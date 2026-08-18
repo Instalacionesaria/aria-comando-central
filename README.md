@@ -2,6 +2,13 @@
 
 Port a Next.js del prototipo `aios-command-center_1.html`.
 
+**Producción:** https://aria-comando-central.vercel.app
+
+Vercel está conectado a este repo: cada push a `main` despliega a
+producción y cada rama o PR genera su propia URL de vista previa. El
+proyecto vive en el scope `instalacionesariaia-1374s-projects` y Next.js
+se detecta solo — no hace falta `vercel.json`.
+
 ## Arrancar
 
 ```bash
