@@ -1,0 +1,53 @@
+/* Tailwind v4 con dos precauciones para no tocar el diseño heredado:
+   1. sin preflight, porque el reset propio de aios.css ya manda;
+   2. con prefijo `tw:`, porque el diseño usa clases semánticas (`ring`,
+      `hidden`, `card`, `grid-3`…) que chocarían con las utilidades.
+   Se escribe `tw:flex`, `tw:bg-bg-panel`, `tw:text-accent`. */
+/* aios va en su propia capa: sin ella, su reset `* { padding:0 }` iría
+   sin capa y ganaría a TODA utilidad de Tailwind (las capas pierden
+   frente al CSS sin capa). Con la capa, `tw:p-4` puede sobrescribirlo. */
+@layer theme, base, aios, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw);
+
+/* Hoja original íntegra — única fuente de verdad de los tokens. */
+@import "./aios.css" layer(aios);
+
+/* Los tokens del diseño expuestos como utilidades de Tailwind.
+   `inline` hace que las clases apunten a la var, no a una copia. */
+@theme inline {
+  --color-bg:          var(--bg);
+  --color-bg-sunk:     var(--bg-sunk);
+  --color-bg-panel:    var(--bg-panel);
+  --color-bg-raise:    var(--bg-raise);
+  --color-bg-float:    var(--bg-float);
+  --color-line:        var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-txt:         var(--txt);
+  --color-txt-dim:     var(--txt-dim);
+  --color-txt-faint:   var(--txt-faint);
+  --color-accent:      var(--accent);
+  --color-accent-dim:  var(--accent-dim);
+  --color-exec:        var(--exec);
+  --color-exec-dim:    var(--exec-dim);
+  --color-warn:        var(--warn);
+  --color-crit:        var(--crit);
+  --color-ok:          var(--ok);
+  --color-dev:         var(--dev);
+
+  --shadow-1:    var(--sh-1);
+  --shadow-2:    var(--sh-2);
+  --shadow-3:    var(--sh-3);
+  --shadow-hair: var(--hair);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+/* Las familias de next/font se inyectan en la cadena original,
+   detrás de las de sistema, igual que hacía el <link> a Google Fonts. */
+:root {
+  --font-ui:   -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+               var(--font-inter), system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, var(--font-plex-mono), monospace;
+}
