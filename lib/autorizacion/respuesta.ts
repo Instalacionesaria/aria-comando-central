@@ -111,6 +111,46 @@ export const CREDENCIALES_INVALIDAS = 'Credenciales inválidas.';
 
 export type CodigoRechazo = keyof typeof RECHAZOS;
 
+/**
+ * ADR-0704 — Las respuestas de error no revelan estructura.
+ *
+ * El mensaje de un error de la base, **solo si viene de un disparador que alguien escribió para
+ * que lo lea una persona**. Para cualquier otro error devuelve `null`.
+ *
+ * ── EL DISCRIMINANTE ES EL SQLSTATE, NO EL TEXTO ─────────────────────────────
+ *
+ * El `05` § 3 pide devolver el mensaje de la base *"tal cual"* porque *"si los mensajes de los
+ * disparadores están escritos para leerse, traducirlos en el backend sería mantener dos textos que
+ * dicen lo mismo y que van a divergir"*. Y tiene razón.
+ *
+ * Pero `ADR-0704` exige que ningún cuerpo de error contenga nombres de tablas ni consultas. Las dos
+ * cosas son compatibles **solo si se distingue qué error es**, y el texto no sirve para eso. Medido
+ * contra esta base:
+ *
+ *   · un disparador:  `El administrador principal no se puede degradar (usuario 6fffc…).`
+ *   · un error real:  `column "columna_inexistente" of relation "usuarios" does not exist`
+ *
+ * El segundo **nombra la tabla**. Un filtro por patrones sobre el texto sería una lista de palabras
+ * prohibidas que hay que mantener, y que falla en el idioma equivocado.
+ *
+ * `P0001` es `raise_exception`: **el código que produce exactamente un `raise exception` de
+ * plpgsql, y ningún otro error**. Los errores estructurales tienen los suyos —`42703` para una
+ * columna que no existe, `42P01` para una tabla— y ninguno pasa.
+ *
+ * Nótese que `23505` (unicidad) y `23503` (clave foránea) **tampoco** pasan, y eso es deliberado:
+ * el `05` § 3 los excluye por su cuenta porque *"las verificaciones de unicidad y de integridad
+ * referencial no pasan por la seguridad a nivel de fila… un mensaje de 'ya existe una fila con ese
+ * valor' es un canal que confirma la existencia de un registro de otra organización"*.
+ */
+export function mensajeDeDisparador(e: unknown): string | null {
+  const codigo = (e as { code?: unknown } | null)?.code;
+  if (codigo !== 'P0001') return null;
+  const mensaje = (e as { message?: unknown } | null)?.message;
+  if (typeof mensaje !== 'string' || mensaje.length === 0) return null;
+  // Solo la primera línea: el `CONTEXT:` de plpgsql nombra la función y su número de línea.
+  return mensaje.split('\n')[0] ?? null;
+}
+
 /** Las cabeceras que lleva TODA respuesta del API. */
 function cabeceras(): Headers {
   const h = new Headers();

@@ -31,7 +31,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
-import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 
@@ -87,8 +87,14 @@ export async function POST(peticion: Request): Promise<Response> {
       if (/duplicate key|unique constraint/i.test(mensaje)) {
         return ok({ creada: false, motivo: 'slug_duplicado' }, 409);
       }
-      // Los mensajes de los DISPARADORES sí se devuelven tal cual (05 § 3).
-      return rechazo('rechazo_de_la_base', mensaje.split('\n')[0]);
+      // Los mensajes de los DISPARADORES sí se devuelven tal cual (05 § 3) — y **solo** ésos.
+      // `ADR-0704` exige que ningún cuerpo de error revele estructura, y un error estructural
+      // nombra la tabla: `column "x" of relation "usuarios" does not exist`. El discriminante es el
+      // SQLSTATE, no el texto. Ver `mensajeDeDisparador()`.
+      const deDisparador = mensajeDeDisparador(e);
+      return deDisparador
+        ? rechazo('rechazo_de_la_base', deDisparador)
+        : rechazo('rechazo_de_la_base');
     }
 
     await auditarAdministracion(db, {

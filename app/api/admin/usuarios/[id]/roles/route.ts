@@ -28,7 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
-import { ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
+import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { usuarioObjetivo } from '../../../../../../lib/administracion/objetivo.ts';
 import { auditarAdministracion } from '../../../../../../lib/autenticacion/auditoria.ts';
@@ -125,7 +125,12 @@ export async function POST(
         // existencia de un registro de otra organización"* (05 § 3).
         return ok({ asignados: false, motivo: 'rol_invalido' }, 409);
       }
-      return rechazo('rechazo_de_la_base', mensaje.split('\n')[0]);
+      // Y SOLO el mensaje de un disparador: el discriminante es el SQLSTATE (`P0001`), no el
+      // texto. Un error estructural nombra la tabla, y `ADR-0704` lo prohíbe.
+      const deDisparador = mensajeDeDisparador(e);
+      return deDisparador
+        ? rechazo('rechazo_de_la_base', deDisparador)
+        : rechazo('rechazo_de_la_base');
     }
 
     await auditarAdministracion(db, {

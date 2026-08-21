@@ -22,7 +22,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
-import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { hashear } from '../../../../lib/datos/hash.ts';
 import { contrasenaTemporal } from '../../../../lib/autenticacion/temporal.ts';
@@ -92,8 +92,13 @@ export async function POST(peticion: Request): Promise<Response> {
       if (/duplicate key|unique constraint/i.test(mensaje)) {
         return rechazo('email_duplicado');
       }
-      // Los DISPARADORES sí devuelven su mensaje: *"están escritos para leerse"* (05 § 3).
-      return rechazo('rechazo_de_la_base', mensaje.split('\n')[0]);
+      // Los DISPARADORES sí devuelven su mensaje: *"están escritos para leerse"* (05 § 3). Y
+      // **solo** ésos: el discriminante es el SQLSTATE (`P0001`), no el texto, porque un error
+      // estructural nombra la tabla y `ADR-0704` lo prohíbe.
+      const deDisparador = mensajeDeDisparador(e);
+      return deDisparador
+        ? rechazo('rechazo_de_la_base', deDisparador)
+        : rechazo('rechazo_de_la_base');
     }
 
     // El correo SÍ va a la auditoría; la contraseña temporal NUNCA, *"ni ahí"*. El tipo `Detalle`
