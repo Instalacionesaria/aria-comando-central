@@ -426,3 +426,47 @@ test('el inquilino NO alcanza el hash de contraseña ni las marcas de bloqueo', 
     assert.equal(f?.ok, false, `app_inquilino NO tendría que poder leer ${col}`);
   }
 });
+
+test('07 § 1 · ninguna función tiene dos firmas', async () => {
+  // "PostgreSQL resuelve las sobrecargas POR CANTIDAD DE ARGUMENTOS. Si existe
+  // `f(p_org_id)` y quedó una `f()` heredada, UN LLAMADOR QUE SE OLVIDE EL ARGUMENTO NO
+  // FALLA: ejecuta la vieja, que ignora la organización."
+  //
+  // `EJECUCION` § 2 prohíbe los procedimientos almacenados con lógica de negocio, así que
+  // la trampa entera no debería aplicar — pero `negocio.aplicar_aislamiento()` existe y es
+  // una función, y el día que alguien le cambie la firma va a escribir un
+  // `create or replace` que deja la vieja viva al lado. El propio `07` lo dice: "borrar la
+  // versión sin parámetro es parte del trabajo", y el borrado "SE LLEVA LOS PERMISOS".
+  //
+  // Es una comprobación de catálogo de tres líneas que cierra la clase entera.
+  // Se excluyen las funciones que pertenecen a una EXTENSIÓN, y la primera corrida
+  // demostró por qué: `pgcrypto` trae **doce** nombres sobrecargados en `public`
+  // —`digest`, `hmac`, `pgp_sym_encrypt`…— que son su API pública y están perfectas. Sin
+  // este filtro la prueba fallaba sobre código correcto, que es como mueren las pruebas
+  // arquitectónicas (04 § 7). La sobrecarga que importa es la NUESTRA.
+  const dobles = await filas<{ esquema: string; nombre: string; firmas: string }>(
+    mig,
+    `select n.nspname as esquema, p.proname as nombre, count(*)::text as firmas
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('identidad', 'negocio', 'public')
+        and not exists (select 1 from pg_depend d
+                         where d.objid = p.oid and d.deptype = 'e')
+      group by 1, 2 having count(*) > 1
+      order by 1, 2`,
+  );
+  assert.deepEqual(
+    dobles.map((d) => `${d.esquema}.${d.nombre} (${d.firmas} firmas)`),
+    [],
+    'una función con dos firmas se resuelve por cantidad de argumentos: el llamador que ' +
+      'se olvide el de la organización NO falla, ejecuta la otra',
+  );
+
+  // La guarda contra el falso verde: si no hubiera NINGUNA función, el conjunto vacío
+  // pasaría sin verificar nada. Hoy hay una, `negocio.aplicar_aislamiento`.
+  const cuantas = await unaFila<{ n: string }>(
+    mig,
+    `select count(*)::text as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('identidad', 'negocio')`,
+  );
+  assert.ok(Number(cuantas?.n ?? 0) > 0, 'no hay ninguna función: la prueba pasaría en vacío');
+});

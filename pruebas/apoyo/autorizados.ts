@@ -37,6 +37,21 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // contexto en cada vuelta como una petición normal". No lee datos de negocio sin
   // filtro.
   'scripts/db.mjs',
+  // ── Etapa 3 ──────────────────────────────────────────────────────────────────
+  // Resolver la sesión ES el dominio de identidad: `identidad.sesiones` no tiene columna de
+  // organización, porque se busca por hash de token ANTES de saber quién es nadie. El rol
+  // del inquilino no tiene ni `select` sobre esa tabla, así que esto no es una comodidad:
+  // es el único camino que existe.
+  'lib/autorizacion/sesion.ts',
+  // Las tres operaciones de la propia sesión: leerla, borrarla, y cambiar la organización
+  // activa del rol de plataforma. Las tres escriben o leen `identidad.sesiones`.
+  'app/api/auth/sesion/route.ts',
+  // La lista de usuarios de la organización efectiva. Es el caso que el 04 § 4 llama
+  // legítimo y a la vez el más peligroso: acá el filtro por organización lo pone la consulta
+  // A MANO (`where org_id = contexto.orgEfectiva`), porque la política de identidad para este
+  // rol es `using (true)`. Es el único lugar del sistema donde olvidarse un `where` devuelve
+  // filas de otra organización sin error — y por eso está en una lista que alguien revisa.
+  'app/api/usuarios/route.ts',
 ];
 
 /**
@@ -71,7 +86,25 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
 /**
  * Las rutas públicas: no exigen sesión y no abren contexto de organización.
  *
- * Vacía hoy porque no hay ni un manejador de ruta. Cuando existan, acá van el login, la
- * comprobación de salud y el arranque.
+ * DOS ENTRADAS, NO TRES, y la diferencia está resuelta por precedencia. `PRUEBAS.md` dice
+ * *"salvo las rutas públicas (login, salud, arranque)"*, pero `EJECUCION` § 3 cerró que el
+ * arranque del primer administrador es un **script contra la base, no endpoint HTTP** — y el
+ * 03 § 6 coincide con `EJECUCION`: su pseudocódigo dice *"(login, salud)"*, sin arranque. Una
+ * tercera entrada rompería la comprobación de entradas muertas de abajo.
+ *
+ * El login es de la Etapa 4. Hoy está la salud, y nada más.
  */
-export const RUTAS_PUBLICAS: readonly string[] = [];
+export const RUTAS_PUBLICAS: readonly string[] = ['app/api/salud/route.ts'];
+
+/**
+ * Las rutas que usan `sesionOpcional(` en vez del portero.
+ *
+ * NO son públicas y no son una excepción cómoda: tienen su propio contrato, definido en el
+ * paso 0 del 03 § 5. `exigir(` LANZA si se lo llama con una de ellas, así que no es posible
+ * pasar por el camino equivocado sin que reviente.
+ *
+ * Están separadas de `RUTAS_PUBLICAS` a propósito: una ruta pública no mira la sesión; éstas
+ * la miran y **toleran que no haya**. Colapsar las dos listas convertiría "tolera que no
+ * haya sesión" en "no mira la sesión", que es un permiso mucho más grande.
+ */
+export const RUTAS_CON_SESION_OPCIONAL: readonly string[] = ['app/api/auth/sesion/route.ts'];

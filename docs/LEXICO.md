@@ -17,7 +17,14 @@ ahí van a salir los ejemplos que se porten. La deriva no es hipotética.
 | `dbSinScope()` | `conIdentidad(` | `conIdentidad(fn)` | `lib/datos/capa.ts` |
 | `conCredenciales(cred, fn)` | `conOrganizacion(` | `conOrganizacion(orgId, fn)` | `lib/datos/capa.ts` — **Etapa 2** |
 | `activar(cred)` | — | **no existe** (ver abajo) | — |
-| `exigir(req, res, roles)` | `exigir(` | `exigir(peticion, capacidades)` | `lib/portero.ts` — **Etapa 3** |
+| `exigir(req, res, roles)` | `exigir(` | `exigir(peticion, capacidades)` | `lib/autorizacion/portero.ts` — **Etapa 3** |
+| — | `sesionOpcional(` | `sesionOpcional(peticion)` | `lib/autorizacion/portero.ts` |
+| — | `resolverSesion(` | `resolverSesion(token)` | `lib/autorizacion/sesion.ts` |
+| — | `verificarOrigen(` | `verificarOrigen(peticion)` | `lib/autorizacion/portero.ts` |
+| — | `ESTADOS` | `ESTADOS`, `COMUN`, `SIN_SESION_REQUERIDA` | `lib/autorizacion/estados.ts` |
+| — | `"ninguna"` | `NINGUNA` | `lib/autorizacion/capacidades.ts` |
+| — | `SECCIONES`, `puede(` | `SECCIONES`, `puede(permisos, seccion)` | `lib/autorizacion/secciones.ts` |
+| dos clientes HTTP | — | `pedir(` | `lib/http/cliente.ts`, **único archivo** |
 | `org_id`, `empresa` | `org_id` | `org_id` | columna, en toda tabla de negocio |
 | `super_admin` | `superadministrador` | `superadministrador` | fila de `roles` — **Etapa 1** |
 | `closer_*` en `public` | `identidad.*` / `negocio.*` | dos esquemas, sin prefijo | migraciones |
@@ -62,3 +69,56 @@ los va a buscar sobre el código **sin comentarios**, excluyendo `pruebas/`:
 | Roles | `migrador`, `app_inquilino`, `app_identidad` |
 | Variable de transacción | `app.org_id` |
 | Contabilidad de migraciones | `public.migraciones_aplicadas`, `public.migraciones_candado` |
+
+## `exigir(` cambió de firma, y el motivo importa más que el cambio
+
+El `03` § 5 escribe `exigir(peticion, respuesta, capacidadesRequeridas)` con el contrato
+*"devuelve nulo y ya respondió"*, y lo defiende con un argumento que hay que leer entero
+antes de tocarlo:
+
+> *"Devuelve nulo y ya respondió, en vez de lanzar una excepción o devolver un resultado
+> con dos ramas. Eso obliga a escribir la línea de salida, y **olvidarse no abre la
+> operación**: rompe en cuanto se usa el contexto. Un portero que devolviera un booleano se
+> podría ignorar en silencio."*
+
+**Esa firma no es implementable en el App Router.** Un manejador de ruta no recibe un
+objeto `respuesta` que se pueda escribir: devuelve una `Response`. No hay a quién
+responderle desde adentro del portero.
+
+Así que cambia la firma y **se conserva la propiedad**:
+
+```ts
+const ctx = await exigir(peticion, ['usuarios.ver']);
+if (ctx instanceof Response) return ctx;   // el portero ya armó la respuesta
+```
+
+Olvidarse de esa línea no abre la operación: `ctx.permisos` sobre un `Contexto | Response`
+es **error de compilación**, porque `Response` no tiene `permisos`. Es más fuerte que la
+versión del documento —ahí olvidarse rompe en tiempo de ejecución, acá no compila— y
+conserva lo esencial: no hay forma de ignorar el resultado en silencio.
+
+Las dos salidas que parecen naturales y **no** se toman: lanzar una excepción (el mismo
+§ 5 la descarta, y un `catch` de más arriba la volvería un 500 sin código), y devolver
+`{ ok, contexto }` (es el defecto que el § 5 nombra: *"quien escriba `si no contexto:
+devolver` sobre la forma nueva NUNCA corta, porque un objeto siempre es verdadero"*).
+
+La cadena que buscan las pruebas sigue siendo `exigir(`.
+
+## `ESTADOS`, no `RUTAS_PERMITIDAS`
+
+El mismo diccionario tiene dos nombres en los dos documentos normativos: el `03` § 5 lo
+llama `RUTAS_PERMITIDAS`, el `09` § 5 lo llama `ESTADOS`, **con el mismo contenido**. Gana
+el `09` por número más alto, y `EJECUCION` § 4 refuerza: del `09` dice que *"la lista blanca
+de la § 5 se aplica literalmente"*.
+
+`COMUN` y `SIN_SESION_REQUERIDA` solo existen en el `03`, y se conservan: la fila de
+`PRUEBAS` de la Etapa 4 (*"comparando **sin** el conjunto común"*) depende de que `COMUN`
+exista como constante propia.
+
+## Las rutas llevan el prefijo `/api`
+
+El `03` § 5 y el `09` § 5 escriben `GET /auth/sesion`. En el App Router el camino real de
+`app/api/auth/sesion/route.ts` **es** `/api/auth/sesion`, y el portero compara contra el
+camino real. Escribirlas sin el prefijo haría que ninguna coincidiera nunca — y como el
+resultado de no coincidir es *rechazar*, el síntoma sería que nadie puede salir de un
+estado restringido: falla cerrado, pero bloquea a todo el mundo.

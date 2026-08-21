@@ -1,0 +1,137 @@
+// ADR-0301 — Toda operación llama al portero.
+//
+// Las tres operaciones de la propia sesión.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET Y DELETE NO PASAN POR EL PORTERO, Y NO ES UNA EXCEPCIÓN CÓMODA
+//
+// El paso 0 del 03 § 5 las saca a propósito, con un motivo que vale releer:
+//
+//   "Mezclarlas en esta función obliga a devolver dos formas distintas —el contexto, o un
+//    objeto con un campo que hay que recordar mirar— y en un lenguaje sin tipos eso es una
+//    fuente de defectos silenciosos: quien escriba `si no contexto: devolver` sobre la forma
+//    nueva NUNCA corta, porque un objeto siempre es verdadero."
+//
+// Y cada una tiene su razón:
+//
+//   · `GET` — *"'¿hay alguien?' es una pregunta legítima sin sesión, y responde 200
+//     `{ autenticado: false }`. Si respondiera 401, el arranque del frontend entraría en
+//     bucle con el manejador que escucha ese código."*
+//   · `DELETE` — *"tiene que borrar la cookie SIEMPRE, también cuando la sesión ya venció: es
+//     la única forma de que el navegador deje de mandarla."*
+//
+// Las dos usan `sesionOpcional(`, que tiene su propio contrato: devuelve la sesión o nulo, y
+// nunca responde por su cuenta.
+//
+// UNA CONTRADICCIÓN DE LA ESPECIFICACIÓN, RESUELTA Y REPORTADA: el paso 0 dice que el
+// portero LANZA si la ruta está en `SIN_SESION_REQUERIDA` —o sea que estas rutas nunca
+// llegan a los pasos 2 y 3—, pero el comentario del mismo paso 0 afirma que "cuando SÍ hay
+// sesión las dos siguen pasando por el resto del portero", y el paso 3 lleva una guarda que
+// solo tiene sentido si SÍ llegan. Es la misma sección del mismo documento, así que la regla
+// de precedencia no aplica. La lectura que hace consistente todo el texto —y que da el mismo
+// comportamiento observable por las dos vías— es: estas rutas están en las cuatro listas de
+// `ESTADOS`, así que el paso 2 nunca las rechazaría, y están exentas del paso 3 por la guarda
+// literal. Implementadas por `sesionOpcional(`, el resultado es idéntico.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { cookieSesionBorrada } from '../../../../lib/autorizacion/cookie.ts';
+import { exigir, sesionOpcional } from '../../../../lib/autorizacion/portero.ts';
+import { ok } from '../../../../lib/autorizacion/respuesta.ts';
+import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
+import { conIdentidad } from '../../../../lib/datos/capa.ts';
+
+/**
+ * ¿Quién soy? Responde 200 **siempre**, con o sin sesión.
+ *
+ * Devuelve el estado además del usuario, y eso no es adorno: sin él el frontend no sabe qué
+ * pantalla mostrar y no puede salir de un estado restringido (02 § 5, 09 § 5).
+ */
+export async function GET(peticion: Request): Promise<Response> {
+  const contexto = await sesionOpcional(peticion);
+  if (!contexto) return ok({ autenticado: false });
+
+  return ok({
+    autenticado: true,
+    estado: contexto.estado,
+    usuarioId: contexto.usuarioId,
+    organizacion: contexto.organizacion,
+    // Se devuelven los permisos para que el menú se arme, y las secciones ya filtradas para
+    // que las dos mitades usen la MISMA función (03 § 7). Es comodidad, no seguridad: cada
+    // operación valida igual.
+    permisos: [...contexto.permisos].sort(),
+    secciones: seccionesVisibles(contexto.permisos),
+    // El cartel permanente del 03 § 3: "cuando mira otra organización, la interfaz lo
+    // muestra de forma permanente. No es decoración: sin eso, alguien puede mirar la
+    // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro
+    // cliente."
+    mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
+  });
+}
+
+/**
+ * Cerrar sesión. Borra la cookie **siempre**, haya sesión o no.
+ *
+ * El orden importa: primero se borra la fila si existe, y la cabecera de la cookie va en la
+ * respuesta en los dos casos. Si la fila no existe —sesión ya vencida— igual hay que
+ * mandarla, porque es la única forma de que el navegador deje de enviar la cookie.
+ */
+export async function DELETE(peticion: Request): Promise<Response> {
+  const contexto = await sesionOpcional(peticion);
+
+  if (contexto) {
+    await conIdentidad(async (db) => {
+      await db.deleteFrom('sesiones').where('id', '=', contexto.sesionId).execute();
+    });
+  }
+
+  const respuesta = ok({ cerrada: true });
+  // La cabecera se escribe a mano con los cuatro atributos. `cookies().delete()` emitiría un
+  // `Set-Cookie` sin `Secure`, el navegador lo rechazaría por el prefijo `__Host-`, y esto
+  // respondería 200 con la cookie intacta. Ver `lib/autorizacion/cookie.ts`.
+  respuesta.headers.append('set-cookie', cookieSesionBorrada());
+  return respuesta;
+}
+
+/**
+ * Cambiar la organización activa. Solo el rol de plataforma.
+ *
+ * Exige `organizaciones.listar`, que existe en el catálogo justamente para esto — el
+ * comentario de la migración 003 lo dice: *"necesaria para el cambio de organización activa
+ * del rol de plataforma: ese endpoint tiene que exigir una capacidad explícita, no
+ * 'ninguna'"*.
+ *
+ * `esRolDePlataforma` se comprueba **además** de la capacidad, y no es redundante: la
+ * capacidad dice "puede cambiar de organización", y `resolverSesion` solo respeta
+ * `org_activa` si el rol es de plataforma. Sin las dos, alguien podría escribir la columna y
+ * quedarse sin efecto — un cambio que reporta éxito y no ocurre (07 § 0).
+ */
+export async function PATCH(peticion: Request): Promise<Response> {
+  const contexto = await exigir(peticion, ['organizaciones.listar']);
+  if (contexto instanceof Response) return contexto;
+
+  if (!contexto.esRolDePlataforma) {
+    return ok({ cambiada: false, motivo: 'sin_rol_de_plataforma' }, 409);
+  }
+
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return ok({ cambiada: false, motivo: 'cuerpo_invalido' }, 400);
+  }
+  const pedida = (cuerpo as { orgId?: unknown } | null)?.orgId;
+  // `null` es un valor legítimo: significa "volver a mi propia organización".
+  if (pedida !== null && typeof pedida !== 'string') {
+    return ok({ cambiada: false, motivo: 'org_id_invalido' }, 400);
+  }
+
+  await conIdentidad(async (db) => {
+    await db
+      .updateTable('sesiones')
+      .set({ org_activa: pedida })
+      .where('id', '=', contexto.sesionId)
+      .execute();
+  });
+
+  return ok({ cambiada: true, orgActiva: pedida });
+}

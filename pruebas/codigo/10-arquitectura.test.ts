@@ -34,7 +34,20 @@ import {
   RUTAS_PUBLICAS,
 } from '../apoyo/autorizados.ts';
 
-/** Los manejadores de ruta del App Router. Hoy, ninguno. */
+/**
+ * Los manejadores de ruta del App Router.
+ *
+ * Las CUATRO extensiones, no solo `.ts`: `pageExtensions` por omisión es
+ * `['tsx','ts','jsx','js']` y el emparejador de Next acepta las cuatro para `route`
+ * (`node_modules/next/dist/server/lib/find-page-file.js`). Los grupos entre paréntesis, los
+ * corchetes de las rutas dinámicas y las arrobas de las rutas paralelas **no cambian el
+ * nombre del archivo**, así que el recorrido recursivo los cubre solo.
+ *
+ * LO QUE SE LE ESCAPA, dicho acá para que nadie lo descubra tarde: las rutas de metadatos
+ * (`sitemap`, `opengraph-image`, `icon`, `robots`, `manifest`) se compilan a manejadores de
+ * ruta que exportan `GET`, pueden consultar la base, **no se llaman `route.*`** y salen con
+ * caché PÚBLICA. Hoy no existe ninguna, y la comprobación de abajo lo afirma.
+ */
 function manejadoresDeRuta(): string[] {
   const dir = join(RAIZ, 'app');
   if (!existsSync(dir)) return [];
@@ -42,6 +55,36 @@ function manejadoresDeRuta(): string[] {
     .filter((e) => e.isFile() && /^route\.(ts|js|tsx|jsx)$/.test(e.name))
     .map((e) => relative(RAIZ, join(e.parentPath, e.name)).split(sep).join('/'))
     .sort();
+}
+
+/** Los métodos HTTP que un manejador de ruta puede exportar. */
+const METODOS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
+
+/**
+ * Los métodos exportados por un archivo, con el cuerpo de cada uno.
+ *
+ * POR QUÉ POR MÉTODO Y NO POR ARCHIVO, que es el agujero de la versión literal del 03 § 6
+ * (*"afirmar que codigo contiene 'exigir('"*): un `route.ts` con `GET` y `POST` donde **solo
+ * `GET`** llama al portero pasa la comprobación a nivel de archivo. El `POST` queda abierto y
+ * responde 200.
+ *
+ * El corte por método es textual —desde `export … function METODO(` hasta el próximo— y no un
+ * analizador. Para lo que se busca —¿aparece el portero dentro de este cuerpo?— errar
+ * partiendo de más produce un falso ROJO visible, no un falso verde.
+ */
+function metodosDe(limpio: string): { metodo: string; cuerpo: string }[] {
+  const marcas: { metodo: string; desde: number }[] = [];
+  for (const m of METODOS) {
+    const re = new RegExp(`export\\s+(?:async\\s+)?(?:function\\s+${m}\\b|const\\s+${m}\\b)`, 'g');
+    for (let hit = re.exec(limpio); hit; hit = re.exec(limpio)) {
+      marcas.push({ metodo: m, desde: hit.index });
+    }
+  }
+  marcas.sort((a, b) => a.desde - b.desde);
+  return marcas.map((mk, i) => ({
+    metodo: mk.metodo,
+    cuerpo: limpio.slice(mk.desde, marcas[i + 1]?.desde ?? limpio.length),
+  }));
 }
 
 // ─── ADR-0203 · un solo lugar crea el cliente ───────────────────────────────
@@ -145,19 +188,12 @@ test('ADR-0209 · ningún archivo nuevo cruza los dos dominios sin decirlo', () 
 test('ADR-0202 · todo manejador de ruta abre el contexto de su organización', () => {
   const rutas = manejadoresDeRuta();
 
-  // HOY NO HAY NINGUNO, y eso se AFIRMA en vez de dejar pasar un bucle vacío.
-  //
-  // Un bucle sobre cero archivos pasa siempre, y "una prueba que pasa en vacío es peor
-  // que ninguna" (09 § 4). Con esta afirmación, el día que la Etapa 3 escriba el primer
-  // manejador de ruta esta prueba FALLA, y quien la arregle tiene que borrar este conteo
-  // a propósito y dejar que el bucle de abajo lo verifique. Es el disparador que hace
-  // que la regla exista antes que el código que vigila.
-  assert.deepEqual(
-    rutas,
-    [],
-    'apareció el primer manejador de ruta: borrá esta afirmación y dejá que el bucle ' +
-      'de abajo verifique que abre el contexto',
-  );
+  // El cable trampa que estuvo armado desde la Etapa 1 decía `deepEqual(rutas, [])` —"hoy no
+  // hay ninguno"— y DISPARÓ al aparecer el primer manejador, que es exactamente para lo que
+  // estaba. Lo reemplaza la guarda contraria: ahora la prueba exige que HAYA manejadores,
+  // porque un bucle sobre cero archivos pasa siempre y *"una prueba que pasa en vacío es peor
+  // que ninguna"* (09 § 4).
+  assert.ok(rutas.length > 0, 'no hay ningún manejador de ruta: el bucle pasaría en vacío');
 
   for (const ruta of rutas) {
     if (RUTAS_PUBLICAS.includes(ruta)) continue;
@@ -224,8 +260,12 @@ test('ninguna primitiva de caché bajo `app/`', () => {
     /\brevalidateTag\b/,
     /\brevalidatePath\b/,
     /\bupdateTag\b/,
-    /export\s+const\s+(dynamic|revalidate|fetchCache)\b/,
+    /export\s+const\s+(dynamic|revalidate|fetchCache|dynamicParams|experimental_ppr)\b/,
     /cache:\s*['"]force-cache['"]/,
+    // `generateStaticParams` SOLA, sin ninguna otra opción, ya activa la generación
+    // estática (`is-static-gen-enabled.js`).
+    /\bgenerateStaticParams\b/,
+    /\bnext:\s*\{\s*revalidate/,
   ];
   for (const patron of vocabulario) {
     assert.deepEqual(
@@ -234,6 +274,60 @@ test('ninguna primitiva de caché bajo `app/`', () => {
       `primitiva de caché ${patron} bajo app/`,
     );
   }
+
+  // LA TRAMPA DE ESTA LISTA, verificada en el código de Next y no deducida:
+  //
+  //   isStaticGenEnabled = dynamic === 'force-static' || dynamic === 'error'
+  //                     || revalidate === false || (revalidate !== undefined && revalidate > 0)
+  //                     || typeof generateStaticParams === 'function'
+  //
+  // Los documentos de Next describen `revalidate = false` como *"(default)"*, así que alguien
+  // lo escribe **para ser explícito** — y con eso el manejador entra en generación estática.
+  // Lo mismo `dynamic = 'error'`. Los dos son un cambio de régimen escrito con la intención
+  // opuesta, y por eso la búsqueda prohíbe el `export const` entero en vez de sus valores.
+  //
+  // Y hay un empujón para escribirlos: el 08 § 3 regla 1 pide *"toda ruta autenticada se
+  // declara dinámica, explícitamente"*. En esta versión la única forma de hacerlo es
+  // `export const dynamic = 'force-dynamic'`, que es una primitiva de caché — justo lo que
+  // `EJECUCION` § 2 prohíbe. Gana `EJECUCION`, y la explicitud se consigue de dos formas que
+  // no son primitivas: esta búsqueda (que no se puede olvidar, a diferencia de una
+  // declaración por archivo) y el `Cache-Control: no-store` de `lib/autorizacion/respuesta.ts`.
+  assert.match(
+    archivosFuente(['lib']).find((a) => a.ruta === 'lib/autorizacion/respuesta.ts')?.limpio ?? '',
+    /cache-control['"]\s*,\s*['"]no-store/,
+    'el constructor de respuestas tiene que poner `no-store` explícito',
+  );
+});
+
+test('la caché no se puede activar por la puerta de al lado', () => {
+  // La comprobación anterior mira `app/`. Ésta mira la CONFIGURACIÓN, y la lista es más larga
+  // que `cacheComponents` porque hay varias formas de habilitar lo mismo. La que más importa:
+  // `experimental.useCache: true` habilita `'use cache'` **sin** `cacheComponents` — en
+  // `node_modules/next/dist/server/config.js`, `result.experimental.useCache =
+  // result.cacheComponents` solo cuando el usuario NO lo definió.
+  const config = archivosFuente(['.']).find((a) => a.ruta === 'next.config.mjs');
+  const texto = config?.limpio ?? '';
+  assert.ok(texto.length > 0, 'no se pudo leer next.config.mjs');
+
+  for (const clave of [
+    'cacheComponents',
+    'useCache',
+    'dynamicIO',
+    'ppr',
+    'cacheLife',
+    'cacheHandlers',
+    'expireTime',
+    'staleTimes',
+  ]) {
+    assert.doesNotMatch(
+      texto,
+      new RegExp(`\\b${clave}\\b`),
+      `${clave} en next.config.mjs cambia el régimen de caché de todo el proyecto`,
+    );
+  }
+  // `output: 'export'` convertiría todo en estático y los manejadores de ruta dejarían de
+  // existir como tales.
+  assert.doesNotMatch(texto, /output\s*:\s*['"]export['"]/);
 });
 
 test('ningún `use server`: una acción exportada es alcanzable por un POST directo', () => {

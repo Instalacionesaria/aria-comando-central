@@ -10,7 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "tipos": "tsc --noEmit",
+    "tipos": "next typegen && tsc --noEmit",
     "test": "node scripts/pruebas.mjs",
     "compuerta": "node scripts/pruebas.mjs pruebas/base/01-controlador-transaccion.test.ts",
     "db:arranque": "node --env-file-if-exists=.env.local scripts/db.mjs arranque",
