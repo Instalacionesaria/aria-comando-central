@@ -95,6 +95,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // que el alta de organización: es lo primero que existe. `EJECUCION` § 3 lo cerró como *"script
   // contra la base, no endpoint HTTP"*, así que nunca está expuesto.
   'scripts/arranque.mjs',
+  // ── Etapa 6 ──────────────────────────────────────────────────────────────────
+  // Las credenciales viven en `identidad.organizaciones_credenciales`, y el rol del inquilino no
+  // tiene NINGÚN acceso a esa tabla —ni `select`—: es la tabla que guarda los secretos de todas las
+  // organizaciones. El filtro por organización lo pone la consulta con `contexto.orgEfectiva`.
+  'app/api/admin/credenciales/route.ts',
 ];
 
 /**

@@ -62,7 +62,9 @@ export type Accion =
   | 'usuario_editado'
   | 'usuario_desactivado'
   | 'password_restablecida'
-  | 'roles_asignados';
+  | 'roles_asignados'
+  // ── Etapa 6 ──
+  | 'credenciales_cargadas';
 
 /**
  * Lo único que puede ir en `detalle`. Tres campos, todos opcionales, **todos nombrados**.
@@ -114,6 +116,7 @@ export async function auditarAdministracion(
       | 'usuario_desactivado'
       | 'password_restablecida'
       | 'roles_asignados'
+      | 'credenciales_cargadas'
     >;
     actor: string;
     objetivo: string;

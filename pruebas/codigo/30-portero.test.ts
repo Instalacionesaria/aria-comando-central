@@ -287,6 +287,25 @@ test('ADR-0304 · las operaciones de una misma pantalla piden el MISMO conjunto'
     }
 
     for (const { metodo, cuerpo } of metodosDe(limpio)) {
+      // SOLO LOS MÉTODOS QUE LLENAN LA PANTALLA, y el recorte tiene motivo.
+      //
+      // El defecto que esta fila previene es de LECTURAS. El `07` § 2 lo describe así: quien abría
+      // una pantalla de cinco secciones autorizado en una *"veía una sección con datos y cuatro en
+      // blanco, sin ningún error"*. Eso pasa cuando dos GET de la misma pantalla piden capacidades
+      // distintas.
+      //
+      // Una MUTACIÓN que pide otra capacidad no produce ese defecto: `credenciales.ver` y
+      // `credenciales.editar` son dos a propósito —el `03` § 2 usa exactamente ese criterio,
+      // *"¿existe un rol plausible que necesite A y no B?"*— y un rol de consulta tiene que poder
+      // ver la pantalla sin poder escribir.
+      //
+      // Igualarlas para que esta prueba pase sería una ESCALADA SILENCIOSA: el portero usa
+      // `contieneAlguna`, así que pedir las dos en las dos deja escribir a quien solo puede leer.
+      //
+      // Lo que queda sin cubrir —un botón que se ve y da 403— es el `07` § 4, *"mostrar un control
+      // que no puede cumplir"*, y se resuelve no renderizando el control. Eso es interfaz, y esta
+      // prueba no lo puede ver.
+      if (metodo !== 'GET') continue;
       const m = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([\s\S]*?)\)\s*;/.exec(cuerpo);
       if (!m) continue;
       const arg = (m[1] ?? '').trim();

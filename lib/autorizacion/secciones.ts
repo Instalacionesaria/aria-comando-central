@@ -62,6 +62,7 @@ export interface Seccion {
  */
 export const SECCIONES: readonly Seccion[] = [
   { clave: 'usuarios', nombre: 'Usuarios', capacidadRequerida: 'usuarios.ver' },
+  { clave: 'credenciales', nombre: 'Integraciones', capacidadRequerida: 'credenciales.ver' },
 ];
 
 /**

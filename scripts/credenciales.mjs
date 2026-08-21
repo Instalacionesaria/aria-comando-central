@@ -28,6 +28,27 @@ const vars = {
   DATABASE_URL_MIGRADOR: `postgresql://migrador:${clave()}@${ANFITRION}`,
   DATABASE_URL_INQUILINO: `postgresql://app_inquilino:${clave()}@${ANFITRION}`,
   DATABASE_URL_IDENTIDAD: `postgresql://app_identidad:${clave()}@${ANFITRION}`,
+
+  // ── Etapa 6 · las tres que faltaban, y por qué eso era un agujero ──────────
+  //
+  // Hasta acá este script emitía SOLO las cuatro cadenas de conexión, y eso volvía
+  // **decorativa** la mitad más importante de la fila ⛔ de la Etapa 6.
+  //
+  // El razonamiento completo, porque no es obvio: la fila exige que el paquete construido no
+  // contenga *"los nombres NI LOS VALORES"* de ninguna variable secreta. La prueba busca el
+  // valor de `CLAVE_MAESTRA` dentro del paquete. Pero si el build de la integración corre SIN
+  // esa variable, un `NEXT_PUBLIC_CLAVE_MAESTRA` se inlinearía como `undefined` —no hay nada
+  // que encontrar, la prueba pasa— y el mismo código en producción se inlinearía **con la clave
+  // real**. La integración diría verde sobre exactamente el defecto que existe para atrapar.
+  //
+  // Así que el build de la integración necesita valores para TODAS las variables clasificadas
+  // como secretas. Son efímeros y no protegen nada: existen para que haya algo que buscar.
+  CLAVE_MAESTRA: randomBytes(32).toString('base64'),
+
+  // Estas dos NO son secretas —el dominio es público y la cabecera es un nombre de cabecera—
+  // pero el build y las pruebas las necesitan para no tomar caminos distintos que en producción.
+  DOMINIO_ESPERADO: 'ejemplo.test',
+  CABECERA_DIRECCION_REAL: 'x-real-ip',
 };
 
 const bloque = Object.entries(vars)
@@ -43,7 +64,10 @@ if (argv.has('--github-env')) {
     process.exit(1);
   }
   appendFileSync(destino, bloque + '\n', 'utf8');
-  console.log('credenciales.mjs: 4 variables agregadas a GITHUB_ENV (valores no impresos).');
+  console.log(
+    `credenciales.mjs: ${Object.keys(vars).length} variables agregadas a GITHUB_ENV ` +
+      '(valores no impresos).',
+  );
   console.log('  ' + Object.keys(vars).join('\n  '));
 } else if (argv.has('--escribir')) {
   const ruta = join(RAIZ, '.env.local');
