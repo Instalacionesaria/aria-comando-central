@@ -9,3 +9,14 @@ npm-debug.log*
 .vercel
 .port/
 .env*
+# La plantilla SÍ se versiona — la regla `.env*` de arriba se la tragaría.
+# Solo NOMBRES de variables, ningún valor.
+!.env.example
+graphify-out/
+
+# TypeScript: los dos los genera la herramienta.
+# `next-env.d.ts` lo reescribe `next dev`/`next build` y además importa de
+# `.next/types/`, así que sin un build previo no resuelve. Consecuencia para la
+# integración: `tsc --noEmit` corre DESPUÉS de `next build`, no antes.
+next-env.d.ts
+*.tsbuildinfo

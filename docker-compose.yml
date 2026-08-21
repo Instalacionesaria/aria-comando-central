@@ -1,0 +1,43 @@
+# Un PostgreSQL local EFÍMERO. Cada corrida arranca desde cero.
+#
+# El MISMO archivo se usa en la máquina de desarrollo y en la integración
+# continua. Con un bloque `services:` de GitHub Actions habría DOS descripciones
+# del entorno y divergirían — y una divergencia entre entornos es exactamente lo
+# que hace "que la prueba que debía fallar pase" (08-ENDURECIMIENTO § 11.5).
+
+services:
+  base:
+    # La versión MAYOR tiene que coincidir con la del PostgreSQL administrado que
+    # se elija (requisito de paridad). El parche se fija cuando ese proveedor
+    # exista: fijarlo ahora sería precisión falsa, porque todavía no sabemos
+    # contra qué versión corre producción.
+    image: postgres:18-alpine
+    # El nombre del contenedor es fijo para que los guiones lo puedan esperar sin
+    # adivinar el prefijo que Compose le pone al proyecto.
+    container_name: aria_base
+    environment:
+      # Solo del contenedor local. La contraseña real de cada rol de la
+      # aplicación la pone `db/arranque/000_cluster.sql` desde el entorno.
+      POSTGRES_PASSWORD: postgres_local
+      POSTGRES_DB: aria
+      # Determinismo: sin esto la imagen toma la localización del anfitrión y los
+      # mensajes de error cambian de idioma entre máquinas — y hay pruebas que
+      # afirman sobre el TEXTO de los errores de los disparadores.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+      LANG: C
+    ports:
+      # 55432 y no 5432: no pisa un PostgreSQL que ya esté instalado en la
+      # máquina. Atado a 127.0.0.1, no expuesto en la red.
+      - "127.0.0.1:55432:5432"
+    # SIN sección `volumes:` a propósito. La imagen declara su propio VOLUME y
+    # Compose le crea uno anónimo que `docker compose down -v` se lleva entero.
+    # Así no hay que adivinar dónde pone PGDATA cada versión de la imagen.
+    healthcheck:
+      # `pg_isready` sin más responde antes de que el arranque haya terminado de
+      # reiniciar el servidor la primera vez. La consulta real es la única señal
+      # confiable de "acepta conexiones de verdad".
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aria && psql -U postgres -d aria -c 'select 1' > /dev/null"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

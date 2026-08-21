@@ -1,0 +1,27 @@
+# Finales de línea, fijados a propósito para los tipos de archivo que se hashean
+# o se leen como texto en las pruebas.
+#
+# El desarrollo es en Windows con `core.autocrlf = true`: git guarda LF y escribe
+# CRLF en el disco. La integración continua corre en Linux, donde el mismo archivo
+# commiteado está en LF. Sin esto, una suma de comprobación calculada sobre los
+# bytes del disco DIFIERE entre las dos máquinas — y el corredor de migraciones
+# reportaría una migración ya aplicada como cambiada, o al revés.
+#
+# Se declaran solo los tipos nuevos y los que una prueba lee. No se pone un
+# `* text=auto eol=lf` global a propósito: los 48 archivos que ya existen están
+# en CRLF en el disco y renormalizarlos es ruido que no compra nada acá, porque
+# el corredor normaliza `\r\n` a `\n` antes de hashear de todas formas. Son los
+# dos cinturones: este archivo para lo que viene, la normalización para lo que ya está.
+
+# Las migraciones se hashean para detectar una editada después de aplicada.
+*.sql   text eol=lf
+
+# La capa de acceso y sus pruebas. Las listas blancas de las pruebas que leen el
+# código fuente comparan rutas y contenido: tienen que coincidir en las dos plataformas.
+*.ts    text eol=lf
+*.mts   text eol=lf
+*.mjs   text eol=lf
+
+# Los flujos de trabajo los lee una prueba como texto (fila ⛔ 1 de la Etapa 0).
+*.yml   text eol=lf
+*.yaml  text eol=lf

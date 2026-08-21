@@ -1,0 +1,82 @@
+# La integración que bloquea.
+#
+# ADR-0001 — "Las pruebas corren en cada cambio y pueden bloquear."
+#
+# ADVERTENCIA IMPORTANTE, y es media fila de PRUEBAS: este archivo hace que la
+# corrida se ponga ROJA. Que el rojo BLOQUEE necesita dos cosas más, que no son
+# código y no las puede poner el asistente:
+#
+#   1. una regla de protección de rama en `main` con `verificar` como chequeo
+#      REQUERIDO, y
+#   2. que el trabajo llegue por pull request.
+#
+# Y pesa más de lo normal en este repo porque Vercel está conectado: Vercel
+# despliega POR PUSH, NO POR CHEQUEO. Sin esas dos piezas, un commit con las
+# pruebas en rojo se publica en producción igual. Mientras falten, esta fila está
+# implementada pero INERTE, y está dicho así en docs/ETAPA-0.md en vez de tildada.
+
+name: verificar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Menor privilegio: este trabajo solo lee el repositorio.
+permissions:
+  contents: read
+
+# Una corrida por rama. Un push nuevo cancela el anterior.
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # .nvmrc es la única fuente de la versión de Node, para la máquina de
+          # desarrollo y para acá.
+          node-version-file: .nvmrc
+          cache: npm
+
+      # `npm ci` y no `npm install`: instala exactamente el archivo de bloqueo y
+      # falla si divergió del manifiesto. Los guiones de instalación quedan
+      # desactivados por .npmrc, no por una bandera de acá.
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Contraseñas efímeras para los tres roles. CERO secretos de GitHub: la base
+      # vive y muere dentro de este trabajo, así que no hay nada que guardar.
+      # Y de paso cumple la nota del 09 § 2: la contraseña de `migrador` no está
+      # en el entorno de la aplicación desplegada, solo acá.
+      - name: Generar credenciales efímeras
+        run: node scripts/credenciales.mjs --github-env
+
+      # El build va antes del chequeo de tipos porque `next-env.d.ts` importa de
+      # `.next/types/`: sin un build previo, `tsc --noEmit` no resuelve.
+      - name: Construir
+        run: npm run build
+
+      - name: Chequear tipos
+        run: npm run tipos
+
+      # Un comando, desde cero: levanta el contenedor, crea los tres roles y los
+      # dos esquemas, aplica las migraciones, siembra y verifica contra la base.
+      # El MISMO comando que se corre en la máquina de desarrollo.
+      - name: Base desde cero
+        run: npm run db:reset
+
+      - name: Pruebas
+        run: npm test
+
+      # Diagnóstico, solo cuando algo falló. No afecta el resultado del trabajo.
+      - name: Registro de la base si algo falló
+        if: failure()
+        run: docker compose logs --no-color --tail 100 base

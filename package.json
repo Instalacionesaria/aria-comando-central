@@ -2,20 +2,39 @@
   "name": "aios-command-center",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.14.1 <25"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "tipos": "tsc --noEmit",
+    "test": "node scripts/pruebas.mjs",
+    "compuerta": "node scripts/pruebas.mjs pruebas/base/01-controlador-transaccion.test.ts",
+    "db:arranque": "node --env-file-if-exists=.env.local scripts/db.mjs arranque",
+    "db:migrar": "node --env-file-if-exists=.env.local scripts/db.mjs migrar",
+    "db:sembrar": "node --env-file-if-exists=.env.local scripts/db.mjs sembrar",
+    "db:verificar": "node --env-file-if-exists=.env.local scripts/db.mjs verificar",
+    "db:reset": "node --env-file-if-exists=.env.local scripts/db.mjs reset",
     "paridad": "node scripts/paridad.mjs"
   },
   "dependencies": {
+    "kysely": "0.29.5",
     "next": "16.3.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "pg": "8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.0",
-    "playwright": "^1.62.1",
-    "tailwindcss": "^4.1.0"
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.3",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "playwright": "1.62.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
   }
 }
