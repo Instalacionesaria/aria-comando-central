@@ -69,6 +69,32 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/auth/2fo/configurar/route.ts',
   'app/api/auth/2fo/confirmar/route.ts',
   'app/api/auth/2fo/verificar/route.ts',
+  // ── Etapa 5 ──────────────────────────────────────────────────────────────────
+  //
+  // `lib/administracion/objetivo.ts` NO está en esta lista, y la comprobación de entradas muertas
+  // lo demostró: la puse por costumbre y rompió la suite. No abre la escotilla — RECIBE la
+  // transacción ya abierta. Que la lista rechace lo que no le corresponde es la mitad de su valor.
+  //
+  // El alta de organización. El 05 § 2 lo dice literal: *"es una de las pocas operaciones que
+  // legítimamente corre SIN contexto de organización: la está creando. Si tu capa de aislamiento
+  // lanza cuando no hay organización activa —y debería—, esta operación tiene que usar el acceso
+  // sin filtro, y estar en la lista de autorizadas."*
+  'app/api/admin/organizaciones/route.ts',
+  // Las TRES operaciones que el 09 § 2 deja en identidad: *"quedan en el dominio de identidad solo
+  // las tres operaciones que tocan credenciales: el alta (genera el hash de la temporal), el
+  // restablecimiento y la asignación de roles."* Las tres filtran por `usuarioObjetivo()`.
+  'app/api/admin/usuarios/route.ts',
+  'app/api/admin/usuarios/[id]/restablecer-password/route.ts',
+  'app/api/admin/usuarios/[id]/roles/route.ts',
+  // Desactivar LEE identidad para contar administradores activos —`usuarios_roles` es inalcanzable
+  // desde el inquilino— y ESCRIBE por el inquilino. Es una lectura en el otro dominio, no una
+  // escritura: no hay una segunda mitad que pueda confirmar. La escritura sigue teniendo la red de
+  // la política.
+  'app/api/admin/usuarios/[id]/desactivar/route.ts',
+  // El arranque del primer administrador. Corre SIN contexto de organización por el mismo motivo
+  // que el alta de organización: es lo primero que existe. `EJECUCION` § 3 lo cerró como *"script
+  // contra la base, no endpoint HTTP"*, así que nunca está expuesto.
+  'scripts/arranque.mjs',
 ];
 
 /**
@@ -98,6 +124,14 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // entre dominios no la afecta: no hay una mitad que pueda confirmar mientras la otra
   // falla. Si algún día escribe, hay que volver a pensarlo acá.
   'scripts/db.mjs',
+  // ── Etapa 5 ──────────────────────────────────────────────────────────────────
+  // Desactivar: LEE identidad (contar administradores activos) y ESCRIBE por el inquilino
+  // (`activo = false`). Aceptable porque **solo hay UNA escritura**: la falta de atomicidad entre
+  // dominios del 09 § 6 necesita dos escrituras para producir el "éxito reportado que no ocurrió",
+  // y acá la otra mitad es una lectura. Lo que sí queda es una CARRERA —entre el conteo y la
+  // escritura, otro administrador podría desactivarse— y está aceptada a la vista en el propio
+  // manejador, con su costo escrito.
+  'app/api/admin/usuarios/[id]/desactivar/route.ts',
 ];
 
 /**

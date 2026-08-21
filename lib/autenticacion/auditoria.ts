@@ -55,7 +55,14 @@ export type Accion =
   | 'organizacion_cambiada'
   | 'segundo_factor_confirmado'
   | 'segundo_factor_verificado'
-  | 'segundo_factor_fallido';
+  | 'segundo_factor_fallido'
+  // ── Etapa 5 · el 05 § 7 pide registrar "alta y baja de usuario, cambio de roles" ──
+  | 'organizacion_creada'
+  | 'usuario_creado'
+  | 'usuario_editado'
+  | 'usuario_desactivado'
+  | 'password_restablecida'
+  | 'roles_asignados';
 
 /**
  * Lo único que puede ir en `detalle`. Tres campos, todos opcionales, **todos nombrados**.
@@ -71,6 +78,55 @@ export interface Detalle {
   motivo?: 'email_inexistente' | 'cuenta_inactiva' | 'password';
   /** El estado con el que nació la sesión, cuando el login tuvo éxito. */
   estado?: string;
+  /**
+   * El usuario SOBRE EL QUE se operó, en las acciones de administración.
+   *
+   * `auditoria_accesos.usuario_id` guarda **quién hizo la operación**, no sobre quién. Sin este
+   * campo, una fila de `usuario_desactivado` dice quién desactivó y no a quién — y el registro de
+   * una baja sin la baja es peor que no tenerlo.
+   */
+  objetivo?: string;
+  /** Las claves de rol asignadas, en `roles_asignados`. Nunca identificadores opacos. */
+  roles?: string[];
+  /** El slug de la organización creada. */
+  slug?: string;
+}
+
+/**
+ * Audita una operación de ADMINISTRACIÓN. `actor` y `objetivo` son **obligatorios**.
+ *
+ * El `07` § 1 lo pide con esas palabras, y trae el caso real: *"los parámetros que dicen QUIÉN
+ * HIZO ESTO van obligatorios y SIN VALOR POR DEFECTO: si mañana aparece un llamador nuevo, que no
+ * compile hasta que diga quién es."* El defecto que documenta ocurrió con un parámetro que tenía
+ * valor por defecto —el identificador de una persona real— y **todo** lo registrado, de cualquier
+ * organización, quedó firmado por esa persona.
+ *
+ * Acá eso es un error de compilación: no hay valor por omisión que tapar.
+ */
+export async function auditarAdministracion(
+  trx: Trx,
+  fila: {
+    accion: Extract<
+      Accion,
+      | 'organizacion_creada'
+      | 'usuario_creado'
+      | 'usuario_editado'
+      | 'usuario_desactivado'
+      | 'password_restablecida'
+      | 'roles_asignados'
+    >;
+    actor: string;
+    objetivo: string;
+    orgId: string;
+    detalle?: Omit<Detalle, 'objetivo'>;
+  },
+): Promise<void> {
+  await auditar(trx, {
+    accion: fila.accion,
+    usuarioId: fila.actor,
+    orgId: fila.orgId,
+    detalle: { ...fila.detalle, objetivo: fila.objetivo },
+  });
 }
 
 /**

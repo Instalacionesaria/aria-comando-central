@@ -67,6 +67,32 @@ export const RECHAZOS = {
   // rechazos distintos sean distinguibles por el cliente, y estos dos significan cosas
   // opuestas —"tu cuenta está protegida" contra "esta dirección está golpeando"—.
   demasiados_intentos: 429,
+  // ── Etapa 5 · administración ─────────────────────────────────────────────────
+  //
+  // NINGUNO de los tres está en la especificación con un código de cuerpo.
+  //
+  // `no_encontrado` es 404 y NO 403, y la diferencia es la fila INNEGOCIABLE de la etapa:
+  // *"404, nunca 200 — y 404 y no 403, porque un 403 CONFIRMA QUE ESE IDENTIFICADOR EXISTE"*.
+  // También se usa para un id mal formado: distinguirlo sería un oráculo más débil, pero gratis
+  // de cerrar.
+  no_encontrado: 404,
+  // "Nadie se borra, desactiva ni degrada a sí mismo". Es un CONFLICTO, no una falta de permiso:
+  // quien lo intenta tiene la capacidad, y lo que está mal es el objetivo. Con 403 el mensaje
+  // diría "no tenés permiso" cuando sí lo tiene, y buscaría el permiso que le falta.
+  sobre_si_mismo: 409,
+  // "No se puede dejar una organización sin administrador activo". Mismo razonamiento.
+  ultimo_administrador: 409,
+  // Unicidad. El 05 § 3 lo nombra literal —`409`, código `email_duplicado`— y explica por qué NO
+  // se devuelve el mensaje de la base: *"las verificaciones de unicidad y de integridad
+  // referencial NO PASAN por la seguridad a nivel de fila… un mensaje de 'ya existe una fila con
+  // ese valor' es entonces un canal que CONFIRMA LA EXISTENCIA DE UN REGISTRO DE OTRA
+  // ORGANIZACIÓN, aunque quien pregunta no pueda verlo."*
+  email_duplicado: 409,
+  // Cualquier rechazo de un DISPARADOR, con el mensaje de la base tal cual. El 05 § 3: *"si los
+  // mensajes de los disparadores están escritos para leerse, traducirlos en el backend sería
+  // mantener dos textos que dicen lo mismo y que van a divergir."* La excepción son unicidad y
+  // clave foránea, que tienen su propio código arriba.
+  rechazo_de_la_base: 409,
   // No está en ningún documento, y hace falta: si la base falla, la respuesta NO puede ser
   // 401 `sin_sesion` —eso expulsaría a todo el mundo ante un parpadeo de red y en los
   // registros parecería que a nadie le andaba la sesión (07 § 4)—. Es la regla 2 del

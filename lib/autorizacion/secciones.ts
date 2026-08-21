@@ -105,6 +105,27 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/auth/2fo/configurar/route.ts',
   'app/api/auth/2fo/confirmar/route.ts',
   'app/api/auth/2fo/verificar/route.ts',
+  // ── Etapa 5 ──────────────────────────────────────────────────────────────────
+  //
+  // Las seis operaciones de administración van acá, y es una decisión con motivo. `ADR-0304` exige
+  // que las operaciones de una misma pantalla pidan el MISMO conjunto de capacidades, y estas seis
+  // piden cinco conjuntos distintos: `organizaciones.crear`, `usuarios.crear`, `usuarios.editar`,
+  // `usuarios.desactivar`, `roles.asignar`.
+  //
+  // Igualarlos pidiendo las cinco en las seis sería una ESCALADA SILENCIOSA introducida para que
+  // una prueba pase: el portero usa `contieneAlguna`, así que alguien con solo `usuarios.desactivar`
+  // podría crear usuarios.
+  //
+  // Y el defecto que `ADR-0304` previene es de LECTURAS —*"veía una sección con datos y cuatro en
+  // blanco, sin ningún error"* (07 § 2)—, no de mutaciones: una pantalla que se ve a medias es un
+  // problema de lo que se muestra, y estas seis no muestran nada. La pantalla de administración,
+  // cuando exista, va a tener su `GET` propio, y ÉSE sí entra a `SECCIONES`.
+  'app/api/admin/organizaciones/route.ts',
+  'app/api/admin/usuarios/route.ts',
+  'app/api/admin/usuarios/[id]/route.ts',
+  'app/api/admin/usuarios/[id]/desactivar/route.ts',
+  'app/api/admin/usuarios/[id]/restablecer-password/route.ts',
+  'app/api/admin/usuarios/[id]/roles/route.ts',
 ];
 
 /**
