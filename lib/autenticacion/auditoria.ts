@@ -64,7 +64,18 @@ export type Accion =
   | 'password_restablecida'
   | 'roles_asignados'
   // ── Etapa 6 ──
-  | 'credenciales_cargadas';
+  | 'credenciales_cargadas'
+  // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
+  //
+  // *"La auditoría suele registrar acceso, intento fallido, alta y baja de usuario, cambio de roles,
+  // cambio de credenciales y alta de organización. **Faltan tres**, y son las que dan tres de las
+  // cinco señales."*
+  //
+  // `organizacion_cambiada` ya estaba en este tipo desde la Etapa 3 y **no se emitía en ningún
+  // lado** — que es exactamente el defecto que `ADR-0809` existe para atrapar: *"un cero en la
+  // vigilancia es indistinguible de 'nadie cableó el punto de emisión'"*.
+  | 'permiso_denegado'
+  | 'credencial_ilegible';
 
 /**
  * Lo único que puede ir en `detalle`. Tres campos, todos opcionales, **todos nombrados**.
@@ -92,6 +103,22 @@ export interface Detalle {
   roles?: string[];
   /** El slug de la organización creada. */
   slug?: string;
+  /**
+   * La capacidad que faltaba, en `permiso_denegado`.
+   *
+   * La señal 3 del `10` § 1 agrupa por `detalle->>'capacidad'`, y sin este campo la consulta
+   * devuelve una sola fila con la capacidad en nulo: se pierde justo lo que la señal quería decir,
+   * que es **qué** permiso le falta a qué rol.
+   */
+  capacidad?: string;
+  /**
+   * La organización a la que se cambió, en `organizacion_cambiada`.
+   *
+   * La señal 5 cuenta `count(distinct detalle->>'org_destino')` para detectar *"uso indebido de una
+   * cuenta con acceso a todo"*. Sin este campo cuenta cero organizaciones distintas por usuario, y
+   * un cero por falta de datos se lee como "nadie miró nada".
+   */
+  org_destino?: string | null;
 }
 
 /**

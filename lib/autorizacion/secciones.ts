@@ -127,6 +127,10 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/admin/usuarios/[id]/desactivar/route.ts',
   'app/api/admin/usuarios/[id]/restablecer-password/route.ts',
   'app/api/admin/usuarios/[id]/roles/route.ts',
+  // ── Etapa 8 ──────────────────────────────────────────────────────────────────
+  // La sonda de aislamiento. La llama una tarea programada cada hora: no hay pantalla, no hay
+  // persona, y su resultado va al registro de la tarea y al canal de avisos.
+  'app/api/sonda/route.ts',
 ];
 
 /**

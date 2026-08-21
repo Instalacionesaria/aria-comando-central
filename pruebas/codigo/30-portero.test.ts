@@ -31,6 +31,7 @@ import { join, relative, sep } from 'node:path';
 import { archivosFuente, archivosQueContienen, RAIZ } from '../apoyo/fuente.ts';
 import {
   ARCHIVOS_AUTORIZADOS,
+  RUTAS_CON_SECRETO_PROPIO,
   RUTAS_CON_SESION_OPCIONAL,
   RUTAS_PUBLICAS,
 } from '../apoyo/autorizados.ts';
@@ -89,10 +90,24 @@ test('ADR-0301 · TODO método de TODO manejador llama al portero', () => {
   for (const opcional of RUTAS_CON_SESION_OPCIONAL) {
     assert.ok(rutas.includes(opcional), `${opcional} está en RUTAS_CON_SESION_OPCIONAL y no existe`);
   }
+  for (const propia of RUTAS_CON_SECRETO_PROPIO) {
+    assert.ok(rutas.includes(propia), `${propia} está en RUTAS_CON_SECRETO_PROPIO y no existe`);
+  }
 
   const sinPortero: string[] = [];
   for (const ruta of rutas) {
     if (RUTAS_PUBLICAS.includes(ruta)) continue;
+    // Las rutas con secreto propio no llaman al portero —no hay sesión— pero SÍ tienen que
+    // autenticar. Se verifica que lo hagan, no que no verifiquen nada: es la misma forma que
+    // `sesionOpcional`, y por eso está en su propia lista y no en `RUTAS_PUBLICAS`.
+    if (RUTAS_CON_SECRETO_PROPIO.includes(ruta)) {
+      assert.match(
+        fuenteDe(ruta),
+        /timingSafeEqual/,
+        `${ruta} tiene secreto propio y no lo compara con timingSafeEqual`,
+      );
+      continue;
+    }
     const limpio = fuenteDe(ruta);
     const metodos = metodosDe(limpio);
     assert.ok(metodos.length > 0, `${ruta} no exporta ningún método`);
@@ -353,13 +368,33 @@ test('ADR-0305 · un solo archivo hace peticiones HTTP', () => {
   // con manejo opuesto— y se adopta por simetría con `ADR-0203`. El defecto está medido: *"un
   // 401 por el segundo camino no echa a nadie: la sesión está vencida y la pantalla sigue como
   // si nada."*
+  // `lib/deteccion/aviso.ts` está exceptuado, y la distinción es real, no una comodidad: esta
+  // regla existe porque *"un 401 por el segundo camino no echa a nadie"* (07 § 4) — o sea, es
+  // sobre el cliente que le habla a NUESTRO API y cuyas respuestas llenan una pantalla.
+  //
+  // `avisar()` hace una petición SALIENTE a un canal de terceros, nunca a este API, y **no
+  // devuelve datos a ninguna pantalla**: devuelve un booleano y lanza si el canal falla. No puede
+  // confundir un rechazo con un vacío porque no tiene un vacío que devolver. La última afirmación
+  // de esta prueba es la que sostiene la exención.
+  const EXCEPTUADOS = ['lib/http/cliente.ts', 'lib/deteccion/aviso.ts'];
   const clientes = archivosQueContienen(
     /\bfetch\s*\(|XMLHttpRequest|axios|navigator\.sendBeacon|new\s+EventSource/,
-  ).filter((r) => r !== 'lib/http/cliente.ts');
+  ).filter((r) => !EXCEPTUADOS.includes(r));
   assert.deepEqual(clientes, [], 'todas las peticiones pasan por `pedir(` de lib/http/cliente.ts');
 
-  // La comprobación de entrada muerta: el archivo autorizado SÍ hace la petición.
-  assert.deepEqual(archivosQueContienen(/\bfetch\s*\(/), ['lib/http/cliente.ts']);
+  // La comprobación de entrada muerta: los dos exceptuados SÍ hacen la petición.
+  assert.deepEqual([...archivosQueContienen(/\bfetch\s*\(/)].sort(), [...EXCEPTUADOS].sort());
+
+  // Y el aviso NO lee el cuerpo de la respuesta, que es lo que lo mantiene fuera del alcance de
+  // esta regla. Si algún día lo leyera —para sacar un identificador del aviso, digamos— pasaría a
+  // ser un cliente HTTP y tendría que ir por `pedir(`.
+  const aviso = archivosFuente(['lib']).find((a) => a.ruta === 'lib/deteccion/aviso.ts');
+  assert.ok(aviso, 'no se encontró el módulo de avisos');
+  assert.doesNotMatch(
+    aviso.limpio,
+    /respuesta\s*\.\s*(json|text)\s*\(/,
+    'el aviso lee el cuerpo de la respuesta: pasó a ser un cliente HTTP',
+  );
 });
 
 test('ADR-0305 · el cliente distingue rechazo, vacío y "no pude preguntar"', () => {

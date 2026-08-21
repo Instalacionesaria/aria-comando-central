@@ -52,6 +52,8 @@ import {
 } from './estados.ts';
 import { rechazo } from './respuesta.ts';
 import { COOKIE_SESION, resolverSesion, type Contexto } from './sesion.ts';
+import { conIdentidad } from '../datos/capa.ts';
+import { auditar } from '../autenticacion/auditoria.ts';
 
 export { NINGUNA } from './capacidades.ts';
 export type { Contexto } from './sesion.ts';
@@ -199,6 +201,30 @@ export async function exigir(
 
   // Paso 5 · ¿Tiene ALGUNA de las capacidades pedidas?
   if (!contieneAlguna(contexto.permisos, capacidadesRequeridas)) {
+    // ADR-0809 · Se EMITE `permiso_denegado`, con la capacidad en el detalle.
+    //
+    // El `10` § 1 lo llama *"la señal más subestimada"*: *"un pico de rechazos por permiso en una
+    // organización casi nunca es un ataque: es un rol al que le falta una capacidad, y **nadie lo va
+    // a reportar** porque la pantalla se ve"*.
+    //
+    // La capacidad va en el detalle porque la señal 3 agrupa por `detalle->>'capacidad'`. Sin ese
+    // campo la consulta devuelve una sola fila con la capacidad en nulo, y se pierde justo lo que la
+    // señal quería decir: **qué** permiso le falta a qué rol.
+    try {
+      await conIdentidad(async (db) => {
+        await auditar(db, {
+          accion: 'permiso_denegado',
+          usuarioId: contexto.usuarioId,
+          orgId: contexto.orgEfectiva,
+          detalle: { capacidad: capacidadesRequeridas.join(',') },
+        });
+      });
+    } catch {
+      // Si la auditoría no se puede escribir, la base no está: `resolverSesion` habría fallado
+      // antes, así que este camino es casi imposible. Pero si ocurre, responder 403 sería mentir
+      // —el rechazo no quedó registrado— y el 503 dice la verdad.
+      return rechazo('base_no_disponible');
+    }
     return rechazo('sin_permiso');
   }
 

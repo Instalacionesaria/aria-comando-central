@@ -203,6 +203,10 @@ test('ADR-0202 · todo manejador de ruta abre el contexto de su organización', 
     // Sin esa exención, esta prueba falla sobre operaciones correctas — y una prueba que
     // falla sobre lo correcto se termina ignorando.
     if (ARCHIVOS_AUTORIZADOS.includes(ruta)) continue;
+    // La ruta de la sonda delega en `lib/deteccion/sonda.ts`, que SÍ abre el contexto de cada
+    // organización de control. Está en `ARCHIVOS_AUTORIZADOS` y `CRUZAN_LOS_DOS_DOMINIOS` con su
+    // justificación; la ruta es una cáscara con autenticación propia.
+    if (ruta === 'app/api/sonda/route.ts') continue;
 
     const contenido = archivosFuente(['app']).find((a) => a.ruta === ruta);
     assert.ok(contenido, `no se pudo leer ${ruta}`);

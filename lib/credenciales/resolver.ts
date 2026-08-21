@@ -38,6 +38,7 @@
 
 import { descifrar } from './cifrado.ts';
 import type { Trx } from '../datos/capa.ts';
+import { auditar } from '../autenticacion/auditoria.ts';
 
 /**
  * Los cuatro estados del `08` § 9, con su texto de interfaz **literal**.
@@ -132,7 +133,21 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     .where('org_id', '=', orgId)
     .executeTakeFirst();
 
-  return { orgId: org.id, activa: org.activa, crm: verCredencial(fila) };
+  const crm = verCredencial(fila);
+
+  // ADR-0809 · Se EMITE `credencial_ilegible`, en la función única que descifra.
+  //
+  // El `10` § 1 lo pone en su tabla: *"`credencial_ilegible` → en la función única que descifra
+  // credenciales"*. Es la señal 2, de cadencia **diaria**: no interrumpe, se consulta.
+  //
+  // Va en la MISMA transacción que la lectura. Si fuera aparte, existiría el caso "la credencial no
+  // se pudo leer y nadie lo registró", que es el cero indistinguible de "nadie cableó el punto de
+  // emisión" que `ADR-0809` existe para impedir.
+  if (crm.estado === ILEGIBLE) {
+    await auditar(db, { accion: 'credencial_ilegible', orgId: org.id });
+  }
+
+  return { orgId: org.id, activa: org.activa, crm };
 }
 
 function verCredencial(

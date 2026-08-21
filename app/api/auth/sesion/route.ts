@@ -133,6 +133,29 @@ export async function PATCH(peticion: Request): Promise<Response> {
       .set({ org_activa: pedida })
       .where('id', '=', contexto.sesionId)
       .execute();
+
+    // ADR-0809 · Se EMITE `organizacion_cambiada`, con el destino en el detalle.
+    //
+    // Esta acción estaba en el tipo `Accion` desde la Etapa 3 y **no se emitía en ningún lado**. Es
+    // exactamente el defecto que `ADR-0809` describe: *"un cero en la vigilancia es indistinguible
+    // de 'nadie cableó el punto de emisión', y tres de las seis señales quedan apagadas sin que nada
+    // falle"*.
+    //
+    // El `org_destino` va en el detalle porque la señal 5 cuenta
+    // `count(distinct detalle->>'org_destino')` para detectar *"uso indebido de una cuenta con
+    // acceso a todo"*. Y va en la MISMA transacción que el cambio: el `08` § 12 pide que el acceso
+    // de soporte quede registrado, y un cambio sin su fila es un acceso sin registrar.
+    //
+    // La fila se guarda con la organización VISITADA —`org_destino` cuando hay una, la propia
+    // cuando se vuelve— porque el `08` § 12 lo pide así: *"la fila se guarda con la organización
+    // VISITADA, y la de origen va en el detalle. Al revés, el administrador de un cliente no ve en
+    // su propia auditoría que alguien entró."*
+    await auditar(db, {
+      accion: 'organizacion_cambiada',
+      usuarioId: contexto.usuarioId,
+      orgId: pedida ?? contexto.orgPropia,
+      detalle: { org_destino: pedida },
+    });
   });
 
   return ok({ cambiada: true, orgActiva: pedida });

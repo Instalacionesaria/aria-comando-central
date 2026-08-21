@@ -19,6 +19,7 @@
 import { sql } from 'kysely';
 import { clienteInquilino, type Trx } from './capa.ts';
 import { almacen } from './almacen.ts';
+import { avisar } from '../deteccion/aviso.ts';
 
 // El almacén y los dos lectores viven en `almacen.ts`, que no importa nada de acá: es
 // lo que rompe el ciclo con `capa.ts`, que necesita leer la organización activa para el
@@ -158,6 +159,45 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
 export function datos(): Trx {
   const ctx = almacen.getStore();
   if (!ctx) {
+    // ADR-0802 · EL AVISO. Es la señal 1 del `10` § 1, y la más barata de todas:
+    //
+    //   "La capa de aislamiento YA LANZA una excepción cuando alguien consulta sin organización en
+    //    contexto. Hoy eso termina en un error 500 y en un registro que nadie lee. **Que esa
+    //    excepción emita un aviso convierte el mecanismo de protección en un mecanismo de detección
+    //    sin escribir nada nuevo.**"
+    //
+    // ── POR QUÉ EL AVISO NO SE ESPERA ────────────────────────────────────────
+    //
+    // `datos()` es SÍNCRONA —tiene que serlo: devuelve el constructor de consultas y encadena— y
+    // `avisar()` no lo es. Así que se dispara sin esperar, y la excepción se lanza igual.
+    //
+    // La consecuencia hay que decirla: si el canal de avisos falla, `avisar()` rechaza su promesa y
+    // acá no hay quién lo espere. Un rechazo sin manejar TUMBA EL PROCESO en Node, así que el
+    // `.catch` es obligatorio — y lo único que puede hacer es escribir en el registro. Eso **no es
+    // el aviso**: es el registro de que el aviso NO LLEGÓ, que es una cosa distinta y está
+    // etiquetada como tal.
+    //
+    // La respuesta del propio documento a un canal caído no es un respaldo al registro: es *"el
+    // resumen que se manda siempre (§ 2): también prueba que el canal vive"*. Ese resumen es de
+    // tipo Producción y `EJECUCION` § 5 lo deja fuera de alcance, así que queda como pendiente
+    // nombrado en `docs/ETAPA-8.md`.
+    //
+    // ── Y EL AVISO NO PASA POR LA CAPA QUE ESTÁ FALLANDO ─────────────────────
+    //
+    // El `10` § 1: *"si el registro de este evento se escribe con la misma capa que acaba de lanzar,
+    // no se escribe nunca."* `avisar()` no toca la base: sale por el canal web.
+    void avisar('aislamiento_sin_contexto', {
+      // La traza es lo que dice QUÉ operación se olvidó el contexto, que es el único dato que hace
+      // accionable este aviso. Sin ella dice "algo, en algún lado".
+      traza: new Error('aislamiento_sin_contexto').stack ?? '(sin traza)',
+    }).catch((e: unknown) => {
+      // NO es el aviso. Es el registro de que el aviso no llegó.
+      console.error(
+        '[AVISO NO ENTREGADO] la capa de aislamiento lanzó y el canal de avisos falló:',
+        e instanceof Error ? e.message : e,
+      );
+    });
+
     throw new Error(
       'Ninguna consulta corre sin organización activa. ' +
         'Envolvé la operación en conOrganizacion(orgId, async () => { … }).',

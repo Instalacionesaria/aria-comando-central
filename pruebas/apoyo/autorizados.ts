@@ -100,6 +100,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // tiene NINGÚN acceso a esa tabla —ni `select`—: es la tabla que guarda los secretos de todas las
   // organizaciones. El filtro por organización lo pone la consulta con `contexto.orgEfectiva`.
   'app/api/admin/credenciales/route.ts',
+  // ── Etapa 8 ──────────────────────────────────────────────────────────────────
+  // El portero, para emitir `permiso_denegado`. La auditoría es una tabla de identidad, y en el
+  // paso 5 el portero ya resolvió la sesión — así que sabe de qué organización se trata y filtra
+  // por ella. Y no puede ir por el dominio del inquilino: `auditoria_accesos` sí es alcanzable
+  // desde ahí, pero el portero corre ANTES de que exista contexto de organización.
+  'lib/autorizacion/portero.ts',
+  // La sonda LEE identidad para obtener las dos organizaciones de control, y después abre el
+  // contexto de cada una. Es el mismo caso que `scripts/db.mjs verificar`, y el 04 § 4 lo nombra
+  // como legítimo: *"las tareas programadas necesitan la LISTA de organizaciones, y después
+  // trabajar de una en una, abriendo el contexto en cada vuelta como una petición normal."*
+  'lib/deteccion/sonda.ts',
 ];
 
 /**
@@ -137,6 +148,12 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // escritura, otro administrador podría desactivarse— y está aceptada a la vista en el propio
   // manejador, con su costo escrito.
   'app/api/admin/usuarios/[id]/desactivar/route.ts',
+  // ── Etapa 8 ──────────────────────────────────────────────────────────────────
+  // La sonda: LEE identidad (la lista de organizaciones de control) y LEE negocio por el contexto
+  // de cada una. **No escribe en ninguno de los dos**, así que la falta de atomicidad entre dominios
+  // del 09 § 6 no la afecta: no hay una mitad que pueda confirmar mientras la otra falla. Es
+  // exactamente el mismo caso que `scripts/db.mjs`, y con el mismo comentario.
+  'lib/deteccion/sonda.ts',
 ];
 
 /**
@@ -172,3 +189,23 @@ export const RUTAS_PUBLICAS: readonly string[] = [
  * haya sesión" en "no mira la sesión", que es un permiso mucho más grande.
  */
 export const RUTAS_CON_SESION_OPCIONAL: readonly string[] = ['app/api/auth/sesion/route.ts'];
+
+/**
+ * Las rutas con su PROPIA autenticación, que no es una sesión.
+ *
+ * Una sola, y es la única del sistema que no encaja en ninguna de las otras dos categorías. Eso hay
+ * que resolverlo a la vista en vez de meterla en la lista que menos moleste:
+ *
+ *   · **no puede pasar por el portero**: no hay sesión. La llama una tarea programada, y `exigir()`
+ *     respondería 401 a la única cosa que puede detectar una fuga en producción;
+ *   · **no puede ser pública**: dejar que cualquiera la llame es dejar que cualquiera pregunte por el
+ *     estado del aislamiento y consuma conexiones de la base sin autenticarse.
+ *
+ * Así que tiene un secreto compartido en una cabecera, comparado con `timingSafeEqual`. Sin el
+ * secreto configurado la ruta responde 403 y **no corre la sonda**: no hay respaldo, porque una
+ * sonda que corre sin autenticación es un punto de entrada abierto.
+ *
+ * Esta lista existe para que agregar una segunda entrada sea un acto deliberado. Un endpoint con
+ * "su propia autenticación" es exactamente la forma que toma un portero saltado por comodidad.
+ */
+export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = ['app/api/sonda/route.ts'];
