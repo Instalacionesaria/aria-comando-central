@@ -19,6 +19,12 @@ export const DIRS_FUENTE = ['app', 'components', 'lib', 'db', 'scripts'] as cons
 
 const EXTENSIONES = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.sql'];
 
+// Nunca se entra acá, pase lo que pase. Sin este filtro, un `archivosFuente(['.'])`
+// —fácil de escribir por accidente— se pone a leer `node_modules` archivo por archivo:
+// medido, 127 segundos en una sola prueba. Una prueba lenta se termina salteando, así
+// que el costo real no es el tiempo sino la suite que alguien deja de correr.
+const NUNCA = new Set(['node_modules', '.next', '.git', 'graphify-out', 'dist']);
+
 export interface Archivo {
   /** Ruta relativa a la raíz, siempre con `/` — en Windows y en Linux. */
   ruta: string;
@@ -43,7 +49,23 @@ export function sinComentarios(texto: string): string {
     .join('\n');
 }
 
+// El árbol se lee UNA vez por combinación de directorios.
+//
+// Sin esto, cada prueba de tipo Código relee y re-limpia todos los archivos del
+// proyecto: medido, la suite pasó de 6 a 71 segundos al agregar las pruebas
+// arquitectónicas de la Etapa 2. El contenido no cambia durante una corrida —los
+// archivos son de entrada, no de salida— así que la caché no puede quedar vieja.
+//
+// Y el motivo por el que vale arreglarlo en vez de aceptarlo: una suite lenta se termina
+// salteando, y una suite que nadie corre es exactamente lo que estas pruebas existen
+// para evitar.
+const cache = new Map<string, Archivo[]>();
+
 export function archivosFuente(dirs: readonly string[] = DIRS_FUENTE): Archivo[] {
+  const clave = [...dirs].sort().join('|');
+  const enCache = cache.get(clave);
+  if (enCache) return enCache;
+
   const salida: Archivo[] = [];
   for (const dir of dirs) {
     const abs = join(RAIZ, dir);
@@ -52,6 +74,7 @@ export function archivosFuente(dirs: readonly string[] = DIRS_FUENTE): Archivo[]
       if (!e.isFile()) continue;
       if (!EXTENSIONES.some((x) => e.name.endsWith(x))) continue;
       const rutaAbs = join(e.parentPath, e.name);
+      if (relative(RAIZ, rutaAbs).split(sep).some((seg) => NUNCA.has(seg))) continue;
       const contenido = readFileSync(rutaAbs, 'utf8');
       salida.push({
         // Normalizar el separador es obligatorio: una lista blanca escrita con `/`
@@ -62,7 +85,9 @@ export function archivosFuente(dirs: readonly string[] = DIRS_FUENTE): Archivo[]
       });
     }
   }
-  return salida.sort((a, b) => a.ruta.localeCompare(b.ruta));
+  salida.sort((a, b) => a.ruta.localeCompare(b.ruta));
+  cache.set(clave, salida);
+  return salida;
 }
 
 /** Los archivos cuyo contenido SIN COMENTARIOS coincide con el patrón. */

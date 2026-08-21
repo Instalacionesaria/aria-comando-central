@@ -139,7 +139,7 @@ async function sembrar() {
   const r = await poblar();
   for (const c of r.creadas) console.log(`  creada ${c}`);
   if (r.creadas.length === 0) console.log('  nada que crear (ya estaba sembrada)');
-  console.log(`  ${r.organizaciones} organizaciones, ${r.usuarios} usuarios, ${r.asignaciones} asignaciones de rol`);
+  console.log(`  ${r.organizaciones} organizaciones, ${r.usuarios} usuarios, ${r.asignaciones} asignaciones, ${r.control} filas de control`);
 }
 
 /**
@@ -186,6 +186,48 @@ async function verificar() {
     if (n !== 0) fallos.push(`migrador ve ${n} organizaciones: el forzado de RLS no está puesto`);
   } finally {
     await migrador.end();
+  }
+
+  // ── El dominio del INQUILINO, por el camino real ──────────────────────────
+  //
+  // No con una conexión de conveniencia: por `conOrganizacion()`, que es lo que va a
+  // usar la aplicación. El 09 § 1 lo dice de la forma más útil: "correr estas
+  // comprobaciones con el rol propietario las hace pasar todas SIN QUE NADA ESTÉ
+  // PROTEGIDO".
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { conIdentidad, cerrarClientes } = await import('../lib/datos/capa.ts');
+  try {
+    const orgs = await conIdentidad(async (db) =>
+      db.selectFrom('organizaciones').select(['id', 'slug']).orderBy('slug').execute(),
+    );
+
+    // Lo que cada organización ve, y de quién es cada fila.
+    const visto = new Map();
+    for (const org of orgs) {
+      const filas = await conOrganizacion(org.id, async () =>
+        datos().selectFrom('control_aislamiento').select(['org_id', 'marca']).execute(),
+      );
+      visto.set(org.slug, filas);
+      const ajenas = filas.filter((f) => f.org_id !== org.id);
+      console.log(`  ${org.slug}: ve ${filas.length} fila(s) de control, ${ajenas.length} ajena(s)`);
+      // LA comprobación. Una fila ajena acá es la fuga que todo el diseño existe para
+      // impedir — y no lanzaría ninguna excepción por sí sola.
+      if (ajenas.length > 0) {
+        fallos.push(`${org.slug} ve ${ajenas.length} fila(s) de otra organización`);
+      }
+    }
+
+    // Y la guarda contra el falso verde: si NINGUNA organización tiene filas, "nadie ve
+    // filas ajenas" es cierto y vacío a la vez.
+    const conFilas = [...visto.values()].filter((f) => f.length > 0).length;
+    if (conFilas < 2) {
+      fallos.push(
+        `solo ${conFilas} organización(es) tiene(n) filas de control: ` +
+          'con menos de dos, el aislamiento no es comprobable',
+      );
+    }
+  } finally {
+    await cerrarClientes();
   }
 
   if (fallos.length > 0) {

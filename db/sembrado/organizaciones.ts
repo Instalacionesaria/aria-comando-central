@@ -30,6 +30,7 @@
 // sembrado— es la evidencia textual de que son dos pasos.
 
 import { conIdentidad } from '../../lib/datos/capa.ts';
+import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { hashear } from '../../lib/datos/hash.ts';
 
 // Contraseña de desarrollo, obviamente falsa y nunca de producción. El guard de
@@ -149,14 +150,56 @@ export interface ResumenSembrado {
   organizaciones: number;
   usuarios: number;
   asignaciones: number;
+  control: number;
   creadas: string[];
+}
+
+/**
+ * Las filas de negocio, POR BUCLE DE ORGANIZACIONES.
+ *
+ * No es una preferencia de estilo: `conIdentidad()` usa el rol `app_identidad`, que
+ * **no tiene ningún permiso sobre el esquema `negocio`** — consultarlo lanza permiso
+ * denegado. Así que estas filas solo se pueden escribir abriendo el contexto de cada
+ * organización, una por una, exactamente como lo haría una petición normal.
+ *
+ * Y eso es lo que el `09` § 2 prescribe para TODO relleno de datos: "los rellenos se
+ * escriben por bucle de organizaciones, con la variable puesta, igual que una tarea
+ * programada". La alternativa —una política de mantenimiento para el rol que migra—
+ * está prohibida por EJECUCION § 3.
+ *
+ * Con las políticas puestas y sin esto, una migración de datos INFORMA ÉXITO Y NO TOCA
+ * UNA FILA: `update` y `delete` devuelven cero filas afectadas SIN ERROR. Queda marcada
+ * como aplicada, el despliegue sigue, y la columna nueva queda vacía en producción.
+ */
+async function sembrarControl(orgs: ReadonlyArray<{ id: string; slug: string }>): Promise<string[]> {
+  const creadas: string[] = [];
+  for (const org of orgs) {
+    await conOrganizacion(org.id, async () => {
+      const db = datos();
+      const existente = await db
+        .selectFrom('control_aislamiento')
+        .select(['id'])
+        .where('marca', '=', `control-${org.slug}`)
+        .executeTakeFirst();
+      if (existente) return;
+
+      // Nótese que NO se escribe `org_id`: la capa fina lo inyecta. Si el código de
+      // negocio tuviera que acordarse de ponerlo, volveríamos a "acordate de filtrar".
+      await db
+        .insertInto('control_aislamiento')
+        .values({ marca: `control-${org.slug}` })
+        .execute();
+      creadas.push(`control:${org.slug}`);
+    });
+  }
+  return creadas;
 }
 
 /** Idempotente: correrlo diez veces deja el mismo resultado. */
 export async function sembrar(): Promise<ResumenSembrado> {
   exigirBaseLocal();
 
-  return conIdentidad(async (db) => {
+  const identidad = await conIdentidad(async (db) => {
     const creadas: string[] = [];
 
     for (const org of ORGS) {
@@ -249,11 +292,42 @@ export async function sembrar(): Promise<ResumenSembrado> {
       .select((eb) => eb.fn.countAll<string>().as('n'))
       .executeTakeFirstOrThrow();
 
+    const filas = await db.selectFrom('organizaciones').select(['id', 'slug']).execute();
+
     return {
       organizaciones: Number(orgs.n),
       usuarios: Number(usuarios.n),
       asignaciones: Number(asignaciones.n),
       creadas,
+      filas,
     };
   });
+
+  // Y ahora el dominio del INQUILINO, en otra conexión y con la variable de transacción
+  // puesta por organización. Entre los dos dominios NO hay atomicidad (09 § 6): son dos
+  // transacciones distintas y una puede confirmar y la otra fallar. Es aceptable acá
+  // porque el sembrado es idempotente y `db.mjs verificar` comprueba el EFECTO, no la
+  // ausencia de error — y porque `reset` dice qué fases completó en vez de un "listo" liso.
+  const creadasControl = await sembrarControl(identidad.filas);
+
+  // El conteo se hace también por bucle, porque una sola consulta sin contexto no puede
+  // ver `negocio` — que es precisamente la garantía que se está construyendo.
+  let control = 0;
+  for (const org of identidad.filas) {
+    control += await conOrganizacion(org.id, async () => {
+      const f = await datos()
+        .selectFrom('control_aislamiento')
+        .select((eb) => eb.fn.countAll<string>().as('n'))
+        .executeTakeFirstOrThrow();
+      return Number(f.n);
+    });
+  }
+
+  return {
+    organizaciones: identidad.organizaciones,
+    usuarios: identidad.usuarios,
+    asignaciones: identidad.asignaciones,
+    control,
+    creadas: [...identidad.creadas, ...creadasControl],
+  };
 }

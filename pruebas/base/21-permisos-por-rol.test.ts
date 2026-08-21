@@ -202,24 +202,21 @@ test('toda tabla de identidad es ACCESIBLE por al menos un rol', async () => {
   }
 });
 
-test('las tablas de negocio son accesibles para el inquilino — y hoy no hay ninguna', async () => {
-  // Ésta es la versión del 09 § 4, acotada a `negocio` donde no hay permisos por
-  // columna. Hoy `negocio` está VACÍO, así que el bucle no corre.
+test('toda tabla de negocio es accesible para el inquilino, con las cuatro operaciones', async () => {
+  // Ésta es la versión del 09 § 4, acotada a `negocio` — donde NO hay permisos por
+  // columna, así que `has_table_privilege` sí sirve.
   //
-  // Y eso se AFIRMA en vez de dejarse pasar: "una prueba que pasa en vacío es peor que
-  // ninguna". El día que la Etapa 2 cree la primera tabla de negocio, este conteo
-  // cambia, esta afirmación falla, y quien la arregle tiene que decidir a propósito
-  // qué espera del bucle.
+  // Hasta la Etapa 2 este bucle corría sobre cero tablas, y en vez de dejarlo pasar en
+  // vacío había una afirmación de que el conteo era cero. Esa afirmación FALLÓ en cuanto
+  // apareció `control_aislamiento`, que es exactamente lo que tenía que pasar: obligó a
+  // decidir a propósito qué se espera del bucle en vez de heredar una prueba que pasaba
+  // sin comprobar nada.
   const tablas = await filas<{ relname: string }>(
     mig,
     `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
-      where n.nspname = 'negocio' and c.relkind in ('r', 'p')`,
+      where n.nspname = 'negocio' and c.relkind in ('r', 'p') order by c.relname`,
   );
-  assert.equal(
-    tablas.length,
-    0,
-    'apareció una tabla de negocio: quitá este conteo y dejá que el bucle de abajo la verifique',
-  );
+  assert.ok(tablas.length > 0, 'no hay ninguna tabla de negocio: el bucle pasaría en vacío');
 
   for (const { relname } of tablas) {
     for (const priv of TODOS) {
@@ -228,7 +225,23 @@ test('las tablas de negocio son accesibles para el inquilino — y hoy no hay ni
         'select has_table_privilege($1, $2, $3) as tiene',
         ['app_inquilino', `negocio.${relname}`, priv],
       );
+      // "Una tabla con política perfecta y sin permiso pasa la fila anterior y ROMPE EN
+      // PRODUCCIÓN." La función `aplicar_aislamiento()` otorga las cuatro; si alguien
+      // creara una tabla de negocio sin llamarla, el corredor de migraciones la rechaza
+      // antes — y si igual llegara, esto la agarra.
       assert.equal(f?.tiene, true, `app_inquilino no tiene ${priv} sobre negocio.${relname}`);
+    }
+
+    // Y el rol de IDENTIDAD no la alcanza, en ninguna de las cuatro. Es la mitad
+    // complementaria: la frontera entre dominios se construye con `grant`, no con
+    // políticas, porque sin permiso falla fuerte y a la vista.
+    for (const priv of TODOS) {
+      const f = await unaFila<{ tiene: boolean }>(
+        mig,
+        'select has_table_privilege($1, $2, $3) as tiene',
+        ['app_identidad', `negocio.${relname}`, priv],
+      );
+      assert.equal(f?.tiene, false, `app_identidad alcanza ${priv} sobre negocio.${relname}`);
     }
   }
 });

@@ -9,7 +9,7 @@
 // código de la aplicación escribe `pedidos` y no `negocio.pedidos`"). Las
 // migraciones, al contrario, califican todo.
 
-import type { Generated } from 'kysely';
+import type { ColumnType, Generated } from 'kysely';
 
 export interface TablaOrganizaciones {
   id: Generated<string>;
@@ -135,8 +135,44 @@ export interface VistaUsuariosPermisos {
   permiso: string;
 }
 
-/** Las diez tablas de identidad, más la vista de permisos efectivos. */
+/**
+ * La tabla de control del aislamiento, en el esquema `negocio`.
+ *
+ * Existe para que el aislamiento sea comprobable —"con la organización A no se ve ni
+ * una fila de la B"— y para la sonda horaria del `10` § 1. Para nada más: ninguna
+ * métrica ni informe de negocio la cuenta.
+ */
+export interface TablaControlAislamiento {
+  id: Generated<string>;
+  /**
+   * La columna del inquilino.
+   *
+   * `ColumnType<lectura, inserción, actualización>` y NO `Generated<string>`, y la
+   * diferencia cierra un agujero real:
+   *
+   *   · al LEER es un `string` — siempre está;
+   *   · al INSERTAR es opcional, porque la capa fina la inyecta y el código de negocio
+   *     no la escribe;
+   *   · al ACTUALIZAR es `never`, así que `updateTable('…').set({ org_id: … })` es un
+   *     ERROR DE COMPILACIÓN.
+   *
+   * Ese tercer parámetro es el que importa. Con `Generated<string>` la actualización
+   * queda permitida por los tipos y solo la detiene el `with check` de la política en
+   * tiempo de ejecución — y hay un camino que ni eso cubre bien: un
+   * `onConflict(...).doUpdateSet({ org_id: <ajena> })` compila, sale, y depende
+   * enteramente de la política. Mover la columna del inquilino de una fila existente no
+   * es una operación que este sistema quiera tener disponible: es "cambiarle el dueño a
+   * todo lo que hizo", que el 05 § 3 dice que necesita su propia operación, su propia
+   * capacidad y su propio registro de auditoría.
+   */
+  org_id: ColumnType<string, string | undefined, never>;
+  marca: string;
+  creado_el: Generated<Date>;
+}
+
+/** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
+  control_aislamiento: TablaControlAislamiento;
   organizaciones: TablaOrganizaciones;
   usuarios: TablaUsuarios;
   permisos: TablaPermisos;

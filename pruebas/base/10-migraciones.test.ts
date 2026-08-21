@@ -10,6 +10,13 @@
 //              ninguna de sus tablas lleva org_id. Reapuntada de `comun` a `public`,
 //              porque EJECUCION § 2 y § 3 cierran que `comun` no se crea.
 //
+// Y de la Etapa 2, porque es una comprobación de catálogo sobre los mismos roles:
+//   ADR-0204 — los roles de la aplicación no pueden saltear las políticas.
+//              INNEGOCIABLE. Si `rolbypassrls` fuera cierto o el rol fuera superusuario,
+//              las políticas existirían en el esquema y NO PROTEGERÍAN DE NADA — y eso
+//              es peor que no tenerlas, porque uno acepta atajos en la capa de
+//              aplicación pensando "igual la base me cubre" (08 § 1).
+//
 // Todo lo de acá corre conectando como `migrador`, y las comprobaciones de catálogo
 // son las que "no se pueden engañar con un comentario y no se quedan viejas"
 // (PRUEBAS § Los cinco tipos).

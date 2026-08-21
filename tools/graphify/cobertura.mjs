@@ -108,6 +108,32 @@ for (const etapa of etapas) {
   }
 }
 
+// ── Las reglas LOCALES: citadas en el código y ausentes de `PRUEBAS.md` ─────
+//
+// Existen y van a seguir existiendo: `EJECUCION` § 2 declara reglas que `PRUEBAS.md` no
+// convirtió en fila, y una etapa puede descubrir una regla que la especificación no vio
+// —la Etapa 2 descubrió dos, midiendo—. El riesgo no es que existan: es que sean
+// INVISIBLES. Sin esta lista, una regla local vive en un comentario, nadie la cuenta, y
+// la primera lectura de `docs/TRAZABILIDAD.md` dice que la etapa está completa.
+//
+// El identificador trae su etapa adentro (`ADR-SSRR`), así que se pueden acotar al mismo
+// alcance que se pidió.
+const definidas = new Set(reglas.map((r) => r.id));
+const locales = [...citas.keys()]
+  .filter((id) => !definidas.has(id))
+  .filter((id) => {
+    const etapa = String(Number(id.slice(4, 6)));
+    return todas || etapas.includes(etapa);
+  })
+  .sort();
+
+if (locales.length > 0) {
+  console.log(`\nReglas LOCALES (no están en PRUEBAS.md, hay que agregarlas o justificarlas):`);
+  for (const id of locales) {
+    console.log(`     ${id}  ${[...citas.get(id)].sort().join(', ')}`);
+  }
+}
+
 if (faltanInnegociables > 0) {
   console.error(
     `\n${faltanInnegociables} regla(s) INNEGOCIABLE(S) sin ningún archivo que las cite.`,

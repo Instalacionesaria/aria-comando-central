@@ -18,6 +18,8 @@
 import { Kysely, PostgresDialect, type Transaction } from 'kysely';
 import pg from 'pg';
 import { urlDe, type RolBase } from './entorno.ts';
+import { organizacionActual } from './almacen.ts';
+import { InyectarOrganizacion } from './inyeccion.ts';
 import type { BaseDeDatos } from './esquema.ts';
 
 export type Db = Kysely<BaseDeDatos>;
@@ -26,6 +28,17 @@ export type Trx = Transaction<BaseDeDatos>;
 // El único constructor de clientes del proyecto.
 function crearCliente(rol: RolBase): Db {
   return new Kysely<BaseDeDatos>({
+    // La inyección de la organización va SOLO en el cliente del inquilino.
+    //
+    // El de identidad NO la lleva, y eso es lo que hace viable que la inyección sea
+    // incondicional: las tablas de identidad se alcanzan por otro cliente, así que este
+    // transformador nunca las ve. Si las viera, un `insert into sesiones` recibiría una
+    // columna `org_id` que no existe — y fallaría ruidosamente, que es el lado correcto
+    // del que fallar, pero no hace falta llegar ahí.
+    //
+    // `organizacionActual` viene de `almacen.ts`, que no importa nada de esta capa —
+    // por eso no hay ciclo con `contexto.ts`.
+    plugins: rol === 'inquilino' ? [new InyectarOrganizacion(organizacionActual)] : [],
     dialect: new PostgresDialect({
       pool: new pg.Pool({
         connectionString: urlDe(rol),
@@ -80,14 +93,16 @@ export async function conIdentidad<T>(trabajo: (db: Trx) => Promise<T>): Promise
 }
 
 /**
- * El cliente del dominio del inquilino, sin contexto de organización todavía.
+ * El cliente del dominio del inquilino.
  *
- * En la Etapa 0 existe solo para que las pruebas puedan comprobar que este rol
- * FALLA al tocar las tablas de identidad. La Etapa 2 le pone `conOrganizacion(`
- * encima, y a partir de ahí ninguna consulta de negocio corre sin organización
- * activa.
+ * NO se usa directo desde código de negocio: se usa a través de `conOrganizacion(` y
+ * `datos()` de `contexto.ts`, que son los que ponen la variable de transacción y
+ * lanzan cuando no hay contexto. Éste es solo el constructor del agrupador.
+ *
+ * Lo exporta para `contexto.ts` y para las pruebas que necesitan comprobar que este
+ * rol FALLA al tocar las tablas de identidad.
  */
-export function clienteInquilinoParaPruebas(): Db {
+export function clienteInquilino(): Db {
   return clienteDe('inquilino');
 }
 

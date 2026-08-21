@@ -121,7 +121,11 @@ export function revisarMigraciones(): Rechazo[] {
         if (!/\borg_id\b/.test(declaracion)) {
           rechazos.push({ archivo, motivo: `\`${nombre}\` es de negocio y no declara org_id` });
         }
-        if (!/\bselect\s+aplicar_aislamiento\s*\(/i.test(limpio)) {
+        // El calificador de esquema es opcional: la convención del proyecto es
+        // calificar (`select negocio.aplicar_aislamiento(...)`), pero el documento la
+        // escribe sin calificar y las dos formas tienen que pasar. Sin el grupo
+        // opcional, este rechazo dispararía sobre una migración correcta.
+        if (!/\bselect\s+(?:[\w"]+\.)?aplicar_aislamiento\s*\(/i.test(limpio)) {
           rechazos.push({
             archivo,
             motivo: `\`${nombre}\` es de negocio y el archivo no llama a aplicar_aislamiento()`,
