@@ -52,7 +52,10 @@ export type Accion =
   | 'freno_por_origen'
   | 'sesion_cerrada'
   | 'password_cambiada'
-  | 'organizacion_cambiada';
+  | 'organizacion_cambiada'
+  | 'segundo_factor_confirmado'
+  | 'segundo_factor_verificado'
+  | 'segundo_factor_fallido';
 
 /**
  * Lo único que puede ir en `detalle`. Tres campos, todos opcionales, **todos nombrados**.

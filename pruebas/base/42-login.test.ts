@@ -294,9 +294,17 @@ test('ADR-0413 · el ORDEN de las ramas: la contraseña temporal gana sobre conf
 
 // ─── ADR-0404 · el techo absoluto de una sesión a medio autenticar ──────────
 
-test('ADR-0404 · una sesión a medio autenticar nace con CINCO minutos en los DOS plazos', async () => {
-  // La trampa: el valor por omisión de `expira_absoluto` en la tabla son **30 días**. Omitir
-  // la columna deja una sesión sin identidad probada viva un mes.
+test('ADR-0404 · `debe_configurar_2fo` lleva el vencimiento NORMAL, no cinco minutos', async () => {
+  // Esta prueba nació afirmando lo contrario, y al releer el `02` § 2 quedó claro que el
+  // código estaba mal:
+  //
+  //   "Los otros dos estados restringidos —contraseña temporal y segundo factor por
+  //    configurar— SÍ llevan el vencimiento normal: ahí la identidad YA ESTÁ PROBADA, lo que
+  //    falta es un trámite."
+  //
+  // Cinco minutos son SOLO para `pendiente_2fo`, que es *"una fila de sesión que existe sin
+  // haber probado la identidad completa"*. Cortar los otros dos a cinco minutos le vence la
+  // sesión a alguien mientras elige una contraseña nueva.
   const u = await usuarioDePrueba({
     email: 'plazos@principal.ejemplo',
     rolClave: 'superadministrador',
@@ -316,10 +324,9 @@ test('ADR-0404 · una sesión a medio autenticar nace con CINCO minutos en los D
         .executeTakeFirstOrThrow(),
     );
     assert.equal(s.estado, 'debe_configurar_2fo');
-    assert.ok(Number(s.faltan_el) <= 300, `expira_el a ${s.faltan_el}s, tendría que ser <= 300`);
     assert.ok(
-      Number(s.faltan_absoluto) <= 300,
-      `expira_absoluto a ${s.faltan_absoluto}s: heredó el valor por omisión de 30 días`,
+      Number(s.faltan_el) > 6 * 24 * 3600,
+      `expira_el a ${s.faltan_el}s: la identidad ya está probada, el plazo es el normal`,
     );
   } finally {
     await u.limpiar();

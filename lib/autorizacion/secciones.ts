@@ -101,6 +101,10 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/control/route.ts',
   // El login. No pertenece a una pantalla: es la puerta.
   'app/api/auth/login/route.ts',
+  // El segundo factor: son trámites de la propia cuenta, no de una pantalla del producto.
+  'app/api/auth/2fo/configurar/route.ts',
+  'app/api/auth/2fo/confirmar/route.ts',
+  'app/api/auth/2fo/verificar/route.ts',
 ];
 
 /**

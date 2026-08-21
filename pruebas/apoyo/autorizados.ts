@@ -63,6 +63,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // un correo inexistente—. `auditoria_accesos` es una tabla de identidad y la escritura no
   // tiene organización cuando el usuario no existe.
   'lib/autenticacion/auditoria.ts',
+  // Las tres rutas del segundo factor. Escriben y leen `identidad.usuarios_segundo_factor`,
+  // que es identidad pura: el secreto se busca por usuario, no por organización, y el rol del
+  // inquilino no tiene ningún acceso a esa tabla.
+  'app/api/auth/2fo/configurar/route.ts',
+  'app/api/auth/2fo/confirmar/route.ts',
+  'app/api/auth/2fo/verificar/route.ts',
 ];
 
 /**

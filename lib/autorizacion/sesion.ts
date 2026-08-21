@@ -42,6 +42,8 @@ export type EstadoSesion =
  */
 export interface Contexto {
   sesionId: string;
+  /** Cuando se creo la sesion. Lo necesita el tope de codigos del segundo factor. */
+  creadaEl: Date;
   usuarioId: string;
   estado: EstadoSesion;
   /** La organización a la que PERTENECE el usuario (04 § 8). */
@@ -139,6 +141,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         's.estado',
         's.org_activa',
         's.expira_el',
+        's.creada_el',
         'u.org_id as org_propia',
       ])
       .executeTakeFirst();
@@ -215,6 +218,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
 
     return {
       sesionId: fila.sesion_id,
+      creadaEl: fila.creada_el,
       usuarioId: fila.usuario_id,
       estado: fila.estado,
       orgPropia: fila.org_propia,

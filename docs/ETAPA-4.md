@@ -7,8 +7,8 @@ a punta.
 npm run db:reset && npm run tipos && npm test
 ```
 
-**165 pruebas, 165 pasan. Las catorce filas de `PRUEBAS.md` tienen prueba; las cuatro ⛔
-también.**
+**173 pruebas, 173 pasan. Las catorce filas de `PRUEBAS.md` tienen prueba; las cuatro ⛔
+también. Y el segundo factor completo.**
 
 ## El criterio de cierre
 
@@ -108,33 +108,81 @@ deje de ser el problema.
    *"salt fijo"*, y no es un secreto: es el hash de una contraseña que nadie conoce. Derivarlo en
    el arranque costaría ~100 ms por arranque en frío, para nada.
 
-## Lo que la Etapa 4 **no** hace, y por qué
+## El segundo factor, y las dos funciones que se adelantaron
 
-**Los tres endpoints del segundo factor no están.** No es un olvido: `identidad.usuarios_
-segundo_factor.secreto_cifrado` es `text not null`, y tanto el `08` § 10 como el comentario de
-la migración 006 exigen cifrarlo **con la clave maestra** — que es la Etapa 6.
+`EJECUCION` § 5 pone el segundo factor en el cierre de la Etapa 4 y el cifrado en el de la 6, y
+las dos cosas no se pueden separar: `secreto_cifrado` es `text not null` y el `08` § 10 exige
+cifrarlo **con la clave maestra**. `EJECUCION` § 6 dice que eso se pregunta, no se decide. Se
+preguntó, y la decisión fue **adelantar el mínimo**: `claveMaestra()`, `cifrar` y `descifrar`,
+más las dos filas de `PRUEBAS` de la Etapa 6 que verifican ese primitivo.
 
-Lo que sí está, y es la parte que las filas ⛔ piden: el login **calcula el estado** mirando si
-el segundo factor está confirmado y si algún rol lo exige, y el portero corta. `ADR-0413` está
-verde y probada por mutación.
+Lo que **sigue** siendo Etapa 6: la función única `resolverCredenciales`, el enmascarado del
+`06` § 7, los cuatro estados de credencial, el refresco con candado del `08` § 9, y toda la
+tabla `organizaciones_credenciales`.
 
-Consecuencia que hay que decir de frente: **el rol de plataforma no puede usar la aplicación
-todavía.** El fundador entra, recibe `debe_configurar_2fo`, y desde ahí solo puede consultar y
-cerrar su sesión. Eso es *exactamente* lo que `EJECUCION` § 3 manda —*"segundo factor
-obligatorio para el rol de plataforma"*— así que es comportamiento correcto, no un defecto. Pero
-significa que la etapa que le dé salida a ese estado necesita **dos funciones de la Etapa 6**:
-`claveMaestra()` y `cifrar`/`descifrar`. `EJECUCION` § 6 dice que eso se pregunta, no se decide
-solo.
+### Los parámetros del código son una decisión propia
 
-Tampoco hay: pantallas, cliente de login en la interfaz, ni sesiones visibles y revocables por
-el usuario (fuera de alcance por `EJECUCION` § 7).
+El `02` § 7 dice textualmente que el documento no trae *"la implementación del algoritmo de
+códigos"*, `EJECUCION` § 3 solo cierra *"basado en tiempo"*, y el único parámetro escrito en los
+catorce documentos es **seis dígitos**. Ninguna biblioteca está nombrada.
+
+Así que: TOTP a mano con `node:crypto`, 30 segundos, ±1 ventana de tolerancia, y **HMAC-SHA1**.
+Lo último no es un descuido: es lo que dice RFC 6238 y lo que implementan las aplicaciones de
+autenticación. Elegir SHA-256 *"porque es mejor"* produce códigos que el teléfono de la persona
+**no genera**, y el síntoma es *"el código nunca funciona"*. La resistencia a colisiones de SHA-1
+no es la propiedad que importa acá.
+
+Cuarenta líneas, cero dependencias — y eso importa porque `.npmrc` tiene `ignore-scripts=true`
+con la lista de excepciones vacía.
+
+### Una contradicción del `02` § 5 consigo mismo
+
+Su tabla de transiciones dice que `confirmar` lleva a `activa`. El párrafo siguiente dice que
+**toda** transición recalcula el estado con las cuatro ramas del login. Aplicado a `confirmar`,
+el recálculo devuelve `pendiente_2fo` —el factor acaba de quedar confirmado— y la cuenta entra
+en un **bucle**: quien acaba de probar el código con el que se inscribió tendría que probarlo
+otra vez.
+
+Gana la tabla, porque escribe el destino literal y porque el recálculo produce un bucle. Para eso
+existe `yaProboElFactor`, que salta la rama 1. La regla del recálculo sí se aplica a `verificar`
+y al cambio de contraseña, que es donde su motivo es cierto: *"quien entra con contraseña
+temporal y un rol que exige segundo factor pasa por dos estados, no por uno."*
+
+### Decisiones más que la especificación no toma
+
+- **Tres códigos fallidos destruyen la sesión pendiente.** El `02` § 2 dice *"el código falla N
+  veces → se destruye"* y no fija N. Con seis dígitos y ±1 ventana hay ~3 millones de
+  combinaciones, así que tres intentos por sesión de cinco minutos deja la fuerza bruta fuera de
+  escala. El contador no tiene columna: se cuenta sobre la auditoría **desde que esta sesión se
+  creó**, para que los fallos de una sesión anterior no cuenten contra ésta.
+- **Ocho códigos de respaldo, hasheados con el algoritmo LENTO.** Son secretos de baja entropía
+  escritos por una persona, así que acá sí corresponde el hash caro — al contrario que el token
+  de sesión, que son 32 bytes aleatorios. Se consumen de a uno: sin eso, un código anotado en un
+  papel es una contraseña permanente.
+- **`verificar` extiende el plazo de la sesión.** Una sesión pendiente nace con cinco minutos;
+  sin esta línea se vencería a los cinco minutos de haber entrado bien, y el síntoma sería *"me
+  echa todo el tiempo"*.
+
+### Y un error mío que encontró releer el `02` § 2
+
+La primera versión le daba cinco minutos a `pendiente_2fo` **y** a `debe_configurar_2fo`. El
+documento dice lo contrario: *"los otros dos estados restringidos —contraseña temporal y segundo
+factor por configurar— SÍ llevan el vencimiento normal: ahí la identidad ya está probada, lo que
+falta es un trámite."* Cinco minutos son solo para `pendiente_2fo`, que es *"una fila de sesión
+que existe sin haber probado la identidad completa"*. Con el error, a alguien se le vencía la
+sesión mientras elegía una contraseña nueva.
+
+## Lo que la Etapa 4 **no** hace
+
+Ninguna pantalla, ningún cliente de login en la interfaz, ninguna alta de usuarios ni de
+organizaciones (Etapa 5), y ninguna sesión visible o revocable por el propio usuario (fuera de
+alcance por `EJECUCION` § 7).
 
 ## Pendientes
 
-1. **La decisión del segundo factor**, arriba. Es la única cosa que le falta a esta etapa.
-2. **`DOMINIO_ESPERADO` y `CABECERA_DIRECCION_REAL` en Vercel.** Sin la primera, el portero
-   rechaza toda petición que modifica —incluido el login—. Sin la segunda, el freno por origen no
-   frena.
+1. **Tres variables de entorno en Vercel**, documentadas en `.env.example`: `DOMINIO_ESPERADO`, `CABECERA_DIRECCION_REAL` y `CLAVE_MAESTRA`. Sin la primera el portero rechaza toda
+   petición que modifica, incluido el login. Sin la segunda el freno por origen no frena. Sin la
+   tercera no se puede configurar el segundo factor, y el rol de plataforma no puede entrar.
 3. **El proveedor de PostgreSQL administrado.** Bloqueante para desplegar desde la Etapa 3.
 4. **Protección de rama en `main`** con `verificar` requerido.
 5. **`ultimo_acceso_el` tiene un solo autor y ya se sella**, pero nadie lo lee todavía. El

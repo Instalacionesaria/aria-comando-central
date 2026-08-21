@@ -32,10 +32,9 @@ import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import { verificar } from '../../../../lib/datos/hash.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
-import type { Trx } from '../../../../lib/datos/capa.ts';
 import { serializarCookieSesion } from '../../../../lib/autorizacion/cookie.ts';
 import { verificarOrigen } from '../../../../lib/autorizacion/portero.ts';
-import { hashDeToken, type EstadoSesion } from '../../../../lib/autorizacion/sesion.ts';
+import { hashDeToken } from '../../../../lib/autorizacion/sesion.ts';
 import {
   CREDENCIALES_INVALIDAS,
   ok,
@@ -44,6 +43,7 @@ import {
 import { SENUELO } from '../../../../lib/autenticacion/senuelo.ts';
 import { direccionDeOrigen } from '../../../../lib/autenticacion/direccion.ts';
 import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
+import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
 import {
   anotarFalloDeCuenta,
   frenadoPorOrigen,
@@ -149,10 +149,20 @@ export async function POST(peticion: Request): Promise<Response> {
     }
 
     // ── Recién acá se consulta el resto. Solo para usuarios que ya entraron. ─
-    const estado = await estadoInicial(db, usuario.id, usuario.debe_cambiar_password);
+    const estado = await estadoQueCorresponde(db, usuario.id);
 
     const token = randomBytes(32).toString('base64url');
-    const pendiente = estado === 'pendiente_2fo' || estado === 'debe_configurar_2fo';
+
+    // SOLO `pendiente_2fo` lleva cinco minutos, y la distinción es del `02` § 2:
+    //
+    //   "Los otros dos estados restringidos —contraseña temporal y segundo factor por
+    //    configurar— SÍ llevan el vencimiento normal: ahí la identidad YA ESTÁ PROBADA, lo
+    //    que falta es un trámite."
+    //
+    // `pendiente_2fo` es distinto porque es *"una fila de sesión que existe SIN HABER PROBADO
+    // la identidad completa"*. Los otros dos ya probaron contraseña; cortarlos a cinco minutos
+    // solo haría que a alguien se le venciera la sesión mientras elige una contraseña nueva.
+    const sinIdentidadProbada = estado === 'pendiente_2fo';
 
     await db
       .insertInto('sesiones')
@@ -168,10 +178,10 @@ export async function POST(peticion: Request): Promise<Response> {
         // Una sesión sin identidad probada vive CINCO MINUTOS, y el techo absoluto también.
         // Sin escribir `expira_absoluto` hereda los 30 días del valor por omisión de la
         // tabla y queda una sesión a medio autenticar viva un mes.
-        expira_el: pendiente
+        expira_el: sinIdentidadProbada
           ? sql<Date>`now() + interval '${sql.lit(MINUTOS_PENDIENTE)} minutes'`
           : sql<Date>`now() + interval '7 days'`,
-        ...(pendiente
+        ...(sinIdentidadProbada
           ? {
               expira_absoluto: sql<Date>`now() + interval '${sql.lit(MINUTOS_PENDIENTE)} minutes'`,
             }
@@ -205,57 +215,4 @@ export async function POST(peticion: Request): Promise<Response> {
     respuesta.headers.append('set-cookie', serializarCookieSesion(token));
     return respuesta;
   });
-}
-
-/**
- * El estado con el que nace la sesión. **El orden de las ramas no es el obvio.**
- *
- * El `03` § 5 lo explica, y la segunda mitad es la que casi siempre se pone al revés:
- *
- *   "Si el segundo factor ya está configurado y falta verificarlo, GANA SIEMPRE: todavía no
- *    se probó la identidad y nada más puede pasar antes. Pero si falta CONFIGURARLO y además
- *    hay contraseña temporal, gana LA CONTRASEÑA TEMPORAL — porque la temporal la conoce
- *    quien creó la cuenta, y dejar configurar el segundo factor primero le permitiría a esa
- *    persona INSCRIBIR SU DISPOSITIVO EN LA CUENTA DE OTRO."
- *
- * Ese es el ataque completo: el administrador que da de alta a alguien conoce su contraseña
- * temporal, entra antes que el dueño, e inscribe su propio teléfono. Invertir las ramas 2 y 3
- * lo habilita, y **nada falla**.
- */
-async function estadoInicial(
-  db: Trx,
-  usuarioId: string,
-  debeCambiarPassword: boolean,
-): Promise<EstadoSesion> {
-  // ¿Tiene el segundo factor CONFIRMADO? No "¿existe la fila?": un alta empezada y
-  // abandonada dejaría la cuenta en `pendiente_2fo` para siempre.
-  const confirmado = await db
-    .selectFrom('usuarios_segundo_factor')
-    .select('usuario_id')
-    .where('usuario_id', '=', usuarioId)
-    .where('confirmado_el', 'is not', null)
-    .executeTakeFirst();
-
-  // 1 · Segundo factor configurado y sin verificar en esta sesión: gana siempre.
-  if (confirmado) return 'pendiente_2fo';
-
-  // 2 · Contraseña temporal. ANTES de configurar el segundo factor. Ver arriba.
-  if (debeCambiarPassword) return 'debe_cambiar_password';
-
-  // 3 · ¿Algún rol le EXIGE segundo factor, y todavía no lo configuró?
-  //
-  // Si esta consulta devolviera cero filas por falta de permiso en vez de por ausencia de
-  // rol, el superadministrador obtendría una sesión `activa`. Los permisos están puestos y
-  // hay una prueba que lo afirma con el rol real de la aplicación, nunca con el propietario.
-  const exige = await db
-    .selectFrom('usuarios_roles as ur')
-    .innerJoin('roles as r', 'r.id', 'ur.rol_id')
-    .where('ur.usuario_id', '=', usuarioId)
-    .where('r.exige_segundo_factor', '=', true)
-    .select('r.id')
-    .executeTakeFirst();
-  if (exige) return 'debe_configurar_2fo';
-
-  // 4 · Todo en orden.
-  return 'activa';
 }

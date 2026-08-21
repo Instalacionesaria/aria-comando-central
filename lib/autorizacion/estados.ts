@@ -123,11 +123,10 @@ export const EXENTAS_DE_ORGANIZACION_ACTIVA: readonly Ruta[] = [
  * acumula rutas que ya no existen, y ahí deja de decir la verdad.
  */
 export const AUN_NO_EXISTEN: readonly Ruta[] = [
-  // `POST /api/auth/sesion` —el cambio de contraseña— salió de acá en la Etapa 4, que es
-  // exactamente lo que esta lista existe para forzar.
-  'POST /api/auth/2fo/verificar',
-  'POST /api/auth/2fo/configurar',
-  'POST /api/auth/2fo/confirmar',
+  // VACÍA, y eso es el cierre de la Etapa 4: las cuatro rutas que estaban acá —el cambio de
+  // contraseña y las tres del segundo factor— existen. La lista se queda porque la Etapa 5 va a
+  // necesitarla otra vez, y porque su comprobación de entradas muertas corre en los dos
+  // sentidos: una ruta que YA existe tiene que salir de acá.
 ];
 
 /** ¿Esta ruta está habilitada para este estado de sesión? */
