@@ -99,6 +99,8 @@ export const SIN_PANTALLA: readonly string[] = [
   // La sonda del aislamiento. Existe para la prueba de la Etapa 2 y la sonda de la 8, no
   // para una pantalla (10 § 1).
   'app/api/control/route.ts',
+  // El login. No pertenece a una pantalla: es la puerta.
+  'app/api/auth/login/route.ts',
 ];
 
 /**

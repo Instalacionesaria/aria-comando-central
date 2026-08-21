@@ -52,6 +52,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // rol es `using (true)`. Es el único lugar del sistema donde olvidarse un `where` devuelve
   // filas de otra organización sin error — y por eso está en una lista que alguien revisa.
   'app/api/usuarios/route.ts',
+  // ── Etapa 4 ──────────────────────────────────────────────────────────────────
+  // El login. Es el caso que el 04 § 4 nombra como el ÚNICO que de verdad necesita la
+  // escotilla: *"de las cuatro [operaciones que cruzan organizaciones], tres NO necesitan
+  // leer datos de negocio sin filtro… Queda solo el login."* Y no puede ser de otra forma:
+  // busca por correo, ANTES de saber a qué organización pertenece nadie.
+  'app/api/auth/login/route.ts',
+  // El registro de accesos. `auditarSuelto()` abre su propia transacción de identidad para
+  // los caminos donde no hay nada más que escribir —un rechazo por freno, un intento contra
+  // un correo inexistente—. `auditoria_accesos` es una tabla de identidad y la escritura no
+  // tiene organización cuando el usuario no existe.
+  'lib/autenticacion/auditoria.ts',
 ];
 
 /**
@@ -94,7 +105,15 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
  *
  * El login es de la Etapa 4. Hoy está la salud, y nada más.
  */
-export const RUTAS_PUBLICAS: readonly string[] = ['app/api/salud/route.ts'];
+export const RUTAS_PUBLICAS: readonly string[] = [
+  'app/api/salud/route.ts',
+  // El login. Es público por definición —no puede exigir sesión para crear una— y aun así
+  // **verifica el origen**: el 08 § 5.3 pone `verificarOrigen` "en el portero", el login no
+  // pasa por el portero, y la fila de PRUEBAS de la Etapa 3 pide que toda petición que
+  // modifica lo verifique. Estar en esta lista lo exime del portero, NO de la verificación
+  // de origen, y hay una prueba que lo afirma.
+  'app/api/auth/login/route.ts',
+];
 
 /**
  * Las rutas que usan `sesionOpcional(` en vez del portero.

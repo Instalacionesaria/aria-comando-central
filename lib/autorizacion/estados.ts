@@ -123,7 +123,8 @@ export const EXENTAS_DE_ORGANIZACION_ACTIVA: readonly Ruta[] = [
  * acumula rutas que ya no existen, y ahí deja de decir la verdad.
  */
 export const AUN_NO_EXISTEN: readonly Ruta[] = [
-  'POST /api/auth/sesion',
+  // `POST /api/auth/sesion` —el cambio de contraseña— salió de acá en la Etapa 4, que es
+  // exactamente lo que esta lista existe para forzar.
   'POST /api/auth/2fo/verificar',
   'POST /api/auth/2fo/configurar',
   'POST /api/auth/2fo/confirmar',

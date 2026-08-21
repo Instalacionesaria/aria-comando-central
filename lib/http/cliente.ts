@@ -119,7 +119,13 @@ export async function pedir<T>(
 /**
  * ¿Este rechazo significa que hay que volver al login?
  *
- * Solo el 401. Los cinco 403 **no** son "volvé a entrar":
+ * **Se mira el CÓDIGO, no el estado**, y la diferencia importa: el login responde 401
+ * `credenciales_invalidas` cuando la contraseña está mal, y eso NO es "se te venció la
+ * sesión". Si esta función mirara `estado === 401`, una contraseña mal tipeada mandaría al
+ * usuario al login que ya está mirando — o peor, dispararía el manejador global de sesión
+ * vencida y le borraría el formulario.
+ *
+ * Solo `sin_sesion`. Los cinco 403 **no** son "volvé a entrar":
  *
  *   · `sin_permiso` — la pantalla lo dice, y NO como "no hay datos".
  *   · los tres de estado — el frontend rutea al paso que falta. Mostrarlos como "no tenés
@@ -128,5 +134,5 @@ export async function pedir<T>(
  *   · `organizacion_inactiva` — no es del usuario, es del inquilino.
  */
 export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
-  return r.tipo === 'rechazado' && r.estado === 401;
+  return r.tipo === 'rechazado' && r.codigo === 'sin_sesion';
 }

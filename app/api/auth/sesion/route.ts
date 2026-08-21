@@ -35,8 +35,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { cookieSesionBorrada } from '../../../../lib/autorizacion/cookie.ts';
-import { exigir, sesionOpcional } from '../../../../lib/autorizacion/portero.ts';
-import { ok } from '../../../../lib/autorizacion/respuesta.ts';
+import { exigir, NINGUNA, sesionOpcional } from '../../../../lib/autorizacion/portero.ts';
+import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { hashear, verificar } from '../../../../lib/datos/hash.ts';
+import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
 import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 
@@ -134,4 +136,84 @@ export async function PATCH(peticion: Request): Promise<Response> {
   });
 
   return ok({ cambiada: true, orgActiva: pedida });
+}
+
+/**
+ * Cambiar la propia contraseña. **NO exige ninguna capacidad**, y ésa es la fila `ADR-0406`.
+ *
+ * Es la ÚNICA salida del estado `debe_cambiar_password`. Si exigiera una capacidad, alguien
+ * con contraseña temporal y sin esa capacidad quedaría encerrado sin salida — y el `03` § 5
+ * ya estableció que *"un estado sin salida es una cuenta bloqueada que necesita a un
+ * administrador"*.
+ *
+ * `NINGUNA` es un valor escrito a propósito, no una lista vacía: *"una lista vacía se puede
+ * pasar por accidente y abriría la operación"* (03 § 5).
+ */
+export async function POST(peticion: Request): Promise<Response> {
+  const contexto = await exigir(peticion, NINGUNA);
+  if (contexto instanceof Response) return contexto;
+
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return ok({ cambiada: false, motivo: 'cuerpo_invalido' }, 400);
+  }
+  const actual = (cuerpo as { actual?: unknown } | null)?.actual;
+  const nueva = (cuerpo as { nueva?: unknown } | null)?.nueva;
+  if (typeof actual !== 'string' || typeof nueva !== 'string') {
+    return ok({ cambiada: false, motivo: 'cuerpo_invalido' }, 400);
+  }
+  // El largo mínimo es lo único que se valida acá. La política de contraseñas completa no
+  // está en la especificación y no se inventa.
+  if (nueva.length < 12) {
+    return ok({ cambiada: false, motivo: 'demasiado_corta' }, 400);
+  }
+
+  return conIdentidad(async (db) => {
+    const u = await db
+      .selectFrom('usuarios')
+      .select(['id', 'org_id', 'password_hash'])
+      .where('id', '=', contexto.usuarioId)
+      .executeTakeFirstOrThrow();
+
+    // La contraseña ACTUAL se verifica aunque la sesión ya esté abierta: sin eso, una sesión
+    // robada permite cambiar la contraseña y quedarse con la cuenta.
+    if (!u.password_hash || !verificar(actual, u.password_hash)) {
+      return rechazo('credenciales_invalidas');
+    }
+
+    await db
+      .updateTable('usuarios')
+      .set({ password_hash: hashear(nueva), debe_cambiar_password: false })
+      .where('id', '=', u.id)
+      .execute();
+
+    // La sesión pasa a `activa` SOLO si estaba en `debe_cambiar_password`. Si estaba en un
+    // estado de segundo factor, ese estado sigue mandando: cambiar la contraseña no prueba la
+    // identidad.
+    if (contexto.estado === 'debe_cambiar_password') {
+      await db
+        .updateTable('sesiones')
+        .set({ estado: 'activa' })
+        .where('id', '=', contexto.sesionId)
+        .execute();
+    }
+
+    // Y TODAS las demás sesiones del usuario se cierran. Cambiar la contraseña es lo que hace
+    // alguien que sospecha que le entraron; dejar las otras sesiones vivas lo volvería inútil.
+    await db
+      .deleteFrom('sesiones')
+      .where('usuario_id', '=', u.id)
+      .where('id', '!=', contexto.sesionId)
+      .execute();
+
+    await auditar(db, {
+      accion: 'password_cambiada',
+      usuarioId: u.id,
+      orgId: u.org_id,
+    });
+
+    return ok({ cambiada: true });
+  });
 }

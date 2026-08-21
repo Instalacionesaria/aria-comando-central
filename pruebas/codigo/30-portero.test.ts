@@ -40,7 +40,7 @@ import {
   SIN_OPERACIONES_TODAVIA,
   SIN_PANTALLA,
 } from '../../lib/autorizacion/secciones.ts';
-import { AUN_NO_EXISTEN, COMUN, ESTADOS } from '../../lib/autorizacion/estados.ts';
+import { AUN_NO_EXISTEN, ESTADOS } from '../../lib/autorizacion/estados.ts';
 
 const METODOS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
 
@@ -387,21 +387,11 @@ test('ADR-0306 · el portero verifica el origen y solo exime los métodos que no
   );
 });
 
-// ─── Las listas blancas de estado, y sus entradas muertas ───────────────────
-
-test('las cuatro listas de ESTADOS incluyen el conjunto COMUN', () => {
-  // El 03 § 5 llama a esto *"el error más fácil de cometer armando estas listas"*: sin
-  // consultar la sesión, el frontend no sabe en qué estado está; sin cerrar sesión, el estado
-  // no tiene salida y es *"una cuenta bloqueada que necesita a un administrador"*.
-  for (const [estado, rutas] of Object.entries(ESTADOS)) {
-    if (rutas === null) continue; // `activa` habilita todo.
-    for (const comun of COMUN) {
-      assert.ok(rutas.includes(comun), `el estado ${estado} no habilita ${comun}`);
-    }
-  }
-  // `activa` tiene que estar, o una sesión normal no puede hacer nada.
-  assert.ok('activa' in ESTADOS, 'falta el estado `activa`');
-});
+// ─── Las entradas muertas de las listas blancas ─────────────────────────────
+//
+// Las dos propiedades de CONTENIDO de esas listas —el conjunto común en las cuatro, y
+// ninguna ruta específica en dos— son ADR-0409 y ADR-0408, de la Etapa 4:
+// `pruebas/codigo/40-estados-de-sesion.test.ts`.
 
 test('ninguna ruta de las listas blancas está muerta', () => {
   // Una lista blanca sin comprobación de entradas muertas acumula rutas que ya no existen, y

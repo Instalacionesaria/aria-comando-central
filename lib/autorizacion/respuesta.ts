@@ -46,12 +46,42 @@ export const RECHAZOS = {
   // cuerpo —"responder 403 'Origen no permitido'"—, y justo es el que el cliente no podría
   // distinguir de los otros cinco. Se le pone código.
   origen_no_permitido: 403,
+  // ── Etapa 4 · el login ──────────────────────────────────────────────────────
+  //
+  // NINGUNO de estos tres está en la especificación con un código de cuerpo. Los tres hacen
+  // falta, y los tres tienen que ser distinguibles.
+  //
+  // `credenciales_invalidas` es 401 y **no** es `sin_sesion`, y la diferencia no es
+  // cosmética: `hayQueVolverAEntrar()` del cliente HTTP mira el código, no el estado, así
+  // que si compartieran código una contraseña mal tipeada quedaría indistinguible de "se te
+  // venció la sesión" para todo el frontend. El mensaje que se muestra es el mismo para las
+  // tres causas —correo inexistente, cuenta inactiva, contraseña mal—; lo que se distingue
+  // es el CÓDIGO DE SITUACIÓN, no la causa.
+  credenciales_invalidas: 401,
+  // La excepción deliberada al mensaje único (02 § 4): *"cuando la cuenta está bloqueada, se
+  // dice. Rompe el mensaje único a propósito — quien llegó hasta ahí ya sabe que la cuenta
+  // existe, porque la bloqueó él. Ocultarlo solo confunde al dueño legítimo, que necesita
+  // saber que tiene que esperar."*
+  cuenta_bloqueada: 429,
+  // El freno por origen. Código propio y distinto del de cuenta: el 09 § 5 exige que
+  // rechazos distintos sean distinguibles por el cliente, y estos dos significan cosas
+  // opuestas —"tu cuenta está protegida" contra "esta dirección está golpeando"—.
+  demasiados_intentos: 429,
   // No está en ningún documento, y hace falta: si la base falla, la respuesta NO puede ser
   // 401 `sin_sesion` —eso expulsaría a todo el mundo ante un parpadeo de red y en los
   // registros parecería que a nadie le andaba la sesión (07 § 4)—. Es la regla 2 del
   // 07 § 0: un valor significa una sola cosa.
   base_no_disponible: 503,
 } as const;
+
+/**
+ * El único texto que ve quien falla el login. **Uno solo, para tres situaciones.**
+ *
+ * El `02` § 4: *"`401` con 'Credenciales inválidas.' para las tres situaciones: el email no
+ * existe, la cuenta está inactiva, o la contraseña está mal. Distinguirlas le confirma a un
+ * atacante qué emails son reales — un enumerador de cuentas gratis."*
+ */
+export const CREDENCIALES_INVALIDAS = 'Credenciales inválidas.';
 
 export type CodigoRechazo = keyof typeof RECHAZOS;
 
