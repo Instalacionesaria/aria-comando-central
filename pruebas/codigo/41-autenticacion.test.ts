@@ -247,3 +247,58 @@ test('ADR-0401 · el señuelo tiene los MISMOS parámetros que un hash real', ()
     'el señuelo no tiene 64 bytes: cuesta menos que un hash real',
   );
 });
+
+// ─── El estado de la sesión se RECALCULA, nunca se escribe literal ──────────
+
+test('las tres transiciones llaman a `estadoQueCorresponde`, ninguna escribe un estado literal', () => {
+  // ═════════════════════════════════════════════════════════════════════════
+  // ESTA PRUEBA REEMPLAZA A UNA DE BASE QUE DEJÓ DE PODER MEDIR
+  //
+  // El cambio de contraseña escribía `estado: 'activa'` con una constante en vez de recalcular,
+  // y eso salteaba entero el segundo factor obligatorio: un usuario con contraseña temporal y un
+  // rol que lo exigía quedaba dentro siete días sin haberlo configurado. Lo cazó una prueba de
+  // base.
+  //
+  // Cuando el segundo factor pasó a ser opcional (migración 010), la constante y el recálculo se
+  // volvieron **indistinguibles por comportamiento** en ese camino: las cuatro ramas ahora
+  // devuelven `activa` ahí. O sea que la prueba de base dejó de poder ver la diferencia, y una
+  // prueba que no puede fallar por lo que dice medir es peor que ninguna.
+  //
+  // Así que la garantía se muda acá, donde SÍ se puede ver: se afirma la FORMA del código. El
+  // recálculo se conserva porque es correcto por construcción y sigue estando bien el día que
+  // alguien vuelva a exigir el factor por rol — y esta prueba es lo que impide que alguien lo
+  // "simplifique" de vuelta a una constante mientras eso no se puede observar.
+  // ═════════════════════════════════════════════════════════════════════════
+  const CAMINOS = [
+    'app/api/auth/login/route.ts',
+    'app/api/auth/sesion/route.ts',
+    'app/api/auth/2fo/confirmar/route.ts',
+    'app/api/auth/2fo/verificar/route.ts',
+  ];
+
+  const archivos = archivosFuente(['app']);
+  for (const camino of CAMINOS) {
+    const a = archivos.find((x) => x.ruta === camino);
+    assert.ok(a, `no se encontró ${camino}`);
+    assert.match(
+      a.limpio,
+      /\bestadoQueCorresponde\s*\(/,
+      `${camino} decide el estado de una sesión sin recalcularlo con las cuatro ramas`,
+    );
+  }
+
+  // LA MITAD COMPLEMENTARIA: que nadie escriba un estado literal en `sesiones.estado`.
+  //
+  // Sin ella, un archivo podría llamar a `estadoQueCorresponde` para una rama y escribir
+  // `'activa'` a mano en otra — que es exactamente la forma que tenía el defecto. Se excluye
+  // `login/route.ts`, que legítimamente escribe el resultado de la función en una variable
+  // llamada `estado`; lo que se busca es la CADENA literal junto al `set`.
+  const literales = archivos
+    .filter((a) => /\.set\(\s*\{[^}]*estado:\s*'(activa|pendiente_2fo|debe_)/s.test(a.limpio))
+    .map((a) => a.ruta);
+  assert.deepEqual(
+    literales,
+    [],
+    'un manejador escribe un estado de sesión literal: tiene que salir de `estadoQueCorresponde`',
+  );
+});

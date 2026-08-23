@@ -28,6 +28,7 @@ import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { exigir, NINGUNA } from '../../lib/autorizacion/portero.ts';
 import type { Exigencia } from '../../lib/autorizacion/capacidades.ts';
 import { ESTADOS } from '../../lib/autorizacion/estados.ts';
+import { cifrar } from '../../lib/credenciales/cifrado.ts';
 import { TOPE_POR_CUENTA, TOPE_POR_ORIGEN } from '../../lib/autenticacion/freno.ts';
 
 const DOMINIO = 'ejemplo.test';
@@ -231,10 +232,22 @@ test('ADR-0405 · la respuesta trae el prefijo y los CUATRO atributos', async ()
 });
 
 // ─── ADR-0413 · el segundo factor obligatorio ───────────────────────────────
-
-test('ADR-0413 · un rol que exige segundo factor NO da sesión habilitada', async () => {
-  // `superadministrador` tiene `exige_segundo_factor = true` y la restricción
-  // `roles_plataforma_exige_2fo` no lo deja nacer de otra forma.
+test('ADR-0413 · RETIRADA · un rol de plataforma SIN factor configurado entra directo', async () => {
+  // ═════════════════════════════════════════════════════════════════════════
+  // ESTA FILA SE RETIRÓ. LA PRUEBA SE DA VUELTA, NO SE BORRA.
+  //
+  // `ADR-0413` decía: *"un usuario con un rol que exige segundo factor no obtiene sesión
+  // habilitada. INNEGOCIABLE"*. La rama 3 de `lib/autenticacion/estado.ts` la hacía cumplir y
+  // se quitó a pedido explícito de quien decide el producto.
+  //
+  // Lo que se acepta está escrito en la migración 010 y en `estado.ts`. En una línea: contra
+  // adivinar la contraseña no cambia nada —el freno por cuenta corta a los cinco intentos, el
+  // de origen a los veinte— y contra una contraseña YA filtrada el segundo factor era lo único
+  // que quedaba.
+  //
+  // La prueba invertida existe para que reponer la rama la haga fallar: una invariante que se
+  // retira sin dejar rastro es una que nadie sabe que se fue.
+  // ═════════════════════════════════════════════════════════════════════════
   const u = await usuarioDePrueba({
     email: 'plataforma@principal.ejemplo',
     rolClave: 'superadministrador',
@@ -242,26 +255,80 @@ test('ADR-0413 · un rol que exige segundo factor NO da sesión habilitada', asy
   });
   try {
     const r = await login(peticion({ email: 'plataforma@principal.ejemplo', password: PASSWORD }));
-    assert.equal(r.status, 200, 'el login tiene que tener éxito: lo que cambia es el ESTADO');
+    assert.equal(r.status, 200);
     const cuerpo = await cuerpoDe(r);
     assert.equal(
       cuerpo.estado,
-      'debe_configurar_2fo',
-      'un usuario con rol que exige segundo factor obtuvo una sesión habilitada',
+      'activa',
+      'el segundo factor volvió a ser obligatorio: si es a propósito, esta prueba tiene que ' +
+        'volver a su forma anterior junto con la rama 3 de lib/autenticacion/estado.ts',
     );
 
-    // Y el portero CORTA. La fila dice "el login devuelve un estado restringido, no `activa`,
-    // Y EL PORTERO CORTA" — las dos mitades.
+    // Y el portero DEJA PASAR. Es la otra mitad, y la que de verdad cambió: antes cortaba con
+    // `debe_configurar_2fo`. Sin esta afirmación, un estado `activa` que el portero rechazara
+    // por otro motivo pasaría la de arriba.
     const cookie = r.headers.get('set-cookie') ?? '';
     const token = /__Host-sesion=([^;]+)/.exec(cookie)?.[1] ?? '';
     const conSesion = new Request(`https://${DOMINIO}/api/usuarios`, {
       headers: { cookie: `${COOKIE_SESION}=${token}` },
     });
-    const corte = await exigir(conSesion, ['usuarios.ver']);
-    assert.ok(corte instanceof Response, 'el portero dejó pasar una sesión sin segundo factor');
-    assert.equal(corte.status, 403);
-    assert.equal((await corte.json()).codigo, 'debe_configurar_2fo');
+    const contexto = await exigir(conSesion, ['usuarios.ver']);
+    assert.ok(
+      !(contexto instanceof Response),
+      `el portero cortó una sesión que tiene que estar habilitada: ${
+        contexto instanceof Response ? JSON.stringify(await contexto.json()) : ''
+      }`,
+    );
   } finally {
+    await u.limpiar();
+  }
+});
+
+test('ADR-0413 · LO QUE SIGUE EN PIE · con el factor YA confirmado, el login NO habilita', async () => {
+  // LA MITAD QUE NO SE RETIRÓ, y la razón por la que "opcional" no significa "no existe".
+  //
+  // Activar el segundo factor es opcional; cumplirlo, una vez activado, no lo es. La rama 1 de
+  // `estadoQueCorresponde` no se tocó: un factor confirmado y sin verificar en ESTA sesión
+  // devuelve `pendiente_2fo`, y el portero corta.
+  //
+  // Sin esta prueba, alguien podría "simplificar" la rama 1 junto con la 3 y el sistema
+  // quedaría con las rutas del segundo factor intactas, sin que nadie las cumpla — el peor de
+  // los dos mundos, porque la pantalla diría que está protegido.
+  const u = await usuarioDePrueba({
+    email: 'confactor@principal.ejemplo',
+    rolClave: 'superadministrador',
+    orgSlug: 'principal',
+  });
+  try {
+    // El factor, confirmado a mano: lo que importa acá es el ESTADO de la fila, no cómo llegó.
+    // El recorrido de alta tiene su propia prueba en `43-segundo-factor.test.ts`.
+    await admin.query(
+      `insert into identidad.usuarios_segundo_factor (usuario_id, secreto_cifrado, confirmado_el)
+       values ($1, $2, now())`,
+      [u.id, cifrar('JBSWY3DPEHPK3PXP')],
+    );
+
+    const r = await login(peticion({ email: 'confactor@principal.ejemplo', password: PASSWORD }));
+    assert.equal(r.status, 200, 'el login tiene que tener éxito: lo que cambia es el ESTADO');
+    assert.equal(
+      (await cuerpoDe(r)).estado,
+      'pendiente_2fo',
+      'un factor confirmado dejó de exigirse: eso NO es parte de lo que se retiró',
+    );
+
+    const cookie = r.headers.get('set-cookie') ?? '';
+    const token = /__Host-sesion=([^;]+)/.exec(cookie)?.[1] ?? '';
+    const corte = await exigir(
+      new Request(`https://${DOMINIO}/api/usuarios`, {
+        headers: { cookie: `${COOKIE_SESION}=${token}` },
+      }),
+      ['usuarios.ver'],
+    );
+    assert.ok(corte instanceof Response, 'el portero dejó pasar una sesión sin verificar el factor');
+    assert.equal(corte.status, 403);
+    assert.equal((await corte.json()).codigo, 'pendiente_2fo');
+  } finally {
+    await admin.query('delete from identidad.usuarios_segundo_factor where usuario_id = $1', [u.id]);
     await u.limpiar();
   }
 });
@@ -305,9 +372,17 @@ test('ADR-0404 · `debe_configurar_2fo` lleva el vencimiento NORMAL, no cinco mi
   // Cinco minutos son SOLO para `pendiente_2fo`, que es *"una fila de sesión que existe sin
   // haber probado la identidad completa"*. Cortar los otros dos a cinco minutos le vence la
   // sesión a alguien mientras elige una contraseña nueva.
+  //
+  // ── Y POR QUÉ AHORA MIDE `debe_cambiar_password` Y NO `debe_configurar_2fo` ──
+  //
+  // Medía el segundo, y ese estado dejó de ser alcanzable desde el login cuando el segundo
+  // factor pasó a ser opcional (migración 010). El estado cambia; **la propiedad que la fila
+  // afirma no**: un estado restringido donde la identidad YA está probada lleva el plazo normal.
+  // De los tres estados restringidos, el único que hoy se alcanza y cumple esa condición es la
+  // contraseña temporal, así que la prueba se muda ahí en vez de borrarse.
   const u = await usuarioDePrueba({
     email: 'plazos@principal.ejemplo',
-    rolClave: 'superadministrador',
+    debeCambiarPassword: true,
     orgSlug: 'principal',
   });
   try {
@@ -323,10 +398,17 @@ test('ADR-0404 · `debe_configurar_2fo` lleva el vencimiento NORMAL, no cinco mi
         .where('usuario_id', '=', u.id)
         .executeTakeFirstOrThrow(),
     );
-    assert.equal(s.estado, 'debe_configurar_2fo');
+    assert.equal(s.estado, 'debe_cambiar_password');
     assert.ok(
       Number(s.faltan_el) > 6 * 24 * 3600,
       `expira_el a ${s.faltan_el}s: la identidad ya está probada, el plazo es el normal`,
+    );
+    // El techo absoluto también es el normal, y no los cinco minutos. Sin esta mitad, un login
+    // que pusiera el plazo bien y el techo corto le vencería la sesión a alguien mientras elige
+    // su contraseña — el síntoma exacto que la fila existe para impedir.
+    assert.ok(
+      Number(s.faltan_absoluto) > 6 * 24 * 3600,
+      `expira_absoluto a ${s.faltan_absoluto}s: tendría que ser el techo normal`,
     );
   } finally {
     await u.limpiar();

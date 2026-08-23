@@ -1,7 +1,19 @@
 // ADR-0413 — Un usuario con un rol que exige segundo factor no obtiene sesión habilitada.
-//            INNEGOCIABLE.
+//            **YA NO SE CUMPLE, y hay que decirlo acá arriba.**
 //
-// Las cuatro ramas que deciden el estado de una sesión. **UN solo lugar.**
+// Esa fila estaba marcada INNEGOCIABLE y se retiró a pedido explícito de quien decide el
+// producto: obligar a dar de alta una aplicación de autenticación en el primer ingreso es
+// demasiada fricción para este equipo. La rama que lo forzaba ya no está —ver la nota larga
+// donde estaba, más abajo— y la migración 010 quitó la invariante de la base.
+//
+// Se deja el encabezado con el nombre de la fila y no se borra la referencia, porque una fila
+// INNEGOCIABLE que se retira tiene que quedar visible como retirada. Un archivo que dijera
+// simplemente "tres ramas" haría desaparecer la decisión.
+//
+// Lo que SÍ sigue en pie: quien active el segundo factor por su cuenta tiene que cumplirlo en
+// cada ingreso. La rama 1 no se tocó.
+//
+// Las TRES ramas que deciden el estado de una sesión. **UN solo lugar.**
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // "EL SIGUIENTE QUE CORRESPONDA", NO "ACTIVA"
@@ -24,8 +36,15 @@
 //    INSCRIBIR SU DISPOSITIVO EN LA CUENTA DE OTRO."
 //
 // Ése es el ataque completo: el administrador que da de alta a alguien conoce su contraseña
-// temporal, entra antes que el dueño, e inscribe su propio teléfono. Invertir las ramas 2 y 3
-// lo habilita, y **nada falla**.
+// temporal, entra antes que el dueño, e inscribe su propio teléfono.
+//
+// Se conserva escrito aunque la rama 3 ya no exista, por dos razones. La primera es que el
+// orden de las dos ramas que QUEDAN sigue importando por lo mismo. La segunda es que el ataque
+// no desapareció con la rama: **sigue siendo posible**, y ahora sin la rama que lo acotaba.
+// Quien conozca una contraseña temporal puede entrar y activar el segundo factor con su propio
+// dispositivo antes que el dueño. Lo que lo limita hoy es que el cambio de contraseña cierra
+// TODAS las demás sesiones, así que el dueño lo expulsa al elegir su contraseña — pero el
+// factor inscripto queda. Está anotado en `docs/DESPLIEGUE.md`.
 //
 // ── UNA CONTRADICCIÓN DEL `02` § 5 CONSIGO MISMO, RESUELTA ───────────────────
 //
@@ -95,29 +114,48 @@ export async function estadoQueCorresponde(
   // 2 · Contraseña temporal. ANTES de configurar el segundo factor. Ver el encabezado.
   if (u.debe_cambiar_password) return 'debe_cambiar_password';
 
-  // 3 · ¿Algún rol le EXIGE segundo factor, y todavía no lo configuró?
+  // 3 · NO HAY RAMA 3. El segundo factor es OPCIONAL, y acá está lo que eso significa.
   //
-  // Si esta consulta devolviera cero filas por falta de permiso en vez de por ausencia de rol,
-  // el superadministrador obtendría una sesión `activa`. Los permisos están puestos y hay una
-  // prueba que lo afirma con el rol real de la aplicación, nunca con el propietario.
-  const exige = await db
-    .selectFrom('usuarios_roles as ur')
-    .innerJoin('roles as r', 'r.id', 'ur.rol_id')
-    .where('ur.usuario_id', '=', usuarioId)
-    .where('r.exige_segundo_factor', '=', true)
-    .select('r.id')
-    .executeTakeFirst();
-  if (exige) {
-    // Se decide por el ESTADO REAL de la fila, no por la bandera del llamador.
-    //
-    // Llegar acá con el factor confirmado solo puede significar que la rama 1 se salteó a
-    // propósito, o sea que acaba de probarlo: no hay nada pendiente. Sin confirmar, hay que
-    // configurarlo — y ésa es la rama que la versión anterior se perdía cuando el llamador
-    // pasaba `yaProboElFactor` sin haber configurado nada.
-    if (factorConfirmado) return 'activa';
-    return 'debe_configurar_2fo';
-  }
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // Acá había una consulta que preguntaba si algún rol del usuario tenía
+  // `exige_segundo_factor` y, si lo tenía sin configurar, devolvía `debe_configurar_2fo`
+  // — el estado que obliga a dar de alta un autenticador antes de poder trabajar.
+  //
+  // Se quitó a pedido explícito de quien decide el producto: obligar a configurar una
+  // aplicación de autenticación en el primer ingreso es demasiada fricción para el tamaño
+  // de este equipo.
+  //
+  // ── QUÉ SIGUE VALIENDO, PORQUE NO ES "SE FUE EL SEGUNDO FACTOR" ──────────────
+  //
+  // La rama 1 NO SE TOCÓ, y es la mitad que importa: quien tenga un factor confirmado y
+  // sin verificar en esta sesión sigue recibiendo `pendiente_2fo` y sigue teniendo que
+  // escribir su código. O sea que activar el segundo factor es opcional; **cumplirlo, una
+  // vez activado, no lo es.**
+  //
+  // Y las tres rutas de `app/api/auth/2fo/` siguen enteras. Un usuario `activa` puede
+  // llamarlas cuando quiera, porque `ESTADOS.activa` es `null` y habilita toda ruta. Así
+  // que quien quiera protegerse puede, sin que nadie más quede encerrado.
+  //
+  // ── LO QUE SE ACEPTA, MEDIDO ─────────────────────────────────────────────────
+  //
+  // La restricción que la migración 010 quita decía —y sigue siendo cierto— que el rol de
+  // plataforma *"ve los datos de TODAS las organizaciones, y una contraseña filtrada sin
+  // segundo factor es una brecha de todos los clientes a la vez"*.
+  //
+  // Contra adivinar la contraseña por la puerta de entrada no cambia nada: el freno por
+  // cuenta corta a los cinco intentos y bloquea quince minutos, el de origen a los veinte,
+  // y el hash es `scrypt` con N=16384. Lo que se pierde es la defensa contra una contraseña
+  // YA filtrada —correo, reuso, teclado capturado—, y ahí el segundo factor era lo único
+  // que quedaba.
+  //
+  // El camino de vuelta es corto y está escrito: reponer esta rama y la restricción
+  // `roles_plataforma_exige_2fo` de la migración 010.
+  // ═══════════════════════════════════════════════════════════════════════════════
 
   // 4 · Todo en orden.
+  //
+  // `factorConfirmado` ya se consultó arriba y la rama 1 decidió con él. Si llegamos acá
+  // con el factor confirmado es porque `yaProboElFactor` está puesto —quien llama acaba de
+  // validar un código— y entonces no queda nada pendiente.
   return 'activa';
 }

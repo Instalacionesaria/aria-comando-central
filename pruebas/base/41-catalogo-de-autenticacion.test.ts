@@ -38,31 +38,65 @@ after(async () => {
   await cerrarTodo();
 });
 
-// ─── ADR-0412 · el rol de plataforma y el segundo factor ────────────────────
+// ─── ADR-0412 · el rol de plataforma y el segundo factor · RETIRADA ─────────
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// ESTA FILA SE RETIRÓ, Y LAS PRUEBAS NO SE BORRARON: SE DIERON VUELTA
+//
+// `ADR-0412` decía que un rol de plataforma no puede existir sin exigir segundo factor, y lo
+// hacía cumplir la restricción `roles_plataforma_exige_2fo` de la migración 003. Su comentario
+// explicaba por qué era una invariante y no una convención:
+//
+//   "ese rol ve los datos de TODAS las organizaciones, y una contraseña filtrada sin segundo
+//    factor es una brecha de todos los clientes a la vez."
+//
+// La migración 010 quita esa restricción, a pedido explícito de quien decide el producto.
+//
+// Borrar estas pruebas habría sido lo cómodo y lo peor: una invariante que desaparece sin
+// dejar rastro es una invariante que nadie sabe que se fue. Invertidas, dicen dos cosas que la
+// suite tiene que seguir sabiendo:
+//
+//   1. que la restricción YA NO ESTÁ, y que eso fue una decisión — si alguien la repone, esta
+//      prueba falla y le cuenta que está volviendo atrás algo deliberado;
+//   2. que la PERILLA sigue existiendo, así que volver a exigirlo por rol es cambiar una fila
+//      más la rama 3 de `lib/autenticacion/estado.ts`, no rediseñar nada.
+//
+// Lo que se aceptó al retirarla está medido en la migración 010 y en `estado.ts`. En una línea:
+// contra adivinar la contraseña no cambia nada —los dos frenos siguen—, y contra una contraseña
+// ya filtrada el segundo factor era lo único que quedaba.
+// ═══════════════════════════════════════════════════════════════════════════════
 
-test('ADR-0412 · CERO roles con `solo_principal` y el segundo factor apagado', async () => {
+test('ADR-0412 · RETIRADA · la restricción del rol de plataforma ya no existe', async () => {
   const f = await unaFila<{ n: string }>(
     admin,
-    `select count(*)::text as n from identidad.roles
-      where solo_principal and not exige_segundo_factor`,
+    `select count(*)::text as n from pg_constraint
+      where conname = 'roles_plataforma_exige_2fo'`,
   );
-  assert.equal(f?.n, '0', 'hay un rol de plataforma que no exige segundo factor');
+  assert.equal(
+    f?.n,
+    '0',
+    'volvió `roles_plataforma_exige_2fo`: si es a propósito, esta prueba y la rama 3 de ' +
+      'lib/autenticacion/estado.ts tienen que volver con ella',
+  );
 
-  // LA GUARDA CONTRA EL FALSO VERDE: sin roles de plataforma, el conteo da 0 y la fila no
-  // verifica nada. Tiene que haber al menos uno.
-  const cuantos = await unaFila<{ n: string }>(
+  // LA GUARDA CONTRA EL FALSO VERDE, y acá no es teórica: si esta consulta buscara un nombre
+  // mal escrito devolvería 0 igual, y la prueba pasaría sin verificar nada. Se comprueba que
+  // el mecanismo funciona buscando una restricción que SÍ existe.
+  const testigo = await unaFila<{ n: string }>(
     admin,
-    `select count(*)::text as n from identidad.roles where solo_principal`,
+    `select count(*)::text as n from pg_constraint
+      where conname = 'usuarios_credenciales_completas'`,
   );
-  assert.ok(
-    Number(cuantos?.n ?? 0) > 0,
-    'no hay ningún rol de plataforma: la prueba pasaría en vacío',
+  assert.equal(
+    testigo?.n,
+    '1',
+    'la consulta de restricciones no encuentra una que sí existe: no está probando nada',
   );
 });
 
-test('ADR-0412 · crear un rol de plataforma SIN la bandera falla', async () => {
-  // La segunda mitad de la fila, y la que importa: el conteo de arriba dice cómo está la
-  // base HOY; esto dice que no puede cambiar. Todo en una transacción que se revierte.
+test('ADR-0412 · RETIRADA · un rol de plataforma ya puede NO exigir segundo factor', async () => {
+  // El complemento de la de arriba: que la restricción no esté en el catálogo es una cosa, y
+  // que la base de verdad acepte la fila es otra. Todo en una transacción que se revierte.
   await admin.query('begin');
   let error: string | null = null;
   try {
@@ -75,14 +109,13 @@ test('ADR-0412 · crear un rol de plataforma SIN la bandera falla', async () => 
   } finally {
     await admin.query('rollback');
   }
-  assert.ok(error !== null, 'se pudo crear un rol de plataforma sin segundo factor');
-  assert.match(error, /roles_plataforma_exige_2fo/, `rechazado por otro motivo: ${error}`);
+  assert.equal(error, null, `la base todavía lo rechaza: ${error}`);
 });
 
-test('ADR-0412 · APAGAR la bandera de un rol de plataforma existente también falla', async () => {
-  // El camino que la fila de `PRUEBAS.md` no nombra y que es el más probable en la vida real:
-  // el rol ya existe y alguien lo edita. Una restricción `check` cubre los dos casos —insert
-  // y update— y esto lo demuestra en vez de suponerlo.
+test('ADR-0412 · RETIRADA · y APAGARLO en un rol existente tampoco falla', async () => {
+  // El camino de la vida real: el rol ya existe y alguien lo edita. Antes lo cubría la misma
+  // restricción `check` para `insert` y para `update`; ahora ninguno de los dos falla, y esto lo
+  // demuestra en vez de suponerlo.
   await admin.query('begin');
   let error: string | null = null;
   try {
@@ -94,27 +127,26 @@ test('ADR-0412 · APAGAR la bandera de un rol de plataforma existente también f
   } finally {
     await admin.query('rollback');
   }
-  assert.ok(error !== null, 'se pudo apagar el segundo factor de un rol de plataforma');
-  assert.match(error, /roles_plataforma_exige_2fo/, `rechazado por otro motivo: ${error}`);
+  assert.equal(error, null, `la base todavía lo rechaza: ${error}`);
 });
 
-test('ADR-0412 · y al revés: un rol NORMAL sí puede no exigir segundo factor', async () => {
-  // La guarda que hace que las tres de arriba signifiquen algo. Si la restricción exigiera
-  // segundo factor a TODO rol, las tres pasarían igual y estaríamos verificando una
-  // restricción demasiado fuerte — que además rompería el rol de administrador.
-  await admin.query('begin');
-  let error: string | null = null;
-  try {
-    await admin.query(
-      `insert into identidad.roles (clave, nombre, es_sistema, solo_principal, exige_segundo_factor)
-       values ('sonda_normal', 'Sonda', false, false, false)`,
-    );
-  } catch (e) {
-    error = String((e as Error).message);
-  } finally {
-    await admin.query('rollback');
-  }
-  assert.equal(error, null, 'un rol normal sin segundo factor fue rechazado');
+test('ADR-0412 · RETIRADA · la PERILLA sigue existiendo: la columna no se borró', async () => {
+  // Es la mitad que hace reversible la decisión. Borrar la columna habría sido una puerta de
+  // una sola dirección: volver a exigir segundo factor por rol exigiría una migración que la
+  // reponga y decidir de nuevo su valor para cada fila.
+  //
+  // Se afirma el TIPO además de la existencia: una columna que existiera como `text` no serviría
+  // de perilla, y el síntoma sería un error de tipo en la consulta del login.
+  const c = await unaFila<{ tipo: string; obligatoria: boolean }>(
+    admin,
+    `select format_type(a.atttypid, a.atttypmod) as tipo, a.attnotnull as obligatoria
+       from pg_attribute a
+      where a.attrelid = 'identidad.roles'::regclass
+        and a.attname = 'exige_segundo_factor' and not a.attisdropped`,
+  );
+  assert.ok(c, 'se borró `exige_segundo_factor`: la decisión dejó de ser reversible');
+  assert.equal(c.tipo, 'boolean');
+  assert.equal(c.obligatoria, true, 'una perilla que admite nulos tiene tres estados, no dos');
 });
 
 // ─── ADR-0414 · el estado de la sesión existe como dato ─────────────────────

@@ -229,18 +229,41 @@ test('ADR-0104 · un rol privado de una organización no se asigna a usuario de 
   }
 });
 
-test('ADR-0104 · un rol de plataforma no puede nacer sin exigir segundo factor', async () => {
-  // Es una invariante, no una convención: ese rol ve los datos de TODAS las
-  // organizaciones, y una contraseña filtrada sin segundo factor es una brecha de
-  // todos los clientes a la vez. La restricción `roles_plataforma_exige_2fo` no lo
-  // deja nacer de otra forma.
-  await assert.rejects(
-    () =>
-      su.query(
-        `insert into identidad.roles (clave, nombre, solo_principal, exige_segundo_factor)
-         values ('plataforma_sin_2fo', 'Malo', true, false)`,
-      ),
-    /roles_plataforma_exige_2fo/i,
+test('ADR-0104 · RETIRADA · un rol de plataforma YA puede nacer sin exigir segundo factor', async () => {
+  // Esta invariante se retiró, y la prueba se da vuelta en vez de borrarse.
+  //
+  // Decía —y sigue siendo cierto como afirmación de riesgo— que el rol de plataforma ve los
+  // datos de TODAS las organizaciones, y que una contraseña filtrada sin segundo factor es una
+  // brecha de todos los clientes a la vez. La migración 010 quita
+  // `roles_plataforma_exige_2fo` a pedido explícito de quien decide el producto.
+  //
+  // Se prueba acá con el SUPERUSUARIO, y eso es lo que esta prueba aporta sobre las cuatro de
+  // `41-catalogo-de-autenticacion.test.ts`: el resto del archivo verifica invariantes que
+  // aguantan *"una sentencia a mano un domingo"*. Que ésta ya no aguante nada es exactamente el
+  // hecho que hay que dejar afirmado — si alguien repone la restricción, esto falla y le cuenta
+  // que está volviendo atrás una decisión deliberada.
+  //
+  // En su PROPIA transacción, que se revierte. Este archivo no envuelve las pruebas por
+  // omisión —casi todas esperan un rechazo, así que nada queda— y la primera versión de esta
+  // prueba, que ahora espera ÉXITO, dejó el rol sembrado: la corrida siguiente falló con
+  // `roles_clave_unica` y el diagnóstico dejó de hablar del segundo factor. Invertir una
+  // prueba de rechazo a una de éxito cambia quién tiene que limpiar.
+  await su.query('begin');
+  let error: string | null = null;
+  try {
+    await su.query(
+      `insert into identidad.roles (clave, nombre, solo_principal, exige_segundo_factor)
+       values ('plataforma_sin_2fo', 'Sin segundo factor', true, false)`,
+    );
+  } catch (e) {
+    error = String((e as Error).message);
+  } finally {
+    await su.query('rollback');
+  }
+  assert.equal(
+    error,
+    null,
+    `la base todavía impide un rol de plataforma sin segundo factor: ¿volvió la restricción? ${error}`,
   );
 });
 

@@ -25,6 +25,7 @@ import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
 import { conectar, cerrarTodo, unaFila } from '../apoyo/conexiones.ts';
 import { hashear, verificar as verificarHash } from '../../lib/datos/hash.ts';
 import { MINIMO_PASSWORD } from '../../lib/autenticacion/politica.ts';
+import { exigir } from '../../lib/autorizacion/portero.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { cifrar, claveMaestra, descifrar } from '../../lib/credenciales/cifrado.ts';
 import { codigoActual, DIGITOS, PERIODO_SEGUNDOS } from '../../lib/autenticacion/totp.ts';
@@ -206,12 +207,30 @@ function con(token: string, camino: string, cuerpo?: unknown): Request {
   });
 }
 
-test('ADR-0413 · el recorrido completo: configurar, confirmar, y recién ahí `activa`', async () => {
+test('ADR-0413 · el recorrido completo del alta VOLUNTARIA, y que después se exige', async () => {
+  // ═════════════════════════════════════════════════════════════════════════
+  // EL MISMO RECORRIDO, AHORA VOLUNTARIO
+  //
+  // Antes el paso 1 afirmaba `debe_configurar_2fo`: el login metía al usuario en un estado
+  // restringido y el alta era la única salida. Desde la migración 010 el segundo factor es
+  // opcional, así que el login da `activa` y el alta la empieza quien quiere.
+  //
+  // Los pasos 2 a 6 NO CAMBIARON, y eso es exactamente lo que hay que demostrar: activar es
+  // opcional, **cumplir no**. Del paso 5 en adelante, un factor confirmado se exige en cada
+  // ingreso igual que antes. Si alguien "simplificara" también la rama 1 de
+  // `estadoQueCorresponde`, esta prueba lo caza — y sería el peor de los dos mundos: las rutas
+  // del segundo factor intactas y nadie cumpliéndolas, con la pantalla diciendo que está
+  // protegido.
+  // ═════════════════════════════════════════════════════════════════════════
   await crearUsuario();
   try {
-    // 1 · El login da `debe_configurar_2fo`, no `activa`.
+    // 1 · El login da `activa`: nadie queda encerrado teniendo que configurar nada.
     const primera = await entrar();
-    assert.equal(primera.estado, 'debe_configurar_2fo');
+    assert.equal(
+      primera.estado,
+      'activa',
+      'el segundo factor volvió a ser obligatorio: ver la rama 3 de lib/autenticacion/estado.ts',
+    );
 
     // 2 · Configurar devuelve el secreto UNA vez, y lo guarda cifrado y SIN confirmar.
     const rConf = await configurar(con(primera.token, '/api/auth/2fo/configurar'));
@@ -367,82 +386,67 @@ test('ADR-0413 · tres códigos fallidos DESTRUYEN la sesión pendiente', async 
 
 // ─── ADR-0413 · la cadena de DOS estados restringidos ───────────────────────
 
-test('ADR-0413 · cambiar la contraseña temporal NO da sesión activa: manda a configurar el factor', async () => {
-  // ═════════════════════════════════════════════════════════════════════════
-  // LA CADENA QUE NINGUNA PRUEBA CUBRÍA, Y EL DEFECTO QUE TENÍA
+test('ADR-0413 · cambiar la contraseña temporal deja la sesión USABLE, no a medias', async () => {
+  // ════════════════════════════════════════════════════════════════════════
+  // ESTA PRUEBA NACIÓ CAZANDO UN DEFECTO, Y HAY QUE CONTAR EN QUÉ QUEDÓ
   //
-  // `POST /api/auth/sesion` escribía `.set({ estado: 'activa' })` con la constante. Para un
-  // usuario con contraseña temporal Y un rol que exige segundo factor —el camino NORMAL de un
-  // alta hecha por un administrador, porque `app/api/admin/usuarios/route.ts` pone
-  // `debe_cambiar_password: true` en TODA alta— eso significaba:
+  // Afirmaba que el cambio de contraseña manda a `debe_configurar_2fo` cuando el rol exige
+  // segundo factor. Encontró un defecto real —el manejador escribía `estado: 'activa'` con una
+  // constante en vez de recalcular, y el segundo factor obligatorio se salteaba entero— y ese
+  // arreglo se quedó.
   //
-  //   login → debe_cambiar_password → cambia la contraseña → `activa`
+  // Después el segundo factor pasó a ser opcional (migración 010), y con eso el recálculo
+  // **siempre** devuelve `activa` en este camino: la rama 1 se saltea por `yaProboElFactor`, la
+  // rama 2 ya no aplica porque `debe_cambiar_password` acaba de quedar en falso, y la rama 3 no
+  // existe. O sea que la constante y el recálculo se volvieron indistinguibles POR
+  // COMPORTAMIENTO.
   //
-  // Y `ESTADOS.activa` es `null`, o sea que el paso 2 del portero habilita TODA ruta. El
-  // usuario entraba al sistema y trabajaba siete días **sin haber configurado nunca el segundo
-  // factor que su rol exige**. Recién el login siguiente lo mandaba a `debe_configurar_2fo`.
+  // Se conserva el recálculo igual, porque es correcto por construcción y sigue estando bien el
+  // día que alguien vuelva a exigir el factor por rol. Que se siga llamando lo afirma una prueba
+  // de CÓDIGO —`pruebas/codigo/41-autenticacion.test.ts`— y no ésta, porque desde acá ya no se
+  // puede ver la diferencia. Decirlo es mejor que dejar una prueba que parece medir algo y no.
   //
-  // Nada fallaba. Es exactamente lo que el encabezado de `lib/autenticacion/estado.ts` venía
-  // advirtiendo —*"cada transición recalcula el estado con las mismas cuatro ramas del login,
-  // EN VEZ DE ASUMIR QUE YA NO QUEDA NADA PENDIENTE"*— y ese archivo se declara usado por *"el
-  // login, el cambio de contraseña y la verificación del segundo factor"*, mientras el cambio
-  // de contraseña no lo llamaba.
-  //
-  // El `02` § 5 escribe el caso con nombre: *"quien entra con contraseña temporal Y un rol que
-  // exige segundo factor pasa por DOS estados, no por uno."*
-  // ═════════════════════════════════════════════════════════════════════════
-  // El cuerpo va en `try/finally`, y no es ceremonia. El encabezado de `usuarioDePrueba` en
-  // `42-login.test.ts` ya cuenta esta lección: *"una corrida que falla a mitad de camino deja
-  // usuarios sembrados, y la siguiente moría… o sea que el diagnóstico dejaba de ser el defecto
-  // original y pasaba a ser el residuo."*
-  //
-  // Pasó exactamente eso: la primera versión de esta prueba falló en su aserción, el
-  // `borrarUsuario()` del final nunca corrió, y en la corrida siguiente `11-sembrado` falló dos
-  // aserciones — "hay un usuario en cada organización" y "el hash guardado VERIFICA"— por un
-  // usuario que no era suyo. Las dos tenían razón y ninguna hablaba del defecto real.
+  // Lo que SÍ sigue midiendo esta prueba, y vale: que el camino completo deja una sesión
+  // **usable de verdad**, no una que el portero corta con un código que la pantalla no espera.
+  // ════════════════════════════════════════════════════════════════════════
   await crearUsuario({ debeCambiarPassword: true });
   try {
-  const { token, estado } = await entrar();
-  // La rama 2 gana sobre la 3, y eso es a propósito: el administrador que dio el alta conoce
-  // la contraseña temporal, y dejar configurar el factor primero le permitiría inscribir SU
-  // dispositivo en la cuenta de otro.
-  assert.equal(estado, 'debe_cambiar_password', 'el login no dio el primer estado restringido');
+    const { token, estado } = await entrar();
+    assert.equal(estado, 'debe_cambiar_password', 'el login no dio el estado restringido');
 
-  const NUEVA = 'otra-contrasena-bien-larga';
-  const r = await cambiarPassword(
-    con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: NUEVA }),
-  );
-  assert.equal(r.status, 200, await r.clone().text());
-  assert.equal(((await r.json()) as { cambiada: boolean }).cambiada, true);
+    const NUEVA = 'otra-contrasena-bien-larga';
+    const r = await cambiarPassword(
+      con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: NUEVA }),
+    );
+    assert.equal(r.status, 200, await r.clone().text());
+    assert.equal(((await r.json()) as { cambiada: boolean }).cambiada, true);
 
-  // LA AFIRMACIÓN. El estado en la BASE, no lo que la respuesta diga: el manejador no devuelve
-  // el estado nuevo, y lo que decide qué puede hacer esta sesión es la columna.
-  const fila = await unaFila<{ estado: string }>(
-    admin,
-    `select s.estado from identidad.sesiones s
-       join identidad.usuarios u on u.id = s.usuario_id
-      where lower(u.email) = lower($1)`,
-    [EMAIL],
-  );
-  assert.equal(
-    fila?.estado,
-    'debe_configurar_2fo',
-    'la sesión quedó habilitada sin haber configurado el segundo factor que el rol exige',
-  );
+    // El estado en la BASE, no lo que diga la respuesta: el manejador no devuelve el estado
+    // nuevo, y lo que decide qué puede hacer esta sesión es la columna.
+    const fila = await unaFila<{ estado: string }>(
+      admin,
+      `select s.estado from identidad.sesiones s
+         join identidad.usuarios u on u.id = s.usuario_id
+        where lower(u.email) = lower($1)`,
+      [EMAIL],
+    );
+    assert.equal(fila?.estado, 'activa', 'la sesión quedó en un estado restringido');
 
-  // Y la mitad que lo hace verificable de verdad: con ese estado, el portero RECHAZA la ruta
-  // de verificación. Sin esto, la afirmación de arriba solo compara una cadena de texto.
-  const cualquiera = await verificar(con(token, '/api/auth/2fo/verificar', { codigo: '000000' }));
-  assert.equal(
-    cualquiera.status,
-    403,
-    'el estado dice debe_configurar_2fo pero el portero no lo está aplicando',
-  );
-  assert.equal(
-    ((await cualquiera.json()) as { codigo: string }).codigo,
-    'debe_configurar_2fo',
-    'el rechazo tiene que decir CUÁL estado falta, o el frontend no sabe a dónde mandarlo',
-  );
+    // Y LA MITAD QUE LO HACE VALER: el portero DEJA PASAR. Sin esto, la afirmación de arriba
+    // solo compara una cadena de texto — y el defecto que esta prueba nació cazando era
+    // exactamente una sesión cuyo estado decía una cosa y el portero hacía otra.
+    const contexto = await exigir(
+      new Request(`https://${DOMINIO}/api/usuarios`, {
+        headers: { cookie: `${COOKIE_SESION}=${token}` },
+      }),
+      ['usuarios.ver'],
+    );
+    assert.ok(
+      !(contexto instanceof Response),
+      `el portero cortó una sesión que tiene que estar habilitada: ${
+        contexto instanceof Response ? JSON.stringify(await contexto.json()) : ''
+      }`,
+    );
   } finally {
     await borrarUsuario();
   }
