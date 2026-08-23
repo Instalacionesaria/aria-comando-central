@@ -136,3 +136,79 @@ export async function pedir<T>(
 export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
   return r.tipo === 'rechazado' && r.codigo === 'sin_sesion';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LAS PETICIONES SALIENTES, Y POR QUÉ VIVEN EN ESTE MISMO ARCHIVO
+//
+// `pedir(` habla con NUESTRO API desde el navegador. `pedirExterno(` habla desde el SERVIDOR con un
+// servicio de terceros: la API de Anthropic y el almacén del hub (ver `lib/fundaciones/`).
+//
+// Son dos cosas distintas y comparten archivo por una razón concreta: `ADR-0305` afirma que
+// `fetch(` aparece en **exactamente dos** archivos del proyecto, y esa afirmación es lo que impide
+// que aparezca un segundo cliente HTTP con el manejo de errores opuesto. Un tercer archivo
+// —`lib/fundaciones/anthropic.ts`, digamos— rompería la prueba, y la salida fácil sería agregarlo a
+// la lista de exceptuados. Ahí se pierde la propiedad: la lista de excepciones crece y nadie vuelve
+// a saber cuántos clientes HTTP hay.
+//
+// Lo que NO se comparte es el contrato. `pedirExterno` devuelve las MISMAS tres ramas, porque el
+// motivo de las tres ramas no era el navegador: era que *"un valor significa una sola cosa"*. Un
+// 402 de Anthropic ("esta organización no tiene saldo") y un tiempo de espera agotado no pueden
+// llegar como el mismo `null`.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Cuánto se espera a un servicio externo. Una generación larga tarda minutos, no segundos. */
+const ESPERA_EXTERNA_MS = 240_000;
+
+/**
+ * Pide algo a un servicio de terceros, desde el servidor.
+ *
+ * Diferencias con `pedir(`, todas obligadas por el destino:
+ *   · el camino es una URL absoluta —el servicio está en otro dominio—;
+ *   · las cabeceras las pone quien llama, porque cada servicio autentica distinto;
+ *   · no manda credenciales del navegador (`credentials`): no hay navegador;
+ *   · la espera es de minutos.
+ *
+ * `estado` viaja en la rama `rechazado` **además** del código, porque un servicio externo no
+ * conoce nuestros seis códigos de rechazo: el número de situación es lo único que se puede
+ * interpretar sin adivinar. `codigo` queda como `'sin_codigo'` salvo que el servicio traiga uno.
+ */
+export async function pedirExterno<T>(
+  url: string,
+  opciones: { metodo?: string; cabeceras?: Record<string, string>; cuerpo?: unknown } = {},
+): Promise<Respuesta<T>> {
+  const { metodo = 'GET', cabeceras = {}, cuerpo } = opciones;
+
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(url, {
+      method: metodo,
+      headers: cuerpo === undefined ? cabeceras : { 'content-type': 'application/json', ...cabeceras },
+      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(ESPERA_EXTERNA_MS),
+    });
+  } catch (e) {
+    return { tipo: 'sin_respuesta', causa: e instanceof Error ? e.message : 'desconocida' };
+  }
+
+  let cuerpoLeido: unknown;
+  try {
+    cuerpoLeido = await respuesta.json();
+  } catch {
+    if (!respuesta.ok) {
+      return { tipo: 'rechazado', estado: respuesta.status, codigo: 'sin_codigo' };
+    }
+    // Un 200 sin JSON es una respuesta que no se entendió, no un vacío legítimo.
+    return { tipo: 'sin_respuesta', causa: 'el cuerpo no es JSON' };
+  }
+
+  if (!respuesta.ok) {
+    const codigo = (cuerpoLeido as { error?: { type?: unknown } } | null)?.error?.type;
+    return {
+      tipo: 'rechazado',
+      estado: respuesta.status,
+      codigo: typeof codigo === 'string' ? codigo : 'sin_codigo',
+    };
+  }
+
+  return { tipo: 'datos', datos: cuerpoLeido as T };
+}

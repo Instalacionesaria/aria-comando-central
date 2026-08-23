@@ -148,3 +148,18 @@ Total: **75 reglas**, de las cuales **26 son ⛔**.
 | `ADR-0808` |  | El aviso funciona | El resumen se manda siempre, también cuando todo está en cero | Producción |
 | `ADR-0809` | ⛔ | Las tres acciones de auditoría se emiten | Provocar cada una y verificar que aparece la fila. Sin esto, un cero en la vigilancia es indistinguible de "nadie cableó el punto de emisión", y tres de las seis señales quedan apagadas sin que nada falle | Código |
 | `ADR-0810` |  | El aviso de aislamiento llega de verdad | Provocar la excepción en un entorno de ensayo y confirmar que el mensaje llega al medio elegido. Escribir en el registro del servidor no cuenta | Producción |
+
+## Etapa 9
+
+| ID | ⛔ | Regla | La prueba | Tipo |
+| --- | --- | --- | --- | --- |
+| `ADR-0901` | ⛔ | Los identificadores de herramienta son los del hub, y el orden es el del método | La lista literal `[0, 1, 3, 2, 4, 10, 26]`. Renumerarlos no falla: rompe la herencia y la Oferta genera con el contexto de otra herramienta | Código |
+| `ADR-0902` | ⛔ | Las claves de persistencia son las que ya escribió ARIA-brain | Las claves cortas derivadas se cruzan contra la lista del hub. Una diferencia no falla: cada sistema lee la suya y ve la del otro vacía | Código |
+| `ADR-0903` | ⛔ | Ningún prompt sale con una variable de plantilla sin resolver | Se arma el prompt de las siete con estado completo y vacío, y no queda ni una `{{clave}}` ni un `undefined`. Un hueco no falla: el modelo lo rellena inventando | Código |
+| `ADR-0904` | ⛔ | No hay prompt suplente: una metodología ilegible LANZA | Dos copias del mismo prompt divergen en la primera corrección, y el documento sale generado con la metodología vieja sin ningún error | Código |
+| `ADR-0905` |  | El contexto heredado llega al prompt | Los documentos del estado aparecen dentro del prompt de quien los hereda; el Mapa hornea desde las cuatro fuentes | Código |
+| `ADR-0906` |  | Un research a medias no se hereda | Con cuatro de cinco pasos, el ICP no recibe nada: el segmento ganador es el paso 5 | Código |
+| `ADR-0907` |  | El bloque `<veredicto>` nunca sale crudo | Ni a la pantalla ni al portapapeles. El escape del renderizador corre ANTES de agregar etiquetas propias | Código |
+| `ADR-0908` | ⛔ | La llave de IA es por organización, sin respaldo al entorno | No hay `ANTHROPIC_API_KEY`. Una llave general factura el consumo de todas a una, con la API respondiendo 200 | Código |
+| `ADR-0909` |  | El `cliente_id` del almacén sale de la sesión, nunca del navegador | Las dos rutas están en `ARCHIVOS_AUTORIZADOS` con su justificación: el filtro lo ponen a mano con `contexto.orgEfectiva` | Código |
+| `ADR-0910` |  | Una vista reactificada sale de la comparación con el prototipo, y se dice | `icp` fuera de `VISTAS` en `paridad.mjs`; las otras nueve siguen. Un rojo permanente no se arregla: se ignora, y con él se ignoran los demás | Código |

@@ -4,19 +4,20 @@
 // El mapa pantalla → capacidad. UNA sola fuente de verdad.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// EL ESTADO HONESTO DE ESTE ARCHIVO
+// EL ESTADO HONESTO DE ESTE ARCHIVO — ACTUALIZADO EN LA ETAPA 9
 //
-// Las dos filas de `PRUEBAS.md` que dependen de acá son las únicas de la Etapa 3 que **no
-// pueden verificar algo real todavía**, y el motivo es concreto: ninguna de las diez
-// pantallas del prototipo corresponde a ninguna de las trece capacidades del catálogo. Las
-// trece son de identidad y administración (`usuarios.*`, `roles.*`, `credenciales.*`,
-// `configuracion.editar`, `auditoria.ver`, `organizaciones.*`); las diez pantallas son de
-// producto —Executive, Leads Portal, ICP, Acquisition, Creative, Conversion, Conversation,
-// Sales, Setter, Closer— y **no tienen ni una operación de servidor**: hay cero `fetch(` en
-// todo el repositorio.
+// Hasta la Etapa 8 este archivo decía que sus dos filas de `PRUEBAS.md` no podían verificar nada
+// real, porque ninguna de las diez pantallas del prototipo tenía una sola operación de servidor:
+// las trece capacidades del catálogo eran de identidad y administración, y las diez pantallas eran
+// de producto. Una pantalla sin operaciones no puede filtrar nada.
 //
-// Una pantalla sin operaciones no puede filtrar nada. Entra al modelo de permisos el día
-// que tenga la primera, y el cable trampa de abajo obliga a que ese día alguien lo decida.
+// **Eso dejó de ser cierto.** La Etapa 9 le dio a `icp` (ICP & Oferta) sus tres primeras
+// operaciones y sus dos capacidades propias (`fundaciones.ver`, `fundaciones.editar`), así que hoy
+// hay una pantalla de producto que se decide por capacidad y `ADR-0303` verifica algo real. Las
+// otras nueve siguen en `SIN_OPERACIONES_TODAVIA`, con el mismo cable trampa esperándolas.
+//
+// Se conserva el párrafo de arriba en vez de borrarlo porque explica QUÉ estaba esperando la lista,
+// y la próxima pantalla que reciba una operación va a necesitar leerlo.
 //
 // ── LA TRAMPA QUE ESTE ARCHIVO PODRÍA SER ────────────────────────────────────
 //
@@ -34,6 +35,12 @@
 // compara el port con el original— empieza a fallar y se termina desactivando. Eso es
 // trabajo de la etapa que le dé interfaz a la primera pantalla administrada, no de ésta.
 // Queda escrito en `docs/ETAPA-3.md` como deuda, con su riesgo nombrado.
+//
+// La Etapa 9 NO pagó esa deuda, y conviene decirlo con precisión: `icp` sigue apareciendo en los
+// cuatro lugares, y el menú sigue mostrando las diez entradas a cualquiera con sesión. Lo que sí
+// cambió es que ahora hay UNA pantalla donde la lista paralela tiene consecuencia visible —quien no
+// tenga `fundaciones.ver` entra a la pestaña y sus operaciones responden `sin_permiso`, en vez de
+// ver la pantalla vacía—, porque el componente distingue el rechazo del vacío (`ADR-0305`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { Capacidad } from './capacidades.ts';
@@ -63,6 +70,16 @@ export interface Seccion {
 export const SECCIONES: readonly Seccion[] = [
   { clave: 'usuarios', nombre: 'Usuarios', capacidadRequerida: 'usuarios.ver' },
   { clave: 'credenciales', nombre: 'Integraciones', capacidadRequerida: 'credenciales.ver' },
+  // ── Etapa 9 · el cable trampa DISPARÓ, y esta línea es la decisión que pedía ──
+  //
+  // `icp` es la PRIMERA pantalla del prototipo que recibe operaciones de servidor
+  // (`GET/POST /api/fundaciones/estado`, `POST /api/fundaciones/generar`). El comentario de arriba
+  // decía que el día que pasara, alguien tenía que decidir *"catalogar su capacidad y ponerla en
+  // `SECCIONES`, o justificar por qué no"*. Se catalogó.
+  //
+  // Con esto `ADR-0303` deja de estar inerte: hay una pantalla real cuya visibilidad se decide por
+  // una capacidad del catálogo, y `ADR-0304` compara de verdad los conjuntos de sus operaciones.
+  { clave: 'icp', nombre: 'ICP & Oferta', capacidadRequerida: 'fundaciones.ver' },
 ];
 
 /**
@@ -75,7 +92,7 @@ export const SECCIONES: readonly Seccion[] = [
 export const SIN_OPERACIONES_TODAVIA: readonly string[] = [
   'executive',
   'leads',
-  'icp',
+  // `icp` SALIÓ de esta lista en la Etapa 9: ya tiene operaciones y vive en `SECCIONES`.
   'acquisition',
   'creative',
   'conversion',

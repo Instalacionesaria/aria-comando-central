@@ -98,6 +98,27 @@ export const RECHAZOS = {
   // registros parecería que a nadie le andaba la sesión (07 § 4)—. Es la regla 2 del
   // 07 § 0: un valor significa una sola cosa.
   base_no_disponible: 503,
+  // ── Etapa 9 · Fundaciones (la pantalla `icp`) ───────────────────────────────
+  //
+  // Siete códigos nuevos, y la tentación era uno: `no_se_pudo_generar`. Cada uno de estos lleva a
+  // una acción DISTINTA de una persona distinta, y colapsarlos manda a todos a buscar al lugar
+  // equivocado — que es literalmente el defecto del `07` § 2 aplicado a una pantalla nueva.
+  //
+  // Los tres primeros son 409 y no 403: quien los recibe TIENE el permiso. Lo que falta es una
+  // configuración de la organización, y un 403 lo mandaría a pedirle un permiso a alguien que no
+  // se lo puede dar.
+  peticion_invalida: 400,
+  sin_llave_de_ia: 409,
+  llave_de_ia_ilegible: 409,
+  sin_alumno_vinculado: 409,
+  // El modelo respondió mal o no respondió. NO es 500: nuestro servidor está bien, y un 500 haría
+  // que alguien revisara este código en vez del estado del servicio.
+  modelo_no_disponible: 502,
+  // El almacén del hub no contestó. Distinto de `base_no_disponible`, que es NUESTRA base: son dos
+  // sistemas y dos guardias, y confundirlos hace que se revise el que anda.
+  almacen_no_disponible: 503,
+  // El archivo de metodología no se pudo leer. Sí es nuestro: falta en el paquete construido.
+  metodologia_ilegible: 500,
 } as const;
 
 /**

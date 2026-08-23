@@ -125,6 +125,19 @@ export interface TablaOrganizacionesCredenciales {
   crm_refresh_cifrado: string | null;
   crm_expira_el: Date | null;
   crm_estado: Generated<EstadoCredencial>;
+  /**
+   * A qué alumno del hub (ARIA-brain) corresponde esta organización. Migración 009.
+   *
+   * **No es un secreto**, y por eso no está cifrada: es un identificador de cuenta ajena, de la
+   * misma clase que `crm_cuenta_id` y `pagos_comercio_id`, que tampoco lo están. Lo que protege el
+   * trabajo del alumno no es que este número sea difícil de adivinar —es un UUID en la base de otro
+   * sistema— sino que la llave de servicio del almacén nunca sale del servidor.
+   *
+   * Nulo significa *"esta organización no tiene Fundaciones"*, y Fundaciones responde
+   * `sin_alumno_vinculado`. No hay valor por omisión: uno cualquiera dejaría a una organización
+   * leyendo y ESCRIBIENDO el trabajo de otro alumno.
+   */
+  fundaciones_cliente_id: string | null;
   actualizado_el: Generated<Date>;
   actualizado_por: string | null;
 }

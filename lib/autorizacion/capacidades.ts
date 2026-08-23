@@ -22,8 +22,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Las trece capacidades del catálogo, tal como las carga
- * `db/migraciones/003_roles_y_permisos.sql`.
+ * Las capacidades del catálogo, tal como las cargan
+ * `db/migraciones/003_roles_y_permisos.sql` (las trece primeras) y
+ * `db/migraciones/009_fundaciones.sql` (las dos de Fundaciones).
  *
  * El nombre es `recurso.accion` y es **estable para siempre** (03 § 2): es una clave que
  * está en filas de la base y en condicionales del código, así que renombrarla es una
@@ -43,6 +44,14 @@ export const CAPACIDADES = [
   'credenciales.editar',
   'configuracion.editar',
   'auditoria.ver',
+  // ── Etapa 9 · Fundaciones (la pantalla `icp`) ────────────────────────────────
+  //
+  // Dos y no una, con el criterio del `03` § 2: *"¿existe un rol plausible que necesite A y no
+  // B?"*. Sí, y es el caso normal — un coach mira el avatar y la oferta de un alumno para preparar
+  // el kickoff, y no tiene por qué poder gastarle tokens generando de nuevo. Ver es leer siete
+  // documentos; editar es gastar dinero de la organización.
+  'fundaciones.ver',
+  'fundaciones.editar',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

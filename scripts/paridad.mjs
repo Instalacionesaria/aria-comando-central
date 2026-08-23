@@ -18,8 +18,24 @@ import { existsSync } from 'node:fs';
 const ORIGINAL = 'aios-command-center_1.html';
 const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3000/';
 
+// NUEVE, no diez. `icp` salió en la Etapa 9 y hay que leer por qué antes de volver a ponerla.
+//
+// Esta compuerta compara el port contra `aios-command-center_1.html` vista por vista: forma del
+// DOM, texto y geometría. Su valor entero depende de que un rojo signifique "se rompió algo", y
+// para eso lo que compara tiene que ser lo que se portó SIN cambios.
+//
+// `icp` dejó de serlo a propósito: era el placeholder "Pendiente de construir" y ahora tiene las
+// siete herramientas de Fundaciones, con estado en React. Compararla contra el prototipo daría un
+// rojo permanente — y un rojo permanente no se arregla, se ignora, y con él se ignoran los otros
+// nueve. Esa es la forma en la que una compuerta muere.
+//
+// Lo que se pierde, dicho con precisión: esta vista ya no tiene red de seguridad automática. Lo que
+// se conserva: las otras nueve siguen comparándose, así que el día que se reactifique una segunda,
+// la comparación sigue siendo confiable para las que no cambiaron.
+//
+// La regla al agregar una vista reactificada: sale de acá, y su motivo se escribe en `docs/ETAPA-N`.
 const VISTAS = ['executive', 'acquisition', 'creative', 'conversion', 'conversation',
-                'sales', 'icp', 'contacts', 'setter', 'closer'];
+                'sales', 'contacts', 'setter', 'closer'];
 
 /* Cada paso deja la página lista para el siguiente, así que el orden importa. */
 const PASOS = [

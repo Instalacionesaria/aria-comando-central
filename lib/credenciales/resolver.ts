@@ -189,3 +189,109 @@ function verCredencial(
     origen: 'organizacion',
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ETAPA 9 · LAS DOS COSAS QUE FUNDACIONES NECESITA DE ESTA TABLA
+//
+// La pantalla `icp` (ICP & Oferta) genera documentos con un modelo de lenguaje y guarda el estado
+// del alumno en el almacén del hub. Para eso necesita dos valores POR ORGANIZACIÓN, y los dos ya
+// tenían columna en `organizaciones_credenciales`:
+//
+//   · `ia_clave_cifrada` — la llave de la API de Anthropic **de esta organización**. La columna
+//     existía desde la migración 006 y hasta ahora nadie la leía.
+//   · `fundaciones_cliente_id` — a qué alumno del hub corresponde esta organización. La agrega la
+//     migración 009, junto a `crm_cuenta_id` y `pagos_comercio_id`, que son de la misma clase:
+//     identificadores de cuenta ajena, NO secretos.
+//
+// ── POR QUÉ NO HAY RESPALDO AL ENTORNO, OTRA VEZ ─────────────────────────────
+//
+// La tentación acá es enorme y concreta: una sola `ANTHROPIC_API_KEY` en Vercel y listo. Sería
+// exactamente el `??` del `07` § 1 con la peor consecuencia de esta etapa: **el consumo de tokens
+// de todas las organizaciones facturado a una**, y sin que nada falle — la API responde 200 y el
+// documento sale bien. Es el mismo defecto que ARIA-brain ya pagó y quitó en agosto de 2026 (ver
+// `lib/accountKeys.ts` en ese repositorio: *"el fallback hacía que el consumo de cualquier cuenta
+// lo pagara ARIA"*).
+//
+// Sin llave propia, la organización no genera y lo dice. `ADR-0604`, sin excepción.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Por qué una organización no puede generar. Cada valor significa una sola cosa. */
+export type FaltaParaGenerar = 'sin_llave_de_ia' | 'llave_de_ia_ilegible' | 'sin_alumno_vinculado';
+
+/**
+ * Quién es el alumno del hub de esta organización.
+ *
+ * Está separado de la llave de IA a propósito, y no es una duplicación: **leer no necesita la
+ * llave**. Una organización a la que todavía no le cargaron la llave de IA tiene que poder ABRIR la
+ * pantalla y ver los siete documentos que ya generó en el hub. Si las dos cosas se resolvieran
+ * juntas, esa organización recibiría "falta la llave de IA" al intentar leer, y la respuesta
+ * honesta —"acá está tu trabajo, y para generar de nuevo falta la llave"— sería imposible de dar.
+ */
+export type AlumnoDeFundaciones =
+  | { tipo: 'listo'; clienteId: string }
+  | { tipo: 'falta'; que: 'sin_alumno_vinculado' };
+
+export async function resolverAlumnoDeFundaciones(
+  db: Trx,
+  orgId: string,
+): Promise<AlumnoDeFundaciones> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['fundaciones_cliente_id'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.fundaciones_cliente_id) return { tipo: 'falta', que: 'sin_alumno_vinculado' };
+  return { tipo: 'listo', clienteId: fila.fundaciones_cliente_id };
+}
+
+/** Lo que hace falta para GENERAR: el alumno y la llave. */
+export type AccesoAFundaciones =
+  | { tipo: 'listo'; claveIa: string; clienteId: string }
+  | { tipo: 'falta'; que: FaltaParaGenerar };
+
+/**
+ * La llave de IA y el alumno del hub de esta organización, o **qué falta**.
+ *
+ * Los tres faltantes son tres y no uno. "No cargaron la llave", "la llave está cargada y no la
+ * puedo descifrar" (pasa al restaurar una copia de la base con otra clave maestra — ver `ILEGIBLE`
+ * arriba) y "esta organización no está vinculada a ningún alumno del hub" llevan a tres acciones
+ * distintas —cargar la llave, revisar la clave maestra del servidor, vincular la cuenta— y
+ * colapsarlas en *"no se pudo generar"* manda a las tres personas al lugar equivocado.
+ */
+export async function resolverAccesoAFundaciones(
+  db: Trx,
+  orgId: string,
+): Promise<AccesoAFundaciones> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['ia_clave_cifrada', 'fundaciones_cliente_id'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.fundaciones_cliente_id) return { tipo: 'falta', que: 'sin_alumno_vinculado' };
+  if (!fila.ia_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_ia' };
+
+  let claveIa: string;
+  try {
+    claveIa = descifrar(fila.ia_clave_cifrada);
+  } catch {
+    // ADR-0809 · el mismo punto de emisión que `resolverCredenciales`, y en la misma transacción:
+    // un descifrado que falla y no queda registrado es el cero indistinguible de "nadie cableó la
+    // señal".
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
+  }
+
+  return { tipo: 'listo', claveIa, clienteId: fila.fundaciones_cliente_id };
+}
+
+/** El texto que se le muestra a quien no puede generar. Uno por faltante. */
+export const TEXTO_DE_FALTA: Readonly<Record<FaltaParaGenerar, string>> = {
+  sin_llave_de_ia:
+    'Esta organización todavía no tiene su llave de IA. Se carga en Integraciones, y sin ella no se puede generar.',
+  llave_de_ia_ilegible:
+    'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
+  sin_alumno_vinculado:
+    'Esta organización no está vinculada a una cuenta del hub, así que no hay dónde leer ni guardar el trabajo de Fundaciones.',
+};

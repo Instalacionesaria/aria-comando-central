@@ -13,6 +13,12 @@
 /* Hoja original íntegra — única fuente de verdad de los tokens. */
 @import "./aios.css" layer(aios);
 
+/* Etapa 9 · lo que el prototipo nunca tuvo: formularios y documentos largos.
+   Va en `components`, que gana a `aios`: sin eso, el reset `* { margin:0 }`
+   de la hoja original se comería todos los márgenes de acá. Y no toca
+   `aios.css`, que tiene que seguir siendo diffeable contra el HTML original. */
+@import "./fundaciones.css" layer(components);
+
 /* Los tokens del diseño expuestos como utilidades de Tailwind.
    `inline` hace que las clases apunten a la var, no a una copia. */
 @theme inline {

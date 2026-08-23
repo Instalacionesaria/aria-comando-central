@@ -57,6 +57,37 @@ lib/aios/
   conversation.js  closer.js  closer-contact.js  leads-group.js
 ```
 
+### ICP & Oferta es la excepción: tiene estado en React
+
+`components/views/IcpView.jsx` ya no es el placeholder del prototipo. La
+Etapa 9 le puso las siete primeras herramientas de Fundaciones traídas de
+ARIA-brain (ficha de negocio, market research, ICP, categoría, oferta,
+precio y mapa de proceso), con subpestañas y estado en React:
+
+```
+components/fundaciones/   Fundaciones.jsx (las 7 subpestañas)
+                          PanelHerramienta.jsx  PanelResearch.jsx
+                          Documento.jsx
+lib/fundaciones/          herramientas.ts  campos.ts  estado.ts
+                          herencia.ts  prompts.ts  plantillas.ts
+                          almacen.ts  generacion.ts  documento.ts
+                          mensajes.ts  skills/**/SKILL.md
+app/api/fundaciones/      estado/route.ts  generar/route.ts
+app/fundaciones.css       lo que el prototipo nunca tuvo: formularios
+```
+
+Tres cosas que hay que saber antes de tocarla, cada una con su motivo
+completo en `docs/ETAPA-9.md`:
+
+1. **Su estado vive en el almacén de ARIA-brain**, compartido con el hub
+   mientras el hub siga en pie. No está en esta base y el aislamiento de
+   este proyecto no lo cubre: el filtro lo pone `lib/fundaciones/almacen.ts`.
+2. **La llave de IA es por organización**, sin respaldo al entorno. No hay
+   `ANTHROPIC_API_KEY`. Sin llave propia se puede ver todo y no se puede
+   generar nada.
+3. **`icp` salió de `npm run paridad`.** Ya no coincide con el prototipo a
+   propósito; las otras nueve vistas se siguen comparando.
+
 ### Cómo encaja React con la capa imperativa
 
 `CommandCenter` sólo renderiza el esqueleto: los contenedores vacíos
@@ -113,6 +144,12 @@ compara, vista por vista, la forma del DOM, el texto y la geometría de
 cada elemento; después recorre catorce interacciones (calendario, drawers,
 modales, ficha de lead, pestañas del closer, Ask Executive, organigrama).
 Sale con código 1 si algo difiere.
+
+Compara **nueve** vistas, no diez: `icp` salió en la Etapa 9. Una vista
+reactificada deja de coincidir con el prototipo a propósito, y dejarla en
+la lista daría un rojo permanente — que no se arregla, se ignora, y con él
+se ignoran las demás. La regla al reactificar una vista: sale de `VISTAS`,
+y el motivo se escribe en el `docs/ETAPA-N` de su etapa.
 
 Es la red de seguridad para reactificar: reescribes un módulo de
 `lib/aios/` como componente React y vuelves a pasarlo.

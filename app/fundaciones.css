@@ -1,0 +1,686 @@
+/* Etapa 9 · Fundaciones — los estilos de la pantalla ICP & Oferta.
+   ============================================================================
+   POR QUÉ ESTO NO ESTÁ EN `aios.css`
+
+   `aios.css` es la hoja del prototipo, íntegra y sin tocar, y es la única fuente de verdad
+   de los tokens. La regla del proyecto es no editarla: cualquier línea agregada ahí deja de
+   ser diffeable contra `aios-command-center_1.html`, que es la referencia con la que se
+   compara el port.
+
+   Así que acá no hay ni un color literal. Todo sale de los tokens de `aios.css`, y lo que se
+   agrega son las piezas que el prototipo nunca tuvo, porque era un tablero de lectura y no
+   tenía un solo formulario: campos, botón de generar, y el documento largo.
+
+   Se importa en la capa `components`, que va DESPUÉS de `aios` en el orden de capas de
+   `globals.css`. Sin eso, el reset `* { margin:0; padding:0 }` de la hoja original ganaría
+   sobre estos márgenes.
+   ========================================================================= */
+
+/* ── El envoltorio y las subpestañas ─────────────────────────────────────── */
+
+/* Las subpestañas reutilizan `.cl-sub` del cockpit del Closer: es el patrón de pestañas
+   que el diseño ya tiene, y hacer otro daría dos gramáticas para la misma cosa. Lo único
+   que cambia es que son siete y tienen que poder envolverse en pantallas angostas. */
+.fd-sub {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.fd-sub button {
+  gap: 7px;
+}
+/* El número del paso. Es el orden del MÉTODO, no el orden de los identificadores. */
+.fd-sub .fd-n {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt-faint);
+  min-width: 11px;
+  text-align: right;
+}
+.fd-sub button.on .fd-n {
+  color: var(--accent);
+}
+/* Hecho: un punto, no un ✓ grande. La pestaña sigue siendo la pestaña. */
+.fd-sub .fd-hecho {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+}
+
+.fd-avance {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+.fd-avance .fd-barra {
+  width: 96px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+.fd-avance .fd-barra i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), rgba(53, 224, 210, 0.4));
+}
+.fd-avance b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── La cabecera de la herramienta ───────────────────────────────────────── */
+
+.fd-cab {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 0 2px;
+}
+.fd-cab h3 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--txt);
+}
+.fd-cab .fd-bajada {
+  font-size: 12.5px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+  max-width: 720px;
+}
+.fd-cab .fd-mas {
+  align-self: flex-start;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.fd-cab .fd-detalle {
+  font-size: 12px;
+  color: var(--txt-dim);
+  line-height: 1.6;
+  max-width: 720px;
+  padding: 9px 11px;
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-sunk);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ── Lo que hereda la herramienta ────────────────────────────────────────── */
+
+.fd-herencia {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.fd-herencia .fd-etq {
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.fd-fuente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+.fd-fuente:hover {
+  border-color: var(--line-strong);
+  color: var(--txt);
+}
+.fd-fuente b {
+  font-weight: 600;
+  color: var(--txt);
+}
+.fd-fuente.ok {
+  border-color: rgba(53, 224, 210, 0.3);
+  background: var(--accent-dim);
+}
+.fd-fuente.ok b {
+  color: var(--accent);
+}
+/* Falta y hace falta: coral. No bloquea — genera igual, con marcadores [COMPLETAR]. */
+.fd-fuente.falta {
+  border-style: dashed;
+  border-color: rgba(240, 92, 92, 0.32);
+  color: var(--crit);
+}
+.fd-fuente.falta b {
+  color: var(--crit);
+}
+
+.fd-aviso {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+}
+.fd-aviso i {
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.fd-aviso.falta {
+  border-color: rgba(240, 136, 76, 0.28);
+  color: var(--warn);
+}
+.fd-aviso.mal {
+  border-color: rgba(240, 92, 92, 0.3);
+  color: var(--crit);
+}
+.fd-aviso b {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* ── El formulario ───────────────────────────────────────────────────────── */
+
+.fd-rejilla {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 11px;
+}
+.fd-rejilla.dos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1180px) {
+  .fd-rejilla.dos {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fd-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.fd-campo label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--txt-dim);
+}
+.fd-campo input,
+.fd-campo textarea {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 11px;
+  outline: 0;
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+.fd-campo textarea {
+  min-height: 74px;
+  line-height: 1.55;
+}
+.fd-campo input::placeholder,
+.fd-campo textarea::placeholder {
+  color: var(--txt-faint);
+}
+.fd-campo input:focus,
+.fd-campo textarea:focus {
+  border-color: rgba(53, 224, 210, 0.4);
+  box-shadow: 0 0 14px rgba(53, 224, 210, 0.08);
+}
+
+/* ── Los botones ─────────────────────────────────────────────────────────── */
+
+.fd-acciones {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.fd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bg);
+  background: linear-gradient(180deg, var(--accent), rgba(53, 224, 210, 0.82));
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 15px;
+  cursor: pointer;
+  box-shadow: var(--sh-1);
+}
+.fd-btn:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.fd-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.fd-btn.sec {
+  color: var(--txt-dim);
+  background: var(--bg-raise);
+  border: 1px solid var(--line-strong);
+  font-weight: 500;
+  box-shadow: none;
+}
+.fd-btn.sec:hover:not(:disabled) {
+  color: var(--txt);
+  border-color: rgba(148, 197, 255, 0.28);
+  filter: none;
+}
+.fd-guardado {
+  font-size: 11px;
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── El veredicto ────────────────────────────────────────────────────────── */
+
+.fd-veredicto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+}
+.fd-veredicto > div {
+  background: var(--bg-raise);
+  padding: 11px 13px;
+}
+.fd-veredicto .fd-vt {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.fd-veredicto .fd-vc {
+  font-size: 12.5px;
+  color: var(--txt);
+  line-height: 1.5;
+  margin-top: 5px;
+}
+
+/* ── El documento ────────────────────────────────────────────────────────── */
+
+.fd-doc-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.fd-doc-cab .fd-titulo {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.fd-doc-cab .fd-meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+.fd-doc-cab .fd-der {
+  margin-left: auto;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.fd-mini {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.fd-mini:hover {
+  color: var(--txt);
+  border-color: var(--line-strong);
+}
+.fd-mini.on {
+  color: var(--accent);
+  border-color: rgba(53, 224, 210, 0.32);
+}
+
+.fd-doc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--txt);
+  max-height: 640px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+.fd-doc .fd-h {
+  font-weight: 600;
+  color: var(--txt);
+  letter-spacing: -0.015em;
+}
+.fd-doc .fd-h1 {
+  font-size: 17px;
+  margin: 4px 0 10px;
+}
+.fd-doc .fd-h2 {
+  font-size: 14.5px;
+  margin: 18px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.fd-doc .fd-h3 {
+  font-size: 13px;
+  margin: 14px 0 6px;
+  color: var(--accent);
+}
+.fd-doc .fd-h4 {
+  font-size: 12.5px;
+  margin: 11px 0 5px;
+  color: var(--txt-dim);
+}
+.fd-doc .fd-p {
+  margin: 5px 0;
+}
+.fd-doc .fd-aire {
+  height: 7px;
+}
+.fd-doc .fd-lista {
+  list-style: none;
+  margin: 6px 0 6px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fd-doc .fd-lista li {
+  position: relative;
+  padding-left: 15px;
+  color: var(--txt);
+}
+.fd-doc .fd-lista li::before {
+  content: '·';
+  position: absolute;
+  left: 3px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.fd-doc .fd-num li::before {
+  content: '';
+}
+.fd-doc .fd-num li {
+  padding-left: 4px;
+}
+.fd-doc .fd-num li b {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 3px;
+}
+.fd-doc strong {
+  font-weight: 600;
+  color: #fff;
+}
+.fd-doc em {
+  font-style: normal;
+  color: var(--txt-dim);
+}
+
+/* Una tabla ancha hace scroll DENTRO de su caja. Sin esto, un documento con una tabla de
+   ocho columnas empuja el ancho de la vista entera y aparece una barra horizontal en la
+   página, que es el único scroll que este diseño no tiene en ningún lado. */
+.fd-doc .fd-tabla {
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.fd-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+.fd-doc th,
+.fd-doc td {
+  text-align: left;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.fd-doc th {
+  font-weight: 600;
+  color: var(--txt-dim);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--bg-sunk);
+  white-space: nowrap;
+}
+.fd-doc tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ── El historial de versiones ───────────────────────────────────────────── */
+
+.fd-versiones {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.fd-version {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--txt-dim);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.fd-version.on {
+  color: var(--accent);
+  border-color: rgba(53, 224, 210, 0.32);
+  background: var(--accent-dim);
+}
+
+/* ── El ajuste (regenerar con una nota) ──────────────────────────────────── */
+
+.fd-ajuste {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.fd-ajuste textarea {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 11px;
+  min-height: 62px;
+  outline: 0;
+  resize: vertical;
+}
+.fd-ajuste textarea:focus {
+  border-color: rgba(53, 224, 210, 0.4);
+}
+
+/* ── Los cinco pasos del Research ────────────────────────────────────────── */
+
+.fd-pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.fd-paso {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+.fd-paso-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  cursor: pointer;
+}
+.fd-paso-cab:hover {
+  background: rgba(148, 197, 255, 0.02);
+}
+.fd-paso-n {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  color: var(--txt-faint);
+  flex: none;
+}
+.fd-paso.hecho .fd-paso-n {
+  color: var(--bg);
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.fd-paso.corriendo .fd-paso-n {
+  color: var(--accent);
+  border-color: rgba(53, 224, 210, 0.45);
+}
+.fd-paso-t {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--txt);
+}
+.fd-paso-e {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.fd-paso.hecho .fd-paso-e {
+  color: var(--ok);
+}
+.fd-paso-cuerpo {
+  padding: 0 13px 13px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.fd-citas {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+.fd-citas .fd-etq {
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+.fd-citas a {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fd-citas a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ── Cargando ────────────────────────────────────────────────────────────── */
+
+.fd-cargando {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.fd-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: fd-latir 1.15s ease-in-out infinite;
+}
+@keyframes fd-latir {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+/* El esqueleto del documento mientras se genera: dice "va a aparecer texto acá", que es
+   más honesto que un spinner sobre una pantalla vacía cuando la espera son minutos. */
+.fd-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.fd-esqueleto span {
+  height: 9px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bg-raise), var(--bg-float), var(--bg-raise));
+  background-size: 300% 100%;
+  animation: fd-brillo 1.5s linear infinite;
+}
+@keyframes fd-brillo {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

@@ -111,6 +111,24 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // como legítimo: *"las tareas programadas necesitan la LISTA de organizaciones, y después
   // trabajar de una en una, abriendo el contexto en cada vuelta como una petición normal."*
   'lib/deteccion/sonda.ts',
+  // ── Etapa 9 · Fundaciones ────────────────────────────────────────────────────
+  //
+  // Las dos operaciones de la pantalla `icp`. Es un caso NUEVO en esta lista y hay que leerlo
+  // entero antes de tomarlo como precedente: no abren contexto de inquilino porque **los datos que
+  // manejan no están en esta base**. El estado de Fundaciones vive en el almacén de ARIA-brain
+  // (ver `lib/fundaciones/almacen.ts`), y de acá leen UNA fila: la de
+  // `identidad.organizaciones_credenciales`, que trae la llave de IA de la organización y a qué
+  // alumno del hub corresponde. Esa tabla es la que guarda los secretos de todas las
+  // organizaciones y el rol del inquilino no tiene ni `select` sobre ella — es el mismo caso que
+  // `app/api/admin/credenciales/route.ts`.
+  //
+  // Y por eso están acá y no en una exención cómoda: **el filtro por organización lo ponen estas
+  // consultas a mano**, con `contexto.orgEfectiva`. Hay un segundo filtro que ninguna política de
+  // esta base puede cubrir —el `cliente_id` con el que se le habla al almacén— y sale de esa misma
+  // fila, nunca del navegador. Las dos rutas son, junto a `app/api/usuarios/route.ts`, los lugares
+  // donde olvidarse un `where` devuelve datos de otra organización sin ningún error.
+  'app/api/fundaciones/estado/route.ts',
+  'app/api/fundaciones/generar/route.ts',
 ];
 
 /**
