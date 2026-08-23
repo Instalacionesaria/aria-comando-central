@@ -111,7 +111,22 @@ test('ADR-0203 · nadie fuera de la capa de datos importa el controlador', () =>
   const importan = archivosFuente().filter((a) => /from\s+['"]pg['"]/.test(a.limpio));
   assert.deepEqual(
     importan.map((a) => a.ruta).sort(),
-    ['lib/datos/capa.ts', 'scripts/db.mjs'].sort(),
+    [
+      // La capa de datos: es su trabajo, y el único constructor de clientes del proyecto.
+      'lib/datos/capa.ts',
+      // El arranque del clúster y la fase `verificar`: se conectan como un ROL CONCRETO para
+      // crear objetos del clúster y para afirmar qué ve cada uno. Eso no es acceso a datos de
+      // la aplicación, es inspección.
+      'scripts/db.mjs',
+      // Las comprobaciones contra el proveedor administrado. Mismo caso que `db.mjs`, y por eso
+      // está acá y no en la capa: inspecciona el catálogo como `migrador` y comprueba que las
+      // FRONTERAS ENTRE DOMINIOS LANZAN — dos cosas que por definición no pueden pasar por la
+      // capa de datos, porque lo que verifican es que la capa no alcance.
+      //
+      // Sus lecturas de negocio SÍ van por `conOrganizacion()` y `datos()`: no pone
+      // `app.org_id` a mano, y `ADR-0201` lo hace cumplir.
+      'scripts/compatibilidad.mjs',
+    ].sort(),
     'un archivo nuevo importa `pg`: o va en la capa de datos, o hay que justificarlo acá',
   );
 });

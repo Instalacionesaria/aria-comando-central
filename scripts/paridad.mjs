@@ -16,7 +16,21 @@ import { pathToFileURL } from 'node:url';
 import { existsSync } from 'node:fs';
 
 const ORIGINAL = 'aios-command-center_1.html';
-const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3000/';
+// El puerto es 3100, no 3000: tiene que coincidir con `DOMINIO_ESPERADO` de `.env.local`, y el
+// guión `dev` lo fija (ver `package.json`).
+//
+// ── Y AHORA ESTO NECESITA UNA SESIÓN ────────────────────────────────────────
+//
+// Desde que `app/page.js` envuelve el centro de mando en `app/guardia.tsx`, un navegador sin
+// sesión recibe "Verificando la sesión…" y después una redirección a `/entrar`. O sea que
+// TODOS los selectores de abajo fallan, con un error que no dice "falta la sesión" sino
+// "no encuentro `#v-executive`".
+//
+// No se debilita la guarda para que esta comparación ande: la guarda es lo que impide que un
+// visitante vea la aplicación. Lo que hay que hacer es entrar primero — con el usuario del
+// sembrado, que solo existe en local — y recién después comparar. Está anotado como pendiente
+// en `docs/DESPLIEGUE.md`.
+const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 
 // NUEVE, no diez. `icp` salió en la Etapa 9 y hay que leer por qué antes de volver a ponerla.
 //

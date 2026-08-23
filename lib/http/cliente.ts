@@ -44,7 +44,32 @@
  */
 export type Respuesta<T> =
   | { readonly tipo: 'datos'; readonly datos: T }
-  | { readonly tipo: 'rechazado'; readonly estado: number; readonly codigo: string }
+  | {
+      readonly tipo: 'rechazado';
+      readonly estado: number;
+      readonly codigo: string;
+      /**
+       * El `detalle` del rechazo, si el servidor mandó uno. **Es texto para mostrar.**
+       *
+       * Se agregó porque descartarlo tiraba a la basura los únicos mensajes del sistema
+       * escritos para que los lea una persona. Dos casos medidos:
+       *
+       *   · `cuenta_bloqueada` trae `"Esperá 15 minuto(s)."` — el número de minutos NO está
+       *     en ningún otro campo, ni hay `Retry-After`. Sin `detalle`, lo mejor que puede
+       *     decir una pantalla es "esperá unos minutos", que es peor y encima adivina.
+       *   · `sin_sesion` desde la verificación del segundo factor trae *"Demasiados códigos
+       *     incorrectos. Volvé a iniciar sesión."*, que explica por qué la sesión se cortó.
+       *     Sin él, el usuario ve "la sesión venció" y no entiende qué hizo.
+       *
+       * `rechazo()` en `lib/autorizacion/respuesta.ts` ya garantiza qué puede ir acá:
+       * *"`detalle` es opcional y **nunca** lleva nada que el cliente no deba saber"*. Así que
+       * el campo ya estaba pensado para viajar; lo que faltaba era que llegara.
+       *
+       * Opcional y no cadena vacía: la mayoría de los rechazos no traen detalle, y un `''`
+       * obligaría a cada consumidor a distinguir "no hay detalle" de "el detalle es vacío".
+       */
+      readonly detalle?: string;
+    }
   | { readonly tipo: 'sin_respuesta'; readonly causa: string };
 
 /** Cuánto se espera antes de decir "no pude preguntar". */
@@ -106,10 +131,16 @@ export async function pedir<T>(
 
   if (!respuesta.ok) {
     const codigo = (cuerpoLeido as { codigo?: unknown } | null)?.codigo;
+    const detalle = (cuerpoLeido as { detalle?: unknown } | null)?.detalle;
     return {
       tipo: 'rechazado',
       estado: respuesta.status,
       codigo: typeof codigo === 'string' ? codigo : 'sin_codigo',
+      // Se incluye solo si vino y es texto. Nunca se inventa uno a partir del código: el
+      // texto de cada código es decisión de la pantalla, y un respaldo acá haría que dos
+      // pantallas mostraran mensajes distintos para el mismo rechazo según cuál se acordó de
+      // poner el suyo.
+      ...(typeof detalle === 'string' && detalle.length > 0 ? { detalle } : {}),
     };
   }
 

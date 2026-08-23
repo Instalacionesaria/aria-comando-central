@@ -32,10 +32,13 @@ import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { PATCH as cambiarOrg } from '../../app/api/auth/sesion/route.ts';
 import { cifrar } from '../../lib/credenciales/cifrado.ts';
 import { resolverCredenciales } from '../../lib/credenciales/resolver.ts';
-import { sondaDeAislamiento } from '../../lib/deteccion/sonda.ts';
+import { sondaDeAislamiento, SLUGS_DE_CONTROL } from '../../lib/deteccion/sonda.ts';
 import { reiniciarVentanas } from '../../lib/deteccion/aviso.ts';
 
 const DOMINIO = 'ejemplo.test';
+
+// La organización de control que la prueba de la rama "sonda rota" oculta y repone.
+const OCULTADO = SLUGS_DE_CONTROL[1];
 
 let admin: Client;
 
@@ -425,9 +428,17 @@ test('ADR-0801 · y si hubiera una fuga, la sonda la ve y avisa', async () => {
   process.env.AVISO_URL = `http://127.0.0.1:${(servidor.address() as { port: number }).port}/a`;
 
   try {
-    // Se desactiva temporalmente la organización beta del conjunto de control, de modo que la sonda
-    // encuentre UNA sola: es la rama "la sonda no está verificando nada", que también avisa.
-    await admin.query(`update identidad.organizaciones set slug = 'beta-oculta' where slug = 'beta'`);
+    // Se le cambia el slug a UNA de las dos organizaciones de control, de modo que la sonda
+    // encuentre una sola: es la rama "la sonda no está verificando nada", que también avisa.
+    //
+    // El slug sale de `SLUGS_DE_CONTROL` y no está escrito a mano: hasta la Etapa 8 esto
+    // ocultaba `beta`, que era un slug del SEMBRADO DE DESARROLLO — y por eso la sonda
+    // avisaba gravedad máxima en producción cada hora, donde el sembrado no corre. Con la
+    // constante, el día que los controles se renombren esta prueba los sigue.
+    await admin.query(
+      `update identidad.organizaciones set slug = $2 where slug = $1`,
+      [OCULTADO, `${OCULTADO}-oculta`],
+    );
     const r = await sondaDeAislamiento();
 
     assert.equal(r.revisadas, 1, 'la sonda tendría que haber encontrado una sola');
@@ -436,7 +447,10 @@ test('ADR-0801 · y si hubiera una fuga, la sonda la ve y avisa', async () => {
     assert.equal(recibidos[0]?.firma, 'fuga_entre_organizaciones');
     assert.match(String(recibidos[0]?.detalle.motivo), /no está verificando nada/);
   } finally {
-    await admin.query(`update identidad.organizaciones set slug = 'beta' where slug = 'beta-oculta'`);
+    await admin.query(
+      `update identidad.organizaciones set slug = $1 where slug = $2`,
+      [OCULTADO, `${OCULTADO}-oculta`],
+    );
     servidor.close();
   }
 });

@@ -28,6 +28,7 @@
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
 import { hashear } from '../lib/datos/hash.ts';
 import { contrasenaTemporal } from '../lib/autenticacion/temporal.ts';
+import { asegurarControlesDeSonda } from '../db/controles/sonda.ts';
 
 const [nombre, email] = process.argv.slice(2);
 
@@ -88,6 +89,26 @@ try {
 
     return { creado: true, id: u.id, slug: principal.slug };
   });
+
+  // Las dos organizaciones de control de la sonda.
+  //
+  // Va ANTES del corte por "ya existe el administrador fundador", y a propósito: es la
+  // única forma de que alguien que ya arrancó su sistema pueda conseguirlas. Sin esto,
+  // un despliegue anterior a este cambio se queda para siempre sin controles y con la
+  // sonda avisando gravedad máxima cada hora.
+  //
+  // Es idempotente, así que correr el arranque de nuevo solo para esto es seguro — y es
+  // exactamente lo que hay que hacer en un sistema ya arrancado.
+  const controles = await asegurarControlesDeSonda();
+  if (controles.organizaciones.length > 0) {
+    console.log(`organizaciones de control de la sonda creadas: ${controles.organizaciones.join(', ')}`);
+  }
+  if (controles.filas.length > 0) {
+    console.log(`filas de control creadas: ${controles.filas.join(', ')}`);
+  }
+  if (controles.organizaciones.length === 0 && controles.filas.length === 0) {
+    console.log('organizaciones de control de la sonda: ya estaban');
+  }
 
   if (!resultado.creado) {
     console.error(`arranque: ${resultado.motivo}`);

@@ -12,6 +12,22 @@ npm-debug.log*
 # La plantilla SÍ se versiona — la regla `.env*` de arriba se la tragaría.
 # Solo NOMBRES de variables, ningún valor.
 !.env.example
+
+# ── Notas y volcados de credenciales que alguien deja en la raíz ─────────────
+#
+# La regla `.env*` de arriba NO los agarra: un archivo con las variables de
+# producción pegadas se llama "variables de entorno.txt", no ".env". Y este
+# repositorio es PÚBLICO, así que un `git add .` distraído publica secretos de
+# forma permanente — quedan en la caché de GitHub y en cada clon, aunque después
+# se borre el archivo.
+#
+# Se ignoran por EXTENSIÓN y no por nombre: el nombre exacto siempre es otro.
+*.txt
+!README.txt
+*.csv
+*.env
+credenciales*
+secretos*
 graphify-out/
 
 # TypeScript: los dos los genera la herramienta.

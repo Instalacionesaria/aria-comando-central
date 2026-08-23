@@ -46,7 +46,20 @@ function coincide(recibido: string, esperado: string): boolean {
 export async function POST(peticion: Request): Promise<Response> {
   const esperado = process.env.SONDA_TOKEN;
   if (!esperado) {
-    return rechazo('sin_permiso', 'SONDA_TOKEN no está configurado: la sonda NO corrió.');
+    // El nombre de la variable va al REGISTRO, no al cuerpo. Mismo motivo que en
+    // `verificarOrigen`: esta ruta es alcanzable **sin autenticar** —es su naturaleza, la llama
+    // una tarea programada— así que un `detalle` acá se lo cuenta a cualquiera que la golpee. Y
+    // desde que la pantalla de entrada muestra el `detalle` de los rechazos, ese campo dejó de
+    // ser un rincón que nadie lee.
+    //
+    // Quien puede arreglar esto administra el despliegue y lee el registro. Que la sonda NO
+    // corrió es justo lo que hay que gritar ahí: un 403 silencioso en una tarea horaria se lee
+    // como "la sonda anda y no encuentra nada".
+    console.error(
+      'sonda: el secreto de la sonda no está configurado, así que la ruta responde 403 y LA ' +
+        'SONDA NO CORRIÓ. La señal 6 está apagada. Ver docs/DESPLIEGUE.md.',
+    );
+    return rechazo('sin_permiso');
   }
   const recibido = peticion.headers.get('x-sonda-token');
   if (!recibido || !coincide(recibido, esperado)) {

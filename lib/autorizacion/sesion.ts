@@ -19,7 +19,16 @@ import { sql } from 'kysely';
 import { conIdentidad } from '../datos/capa.ts';
 
 /** El nombre de la cookie. El prefijo es parte del nombre, no un adorno (08 § 5.2). */
-export const COOKIE_SESION = '__Host-sesion';
+// El nombre de la cookie se define en `cookie.ts`, que no importa nada, y se REEXPORTA acá.
+//
+// La dirección de la dependencia se invirtió el día que `proxy.ts` necesitó el nombre: este
+// archivo importa `kysely` y `lib/datos/capa.ts`, así que importarlo desde acá arrastraba `pg` y
+// el agrupador de conexiones a un archivo que puede correr en el borde. El motivo completo está
+// en `cookie.ts`.
+//
+// Se reexporta en vez de mover y actualizar los diez importadores: una única definición, y ningún
+// cambio en los archivos que ya la pedían de acá.
+export { COOKIE_SESION } from './cookie.ts';
 
 /** Los cuatro estados, tal como los declara el `check` de `identidad.sesiones`. */
 export type EstadoSesion =

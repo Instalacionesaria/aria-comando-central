@@ -14,8 +14,20 @@ import { fileURLToPath } from 'node:url';
 
 export const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
 
-/** Los directorios que contienen código del proyecto. `pruebas/` NO está. */
-export const DIRS_FUENTE = ['app', 'components', 'lib', 'db', 'scripts'] as const;
+/**
+ * Los directorios que contienen código del proyecto. `pruebas/` NO está.
+ *
+ * `'.'` es LA RAÍZ, y se recorre **sin recursión** (ver `archivosFuente`). Está porque sin
+ * ella `proxy.ts` era invisible para TODAS las pruebas del proyecto: la compuerta de rutas vive
+ * en la raíz por exigencia de Next, y ningún barrido la miraba. O sea que el archivo que decide
+ * si un visitante sin sesión ve la aplicación quedaba fuera de la búsqueda de claves de
+ * servicio, de la de primitivas de caché, de la de `set role`, y de todas las demás.
+ *
+ * Sin recursión a propósito: un `readdirSync(RAIZ, { recursive: true })` entra a
+ * `node_modules` antes de filtrarlo, y eso está medido en 127 segundos — el comentario de
+ * `NUNCA`, abajo, cuenta la historia.
+ */
+export const DIRS_FUENTE = ['.', 'app', 'components', 'lib', 'db', 'scripts'] as const;
 
 const EXTENSIONES = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.sql'];
 
@@ -70,7 +82,9 @@ export function archivosFuente(dirs: readonly string[] = DIRS_FUENTE): Archivo[]
   for (const dir of dirs) {
     const abs = join(RAIZ, dir);
     if (!existsSync(abs)) continue;
-    for (const e of readdirSync(abs, { recursive: true, withFileTypes: true })) {
+    // La raíz se lee sin recursión: ahí abajo vive `node_modules`.
+    const recursive = dir !== '.';
+    for (const e of readdirSync(abs, { recursive, withFileTypes: true })) {
       if (!e.isFile()) continue;
       if (!EXTENSIONES.some((x) => e.name.endsWith(x))) continue;
       const rutaAbs = join(e.parentPath, e.name);

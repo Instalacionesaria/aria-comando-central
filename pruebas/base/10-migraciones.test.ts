@@ -111,48 +111,126 @@ test('ningún rol es miembro de otro', async () => {
 
 // ─── Los esquemas ───────────────────────────────────────────────────────────
 
-test('los esquemas son exactamente identidad, negocio y public — `comun` NO existe', async () => {
+test('los esquemas DE MIGRADOR son exactamente los nuestros — `comun` NO existe', async () => {
+  // ── POR QUÉ ESTO PREGUNTA POR EL DUEÑO Y NO POR EL CLÚSTER ──────────────────
+  //
+  // Antes esto afirmaba `deepEqual(nombres, ['identidad', 'negocio', 'public'])`
+  // sobre TODOS los esquemas no sistémicos del clúster. Contra el contenedor de la
+  // Etapa 0 era exacto, porque ahí no vivía nadie más.
+  //
+  // Contra la base real falla con una lista de ~19 nombres: los esquemas de
+  // plataforma de Supabase (`auth`, `storage`, `extensions`, `graphql_public`,
+  // `realtime`, `vault`, `cron`, `supabase_migrations`…). Y falla POR EL MOTIVO
+  // EQUIVOCADO: no descubrió una tabla nuestra fuera del régimen, descubrió que la
+  // base tiene otros inquilinos.
+  //
+  // La intención de la fila nunca fue "este clúster es nuestro". Era: *no nació un
+  // esquema nuestro fuera del régimen*. Preguntar por `nspowner = migrador` dice
+  // exactamente eso, y sigue rompiendo si alguien agrega un esquema propio — que es
+  // toda la propiedad que la fila compraba.
   const r = await filas<{ nspname: string }>(
     mig,
-    `select nspname from pg_namespace
-      where nspname not like 'pg\\_%' and nspname <> 'information_schema'
-      order by nspname`,
+    `select n.nspname from pg_namespace n
+       join pg_roles p on p.oid = n.nspowner
+      where p.rolname = 'migrador'
+      order by n.nspname`,
   );
   const nombres = r.map((x) => x.nspname);
-  // Un esquema nuevo ROMPE la suite. Es deliberado: el 09 § 6 nombra la ruta de
-  // búsqueda mal puesta como el mecanismo por el que una tabla nace en el esquema
-  // equivocado, y sin esta afirmación una tabla podría nacer fuera del régimen.
-  assert.deepEqual(nombres, ['identidad', 'negocio', 'public']);
-  assert.ok(!nombres.includes('comun'), 'EJECUCION § 2 y § 3: el esquema `comun` no se crea');
+  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'identidad', 'negocio'].sort());
+
+  // `comun` se comprueba sobre TODO el clúster y no solo sobre lo de `migrador`: la
+  // prohibición de EJECUCION § 2 y § 3 es sobre el nombre, sin importar quién lo cree.
+  // Si alguien lo creara con otro rol, la afirmación de arriba no lo vería.
+  const comun = await filas<{ nspname: string }>(
+    mig,
+    `select nspname from pg_namespace where nspname = 'comun'`,
+  );
+  assert.deepEqual(comun, [], 'EJECUCION § 2 y § 3: el esquema `comun` no se crea');
 });
 
-test('`public` solo tiene la contabilidad de migraciones, y ninguna tabla con org_id', async () => {
+test('NINGUNA tabla nuestra vive en `public`, y ninguna tabla nuestra tiene org_id fuera de negocio', async () => {
   // Es la fila de PRUEBAS Etapa 1 que el 09 § 4 escribió para el esquema de
-  // catálogos —"la más valiosa del documento entero"— RETARGETEADA.
+  // catálogos —"la más valiosa del documento entero"— RETARGETEADA dos veces.
   //
-  // Sin `comun`, el agujero por exclusión se muda a `public`, que siempre existe y
-  // que es donde tiene que vivir la contabilidad de las migraciones. El valor de la
-  // fila nunca fue `comun`: era *el esquema que la prueba de RLS excluye*.
-  const tablas = await filas<{ relname: string }>(
+  // Primero de `comun` a `public`, cuando `comun` dejó de existir: el valor de la
+  // fila nunca fue `comun`, era *el esquema que la prueba de RLS excluye*.
+  //
+  // Y ahora de "`public` tiene exactamente estas dos tablas" a "`public` no tiene
+  // NINGUNA tabla nuestra". Las dos razones del cambio:
+  //
+  //   1. La contabilidad se mudó a su propio esquema, así que en `public` no debería
+  //      quedar nada de lo nuestro. La afirmación se vuelve más fuerte, no más débil.
+  //   2. `public` tiene 59 tablas de otros cinco sistemas en la base real. Un
+  //      `deepEqual` contra el inventario completo de `public` mide código ajeno.
+  //
+  // El discriminante es el DUEÑO. `pg_class` no filtra por ACL, así que `migrador` ve
+  // todas las tablas del esquema y puede afirmar sobre las suyas sin ver las ajenas.
+  const nuestrasEnPublic = await filas<{ relname: string }>(
     mig,
     `select c.relname from pg_class c
         join pg_namespace n on n.oid = c.relnamespace
-       where n.nspname = 'public' and c.relkind in ('r', 'p')
+        join pg_roles p     on p.oid = c.relowner
+       where n.nspname = 'public' and c.relkind in ('r', 'p') and p.rolname = 'migrador'
        order by c.relname`,
   );
   assert.deepEqual(
-    tablas.map((t) => t.relname).sort(),
+    nuestrasEnPublic,
+    [],
+    '`public` está publicado por PostgREST: una tabla nuestra ahí nace alcanzable ' +
+      'desde la red y sin ninguna de nuestras políticas',
+  );
+
+  // Y la contabilidad está donde tiene que estar. Sin esta mitad, la afirmación de
+  // arriba pasaría también si las migraciones no hubieran corrido nunca.
+  const contabilidad = await filas<{ relname: string }>(
+    mig,
+    `select c.relname from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = $1 and c.relkind in ('r', 'p')
+       order by c.relname`,
+    [ESQUEMA_CONTABILIDAD],
+  );
+  assert.deepEqual(
+    contabilidad.map((t) => t.relname).sort(),
     [TABLA_APLICADAS, TABLA_CANDADO].sort(),
   );
 
-  // Y la comprobación que importa de verdad: una tabla con columna de organización
-  // acá sería una tabla de negocio SIN AISLAMIENTO, en el esquema equivocado.
-  const conOrg = await filas<{ table_name: string }>(
+  // ── La comprobación que importa de verdad ───────────────────────────────────
+  //
+  // Una tabla NUESTRA con columna de organización fuera de los dos esquemas del
+  // diseño es una tabla de negocio sin aislamiento, en el esquema equivocado.
+  //
+  // `identidad` queda dentro del conjunto permitido y NO es una concesión: cuatro de
+  // sus tablas llevan `org_id` a propósito (`usuarios`, `roles`, `auditoria_accesos`,
+  // `organizaciones_credenciales`). Ahí el filtro por organización lo pone la
+  // aplicación —`usuarioObjetivo()` en `lib/administracion/objetivo.ts` es el único
+  // `where org_id` del dominio— y no una política, que es toda la razón por la que
+  // los dos dominios están separados. Lo que esta afirmación persigue es una tabla
+  // con `org_id` en un TERCER lugar: `public`, la contabilidad, o un esquema nuevo.
+  //
+  // Se lee de `pg_attribute` y NO de `information_schema.columns`, y ése es un
+  // arreglo de fondo, no cosmético: `information_schema` FILTRA POR PRIVILEGIOS.
+  // `migrador` no tiene ninguno sobre las tablas de los otros cinco sistemas, así que
+  // la versión anterior podía pasar EN VERDE POR FALTA DE VISIBILIDAD en vez de por
+  // ausencia de `org_id` — exactamente el falso verde que este archivo entero existe
+  // para no tener. `pg_attribute` no filtra por ACL.
+  const conOrg = await filas<{ esquema: string; tabla: string }>(
     mig,
-    `select table_name from information_schema.columns
-       where table_schema = 'public' and column_name = 'org_id'`,
+    `select n.nspname as esquema, c.relname as tabla
+       from pg_attribute a
+       join pg_class c     on c.oid = a.attrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       join pg_roles p     on p.oid = c.relowner
+      where a.attname = 'org_id' and a.attnum > 0 and not a.attisdropped
+        and c.relkind in ('r', 'p') and p.rolname = 'migrador'
+        and n.nspname not in ('negocio', 'identidad')
+      order by 1, 2`,
   );
-  assert.deepEqual(conOrg, [], 'una tabla con org_id en `public` es una tabla de negocio sin aislar');
+  assert.deepEqual(
+    conOrg,
+    [],
+    'una tabla nuestra con org_id fuera de `negocio` e `identidad` no está en ningún régimen',
+  );
 });
 
 test('las tres rutas de búsqueda son las doctrinales y ninguna menciona `comun`', async () => {
@@ -209,13 +287,40 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
     'no puede haber regla por omisión sobre `identidad`: es lo que la hace segura',
   );
 
-  // Para cada esquema no sistémico distinto de `identidad` y `public` tiene que
-  // haber una regla. Hoy eso es solo `negocio`; el día que alguien cree un tercer
+  // Para cada esquema NUESTRO distinto de `identidad` y de la contabilidad tiene que
+  // haber una regla. Hoy eso es solo `negocio`; el día que alguien cree un cuarto
   // esquema sin su regla, esto rompe.
+  //
+  // ── POR QUÉ POR DUEÑO Y NO POR "NO SISTÉMICO" ───────────────────────────────
+  //
+  // Antes el universo era "todo esquema que no empiece con `pg_` y no sea
+  // `information_schema`, `identidad` ni `public`". Ese era el complemento correcto
+  // mientras el clúster fuera nuestro.
+  //
+  // Contra la base real dispara UNA VEZ POR CADA ESQUEMA DE SUPABASE —`auth`,
+  // `storage`, `extensions`, `realtime`, `vault`, `cron`, `supabase_migrations`…—
+  // exigiéndoles una regla de permisos por omisión para `migrador` que no tienen ni
+  // tienen por qué tener. El comentario original anticipaba el modo de falla ("el día
+  // que alguien cree un tercer esquema sin su regla, esto rompe"); lo que no
+  // anticipaba es que alguien crearía dieciséis, y que ninguno sería nuestro.
+  //
+  // La contabilidad se excluye por el mismo motivo que `identidad`: sus dos tablas
+  // las crea Kysely y no las toca ningún rol de aplicación, así que una regla por
+  // omisión ahí no protegería nada y daría acceso donde no hace falta.
   const esquemas = await filas<{ nspname: string }>(
     mig,
-    `select nspname from pg_namespace
-      where nspname not like 'pg\\_%' and nspname not in ('information_schema', 'identidad', 'public')`,
+    `select n.nspname from pg_namespace n
+       join pg_roles p on p.oid = n.nspowner
+      where p.rolname = 'migrador' and n.nspname not in ('identidad', $1)`,
+    [ESQUEMA_CONTABILIDAD],
+  );
+  // La guarda contra el falso verde: un bucle sobre cero esquemas pasa sin afirmar
+  // nada, y con el universo acotado por dueño eso es ahora posible de verdad — basta
+  // que la consulta de arriba se equivoque en el nombre del rol.
+  assert.deepEqual(
+    esquemas.map((e) => e.nspname),
+    ['negocio'],
+    'se esperaba exactamente un esquema de negocio de `migrador` que necesite la regla',
   );
   for (const e of esquemas) {
     assert.ok(
@@ -444,11 +549,29 @@ test('07 § 1 · ninguna función tiene dos firmas', async () => {
   // —`digest`, `hmac`, `pgp_sym_encrypt`…— que son su API pública y están perfectas. Sin
   // este filtro la prueba fallaba sobre código correcto, que es como mueren las pruebas
   // arquitectónicas (04 § 7). La sobrecarga que importa es la NUESTRA.
+  //
+  // ── Y POR QUÉ `public` YA NO ESTÁ EN EL FILTRO ──────────────────────────────
+  //
+  // Estaba, y contra el contenedor de la Etapa 0 era gratis: en `public` no vivía
+  // nada salvo la contabilidad, que no tiene funciones.
+  //
+  // En la base real hay **catorce funciones RPC** de otros cinco sistemas ahí. Tres
+  // de ellas son `match_documents`, `match_documents_crm` y `match_documents_sofia`,
+  // que salen de la plantilla RAG de Supabase — y esa plantilla se distribuye con
+  // variantes sobrecargadas. Barrer `public` es medir código ajeno: la prueba fallaría
+  // nombrando una función que no escribimos y que no podemos arreglar.
+  //
+  // Lo cual NO significa que el hallazgo no valga. Una RPC sobrecargada expuesta por
+  // PostgREST tiene el modo de falla exacto que este comentario describe, así que la
+  // consulta contra `public` queda escrita en `docs/COMPATIBILIDAD.md` para correrla a
+  // mano contra la base real y anotar lo que devuelva. Es un hallazgo sobre esa base,
+  // no una prueba de este repositorio.
   const dobles = await filas<{ esquema: string; nombre: string; firmas: string }>(
     mig,
     `select n.nspname as esquema, p.proname as nombre, count(*)::text as firmas
        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname in ('identidad', 'negocio', 'public')
+       join pg_roles r on r.oid = n.nspowner
+      where r.rolname = 'migrador'
         and not exists (select 1 from pg_depend d
                          where d.objid = p.oid and d.deptype = 'e')
       group by 1, 2 having count(*) > 1

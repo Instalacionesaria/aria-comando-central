@@ -111,6 +111,21 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // como legítimo: *"las tareas programadas necesitan la LISTA de organizaciones, y después
   // trabajar de una en una, abriendo el contexto en cada vuelta como una petición normal."*
   'lib/deteccion/sonda.ts',
+  // Las dos organizaciones de control de la sonda. Escribe en `identidad.organizaciones`, que es el
+  // mismo caso que el alta de organización (`app/api/admin/organizaciones/route.ts`) y que el
+  // arranque: **está creando la organización**, así que no puede haber contexto de organización
+  // todavía. El 05 § 2 lo nombra literal como uno de los casos que legítimamente corren sin él.
+  //
+  // No es un endpoint y nunca está expuesto: lo llaman `scripts/arranque.mjs` y el sembrado.
+  'db/controles/sonda.ts',
+  // La organización principal, contra el proveedor administrado. Mismo caso exacto que el alta
+  // de organización y que el arranque: **está creando la primera organización**, así que no puede
+  // haber contexto de organización todavía.
+  //
+  // Existe porque quedaba un hueco: las migraciones no pueden insertarla —`migrador` no tiene
+  // política— y el sembrado, que sí sabe, se niega a correr contra un anfitrión remoto. Es un
+  // guión, nunca un endpoint.
+  'scripts/organizacion-principal.mjs',
   // ── Etapa 9 · Fundaciones ────────────────────────────────────────────────────
   //
   // Las dos operaciones de la pantalla `icp`. Es un caso NUEVO en esta lista y hay que leerlo
@@ -172,6 +187,19 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // del 09 § 6 no la afecta: no hay una mitad que pueda confirmar mientras la otra falla. Es
   // exactamente el mismo caso que `scripts/db.mjs`, y con el mismo comentario.
   'lib/deteccion/sonda.ts',
+  // Los controles de la sonda: ESCRIBE en los dos —organizaciones por `conIdentidad()`, sus filas
+  // de control por `conOrganizacion()`— y por lo tanto es el caso peligroso de verdad, no la
+  // variante con una sola escritura de las dos entradas de arriba.
+  //
+  // Escribir el bloque que el 09 § 6 exige ENCONTRÓ UN DEFECTO, y vale dejarlo dicho acá: con la
+  // primera mitad confirmada y la segunda fallada, quedaba una organización de control sin su fila,
+  // y la sonda —que contaba organizaciones y no filas— devolvía "todo bien" habiendo revisado una
+  // sola. El "éxito reportado que no ocurrió", en la única cosa que puede detectar la fuga misma.
+  //
+  // Aceptable ahora por tres propiedades, las tres escritas en el encabezado del archivo: se
+  // DETECTA (la sonda avisa con gravedad máxima), se REPARA volviendo a correr el arranque
+  // —idempotente por organización y por mitad—, y no hay datos de nadie que perder.
+  'db/controles/sonda.ts',
 ];
 
 /**

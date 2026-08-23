@@ -1,0 +1,315 @@
+# Desplegar
+
+Lo que se hizo, en orden, y cómo se comprueba cada paso. **Ya está hecho** contra el proyecto
+`SOFIA` (`pajhjpzydkkpmjdofqqp`); queda como registro y como guion para el próximo entorno.
+
+## El entorno real, medido
+
+No supuesto — leído del proyecto por la Management API:
+
+| | |
+| --- | --- |
+| PostgreSQL | **17.4** (por eso `docker-compose.yml` fija `postgres:17-alpine`) |
+| Región | `sa-east-1` |
+| Agrupador | `aws-0-sa-east-1.pooler.supabase.com:6543`, modo **transacción** |
+| Conexión directa | `db.pajhjpzydkkpmjdofqqp.supabase.co:5432` |
+| `public` | 59 tablas, 3 vistas, 14 RPC, ~19.400 filas de cinco sistemas |
+
+## Lo que hace innecesaria la contraseña de Postgres
+
+`SUPABASE_ACCESS_TOKEN` (un token personal, `sbp_…`) llama a
+`POST /v1/projects/{ref}/database/query`. Con `read_only: false` **conecta como `postgres` con
+permiso de crear roles**. Con eso se crean los tres roles del diseño y sus contraseñas las elige
+quien despliega, así que las cadenas de conexión quedan completas sin ir a buscar la contraseña de
+la base.
+
+Consecuencia: **`DATABASE_URL_ADMIN` no existe** en este despliegue, y `db.mjs arranque` no se usa
+contra Supabase. El arranque va por la API.
+
+Las credenciales de despliegue viven en `.env.supabase`, ignorado por git. **No en `.env.local`**:
+ese apunta al contenedor local, y la suite de pruebas —que borra usuarios y credenciales cifradas—
+se niega a correr contra un proveedor administrado (`lib/datos/anfitrion.ts`). Dos bases, dos
+archivos.
+
+---
+
+## 1 · La huella de `public`, antes y después
+
+El criterio de éxito de toda la convivencia es que no cambie. Se captura antes y después y se
+diffea: relaciones con dueño, RLS y ACL; columnas; políticas; funciones; ACL del esquema; permisos
+por omisión; roles; esquemas.
+
+**Resultado medido:** el diff tuvo exactamente cuatro clases de cambio y ninguna toca lo ajeno.
+
+- las tres filas de los roles nuevos en `pg_roles`;
+- los tres esquemas nuevos (`identidad`, `negocio`, `migraciones`), todos de `migrador`;
+- las dos reglas de permisos por omisión de `migrador` en `negocio`;
+- `USAGE` sobre el esquema `public` para los tres roles — que **no da acceso a ninguna tabla**.
+
+Las 59 relaciones, sus columnas, sus políticas y sus funciones quedaron **byte por byte
+idénticas**.
+
+---
+
+## 2 · Los tres roles
+
+`db/arranque/000_cluster.sql` con los marcadores sustituidos igual que hace `scripts/db.mjs`
+—`escapeLiteral` para las contraseñas, `escapeIdentifier` para el nombre de la base— enviado por la
+Management API.
+
+Dos cosas del archivo que existen por este entorno:
+
+- **Verifica en vez de imponer.** Los `alter role … nosuperuser noreplication` no se pueden correr:
+  PostgreSQL valida esas opciones **por presencia, no por cambio de valor**, y el `postgres` de
+  Supabase no es superusuario real. Ahora un bloque `do` aborta el arranque si algún rol tiene
+  atributos que no debería.
+- **No instala `pgcrypto`.** Ya está, en el esquema `extensions`. Y ninguna migración usa una sola
+  de sus funciones: `gen_random_uuid()` está en el núcleo desde PostgreSQL 13.
+
+**Comprobado:** los tres existen, ninguno es superusuario, ninguno tiene `bypassrls`, ninguno
+hereda, y las tres rutas de búsqueda quedaron puestas. Y `PUBLIC` sigue sin `CREATE` sobre
+`public` — el `revoke` del arranque fue el no-op que su ACL previa anticipaba.
+
+---
+
+## 3 · Las migraciones
+
+```bash
+node --env-file=.env.supabase scripts/db.mjs migrar
+```
+
+Las ocho, como `migrador`, por la conexión directa al 5432.
+
+Un dato que estaba mal documentado y se midió: **`current_user` es `migrador` también por el
+agrupador.** Supavisor usa el sufijo `migrador.<proyecto>` solo para elegir el proyecto y la sesión
+queda con el rol real, así que los tres caminos pasan la compuerta de `lib/datos/migrador.ts`. Se
+usa la directa igual, porque el DDL no tiene por qué pasar por un agrupador en modo transacción.
+
+---
+
+## 4 · La organización principal, y el usuario
+
+Quedaba un hueco entre "las migraciones corrieron" y "el arranque puede correr": `arranque.mjs`
+**exige** la organización principal y no la crea a propósito, ninguna migración puede insertarla
+—`migrador` no tiene política sobre `identidad.organizaciones`— y el sembrado, que sí sabe, se
+niega a correr contra un anfitrión remoto.
+
+```bash
+node --env-file=.env.supabase scripts/organizacion-principal.mjs "ARIA" aria "America/Lima"
+node --env-file=.env.supabase scripts/arranque.mjs "Tu Nombre" tu@correo
+```
+
+El segundo imprime una contraseña temporal de 14 caracteres **una sola vez** y crea además las dos
+organizaciones de control de la sonda. Es idempotente para esas dos: se puede volver a correr para
+reponerlas.
+
+La contraseña que elijas necesita **9 caracteres o más** (`lib/autenticacion/politica.ts`). Ese
+mínimo era 12 y se bajó a pedido explícito; el archivo escribe qué se acepta al bajarlo. En
+resumen: no cambia nada frente a alguien probando contraseñas en el login —el freno corta a los
+cinco intentos por cuenta y a los veinte por dirección— pero sí frente a un volcado de la tabla de
+hashes, donde el largo es la única defensa que queda. **Elegí una larga de todas formas.**
+
+---
+
+## 5 · Las variables en Vercel
+
+Seis, alcance **production**, creadas por la API con un token personal:
+
+| Variable | Tipo | Qué es |
+| --- | --- | --- |
+| `DATABASE_URL_INQUILINO` | sensitive | datos de negocio, siempre filtrados por política |
+| `DATABASE_URL_IDENTIDAD` | sensitive | usuarios y sesiones; no llega a datos de negocio |
+| `CLAVE_MAESTRA` | sensitive | cifra el secreto del segundo factor |
+| `SONDA_TOKEN` | sensitive | el secreto del punto de entrada de la sonda |
+| `DOMINIO_ESPERADO` | plain | el host desde el que se aceptan peticiones que modifican |
+| `CABECERA_DIRECCION_REAL` | plain | `x-real-ip`; qué cabecera trae la IP del visitante |
+
+Los cuatro secretos van como `sensitive`: **no se pueden volver a leer**, ni por la API ni por el
+panel. Se verifican por comportamiento, que es la única verificación que importa. Los dos que no son
+secretos van como `plain` para poder confirmarlos — `DOMINIO_ESPERADO` existía como `sensitive` con
+un valor que nadie podía leer, y si estaba mal **todo** login habría fallado con un 403 que no
+explica nada.
+
+**Lo que NO se creó, y por qué:**
+
+- `DATABASE_URL_MIGRADOR` y `DATABASE_URL_ADMIN` — su contraseña no vive en el entorno de la
+  aplicación (`09` § 2, `10` § 4). Si estuvieran, el rol dueño de las tablas quedaría alcanzable
+  desde cualquier función desplegada.
+- `AVISO_URL` y `AVISO_DESTINO` — sin definir. Crearlas vacías es peor que no crearlas: `avisar()`
+  lanza sin canal a propósito, y una cadena vacía haría creer que está configurado. **El login
+  funciona sin ellas; la sonda no.**
+
+**Dos consecuencias del alcance solo-producción:** las vistas previas no tienen variables de base y
+por lo tanto no funcionan —deliberado, una vista previa no debería escribir en datos de
+producción— y de todas formas no podrían loguear, porque cada una tiene un dominio distinto del
+esperado.
+
+---
+
+## 6 · Comprobar
+
+```bash
+node --env-file=.env.supabase scripts/compatibilidad.mjs
+```
+
+23 comprobaciones contra el proveedor administrado: la versión mayor, que ningún rol nuestro puede
+evadir las políticas, que la variable de transacción **sobrevive por el agrupador** —lo único que el
+contenedor local no puede verificar—, que cada organización de control ve sus filas y ninguna ajena,
+que las fronteras entre dominios lanzan, que el propietario ve cero filas, y que ninguna tabla
+nuestra vive en `public` ni ninguna de `public` recibió permisos nuestros.
+
+Las lecturas de negocio van por `conOrganizacion()` y `datos()`, no con un `set_config` a mano: esa
+función ya hace una lectura de vuelta y lanza si la variable no quedó puesta, así que probar el
+camino real prueba más que comparar dos cadenas.
+
+Y en local, siempre: `npm run db:reset && npm run build && npm run tipos && npm test`.
+
+---
+
+## 7 · Desplegar
+
+```bash
+git push origin main
+```
+
+**Vercel despliega por push, no por chequeo.** Un commit con las pruebas en rojo se publica igual.
+La protección de rama en `main` con `verificar` requerido sigue pendiente y es lo primero que
+conviene hacer después del primer despliegue.
+
+Después, en este orden, porque cada uno descarta una causa distinta:
+
+1. **`GET /api/salud`** — sin sesión. Si falla, es la base o las cadenas de conexión.
+2. **Abrir la raíz** — tiene que redirigir a `/entrar`. Si muestra el centro de mando, el proxy no
+   corre: el build tiene que decir `ƒ Proxy (Middleware)`, y el archivo tiene que llamarse
+   `proxy.ts` — en Next 16 `middleware.ts` **no corre**, y no da error.
+3. **Entrar con la temporal.** Si da 403 «el servidor rechazó el origen», es `DOMINIO_ESPERADO`.
+4. **Las tres pantallas del primer ingreso** — contraseña, segundo factor, códigos de respaldo.
+   **Guardá los ocho códigos**: no se vuelven a mostrar y no se pueden regenerar.
+5. **La sonda** (`POST /api/sonda` con la cabecera del token) — va a responder 403 hasta que se
+   defina el canal de avisos.
+
+---
+
+## Un hallazgo sobre la base, ajeno a este trabajo
+
+Medido al inventariar, y no lo causó nada de acá: **seis tablas de `public` no tienen RLS, y `anon`
+tiene permisos completos de lectura y escritura sobre ellas.** La clave publicable viaja en el
+navegador por diseño, así que hoy cualquiera que la tenga puede leer y modificar:
+
+| Tabla | Filas | Qué contiene |
+| --- | --- | --- |
+| `message_buffer` | 1.888 | mensajes de conversaciones |
+| `conversations` | 752 | conversaciones |
+| `aria_brain_clientes` | 16 | clientes, **con una columna `password`** |
+| `documents`, `documents_crm`, `documents_sofia` | — | contenido RAG |
+
+Más `aria_brain_prekickoff_responses`, con tres políticas que dan a `anon` permiso de leer, insertar
+y actualizar, y que guarda `nombre_completo`, `email`, `telefono` y `password`.
+
+Rotar la clave no lo arregla: la publicable es pública por diseño. El arreglo es una línea por tabla
+—`alter table … enable row level security`— y **no rompe a quien entra por `service_role`**, que
+tiene `bypassrls`. Solo corta a `anon` y `authenticated`. Son tablas de otros sistemas, así que la
+decisión y la prueba de regresión son de quien los mantiene.
+
+---
+
+## Lo que queda pendiente
+
+- **Protección de rama en `main`** con `verificar` requerido.
+- **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) y la tarea horaria de la sonda.
+- **El código QR del segundo factor.** Hoy la pantalla muestra el secreto para carga manual y un
+  enlace `otpauth://`. Generarlo exige una dependencia nueva —decisión de cadena de suministro, con
+  `ignore-scripts=true` y versiones fijas por `ADR-7101`— o escribir el codificador.
+- **Las pantallas de administración.** La API de alta de usuarios y organizaciones está completa y
+  probada; la interfaz no. Mientras tanto se da de alta por guion.
+- **Los 5 usuarios de `closer_usuarios`.** Su `password_hash` usa `scrypt$16384$8$1$…`, **el mismo
+  formato y los mismos parámetros** que `lib/datos/hash.ts`, así que se pueden copiar a
+  `identidad.usuarios` y entrarían con sus contraseñas actuales. Falta escribir y probar ese guion.
+
+
+## Anexo · Probarlo en tu máquina
+
+El puerto de desarrollo está fijado en `3100` (`package.json`), y no es una preferencia: tiene que
+coincidir con `DOMINIO_ESPERADO=localhost:3100` de `.env.local`. Si no coinciden, **el login falla y
+el mensaje dice "problema de configuración del servidor"** — que es correcto y aun así manda a buscar
+en el lugar equivocado. Atarlos en el guión es lo que impide que divergan.
+
+```bash
+docker desktop start           # o abrir Docker Desktop
+npm run db:reset               # base local desde cero, con el sembrado
+npm run dev                    # http://localhost:3100
+```
+
+El sembrado crea `fundadora@principal.ejemplo` con la contraseña `desarrollo-no-usar` y la marca de
+"debe cambiar la contraseña", más el rol `superadministrador` — que exige segundo factor. O sea que
+el flujo local es **el mismo** que en producción: las tres pantallas del primer ingreso.
+
+Ese usuario existe **solo en local**: el sembrado se niega a correr contra un anfitrión remoto.
+
+---
+
+## Anexo · Hallazgos de la revisión adversarial que quedan abiertos
+
+Cinco lentes revisaron la interfaz de login, con un escéptico refutando cada hallazgo: **42
+crudos, 20 confirmados, 22 descartados**. Ocho se arreglaron en el mismo cambio. Los que quedan
+están acá con su mecanismo, porque un hallazgo confirmado que nadie escribe se pierde.
+
+### Arreglados
+
+| Qué | Dónde |
+| --- | --- |
+| Redirección abierta por tab, LF y CR: cuatro variantes pasaban las guardas por prefijo | `lib/autorizacion/destino.ts` |
+| Cambiar la contraseña temporal ponía la sesión en `activa` y salteaba el segundo factor obligatorio | `app/api/auth/sesion/route.ts` |
+| El campo "contraseña actual" se desmontaba al primer carácter: `debe_cambiar_password` sin salida | `app/entrar/page.tsx` |
+| `detalle` reemplazaba el texto del código: `cuenta_bloqueada` perdía el "está bloqueada" | `app/entrar/page.tsx` |
+| Los 409 del segundo factor eran código muerto: la pantalla quedaba clavada | `app/entrar/page.tsx` |
+| `salir()` informaba éxito con el `DELETE` fallado | `app/entrar/page.tsx` |
+| Los códigos de respaldo se perdían con un parpadeo de red | `app/entrar/page.tsx` |
+| El matcher del proxy excluía `api` por prefijo: `/apis` salteaba la compuerta | `proxy.ts` |
+| `SONDA_TOKEN` viajaba por nombre en un `detalle` que ahora se dibuja | `app/api/sonda/route.ts` |
+| `proxy.ts` era invisible para TODOS los barridos del proyecto | `pruebas/apoyo/fuente.ts` |
+
+### Abiertos, en orden de gravedad
+
+**Una pestaña vieja puede borrar el segundo factor recién confirmado.** Una sesión `activa`
+puede volver a llamar `POST /api/auth/2fo/configurar`, que sobrescribe el secreto y deja
+`confirmado_el` en nulo. Escenario: dos pestañas en el alta, se confirma en una, y la otra
+—todavía en la fase de configurar— genera un secreto nuevo. El factor confirmado desaparece y el
+login siguiente pide configurarlo otra vez. Es del backend y es previo a este trabajo.
+
+**`POST /api/auth/2fo/verificar` es alcanzable con la sesión ya `activa`.** Tres códigos
+incorrectos borran la sesión, así que alguien con acceso a una pestaña abierta puede tirar una
+sesión buena sin saber ninguna credencial. `ESTADOS.activa` es `null`, o sea que habilita toda
+ruta — que es correcto en general y de más en este caso.
+
+**`proxy.ts` no tiene ni una prueba.** Ya es visible para los barridos estáticos, pero su
+comportamiento —a quién redirige, a quién deja pasar— no está verificado por nada. Y hay una
+razón estructural: no se puede importar desde la suite sin el entorno de Next. Lo que sí se puede
+probar y falta: que el matcher deje pasar y bloquee lo que dice, y que el grafo de imports no
+arrastre la capa de datos (el arreglo de `COOKIE_SESION` no tiene nada que lo sostenga).
+
+**`npm run paridad` necesita una sesión.** La guarda de `app/guardia.tsx` hace que un navegador
+sin sesión reciba la redirección a `/entrar`, así que todos los selectores fallan con un error que
+no dice "falta la sesión". No se debilita la guarda: hay que entrar primero con el usuario del
+sembrado. El puerto ya está corregido a 3100.
+
+**La promesa de `rechazo()` sobre `detalle` no la hace cumplir nada.** Dice que *"nunca lleva
+nada que el cliente no deba saber"*, y ahora ese campo se dibuja en pantalla. Dos lugares la
+tensan: `rechazo_de_la_base` pasa el texto crudo de cualquier `raise exception` de una migración,
+y el `sin_permiso` de la asignación de roles publica el nombre de una capacidad interna. Una
+prueba que recorra todas las llamadas a `rechazo()` con detalle cerraría la clase.
+
+**El encabezado de `lib/http/cliente.ts` quedó un poco desactualizado.** Afirma que
+`Respuesta<T>` no admite un `??` sobre el resultado; con el campo `detalle` opcional eso es menos
+absoluto de lo que dice. Y el barrido que verifica la unicidad de `pedir()` es más angosto que la
+afirmación del encabezado.
+
+**El `console.error` nuevo del portero no está cubierto por `ADR-0407`.** Esa fila prohíbe
+registrar cuerpos en rutas de autenticación, y el portero no estaba en su alcance. El registro que
+se agregó no toca ningún cuerpo, pero el alcance de la regla debería incluirlo antes de que
+alguien agregue el segundo. Y la rama "sin variable de dominio" que se cambió no tiene prueba de
+comportamiento.
+
+**`/entrar` es una página pública y ninguna lista blanca la nombra.** Las listas de
+`pruebas/apoyo/autorizados.ts` cubren rutas de API. Una página nueva nace sin guarda y sin que
+nada falle — que es la forma que tiene este proyecto de perder invariantes.

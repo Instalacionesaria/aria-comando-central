@@ -39,6 +39,8 @@ import { exigir, NINGUNA, sesionOpcional } from '../../../../lib/autorizacion/po
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { hashear, verificar } from '../../../../lib/datos/hash.ts';
 import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
+import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
+import { MINIMO_PASSWORD } from '../../../../lib/autenticacion/politica.ts';
 import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 
@@ -189,7 +191,11 @@ export async function POST(peticion: Request): Promise<Response> {
   }
   // El largo mínimo es lo único que se valida acá. La política de contraseñas completa no
   // está en la especificación y no se inventa.
-  if (nueva.length < 12) {
+  //
+  // El número vive en `lib/autenticacion/politica.ts` y no acá: estaba duplicado con la
+  // pantalla de entrada, y dos copias del mismo límite en los dos lados de la red divergen. El
+  // por qué del valor —y qué se acepta al elegirlo— está escrito en ese archivo.
+  if (nueva.length < MINIMO_PASSWORD) {
     return ok({ cambiada: false, motivo: 'demasiado_corta' }, 400);
   }
 
@@ -212,13 +218,52 @@ export async function POST(peticion: Request): Promise<Response> {
       .where('id', '=', u.id)
       .execute();
 
-    // La sesión pasa a `activa` SOLO si estaba en `debe_cambiar_password`. Si estaba en un
-    // estado de segundo factor, ese estado sigue mandando: cambiar la contraseña no prueba la
-    // identidad.
+    // ── EL ESTADO SE RECALCULA. NO SE ASUME `activa`. ────────────────────────
+    //
+    // Acá había `.set({ estado: 'activa' })` con la constante, y era un agujero en
+    // `ADR-0413` —*"un usuario con un rol que exige segundo factor no obtiene sesión
+    // habilitada. INNEGOCIABLE"*—. El escenario completo, que es el camino NORMAL de un alta
+    // hecha por un administrador:
+    //
+    //   1. Alta: `debe_cambiar_password = true` y un rol con `exige_segundo_factor`.
+    //      `app/api/admin/usuarios/route.ts` pone esa marca en TODA alta.
+    //   2. Login → `estadoQueCorresponde` rama 2 → `debe_cambiar_password`.
+    //   3. Cambia la contraseña → esta línea la ponía en `activa`.
+    //   4. `ESTADOS.activa` es `null`, o sea que el paso 2 del portero habilita TODA ruta.
+    //
+    // Resultado: entraba al sistema y trabajaba siete días **sin haber configurado nunca el
+    // segundo factor que su rol exige**. Recién el login siguiente lo mandaba a
+    // `debe_configurar_2fo`. Nada fallaba, y es exactamente lo que el encabezado de
+    // `lib/autenticacion/estado.ts` viene advirtiendo: *"cada transición recalcula el estado
+    // con las mismas cuatro ramas del login, EN VEZ DE ASUMIR QUE YA NO QUEDA NADA
+    // PENDIENTE"*. Ese archivo incluso se declara usado por *"el login, el cambio de
+    // contraseña y la verificación del segundo factor"* — y el cambio de contraseña no lo
+    // llamaba.
+    //
+    // ── POR QUÉ `yaProboElFactor: true` ─────────────────────────────────────
+    //
+    // Sin esa opción, la rama 1 devuelve `pendiente_2fo` cuando el factor está confirmado, y
+    // acá eso sería un bucle: una sesión SOLO puede estar en `debe_cambiar_password` de dos
+    // maneras, y en las dos la rama 1 ya no corresponde.
+    //
+    //   · sin factor confirmado — el login llegó a la rama 2 directo;
+    //   · con factor confirmado — el login dio `pendiente_2fo`, y para llegar a
+    //     `debe_cambiar_password` hubo que pasar por `verificar`, o sea que **el factor ya se
+    //     probó en esta sesión**.
+    //
+    // Con la opción puesta, los cuatro casos salen bien: rol que exige y factor sin
+    // configurar → `debe_configurar_2fo` (el defecto, cerrado); rol que exige y factor ya
+    // probado → `activa`; sin rol que exija → `activa`.
+    //
+    // Y sigue dentro del `if`: una sesión que YA estaba `activa` y cambia su contraseña no se
+    // toca. Recalcular ahí la mandaría a `pendiente_2fo` por la rama 1 y le pediría el código
+    // de nuevo a alguien que no cambió de estado — un cambio de comportamiento que este
+    // arreglo no necesita.
     if (contexto.estado === 'debe_cambiar_password') {
+      const siguiente = await estadoQueCorresponde(db, u.id, { yaProboElFactor: true });
       await db
         .updateTable('sesiones')
-        .set({ estado: 'activa' })
+        .set({ estado: siguiente })
         .where('id', '=', contexto.sesionId)
         .execute();
     }

@@ -18,6 +18,7 @@
 import { Kysely, PostgresDialect, type Transaction } from 'kysely';
 import pg from 'pg';
 import { urlDe, type RolBase } from './entorno.ts';
+import { enPruebas, exigirAnfitrionLocal } from './anfitrion.ts';
 import { organizacionActual } from './almacen.ts';
 import { InyectarOrganizacion } from './inyeccion.ts';
 import type { BaseDeDatos } from './esquema.ts';
@@ -27,6 +28,28 @@ export type Trx = Transaction<BaseDeDatos>;
 
 // El único constructor de clientes del proyecto.
 function crearCliente(rol: RolBase): Db {
+  const url = urlDe(rol);
+
+  // ── El guard de anfitrión, SOLO bajo pruebas ───────────────────────────────
+  //
+  // `pruebas/apoyo/conexiones.ts` cubre las conexiones de inspección, pero varias
+  // pruebas escriben por el CAMINO REAL a propósito —`30-aislamiento` y la fase
+  // `verificar` de `db.mjs` usan `conOrganizacion()` y `datos()`, que es lo que las
+  // hace valer algo— y ese camino pasa por acá, no por ahí.
+  //
+  // Sin esta rama, el guard de las pruebas tendría un agujero con la forma exacta
+  // de las pruebas que más escriben.
+  //
+  // Condicionado a `enPruebas()` porque en producción el anfitrión TIENE que ser
+  // remoto: acá el mismo hecho es correcto o catastrófico según quién pregunte.
+  if (enPruebas()) {
+    exigirAnfitrionLocal(url, {
+      quien: `la capa de datos bajo pruebas (rol \`${rol}\`)`,
+      porque: 'la suite escribe y borra por el camino real de la aplicación.',
+      escotilla: 'ARIA_PRUEBAS_FORZADAS',
+    });
+  }
+
   return new Kysely<BaseDeDatos>({
     // La inyección de la organización va SOLO en el cliente del inquilino.
     //
@@ -41,7 +64,7 @@ function crearCliente(rol: RolBase): Db {
     plugins: rol === 'inquilino' ? [new InyectarOrganizacion(organizacionActual)] : [],
     dialect: new PostgresDialect({
       pool: new pg.Pool({
-        connectionString: urlDe(rol),
+        connectionString: url,
         // A la escala de este sistema —cinco organizaciones, veinte usuarios,
         // decenas de peticiones simultáneas— un agrupador chico alcanza. La regla
         // de tamaño de EJECUCION § 1 es explícita: "si una solución existe para

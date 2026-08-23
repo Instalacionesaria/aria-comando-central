@@ -20,9 +20,11 @@ import { POST as login } from '../../app/api/auth/login/route.ts';
 import { POST as configurar } from '../../app/api/auth/2fo/configurar/route.ts';
 import { POST as confirmar } from '../../app/api/auth/2fo/confirmar/route.ts';
 import { POST as verificar, TOPE_DE_CODIGOS } from '../../app/api/auth/2fo/verificar/route.ts';
+import { POST as cambiarPassword } from '../../app/api/auth/sesion/route.ts';
 import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
-import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
-import { hashear } from '../../lib/datos/hash.ts';
+import { conectar, cerrarTodo, unaFila } from '../apoyo/conexiones.ts';
+import { hashear, verificar as verificarHash } from '../../lib/datos/hash.ts';
+import { MINIMO_PASSWORD } from '../../lib/autenticacion/politica.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { cifrar, claveMaestra, descifrar } from '../../lib/credenciales/cifrado.ts';
 import { codigoActual, DIGITOS, PERIODO_SEGUNDOS } from '../../lib/autenticacion/totp.ts';
@@ -151,7 +153,7 @@ async function borrarUsuario(): Promise<void> {
   );
 }
 
-async function crearUsuario(): Promise<void> {
+async function crearUsuario(opciones: { debeCambiarPassword?: boolean } = {}): Promise<void> {
   await borrarUsuario();
   await conIdentidad(async (db) => {
     const org = await db
@@ -166,6 +168,7 @@ async function crearUsuario(): Promise<void> {
         nombre: 'Usuario de segundo factor',
         email: EMAIL,
         password_hash: hashear(PASSWORD),
+        debe_cambiar_password: opciones.debeCambiarPassword ?? false,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -357,6 +360,215 @@ test('ADR-0413 · tres códigos fallidos DESTRUYEN la sesión pendiente', async 
         .executeTakeFirst(),
     );
     assert.equal(sigueViva, undefined, 'la sesión pendiente sobrevivió al tope de códigos');
+  } finally {
+    await borrarUsuario();
+  }
+});
+
+// ─── ADR-0413 · la cadena de DOS estados restringidos ───────────────────────
+
+test('ADR-0413 · cambiar la contraseña temporal NO da sesión activa: manda a configurar el factor', async () => {
+  // ═════════════════════════════════════════════════════════════════════════
+  // LA CADENA QUE NINGUNA PRUEBA CUBRÍA, Y EL DEFECTO QUE TENÍA
+  //
+  // `POST /api/auth/sesion` escribía `.set({ estado: 'activa' })` con la constante. Para un
+  // usuario con contraseña temporal Y un rol que exige segundo factor —el camino NORMAL de un
+  // alta hecha por un administrador, porque `app/api/admin/usuarios/route.ts` pone
+  // `debe_cambiar_password: true` en TODA alta— eso significaba:
+  //
+  //   login → debe_cambiar_password → cambia la contraseña → `activa`
+  //
+  // Y `ESTADOS.activa` es `null`, o sea que el paso 2 del portero habilita TODA ruta. El
+  // usuario entraba al sistema y trabajaba siete días **sin haber configurado nunca el segundo
+  // factor que su rol exige**. Recién el login siguiente lo mandaba a `debe_configurar_2fo`.
+  //
+  // Nada fallaba. Es exactamente lo que el encabezado de `lib/autenticacion/estado.ts` venía
+  // advirtiendo —*"cada transición recalcula el estado con las mismas cuatro ramas del login,
+  // EN VEZ DE ASUMIR QUE YA NO QUEDA NADA PENDIENTE"*— y ese archivo se declara usado por *"el
+  // login, el cambio de contraseña y la verificación del segundo factor"*, mientras el cambio
+  // de contraseña no lo llamaba.
+  //
+  // El `02` § 5 escribe el caso con nombre: *"quien entra con contraseña temporal Y un rol que
+  // exige segundo factor pasa por DOS estados, no por uno."*
+  // ═════════════════════════════════════════════════════════════════════════
+  // El cuerpo va en `try/finally`, y no es ceremonia. El encabezado de `usuarioDePrueba` en
+  // `42-login.test.ts` ya cuenta esta lección: *"una corrida que falla a mitad de camino deja
+  // usuarios sembrados, y la siguiente moría… o sea que el diagnóstico dejaba de ser el defecto
+  // original y pasaba a ser el residuo."*
+  //
+  // Pasó exactamente eso: la primera versión de esta prueba falló en su aserción, el
+  // `borrarUsuario()` del final nunca corrió, y en la corrida siguiente `11-sembrado` falló dos
+  // aserciones — "hay un usuario en cada organización" y "el hash guardado VERIFICA"— por un
+  // usuario que no era suyo. Las dos tenían razón y ninguna hablaba del defecto real.
+  await crearUsuario({ debeCambiarPassword: true });
+  try {
+  const { token, estado } = await entrar();
+  // La rama 2 gana sobre la 3, y eso es a propósito: el administrador que dio el alta conoce
+  // la contraseña temporal, y dejar configurar el factor primero le permitiría inscribir SU
+  // dispositivo en la cuenta de otro.
+  assert.equal(estado, 'debe_cambiar_password', 'el login no dio el primer estado restringido');
+
+  const NUEVA = 'otra-contrasena-bien-larga';
+  const r = await cambiarPassword(
+    con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: NUEVA }),
+  );
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.equal(((await r.json()) as { cambiada: boolean }).cambiada, true);
+
+  // LA AFIRMACIÓN. El estado en la BASE, no lo que la respuesta diga: el manejador no devuelve
+  // el estado nuevo, y lo que decide qué puede hacer esta sesión es la columna.
+  const fila = await unaFila<{ estado: string }>(
+    admin,
+    `select s.estado from identidad.sesiones s
+       join identidad.usuarios u on u.id = s.usuario_id
+      where lower(u.email) = lower($1)`,
+    [EMAIL],
+  );
+  assert.equal(
+    fila?.estado,
+    'debe_configurar_2fo',
+    'la sesión quedó habilitada sin haber configurado el segundo factor que el rol exige',
+  );
+
+  // Y la mitad que lo hace verificable de verdad: con ese estado, el portero RECHAZA la ruta
+  // de verificación. Sin esto, la afirmación de arriba solo compara una cadena de texto.
+  const cualquiera = await verificar(con(token, '/api/auth/2fo/verificar', { codigo: '000000' }));
+  assert.equal(
+    cualquiera.status,
+    403,
+    'el estado dice debe_configurar_2fo pero el portero no lo está aplicando',
+  );
+  assert.equal(
+    ((await cualquiera.json()) as { codigo: string }).codigo,
+    'debe_configurar_2fo',
+    'el rechazo tiene que decir CUÁL estado falta, o el frontend no sabe a dónde mandarlo',
+  );
+  } finally {
+    await borrarUsuario();
+  }
+});
+
+test('ADR-0413 · y sin rol que lo exija, cambiar la contraseña SÍ da sesión activa', async () => {
+  // LA MITAD COMPLEMENTARIA, y sin ella la prueba de arriba pasaría con un manejador que
+  // dejara a TODO el mundo en `debe_configurar_2fo` para siempre — un estado del que solo se
+  // sale configurando un factor que su rol no pide.
+  //
+  // Se usa un usuario de `alfa` SIN rol: `superadministrador` solo existe en la organización
+  // principal (lo fuerza un disparador de la Etapa 1) y todo rol de plataforma exige segundo
+  // factor, así que "sin rol" es la forma de tener este caso.
+  const EMAIL_SIN_ROL = 'temporal-sin-rol@alfa.ejemplo';
+  const limpiar = async () => {
+    await admin.query(
+      `with objetivo as (select id from identidad.usuarios where lower(email) = lower($1)),
+            s as (delete from identidad.sesiones where usuario_id in (select id from objetivo))
+       delete from identidad.usuarios where id in (select id from objetivo)`,
+      [EMAIL_SIN_ROL],
+    );
+  };
+
+  await limpiar();
+  try {
+  await conIdentidad(async (db) => {
+    const org = await db
+      .selectFrom('organizaciones')
+      .select('id')
+      .where('slug', '=', 'alfa')
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto('usuarios')
+      .values({
+        org_id: org.id,
+        nombre: 'Temporal sin rol',
+        email: EMAIL_SIN_ROL,
+        password_hash: hashear(PASSWORD),
+        debe_cambiar_password: true,
+      })
+      .execute();
+  });
+
+  const r = await login(
+    new Request(`https://${DOMINIO}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: `https://${DOMINIO}` },
+      body: JSON.stringify({ email: EMAIL_SIN_ROL, password: PASSWORD }),
+    }),
+  );
+  assert.equal(((await r.clone().json()) as { estado: string }).estado, 'debe_cambiar_password');
+  const token = /__Host-sesion=([^;]+)/.exec(r.headers.get('set-cookie') ?? '')?.[1] ?? '';
+
+  const cambio = await cambiarPassword(
+    con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: 'otra-contrasena-bien-larga' }),
+  );
+  assert.equal(cambio.status, 200, await cambio.clone().text());
+
+  const fila = await unaFila<{ estado: string }>(
+    admin,
+    `select s.estado from identidad.sesiones s
+       join identidad.usuarios u on u.id = s.usuario_id
+      where lower(u.email) = lower($1)`,
+    [EMAIL_SIN_ROL],
+  );
+  assert.equal(
+    fila?.estado,
+    'activa',
+    'sin rol que exija segundo factor, cambiar la contraseña tiene que dejar la sesión activa',
+  );
+  } finally {
+    await limpiar();
+  }
+});
+
+// ─── El largo mínimo de la contraseña ───────────────────────────────────────
+
+test('el largo mínimo se hace cumplir EN EL SERVIDOR, no solo en el formulario', async () => {
+  // ═════════════════════════════════════════════════════════════════════════
+  // POR QUÉ ESTA PRUEBA NO EXISTÍA Y POR QUÉ HACE FALTA
+  //
+  // El mínimo era un `12` literal en el manejador, sin documentar y **sin ninguna prueba que
+  // lo afirmara**. O sea que se podía borrar la comprobación entera y la suite seguía verde:
+  // el único lugar que quedaba validando era el `minLength` del formulario, que es una
+  // sugerencia del navegador y no una defensa — cualquiera manda el `POST` a mano.
+  //
+  // Ahora el número vive en `lib/autenticacion/politica.ts` con su justificación, y esta
+  // prueba es lo que impide que vuelva a ser un número mágico borrable.
+  //
+  // Se afirma sobre `MINIMO_PASSWORD` y no sobre un literal a propósito: el día que alguien
+  // suba el mínimo, esta prueba lo sigue sin editarse. Un `9` escrito acá obligaría a
+  // cambiar dos lugares y volvería a abrir la puerta a que divergieran.
+  // ═════════════════════════════════════════════════════════════════════════
+  await crearUsuario({ debeCambiarPassword: true });
+  try {
+    const { token } = await entrar();
+
+    // UNO menos que el mínimo: rechazada.
+    const corta = 'a'.repeat(MINIMO_PASSWORD - 1);
+    const r1 = await cambiarPassword(con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: corta }));
+    assert.equal(r1.status, 400, 'una contraseña por debajo del mínimo tiene que ser rechazada');
+    assert.equal(
+      ((await r1.json()) as { motivo: string }).motivo,
+      'demasiado_corta',
+      'el motivo tiene que decir QUÉ estuvo mal, o el formulario no sabe qué mostrar',
+    );
+
+    // Y la contraseña NO cambió. Sin esta mitad, un manejador que rechazara con 400 después
+    // de haber escrito el hash pasaría la afirmación de arriba — y sería peor que aceptarla,
+    // porque el usuario no sabría con cuál quedó.
+    const sigueLaVieja = await conIdentidad(async (db) => {
+      const u = await db
+        .selectFrom('usuarios')
+        .select('password_hash')
+        .where('email', '=', EMAIL)
+        .executeTakeFirstOrThrow();
+      return verificarHash(PASSWORD, u.password_hash ?? '');
+    });
+    assert.ok(sigueLaVieja, 'la contraseña se cambió a pesar del rechazo');
+
+    // EXACTAMENTE el mínimo: aceptada. La mitad complementaria, y sin ella un manejador que
+    // rechazara TODA contraseña pasaría la primera afirmación.
+    const justa = 'a'.repeat(MINIMO_PASSWORD);
+    const r2 = await cambiarPassword(con(token, '/api/auth/sesion', { actual: PASSWORD, nueva: justa }));
+    assert.equal(r2.status, 200, await r2.clone().text());
+    assert.equal(((await r2.json()) as { cambiada: boolean }).cambiada, true);
   } finally {
     await borrarUsuario();
   }

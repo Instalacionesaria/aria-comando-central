@@ -16,6 +16,7 @@ import { conectar, cerrarTodo, unaFila, filas } from '../apoyo/conexiones.ts';
 import { verificar } from '../../lib/datos/hash.ts';
 import { CLAVE_DESARROLLO, SLUG_PRINCIPAL, SLUGS_CLIENTE } from '../../db/sembrado/organizaciones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
+import { SLUGS_DE_CONTROL } from '../../lib/deteccion/sonda.ts';
 
 let ident: Client;
 
@@ -28,31 +29,63 @@ after(async () => {
   await cerrarClientes();
 });
 
-test('hay tres organizaciones: la principal y las DOS sembradas', async () => {
-  const orgs = await filas<{ slug: string; es_principal: boolean }>(
+test('hay tres organizaciones de desarrollo, más las dos de control de la sonda', async () => {
+  const orgs = await filas<{ slug: string; es_principal: boolean; activa: boolean }>(
     ident,
-    'select slug, es_principal from identidad.organizaciones order by slug',
+    'select slug, es_principal, activa from identidad.organizaciones order by slug',
   );
-  assert.equal(orgs.length, 3, 'una principal más las dos organizaciones cliente');
+
+  // Cinco, y las dos familias son distintas a propósito.
+  //
+  // Hasta la Etapa 8 eran tres, y la sonda de aislamiento usaba `alfa` y `beta` como
+  // sus organizaciones de control. Eso funcionaba en desarrollo y avisaba gravedad
+  // MÁXIMA cada hora en producción, porque el sembrado no corre ahí y esas dos no
+  // existen. Las de control ahora son propias y las crea `db/controles/sonda.ts` desde
+  // los dos caminos — el sembrado acá, `scripts/arranque.mjs` en producción.
+  assert.equal(orgs.length, 5, 'tres de desarrollo más dos de control de la sonda');
 
   const principal = orgs.filter((o) => o.es_principal);
   assert.equal(principal.length, 1, 'tiene que haber EXACTAMENTE una organización principal');
   assert.equal(principal[0]?.slug, SLUG_PRINCIPAL);
+
+  // Las dos de control existen, y están INACTIVAS. Es la mitad que importa: son
+  // infraestructura, no clientes, y el portero exige la organización activa — así que
+  // nadie puede entrar a ellas mientras la sonda las sigue usando, porque
+  // `conOrganizacion()` fija la variable de transacción y no mira este campo.
+  const control = orgs.filter((o) => (SLUGS_DE_CONTROL as readonly string[]).includes(o.slug));
+  assert.deepEqual(
+    control.map((o) => o.slug).sort(),
+    [...SLUGS_DE_CONTROL].sort(),
+    'faltan las organizaciones de control de la sonda',
+  );
+  for (const c of control) {
+    assert.equal(c.activa, false, `la organización de control ${c.slug} tendría que estar inactiva`);
+    assert.equal(c.es_principal, false, 'una organización de control no puede ser la principal');
+  }
 
   // "Las dos organizaciones sembradas" del criterio de cierre son éstas. Existen
   // como clientes, no como la plataforma, porque las pruebas de aislamiento de la
   // Etapa 2 tienen que comparar CLIENTE contra CLIENTE: el usuario de la principal
   // es el superadministrador con `orgEfectiva` conmutable, el peor fixture posible
   // para la prueba más importante del proyecto.
-  const clientes = orgs.filter((o) => !o.es_principal).map((o) => o.slug);
+  const clientes = orgs
+    .filter((o) => !o.es_principal)
+    .filter((o) => !(SLUGS_DE_CONTROL as readonly string[]).includes(o.slug))
+    .map((o) => o.slug);
   assert.deepEqual(clientes.sort(), [...SLUGS_CLIENTE].sort());
 });
 
 test('los datos son DISTINTOS entre organizaciones, no dos copias', async () => {
-  const orgs = await filas<{ slug: string; nombre: string; zona_horaria: string }>(
+  // Solo las de DESARROLLO. Las dos de control de la sonda comparten la zona horaria
+  // por omisión, y tiene que ser así: lo que esta prueba persigue es que los fixtures
+  // con los que se comparan datos de cliente no sean dos copias. Una organización de
+  // control no tiene datos que comparar — tiene una fila con una marca.
+  const todas = await filas<{ slug: string; nombre: string; zona_horaria: string }>(
     ident,
     'select slug, nombre, zona_horaria from identidad.organizaciones',
   );
+  const orgs = todas.filter((o) => !(SLUGS_DE_CONTROL as readonly string[]).includes(o.slug));
+  assert.equal(orgs.length, 3, 'se esperaban las tres organizaciones de desarrollo');
   const distintos = (xs: string[]) => new Set(xs).size === xs.length;
 
   assert.ok(distintos(orgs.map((o) => o.slug)), 'los slugs tienen que ser distintos');
@@ -76,6 +109,23 @@ test('hay un usuario en cada organización', async () => {
   for (const g of porOrg) {
     assert.equal(g.n, 1, `la organización ${g.org_id} tiene ${g.n} usuarios, se esperaba 1`);
   }
+
+  // Y las dos de control NO tienen ninguno, que es lo que las hace infraestructura y no
+  // clientes. Sin esta mitad, un usuario creado ahí por accidente pasaría inadvertido:
+  // el conteo total de arriba lo detectaría, pero no diría dónde está.
+  const enControl = await filas<{ slug: string; n: number }>(
+    ident,
+    `select o.slug, count(u.id)::int as n
+       from identidad.organizaciones o
+       left join identidad.usuarios u on u.org_id = o.id
+      where o.slug = any($1) group by o.slug order by o.slug`,
+    [[...SLUGS_DE_CONTROL]],
+  );
+  assert.deepEqual(
+    enControl,
+    [...SLUGS_DE_CONTROL].sort().map((slug) => ({ slug, n: 0 })),
+    'una organización de control con usuarios dejó de ser infraestructura',
+  );
 
   // Y cada usuario pertenece a una organización que existe. La clave foránea ya lo
   // garantiza; esto lo afirma para que se lea.

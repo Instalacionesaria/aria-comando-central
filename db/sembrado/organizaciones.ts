@@ -32,6 +32,8 @@
 import { conIdentidad } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { hashear } from '../../lib/datos/hash.ts';
+import { exigirAnfitrionLocal } from '../../lib/datos/anfitrion.ts';
+import { asegurarControlesDeSonda } from '../controles/sonda.ts';
 
 // Contraseña de desarrollo, obviamente falsa y nunca de producción. El guard de
 // abajo impide que este programa corra contra algo que no sea local.
@@ -123,27 +125,24 @@ const ORGS: readonly OrgSembrada[] = [
  * El 10 § 4 es explícito: "nunca datos reales en desarrollo", y su recíproco importa
  * igual — nunca datos de desarrollo en algo que no sea desarrollo. Este programa
  * escribe usuarios con una contraseña conocida.
+ *
+ * La lista de anfitriones locales vive en `lib/datos/anfitrion.ts` desde que las
+ * pruebas necesitaron el mismo guard. Tenía que ser UNA lista y no dos: la copia que
+ * nadie mira es la que se queda vieja, y en este caso "vieja" significa que un
+ * proveedor nuevo pasa por un lado y no por el otro.
+ *
+ * Lo que SÍ cambió al unificar: `ARIA_SEMBRADO_FORZADO=1` ya no puede apuntar esto a
+ * un proveedor administrado. Servía para un anfitrión local con otro nombre, y ahora
+ * es lo único para lo que sirve.
  */
 function exigirBaseLocal(): void {
-  if (process.env.ARIA_SEMBRADO_FORZADO === '1') {
-    console.warn('sembrado: ARIA_SEMBRADO_FORZADO=1 — se omite la comprobación de anfitrión.');
-    return;
-  }
   const url = process.env.DATABASE_URL_IDENTIDAD;
   if (!url) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
-  let anfitrion: string;
-  try {
-    anfitrion = new URL(url).hostname;
-  } catch {
-    throw new Error('DATABASE_URL_IDENTIDAD no es una URL válida.');
-  }
-  const locales = new Set(['localhost', '127.0.0.1', '::1', 'host.docker.internal']);
-  if (!locales.has(anfitrion)) {
-    throw new Error(
-      `el sembrado se niega a correr contra "${anfitrion}": escribe usuarios con una ` +
-        'contraseña de desarrollo conocida. Solo anfitriones locales.',
-    );
-  }
+  exigirAnfitrionLocal(url, {
+    quien: 'el sembrado',
+    porque: 'escribe usuarios con una contraseña de desarrollo conocida.',
+    escotilla: 'ARIA_SEMBRADO_FORZADO',
+  });
 }
 
 export interface ResumenSembrado {
@@ -308,12 +307,36 @@ export async function sembrar(): Promise<ResumenSembrado> {
   // transacciones distintas y una puede confirmar y la otra fallar. Es aceptable acá
   // porque el sembrado es idempotente y `db.mjs verificar` comprueba el EFECTO, no la
   // ausencia de error — y porque `reset` dice qué fases completó en vez de un "listo" liso.
-  const creadasControl = await sembrarControl(identidad.filas);
+  // Solo las TRES de desarrollo. Las dos de control de la sonda tienen su propia fila,
+  // con su propia marca, y las crea `db/controles/sonda.ts` — pasarlas por acá les
+  // pondría una segunda fila de control con otra marca, y la sonda cuenta filas.
+  const slugsDeDesarrollo = new Set(ORGS.map((o) => o.slug));
+  const creadasControl = await sembrarControl(
+    identidad.filas.filter((f) => slugsDeDesarrollo.has(f.slug)),
+  );
+
+  // Y las dos de control de la sonda, por el mismo camino que en producción.
+  //
+  // El sembrado las crea ADEMÁS de las tres de desarrollo, en vez de reusar `alfa` y
+  // `beta`: así la sonda mira lo MISMO en los dos entornos. Cuando `alfa` y `beta` eran
+  // los controles, la sonda pasaba en desarrollo y avisaba gravedad máxima en
+  // producción cada hora — la peor combinación posible, porque el entorno donde se
+  // prueba era el único donde funcionaba.
+  const controles = await asegurarControlesDeSonda();
 
   // El conteo se hace también por bucle, porque una sola consulta sin contexto no puede
   // ver `negocio` — que es precisamente la garantía que se está construyendo.
+  //
+  // Y se relee la lista de organizaciones: `identidad.filas` se leyó ANTES de que
+  // `asegurarControlesDeSonda()` creara las dos de control, así que en la primera corrida
+  // no las incluíría y el conteo reportado sería dos menos que la realidad. Un conteo que
+  // miente en la primera corrida y acierta en la segunda es peor que ninguno.
+  const todas = await conIdentidad(async (db) =>
+    db.selectFrom('organizaciones').select(['id', 'slug']).execute(),
+  );
+
   let control = 0;
-  for (const org of identidad.filas) {
+  for (const org of todas) {
     control += await conOrganizacion(org.id, async () => {
       const f = await datos()
         .selectFrom('control_aislamiento')
@@ -324,10 +347,15 @@ export async function sembrar(): Promise<ResumenSembrado> {
   }
 
   return {
-    organizaciones: identidad.organizaciones,
+    organizaciones: todas.length,
     usuarios: identidad.usuarios,
     asignaciones: identidad.asignaciones,
     control,
-    creadas: [...identidad.creadas, ...creadasControl],
+    creadas: [
+      ...identidad.creadas,
+      ...creadasControl,
+      ...controles.organizaciones.map((s2) => `organizacion-de-control:${s2}`),
+      ...controles.filas.map((s2) => `control-de-sonda:${s2}`),
+    ],
   };
 }

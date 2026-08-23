@@ -59,21 +59,38 @@ export async function estadoQueCorresponde(
     .where('id', '=', usuarioId)
     .executeTakeFirstOrThrow();
 
-  // 1 · Segundo factor CONFIRMADO y sin verificar en esta sesión: gana siempre.
+  // ¿El segundo factor está CONFIRMADO?
   //
   // Se pregunta por `confirmado_el is not null`, NO por la existencia de la fila. El comentario
   // de la migración 006 lo dice: *"el login pregunta si el segundo factor está CONFIRMADO, no
   // si existe la fila"*. Un alta empezada y abandonada dejaría la cuenta en `pendiente_2fo`
   // para siempre, con un secreto que nadie confirmó.
-  if (!opciones.yaProboElFactor) {
-    const confirmado = await db
-      .selectFrom('usuarios_segundo_factor')
-      .select('usuario_id')
-      .where('usuario_id', '=', usuarioId)
-      .where('confirmado_el', 'is not', null)
-      .executeTakeFirst();
-    if (confirmado) return 'pendiente_2fo';
-  }
+  //
+  // ── SE CONSULTA SIEMPRE, TAMBIÉN CON `yaProboElFactor` ──────────────────────
+  //
+  // Antes esta consulta estaba DENTRO del `if (!opciones.yaProboElFactor)`, y la rama 3 usaba
+  // la bandera para decidir. Eso escondía un defecto: con la bandera puesta, la rama 3
+  // devolvía `activa` **sin mirar si el factor existía**.
+  //
+  // No se notaba porque los dos únicos llamadores que la pasaban —`confirmar` y `verificar`—
+  // escriben o ya tienen `confirmado_el`, así que "hay bandera" y "hay factor" coincidían
+  // siempre. Dejó de coincidir cuando el cambio de contraseña pasó a llamar acá: ahí la bandera
+  // significa *"el factor ya se probó en esta sesión, no vuelvas a pedirlo"*, y el factor bien
+  // puede no estar configurado. La rama 3 devolvía `activa` y el segundo factor obligatorio se
+  // salteaba entero — con una prueba nueva en rojo, que es como se encontró.
+  //
+  // Ahora la bandera hace UNA sola cosa: saltear la rama 1. Quién está configurado lo decide el
+  // estado real de la fila, que es lo único que no puede mentir. Cuesta una consulta más en dos
+  // caminos.
+  const factorConfirmado = await db
+    .selectFrom('usuarios_segundo_factor')
+    .select('usuario_id')
+    .where('usuario_id', '=', usuarioId)
+    .where('confirmado_el', 'is not', null)
+    .executeTakeFirst();
+
+  // 1 · Confirmado y sin verificar en esta sesión: gana siempre.
+  if (factorConfirmado && !opciones.yaProboElFactor) return 'pendiente_2fo';
 
   // 2 · Contraseña temporal. ANTES de configurar el segundo factor. Ver el encabezado.
   if (u.debe_cambiar_password) return 'debe_cambiar_password';
@@ -91,10 +108,13 @@ export async function estadoQueCorresponde(
     .select('r.id')
     .executeTakeFirst();
   if (exige) {
-    // Si ya lo configuró y confirmó, la rama 1 lo habría atrapado (o `yaProboElFactor` lo
-    // saltó a propósito). Así que llegar acá con el factor confirmado significa que acaba de
-    // probarlo: no hay nada pendiente.
-    if (opciones.yaProboElFactor) return 'activa';
+    // Se decide por el ESTADO REAL de la fila, no por la bandera del llamador.
+    //
+    // Llegar acá con el factor confirmado solo puede significar que la rama 1 se salteó a
+    // propósito, o sea que acaba de probarlo: no hay nada pendiente. Sin confirmar, hay que
+    // configurarlo — y ésa es la rama que la versión anterior se perdía cuando el llamador
+    // pasaba `yaProboElFactor` sin haber configurado nada.
+    if (factorConfirmado) return 'activa';
     return 'debe_configurar_2fo';
   }
 

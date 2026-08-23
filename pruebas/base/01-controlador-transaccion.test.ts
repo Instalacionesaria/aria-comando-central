@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import pg from 'pg';
+import { exigirAnfitrionLocal } from '../../lib/datos/anfitrion.ts';
 
 const url = process.env.DATABASE_URL_ADMIN;
 if (!url) {
@@ -26,6 +27,23 @@ if (!url) {
       'en su primera ejecución los tres roles del diseño todavía no existen.',
   );
 }
+
+// El guard de anfitrión, a mano y no por `conectar()`.
+//
+// Esta compuerta es el único archivo de prueba que construye su propio cliente, y
+// tiene motivo: necesita `max: 1` y `db.connection()` para fijar UNA conexión
+// física, que es toda la propiedad que verifica. Un `pg.Client` de
+// `pruebas/apoyo/conexiones.ts` no sirve acá.
+//
+// Pero saltear el constructor también salteaba el guard, y esta prueba CREA Y BORRA
+// UN ROL DEL CLÚSTER (`sonda_lector`). Contra un clúster compartido con otros cinco
+// sistemas eso no es una prueba, es una modificación del entorno de otros — y si la
+// prueba muere entre el `create` y el `drop`, el rol queda huérfano ahí.
+exigirAnfitrionLocal(url, {
+  quien: 'la compuerta del controlador de transacción',
+  porque: 'crea y borra un rol del clúster.',
+  escotilla: 'ARIA_PRUEBAS_FORZADAS',
+});
 
 const db = new Kysely<Record<string, never>>({
   dialect: new PostgresDialect({ pool: new pg.Pool({ connectionString: url, max: 1 }) }),

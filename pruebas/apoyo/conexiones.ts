@@ -17,12 +17,39 @@
 
 import pg from 'pg';
 import { urlDe, type RolBase } from '../../lib/datos/entorno.ts';
+import { exigirAnfitrionLocal } from '../../lib/datos/anfitrion.ts';
 
 const abiertos: pg.Client[] = [];
 
-/** Un cliente conectado con el rol pedido. Se cierra con `cerrarTodo()`. */
+/**
+ * Un cliente conectado con el rol pedido. Se cierra con `cerrarTodo()`.
+ *
+ * ── EL GUARD DE ANFITRIÓN, Y POR QUÉ ESTÁ ACÁ ────────────────────────────────
+ *
+ * Este es el único punto por donde se conecta toda prueba de base, así que es el
+ * único lugar donde el guard tiene que estar para cubrirlas a las 158.
+ *
+ * Y hace falta de verdad, no por prolijidad: la suite BORRA. `limpiarTodo()` se
+ * lleva todo usuario que no sea uno de los tres del sembrado y reactiva a los
+ * desactivados; `60-credenciales.test.ts` vacía `organizaciones_credenciales` en el
+ * `before` y en el `after`, y eso es IRREVERSIBLE porque está cifrado con
+ * `CLAVE_MAESTRA`. Con `.env.local` apuntando a un proveedor administrado, un
+ * `npm test` es una pérdida de datos de producción.
+ *
+ * Se comprueba en cada llamada y no una vez al importar: el costo es una
+ * comparación en un `Set` frente a un viaje de red, y así una prueba que conecte
+ * con dos roles queda cubierta en los dos.
+ */
 export async function conectar(rol: RolBase): Promise<pg.Client> {
-  const cliente = new pg.Client({ connectionString: urlDe(rol), connectionTimeoutMillis: 10_000 });
+  const url = urlDe(rol);
+  exigirAnfitrionLocal(url, {
+    quien: `la suite de pruebas (rol \`${rol}\`)`,
+    porque:
+      'la suite borra usuarios, sesiones y credenciales cifradas — y las credenciales ' +
+      'no se recuperan.',
+    escotilla: 'ARIA_PRUEBAS_FORZADAS',
+  });
+  const cliente = new pg.Client({ connectionString: url, connectionTimeoutMillis: 10_000 });
   await cliente.connect();
   abiertos.push(cliente);
   return cliente;

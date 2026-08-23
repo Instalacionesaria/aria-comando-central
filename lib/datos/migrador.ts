@@ -23,16 +23,46 @@ import { clienteMigradorParaMigraciones, type Db } from './capa.ts';
 
 const DIR = fileURLToPath(new URL('../../db/migraciones/', import.meta.url));
 
-// La contabilidad de las migraciones vive en `public`, NO en `identidad`.
+// La contabilidad de las migraciones vive en su PROPIO esquema.
 //
-// Bomba concreta: por omisión Kysely crea su tabla en el primer esquema de la ruta
-// de búsqueda, y `migrador` tiene `search_path = identidad, negocio`. La
-// contabilidad nacería DENTRO de `identidad` y la prueba de catálogo de la Etapa 1
-// —"cero tablas sin seguridad activada, forzada y con política"— fallaría sobre la
-// tabla de la propia herramienta.
-export const ESQUEMA_CONTABILIDAD = 'public';
+// Bomba concreta, y sigue siendo cierta: por omisión Kysely crea su tabla en el
+// primer esquema de la ruta de búsqueda, y `migrador` tiene
+// `search_path = identidad, negocio`. La contabilidad nacería DENTRO de `identidad` y
+// la prueba de catálogo de la Etapa 1 —"cero tablas sin seguridad activada, forzada y
+// con política"— fallaría sobre la tabla de la propia herramienta.
+//
+// ── POR QUÉ YA NO ES `public` ──────────────────────────────────────────────────
+//
+// Hasta acá era `public`, y el razonamiento era que `public` era el esquema vacío
+// por exclusión: el único lugar que no era ni `identidad` ni `negocio`.
+//
+// Ese razonamiento se cayó. La base real tiene 59 tablas de cinco sistemas ahí, más
+// los esquemas de plataforma de Supabase. `public` no es un lugar tranquilo: es el
+// esquema de otros cinco dueños, y encima está publicado por PostgREST, así que una
+// tabla nuestra sin RLS nace alcanzable desde la red con la clave anónima.
+//
+// Mudarla acá compra lo que de verdad importaba: permite QUITAR
+// `grant usage, create on schema public to migrador` del arranque, que era la única
+// razón por la que `migrador` podía crear objetos en el esquema de los cinco
+// sistemas. Con eso, nuestra superficie de escritura sobre `public` baja a CERO — que
+// es la propiedad entera sobre la que se apoya la convivencia.
+export const ESQUEMA_CONTABILIDAD = 'migraciones';
 export const TABLA_APLICADAS = 'migraciones_aplicadas';
 export const TABLA_CANDADO = 'migraciones_candado';
+
+/**
+ * Los esquemas donde este proyecto puede crear tablas.
+ *
+ * `public` NO está, y es el punto. La lista la usa el rechazo 4b de
+ * `revisarMigraciones()`: hasta la base real, "calificar el esquema" alcanzaba
+ * porque no había otro esquema donde caer.
+ *
+ * `migraciones` está porque es el esquema de la contabilidad — pero esas dos tablas
+ * las crea Kysely, no un archivo de `db/migraciones/`, así que en la práctica ningún
+ * `create table` nuestro lo nombra. Está en la lista para que el día que alguien
+ * necesite tocar la contabilidad desde una migración, el rechazo no lo confunda.
+ */
+export const ESQUEMAS_NUESTROS: readonly string[] = ['identidad', 'negocio', ESQUEMA_CONTABILIDAD];
 
 /** Los `.sql` de db/migraciones/, en orden alfabético. El nombre ordena. */
 export function archivosDeMigracion(): string[] {
@@ -110,6 +140,25 @@ export function revisarMigraciones(): Rechazo[] {
       const nombre = m[1] ?? '';
       if (!nombre.includes('.')) {
         rechazos.push({ archivo, motivo: `\`create table ${nombre}\` sin esquema: calificalo` });
+      } else if (!ESQUEMAS_NUESTROS.some((e) => nombre.toLowerCase().startsWith(`${e}.`))) {
+        // 4b · Y el esquema tiene que ser UNO DE LOS NUESTROS.
+        //
+        // Hasta acá la regla 4 solo exigía que el nombre tuviera un punto, y con la
+        // base vacía de la Etapa 0 eso alcanzaba: no había otro esquema donde caer.
+        // Ya no. La base real tiene cinco sistemas en `public` y los esquemas de
+        // plataforma de Supabase (`auth`, `storage`, `extensions`, `vault`…), así que
+        // `create table public.pedidos` y `create table auth.usuarios` pasaban la
+        // revisión sin una objeción.
+        //
+        // Y una tabla nuestra en `public` no es solo desorden: `public` está
+        // publicado por PostgREST, así que nace alcanzable desde la red con la clave
+        // anónima y sin ninguna de las quince políticas de este sistema.
+        rechazos.push({
+          archivo,
+          motivo:
+            `\`create table ${nombre}\`: el esquema tiene que ser uno de ` +
+            `${ESQUEMAS_NUESTROS.join(', ')} — no se crean tablas en esquemas ajenos`,
+        });
       }
       // 5 · Toda tabla de NEGOCIO lleva la columna del inquilino, o está en la
       //     lista de tablas compartidas — que es el CONJUNTO VACÍO, porque no hay
@@ -121,14 +170,34 @@ export function revisarMigraciones(): Rechazo[] {
         if (!/\borg_id\b/.test(declaracion)) {
           rechazos.push({ archivo, motivo: `\`${nombre}\` es de negocio y no declara org_id` });
         }
-        // El calificador de esquema es opcional: la convención del proyecto es
-        // calificar (`select negocio.aplicar_aislamiento(...)`), pero el documento la
-        // escribe sin calificar y las dos formas tienen que pasar. Sin el grupo
-        // opcional, este rechazo dispararía sobre una migración correcta.
-        if (!/\bselect\s+(?:[\w"]+\.)?aplicar_aislamiento\s*\(/i.test(limpio)) {
+        // 5b · La llamada tiene que nombrar ESTA tabla, no cualquiera.
+        //
+        // Antes se comprobaba contra el archivo completo: bastaba UNA llamada a
+        // `aplicar_aislamiento()` en cualquier parte para que TODAS las tablas de
+        // negocio del archivo pasaran. Una migración que creara dos tablas y aislara
+        // una sola pasaba la revisión, y la que quedaba afuera terminaba con RLS
+        // apagada y el `grant` por omisión al inquilino — o sea, el inquilino viendo
+        // todas las filas de todas las organizaciones.
+        //
+        // Que es exactamente el defecto que la migración 008 existe para prevenir. Con
+        // una sola tabla de negocio en el proyecto el hueco era teórico; deja de serlo
+        // en cuanto se agregue la segunda.
+        //
+        // El calificador de esquema es opcional en las dos puntas: la convención del
+        // proyecto es calificar (`select negocio.aplicar_aislamiento('negocio.x')`),
+        // pero el documento la escribe sin calificar y las dos formas tienen que pasar.
+        const corta = nombre.replace(/^negocio\./i, '');
+        const nombrada = new RegExp(
+          String.raw`\bselect\s+(?:[\w"]+\.)?aplicar_aislamiento\s*\(\s*'(?:negocio\.)?` +
+            `${corta}'`,
+          'i',
+        );
+        if (!nombrada.test(limpio)) {
           rechazos.push({
             archivo,
-            motivo: `\`${nombre}\` es de negocio y el archivo no llama a aplicar_aislamiento()`,
+            motivo:
+              `\`${nombre}\` es de negocio y ninguna llamada a aplicar_aislamiento() la ` +
+              'nombra: una llamada por tabla, no una por archivo',
           });
         }
       }
@@ -237,6 +306,19 @@ export async function migrar(): Promise<ResultadoMigracion> {
 
   const db = clienteMigradorParaMigraciones();
   await comprobarConexion(db);
+
+  // El esquema de la contabilidad, antes que nada.
+  //
+  // Kysely usa `migrationTableSchema` pero NO crea el esquema: si no existe, falla
+  // con "schema does not exist" en la primera corrida y ni el candado se toma. Con
+  // `public` esto no hacía falta porque siempre existe; ése era todo el conveniente
+  // de estar ahí, y es más barato de reponer que la propiedad que costaba.
+  //
+  // Después de `comprobarConexion()` y no antes: crear un esquema sin haber
+  // verificado con qué rol estamos conectados es crearlo con el dueño equivocado, y
+  // el dueño de un esquema es lo que las pruebas de catálogo usan para distinguir lo
+  // nuestro de lo ajeno.
+  await sql.raw(`create schema if not exists ${ESQUEMA_CONTABILIDAD}`).execute(db);
 
   const migrator = new Migrator({
     db,

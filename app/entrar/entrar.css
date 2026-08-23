@@ -1,0 +1,228 @@
+/* La pantalla de entrada. Usa los tokens de `app/aios.css`, con respaldo propio.
+ *
+ * Los `var(--x, respaldo)` no son paranoia: esta pantalla es lo primero que carga y tiene que
+ * verse bien aunque la hoja del centro de mando no haya llegado. Un login sin estilos sobre
+ * fondo blanco con texto claro es un login ilegible. */
+
+.entrar {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg, #05080d);
+  color: var(--txt, #dbe7f4);
+  font-family: var(--font-ui, system-ui, sans-serif);
+}
+
+.entrar-caja {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-panel, #0b111b);
+  border: 1px solid var(--line, rgba(148, 197, 255, 0.08));
+  border-radius: 12px;
+  padding: 28px 26px 26px;
+  box-shadow: var(--sh-3, 0 16px 40px rgba(0, 0, 0, 0.35));
+}
+
+.entrar-cabecera {
+  margin-bottom: 20px;
+}
+
+.entrar-marca {
+  display: block;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--accent, #35e0d2);
+  margin-bottom: 10px;
+}
+
+.entrar-titulo {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.entrar-sub {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--txt-dim, #7d8ca1);
+}
+
+.entrar-error {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--crit, #f05c5c);
+  background: rgba(240, 92, 92, 0.09);
+  border: 1px solid rgba(240, 92, 92, 0.22);
+}
+
+.entrar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.entrar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entrar-campo > span {
+  font-size: 12px;
+  color: var(--txt-dim, #7d8ca1);
+}
+
+.entrar-campo > input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--txt, #dbe7f4);
+  background: var(--bg-sunk, #070b12);
+  border: 1px solid var(--line-strong, rgba(148, 197, 255, 0.16));
+  border-radius: 8px;
+}
+
+.entrar-campo > input:focus {
+  outline: none;
+  border-color: var(--accent, #35e0d2);
+  box-shadow: 0 0 0 3px var(--accent-dim, rgba(53, 224, 210, 0.12));
+}
+
+.entrar-form > button {
+  margin-top: 4px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #05080d;
+  background: var(--accent, #35e0d2);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.entrar-form > button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.entrar-secreto {
+  margin-bottom: 18px;
+}
+
+.entrar-clave {
+  display: block;
+  margin: 12px 0;
+  padding: 12px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 15px;
+  /* El secreto se copia a mano a una aplicación de autenticación: se corta donde haga falta
+     en vez de desbordar, y se puede seleccionar entero. */
+  word-break: break-all;
+  text-align: center;
+  color: var(--accent, #35e0d2);
+  background: var(--bg-sunk, #070b12);
+  border: 1px solid var(--line-strong, rgba(148, 197, 255, 0.16));
+  border-radius: 8px;
+  user-select: all;
+}
+
+.entrar-datos {
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.entrar-datos > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.entrar-datos dt {
+  color: var(--txt-faint, #4a5568);
+}
+
+.entrar-datos dd {
+  margin: 0;
+  text-align: right;
+  color: var(--txt-dim, #7d8ca1);
+}
+
+.entrar-mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  word-break: break-all;
+}
+
+.entrar-aviso {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--exec, #e8b64c);
+}
+
+.entrar-respaldos {
+  margin: 14px 0 0;
+  padding: 12px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  background: var(--bg-sunk, #070b12);
+  border: 1px solid var(--line-strong, rgba(148, 197, 255, 0.16));
+  border-radius: 8px;
+  user-select: all;
+}
+
+.entrar-nota {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--exec, #e8b64c);
+  background: var(--exec-dim, rgba(232, 182, 76, 0.12));
+  border: 1px solid rgba(232, 182, 76, 0.22);
+}
+
+.entrar-enlace {
+  color: var(--accent, #35e0d2);
+}
+
+/* La salida de un estado restringido. Discreta pero siempre presente: un estado sin salida es
+   una cuenta bloqueada que necesita a un administrador (03 § 5). */
+.entrar-salir {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--txt-dim, #7d8ca1);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line, rgba(148, 197, 255, 0.08));
+  cursor: pointer;
+}
+
+.entrar-salir:hover:not(:disabled) {
+  color: var(--txt, #dbe7f4);
+}
+
+.entrar-salir:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

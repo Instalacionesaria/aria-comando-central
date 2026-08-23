@@ -7,11 +7,23 @@
 
 services:
   base:
-    # La versión MAYOR tiene que coincidir con la del PostgreSQL administrado que
-    # se elija (requisito de paridad). El parche se fija cuando ese proveedor
-    # exista: fijarlo ahora sería precisión falsa, porque todavía no sabemos
-    # contra qué versión corre producción.
-    image: postgres:18-alpine
+    # La versión MAYOR tiene que coincidir con la del PostgreSQL administrado, y
+    # ahora sabemos cuál es: **PostgreSQL 17.4**, medido contra el proyecto real
+    # (`select version()` por la Management API), no supuesto.
+    #
+    # Estaba en 18 mientras el proveedor no existía. Bajarlo no es cosmético: hay
+    # una defensa entera que se validó contra un comportamiento de 18. El
+    # `docs/ETAPA-2.md` afirma que *"PostgreSQL 18 exige privilegio sobre todas las
+    # columnas para cualquier referencia de fila completa, así que el permiso por
+    # columna es hermético"*, y de eso depende que el inquilino no alcance
+    # `identidad.usuarios.password_hash`. Con el contenedor en 18 y producción en
+    # 17, la suite habría dado verde sobre una propiedad que en producción puede
+    # no valer — la divergencia entre entornos que el encabezado de este archivo
+    # nombra como *"exactamente lo que hace que la prueba que debía fallar pase"*.
+    #
+    # El parche queda sin fijar a propósito: Supabase actualiza el suyo y clavarlo
+    # acá produciría una divergencia nueva en la dirección contraria.
+    image: postgres:17-alpine
     # El nombre del contenedor es fijo para que los guiones lo puedan esperar sin
     # adivinar el prefijo que Compose le pone al proyecto.
     container_name: aria_base

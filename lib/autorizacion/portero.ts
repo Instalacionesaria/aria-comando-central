@@ -92,7 +92,22 @@ export function verificarOrigen(peticion: Request): Response | null {
   const esperado = dominioEsperado();
   const origen = peticion.headers.get('origin');
   if (!esperado) {
-    return rechazo('origen_no_permitido', 'DOMINIO_ESPERADO no está configurado');
+    // El nombre de la variable va al REGISTRO DEL SERVIDOR, no al cuerpo de la respuesta.
+    //
+    // Antes viajaba como `detalle`, y eso era un detalle de configuración del servidor
+    // contado a cualquiera que golpee el endpoint. Dejó de ser teórico cuando la pantalla de
+    // entrada empezó a mostrar el `detalle` de los rechazos: la variable mal puesta pasaba a
+    // aparecer en la cara del usuario.
+    //
+    // Y el registro es el lugar correcto de todas formas: quien puede arreglar esto es quien
+    // administra el despliegue, y esa persona lee el registro, no la pantalla de login.
+    // Registrar el NOMBRE no filtra nada —no es el valor— y `ADR-0407` prohíbe registrar
+    // cuerpos, que no es el caso.
+    console.error(
+      'verificarOrigen: la variable de dominio esperado no está configurada. Toda petición ' +
+        'que modifica va a ser rechazada, incluido el login. Ver docs/DESPLIEGUE.md.',
+    );
+    return rechazo('origen_no_permitido');
   }
   if (!origen) return rechazo('origen_no_permitido');
   let host: string;

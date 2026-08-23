@@ -18,6 +18,18 @@
 // (tira la base primero, así que una falla a medias se arregla volviendo a correrlo)
 // y porque `verificar` es una fase aparte que comprueba el efecto, no la ausencia de
 // error.
+//
+// ── Y EL LÍMITE DE ESE RAZONAMIENTO ─────────────────────────────────────
+//
+// "Idempotente por destrucción" vale SOLO para el contenedor local. Contra un
+// proveedor administrado, `bajar` no destruye nada remoto, así que `reset` pasa a
+// ser `arranque + migrar + sembrar` sobre estado ACUMULADO — y con eso desaparece
+// justo la propiedad que hacía aceptable la falta de atomicidad entre dominios.
+//
+// Por eso `bajar` ahora exige un anfitrión local, y con ella `reset` completo: es la
+// primera fase de la lista, así que corta antes de que nada haya corrido. Las fases
+// sueltas `arranque` y `migrar` SÍ pueden correr contra el proveedor administrado:
+// es como se despliega.
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -54,9 +66,31 @@ async function esperarSano({ intentos = 60, cada = 2000 } = {}) {
   throw new Error(`el contenedor ${CONTENEDOR} no llegó a "healthy"`);
 }
 
+// El guard de anfitrión, para las fases que solo tienen sentido en local.
+//
+// La lista de anfitriones vive en `lib/datos/anfitrion.ts`, que es la misma que usan
+// el sembrado y las pruebas. Se importa perezosamente porque este archivo corre
+// fases que NO necesitan entorno de base (`levantar`), y un import arriba las haría
+// depender de él.
+async function exigirLocalParaFase(fase, porque) {
+  const { exigirAnfitrionLocal } = await import('../lib/datos/anfitrion.ts');
+  const url = process.env.DATABASE_URL_IDENTIDAD;
+  if (!url) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  exigirAnfitrionLocal(url, {
+    quien: `la fase \`${fase}\``,
+    porque,
+    escotilla: 'ARIA_DB_FORZADO',
+  });
+}
+
 // ── Fases ────────────────────────────────────────────────────────────────────
 
 async function bajar() {
+  // Este `docker compose down -v` no mira a dónde apunta el entorno, y ahí hay dos
+  // sorpresas distintas: contra un proveedor administrado no baja NADA remoto —así
+  // que `reset` deja de ser idempotente por destrucción, ver el encabezado— y de
+  // paso se lleva la base local de alguien que creía estar operando la remota.
+  await exigirLocalParaFase('bajar', 'destruye el contenedor local y su volumen.');
   // `-v` se lleva el volumen anónimo: la base muere de verdad.
   compose('down', '-v', '--remove-orphans');
 }
@@ -165,10 +199,13 @@ async function verificar() {
     const nOrgs = orgs.rows[0]?.n ?? 0;
     const nUsuarios = usuarios.rows[0]?.n ?? 0;
     console.log(`  app_identidad ve ${nOrgs} organizaciones y ${nUsuarios} usuarios`);
-    if (nOrgs !== 3) fallos.push(`se esperaban 3 organizaciones, hay ${nOrgs}`);
+    // CINCO organizaciones: las tres de desarrollo más las dos de control de la sonda,
+    // que el sembrado crea por el mismo camino que `scripts/arranque.mjs` en producción.
+    // Y TRES usuarios: las de control no tienen ninguno, son infraestructura.
+    if (nOrgs !== 5) fallos.push(`se esperaban 5 organizaciones, hay ${nOrgs}`);
     if (nUsuarios !== 3) fallos.push(`se esperaban 3 usuarios, hay ${nUsuarios}`);
     if (porOrg.rows.length !== 3 || porOrg.rows.some((f) => f.n !== 1)) {
-      fallos.push('cada organización tiene que tener exactamente un usuario');
+      fallos.push('cada organización de desarrollo tiene que tener exactamente un usuario');
     }
   } finally {
     await identidad.end();

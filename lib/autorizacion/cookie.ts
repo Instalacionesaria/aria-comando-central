@@ -32,7 +32,26 @@
 // una sola vez, con los cuatro atributos escritos. No hay una segunda forma de hacerlo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { COOKIE_SESION } from './sesion.ts';
+/**
+ * El nombre de la cookie de sesión. **Vive acá y no en `sesion.ts`, a propósito.**
+ *
+ * Estaba en `sesion.ts`, que es donde se resuelve la sesión contra la base — y por eso importa
+ * `kysely` y `lib/datos/capa.ts`, que a su vez trae `pg`, el agrupador de conexiones y
+ * `AsyncLocalStorage`.
+ *
+ * Eso lo volvió un problema el día que `proxy.ts` necesitó el nombre. La documentación de
+ * Next 16 dice del proxy: *"Proxy is meant to be invoked separately of your render code and in
+ * optimized cases deployed to your CDN […] you should not attempt relying on shared modules or
+ * globals."* Importar el nombre desde `sesion.ts` arrastraba **la capa de datos entera** a un
+ * archivo que puede correr en el borde, para leer una cadena de trece caracteres.
+ *
+ * El build lo toleraba, y ahí está lo peligroso: si el empaquetador hoy poda `pg`, mañana un
+ * refactor cualquiera de `capa.ts` lo vuelve a meter, y el síntoma aparece lejos de la causa.
+ *
+ * Este archivo no importa NADA, y por eso es el lugar correcto. `sesion.ts` la reexporta para que
+ * los diez archivos que ya la importaban de ahí sigan andando: hay UNA definición, no dos.
+ */
+export const COOKIE_SESION = '__Host-sesion';
 
 /**
  * La cabecera `Set-Cookie` de la sesión.
