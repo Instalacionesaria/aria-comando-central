@@ -477,3 +477,43 @@ test('el vacío legítimo dice POR QUÉ está vacío', () => {
   // El rechazo por permiso NO ofrece reintentar: reintentar no cambia tus capacidades.
   assert.match(lista, /sinPermiso/, 'la lista no distingue el rechazo por permiso');
 });
+
+test('la consulta de la lista tiene un desempate ESTABLE en el orden', () => {
+  // ── POR QUÉ ESTA PRUEBA ES DE CÓDIGO Y NO DE COMPORTAMIENTO ───────────────
+  //
+  // Escribí primero la de comportamiento: crear 101 contactos, pedir las dos páginas y
+  // comprobar que la segunda no repite filas de la primera. **Y no sirve.** Se comprobó
+  // quitando el `orderBy('c.id')` del código: la prueba SIGUIÓ PASANDO.
+  //
+  // El motivo es que un orden inestable no está obligado a ser distinto. Sin desempate,
+  // PostgreSQL puede devolver las filas empatadas en cualquier orden — y "cualquiera" incluye
+  // "el mismo dos veces seguidas". La prueba pasa por suerte, y el día que el planificador
+  // cambie de estrategia —más filas, otra versión, otro índice— empieza a repetir gente sin
+  // que nada falle.
+  //
+  // Así que el comportamiento se prueba donde se puede (que `hayMas` diga la verdad, que entre
+  // las dos páginas esté todo) y el MECANISMO se prueba acá, que es determinista.
+  //
+  // Lo que hay que impedir: que la lista ordene SOLO por `ultimo_entrante_el`. Esa columna es
+  // nula para la mayoría de los contactos recién traídos —GoHighLevel no da fecha de última
+  // actividad entrante— así que casi todas las filas empatan, y el empate es justo donde la
+  // paginación se rompe.
+  const fila = archivosFuente(['lib']).find((a) => a.ruta === 'lib/negocio/fila.ts');
+  assert.ok(fila, 'no se encontró la consulta de la lista');
+
+  const ordenes = [...fila.limpio.matchAll(/\.orderBy\(\s*(?:'([^']+)'|sql`[^`]*`)/g)].map(
+    (m) => m[1] ?? '(expresión)',
+  );
+
+  assert.ok(
+    ordenes.length >= 2,
+    `la lista ordena por ${ordenes.length} criterio(s): sin un segundo, las filas empatadas ` +
+      'salen en cualquier orden y la paginación repite o se saltea gente',
+  );
+  assert.ok(
+    ordenes.includes('c.id'),
+    `el último criterio de orden tiene que ser único por fila. Hoy ordena por: ${ordenes.join(', ')}`,
+  );
+  // Y el desempate va ÚLTIMO: primero por actividad, que es lo que decide qué se ve arriba.
+  assert.equal(ordenes[ordenes.length - 1], 'c.id', 'el desempate no está al final del orden');
+});

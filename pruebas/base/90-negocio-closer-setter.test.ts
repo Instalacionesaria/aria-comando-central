@@ -770,3 +770,68 @@ test('la fila TAMPOCO cruza organizaciones: los íconos se cuentan dentro del in
   assert.ok(fila);
   assert.equal(fila.iconos.llamadasContestadas, 0, 'contó una llamada de otra organización');
 });
+
+test('con más de una página, la lista DICE que hay más', async () => {
+  // ── EL DEFECTO QUE ESTO ATRAPA ────────────────────────────────────────────
+  //
+  // Medido contra la subcuenta real: el closer tiene 123 contactos y la primera página trae
+  // 100. Sin `hayMas`, la pantalla muestra 100 y **se ve completa**. Nadie reporta lo que no
+  // sabe que falta, así que 23 personas quedarían sin trabajar sin que nada falle.
+  //
+  // Se prueban las DOS direcciones. Solo la primera —"con muchos dice que hay más"— pasaría
+  // con un `hayMas: true` fijo, que sería igual de mentiroso en el otro sentido: una lista
+  // completa con un botón «ver más» que trae cero.
+  const marca = randomUUID().slice(0, 8);
+
+  // Una página son 100. Se crean 101 de una sola sentencia: uno por uno son 101 viajes.
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('contactos')
+      .values(
+        Array.from({ length: 101 }, (_, i) => ({
+          ghl_contact_id: `pag-${marca}-${i}`,
+          nombre: `Contacto de paginación ${i}`,
+          territorio: 'closer' as const,
+        })),
+      )
+      .execute();
+  });
+
+  const primera = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  assert.equal(primera.filas.length, 100, 'la página no trae 100 filas');
+  assert.equal(primera.hayMas, true, 'con 101 contactos, la lista no dijo que había más');
+
+  // La segunda trae el resto y ya no promete más. Y NO puede repetir filas de la primera: sin
+  // un desempate estable en el orden, la paginación repite o se saltea gente en silencio.
+  const segunda = await conOrganizacion(alfa, () => filasDeTerritorio('closer', { pagina: 1 }));
+
+  // Cuántos hay DE VERDAD. No se compara contra 101: las pruebas anteriores de este archivo
+  // dejan contactos de zona closer en la misma organización, así que el total es mayor. Fijar
+  // el número a mano haría que esta prueba se rompiera cada vez que alguien agrega otra.
+  const cuantos = await unaFila<{ n: number }>(
+    admin,
+    `select count(*)::int as n from negocio.contactos where org_id = $1 and territorio = 'closer'`,
+    [alfa],
+  );
+  assert.ok(cuantos && cuantos.n > 100 && cuantos.n <= 200, `hacen falta entre 101 y 200 contactos, hay ${cuantos?.n}`);
+
+  assert.equal(segunda.hayMas, false, 'la segunda página dijo que todavía hay más');
+  assert.equal(
+    segunda.filas.length,
+    cuantos.n - 100,
+    'la segunda página no trae exactamente el resto',
+  );
+
+  // Y NO puede repetir filas de la primera: sin un desempate estable en el orden, la
+  // paginación repite o se saltea gente en silencio, y las dos cosas se ven igual de bien.
+  const ids = new Set(primera.filas.map((f) => f.id));
+  const repetidas = segunda.filas.filter((f) => ids.has(f.id)).map((f) => f.nombre);
+  assert.deepEqual(
+    repetidas,
+    [],
+    `la página 2 repitió filas de la 1: el orden no tiene desempate estable. ${repetidas.join(', ')}`,
+  );
+
+  // Entre las dos está TODO: ni una persona se perdió entre página y página.
+  assert.equal(ids.size + segunda.filas.length, cuantos.n, 'faltan contactos entre las dos páginas');
+});

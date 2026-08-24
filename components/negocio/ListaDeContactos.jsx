@@ -43,6 +43,13 @@ export default function ListaDeContactos({ camino, zona }) {
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
   const [codigo, setCodigo] = useState(null);
+  /* La página que ya se pidió, y si el servidor dijo que hay más.
+     Sin esto la lista corta en 100 y **se ve completa**: medido contra la cuenta real, el
+     closer tiene 123 contactos y la primera página trae 100. Una lista truncada que parece
+     entera es el mismo defecto que un dato inventado — nadie reporta lo que no sabe que falta. */
+  const [pagina, setPagina] = useState(0);
+  const [hayMas, setHayMas] = useState(false);
+  const [trayendoPagina, setTrayendoPagina] = useState(false);
   const [trayendo, setTrayendo] = useState(false);
   const [resultado, setResultado] = useState(null);
   const yaPedido = useRef(false);
@@ -63,8 +70,28 @@ export default function ListaDeContactos({ camino, zona }) {
       return;
     }
     setFilas(r.datos.filas ?? []);
+    setHayMas(Boolean(r.datos.hayMas));
+    setPagina(0);
     setSituacion('listo');
   }, [camino]);
+
+  /* Traer la página siguiente y AGREGARLA, no reemplazar. Quien está mirando la lista no
+     pierde el lugar, que es lo que pasa cuando "ver más" repinta desde cero. */
+  const masFilas = useCallback(async () => {
+    setTrayendoPagina(true);
+    const siguiente = pagina + 1;
+    const r = await pedir(`${camino}?pagina=${siguiente}`);
+    setTrayendoPagina(false);
+    if (r.tipo !== 'datos') {
+      /* No se toca la lista que ya está. Un fallo al pedir la página 2 no invalida la 1, y
+         vaciarla haría desaparecer datos correctos por un problema de red. */
+      setResultado({ mal: true, texto: 'No se pudo traer la página siguiente. Lo que ves sigue siendo correcto.' });
+      return;
+    }
+    setFilas((antes) => [...antes, ...(r.datos.filas ?? [])]);
+    setHayMas(Boolean(r.datos.hayMas));
+    setPagina(siguiente);
+  }, [camino, pagina]);
 
   useEffect(() => {
     if (yaPedido.current) return;
@@ -205,10 +232,25 @@ export default function ListaDeContactos({ camino, zona }) {
       <div className="md-sec">
         <div className="md-h">
           Tus contactos <span className="b">{filas.length}</span>
+          {/* El conteo dice cuántas se están MOSTRANDO, y cuando hay más se dice al lado. Un
+              número a secas con la lista cortada afirma un total que no es. */}
+          {hayMas ? <span className="hint"> y hay más</span> : null}
         </div>
         {filas.map((f) => (
           <Fila key={f.id} fila={f} />
         ))}
+        {hayMas ? (
+          <div className="aj-fila" style={{ justifyContent: 'center', padding: '12px 0' }}>
+            <button
+              type="button"
+              className="fd-btn sec"
+              disabled={trayendoPagina}
+              onClick={() => void masFilas()}
+            >
+              {trayendoPagina ? 'Trayendo…' : 'Ver más contactos'}
+            </button>
+          </div>
+        ) : null}
       </div>
     </>
   );

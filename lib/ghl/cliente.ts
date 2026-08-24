@@ -219,7 +219,27 @@ export function nombreDe(c: ContactoDeGhl): string | null {
   if (conMayusculas) return conMayusculas.trim();
 
   const enMinusculas = [c.firstNameLowerCase, c.lastNameLowerCase].filter(Boolean).join(' ').trim();
-  return enMinusculas.length > 0 ? enMinusculas : null;
+  if (enMinusculas.length === 0) return null;
+
+  // ── SE LE DEVUELVE LA MAYÚSCULA INICIAL, Y HAY QUE DECIR POR QUÉ ES LEGÍTIMO
+  //
+  // Medido contra la subcuenta real: los 238 contactos llegan en minúscula —«ornella
+  // centurion», «jose zaval»— porque `/contacts/search` solo devuelve las variantes
+  // `*LowerCase`. La documentación oficial lo dice con todas las letras: *"first name without
+  // lowercase is not yet available"*.
+  //
+  // Esto NO es inventar un dato, y la distinción importa porque este proyecto no inventa
+  // ninguno: **la fuente perdió la caja, no el nombre**. La persona se llama igual; lo que
+  // falta es una convención de presentación. Escribir una lista de trabajo entera en minúscula
+  // hace que se lea como datos de prueba.
+  //
+  // Y es APROXIMADO, lo cual también hay que decir: «de la cruz» sale «De La Cruz», que no es
+  // como se escribe. La alternativa exacta es pedir `GET /contacts/{id}` por cada contacto
+  // —123 llamadas más contra un límite de tasa ajeno, por una mayúscula— y no vale ese precio.
+  //
+  // El nombre CRUDO no se pierde: si algún día `/contacts/search` devuelve las variantes con
+  // caja, la rama de arriba las prefiere y esta ni se ejecuta.
+  return enMinusculas.replace(/(^|[\s'-])(\p{L})/gu, (_, antes, letra) => antes + letra.toUpperCase());
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
