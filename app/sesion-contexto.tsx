@@ -31,7 +31,7 @@ export interface SeccionDelMenu {
 
 /** Un grupo del menú con sus secciones visibles, ya en orden. */
 export interface GrupoDelMenu {
-  grupo: { clave: string; etiqueta: string | null };
+  grupo: { clave: string; etiqueta: string | null; pie?: true };
   secciones: SeccionDelMenu[];
 }
 

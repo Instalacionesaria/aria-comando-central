@@ -33,6 +33,20 @@ export default function IconSprite() {
             strokeLinecap="round"
            />
         </symbol>
+        {/* El engranaje de Ajustes. NO viene del prototipo: es el primer icono propio, y
+            hace falta porque la pantalla de Ajustes tampoco viene del prototipo. Se dibuja
+            con el mismo lenguaje que los otros diez —trazo de 1.2 sobre `currentColor`—
+            para que no se note que es de otra mano. */}
+        <symbol id="i-ajustes" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="2.1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <path
+            d="M8 1.4v1.7M8 12.9v1.7M1.4 8h1.7M12.9 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        </symbol>
         <symbol id="i-icp" viewBox="0 0 16 16">
           <circle cx="8" cy="8" r="6.1" fill="none" stroke="currentColor" strokeWidth="1.2" />
           <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.2" />

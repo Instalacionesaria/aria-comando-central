@@ -61,13 +61,21 @@ export default function Nav() {
   //
   // En la práctica no pasa: `app/guardia.tsx` no monta el armazón hasta tener la respuesta. El
   // caso que esto cubre es el montaje de este componente fuera de la guarda.
-  const grupos = sesion?.menu ?? [];
+  const todos = sesion?.menu ?? [];
+  // El cuerpo del menú y el pie salen de la MISMA lista, separados por la bandera `pie` del
+  // grupo. Si el pie tuviera su propia lista, volveríamos a tener dos que se pueden
+  // desordenar una respecto de la otra — el defecto que esta etapa pagó.
+  const grupos = todos.filter((g) => !g.grupo.pie);
+  const enElPie = todos.filter((g) => g.grupo.pie).flatMap((g) => g.secciones);
 
   // La primera sección visible arranca activa. NO `executive` fijo: para un closer esa pantalla
   // no existe, y el `on` escrito a mano dejaba el área principal en blanco sin que nada falle.
   // `CommandCenter.jsx` usa la misma regla para decidir qué vista dibuja activa, y las dos
   // salen de este mismo orden.
-  const primera = grupos[0]?.secciones[0]?.clave;
+  // La pantalla de arranque sale del CUERPO, nunca del pie. Un usuario cuya única sección
+  // fuera Ajustes abriría en Ajustes, que es correcto; lo que no puede pasar es que alguien con
+  // pestañas de trabajo abra en la configuración.
+  const primera = grupos[0]?.secciones[0]?.clave ?? enElPie[0]?.clave;
 
   return (
     <>
@@ -119,12 +127,23 @@ export default function Nav() {
           </i>
           {' '}{sesion?.usuarioNombre ?? '—'}
         </div>
-        <div className="role-row">
-          <i>
-            ⚙
-          </i>
-          {' '}Ajustes
-        </div>
+        {/* La fila de Ajustes era DECORATIVA en el prototipo: un `role-row` sin `data-view`,
+            así que `shell.js` no la enrutaba y clicarla no hacía nada. Ahora es una entrada
+            real, y solo aparece con `credenciales.ver`. */}
+        {enElPie.map((s) => (
+          <div
+            className={s.clave === primera ? 'nav-item on' : 'nav-item'}
+            data-view={s.clave}
+            key={s.clave}
+          >
+            <svg className="ni" viewBox="0 0 16 16">
+              <use href={s.menu.icono} />
+            </svg>
+            <span className="n">
+              {s.nombre}
+            </span>
+          </div>
+        ))}
       </div>
     </aside>
     </>

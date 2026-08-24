@@ -112,10 +112,23 @@ export interface Seccion {
  * `null` lo dice en vez de dejarlo a que alguien se acuerde. La clave `'AIOS'` igual existe
  * porque `lib/aios/shell.js` la usa para la miga de pan.
  */
-export const GRUPOS_DEL_MENU: readonly { clave: string; etiqueta: string | null }[] = [
+export const GRUPOS_DEL_MENU: readonly {
+  clave: string;
+  etiqueta: string | null;
+  /**
+   * `true` = va en el PIE del menú, no en el cuerpo.
+   *
+   * El prototipo ya tenía una fila «⚙ Ajustes» ahí abajo, decorativa. Ajustes va en ese lugar
+   * y no en un cuarto grupo del cuerpo por una razón que no es estética: es donde la gente ya
+   * lo busca, y mover un elemento que el prototipo puso en un lado obliga a que alguien
+   * reaprenda dónde está algo que no cambió de significado.
+   */
+  pie?: true;
+}[] = [
   { clave: 'AIOS', etiqueta: null },
   { clave: 'Inteligencia', etiqueta: 'Inteligencia' },
   { clave: 'Operación', etiqueta: 'Operación' },
+  { clave: 'Pie', etiqueta: null, pie: true },
 ];
 
 /**
@@ -129,7 +142,24 @@ export const SECCIONES: readonly Seccion[] = [
   // ── Las dos de administración. Sin `menu`: tienen operaciones y capacidad, y todavía no
   //    tienen pantalla en el prototipo. Ver el comentario de `Seccion.menu`.
   { clave: 'usuarios', nombre: 'Usuarios', capacidadRequerida: 'usuarios.ver' },
-  { clave: 'credenciales', nombre: 'Integraciones', capacidadRequerida: 'credenciales.ver' },
+  {
+    // ── Etapa 11 · Ajustes gana pantalla ──
+    //
+    // Esta sección existía desde la Etapa 6 con sus dos operaciones y su capacidad, y **sin
+    // pantalla**: no había forma de que una empresa cargara su propio token de GoHighLevel ni
+    // su propia llave de Anthropic. La columna `ia_clave_cifrada` estaba en la base desde la
+    // migración 006 y nada la escribía, así que `icp` respondía `sin_llave_de_ia` para siempre
+    // y el arreglo que se ve fácil era una variable de entorno global — la fuga que
+    // `lib/credenciales/resolver.ts` documenta en su encabezado.
+    //
+    // Se llama «Ajustes» y no «Integraciones» porque es lo que se pidió y es lo que la fila
+    // decorativa del prototipo ya decía. Guarda más que integraciones: es la configuración de
+    // la empresa.
+    clave: 'credenciales',
+    nombre: 'Ajustes',
+    capacidadRequerida: 'credenciales.ver',
+    menu: { grupo: 'Pie', icono: '#i-ajustes' },
+  },
 
   // ── Grupo 1 · AIOS ─────────────────────────────────────────────────────────
   {

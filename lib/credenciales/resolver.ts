@@ -100,11 +100,46 @@ export function enmascarar(valor: string): string {
   return '••••' + valor.slice(-4);
 }
 
-/** Lo que devuelve la función única. */
+/**
+ * Lo que devuelve la función única.
+ *
+ * ── POR QUÉ TRES CREDENCIALES Y NO UNA ──────────────────────────────────────
+ *
+ * Hasta la Etapa 11 esto devolvía solo `crm`, y las otras dos columnas de la tabla
+ * —`ia_clave_cifrada`, `pagos_clave_cifrada`— existían desde la migración 006 sin que nada
+ * las leyera. Que existieran sin leerse tenía una consecuencia concreta: **no había forma de
+ * cargar la llave de IA de una organización**, así que la pantalla `icp` respondía
+ * `sin_llave_de_ia` para siempre y el único arreglo aparente era una variable de entorno
+ * global — que es exactamente la fuga que el encabezado de este archivo describe.
+ *
+ * Cada una tiene su propio estado. Tener uno solo haría que "no cargó GHL" y "no cargó la
+ * llave de IA" fueran el mismo hecho, y son dos: una organización puede operar el pipeline
+ * sin generar documentos, y al revés.
+ *
+ * ── Y LOS IDENTIFICADORES PÚBLICOS VAN COMPLETOS, NO ENMASCARADOS ───────────
+ *
+ * `crm_cuenta_id`, `pagos_comercio_id` y `fundaciones_cliente_id` **no son secretos**: son el
+ * identificador de esta organización en una cuenta ajena. Enmascararlos daría la impresión
+ * contraria —que son lo que protege algo— y volvería imposible la única cosa que hace falta
+ * hacer con ellos: mirarlos para comprobar que apuntan a la subcuenta correcta.
+ */
 export interface Credenciales {
   orgId: string;
   activa: boolean;
+  /** El token de GoHighLevel. La integración del pipeline. */
   crm: CredencialVisible;
+  /** La llave de la API de Anthropic **de esta organización**. Ver el encabezado. */
+  ia: CredencialVisible;
+  /** La clave de la pasarela de pagos. */
+  pagos: CredencialVisible;
+  /** La subcuenta de GoHighLevel. NO es secreto: va completo. */
+  crmCuentaId: string | null;
+  /** El comercio de la pasarela. NO es secreto: va completo. */
+  pagosComercioId: string | null;
+  /** El alumno del hub para Fundaciones. NO es secreto: va completo. */
+  fundacionesClienteId: string | null;
+  /** Cuándo se tocó por última vez esta configuración. `null` = nunca hubo fila. */
+  actualizadoEl: Date | null;
 }
 
 /**
@@ -129,11 +164,30 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
 
   const fila = await db
     .selectFrom('organizaciones_credenciales')
-    .select(['crm_token_cifrado', 'crm_estado'])
+    .select([
+      'crm_token_cifrado',
+      'crm_estado',
+      'ia_clave_cifrada',
+      'pagos_clave_cifrada',
+      'crm_cuenta_id',
+      'pagos_comercio_id',
+      'fundaciones_cliente_id',
+      'actualizado_el',
+    ])
     .where('org_id', '=', orgId)
     .executeTakeFirst();
 
-  const crm = verCredencial(fila);
+  const crm = verCredencial(fila?.crm_token_cifrado ?? null, fila?.crm_estado ?? 'ausente');
+
+  // La llave de IA y la de pagos NO tienen columna de estado propia, y eso NO se resuelve
+  // reusando `crm_estado`: diría "vencida" de una llave de Anthropic porque venció el token de
+  // GoHighLevel. Se derivan de la presencia, que es lo único que la tabla sabe de ellas.
+  //
+  // Las dos siguen distinguiendo `ausente` de `ilegible`, que es la distinción que importa: una
+  // llave que está cargada y no se puede descifrar necesita que alguien la vuelva a cargar, y
+  // decirle "falta conectar" manda a reconectar algo que ya está conectado.
+  const ia = verCredencial(fila?.ia_clave_cifrada ?? null, 'activa');
+  const pagos = verCredencial(fila?.pagos_clave_cifrada ?? null, 'activa');
 
   // ADR-0809 · Se EMITE `credencial_ilegible`, en la función única que descifra.
   //
@@ -143,19 +197,40 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   // Va en la MISMA transacción que la lectura. Si fuera aparte, existiría el caso "la credencial no
   // se pudo leer y nadie lo registró", que es el cero indistinguible de "nadie cableó el punto de
   // emisión" que `ADR-0809` existe para impedir.
-  if (crm.estado === ILEGIBLE) {
+  //
+  // Y cubre las TRES, no solo el CRM. Una llave de IA ilegible tiene la misma causa —la clave
+  // maestra cambió— y el mismo síntoma para quien la sufre: la pantalla dice que no puede
+  // generar y nadie sabe por qué. Emitir solo por una de las tres dejaría dos tercios de la
+  // señal sin cablear, que es el cero indistinguible que `ADR-0809` existe para impedir.
+  if (crm.estado === ILEGIBLE || ia.estado === ILEGIBLE || pagos.estado === ILEGIBLE) {
     await auditar(db, { accion: 'credencial_ilegible', orgId: org.id });
   }
 
-  return { orgId: org.id, activa: org.activa, crm };
+  return {
+    orgId: org.id,
+    activa: org.activa,
+    crm,
+    ia,
+    pagos,
+    crmCuentaId: fila?.crm_cuenta_id ?? null,
+    pagosComercioId: fila?.pagos_comercio_id ?? null,
+    fundacionesClienteId: fila?.fundaciones_cliente_id ?? null,
+    actualizadoEl: fila?.actualizado_el ?? null,
+  };
 }
 
-function verCredencial(
-  fila: { crm_token_cifrado: string | null; crm_estado: EstadoCredencial } | undefined,
-): CredencialVisible {
+/**
+ * El estado visible de UNA credencial cifrada.
+ *
+ * Toma el blob y su estado por separado —y no la fila entera— porque desde la Etapa 11 hay
+ * tres credenciales en la misma fila. Con la firma anterior, la llave de IA habría tenido que
+ * pasar por acá disfrazada de `crm_token_cifrado`, y el nombre habría dejado de decir la
+ * verdad justo en la función que decide qué se muestra de un secreto.
+ */
+function verCredencial(cifrado: string | null, estado: EstadoCredencial): CredencialVisible {
   // Sin fila y con fila vacía significan lo mismo hacia afuera —nunca se cargó— y las dos son
   // `ausente`. Lo que NO pueden significar es lo mismo que `vencida`: eso es la fila `ADR-0606`.
-  if (!fila || !fila.crm_token_cifrado) {
+  if (!cifrado) {
     return {
       cargado: false,
       estado: 'ausente',
@@ -167,7 +242,7 @@ function verCredencial(
 
   let vistaPrevia: string | null;
   try {
-    vistaPrevia = enmascarar(descifrar(fila.crm_token_cifrado));
+    vistaPrevia = enmascarar(descifrar(cifrado));
   } catch {
     // Hay algo guardado y no se puede leer. **No es `ausente`**: decir "falta conectar" mandaría a
     // reconectar una integración que está conectada, y el problema real —la clave maestra— quedaría
@@ -183,8 +258,8 @@ function verCredencial(
 
   return {
     cargado: true,
-    estado: fila.crm_estado,
-    texto: ESTADOS_DE_CREDENCIAL[fila.crm_estado],
+    estado,
+    texto: ESTADOS_DE_CREDENCIAL[estado],
     vistaPrevia,
     origen: 'organizacion',
   };

@@ -399,7 +399,25 @@ test('ADR-0305 · un solo archivo hace peticiones HTTP', () => {
   // devuelve datos a ninguna pantalla**: devuelve un booleano y lanza si el canal falla. No puede
   // confundir un rechazo con un vacío porque no tiene un vacío que devolver. La última afirmación
   // de esta prueba es la que sostiene la exención.
-  const EXCEPTUADOS = ['lib/http/cliente.ts', 'lib/deteccion/aviso.ts'];
+  //
+  // Y `scripts/supabase.mjs` desde la Etapa 11, con un motivo DISTINTO del de `aviso.ts` y que
+  // hay que decir aparte: ése se sostiene en que no lee el cuerpo de la respuesta, y éste **sí
+  // lo lee** — el error de PostgreSQL que devuelve la Management API es lo único con que se
+  // puede diagnosticar una migración que falló.
+  //
+  // Lo que lo saca del alcance de la regla es otra cosa: **no es código de la aplicación**. Es
+  // una herramienta de despliegue que corre una persona en una terminal, contra la API de
+  // Supabase y nunca contra la nuestra. No tiene una pantalla que llenar, así que no tiene un
+  // vacío con el que confundir un rechazo — que es el defecto que esta regla previene.
+  //
+  // La exención es por ARCHIVO y no por carpeta a propósito: un script futuro que sí le hable a
+  // nuestro API tiene que aparecer acá y que alguien decida, en vez de heredar la exención por
+  // estar en `scripts/`.
+  const EXCEPTUADOS = [
+    'lib/http/cliente.ts',
+    'lib/deteccion/aviso.ts',
+    'scripts/supabase.mjs',
+  ];
   const clientes = archivosQueContienen(
     /\bfetch\s*\(|XMLHttpRequest|axios|navigator\.sendBeacon|new\s+EventSource/,
   ).filter((r) => !EXCEPTUADOS.includes(r));
