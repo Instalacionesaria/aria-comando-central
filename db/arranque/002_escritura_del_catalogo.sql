@@ -1,0 +1,98 @@
+-- El privilegio que le falta al rol que puede escribir el catálogo. Corre como `migrador`.
+--
+-- ═════════════════════════════════════════════════════════════════════════════
+-- EL PROBLEMA, PLANTEADO CON PRECISIÓN
+--
+-- Para escribir `identidad.permisos` hace falta **UN rol con las DOS cosas**:
+--
+--   (a) privilegio `INSERT` sobre la tabla, y
+--   (b) exención de su `force row level security`.
+--
+-- Y en este sistema están repartidas en dos roles distintos. Medido contra Supabase el
+-- 2026-08-24, no supuesto:
+--
+--   · `migrador`  → tiene (a): es el dueño, ACL `arwdDxtm`.
+--                   NO tiene (b): el forzado alcanza al dueño, y no hay política de
+--                   escritura. `EJECUCION` § 3 prohíbe darle una.
+--
+--   · `postgres`  → tiene (b): `rolbypassrls = true`.
+--                   NO tiene (a): `has_table_privilege('postgres','identidad.permisos','INSERT')`
+--                   devuelve **false**. No es superusuario en Supabase y no es miembro de
+--                   `migrador`.
+--
+-- Ése fue mi error de razonamiento y conviene dejarlo escrito: medí `rolbypassrls` y
+-- concluí "entonces puede escribir". **Omitir políticas no es tener privilegio de tabla.**
+-- Son dos comprobaciones independientes y hay que pasar las dos. En local no se notaba,
+-- porque ahí el rol de arranque es un superusuario de verdad y salta las dos.
+--
+-- Y las filas del catálogo no son opcionales: `identidad.roles_permisos.permiso` tiene
+-- `FOREIGN KEY … REFERENCES identidad.permisos(clave)`. Sin la fila del catálogo, asignar
+-- `closer.ver` al rol `closer` falla por integridad referencial.
+--
+-- ── POR QUÉ SE ELIGIÓ DAR (a) Y NO (b) ──────────────────────────────────────
+--
+--   · **dar (b) a `migrador`** —una política de escritura— es lo que `EJECUCION` § 3
+--     prohíbe, y es la prohibición más citada del repositorio.
+--
+--   · **`grant insert` a `app_identidad`** funciona y ENSANCHA: desde ese momento
+--     cualquier petición HTTP servida por la conexión de identidad puede escribir el
+--     catálogo de capacidades, que es la tabla que decide quién puede qué en todo el
+--     sistema. Es un cambio de superficie permanente para una operación de una sola vez.
+--
+--   · **`no force` / `disable row level security`** funciona, y el guardia del corredor de
+--     migraciones NO LO ATRAPA: rechaza `no force`, no `disable`. Elegir el camino que el
+--     guardia no ve es peor que el que necesita un permiso.
+--
+--   · **dar (a) al rol del clúster** —esto— no ensancha nada alcanzable desde la red.
+--     `app_identidad` sigue con solo `select` sobre `permisos`, así que la afirmación de
+--     diseño de la migración 003 —*"solo lectura: la escritura es una migración"*— sigue
+--     siendo cierta para todo lo que atiende peticiones.
+--
+--     Y el paso marginal es chico: ese rol **ya** tiene `rolbypassrls`, o sea que ya puede
+--     LEER cada fila de cada inquilino de toda la base. Sumarle `insert` sobre un catálogo
+--     global —`identidad.permisos` no tiene `org_id`, no hay datos de inquilino en él— no
+--     le da un alcance que no tuviera.
+--
+-- ── LO QUE NO SE MINIMIZÓ, Y POR QUÉ ────────────────────────────────────────
+--
+-- Estrictamente, solo `identidad.permisos` necesita el privilegio: `app_identidad` **sí**
+-- puede insertar en `identidad.roles` y en `identidad.roles_permisos` —tienen política
+-- `ALL` para ese rol y `insert` en su ACL, medido—. Podría escribirse el catálogo con dos
+-- conexiones y dos archivos, cada uno con el mínimo.
+--
+-- No se hizo, y es una decisión: el bloque de comprobación del final de `001_catalogo.sql`
+-- tiene que ver las tres tablas a la vez para poder afirmar que el reparto entró. Partirlo
+-- en dos conexiones haría que la verificación no pudiera ver lo que verifica, y eso es peor
+-- que un privilegio de más en un rol de despliegue.
+--
+-- ── UNA VEZ, Y ES IDEMPOTENTE ───────────────────────────────────────────────
+--
+-- `grant` es idempotente por definición. Correr este archivo diez veces deja el mismo
+-- estado. En local no hace nada útil —el rol de arranque ya es superusuario— y tampoco
+-- hace daño.
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- Solo `insert`. NO `update` ni `delete`, y no es cosmético: el catálogo se escribe con
+-- `on conflict do nothing`, así que `insert` es todo lo que `001_catalogo.sql` necesita.
+-- Un `update` de más permitiría reescribir la descripción de una capacidad existente, y un
+-- `delete` permitiría borrarla — que por la cascada de `roles_permisos` desasignaría esa
+-- capacidad de todos los roles del sistema, en silencio.
+grant insert on identidad.permisos       to @ROL_DEL_CATALOGO@;
+grant insert on identidad.roles          to @ROL_DEL_CATALOGO@;
+grant insert on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
+
+-- Y `select`, que hace falta para las subconsultas del reparto.
+--
+-- Sin esto el modo de falla es el PEOR de todos y ya se pagó una vez en este repositorio:
+-- un `insert … select … from identidad.roles r, identidad.permisos p` corrido por un rol
+-- que no puede LEER esas tablas devuelve cero filas, y el `insert` **entra cero filas y
+-- reporta éxito**. Ni un error. Es exactamente lo que hacía la migración 009.
+--
+-- El rol del clúster ya tiene `select` medido sobre las tres, así que esto es reafirmar. Va
+-- igual: la afirmación tiene que estar en el archivo, no en la medición de un día.
+grant select on identidad.permisos       to @ROL_DEL_CATALOGO@;
+grant select on identidad.roles          to @ROL_DEL_CATALOGO@;
+grant select on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
+
+-- El esquema, que sin `usage` deja los `grant` de arriba sin efecto alcanzable.
+grant usage on schema identidad to @ROL_DEL_CATALOGO@;

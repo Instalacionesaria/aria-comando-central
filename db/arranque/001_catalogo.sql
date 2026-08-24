@@ -208,7 +208,31 @@ do $comprobar$
 declare
   v_sin_capacidades text;
   v_faltan          int;
+  v_falta_rol       text;
 begin
+  -- ── PRIMERO: QUE LOS ROLES EXISTAN ─────────────────────────────────────────
+  --
+  -- Sin esta comprobación, todo lo de abajo **pasa vacío justo cuando falla**. La lógica
+  -- es "ningún rol de sistema puede quedar sin capacidades", y si el `insert` de los roles
+  -- entró cero filas, los roles no existen: la consulta no los encuentra, no encuentra
+  -- ninguno sin capacidades, y reporta éxito.
+  --
+  -- Es el mismo modo de falla que este archivo persigue en todas partes —un cero que
+  -- significa "no se midió" leído como "está bien"— y lo tenía en su propia verificación.
+  select string_agg(esperado, ', ')
+    into v_falta_rol
+    from unnest(array['superadministrador','administrador','closer','setter']) as esperado
+   where not exists (
+     select 1 from identidad.roles r where r.clave = esperado and r.org_id is null);
+
+  if v_falta_rol is not null then
+    raise exception
+      'faltan roles de sistema que este archivo tenía que crear: %. El `insert` entró cero '
+      'filas en silencio, probablemente porque el rol que corre no tiene privilegio de '
+      'inserción sobre identidad.roles. Ver db/arranque/002_escritura_del_catalogo.sql.',
+      v_falta_rol;
+  end if;
+
   select string_agg(r.clave, ', ')
     into v_sin_capacidades
     from identidad.roles r
@@ -237,6 +261,48 @@ begin
     raise exception
       '% capacidad(es) del catálogo no están asignadas al superadministrador. Ese rol las '
       'tiene TODAS por diseño, sin atajo en el portero.', v_faltan;
+  end if;
+
+  -- ── Y LA SEPARACIÓN DE LAS DOS PESTAÑAS ────────────────────────────────────
+  --
+  -- Lo único que se pidió en voz alta fue *"un closer solo ve su pestaña"*. Acá se verifica
+  -- lo que lo hace cierto del lado de la base: que cada uno tenga SU capacidad de lectura y
+  -- **no la del otro**.
+  --
+  -- El modo de falla que atrapa es silencioso: un `in (…)` con una clave de más en la lista
+  -- del reparto le da al closer la pestaña del setter, y nada falla — el menú filtra bien,
+  -- con el criterio equivocado.
+  if exists (
+    select 1 from identidad.roles r
+      join identidad.roles_permisos rp on rp.rol_id = r.id
+     where r.org_id is null
+       and ((r.clave = 'closer' and rp.permiso = 'setter.ver')
+         or (r.clave = 'setter' and rp.permiso = 'closer.ver'))
+  ) then
+    raise exception
+      'un rol operativo recibió la capacidad de lectura del OTRO: con eso los dos ven las '
+      'dos pestañas y nada falla. Revisá las listas `in (…)` del reparto.';
+  end if;
+
+  if not exists (select 1 from identidad.roles r join identidad.roles_permisos rp on rp.rol_id = r.id
+                  where r.clave = 'closer' and r.org_id is null and rp.permiso = 'closer.ver')
+     or not exists (select 1 from identidad.roles r join identidad.roles_permisos rp on rp.rol_id = r.id
+                  where r.clave = 'setter' and r.org_id is null and rp.permiso = 'setter.ver') then
+    raise exception
+      'un rol operativo NO recibió su propia capacidad de lectura: su pestaña no se le '
+      'muestra a nadie.';
+  end if;
+
+  -- Y que `tablero.ver` NO les llegue: si les llegara, un closer vería además los siete
+  -- tableros del prototipo, o sea ocho entradas de menú en vez de una.
+  if exists (
+    select 1 from identidad.roles r
+      join identidad.roles_permisos rp on rp.rol_id = r.id
+     where r.org_id is null and r.clave in ('closer','setter') and rp.permiso = 'tablero.ver'
+  ) then
+    raise exception
+      'un rol operativo recibió `tablero.ver`: vería los siete tableros del prototipo además '
+      'de su pestaña.';
   end if;
 end
 $comprobar$;

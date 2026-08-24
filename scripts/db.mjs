@@ -178,6 +178,39 @@ async function arranque() {
  */
 async function catalogo() {
   if (!process.env.DATABASE_URL_ADMIN) throw new Error('DATABASE_URL_ADMIN no está definida.');
+
+  // ── PRIMERO el privilegio, y lo otorga el DUEÑO ────────────────────────────
+  //
+  // `identidad.permisos` tiene el forzado de RLS, así que hacen falta DOS cosas para
+  // escribirla: privilegio de inserción y exención de las políticas. Están repartidas en
+  // dos roles distintos, y el único que puede otorgar es el dueño — `migrador`. El
+  // razonamiento completo está en `db/arranque/002_escritura_del_catalogo.sql`.
+  //
+  // En local esto es un no-op —el rol de arranque es superusuario de verdad y salta las
+  // dos comprobaciones— y se corre igual, a propósito: que el camino local y el de
+  // producción tengan la MISMA forma es lo que hace que `db:reset` pruebe este archivo. Un
+  // paso que solo existe en producción es un paso que nadie prueba.
+  if (!process.env.DATABASE_URL_MIGRADOR) throw new Error('DATABASE_URL_MIGRADOR no está definida.');
+  const rolDelCatalogo = decodeURIComponent(new URL(process.env.DATABASE_URL_ADMIN).username);
+  if (!rolDelCatalogo) throw new Error('DATABASE_URL_ADMIN no nombra un usuario.');
+
+  const dueno = new pg.Client({ connectionString: process.env.DATABASE_URL_MIGRADOR });
+  await dueno.connect();
+  try {
+    let permiso = readFileSync(
+      new URL('../db/arranque/002_escritura_del_catalogo.sql', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+    // Como IDENTIFICADOR, no como literal: es un nombre de rol.
+    permiso = permiso.replaceAll('@ROL_DEL_CATALOGO@', dueno.escapeIdentifier(rolDelCatalogo));
+    const marcas = permiso.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`marcas sin reemplazar: ${[...new Set(marcas)].join(', ')}`);
+    await dueno.query(permiso);
+    console.log(`  privilegio de escritura del catálogo para \`${rolDelCatalogo}\``);
+  } finally {
+    await dueno.end();
+  }
+
   const cliente = new pg.Client({ connectionString: process.env.DATABASE_URL_ADMIN });
   await cliente.connect();
   try {
