@@ -99,7 +99,29 @@ export default function ListaDeContactos({ camino, zona }) {
     const partes = [`${guardados} contacto(s) guardado(s)`];
     if (d.salteados?.length) partes.push(`${d.salteados.length} salteado(s): ${d.salteados[0].porque}`);
     if (d.truncado) partes.push('se llegó al tope de páginas: puede faltar gente');
-    setResultado({ mal: Boolean(d.salteados?.length || d.truncado), texto: partes.join(' · ') });
+
+    /* Y si no vino NADA, el diagnóstico de etiquetas. Es la diferencia entre "no cargó" y
+       "busqué `zona_closer` y tu cuenta tiene `Zona Closer`".
+       `null` y `[]` son distintos: uno es "no pude leer el catálogo" —el token puede no tener
+       el alcance `locations/tags.readonly`, que es otro— y el otro es "no hay ninguna". */
+    if (guardados === 0) {
+      const cuales = d.etiquetasDeLaCuenta;
+      if (Array.isArray(cuales) && cuales.length > 0) {
+        partes.push(`se buscó \`zona_closer\` y \`zona_setter\`; tu subcuenta tiene: ${cuales.join(', ')}`);
+      } else if (Array.isArray(cuales)) {
+        partes.push('tu subcuenta de GoHighLevel no tiene ninguna etiqueta creada');
+      } else {
+        partes.push(
+          'no se pudo leer el catálogo de etiquetas: al token le falta el permiso ' +
+            '`locations/tags.readonly`, que es distinto del de contactos',
+        );
+      }
+    }
+
+    setResultado({
+      mal: Boolean(d.salteados?.length || d.truncado || guardados === 0),
+      texto: partes.join(' · '),
+    });
 
     // Y se vuelve a leer la lista. Decir "guardados 12" sin releer sería reportar un éxito sin
     // verificar que se puede ver.

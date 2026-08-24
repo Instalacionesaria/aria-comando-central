@@ -221,3 +221,50 @@ export function nombreDe(c: ContactoDeGhl): string | null {
   const enMinusculas = [c.firstNameLowerCase, c.lastNameLowerCase].filter(Boolean).join(' ').trim();
   return enMinusculas.length > 0 ? enMinusculas : null;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL CATÁLOGO DE ETIQUETAS — PARA QUE UN VACÍO DIGA POR QUÉ ESTÁ VACÍO
+//
+// Cuando una sincronización trae cero contactos hay exactamente dos causas, y desde afuera se
+// ven idénticas:
+//
+//   1. la subcuenta no tiene contactos con esa etiqueta;
+//   2. la etiqueta **se llama distinto** — `Zona Closer`, `zona-closer`, `ZONA_CLOSER`.
+//
+// La segunda es la frecuente, y la documentación oficial **no confirma** si GoHighLevel
+// normaliza los tags al guardarlos ni si el filtro `eq` distingue mayúsculas. Así que no se
+// adivina: se lee el catálogo real de la subcuenta y se muestra.
+//
+// Sin esto, el síntoma que llega es "no carga nada" y no hay dónde mirar. Con esto, la
+// pantalla dice *"busqué `zona_closer` y tu cuenta tiene `Zona Closer`"*, que es un diagnóstico.
+//
+// ── Y SI EL TOKEN NO TIENE ESE PERMISO ──────────────────────────────────────
+//
+// Leer tags necesita el alcance `locations/tags.readonly`, que es DISTINTO del
+// `contacts.readonly` que necesita la búsqueda. Un token que sirve para traer contactos puede
+// no servir para esto. Por eso el catálogo es informativo y su fallo NO rompe la
+// sincronización: se devuelve `null` y la pantalla dice que no pudo leerlo, en vez de convertir
+// un permiso que falta en "la sincronización falló".
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Las etiquetas que existen en la subcuenta, o `null` si no se pudieron leer.
+ *
+ * `null` y `[]` significan cosas distintas y por eso no se colapsan: `[]` es "esta subcuenta
+ * no tiene ninguna etiqueta" —un hecho— y `null` es "no pude preguntar", que manda a revisar
+ * el alcance del token y no las etiquetas.
+ */
+export async function etiquetasDeLaSubcuenta(acceso: {
+  token: string;
+  locationId: string;
+}): Promise<string[] | null> {
+  const r = await pedirExterno<{ tags?: unknown }>(
+    `${BASE}/locations/${encodeURIComponent(acceso.locationId)}/tags`,
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+  );
+  if (r.tipo !== 'datos') return null;
+  if (!Array.isArray(r.datos?.tags)) return null;
+  return (r.datos.tags as { name?: unknown }[])
+    .map((t) => (typeof t?.name === 'string' ? t.name : null))
+    .filter((n): n is string => n !== null);
+}

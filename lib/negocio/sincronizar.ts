@@ -32,6 +32,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
+  etiquetasDeLaSubcuenta,
   nombreDe,
   todosLosContactosPorEtiqueta,
   type ContactoDeGhl,
@@ -63,6 +64,15 @@ export interface Resumen {
   salteados: { id: string; porque: string }[];
   /** `true` si se llegó al tope de páginas sin agotar una etiqueta. Ver `TOPE_DE_PAGINAS`. */
   truncado: boolean;
+  /**
+   * Las etiquetas que EXISTEN en la subcuenta. Solo se consulta cuando no vino ningún
+   * contacto, que es cuando sirve para algo.
+   *
+   * `null` = no se preguntó, o no se pudo (el token puede no tener `locations/tags.readonly`,
+   * que es un alcance distinto del que usa la búsqueda). `[]` = la subcuenta no tiene ninguna
+   * etiqueta. Los dos NO son lo mismo: uno manda a revisar el token y el otro las etiquetas.
+   */
+  etiquetasDeLaCuenta: string[] | null;
 }
 
 export type ResultadoDeSincronizar =
@@ -87,6 +97,7 @@ export async function sincronizarContactos(acceso: {
     guardados: { closer: 0, setter: 0 },
     salteados: [],
     truncado: false,
+    etiquetasDeLaCuenta: null,
   };
 
   // Se recorren las etiquetas en orden de precedencia y se queda el PRIMER territorio que le
@@ -108,6 +119,16 @@ export async function sincronizarContactos(acceso: {
       if (guardado === true) resumen.guardados[territorio] += 1;
       else resumen.salteados.push({ id: c.id, porque: guardado });
     }
+  }
+
+  // Si no vino NI UN contacto, la pregunta siguiente siempre es la misma: ¿estarán mal los
+  // nombres de las etiquetas? Se contesta antes de que alguien la haga.
+  //
+  // Solo en ese caso: cuando vinieron contactos, el catálogo no aporta nada y sería una
+  // llamada más contra el límite de tasa de GoHighLevel.
+  const vinoAlgo = Object.values(resumen.traidos).some((n) => n > 0);
+  if (!vinoAlgo) {
+    resumen.etiquetasDeLaCuenta = await etiquetasDeLaSubcuenta(acceso);
   }
 
   return { tipo: 'listo', resumen };
