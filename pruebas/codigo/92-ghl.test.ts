@@ -154,6 +154,32 @@ test('el nombre con caja se prefiere sobre el que viene en minúscula', () => {
   assert.equal(nombreDe({ id: 'x', firstName: 'Ana', lastName: 'Solís' }), 'Ana Solís');
 });
 
+test('un campo "con caja" que trae MINÚSCULAS también se corrige', () => {
+  // ── EL CASO QUE MI PRIMERA VERSIÓN NO CUBRÍA ──────────────────────────────
+  //
+  // La lógica original elegía `contactName` antes que las variantes `*LowerCase`, dando por
+  // sentado que el primero traía mayúsculas. Se desplegó, se resincronizaron los 124 contactos
+  // de la cuenta real, **y siguieron en minúscula**: GoHighLevel devuelve uno de esos campos y
+  // su contenido también viene sin caja.
+  //
+  // La regla nueva mira el VALOR y no el nombre del campo. Esta prueba es la que distingue las
+  // dos: con la lógica vieja devuelve 'ornella centurion' y falla.
+  assert.equal(nombreDe({ id: 'x', contactName: 'ornella centurion' }), 'Ornella Centurion');
+  assert.equal(nombreDe({ id: 'x', firstName: 'jose', lastName: 'zaval' }), 'Jose Zaval');
+});
+
+test('un nombre que YA tiene mayúsculas no se toca', () => {
+  // La otra mitad, y es la que impide romper nombres que estaban bien. «McDonald» capitalizado
+  // a la fuerza queda «Mcdonald», y «van der Berg» queda «Van Der Berg»: los dos son errores
+  // que no existían antes de "arreglarlos".
+  //
+  // El criterio es "tiene alguna mayúscula" y no "empieza con mayúscula", justamente por
+  // «van der Berg».
+  for (const bueno of ['McDonald', 'van der Berg', 'María José Pérez', "d'Angelo"]) {
+    assert.equal(nombreDe({ id: 'x', contactName: bueno }), bueno, `se modificó ${bueno}`);
+  }
+});
+
 test('el nombre en minúscula recupera la mayúscula inicial', () => {
   // Medido: los 238 contactos de la subcuenta llegan así. Una lista de trabajo entera en
   // minúscula se lee como datos de prueba.

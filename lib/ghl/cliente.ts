@@ -211,36 +211,54 @@ export async function todosLosContactosPorEtiqueta(
  * si fuera el nombre real.
  */
 export function nombreDe(c: ContactoDeGhl): string | null {
-  const conMayusculas = [
+  const crudo = [
     c.contactName,
     c.name,
     [c.firstName, c.lastName].filter(Boolean).join(' '),
-  ].find((n) => typeof n === 'string' && n.trim().length > 0);
-  if (conMayusculas) return conMayusculas.trim();
+    [c.firstNameLowerCase, c.lastNameLowerCase].filter(Boolean).join(' '),
+  ]
+    .map((n) => (typeof n === 'string' ? n.trim() : ''))
+    .find((n) => n.length > 0);
 
-  const enMinusculas = [c.firstNameLowerCase, c.lastNameLowerCase].filter(Boolean).join(' ').trim();
-  if (enMinusculas.length === 0) return null;
-
-  // ── SE LE DEVUELVE LA MAYÚSCULA INICIAL, Y HAY QUE DECIR POR QUÉ ES LEGÍTIMO
-  //
-  // Medido contra la subcuenta real: los 238 contactos llegan en minúscula —«ornella
-  // centurion», «jose zaval»— porque `/contacts/search` solo devuelve las variantes
-  // `*LowerCase`. La documentación oficial lo dice con todas las letras: *"first name without
-  // lowercase is not yet available"*.
-  //
-  // Esto NO es inventar un dato, y la distinción importa porque este proyecto no inventa
-  // ninguno: **la fuente perdió la caja, no el nombre**. La persona se llama igual; lo que
-  // falta es una convención de presentación. Escribir una lista de trabajo entera en minúscula
-  // hace que se lea como datos de prueba.
-  //
-  // Y es APROXIMADO, lo cual también hay que decir: «de la cruz» sale «De La Cruz», que no es
-  // como se escribe. La alternativa exacta es pedir `GET /contacts/{id}` por cada contacto
-  // —123 llamadas más contra un límite de tasa ajeno, por una mayúscula— y no vale ese precio.
-  //
-  // El nombre CRUDO no se pierde: si algún día `/contacts/search` devuelve las variantes con
-  // caja, la rama de arriba las prefiere y esta ni se ejecuta.
-  return enMinusculas.replace(/(^|[\s'-])(\p{L})/gu, (_, antes, letra) => antes + letra.toUpperCase());
+  if (!crudo) return null;
+  return conCaja(crudo);
 }
+
+/**
+ * Le devuelve la mayúscula inicial a un nombre **solo si la fuente la perdió**.
+ *
+ * ── LA REGLA, Y POR QUÉ NO ES "CAPITALIZAR SIEMPRE" ─────────────────────────
+ *
+ * Se decide mirando el propio valor: **si no tiene NI UNA mayúscula, la caja se perdió**. Si
+ * tiene alguna, se respeta tal cual, porque entonces alguien la escribió a propósito — y
+ * capitalizar «McDonald» o «van der Berg» sería romper un nombre que estaba bien.
+ *
+ * ── POR QUÉ NO ALCANZABA CON PREFERIR LOS CAMPOS "CON CAJA" ─────────────────
+ *
+ * La primera versión elegía `contactName` / `name` / `firstName` antes que las variantes
+ * `*LowerCase`, dando por sentado que las primeras traían mayúsculas. **Medido contra la
+ * subcuenta real: no.** Después de resincronizar los 124 contactos seguían en minúscula, o sea
+ * que GoHighLevel devuelve uno de esos campos y su contenido también viene en minúscula.
+ *
+ * Mirar el VALOR en vez del nombre del campo funciona sin importar cuál vino, y sigue
+ * funcionando el día que la API cambie qué devuelve.
+ *
+ * ── Y ESTO NO ES INVENTAR UN DATO ───────────────────────────────────────────
+ *
+ * La distinción importa porque este proyecto no inventa ninguno: **la fuente perdió la CAJA, no
+ * el nombre.** La persona se llama igual; lo que falta es una convención de presentación, y una
+ * lista de trabajo entera en minúscula se lee como datos de prueba.
+ *
+ * Es APROXIMADO, y hay que decirlo: «de la cruz» sale «De La Cruz», que no es como se escribe.
+ * La alternativa exacta es pedir `GET /contacts/{id}` por cada contacto —124 llamadas más
+ * contra un límite de tasa ajeno, por una mayúscula— y no vale ese precio.
+ */
+function conCaja(nombre: string): string {
+  // `\p{Lu}` y no `[A-Z]`: un nombre puede empezar con Á, Ñ o Ö y estar perfectamente escrito.
+  if (/\p{Lu}/u.test(nombre)) return nombre;
+  return nombre.replace(/(^|[\s'-])(\p{L})/gu, (_, antes, letra) => antes + letra.toUpperCase());
+}
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL CATÁLOGO DE ETIQUETAS — PARA QUE UN VACÍO DIGA POR QUÉ ESTÁ VACÍO
