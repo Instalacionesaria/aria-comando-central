@@ -183,6 +183,188 @@ export interface TablaControlAislamiento {
   creado_el: Generated<Date>;
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LAS OCHO TABLAS DE NEGOCIO DE LAS PESTAÑAS CLOSER Y SETTER (`11` § 2)
+//
+// Las ocho llevan `org_id` con el MISMO tipo que `control_aislamiento`:
+// `ColumnType<string, string | undefined, never>`. El tercer parámetro es el que importa —
+// hace que `updateTable('contactos').set({ org_id: … })` sea un error de COMPILACIÓN, no
+// algo que solo detenga la política en tiempo de ejecución. Mover un contacto de una
+// organización a otra no es una operación que este sistema quiera tener disponible.
+//
+// Y las columnas que la fuente no tiene van como `| null`, no como obligatorias. El
+// motivo está en el encabezado de la migración 011 y es el `11` § 9 regla 1: un cero
+// medido y un cero no medido no son el mismo hecho.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** La columna del inquilino, igual en las ocho. Ver `TablaControlAislamiento.org_id`. */
+type ColumnaInquilino = ColumnType<string, string | undefined, never>;
+
+/** El territorio: de qué pestaña es el contacto. `null` = en ninguno ("congelado"). */
+export type Territorio = 'closer' | 'setter';
+
+/** Las salidas de Avanzar. Las seis del closer más las tres propias del setter. */
+export type SalidaResultado =
+  | 'venta'
+  | 'acuerdo_sin_pago'
+  | 'seguimiento'
+  | 'no_interesa'
+  | 'no_show'
+  | 'nurture'
+  | 'agendo'
+  | 'venta_chica'
+  | 'no_califica';
+
+/**
+ * La entidad central.
+ *
+ * `etapa`, `score`, `responsable_id` y `territorio` admiten nulos porque **GoHighLevel no
+ * los da**: no hay campo de etapa que leer —la mueve un workflow disparado por una
+ * etiqueta—, nada calcula el score, y las etiquetas dicen territorio, no asignación.
+ */
+export interface TablaContactos {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  ghl_contact_id: string;
+  nombre: string;
+  telefono: string | null;
+  email: string | null;
+  etiquetas: Generated<string[]>;
+  territorio: Territorio | null;
+  fuente: Generated<string>;
+  etapa: string | null;
+  score: string | null;
+  responsable_id: string | null;
+  responsable_rol: Territorio | null;
+  /**
+   * El sello de atribución del setter. La ÚNICA excepción a "lo calculado no se guarda"
+   * (`11` § 2 regla 4), y un disparador impide sobreescribirlo o apagarlo.
+   *
+   * El tipo NO lo refleja a propósito: un `never` de actualización haría imposible
+   * ENCENDERLO, que es la operación legítima. La invariante vive en la base, donde un
+   * `update` no la puede esquivar.
+   */
+  sello_setter_id: string | null;
+  sello_setter_el: Date | null;
+  ultimo_entrante_el: Date | null;
+  ultimo_entrante_texto: string | null;
+  ultimo_saliente_el: Date | null;
+  sincronizado_el: Date | null;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaCitas {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  ghl_evento_id: string;
+  contacto_id: string;
+  inicio_el: Date;
+  fin_el: Date | null;
+  titulo: string | null;
+  /** El estado tal como lo devuelve GHL. Texto y no enumerado: los valores son de ellos. */
+  estado_ghl: string | null;
+  /** La sala. `null` es un caso con tratamiento propio en la interfaz (`11` § 5.4). */
+  sala_url: string | null;
+  sincronizado_el: Date | null;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaMensajes {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  ghl_mensaje_id: string;
+  contacto_id: string;
+  canal: string | null;
+  direccion: 'entrante' | 'saliente';
+  cuerpo: string | null;
+  /** Tres estados y no dos: el bot y una persona ausente no son lo mismo. */
+  autor: 'contacto' | 'agente' | 'persona';
+  autor_usuario_id: string | null;
+  enviado_el: Date;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaLlamadas {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  externa_id: string;
+  contacto_id: string;
+  agente: string | null;
+  /** CONTESTADAS, no hechas. El tercer ícono de la fila cuenta esto (`11` § 7.2). */
+  contestada: Generated<boolean>;
+  inicio_el: Date;
+  duracion_segundos: number | null;
+  resumen: string | null;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaTareas {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  /** Vence UN DÍA, no a una hora: la frontera la calcula la consulta con la zona. */
+  vence_el: Date;
+  situacion: string | null;
+  modo: string | null;
+  nota: string | null;
+  /** Fecha y no booleano: así "Completadas hoy" se vacía sola a medianoche. */
+  completada_el: Date | null;
+  completada_por: string | null;
+  /** `null` = lo registró el Sistema (`11` § 9 regla 5). */
+  creada_por: string | null;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaResultados {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  salida: SalidaResultado;
+  /** El rol que lo registró: las dos comisiones se calculan distinto. */
+  rol: Territorio;
+  /** `null` cuando la salida no pide monto. **No cero**: cero es un monto medido. */
+  monto: string | null;
+  forma_pago: string | null;
+  detalle: string | null;
+  nota: string | null;
+  registrado_por: string | null;
+  creado_el: Generated<Date>;
+}
+
+/**
+ * UNA tabla para los dos roles (`11` § 7.4).
+ *
+ * *"No hay endpoint de notas por rol y no debería haberlo: es el mismo dato sobre el mismo
+ * lead. Cuando pasó, las notas del setter vivían solo en memoria y se perdían al recargar
+ * la página, sin que nada fallara."*
+ */
+export interface TablaNotas {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  cuerpo: string;
+  /** `null` solo para las importadas: el endpoint de notas de GHL no devuelve autor. */
+  autor_id: string | null;
+  /** Y esto distingue "importada sin autor" de "escrita acá". Sin él, el nulo miente. */
+  origen: Generated<'plataforma' | 'importada'>;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaHallazgos {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  titulo: string;
+  categoria: string | null;
+  severidad: string | null;
+  diagnostico: string | null;
+  /** Abierto = sin fecha. Así la cola no depende de que alguien apague una bandera. */
+  resuelto_el: Date | null;
+  resuelto_por: string | null;
+  detectado_el: Generated<Date>;
+}
+
 /** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -197,4 +379,15 @@ export interface BaseDeDatos {
   usuarios_segundo_factor: TablaUsuariosSegundoFactor;
   organizaciones_credenciales: TablaOrganizacionesCredenciales;
   usuarios_permisos: VistaUsuariosPermisos;
+
+  // Las ocho de negocio. Sin calificar, como las demas: la ruta de busqueda por rol las
+  // resuelve en `negocio`, y `public` no esta en la ruta de ningun rol nuestro.
+  contactos: TablaContactos;
+  citas: TablaCitas;
+  mensajes: TablaMensajes;
+  llamadas: TablaLlamadas;
+  tareas: TablaTareas;
+  resultados: TablaResultados;
+  notas: TablaNotas;
+  hallazgos: TablaHallazgos;
 }
