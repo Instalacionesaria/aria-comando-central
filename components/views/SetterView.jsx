@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 3075-3147. */
-export default function SetterView() {
+export default function SetterView({ activa }) {
   return (
     <>
-    <section className="view" id="v-setter">
+    <section className={activa ? 'view on' : 'view'} id="v-setter">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l stack">

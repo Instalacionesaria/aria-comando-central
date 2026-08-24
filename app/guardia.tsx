@@ -29,10 +29,22 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../lib/http/cliente.ts';
+import {
+  ProveedorDeSesion,
+  type DatosDeSesion,
+  type GrupoDelMenu,
+} from './sesion-contexto.tsx';
 
 interface Sesion {
   autenticado: boolean;
   estado?: string;
+  // Lo que el armazón necesita para dibujarse. Llega en la MISMA respuesta que ya se pide
+  // para saber si hay sesión, así que no cuesta un viaje más — y no puede quedar viejo
+  // respecto del estado, que es lo que pasaría con dos peticiones.
+  menu?: GrupoDelMenu[];
+  usuarioNombre?: string;
+  organizacion?: DatosDeSesion['organizacion'];
+  mirandoOtraOrganizacion?: boolean;
 }
 
 type Situacion = 'preguntando' | 'adentro' | 'sin_respuesta';
@@ -40,6 +52,7 @@ type Situacion = 'preguntando' | 'adentro' | 'sin_respuesta';
 export default function Guardia({ children }: { children: React.ReactNode }) {
   const [situacion, setSituacion] = useState<Situacion>('preguntando');
   const [causa, setCausa] = useState<string | null>(null);
+  const [datos, setDatos] = useState<DatosDeSesion | null>(null);
   const yaPreguntado = useRef(false);
 
   const preguntar = useCallback(async () => {
@@ -63,6 +76,17 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
     }
 
     if (r.datos.autenticado && r.datos.estado === 'activa') {
+      // El menú y la organización vienen en esta misma respuesta. Si faltaran —una versión
+      // vieja del servidor detrás de un despliegue a medias— el armazón se dibuja SIN ninguna
+      // entrada, no con las diez: el `03` § 5 llevado a la interfaz, *"una operación nueva
+      // nace cerrada"*.
+      setDatos({
+        menu: r.datos.menu ?? [],
+        usuarioNombre: r.datos.usuarioNombre ?? '',
+        organizacion:
+          r.datos.organizacion ?? { id: '', nombre: '', activa: true, zonaHoraria: 'UTC' },
+        mirandoOtraOrganizacion: r.datos.mirandoOtraOrganizacion ?? false,
+      });
       setSituacion('adentro');
       return;
     }
@@ -82,7 +106,9 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
     void preguntar();
   }, [preguntar]);
 
-  if (situacion === 'adentro') return <>{children}</>;
+  if (situacion === 'adentro') {
+    return <ProveedorDeSesion value={datos}>{children}</ProveedorDeSesion>;
+  }
 
   if (situacion === 'sin_respuesta') {
     return (

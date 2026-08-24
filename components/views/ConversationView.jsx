@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 2865-2929. */
-export default function ConversationView() {
+export default function ConversationView({ activa }) {
   return (
     <>
-    <section className="view" id="v-conversation">
+    <section className={activa ? 'view on' : 'view'} id="v-conversation">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l stack">

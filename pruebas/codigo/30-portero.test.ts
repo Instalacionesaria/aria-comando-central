@@ -353,7 +353,30 @@ test('ADR-0304 · las operaciones de una misma pantalla piden el MISMO conjunto'
 
   // Y la guarda: cada sección declarada tiene que tener al menos una operación, o `SECCIONES`
   // es la lista paralela que este archivo existe para no ser.
+  //
+  // ── LA ÚNICA EXENCIÓN, Y ES EL CABLE TRAMPA ────────────────────────────────
+  //
+  // `sinOperacionesTodavia`. Desde la Etapa 11 `SECCIONES` es la lista ÚNICA —incluye las
+  // pantallas del prototipo que todavía no llaman a nada— y esa bandera es lo que las exime.
+  //
+  // Lo que hace que siga siendo un cable trampa y no una puerta de escape: bajar la bandera es
+  // un acto manual, y **darle su primera operación a una pantalla sin bajarla no rompe nada
+  // acá**. Al revés: el día que alguien le escribe un manejador con `PANTALLA = 'executive'`,
+  // la aserción de abajo dispara y le obliga a decidir. Y si alguien pone la bandera en una
+  // pantalla que YA tiene operaciones para silenciar un rojo, también dispara.
   for (const s of SECCIONES) {
+    if (s.sinOperacionesTodavia) {
+      // La bandera dice "no tiene operaciones". Si tiene, la bandera miente — y una bandera
+      // que miente es peor que no tenerla, porque exime a una pantalla que sí hay que
+      // verificar.
+      assert.ok(
+        !porPantalla.has(s.clave),
+        `la sección "${s.clave}" está marcada \`sinOperacionesTodavia\` y TIENE operaciones: ` +
+          `${[...(porPantalla.get(s.clave) ?? new Map()).keys()].join(', ')}. ` +
+          'Bajá la bandera en `lib/autorizacion/secciones.ts`.',
+      );
+      continue;
+    }
     assert.ok(
       porPantalla.has(s.clave),
       `la sección "${s.clave}" no tiene ninguna operación que la declare con PANTALLA`,

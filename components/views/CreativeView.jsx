@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 2747-2804. */
-export default function CreativeView() {
+export default function CreativeView({ activa }) {
   return (
     <>
-    <section className="view" id="v-creative">
+    <section className={activa ? 'view on' : 'view'} id="v-creative">
       <div className="view-scroll cre-scroll">
         <div className="cre-wrap">
           <div className="cre-head">

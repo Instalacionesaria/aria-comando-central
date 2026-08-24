@@ -41,7 +41,7 @@ import { hashear, verificar } from '../../../../lib/datos/hash.ts';
 import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
 import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
 import { MINIMO_PASSWORD } from '../../../../lib/autenticacion/politica.ts';
-import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
+import { menuVisible, seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 
 /**
@@ -64,6 +64,14 @@ export async function GET(peticion: Request): Promise<Response> {
     // operación valida igual.
     permisos: [...contexto.permisos].sort(),
     secciones: seccionesVisibles(contexto.permisos),
+    // El menú YA AGRUPADO y en orden, no una lista para que el cliente ordene. Es el § 9
+    // regla 3 aplicado a la interfaz: si el componente supiera el orden de los grupos,
+    // tendríamos otra vez dos listas que se pueden desordenar una respecto de la otra — que
+    // es el defecto que la Etapa 11 pagó, descrito en `lib/autorizacion/secciones.ts`.
+    menu: menuVisible(contexto.permisos),
+    // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
+    // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
+    usuarioNombre: contexto.usuarioNombre,
     // El cartel permanente del 03 § 3: "cuando mira otra organización, la interfaz lo
     // muestra de forma permanente. No es decoración: sin eso, alguien puede mirar la
     // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro

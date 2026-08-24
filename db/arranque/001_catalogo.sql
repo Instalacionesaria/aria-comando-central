@@ -98,6 +98,13 @@ insert into identidad.permisos (clave, descripcion) values
   --
   -- Y son DOS y no una porque de eso depende que un closer no vea la pestaña del setter.
   -- Con una sola capacidad de lectura compartida, los dos roles verían las dos pestañas.
+  -- Las siete pantallas del prototipo sin operaciones. UNA para las siete: no tienen nada
+  -- que proteger del lado del servidor, y lo que decide es si aparecen en el menú.
+  --
+  -- La tiene el administrador y NO la tienen closer ni setter, y de eso depende que un
+  -- closer no vea los siete tableros de inteligencia además de su pestaña.
+  ('tablero.ver', 'Ver los tableros de inteligencia del prototipo'),
+
   ('closer.ver',  'Ver la pestaña Closer: su tablero, su día, su pipeline y su agenda'),
   ('setter.ver',  'Ver la pestaña Setter: su tablero, su día y su pipeline'),
 

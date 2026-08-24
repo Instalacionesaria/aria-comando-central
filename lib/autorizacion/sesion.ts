@@ -54,6 +54,14 @@ export interface Contexto {
   /** Cuando se creo la sesion. Lo necesita el tope de codigos del segundo factor. */
   creadaEl: Date;
   usuarioId: string;
+  /**
+   * El nombre del usuario. Lo necesita el pie del menú, que hasta la Etapa 11 decía
+   * *"Francisco · Gerencia"* escrito a mano — el mismo nombre para todos los inquilinos.
+   *
+   * No cuesta una consulta: la que resuelve la sesión ya une `usuarios` para comprobar que
+   * esté activo.
+   */
+  usuarioNombre: string;
   estado: EstadoSesion;
   /** La organización a la que PERTENECE el usuario (04 § 8). */
   orgPropia: string;
@@ -152,6 +160,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         's.expira_el',
         's.creada_el',
         'u.org_id as org_propia',
+        'u.nombre as usuario_nombre',
       ])
       .executeTakeFirst();
 
@@ -229,6 +238,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
       sesionId: fila.sesion_id,
       creadaEl: fila.creada_el,
       usuarioId: fila.usuario_id,
+      usuarioNombre: fila.usuario_nombre,
       estado: fila.estado,
       orgPropia: fila.org_propia,
       orgEfectiva,

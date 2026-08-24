@@ -1,137 +1,123 @@
-/* Portado de aios-command-center_1.html — navegación lateral, líneas 2514-2550. */
+'use client';
+
+/* Portado de aios-command-center_1.html — navegación lateral, líneas 2514-2550.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ESTE ARCHIVO ERA DIEZ ENTRADAS DE JSX LITERAL, Y ESO ERA EL DEFECTO
+ *
+ * `lib/autorizacion/secciones.ts` declaraba qué pantallas correspondían a cada capacidad, y
+ * este archivo dibujaba las diez a cualquiera con sesión. Las dos pruebas que miraban esa
+ * lista quedaban verdes verificando un arreglo que ningún píxel usaba — la forma exacta del
+ * `07` § 0: *"un éxito reportado que no ocurrió"*.
+ *
+ * La deuda estaba escrita y fechada: *"unificarlos exige reescribir `Nav.jsx` como un `.map()`
+ * que produzca un DOM idéntico al del prototipo, o `npm run paridad` empieza a fallar y se
+ * termina desactivando. Eso es trabajo de la etapa que le dé interfaz a la primera pantalla
+ * administrada, no de ésta."*
+ *
+ * Esa etapa es la 11, porque es la primera en que la pantalla que gana operaciones **no la ve
+ * todo el mundo**: un closer no puede ver la pestaña del setter. Con el menú escrito a mano,
+ * *"solo ve su pestaña"* habría sido falso — vería las diez entradas y ocho le responderían
+ * 403 al abrirlas.
+ *
+ * ── EL DOM ES IDÉNTICO, Y ES UN REQUISITO ──────────────────────────────────
+ *
+ * Con todas las capacidades el `.map()` produce exactamente el mismo árbol que el JSX literal:
+ * mismas clases, mismo orden, mismos `data-view`, el galón `›` en las mismas cinco. Es lo que
+ * permite que `npm run paridad` siga comparando el port con el original. Si esto divergiera, la
+ * única compuerta que valida el port empezaría a dar rojo y terminaría desactivada.
+ *
+ * ── Y LO QUE DEJÓ DE ESTAR ESCRITO A MANO ──────────────────────────────────
+ *
+ * El nombre de la organización y el de la persona estaban FIJOS en el JSX —el de la primera
+ * organización y el de su fundador, escritos a mano—. El de la organización es justo el dato
+ * que el `03` § 3 exige mostrar bien: *"sin eso, alguien puede mirar la pantalla, sacar una
+ * conclusión sobre 'los números' y estar viendo los de otro cliente"*. Y estaba fijo, o sea
+ * que todos los inquilinos veían el del primero.
+ *
+ * Las dos cadenas no se repiten acá ni en un comentario, a propósito: la prueba que impide que
+ * vuelvan busca el TEXTO en este archivo, y nombrarlas en la explicación la haría fallar. Están
+ * en `pruebas/codigo/91-closer-y-setter.test.ts`, que es donde corresponde.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import { useSesion } from '../app/sesion-contexto.tsx';
+
+/** Las iniciales para el avatar. Dos letras, de las dos primeras palabras. */
+function iniciales(nombre) {
+  const partes = String(nombre ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (partes.length === 0) return '··';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[1][0]).toUpperCase();
+}
+
 export default function Nav() {
+  const sesion = useSesion();
+
+  // Sin datos de sesión no se dibuja NINGUNA entrada. Es el `03` § 5 —*"una operación nueva
+  // nace cerrada"*— llevado al menú: ante la duda, ninguna puerta, no todas.
+  //
+  // En la práctica no pasa: `app/guardia.tsx` no monta el armazón hasta tener la respuesta. El
+  // caso que esto cubre es el montaje de este componente fuera de la guarda.
+  const grupos = sesion?.menu ?? [];
+
+  // La primera sección visible arranca activa. NO `executive` fijo: para un closer esa pantalla
+  // no existe, y el `on` escrito a mano dejaba el área principal en blanco sin que nada falle.
+  // `CommandCenter.jsx` usa la misma regla para decidir qué vista dibuja activa, y las dos
+  // salen de este mismo orden.
+  const primera = grupos[0]?.secciones[0]?.clave;
+
   return (
     <>
     <aside className="nav">
       <button className="acct" id="acctBtn">
         <span className="acct-av">
-          AH
+          {iniciales(sesion?.organizacion.nombre)}
         </span>
         <span className="acct-txt">
           <span className="acct-name">
-            ARIA High Ticket
+            {sesion?.organizacion.nombre ?? '—'}
           </span>
           <span className="acct-role">
-            ARIA IA
+            {/* El cartel permanente del `03` § 3. No es decoración: es la diferencia entre
+                mirar los números de un cliente y creer que son los propios. */}
+            {sesion?.mirandoOtraOrganizacion ? 'Mirando otra organización' : 'Tu organización'}
           </span>
         </span>
         <span className="acct-chev">
           ⇅
         </span>
       </button>
-      <div className="nav-group">
-        <div className="nav-item on" data-view="executive">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-exec" />
-          </svg>
-          <span className="n">
-            Executive
-          </span>
+      {grupos.map(({ grupo, secciones }) => (
+        <div className="nav-group" key={grupo.clave}>
+          {/* El primer grupo no lleva etiqueta en el prototipo, y el `null` lo dice desde
+              `GRUPOS_DEL_MENU` en vez de dejarlo a que alguien se acuerde acá. */}
+          {grupo.etiqueta ? <div className="nav-label">{grupo.etiqueta}</div> : null}
+          {secciones.map((s) => (
+            <div
+              className={s.clave === primera ? 'nav-item on' : 'nav-item'}
+              data-view={s.clave}
+              key={s.clave}
+            >
+              <svg className="ni" viewBox="0 0 16 16">
+                <use href={s.menu.icono} />
+              </svg>
+              <span className="n">
+                {s.nombre}
+              </span>
+              {s.menu.galon ? <span className="chev">›</span> : null}
+            </div>
+          ))}
         </div>
-        <div className="nav-item" data-view="contacts">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-leads" />
-          </svg>
-          <span className="n">
-            Leads Portal
-          </span>
-          <span className="chev">
-            ›
-          </span>
-        </div>
-        <div className="nav-item" data-view="icp">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-icp" />
-          </svg>
-          <span className="n">
-            ICP & Oferta
-          </span>
-          <span className="chev">
-            ›
-          </span>
-        </div>
-      </div>
-      <div className="nav-group">
-        <div className="nav-label">
-          Inteligencia
-        </div>
-        <div className="nav-item" data-view="acquisition">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-acq" />
-          </svg>
-          <span className="n">
-            Acquisition
-          </span>
-        </div>
-        <div className="nav-item" data-view="creative">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-creative" />
-          </svg>
-          <span className="n">
-            Creative
-          </span>
-          <span className="chev">
-            ›
-          </span>
-        </div>
-        <div className="nav-item" data-view="conversion">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-conv" />
-          </svg>
-          <span className="n">
-            Conversion
-          </span>
-          <span className="chev">
-            ›
-          </span>
-        </div>
-        <div className="nav-item" data-view="conversation">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-chat" />
-          </svg>
-          <span className="n">
-            Conversation
-          </span>
-        </div>
-        <div className="nav-item" data-view="sales">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-sales" />
-          </svg>
-          <span className="n">
-            Sales
-          </span>
-          <span className="chev">
-            ›
-          </span>
-        </div>
-      </div>
-      <div className="nav-group">
-        <div className="nav-label">
-          Operación
-        </div>
-        <div className="nav-item" data-view="setter">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-setter" />
-          </svg>
-          <span className="n">
-            Setter
-          </span>
-        </div>
-        <div className="nav-item" data-view="closer">
-          <svg className="ni" viewBox="0 0 16 16">
-            <use href="#i-closer" />
-          </svg>
-          <span className="n">
-            Closer
-          </span>
-        </div>
-      </div>
+      ))}
       <div className="nav-foot">
         <div className="role-row">
           <i>
-            FR
+            {iniciales(sesion?.usuarioNombre)}
           </i>
-          {' '}Francisco · Gerencia
+          {' '}{sesion?.usuarioNombre ?? '—'}
         </div>
         <div className="role-row">
           <i>

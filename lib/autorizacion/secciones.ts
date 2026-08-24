@@ -19,28 +19,46 @@
 // Se conserva el párrafo de arriba en vez de borrarlo porque explica QUÉ estaba esperando la lista,
 // y la próxima pantalla que reciba una operación va a necesitar leerlo.
 //
-// ── LA TRAMPA QUE ESTE ARCHIVO PODRÍA SER ────────────────────────────────────
+// ── LA TRAMPA QUE ESTE ARCHIVO ERA, Y QUE LA ETAPA 11 PAGÓ ──────────────────
 //
-// El defecto natural acá es **la lista paralela**: declarar `SECCIONES` y dejar el menú
-// renderizándose de otra lista. Las dos pruebas quedan verdes para siempre verificando un
-// arreglo que ningún píxel de la pantalla usa, mientras el menú real muestra las diez
-// secciones a todo el mundo. Es la forma exacta del `07` § 0: *"un éxito reportado que no
-// ocurrió"*.
+// El defecto era **la lista paralela**: `SECCIONES` declaraba tres pantallas y el menú se
+// renderizaba de OTRA lista —diez entradas de JSX literal en `components/Nav.jsx`—. Las dos
+// pruebas quedaban verdes para siempre verificando un arreglo que ningún píxel de la pantalla
+// usaba, mientras el menú real mostraba las diez secciones a cualquiera con sesión. Es la
+// forma exacta del `07` § 0: *"un éxito reportado que no ocurrió"*.
 //
-// Hoy el repo tiene la clave de cada pantalla repetida **en cuatro lugares**:
-// `components/Nav.jsx` (JSX literal con `data-view`), el mapa `GROUP` de
-// `lib/aios/shell.js`, los `id="v-…"` de `components/views/*View.jsx`, y `const VISTAS` de
-// `scripts/paridad.mjs`. Unificarlos exige reescribir `Nav.jsx` como un `.map()` que
-// produzca un DOM **idéntico** al del prototipo, o `npm run paridad` —la única compuerta que
-// compara el port con el original— empieza a fallar y se termina desactivando. Eso es
-// trabajo de la etapa que le dé interfaz a la primera pantalla administrada, no de ésta.
-// Queda escrito en `docs/ETAPA-3.md` como deuda, con su riesgo nombrado.
+// La clave de cada pantalla estaba repetida **en cuatro lugares**: el JSX de `Nav.jsx`, el
+// mapa `GROUP` de `lib/aios/shell.js`, los `id="v-…"` de `components/views/*View.jsx`, y
+// `const VISTAS` de `scripts/paridad.mjs`. Este archivo decía que unificarlos era *"trabajo de
+// la etapa que le dé interfaz a la primera pantalla administrada"*.
 //
-// La Etapa 9 NO pagó esa deuda, y conviene decirlo con precisión: `icp` sigue apareciendo en los
-// cuatro lugares, y el menú sigue mostrando las diez entradas a cualquiera con sesión. Lo que sí
-// cambió es que ahora hay UNA pantalla donde la lista paralela tiene consecuencia visible —quien no
-// tenga `fundaciones.ver` entra a la pestaña y sus operaciones responden `sin_permiso`, en vez de
-// ver la pantalla vacía—, porque el componente distingue el rechazo del vacío (`ADR-0305`).
+// **Esa etapa es la 11**, porque es la primera en que una pantalla que gana operaciones NO la
+// ve todo el mundo: un closer no puede ver la pestaña del setter. Con el menú escrito a mano,
+// "solo ve su pestaña" habría sido falso — vería las diez entradas y ocho le responderían 403.
+//
+// ── Y LO QUE APARECIÓ AL UNIFICAR, QUE ES EL ARGUMENTO ENTERO ───────────────
+//
+// `SIN_OPERACIONES_TODAVIA` tenía la clave **`leads`**. No existe. Las otras tres copias dicen
+// `contacts`: el `data-view` del menú, el mapa `GROUP` del armazón y el `id="v-contacts"` de
+// la vista. Así que la lista venía afirmando la pertenencia de una pantalla que la aplicación
+// no tiene, y las dos pruebas que la miran pasaban en verde igual — comprobaban su LARGO y que
+// `icp` no estuviera, nunca que sus claves existieran.
+//
+// Es la demostración de por qué la lista paralela es un defecto y no una molestia: no divergió
+// en algo visible, divergió en un nombre, y nadie podía notarlo mirando la pantalla.
+//
+// ── CÓMO QUEDÓ: UNA LISTA, NO DOS ───────────────────────────────────────────
+//
+// `SECCIONES` es ahora la única, con las diez pantallas y las dos de administración.
+// `SIN_OPERACIONES_TODAVIA` se DERIVA de la bandera `sinOperacionesTodavia`.
+//
+// Y el cable trampa sobrevive, que era la objeción a derivarla. La nota anterior decía: *"está
+// escrita a mano y no derivada de los archivos, y eso es a propósito: es la lista que alguien
+// tiene que EDITAR el día que una de estas pantallas reciba su primera operación. Una lista
+// derivada se actualizaría sola y nadie decidiría nada."* Correcto — y sigue valiendo, porque
+// esto no se deriva de los ARCHIVOS: se deriva de una bandera que hay que editar a mano. La
+// prueba de `ADR-0304` exige que toda sección SIN la bandera tenga un manejador que la
+// declare, así que agregarle una operación a una pantalla y no bajar la bandera es rojo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { Capacidad } from './capacidades.ts';
@@ -58,7 +76,47 @@ export interface Seccion {
    * —la de la pantalla y la de sus operaciones— y ninguna sería el contrato.
    */
   capacidadRequerida: Capacidad;
+  /**
+   * `true` = la pantalla **todavía no tiene ninguna operación de servidor**.
+   *
+   * Es el cable trampa, y hay que editarlo a mano. `ADR-0304` verifica que toda sección SIN
+   * esta bandera tenga al menos un manejador de ruta que la declare con `PANTALLA`, así que
+   * darle su primera operación a una de éstas y olvidarse de bajar la bandera es rojo.
+   *
+   * Lo que la bandera NO significa: que la pantalla se vea sin permiso. Estas diez también
+   * piden su capacidad para aparecer en el menú — lo que no tienen es qué proteger del lado
+   * del servidor, porque no llaman a ninguna operación.
+   */
+  sinOperacionesTodavia?: true;
+  /**
+   * Cómo se dibuja en el menú lateral. **Ausente = no tiene entrada en el menú.**
+   *
+   * `usuarios` y `credenciales` son así: tienen operaciones y capacidad, y no tienen pantalla
+   * en el prototipo todavía. Su ausencia acá es lo que impide que el menú invente una entrada
+   * que no lleva a ningún lado.
+   */
+  menu?: {
+    /** A qué grupo pertenece. Tiene que ser una clave de `GRUPOS_DEL_MENU`. */
+    grupo: string;
+    /** El `href` del `<use>` del sprite de iconos. */
+    icono: string;
+    /** ¿Lleva el galón `›` a la derecha? Cinco de las diez lo llevan en el prototipo. */
+    galon?: true;
+  };
 }
+
+/**
+ * Los grupos del menú, **en orden**, con su etiqueta.
+ *
+ * El primero no tiene etiqueta visible y los otros dos sí — es así en el prototipo, y el
+ * `null` lo dice en vez de dejarlo a que alguien se acuerde. La clave `'AIOS'` igual existe
+ * porque `lib/aios/shell.js` la usa para la miga de pan.
+ */
+export const GRUPOS_DEL_MENU: readonly { clave: string; etiqueta: string | null }[] = [
+  { clave: 'AIOS', etiqueta: null },
+  { clave: 'Inteligencia', etiqueta: 'Inteligencia' },
+  { clave: 'Operación', etiqueta: 'Operación' },
+];
 
 /**
  * Las pantallas que tienen al menos una operación de servidor.
@@ -68,55 +126,116 @@ export interface Seccion {
  * conjunto** de capacidades.
  */
 export const SECCIONES: readonly Seccion[] = [
+  // ── Las dos de administración. Sin `menu`: tienen operaciones y capacidad, y todavía no
+  //    tienen pantalla en el prototipo. Ver el comentario de `Seccion.menu`.
   { clave: 'usuarios', nombre: 'Usuarios', capacidadRequerida: 'usuarios.ver' },
   { clave: 'credenciales', nombre: 'Integraciones', capacidadRequerida: 'credenciales.ver' },
-  // ── Etapa 9 · el cable trampa DISPARÓ, y esta línea es la decisión que pedía ──
+
+  // ── Grupo 1 · AIOS ─────────────────────────────────────────────────────────
+  {
+    clave: 'executive',
+    nombre: 'Executive',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'AIOS', icono: '#i-exec' },
+  },
+  {
+    // `contacts`, NO `leads`. Ver el encabezado: la lista vieja decía `leads` y las otras tres
+    // copias decían `contacts`. Se corrigió al nombre que usa la aplicación, que gana 3 a 1.
+    clave: 'contacts',
+    nombre: 'Leads Portal',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'AIOS', icono: '#i-leads', galon: true },
+  },
+  {
+    // ── Etapa 9 · el cable trampa DISPARÓ por primera vez ──
+    //
+    // `icp` fue la PRIMERA pantalla del prototipo con operaciones de servidor
+    // (`GET/POST /api/fundaciones/estado`, `POST /api/fundaciones/generar`), así que es la
+    // única de las diez sin la bandera. Con esto `ADR-0303` dejó de estar inerte.
+    clave: 'icp',
+    nombre: 'ICP & Oferta',
+    capacidadRequerida: 'fundaciones.ver',
+    menu: { grupo: 'AIOS', icono: '#i-icp', galon: true },
+  },
+
+  // ── Grupo 2 · Inteligencia ─────────────────────────────────────────────────
+  {
+    clave: 'acquisition',
+    nombre: 'Acquisition',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Inteligencia', icono: '#i-acq' },
+  },
+  {
+    clave: 'creative',
+    nombre: 'Creative',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Inteligencia', icono: '#i-creative', galon: true },
+  },
+  {
+    clave: 'conversion',
+    nombre: 'Conversion',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Inteligencia', icono: '#i-conv', galon: true },
+  },
+  {
+    clave: 'conversation',
+    nombre: 'Conversation',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Inteligencia', icono: '#i-chat' },
+  },
+  {
+    clave: 'sales',
+    nombre: 'Sales',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Inteligencia', icono: '#i-sales', galon: true },
+  },
+
+  // ── Grupo 3 · Operación · Etapa 11 ─────────────────────────────────────────
   //
-  // `icp` es la PRIMERA pantalla del prototipo que recibe operaciones de servidor
-  // (`GET/POST /api/fundaciones/estado`, `POST /api/fundaciones/generar`). El comentario de arriba
-  // decía que el día que pasara, alguien tenía que decidir *"catalogar su capacidad y ponerla en
-  // `SECCIONES`, o justificar por qué no"*. Se catalogó.
-  //
-  // Con esto `ADR-0303` deja de estar inerte: hay una pantalla real cuya visibilidad se decide por
-  // una capacidad del catálogo, y `ADR-0304` compara de verdad los conjuntos de sus operaciones.
-  { clave: 'icp', nombre: 'ICP & Oferta', capacidadRequerida: 'fundaciones.ver' },
-  // ── Etapa 11 · las dos pestañas operativas ────────────────────────────────
-  //
-  // Cada una pide una capacidad DISTINTA, y de eso depende lo único que se pidió en voz alta:
-  // *"un closer solo ve su pestaña"*. Con una capacidad de lectura compartida entre las dos,
-  // los dos roles verían las dos pestañas — el filtro de `seccionesVisibles` no tendría con
-  // qué distinguirlos.
+  // Las dos pestañas operativas, y las ÚNICAS dos con una capacidad de lectura propia. De eso
+  // depende lo único que se pidió en voz alta: *"un closer solo ve su pestaña"*. Si las dos
+  // pidieran la misma capacidad, los dos roles verían las dos — y este archivo seguiría
+  // filtrando bien, con el criterio equivocado. No fallaría nada.
   //
   // Y las CUATRO sub-pestañas del closer piden `closer.ver`, no una cada una. El `11` § 8
   // listó `tablero.ver` para el Inicio y `agenda.ver` para la Agenda, y el mismo § 8 —y
   // `ADR-0304`— prohiben eso: dos llamadas de la misma pantalla con capacidades distintas
   // dejan *"esa parte vacía para alguien que ve el resto, y no hay forma de darse cuenta
   // mirando"*. El razonamiento completo está en `db/arranque/001_catalogo.sql`.
-  { clave: 'closer', nombre: 'Closer', capacidadRequerida: 'closer.ver' },
-  { clave: 'setter', nombre: 'Setter', capacidadRequerida: 'setter.ver' },
+  {
+    clave: 'setter',
+    nombre: 'Setter',
+    capacidadRequerida: 'setter.ver',
+    menu: { grupo: 'Operación', icono: '#i-setter' },
+  },
+  {
+    clave: 'closer',
+    nombre: 'Closer',
+    capacidadRequerida: 'closer.ver',
+    menu: { grupo: 'Operación', icono: '#i-closer' },
+  },
 ];
 
 /**
- * Las diez pantallas del prototipo, que **todavía no tienen ninguna operación**.
+ * Las pantallas del prototipo que **todavía no tienen ninguna operación**.
  *
- * Está escrita a mano y no derivada de los archivos, y eso es a propósito: es la lista que
- * alguien tiene que **editar** el día que una de estas pantallas reciba su primera
- * operación. Una lista derivada se actualizaría sola y nadie decidiría nada.
+ * DERIVADA, y el encabezado explica por qué eso no debilita el cable trampa: no se deriva de
+ * los archivos —que se actualizaría sola y nadie decidiría nada— sino de una bandera que hay
+ * que editar a mano en `SECCIONES`.
+ *
+ * Eran nueve hasta la Etapa 11, que se llevó `setter` y `closer` por el mismo camino que la 9
+ * se llevó `icp`.
  */
-export const SIN_OPERACIONES_TODAVIA: readonly string[] = [
-  'executive',
-  'leads',
-  // `icp` SALIÓ de esta lista en la Etapa 9: ya tiene operaciones y vive en `SECCIONES`.
-  'acquisition',
-  'creative',
-  'conversion',
-  'conversation',
-  'sales',
-  // `setter` y `closer` SALIERON de esta lista en la Etapa 11: ya tienen operaciones y viven
-  // en `SECCIONES`. Son la segunda vez que el cable trampa dispara, y la primera en que la
-  // pantalla que gana operaciones **no** la ve todo el mundo — lo que obligó a que el menú
-  // deje de estar escrito a mano. Ver la nota de la lista paralela, arriba.
-];
+export const SIN_OPERACIONES_TODAVIA: readonly string[] = SECCIONES.filter(
+  (s) => s.sinOperacionesTodavia,
+).map((s) => s.clave);
 
 /**
  * Las operaciones que **no pertenecen a ninguna pantalla**, nombradas una por una.
@@ -185,4 +304,26 @@ export function puede(permisos: ReadonlySet<string>, seccion: Seccion): boolean 
 /** Las secciones visibles para un conjunto de permisos (03 § 7). */
 export function seccionesVisibles(permisos: ReadonlySet<string>): readonly Seccion[] {
   return SECCIONES.filter((s) => puede(permisos, s));
+}
+
+/**
+ * Las secciones del MENÚ visibles, agrupadas y en el orden del prototipo.
+ *
+ * Existe para que `components/Nav.jsx` no tenga que saber nada de grupos ni de orden: si esa
+ * lógica viviera en el componente, volveríamos a tener dos listas que se pueden desordenar
+ * una respecto de la otra.
+ *
+ * Los grupos que quedan sin ninguna sección visible **no se devuelven**. Un `<div
+ * class="nav-group">` con su etiqueta y nada adentro deja un título flotando sobre el vacío —
+ * que le dice al usuario que ahí hay algo que no puede ver, cuando lo que corresponde es que
+ * no sepa que existe.
+ */
+export function menuVisible(
+  permisos: ReadonlySet<string>,
+): readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly Seccion[] }[] {
+  const visibles = seccionesVisibles(permisos).filter((s) => s.menu);
+  return GRUPOS_DEL_MENU.map((grupo) => ({
+    grupo,
+    secciones: visibles.filter((s) => s.menu!.grupo === grupo.clave),
+  })).filter((g) => g.secciones.length > 0);
 }

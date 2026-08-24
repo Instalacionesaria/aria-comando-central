@@ -18,9 +18,9 @@
 
 import Fundaciones from '../fundaciones/Fundaciones';
 
-export default function IcpView() {
+export default function IcpView({ activa }) {
   return (
-    <section className="view" id="v-icp">
+    <section className={activa ? 'view on' : 'view'} id="v-icp">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l">

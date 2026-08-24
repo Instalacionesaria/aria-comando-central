@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 2680-2744. */
-export default function AcquisitionView() {
+export default function AcquisitionView({ activa }) {
   return (
     <>
-    <section className="view" id="v-acquisition">
+    <section className={activa ? 'view on' : 'view'} id="v-acquisition">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l">

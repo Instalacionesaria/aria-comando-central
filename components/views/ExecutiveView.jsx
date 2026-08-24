@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 2555-2677. */
-export default function ExecutiveView() {
+export default function ExecutiveView({ activa }) {
   return (
     <>
-    <section className="view on" id="v-executive">
+    <section className={activa ? 'view on' : 'view'} id="v-executive">
       <div className="view-scroll ex-scroll">
         <div className="ex-head">
           <div className="ex-title-wrap">

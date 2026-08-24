@@ -63,6 +63,15 @@ export const CAPACIDADES = [
   // hay forma de darse cuenta mirando"*. Las dos mitades del documento no pueden valer a la
   // vez; gana la regla, que describe un defecto medido. El motivo completo está en
   // `db/arranque/001_catalogo.sql`.
+  // Las SIETE pantallas del prototipo que todavía no tienen operaciones. Una capacidad
+  // para las siete y no una cada una: no tienen nada que proteger del lado del servidor
+  // —no llaman a ninguna operación— y lo que decide es si aparecen en el menú. Siete
+  // capacidades para eso serían siete líneas de reparto por rol sin una decisión distinta
+  // detrás de ninguna.
+  //
+  // La tiene el administrador y NO la tienen closer ni setter, y de eso depende que un
+  // closer no vea los siete tableros de inteligencia además de su pestaña.
+  'tablero.ver',
   'closer.ver',
   'setter.ver',
   // La ficha del contacto. De las DOS pestañas, así que no puede pedir la de una sola.

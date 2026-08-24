@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 3150-3172. */
-export default function CloserView() {
+export default function CloserView({ activa }) {
   return (
     <>
-    <section className="view" id="v-closer">
+    <section className={activa ? 'view on' : 'view'} id="v-closer">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l stack">

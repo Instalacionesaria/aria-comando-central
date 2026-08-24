@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 3024-3072. */
-export default function ContactsView() {
+export default function ContactsView({ activa }) {
   return (
     <>
-    <section className="view" id="v-contacts">
+    <section className={activa ? 'view on' : 'view'} id="v-contacts">
       <div className="view-scroll cre-scroll">
         <div className="lp-wrap">
           <div className="cre-head">

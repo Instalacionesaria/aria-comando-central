@@ -1,8 +1,8 @@
 /* Portado de aios-command-center_1.html — vista, líneas 2807-2862. */
-export default function ConversionView() {
+export default function ConversionView({ activa }) {
   return (
     <>
-    <section className="view" id="v-conversion">
+    <section className={activa ? 'view on' : 'view'} id="v-conversion">
       <div className="view-scroll cre-scroll">
         <div className="cv-wrap">
           <div className="cre-head">
