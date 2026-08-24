@@ -1,0 +1,141 @@
+/* Etapa 11 · Ajustes — lo POCO que esta pantalla necesita y el diseño no tenía.
+   ============================================================================
+   ESTE ARCHIVO ES CORTO A PROPÓSITO, Y LA PRIMERA VERSIÓN NO LO ERA
+
+   Escribí una hoja de 260 líneas con su propio `.aj-campo`, su propio `.aj-btn` y su propia
+   píldora de estado. Estaba mal, y el motivo lo dice `fundaciones.css` sobre sí mismo cuando
+   reusa las subpestañas del cockpit del Closer:
+
+     "es el patrón de pestañas que el diseño ya tiene, y hacer otro daría dos gramáticas
+      para la misma cosa"
+
+   La Etapa 9 ya inventó el formulario que el prototipo no tenía —`.fd-campo`, `.fd-btn`,
+   `.fd-aviso`— y la píldora de estado existe desde el prototipo: `.chip` con `.ok` / `.warn`
+   / `.crit`. Un tercer juego de clases para lo mismo se ve idéntico el primer día y divergen
+   el día que alguien ajusta uno de los dos.
+
+   Así que acá quedó SOLO lo que de verdad no existía en ninguna parte: la caja que muestra
+   el valor de una credencial —o su ausencia—, y el párrafo de entrada.
+
+   ── LAS DOS TRAMPAS QUE ME COMÍ, PARA QUE NO SE REPITAN ─────────────────────
+
+   1. **`.cre-desc` está definida como `.cre-head .cre-desc`.** Fuera de un encabezado de
+      vista no pinta nada. La primera versión de esta pantalla la usaba suelta para las
+      bajadas de cada tarjeta, y por eso se veía sin estilo.
+
+   2. **`.stack` a secas no existe.** Solo `.ch-l.stack` (aios.css:2064). Envolver el
+      contenido en `<div className="stack">` no hace nada — ni columna, ni separación.
+
+   Las dos fallan igual de callado: la clase existe en el JSX, no existe en el CSS, y el
+   navegador no dice una palabra.
+
+   ── Y LAS TRES REGLAS DE SIEMPRE ────────────────────────────────────────────
+
+   No se toca `aios.css` (es la hoja diffeable contra el prototipo), ni un color literal, y
+   la capa `components` para ganarle al reset `* { margin:0 }` de la hoja original.
+   ========================================================================= */
+
+/* ── El párrafo de entrada ────────────────────────────────────────────────── */
+
+/* No usa `.cre-desc` por la trampa 1: está fuera del `.cre-head`. */
+.aj-intro {
+  font-size: 12.5px;
+  color: var(--txt-dim);
+  line-height: 1.6;
+  max-width: 660px;
+}
+.aj-intro b {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+/* ── El cuerpo de una tarjeta de credencial ───────────────────────────────── */
+
+/* `.card-body` no trae dirección ni separación —así es en todo el proyecto, y las vistas se
+   la pasan inline—. Acá se declara una vez en vez de repetir el `style` en seis tarjetas. */
+.aj-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* La bajada de cada tarjeta: qué es esta credencial y de dónde se saca. */
+.aj-ayuda {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  line-height: 1.55;
+}
+
+/* ── EL VALOR, que es lo único sin precedente en el diseño ────────────────── */
+
+/* De un secreto se muestran los últimos cuatro caracteres que calculó el SERVIDOR; de un
+   identificador público, el valor entero. Monoespaciada porque lo único que se hace con
+   esto es compararlo carácter por carácter cuando algo no anda. */
+.aj-valor {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 11px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cuando no hay nada cargado. Borde punteado y tipografía de texto, no monoespaciada: un
+   guión en monoespaciada dentro de una caja sólida se lee como un valor que existe. Es el
+   mismo lenguaje que `.dw-empty` usa para el vacío chico. */
+.aj-valor.vacio {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  color: var(--txt-faint);
+  background: none;
+  border-style: dashed;
+  border-color: var(--line-strong);
+}
+
+/* ── Dos ajustes sobre las clases reusadas ────────────────────────────────── */
+
+/* El campo y sus botones en una sola línea. `.fd-campo` es columna —está pensado para
+   etiqueta arriba, campo abajo— y acá la etiqueta ya la da el encabezado de la tarjeta. */
+.aj-fila {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.aj-fila .fd-campo {
+  flex: 1 1 190px;
+}
+/* Los secretos en monoespaciada: un token pegado en tipografía proporcional no se puede
+   comparar de un vistazo, que es justo lo que hace falta cuando algo no anda. El marcador
+   vuelve a la tipografía de texto, porque es una frase y no un valor. */
+.aj-fila .fd-campo input[type='password'] {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.aj-fila .fd-campo input::placeholder {
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+}
+
+/* Borrar es destructivo y se ve destructivo, pero no grita: recolorea el botón secundario en
+   vez de ser un bloque rojo. Seis botones rojos rellenos harían que la pantalla entera
+   pareciera una alarma. */
+.fd-btn.sec.aj-peligro {
+  color: var(--crit);
+  border-color: color-mix(in srgb, var(--crit) 26%, transparent);
+}
+.fd-btn.sec.aj-peligro:hover:not(:disabled) {
+  color: var(--crit);
+  border-color: color-mix(in srgb, var(--crit) 45%, transparent);
+  background: color-mix(in srgb, var(--crit) 7%, transparent);
+}
+
+/* El aviso de resultado, en verde cuando salió bien. `.fd-aviso` trae el neutro y el `.mal`;
+   le faltaba el caso bueno, porque en Fundaciones el acuse es `.fd-guardado`. */
+.fd-aviso.bien {
+  border-color: color-mix(in srgb, var(--ok) 26%, transparent);
+  color: var(--ok);
+}

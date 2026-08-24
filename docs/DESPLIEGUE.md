@@ -388,3 +388,36 @@ Lo que sí es evidencia:
    *cualquier* acceso a base lance. Así que si tras el despliegue una ruta que toca la
    base responde bien, la cadena tiene el parámetro. El guardia convierte una propiedad
    invisible en una observable.
+
+---
+
+## Los datos inventados que quedan, y dónde
+
+La Etapa 11 sacó los de las pestañas **Closer** y **Setter**, que estuvieron desplegados
+mostrando nombres de personas y montos que no existen. Lo que se borró está detallado en el
+encabezado de `components/views/CloserView.jsx`.
+
+**Las otras siete pantallas del prototipo siguen igual.** Son las de
+`SIN_OPERACIONES_TODAVIA`, no tienen ninguna operación de servidor, y su contenido es el
+maquetado del HTML original:
+
+| archivo | qué inventa |
+| --- | --- |
+| `components/views/SalesView.jsx` | un nombre de persona |
+| `components/Overlays.jsx` | un nombre de persona en la ficha lateral |
+| `lib/aios/leads-portal.js` | nombres en el portal de contactos |
+| `lib/aios/leads-group.js` | nombres en el agrupador |
+| `components/views/ExecutiveView.jsx` | métricas del tablero |
+| `components/views/AcquisitionView.jsx` | métricas de adquisición |
+| `lib/aios/creative.js`, `conversion.js`, `conversation.js`, `executive*.js`, `acquisition*.js` | las métricas de sus paneles |
+
+**Por qué no se vaciaron en esta etapa, dicho de frente.** Vaciarlas sin tener de dónde traer
+datos las deja en siete carteles de "falta conectar". Cuáles se conectan y en qué orden es una
+decisión de producto, no una consecuencia de esta etapa. Quedan visibles **solo para quien
+tenga `tablero.ver`** —o sea administradores, no closers ni setters—, y eso acota a quién le
+pueden mentir.
+
+La prueba `pruebas/codigo/91-closer-y-setter.test.ts` verifica que los nombres inventados no
+vuelvan a las dos pestañas conectadas. Su comentario explica por qué no amplía el alcance:
+corrida sobre todo el árbol, encuentra los de la tabla de arriba — y una prueba que se pone en
+rojo por una decisión que nadie tomó se termina desactivando.

@@ -23,7 +23,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { RAIZ } from '../apoyo/fuente.ts';
+import { RAIZ, archivosFuente } from '../apoyo/fuente.ts';
 import {
   GRUPOS_DEL_MENU,
   SECCIONES,
@@ -267,4 +267,208 @@ test('las dos rutas piden capacidades DISTINTAS, y son las de su pantalla', () =
   // podría llamar a las dos.
   assert.doesNotMatch(closer, /setter\.ver/);
   assert.doesNotMatch(setter, /closer\.ver/);
+});
+
+// ─── Los datos inventados, que estuvieron en producción ─────────────────────
+//
+// Hasta la Etapa 11 las dos pestañas mostraban datos escritos a mano, y estuvieron
+// desplegados: seis citas con nombres de personas, cinco meses de facturación, un diagnóstico
+// atribuido a la IA que ninguna IA generó, y un encabezado con el nombre de un closer que no
+// existe. Nada de eso fallaba.
+//
+// Estas pruebas no comprueban que la pantalla "esté bien". Comprueban que ESO no vuelva, que
+// es distinto: el arreglo natural cuando una lista se ve vacía es poner una fila de ejemplo
+// «para ver cómo queda», y esa fila se queda.
+
+test('los dos módulos que pintaban datos inventados NO existen', async () => {
+  // No es una prueba de organización de archivos. `lib/aios/closer.js` y
+  // `closer-contact.js` existían SOLO para pintar literales, y mientras existan alguien puede
+  // volver a engancharlos al arranque con una línea.
+  const { existsSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  for (const muerto of ['lib/aios/closer.js', 'lib/aios/closer-contact.js']) {
+    assert.equal(
+      existsSync(join(RAIZ, muerto)),
+      false,
+      `volvió ${muerto}, que existía solo para dibujar datos escritos a mano`,
+    );
+  }
+  // Y que el arranque no los nombre. Un import de un archivo que no existe rompe la
+  // construcción, así que esto atrapa el caso en que alguien los recree.
+  const arranque = leer('lib/aios/index.js');
+  const sinComentar = arranque
+    .split('\n')
+    .filter((l) => !l.trimStart().startsWith('*') && !l.trimStart().startsWith('/*') && !l.trimStart().startsWith('//'))
+    .join('\n');
+  assert.doesNotMatch(sinComentar, /initCloser\b/, 'el arranque volvió a cargar `initCloser`');
+  assert.doesNotMatch(sinComentar, /initCloserContact\b/, 'el arranque volvió a cargar `initCloserContact`');
+});
+
+test('las dos vistas no traen NINGUNO de los nombres inventados que tenían', () => {
+  // La lista es la del inventario real, no una invención de esta prueba. Son las personas que
+  // la aplicación mostraba como si fueran contactos de la organización.
+  //
+  // Se busca en TODO el árbol de interfaz, no solo en las dos vistas: si alguien los mueve a
+  // un archivo de datos de ejemplo, siguen llegando a la pantalla.
+  const INVENTADOS = [
+    'Luzma Carbajal',
+    'Marcos Gabriel Juarez',
+    'Rodrigo Wayar Cruz',
+    'Andres Rendon',
+    'Richie Brizuela',
+    'Irma Perez',
+    'Quiroz Prueba',
+    'Angelica Moncada',
+    'Claudia del Aguila',
+    'Francisco Padilla',
+    'Guillermo Martinez',
+    'Isidro Ramirez',
+    'Moises Ruiz Test',
+    'David Silva',
+    'Jorge Veramendi',
+    'Andrea Salas',
+  ];
+
+  // ── EL ALCANCE, Y LA DEUDA QUE DEJA A LA VISTA ────────────────────────────
+  //
+  // Se revisan los archivos de ESTA etapa. Corrida sobre todo el árbol, esta misma prueba
+  // encuentra los mismos nombres en `components/Overlays.jsx`, `components/views/SalesView.jsx`,
+  // `lib/aios/leads-portal.js` y `lib/aios/leads-group.js` — o sea que **las otras siete
+  // pantallas del prototipo siguen mostrando datos inventados**.
+  //
+  // No se amplía el alcance acá por una razón, no por comodidad: esas siete están en
+  // `SIN_OPERACIONES_TODAVIA`, no tienen ninguna operación de servidor, y vaciarlas sin tener
+  // de dónde traer datos las deja en siete carteles. Cuáles se conectan y en qué orden es una
+  // decisión de producto, y no la toma una prueba.
+  //
+  // Queda anotado en `docs/ETAPA-11.md` con su nombre. Lo que esta prueba garantiza es que las
+  // dos pestañas que SÍ se conectaron no vuelvan atrás.
+  const AMBITO = (r: string) =>
+    r === 'components/views/CloserView.jsx' ||
+    r === 'components/views/SetterView.jsx' ||
+    r.startsWith('components/negocio/');
+
+  const sospechosos = [];
+  for (const a of archivosFuente(['components'])) {
+    if (!AMBITO(a.ruta)) continue;
+    for (const nombre of INVENTADOS) {
+      if (a.limpio.includes(nombre)) sospechosos.push(`${a.ruta}: ${nombre}`);
+    }
+  }
+  assert.deepEqual(
+    sospechosos,
+    [],
+    `volvieron nombres de personas inventados a la interfaz:\n  ${sospechosos.join('\n  ')}`,
+  );
+});
+
+test('las dos vistas no traen montos ni porcentajes inventados', () => {
+  // Un monto con dígitos es una AFIRMACIÓN sobre el dinero de un cliente. El umbral son tres
+  // caracteres de cifra a propósito: `$0` aparece en el texto que explica por qué NO se
+  // muestra un `$0`, y ese texto es correcto. `$24.800` no lo es.
+  const MONTO = /\$\s?\d[\d.,]{2,}/g;
+
+  // ── POR QUÉ NO SE REVISAN LOS PORCENTAJES ─────────────────────────────────
+  //
+  // Se escribió y se quitó. Un `50%` puede ser una métrica inventada o el ancho de una parada
+  // de degradado en un estilo en línea, y desde el texto no hay forma de distinguirlos:
+  // corrida sobre las vistas, marcaba once anchos de CSS legítimos de `ExecutiveView`.
+  //
+  // Una prueba que señala código correcto se desactiva, y con ella se pierde también la parte
+  // que sí servía. Los montos sí se revisan, porque `$` no aparece en una medida de CSS.
+  const ENFOQUE = (r: string) =>
+    r === 'components/views/CloserView.jsx' ||
+    r === 'components/views/SetterView.jsx' ||
+    r.startsWith('components/negocio/');
+
+  const hallados = [];
+  for (const a of archivosFuente(['components'])) {
+    if (!ENFOQUE(a.ruta)) continue;
+    for (const m of a.limpio.matchAll(MONTO)) hallados.push(`${a.ruta}: ${m[0]}`);
+  }
+  assert.deepEqual(
+    hallados,
+    [],
+    `volvieron cifras inventadas a la interfaz:\n  ${hallados.join('\n  ')}`,
+  );
+});
+
+test('la fila y sus seis íconos son UN archivo para las dos pestañas', () => {
+  // El `11` § 7: *"estos componentes se construyen una sola vez. Si se construyen por pantalla,
+  // divergen"*. Y el § 9 regla 3 lo dice como regla.
+  //
+  // El defecto que previene es concreto y silencioso: el tercer ícono cuenta llamadas
+  // CONTESTADAS. Dos implementaciones terminan con una contando todas, y las dos muestran un
+  // número plausible.
+  const closer = leer('components/views/CloserView.jsx');
+  const setter = leer('components/views/SetterView.jsx');
+
+  for (const [nombre, src] of [['CloserView', closer], ['SetterView', setter]] as const) {
+    assert.match(
+      src,
+      /from '\.\.\/negocio\/ListaDeContactos\.jsx'/,
+      `${nombre} no usa la lista compartida`,
+    );
+  }
+
+  // Y que cada una pida SU ruta, con el territorio del lado del servidor.
+  assert.match(closer, /camino="\/api\/closer\/contactos"/);
+  assert.match(setter, /camino="\/api\/setter\/contactos"/);
+  // Ninguna pide la de la otra: sería la forma de que un setter vea la zona del closer sin que
+  // nada falle.
+  assert.doesNotMatch(closer, /\/api\/setter\//);
+  assert.doesNotMatch(setter, /\/api\/closer\//);
+
+  // La fila existe una sola vez, y la usa la lista compartida — no cada vista por su lado.
+  const lista = leer('components/negocio/ListaDeContactos.jsx');
+  assert.match(lista, /from '\.\/Fila\.jsx'/);
+  for (const [nombre, src] of [['CloserView', closer], ['SetterView', setter]] as const) {
+    assert.doesNotMatch(src, /Fila\.jsx/, `${nombre} dibuja la fila por su cuenta`);
+  }
+});
+
+test('los seis íconos distinguen "no medido" de "medido en cero"', () => {
+  // El `11` § 9 regla 1: *"un cero medido y un cero no medido no son el mismo hecho"*, y el
+  // § 7.2: *"los inactivos se atenúan; **nunca** se muestra un 0"*.
+  //
+  // Se comprueba en el código porque el defecto no se ve mirando: un `0` dibujado donde nadie
+  // midió nada se lee como un hecho, y es el que nadie reporta.
+  const fila = leer('components/negocio/Fila.jsx');
+
+  // Las tres ramas tienen que existir por nombre.
+  assert.match(fila, /sinMedir/, 'la fila dejó de distinguir "no medido"');
+  assert.match(fila, /v === null \|\| v === undefined/, 'la distinción de "no medido" cambió de forma');
+
+  // Y el número solo se dibuja si hay MÁS de uno. Un `+1` al lado de un ícono que ya dice
+  // "tiene una" es ruido; un `0` es falso.
+  assert.match(fila, /activo && v > 1/, 'la fila dibujaría un contador en cero o en uno');
+
+  // Los seis, en el orden del § 7.2, y ninguno de más ni de menos.
+  const bloque = fila.slice(fila.indexOf('const ICONOS = ['), fila.indexOf('];', fila.indexOf('const ICONOS = [')));
+  const claves = [...bloque.matchAll(/clave: '(\w+)'/g)].map((m) => m[1]!);
+  assert.deepEqual(claves, [
+    'reunionesTenidas',
+    'citaFutura',
+    'llamadasContestadas',
+    'estadoAgente',
+    'seguimientoAbierto',
+    'montoVenta',
+  ]);
+});
+
+test('el vacío legítimo dice POR QUÉ está vacío', () => {
+  // El `11` § 4: *"no hay datos cargados → `—`, con una línea que diga qué falta"*. Un panel
+  // que simplemente parece vacío no se reporta, y con él se pierde el único síntoma de que la
+  // conexión con GoHighLevel no está puesta.
+  const lista = leer('components/negocio/ListaDeContactos.jsx');
+  assert.match(lista, /filas\.length === 0/, 'la lista dejó de tratar el vacío como un caso');
+  assert.match(lista, /Ajustes/, 'el vacío no dice dónde se configura la conexión');
+
+  // Y las TRES ramas de `ADR-0305`, sin colapsar. Si se colapsan, un 403 se ve como una
+  // bandeja de trabajo vacía.
+  for (const rama of ['sin_respuesta', 'rechazado', 'cargando']) {
+    assert.match(lista, new RegExp(`'${rama}'`), `la lista colapsó la rama ${rama}`);
+  }
+  // El rechazo por permiso NO ofrece reintentar: reintentar no cambia tus capacidades.
+  assert.match(lista, /sinPermiso/, 'la lista no distingue el rechazo por permiso');
 });

@@ -19,6 +19,10 @@
    `aios.css`, que tiene que seguir siendo diffeable contra el HTML original. */
 @import "./fundaciones.css" layer(components);
 
+/* Etapa 11 · Ajustes — los campos de la configuración de la empresa. Misma capa y por el
+   mismo motivo: el prototipo era un tablero de LECTURA y no tenía un solo formulario. */
+@import "./ajustes.css" layer(components);
+
 /* Los tokens del diseño expuestos como utilidades de Tailwind.
    `inline` hace que las clases apunten a la var, no a una copia. */
 @theme inline {
