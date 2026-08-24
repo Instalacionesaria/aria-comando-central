@@ -143,6 +143,23 @@ export const SECCIONES: readonly Seccion[] = [
   //    tienen pantalla en el prototipo. Ver el comentario de `Seccion.menu`.
   { clave: 'usuarios', nombre: 'Usuarios', capacidadRequerida: 'usuarios.ver' },
   {
+    // ── Etapa 11 · la pantalla de administración que la Etapa 5 anticipó ───────────
+    //
+    // El comentario de `SIN_PANTALLA` decía, desde entonces: *"la pantalla de administración,
+    // cuando exista, va a tener su GET propio, y ÉSE sí entra a `SECCIONES`"*. Es éste.
+    //
+    // Sin `menu`: no es una entrada del menú lateral, es una PESTAÑA dentro de Ajustes. Lo
+    // mismo que `usuarios`, arriba. La sección existe igual porque es lo que hace que sus
+    // operaciones tengan una pantalla que declarar y que `ADR-0304` pueda compararlas.
+    //
+    // `organizaciones.listar` la tiene SOLO el rol de plataforma — la migración 003 se la
+    // niega al administrador con `not like 'organizaciones.%'`. Esa es la barrera; la regla de
+    // "solo desde la principal" es de coherencia y se comprueba aparte, en el manejador.
+    clave: 'empresas',
+    nombre: 'Empresas',
+    capacidadRequerida: 'organizaciones.listar',
+  },
+  {
     // ── Etapa 11 · Ajustes gana pantalla ──
     //
     // Esta sección existía desde la Etapa 6 con sus dos operaciones y su capacidad, y **sin

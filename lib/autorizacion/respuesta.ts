@@ -141,6 +141,15 @@ export const RECHAZOS = {
   // No se pudo hablar con el servicio externo. NO es "no hay contactos": es que no se pudo
   // preguntar, y confundirlos es el defecto que `ADR-0305` persigue.
   servicio_externo_no_disponible: 503,
+
+  // Administrar empresas y usuarios se hace DESDE la organización principal. 409 y no 403: no
+  // es que falte un permiso —quien llega hasta acá lo tiene— es que la sesión está conmutada
+  // a otra organización. Un 403 mandaría a pedir un permiso que ya se tiene.
+  fuera_de_la_principal: 409,
+  // El identificador corto de una empresa ya existe. 409 como el resto de los conflictos, y con
+  // código propio: es el único de los cuatro rechazos del alta que se arregla cambiando UN
+  // campo, y quien lo recibe tiene que saber cuál.
+  slug_duplicado: 409,
 } as const;
 
 /**

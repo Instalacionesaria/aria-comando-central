@@ -23,6 +23,10 @@
    mismo motivo: el prototipo era un tablero de LECTURA y no tenía un solo formulario. */
 @import "./ajustes.css" layer(components);
 
+/* Etapa 11 · lo que cambió de sitio en el armazón: el menú de la cuenta, que estaba
+   arriba a la derecha con un nombre fijo y sin cerrar sesión de verdad. */
+@import "./armazon.css" layer(components);
+
 /* Los tokens del diseño expuestos como utilidades de Tailwind.
    `inline` hace que las clases apunten a la var, no a una copia. */
 @theme inline {

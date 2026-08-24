@@ -44,7 +44,26 @@ export interface DatosDeSesion {
    */
   menu: GrupoDelMenu[];
   usuarioNombre: string;
-  organizacion: { id: string; nombre: string; activa: boolean; zonaHoraria: string };
+  /** Quién es. Lo necesita la pantalla de usuarios para no ofrecerse a sí misma un cambio de
+   *  rol: `ADR-0502` dice que nadie se degrada a sí mismo, y el servidor responde 409. Ofrecer
+   *  el botón para recibir ese 409 sería un control que no funciona. */
+  usuarioId: string;
+  /**
+   * Las secciones que esta persona puede ver, ya filtradas por el SERVIDOR con
+   * `seccionesVisibles()`.
+   *
+   * Es la misma función que arma el menú, no una segunda copia de la regla: las pestañas de
+   * Ajustes se deciden con esto, así que no hay forma de que el menú y las pestañas discrepen.
+   */
+  secciones: { clave: string; nombre: string }[];
+  organizacion: {
+    id: string;
+    nombre: string;
+    activa: boolean;
+    zonaHoraria: string;
+    /** Administrar empresas y usuarios se hace DESDE la principal. Ver `sesion.ts`. */
+    esPrincipal: boolean;
+  };
   /** El cartel permanente del `03` § 3. */
   mirandoOtraOrganizacion: boolean;
 }

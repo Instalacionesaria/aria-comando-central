@@ -1,346 +1,119 @@
 'use client';
 
-/* Ajustes — la configuración de la empresa. NO viene del prototipo.
+/* Ajustes — la configuración de la empresa, en tres pestañas. NO viene del prototipo.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * POR QUÉ ESTA PANTALLA EXISTE
+ * QUIÉN VE CADA PESTAÑA, Y POR QUÉ ASÍ
  *
- * Se pidió así: *"cada empresa tenga sus 'ajustes' donde pueda validar sus propios
- * credenciales, un campo para guardar el apikey de antropic solo para su empresa, uno para
- * conectar su cuenta de ghl y así sucesivamente"*.
+ * Se pidió: *"la de credenciales lo pueden ver los admin, y la de empresa y usuarios solo se
+ * puede ver por un superadmin. Y eso de empresa y de usuarios solo se puede ver desde la
+ * empresa principal que es ARIA."*
  *
- * Y era necesaria además de pedida. La tabla `identidad.organizaciones_credenciales` tenía
- * `ia_clave_cifrada` desde la migración 006 y **nada la escribía**, así que la pantalla `icp`
- * respondía `sin_llave_de_ia` para siempre. El arreglo que se ve fácil desde lejos es una
- * `ANTHROPIC_API_KEY` global en Vercel — y es exactamente la fuga que
- * `lib/credenciales/resolver.ts` documenta en su encabezado: el consumo de todas las
- * organizaciones facturado a una, sin que nada falle.
+ * Se implementó así, con UNA desviación que hay que decir de frente:
  *
- * ── LO QUE ESTA PANTALLA NUNCA HACE ────────────────────────────────────────
+ *   · **Credenciales** → `credenciales.ver`. La tienen administrador y superadministrador.
  *
- * **No recibe ni muestra un secreto.** El servidor devuelve `vistaPrevia` —los últimos cuatro
- * caracteres— y nunca el valor. Un campo que muestre el token completo para "confirmar" lo
- * pone en el DOM, en las herramientas de desarrollo y en cualquier captura de pantalla de
- * soporte. Los campos de carga arrancan vacíos siempre, incluso con credencial cargada.
+ *   · **Empresas** → `organizaciones.listar` **y estar en la principal**. La capacidad solo la
+ *     tiene el rol de plataforma —la migración 003 se la niega al administrador con
+ *     `not like 'organizaciones.%'`— y la regla de la principal se comprueba TAMBIÉN en el
+ *     servidor, así que las dos mitades dicen lo mismo.
  *
- * ── Y POR QUÉ CADA CAMPO SE GUARDA SOLO ────────────────────────────────────
+ *   · **Usuarios** → `organizaciones.listar`, **sin** la condición de la principal. Ésta es la
+ *     desviación, y el motivo no es de interfaz: `POST /api/admin/usuarios` crea SIEMPRE en la
+ *     organización ACTIVA de la sesión, decidido en la Etapa 5 con su razón escrita —*"un
+ *     segundo camino sería un segundo lugar donde olvidarse el filtro"*—. Para crearle un
+ *     usuario a «Cliente X» hay que estar administrando Cliente X; si la pestaña desapareciera
+ *     al conmutar, no habría forma de darle usuarios a ninguna empresa que no sea la principal.
  *
- * Un botón «Guardar todo» tendría que mandar los tres secretos en cada envío, y los dos que no
- * se tocaron irían vacíos. Con la ruta anterior eso los BORRABA. La ruta ahora solo escribe
- * los campos presentes en el cuerpo, y esta pantalla manda exactamente uno por envío.
+ *     Lo esencial del pedido se respeta: la pide `organizaciones.listar`, o sea que un
+ *     administrador de un cliente NO la ve. Y la pantalla dice arriba de todo en qué empresa
+ *     está creando, que es el defecto que la regla venía a evitar.
  *
- * ── LOS ESTILOS: SE REUSA, NO SE INVENTA ───────────────────────────────────
+ * ── NO SE PREGUNTA POR EL NOMBRE DEL ROL, NI UNA VEZ ───────────────────────
  *
- * Todo lo visual sale de clases que ya existen. `.card` / `.card-head` / `.card-body` es la
- * tarjeta canónica del prototipo; `.fd-campo` / `.fd-btn` / `.fd-aviso` es el formulario que
- * la Etapa 9 tuvo que inventar porque el prototipo era un tablero de LECTURA; `.chip` con
- * `.ok` / `.warn` / `.crit` es la píldora de estado del diseño original.
- *
- * La primera versión de este archivo inventó un tercer juego de clases para lo mismo, y además
- * usó dos que no existen fuera de su padre —`.cre-desc` solo pinta dentro de `.cre-head`, y
- * `.stack` solo existe como `.ch-l.stack`—, así que se veía sin estilo. Las dos trampas están
- * anotadas en `app/ajustes.css`.
+ * `ADR-0302`: el permiso se pregunta por capacidad. No hay ningún `rol === 'superadministrador'`
+ * acá ni en el servidor — se mira si la sesión trae la capacidad, que es lo que permite mover
+ * un permiso de un rol a otro sin tocar código.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { pedir } from '../../lib/http/cliente.ts';
-
-/* Los campos, en el orden en que se muestran: primero lo que hace falta para que las pestañas
- * Closer y Setter traigan datos, después lo de Fundaciones, y al final lo opcional.
- *
- * `secreto: true` → nunca se recibe su valor; se ve el estado y una vista previa.
- * `secreto: false` → identificador de una cuenta ajena, se recibe y se muestra completo. */
-const CAMPOS = [
-  {
-    entrada: 'crmToken',
-    estado: 'crm',
-    titulo: 'Token de GoHighLevel',
-    ayuda: 'El Private Integration Token de tu subcuenta. En GHL: Settings → Private Integrations.',
-    secreto: true,
-  },
-  {
-    entrada: 'crmCuentaId',
-    valor: 'crmCuentaId',
-    titulo: 'Location ID de GoHighLevel',
-    ayuda: 'El identificador de tu subcuenta. No es un secreto, así que se muestra entero.',
-    secreto: false,
-  },
-  {
-    entrada: 'iaClave',
-    estado: 'ia',
-    titulo: 'Clave de API de Anthropic',
-    ayuda: 'La de tu empresa. El consumo de tokens se factura a esta clave y a ninguna otra.',
-    secreto: true,
-  },
-  {
-    entrada: 'fundacionesClienteId',
-    valor: 'fundacionesClienteId',
-    titulo: 'Alumno de Fundaciones',
-    ayuda: 'A qué alumno del hub corresponde esta organización. Sin esto, ICP & Oferta no abre.',
-    secreto: false,
-  },
-  {
-    entrada: 'pagosClave',
-    estado: 'pagos',
-    titulo: 'Clave de la pasarela de pagos',
-    ayuda: 'Opcional. Todavía no hay ninguna operación que la use.',
-    secreto: true,
-  },
-  {
-    entrada: 'pagosComercioId',
-    valor: 'pagosComercioId',
-    titulo: 'ID de comercio de la pasarela',
-    ayuda: 'Opcional, y tampoco es un secreto.',
-    secreto: false,
-  },
-];
-
-/* El texto de los rechazos que esta pantalla sabe nombrar.
- *
- * `peticion_invalida` NO está acá a propósito: el servidor manda un `detalle` que dice qué
- * campo y por qué, y es más preciso que cualquier frase genérica. El código prefiere el
- * detalle, así que un texto acá lo taparía. */
-const MOTIVOS = {
-  sin_permiso: 'Tu usuario no puede ver ni cambiar los ajustes de esta organización.',
-  organizacion_inactiva: 'Esta organización está desactivada.',
-};
-
-/* La píldora de estado, con la clase del diseño original.
- *
- * Los cuatro estados y su texto viven en `lib/credenciales/resolver.ts`; acá solo se traduce
- * a color. Repetir los textos haría que las dos mitades divergieran. */
-function pinta(estado, cargado) {
-  if (!cargado) return { chip: 'warn', etiqueta: 'Falta cargar' };
-  if (estado === 'ilegible') return { chip: 'crit', etiqueta: 'Ilegible' };
-  if (estado === 'vencida') return { chip: 'crit', etiqueta: 'Vencida' };
-  if (estado === 'revocada') return { chip: 'crit', etiqueta: 'Revocada' };
-  return { chip: 'ok', etiqueta: 'Cargada' };
-}
+import { useState } from 'react';
+import { useSesion } from '../../app/sesion-contexto.tsx';
+import Credenciales from '../ajustes/Credenciales.jsx';
+import Empresas from '../ajustes/Empresas.jsx';
+import Usuarios from '../ajustes/Usuarios.jsx';
 
 export default function AjustesView({ activa }) {
-  const [datos, setDatos] = useState(null);
-  const [situacion, setSituacion] = useState('cargando');
-  const [causa, setCausa] = useState(null);
-  const [codigo, setCodigo] = useState(null);
-  const [borradores, setBorradores] = useState({});
-  const [guardando, setGuardando] = useState(null);
-  /* El resultado del último guardado, POR CAMPO. Uno global haría que guardar el token de GHL
-     mostrara «guardado» al lado de la clave de Anthropic. */
-  const [avisos, setAvisos] = useState({});
-  const yaPedido = useRef(false);
+  const sesion = useSesion();
+  const [sub, setSub] = useState('credenciales');
+  /* Cambiar de empresa reescribe la sesión entera, así que hay que volver a pedirla. Se hace
+     con una recarga completa y no con un re-render: `app/guardia.tsx` la pide una sola vez por
+     carga, y media pantalla con la sesión vieja y media con la nueva es peor que esperar. */
+  const recargar = () => window.location.reload();
 
-  const cargar = useCallback(async () => {
-    setSituacion('cargando');
-    const r = await pedir('/api/admin/credenciales');
-    /* Las tres ramas separadas, sin colapsar. Un rechazo por permiso NO es «no hay datos»
-       (`ADR-0305`): con una sola rama, alguien sin `credenciales.ver` vería la pantalla vacía
-       y creería que su empresa no tiene nada configurado. */
-    if (r.tipo === 'sin_respuesta') {
-      setCausa('No se pudo contactar al servidor. No es tu configuración: no llegó la pregunta.');
-      setCodigo(null);
-      setSituacion('sin_respuesta');
-      return;
-    }
-    if (r.tipo === 'rechazado') {
-      setCausa(r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`);
-      setCodigo(r.codigo);
-      setSituacion('rechazado');
-      return;
-    }
-    setDatos(r.datos);
-    setSituacion('listo');
-  }, []);
+  /* Las capacidades vienen del servidor, ya resueltas. `secciones` es lo que `seccionesVisibles`
+     dejó pasar, o sea la MISMA función que decide el menú — no una segunda copia de la regla. */
+  const puede = (clave) => (sesion?.secciones ?? []).some((s) => s.clave === clave);
+  const enLaPrincipal = Boolean(sesion?.organizacion?.esPrincipal);
 
-  useEffect(() => {
-    if (yaPedido.current) return;
-    yaPedido.current = true;
-    void cargar();
-  }, [cargar]);
+  const PESTANAS = [
+    { clave: 'credenciales', nombre: 'Credenciales', icono: '#i-ajustes', visible: puede('credenciales') },
+    { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') && enLaPrincipal },
+    { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('empresas') },
+  ].filter((p) => p.visible);
 
-  /* Guarda UN campo. `valor === null` borra. */
-  const guardar = useCallback(async (campo, valor) => {
-    setGuardando(campo.entrada);
-    setAvisos((a) => ({ ...a, [campo.entrada]: null }));
-
-    const r = await pedir('/api/admin/credenciales', {
-      metodo: 'PUT',
-      cuerpo: { [campo.entrada]: valor },
-    });
-
-    setGuardando(null);
-    if (r.tipo === 'sin_respuesta') {
-      setAvisos((a) => ({
-        ...a,
-        [campo.entrada]: { mal: true, texto: 'No llegó al servidor. No se guardó nada.' },
-      }));
-      return;
-    }
-    if (r.tipo === 'rechazado') {
-      /* El `detalle` del servidor va PRIMERO: es el que dice qué campo y por qué. Un texto
-         local genérico lo taparía y quien lo lee volvería a probar con lo mismo. */
-      setAvisos((a) => ({
-        ...a,
-        [campo.entrada]: {
-          mal: true,
-          texto: r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`,
-        },
-      }));
-      return;
-    }
-    /* El servidor devuelve el estado RESUELTO, no un «ok». Se pisa el estado local con eso:
-       mostrar «guardado» sin haber leído lo que quedó es reportar un éxito sin verificarlo. */
-    setDatos(r.datos);
-    setBorradores((b) => ({ ...b, [campo.entrada]: '' }));
-    setAvisos((a) => ({
-      ...a,
-      [campo.entrada]: { mal: false, texto: valor === null ? 'Borrado.' : 'Guardado.' },
-    }));
-  }, []);
-
-  function tarjeta(campo) {
-    const estado = campo.secreto ? datos?.[campo.estado] : null;
-    const valorPublico = campo.secreto ? null : (datos?.[campo.valor] ?? null);
-    const cargado = campo.secreto ? Boolean(estado?.cargado) : valorPublico !== null;
-    const vista = pinta(estado?.estado, cargado);
-    const aviso = avisos[campo.entrada];
-    const borrador = borradores[campo.entrada] ?? '';
-    const ocupado = guardando === campo.entrada;
-
-    return (
-      <div className="card" key={campo.entrada}>
-        <div className="card-head">
-          {campo.titulo}
-          <span className="hint">
-            <span className={`chip ${vista.chip}`}>{vista.etiqueta}</span>
-          </span>
-        </div>
-        <div className="card-body aj-cuerpo">
-          <div className="aj-ayuda">{campo.ayuda}</div>
-
-          {/* EL VALOR. De un secreto solo la vista previa que calculó el servidor; de un
-              identificador público, entero. No hay camino por el que el valor de un secreto
-              llegue acá. */}
-          <div className={`aj-valor${cargado ? '' : ' vacio'}`}>
-            {cargado
-              ? campo.secreto
-                ? (estado?.vistaPrevia ?? '••••')
-                : valorPublico
-              : 'Sin configurar'}
-          </div>
-
-          {/* El texto del estado, cuando hay algo que decir. `activa` no dice nada —no hay
-              nada que decir— y ahí el servidor manda `texto: null`. */}
-          {estado?.texto ? <div className="aj-ayuda">{estado.texto}</div> : null}
-
-          <div className="aj-fila">
-            <div className="fd-campo">
-              <input
-                type={campo.secreto ? 'password' : 'text'}
-                value={borrador}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={cargado ? 'Pegá el valor nuevo para reemplazarlo' : 'Pegá el valor'}
-                onChange={(e) => setBorradores((b) => ({ ...b, [campo.entrada]: e.target.value }))}
-              />
-            </div>
-            <button
-              type="button"
-              className="fd-btn"
-              disabled={ocupado || borrador.trim().length === 0}
-              onClick={() => void guardar(campo, borrador.trim())}
-            >
-              {ocupado ? 'Guardando…' : cargado ? 'Reemplazar' : 'Guardar'}
-            </button>
-            {/* Borrar manda `null` explícito, que es la única forma de borrar en la ruta. Solo
-                aparece si hay algo que borrar: un botón que no puede hacer nada es peor que la
-                ausencia del botón. */}
-            {cargado ? (
-              <button
-                type="button"
-                className="fd-btn sec aj-peligro"
-                disabled={ocupado}
-                onClick={() => void guardar(campo, null)}
-              >
-                Borrar
-              </button>
-            ) : null}
-          </div>
-
-          {aviso ? (
-            <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
-              <i>{aviso.mal ? '⚠' : '✓'}</i>
-              <span>{aviso.texto}</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  function cuerpo() {
-    if (situacion === 'cargando') {
-      return (
-        <div className="fd-aviso">
-          <i>◍</i>
-          <span>Cargando los ajustes…</span>
-        </div>
-      );
-    }
-
-    if (situacion === 'sin_respuesta') {
-      return (
-        <div className="aj-fila">
-          <div className="fd-aviso mal">
-            <i>◍</i>
-            <span>{causa}</span>
-          </div>
-          <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
-            Reintentar
-          </button>
-        </div>
-      );
-    }
-
-    if (situacion === 'rechazado') {
-      /* Un rechazo por PERMISO se dibuja distinto de un error, y no ofrece «Reintentar»:
-         reintentar no cambia qué capacidades tiene tu usuario, y un botón que no puede
-         funcionar hace que la gente lo apriete tres veces antes de pedir ayuda. */
-      const sinPermiso = codigo === 'sin_permiso' || codigo === 'organizacion_inactiva';
-      return (
-        <div className={`fd-aviso ${sinPermiso ? 'falta' : 'mal'}`}>
-          <i>◍</i>
-          <span>{causa}</span>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        <p className="aj-intro">
-          Estas credenciales son <b>solo de esta organización</b>. Cada empresa usa las suyas:
-          nunca se toma la de otra, ni una global del servidor. Sin la credencial que
-          corresponde, la parte que la necesita no funciona y lo dice.
-        </p>
-        <div className="fd-rejilla dos">{CAMPOS.map(tarjeta)}</div>
-      </>
-    );
-  }
+  /* Si la pestaña activa dejó de existir —pasa al conmutar de empresa: Empresas desaparece—
+     se cae a la primera que quede. Sin esto, el cuerpo queda en blanco sin ningún error. */
+  const activaAhora = PESTANAS.some((p) => p.clave === sub) ? sub : (PESTANAS[0]?.clave ?? null);
 
   return (
     <>
     <section className={activa ? 'view on' : 'view'} id="v-credenciales">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
-          <div className="ch-l">
-            <h2>
-              Ajustes
-            </h2>
-            <span className="cre-desc">
-              Las credenciales y las cuentas externas de esta empresa
-            </span>
+          <div className="ch-l stack">
+            <div className="ch-title">
+              <h2>
+                Ajustes
+              </h2>
+              <span className="cre-desc">
+                {sesion?.organizacion?.nombre
+                  ? `Configuración de ${sesion.organizacion.nombre}`
+                  : 'Configuración de esta empresa'}
+              </span>
+            </div>
+            {/* Una sola pestaña no es una pestaña: si la persona solo puede ver credenciales,
+                mostrar un selector de uno es ruido que sugiere que hay algo más. */}
+            {PESTANAS.length > 1 ? (
+              <div className="cl-sub aj-sub">
+                {PESTANAS.map((p) => (
+                  <button
+                    key={p.clave}
+                    type="button"
+                    className={activaAhora === p.clave ? 'on' : undefined}
+                    onClick={() => setSub(p.clave)}
+                  >
+                    <svg viewBox="0 0 16 16">
+                      <use href={p.icono} />
+                    </svg>
+                    {p.nombre}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
-        {cuerpo()}
+
+        {activaAhora === 'credenciales' ? <Credenciales /> : null}
+        {activaAhora === 'empresas' ? (
+          <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
+        ) : null}
+        {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
+        {activaAhora === null ? (
+          <div className="fd-aviso falta">
+            <i>◍</i>
+            <span>Tu usuario no tiene ninguna sección de ajustes.</span>
+          </div>
+        ) : null}
       </div>
     </section>
     </>

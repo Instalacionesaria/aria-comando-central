@@ -120,7 +120,12 @@ test('`Nav.jsx` NO tiene ninguna entrada escrita a mano', () => {
   // es el arreglo que se ve natural cuando falta una entrada del menú. Con uno solo vuelve el
   // defecto entero: una entrada que se muestra sin mirar ninguna capacidad, con las cinco
   // pruebas anteriores en verde.
-  const nav = leer('components/Nav.jsx');
+  // SIN COMENTARIOS. La regla es sobre entradas DIBUJADAS, y un comentario no dibuja nada:
+  // leyendo el archivo crudo, la propia explicación de por qué no puede haber un
+  // `data-view` literal hacía fallar la prueba. Un guardia que se dispara con su propia
+  // documentación se termina desactivando.
+  const nav = archivosFuente(['components']).find((a) => a.ruta === 'components/Nav.jsx')?.limpio;
+  assert.ok(nav, 'no se encontró Nav.jsx');
 
   // El `data-view` tiene que venir de la variable, nunca de un literal.
   const literales = [...nav.matchAll(/data-view=["'][a-z]+["']/g)].map((m) => m[0]);

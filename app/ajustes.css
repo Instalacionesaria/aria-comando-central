@@ -139,3 +139,53 @@
   border-color: color-mix(in srgb, var(--ok) 26%, transparent);
   color: var(--ok);
 }
+
+/* ── El desplegable ───────────────────────────────────────────────────────── */
+
+/* El prototipo NO tiene un solo `<select>` —ni uno en 367 KB— porque era un tablero de
+   lectura. Su reemplazo de diseño para elegir entre opciones es `.pill` + `.pill-menu`, que
+   es un popover con estado propio.
+   Acá se usa un `<select>` de verdad y no ese patrón, por dos razones: es un formulario, no
+   un filtro de tablero; y un `<select>` nativo trae gratis el teclado, el lector de pantalla
+   y el comportamiento del sistema en un teléfono. Reimplementar eso con divs es cómo se
+   rompe la accesibilidad sin notarlo.
+   Se le da el MISMO aspecto que a `.fd-campo input` para que no se vea de otra mano. */
+.fd-campo select,
+.row-i select {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 11px;
+  outline: 0;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  /* La flecha del sistema en el color del texto apagado. Sin esto, en algunos navegadores
+     queda negra sobre fondo oscuro y no se ve. */
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--txt-faint) 50%),
+    linear-gradient(135deg, var(--txt-faint) 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+.fd-campo select:focus,
+.row-i select:focus {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+/* Las opciones las dibuja el sistema operativo, no el navegador: el único control real es el
+   fondo, y sin él quedan blancas sobre blanco en un tema oscuro. */
+.fd-campo select option,
+.row-i select option {
+  background: var(--bg-panel);
+  color: var(--txt);
+}
+.row-i select {
+  font-size: 12px;
+  padding: 6px 26px 6px 9px;
+}

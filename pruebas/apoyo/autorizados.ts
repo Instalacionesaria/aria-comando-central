@@ -154,6 +154,18 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // que `app/api/fundaciones/estado/route.ts`. Todo lo que ESCRIBE va por el otro camino
   // —`conOrganizacion(` y la política de fila— así que la escotilla no toca datos de negocio.
   'app/api/contactos/sincronizar/route.ts',
+  // El listado de organizaciones. Es la ÚNICA consulta del sistema que cruza organizaciones A
+  // PROPÓSITO. Lo que la hace aceptable no es un `where`: es `organizaciones.listar`, que solo
+  // tiene el rol de plataforma, comprobada por el portero una línea antes.
+  //
+  // `lib/administracion/organizaciones.ts` NO está en esta lista, y no es un olvido: recibe la
+  // transacción por parámetro y no llama a `conIdentidad(` ni una vez. La comprobación de
+  // entradas muertas de esta lista lo atrapó, y tiene razón — una entrada de más acá enseña a
+  // leer la lista como decorativa.
+  'app/api/admin/organizaciones/route.ts',
+  // El catálogo de roles. Lee `identidad.roles`, que es de ese dominio. No cruza nada: los
+  // roles globales no pertenecen a ninguna organización.
+  'app/api/admin/roles/route.ts',
 ];
 
 /**

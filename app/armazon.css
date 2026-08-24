@@ -1,0 +1,75 @@
+/* Etapa 11 · los ajustes al armazón que el prototipo no contemplaba.
+   ============================================================================
+   Mismas tres reglas de siempre: no se toca `aios.css` —es la hoja diffeable contra el
+   prototipo—, ni un color literal, y la capa `components` para ganarle a su reset.
+
+   Acá va SOLO lo que cambió de sitio o de comportamiento respecto del maquetado. Todo lo
+   demás reusa las clases del prototipo tal cual.
+   ========================================================================= */
+
+/* ── El menú de la cuenta, mudado al pie del menú lateral ─────────────────── */
+
+/* `.menu-pop` del prototipo abre hacia ABAJO (`top: calc(100% + 7px)`), que era correcto
+   colgando de la barra superior. En el pie de la barra lateral, hacia abajo se sale de la
+   pantalla: no se ve nada y parece que el botón no anda.
+
+   El modificador va en el envoltorio y no pisa `.menu-pop` a secas, porque el desplegable de
+   la barra superior podría volver algún día y tiene que seguir abriendo hacia abajo. */
+.menu-wrap.arriba .menu-pop {
+  top: auto;
+  bottom: calc(100% + 7px);
+  right: auto;
+  left: 0;
+  /* Ancho de la barra lateral menos su relleno. Un ancho fijo de 230px —el del prototipo— se
+     sale por la derecha cuando el menú lateral es más angosto. */
+  width: 100%;
+  min-width: 190px;
+  /* La animación de entrada también se invierte: subía desde arriba, ahora baja desde abajo. */
+  transform: translateY(4px) scale(0.98);
+}
+.menu-wrap.arriba.open .menu-pop {
+  transform: translateY(0) scale(1);
+}
+
+/* El disparador ES la fila del nombre. `.role-row` ya le da el alto, el relleno y el hover;
+   esto solo lo convierte en un botón de verdad —el prototipo usaba un `div`— sin que se note. */
+.role-row.disparador {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt-dim);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.role-row.disparador .n {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* El galón gira al abrir, que es lo que dice que el menú está desplegado sin leer nada. */
+.role-row.disparador .chev {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--txt-faint);
+  transition: transform 0.18s ease;
+}
+.menu-wrap.arriba.open .role-row.disparador .chev {
+  transform: rotate(180deg);
+}
+.menu-wrap.arriba.open .role-row.disparador {
+  color: var(--txt);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+/* ── Las sub-pestañas de Ajustes ──────────────────────────────────────────── */
+
+/* Reusa `.cl-sub`, que es el patrón de sub-pestañas del cockpit del Closer y el mismo que
+   `fundaciones.css` reusó en la Etapa 9 por el mismo motivo: hacer otro daría dos gramáticas
+   para la misma cosa. Lo único que se agrega es que puedan envolverse. */
+.aj-sub {
+  flex-wrap: wrap;
+  max-width: 100%;
+}

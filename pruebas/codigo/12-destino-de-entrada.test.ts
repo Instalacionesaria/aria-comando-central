@@ -148,7 +148,13 @@ test('nadie navega a un destino sin validarlo', () => {
     navegan.sort(),
     // Los dos que navegan a un destino que viene de afuera. `guardia.tsx` manda a `/entrar` con
     // un camino que ARMA ella misma desde `window.location.pathname`, no de un parámetro.
-    ['app/entrar/page.tsx', 'app/guardia.tsx'].sort(),
+    //
+    // Y desde la Etapa 11, el menú de la cuenta: su «Cerrar sesión» va a `/entrar` con un
+    // literal —no hay ningún valor de afuera en esa cadena— y tiene que ser una navegación
+    // COMPLETA y no enrutado del cliente, porque `proxy.ts` tiene que ver la petición para
+    // comprobar que la cookie ya no está. Se anota acá en vez de exceptuar la carpeta entera:
+    // el día que alguien navegue con un valor de un parámetro, esta lista lo obliga a decidir.
+    ['app/entrar/page.tsx', 'app/guardia.tsx', 'components/MenuDeUsuario.jsx'].sort(),
     'un archivo nuevo navega por su cuenta: si el destino viene de un parámetro, tiene que ' +
       'pasar por destinoSeguro()',
   );

@@ -43,6 +43,8 @@ interface Sesion {
   // respecto del estado, que es lo que pasaría con dos peticiones.
   menu?: GrupoDelMenu[];
   usuarioNombre?: string;
+  usuarioId?: string;
+  secciones?: DatosDeSesion['secciones'];
   organizacion?: DatosDeSesion['organizacion'];
   mirandoOtraOrganizacion?: boolean;
 }
@@ -83,8 +85,19 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
       setDatos({
         menu: r.datos.menu ?? [],
         usuarioNombre: r.datos.usuarioNombre ?? '',
+        usuarioId: r.datos.usuarioId ?? '',
+        // `[]` y no `undefined`: sin secciones no se dibuja NINGUNA pestaña, que es el lado
+        // correcto del que fallar. Ver el `03` § 5, "una operación nueva nace cerrada".
+        secciones: r.datos.secciones ?? [],
         organizacion:
-          r.datos.organizacion ?? { id: '', nombre: '', activa: true, zonaHoraria: 'UTC' },
+          r.datos.organizacion ?? {
+            id: '',
+            nombre: '',
+            activa: true,
+            zonaHoraria: 'UTC',
+            // `false` y no `true`: ante la duda, NO se muestran las pestañas de administración.
+            esPrincipal: false,
+          },
         mirandoOtraOrganizacion: r.datos.mirandoOtraOrganizacion ?? false,
       });
       setSituacion('adentro');

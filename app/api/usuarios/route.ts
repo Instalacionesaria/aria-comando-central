@@ -32,14 +32,45 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const usuarios = await conIdentidad(async (db) =>
     db
-      .selectFrom('usuarios')
+      .selectFrom('usuarios as u')
       // EL FILTRO, a mano y a la vista. Con el rol de identidad no hay política que lo
       // ponga: `usuarios_identidad` es `using (true)`.
-      .where('org_id', '=', contexto.orgEfectiva)
-      .orderBy('nombre')
-      .select(['id', 'nombre', 'email', 'activo', 'es_admin_principal'])
+      .where('u.org_id', '=', contexto.orgEfectiva)
+      .orderBy('u.nombre')
+      .select((eb) => [
+        'u.id',
+        'u.nombre',
+        'u.email',
+        'u.activo',
+        'u.es_admin_principal',
+        // ── LOS ROLES, agregados en la Etapa 11 ──────────────────────────────
+        //
+        // Hasta ahora esta lista no decía qué rol tiene cada persona, y eso hacía que
+        // asignar roles fuera **destructivo a ciegas**: `POST .../roles` REEMPLAZA el
+        // conjunto completo, no suma. Sin saber el conjunto actual, editar el rol de
+        // alguien le quitaba los otros sin que nadie lo viera venir.
+        //
+        // Como subconsulta y no como `join` + `group by`: un `join` a `usuarios_roles`
+        // multiplica las filas de usuario por sus roles, y el `left join` con cero roles
+        // hace que el agregado devuelva `[null]` en vez de `[]`. Las dos cosas se arreglan
+        // después en el código, y arreglarlas es donde se cuela el error.
+        eb
+          .selectFrom('usuarios_roles as ur')
+          .innerJoin('roles as r', 'r.id', 'ur.rol_id')
+          .whereRef('ur.usuario_id', '=', 'u.id')
+          .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('r.clave')]).as('claves'))
+          .as('roles'),
+      ])
       .execute(),
   );
 
-  return ok({ usuarios });
+  return ok({
+    usuarios: usuarios.map((u) => ({
+      ...u,
+      // `?? []` porque la subconsulta devuelve `null` cuando la persona no tiene ningún rol.
+      // Un nulo acá obligaría a cada consumidor a acordarse, y el que se olvide dibuja
+      // "undefined" donde debería decir que no tiene ninguno.
+      roles: u.roles ?? [],
+    })),
+  });
 }

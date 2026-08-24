@@ -31,6 +31,17 @@ import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.t
 /** No valida direcciones de correo del mundo real: valida que tenga forma de correo (05 § 3). */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * El texto de cada rechazo de validación, uno por motivo. Ver el mismo comentario en
+ * `app/api/admin/organizaciones/route.ts`: `ok({ creado: false, motivo }, 400)` no llegaba a la
+ * pantalla, porque el cliente HTTP solo conserva `codigo` y `detalle` de una respuesta no-ok.
+ */
+const MOTIVOS = {
+  cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
+  falta_nombre: 'La persona necesita un nombre.',
+  email_invalido: 'Ese correo no tiene forma de correo.',
+} as const;
+
 export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['usuarios.crear']);
   if (contexto instanceof Response) return contexto;
@@ -39,7 +50,7 @@ export async function POST(peticion: Request): Promise<Response> {
   try {
     cuerpo = await peticion.json();
   } catch {
-    return ok({ creado: false, motivo: 'cuerpo_invalido' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
   const c = cuerpo as { nombre?: unknown; email?: unknown; orgId?: unknown } | null;
   const nombre = c?.nombre;
@@ -48,10 +59,10 @@ export async function POST(peticion: Request): Promise<Response> {
 
   // El orden de las validaciones es el de la tabla del `05` § 3.
   if (typeof nombre !== 'string' || nombre.trim().length === 0) {
-    return ok({ creado: false, motivo: 'falta_nombre' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['falta_nombre']);
   }
   if (typeof email !== 'string' || !EMAIL.test(email)) {
-    return ok({ creado: false, motivo: 'email_invalido' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['email_invalido']);
   }
   // EL 404 DEL ALTA. Ver el encabezado.
   if (orgId !== undefined && orgId !== contexto.orgEfectiva) {

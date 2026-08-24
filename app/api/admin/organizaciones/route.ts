@@ -34,6 +34,81 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
+import { listarOrganizaciones } from '../../../../lib/administracion/organizaciones.ts';
+
+/**
+ * A qué pantalla pertenece el `GET`. Es un `export`, no un comentario.
+ *
+ * ── SOLO EL `GET` LO DECLARA, Y EL `POST` SIGUE EN `SIN_PANTALLA` ───────────
+ *
+ * `ADR-0304` exige que las operaciones de una misma pantalla pidan el MISMO conjunto de
+ * capacidades, y estas dos piden distinto: `organizaciones.listar` para ver,
+ * `organizaciones.crear` para dar de alta. Igualarlas sería una escalada silenciosa — el
+ * portero usa `contieneAlguna`, así que alguien con solo `listar` podría crear.
+ *
+ * La salida no la invento acá: está escrita desde la Etapa 5 en `SIN_PANTALLA`, donde el
+ * comentario de las seis operaciones de administración dice *"la pantalla de administración,
+ * cuando exista, va a tener su GET propio, y ÉSE sí entra a `SECCIONES`"*. Esto es ese día.
+ *
+ * Y el defecto que `ADR-0304` previene es de LECTURAS —*"veía una sección con datos y cuatro
+ * en blanco"*— no de mutaciones: el `POST` no llena ningún panel, así que no puede dejar uno
+ * a medias.
+ */
+export const PANTALLA = 'empresas';
+
+/**
+ * Las organizaciones que existen. **Solo desde la principal.**
+ *
+ * ── LA REGLA DE LA EMPRESA PRINCIPAL, Y QUÉ CLASE DE REGLA ES ───────────────
+ *
+ * Se pidió así: administrar empresas y usuarios se hace desde ARIA. Y conviene decir qué
+ * protege y qué no: **no es una barrera de seguridad**, es una de coherencia. La barrera es
+ * `organizaciones.listar`, que solo tiene el rol de plataforma; quien no la tiene no llega acá
+ * esté donde esté.
+ *
+ * Lo que evita es otra cosa, y es real: que alguien administre la plataforma **creyendo que
+ * está en una empresa cliente**. Con la sesión conmutada a otra organización, el cartel
+ * permanente dice "estás mirando otra organización" y a la vez esta pantalla mostraría las
+ * veinte — dos afirmaciones que se contradicen en la misma vista.
+ *
+ * Se comprueba en el SERVIDOR además de en la interfaz para que las dos mitades digan lo
+ * mismo. Una regla que solo vive en la pantalla se salta con una petición a mano, y entonces
+ * la regla no era una regla.
+ */
+export async function GET(peticion: Request): Promise<Response> {
+  const contexto = await exigir(peticion, ['organizaciones.listar']);
+  if (contexto instanceof Response) return contexto;
+
+  if (!contexto.organizacion.esPrincipal) {
+    return rechazo(
+      'fuera_de_la_principal',
+      'Las empresas se administran desde la organización principal. Volvé a la tuya para verlas.',
+    );
+  }
+
+  const organizaciones = await conIdentidad(async (db) => listarOrganizaciones(db));
+  return ok({ organizaciones });
+}
+
+/**
+ * El texto de cada rechazo de validación, uno por motivo.
+ *
+ * ── POR QUÉ ESTO REEMPLAZÓ A `ok({ creada: false, motivo }, 400)` ───────────
+ *
+ * La forma anterior **no llegaba a la pantalla**. `lib/http/cliente.ts` clasifica cualquier
+ * respuesta no-ok como `{ tipo: 'rechazado' }` y solo conserva `codigo` y `detalle` del cuerpo:
+ * el `motivo` se perdía en el camino, así que los tres se veían todos como «Rechazado (400)».
+ *
+ * Se descubrió construyendo la pantalla de Empresas: crear una sin tocar el identificador
+ * respondía «Rechazado (400)» y no había forma de saber que el problema era el slug.
+ */
+const MOTIVOS = {
+  cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
+  falta_nombre: 'La empresa necesita un nombre.',
+  slug_invalido:
+    'El identificador corto no sirve: minúsculas, números y guiones, entre 3 y 40 caracteres.',
+  slug_duplicado: 'Ya existe una empresa con ese identificador corto.',
+} as const;
 
 /** Un slug: minúsculas, números y guiones. Es parte de una URL, así que se acota. */
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/;
@@ -49,17 +124,17 @@ export async function POST(peticion: Request): Promise<Response> {
   try {
     cuerpo = await peticion.json();
   } catch {
-    return ok({ creada: false, motivo: 'cuerpo_invalido' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
   const nombre = (cuerpo as { nombre?: unknown } | null)?.nombre;
   const slug = (cuerpo as { slug?: unknown } | null)?.slug;
   const zonaHoraria = (cuerpo as { zonaHoraria?: unknown } | null)?.zonaHoraria;
 
   if (typeof nombre !== 'string' || nombre.trim().length === 0) {
-    return ok({ creada: false, motivo: 'falta_nombre' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['falta_nombre']);
   }
   if (typeof slug !== 'string' || !SLUG.test(slug)) {
-    return ok({ creada: false, motivo: 'slug_invalido' }, 400);
+    return rechazo('peticion_invalida', MOTIVOS['slug_invalido']);
   }
 
   return conIdentidad(async (db) => {
@@ -85,7 +160,7 @@ export async function POST(peticion: Request): Promise<Response> {
       // por diseño, pero la forma se respeta igual: código propio, sin el detalle de la base.
       const mensaje = String((e as Error).message);
       if (/duplicate key|unique constraint/i.test(mensaje)) {
-        return ok({ creada: false, motivo: 'slug_duplicado' }, 409);
+        return rechazo('slug_duplicado', MOTIVOS['slug_duplicado']);
       }
       // Los mensajes de los DISPARADORES sí se devuelven tal cual (05 § 3) — y **solo** ésos.
       // `ADR-0704` exige que ningún cuerpo de error revele estructura, y un error estructural

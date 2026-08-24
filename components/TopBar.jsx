@@ -26,45 +26,12 @@ export default function TopBar() {
         <button className="icon-btn" id="reportBtn" title="Reportar un problema" aria-label="Reportar">
           ⚑
         </button>
-        <div className="menu-wrap" id="userWrap">
-          <button className="user-btn" id="userBtn" title="Francisco · Gerencia" aria-label="Cuenta">
-            <span className="uav">
-              FR
-            </span>
-          </button>
-          <div className="menu-pop" id="userMenu">
-            <div className="mp-head">
-              <span className="uav big">
-                FR
-              </span>
-              <span>
-                <b>
-                  Francisco
-                </b>
-                <em>
-                  Gerencia · ARIA IA
-                </em>
-              </span>
-            </div>
-            <div className="mp-sep" />
-            <button className="mp-item">
-              Perfil
-            </button>
-            <button className="mp-item">
-              Preferencias
-            </button>
-            <button className="mp-item">
-              Usuarios y permisos
-            </button>
-            <div className="mp-sep" />
-            <button className="mp-item">
-              Ayuda y soporte
-            </button>
-            <button className="mp-item danger">
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
+        {/* EL MENÚ DE LA CUENTA SE MUDÓ AL PIE DEL MENÚ LATERAL.
+            Estaba acá con el avatar «FR» y el título «Francisco · Gerencia» escritos a mano
+            —el mismo nombre para todos los inquilinos— y sus seis botones no hacían nada:
+            `shell.js` solo abría y cerraba el desplegable, así que «Cerrar sesión» no cerraba
+            ninguna sesión. Ahora vive en `components/MenuDeUsuario.jsx`, junto al nombre de
+            la persona, con su nombre real y un cierre de sesión que funciona. */}
       </div>
     </header>
     </>

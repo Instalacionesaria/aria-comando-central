@@ -71,8 +71,22 @@ export interface Contexto {
    * Es el valor que recibe `conOrganizacion(`. Todo lo demás usa éste, nunca `orgPropia`.
    */
   orgEfectiva: string;
-  /** Nombre y estado de `orgEfectiva`. El nombre lo necesita el cartel permanente (03 § 3). */
-  organizacion: { id: string; nombre: string; activa: boolean; zonaHoraria: string };
+  /**
+   * Nombre y estado de `orgEfectiva`. El nombre lo necesita el cartel permanente (03 § 3).
+   *
+   * `esPrincipal` se agregó en la Etapa 11 y no es decorativo: administrar empresas y usuarios
+   * se hace **desde la principal**, y sin este dato la interfaz no puede saber si mostrar esas
+   * pestañas. Deducirlo comparando el nombre con la cadena `'ARIA'` sería lo fácil y lo
+   * frágil — el día que alguien renombre la organización, la pantalla cambia de comportamiento
+   * sin que nadie toque una línea.
+   */
+  organizacion: {
+    id: string;
+    nombre: string;
+    activa: boolean;
+    zonaHoraria: string;
+    esPrincipal: boolean;
+  };
   /** Los permisos efectivos, calculados en esta petición. Nunca cacheados. */
   permisos: ReadonlySet<string>;
   /**
@@ -220,7 +234,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
     const org = await db
       .selectFrom('organizaciones')
       .where('id', '=', orgEfectiva)
-      .select(['id', 'nombre', 'activa', 'zona_horaria'])
+      .select(['id', 'nombre', 'activa', 'zona_horaria', 'es_principal'])
       .executeTakeFirst();
 
     // Que `orgEfectiva` no exista es imposible por clave foránea, pero si pasara, devolver
@@ -247,6 +261,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         nombre: org.nombre,
         activa: org.activa,
         zonaHoraria: org.zona_horaria,
+        esPrincipal: org.es_principal,
       },
       permisos,
       esRolDePlataforma,
