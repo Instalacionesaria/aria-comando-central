@@ -523,23 +523,186 @@ test('sin ningún resultado registrado la situación es `sin_resultado`, que no 
   assert.equal(fila.situacion, 'sin_resultado');
 });
 
-test('el estado del agente es NULO, y eso es un hecho medido', async () => {
-  // Esta prueba parece trivial y no lo es: fija por escrito que **no hay de dónde sacarlo**.
+test('el estado del agente sale de las ETIQUETAS, que es la fuente que apareció', async () => {
+  // ── ESTA PRUEBA CAMBIÓ DE SENTIDO, Y ESO ES EL PUNTO ──────────────────────
   //
-  // El día que alguien conecte una fuente para el estado del bot, esta prueba falla y le
-  // obliga a decidir a la vista. Sin ella, la salida fácil es devolver `'apagado'` —que se
-  // ve razonable— y con eso el sexto ícono afirmaría de todos los contactos que su agente
-  // está apagado. Ninguno lo sabe.
+  // Antes afirmaba que el estado del agente era `null` SIEMPRE, con este comentario:
+  //
+  //   "El día que alguien conecte una fuente para el estado del bot, esta prueba falla y le
+  //    obliga a decidir a la vista. Sin ella, la salida fácil es devolver 'apagado' —que se ve
+  //    razonable— y con eso el sexto ícono afirmaría de todos los contactos que su agente está
+  //    apagado. Ninguno lo sabe."
+  //
+  // Ese día llegó: el documento de contrato de la subcuenta mostró que el estado sale de DIEZ
+  // etiquetas de la familia `bot_*`, que ya venían en cada contacto y ya se guardaban en la
+  // columna `etiquetas`. El dato estaba en la base y la fila no lo miraba.
+  //
+  // El cable trampa hizo su trabajo: nadie pudo conectar la fuente sin venir acá.
   const marca = randomUUID().slice(0, 8);
-  const id = await contactoConTerritorio(alfa, 'ag-' + marca, 'closer');
+
+  const casos: [string[], string][] = [
+    [[], 'sin_agente'],
+    [['bot_activado_leadflow'], 'atendiendo_pre_agenda'],
+    [['bot_activado_appflow'], 'atendiendo_post_agenda'],
+    [['bot_activado'], 'atendiendo'],
+    [['bot_apagado_manual'], 'apagado_a_mano'],
+    [['bot_desactivado_postcall'], 'ya_paso_la_llamada'],
+    [['bot_desactivado_appflow'], 'pausado_por_fallo'],
+    [['bot_desactivado_leadflow'], 'pausado_por_fallo'],
+    // LEGADO. Ya no se aplica y se sigue leyendo, porque quedaron contactos con él puesto.
+    [['bot_pausado_fallo'], 'pausado_por_fallo'],
+  ];
+
+  // El identificador lleva el ÍNDICE y no el estado esperado: tres casos distintos esperan
+  // `pausado_por_fallo` —son tres etiquetas para el mismo estado— y con el estado en el nombre
+  // los tres chocarían contra el único `contactos_ghl_por_org`. Lo atrapó ese índice, que es
+  // exactamente para lo que está.
+  for (const [i, [etiquetas, esperado]] of casos.entries()) {
+    const id = await contactoConTerritorio(alfa, `ag-${i}-${marca}`, 'closer', {
+      etiquetas,
+    });
+    const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+    const fila = r.filas.find((f) => f.id === id);
+    assert.ok(fila, `no volvió el contacto de ${esperado}`);
+    assert.equal(
+      fila.iconos.estadoAgente,
+      esperado,
+      `con [${etiquetas.join(', ')}] el estado tendría que ser ${esperado}`,
+    );
+  }
+});
+
+test('con etiquetas de agente contradictorias gana el APAGADO', async () => {
+  // No es un caso teórico. Medido contra la subcuenta real el 2026-08-24: el contacto
+  // «marcelo» tiene `bot_activado_appflow` y `bot_desactivado_postcall` a la vez.
+  //
+  // Sin un orden explícito, el resultado dependería de en qué posición del arreglo vino cada
+  // etiqueta — o sea, de nada. Y las dos lecturas llevan a acciones opuestas: "el bot lo está
+  // atendiendo, no lo toques" contra "ya pasó por la llamada, seguí vos".
+  //
+  // Gana el apagado porque es más NUEVO: los `bot_desactivado_*` los aplica la aplicación al
+  // registrar un resultado, o sea después de que el CRM encendió el suyo.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, `ag-choque-${marca}`, 'closer', {
+    // En este orden a propósito: el encendido PRIMERO. Si el código recorriera las etiquetas
+    // del contacto en vez de su propia lista de precedencia, ganaría éste y la prueba fallaría.
+    etiquetas: ['bot_activado_appflow', 'bot_desactivado_postcall'],
+  });
+
   const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
   const fila = r.filas.find((f) => f.id === id);
   assert.ok(fila);
   assert.equal(
     fila.iconos.estadoAgente,
-    null,
-    'devolvió un estado de agente: si ahora hay una fuente, hay que documentarla acá',
+    'ya_paso_la_llamada',
+    'con las dos etiquetas ganó el encendido: el orden de precedencia no se está respetando',
   );
+});
+
+test('`bot_reactivar` NO decide el estado: es una orden, no un hecho', async () => {
+  // El contrato lo dice con todas las letras: *"Orden de volver a encender el bot. **No decide
+  // estado**: es una orden"*.
+  //
+  // Un contacto con `bot_apagado_manual` y `bot_reactivar` está APAGADO hasta que el CRM
+  // ejecute la orden. Tratarla como estado haría que el ícono dijera que el bot atiende cuando
+  // todavía no lo hace — y quien mire la fila decidiría no tocar un contacto que sí necesita
+  // que alguien lo toque.
+  const marca = randomUUID().slice(0, 8);
+
+  // ── EL CASO QUE DE VERDAD DISCRIMINA ──────────────────────────────────────
+  //
+  // La primera versión de esta prueba usaba `['bot_apagado_manual', 'bot_reactivar']` y era
+  // VACUA: metiendo `bot_reactivar` en la tabla de estados, la prueba seguía pasando, porque
+  // `bot_apagado_manual` ganaba igual por precedencia. Lo encontró una mutación.
+  //
+  // El caso que discrimina es la etiqueta SOLA: si decidiera estado, diría que el bot atiende;
+  // como es una orden pendiente, no hay ningún estado puesto.
+  const sola = await contactoConTerritorio(alfa, `ag-sola-${marca}`, 'closer', {
+    etiquetas: ['bot_reactivar'],
+  });
+  // Y el caso de convivencia, que es el que ocurre en la subcuenta real.
+  const conOtra = await contactoConTerritorio(alfa, `ag-orden-${marca}`, 'closer', {
+    etiquetas: ['bot_apagado_manual', 'bot_reactivar'],
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const laSola = r.filas.find((f) => f.id === sola);
+  const laOtra = r.filas.find((f) => f.id === conOtra);
+  assert.ok(laSola && laOtra);
+
+  assert.equal(
+    laSola.iconos.estadoAgente,
+    'sin_agente',
+    '`bot_reactivar` sola decidió un estado: es una ORDEN, y el bot todavía no atiende',
+  );
+  assert.equal(laOtra.iconos.estadoAgente, 'apagado_a_mano');
+});
+
+test('la cita y el seguimiento se encienden por ETIQUETA, no solo por tabla', async () => {
+  // Las dos tablas —`negocio.citas` y `negocio.tareas`— están vacías mientras no se lea el
+  // calendario ni se registre nada acá. Con solo esa fuente, dos de los seis íconos quedarían
+  // apagados para los 238 contactos reales que SÍ tienen la etiqueta puesta por el CRM.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, `et-${marca}`, 'closer', {
+    etiquetas: ['cita_agendada', 'seguimiento_recupero'],
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.equal(fila.iconos.citaFutura, true, '`cita_agendada` no encendió el ícono de la cita');
+  assert.equal(
+    fila.iconos.seguimientoAbierto,
+    true,
+    '`seguimiento_recupero` no encendió el ícono del seguimiento',
+  );
+});
+
+test('`seguimiento_manual` NO enciende el ícono, y es deliberado', async () => {
+  // El contrato: *"`seguimiento_manual` no dispara nada, y ese es su punto: le dice al CRM que
+  // NO persiga a este contacto porque lo retoma una persona"*.
+  //
+  // Contarlo encendería el ícono de "hay un seguimiento automático corriendo" justo cuando lo
+  // que hay es lo contrario. Es un error fácil —los dos empiezan con `seguimiento_`— y por eso
+  // tiene su propia prueba.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, `sm-${marca}`, 'closer', {
+    etiquetas: ['seguimiento_manual'],
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.equal(
+    fila.iconos.seguimientoAbierto,
+    false,
+    '`seguimiento_manual` encendió el ícono: dice lo contrario de lo que significa',
+  );
+});
+
+test('`estancado` NO va en la píldora: va en la fila', async () => {
+  // El `11` § 7.1: *"la píldora dice la situación REAL, nunca una condición temporal.
+  // «Estancado» y «vencido» se comunican con el color de la fila y el microtexto, jamás con la
+  // píldora"*.
+  //
+  // El defecto que evita: un contacto con una VENTA registrada y la etiqueta `estancado`
+  // mostraría «Estancado» y taparía el hecho que importa.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, `es-${marca}`, 'closer', {
+    etiquetas: ['estancado'],
+  });
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('resultados')
+      .values({ contacto_id: id, salida: 'venta', rol: 'closer', monto: '900.00' } as never)
+      .execute();
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.equal(fila.estancado, true, 'no se leyó la etiqueta `estancado`');
+  assert.equal(fila.situacion, 'venta', 'el estancado tapó la situación real');
 });
 
 test('el orden pone los que nunca escribieron AL FINAL, no al principio', async () => {

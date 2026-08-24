@@ -37,12 +37,42 @@
  * igual que antes. Lo que cambia es que ahora los valores son medidos. */
 const ICONOS = [
   { clave: 'reunionesTenidas', glifo: '▢', titulo: 'Reuniones que ya tuvo', conteo: true },
-  { clave: 'citaFutura', glifo: '▤', titulo: 'Tiene una cita futura' },
+  { clave: 'citaFutura', glifo: '▤', titulo: 'Tiene una cita agendada' },
   { clave: 'llamadasContestadas', glifo: '✆', titulo: 'Llamadas del agente contestadas', conteo: true },
-  { clave: 'estadoAgente', glifo: '◈', titulo: 'Estado del agente' },
+  { clave: 'estadoAgente', glifo: '◈', titulo: 'Estado del agente', agente: true },
   { clave: 'seguimientoAbierto', glifo: '◷', titulo: 'Tiene un seguimiento corriendo' },
   { clave: 'montoVenta', glifo: '$', titulo: 'Venta registrada' },
 ];
+
+/* El color del ícono del agente, por estado.
+ *
+ * Cinco estados con tres colores, no uno. «Atendiendo» es cian —el bot trabaja— y «pausado por
+ * fallo» es coral, porque significa que el auditor encontró algo. Entre medio quedan los dos
+ * apagados normales: no hay nada mal, pero tampoco hay un bot trabajando.
+ *
+ * Sin esta distinción, «el bot está atendiendo» y «el bot falló y lo pausamos» se verían igual
+ * — y son justo los dos casos que llevan a acciones opuestas. */
+const COLOR_DEL_AGENTE = {
+  atendiendo_pre_agenda: 'var(--accent)',
+  atendiendo_post_agenda: 'var(--accent)',
+  atendiendo: 'var(--accent)',
+  pausado_por_fallo: 'var(--crit)',
+  apagado_a_mano: 'var(--txt-dim)',
+  ya_paso_la_llamada: 'var(--txt-dim)',
+  sin_agente: null,
+};
+
+/* El texto del título, por estado. Es lo que se lee al pasar el puntero, y es donde vive la
+ * diferencia entre los cinco: el glifo es el mismo. */
+const TITULO_DEL_AGENTE = {
+  atendiendo_pre_agenda: 'El agente pre-agenda está atendiendo',
+  atendiendo_post_agenda: 'El agente post-agenda está atendiendo',
+  atendiendo: 'El chatbot está atendiendo',
+  apagado_a_mano: 'Un humano apagó el bot',
+  ya_paso_la_llamada: 'Ya tuvo la llamada de cierre: el bot se apagó',
+  pausado_por_fallo: 'El bot se pausó porque el auditor encontró un fallo',
+  sin_agente: 'Sin agente',
+};
 
 /** El texto de cada situación. Es la píldora del § 7.1: la situación REAL, nunca una condición
  *  temporal. "Estancado" y "vencido" no salen de acá — son microtexto y color de fila. */
@@ -87,6 +117,23 @@ export function SeisIconos({ iconos }) {
     <div className="md-acts">
       {ICONOS.map((ic) => {
         const v = iconos?.[ic.clave];
+
+        /* El agente no es un contador ni un sí/no: son cinco estados, y cada uno tiene su
+           color y su texto. `sin_agente` se dibuja como el resto de los ceros medidos —
+           atenuado, sin número— porque eso es lo que es: se miraron las etiquetas y no hay
+           ninguna del agente. */
+        if (ic.agente) {
+          const hay = v && v !== 'sin_agente';
+          return (
+            <i
+              key={ic.clave}
+              title={TITULO_DEL_AGENTE[v] ?? ic.titulo}
+              style={{ opacity: hay ? 1 : 0.45, color: COLOR_DEL_AGENTE[v] ?? undefined }}
+            >
+              {ic.glifo}
+            </i>
+          );
+        }
         /* Las TRES situaciones, y son tres porque el § 9 regla 1 lo exige: *"un cero medido y
            un cero no medido no son el mismo hecho"*.
              · null      → no hay de dónde medirlo. Se dibuja al 30%, sin número.
@@ -127,11 +174,20 @@ export default function Fila({ fila, onAbrir }) {
   const micro = microtexto(fila);
   const completada = fila.situacion === 'venta' || fila.situacion === 'no_interesa';
 
+  /* «Estancado» va en el COLOR de la fila y en el microtexto, NUNCA en la píldora. El § 7.1 es
+     explícito: la píldora dice la situación REAL, no una condición temporal. Mezclarlas haría
+     que «estancado» tapara «venta» o «seguimiento», que es el hecho que importa. */
   return (
     <div
       className={`md-r${completada ? ' md-done' : ''}`}
+      style={
+        fila.estancado && !completada
+          ? { borderLeft: '2px solid var(--warn)', paddingLeft: 10, ...(onAbrir ? { cursor: 'pointer' } : {}) }
+          : onAbrir
+            ? { cursor: 'pointer' }
+            : undefined
+      }
       onClick={onAbrir ? () => onAbrir(fila) : undefined}
-      style={onAbrir ? { cursor: 'pointer' } : undefined}
     >
       {/* El score. Sin dato va `—`, no un número inventado ni un espacio en blanco: el § 7.1
           pide el guión, porque un hueco se lee como "todavía cargando". */}
@@ -144,7 +200,13 @@ export default function Fila({ fila, onAbrir }) {
           <span className="tagx nu">{fila.fuente}</span>
           {sit ? <span className={`tagx ${sit.clase}`}>{sit.texto}</span> : null}
         </div>
-        {micro ? <div className="md-sub">{micro}</div> : null}
+        {micro || fila.estancado ? (
+          <div className="md-sub">
+            {fila.estancado ? <span style={{ color: 'var(--warn)' }}>estancado</span> : null}
+            {fila.estancado && micro ? ' · ' : null}
+            {micro}
+          </div>
+        ) : null}
       </div>
       <SeisIconos iconos={fila.iconos} />
     </div>

@@ -38,6 +38,13 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
+import {
+  CITA_AGENDADA,
+  ESTANCADO,
+  SEGUIMIENTO_AUTOMATICO,
+  estadoDelAgente,
+  type EstadoDelAgente,
+} from '../ghl/contrato.ts';
 
 /**
  * Los seis íconos de una fila, en el orden del `11` § 7.2. **Siempre los seis.**
@@ -56,25 +63,48 @@ import type { Territorio } from '../datos/esquema.ts';
 export interface SeisIconos {
   /** 📹 Reuniones que YA TUVO: citas cuyo inicio ya pasó. */
   reunionesTenidas: number;
-  /** 📅 ¿Tiene una cita futura? */
+  /**
+   * 📅 ¿Tiene una cita?
+   *
+   * DOS fuentes, y la etiqueta manda. `negocio.citas` sabe CUÁNDO es —lo que hace falta para la
+   * Agenda— pero está vacía mientras no se lea el calendario. La etiqueta `cita_agendada`, que
+   * pone el detector post-call del CRM, dice que la hay aunque no diga cuándo.
+   *
+   * Se combinan en vez de elegir una: con solo la tabla, el ícono está apagado para los 238
+   * contactos reales; con solo la etiqueta, se pierde la cita que ya se leyó del calendario.
+   */
   citaFutura: boolean;
   /** 📞 Llamadas de agente IA **CONTESTADAS**. No las hechas — ver el encabezado. */
   llamadasContestadas: number;
   /**
    * 🤖 Estado del agente.
    *
-   * **`null` siempre, hoy, y es un hecho medido y no un olvido.** No hay de dónde sacarlo:
-   * la migración 011 no copió `bot_estado` del sistema viejo porque allá está muerta desde su
-   * propia migración 013, y GoHighLevel no expone el estado del bot por contacto en la API
-   * que se usa.
+   * ── ESTO ERA `null` SIEMPRE, Y ESTABA MAL ─────────────────────────────────
    *
-   * Así que va `null` —el ícono no se dibuja— en vez de `'apagado'`, que sería inventar. Y
-   * tiene una consecuencia que hay que decir en voz alta: la regla 3 de Mi Día (`11` § 5.2),
-   * *"una IA activa nunca genera tarea humana"*, **no se puede hacer cumplir todavía**. No
-   * hay con qué saber si la IA está activa. Está anotado en `docs/ETAPA-11.md`, no resuelto.
+   * La primera versión decía *"no hay de dónde sacarlo"* y devolvía `null`. Era falso, y el
+   * documento `LISTA-TAGS` de la subcuenta lo mostró: el estado del agente sale de **diez
+   * etiquetas** —la familia `bot_*`— que ya venían en cada contacto y que ya se guardaban en
+   * la columna `etiquetas`. El dato estaba en la base y la fila no lo miraba.
+   *
+   * Se calcula AL LEER y no se guarda, por el `11` § 9 regla 4: *"lo que se calcula al leer no
+   * se queda viejo; lo que se guarda calculado, sí"*. Una columna `estado_agente` quedaría
+   * vieja en cuanto el CRM cambie una etiqueta entre dos sincronizaciones.
+   *
+   * `'sin_agente'` NO es lo mismo que no saber: significa que las etiquetas se leyeron y
+   * ninguna es del agente. Es un cero medido.
    */
-  estadoAgente: string | null;
-  /** ⏱ ¿Tiene un seguimiento corriendo? Una tarea sin completar. */
+  estadoAgente: EstadoDelAgente;
+  /**
+   * ⏱ ¿Tiene un seguimiento corriendo?
+   *
+   * Dos fuentes, por el mismo motivo que la cita. `seguimiento_recupero` es —literal del
+   * contrato— *"lo que enciende el ícono ⏱"*: significa que hay una serie automática corriendo
+   * del lado del CRM. `negocio.tareas` son los seguimientos que se registran acá.
+   *
+   * `seguimiento_manual` NO cuenta, y es deliberado: el contrato dice que **no dispara nada**,
+   * su punto es decirle al CRM que no persiga a este contacto porque lo retoma una persona.
+   * Contarlo encendería el ícono de "hay algo corriendo" cuando lo que hay es lo contrario.
+   */
   seguimientoAbierto: boolean;
   /**
    * 💰 El monto de la venta, o `null`.
@@ -112,6 +142,14 @@ export interface Fila {
    * que se calculan en el cliente con las fechas de arriba.
    */
   situacion: Situacion;
+  /**
+   * ¿El CRM lo marcó como estancado?
+   *
+   * NO va en la píldora. El `11` § 7.1 es explícito: *"la situación real, nunca una condición
+   * temporal. «Estancado» y «vencido» se comunican con el color de la fila y el microtexto,
+   * jamás con la píldora"*. Va como bandera para que la fila lo pinte.
+   */
+  estancado: boolean;
   iconos: SeisIconos;
 }
 
@@ -178,6 +216,8 @@ export async function filasDeTerritorio(
       'c.ultimo_entrante_el',
       'c.ultimo_entrante_texto',
       'c.ultimo_saliente_el',
+      // Las etiquetas crudas. De acá salen tres de los seis íconos y la marca de estancado.
+      'c.etiquetas',
 
       // 📹 Reuniones que YA TUVO. `inicio_el < now()`, y las que no tienen fecha de inicio
       // no cuentan: una cita sin inicio no es una reunión que ocurrió.
@@ -270,6 +310,7 @@ export async function filasDeTerritorio(
       ultimoEntranteTexto: f.ultimo_entrante_texto,
       ultimoSalienteEl: f.ultimo_saliente_el,
       situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
+      estancado: (f.etiquetas ?? []).includes(ESTANCADO),
       iconos: {
         // `count(*)` de PostgreSQL vuelve como `bigint`, y el controlador lo entrega en
         // texto para no perder precisión. Un `Number()` acá es seguro —no hay contacto con
@@ -281,11 +322,12 @@ export async function filasDeTerritorio(
         // un booleano de verdad, pero dejar pasar el tipo ancho haría que el cliente pudiera
         // recibir un `0` —que en JSON es falso al evaluarlo, y verdadero si alguien compara
         // con `!== false`.
-        citaFutura: Boolean(f.cita_futura),
+        // La tabla O la etiqueta. Ver los comentarios de los campos.
+        citaFutura: Boolean(f.cita_futura) || (f.etiquetas ?? []).includes(CITA_AGENDADA),
         llamadasContestadas: Number(f.llamadas_contestadas ?? 0),
-        // Siempre nulo hoy, y a propósito. Ver el comentario del campo.
-        estadoAgente: null,
-        seguimientoAbierto: Boolean(f.seguimiento_abierto),
+        estadoAgente: estadoDelAgente(f.etiquetas ?? []),
+        seguimientoAbierto:
+          Boolean(f.seguimiento_abierto) || (f.etiquetas ?? []).includes(SEGUIMIENTO_AUTOMATICO),
         montoVenta: f.monto_venta,
       },
     })),
