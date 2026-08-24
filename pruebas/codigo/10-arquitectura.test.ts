@@ -400,3 +400,49 @@ test('ADR-0201 · un solo archivo pone `app.org_id`', () => {
     'lib/datos/contexto.ts',
   ]);
 });
+
+// ─── Que el código esté DENTRO del repositorio ──────────────────────────────
+
+test('ningún archivo de código está ignorado por git', async () => {
+  // ── EL DEFECTO QUE ESTO ATRAPA, Y CÓMO SE PAGÓ ────────────────────────────
+  //
+  // `.gitignore` tiene `credenciales*` y `secretos*` — dos reglas por PREFIJO y sin
+  // extensión, puestas a propósito así: un volcado de credenciales se llama "credenciales de
+  // produccion" y no tiene extensión, y este repositorio es público.
+  //
+  // El 2026-08-24 esa regla se tragó `components/ajustes/Credenciales.jsx`, que es un
+  // componente de React. Y falló de la peor forma posible: **el build LOCAL pasaba**, porque
+  // el archivo está en el disco. `npm run build`, `npm test` y los tipos, todo en verde. Solo
+  // se cayó al construir desde el repositorio, con `Module not found`.
+  //
+  // O sea que ninguna comprobación que corra sobre el disco puede verlo. Hay que preguntarle
+  // a git, que es lo único que sabe qué se va a publicar.
+  const { execFileSync } = await import('node:child_process');
+
+  const fuentes = archivosFuente(['app', 'components', 'lib']).map((a) => a.ruta);
+  assert.ok(fuentes.length > 50, 'no se encontraron archivos de código: la prueba sería vacua');
+
+  // `check-ignore` devuelve las rutas ignoradas y sale con 1 cuando no hay ninguna, que es el
+  // caso bueno. Se le pasan todas juntas: una llamada por archivo son cientos de procesos.
+  let ignorados: string[] = [];
+  try {
+    const salida = execFileSync('git', ['check-ignore', '--stdin'], {
+      cwd: RAIZ,
+      input: fuentes.join('\n'),
+      encoding: 'utf8',
+    });
+    ignorados = salida.split('\n').map((l) => l.trim()).filter(Boolean);
+  } catch (e) {
+    // Salida 1 = ninguna ruta ignorada. Cualquier otra cosa es un fallo real de la
+    // herramienta, y se deja pasar en vez de fingir que la comprobación se hizo.
+    const codigo = (e as { status?: number }).status;
+    if (codigo !== 1) throw e;
+  }
+
+  assert.deepEqual(
+    ignorados.map((r) => r.replace(/\\/g, '/')).sort(),
+    [],
+    'estos archivos de código están ignorados por git: existen en tu disco y NO en el ' +
+      'repositorio, así que el build local pasa y el del servidor falla con `Module not found`',
+  );
+});

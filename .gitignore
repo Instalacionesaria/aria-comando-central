@@ -28,6 +28,26 @@ npm-debug.log*
 *.env
 credenciales*
 secretos*
+
+# ── Y LA EXCEPCIÓN: el CÓDIGO que se llama así ───────────────────────────────
+#
+# Las dos reglas de arriba son por PREFIJO y sin extensión, a propósito: un volcado
+# de credenciales se llama "credenciales de produccion" y no tiene extensión.
+#
+# El costo apareció el 2026-08-24: `components/ajustes/Credenciales.jsx` —un
+# componente de React, no un secreto— quedó fuera del repositorio. Y falló de la
+# peor forma posible: **el build LOCAL pasaba**, porque el archivo existe en el
+# disco. Solo se cayó al construir desde el repositorio, con `Module not found`.
+#
+# No se debilitan las reglas: se excluye el código fuente, que nunca es un volcado
+# de credenciales. Un archivo de secretos no se llama `.jsx`.
+!*.jsx
+!*.tsx
+!*.ts
+!*.js
+!*.sql
+!*.css
+
 graphify-out/
 
 # TypeScript: los dos los genera la herramienta.
