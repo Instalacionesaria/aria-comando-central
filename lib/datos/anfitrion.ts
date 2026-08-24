@@ -173,3 +173,71 @@ export function exigirAnfitrionLocal(url: string, o: OpcionesDeExigencia): void 
       `${o.porque} Para la base local: \`npm run db:reset\`.`,
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL CIFRADO EN TRÁNSITO — AGREGADO EN LA ETAPA 11, POR ALGO MEDIDO
+//
+// `node-postgres` **no negocia TLS por omisión**, y ninguna de las tres cadenas de
+// producción lo pedía. Medido el 2026-08-24 del lado del cliente —`socket.encrypted`,
+// que es el único lugar donde se puede medir una conexión agrupada, porque
+// `pg_stat_ssl` describe la pata Supavisor↔Postgres y no la del cliente:
+//
+//   DATABASE_URL_INQUILINO  (6543)  → socket cifrado: false
+//   DATABASE_URL_IDENTIDAD  (6543)  → socket cifrado: false
+//   DATABASE_URL_MIGRADOR   (5432)  → socket cifrado: false
+//
+// Las tres contraseñas de base y todo el tráfico —nombres, teléfonos, correos, tokens
+// de sesión, los blobs cifrados de credenciales— cruzaban internet abierto en claro,
+// entre Vercel y `sa-east-1`. **Nada fallaba.**
+//
+// Es exactamente la clase de defecto que este archivo existe para atrapar: uno que no
+// se manifiesta, que no aparece en ninguna prueba, y que solo se encuentra si alguien
+// va y lo mide. Así que ahora hay un guardia, para que no haga falta acordarse.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * ¿Esta cadena de conexión pide cifrado?
+ *
+ * Se busca `sslmode` en la cadena y **no** se acepta `sslmode=disable`, que es pedirlo
+ * y apagarlo — la forma exacta en que alguien "arregla" un error de certificado.
+ */
+export function pideCifrado(url: string): boolean {
+  const texto = url.toLowerCase();
+  if (!texto.includes('sslmode=')) return false;
+  return !/sslmode=(disable|allow)\b/.test(texto);
+}
+
+/**
+ * Exige que una conexión a un proveedor administrado vaya cifrada.
+ *
+ * ── POR QUÉ EL CRITERIO ES EL ANFITRIÓN Y NO EL ENTORNO ─────────────────────
+ *
+ * Podría preguntar por `NODE_ENV === 'production'`, y sería peor por dos razones. La
+ * primera: la suite corre contra un contenedor local por bucle de retorno, donde exigir
+ * TLS obligaría a generar certificados para no proteger nada. La segunda, que es la que
+ * importa: **una copia de producción abierta desde una máquina de desarrollo NO es
+ * desarrollo.** Con el criterio del entorno, ese caso —el más frecuente cuando alguien
+ * depura un problema real— quedaría sin cifrar y sin aviso.
+ *
+ * El anfitrión dice la verdad en los dos casos: si el destino es un proveedor
+ * administrado, el tráfico sale a la red, y punto.
+ *
+ * ── Y NO TIENE ESCOTILLA, A DIFERENCIA DE `exigirAnfitrionLocal` ────────────
+ *
+ * Esa otra la tiene porque hay un caso legítimo —correr una prueba contra una copia
+ * desechable— que alguien puede querer con conocimiento de causa. Acá no hay ninguno:
+ * no existe la razón "necesito que los datos de mis clientes viajen en claro". Lo que
+ * sí puede pasar es que un certificado dé problemas, y la salida a eso es arreglar el
+ * certificado, no apagar el cifrado.
+ */
+export function exigirCifradoSiEsRemoto(url: string, quien: string): void {
+  if (!esProveedorAdministrado(url)) return;
+  if (pideCifrado(url)) return;
+  throw new Error(
+    `${quien}: la cadena de conexión apunta a un proveedor administrado y NO pide cifrado. ` +
+      'El tráfico —contraseña de base incluida— viajaría en claro por internet. ' +
+      'Agregá `?uselibpqcompat=true&sslmode=require` a la cadena. ' +
+      '(`uselibpqcompat` hace falta porque node-postgres 8.16+ cambió el significado de ' +
+      '`sslmode=require` a verificar el certificado, y Supabase firma con su propia autoridad.)',
+  );
+}

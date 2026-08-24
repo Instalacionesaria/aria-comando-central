@@ -34,6 +34,8 @@ import {
   esProveedorAdministrado,
   anfitrionDe,
   exigirAnfitrionLocal,
+  exigirCifradoSiEsRemoto,
+  pideCifrado,
 } from '../../lib/datos/anfitrion.ts';
 
 // ── La lista blanca hace lo que dice ─────────────────────────────────────────
@@ -273,4 +275,115 @@ test('la búsqueda de la clave de servicio encontraría algo si estuviera', () =
   );
   // Y que la exclusión sea NECESARIA: sin comentarios, este archivo sigue nombrándola.
   assert.match(sinComentarios(yo.contenido), /service_role/);
+});
+
+// ─── El cifrado en tránsito ─────────────────────────────────────────────────
+//
+// Estas pruebas existen por algo MEDIDO, no por principio. El 2026-08-24, las tres
+// cadenas de producción viajaban sin cifrar —`socket.encrypted === false` en las tres— y
+// nada fallaba. `node-postgres` no negocia TLS por omisión y ninguna cadena lo pedía.
+
+test('una cadena a un proveedor administrado SIN cifrado se rechaza', () => {
+  // Y primero: que la trampa sea real. Si esta cadena no se reconociera como proveedor
+  // administrado, la prueba de abajo pasaría sin comprobar nada.
+  const sinCifrar = 'postgresql://migrador:clave@db.abc.supabase.co:5432/postgres';
+  assert.equal(
+    esProveedorAdministrado(sinCifrar),
+    true,
+    'la cadena de prueba no se reconoce como proveedor administrado: la prueba sería vacua',
+  );
+  assert.equal(pideCifrado(sinCifrar), false);
+
+  assert.throws(
+    () => exigirCifradoSiEsRemoto(sinCifrar, 'la prueba'),
+    /NO pide cifrado/,
+    'una conexión en claro a un proveedor administrado pasó',
+  );
+});
+
+test('con `sslmode=require` pasa, y el mensaje dice qué agregar', () => {
+  const conCifrado =
+    'postgresql://migrador:clave@db.abc.supabase.co:5432/postgres?uselibpqcompat=true&sslmode=require';
+  assert.equal(pideCifrado(conCifrado), true);
+  exigirCifradoSiEsRemoto(conCifrado, 'la prueba');
+
+  // El mensaje tiene que traer el parámetro EXACTO, los dos pedazos. `uselibpqcompat`
+  // no es un adorno: sin él, node-postgres 8.16+ interpreta `require` como verificar el
+  // certificado y la conexión a Supabase falla con "self-signed certificate". Quien lea
+  // el error tiene que poder copiar y pegar algo que funcione.
+  try {
+    exigirCifradoSiEsRemoto('postgresql://u:c@db.abc.supabase.co:5432/postgres', 'la prueba');
+    assert.fail('no lanzó');
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    assert.match(m, /sslmode=require/);
+    assert.match(m, /uselibpqcompat/);
+  }
+});
+
+test('`sslmode=disable` NO cuenta como pedir cifrado', () => {
+  // Es la forma en que alguien "arregla" un error de certificado: dejar el parámetro y
+  // apagarlo. Una comprobación que solo buscara la palabra `sslmode` lo dejaría pasar, y
+  // la cadena se leería como protegida estando en claro.
+  for (const apagado of ['sslmode=disable', 'sslmode=allow']) {
+    const url = `postgresql://u:c@db.abc.supabase.co:5432/postgres?${apagado}`;
+    assert.equal(pideCifrado(url), false, `${apagado} contó como cifrado`);
+    assert.throws(() => exigirCifradoSiEsRemoto(url, 'la prueba'), /NO pide cifrado/);
+  }
+});
+
+test('contra el contenedor local no exige nada', () => {
+  // Exigir TLS por bucle de retorno obligaría a generar certificados para no proteger
+  // nada, y el costo se pagaría en cada máquina de desarrollo.
+  for (const local of [
+    'postgresql://migrador:clave@localhost:5433/aria',
+    'postgresql://migrador:clave@127.0.0.1:5433/aria',
+  ]) {
+    assert.equal(pideCifrado(local), false, 'la cadena local no pide cifrado, y no hace falta');
+    exigirCifradoSiEsRemoto(local, 'la prueba');
+  }
+});
+
+test('el criterio es el ANFITRIÓN, no el entorno', () => {
+  // Si el guardia preguntara por `NODE_ENV === 'production'`, el caso más frecuente
+  // quedaría descubierto: alguien que abre una COPIA DE PRODUCCIÓN desde su máquina para
+  // depurar un problema real. Eso no es desarrollo, y con el criterio del entorno saldría
+  // sin cifrar y sin aviso.
+  //
+  // Se comprueba leyendo el código: el guardia no puede nombrar `NODE_ENV`.
+  const anfitrion = archivosFuente(['lib']).find((a) => a.ruta === 'lib/datos/anfitrion.ts');
+  assert.ok(anfitrion, 'no se encontró el módulo de anfitrión');
+  const cuerpo = anfitrion.limpio.slice(anfitrion.limpio.indexOf('export function exigirCifradoSiEsRemoto'));
+  assert.ok(cuerpo.length > 0, 'no se encontró `exigirCifradoSiEsRemoto`');
+  assert.doesNotMatch(
+    cuerpo,
+    /NODE_ENV|enPruebas\s*\(/,
+    'el guardia de cifrado se condicionó al entorno: una copia de producción abierta desde ' +
+      'una máquina de desarrollo quedaría sin cifrar',
+  );
+});
+
+test('la capa de datos llama al guardia de cifrado, y SIN condicionarlo', () => {
+  // La forma 1 de romperlo: envolverlo en `if (!enPruebas())`, que es lo que hace el OTRO
+  // guardia y por eso se ve razonable copiarlo. Sería un error: el de anfitrión distingue
+  // local de remoto porque el mismo hecho es correcto o catastrófico según quién pregunte;
+  // este no tiene esa ambigüedad, y ya no hace nada contra un anfitrión local.
+  const capa = archivosFuente(['lib']).find((a) => a.ruta === 'lib/datos/capa.ts');
+  assert.ok(capa, 'no se encontró la capa de datos');
+  assert.match(
+    capa.limpio,
+    /exigirCifradoSiEsRemoto\s*\(/,
+    'la capa de datos dejó de exigir cifrado',
+  );
+
+  // Y que la llamada NO esté dentro de la rama de pruebas. Se mira el texto entre el
+  // `if (enPruebas())` y su cierre.
+  const desde = capa.limpio.indexOf('if (enPruebas())');
+  const hasta = capa.limpio.indexOf('return new Kysely');
+  assert.ok(desde >= 0 && hasta > desde, 'no se pudo ubicar la rama de pruebas');
+  assert.doesNotMatch(
+    capa.limpio.slice(desde, hasta).replace(/exigirCifradoSiEsRemoto[\s\S]*$/, ''),
+    /exigirCifradoSiEsRemoto/,
+    'el guardia de cifrado quedó dentro de la rama de pruebas',
+  );
 });

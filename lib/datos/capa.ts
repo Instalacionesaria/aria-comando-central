@@ -18,7 +18,7 @@
 import { Kysely, PostgresDialect, type Transaction } from 'kysely';
 import pg from 'pg';
 import { urlDe, type RolBase } from './entorno.ts';
-import { enPruebas, exigirAnfitrionLocal } from './anfitrion.ts';
+import { enPruebas, exigirAnfitrionLocal, exigirCifradoSiEsRemoto } from './anfitrion.ts';
 import { organizacionActual } from './almacen.ts';
 import { InyectarOrganizacion } from './inyeccion.ts';
 import type { BaseDeDatos } from './esquema.ts';
@@ -49,6 +49,17 @@ function crearCliente(rol: RolBase): Db {
       escotilla: 'ARIA_PRUEBAS_FORZADAS',
     });
   }
+
+  // ── El cifrado en tránsito, SIEMPRE ────────────────────────────────────────
+  //
+  // Sin condicionar a `enPruebas()`, al revés que el guardia de arriba: ése distingue
+  // local de remoto porque el mismo hecho es correcto o catastrófico según quién
+  // pregunte, y éste no tiene esa ambigüedad. Si el destino es un proveedor
+  // administrado, el tráfico sale a la red y tiene que ir cifrado — lo pida una prueba,
+  // un script o una función desplegada.
+  //
+  // Contra el contenedor local no hace nada: no es un proveedor administrado.
+  exigirCifradoSiEsRemoto(url, `la capa de datos (rol \`${rol}\`)`);
 
   return new Kysely<BaseDeDatos>({
     // La inyección de la organización va SOLO en el cliente del inquilino.

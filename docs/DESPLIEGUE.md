@@ -313,3 +313,78 @@ comportamiento.
 **`/entrar` es una página pública y ninguna lista blanca la nombra.** Las listas de
 `pruebas/apoyo/autorizados.ts` cubren rutas de API. Una página nueva nace sin guarda y sin que
 nada falle — que es la forma que tiene este proyecto de perder invariantes.
+
+---
+
+## El cifrado en tránsito — medido el 2026-08-24, y estaba mal
+
+**Las tres cadenas de conexión a producción viajaban SIN CIFRAR.** No es una sospecha:
+se midió del lado del cliente con `socket.encrypted`, que es el único lugar donde se
+puede medir una conexión agrupada — `pg_stat_ssl` describe la pata Supavisor↔Postgres,
+no la del cliente, así que preguntándole a la base se obtiene la respuesta de otra
+conexión.
+
+| conexión | antes | con el parámetro |
+| --- | --- | --- |
+| `DATABASE_URL_INQUILINO` (6543) | **sin cifrar** | TLSv1.3 |
+| `DATABASE_URL_IDENTIDAD` (6543) | **sin cifrar** | TLSv1.3 |
+| `DATABASE_URL_MIGRADOR` (5432) | **sin cifrar** | TLSv1.3 |
+
+La causa: **`node-postgres` no negocia TLS por omisión** y ninguna de las tres cadenas lo
+pedía. Así que las tres contraseñas de base y todo el tráfico —nombres, teléfonos,
+correos, tokens de sesión, los blobs cifrados de credenciales— cruzaban internet abierto
+en claro entre Vercel y `sa-east-1`. **Nada fallaba.**
+
+El arreglo es un parámetro por cadena:
+
+```
+?uselibpqcompat=true&sslmode=require
+```
+
+`uselibpqcompat=true` hace falta porque `node-postgres` 8.16+ cambió el significado de
+`sslmode=require` a *verificar el certificado*; su propio aviso lo dice. Sin eso,
+`require` se comporta como `verify-full` y la conexión falla.
+
+### Lo que NO está resuelto, dicho de frente
+
+`require` **cifra y no verifica el certificado**: protege de que alguien escuche el
+tráfico, no de que alguien se ponga en el medio. `verify-full` sí verifica, y contra este
+proyecto falla con *"self-signed certificate in certificate chain"* — Supabase firma con
+su propia autoridad, así que hace falta desplegar su paquete de CA junto con la
+aplicación y apuntar `sslrootcert` ahí.
+
+Eso queda **pendiente**. `require` es una mejora estricta sobre texto en claro; decir que
+el problema está cerrado sería falso.
+
+### El guardia, para que no vuelva a pasar
+
+`exigirCifradoSiEsRemoto()` en `lib/datos/anfitrion.ts`, llamado desde `lib/datos/capa.ts`
+en cada creación de cliente. Si el anfitrión es un proveedor administrado y la cadena no
+pide cifrado, **lanza**.
+
+Tres decisiones de ese guardia, cada una por un modo de falla:
+
+- **El criterio es el ANFITRIÓN, no `NODE_ENV`.** Con el entorno, el caso más frecuente
+  quedaría descubierto: alguien que abre una copia de producción desde su máquina para
+  depurar. Eso no es desarrollo.
+- **No está condicionado a `enPruebas()`**, al revés que el guardia de anfitrión. Ése
+  distingue local de remoto porque el mismo hecho es correcto o catastrófico según quién
+  pregunte; éste no tiene esa ambigüedad y ya no hace nada contra un anfitrión local.
+- **No tiene escotilla.** No existe la razón "necesito que los datos de mis clientes
+  viajen en claro". Si un certificado da problemas, se arregla el certificado.
+
+### Cómo se verifica que Vercel quedó bien
+
+**No se puede leer el valor.** Las dos variables son `type: sensitive`, y Vercel devuelve
+`value: ""` incluso con `decrypt=true` — así que una comprobación que busque `sslmode` en
+la respuesta de la API **pasa siempre, sin comprobar nada**. Es un falso verde y hay que
+nombrarlo, porque es el primer lugar donde uno mira.
+
+Lo que sí es evidencia:
+
+1. `updatedAt` de la variable se mueve tras el `PATCH` — prueba que hubo una escritura,
+   no que el valor sea el correcto.
+2. **La definitiva: el guardia.** Con él desplegado, una cadena sin `sslmode` hace que
+   *cualquier* acceso a base lance. Así que si tras el despliegue una ruta que toca la
+   base responde bien, la cadena tiene el parámetro. El guardia convierte una propiedad
+   invisible en una observable.
