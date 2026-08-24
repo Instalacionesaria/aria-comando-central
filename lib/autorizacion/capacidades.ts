@@ -52,6 +52,27 @@ export const CAPACIDADES = [
   // documentos; editar es gastar dinero de la organización.
   'fundaciones.ver',
   'fundaciones.editar',
+  // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
+  //
+  // UNA de lectura por PESTAÑA, y son dos porque de eso depende que un closer no vea la
+  // pestaña del setter. Con una sola capacidad compartida, los dos roles verían las dos.
+  //
+  // El `11` § 8 listó además `tablero.ver` y `agenda.ver` para sub-pestañas del closer, y
+  // NO se catalogan: el mismo § 8 prohibe que dos llamadas de la misma pantalla pidan
+  // capacidades distintas, porque *"esa parte se ve vacía para alguien que ve el resto, y no
+  // hay forma de darse cuenta mirando"*. Las dos mitades del documento no pueden valer a la
+  // vez; gana la regla, que describe un defecto medido. El motivo completo está en
+  // `db/arranque/001_catalogo.sql`.
+  'closer.ver',
+  'setter.ver',
+  // La ficha del contacto. De las DOS pestañas, así que no puede pedir la de una sola.
+  'contactos.ver',
+  // Las tres de MUTACIÓN. Éstas sí pueden diferir de la lectura de la pantalla: el defecto
+  // que esa regla previene es de lecturas —"una sección con datos y cuatro en blanco"— y un
+  // botón deshabilitado no es un panel vacío.
+  'contactos.avanzar',
+  'contactos.comentar',
+  'conversaciones.responder',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

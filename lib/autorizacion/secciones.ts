@@ -80,6 +80,20 @@ export const SECCIONES: readonly Seccion[] = [
   // Con esto `ADR-0303` deja de estar inerte: hay una pantalla real cuya visibilidad se decide por
   // una capacidad del catálogo, y `ADR-0304` compara de verdad los conjuntos de sus operaciones.
   { clave: 'icp', nombre: 'ICP & Oferta', capacidadRequerida: 'fundaciones.ver' },
+  // ── Etapa 11 · las dos pestañas operativas ────────────────────────────────
+  //
+  // Cada una pide una capacidad DISTINTA, y de eso depende lo único que se pidió en voz alta:
+  // *"un closer solo ve su pestaña"*. Con una capacidad de lectura compartida entre las dos,
+  // los dos roles verían las dos pestañas — el filtro de `seccionesVisibles` no tendría con
+  // qué distinguirlos.
+  //
+  // Y las CUATRO sub-pestañas del closer piden `closer.ver`, no una cada una. El `11` § 8
+  // listó `tablero.ver` para el Inicio y `agenda.ver` para la Agenda, y el mismo § 8 —y
+  // `ADR-0304`— prohiben eso: dos llamadas de la misma pantalla con capacidades distintas
+  // dejan *"esa parte vacía para alguien que ve el resto, y no hay forma de darse cuenta
+  // mirando"*. El razonamiento completo está en `db/arranque/001_catalogo.sql`.
+  { clave: 'closer', nombre: 'Closer', capacidadRequerida: 'closer.ver' },
+  { clave: 'setter', nombre: 'Setter', capacidadRequerida: 'setter.ver' },
 ];
 
 /**
@@ -98,8 +112,10 @@ export const SIN_OPERACIONES_TODAVIA: readonly string[] = [
   'conversion',
   'conversation',
   'sales',
-  'setter',
-  'closer',
+  // `setter` y `closer` SALIERON de esta lista en la Etapa 11: ya tienen operaciones y viven
+  // en `SECCIONES`. Son la segunda vez que el cable trampa dispara, y la primera en que la
+  // pantalla que gana operaciones **no** la ve todo el mundo — lo que obligó a que el menú
+  // deje de estar escrito a mano. Ver la nota de la lista paralela, arriba.
 ];
 
 /**

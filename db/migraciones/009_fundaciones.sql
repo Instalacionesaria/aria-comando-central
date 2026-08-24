@@ -27,27 +27,31 @@
 -- todo el mundo con 403 y el síntoma que llega es "la pantalla está vacía".
 -- ═════════════════════════════════════════════════════════════════════════════
 
-insert into identidad.permisos (clave, descripcion) values
-  ('fundaciones.ver',    'Ver el trabajo de Fundaciones: ficha, research, ICP, categoría, oferta, precio y mapa'),
-  ('fundaciones.editar', 'Generar y editar los entregables de Fundaciones (consume tokens de la organización)');
-
--- El superadministrador recibe todo. La prueba "el rol de plataforma tiene TODAS las
--- capacidades cargadas en la tabla" lo verifica, y sin estas dos líneas fallaría — que
--- es exactamente lo que tiene que pasar cuando alguien agrega una capacidad y se olvida
--- de repartirla.
-insert into identidad.roles_permisos (rol_id, permiso)
-  select r.id, p.clave
-    from identidad.roles r, identidad.permisos p
-   where r.clave = 'superadministrador'
-     and p.clave in ('fundaciones.ver', 'fundaciones.editar');
-
--- El administrador, todo lo de su organización. Misma regla que la migración 003: todo
--- salvo `organizaciones.%`.
-insert into identidad.roles_permisos (rol_id, permiso)
-  select r.id, p.clave
-    from identidad.roles r, identidad.permisos p
-   where r.clave = 'administrador'
-     and p.clave in ('fundaciones.ver', 'fundaciones.editar');
+-- ── POR QUÉ ACÁ NO HAY NINGÚN `insert`, Y ANTES SÍ ──────────────────────────
+--
+-- Esta migración tenía los tres `insert` que cargaban esas dos capacidades y las
+-- repartían. **No funcionaban, y no fallaban tampoco** — que es la peor de las dos
+-- combinaciones:
+--
+--   · el `insert into identidad.permisos` era RECHAZADO por política. `force row level
+--     security` desde la migración 003 y sin política para `migrador`. Eso sí abortaba,
+--     y con él la migración entera: `db:reset` moría acá y se llevaba las 158 pruebas de
+--     base de un tirón, porque ninguna podía construir la base.
+--
+--   · y los dos `insert … select … from identidad.roles r, identidad.permisos p` tienen
+--     un modo de falla peor todavía. Corridos por un rol sin política de LECTURA sobre
+--     esas tablas, los dos `select` devuelven cero filas, así que el `insert` **entra
+--     cero filas y reporta éxito**. Ni un error. El resultado es que ningún rol recibe
+--     la capacidad, o sea 403 en la pantalla `icp` para todo el mundo, y el síntoma que
+--     llega es "la pantalla está vacía".
+--
+-- Las dos capacidades y su reparto viven ahora en `db/arranque/001_catalogo.sql`, que
+-- corre con la credencial de nivel clúster —la única que omite RLS— en la fase
+-- `node scripts/db.mjs catalogo`, después de migrar. Ese archivo explica en su encabezado
+-- las siete salidas que se midieron y por qué se descartaron las otras seis.
+--
+-- Lo que queda de esta migración es la columna, que es lo que una migración sí puede
+-- hacer.
 
 -- ═════════════════════════════════════════════════════════════════════════════
 -- 2 · El vínculo con el alumno del hub

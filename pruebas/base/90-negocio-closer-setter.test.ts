@@ -32,6 +32,7 @@ import type { Client } from 'pg';
 import { conectar, cerrarTodo, unaFila, filas } from '../apoyo/conexiones.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
+import { filasDeTerritorio } from '../../lib/negocio/fila.ts';
 
 let admin: Client;
 let alfa: string;
@@ -361,4 +362,248 @@ test('los identificadores de GHL son únicos POR ORGANIZACIÓN, no globales', as
     dentro = String((e as Error).message);
   }
   assert.ok(dentro !== null, 'se pudo duplicar el mismo contacto de GHL en la misma organización');
+});
+
+// ─── 4 · La fila y sus seis íconos ──────────────────────────────────────────
+//
+// Lo que se prueba acá NO es que la consulta corra: es la SEMÁNTICA, que es lo que puede
+// mentir sin fallar. Cada una de estas pruebas corresponde a una forma concreta de estar mal
+// que deja la pantalla funcionando y mostrando un número equivocado.
+
+/** Un contacto con territorio, que es lo que la fila filtra. */
+async function contactoConTerritorio(
+  org: string,
+  ghlId: string,
+  territorio: 'closer' | 'setter' | null,
+  extra: Record<string, unknown> = {},
+): Promise<string> {
+  return conOrganizacion(org, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({ ghl_contact_id: ghlId, nombre: 'C ' + ghlId, territorio, ...extra } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+}
+
+test('el territorio SEPARA las dos pestañas: el contacto de una no aparece en la otra', async () => {
+  // ES LA PRUEBA DE LA ETAPA. Lo único que se pidió en voz alta fue *"un closer solo ve su
+  // pestaña y por lo tanto solo le aparecerán los contactos que estén en zona closer"*.
+  //
+  // Y el modo de fallar es silencioso: si alguien saca el `where territorio`, las dos
+  // pestañas siguen andando y muestran MÁS filas. Nadie reporta ver más trabajo del que le
+  // toca — se reporta ver menos.
+  const marca = randomUUID().slice(0, 8);
+  const delCloser = await contactoConTerritorio(alfa, 'terr-c-' + marca, 'closer');
+  const delSetter = await contactoConTerritorio(alfa, 'terr-s-' + marca, 'setter');
+  // Y uno CONGELADO, sin territorio: no es de ninguna de las dos.
+  const congelado = await contactoConTerritorio(alfa, 'terr-n-' + marca, null);
+
+  const closer = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const setter = await conOrganizacion(alfa, () => filasDeTerritorio('setter'));
+
+  const idsCloser = closer.filas.map((f) => f.id);
+  const idsSetter = setter.filas.map((f) => f.id);
+
+  assert.ok(idsCloser.includes(delCloser), 'el contacto de zona closer no está en la lista del closer');
+  assert.ok(!idsCloser.includes(delSetter), 'el closer VE un contacto de zona setter');
+  assert.ok(!idsSetter.includes(delCloser), 'el setter VE un contacto de zona closer');
+  assert.ok(idsSetter.includes(delSetter), 'el contacto de zona setter no está en la lista del setter');
+
+  // El congelado en NINGUNA. Un `territorio is null` que cayera en una de las dos listas
+  // sería trabajo apareciendo en la bandeja de alguien que no lo pidió.
+  assert.ok(!idsCloser.includes(congelado), 'un contacto sin territorio apareció en el closer');
+  assert.ok(!idsSetter.includes(congelado), 'un contacto sin territorio apareció en el setter');
+});
+
+test('el tercer ícono cuenta llamadas CONTESTADAS, no llamadas hechas', async () => {
+  // La divergencia que el encabezado de `lib/negocio/fila.ts` nombra. Dos llamadas: una
+  // contestada y una que no. El ícono tiene que decir UNO.
+  //
+  // Sin esta prueba, quitar el `where contestada` da DOS —un número perfectamente
+  // plausible— y el closer creería que el agente conectó el doble de veces de las que
+  // conectó. Es exactamente el defecto que "sigue funcionando y muestra datos falsos".
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, 'llam-' + marca, 'closer');
+
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('llamadas')
+      .values([
+        { externa_id: 'ok-' + marca, contacto_id: id, contestada: true, inicio_el: new Date() },
+        { externa_id: 'no-' + marca, contacto_id: id, contestada: false, inicio_el: new Date() },
+        // Y una tercera SIN hora de inicio, que es el 42% de las llamadas reales de la
+        // fuente: una llamada que nunca conectó no tiene inicio. Tampoco fue contestada,
+        // así que tampoco cuenta.
+        { externa_id: 'nada-' + marca, contacto_id: id, contestada: false, inicio_el: null },
+      ] as never)
+      .execute();
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila, 'el contacto no volvió en la lista');
+  assert.equal(
+    fila.iconos.llamadasContestadas,
+    1,
+    'contó llamadas hechas y no contestadas: el ícono del `11` § 7.2 dice CONTESTADAS',
+  );
+});
+
+test('las reuniones que YA TUVO no incluyen las futuras ni las sin fecha', async () => {
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, 'cita-' + marca, 'closer');
+  const ayer = new Date(Date.now() - 24 * 3600 * 1000);
+  const manana = new Date(Date.now() + 24 * 3600 * 1000);
+
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('citas')
+      .values([
+        { ghl_evento_id: 'pas-' + marca, contacto_id: id, inicio_el: ayer },
+        { ghl_evento_id: 'fut-' + marca, contacto_id: id, inicio_el: manana },
+      ] as never)
+      .execute();
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  // UNA reunión tenida, no dos: la de mañana no ocurrió todavía.
+  assert.equal(fila.iconos.reunionesTenidas, 1, 'contó como "ya tuvo" una cita futura');
+  // Y el cuarto... perdón, el SEGUNDO ícono sí la ve: hay cita futura.
+  assert.equal(fila.iconos.citaFutura, true, 'no detectó la cita futura');
+  // Y es un BOOLEANO de verdad, no un 0/1 de otro motor. Si llegara `1`, `=== true` falla
+  // en el cliente y el ícono no se dibuja nunca.
+  assert.equal(typeof fila.iconos.citaFutura, 'boolean');
+});
+
+test('una venta SIN monto cargado da `null`, no cero', async () => {
+  // El § 9 regla 1, con la consecuencia dicha por el § 4: *"un `$0` donde nadie cargó
+  // montos afirma «no vendiste nada». Es falso, y nadie reporta un panel que simplemente
+  // parece vacío."*
+  //
+  // Y hoy es el caso NORMAL, no un borde: el § 4 dice que ningún contacto tiene monto.
+  const marca = randomUUID().slice(0, 8);
+  const sinMonto = await contactoConTerritorio(alfa, 'vsm-' + marca, 'closer');
+  const conMonto = await contactoConTerritorio(alfa, 'vcm-' + marca, 'closer');
+
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('resultados')
+      .values([
+        { contacto_id: sinMonto, salida: 'venta', rol: 'closer', monto: null },
+        { contacto_id: conMonto, salida: 'venta', rol: 'closer', monto: '1500.00' },
+      ] as never)
+      .execute();
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const a = r.filas.find((f) => f.id === sinMonto);
+  const b = r.filas.find((f) => f.id === conMonto);
+  assert.ok(a && b);
+  assert.equal(a.iconos.montoVenta, null, 'una venta sin monto devolvió algo en vez de nulo');
+  assert.notEqual(a.iconos.montoVenta, '0', 'devolvió un cero donde nadie cargó un monto');
+  assert.equal(b.iconos.montoVenta, '1500.00');
+
+  // Y la píldora sale del ÚLTIMO resultado, que en los dos es la venta.
+  assert.equal(a.situacion, 'venta');
+  assert.equal(b.situacion, 'venta');
+});
+
+test('sin ningún resultado registrado la situación es `sin_resultado`, que no es una salida', async () => {
+  // "Todavía nadie registró un resultado" y "el resultado fue que no interesa" son dos
+  // hechos distintos, y colapsarlos hace que la píldora afirme algo que nadie dijo.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, 'sr-' + marca, 'closer');
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.equal(fila.situacion, 'sin_resultado');
+});
+
+test('el estado del agente es NULO, y eso es un hecho medido', async () => {
+  // Esta prueba parece trivial y no lo es: fija por escrito que **no hay de dónde sacarlo**.
+  //
+  // El día que alguien conecte una fuente para el estado del bot, esta prueba falla y le
+  // obliga a decidir a la vista. Sin ella, la salida fácil es devolver `'apagado'` —que se
+  // ve razonable— y con eso el sexto ícono afirmaría de todos los contactos que su agente
+  // está apagado. Ninguno lo sabe.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, 'ag-' + marca, 'closer');
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.equal(
+    fila.iconos.estadoAgente,
+    null,
+    'devolvió un estado de agente: si ahora hay una fuente, hay que documentarla acá',
+  );
+});
+
+test('el orden pone los que nunca escribieron AL FINAL, no al principio', async () => {
+  // En PostgreSQL `order by … desc` pone los NULOS PRIMERO. Sin `nulls last`, la lista de
+  // trabajo arranca con los contactos que nunca dijeron una palabra y entierra al que
+  // acaba de responder — y no falla nada: la lista está ahí, completa, en el orden que
+  // menos sirve.
+  const marca = randomUUID().slice(0, 8);
+  const callado = await contactoConTerritorio(alfa, 'ord-n-' + marca, 'closer');
+  const hablo = await contactoConTerritorio(alfa, 'ord-h-' + marca, 'closer', {
+    ultimo_entrante_el: new Date(),
+    ultimo_entrante_texto: 'respondió',
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const posHablo = r.filas.findIndex((f) => f.id === hablo);
+  const posCallado = r.filas.findIndex((f) => f.id === callado);
+  assert.ok(posHablo >= 0 && posCallado >= 0);
+  assert.ok(
+    posHablo < posCallado,
+    'el que nunca escribió quedó ANTES del que acaba de responder: falta `nulls last`',
+  );
+});
+
+test('la fuente NUNCA llega vacía, aunque nadie la haya cargado', async () => {
+  // El § 7.1: *"ninguna fila sin fuente: si no se sabe, va un valor de reserva visible"*.
+  // La reserva la pone la base, no la consulta ni el cliente — así que no hay camino por el
+  // que una fila llegue sin chip.
+  const marca = randomUUID().slice(0, 8);
+  const id = await contactoConTerritorio(alfa, 'fue-' + marca, 'closer');
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  const fila = r.filas.find((f) => f.id === id);
+  assert.ok(fila);
+  assert.ok(fila.fuente && fila.fuente.length > 0, 'llegó una fila sin fuente');
+});
+
+test('la fila TAMPOCO cruza organizaciones: los íconos se cuentan dentro del inquilino', async () => {
+  // El aislamiento de `contactos` ya está probado arriba. Esto prueba algo distinto y más
+  // fácil de romper: los SEIS AGREGADOS son subconsultas sobre otras cinco tablas, y cada
+  // una es una oportunidad de contar filas ajenas. Una subconsulta que se escape del
+  // contexto no falla — suma.
+  const marca = randomUUID().slice(0, 8);
+  const enAlfa = await contactoConTerritorio(alfa, 'x-a-' + marca, 'closer');
+  await contactoConTerritorio(beta, 'x-b-' + marca, 'closer');
+
+  await conOrganizacion(beta, async () => {
+    // Una llamada contestada en BETA. No puede aparecer en el conteo de alfa.
+    const suyo = await datos()
+      .selectFrom('contactos')
+      .where('ghl_contact_id', '=', 'x-b-' + marca)
+      .select('id')
+      .executeTakeFirstOrThrow();
+    await datos()
+      .insertInto('llamadas')
+      .values({ externa_id: 'aj-' + marca, contacto_id: suyo.id, contestada: true, inicio_el: new Date() } as never)
+      .execute();
+  });
+
+  const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
+  assert.ok(
+    !r.filas.some((f) => f.nombre.includes('x-b-' + marca)),
+    'la lista de alfa trajo un contacto de beta',
+  );
+  const fila = r.filas.find((f) => f.id === enAlfa);
+  assert.ok(fila);
+  assert.equal(fila.iconos.llamadasContestadas, 0, 'contó una llamada de otra organización');
 });

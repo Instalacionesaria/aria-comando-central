@@ -7,6 +7,7 @@
 //   node scripts/db.mjs levantar    el contenedor, y esperar a que esté sano
 //   node scripts/db.mjs bajar       el contenedor y su volumen
 //   node scripts/db.mjs arranque    los tres roles y sus rutas de búsqueda (superusuario)
+//   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
@@ -23,12 +24,13 @@
 //
 // "Idempotente por destrucción" vale SOLO para el contenedor local. Contra un
 // proveedor administrado, `bajar` no destruye nada remoto, así que `reset` pasa a
-// ser `arranque + migrar + sembrar` sobre estado ACUMULADO — y con eso desaparece
+// ser `arranque + migrar + catalogo + sembrar` sobre estado ACUMULADO — y con eso desaparece
 // justo la propiedad que hacía aceptable la falta de atomicidad entre dominios.
 //
 // Por eso `bajar` ahora exige un anfitrión local, y con ella `reset` completo: es la
 // primera fase de la lista, así que corta antes de que nada haya corrido. Las fases
-// sueltas `arranque` y `migrar` SÍ pueden correr contra el proveedor administrado:
+// sueltas `arranque`, `migrar` y `catalogo` SÍ pueden correr contra el proveedor
+// administrado:
 // es como se despliega.
 
 import { spawnSync } from 'node:child_process';
@@ -161,6 +163,41 @@ async function arranque() {
   }
 }
 
+/**
+ * El catálogo de capacidades, los roles de sistema y el reparto.
+ *
+ * Va en una fase PROPIA y no dentro de `arranque()` por una razón de orden que no es
+ * opinable: `arranque` corre ANTES de `migrar`, y `identidad.permisos` todavía no existe.
+ * Y no va dentro de una migración porque esa tabla tiene el forzado de RLS sin política
+ * para `migrador`, así que un `insert` desde ahí es rechazado — es lo que rompe
+ * `009_fundaciones`. El motivo completo, con las siete salidas medidas y por qué se
+ * descartó cada una, está en el encabezado de `db/arranque/001_catalogo.sql`.
+ *
+ * Corre con `DATABASE_URL_ADMIN` —la misma credencial que `arranque`— porque es la única
+ * que omite RLS. En Supabase ese rol es `postgres` por la Management API.
+ */
+async function catalogo() {
+  if (!process.env.DATABASE_URL_ADMIN) throw new Error('DATABASE_URL_ADMIN no está definida.');
+  const cliente = new pg.Client({ connectionString: process.env.DATABASE_URL_ADMIN });
+  await cliente.connect();
+  try {
+    const sql = readFileSync(
+      new URL('../db/arranque/001_catalogo.sql', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+
+    // Sin marcas que sustituir: no lleva contraseñas ni el nombre de la base. Si alguien
+    // agrega una, esto lo dice en vez de mandar `@MARCA@` al motor.
+    const marcas = sql.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`001_catalogo.sql tiene marcas y esta fase no sustituye ninguna: ${[...new Set(marcas)].join(', ')}`);
+
+    await cliente.query(sql);
+    console.log('  catálogo de capacidades, roles de sistema y reparto');
+  } finally {
+    await cliente.end();
+  }
+}
+
 async function migrar() {
   const { migrar: aplicar } = await import('../lib/datos/migrador.ts');
   const { aplicadas } = await aplicar();
@@ -275,8 +312,9 @@ async function verificar() {
 
 // ── Despacho ─────────────────────────────────────────────────────────────────
 
-const FASES = { bajar, levantar, arranque, migrar, sembrar, verificar };
-const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'sembrar', 'verificar'];
+const FASES = { bajar, levantar, arranque, migrar, catalogo, sembrar, verificar };
+// `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
+const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'verificar'];
 
 const comando = process.argv[2];
 const completadas = [];

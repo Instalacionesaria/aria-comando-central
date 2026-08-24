@@ -38,7 +38,7 @@ import {
 import { aHtml, aTextoPlano, leerDocumento } from '../../lib/fundaciones/documento.ts';
 import { MODELO } from '../../lib/fundaciones/generacion.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
-import { SECCIONES, SIN_OPERACIONES_TODAVIA } from '../../lib/autorizacion/secciones.ts';
+import { SECCIONES, SIN_OPERACIONES_TODAVIA, seccionesVisibles } from '../../lib/autorizacion/secciones.ts';
 
 // ─── El contrato con ARIA-brain: los identificadores y las claves ───────────
 
@@ -423,28 +423,87 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   );
   assert.ok(CAPACIDADES.includes('fundaciones.ver'));
   assert.ok(CAPACIDADES.includes('fundaciones.editar'));
-  // Las nueve que siguen esperando su primera operación.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 9);
+  // Las SIETE que siguen esperando su primera operación. Eran nueve hasta la Etapa 11, que se
+  // llevó `setter` y `closer` por el mismo camino que la 9 se llevó `icp`.
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 7);
 });
 
-test('las dos capacidades están en la migración que las carga', async () => {
-  // El catálogo de TypeScript y la tabla se cruzan en las dos direcciones con una prueba de BASE,
-  // que necesita Postgres. Ésta es la mitad que se puede comprobar sin base: que la migración
-  // exista y las nombre. Sin ella, un catálogo con dos claves que ninguna migración inserta
-  // rechaza a todo el mundo con 403 y el síntoma es "la pantalla está vacía".
+test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {
+  // La segunda vez que el cable trampa dispara. Y la primera con una consecuencia que `icp` no
+  // tuvo: estas dos pantallas **no las ve todo el mundo**, así que su visibilidad tiene que
+  // decidirse por capacidad de verdad y no solo estar catalogada.
+  for (const clave of ['setter', 'closer']) {
+    assert.ok(
+      SECCIONES.some((s) => s.clave === clave),
+      clave + ' no está en SECCIONES',
+    );
+    assert.ok(
+      !SIN_OPERACIONES_TODAVIA.includes(clave),
+      clave + ' quedó en las DOS listas: una de las dos miente',
+    );
+  }
+
+  // Y ésta es LA aserción de la etapa, la que hace cierto *"un closer solo ve su pestaña"*.
+  //
+  // Las dos capacidades tienen que ser DISTINTAS. Si alguien las unifica —que es la
+  // simplificación que se ve razonable desde lejos— los dos roles pasan a ver las dos
+  // pestañas y nada más falla: `seccionesVisibles` filtra bien, con el criterio equivocado.
+  const closer = SECCIONES.find((s) => s.clave === 'closer');
+  const setter = SECCIONES.find((s) => s.clave === 'setter');
+  assert.notEqual(
+    closer?.capacidadRequerida,
+    setter?.capacidadRequerida,
+    'Closer y Setter piden la MISMA capacidad: con eso los dos roles ven las dos pestañas',
+  );
+
+  // Y que la separación sea real, no dos nombres: lo que un closer tiene no puede abrir la
+  // pestaña del setter. Se comprueba con `seccionesVisibles`, que es la función que decide.
+  assert.ok(closer && setter);
+  const soloCloser = seccionesVisibles(new Set([closer.capacidadRequerida])).map((x) => x.clave);
+  const soloSetter = seccionesVisibles(new Set([setter.capacidadRequerida])).map((x) => x.clave);
+  assert.deepEqual(soloCloser, ['closer'], 'con closer.ver a secas se ve algo más que Closer');
+  assert.deepEqual(soloSetter, ['setter'], 'con setter.ver a secas se ve algo más que Setter');
+});
+
+test('las dos capacidades están en el archivo que las carga, y no en la migración', async () => {
+  // Esta prueba SE MUDÓ en la Etapa 11, y el motivo es que el archivo que decía cargarlas no las
+  // cargaba. La migración 009 tenía los tres `insert`, y el primero era rechazado por política
+  // —`identidad.permisos` tiene el forzado de RLS sin política para `migrador`— así que
+  // `db:reset` moría ahí y se llevaba las 158 pruebas de base con él. Nadie podía reconstruir la
+  // base local, y esta prueba pasaba en verde igual: comprobaba que el texto NOMBRARA las
+  // capacidades, no que llegaran a la tabla.
+  //
+  // Ahora las carga `db/arranque/001_catalogo.sql`, con la credencial de nivel clúster, que es
+  // la única que omite RLS. Ese archivo explica en su encabezado las siete salidas que se
+  // midieron y por qué se descartaron las otras seis.
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { RAIZ } = await import('../apoyo/fuente.ts');
-  const sql = readFileSync(join(RAIZ, 'db/migraciones/009_fundaciones.sql'), 'utf8');
+
+  const catalogo = readFileSync(join(RAIZ, 'db/arranque/001_catalogo.sql'), 'utf8');
   for (const capacidad of ['fundaciones.ver', 'fundaciones.editar']) {
-    assert.match(sql, new RegExp(capacidad.replace('.', '\\.')), `la migración no carga ${capacidad}`);
+    assert.ok(catalogo.includes("('" + capacidad + "'"), 'el catálogo no carga ' + capacidad);
   }
   // Y las reparte: una capacidad en el catálogo que ningún rol tiene es una capacidad que nadie
   // puede usar.
-  assert.match(sql, /superadministrador/);
-  assert.match(sql, /administrador/);
-  // La columna del vínculo con el hub.
-  assert.match(sql, /fundaciones_cliente_id/);
+  assert.match(catalogo, /superadministrador/);
+  assert.match(catalogo, /administrador/);
+
+  // La otra mitad, y es la que impide que esto se deshaga: la migración YA NO tiene que
+  // intentar el `insert`. Si alguien lo vuelve a poner, `db:reset` vuelve a morir — y sin esta
+  // aserción, moriría sin que ninguna prueba diga por qué.
+  const migracion = readFileSync(join(RAIZ, 'db/migraciones/009_fundaciones.sql'), 'utf8');
+  const sinComentarios = migracion
+    .split('\n')
+    .filter((l) => !l.trimStart().startsWith('--'))
+    .join('\n');
+  assert.doesNotMatch(
+    sinComentarios,
+    /insert\s+into\s+identidad\./i,
+    'la migración 009 volvió a tener un `insert` en `identidad`: eso es rechazado por política',
+  );
+  // Lo que sí le queda, que es lo que una migración puede hacer.
+  assert.match(migracion, /fundaciones_cliente_id/);
 });
 
 // ─── La compuerta de paridad ───────────────────────────────────────────────
@@ -462,6 +521,6 @@ test('`icp` salió de la comparación con el prototipo, y las otras nueve siguen
   const lista = /const VISTAS = \[([\s\S]*?)\];/.exec(paridad);
   assert.ok(lista && lista[1], 'no se pudo leer la lista de vistas de paridad.mjs');
   const vistas = [...lista[1].matchAll(/'([\w-]+)'/g)].map((m) => m[1]);
-  assert.equal(vistas.length, 9, `la lista de paridad tiene ${vistas.length} vistas, no nueve`);
+  assert.equal(vistas.length, 7, `la lista de paridad tiene ${vistas.length} vistas, no siete`);
   assert.ok(!vistas.includes('icp'), '`icp` volvió a la comparación: va a dar rojo permanente');
 });

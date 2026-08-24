@@ -280,7 +280,17 @@ create table negocio.llamadas (
   -- **contestadas** — no llamadas hechas. Son dos números distintos y solo uno vale.
   contestada  boolean not null default false,
 
-  inicio_el          timestamptz not null,
+  -- La hora de inicio ADMITE NULOS, y es una corrección medida, no una precaución.
+  --
+  -- Estaba `not null`, que es lo que parece obvio para una llamada. En los datos de la
+  -- plataforma de voz que hoy alimenta esto, **75 de 180 llamadas (42 %) no tienen hora de
+  -- inicio**. Una llamada que nunca se estableció —no contestada, cortada al marcar— no
+  -- tiene cuándo empezó, y la plataforma lo refleja dejándolo vacío.
+  --
+  -- Con `not null` la importación habría fallado en 75 filas, o peor: alguien habría puesto
+  -- la hora de recepción como relleno y el tercer ícono de la fila —que cuenta llamadas
+  -- CONTESTADAS— habría contado intentos con una hora inventada.
+  inicio_el          timestamptz,
   duracion_segundos  integer,
   resumen            text,
 
@@ -291,7 +301,12 @@ create table negocio.llamadas (
   foreign key (org_id, contacto_id) references negocio.contactos (org_id, id) on delete cascade
 );
 
-create index llamadas_por_contacto on negocio.llamadas (org_id, contacto_id, inicio_el desc);
+-- `nulls last`: una llamada sin hora de inicio (42 % de los datos de origen) no puede
+-- encabezar la lista de la ficha. Con el orden por omision los nulos van primero en
+-- `desc`, y la ficha abriria mostrando los intentos fallidos arriba de las conversaciones
+-- reales.
+create index llamadas_por_contacto
+  on negocio.llamadas (org_id, contacto_id, inicio_el desc nulls last);
 
 select negocio.aplicar_aislamiento('negocio.llamadas');
 

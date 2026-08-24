@@ -48,8 +48,12 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // la comparación sigue siendo confiable para las que no cambiaron.
 //
 // La regla al agregar una vista reactificada: sale de acá, y su motivo se escribe en `docs/ETAPA-N`.
+// `setter` y `closer` SALIERON en la Etapa 11, por el mismo motivo que `icp` en la 9: dejaron
+// de coincidir con el prototipo A PROPÓSITO. Sus datos ya no son los del maquetado —vienen de
+// `negocio.*`— y sus dos menús ya no se muestran a todo el mundo. Compararlas daría un rojo
+// permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
 const VISTAS = ['executive', 'acquisition', 'creative', 'conversion', 'conversation',
-                'sales', 'contacts', 'setter', 'closer'];
+                'sales', 'contacts'];
 
 /* Cada paso deja la página lista para el siguiente, así que el orden importa. */
 const PASOS = [

@@ -293,7 +293,8 @@ export interface TablaLlamadas {
   agente: string | null;
   /** CONTESTADAS, no hechas. El tercer ícono de la fila cuenta esto (`11` § 7.2). */
   contestada: Generated<boolean>;
-  inicio_el: Date;
+  /** Admite nulos: 42 % de las llamadas de origen no tienen hora de inicio (no se establecieron). */
+  inicio_el: Date | null;
   duracion_segundos: number | null;
   resumen: string | null;
   creado_el: Generated<Date>;
