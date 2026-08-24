@@ -144,6 +144,16 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // donde olvidarse un `where` devuelve datos de otra organización sin ningún error.
   'app/api/fundaciones/estado/route.ts',
   'app/api/fundaciones/generar/route.ts',
+  // ── Etapa 11 ─────────────────────────────────────────────────────────────────
+  // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
+  // Location ID de la organización, que viven en `identidad.organizaciones_credenciales` — una
+  // tabla de identidad sobre la que el rol del inquilino no tiene ni `select`, y con razón:
+  // guarda los secretos de todas las organizaciones.
+  //
+  // El filtro por organización lo pone esa llamada A MANO, con `contexto.orgEfectiva`, igual
+  // que `app/api/fundaciones/estado/route.ts`. Todo lo que ESCRIBE va por el otro camino
+  // —`conOrganizacion(` y la política de fila— así que la escotilla no toca datos de negocio.
+  'app/api/contactos/sincronizar/route.ts',
 ];
 
 /**
@@ -200,6 +210,29 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // DETECTA (la sonda avisa con gravedad máxima), se REPARA volviendo a correr el arranque
   // —idempotente por organización y por mitad—, y no hay datos de nadie que perder.
   'db/controles/sonda.ts',
+  // ── Etapa 11 ─────────────────────────────────────────────────────────────────
+  // Traer los contactos de GoHighLevel: LEE identidad (el token y el Location ID de la
+  // organización) y ESCRIBE por el inquilino (`negocio.contactos`).
+  //
+  // ── QUÉ PASA SI LA SEGUNDA MITAD FALLA ──
+  //
+  // La mitad de identidad **no escribe en el camino de éxito**. `resolverAccesoAGhl` solo lee;
+  // su única escritura posible es la fila de auditoría `credencial_ilegible`, y ésa ocurre
+  // exactamente en la rama que devuelve `falta` — donde la segunda mitad NUNCA corre. Así que
+  // el defecto del 09 § 6 —una mitad confirmada y la otra fallida produciendo un éxito
+  // reportado— no se puede dar acá: hace falta que las dos escriban, y una no escribe.
+  //
+  // Lo que SÍ puede quedar a medias es dentro del dominio de negocio: los contactos se
+  // escriben de a uno, no en una transacción, así que si GoHighLevel falla en la página tres
+  // quedan guardados los de las dos primeras. Es aceptable y está sostenido por dos cosas
+  // escritas en el código, no por suerte:
+  //
+  //   · el `insert … on conflict (org_id, ghl_contact_id) do update` es IDEMPOTENTE, así que
+  //     volver a traer completa lo que faltó en vez de duplicar;
+  //   · el manejador responde el FALLO, no un éxito parcial disfrazado — y cuando sí termina,
+  //     devuelve el resumen con los salteados y el aviso de truncado, que son los dos casos en
+  //     que la lista queda corta y parece completa.
+  'app/api/contactos/sincronizar/route.ts',
 ];
 
 /**

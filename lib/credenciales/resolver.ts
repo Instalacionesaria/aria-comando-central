@@ -370,3 +370,102 @@ export const TEXTO_DE_FALTA: Readonly<Record<FaltaParaGenerar, string>> = {
   sin_alumno_vinculado:
     'Esta organización no está vinculada a una cuenta del hub, así que no hay dónde leer ni guardar el trabajo de Fundaciones.',
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ETAPA 11 · LO QUE LAS PESTAÑAS CLOSER Y SETTER NECESITAN DE ESTA TABLA
+//
+// Dos valores por organización, y los dos ya tenían columna desde la migración 006:
+//
+//   · `crm_token_cifrado` — el Private Integration Token de la subcuenta de GoHighLevel.
+//   · `crm_cuenta_id`     — el Location ID de esa subcuenta. NO es secreto: es el
+//     identificador de la cuenta, va y viene completo.
+//
+// Y hacen falta LOS DOS. Un token sin Location ID no sirve: cada llamada a la API v2 de GHL
+// lleva el `locationId`, y un token que abarca varias subcuentas sin decir cuál devolvería los
+// contactos de otra empresa del mismo cliente. Eso no fallaría — devolvería 200 con datos de
+// alguien más.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Por qué una organización no puede sincronizar con GoHighLevel.
+ *
+ * CINCO razones y no una, con el mismo criterio que el resto de este archivo: cada una lleva a
+ * una acción distinta, y colapsarlas en *"no se pudo conectar"* manda a cinco personas al lugar
+ * equivocado.
+ *
+ *   · `sin_token`       → nunca se cargó. Se carga en Ajustes.
+ *   · `token_ilegible`  → está cargado y el servidor no lo puede descifrar. **No es que falte**:
+ *     decir "falta conectar" mandaría a reconectar algo conectado, y el problema real —la clave
+ *     maestra del servidor— quedaría sin diagnosticar. Pasa al restaurar una copia de la base.
+ *   · `token_vencido`   → se cargó y dejó de servir. Hay que volver a autorizarlo.
+ *   · `token_revocado`  → lo cortaron desde el panel de GoHighLevel. Lo arregla el cliente, no
+ *     nosotros, y decirle "está vencido" lo mandaría a esperar una renovación que no va a venir.
+ *   · `sin_subcuenta`   → hay token y falta el Location ID. Ver el encabezado: sin él, un token
+ *     de varias subcuentas traería los contactos de otra empresa **sin fallar**.
+ */
+export type FaltaParaGhl =
+  | 'sin_token'
+  | 'token_ilegible'
+  | 'token_vencido'
+  | 'token_revocado'
+  | 'sin_subcuenta';
+
+/** El texto de cada faltante. Uno por razón, ninguno genérico. */
+export const TEXTO_DE_FALTA_GHL: Readonly<Record<FaltaParaGhl, string>> = {
+  sin_token:
+    'Falta el token de GoHighLevel de esta organización. Se carga en Ajustes.',
+  token_ilegible:
+    'El token está cargado y el servidor no puede leerlo. Hay que volver a cargarlo en Ajustes.',
+  token_vencido:
+    'La conexión con GoHighLevel venció. Hay que volver a autorizarla en Ajustes.',
+  token_revocado:
+    'El acceso fue revocado desde el panel de GoHighLevel. Hay que volver a autorizarlo ahí y cargar el token nuevo.',
+  sin_subcuenta:
+    'Falta el Location ID de tu subcuenta de GoHighLevel. Sin él no se sabe de qué cuenta traer los contactos.',
+};
+
+/** Lo que hace falta para hablar con GoHighLevel. */
+export type AccesoAGhl =
+  | { tipo: 'listo'; token: string; locationId: string }
+  | { tipo: 'falta'; que: FaltaParaGhl };
+
+/**
+ * El token y la subcuenta de GoHighLevel de esta organización, o **qué falta**.
+ *
+ * ── EL ORDEN DE LAS COMPROBACIONES IMPORTA ──────────────────────────────────
+ *
+ * Primero la presencia, después el estado, y al final el descifrado. Si el estado se mirara
+ * antes que la presencia, una organización sin fila —que es el caso normal de una organización
+ * recién creada— recibiría el estado por omisión `ausente` traducido a un texto de conexión
+ * rota, en vez de "falta cargarlo".
+ *
+ * Y `sin_subcuenta` se comprueba con el token YA descifrado, no antes: si se mirara primero,
+ * alguien con el Location ID puesto y el token ilegible recibiría "falta la subcuenta" y se
+ * pondría a buscar un dato que ya tiene.
+ */
+export async function resolverAccesoAGhl(db: Trx, orgId: string): Promise<AccesoAGhl> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['crm_token_cifrado', 'crm_estado', 'crm_cuenta_id'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.crm_token_cifrado) return { tipo: 'falta', que: 'sin_token' };
+  if (fila.crm_estado === 'vencida') return { tipo: 'falta', que: 'token_vencido' };
+  if (fila.crm_estado === 'revocada') return { tipo: 'falta', que: 'token_revocado' };
+
+  let token: string;
+  try {
+    token = descifrar(fila.crm_token_cifrado);
+  } catch {
+    // ADR-0809 · el mismo punto de emisión que las otras dos funciones de este archivo, y en la
+    // misma transacción: un descifrado que falla y no queda registrado es el cero
+    // indistinguible de "nadie cableó la señal".
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'token_ilegible' };
+  }
+
+  if (!fila.crm_cuenta_id) return { tipo: 'falta', que: 'sin_subcuenta' };
+
+  return { tipo: 'listo', token, locationId: fila.crm_cuenta_id };
+}

@@ -119,6 +119,28 @@ export const RECHAZOS = {
   almacen_no_disponible: 503,
   // El archivo de metodología no se pudo leer. Sí es nuestro: falta en el paquete construido.
   metodologia_ilegible: 500,
+
+  // ── Etapa 11 · GoHighLevel ───────────────────────────────────────────
+  //
+  // Los tres son 409 y 503, nunca 500, y la distinción vale lo mismo que la de la Etapa 9:
+  // nuestro servidor está bien en los tres casos, y un 500 haría que alguien revisara este
+  // código en vez de la configuración o el estado del servicio ajeno.
+
+  // Falta el token o el Location ID de la organización. 409 y no 403: el detalle dice cuál de
+  // los cinco faltantes es, y se arregla en Ajustes. Un 403 mandaría a pedirle un permiso a
+  // alguien que no tiene nada que dar.
+  credenciales_incompletas: 409,
+  // El token existe y GoHighLevel lo rechazó. Distinto del anterior: ahí falta cargar algo, acá
+  // lo cargado dejó de servir — o es de agencia en vez de subcuenta, que es el error más
+  // frecuente al crear un Private Integration.
+  credencial_rechazada: 409,
+  // El servicio externo está limitando las peticiones. Tiene su propio código porque es lo
+  // único de esta lista que se arregla ESPERANDO: colapsarlo con "no disponible" hace que
+  // alguien reintente en bucle y empeore justo lo que está midiendo el límite.
+  servicio_externo_saturado: 429,
+  // No se pudo hablar con el servicio externo. NO es "no hay contactos": es que no se pudo
+  // preguntar, y confundirlos es el defecto que `ADR-0305` persigue.
+  servicio_externo_no_disponible: 503,
 } as const;
 
 /**

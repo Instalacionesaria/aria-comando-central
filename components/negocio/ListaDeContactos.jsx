@@ -33,6 +33,9 @@ import Fila from './Fila.jsx';
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no tiene permiso para ver esta pestaña.',
   organizacion_inactiva: 'Esta organización está desactivada.',
+  // Los cuatro de GoHighLevel NO tienen texto acá a propósito: el servidor manda un `detalle`
+  // que dice cuál de los cinco faltantes es, o qué respondió GoHighLevel. Un texto genérico
+  // local lo taparía, y esos cinco faltantes llevan a cinco acciones distintas.
 };
 
 export default function ListaDeContactos({ camino, zona }) {
@@ -40,6 +43,8 @@ export default function ListaDeContactos({ camino, zona }) {
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
   const [codigo, setCodigo] = useState(null);
+  const [trayendo, setTrayendo] = useState(false);
+  const [resultado, setResultado] = useState(null);
   const yaPedido = useRef(false);
 
   const cargar = useCallback(async () => {
@@ -66,6 +71,54 @@ export default function ListaDeContactos({ camino, zona }) {
     yaPedido.current = true;
     void cargar();
   }, [cargar]);
+
+  /* Traer de GoHighLevel. Es una operación APARTE de cargar la lista, y se ve aparte.
+   *
+   * Colapsarlas —traer siempre al abrir la pestaña— tendría dos problemas: abrir la pestaña
+   * pasaría a depender de que GoHighLevel esté arriba, y cada apertura gastaría peticiones
+   * contra un límite de tasa ajeno. La lista lee lo que YA está guardado; traer es explícito. */
+  const traer = useCallback(async () => {
+    setTrayendo(true);
+    setResultado(null);
+    const r = await pedir('/api/contactos/sincronizar', { metodo: 'POST' });
+    setTrayendo(false);
+
+    if (r.tipo === 'sin_respuesta') {
+      setResultado({ mal: true, texto: 'No llegó al servidor. No se trajo nada.' });
+      return;
+    }
+    if (r.tipo === 'rechazado') {
+      setResultado({ mal: true, texto: r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).` });
+      return;
+    }
+
+    /* El resumen COMPLETO, no un «listo». Lo que importa que se vea son los dos casos en que
+       la lista queda corta y parece completa: contactos salteados, y el tope de páginas. */
+    const d = r.datos;
+    const guardados = (d.guardados?.closer ?? 0) + (d.guardados?.setter ?? 0);
+    const partes = [`${guardados} contacto(s) guardado(s)`];
+    if (d.salteados?.length) partes.push(`${d.salteados.length} salteado(s): ${d.salteados[0].porque}`);
+    if (d.truncado) partes.push('se llegó al tope de páginas: puede faltar gente');
+    setResultado({ mal: Boolean(d.salteados?.length || d.truncado), texto: partes.join(' · ') });
+
+    // Y se vuelve a leer la lista. Decir "guardados 12" sin releer sería reportar un éxito sin
+    // verificar que se puede ver.
+    yaPedido.current = false;
+    await cargar();
+  }, [cargar]);
+
+  const boton = (
+    <button type="button" className="fd-btn sec" disabled={trayendo} onClick={() => void traer()}>
+      {trayendo ? 'Trayendo de GoHighLevel…' : 'Traer de GoHighLevel'}
+    </button>
+  );
+
+  const avisoDeTraida = resultado ? (
+    <div className={`fd-aviso ${resultado.mal ? 'falta' : 'bien'}`} role="status">
+      <i>{resultado.mal ? '⚠' : '✓'}</i>
+      <span>{resultado.texto}</span>
+    </div>
+  ) : null;
 
   if (situacion === 'cargando') {
     return (
@@ -105,26 +158,36 @@ export default function ListaDeContactos({ camino, zona }) {
        línea que diga qué falta"*. Un panel que simplemente parece vacío no se reporta, y con
        él se pierde el único síntoma de que la conexión con GoHighLevel no está puesta. */
     return (
-      <div className="empty">
-        <div className="e-ic">◔</div>
-        <div className="e-t">Todavía no hay contactos en {zona}</div>
-        <div className="e-d">
-          Los contactos llegan de GoHighLevel según su etiqueta: los de <b>{zona}</b> aparecen
-          acá. Si esperabas ver gente, revisá en <b>Ajustes</b> que estén cargados el token y el
-          Location ID de tu subcuenta.
+      <>
+        {avisoDeTraida}
+        <div className="empty">
+          <div className="e-ic">◔</div>
+          <div className="e-t">Todavía no hay contactos en {zona}</div>
+          <div className="e-d">
+            Los contactos llegan de GoHighLevel según su etiqueta: los de <b>{zona}</b> aparecen
+            acá. Si es la primera vez, traelos. Si ya lo hiciste y sigue vacío, revisá en{' '}
+            <b>Ajustes</b> que estén cargados el token y el Location ID de tu subcuenta.
+          </div>
+          <div className="aj-fila" style={{ justifyContent: 'center', marginTop: 14 }}>{boton}</div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="md-sec">
-      <div className="md-h">
-        Tus contactos <span className="b">{filas.length}</span>
+    <>
+      <div className="aj-fila">
+        {boton}
+        {avisoDeTraida}
       </div>
-      {filas.map((f) => (
-        <Fila key={f.id} fila={f} />
-      ))}
-    </div>
+      <div className="md-sec">
+        <div className="md-h">
+          Tus contactos <span className="b">{filas.length}</span>
+        </div>
+        {filas.map((f) => (
+          <Fila key={f.id} fila={f} />
+        ))}
+      </div>
+    </>
   );
 }

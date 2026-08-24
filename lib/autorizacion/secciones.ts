@@ -313,6 +313,15 @@ export const SIN_PANTALLA: readonly string[] = [
   // La sonda de aislamiento. La llama una tarea programada cada hora: no hay pantalla, no hay
   // persona, y su resultado va al registro de la tarea y al canal de avisos.
   'app/api/sonda/route.ts',
+  // ── Etapa 11 ──────────────────────────────────────────────────────────
+  //
+  // Traer los contactos de GoHighLevel. La llaman LAS DOS pestañas, así que no puede declarar
+  // ni `closer` ni `setter` sin mentir sobre una — y `ADR-0304` exige que las operaciones de
+  // una pantalla pidan el mismo conjunto de capacidades.
+  //
+  // No es una excusa para no decidir: pide `contactos.ver`, que es la capacidad de la ficha y
+  // la tienen los dos roles. Lo que trae no es de una pantalla, es de un contacto.
+  'app/api/contactos/sincronizar/route.ts',
 ];
 
 /**
