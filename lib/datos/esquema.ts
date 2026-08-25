@@ -251,6 +251,13 @@ export interface TablaContactos {
   ultimo_entrante_texto: string | null;
   ultimo_saliente_el: Date | null;
   sincronizado_el: Date | null;
+  /**
+   * Desde cuando tenemos los mensajes de este contacto. **Nula = no se leyo su historia.**
+   *
+   * Sin esta columna, una conversacion vacia y una que nadie leyo se ven identicas, y la ficha
+   * diria «nunca escribio» de las dos.
+   */
+  mensajes_desde_el: Date | null;
   creado_el: Generated<Date>;
 }
 
@@ -274,6 +281,8 @@ export interface TablaMensajes {
   id: Generated<string>;
   org_id: ColumnaInquilino;
   ghl_mensaje_id: string;
+  /** De qué conversación del CRM salió. Es lo que permite pedir el resto sin buscarla de nuevo. */
+  ghl_conversacion_id: string | null;
   contacto_id: string;
   canal: string | null;
   direccion: 'entrante' | 'saliente';
@@ -281,7 +290,57 @@ export interface TablaMensajes {
   /** Tres estados y no dos: el bot y una persona ausente no son lo mismo. */
   autor: 'contacto' | 'agente' | 'persona';
   autor_usuario_id: string | null;
+  /** Quién lo mandó según el CRM, cuando no es alguien nuestro. Texto libre: es un id ajeno. */
+  autor_ghl_usuario_id: string | null;
   enviado_el: Date;
+
+  /**
+   * El estado CRUDO del canal, **sin `check`**. El vocabulario es ajeno: una lista cerrada
+   * convertiría un valor nuevo en un error que aborta la transacción y con ella el ciclo entero.
+   */
+  estado_entrega: string | null;
+  /** Nuestra clasificación, **con `check`**. La calcula `familiaDeEntrega()`, que es total. */
+  estado_entrega_familia: Generated<'en_curso' | 'entregado' | 'fallido' | 'desconocido'>;
+  /** El texto del canal cuando rechazó. Es lo único que explica por qué no llegó. */
+  fallo_del_canal: string | null;
+  estado_entrega_el: Date | null;
+  /** Cuándo lo miró la tercera pasada. `null` = nunca, y por eso el índice ordena `nulls first`. */
+  estado_entrega_revisado_el: Date | null;
+  /**
+   * `true` = el identificador lo inventamos nosotros porque el CRM no devolvió uno.
+   * La pasada de entregas los EXCLUYE: preguntar por un id que no existe cuesta dos llamadas por
+   * ciclo para siempre y la cola no se vacía nunca.
+   */
+  id_fabricado: Generated<boolean>;
+  /** Por qué camino entró: `aviso`, `ingesta`, `revision`, `apertura` o `propio`. */
+  origen: Generated<'aviso' | 'ingesta' | 'revision' | 'apertura' | 'propio'>;
+
+  creado_el: Generated<Date>;
+}
+
+/**
+ * El pulso de la ingesta: el candado, las marcas y la contabilidad del coste.
+ *
+ * Una fila por organización y por cosa que se ingiere. Hoy la única clave es `'mensajes'`.
+ */
+export interface TablaIngestaPulso {
+  org_id: ColumnaInquilino;
+  clave: string;
+  /**
+   * **Toda conversación cuya última actividad es anterior o igual a esto ya fue ingerida.**
+   * No es «la última vez que corrimos»: eso avanza con el reloj y se saltea lo que falló.
+   */
+  marca_el: Date | null;
+  /** El piso. Antes de esta fecha, «vacío» significa «no se leyó», no «nunca escribió». */
+  marca_desde_el: Date | null;
+  ultima_corrida_el: Date | null;
+  ultima_corrida_llamadas: number | null;
+  llamadas_acumuladas: Generated<string>;
+  corridas: Generated<string>;
+  /** `true` = se agotó un tope y quedó trabajo sin hacer. Una cola incompleta tiene que decirlo. */
+  atrasado: Generated<boolean>;
+  ultimo_fallo: string | null;
+  ultimo_fallo_el: Date | null;
   creado_el: Generated<Date>;
 }
 
@@ -386,6 +445,7 @@ export interface BaseDeDatos {
   contactos: TablaContactos;
   citas: TablaCitas;
   mensajes: TablaMensajes;
+  ingesta_pulso: TablaIngestaPulso;
   llamadas: TablaLlamadas;
   tareas: TablaTareas;
   resultados: TablaResultados;
