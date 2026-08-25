@@ -40,6 +40,7 @@ import { conectar, cerrarTodo, filas } from '../apoyo/conexiones.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { ANTIRREBOTE_MS, conElPulso, leerPulso, NO_CORRIO } from '../../lib/negocio/pulso.ts';
+import { pendientesDeRevision, revisarEntregas } from '../../lib/negocio/entregas.ts';
 
 let admin: Client;
 let alfa: string;
@@ -377,4 +378,311 @@ test('el pulso de una empresa no se ve desde la otra', async () => {
 
   assert.ok(await leerPulso(alfa, 'mensajes'), 'alfa tiene que ver el suyo');
   assert.equal(await leerPulso(beta, 'mensajes'), undefined, 'beta no puede ver el de alfa');
+});
+
+// ═══ 5 · La cola de la tercera pasada ═══════════════════════════════════════
+//
+// Los tres recortes de `lib/negocio/entregas.ts` viven en una sola consulta, y equivocarse en
+// cualquiera de ellos **no da error**: da una cola que no se vacía nunca y una factura que crece
+// sola. Son dos llamadas por ciclo, indefinidamente, contra un servicio que cobra por llamada.
+
+/** Un contacto y un mensaje saliente por el camino real. `org_id` lo inyecta la capa fina. */
+async function mensajeSaliente(
+  org: string,
+  extra: Record<string, unknown>,
+): Promise<string> {
+  return conOrganizacion(org, async () => {
+    const c = await datos()
+      .selectFrom('contactos')
+      .select('id')
+      .limit(1)
+      .executeTakeFirst();
+    const contactoId =
+      c?.id ??
+      (
+        await datos()
+          .insertInto('contactos')
+          .values({
+            ghl_contact_id: `ghl-entregas-${Math.random().toString(36).slice(2)}`,
+            nombre: 'Contacto de entregas',
+            territorio: 'closer',
+          } as never)
+          .returning('id')
+          .executeTakeFirstOrThrow()
+      ).id;
+
+    const m = await datos()
+      .insertInto('mensajes')
+      .values({
+        ghl_mensaje_id: `m-${Math.random().toString(36).slice(2)}`,
+        contacto_id: contactoId,
+        direccion: 'saliente',
+        cuerpo: 'algo',
+        autor: 'persona',
+        enviado_el: new Date(),
+        estado_entrega_familia: 'en_curso',
+        id_fabricado: false,
+        origen: 'propio',
+        ...extra,
+      } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return m.id;
+  });
+}
+
+async function limpiarMensajes(): Promise<void> {
+  for (const org of [alfa, beta]) {
+    await conOrganizacion(org, async () => {
+      await datos().deleteFrom('mensajes').execute();
+      await datos().deleteFrom('contactos').execute();
+    });
+  }
+}
+
+test('un identificador FABRICADO no entra nunca en la cola', async () => {
+  // El gasto silencioso más caro que podía tener este diseño. Cuando el envío no devuelve
+  // identificador se inventa uno; preguntarle al CRM por él devuelve 400 —medido— para siempre.
+  // Sin este recorte son dos llamadas por ciclo, indefinidamente, y la cola no se vacía nunca.
+  await limpiarMensajes();
+  await mensajeSaliente(alfa, { id_fabricado: true });
+  const cola = await pendientesDeRevision(alfa);
+  assert.deepEqual(cola, [], 'un id fabricado en la cola es una factura que crece sola');
+});
+
+test('solo los EN CURSO: lo resuelto no se vuelve a preguntar', async () => {
+  await limpiarMensajes();
+  const enCurso = await mensajeSaliente(alfa, { estado_entrega_familia: 'en_curso' });
+  await mensajeSaliente(alfa, { estado_entrega_familia: 'entregado', estado_entrega: 'delivered' });
+  await mensajeSaliente(alfa, { estado_entrega_familia: 'fallido', estado_entrega: 'failed' });
+  // Y `desconocido` tampoco: el CRM contestó algo que no supimos clasificar, y repreguntar por un
+  // valor que no entendemos es gastar llamadas para siempre.
+  await mensajeSaliente(alfa, { estado_entrega_familia: 'desconocido' });
+
+  const cola = await pendientesDeRevision(alfa);
+  assert.deepEqual(
+    cola.map((m) => m.id),
+    [enCurso],
+  );
+});
+
+test('un ENTRANTE no se revisa: no hay nada que entregar', async () => {
+  await limpiarMensajes();
+  await mensajeSaliente(alfa, { direccion: 'entrante', autor: 'contacto' });
+  assert.deepEqual(await pendientesDeRevision(alfa), []);
+});
+
+test('pasada la ventana de una hora se deja de preguntar', async () => {
+  // Un mensaje que sigue sin resolverse después de una hora casi seguro no se va a resolver, y
+  // seguir preguntando es pagar por nada. Queda `en_curso`, que la pantalla lee como «enviado» —
+  // que es exactamente lo que se sabe de él.
+  await limpiarMensajes();
+  const ahora = new Date();
+  const reciente = await mensajeSaliente(alfa, {
+    enviado_el: new Date(ahora.getTime() - 30 * 60_000),
+  });
+  await mensajeSaliente(alfa, { enviado_el: new Date(ahora.getTime() - 90 * 60_000) });
+
+  const cola = await pendientesDeRevision(alfa, ahora);
+  assert.deepEqual(
+    cola.map((m) => m.id),
+    [reciente],
+  );
+});
+
+test('primero los NUNCA revisados, y después el más viejo', async () => {
+  // Con cualquier otro orden, los dos mismos mensajes se revisarían una y otra vez mientras el
+  // resto **no se mira nunca**. Es inanición, y no da ningún error: la cola simplemente no avanza.
+  await limpiarMensajes();
+  const ahora = new Date();
+  const revisadoHaceRato = await mensajeSaliente(alfa, {
+    enviado_el: new Date(ahora.getTime() - 20 * 60_000),
+    estado_entrega_revisado_el: new Date(ahora.getTime() - 10 * 60_000),
+  });
+  /* EL NUNCA REVISADO ES EL MÁS VIEJO DE LOS TRES, y eso es lo que hace que esta prueba sirva.
+     Con él siendo el más nuevo, un orden por `enviado_el desc` daba exactamente la misma respuesta
+     y la mutación quedaba invisible — el arnés lo encontró. Ahora cualquier orden que mire la fecha
+     de envío en vez del sello de revisión lo manda al fondo y la prueba falla. */
+  const nuncaRevisado = await mensajeSaliente(alfa, {
+    enviado_el: new Date(ahora.getTime() - 45 * 60_000),
+    estado_entrega_revisado_el: null,
+  });
+  const revisadoReciEn = await mensajeSaliente(alfa, {
+    enviado_el: new Date(ahora.getTime() - 25 * 60_000),
+    estado_entrega_revisado_el: new Date(ahora.getTime() - 60_000),
+  });
+
+  const cola = await pendientesDeRevision(alfa, ahora);
+  // Dos por ciclo, y en este orden: el que nunca se miró primero, después el mirado hace más rato.
+  assert.deepEqual(
+    cola.map((m) => m.id),
+    [nuncaRevisado, revisadoHaceRato],
+  );
+  assert.ok(!cola.some((m) => m.id === revisadoReciEn), 'el recién mirado no va primero');
+});
+
+test('la cola se corta en dos por ciclo', async () => {
+  await limpiarMensajes();
+  for (let i = 0; i < 5; i++) await mensajeSaliente(alfa, {});
+  assert.equal((await pendientesDeRevision(alfa)).length, 2);
+});
+
+test('la cola de una empresa no ve los mensajes de la otra', async () => {
+  await limpiarMensajes();
+  await mensajeSaliente(alfa, {});
+  assert.equal((await pendientesDeRevision(alfa)).length, 1);
+  assert.deepEqual(await pendientesDeRevision(beta), []);
+});
+
+// ═══ 6 · El bucle de revisión, con un proveedor de mentira ══════════════════
+
+/** Un CRM de mentira. Devuelve lo que se le diga, y cuenta a quién le preguntaron. */
+function crmQueResponde(porId: Record<string, unknown>) {
+  const preguntados: string[] = [];
+  const fn = async (_acceso: { token: string }, id: string) => {
+    preguntados.push(id);
+    const r = porId[id];
+    if (r === undefined) return { tipo: 'datos' as const, datos: null };
+    return r as never;
+  };
+  return { fn, preguntados };
+}
+
+const conEstado = (estado: string | null) => ({
+  tipo: 'datos' as const,
+  datos: {
+    id: 'x',
+    conversacionId: null,
+    contactId: null,
+    cuerpo: null,
+    direccion: 'outbound',
+    tipo: 'TYPE_WHATSAPP',
+    canal: 'WhatsApp',
+    estado,
+    enviadoEl: new Date(),
+    usuarioId: null,
+    fuente: null,
+  },
+});
+
+async function estadoDe(id: string) {
+  return conOrganizacion(alfa, async () =>
+    datos()
+      .selectFrom('mensajes')
+      .select([
+        'estado_entrega',
+        'estado_entrega_familia',
+        'fallo_del_canal',
+        'estado_entrega_revisado_el',
+      ])
+      .where('id', '=', id)
+      .executeTakeFirst(),
+  );
+}
+
+test('un saliente que el canal RECHAZÓ queda en rojo, con el motivo', async () => {
+  // El defecto entero, cerrado: la llamada devolvió éxito, el CRM aceptó el mensaje, y el canal lo
+  // rechazó después. Esta pasada es lo único que lo descubre.
+  await limpiarMensajes();
+  const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-1' });
+  const crm = crmQueResponde({ 'ghl-1': conEstado('failed') });
+
+  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+
+  assert.deepEqual(crm.preguntados, ['ghl-1']);
+  assert.equal(r.resueltos, 1);
+  assert.equal(r.llamadas, 1);
+  const m = await estadoDe(id);
+  assert.equal(m?.estado_entrega_familia, 'fallido');
+  assert.equal(m?.estado_entrega, 'failed');
+  assert.ok(m?.fallo_del_canal, 'sin motivo, la burbuja en rojo solo dice que algo salió mal');
+});
+
+test('y uno entregado sale de la cola', async () => {
+  await limpiarMensajes();
+  const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-2' });
+  await revisarEntregas(alfa, { token: 't' }, crmQueResponde({ 'ghl-2': conEstado('delivered') }).fn);
+
+  const m = await estadoDe(id);
+  assert.equal(m?.estado_entrega_familia, 'entregado');
+  assert.equal(m?.fallo_del_canal, null, 'un entregado no puede quedar con un motivo de fallo');
+  assert.deepEqual(await pendientesDeRevision(alfa), []);
+});
+
+test('EL SELLO SE ESTAMPA AUNQUE NADA CAMBIE: es lo único que hace avanzar la cola', async () => {
+  // Sin esto, los dos primeros de la lista se revisan en cada ciclo **para siempre** y el resto no
+  // se mira nunca. No da ningún error: la cola simplemente no avanza, y son dos llamadas por ciclo
+  // gastadas en los mismos dos mensajes.
+  await limpiarMensajes();
+  const a = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-a' });
+  const b = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-b' });
+  const c = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-c' });
+
+  // El CRM contesta `sent`: sigue EN CURSO, así que nada cambia de familia.
+  const crm = crmQueResponde({
+    'ghl-a': conEstado('sent'),
+    'ghl-b': conEstado('sent'),
+    'ghl-c': conEstado('sent'),
+  });
+
+  const r1 = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  assert.equal(r1.resueltos, 0, 'nada se resolvió, que es justo el caso que importa');
+
+  /* Los dos primeros quedaron sellados, así que el ciclo siguiente ARRANCA POR EL TERCERO.
+     Se afirma el primero y no la lista entera: los tres siguen sin resolverse —el CRM contestó
+     `sent`, que es `en_curso`— así que la cola de dos sigue trayendo dos. Lo que tiene que haber
+     cambiado es POR CUÁL empieza. */
+  const cola = await pendientesDeRevision(alfa);
+  assert.equal(
+    cola[0]?.id,
+    c,
+    'la cola no avanzó: los mismos dos se van a revisar para siempre y el tercero nunca',
+  );
+  assert.equal(r1.llamadas, 2, 'se revisaron dos, que es el tope del ciclo');
+  for (const id of [a, b]) {
+    assert.ok((await estadoDe(id))?.estado_entrega_revisado_el, 'quedó sin sellar');
+  }
+});
+
+test('un identificador que el CRM no reconoce sale de la cola, no se reintenta', async () => {
+  // Es un HECHO, no un fallo: preguntar de nuevo no lo va a cambiar. Dejarlo `en_curso` lo traería
+  // en cada ciclo, indefinidamente, por una respuesta que ya se sabe.
+  await limpiarMensajes();
+  const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-fantasma' });
+  const r = await revisarEntregas(alfa, { token: 't' }, crmQueResponde({}).fn);
+
+  assert.equal(r.desconocidos, 1);
+  assert.equal((await estadoDe(id))?.estado_entrega_familia, 'desconocido');
+  assert.deepEqual(await pendientesDeRevision(alfa), []);
+});
+
+test('si el proveedor falla, se corta el ciclo y NO se sella al que no se pudo preguntar', async () => {
+  // Sellarlo lo mandaría al fondo de la cola por un problema que no es suyo. Y seguir preguntando
+  // es gastar el resto del presupuesto en el mismo error.
+  await limpiarMensajes();
+  const a = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-x' });
+  await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-y' });
+
+  const crm = crmQueResponde({
+    'ghl-x': { tipo: 'fallo', fallo: { tipo: 'sin_respuesta', causa: 'se cayó' } },
+    'ghl-y': conEstado('delivered'),
+  });
+  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+
+  assert.equal(r.llamadas, 1, 'se cortó en el primero en vez de insistir');
+  assert.deepEqual(crm.preguntados, ['ghl-x'], 'no se preguntó por el segundo');
+  assert.equal(
+    (await estadoDe(a))?.estado_entrega_revisado_el,
+    null,
+    'no se pudo preguntar: no se puede dar por revisado',
+  );
+});
+
+test('la revisión no toca los mensajes de otra empresa', async () => {
+  await limpiarMensajes();
+  await mensajeSaliente(beta, { ghl_mensaje_id: 'ghl-de-beta' });
+  const crm = crmQueResponde({ 'ghl-de-beta': conEstado('failed') });
+  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  assert.equal(r.llamadas, 0);
+  assert.deepEqual(crm.preguntados, []);
 });

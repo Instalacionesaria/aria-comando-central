@@ -16,7 +16,12 @@
 //
 //   **En régimen: 1 llamada.** La búsqueda, y nada cambió. Es el caso normal.
 //   **Con actividad: 1 + k**, siendo `k` las conversaciones NUESTRAS que se movieron.
-//   **En el peor caso: 13**, y lo acotan los dos topes de abajo.
+//   **Con envíos propios por confirmar: +2**, que es la tercera pasada yendo a buscar su estado.
+//   **En el peor caso: 15**, y lo acotan los dos topes de abajo más el de `entregas.ts`.
+//
+// Ese `+2` no es un extra opcional: es lo único que descubre que un mensaje que el CRM aceptó
+// terminó rechazado por el canal. Un mensaje que falla minutos después **no cambia la fecha de su
+// conversación**, así que queda por debajo de la marca de agua y ninguna otra vía lo vuelve a mirar.
 //
 // ── POR QUÉ SE PIDEN LOS MENSAJES Y NO ALCANZA CON LA BÚSQUEDA ──────────────
 //
@@ -42,6 +47,7 @@ import {
   type MensajeDeGhl,
 } from '../ghl/conversaciones.ts';
 import { esUnMensaje, familiaDeEntrega } from '../ghl/entrega.ts';
+import { revisarEntregas } from './entregas.ts';
 import { conElPulso, type Cierre, type ResultadoDelPulso } from './pulso.ts';
 
 /**
@@ -67,6 +73,9 @@ export interface ResultadoDeIngesta {
   /** Los que el CRM mandó sin fecha utilizable. Se cuentan porque **no se guardaron**. */
   sinFecha: number;
   atrasado: boolean;
+  /** Cuántas entregas sin resolver se fueron a buscar, y cuántas se resolvieron. */
+  entregasRevisadas: number;
+  entregasResueltas: number;
 }
 
 /** Una fila lista para escribir. Se nombra para que `filas` no quede sin tipo. */
@@ -139,7 +148,17 @@ export async function ingerirMensajes(
         // contra algo que acaba de decir que no.
         return {
           cierre: cierreDe({ marca, llamadas, atrasado: true, fallo: describir(r.fallo) }),
-          resultado: { miradas, nuestras, mensajesNuevos, sinFecha, atrasado: true },
+          // La revisión de entregas NO se intenta si la búsqueda falló: el proveedor acaba de
+          // decir que no, y gastar dos llamadas más contra él es insistir sobre lo mismo.
+          resultado: {
+            miradas,
+            nuestras,
+            mensajesNuevos,
+            sinFecha,
+            atrasado: true,
+            entregasRevisadas: 0,
+            entregasResueltas: 0,
+          },
         };
       }
 
@@ -187,6 +206,14 @@ export async function ingerirMensajes(
       if (pagina === TOPE_DE_PAGINAS - 1) atrasado = true;
     }
 
+    // ── Y LA TERCERA PASADA, dentro del MISMO ciclo ────────────────────────
+    //
+    // Comparte el alquiler y la contabilidad de la ingesta a propósito: dos candados separados
+    // serían dos cosas que mantener, y esto no necesita el suyo — corre exactamente cuando corre
+    // el ciclo, ni más ni menos.
+    const revision = await revisarEntregas(orgId, acceso);
+    llamadas += revision.llamadas;
+
     return {
       cierre: cierreDe({
         marca,
@@ -198,7 +225,15 @@ export async function ingerirMensajes(
         // un `coalesce` para que un ciclo posterior no lo mueva.
         primeraVista: pulso.marcaDesdeEl === null ? primeraVista : undefined,
       }),
-      resultado: { miradas, nuestras, mensajesNuevos, sinFecha, atrasado },
+      resultado: {
+        miradas,
+        nuestras,
+        mensajesNuevos,
+        sinFecha,
+        atrasado,
+        entregasRevisadas: revision.revisados,
+        entregasResueltas: revision.resueltos,
+      },
     };
   });
 }
