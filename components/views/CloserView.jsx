@@ -33,6 +33,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import Inicio from '../closer/Inicio.jsx';
 import MiDia from '../closer/MiDia.jsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
@@ -121,29 +122,39 @@ export default function CloserView({ activa }) {
     void cargar();
   }, [cargar]);
 
-  /* ── SIN RELOJ, Y ES DELIBERADO ─────────────────────────────────────────────
+  /* ── EL RELOJ DE 10 SEGUNDOS, QUE ESTUVO BLOQUEADO A PROPÓSITO ──────────────
    *
-   * El `04` § 2 pone el reloj principal en 10 segundos, y también dice qué lo hace sostenible:
-   * un candado del lado del servidor que hace que N pestañas cuesten lo mismo que una, y una
-   * marca de agua para que el costo sea proporcional a la actividad y no al tamaño de la
-   * cuenta. **Ninguna de las dos piezas existe todavía.**
+   * Hasta ahora este archivo decía que el intervalo no se ponía porque *"poner el intervalo antes
+   * que el candado sería la parte fácil de un diseño cuya parte difícil lo sostiene"*, y nombraba
+   * las dos piezas que faltaban: **un candado del lado del servidor** que hace que N pestañas
+   * cuesten lo mismo que una, y **una marca de agua** para que el costo sea proporcional a la
+   * actividad y no al tamaño de la cuenta.
    *
-   * Poner el intervalo antes que el candado sería la parte fácil de un diseño cuya parte difícil
-   * lo sostiene: cada pestaña abierta multiplicaría las consultas, y con tres vistas abiertas
-   * son cientos de peticiones por hora. Es exactamente el estado del que el `04` § 1 dice que
-   * se venía: *"ocho `setInterval` sueltos repartidos en cuatro archivos"*.
+   * Las dos existen: `lib/negocio/pulso.ts` y la columna `marca_el`. Medido contra la cuenta real,
+   * **un ciclo en régimen cuesta exactamente 1 llamada** — la búsqueda, que devuelve cero
+   * conversaciones nuevas.
    *
-   * Mientras tanto se recarga en los dos momentos que el `04` § 2 llama correctos para las
-   * pantallas sin reloj: **al montar** y **al recuperar el foco**. Y al volver dispara de
-   * inmediato, porque quien vuelve a la pestaña quiere ver fresco, no esperar un ciclo.
+   * ── SON DOS PEDIDOS Y NO UNO, Y CONVIENE DECIR POR QUÉ ────────────────────
+   *
+   * El tic dispara la INGESTA —que es la que habla con el CRM— y después recarga las colas. Podrían
+   * ser uno solo, y no lo son porque hacen cosas distintas: la ingesta la puede pedir también una
+   * tarea programada sin que haya nadie mirando, y las colas no sirven de nada sin una pantalla.
+   * Los dos pedidos son contra NUESTRO servidor; el presupuesto del proveedor lo gobierna el
+   * candado, no esta perilla.
+   *
+   * Y el orden importa: primero traer, después leer. Al revés, cada tic mostraría lo de hace diez
+   * segundos.
    */
-  useEffect(() => {
-    const alVolver = () => {
-      if (document.visibilityState === 'visible') void cargar();
-    };
-    document.addEventListener('visibilitychange', alVolver);
-    return () => document.removeEventListener('visibilitychange', alVolver);
+  const tic = useCallback(async () => {
+    // Un fallo de la ingesta NO impide recargar las colas: son dos cosas, y que el CRM esté caído
+    // no es motivo para dejar de mostrar el trabajo que ya está en la base.
+    await pedir('/api/mensajes/ingesta', { metodo: 'POST' });
+    await cargar();
   }, [cargar]);
+
+  /* Una sola clave para toda la aplicación: si mañana el Setter tiene su propio tic, registrarlo
+     con esta misma clave lo REEMPLAZA en vez de duplicar el tráfico. */
+  usarReloj('operacion:tic', tic, CADENCIA.operacion);
 
   function cuerpo() {
     if (situacion === 'cargando') {

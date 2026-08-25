@@ -129,6 +129,15 @@ export function usarReloj(clave: string | null, fn: () => void, ms: number): voi
  * qué frecuencia pregunten. Esta perilla se puede mover sin tocar el presupuesto del proveedor.
  */
 export const CADENCIA = {
-  /** El chat con la ficha abierta. */
+  /** El chat con la ficha abierta. Lee de la caché: **cero llamadas al proveedor**. */
   chat: 5_000,
+  /**
+   * EL tic de la operación: dispara la ingesta y recarga las colas.
+   *
+   * Que sean 10 segundos **no es el límite de llamadas al CRM**. El candado de
+   * `lib/negocio/pulso.ts` garantiza que la ingesta corra como mucho una vez por ciclo sin importar
+   * cuántas pestañas ni con qué frecuencia pidan, y medido contra la cuenta real un ciclo en
+   * régimen cuesta **una** llamada. Esta perilla se puede mover sin tocar ese presupuesto.
+   */
+  operacion: 10_000,
 } as const;
