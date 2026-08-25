@@ -72,6 +72,17 @@ export async function GET(peticion: Request): Promise<Response> {
     // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
     // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
     usuarioNombre: contexto.usuarioNombre,
+    /**
+     * ¿Puede moverse entre empresas?
+     *
+     * Se responde ACÁ y no se deduce en el navegador, y es la diferencia entre un botón que
+     * funciona y uno que da 409. La condición es **exactamente la que comprueba
+     * `PATCH /api/auth/sesion`**: la capacidad `organizaciones.listar` y tener un rol de
+     * plataforma. Reimplementarla en el cliente sería tener dos definiciones de lo mismo, y la
+     * que se quede vieja ofrece un control que va a ser rechazado.
+     */
+    puedeCambiarDeEmpresa:
+      contexto.esRolDePlataforma && contexto.permisos.has('organizaciones.listar'),
     // El cartel permanente del 03 § 3: "cuando mira otra organización, la interfaz lo
     // muestra de forma permanente. No es decoración: sin eso, alguien puede mirar la
     // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro

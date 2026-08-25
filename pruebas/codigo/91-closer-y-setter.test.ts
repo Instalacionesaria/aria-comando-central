@@ -31,6 +31,7 @@ import {
   menuVisible,
 } from '../../lib/autorizacion/secciones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
+import { EXENTAS_DE_ORGANIZACION_ACTIVA } from '../../lib/autorizacion/estados.ts';
 
 const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
 
@@ -516,4 +517,99 @@ test('la consulta de la lista tiene un desempate ESTABLE en el orden', () => {
   );
   // Y el desempate va ÚLTIMO: primero por actividad, que es lo que decide qué se ve arriba.
   assert.equal(ordenes[ordenes.length - 1], 'c.id', 'el desempate no está al final del orden');
+});
+
+// ─── El encierro, que ocurrió ───────────────────────────────────────────────
+
+test('desde una organización INACTIVA se puede ver a dónde volver', () => {
+  // ── EL DEFECTO QUE ESTO IMPIDE, Y QUE PASÓ DE VERDAD ──────────────────────
+  //
+  // El 2026-08-25 el superadministrador se conmutó a una organización de control de la sonda
+  // —que nace `activa = false` a propósito, porque es infraestructura y no un cliente— y quedó
+  // **sin salida por la interfaz**:
+  //
+  //   · el paso 3 del portero le respondía 403 `organizacion_inactiva` a casi todo;
+  //   · el listado de organizaciones estaba sujeto a ese paso, así que la pantalla no tenía de
+  //     dónde sacar las opciones para volver;
+  //   · y la pestaña Empresas —el único conmutador que había— exigía estar en la principal, así
+  //     que tampoco se dibujaba.
+  //
+  // Hubo que devolverle la sesión con una sentencia contra la base. El `03` § 5 ya lo tenía
+  // escrito: **un estado sin salida es un defecto.**
+  //
+  // `PATCH /api/auth/sesion` ya estaba exento y su comentario describía este escenario con
+  // precisión. Lo que faltaba era el LISTADO: se podía salir y no se podía saber hacia qué.
+  assert.ok(
+    EXENTAS_DE_ORGANIZACION_ACTIVA.includes('PATCH /api/auth/sesion'),
+    'la ruta que conmuta de organización volvió a estar sujeta al control de organización activa',
+  );
+  assert.ok(
+    EXENTAS_DE_ORGANIZACION_ACTIVA.includes('GET /api/admin/organizaciones'),
+    'el listado de organizaciones volvió a estar sujeto al control de organización activa: ' +
+      'desde una organización inactiva no habría de dónde sacar a qué volver',
+  );
+});
+
+test('el listado de organizaciones NO exige estar en la principal', () => {
+  // La otra mitad del encierro. La regla «solo desde ARIA» es de coherencia de INTERFAZ —la
+  // pestaña Empresas—, no una barrera: la barrera es `organizaciones.listar`, que solo tiene el
+  // rol de plataforma.
+  //
+  // Comprobada en el servidor, esa regla convertía el listado en algo que puede dejar a alguien
+  // sin salida, porque el listado es también de dónde saca sus opciones el conmutador.
+  const ruta = leer('app/api/admin/organizaciones/route.ts');
+  const get = ruta.slice(ruta.indexOf('export async function GET'), ruta.indexOf('export async function POST'));
+  assert.ok(get.length > 0, 'no se encontró el GET de organizaciones');
+  assert.doesNotMatch(
+    get.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, ''),
+    /esPrincipal/,
+    'el listado volvió a exigir estar en la principal: eso encierra a quien conmutó de empresa',
+  );
+});
+
+test('el conmutador de empresa se dibuja SIEMPRE, no dentro de una pantalla', () => {
+  // La salida no puede vivir en un lugar al que hay que llegar: tiene que estar donde ya estás.
+  // Por eso el conmutador es el botón del menú lateral y no un control de Ajustes — el menú se
+  // dibuja en todas las pantallas y en cualquier empresa.
+  const nav = archivosFuente(['components']).find((a) => a.ruta === 'components/Nav.jsx')?.limpio;
+  assert.ok(nav, 'no se encontró Nav.jsx');
+  assert.match(nav, /SelectorDeEmpresa/, 'el menú lateral dejó de tener el conmutador de empresa');
+
+  // Y pide permiso al SERVIDOR en vez de deducirlo. Dos definiciones de la misma regla acaban
+  // con un botón que ofrece algo que va a ser rechazado con 409.
+  const sel = archivosFuente(['components']).find(
+    (a) => a.ruta === 'components/SelectorDeEmpresa.jsx',
+  )?.limpio;
+  assert.ok(sel, 'no se encontró SelectorDeEmpresa.jsx');
+  assert.match(sel, /puedeCambiarDeEmpresa/, 'el conmutador dedujo el permiso en vez de preguntarlo');
+  // No puede preguntar por el NOMBRE del rol: `ADR-0302`.
+  assert.doesNotMatch(sel, /superadministrador/, 'el conmutador pregunta por el nombre del rol');
+});
+
+test('las organizaciones de la sonda NO se listan como empresas', () => {
+  // `control-a` y `control-b` son infraestructura: existen para que la sonda horaria compruebe
+  // en producción que el aislamiento entre inquilinos funciona. Listarlas como clientes es lo
+  // que hizo posible el encierro — aparecían con un botón «Administrar» que conmutaba a una
+  // organización inactiva.
+  //
+  // Se filtran por `SLUGS_DE_CONTROL`, la MISMA constante que usa la sonda. Filtrar por «las
+  // inactivas» sería otra cosa y estaría mal: una empresa cliente desactivada tiene que seguir
+  // viéndose (`02` regla 7).
+  // SIN COMENTARIOS, y buscando la CLAUSULA y no la mencion. La primera version comprobaba que
+  // `SLUGS_DE_CONTROL` apareciera en el archivo, y era vacua: quitando el `.where(...)` queda el
+  // import y el comentario, asi que la prueba pasaba con el filtro borrado. Lo encontro una
+  // mutacion.
+  const listado = archivosFuente(['lib']).find(
+    (a) => a.ruta === 'lib/administracion/organizaciones.ts',
+  )?.limpio;
+  assert.ok(listado, 'no se encontro el listado de organizaciones');
+  assert.ok(
+    /\.where\(\s*'o\.slug'\s*,\s*'not in'\s*,\s*SLUGS_DE_CONTROL\s*\)/.test(listado),
+    'el listado dejo de EXCLUIR las organizaciones de la sonda: volverian a aparecer como ' +
+      'empresas, con un boton que conmuta a una organizacion inactiva',
+  );
+  assert.ok(
+    !/where\('o\.activa'/.test(listado),
+    'el listado filtra por `activa`: una empresa cliente desactivada tiene que verse igual',
+  );
 });

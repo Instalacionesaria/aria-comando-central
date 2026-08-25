@@ -44,6 +44,7 @@ interface Sesion {
   menu?: GrupoDelMenu[];
   usuarioNombre?: string;
   usuarioId?: string;
+  puedeCambiarDeEmpresa?: boolean;
   secciones?: DatosDeSesion['secciones'];
   organizacion?: DatosDeSesion['organizacion'];
   mirandoOtraOrganizacion?: boolean;
@@ -86,6 +87,8 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
         menu: r.datos.menu ?? [],
         usuarioNombre: r.datos.usuarioNombre ?? '',
         usuarioId: r.datos.usuarioId ?? '',
+        // `false` ante la duda: sin saberlo, NO se ofrece el conmutador.
+        puedeCambiarDeEmpresa: r.datos.puedeCambiarDeEmpresa ?? false,
         // `[]` y no `undefined`: sin secciones no se dibuja NINGUNA pestaña, que es el lado
         // correcto del que fallar. Ver el `03` § 5, "una operación nueva nace cerrada".
         secciones: r.datos.secciones ?? [],

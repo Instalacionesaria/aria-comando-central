@@ -42,6 +42,7 @@
 
 import { useSesion } from '../app/sesion-contexto.tsx';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
+import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 
 /** Las iniciales para el avatar. Dos letras, de las dos primeras palabras. */
 function iniciales(nombre) {
@@ -81,24 +82,11 @@ export default function Nav() {
   return (
     <>
     <aside className="nav">
-      <button className="acct" id="acctBtn">
-        <span className="acct-av">
-          {iniciales(sesion?.organizacion.nombre)}
-        </span>
-        <span className="acct-txt">
-          <span className="acct-name">
-            {sesion?.organizacion.nombre ?? '—'}
-          </span>
-          <span className="acct-role">
-            {/* El cartel permanente del `03` § 3. No es decoración: es la diferencia entre
-                mirar los números de un cliente y creer que son los propios. */}
-            {sesion?.mirandoOtraOrganizacion ? 'Mirando otra organización' : 'Tu organización'}
-          </span>
-        </span>
-        <span className="acct-chev">
-          ⇅
-        </span>
-      </button>
+      {/* El botón de la empresa ES el conmutador. Antes solo mostraba el nombre y no hacía
+          nada, y eso creó un encierro: la única forma de cambiar de empresa era la pestaña
+          Empresas, que solo se ve desde la principal — así que conmutarse quitaba de la
+          pantalla el único control con el que se podía volver. Ver `SelectorDeEmpresa.jsx`. */}
+      <SelectorDeEmpresa sesion={sesion} />
       {grupos.map(({ grupo, secciones }) => (
         <div className="nav-group" key={grupo.clave}>
           {/* El primer grupo no lleva etiqueta en el prototipo, y el `null` lo dice desde

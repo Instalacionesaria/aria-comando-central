@@ -79,13 +79,21 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['organizaciones.listar']);
   if (contexto instanceof Response) return contexto;
 
-  if (!contexto.organizacion.esPrincipal) {
-    return rechazo(
-      'fuera_de_la_principal',
-      'Las empresas se administran desde la organización principal. Volvé a la tuya para verlas.',
-    );
-  }
-
+  // ── LA REGLA DE «SOLO DESDE LA PRINCIPAL» SE FUE DE ACÁ, Y ES UN ARREGLO ──
+  //
+  // Estaba comprobada en este manejador, y **eso creó un encierro**. El listado no es solo la
+  // pantalla de Empresas: es también de dónde saca sus opciones el conmutador de organización.
+  // Con la regla acá, alguien conmutado a otra organización perdía las dos cosas a la vez —la
+  // pestaña Y el conmutador— y no tenía forma de volver por la interfaz.
+  //
+  // Ocurrió: el superadministrador se movió a una organización de control de la sonda, que nace
+  // inactiva, y quedó encerrado. Hubo que devolverle la sesión con una sentencia a mano.
+  //
+  // La regla sigue existiendo, y sigue siendo la que se pidió: la **pestaña Empresas** solo se
+  // ve desde la principal. Pero es una regla de coherencia de interfaz, no una barrera — la
+  // barrera es `organizaciones.listar`, que solo tiene el rol de plataforma. Ponerla en el
+  // servidor la convirtió en algo que puede dejar a alguien sin salida, y el `03` § 5 ya
+  // estableció que un estado sin salida es un defecto.
   const organizaciones = await conIdentidad(async (db) => listarOrganizaciones(db));
   return ok({ organizaciones });
 }

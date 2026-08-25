@@ -73,3 +73,36 @@
   flex-wrap: wrap;
   max-width: 100%;
 }
+
+/* ── El conmutador de empresa ─────────────────────────────────────────────── */
+
+/* `.acct` del prototipo es un botón de ancho completo con `margin-bottom`. Envolverlo en el
+   `.menu-wrap` que necesita el desplegable rompía ese margen —el margen queda en el hijo, no
+   en el envoltorio— así que se traslada. */
+.acct-wrap {
+  margin-bottom: 14px;
+}
+.acct-wrap .acct {
+  margin-bottom: 0;
+}
+/* El desplegable cuelga HACIA ABAJO, que es lo correcto acá: el botón está arriba del menú
+   lateral, y `.menu-pop` ya abre así por omisión. Solo se ajusta el ancho, porque el del
+   prototipo (230px) se sale por la derecha en una barra angosta. */
+.acct-wrap .menu-pop {
+  left: 0;
+  right: auto;
+  width: 100%;
+  min-width: 200px;
+}
+/* Y el galón gira, igual que en el menú de la cuenta. */
+.acct-wrap .acct-chev {
+  transition: transform 0.18s ease;
+}
+.acct-wrap.open .acct-chev {
+  transform: rotate(180deg);
+}
+/* Las opciones del menú pueden ser nombres largos: se dejan envolver en vez de cortarse. */
+.acct-wrap .mp-item {
+  white-space: normal;
+  line-height: 1.4;
+}

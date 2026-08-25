@@ -9,6 +9,7 @@
 // todo el sistema que lo hace— y eso merece un archivo donde se vea sin buscarlo.
 
 import type { Trx } from '../datos/capa.ts';
+import { SLUGS_DE_CONTROL } from '../deteccion/sonda.ts';
 
 /** Una organización, como la ve quien administra la plataforma. */
 export interface OrganizacionListada {
@@ -51,6 +52,21 @@ export interface OrganizacionListada {
 export async function listarOrganizaciones(db: Trx): Promise<OrganizacionListada[]> {
   const filas = await db
     .selectFrom('organizaciones as o')
+    // ── LAS DOS DE LA SONDA NO SON EMPRESAS, Y NO SE LISTAN ──────────────────
+    //
+    // `control-a` y `control-b` son INFRAESTRUCTURA: existen para que la sonda horaria pueda
+    // comprobar en producción que el aislamiento entre inquilinos de verdad funciona —se pone en
+    // una e intenta ver la fila de la otra—. Es la única señal del sistema que detecta **la fuga
+    // misma** en vez de sus alrededores, y su costo son estas dos filas.
+    //
+    // Nacen con `activa = false` a propósito, así que nadie puede entrar a ellas. Lo que faltaba
+    // era esto: **listarlas como si fueran clientes**. Aparecían con un botón «Administrar» que
+    // conmutaba la sesión a una organización inactiva, y de ahí no se salía.
+    //
+    // Se filtran por `SLUGS_DE_CONTROL`, que es la MISMA constante que usa la sonda para
+    // encontrarlas. No por «las inactivas»: una empresa cliente desactivada también lo está, y
+    // tiene que seguir viéndose — el `02` regla 7 es explícito sobre que lo apagado se ve.
+    .where('o.slug', 'not in', SLUGS_DE_CONTROL)
     .leftJoin('organizaciones_credenciales as c', 'c.org_id', 'o.id')
     .select((eb) => [
       'o.id',

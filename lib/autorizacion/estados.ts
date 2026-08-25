@@ -112,6 +112,20 @@ export const SIN_SESION_REQUERIDA: readonly Ruta[] = [...COMUN];
 export const EXENTAS_DE_ORGANIZACION_ACTIVA: readonly Ruta[] = [
   ...SIN_SESION_REQUERIDA,
   'PATCH /api/auth/sesion',
+  // ── Etapa 11 · y el encierro OCURRIÓ, tal como lo describe el comentario de arriba ──
+  //
+  // `PATCH` estaba exento, así que conmutar funcionaba. Lo que faltaba era **poder ver a
+  // dónde**: el listado de organizaciones sí estaba sujeto al paso 3, así que desde una
+  // organización inactiva la pantalla no tenía de dónde sacar las opciones. Se podía salir y
+  // no se podía saber hacia qué.
+  //
+  // Pasó de verdad el 2026-08-25: el superadministrador se conmutó a una organización de
+  // control de la sonda —que nace `activa = false` a propósito— y quedó sin salida por la
+  // interfaz. Hubo que devolverle la sesión con una sentencia a mano.
+  //
+  // Es de solo lectura y no expone datos de inquilino: devuelve nombres de organizaciones a
+  // quien ya tiene `organizaciones.listar`, que solo tiene el rol de plataforma.
+  'GET /api/admin/organizaciones',
 ];
 
 /**

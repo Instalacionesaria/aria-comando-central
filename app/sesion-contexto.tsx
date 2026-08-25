@@ -48,6 +48,9 @@ export interface DatosDeSesion {
    *  rol: `ADR-0502` dice que nadie se degrada a sí mismo, y el servidor responde 409. Ofrecer
    *  el botón para recibir ese 409 sería un control que no funciona. */
   usuarioId: string;
+  /** ¿Puede moverse entre empresas? Lo responde el SERVIDOR con la misma condición que el
+   *  endpoint que conmuta, para que el botón no ofrezca algo que va a ser rechazado. */
+  puedeCambiarDeEmpresa: boolean;
   /**
    * Las secciones que esta persona puede ver, ya filtradas por el SERVIDOR con
    * `seccionesVisibles()`.
