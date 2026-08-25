@@ -41,6 +41,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useSesion } from '../app/sesion-contexto.tsx';
+import { irALaVista } from '../lib/aios/shell.js';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 
@@ -110,42 +111,28 @@ export default function Nav() {
         </div>
       ))}
       <div className="nav-foot">
-        {/* AJUSTES VA ARRIBA DEL NOMBRE, y el orden acá ES el orden en pantalla.
-            La entrada de Ajustes era DECORATIVA en el prototipo: un `role-row` sin `data-view`,
-            así que `shell.js` no la enrutaba y clicarla no hacía nada. Ahora es una entrada
-            real, y solo aparece con `credenciales.ver`. */}
-        {enElPie.map((s) => (
-          <div
-            className={s.clave === primera ? 'nav-item on' : 'nav-item'}
-            data-view={s.clave}
-            key={s.clave}
-          >
-            <svg className="ni" viewBox="0 0 16 16">
-              <use href={s.menu.icono} />
-            </svg>
-            <span className="n">
-              {s.nombre}
-            </span>
-          </div>
-        ))}
-        {/* La fila del nombre ES el disparador del menú de la cuenta, que hasta la Etapa 11
-            vivía arriba a la derecha con un nombre escrito a mano y un «Cerrar sesión» que no
-            cerraba nada. Ver `components/MenuDeUsuario.jsx`.
+        {/* AJUSTES NO TIENE FILA PROPIA: se llega desde el desplegable de la cuenta, que es
+            justo el que está acá. Tenerlo en los dos lugares eran dos controles para lo mismo a
+            unos píxeles de distancia.
 
-            Queda ÚLTIMA, y su menú abre hacia arriba: es lo último de la barra, así que hacia
-            abajo se saldría de la pantalla. El modificador está en `app/armazon.css`.
+            Y sacar la fila obligó a arreglar el enrutado de verdad. El desplegable no enrutaba:
+            simulaba el clic de esta fila, así que sin fila el botón se apretaba y no pasaba
+            nada, en silencio. Ahora las dos cosas llaman a `irALaVista`, que es el único lugar
+            que decide qué significa abrir una pantalla. Ver `lib/aios/shell.js`.
 
-            La sección del pie se le pasa como DATO. Con la clave escrita a mano acá volvería la
-            lista paralela por la puerta de atrás: un `data-view` literal en este archivo es
+            La fila del nombre ES el disparador, y su menú abre hacia arriba: es lo último de la
+            barra, así que hacia abajo se saldría de la pantalla. El modificador está en
+            `app/armazon.css`.
+
+            La sección se le pasa como DATO. Con la clave escrita a mano acá volvería la lista
+            paralela por la puerta de atrás: un `data-view` literal en este archivo es
             exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón — el día que la
             clave cambie, el menú seguiría funcionando y este atajo no. */}
         <MenuDeUsuario
           sesion={sesion}
           seccion={enElPie[0] ?? null}
-          alIrALaSeccion={(clave) => {
-            /* Se dispara el clic de la entrada REAL del menú en vez de duplicar el enrutado:
-               así hay UN solo lugar que decide qué pasa al abrir una pantalla. */
-            document.querySelector(`.nav-item[data-view="${clave}"]`)?.click();
+          alIrALaSeccion={(clave, nombre) => {
+            irALaVista(clave, nombre);
           }}
         />
       </div>

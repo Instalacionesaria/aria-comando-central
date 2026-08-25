@@ -613,3 +613,48 @@ test('las organizaciones de la sonda NO se listan como empresas', () => {
     'el listado filtra por `activa`: una empresa cliente desactivada tiene que verse igual',
   );
 });
+
+test('Ajustes se abre desde el menú de la cuenta, sin simular el clic de una fila', () => {
+  // EL DEFECTO QUE ESTO IMPIDE ES SILENCIOSO, y estuvo a punto de ocurrir en esta misma etapa.
+  //
+  // El desplegable de la cuenta no enrutaba: hacía
+  // `document.querySelector('.nav-item[data-view="…"]')?.click()`, o sea que delegaba en la fila
+  // del menú lateral. Cuando Ajustes dejó de tener fila propia —se pidió el control en un solo
+  // lugar— ese `querySelector` habría devuelto `null`, el `?.` se lo habría tragado y el botón
+  // quedaba apretable y sin efecto. Sin excepción, sin nada en consola: exactamente la clase de
+  // control que esta etapa vino a sacar.
+  const componentes = archivosFuente(['components']);
+  const nav = componentes.find((a) => a.ruta === 'components/Nav.jsx')?.limpio;
+  assert.ok(nav, 'no se encontró Nav.jsx');
+
+  // 1 · El pie no dibuja NINGUNA fila de menú. Si vuelve, Ajustes está en dos lugares otra vez.
+  const pie = nav.slice(nav.indexOf('nav-foot'));
+  assert.ok(pie.length > 0, 'no se encontró el pie del menú');
+  assert.ok(
+    !/nav-item/.test(pie),
+    'volvió una fila de menú al pie: Ajustes estaría en dos controles a la vez',
+  );
+
+  // 2 · Y el desplegable enruta de verdad, en vez de delegar en un elemento del DOM.
+  assert.ok(/irALaVista/.test(nav), '`Nav.jsx` dejó de enrutar por `irALaVista`');
+
+  // 3 · Ningún componente vuelve a la simulación de clic. Funciona mientras la fila exista, y
+  //     calla cuando no — y qué filas existen depende de las capacidades de quien mira.
+  for (const a of componentes) {
+    assert.ok(
+      !/nav-item\[data-view[\s\S]{0,40}?click\(\)/.test(a.limpio),
+      `${a.ruta} abre una pantalla simulando el clic de una fila del menú`,
+    );
+  }
+
+  // 4 · Y las dos vías —las filas y el desplegable— pasan por la MISMA función. Si el enrutado
+  //     vuelve adentro del manejador, hay dos definiciones de «abrir una pantalla» y una se
+  //     queda atrás sin que nada falle.
+  const shell = archivosFuente(['lib']).find((a) => a.ruta === 'lib/aios/shell.js')?.limpio;
+  assert.ok(shell, 'no se encontró shell.js');
+  assert.ok(/export function irALaVista/.test(shell), '`irALaVista` dejó de estar exportada');
+  assert.ok(
+    /function initShell[\s\S]*irALaVista\(/.test(shell),
+    '`initShell` dejó de usar `irALaVista`: el enrutado volvió a estar duplicado',
+  );
+});

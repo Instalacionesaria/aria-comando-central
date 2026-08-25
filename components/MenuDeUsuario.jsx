@@ -122,7 +122,9 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
             role="menuitem"
             onClick={() => {
               setAbierto(false);
-              alIrALaSeccion?.(seccion.clave);
+              /* El nombre viaja con la clave: Ajustes ya no tiene fila en el menu lateral, asi
+                 que no hay DOM del que leerlo para la miga de pan. */
+              alIrALaSeccion?.(seccion.clave, seccion.nombre);
             }}
           >
             {seccion.nombre}
