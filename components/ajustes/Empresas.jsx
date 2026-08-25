@@ -1,23 +1,23 @@
 'use client';
 
-/* Empresas — dar de alta organizaciones y ver cuáles operan.
+/* Empresas — dar de alta organizaciones, ver cuáles operan, editarlas y eliminarlas.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * SOLO DESDE LA ORGANIZACIÓN PRINCIPAL, Y QUÉ CLASE DE REGLA ES
  *
  * Se pidió así. Y conviene decir qué protege y qué no: **no es una barrera de seguridad**. La
- * barrera es la capacidad `organizaciones.listar`, que solo tiene el rol de plataforma — la
- * migración 003 se la niega al administrador con `not like 'organizaciones.%'`. Quien no la
- * tiene no llega acá esté donde esté.
+ * barrera es la capacidad `organizaciones.listar`, que solo tiene el rol de plataforma — el
+ * reparto se la niega al administrador con `not like 'organizaciones.%'`. Quien no la tiene no
+ * llega acá esté donde esté.
  *
  * Lo que la regla evita es otra cosa, y es real: administrar la plataforma **creyendo que se
  * está dentro de una empresa cliente**. Con la sesión conmutada a otra organización, el cartel
  * permanente dice "estás mirando otra organización" y esta pantalla mostraría las veinte — dos
  * afirmaciones que se contradicen en la misma vista.
  *
- * Se comprueba también en el servidor (`app/api/admin/organizaciones/route.ts`), para que las
- * dos mitades digan lo mismo. Una regla que solo vive en la pantalla se salta con una petición
- * a mano, y entonces no era una regla.
+ * La comprobación vive SOLO acá, y eso es deliberado: en el servidor se quitó porque creaba un
+ * encierro —el listado alimenta también el conmutador, así que la regla dejaba a alguien
+ * conmutado sin pestaña *y* sin conmutador—. Ver `app/api/admin/organizaciones/route.ts`.
  *
  * ── LO QUE UN ALTA NO HACE ──────────────────────────────────────────────────
  *
@@ -28,11 +28,16 @@
  * Así que una empresa recién creada existe y NO opera. La lista lo dice en cada fila, porque
  * es la pregunta que sigue: *¿a cuál le falta conectar GoHighLevel?*
  *
- * ── EL FORMULARIO ES UNA VENTANA ────────────────────────────────────────────
+ * ── LA EMPRESA PRINCIPAL NO SE TOCA, Y NO LO DECIDE ESTA PANTALLA ───────────
  *
- * Se pidió que apareciera al apretar el botón, y hay un motivo además del pedido: el alta es
- * una operación OCASIONAL y la lista es lo que se mira siempre. Con el formulario permanente
- * arriba, lo que importa quedaba empujado hacia abajo todo el tiempo. Ver `components/Ventana.jsx`.
+ * A ARIA no se le ofrece desactivar ni eliminar. Las dos las rechaza el disparador
+ * `organizaciones_protegida` de la migración 007, con el criterio escrito ahí: *"un condicional se
+ * saltea con una sentencia a mano un domingo. Un disparador no."* Desactivarla equivaldría a
+ * apagar la plataforma entera.
+ *
+ * Tampoco se ofrece eliminar la empresa que se está administrando: quien lo hiciera se quedaría
+ * con una sesión apuntando a algo que ya no existe. Eso lo rechaza la ruta, porque la base no lo
+ * impide — `sesiones.org_activa` se pone en nulo y el borrado pasaría.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -41,6 +46,7 @@ import Ventana from '../Ventana.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede administrar empresas.',
+  sobre_si_mismo: 'No se puede eliminar la empresa que estás administrando.',
 };
 
 /** Un slug: minúsculas, números y guiones. La misma forma que valida el servidor. */
@@ -57,17 +63,32 @@ function slugDe(nombre) {
     .slice(0, 40);
 }
 
+/** El texto de un rechazo, con el detalle del servidor si lo trae. */
+function porQue(r) {
+  if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se cambió nada.';
+  if (r.tipo === 'rechazado') return r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`;
+  return `No se pudo: ${r.datos?.motivo ?? 'sin motivo'}`;
+}
+
 export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const [lista, setLista] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
+  const [aviso, setAviso] = useState(null);
+
+  // ── El alta ──
+  const [altaAbierta, setAltaAbierta] = useState(false);
   const [nombre, setNombre] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTocado, setSlugTocado] = useState(false);
   const [creando, setCreando] = useState(false);
-  const [aviso, setAviso] = useState(null);
-  /** El formulario vive en una ventana emergente: aparece al apretar «Crear empresa». */
-  const [abierta, setAbierta] = useState(false);
+
+  // ── La edición ──
+  const [editando, setEditando] = useState(null);
+  const [edNombre, setEdNombre] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const [confirmaBorrado, setConfirmaBorrado] = useState(false);
+
   const yaPedido = useRef(false);
 
   const cargar = useCallback(async () => {
@@ -93,6 +114,11 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     void cargar();
   }, [cargar]);
 
+  const recargar = useCallback(async () => {
+    yaPedido.current = false;
+    await cargar();
+  }, [cargar]);
+
   /* El slug que se ENVÍA es el que se MUESTRA.
      La primera versión mandaba el estado `slug`, que está vacío mientras nadie toque el campo
      —el valor visible sale de `slugDe(nombre)`—, así que crear sin tocar el identificador
@@ -108,20 +134,8 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     });
     setCreando(false);
 
-    if (r.tipo === 'sin_respuesta') {
-      setAviso({ mal: true, texto: 'No llegó al servidor. No se creó nada.' });
-      return;
-    }
-    if (r.tipo === 'rechazado') {
-      setAviso({ mal: true, texto: r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).` });
-      return;
-    }
-    /* Esta ruta devuelve `ok({creada:false, motivo}, 400)` para las validaciones — una forma
-       vieja que el cliente clasifica como rechazo, así que este tramo solo corre en el 201.
-       Se mira igual: si algún día la ruta devuelve 200 con `creada:false`, un «listo» acá
-       sería un éxito reportado que no ocurrió. */
-    if (r.datos?.creada === false) {
-      setAviso({ mal: true, texto: `No se creó: ${r.datos.motivo}` });
+    if (r.tipo !== 'datos' || r.datos?.creada === false) {
+      setAviso({ mal: true, texto: porQue(r) });
       return;
     }
 
@@ -132,13 +146,9 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setNombre('');
     setSlug('');
     setSlugTocado(false);
-    /* Se cierra sola al crear, y el aviso NO se pierde: se dibuja en la página cuando la ventana
-       no está. Los errores, en cambio, se quedan adentro — es donde está el campo que hay que
-       corregir, y cerrar la ventana con el nombre a medio escribir sería perder lo tipeado. */
-    setAbierta(false);
-    yaPedido.current = false;
-    await cargar();
-  }, [nombre, slug, slugTocado, cargar]);
+    setAltaAbierta(false);
+    await recargar();
+  }, [nombre, slug, slugTocado, recargar]);
 
   /* Conmutar de empresa. Es una operación REAL de la sesión, no un filtro de pantalla:
      `PATCH /api/auth/sesion` escribe `org_activa`, y a partir de ahí TODO lo que hace la
@@ -154,6 +164,76 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     },
     [alCambiarDeEmpresa],
   );
+
+  // ─── La edición ───────────────────────────────────────────────────────────
+
+  const abrirEdicion = (o) => {
+    setAviso(null);
+    setConfirmaBorrado(false);
+    setEditando(o);
+    setEdNombre(o.nombre ?? '');
+  };
+  const cerrarEdicion = () => {
+    setEditando(null);
+    setConfirmaBorrado(false);
+  };
+
+  const guardar = useCallback(async () => {
+    if (!editando) return;
+    setOcupado(true);
+    setAviso(null);
+    const r = await pedir(`/api/admin/organizaciones/${editando.id}`, {
+      metodo: 'PATCH',
+      cuerpo: { nombre: edNombre.trim() },
+    });
+    setOcupado(false);
+    if (r.tipo !== 'datos') {
+      setAviso({ mal: true, texto: porQue(r) });
+      return;
+    }
+    setAviso({ mal: false, texto: `Se guardó «${edNombre.trim()}».` });
+    cerrarEdicion();
+    await recargar();
+  }, [editando, edNombre, recargar]);
+
+  /** Activar, desactivar o borrar la empresa abierta. */
+  const accion = useCallback(
+    async (que) => {
+      if (!editando) return;
+      setOcupado(true);
+      setAviso(null);
+      const r =
+        que === 'borrar'
+          ? await pedir(`/api/admin/organizaciones/${editando.id}`, { metodo: 'DELETE' })
+          : await pedir(`/api/admin/organizaciones/${editando.id}`, {
+              metodo: 'PATCH',
+              cuerpo: { activa: que === 'activar' },
+            });
+      setOcupado(false);
+
+      if (r.tipo !== 'datos') {
+        /* El aviso se queda EN LA VENTANA: estos rechazos explican por qué no se pudo —«tiene
+           contactos cargados», «todavía tiene personas dadas de alta»— y ésa es la información
+           que dice qué hacer en su lugar. */
+        setAviso({ mal: true, texto: porQue(r) });
+        return;
+      }
+
+      setAviso({
+        mal: false,
+        texto: {
+          desactivar: `«${editando.nombre}» dejó de operar. Sus datos siguen ahí y se puede reactivar.`,
+          activar: `«${editando.nombre}» vuelve a operar.`,
+          borrar: `Se eliminó «${editando.nombre}».`,
+        }[que],
+      });
+      cerrarEdicion();
+      await recargar();
+    },
+    [editando, recargar],
+  );
+
+  // ─── Pantalla ─────────────────────────────────────────────────────────────
 
   if (situacion === 'cargando') {
     return (
@@ -176,9 +256,6 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const slugValido = SLUG.test(slugPropuesto);
   const puedeCrear = nombre.trim().length > 0 && slugValido && !creando;
 
-  /* El mismo aviso, en dos sitios posibles: adentro de la ventana mientras está abierta —donde
-     está el campo que hay que corregir— y en la página cuando se cerró. Se define una vez para
-     que las dos ubicaciones no puedan divergir. */
   const elAviso = aviso ? (
     <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
       <i>{aviso.mal ? '⚠' : '✓'}</i>
@@ -186,12 +263,8 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     </div>
   ) : null;
 
-  /* Al abrir se limpia el aviso anterior. Un «creada» de hace un rato encima del formulario de
-     la siguiente es la clase de cosa que hace dudar de si se creó una o dos. */
-  const abrir = () => {
-    setAviso(null);
-    setAbierta(true);
-  };
+  const esPrincipal = Boolean(editando?.esPrincipal);
+  const esLaQueAdministro = editando?.id === sesion?.organizacion?.id;
 
   return (
     <>
@@ -201,13 +274,20 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
         usuarios.
       </p>
 
-      {abierta ? null : elAviso}
+      {altaAbierta || editando ? null : elAviso}
 
       {/* ── La lista, con el alta en su encabezado ── */}
       <div className="card">
         <div className="card-head">
           Empresas <span className="hint">{lista.length}</span>
-          <button type="button" className="fd-btn aj-alta" onClick={abrir}>
+          <button
+            type="button"
+            className="fd-btn aj-alta"
+            onClick={() => {
+              setAviso(null);
+              setAltaAbierta(true);
+            }}
+          >
             Crear empresa
           </button>
         </div>
@@ -237,12 +317,15 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
                   `${o.usuarios} usuario(s)`
                 )}
               </div>
-              <div className="num">
+              <div className="num" style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <button type="button" className="fd-btn sec" onClick={() => abrirEdicion(o)}>
+                  Editar
+                </button>
                 {o.id === sesion?.organizacion?.id ? (
                   <span className="rs">estás acá</span>
                 ) : (
                   <button type="button" className="fd-btn sec" onClick={() => void irA(o)}>
-                    Administrar
+                    Entrar
                   </button>
                 )}
               </div>
@@ -252,11 +335,11 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
       </div>
 
       {/* ── El alta ── */}
-      {abierta ? (
+      {altaAbierta ? (
         <Ventana
           titulo="Crear una empresa"
           subtitulo="Va a existir pero NO va a operar: después hay que cargarle GoHighLevel y crearle usuarios."
-          alCerrar={() => setAbierta(false)}
+          alCerrar={() => setAltaAbierta(false)}
         >
           <div className="fd-rejilla dos">
             <div className="fd-campo">
@@ -302,10 +385,138 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
             <button type="button" className="fd-btn" disabled={!puedeCrear} onClick={() => void crear()}>
               {creando ? 'Creando…' : 'Crear empresa'}
             </button>
-            <button type="button" className="fd-btn sec" disabled={creando} onClick={() => setAbierta(false)}>
+            <button type="button" className="fd-btn sec" disabled={creando} onClick={() => setAltaAbierta(false)}>
               Cancelar
             </button>
           </div>
+        </Ventana>
+      ) : null}
+
+      {/* ── La edición ── */}
+      {editando ? (
+        <Ventana
+          titulo={editando.nombre}
+          subtitulo={
+            esPrincipal
+              ? 'Es la empresa principal de la plataforma.'
+              : `Identificador: ${editando.slug}`
+          }
+          alCerrar={cerrarEdicion}
+        >
+          <div className="fd-campo">
+            <label htmlFor="ed-emp-nombre">Nombre</label>
+            <input
+              id="ed-emp-nombre"
+              type="text"
+              value={edNombre}
+              onChange={(e) => setEdNombre(e.target.value)}
+            />
+          </div>
+          <div className="aj-ayuda">
+            El identificador corto <b>no se cambia</b>: va en direcciones, y cambiarlo rompería
+            cualquier enlace que ya exista.
+          </div>
+
+          {elAviso}
+
+          <div className="aj-fila">
+            <button
+              type="button"
+              className="fd-btn"
+              disabled={ocupado || edNombre.trim().length === 0}
+              onClick={() => void guardar()}
+            >
+              {ocupado ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button type="button" className="fd-btn sec" disabled={ocupado} onClick={cerrarEdicion}>
+              Cancelar
+            </button>
+          </div>
+
+          <div className="aj-sep" />
+
+          {esPrincipal ? (
+            <div className="aj-ayuda">
+              A la empresa principal no se la puede desactivar ni eliminar. Lo impide la base de
+              datos, no esta pantalla: desactivarla equivale a apagar la plataforma entera.
+            </div>
+          ) : (
+            <>
+              <div className="aj-fila">
+                {editando.activa ? (
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={ocupado}
+                    onClick={() => void accion('desactivar')}
+                  >
+                    Desactivar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={ocupado}
+                    onClick={() => void accion('activar')}
+                  >
+                    Reactivar
+                  </button>
+                )}
+                {esLaQueAdministro || confirmaBorrado ? null : (
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={ocupado}
+                    style={{ color: 'var(--crit)' }}
+                    onClick={() => setConfirmaBorrado(true)}
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+              <div className="aj-ayuda">
+                <b>Desactivar</b> deja la empresa sin operar y conserva todos sus datos: sus
+                usuarios no pueden entrar y sus pantallas dejan de responder. Es reversible.
+              </div>
+
+              {esLaQueAdministro ? (
+                <div className="aj-ayuda">
+                  No se puede eliminar la empresa que estás administrando: te quedarías con una
+                  sesión apuntando a algo que ya no existe. Volvé a la tuya primero.
+                </div>
+              ) : null}
+
+              {confirmaBorrado ? (
+                <div className="fd-aviso falta">
+                  <i>⚠</i>
+                  <span>
+                    <b>Eliminar no se puede deshacer.</b> Si esta empresa tiene personas, contactos
+                    o cualquier dato cargado, la base va a rechazarlo — y ahí lo que corresponde es
+                    desactivarla.
+                    <br />
+                    <button
+                      type="button"
+                      className="fd-btn"
+                      disabled={ocupado}
+                      style={{ marginTop: 8, marginRight: 7 }}
+                      onClick={() => void accion('borrar')}
+                    >
+                      {ocupado ? 'Eliminando…' : `Sí, eliminar «${editando.nombre}»`}
+                    </button>
+                    <button
+                      type="button"
+                      className="fd-btn sec"
+                      disabled={ocupado}
+                      style={{ marginTop: 8 }}
+                      onClick={() => setConfirmaBorrado(false)}
+                    >
+                      No
+                    </button>
+                  </span>
+                </div>
+              ) : null}
+            </>
+          )}
         </Ventana>
       ) : null}
     </>

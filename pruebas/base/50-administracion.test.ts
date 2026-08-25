@@ -106,6 +106,19 @@ async function limpiarTodo(): Promise<void> {
   // conviene a este archivo.
   await admin.query('update identidad.usuarios set activo = true where not activo');
   await admin.query(`delete from identidad.organizaciones where slug like 'sonda-%'`);
+  // Y el rol privado de prueba. Sin esto sobrevive entre corridas, y una prueba que lo cree con
+  // OTRAS capacidades lo reusaria tal cual: pasaria en verde midiendo el rol de la corrida
+  // anterior.
+  //
+  // Las asignaciones se borran PRIMERO, y eso lo enseño un fallo: `usuarios_roles.rol_id` es
+  // `no action`, no cascada. Borrar el rol fallaba con `23503` en cuanto una usuaria del sembrado
+  // lo tenia puesto —el sembrado no lleva la marca, asi que la limpieza de usuarios no la toca— y
+  // el error subia desde el gancho `after`, donde no se lee.
+  await admin.query(
+    `delete from identidad.usuarios_roles
+      where rol_id in (select id from identidad.roles where clave like 'gestor-%')`,
+  );
+  await admin.query(`delete from identidad.roles where clave like 'gestor-%'`);
 }
 
 /** Un usuario con roles, en la organización que se pida. */
@@ -139,6 +152,77 @@ async function usuario(opciones: {
       await db.insertInto('usuarios_roles').values({ usuario_id: u.id, rol_id: rol.id }).execute();
     }
     return { id: u.id, orgId: org.id };
+  });
+}
+
+/**
+ * EL ROL DE PRUEBA QUE SI ADMINISTRA PERSONAS.
+ *
+ * Hasta la Etapa 12 estas pruebas usaban el rol `administrador`, que tenia las cinco capacidades.
+ * Se le quitaron a pedido: en una empresa cliente, administrar personas es del rol de plataforma,
+ * y dejarselas hacia que la frontera viviera solo en la interfaz.
+ *
+ * Y `superadministrador` no sirve como reemplazo: su bandera `solo_principal` lo ata a la
+ * organizacion principal —el disparador `rol_de_plataforma_acotado` rechaza asignarlo fuera— y
+ * estas pruebas necesitan un actor DENTRO de una empresa cliente. Es lo unico que demuestra el 404
+ * entre organizaciones.
+ *
+ * Asi que se crea un rol PRIVADO de la organizacion, con las capacidades y con un nombre que **no
+ * es** «administrador». Eso no es un parche para que la suite pase: prueba algo mas fuerte que
+ * antes. Las cinco operaciones dependen de las CAPACIDADES y no de como se llame el rol, que es
+ * exactamente lo que dice `ADR-0302` y lo que ninguna prueba estaba demostrando.
+ */
+const CAPACIDADES_DEL_GESTOR = [
+  'usuarios.ver',
+  'usuarios.crear',
+  'usuarios.editar',
+  'usuarios.desactivar',
+  'usuarios.borrar',
+  // `roles.asignar` SI, y `organizaciones.listar` NO: es la combinacion que hace falta para
+  // `ADR-0504` — puede asignar roles y no puede otorgar el de plataforma.
+  'roles.asignar',
+] as const;
+
+/** Crea (o reusa) el rol privado que administra personas en esa organizacion. */
+async function rolQueAdministraPersonas(orgSlug: string): Promise<string> {
+  const clave = `gestor-${orgSlug}`;
+  await conIdentidad(async (db) => {
+    const org = await db
+      .selectFrom('organizaciones')
+      .select('id')
+      .where('slug', '=', orgSlug)
+      .executeTakeFirstOrThrow();
+    const ya = await db
+      .selectFrom('roles')
+      .select('id')
+      .where('clave', '=', clave)
+      .executeTakeFirst();
+    if (ya) return;
+    const rol = await db
+      .insertInto('roles')
+      .values({ clave, org_id: org.id, nombre: `Gestor de ${orgSlug}`, es_sistema: false })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto('roles_permisos')
+      .values(CAPACIDADES_DEL_GESTOR.map((permiso) => ({ rol_id: rol.id, permiso })))
+      .execute();
+  });
+  return clave;
+}
+
+/** Le da un rol a alguien que ya existe. Para los usuarios del sembrado. */
+async function darRol(usuarioId: string, clave: string): Promise<void> {
+  await conIdentidad(async (db) => {
+    const rol = await db
+      .selectFrom('roles')
+      .select('id')
+      .where('clave', '=', clave)
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto('usuarios_roles')
+      .values({ usuario_id: usuarioId, rol_id: rol.id })
+      .execute();
   });
 }
 
@@ -184,7 +268,7 @@ test('ADR-0501 · las CINCO operaciones responden 404 con un usuario de otra org
   const admAlfa = await usuario({
     email: 'adm-alfa@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const token = await sesion(admAlfa.id);
   // Y la víctima: un usuario de BETA.
@@ -285,7 +369,7 @@ test('ADR-0501 · y sobre un usuario PROPIO las cinco funcionan', async () => {
   const adm = await usuario({
     email: 'adm2@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const token = await sesion(adm.id);
   const propio = await usuario({ email: 'propio@alfa.ejemplo', orgSlug: 'alfa' });
@@ -328,7 +412,7 @@ test('ADR-0502 · desactivarse y degradarse a sí mismo se rechazan', async () =
   const adm = await usuario({
     email: 'adm3@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const token = await sesion(adm.id);
   const ctx = { params: Promise.resolve({ id: adm.id }) };
@@ -395,7 +479,7 @@ test('ADR-0503 · desactivar al ÚLTIMO administrador activo se rechaza', async 
   const extra = await usuario({
     email: 'extra@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const ana = await conIdentidad(async (db) =>
     db
@@ -404,6 +488,11 @@ test('ADR-0503 · desactivar al ÚLTIMO administrador activo se rechaza', async 
       .where('email', '=', 'ana@alfa.ejemplo')
       .executeTakeFirstOrThrow(),
   );
+  // `ana` viene del sembrado con el rol `administrador`, que desde la Etapa 12 **no tiene**
+  // `usuarios.crear`. Y esta regla define «administrador» por esa capacidad, no por el nombre del
+  // rol, asi que sin esto `ana` no contaria y desactivar a `extra` ya seria desactivar al ultimo:
+  // la primera mitad de la prueba daria 409 y la segunda pasaria por el motivo equivocado.
+  await darRol(ana.id, await rolQueAdministraPersonas('alfa'));
   const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
   // Con dos, desactivar a `extra` TIENE que dejar. Sin esta mitad, un manejador que rechazara
@@ -448,6 +537,8 @@ test('ADR-0503 · un usuario SIN la capacidad no cuenta como administrador', asy
       .where('email', '=', 'ana@alfa.ejemplo')
       .executeTakeFirstOrThrow(),
   );
+  // El rol del sembrado ya no administra personas, asi que `ana` necesita el que si.
+  await darRol(ana.id, await rolQueAdministraPersonas('alfa'));
   const token = await sesion(ana.id);
   const comun = await usuario({ email: 'comun@alfa.ejemplo', orgSlug: 'alfa' });
 
@@ -468,7 +559,7 @@ test('ADR-0504 · un administrador no puede otorgar el rol de plataforma — end
   const adm = await usuario({
     email: 'adm-principal@principal.ejemplo',
     orgSlug: 'principal',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('principal')],
   });
   const token = await sesion(adm.id);
   const objetivo = await usuario({ email: 'obj@principal.ejemplo', orgSlug: 'principal' });
@@ -518,7 +609,7 @@ test('ADR-0505 · restablecer cierra TODAS las sesiones del usuario', async () =
   const adm = await usuario({
     email: 'adm4@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const token = await sesion(adm.id);
   const victima = await usuario({ email: 'victima@alfa.ejemplo', orgSlug: 'alfa' });
@@ -581,7 +672,7 @@ test('ADR-0505 · y desactivar invalida la sesión SIN borrar ninguna fila', asy
   const adm = await usuario({
     email: 'adm5@alfa.ejemplo',
     orgSlug: 'alfa',
-    roles: ['administrador'],
+    roles: [await rolQueAdministraPersonas('alfa')],
   });
   const token = await sesion(adm.id);
   const objetivo = await usuario({ email: 'baja@alfa.ejemplo', orgSlug: 'alfa' });

@@ -188,7 +188,16 @@ test('ADR-0302 · ninguna comparación con un nombre de rol', () => {
   // Se busca la COMPARACIÓN, no la mención. `db/` y `db/sembrado/` nombran los roles como
   // DATOS —los `insert` de la migración 003, el tipo del sembrado— y eso es legítimo; excluir
   // `db/` entero para que esta prueba pase le sacaría a `ADR-0303` su fuente de roles.
-  const CLAVES = ['superadministrador', 'administrador'];
+  // LOS CUATRO, y hasta la Etapa 12 eran dos.
+  //
+  // La lista tenía `superadministrador` y `administrador`, o sea que un `=== 'closer'` nuevo
+  // pasaba en verde — y es el más tentador de escribir, porque «un closer solo ve su pestaña»
+  // suena a algo que se decide mirando el rol. Se decide mirando `closer.ver`.
+  //
+  // Los cuatro roles del sistema salen de una sola fuente para que agregar un quinto no deje un
+  // hueco: si mañana hay un rol nuevo y esta lista no lo nombra, la comparación que lo trate como
+  // caso especial no la detecta nadie.
+  const CLAVES = ['superadministrador', 'administrador', 'closer', 'setter'];
   const malos: string[] = [];
   for (const a of archivosFuente(['app', 'components', 'lib'])) {
     for (const clave of CLAVES) {

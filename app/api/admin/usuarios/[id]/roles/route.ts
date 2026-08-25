@@ -64,11 +64,22 @@ export async function POST(
 
     // Los roles pedidos, con su bandera. Un rol inexistente es `400` (05 § 3, tabla de
     // validaciones), no un 404: el 404 es del usuario.
-    const roles = await db
-      .selectFrom('roles')
-      .select(['id', 'clave', 'solo_principal'])
-      .where('clave', 'in', claves as string[])
-      .execute();
+    //
+    // LA LISTA VACÍA SE SALTEA LA CONSULTA, y no es una micro-optimización: es un defecto que una
+    // prueba nueva encontró. `where('clave', 'in', [])` genera `in ()`, que **no es SQL válido** —
+    // la petición moría con «syntax error at or near ")"» y desde afuera se veía como una caída.
+    //
+    // O sea que «quitarle todos los roles a alguien», que es la forma documentada de dejar a una
+    // persona sin capacidades, nunca funcionó. No se había notado porque el único caso que las
+    // pruebas ejercitaban era sobre uno mismo, y ahí `ADR-0502` rechaza tres líneas antes.
+    const roles =
+      claves.length === 0
+        ? []
+        : await db
+            .selectFrom('roles')
+            .select(['id', 'clave', 'solo_principal'])
+            .where('clave', 'in', claves as string[])
+            .execute();
 
     if (roles.length !== new Set(claves as string[]).size) {
       return ok({ asignados: false, motivo: 'rol_inexistente' }, 400);

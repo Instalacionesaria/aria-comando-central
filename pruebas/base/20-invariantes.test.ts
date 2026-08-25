@@ -341,8 +341,10 @@ test('ningún rol de aplicación puede BORRAR usuarios ni MUTAR la auditoría', 
   // demás" (09 § 2). Los disparadores de arriba son la primera; ésta es la segunda, y
   // es la que hace que la operación no llegue nunca a intentarse desde la aplicación.
   const prohibidos: Array<[string, string, string]> = [
+    // `app_identidad` sigue SIN poder borrar usuarios, y es la mitad que no se movió en la Etapa
+    // 12. La otra mitad —`app_inquilino` SÍ puede— se comprueba en la prueba de abajo, que exige
+    // además la política que la acota. Ver la migración 012.
     ['app_identidad', 'identidad.usuarios', 'DELETE'],
-    ['app_inquilino', 'identidad.usuarios', 'DELETE'],
     ['app_identidad', 'identidad.auditoria_accesos', 'UPDATE'],
     ['app_identidad', 'identidad.auditoria_accesos', 'DELETE'],
     ['app_inquilino', 'identidad.auditoria_accesos', 'UPDATE'],
@@ -364,4 +366,48 @@ test('ningún rol de aplicación puede BORRAR usuarios ni MUTAR la auditoría', 
     );
     assert.equal(f?.tiene, false, `${rol} NO tendría que tener ${privilegio} sobre ${tabla}`);
   }
+});
+
+test('borrar un usuario lo puede el INQUILINO, y solo con la política que lo acota', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESTA PRUEBA REEMPLAZA A UNA MÁS SIMPLE, Y ES MÁS FUERTE QUE ELLA
+  //
+  // Hasta la Etapa 12 la invariante era *"ningún rol de aplicación puede BORRAR usuarios"*, y se
+  // cumplía porque no había ninguna operación de borrado. Cuando se pidió una, esa invariante ya
+  // no describía lo que había que proteger: **el peligro nunca fue borrar, fue borrar a alguien de
+  // OTRA empresa.**
+  //
+  // Así que se afirma eso, en dos mitades que tienen que valer las dos:
+  //
+  //   1 · el privilegio existe SOLO en el rol cuya política filtra por organización, y
+  //   2 · esa política existe.
+  //
+  // La segunda no es un adorno. Con `force row level security` y el privilegio puesto pero sin
+  // política de `delete`, el borrado **no toca ninguna fila y no da error**: responde 404 siempre,
+  // y el síntoma sería «el botón no hace nada». Y al revés, si alguien reescribiera la política sin
+  // el `org_id`, el privilegio quedaría sin acotar y nada fallaría.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const puede = await unaFila<{ tiene: boolean }>(
+    su,
+    `select has_table_privilege('app_inquilino', 'identidad.usuarios', 'DELETE') as tiene`,
+  );
+  assert.equal(puede?.tiene, true, 'el inquilino no puede borrar usuarios: la operación no existe');
+
+  const politica = await unaFila<{ expresion: string | null }>(
+    su,
+    `select pg_get_expr(pol.polqual, pol.polrelid) as expresion
+       from pg_policy pol
+       join pg_class c on c.oid = pol.polrelid
+      where c.relname = 'usuarios'
+        and c.relnamespace = 'identidad'::regnamespace
+        and pol.polcmd = 'd'
+        and 'app_inquilino' = any (
+          select r.rolname from pg_roles r where r.oid = any (pol.polroles))`,
+  );
+  assert.ok(politica, 'no hay política de `delete` para el inquilino: el borrado no tocaría nada');
+  assert.match(
+    String(politica.expresion),
+    /org_id/,
+    'la política de borrado no menciona `org_id`: el privilegio quedó sin acotar por organización',
+  );
 });

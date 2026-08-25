@@ -72,12 +72,30 @@ test('la contraseña temporal no se puede cerrar de un descuido', () => {
     'Usuarios dejó de proteger la contraseña temporal del cierre accidental',
   );
 
-  /* Y tiene que haber una salida EXPLÍCITA mientras está en pantalla; si no, es un estado sin
-     salida, que es lo que el `03` § 5 llama defecto. */
-  const conTemporal = u.slice(u.indexOf('temporal ? ('));
-  assert.ok(
-    /onClick=\{cerrar\}/.test(conTemporal),
-    'la vista de la contraseña temporal no ofrece ningún botón para salir',
+  /* Y CADA vista de la contraseña tiene su salida explícita. Sin eso es un estado sin salida, que
+     es lo que el `03` § 5 llama defecto — y acá es peor, porque el Escape está deshabilitado a
+     propósito.
+
+     Se cuenta el PANEL (`{laTemporal}`) y no `temporal ? (`, y la diferencia la enseñó un fallo:
+     `temporal ? (` también casa con el ternario del título de la ventana, así que la cuenta daba
+     tres donde hay dos vistas. Una prueba que cuenta mal es una prueba que va a fallar sobre
+     código correcto, y ésas se terminan borrando. */
+  const paneles = (u.match(/\{laTemporal\}/g) ?? []).length;
+  assert.ok(paneles > 0, 'no se dibuja el panel de la contraseña temporal en ningún lado');
+  assert.equal(
+    (u.match(/Listo, ya la copié/g) ?? []).length,
+    paneles,
+    `se dibuja la contraseña en ${paneles} lugar(es) y no hay un botón de salida en cada uno`,
+  );
+
+  /* Y TODA ventana de este archivo protege la contraseña, no solo la que la muestra hoy.
+     El restablecimiento desde la ficha apareció después del alta, y devuelve una temporal igual:
+     si esa segunda ventana no llevara el guardia, la contraseña se perdería con un Escape. Atar la
+     cuenta al número de ventanas hace que la próxima tampoco pueda olvidarlo. */
+  assert.equal(
+    (u.match(/cerrablePorFuera=\{!temporal\}/g) ?? []).length,
+    (u.match(/<Ventana/g) ?? []).length,
+    'hay una ventana en Usuarios que no protege la contraseña temporal del cierre accidental',
   );
 });
 
@@ -101,7 +119,7 @@ test('los formularios de alta viven DENTRO de la ventana, no en la página', () 
        aparece sola al entrar a la pestaña. */
     assert.match(
       t,
-      /abierta \? \(\s*<Ventana/,
+      /[Aa]bierta \? \(\s*<Ventana/,
       `${ruta} dibuja la ventana sin mirar si está abierta`,
     );
   }

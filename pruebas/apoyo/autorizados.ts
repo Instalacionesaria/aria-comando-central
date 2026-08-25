@@ -166,6 +166,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // El catálogo de roles. Lee `identidad.roles`, que es de ese dominio. No cruza nada: los
   // roles globales no pertenecen a ninguna organización.
   'app/api/admin/roles/route.ts',
+  // ── Etapa 12 ─────────────────────────────────────────────────────────────────
+  //
+  // Editar y borrar una empresa. Es el caso simétrico del alta: la política del inquilino sobre
+  // `identidad.organizaciones` es `id = app.org_id`, o sea que desde el inquilino solo se puede
+  // tocar la organización PROPIA — y esto es exactamente lo contrario, el rol de plataforma
+  // administrando una empresa que no es la suya.
+  //
+  // Lo que lo hace aceptable no es un `where`: es que `organizaciones.editar` y
+  // `organizaciones.borrar` las tiene solo el rol de plataforma, comprobado por el portero una
+  // línea antes. El reparto del catálogo le niega al administrador la familia entera.
+  'app/api/admin/organizaciones/[id]/route.ts',
 ];
 
 /**

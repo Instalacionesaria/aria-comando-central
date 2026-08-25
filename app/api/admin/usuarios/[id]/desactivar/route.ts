@@ -37,7 +37,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
-import { ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
+import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { auditarAdministracion } from '../../../../../../lib/autenticacion/auditoria.ts';
@@ -113,22 +113,42 @@ export async function POST(
   // Y la escritura, por el DOMINIO DEL INQUILINO. Sin `where org_id`: lo pone la política
   // `usuarios_edita_inquilino`, y el 404 sale de que se tocan cero filas. Ver
   // `lib/administracion/objetivo.ts` para el mapa de los dos mecanismos.
-  const tocadas = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const r = await datos()
-      .updateTable('usuarios')
-      .set({ activo: false })
-      .where('id', '=', id)
-      .executeTakeFirst();
-    if (r.numUpdatedRows === 0n) return 0n;
+  // EL `try` NO ESTABA, Y ERA UN DEFECTO QUE UNA PRUEBA NUEVA ENCONTRÓ.
+  //
+  // El disparador `usuarios_admin_protegido` rechaza desactivar al administrador principal, con un
+  // mensaje escrito para leerse. Sin este `catch`, esa excepción se escapaba del manejador: la
+  // protección funcionaba —nadie quedaba desactivado— pero quien lo intentaba recibía un error
+  // genérico en vez del motivo, y desde la pantalla eso es indistinguible de «se cayó».
+  //
+  // O sea que la barrera existía y **el camino que la gente usa no llegaba hasta ella**. Las otras
+  // rutas de administración ya lo tenían; ésta se quedó sin él porque su escritura no puede fallar
+  // por unicidad y pareció que no hacía falta.
+  let tocadas: bigint;
+  try {
+    tocadas = await conOrganizacion(contexto.orgEfectiva, async () => {
+      const r = await datos()
+        .updateTable('usuarios')
+        .set({ activo: false })
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (r.numUpdatedRows === 0n) return 0n;
 
-    await auditarAdministracion(datos(), {
-      accion: 'usuario_desactivado',
-      actor: contexto.usuarioId,
-      objetivo: id,
-      orgId: contexto.orgEfectiva,
+      await auditarAdministracion(datos(), {
+        accion: 'usuario_desactivado',
+        actor: contexto.usuarioId,
+        objetivo: id,
+        orgId: contexto.orgEfectiva,
+      });
+      return r.numUpdatedRows;
     });
-    return r.numUpdatedRows;
-  });
+  } catch (e) {
+    // SOLO el mensaje de un disparador, discriminado por SQLSTATE y no por el texto: un error
+    // estructural nombra la tabla, y `ADR-0704` lo prohíbe.
+    const deDisparador = mensajeDeDisparador(e);
+    return deDisparador
+      ? rechazo('rechazo_de_la_base', deDisparador)
+      : rechazo('rechazo_de_la_base');
+  }
 
   if (tocadas === 0n) return rechazo('no_encontrado');
 

@@ -130,13 +130,13 @@ async function codigoDe(r: unknown): Promise<{ estado: number; codigo: string } 
 // ─── Paso 1 · ¿hay sesión? ──────────────────────────────────────────────────
 
 test('ADR-0301 · sin cookie: 401 sin_sesion', async () => {
-  const r = await exigir(peticion('GET', '/api/usuarios'), ['usuarios.ver']);
+  const r = await exigir(peticion('GET', '/api/usuarios'), ['credenciales.ver']);
   assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
 });
 
 test('ADR-0301 · con un token inventado: 401 sin_sesion', async () => {
   const r = await exigir(peticion('GET', '/api/usuarios', { token: 'no-existe' }), [
-    'usuarios.ver',
+    'credenciales.ver',
   ]);
   assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
 });
@@ -145,7 +145,7 @@ test('ADR-0301 · una sesión con `expira_el` pasado: 401', async () => {
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '-1 hour' });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await borrarSesion(s.id);
@@ -164,7 +164,7 @@ test('ADR-0301 · el TECHO ABSOLUTO: `expira_el` futuro y `expira_absoluto` pasa
     expiraAbsoluto: '-1 hour',
   });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await borrarSesion(s.id);
@@ -182,7 +182,7 @@ test('ADR-0301 · un usuario desactivado no tiene sesión, aunque la fila exista
     await conIdentidad(async (db) => {
       await db.updateTable('usuarios').set({ activo: false }).where('id', '=', u.ana.id).execute();
     });
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await conIdentidad(async (db) => {
@@ -209,7 +209,7 @@ test('ADR-0301 · cada estado restringido devuelve SU código, no `sin_permiso`'
     const s = await sesionNueva({ usuarioId: u.fundadora.id, estado });
     try {
       const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
-        'usuarios.ver',
+        'credenciales.ver',
       ]);
       assert.deepEqual(
         await codigoDe(r),
@@ -228,7 +228,7 @@ test('ADR-0301 · una sesión ACTIVA sí llega al paso de capacidades', async ()
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.equal(await codigoDe(r), null, 'una sesión activa con la capacidad tiene que pasar');
   } finally {
     await borrarSesion(s.id);
@@ -244,7 +244,7 @@ test('ADR-0301 · organización inactiva: 403 organizacion_inactiva', async () =
     await conIdentidad(async (db) => {
       await db.updateTable('organizaciones').set({ activa: false }).where('id', '=', u.ana.org).execute();
     });
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.deepEqual(await codigoDe(r), { estado: 403, codigo: 'organizacion_inactiva' });
   } finally {
     await conIdentidad(async (db) => {
@@ -254,11 +254,23 @@ test('ADR-0301 · organización inactiva: 403 organizacion_inactiva', async () =
   }
 });
 
+// LA CAPACIDAD DE MUESTRA ES `credenciales.ver`, Y ANTES ERA `usuarios.ver`.
+//
+// Este archivo mide EL PORTERO, no un permiso en particular: lo unico que necesita de la capacidad
+// que le pasa es que la actora la tenga (para los casos que pasan) o que no la tenga (para los que
+// rechazan). Cual sea es incidental.
+//
+// Se cambio porque dejo de ser incidental: la Etapa 12 le quito al rol `administrador` la familia
+// `usuarios.%` entera —administrar personas paso a ser del rol de plataforma— y con eso cuatro
+// pruebas empezaron a medir «no tiene la capacidad» creyendo medir otra cosa. La que rechaza sigue
+// usando `organizaciones.crear`, que Ana tampoco tiene y por un motivo mas viejo.
+
 // ─── Paso 5 · las capacidades ───────────────────────────────────────────────
 
 test('ADR-0302 · sin la capacidad: 403 sin_permiso', async () => {
   const u = await usuarios();
-  // Ana es `administrador`, que tiene todo MENOS `organizaciones.*`.
+  // Ana es `administrador`: desde la Etapa 12 no tiene `organizaciones.*`, ni `usuarios.*`, ni
+  // `roles.*`.
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
     const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
@@ -289,7 +301,7 @@ test('ADR-0302 · los permisos se leen EN LA PETICIÓN, no se cachean', async ()
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
     const antes = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
-      'usuarios.ver',
+      'credenciales.ver',
     ]);
     assert.equal(await codigoDe(antes), null, 'tendría que pasar antes de quitarle el rol');
 
@@ -305,7 +317,7 @@ test('ADR-0302 · los permisos se leen EN LA PETICIÓN, no se cachean', async ()
     });
 
     const despues = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
-      'usuarios.ver',
+      'credenciales.ver',
     ]);
     assert.deepEqual(
       await codigoDe(despues),
@@ -339,7 +351,7 @@ test('ADR-0206 · `org_activa` de un usuario COMÚN se ignora — es la fuga ent
   // beta como activa.
   const s = await sesionNueva({ usuarioId: u.ana.id, orgActiva: u.orgBeta });
   try {
-    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.ok(!(ctx instanceof Response), 'tendría que pasar el portero');
     assert.equal(ctx.esRolDePlataforma, false, 'ana no es rol de plataforma');
     assert.equal(
@@ -360,7 +372,7 @@ test('ADR-0206 · `org_activa` del rol de plataforma SÍ se respeta', async () =
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.fundadora.id, orgActiva: u.orgBeta });
   try {
-    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['usuarios.ver']);
+    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
     assert.ok(!(ctx instanceof Response), 'tendría que pasar el portero');
     assert.equal(ctx.esRolDePlataforma, true, 'la fundadora tiene el rol `solo_principal`');
     assert.equal(ctx.orgEfectiva, u.orgBeta);
@@ -413,7 +425,7 @@ test('ADR-0306 · una lectura NO necesita `Origin`', async () => {
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
     const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token, origen: null }), [
-      'usuarios.ver',
+      'credenciales.ver',
     ]);
     assert.equal(await codigoDe(r), null);
   } finally {
@@ -461,7 +473,7 @@ test('la renovación NO toca `expira_absoluto`, y no corre si el estado no es `a
   const activa = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '2 hours' });
   try {
     const antes = await plazos(activa.id);
-    await exigir(peticion('GET', '/api/usuarios', { token: activa.token }), ['usuarios.ver']);
+    await exigir(peticion('GET', '/api/usuarios', { token: activa.token }), ['credenciales.ver']);
     const despues = await plazos(activa.id);
     assert.ok(
       despues.expira_el > antes.expira_el,
@@ -503,7 +515,7 @@ test('la renovación NO toca `expira_absoluto`, y no corre si el estado no es `a
   const lejana = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '6 days' });
   try {
     const antes = await plazos(lejana.id);
-    await exigir(peticion('GET', '/api/usuarios', { token: lejana.token }), ['usuarios.ver']);
+    await exigir(peticion('GET', '/api/usuarios', { token: lejana.token }), ['credenciales.ver']);
     const despues = await plazos(lejana.id);
     assert.equal(
       despues.expira_el.getTime(),

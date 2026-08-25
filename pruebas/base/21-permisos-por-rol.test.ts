@@ -60,15 +60,35 @@ interface Esperado {
 const ESPERADO: Record<string, Partial<Record<'app_inquilino' | 'app_identidad', Esperado>>> = {
   organizaciones: {
     app_inquilino: { tabla: ['SELECT'], columnas: { UPDATE: ['nombre', 'zona_horaria'] } },
-    app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE'] },
+    // `DELETE` desde la Etapa 12: borrar una empresa es una operación de PLATAFORMA sobre una
+    // empresa que no es la propia, y la política del inquilino (`id = app.org_id`) solo alcanza la
+    // propia. Lo que la acota no es la política sino la capacidad `organizaciones.borrar`, que el
+    // reparto le niega al administrador junto con toda la familia `organizaciones.%`.
+    app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'] },
   },
   // Permiso POR COLUMNA: el dominio del inquilino necesita nombre y correo para
   // mostrar autores y listas. NO necesita el hash ni las marcas de bloqueo. Si una
   // consulta de negocio tuviera una inyección, el hash no está a su alcance.
   usuarios: {
     app_inquilino: {
-      columnas: { SELECT: ['id', 'org_id', 'nombre', 'email', 'activo'], UPDATE: ['nombre', 'activo'] },
+      // `DELETE` al INQUILINO y no a identidad, que es lo contrario de lo que uno esperaría, y es
+      // la decisión que más importa de la migración 012.
+      //
+      // La política del inquilino filtra por organización; la de identidad es `using (true)`. O
+      // sea que con identidad el único freno al peor fallo posible —borrar a alguien de OTRA
+      // empresa— sería un `where org_id` escrito a mano, que se puede borrar sin que nada falle.
+      // Con el inquilino ese fallo es inalcanzable: la fila no se ve, el `delete` toca cero y sale
+      // 404. Se acepta una superficie más ancha a cambio de un límite duro.
+      tabla: ['DELETE'],
+      columnas: {
+        SELECT: ['id', 'org_id', 'nombre', 'email', 'activo'],
+        // `email` desde la Etapa 12: un correo mal escrito deja a la persona sin poder entrar, y
+        // sin esta columna la única salida era borrarla y crearla de nuevo. Se otorgó la columna en
+        // vez de mover la ruta a identidad, para no perder la red de la política.
+        UPDATE: ['nombre', 'activo', 'email'],
+      },
     },
+    // Identidad sigue SIN `DELETE`. Es la mitad que no se movió, y es la que importa.
     app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE'] },
   },
   permisos: {

@@ -72,14 +72,37 @@
 -- hace daño.
 -- ═════════════════════════════════════════════════════════════════════════════
 
--- Solo `insert`. NO `update` ni `delete`, y no es cosmético: el catálogo se escribe con
--- `on conflict do nothing`, así que `insert` es todo lo que `001_catalogo.sql` necesita.
--- Un `update` de más permitiría reescribir la descripción de una capacidad existente, y un
--- `delete` permitiría borrarla — que por la cascada de `roles_permisos` desasignaría esa
--- capacidad de todos los roles del sistema, en silencio.
+-- Solo `insert` sobre las tres. NO `update`, y no es cosmético: un `update` de más
+-- permitiría reescribir la descripción de una capacidad existente.
 grant insert on identidad.permisos       to @ROL_DEL_CATALOGO@;
 grant insert on identidad.roles          to @ROL_DEL_CATALOGO@;
 grant insert on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
+
+-- ── Y `delete`, SOLO sobre el reparto ───────────────────────────────────────
+--
+-- La versión anterior de este archivo no concedía `delete` en ninguna de las tres, con este
+-- motivo escrito: *"un `delete` permitiría borrarla — que por la cascada de `roles_permisos`
+-- desasignaría esa capacidad de todos los roles del sistema, en silencio"*.
+--
+-- Ese motivo es correcto y sigue vigente, **pero es de `identidad.permisos`**, que es el
+-- catálogo. Ahí un borrado arrastra la cascada y ahí `delete` sigue negado.
+--
+-- `identidad.roles_permisos` es la tabla del reparto, y ahí un borrado es exactamente
+-- *"quitarle esta capacidad a este rol"*: la operación que hacía falta y que no existía.
+--
+-- ── QUÉ SE ARREGLA CON ESTO, PORQUE NO ES UN PERMISO DE COMODIDAD ────────────
+--
+-- Sin `delete`, `001_catalogo.sql` solo podía INSERTAR, así que el reparto **derivaba en un
+-- solo sentido**: daba capacidades y no las quitaba nunca. Un rol al que había que recortarle
+-- permisos se quedaba con los viejos, y el archivo describía un reparto que no era el real —
+-- la peor combinación, porque el archivo se lee como si fuera la verdad.
+--
+-- Con esto el reparto pasa a ser DECLARATIVO: el archivo afirma el conjunto completo de cada
+-- rol, borra lo que no corresponde e inserta lo que falta. Reejecutarlo converge.
+--
+-- El alcance sigue sin ensancharse hacia la red: `app_identidad` no recibe nada nuevo, y el
+-- rol del clúster ya podía leer y escribir el reparto entero.
+grant delete on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
 
 -- Y `select`, que hace falta para las subconsultas del reparto.
 --

@@ -63,6 +63,18 @@ export type Accion =
   | 'usuario_desactivado'
   | 'password_restablecida'
   | 'roles_asignados'
+  // ── Etapa 12 · las tres que faltaban del ciclo de vida ────────────────────────
+  //
+  // `usuario_activado` es la inversa de `usuario_desactivado`, y su ausencia dejaba el registro
+  // contando una sola mitad: se veía a quién se sacó de circulación y no a quién se devolvió.
+  //
+  // `usuario_borrado` y `organizacion_borrada` registran lo único irreversible que el sistema
+  // permite hacer. Registrarlas es lo que hace que quedar sin rastro en el negocio no signifique
+  // quedar sin rastro en ningún lado: la fila de auditoría sobrevive a la fila borrada.
+  | 'usuario_activado'
+  | 'usuario_borrado'
+  | 'organizacion_editada'
+  | 'organizacion_borrada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -144,6 +156,13 @@ export async function auditarAdministracion(
       | 'password_restablecida'
       | 'roles_asignados'
       | 'credenciales_cargadas'
+      // Etapa 12 · el resto del ciclo de vida. El `Extract` es deliberadamente una lista y no
+      // `Accion` entera: así una acción de autenticación —un `login_fallido`, por ejemplo— no se
+      // puede registrar por esta puerta, que exige un actor y un objetivo que ahí no existen.
+      | 'usuario_activado'
+      | 'usuario_borrado'
+      | 'organizacion_editada'
+      | 'organizacion_borrada'
     >;
     actor: string;
     objetivo: string;

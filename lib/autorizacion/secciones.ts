@@ -326,6 +326,14 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/admin/usuarios/[id]/desactivar/route.ts',
   'app/api/admin/usuarios/[id]/restablecer-password/route.ts',
   'app/api/admin/usuarios/[id]/roles/route.ts',
+  // ── Etapa 12 · el resto del ciclo de vida ────────────────────────────────────
+  //
+  // Reactivar, y editar o borrar una empresa. Van acá por el mismo motivo que las seis de arriba:
+  // no muestran nada, y sus capacidades son distintas entre sí (`usuarios.desactivar`,
+  // `organizaciones.editar`, `organizaciones.borrar`), así que declarar una pantalla común las
+  // pondría en conflicto con `ADR-0304`.
+  'app/api/admin/usuarios/[id]/activar/route.ts',
+  'app/api/admin/organizaciones/[id]/route.ts',
   // ── Etapa 8 ──────────────────────────────────────────────────────────────────
   // La sonda de aislamiento. La llama una tarea programada cada hora: no hay pantalla, no hay
   // persona, y su resultado va al registro de la tarea y al canal de avisos.

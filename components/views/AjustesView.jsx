@@ -14,20 +14,30 @@
  *   · **Credenciales** → `credenciales.ver`. La tienen administrador y superadministrador.
  *
  *   · **Empresas** → `organizaciones.listar` **y estar en la principal**. La capacidad solo la
- *     tiene el rol de plataforma —la migración 003 se la niega al administrador con
- *     `not like 'organizaciones.%'`— y la regla de la principal se comprueba TAMBIÉN en el
- *     servidor, así que las dos mitades dicen lo mismo.
+ *     tiene el rol de plataforma: el reparto se la niega al administrador con
+ *     `not like 'organizaciones.%'`. La regla de la principal es SOLO de interfaz —se quitó del
+ *     servidor porque creaba un encierro, ver `app/api/admin/organizaciones/route.ts`— y eso está
+ *     bien acá: la barrera es la capacidad, esto es coherencia.
  *
- *   · **Usuarios** → `organizaciones.listar`, **sin** la condición de la principal. Ésta es la
- *     desviación, y el motivo no es de interfaz: `POST /api/admin/usuarios` crea SIEMPRE en la
- *     organización ACTIVA de la sesión, decidido en la Etapa 5 con su razón escrita —*"un
- *     segundo camino sería un segundo lugar donde olvidarse el filtro"*—. Para crearle un
- *     usuario a «Cliente X» hay que estar administrando Cliente X; si la pestaña desapareciera
- *     al conmutar, no habría forma de darle usuarios a ninguna empresa que no sea la principal.
+ *   · **Usuarios** → `usuarios.ver`, **sin** la condición de la principal. Dos cosas que decir.
  *
- *     Lo esencial del pedido se respeta: la pide `organizaciones.listar`, o sea que un
- *     administrador de un cliente NO la ve. Y la pantalla dice arriba de todo en qué empresa
- *     está creando, que es el defecto que la regla venía a evitar.
+ *     La CAPACIDAD estaba mal, y era un defecto propio: preguntaba por la sección `empresas`, o
+ *     sea por `organizaciones.listar`. La sección `usuarios` existe en `secciones.ts` con su
+ *     capacidad y **nadie la consultaba**. Dos consecuencias medibles: un rol con
+ *     `organizaciones.listar` y sin `usuarios.ver` vería la pestaña y recibiría 403 de las dos
+ *     rutas que la llenan, y uno con `usuarios.ver` sin la otra no la vería teniéndola.
+ *
+ *     Y la condición de la principal NO se pone, aunque se pidiera. El motivo no es de interfaz:
+ *     editar, desactivar y borrar operan sobre la organización ACTIVA de la sesión. Si la pestaña
+ *     desapareciera al conmutar, no habría forma de administrar a la gente de ningún cliente —
+ *     y eso ya está escrito en el encabezado de `components/ajustes/Usuarios.jsx`.
+ *
+ *     Lo esencial del pedido se cumple donde importa, y desde la Etapa 12 lo hace cumplir el
+ *     SERVIDOR: el rol `administrador` perdió la familia `usuarios.%` entera, así que un
+ *     administrador de un cliente no ve la pestaña **y tampoco puede llamar a sus rutas**. Antes
+ *     lo primero era cierto y lo segundo no.
+ *
+ *     Lo que sí cambió para no obligar a conmutar: el alta lleva un selector de empresa.
  *
  * ── NO SE PREGUNTA POR EL NOMBRE DEL ROL, NI UNA VEZ ───────────────────────
  *
@@ -58,7 +68,7 @@ export default function AjustesView({ activa }) {
   const PESTANAS = [
     { clave: 'credenciales', nombre: 'Credenciales', icono: '#i-ajustes', visible: puede('credenciales') },
     { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') && enLaPrincipal },
-    { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('empresas') },
+    { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('usuarios') },
   ].filter((p) => p.visible);
 
   /* Si la pestaña activa dejó de existir —pasa al conmutar de empresa: Empresas desaparece—

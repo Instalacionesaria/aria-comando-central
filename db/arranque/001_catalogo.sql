@@ -119,7 +119,21 @@ insert into identidad.permisos (clave, descripcion) values
   -- vacío — se ve que está y se ve que no se puede.
   ('contactos.avanzar',        'Registrar el resultado de un contacto con Avanzar'),
   ('contactos.comentar',       'Escribir notas en la ficha de un contacto'),
-  ('conversaciones.responder', 'Enviar mensajes y encender o apagar el agente de un contacto')
+  ('conversaciones.responder', 'Enviar mensajes y encender o apagar el agente de un contacto'),
+
+  -- ── Etapa 12 · Borrar ──────────────────────────────────────────────────────
+  --
+  -- DOS capacidades nuevas, y no se reusan las de editar ni las de desactivar.
+  --
+  -- Desactivar es reversible y borrar no lo es, así que autorizar lo primero no puede
+  -- autorizar lo segundo: quien recibe `usuarios.desactivar` está recibiendo *"puede sacar a
+  -- alguien de circulación"*, no *"puede hacer desaparecer su rastro"*. Con una sola
+  -- capacidad para las dos, ampliar la operación ampliaría en silencio lo que ya se concedió.
+  --
+  -- Las tiene solo el superadministrador. El administrador no, por la regla del reparto de
+  -- abajo, que le niega `usuarios.%` y `organizaciones.%` completos.
+  ('usuarios.borrar',       'Eliminar una persona de la base, cuando no tiene ningún historial asociado'),
+  ('organizaciones.borrar', 'Eliminar una empresa de la base, cuando no tiene ningún dato asociado')
 
 on conflict (clave) do nothing;
 
@@ -139,57 +153,114 @@ on conflict do nothing;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 3 · El reparto
+-- 3 · El reparto, y es DECLARATIVO
 --
--- ── NO SE ESCRIBE `insert … select … from roles, permisos` ───────────────────
+-- ── POR QUÉ DEJÓ DE SER UNA LISTA DE `insert` ───────────────────────────────
 --
--- Que es la forma natural, y es la que tiene `009_fundaciones`. El problema es OTRO y es
--- peor que un rechazo: con esa forma, corrida por un rol sin política de lectura sobre esas
--- dos tablas, **los dos `select` devuelven cero filas y el `insert` entra CERO FILAS SIN
--- ERROR**. Reporta éxito y no reparte nada, y el síntoma es que todos los roles quedan sin
--- capacidades — o sea 403 en todas partes, sin una línea de error que lo explique.
+-- La versión anterior eran cuatro `insert … on conflict do nothing`, uno por rol. Funcionaba
+-- para dar capacidades y **no podía quitar ninguna**: el reparto derivaba en un solo sentido.
 --
--- Acá el rol que corre SÍ omite RLS, así que la forma natural funcionaría. Se escribe con
--- subconsultas explícitas de todas formas, para que copiar este archivo a un contexto con
--- menos permisos falle en vez de mentir.
+-- Se pagó al primer recorte real. Se pidió que el administrador dejara de administrar
+-- personas, o sea quitarle `usuarios.%` y `roles.%`. Cambiar el `where` de su `insert` no
+-- quita nada: las filas viejas siguen ahí, el rol conserva las capacidades, y **el archivo
+-- describe un reparto que no es el real** — que es peor que no describirlo, porque se lee
+-- como si fuera la verdad.
+--
+-- Ahora cada rol declara su conjunto COMPLETO: lo que no está se borra, lo que falta se
+-- inserta. Reejecutar converge, y el archivo es la fuente de verdad de quién puede qué.
+--
+-- Eso exige `delete` sobre `identidad.roles_permisos`, concedido en
+-- `002_escritura_del_catalogo.sql` — y solo sobre esa tabla, no sobre el catálogo.
+--
+-- ── POR QUÉ UN BLOQUE Y NO OCHO SENTENCIAS ──────────────────────────────────
+--
+-- Porque cada conjunto tiene que estar escrito UNA vez. Con un `delete … not in (…)` y un
+-- `insert … in (…)` sueltos, cada lista aparecería dos veces, y dos listas que tienen que
+-- coincidir son dos listas que se desincronizan: la del `delete` con una clave de menos
+-- borra una capacidad que el `insert` acaba de poner, y el rol la pierde en cada corrida.
+--
+-- Acá el conjunto se nombra una vez, en `v_reparto.permisos`, y las dos sentencias lo leen.
+--
+-- ── Y LOS DOS ADMINISTRATIVOS SE DERIVAN, NO SE ENUMERAN ────────────────────
+--
+-- `superadministrador` es *"todas"* y `administrador` es *"todas menos tres familias"*, así
+-- que se calculan sobre `identidad.permisos`. Enumerarlos obligaría a editar este archivo
+-- cada vez que se agrega una capacidad, y olvidarse no falla: deja al superadministrador sin
+-- ella y el síntoma es un 403 en una pantalla suelta.
 -- ═════════════════════════════════════════════════════════════════════════════
 
--- El closer: su pestaña, la ficha, y las tres acciones. No ve la del setter.
-insert into identidad.roles_permisos (rol_id, permiso)
-select r.id, p.clave
-  from identidad.roles r, identidad.permisos p
- where r.clave = 'closer' and r.org_id is null
-   and p.clave in ('closer.ver', 'contactos.ver', 'contactos.avanzar',
-                   'contactos.comentar', 'conversaciones.responder')
-on conflict do nothing;
+do $reparto$
+declare
+  v_reparto record;
+begin
+  for v_reparto in
+    select * from (values
+      -- Los dos operativos, enumerados: su recorte es el punto, no una consecuencia.
+      -- Cada uno tiene SU capacidad de lectura y no la del otro, y ninguno tiene
+      -- `tablero.ver` — de eso depende que un closer vea una entrada de menú y no ocho.
+      ('closer', array['closer.ver', 'contactos.ver', 'contactos.avanzar',
+                       'contactos.comentar', 'conversaciones.responder']),
+      ('setter', array['setter.ver', 'contactos.ver', 'contactos.avanzar',
+                       'contactos.comentar', 'conversaciones.responder']),
 
--- El setter: lo mismo, con su pestaña. No ve la del closer.
-insert into identidad.roles_permisos (rol_id, permiso)
-select r.id, p.clave
-  from identidad.roles r, identidad.permisos p
- where r.clave = 'setter' and r.org_id is null
-   and p.clave in ('setter.ver', 'contactos.ver', 'contactos.avanzar',
-                   'contactos.comentar', 'conversaciones.responder')
-on conflict do nothing;
+      -- El superadministrador: TODAS. El `03` § 2 lo pide sin atajo en el portero, así que
+      -- las capacidades tienen que estar cargadas en la tabla de verdad.
+      ('superadministrador', (select array_agg(clave) from identidad.permisos)),
 
--- El superadministrador recibe TODO, sin atajo en el portero. La prueba "el rol de
--- plataforma tiene todas las capacidades cargadas en la tabla" lo verifica, y sin estas
--- líneas fallaría — que es exactamente lo que tiene que pasar cuando alguien agrega una
--- capacidad y se olvida de repartirla.
-insert into identidad.roles_permisos (rol_id, permiso)
-select r.id, p.clave
-  from identidad.roles r, identidad.permisos p
- where r.clave = 'superadministrador' and r.org_id is null
-on conflict do nothing;
+      -- El administrador: todo lo de SU empresa. Se le niegan tres familias completas:
+      --
+      --   · `organizaciones.%` — no ve ni crea ni borra empresas. Es lo que lo mantiene
+      --     zonificado: sin `organizaciones.listar` no puede conmutarse a otra.
+      --   · `usuarios.%`       — no administra personas. Hasta ahora SÍ las tenía y la
+      --     frontera vivía solo en la interfaz: la pestaña se filtraba por
+      --     `organizaciones.listar`, así que no la veía, pero una petición a mano a
+      --     `POST /api/admin/usuarios` funcionaba. La regla era cosmética.
+      --   · `roles.%`          — ni asignar ni administrar. `roles.administrar` además no la
+      --     exige ninguna ruta (la barrera del rol de plataforma usa `organizaciones.listar`),
+      --     así que dejársela era una capacidad sin puerta.
+      --
+      -- Le queda lo que se pidió: credenciales, configuración, auditoría, fundaciones, los
+      -- tableros y las dos pestañas de operación con sus acciones.
+      ('administrador', (select array_agg(clave) from identidad.permisos
+                          where clave not like 'organizaciones.%'
+                            and clave not like 'usuarios.%'
+                            and clave not like 'roles.%'))
+    ) as t(rol, permisos)
+  loop
+    -- Un conjunto nulo significa que el catálogo no se pudo leer, y las dos sentencias de
+    -- abajo lo tratarían como "no hacer nada" **en silencio**: `<> all (null)` es nulo y
+    -- `= any (null)` no devuelve filas. O sea que el rol se quedaría como estaba y este
+    -- archivo reportaría éxito. Es el modo de falla que persigue todo el archivo.
+    if v_reparto.permisos is null or cardinality(v_reparto.permisos) = 0 then
+      raise exception
+        'el conjunto de capacidades de «%» salió vacío. Si es uno de los derivados, el '
+        '`select` sobre identidad.permisos devolvió cero filas: el rol que corre este '
+        'archivo no puede leer el catálogo. Ver db/arranque/002_escritura_del_catalogo.sql.',
+        v_reparto.rol;
+    end if;
 
--- El administrador: todo lo de su organización, o sea todo salvo `organizaciones.%`. Misma
--- regla que la migración 003.
-insert into identidad.roles_permisos (rol_id, permiso)
-select r.id, p.clave
-  from identidad.roles r, identidad.permisos p
- where r.clave = 'administrador' and r.org_id is null
-   and p.clave not like 'organizaciones.%'
-on conflict do nothing;
+    -- Quitar lo que ya no corresponde. Acotado a `org_id is null`: los roles privados de una
+    -- organización —la columna existe y hoy está vacía— no los reparte este archivo, y
+    -- borrarles filas sería tocar algo que no declara.
+    delete from identidad.roles_permisos rp
+     using identidad.roles r
+     where r.id = rp.rol_id
+       and r.clave = v_reparto.rol
+       and r.org_id is null
+       and rp.permiso <> all (v_reparto.permisos);
+
+    -- Y poner lo que falta. Con subconsultas explícitas sobre las dos tablas: si alguien
+    -- copia este archivo a un contexto sin lectura, el `insert` entra cero filas y el bloque
+    -- de comprobación del final lo grita, en vez de que la falta pase inadvertida.
+    insert into identidad.roles_permisos (rol_id, permiso)
+    select r.id, p.clave
+      from identidad.roles r, identidad.permisos p
+     where r.clave = v_reparto.rol and r.org_id is null
+       and p.clave = any (v_reparto.permisos)
+    on conflict do nothing;
+  end loop;
+end
+$reparto$;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
@@ -209,6 +280,7 @@ declare
   v_sin_capacidades text;
   v_faltan          int;
   v_falta_rol       text;
+  v_sobran          text;
 begin
   -- ── PRIMERO: QUE LOS ROLES EXISTAN ─────────────────────────────────────────
   --
@@ -303,6 +375,46 @@ begin
     raise exception
       'un rol operativo recibió `tablero.ver`: vería los siete tableros del prototipo además '
       'de su pestaña.';
+  end if;
+
+  -- ── LA FRONTERA DEL ADMINISTRADOR ──────────────────────────────────────────
+  --
+  -- Se pidió que el administrador vea credenciales y NO Empresas ni Usuarios. Que no las vea
+  -- ya se cumplía en la interfaz; lo que faltaba es que el servidor lo haga cumplir.
+  --
+  -- Se verifica acá y no solo en la suite porque este archivo es lo que corre contra
+  -- producción: la suite mide la base local. Si el reparto declarativo no borró las filas
+  -- viejas —porque falta el `delete` del 002, por ejemplo— esto tiene que fallar en el
+  -- despliegue, no descubrirse leyendo la tabla tres semanas después.
+  select string_agg(rp.permiso, ', ' order by rp.permiso)
+    into v_sobran
+    from identidad.roles r
+    join identidad.roles_permisos rp on rp.rol_id = r.id
+   where r.clave = 'administrador' and r.org_id is null
+     and (rp.permiso like 'organizaciones.%'
+       or rp.permiso like 'usuarios.%'
+       or rp.permiso like 'roles.%');
+
+  if v_sobran is not null then
+    raise exception
+      'el administrador conserva capacidades que no le corresponden: %. El reparto '
+      'declarativo no borró las filas viejas — comprobá que el rol que corre este archivo '
+      'tenga `delete` sobre identidad.roles_permisos (db/arranque/002_escritura_del_catalogo.sql).',
+      v_sobran;
+  end if;
+
+  -- Y la otra mitad, que es la que se rompe por exceso de celo: quitarle de más lo deja sin
+  -- Ajustes entero. TODA la pantalla de Ajustes cuelga de `credenciales.ver` —es la única
+  -- sección de Ajustes con entrada de menú— así que sin esa capacidad el administrador no
+  -- tiene dónde cargar el token de su CRM, que es lo único que se pidió que sí pudiera hacer.
+  if not exists (
+    select 1 from identidad.roles r
+      join identidad.roles_permisos rp on rp.rol_id = r.id
+     where r.clave = 'administrador' and r.org_id is null and rp.permiso = 'credenciales.ver'
+  ) then
+    raise exception
+      'el administrador quedó sin `credenciales.ver`: se queda sin la pantalla de Ajustes '
+      'completa, que es lo único que se pidió que sí pudiera ver.';
   end if;
 end
 $comprobar$;

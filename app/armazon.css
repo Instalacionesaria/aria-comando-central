@@ -238,3 +238,12 @@
 .card-head .hint + .aj-alta {
   margin-left: 0;
 }
+
+/* Un separador dentro de una ventana. Reusa el grosor y el color de `.mp-sep` del prototipo —el
+   de los desplegables— porque es la misma idea: partir una lista en dos mitades. Lo único que
+   cambia es el margen, que ahí era de 4px para un menú angosto. */
+.aj-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}

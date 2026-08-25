@@ -39,6 +39,12 @@ export const CAPACIDADES = [
   'usuarios.crear',
   'usuarios.editar',
   'usuarios.desactivar',
+  // Borrar NO es desactivar, y por eso es su propia capacidad en vez de reusar la de arriba.
+  // Desactivar es reversible; esto no. Conceder «puede sacar a alguien de circulación» no puede
+  // conceder de paso «puede hacer desaparecer su rastro», o ampliar la operación ampliaría en
+  // silencio lo que ya se había autorizado. La tiene solo el rol de plataforma.
+  'usuarios.borrar',
+  'organizaciones.borrar',
   'roles.asignar',
   'credenciales.ver',
   'credenciales.editar',
