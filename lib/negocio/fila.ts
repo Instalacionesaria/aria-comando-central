@@ -143,6 +143,19 @@ export interface Fila {
    */
   situacion: Situacion;
   /**
+   * Las etiquetas CRUDAS del CRM, tal como vinieron.
+   *
+   * Viajan con la fila porque de ellas salen las cinco colas de Mi Día y las siete columnas del
+   * Pipeline, y el `01` es explícito sobre por qué se cargan una sola vez: *"los seis íconos se
+   * cargan una sola vez para todos, y viajan con cada contacto en cada cola. Por eso se ven
+   * iguales en Mi Día, en el Pipeline y en la ficha: **es el mismo dato, no tres cálculos que
+   * coinciden**"*.
+   *
+   * Y sirven para lo que nada más sirve: diagnosticar por qué un contacto cayó donde cayó, que
+   * es la primera pregunta cuando alguien dice "éste no va acá".
+   */
+  etiquetas: string[];
+  /**
    * ¿El CRM lo marcó como estancado?
    *
    * NO va en la píldora. El `11` § 7.1 es explícito: *"la situación real, nunca una condición
@@ -179,6 +192,19 @@ export type Situacion =
 const POR_PAGINA = 100;
 
 /**
+ * El tope cuando se piden TODAS (Mi Día y el Pipeline).
+ *
+ * 5.000 y no infinito. Con la subcuenta real —124 contactos de closer— sobra por mucho, y a la
+ * vez impide que una organización grande traiga todo a memoria y a la respuesta HTTP de una
+ * sola vez.
+ *
+ * Si se alcanza, `hayMas` queda en `true` y **quien llama tiene que decirlo**. Un corte
+ * silencioso acá sería peor que en la lista paginada: en el Pipeline haría que el contador y
+ * las columnas discrepen, que es exactamente el defecto que el `02` regla 2 describe.
+ */
+const TOPE_SIN_PAGINAR = 5000;
+
+/**
  * Las filas de una pestaña, con sus seis íconos.
  *
  * ── UNA CONSULTA, NO N+1 ────────────────────────────────────────────────────
@@ -197,9 +223,25 @@ const POR_PAGINA = 100;
  */
 export async function filasDeTerritorio(
   territorio: Territorio,
-  opciones: { pagina?: number } = {},
+  opciones: { pagina?: number; todas?: boolean } = {},
 ): Promise<{ filas: Fila[]; hayMas: boolean }> {
   const pagina = Math.max(0, Math.trunc(opciones.pagina ?? 0));
+
+  /* `todas` trae el territorio COMPLETO sin paginar, y existe para Mi Día y el Pipeline.
+   *
+   * El `01` § "Cómo se arma todo esto" lo pide así: *"los seis íconos se cargan una sola vez
+   * para todos, y viajan con cada contacto en cada cola. Por eso se ven iguales en Mi Día, en
+   * el Pipeline y en la ficha: **es el mismo dato, no tres cálculos que coinciden**"*.
+   *
+   * Y el `02` es más terminante: *"el Pipeline son TODOS los contactos del territorio... Si un
+   * contacto del territorio no aparece en ninguna columna, hay un defecto"*. Con páginas, un
+   * contacto de la página 2 no aparecería en ninguna columna — y el contador lo contaría.
+   *
+   * El tope sigue existiendo, más alto: `TOPE_SIN_PAGINAR`. No es una paginación disfrazada; es
+   * un freno para que una organización con decenas de miles de contactos no traiga todo a
+   * memoria de una vez. Si se alcanza, `hayMas` queda en `true` y quien llama tiene que
+   * decirlo, igual que en la paginación normal.
+   */
 
   // Se piden UNA MÁS que las que caben. Es cómo se sabe si hay más página sin pagar un
   // `count(*)` sobre toda la tabla — que con RLS encima es la consulta más cara de la lista.
@@ -291,15 +333,16 @@ export async function filasDeTerritorio(
     // `null`— pueden salir en orden distinto en cada pedido, y la paginación repite o se
     // saltea filas sin que nada falle.
     .orderBy('c.id', 'asc')
-    .limit(POR_PAGINA + 1)
-    .offset(pagina * POR_PAGINA)
+    .limit((opciones.todas ? TOPE_SIN_PAGINAR : POR_PAGINA) + 1)
+    .offset(opciones.todas ? 0 : pagina * POR_PAGINA)
     .execute();
 
-  const hayMas = crudas.length > POR_PAGINA;
+  const cabe = opciones.todas ? TOPE_SIN_PAGINAR : POR_PAGINA;
+  const hayMas = crudas.length > cabe;
 
   return {
     hayMas,
-    filas: crudas.slice(0, POR_PAGINA).map((f) => ({
+    filas: crudas.slice(0, cabe).map((f) => ({
       id: f.id,
       nombre: f.nombre,
       telefono: f.telefono,
@@ -310,6 +353,7 @@ export async function filasDeTerritorio(
       ultimoEntranteTexto: f.ultimo_entrante_texto,
       ultimoSalienteEl: f.ultimo_saliente_el,
       situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
+      etiquetas: f.etiquetas ?? [],
       estancado: (f.etiquetas ?? []).includes(ESTANCADO),
       iconos: {
         // `count(*)` de PostgreSQL vuelve como `bigint`, y el controlador lo entrega en
