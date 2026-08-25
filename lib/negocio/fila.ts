@@ -37,6 +37,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { armarPildora, type Pildora } from './pildora.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
   CITA_AGENDADA,
@@ -119,8 +120,22 @@ export interface SeisIconos {
 /** Una fila de la lista, con todo lo que el `11` § 7.1 pide dibujar. */
 export interface Fila {
   id: string;
+  /**
+   * El identificador del contacto EN EL CRM.
+   *
+   * Viaja porque el encabezado de la ficha tiene un botón «Ver en GoHighLevel», y sin esto la
+   * pantalla no tendría con qué armar el enlace. No es un secreto: es el mismo identificador
+   * que se ve en la barra de direcciones del CRM.
+   *
+   * **Puede ser nulo**, y no por descuido: la fila huérfana —un resultado cuyo contacto ya no
+   * está en la caché— no sabe cuál era. Ahí el botón «Ver en GoHighLevel» **no se dibuja**,
+   * que es distinto de dibujarlo apuntando a una dirección inventada.
+   */
+  ghlContactId: string | null;
   nombre: string;
   telefono: string | null;
+  /** Para el grupo «Detalles» del Perfil. La lista no lo dibuja. */
+  email: string | null;
   /** La letra de calificación. `null` → la fila dibuja `—`. Nada la calcula todavía. */
   score: string | null;
   /**
@@ -142,6 +157,14 @@ export interface Fila {
    * que se calculan en el cliente con las fechas de arriba.
    */
   situacion: Situacion;
+  /**
+   * El texto y el color de la píldora, ya armados. `null` = sin resultado registrado, y entonces
+   * **no se dibuja ninguna** — no es un estado, es que nadie midió todavía.
+   *
+   * Viaja armada y no en piezas para que la fila y la ficha no puedan formatearla distinto. Ver
+   * `lib/negocio/pildora.ts`.
+   */
+  pildora: Pildora | null;
   /**
    * Las etiquetas CRUDAS del CRM, tal como vinieron.
    *
@@ -205,53 +228,114 @@ const POR_PAGINA = 100;
 const TOPE_SIN_PAGINAR = 5000;
 
 /**
- * Las filas de una pestaña, con sus seis íconos.
+ * De la fila cruda de la consulta a la `Fila` que ve el cliente.
  *
- * ── UNA CONSULTA, NO N+1 ────────────────────────────────────────────────────
+ * Está nombrada por el mismo motivo que `conLosSeisIconos`: la usan las dos lecturas —el
+ * territorio y el contacto suelto— y **el mapeo es donde vive la mitad de las decisiones**. El
+ * `Number()` de los conteos, el `Boolean()` de los `exists`, y las dos fuentes que se combinan
+ * en dos de los íconos son todas reglas que tenían que quedar en un solo lugar.
  *
- * Los seis íconos son seis agregados sobre cinco tablas distintas. Escrito como "traigo los
- * contactos y después por cada uno cuento sus citas" son 6·N consultas, y con 100 filas eso
- * son 600 viajes dentro de una transacción — el tipo de cosa que funciona con datos de prueba
- * y se cae con datos reales.
- *
- * Van como subconsultas correlacionadas en la misma sentencia. Y hay una razón de corrección
- * además de la de velocidad: **todo pasa por la misma transacción, así que todo ve el mismo
- * `app.org_id`**. Seis consultas sueltas son seis oportunidades de que una se escape del
- * contexto, y una que se escape no falla: devuelve cero filas.
- *
- * @param territorio  `'closer'` o `'setter'`. El filtro de negocio del § 8.
+ * Escrita a mano y no con un tipo derivado: los nombres cambian de `snake_case` a `camelCase`
+ * a propósito — la base y el cliente son dos vocabularios, y traducir en un solo punto es lo
+ * que permite renombrar una columna sin tocar la pantalla.
  */
-export async function filasDeTerritorio(
-  territorio: Territorio,
-  opciones: { pagina?: number; todas?: boolean } = {},
-): Promise<{ filas: Fila[]; hayMas: boolean }> {
-  const pagina = Math.max(0, Math.trunc(opciones.pagina ?? 0));
+function aFila(f: {
+  id: string;
+  ghl_contact_id: string;
+  nombre: string;
+  telefono: string | null;
+  email: string | null;
+  score: string | null;
+  fuente: string;
+  etapa: string | null;
+  ultimo_entrante_el: Date | null;
+  ultimo_entrante_texto: string | null;
+  ultimo_saliente_el: Date | null;
+  etiquetas: string[] | null;
+  reuniones_tenidas: string | null;
+  cita_futura: unknown;
+  llamadas_contestadas: string | null;
+  seguimiento_abierto: unknown;
+  monto_venta: string | null;
+  ultima_salida: string | null;
+  ultimo_detalle: string | null;
+  ultima_forma_pago: string | null;
+  ultimo_monto: string | null;
+}): Fila {
+  return {
+    id: f.id,
+    ghlContactId: f.ghl_contact_id,
+    nombre: f.nombre,
+    telefono: f.telefono,
+    email: f.email,
+    score: f.score,
+    fuente: f.fuente,
+    etapa: f.etapa,
+    ultimoEntranteEl: f.ultimo_entrante_el,
+    ultimoEntranteTexto: f.ultimo_entrante_texto,
+    ultimoSalienteEl: f.ultimo_saliente_el,
+    situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
+    // LA PÍLDORA LA CALCULA EL SERVIDOR, igual que los seis íconos, y por el mismo motivo: así la
+    // fila y la ficha reciben **el mismo objeto**, y el espejo que el `02` exige es cierto por
+    // construcción en vez de por coincidencia entre dos diccionarios.
+    pildora: armarPildora({
+      situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
+      detalle: f.ultimo_detalle,
+      formaPago: f.ultima_forma_pago,
+      monto: f.ultimo_monto,
+    }),
+    etiquetas: f.etiquetas ?? [],
+    estancado: (f.etiquetas ?? []).includes(ESTANCADO),
+    iconos: {
+      // `count(*)` de PostgreSQL vuelve como `bigint`, y el controlador lo entrega en
+      // texto para no perder precisión. Un `Number()` acá es seguro —no hay contacto con
+      // 2^53 reuniones— pero pasarlo tal cual haría que el cliente reciba `"3"` y que
+      // `n > 0` sea cierto para `"0"`.
+      reunionesTenidas: Number(f.reuniones_tenidas ?? 0),
+      // `Boolean(` y no el valor tal cual: kysely tipa `exists` como `SqlBool`, que admite
+      // `0`/`1` además de booleanos porque otros motores devuelven eso. PostgreSQL devuelve
+      // un booleano de verdad, pero dejar pasar el tipo ancho haría que el cliente pudiera
+      // recibir un `0` —que en JSON es falso al evaluarlo, y verdadero si alguien compara
+      // con `!== false`.
+      // La tabla O la etiqueta. Ver los comentarios de los campos.
+      citaFutura: Boolean(f.cita_futura) || (f.etiquetas ?? []).includes(CITA_AGENDADA),
+      llamadasContestadas: Number(f.llamadas_contestadas ?? 0),
+      estadoAgente: estadoDelAgente(f.etiquetas ?? []),
+      seguimientoAbierto:
+        Boolean(f.seguimiento_abierto) || (f.etiquetas ?? []).includes(SEGUIMIENTO_AUTOMATICO),
+      montoVenta: f.monto_venta,
+    },
+  };
+}
 
-  /* `todas` trae el territorio COMPLETO sin paginar, y existe para Mi Día y el Pipeline.
-   *
-   * El `01` § "Cómo se arma todo esto" lo pide así: *"los seis íconos se cargan una sola vez
-   * para todos, y viajan con cada contacto en cada cola. Por eso se ven iguales en Mi Día, en
-   * el Pipeline y en la ficha: **es el mismo dato, no tres cálculos que coinciden**"*.
-   *
-   * Y el `02` es más terminante: *"el Pipeline son TODOS los contactos del territorio... Si un
-   * contacto del territorio no aparece en ninguna columna, hay un defecto"*. Con páginas, un
-   * contacto de la página 2 no aparecería en ninguna columna — y el contador lo contaría.
-   *
-   * El tope sigue existiendo, más alto: `TOPE_SIN_PAGINAR`. No es una paginación disfrazada; es
-   * un freno para que una organización con decenas de miles de contactos no traiga todo a
-   * memoria de una vez. Si se alcanza, `hayMas` queda en `true` y quien llama tiene que
-   * decirlo, igual que en la paginación normal.
-   */
-
-  // Se piden UNA MÁS que las que caben. Es cómo se sabe si hay más página sin pagar un
-  // `count(*)` sobre toda la tabla — que con RLS encima es la consulta más cara de la lista.
-  const crudas = await datos()
+/**
+ * La consulta con los seis íconos, SIN filtro y SIN orden.
+ *
+ * ── POR QUÉ ESTO SALIÓ A UNA FUNCIÓN ────────────────────────────────
+ *
+ * La ficha necesita los seis íconos de UN contacto, y `filasDeTerritorio` solo sabe traer un
+ * territorio entero. Las dos salidas fáciles eran malas:
+ *
+ *   · **Reescribir las subconsultas** para el caso de uno. Serían dos implementaciones de los
+ *     mismos seis agregados, y el encabezado de este archivo ya cuenta lo que pasó la última
+ *     vez que hubo dos: `count(*)` en un lado y `count(*) where contestada` en el otro, y el
+ *     mismo contacto decía dos cosas distintas según dónde se lo mirara.
+ *   · **Pasarle la fila que el cliente ya tiene.** Funciona hasta que la ficha se abre desde
+ *     algo que no la tiene —el Pipeline, una pantalla de auditoría— y entonces abre vacía.
+ *
+ * Así que el `select` se nombra una vez y los dos lo usan. Los constructores de kysely son
+ * inmutables, así que agregarle `where` y `orderBy` después no toca esta definición.
+ */
+function conLosSeisIconos() {
+  return datos()
     .selectFrom('contactos as c')
-    .where('c.territorio', '=', territorio)
     .select((eb) => [
       'c.id',
+      // El identificador del CRM, para el enlace del encabezado de la ficha.
+      'c.ghl_contact_id',
       'c.nombre',
       'c.telefono',
+      'c.email',
       'c.score',
       'c.fuente',
       'c.etapa',
@@ -324,7 +408,103 @@ export async function filasDeTerritorio(
         .limit(1)
         .select('resultados.salida')
         .as('ultima_salida'),
-    ])
+
+      // Y las TRES piezas de la subcategoría de la píldora, del MISMO resultado que la línea de
+      // arriba: las cuatro subconsultas tienen el mismo `where`, el mismo orden y el mismo
+      // `limit 1`, así que resuelven a la misma fila.
+      //
+      // Cuatro subconsultas y no una unión lateral, que sería más corta: el índice
+      // `resultados_por_contacto (org_id, contacto_id, creado_el desc)` las convierte en cuatro
+      // búsquedas de una fila cada una, y la forma repetida es la del resto del archivo. Una
+      // lateral acá sería la única construcción distinta en el archivo, y el `08` § 2 pide
+      // consistencia por encima de brevedad cuando el coste es el mismo.
+      //
+      // No se reusa `monto_venta` para esto: ése es «el monto de la última VENTA», que puede ser
+      // una fila distinta del último resultado. Confundirlos pondría el monto de una venta vieja
+      // en la píldora de un no-show.
+      eb
+        .selectFrom('resultados')
+        .whereRef('resultados.contacto_id', '=', 'c.id')
+        .orderBy('resultados.creado_el', 'desc')
+        .limit(1)
+        .select('resultados.detalle')
+        .as('ultimo_detalle'),
+      eb
+        .selectFrom('resultados')
+        .whereRef('resultados.contacto_id', '=', 'c.id')
+        .orderBy('resultados.creado_el', 'desc')
+        .limit(1)
+        .select('resultados.forma_pago')
+        .as('ultima_forma_pago'),
+      eb
+        .selectFrom('resultados')
+        .whereRef('resultados.contacto_id', '=', 'c.id')
+        .orderBy('resultados.creado_el', 'desc')
+        .limit(1)
+        .select('resultados.monto')
+        .as('ultimo_monto'),
+    ]);
+}
+
+/**
+ * UN contacto con sus seis íconos, para la ficha.
+ *
+ * Sin filtro de territorio, y es deliberado: la ficha se abre desde las tres pantallas del
+ * closer, desde las del setter y desde la auditoría, y el mismo contacto **cambia de
+ * territorio** cuando agenda. Filtrar acá haría que la ficha de un contacto que acaba de pasar
+ * a `closer` abriera vacía para el setter que lo agendó — y sin ningún error.
+ *
+ * La barrera es la capacidad `contactos.ver`, que tienen los dos roles, más el aislamiento por
+ * fila: `undefined` significa «no existe en ESTA organización», que es lo que corresponde.
+ */
+export async function filaDeContacto(contactoId: string): Promise<Fila | undefined> {
+  const cruda = await conLosSeisIconos().where('c.id', '=', contactoId).executeTakeFirst();
+  return cruda ? aFila(cruda) : undefined;
+}
+
+/**
+ * Las filas de una pestaña, con sus seis íconos.
+ *
+ * ── UNA CONSULTA, NO N+1 ────────────────────────────────────────────────────
+ *
+ * Los seis íconos son seis agregados sobre cinco tablas distintas. Escrito como "traigo los
+ * contactos y después por cada uno cuento sus citas" son 6·N consultas, y con 100 filas eso
+ * son 600 viajes dentro de una transacción — el tipo de cosa que funciona con datos de prueba
+ * y se cae con datos reales.
+ *
+ * Van como subconsultas correlacionadas en la misma sentencia. Y hay una razón de corrección
+ * además de la de velocidad: **todo pasa por la misma transacción, así que todo ve el mismo
+ * `app.org_id`**. Seis consultas sueltas son seis oportunidades de que una se escape del
+ * contexto, y una que se escape no falla: devuelve cero filas.
+ *
+ * @param territorio  `'closer'` o `'setter'`. El filtro de negocio del § 8.
+ */
+export async function filasDeTerritorio(
+  territorio: Territorio,
+  opciones: { pagina?: number; todas?: boolean } = {},
+): Promise<{ filas: Fila[]; hayMas: boolean }> {
+  const pagina = Math.max(0, Math.trunc(opciones.pagina ?? 0));
+
+  /* `todas` trae el territorio COMPLETO sin paginar, y existe para Mi Día y el Pipeline.
+   *
+   * El `01` § "Cómo se arma todo esto" lo pide así: *"los seis íconos se cargan una sola vez
+   * para todos, y viajan con cada contacto en cada cola. Por eso se ven iguales en Mi Día, en
+   * el Pipeline y en la ficha: **es el mismo dato, no tres cálculos que coinciden**"*.
+   *
+   * Y el `02` es más terminante: *"el Pipeline son TODOS los contactos del territorio... Si un
+   * contacto del territorio no aparece en ninguna columna, hay un defecto"*. Con páginas, un
+   * contacto de la página 2 no aparecería en ninguna columna — y el contador lo contaría.
+   *
+   * El tope sigue existiendo, más alto: `TOPE_SIN_PAGINAR`. No es una paginación disfrazada; es
+   * un freno para que una organización con decenas de miles de contactos no traiga todo a
+   * memoria de una vez. Si se alcanza, `hayMas` queda en `true` y quien llama tiene que
+   * decirlo, igual que en la paginación normal.
+   */
+
+  // Se piden UNA MÁS que las que caben. Es cómo se sabe si hay más página sin pagar un
+  // `count(*)` sobre toda la tabla — que con RLS encima es la consulta más cara de la lista.
+  const crudas = await conLosSeisIconos()
+    .where('c.territorio', '=', territorio)
     // Por actividad entrante, y los que nunca escribieron al final. `nulls last` explícito:
     // en PostgreSQL `desc` pone los nulos PRIMERO por omisión, así que sin esto la lista
     // arranca con los contactos que nunca dijeron nada.
@@ -340,40 +520,5 @@ export async function filasDeTerritorio(
   const cabe = opciones.todas ? TOPE_SIN_PAGINAR : POR_PAGINA;
   const hayMas = crudas.length > cabe;
 
-  return {
-    hayMas,
-    filas: crudas.slice(0, cabe).map((f) => ({
-      id: f.id,
-      nombre: f.nombre,
-      telefono: f.telefono,
-      score: f.score,
-      fuente: f.fuente,
-      etapa: f.etapa,
-      ultimoEntranteEl: f.ultimo_entrante_el,
-      ultimoEntranteTexto: f.ultimo_entrante_texto,
-      ultimoSalienteEl: f.ultimo_saliente_el,
-      situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
-      etiquetas: f.etiquetas ?? [],
-      estancado: (f.etiquetas ?? []).includes(ESTANCADO),
-      iconos: {
-        // `count(*)` de PostgreSQL vuelve como `bigint`, y el controlador lo entrega en
-        // texto para no perder precisión. Un `Number()` acá es seguro —no hay contacto con
-        // 2^53 reuniones— pero pasarlo tal cual haría que el cliente reciba `"3"` y que
-        // `n > 0` sea cierto para `"0"`.
-        reunionesTenidas: Number(f.reuniones_tenidas ?? 0),
-        // `Boolean(` y no el valor tal cual: kysely tipa `exists` como `SqlBool`, que admite
-        // `0`/`1` además de booleanos porque otros motores devuelven eso. PostgreSQL devuelve
-        // un booleano de verdad, pero dejar pasar el tipo ancho haría que el cliente pudiera
-        // recibir un `0` —que en JSON es falso al evaluarlo, y verdadero si alguien compara
-        // con `!== false`.
-        // La tabla O la etiqueta. Ver los comentarios de los campos.
-        citaFutura: Boolean(f.cita_futura) || (f.etiquetas ?? []).includes(CITA_AGENDADA),
-        llamadasContestadas: Number(f.llamadas_contestadas ?? 0),
-        estadoAgente: estadoDelAgente(f.etiquetas ?? []),
-        seguimientoAbierto:
-          Boolean(f.seguimiento_abierto) || (f.etiquetas ?? []).includes(SEGUIMIENTO_AUTOMATICO),
-        montoVenta: f.monto_venta,
-      },
-    })),
-  };
+  return { hayMas, filas: crudas.slice(0, cabe).map(aFila) };
 }

@@ -338,6 +338,10 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 function filaHuerfana(id: string): Fila {
   return {
     id,
+    // No se sabe cuál era su identificador en el CRM: el contacto ya no está en la caché. Nulo
+    // para que la ficha NO dibuje el enlace, en vez de armar uno que lleva a ninguna parte.
+    ghlContactId: null,
+    email: null,
     nombre: 'Contacto que ya no está en el pipeline',
     telefono: null,
     score: null,
@@ -348,6 +352,9 @@ function filaHuerfana(id: string): Fila {
     ultimoEntranteTexto: null,
     ultimoSalienteEl: null,
     situacion: 'sin_resultado',
+    // Sin resultado no hay pildora, y esa es la respuesta correcta para una fila huerfana: el
+    // contacto ya no esta en la cache, asi que no se sabe en que estado quedo.
+    pildora: null,
     estancado: false,
     iconos: {
       reunionesTenidas: 0,

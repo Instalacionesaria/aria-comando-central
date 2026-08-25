@@ -306,3 +306,47 @@ export async function etiquetasDeLaSubcuenta(acceso: {
     .map((t) => (typeof t?.name === 'string' ? t.name : null))
     .filter((n): n is string => n !== null);
 }
+
+/**
+ * UN contacto por su identificador. `GET /contacts/{id}`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * PARA QUÉ EXISTE, Y POR QUÉ ES LA ÚNICA LLAMADA QUE CUESTA ABRIR UNA FICHA
+ *
+ * Todo lo que la ficha muestra sale de la caché: cero llamadas al CRM por pestaña, por mensaje y
+ * por ícono. La excepción es la apertura, y es deliberada.
+ *
+ * El estado del agente, la cita agendada y el seguimiento automático **se derivan de las
+ * etiquetas**, y las etiquetas las mantiene una sincronización que hoy corre cuando alguien
+ * aprieta un botón. Sin refrescar al abrir, la ficha diría «el bot está apagado» leyendo una
+ * etiqueta de hace días — y el bot es exactamente lo que la persona viene a mirar antes de
+ * escribir.
+ *
+ * Una llamada por apertura, por acción explícita de una persona. Comparado con un reloj que
+ * refresque, es gratis.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export async function contactoPorId(
+  acceso: { token: string; locationId: string },
+  ghlContactId: string,
+): Promise<ResultadoDeGhl<ContactoDeGhl | null>> {
+  const r = await pedirExterno<{ contact?: unknown }>(
+    `${BASE}/contacts/${encodeURIComponent(ghlContactId)}`,
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+  );
+
+  if (r.tipo !== 'datos') {
+    // UN 404 NO ES UN FALLO, y distinguirlo importa: significa que ese contacto ya no está en el
+    // CRM —lo borraron— y la ficha tiene que poder decir eso en vez de «no se pudo consultar».
+    // Se devuelve `datos: null`, que es un hecho medido, no un error.
+    if (r.tipo === 'rechazado' && r.estado === 404) return { tipo: 'datos', datos: null };
+    return { tipo: 'fallo', fallo: traducirFallo(r) };
+  }
+
+  // La respuesta envuelve el contacto en `contact`. Si no viene con esa forma se devuelve `null`
+  // en vez de un objeto a medias: un contacto sin `id` ni `tags` haría que el refresco borre las
+  // etiquetas que sí teníamos.
+  const c = r.datos?.contact;
+  if (!c || typeof c !== 'object') return { tipo: 'datos', datos: null };
+  return { tipo: 'datos', datos: c as ContactoDeGhl };
+}

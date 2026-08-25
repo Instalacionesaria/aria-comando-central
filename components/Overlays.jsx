@@ -24,87 +24,20 @@ export default function Overlays() {
         <span className="lg-count" id="lgCount" />
       </div>
     </aside>
-    {/* ================= CONTACTO DEL CLOSER ================= */}
-    <div className="scrim" id="cwScrim" />
-    <aside className="cw" id="cwPanel" aria-hidden="true">
-      <div className="cw-h">
-        <div className="cw-top">
-          <span className="cw-av" id="cwAv">
-            AR
-          </span>
-          <div>
-            <div className="cw-n" id="cwName">
-              Andres Rendon
-            </div>
-            <div className="cw-p" id="cwPhone">
-              +57 317 500 7777
-            </div>
-          </div>
-          <button
-            className="cw-pin"
-            style={{ marginLeft: 'auto' }}
-            onClick={() => { window.open('https://app.gohighlevel.com/','_blank') }}
-          >
-            ↗ Ver en GHL
-          </button>
-          <span className="cw-x" id="cwClose">
-            ✕
-          </span>
-        </div>
-        <div className="cw-meta">
-          <span className="tagx ag" id="cwState">
-            Agendado
-          </span>
-          <span className="cw-acts">
-            <i title="Video">
-              ▢
-            </i>
-            <i title="Agenda">
-              ▤
-            </i>
-            <i title="Llamadas">
-              ✆ 1
-            </i>
-            <i title="Bot">
-              ◈
-            </i>
-            <i title="Recordar">
-              ◷
-            </i>
-            <i title="Cobrar">
-              $
-            </i>
-          </span>
-        </div>
-        <button className="cw-go" id="cwAdvance">
-          Avanzar →
-        </button>
-      </div>
-      <div className="cw-tabs" id="cwTabs">
-        <button data-t="chat" className="on">
-          ◔ Chat
-        </button>
-        <button data-t="llamada">
-          ✆ Llamada
-        </button>
-        <button data-t="perfil">
-          ☰ Perfil
-        </button>
-        <button data-t="historial">
-          ◷ Historial
-        </button>
-        <button data-t="notas">
-          ▤ Notas
-        </button>
-      </div>
-      <div className="cw-body" id="cwBody" />
-      <div className="cw-input">
-        <input type="text" placeholder="Escribe un mensaje…" />
-        <button className="cw-send">
-          ⏎
-        </button>
-      </div>
-    </aside>
+    {/* ================= CONTACTO DEL CLOSER =================
+        EL PANEL SE FUE DE ACA, Y AHORA ES REACT.
+
+        Vivia aca portado fiel del prototipo -encabezado, las cinco pestanas, el cuerpo y el
+        compositor- y **sin una linea de JavaScript**: cinco botones sin manejador, un cuerpo que
+        nadie llenaba, y un solo control vivo, el enlace a GoHighLevel. Un panel que no se podia
+        abrir, con cinco pestanas que no cambiaban nada.
+
+        Ahora lo dibuja `components/negocio/Ficha.jsx`, con las MISMAS clases -`.cw`, `.cw-tabs`,
+        `.cw-body`- asi que el CSS de `app/aios.css` se reusa sin tocar una regla.
+
+        Se BORRA en vez de dejarse: dos elementos `.cw` en el arbol, uno inerte y otro real, es la
+        clase de cosa que despues alguien encuentra y no entiende cual manda. Y sus ids duplicados
+        harian que un `getElementById` eligiera el equivocado. */}
     {/* ================= RESULTADO ================= */}
     <div className="scrim" id="resScrim" />
     <div className="res" id="resModal" role="dialog">

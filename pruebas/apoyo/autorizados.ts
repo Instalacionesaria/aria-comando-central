@@ -154,6 +154,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // que `app/api/fundaciones/estado/route.ts`. Todo lo que ESCRIBE va por el otro camino
   // —`conOrganizacion(` y la política de fila— así que la escotilla no toca datos de negocio.
   'app/api/contactos/sincronizar/route.ts',
+  // La ficha del contacto. Lee la credencial de GoHighLevel para refrescar ese contacto al
+  // abrirla, que es exactamente el mismo caso que la sincronizacion de al lado: el token vive en
+  // `identidad.organizaciones_credenciales`, una tabla sobre la que el rol del inquilino no tiene
+  // ni `select`. Todo lo que ESCRIBE va por `conOrganizacion(` y la politica de fila.
+  'app/api/contactos/[id]/route.ts',
   // El listado de organizaciones. Es la ÚNICA consulta del sistema que cruza organizaciones A
   // PROPÓSITO. Lo que la hace aceptable no es un `where`: es `organizaciones.listar`, que solo
   // tiene el rol de plataforma, comprobada por el portero una línea antes.
@@ -256,6 +261,12 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   //     devuelve el resumen con los salteados y el aviso de truncado, que son los dos casos en
   //     que la lista queda corta y parece completa.
   'app/api/contactos/sincronizar/route.ts',
+  // La ficha: lee la credencial por identidad y escribe el contacto refrescado por el inquilino.
+  //
+  // Lo que queda a medias si la segunda mitad falla es NADA, y por eso es aceptable: la primera
+  // solo LEE. Y el orden lo garantiza — la ficha se arma de la cache ANTES del refresco, asi que
+  // un fallo del CRM no impide abrirla, solo deja el aviso de que no se actualizo.
+  'app/api/contactos/[id]/route.ts',
 ];
 
 /**

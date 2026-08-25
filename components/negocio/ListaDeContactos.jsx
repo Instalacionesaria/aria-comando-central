@@ -29,6 +29,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import Fila from './Fila.jsx';
+import Ficha from './Ficha.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no tiene permiso para ver esta pestaña.',
@@ -39,6 +40,14 @@ const MOTIVOS = {
 };
 
 export default function ListaDeContactos({ camino, zona }) {
+  /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
+     llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
+     se pasa, la fila no es clicable"*. Este es ese paso.
+
+     Se guarda el IDENTIFICADOR y no la fila entera: la ficha vuelve a pedir el contacto al abrirse
+     -con eso refresca sus etiquetas contra el CRM- y quedarse con una copia de la fila haria que el
+     encabezado mostrara el estado viejo al lado de los datos nuevos. */
+  const [abierta, setAbierta] = useState(null);
   const [filas, setFilas] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
@@ -237,7 +246,7 @@ export default function ListaDeContactos({ camino, zona }) {
           {hayMas ? <span className="hint"> y hay más</span> : null}
         </div>
         {filas.map((f) => (
-          <Fila key={f.id} fila={f} />
+          <Fila key={f.id} fila={f} onAbrir={(fila) => setAbierta(fila.id)} />
         ))}
         {hayMas ? (
           <div className="aj-fila" style={{ justifyContent: 'center', padding: '12px 0' }}>
@@ -252,6 +261,10 @@ export default function ListaDeContactos({ camino, zona }) {
           </div>
         ) : null}
       </div>
+      {/* La ficha se abre DONDE se la invoco y nunca navega: es un panel superpuesto, asi que la
+          lista de atras conserva su posicion de scroll y al cerrar se vuelve exactamente a donde
+          se estaba. Ver `components/negocio/Ficha.jsx`. */}
+      {abierta ? <Ficha contactoId={abierta} alCerrar={() => setAbierta(null)} /> : null}
     </>
   );
 }

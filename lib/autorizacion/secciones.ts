@@ -347,6 +347,22 @@ export const SIN_PANTALLA: readonly string[] = [
   // No es una excusa para no decidir: pide `contactos.ver`, que es la capacidad de la ficha y
   // la tienen los dos roles. Lo que trae no es de una pantalla, es de un contacto.
   'app/api/contactos/sincronizar/route.ts',
+  // ── Etapa 13 · la ficha del contacto ─────────────────────────────────────────
+  //
+  // La ficha se abre desde las tres pantallas del closer, desde las del setter y desde la
+  // auditoria. Declarar `PANTALLA = 'closer'` afirmaria que es de una pestaña, y `ADR-0304`
+  // cruzaria su capacidad contra las de esa pantalla sin coincidir.
+  //
+  // Pide `contactos.ver`, que es la capacidad de la ficha y la tienen los dos roles operativos.
+  'app/api/contactos/[id]/route.ts',
+  // Y sus cinco pestanas. Van todas aca por el mismo motivo que la ficha: son de UNA pantalla que
+  // no es ni la del closer ni la del setter, es la ficha, y la ficha no tiene entrada de menu
+  // propia. Las cinco piden `contactos.ver`; escribir una nota pide `contactos.comentar`.
+  'app/api/contactos/[id]/mensajes/route.ts',
+  'app/api/contactos/[id]/llamadas/route.ts',
+  'app/api/contactos/[id]/perfil/route.ts',
+  'app/api/contactos/[id]/historial/route.ts',
+  'app/api/contactos/[id]/notas/route.ts',
 ];
 
 /**

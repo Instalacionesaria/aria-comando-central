@@ -1,0 +1,376 @@
+// Las cinco pestañas de la ficha, cada una con su lectura.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// LA REGLA QUE GOBIERNA TODO ESTE ARCHIVO
+//
+// Cinco de estas seis tablas están **vacías** en producción hoy: `mensajes`, `llamadas`, `citas`,
+// `resultados` y `tareas` tienen cero filas, y `notas` también. Los 239 contactos son reales; su
+// historia todavía no se trajo.
+//
+// Así que cada lectura devuelve DOS cosas: lo que hay, y `falta` — una frase que dice **por qué no
+// hay más**. Es el `11` § 9 regla 1, que este repositorio ya aplica en `lib/negocio/inicio.ts`:
+//
+//   *"un cero medido y un cero no medido no son el mismo hecho."*
+//
+// Una lista vacía sin `falta` afirma «este contacto nunca habló». Con `falta` dice «todavía no
+// trajimos sus mensajes», que es lo cierto. La diferencia importa porque la primera hace que alguien
+// llame a un cliente creyendo que nunca contestó.
+//
+// Y `falta` es `null` cuando la fuente SÍ está poblada y el resultado es genuinamente cero. Ese
+// caso también hay que poder distinguirlo, y es el que va a ir apareciendo bloque por bloque.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { sql } from 'kysely';
+import { datos } from '../datos/contexto.ts';
+
+/** Lo que devuelve cada pestaña: lo medido, y por qué no hay más. */
+export interface Pestana<T> {
+  filas: T[];
+  /** `null` = la fuente está poblada y esto es todo lo que hay. Si no, qué falta para que haya. */
+  falta: string | null;
+}
+
+/* Las frases de `falta`, en un solo lugar. Cada una nombra **la pieza que no existe todavía**, no
+   un «no hay datos» genérico: quien lea esto tiene que poder saber si es un problema suyo o una
+   parte del sistema que no está construida. */
+const FALTA = {
+  mensajes:
+    'Todavía no se trajeron los mensajes de GoHighLevel. Esta conversación puede existir en el ' +
+    'CRM: lo que falta es la ingesta que la copia acá.',
+  llamadas:
+    'Todavía no se conectó la plataforma de voz, así que no hay ninguna llamada registrada. Las ' +
+    'llamadas llegan por aviso de Assistable, no se consultan.',
+  historial:
+    'El historial se arma con los mensajes, las llamadas, las citas, los resultados y las notas. ' +
+    'Hoy solo hay notas: el resto todavía no tiene de dónde venir.',
+  perfil:
+    'Los campos del formulario y de calificación viven en GoHighLevel y todavía no se leen. Lo ' +
+    'que se muestra son los datos que sí se sincronizan.',
+} as const;
+
+// ─── Chat ───────────────────────────────────────────────────────────────────
+
+export interface MensajeDeFicha {
+  id: string;
+  direccion: 'entrante' | 'saliente';
+  autor: 'contacto' | 'agente' | 'persona';
+  canal: string | null;
+  cuerpo: string | null;
+  enviadoEl: Date;
+}
+
+/** El tope del `03` § 1: los ÚLTIMOS 200. */
+const TOPE_DE_MENSAJES = 200;
+
+/**
+ * Los mensajes del contacto, del más viejo al más nuevo.
+ *
+ * ── EL TOPE SE PIDE DESCENDENTE Y SE DA VUELTA ──────────────────────────────
+ *
+ * El `03` § 1 nombra este error y lo llama «una línea que no falla nunca y rompe la pantalla en
+ * cuanto una conversación crece»: con `ascendente + limit 200` se guardan los 200 **más viejos**.
+ * Pasada esa cantidad, el chat mostraría el arranque de la conversación y **esconde lo reciente**,
+ * que es exactamente lo que alguien abrió a mirar.
+ *
+ * Así que se ordena `desc`, se corta, y se invierte en memoria. El índice
+ * `mensajes_por_contacto (org_id, contacto_id, enviado_el desc)` está hecho para este orden.
+ */
+export async function mensajesDeLaFicha(contactoId: string): Promise<Pestana<MensajeDeFicha>> {
+  const crudos = await datos()
+    .selectFrom('mensajes')
+    .select(['id', 'direccion', 'autor', 'canal', 'cuerpo', 'enviado_el'])
+    .where('contacto_id', '=', contactoId)
+    .orderBy('enviado_el', 'desc')
+    // Desempate estable: dos mensajes con el mismo instante —pasa con los importados— saldrían en
+    // orden distinto en cada pedido, y el reloj del chat los vería como mensajes nuevos.
+    .orderBy('id', 'desc')
+    .limit(TOPE_DE_MENSAJES)
+    .execute();
+
+  return {
+    filas: crudos
+      .map((m) => ({
+        id: m.id,
+        direccion: m.direccion,
+        autor: m.autor,
+        canal: m.canal,
+        cuerpo: m.cuerpo,
+        enviadoEl: m.enviado_el,
+      }))
+      .reverse(),
+    falta: crudos.length === 0 ? FALTA.mensajes : null,
+  };
+}
+
+// ─── Llamada ────────────────────────────────────────────────────────────────
+
+export interface LlamadaDeFicha {
+  id: string;
+  agente: string | null;
+  contestada: boolean;
+  inicioEl: Date | null;
+  duracionSegundos: number | null;
+  resumen: string | null;
+}
+
+/**
+ * Las llamadas, la más reciente primero. **Nunca se borra ninguna** (`04` § 1).
+ *
+ * `nulls last` en el orden: el 42 % de las llamadas de origen no traen hora de inicio, y sin esto
+ * la ficha abriría mostrando los intentos sin fecha arriba. El índice
+ * `llamadas_por_contacto (org_id, contacto_id, inicio_el desc nulls last)` ya está declarado así.
+ */
+export async function llamadasDeLaFicha(contactoId: string): Promise<Pestana<LlamadaDeFicha>> {
+  const crudas = await datos()
+    .selectFrom('llamadas')
+    .select(['id', 'agente', 'contestada', 'inicio_el', 'duracion_segundos', 'resumen'])
+    .where('contacto_id', '=', contactoId)
+    .orderBy('inicio_el', sql`desc nulls last`)
+    .orderBy('id', 'desc')
+    .execute();
+
+  return {
+    filas: crudas.map((l) => ({
+      id: l.id,
+      agente: l.agente,
+      contestada: l.contestada,
+      inicioEl: l.inicio_el,
+      duracionSegundos: l.duracion_segundos,
+      resumen: l.resumen,
+    })),
+    falta: crudas.length === 0 ? FALTA.llamadas : null,
+  };
+}
+
+// ─── Notas ──────────────────────────────────────────────────────────────────
+
+export interface NotaDeFicha {
+  id: string;
+  cuerpo: string;
+  /** El nombre de quien la escribió, o `null` = la importó el sistema desde el CRM. */
+  autor: string | null;
+  origen: 'plataforma' | 'importada';
+  creadoEl: Date;
+}
+
+/**
+ * Las notas del contacto, la más reciente primero.
+ *
+ * ── UNA SOLA TABLA PARA LOS DOS ROLES, Y ESO ES LA MITAD DEL PUNTO ──────────
+ *
+ * El `04` § 4 cuenta el defecto que costó más caro de toda la ficha, y eran **tres apilados**: la
+ * nota se escribía en otra tabla según por qué camino se registrara, un módulo no le hablaba al
+ * endpoint por ninguna vía —sus notas vivían en memoria y **se perdían al recargar**—, y al
+ * recargar la lista se reconstruía con las notas vacías, **borrando la que se acababa de crear**.
+ *
+ * De la medición: *"de 13 resultados registrados con nota, solo 2 llegaron a la tabla"*.
+ *
+ * `negocio.notas` es una sola tabla y esta función es la única lectura. La migración 011 ya lo
+ * declaraba así en su encabezado.
+ *
+ * El nombre del autor sale de `identidad.usuarios`, que el rol del inquilino puede leer por columna
+ * (`grant select (id, org_id, nombre, email, activo)`). Se une por las DOS columnas porque la clave
+ * foránea es compuesta.
+ */
+export async function notasDeLaFicha(contactoId: string): Promise<Pestana<NotaDeFicha>> {
+  const crudas = await datos()
+    .selectFrom('notas as n')
+    .leftJoin('usuarios as u', (j) =>
+      j.onRef('u.id', '=', 'n.autor_id').onRef('u.org_id', '=', 'n.org_id'),
+    )
+    .select(['n.id', 'n.cuerpo', 'n.origen', 'n.creado_el', 'u.nombre as autor'])
+    .where('n.contacto_id', '=', contactoId)
+    .orderBy('n.creado_el', 'desc')
+    .orderBy('n.id', 'desc')
+    .execute();
+
+  return {
+    filas: crudas.map((n) => ({
+      id: n.id,
+      cuerpo: n.cuerpo,
+      autor: n.autor,
+      origen: n.origen,
+      creadoEl: n.creado_el,
+    })),
+    // Las notas NO llevan `falta`: la tabla está poblada por esta misma aplicación, así que cero
+    // notas es un cero medido — este contacto no tiene ninguna. Es la única de las cinco pestañas
+    // donde el vacío es un hecho y no una pieza que no existe.
+    falta: null,
+  };
+}
+
+// ─── Perfil ─────────────────────────────────────────────────────────────────
+
+export interface CampoDePerfil {
+  /** La etiqueta CORTA (`04` § 2): «Objetivo de facturación», no la pregunta entera. */
+  etiqueta: string;
+  valor: string;
+  /** A qué grupo pertenece por su SIGNIFICADO, no por el formulario del que salió. */
+  grupo: 'detalles' | 'origen' | 'calificacion' | 'interacciones';
+}
+
+/**
+ * El perfil, con lo que hoy se sabe de verdad.
+ *
+ * ── AGRUPADO POR SIGNIFICADO, NO POR FORMULARIO ─────────────────────────────
+ *
+ * El `04` § 2 lo pide así y explica por qué no es obvio: **la misma pregunta existe en dos
+ * formularios con dos claves distintas**, y el lead pudo entrar por cualquiera. Medido contra la
+ * cuenta real: hay 160 campos personalizados, y «objetivo de facturación» aparece con clave
+ * acentuada y sin acentuar, **las dos existiendo a la vez**. Agrupando por formulario, ese dato
+ * aparecería dos veces con dos nombres y nadie sabría cuál mirar.
+ *
+ * ── LO QUE HOY SE PUEDE MOSTRAR, Y NADA MÁS ─────────────────────────────────
+ *
+ * Solo las columnas que la sincronización trae de verdad. Los 160 campos personalizados —la
+ * calificación entera— viven en GoHighLevel y todavía no se leen; el `falta` lo dice. Inventar los
+ * grupos de Calificación e Interacciones con etiquetas vacías sería la forma exacta del defecto que
+ * `components/negocio/Fila.jsx` documenta: datos que solo existían en el ejemplo, en producción,
+ * mostrando cifras que no eran de nadie.
+ *
+ * **Los grupos sin campos no se dibujan** (`04` § 2), y eso lo decide la pantalla contando lo que
+ * llega — no hace falta mandar grupos vacíos para que los descarte.
+ */
+export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<CampoDePerfil>> {
+  const c = await datos()
+    .selectFrom('contactos')
+    .select(['nombre', 'telefono', 'email', 'fuente', 'etiquetas', 'score', 'sincronizado_el'])
+    .where('id', '=', contactoId)
+    .executeTakeFirst();
+
+  if (!c) return { filas: [], falta: FALTA.perfil };
+
+  const campos: CampoDePerfil[] = [];
+  const poner = (etiqueta: string, valor: string | null, grupo: CampoDePerfil['grupo']) => {
+    // Un campo sin valor NO se manda. El `04` § 2: *"un campo vacío afirma algo falso"*, y un
+    // «Correo: —» se lee como «no tiene correo» cuando lo cierto es que no lo trajimos.
+    if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+      campos.push({ etiqueta, valor: String(valor), grupo });
+    }
+  };
+
+  poner('Nombre', c.nombre, 'detalles');
+  poner('Teléfono', c.telefono, 'detalles');
+  poner('Correo', c.email, 'detalles');
+  poner('Fuente', c.fuente, 'origen');
+  // La calificación es una letra y hoy **nada la calcula**. Va igual cuando existe: el día que se
+  // calcule, aparece sin tocar esto.
+  poner('Calificación', c.score, 'calificacion');
+  // Las etiquetas crudas del CRM. Van en «Origen» porque es de donde salió el contacto, y sirven
+  // para la primera pregunta cuando alguien dice «éste no va acá».
+  poner('Etiquetas', (c.etiquetas ?? []).join(', '), 'origen');
+
+  return { filas: campos, falta: FALTA.perfil };
+}
+
+// ─── Historial ──────────────────────────────────────────────────────────────
+
+export interface EventoDeHistorial {
+  id: string;
+  cuando: Date;
+  /** Qué pasó, en una línea. */
+  titulo: string;
+  /** El detalle, si hay. */
+  detalle: string | null;
+  /** El nombre de quien lo hizo, o `Sistema` si fue un automatismo. */
+  autor: string;
+}
+
+/**
+ * La línea de tiempo del contacto. **Inmutable**: no se edita ni se borra (`04` § 3).
+ *
+ * ── EL AUTOR ES REAL, SIEMPRE ───────────────────────────────────────────────
+ *
+ * Un nombre si lo hizo una persona, `Sistema` si lo hizo un automatismo. El `04` § 3 dice que esa
+ * distinción es la que sostiene el historial entero: *"atribuirle a alguien una decisión que no
+ * tomó convierte el historial en algo que no se puede usar para entender qué pasó"*.
+ *
+ * Y por eso `Sistema` es el valor de reserva y no el nombre de quien está mirando: una fila sin
+ * autor registrado la hizo un automatismo, no la persona que la está leyendo.
+ *
+ * ── UNA CONSULTA POR ORIGEN, UNIDAS EN MEMORIA ──────────────────────────────
+ *
+ * Cuatro consultas chicas y un `sort`, en vez de un `union all` en SQL. Las cuatro tablas tienen su
+ * índice por contacto, las cuatro devuelven pocas filas, y en memoria se puede dar a cada origen su
+ * propio texto sin escribir cuatro `case` dentro de una sentencia. El día que esto tenga que
+ * paginar, el `union all` se justifica; hoy sería complejidad sin usar.
+ *
+ * Los mensajes NO entran: son cientos por contacto y tienen su propia pestaña. Un historial que se
+ * inunda de mensajes deja de servir para ver qué pasó.
+ */
+export async function historialDeLaFicha(contactoId: string): Promise<Pestana<EventoDeHistorial>> {
+  const nombreDe = (n: string | null) => n ?? 'Sistema';
+
+  const [resultados, tareas, citas, notas] = await Promise.all([
+    datos()
+      .selectFrom('resultados as r')
+      .leftJoin('usuarios as u', (j) =>
+        j.onRef('u.id', '=', 'r.registrado_por').onRef('u.org_id', '=', 'r.org_id'),
+      )
+      .select(['r.id', 'r.creado_el', 'r.salida', 'r.detalle', 'r.nota', 'u.nombre as autor'])
+      .where('r.contacto_id', '=', contactoId)
+      .execute(),
+    datos()
+      .selectFrom('tareas as t')
+      .leftJoin('usuarios as u', (j) =>
+        j.onRef('u.id', '=', 't.creada_por').onRef('u.org_id', '=', 't.org_id'),
+      )
+      .select(['t.id', 't.creado_el', 't.vence_el', 't.modo', 't.nota', 'u.nombre as autor'])
+      .where('t.contacto_id', '=', contactoId)
+      .execute(),
+    datos()
+      .selectFrom('citas')
+      .select(['id', 'creado_el', 'inicio_el', 'titulo', 'estado_ghl'])
+      .where('contacto_id', '=', contactoId)
+      .execute(),
+    datos()
+      .selectFrom('notas as n')
+      .leftJoin('usuarios as u', (j) =>
+        j.onRef('u.id', '=', 'n.autor_id').onRef('u.org_id', '=', 'n.org_id'),
+      )
+      .select(['n.id', 'n.creado_el', 'n.cuerpo', 'u.nombre as autor'])
+      .where('n.contacto_id', '=', contactoId)
+      .execute(),
+  ]);
+
+  const eventos: EventoDeHistorial[] = [
+    ...resultados.map((r) => ({
+      id: `resultado:${r.id}`,
+      cuando: r.creado_el,
+      titulo: `Se registró «${r.salida}»`,
+      detalle: r.detalle ?? r.nota,
+      autor: nombreDe(r.autor),
+    })),
+    ...tareas.map((t) => ({
+      id: `tarea:${t.id}`,
+      cuando: t.creado_el,
+      titulo: `Seguimiento para el ${String(t.vence_el).slice(0, 10)}`,
+      detalle: t.nota ?? t.modo,
+      autor: nombreDe(t.autor),
+    })),
+    ...citas.map((c) => ({
+      id: `cita:${c.id}`,
+      cuando: c.creado_el,
+      titulo: c.titulo ?? 'Cita agendada',
+      // El estado viene crudo del CRM y se muestra crudo: es el vocabulario de ellos, y
+      // traducirlo haría que el día que cambie nadie entienda qué pasó.
+      detalle: c.estado_ghl,
+      // Las citas las agenda un automatismo del CRM, no una persona de esta aplicación.
+      autor: 'Sistema',
+    })),
+    ...notas.map((n) => ({
+      id: `nota:${n.id}`,
+      cuando: n.creado_el,
+      titulo: 'Nota',
+      detalle: n.cuerpo,
+      autor: nombreDe(n.autor),
+    })),
+  ].sort((a, b) => b.cuando.getTime() - a.cuando.getTime());
+
+  return {
+    filas: eventos,
+    // Con notas ya hay historial de verdad, aunque parcial. `falta` solo cuando no hay NADA, y
+    // dice qué orígenes todavía no existen en vez de un «sin datos» que no orienta.
+    falta: eventos.length === 0 ? FALTA.historial : null,
+  };
+}

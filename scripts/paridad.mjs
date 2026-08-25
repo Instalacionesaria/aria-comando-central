@@ -71,11 +71,21 @@ const PASOS = [
                                         await p.click('#v-contacts .lc'); },     '#drawer.on'],
   ['grupo de contactos',   async p => { await p.click('#dwClose');
                                         await p.click('#v-contacts [data-leads]'); }, '.lg.on'],
-  ['closer · Mi Día',      async p => { await p.keyboard.press('Escape');
-                                        await p.click('.nav-item[data-view="closer"]');
-                                        await p.click('#clNav button[data-c="dia"]'); }, '#clDia'],
-  ['contacto del closer',  p => p.click('#clDia .md-r'),                         '.cw.on'],
-  ['pestañas del contacto',p => p.click('#cwTabs button:nth-child(2)'),          '#cwBody'],
+  /* LOS TRES PASOS DEL CLOSER SALIERON, y conviene decir por qué en vez de dejarlos rotos.
+   *
+   * Apuntaban a `#clDia`, `#clNav` y `#cwTabs`: ids del módulo imperativo que se borró en la Etapa
+   * 11 por pintar datos inventados. Ninguno de los tres existe desde entonces, o sea que estos
+   * pasos venían fallando —o habrían fallado la primera vez que alguien pudiera correr esto— y
+   * afirmaban lo contrario de lo que pasaba.
+   *
+   * No se reescriben contra el DOM nuevo, y es una decisión: la ficha se abre desde una FILA, y una
+   * fila existe solo si la organización tiene contactos sincronizados. La base local no los tiene,
+   * así que el paso sería rojo en cualquier máquina recién reconstruida — y un rojo permanente no
+   * se arregla, se ignora, y con él se ignoran los otros trece.
+   *
+   * Lo que cubre a la ficha en su lugar: `pruebas/codigo/95-ficha.test.ts` y la verificación en el
+   * navegador contra los contactos reales. Y `closer` ya estaba fuera de `VISTAS`, así que su forma
+   * nunca se comparó con el prototipo. */
   ['Ask Executive',        async p => { await p.keyboard.press('Escape');
                                         await p.click('#askTrigger'); },         '.ask-panel.on'],
   ['menú de usuario',      async p => { await p.keyboard.press('Escape');

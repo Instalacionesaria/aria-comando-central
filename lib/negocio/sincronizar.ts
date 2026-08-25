@@ -32,6 +32,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
+  contactoPorId,
   etiquetasDeLaSubcuenta,
   nombreDe,
   todosLosContactosPorEtiqueta,
@@ -151,7 +152,21 @@ export async function sincronizarContactos(acceso: {
  * atribución del setter y el trabajo hecho acá. El sello además tiene un disparador que lo
  * protege, así que esto es el cinturón además del tirante.
  */
-async function guardar(c: ContactoDeGhl, territorio: Territorio): Promise<true | string> {
+async function guardar(
+  c: ContactoDeGhl,
+  /**
+   * `null` = **congelado**: el contacto no esta en ningun territorio.
+   *
+   * El `01` seccion 2 lo define asi y aclara que le pasa: sigue visible y atenuado, sigue siendo
+   * movible, **no se borra**, y no entra a las colas de trabajo. Y se descongela solo si una
+   * etiqueta de territorio reaparece.
+   *
+   * La definicion importa: la primera version de esa regla decia «perdio `zona_closer`», y con eso
+   * **todo contacto del setter nacia congelado** -- nunca tuvo `zona_closer`, la gana recien al
+   * agendar. El modulo del setter habria quedado inerte sin que nada fallara.
+   */
+  territorio: Territorio | null,
+): Promise<true | string> {
   const nombre = nombreDe(c);
   // La columna `nombre` es obligatoria. Un contacto sin nombre se saltea CON MOTIVO en vez de
   // entrar como "Sin nombre", que después se lee como si fuera su nombre.
@@ -195,4 +210,54 @@ async function guardar(c: ContactoDeGhl, territorio: Territorio): Promise<true |
     .execute();
 
   return true;
+}
+
+/**
+ * Refrescar UN contacto contra el CRM. Es la llamada que cuesta abrir la ficha.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * EL TERRITORIO SE RECALCULA, Y ES LA MITAD IMPORTANTE
+ *
+ * El refresco no es solo «traer el nombre nuevo»: **relee las etiquetas**, y de ellas dependen el
+ * estado del agente, la cita agendada y el seguimiento automático — tres de los seis íconos.
+ *
+ * Y con las etiquetas viene el territorio. Un contacto que agendó pierde `zona_setter` y gana
+ * `zona_closer`: es **el mismo contacto cambiando de dueño, sin resetear ningún dato**. Su
+ * historial, sus notas y sus llamadas siguen ahí porque el `do update` de `guardar` no los toca.
+ *
+ * Si no tiene ninguna de las dos queda **congelado**, con `territorio` nulo — que es lo que el
+ * `01` § 2 pide: se ve, se mueve, no cuesta llamadas, y se descongela solo cuando la etiqueta
+ * reaparece.
+ *
+ * ── UN CONTACTO BORRADO EN EL CRM NO SE BORRA ACÁ ───────────────────────────
+ *
+ * `contactoPorId` devuelve `datos: null` para un 404, y acá eso se traduce a `no_esta_en_el_crm`
+ * **sin tocar la fila**. Borrarla arrastraría en cascada sus mensajes, sus notas y sus resultados —
+ * el historial de un trabajo que sí ocurrió. La ficha lo dice y nadie pierde nada.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export type ResultadoDeRefresco =
+  | { tipo: 'listo'; territorio: Territorio | null }
+  | { tipo: 'no_esta_en_el_crm' }
+  | { tipo: 'salteado'; motivo: string }
+  | { tipo: 'fallo'; fallo: FalloDeGhl };
+
+export async function refrescarUnContacto(
+  acceso: { token: string; locationId: string },
+  ghlContactId: string,
+): Promise<ResultadoDeRefresco> {
+  const r = await contactoPorId(acceso, ghlContactId);
+  if (r.tipo === 'fallo') return { tipo: 'fallo', fallo: r.fallo };
+  if (!r.datos) return { tipo: 'no_esta_en_el_crm' };
+
+  // El territorio, con la MISMA precedencia que la sincronización completa: el orden de `ETIQUETAS`
+  // es el orden de prioridad y el closer gana. Se recorre esa lista y no se escribe otra
+  // comparación — dos lugares que decidan el territorio es un lugar donde divergir, y el síntoma
+  // sería un contacto que aparece en las dos pestañas o en ninguna.
+  const etiquetas = r.datos.tags ?? [];
+  const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
+
+  const guardado = await guardar(r.datos, territorio);
+  if (guardado !== true) return { tipo: 'salteado', motivo: guardado };
+  return { tipo: 'listo', territorio };
 }

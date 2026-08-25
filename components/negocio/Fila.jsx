@@ -74,20 +74,18 @@ const TITULO_DEL_AGENTE = {
   sin_agente: 'Sin agente',
 };
 
-/** El texto de cada situación. Es la píldora del § 7.1: la situación REAL, nunca una condición
- *  temporal. "Estancado" y "vencido" no salen de acá — son microtexto y color de fila. */
-const SITUACION = {
-  sin_resultado: null,
-  venta: { texto: 'Venta', clase: 'ag' },
-  acuerdo_sin_pago: { texto: 'Acuerdo sin pago', clase: 'seg' },
-  seguimiento: { texto: 'Seguimiento', clase: 'seg' },
-  no_interesa: { texto: 'No le interesa', clase: 'no' },
-  no_show: { texto: 'No-show', clase: 'no' },
-  nurture: { texto: 'Nurture', clase: 'nu' },
-  agendo: { texto: 'Agendó', clase: 'ag' },
-  venta_chica: { texto: 'Venta chica', clase: 'ag' },
-  no_califica: { texto: 'No califica', clase: 'no' },
-};
+/* EL DICCIONARIO DE SITUACIONES SE FUE, Y ESO ES EL ARREGLO.
+ *
+ * Acá vivía un `SITUACION` con el texto y el color de cada salida. La ficha necesita **la misma**
+ * píldora —el `02` la llama «espejo obligatorio»— y con un diccionario por pantalla habría dos
+ * lugares que formatean lo mismo. La implementación de referencia tenía seis, y el resultado
+ * medido fue `Seguimiento · Dudando` en un lado y `SEGUIMIENTO · DUDANDO` en el otro **para el
+ * mismo estado**.
+ *
+ * Ahora la píldora la arma el SERVIDOR y viaja dentro de `fila.pildora`, igual que los seis
+ * íconos. La fila y la ficha reciben el mismo objeto, así que el espejo es cierto por construcción
+ * y no por coincidencia. Ver `lib/negocio/pildora.ts`.
+ */
 
 /** El microtexto de actividad: un evento REAL, nunca una frase genérica (§ 7.1). */
 function microtexto(fila) {
@@ -170,7 +168,7 @@ export function SeisIconos({ iconos }) {
  * confiar en la pantalla.
  */
 export default function Fila({ fila, onAbrir }) {
-  const sit = SITUACION[fila.situacion] ?? null;
+  const sit = fila.pildora ?? null;
   const micro = microtexto(fila);
   const completada = fila.situacion === 'venta' || fila.situacion === 'no_interesa';
 

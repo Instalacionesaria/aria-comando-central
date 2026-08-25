@@ -28,7 +28,9 @@
  * Y como filtra por fecha, se vacía sola a medianoche.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
+import { useState } from 'react';
 import Fila, { SeisIconos } from '../negocio/Fila.jsx';
+import Ficha from '../negocio/Ficha.jsx';
 
 /** Las cinco colas, en el orden fijo del `01`. */
 const COLAS = [
@@ -114,6 +116,14 @@ function FilaDeAgenda({ item, zona }) {
 }
 
 export default function MiDia({ colas, zonaHoraria }) {
+  /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
+     llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
+     se pasa, la fila no es clicable"*. Este es ese paso.
+
+     Se guarda el IDENTIFICADOR y no la fila entera: la ficha vuelve a pedir el contacto al abrirse
+     -con eso refresca sus etiquetas contra el CRM- y quedarse con una copia de la fila haria que el
+     encabezado mostrara el estado viejo al lado de los datos nuevos. */
+  const [abierta, setAbierta] = useState(null);
   if (!colas) {
     return (
       <div className="fd-aviso">
@@ -188,7 +198,7 @@ export default function MiDia({ colas, zonaHoraria }) {
               }
               return (
                 <div key={item.fila.id + i}>
-                  <Fila fila={item.fila} />
+                  <Fila fila={item.fila} onAbrir={(fila) => setAbierta(fila.id)} />
                   {/* Lo propio de cada cola va DEBAJO de la fila compartida, no dentro: la
                       fila es el mismo componente en las cinco colas y en el Pipeline, y
                       meterle casos por cola sería el camino a cinco variantes que divergen. */}
@@ -237,6 +247,10 @@ export default function MiDia({ colas, zonaHoraria }) {
           </span>
         </div>
       ) : null}
+      {/* La ficha se abre DONDE se la invoco y nunca navega: es un panel superpuesto, asi que la
+          lista de atras conserva su posicion de scroll y al cerrar se vuelve exactamente a donde
+          se estaba. Ver `components/negocio/Ficha.jsx`. */}
+      {abierta ? <Ficha contactoId={abierta} alCerrar={() => setAbierta(null)} /> : null}
     </>
   );
 }
