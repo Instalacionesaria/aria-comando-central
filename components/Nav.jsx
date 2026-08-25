@@ -110,23 +110,8 @@ export default function Nav() {
         </div>
       ))}
       <div className="nav-foot">
-        {/* La fila del nombre ES el disparador del menú de la cuenta, que hasta la Etapa 11
-            vivía arriba a la derecha con un nombre escrito a mano y un «Cerrar sesión» que no
-            cerraba nada. Ver `components/MenuDeUsuario.jsx`. */}
-        {/* La sección del pie se le pasa como DATO. Con la clave escrita a mano acá volvería
-            la lista paralela por la puerta de atrás: un `data-view="credenciales"` literal en
-            este archivo es exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón —
-            el día que la clave cambie, el menú seguiría funcionando y este atajo no. */}
-        <MenuDeUsuario
-          sesion={sesion}
-          seccion={enElPie[0] ?? null}
-          alIrALaSeccion={(clave) => {
-            /* Se dispara el clic de la entrada REAL del menú en vez de duplicar el enrutado:
-               así hay UN solo lugar que decide qué pasa al abrir una pantalla. */
-            document.querySelector(`.nav-item[data-view="${clave}"]`)?.click();
-          }}
-        />
-        {/* La fila de Ajustes era DECORATIVA en el prototipo: un `role-row` sin `data-view`,
+        {/* AJUSTES VA ARRIBA DEL NOMBRE, y el orden acá ES el orden en pantalla.
+            La entrada de Ajustes era DECORATIVA en el prototipo: un `role-row` sin `data-view`,
             así que `shell.js` no la enrutaba y clicarla no hacía nada. Ahora es una entrada
             real, y solo aparece con `credenciales.ver`. */}
         {enElPie.map((s) => (
@@ -143,6 +128,26 @@ export default function Nav() {
             </span>
           </div>
         ))}
+        {/* La fila del nombre ES el disparador del menú de la cuenta, que hasta la Etapa 11
+            vivía arriba a la derecha con un nombre escrito a mano y un «Cerrar sesión» que no
+            cerraba nada. Ver `components/MenuDeUsuario.jsx`.
+
+            Queda ÚLTIMA, y su menú abre hacia arriba: es lo último de la barra, así que hacia
+            abajo se saldría de la pantalla. El modificador está en `app/armazon.css`.
+
+            La sección del pie se le pasa como DATO. Con la clave escrita a mano acá volvería la
+            lista paralela por la puerta de atrás: un `data-view` literal en este archivo es
+            exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón — el día que la
+            clave cambie, el menú seguiría funcionando y este atajo no. */}
+        <MenuDeUsuario
+          sesion={sesion}
+          seccion={enElPie[0] ?? null}
+          alIrALaSeccion={(clave) => {
+            /* Se dispara el clic de la entrada REAL del menú en vez de duplicar el enrutado:
+               así hay UN solo lugar que decide qué pasa al abrir una pantalla. */
+            document.querySelector(`.nav-item[data-view="${clave}"]`)?.click();
+          }}
+        />
       </div>
     </aside>
     </>
