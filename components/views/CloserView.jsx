@@ -76,23 +76,42 @@ export default function CloserView({ activa }) {
   const [causa, setCausa] = useState(null);
   const yaPedido = useRef(false);
 
+  /* ── UNA RECARGA NO ES UNA PRIMERA CARGA, Y CONFUNDIRLAS CIERRA LA FICHA ────
+   *
+   * **Medido en el navegador.** Con una ficha abierta, volver a la pestaña la cerraba: `cargar`
+   * ponía `'cargando'`, eso reemplaza el cuerpo entero por el aviso de espera, y al desmontarse
+   * `MiDia` se lleva puesta la ficha que colgaba de su estado.
+   *
+   * Es exactamente lo que el `02` § 1 prohíbe —*"quien la abre no pierde el contexto de dónde
+   * estaba"*—, y se ve como si la aplicación se hubiera reiniciado sola.
+   *
+   * Con el reloj del chat esto pasa de ser molesto a ser constante, así que la regla queda escrita:
+   * **la pantalla solo se vacía cuando no hay nada que mostrar.** Teniendo datos, una recarga los
+   * reemplaza cuando llega la respuesta, y hasta entonces no se toca nada.
+   */
   const cargar = useCallback(async () => {
-    setSituacion('cargando');
+    setSituacion((antes) => (antes === 'listo' ? antes : 'cargando'));
     const r = await pedir('/api/closer/mi-dia');
     /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»:
        con una sola rama, alguien sin `closer.ver` vería un cockpit en cero y creería que no
        vendió nada. */
+    /* Y UN FALLO DE RECARGA TAMPOCO VACÍA LA PANTALLA. Es la misma regla mirada del otro lado:
+       borrar el día de trabajo de alguien por un corte de red de dos segundos es peor que seguir
+       mostrando datos de hace un momento. Lo que NO se hace es callarlo — queda el aviso de abajo,
+       que dice que lo que se está viendo no se pudo actualizar. */
     if (r.tipo === 'sin_respuesta') {
       setCausa('No se pudo contactar al servidor. No es que no tengas trabajo: no se pudo preguntar.');
-      setSituacion('sin_respuesta');
+      setSituacion((antes) => (antes === 'listo' ? antes : 'sin_respuesta'));
       return;
     }
     if (r.tipo === 'rechazado') {
       setCausa(r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`);
-      setSituacion('rechazado');
+      setSituacion((antes) => (antes === 'listo' ? antes : 'rechazado'));
       return;
     }
     setDatos(r.datos);
+    // Y se limpia el aviso: un fallo viejo que no se borra es como se aprende a ignorar un cartel.
+    setCausa(null);
     setSituacion('listo');
   }, []);
 
@@ -235,6 +254,15 @@ export default function CloserView({ activa }) {
             </div>
           </div>
         </div>
+
+        {/* El aviso de una recarga que no salió. Aparece SOBRE los datos, no en lugar de ellos:
+            lo que se está viendo sigue siendo cierto, solo que es de hace un momento. */}
+        {situacion === 'listo' && causa ? (
+          <div className="fd-aviso falta" style={{ marginBottom: 12 }}>
+            <i>◍</i>
+            <span>Esto es de hace un momento: la última actualización no salió. {causa}</span>
+          </div>
+        ) : null}
 
         <div className="cl-page">{cuerpo()}</div>
 

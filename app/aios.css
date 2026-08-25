@@ -2308,6 +2308,21 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .cw-send{width:32px; height:32px; border-radius:9px; border:0; cursor:pointer; font-size:13px;
   background:rgba(53,224,210,.12); color:var(--accent);}
 
+/* Los estados de entrega. Lo único de la ficha que el prototipo no tenía, porque el prototipo
+   daba todo por entregado, que es el defecto que este bloque existe para arreglar. */
+.msgw-est{color:var(--txt-faint);}
+.msgw-est.mal{color:var(--crit); font-weight:600;}
+/* Un saliente que NO llegó se ve distinto de uno que sí, y no solo por el renglón de abajo: el
+   borde entero cambia. Un estado que hay que leer con lupa se pierde en una conversación larga. */
+.msgw.mal{border-color:rgba(240,92,92,.42); background:rgba(240,92,92,.06);}
+/* El motivo del canal, debajo del texto. Es lo único que explica POR QUÉ no llegó. */
+.msgw-falla{display:block; margin-top:6px; font-size:10.5px; color:var(--crit); font-style:italic;}
+.cw-input input:disabled{cursor:not-allowed;}
+.cw-send:disabled{opacity:.4; cursor:not-allowed;}
+/* El aviso de la ventana cerrada va PEGADO al compositor, no arriba del panel: el aviso que
+   explica tiene que estar al lado del control que no se puede usar. */
+.cw-cerrada{margin:0 16px 0; border-radius:10px;}
+
 /* resultado de la llamada */
 .res{position:fixed; z-index:80; top:50%; left:50%; transform:translate(-50%,-48%) scale(.985);
   width:640px; max-width:94vw; background:linear-gradient(180deg,#131c2b,#0a0f18);

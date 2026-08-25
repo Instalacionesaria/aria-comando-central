@@ -252,10 +252,10 @@ export interface TablaContactos {
   ultimo_saliente_el: Date | null;
   sincronizado_el: Date | null;
   /**
-   * Desde cuando tenemos los mensajes de este contacto. **Nula = no se leyo su historia.**
+   * Desde cuándo tenemos los mensajes de este contacto. **Nula = no se leyó su historia.**
    *
-   * Sin esta columna, una conversacion vacia y una que nadie leyo se ven identicas, y la ficha
-   * diria «nunca escribio» de las dos.
+   * Sin esta columna, una conversación vacía y una que nadie leyó se ven idénticas, y la ficha
+   * diría «nunca escribió» de las dos.
    */
   mensajes_desde_el: Date | null;
   creado_el: Generated<Date>;

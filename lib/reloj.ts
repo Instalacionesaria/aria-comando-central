@@ -15,7 +15,8 @@
 //
 //   **1 · Pestaña oculta = CERO intervalos corriendo.** Un solo escucha de `visibilitychange` los
 //   pausa y los reanuda a todos. Al volver, cada reloj dispara UNA vez de inmediato: quien vuelve a
-//   la pestaña quiere ver fresco, no esperar el próximo ciclo.
+//   la pestaña quiere ver fresco, no esperar el próximo ciclo. **Eso sí lo hace este módulo; la
+//   PRIMERA lectura no** — ver `registrarReloj`, que explica por qué.
 //
 //   **2 · Un reloj por clave.** Registrar dos veces la misma clave reemplaza al anterior, así que
 //   dos montajes del mismo componente **no duplican el tráfico**. Por eso la clave del chat es
@@ -71,8 +72,21 @@ function escuchar(): void {
 }
 
 /**
- * Registra un reloj. Dispara `fn` una vez de inmediato (si la pestaña está visible) y después cada
- * `ms`. Devuelve la función para darlo de baja.
+ * Registra un reloj: dispara `fn` cada `ms`. Devuelve la función para darlo de baja.
+ *
+ * ── NO HACE LA PRIMERA LECTURA, Y ESO SE APRENDIÓ MIRANDO ──────────────────
+ *
+ * La versión anterior disparaba una vez al registrarse, y con eso la primera carga del chat quedaba
+ * colgada de este módulo. **Medido en el navegador**: con la pestaña oculta, `visible()` es falso,
+ * el disparo inicial no ocurre, y el chat se quedaba en «Cargando…» sin decir por qué. Se
+ * recuperaba al volver a la pestaña, pero mientras tanto era un estado sin salida aparente — y el
+ * `03` § 5 llama a eso un defecto.
+ *
+ * La división correcta: **el reloj REPITE; la primera lectura la hace quien abre.** Un componente
+ * siempre puede pedir sus datos; lo que no puede es garantizar que la pestaña esté a la vista.
+ *
+ * Lo que sí sigue haciendo, porque ahí sí es el único que puede: **disparar al volver de oculta**.
+ * Quien vuelve a la pestaña quiere ver fresco, no esperar el próximo ciclo.
  */
 export function registrarReloj(clave: string, fn: () => void, ms: number): () => void {
   escuchar();
@@ -81,10 +95,9 @@ export function registrarReloj(clave: string, fn: () => void, ms: number): () =>
 
   const t: Tarea = { fn, ms, timer: null };
   tareas.set(clave, t);
-  if (visible()) {
-    fn();
-    arrancar(t);
-  }
+  // Solo se arranca el intervalo. Con la pestaña oculta ni eso: el escucha de visibilidad lo
+  // levanta al volver, y de paso dispara una vez.
+  if (visible()) arrancar(t);
 
   return () => {
     // Solo se da de baja si el registro sigue siendo ÉSTE. Sin esta comprobación, el desmontaje

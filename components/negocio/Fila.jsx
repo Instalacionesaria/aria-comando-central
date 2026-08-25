@@ -94,7 +94,17 @@ function microtexto(fila) {
   /* El texto de lo que escribió viaja junto a la fecha a propósito: el disparador de la base
      los mueve juntos, así que no puede pasar que la fecha sea de un mensaje y el texto de
      otro. */
-  return fila.ultimoEntranteTexto ? `respondió ${cuando}: “${fila.ultimoEntranteTexto}”` : `respondió ${cuando}`;
+  /* Y UN MENSAJE SIN TEXTO NO SE CALLA: se marca.
+
+     Antes esta rama devolvía solo «respondió hace 1 h» y la fila quedaba sin cita, indistinguible
+     de una en la que nadie escribió nada. Se vio en el navegador con un contacto cuyo último
+     entrante era un audio.
+
+     Es la misma regla que el chat ya aplica burbuja por burbuja —un audio o una imagen existieron,
+     y descartarlos hace que para el auditor ese turno no haya ocurrido—, aplicada acá también para
+     que las dos pantallas no cuenten historias distintas del mismo mensaje. */
+  const texto = fila.ultimoEntranteTexto ?? '[mensaje sin texto]';
+  return `respondió ${cuando}: “${texto}”`;
 }
 
 /** «hace 2 h». Del lado del cliente porque depende del reloj de quien mira. */

@@ -74,6 +74,10 @@ async function limpiar(): Promise<void> {
       await datos().deleteFrom('resultados').execute();
       await datos().deleteFrom('llamadas').execute();
       await datos().deleteFrom('contactos').execute();
+      // Y EL PULSO, que no es una tabla más en esta lista: de él sale la respuesta a «¿por qué no
+      // hay mensajes?». Dejando una fila de otra prueba, un cero NO MEDIDO se leería como medido,
+      // que es exactamente la confusión que este archivo existe para impedir.
+      await datos().deleteFrom('ingesta_pulso').execute();
     });
   }
 }
@@ -212,6 +216,49 @@ test('sin mensajes se dice QUÉ falta, no «no hay nada»', async () => {
   // que alguien llame a un cliente creyendo que no contestó.
   assert.ok(r.falta, 'una lista vacía sin `falta` afirma que el contacto nunca escribió');
   assert.match(String(r.falta), /ingesta|GoHighLevel/i, '`falta` no dice qué pieza no existe');
+});
+
+test('un cero MEDIDO no lleva `falta`, y quien lo decide es el pulso de la ingesta', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TRES ESTADOS Y NO DOS, Y EL DEL MEDIO ES EL QUE MÁS DURA
+  //
+  // «Sin mensajes» puede significar tres cosas distintas, y las tres mandan a hacer algo distinto:
+  //
+  //   · **nunca corrió la ingesta** → no se sabe nada de este contacto;
+  //   · **está a mitad de camino** → puede tener mensajes que aún no se copiaron;
+  //   · **dio una vuelta entera** → no tiene mensajes, y eso es un hecho.
+  //
+  // El contacto no puede responder eso: quien lo sabe es el pulso de la organización, porque la
+  // ingesta camina la cuenta **en orden y sin saltos**. Sin esta prueba, el tercer caso seguiría
+  // diciendo «todavía no se trajeron los mensajes» para siempre, y esa frase envejece hasta que
+  // nadie la lee.
+  // ═══════════════════════════════════════════════════════════════════════════
+  await limpiar();
+  const id = await contactoEn(alfa);
+
+  const conPulso = async (marca: Date | null, atrasado: boolean) =>
+    conOrganizacion(alfa, async () => {
+      await datos().deleteFrom('ingesta_pulso').execute();
+      await datos()
+        .insertInto('ingesta_pulso')
+        .values({ clave: 'mensajes', marca_el: marca, atrasado } as never)
+        .execute();
+      return mensajesDeLaFicha(id);
+    });
+
+  // Corrió pero quedó trabajo sin hacer: NO se puede afirmar el cero.
+  const aMedias = await conPulso(new Date('2026-01-01T00:00:00Z'), true);
+  assert.ok(aMedias.falta, 'con la ingesta atrasada, el cero todavía no está medido');
+  assert.match(String(aMedias.falta), /recorriendo|aún no se copiaron/i);
+
+  // Una vuelta completa: el cero es un hecho y no hay nada que aclarar.
+  const completo = await conPulso(new Date('2026-01-01T00:00:00Z'), false);
+  assert.equal(completo.falta, null, 'con la cuenta recorrida entera, el cero SÍ está medido');
+
+  // Y una fila de pulso sin marca es lo mismo que no haber corrido nunca.
+  const sinMarca = await conPulso(null, false);
+  assert.ok(sinMarca.falta, 'una fila de pulso sin marca no mide nada');
+  assert.match(String(sinMarca.falta), /ingesta|GoHighLevel/i);
 });
 
 // ─── 3 · La píldora sale del último resultado ───────────────────────────────

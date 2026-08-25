@@ -28,17 +28,32 @@
  * Este componente emite **el mismo DOM y las mismas clases**, así que el CSS de `app/aios.css` y la
  * comparación con el prototipo siguen valiendo sin escribir una regla nueva.
  *
+ * ── EL CHAT ES LA ÚNICA PESTAÑA CON RELOJ, Y ESO ES DELIBERADO ──────────────
+ *
+ * Las otras cuatro se piden al abrirlas y se quedan. El `04` § 5 lo justifica: su dato **no cambia
+ * mientras alguien mira**, y si cambia es porque esa misma persona lo cambió. El chat sí: del otro
+ * lado hay alguien escribiendo.
+ *
+ * El reloj se registra con la clave `chat:<id>` en `lib/reloj.ts`, y de ahí salen las dos
+ * propiedades que un `setInterval` suelto no puede dar: **pestaña oculta = cero intervalos**, y
+ * **abrir la ficha de otro contacto reemplaza el reloj en vez de sumar uno**.
+ *
+ * Y no negocia con nadie: leer mensajes es **cero llamadas al CRM**. Lo que cuesta —la ingesta—
+ * tiene su propio ciclo, su propio candado y su propio presupuesto.
+ *
  * ── LO QUE TODAVÍA NO SE DIBUJA, Y NO ES UN OLVIDO ──────────────────────────
  *
- * **El botón «Avanzar →» y el compositor de mensajes no están.** Los dos existen en el CSS y en el
- * prototipo, y los dos llegan en su bloque. Dibujarlos ahora sería exactamente lo que este
- * repositorio quitó dos veces —el «Reportar un problema» de la barra superior, los seis botones del
- * menú de cuenta— con el criterio que quedó escrito: **un control que parece funcionar y no hace
- * nada es peor que su ausencia.**
+ * **El botón «Avanzar →» no está.** Existe en el CSS y en el prototipo, y llega en su bloque.
+ * Dibujarlo ahora sería exactamente lo que este repositorio quitó dos veces —el «Reportar un
+ * problema» de la barra superior, los seis botones del menú de cuenta— con el criterio que quedó
+ * escrito: **un control que parece funcionar y no hace nada es peor que su ausencia.**
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { useSesion } from '../../app/sesion-contexto.tsx';
+import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
+import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { SeisIconos } from './Fila.jsx';
 
 /* Los seis íconos se importan de `Fila.jsx` y NO se copian.
@@ -88,24 +103,21 @@ function iniciales(nombre) {
 }
 
 /** La hora de un mensaje, en la zona de quien mira. */
-function hora(iso) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ''
-    : d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-}
-
-/** La fecha larga de un separador de día. */
-function diaLargo(iso) {
+function hora(iso, zona) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  const hoy = new Date();
-  const mismo = (a, b) => a.toDateString() === b.toDateString();
-  if (mismo(d, hoy)) return 'HOY';
-  const ayer = new Date(hoy);
-  ayer.setDate(ayer.getDate() - 1);
-  if (mismo(d, ayer)) return 'AYER';
-  return d.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+  try {
+    // La zona de la EMPRESA, igual que los separadores de día. Si la hora y el separador usaran
+    // zonas distintas, un mensaje podría quedar bajo «AYER» con una hora de hoy.
+    return new Intl.DateTimeFormat('es', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: zona,
+    }).format(d);
+  } catch {
+    return d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  }
 }
 
 /** «hace 2 h», para el historial y las notas. */
@@ -128,6 +140,62 @@ function LoQueFalta({ texto }) {
   );
 }
 
+/**
+ * Una burbuja, con lo que se sabe de su entrega.
+ *
+ * ── POR QUÉ EL ESTADO SE DIBUJA Y NO SE GUARDA CALLADO ──────────────────────
+ *
+ * Es la mitad visible del arreglo del defecto que originó todo el bloque: un mensaje se mandó, la
+ * aplicación lo dio por enviado, **y nunca llegó**. La ventana de 24 horas evita gastar la llamada
+ * en el caso conocido; esto hace visible **todo lo demás** que el canal puede rechazar — un número
+ * sin WhatsApp, un dispositivo desconectado.
+ *
+ * Y hay DOS fallos distintos, y se dicen distinto porque llevan a cosas distintas:
+ *
+ *   · `envio: 'fallido'` → el `POST` no terminó bien: **el servidor no tiene nada**. Se reintenta.
+ *   · `entrega: 'fallido'` → la fila existe, el CRM la aceptó, y el canal la rechazó después.
+ *     Reintentar el mismo texto por el mismo canal va a fallar igual.
+ */
+function Burbuja({ m, zona }) {
+  const saliente = m.direccion === 'saliente';
+  const noSalio = m.envio === 'fallido';
+  const rechazado = m.entrega === 'fallido';
+  const mal = noSalio || rechazado;
+
+  return (
+    <div className={`msgw ${saliente ? 'out' : 'in'}${mal ? ' mal' : ''}`}>
+      {/* Un mensaje sin texto NO se descarta: un audio o una imagen existieron, y descartarlos
+          hacía que para el auditor ese turno no hubiera ocurrido. Va con un marcador honesto entre
+          corchetes, distinguible del contenido real. */}
+      {m.cuerpo ?? '[mensaje sin texto]'}
+      {/* Y el motivo del canal, cuando lo hay. Es lo ÚNICO que explica por qué no llegó, y sin él
+          la burbuja en rojo solo dice que algo salió mal. */}
+      {rechazado && m.falloDelCanal ? <span className="msgw-falla">{m.falloDelCanal}</span> : null}
+      <span className="t">
+        {hora(m.enviadoEl, zona)}
+        {m.autor === 'agente' ? ' · agente' : null}
+        {saliente ? <EstadoDeEnvio m={m} /> : null}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * El renglon de estado de un saliente. **Nunca dice «entregado» hasta que el canal lo diga.**
+ *
+ * `en_curso` se lee «enviado», que es exactamente lo que se sabe: salió de acá y el CRM lo aceptó.
+ * Decir «entregado» ahí sería afirmar un hecho que todavía no ocurrió, y es el defecto entero.
+ */
+function EstadoDeEnvio({ m }) {
+  if (m.envio === 'enviando') return <span className="msgw-est"> · enviando…</span>;
+  if (m.envio === 'fallido') return <span className="msgw-est mal"> · no salió</span>;
+  if (m.entrega === 'fallido') return <span className="msgw-est mal"> · no llegó</span>;
+  if (m.entrega === 'entregado') return <span className="msgw-est"> · entregado</span>;
+  if (m.entrega === 'en_curso') return <span className="msgw-est"> · enviado</span>;
+  // `desconocido`, o un mensaje viejo sin estado. NO se inventa uno: se calla.
+  return null;
+}
+
 export default function Ficha({ contactoId, alCerrar }) {
   const [contacto, setContacto] = useState(null);
   const [refresco, setRefresco] = useState(null);
@@ -139,6 +207,17 @@ export default function Ficha({ contactoId, alCerrar }) {
   const [nota, setNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
   const [avisoNota, setAvisoNota] = useState(null);
+  /** La ventana de 24 horas, tal como la calculó el SERVIDOR. `null` = todavía no se sabe. */
+  const [ventana, setVentana] = useState(null);
+  const [borrador, setBorrador] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [avisoEnvio, setAvisoEnvio] = useState(null);
+
+  const sesion = useSesion();
+  /* La zona de la EMPRESA y no la del navegador. Un mensaje de las 22:00 en Lima son las 03:00 del
+     día siguiente en UTC: sin esto, el separador diría un día distinto del que ve quien lo
+     escribió. `UTC` de respaldo — no se cae a la del navegador, que seria inventar un hecho. */
+  const zona = sesion?.organizacion.zonaHoraria ?? 'UTC';
 
   const caja = useRef(null);
   const previo = useRef(null);
@@ -224,6 +303,8 @@ export default function Ficha({ contactoId, alCerrar }) {
      su dato no cambia mientras alguien mira — y si cambia, es porque esa misma persona lo cambió. */
   useEffect(() => {
     if (situacion !== 'listo') return undefined;
+    // El chat NO pasa por acá: tiene reloj, ventana y envío, y su carga vive en `cargarChat`.
+    if (activa === 'chat') return undefined;
     if (pestanas[activa] !== undefined) return undefined;
     const cual = PESTANAS.find((p) => p.clave === activa);
     if (!cual) return undefined;
@@ -253,6 +334,138 @@ export default function Ficha({ contactoId, alCerrar }) {
       vigente = false;
     };
   }, [activa, contactoId, pestanas, situacion]);
+
+  /* ── EL CHAT: una lectura que FUSIONA, nunca reemplaza ──────────────────────
+   *
+   * Pisar la lista con la respuesta es el defecto que `lib/negocio/chat.ts` existe para impedir: un
+   * mensaje recién enviado todavía no está del otro lado, así que la burbuja desaparecía de la
+   * pantalla y volvía unos segundos después. Y el caso peor era el otro — un envío que falló de
+   * verdad se borraba, y era lo único que decía que el contacto no lo había recibido.
+   *
+   * La ventana viene en la MISMA respuesta, no en otra: son el mismo hecho, y separadas pueden
+   * contradecirse — llega una respuesta y el compositor sigue deshabilitado hasta el pedido
+   * siguiente.
+   */
+  const cargarChat = useCallback(async () => {
+    const r = await pedir(`/api/contactos/${contactoId}/mensajes`);
+    if (r.tipo !== 'datos') {
+      setPestanas((antes) => {
+        // Un fallo NO borra lo que ya se estaba mostrando. Vaciar el chat por una respuesta que no
+        // llegó convierte un problema de red en «este contacto nunca escribió».
+        if (antes.chat?.filas?.length) return antes;
+        return {
+          ...antes,
+          chat: {
+            filas: [],
+            error:
+              r.tipo === 'rechazado'
+                ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
+                : 'No se pudo contactar al servidor.',
+          },
+        };
+      });
+      return;
+    }
+    setVentana(r.datos.ventana ?? null);
+    setPestanas((antes) => ({
+      ...antes,
+      chat: {
+        filas: fusionarMensajes(r.datos.mensajes ?? [], antes.chat?.filas ?? []),
+        falta: r.datos.falta ?? null,
+      },
+    }));
+  }, [contactoId]);
+
+  /* LA PRIMERA LECTURA LA HACE LA FICHA, no el reloj, y no es una duplicación.
+     Medido en el navegador: con la pestaña oculta el reloj no dispara —es su razón de ser— y el
+     chat se quedaba en «Cargando…» sin decir por qué. El reloj REPITE; abrir es de quien abre. */
+  useEffect(() => {
+    if (situacion !== 'listo' || activa !== 'chat') return undefined;
+    if (pestanas.chat !== undefined) return undefined;
+    void cargarChat();
+    return undefined;
+  }, [activa, cargarChat, pestanas.chat, situacion]);
+
+  /* Y el reloj, que solo repite. La clave lleva el identificador del contacto: abrir otra ficha
+     REEMPLAZA el reloj en vez de sumar uno, y con la pestaña oculta no queda ninguno corriendo.
+     `null` mientras el chat no esté a la vista: no se registra, y así no hace falta romper la regla
+     de los hooks para apagarlo. */
+  usarReloj(
+    situacion === 'listo' && activa === 'chat' ? `chat:${contactoId}` : null,
+    cargarChat,
+    CADENCIA.chat,
+  );
+
+  const mandar = useCallback(async () => {
+    const texto = borrador.trim();
+    if (texto.length === 0) return;
+    setEnviando(true);
+    setAvisoEnvio(null);
+
+    /* LA BURBUJA OPTIMISTA. Se dibuja antes de que el servidor conteste, y **sobrevive** a los
+       ciclos que todavía no la traen porque `fusionarMensajes` la conserva mientras esté en vuelo.
+       El identificador es local: el de verdad lo pone el CRM, y hasta entonces el único puente
+       entre las dos es el texto. */
+    const local = `local:${contactoId}:${performance.now()}`;
+    setPestanas((antes) => ({
+      ...antes,
+      chat: {
+        ...(antes.chat ?? { falta: null }),
+        filas: [
+          ...(antes.chat?.filas ?? []),
+          {
+            id: local,
+            cuerpo: texto,
+            direccion: 'saliente',
+            autor: 'persona',
+            enviadoEl: new Date().toISOString(),
+            envio: 'enviando',
+          },
+        ],
+      },
+    }));
+    setBorrador('');
+
+    const r = await pedir(`/api/contactos/${contactoId}/mensajes`, {
+      metodo: 'POST',
+      cuerpo: { texto },
+    });
+    setEnviando(false);
+
+    if (r.tipo !== 'datos') {
+      setAvisoEnvio(
+        r.tipo === 'rechazado'
+          ? (r.detalle ?? `No se pudo enviar (${r.estado}).`)
+          : 'No se pudo contactar al servidor.',
+      );
+      // La burbuja NO se borra: se marca. Es lo único que dice que el contacto no lo recibió, y
+      // borrarla dejaría el mensaje desaparecido sin rastro. El texto vuelve al compositor para
+      // poder reintentar sin volver a escribirlo.
+      setPestanas((antes) => ({
+        ...antes,
+        chat: {
+          ...(antes.chat ?? { falta: null }),
+          filas: (antes.chat?.filas ?? []).map((m) =>
+            m.id === local ? { ...m, envio: 'fallido' } : m,
+          ),
+        },
+      }));
+      setBorrador(texto);
+      return;
+    }
+
+    if (r.datos.sinSeguimiento) {
+      // El CRM no devolvió identificador, así que este mensaje **no se va a poder confirmar
+      // nunca**. Quien mira tiene derecho a saber que el visto bueno no va a llegar.
+      setAvisoEnvio(
+        'Salió, pero GoHighLevel no devolvió su identificador: no vamos a poder confirmar la entrega.',
+      );
+    }
+    // No se toca la burbuja: el ciclo siguiente trae la fila real y la fusión suelta la optimista.
+    // Marcarla «entregada» acá sería exactamente el defecto original — dar por llegado lo que solo
+    // fue aceptado.
+    void cargarChat();
+  }, [borrador, cargarChat, contactoId]);
 
   const agregarNota = useCallback(async () => {
     const texto = nota.trim();
@@ -315,33 +528,21 @@ export default function Ficha({ contactoId, alCerrar }) {
 
     if (activa === 'chat') {
       if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />;
-      /* Los separadores de día. Sin ellos, una conversación de varios días se lee como si el
-         tiempo retrocediera: `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue
-         el día. El dato ya viaja en cada mensaje; el defecto aparece cuando la pantalla lo
-         descarta y pone un «HOY» fijo. */
-      let ultimoDia = null;
+      /* Los separadores de día los pone `conSeparadores`, no este JSX, y no es por prolijidad:
+         «donde cambia el día» es una decisión con dos zonas horarias adentro y en el JSX no se
+         puede probar. Sin ellos, una conversación de varios días se lee como si el tiempo
+         retrocediera — `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue el día. */
       return (
         <>
-          {p.filas.map((m) => {
-            const dia = new Date(m.enviadoEl).toDateString();
-            const separador = dia !== ultimoDia ? diaLargo(m.enviadoEl) : null;
-            ultimoDia = dia;
-            return (
-              <div key={m.id}>
-                {separador ? <div className="cw-day">{separador}</div> : null}
-                <div className={m.direccion === 'saliente' ? 'msgw out' : 'msgw in'}>
-                  {/* Un mensaje sin texto NO se descarta: un audio o una imagen existieron, y
-                      descartarlos hacía que para el auditor ese turno no hubiera ocurrido. Va con
-                      un marcador honesto entre corchetes, distinguible del contenido real. */}
-                  {m.cuerpo ?? '[mensaje sin texto]'}
-                  <span className="t">
-                    {hora(m.enviadoEl)}
-                    {m.autor === 'agente' ? ' · agente' : null}
-                  </span>
-                </div>
+          {conSeparadores(p.filas, zona).map((r) =>
+            r.tipo === 'dia' ? (
+              <div className="cw-day" key={r.clave}>
+                {r.texto}
               </div>
-            );
-          })}
+            ) : (
+              <Burbuja key={r.clave} m={r.mensaje} zona={zona} />
+            ),
+          )}
         </>
       );
     }
@@ -580,7 +781,93 @@ export default function Ficha({ contactoId, alCerrar }) {
             <Cuerpo />
           )}
         </div>
+
+        {/* EL COMPOSITOR, solo en la pestaña del chat. En las otras cuatro no se dibuja: un cuadro
+            de texto debajo del historial de llamadas invitaría a escribir algo que no va a ningún
+            lado. */}
+        {situacion === 'listo' && activa === 'chat' ? (
+          <Compositor
+            ventana={ventana}
+            borrador={borrador}
+            alEscribir={setBorrador}
+            alMandar={mandar}
+            enviando={enviando}
+            aviso={avisoEnvio}
+                      />
+        ) : null}
       </aside>
+    </>
+  );
+}
+
+/**
+ * El compositor.
+ *
+ * ── DESHABILITADO **CON EL MOTIVO A LA VISTA**, no deshabilitado a secas ────
+ *
+ * Un control apagado sin explicación es peor que uno que falla: quien lo mira no sabe si es un
+ * defecto, si le falta un permiso, o si tiene que hacer algo. Acá lo que hay que hacer está escrito
+ * — esperar a que el contacto escriba, o mandarle una plantilla desde el CRM —, y por eso el motivo
+ * lo redacta el SERVIDOR: es el mismo texto con el que responde el rechazo si alguien manda igual.
+ *
+ * ── Y MIENTRAS NO SE SEPA, NO SE DECIDE ────────────────────────────────────
+ *
+ * `ventana === null` es «todavía no contestó el servidor», que **no es** «está cerrada». Dibujarlo
+ * cerrado en ese instante haría parpadear el motivo del vencimiento en cada apertura de ficha, y
+ * quien lo lee no tiene forma de saber que fue mentira por medio segundo.
+ */
+function Compositor({ ventana, borrador, alEscribir, alMandar, enviando, aviso }) {
+  const sinRespuesta = ventana === null;
+  const cerrada = ventana !== null && !ventana.abierta;
+  const bloqueado = sinRespuesta || cerrada || enviando;
+
+  return (
+    <>
+      {cerrada ? (
+        <div className="fd-aviso falta cw-cerrada">
+          <i>◍</i>
+          <span>{ventana.motivo}</span>
+        </div>
+      ) : null}
+      {aviso ? (
+        <div className="fd-aviso mal cw-cerrada">
+          <i>⚠</i>
+          <span>{aviso}</span>
+        </div>
+      ) : null}
+      <div className="cw-input">
+        <input
+          type="text"
+          value={borrador}
+          onChange={(e) => alEscribir(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter manda. No hay Shift+Enter para el salto de línea porque esto es un `input` de
+            // una línea, que es lo que el prototipo tiene y lo que el CSS estila.
+            if (e.key === 'Enter' && !bloqueado) {
+              e.preventDefault();
+              void alMandar();
+            }
+          }}
+          disabled={bloqueado}
+          placeholder={
+            sinRespuesta
+              ? 'Cargando la conversación…'
+              : cerrada
+                ? 'Pasaron más de 24 horas: el canal no acepta texto libre'
+                : 'Escribí un mensaje…'
+          }
+          aria-label="Mensaje para el contacto"
+        />
+        <button
+          type="button"
+          className="cw-send"
+          onClick={() => void alMandar()}
+          disabled={bloqueado || borrador.trim().length === 0}
+          aria-label="Enviar"
+        >
+          {enviando ? '◍' : '➤'}
+        </button>
+      </div>
     </>
   );
 }
