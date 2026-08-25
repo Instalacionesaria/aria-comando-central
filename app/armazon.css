@@ -106,3 +106,135 @@
   white-space: normal;
   line-height: 1.4;
 }
+
+/* ── Las ventanas emergentes ──────────────────────────────────────────────── */
+
+/* El prototipo solo tenía paneles LATERALES —`.drawer`, `.cw`, `.lg`—, ninguna ventana centrada.
+   Lo único nuevo acá es la caja: el fondo reusa `.scrim`, que ya existía con su `.on` y su
+   fundido. Ver `components/Ventana.jsx`. */
+.vt {
+  position: fixed;
+  inset: 0;
+  /* Por encima de `.drawer`, que el prototipo dejó en 100. */
+  z-index: 101;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  /* Los clics del vacío son del `.scrim`, que está debajo y sabe cerrar. Sin esto, esta capa se
+     los come y el fondo deja de responder. */
+  pointer-events: none;
+}
+.vt-caja {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 560px;
+  /* Alto máximo, con el cuerpo desplazándose adentro: ver `.vt-cuerpo`. */
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raise);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: var(--sh-3);
+  /* LA ANIMACION ES DECORACION, y por eso no lleva `animation-fill-mode`.
+     La primera version dejaba la caja en `opacity: 0` y la encendia desde JavaScript en el cuadro
+     siguiente. Verificado en el navegador: `requestAnimationFrame` no corre si la pagina no esta
+     componiendo cuadros, y la ventana quedaba montada e INVISIBLE, con el fondo sin recibir clics
+     y la pagina bloqueada en un estado que no se ve.
+     Sin `fill-mode`, antes y despues de la animacion valen los estilos normales — o sea visible.
+     Si la animacion no corre nunca, la ventana aparece de golpe, que es lo correcto. */
+  animation: vt-entra 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes vt-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+/* El fondo reusa `.scrim on`, que ya lo deja opaco y clicable; esto solo le agrega el fundido de
+   entrada, con el mismo criterio: si no corre, el fondo ya esta donde tiene que estar. */
+.vt-fondo {
+  animation: vt-fondo 0.22s ease;
+}
+@keyframes vt-fondo {
+  from {
+    opacity: 0;
+  }
+}
+/* La caja recibe el foco solo para poder devolvérselo a un campo. El contorno lo lleva el
+   control de adentro, así que dibujarlo en la caja sería un recuadro que no explica nada. */
+.vt-caja:focus {
+  outline: none;
+}
+
+.vt-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.vt-head b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--txt);
+}
+.vt-head em {
+  display: block;
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+.vt-x {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 12px;
+  color: var(--txt-dim);
+  background: none;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.vt-x:hover {
+  color: var(--txt);
+  background: var(--bg-float);
+}
+
+/* El cuerpo desplaza ADENTRO, no la ventana entera. Con un formulario más alto que la pantalla,
+   desplazar la ventana dejaría el título fuera de vista justo cuando hace falta saber qué se
+   está creando —y en qué empresa. */
+.vt-cuerpo {
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Quien pidió menos movimiento recibe la ventana sin animación, no una animación más lenta. */
+@media (prefers-reduced-motion: reduce) {
+  .vt-caja,
+  .vt-fondo {
+    animation: none;
+  }
+}
+
+/* El botón de alta, en el encabezado de la tarjeta de la lista. `.card-head .hint` ya lleva
+   `margin-left: auto`, así que cuando hay contador el botón lo sigue; cuando no lo hay, el
+   botón necesita el suyo. */
+.card-head .aj-alta {
+  margin-left: auto;
+}
+.card-head .hint + .aj-alta {
+  margin-left: 0;
+}

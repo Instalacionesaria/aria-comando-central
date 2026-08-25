@@ -27,10 +27,17 @@
  *
  * Así que una empresa recién creada existe y NO opera. La lista lo dice en cada fila, porque
  * es la pregunta que sigue: *¿a cuál le falta conectar GoHighLevel?*
+ *
+ * ── EL FORMULARIO ES UNA VENTANA ────────────────────────────────────────────
+ *
+ * Se pidió que apareciera al apretar el botón, y hay un motivo además del pedido: el alta es
+ * una operación OCASIONAL y la lista es lo que se mira siempre. Con el formulario permanente
+ * arriba, lo que importa quedaba empujado hacia abajo todo el tiempo. Ver `components/Ventana.jsx`.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import Ventana from '../Ventana.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede administrar empresas.',
@@ -59,6 +66,8 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const [slugTocado, setSlugTocado] = useState(false);
   const [creando, setCreando] = useState(false);
   const [aviso, setAviso] = useState(null);
+  /** El formulario vive en una ventana emergente: aparece al apretar «Crear empresa». */
+  const [abierta, setAbierta] = useState(false);
   const yaPedido = useRef(false);
 
   const cargar = useCallback(async () => {
@@ -123,6 +132,10 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setNombre('');
     setSlug('');
     setSlugTocado(false);
+    /* Se cierra sola al crear, y el aviso NO se pierde: se dibuja en la página cuando la ventana
+       no está. Los errores, en cambio, se quedan adentro — es donde está el campo que hay que
+       corregir, y cerrar la ventana con el nombre a medio escribir sería perder lo tipeado. */
+    setAbierta(false);
     yaPedido.current = false;
     await cargar();
   }, [nombre, slug, slugTocado, cargar]);
@@ -163,6 +176,23 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const slugValido = SLUG.test(slugPropuesto);
   const puedeCrear = nombre.trim().length > 0 && slugValido && !creando;
 
+  /* El mismo aviso, en dos sitios posibles: adentro de la ventana mientras está abierta —donde
+     está el campo que hay que corregir— y en la página cuando se cerró. Se define una vez para
+     que las dos ubicaciones no puedan divergir. */
+  const elAviso = aviso ? (
+    <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
+      <i>{aviso.mal ? '⚠' : '✓'}</i>
+      <span>{aviso.texto}</span>
+    </div>
+  ) : null;
+
+  /* Al abrir se limpia el aviso anterior. Un «creada» de hace un rato encima del formulario de
+     la siguiente es la clase de cosa que hace dudar de si se creó una o dos. */
+  const abrir = () => {
+    setAviso(null);
+    setAbierta(true);
+  };
+
   return (
     <>
       <p className="aj-intro">
@@ -171,65 +201,15 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
         usuarios.
       </p>
 
-      {/* ── El alta ── */}
-      <div className="card">
-        <div className="card-head">Crear una empresa</div>
-        <div className="card-body aj-cuerpo">
-          <div className="fd-rejilla dos">
-            <div className="fd-campo">
-              <label htmlFor="emp-nombre">Nombre</label>
-              <input
-                id="emp-nombre"
-                type="text"
-                value={nombre}
-                placeholder="Cliente Ejemplo"
-                onChange={(e) => setNombre(e.target.value)}
-              />
-            </div>
-            <div className="fd-campo">
-              <label htmlFor="emp-slug">Identificador corto</label>
-              <input
-                id="emp-slug"
-                type="text"
-                value={slugPropuesto}
-                placeholder="cliente-ejemplo"
-                onChange={(e) => {
-                  setSlugTocado(true);
-                  setSlug(e.target.value);
-                }}
-              />
-            </div>
-          </div>
-          {/* Se PROPONE a partir del nombre y se puede cambiar. Un slug generado sin mostrarlo
-              es un dato que después aparece en una URL y nadie sabe de dónde salió. */}
-          <div className="aj-ayuda">
-            El identificador va en direcciones y no se puede repetir: minúsculas, números y
-            guiones. Se propone a partir del nombre y se puede cambiar.
-          </div>
-          {!slugValido && slugPropuesto.length > 0 ? (
-            <div className="fd-aviso falta">
-              <i>⚠</i>
-              <span>«{slugPropuesto}» no sirve como identificador: minúsculas, números y guiones.</span>
-            </div>
-          ) : null}
-          <div className="aj-fila">
-            <button type="button" className="fd-btn" disabled={!puedeCrear} onClick={() => void crear()}>
-              {creando ? 'Creando…' : 'Crear empresa'}
-            </button>
-          </div>
-          {aviso ? (
-            <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
-              <i>{aviso.mal ? '⚠' : '✓'}</i>
-              <span>{aviso.texto}</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      {abierta ? null : elAviso}
 
-      {/* ── La lista ── */}
+      {/* ── La lista, con el alta en su encabezado ── */}
       <div className="card">
         <div className="card-head">
           Empresas <span className="hint">{lista.length}</span>
+          <button type="button" className="fd-btn aj-alta" onClick={abrir}>
+            Crear empresa
+          </button>
         </div>
         <div className="rows">
           {lista.map((o) => (
@@ -270,6 +250,64 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
           ))}
         </div>
       </div>
+
+      {/* ── El alta ── */}
+      {abierta ? (
+        <Ventana
+          titulo="Crear una empresa"
+          subtitulo="Va a existir pero NO va a operar: después hay que cargarle GoHighLevel y crearle usuarios."
+          alCerrar={() => setAbierta(false)}
+        >
+          <div className="fd-rejilla dos">
+            <div className="fd-campo">
+              <label htmlFor="emp-nombre">Nombre</label>
+              <input
+                id="emp-nombre"
+                type="text"
+                value={nombre}
+                placeholder="Cliente Ejemplo"
+                onChange={(e) => setNombre(e.target.value)}
+              />
+            </div>
+            <div className="fd-campo">
+              <label htmlFor="emp-slug">Identificador corto</label>
+              <input
+                id="emp-slug"
+                type="text"
+                value={slugPropuesto}
+                placeholder="cliente-ejemplo"
+                onChange={(e) => {
+                  setSlugTocado(true);
+                  setSlug(e.target.value);
+                }}
+              />
+            </div>
+          </div>
+          {/* Se PROPONE a partir del nombre y se puede cambiar. Un slug generado sin mostrarlo
+              es un dato que después aparece en una URL y nadie sabe de dónde salió. */}
+          <div className="aj-ayuda">
+            El identificador va en direcciones y no se puede repetir: minúsculas, números y
+            guiones. Se propone a partir del nombre y se puede cambiar.
+          </div>
+          {!slugValido && slugPropuesto.length > 0 ? (
+            <div className="fd-aviso falta">
+              <i>⚠</i>
+              <span>«{slugPropuesto}» no sirve como identificador: minúsculas, números y guiones.</span>
+            </div>
+          ) : null}
+
+          {elAviso}
+
+          <div className="aj-fila">
+            <button type="button" className="fd-btn" disabled={!puedeCrear} onClick={() => void crear()}>
+              {creando ? 'Creando…' : 'Crear empresa'}
+            </button>
+            <button type="button" className="fd-btn sec" disabled={creando} onClick={() => setAbierta(false)}>
+              Cancelar
+            </button>
+          </div>
+        </Ventana>
+      ) : null}
     </>
   );
 }

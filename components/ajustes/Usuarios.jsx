@@ -27,10 +27,22 @@
  * `POST /api/admin/usuarios/{id}/roles` borra los roles que tenía y pone los que se manden. Por
  * eso esta pantalla muestra los actuales y los precarga: hasta la Etapa 11 el listado no los
  * devolvía, así que editar el rol de alguien era **destructivo a ciegas**.
+ *
+ * ── EL FORMULARIO ES UNA VENTANA, Y ESO TOCA LA CONTRASEÑA TEMPORAL ─────────
+ *
+ * Se pidió que el alta apareciera al apretar el botón. Con el formulario adentro de una ventana
+ * aparece un riesgo que antes no existía: **la temporal se muestra UNA sola vez**, y una ventana
+ * es algo que se cierra de un Escape sin leer.
+ *
+ * Así que la ventana no se cierra al crear la persona: se queda mostrando la contraseña, y
+ * mientras esté en pantalla **Escape y el fondo dejan de cerrar**. Sale con un botón que dice
+ * qué se está confirmando. Sin eso, el gesto más natural del mundo —cerrar— destruye un dato
+ * irrecuperable, y lo único que queda es restablecerlo.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import Ventana from '../Ventana.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede administrar personas en esta empresa.',
@@ -54,6 +66,8 @@ export default function Usuarios({ sesion }) {
   /** La contraseña temporal. **Se muestra una sola vez y no se guarda en ningún lado.** */
   const [temporal, setTemporal] = useState(null);
   const [editando, setEditando] = useState(null);
+  /** El formulario vive en una ventana emergente: aparece al apretar «Agregar usuario». */
+  const [abierta, setAbierta] = useState(false);
   const yaPedido = useRef(false);
 
   const orgId = sesion?.organizacion?.id;
@@ -110,13 +124,16 @@ export default function Usuarios({ sesion }) {
           : r.tipo === 'sin_respuesta'
             ? 'No llegó al servidor. No se creó nada.'
             : `No se creó: ${r.datos?.motivo}`;
+      /* El error se queda en la ventana, con lo tipeado intacto: es donde está el campo que hay
+         que corregir. */
       setAviso({ mal: true, texto });
       return;
     }
 
     const id = r.datos.id;
     /* La temporal se muestra ACÁ y no se guarda: el servidor la devuelve una sola vez
-       (`seMuestraUnaVez`) y no hay forma de volver a verla — solo de restablecerla. */
+       (`seMuestraUnaVez`) y no hay forma de volver a verla — solo de restablecerla. Ponerla en
+       el estado es lo que mantiene la ventana abierta y sin cierre accidental. */
     setTemporal({ email: email.trim(), clave: r.datos.temporal });
 
     /* El rol es una SEGUNDA llamada, y hay que decirlo: entre las dos, la persona existe con
@@ -191,6 +208,27 @@ export default function Usuarios({ sesion }) {
   const puedeCrear = nombre.trim().length > 0 && EMAIL.test(email.trim()) && !creando;
   const asignables = roles.filter((r) => !r.soloPrincipal);
 
+  /* El mismo aviso, en dos sitios posibles: adentro de la ventana mientras está abierta y en la
+     página cuando se cerró. Se define una vez para que no puedan divergir. */
+  const elAviso = aviso ? (
+    <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
+      <i>{aviso.mal ? '⚠' : '✓'}</i>
+      <span>{aviso.texto}</span>
+    </div>
+  ) : null;
+
+  const abrir = () => {
+    setAviso(null);
+    setTemporal(null);
+    setAbierta(true);
+  };
+  /* Cerrar TIRA la temporal, y por eso solo se llega acá a propósito: mientras está en pantalla,
+     `cerrablePorFuera={false}` saca el fondo y Escape de las formas de cerrar. */
+  const cerrar = () => {
+    setAbierta(false);
+    setTemporal(null);
+  };
+
   return (
     <>
       {/* EN QUÉ EMPRESA. Arriba de todo y sin ambigüedad: el defecto que evita es crear el
@@ -205,79 +243,15 @@ export default function Usuarios({ sesion }) {
         </span>
       </div>
 
-      {/* ── El alta ── */}
-      <div className="card">
-        <div className="card-head">Crear una persona</div>
-        <div className="card-body aj-cuerpo">
-          <div className="fd-rejilla dos">
-            <div className="fd-campo">
-              <label htmlFor="us-nombre">Nombre</label>
-              <input id="us-nombre" type="text" value={nombre} placeholder="Nombre y apellido"
-                onChange={(e) => setNombre(e.target.value)} />
-            </div>
-            <div className="fd-campo">
-              <label htmlFor="us-email">Correo</label>
-              <input id="us-email" type="email" value={email} placeholder="persona@empresa.com"
-                autoComplete="off" onChange={(e) => setEmail(e.target.value)} />
-            </div>
-          </div>
+      {abierta ? null : elAviso}
 
-          <div className="fd-campo">
-            <label htmlFor="us-rol">Rol</label>
-            {asignables.length === 0 ? (
-              <div className="fd-aviso falta">
-                <i>⚠</i>
-                <span>No se pudo leer el catálogo de roles. Se puede crear la persona, pero habrá que darle el rol después.</span>
-              </div>
-            ) : (
-              <select id="us-rol" value={rolNuevo} onChange={(e) => setRolNuevo(e.target.value)}>
-                <option value="">Sin rol todavía</option>
-                {asignables.map((r) => (
-                  <option key={r.clave} value={r.clave}>
-                    {r.nombre}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div className="aj-ayuda">
-            Sin rol, la persona puede entrar y no ve ninguna pantalla. Un <b>Closer</b> ve solo la
-            pestaña Closer; un <b>Setter</b> solo la del Setter.
-          </div>
-
-          <div className="aj-fila">
-            <button type="button" className="fd-btn" disabled={!puedeCrear} onClick={() => void crear()}>
-              {creando ? 'Creando…' : 'Crear persona'}
-            </button>
-          </div>
-
-          {/* LA TEMPORAL. Se muestra una sola vez, y la pantalla lo dice — el servidor no la
-              guarda en claro y no hay forma de volver a verla, solo de restablecerla. */}
-          {temporal ? (
-            <div className="fd-aviso bien">
-              <i>✓</i>
-              <span>
-                Contraseña temporal de <b>{temporal.email}</b>: <code className="aj-valor" style={{ display: 'inline-block', padding: '2px 8px' }}>{temporal.clave}</code>
-                <br />
-                <b>Se muestra una sola vez.</b> Copiala ahora: no se puede volver a ver, solo
-                restablecer. La persona tendrá que cambiarla al entrar.
-              </span>
-            </div>
-          ) : null}
-
-          {aviso ? (
-            <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
-              <i>{aviso.mal ? '⚠' : '✓'}</i>
-              <span>{aviso.texto}</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* ── La lista ── */}
+      {/* ── La lista, con el alta en su encabezado ── */}
       <div className="card">
         <div className="card-head">
           Personas <span className="hint">{gente.length}</span>
+          <button type="button" className="fd-btn aj-alta" onClick={abrir}>
+            Agregar usuario
+          </button>
         </div>
         <div className="rows">
           {gente.map((u) => (
@@ -334,6 +308,99 @@ export default function Usuarios({ sesion }) {
           ))}
         </div>
       </div>
+
+      {/* ── El alta ── */}
+      {abierta ? (
+        <Ventana
+          titulo={temporal ? 'Copiá la contraseña temporal' : 'Agregar una persona'}
+          subtitulo={
+            temporal
+              ? 'Es la única vez que se puede ver. Después solo se puede restablecer.'
+              : `Se crea en ${sesion?.organizacion?.nombre ?? 'esta empresa'}.`
+          }
+          /* La temporal en pantalla saca el cierre accidental. Es lo único que justifica quitar
+             Escape, y solo porque lo que se pierde no se puede recuperar. */
+          cerrablePorFuera={!temporal}
+          alCerrar={cerrar}
+        >
+          {temporal ? (
+            <>
+              {/* Reemplaza al formulario en vez de sumarse: dejarlo debajo daría a entender que
+                  se puede crear otra mientras esta contraseña sigue sin copiarse. */}
+              <div className="fd-aviso bien">
+                <i>✓</i>
+                <span>
+                  Contraseña temporal de <b>{temporal.email}</b>:
+                </span>
+              </div>
+              <code className="aj-valor" style={{ display: 'block', padding: '10px 12px', fontSize: 14 }}>
+                {temporal.clave}
+              </code>
+              <div className="aj-ayuda">
+                <b>Se muestra una sola vez.</b> Copiala ahora: no se puede volver a ver, solo
+                restablecer. La persona tendrá que cambiarla al entrar.
+              </div>
+
+              {elAviso}
+
+              <div className="aj-fila">
+                <button type="button" className="fd-btn" onClick={cerrar}>
+                  Listo, ya la copié
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="fd-rejilla dos">
+                <div className="fd-campo">
+                  <label htmlFor="us-nombre">Nombre</label>
+                  <input id="us-nombre" type="text" value={nombre} placeholder="Nombre y apellido"
+                    onChange={(e) => setNombre(e.target.value)} />
+                </div>
+                <div className="fd-campo">
+                  <label htmlFor="us-email">Correo</label>
+                  <input id="us-email" type="email" value={email} placeholder="persona@empresa.com"
+                    autoComplete="off" onChange={(e) => setEmail(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="fd-campo">
+                <label htmlFor="us-rol">Rol</label>
+                {asignables.length === 0 ? (
+                  <div className="fd-aviso falta">
+                    <i>⚠</i>
+                    <span>No se pudo leer el catálogo de roles. Se puede crear la persona, pero habrá que darle el rol después.</span>
+                  </div>
+                ) : (
+                  <select id="us-rol" value={rolNuevo} onChange={(e) => setRolNuevo(e.target.value)}>
+                    <option value="">Sin rol todavía</option>
+                    {asignables.map((r) => (
+                      <option key={r.clave} value={r.clave}>
+                        {r.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="aj-ayuda">
+                Sin rol, la persona puede entrar y no ve ninguna pantalla. Un <b>Closer</b> ve solo la
+                pestaña Closer; un <b>Setter</b> solo la del Setter.
+              </div>
+
+              {elAviso}
+
+              <div className="aj-fila">
+                <button type="button" className="fd-btn" disabled={!puedeCrear} onClick={() => void crear()}>
+                  {creando ? 'Creando…' : 'Crear persona'}
+                </button>
+                <button type="button" className="fd-btn sec" disabled={creando} onClick={cerrar}>
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
+        </Ventana>
+      ) : null}
     </>
   );
 }
