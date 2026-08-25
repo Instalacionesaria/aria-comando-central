@@ -363,6 +363,13 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/contactos/[id]/perfil/route.ts',
   'app/api/contactos/[id]/historial/route.ts',
   'app/api/contactos/[id]/notas/route.ts',
+  // El ciclo de ingesta de mensajes. No lo abre una pantalla: lo pide un reloj, y lo va a pedir
+  // también una tarea programada. No muestra nada, así que el defecto que `ADR-0304` previene
+  // —una pantalla con secciones en blanco— no lo puede producir.
+  //
+  // Pide `contactos.ver`, la misma capacidad que las cinco pestañas de la ficha, y a propósito:
+  // es lo que hace que la ficha tenga qué leer.
+  'app/api/mensajes/ingesta/route.ts',
 ];
 
 /**

@@ -187,6 +187,15 @@ export interface MensajeDeGhl {
   enviadoEl: Date | null;
   /** Quién lo mandó del lado del CRM. Medido: viene `''` y no nulo cuando no hay nadie. */
   usuarioId: string | null;
+  /**
+   * De dónde salió: `workflow`, `campaign`, `bulk_actions`, `api` o `app`.
+   *
+   * Es el ÚNICO campo que distingue un mensaje que escribió una persona de uno que disparó una
+   * automatización, y `userId` no sirve para eso: medido, un mensaje con `source: "workflow"`
+   * **también trae `userId`** —el dueño del flujo—. Deducir «lo escribió alguien» de que haya
+   * usuario le atribuiría a una persona todos los mensajes automáticos.
+   */
+  fuente: string | null;
 }
 
 export interface PaginaDeMensajes {
@@ -328,6 +337,7 @@ export function leerMensaje(m: unknown): MensajeDeGhl {
     estado: texto(o.status),
     enviadoEl: aInstante(o.dateAdded),
     usuarioId: texto(o.userId),
+    fuente: texto(o.source),
   };
 }
 

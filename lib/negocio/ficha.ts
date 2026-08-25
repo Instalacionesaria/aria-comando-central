@@ -37,6 +37,9 @@ const FALTA = {
   mensajes:
     'Todavía no se trajeron los mensajes de GoHighLevel. Esta conversación puede existir en el ' +
     'CRM: lo que falta es la ingesta que la copia acá.',
+  mensajesAMedias:
+    'La ingesta todavía está recorriendo la cuenta hacia atrás. Esta conversación puede tener ' +
+    'mensajes que aún no se copiaron.',
   llamadas:
     'Todavía no se conectó la plataforma de voz, así que no hay ninguna llamada registrada. Las ' +
     'llamadas llegan por aviso de Assistable, no se consultan.',
@@ -57,6 +60,14 @@ export interface MensajeDeFicha {
   canal: string | null;
   cuerpo: string | null;
   enviadoEl: Date;
+  /**
+   * En qué estado quedó la entrega. **Va en la respuesta y se dibuja**, y es la mitad visible del
+   * arreglo del defecto original: la otra mitad —la ventana de 24 horas— evita gastar la llamada,
+   * y ésta hace visible todo lo demás que el canal puede rechazar.
+   */
+  entrega: 'en_curso' | 'entregado' | 'fallido' | 'desconocido';
+  /** Lo que dijo el canal al rechazarlo. Es lo único que explica POR QUÉ no llegó. */
+  falloDelCanal: string | null;
 }
 
 /** El tope del `03` § 1: los ÚLTIMOS 200. */
@@ -78,7 +89,16 @@ const TOPE_DE_MENSAJES = 200;
 export async function mensajesDeLaFicha(contactoId: string): Promise<Pestana<MensajeDeFicha>> {
   const crudos = await datos()
     .selectFrom('mensajes')
-    .select(['id', 'direccion', 'autor', 'canal', 'cuerpo', 'enviado_el'])
+    .select([
+      'id',
+      'direccion',
+      'autor',
+      'canal',
+      'cuerpo',
+      'enviado_el',
+      'estado_entrega_familia',
+      'fallo_del_canal',
+    ])
     .where('contacto_id', '=', contactoId)
     .orderBy('enviado_el', 'desc')
     // Desempate estable: dos mensajes con el mismo instante —pasa con los importados— saldrían en
@@ -96,10 +116,37 @@ export async function mensajesDeLaFicha(contactoId: string): Promise<Pestana<Men
         canal: m.canal,
         cuerpo: m.cuerpo,
         enviadoEl: m.enviado_el,
+        entrega: m.estado_entrega_familia,
+        falloDelCanal: m.fallo_del_canal,
       }))
       .reverse(),
-    falta: crudos.length === 0 ? FALTA.mensajes : null,
+    falta: crudos.length > 0 ? null : await porQueNoHayMensajes(),
   };
+}
+
+/**
+ * Un cero de mensajes, explicado. **Un cero medido y un cero no medido no son el mismo hecho**
+ * (`11` § 9 regla 1), y acá la diferencia manda a alguien a llamar a un cliente creyendo que nunca
+ * contestó.
+ *
+ * Quien sabe cuál de los dos es no es este contacto: es el pulso de la organización. La ingesta
+ * camina la cuenta **en orden y sin saltos**, así que una vez que terminó una vuelta completa sin
+ * quedar atrasada, un contacto sin mensajes no tiene mensajes de verdad.
+ *
+ * Y son TRES estados y no dos, porque el del medio es el que dura más al principio: nunca corrió,
+ * está a mitad de camino, o terminó.
+ */
+async function porQueNoHayMensajes(): Promise<string | null> {
+  const pulso = await datos()
+    .selectFrom('ingesta_pulso')
+    .select(['marca_el', 'atrasado'])
+    .where('clave', '=', 'mensajes')
+    .executeTakeFirst();
+
+  if (!pulso || pulso.marca_el === null) return FALTA.mensajes;
+  if (pulso.atrasado) return FALTA.mensajesAMedias;
+  // Terminó una vuelta completa: el cero es medido y no hay nada que aclarar.
+  return null;
 }
 
 // ─── Llamada ────────────────────────────────────────────────────────────────

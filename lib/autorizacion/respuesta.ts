@@ -150,6 +150,18 @@ export const RECHAZOS = {
   // código propio: es el único de los cuatro rechazos del alta que se arregla cambiando UN
   // campo, y quien lo recibe tiene que saber cuál.
   slug_duplicado: 409,
+
+  // ── Etapa 13 · El chat ───────────────────────────────────────────────
+  //
+  // Pasaron más de 24 horas desde el último mensaje del contacto, así que el canal solo acepta
+  // plantillas aprobadas. 409 y no 403: quien lo recibe TIENE el permiso de responder; lo que
+  // falta es que el contacto escriba. Un 403 lo mandaría a pedirle un permiso a alguien que no
+  // se lo puede dar, cuando la única salida está del otro lado de la conversación.
+  //
+  // Y tiene código propio en vez de caer en `peticion_invalida` porque la petición está bien: es
+  // el momento el que no sirve, y el compositor tiene que poder distinguir «arreglá el texto» de
+  // «esperá a que te escriba».
+  ventana_cerrada: 409,
 } as const;
 
 /**

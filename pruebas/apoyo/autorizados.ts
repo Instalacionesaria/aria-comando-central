@@ -171,6 +171,21 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // El catálogo de roles. Lee `identidad.roles`, que es de ese dominio. No cruza nada: los
   // roles globales no pertenecen a ninguna organización.
   'app/api/admin/roles/route.ts',
+  // ── Etapa 13 · el chat ───────────────────────────────────────────────────────
+  //
+  // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de
+  // arriba, y escribe la fila del mensaje por `conOrganizacion(` y la política de fila.
+  'app/api/contactos/[id]/mensajes/route.ts',
+  // El ciclo de ingesta. Mismo motivo para el token, y **no llama a `conOrganizacion(` en el
+  // manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que lo abre para cada una
+  // de sus tres transacciones cortas. Está acá por el token, y estar acá lo exime también de
+  // `ADR-0202` — así que queda dicho dónde vive el contexto: en `ingerirMensajes(`, que recibe la
+  // organización por parámetro y nunca la deduce.
+  //
+  // La cáscara existe porque el candado NO puede vivir en una sola transacción: un ciclo hace
+  // hasta trece llamadas contra un servicio ajeno, y sostener la transacción mientras tanto
+  // retendría una conexión del agrupador todo ese rato.
+  'app/api/mensajes/ingesta/route.ts',
   // ── Etapa 12 ─────────────────────────────────────────────────────────────────
   //
   // Editar y borrar una empresa. Es el caso simétrico del alta: la política del inquilino sobre
@@ -267,6 +282,21 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // solo LEE. Y el orden lo garantiza — la ficha se arma de la cache ANTES del refresco, asi que
   // un fallo del CRM no impide abrirla, solo deja el aviso de que no se actualizo.
   'app/api/contactos/[id]/route.ts',
+  // ── Etapa 13 ─────────────────────────────────────────────────────────────────
+  //
+  // Mandar un mensaje: lee la credencial por identidad y escribe la fila por el inquilino.
+  //
+  // Y ACÁ SÍ HAY UN ESTADO A MEDIAS POSIBLE, así que se dice de frente: si el alta de la fila
+  // falla después de que el canal aceptó el mensaje, **el contacto lo recibió y nosotros no
+  // tenemos registro**. No es una hipótesis cómoda: es el orden inevitable, porque el
+  // identificador que se guarda lo devuelve el envío.
+  //
+  // Lo que lo hace aceptable es que **se repara solo, y sin intervención**: ese mensaje existe en
+  // la conversación del CRM, así que la ingesta lo trae en el ciclo siguiente con su
+  // identificador de verdad. La ventana de inconsistencia es de un ciclo, y lo único que se
+  // pierde en el medio es la atribución a la persona que lo escribió — la fila reconstruida dice
+  // `agente` en vez de su nombre.
+  'app/api/contactos/[id]/mensajes/route.ts',
 ];
 
 /**
