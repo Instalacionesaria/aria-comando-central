@@ -1,60 +1,55 @@
 'use client';
 
-/* La pestaña Closer. Portada de aios-command-center_1.html líneas 3150-3172, y REESCRITA en la
- * Etapa 11 para que no invente nada.
+/* La pestaña Closer. Cuatro sub-pestañas: Inicio · Mi Día · Pipeline · Agenda.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * QUÉ SE BORRÓ, Y POR QUÉ NO ERA UN DETALLE
+ * QUÉ SE BORRÓ DE ACÁ, Y POR QUÉ NO ERA UN DETALLE
  *
- * `lib/aios/closer.js` llenaba estas cuatro sub-pestañas con datos escritos a mano, y estuvo
- * en producción. Lo que mostraba:
+ * `lib/aios/closer.js` llenaba estas cuatro sub-pestañas con datos escritos a mano, y estuvo en
+ * producción: un cockpit con 20 llamadas y 95% de asistencia, cinco meses de facturación
+ * inventada, seis citas con nombres de personas, un diagnóstico atribuido a la IA que ninguna IA
+ * generó, y el encabezado «Closer · Jorge Veramendi».
  *
- *   · un cockpit con 20 llamadas, 24 agendadas y 95% de asistencia;
- *   · cinco meses de facturación inventada — $9.800, $14.200, $11.600, $24.800;
- *   · seis citas con nombres de personas: Luzma Carbajal, Marcos Gabriel Juarez, Rodrigo
- *     Wayar Cruz, Andres Rendon, Richie Brizuela, Irma Perez;
- *   · un diagnóstico atribuido a la IA que ninguna IA generó: *"Falla detectada por IA: el
- *     contacto pidió tres veces el precio y la garantía sin respuesta clara"*;
- *   · siete mensajes de buzón entre comillas, y "27 tareas pendientes";
- *   · el encabezado "Closer · Jorge Veramendi" y la fecha fija "jueves, 13 de agosto".
+ * Dos detalles que muestran hasta dónde llegaba: el encabezado del buzón decía **25** con
+ * **siete** filas debajo, y una aclaración afirmaba *"julio es real · abril a junio son
+ * referencia"* — decía de dónde venían datos que no venían de ninguna parte.
  *
- * Dos detalles que muestran hasta dónde llegaba. El encabezado del buzón decía **25** con
- * **siete** filas debajo: el conteo y la lista eran dos inventos distintos que no coincidían. Y
- * una aclaración afirmaba *"julio es real · abril a junio son referencia"* — decía de dónde
- * venían datos que no venían de ninguna parte.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * UNA SOLA LLAMADA PARA INICIO Y MI DÍA, Y NO ES POR AHORRAR UNA PETICIÓN
  *
- * Nada de eso fallaba, y es el defecto que este sistema entero existe para impedir. Una
- * pantalla con nombres de clientes y dinero falsos es peor que una vacía: la vacía se reporta.
+ * El contador de tareas del cockpit se calcula con la regla de Mi Día —los seguimientos
+ * automáticos **no** suman— así que con dos endpoints habría dos implementaciones del mismo
+ * número. El `01` es terminante: *"si dos pantallas muestran el mismo número, comparten la
+ * función que lo calcula"*.
  *
- * ── LO QUE HAY AHORA ────────────────────────────────────────────────────────
+ * Con una llamada, el cockpit recibe el contador que Mi Día ya calculó. No puede discrepar.
  *
- * **Mi Día** trae los contactos de verdad, de `/api/closer/contactos`, con la fila y los seis
- * íconos compartidos (`components/negocio/`).
+ * ── Y CERO LLAMADAS A GOHIGHLEVEL ───────────────────────────────────────────
  *
- * **Inicio, Pipeline y Agenda** dicen que faltan, con lo que falta. No muestran `$0` ni un
- * `95%`: el `11` § 4 lo pide así —*"no hay datos cargados → `—`, con una línea que diga qué
- * falta"*— porque *"un `$0` donde nadie cargó montos afirma «no vendiste nada». Es falso"*.
+ * El `04` § 8: las cuatro pantallas que el closer mira todo el día cuestan **0**. Todo el
+ * presupuesto se gasta en TRAER los datos —`/api/contactos/sincronizar`, por acción explícita de
+ * una persona— y no en mirarlos.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { pedir } from '../../lib/http/cliente.ts';
+import Inicio from '../closer/Inicio.jsx';
+import MiDia from '../closer/MiDia.jsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 
 const SUB = [
-  { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
+  { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
   { clave: 'pipeline', nombre: 'Pipeline', icono: '#i-conv' },
   { clave: 'agenda', nombre: 'Agenda', icono: '#i-closer' },
 ];
 
-/* Mi Día va PRIMERO, y es un cambio respecto del prototipo.
- *
- * El `11` § 5.2 la llama *"la pantalla donde se trabaja"*, y el Inicio *"responde una sola
- * pregunta: ¿cómo voy este mes?"*. Abrir en el tablero tenía sentido cuando el tablero mostraba
- * números; hoy no tiene ninguno, y abrir en un cartel de "falta configurar" haría que la
- * pestaña pareciera no funcionar. */
-const ARRANQUE = 'dia';
+const MOTIVOS = {
+  sin_permiso: 'Tu usuario no tiene permiso para ver esta pestaña.',
+  organizacion_inactiva: 'Esta organización está desactivada.',
+};
 
-/** El cartel de lo que todavía no está. Dice QUÉ falta, no "próximamente". */
+/** El cartel de lo que todavía no está. Dice QUÉ falta, no «próximamente». */
 function Falta({ titulo, detalle, puntos }) {
   return (
     <div className="empty">
@@ -73,7 +68,135 @@ function Falta({ titulo, detalle, puntos }) {
 }
 
 export default function CloserView({ activa }) {
-  const [sub, setSub] = useState(ARRANQUE);
+  /* Inicio arranca, como se pidió: el cockpit responde «¿cómo voy este mes?» y es lo primero
+     que alguien quiere ver al abrir su pestaña. */
+  const [sub, setSub] = useState('inicio');
+  const [datos, setDatos] = useState(null);
+  const [situacion, setSituacion] = useState('cargando');
+  const [causa, setCausa] = useState(null);
+  const yaPedido = useRef(false);
+
+  const cargar = useCallback(async () => {
+    setSituacion('cargando');
+    const r = await pedir('/api/closer/mi-dia');
+    /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»:
+       con una sola rama, alguien sin `closer.ver` vería un cockpit en cero y creería que no
+       vendió nada. */
+    if (r.tipo === 'sin_respuesta') {
+      setCausa('No se pudo contactar al servidor. No es que no tengas trabajo: no se pudo preguntar.');
+      setSituacion('sin_respuesta');
+      return;
+    }
+    if (r.tipo === 'rechazado') {
+      setCausa(r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`);
+      setSituacion('rechazado');
+      return;
+    }
+    setDatos(r.datos);
+    setSituacion('listo');
+  }, []);
+
+  useEffect(() => {
+    if (yaPedido.current) return;
+    yaPedido.current = true;
+    void cargar();
+  }, [cargar]);
+
+  /* ── SIN RELOJ, Y ES DELIBERADO ─────────────────────────────────────────────
+   *
+   * El `04` § 2 pone el reloj principal en 10 segundos, y también dice qué lo hace sostenible:
+   * un candado del lado del servidor que hace que N pestañas cuesten lo mismo que una, y una
+   * marca de agua para que el costo sea proporcional a la actividad y no al tamaño de la
+   * cuenta. **Ninguna de las dos piezas existe todavía.**
+   *
+   * Poner el intervalo antes que el candado sería la parte fácil de un diseño cuya parte difícil
+   * lo sostiene: cada pestaña abierta multiplicaría las consultas, y con tres vistas abiertas
+   * son cientos de peticiones por hora. Es exactamente el estado del que el `04` § 1 dice que
+   * se venía: *"ocho `setInterval` sueltos repartidos en cuatro archivos"*.
+   *
+   * Mientras tanto se recarga en los dos momentos que el `04` § 2 llama correctos para las
+   * pantallas sin reloj: **al montar** y **al recuperar el foco**. Y al volver dispara de
+   * inmediato, porque quien vuelve a la pestaña quiere ver fresco, no esperar un ciclo.
+   */
+  useEffect(() => {
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') void cargar();
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => document.removeEventListener('visibilitychange', alVolver);
+  }, [cargar]);
+
+  function cuerpo() {
+    if (situacion === 'cargando') {
+      return (
+        <div className="fd-aviso">
+          <i>◍</i>
+          <span>Cargando tu día…</span>
+        </div>
+      );
+    }
+    if (situacion === 'sin_respuesta') {
+      return (
+        <div className="aj-fila">
+          <div className="fd-aviso mal">
+            <i>◍</i>
+            <span>{causa}</span>
+          </div>
+          <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+    if (situacion === 'rechazado') {
+      return (
+        <div className="fd-aviso falta">
+          <i>◍</i>
+          <span>{causa}</span>
+        </div>
+      );
+    }
+
+    if (sub === 'inicio') {
+      return <Inicio cockpit={datos.cockpit} alIrAMiDia={() => setSub('dia')} />;
+    }
+    if (sub === 'dia') {
+      return <MiDia colas={datos.colas} zonaHoraria={datos.zonaHoraria} />;
+    }
+    if (sub === 'pipeline') {
+      return (
+        <Falta
+          titulo="El pipeline necesita la etapa de cada contacto"
+          detalle={
+            'Las siete columnas se arman de la etapa, y la etapa vive en la base propia: la ' +
+            'pone Avanzar, que todavía no existe. Para los contactos que nunca recibieron un ' +
+            'Avanzar se deduce de las etiquetas de desenlace, y hoy solo dos de los 124 tienen ' +
+            'alguna.'
+          }
+          puntos={[
+            'Agendado · Seguimiento · Cierre en curso · Ganado · No-show · Nurture · Descalificado',
+            'Cada columna con su conteo, aunque esté vacía',
+            'Los congelados se ven, atenuados y con su explicación',
+          ]}
+        />
+      );
+    }
+    return (
+      <Falta
+        titulo="La agenda necesita las citas de tu calendario"
+        detalle={
+          'Las citas se leen del calendario de tu subcuenta de GoHighLevel, y eso todavía no ' +
+          'está conectado. La etiqueta `cita_agendada` dice quién tiene cita —74 contactos— ' +
+          'pero no cuándo, así que no alcanza para dibujar un calendario.'
+        }
+        puntos={[
+          'Mini-calendario del mes y Próximos Días',
+          'La agenda del día, con el enlace de cada videollamada',
+          'Un botón para traer del CRM: una llamada por clic, nunca un reloj',
+        ]}
+      />
+    );
+  }
 
   return (
     <>
@@ -85,11 +208,8 @@ export default function CloserView({ activa }) {
               <h2>
                 Closer
               </h2>
-              {/* El subtítulo dice qué hace la pestaña. Antes decía "Closer · Jorge
-                  Veramendi" — un nombre de persona inventado, igual para todos los
-                  inquilinos. */}
               <span className="cre-desc">
-                Qué tengo que hacer ahora con mis contactos
+                {sub === 'inicio' ? 'Cómo voy este mes' : 'Qué tengo que hacer ahora'}
               </span>
             </div>
             <div className="cl-sub">
@@ -105,63 +225,26 @@ export default function CloserView({ activa }) {
                     <use href={s.icono} />
                   </svg>
                   {s.nombre}
+                  {/* El contador va en Mi Día y solo si hay algo. Un `0` en una píldora al lado
+                      del nombre es ruido que se aprende a ignorar. */}
+                  {s.clave === 'dia' && datos?.colas?.tareasPendientes ? (
+                    <span className="cnt">{datos.colas.tareasPendientes}</span>
+                  ) : null}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Se dibuja SOLO la sub-pestaña activa. El prototipo tenía las cuatro en el DOM con
-            `hidden`, y con datos reales eso significaría pedir cuatro veces al servidor para
-            mostrar una. */}
-        <div className="cl-page">
-          {sub === 'dia' ? (
+        <div className="cl-page">{cuerpo()}</div>
+
+        {/* La lista completa del territorio queda accesible desde Mi Día: es donde se trae de
+            GoHighLevel y donde se ven los 124, no solo los del día. */}
+        {sub === 'dia' && situacion === 'listo' ? (
+          <div style={{ marginTop: 18 }}>
             <ListaDeContactos camino="/api/closer/contactos" zona="zona closer" />
-          ) : null}
-
-          {sub === 'inicio' ? (
-            <Falta
-              titulo="El tablero del mes todavía no tiene de dónde sacar los números"
-              detalle={
-                'Lo cobrado, la comisión contra la meta y la tasa de asistencia se calculan de ' +
-                'los resultados que se registran con Avanzar. Todavía no hay ninguno, así que ' +
-                'acá iría un “—” y no un “$0”: son dos cosas distintas y sólo una es cierta.'
-              }
-              puntos={[
-                'Cobrado del mes, y el anillo de comisión contra la meta',
-                'Ventas, acuerdos sin pagar, llamadas del mes y tasa de asistencia',
-                'El puente a Mi Día con las tareas pendientes',
-              ]}
-            />
-          ) : null}
-
-          {sub === 'pipeline' ? (
-            <Falta
-              titulo="El pipeline necesita la etapa de cada contacto"
-              detalle={
-                'GoHighLevel no expone un campo de etapa: la mueve un workflow disparado por ' +
-                'una etiqueta. Hasta que eso se lea, las siete columnas estarían todas vacías ' +
-                'y no dirían nada que la lista de Mi Día no diga mejor.'
-              }
-              puntos={[
-                'Agendado · Seguimiento · Cierre en curso · Ganado · No-show · Nurture · Descalificado',
-                'Cada columna con su conteo, aunque esté vacía',
-                'Monto y antigüedad por contacto',
-              ]}
-            />
-          ) : null}
-
-          {sub === 'agenda' ? (
-            <Falta
-              titulo="La agenda necesita las citas de tu calendario"
-              detalle={
-                'Las citas se leen del calendario de tu subcuenta de GoHighLevel. Sin el token ' +
-                'y el Location ID cargados en Ajustes, no hay de dónde traerlas.'
-              }
-              puntos={['Semana y mes', 'Bloques de disponibilidad', 'Reprogramar desde la misma vista']}
-            />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </section>
     </>
