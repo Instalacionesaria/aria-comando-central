@@ -63,16 +63,28 @@ export default function AjustesView({ activa }) {
   /* Las capacidades vienen del servidor, ya resueltas. `secciones` es lo que `seccionesVisibles`
      dejó pasar, o sea la MISMA función que decide el menú — no una segunda copia de la regla. */
   const puede = (clave) => (sesion?.secciones ?? []).some((s) => s.clave === clave);
-  const enLaPrincipal = Boolean(sesion?.organizacion?.esPrincipal);
 
+  /* ── LAS PESTAÑAS DEPENDEN DE LA CAPACIDAD, NO DE DÓNDE ESTÉS PARADO ────────
+   *
+   * Empresas llevaba además un `&& enLaPrincipal`, y eso resultó ser un defecto. La intención era
+   * de coherencia —administrar se hace desde la casa matriz—, pero el efecto era otro: quien
+   * conmutaba a una empresa cliente **perdía la pestaña**, y para volver a verla tenía que
+   * acordarse de que la salida era volver a la principal. Un menú que aparece y desaparece según
+   * dónde estés no se lee como una regla: se lee como que la aplicación se rompió.
+   *
+   * La barrera real es la capacidad, y no se movió: `organizaciones.listar` la tiene **solo** el
+   * rol de plataforma —la migración 003 se la niega al administrador con
+   * `not like 'organizaciones.%'`—, y la comprueba el servidor en cada operación. Esconder de más
+   * en la pantalla no agregaba seguridad; agregaba un estado sin salida aparente.
+   */
   const PESTANAS = [
     { clave: 'credenciales', nombre: 'Credenciales', icono: '#i-ajustes', visible: puede('credenciales') },
-    { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') && enLaPrincipal },
+    { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') },
     { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('usuarios') },
   ].filter((p) => p.visible);
 
-  /* Si la pestaña activa dejó de existir —pasa al conmutar de empresa: Empresas desaparece—
-     se cae a la primera que quede. Sin esto, el cuerpo queda en blanco sin ningún error. */
+  /* Si la pestaña activa dejó de existir se cae a la primera que quede. Sin esto, el cuerpo queda
+     en blanco sin ningún error. */
   const activaAhora = PESTANAS.some((p) => p.clave === sub) ? sub : (PESTANAS[0]?.clave ?? null);
 
   return (

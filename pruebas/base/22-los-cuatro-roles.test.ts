@@ -29,6 +29,8 @@ import type { Client } from 'pg';
 import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
 import { seccionesVisibles, menuVisible } from '../../lib/autorizacion/secciones.ts';
+import { personasQuePuedeAdministrar } from '../../lib/administracion/usuarios.ts';
+import { cerrarClientes, conIdentidad } from '../../lib/datos/capa.ts';
 
 /* La conexión de IDENTIDAD y no la del migrador, y la diferencia la enseñó un fallo.
  *
@@ -43,12 +45,20 @@ import { seccionesVisibles, menuVisible } from '../../lib/autorizacion/secciones
  * `app_identidad` tiene la política `ALL … using (true)` sobre las tres tablas del catálogo. */
 let mig: Client;
 
+/* Los FIXTURES van por `admin` y no por `identidad`, y no es indiferente: `app_identidad`
+   **no tiene `delete` sobre `identidad.usuarios`** —la migración 012 se lo dio al inquilino, y
+   ese reparto es deliberado—. Usar el rol de la aplicación para limpiar dejaría la prueba
+   fallando por un permiso que está bien que no tenga. Lo que se MIDE sí va por el camino real. */
+let admin: Client;
+
 before(async () => {
   mig = await conectar('identidad');
+  admin = await conectar('admin');
 });
 
 after(async () => {
   await cerrarTodo();
+  await cerrarClientes();
 });
 
 /** Las capacidades de un rol de sistema, leídas de la base. */
@@ -185,4 +195,180 @@ test('la pestaña Usuarios se decide por `usuarios.ver`, no por `organizaciones.
     false,
     '`organizaciones.listar` sigue habilitando la pestaña Usuarios',
   );
+});
+
+// ─── El alcance del listado de personas ─────────────────────────────────────
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL DEFECTO QUE ESTO ARREGLA, Y EL QUE NO PUEDE INTRODUCIR
+//
+// **El que arregla:** la lista filtraba SIEMPRE por la organización efectiva, también para quien
+// administra la plataforma. Se creaba a alguien en otra empresa y **no aparecía**; para verlo había
+// que conmutarse a esa empresa. Una lista de personas que cambia según dónde estés parado no se lee
+// como un filtro: se lee como que esa persona no se creó.
+//
+// **El que no puede introducir:** que el administrador de una empresa vea a los de otra. Esa es la
+// frontera de la que depende todo el aislamiento del sistema, y ensancharla acá la abriría para
+// todos de una sola vez.
+//
+// Las dos se afirman, y la segunda importa más que la primera.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Un usuario suelto, por el camino del rol de identidad. Devuelve su id. */
+async function personaEn(org: string, nombre: string): Promise<string> {
+  const r = await admin.query<{ id: string }>(
+    `insert into identidad.usuarios (org_id, nombre, email, password_hash, creado_por)
+     values ($1, $2, $3, 'scrypt$16384$8$1$c2FsCg==$aGFzaAo=', null)
+     returning id`,
+    [org, nombre, `${nombre.toLowerCase().replace(/\s+/g, '.')}@alcance.ejemplo`],
+  );
+  return r.rows[0]!.id;
+}
+
+async function orgPorSlug(slug: string): Promise<{ id: string; nombre: string }> {
+  const r = await admin.query<{ id: string; nombre: string }>(
+    'select id, nombre from identidad.organizaciones where slug = $1',
+    [slug],
+  );
+  assert.ok(r.rows[0], `falta la organización ${slug}`);
+  return r.rows[0]!;
+}
+
+async function limpiarAlcance(): Promise<void> {
+  await admin.query("delete from identidad.usuarios where email like '%@alcance.ejemplo'");
+}
+
+test('CON alcance de plataforma, la lista trae a todo el mundo y dice de qué empresa es', async () => {
+  await limpiarAlcance();
+  const alfa = await orgPorSlug('alfa');
+  const beta = await orgPorSlug('beta');
+  const enAlfa = await personaEn(alfa.id, 'Persona De Alfa');
+  const enBeta = await personaEn(beta.id, 'Persona De Beta');
+
+  try {
+    const todos = await conIdentidad(async (db) =>
+      personasQuePuedeAdministrar(db, alfa.id, true),
+    );
+    const ids = todos.map((u) => u.id);
+    assert.ok(ids.includes(enAlfa), 'falta la persona de la empresa donde está parado');
+    assert.ok(
+      ids.includes(enBeta),
+      'falta la persona de OTRA empresa: es justo el defecto que esto viene a arreglar',
+    );
+
+    // Y cada una dice de dónde es. Sin esto, dos personas con el mismo nombre en empresas
+    // distintas son dos renglones idénticos, y administrar al que no era no da ningún error.
+    const laDeBeta = todos.find((u) => u.id === enBeta);
+    assert.equal(laDeBeta?.organizacion.id, beta.id);
+    assert.equal(laDeBeta?.organizacion.nombre, beta.nombre);
+    assert.equal(laDeBeta?.organizacion.esPrincipal, false);
+  } finally {
+    await limpiarAlcance();
+  }
+});
+
+test('SIN alcance de plataforma, la lista se queda en su empresa — y esto es lo que no se puede romper', async () => {
+  await limpiarAlcance();
+  const alfa = await orgPorSlug('alfa');
+  const beta = await orgPorSlug('beta');
+  const enAlfa = await personaEn(alfa.id, 'Persona De Alfa');
+  const enBeta = await personaEn(beta.id, 'Persona De Beta');
+
+  try {
+    const soloAlfa = await conIdentidad(async (db) =>
+      personasQuePuedeAdministrar(db, alfa.id, false),
+    );
+    const ids = soloAlfa.map((u) => u.id);
+    assert.ok(ids.includes(enAlfa));
+    assert.equal(
+      ids.includes(enBeta),
+      false,
+      'un administrador vio a alguien de otra empresa: el aislamiento se rompió por acá',
+    );
+    // Y NINGUNA fila de otra empresa, no solo la que sembramos: el `where` puede haberse caído
+    // parcialmente y esta prueba tiene que verlo igual.
+    assert.deepEqual(
+      [...new Set(soloAlfa.map((u) => u.organizacion.id))],
+      [alfa.id],
+      'la lista trajo filas de más de una empresa sin alcance de plataforma',
+    );
+  } finally {
+    await limpiarAlcance();
+  }
+});
+
+test('la empresa viaja SIEMPRE, también sin alcance de plataforma', async () => {
+  // Mandarla a veces sí y a veces no obligaría a la pantalla a adivinar, y una lista donde la mitad
+  // de las filas dicen de dónde son y la otra mitad no es peor que una donde no lo dice ninguna.
+  await limpiarAlcance();
+  const alfa = await orgPorSlug('alfa');
+  await personaEn(alfa.id, 'Persona De Alfa');
+  try {
+    const filas = await conIdentidad(async (db) =>
+      personasQuePuedeAdministrar(db, alfa.id, false),
+    );
+    assert.ok(filas.length > 0, 'sin filas esta prueba pasaría en vacío');
+    for (const u of filas) {
+      assert.ok(u.organizacion?.nombre, `${u.nombre} vino sin empresa`);
+    }
+  } finally {
+    await limpiarAlcance();
+  }
+});
+
+test('quien no tiene rol viene con una lista VACÍA, nunca con un nulo', async () => {
+  // Un nulo acá obligaría a cada consumidor a acordarse, y el que se olvide dibuja "undefined"
+  // donde debería decir que no tiene ninguno.
+  await limpiarAlcance();
+  const alfa = await orgPorSlug('alfa');
+  const sinRol = await personaEn(alfa.id, 'Persona Sin Rol');
+  try {
+    const filas = await conIdentidad(async (db) =>
+      personasQuePuedeAdministrar(db, alfa.id, false),
+    );
+    const u = filas.find((x) => x.id === sinRol);
+    assert.deepEqual(u?.roles, []);
+  } finally {
+    await limpiarAlcance();
+  }
+});
+
+test('con alcance de plataforma, la lista viene AGRUPADA por empresa', async () => {
+  /* Se afirma la AGRUPACIÓN y no «la principal primero», y el arnés de mutación es la razón.
+     Sacar el `order by es_principal desc` no rompía nada: la empresa principal del sembrado se
+     llama «ARIA IA (plataforma)» y las otras «Cliente Alfa» y «Cliente Beta», así que el orden
+     alfabético la deja primera igual. La prueba pasaba por casualidad.
+
+     La agrupación sí se puede medir con estos datos, y es la propiedad que de verdad importa:
+     una lista de varias empresas entreverada no se puede leer de un vistazo, y ahí es donde se
+     administra a la persona equivocada. Que la principal vaya primera es una comodidad; que las
+     filas de una empresa estén juntas es lo que hace la lista legible. */
+  await limpiarAlcance();
+  const alfa = await orgPorSlug('alfa');
+  const beta = await orgPorSlug('beta');
+  await personaEn(alfa.id, 'Zzz Ultima De Alfa');
+  await personaEn(beta.id, 'Aaa Primera De Beta');
+
+  try {
+    const todos = await conIdentidad(async (db) => personasQuePuedeAdministrar(db, alfa.id, true));
+    assert.ok(
+      new Set(todos.map((u) => u.organizacion.id)).size > 1,
+      'todas las filas son de la misma empresa: el orden no se estaría midiendo',
+    );
+
+    /* Sin el orden por empresa, «Aaa Primera De Beta» se colaría entre las de Alfa: es un nombre
+       que gana alfabéticamente contra todos los de la otra empresa. Por eso los nombres del
+       fixture son ésos y no cualquiera. */
+    const vistas: string[] = [];
+    for (const u of todos) {
+      if (vistas[vistas.length - 1] !== u.organizacion.id) vistas.push(u.organizacion.id);
+    }
+    assert.equal(
+      vistas.length,
+      new Set(vistas).size,
+      'una empresa aparece en dos tramos: la lista está entreverada',
+    );
+  } finally {
+    await limpiarAlcance();
+  }
 });

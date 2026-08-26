@@ -65,6 +65,8 @@ function porQue(r) {
 
 export default function Usuarios({ sesion }) {
   const [gente, setGente] = useState(null);
+  /** `true` = la lista trae gente de TODAS las empresas. Lo dice el servidor, no se deduce acá. */
+  const [cruzaEmpresas, setCruzaEmpresas] = useState(false);
   const [roles, setRoles] = useState([]);
   /** Las empresas, para el selector del alta. Solo se piden si se puede elegir. */
   const [empresas, setEmpresas] = useState([]);
@@ -113,6 +115,7 @@ export default function Usuarios({ sesion }) {
       return;
     }
     setGente(u.datos.usuarios ?? []);
+    setCruzaEmpresas(Boolean(u.datos.todasLasEmpresas));
     /* El catálogo de roles se pide aparte y su fallo NO tumba la pantalla: sin él se puede ver
        quién hay, que es la mitad útil. Lo que no se puede es asignar, y el formulario lo dice
        en vez de ofrecer una lista vacía. */
@@ -140,6 +143,34 @@ export default function Usuarios({ sesion }) {
     void cargar();
     void cargarEmpresas();
   }, [cargar, cargarEmpresas, orgId]);
+
+  /* ── IR A LA EMPRESA DE ESA PERSONA ─────────────────────────────────────────
+   *
+   * Ver a todo el mundo destapó algo que hasta ahora no se podía ver: **todas** las operaciones
+   * sobre una persona están acotadas a la empresa activa —`usuarioObjetivo` es, con nombre y
+   * apellido, *"el único `where('org_id', …)` del dominio de identidad"*—. Así que un botón
+   * «Administrar» sobre alguien de otra empresa devolvería 404 (`ADR-0501`: 404 y nunca 403).
+   *
+   * Un control que se ve y no puede cumplir es el `07` § 4, y la salida NO es esconder a esa
+   * persona —eso nos devolvería al defecto que vinimos a arreglar— sino ofrecer lo único que sí
+   * funciona: **ir a su empresa**. Es la misma decisión que ya se había tomado para editar y
+   * borrar, escrita como un botón en vez de como algo que hay que saber.
+   *
+   * Y NO se ensancha la escritura. Esa frontera es la que sostiene todo el aislamiento del
+   * sistema, y abrirla porque el listado creció sería pagar con lo caro algo que se resuelve con
+   * un clic.
+   */
+  const irALaEmpresaDe = useCallback(async (u) => {
+    setAviso(null);
+    const r = await pedir('/api/auth/sesion', { metodo: 'PATCH', cuerpo: { orgId: u.organizacion.id } });
+    if (r.tipo !== 'datos') {
+      setAviso({ mal: true, texto: `No se pudo cambiar a ${u.organizacion.nombre}.` });
+      return;
+    }
+    /* La sesión entera cambió, así que se recarga la página. Un re-render dejaría media pantalla
+       con la empresa vieja y media con la nueva, que es peor que esperar. */
+    window.location.reload();
+  }, []);
 
   const recargar = useCallback(async () => {
     yaPedido.current = false;
@@ -179,7 +210,7 @@ export default function Usuarios({ sesion }) {
       texto:
         `Se creó ${nombre.trim()}` +
         (donde ? ` en ${donde.nombre}` : '') +
-        (rolNuevo ? ` con el rol «${rolNuevo}».` : ', sin rol todavía: no va a ver ninguna pantalla.'),
+        ` con el rol «${rolNuevo}».`,
     });
     setNombre('');
     setEmail('');
@@ -333,10 +364,44 @@ export default function Usuarios({ sesion }) {
     );
   }
 
-  const puedeCrear = nombre.trim().length > 0 && EMAIL.test(email.trim()) && !creando;
-  /* El rol de plataforma no se ofrece nunca en ningún selector: la bandera viene del servidor, y
-     el disparador `rol_de_plataforma_acotado` lo rechazaría fuera de la organización principal. */
-  const asignables = roles.filter((r) => !r.soloPrincipal);
+  /* El rol es obligatorio: ver el selector del alta. Sin esto, el botón quedaría habilitado con
+     el selector en su opción vacía y se crearía justo la persona que no queremos crear. */
+  const puedeCrear =
+    nombre.trim().length > 0 && EMAIL.test(email.trim()) && rolNuevo !== '' && !creando;
+  /* ── QUÉ ROLES SE OFRECEN, Y POR QUÉ EL DE PLATAFORMA AHORA SÍ ──────────────
+   *
+   * Antes esta línea filtraba `soloPrincipal` **siempre**, así que no había forma de crear otro
+   * superadministrador desde la aplicación: el selector no lo mostraba, y el único que existía era
+   * el que había sembrado el arranque. Una sola persona con la llave no es una regla de seguridad,
+   * es un punto único de falla — si pierde el acceso, no queda nadie que pueda devolvérselo.
+   *
+   * Se ofrece a quien puede otorgarlo, y el criterio del servidor está en
+   * `app/api/admin/usuarios/[id]/roles/route.ts`: **no se puede otorgar el alcance que uno no
+   * tiene** — o sea, hace falta `organizaciones.listar`.
+   *
+   * Acá se pregunta por `puedeElegirEmpresa`, que el servidor calcula como *tener esa capacidad Y
+   * un rol de plataforma*. Es **más estricto** que lo que el servidor exige, y esa asimetría es la
+   * correcta: la pantalla nunca ofrece un control que vaya a ser rechazado. Al revés —ofrecer de
+   * más y que el servidor conteste 403— es el `07` § 4, *"mostrar un control que no puede
+   * cumplir"*.
+   *
+   * Y no es una comparación de nombre de rol, que es lo que `ADR-0302` prohíbe.
+   *
+   * Y sigue habiendo una restricción que NO se toca, porque vive en la base: el disparador
+   * `rol_de_plataforma_acotado` exige que la persona pertenezca a la empresa principal. El
+   * formulario la respeta en vez de dejar que la base rechace con un mensaje que nadie entiende.
+   */
+  const asignables = roles.filter((r) => !r.soloPrincipal || puedeElegirEmpresa);
+  /**
+   * El rol de plataforma, tal como lo trae el catálogo. Se guarda la fila entera y no solo su
+   * clave porque **su nombre también sale de acá**: escribirlo a mano en la pantalla sería
+   * hardcodear el nombre de un rol, que es lo que `ADR-0302` persigue, y además haría que renombrar
+   * el rol en el catálogo dejara la ayuda diciendo otra cosa.
+   */
+  const rolDePlataforma = roles.find((r) => r.soloPrincipal) ?? null;
+  /** `true` = se está por crear a alguien con el rol de plataforma. */
+  const creandoPlataforma = Boolean(rolDePlataforma) && rolNuevo === rolDePlataforma.clave;
+  const laPrincipal = empresas.find((o) => o.esPrincipal) ?? null;
 
   const elAviso = aviso ? (
     <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
@@ -374,10 +439,20 @@ export default function Usuarios({ sesion }) {
       <div className={`fd-aviso ${sesion?.mirandoOtraOrganizacion ? 'falta' : ''}`}>
         <i>◍</i>
         <span>
-          Estás viendo las personas de <b>{sesion?.organizacion?.nombre ?? '—'}</b>
-          {sesion?.mirandoOtraOrganizacion
-            ? ' — que NO es tu organización. Editar, desactivar y eliminar actúan sobre ella.'
-            : '.'}
+          {cruzaEmpresas ? (
+            <>
+              Estás viendo <b>todas</b> las personas de la plataforma. Administrar actúa sobre{' '}
+              <b>{sesion?.organizacion?.nombre ?? '—'}</b>: para las de otra empresa, el botón te
+              lleva ahí.
+            </>
+          ) : (
+            <>
+              Estás viendo las personas de <b>{sesion?.organizacion?.nombre ?? '—'}</b>
+              {sesion?.mirandoOtraOrganizacion
+                ? ' — que NO es tu organización. Editar, desactivar y eliminar actúan sobre ella.'
+                : '.'}
+            </>
+          )}
         </span>
       </div>
 
@@ -410,7 +485,18 @@ export default function Usuarios({ sesion }) {
                   {u.es_admin_principal ? <span className="tagx ag" style={{ marginLeft: 8 }}>Fundador</span> : null}
                   {!u.activo ? <span className="tagx no" style={{ marginLeft: 8 }}>Inactivo</span> : null}
                 </div>
-                <div className="rs">{u.email ?? 'sin correo'}</div>
+                <div className="rs">
+                  {u.email ?? 'sin correo'}
+                  {/* DE QUÉ EMPRESA ES, cuando la lista cruza empresas.
+                      Sin esto, dos personas con el mismo nombre en empresas distintas son dos
+                      renglones idénticos, y administrar al que no era no da ningún error. La
+                      condición la manda el servidor: ver `todasLasEmpresas` en la respuesta. */}
+                  {cruzaEmpresas && u.organizacion ? (
+                    <span className={`tagx ${u.organizacion.esPrincipal ? 'ag' : 'nu'}`} style={{ marginLeft: 8 }}>
+                      {u.organizacion.nombre}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div>
                 {u.roles?.length ? (
@@ -426,9 +512,16 @@ export default function Usuarios({ sesion }) {
                 )}
               </div>
               <div className="num">
-                <button type="button" className="fd-btn sec" onClick={() => abrirEdicion(u)}>
-                  {u.id === sesion?.usuarioId ? 'Tus datos' : 'Administrar'}
-                </button>
+                {u.organizacion && u.organizacion.id !== orgId ? (
+                  /* De otra empresa: administrar acá daría 404. Se ofrece lo que sí funciona. */
+                  <button type="button" className="fd-btn sec" onClick={() => void irALaEmpresaDe(u)}>
+                    Ir a {u.organizacion.nombre}
+                  </button>
+                ) : (
+                  <button type="button" className="fd-btn sec" onClick={() => abrirEdicion(u)}>
+                    {u.id === sesion?.usuarioId ? 'Tus datos' : 'Administrar'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -480,6 +573,7 @@ export default function Usuarios({ sesion }) {
                   <select
                     id="us-empresa"
                     value={orgNueva}
+                    disabled={creandoPlataforma}
                     onChange={(e) => setOrgNueva(e.target.value)}
                   >
                     {empresas.length === 0 ? (
@@ -494,7 +588,9 @@ export default function Usuarios({ sesion }) {
                     ))}
                   </select>
                   <div className="aj-ayuda">
-                    No hace falta conmutarse: la persona se crea en la empresa que elijas acá.
+                    {creandoPlataforma
+                      ? `Un ${rolDePlataforma?.nombre ?? 'rol de plataforma'} ve todas las empresas, así que vive en la principal. Por eso este campo queda fijo.`
+                      : 'No hace falta conmutarse: la persona se crea en la empresa que elijas acá.'}
                   </div>
                 </div>
               ) : (
@@ -524,8 +620,31 @@ export default function Usuarios({ sesion }) {
                     <span>No se pudo leer el catálogo de roles. Se puede crear la persona, pero habrá que darle el rol después.</span>
                   </div>
                 ) : (
-                  <select id="us-rol" value={rolNuevo} onChange={(e) => setRolNuevo(e.target.value)}>
-                    <option value="">Sin rol todavía</option>
+                  /* NO HAY OPCIÓN «SIN ROL». Estaba, y era la que venía elegida por omisión: el
+                     camino más corto del formulario creaba una persona que puede entrar y no ve
+                     ninguna pantalla. Nadie da de alta a alguien para que no vea nada, así que era
+                     un valor por omisión que solo servía para equivocarse.
+                     Quitar el rol sigue siendo posible, pero ahora es un acto deliberado y se hace
+                     desde la edición, que es donde tiene sentido. */
+                  <select
+                    id="us-rol"
+                    value={rolNuevo}
+                    onChange={(e) => {
+                      const elegido = e.target.value;
+                      setRolNuevo(elegido);
+                      /* UN SUPERADMINISTRADOR NACE EN LA EMPRESA PRINCIPAL, y no es una regla de
+                         esta pantalla: la impone el disparador `rol_de_plataforma_acotado` de la
+                         base. Sin esto, elegir el rol y dejar otra empresa daba un rechazo de la
+                         base con un texto que nadie escribió para que lo lea una persona.
+                         Se corrige acá, en el momento de elegir, en vez de avisar después. */
+                      if (elegido && elegido === rolDePlataforma?.clave && laPrincipal) {
+                        setOrgNueva(laPrincipal.id);
+                      }
+                    }}
+                  >
+                    <option value="" disabled>
+                      Elegí un rol
+                    </option>
                     {asignables.map((r) => (
                       <option key={r.clave} value={r.clave}>
                         {r.nombre}
@@ -535,8 +654,15 @@ export default function Usuarios({ sesion }) {
                 )}
               </div>
               <div className="aj-ayuda">
-                Sin rol, la persona puede entrar y no ve ninguna pantalla. Un <b>Closer</b> ve solo la
-                pestaña Closer; un <b>Setter</b> solo la del Setter.
+                Un <b>Closer</b> ve solo la pestaña Closer; un <b>Setter</b> solo la del Setter. Un{' '}
+                <b>Administrador</b> ve el resto de su empresa.
+                {creandoPlataforma ? (
+                  <>
+                    {' '}
+                    Un <b>{rolDePlataforma.nombre}</b> ve <b>todas</b> las empresas, y por eso vive
+                    en la empresa principal.
+                  </>
+                ) : null}
               </div>
 
               {elAviso}
