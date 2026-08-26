@@ -1,0 +1,574 @@
+/* La ficha del contacto y el interior del Closer: lo que el prototipo dejó a medias.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ESTA HOJA EXISTE Y NO SE ARREGLA `aios.css`
+ *
+ * `app/aios.css` es el port literal de `aios-command-center_1.html` y tiene que **seguir siendo
+ * comparable contra él**: es lo que hace que `scripts/paridad.mjs` signifique algo y lo que permite
+ * mirar un diff y saber si algo se desvió del diseño original. Arreglar ahí adentro rompe esa
+ * propiedad para siempre.
+ *
+ * Es el mismo motivo por el que existen `fundaciones.css`, `ajustes.css` y `armazon.css`, y va en la
+ * misma capa (`components`), que gana a `aios` sin necesidad de un solo `!important`.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * EL DEFECTO QUE ORIGINÓ TODO: `.out` NO ES UNA CLASE DEL CHAT
+ *
+ * Una burbuja saliente se dibujaba `class="msgw out"`. Y en `aios.css:654` vive esto, que es de otro
+ * componente por completo —las fichas de indicador de Fundaciones, con su `.out .k` y su `.out .v`—:
+ *
+ *     .out{ … padding:0 11px; height:38px; display:flex; align-items:center; gap:8px; }
+ *
+ * `.msgw` no declara `display` ni `height`, así que la burbuja saliente **heredaba las dos**:
+ *
+ *   · `height:38px` fijo → un mensaje de 87 caracteres se dibujaba en una caja de 38 px y el texto
+ *     se salía por abajo. Medido en el navegador: alto 38 px con dos renglones adentro.
+ *   · `display:flex` → el texto y el renglón de la hora dejaban de apilarse y se ponían **uno al
+ *     lado del otro**, con la hora estrujada contra el borde derecho.
+ *
+ * Y esto es un defecto HEREDADO, no introducido: el prototipo tiene las dos reglas y el mismo choque.
+ * El port fue fiel, y copió fielmente el defecto.
+ *
+ * Por eso los modificadores se renombran a `msgw-sale` / `msgw-entra`, que no pueden chocar con
+ * nada, en vez de taparlo con un `display:block` defensivo: un parche deja la colisión viva y el
+ * próximo que toque `.out` la vuelve a romper sin enterarse.
+ * `pruebas/codigo/103-ficha-diseno.test.ts` impide que vuelva a haber un modificador de una palabra.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * Y EL SEGUNDO: UNA BURBUJA NO PUEDE SER UN BLOQUE
+ *
+ * `.cw-body` es `display:block` y `.msgw` sólo trae `max-width:82%`. Un bloque **ocupa todo el ancho
+ * disponible** y `max-width` únicamente lo recorta: medido, TODAS las burbujas medían 419,3 px, la
+ * de «ok» igual que la de 193 caracteres. Con `text-align:right` en el renglón de la hora, «23:18»
+ * quedaba a 380 px de la palabra «Hola». Eso es, literalmente, «los mensajes no están alineados».
+ *
+ * La regla `.cl` del propio prototipo (`aios.css:1917`) hace lo correcto —`align-self:flex-end`
+ * sobre un padre flex— así que el molde ya estaba: al chat se le aplicó a medias.
+ * ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── LA ESCALA DEL PANEL ─────────────────────────────────────────────────────
+   Cuatro variables y no números sueltos, porque el problema de fondo del panel era ése: el
+   encabezado respiraba 20 px, las pestañas 16, el compositor 16 y el cuerpo 20 más los 8 de la barra
+   de desplazamiento. Cuatro ejes verticales distintos en una columna de 560 px de ancho.
+
+   `--cw-canal` es el ancho que se le come la barra de desplazamiento. `.cw-body` la reserva SIEMPRE
+   con `scrollbar-gutter`, así que el borde derecho del contenido no salta cuando la conversación
+   crece lo suficiente para desplazarse. */
+.cw {
+  --cw-pad: 20px;
+  --cw-canal: 8px;
+  --cw-radio: 12px;
+  --cw-radio-chico: 9px;
+  --cw-gap: 12px;
+}
+
+/* ── 1 · EL ENCABEZADO, QUE SE APLASTABA ─────────────────────────────────────
+   Medido con un nombre real de 39 caracteres: los cinco controles de `.cw-top` competían por 519 px
+   sin que ninguno declarara si podía encogerse, y perdían los tres a la vez — el nombre partido en
+   dos renglones, «Avanzar →» partido en dos renglones, y la ✕ estrujada de 28 px a 23,6.
+
+   La identidad y las acciones se separan en dos filas. No es sólo espacio: son dos cosas distintas
+   —quién es esto, y qué puedo hacerle— y el `02` § 2 ya dice que el encabezado «es una foto del
+   contacto, no un panel de control». Tenerlas mezcladas era lo que forzaba la competencia. */
+.cw-h {
+  padding: 16px var(--cw-pad) 14px;
+}
+
+.cw-top {
+  align-items: flex-start;
+  gap: 11px;
+}
+
+/* La identidad ocupa lo que sobre y **se recorta con puntos suspensivos**. `min-width:0` es lo que
+   falta casi siempre en un hijo de flex: sin él, el mínimo automático es el contenido, y el nombre
+   largo empuja a todos los demás en vez de recortarse. */
+.cw-quien {
+  min-width: 0;
+  flex: 1;
+}
+
+.cw-quien .cw-n,
+.cw-quien .cw-p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La ✕ no se encoge. Es el único control que tiene que existir siempre: si algo se rompe adentro
+   del panel, es la salida. */
+.cw .cw-x {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  transition: background .14s ease, border-color .14s ease;
+}
+
+.cw .cw-x:hover {
+  border-color: var(--line-strong);
+}
+
+.cw .cw-x:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Las acciones, en su propia fila.
+   `.cw-go` ya existía en `aios.css` —es el botón principal que el prototipo dibujaba en este panel—
+   y el port lo dejó muerto: Avanzar se hizo con `.fd-btn`, que es un botón de FORMULARIO y mide
+   10 px más de alto que sus vecinos. Se le devuelve el suyo. */
+.cw-acciones {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.cw-acciones .cw-go {
+  width: auto;
+  flex: 1 1 auto;
+  margin-top: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  border-radius: var(--cw-radio-chico);
+  white-space: nowrap;
+}
+
+.cw-acciones .cw-pin {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border-radius: var(--cw-radio-chico);
+  padding: 10px 12px;
+}
+
+.cw-acciones .cw-pin:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.cw-acciones .cw-go:focus-visible,
+.cw-acciones .cw-pin:focus-visible,
+.cw-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* La píldora y los seis íconos: que no se peguen al nombre ni entre sí. */
+.cw-meta {
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: 13px;
+}
+
+/* ── 2 · UN SOLO EJE VERTICAL ────────────────────────────────────────────────
+   Las pestañas llevaban `padding:10px 16px` y cada botón `7px 12px`, así que el texto de «Chat»
+   empezaba a 28 px del borde mientras el nombre del contacto empezaba a 20. Se compensa el padding
+   interno del botón para que el TEXTO —que es lo que el ojo alinea— caiga en el mismo eje. */
+.cw-tabs {
+  padding: 8px calc(var(--cw-pad) - 12px);
+  gap: 2px;
+}
+
+.cw-tabs button {
+  border-radius: var(--cw-radio-chico);
+}
+
+/* Y el cuerpo reserva el canal de la barra de desplazamiento en vez de dejar que aparezca y corra
+   todo 8 px. Con `stable`, el borde derecho del contenido queda a `--cw-pad` haya o no scroll. */
+.cw-body {
+  padding: 16px calc(var(--cw-pad) - var(--cw-canal)) 20px var(--cw-pad);
+  scrollbar-gutter: stable;
+}
+
+/* ── 3 · LA COLUMNA DEL CHAT ─────────────────────────────────────────────────
+   Contenedor propio, y no `.cw-body` a secas, porque las otras cuatro pestañas necesitan bloques de
+   ancho completo: volver flex al cuerpo entero encogería las tarjetas del Perfil al ancho de su
+   texto. */
+.cw-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Ahora la burbuja es un hijo de flex, así que **mide lo que mide su contenido**, con el tope del
+   82 % que el prototipo ya quería. El `margin-bottom:9px` de `aios.css` se anula: el ritmo lo
+   deciden las reglas de adyacencia de más abajo, que saben de qué lado viene cada mensaje. */
+.cw-chat .msgw {
+  margin: 0;
+  max-width: 82%;
+  /* Una URL sin espacios o un identificador largo desbordaban la burbuja. `anywhere` corta dentro de
+     la palabra sólo cuando no hay otra salida. */
+  overflow-wrap: anywhere;
+}
+
+.cw-chat .msgw-entra {
+  align-self: flex-start;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  color: var(--txt);
+  /* La esquina viva marca de qué lado habla cada uno. Es lo que hace que la columna se lea como una
+     conversación y no como una lista de tarjetas. */
+  border-radius: var(--cw-radio) var(--cw-radio) var(--cw-radio) 4px;
+}
+
+.cw-chat .msgw-sale {
+  align-self: flex-end;
+  background: rgba(53, 224, 210, .09);
+  border: 1px solid rgba(53, 224, 210, .18);
+  color: var(--txt);
+  border-radius: var(--cw-radio) var(--cw-radio) 4px var(--cw-radio);
+}
+
+/* EL RITMO AGRUPA. Dos mensajes seguidos del mismo lado son un turno: van pegados. Un cambio de lado
+   es otra persona hablando: va separado. Con un `margin-bottom` fijo, cuarenta mensajes eran cuarenta
+   tarjetas equidistantes y no se veía dónde terminaba cada turno. */
+.cw-chat .msgw + .msgw {
+  margin-top: 3px;
+}
+
+.cw-chat .msgw-entra + .msgw-sale,
+.cw-chat .msgw-sale + .msgw-entra {
+  margin-top: 12px;
+}
+
+/* Dentro de un turno, sólo la última burbuja lleva la esquina viva. */
+.cw-chat .msgw-entra:has(+ .msgw-entra) {
+  border-bottom-left-radius: var(--cw-radio);
+}
+
+.cw-chat .msgw-sale:has(+ .msgw-sale) {
+  border-bottom-right-radius: var(--cw-radio);
+}
+
+/* El renglón de la hora y el estado.
+   Sube de 9,5 px a 11 px y de `--txt-faint` a `--txt-dim`, y lo segundo no es gusto: `#4a5568` sobre
+   `#070b12` da **2,62:1**, muy por debajo del 4,5:1 que exige la WCAG, y a 9,5 px ni siquiera aplica
+   la excepción de «texto grande». `--txt-dim` da 5,77:1. */
+.cw-chat .msgw .t {
+  font-size: 11px;
+  color: var(--txt-dim);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cw-chat .msgw-falla {
+  font-size: 11px;
+  color: var(--crit);
+}
+
+/* El separador de día: centrado sobre la COLUMNA y con aire arriba, que es lo que lo convierte en un
+   separador. Con `margin:4px 0 14px` quedaba pegado al mensaje de arriba y separado del de abajo —
+   o sea, dividiendo en el lugar equivocado. */
+.cw-chat .cw-day {
+  align-self: center;
+  margin: 20px 0 12px;
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+
+.cw-chat > .cw-day:first-child {
+  margin-top: 2px;
+}
+
+/* Los avisos del chat (atraso del barrido, sin mensajes) ocupan el ancho completo: no son mensajes
+   de nadie. Sin esto se encogerían al ancho de su texto, como cualquier hijo de flex. */
+.cw-chat > .fd-aviso,
+.cw-chat > .dw-empty {
+  align-self: stretch;
+  width: 100%;
+}
+
+.cw-chat > .fd-aviso {
+  margin-bottom: 14px;
+}
+
+/* ── 4 · EL COMPOSITOR ───────────────────────────────────────────────────────
+   Mismo eje que todo lo demás, y una caja de verdad alrededor del campo: era un `input` sin fondo
+   flotando sobre el panel, con el botón al lado y nada que dijera dónde empieza la zona de escribir. */
+.cw-input {
+  padding: 12px var(--cw-pad);
+  gap: 9px;
+  align-items: center;
+}
+
+.cw-input input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--cw-radio-chico);
+  background: var(--bg-sunk);
+  line-height: 1.4;
+}
+
+.cw-input input:focus {
+  border-color: rgba(53, 224, 210, .35);
+  outline: none;
+}
+
+.cw-input input:disabled {
+  background: transparent;
+  border-color: transparent;
+}
+
+.cw-send {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--cw-radio-chico);
+  border: 1px solid rgba(53, 224, 210, .22);
+  transition: background .14s ease;
+}
+
+.cw-send:not(:disabled):hover {
+  background: rgba(53, 224, 210, .2);
+}
+
+.cw-send:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* El aviso pegado al compositor: `margin:0 16px 0` eran tres valores y ningún aire abajo, así que
+   tocaba el borde del campo. */
+.cw .cw-cerrada {
+  margin: 0 var(--cw-pad) 10px;
+}
+
+/* ── 5 · LAS OTRAS CUATRO PESTAÑAS ───────────────────────────────────────────
+   `.kv` es una rejilla `1fr auto` con el valor alineado a la derecha, y sirve perfecto para un
+   número. El Perfil la usaba para texto libre y le apagaba la alineación con un estilo en línea, sin
+   tocar las COLUMNAS: cada fila calculaba su propio corte y los valores arrancaban a 272, 400, 142,
+   472, 311 y 497 px. Seis renglones, seis márgenes distintos.
+
+   Con una columna de etiqueta fija, los valores arrancan todos en el mismo sitio. Y el estilo en
+   línea desaparece del JSX. */
+.cw-body .kv-box {
+  padding: 2px 12px;
+}
+
+.cw-body .kv {
+  grid-template-columns: minmax(0, 104px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 10px 0;
+}
+
+.cw-body .kv span {
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.45;
+  padding-top: 1px;
+}
+
+.cw-body .kv b {
+  font-weight: 400;
+  text-align: left;
+  color: var(--txt);
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* El historial: la columna del «hace 2 h» dejaba de estar alineada en cuanto un título medía
+   distinto, porque `margin-left:auto` la empuja contra lo que haya. Con una rejilla de tres columnas
+   la marca de tiempo queda en su carril. */
+.cw-body .ld-time {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: start;
+  padding: 11px 0;
+}
+
+.cw-body .ld-dot {
+  margin-top: 5px;
+}
+
+.cw-body .ld-when {
+  margin-left: 0;
+  padding-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las notas: una clase, no seis estilos en línea con números crudos. */
+.cw-nota {
+  margin-top: 9px;
+  padding: 12px 14px;
+  border-radius: var(--cw-radio);
+}
+
+.cw-nota-cuerpo {
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-line;
+  color: var(--txt);
+  overflow-wrap: anywhere;
+}
+
+.cw-nota-pie {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+
+/* ── 6 · AVANZAR ─────────────────────────────────────────────────────────────
+   Las seis tarjetas del resultado traen `class="ic win|money|next|lost"` esperando la pastilla de
+   color del prototipo… que nunca se portó. Medido: las seis salían transparentes y del mismo gris.
+   En una pantalla que se resuelve de un clic, el color ES la señal — «Venta» y «Perdido» no pueden
+   verse igual. */
+.res-o .ic {
+  flex-shrink: 0;
+  background: rgba(148, 197, 255, .06);
+  color: var(--txt-dim);
+}
+
+.res-o .ic.win {
+  background: rgba(74, 222, 128, .14);
+  color: var(--ok);
+}
+
+.res-o .ic.money {
+  background: rgba(232, 182, 76, .14);
+  color: var(--exec);
+}
+
+.res-o .ic.next {
+  background: rgba(53, 224, 210, .14);
+  color: var(--accent);
+}
+
+.res-o .ic.lost {
+  background: rgba(240, 92, 92, .13);
+  color: var(--crit);
+}
+
+/* Dentro de `Ventana.jsx` el cuerpo ya trae su propio margen, así que el de la rejilla portada
+   sumaba y las tarjetas quedaban 36,7 px adentro mientras el título del modal empezaba a 14. */
+.vt-cuerpo > .res-g {
+  padding: 0;
+  gap: 10px;
+}
+
+.vt-cuerpo > .res-g .res-o {
+  border-radius: var(--cw-radio, 12px);
+}
+
+.res-o:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 7 · UNA CONVERSACIÓN QUE LLEGA SOLA HAY QUE ANUNCIARLA ──────────────────
+   El chat se refresca cada N segundos con su propio reloj. Para quien usa lector de pantalla, los
+   mensajes nuevos aparecían sin que nada lo dijera. `aria-live` lo pone el JSX; acá sólo se deja
+   constancia de que la región existe y de por qué no lleva `assertive`: interrumpir la lectura en
+   curso por cada mensaje entrante es peor que enterarse un momento después. */
+
+/* El aviso de que el refresco contra el CRM no salió, separado del encabezado que lo precede. */
+.cw-aviso-refresco {
+  margin-top: 12px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   8 · EL TEXTO SECUNDARIO SE PUEDE LEER
+   ═════════════════════════════════════════════════════════════════════════════
+   `--txt-faint` es `#4a5568`, y su contraste **no puede** pasar 4,5:1 contra ningún fondo de este
+   tema: contra el más oscuro (`--bg` #05080d) da 2,79:1, que es su techo matemático. No es un
+   ajuste fino, es un token que se usa como color de TEXTO donde tendría que usarse como color de
+   trazo.
+
+   Acá no se toca el token —lo comparten seis vistas más y sería otro trabajo, con su propio
+   antes/después por pantalla— sino los sitios de ESTA superficie donde lo que está apagado es
+   justamente lo que hay que leer. `--txt-dim` (#7d8ca1) da 5,77:1 sobre `--bg-sunk`.
+
+   Y el caso que más molesta decir: `.dw-empty` es el componente `LoQueFalta`, el mecanismo con el
+   que este proyecto cumple su propia regla de que **un dato ausente se dice, no se dibuja vacío**.
+   La frase que existe para que nadie confunda «no hay» con «no se pudo traer» era, a 2,62:1, lo
+   menos legible del panel. */
+.cw-body .dw-empty,
+.cl-page .dw-empty {
+  color: var(--txt-dim);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* El teléfono, bajo el nombre: es un dato, no una marca de agua. */
+.cw-quien .cw-p {
+  color: var(--txt-dim);
+}
+
+/* El motivo por el que el compositor está bloqueado vive en el `placeholder`. A 2,55:1 era el texto
+   más importante y menos legible de la pestaña. */
+.cw-input input::placeholder {
+  color: var(--txt-dim);
+  opacity: 1;
+}
+
+/* El pie de cada evento del historial: quién lo hizo y con qué detalle. */
+.cw-body .ld-m {
+  color: var(--txt-dim);
+}
+
+/* El conteo de cada columna del Pipeline. Su propia píldora ACLARA el fondo, así que quedaba en
+   1,91:1 — el peor de toda la superficie — justo en el número que ES el dato de la columna. Y el
+   comentario de `aios.css` dice «el conteo se dibuja SIEMPRE, incluido el cero: es la mitad visible
+   de la regla»; la regla se cumplía en el DOM y se perdía en la pantalla. */
+.pipe-c {
+  color: var(--txt);
+}
+
+.pipe-vacia {
+  color: var(--txt-dim);
+}
+
+/* El glifo de cada pestaña, ahora que es un elemento propio: se atenúa él y no el nombre. Y el
+   `gap:7px` que `aios.css` declaraba por fin se cumple — con los dos nodos de texto contiguos que
+   había antes, flexbox los envolvía en UN ítem anónimo y el `gap` no repartía nada. */
+.cw-tabs .cw-tab-g {
+  font-style: normal;
+  opacity: .75;
+}
+
+.cw-tabs button.on .cw-tab-g {
+  opacity: 1;
+}
+
+/* Y el botón de cerrar, que ahora es un `<button>` de verdad: un `<button>` sí trae tipografía del
+   agente de usuario, cosa que el `<span>` no traía. */
+.cw .cw-x {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Un `aria-disabled` no atenúa solo, a diferencia de `disabled`. */
+.cw-acciones .cw-pin[aria-disabled='true'] {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* El aviso del panel, más compacto: dos de estos apilados —el refresco del CRM y el atraso del
+   barrido— se comían 150 px de una columna de 720. */
+.cw .fd-aviso {
+  padding: 9px 11px;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   9 · MI DÍA: LA CITA DEL MENSAJE CUELGA DEBAJO DEL CONTACTO EQUIVOCADO
+   ═════════════════════════════════════════════════════════════════════════════
+   `.md-r` es una rejilla `64px 1fr auto` con `gap:14px` y `padding:0 16px`, así que el nombre del
+   contacto arranca a 94 px del borde. `.md-quote` —lo último que dijo esa persona— es hermana de la
+   fila, no hija, así que arranca a 0: medido, **94 px a la izquierda del nombre al que pertenece**.
+   Se lee como si fuera de la fila de arriba, o de nadie.
+
+   Se alinea con la MISMA aritmética de la rejilla en vez de un número copiado, para que el día que
+   la primera columna cambie de ancho esto siga cuadrando. */
+.md-quote {
+  /* 16 del padding de la fila + 64 de la columna de la hora + 14 del hueco. */
+  margin-left: calc(16px + 64px + 14px);
+  padding-right: 16px;
+  overflow-wrap: anywhere;
+}

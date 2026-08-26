@@ -38,25 +38,20 @@ export default function Overlays() {
         Se BORRA en vez de dejarse: dos elementos `.cw` en el arbol, uno inerte y otro real, es la
         clase de cosa que despues alguien encuentra y no entiende cual manda. Y sus ids duplicados
         harian que un `getElementById` eligiera el equivocado. */}
-    {/* ================= RESULTADO ================= */}
-    <div className="scrim" id="resScrim" />
-    <div className="res" id="resModal" role="dialog">
-      <span className="res-x" id="resClose">
-        ✕
-      </span>
-      <div className="res-h">
-        <div className="res-k">
-          Resultado · llamada o chat
-        </div>
-        <div className="res-t">
-          ¿Cómo terminó?
-        </div>
-        <div className="res-d">
-          Sirve igual tras una llamada o tras el chat. Un clic mueve el pipeline y dispara lo que corresponda.
-        </div>
-      </div>
-      <div className="res-g" id="resOpts" />
-    </div>
+    {/* ================= RESULTADO =================
+        EL MODAL SE FUE DE ACA POR LA MISMA REGLA QUE EL PANEL DEL CONTACTO, ARRIBA.
+
+        Vivia aca portado del prototipo -`#resModal`, `#resOpts`, `#resClose`, `#resScrim`- y **sin
+        una linea de JavaScript**: nada en el repositorio los nombraba, asi que `#resOpts` era una
+        rejilla vacia y el modal no se podia abrir. Quedaba en el arbol con `opacity:0`, flotando en
+        el centro de la pantalla, con una copia del titulo «¿Como termino?» que ya nadie mantenia.
+
+        Ahora lo dibuja `components/negocio/Avanzar.jsx` sobre `components/Ventana.jsx`, reusando las
+        clases de las tarjetas -`.res-g`, `.res-o`, `.ic`-.
+
+        Se BORRA en vez de dejarse, igual que `#cwPanel`: dos modales de resultado en el arbol, uno
+        inerte y otro real, es la clase de cosa que despues alguien encuentra y no entiende cual
+        manda. */}
     <div className="scrim" id="askScrim" />
     <div className="ask-panel" id="askPanel" aria-hidden="true">
       <div className="ap-head">

@@ -27,6 +27,12 @@
    arriba a la derecha con un nombre fijo y sin cerrar sesión de verdad. */
 @import "./armazon.css" layer(components);
 
+/* La ficha del contacto y el interior del Closer. Va DESPUÉS de `aios.css` y en la capa
+   `components` porque corrige reglas de la hoja portada sin tocarla: `aios.css` tiene que seguir
+   siendo comparable contra `aios-command-center_1.html`, que es lo que hace que `npm run paridad`
+   signifique algo. El motivo largo está en el encabezado del archivo. */
+@import "./closer.css" layer(components);
+
 /* Los tokens del diseño expuestos como utilidades de Tailwind.
    `inline` hace que las clases apunten a la var, no a una copia. */
 @theme inline {

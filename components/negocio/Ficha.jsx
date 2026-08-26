@@ -69,6 +69,14 @@ import { SeisIconos } from './Fila.jsx';
  * Vive en `Fila.jsx` y no en un archivo propio porque ahí nació y ahí está exportado para esto.
  * Moverlo sería tocar dos archivos para que el import se lea más lindo. */
 
+/**
+ * Cuánto margen cuenta como «estaba mirando el fondo».
+ *
+ * No es cero: con cero, un scroll de un píxel —o el redondeo de un zoom del navegador— hace que el
+ * chat deje de seguir la conversación sin que nadie lo haya decidido.
+ */
+const PEGADO_AL_FONDO = 90;
+
 /** Lo que puede recibir el foco. Igual que en `components/Ventana.jsx`. */
 const ENFOCABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
@@ -168,12 +176,25 @@ function Burbuja({ m, zona }) {
   const rechazado = m.entrega === 'fallido';
   const mal = noSalio || rechazado;
 
+  /* `msgw-sale` / `msgw-entra` y NO `out` / `in`.
+     Un modificador de una palabra en una hoja global de 2452 líneas es una colisión esperando:
+     `aios.css:654` define `.out` para las fichas de indicador de Fundaciones —`height:38px`,
+     `display:flex`— y la burbuja saliente heredaba las dos. El texto se salía de una caja de 38 px y
+     la hora se ponía AL LADO del mensaje en vez de debajo. Es el defecto que se veía como «los
+     mensajes no están alineados», y viene heredado del prototipo, que tiene el mismo choque. */
   return (
-    <div className={`msgw ${saliente ? 'out' : 'in'}${mal ? ' mal' : ''}`}>
+    <div className={`msgw ${saliente ? 'msgw-sale' : 'msgw-entra'}${mal ? ' mal' : ''}`}>
       {/* Un mensaje sin texto NO se descarta: un audio o una imagen existieron, y descartarlos
           hacía que para el auditor ese turno no hubiera ocurrido. Va con un marcador honesto entre
-          corchetes, distinguible del contenido real. */}
-      {m.cuerpo ?? '[mensaje sin texto]'}
+          corchetes, distinguible del contenido real.
+
+          `?.trim() ||` y no `??`, por dos motivos medidos. `??` sólo atrapa `null`: un `cuerpo: ''`
+          —que el CRM manda cuando el mensaje era sólo un adjunto— se pintaba como cadena vacía, así
+          que la burbuja salía con la hora sola y sin marcador. Y el recorte es porque `pre-line`
+          conserva los saltos de línea: un mensaje terminado en dos saltos, que en WhatsApp es
+          normal, dejaba dos renglones en blanco entre el texto y la hora. Los saltos de ADENTRO se
+          conservan, que es para lo que `pre-line` está puesto. */}
+      {m.cuerpo?.trim() || '[mensaje sin texto]'}
       {/* Y el motivo del canal, cuando lo hay. Es lo ÚNICO que explica por qué no llegó, y sin él
           la burbuja en rojo solo dice que algo salió mal. */}
       {rechazado && m.falloDelCanal ? <span className="msgw-falla">{m.falloDelCanal}</span> : null}
@@ -402,6 +423,48 @@ export default function Ficha({ contactoId, alCerrar }) {
     return undefined;
   }, [activa, cargarChat, pestanas.chat, situacion]);
 
+  /* ── EL CHAT ABRE POR EL ÚLTIMO MENSAJE ────────────────────────────────────
+   *
+   * La `ref` del cuerpo estaba declarada y atada al div desde el primer día, y **no se leía en
+   * ninguna de las 976 líneas del archivo**. Medido en el navegador con una conversación de 8
+   * mensajes: se abría en `scrollTop: 0` con **604 px de conversación por debajo del borde**. O sea
+   * que al abrir una ficha se veía lo más viejo que dijo el contacto, y lo último —que es la razón
+   * por la que uno abre la ficha— quedaba fuera de la vista.
+   *
+   * Peor todavía al escribir: la burbuja optimista se agrega al final, así que se escribía, se
+   * apretaba Enter, y **no pasaba nada visible**.
+   *
+   * ── PERO NO SIEMPRE, Y ESA ES LA MITAD DIFÍCIL ─────────────────────────────
+   *
+   * El reloj recarga cada pocos segundos. Bajar a la fuerza en cada ciclo le arranca la vista a
+   * quien subió a leer algo de hace tres días — y como el ciclo vuelve, no hay forma de ganarle.
+   * Así que sólo se baja si ya se estaba MIRANDO el fondo (`PEGADO_AL_FONDO` de margen, para que un
+   * scroll casi-abajo cuente como abajo). Al abrir la pestaña y al mandar se baja siempre: en los
+   * dos casos la intención de quien usa es inequívoca.
+   */
+  const filasDelChat = pestanas.chat?.filas?.length ?? 0;
+  /** Se pide bajar sí o sí en el próximo pintado: al abrir el chat y al mandar. */
+  const bajarSiempre = useRef(true);
+
+  useEffect(() => {
+    if (activa !== 'chat') {
+      bajarSiempre.current = true;
+      return;
+    }
+    const caja = cuerpo.current;
+    if (!caja) return;
+    /* Con la lista todavía vacía no hay nada al fondo, y lo importante: **la petición no se
+       consume**. La primera versión bajaba en el pintado del «Cargando…», daba el pedido por
+       cumplido, y cuando llegaban los ocho mensajes ya no bajaba — que es exactamente el defecto
+       que esto vino a arreglar, con un paso más. Lo vio la verificación en el navegador. */
+    if (filasDelChat === 0) return;
+    const alFondo = caja.scrollHeight - caja.scrollTop - caja.clientHeight;
+    if (bajarSiempre.current || alFondo <= PEGADO_AL_FONDO) {
+      caja.scrollTop = caja.scrollHeight;
+      bajarSiempre.current = false;
+    }
+  }, [activa, filasDelChat, situacion]);
+
   /* Y el reloj, que solo repite. La clave lleva el identificador del contacto: abrir otra ficha
      REEMPLAZA el reloj en vez de sumar uno, y con la pestaña oculta no queda ninguno corriendo.
      `null` mientras el chat no esté a la vista: no se registra, y así no hace falta romper la regla
@@ -422,6 +485,9 @@ export default function Ficha({ contactoId, alCerrar }) {
        ciclos que todavía no la traen porque `fusionarMensajes` la conserva mientras esté en vuelo.
        El identificador es local: el de verdad lo pone el CRM, y hasta entonces el único puente
        entre las dos es el texto. */
+    /* Lo que uno acaba de escribir se ve SIEMPRE, aunque estuviera leyendo más arriba: apretar
+       Enter es una intención inequívoca de mirar el final. */
+    bajarSiempre.current = true;
     const local = `local:${contactoId}:${performance.now()}`;
     setPestanas((antes) => ({
       ...antes,
@@ -555,18 +621,28 @@ export default function Ficha({ contactoId, alCerrar }) {
 
       if (p.filas.length === 0) {
         return (
-          <>
+          <div className="cw-chat">
             {atraso}
             <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />
-          </>
+          </div>
         );
       }
       /* Los separadores de día los pone `conSeparadores`, no este JSX, y no es por prolijidad:
          «donde cambia el día» es una decisión con dos zonas horarias adentro y en el JSX no se
          puede probar. Sin ellos, una conversación de varios días se lee como si el tiempo
          retrocediera — `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue el día. */
+      /* CONTENEDOR PROPIO, y es la mitad del arreglo.
+         `.cw-body` es un bloque, y un bloque hace que cada burbuja ocupe TODO el ancho: medido, las
+         nueve burbujas medían 419,3 px, la de «ok» igual que la de 193 caracteres, con la hora
+         alineada a la derecha a 380 px de su propio texto. `.cw-chat` es una columna flex, así que
+         cada burbuja mide lo que mide su contenido y `align-self` la manda a su lado.
+         No se vuelve flex `.cw-body` entero porque las otras cuatro pestañas necesitan bloques de
+         ancho completo, y ahí se encogerían al ancho de su texto.
+         `aria-live="polite"`: los mensajes entran solos con el reloj del chat, y sin esto quien usa
+         lector de pantalla no se entera. `polite` y no `assertive` a propósito — interrumpir la
+         lectura en curso por cada mensaje es peor que enterarse un momento después. */
       return (
-        <>
+        <div className="cw-chat" aria-live="polite">
           {atraso}
           {conSeparadores(p.filas, zona).map((r) =>
             r.tipo === 'dia' ? (
@@ -577,7 +653,7 @@ export default function Ficha({ contactoId, alCerrar }) {
               <Burbuja key={r.clave} m={r.mensaje} zona={zona} />
             ),
           )}
-        </>
+        </div>
       );
     }
 
@@ -609,7 +685,7 @@ export default function Ficha({ contactoId, alCerrar }) {
                 {l.resumen ? (
                   <div className="kv">
                     <span>Resumen</span>
-                    <b style={{ textAlign: 'left', fontWeight: 400 }}>{l.resumen}</b>
+                    <b>{l.resumen}</b>
                   </div>
                 ) : null}
               </div>
@@ -630,10 +706,14 @@ export default function Ficha({ contactoId, alCerrar }) {
               <div className="dw-block" key={g.clave}>
                 <div className="dw-sec-t">{g.titulo}</div>
                 <div className="kv-box">
+                  {/* Sin `style` en línea: el `text-align:left` apagaba la alineación de `.kv` pero
+                      no tocaba sus COLUMNAS, que son `1fr auto`. Cada fila calculaba su propio corte
+                      y los seis valores del Perfil arrancaban a 272, 400, 142, 472, 311 y 497 px.
+                      La columna de etiqueta fija vive ahora en `app/closer.css`. */}
                   {suyos.map((c) => (
                     <div className="kv" key={c.etiqueta}>
                       <span>{c.etiqueta}</span>
-                      <b style={{ textAlign: 'left', fontWeight: 400 }}>{c.valor}</b>
+                      <b>{c.valor}</b>
                     </div>
                   ))}
                 </div>
@@ -692,7 +772,10 @@ export default function Ficha({ contactoId, alCerrar }) {
           </button>
         </div>
         {avisoNota ? (
-          <div className="fd-aviso mal">
+          /* `alert` y no `status`: es el fallo de algo que la persona acaba de hacer, y llega
+             cuando ya dejó de mirar el botón. Los avisos que NO son consecuencia de una acción
+             —el atraso del barrido— siguen siendo `status`, que no interrumpe. */
+          <div className="fd-aviso mal" role="alert">
             <i>⚠</i>
             <span>{avisoNota}</span>
           </div>
@@ -702,9 +785,9 @@ export default function Ficha({ contactoId, alCerrar }) {
           <LoQueFalta texto="Este contacto todavía no tiene notas." />
         ) : (
           p.filas.map((n) => (
-            <div className="pr-box" key={n.id} style={{ marginTop: 9, padding: '11px 13px' }}>
-              <div style={{ fontSize: 12.5, lineHeight: 1.55, whiteSpace: 'pre-line' }}>{n.cuerpo}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--txt-faint)', marginTop: 7 }}>
+            <div className="pr-box cw-nota" key={n.id}>
+              <div className="cw-nota-cuerpo">{n.cuerpo}</div>
+              <div className="cw-nota-pie">
                 {/* `null` = la importó el sistema desde el CRM, y se dice así. Poner el nombre de
                     quien mira sería atribuirle una nota que no escribió. */}
                 {n.autor ?? 'Sistema'} · {hace(n.creadoEl)}
@@ -736,24 +819,43 @@ export default function Ficha({ contactoId, alCerrar }) {
         onKeyDown={teclas}
       >
         <div className="cw-h">
+          {/* ── DOS FILAS, Y NO ES SÓLO ESPACIO ──────────────────────────────
+              Los cinco controles vivían en `.cw-top` compitiendo por 519 px sin que ninguno dijera si
+              podía encogerse. Medido con un nombre real de 39 caracteres: el nombre partido en dos
+              renglones, «Avanzar →» partido en dos renglones, y la ✕ estrujada de 28 px a 23,6.
+              Arriba va QUIÉN ES —que es lo que el `02` § 2 llama «una foto del contacto»— y abajo
+              QUÉ PUEDO HACERLE. Tenerlas mezcladas era lo que forzaba la competencia. */}
           <div className="cw-top">
             <span className="cw-av">{iniciales(contacto?.nombre)}</span>
-            <div>
+            <div className="cw-quien">
               <div className="cw-n">{contacto?.nombre ?? 'Cargando…'}</div>
               <div className="cw-p">{contacto?.telefono ?? 'sin teléfono'}</div>
             </div>
-            {/* El enlace al CRM solo si se sabe a dónde. Con `enlaceCrm` nulo el botón NO se
-                dibuja, en vez de llevar a una página que no es la de este contacto. */}
-            {/* AVANZAR primero y a la derecha: es la acción de la pantalla, no una más. */}
             <button
               type="button"
-              className="fd-btn"
-              style={{ marginLeft: 'auto' }}
+              className="cw-x"
+              onClick={() => alCerrar?.()}
+              aria-label="Cerrar la ficha"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="cw-acciones">
+            {/* AVANZAR es la acción de la pantalla, no una más, y por eso ocupa el ancho que sobra.
+                Usa `.cw-go`, que es el botón principal que el prototipo ya tenía dibujado para ESTE
+                panel y que el port dejó muerto: se hacía con `.fd-btn`, un botón de FORMULARIO que
+                mide 10 px más de alto que sus vecinos y desalineaba la fila entera. */}
+            <button
+              type="button"
+              className="cw-go"
               disabled={situacion !== 'listo'}
               onClick={() => setAvanzando(true)}
             >
               Avanzar →
             </button>
+            {/* El enlace al CRM solo si se sabe a dónde. Con `enlaceCrm` nulo el botón NO se
+                dibuja, en vez de llevar a una página que no es la de este contacto. */}
             {refresco?.enlaceCrm ? (
               <button
                 type="button"
@@ -773,10 +875,16 @@ export default function Ficha({ contactoId, alCerrar }) {
                 contacto —sin identificador en el CRM no hay página a la que ir— y éste depende de una
                 configuración de la empresa. Lo primero no se puede arreglar desde acá; lo segundo sí,
                 y el `title` dice dónde. */}
+            {/* `aria-disabled` y NO `disabled`, y no es un detalle: un elemento `disabled` no
+                recibe foco, así que con teclado el `title` es inalcanzable y el lector de pantalla
+                salta el botón entero. O sea que la mitad del diseño de acá arriba —«atenuado con su
+                explicación»— no le llegaba a quien no usa ratón. Con `aria-disabled` el botón sigue
+                en el recorrido, anuncia que está deshabilitado, y su motivo se lee. Que no haga
+                nada al pulsarlo lo garantiza la guarda del `onClick`, que ya estaba. */}
             <button
               type="button"
               className="cw-pin"
-              disabled={!enlaceAgendar}
+              aria-disabled={!enlaceAgendar}
               title={
                 enlaceAgendar
                   ? 'Abre el calendario de agendamiento de la empresa'
@@ -786,17 +894,6 @@ export default function Ficha({ contactoId, alCerrar }) {
             >
               ◷ Agendar
             </button>
-            <span
-              className="cw-x"
-              role="button"
-              tabIndex={0}
-              onClick={() => alCerrar?.()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') alCerrar?.();
-              }}
-            >
-              ✕
-            </span>
           </div>
 
           {/* EL ENCABEZADO ES SOLO ESTADO. Nada de acá es clicable salvo cerrar y el enlace al
@@ -813,28 +910,49 @@ export default function Ficha({ contactoId, alCerrar }) {
               había. Una ficha que se niega a abrir porque el CRM está caído es inútil justo cuando
               hay que trabajar sin él. */}
           {refresco && !refresco.actualizado && refresco.porque ? (
-            <div className="fd-aviso falta" style={{ marginTop: 12 }}>
+            <div className="fd-aviso falta cw-aviso-refresco">
               <i>◍</i>
               <span>{refresco.porque}</span>
             </div>
           ) : null}
         </div>
 
-        <div className="cw-tabs">
+        {/* ── CINCO PESTAÑAS QUE SE ANUNCIAN COMO PESTAÑAS ──────────────────
+            Eran cinco `<button>` sueltos con la activa marcada sólo por `className`: un lector de
+            pantalla leía cinco botones sin relación entre sí y sin decir cuál está abierto.
+            `aria-selected` lo dice, y `aria-controls` ata cada una al cuerpo que cambia.
+
+            Y el glifo va en su propio elemento. `.cw-tabs button` declara `gap:7px`, que reparte
+            espacio ENTRE ítems flex — pero `{p.glifo} {p.nombre}` produce nodos de texto contiguos
+            que flexbox envuelve en UN solo ítem anónimo, así que el `gap` no hacía nada: el aire
+            entre «◔» y «Chat» era el del espacio tipográfico. Viene del prototipo, que escribía
+            igual. Ahora son dos ítems, el `gap` se cumple, y el glifo se puede atenuar aparte. */}
+        <div className="cw-tabs" role="tablist" aria-label="Secciones del contacto">
           {PESTANAS.map((p) => (
             <button
               key={p.clave}
               type="button"
+              role="tab"
+              id={`cw-tab-${p.clave}`}
+              aria-selected={activa === p.clave}
+              aria-controls="cw-panel"
               data-t={p.clave}
               className={activa === p.clave ? 'on' : undefined}
               onClick={() => setActiva(p.clave)}
             >
-              {p.glifo} {p.nombre}
+              <i className="cw-tab-g" aria-hidden="true">{p.glifo}</i>
+              <span>{p.nombre}</span>
             </button>
           ))}
         </div>
 
-        <div className="cw-body" ref={cuerpo}>
+        <div
+          className="cw-body"
+          ref={cuerpo}
+          id="cw-panel"
+          role="tabpanel"
+          aria-labelledby={`cw-tab-${activa}`}
+        >
           {situacion === 'cargando' ? (
             <div className="dw-empty">Cargando el contacto…</div>
           ) : situacion !== 'listo' ? (
@@ -856,7 +974,10 @@ export default function Ficha({ contactoId, alCerrar }) {
             disparó sus automatismos** —la secuencia de recuperación de un no-show, por ejemplo—.
             Colapsarlo en «listo» sería reportar un éxito a medias como completo. */}
         {loRegistrado ? (
-          <div className={`fd-aviso ${loRegistrado.crm?.avisado ? 'bien' : 'falta'} cw-cerrada`}>
+          <div
+            className={`fd-aviso ${loRegistrado.crm?.avisado ? 'bien' : 'falta'} cw-cerrada`}
+            role="status"
+          >
             <i>{loRegistrado.crm?.avisado ? '✓' : '◍'}</i>
             <span>
               Registrado. El contacto pasó a <b>{loRegistrado.etapa}</b>.
@@ -933,7 +1054,7 @@ function Compositor({ ventana, borrador, alEscribir, alMandar, enviando, aviso }
         </div>
       ) : null}
       {aviso ? (
-        <div className="fd-aviso mal cw-cerrada">
+        <div className="fd-aviso mal cw-cerrada" role="alert">
           <i>⚠</i>
           <span>{aviso}</span>
         </div>
