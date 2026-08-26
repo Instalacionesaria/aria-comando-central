@@ -82,6 +82,22 @@ insert into identidad.permisos (clave, descripcion) values
   ('fundaciones.ver',    'Ver el trabajo de Fundaciones: ficha, research, ICP, categoría, oferta, precio y mapa'),
   ('fundaciones.editar', 'Generar y editar los entregables de Fundaciones (consume tokens de la organización)'),
 
+  -- ── La pantalla `tools` ────────────────────────────────────────────────────
+  --
+  -- DOS y no una, con el mismo criterio que las de Fundaciones: ver un plan de prospección es
+  -- leer un documento; generarlo de nuevo gasta tokens de la organización.
+  --
+  -- Y separadas de `fundaciones.%` a propósito. Reusarlas era la salida barata: `tools` no es
+  -- Fundaciones —sus herramientas no son parte del método, son lo que se hace después— y
+  -- unificarlas significaría que darle Tools a alguien le da también ICP & Oferta, sin que nadie
+  -- lo decida y sin que nada falle.
+  --
+  -- El reparto de abajo es DERIVADO, así que estas dos llegan solas a los tres roles: el
+  -- superadministrador las recibe por «todas», y el administrador y el usuario porque `tools.%`
+  -- no está entre las familias que se les niegan.
+  ('tools.ver',          'Ver las herramientas de la pantalla Tools y sus documentos'),
+  ('tools.editar',       'Generar y editar los documentos de Tools (consume tokens de la organización)'),
+
   -- ── Etapa 11 · Closer y Setter ─────────────────────────────────────────────
   --
   -- UNA capacidad de lectura POR PESTAÑA, y acá está la decisión que hubo que tomar.

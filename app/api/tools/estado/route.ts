@@ -2,14 +2,17 @@
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 // ADR-0305 — Un rechazo por permiso no se muestra como "no hay datos".
 //
-// El estado de Fundaciones del alumno: leerlo entero, y guardar los inputs de una herramienta.
+// El estado de las herramientas de la pantalla `tools`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// POR QUÉ ESTE ARCHIVO SE ACORTÓ, Y QUÉ SE QUEDÓ ADENTRO
+// LAS DOS DIFERENCIAS CON `/api/fundaciones/estado`, Y LAS DOS IMPORTAN
 //
-// El trabajo se mudó a `lib/fundaciones/operaciones.ts` cuando apareció la pantalla `tools`, que
-// tiene LAS MISMAS tres operaciones con capacidades distintas. Copiar el archivo y cambiarle la
-// capacidad habría sido la lista paralela con otro nombre.
+//   1. **Pide `tools.ver`, no `fundaciones.ver`.** Reusar la de Fundaciones era la salida barata:
+//      darle Tools a alguien le daría también ICP & Oferta, sin que nadie lo decida.
+//   2. **Admite solo las herramientas de `TOOLS`.** Sin ese filtro, una petición acá con
+//      `herramienta: 3` guardaría el ICP con la capacidad equivocada.
+//
+// El trabajo es el mismo y vive en `lib/fundaciones/operaciones.ts`.
 //
 // Lo que NO se mudó es la autorización: el `exigir(` y el `conIdentidad(` se quedan acá. Tres
 // pruebas lo exigen —`ADR-0301`, `ADR-0202`, `ADR-0211`— y leen ESTE archivo, no lo que llama. Y
@@ -28,14 +31,14 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { resolverAlumnoDeFundaciones } from '../../../../lib/credenciales/resolver.ts';
-import { FUNDACIONES } from '../../../../lib/fundaciones/herramientas.ts';
+import { TOOLS } from '../../../../lib/fundaciones/herramientas.ts';
 import { guardarLosInputs, leerElEstado } from '../../../../lib/fundaciones/operaciones.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
-export const PANTALLA = 'icp';
+export const PANTALLA = 'tools';
 
 /**
- * Leer nueve documentos del almacén tarda, y generar tarda mucho más.
+ * Leer el almacén tarda, y generar tarda mucho más.
  *
  * El valor por omisión de la plataforma corta la función antes de que una generación de 16.000
  * tokens termine, y el síntoma sería *"a veces no guarda"* — un fallo intermitente que se
@@ -44,7 +47,7 @@ export const PANTALLA = 'icp';
 export const maxDuration = 300;
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['fundaciones.ver'], PANTALLA);
+  const contexto = await exigir(peticion, ['tools.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   // EL FILTRO, a mano y a la vista: con el rol de identidad no hay política que lo ponga.
@@ -57,7 +60,7 @@ export async function GET(peticion: Request): Promise<Response> {
 }
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['fundaciones.editar'], PANTALLA);
+  const contexto = await exigir(peticion, ['tools.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const alumno = await conIdentidad(async (db) =>
@@ -65,5 +68,5 @@ export async function POST(peticion: Request): Promise<Response> {
   );
   if (alumno.tipo === 'falta') return rechazo(alumno.que);
 
-  return guardarLosInputs(peticion, alumno, FUNDACIONES);
+  return guardarLosInputs(peticion, alumno, TOOLS);
 }

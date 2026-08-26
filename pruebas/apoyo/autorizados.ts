@@ -171,6 +171,14 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // El catálogo de roles. Lee `identidad.roles`, que es de ese dominio. No cruza nada: los
   // roles globales no pertenecen a ninguna organización.
   'app/api/admin/roles/route.ts',
+  // ── Las dos rutas de la pantalla `tools` ────────────────────────────────────
+  //
+  // Mismo caso que las de Fundaciones, y por el mismo motivo: el estado de las herramientas no
+  // está en esta base —vive en el almacén de ARIA-brain—, y de acá se lee UNA fila, la de
+  // credenciales, que el rol del inquilino no puede ni mirar. Así que el filtro por organización
+  // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
+  'app/api/tools/estado/route.ts',
+  'app/api/tools/generar/route.ts',
   // ── Etapa 13 · el chat ───────────────────────────────────────────────────────
   //
   // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de

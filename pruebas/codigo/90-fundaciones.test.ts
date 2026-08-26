@@ -149,13 +149,17 @@ test('ningún identificador de campo se repite entre herramientas', () => {
 
 // ─── Las metodologías: existen, y no hay suplente que las tape ──────────────
 
-test('las trece metodologías existen y no están vacías', () => {
+test('las catorce metodologías existen y no están vacías', () => {
   const todas = [...Object.values(METODOLOGIA), ...METODOLOGIA_RESEARCH];
-  // Once hasta que entraron VSL(5) y Landing(6). El número literal es lo que obliga a que sumar o
-  // quitar una metodología sea una decisión: los archivos entran al paquete construido por un glob
-  // de `outputFileTracingIncludes`, así que uno que falte NO rompe la construcción — rompe la
-  // generación en producción, con `metodologia_ilegible`, y solo para esa herramienta.
-  assert.equal(todas.length, 13, 'cambió la cantidad de metodologías sin que nadie lo dijera');
+  // Once hasta que entraron VSL(5) y Landing(6); catorce desde que entró Prospección(20), que es
+  // de la pantalla `tools` y no de Fundaciones — el mapa es de TODAS las herramientas, porque la
+  // metodología de una no depende de en qué pantalla se muestre.
+  //
+  // El número literal es lo que obliga a que sumar o quitar una metodología sea una decisión: los
+  // archivos entran al paquete construido por un glob de `outputFileTracingIncludes`, así que uno
+  // que falte NO rompe la construcción — rompe la generación en producción, con
+  // `metodologia_ilegible`, y solo para esa herramienta.
+  assert.equal(todas.length, 14, 'cambió la cantidad de metodologías sin que nadie lo dijera');
 
   for (const id of todas) {
     const plantilla = leerPlantilla(id);
@@ -483,16 +487,17 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   );
   assert.ok(CAPACIDADES.includes('fundaciones.ver'));
   assert.ok(CAPACIDADES.includes('fundaciones.editar'));
-  // Las OCHO que siguen esperando su primera operación.
+  // Las SIETE que siguen esperando su primera operación.
   //
   // Eran nueve hasta la Etapa 11, que se llevó `setter` y `closer` por el mismo camino que la 9
-  // se llevó `icp` — y volvieron a ocho cuando entró `tools`, que nace sin ninguna operación.
+  // se llevó `icp`. `tools` nació sin operaciones y las tuvo el mismo día: Prospección en Frío le
+  // dio las suyas, así que entró y salió de esta lista sin llegar a contarse.
   //
   // El número literal es el cable trampa: **el día que una de estas ocho reciba su primera
   // operación de servidor, esta línea falla** y alguien tiene que bajarle la bandera
   // `sinOperacionesTodavia` en `SECCIONES` en vez de dejar una pantalla que decide por
   // capacidad figurando como si no decidiera nada. Derivarlo lo apagaría.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 8);
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 7);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {

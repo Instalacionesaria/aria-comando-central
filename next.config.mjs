@@ -21,6 +21,11 @@ const nextConfig = {
   // este archivo no parsea y Next falla al arrancar con "Unexpected token".
   outputFileTracingIncludes: {
     '/api/fundaciones/generar': ['./lib/fundaciones/skills/**/*'],
+    // La pantalla `tools` genera por su propia ruta y lee los mismos archivos. Se declara
+    // explícito aunque el trazado ya los arrastre por el módulo compartido: depender de eso es
+    // depender de cómo Next agrupa los fragmentos, que puede cambiar entre versiones. Y el modo
+    // de falla es el peor par posible — funciona en desarrollo y falla en producción.
+    '/api/tools/generar': ['./lib/fundaciones/skills/**/*'],
   },
 };
 

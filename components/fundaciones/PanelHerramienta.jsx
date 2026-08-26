@@ -34,6 +34,11 @@ export default function PanelHerramienta({
   faltaPermiso,
   onIr,
   onEstadoCambiado,
+  /* Las dos rutas de SU pantalla. Llegan por props y no están escritas acá porque el mismo
+     panel sirve a ICP & Oferta y a Tools, que tienen capacidades distintas: una ruta escrita
+     adentro haría que Tools guardara y generara con la capacidad de Fundaciones. */
+  rutaEstado,
+  rutaGenerar,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -87,7 +92,7 @@ export default function PanelHerramienta({
   const guardar = async () => {
     setError(null);
     setGuardando(true);
-    const r = await pedir('/api/fundaciones/estado', {
+    const r = await pedir(rutaEstado, {
       metodo: 'POST',
       cuerpo: { herramienta: herramienta.id, valores },
     });
@@ -109,7 +114,7 @@ export default function PanelHerramienta({
       cuerpo.ajuste = ajuste;
       cuerpo.previa = documento;
     }
-    const r = await pedir('/api/fundaciones/generar', { metodo: 'POST', cuerpo });
+    const r = await pedir(rutaGenerar, { metodo: 'POST', cuerpo });
     setGenerando(false);
     const mal = problema(r);
     if (mal) {

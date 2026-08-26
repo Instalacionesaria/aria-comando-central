@@ -1,46 +1,52 @@
-/* Tools — nace vacía, y lo dice.
+/* La vista `tools` — las herramientas de la operación.
    ==========================================================================
-   Esta vista NO viene del prototipo `aios-command-center_1.html`: es la primera pantalla
-   creada de cero en el proyecto. Por eso no está en `scripts/paridad.mjs` — no hay contra
-   qué compararla.
+   Es la primera pantalla creada de cero en el proyecto: no viene de
+   `aios-command-center_1.html`, así que no está en `scripts/paridad.mjs` — no hay contra
+   qué compararla, y compararla contra un HTML donde no existe daría un rojo permanente.
 
-   ── POR QUÉ NO TIENE TARJETAS DE MAQUETA ──────────────────────────────────
+   Nació como marcador de posición y duró poco: la primera herramienta —Prospección en
+   Frío, traída de la fase Growth de ARIA-brain— le dio sus dos operaciones y con eso salió
+   de `SIN_OPERACIONES_TODAVIA`. Es el mismo camino que hizo `icp` en la Etapa 9.
 
-   Lo natural sería copiar la forma de `SalesView` —cuatro estadísticas, una tabla, unas
-   barras— para que "se vea como el resto". Eso es exactamente lo que este repositorio no
-   hace: las cifras de las otras nueve vistas son maquetado del prototipo, y alguien que
-   las mira ya sabe que lo son. De ésta nadie lo sabría, y un `$55,200` inventado en una
-   pantalla nueva se lee como un dato.
+   ── POR QUÉ REUSA EL COMPONENTE DE FUNDACIONES ────────────────────────────
 
-   Es la misma regla que `ADR-0305` aplica a los rechazos y que la migración 011 aplica a
-   las columnas: un cero medido y un cero no medido no son el mismo hecho. Acá no hay
-   ninguna medición todavía, así que la pantalla dice eso y nada más. */
+   Porque es literalmente lo mismo: subpestañas, un formulario, un botón que gasta tokens,
+   un documento con su historial de versiones y el cartel de las tres ramas de fallo.
+   Copiarlo para cambiarle dos rutas habría duplicado doscientas líneas que divergen en la
+   primera corrección — y con ellas el cartel de error y el indicador de avance.
+
+   Lo que SÍ cambia viaja en el catálogo, explícito y sin valores por omisión: sus
+   herramientas, sus dos rutas y su capacidad de edición. Esa última no es un detalle:
+   `tools.editar` y `fundaciones.editar` son distintas a propósito, y un panel que hubiera
+   heredado la de Fundaciones dejaría generar aquí a quien solo puede generar allá.
+
+   El envoltorio —`.view` > `.view-scroll cre-scroll` > `.cre-head`— se conserva porque es
+   el que hace que la vista se comporte como las otras: el mismo scroll, el mismo
+   encabezado, el mismo lugar. */
+
+import Fundaciones from '../fundaciones/Fundaciones';
+import { TOOLS } from '@/lib/fundaciones/herramientas';
+
+const CATALOGO_TOOLS = {
+  herramientas: TOOLS,
+  rutaEstado: '/api/tools/estado',
+  rutaGenerar: '/api/tools/generar',
+  capacidadEditar: 'tools.editar',
+};
+
 export default function ToolsView({ activa }) {
   return (
     <section className={activa ? 'view on' : 'view'} id="v-tools">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l">
-            <h2>
-              Tools
-            </h2>
+            <h2>Tools</h2>
             <span className="cre-desc">
-              Las herramientas de la operación
+              Las herramientas de la operación, que heredan de tu ICP y tu oferta
             </span>
           </div>
         </div>
-
-        <div className="card">
-          <div className="card-body" style={{ padding: '34px 28px', textAlign: 'center' }}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-              Pendiente de construir
-            </div>
-            <div style={{ color: 'var(--txt-dim)', fontSize: 12.5, lineHeight: 1.6, maxWidth: 560, margin: '0 auto' }}>
-              La pestaña existe y está en su lugar; todavía no tiene nada adentro. No es que
-              no haya datos — es que no hay ninguna operación detrás de esta pantalla.
-            </div>
-          </div>
-        </div>
+        <Fundaciones catalogo={CATALOGO_TOOLS} />
       </div>
     </section>
   );

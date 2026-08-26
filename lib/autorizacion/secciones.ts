@@ -271,25 +271,21 @@ export const SECCIONES: readonly Seccion[] = [
   {
     // ── Tools ──
     //
-    // Nace VACÍA y con la bandera puesta: no tiene ninguna operación de servidor todavía. La
-    // pantalla lo dice con todas las letras en vez de mostrar tarjetas de maqueta — un
-    // marcador de posición que se parece a datos es el defecto que `ADR-0305` persigue, y acá
-    // sería peor que en las otras nueve, porque éstas vienen del prototipo y alguien podría
-    // reconocerlas como tales. Ésta no la reconoce nadie.
+    // Nació vacía y con la bandera puesta. Duró poco: la primera herramienta —Prospección en
+    // Frío, traída de la fase Growth de ARIA-brain— le dio sus dos operaciones, así que la
+    // bandera se cayó. Es el mismo camino que hizo `icp` en la Etapa 9.
     //
-    // `tablero.ver` como las demás pantallas sin operaciones, y eso ES una decisión: con esa
-    // capacidad la ven administrador y superadministrador, y NO la ven closer ni setter — el
-    // catálogo no se las da. Cuando Tools tenga contenido y se sepa quién debe verlo, puede
-    // necesitar una capacidad propia; el criterio para decidirlo está en el `03` § 2:
-    // "¿existe un rol plausible que necesite A y no B?".
+    // **Capacidades PROPIAS y no `fundaciones.*`.** Reusarlas era la salida barata y estaba mal:
+    // `tools` no es Fundaciones —sus herramientas no son parte del método, son lo que se hace
+    // después—, y unificarlas significaría que darle Tools a alguien le da también ICP & Oferta.
+    // Sin que nadie lo decida y sin que nada falle.
     //
     // NO va en `scripts/paridad.mjs`: esa comparación es contra `aios-command-center_1.html`,
     // y esta pantalla no existe en el prototipo. Compararla daría un rojo permanente, y un
     // rojo permanente no se arregla — se ignora, y con él se ignoran los demás.
     clave: 'tools',
     nombre: 'Tools',
-    capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
+    capacidadRequerida: 'tools.ver',
     menu: { grupo: 'Operación', icono: '#i-tools' },
   },
 ];

@@ -47,6 +47,11 @@ export default function PanelResearch({
   puedeEditar,
   faltaPermiso,
   onEstadoCambiado,
+  /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
+     sus rutas igual: que una pantalla tenga una sola herramienta de este tipo no es motivo
+     para que ESTE archivo sepa a cuál pertenece. */
+  rutaEstado,
+  rutaGenerar,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -88,7 +93,7 @@ export default function PanelResearch({
   const guardar = async () => {
     setErrorAlGuardar(null);
     setGuardando(true);
-    const r = await pedir('/api/fundaciones/estado', {
+    const r = await pedir(rutaEstado, {
       metodo: 'POST',
       cuerpo: { herramienta: 1, valores },
     });
@@ -108,7 +113,7 @@ export default function PanelResearch({
     setCorriendo(paso);
     setError((previo) => ({ ...previo, [paso]: null }));
 
-    const r = await pedir('/api/fundaciones/generar', {
+    const r = await pedir(rutaGenerar, {
       metodo: 'POST',
       cuerpo: { herramienta: 1, valores, paso },
     });

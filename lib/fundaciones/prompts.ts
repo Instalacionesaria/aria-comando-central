@@ -36,6 +36,9 @@ export const METODOLOGIA: Readonly<Record<number, string>> = {
   26: 'mapa-proceso/system',
   5: 'vsl/killer-framework',
   6: 'landing/vsl-ai-studio',
+  // De la pantalla `tools`, no de Fundaciones. El mapa es de TODAS las herramientas: la
+  // metodología de una no depende de en qué pantalla se muestre.
+  20: 'prospeccion/outbound-setting',
 };
 
 /** Las metodologías de los cinco pasos del Research, en orden. */
@@ -448,6 +451,63 @@ function datosDeLanding(valores: Record<string, string>, estado: EstadoDeFundaci
   };
 }
 
+/**
+ * Lo que hereda Prospección en Frío. Puerto del `DATA_GETTERS[20]` del hub.
+ *
+ * Es la primera herramienta de la pantalla `tools`, y hereda de ICP & Oferta: sin el avatar, la
+ * página no sabe a quién escribirle, y sin la oferta no sabe qué ofrecer. Por eso vive DESPUÉS
+ * del método aunque esté en otra pantalla.
+ *
+ * ── LAS DOS VARIABLES QUE NO SON DATOS ──────────────────────────────────────
+ *
+ * `_ghlNombre` y `_ghlEmpresa` valen, literalmente, `{{nombre}}` y `{{empresa}}`. No son un
+ * error ni un valor de relleno: son los campos de combinación del CRM, y tienen que llegar al
+ * documento generado TAL CUAL para que el alumno pueda pegar la secuencia en GoHighLevel y que
+ * el CRM los reemplace por el nombre de cada prospecto.
+ *
+ * Se pasan como DATOS y no se escriben dentro del `SKILL.md` por una razón mecánica: el motor de
+ * plantillas de `plantillas.ts` interpola `{{…}}`, así que un `{{nombre}}` escrito en el archivo
+ * se resolvería contra los datos, no lo encontraría, y quedaría **como cadena vacía**. La
+ * secuencia saldría con huecos donde va el nombre del prospecto, sin ningún error. El hub llegó a
+ * la misma solución y por el mismo motivo; su comentario lo dice.
+ */
+function datosDeProspeccion(
+  valores: Record<string, string>,
+  estado: EstadoDeFundaciones,
+): DatosDePlantilla {
+  const f = fuentes(estado);
+  const partes: string[] = [];
+
+  // Los recortes y el orden son los del hub, y son parte del contrato: el `SKILL.md` fue afinado
+  // contra estos textos.
+  if (f.icp.presente) partes.push('ICP:\n' + f.icp.completo.slice(0, 1800));
+  if (f.oferta.presente) partes.push('OFERTA:\n' + f.oferta.completo.slice(0, 1500));
+  if (f.categoria.presente) {
+    partes.push('POSICIONAMIENTO / CATEGORÍA ÚNICA:\n' + f.categoria.completo.slice(0, 1500));
+  }
+
+  const icp = f.icp.presente ? f.icp.completo : SIN_ESPECIFICAR;
+
+  return {
+    nicho: f.niche.presente ? f.niche.completo : SIN_ESPECIFICAR,
+    oferta: f.oferta.presente ? f.oferta.completo : SIN_ESPECIFICAR,
+    ubicacion: valor(valores, 't20-ubicacion'),
+    canal: valor(valores, 't20-canal'),
+    fuentes: valor(valores, 't20-fuentes'),
+    tono: valor(valores, 't20-tono'),
+    icp,
+    // `\n` simple entre bloques, no doble: es lo que hace el hub para esta herramienta y no para
+    // las de Fundaciones. Parece una inconsistencia y se conserva — el prompt fue afinado así.
+    _growthContext: partes.length > 0 ? partes.join('\n') : null,
+    // Réplica del `d.icp || '(usar el ICP heredado del contexto)'` del hub: cuando no hay avatar,
+    // el prompt no recibe un hueco sino la INSTRUCCIÓN de sacarlo del contexto.
+    _icpTxt: icp,
+    // Ver el encabezado. Estos dos no son datos del alumno.
+    _ghlNombre: '{{nombre}}',
+    _ghlEmpresa: '{{empresa}}',
+  };
+}
+
 function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoDeFundaciones): string {
   const f = fuentes(estado);
   const partes: string[] = [];
@@ -544,7 +604,9 @@ export function armarPrompt(
               ? datosDeVsl(valores, estado)
               : id === 6
                 ? datosDeLanding(valores, estado)
-                : datosDeMapa(valores, estado);
+                : id === 20
+                  ? datosDeProspeccion(valores, estado)
+                  : datosDeMapa(valores, estado);
 
   return interpolar(plantilla, datos);
 }

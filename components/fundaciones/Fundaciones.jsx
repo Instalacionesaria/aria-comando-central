@@ -34,16 +34,33 @@ import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 import PanelHerramienta from './PanelHerramienta';
 import PanelResearch from './PanelResearch';
 
-export default function Fundaciones() {
+/* Lo que este componente necesita saber de SU pantalla.
+
+   Nació sirviendo a una sola —ICP & Oferta— con todo escrito adentro. Cuando apareció `tools`,
+   la alternativa era copiar el archivo: doscientas líneas duplicadas que divergen en la primera
+   corrección, y con ellas el cartel de error, las tres ramas de carga y el indicador de avance.
+   Es la lista paralela otra vez, con forma de componente.
+
+   Los valores por omisión son los de ICP & Oferta y existen para que `IcpView` no cambiara. Lo
+   que NO hacen es adivinar: `ToolsView` los pasa todos, explícitos. */
+const CATALOGO_ICP = {
+  herramientas: FUNDACIONES,
+  rutaEstado: '/api/fundaciones/estado',
+  rutaGenerar: '/api/fundaciones/generar',
+  capacidadEditar: 'fundaciones.editar',
+};
+
+export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
+  const { herramientas, rutaEstado, rutaGenerar, capacidadEditar } = catalogo;
   const [estado, setEstado] = useState(null);
   const [permisos, setPermisos] = useState(null);
   const [problema, setProblema] = useState(null);
-  const [activa, setActiva] = useState(FUNDACIONES[0].id);
+  const [activa, setActiva] = useState(catalogo.herramientas[0].id);
 
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([
       pedir('/api/auth/sesion'),
-      pedir('/api/fundaciones/estado'),
+      pedir(rutaEstado),
     ]);
 
     /* La sesión se pide para saber si mostrar los botones que generan. Es comodidad, no
@@ -66,7 +83,7 @@ export default function Fundaciones() {
         ? { texto: mensajeDeRechazo(respuesta.codigo, respuesta.estado), codigo: respuesta.codigo }
         : { texto: SIN_RESPUESTA, codigo: 'sin_respuesta' },
     );
-  }, []);
+  }, [rutaEstado]);
 
   useEffect(() => {
     cargar();
@@ -122,11 +139,11 @@ export default function Fundaciones() {
      manda a pedirle un permiso a alguien que no tiene nada que darle. Así que viaja el motivo,
      no el booleano: cuando la causa es el problema, el aviso de arriba ya lo explicó y el panel
      no agrega nada. */
-  const tienePermisoDeEditar = permisos ? permisos.includes('fundaciones.editar') : false;
+  const tienePermisoDeEditar = permisos ? permisos.includes(capacidadEditar) : false;
   const puedeEditar = !problema && tienePermisoDeEditar;
   const faltaPermiso = !problema && !tienePermisoDeEditar;
-  const hechos = FUNDACIONES.filter((h) => pasoCompleto(estadoUsable, h.id)).length;
-  const herramienta = FUNDACIONES.find((h) => h.id === activa) || FUNDACIONES[0];
+  const hechos = herramientas.filter((h) => pasoCompleto(estadoUsable, h.id)).length;
+  const herramienta = herramientas.find((h) => h.id === activa) || herramientas[0];
   const esConfiguracion =
     problema !== null &&
     (problema.codigo === 'sin_llave_de_ia' ||
@@ -136,7 +153,7 @@ export default function Fundaciones() {
   return (
     <>
       <div className="cl-sub fd-sub" role="tablist">
-        {FUNDACIONES.map((h, i) => {
+        {herramientas.map((h, i) => {
           const completo = pasoCompleto(estadoUsable, h.id);
           return (
             <button
@@ -155,10 +172,10 @@ export default function Fundaciones() {
         })}
         <div className="fd-avance">
           <span className="fd-barra">
-            <i style={{ width: `${(hechos / FUNDACIONES.length) * 100}%` }} />
+            <i style={{ width: `${(hechos / herramientas.length) * 100}%` }} />
           </span>
           <b>
-            {hechos}/{FUNDACIONES.length}
+            {hechos}/{herramientas.length}
           </b>
         </div>
       </div>
@@ -190,6 +207,8 @@ export default function Fundaciones() {
           puedeEditar={puedeEditar}
           faltaPermiso={faltaPermiso}
           onEstadoCambiado={recargar}
+          rutaEstado={rutaEstado}
+          rutaGenerar={rutaGenerar}
         />
       ) : (
         <PanelHerramienta
@@ -200,6 +219,8 @@ export default function Fundaciones() {
           faltaPermiso={faltaPermiso}
           onIr={setActiva}
           onEstadoCambiado={recargar}
+          rutaEstado={rutaEstado}
+          rutaGenerar={rutaGenerar}
         />
       )}
     </>

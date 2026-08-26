@@ -58,6 +58,18 @@ export const CAPACIDADES = [
   // documentos; editar es gastar dinero de la organización.
   'fundaciones.ver',
   'fundaciones.editar',
+  // ── Las dos de la pantalla `tools` ──
+  //
+  // DOS, con el criterio del `03` § 2: *"¿existe un rol plausible que necesite A y no B?"*. Sí,
+  // y es el mismo caso que Fundaciones — ver un plan de prospección es leer un documento;
+  // generarlo de nuevo gasta tokens de la organización.
+  //
+  // Y SEPARADAS de `fundaciones.*`, que era la salida barata: la pantalla `tools` no es
+  // Fundaciones, va a tener tres herramientas que no son del método, y unificarlas significaría
+  // que darle Tools a alguien le da también ICP & Oferta — sin que nadie lo decida y sin que
+  // nada falle.
+  'tools.ver',
+  'tools.editar',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //
   // UNA de lectura por PESTAÑA, y son dos porque de eso depende que un closer no vea la

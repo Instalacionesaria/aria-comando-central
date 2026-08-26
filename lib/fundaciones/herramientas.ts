@@ -527,6 +527,91 @@ const LANDING: Herramienta = {
   forma: 'generica',
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// LAS HERRAMIENTAS DE LA PANTALLA `tools`
+//
+// Foundations no es lo único que tiene el hub. `Prospección en Frío` vive en su fase Growth,
+// y acá vive en una pantalla propia — no como décima subpestaña de ICP & Oferta, porque no es
+// parte del método: es lo que se hace DESPUÉS, con el método hecho.
+//
+// Comparten TODO lo demás con las nueve: el mismo registro, el mismo almacén (`perfil[20]`,
+// `historial[20]`), el mismo motor de plantillas y el mismo panel. El `id` sigue siendo el del
+// hub por el mismo motivo de siempre — es la llave posicional del almacén compartido.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const PROSPECCION: Herramienta = {
+  id: 20,
+  clave: 'prospeccion',
+  pestania: 'Prospección',
+  titulo: 'Prospección en frío',
+  bajada: 'El plan de ataque completo para conseguir reuniones sin esperar a que te encuentren.',
+  detalle:
+    'No extrae leads por vos: te entrega el plan listo para ejecutar. Los criterios y filtros ' +
+    'exactos de búsqueda en Google Maps, LinkedIn y Facebook; cómo calificar cada lead con el ' +
+    'modelo de tres niveles; el primer mensaje de dos preguntas en tono consultor; la secuencia ' +
+    'de siete toques para cargar en el CRM; y el manejo de objeciones. Hereda tu avatar, tu ' +
+    'categoría y tu oferta de ICP & Oferta.',
+  filas: [
+    {
+      columnas: 1,
+      campos: [
+        { id: 't20-ubicacion', etiqueta: '¿Dónde están tus prospectos?', tipo: 'texto', marcador: 'Ej: Perú, México, LATAM completo' },
+      ],
+    },
+    {
+      columnas: 2,
+      campos: [
+        {
+          id: 't20-canal',
+          etiqueta: '¿Por dónde los vas a contactar?',
+          tipo: 'lista',
+          opciones: [
+            { valor: 'Multicanal (WhatsApp + Email + Llamada)', etiqueta: 'Multicanal (WhatsApp + Email + Llamada)' },
+            { valor: 'Instagram / Facebook DM', etiqueta: 'Instagram / Facebook DM' },
+            { valor: 'LinkedIn DM', etiqueta: 'LinkedIn DM' },
+            { valor: 'WhatsApp', etiqueta: 'WhatsApp' },
+            { valor: 'Email', etiqueta: 'Email' },
+          ],
+        },
+        {
+          id: 't20-fuentes',
+          etiqueta: '¿De dónde los vas a sacar?',
+          tipo: 'lista',
+          opciones: [
+            { valor: 'Las 3: Google Maps + LinkedIn + Facebook', etiqueta: 'Las 3: Google Maps + LinkedIn + Facebook' },
+            { valor: 'Solo Google Maps', etiqueta: 'Solo Google Maps' },
+            { valor: 'Solo LinkedIn', etiqueta: 'Solo LinkedIn' },
+            { valor: 'Solo Facebook', etiqueta: 'Solo Facebook' },
+            { valor: 'Google Maps + LinkedIn', etiqueta: 'Google Maps + LinkedIn' },
+          ],
+        },
+      ],
+    },
+    {
+      columnas: 1,
+      campos: [
+        {
+          // "Siempre dentro del marco consultivo" NO es adorno del texto: las tres opciones son
+          // variantes de tono DENTRO de ese marco, y el `SKILL.md` está escrito sobre esa premisa
+          // (Direct Value DM: consultor, no vendedor). Una cuarta opción "agresiva" no sería una
+          // opción más — contradiría la metodología entera.
+          id: 't20-tono',
+          etiqueta: '¿Con qué tono? (siempre dentro del marco consultivo)',
+          tipo: 'lista',
+          opciones: [
+            { valor: 'Consultivo profesional (estilo doctor)', etiqueta: 'Consultivo profesional (estilo doctor)' },
+            { valor: 'Consultivo cercano y conversacional', etiqueta: 'Consultivo cercano y conversacional' },
+            { valor: 'Consultivo directo y seguro', etiqueta: 'Consultivo directo y seguro' },
+          ],
+        },
+      ],
+    },
+  ],
+  etiquetaBoton: 'Generar mi plan de prospección',
+  etiquetaSalida: 'Plan de Prospección',
+  forma: 'generica',
+};
+
 /**
  * Las nueve, **en el orden del método**. El componente pinta las subpestañas recorriendo esto.
  *
@@ -549,9 +634,25 @@ export const FUNDACIONES: readonly Herramienta[] = [
 /** Los nueve identificadores, para las comprobaciones y para recorrer sin buscar. */
 export const IDS_FUNDACIONES: readonly number[] = FUNDACIONES.map((h) => h.id);
 
+/**
+ * Las herramientas de la pantalla `tools`, en el orden en que se muestran.
+ *
+ * Hoy una. Va a haber más, y por eso es una lista y no una constante suelta.
+ */
+export const TOOLS: readonly Herramienta[] = [PROSPECCION];
+
+/**
+ * Todas las herramientas del proyecto, de las dos pantallas.
+ *
+ * Existe para `herramienta(id)`: la validación de "¿este identificador es una herramienta?" no
+ * puede depender de en qué pantalla vive, o el mismo id sería válido en una ruta e inválido en
+ * la otra. QUÉ pantalla puede usar cuál lo deciden las rutas, con su propia lista.
+ */
+export const TODAS: readonly Herramienta[] = [...FUNDACIONES, ...TOOLS];
+
 /** La herramienta con ese identificador del hub, o `undefined`. */
 export function herramienta(id: number): Herramienta | undefined {
-  return FUNDACIONES.find((h) => h.id === id);
+  return TODAS.find((h) => h.id === id);
 }
 
 /** Los identificadores de los cinco pasos de Market Research, en orden. */
