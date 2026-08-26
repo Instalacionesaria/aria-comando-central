@@ -8,6 +8,7 @@
 //   node scripts/db.mjs bajar       el contenedor y su volumen
 //   node scripts/db.mjs arranque    los tres roles y sus rutas de búsqueda (superusuario)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
+//   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
@@ -236,13 +237,36 @@ async function catalogo() {
   // archivo que corre explica: el DUEÑO otorga privilegios, el rol del CATÁLOGO escribe
   // capacidades y roles, e IDENTIDAD retira roles y reasigna a su gente.
   //
-  // Esta última no es intercambiable con las otras dos: `migrador` y el rol del catálogo no
-  // tienen política sobre `identidad.usuarios_roles`, así que con cualquiera de ellos el
-  // retiro afectaría **cero filas y reportaría éxito**, dejando a alguien sin ningún rol. Está
-  // medido y escrito en el encabezado de `003_retiro_de_roles.sql`.
-  //
   // Va DESPUÉS del catálogo porque necesita que el rol destino ya exista — y si no existe, ese
   // archivo se niega a borrar nada en vez de dejar gente sin acceso.
+  await retiro();
+}
+
+/**
+ * El retiro de los roles que salieron del catálogo. **Corre como `app_identidad`.**
+ *
+ * ── POR QUÉ ES UNA FASE SUELTA Y NO SOLO EL FINAL DE `catalogo` ──────────────
+ *
+ * Porque contra Supabase `catalogo` **no se puede correr**: exige `DATABASE_URL_ADMIN`, y la
+ * contraseña de `postgres` no vive en ninguna máquina de acá a propósito (`docs/DESPLIEGUE.md`
+ * § 2). Allá el catálogo se manda por la Management API:
+ *
+ *     node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql
+ *     node --env-file=.env.supabase scripts/db.mjs retiro
+ *
+ * Y el retiro es el único de los tres pasos que ESE camino no puede hacer, porque no es un
+ * problema de privilegio sino de política: `migrador`, el rol del catálogo y `postgres` no
+ * tienen política sobre `identidad.usuarios_roles`, así que con cualquiera de ellos el retiro
+ * afectaría **cero filas y reportaría éxito**, dejando a alguien sin ningún rol. Medido y
+ * escrito en el encabezado de `003_retiro_de_roles.sql`:
+ *
+ *     migrador → select count(*) from identidad.usuarios_roles  →  0 filas
+ *
+ * Sin esta fase, el paso quedaba viviendo en la cabeza de quien despliega — y un paso que solo
+ * existe en producción es un paso que nadie prueba. Acá corre en las dos partes: `catalogo` la
+ * llama en local, y en Supabase se la invoca sola.
+ */
+async function retiro() {
   if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
   const identidad = new pg.Client({ connectionString: process.env.DATABASE_URL_IDENTIDAD });
   await identidad.connect();
@@ -379,7 +403,10 @@ async function verificar() {
 
 // ── Despacho ─────────────────────────────────────────────────────────────────
 
-const FASES = { bajar, levantar, arranque, migrar, catalogo, sembrar, verificar };
+// `retiro` está en la lista pero NO en `RESET`: `catalogo` ya la llama, y correrla dos veces
+// seguidas no rompe nada —es idempotente— pero repetir un paso en la secuencia hace creer que
+// hace falta dos veces. Se invoca sola contra Supabase, donde `catalogo` no puede correr.
+const FASES = { bajar, levantar, arranque, migrar, catalogo, retiro, sembrar, verificar };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
 const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'verificar'];
 

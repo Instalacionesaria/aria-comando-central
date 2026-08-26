@@ -111,6 +111,68 @@ hashes, donde el largo es la única defensa que queda. **Elegí una larga de tod
 
 ---
 
+## 4b · El catálogo de capacidades y el retiro de roles
+
+**Es el único paso del despliegue que no se puede hacer con `scripts/db.mjs` a secas**, y hay que
+decirlo porque el síntoma de saltearlo no es un error: la aplicación funciona con el catálogo viejo,
+así que un rol nuevo simplemente no existe y nadie lo nota hasta que alguien intenta asignarlo.
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql
+node --env-file=.env.supabase scripts/db.mjs retiro
+```
+
+**Son dos comandos y no uno porque son dos roles distintos de la base, y ninguno de los dos puede
+hacer lo del otro:**
+
+| Paso | Quién lo corre | Por qué no puede ser el otro |
+| --- | --- | --- |
+| El catálogo (`001`) | `postgres`, por la Management API | Hace falta omitir RLS **y** tener `INSERT`. `migrador` tiene lo segundo y no lo primero. |
+| El retiro (`003`) | `app_identidad`, por TCP | Es un problema de POLÍTICA, no de privilegio: nadie más tiene política sobre `identidad.usuarios_roles`. |
+
+Y el segundo es el peligroso. Medido: `migrador` ve **0 filas** en `identidad.usuarios_roles`, así
+que corrido con el rol equivocado el retiro afecta cero filas, **reporta éxito**, y borra los roles
+viejos dejando a su gente sin ninguno. Por eso `db.mjs retiro` existe como fase con nombre: el paso
+vivía en la cabeza de quien despliega, y un paso que solo existe en producción es un paso que nadie
+prueba. Ahora corre en los dos lados — `catalogo` lo llama en local, y acá se lo invoca solo.
+
+`002_escritura_del_catalogo.sql` **no hace falta repetirlo**: otorga el `INSERT` a `postgres` una
+vez y el privilegio queda. Comprobado antes de correr, en lectura:
+
+```sql
+select has_table_privilege('postgres','identidad.permisos','INSERT');   -- true
+select rolbypassrls from pg_roles where rolname = 'postgres';           -- true
+```
+
+**Aplicado el 2026-08-26, y el antes y el después:**
+
+| | antes | después |
+| --- | --- | --- |
+| roles | `administrador`, `closer`, `setter`, `superadministrador` | `administrador`, `superadministrador`, `usuario` |
+| capacidades | 24 | 24 |
+| asignaciones | 47 | 48 |
+| usuarios sin rol | 0 | **0** |
+
+`closer` y `setter` tenían **cero usuarios**, así que el retiro no movió a nadie. La diferencia
+entre `administrador` (13 capacidades) y `usuario` (11) es exactamente `credenciales.ver` y
+`credenciales.editar` — y eso lo verifica `pruebas/base/22-los-tres-roles.test.ts` por diferencia de
+conjuntos, no por conteo.
+
+**El orden importa y en un sentido solo:** el catálogo primero, porque `003` se niega a borrar nada
+si el rol destino `usuario` todavía no existe. Preferir no hacer nada antes que dejar a alguien sin
+acceso.
+
+Verificación, contra la base y no contra el código:
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer "select (select count(*) from identidad.permisos) as permisos, (select count(*) from identidad.roles_permisos) as rp, (select string_agg(clave,', ' order by clave) from identidad.roles) as roles, (select count(*) from identidad.usuarios u where not exists (select 1 from identidad.usuarios_roles ur where ur.usuario_id=u.id)) as sin_rol"
+```
+
+Lo último es lo que hay que mirar: **`sin_rol` tiene que ser 0.** Un número mayor significa que el
+retiro corrió con el rol equivocado, y esa persona no puede entrar a ninguna pantalla.
+
+---
+
 ## 5 · Las variables en Vercel
 
 Seis, alcance **production**, creadas por la API con un token personal:
