@@ -215,6 +215,10 @@ test('el rol de plataforma crea en OTRA empresa sin conmutarse, y en una sola ll
       email: 'nuevo-en-alfa@e12.ejemplo',
       orgId: alfa,
       rol: 'usuario',
+      /* Las pestañas, y esta línea es nueva: el rol `usuario` se restringe por sección, así que un
+         alta sin ellas ahora se RECHAZA. Antes esta prueba pasaba sin pedirlas y creaba a alguien
+         que —con la semántica vieja— veía las diez. El caso contrario está en la prueba de abajo. */
+      secciones: ['closer'],
     }),
   );
   assert.equal(r.status, 201, await r.clone().text());
@@ -238,6 +242,14 @@ test('el rol de plataforma crea en OTRA empresa sin conmutarse, y en una sola ll
     [datos.id],
   );
   assert.deepEqual(roles.rows.map((f) => f.clave), ['usuario']);
+
+  // Y LAS PESTAÑAS también quedaron en la misma operación. Sin esto, la persona tendría el rol
+  // restringido y cero secciones: entraría y no vería nada.
+  const secciones = await admin.query<{ seccion: string }>(
+    'select seccion from identidad.usuarios_secciones where usuario_id = $1',
+    [datos.id],
+  );
+  assert.deepEqual(secciones.rows.map((f) => f.seccion), ['closer']);
 });
 
 test('y quien NO es rol de plataforma sigue recibiendo 404 con una empresa ajena', async () => {

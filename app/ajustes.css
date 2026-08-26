@@ -189,3 +189,22 @@
   font-size: 12px;
   padding: 6px 26px 6px 9px;
 }
+
+/* ── LAS CASILLAS DE PERMISOS POR PERSONA ─────────────────────────────────────
+ *
+ * Es el primer `input[type=checkbox]` de la aplicación —el censo de tipos daba button, text, date,
+ * submit, password, number y email, y cero casillas— así que va con clase propia.
+ *
+ * Y va FUERA de la regla de `.fd-campo input`, que fija `width:100%` con relleno y borde: una
+ * casilla ahí sale como una caja de ancho completo de 30px de alto. La anulación por tipo es lo que
+ * hace que el `input` recupere su tamaño propio. */
+.aj-casillas { display:flex; flex-direction:column; gap:12px; margin-top:2px; }
+.aj-grupo { display:flex; flex-wrap:wrap; gap:6px 14px; }
+.aj-grupo-t { flex:0 0 100%; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--txt-faint); }
+.aj-casilla { display:inline-flex; align-items:center; gap:7px; font-size:12.5px;
+  color:var(--txt-dim); cursor:pointer; user-select:none; }
+.aj-casilla:hover { color:var(--txt); }
+/* El tamaño propio de la casilla, contra `.fd-campo input { width:100% }`. */
+.aj-casilla input[type='checkbox'] { width:15px; height:15px; min-width:15px; padding:0; margin:0;
+  accent-color:var(--accent); cursor:pointer; }

@@ -79,6 +79,9 @@ export default function Usuarios({ sesion }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [rolNuevo, setRolNuevo] = useState('');
+  /* Las pestañas elegidas para la persona nueva. Un `Set` y no un arreglo: la pregunta es
+     «¿está?», y con un arreglo habría que cuidarse de los duplicados en cada clic. */
+  const [seccionesNuevas, setSeccionesNuevas] = useState(() => new Set());
   const [orgNueva, setOrgNueva] = useState('');
   const [creando, setCreando] = useState(false);
 
@@ -179,6 +182,14 @@ export default function Usuarios({ sesion }) {
 
   // ─── El alta ──────────────────────────────────────────────────────────────
 
+  /* El rol elegido, con sus datos del catálogo. De acá sale si hay que pedir pestañas y cuáles se
+     pueden ofrecer — se PREGUNTA al servidor, no se deduce del nombre del rol (`ADR-0302`).
+
+     Va ANTES de `crear` porque esa función la usa en su cuerpo y en sus dependencias. Declarada
+     después, el componente lanza `Cannot access 'elRol' before initialization` al renderizar — y el
+     síntoma es una pantalla en blanco, no un error de compilación. */
+  const elRol = roles.find((r) => r.clave === rolNuevo) ?? null;
+
   const crear = useCallback(async () => {
     setCreando(true);
     setAviso(null);
@@ -194,6 +205,10 @@ export default function Usuarios({ sesion }) {
         email: email.trim(),
         ...(orgNueva ? { orgId: orgNueva } : {}),
         ...(rolNuevo ? { rol: rolNuevo } : {}),
+        /* Las pestañas viajan SOLO si el rol se restringe, y el servidor no las guarda si no.
+           Mandarlas siempre dejaría filas para roles que las ignoran — filas que resucitarían el
+           día que ese rol pase a restringir. */
+        ...(elRol?.restringePorSeccion ? { secciones: [...seccionesNuevas] } : {}),
       },
     });
     setCreando(false);
@@ -215,8 +230,12 @@ export default function Usuarios({ sesion }) {
     setNombre('');
     setEmail('');
     setRolNuevo('');
+    /* Y las pestañas. Sin este reset, el alta siguiente hereda las casillas de la anterior **sin
+       ningún error** — y `orgNueva`, que ya estaba así, se agrega acá por lo mismo. */
+    setSeccionesNuevas(new Set());
+    setOrgNueva('');
     await recargar();
-  }, [nombre, email, orgNueva, rolNuevo, empresas, recargar]);
+  }, [nombre, email, orgNueva, rolNuevo, seccionesNuevas, elRol, empresas, recargar]);
 
   // ─── La edición y las tres acciones ───────────────────────────────────────
 
@@ -367,7 +386,14 @@ export default function Usuarios({ sesion }) {
   /* El rol es obligatorio: ver el selector del alta. Sin esto, el botón quedaría habilitado con
      el selector en su opción vacía y se crearía justo la persona que no queremos crear. */
   const puedeCrear =
-    nombre.trim().length > 0 && EMAIL.test(email.trim()) && rolNuevo !== '' && !creando;
+    nombre.trim().length > 0 &&
+    EMAIL.test(email.trim()) &&
+    rolNuevo !== '' &&
+    /* Y al menos una pestaña cuando el rol las exige. Es el mismo argumento por el que se quitó la
+       opción «sin rol todavía», escrito abajo en el selector: *el camino más corto del formulario
+       creaba una persona que puede entrar y no ve ninguna pantalla*. */
+    (!elRol?.restringePorSeccion || seccionesNuevas.size > 0) &&
+    !creando;
   /* ── QUÉ ROLES SE OFRECEN, Y POR QUÉ EL DE PLATAFORMA AHORA SÍ ──────────────
    *
    * Antes esta línea filtraba `soloPrincipal` **siempre**, así que no había forma de crear otro
@@ -653,6 +679,57 @@ export default function Usuarios({ sesion }) {
                   </select>
                 )}
               </div>
+              {/* ── LAS PESTAÑAS DE ESTA PERSONA ──────────────────────────────────
+                  Solo para los roles que se restringen por sección, y eso lo dice el servidor. Las
+                  casillas salen del catálogo YA AGRUPADO: ni un nombre de sección se escribe acá, por
+                  lo mismo que el menú tampoco los tiene.
+
+                  Y lo que se ofrece es el TECHO del rol: `usuario` no alcanza Ajustes, así que esa
+                  casilla no aparece. Ofrecerla sería un control que se ve y no puede cumplir. */}
+              {elRol?.restringePorSeccion ? (
+                <div className="fd-campo">
+                  <label htmlFor="alta-secciones">Pestañas que va a ver</label>
+                  <div className="aj-casillas" id="alta-secciones">
+                    {(elRol.alcance ?? []).map((g) => (
+                      <div className="aj-grupo" key={g.grupo.clave}>
+                        {g.grupo.etiqueta ? <span className="aj-grupo-t">{g.grupo.etiqueta}</span> : null}
+                        {g.secciones.map((sec) => (
+                          <label className="aj-casilla" key={sec.clave}>
+                            <input
+                              type="checkbox"
+                              /* El `<label>` envuelve la casilla, y aun así el árbol de
+                                 accesibilidad la leía como «on»: el nombre no se computaba. Con
+                                 `aria-label` cada casilla dice qué pestaña es. */
+                              aria-label={sec.nombre}
+                              checked={seccionesNuevas.has(sec.clave)}
+                              onChange={(e) =>
+                                setSeccionesNuevas((antes) => {
+                                  const ahora = new Set(antes);
+                                  if (e.target.checked) ahora.add(sec.clave);
+                                  else ahora.delete(sec.clave);
+                                  return ahora;
+                                })
+                              }
+                            />
+                            <span>{sec.nombre}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Se dice qué elige Y QUÉ NO, y la segunda mitad importa más: la restricción es de
+                      PESTAÑAS. Las operaciones sobre un contacto —abrir su ficha, escribirle— piden
+                      capacidades que este rol tiene y no pertenecen a ninguna pantalla, así que no
+                      quedan restringidas. Prometer lo contrario sería la frontera cosmética que este
+                      repositorio ya pagó dos veces. */}
+                  <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
+                    Elegí al menos una. Esto decide <b>qué pestañas aparecen</b> en su menú, y el
+                    servidor rechaza lo que quede afuera. No limita a qué contactos accede: para eso
+                    está el territorio.
+                  </div>
+                </div>
+              ) : null}
+
               {/* Los NOMBRES salen del catálogo y la diferencia se describe en palabras. Escribir
                   «Closer ve la pestaña Closer» era cierto con cuatro roles y quedó falso al pasar
                   a tres, y una ayuda que miente es peor que ninguna: se lee con confianza. */}

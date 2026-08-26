@@ -31,7 +31,7 @@
 // `organizaciones.listar`. Eso no cambia.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
+import { alcanceOfrecible } from '../../../../lib/autorizacion/secciones.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -62,25 +62,46 @@ export async function GET(peticion: Request): Promise<Response> {
       // Un rol privado de otra organización no es asignable acá —lo impide el disparador
       // `usuarios_roles_no_cruzan`— así que ofrecerlo sería ofrecer algo que va a fallar.
       .where('org_id', 'is', null)
-      .select(['id', 'clave', 'nombre', 'solo_principal', 'exige_segundo_factor'])
+      .select([
+        'id',
+        'clave',
+        'nombre',
+        'solo_principal',
+        'exige_segundo_factor',
+        'secciones_restringidas',
+      ])
       .orderBy('solo_principal', 'desc')
       .orderBy('nombre', 'asc')
       .execute();
 
-    // Las capacidades de todos los roles en UNA consulta, no una por rol.
-    const reparto = await db
-      .selectFrom('roles_permisos')
-      .select(['rol_id', 'permiso'])
-      .where(
-        'rol_id',
-        'in',
-        filas.map((f) => f.id),
-      )
-      .execute();
+    /* Las capacidades de todos los roles en UNA consulta, no una por rol.
+     *
+     * Y con la guarda de la lista vacía: `where('rol_id', 'in', [])` genera `in ()`, que **no es SQL
+     * válido**. Es el mismo defecto que ya se pagó en `POST /api/admin/usuarios/[id]/roles`, donde
+     * «quitarle todos los roles a alguien» nunca funcionó y nadie lo notó. Sin roles globales —una
+     * base recién arrancada— esto respondería con una caída en vez de una lista vacía. */
+    const reparto =
+      filas.length === 0
+        ? []
+        : await db
+            .selectFrom('roles_permisos')
+            .select(['rol_id', 'permiso'])
+            .where(
+              'rol_id',
+              'in',
+              filas.map((f) => f.id),
+            )
+            .execute();
 
     return filas.map((f) => {
       const capacidades = new Set(reparto.filter((r) => r.rol_id === f.id).map((r) => r.permiso));
-      return { ...f, secciones: seccionesVisibles(capacidades).map((x) => x.clave) };
+      /* AGRUPADAS y en orden, no una lista de claves.
+       *
+       * El formulario dibuja casillas y necesita el nombre de cada sección y su grupo. Con una lista
+       * de claves los escribiría en el JSX, y serían la quinta copia de los trece nombres — el
+       * defecto que `secciones.ts` existe para cerrar. El mismo argumento que el menú, que ya viaja
+       * agrupado por eso. */
+      return { ...f, alcance: alcanceOfrecible(capacidades) };
     });
   });
 
@@ -99,13 +120,22 @@ export async function GET(peticion: Request): Promise<Response> {
       soloPrincipal: r.solo_principal,
       exigeSegundoFactor: r.exige_segundo_factor,
       /**
-       * Las claves de las secciones que este rol puede alcanzar, en el orden del menú.
+       * Las secciones que este rol puede alcanzar, agrupadas y en orden.
        *
-       * Es lo que el formulario de alta usa para dibujar las casillas de permisos por persona. No es
-       * «lo que la persona va a ver»: es el techo. Lo que ve es esto **cortado** por las secciones
-       * que se le concedan.
+       * Es el techo, no «lo que la persona va a ver»: lo que ve es esto **cortado** por las secciones
+       * que se le concedan. Sirve para que el formulario no ofrezca una casilla que no haría nada —
+       * el `07` § 4, *un control que se ve y no puede cumplir*.
        */
-      secciones: r.secciones,
+      alcance: r.alcance,
+      /**
+       * `true` = este rol se restringe por sección, así que el alta **tiene que** elegir pestañas.
+       *
+       * La pantalla lo PREGUNTA, no lo deduce del nombre del rol. Es el mismo criterio que
+       * `soloPrincipal`, y `ADR-0302` es explícito: una lista `['usuario']` en el componente
+       * funcionaría hoy y mentiría el día que exista un segundo rol restringido — y ninguna de las
+       * pruebas estáticas la vería, porque solo atrapan comparaciones directas.
+       */
+      restringePorSeccion: r.secciones_restringidas,
     })),
   });
 }

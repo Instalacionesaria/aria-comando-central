@@ -44,6 +44,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import {
+  clavesDeSeccion,
+  seccionesConAlcance,
+} from '../../../../lib/autorizacion/secciones.ts';
 import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -64,7 +68,17 @@ const MOTIVOS = {
   falta_nombre: 'La persona necesita un nombre.',
   email_invalido: 'Ese correo no tiene forma de correo.',
   rol_invalido: 'Ese rol no existe.',
+  sin_secciones:
+    'Este rol se restringe por pestañas, así que hay que elegir al menos una. Una persona que ' +
+    'entra y no ve ninguna pantalla queda sin nada que hacer y sin forma de arreglarlo sola.',
+  seccion_invalida: 'Alguna de las pestañas elegidas no existe.',
+  alcance_vacio:
+    'Ninguna de las pestañas elegidas la habilita el rol de esta persona, así que no vería ' +
+    'ninguna. Hay que elegir entre las que ese rol alcanza.',
 } as const;
+
+/** La forma de un uuid. Se comprueba antes de que el motor la rechace con un 500. */
+const UUID_ORG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['usuarios.crear'], SIN_SECCION);
@@ -76,11 +90,25 @@ export async function POST(peticion: Request): Promise<Response> {
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { nombre?: unknown; email?: unknown; orgId?: unknown; rol?: unknown } | null;
+  const c = cuerpo as {
+    nombre?: unknown;
+    email?: unknown;
+    orgId?: unknown;
+    rol?: unknown;
+    secciones?: unknown;
+  } | null;
   const nombre = c?.nombre;
   const email = c?.email;
   const orgId = c?.orgId;
   const rol = c?.rol;
+  /* Las pestañas que esta persona va a ver. **Ausente ≠ vacío**, y la diferencia decide:
+   *
+   *   · ausente → no se pidió ninguna. Es un error solo si el rol se restringe por sección.
+   *   · `[]`    → se pidió explícitamente ninguna, y eso se RECHAZA: una persona que entra y no ve
+   *     nada queda sin nada que hacer y sin forma de arreglarlo sola.
+   *
+   * Las dos ramas están abajo, y son dos porque los dos ceros no son el mismo hecho. */
+  const secciones = c?.secciones;
 
   // El orden de las validaciones es el de la tabla del `05` § 3.
   if (typeof nombre !== 'string' || nombre.trim().length === 0) {
@@ -91,6 +119,17 @@ export async function POST(peticion: Request): Promise<Response> {
   }
   if (rol !== undefined && rol !== null && (typeof rol !== 'string' || rol.length === 0)) {
     return rechazo('peticion_invalida', MOTIVOS['rol_invalido']);
+  }
+  // La FORMA de las secciones. Que sean las correctas se decide más abajo, contra el rol, y no acá:
+  // una clave válida puede seguir dando cero pestañas.
+  if (secciones !== undefined) {
+    if (!Array.isArray(secciones) || secciones.some((x) => typeof x !== 'string')) {
+      return rechazo('peticion_invalida', MOTIVOS['seccion_invalida']);
+    }
+    const conocidas = clavesDeSeccion();
+    if (secciones.some((x) => !conocidas.includes(x as string))) {
+      return rechazo('peticion_invalida', MOTIVOS['seccion_invalida']);
+    }
   }
 
   // EL 404 DEL ALTA, y la elección de empresa. Ver el encabezado.
@@ -119,6 +158,15 @@ export async function POST(peticion: Request): Promise<Response> {
     // subiría de la base es un `23503` que acaba en `rechazo_de_la_base` (409) nombrando una
     // tabla. `ADR-0501` pide 404, nunca 403 ni un error estructural.
     if (orgDestino !== contexto.orgEfectiva) {
+      /* Y que TENGA FORMA de uuid, antes de preguntar.
+       *
+       * Sin esto, un `orgId` mal formado no llega a la consulta como «no encontrado»: PostgreSQL
+       * lanza `invalid input syntax for type uuid` y sale un **500**. Encontrado manejando el
+       * formulario en el navegador, con un valor equivocado que mandó una sonda mía.
+       *
+       * Se responde 404 y no 400, que es lo mismo que hace `usuarioObjetivo(` con el identificador
+       * de una persona: *"distinguirlos también es un oráculo, más débil pero gratis de cerrar"*. */
+      if (!UUID_ORG.test(orgDestino)) return rechazo('no_encontrado');
       const existe = await db
         .selectFrom('organizaciones')
         .select('id')
@@ -129,11 +177,11 @@ export async function POST(peticion: Request): Promise<Response> {
 
     // El rol pedido, si hay. Un rol inexistente es 400 y no 404 — el 404 es de la empresa y de la
     // persona, y `05` § 3 lo pone en la tabla de validaciones.
-    let rolDestino: { id: string; solo_principal: boolean } | undefined;
+    let rolDestino: { id: string; solo_principal: boolean; secciones_restringidas: boolean } | undefined;
     if (typeof rol === 'string' && rol.length > 0) {
       rolDestino = await db
         .selectFrom('roles')
-        .select(['id', 'solo_principal'])
+        .select(['id', 'solo_principal', 'secciones_restringidas'])
         .where('clave', '=', rol)
         .where('org_id', 'is', null)
         .executeTakeFirst();
@@ -152,6 +200,49 @@ export async function POST(peticion: Request): Promise<Response> {
         );
       }
     }
+
+    /* ── LA VALIDACIÓN VA SOBRE EL RESULTADO, NO SOBRE LA LISTA ──────────────
+     *
+     * Validar que las claves existan **no alcanza**, y el caso lo demuestra:
+     * `{ rol: 'usuario', secciones: ['credenciales'] }` pasa cualquier validación de lista
+     * —`credenciales` es una sección real— y produce **cero pestañas**, porque el rol `usuario` no
+     * tiene `credenciales.ver`. La persona entraría y no vería nada.
+     *
+     * Así que se resuelven las capacidades del rol que se está asignando y se comprueba que la
+     * intersección no sea vacía. Es la misma función que decide el menú, así que no hay dos reglas.
+     */
+    let alcanceAGuardar: string[] = [];
+    if (rolDestino?.secciones_restringidas) {
+      if (secciones === undefined) {
+        return rechazo('peticion_invalida', MOTIVOS['sin_secciones']);
+      }
+      const pedidas = secciones as string[];
+      if (pedidas.length === 0) {
+        return rechazo('peticion_invalida', MOTIVOS['sin_secciones']);
+      }
+
+      const capacidades = new Set(
+        (
+          await db
+            .selectFrom('roles_permisos')
+            .select('permiso')
+            .where('rol_id', '=', rolDestino.id)
+            .execute()
+        ).map((x) => x.permiso),
+      );
+      const efectivas = seccionesConAlcance(capacidades, {
+        restringido: true,
+        concedidas: new Set(pedidas),
+      });
+      if (efectivas.length === 0) {
+        return rechazo('peticion_invalida', MOTIVOS['alcance_vacio']);
+      }
+      // Se guardan las PEDIDAS, no las efectivas. Si mañana el rol gana una capacidad, la pestaña
+      // que ya estaba concedida aparece sola — y guardar solo las efectivas la habría perdido.
+      alcanceAGuardar = pedidas;
+    }
+    // Un rol NO restringido ignora las secciones que vengan, y **no las guarda**: filas que nadie
+    // mira son filas que resucitan el día que alguien marque ese rol.
 
     let creado: { id: string };
     try {
@@ -191,6 +282,10 @@ export async function POST(peticion: Request): Promise<Response> {
         : rechazo('rechazo_de_la_base');
     }
 
+    // EL ALCANCE, TAMBIÉN EN LA MISMA TRANSACCIÓN, y por el mismo motivo que el rol: partido en dos
+    // llamadas, un fallo de la segunda dejaría a la persona con su rol restringido y **sin ninguna
+    // pestaña** — o sea creada y sin poder trabajar. Acá un fallo deshace también el alta.
+    //
     // EL ROL, EN LA MISMA TRANSACCIÓN. Ver el encabezado: partido en dos llamadas, entre ellas la
     // persona existía sin ninguna capacidad, y un fallo de la segunda la dejaba así. Acá un fallo
     // deshace también el alta.
@@ -216,6 +311,21 @@ export async function POST(peticion: Request): Promise<Response> {
       }
     }
 
+    // Y LAS PESTAÑAS. Mismo argumento que el rol: en la misma transacción o no van.
+    if (alcanceAGuardar.length > 0) {
+      await db
+        .insertInto('usuarios_secciones')
+        .values(
+          alcanceAGuardar.map((seccion) => ({
+            usuario_id: creado.id,
+            seccion,
+            // QUIÉN LO HIZO, obligatorio y sin valor por defecto, como en el rol.
+            concedida_por: contexto.usuarioId,
+          })),
+        )
+        .execute();
+    }
+
     // El correo SÍ va a la auditoría; la contraseña temporal NUNCA, *"ni ahí"*. El tipo `Detalle`
     // no tiene campo para ella, así que esto no depende de que nadie se olvide.
     //
@@ -233,7 +343,16 @@ export async function POST(peticion: Request): Promise<Response> {
     // La temporal, UNA sola vez. El `05` § 3: *"no se puede volver a consultar: para eso está el
     // restablecimiento, que genera otra."*
     return ok(
-      { creado: true, id: creado.id, temporal, seMuestraUnaVez: true, rol: rolDestino ? rol : null },
+      {
+        creado: true,
+        id: creado.id,
+        temporal,
+        seMuestraUnaVez: true,
+        rol: rolDestino ? rol : null,
+        // Las pestañas que quedaron, para que la pantalla muestre lo que se guardó y no lo que se
+        // mandó. Vacío significa «este rol no se restringe», no «no ve ninguna».
+        secciones: alcanceAGuardar,
+      },
       201,
     );
   });

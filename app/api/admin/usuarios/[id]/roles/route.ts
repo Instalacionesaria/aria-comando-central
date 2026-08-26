@@ -28,7 +28,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
-import { SIN_SECCION } from '../../../../../../lib/autorizacion/secciones.ts';
+import {
+  clavesDeSeccion,
+  seccionesConAlcance,
+  SIN_SECCION,
+} from '../../../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { usuarioObjetivo } from '../../../../../../lib/administracion/objetivo.ts';
@@ -55,6 +59,21 @@ export async function POST(
     return ok({ asignados: false, motivo: 'cuerpo_invalido' }, 400);
   }
   const claves = (cuerpo as { roles?: unknown } | null)?.roles;
+  /* Las pestañas, para el caso en que el rol nuevo se restrinja por sección.
+   *
+   * Este endpoint es **el camino que hacía fallar abierto** el primer diseño: reemplazaba los roles y
+   * no tocaba nada más, así que degradar a alguien de `administrador` a `usuario` lo dejaba con cero
+   * filas de alcance. Con la semántica de «filas = restringido», eso eran las diez pestañas. */
+  const secciones = (cuerpo as { secciones?: unknown } | null)?.secciones;
+  if (secciones !== undefined) {
+    const conocidas = clavesDeSeccion();
+    if (
+      !Array.isArray(secciones) ||
+      secciones.some((x) => typeof x !== 'string' || !conocidas.includes(x))
+    ) {
+      return ok({ asignados: false, motivo: 'seccion_invalida' }, 400);
+    }
+  }
   if (!Array.isArray(claves) || claves.some((c) => typeof c !== 'string')) {
     return ok({ asignados: false, motivo: 'roles_invalidos' }, 400);
   }
@@ -78,7 +97,7 @@ export async function POST(
         ? []
         : await db
             .selectFrom('roles')
-            .select(['id', 'clave', 'solo_principal'])
+            .select(['id', 'clave', 'solo_principal', 'secciones_restringidas'])
             .where('clave', 'in', claves as string[])
             .execute();
 
@@ -110,10 +129,68 @@ export async function POST(
       );
     }
 
+    /* ── EL ALCANCE, Y LAS DOS DIRECCIONES DEL CAMBIO ─────────────────────────
+     *
+     * `bool_and` en la sesión decide igual que acá: basta UN rol no restringido para que la persona
+     * no esté restringida. Así que la pregunta es si TODOS los roles nuevos restringen.
+     *
+     *   · Ninguno restringe (promover a `administrador`) → las filas se BORRAN. No es seguridad —ya
+     *     se ignoran— es higiene: sin el borrado, promover y volver a degradar **resucita** un
+     *     alcance viejo que nadie eligió.
+     *   · Todos restringen (degradar a `usuario`) → el cuerpo tiene que traer las pestañas, y se
+     *     validan contra el resultado igual que en el alta. Sin ellas, rechazo: es exactamente el
+     *     estado que antes se leía como «sin restricción».
+     */
+    const restringeAhora = roles.length > 0 && roles.every((r) => r.secciones_restringidas);
+    let alcanceAGuardar: string[] = [];
+    if (restringeAhora) {
+      const pedidas = (secciones as string[] | undefined) ?? [];
+      if (pedidas.length === 0) {
+        return ok({ asignados: false, motivo: 'sin_secciones' }, 400);
+      }
+      const capacidades = new Set(
+        (
+          await db
+            .selectFrom('roles_permisos')
+            .select('permiso')
+            .where(
+              'rol_id',
+              'in',
+              roles.map((r) => r.id),
+            )
+            .execute()
+        ).map((x) => x.permiso),
+      );
+      const efectivas = seccionesConAlcance(capacidades, {
+        restringido: true,
+        concedidas: new Set(pedidas),
+      });
+      if (efectivas.length === 0) {
+        return ok({ asignados: false, motivo: 'alcance_vacio' }, 400);
+      }
+      alcanceAGuardar = pedidas;
+    }
+
     try {
       // Reemplazo del conjunto, no suma: `POST` con la lista completa. Borrar y volver a insertar
       // en la misma transacción deja el estado consistente incluso si el insert falla.
       await db.deleteFrom('usuarios_roles').where('usuario_id', '=', objetivo.id).execute();
+      // El alcance se borra SIEMPRE, y se repone solo si el rol nuevo restringe. Un borrado
+      // condicional dejaría las filas viejas cuando alguien pasa a un rol sin restricción, y
+      // volverían a valer el día que lo degraden.
+      await db.deleteFrom('usuarios_secciones').where('usuario_id', '=', objetivo.id).execute();
+      if (alcanceAGuardar.length > 0) {
+        await db
+          .insertInto('usuarios_secciones')
+          .values(
+            alcanceAGuardar.map((seccion) => ({
+              usuario_id: objetivo.id,
+              seccion,
+              concedida_por: contexto.usuarioId,
+            })),
+          )
+          .execute();
+      }
       if (roles.length > 0) {
         await db
           .insertInto('usuarios_roles')
