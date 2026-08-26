@@ -175,7 +175,7 @@ retiro corrió con el rol equivocado, y esa persona no puede entrar a ninguna pa
 
 ## 5 · Las variables en Vercel
 
-Seis, alcance **production**, creadas por la API con un token personal:
+**Siete**, alcance **production**, creadas por la API con un token personal:
 
 | Variable | Tipo | Qué es |
 | --- | --- | --- |
@@ -183,6 +183,7 @@ Seis, alcance **production**, creadas por la API con un token personal:
 | `DATABASE_URL_IDENTIDAD` | sensitive | usuarios y sesiones; no llega a datos de negocio |
 | `CLAVE_MAESTRA` | sensitive | cifra el secreto del segundo factor |
 | `SONDA_TOKEN` | sensitive | el secreto del punto de entrada de la sonda |
+| `CRON_SECRET` | sensitive | el secreto de las tareas programadas (`/api/cron`) |
 | `DOMINIO_ESPERADO` | plain | el host desde el que se aceptan peticiones que modifican |
 | `CABECERA_DIRECCION_REAL` | plain | `x-real-ip`; qué cabecera trae la IP del visitante |
 
@@ -205,6 +206,92 @@ explica nada.
 por lo tanto no funcionan —deliberado, una vista previa no debería escribir en datos de
 producción— y de todas formas no podrían loguear, porque cada una tiene un dominio distinto del
 esperado.
+
+---
+
+## 5b · Las tareas programadas
+
+`vercel.json` declara **un** cron: `GET /api/cron`, todos los días a las **12:00 UTC** (07:00 en
+`America/Lima`). Ahí corren las tres tareas: la sonda de aislamiento, la ingesta de mensajes y el
+barrido de citas, para todas las empresas activas.
+
+**Hasta esto, las dos últimas solo corrían mientras alguien tenía la pestaña del Closer abierta.**
+
+### Por qué un solo cron, y diario
+
+Es el único horario que funciona en los **dos** planes de Vercel, y la decisión tiene costo:
+
+- **En Hobby, un horario más frecuente que un día no se ignora ni se ajusta: hace fallar el
+  despliegue entero**, con un mensaje sobre cuentas Hobby.
+- En Pro andaría `*/10 * * * *` para los mensajes y `3 * * * *` para las citas y la sonda.
+
+El plan de este proyecto **no se pudo medir**: el token disponible lee los proyectos (`/v9/projects`
+responde) pero no la facturación del equipo (403 en `/v2/teams/{id}`), y el plan no aparece en el
+objeto del proyecto. Así que se eligió el horario correcto en los dos, porque los dos errores no
+cuestan lo mismo: con el diario en Pro la agenda se refresca menos seguido; con `*/10` en Hobby **no
+se puede desplegar**.
+
+**Para pasar a Pro** hay que mover dos renglones juntos —`vercel.json` y `HORARIOS` de
+`lib/negocio/barrido.ts`— y `pruebas/codigo/99-cron.test.ts` verifica que no se mueva uno solo. Los
+valores para Pro están escritos como comentario en ese archivo.
+
+### El coste, medido
+
+| Tarea | Llamadas a GoHighLevel |
+| --- | --- |
+| `citas` | **1 + un por calendario**. Con los 9 medidos en la subcuenta de ARIA: **10**. `GET /calendars/events` responde 422 sin `calendarId`, así que no baja. |
+| `mensajes` | **1** en régimen, **15** en el peor caso (topes de 7 páginas y 6 conversaciones, más 2 entregas) |
+| `sonda` | **0** |
+
+Medido el 2026-08-26: de las tres empresas activas, **solo `aria` tiene token cargado**. `aivora` y
+`prueba` se saltean con `sin_token` y cuestan **cero**. O sea que hoy una corrida cuesta **11 en
+régimen y 25 en el peor caso** — no un rango.
+
+### La protección de despliegue, y el día que esto se rompa
+
+Comprobado con `curl` antes de escribir el cron:
+
+```
+GET https://aria-comando-central.vercel.app/api/salud            → 200
+GET https://aria-comando-central-<hash>.vercel.app/api/salud     → 302 a vercel.com/sso-api
+```
+
+La protección está en **Standard**, que deja la URL de producción pública y protege la URL generada
+del despliegue. El cron pega en la de producción, así que anda.
+
+**El día que alguien pase la protección a «All Deployments», el cron deja de correr y nada lo dice**:
+una respuesta 3xx hace que Vercel dé la corrida por terminada **y que no aparezca en los registros**.
+Si eso pasa, la salida es `x-vercel-protection-bypass`.
+
+### Cómo saber si corre
+
+**No mires los registros de Vercel.** En Hobby duran una hora, y **no existe ninguna alerta por
+ausencia** de invocaciones: las dos alertas de Vercel son por exceso, con una línea base de ~1.000
+peticiones por intervalo — un 403 diario *es* la línea base, nunca una anomalía.
+
+Lo que sobrevive es el sello:
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer "select o.slug, t.tarea, t.ultimo_estado, t.ultimo_motivo, t.ultima_corrida_el from negocio.tareas_programadas t join identidad.organizaciones o on o.id = t.org_id order by t.ultima_corrida_el desc"
+```
+
+Hay fila por cada par (empresa, tarea) **incluidas las que no corrieron**: `saltada` (no hay
+credencial), `frenada` (el antirrebote), `sin_tiempo` (se agotó el presupuesto de la corrida) y
+`fallo`. Los tres primeros son estados **normales**. Sin esas filas, «esta empresa no tiene token» y
+«el cron no pasó nunca» se verían igual.
+
+### Ponerse al día
+
+La ingesta camina **700 conversaciones por corrida** (7 páginas × 100) contra las ~15.800 de la
+cuenta: son **≈23 corridas** para caminarla entera, o sea ≈23 días con el cron diario. Se acelera a
+mano, sin tocar código, dejando más de 8 segundos entre corridas (el antirrebote del pulso):
+
+```bash
+vercel crons run /api/cron
+```
+
+Ese comando lee las definiciones del proyecto **desplegado**, no del `vercel.json` local: sin
+desplegar antes dice que no lo encuentra, y eso se confunde con «el cron está roto».
 
 ---
 
@@ -247,8 +334,13 @@ Después, en este orden, porque cada uno descarta una causa distinta:
 3. **Entrar con la temporal.** Si da 403 «el servidor rechazó el origen», es `DOMINIO_ESPERADO`.
 4. **Las tres pantallas del primer ingreso** — contraseña, segundo factor, códigos de respaldo.
    **Guardá los ocho códigos**: no se vuelven a mostrar y no se pueden regenerar.
-5. **La sonda** (`POST /api/sonda` con la cabecera del token) — va a responder 403 hasta que se
-   defina el canal de avisos.
+5. **La sonda** (`POST /api/sonda` con la cabecera del token). Cuidado con el renglón que decía
+   antes acá: **el 403 sale solo por el token**, no por el canal de avisos. Sin `AVISO_URL` lo que
+   pasa es otra cosa —`avisar()` LANZA a propósito y la ruta se cae con 500— así que los dos
+   síntomas mandan a buscar en lugares distintos y conviene no confundirlos.
+6. **El cron** (`GET /api/cron` con `Authorization: Bearer $CRON_SECRET`). Ver § 5b: con `curl -i` y
+   **sin seguir redirecciones**, porque el navegador las sigue y el cron no — una prueba en el
+   navegador puede dar un falso verde.
 
 ---
 

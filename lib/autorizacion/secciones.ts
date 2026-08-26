@@ -299,6 +299,11 @@ export const SIN_PANTALLA: readonly string[] = [
   // La sonda del aislamiento. Existe para la prueba de la Etapa 2 y la sonda de la 8, no
   // para una pantalla (10 § 1).
   'app/api/control/route.ts',
+  // Las tareas programadas. No muestra nada y su único lector es el disparador de la plataforma:
+  // declarar una `PANTALLA` la metería en la comparación de conjuntos de `ADR-0304` contra las
+  // operaciones de una pantalla real, y ahí la única salida sería igualar capacidades — que es la
+  // escalada silenciosa que esa regla existe para impedir.
+  'app/api/cron/route.ts',
   // El login. No pertenece a una pantalla: es la puerta.
   'app/api/auth/login/route.ts',
   // El segundo factor: son trámites de la propia cuenta, no de una pantalla del producto.

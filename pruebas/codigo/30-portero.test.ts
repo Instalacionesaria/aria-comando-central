@@ -101,10 +101,19 @@ test('ADR-0301 · TODO método de TODO manejador llama al portero', () => {
     // autenticar. Se verifica que lo hagan, no que no verifiquen nada: es la misma forma que
     // `sesionOpcional`, y por eso está en su propia lista y no en `RUTAS_PUBLICAS`.
     if (RUTAS_CON_SECRETO_PROPIO.includes(ruta)) {
+      // ── SE EXIGE LA LLAMADA, NO LA MENCIÓN ─────────────────────────────────
+      //
+      // Esto decía `/timingSafeEqual/` a secas, y una mutación lo pasó: reemplazar el cuerpo de la
+      // comparación por un `===` **dejando el `import` en su lugar** satisfacía el grep. O sea que el
+      // guardia de la regla más estricta del portero se podía cumplir con un import sin usar.
+      //
+      // Con el paréntesis se exige que se LLAME. No es una prueba de que la comparación sea correcta
+      // —eso lo prueban las de comportamiento de cada ruta— pero cierra el caso en que el canal de
+      // tiempo vuelve y la suite no dice nada.
       assert.match(
         fuenteDe(ruta),
-        /timingSafeEqual/,
-        `${ruta} tiene secreto propio y no lo compara con timingSafeEqual`,
+        /timingSafeEqual\s*\(/,
+        `${ruta} tiene secreto propio y no LLAMA a timingSafeEqual (mencionarlo no alcanza)`,
       );
       continue;
     }

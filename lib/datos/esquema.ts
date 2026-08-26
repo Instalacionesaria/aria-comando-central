@@ -323,6 +323,27 @@ export interface TablaMensajes {
  *
  * Una fila por organización y por cosa que se ingiere. Hoy la única clave es `'mensajes'`.
  */
+/**
+ * El sello de las tareas programadas. La escribe UN solo archivo, `lib/negocio/barrido.ts`.
+ *
+ * Es una tabla distinta de `ingesta_pulso` y no una columna más, porque contesta una pregunta que
+ * esa no puede: **¿pasó el cron por acá?**. `ingesta_pulso` solo se escribe cuando el trabajo corre,
+ * y quien más gana su candado hoy es el reloj del navegador cada 10 segundos — así que un pulso
+ * fresco no distingue «el cron se disparó» de «alguien tenía la pestaña abierta».
+ */
+export interface TablaTareasProgramadas {
+  org_id: ColumnaInquilino;
+  tarea: string;
+  /** Cuándo PASÓ el cron, no cuándo hizo trabajo. Lo segundo lo dice `ultimo_estado`. */
+  ultima_corrida_el: Date;
+  /** `corrio` | `saltada` | `frenada` | `sin_tiempo` | `fallo`. Los tres del medio son normales. */
+  ultimo_estado: string;
+  /** Cuál de las cinco faltas de credencial, o por qué frenó. Nulo solo cuando corrió. */
+  ultimo_motivo: string | null;
+  ultimas_llamadas: number | null;
+  creado_el: Generated<Date>;
+}
+
 export interface TablaIngestaPulso {
   org_id: ColumnaInquilino;
   clave: string;
@@ -446,6 +467,7 @@ export interface BaseDeDatos {
   citas: TablaCitas;
   mensajes: TablaMensajes;
   ingesta_pulso: TablaIngestaPulso;
+  tareas_programadas: TablaTareasProgramadas;
   llamadas: TablaLlamadas;
   tareas: TablaTareas;
   resultados: TablaResultados;

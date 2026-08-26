@@ -188,6 +188,21 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // servicio ajeno, y sostener una transacción mientras tanto retendría una conexión del agrupador
   // todo ese rato.
   'app/api/closer/agenda/refrescar/route.ts',
+  // Las TAREAS PROGRAMADAS. Mismo motivo para el token, y uno propio además: necesita **la lista de
+  // organizaciones**, que es la única consulta del sistema que cruza organizaciones a propósito.
+  //
+  // Las dos cosas viven en identidad: `identidad.organizaciones_credenciales` es una tabla sobre la
+  // que el rol del inquilino no tiene ni `select`, y la lista de empresas por definición no puede
+  // filtrarse por una organización. Estar acá lo exime también de `ADR-0202`, así que queda dicho
+  // dónde vive el contexto de inquilino: en `ingerirMensajes(` y `barrerCitas(`, que reciben la
+  // organización por parámetro y nunca la deducen, y en el bucle de `barrerTodo(`, que abre
+  // `conOrganizacion(` una vez por empresa y una vez por sello.
+  //
+  // `resolverAccesoAGhl` se llama UNA VEZ POR EMPRESA, no con una consulta que traiga todas las
+  // credenciales juntas. Esa consulta sería más rápida y sumaría un cuarto lugar donde el filtro por
+  // organización lo pone una consulta escrita a mano — y olvidarse un `where` ahí entrega el token de
+  // una empresa a otra sin ningún error.
+  'app/api/cron/route.ts',
   // El ciclo de ingesta. Mismo motivo para el token, y **no llama a `conOrganizacion(` en el
   // manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que lo abre para cada una
   // de sus tres transacciones cortas. Está acá por el token, y estar acá lo exime también de
@@ -376,4 +391,25 @@ export const RUTAS_CON_SESION_OPCIONAL: readonly string[] = ['app/api/auth/sesio
  * Esta lista existe para que agregar una segunda entrada sea un acto deliberado. Un endpoint con
  * "su propia autenticación" es exactamente la forma que toma un portero saltado por comodidad.
  */
-export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = ['app/api/sonda/route.ts'];
+export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = [
+  'app/api/sonda/route.ts',
+  // ── Etapa 13 · las tareas programadas ──────────────────────────────────────
+  //
+  // La segunda entrada, y el comentario de arriba pide que sea un acto deliberado. Lo es, y por el
+  // mismo par de razones que la sonda:
+  //
+  //   · **No puede pasar por el portero**: no hay sesión. La llama el disparador de la plataforma, y
+  //     `exigir()` respondería 401 a CADA corrida — o sea que la ingesta de mensajes y el barrido de
+  //     citas no correrían nunca, y el síntoma sería «el chat tiene dos días de atraso», no un error.
+  //   · **No puede ser pública**: dispararía la ingesta y el barrido de todas las empresas para
+  //     cualquiera en internet, con su coste en llamadas al proveedor.
+  //
+  // Su autenticación es `Authorization: Bearer CRON_SECRET`, comparada con `timingSafeEqual`, y con
+  // el guardia de «la variable no está definida» ANTES de la comparación: sin él se compara contra
+  // el literal `'Bearer undefined'`, que cualquiera puede mandar.
+  //
+  // La diferencia con la sonda —y es la que hace que no se pueda copiar— es que Vercel manda el
+  // prefijo `Bearer ` COMO PARTE DEL VALOR de la cabecera. La sonda compara la cabecera entera; acá
+  // hay que quitar el prefijo antes, o son 403 en todas las corridas para siempre.
+  'app/api/cron/route.ts',
+];
