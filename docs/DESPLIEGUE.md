@@ -247,21 +247,52 @@ Medido el 2026-08-26: de las tres empresas activas, **solo `aria` tiene token ca
 `prueba` se saltean con `sin_token` y cuestan **cero**. O sea que hoy una corrida cuesta **11 en
 régimen y 25 en el peor caso** — no un rango.
 
-### La protección de despliegue, y el día que esto se rompa
+### ⚠ LA PROTECCIÓN DE DESPLIEGUE, Y LO PRIMERO QUE HAY QUE COMPROBAR
 
-Comprobado con `curl` antes de escribir el cron:
+Esto se midió **después** de desplegar, y corrige lo que este documento decía antes. Es el único
+punto abierto del cron y conviene entenderlo entero, porque su modo de fallar es el silencio.
+
+Lo que Vercel registró al desplegar, leído por la API del proyecto:
+
+```json
+{ "host": "aria-comando-central-q6jetb2ep.vercel.app", "path": "/api/cron", "schedule": "0 12 * * *" }
+```
+
+O sea que el planificador quedó apuntando a la **URL generada del despliegue**, no al dominio de
+producción. Y las dos no responden igual:
 
 ```
-GET https://aria-comando-central.vercel.app/api/salud            → 200
-GET https://aria-comando-central-<hash>.vercel.app/api/salud     → 302 a vercel.com/sso-api
+GET https://aria-comando-central.vercel.app/api/cron              → 403   ← nuestro rechazo: la ruta CORRIÓ
+GET https://aria-comando-central-q6jetb2ep.vercel.app/api/cron    → 302   ← el muro de SSO: la ruta NO corrió
 ```
 
-La protección está en **Standard**, que deja la URL de producción pública y protege la URL generada
-del despliegue. El cron pega en la de producción, así que anda.
+La protección está en **Standard**, que deja público el dominio de producción y protege las URL
+generadas. **La documentación de Vercel no dice en ninguna parte que los cron salteen la protección**
+—los cuatro métodos de excepción que documenta son todos explícitos, y ninguno se aplica solo— así
+que hay dos posibilidades y desde afuera no se distinguen:
 
-**El día que alguien pase la protección a «All Deployments», el cron deja de correr y nada lo dice**:
-una respuesta 3xx hace que Vercel dé la corrida por terminada **y que no aparezca en los registros**.
-Si eso pasa, la salida es `x-vercel-protection-bypass`.
+1. El disparador de Vercel es interno y pasa la protección. Entonces todo anda.
+2. El disparador recibe el 302. Entonces **la corrida se da por terminada, no hace ningún trabajo y
+   no aparece en los registros**. Es el peor caso posible: no hay error que ver.
+
+**Cómo se resuelve, en un minuto y sin esperar al horario:** en el panel de Vercel, Settings → Cron
+Jobs, apretar **Run** en `/api/cron`. Después, mirar el sello — que es lo único que sobrevive:
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer "select o.slug, t.tarea, t.ultimo_estado, t.ultima_corrida_el from negocio.tareas_programadas t join identidad.organizaciones o on o.id = t.org_id order by t.ultima_corrida_el desc"
+```
+
+- **Si hay filas** → el disparador pasa la protección. Anda, y esta sección se puede acortar.
+- **Si no hay ninguna** → es el caso 2. La salida es una de estas tres, en este orden de preferencia:
+  1. **Deployment Protection Exceptions**: agregar el dominio de producción como excepción.
+  2. Cambiar el alcance de la protección a **None** para producción. Es la más simple y la que más
+     afloja: deja pública la URL generada de todos los despliegues.
+  3. **Protection Bypass for Automation** con el secreto en la cadena de consulta del `path`. Es la
+     peor de las tres y hay que decir por qué: pondría un secreto en `vercel.json`, o sea **en el
+     repositorio**, que es lo que `ADR-0601` prohíbe.
+
+Ninguna de las tres se hizo: las tres cambian la configuración de seguridad del proyecto, y esa
+decisión no es de quien escribe el código.
 
 ### Cómo saber si corre
 
