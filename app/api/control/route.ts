@@ -27,11 +27,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir, NINGUNA } from '../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../lib/autorizacion/secciones.ts';
 import { ok } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../lib/datos/contexto.ts';
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, NINGUNA);
+  const contexto = await exigir(peticion, NINGUNA, SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   // `orgEfectiva`, no `orgPropia`. Es la línea que decide si el rol de plataforma ve lo que

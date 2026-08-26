@@ -36,6 +36,10 @@ import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
 import { hashear } from '../../lib/datos/hash.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { exigir } from '../../lib/autorizacion/portero.ts';
+/* Estas pruebas miden los pasos 1 a 5 del portero. El alcance por sección es el paso 6 y
+   se mide aparte, en `pruebas/base/31-alcance.test.ts`: acá se pasa `SIN_SECCION` para que
+   quede escrito que la sección no es lo que este archivo está midiendo. */
+import { SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 
 const DOMINIO = 'ejemplo.test';
 const PASSWORD = 'una-contrasena-de-prueba-larga';
@@ -623,7 +627,8 @@ test('ADR-0505 · restablecer cierra TODAS las sesiones del usuario', async () =
       headers: { cookie: `${COOKIE_SESION}=${t1}` },
     }),
     'ninguna',
-  );
+  SIN_SECCION,
+);
   assert.ok(!(antes instanceof Response), 'la sesión tendría que valer antes del restablecimiento');
 
   const r = await restablecer(
@@ -641,6 +646,7 @@ test('ADR-0505 · restablecer cierra TODAS las sesiones del usuario', async () =
         headers: { cookie: `${COOKIE_SESION}=${t}` },
       }),
       'ninguna',
+      SIN_SECCION,
     );
     assert.ok(despues instanceof Response, 'una sesión sobrevivió al restablecimiento');
     assert.equal(despues.status, 401);
@@ -689,7 +695,8 @@ test('ADR-0505 · y desactivar invalida la sesión SIN borrar ninguna fila', asy
       headers: { cookie: `${COOKIE_SESION}=${suToken}` },
     }),
     'ninguna',
-  );
+  SIN_SECCION,
+);
   assert.ok(despues instanceof Response, 'el usuario desactivado sigue teniendo sesión válida');
   assert.equal(despues.status, 401);
 

@@ -26,6 +26,10 @@ import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
 import { hashear } from '../../lib/datos/hash.ts';
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { exigir, NINGUNA } from '../../lib/autorizacion/portero.ts';
+/* Estas pruebas miden los pasos 1 a 5 del portero. El alcance por sección es el paso 6 y
+   se mide aparte, en `pruebas/base/31-alcance.test.ts`: acá se pasa `SIN_SECCION` para que
+   quede escrito que la sección no es lo que este archivo está midiendo. */
+import { SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import type { Exigencia } from '../../lib/autorizacion/capacidades.ts';
 import { ESTADOS } from '../../lib/autorizacion/estados.ts';
 import { cifrar } from '../../lib/credenciales/cifrado.ts';
@@ -272,7 +276,7 @@ test('ADR-0413 · RETIRADA · un rol de plataforma SIN factor configurado entra 
     const conSesion = new Request(`https://${DOMINIO}/api/usuarios`, {
       headers: { cookie: `${COOKIE_SESION}=${token}` },
     });
-    const contexto = await exigir(conSesion, ['usuarios.ver']);
+    const contexto = await exigir(conSesion, ['usuarios.ver'], SIN_SECCION);
     assert.ok(
       !(contexto instanceof Response),
       `el portero cortó una sesión que tiene que estar habilitada: ${
@@ -323,6 +327,7 @@ test('ADR-0413 · LO QUE SIGUE EN PIE · con el factor YA confirmado, el login N
         headers: { cookie: `${COOKIE_SESION}=${token}` },
       }),
       ['usuarios.ver'],
+      SIN_SECCION,
     );
     assert.ok(corte instanceof Response, 'el portero dejó pasar una sesión sin verificar el factor');
     assert.equal(corte.status, 403);
@@ -732,7 +737,7 @@ test('ADR-0411 · con una sesión pendiente, TODAS las rutas fuera de su lista r
         method: metodo,
         headers: { cookie: `${COOKIE_SESION}=${token}`, origin: `https://${DOMINIO}` },
       });
-      const resultado = await exigir(p, exigencia);
+      const resultado = await exigir(p, exigencia, SIN_SECCION);
 
       if (permitidas.includes(ruta as never)) continue;
 
@@ -757,7 +762,7 @@ test('ADR-0411 · con una sesión pendiente, TODAS las rutas fuera de su lista r
       method: 'POST',
       headers: { cookie: `${COOKIE_SESION}=${token}`, origin: `https://${DOMINIO}` },
     });
-    const puedeSalir = await exigir(salida, NINGUNA);
+    const puedeSalir = await exigir(salida, NINGUNA, SIN_SECCION);
     assert.ok(
       !(puedeSalir instanceof Response),
       'la única salida del estado también rechaza: la cuenta queda encerrada',

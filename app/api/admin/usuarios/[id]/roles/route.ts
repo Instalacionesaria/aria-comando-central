@@ -28,6 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { usuarioObjetivo } from '../../../../../../lib/administracion/objetivo.ts';
@@ -37,7 +38,7 @@ export async function POST(
   peticion: Request,
   ctx: RouteContext<'/api/admin/usuarios/[id]/roles'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['roles.asignar']);
+  const contexto = await exigir(peticion, ['roles.asignar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

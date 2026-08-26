@@ -44,6 +44,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { contieneAlguna, NINGUNA, type Exigencia } from './capacidades.ts';
+import { SIN_SECCION, type Pantalla } from './secciones.ts';
 import {
   EXENTAS_DE_ORGANIZACION_ACTIVA,
   SIN_SESION_REQUERIDA,
@@ -166,6 +167,7 @@ function cookieDe(peticion: Request): string | undefined {
 export async function exigir(
   peticion: Request,
   capacidadesRequeridas: Exigencia,
+  pantalla: Pantalla,
 ): Promise<Contexto | Response> {
   const ruta = rutaDe(peticion);
 
@@ -241,6 +243,55 @@ export async function exigir(
       return rechazo('base_no_disponible');
     }
     return rechazo('sin_permiso');
+  }
+
+  /* ── Paso 6 · ¿La SECCIÓN de esta operación está en el alcance de esta persona? ──
+   *
+   * El alcance por persona es un eje distinto de las capacidades: no habilita nada que el rol no
+   * habilite, solo recorta qué pantallas usa. Por eso se comprueba **además** del Paso 5 y nunca en
+   * su lugar. El razonamiento completo está en `seccionesConAlcance`.
+   *
+   * ── POR QUÉ EXACTAMENTE ACÁ, Y NO ANTES ─────────────────────────────────
+   *
+   * El orden no es casual y conviene que quede escrito, porque cada paso anterior protege algo:
+   *
+   *   · Antes del Paso 1 no hay usuario, así que no hay alcance que consultar.
+   *   · Antes del Paso 2 el código de rechazo tiene que ser el ESTADO —`debe_cambiar_password` y
+   *     los otros— porque es lo único que le dice al frontend qué pantalla mostrar.
+   *   · Antes del Paso 3 taparía el diagnóstico de `organizacion_inactiva`, que existe porque ese
+   *     encierro **ya ocurrió** y hubo que devolver una sesión con una sentencia a mano.
+   *   · **Antes del Paso 4 sería el error grave.** Ese `return` temprano protege las cuatro salidas
+   *     de los estados restringidos: las tres rutas del segundo factor y el cambio de contraseña.
+   *     Puesto antes, una errata del alcance podría dejar a alguien sin poder cambiar su contraseña
+   *     temporal — o sea encerrado, necesitando un administrador. Después del Paso 4, eso es
+   *     imposible por construcción.
+   *
+   * ── Y POR QUÉ NO REUSA `permiso_denegado` ──────────────────────────────
+   *
+   * Esa señal agrupa por `detalle->>'capacidad'` y el `10` § 1 la llama *"la señal más
+   * subestimada"*. Un rechazo por sección **no tiene capacidad que culpar**: la persona tiene la
+   * capacidad. Meterlo ahí contaminaría la señal con filas cuya capacidad no es el problema. Acción
+   * propia, campo propio.
+   */
+  if (
+    pantalla !== SIN_SECCION &&
+    contexto.alcance.restringido &&
+    !contexto.alcance.concedidas.has(pantalla)
+  ) {
+    try {
+      await conIdentidad(async (db) => {
+        await auditar(db, {
+          accion: 'seccion_denegada',
+          usuarioId: contexto.usuarioId,
+          orgId: contexto.orgEfectiva,
+          detalle: { seccion: pantalla },
+        });
+      });
+    } catch {
+      // Misma regla que el Paso 5: responder 403 sin haber registrado el rechazo sería mentir.
+      return rechazo('base_no_disponible');
+    }
+    return rechazo('seccion_no_concedida');
   }
 
   return contexto;

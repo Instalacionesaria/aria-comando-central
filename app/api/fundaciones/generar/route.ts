@@ -118,7 +118,7 @@ function rechazoDeModelo(
 }
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['fundaciones.editar']);
+  const contexto = await exigir(peticion, ['fundaciones.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: CuerpoDeGeneracion;

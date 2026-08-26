@@ -200,19 +200,19 @@ test('las cinco pestañas piden la MISMA capacidad, y es la de la ficha', () => 
   for (const camino of ['mensajes', 'llamadas', 'perfil', 'historial', 'notas']) {
     assert.match(
       fuente(`app/api/contactos/[id]/${camino}/route.ts`),
-      /exigir\(peticion, \['contactos\.ver'\]\)/,
+      /exigir\(peticion, \['contactos\.ver'\],/,
       `la pestaña ${camino} no pide \`contactos.ver\``,
     );
   }
   // Y la ficha misma.
-  assert.match(fuente('app/api/contactos/[id]/route.ts'), /exigir\(peticion, \['contactos\.ver'\]\)/);
+  assert.match(fuente('app/api/contactos/[id]/route.ts'), /exigir\(peticion, \['contactos\.ver'\],/);
 
   // Escribir una nota es OTRA capacidad, y eso no rompe la regla: el defecto que `ADR-0304`
   // previene es de lecturas —*"una sección con datos y cuatro en blanco"*—, y un botón que no está
   // no es un panel vacío.
   assert.match(
     fuente('app/api/contactos/[id]/notas/route.ts'),
-    /exigir\(peticion, \['contactos\.comentar'\]\)/,
+    /exigir\(peticion, \['contactos\.comentar'\],/,
     'escribir una nota no pide `contactos.comentar`',
   );
 });

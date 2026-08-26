@@ -4,6 +4,7 @@
 // pestañas, porque son una sola pantalla y `ADR-0304` lo exige.
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../../lib/datos/contexto.ts';
 import { historialDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
@@ -14,7 +15,7 @@ export async function GET(
   peticion: Request,
   ctx: RouteContext<'/api/contactos/[id]/historial'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['contactos.ver']);
+  const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

@@ -476,7 +476,12 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   // que `roles` puede ser global o de una organización, que la auditoría tiene la
   // organización nulificable a propósito, y que el segundo factor y las credenciales
   // cifradas son dos tablas más que nadie contó.
-  const DIEZ_TABLAS_DE_IDENTIDAD = [
+  // ── ONCE, Y EL NOMBRE SE ACTUALIZA CON EL NÚMERO ─────────────────────────
+  //
+  // La constante se llamaba `DIEZ_TABLAS_DE_IDENTIDAD`. Un nombre con el número adentro es lo que
+  // hace que agregar una tabla **obligue** a leer esta prueba en vez de sumar un renglón y seguir —
+  // que es exactamente para lo que está escrita así. La número once es `usuarios_secciones`.
+  const ONCE_TABLAS_DE_IDENTIDAD = [
     'auditoria_accesos',
     'organizaciones',
     'organizaciones_credenciales',
@@ -486,12 +491,13 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
     'sesiones',
     'usuarios',
     'usuarios_roles',
+    'usuarios_secciones',
     'usuarios_segundo_factor',
   ];
   assert.deepEqual(
     r.filter((t) => t.nspname === 'identidad').map((t) => t.relname).sort(),
-    DIEZ_TABLAS_DE_IDENTIDAD,
-    'el conjunto de tablas de identidad cambió: son diez y se otorgan a mano, una por una',
+    ONCE_TABLAS_DE_IDENTIDAD,
+    'el conjunto de tablas de identidad cambió: son once y se otorgan a mano, una por una',
   );
 
   for (const t of r) {

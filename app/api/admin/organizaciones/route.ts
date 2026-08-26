@@ -77,7 +77,7 @@ export const PANTALLA = 'empresas';
  * la regla no era una regla.
  */
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['organizaciones.listar']);
+  const contexto = await exigir(peticion, ['organizaciones.listar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   // ── LA REGLA DE «SOLO DESDE LA PRINCIPAL» SE FUE DE ACÁ, Y ES UN ARREGLO ──
@@ -126,7 +126,7 @@ export async function POST(peticion: Request): Promise<Response> {
   // `organizaciones.crear` es literal del `05` § 2, que agrega: *"que en la práctica solo tiene el
   // rol de plataforma"*. En la práctica, no por construcción: la capacidad se puede otorgar a
   // otro rol sin tocar código, que es exactamente lo que el modelo de capacidades compra.
-  const contexto = await exigir(peticion, ['organizaciones.crear']);
+  const contexto = await exigir(peticion, ['organizaciones.crear'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: unknown;

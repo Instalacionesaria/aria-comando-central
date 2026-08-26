@@ -14,6 +14,7 @@
 // token de sesión.
 
 import { exigir, NINGUNA } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { descifrar } from '../../../../../lib/credenciales/cifrado.ts';
@@ -23,7 +24,7 @@ import { estadoQueCorresponde } from '../../../../../lib/autenticacion/estado.ts
 import { auditar } from '../../../../../lib/autenticacion/auditoria.ts';
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, NINGUNA);
+  const contexto = await exigir(peticion, NINGUNA, SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: unknown;

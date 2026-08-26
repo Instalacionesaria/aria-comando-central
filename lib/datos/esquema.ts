@@ -58,12 +58,34 @@ export interface TablaRoles {
   /** Solo puede existir en la organización principal. Lo hace cumplir un disparador. */
   solo_principal: Generated<boolean>;
   exige_segundo_factor: Generated<boolean>;
+  /**
+   * `true` = quien tenga este rol ve **solo** las secciones que tenga concedidas, y cero concedidas
+   * son cero pestañas.
+   *
+   * Es lo que expresa «el administrador está desbloqueado» sin que ningún `if` nombre un rol
+   * (`ADR-0302`), igual que `solo_principal` expresa la barrera entre inquilinos. Ver la migración 017.
+   */
+  secciones_restringidas: Generated<boolean>;
   creado_el: Generated<Date>;
 }
 
 export interface TablaRolesPermisos {
   rol_id: string;
   permiso: string;
+}
+
+/**
+ * El alcance por persona: qué secciones ve. **Solo cuenta si su rol está marcado.**
+ *
+ * Cero filas con un rol restringido son cero pestañas —falla cerrado— y cero filas con un rol no
+ * restringido no significan nada, porque las filas se ignoran. Ver la migración 017.
+ */
+export interface TablaUsuariosSecciones {
+  usuario_id: string;
+  /** Una clave de `SECCIONES`. La base la valida con un `check`, para que un renombre sea ruidoso. */
+  seccion: string;
+  concedida_el: Generated<Date>;
+  concedida_por: string | null;
 }
 
 export interface TablaUsuariosRoles {
@@ -482,6 +504,7 @@ export interface BaseDeDatos {
   roles: TablaRoles;
   roles_permisos: TablaRolesPermisos;
   usuarios_roles: TablaUsuariosRoles;
+  usuarios_secciones: TablaUsuariosSecciones;
   sesiones: TablaSesiones;
   auditoria_accesos: TablaAuditoriaAccesos;
   usuarios_segundo_factor: TablaUsuariosSegundoFactor;

@@ -53,7 +53,7 @@ export async function GET(peticion: Request): Promise<Response> {
   // `closer.ver` como las otras tres sub-pestañas: son una sola pantalla y `ADR-0304` exige el
   // mismo conjunto. Si Agenda pidiera algo distinto, se vería vacía para alguien que ve Inicio,
   // Mi Día y Pipeline — y no habría forma de darse cuenta mirando.
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const url = new URL(peticion.url);

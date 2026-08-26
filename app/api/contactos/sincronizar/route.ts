@@ -30,6 +30,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
@@ -44,7 +45,7 @@ import { sincronizarContactos } from '../../../../lib/negocio/sincronizar.ts';
 export const maxDuration = 300;
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['contactos.ver']);
+  const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   // El acceso se resuelve por IDENTIDAD: la tabla de credenciales es de ese dominio y el rol

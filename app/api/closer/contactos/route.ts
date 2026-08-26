@@ -41,7 +41,7 @@ export const PANTALLA = 'closer';
 const TERRITORIO = 'closer' as const;
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const url = new URL(peticion.url);

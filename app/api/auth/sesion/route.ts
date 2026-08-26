@@ -36,12 +36,13 @@
 
 import { cookieSesionBorrada } from '../../../../lib/autorizacion/cookie.ts';
 import { exigir, NINGUNA, sesionOpcional } from '../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { hashear, verificar } from '../../../../lib/datos/hash.ts';
 import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
 import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
 import { MINIMO_PASSWORD } from '../../../../lib/autenticacion/politica.ts';
-import { menuVisible, seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
+import { menuVisible, seccionesConAlcance } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 
 /**
@@ -63,12 +64,15 @@ export async function GET(peticion: Request): Promise<Response> {
     // que las dos mitades usen la MISMA función (03 § 7). Es comodidad, no seguridad: cada
     // operación valida igual.
     permisos: [...contexto.permisos].sort(),
-    secciones: seccionesVisibles(contexto.permisos),
+    // Las dos mitades cortadas por el MISMO alcance. Si se filtrara solo una, la otra quedaría
+    // entera: `secciones` la lee `AjustesView` para decidir sus pestañas y `menu` lo lee `Nav`, así
+    // que cortar una sola deja media interfaz sin restringir.
+    secciones: seccionesConAlcance(contexto.permisos, contexto.alcance),
     // El menú YA AGRUPADO y en orden, no una lista para que el cliente ordene. Es el § 9
     // regla 3 aplicado a la interfaz: si el componente supiera el orden de los grupos,
     // tendríamos otra vez dos listas que se pueden desordenar una respecto de la otra — que
     // es el defecto que la Etapa 11 pagó, descrito en `lib/autorizacion/secciones.ts`.
-    menu: menuVisible(contexto.permisos),
+    menu: menuVisible(contexto.permisos, contexto.alcance),
     // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
     // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
     usuarioNombre: contexto.usuarioNombre,
@@ -129,7 +133,7 @@ export async function DELETE(peticion: Request): Promise<Response> {
  * quedarse sin efecto — un cambio que reporta éxito y no ocurre (07 § 0).
  */
 export async function PATCH(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['organizaciones.listar']);
+  const contexto = await exigir(peticion, ['organizaciones.listar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   if (!contexto.esRolDePlataforma) {
@@ -194,7 +198,7 @@ export async function PATCH(peticion: Request): Promise<Response> {
  * pasar por accidente y abriría la operación"* (03 § 5).
  */
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, NINGUNA);
+  const contexto = await exigir(peticion, NINGUNA, SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: unknown;

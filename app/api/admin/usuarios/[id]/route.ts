@@ -46,6 +46,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { auditarAdministracion } from '../../../../../lib/autenticacion/auditoria.ts';
@@ -60,7 +61,7 @@ export async function PATCH(
   peticion: Request,
   ctx: RouteContext<'/api/admin/usuarios/[id]'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['usuarios.editar']);
+  const contexto = await exigir(peticion, ['usuarios.editar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;
@@ -154,7 +155,7 @@ export async function DELETE(
   peticion: Request,
   ctx: RouteContext<'/api/admin/usuarios/[id]'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['usuarios.borrar']);
+  const contexto = await exigir(peticion, ['usuarios.borrar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

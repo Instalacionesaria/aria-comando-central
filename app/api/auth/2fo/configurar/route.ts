@@ -19,13 +19,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir, NINGUNA } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { cifrar } from '../../../../../lib/credenciales/cifrado.ts';
 import { secretoNuevo } from '../../../../../lib/autenticacion/totp.ts';
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, NINGUNA);
+  const contexto = await exigir(peticion, NINGUNA, SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const secreto = secretoNuevo();

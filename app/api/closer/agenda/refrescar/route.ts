@@ -50,7 +50,7 @@ export const PANTALLA = 'closer';
 export const maxDuration = 300;
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva));

@@ -121,17 +121,17 @@ test('las capacidades de borrar son PROPIAS, no las de editar ni las de desactiv
   // «puede sacar a alguien de circulación» en «puede hacer desaparecer su rastro» sin que nadie
   // otorgue nada nuevo.
   const persona = fuente('app/api/admin/usuarios/[id]/route.ts');
-  assert.match(persona, /exigir\(peticion, \['usuarios\.borrar'\]\)/, 'el borrado de personas no exige `usuarios.borrar`');
+  assert.match(persona, /exigir\(peticion, \['usuarios\.borrar'\],/, 'el borrado de personas no exige `usuarios.borrar`');
 
   const empresa = fuente('app/api/admin/organizaciones/[id]/route.ts');
   assert.match(
     empresa,
-    /exigir\(peticion, \['organizaciones\.borrar'\]\)/,
+    /exigir\(peticion, \['organizaciones\.borrar'\],/,
     'el borrado de empresas no exige `organizaciones.borrar`',
   );
   assert.match(
     empresa,
-    /exigir\(peticion, \['organizaciones\.editar'\]\)/,
+    /exigir\(peticion, \['organizaciones\.editar'\],/,
     'editar una empresa no exige `organizaciones.editar`',
   );
 });

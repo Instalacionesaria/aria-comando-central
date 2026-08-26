@@ -37,7 +37,7 @@ const MOTIVOS: Record<string, string> = {
 };
 
 export async function PATCH(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   /* ── EL SUPERADMINISTRADOR MIRANDO OTRA EMPRESA ───────────────────────────

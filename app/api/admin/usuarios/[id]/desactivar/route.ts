@@ -37,6 +37,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
@@ -48,7 +49,7 @@ export async function POST(
   peticion: Request,
   ctx: RouteContext<'/api/admin/usuarios/[id]/desactivar'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['usuarios.desactivar']);
+  const contexto = await exigir(peticion, ['usuarios.desactivar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

@@ -25,6 +25,10 @@ import { sql } from 'kysely';
 import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { exigir, NINGUNA, sesionOpcional } from '../../lib/autorizacion/portero.ts';
+/* Estas pruebas miden los pasos 1 a 5 del portero. El alcance por sección es el paso 6 y
+   se mide aparte, en `pruebas/base/31-alcance.test.ts`: acá se pasa `SIN_SECCION` para que
+   quede escrito que la sección no es lo que este archivo está midiendo. */
+import { SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import { COOKIE_SESION, hashDeToken, type EstadoSesion } from '../../lib/autorizacion/sesion.ts';
 
 const DOMINIO = 'ejemplo.test';
@@ -130,14 +134,14 @@ async function codigoDe(r: unknown): Promise<{ estado: number; codigo: string } 
 // ─── Paso 1 · ¿hay sesión? ──────────────────────────────────────────────────
 
 test('ADR-0301 · sin cookie: 401 sin_sesion', async () => {
-  const r = await exigir(peticion('GET', '/api/usuarios'), ['credenciales.ver']);
+  const r = await exigir(peticion('GET', '/api/usuarios'), ['credenciales.ver'], SIN_SECCION);
   assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
 });
 
 test('ADR-0301 · con un token inventado: 401 sin_sesion', async () => {
   const r = await exigir(peticion('GET', '/api/usuarios', { token: 'no-existe' }), [
     'credenciales.ver',
-  ]);
+  ], SIN_SECCION);
   assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
 });
 
@@ -145,7 +149,7 @@ test('ADR-0301 · una sesión con `expira_el` pasado: 401', async () => {
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '-1 hour' });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await borrarSesion(s.id);
@@ -164,7 +168,7 @@ test('ADR-0301 · el TECHO ABSOLUTO: `expira_el` futuro y `expira_absoluto` pasa
     expiraAbsoluto: '-1 hour',
   });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await borrarSesion(s.id);
@@ -182,7 +186,7 @@ test('ADR-0301 · un usuario desactivado no tiene sesión, aunque la fila exista
     await conIdentidad(async (db) => {
       await db.updateTable('usuarios').set({ activo: false }).where('id', '=', u.ana.id).execute();
     });
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 401, codigo: 'sin_sesion' });
   } finally {
     await conIdentidad(async (db) => {
@@ -210,7 +214,7 @@ test('ADR-0301 · cada estado restringido devuelve SU código, no `sin_permiso`'
     try {
       const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
         'credenciales.ver',
-      ]);
+      ], SIN_SECCION);
       assert.deepEqual(
         await codigoDe(r),
         { estado: 403, codigo: estado },
@@ -228,7 +232,7 @@ test('ADR-0301 · una sesión ACTIVA sí llega al paso de capacidades', async ()
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.equal(await codigoDe(r), null, 'una sesión activa con la capacidad tiene que pasar');
   } finally {
     await borrarSesion(s.id);
@@ -244,7 +248,7 @@ test('ADR-0301 · organización inactiva: 403 organizacion_inactiva', async () =
     await conIdentidad(async (db) => {
       await db.updateTable('organizaciones').set({ activa: false }).where('id', '=', u.ana.org).execute();
     });
-    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 403, codigo: 'organizacion_inactiva' });
   } finally {
     await conIdentidad(async (db) => {
@@ -275,7 +279,7 @@ test('ADR-0302 · sin la capacidad: 403 sin_permiso', async () => {
   try {
     const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
       'organizaciones.crear',
-    ]);
+    ], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 403, codigo: 'sin_permiso' });
   } finally {
     await borrarSesion(s.id);
@@ -286,7 +290,7 @@ test('ADR-0302 · `NINGUNA` deja pasar a cualquiera con sesión activa', async (
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.ana.id });
   try {
-    const r = await exigir(peticion('GET', '/api/control', { token: s.token }), NINGUNA);
+    const r = await exigir(peticion('GET', '/api/control', { token: s.token }), NINGUNA, SIN_SECCION);
     assert.equal(await codigoDe(r), null);
   } finally {
     await borrarSesion(s.id);
@@ -302,7 +306,7 @@ test('ADR-0302 · los permisos se leen EN LA PETICIÓN, no se cachean', async ()
   try {
     const antes = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
       'credenciales.ver',
-    ]);
+    ], SIN_SECCION);
     assert.equal(await codigoDe(antes), null, 'tendría que pasar antes de quitarle el rol');
 
     // Se le quita el rol y se vuelve a preguntar con LA MISMA sesión.
@@ -318,7 +322,7 @@ test('ADR-0302 · los permisos se leen EN LA PETICIÓN, no se cachean', async ()
 
     const despues = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), [
       'credenciales.ver',
-    ]);
+    ], SIN_SECCION);
     assert.deepEqual(
       await codigoDe(despues),
       { estado: 403, codigo: 'sin_permiso' },
@@ -351,7 +355,7 @@ test('ADR-0206 · `org_activa` de un usuario COMÚN se ignora — es la fuga ent
   // beta como activa.
   const s = await sesionNueva({ usuarioId: u.ana.id, orgActiva: u.orgBeta });
   try {
-    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.ok(!(ctx instanceof Response), 'tendría que pasar el portero');
     assert.equal(ctx.esRolDePlataforma, false, 'ana no es rol de plataforma');
     assert.equal(
@@ -372,7 +376,7 @@ test('ADR-0206 · `org_activa` del rol de plataforma SÍ se respeta', async () =
   const u = await usuarios();
   const s = await sesionNueva({ usuarioId: u.fundadora.id, orgActiva: u.orgBeta });
   try {
-    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver']);
+    const ctx = await exigir(peticion('GET', '/api/usuarios', { token: s.token }), ['credenciales.ver'], SIN_SECCION);
     assert.ok(!(ctx instanceof Response), 'tendría que pasar el portero');
     assert.equal(ctx.esRolDePlataforma, true, 'la fundadora tiene el rol `solo_principal`');
     assert.equal(ctx.orgEfectiva, u.orgBeta);
@@ -391,7 +395,7 @@ test('ADR-0306 · una petición que modifica sin `Origin` se rechaza', async () 
   try {
     const r = await exigir(peticion('PATCH', '/api/auth/sesion', { token: s.token, origen: null }), [
       'organizaciones.listar',
-    ]);
+    ], SIN_SECCION);
     assert.deepEqual(await codigoDe(r), { estado: 403, codigo: 'origen_no_permitido' });
   } finally {
     await borrarSesion(s.id);
@@ -405,12 +409,14 @@ test('ADR-0306 · con un `Origin` ajeno se rechaza, y con el propio pasa', async
     const ajeno = await exigir(
       peticion('PATCH', '/api/auth/sesion', { token: s.token, origen: 'https://malo.test' }),
       ['organizaciones.listar'],
+      SIN_SECCION,
     );
     assert.deepEqual(await codigoDe(ajeno), { estado: 403, codigo: 'origen_no_permitido' });
 
     const propio = await exigir(
       peticion('PATCH', '/api/auth/sesion', { token: s.token, origen: `https://${DOMINIO}` }),
       ['organizaciones.listar'],
+      SIN_SECCION,
     );
     assert.equal(await codigoDe(propio), null, 'con el origen propio tendría que pasar');
   } finally {
@@ -426,7 +432,7 @@ test('ADR-0306 · una lectura NO necesita `Origin`', async () => {
   try {
     const r = await exigir(peticion('GET', '/api/usuarios', { token: s.token, origen: null }), [
       'credenciales.ver',
-    ]);
+    ], SIN_SECCION);
     assert.equal(await codigoDe(r), null);
   } finally {
     await borrarSesion(s.id);
@@ -439,11 +445,11 @@ test('ADR-0301 · llamar al portero con una ruta de `sesionOpcional` LANZA', asy
   // No es un rechazo: es un error de programación. Mezclar los dos contratos es lo que produce
   // los defectos silenciosos que el paso 0 del 03 § 5 existe para evitar.
   await assert.rejects(
-    () => exigir(peticion('GET', '/api/auth/sesion'), NINGUNA),
+    () => exigir(peticion('GET', '/api/auth/sesion'), NINGUNA, SIN_SECCION),
     /usa sesionOpcional\(\), no el portero/,
   );
   await assert.rejects(
-    () => exigir(peticion('DELETE', '/api/auth/sesion'), NINGUNA),
+    () => exigir(peticion('DELETE', '/api/auth/sesion'), NINGUNA, SIN_SECCION),
     /usa sesionOpcional\(\), no el portero/,
   );
 });
@@ -473,7 +479,7 @@ test('la renovación NO toca `expira_absoluto`, y no corre si el estado no es `a
   const activa = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '2 hours' });
   try {
     const antes = await plazos(activa.id);
-    await exigir(peticion('GET', '/api/usuarios', { token: activa.token }), ['credenciales.ver']);
+    await exigir(peticion('GET', '/api/usuarios', { token: activa.token }), ['credenciales.ver'], SIN_SECCION);
     const despues = await plazos(activa.id);
     assert.ok(
       despues.expira_el > antes.expira_el,
@@ -515,7 +521,7 @@ test('la renovación NO toca `expira_absoluto`, y no corre si el estado no es `a
   const lejana = await sesionNueva({ usuarioId: u.ana.id, expiraEl: '6 days' });
   try {
     const antes = await plazos(lejana.id);
-    await exigir(peticion('GET', '/api/usuarios', { token: lejana.token }), ['credenciales.ver']);
+    await exigir(peticion('GET', '/api/usuarios', { token: lejana.token }), ['credenciales.ver'], SIN_SECCION);
     const despues = await plazos(lejana.id);
     assert.equal(
       despues.expira_el.getTime(),

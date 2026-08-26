@@ -20,6 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
@@ -48,7 +49,7 @@ export async function POST(peticion: Request): Promise<Response> {
   //
   // Pedir `conversaciones.responder` sería más estricto y estaría MAL: quien solo puede mirar
   // vería un chat que no se actualiza nunca, sin ningún error — el modo de falla del `07` § 2.
-  const contexto = await exigir(peticion, ['contactos.ver']);
+  const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva));

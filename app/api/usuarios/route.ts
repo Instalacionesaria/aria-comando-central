@@ -48,7 +48,7 @@ import { conIdentidad } from '../../../lib/datos/capa.ts';
 export const PANTALLA = 'usuarios';
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['usuarios.ver']);
+  const contexto = await exigir(peticion, ['usuarios.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const todasLasEmpresas = contexto.permisos.has('organizaciones.listar');

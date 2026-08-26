@@ -159,9 +159,29 @@ on conflict (clave) do nothing;
 -- opcional para todos.
 -- ═════════════════════════════════════════════════════════════════════════════
 
-insert into identidad.roles (clave, nombre, es_sistema, solo_principal, exige_segundo_factor) values
-  ('usuario', 'Usuario', true, false, false)
+insert into identidad.roles
+    (clave, nombre, es_sistema, solo_principal, exige_segundo_factor, secciones_restringidas) values
+  ('usuario', 'Usuario', true, false, false, true)
 on conflict do nothing;
+
+-- ── LA BANDERA DE LA RESTRICCIÓN POR SECCIÓN, DECLARATIVA ────────────────────
+--
+-- El `insert` de arriba solo sirve la primera vez —lleva `on conflict do nothing`— así que la bandera
+-- se afirma acá, con el MISMO criterio que el reparto de capacidades de abajo: **se declara el estado
+-- completo y converge**. Un `update … where clave = 'usuario'` daría la mitad: marcaría, y no
+-- desmarcaría si alguien marcó de más.
+--
+-- Y va en el arranque y no en la migración 017 por un motivo medido: `identidad.roles` tiene
+-- `force row level security` sin política para `migrador`, así que desde una migración este `update`
+-- **afectaría cero filas informando éxito**. El arranque corre con un rol que omite las políticas.
+--
+-- Qué significa `true`: las personas con ese rol ven **solo** las secciones que tengan concedidas, y
+-- cero filas concedidas son cero pestañas. Qué significa `false`: sin restricción, y las filas de
+-- alcance se ignoran por completo. Es lo que expresa «el administrador está desbloqueado» sin
+-- escribir el nombre de ningún rol en el código — `ADR-0302`.
+update identidad.roles
+   set secciones_restringidas = (clave = 'usuario')
+ where org_id is null;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════

@@ -29,9 +29,14 @@ import {
   SECCIONES,
   SIN_OPERACIONES_TODAVIA,
   menuVisible,
+  type Alcance,
 } from '../../lib/autorizacion/secciones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
 import { EXENTAS_DE_ORGANIZACION_ACTIVA } from '../../lib/autorizacion/estados.ts';
+
+/* Estas pruebas miden qué habilita cada ROL. El alcance por persona es otra pregunta —la mide
+   `pruebas/base/31-alcance.test.ts`— y se pasa con nombre para que quede escrito cuál es cuál. */
+const SIN_ALCANCE: Alcance = { restringido: false };
 
 const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
 
@@ -170,8 +175,8 @@ test('un closer ve SU pestaña y nada más; un setter la suya', () => {
     'conversaciones.responder',
   ]);
 
-  const vistasDelCloser = menuVisible(delCloser).flatMap((g) => g.secciones.map((s) => s.clave));
-  const vistasDelSetter = menuVisible(delSetter).flatMap((g) => g.secciones.map((s) => s.clave));
+  const vistasDelCloser = menuVisible(delCloser, SIN_ALCANCE).flatMap((g) => g.secciones.map((s) => s.clave));
+  const vistasDelSetter = menuVisible(delSetter, SIN_ALCANCE).flatMap((g) => g.secciones.map((s) => s.clave));
 
   assert.deepEqual(vistasDelCloser, ['closer'], 'un closer ve algo más que su pestaña');
   assert.deepEqual(vistasDelSetter, ['setter'], 'un setter ve algo más que su pestaña');
@@ -188,12 +193,12 @@ test('un grupo que queda sin secciones visibles NO se dibuja', () => {
   // Un `<div class="nav-group">` con su etiqueta y nada adentro deja un título flotando sobre
   // el vacío: le dice al usuario que ahí hay algo que no puede ver, cuando lo que corresponde
   // es que no sepa que existe.
-  const soloCloser = menuVisible(new Set(['closer.ver']));
+  const soloCloser = menuVisible(new Set(['closer.ver']), SIN_ALCANCE);
   assert.equal(soloCloser.length, 1, 'quedaron grupos vacíos en el menú');
   assert.equal(soloCloser[0]!.grupo.clave, 'Operación');
 
   // Y sin ninguna capacidad, ningún grupo. Ni uno vacío.
-  assert.deepEqual(menuVisible(new Set()), []);
+  assert.deepEqual(menuVisible(new Set(), SIN_ALCANCE), []);
 });
 
 test('todas las capacidades del menú están en el catálogo, y el catálogo las carga', () => {
@@ -264,8 +269,8 @@ test('el territorio se escribe en el SERVIDOR: no llega del navegador', () => {
 test('las dos rutas piden capacidades DISTINTAS, y son las de su pantalla', () => {
   const closer = leer('app/api/closer/contactos/route.ts');
   const setter = leer('app/api/setter/contactos/route.ts');
-  assert.match(closer, /exigir\(peticion, \['closer\.ver'\]\)/);
-  assert.match(setter, /exigir\(peticion, \['setter\.ver'\]\)/);
+  assert.match(closer, /exigir\(peticion, \['closer\.ver'\],/);
+  assert.match(setter, /exigir\(peticion, \['setter\.ver'\],/);
   assert.match(closer, /PANTALLA = 'closer'/);
   assert.match(setter, /PANTALLA = 'setter'/);
   // Y ninguna pide la de la otra, que es la forma en que la separación se rompería sin que

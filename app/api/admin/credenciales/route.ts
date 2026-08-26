@@ -96,7 +96,7 @@ const CAMPOS = [
 ] as const;
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['credenciales.ver']);
+  const contexto = await exigir(peticion, ['credenciales.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const credenciales = await conIdentidad(async (db) =>
@@ -106,7 +106,7 @@ export async function GET(peticion: Request): Promise<Response> {
 }
 
 export async function PUT(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['credenciales.editar']);
+  const contexto = await exigir(peticion, ['credenciales.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   // ── LOS RECHAZOS VAN POR `rechazo(`, NO POR `ok(…, 400)` ──────────────────

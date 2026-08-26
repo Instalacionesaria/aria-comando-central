@@ -28,6 +28,10 @@ import { conectar, cerrarTodo, filas, unaFila } from '../apoyo/conexiones.ts';
 import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { exigir } from '../../lib/autorizacion/portero.ts';
+/* Estas pruebas miden los pasos 1 a 5 del portero. El alcance por sección es el paso 6 y
+   se mide aparte, en `pruebas/base/31-alcance.test.ts`: acá se pasa `SIN_SECCION` para que
+   quede escrito que la sección no es lo que este archivo está midiendo. */
+import { SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { PATCH as cambiarOrg } from '../../app/api/auth/sesion/route.ts';
 import { cifrar } from '../../lib/credenciales/cifrado.ts';
@@ -131,7 +135,8 @@ test('ADR-0809 · `permiso_denegado` se emite, con la capacidad en el detalle', 
       headers: { origin: `https://${DOMINIO}`, cookie: `${COOKIE_SESION}=${token}` },
     }),
     ['organizaciones.crear'],
-  );
+  SIN_SECCION,
+);
   assert.ok(r instanceof Response);
   assert.equal(r.status, 403);
 
@@ -251,7 +256,8 @@ test('ADR-0809 · las tres acciones existen en el catálogo del tipo, y ninguna 
       headers: { cookie: `${COOKIE_SESION}=${tokenAna}` },
     }),
     ['organizaciones.crear'],
-  );
+  SIN_SECCION,
+);
 
   const alfa = (await unaFila<{ id: string }>(
     admin,

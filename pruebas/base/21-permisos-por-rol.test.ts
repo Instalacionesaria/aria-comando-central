@@ -104,6 +104,12 @@ const ESPERADO: Record<string, Partial<Record<'app_inquilino' | 'app_identidad',
   usuarios_roles: {
     app_identidad: { tabla: ['SELECT', 'INSERT', 'DELETE'] },
   },
+  // Los MISMOS tres que la tabla hermana, y sin `UPDATE`: una fila de asignación no se edita, se
+  // pone y se quita. Este mapa compara los privilegios EXACTOS, así que un `UPDATE` otorgado sin
+  // declararlo acá se ve — que es para lo que sirve la comparación exacta.
+  usuarios_secciones: {
+    app_identidad: { tabla: ['SELECT', 'INSERT', 'DELETE'] },
+  },
   sesiones: {
     app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'] },
   },
@@ -207,7 +213,7 @@ test('toda tabla de identidad es ACCESIBLE por al menos un rol', async () => {
     `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'identidad' and c.relkind in ('r', 'p') order by c.relname`,
   );
-  assert.equal(tablas.length, 10, 'son diez tablas de identidad');
+  assert.equal(tablas.length, 11, 'son once tablas de identidad');
 
   for (const { relname } of tablas) {
     const f = await unaFila<{ alcanzable: boolean }>(

@@ -24,6 +24,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
@@ -53,7 +54,7 @@ export async function GET(
   // `contactos.ver`, la capacidad de la ficha. Las cinco pestañas piden la MISMA: son una sola
   // pantalla, y `ADR-0304` lo exige — si una pidiera algo distinto, esa pestaña se vería vacía
   // para alguien que ve las otras cuatro, y no habría forma de darse cuenta mirando.
-  const contexto = await exigir(peticion, ['contactos.ver']);
+  const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;
@@ -90,7 +91,7 @@ export async function POST(
   // Escribir pide otra capacidad, y NO rompe `ADR-0304`: la regla previene pantallas con secciones
   // vacías por lecturas desparejas. Un compositor deshabilitado no es un panel vacío — se ve que el
   // chat se puede leer y no escribir.
-  const contexto = await exigir(peticion, ['conversaciones.responder']);
+  const contexto = await exigir(peticion, ['conversaciones.responder'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

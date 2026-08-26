@@ -31,6 +31,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -69,7 +70,7 @@ export async function GET(
   peticion: Request,
   ctx: RouteContext<'/api/contactos/[id]'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['contactos.ver']);
+  const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

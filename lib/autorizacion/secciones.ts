@@ -446,6 +446,38 @@ export function seccionesVisibles(permisos: ReadonlySet<string>): readonly Secci
  * Se deriva de `SECCIONES` y no se escribe a mano: una segunda lista es una lista que va a quedar
  * corta el día que se agregue una pantalla, y el síntoma sería una sección que no se puede conceder.
  */
+/**
+ * Las secciones OFRECIBLES como alcance para un conjunto de capacidades, **agrupadas y en orden**.
+ *
+ * Es lo que el formulario de alta dibuja como casillas. Se agrupa acá y no en el componente por el
+ * mismo motivo que `menuVisible`, que está escrito en `app/api/auth/sesion/route.ts`: *"si el
+ * componente supiera el orden de los grupos, tendríamos otra vez dos listas que se pueden desordenar
+ * una respecto de la otra"*.
+ *
+ * ── LA DIFERENCIA CON `menuVisible`, Y ES LA QUE IMPORTA ────────────────────
+ *
+ * Incluye las secciones **sin `menu`** —`usuarios` y `empresas`, que son pestañas dentro de Ajustes—
+ * en un grupo propio. Si quedaran afuera serían secciones que el portero puede negar y que la
+ * interfaz no puede conceder: nadie podría restringirlas nunca, y el que las tenga las tendría para
+ * siempre sin que nada lo diga.
+ */
+export function alcanceOfrecible(
+  permisos: ReadonlySet<string>,
+): readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly Seccion[] }[] {
+  const alcanzables = seccionesVisibles(permisos);
+  const conMenu = GRUPOS_DEL_MENU.map((grupo) => ({
+    grupo,
+    secciones: alcanzables.filter((s) => s.menu?.grupo === grupo.clave),
+  }));
+  // Las que no están en ningún grupo del menú, juntas y con nombre. Sin etiqueta serían casillas
+  // huérfanas al final de la lista y nadie sabría qué son.
+  const sueltas = alcanzables.filter((s) => !s.menu);
+  return [
+    ...conMenu,
+    { grupo: { clave: 'Ajustes', etiqueta: 'Ajustes' }, secciones: sueltas },
+  ].filter((g) => g.secciones.length > 0);
+}
+
 export function clavesDeSeccion(): readonly string[] {
   return SECCIONES.map((s) => s.clave);
 }
@@ -483,25 +515,50 @@ export function clavesDeSeccion(): readonly string[] {
  * **ADEMÁS** de la capacidad, nunca en su lugar. Un alcance que conceda `credenciales` a un rol que
  * no tiene `credenciales.ver` no concede nada.
  *
- * ── CERO FILAS: SIN ALCANCE, NO «SIN NADA» ──────────────────────────────────
+ * ── CERO FILAS: DOS HECHOS DISTINTOS, Y NO LOS SEPARA LA PRESENCIA DE FILAS ──
  *
- * `concedidas === null` significa que esta persona **no tiene alcance configurado**, y entonces ve
- * todo lo que su rol habilita. Es lo que mantiene a los administradores y a quien ya existía
- * funcionando sin sembrarle filas a nadie.
+ * La primera versión de esto decía: «si la persona tiene filas, solo esas secciones; si no tiene, sin
+ * restricción». **Falla ABIERTO**, y el camino es un clic normal: `POST /api/admin/usuarios/{id}/roles`
+ * reemplaza los roles y no toca nada más, así que degradar a alguien de `administrador` a `usuario` lo
+ * dejaba con cero filas — o sea con las diez pestañas. Y al revés era peor: promover dejaba un
+ * administrador restringido a una pestaña **sin ninguna operación para arreglarlo**.
  *
- * Un conjunto VACÍO es otra cosa: significa «ninguna sección», y es un estado sin salida —la persona
- * entra y no ve nada, sin explicación—. Por eso el endpoint del alta lo rechaza en vez de guardarlo:
- * la ausencia y el vacío son los dos ceros del `11` § 9 regla 1, y acá uno de los dos no se puede
- * escribir.
- * ═══════════════════════════════════════════════════════════════════════════════
+ * Lo que separa los dos ceros es un hecho AFIRMADO en el rol, `secciones_restringidas`:
+ *
+ *   · rol no restringido → sin alcance, y las filas se ignoran. Es lo que expresa «el administrador
+ *     está desbloqueado» sin escribir el nombre de ningún rol (`ADR-0302`).
+ *   · rol restringido → solo las concedidas, y cero filas son **cero pestañas**. Falla CERRADO.
+ *
+ * Por eso el parámetro es una unión discriminada y no un `Set | null`: con el nulo, «restringido con
+ * conjunto indefinido» era expresable, y era justamente el estado que abre la puerta.
  */
+/**
+ * «Esta operación no pertenece a ninguna pantalla» es un VALOR CON NOMBRE, no una ausencia.
+ *
+ * Mismo argumento que `NINGUNA` en `capacidades.ts`: *"una lista vacía se puede pasar por accidente y
+ * ABRIRÍA la operación. Un valor con nombre tiene que escribirse a propósito."* Acá el accidente
+ * sería un `undefined` que dejara la operación fuera del alcance sin que nadie lo decidiera.
+ *
+ * Y es válido **solo** para las rutas listadas en `SIN_PANTALLA`, que ahora tiene comprobación de
+ * entradas muertas en las dos direcciones. Escribirlo deja de ser una decisión que se toma sola y
+ * pasa a ser una línea en una lista que alguien revisa.
+ */
+export const SIN_SECCION = 'sin_seccion' as const;
+
+/** Qué pantalla pide una operación: una sección, o ninguna con nombre. */
+export type Pantalla = string | typeof SIN_SECCION;
+
+export type Alcance =
+  | { readonly restringido: false }
+  | { readonly restringido: true; readonly concedidas: ReadonlySet<string> };
+
 export function seccionesConAlcance(
   permisos: ReadonlySet<string>,
-  concedidas: ReadonlySet<string> | null,
+  alcance: Alcance,
 ): readonly Seccion[] {
   const delRol = seccionesVisibles(permisos);
-  if (concedidas === null) return delRol;
-  return delRol.filter((s) => concedidas.has(s.clave));
+  if (!alcance.restringido) return delRol;
+  return delRol.filter((s) => alcance.concedidas.has(s.clave));
 }
 
 /**
@@ -518,8 +575,16 @@ export function seccionesConAlcance(
  */
 export function menuVisible(
   permisos: ReadonlySet<string>,
+  alcance: Alcance,
 ): readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly Seccion[] }[] {
-  const visibles = seccionesVisibles(permisos).filter((s) => s.menu);
+  /* El alcance va OBLIGATORIO, no opcional, y la diferencia es todo: opcional deja que un llamador
+     nuevo se lo olvide y muestre el menú entero **sin fallar**. Obligatorio rompe la compilación en
+     cada llamador, que es el resultado buscado.
+
+     Y el corte se aplica ACÁ, antes de agrupar. Aplicarlo afuera sobre el menú ya agrupado dejaría
+     grupos con título y nada adentro — un título flotando sobre el vacío, que es lo que la regla de
+     abajo prohíbe. */
+  const visibles = seccionesConAlcance(permisos, alcance).filter((s) => s.menu);
   return GRUPOS_DEL_MENU.map((grupo) => ({
     grupo,
     secciones: visibles.filter((s) => s.menu!.grupo === grupo.clave),

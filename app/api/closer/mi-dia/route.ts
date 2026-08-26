@@ -42,7 +42,7 @@ import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
 export const PANTALLA = 'closer';
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   // La zona horaria de la ORGANIZACIÓN, no la del navegador. Es lo que decide qué es "hoy" y

@@ -27,7 +27,7 @@ export const PANTALLA = 'setter';
 const TERRITORIO = 'setter' as const;
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['setter.ver']);
+  const contexto = await exigir(peticion, ['setter.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const url = new URL(peticion.url);

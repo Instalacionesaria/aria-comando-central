@@ -44,6 +44,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { hashear } from '../../../../lib/datos/hash.ts';
@@ -66,7 +67,7 @@ const MOTIVOS = {
 } as const;
 
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['usuarios.crear']);
+  const contexto = await exigir(peticion, ['usuarios.crear'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: unknown;

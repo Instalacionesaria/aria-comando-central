@@ -52,6 +52,11 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   // claves foráneas `no action` que apuntan a usuarios y exige traducción para cada una. Sin ella,
   // borrar a quien alguna vez le asignó un rol a otro daba el mensaje genérico.
   usuarios_roles_asignado_por_fkey: 'asignó roles a otras personas',
+  // La misma clase que la de arriba, y por eso la frase es simétrica: quien definió las pestañas de
+  // otra persona deja de ser borrable, igual que quien le asignó un rol. La otra clave de esa tabla
+  // —la de la persona dueña del alcance— cascadea, así que no llega acá: el alcance de alguien que ya
+  // no está no significa nada.
+  usuarios_secciones_concedida_por_fkey: 'definió las pestañas de otras personas',
   organizaciones_credenciales_org_id_actualizado_por_fkey: 'cargó credenciales de la empresa',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────

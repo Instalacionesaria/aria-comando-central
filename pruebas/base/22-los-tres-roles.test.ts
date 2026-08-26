@@ -28,7 +28,12 @@ import assert from 'node:assert/strict';
 import type { Client } from 'pg';
 import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
-import { seccionesVisibles, menuVisible } from '../../lib/autorizacion/secciones.ts';
+import { seccionesVisibles, menuVisible, type Alcance } from '../../lib/autorizacion/secciones.ts';
+
+/* Esta prueba mide qué habilita cada ROL, así que el alcance por persona no interviene. Se pasa con
+   nombre en vez de un objeto suelto: deja escrito que la medición es del rol y que el alcance es otra
+   pregunta — la que mide `pruebas/base/31-alcance.test.ts`. */
+const SIN_ALCANCE: Alcance = { restringido: false };
 import { personasQuePuedeAdministrar } from '../../lib/administracion/usuarios.ts';
 import { cerrarClientes, conIdentidad } from '../../lib/datos/capa.ts';
 
@@ -244,8 +249,8 @@ test('lo que cada rol ve en pantalla sale de su reparto, y es lo que se pidió',
     'el usuario y el administrador ven exactamente lo mismo: la diferencia se perdió',
   );
   assert.ok(
-    menuVisible(delUsuario).length < menuVisible(delAdmin).length ||
-      menuVisible(delUsuario).length > 0,
+    menuVisible(delUsuario, SIN_ALCANCE).length < menuVisible(delAdmin, SIN_ALCANCE).length ||
+      menuVisible(delUsuario, SIN_ALCANCE).length > 0,
     'el usuario no ve ningún grupo de menú',
   );
 });

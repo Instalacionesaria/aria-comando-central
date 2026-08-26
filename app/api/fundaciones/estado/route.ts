@@ -53,7 +53,7 @@ function rechazoDeAlmacen(fallo: { tipo: string }): Response {
 }
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['fundaciones.ver']);
+  const contexto = await exigir(peticion, ['fundaciones.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const alumno = await conIdentidad(async (db) =>
@@ -95,7 +95,7 @@ function soloTextos(x: unknown): Record<string, string> | null {
  * lo que escribe lo va a heredar la siguiente herramienta.
  */
 export async function POST(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['fundaciones.editar']);
+  const contexto = await exigir(peticion, ['fundaciones.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: CuerpoDeGuardado;

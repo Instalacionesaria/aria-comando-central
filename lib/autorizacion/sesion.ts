@@ -17,6 +17,7 @@
 import { createHash } from 'node:crypto';
 import { sql } from 'kysely';
 import { conIdentidad } from '../datos/capa.ts';
+import type { Alcance } from './secciones.ts';
 
 /** El nombre de la cookie. El prefijo es parte del nombre, no un adorno (08 § 5.2). */
 // El nombre de la cookie se define en `cookie.ts`, que no importa nada, y se REEXPORTA acá.
@@ -89,6 +90,19 @@ export interface Contexto {
   };
   /** Los permisos efectivos, calculados en esta petición. Nunca cacheados. */
   permisos: ReadonlySet<string>;
+  /**
+   * Qué pestañas ve esta persona, **además** de lo que su rol habilita.
+   *
+   * `{ restringido: false }` = ninguna restricción, y las filas de alcance se ignoran. Es lo que
+   * expresa «el administrador está desbloqueado» sin que ningún `if` nombre un rol (`ADR-0302`): sale
+   * de la bandera `secciones_restringidas` de la tabla de roles.
+   *
+   * Se calcula acá y no dentro de `exigir` por un motivo de arquitectura: `GET /api/auth/sesion` —el
+   * endpoint que devuelve el menú— **no pasa por el portero**, usa `sesionOpcional`. Si el alcance
+   * viviera en el portero, el menú tendría que filtrarse con otra fuente, y volveríamos a tener dos
+   * listas que se desordenan una respecto de la otra.
+   */
+  alcance: Alcance;
   /**
    * Si el usuario tiene algún rol de plataforma.
    *
@@ -210,14 +224,48 @@ export async function resolverSesion(token: string | undefined): Promise<Context
     // Lo que está PROHIBIDO es la tercera vía, la que aparece sola: comparar
     // `clave === 'superadministrador'`. Funciona hoy y miente el día que exista un segundo
     // rol de plataforma, y es exactamente lo que `ADR-0302` busca en el código.
-    const plataforma = await db
+    // ── LAS DOS BANDERAS EN UNA SOLA CONSULTA ────────────────────────────────
+    //
+    // Antes esto preguntaba solo por `solo_principal`. Ahora trae también
+    // `secciones_restringidas`, y los dos agregados son distintos a propósito:
+    //
+    //   · `bool_or(solo_principal)`  → basta UN rol de plataforma para serlo. Las capacidades SUMAN.
+    //   · `bool_and(secciones_restringidas)` → basta UN rol NO restringido para no estar restringido.
+    //
+    // El segundo es el que sorprende y es el correcto por lo mismo que el primero: los roles solo
+    // suman. Alguien con `administrador` **y** `usuario` tiene la unión de las capacidades; con
+    // `bool_or` le estaríamos restando pestañas al rol de administrador, que es justo lo que la
+    // migración 003 prohíbe. Con cero roles el agregado es nulo y da `false`, y da igual: sin roles no
+    // hay capacidades y no hay ninguna sección que mostrar.
+    const banderas = await db
       .selectFrom('usuarios_roles as ur')
       .innerJoin('roles as r', 'r.id', 'ur.rol_id')
       .where('ur.usuario_id', '=', fila.usuario_id)
-      .where('r.solo_principal', '=', true)
-      .select('r.id')
+      .select(({ fn }) => [
+        fn<boolean | null>('bool_or', ['r.solo_principal']).as('plataforma'),
+        fn<boolean | null>('bool_and', ['r.secciones_restringidas']).as('restringido'),
+      ])
       .executeTakeFirst();
-    const esRolDePlataforma = plataforma !== undefined;
+    const esRolDePlataforma = banderas?.plataforma === true;
+
+    /* ── EL ALCANCE, y las filas se leen SOLO si hacen falta ──────────────────
+     *
+     * Sin restricción no se consulta nada: es una consulta menos por petición para todo el mundo menos
+     * las personas restringidas. Y no se cachea, por el mismo motivo escrito arriba para los permisos:
+     * *"si a alguien le quitan un permiso, seguiría teniéndolo hasta que su sesión venza"*. Quitar una
+     * pestaña se ve en la petición siguiente.
+     *
+     * Cero filas con el rol restringido son **cero secciones**, y eso es deliberado: falla cerrado.
+     * Ver el encabezado de `seccionesConAlcance`. */
+    let alcance: Alcance = { restringido: false };
+    if (banderas?.restringido === true) {
+      const concedidas = await db
+        .selectFrom('usuarios_secciones')
+        .select('seccion')
+        .where('usuario_id', '=', fila.usuario_id)
+        .execute();
+      alcance = { restringido: true, concedidas: new Set(concedidas.map((c) => c.seccion)) };
+    }
 
     // LA FÓRMULA DEL 04 § 8, y el `?:` es la barrera entera:
     //
@@ -264,6 +312,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         esPrincipal: org.es_principal,
       },
       permisos,
+      alcance,
       esRolDePlataforma,
       mirandoOtraOrganizacion: orgEfectiva !== fila.org_propia,
     };

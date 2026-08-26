@@ -24,6 +24,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
+import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
@@ -56,7 +57,7 @@ export async function POST(
   peticion: Request,
   ctx: RouteContext<'/api/contactos/[id]/avanzar'>,
 ): Promise<Response> {
-  const contexto = await exigir(peticion, ['contactos.avanzar']);
+  const contexto = await exigir(peticion, ['contactos.avanzar'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
   const { id } = await ctx.params;

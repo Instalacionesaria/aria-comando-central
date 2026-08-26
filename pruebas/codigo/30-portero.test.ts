@@ -344,7 +344,13 @@ test('ADR-0304 · las operaciones de una misma pantalla piden el MISMO conjunto'
       if (metodo !== 'GET') continue;
       const m = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([\s\S]*?)\)\s*;/.exec(cuerpo);
       if (!m) continue;
-      const arg = (m[1] ?? '').trim();
+      /* El TERCER argumento se descarta antes de leer las capacidades.
+         `exigir` pasó a recibir la pantalla, y sin este recorte el conjunto de una ruta que pide
+         `NINGUNA` se leía como `'NINGUNA, SIN_SECCION'` — o sea que la comparación con el valor con
+         nombre dejaba de reconocerlo. La pantalla se cruza en su propia prueba. */
+      const arg = (m[1] ?? '')
+        .replace(/,\s*(PANTALLA|SIN_SECCION)\s*,?\s*$/, '')
+        .trim();
       // `NINGUNA` NO se normaliza a `[]`. El 03 § 5: *"'ninguna capacidad' es un valor
       // explícito, no una lista vacía"*. Si se normalizaran juntos, una operación que quedó
       // abierta por accidente se agruparía con las abiertas a propósito y el conjunto

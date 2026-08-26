@@ -195,7 +195,13 @@ test('ADR-0406 · el cambio de contraseña pide `NINGUNA` capacidad', () => {
   const llamada = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([^)]*)\)/.exec(post.cuerpo);
   assert.ok(llamada, 'el cambio de contraseña no llama al portero');
   assert.equal(
-    (llamada[1] ?? '').trim(),
+    /* El tercer argumento —la pantalla— se descarta: lo que esta prueba mide es la CAPACIDAD.
+       Sin el recorte, el valor con nombre `NINGUNA` se leía como `'NINGUNA, SIN_SECCION'` y esta
+       comparación fallaba sobre una ruta correcta. Y una prueba que falla sobre lo correcto se
+       termina ignorando. */
+    (llamada[1] ?? '')
+      .replace(/,\s*(PANTALLA|SIN_SECCION)\s*,?\s*$/, '')
+      .trim(),
     'NINGUNA',
     'el cambio de contraseña exige una capacidad: encierra a quien no la tenga',
   );

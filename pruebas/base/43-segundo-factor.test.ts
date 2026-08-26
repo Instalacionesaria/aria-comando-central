@@ -26,6 +26,10 @@ import { conectar, cerrarTodo, unaFila } from '../apoyo/conexiones.ts';
 import { hashear, verificar as verificarHash } from '../../lib/datos/hash.ts';
 import { MINIMO_PASSWORD } from '../../lib/autenticacion/politica.ts';
 import { exigir } from '../../lib/autorizacion/portero.ts';
+/* Estas pruebas miden los pasos 1 a 5 del portero. El alcance por sección es el paso 6 y
+   se mide aparte, en `pruebas/base/31-alcance.test.ts`: acá se pasa `SIN_SECCION` para que
+   quede escrito que la sección no es lo que este archivo está midiendo. */
+import { SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { cifrar, claveMaestra, descifrar } from '../../lib/credenciales/cifrado.ts';
 import { codigoActual, DIGITOS, PERIODO_SEGUNDOS } from '../../lib/autenticacion/totp.ts';
@@ -440,6 +444,7 @@ test('ADR-0413 · cambiar la contraseña temporal deja la sesión USABLE, no a m
         headers: { cookie: `${COOKIE_SESION}=${token}` },
       }),
       ['usuarios.ver'],
+      SIN_SECCION,
     );
     assert.ok(
       !(contexto instanceof Response),

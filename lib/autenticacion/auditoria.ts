@@ -81,6 +81,12 @@ export type Accion =
   // porcentaje cambiado no deja ningún rastro de quién lo cambió — y es exactamente la clase de dato
   // sobre la que después alguien pregunta.
   | 'comision_configurada'
+  // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
+  //
+  // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
+  // `detalle->>'capacidad'` y acá **no hay capacidad que culpar** —la persona la tiene—. Meterlo ahí
+  // contaminaría *"la señal más subestimada"* con filas cuyo problema no es una capacidad.
+  | 'seccion_denegada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -129,6 +135,13 @@ export interface Detalle {
    * que es **qué** permiso le falta a qué rol.
    */
   capacidad?: string;
+  /**
+   * La sección que se negó, en `seccion_denegada`.
+   *
+   * Campo propio por lo mismo que la acción es propia: una señal que agrupe por sección contesta
+   * «¿a quién le falta qué pestaña?», que es otra pregunta que «¿a qué rol le falta qué capacidad?».
+   */
+  seccion?: string;
   /**
    * La organización a la que se cambió, en `organizacion_cambiada`.
    *

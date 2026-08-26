@@ -22,7 +22,7 @@ import { pipelineDelCloser } from '../../../../lib/negocio/pipeline.ts';
 export const PANTALLA = 'closer';
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['closer.ver']);
+  const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const pipeline = await conOrganizacion(contexto.orgEfectiva, () => pipelineDelCloser());

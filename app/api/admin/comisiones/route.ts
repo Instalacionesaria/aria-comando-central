@@ -49,7 +49,7 @@ const MOTIVOS: Record<string, string> = {
 };
 
 export async function GET(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['credenciales.ver']);
+  const contexto = await exigir(peticion, ['credenciales.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   const usuarios = await conOrganizacion(contexto.orgEfectiva, () => porcentajesDeLaEmpresa());
@@ -65,7 +65,7 @@ export async function GET(peticion: Request): Promise<Response> {
  * pista de quién la borró.
  */
 export async function PUT(peticion: Request): Promise<Response> {
-  const contexto = await exigir(peticion, ['credenciales.editar']);
+  const contexto = await exigir(peticion, ['credenciales.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
   let cuerpo: unknown;
