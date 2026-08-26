@@ -22,6 +22,7 @@ import IcpView from './views/IcpView';
 import ContactsView from './views/ContactsView';
 import SetterView from './views/SetterView';
 import CloserView from './views/CloserView';
+import ToolsView from './views/ToolsView';
 import AjustesView from './views/AjustesView';
 
 /* La vista de cada pantalla, por su clave.
@@ -41,6 +42,7 @@ const VISTAS = {
   sales: SalesView,
   setter: SetterView,
   closer: CloserView,
+  tools: ToolsView,
   credenciales: AjustesView,
 };
 

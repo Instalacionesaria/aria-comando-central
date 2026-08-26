@@ -137,6 +137,17 @@ export default function IconSprite() {
             strokeLinecap="round"
            />
         </symbol>
+        {/* Tools · una llave inglesa. `currentColor` como los demás: el color lo pone el
+            menú según si la entrada está activa, y un literal acá lo rompería. */}
+        <symbol id="i-tools" viewBox="0 0 16 16">
+          <path
+            d="M10.4 2.2a3.4 3.4 0 0 0-3.1 4.7L2.6 11.6a1.5 1.5 0 0 0 2.1 2.1l4.7-4.7a3.4 3.4 0 0 0 4.4-4.3l-2 2-1.9-.5-.5-1.9 2-2a3.4 3.4 0 0 0-1-.1Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinejoin="round"
+           />
+        </symbol>
         <symbol id="i-closer" viewBox="0 0 16 16">
           <path
             d="M3 9.4V8a5 5 0 0 1 10 0v1.4"

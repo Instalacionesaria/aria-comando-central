@@ -268,6 +268,30 @@ export const SECCIONES: readonly Seccion[] = [
     capacidadRequerida: 'closer.ver',
     menu: { grupo: 'Operación', icono: '#i-closer' },
   },
+  {
+    // ── Tools ──
+    //
+    // Nace VACÍA y con la bandera puesta: no tiene ninguna operación de servidor todavía. La
+    // pantalla lo dice con todas las letras en vez de mostrar tarjetas de maqueta — un
+    // marcador de posición que se parece a datos es el defecto que `ADR-0305` persigue, y acá
+    // sería peor que en las otras nueve, porque éstas vienen del prototipo y alguien podría
+    // reconocerlas como tales. Ésta no la reconoce nadie.
+    //
+    // `tablero.ver` como las demás pantallas sin operaciones, y eso ES una decisión: con esa
+    // capacidad la ven administrador y superadministrador, y NO la ven closer ni setter — el
+    // catálogo no se las da. Cuando Tools tenga contenido y se sepa quién debe verlo, puede
+    // necesitar una capacidad propia; el criterio para decidirlo está en el `03` § 2:
+    // "¿existe un rol plausible que necesite A y no B?".
+    //
+    // NO va en `scripts/paridad.mjs`: esa comparación es contra `aios-command-center_1.html`,
+    // y esta pantalla no existe en el prototipo. Compararla daría un rojo permanente, y un
+    // rojo permanente no se arregla — se ignora, y con él se ignoran los demás.
+    clave: 'tools',
+    nombre: 'Tools',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    menu: { grupo: 'Operación', icono: '#i-tools' },
+  },
 ];
 
 /**

@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ VIGILA ESTE ARCHIVO, Y POR QUÉ NINGUNA DE ESTAS COSAS FALLA SOLA
 //
-// Las siete herramientas son un PORT de ARIA-brain que comparte almacén con él. Todo lo que puede
+// Las nueve herramientas son un PORT de ARIA-brain que comparte almacén con él. Todo lo que puede
 // salir mal acá tiene la misma forma: **el documento se genera, se ve bien, y está construido sobre
 // nada**. Ninguno de estos defectos produce un error.
 //
@@ -42,22 +42,57 @@ import { SECCIONES, SIN_OPERACIONES_TODAVIA, seccionesVisibles } from '../../lib
 
 // ─── El contrato con ARIA-brain: los identificadores y las claves ───────────
 
-test('las siete herramientas son las siete del hub, en el ORDEN DEL MÉTODO', () => {
-  // El orden es el de `FOUNDATIONS_JOURNEY` de ARIA-brain, recortado a las siete primeras. NO es el
-  // orden de los identificadores, y esta lista literal es la que lo congela: sin ella, reordenar las
-  // pestañas "para que queden por número" pasaría desapercibido y dejaría a Categoría generando
-  // antes de que exista el avatar del que lee.
+test('las nueve herramientas son las nueve del hub, en el ORDEN DEL MÉTODO', () => {
+  // El orden es el de `FOUNDATIONS_JOURNEY` de ARIA-brain. NO es el orden de los identificadores, y
+  // esta lista literal es la que lo congela: sin ella, reordenar las pestañas "para que queden por
+  // número" pasaría desapercibido y dejaría a Categoría generando antes de que exista el avatar del
+  // que lee.
   assert.deepEqual(
     IDS_FUNDACIONES,
-    [0, 1, 3, 2, 4, 10, 26],
+    [0, 1, 3, 2, 4, 10, 26, 5, 6],
     'los identificadores son los del hub y el orden es el del método: Perfil, Research, ICP, ' +
-      'Categoría, Oferta, Pricing, Mapa',
+      'Categoría, Oferta, Pricing, Mapa, VSL, Landing',
   );
 
-  // Las dos que faltan para las nueve del hub quedan fuera A PROPÓSITO, y se nombran para que
-  // agregarlas sea una decisión: VSL(5) y Landing(6).
-  assert.equal(herramienta(5), undefined, 'VSL entró sin que nadie lo decidiera');
-  assert.equal(herramienta(6), undefined, 'Landing entró sin que nadie lo decidiera');
+  // ── ESTA AFIRMACIÓN ESTABA INVERTIDA, Y SE INVIERTE, NO SE BORRA ───────────
+  //
+  // Decía `assert.equal(herramienta(5), undefined)` con el motivo "VSL entró sin que nadie lo
+  // decidiera": las dos últimas del método quedaron fuera de la Etapa 9 y esa línea existía para
+  // que agregarlas fuera una decisión y no un accidente. Se decidió, y ahora la prueba custodia lo
+  // contrario — que no se caigan sin que nadie lo note.
+  assert.ok(herramienta(5), 'VSL(5) salió de las nueve');
+  assert.ok(herramienta(6), 'Landing(6) salió de las nueve');
+
+  // Los prefijos de campo del hub NO coinciden con el id de la herramienta, y esa rareza se
+  // congela: el VSL es la 5 y sus campos son `t6-`; la Landing es la 6 y el suyo es `t7-`.
+  // "Arreglarlo" cambiaría la clave con la que se guarda cada campo.
+  assert.ok(
+    camposDe(herramienta(5)!).every((c) => c.id.startsWith('t6-')),
+    'los campos del VSL son `t6-`, como en el hub',
+  );
+  assert.deepEqual(camposDe(herramienta(6)!).map((c) => c.id), ['t7-niche']);
+});
+
+test('los valores de las listas del VSL encienden las ramas del framework', () => {
+  // `vsl/killer-framework` no es una plantilla con huecos: tiene ramas. Los tres booleanos que las
+  // encienden se derivan mirando el PRINCIPIO del valor elegido, igual que el hub. Acortar un valor
+  // en `herramientas.ts` —"B2C" en vez de la frase entera— apaga la rama Y EL DOCUMENTO SALE IGUAL,
+  // escrito con el molde equivocado. Esto es lo que hace que ese cambio falle en vez de pasar.
+  const campos = new Map(camposDe(herramienta(5)!).map((c) => [c.id, c]));
+
+  const mercado = campos.get('t6-market')!;
+  assert.ok(mercado.opciones!.some((o) => o.valor.startsWith('B2C')), 'ninguna opción enciende _isB2C');
+  assert.ok(mercado.opciones!.some((o) => o.valor.startsWith('B2B')), 'falta la rama B2B');
+
+  const proof = campos.get('t6-socialproof')!;
+  assert.ok(proof.opciones!.some((o) => o.valor.startsWith('Sí')), 'ninguna opción enciende _hasProof');
+  assert.ok(proof.opciones!.some((o) => o.valor.startsWith('No')), 'ninguna opción enciende _noProof');
+
+  const formato = campos.get('t6-format')!;
+  assert.ok(
+    formato.opciones!.some((o) => o.valor.startsWith('Case study')),
+    'ninguna opción enciende _isScreenShare, que cambia el entregable entero',
+  );
 });
 
 test('las claves de persistencia son las que ya escribió el hub', () => {
@@ -72,6 +107,11 @@ test('las claves de persistencia son las que ya escribió el hub', () => {
     4: ['name', 'price', 'result', 'format', 'why', 'when', 'includes', 'urgency'],
     10: ['outcome', 'probability', 'problemcost', 'clientrevenue', 'delivery', 'goal', 'proof', 'pastresults'],
     26: ['caso', 'responsables'],
+    // El VSL guarda con prefijo `t6-` y la Landing con `t7-`, aunque sus ids sean 5 y 6. Las claves
+    // cortas que quedan son éstas, y son las del hub: si alguien "arregla" los prefijos para que
+    // coincidan con el id, esta lista deja de cuadrar y la prueba lo dice.
+    5: ['program', 'duration', 'promise', 'market', 'socialproof', 'format', 'story', 'obj'],
+    6: ['niche'],
   };
 
   for (const h of FUNDACIONES) {
@@ -109,9 +149,13 @@ test('ningún identificador de campo se repite entre herramientas', () => {
 
 // ─── Las metodologías: existen, y no hay suplente que las tape ──────────────
 
-test('las once metodologías existen y no están vacías', () => {
+test('las trece metodologías existen y no están vacías', () => {
   const todas = [...Object.values(METODOLOGIA), ...METODOLOGIA_RESEARCH];
-  assert.equal(todas.length, 11, 'cambió la cantidad de metodologías sin que nadie lo dijera');
+  // Once hasta que entraron VSL(5) y Landing(6). El número literal es lo que obliga a que sumar o
+  // quitar una metodología sea una decisión: los archivos entran al paquete construido por un glob
+  // de `outputFileTracingIncludes`, así que uno que falte NO rompe la construcción — rompe la
+  // generación en producción, con `metodologia_ilegible`, y solo para esa herramienta.
+  assert.equal(todas.length, 13, 'cambió la cantidad de metodologías sin que nadie lo dijera');
 
   for (const id of todas) {
     const plantilla = leerPlantilla(id);
@@ -122,7 +166,7 @@ test('las once metodologías existen y no están vacías', () => {
     assert.ok(plantilla.trim().length > 200, `${id} es sospechosamente corta`);
   }
 
-  // Las siete herramientas tienen la suya. Research usa las cinco de los pasos.
+  // Las nueve herramientas tienen la suya. Research usa las cinco de los pasos.
   for (const h of FUNDACIONES) {
     if (h.id === 1) continue;
     assert.ok(METODOLOGIA[h.id], `"${h.pestania}" no tiene metodología asignada`);
@@ -162,6 +206,18 @@ function estadoCompleto(): EstadoDeFundaciones {
     4: { name: 'Protocolo', price: '$4,000', result: '15 llamadas', format: 'DFY', why: 'cuello', when: '90 días', includes: 'todo', urgency: 'cupos' },
     10: { outcome: '$120k', probability: '60%', problemcost: '$8k', clientrevenue: '$40k', delivery: '$600', goal: '$30k', proof: '6 clientes', pastresults: '3 a 14' },
     26: { caso: 'Marcos', responsables: 'yo' },
+    5: {
+      program: 'ARIA IA Accelerator',
+      duration: 'medio',
+      promise: 'Lanza tu AI Firm en 90 días',
+      // Los valores LARGOS y no las etiquetas: son los que encienden las ramas del framework.
+      market: 'B2B — vendes a dueños de negocio / empresas (lenguaje directo, lógico, orientado a resultados)',
+      socialproof: 'Sí, tengo casos de éxito / testimonios / resultados probados con clientes reales',
+      format: 'Case study / screen share — proyectando Miro, Google Docs u otra pantalla mientras hablas',
+      story: 'Marcos pasó de 4 a 19 llamadas',
+      obj: 'no tengo tiempo',
+    },
+    6: { niche: 'agencias digitales' },
   };
   e.historial = {
     0: [{ date: 'hoy', output: 'PERFIL GENERADO' }],
@@ -170,6 +226,10 @@ function estadoCompleto(): EstadoDeFundaciones {
     4: [{ date: 'hoy', output: 'OFERTA GENERADA' }],
     10: [{ date: 'hoy', output: 'PRICING GENERADO' }],
     26: [{ date: 'hoy', output: 'MAPA GENERADO' }],
+    // El guion del VSL con sus DOS secciones de compromiso: es lo que la Landing copia en vez de
+    // inventar. Sin ellas, `formatearCompromisos` devuelve null y la landing toma la otra rama.
+    5: [{ date: 'hoy', output: '# Guion\n\n## Pasos y requisitos para aplicar\nFacturar $5k/mes\n\n## Cupos limitados\nSolo 8 por mes\n' }],
+    6: [{ date: 'hoy', output: 'PROMPT DE LANDING GENERADO' }],
   };
   e.researchInputs = { niche: 'agencias', buyers: '50,000+', ltv: '$3,000+', contract: '$1,000+', experience: 'consultor' };
   e.researchSalidas = ['PASO 1', 'PASO 2', 'PASO 3', 'PASO 4', 'PASO 5'];
@@ -304,7 +364,7 @@ test('los tres casos especiales de "paso completo" son los del hub', () => {
   assert.equal(pasoCompleto(soloLegado, 2), true, 'se perdió el entregable del chat viejo');
   assert.equal(fuentes(soloLegado).categoria.presente, true);
 
-  // Y el estado completo: los siete.
+  // Y el estado completo: los nueve.
   const completo = estadoCompleto();
   for (const h of FUNDACIONES) {
     assert.equal(pasoCompleto(completo, h.id), true, `"${h.pestania}" no contó con todo hecho`);
@@ -423,9 +483,16 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   );
   assert.ok(CAPACIDADES.includes('fundaciones.ver'));
   assert.ok(CAPACIDADES.includes('fundaciones.editar'));
-  // Las SIETE que siguen esperando su primera operación. Eran nueve hasta la Etapa 11, que se
-  // llevó `setter` y `closer` por el mismo camino que la 9 se llevó `icp`.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 7);
+  // Las OCHO que siguen esperando su primera operación.
+  //
+  // Eran nueve hasta la Etapa 11, que se llevó `setter` y `closer` por el mismo camino que la 9
+  // se llevó `icp` — y volvieron a ocho cuando entró `tools`, que nace sin ninguna operación.
+  //
+  // El número literal es el cable trampa: **el día que una de estas ocho reciba su primera
+  // operación de servidor, esta línea falla** y alguien tiene que bajarle la bandera
+  // `sinOperacionesTodavia` en `SECCIONES` en vez de dejar una pantalla que decide por
+  // capacidad figurando como si no decidiera nada. Derivarlo lo apagaría.
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 8);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {
