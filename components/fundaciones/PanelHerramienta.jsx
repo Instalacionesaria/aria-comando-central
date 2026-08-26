@@ -187,6 +187,30 @@ export default function PanelHerramienta({
                       placeholder={campo.marcador}
                       onChange={(e) => ponerCampo(campo.id, e.target.value)}
                     />
+                  ) : campo.tipo === 'lista' ? (
+                    /* El desplegable entró con el VSL, que tiene tres.
+                       ── POR QUÉ NO ES UN `input` CON SUGERENCIAS ──────────────────────
+                       Los valores de estas listas NO son etiquetas: son el texto que entra
+                       al prompt, y el `SKILL.md` del VSL deriva de ellos tres booleanos que
+                       encienden ramas enteras del framework (`_isB2C`, `_hasProof`,
+                       `_isScreenShare`). La derivación mira el principio de la cadena, así
+                       que un valor escrito a mano —"b2c", "si"— apaga la rama y el documento
+                       sale igual, con el molde equivocado. Un desplegable hace que solo
+                       existan los valores que el framework entiende. */
+                    <select
+                      id={campo.id}
+                      value={valores[campo.id] ?? campo.valorPorOmision ?? ''}
+                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                    >
+                      {/* Sin opción vacía inyectada: cuando la lista necesita una, viene en
+                          `opciones` con su propio texto (el `Selecciona…` de la prueba
+                          social). Agregar una acá dejaría dos vacíos en esa lista. */}
+                      {campo.opciones?.map((o) => (
+                        <option key={o.valor} value={o.valor}>
+                          {o.etiqueta}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       id={campo.id}

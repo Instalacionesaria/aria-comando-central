@@ -229,6 +229,7 @@
   color: var(--txt-dim);
 }
 .fd-campo input,
+.fd-campo select,
 .fd-campo textarea {
   font: inherit;
   font-size: 12.5px;
@@ -250,7 +251,29 @@
 .fd-campo textarea::placeholder {
   color: var(--txt-faint);
 }
+/* El desplegable entró con el VSL. Hereda la caja de `input` y agrega lo suyo: sin
+   `appearance: none` el navegador pinta su propio control, que en macOS ignora el fondo y
+   el borde y aparece un cuadro blanco en medio de la pantalla oscura. La flecha va como
+   imagen de fondo y NO como un carácter en un pseudo-elemento: un `::after` sobre un
+   `select` no se pinta en ningún navegador. Ni un color literal — `currentColor` en el SVG
+   sigue al token de texto, así que la flecha cambia sola con el tema. */
+.fd-campo select {
+  appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23ffffff' stroke-opacity='.55' stroke-width='1.5'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 11px;
+}
+/* Las opciones las pinta el sistema operativo, no esta hoja. Sin esto, en Windows el menú
+   abierto sale con texto claro sobre fondo claro. */
+.fd-campo select option {
+  background: var(--bg-sunk);
+  color: var(--txt);
+}
 .fd-campo input:focus,
+.fd-campo select:focus,
 .fd-campo textarea:focus {
   border-color: rgba(53, 224, 210, 0.4);
   box-shadow: 0 0 14px rgba(53, 224, 210, 0.08);

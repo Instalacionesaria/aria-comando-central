@@ -32,7 +32,15 @@ import { SIN_ESPECIFICAR } from './campos.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 
 /** Las fuentes que una herramienta puede heredar. Las claves son las del hub. */
-export type ClaveDeFuente = 'niche' | 'perfil' | 'icp' | 'categoria' | 'oferta' | 'pricing' | 'marketResearch';
+export type ClaveDeFuente =
+  | 'niche'
+  | 'perfil'
+  | 'icp'
+  | 'categoria'
+  | 'oferta'
+  | 'pricing'
+  | 'marketResearch'
+  | 'vsl';
 
 export interface Fuente {
   clave: ClaveDeFuente;
@@ -61,6 +69,7 @@ export function fuentes(estado: EstadoDeFundaciones): Record<ClaveDeFuente, Fuen
   const docIcp = ultimaVersion(estado, 3);
   const docOferta = ultimaVersion(estado, 4);
   const docPricing = ultimaVersion(estado, 10);
+  const docVsl = ultimaVersion(estado, 5);
   const docCategoria = ultimaVersion(estado, 2) ?? estado.categoriaLegado;
 
   const nicho =
@@ -133,6 +142,14 @@ export function fuentes(estado: EstadoDeFundaciones): Record<ClaveDeFuente, Fuen
       presente: !!docPricing,
       herramienta: 10,
     },
+    vsl: {
+      clave: 'vsl',
+      etiqueta: 'Tus videos',
+      resumen: 'Guion del VSL',
+      completo: docVsl ?? '',
+      presente: !!docVsl,
+      herramienta: 5,
+    },
   };
 }
 
@@ -151,6 +168,10 @@ export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFu
   4: ['niche', 'icp', 'categoria'],
   10: [],
   26: ['icp', 'categoria', 'oferta', 'pricing'],
+  5: ['icp', 'categoria', 'oferta', 'pricing'],
+  // La Landing es la que MÁS hereda: las cuatro del VSL más el guion. No es acumulación por
+  // acumulación — la página tiene que decir lo mismo que el video, y por eso el guion entra.
+  6: ['icp', 'categoria', 'oferta', 'pricing', 'vsl'],
 };
 
 /**
@@ -163,6 +184,14 @@ export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFu
 export const FUENTES_CRITICAS: Readonly<Record<number, readonly ClaveDeFuente[]>> = {
   4: ['icp', 'categoria'],
   26: ['icp', 'categoria', 'oferta', 'pricing'],
+  // El VSL sin avatar ni oferta se puede escribir, y sale genérico: el Pattern Interrupt no tiene
+  // el lenguaje del cliente y la sección del programa no tiene stack. Se avisa antes de gastar la
+  // generación, no se bloquea.
+  5: ['icp', 'oferta'],
+  // La Landing sin VSL es el caso que `compromisos.ts` documenta: la página inventa sus propios
+  // requisitos y cupos, y termina contradiciendo al video. Es la fuente crítica más importante de
+  // las cinco que hereda.
+  6: ['icp', 'oferta', 'vsl'],
 };
 
 /** Las fuentes críticas que faltan para esta herramienta. */

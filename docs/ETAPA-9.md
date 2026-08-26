@@ -12,7 +12,8 @@ tipo Base, que necesitan Postgres levantado (`npm run db:reset`).
 
 ## Qué se portó, y qué no
 
-Nueve herramientas tiene Foundations en ARIA-brain. Entraron **siete**:
+Nueve herramientas tiene Foundations en ARIA-brain. Entraron **siete**, y las dos que faltaban
+—VSL(`5`) y Landing(`6`)— **entraron después**; ver "Las nueve, completas" al final.
 
 | # | Pestaña | `id` del hub | Metodología | Forma |
 | --- | --- | --- | --- | --- |
@@ -33,8 +34,9 @@ Renumerarlos —"que queden 0..6, más ordenado"— no rompe nada visible. Rompe
 síntoma es un documento generado con el contexto de otra herramienta. Hay una prueba con la lista
 literal para que eso sea una decisión y no un accidente.
 
-**Las dos que faltan** son VSL (`5`) y Landing (`6`), las dos últimas del método. Están nombradas en
-la prueba: agregarlas requiere borrar dos afirmaciones, no solo agregar dos entradas.
+**Las dos que faltaban** eran VSL (`5`) y Landing (`6`), las dos últimas del método. Estaban
+nombradas en la prueba justamente para que agregarlas fuera una decisión — y se decidió. La prueba
+ahora custodia lo contrario: que no se caigan sin que nadie lo note.
 
 **Nada se borró de ARIA-brain.** El hub sigue completo y sigue siendo el sistema que los alumnos usan
 hoy. Esta etapa es un port que CONVIVE, no un reemplazo.
@@ -209,7 +211,6 @@ del cockpit del Closer, para no inventar una segunda gramática de pestañas.
 
 Nombrado, no escondido:
 
-- **VSL (`5`) y Landing (`6`)**, las dos últimas herramientas del método.
 - **Editar una fuente heredada solo para una herramienta.** El hub tiene `chipOverrides` —overrides
   en memoria, que se pierden al recargar—. Acá las fuentes son de solo lectura: se muestran, y se va
   a su herramienta para cambiarlas.
@@ -264,3 +265,43 @@ La llave de IA se carga por el camino que ya existe para las credenciales (cifra
 Sin el vínculo: `sin_alumno_vinculado`. Sin la llave: se puede ver todo, no se puede generar. Sin las
 variables del almacén: `almacen_no_disponible`. Los tres lo dicen, y ninguno se muestra como "no hay
 nada".
+
+
+## Las nueve, completas
+
+VSL (`5`) y Landing (`6`) entraron después de la entrega original. Con eso las nueve subpestañas de
+Foundations del hub existen en la pantalla `icp`, en el orden del método:
+
+    Perfil(0) → Research(1) → ICP(3) → Categoría(2) → Oferta(4) → Pricing(10) → Mapa(26) → VSL(5) → Landing(6)
+
+Lo que trajeron consigo, y que no estaba:
+
+**El desplegable.** `PanelHerramienta` solo sabía pintar campos de texto y áreas: el tipo `lista`
+estaba declarado en `herramientas.ts` y ninguna herramienta lo usaba. El VSL tiene tres, y **no son
+adorno**. Los valores de esas listas no son etiquetas: son el texto que entra al prompt, y
+`vsl/killer-framework` deriva de ellos tres booleanos que encienden ramas enteras del framework
+—`_isB2C` cambia el lenguaje y el cierre, `_hasProof` cambia en qué se apoya la credibilidad,
+`_isScreenShare` cambia el entregable de "un guion" a "un guion más un documento visual"—. La
+derivación mira el PRINCIPIO de la cadena (`'Sí'`, `'B2C'`, `'Case study'`), igual que el hub.
+
+Eso hace que acortar un valor —"B2C" en vez de la frase entera— apague una rama **y el documento
+salga igual**, escrito con el molde equivocado. Hay una prueba que lo custodia, y el comentario está
+en los tres archivos que participan.
+
+**Los prefijos de campo que no coinciden con el id.** El VSL es la herramienta `5` y sus campos son
+`t6-*`; la Landing es la `6` y el suyo es `t7-niche`. Así están en el hub, y `claveCorta()` guarda el
+identificador sin prefijo. "Arreglarlo" para que coincida no rompe nada visible y cambia la clave con
+la que se guarda cada campo: el mismo alumno vería el formulario en blanco en el otro sistema.
+
+**`compromisos.ts`**, que no tiene equivalente en las siete anteriores. La Landing es la única
+herramienta que hereda un documento *recortado a dos de sus secciones*: los requisitos para aplicar y
+los cupos del VSL. Es un puerto de `vslCommitments.ts` del hub, y su encabezado documenta el defecto
+que lo originó — la página hablaba de los mismos requisitos sin leer el VSL, y podía contradecirlo.
+La extracción es por encabezados de Markdown y es tolerante a propósito: el guion lo escribe un
+modelo y la redacción del título varía entre generaciones.
+
+**Y una fuente heredada nueva:** `vsl`. La Landing es la que más hereda de las nueve — las cuatro del
+Mapa más el guion.
+
+Las trece metodologías (once más las dos nuevas) entran al paquete construido por el glob de
+`outputFileTracingIncludes`; se verificó en el `.nft.json` de la ruta que genera, no se supuso.

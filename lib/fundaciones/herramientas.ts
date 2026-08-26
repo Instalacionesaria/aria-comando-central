@@ -1,4 +1,4 @@
-// Las siete herramientas de Fundaciones que viven dentro de la pantalla `icp` (ICP & Oferta).
+// Las nueve herramientas de Fundaciones que viven dentro de la pantalla `icp` (ICP & Oferta).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // DE DÓNDE VIENE ESTE ARCHIVO, Y QUÉ NO SE PUEDE CAMBIAR
@@ -15,9 +15,12 @@
 //
 // Por eso el orden del método y el orden de los identificadores NO COINCIDEN, igual que en el hub:
 //   Perfil(0) → Research(1) → ICP(3) → Categoría(2) → Oferta(4) → Pricing(10) → Mapa(26)
+//                                                        → VSL(5) → Landing(6)
 //
-// Las dos que faltan para las nueve del hub —VSL(5) y Landing(6)— quedan fuera a propósito: son
-// las dos últimas del método y no entran en esta entrega. Ver `docs/ETAPA-9.md`.
+// VSL(5) y Landing(6) entraron después: `docs/ETAPA-9.md` las dejó fuera de la primera entrega y
+// esta las agrega, con lo que las nueve del hub quedan completas. Van AL FINAL porque son las dos
+// últimas del método —la Landing hereda del VSL, que hereda de las cuatro anteriores—, no por
+// haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
@@ -372,8 +375,160 @@ const MAPA: Herramienta = {
   forma: 'generica',
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// VSL (5) y Landing (6) — las dos últimas del método
+//
+// Entraron después de las siete primeras. Dos cosas de sus campos que NO se pueden tocar:
+//
+//   1. **Los prefijos son `t6-` y `t7-`, y no coinciden con el id de la herramienta.** El VSL es
+//      la herramienta 5 y sus campos empiezan con `t6-`; la Landing es la 6 y su campo es
+//      `t7-niche`. Así están en el hub, y `claveCorta()` guarda el identificador SIN prefijo
+//      (`t6-program` → `program`). Renombrarlos a `t5-` "para que coincida" no rompe nada visible
+//      y cambia la clave guardada: el mismo alumno vería el campo en blanco en el otro sistema.
+//
+//   2. **Los VALORES de las tres listas del VSL son texto largo a propósito.** No son etiquetas:
+//      son lo que entra al prompt, y el `SKILL.md` de `vsl/killer-framework` deriva de ellos tres
+//      booleanos que encienden ramas enteras (`_isB2C`, `_hasProof`, `_isScreenShare`). Esa
+//      derivación mira el PRINCIPIO de la cadena — `'Sí'`, `'B2C'`, `'Case study'` — así que
+//      acortar un valor apaga una rama del framework sin que nada falle. Ver `prompts.ts`.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const VSL: Herramienta = {
+  id: 5,
+  clave: 'vsl',
+  pestania: 'Tus videos',
+  titulo: 'Tu video de ventas (VSL)',
+  bajada: 'El guion completo del video que convence y lleva a agendar la llamada.',
+  detalle:
+    'Usa el Killer VSL Framework con el protocolo de Belief Shifting y Process Selling. Distingue ' +
+    'B2B de B2C —cambian el lenguaje, la apertura y la llamada a la acción—, pregunta si tienes ' +
+    'prueba social para saber en qué apoyar la credibilidad, y el formato de grabación: a cámara ' +
+    'o compartiendo pantalla. Hereda tu avatar, tu categoría, tu oferta y tu precio si ya los ' +
+    'generaste.',
+  filas: [
+    {
+      columnas: 2,
+      campos: [
+        { id: 't6-program', etiqueta: '¿Cómo se llama tu programa?', tipo: 'texto', marcador: 'Ej: ARIA IA Accelerator' },
+        {
+          id: 't6-duration',
+          etiqueta: '¿Qué duración buscas?',
+          tipo: 'lista',
+          valorPorOmision: 'medio',
+          opciones: [
+            { valor: 'corto', etiqueta: 'Corto (5–8 min)' },
+            { valor: 'medio', etiqueta: 'Medio (12–18 min)' },
+            { valor: 'largo', etiqueta: 'Largo (25–35 min)' },
+          ],
+        },
+      ],
+    },
+    {
+      columnas: 1,
+      campos: [
+        { id: 't6-promise', etiqueta: 'La promesa grande', tipo: 'texto', marcador: 'Ej: Lanza tu AI Firm en 90 días' },
+      ],
+    },
+    {
+      columnas: 2,
+      campos: [
+        {
+          id: 't6-market',
+          etiqueta: '¿A quién le vendes?',
+          tipo: 'lista',
+          opciones: [
+            {
+              valor: 'B2B — vendes a dueños de negocio / empresas (lenguaje directo, lógico, orientado a resultados)',
+              etiqueta: 'B2B (vendes a negocios)',
+            },
+            {
+              valor: 'B2C — vendes a consumidor final (lenguaje emocional, entretenido, enfocado en transformación de vida)',
+              etiqueta: 'B2C (vendes a consumidor final)',
+            },
+          ],
+        },
+        {
+          id: 't6-socialproof',
+          etiqueta: '¿Tienes prueba social? (casos, testimonios, resultados)',
+          tipo: 'lista',
+          opciones: [
+            { valor: '', etiqueta: 'Selecciona…' },
+            {
+              valor: 'Sí, tengo casos de éxito / testimonios / resultados probados con clientes reales',
+              etiqueta: 'Sí, tengo prueba social',
+            },
+            {
+              valor: 'No, aún no tengo casos de éxito con clientes — solo mi propia experiencia con el método',
+              etiqueta: 'No, aún no tengo prueba social',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      columnas: 1,
+      campos: [
+        {
+          id: 't6-format',
+          etiqueta: '¿Cómo te sientes más cómodo grabando?',
+          tipo: 'lista',
+          opciones: [
+            {
+              valor: 'Case study / screen share — proyectando Miro, Google Docs u otra pantalla mientras hablas',
+              etiqueta: 'Compartiendo pantalla, estilo Loom (recomendado) — te doy el guion Y el documento',
+            },
+            {
+              valor: 'Raw talking-head — cámara directa, tú hablando de frente, sin pantalla compartida',
+              etiqueta: 'A cámara — tú hablando directo (solo el guion)',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      columnas: 1,
+      campos: [
+        { id: 't6-story', etiqueta: 'La historia de transformación que vas a contar', tipo: 'area', marcador: 'Un caso de éxito tuyo, o tu propia historia' },
+      ],
+    },
+    {
+      columnas: 1,
+      campos: [
+        { id: 't6-obj', etiqueta: '¿Qué objeciones tienes que refutar?', tipo: 'area', marcador: 'Ej: "no tengo tiempo", "ya lo intenté", "es muy caro"' },
+      ],
+    },
+  ],
+  etiquetaBoton: 'Redactar mi VSL',
+  etiquetaSalida: 'Guion del VSL',
+  forma: 'generica',
+};
+
+const LANDING: Herramienta = {
+  id: 6,
+  clave: 'landing',
+  pestania: 'Tu página',
+  titulo: 'Tu página',
+  bajada: 'El prompt listo para pegar en AI Studio y publicar la página donde agendan la llamada.',
+  detalle:
+    'Hereda TODO lo anterior: el avatar para el bloque de problema, la categoría para el titular y ' +
+    'el mecanismo, la oferta para la promesa, la garantía del precio para el FAQ — y el guion del ' +
+    'VSL, para que la página no prometa algo distinto del video. Los requisitos para aplicar y los ' +
+    'cupos se copian del VSL en vez de inventarse de nuevo.',
+  filas: [
+    {
+      columnas: 1,
+      campos: [
+        { id: 't7-niche', etiqueta: 'Tu nicho, en una línea', tipo: 'texto', marcador: 'Ej: dueñas de medspas que reciben consultas por WhatsApp' },
+      ],
+    },
+  ],
+  etiquetaBoton: 'Generar mi página',
+  etiquetaSalida: 'Prompt para AI Studio',
+  forma: 'generica',
+};
+
 /**
- * Las siete, **en el orden del método**. El componente pinta las subpestañas recorriendo esto.
+ * Las nueve, **en el orden del método**. El componente pinta las subpestañas recorriendo esto.
  *
  * El orden NO es el de los identificadores y no se reordena sin decidirlo: es la secuencia en la
  * que una herramienta hereda de las anteriores. Poner Categoría antes de ICP, por ejemplo, deja al
@@ -387,9 +542,11 @@ export const FUNDACIONES: readonly Herramienta[] = [
   OFERTA,
   PRICING,
   MAPA,
+  VSL,
+  LANDING,
 ];
 
-/** Los siete identificadores, para las comprobaciones y para recorrer sin buscar. */
+/** Los nueve identificadores, para las comprobaciones y para recorrer sin buscar. */
 export const IDS_FUNDACIONES: readonly number[] = FUNDACIONES.map((h) => h.id);
 
 /** La herramienta con ese identificador del hub, o `undefined`. */

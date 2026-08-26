@@ -22,6 +22,7 @@
 
 import { SIN_ESPECIFICAR, presente, valor } from './campos.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
+import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
 import { fuentes } from './herencia.ts';
 import { interpolar, leerPlantilla, type DatosDePlantilla } from './plantillas.ts';
 
@@ -33,6 +34,8 @@ export const METODOLOGIA: Readonly<Record<number, string>> = {
   4: 'oferta/irresistible',
   10: 'pricing/protocol',
   26: 'mapa-proceso/system',
+  5: 'vsl/killer-framework',
+  6: 'landing/vsl-ai-studio',
 };
 
 /** Las metodologías de los cinco pasos del Research, en orden. */
@@ -294,6 +297,157 @@ function datosDeMapa(valores: Record<string, string>, estado: EstadoDeFundacione
  * conversacional que el hub adapta a modo documento y al que le pega los datos al final. El
  * adaptador de abajo es parte de ese contrato y va literal.
  */
+/**
+ * Lo que el VSL hereda. Puerto del `DATA_GETTERS[5]` del hub.
+ *
+ * ── LOS TRES BOOLEANOS SON LA MITAD DE ESTA FUNCIÓN ──────────────────────────
+ *
+ * `vsl/killer-framework` no es una plantilla con huecos: tiene RAMAS. `{{#_isScreenShare}}` cambia
+ * el entregable entero —guion más documento visual, en vez de solo guion—, `{{^_hasProof}}` cambia
+ * en qué se apoya la credibilidad cuando el alumno todavía no tiene casos, y `{{#_isB2C}}` cambia
+ * el lenguaje, la apertura y el cierre.
+ *
+ * Los tres se derivan mirando el PRINCIPIO del valor de la lista, exactamente como el hub. Es
+ * frágil y se conserva igual a propósito: acortar un valor en `herramientas.ts` —"B2C" en vez de
+ * la frase entera— apaga una rama del framework y **el documento sale igual**, escrito con el
+ * molde equivocado. Por eso el comentario está en los dos archivos.
+ */
+function datosDeVsl(valores: Record<string, string>, estado: EstadoDeFundaciones): DatosDePlantilla {
+  const f = fuentes(estado);
+  const partes: string[] = [];
+
+  // El orden y las etiquetas son los del hub. Los `SKILL.md` fueron afinados contra estos textos:
+  // cambiar "AVATAR / TARJETA ESPEJO YA GENERADA" por "Avatar" cambia el documento que recibe el
+  // alumno, sin que nada falle.
+  if (f.icp.presente) {
+    partes.push(
+      'AVATAR / TARJETA ESPEJO YA GENERADA (usa su lenguaje exacto en el Pattern Interrupt y las ' +
+        'secciones de dolor; usa sus objeciones en la sección de objeciones; deriva de aquí las ' +
+        'creencias a instalar):\n' + f.icp.completo.slice(0, 3000),
+    );
+  }
+  if (f.categoria.presente) {
+    partes.push(
+      'CATEGORÍA ÚNICA / POSICIONAMIENTO YA DEFINIDO (el Mecanismo Único del VSL debe alinearse ' +
+        'con este reframe y llevar su nombre propio si ya existe; las afirmaciones provocadoras de ' +
+        'aquí son candidatas directas para el Pattern Interrupt y el Hook):\n' +
+        f.categoria.completo.slice(0, 2500),
+    );
+  }
+  if (f.oferta.presente) {
+    partes.push(
+      'OFERTA IRRESISTIBLE YA GENERADA (usa el stack de valor para la sección del programa y la ' +
+        'transición al CTA):\n' + f.oferta.completo.slice(0, 2500),
+    );
+  }
+  if (f.pricing.presente) {
+    // El recorte más chico de los cuatro, y la advertencia en mayúsculas: de acá solo se quiere la
+    // GARANTÍA. El precio no se menciona nunca — este embudo lleva a una llamada, no a una compra.
+    partes.push(
+      'GARANTÍA Y PRICING PROTOCOL YA CALCULADOS (usa la garantía condicional de aquí para la ' +
+        'sección de reducción de riesgo — NO reveles ninguna cifra de precio en el VSL, este es un ' +
+        'funnel de aplicación/llamada):\n' + f.pricing.completo.slice(0, 2000),
+    );
+  }
+
+  const proof = valor(valores, 't6-socialproof');
+  const formato = valor(valores, 't6-format');
+  const mercado = valor(valores, 't6-market');
+
+  return {
+    program: valor(valores, 't6-program'),
+    duration: valor(valores, 't6-duration'),
+    // El nicho sale del AVATAR y no de la ficha: es el nicho al que le habla el video.
+    icp: f.niche.presente ? f.niche.completo : SIN_ESPECIFICAR,
+    promise: valor(valores, 't6-promise'),
+    story: valor(valores, 't6-story'),
+    obj: valor(valores, 't6-obj'),
+    _crossContext: partes.length > 0 ? partes.join('\n\n') : null,
+    // Los tres booleanos. Ver el encabezado de esta función.
+    _hasProof: proof.startsWith('Sí'),
+    _noProof: proof.startsWith('No'),
+    _isScreenShare: formato.startsWith('Case study'),
+    _isB2C: mercado.startsWith('B2C'),
+    // Y los tres textos, para que el prompt pueda decir qué eligió el alumno aunque la rama no
+    // dependa de eso. `(no especificado)` es el valor del hub, no una cadena vacía: un hueco vacío
+    // en el prompt se lee como si el campo no existiera.
+    _marketTxt: mercado !== SIN_ESPECIFICAR ? mercado : 'B2B (por defecto)',
+    _socialproofTxt: proof,
+    _formatTxt: formato,
+  };
+}
+
+/**
+ * Lo que la Landing hereda. Puerto del `DATA_GETTERS[6]` del hub.
+ *
+ * Es la herramienta que MÁS hereda de todas: las cuatro fuentes del Mapa más el guion del VSL. Y
+ * el guion entra dos veces y por motivos distintos — una para la coherencia narrativa, y otra
+ * recortado a sus dos secciones de compromiso, que son la fuente de verdad de lo que la página
+ * puede pedir. Ver `compromisos.ts` para el defecto que eso previene.
+ */
+function datosDeLanding(valores: Record<string, string>, estado: EstadoDeFundaciones): DatosDePlantilla {
+  const f = fuentes(estado);
+  const partes: string[] = [];
+
+  const docPerfil = ultimaVersion(estado, 0);
+  if (docPerfil) {
+    partes.push('PERFIL DE CLIENTE (el negocio del alumno):\n' + docPerfil.slice(0, 1500));
+  }
+  if (f.icp.presente) {
+    partes.push(
+      'AVATAR / TARJETA ESPEJO YA GENERADA (usa su situación actual para el bloque PROBLEMA, su ' +
+        'situación deseada para el RESULTADO DESEADO, y sus objeciones para el FAQ; deriva de aquí ' +
+        'testimonios creíbles del nicho):\n' + f.icp.completo.slice(0, 3000),
+    );
+  }
+  if (f.categoria.presente) {
+    partes.push(
+      'CATEGORÍA ÚNICA / POSICIONAMIENTO (usa el nombre del Mecanismo Único como ' +
+        'SOLUCIÓN/MECANISMO, y su ángulo para la OFERTA PRINCIPAL y el titular):\n' +
+        f.categoria.completo.slice(0, 2500),
+    );
+  }
+  if (f.oferta.presente) {
+    partes.push(
+      'OFERTA IRRESISTIBLE YA GENERADA (extrae la PROMESA MACRO para la OFERTA PRINCIPAL; usa los ' +
+        'componentes del stack como base del ROADMAP en fases hacia el resultado, NO como lista de ' +
+        'features):\n' + f.oferta.completo.slice(0, 2500),
+    );
+  }
+  if (f.pricing.presente) {
+    partes.push(
+      'GARANTÍA / PRICING PROTOCOL (usa la garantía condicional para reducir riesgo en el FAQ — ' +
+        'NUNCA reveles ninguna cifra de precio en la landing; este es un funnel de ' +
+        'aplicación/llamada):\n' + f.pricing.completo.slice(0, 1500),
+    );
+  }
+
+  const guion = ultimaVersion(estado, 5);
+  if (guion) {
+    partes.push(
+      'GUIÓN DE VSL YA GENERADO (la landing acompaña este VSL — mantén coherencia de promesa, ' +
+        'mecanismo y CTA con este guión):\n' + guion.slice(0, 2000),
+    );
+  }
+
+  // El nicho, con la misma precedencia que el hub: el del avatar antes que el escrito acá. El campo
+  // del formulario es el último recurso, no el primero: si el alumno ya definió su avatar, el nicho
+  // de la página tiene que ser el mismo.
+  const nicho = f.niche.presente
+    ? f.niche.completo
+    : presente(valores, 't7-niche')
+      ? valor(valores, 't7-niche')
+      : SIN_ESPECIFICAR;
+
+  return {
+    niche: nicho,
+    _crossContext: partes.length > 0 ? partes.join('\n\n') : null,
+    // `null` cuando el VSL no existe o es a cámara: el `SKILL.md` tiene una rama entera para ese
+    // caso (`{{^_vslCommitments}}`), y ahí la página pide lo que corresponda sin contradecir nada.
+    _vslCommitments: guion ? formatearCompromisos(extraerCompromisos(guion)) : null,
+  };
+}
+
 function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoDeFundaciones): string {
   const f = fuentes(estado);
   const partes: string[] = [];
@@ -386,7 +540,11 @@ export function armarPrompt(
           ? datosDeOferta(valores, estado)
           : id === 10
             ? datosDePricing(valores, estado)
-            : datosDeMapa(valores, estado);
+            : id === 5
+              ? datosDeVsl(valores, estado)
+              : id === 6
+                ? datosDeLanding(valores, estado)
+                : datosDeMapa(valores, estado);
 
   return interpolar(plantilla, datos);
 }
