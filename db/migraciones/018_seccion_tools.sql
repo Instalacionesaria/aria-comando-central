@@ -30,7 +30,11 @@ alter table identidad.usuarios_secciones
     'executive', 'contacts', 'icp',
     'acquisition', 'creative', 'conversion', 'conversation', 'sales',
     'setter', 'closer',
-    -- La nueva. Su capacidad es `tablero.ver`, la misma que comparten las siete del tablero: otra
-    -- confirmación de que la restricción tenía que ser por SECCIÓN y no por capacidad.
+    -- La nueva. Nació compartiendo `tablero.ver` con las siete del tablero, y **para cuando esta
+    -- migración se aplicó en producción ya tenía `tools.ver` propia**: la primera herramienta le dio
+    -- operaciones de servidor el mismo día. Se deja escrito porque el cambio refuerza el motivo por
+    -- el que el alcance se lleva por SECCIÓN y no por capacidad — la capacidad de una pestaña puede
+    -- cambiar debajo, y una fila de alcance que nombrara `tablero.ver` habría empezado a conceder
+    -- otra cosa sin que nadie la tocara.
     'tools'
   ));
