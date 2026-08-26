@@ -104,6 +104,21 @@ grant insert on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
 -- rol del clúster ya podía leer y escribir el reparto entero.
 grant delete on identidad.roles_permisos to @ROL_DEL_CATALOGO@;
 
+-- ── Y `update` SOBRE `roles`, POR EL MISMO ARGUMENTO ─────────────────────────
+--
+-- Los roles se insertan con `on conflict do nothing`, así que ese `insert` solo sirve la primera
+-- vez: una BANDERA del rol —`solo_principal`, `exige_segundo_factor`, `secciones_restringidas`—
+-- nunca se podría cambiar sobre un rol que ya existe.
+--
+-- Es el mismo defecto que el `delete` de arriba cierra, un nivel más arriba: el archivo describiría
+-- un estado que no es el real. Y ya se pagó: la primera corrida del alcance por sección falló con
+-- «permission denied for table roles» **después** de que las migraciones se aplicaran, o sea con la
+-- tabla creada y el rol sin marcar — el peor punto para quedarse.
+--
+-- Con esto, el archivo afirma el estado completo de cada rol y converge al reejecutarlo. Y no
+-- ensancha nada alcanzable desde la red: `app_identidad` no recibe nada nuevo.
+grant update on identidad.roles to @ROL_DEL_CATALOGO@;
+
 -- Y `select`, que hace falta para las subconsultas del reparto.
 --
 -- Sin esto el modo de falla es el PEOR de todos y ya se pagó una vez en este repositorio:

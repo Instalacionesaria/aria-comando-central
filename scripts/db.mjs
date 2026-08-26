@@ -8,6 +8,7 @@
 //   node scripts/db.mjs bajar       el contenedor y su volumen
 //   node scripts/db.mjs arranque    los tres roles y sus rutas de búsqueda (superusuario)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
+//   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
@@ -180,37 +181,7 @@ async function arranque() {
 async function catalogo() {
   if (!process.env.DATABASE_URL_ADMIN) throw new Error('DATABASE_URL_ADMIN no está definida.');
 
-  // ── PRIMERO el privilegio, y lo otorga el DUEÑO ────────────────────────────
-  //
-  // `identidad.permisos` tiene el forzado de RLS, así que hacen falta DOS cosas para
-  // escribirla: privilegio de inserción y exención de las políticas. Están repartidas en
-  // dos roles distintos, y el único que puede otorgar es el dueño — `migrador`. El
-  // razonamiento completo está en `db/arranque/002_escritura_del_catalogo.sql`.
-  //
-  // En local esto es un no-op —el rol de arranque es superusuario de verdad y salta las
-  // dos comprobaciones— y se corre igual, a propósito: que el camino local y el de
-  // producción tengan la MISMA forma es lo que hace que `db:reset` pruebe este archivo. Un
-  // paso que solo existe en producción es un paso que nadie prueba.
-  if (!process.env.DATABASE_URL_MIGRADOR) throw new Error('DATABASE_URL_MIGRADOR no está definida.');
-  const rolDelCatalogo = decodeURIComponent(new URL(process.env.DATABASE_URL_ADMIN).username);
-  if (!rolDelCatalogo) throw new Error('DATABASE_URL_ADMIN no nombra un usuario.');
-
-  const dueno = new pg.Client({ connectionString: process.env.DATABASE_URL_MIGRADOR });
-  await dueno.connect();
-  try {
-    let permiso = readFileSync(
-      new URL('../db/arranque/002_escritura_del_catalogo.sql', import.meta.url),
-      'utf8',
-    ).replace(/\r\n/g, '\n');
-    // Como IDENTIFICADOR, no como literal: es un nombre de rol.
-    permiso = permiso.replaceAll('@ROL_DEL_CATALOGO@', dueno.escapeIdentifier(rolDelCatalogo));
-    const marcas = permiso.match(/@[A-Z_]+@/g);
-    if (marcas) throw new Error(`marcas sin reemplazar: ${[...new Set(marcas)].join(', ')}`);
-    await dueno.query(permiso);
-    console.log(`  privilegio de escritura del catálogo para \`${rolDelCatalogo}\``);
-  } finally {
-    await dueno.end();
-  }
+  await permisosDelCatalogo();
 
   const cliente = new pg.Client({ connectionString: process.env.DATABASE_URL_ADMIN });
   await cliente.connect();
@@ -288,6 +259,69 @@ async function retiro() {
     await identidad.end();
   }
 }
+
+/**
+ * Los privilegios que el rol del catálogo necesita para escribir `identidad.permisos`. **Los otorga
+ * el DUEÑO, `migrador`**, que es el único que puede otorgar.
+ *
+ * ── POR QUÉ ES UNA FASE SUELTA, IGUAL QUE `retiro` ───────────────────────────
+ *
+ * Por lo mismo que `retiro`: contra Supabase, `catalogo` no se puede correr —exige
+ * `DATABASE_URL_ADMIN`, que allá no existe a propósito— y este paso se quedaba sin camino. La
+ * secuencia contra producción es:
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs permisos-del-catalogo
+ *     node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql
+ *     node --env-file=.env.supabase scripts/db.mjs retiro
+ *
+ * Y hace falta de verdad, no en teoría: la primera corrida del alcance por sección contra producción
+ * falló con «permission denied for table roles» **después** de aplicar las migraciones — o sea con la
+ * tabla `usuarios_secciones` ya creada y el rol `usuario` todavía sin marcar, que es justo el punto
+ * en el que la funcionalidad queda inerte sin que nada dé error. La causa: `001_catalogo.sql` pasó a
+ * hacer `update` sobre `identidad.roles` —los roles se insertan con `on conflict do nothing`, así que
+ * una BANDERA de un rol que ya existe no se podría cambiar nunca— y el rol del catálogo solo tenía
+ * `insert`.
+ *
+ * Sigue corriendo dentro de `catalogo()` también, y eso no es duplicación: que el camino local y el
+ * de producción tengan la MISMA forma es lo que hace que `db:reset` pruebe este paso.
+ */
+async function permisosDelCatalogo() {
+  // ── PRIMERO el privilegio, y lo otorga el DUEÑO ────────────────────────────
+  //
+  // `identidad.permisos` tiene el forzado de RLS, así que hacen falta DOS cosas para
+  // escribirla: privilegio de inserción y exención de las políticas. Están repartidas en
+  // dos roles distintos, y el único que puede otorgar es el dueño — `migrador`. El
+  // razonamiento completo está en `db/arranque/002_escritura_del_catalogo.sql`.
+  //
+  // En local esto es un no-op —el rol de arranque es superusuario de verdad y salta las
+  // dos comprobaciones— y se corre igual, a propósito: que el camino local y el de
+  // producción tengan la MISMA forma es lo que hace que `db:reset` pruebe este archivo. Un
+  // paso que solo existe en producción es un paso que nadie prueba.
+  if (!process.env.DATABASE_URL_MIGRADOR) throw new Error('DATABASE_URL_MIGRADOR no está definida.');
+  /* Contra Supabase el rol del catálogo es `postgres` —así es como conecta la Management API— y no
+     hay cadena de conexión de la que deducirlo: la contraseña de ese rol no vive en ninguna máquina
+     de acá. Se nombra, y se dice por qué, en vez de exigir una variable que no puede existir. */
+  const rolDelCatalogo = process.env.DATABASE_URL_ADMIN
+    ? decodeURIComponent(new URL(process.env.DATABASE_URL_ADMIN).username)
+    : 'postgres';
+  if (!rolDelCatalogo) throw new Error('DATABASE_URL_ADMIN no nombra un usuario.');
+
+  const dueno = new pg.Client({ connectionString: process.env.DATABASE_URL_MIGRADOR });
+  await dueno.connect();
+  try {
+    let permiso = readFileSync(
+      new URL('../db/arranque/002_escritura_del_catalogo.sql', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+    // Como IDENTIFICADOR, no como literal: es un nombre de rol.
+    permiso = permiso.replaceAll('@ROL_DEL_CATALOGO@', dueno.escapeIdentifier(rolDelCatalogo));
+    const marcas = permiso.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`marcas sin reemplazar: ${[...new Set(marcas)].join(', ')}`);
+    await dueno.query(permiso);
+    console.log(`  privilegio de escritura del catálogo para \`${rolDelCatalogo}\``);
+  } finally {
+    await dueno.end();
+  }}
 
 async function migrar() {
   const { migrar: aplicar } = await import('../lib/datos/migrador.ts');
@@ -406,7 +440,17 @@ async function verificar() {
 // `retiro` está en la lista pero NO en `RESET`: `catalogo` ya la llama, y correrla dos veces
 // seguidas no rompe nada —es idempotente— pero repetir un paso en la secuencia hace creer que
 // hace falta dos veces. Se invoca sola contra Supabase, donde `catalogo` no puede correr.
-const FASES = { bajar, levantar, arranque, migrar, catalogo, retiro, sembrar, verificar };
+const FASES = {
+  bajar,
+  levantar,
+  arranque,
+  migrar,
+  catalogo,
+  'permisos-del-catalogo': permisosDelCatalogo,
+  retiro,
+  sembrar,
+  verificar,
+};
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
 const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'verificar'];
 

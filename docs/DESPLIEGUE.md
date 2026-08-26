@@ -118,15 +118,17 @@ decirlo porque el síntoma de saltearlo no es un error: la aplicación funciona 
 así que un rol nuevo simplemente no existe y nadie lo nota hasta que alguien intenta asignarlo.
 
 ```bash
+node --env-file=.env.supabase scripts/db.mjs permisos-del-catalogo
 node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql
 node --env-file=.env.supabase scripts/db.mjs retiro
 ```
 
-**Son dos comandos y no uno porque son dos roles distintos de la base, y ninguno de los dos puede
-hacer lo del otro:**
+**Son tres comandos y no uno porque son tres roles distintos de la base, y ninguno puede hacer lo del
+otro:**
 
 | Paso | Quién lo corre | Por qué no puede ser el otro |
 | --- | --- | --- |
+| Los privilegios (`002`) | `migrador`, por TCP | Solo el DUEÑO de la tabla puede otorgar sobre ella. |
 | El catálogo (`001`) | `postgres`, por la Management API | Hace falta omitir RLS **y** tener `INSERT`. `migrador` tiene lo segundo y no lo primero. |
 | El retiro (`003`) | `app_identidad`, por TCP | Es un problema de POLÍTICA, no de privilegio: nadie más tiene política sobre `identidad.usuarios_roles`. |
 
@@ -136,11 +138,27 @@ viejos dejando a su gente sin ninguno. Por eso `db.mjs retiro` existe como fase 
 vivía en la cabeza de quien despliega, y un paso que solo existe en producción es un paso que nadie
 prueba. Ahora corre en los dos lados — `catalogo` lo llama en local, y acá se lo invoca solo.
 
-`002_escritura_del_catalogo.sql` **no hace falta repetirlo**: otorga el `INSERT` a `postgres` una
-vez y el privilegio queda. Comprobado antes de correr, en lectura:
+### El primer paso decía «no hace falta repetirlo», y eso costó una corrida fallida
+
+Esta sección afirmaba que `002_escritura_del_catalogo.sql` se corría una vez y el privilegio quedaba.
+**Era falso, y el modo de falla es el peor de los posibles: a mitad de camino.** Al desplegar el
+alcance por sección, `001_catalogo.sql` pasó a hacer un `update` sobre `identidad.roles` —los roles se
+insertan con `on conflict do nothing`, así que una BANDERA de un rol que ya existe no se podría
+cambiar nunca de otra forma— y la corrida murió con **`permission denied for table roles`**
+**después** de aplicar las migraciones. O sea: con `identidad.usuarios_secciones` ya creada y el rol
+`usuario` todavía sin marcar, que es exactamente el estado en el que la funcionalidad queda inerte
+**sin que nada dé error**.
+
+La lección concreta: **`002` crece cada vez que el catálogo toca una tabla nueva**, así que corre
+siempre y primero. Por eso ahora es una fase con nombre —`permisos-del-catalogo`— y no un párrafo de
+este documento: un paso que vive en la cabeza de quien despliega es un paso que se saltea.
+
+Es idempotente (`grant` sobre lo ya otorgado no hace nada), así que repetirlo es gratis. Y comprobable
+antes de correr, en lectura:
 
 ```sql
 select has_table_privilege('postgres','identidad.permisos','INSERT');   -- true
+select has_table_privilege('postgres','identidad.roles','UPDATE');      -- true
 select rolbypassrls from pg_roles where rolname = 'postgres';           -- true
 ```
 
@@ -170,6 +188,28 @@ node --env-file=.env.supabase scripts/supabase.mjs leer "select (select count(*)
 
 Lo último es lo que hay que mirar: **`sin_rol` tiene que ser 0.** Un número mayor significa que el
 retiro corrió con el rol equivocado, y esa persona no puede entrar a ninguna pantalla.
+
+### Y la bandera del alcance, que es lo que el `002` desbloqueó
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer "select clave, secciones_restringidas from identidad.roles where org_id is null order by clave"
+```
+
+`usuario` tiene que decir **`true`**; los otros dos, `false`. Con `usuario` en `false` la migración
+017 está aplicada y la funcionalidad **no hace nada** — el transitorio seguro, y el que hay que saber
+distinguir de «ya está listo».
+
+**Corrido el 2026-08-26**, después del `002`: `usuario` en `true`, y **cero personas** con ese rol en
+producción, así que nadie se quedó sin pestañas. Eso hay que medirlo ANTES de dar el paso, porque
+`secciones_restringidas = true` con cero filas concedidas significa cero pestañas — falla cerrado a
+propósito:
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer "select r.clave as rol, count(*) filter (where (select count(*) from identidad.usuarios_secciones s where s.usuario_id = u.id) = 0) as sin_secciones from identidad.usuarios u join identidad.usuarios_roles ur on ur.usuario_id = u.id join identidad.roles r on r.id = ur.rol_id group by r.clave"
+```
+
+De la fila `usuario`, `sin_secciones` tiene que ser 0. Si no lo es, hay gente que puede entrar y no ve
+ninguna pantalla, y el alta nueva no lo arregla: hay que concederles las pestañas a mano.
 
 ---
 
