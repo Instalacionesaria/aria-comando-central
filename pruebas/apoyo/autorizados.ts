@@ -179,6 +179,15 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
   // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
   'app/api/contactos/[id]/avanzar/route.ts',
+  // Traer las citas del calendario. Mismo motivo para el token, y **no llama a `conOrganizacion(`
+  // en el manejador**: es una cáscara que delega en `lib/negocio/citas.ts`, que lo abre para cada
+  // una de sus escrituras. Estar acá lo exime también de `ADR-0202`, así que queda dicho dónde vive
+  // el contexto: en `barrerCitas(`, que recibe la organización por parámetro y nunca la deduce.
+  //
+  // La cáscara existe por lo mismo que la de la ingesta: el barrido hace diez llamadas contra un
+  // servicio ajeno, y sostener una transacción mientras tanto retendría una conexión del agrupador
+  // todo ese rato.
+  'app/api/closer/agenda/refrescar/route.ts',
   // El ciclo de ingesta. Mismo motivo para el token, y **no llama a `conOrganizacion(` en el
   // manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que lo abre para cada una
   // de sus tres transacciones cortas. Está acá por el token, y estar acá lo exime también de

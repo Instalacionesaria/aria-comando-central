@@ -39,6 +39,7 @@ import { mensajeDeDisparador, ok, rechazo } from '../../../../../lib/autorizacio
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { auditarAdministracion } from '../../../../../lib/autenticacion/auditoria.ts';
 import { loQueImpideBorrar } from '../../../../../lib/administracion/borrado.ts';
+import { esZonaValida } from '../../../../../lib/negocio/zonas.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,6 +48,9 @@ const MOTIVOS = {
   sin_cambios: 'No se mandó ningún campo para cambiar.',
   falta_nombre: 'La empresa necesita un nombre.',
   activa_invalida: 'El campo «activa» tiene que ser verdadero o falso.',
+  zona_invalida:
+    'Esa no es una zona horaria de la lista. Se elige del selector; escribirla a mano no sirve ' +
+    'porque el motor de fechas solo conoce los nombres del catálogo.',
 } as const;
 
 /**
@@ -71,7 +75,7 @@ export async function PATCH(
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { nombre?: unknown; activa?: unknown } | null;
+  const c = cuerpo as { nombre?: unknown; activa?: unknown; zonaHoraria?: unknown } | null;
   const nombre = c?.nombre;
   const activa = c?.activa;
 
@@ -86,7 +90,23 @@ export async function PATCH(
   // Un cuerpo sin ningún campo conocido se RECHAZA en vez de responder «editado». Es la misma
   // regla que las credenciales: un 200 sobre un cuerpo que no se entendió es un éxito reportado
   // que no ocurrió, y la pantalla diría «guardado» sin que nada cambiara.
-  if (nombre === undefined && activa === undefined) {
+  /* ── LA ZONA HORARIA, y este endpoint es el único lugar donde se puede arreglar ──
+   *
+   * Antes solo aceptaba el nombre y el estado, así que una empresa que nació sin zona **no tenía
+   * arreglo posible desde la aplicación**. Medido en producción: dos de tres empresas reales
+   * estaban en `UTC` por omisión, y con las citas del calendario en `-05:00` eso significa que toda
+   * cita de la tarde se dibujaba un día corrida. Sin ningún error.
+   *
+   * Se valida contra el catálogo y contra el motor de fechas: un nombre que `Intl` no conoce hace
+   * lanzar a cada pantalla que muestre una hora, y guardarlo convertiría un campo mal elegido en
+   * una pantalla caída.
+   */
+  const zonaHoraria = c?.zonaHoraria;
+  if (zonaHoraria !== undefined && !esZonaValida(zonaHoraria)) {
+    return rechazo('peticion_invalida', MOTIVOS['zona_invalida']);
+  }
+
+  if (nombre === undefined && activa === undefined && zonaHoraria === undefined) {
     return rechazo('peticion_invalida', MOTIVOS['sin_cambios']);
   }
 
@@ -98,6 +118,7 @@ export async function PATCH(
         .set({
           ...(typeof nombre === 'string' ? { nombre: nombre.trim() } : {}),
           ...(typeof activa === 'boolean' ? { activa } : {}),
+          ...(typeof zonaHoraria === 'string' ? { zona_horaria: zonaHoraria.trim() } : {}),
         })
         .where('id', '=', id)
         .executeTakeFirst();

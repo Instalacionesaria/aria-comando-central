@@ -42,6 +42,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { ZONAS } from '../../lib/negocio/zonas.ts';
 import Ventana from '../Ventana.jsx';
 
 const MOTIVOS = {
@@ -81,11 +82,23 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const [nombre, setNombre] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTocado, setSlugTocado] = useState(false);
+  /* La zona de la empresa. Arranca en la de ESTE navegador y no en UTC: quien crea la empresa casi
+     siempre está en la misma zona que su equipo, y `UTC` no significa «está en UTC» — significa
+     «nadie lo dijo». Ver `lib/negocio/zonas.ts`, donde está medido lo que ese silencio costaba. */
+  const [zona, setZona] = useState(() => {
+    try {
+      const propia = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return ZONAS.some((z) => z.valor === propia) ? propia : 'America/Lima';
+    } catch {
+      return 'America/Lima';
+    }
+  });
   const [creando, setCreando] = useState(false);
 
   // ── La edición ──
   const [editando, setEditando] = useState(null);
   const [edNombre, setEdNombre] = useState('');
+  const [edZona, setEdZona] = useState('UTC');
   const [ocupado, setOcupado] = useState(false);
   const [confirmaBorrado, setConfirmaBorrado] = useState(false);
 
@@ -130,7 +143,7 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setAviso(null);
     const r = await pedir('/api/admin/organizaciones', {
       metodo: 'POST',
-      cuerpo: { nombre: nombre.trim(), slug: elSlug },
+      cuerpo: { nombre: nombre.trim(), slug: elSlug, zonaHoraria: zona },
     });
     setCreando(false);
 
@@ -172,6 +185,10 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setConfirmaBorrado(false);
     setEditando(o);
     setEdNombre(o.nombre ?? '');
+    /* El valor GUARDADO, no el del navegador. En el alta se propone la zona de quien crea; acá
+       proponer otra cosa que lo guardado haría que abrir y guardar sin tocar nada cambiara la
+       zona de la empresa — un efecto que nadie pidió y que nada mostraría. */
+    setEdZona(o.zonaHoraria ?? 'UTC');
   };
   const cerrarEdicion = () => {
     setEditando(null);
@@ -184,7 +201,7 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setAviso(null);
     const r = await pedir(`/api/admin/organizaciones/${editando.id}`, {
       metodo: 'PATCH',
-      cuerpo: { nombre: edNombre.trim() },
+      cuerpo: { nombre: edNombre.trim(), zonaHoraria: edZona },
     });
     setOcupado(false);
     if (r.tipo !== 'datos') {
@@ -194,7 +211,7 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setAviso({ mal: false, texto: `Se guardó «${edNombre.trim()}».` });
     cerrarEdicion();
     await recargar();
-  }, [editando, edNombre, recargar]);
+  }, [editando, edNombre, edZona, recargar]);
 
   /** Activar, desactivar o borrar la empresa abierta. */
   const accion = useCallback(
@@ -299,6 +316,19 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
                   {o.nombre}
                   {o.esPrincipal ? <span className="tagx ag" style={{ marginLeft: 8 }}>Principal</span> : null}
                   {!o.activa ? <span className="tagx no" style={{ marginLeft: 8 }}>Desactivada</span> : null}
+                  {/* SIN ZONA se dice en la lista, no solo adentro del formulario. `UTC` es el valor
+                      por omisión de la columna, así que significa «nadie lo dijo» — y el efecto es que
+                      las citas de la tarde se dibujan un día corridas. Sin esta etiqueta había que abrir
+                      cada empresa de a una para enterarse. */}
+                  {o.zonaHoraria === 'UTC' ? (
+                    <span
+                      className="tagx venc"
+                      style={{ marginLeft: 8 }}
+                      title="Las horas se muestran en UTC. Si el equipo no trabaja en UTC, las citas de la tarde aparecen un día corridas. Se elige en Editar."
+                    >
+                      Sin zona horaria
+                    </span>
+                  ) : null}
                 </div>
                 <div className="rs">{o.slug}</div>
               </div>
@@ -366,6 +396,23 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
               />
             </div>
           </div>
+          <div className="fd-campo">
+            <label htmlFor="emp-zona">Zona horaria</label>
+            <select id="emp-zona" value={zona} onChange={(e) => setZona(e.target.value)}>
+              {ZONAS.map((z) => (
+                <option key={z.valor} value={z.valor}>
+                  {z.nombre}
+                </option>
+              ))}
+            </select>
+            {/* Se dice PARA QUÉ sirve. Un campo de configuración sin consecuencia visible se elige
+                al azar, y este decide qué día es «hoy» para toda la empresa. */}
+            <div className="aj-ayuda">
+              Decide qué es «hoy» y a qué hora se muestra cada cita. Si queda mal, las citas de la
+              tarde aparecen un día corridas — y nada lo avisa.
+            </div>
+          </div>
+
           {/* Se PROPONE a partir del nombre y se puede cambiar. Un slug generado sin mostrarlo
               es un dato que después aparece en una URL y nadie sabe de dónde salió. */}
           <div className="aj-ayuda">
@@ -412,6 +459,23 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
               onChange={(e) => setEdNombre(e.target.value)}
             />
           </div>
+          <div className="fd-campo">
+            <label htmlFor="ed-emp-zona">Zona horaria</label>
+            <select id="ed-emp-zona" value={edZona} onChange={(e) => setEdZona(e.target.value)}>
+              {ZONAS.map((z) => (
+                <option key={z.valor} value={z.valor}>
+                  {z.nombre}
+                </option>
+              ))}
+            </select>
+            {/* SE DICE LA CONSECUENCIA, no el nombre del campo. Esto decide qué día es «hoy» para
+                toda la empresa, y una zona equivocada no da error: corre las horas en silencio. */}
+            <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
+              Decide qué es «hoy» y a qué hora se muestra cada cita de la agenda. Si queda mal, las
+              citas de la tarde aparecen un día corridas — y nada lo avisa.
+            </div>
+          </div>
+
           <div className="aj-ayuda">
             El identificador corto <b>no se cambia</b>: va en direcciones, y cambiarlo rompería
             cualquier enlace que ya exista.

@@ -29,6 +29,19 @@ export interface OrganizacionListada {
    * plataforma necesita saber qué empresas están sin conectar, no ver sus secretos.
    */
   tieneCredencialDeCrm: boolean;
+  /**
+   * La zona horaria con la que se calcula «hoy» y se muestra cada hora.
+   *
+   * Viaja en el listado por dos motivos, y el segundo es el que importa. El primero es que el
+   * formulario de edición necesita el valor actual para no proponer uno distinto al guardado.
+   *
+   * El segundo: **la columna es `not null default 'UTC'`, así que una empresa que nunca la cargó
+   * no se distingue de una que eligió UTC a propósito.** Medido en producción, dos de tres
+   * empresas estaban así, y con las citas del calendario en `-05:00` eso corría toda cita de la
+   * tarde al día siguiente. Sin este dato en la lista, para enterarse había que abrir cada
+   * empresa de a una. Ver `lib/negocio/zonas.ts`.
+   */
+  zonaHoraria: string;
   /** Cuántos usuarios tiene. Una empresa sin usuarios es una empresa a la que nadie puede entrar. */
   usuarios: number;
   creadaEl: Date;
@@ -75,6 +88,7 @@ export async function listarOrganizaciones(db: Trx): Promise<OrganizacionListada
       'o.activa',
       'o.es_principal',
       'o.creada_el',
+      'o.zona_horaria',
       // `is not null`, no el valor. Ver el comentario de `tieneCredencialDeCrm`.
       eb('c.crm_token_cifrado', 'is not', null).as('tiene_credencial'),
       eb
@@ -97,6 +111,7 @@ export async function listarOrganizaciones(db: Trx): Promise<OrganizacionListada
     esPrincipal: f.es_principal,
     tieneCredencialDeCrm: Boolean(f.tiene_credencial),
     usuarios: Number(f.usuarios ?? 0),
+    zonaHoraria: f.zona_horaria,
     creadaEl: f.creada_el,
   }));
 }

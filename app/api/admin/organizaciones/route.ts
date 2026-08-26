@@ -30,6 +30,7 @@
 // de demostración termina en clientes que ven información que no es suya y no saben si es real."*
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { esZonaValida } from '../../../../lib/negocio/zonas.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -156,7 +157,10 @@ export async function POST(peticion: Request): Promise<Response> {
           // Los valores por defecto que el `05` § 2 dice que SÍ conviene poner. `es_principal`
           // NO se pasa: su valor por omisión es falso y el índice parcial
           // `organizaciones_una_principal` no dejaría una segunda.
-          ...(typeof zonaHoraria === 'string' ? { zona_horaria: zonaHoraria } : {}),
+          // Validada contra el catálogo: un nombre que `Intl` no conoce hace lanzar a cada
+          // pantalla que muestre una hora. Y si no viene, la columna pone `UTC` — que no
+          // significa «está en UTC» sino «nadie lo dijo». Ver `lib/negocio/zonas.ts`.
+          ...(esZonaValida(zonaHoraria) ? { zona_horaria: zonaHoraria } : {}),
         })
         .returning('id')
         .executeTakeFirstOrThrow();

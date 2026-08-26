@@ -35,6 +35,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import Pipeline from '../closer/Pipeline.jsx';
+import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
 import MiDia from '../closer/MiDia.jsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
@@ -51,23 +52,6 @@ const MOTIVOS = {
   organizacion_inactiva: 'Esta organización está desactivada.',
 };
 
-/** El cartel de lo que todavía no está. Dice QUÉ falta, no «próximamente». */
-function Falta({ titulo, detalle, puntos }) {
-  return (
-    <div className="empty">
-      <div className="e-ic">◇</div>
-      <div className="e-t">{titulo}</div>
-      <div className="e-d">{detalle}</div>
-      {puntos ? (
-        <ul>
-          {puntos.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
 
 export default function CloserView({ activa }) {
   /* Inicio arranca, como se pidió: el cockpit responde «¿cómo voy este mes?» y es lo primero
@@ -196,21 +180,7 @@ export default function CloserView({ activa }) {
     }
     if (sub === 'pipeline') return <Pipeline />;
 
-    return (
-      <Falta
-        titulo="La agenda necesita las citas de tu calendario"
-        detalle={
-          'Las citas se leen del calendario de tu subcuenta de GoHighLevel, y eso todavía no ' +
-          'está conectado. La etiqueta `cita_agendada` dice quién tiene cita —74 contactos— ' +
-          'pero no cuándo, así que no alcanza para dibujar un calendario.'
-        }
-        puntos={[
-          'Mini-calendario del mes y Próximos Días',
-          'La agenda del día, con el enlace de cada videollamada',
-          'Un botón para traer del CRM: una llamada por clic, nunca un reloj',
-        ]}
-      />
-    );
+    return <Agenda zonaHoraria={datos.zonaHoraria} />;
   }
 
   return (

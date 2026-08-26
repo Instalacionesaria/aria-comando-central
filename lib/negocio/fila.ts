@@ -37,6 +37,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { noCancelada } from './citas.ts';
 import { armarPildora, type Pildora } from './pildora.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
@@ -345,22 +346,34 @@ function conLosSeisIconos() {
       // Las etiquetas crudas. De acá salen tres de los seis íconos y la marca de estancado.
       'c.etiquetas',
 
-      // 📹 Reuniones que YA TUVO. `inicio_el < now()`, y las que no tienen fecha de inicio
-      // no cuentan: una cita sin inicio no es una reunión que ocurrió.
+      /* 📹 Reuniones que YA TUVO. `inicio_el < now()`, y las que no tienen fecha de inicio
+         no cuentan: una cita sin inicio no es una reunión que ocurrió.
+
+         ── Y SIN LAS CANCELADAS, que es un arreglo y no un detalle ──
+         El primer barrido real lo dejó a la vista: **411 de 1052 citas están canceladas, el 39 %**.
+         Contarlas acá hacía que este ícono —el que el closer mira ANTES de llamar, para saber si ya
+         habló con esta persona— dijera que hubo reuniones que nadie tuvo. Y no había forma de
+         notarlo: el número se veía plausible.
+
+         El filtro es `noCancelada()`, la MISMA definición que usa la cola de Mi Día. */
       eb
         .selectFrom('citas')
         .whereRef('citas.contacto_id', '=', 'c.id')
         .where('citas.inicio_el', '<', sql<Date>`now()`)
+        .where(noCancelada('citas.estado_ghl'))
         .select(({ fn }) => fn.countAll<string>().as('n'))
         .as('reuniones_tenidas'),
 
-      // 📅 ¿Cita futura? `exists`, no un conteo: el ícono dice sí o no.
+      // 📅 ¿Cita futura? `exists`, no un conteo: el ícono dice sí o no. Sin canceladas por lo
+      // mismo, y acá el efecto es peor: una cita cancelada encendía el ícono de «tiene cita
+      // agendada», que es justo el motivo por el que alguien decide NO llamar.
       eb
         .exists(
           eb
             .selectFrom('citas')
             .whereRef('citas.contacto_id', '=', 'c.id')
             .where('citas.inicio_el', '>=', sql<Date>`now()`)
+            .where(noCancelada('citas.estado_ghl'))
             .select(sql`1`.as('x')),
         )
         .as('cita_futura'),

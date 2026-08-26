@@ -55,6 +55,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
+import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import Avanzar from './Avanzar.jsx';
 import { SeisIconos } from './Fila.jsx';
@@ -106,32 +107,34 @@ function iniciales(nombre) {
 }
 
 /** La hora de un mensaje, en la zona de quien mira. */
-function hora(iso, zona) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  try {
-    // La zona de la EMPRESA, igual que los separadores de día. Si la hora y el separador usaran
-    // zonas distintas, un mensaje podría quedar bajo «AYER» con una hora de hoy.
-    return new Intl.DateTimeFormat('es', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: zona,
-    }).format(d);
-  } catch {
-    return d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-  }
-}
 
-/** «hace 2 h», para el historial y las notas. */
+/**
+ * «hace 2 h» / «en 3 h», para el historial y las notas.
+ *
+ * ── EL FUTURO NO ESTABA, Y APARECIÓ CUANDO ARREGLAMOS EL HISTORIAL ─────────
+ *
+ * Esta función restaba y listo, porque todo lo que le llegaba era pasado: notas, resultados y —hasta
+ * hace un rato— las citas por su fecha de COPIA. Desde que el historial ubica cada cita por cuándo
+ * ES, una cita de mañana llega acá con un instante futuro: la resta salía negativa, `Math.round` la
+ * dejaba en cero o menos, y el rótulo decía **«ahora» para una cita de dentro de 29 horas**.
+ *
+ * Se vio en el navegador con datos de prueba. No daba error, y la línea se leía perfectamente
+ * plausible — que es exactamente el modo de falla que este proyecto persigue.
+ *
+ * Se resuelve con el signo, no con un caso especial: la magnitud es la misma y sólo cambia la
+ * preposición. Y el umbral de «ahora» se aplica al VALOR ABSOLUTO, porque un minuto para adelante
+ * también es ahora.
+ */
 function hace(iso) {
   const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.round(ms / 60000);
+  const futuro = ms < 0;
+  const min = Math.round(Math.abs(ms) / 60000);
+  const decir = (cantidad, unidad) => (futuro ? `en ${cantidad} ${unidad}` : `hace ${cantidad} ${unidad}`);
   if (min < 1) return 'ahora';
-  if (min < 60) return `hace ${min} min`;
+  if (min < 60) return decir(min, 'min');
   const h = Math.round(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  return `hace ${Math.round(h / 24)} d`;
+  if (h < 24) return decir(h, 'h');
+  return decir(Math.round(h / 24), 'd');
 }
 
 /** El aviso de lo que falta medir. NO es un error: es un hecho sobre el sistema. */
@@ -175,7 +178,7 @@ function Burbuja({ m, zona }) {
           la burbuja en rojo solo dice que algo salió mal. */}
       {rechazado && m.falloDelCanal ? <span className="msgw-falla">{m.falloDelCanal}</span> : null}
       <span className="t">
-        {hora(m.enviadoEl, zona)}
+        {horaEnZona(m.enviadoEl, zona)}
         {m.autor === 'agente' ? ' · agente' : null}
         {saliente ? <EstadoDeEnvio m={m} /> : null}
       </span>

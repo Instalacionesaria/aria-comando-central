@@ -30,6 +30,7 @@
 
 import { useState } from 'react';
 import Fila, { SeisIconos } from '../negocio/Fila.jsx';
+import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
 
 /** Las cinco colas, en el orden fijo del `01`. */
@@ -68,16 +69,10 @@ const CASO = {
   automatico_en_curso: { texto: 'Serie automática corriendo', clase: 'nu' },
 };
 
-/** La hora de una cita, en la zona de la ORGANIZACIÓN y no la del navegador. */
-function hora(iso, zona) {
-  if (!iso) return '—';
-  return new Intl.DateTimeFormat('es', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: zona,
-  }).format(new Date(iso));
-}
+/* La hora ya no se calcula acá: `horaEnZona` de `lib/negocio/tiempo.ts` es la ÚNICA definición de
+   toda la aplicación. El documento de la Agenda nombra el defecto que eso cierra — *"cuando cada
+   pantalla la calculaba por su cuenta, dos vitrinas mostraban horas distintas para la misma
+   cita"*—, y este archivo era una de las dos. */
 
 /** Una fila de la Agenda: la hora, el estado, la sala y los seis íconos. */
 function FilaDeAgenda({ item, zona }) {
@@ -85,7 +80,7 @@ function FilaDeAgenda({ item, zona }) {
   return (
     <div className="md-r">
       <span className="md-time" style={c.vencida ? { color: 'var(--crit)' } : undefined}>
-        {hora(c.inicioEl, zona)}
+        {horaEnZona(c.inicioEl, zona)}
       </span>
       <div>
         <div className="md-nm">
@@ -159,7 +154,7 @@ export default function MiDia({ colas, zonaHoraria }) {
           </div>
           <div className="md-s">
             {colas.agenda[0]?.cita
-              ? `próxima a las ${hora(colas.agenda[0].cita.inicioEl, zonaHoraria)}`
+              ? `próxima a las ${horaEnZona(colas.agenda[0].cita.inicioEl, zonaHoraria)}`
               : 'sin citas leídas'}
           </div>
         </div>

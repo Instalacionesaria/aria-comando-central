@@ -397,7 +397,12 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
     })),
     ...citas.map((c) => ({
       id: `cita:${c.id}`,
-      cuando: c.creado_el,
+      /* LA HORA DE LA CITA, no la de la copia.
+         Era `creado_el`, que es cuándo el barrido la trajo — y el barrido trae todo junto: las 43
+         filas del primer barrido real quedaron con el mismo `creado_el` al minuto. El historial
+         ordenaba por el orden en que copiamos, que no es un hecho del contacto sino de nuestro
+         proceso, y con eso una cita de hace dos semanas aparecía arriba de una nota de ayer. */
+      cuando: c.inicio_el,
       titulo: c.titulo ?? 'Cita agendada',
       // El estado viene crudo del CRM y se muestra crudo: es el vocabulario de ellos, y
       // traducirlo haría que el día que cambie nadie entienda qué pasó.

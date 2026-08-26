@@ -31,6 +31,8 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { porQueNoHayCitasHoy } from './agenda.ts';
+import { noCancelada } from './citas.ts';
 import { filasDeTerritorio, type Fila } from './fila.ts';
 import { estadoDelAgente, SEGUIMIENTO_AUTOMATICO } from '../ghl/contrato.ts';
 
@@ -181,18 +183,25 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     // SERVIDOR, que no es la de nadie.
     .where('inicio_el', '>=', sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`)
     .where('inicio_el', '<', sql<Date>`(date_trunc('day', timezone(${zonaHoraria}, now())) + interval '1 day') at time zone ${zonaHoraria}`)
-    // Las canceladas se excluyen en la CONSULTA. El estado lo pone GoHighLevel y es texto libre,
-    // así que se compara sin distinguir caja.
-    .where((eb) =>
-      eb.or([
-        eb('estado_ghl', 'is', null),
-        eb(sql<string>`lower(estado_ghl)`, 'not in', ['cancelled', 'canceled', 'cancelada']),
-      ]),
-    )
+    /* Las canceladas se excluyen en la CONSULTA, y el filtro es `noCancelada()` —la misma
+       definición que usan los íconos 📹 y 📅 de la fila—. Antes esta lista estaba escrita a mano acá
+       y en ningún lado allá: los íconos contaban las canceladas y esta cola no, así que la misma
+       cita estaba y no estaba según dónde se la mirara. */
+    .where(noCancelada('estado_ghl'))
     .orderBy('inicio_el', 'asc')
     .execute();
 
-  const ahora = Date.now();
+  /* ── EL MISMO RELOJ QUE LA CONSULTA, Y ANTES ERAN DOS ──────────────────────
+   *
+   * Esto era `Date.now()`, el reloj de la aplicación, mientras la ventana de arriba y los íconos de
+   * `fila.ts` usan `now()`, el de la base. Son dos procesos distintos y no están sincronizados: la
+   * misma cita podía estar vencida acá y pendiente en su ícono.
+   *
+   * Se trae de la base y funciona por una propiedad que conviene nombrar: **`now()` devuelve el
+   * instante en que empezó la TRANSACCIÓN**, no el de cada sentencia. Como `conOrganizacion()`
+   * envuelve todo esto en una, es literalmente el mismo instante que ya usó la consulta. */
+  const reloj = await datos().selectNoFrom(sql<Date>`now()`.as('ahora')).executeTakeFirstOrThrow();
+  const ahora = reloj.ahora.getTime();
   for (const c of citas) {
     const fila = porId.get(c.contacto_id);
     // Sin el contacto en la caché no hay fila que dibujar. No se inventa una: el `03` pide
@@ -213,11 +222,17 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
   resultado.agenda.sort((a, b) => Number(a.cita?.vencida) - Number(b.cita?.vencida));
 
   if (citas.length === 0) {
-    // Vacía porque falta la fuente, no porque no haya citas. Son dos hechos distintos: con 74
-    // contactos que tienen la etiqueta `cita_agendada`, decir "no tenés citas hoy" sería falso.
-    resultado.faltantes.agenda =
-      'Las citas se leen del calendario de GoHighLevel, y eso todavía no está conectado. ' +
-      'La etiqueta `cita_agendada` dice QUIÉN tiene cita, pero no cuándo.';
+    /* ── ESTE TEXTO DECÍA UNA MENTIRA, Y LA VOLVIÓ MENTIRA ESTE MISMO TRABAJO ──
+     *
+     * Decía *"las citas se leen del calendario de GoHighLevel, y eso todavía no está conectado"*.
+     * Era cierto cuando se escribió; desde que existe el barrido, **un día tranquilo se reporta como
+     * una integración rota**. Y con el 39 % de canceladas medido, un día cuyas citas están todas
+     * canceladas cae acá también.
+     *
+     * Ahora lo contesta `porQueNoHayCitasHoy()`, que mira el pulso del barrido: nunca corrió, corrió
+     * a medias, o corrió completo y entonces el cero está medido. Un mensaje de falta que sobrevive
+     * a lo que describe es peor que no tenerlo — enseña a no creerle a los demás. */
+    resultado.faltantes.agenda = await porQueNoHayCitasHoy(zonaHoraria);
   }
 
   // ── Cola 3 · BUZÓN ────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { FamiliaDeEntrega } from '../ghl/entrega.ts';
+import { diaEnZona, etiquetaDeDia } from './tiempo.ts';
 
 /**
  * Lo mínimo que la fusión necesita saber de un mensaje. El componente pasa los suyos enteros.
@@ -111,79 +112,16 @@ function clave(cuerpo: string | null): string {
 }
 
 // ─── Los separadores de día ─────────────────────────────────────────────────
-
-/**
- * El día calendario de un instante, **en la zona de la organización**.
- *
- * No es un detalle: un mensaje de las 22:00 en Lima son las 03:00 del día siguiente en UTC. Sin la
- * zona, el separador diría un día distinto del que ve la persona que escribió el mensaje.
- *
- * Se arma con `formatToParts` y no con un `toLocaleDateString` de una configuración regional que dé
- * `YYYY-MM-DD` por casualidad: el formato de salida de una configuración regional no es un contrato.
- */
-export function diaEnZona(instante: Date | string, zona: string): string {
-  const d = instante instanceof Date ? instante : new Date(instante);
-  if (Number.isNaN(d.getTime())) return '';
-  let partes;
-  try {
-    partes = new Intl.DateTimeFormat('en-US', {
-      timeZone: zona,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(d);
-  } catch {
-    // Una zona inválida no puede tirar abajo el chat: se cae a UTC, que al menos es un día real.
-    partes = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(d);
-  }
-  const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? '';
-  return `${de('year')}-${de('month')}-${de('day')}`;
-}
-
-/**
- * La etiqueta del separador de día, estilo WhatsApp.
- *
- * ── EL DEFECTO QUE ARREGLA ──────────────────────────────────────────────────
- *
- * El chat tenía **un «HOY» escrito a mano** arriba de todo y ningún separador más, así que una
- * conversación de varios días se veía como un bloque continuo donde solo cambia la hora:
- *
- *     19:14  Gracias los veo mañana
- *     08:09  Ya lo vi              ← parece que retrocede en el tiempo
- *
- * Los mensajes estaban en orden y con su hora correcta. Lo que faltaba era decir que ahí cambió el
- * día: **sin eso, el orden correcto se lee como desorden.**
- */
-export function etiquetaDeDia(fecha: string, hoy: string): string {
-  if (fecha === hoy) return 'HOY';
-  if (fecha === sumarDias(hoy, -1)) return 'AYER';
-
-  // `T12:00` y no medianoche: a las 00:00 un desfase de zona de pocas horas cae en el día anterior,
-  // y el separador diría un día menos que el mensaje que encabeza.
-  const d = new Date(`${fecha}T12:00:00Z`);
-  if (Number.isNaN(d.getTime())) return fecha; // fecha ilegible: se muestra cruda, no se inventa
-  return new Intl.DateTimeFormat('es', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-    .format(d)
-    .toUpperCase();
-}
-
-/** Suma días a un `YYYY-MM-DD` sin arrastrar la zona del navegador. */
-function sumarDias(iso: string, delta: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  if (Number.isNaN(d.getTime())) return '';
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
+//
+// `diaEnZona` y `etiquetaDeDia` VIVÍAN ACÁ y se mudaron a `lib/negocio/tiempo.ts`. El motivo es el
+// defecto que el documento de la Agenda ya había pagado: *"cuando cada pantalla la calculaba por su
+// cuenta, dos vitrinas mostraban horas distintas para la misma cita"*. Con la Agenda serían tres
+// definiciones del mismo día; ahora hay una.
+//
+// Se re-exportan para no romper a quien ya las importaba de acá, y porque el defecto que arreglaron
+// —días distintos pegados sin separador, «el orden correcto leído como desorden»— se explica en el
+// archivo nuevo.
+export { diaEnZona, etiquetaDeDia } from './tiempo.ts';
 
 /** Un renglón de la lista que se dibuja: o un separador, o un mensaje. */
 export type RenglonDeChat<T> =

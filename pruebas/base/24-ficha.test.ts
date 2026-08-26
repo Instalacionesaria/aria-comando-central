@@ -366,6 +366,42 @@ test('una nota se guarda con su autor y se lee en la ficha', async () => {
   assert.equal(r.falta, null);
 });
 
+test('el historial ubica una cita por CUÁNDO ES, no por cuándo la copiamos', async () => {
+  // LA MUTACIÓN QUE SOBREVIVIÓ, y el defecto era real: el historial usaba `creado_el` de la cita, que
+  // es cuándo el barrido la trajo. Y el barrido trae todo junto: **las 43 filas del primer barrido
+  // real quedaron con el mismo `creado_el` al minuto**, así que el historial ordenaba por el orden en
+  // que copiamos —un hecho de nuestro proceso, no del contacto—.
+  //
+  // Se prueba con una cita VIEJA insertada ahora: si el historial ordenara por la copia, la cita de
+  // hace un mes aparecería arriba de la nota de hace una semana.
+  const id = await contactoEn(alfa);
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('citas')
+      .values({
+        contacto_id: id,
+        ghl_evento_id: `ev-${randomUUID()}`,
+        inicio_el: new Date(Date.now() - 30 * 86_400_000),
+        titulo: 'La cita vieja',
+      } as never)
+      .execute();
+    await datos()
+      .insertInto('notas')
+      .values({ contacto_id: id, cuerpo: 'La nota de después' } as never)
+      .execute();
+  });
+
+  const h = await conOrganizacion(alfa, () => historialDeLaFicha(id));
+  assert.equal(h.filas.length, 2);
+  assert.equal(h.filas[0]?.titulo, 'Nota', 'la nota es más reciente que una cita de hace un mes');
+  assert.equal(h.filas[1]?.titulo, 'La cita vieja');
+  // Y la fecha que se muestra es la de la cita, no la de la copia: son un mes de diferencia.
+  const cuando = h.filas[1]?.cuando;
+  assert.ok(cuando);
+  const diasAtras = (Date.now() - new Date(cuando).getTime()) / 86_400_000;
+  assert.ok(diasAtras > 25, `la cita quedó fechada hace ${Math.round(diasAtras)} días, no hace un mes`);
+});
+
 test('sin notas el vacío es un hecho medido, no una pieza que falta', async () => {
   await limpiar();
   const id = await contactoEn(alfa);

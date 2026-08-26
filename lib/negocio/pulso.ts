@@ -48,8 +48,20 @@
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 
-/** Qué se está ingiriendo. Hoy hay una sola, y es una columna para que mañana haya más. */
-export type ClaveDePulso = 'mensajes';
+/**
+ * Qué se está ingiriendo. Cada clave tiene su propio candado, su propia marca y su propio coste.
+ *
+ * ── SON DOS Y NO UNA, Y LA RAZÓN ES EL COSTE ───────────────────────────────
+ *
+ * `mensajes` cuesta 1 llamada en régimen y crece con la ACTIVIDAD: si nadie escribe, no cuesta más.
+ * `citas` cuesta 10 —una por calendario, medido— y **no crece con la cantidad de citas**: crece con
+ * la cantidad de calendarios.
+ *
+ * Con una sola clave las dos compartirían el antirrebote, y la que corriera primero bloquearía a la
+ * otra: la agenda se barrería a la cadencia del chat —seis veces por minuto— para un dato que
+ * cambia cuando alguien agenda.
+ */
+export type ClaveDePulso = 'mensajes' | 'citas';
 
 /**
  * El antirrebote. **El candado impide corridas simultáneas, no seguidas**: sin esto, dos pestañas
