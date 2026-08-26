@@ -350,3 +350,43 @@ export async function contactoPorId(
   if (!c || typeof c !== 'object') return { tipo: 'datos', datos: null };
   return { tipo: 'datos', datos: c as ContactoDeGhl };
 }
+
+/**
+ * Le pone etiquetas a un contacto. **Suma, no reemplaza.**
+ *
+ * ── LA ÚNICA ESCRITURA AL CRM DE TODO EL SISTEMA ────────────────────────────
+ *
+ * Todo lo demás lee. Esto escribe, y por eso lleva su propia advertencia: el endpoint AGREGA a las
+ * que el contacto ya tiene. Es lo correcto y es lo que el contrato pide —*"escribir un resultado
+ * nuevo no borra los anteriores"*, porque un contacto puede haber sido no-show en junio y venta en
+ * julio, y las dos cosas ocurrieron—.
+ *
+ * ── LO QUE ESTA FUNCIÓN NO PUEDE COMPROBAR, Y HAY QUE SABERLO ───────────────
+ *
+ * Que la etiqueta EXISTA en la subcuenta. Una que no existe se acepta con un 200 y no hace nada:
+ * es el defecto que el encabezado de `contrato.ts` llama el más caro de su lista, *"porque es
+ * invisible"*. La defensa es `sePuedeMandar()` y va **antes** de llamar acá — no adentro, porque
+ * esta función es el transporte y esa es una decisión de negocio.
+ *
+ * Devolver éxito acá significa «el CRM aceptó la petición», nunca «la etiqueta quedó puesta».
+ */
+export async function ponerEtiquetas(
+  acceso: { token: string },
+  ghlContactId: string,
+  etiquetas: readonly string[],
+): Promise<ResultadoDeGhl<{ puestas: number }>> {
+  // Una lista vacía NO se manda: sería una petición que no puede lograr nada, y el proveedor
+  // podría contestar un 400 que se leería como un fallo real.
+  if (etiquetas.length === 0) return { tipo: 'datos', datos: { puestas: 0 } };
+
+  const r = await pedirExterno<unknown>(
+    `${BASE}/contacts/${encodeURIComponent(ghlContactId)}/tags`,
+    {
+      metodo: 'POST',
+      cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS),
+      cuerpo: { tags: [...etiquetas] },
+    },
+  );
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+  return { tipo: 'datos', datos: { puestas: etiquetas.length } };
+}

@@ -34,6 +34,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import Pipeline from '../closer/Pipeline.jsx';
 import Inicio from '../closer/Inicio.jsx';
 import MiDia from '../closer/MiDia.jsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
@@ -193,24 +194,8 @@ export default function CloserView({ activa }) {
     if (sub === 'dia') {
       return <MiDia colas={datos.colas} zonaHoraria={datos.zonaHoraria} />;
     }
-    if (sub === 'pipeline') {
-      return (
-        <Falta
-          titulo="El pipeline necesita la etapa de cada contacto"
-          detalle={
-            'Las siete columnas se arman de la etapa, y la etapa vive en la base propia: la ' +
-            'pone Avanzar, que todavía no existe. Para los contactos que nunca recibieron un ' +
-            'Avanzar se deduce de las etiquetas de desenlace, y hoy solo dos de los 124 tienen ' +
-            'alguna.'
-          }
-          puntos={[
-            'Agendado · Seguimiento · Cierre en curso · Ganado · No-show · Nurture · Descalificado',
-            'Cada columna con su conteo, aunque esté vacía',
-            'Los congelados se ven, atenuados y con su explicación',
-          ]}
-        />
-      );
-    }
+    if (sub === 'pipeline') return <Pipeline />;
+
     return (
       <Falta
         titulo="La agenda necesita las citas de tu calendario"

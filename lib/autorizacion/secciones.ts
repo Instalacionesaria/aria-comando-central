@@ -363,6 +363,14 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/contactos/[id]/perfil/route.ts',
   'app/api/contactos/[id]/historial/route.ts',
   'app/api/contactos/[id]/notas/route.ts',
+  // Avanzar. Va acá por el mismo motivo que la ficha entera: se abre desde las tres pantallas del
+  // closer, desde las del setter y desde la auditoría, así que declarar `PANTALLA = 'closer'`
+  // afirmaría que es de una pestaña. Y no muestra nada — es una mutación.
+  //
+  // Pide `contactos.avanzar`, que es su propia capacidad y está catalogada: el `03` § 2 separa
+  // MIRAR una ficha de REGISTRAR un resultado a propósito, porque existe un rol plausible que
+  // necesite lo primero y no lo segundo.
+  'app/api/contactos/[id]/avanzar/route.ts',
   // El ciclo de ingesta de mensajes. No lo abre una pantalla: lo pide un reloj, y lo va a pedir
   // también una tarea programada. No muestra nada, así que el defecto que `ADR-0304` previene
   // —una pantalla con secciones en blanco— no lo puede producir.

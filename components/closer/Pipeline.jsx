@@ -1,0 +1,164 @@
+'use client';
+
+/* El Pipeline del closer: las siete columnas.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * UNA COLUMNA VACÍA SE DIBUJA IGUAL, CON SU CERO
+ *
+ * Es la única regla de esta pantalla que hay que defender, porque la tentación contraria es fuerte:
+ * siete columnas de las que cinco están vacías se ven mal. Pero una columna que desaparece cuando
+ * está vacía **hace que nadie note que está vacía**, y `Ganado 0` es una afirmación mientras que un
+ * Ganado ausente es una pregunta que nadie se hace.
+ *
+ * ── Y SE DICE DE DÓNDE SALIÓ CADA CLASIFICACIÓN ─────────────────────────────
+ *
+ * Mientras la mayoría esté clasificada por sus etiquetas del CRM y no por un Avanzar, las columnas
+ * describen lo que el CRM etiquetó, no lo que alguien registró. Eso no es un defecto —es el estado
+ * real hoy, con 239 contactos y los primeros resultados recién entrando— pero **el número no puede
+ * parecer más firme de lo que es**. El servidor lo cuenta y esto lo muestra.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { pedir } from '../../lib/http/cliente.ts';
+import Ficha from '../negocio/Ficha.jsx';
+import { SeisIconos } from '../negocio/Fila.jsx';
+
+export default function Pipeline() {
+  const [datos, setDatos] = useState(null);
+  const [situacion, setSituacion] = useState('cargando');
+  const [causa, setCausa] = useState(null);
+  const [abierta, setAbierta] = useState(null);
+  const yaPedido = useRef(false);
+
+  const cargar = useCallback(async () => {
+    const r = await pedir('/api/closer/pipeline');
+    if (r.tipo !== 'datos') {
+      /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»: con
+         una sola rama, alguien sin `closer.ver` vería siete columnas en cero y creería que no tiene
+         contactos. */
+      setCausa(
+        r.tipo === 'rechazado'
+          ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
+          : 'No se pudo contactar al servidor. No es que no tengas contactos: no se pudo preguntar.',
+      );
+      setSituacion(r.tipo);
+      return;
+    }
+    setDatos(r.datos);
+    setSituacion('listo');
+  }, []);
+
+  useEffect(() => {
+    if (yaPedido.current) return;
+    yaPedido.current = true;
+    void cargar();
+  }, [cargar]);
+
+  /* Se recarga al cerrar la ficha, y no siempre: registrar un resultado ahí adentro mueve al
+     contacto de columna, y dejar el tablero como estaba mostraría el contacto en la columna vieja
+     justo después de haberlo movido. */
+  const cerrarFicha = useCallback(() => {
+    setAbierta(null);
+    yaPedido.current = false;
+    void cargar();
+  }, [cargar]);
+
+  if (situacion === 'cargando') {
+    return (
+      <div className="fd-aviso">
+        <i>◍</i>
+        <span>Cargando el pipeline…</span>
+      </div>
+    );
+  }
+  if (situacion !== 'listo') {
+    return (
+      <div className="aj-fila">
+        <div className="fd-aviso mal">
+          <i>◍</i>
+          <span>{causa}</span>
+        </div>
+        <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  const c = datos.clasificados;
+
+  return (
+    <>
+      {/* DE DÓNDE SALE LA CLASIFICACIÓN. Ver el encabezado. */}
+      <div className={`fd-aviso ${c.porResultado > 0 ? '' : 'falta'}`}>
+        <i>◍</i>
+        <span>
+          <b>{datos.total}</b> contacto(s) en el territorio.{' '}
+          {c.porResultado > 0 ? (
+            <>
+              <b>{c.porResultado}</b> con un resultado registrado en Avanzar
+            </>
+          ) : (
+            <>
+              <b>Ninguno</b> tiene todavía un resultado registrado en Avanzar
+            </>
+          )}
+          {c.porEtiqueta > 0 ? `, ${c.porEtiqueta} clasificado(s) por sus etiquetas del CRM` : ''}
+          {c.sinNada > 0 ? `, ${c.sinNada} sin nada todavía` : ''}.
+          {c.porResultado === 0
+            ? ' Las columnas describen lo que el CRM etiquetó, no lo que alguien registró.'
+            : ''}
+        </span>
+      </div>
+
+      {/* EL AVISO DE TRUNCADO. Un tablero que muestra una parte y parece mostrar el todo es el peor
+          resultado posible de una lista con tope: los conteos se leerían como los reales. */}
+      {datos.hayMas ? (
+        <div className="fd-aviso falta">
+          <i>⚠</i>
+          <span>
+            Esto es una parte del territorio: se alcanzó el tope de la consulta, así que los
+            conteos de abajo están incompletos.
+          </span>
+        </div>
+      ) : null}
+
+      <div className="pipe">
+        {datos.columnas.map((col) => (
+          <div className="pipe-col" key={col.clave}>
+            <div className="pipe-h">
+              <span className="pipe-n">{col.nombre}</span>
+              <span className="pipe-c">{col.cuantos}</span>
+            </div>
+            <div className="pipe-b">
+              {col.filas.length === 0 ? (
+                /* Vacía CON SU MOTIVO, no en blanco. Una columna en blanco se lee como un error
+                   de carga; «Nadie acá» dice que se miró y no hay. */
+                <div className="pipe-vacia">Nadie acá.</div>
+              ) : (
+                col.filas.map((f) => (
+                  <button
+                    type="button"
+                    className="pipe-t"
+                    key={f.id}
+                    onClick={() => setAbierta(f.id)}
+                  >
+                    <span className="pipe-nm">{f.nombre}</span>
+                    {f.pildora ? (
+                      <span className={`tagx ${f.pildora.clase}`}>{f.pildora.texto}</span>
+                    ) : null}
+                    <SeisIconos iconos={f.iconos} />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* La ficha se abre DONDE se la invoca y nunca navega: al cerrarla se vuelve al mismo
+          tablero, en la misma posición. Ver `components/negocio/Ficha.jsx`. */}
+      {abierta ? <Ficha contactoId={abierta} alCerrar={cerrarFicha} /> : null}
+    </>
+  );
+}

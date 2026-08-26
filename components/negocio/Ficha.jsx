@@ -41,12 +41,14 @@
  * Y no negocia con nadie: leer mensajes es **cero llamadas al CRM**. Lo que cuesta —la ingesta—
  * tiene su propio ciclo, su propio candado y su propio presupuesto.
  *
- * ── LO QUE TODAVÍA NO SE DIBUJA, Y NO ES UN OLVIDO ──────────────────────────
+ * ── AVANZAR ES EL CONTROL MÁS IMPORTANTE DE ESTA PANTALLA ──────────────────
  *
- * **El botón «Avanzar →» no está.** Existe en el CSS y en el prototipo, y llega en su bloque.
- * Dibujarlo ahora sería exactamente lo que este repositorio quitó dos veces —el «Reportar un
- * problema» de la barra superior, los seis botones del menú de cuenta— con el criterio que quedó
- * escrito: **un control que parece funcionar y no hace nada es peor que su ausencia.**
+ * Y no por gusto: de él salen los números de Inicio, las siete columnas del Pipeline y la píldora
+ * de cada fila. Sin él las tres cosas están en cero o vacías, y ninguna tiene otra fuente.
+ *
+ * Está en el ENCABEZADO y no al pie del chat: se registra un resultado igual después de una llamada
+ * que después de una conversación escrita, así que colgarlo de una pestaña lo escondería en la
+ * mitad de los casos.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -54,6 +56,7 @@ import { pedir } from '../../lib/http/cliente.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import Avanzar from './Avanzar.jsx';
 import { SeisIconos } from './Fila.jsx';
 
 /* Los seis íconos se importan de `Fila.jsx` y NO se copian.
@@ -210,6 +213,8 @@ export default function Ficha({ contactoId, alCerrar }) {
   /** La ventana de 24 horas, tal como la calculó el SERVIDOR. `null` = todavía no se sabe. */
   const [ventana, setVentana] = useState(null);
   const [borrador, setBorrador] = useState('');
+  const [avanzando, setAvanzando] = useState(false);
+  const [loRegistrado, setLoRegistrado] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [avisoEnvio, setAvisoEnvio] = useState(null);
 
@@ -272,30 +277,30 @@ export default function Ficha({ contactoId, alCerrar }) {
   );
 
   /* El contacto. Se pide UNA vez por apertura, y esa petición refresca sus etiquetas contra el CRM
-     — es la única llamada que cuesta abrir la ficha. */
-  useEffect(() => {
-    let vigente = true;
-    setSituacion('cargando');
-    void (async () => {
-      const r = await pedir(`/api/contactos/${contactoId}`);
-      if (!vigente) return;
-      if (r.tipo !== 'datos') {
-        setCausa(
-          r.tipo === 'rechazado'
-            ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
-            : 'No se pudo contactar al servidor.',
-        );
-        setSituacion(r.tipo);
-        return;
-      }
-      setContacto(r.datos.contacto);
-      setRefresco(r.datos.refresco);
-      setSituacion('listo');
-    })();
-    return () => {
-      vigente = false;
-    };
+     — es la única llamada que cuesta abrir la ficha.
+     Está en su propia función y no dentro del efecto porque Avanzar la vuelve a llamar: registrar un
+     resultado cambia la píldora y los seis íconos, y dejarlos con lo de antes mostraría el resultado
+     nuevo con la píldora vieja, las dos cosas en la misma pantalla contradiciéndose. */
+  const cargarContacto = useCallback(async () => {
+    const r = await pedir(`/api/contactos/${contactoId}`);
+    if (r.tipo !== 'datos') {
+      setCausa(
+        r.tipo === 'rechazado'
+          ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
+          : 'No se pudo contactar al servidor.',
+      );
+      setSituacion(r.tipo);
+      return;
+    }
+    setContacto(r.datos.contacto);
+    setRefresco(r.datos.refresco);
+    setSituacion('listo');
   }, [contactoId]);
+
+  useEffect(() => {
+    setSituacion('cargando');
+    void cargarContacto();
+  }, [cargarContacto]);
 
   /* Cada pestaña se pide AL ABRIRLA, no al abrir la ficha. El `02` § 4: traer las cinco de una
      serían cuatro llamadas para pantallas que nadie va a mirar.
@@ -710,11 +715,20 @@ export default function Ficha({ contactoId, alCerrar }) {
             </div>
             {/* El enlace al CRM solo si se sabe a dónde. Con `enlaceCrm` nulo el botón NO se
                 dibuja, en vez de llevar a una página que no es la de este contacto. */}
+            {/* AVANZAR primero y a la derecha: es la acción de la pantalla, no una más. */}
+            <button
+              type="button"
+              className="fd-btn"
+              style={{ marginLeft: 'auto' }}
+              disabled={situacion !== 'listo'}
+              onClick={() => setAvanzando(true)}
+            >
+              Avanzar →
+            </button>
             {refresco?.enlaceCrm ? (
               <button
                 type="button"
                 className="cw-pin"
-                style={{ marginLeft: 'auto' }}
                 onClick={() => window.open(refresco.enlaceCrm, '_blank', 'noopener')}
               >
                 ↗ Ver en GHL
@@ -728,7 +742,6 @@ export default function Ficha({ contactoId, alCerrar }) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') alCerrar?.();
               }}
-              style={refresco?.enlaceCrm ? undefined : { marginLeft: 'auto' }}
             >
               ✕
             </span>
@@ -785,6 +798,24 @@ export default function Ficha({ contactoId, alCerrar }) {
         {/* EL COMPOSITOR, solo en la pestaña del chat. En las otras cuatro no se dibuja: un cuadro
             de texto debajo del historial de llamadas invitaría a escribir algo que no va a ningún
             lado. */}
+        {/* ── LO QUE SE REGISTRÓ, Y LO QUE PASÓ CON EL CRM ─────────────────────
+            El resultado quedó guardado y la ficha ya se refrescó. Lo que puede haber quedado a
+            medias es el aviso al CRM, y eso se dice aparte: mientras no llegue, el CRM **no
+            disparó sus automatismos** —la secuencia de recuperación de un no-show, por ejemplo—.
+            Colapsarlo en «listo» sería reportar un éxito a medias como completo. */}
+        {loRegistrado ? (
+          <div className={`fd-aviso ${loRegistrado.crm?.avisado ? 'bien' : 'falta'} cw-cerrada`}>
+            <i>{loRegistrado.crm?.avisado ? '✓' : '◍'}</i>
+            <span>
+              Registrado. El contacto pasó a <b>{loRegistrado.etapa}</b>.
+              {loRegistrado.tarea ? ' Se creó la tarea de seguimiento.' : ''}
+              {loRegistrado.crm?.avisado
+                ? ''
+                : ` Falta avisarle a GoHighLevel: ${loRegistrado.crm?.porque ?? 'no se pudo.'}`}
+            </span>
+          </div>
+        ) : null}
+
         {situacion === 'listo' && activa === 'chat' ? (
           <Compositor
             ventana={ventana}
@@ -796,6 +827,26 @@ export default function Ficha({ contactoId, alCerrar }) {
                       />
         ) : null}
       </aside>
+
+      {avanzando ? (
+        <Avanzar
+          contactoId={contactoId}
+          nombre={contacto?.nombre}
+          alCerrar={() => setAvanzando(false)}
+          alRegistrar={(lo) => {
+            setLoRegistrado(lo);
+            /* Se recarga el contacto: la píldora del encabezado y los seis íconos salen del
+               servidor, y dejarlos con lo de antes mostraría un resultado registrado con la
+               píldora vieja — las dos cosas en la misma pantalla, contradiciéndose. */
+            void cargarContacto();
+            /* Y el chat, porque la nota del resultado también aparece en el historial. */
+            setPestanas((antes) => {
+              const { historial, notas, ...resto } = antes;
+              return resto;
+            });
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -176,6 +176,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de
   // arriba, y escribe la fila del mensaje por `conOrganizacion(` y la política de fila.
   'app/api/contactos/[id]/mensajes/route.ts',
+  // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
+  // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
+  'app/api/contactos/[id]/avanzar/route.ts',
   // El ciclo de ingesta. Mismo motivo para el token, y **no llama a `conOrganizacion(` en el
   // manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que lo abre para cada una
   // de sus tres transacciones cortas. Está acá por el token, y estar acá lo exime también de
@@ -297,6 +300,19 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // pierde en el medio es la atribución a la persona que lo escribió — la fila reconstruida dice
   // `agente` en vez de su nombre.
   'app/api/contactos/[id]/mensajes/route.ts',
+  // Avanzar: escribe el resultado por el inquilino y le avisa al CRM por identidad.
+  //
+  // ── EL ORDEN ES LA RESPUESTA A ESTA PREGUNTA ────────────────────────────────
+  //
+  // Qué queda a medias si la segunda mitad falla: **el CRM no disparó sus automatismos**. El
+  // resultado está registrado, los números de Inicio ya lo cuentan y el contacto ya se movió de
+  // columna; lo único que falta es el aviso. Se puede reintentar, y **la respuesta lo dice** en su
+  // propio campo `crm` en vez de colapsarlo en el éxito general.
+  //
+  // Al revés —CRM primero— un fallo de la base dejaría al CRM disparando flujos por un resultado
+  // que acá no existe: nadie sabría que pasó, no habría fila que reintentar, y no se repara solo.
+  // Por eso el orden no es preferencia, y está escrito en el encabezado del manejador.
+  'app/api/contactos/[id]/avanzar/route.ts',
 ];
 
 /**
