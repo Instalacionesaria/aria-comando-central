@@ -331,6 +331,26 @@ export interface TablaMensajes {
  * y quien más gana su candado hoy es el reloj del navegador cada 10 segundos — así que un pulso
  * fresco no distingue «el cron se disparó» de «alguien tenía la pestaña abierta».
  */
+/**
+ * La comisión de una persona: su porcentaje y su meta.
+ *
+ * Los dos son **nulables y sin valor por omisión**, y es la decisión central de la tabla: una
+ * comisión sin cargar es `null`, no `0`. Un 0 % afirma que esa persona no cobra comisión, que es un
+ * hecho distinto de «todavía nadie lo configuró». Ver la migración 015.
+ */
+export interface TablaComisiones {
+  org_id: ColumnaInquilino;
+  usuario_id: string;
+  /** Hoy solo `closer`. Está en la clave primaria para que agregar un tramo no sea migrarla. */
+  tipo: string;
+  /** `null` = nadie lo cargó. **Nunca `0` por omisión.** */
+  porcentaje: string | null;
+  /** `null` = sin meta. Nunca `0`: lo prohíbe un `check` de la base. */
+  meta_mensual: string | null;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
 export interface TablaTareasProgramadas {
   org_id: ColumnaInquilino;
   tarea: string;
@@ -468,6 +488,7 @@ export interface BaseDeDatos {
   mensajes: TablaMensajes;
   ingesta_pulso: TablaIngestaPulso;
   tareas_programadas: TablaTareasProgramadas;
+  comisiones: TablaComisiones;
   llamadas: TablaLlamadas;
   tareas: TablaTareas;
   resultados: TablaResultados;

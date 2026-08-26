@@ -75,6 +75,12 @@ export type Accion =
   | 'usuario_borrado'
   | 'organizacion_editada'
   | 'organizacion_borrada'
+  // ── Etapa 13 · la comisión ────────────────────────────────────────────────────
+  //
+  // Es un número que decide cuánto cobra una persona, y lo fija OTRA persona. Sin esta fila, un
+  // porcentaje cambiado no deja ningún rastro de quién lo cambió — y es exactamente la clase de dato
+  // sobre la que después alguien pregunta.
+  | 'comision_configurada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -163,6 +169,7 @@ export async function auditarAdministracion(
       | 'usuario_borrado'
       | 'organizacion_editada'
       | 'organizacion_borrada'
+      | 'comision_configurada'
     >;
     actor: string;
     objetivo: string;

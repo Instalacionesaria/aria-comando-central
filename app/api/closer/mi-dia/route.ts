@@ -35,6 +35,7 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { cockpitDelMes } from '../../../../lib/negocio/inicio.ts';
+import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
 import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
@@ -49,12 +50,32 @@ export async function GET(peticion: Request): Promise<Response> {
   // día. Viene resuelta en el contexto de la sesión.
   const zona = contexto.organizacion.zonaHoraria;
 
-  const { colas, cockpit } = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const { colas, cockpit, comision } = await conOrganizacion(contexto.orgEfectiva, async () => {
     const colas = await colasDelDia(zona);
     // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
     const cockpit = await cockpitDelMes(zona, colas.tareasPendientes);
-    return { colas, cockpit };
+    /* ── LA COMISIÓN VIAJA ACÁ Y NO EN UN GET PROPIO ────────────────────────
+     *
+     * Si tuviera endpoint propio con `PANTALLA = 'closer'` tendría que pedir el mismo conjunto de
+     * capacidades que los otros cinco —eso lo exige `ADR-0304`— y no ganaría nada; y con otra
+     * capacidad, alguien vería el cockpit con la columna derecha en blanco y sin ningún error, que es
+     * justo el defecto que esa regla existe para prevenir.
+     *
+     * Y cabe en la regla de admisión de este endpoint: leer una fila es más barato que un viaje de
+     * ida y vuelta al CRM. Cero llamadas externas, igual que todo lo demás de esta pantalla.
+     */
+    const comision = await comisionDelMes(contexto.usuarioId, zona);
+    return { colas, cockpit, comision };
   });
 
-  return ok({ cockpit, colas, zonaHoraria: zona });
+  return ok({
+    cockpit,
+    colas,
+    comision,
+    zonaHoraria: zona,
+    /* La pantalla necesita saberlo para NO ofrecerle a un superadministrador que configure una meta
+       en la empresa de otro: su `usuarioId` no pertenece a esa empresa, así que la fila es imposible
+       por la clave foránea compuesta. Mandarlo a configurar algo imposible es mentirle. */
+    mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
+  });
 }

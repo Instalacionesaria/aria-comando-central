@@ -1,0 +1,105 @@
+// La meta del mes de la propia persona. La fija ella, no quien administra.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// POR QUÉ ESTO NO PIDE UNA CAPACIDAD DE ADMINISTRACIÓN
+//
+// Es un trámite de la propia cuenta, igual que las tres rutas del segundo factor: se escribe una
+// columna de la fila de quien está pidiendo, y de ninguna otra. Así que pide `closer.ver`, la
+// capacidad de su propia pantalla — la misma que las otras cinco operaciones de `PANTALLA = 'closer'`,
+// como `ADR-0304` exige.
+//
+// Exigir `credenciales.editar` acá sería más estricto y estaría mal: el anillo del cockpit diría
+// «cargá tu meta» y el botón fallaría con un rechazo para todo el equipo salvo quien administra. Es
+// el modo de falla del `07` § 2 — la pantalla se ve completa y una parte no funciona.
+//
+// ── Y LA COLUMNA QUE NO SE TOCA ─────────────────────────────────────────────
+//
+// **Solo `meta_mensual`.** El porcentaje lo fija otro endpoint y otra persona. Un único endpoint que
+// escribiera las dos columnas con `?? null` borraría la mitad ajena en cada guardado, y el síntoma
+// —«se me borró el porcentaje»— no tendría ninguna pista de quién lo borró.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
+import { comisionDelMes, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
+
+export const PANTALLA = 'closer';
+
+const MOTIVOS: Record<string, string> = {
+  cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
+  meta_invalida:
+    'La meta tiene que ser un monto mayor que cero, o `null` para quitarla. Una meta de cero no ' +
+    'significa nada y la base no la acepta.',
+  otra_empresa:
+    'Estás mirando otra empresa. La meta es tuya y va en la tuya: acá no hay ninguna comisión ' +
+    'tuya que configurar.',
+};
+
+export async function PATCH(peticion: Request): Promise<Response> {
+  const contexto = await exigir(peticion, ['closer.ver']);
+  if (contexto instanceof Response) return contexto;
+
+  /* ── EL SUPERADMINISTRADOR MIRANDO OTRA EMPRESA ───────────────────────────
+   *
+   * Al conmutar de empresa, `orgEfectiva` cambia y `usuarioId` NO. Así que un `insert` acá intentaría
+   * crear la fila `(empresa visitada, esa persona)`, y la clave foránea compuesta la rechazaría —con
+   * un 409 y el mensaje del motor, que no explica nada.
+   *
+   * Se corta antes y con su propio motivo, porque la respuesta honesta no es «no se pudo»: es que en
+   * la empresa de otro no hay ninguna comisión suya. La pantalla usa lo mismo para no ofrecerle
+   * configurar algo imposible.
+   */
+  if (contexto.mirandoOtraOrganizacion) {
+    return rechazo('peticion_invalida', MOTIVOS['otra_empresa']);
+  }
+
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
+  }
+  const c = cuerpo as { meta?: unknown } | null;
+
+  // Presencia, no `!== undefined`: con la otra forma, `{"meta": null}` se leería como «no vino» y
+  // quitar la meta dejaría de funcionar en silencio.
+  if (!c || !Object.hasOwn(c, 'meta')) {
+    return rechazo('peticion_invalida', MOTIVOS['meta_invalida']);
+  }
+  const m = c.meta;
+  const valida = typeof m === 'number' && Number.isFinite(m) && m > 0;
+  if (m !== null && !valida) {
+    // El cero cae acá. La base también lo rechazaría —tiene un `check`— pero el rechazo con motivo es
+    // lo que hace que quien lo escribió entienda por qué, en vez de recibir el mensaje del motor.
+    return rechazo('peticion_invalida', MOTIVOS['meta_invalida']);
+  }
+  const meta = m === null ? null : (m as number);
+
+  const comision = await conOrganizacion(contexto.orgEfectiva, async () => {
+    await datos()
+      .insertInto('comisiones')
+      .values({
+        usuario_id: contexto.usuarioId,
+        tipo: TIPO_CLOSER,
+        meta_mensual: meta,
+        actualizado_el: new Date(),
+        actualizado_por: contexto.usuarioId,
+      } as never)
+      .onConflict((oc) =>
+        // **Solo `meta_mensual`.** `porcentaje` no aparece: no se puede pisar desde acá.
+        oc.columns(['org_id', 'usuario_id', 'tipo']).doUpdateSet({
+          meta_mensual: meta,
+          actualizado_el: new Date(),
+          actualizado_por: contexto.usuarioId,
+        } as never),
+      )
+      .execute();
+
+    // Se devuelve la comisión RECALCULADA, no un `{ ok: true }`: la meta cambia «cuánto falta» y
+    // «meta superada», y mostrar «guardado» sin leer lo que quedó es reportar un éxito sin verificar.
+    return comisionDelMes(contexto.usuarioId, contexto.organizacion.zonaHoraria);
+  });
+
+  return ok({ comision });
+}

@@ -173,7 +173,19 @@ export default function CloserView({ activa }) {
     }
 
     if (sub === 'inicio') {
-      return <Inicio cockpit={datos.cockpit} alIrAMiDia={() => setSub('dia')} />;
+      return (
+        <Inicio
+          cockpit={datos.cockpit}
+          comision={datos.comision}
+          mirandoOtraOrganizacion={datos.mirandoOtraOrganizacion}
+          /* Al guardar la meta se pisa SOLO la comisión, con lo que devolvió el servidor. Recargar
+             todo serviría igual y tardaría: el resto del tablero no cambió porque alguien fijó su
+             meta, y una recarga completa acá es la que se lleva puesto lo que otro componente
+             tenga abierto. */
+          alGuardarLaMeta={(nueva) => setDatos((d) => (d ? { ...d, comision: nueva } : d))}
+          alIrAMiDia={() => setSub('dia')}
+        />
+      );
     }
     if (sub === 'dia') {
       return <MiDia colas={datos.colas} zonaHoraria={datos.zonaHoraria} />;

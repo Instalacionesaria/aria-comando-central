@@ -176,6 +176,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de
   // arriba, y escribe la fila del mensaje por `conOrganizacion(` y la política de fila.
   'app/api/contactos/[id]/mensajes/route.ts',
+  // Los PORCENTAJES DE COMISIÓN. Lee `identidad.usuarios` para comprobar que la persona a la que se
+  // le fija el porcentaje es de esta empresa, y tiene que ser por identidad y no por el inquilino:
+  // `usuarioObjetivo(` selecciona `es_admin_principal`, y el rol del inquilino tiene concedidas cinco
+  // columnas de esa tabla y ésa no es una. Medido a golpes: la versión anterior falló con
+  // «permission denied for table usuarios».
+  //
+  // La escritura va entera por `conOrganizacion(`, incluida la fila de auditoría — que puede ir por el
+  // inquilino porque la migración 005 le da `insert` con una política que exige que `org_id` sea el de
+  // la sesión. Eso es mejor que auditar por identidad: **la comisión y su rastro van en la misma
+  // transacción**, así que no existe el estado «se cambió el porcentaje y no quedó registrado quién».
+  'app/api/admin/comisiones/route.ts',
   // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
   // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
   'app/api/contactos/[id]/avanzar/route.ts',
@@ -241,6 +252,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
  * defiende para la escotilla.
  */
 export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
+  // Los porcentajes de comisión. **Qué queda a medias si la segunda mitad falla: nada**, porque la
+  // primera no escribe — se lee de identidad quién es la persona y se escribe en negocio su
+  // porcentaje. Es la misma forma y la misma justificación que la ingesta de mensajes.
+  'app/api/admin/comisiones/route.ts',
   // El sembrado: identidad por `conIdentidad()`, negocio por bucle de
   // `conOrganizacion()`. Aceptable porque es idempotente POR DESTRUCCIÓN —`db:reset`
   // tira la base primero, así que una falla a medias se arregla volviendo a correrlo— y

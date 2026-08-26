@@ -21,8 +21,13 @@
  *
  * Del `11` § 5.1: *"sin comisión configurada va `—`, nunca `$0`. Y «meta superada» NO aparece
  * si la comisión es cero, aunque la meta también lo sea: un porcentaje sobre base cero no es un
- * logro."* Todavía no hay comisión configurable, así que el anillo no se dibuja — en vez de
- * dibujar un anillo al 0% que afirmaría un progreso medido.
+ * logro."* Ahora la comisión SÍ se configura, y el anillo vive en `Comision.jsx` con los ocho
+ * estados que eso abre — incluido el que este comentario nombra: meta superada exige que la
+ * comisión sea mayor que cero, y no solo que falte cero para la meta.
+ *
+ * Un detalle que importa: el «Cobrado» del hero es de **toda la empresa** y la comisión trae su
+ * propia base, la de las ventas que registró quien mira. Son dos números con dos rótulos, y
+ * multiplicar el primero por un porcentaje personal habría dado un número plausible y más alto.
  *
  * ── LO QUE ESTA PANTALLA NO CUESTA ──────────────────────────────────────────
  *
@@ -30,6 +35,8 @@
  * closer mira todo el día cuestan **0**. Todo el presupuesto se gasta en TRAER los datos, una
  * vez, cuando cambian.
  * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import Comision from './Comision.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -63,7 +70,13 @@ function Baldosa({ k, v, s, color }) {
   );
 }
 
-export default function Inicio({ cockpit, alIrAMiDia }) {
+export default function Inicio({
+  cockpit,
+  comision,
+  mirandoOtraOrganizacion,
+  alGuardarLaMeta,
+  alIrAMiDia,
+}) {
   if (!cockpit) {
     return (
       <div className="fd-aviso">
@@ -124,20 +137,19 @@ export default function Inicio({ cockpit, alIrAMiDia }) {
           </div>
         </div>
 
-        {/* ── La columna derecha: el anillo de comisión ── */}
-        <div className="ck-ring">
-          {/* NO se dibuja un anillo al 0%. El § 5.1: «meta superada» no aparece si la comisión
-              es cero, aunque la meta también lo sea — un porcentaje sobre base cero no es un
-              logro. Y sin comisión configurada, un anillo vacío afirmaría un progreso medido
-              que nadie midió. */}
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--txt-dim)', lineHeight: 1.6 }}>
-            <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--txt-faint)' }}>—</div>
-            <div style={{ marginTop: 8 }}>Sin comisión configurada</div>
-            <div style={{ fontSize: 11, color: 'var(--txt-faint)', marginTop: 6 }}>
-              Cargá tu porcentaje y tu meta para ver cuánto falta.
-            </div>
-          </div>
-        </div>
+        {/* ── La columna derecha: el anillo de comisión ──
+            Estaba fijo en «Sin comisión configurada / Cargá tu porcentaje y tu meta», y ese texto era
+            **imposible de seguir**: no había dónde cargar ninguna de las dos cosas. Y la mitad era
+            además falsa — el porcentaje no lo carga la persona, lo fija quien administra.
+
+            `Comision.jsx` tiene los ocho estados, y la regla que los gobierna es la misma de todo el
+            cockpit: un cero medido y un cero sin medir no son el mismo hecho. Acá con una vuelta más,
+            porque son DOS mitades —el porcentaje y la base— y cualquiera puede faltar por separado. */}
+        <Comision
+          comision={comision}
+          mirandoOtraOrganizacion={mirandoOtraOrganizacion}
+          alGuardar={alGuardarLaMeta}
+        />
       </div>
 
       {/* ── El no-show, que sí es un conteo real ── */}
