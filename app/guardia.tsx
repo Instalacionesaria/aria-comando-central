@@ -42,6 +42,7 @@ interface Sesion {
   // para saber si hay sesión, así que no cuesta un viaje más — y no puede quedar viejo
   // respecto del estado, que es lo que pasaría con dos peticiones.
   menu?: GrupoDelMenu[];
+  arranque?: DatosDeSesion['arranque'];
   usuarioNombre?: string;
   usuarioId?: string;
   puedeCambiarDeEmpresa?: boolean;
@@ -85,6 +86,11 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
       // nace cerrada"*.
       setDatos({
         menu: r.datos.menu ?? [],
+        // `null` y NO deducido del menú: deducirlo acá volvería a poner la regla en el cliente,
+        // que es justo lo que `seccionDeArranque` vino a juntar. Sin el campo no se marca ninguna
+        // pantalla —el menú sigue andando, un clic abre lo que sea— y es el mismo lado del que
+        // fallan las demás de esta lista.
+        arranque: r.datos.arranque ?? null,
         usuarioNombre: r.datos.usuarioNombre ?? '',
         usuarioId: r.datos.usuarioId ?? '',
         // `false` ante la duda: sin saberlo, NO se ofrece el conmutador.

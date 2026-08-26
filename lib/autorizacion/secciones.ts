@@ -586,3 +586,51 @@ export function menuVisible(
     secciones: visibles.filter((s) => s.menu!.grupo === grupo.clave),
   })).filter((g) => g.secciones.length > 0);
 }
+
+/**
+ * La pantalla con la que se abre la aplicación, y el grupo que la encabeza.
+ *
+ * ── POR QUÉ ESTO ES UNA FUNCIÓN Y NO TRES `[0]` REPETIDOS ────────────────────
+ *
+ * Porque ya eran dos, el tercero faltaba, y el que faltaba es el que se vio. `Nav.jsx` marcaba la
+ * fila activa con `grupos[0]?.secciones[0]`, `CommandCenter.jsx` dibujaba la vista activa con
+ * `i === 0`, y cada uno llevaba un comentario diciendo que el otro «usa la misma regla sobre el
+ * mismo orden». Eso es una lista paralela escrita en prosa: mientras nadie la rompa, funciona.
+ *
+ * **El tercer lugar no tenía ni comentario ni regla: la miga de pan.** `TopBar.jsx` traía
+ * `Executive` escrito a mano —del prototipo— y `AskBar.jsx` lo mismo. Medido en el navegador con
+ * una persona restringida a Closer y Tools: el menú mostraba las dos pestañas correctas, la vista
+ * abierta era Closer, y arriba decía **«AIOS / Executive»**. La miga nombraba una pantalla que esa
+ * persona no puede ver Y que no era la que estaba abierta.
+ *
+ * No es una fuga —`Executive` es el nombre de una pestaña, no el dato de nadie— pero sí es la
+ * interfaz afirmando algo falso en el único lugar cuyo trabajo es decir dónde estás.
+ *
+ * ── EL CUERPO ANTES QUE EL PIE, Y NO ES UN DETALLE ───────────────────────────
+ *
+ * Alguien con pestañas de trabajo **no puede** abrir en la configuración. Al revés sí: si su única
+ * sección fuera Ajustes, abrir en Ajustes es lo correcto. Es la regla que `Nav.jsx` ya aplicaba;
+ * acá queda escrita una vez.
+ *
+ * Devuelve el `clave` del GRUPO y no su `etiqueta`, a propósito: es lo que muestra la miga hoy
+ * —`irALaVista` hace `GROUP[clave]`— y el primer grupo tiene `etiqueta: null`, así que con la
+ * etiqueta la miga de un ejecutivo quedaría vacía. La rareza de que el pie diga «Pie» se hereda de
+ * `lib/aios/shell.js`, donde ya está anotada como trabajo aparte; lo que no puede pasar es que este
+ * lugar y el clic en el menú muestren cosas distintas para la misma pantalla.
+ *
+ * @param menu lo que devuelve `menuVisible`, con el alcance ya aplicado.
+ * @returns `null` cuando no hay ninguna sección. No se inventa una: quien llama tiene que poder
+ *   distinguir «abre en Closer» de «no hay nada que abrir» — un estado alcanzable, un rol
+ *   restringido sin secciones concedidas, que hoy no tiene pantalla propia.
+ */
+export function seccionDeArranque(
+  menu: readonly { grupo: { clave: string }; secciones: readonly Seccion[] }[],
+): { seccion: Seccion; grupo: string } | null {
+  const esPie = (clave: string) => GRUPOS_DEL_MENU.find((g) => g.clave === clave)?.pie === true;
+  const enOrden = [...menu.filter((g) => !esPie(g.grupo.clave)), ...menu.filter((g) => esPie(g.grupo.clave))];
+  for (const g of enOrden) {
+    const seccion = g.secciones[0];
+    if (seccion) return { seccion, grupo: g.grupo.clave };
+  }
+  return null;
+}

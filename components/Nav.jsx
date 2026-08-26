@@ -73,12 +73,12 @@ export default function Nav() {
 
   // La primera sección visible arranca activa. NO `executive` fijo: para un closer esa pantalla
   // no existe, y el `on` escrito a mano dejaba el área principal en blanco sin que nada falle.
-  // `CommandCenter.jsx` usa la misma regla para decidir qué vista dibuja activa, y las dos
-  // salen de este mismo orden.
-  // La pantalla de arranque sale del CUERPO, nunca del pie. Un usuario cuya única sección
-  // fuera Ajustes abriría en Ajustes, que es correcto; lo que no puede pasar es que alguien con
-  // pestañas de trabajo abra en la configuración.
-  const primera = grupos[0]?.secciones[0]?.clave ?? enElPie[0]?.clave;
+  //
+  // LA REGLA YA NO ESTÁ ACÁ, y sacarla no fue prolijidad: estaba escrita en este archivo, otra vez
+  // en `CommandCenter.jsx`, y **faltaba** en la miga de pan — que por eso le decía «Executive» a
+  // alguien que no ve Executive. Ahora la decide el servidor, una vez, y las tres partes leen el
+  // mismo campo. El motivo completo está en `seccionDeArranque`.
+  const primera = sesion?.arranque?.seccion.clave;
 
   return (
     <>

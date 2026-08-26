@@ -63,29 +63,34 @@ export default function CommandCenter() {
   // de inquilino en ellas (son maquetado del prototipo), así que esto no cierra una fuga: cierra
   // una confusión.
   const visibles = (sesion?.menu ?? []).flatMap((g) => g.secciones.map((s) => s.clave));
+  const arranque = sesion?.arranque?.seccion.clave;
 
   return (
     <>
       <IconSprite />
 
       <div className="app">
-        <TopBar />
+        <TopBar arranque={sesion?.arranque ?? null} />
         <Nav />
 
         <main className="main">
           {visibles.map((clave, i) => {
             const Vista = VISTAS[clave];
             if (!Vista) return null;
-            // La PRIMERA visible arranca activa, no `executive` fijo: para un closer esa
-            // pantalla no existe, y el `on` escrito a mano en `ExecutiveView` dejaba el área
-            // principal en blanco sin que nada falle. `Nav.jsx` usa la misma regla sobre el
-            // mismo orden, así que la entrada marcada y la vista dibujada son la misma.
-            return <Vista key={clave} activa={i === 0} />;
+            // La de arranque arranca activa, no `executive` fijo: para un closer esa pantalla no
+            // existe, y el `on` escrito a mano en `ExecutiveView` dejaba el área principal en
+            // blanco sin que nada falle.
+            //
+            // Se compara por CLAVE y no por `i === 0`. Con el índice, esto y `Nav.jsx` coincidían
+            // solo mientras las dos listas se recorrieran igual — y son dos listas distintas: acá
+            // se aplanan los grupos y allá no, así que la regla «cuerpo antes que pie» no se podía
+            // ni expresar. Ahora las dos preguntan lo mismo.
+            return <Vista key={clave} activa={clave === arranque} />;
           })}
         </main>
 
         <SidePanel />
-        <AskBar />
+        <AskBar arranque={sesion?.arranque ?? null} />
       </div>
 
       <Overlays />

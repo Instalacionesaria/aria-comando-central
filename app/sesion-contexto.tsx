@@ -43,6 +43,15 @@ export interface DatosDeSesion {
    * desordenar una respecto de la otra, que es el defecto que la Etapa 11 pagó.
    */
   menu: GrupoDelMenu[];
+  /**
+   * Con qué pantalla se abre, decidido por el servidor con `seccionDeArranque()`.
+   *
+   * `null` es un estado real y hay que poder distinguirlo: un rol restringido sin ninguna sección
+   * concedida no tiene pantalla que abrir. Los tres consumidores —la fila marcada, la vista
+   * dibujada y la miga de pan— leen ESTE campo en vez de deducirlo cada uno del menú, que es como
+   * la miga terminó diciendo «Executive» a alguien que no ve Executive.
+   */
+  arranque: { seccion: SeccionDelMenu; grupo: string } | null;
   usuarioNombre: string;
   /** Quién es. Lo necesita la pantalla de usuarios para no ofrecerse a sí misma un cambio de
    *  rol: `ADR-0502` dice que nadie se degrada a sí mismo, y el servidor responde 409. Ofrecer

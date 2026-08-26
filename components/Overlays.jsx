@@ -68,10 +68,12 @@ export default function Overlays() {
             Executive Intelligence
           </div>
           <div className="ap-s">
+            {/* VACÍO y no «Executive»: lo llena `refreshScope()` en `executive-chat.js` antes de
+                mostrar el panel, leyendo la fila activa del menú. El literal del prototipo no se
+                alcanzaba a ver, pero era otro nombre de sección escrito a mano — y el de al lado,
+                en `AskBar.jsx`, sí se veía y decía «Executive» a quien no ve Executive. */}
             respondiendo con datos de{' '}
-            <b id="askCtx">
-              Executive
-            </b>
+            <b id="askCtx" />
             {' '}·{' '}
             <span id="askCtxP">
               7 días

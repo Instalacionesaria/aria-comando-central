@@ -42,7 +42,11 @@ import { hashear, verificar } from '../../../../lib/datos/hash.ts';
 import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
 import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
 import { MINIMO_PASSWORD } from '../../../../lib/autenticacion/politica.ts';
-import { menuVisible, seccionesConAlcance } from '../../../../lib/autorizacion/secciones.ts';
+import {
+  menuVisible,
+  seccionDeArranque,
+  seccionesConAlcance,
+} from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 
 /**
@@ -54,6 +58,11 @@ import { conIdentidad } from '../../../../lib/datos/capa.ts';
 export async function GET(peticion: Request): Promise<Response> {
   const contexto = await sesionOpcional(peticion);
   if (!contexto) return ok({ autenticado: false });
+
+  /* Una sola vez: el menú y la pantalla de arranque tienen que salir de la MISMA lista. Llamar a
+     `menuVisible` dos veces daría el mismo resultado hoy y es exactamente la forma de que mañana
+     no lo dé. */
+  const menu = menuVisible(contexto.permisos, contexto.alcance);
 
   return ok({
     autenticado: true,
@@ -72,7 +81,13 @@ export async function GET(peticion: Request): Promise<Response> {
     // regla 3 aplicado a la interfaz: si el componente supiera el orden de los grupos,
     // tendríamos otra vez dos listas que se pueden desordenar una respecto de la otra — que
     // es el defecto que la Etapa 11 pagó, descrito en `lib/autorizacion/secciones.ts`.
-    menu: menuVisible(contexto.permisos, contexto.alcance),
+    menu,
+    /**
+     * Con qué pantalla se abre, decidido ACÁ por el mismo motivo que el menú viene agrupado: si
+     * cada mitad de la interfaz lo dedujera, serían tres deducciones que se pueden desincronizar
+     * — y ya se desincronizaron. Ver `seccionDeArranque`.
+     */
+    arranque: seccionDeArranque(menu),
     // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
     // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
     usuarioNombre: contexto.usuarioNombre,
