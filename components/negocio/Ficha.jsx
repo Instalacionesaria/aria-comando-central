@@ -205,6 +205,8 @@ function EstadoDeEnvio({ m }) {
 export default function Ficha({ contactoId, alCerrar }) {
   const [contacto, setContacto] = useState(null);
   const [refresco, setRefresco] = useState(null);
+  /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
+  const [enlaceAgendar, setEnlaceAgendar] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
   const [activa, setActiva] = useState('chat');
@@ -297,6 +299,7 @@ export default function Ficha({ contactoId, alCerrar }) {
     }
     setContacto(r.datos.contacto);
     setRefresco(r.datos.refresco);
+    setEnlaceAgendar(r.datos.enlaceAgendar ?? null);
     setSituacion('listo');
   }, [contactoId]);
 
@@ -380,6 +383,11 @@ export default function Ficha({ contactoId, alCerrar }) {
       chat: {
         filas: fusionarMensajes(r.datos.mensajes ?? [], antes.chat?.filas ?? []),
         falta: r.datos.falta ?? null,
+        /* El atraso del barrido automático. **Se guarda aparte de `falta` a propósito**: `falta`
+           contesta «por qué no hay ninguno» y solo se dibuja con la lista vacía; esto contesta «¿está
+           al día?» y hace falta justamente cuando HAY mensajes — un chat con lo de anteayer se ve
+           completo, y el mensaje de ayer es el que no está. */
+        frescura: r.datos.frescura ?? null,
       },
     }));
   }, [contactoId]);
@@ -535,13 +543,31 @@ export default function Ficha({ contactoId, alCerrar }) {
     }
 
     if (activa === 'chat') {
-      if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />;
+      /* EL ATRASO VA ARRIBA Y EN LOS DOS CASOS: con mensajes y sin ellos. Es la diferencia entre
+         «este contacto no escribió» y «hace tres días que no traemos nada de nadie», y sin esta línea
+         las dos se ven igual — una conversación que termina el martes. */
+      const atraso = p.frescura?.aviso ? (
+        <div className="fd-aviso falta" role="status">
+          <i>◍</i>
+          <span>{p.frescura.aviso}</span>
+        </div>
+      ) : null;
+
+      if (p.filas.length === 0) {
+        return (
+          <>
+            {atraso}
+            <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />
+          </>
+        );
+      }
       /* Los separadores de día los pone `conSeparadores`, no este JSX, y no es por prolijidad:
          «donde cambia el día» es una decisión con dos zonas horarias adentro y en el JSX no se
          puede probar. Sin ellos, una conversación de varios días se lee como si el tiempo
          retrocediera — `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue el día. */
       return (
         <>
+          {atraso}
           {conSeparadores(p.filas, zona).map((r) =>
             r.tipo === 'dia' ? (
               <div className="cw-day" key={r.clave}>
@@ -737,6 +763,29 @@ export default function Ficha({ contactoId, alCerrar }) {
                 ↗ Ver en GHL
               </button>
             ) : null}
+            {/* ── AGENDAR: SE ATENÚA, NO DESAPARECE ────────────────────────────
+                Es la misma regla que el botón de la sala en la Agenda, y por el mismo motivo escrito
+                allá: *"atenuado con su explicación, el closer entiende que esa cita no tiene sala.
+                Desaparecido, cree que la interfaz se rompió — y va a buscar el enlace a mano en otro
+                lado"*.
+
+                Y la diferencia con «Ver en GHL», que sí desaparece: ese enlace depende de ESTE
+                contacto —sin identificador en el CRM no hay página a la que ir— y éste depende de una
+                configuración de la empresa. Lo primero no se puede arreglar desde acá; lo segundo sí,
+                y el `title` dice dónde. */}
+            <button
+              type="button"
+              className="cw-pin"
+              disabled={!enlaceAgendar}
+              title={
+                enlaceAgendar
+                  ? 'Abre el calendario de agendamiento de la empresa'
+                  : 'No hay calendario de agendamiento configurado. Se carga en Ajustes → Credenciales.'
+              }
+              onClick={() => enlaceAgendar && window.open(enlaceAgendar, '_blank', 'noopener')}
+            >
+              ◷ Agendar
+            </button>
             <span
               className="cw-x"
               role="button"

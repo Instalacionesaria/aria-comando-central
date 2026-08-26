@@ -22,6 +22,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { frescuraDe, type Frescura } from './frescura.ts';
 
 /** Lo que devuelve cada pestaña: lo medido, y por qué no hay más. */
 export interface Pestana<T> {
@@ -86,7 +87,17 @@ const TOPE_DE_MENSAJES = 200;
  * Así que se ordena `desc`, se corta, y se invierte en memoria. El índice
  * `mensajes_por_contacto (org_id, contacto_id, enviado_el desc)` está hecho para este orden.
  */
-export async function mensajesDeLaFicha(contactoId: string): Promise<Pestana<MensajeDeFicha>> {
+/**
+ * El chat, y **lo único de las seis pestañas que lleva `frescura`**.
+ *
+ * No va en `Pestana<T>`: de las seis pestañas, solo dos tienen un barrido automático detrás. Ponerlo
+ * en el tipo compartido obligaría a las otras cuatro a devolver un dato que no significa nada para
+ * ellas —el perfil se lee en vivo, las notas las escribe esta aplicación— y un campo que siempre
+ * dice lo mismo se vuelve invisible.
+ */
+export async function mensajesDeLaFicha(
+  contactoId: string,
+): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura }> {
   const crudos = await datos()
     .selectFrom('mensajes')
     .select([
@@ -121,6 +132,15 @@ export async function mensajesDeLaFicha(contactoId: string): Promise<Pestana<Men
       }))
       .reverse(),
     falta: crudos.length > 0 ? null : await porQueNoHayMensajes(),
+    /* ── LA FRESCURA SE CALCULA SIEMPRE, HAYA O NO MENSAJES ──────────────────
+     *
+     * `falta` de arriba está condicionado a `crudos.length > 0`, y con razón: contesta «¿por qué no
+     * hay ninguno?». El atraso es otra pregunta y no se puede condicionar igual — un chat con
+     * mensajes de hace tres días **se ve completo** y es el caso que importa: la persona escribió
+     * ayer y su mensaje no está acá.
+     *
+     * Por eso es un campo hermano y no una rama más de `falta`. */
+    frescura: await frescuraDe('mensajes'),
   };
 }
 

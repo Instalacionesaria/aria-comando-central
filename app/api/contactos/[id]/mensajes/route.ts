@@ -73,6 +73,9 @@ export async function GET(
   return ok({
     mensajes: r.pestana.filas,
     falta: r.pestana.falta,
+    /* Hace cuánto que el barrido automático no trae mensajes. Viaja SIEMPRE, no solo con la lista
+       vacía: un chat con lo de anteayer se ve completo, y el mensaje de ayer es el que falta. */
+    frescura: r.pestana.frescura,
     // La ventana la calcula el SERVIDOR con su reloj. Dejársela al navegador haría que un reloj
     // atrasado abriera un compositor que el canal va a rechazar — y la decisión de gastar o no la
     // llamada la toma el servidor.

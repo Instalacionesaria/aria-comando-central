@@ -88,6 +88,9 @@ const CAMPOS = [
   { entrada: 'iaClave', columna: 'ia_clave_cifrada', secreto: true },
   { entrada: 'pagosClave', columna: 'pagos_clave_cifrada', secreto: true },
   { entrada: 'crmCuentaId', columna: 'crm_cuenta_id', secreto: false },
+  // El calendario de agendamiento. `secreto: false`: es el identificador de un calendario ajeno, va y
+  // viene completo. Y NO es un filtro del barrido — ver la migración 016.
+  { entrada: 'crmCalendarioId', columna: 'crm_calendario_id', secreto: false },
   { entrada: 'pagosComercioId', columna: 'pagos_comercio_id', secreto: false },
   { entrada: 'fundacionesClienteId', columna: 'fundaciones_cliente_id', secreto: false },
 ] as const;

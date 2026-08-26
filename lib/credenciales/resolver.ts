@@ -134,6 +134,13 @@ export interface Credenciales {
   pagos: CredencialVisible;
   /** La subcuenta de GoHighLevel. NO es secreto: va completo. */
   crmCuentaId: string | null;
+  /**
+   * El calendario de agendamiento. **No es un secreto y no es un filtro**: ver la migración 016.
+   *
+   * Va en la misma clase que `crmCuentaId` —identificador de una cuenta ajena, viaja completo— y no
+   * en la de los tokens.
+   */
+  crmCalendarioId: string | null;
   /** El comercio de la pasarela. NO es secreto: va completo. */
   pagosComercioId: string | null;
   /** El alumno del hub para Fundaciones. NO es secreto: va completo. */
@@ -170,6 +177,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'ia_clave_cifrada',
       'pagos_clave_cifrada',
       'crm_cuenta_id',
+      'crm_calendario_id',
       'pagos_comercio_id',
       'fundaciones_cliente_id',
       'actualizado_el',
@@ -213,6 +221,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     ia,
     pagos,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
+    crmCalendarioId: fila?.crm_calendario_id ?? null,
     pagosComercioId: fila?.pagos_comercio_id ?? null,
     fundacionesClienteId: fila?.fundaciones_cliente_id ?? null,
     actualizadoEl: fila?.actualizado_el ?? null,

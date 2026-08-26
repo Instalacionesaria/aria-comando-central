@@ -31,6 +31,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { estaCancelada } from '../ghl/calendarios.ts';
 import { noCancelada } from './citas.ts';
+import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
 
 export interface CitaDeLaAgenda {
@@ -74,6 +75,14 @@ export interface Agenda {
    * corridas** — ver el encabezado.
    */
   avisoDeZona: string | null;
+  /**
+   * Hace cuánto que el barrido automático no pasa. `estado: 'al_dia'` = no hay nada que decir.
+   *
+   * Va acá y **no dentro de `falta`**, y la distinción no es de prolijidad: `falta` solo se calcula
+   * cuando la ventana está vacía, así que un atraso metido ahí sería invisible en cuanto haya una
+   * sola cita — que es justo el caso donde la agenda se ve completa y no lo está.
+   */
+  frescura: Frescura;
   /**
    * Por qué está vacía, cuando la causa es que falta una fuente y no que no haya citas.
    *
@@ -205,6 +214,7 @@ export async function agendaDelCloser(
     total: filas.length,
     zonaHoraria,
     avisoDeZona: avisoDeZona(zonaHoraria),
+    frescura: await frescuraDe('citas'),
     falta: filas.length === 0 ? await porQueNoHayCitas(zonaHoraria) : null,
   };
 }

@@ -187,6 +187,17 @@ export default function Agenda({ zonaHoraria }) {
         </div>
       ) : null}
 
+      {/* ── EL ATRASO DEL BARRIDO AUTOMÁTICO ──────────────────────────────────
+          Va SIEMPRE que exista, no solo cuando la agenda está vacía. Con citas a la vista es el caso
+          que más importa: la pantalla se ve completa y puede faltarle lo último. Y no se puede
+          cerrar — no es una notificación, es el estado del sistema. */}
+      {datos.frescura?.aviso ? (
+        <div className="fd-aviso falta" role="status">
+          <i>◍</i>
+          <span>{datos.frescura.aviso}</span>
+        </div>
+      ) : null}
+
       {aviso ? (
         <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
           <i>{aviso.mal ? '⚠' : '✓'}</i>

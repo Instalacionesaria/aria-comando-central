@@ -121,6 +121,13 @@ export interface TablaOrganizacionesCredenciales {
   pagos_clave_cifrada: string | null;
   ia_clave_cifrada: string | null;
   crm_cuenta_id: string | null;
+  /**
+   * El calendario donde se agendan las llamadas. **No es un filtro del barrido.**
+   *
+   * El barrido lee TODOS los calendarios de la subcuenta; usar éste para acotarlo perdería las citas
+   * de los demás — medido: 27 de 376. Ver la migración 016.
+   */
+  crm_calendario_id: string | null;
   pagos_comercio_id: string | null;
   crm_refresh_cifrado: string | null;
   crm_expira_el: Date | null;

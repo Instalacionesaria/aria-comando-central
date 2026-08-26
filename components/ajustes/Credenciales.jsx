@@ -51,6 +51,19 @@ const CAMPOS = [
     secreto: false,
   },
   {
+    entrada: 'crmCalendarioId',
+    valor: 'crmCalendarioId',
+    titulo: 'Calendario de agendamiento',
+    /* Se dice para qué sirve Y para qué NO, y la segunda mitad importa más: sin ella, el próximo que
+       lea este campo va a pensar que el barrido de la agenda lee ese calendario — y va a «arreglar»
+       las diez llamadas por corrida acotándolo a uno. Medido: eso perdería 27 citas de 376. */
+    ayuda:
+      'El calendario de GoHighLevel donde se agendan las llamadas del closer, para el enlace de ' +
+      'agendar. NO acota la agenda: el barrido lee todos los calendarios de la subcuenta, y usar ' +
+      'este como filtro perdería las citas de los demás. Tampoco es un secreto.',
+    secreto: false,
+  },
+  {
     entrada: 'iaClave',
     estado: 'ia',
     titulo: 'Clave de API de Anthropic',

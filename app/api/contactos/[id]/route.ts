@@ -34,7 +34,12 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
+import {
+  resolverAccesoAGhl,
+  resolverCredenciales,
+  TEXTO_DE_FALTA_GHL,
+} from '../../../../lib/credenciales/resolver.ts';
+import { enlaceDeAgendamiento } from '../../../../lib/ghl/agendar.ts';
 import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
 
@@ -124,5 +129,26 @@ export async function GET(
   //     404 acá sería un error inventado por nuestra propia consulta.
   const despues = (await conOrganizacion(orgId, () => filaDeContacto(id))) ?? antes;
 
-  return ok({ contacto: despues, refresco: { actualizado: porque === null, porque, enlaceCrm } });
+  /* ── EL ENLACE PARA AGENDAR ────────────────────────────────────────────────
+   *
+   * Sale del calendario configurado en Ajustes → Credenciales, y **no** de los calendarios que la
+   * API devuelve: la subcuenta real tiene nueve y cinco son `round_robin`, así que nada en la API
+   * dice cuál es «el de la empresa». Elegir el que tiene más citas es una heurística que cambia sola
+   * con el uso.
+   *
+   * Va como URL ya armada o `null`, nunca como identificador: la forma de la URL está medida y vive
+   * en un solo archivo. Ver `lib/ghl/agendar.ts`.
+   */
+  /* Es una lectura APARTE de la del token, y no por descuido: el enlace para agendar es de la
+   * EMPRESA, no de este contacto. Colgarlo de `resolverAccesoAGhl` —que se resuelve solo cuando el
+   * contacto tiene identificador en el CRM— haría que el botón desapareciera para los contactos que
+   * todavía no están sincronizados, que no tiene nada que ver. */
+  const credenciales = await conIdentidad((db) => resolverCredenciales(db, orgId));
+  const enlaceAgendar = enlaceDeAgendamiento(credenciales.crmCalendarioId);
+
+  return ok({
+    contacto: despues,
+    refresco: { actualizado: porque === null, porque, enlaceCrm },
+    enlaceAgendar,
+  });
 }
