@@ -122,3 +122,46 @@ test('el Paso 6 del portero se comprueba DESPUÉS del Paso 4', () => {
       'el cambio de su contraseña temporal',
   );
 });
+
+
+test('las casillas se dibujan UNA vez y se usan dos: alta y edición', () => {
+  // La copia era el camino corto. Con dos, la prueba de más arriba —«ningún nombre de sección
+  // escrito a mano»— tiene dos lugares donde fallar, y el `aria-label` que se agregó después de
+  // medir que el árbol de accesibilidad leía «on» viviría en uno solo.
+  const fuente = leer(FORMULARIO);
+  assert.equal(
+    fuente.match(/className="aj-casillas"/g)?.length,
+    1,
+    'hay más de un bloque de casillas: tiene que ser un componente usado dos veces',
+  );
+  assert.equal(
+    fuente.match(/<CasillasDeSecciones/g)?.length,
+    2,
+    'el alta y la edición tienen que usar el MISMO componente',
+  );
+});
+
+test('la EDICIÓN manda las secciones, y solo cuando el rol las exige', () => {
+  // Sin esto, `POST .../roles` rechaza con `sin_secciones` cuando el rol destino restringe: pasar a
+  // alguien al rol `usuario` desde el panel devolvía 400 y no había ningún otro camino en la
+  // interfaz. Y el conjunto tiene que salir del que la persona YA tiene —`editando.secciones`— o
+  // guardar un cambio de nombre le vaciaría las pestañas.
+  const fuente = leer(FORMULARIO);
+  assert.match(
+    fuente,
+    /elRolEditado\?\.restringePorSeccion \? \{ secciones: \[\.\.\.edSecciones\] \}/,
+    'el cuerpo de la edición no manda las secciones detrás de la bandera del rol',
+  );
+  assert.match(
+    fuente,
+    /setEdSecciones\(new Set\(u\.secciones \?\? \[\]\)\)/,
+    'el panel no arranca con las pestañas que la persona ya tiene',
+  );
+  // Y el POST también cuando SOLO cambiaron las pestañas: con `if (cambioDeRol)` a secas, destildar
+  // una pestaña y guardar no hacía nada y la pantalla decía que sí.
+  assert.match(
+    fuente,
+    /if \(cambioDeRol \|\| cambioDeSecciones\)/,
+    'cambiar solo las pestañas no dispara ninguna operación',
+  );
+});

@@ -31,6 +31,7 @@ import { exigir } from '../../lib/autorizacion/portero.ts';
 import { seccionesConAlcance, SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import { POST as crearUsuario } from '../../app/api/admin/usuarios/route.ts';
 import { POST as asignarRoles } from '../../app/api/admin/usuarios/[id]/roles/route.ts';
+import { personasQuePuedeAdministrar } from '../../lib/administracion/usuarios.ts';
 
 const DOMINIO = 'ejemplo.test';
 
@@ -508,5 +509,59 @@ test('DEGRADAR a un rol restringido SIN pasar secciones se RECHAZA, y el rol no 
   assert.deepEqual(
     ahora.map((x) => x.seccion),
     ['closer', 'contacts'],
+  );
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 8 · EL LISTADO TIENE QUE TRAER EL ALCANCE, O LA EDICIÓN NO PUEDE MANDARLO
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('el listado trae las secciones de cada persona, y `[]` cuando no tiene', async () => {
+  // `POST .../roles` REEMPLAZA roles y alcance juntos. Sin este dato en el listado, la pantalla de
+  // edición no tenía de dónde sacar el conjunto actual, así que el panel no podía mandarlo — y la
+  // prueba de acá arriba dice qué pasa cuando no se manda: 400 `sin_secciones`. O sea que pasar a
+  // alguien al rol `usuario` desde la interfaz era IMPOSIBLE, no incómodo.
+  //
+  // `[]` y no `null` por lo mismo que los roles: el nulo obliga a cada consumidor a acordarse, y el
+  // que se olvide dibuja «undefined» donde tendría que decir que no tiene ninguna.
+  await limpiar();
+  const conAlcance = await persona('usuario', ['closer', 'tools']);
+  const sinAlcance = await persona('administrador');
+
+  const listado = await conIdentidad((db) => personasQuePuedeAdministrar(db, alfa, false));
+  const a = listado.find((p) => p.id === conAlcance);
+  const b = listado.find((p) => p.id === sinAlcance);
+  assert.ok(a && b, 'las dos personas tienen que estar en el listado');
+  assert.deepEqual([...a.secciones].sort(), ['closer', 'tools']);
+  assert.deepEqual(b.secciones, [], 'sin filas de alcance tiene que ser una lista vacía');
+});
+
+test('CAMBIAR solo las pestañas, sin tocar el rol, reemplaza el conjunto', async () => {
+  // El camino que la pantalla de edición usa ahora: mismo rol, otra lista. Es un REEMPLAZO y no una
+  // suma — lo que se destilda se quita — y eso hay que poder comprobarlo, porque es la diferencia
+  // entre «le saqué Tools» y «no pasó nada».
+  await limpiar();
+  const p = await persona('usuario', ['closer', 'tools']);
+  const token = await tokenDeQuienAdministra();
+
+  const r = await asignarRoles(
+    conCuerpo(`/api/admin/usuarios/${p}/roles`, token, {
+      roles: ['usuario'],
+      secciones: ['closer'],
+    }),
+    { params: Promise.resolve({ id: p }) },
+  );
+  assert.equal(r.status, 200, await r.clone().text());
+
+  const ahora = await filas<{ seccion: string }>(
+    admin,
+    'select seccion from identidad.usuarios_secciones where usuario_id = $1 order by seccion',
+    [p],
+  );
+  assert.deepEqual(
+    ahora.map((x) => x.seccion),
+    ['closer'],
+    'destildar una pestaña no se la quitó: el POST tiene que reemplazar el conjunto',
   );
 });

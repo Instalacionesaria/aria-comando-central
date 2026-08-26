@@ -57,6 +57,55 @@ const MOTIVOS = {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** El texto de un rechazo, con el detalle del servidor si lo trae. */
+/**
+ * Las casillas de pestañas. **Un componente, dos usos: el alta y la edición.**
+ *
+ * Copiarlo era el camino corto y estaba mal por dos motivos medidos. El primero: es la única parte
+ * de esta pantalla que recorre el catálogo de secciones, y una segunda copia es una segunda
+ * oportunidad de que alguien escriba un nombre a mano — que es exactamente lo que
+ * `pruebas/codigo/101-alcance.test.ts` prohíbe, y lo prohíbe porque ya pasó (`leads` contra
+ * `contacts`, con dos pruebas en verde). El segundo: el `aria-label` de acá abajo se agregó después
+ * de medir que el árbol de accesibilidad leía «on» en vez del nombre de la pestaña; con dos copias,
+ * ese arreglo vive en una sola.
+ *
+ * `grupos` es el ALCANCE OFRECIBLE del rol, ya agrupado por el servidor. Lo que se ofrece es el
+ * techo del rol: `usuario` no alcanza Ajustes, así que esa casilla no aparece. Ofrecerla sería un
+ * control que se ve y no puede cumplir.
+ */
+function CasillasDeSecciones({ id, grupos, elegidas, alCambiar }) {
+  return (
+    <div className="aj-casillas" id={id}>
+      {(grupos ?? []).map((g) => (
+        <div className="aj-grupo" key={g.grupo.clave}>
+          {g.grupo.etiqueta ? <span className="aj-grupo-t">{g.grupo.etiqueta}</span> : null}
+          {g.secciones.map((sec) => (
+            <label className="aj-casilla" key={sec.clave}>
+              <input
+                type="checkbox"
+                /* El `<label>` envuelve la casilla, y aun así el árbol de accesibilidad la leía
+                   como «on»: el nombre no se computaba. Con `aria-label` cada casilla dice qué
+                   pestaña es. */
+                aria-label={sec.nombre}
+                checked={elegidas.has(sec.clave)}
+                onChange={(e) => alCambiar(sec.clave, e.target.checked)}
+              />
+              <span>{sec.nombre}</span>
+            </label>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Agregar o quitar una clave de un `Set`, sin tocar el original. */
+function conmutar(antes, clave, puesta) {
+  const ahora = new Set(antes);
+  if (puesta) ahora.add(clave);
+  else ahora.delete(clave);
+  return ahora;
+}
+
 function porQue(r) {
   if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se cambió nada.';
   if (r.tipo === 'rechazado') return r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`;
@@ -90,6 +139,15 @@ export default function Usuarios({ sesion }) {
   const [edNombre, setEdNombre] = useState('');
   const [edEmail, setEdEmail] = useState('');
   const [edRol, setEdRol] = useState('');
+  /* Las pestañas de quien se está editando. Arrancan con las que YA tiene: el `POST` reemplaza el
+     conjunto, así que abrir el panel con las casillas vacías y guardar sería quitárselas todas. */
+  const [edSecciones, setEdSecciones] = useState(() => new Set());
+  /* El rol elegido en la edición, con sus datos del catálogo. Se declara ACÁ ARRIBA y no junto al
+     resto de los derivados, y no es estilo: `guardar` lo nombra en su lista de dependencias, y esa
+     lista se evalúa al renderizar. Declarado más abajo, la pantalla queda EN BLANCO con «Cannot
+     access before initialization» — que ya pasó una vez con `elRol`, y no es un error de
+     compilación, así que solo se ve abriendo la pantalla. */
+  const elRolEditado = roles.find((r) => r.clave === edRol) ?? null;
   const [ocupado, setOcupado] = useState(false);
   const [confirmaBorrado, setConfirmaBorrado] = useState(false);
 
@@ -247,6 +305,7 @@ export default function Usuarios({ sesion }) {
     setEdNombre(u.nombre ?? '');
     setEdEmail(u.email ?? '');
     setEdRol(u.roles?.[0] ?? '');
+    setEdSecciones(new Set(u.secciones ?? []));
   };
 
   const cerrarEdicion = () => {
@@ -276,10 +335,22 @@ export default function Usuarios({ sesion }) {
     }
 
     const cambioDeRol = edRol !== (editando.roles?.[0] ?? '');
-    if (cambioDeRol) {
+    /* Una operación, no dos: el servidor reemplaza roles Y alcance en la misma transacción. Se
+       manda también cuando SOLO cambiaron las pestañas, porque no hay otro camino para escribirlas
+       — y con el conjunto completo, que es lo que esa ruta espera. */
+    const antes = new Set(editando.secciones ?? []);
+    const cambioDeSecciones =
+      antes.size !== edSecciones.size || [...edSecciones].some((s) => !antes.has(s));
+    if (cambioDeRol || cambioDeSecciones) {
       const r = await pedir(`/api/admin/usuarios/${editando.id}/roles`, {
         metodo: 'POST',
-        cuerpo: { roles: edRol ? [edRol] : [] },
+        cuerpo: {
+          roles: edRol ? [edRol] : [],
+          /* Solo si el rol destino restringe, igual que en el alta. Con un rol sin restricción el
+             servidor borra el alcance de todas formas; mandarlo sería decirle algo que va a
+             ignorar, y la próxima persona que lea esto tendría que averiguar cuál manda. */
+          ...(elRolEditado?.restringePorSeccion ? { secciones: [...edSecciones] } : {}),
+        },
       });
       if (r.tipo !== 'datos' || r.datos?.asignados === false) {
         setOcupado(false);
@@ -295,14 +366,14 @@ export default function Usuarios({ sesion }) {
     }
 
     setOcupado(false);
-    if (!cambioDeDatos && !cambioDeRol) {
+    if (!cambioDeDatos && !cambioDeRol && !cambioDeSecciones) {
       setAviso({ mal: false, texto: 'No había nada que cambiar.' });
       return;
     }
     setAviso({ mal: false, texto: `Se guardó ${edNombre.trim()}.` });
     cerrarEdicion();
     await recargar();
-  }, [editando, edNombre, edEmail, edRol, recargar]);
+  }, [editando, edNombre, edEmail, edRol, edSecciones, elRolEditado, recargar]);
 
   /** Una acción sobre la persona abierta: desactivar, activar o borrar. */
   const accion = useCallback(
@@ -689,34 +760,14 @@ export default function Usuarios({ sesion }) {
               {elRol?.restringePorSeccion ? (
                 <div className="fd-campo">
                   <label htmlFor="alta-secciones">Pestañas que va a ver</label>
-                  <div className="aj-casillas" id="alta-secciones">
-                    {(elRol.alcance ?? []).map((g) => (
-                      <div className="aj-grupo" key={g.grupo.clave}>
-                        {g.grupo.etiqueta ? <span className="aj-grupo-t">{g.grupo.etiqueta}</span> : null}
-                        {g.secciones.map((sec) => (
-                          <label className="aj-casilla" key={sec.clave}>
-                            <input
-                              type="checkbox"
-                              /* El `<label>` envuelve la casilla, y aun así el árbol de
-                                 accesibilidad la leía como «on»: el nombre no se computaba. Con
-                                 `aria-label` cada casilla dice qué pestaña es. */
-                              aria-label={sec.nombre}
-                              checked={seccionesNuevas.has(sec.clave)}
-                              onChange={(e) =>
-                                setSeccionesNuevas((antes) => {
-                                  const ahora = new Set(antes);
-                                  if (e.target.checked) ahora.add(sec.clave);
-                                  else ahora.delete(sec.clave);
-                                  return ahora;
-                                })
-                              }
-                            />
-                            <span>{sec.nombre}</span>
-                          </label>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                  <CasillasDeSecciones
+                    id="alta-secciones"
+                    grupos={elRol.alcance}
+                    elegidas={seccionesNuevas}
+                    alCambiar={(clave, puesta) =>
+                      setSeccionesNuevas((antes) => conmutar(antes, clave, puesta))
+                    }
+                  />
                   {/* Se dice qué elige Y QUÉ NO, y la segunda mitad importa más: la restricción es de
                       PESTAÑAS. Las operaciones sobre un contacto —abrir su ficha, escribirle— piden
                       capacidades que este rol tiene y no pertenecen a ninguna pantalla, así que no
@@ -845,10 +896,44 @@ export default function Usuarios({ sesion }) {
                 ) : null}
               </div>
 
+              {/* ── LAS PESTAÑAS DE ESTA PERSONA, AL EDITAR ───────────────────────
+                  Sin esto, el alcance se elegía una vez en el alta y NO se podía tocar nunca más:
+                  un tilde de más había que arreglarlo borrando a la persona y volviéndola a crear.
+
+                  Y había algo peor que una comodidad faltante: `POST .../roles` reemplaza roles y
+                  alcance juntos y **rechaza** con `sin_secciones` cuando el rol destino restringe y
+                  el cuerpo no trae ninguna. O sea que pasar a alguien al rol `usuario` desde este
+                  panel devolvía 400 y no había ningún camino en la interfaz para hacerlo. */}
+              {elRolEditado?.restringePorSeccion && !soyYo && !esFundador ? (
+                <div className="fd-campo">
+                  <label htmlFor="ed-secciones">Pestañas que va a ver</label>
+                  <CasillasDeSecciones
+                    id="ed-secciones"
+                    grupos={elRolEditado.alcance}
+                    elegidas={edSecciones}
+                    alCambiar={(clave, puesta) =>
+                      setEdSecciones((previas) => conmutar(previas, clave, puesta))
+                    }
+                  />
+                  <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
+                    Al menos una. Se guarda el conjunto <b>completo</b>: lo que destildes se le
+                    quita.
+                  </div>
+                </div>
+              ) : null}
+
               {elAviso}
 
               <div className="aj-fila">
-                <button type="button" className="fd-btn" disabled={ocupado} onClick={() => void guardar()}>
+                {/* Deshabilitado también cuando el rol elegido restringe y no quedó ninguna
+                    pestaña: es el mismo freno que el alta, y evita mandar un cuerpo que el
+                    servidor ya sabe que va a rechazar. */}
+                <button
+                  type="button"
+                  className="fd-btn"
+                  disabled={ocupado || (elRolEditado?.restringePorSeccion && edSecciones.size === 0)}
+                  onClick={() => void guardar()}
+                >
                   {ocupado ? 'Guardando…' : 'Guardar'}
                 </button>
                 <button type="button" className="fd-btn sec" disabled={ocupado} onClick={cerrarEdicion}>

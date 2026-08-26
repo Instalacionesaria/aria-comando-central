@@ -19,6 +19,15 @@ export interface PersonaListada {
   /** Las claves de sus roles. **Nunca `null`**: sin roles es una lista vacía. */
   roles: string[];
   /**
+   * Las pestañas que tiene concedidas. **Nunca `null`**, por lo mismo que los roles.
+   *
+   * Viaja por el MISMO motivo que ellos, y con un síntoma peor: `POST .../roles` reemplaza roles y
+   * alcance juntos, y **rechaza** con `sin_secciones` si el rol destino restringe y el cuerpo no
+   * trae ninguna. Sin este dato, la pantalla de edición no podía mandarlas — así que pasar a
+   * alguien al rol `usuario` desde ahí devolvía 400 y no había forma de hacerlo.
+   */
+  secciones: string[];
+  /**
    * De qué empresa es.
    *
    * Viaja SIEMPRE, no solo cuando la lista cruza empresas. Mandarla a veces sí y a veces no
@@ -101,6 +110,16 @@ export async function personasQuePuedeAdministrar(
         .whereRef('ur.usuario_id', '=', 'u.id')
         .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('r.clave')]).as('claves'))
         .as('roles'),
+      // ── EL ALCANCE ───────────────────────────────────────────────────────
+      //
+      // Subconsulta por lo mismo que los roles, y hace falta también por lo mismo: el `POST`
+      // reemplaza el conjunto. La diferencia es que acá el modo de falla ya no es silencioso —el
+      // servidor rechaza— pero deja una operación IMPOSIBLE en vez de una destructiva.
+      eb
+        .selectFrom('usuarios_secciones as us')
+        .whereRef('us.usuario_id', '=', 'u.id')
+        .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('us.seccion')]).as('claves'))
+        .as('secciones'),
     ])
     .execute();
 
@@ -114,6 +133,7 @@ export async function personasQuePuedeAdministrar(
     // acá obligaría a cada consumidor a acordarse, y el que se olvide dibuja "undefined" donde
     // debería decir que no tiene ninguno.
     roles: f.roles ?? [],
+    secciones: f.secciones ?? [],
     organizacion: { id: f.org_id, nombre: f.org_nombre, esPrincipal: f.org_es_principal },
   }));
 }
