@@ -31,6 +31,7 @@
 // `organizaciones.listar`. Eso no cambia.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { seccionesVisibles } from '../../../../lib/autorizacion/secciones.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -42,18 +43,46 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['usuarios.ver']);
   if (contexto instanceof Response) return contexto;
 
-  const roles = await conIdentidad(async (db) =>
-    db
+  /* ── LAS SECCIONES QUE ALCANZA CADA ROL ────────────────────────────────────
+   *
+   * Viajan con el rol para que el formulario de alta pueda ofrecer casillas de permisos por persona
+   * **sin ofrecer las que no harían nada**. Un `usuario` no tiene `credenciales.ver`, así que darle
+   * la sección Ajustes es tildar una casilla sin efecto — y eso es el `07` § 4: *un control que se ve
+   * y no puede cumplir*.
+   *
+   * El mapeo lo hace el SERVIDOR con `seccionesVisibles`, que es la misma función que decide el menú.
+   * La alternativa —mandarle al navegador las capacidades de cada rol y que él calcule— pondría una
+   * segunda copia de esa regla en el cliente, y las dos se desordenarían la primera vez que se agregue
+   * una sección.
+   */
+  const roles = await conIdentidad(async (db) => {
+    const filas = await db
       .selectFrom('roles')
       // Los roles GLOBALES, que son los que sirven de plantilla para cualquier organización.
       // Un rol privado de otra organización no es asignable acá —lo impide el disparador
       // `usuarios_roles_no_cruzan`— así que ofrecerlo sería ofrecer algo que va a fallar.
       .where('org_id', 'is', null)
-      .select(['clave', 'nombre', 'solo_principal', 'exige_segundo_factor'])
+      .select(['id', 'clave', 'nombre', 'solo_principal', 'exige_segundo_factor'])
       .orderBy('solo_principal', 'desc')
       .orderBy('nombre', 'asc')
-      .execute(),
-  );
+      .execute();
+
+    // Las capacidades de todos los roles en UNA consulta, no una por rol.
+    const reparto = await db
+      .selectFrom('roles_permisos')
+      .select(['rol_id', 'permiso'])
+      .where(
+        'rol_id',
+        'in',
+        filas.map((f) => f.id),
+      )
+      .execute();
+
+    return filas.map((f) => {
+      const capacidades = new Set(reparto.filter((r) => r.rol_id === f.id).map((r) => r.permiso));
+      return { ...f, secciones: seccionesVisibles(capacidades).map((x) => x.clave) };
+    });
+  });
 
   return ok({
     roles: roles.map((r) => ({
@@ -69,6 +98,14 @@ export async function GET(peticion: Request): Promise<Response> {
        */
       soloPrincipal: r.solo_principal,
       exigeSegundoFactor: r.exige_segundo_factor,
+      /**
+       * Las claves de las secciones que este rol puede alcanzar, en el orden del menú.
+       *
+       * Es lo que el formulario de alta usa para dibujar las casillas de permisos por persona. No es
+       * «lo que la persona va a ver»: es el techo. Lo que ve es esto **cortado** por las secciones
+       * que se le concedan.
+       */
+      secciones: r.secciones,
     })),
   });
 }

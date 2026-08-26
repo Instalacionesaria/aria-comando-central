@@ -66,7 +66,10 @@ export async function GET(peticion: Request): Promise<Response> {
   // con `dias=1`, la pestaña Agenda con quince, y quien quiera más— y **la forma de la respuesta no
   // cambia**. Eso es lo que permitió que el origen de los datos cambiara sin tocar el frontend.
   const agenda = await conOrganizacion(contexto.orgEfectiva, () =>
-    agendaDelCloser(contexto.organizacion.zonaHoraria, {
+    // El territorio va EXPLÍCITO. Esta ruta es la de la pantalla del closer, así que es `closer` —y
+    // decirlo acá en vez de dejar que la consulta lo suponga es lo que hizo visible que antes no
+    // filtraba nada: devolvía las citas del setter y de los contactos congelados.
+    agendaDelCloser('closer', contexto.organizacion.zonaHoraria, {
       dias,
       incluirCanceladas: url.searchParams.get('canceladas') === 'si',
     }),

@@ -168,7 +168,7 @@ async function marcarPulso(campos: { atrasado?: boolean; corrida?: boolean }): P
 }
 
 const laAgenda = (opciones: { dias?: number; incluirCanceladas?: boolean } = {}, zona = ZONA) =>
-  conOrganizacion(alfa, () => agendaDelCloser(zona, opciones));
+  conOrganizacion(alfa, () => agendaDelCloser('closer', zona, opciones));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1 · EL BARRIDO
@@ -590,7 +590,7 @@ test('la cola de HOY de Mi Día ya NO dice que el calendario no está conectado'
   // mensaje de falta que sobrevive a lo que describe enseña a no creerle a los demás.
   await limpiar();
   await marcarPulso({ corrida: true });
-  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy(ZONA));
+  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy('closer', ZONA));
   assert.doesNotMatch(texto, /no está conectado/i);
 });
 
@@ -632,7 +632,7 @@ test('el cero de hoy dice CUÁNTAS hay más adelante, que es lo que decide qué 
   await citaEnTabla(c, mañana.i);
   await citaEnTabla(c, mañana.i, { estado_ghl: 'cancelled' });
 
-  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy(ZONA));
+  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy('closer', ZONA));
   assert.match(texto, /1 cita/, 'la cancelada no cuenta como cita por delante');
   assert.match(texto, /Agenda/);
 });
@@ -640,7 +640,7 @@ test('el cero de hoy dice CUÁNTAS hay más adelante, que es lo que decide qué 
 test('cero hoy y cero adelante dice que lo que falta es AGENDAR', async () => {
   await limpiar();
   await marcarPulso({ corrida: true });
-  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy(ZONA));
+  const texto = await conOrganizacion(alfa, () => porQueNoHayCitasHoy('closer', ZONA));
   assert.match(texto, /agendar/i);
 });
 
@@ -696,4 +696,80 @@ test('una cita futura viva SÍ enciende el ícono, y una pasada viva SÍ cuenta 
   assert.ok(fila);
   assert.equal(fila.iconos.citaFutura, true);
   assert.equal(fila.iconos.reunionesTenidas, 1);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5 · EL TERRITORIO, QUE NO SE FILTRABA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('LA FUGA: la agenda del closer NO devuelve citas de contactos del setter', async () => {
+  // Defecto preexistente que encontró una revisión adversarial: `agendaDelCloser` no mencionaba
+  // `territorio` ni una vez. Devolvía las citas de CUALQUIER contacto de la empresa —con su nombre,
+  // su teléfono y su identificador— y la capacidad no lo tapa: `closer.ver` habilita la pantalla, no
+  // decide qué territorio muestra.
+  await limpiar();
+  await marcarPulso({ corrida: true });
+  const enUnaHora = await unaFila<{ i: Date }>(admin, `select now() + interval '1 hour' as i`);
+  assert.ok(enUnaHora);
+
+  const delCloser = await contacto(`t1-${randomUUID().slice(0, 6)}`);
+  await citaEnTabla(delCloser, enUnaHora.i);
+
+  // Uno del setter y uno CONGELADO —`territorio` nulo—, que es el que no aparece en ninguna
+  // pantalla y del que nadie se acordaría.
+  const delSetter = await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({ ghl_contact_id: `t2-${randomUUID()}`, nombre: 'Del setter', territorio: 'setter' } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+  await citaEnTabla(delSetter, enUnaHora.i);
+
+  const congelado = await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({ ghl_contact_id: `t3-${randomUUID()}`, nombre: 'Congelado', territorio: null } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+  await citaEnTabla(congelado, enUnaHora.i);
+
+  const a = await laAgenda({ dias: 2 });
+  const ids = a.dias.flatMap((d) => d.citas).map((c) => c.contactoId);
+  assert.deepEqual(ids, [delCloser], 'la agenda del closer trajo citas de otro territorio');
+  assert.equal(a.total, 1);
+
+  // Y el del setter SÍ está en la tabla: no es que no se guardó, es que esta pantalla no lo muestra.
+  const enLaTabla = await conOrganizacion(alfa, () =>
+    datos().selectFrom('citas').select(['contacto_id']).execute(),
+  );
+  assert.equal(enLaTabla.length, 3, 'las tres citas tienen que estar guardadas');
+});
+
+test('el conteo que explica un cero también es del territorio', async () => {
+  // «Quedaron 12 citas de días anteriores» contando las del setter sería explicar un cero con un
+  // número de otra pantalla — y quien lo lea va a apretar «Traer del calendario» para nada.
+  await limpiar();
+  await marcarPulso({ corrida: true });
+  const ayer = await unaFila<{ i: Date }>(admin, `select now() - interval '1 day' as i`);
+  assert.ok(ayer);
+
+  const delSetter = await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({ ghl_contact_id: `t4-${randomUUID()}`, nombre: 'Del setter', territorio: 'setter' } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+  await citaEnTabla(delSetter, ayer.i);
+
+  const a = await laAgenda({ dias: 5 });
+  assert.equal(a.total, 0);
+  assert.ok(a.falta);
+  // El texto del cero medido, NO el que cuenta citas anteriores: para el closer no hubo ninguna.
+  assert.doesNotMatch(a.falta, /1 cita|quedaron/i, 'contó una cita del setter para explicar el cero');
 });

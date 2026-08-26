@@ -186,7 +186,7 @@ test('la AGENDA lleva la frescura, y NO la mete en `falta`', async () => {
     [alfa],
   );
 
-  const a = await conOrganizacion(alfa, () => agendaDelCloser(ZONA, { dias: 3 }));
+  const a = await conOrganizacion(alfa, () => agendaDelCloser('closer', ZONA, { dias: 3 }));
   assert.equal(a.frescura.estado, 'atrasada');
   assert.ok(a.frescura.aviso);
   // Y `falta` sigue hablando de lo suyo: por qué no hay citas, no de cuándo corrió el barrido.

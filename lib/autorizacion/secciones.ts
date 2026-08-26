@@ -349,7 +349,17 @@ export const SIN_PANTALLA: readonly string[] = [
   // blanco, sin ningún error"* (07 § 2)—, no de mutaciones: una pantalla que se ve a medias es un
   // problema de lo que se muestra, y estas seis no muestran nada. La pantalla de administración,
   // cuando exista, va a tener su `GET` propio, y ÉSE sí entra a `SECCIONES`.
-  'app/api/admin/organizaciones/route.ts',
+  /* ── ACÁ ESTABA `app/api/admin/organizaciones/route.ts`, Y ERA UNA ENTRADA MUERTA ──
+   *
+   * Ese archivo declara `PANTALLA = 'empresas'` (route.ts:58) **y** estaba en esta lista. La prueba
+   * que las cruza solo consulta `SIN_PANTALLA` en la rama `if (!pantalla)`, así que la entrada no
+   * la veía nadie: ni servía ni fallaba.
+   *
+   * No es un detalle de prolijidad. Esta lista pasó a decidir algo —qué operaciones quedan fuera
+   * del alcance por sección— y una lista que miente en una fila es una lista en la que no se puede
+   * apoyar una decisión de permisos. La comprobación de entradas muertas que `ESTADOS` ya tenía
+   * ahora la tiene ésta también.
+   */
   'app/api/admin/usuarios/route.ts',
   'app/api/admin/usuarios/[id]/route.ts',
   'app/api/admin/usuarios/[id]/desactivar/route.ts',
@@ -428,6 +438,70 @@ export function puede(permisos: ReadonlySet<string>, seccion: Seccion): boolean 
 /** Las secciones visibles para un conjunto de permisos (03 § 7). */
 export function seccionesVisibles(permisos: ReadonlySet<string>): readonly Seccion[] {
   return SECCIONES.filter((s) => puede(permisos, s));
+}
+
+/**
+ * Las claves de sección que existen. Para validar lo que llega de una petición.
+ *
+ * Se deriva de `SECCIONES` y no se escribe a mano: una segunda lista es una lista que va a quedar
+ * corta el día que se agregue una pantalla, y el síntoma sería una sección que no se puede conceder.
+ */
+export function clavesDeSeccion(): readonly string[] {
+  return SECCIONES.map((s) => s.clave);
+}
+
+/**
+ * Las secciones que una persona ve: lo que su ROL habilita, cortado por su ALCANCE personal.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ESTO PARECE VIOLAR UNA REGLA ESCRITA DEL PROYECTO, Y HAY QUE DECIRLO ENTERO
+ *
+ * `db/migraciones/003_roles_y_permisos.sql:114-118` dice, sobre los permisos efectivos:
+ *
+ *   *"SOLO SUMA, NUNCA RESTA: no hay permisos negativos. Un modelo con «permitir» y «denegar»
+ *   necesita reglas de precedencia, y esas reglas se vuelven imposibles de razonar en cuanto un
+ *   usuario tiene tres roles. Si hace falta que alguien tenga CASI un rol, la respuesta es un rol
+ *   nuevo — que con este modelo cuesta una fila."*
+ *
+ * Y un alcance por persona **parece** exactamente eso: el rol da diez pestañas y el alcance deja
+ * tres. Tres razones por las que no es lo mismo, y si alguna de las tres deja de ser cierta hay que
+ * volver a discutir esto:
+ *
+ *   1 · **No toca ninguna capacidad.** Dos personas con el mismo rol y alcances distintos tienen el
+ *       MISMO conjunto de capacidades. El alcance no habilita nada que el rol no habilite —es una
+ *       intersección, nunca una unión— así que no existe la pregunta «¿gana el permiso o la
+ *       negación?».
+ *   2 · **No hay precedencia que razonar**, que es el problema concreto que la regla nombra. El
+ *       alcance es UNO por persona, no uno por rol: no se combinan tres alcances, no hay orden.
+ *   3 · **La alternativa que la regla propone no puede expresar esto.** Siete secciones —executive,
+ *       contacts, acquisition, creative, conversion, conversation, sales— comparten la capacidad
+ *       `tablero.ver`. Un rol nuevo por combinación no las separa: **ninguna combinación de
+ *       capacidades puede**, porque la capacidad no distingue esas siete pantallas. O se agrega un
+ *       eje nuevo, o el pedido es imposible.
+ *
+ * Y una consecuencia que hay que respetar en todos los llamadores: el alcance se comprueba
+ * **ADEMÁS** de la capacidad, nunca en su lugar. Un alcance que conceda `credenciales` a un rol que
+ * no tiene `credenciales.ver` no concede nada.
+ *
+ * ── CERO FILAS: SIN ALCANCE, NO «SIN NADA» ──────────────────────────────────
+ *
+ * `concedidas === null` significa que esta persona **no tiene alcance configurado**, y entonces ve
+ * todo lo que su rol habilita. Es lo que mantiene a los administradores y a quien ya existía
+ * funcionando sin sembrarle filas a nadie.
+ *
+ * Un conjunto VACÍO es otra cosa: significa «ninguna sección», y es un estado sin salida —la persona
+ * entra y no ve nada, sin explicación—. Por eso el endpoint del alta lo rechaza en vez de guardarlo:
+ * la ausencia y el vacío son los dos ceros del `11` § 9 regla 1, y acá uno de los dos no se puede
+ * escribir.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export function seccionesConAlcance(
+  permisos: ReadonlySet<string>,
+  concedidas: ReadonlySet<string> | null,
+): readonly Seccion[] {
+  const delRol = seccionesVisibles(permisos);
+  if (concedidas === null) return delRol;
+  return delRol.filter((s) => concedidas.has(s.clave));
 }
 
 /**

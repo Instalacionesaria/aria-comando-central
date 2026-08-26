@@ -33,6 +33,7 @@ import { estaCancelada } from '../ghl/calendarios.ts';
 import { noCancelada } from './citas.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
+import type { Territorio } from '../datos/esquema.ts';
 
 export interface CitaDeLaAgenda {
   id: string;
@@ -106,6 +107,7 @@ export const DIAS_DE_LA_AGENDA = 15;
  *   de lo que el CRM devuelve.
  */
 export async function agendaDelCloser(
+  territorio: Territorio,
   zonaHoraria: string,
   opciones: { dias?: number; incluirCanceladas?: boolean } = {},
 ): Promise<Agenda> {
@@ -144,6 +146,21 @@ export async function agendaDelCloser(
   let q = datos()
     .selectFrom('citas as c')
     .innerJoin('contactos as k', 'k.id', 'c.contacto_id')
+    /* ── EL TERRITORIO, Y ESTO FALTABA ────────────────────────────────────────
+     *
+     * Esta consulta no filtraba por territorio: devolvía las citas de **cualquier** contacto de la
+     * empresa —las del setter y las de los congelados, que tienen `territorio` nulo y no aparecen en
+     * ninguna pantalla— con su nombre, su teléfono y su identificador.
+     *
+     * La capacidad no alcanza para esto: `closer.ver` habilita la PANTALLA, y lo que la pantalla
+     * mostraba era el territorio equivocado. El aislamiento por fila tampoco: son contactos de la
+     * misma organización.
+     *
+     * Se pasa por parámetro y no se deduce, igual que `filasDeTerritorio(territorio, …)`: así no se
+     * puede llamar sin haberlo decidido. Deducirlo acá —«la función se llama agenda del closer, será
+     * `closer`»— es cómo la omisión vuelve la próxima vez.
+     */
+    .where('k.territorio', '=', territorio)
     .where('c.inicio_el', '>=', desdeLaMedianoche)
     .where('c.inicio_el', '<', hastaElFin)
     .select([
@@ -215,7 +232,7 @@ export async function agendaDelCloser(
     zonaHoraria,
     avisoDeZona: avisoDeZona(zonaHoraria),
     frescura: await frescuraDe('citas'),
-    falta: filas.length === 0 ? await porQueNoHayCitas(zonaHoraria) : null,
+    falta: filas.length === 0 ? await porQueNoHayCitas(territorio, zonaHoraria) : null,
   };
 }
 
@@ -301,19 +318,26 @@ async function faltaDelBarrido(): Promise<string | null> {
  * La tercera frase dice **cuántas hay más adelante**, porque es lo que decide qué hace la persona:
  * cero hoy con seis mañana es un día libre; cero hoy y cero adelante es que hay que agendar.
  */
-export async function porQueNoHayCitasHoy(zonaHoraria: string): Promise<string> {
+export async function porQueNoHayCitasHoy(
+  territorio: Territorio,
+  zonaHoraria: string,
+): Promise<string> {
   const delBarrido = await faltaDelBarrido();
   if (delBarrido !== null) return delBarrido;
 
   const adelante = await datos()
-    .selectFrom('citas')
+    .selectFrom('citas as c')
+    // El mismo territorio que la ventana: «hay 3 citas más adelante» tiene que ser de esta pantalla
+    // y no del setter, o el número que explica un cero es de otro lado.
+    .innerJoin('contactos as k', 'k.id', 'c.contacto_id')
+    .where('k.territorio', '=', territorio)
     .select(({ fn }) => fn.countAll<string>().as('n'))
     .where(
-      'inicio_el',
+      'c.inicio_el',
       '>=',
       sql<Date>`(date_trunc('day', timezone(${zonaHoraria}, now())) + interval '1 day') at time zone ${zonaHoraria}`,
     )
-    .where(noCancelada('estado_ghl'))
+    .where(noCancelada('c.estado_ghl'))
     .executeTakeFirst();
 
   const n = Number(adelante?.n ?? 0);
@@ -332,7 +356,7 @@ export async function porQueNoHayCitasHoy(zonaHoraria: string): Promise<string> 
 /**
  * Un cero de citas de la ventana de la Agenda, explicado. Tres estados, no dos.
  */
-async function porQueNoHayCitas(zonaHoraria: string): Promise<string> {
+async function porQueNoHayCitas(territorio: Territorio, zonaHoraria: string): Promise<string> {
   const delBarrido = await faltaDelBarrido();
   if (delBarrido !== null) return delBarrido;
 
@@ -349,10 +373,14 @@ async function porQueNoHayCitas(zonaHoraria: string): Promise<string> {
    * Así que el cero viene con el dato que lo vuelve una afirmación: cuántas hubo antes.
    */
   const recientes = await datos()
-    .selectFrom('citas')
+    .selectFrom('citas as c')
+    // Y acá también: «quedaron 12 citas de días anteriores» contando las del setter sería explicar
+    // un cero con un número de otra pantalla.
+    .innerJoin('contactos as k', 'k.id', 'c.contacto_id')
+    .where('k.territorio', '=', territorio)
     .select(({ fn }) => fn.countAll<string>().as('n'))
     .where(
-      'inicio_el',
+      'c.inicio_el',
       '<',
       sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`,
     )

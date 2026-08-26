@@ -539,3 +539,28 @@ test('ninguna ruta de las listas blancas está muerta', () => {
   const yaExisten = AUN_NO_EXISTEN.filter((r) => existentes.has(r));
   assert.deepEqual(yaExisten, [], 'estas rutas ya existen: sacalas de AUN_NO_EXISTEN');
 });
+
+test('ninguna entrada de `SIN_PANTALLA` está muerta, y ninguna contradice un `PANTALLA`', () => {
+  // ESTA PRUEBA NACE ROJA CONTRA EL ESTADO ANTERIOR, y por eso se escribe.
+  //
+  // `app/api/admin/organizaciones/route.ts` estaba en `SIN_PANTALLA` **y** declaraba
+  // `PANTALLA = 'empresas'`. La comprobación de más arriba solo consulta `SIN_PANTALLA` en la rama
+  // `if (!pantalla)`, así que esa entrada no la veía nadie: ni servía ni fallaba.
+  //
+  // Pasó a importar porque esta lista decide algo nuevo —qué operaciones quedan fuera de una
+  // restricción por sección— y una lista que miente en una fila es una lista sobre la que no se
+  // puede apoyar una decisión de permisos. Es la misma comprobación que `ESTADOS` ya tiene.
+  const rutas = manejadoresDeRuta();
+
+  const inexistentes = SIN_PANTALLA.filter((r) => !rutas.includes(r));
+  assert.deepEqual(inexistentes, [], 'entradas de SIN_PANTALLA que no son manejadores de ruta');
+
+  const contradictorias = SIN_PANTALLA.filter((r) =>
+    /export\s+const\s+PANTALLA\s*=/.test(fuenteDe(r)),
+  );
+  assert.deepEqual(
+    contradictorias,
+    [],
+    'estas rutas declaran PANTALLA y además están en SIN_PANTALLA: una de las dos sobra',
+  );
+});

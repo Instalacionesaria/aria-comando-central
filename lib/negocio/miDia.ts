@@ -232,7 +232,7 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
      * Ahora lo contesta `porQueNoHayCitasHoy()`, que mira el pulso del barrido: nunca corrió, corrió
      * a medias, o corrió completo y entonces el cero está medido. Un mensaje de falta que sobrevive
      * a lo que describe es peor que no tenerlo — enseña a no creerle a los demás. */
-    resultado.faltantes.agenda = await porQueNoHayCitasHoy(zonaHoraria);
+    resultado.faltantes.agenda = await porQueNoHayCitasHoy('closer', zonaHoraria);
   }
 
   // ── Cola 3 · BUZÓN ────────────────────────────────────────────────────────
