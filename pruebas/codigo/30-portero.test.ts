@@ -197,7 +197,10 @@ test('ADR-0302 · ninguna comparación con un nombre de rol', () => {
   // Los cuatro roles del sistema salen de una sola fuente para que agregar un quinto no deje un
   // hueco: si mañana hay un rol nuevo y esta lista no lo nombra, la comparación que lo trate como
   // caso especial no la detecta nadie.
-  const CLAVES = ['superadministrador', 'administrador', 'closer', 'setter'];
+  /* Los tres vigentes MÁS los dos retirados. Los retirados se conservan a propósito: un
+     `=== 'closer'` reintroducido es igual de invisible que antes, y el rol ya no existe — así
+     que la comparación sería falsa para todo el mundo y la pantalla quedaría vacía sin error. */
+  const CLAVES = ['superadministrador', 'administrador', 'usuario', 'closer', 'setter'];
   const malos: string[] = [];
   for (const a of archivosFuente(['app', 'components', 'lib'])) {
     for (const clave of CLAVES) {

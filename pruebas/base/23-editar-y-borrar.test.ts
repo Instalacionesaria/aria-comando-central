@@ -214,12 +214,12 @@ test('el rol de plataforma crea en OTRA empresa sin conmutarse, y en una sola ll
       nombre: MARCA,
       email: 'nuevo-en-alfa@e12.ejemplo',
       orgId: alfa,
-      rol: 'closer',
+      rol: 'usuario',
     }),
   );
   assert.equal(r.status, 201, await r.clone().text());
   const datos = (await r.json()) as { id: string; temporal: string; rol: string };
-  assert.equal(datos.rol, 'closer');
+  assert.equal(datos.rol, 'usuario');
   assert.ok(datos.temporal?.length === 14, 'la temporal no vino, o no tiene el largo del 05 § 3');
 
   // Quedó en ALFA, no en la organización de la sesión. Es la mitad que importa: sin ella, la
@@ -237,7 +237,7 @@ test('el rol de plataforma crea en OTRA empresa sin conmutarse, y en una sola ll
        join identidad.roles r on r.id = ur.rol_id where ur.usuario_id = $1`,
     [datos.id],
   );
-  assert.deepEqual(roles.rows.map((f) => f.clave), ['closer']);
+  assert.deepEqual(roles.rows.map((f) => f.clave), ['usuario']);
 });
 
 test('y quien NO es rol de plataforma sigue recibiendo 404 con una empresa ajena', async () => {

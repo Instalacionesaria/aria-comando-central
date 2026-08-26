@@ -101,8 +101,10 @@ insert into identidad.permisos (clave, descripcion) values
   -- Las siete pantallas del prototipo sin operaciones. UNA para las siete: no tienen nada
   -- que proteger del lado del servidor, y lo que decide es si aparecen en el menú.
   --
-  -- La tiene el administrador y NO la tienen closer ni setter, y de eso depende que un
-  -- closer no vea los siete tableros de inteligencia además de su pestaña.
+  -- La tuvo el administrador y NO los dos roles operativos que existían antes, y de eso
+  -- dependía que un closer viera una entrada de menú y no ocho. **Con el reparto de tres roles
+  -- la tiene también `usuario`**, y es el ensanchamiento que se aceptó con el efecto a la
+  -- vista: quien opera ve además los siete tableros. Ver el bloque 2.
   ('tablero.ver', 'Ver los tableros de inteligencia del prototipo'),
 
   ('closer.ver',  'Ver la pestaña Closer: su tablero, su día, su pipeline y su agenda'),
@@ -139,16 +141,26 @@ on conflict (clave) do nothing;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 2 · Los dos roles
+-- 2 · El rol base
 --
--- `solo_principal` en FALSO: un closer o un setter existe en cualquier organización, no
--- solo en la que administra la plataforma. Y `exige_segundo_factor` en falso porque la
--- migración 010 lo dejó opcional para todos.
+-- ── DE CUATRO ROLES A TRES, Y QUÉ SE PERDIÓ AL HACERLO ──────────────────────
+--
+-- Había `closer` y `setter`, cada uno con SU pestaña y no la del otro. Se pidió reemplazarlos
+-- por un único `usuario`, y hay que decir con qué se paga: **desaparece la distinción entre
+-- quien agenda y quien cierra.** Un `usuario` ve las dos pestañas.
+--
+-- Lo que lo hace aceptable no es que sea gratis, es que **nadie los tenía asignados**: medido
+-- en producción antes de tocar nada, las tres personas eran superadministrador, administrador
+-- y administrador. Se retiran sin quitarle nada a nadie — y `003_retiro_de_roles.sql` se
+-- encarga de que si alguien los tuviera, pase a `usuario` en vez de quedarse sin ninguno.
+--
+-- `solo_principal` en FALSO: un usuario existe en cualquier organización, no solo en la que
+-- administra la plataforma. Y `exige_segundo_factor` en falso porque la migración 010 lo dejó
+-- opcional para todos.
 -- ═════════════════════════════════════════════════════════════════════════════
 
 insert into identidad.roles (clave, nombre, es_sistema, solo_principal, exige_segundo_factor) values
-  ('closer', 'Closer', true, false, false),
-  ('setter', 'Setter', true, false, false)
+  ('usuario', 'Usuario', true, false, false)
 on conflict do nothing;
 
 
@@ -195,17 +207,33 @@ declare
 begin
   for v_reparto in
     select * from (values
-      -- Los dos operativos, enumerados: su recorte es el punto, no una consecuencia.
-      -- Cada uno tiene SU capacidad de lectura y no la del otro, y ninguno tiene
-      -- `tablero.ver` — de eso depende que un closer vea una entrada de menú y no ocho.
-      ('closer', array['closer.ver', 'contactos.ver', 'contactos.avanzar',
-                       'contactos.comentar', 'conversaciones.responder']),
-      ('setter', array['setter.ver', 'contactos.ver', 'contactos.avanzar',
-                       'contactos.comentar', 'conversaciones.responder']),
-
       -- El superadministrador: TODAS. El `03` § 2 lo pide sin atajo en el portero, así que
       -- las capacidades tienen que estar cargadas en la tabla de verdad.
       ('superadministrador', (select array_agg(clave) from identidad.permisos)),
+
+      -- ── EL USUARIO: todo lo del administrador MENOS las credenciales ────────
+      --
+      -- Se pidió así, con esas palabras: *"la diferencia entre administrador y usuario será
+      -- que el administrador sí puede modificar las credenciales de su empresa"*.
+      --
+      -- Y se DERIVA en vez de enumerarse, por el mismo motivo que los otros dos: enumerarlo
+      -- obligaría a editar este archivo cada vez que se agrega una capacidad, y olvidarse no
+      -- falla — deja al usuario sin ella y el síntoma es un 403 en una pantalla suelta.
+      --
+      -- Hay que decir qué implica, porque es un ensanchamiento respecto de los roles que
+      -- reemplaza: **un usuario ve los siete tableros de inteligencia, Fundaciones y la
+      -- auditoría.** El `closer` no los veía. Es la consecuencia directa de «todo menos
+      -- credenciales» y se eligió con el efecto a la vista.
+      --
+      -- Se le niega `credenciales.%` COMPLETO, no solo `credenciales.editar`. Con `.ver` le
+      -- quedaría la pestaña Ajustes mostrando un panel que no puede tocar, y eso es el `07`
+      -- § 4 —*"mostrar un control que no puede cumplir"*— con la agravante de que ahí se ven
+      -- los estados de conexión de la empresa.
+      ('usuario', (select array_agg(clave) from identidad.permisos
+                    where clave not like 'organizaciones.%'
+                      and clave not like 'usuarios.%'
+                      and clave not like 'roles.%'
+                      and clave not like 'credenciales.%')),
 
       -- El administrador: todo lo de SU empresa. Se le niegan tres familias completas:
       --
@@ -293,7 +321,7 @@ begin
   -- significa "no se midió" leído como "está bien"— y lo tenía en su propia verificación.
   select string_agg(esperado, ', ')
     into v_falta_rol
-    from unnest(array['superadministrador','administrador','closer','setter']) as esperado
+    from unnest(array['superadministrador','administrador','usuario']) as esperado
    where not exists (
      select 1 from identidad.roles r where r.clave = esperado and r.org_id is null);
 
@@ -305,10 +333,22 @@ begin
       v_falta_rol;
   end if;
 
+  -- ── ACOTADO A LOS ROLES QUE ESTE ARCHIVO DECLARA, Y SE APRENDIÓ FALLANDO ───
+  --
+  -- Antes miraba TODOS los roles de sistema, y eso rompió el camino de actualización. Al
+  -- retirar `closer` y `setter` quedan, por un instante, roles de sistema que este archivo ya
+  -- no reparte: la verificación los encontraba sin capacidades y **abortaba el despliegue
+  -- antes de que `003_retiro_de_roles.sql` llegara a retirarlos**. O sea que el archivo que
+  -- iba a limpiar el estado no corría nunca, por culpa del estado que venía a limpiar.
+  --
+  -- La invariante correcta es más chica y más honesta: este archivo puede responder por los
+  -- roles que DECLARA. Uno que no declara no es su asunto — y el `raise warning` de abajo se
+  -- encarga de que tampoco pase inadvertido.
   select string_agg(r.clave, ', ')
     into v_sin_capacidades
     from identidad.roles r
    where r.es_sistema and r.org_id is null
+     and r.clave in ('superadministrador', 'administrador', 'usuario')
      and not exists (select 1 from identidad.roles_permisos rp where rp.rol_id = r.id);
 
   if v_sin_capacidades is not null then
@@ -316,6 +356,23 @@ begin
       'roles de sistema sin ninguna capacidad: %. El reparto entró cero filas en silencio: '
       'revisá que las claves de `permisos` existan y que el rol que corre este archivo '
       'pueda LEER identidad.roles y identidad.permisos.', v_sin_capacidades;
+  end if;
+
+  -- Y lo que la acotación de arriba dejaría pasar: un rol de sistema que existe y que este
+  -- archivo no reparte. No es un error —es exactamente el estado intermedio de un retiro— pero
+  -- **tiene que verse**: un rol vivo que nadie reparte se puede asignar y no da ninguna
+  -- pantalla. Avisa, y `003_retiro_de_roles.sql` es quien lo resuelve.
+  select string_agg(r.clave, ', ')
+    into v_sin_capacidades
+    from identidad.roles r
+   where r.es_sistema and r.org_id is null
+     and r.clave not in ('superadministrador', 'administrador', 'usuario');
+
+  if v_sin_capacidades is not null then
+    raise warning
+      'hay roles de sistema que este archivo ya no reparte: %. Si es un retiro en curso, '
+      'db/arranque/003_retiro_de_roles.sql los va a quitar y va a mover a su gente. Si no lo '
+      'hace, quedan asignables sin dar ninguna pantalla.', v_sin_capacidades;
   end if;
 
   -- Y que el superadministrador tenga TODAS. Es la invariante que el 03 § 2 pide sin
@@ -335,46 +392,65 @@ begin
       'tiene TODAS por diseño, sin atajo en el portero.', v_faltan;
   end if;
 
-  -- ── Y LA SEPARACIÓN DE LAS DOS PESTAÑAS ────────────────────────────────────
+  -- ── LA FRONTERA DEL USUARIO: las credenciales, y NADA MÁS ─────────────────
   --
-  -- Lo único que se pidió en voz alta fue *"un closer solo ve su pestaña"*. Acá se verifica
-  -- lo que lo hace cierto del lado de la base: que cada uno tenga SU capacidad de lectura y
-  -- **no la del otro**.
+  -- Es la única diferencia entre `usuario` y `administrador`, así que es la única cosa que
+  -- puede estar mal de una forma que nadie note. Se verifica en las DOS direcciones, porque
+  -- se rompe de las dos:
   --
-  -- El modo de falla que atrapa es silencioso: un `in (…)` con una clave de más en la lista
-  -- del reparto le da al closer la pestaña del setter, y nada falla — el menú filtra bien,
-  -- con el criterio equivocado.
-  if exists (
-    select 1 from identidad.roles r
-      join identidad.roles_permisos rp on rp.rol_id = r.id
-     where r.org_id is null
-       and ((r.clave = 'closer' and rp.permiso = 'setter.ver')
-         or (r.clave = 'setter' and rp.permiso = 'closer.ver'))
-  ) then
+  --   · **de más** — el usuario conserva `credenciales.%` y entonces los dos roles son el
+  --     mismo rol con dos nombres. Nada falla: la pantalla se dibuja igual para ambos.
+  --   · **de menos** — al usuario le falta algo que el administrador sí tiene y que no son
+  --     credenciales. Ahí la diferencia dejó de ser la que se pidió, y el síntoma es un 403
+  --     en una pantalla suelta que alguien va a reportar como «no me carga».
+  --
+  -- Se verifica acá y no solo en la suite porque este archivo es lo que corre contra
+  -- producción: la suite mide la base local.
+  select string_agg(rp.permiso, ', ' order by rp.permiso)
+    into v_sobran
+    from identidad.roles r
+    join identidad.roles_permisos rp on rp.rol_id = r.id
+   where r.clave = 'usuario' and r.org_id is null
+     and rp.permiso like 'credenciales.%';
+
+  if v_sobran is not null then
     raise exception
-      'un rol operativo recibió la capacidad de lectura del OTRO: con eso los dos ven las '
-      'dos pestañas y nada falla. Revisá las listas `in (…)` del reparto.';
+      'el usuario conserva capacidades de credenciales: %. Con eso `usuario` y '
+      '`administrador` son el mismo rol con dos nombres, y nada falla al mirar.', v_sobran;
   end if;
 
-  if not exists (select 1 from identidad.roles r join identidad.roles_permisos rp on rp.rol_id = r.id
-                  where r.clave = 'closer' and r.org_id is null and rp.permiso = 'closer.ver')
-     or not exists (select 1 from identidad.roles r join identidad.roles_permisos rp on rp.rol_id = r.id
-                  where r.clave = 'setter' and r.org_id is null and rp.permiso = 'setter.ver') then
+  -- Y la otra dirección: la diferencia tiene que ser EXACTAMENTE las credenciales.
+  select string_agg(rp.permiso, ', ' order by rp.permiso)
+    into v_sobran
+    from identidad.roles a
+    join identidad.roles_permisos rp on rp.rol_id = a.id
+   where a.clave = 'administrador' and a.org_id is null
+     and rp.permiso not like 'credenciales.%'
+     and not exists (
+       select 1 from identidad.roles u
+         join identidad.roles_permisos ru on ru.rol_id = u.id
+        where u.clave = 'usuario' and u.org_id is null and ru.permiso = rp.permiso);
+
+  if v_sobran is not null then
     raise exception
-      'un rol operativo NO recibió su propia capacidad de lectura: su pestaña no se le '
-      'muestra a nadie.';
+      'el administrador tiene capacidades que el usuario no, y que no son credenciales: %. '
+      'La diferencia entre los dos roles dejó de ser la que se pidió.', v_sobran;
   end if;
 
-  -- Y que `tablero.ver` NO les llegue: si les llegara, un closer vería además los siete
-  -- tableros del prototipo, o sea ocho entradas de menú en vez de una.
-  if exists (
+  -- ── Y QUE EL USUARIO VEA ALGO ─────────────────────────────────────────────
+  --
+  -- `ADR-0303`: todo rol asignable tiene al menos una pantalla. Un rol que se puede asignar y
+  -- no muestra nada es una persona que puede entrar y no ve nada — y eso se descubre cuando
+  -- ella lo dice, no antes.
+  if not exists (
     select 1 from identidad.roles r
       join identidad.roles_permisos rp on rp.rol_id = r.id
-     where r.org_id is null and r.clave in ('closer','setter') and rp.permiso = 'tablero.ver'
+     where r.clave = 'usuario' and r.org_id is null
+       and rp.permiso in ('closer.ver', 'setter.ver')
   ) then
     raise exception
-      'un rol operativo recibió `tablero.ver`: vería los siete tableros del prototipo además '
-      'de su pestaña.';
+      'el rol `usuario` no recibió ninguna capacidad de pestaña operativa: quien lo tenga '
+      'puede entrar y no ve dónde trabajar.';
   end if;
 
   -- ── LA FRONTERA DEL ADMINISTRADOR ──────────────────────────────────────────

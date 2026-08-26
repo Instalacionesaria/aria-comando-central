@@ -653,14 +653,18 @@ export default function Usuarios({ sesion }) {
                   </select>
                 )}
               </div>
+              {/* Los NOMBRES salen del catálogo y la diferencia se describe en palabras. Escribir
+                  «Closer ve la pestaña Closer» era cierto con cuatro roles y quedó falso al pasar
+                  a tres, y una ayuda que miente es peor que ninguna: se lee con confianza. */}
               <div className="aj-ayuda">
-                Un <b>Closer</b> ve solo la pestaña Closer; un <b>Setter</b> solo la del Setter. Un{' '}
-                <b>Administrador</b> ve el resto de su empresa.
+                Un <b>Usuario</b> trabaja en las dos pestañas de operación y ve los tableros de su
+                empresa. Un <b>Administrador</b> puede además cargar y rotar las credenciales de su
+                empresa — es la única diferencia entre los dos.
                 {creandoPlataforma ? (
                   <>
                     {' '}
-                    Un <b>{rolDePlataforma.nombre}</b> ve <b>todas</b> las empresas, y por eso vive
-                    en la empresa principal.
+                    Un <b>{rolDePlataforma.nombre}</b> ve <b>todas</b> las empresas y administra
+                    empresas y personas, y por eso vive en la empresa principal.
                   </>
                 ) : null}
               </div>

@@ -229,6 +229,40 @@ async function catalogo() {
   } finally {
     await cliente.end();
   }
+
+  // ── Y EL RETIRO, CON UNA TERCERA CONEXIÓN ──────────────────────────────────
+  //
+  // Tres conexiones en una fase parece de más, y cada una está por una razón distinta que el
+  // archivo que corre explica: el DUEÑO otorga privilegios, el rol del CATÁLOGO escribe
+  // capacidades y roles, e IDENTIDAD retira roles y reasigna a su gente.
+  //
+  // Esta última no es intercambiable con las otras dos: `migrador` y el rol del catálogo no
+  // tienen política sobre `identidad.usuarios_roles`, así que con cualquiera de ellos el
+  // retiro afectaría **cero filas y reportaría éxito**, dejando a alguien sin ningún rol. Está
+  // medido y escrito en el encabezado de `003_retiro_de_roles.sql`.
+  //
+  // Va DESPUÉS del catálogo porque necesita que el rol destino ya exista — y si no existe, ese
+  // archivo se niega a borrar nada en vez de dejar gente sin acceso.
+  if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  const identidad = new pg.Client({ connectionString: process.env.DATABASE_URL_IDENTIDAD });
+  await identidad.connect();
+  try {
+    const sql = readFileSync(
+      new URL('../db/arranque/003_retiro_de_roles.sql', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+    const marcas = sql.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`003_retiro_de_roles.sql tiene marcas sin sustituir: ${[...new Set(marcas)].join(', ')}`);
+
+    // Los `raise notice` del archivo son lo único que cuenta qué se movió. Sin esto se
+    // pierden, y una reasignación de accesos que no deja rastro es una que nadie puede
+    // revisar después.
+    identidad.on('notice', (n) => console.log(`  ${n.message}`));
+    await identidad.query(sql);
+    console.log('  roles retirados y su gente reasignada');
+  } finally {
+    await identidad.end();
+  }
 }
 
 async function migrar() {

@@ -103,26 +103,95 @@ test('y SÍ tiene lo que se pidió que tuviera: credenciales y las dos pestañas
   }
 });
 
-test('closer y setter tienen su pestaña, no la del otro, y ninguna de administración', async () => {
-  const closer = await capacidadesDe('closer');
-  const setter = await capacidadesDe('setter');
+test('la diferencia entre `usuario` y `administrador` es EXACTAMENTE las credenciales', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ES LA ÚNICA DIFERENCIA, ASÍ QUE ES LA ÚNICA COSA QUE PUEDE ESTAR MAL SIN QUE SE VEA
+  //
+  // Se pidió con estas palabras: *"la diferencia entre administrador y usuario será que el
+  // administrador sí puede modificar las credenciales de su empresa"*.
+  //
+  // Se comprueba en las DOS direcciones, porque se rompe de las dos y ninguna da error:
+  //
+  //   · **de más** — el usuario conserva credenciales, y entonces los dos roles son el mismo
+  //     rol con dos nombres. La pantalla se dibuja igual para ambos y nada falla.
+  //   · **de menos** — al usuario le falta algo que no son credenciales. Ahí la diferencia
+  //     dejó de ser la que se pidió, y el síntoma es un 403 en una pantalla suelta que alguien
+  //     va a reportar como «no me carga».
+  //
+  // Y se hace por DIFERENCIA DE CONJUNTOS y no enumerando: enumerar obligaría a editar esta
+  // prueba cada vez que se agrega una capacidad, y olvidarse la dejaría pasando en verde sobre
+  // un reparto que ya no es el que dice.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const usuario = new Set(await capacidadesDe('usuario'));
+  const admin = new Set(await capacidadesDe('administrador'));
+  assert.ok(usuario.size > 0, 'el usuario quedó sin capacidades: el reparto no corrió');
 
-  // Conjunto EXACTO. Con un `assert.ok(!incluye(...))` por capacidad, una capacidad nueva mal
-  // repartida entraría sin que nada falle — y el síntoma sería una pestaña de más.
-  assert.deepEqual(closer, [
-    'closer.ver',
-    'contactos.avanzar',
-    'contactos.comentar',
-    'contactos.ver',
-    'conversaciones.responder',
-  ]);
-  assert.deepEqual(setter, [
-    'contactos.avanzar',
-    'contactos.comentar',
-    'contactos.ver',
-    'conversaciones.responder',
-    'setter.ver',
-  ]);
+  const soloDelAdmin = [...admin].filter((c) => !usuario.has(c)).sort();
+  assert.deepEqual(
+    soloDelAdmin,
+    ['credenciales.editar', 'credenciales.ver'],
+    'la diferencia entre administrador y usuario dejó de ser exactamente las credenciales',
+  );
+
+  const soloDelUsuario = [...usuario].filter((c) => !admin.has(c)).sort();
+  assert.deepEqual(soloDelUsuario, [], 'el usuario tiene algo que el administrador no');
+});
+
+test('el `usuario` tampoco administra personas, ni empresas, ni roles', async () => {
+  // Hereda la frontera del administrador: es su subconjunto, así que si el administrador está
+  // bien acotado el usuario también. Se afirma igual y no por transitividad — el reparto son
+  // dos `select` distintos, y uno puede quedar mal sin el otro.
+  const suyas = await capacidadesDe('usuario');
+  const noLeToca = suyas.filter(
+    (c) =>
+      c.startsWith('organizaciones.') ||
+      c.startsWith('usuarios.') ||
+      c.startsWith('roles.') ||
+      c.startsWith('credenciales.'),
+  );
+  assert.deepEqual(noLeToca, [], 'el usuario conserva capacidades que no le corresponden');
+});
+
+test('los roles retirados NO existen, y nadie quedó sin rol por el camino', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LO QUE DE VERDAD PODÍA SALIR MAL AL PASAR DE CUATRO ROLES A TRES
+  //
+  // `closer` y `setter` se retiraron. Lo que importa no es que desaparezcan: es que **nadie se
+  // quede sin ningún rol** en el camino. Una persona sin rol puede entrar y no ve ninguna
+  // pantalla, y eso lo descubre ella, no nosotros.
+  //
+  // `db/arranque/003_retiro_de_roles.sql` mueve a quien los tuviera a `usuario` ANTES de borrar
+  // — el orden importa, porque `usuarios_roles.rol_id` es `no action` y borrar el rol con
+  // asignaciones vivas falla.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const r = await mig.query<{ clave: string }>(
+    `select clave from identidad.roles where org_id is null and clave in ('closer','setter')`,
+  );
+  assert.deepEqual(r.rows, [], 'siguen existiendo roles que el retiro tenía que quitar');
+
+  const huerfanos = await mig.query<{ email: string }>(
+    `select u.email from identidad.usuarios u
+      where u.email is not null
+        and not exists (select 1 from identidad.usuarios_roles ur where ur.usuario_id = u.id)`,
+  );
+  assert.deepEqual(
+    huerfanos.rows,
+    [],
+    'hay personas sin ningún rol: pueden entrar y no ven ninguna pantalla',
+  );
+});
+
+test('el catálogo tiene EXACTAMENTE tres roles de sistema', async () => {
+  // Conjunto exacto, no «al menos éstos». La forma en que esto se rompe es por exceso: un rol
+  // que se retiró a medias, o uno nuevo que alguien agrega sin repartirle nada, queda asignable
+  // y no da ninguna pantalla.
+  const r = await mig.query<{ clave: string }>(
+    'select clave from identidad.roles where org_id is null and es_sistema order by clave',
+  );
+  assert.deepEqual(
+    r.rows.map((f) => f.clave),
+    ['administrador', 'superadministrador', 'usuario'],
+  );
 });
 
 test('el superadministrador tiene TODAS, sin atajo en el portero', async () => {
@@ -142,25 +211,17 @@ test('lo que cada rol ve en pantalla sale de su reparto, y es lo que se pidió',
   // que hace que esta prueba mida el sistema y no una lista escrita al lado.
   const ve = async (rol: string) => new Set(await capacidadesDe(rol));
 
-  const delCloser = await ve('closer');
-  assert.deepEqual(
-    seccionesVisibles(delCloser).map((s) => s.clave),
-    ['closer'],
-    'un closer ve algo más que su pestaña',
-  );
-  const delSetter = await ve('setter');
-  assert.deepEqual(seccionesVisibles(delSetter).map((s) => s.clave), ['setter']);
-
-  // Y NINGUNO llega a Ajustes. La pantalla entera cuelga de `credenciales.ver`, así que esto es
-  // exactamente *"no pueden entrar a configuración"*.
-  for (const [nombre, caps] of [['closer', delCloser], ['setter', delSetter]] as const) {
-    assert.equal(
-      seccionesVisibles(caps).some((s) => s.clave === 'credenciales'),
-      false,
-      `un ${nombre} llega a Ajustes`,
-    );
-    assert.equal(menuVisible(caps).length, 1, `un ${nombre} ve más de un grupo de menú`);
-  }
+  // ── EL USUARIO: todo lo operativo, y NO Ajustes ──────────────────────────
+  //
+  // Toda la pantalla de Ajustes cuelga de `credenciales.ver` —es la única sección de Ajustes con
+  // entrada de menú—, así que no tenerla es exactamente *"no entra a configuración"*.
+  const delUsuario = await ve('usuario');
+  const suyasUsuario = new Set(seccionesVisibles(delUsuario).map((s) => s.clave));
+  assert.ok(suyasUsuario.has('closer'), 'el usuario no ve la pestaña Closer');
+  assert.ok(suyasUsuario.has('setter'), 'el usuario no ve la pestaña Setter');
+  assert.equal(suyasUsuario.has('credenciales'), false, 'el usuario llega a Ajustes');
+  assert.equal(suyasUsuario.has('empresas'), false, 'el usuario ve la pestaña Empresas');
+  assert.equal(suyasUsuario.has('usuarios'), false, 'el usuario ve la pestaña Usuarios');
 
   // El administrador: Ajustes SÍ, y sus dos pestañas de plataforma NO.
   const delAdmin = await ve('administrador');
@@ -173,6 +234,20 @@ test('lo que cada rol ve en pantalla sale de su reparto, y es lo que se pidió',
   const delSuper = await ve('superadministrador');
   const suyas = new Set(seccionesVisibles(delSuper).map((s) => s.clave));
   assert.ok(suyas.has('empresas') && suyas.has('usuarios'), 'al superadministrador le falta una');
+
+  // Y el menú del usuario NO es el del administrador. Sin esta comparación, un reparto que le
+  // diera credenciales al usuario pasaría todas las afirmaciones de arriba menos una — y ésta es
+  // la que lo dice con el nombre de lo que pasó.
+  assert.notDeepEqual(
+    [...suyasUsuario].sort(),
+    [...claves].sort(),
+    'el usuario y el administrador ven exactamente lo mismo: la diferencia se perdió',
+  );
+  assert.ok(
+    menuVisible(delUsuario).length < menuVisible(delAdmin).length ||
+      menuVisible(delUsuario).length > 0,
+    'el usuario no ve ningún grupo de menú',
+  );
 });
 
 test('la pestaña Usuarios se decide por `usuarios.ver`, no por `organizaciones.listar`', async () => {
