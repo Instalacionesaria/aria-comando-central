@@ -388,6 +388,20 @@ export interface TablaComisiones {
   actualizado_por: string | null;
 }
 
+/**
+ * Quién es EL closer de la organización. **Una fila por empresa, y `org_id` es la clave primaria
+ * entera** — así «uno solo» no es una convención del código sino una fila que la base no acepta.
+ *
+ * Sin fila = nadie designó a nadie, que NO es lo mismo que «designó a nadie». La pantalla muestra
+ * `—` y un aviso, nunca `0`. Ver la migración 020.
+ */
+export interface TablaCloserAsignado {
+  org_id: ColumnaInquilino;
+  usuario_id: string;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
 export interface TablaTareasProgramadas {
   org_id: ColumnaInquilino;
   tarea: string;
@@ -519,14 +533,18 @@ export interface BaseDeDatos {
   organizaciones_credenciales: TablaOrganizacionesCredenciales;
   usuarios_permisos: VistaUsuariosPermisos;
 
-  // Las ocho de negocio. Sin calificar, como las demas: la ruta de busqueda por rol las
+  // Las DOCE de negocio. Sin calificar, como las demas: la ruta de busqueda por rol las
   // resuelve en `negocio`, y `public` no esta en la ruta de ningun rol nuestro.
+  //
+  // El comentario decía «ocho» y ya listaba once: un conteo escrito a mano envejece con cada
+  // tabla nueva y nada falla. Se corrige al agregar la doceava.
   contactos: TablaContactos;
   citas: TablaCitas;
   mensajes: TablaMensajes;
   ingesta_pulso: TablaIngestaPulso;
   tareas_programadas: TablaTareasProgramadas;
   comisiones: TablaComisiones;
+  closer_asignado: TablaCloserAsignado;
   llamadas: TablaLlamadas;
   tareas: TablaTareas;
   resultados: TablaResultados;

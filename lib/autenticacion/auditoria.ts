@@ -81,6 +81,17 @@ export type Accion =
   // porcentaje cambiado no deja ningún rastro de quién lo cambió — y es exactamente la clase de dato
   // sobre la que después alguien pregunta.
   | 'comision_configurada'
+  // ── Etapa 14 · quién es el closer ─────────────────────────────────────────────
+  //
+  // Decide DE QUIÉN son los números y el sueldo que muestra el cockpit, y lo elige otra persona. Es
+  // el mismo argumento que la comisión: sin estas filas, un cambio de designación no deja rastro de
+  // quién lo hizo, y es la clase de dato sobre la que después alguien pregunta.
+  //
+  // Son DOS acciones y no una con un valor nulo. «Designé a Ana» y «dejé la empresa sin closer» son
+  // hechos distintos, y un registro que los cuenta como el mismo evento con un campo vacío obliga a
+  // adivinar cuál fue al leerlo.
+  | 'closer_designado'
+  | 'closer_quitado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -183,6 +194,10 @@ export async function auditarAdministracion(
       | 'organizacion_editada'
       | 'organizacion_borrada'
       | 'comision_configurada'
+      // Etapa 14. Las dos exigen actor y objetivo, que es lo que esta puerta pide: quién designó y a
+      // quién. En `closer_quitado` el objetivo es la persona que DEJA de ser closer.
+      | 'closer_designado'
+      | 'closer_quitado'
     >;
     actor: string;
     objetivo: string;

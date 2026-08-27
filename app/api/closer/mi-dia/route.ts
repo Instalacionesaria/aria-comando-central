@@ -35,6 +35,7 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { cockpitDelMes } from '../../../../lib/negocio/inicio.ts';
+import { closerAsignado } from '../../../../lib/negocio/closer.ts';
 import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
 import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
 
@@ -50,10 +51,22 @@ export async function GET(peticion: Request): Promise<Response> {
   // día. Viene resuelta en el contexto de la sesión.
   const zona = contexto.organizacion.zonaHoraria;
 
-  const { colas, cockpit, comision } = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const { colas, cockpit, comision, closer } = await conOrganizacion(contexto.orgEfectiva, async () => {
     const colas = await colasDelDia(zona);
+
+    /* ── DE QUIÉN SON LOS NÚMEROS DE ESTA PANTALLA ───────────────────────────
+     *
+     * Del closer DESIGNADO, no de quien mira. «Closer» dejó de ser un rol y pasó a ser una
+     * designación que hace quien administra —ver `lib/negocio/closer.ts` y la migración 020—, así que
+     * el cockpit tiene un sujeto y es el mismo para todos los que abren la pantalla.
+     *
+     * Antes el número grande era de TODA la empresa y el anillo de al lado de quien miraba: dos
+     * bases distintas en la misma pantalla. Ahora las dos salen de acá.
+     */
+    const closer = await closerAsignado();
+
     // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
-    const cockpit = await cockpitDelMes(zona, colas.tareasPendientes);
+    const cockpit = await cockpitDelMes(zona, colas.tareasPendientes, closer?.usuarioId ?? null);
     /* ── LA COMISIÓN VIAJA ACÁ Y NO EN UN GET PROPIO ────────────────────────
      *
      * Si tuviera endpoint propio con `PANTALLA = 'closer'` tendría que pedir el mismo conjunto de
@@ -64,14 +77,24 @@ export async function GET(peticion: Request): Promise<Response> {
      * Y cabe en la regla de admisión de este endpoint: leer una fila es más barato que un viaje de
      * ida y vuelta al CRM. Cero llamadas externas, igual que todo lo demás de esta pantalla.
      */
-    const comision = await comisionDelMes(contexto.usuarioId, zona);
-    return { colas, cockpit, comision };
+    /* Y sin closer designado no hay comisión que calcular: `null`, no una comisión en cero. Un cero
+       afirmaría que el closer no cobra nada este mes; lo que pasa es que nadie eligió quién es. */
+    const comision = closer === null ? null : await comisionDelMes(closer.usuarioId, zona);
+    return { colas, cockpit, comision, closer };
   });
 
   return ok({
     cockpit,
     colas,
     comision,
+    /* Quién es el closer, para que la pantalla pueda decir de quién son los números en vez de
+       mostrarlos como si fueran de quien mira. `null` = nadie designado. */
+    closer: closer === null ? null : { usuarioId: closer.usuarioId, nombre: closer.nombre },
+    /* Y si quien mira ES el closer designado. Lo decide el SERVIDOR y no la pantalla comparando
+       identificadores, por lo mismo que todo lo demás: es lo que habilita el formulario de la META,
+       que es del closer y no de quien administra. Un administrador ve los números y el porcentaje
+       —lo fija él— pero no le pone la meta a otra persona. */
+    soyElCloser: closer !== null && closer.usuarioId === contexto.usuarioId,
     zonaHoraria: zona,
     /* La pantalla necesita saberlo para NO ofrecerle a un superadministrador que configure una meta
        en la empresa de otro: su `usuarioId` no pertenece a esa empresa, así que la fila es imposible

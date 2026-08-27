@@ -55,7 +55,10 @@
 import { useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import Ventana from '../Ventana.jsx';
-import PorcentajesDelEquipo from './PorcentajesDelEquipo.jsx';
+/* Ya no se importa `PorcentajesDelEquipo`: ese panel listaba a TODA la empresa con un campo de
+   porcentaje cada una, y con un único closer designado esa lista invita a cargarle un porcentaje a
+   alguien que no aparece en ninguna pantalla. Lo reemplaza `QuienEsElCloser.jsx`, que vive en
+   `Inicio.jsx` y decide las dos cosas juntas: quién es el closer, y cuánto cobra. */
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -103,7 +106,12 @@ export default function Comision({
   comision,
   mirandoOtraOrganizacion,
   /** Lo responde el servidor con la condición exacta del endpoint. Ver el encabezado. */
-  puedeConfigurarPorcentajes,
+  /* `soyElCloser` —y no `puedeConfigurarPorcentajes`— es lo que habilita la META.
+     Son dos permisos distintos y antes estaban colapsados en uno. La meta es de la persona: dice
+     cuánto QUIERE cobrar este mes. Un administrador fija el porcentaje, que es una condición de
+     trabajo, pero ponerle a otro su meta personal no tiene sentido — y con el cockpit mostrando
+     siempre al designado, un administrador que abriera esta pantalla habría podido escribirla. */
+  soyElCloser,
   alGuardar,
   /** Recargar el cockpit entero. Se usa al cerrar la ventana de los porcentajes: si alguien cambió
    *  el suyo, su anillo tiene que reflejarlo. */
@@ -116,7 +124,6 @@ export default function Comision({
      está tipeando no se pierde. */
   const [abierto, setAbierto] = useState(false);
   /** La ventana de los porcentajes del equipo. Aparte de la de la meta: son dos cosas distintas. */
-  const [porcentajesAbiertos, setPorcentajesAbiertos] = useState(false);
   const [borrador, setBorrador] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState(null);
@@ -140,15 +147,31 @@ export default function Comision({
     );
   }
 
+  /* ── SIN COMISIÓN QUE MOSTRAR, Y AHORA ESO SIGNIFICA ALGO CONCRETO ────────
+   *
+   * Este corte ya existía y devolvía «— / SIN DATO», a secas. Alcanzaba cuando `comision` solo podía
+   * faltar por una falla de lectura: no había nada útil que decir.
+   *
+   * Ahora tiene una causa nombrable y frecuente: `/api/closer/mi-dia` devuelve `comision: null`
+   * cuando **nadie está designado closer**, que es el estado de toda organización hasta que alguien
+   * lo elija. «SIN DATO» ahí es cierto y no sirve — no dice qué falta ni quién lo resuelve, que es la
+   * regla de todos los vacíos de este cockpit.
+   *
+   * Lo que NO se hace es dibujar un cero. Un `$0` afirmaría que esa persona no cobró nada; lo que
+   * pasa es que no hay de quién hablar. */
   if (!comision) {
     return (
       <div className="ck-ring">
         <div className="ring">
           <div>
             <b>—</b>
-            <span>SIN DATO</span>
+            <span>SIN CLOSER</span>
           </div>
         </div>
+        <p className="ck-nota">
+          Todavía no hay un closer asignado. Lo elige quien administra la empresa, acá mismo en esta
+          pantalla, y a partir de ahí los números son suyos.
+        </p>
       </div>
     );
   }
@@ -229,31 +252,34 @@ export default function Comision({
         )}
       </div>
 
-      {/* ── LOS DOS BOTONES ─────────────────────────────────────────────────
-          El de la meta no aparece cuando está mirando otra empresa —eso corta arriba— y sí aparece
-          cuando falta el porcentaje: la meta es suya y la puede fijar igual, aunque el número
-          todavía no se pueda calcular. Esconderlo ahí haría que la única acción disponible dependa
-          de algo que otra persona tiene que hacer primero.
+      {/* ── EL BOTÓN DE LA META, Y AHORA SOLO PARA SU DUEÑA ──────────────────
+          Sí aparece cuando falta el porcentaje: la meta es suya y la puede fijar igual, aunque el
+          número todavía no se pueda calcular. Esconderlo ahí haría que la única acción disponible
+          dependa de algo que otra persona tiene que hacer primero.
 
-          El de los porcentajes sólo lo ve quien puede editarlos, y lo decide el servidor. */}
-      <div className="ck-acciones">
-        <button
-          type="button"
-          className="fd-btn sec"
-          onClick={() => {
-            setBorrador(k.meta === null ? '' : String(k.meta));
-            setAviso(null);
-            setAbierto(true);
-          }}
-        >
-          {k.meta === null ? 'Fijar mi meta' : 'Cambiar mi meta'}
-        </button>
-        {puedeConfigurarPorcentajes ? (
-          <button type="button" className="fd-btn sec" onClick={() => setPorcentajesAbiertos(true)}>
-            Porcentajes del equipo
+          Y NO aparece para quien no es el closer designado, que es lo que cambió. Este anillo ahora
+          muestra siempre a esa persona —el cockpit tiene un sujeto— así que sin esta condición un
+          administrador que abriera la pantalla vería «Fijar mi meta» y estaría fijando la de otro.
+          El «mi» del rótulo era verdad cuando el anillo era de quien miraba; ya no lo es.
+
+          Lo decide el SERVIDOR (`soyElCloser`), comparando identificadores del lado donde están: la
+          pantalla no recibe el identificador del designado para compararlo, justamente para que no
+          haya dos lugares que respondan la misma pregunta. */}
+      {soyElCloser ? (
+        <div className="ck-acciones">
+          <button
+            type="button"
+            className="fd-btn sec"
+            onClick={() => {
+              setBorrador(k.meta === null ? '' : String(k.meta));
+              setAviso(null);
+              setAbierto(true);
+            }}
+          >
+            {k.meta === null ? 'Fijar mi meta' : 'Cambiar mi meta'}
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {/* ── LA VENTANA DE LA META ───────────────────────────────────────────
           Al guardar se cierra sola, así que el número nuevo queda a la vista sin que nadie tenga que
@@ -325,25 +351,6 @@ export default function Comision({
         </Ventana>
       ) : null}
 
-      {/* ── LA VENTANA DE LOS PORCENTAJES DEL EQUIPO ────────────────────────
-          Lo que era la cuarta pestaña de Ajustes. Al cerrarla se recarga el cockpit: si alguien
-          cambió SU PROPIO porcentaje, su anillo tiene que reflejarlo — y sin esta recarga mostraría
-          el número viejo justo después de haberlo cambiado. */}
-      {porcentajesAbiertos ? (
-        <Ventana
-          titulo="Porcentajes de comisión del equipo"
-          subtitulo="Los fija quien administra. Cada persona ve el suyo en su propio anillo."
-          alCerrar={() => {
-            setPorcentajesAbiertos(false);
-            /* Una RECARGA, no `alGuardar(null)`: esa otra devolución PISA la comisión con lo que
-               recibe, así que un `null` la habría borrado de la pantalla en vez de refrescarla. Son
-               dos cosas distintas y por eso son dos propiedades. */
-            alRecargar?.();
-          }}
-        >
-          <PorcentajesDelEquipo />
-        </Ventana>
-      ) : null}
     </div>
   );
 }

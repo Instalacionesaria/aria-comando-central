@@ -33,6 +33,10 @@ const ZONA = 'America/Lima';
 
 let admin: Client;
 let alfa: string;
+/* Quien registra Y a quien se designa closer. Antes no hacia falta: el cockpit sumaba las ventas de
+   toda la empresa. Ahora tiene sujeto, asi que una prueba del cockpit sin usuario no puede afirmar
+   nada — y eso es una mejora, no una molestia: es el defecto de la 015 hecho imposible de escribir. */
+let quien: string;
 
 before(async () => {
   admin = await conectar('admin');
@@ -42,6 +46,14 @@ before(async () => {
   );
   assert.ok(org, 'falta la organización alfa del sembrado');
   alfa = org.id;
+
+  const u = await unaFila<{ id: string }>(
+    admin,
+    `select id from identidad.usuarios where org_id = $1 limit 1`,
+    [alfa],
+  );
+  assert.ok(u, 'la organizacion alfa no tiene usuarios: ¿corrio el sembrado?');
+  quien = u.id;
   await limpiar();
 });
 
@@ -363,7 +375,7 @@ test('sin ningún resultado, el cockpit devuelve NULO y no cero', async () => {
   await limpiar();
   await contacto(`ck-${randomUUID().slice(0, 6)}`, ['cita_agendada', 'noshow']);
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, quien));
 
   assert.equal(ck.cobrado.valor, null, 'el cobrado devolvió un número sin ningún resultado cargado');
   assert.ok(ck.cobrado.falta, 'el cobrado nulo no dice qué falta');
@@ -387,11 +399,14 @@ test('CON resultados y sin ventas, el cockpit devuelve CERO y no nulo', async ()
   await conOrganizacion(alfa, async () => {
     await datos()
       .insertInto('resultados')
-      .values({ contacto_id: id, salida: 'no_show', rol: 'closer' } as never)
+      /* CON AUTOR, y es lo que cambio: el cockpit ahora suma solo lo del closer designado, asi que
+         un resultado sin `registrado_por` —que la 011 admite: *"Nulo = Sistema"*— no entra en el
+         de nadie. Antes esta fila contaba igual porque la consulta no miraba de quien era. */
+      .values({ contacto_id: id, salida: 'no_show', rol: 'closer', registrado_por: quien } as never)
       .execute();
   });
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, quien));
   assert.equal(ck.cobrado.valor, 0, 'con resultados registrados, el cobrado tiene que ser un cero medido');
   assert.equal(ck.cobrado.falta, undefined, 'un cero medido no lleva texto de "falta"');
   assert.equal(ck.ventas.valor, 0);
@@ -402,6 +417,6 @@ test('el cockpit recibe el contador de tareas, no lo recalcula', async () => {
   // El contador tiene una regla propia —los automáticos no suman— y recalcularlo acá sería una
   // segunda implementación de esa regla.
   await limpiar();
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 7));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 7, quien));
   assert.equal(ck.tareasPendientes.valor, 7, 'el cockpit recalculó el contador en vez de recibirlo');
 });

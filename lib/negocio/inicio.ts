@@ -72,21 +72,60 @@ export interface Cockpit {
 }
 
 /**
- * El cockpit del mes.
+ * El cockpit del mes **del closer designado**.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ANTES ESTE NÚMERO ERA DE TODA LA EMPRESA, Y AL LADO HABÍA UNA COMISIÓN PERSONAL
+ *
+ * Es el defecto que la migración `015` describió y no pudo cerrar sola. Su encabezado lo dejó
+ * medido: *"ese `cobrado` es de TODA la organización — `cockpitDelMes` no recibe `usuarioId` y la
+ * consulta filtra solo por fecha"*, y por eso la comisión se guardó por persona.
+ *
+ * Pero quedaba una inconsistencia a la vista: el número grande de arriba era de la empresa y el
+ * anillo de al lado se calculaba sobre las ventas de UNA persona. Dos bases distintas en la misma
+ * pantalla, sin nada que lo dijera.
+ *
+ * Ahora las dos son del closer designado, así que el número grande y el anillo hablan de lo mismo.
+ *
+ * ── Y SI NO HAY NADIE DESIGNADO ─────────────────────────────────────────────
+ *
+ * `closerId` nulo no produce ceros: produce `falta`. Un `0` afirmaría que el closer no vendió nada
+ * este mes, y lo que pasa es que **nadie eligió de quién son los números**. Es la misma regla que
+ * gobierna cada indicador de este archivo, y la que la `020` grabó en la base al no poner valor por
+ * omisión: sin fila, nadie designó a nadie.
+ * ═══════════════════════════════════════════════════════════════════════════════
  *
  * @param zonaHoraria La de la ORGANIZACIÓN. El mes de un closer en Lima no empieza cuando
  *   empieza el del servidor, y una métrica mensual calculada en otra zona corre el corte de
  *   día en los dos extremos del mes.
+ * @param closerId El usuario designado closer, o `null` si nadie lo está.
  */
-export async function cockpitDelMes(zonaHoraria: string, tareasPendientes: number): Promise<Cockpit> {
+export async function cockpitDelMes(
+  zonaHoraria: string,
+  tareasPendientes: number,
+  closerId: string | null,
+): Promise<Cockpit> {
   const desdeElPrimero = sql<Date>`date_trunc('month', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`;
 
   // Los resultados del mes, agregados de una vez. `filter` en vez de tres consultas: el `01`
   // § "cómo se arma" pide una pasada, y tres viajes para tres números del mismo origen es
   // trabajo que no hace falta.
-  const r = await datos()
+  /* ── EL `where` QUE HACE HONESTO EL NÚMERO GRANDE ──────────────────────────
+   *
+   * `registrado_por = closerId`, y es de la clase que este repositorio llama «el único lugar donde
+   * olvidarse un `where` devuelve filas ajenas sin ningún error»: la política de RLS aísla por
+   * ORGANIZACIÓN, no por persona. Sin esta línea el cobrado vuelve a ser de todos y sale más alto,
+   * que es la forma en que este defecto se ve: un número plausible y equivocado.
+   *
+   * Con `closerId` nulo no se consulta nada. Correr la consulta sin el filtro para «tener algo que
+   * mostrar» es exactamente el error: mostraría el cobrado de la empresa como si fuera de un closer
+   * que nadie eligió. */
+  const r = closerId === null
+    ? undefined
+    : await datos()
     .selectFrom('resultados')
     .where('creado_el', '>=', desdeElPrimero)
+    .where('registrado_por', '=', closerId)
     .select(({ fn, eb }) => [
       fn
         .sum<string | null>(
@@ -116,6 +155,13 @@ export async function cockpitDelMes(zonaHoraria: string, tareasPendientes: numbe
   const SIN_AVANZAR =
     'Todavía no se registró ningún resultado este mes. Los números salen de Avanzar.';
 
+  /* Y el OTRO motivo de que no haya número, que no es el mismo y no se dice igual: no hay a quién
+     medir. Separarlos es lo único que permite que la pantalla diga qué hacer — cargar un resultado,
+     o elegir al closer. Un solo texto para los dos casos mandaría a la mitad de la gente a hacer lo
+     que no corresponde. */
+  const SIN_CLOSER = 'Todavía no hay un closer asignado, así que no hay de quién mostrar números.';
+  const porQueFalta = closerId === null ? SIN_CLOSER : SIN_AVANZAR;
+
   // Los conteos por etiqueta. Éstos SÍ tienen dato hoy, y son la mitad útil del cockpit
   // mientras Avanzar no exista.
   const porEtiqueta = await datos()
@@ -142,26 +188,29 @@ export async function cockpitDelMes(zonaHoraria: string, tareasPendientes: numbe
     ),
     cobrado: huboResultados
       ? { valor: Number(r?.cobrado ?? 0) }
-      : { valor: null, falta: SIN_AVANZAR },
-    ventas: huboResultados ? { valor: Number(r?.ventas ?? 0) } : { valor: null, falta: SIN_AVANZAR },
+      : { valor: null, falta: porQueFalta },
+    ventas: huboResultados ? { valor: Number(r?.ventas ?? 0) } : { valor: null, falta: porQueFalta },
     acuerdos: huboResultados
       ? { valor: Number(r?.acuerdos ?? 0) }
-      : { valor: null, falta: SIN_AVANZAR },
+      : { valor: null, falta: porQueFalta },
+    /* ── ESTOS TRES TEXTOS NOMBRABAN EL CRM DEL PROVEEDOR ─────────────────────
+       Decían «traídos de GoHighLevel» y «hace falta leer el calendario de GoHighLevel». Los lee un
+       cliente en la primera pantalla del Closer, y no le dicen nada que pueda hacer: el nombre de la
+       herramienta con la que la plataforma habla no es asunto suyo.
+       Lo que NO se toca es la distinción: siguen diciendo que el dato no está medido, y no un cero.
+       Cambia el vocabulario, no la honestidad. */
     conCitaAgendada: hayContactos
       ? { valor: Number(porEtiqueta?.con_cita ?? 0) }
-      : {
-          valor: null,
-          falta: 'Todavía no hay contactos traídos de GoHighLevel.',
-        },
+      : { valor: null, falta: 'Todavía no hay contactos en tu cartera.' },
     tasaDeAsistencia: {
       valor: null,
       falta:
-        'Hace falta leer el calendario de GoHighLevel: la tasa necesita saber quién asistió y ' +
-        'sobre cuántas citas, y una etiqueta no dice ninguna de las dos cosas.',
+        'Todavía no se puede calcular: hace falta saber quién asistió a cada cita y sobre cuántas, ' +
+        'y eso se registra al cerrar la cita.',
     },
     noShows: hayContactos
       ? { valor: Number(porEtiqueta?.noshows ?? 0) }
-      : { valor: null, falta: 'Todavía no hay contactos traídos de GoHighLevel.' },
+      : { valor: null, falta: 'Todavía no hay contactos en tu cartera.' },
     // Viene de Mi Día, calculado con su regla: los seguimientos automáticos NO cuentan.
     tareasPendientes: { valor: tareasPendientes },
   };

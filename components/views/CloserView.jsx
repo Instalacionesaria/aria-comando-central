@@ -189,6 +189,8 @@ export default function CloserView({ activa }) {
           /* Quién puede configurar los porcentajes del equipo lo dice el SERVIDOR, con la condición
              exacta del endpoint. Ver `app/api/auth/sesion/route.ts`. */
           puedeConfigurarComisiones={sesion?.puedeConfigurarComisiones ?? false}
+          closer={datos?.closer ?? null}
+          soyElCloser={datos?.soyElCloser ?? false}
           /* Y la recarga completa, para cuando se cierra la ventana de los porcentajes: ahí sí puede
              haber cambiado el número de quien mira. */
           alRecargar={() => void cargar()}

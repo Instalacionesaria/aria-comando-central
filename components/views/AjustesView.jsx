@@ -84,7 +84,9 @@ export default function AjustesView({ activa }) {
     /* ── COMISIONES SE FUE DE ACÁ, Y NO ES UN BORRADO ────────────────────────
      *
      * Era la cuarta pestaña. Ahora vive detrás de un botón al lado del anillo de comisión, en
-     * Closer → Inicio: `components/closer/PorcentajesDelEquipo.jsx`, abierta como ventana.
+     * Closer → Inicio: `components/closer/QuienEsElCloser.jsx`, en línea. Antes era
+     * `PorcentajesDelEquipo.jsx` en una ventana; se reemplazó cuando «closer» pasó a ser UNA
+     * persona designada en vez de un equipo con un porcentaje cada uno.
      *
      * El criterio es el de esta pantalla: **Ajustes configura la EMPRESA** —sus credenciales, sus
      * empresas, su gente— y los porcentajes configuran a las personas de un equipo. Se fueron con el

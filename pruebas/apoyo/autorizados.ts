@@ -206,6 +206,18 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // la sesión. Eso es mejor que auditar por identidad: **la comisión y su rastro van en la misma
   // transacción**, así que no existe el estado «se cambió el porcentaje y no quedó registrado quién».
   'app/api/admin/comisiones/route.ts',
+  // QUIÉN ES EL CLOSER. Lee de identidad **quiénes pueden serlo**, y ahí no hay alternativa: la
+  // condición son capacidades y secciones concedidas, y las tres fuentes que lo dicen —la vista
+  // `usuarios_permisos`, `usuarios_roles` y `usuarios_secciones`— solo las alcanza `app_identidad`.
+  // El rol del inquilino no las tiene concedidas.
+  //
+  // Y esa lectura no es una comodidad: es la que hace cumplir la regla de que un administrador no
+  // pueda ser closer. Sin ella el endpoint solo podría comprobar que el usuario existe, y un
+  // administrador existe — mandaría su propio identificador en el cuerpo y quedaría designado.
+  //
+  // La escritura va entera por `conOrganizacion(`, incluida la auditoría, por el mismo motivo que
+  // arriba: la designación y su rastro en la misma transacción.
+  'app/api/admin/closer/route.ts',
   // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
   // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
   'app/api/contactos/[id]/avanzar/route.ts',
@@ -285,6 +297,11 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // primera no escribe — se lee de identidad quién es la persona y se escribe en negocio su
   // porcentaje. Es la misma forma y la misma justificación que la ingesta de mensajes.
   'app/api/admin/comisiones/route.ts',
+  // Quién es el closer. **Qué queda a medias si la segunda mitad falla: nada.** El `GET` solo lee
+  // —identidad para los candidatos, negocio para el porcentaje y la designación— y el `PUT` lee de
+  // identidad ANTES de escribir: si la lectura falla no se escribió nada, y si la escritura falla la
+  // lectura no dejó rastro. Es la misma forma y la misma justificación que los porcentajes.
+  'app/api/admin/closer/route.ts',
   // El sembrado: identidad por `conIdentidad()`, negocio por bucle de
   // `conOrganizacion()`. Aceptable porque es idempotente POR DESTRUCCIÓN —`db:reset`
   // tira la base primero, así que una falla a medias se arregla volviendo a correrlo— y

@@ -280,7 +280,7 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
   const b = await contactoEn(alfa);
 
   // Antes: sin ningún resultado, «cobrado» NO es cero — es que nadie registró nada.
-  const antes = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0));
+  const antes = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
   assert.equal(antes.cobrado.valor, null, 'sin resultados, cobrado tiene que ser un cero NO medido');
   assert.ok(antes.cobrado.falta, 'y tiene que decir por qué');
 
@@ -291,12 +291,110 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
     registrarResultado(b, { ...BASE, salida: 'acuerdo_sin_pago', monto: '500.00', quien }),
   );
 
-  const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0));
+  const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
   assert.equal(despues.cobrado.valor, 1000, 'el cobrado no cuenta la venta');
   assert.equal(despues.ventas.valor, 1);
   assert.equal(despues.acuerdos.valor, 1);
   // Y ya no hace falta explicar nada: el número es un hecho.
   assert.equal(despues.cobrado.falta, undefined);
+});
+
+test('el cockpit es del closer DESIGNADO: las ventas de otro no entran', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ES EL DEFECTO QUE LA MIGRACION 015 MIDIO Y NO PUDO CERRAR SOLA
+  //
+  // Su encabezado lo dejo escrito: *"ese `cobrado` es de TODA la organizacion — `cockpitDelMes` no
+  // recibe `usuarioId` y la consulta filtra solo por fecha"*. Con la comisión guardada por persona,
+  // la pantalla multiplicaba un porcentaje personal por una base de la empresa: *"correcto con un
+  // closer y falso desde el segundo. Y no falla: da un número plausible **y más alto**"*.
+  //
+  // Ahora el cockpit recibe de quien son los números. Esta prueba es la que lo mantiene: registra una
+  // venta de OTRA persona y exige que no aparezca.
+  //
+  // Sin el `where registrado_por`, `cobrado` daria 1500 en vez de 1000 y las dos aserciones de abajo
+  // pasarian igual si solo mirasen "hay un número".
+  // ═══════════════════════════════════════════════════════════════════════════
+  await limpiar();
+
+  /* ── EL SEGUNDO USUARIO SE CREA ACA, Y LA PRIMERA VERSION NO LO HACIA ─────
+   *
+   * Buscaba un segundo usuario en el sembrado y afirmaba `assert.ok(otros[0])`. El sembrado tiene
+   * UNO, así que la prueba falló — y eso estuvo bien: fallar es lo correcto cuando no se puede
+   * comprobar lo que la prueba dice comprobar. La alternativa habría sido un `if (!otro) return`,
+   * que la deja verde sin haber medido nada y es peor que no tenerla.
+   *
+   * Se crea con `email` y `password_hash` NULOS, que la 002 admite con un `check` de «los dos nulos
+   * o los dos no nulos»: es un usuario que solo sirve para atribuir trabajo, que es exactamente lo
+   * que hace falta acá — un destino valido para la clave foranea de `registrado_por`. */
+  const nuevo = await filas<{ id: string }>(
+    admin,
+    `insert into identidad.usuarios (org_id, nombre) values ($1, $2) returning id`,
+    [alfa, 'Otro que registra'],
+  );
+  assert.ok(nuevo[0], 'no se pudo crear el segundo usuario');
+  const otro = nuevo[0]!.id;
+
+  const mio = await contactoEn(alfa);
+  const ajeno = await contactoEn(alfa);
+
+  await conOrganizacion(alfa, () =>
+    registrarResultado(mio, { ...BASE, salida: 'venta', monto: '1000.00', formaPago: 'Contado', quien }),
+  );
+  await conOrganizacion(alfa, () =>
+    registrarResultado(ajeno, {
+      ...BASE,
+      salida: 'venta',
+      monto: '500.00',
+      formaPago: 'Contado',
+      quien: otro,
+    }),
+  );
+
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
+  assert.equal(
+    ck.cobrado.valor,
+    1000,
+    'el cobrado del cockpit incluye ventas de otra persona: es la base de la comisión, así que ' +
+      'infla lo que cobra el closer designado',
+  );
+  assert.equal(ck.ventas.valor, 1, 'la cuenta de ventas incluye las de otra persona');
+
+  // Y el del OTRO ve las suyas, que es la otra mitad: el filtro filtra, no esconde.
+  const suyo = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, otro));
+  assert.equal(suyo.cobrado.valor, 500);
+
+  /* Se borra el usuario creado, y EN ESTE ORDEN: primero los resultados, porque
+     `resultados.registrado_por` tiene clave foranea sin cascade y el borrado del usuario fallaria.
+     `limpiar()` ya borra resultados, así que se lo llama antes en vez de repetir su cuerpo. */
+  await limpiar();
+  await admin.query('delete from identidad.usuarios where id = $1', [otro]);
+});
+
+test('sin closer designado el cockpit dice que FALTA, y no cero', async () => {
+  // La regla de todo este archivo, aplicada al caso nuevo. Con `closerId` nulo no hay a quien medir,
+  // y eso NO es «no vendio nada»: es que nadie eligió de quien son los números.
+  //
+  // El `?? 0` que esta prueba impide es tentador de verdad, porque la pantalla ya sabe dibujar un
+  // cero y el nulo obliga a un camino más.
+  await limpiar();
+  const id = await contactoEn(alfa);
+  await conOrganizacion(alfa, () =>
+    registrarResultado(id, { ...BASE, salida: 'venta', monto: '2000.00', formaPago: 'Contado', quien }),
+  );
+
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, null));
+  assert.equal(
+    ck.cobrado.valor,
+    null,
+    'sin closer designado el cockpit devolvio un número: son las ventas de la empresa mostradas ' +
+      'como si fueran de un closer que nadie eligió',
+  );
+  assert.match(
+    ck.cobrado.falta ?? '',
+    /closer asignado/i,
+    'el texto de falta no dice que lo que falta es designar al closer, así que manda a cargar un ' +
+      'resultado que ya existe',
+  );
 });
 
 test('un acuerdo sin pago NO suma al cobrado: es plata comprometida, no cobrada', async () => {
@@ -307,7 +405,7 @@ test('un acuerdo sin pago NO suma al cobrado: es plata comprometida, no cobrada'
     registrarResultado(id, { ...BASE, salida: 'acuerdo_sin_pago', monto: '900.00', quien }),
   );
 
-  const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0));
+  const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
   assert.equal(c.cobrado.valor, 0, 'un acuerdo sin pago entró al cobrado');
   assert.equal(c.acuerdos.valor, 1);
   // Y el cero de arriba es MEDIDO: hubo un resultado, no hubo ventas. Sin `falta`.

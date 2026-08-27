@@ -37,6 +37,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import Comision from './Comision.jsx';
+import QuienEsElCloser from './QuienEsElCloser.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -73,6 +74,14 @@ function Baldosa({ k, v, s, color }) {
 export default function Inicio({
   cockpit,
   comision,
+  /* De QUIÉN son los números de esta pantalla. `null` = nadie designado.
+     Antes esta pregunta no existía: el número grande era de toda la empresa y el anillo de quien
+     miraba. Ahora el cockpit tiene un sujeto y la pantalla tiene que decir cuál es — mostrar los
+     números de una persona sin nombrarla es lo que hacía que dos lecturas del mismo tablero
+     significaran cosas distintas según quién lo abriera. */
+  closer,
+  /** `true` si quien mira ES el closer designado. Lo decide el servidor. Habilita la META. */
+  soyElCloser,
   mirandoOtraOrganizacion,
   puedeConfigurarComisiones,
   alGuardarLaMeta,
@@ -96,7 +105,14 @@ export default function Inicio({
       {/* ── El hero: lo cobrado del mes ── */}
       <div className="ck-hero">
         <div>
-          <span className="ck-tag">◈ Cobrado · {c.mes}</span>
+          {/* DE QUIÉN Y DE CUÁNDO. El nombre va en el rótulo del número grande y no en una nota al
+              pie, porque es parte de lo que el número afirma: «cobrado de Ana en agosto» es un hecho
+              distinto de «cobrado de la empresa en agosto», y hasta ahora la pantalla mostraba el
+              segundo con la forma del primero. */}
+          <span className="ck-tag">
+            ◈ Cobrado · {c.mes}
+            {closer ? <> · {closer.nombre}</> : null}
+          </span>
           <div className="ck-big" style={sinCobrado ? { color: 'var(--txt-faint)' } : undefined}>
             {plata(c.cobrado.valor)}
             {!sinCobrado ? <span>cobrado real, no prometido</span> : null}
@@ -150,11 +166,21 @@ export default function Inicio({
         <Comision
           comision={comision}
           mirandoOtraOrganizacion={mirandoOtraOrganizacion}
-          puedeConfigurarPorcentajes={puedeConfigurarComisiones}
+          soyElCloser={soyElCloser}
           alGuardar={alGuardarLaMeta}
           alRecargar={alRecargar}
         />
       </div>
+
+      {/* ── QUIÉN ES EL CLOSER, Y CUÁNTO COBRA ──────────────────────────
+          Solo para quien administra, y lo decide el SERVIDOR (`sesion.puedeConfigurarComisiones`,
+          que es `credenciales.editar`) con la condición exacta de los dos endpoints que el panel
+          llama. Una condición propia acá sería una segunda respuesta a la misma pregunta.
+
+          Va al FINAL del cockpit y no arriba: quien administra entra a esta pantalla de vez en
+          cuando, y quien la usa todos los días es el closer. Poner la configuración primero le
+          daría el lugar de honor a lo que casi nunca se toca. */}
+      {puedeConfigurarComisiones ? <QuienEsElCloser alCambiar={alRecargar} /> : null}
 
       {/* ── El no-show, que sí es un conteo real ── */}
       <div className="md-counters">
