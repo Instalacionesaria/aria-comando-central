@@ -159,27 +159,21 @@ export default function Inicio({
       {/* ── El no-show, que sí es un conteo real ── */}
       <div className="md-counters">
         <div className="md-cn">
-          <span className="ic" style={{ background: 'rgba(240,92,92,.12)', color: 'var(--crit)' }}>
-            !
-          </span>
+          <span className="ic md-ic-crit">!</span>
           <span className="l">No-shows registrados</span>
           <span className="n" style={{ color: c.noShows.valor ? 'var(--crit)' : 'var(--txt-faint)' }}>
             {cifra(c.noShows.valor)}
           </span>
         </div>
         <div className="md-cn">
-          <span className="ic" style={{ background: 'rgba(53,224,210,.10)', color: 'var(--accent)' }}>
-            ◔
-          </span>
+          <span className="ic md-ic-acento">◔</span>
           <span className="l">Con cita agendada</span>
           <span className="n" style={{ color: 'var(--accent)' }}>
             {cifra(c.conCitaAgendada.valor)}
           </span>
         </div>
         <div className="md-cn">
-          <span className="ic" style={{ background: 'rgba(240,136,76,.12)', color: 'var(--warn)' }}>
-            ↻
-          </span>
+          <span className="ic md-ic-warn">↻</span>
           <span className="l">Tareas para hoy</span>
           <span className="n" style={{ color: c.tareasPendientes.valor ? 'var(--warn)' : 'var(--txt-faint)' }}>
             {cifra(c.tareasPendientes.valor)}

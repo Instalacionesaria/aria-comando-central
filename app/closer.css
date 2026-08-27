@@ -1088,3 +1088,166 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   13 · EL COLOR DE CADA ETAPA DEL PIPELINE
+   ═════════════════════════════════════════════════════════════════════════════
+   Las siete etapas se apilan una debajo de la otra, así que al desplazarse hay que poder reconocer
+   en qué columna se está sin volver a leer el título. Eso es lo que hace el color.
+
+   ── CÓMO ESTÁ ARMADO, Y POR QUÉ ASÍ ─────────────────────────────────────────
+
+   Cada sección lleva `data-etapa="<clave>"`, y esas siete reglas hacen UNA sola cosa: definir dos
+   variables locales, `--etapa` y `--c-etapa`. Todo lo demás —el borde, el tinte del encabezado, el
+   punto, la píldora del conteo— se escribe una vez contra esas dos.
+
+   La alternativa era siete bloques completos, uno por etapa, con el borde y el tinte y el punto
+   repetidos en cada uno. Con eso, cambiar el grosor del borde son siete ediciones y la séptima se
+   olvida: el defecto queda como una etapa que se ve distinta de las otras seis sin que nada falle.
+
+   ── Y EL COLOR NO INFORMA SOLO ──────────────────────────────────────────────
+
+   Cada sección conserva su nombre escrito y su conteo. Siete tonos no los distingue todo el mundo
+   —la deuteranopia confunde el verde de «Ganado» con el naranja de «Seguimiento»— así que el color
+   REFUERZA lo que el texto ya dice. Es la misma regla que en la píldora de cada fila obliga a poner
+   la situación en palabras y no solo en tinte. */
+
+.md-sec[data-etapa='agendado'] {
+  --etapa: var(--etapa-agendado);
+  --c-etapa: var(--c-etapa-agendado);
+}
+
+.md-sec[data-etapa='seguimiento'] {
+  --etapa: var(--etapa-seguimiento);
+  --c-etapa: var(--c-etapa-seguimiento);
+}
+
+.md-sec[data-etapa='cierre'] {
+  --etapa: var(--etapa-cierre);
+  --c-etapa: var(--c-etapa-cierre);
+}
+
+.md-sec[data-etapa='ganado'] {
+  --etapa: var(--etapa-ganado);
+  --c-etapa: var(--c-etapa-ganado);
+}
+
+.md-sec[data-etapa='no_show'] {
+  --etapa: var(--etapa-no-show);
+  --c-etapa: var(--c-etapa-no-show);
+}
+
+.md-sec[data-etapa='nurture'] {
+  --etapa: var(--etapa-nurture);
+  --c-etapa: var(--c-etapa-nurture);
+}
+
+.md-sec[data-etapa='descalificado'] {
+  --etapa: var(--etapa-descalificado);
+  --c-etapa: var(--c-etapa-descalificado);
+}
+
+/* El canto de color, que es la señal que se ve de reojo al desplazarse. Va a la IZQUIERDA y con
+   3 px: un borde de 1 px se pierde contra el borde propio de la tarjeta. */
+.md-sec[data-etapa] {
+  border-left: 3px solid var(--etapa);
+}
+
+/* El encabezado teñido. Al 7 % — suficiente para leerse como una banda de color y no tanto como
+   para pelear con el nombre de la etapa, que es el dato. */
+.md-sec[data-etapa] .md-h {
+  background: rgb(var(--c-etapa) / .07);
+  gap: 9px;
+}
+
+/* El punto, antes del nombre. Es la tercera señal —canto, banda, punto— y la que funciona cuando la
+   sección está colapsada contra el borde de la pantalla. */
+.md-sec[data-etapa] .md-h::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--etapa);
+}
+
+/* Y el conteo, en el color de su etapa. El número es lo que más se mira de una columna del Pipeline
+   —«cuántos tengo en Cierre»— así que es donde el color rinde más. */
+.md-sec[data-etapa] .md-h .b {
+  background: rgb(var(--c-etapa) / .16);
+  color: var(--etapa);
+}
+
+/* Una etapa VACÍA conserva su color entero: es la mitad visible de la regla que el Pipeline
+   defiende. «Ganado 0» tiene que verse tan Ganado como «Ganado 4», o el cero deja de ser una
+   afirmación y vuelve a ser un hueco. */
+.md-sec[data-etapa] > .pipe-vacia {
+  border-color: rgb(var(--c-etapa) / .28);
+}
+
+/* ── Y LA FORMA DEL PUNTO, QUE ES LO QUE EL COLOR NO PUEDE ARREGLAR ─────────
+   Medido con la matriz de Machado (2009) sobre los siete cantos de color, en el tema oscuro:
+
+     · ganado / descalificado   distancia 195 en visión normal → **24 en deuteranopia**
+     · no_show / nurture        distancia  62 en visión normal → **32 en protanopia**
+
+   O sea que el verde de «Ganado» y el coral de «Descalificado» —el mejor y el peor desenlace, el
+   par más caro de confundir que tiene esta pantalla— se vuelven casi el mismo color para cerca del
+   8 % de los varones. Ningún ajuste de tono lo arregla: son opuestos en el eje rojo-verde, que es
+   justamente el eje que falta.
+
+   Así que el punto cambia de FORMA, no solo de color, y las formas se eligen por el grupo semántico
+   que `lib/negocio/etapas.ts` ya define:
+
+     · círculo          las tres en curso — agendado, seguimiento, cierre
+     · círculo lleno    ganado: el desenlace positivo (misma forma, el color lo separa del grupo)
+     · cuadrado         descalificado: el desenlace negativo
+     · rombo            no_show: un hecho operativo, no una resolución
+     · anillo (hueco)   nurture: frío y reversible — la forma más «vacía» de las cinco
+
+   Con esto los dos pares que colapsaban quedan distinguidos sin depender del color: círculo contra
+   cuadrado, y rombo contra anillo. */
+
+.md-sec[data-etapa='descalificado'] .md-h::before {
+  border-radius: 2px;
+}
+
+.md-sec[data-etapa='no_show'] .md-h::before {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+.md-sec[data-etapa='nurture'] .md-h::before {
+  background: transparent;
+  border: 2px solid var(--etapa);
+  width: 9px;
+  height: 9px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   14 · LOS CUATRO COLORES QUE VIVÍAN EN EL JSX
+   ═════════════════════════════════════════════════════════════════════════════
+   `Comision.jsx` y `Inicio.jsx` tenían cuatro colores escritos a mano —el carril del arco y los
+   fondos de los tres contadores—. La prueba que prohíbe los literales barre las HOJAS DE ESTILO, no
+   el JSX, así que se colaron por el único camino que no mira: un atributo de SVG y tres
+   `style={{ background: 'rgba(…)' }}`.
+
+   Y el del arco importaba de verdad: `rgba(148,197,255,.08)` es un celeste al 8 %, invisible sobre
+   el blanco del tema claro, así que el anillo de comisión perdía su carril y el arco quedaba
+   flotando sin referencia de cuánto falta.
+
+   `pruebas/codigo/106-etapas-color.test.ts` barre ahora también los JSX de la superficie. */
+.md-ic-crit {
+  background: rgb(var(--c-crit) / .12);
+  color: var(--crit);
+}
+
+.md-ic-acento {
+  background: rgb(var(--c-acento) / .1);
+  color: var(--accent);
+}
+
+.md-ic-warn {
+  background: rgb(var(--c-warn) / .12);
+  color: var(--warn);
+}

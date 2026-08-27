@@ -23,6 +23,33 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
+import { fechaDelDia } from './tiempo.ts';
+
+/**
+ * El día de una columna `date`, como `YYYY-MM-DD`.
+ *
+ * ── ESTO PARECE DE MÁS Y NO LO ES ───────────────────────────────────────────
+ *
+ * El controlador devuelve una columna `date` como un `Date` de JavaScript puesto en la **medianoche
+ * LOCAL del proceso**. Medido: `'2027-03-15'::date` llega como `2027-03-15T05:00:00.000Z` corriendo
+ * en `America/Lima`.
+ *
+ * Así que las dos salidas cortas están mal, cada una a su manera:
+ *
+ *   · `String(d).slice(0, 10)` da **«Mon Mar 15»** — en inglés, y sin año. Es lo que había, y no se
+ *     ve leyendo el código porque diez es justo el largo de una fecha ISO.
+ *   · `d.toISOString().slice(0, 10)` parece el arreglo obvio y es **otro error de zona**: en una
+ *     zona por delante de UTC —Madrid, digamos— la medianoche local es el día ANTERIOR en UTC, así
+ *     que devolvería el 14. Hoy no se notaría porque el servidor corre en UTC; se notaría el día
+ *     que alguien corra esto en otra zona, que es la peor forma de enterarse.
+ *
+ * Los captadores LOCALES son los únicos que leen el día donde el controlador lo puso.
+ */
+function diaDeLaColumna(d: Date | string): string {
+  if (typeof d === 'string') return d.slice(0, 10);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+}
 
 /** Lo que devuelve cada pestaña: lo medido, y por qué no hay más. */
 export interface Pestana<T> {
@@ -411,7 +438,9 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
     ...tareas.map((t) => ({
       id: `tarea:${t.id}`,
       cuando: t.creado_el,
-      titulo: `Seguimiento para el ${String(t.vence_el).slice(0, 10)}`,
+      /* En español y con el año. Antes decía «Seguimiento para el Mon Mar 15» — ver
+         `diaDeLaColumna` para las dos formas de equivocarse acá. */
+      titulo: `Seguimiento para el ${fechaDelDia(diaDeLaColumna(t.vence_el))}`,
       detalle: t.nota ?? t.modo,
       autor: nombreDe(t.autor),
     })),

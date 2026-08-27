@@ -103,6 +103,47 @@
   --accent-alto:   #5ff0e2;
   --accent-hondo:  #1f9c93;
 
+  /* ── UN COLOR POR ETAPA DEL PIPELINE ──────────────────────────────────────
+     Siete etapas y siete colores, **con nombre propio** en vez de reusar `--ok` o `--warn`
+     directamente. El motivo no es prolijidad: un token se llama por lo que SIGNIFICA, y
+     `--exec` significa «capa ejecutiva» en este sistema. Escribir `color: var(--exec)` en la
+     columna «Cierre en curso» ataría las dos cosas — el día que el ámbar del hero cambie,
+     cambiaría una columna del Pipeline sin que nadie lo pidiera.
+
+     La asignación NO es decorativa; sale de lo que cada etapa quiere decir, y eso está
+     escrito en `lib/negocio/etapas.ts`:
+
+       · agendado      la ENTRADA, el trabajo por atender          → el cian del sistema
+       · seguimiento   en curso, y la señal más pegajosa           → naranja
+       · cierre        hay plata comprometida y no cobrada         → ámbar, el color del dinero
+       · ganado        se cobró. Terminal                          → verde
+       · no_show       hecho operativo, el contacto sigue vivo     → violeta: no es un desenlace
+       · nurture       frío pero reversible («no es ahora»)        → azul acero, deliberadamente frío
+       · descalificado cerrado en negativo, decisión humana        → coral
+
+     Y el color **no es la única señal**: cada sección conserva su nombre escrito y su conteo.
+     Siete tonos no los distingue todo el mundo —la deuteranopia confunde el verde con el
+     naranja— así que el color refuerza, nunca informa solo. Es la misma regla del `11` § 7.1 que
+     ya obliga a que la píldora diga la situación con palabras además del tinte. */
+  --etapa-agendado:      #35e0d2;
+  --c-etapa-agendado:    53 224 210;
+  --etapa-seguimiento:   #f0884c;
+  --c-etapa-seguimiento: 240 136  76;
+  --etapa-cierre:        #e8b64c;
+  --c-etapa-cierre:      232 182  76;
+  --etapa-ganado:        #4ade80;
+  --c-etapa-ganado:       74 222 128;
+  --etapa-no-show:       #a396f8;
+  --c-etapa-no-show:     163 150 248;
+  --etapa-nurture:       #6f9fd8;
+  --c-etapa-nurture:     111 159 216;
+  --etapa-descalificado: #f58080;
+  --c-etapa-descalificado: 245 128 128;
+
+  /* El carril del arco del anillo de comisión. Es el mismo caso que `--c-nube`: sobre negro ACLARA
+     y sobre blanco tiene que oscurecer, así que un literal se vuelve invisible en un tema. */
+  --carril-del-arco: rgb(148 197 255 / 0.1);
+
   --sh-1: 0 1px 2px rgb(0 0 0 / 0.5);
   --sh-2: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 24px rgb(0 0 0 / 0.38);
   --sh-3: 0 4px 12px rgb(0 0 0 / 0.55), 0 16px 40px rgb(0 0 0 / 0.45);
@@ -199,6 +240,26 @@
   --sobre-dev:     #5b21b6;
   --accent-alto:   #109b8e;
   --accent-hondo:  #0b6f66;
+
+  /* Las mismas siete etapas, en su versión que se lee sobre blanco. Cada una es el mismo MATIZ
+     —para que quien cambie de tema siga reconociendo la columna— con la luminancia bajada hasta
+     pasar 4,5:1 sobre su propio tinte, que es el fondo real que tienen debajo. */
+  --etapa-agendado:      #095c55;
+  --c-etapa-agendado:      9  92  85;
+  --etapa-seguimiento:   #9a4404;
+  --c-etapa-seguimiento: 154  68   4;
+  --etapa-cierre:        #6b4b00;
+  --c-etapa-cierre:      107  75   0;
+  --etapa-ganado:        #116932;
+  --c-etapa-ganado:       17 105  50;
+  --etapa-no-show:       #5b21b6;
+  --c-etapa-no-show:      91  33 182;
+  --etapa-nurture:       #1f4e79;
+  --c-etapa-nurture:      31  78 121;
+  --etapa-descalificado: #a81b1b;
+  --c-etapa-descalificado: 168 27  27;
+
+  --carril-del-arco: rgb(30 41 59 / 0.14);
 }
 
 /* ── LO QUE NINGÚN TOKEN ARREGLA ─────────────────────────────────────────────

@@ -81,7 +81,10 @@ function Arco({ fraccion }) {
       aria-hidden="true"
       style={{ position: 'absolute', transform: 'rotate(-90deg)' }}
     >
-      <circle cx="75" cy="75" r={r} fill="none" stroke="rgba(148,197,255,.08)" strokeWidth="6" />
+      {/* El carril del arco. Iba con el color escrito a mano —`rgba(148,197,255,.08)`— y eso es un
+          celeste al 8 %: sobre el blanco del tema claro **no se ve**, así que el anillo perdía su
+          carril y el arco quedaba flotando. El token lo sigue en los dos temas. */}
+      <circle cx="75" cy="75" r={r} fill="none" stroke="var(--carril-del-arco)" strokeWidth="6" />
       <circle
         cx="75"
         cy="75"

@@ -143,8 +143,12 @@ export default function Pipeline() {
 
       {/* Las siete etapas, cada una una sección. El orden lo manda el SERVIDOR: es el del embudo,
           y ordenarlo acá sería una segunda lista que puede desordenarse respecto de la suya. */}
+      {/* `data-etapa` lleva la CLAVE del servidor, no un color ni un nombre. El color lo pone
+          `app/closer.css` a partir de esa clave, así que esta pantalla no elige tonos — y el día que
+          se agregue una etapa, el CSS es el único lugar donde hay que darle el suyo. Hasta que se lo
+          den, la sección se dibuja sin canto de color en vez de heredar el de la anterior. */}
       {datos.columnas.map((col) => (
-        <div className="md-sec" key={col.clave}>
+        <div className="md-sec" data-etapa={col.clave} key={col.clave}>
           <div className="md-h">
             {col.nombre}{' '}
             {/* El conteo va SIEMPRE, incluido el cero. Es la mitad visible de la regla del
