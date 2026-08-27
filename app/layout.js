@@ -35,6 +35,18 @@ export default function RootLayout({ children }) {
       lang="es"
       data-tema={TEMA_POR_OMISION}
       className={`${inter.variable} ${plexMono.variable}`}
+      /* ── POR QUÉ SE CALLA EL AVISO DE HIDRATACIÓN, Y SÓLO ACÁ ──────────────
+         El guión de arranque toca este mismo elemento antes de que React hidrate: le corrige
+         `data-tema` y le escribe `style.color-scheme`. React compara lo que sirvió el servidor con
+         lo que encuentra, ve un `style` que no puso, y avisa **«This won't be patched up»** — o sea
+         que abandona la reconciliación de este nodo. Eso no es ruido: es React diciendo que dejó de
+         manejar el `<html>`.
+         Y el servidor no puede evitarlo sirviendo el valor correcto: no lo sabe. Sirve
+         `TEMA_POR_OMISION` a propósito —la preferencia vive en la base, a un `fetch` de distancia—
+         y el guión existe justamente para corregirlo antes del primer pintado.
+         `suppressHydrationWarning` es la respuesta que React documenta para exactamente este caso.
+         Va SOLO en este elemento, que tiene cuatro atributos y ninguno con datos de nadie. */
+      suppressHydrationWarning
     >
       <head>
         {/* ── EL GUION QUE GANA EL PRIMER CUADRO ────────────────────────────

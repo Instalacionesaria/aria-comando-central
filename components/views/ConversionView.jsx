@@ -75,7 +75,7 @@ export default function ConversionView({ activa }) {
           <div className="ghead">
             <span
               className="gdot"
-              style={{ background: 'var(--accent)', boxShadow: '0 0 8px rgba(53,224,210,.5)' }}
+              style={{ background: 'var(--accent)' }}
              />
             <span className="gt">
               Recorrido

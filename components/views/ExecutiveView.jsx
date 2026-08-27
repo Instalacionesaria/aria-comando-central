@@ -90,17 +90,38 @@ export default function ExecutiveView({ activa }) {
           </div>
           <svg className="graph" id="deptGraph" viewBox="0 0 960 560" preserveAspectRatio="xMidYMid meet">
             <defs>
+              {/* EL HALO DEL NÚCLEO, APAGADO. Era un ámbar al 28 % que se desvanecía hacia
+                  afuera: profundidad, que es lo que se pidió sacar. La capa ejecutiva se sigue
+                  distinguiendo por el ámbar de su borde y por su rótulo «CAPA EJECUTIVA».
+
+                  Los tres degradados de este `<defs>` se conservan aunque dos queden en nada, y NO
+                  es por las dudas: `scripts/paridad.mjs` compara esta vista contra el prototipo con
+                  una huella de `tag + id + clases` de cada descendiente (su `forma()`), así que
+                  sacar un `<radialGradient id="…">` de acá la deja en rojo para siempre. Y un rojo
+                  permanente no se arregla: se ignora, y con él se ignoran las otras seis vistas que
+                  sí sirven. Los ATRIBUTOS no entran en esa huella, así que cambiar los colores es
+                  gratis y quitar un nodo no lo es. */}
               <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(232,182,76,0.28)" />
-                <stop offset="100%" stopColor="rgba(232,182,76,0)" />
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="100%" stopColor="transparent" />
               </radialGradient>
+              {/* EL RELLENO DE LAS SEIS TARJETAS, Y ACÁ ESTABA EL DEFECTO DE VERDAD.
+                  Los dos topes eran `#16202f` y `#0c1220` escritos a mano — dos azules casi negros.
+                  Un literal no cambia con el tema, así que en modo claro las tarjetas SEGUÍAN
+                  siendo negras mientras su texto, que sí usa tokens, se volvía casi negro: seis
+                  tarjetas con el nombre del área ilegible, sin que nada falle.
+
+                  Los dos topes apuntan al MISMO token a propósito. Un degradado de dos tonos es un
+                  volumen, y no hay volumen: el token deja la tarjeta plana y del color del tema. */}
               <linearGradient id="nodeFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#16202f" />
-                <stop offset="100%" stopColor="#0c1220" />
+                <stop offset="0%" stopColor="var(--nodo-fondo)" />
+                <stop offset="100%" stopColor="var(--nodo-fondo)" />
               </linearGradient>
+              {/* `dataGlow` no lo referencia NADIE — se comprobó en todo el repositorio, no hay un
+                  solo `url(#dataGlow)`. Queda por la huella de paridad, en nada. */}
               <radialGradient id="dataGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(53,224,210,0.18)" />
-                <stop offset="100%" stopColor="rgba(53,224,210,0)" />
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="100%" stopColor="transparent" />
               </radialGradient>
             </defs>
             {/* conexiones: cada área con el núcleo */}
@@ -139,7 +160,10 @@ export default function ExecutiveView({ activa }) {
                 width="164"
                 height="92"
                 rx="16"
-                style={{ stroke: 'rgba(232,182,76,0.5)', filter: 'drop-shadow(0 0 18px rgba(232,182,76,0.16))' }}
+                /* El ámbar del núcleo, ahora por token: el literal `rgba(232,182,76,0.5)` es el
+                   ámbar del tema OSCURO, y sobre blanco daba un borde lavado. El `drop-shadow` de
+                   18 px que venía al lado era el halo, y se fue con el resto. */
+                style={{ stroke: 'var(--nodo-nucleo-borde)' }}
                />
               <text
                 className="node-sub"

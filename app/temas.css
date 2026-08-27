@@ -58,50 +58,67 @@
   --c-panel:    12  18  28;
   --c-alto:     12  18  28;
 
-  /* El gris-azul de líneas y superficies tenues: sobre negro, ACLARA. */
-  --c-nube:    148 197 255;
-  --line:        rgb(148 197 255 / 0.09);
-  --line-strong: rgb(148 197 255 / 0.17);
+  /* El gris-azul de líneas y superficies tenues: sobre negro, ACLARA.
 
-  --txt:           #dbe7f4;
+     SUBIÓ, y por una razón concreta: hasta ahora una tarjeta se separaba del fondo por DOS señales
+     —su sombra y su línea— y la sombra acaba de desaparecer. Con `0.09` la línea era un apoyo de la
+     sombra; ahora es lo único que hay, así que tiene que sostener sola el borde de cada tarjeta,
+     cada separador y cada hover. Medido: 0.09 sobre `--bg-panel` da un borde de 1,08:1 contra el
+     relleno —invisible— y 0.15 lo lleva a 1,19:1, que es donde el ojo lo engancha sin que la línea
+     compita con el contenido. */
+  --c-nube:    170 212 255;
+  --line:        rgb(170 212 255 / 0.15);
+  --line-strong: rgb(170 212 255 / 0.28);
+
+  --txt:           #eaf2fb;
   /* LOS DOS GRISES SUBEN, y no es gusto: barrido sobre los 2.725 elementos de la pantalla, con
      `--txt-faint` en el `#4a5568` del prototipo había **31 textos por debajo de 4,5:1**, el peor en
      2,62:1 — y ese token tenía un techo matemático de 2,79:1 contra CUALQUIER fondo de este tema, o
      sea que no había fondo que lo salvara. Acá los dos pasan, y la jerarquía entre los tres se
      conserva: 17,4 / 7,4 / 4,7. */
-  --txt-dim:       #93a3b8;
-  --txt-faint:     #8291a7;
+  --txt-dim:       #a6b8ce;
+  --txt-faint:     #93a4bb;
 
   /* Los canales de señal se repiten acá aunque valgan lo mismo que en `aios.css`, y NO es
      redundancia: el tema claro los redefine, y con el oscuro heredándolos del `:root` del prototipo
      los dos bloques dejarían de describir lo mismo. El día que alguien toque el `:root` de
      `aios.css`, el oscuro lo seguiría y el claro no — o sea, una divergencia que sólo se ve en uno
      de los dos temas. `pruebas/codigo/104-temas.test.ts` exige que los conjuntos sean iguales. */
-  --c-acento:   53 224 210;
-  --c-crit:    240  92  92;
-  --c-ok:       74 222 128;
-  --c-exec:    232 182  76;
-  --c-warn:    240 136  76;
-  --c-dev:     139 124 246;
+  /* ── LOS SEIS COLORES DE SEÑAL, MÁS POTENTES ───────────────────────────────
+     Se pidió que resalten mejor. Sobre un fondo casi negro «resaltar más» es subir luminancia y
+     saturación, y eso mueve el contraste SIEMPRE para el lado bueno: cada uno de los seis gana
+     contra el fondo, no pierde. Lo que sí hay que vigilar —y se midió— son los compañeros
+     `--sobre-*`: el texto que va ENCIMA de estos colores cuando son relleno. Ahí subir el relleno
+     resta contraste, y por eso `--sobre-ok` y `--sobre-dev` se movieron con ellos.
+
+     El hex y el canal cambian juntos, siempre. Son el mismo color escrito de dos formas —una para
+     `color:`, otra para `rgb(… / .16)`— y separarlos deja un número de un tono sobre un tinte de
+     otro, que se ve sucio sin que se entienda por qué. */
+  --c-acento:   63 242 226;
+  --c-crit:    255 106 106;
+  --c-ok:       85 235 140;
+  --c-exec:    255 197  84;
+  --c-warn:    255 149  80;
+  --c-dev:     154 139 255;
   --c-brillo:  255 255 255;
 
-  --accent:        #35e0d2;
-  --accent-dim:    rgb(53 224 210 / 0.12);
-  --exec:          #e8b64c;
-  --exec-dim:      rgb(232 182 76 / 0.12);
-  --warn:          #f0884c;
-  --crit:          #f05c5c;
-  --ok:            #4ade80;
-  --dev:           #8b7cf6;
+  --accent:        #3ff2e2;
+  --accent-dim:    rgb(63 242 226 / 0.14);
+  --exec:          #ffc554;
+  --exec-dim:      rgb(255 197 84 / 0.14);
+  --warn:          #ff9550;
+  --crit:          #ff6a6a;
+  --ok:            #55eb8c;
+  --dev:           #9a8bff;
 
   /* Los compañeros de contraste, en su versión para relleno CLARO: el acento y los chips llenos son
      colores vivos, así que encima va texto oscuro o casi blanco según cuál. */
   --sobre-acento:  #04121a;
   --sobre-lleno:   #ffffff;
-  --sobre-ok:      #eafff2;
-  --sobre-dev:     #b3a7fb;
-  --accent-alto:   #5ff0e2;
-  --accent-hondo:  #1f9c93;
+  --sobre-ok:      #f2fff7;
+  --sobre-dev:     #c7bcff;
+  --accent-alto:   #78fff0;
+  --accent-hondo:  #23b3a8;
 
   /* ── UN COLOR POR ETAPA DEL PIPELINE ──────────────────────────────────────
      Siete etapas y siete colores, **con nombre propio** en vez de reusar `--ok` o `--warn`
@@ -142,12 +159,55 @@
 
   /* El carril del arco del anillo de comisión. Es el mismo caso que `--c-nube`: sobre negro ACLARA
      y sobre blanco tiene que oscurecer, así que un literal se vuelve invisible en un tema. */
-  --carril-del-arco: rgb(148 197 255 / 0.1);
+  --carril-del-arco: rgb(170 212 255 / 0.14);
+  /* ── EL LIENZO DE «EQUIPO DE INTELIGENCIA» ─────────────────────────────────
+     Las seis tarjetas del organigrama son SVG, y ahí el color no se hereda del tema como en el
+     resto de la aplicación: el relleno salía de un degradado escrito a mano en el JSX
+     (`#16202f → #0c1220`, dos azules casi negros). En oscuro se veía bien. En claro la tarjeta
+     seguía siendo negra mientras su texto —que sí usa tokens— se volvía casi negro también: seis
+     tarjetas con el nombre del área ILEGIBLE, y nada que falle.
 
-  --sh-1: 0 1px 2px rgb(0 0 0 / 0.5);
-  --sh-2: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 24px rgb(0 0 0 / 0.38);
-  --sh-3: 0 4px 12px rgb(0 0 0 / 0.55), 0 16px 40px rgb(0 0 0 / 0.45);
-  --hair: inset 0 1px 0 rgb(255 255 255 / 0.045);
+     Ese es el defecto que estos cuatro tokens cierran. Van acá y no en el JSX porque un literal en
+     el JSX no cambia con el tema, que es exactamente lo que pasó. */
+  --nodo-fondo:  #121c2b;
+  /* El borde SUBIÓ después de medirlo, y es consecuencia directa de quitar la sombra: la
+     tarjeta se despegaba del lienzo con un `drop-shadow` de 4 px, y sin él lo único que la
+     delimita es este trazo. Medido contra el fondo del lienzo: al 0,24 daba 2,25:1 en oscuro y
+     1,56:1 en claro — o sea que en claro el borde prácticamente no existía y las seis tarjetas
+     quedaban como texto flotando. Al 0,45 y 0,65 dan 3,47:1 y 3,25:1, que es el 3:1 que la
+     WCAG 1.4.11 pide para el limite de un control (y estas tarjetas se pueden tocar). */
+  --nodo-borde:  rgb(63 242 226 / 0.45);
+  /* El núcleo (la capa ejecutiva) se distingue por el ÁMBAR de su borde, no por un halo: el halo
+     era un `drop-shadow` de 18 px y las sombras se fueron. */
+  --nodo-nucleo-borde: rgb(255 197 84 / 0.65);
+  /* ── Y EL FÓSFORO ──────────────────────────────────────────────────────────
+     Se pidió que las letras de adentro de las inteligencias resalten «de un color fosforecente».
+     Sin sombras no hay halo que lo haga, así que el brillo tiene que salir del color solo: máxima
+     saturación y máxima separación de luminancia contra el relleno de la tarjeta. En oscuro es un
+     cian neón; en claro, el mismo matiz llevado al fondo del pozo — porque sobre blanco lo que
+     «resalta» es lo más oscuro y saturado, no lo más brillante. */
+  --fosforo: #5cfff0;
+
+  /* ── SIN PROFUNDIDAD, Y ES UNA DECISIÓN, NO UN DESCUIDO ────────────────────
+     Se pidió sacar toda la sombra de las dos paletas: colores limpios, sin efectos de profundidad.
+     Los cuatro tokens quedan en `none` y con eso se apagan **51 de las 89** declaraciones de
+     `box-shadow` del proyecto en su origen, sin tocar una sola regla.
+
+     Se dejan DECLARADOS en vez de borrarlos, y no es indecisión: los usan 51 reglas repartidas en
+     cuatro hojas. Borrar los tokens dejaría 51 `box-shadow: var(--sh-2)` apuntando a una variable
+     que no existe — que en CSS no es un error, es una declaración inválida que se descarta en
+     silencio. Se vería igual, y nadie podría saber, leyendo una de esas reglas, si la sombra se
+     quitó a propósito o si alguien renombró el token. Con `none` la respuesta está en un lugar.
+
+     Las 38 restantes escriben la sombra a mano; se apagan al final del archivo.
+
+     Y LO QUE ESTO OBLIGA: sin sombra, lo único que separa una tarjeta del fondo es su LÍNEA y el
+     escalón de fondo. Por eso `--line` y `--line-strong` suben acá abajo — no es decoración, es el
+     reemplazo de la señal que se acaba de quitar. */
+  --sh-1: none;
+  --sh-2: none;
+  --sh-3: none;
+  --hair: none;
 }
 
 /* ── CLARO ───────────────────────────────────────────────────────────────────
@@ -155,9 +215,14 @@
    cualquiera es lo que produce esos temas claros que parecen rotos:
 
    1 · **`--c-nube` se da vuelta.** Ver el encabezado. Es el cambio que más se nota.
-   2 · **`--c-sombra` y `--c-brillo` intercambian su papel.** En oscuro la profundidad se hace con
-       negro y el filo superior con blanco; en claro, la sombra sigue siendo negra pero mucho más
-       suave, y el filo blanco no separa nada — pasa a ser una línea gris.
+   2 · **`--c-brillo` se da vuelta.** En oscuro el filo superior de una superficie se hace con
+       blanco; en claro el blanco no separa nada y pasa a ser un gris pizarra.
+
+       `--c-sombra` NO se redefine: se queda en el `0 0 0` de `aios.css` para los dos temas. Y eso
+       es correcto, aunque la versión anterior de este comentario dijera que los dos «intercambian
+       su papel»: una sombra negra más suave es lo que hacían las OPACIDADES de `--sh-*`, no el
+       canal. Hoy ni eso, porque los `--sh-*` valen `none`. Donde `--c-sombra` sigue vivo es en los
+       velos sobre media, que son negros en los dos temas — ver el bloque de acá abajo.
    3 · **Los colores de señal se oscurecen.** `#35e0d2` sobre blanco da 1,6:1 y `#4ade80` da 1,7:1:
        como texto son ilegibles. Se bajan a la versión que pasa 4,5:1, y sus CANALES bajan con
        ellos, así que los fondos tenues siguen siendo del mismo color que su texto.
@@ -186,48 +251,56 @@
 
   /* EL CAMBIO CENTRAL: el gris-azul se vuelve pizarra oscuro. Sobre blanco, lo que separa una
      superficie de la de atrás es OSCURECER, no aclarar. */
-  --c-nube:     30  41  59;
-  --line:        rgb(30 41 59 / 0.13);
-  --line-strong: rgb(30 41 59 / 0.24);
+  /* Mismo movimiento que en oscuro y por el mismo motivo —la línea quedó sola—, sólo que acá va
+     para el otro lado: sobre blanco, separar es OSCURECER. Y acá pesa más todavía, porque el tema
+     claro apila blanco sobre blanco: `--bg-panel` y `--bg-raise` son los dos `#ffffff`, así que
+     entre una tarjeta y la de atrás no hay escalón de fondo. La línea es literalmente la única
+     señal que queda. */
+  --c-nube:     22  32  48;
+  --line:        rgb(22 32 48 / 0.19);
+  --line-strong: rgb(22 32 48 / 0.34);
 
-  --txt:           #0e1420;
+  --txt:           #060b14;
   /* La rampa se corrió un escalón más oscura después de barrer TODAS las vistas y no sólo la que
      estaba abierta. El patrón era siempre el mismo: `--txt-faint` sobre un TINTE de color. Un tinte
      sobre blanco aclara el sustrato, así que el mismo gris que pasa sobre el panel liso no pasa
      sobre una píldora. Los dos conservan un escalón visible entre sí. */
-  --txt-dim:       #3a475b;
+  --txt-dim:       #2d3a4e;
   /* Medido en pantalla, no elegido a ojo: con `#64748b` el rótulo «activo» sobre su fondo teñido
      daba 4,32:1 y el acento 4,26:1. Los dos por debajo del 4,5:1, y por poco — que es la forma en
      que un tema claro se cuela con texto ilegible sin que nadie lo note. */
-  --txt-faint:     #4c5972;
+  --txt-faint:     #3e4b62;
 
-  --accent:        #0b6f66;
-  --c-acento:     11 111 102;
-  --accent-dim:    rgb(11 111 102 / 0.12);
+  /* Los seis de señal bajan un escalón más, por lo mismo que subieron en oscuro: se pidió que
+     resalten en los DOS temas, y sobre blanco resaltar es oscurecer. Igual que allá, el movimiento
+     va a favor del contraste — cada uno gana contra el blanco. */
+  --accent:        #075c54;
+  --c-acento:      7  92  84;
+  --accent-dim:    rgb(7 92 84 / 0.14);
   /* Los dos se oscurecieron una vez más después de barrer la pestaña Closer, que el primer barrido
      no cubría —sólo miraba la pantalla que estaba abierta—: el conteo de las sub-pestañas daba
      3,65:1 sobre su propio tinte ámbar y los avisos de «falta» 4,27:1. El tinte de un color sobre
      blanco ACLARA el sustrato, así que el texto necesita ser más oscuro que sobre el panel liso. */
-  --exec:          #6b4b00;
-  --c-exec:      107  75   0;
-  --exec-dim:      rgb(107 75 0 / 0.12);
-  --warn:          #9a4404;
-  --c-warn:      154  68   4;
-  --crit:          #c62828;
-  --c-crit:      198  40  40;
+  --exec:          #5a3f00;
+  --c-exec:       90  63   0;
+  --exec-dim:      rgb(90 63 0 / 0.14);
+  --warn:          #843803;
+  --c-warn:      132  56   3;
+  --crit:          #b01c1c;
+  --c-crit:      176  28  28;
   /* Verde y violeta también: el indicador «▲ 33 %» va sobre su propio tinte verde y daba 3,83:1. */
-  --ok:            #116932;
-  --c-ok:         17 105  50;
-  --dev:           #6d28d9;
-  --c-dev:       109  40 217;
+  --ok:            #0c5726;
+  --c-ok:         12  87  38;
+  --dev:           #5a1cb8;
+  --c-dev:        90  28 184;
 
-  /* La sombra en claro es una insinuación, no un cajón: con las opacidades del tema oscuro cada
-     tarjeta queda con un halo sucio. */
-  --sh-1: 0 1px 2px rgb(15 23 42 / 0.06);
-  --sh-2: 0 1px 3px rgb(15 23 42 / 0.07), 0 6px 16px rgb(15 23 42 / 0.06);
-  --sh-3: 0 4px 10px rgb(15 23 42 / 0.09), 0 14px 36px rgb(15 23 42 / 0.08);
-  /* El filo blanco de arriba no separa nada sobre blanco: se cambia por una línea gris finísima. */
-  --hair: inset 0 1px 0 rgb(30 41 59 / 0.05);
+  /* Ídem en claro, y acá se notaba MÁS: fue lo que motivó el pedido. Una sombra pensada para fondo
+     oscuro, puesta sobre blanco, no lee como profundidad — lee como suciedad alrededor de cada
+     tarjeta. Bajarle la opacidad lo atenúa; apagarla lo resuelve. */
+  --sh-1: none;
+  --sh-2: none;
+  --sh-3: none;
+  --hair: none;
   --c-brillo:   30  41  59;
 
   /* Y los compañeros de contraste SE DAN VUELTA. Es el paso que hace la diferencia entre un tema
@@ -236,10 +309,12 @@
      PÁLIDO —el verde y el violeta al 20 % sobre blanco— así que pasan a ser el color saturado. */
   --sobre-acento:  #ffffff;
   --sobre-lleno:   #ffffff;
-  --sobre-ok:      #0f5c2e;
-  --sobre-dev:     #5b21b6;
-  --accent-alto:   #109b8e;
-  --accent-hondo:  #0b6f66;
+  /* Estos dos van sobre el tinte PÁLIDO de su propio color, así que cuando el color se oscurece el
+     tinte también, y el texto encima tiene que bajar con él o el par se junta. */
+  --sobre-ok:      #0a4a22;
+  --sobre-dev:     #4a179c;
+  --accent-alto:   #0d857a;
+  --accent-hondo:  #075c54;
 
   /* Las mismas siete etapas, en su versión que se lee sobre blanco. Cada una es el mismo MATIZ
      —para que quien cambie de tema siga reconociendo la columna— con la luminancia bajada hasta
@@ -259,7 +334,16 @@
   --etapa-descalificado: #a81b1b;
   --c-etapa-descalificado: 168 27  27;
 
-  --carril-del-arco: rgb(30 41 59 / 0.14);
+  --carril-del-arco: rgb(22 32 48 / 0.16);
+  /* El lienzo de «Equipo de inteligencia». El motivo de estos cuatro está en el bloque oscuro,
+     y este es el tema donde el defecto se veía: seis tarjetas negras, con su texto negro. */
+  --nodo-fondo:  #ffffff;
+  --nodo-borde:  rgb(7 92 84 / 0.65);
+  /* El ámbar del núcleo, en su versión que se lee sobre blanco. */
+  --nodo-nucleo-borde: rgb(90 63 0 / 0.6);
+  /* Y el fósforo: el mismo matiz cian, al fondo del pozo. Sobre blanco lo que resalta es lo más
+     oscuro y saturado — un neón sobre blanco no resalta, se pierde. */
+  --fosforo: #044e46;
 }
 
 /* ── LO QUE NINGÚN TOKEN ARREGLA ─────────────────────────────────────────────
@@ -355,4 +439,271 @@
 .nav-foot > :first-child {
   flex: 1;
   min-width: 0;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   SIN SOMBRAS NI BRILLOS, EN LAS DOS PALETAS Y EN TODAS LAS PESTAÑAS
+   ═════════════════════════════════════════════════════════════════════════════
+   Los cuatro tokens en `none` apagan 51 de las 89 declaraciones. Las otras 38 escriben la sombra a
+   mano —`box-shadow: 0 0 7px rgb(var(--c-ok) / .5)` y parientes— repartidas por `aios.css`.
+
+   ── QUÉ SON ESAS 38, PORQUE NO SON LO QUE PARECE ────────────────────────────
+
+   Se revisaron una por una antes de barrerlas, y ninguna DIBUJA nada: las 38 son halos encima de un
+   elemento que ya tiene su `background`. Los puntos de estado (`.st.ok`, `.jsdot`, `.gdot`,
+   `.su-dot`) son círculos de 5 a 7 px con un `0 0 7px` de su propio color alrededor; las barras
+   (`.b-bar`, `.ck-bar i`) tienen su degradado y el halo va aparte; los cajones laterales usan
+   `-20px 0 60px` para despegarse del fondo. Apagarlas cambia cómo se ve cada una de esas cosas, no
+   si se ve.
+
+   Eso importaba comprobarlo antes y no después: si UNA sola hubiera sido la única forma de un
+   elemento —un anillo hecho con `inset`, un separador sin borde— un barrido con `*` la habría hecho
+   desaparecer, y el defecto sería un elemento ausente. Que es justo la clase de defecto que no
+   falla y no se nota.
+
+   ── POR QUÉ UN SELECTOR UNIVERSAL Y NO 38 EDICIONES NI UN `!important` ──────
+
+   Porque **las capas ganan antes que la especificidad**. Esta hoja entra en la capa `components` y
+   `aios.css` en la capa `aios` (ver `app/globals.css`), así que un `*` de especificidad 0-0-0 acá le
+   gana a un `.card { box-shadow: … }` de 0-1-0 allá. No hace falta un solo `!important` — y no hace
+   falta tocar `aios.css`, que tiene que seguir siendo comparable contra `aios-command-center_1.html`
+   para que `npm run paridad` signifique algo.
+
+   Lo que el universal NO alcanza es su propia capa: `fundaciones.css`, `ajustes.css`, `armazon.css`
+   y `closer.css` viven en `components` igual que esto, y ahí sí manda la especificidad. Son tres
+   declaraciones literales y van nombradas más abajo, una por una. */
+:root[data-tema] *,
+:root[data-tema] *::before,
+:root[data-tema] *::after {
+  box-shadow: none;
+}
+
+/* Los brillos por FILTRO, que son sombras con otro nombre: `drop-shadow` es exactamente eso. Se
+   apagan los dos que hay, sobre sus selectores exactos — NO con un `filter: none` general, porque
+   `filter` en estas hojas también hace otras cosas (`.cc.lose .cc-media` desatura la tarjeta
+   perdida, `.fd-btn:hover` la aclara) y apagarlas sería quitar información, no profundidad. */
+:root[data-tema] .node-card rect.body,
+:root[data-tema] .node-card:hover rect.body {
+  filter: none;
+}
+
+/* Las tres literales de la MISMA capa, nombradas. Si aparece una cuarta hay que agregarla acá, y
+   `pruebas/codigo/107-sin-sombras.test.ts` lo dice antes de que llegue a la pantalla. */
+:root[data-tema] .fd-sub .fd-hecho,
+:root[data-tema] .fd-campo input:focus,
+:root[data-tema] .fd-campo select:focus,
+:root[data-tema] .fd-campo textarea:focus,
+:root[data-tema] .row-i select:focus {
+  box-shadow: none;
+}
+
+/* ── Y LO QUE HAY QUE DEVOLVER, PORQUE EL BARRIDO SE LLEVA ALGO QUE NO ERA ADORNO ─────────────
+
+   Tres de esas 38 no eran profundidad: eran el AVISO DE FOCO. Los campos de formulario marcaban
+   «acá estás escribiendo» con `box-shadow: 0 0 14px …` más un cambio de borde, y `.cc:focus-visible`
+   lo marcaba con sombra y `outline: none` — o sea que ahí la sombra era casi todo el aviso.
+
+   Barrerlas sin reponer nada le saca a quien navega con teclado la señal de dónde está parado. Así
+   que el foco pasa a `outline`, que es el mecanismo que le corresponde: no ocupa lugar en el
+   maquetado, sobrevive al modo de alto contraste del sistema operativo —cosa que una sombra no
+   hace, se descarta— y con `:focus-visible` sale sólo con teclado, nunca al hacer clic.
+
+   Esto es más de lo que se pidió, y es a propósito: se pidió quitar las sombras, no romper el
+   foco. */
+:root[data-tema] input:focus-visible,
+:root[data-tema] select:focus-visible,
+:root[data-tema] textarea:focus-visible,
+:root[data-tema] button:focus-visible,
+:root[data-tema] [tabindex]:focus-visible,
+:root[data-tema] a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LAS LETRAS DE ADENTRO DE LAS INTELIGENCIAS
+   ═════════════════════════════════════════════════════════════════════════════
+   Las seis tarjetas de «Equipo de inteligencia». El nombre de cada área pasa al fósforo, y el borde
+   se refuerza — el borde, porque la tarjeta venía con un `drop-shadow` de 4 px que la despegaba del
+   lienzo, y sin él lo único que la delimita es su trazo.
+
+   El relleno NO se toca acá: sale de `url(#nodeFill)` en `aios.css`, y ese degradado ahora apunta a
+   `--nodo-fondo` desde el propio JSX. Un mecanismo, y en el único lugar donde el SVG lo puede
+   leer. */
+:root[data-tema] .node-card rect.body {
+  stroke: var(--nodo-borde);
+  stroke-width: 1.25;
+}
+
+:root[data-tema] .node-card:hover rect.body {
+  stroke: var(--fosforo);
+  stroke-width: 1.6;
+}
+
+/* El nombre del área: el fósforo. Es lo que se pidió que resalte, y es además el dato que uno busca
+   cuando mira el organigrama — no el subtítulo ni el conteo. */
+:root[data-tema] .node-name {
+  fill: var(--fosforo);
+  font-weight: 650;
+}
+
+/* El subtítulo sube de `--txt-faint` a `--txt-dim`. Es el texto más chico de la tarjeta (10 px) y
+   estaba en el gris más apagado de los tres: la peor combinación posible de las que había. */
+:root[data-tema] .node-sub {
+  fill: var(--txt-dim);
+}
+
+/* Y el ícono acompaña al nombre, en vez de quedarse en el gris apagado. */
+:root[data-tema] .node-ico {
+  color: var(--fosforo);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LOS CONTROLES QUE VAN SOBRE MEDIA NO SIGUEN AL TEMA, PORQUE LA MEDIA NO LO SIGUE
+   ═════════════════════════════════════════════════════════════════════════════
+   ESTO NO ES PARTE DE LO QUE SE PIDIÓ. Salió del barrido de contraste que se corrió para comprobar
+   que reforzar la paleta no rompiera nada, y es un defecto MÍO del tema claro de la etapa anterior:
+   entonces dije que había barrido todas las vistas, y estas tres estaban sobre una superficie que
+   el barrido no sabía leer.
+
+   ── EL DEFECTO, MEDIDO ──────────────────────────────────────────────────────
+
+   El botón de reproducir y el reloj de duración se dibujan encima de la MEDIA de una pieza — una
+   miniatura, un video. Los tres usaban `rgb(var(--c-brillo) / …)` para su relleno, y `--c-brillo`
+   se da vuelta con el tema: blanco en oscuro, gris pizarra en claro. Con el glifo en
+   `--sobre-lleno`, que es blanco en los dos temas, el resultado en tema claro fue:
+
+     · `.cc-media .play`    1,43:1   (el ▶ blanco sobre un relleno que se volvió claro)
+     · `.dw-video .play`    1,49:1
+     · `.cc-dur`            2,70:1   (el reloj de duración)
+
+   Contra 14,75 / 13,78 / 12,95 en oscuro. O sea: el control desaparecía en uno de los dos temas.
+
+   ── POR QUÉ LA REGLA ES «NO SEGUIR AL TEMA» Y NO «ELEGIR EL OTRO TOKEN» ─────
+
+   Porque debajo de estos controles no hay una superficie del tema: hay una IMAGEN, y una imagen
+   puede ser de cualquier color. Ningún token del tema puede garantizar contraste contra algo que
+   no controla. Lo que sí funciona es lo que hace cualquier reproductor: el control trae su propio
+   velo oscuro y su glifo blanco, iguales en los dos temas. Ahí el contraste no depende de la media
+   ni del tema, sino del velo, que es nuestro.
+
+   Por eso estos dos valores se declaran UNA vez, fuera de los dos bloques: que no tengan versión
+   por tema es la afirmación, no un olvido. */
+/* ── POR QUÉ 0,72 Y NO 0,55, QUE ES DONDE ESTO EMPEZÓ ───────────────────────
+   El primer intento puso el velo en 0,55 y medí 5,12:1. El número era real y la conclusión falsa:
+   mi propia medición leía sólo `background-color`, así que el DEGRADADO de la miniatura no contaba
+   como fondo y el velo se medía sobre el panel. Al arreglar la medición para que lea el degradado,
+   la píldora «Activo» —que había dado 4,7:1 y que por eso dejé sin tocar— pasó a dar **1,01:1**.
+
+   O sea que el defecto era peor de lo que dije, y la razón de fondo es una sola: si el velo no es
+   lo bastante opaco, el contraste lo decide la imagen, y la imagen puede ser cualquier cosa.
+
+   Así que el velo se elige por el PEOR caso posible, que es una imagen blanca. Al 0,72 sobre blanco
+   el fondo compuesto queda en 71 y de ahí sale el piso garantizado, para cualquier miniatura:
+
+     · texto blanco   →  9,2:1
+     · verde `--ok-medio` → 6,0:1
+
+   Sobre una imagen oscura los dos suben. Ese es el punto de un velo: que el número no dependa de la
+   foto. */
+:root[data-tema] {
+  --velo-medio:  rgb(0 0 0 / 0.72);
+  --sobre-medio: #ffffff;
+  /* El verde de «activo», fijo en los dos temas por lo mismo que el blanco: va sobre el velo, no
+     sobre una superficie del tema. `--ok` no sirve acá porque en claro es un verde oscuro, y sobre
+     el velo negro un verde oscuro desaparece. */
+  --ok-medio:    #55eb8c;
+  /* Y EL PISO DEBAJO DE LA MEDIA, que era la pieza que faltaba. `.dw-video` no tiene fondo propio:
+     es un contenedor para un video, y hasta que el video esté ahí lo que se ve detrás de sus
+     controles es el panel — blanco en el tema claro.
+
+     O sea que poner los controles en blanco NO alcanzaba: el primer arreglo del reloj lo habría
+     dejado blanco sobre panel blanco, peor que antes. Un velo tampoco, porque un velo necesita algo
+     debajo que tapar. Lo que hacía falta es lo que hace cualquier reproductor: que el contenedor
+     tenga su propio piso oscuro, así los controles tienen substrato conocido ANTES de que cargue la
+     media y no dependen de con qué los rodearon. */
+  --fondo-medio: #0a0f18;
+}
+
+:root[data-tema] .cc-dur {
+  color: var(--sobre-medio);
+  background: var(--velo-medio);
+}
+
+:root[data-tema] .cc-media .play,
+:root[data-tema] .dw-video .play {
+  color: var(--sobre-medio);
+  background: var(--velo-medio);
+  border-color: rgb(255 255 255 / 0.38);
+}
+
+/* Y LA PÍLDORA DE ESTADO, en sus dos estados. Los dos van sobre la miniatura, así que los dos
+   llevan el velo; lo que los distingue es el color del texto, más la palabra, que ya estaba.
+
+     · pausada  el texto era `--txt-dim`, que en claro se vuelve pizarra oscuro sobre el velo
+                negro: 3,71:1 con 10 px.
+     · activa   el texto es el verde `--ok` sobre un tinte verde al 18 % — casi transparente, así
+                que el fondo real era la miniatura: **1,01:1 en claro y 2,30:1 en oscuro**. Falla en
+                LOS DOS temas, y esa es la que yo había dejado pasar por medirla mal. */
+:root[data-tema] .cc-status.pau {
+  color: var(--sobre-medio);
+  background: var(--velo-medio);
+}
+
+:root[data-tema] .cc-status.act {
+  color: var(--ok-medio);
+  background: var(--velo-medio);
+}
+
+/* Y LA SEXTA, que apareció ÚLTIMA y por eso vale contar cómo: el reloj y la barra del
+   reproductor, dentro del cajón de video. Los dos usan `--c-brillo`, que en claro se vuelve
+   pizarra oscuro, y viven sobre la superficie del VIDEO — que es negra en los dos temas. El
+   reloj daba **1,55:1 en claro** contra 5,50:1 en oscuro.
+
+   POR QUÉ SE ESCAPÓ AL BARRIDO, que es la parte útil de contar: el barrido general pone todas
+   las `.view` visibles a la vez y mide, y así cubrió 985 textos por tema. Pero un CAJÓN no es
+   una `.view`: existe en el DOM sólo después de abrir una pieza. O sea que «barrí todas las
+   vistas» y «barrí toda la pantalla» no son lo mismo, y la diferencia son exactamente los
+   lugares que hay que abrir con un clic. */
+/* Y ACÁ EL VELO NO ERA OPCIONAL, aunque el color ya no se dé vuelta.
+
+   El reloj quedó blanco, pero sin velo se apoya directo en el degradado de la pieza. Esos degradados
+   están escritos a mano en `lib/aios/creative.js` —ocho pares, `#4c3f9e→#2b2560` y compañía— y son
+   literales, así que no cambian con el tema: eso es lo que salvó al reloj. Pero el más CLARO de los
+   ocho es `#8f7a1f→#4a3f10`, un mostaza, y blanco sobre ese mostaza da **4,23:1** con 10,5 px:
+   abajo del 4,5:1, por poco.
+
+   O sea que el arreglo funcionaba para siete piezas de ocho. Con el velo el piso pasa a 15,9:1
+   contra el peor de los ocho, y deja de depender de cuál pieza abrió quien mira. */
+:root[data-tema] .dw-scrub {
+  background: var(--velo-medio);
+  padding: 5px 9px;
+  border-radius: 8px;
+}
+
+:root[data-tema] .dw-scrub .t {
+  color: var(--sobre-medio);
+}
+
+/* La barra también: es un control, y sobre el piso oscuro un gris pizarra al 22 % no se ve. Al 40 %
+   da 3,85:1 contra `--fondo-medio`, que es el 3:1 que la WCAG 1.4.11 pide para un control. */
+:root[data-tema] .dw-scrub .track {
+  background: rgb(255 255 255 / 0.4);
+}
+
+/* El piso del contenedor de la media, Y ES UNA RED, NO EL MECANISMO — conviene decirlo con
+   precisión porque es fácil leerlo al revés.
+
+   Las dos pantallas que dibujan estos contenedores les ponen el degradado de la pieza en un `style`
+   EN LÍNEA (`lib/aios/creative.js:178` y `lib/aios/conversion.js:433`), y un estilo en línea le gana
+   a cualquier capa. Así que hoy esta declaración no se aplica en ninguna de las dos: el substrato
+   real es ese degradado, que por ser literal es igual en los dos temas.
+
+   Queda igual, y con esta nota, para el caso en que un contenedor se dibuje SIN degradado — ahí
+   volvería a ser transparente, y un contenedor de media transparente muestra el panel: blanco en
+   tema claro, que es de dónde vino todo esto. Lo que garantiza el contraste de los controles no es
+   este piso: son sus velos. */
+:root[data-tema] .dw-video,
+:root[data-tema] .cc-media {
+  background-color: var(--fondo-medio);
 }

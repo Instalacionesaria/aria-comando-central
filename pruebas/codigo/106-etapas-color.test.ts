@@ -18,7 +18,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { ETAPAS } from '../../lib/negocio/etapas.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
@@ -153,30 +153,35 @@ test('la pantalla NO elige tonos: pasa la clave del servidor', () => {
   );
 });
 
-test('ningún JSX de la superficie del Closer trae un color escrito a mano', () => {
-  // ESTE ERA EL HUECO DE MI PROPIA GUARDA. `104-temas.test.ts` prohíbe los literales y barre las
-  // cinco HOJAS DE ESTILO — no el JSX. Así que cuatro se colaron por el único camino que no mira: un
-  // atributo de SVG y tres `style={{ background: 'rgba(…)' }}`.
+test('ningún JSX de la superficie trae un color escrito a mano', () => {
+  // ESTE ERA EL HUECO DE MI PROPIA GUARDA, Y SE ABRIÓ DOS VECES.
   //
-  // Y uno importaba de verdad: el carril del arco del anillo de comisión iba en
-  // `rgba(148,197,255,.08)`, un celeste al 8 % que sobre el blanco del tema claro **no se ve**. El
-  // anillo perdía su carril y el arco quedaba flotando sin referencia de cuánto falta — sin que
-  // nada fallara, y sólo en uno de los dos temas.
-  const ARCHIVOS = [
-    'components/closer/Inicio.jsx',
-    'components/closer/MiDia.jsx',
-    'components/closer/Pipeline.jsx',
-    'components/closer/Agenda.jsx',
-    'components/closer/Comision.jsx',
-    'components/closer/PorcentajesDelEquipo.jsx',
-    'components/negocio/Ficha.jsx',
-    'components/negocio/Avanzar.jsx',
-    'components/negocio/Fila.jsx',
-    'components/negocio/ListaDeContactos.jsx',
-    'components/views/CloserView.jsx',
-  ];
+  // `104-temas.test.ts` prohíbe los literales y barre las cinco HOJAS DE ESTILO — no el JSX. Así
+  // que cuatro colores se colaron por el único camino que no mira: un atributo de SVG y tres
+  // `style={{ background: 'rgba(...)' }}`. Se agregó este barrido con una LISTA de once archivos, la
+  // de la superficie del Closer.
+  //
+  // Y la lista fue el segundo hueco. `components/views/` no estaba, y ahí había cinco más: el
+  // degradado `#16202f → #0c1220` que pintaba las tarjetas del organigrama —el defecto que se vio
+  // en pantalla: seis tarjetas negras con su texto negro en tema claro—, dos halos y dos tintes
+  // ámbar. Una lista escrita a mano sólo cubre lo que alguien se acordó de escribir.
+  //
+  // Por eso ahora se RECORRE el árbol. Un archivo nuevo queda cubierto el día que se crea, sin que
+  // nadie tenga que acordarse de nada — que es la misma razón por la que las siete etapas se
+  // recorren desde `ETAPAS` y no desde una lista de siete claves.
+  const archivos: string[] = [];
+  const bajar = (dir: string) => {
+    for (const e of readdirSync(new URL(dir, RAIZ), { withFileTypes: true })) {
+      if (e.isDirectory()) bajar(`${dir}${e.name}/`);
+      else if (e.name.endsWith('.jsx')) archivos.push(`${dir}${e.name}`);
+    }
+  };
+  bajar('components/');
+  bajar('app/');
+  assert.ok(archivos.length > 20, `sólo ${archivos.length} archivos: el recorrido se quedó corto`);
+
   const colados: string[] = [];
-  for (const archivo of ARCHIVOS) {
+  for (const archivo of archivos.sort()) {
     // Sin comentarios: los de este repositorio CITAN colores a propósito para contar qué se cambió.
     const codigo = leer(archivo)
       .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
@@ -189,7 +194,7 @@ test('ningún JSX de la superficie del Closer trae un color escrito a mano', () 
     colados,
     [],
     'hay colores escritos a mano en el JSX. Un literal no cambia con el tema, así que se va a ver ' +
-      'bien en oscuro y va a desaparecer en claro, sin que nada falle: ' +
+      'bien en oscuro y va a desaparecer —o quedar negro sobre negro— en claro, sin que nada falle: ' +
       colados.join(' · '),
   );
 });

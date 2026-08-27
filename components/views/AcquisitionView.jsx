@@ -103,7 +103,7 @@ export default function AcquisitionView({ activa }) {
             </span>
           </div>
           <div className="sig">
-            <span className="si" style={{ background: 'rgba(240,136,76,.14)', color: 'var(--warn)' }}>
+            <span className="si" style={{ background: 'rgb(var(--c-warn) / .14)', color: 'var(--warn)' }}>
               ↓
             </span>
             <div>
@@ -119,7 +119,7 @@ export default function AcquisitionView({ activa }) {
             </span>
           </div>
           <div className="sig">
-            <span className="si" style={{ background: 'rgba(240,136,76,.14)', color: 'var(--warn)' }}>
+            <span className="si" style={{ background: 'rgb(var(--c-warn) / .14)', color: 'var(--warn)' }}>
               ↻
             </span>
             <div>
