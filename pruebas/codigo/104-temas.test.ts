@@ -163,3 +163,76 @@ test('el Pipeline usa la MISMA fila que Mi Día', () => {
   assert.match(pipeline, /className="md-sec"/, 'el Pipeline no usa el molde de secciones de Mi Día');
   assert.match(pipeline, /\{col\.cuantos\}/, 'el Pipeline dejó de mostrar el conteo de cada etapa');
 });
+
+test('el barrido manual espera lo que la ruta puede tardar', () => {
+  // ES EL DEFECTO QUE LLEGÓ COMO QUEJA: «No se pudo contactar al servidor» al apretar «Traer del
+  // calendario». El servidor no fallaba — hace diez llamadas secuenciales a GoHighLevel y declara
+  // `maxDuration = 300`, y el cliente abortaba a los quince segundos. Se reportaba un fallo sobre
+  // una operación que salía bien: medido contra producción después de una de esas «fallas», 118
+  // citas escritas.
+  //
+  // La regla que esto fija: **quien llama a una ruta que declara `maxDuration` tiene que esperar al
+  // menos eso.** Se comprueba comparando los dos números, no la presencia del argumento.
+  const ruta = leer('app/api/closer/agenda/refrescar/route.ts');
+  const segundos = Number(/maxDuration\s*=\s*(\d+)/.exec(ruta)?.[1]);
+  assert.ok(segundos > 0, 'la ruta del barrido dejó de declarar `maxDuration`');
+
+  const agenda = leer('components/closer/Agenda.jsx');
+  const ms = Number(/ESPERA_DEL_BARRIDO_MS\s*=\s*([\d_]+)/.exec(agenda)?.[1]?.replace(/_/g, ''));
+  assert.ok(ms > 0, 'la Agenda dejó de fijar cuánto espera el barrido');
+  assert.ok(
+    ms >= segundos * 1000,
+    `la Agenda espera ${ms / 1000}s y la ruta puede tardar ${segundos}s: el navegador va a abortar ` +
+      'y anunciar un fallo sobre un barrido que está saliendo bien',
+  );
+  assert.match(agenda, /espera: ESPERA_DEL_BARRIDO_MS/, 'la espera se declara y no se usa');
+});
+
+test('el calendario distingue un día SIN CITAS de uno SIN LEER', () => {
+  // La regla que sostiene toda la pantalla, y el defecto más caro que puede tener una agenda: quien
+  // mira un día del mes que viene, lo ve limpio, y se compromete a otra cosa. El servidor manda
+  // `hasta` justamente para que la grilla no tenga que adivinar.
+  const agenda = leer('components/closer/Agenda.jsx');
+  assert.match(agenda, /leido:\s*dia >= datos\.hoy && dia <= datos\.hasta/, 'la grilla ya no acota lo leído');
+  assert.match(agenda, /sin-leer/, 'las casillas sin leer perdieron su aspecto propio');
+  // Y no se pueden abrir: abrir un día sin leer mostraría una lista vacía, que se lee como «no hay».
+  assert.match(agenda, /disabled=\{!c\.leido \|\| c\.cuantas === 0\}/, 'una casilla sin leer se puede abrir');
+
+  const servidor = leer('lib/negocio/agenda.ts');
+  assert.match(servidor, /hasta,/, 'el servidor dejó de mandar hasta dónde llega su respuesta');
+});
+
+test('la Agenda pide los días que el barrido de verdad guardó', () => {
+  // Pedir más devolvería días vacíos que nadie miró — un cero sin medir disfrazado de cero medido —
+  // y pedir menos deja media grilla en gris sin motivo. El número es el del barrido.
+  const citas = leer('lib/negocio/citas.ts');
+  const guardados = Number(/DIAS_ADELANTE\s*=\s*(\d+)/.exec(citas)?.[1]);
+  const agenda = leer('components/closer/Agenda.jsx');
+  const pedidos = Number(/DIAS_QUE_SE_PIDEN\s*=\s*(\d+)/.exec(agenda)?.[1]);
+  assert.equal(pedidos, guardados, 'la Agenda y el barrido no cubren la misma ventana');
+});
+
+test('el encabezado del día muestra la FECHA, no dos veces la etiqueta', () => {
+  // Decía «HOY · HOY»: el rótulo grande y el subtítulo salían de las dos funciones que devuelven la
+  // etiqueta relativa, así que el dato —qué día es— no aparecía en ningún lado. Se vio en el
+  // navegador, no leyendo el código.
+  const agenda = leer('components/closer/Agenda.jsx');
+  assert.match(agenda, /className="ag-dia-s">\{actual \? fechaDelDia\(actual\.dia\)/, 'el subtítulo no muestra la fecha');
+  /* Sin los comentarios: el que explica el arreglo NOMBRA `etiquetaDeDia`, y buscarlo en crudo hacía
+     que la prueba se pusiera roja por su propia explicación. Es el mismo tropiezo que ya tuvo la
+     prueba del modal inerte en `103-ficha-diseno`. */
+  const sinComentarios = agenda
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(!sinComentarios.includes('etiquetaDeDia'), 'volvió la etiqueta relativa al encabezado del día');
+
+  // Y `fechaDelDia` NUNCA devuelve una etiqueta relativa: es lo único que la hace distinta.
+  const tiempo = leer('lib/negocio/tiempo.ts');
+  const cuerpo = tiempo.slice(tiempo.indexOf('export function fechaDelDia'));
+  const hasta = cuerpo.indexOf('\nexport function', 1);
+  const fn = hasta > 0 ? cuerpo.slice(0, hasta) : cuerpo;
+  for (const relativa of ["'HOY'", "'AYER'", "'MAÑANA'"]) {
+    assert.ok(!fn.includes(relativa), `\`fechaDelDia\` devuelve ${relativa}: entonces no es una fecha`);
+  }
+});

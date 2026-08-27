@@ -72,7 +72,25 @@ export type Respuesta<T> =
     }
   | { readonly tipo: 'sin_respuesta'; readonly causa: string };
 
-/** Cuánto se espera antes de decir "no pude preguntar". */
+/**
+ * Cuánto se espera antes de decir "no pude preguntar", cuando quien llama no dice otra cosa.
+ *
+ * Quince segundos es correcto para una lectura de la base, que es lo que hacen casi todas las rutas.
+ * NO lo es para una ruta que llama a un servicio ajeno, y eso costó un defecto que llegó como una
+ * queja: **«No se pudo contactar al servidor» al apretar "Traer del calendario"**.
+ *
+ * Lo que pasaba de verdad: ese barrido hace **diez llamadas secuenciales a GoHighLevel** —una para
+ * listar los calendarios y una por cada uno— y su ruta declara `maxDuration = 300`. Contra la
+ * subcuenta real tarda más de quince segundos, así que el navegador **abortaba la petición** y
+ * mostraba el cartel de red caída… mientras el servidor seguía trabajando y terminaba bien.
+ *
+ * O sea: se reportaba un fallo sobre una operación que había salido bien. Medido contra producción
+ * después de una de esas «fallas»: **118 citas escritas**, la última minutos antes.
+ *
+ * Por eso el tope pasa a ser un ARGUMENTO. La regla es una sola y hay que respetarla: **quien llama
+ * a una ruta que declara `maxDuration` tiene que esperar al menos eso**, o está construyendo el
+ * mismo defecto de nuevo.
+ */
 const ESPERA_MS = 15_000;
 
 /**
@@ -93,9 +111,9 @@ const ESPERA_MS = 15_000;
  */
 export async function pedir<T>(
   camino: string,
-  opciones: { metodo?: string; cuerpo?: unknown } = {},
+  opciones: { metodo?: string; cuerpo?: unknown; espera?: number } = {},
 ): Promise<Respuesta<T>> {
-  const { metodo = 'GET', cuerpo } = opciones;
+  const { metodo = 'GET', cuerpo, espera = ESPERA_MS } = opciones;
 
   let respuesta: Response;
   try {
@@ -107,7 +125,7 @@ export async function pedir<T>(
       credentials: 'same-origin',
       headers: cuerpo === undefined ? {} : { 'content-type': 'application/json' },
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(ESPERA_MS),
+      signal: AbortSignal.timeout(espera),
     });
   } catch (e) {
     // Red caída, DNS, tiempo de espera, petición cancelada. NO es "no hay datos" y NO es

@@ -70,7 +70,7 @@
      sea que no había fondo que lo salvara. Acá los dos pasan, y la jerarquía entre los tres se
      conserva: 17,4 / 7,4 / 4,7. */
   --txt-dim:       #93a3b8;
-  --txt-faint:     #78889e;
+  --txt-faint:     #8291a7;
 
   /* Los canales de señal se repiten acá aunque valgan lo mismo que en `aios.css`, y NO es
      redundancia: el tema claro los redefine, y con el oscuro heredándolos del `:root` del prototipo
@@ -150,24 +150,33 @@
   --line-strong: rgb(30 41 59 / 0.24);
 
   --txt:           #0e1420;
-  --txt-dim:       #47566d;
+  /* La rampa se corrió un escalón más oscura después de barrer TODAS las vistas y no sólo la que
+     estaba abierta. El patrón era siempre el mismo: `--txt-faint` sobre un TINTE de color. Un tinte
+     sobre blanco aclara el sustrato, así que el mismo gris que pasa sobre el panel liso no pasa
+     sobre una píldora. Los dos conservan un escalón visible entre sí. */
+  --txt-dim:       #3a475b;
   /* Medido en pantalla, no elegido a ojo: con `#64748b` el rótulo «activo» sobre su fondo teñido
      daba 4,32:1 y el acento 4,26:1. Los dos por debajo del 4,5:1, y por poco — que es la forma en
      que un tema claro se cuela con texto ilegible sin que nadie lo note. */
-  --txt-faint:     #5b6a80;
+  --txt-faint:     #4c5972;
 
   --accent:        #0b6f66;
   --c-acento:     11 111 102;
   --accent-dim:    rgb(11 111 102 / 0.12);
-  --exec:          #8a6200;
-  --c-exec:      138  98   0;
-  --exec-dim:      rgb(138 98 0 / 0.12);
-  --warn:          #b45309;
-  --c-warn:      180  83   9;
+  /* Los dos se oscurecieron una vez más después de barrer la pestaña Closer, que el primer barrido
+     no cubría —sólo miraba la pantalla que estaba abierta—: el conteo de las sub-pestañas daba
+     3,65:1 sobre su propio tinte ámbar y los avisos de «falta» 4,27:1. El tinte de un color sobre
+     blanco ACLARA el sustrato, así que el texto necesita ser más oscuro que sobre el panel liso. */
+  --exec:          #6b4b00;
+  --c-exec:      107  75   0;
+  --exec-dim:      rgb(107 75 0 / 0.12);
+  --warn:          #9a4404;
+  --c-warn:      154  68   4;
   --crit:          #c62828;
   --c-crit:      198  40  40;
-  --ok:            #15803d;
-  --c-ok:         21 128  61;
+  /* Verde y violeta también: el indicador «▲ 33 %» va sobre su propio tinte verde y daba 3,83:1. */
+  --ok:            #116932;
+  --c-ok:         17 105  50;
   --dev:           #6d28d9;
   --c-dev:       109  40 217;
 

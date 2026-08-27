@@ -68,6 +68,19 @@ export interface Agenda {
    * es tener dos relojes, y el minuto que cruza la medianoche local los separa.
    */
   hoy: string;
+  /**
+   * Hasta qué día llega esta respuesta, inclusive, en la zona de la empresa.
+   *
+   * ── ESTO NO ES UN ADORNO: ES LO QUE HACE HONESTO AL CALENDARIO ─────────────
+   *
+   * La pantalla dibuja un mes entero, y un mes tiene días que esta consulta **no miró**. Sin este
+   * dato, la única forma de dibujarlos sería como días sin citas — y un día sin citas y un día que
+   * nadie leyó son cosas distintas que llevan a decisiones opuestas: uno dice «tengo la mañana
+   * libre» y el otro dice «no sé qué tengo».
+   *
+   * Es la misma regla que el `11` § 9: **un cero medido no se ve igual que un cero sin medir.**
+   */
+  hasta: string;
   total: number;
   /** La zona con la que se calculó todo. Viaja para que la pantalla no elija otra. */
   zonaHoraria: string;
@@ -136,6 +149,15 @@ export async function agendaDelCloser(
     ])
     .executeTakeFirstOrThrow();
   const hoy = reloj.hoy;
+  /* El último día que esta respuesta cubre, con la MISMA aritmética que la ventana de abajo y en la
+     misma zona. Calcularlo en el navegador sería un segundo cálculo del mismo hecho, y el que se
+     equivoque por una zona horaria pinta días «sin citas» que en realidad no se miraron. */
+  const hasta = await datos()
+    .selectNoFrom([
+      sql<string>`to_char(date_trunc('day', timezone(${zonaHoraria}, now())) + ((${dias} - 1) * interval '1 day'), 'YYYY-MM-DD')`.as('hasta'),
+    ])
+    .executeTakeFirstOrThrow()
+    .then((f) => f.hasta);
 
   // El día en la zona de la EMPRESA. Es la misma expresión que `lib/negocio/miDia.ts` ya usa para
   // la cola de hoy, y por el mismo motivo: `date_trunc` sobre `timezone(zona, now())` da la
@@ -228,6 +250,7 @@ export async function agendaDelCloser(
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([dia, citas]) => ({ dia, citas })),
     hoy,
+    hasta,
     total: filas.length,
     zonaHoraria,
     avisoDeZona: avisoDeZona(zonaHoraria),

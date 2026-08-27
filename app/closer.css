@@ -590,3 +590,443 @@
 .md-sec > .md-r:first-of-type {
   border-top: 0;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   11 · LA AGENDA: CALENDARIO A LA IZQUIERDA, EL DÍA A LA DERECHA
+   ═════════════════════════════════════════════════════════════════════════════
+   Dos columnas, y la de la izquierda es fija: un calendario tiene siete columnas de ancho conocido,
+   así que estirarlo con el ancho de la ventana sólo lo deforma. La derecha se queda con el resto,
+   que es donde está lo que se lee — los nombres y las horas. */
+.ag {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+/* Por debajo de eso las dos columnas no entran, y un calendario de 320 px al lado de una tarjeta de
+   200 no se lee: pasan a apilarse, con el mes primero. */
+@media (max-width: 900px) {
+  .ag {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ag-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ag-barra {
+  margin-bottom: 12px;
+}
+
+.ag-coste {
+  margin: 0;
+}
+
+/* ── EL MES ──────────────────────────────────────────────────────────────── */
+.ag-mes-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ag-mes-t {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* El mes llega en minúsculas del catálogo —«agosto de 2026»— y se muestra con la inicial en alta.
+   `text-transform: capitalize` pondría mayúscula también en «De», que es lo que se ve en la captura
+   del diseño viejo y está mal en español. */
+.ag-mes-t::first-letter {
+  text-transform: uppercase;
+}
+
+.ag-mes-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.ag-mes-nav button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--txt-dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: color .14s ease, background .14s ease, border-color .14s ease;
+}
+
+.ag-mes-nav button:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .08);
+  border-color: var(--line);
+}
+
+.ag-mes-nav button:focus-visible,
+.ag-celda:focus-visible,
+.ag-prox:focus-visible,
+.ag-sala:focus-visible,
+.ag-mas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ag-grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.ag-sem {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--txt-dim);
+}
+
+.ag-hueco {
+  height: 38px;
+}
+
+.ag-celda {
+  position: relative;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  color: var(--txt);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: background .14s ease, border-color .14s ease;
+}
+
+.ag-celda:hover:not(:disabled) {
+  background: rgb(var(--c-nube) / .09);
+}
+
+/* Un día leído SIN citas se puede mirar y no se puede abrir: no hay nada que abrir. Queda con el
+   número a plena luz, que es lo que dice «se miró y está libre». */
+.ag-celda:disabled {
+  cursor: default;
+}
+
+/* ── LA DISTINCIÓN QUE SOSTIENE TODA LA PANTALLA ───────────────────────────
+   Un día FUERA de la ventana leída no es un día sin citas. Se apaga hasta quedar claramente en otro
+   plano —no es «vacío», es «no se sabe»— y el motivo se escribe en la leyenda de abajo, porque un
+   color solo no dice qué significa. */
+.ag-celda.sin-leer {
+  color: var(--txt-faint);
+  opacity: .45;
+}
+
+.ag-celda.sin-leer:hover {
+  background: none;
+}
+
+/* HOY, siempre marcado, tenga o no citas: es el ancla de la grilla. */
+.ag-celda.hoy {
+  background: var(--accent);
+  color: var(--sobre-acento);
+  font-weight: 700;
+}
+
+.ag-celda.hoy:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+/* El día ABIERTO, que puede no ser hoy. */
+.ag-celda.abierta:not(.hoy) {
+  border-color: var(--accent);
+  background: rgb(var(--c-acento) / .1);
+}
+
+.ag-punto {
+  position: absolute;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.ag-celda.hoy .ag-punto {
+  background: var(--sobre-acento);
+}
+
+.ag-leyenda {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--txt-dim);
+}
+
+/* ── PRÓXIMOS DÍAS ───────────────────────────────────────────────────────── */
+.ag-proximos-t {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+  margin-bottom: 10px;
+}
+
+.ag-prox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--txt);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  transition: background .14s ease;
+}
+
+.ag-prox:hover:not(:disabled) {
+  background: rgb(var(--c-nube) / .07);
+}
+
+.ag-prox:disabled {
+  cursor: default;
+}
+
+.ag-prox.on {
+  background: rgb(var(--c-acento) / .1);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ag-prox-n {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El conteo va en palabras y SIEMPRE, incluido «Sin citas». Ver el JSX: un cero suelto se lee como
+   un dato que falta, y «Sin citas» dice que se miró. */
+.ag-prox-c {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  color: var(--txt-dim);
+  background: rgb(var(--c-nube) / .09);
+}
+
+.ag-prox-c.hay {
+  color: var(--accent);
+  background: rgb(var(--c-acento) / .13);
+}
+
+/* ── EL DÍA ABIERTO ──────────────────────────────────────────────────────── */
+.ag-dia-h {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ag-dia-t {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.ag-dia-s {
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+
+.ag-vacia {
+  margin: 0;
+}
+
+/* La línea de tiempo: hora, el botón de la sala, y la cita. Es una rejilla y no tres flex anidados
+   para que **las horas queden en su carril**: alineadas contra lo que tengan al lado, la columna
+   bailaría de renglón en renglón según el largo de cada nombre. */
+.ag-linea {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.ag-tramo {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: start;
+}
+
+.ag-hora {
+  padding-top: 13px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Una cita que ya pasó no se esconde —sigue siendo lo que ocurrió ese día— pero se dice. */
+.ag-hora.pasada {
+  color: var(--crit);
+}
+
+.ag-sala {
+  margin-top: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--accent);
+  background: rgb(var(--c-acento) / .12);
+  border: 1px solid rgb(var(--c-acento) / .22);
+  border-radius: 9px;
+  transition: background .14s ease;
+}
+
+.ag-sala:hover:not(:disabled) {
+  background: rgb(var(--c-acento) / .2);
+}
+
+/* SE ATENÚA, NO DESAPARECE. Es la regla 3 del encabezado del componente. */
+.ag-sala:disabled {
+  cursor: not-allowed;
+  color: var(--txt-faint);
+  background: rgb(var(--c-nube) / .06);
+  border-color: var(--line);
+}
+
+.ag-cita {
+  border: 1px solid var(--line);
+  border-radius: var(--cw-radio, 12px);
+  background: var(--bg-sunk);
+  transition: border-color .14s ease;
+}
+
+.ag-cita:hover,
+.ag-cita.abierta {
+  border-color: var(--line-strong);
+}
+
+.ag-cita-h {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+}
+
+.ag-cita-av {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt-dim);
+  background: rgb(var(--c-nube) / .09);
+  border-radius: 50%;
+}
+
+.ag-cita-quien {
+  flex: 1;
+  min-width: 0;
+}
+
+.ag-cita-n {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ag-cita-m {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-mas {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--txt-dim);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  transition: transform .16s ease, color .14s ease, background .14s ease;
+}
+
+.ag-mas:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .1);
+}
+
+.ag-cita.abierta .ag-mas {
+  transform: rotate(180deg);
+}
+
+.ag-cita-cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px 13px 57px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-mas,
+  .ag-celda,
+  .ag-prox,
+  .ag-sala {
+    transition: none;
+  }
+}
+
+/* El chip neutro usaba el gris MÁS apagado sobre su propio tinte, que aclara el sustrato: 4,04:1 en
+   tema claro. Sube un escalón de la rampa — sigue leyéndose como secundario y pasa en los dos temas. */
+.tagx.nu {
+  color: var(--txt-dim);
+}

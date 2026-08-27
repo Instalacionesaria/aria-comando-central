@@ -136,6 +136,33 @@ export function etiquetaDeDia(dia: string, hoy: string): string {
  * Los tres casos con palabras se delegan: si mañana `etiquetaDeDia` cambiara «MAÑANA» por otra cosa,
  * las dos vitrinas cambiarían juntas. Lo único propio de acá es el formato del resto.
  */
+/**
+ * La FECHA de un día, siempre. Nunca «HOY» ni «MAÑANA».
+ *
+ * ── POR QUÉ HACE FALTA UNA CUARTA, Y NO ES UN CAPRICHO ─────────────────────
+ *
+ * `etiquetaDeDia` y `etiquetaCorta` dan la etiqueta RELATIVA cuando el día está cerca, que es lo
+ * correcto donde encabezan una lista. Pero el encabezado de la Agenda muestra las dos cosas juntas
+ * —el rótulo grande y la fecha debajo, como en cualquier calendario— y con las dos funciones que
+ * había el resultado era **«HOY · HOY»**: dos veces lo mismo, y la fecha, que es el dato, en ningún
+ * lado. Se vio en el navegador, no leyendo el código.
+ *
+ * En minúsculas, al revés que las otras dos: éstas encabezan secciones y van en versalitas; ésta va
+ * como subtítulo al lado de un rótulo grande, y una fecha gritada ahí compite con él.
+ */
+export function fechaDelDia(dia: string): string {
+  // `T12:00Z` por el mismo motivo que `etiquetaDeDia`: a medianoche un desfase de horas cae en el
+  // día anterior, y el subtítulo diría un día menos que las citas que acompaña.
+  const d = new Date(`${dia}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return dia; // ilegible: se muestra cruda, no se inventa
+  return new Intl.DateTimeFormat('es', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(d);
+}
+
 export function etiquetaCorta(dia: string, hoy: string): string {
   const larga = etiquetaDeDia(dia, hoy);
   if (larga === 'HOY' || larga === 'AYER' || larga === 'MAÑANA') return larga;
