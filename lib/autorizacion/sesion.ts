@@ -50,6 +50,9 @@ export type EstadoSesion =
  * como *"la regla REEMPLAZADA"*: con un booleano por estado, cada estado nuevo agrega un
  * campo y el frontend maneja dos vocabularios. El estado es UN valor.
  */
+/** Los dos temas. Es la misma lista que el `check` de la migración 019. */
+export type Tema = 'oscuro' | 'claro';
+
 export interface Contexto {
   sesionId: string;
   /** Cuando se creo la sesion. Lo necesita el tope de codigos del segundo factor. */
@@ -63,6 +66,15 @@ export interface Contexto {
    * esté activo.
    */
   usuarioNombre: string;
+  /**
+   * El tema que eligió esta persona: `'oscuro'` o `'claro'`.
+   *
+   * Viaja con la sesión y no en una petición aparte por el mismo motivo que el menú: llega en la
+   * MISMA respuesta que ya se pide para saber si hay sesión, así que no cuesta un viaje más y no
+   * puede quedar viejo respecto del resto. Con dos peticiones habría un instante con el tema de la
+   * anterior y los datos de la nueva.
+   */
+  tema: Tema;
   estado: EstadoSesion;
   /** La organización a la que PERTENECE el usuario (04 § 8). */
   orgPropia: string;
@@ -189,6 +201,7 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         's.creada_el',
         'u.org_id as org_propia',
         'u.nombre as usuario_nombre',
+        'u.tema as tema',
       ])
       .executeTakeFirst();
 
@@ -301,6 +314,11 @@ export async function resolverSesion(token: string | undefined): Promise<Context
       creadaEl: fila.creada_el,
       usuarioId: fila.usuario_id,
       usuarioNombre: fila.usuario_nombre,
+      /* Un valor que no sea uno de los dos NO se propaga: la base lo impide con un `check`, pero un
+         entorno viejo —o una restauración a medias— podría traer otra cosa, y entonces el atributo
+         del `<html>` no coincidiría con ninguna hoja y quedaría la paleta del prototipo sin que
+         nadie entienda por qué. Ante la duda, el que la aplicación siempre tuvo. */
+      tema: fila.tema === 'claro' ? 'claro' : 'oscuro',
       estado: fila.estado,
       orgPropia: fila.org_propia,
       orgEfectiva,

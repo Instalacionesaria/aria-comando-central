@@ -46,6 +46,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Las tres operaciones de la propia sesión: leerla, borrarla, y cambiar la organización
   // activa del rol de plataforma. Las tres escriben o leen `identidad.sesiones`.
   'app/api/auth/sesion/route.ts',
+  // La preferencia de tema de quien pide. Escribe UNA columna de `identidad.usuarios` y el `where`
+  // es `contexto.usuarioId`, que sale de la cookie de sesión y no del cuerpo: no hay parámetro que
+  // pueda nombrar a otra persona. No abre contexto de organización porque no toca ni una fila de
+  // negocio — es una preferencia de quien mira, sobre sí mismo, y el rol del inquilino ni siquiera
+  // tiene `select` sobre esa columna (sus privilegios en `usuarios` son POR COLUMNA).
+  'app/api/auth/tema/route.ts',
   // La lista de usuarios de la organización efectiva. Es el caso que el 04 § 4 llama
   // legítimo y a la vez el más peligroso: acá el filtro por organización lo pone la consulta
   // A MANO (`where org_id = contexto.orgEfectiva`), porque la política de identidad para este

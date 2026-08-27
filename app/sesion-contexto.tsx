@@ -52,6 +52,13 @@ export interface DatosDeSesion {
    * la miga terminó diciendo «Executive» a alguien que no ve Executive.
    */
   arranque: { seccion: SeccionDelMenu; grupo: string } | null;
+  /**
+   * El tema elegido por esta persona, tal como está guardado en la base.
+   *
+   * Es la VERDAD. `app/tema.ts` guarda además una copia en el navegador, pero sólo para que el
+   * primer pintado no destelle: cuando llega esta respuesta, manda ésta.
+   */
+  tema: 'oscuro' | 'claro';
   usuarioNombre: string;
   /** Quién es. Lo necesita la pantalla de usuarios para no ofrecerse a sí misma un cambio de
    *  rol: `ADR-0502` dice que nadie se degrada a sí mismo, y el servidor responde 409. Ofrecer

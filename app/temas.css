@@ -1,0 +1,288 @@
+/* Los dos temas: oscuro y claro.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ESTO ES UN ARCHIVO Y NO UNA EDICIÓN DE `aios.css`
+ *
+ * Por lo mismo que `closer.css`: el bloque `:root` de `aios.css` es el del prototipo, y esa hoja
+ * tiene que seguir siendo comparable contra `aios-command-center_1.html`. Acá se REDEFINEN los
+ * tokens por tema, con un selector más específico (`:root[data-tema='…']`, 0-2-0 contra el 0-1-0 de
+ * `:root`) y en la capa `components`, que gana a `aios`. Ni un `!important`.
+ *
+ * Y tiene una consecuencia útil: si el atributo faltara —una página servida antes de que el cliente
+ * decida—, lo que queda es la paleta del prototipo, que es oscura. Nunca un destello blanco.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * LO QUE HIZO POSIBLE ESTO: LOS COLORES DEJARON DE ESTAR ESCRITOS A MANO
+ *
+ * Las cinco hojas tenían **402 colores literales**, y eran sólo once colores base con distintas
+ * opacidades —122 veces el acento, 101 el gris-azul de líneas y superficies, 48 el coral—. Escritos
+ * así, un tema claro había que hacerlo 402 veces a mano y mantenerlo para siempre.
+ *
+ * Se convirtieron todos a `rgb(var(--c-x) / .08)` en un solo paso mecánico, y se comprobó que **el
+ * tema oscuro no se movió**: la huella de estilos calculados de los 2.725 elementos de la pantalla
+ * dio idéntica antes y después, mismo largo y mismo hash. Ahora un tema son once valores.
+ *
+ * ── EL TOKEN QUE HACE O DESHACE EL TEMA CLARO ──────────────────────────────
+ *
+ * `--c-nube`. Sus 101 apariciones son todas lo mismo: **una capa tenue por encima del fondo** —
+ * bordes, hover, fondos de píldora, separadores—. En oscuro es un celeste, porque aclarar sobre
+ * negro es lo que separa una superficie de la de atrás. En claro tiene que ser lo contrario: un
+ * gris pizarra oscuro, porque sobre blanco lo que separa es oscurecer. Cambiarlo por su opuesto en
+ * una línea reacomoda los 101 usos de golpe; dejarlo celeste habría hecho que cada borde y cada
+ * hover del tema claro fueran invisibles.
+ * ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── OSCURO ──────────────────────────────────────────────────────────────────
+   Más negro que el del prototipo, que es lo que se pidió. El prototipo tiraba a azul marino
+   (`#05080d`, `#101825`): se ve bien de día y de noche se lee como «gris azulado», no como oscuro.
+   La rampa nueva baja luminancia y desatura, conservando el matiz frío para que el cian del acento
+   siga perteneciendo a la misma familia.
+
+   El texto no cambia y el contraste sube solo: `--txt` sobre el fondo nuevo pasa de 16,0:1 a
+   17,4:1, y `--txt-dim` de 5,8:1 a 6,3:1. */
+:root[data-tema='oscuro'] {
+  --bg:            #03050a;
+  --bg-sunk:       #05080f;
+  --bg-panel:      #080d15;
+  --bg-raise:      #0c121c;
+  --bg-float:      #111826;
+  --bg-hondo:      #06090f;
+  --bg-fondo:      #030509;
+  --bg-cajon:      #0d1420;
+  --bg-flota:      #101825;
+
+  --c-velo:      1   2   5;
+  --c-base:      3   5  10;
+  --c-hondo:     6   9  15;
+  --c-hundido:   5   8  15;
+  --c-panel:    12  18  28;
+  --c-alto:     12  18  28;
+
+  /* El gris-azul de líneas y superficies tenues: sobre negro, ACLARA. */
+  --c-nube:    148 197 255;
+  --line:        rgb(148 197 255 / 0.09);
+  --line-strong: rgb(148 197 255 / 0.17);
+
+  --txt:           #dbe7f4;
+  /* LOS DOS GRISES SUBEN, y no es gusto: barrido sobre los 2.725 elementos de la pantalla, con
+     `--txt-faint` en el `#4a5568` del prototipo había **31 textos por debajo de 4,5:1**, el peor en
+     2,62:1 — y ese token tenía un techo matemático de 2,79:1 contra CUALQUIER fondo de este tema, o
+     sea que no había fondo que lo salvara. Acá los dos pasan, y la jerarquía entre los tres se
+     conserva: 17,4 / 7,4 / 4,7. */
+  --txt-dim:       #93a3b8;
+  --txt-faint:     #78889e;
+
+  /* Los canales de señal se repiten acá aunque valgan lo mismo que en `aios.css`, y NO es
+     redundancia: el tema claro los redefine, y con el oscuro heredándolos del `:root` del prototipo
+     los dos bloques dejarían de describir lo mismo. El día que alguien toque el `:root` de
+     `aios.css`, el oscuro lo seguiría y el claro no — o sea, una divergencia que sólo se ve en uno
+     de los dos temas. `pruebas/codigo/104-temas.test.ts` exige que los conjuntos sean iguales. */
+  --c-acento:   53 224 210;
+  --c-crit:    240  92  92;
+  --c-ok:       74 222 128;
+  --c-exec:    232 182  76;
+  --c-warn:    240 136  76;
+  --c-dev:     139 124 246;
+  --c-brillo:  255 255 255;
+
+  --accent:        #35e0d2;
+  --accent-dim:    rgb(53 224 210 / 0.12);
+  --exec:          #e8b64c;
+  --exec-dim:      rgb(232 182 76 / 0.12);
+  --warn:          #f0884c;
+  --crit:          #f05c5c;
+  --ok:            #4ade80;
+  --dev:           #8b7cf6;
+
+  /* Los compañeros de contraste, en su versión para relleno CLARO: el acento y los chips llenos son
+     colores vivos, así que encima va texto oscuro o casi blanco según cuál. */
+  --sobre-acento:  #04121a;
+  --sobre-lleno:   #ffffff;
+  --sobre-ok:      #eafff2;
+  --sobre-dev:     #b3a7fb;
+  --accent-alto:   #5ff0e2;
+  --accent-hondo:  #1f9c93;
+
+  --sh-1: 0 1px 2px rgb(0 0 0 / 0.5);
+  --sh-2: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 24px rgb(0 0 0 / 0.38);
+  --sh-3: 0 4px 12px rgb(0 0 0 / 0.55), 0 16px 40px rgb(0 0 0 / 0.45);
+  --hair: inset 0 1px 0 rgb(255 255 255 / 0.045);
+}
+
+/* ── CLARO ───────────────────────────────────────────────────────────────────
+   No es «el oscuro con los fondos invertidos». Cuatro cosas cambian de naturaleza, y saltearse
+   cualquiera es lo que produce esos temas claros que parecen rotos:
+
+   1 · **`--c-nube` se da vuelta.** Ver el encabezado. Es el cambio que más se nota.
+   2 · **`--c-sombra` y `--c-brillo` intercambian su papel.** En oscuro la profundidad se hace con
+       negro y el filo superior con blanco; en claro, la sombra sigue siendo negra pero mucho más
+       suave, y el filo blanco no separa nada — pasa a ser una línea gris.
+   3 · **Los colores de señal se oscurecen.** `#35e0d2` sobre blanco da 1,6:1 y `#4ade80` da 1,7:1:
+       como texto son ilegibles. Se bajan a la versión que pasa 4,5:1, y sus CANALES bajan con
+       ellos, así que los fondos tenues siguen siendo del mismo color que su texto.
+   4 · **La jerarquía de grises se recalcula.** `--txt-faint` es el más apagado de los tres y aun así
+       tiene que pasar 4,5:1 — en oscuro no lo hacía (2,6:1, su techo matemático era 2,79:1), y acá
+       no hay excusa para repetirlo. */
+:root[data-tema='claro'] {
+  --bg:            #f2f4f8;
+  --bg-sunk:       #e9edf3;
+  --bg-panel:      #ffffff;
+  --bg-raise:      #ffffff;
+  --bg-float:      #f6f8fb;
+  --bg-hondo:      #eef1f6;
+  --bg-fondo:      #e7ebf2;
+  --bg-cajon:      #ffffff;
+  --bg-flota:      #ffffff;
+
+  /* Las superficies como canales: en claro son casi blancas, así que los degradados con opacidad
+     que en oscuro oscurecían, acá aclaran. */
+  --c-velo:    100 116 139;
+  --c-base:    242 244 248;
+  --c-hondo:   233 237 243;
+  --c-hundido: 233 237 243;
+  --c-panel:   255 255 255;
+  --c-alto:    255 255 255;
+
+  /* EL CAMBIO CENTRAL: el gris-azul se vuelve pizarra oscuro. Sobre blanco, lo que separa una
+     superficie de la de atrás es OSCURECER, no aclarar. */
+  --c-nube:     30  41  59;
+  --line:        rgb(30 41 59 / 0.13);
+  --line-strong: rgb(30 41 59 / 0.24);
+
+  --txt:           #0e1420;
+  --txt-dim:       #47566d;
+  /* Medido en pantalla, no elegido a ojo: con `#64748b` el rótulo «activo» sobre su fondo teñido
+     daba 4,32:1 y el acento 4,26:1. Los dos por debajo del 4,5:1, y por poco — que es la forma en
+     que un tema claro se cuela con texto ilegible sin que nadie lo note. */
+  --txt-faint:     #5b6a80;
+
+  --accent:        #0b6f66;
+  --c-acento:     11 111 102;
+  --accent-dim:    rgb(11 111 102 / 0.12);
+  --exec:          #8a6200;
+  --c-exec:      138  98   0;
+  --exec-dim:      rgb(138 98 0 / 0.12);
+  --warn:          #b45309;
+  --c-warn:      180  83   9;
+  --crit:          #c62828;
+  --c-crit:      198  40  40;
+  --ok:            #15803d;
+  --c-ok:         21 128  61;
+  --dev:           #6d28d9;
+  --c-dev:       109  40 217;
+
+  /* La sombra en claro es una insinuación, no un cajón: con las opacidades del tema oscuro cada
+     tarjeta queda con un halo sucio. */
+  --sh-1: 0 1px 2px rgb(15 23 42 / 0.06);
+  --sh-2: 0 1px 3px rgb(15 23 42 / 0.07), 0 6px 16px rgb(15 23 42 / 0.06);
+  --sh-3: 0 4px 10px rgb(15 23 42 / 0.09), 0 14px 36px rgb(15 23 42 / 0.08);
+  /* El filo blanco de arriba no separa nada sobre blanco: se cambia por una línea gris finísima. */
+  --hair: inset 0 1px 0 rgb(30 41 59 / 0.05);
+  --c-brillo:   30  41  59;
+
+  /* Y los compañeros de contraste SE DAN VUELTA. Es el paso que hace la diferencia entre un tema
+     claro y un tema claro con texto invisible: `--accent` acá es un teal oscuro, así que encima va
+     blanco y no el casi-negro del tema oscuro. Y `--sobre-ok` / `--sobre-dev` van sobre un tinte
+     PÁLIDO —el verde y el violeta al 20 % sobre blanco— así que pasan a ser el color saturado. */
+  --sobre-acento:  #ffffff;
+  --sobre-lleno:   #ffffff;
+  --sobre-ok:      #0f5c2e;
+  --sobre-dev:     #5b21b6;
+  --accent-alto:   #109b8e;
+  --accent-hondo:  #0b6f66;
+}
+
+/* ── LO QUE NINGÚN TOKEN ARREGLA ─────────────────────────────────────────────
+   Un puñado de reglas del prototipo asume fondo oscuro de una forma que no pasa por los tokens.
+   Se corrigen acá, por tema, y son pocas a propósito: cada una es una excepción y hay que poder
+   contarlas. */
+:root[data-tema='claro'] body {
+  /* El lienzo del prototipo es un degradado radial que oscurece los bordes. Sobre claro, oscurecer
+     los bordes deja una viñeta sucia; se apaga. */
+  background: var(--bg);
+}
+
+:root[data-tema='claro'] .bmark {
+  /* La marca «A» del logo tiene su color escrito a mano —casi negro sobre el cian del prototipo— y
+     sobre el cian oscurecido del tema claro daba 3,79:1. */
+  color: #ffffff;
+}
+
+:root[data-tema='claro'] .md-join {
+  /* El botón de «unirse a la sala» tiene su color escrito a mano —texto casi negro sobre cian
+     claro— y en tema claro ese cian se pierde contra el panel blanco. */
+  color: #ffffff;
+  background: linear-gradient(180deg, #109b8e, #0d7d72);
+}
+
+:root[data-tema='claro'] .guardia-caja > button {
+  color: #ffffff;
+}
+
+/* La transición del cambio de tema. Corta y sólo en color: animar `all` hace que cada apertura de
+   panel arrastre su posición. */
+:root[data-tema] body,
+:root[data-tema] .app,
+:root[data-tema] .topbar,
+:root[data-tema] .nav,
+:root[data-tema] .view {
+  transition: background-color .18s ease, color .18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-tema] body,
+  :root[data-tema] .app,
+  :root[data-tema] .topbar,
+  :root[data-tema] .nav,
+  :root[data-tema] .view {
+    transition: none;
+  }
+}
+
+/* ── EL BOTÓN, AL LADO DE LA PERSONA ─────────────────────────────────────────
+   Vive en el pie del menú lateral, pegado al nombre, que es donde está el resto de lo que es «tuyo»
+   y no «de la empresa»: tus datos, cerrar sesión. */
+.tema-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--txt-dim);
+  background: rgb(var(--c-nube) / 0.06);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition: color .14s ease, background .14s ease, border-color .14s ease;
+}
+
+.tema-btn:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / 0.12);
+  border-color: var(--line-strong);
+}
+
+.tema-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tema-btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+/* El pie del menú pasa a tener dos controles, así que se vuelve una fila. */
+.nav-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-foot > :first-child {
+  flex: 1;
+  min-width: 0;
+}

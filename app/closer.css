@@ -213,8 +213,8 @@
 
 .cw-chat .msgw-sale {
   align-self: flex-end;
-  background: rgba(53, 224, 210, .09);
-  border: 1px solid rgba(53, 224, 210, .18);
+  background: rgb(var(--c-acento) / .09);
+  border: 1px solid rgb(var(--c-acento) / .18);
   color: var(--txt);
   border-radius: var(--cw-radio) var(--cw-radio) 4px var(--cw-radio);
 }
@@ -302,7 +302,7 @@
 }
 
 .cw-input input:focus {
-  border-color: rgba(53, 224, 210, .35);
+  border-color: rgb(var(--c-acento) / .35);
   outline: none;
 }
 
@@ -316,12 +316,12 @@
   width: 36px;
   height: 36px;
   border-radius: var(--cw-radio-chico);
-  border: 1px solid rgba(53, 224, 210, .22);
+  border: 1px solid rgb(var(--c-acento) / .22);
   transition: background .14s ease;
 }
 
 .cw-send:not(:disabled):hover {
-  background: rgba(53, 224, 210, .2);
+  background: rgb(var(--c-acento) / .2);
 }
 
 .cw-send:focus-visible {
@@ -419,27 +419,27 @@
    verse igual. */
 .res-o .ic {
   flex-shrink: 0;
-  background: rgba(148, 197, 255, .06);
+  background: rgb(var(--c-nube) / .06);
   color: var(--txt-dim);
 }
 
 .res-o .ic.win {
-  background: rgba(74, 222, 128, .14);
+  background: rgb(var(--c-ok) / .14);
   color: var(--ok);
 }
 
 .res-o .ic.money {
-  background: rgba(232, 182, 76, .14);
+  background: rgb(var(--c-exec) / .14);
   color: var(--exec);
 }
 
 .res-o .ic.next {
-  background: rgba(53, 224, 210, .14);
+  background: rgb(var(--c-acento) / .14);
   color: var(--accent);
 }
 
 .res-o .ic.lost {
-  background: rgba(240, 92, 92, .13);
+  background: rgb(var(--c-crit) / .13);
   color: var(--crit);
 }
 
@@ -571,4 +571,22 @@
   margin-left: calc(16px + 64px + 14px);
   padding-right: 16px;
   overflow-wrap: anywhere;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   10 · EL PIPELINE, VERTICAL
+   ═════════════════════════════════════════════════════════════════════════════
+   Las siete etapas pasaron de columnas al costado a secciones apiladas, con el mismo molde que
+   Mi Día. El motivo entero está en `components/closer/Pipeline.jsx`; acá sólo lo que el molde de
+   Mi Día no trae: el vacío de una etapa, que en Mi Día es un `.dw-empty` suelto y acá va DENTRO de
+   la sección, así que necesita su propio aire. */
+.md-sec > .pipe-vacia {
+  margin: 12px 16px;
+  padding: 14px;
+}
+
+/* Y una lista larga no empuja la etapa siguiente fuera de la pantalla: cada sección se desplaza
+   sola a partir de cierto alto. Es lo único que la disposición en columnas hacía bien. */
+.md-sec > .md-r:first-of-type {
+  border-top: 0;
 }

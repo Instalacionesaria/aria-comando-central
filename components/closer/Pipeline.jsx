@@ -1,6 +1,6 @@
 'use client';
 
-/* El Pipeline del closer: las siete columnas.
+/* El Pipeline del closer: las siete etapas, una debajo de la otra.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * UNA COLUMNA VACÍA SE DIBUJA IGUAL, CON SU CERO
@@ -9,6 +9,24 @@
  * siete columnas de las que cinco están vacías se ven mal. Pero una columna que desaparece cuando
  * está vacía **hace que nadie note que está vacía**, y `Ganado 0` es una afirmación mientras que un
  * Ganado ausente es una pregunta que nadie se hace.
+ *
+ * ── ANTES ERAN SIETE COLUMNAS AL COSTADO, Y NO ES UN CAMBIO DE GUSTO ───────
+ *
+ * El tablero era `display:flex` con `overflow-x:auto` y columnas de 232 px fijos: siete columnas
+ * necesitan 1.700 px y la pantalla da menos, así que **de las siete se veían tres** y las otras
+ * cuatro quedaban detrás de un desplazamiento horizontal que nadie usa. Justo el defecto que el
+ * encabezado de acá arriba dice que hay que evitar: una etapa que no se ve es una etapa de la que
+ * nadie se pregunta si está vacía. Se dibujaban las siete y se leían tres.
+ *
+ * Ahora son secciones apiladas con el molde de Mi Día —`.md-sec` + `.md-h` + su conteo—, que es el
+ * que esta aplicación ya usa para «una lista de contactos con un título y un número». Se ve la
+ * séptima igual que la primera, con un desplazamiento vertical que es el que la pantalla ya tiene.
+ *
+ * Y con eso la fila pasa a ser `components/negocio/Fila.jsx`, el MISMO componente de Mi Día. Antes
+ * el Pipeline dibujaba su propia tarjeta —nombre, píldora y los seis íconos, apilados— así que el
+ * mismo contacto se veía de dos maneras distintas en dos pestañas vecinas. Era exactamente lo que
+ * ese archivo dice en su encabezado que existe para impedir: *"si se construyen por pantalla,
+ * divergen"*.
  *
  * ── Y SE DICE DE DÓNDE SALIÓ CADA CLASIFICACIÓN ─────────────────────────────
  *
@@ -21,7 +39,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import Ficha from '../negocio/Ficha.jsx';
-import { SeisIconos } from '../negocio/Fila.jsx';
+import Fila from '../negocio/Fila.jsx';
 
 export default function Pipeline() {
   const [datos, setDatos] = useState(null);
@@ -123,38 +141,27 @@ export default function Pipeline() {
         </div>
       ) : null}
 
-      <div className="pipe">
-        {datos.columnas.map((col) => (
-          <div className="pipe-col" key={col.clave}>
-            <div className="pipe-h">
-              <span className="pipe-n">{col.nombre}</span>
-              <span className="pipe-c">{col.cuantos}</span>
-            </div>
-            <div className="pipe-b">
-              {col.filas.length === 0 ? (
-                /* Vacía CON SU MOTIVO, no en blanco. Una columna en blanco se lee como un error
-                   de carga; «Nadie acá» dice que se miró y no hay. */
-                <div className="pipe-vacia">Nadie acá.</div>
-              ) : (
-                col.filas.map((f) => (
-                  <button
-                    type="button"
-                    className="pipe-t"
-                    key={f.id}
-                    onClick={() => setAbierta(f.id)}
-                  >
-                    <span className="pipe-nm">{f.nombre}</span>
-                    {f.pildora ? (
-                      <span className={`tagx ${f.pildora.clase}`}>{f.pildora.texto}</span>
-                    ) : null}
-                    <SeisIconos iconos={f.iconos} />
-                  </button>
-                ))
-              )}
-            </div>
+      {/* Las siete etapas, cada una una sección. El orden lo manda el SERVIDOR: es el del embudo,
+          y ordenarlo acá sería una segunda lista que puede desordenarse respecto de la suya. */}
+      {datos.columnas.map((col) => (
+        <div className="md-sec" key={col.clave}>
+          <div className="md-h">
+            {col.nombre}{' '}
+            {/* El conteo va SIEMPRE, incluido el cero. Es la mitad visible de la regla del
+                encabezado: `Ganado 0` es una afirmación y un Ganado ausente es una pregunta que
+                nadie se hace. */}
+            <span className="b">{col.cuantos}</span>
           </div>
-        ))}
-      </div>
+
+          {col.filas.length === 0 ? (
+            /* Vacía CON SU MOTIVO, no en blanco. Una sección en blanco se lee como un error de
+               carga; «Nadie acá» dice que se miró y no hay. */
+            <div className="dw-empty pipe-vacia">Nadie en esta etapa.</div>
+          ) : (
+            col.filas.map((f) => <Fila key={f.id} fila={f} onAbrir={(fila) => setAbierta(fila.id)} />)
+          )}
+        </div>
+      ))}
 
       {/* La ficha se abre DONDE se la invoca y nunca navega: al cerrarla se vuelve al mismo
           tablero, en la misma posición. Ver `components/negocio/Ficha.jsx`. */}

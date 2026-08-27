@@ -316,6 +316,10 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/salud/route.ts',
   // Las tres operaciones de la propia sesión. No son de una pantalla: son de la aplicación.
   'app/api/auth/sesion/route.ts',
+  /* El tema de quien pide. No pertenece a ninguna pantalla porque el botón vive en el ARMAZÓN, que
+     se dibuja en todas — y tiene que funcionar también en la de contraseña temporal, donde todavía
+     no hay ninguna sección concedida. Atarlo a una pantalla sería exactamente lo que impediría eso. */
+  'app/api/auth/tema/route.ts',
   // La sonda del aislamiento. Existe para la prueba de la Etapa 2 y la sonda de la 8, no
   // para una pantalla (10 § 1).
   'app/api/control/route.ts',

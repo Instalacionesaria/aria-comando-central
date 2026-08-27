@@ -46,7 +46,7 @@
   height: 5px;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 6px rgb(var(--c-ok) / 0.5);
 }
 
 .fd-avance {
@@ -67,7 +67,7 @@
 .fd-avance .fd-barra i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), rgba(53, 224, 210, 0.4));
+  background: linear-gradient(90deg, var(--accent), rgb(var(--c-acento) / 0.4));
 }
 .fd-avance b {
   font-family: var(--font-mono);
@@ -155,7 +155,7 @@
   color: var(--txt);
 }
 .fd-fuente.ok {
-  border-color: rgba(53, 224, 210, 0.3);
+  border-color: rgb(var(--c-acento) / 0.3);
   background: var(--accent-dim);
 }
 .fd-fuente.ok b {
@@ -164,7 +164,7 @@
 /* Falta y hace falta: coral. No bloquea — genera igual, con marcadores [COMPLETAR]. */
 .fd-fuente.falta {
   border-style: dashed;
-  border-color: rgba(240, 92, 92, 0.32);
+  border-color: rgb(var(--c-crit) / 0.32);
   color: var(--crit);
 }
 .fd-fuente.falta b {
@@ -189,11 +189,11 @@
   line-height: 1.2;
 }
 .fd-aviso.falta {
-  border-color: rgba(240, 136, 76, 0.28);
+  border-color: rgb(var(--c-warn) / 0.28);
   color: var(--warn);
 }
 .fd-aviso.mal {
-  border-color: rgba(240, 92, 92, 0.3);
+  border-color: rgb(var(--c-crit) / 0.3);
   color: var(--crit);
 }
 .fd-aviso b {
@@ -275,8 +275,8 @@
 .fd-campo input:focus,
 .fd-campo select:focus,
 .fd-campo textarea:focus {
-  border-color: rgba(53, 224, 210, 0.4);
-  box-shadow: 0 0 14px rgba(53, 224, 210, 0.08);
+  border-color: rgb(var(--c-acento) / 0.4);
+  box-shadow: 0 0 14px rgb(var(--c-acento) / 0.08);
 }
 
 /* ── Los botones ─────────────────────────────────────────────────────────── */
@@ -295,7 +295,7 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--bg);
-  background: linear-gradient(180deg, var(--accent), rgba(53, 224, 210, 0.82));
+  background: linear-gradient(180deg, var(--accent), rgb(var(--c-acento) / 0.82));
   border: 0;
   border-radius: 9px;
   padding: 10px 15px;
@@ -318,7 +318,7 @@
 }
 .fd-btn.sec:hover:not(:disabled) {
   color: var(--txt);
-  border-color: rgba(148, 197, 255, 0.28);
+  border-color: rgb(var(--c-nube) / 0.28);
   filter: none;
 }
 .fd-guardado {
@@ -398,7 +398,7 @@
 }
 .fd-mini.on {
   color: var(--accent);
-  border-color: rgba(53, 224, 210, 0.32);
+  border-color: rgb(var(--c-acento) / 0.32);
 }
 
 .fd-doc {
@@ -473,7 +473,7 @@
 }
 .fd-doc strong {
   font-weight: 600;
-  color: #fff;
+  color: var(--sobre-lleno);
 }
 .fd-doc em {
   font-style: normal;
@@ -537,7 +537,7 @@
 }
 .fd-version.on {
   color: var(--accent);
-  border-color: rgba(53, 224, 210, 0.32);
+  border-color: rgb(var(--c-acento) / 0.32);
   background: var(--accent-dim);
 }
 
@@ -563,7 +563,7 @@
   resize: vertical;
 }
 .fd-ajuste textarea:focus {
-  border-color: rgba(53, 224, 210, 0.4);
+  border-color: rgb(var(--c-acento) / 0.4);
 }
 
 /* ── Los cinco pasos del Research ────────────────────────────────────────── */
@@ -587,7 +587,7 @@
   cursor: pointer;
 }
 .fd-paso-cab:hover {
-  background: rgba(148, 197, 255, 0.02);
+  background: rgb(var(--c-nube) / 0.02);
 }
 .fd-paso-n {
   width: 21px;
@@ -609,7 +609,7 @@
 }
 .fd-paso.corriendo .fd-paso-n {
   color: var(--accent);
-  border-color: rgba(53, 224, 210, 0.45);
+  border-color: rgb(var(--c-acento) / 0.45);
 }
 .fd-paso-t {
   font-size: 12.5px;

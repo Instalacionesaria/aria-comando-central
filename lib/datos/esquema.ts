@@ -40,6 +40,14 @@ export interface TablaUsuarios {
   ultimo_acceso_el: Date | null;
   creado_por: string | null;
   creado_el: Generated<Date>;
+  /**
+   * La preferencia de tema de esta persona: `'oscuro'` o `'claro'`.
+   *
+   * Vive acá y no en el navegador porque tiene que sobrevivir a cerrar sesión y a cambiar de
+   * máquina. `Generated` porque la migración 019 le pone `default 'oscuro'`, que es lo que la
+   * aplicación era antes de que el claro existiera.
+   */
+  tema: Generated<'oscuro' | 'claro'>;
 }
 
 export interface TablaPermisos {

@@ -40,7 +40,10 @@
  * en `pruebas/codigo/91-closer-y-setter.test.ts`, que es donde corresponde.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
+import { useEffect, useState } from 'react';
 import { useSesion } from '../app/sesion-contexto.tsx';
+import { aplicar, recordar, TEMA_POR_OMISION } from '../app/tema.ts';
+import BotonDeTema from './BotonDeTema.jsx';
 import { irALaVista } from '../lib/aios/shell.js';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
@@ -79,6 +82,21 @@ export default function Nav() {
   // alguien que no ve Executive. Ahora la decide el servidor, una vez, y las tres partes leen el
   // mismo campo. El motivo completo está en `seccionDeArranque`.
   const primera = sesion?.arranque?.seccion.clave;
+
+  /* El tema que se está mostrando. Arranca con el de la sesión —la verdad, que viene de la base— y
+     el botón lo mueve en el acto sin esperar al servidor: ver `BotonDeTema.jsx`. Es estado local
+     porque el contexto de sesión no se vuelve a pedir al cambiarlo, y volver a pedirlo por un
+     interruptor sería una consulta entera para una palabra. */
+  const [tema, setTema] = useState(sesion?.tema ?? TEMA_POR_OMISION);
+
+  /* Y la verdad manda cuando llega. Esto es lo que hace que cambiar el tema en OTRA máquina se vea
+     acá al entrar, en vez de quedar pegado a lo que este navegador recuerda en su copia local. */
+  useEffect(() => {
+    if (!sesion?.tema) return;
+    setTema(sesion.tema);
+    aplicar(sesion.tema);
+    recordar(sesion.tema);
+  }, [sesion?.tema]);
 
   return (
     <>
@@ -135,6 +153,10 @@ export default function Nav() {
             irALaVista(clave, nombre);
           }}
         />
+        {/* El interruptor de tema, AL COSTADO de la persona: es una preferencia personal —se guarda
+            por persona, no por empresa— así que va en el rincón donde ya está lo que es tuyo.
+            `tema` sale de la sesión, o sea de la base. Ver `app/tema.ts`. */}
+        <BotonDeTema tema={tema} alCambiar={setTema} />
       </div>
     </aside>
     </>
