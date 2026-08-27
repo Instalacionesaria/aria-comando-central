@@ -39,7 +39,6 @@ import Pipeline from '../closer/Pipeline.jsx';
 import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
 import MiDia from '../closer/MiDia.jsx';
-import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 
 const SUB = [
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
@@ -254,13 +253,22 @@ export default function CloserView({ activa }) {
 
         <div className="cl-page">{cuerpo()}</div>
 
-        {/* La lista completa del territorio queda accesible desde Mi Día: es donde se trae de
-            GoHighLevel y donde se ven los 124, no solo los del día. */}
-        {sub === 'dia' && situacion === 'listo' ? (
-          <div style={{ marginTop: 18 }}>
-            <ListaDeContactos camino="/api/closer/contactos" zona="zona closer" />
-          </div>
-        ) : null}
+        {/* ── MI DÍA MUESTRA SUS COLAS Y NADA MÁS ──────────────────────────
+            Acá se dibujaba, debajo de las cinco colas, la lista COMPLETA del territorio con su
+            botón «Traer de GoHighLevel». Se quitó por pedido explícito: Mi Día responde «qué
+            tengo que hacer ahora», y una lista de 124 contactos más un botón que habla con el
+            CRM del proveedor no contestan esa pregunta — la diluyen, y encima ponen el nombre
+            de una herramienta ajena delante de un cliente.
+
+            LO QUE ESTO SE LLEVA, dicho para que no sorprenda: era el único punto del Closer
+            desde el que se podían traer contactos. El cron solo hace `mensajes`, `citas` y
+            `sonda` —ver `lib/negocio/barrido.ts`— así que NO hay sincronización automática de
+            contactos. Hoy el único botón que queda vive en la pestaña Setter, y llama al mismo
+            `/api/contactos/sincronizar`, que trae los dos territorios de una vez.
+
+            O sea: quien solo tenga la sección Closer no puede traer contactos. La solución
+            durable es agregar `contactos` a las tareas del cron, y está anotada como pendiente
+            en `docs/DESPLIEGUE.md`. */}
       </div>
     </section>
     </>

@@ -13,14 +13,24 @@
  * El reparto lo hace el servidor; esta pantalla solo dibuja. Repartir acá sería una segunda
  * implementación de la prioridad, y dos implementaciones divergen en silencio.
  *
- * ── LAS DOS CLASES DE VACÍO, QUE NO SE DIBUJAN IGUAL ────────────────────────
+ * ── UN VACÍO SE DIBUJA DE UNA SOLA MANERA: COMO UN VACÍO ────────────────────
  *
- *   · **No hay trabajo**: la cola está vacía de verdad. Se dice así, en gris.
- *   · **Falta una fuente**: no se puede saber si hay trabajo. Se dice QUÉ falta, en ámbar.
+ * Acá hubo dos clases de vacío. La cola vacía de verdad, en gris con su frase neutra, y un
+ * segundo camino en ámbar que explicaba que la fuente no estaba conectada. Ese segundo camino
+ * se eliminó, y este encabezado lo describía como si todavía existiera — o sea que la
+ * documentación afirmaba lo contrario que el código de más abajo.
  *
- * Colapsarlas es el defecto que el `11` § 4 persigue: con 74 contactos etiquetados
- * `cita_agendada`, decir "no tenés citas hoy" sería **falso** — la etiqueta dice quién tiene
- * cita, no cuándo.
+ * El motivo de sacarlo, que es el que importa conservar: **esos textos los lee un cliente.**
+ * Nombraban etiquetas y piezas internas de un CRM que no es suyo, no le decían nada que pudiera
+ * hacer, y envejecían sin que nada fallara — el de los seguimientos afirmaba que Avanzar no
+ * existía cuando ya estaba completo, así que la pantalla mentía sobre su propio sistema.
+ *
+ * Lo que sí sigue siendo verdad, y es la razón de que cada cola tenga su propia frase: decir
+ * "no tenés citas hoy" cuando hay 74 contactos con cita sería **falso**. La frase de cada cola
+ * afirma exactamente lo que esa cola sabe —"no hay citas PARA HOY", "nadie está en seguimiento
+ * HOY"— y nunca algo más grande que eso.
+ *
+ * El diagnóstico de una fuente sin conectar vive en Ajustes, que lo mira quien puede arreglarlo.
  *
  * ── Y «COMPLETADAS HOY» SIEMPRE SE DIBUJA ───────────────────────────────────
  *
@@ -235,12 +245,19 @@ export default function MiDia({ colas, zonaHoraria }) {
         );
       })}
 
+      {/* ESTE AVISO NO SE BORRA, Y VALE DECIR POR QUÉ.
+          Solo aparece cuando el territorio no entró completo en una consulta, o sea cuando estas
+          listas de verdad pueden estar cortas. Sacarlo haría que una lista incompleta se viera
+          igual que una completa — que es el defecto que esta pantalla persigue en todas sus colas:
+          un cero medido y un cero no medido no son lo mismo.
+          Lo que sí se cambió es CÓMO lo dice. Antes hablaba de «los que caben en una pasada», que
+          es vocabulario del servidor y no le dice nada a quien lo lee. */}
       {colas.truncado ? (
         <div className="fd-aviso falta">
           <i>⚠</i>
           <span>
-            Hay más contactos de los que caben en una pasada, así que estas colas pueden estar
-            incompletas.
+            Tenés muchos contactos asignados y estas listas muestran una parte. Si buscás a alguien
+            y no aparece acá, todavía puede estar en tu cartera.
           </span>
         </div>
       ) : null}

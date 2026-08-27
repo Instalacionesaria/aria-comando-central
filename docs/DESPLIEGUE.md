@@ -450,6 +450,33 @@ decisión y la prueba de regresión son de quien los mantiene.
 - **Los 5 usuarios de `closer_usuarios`.** Su `password_hash` usa `scrypt$16384$8$1$…`, **el mismo
   formato y los mismos parámetros** que `lib/datos/hash.ts`, así que se pueden copiar a
   `identidad.usuarios` y entrarían con sus contraseñas actuales. Falta escribir y probar ese guion.
+- **La sincronización de contactos no la hace el cron.** `lib/negocio/barrido.ts` corre `mensajes`,
+  `citas` y `sonda` — y el `check` de la migración `014` acepta exactamente esas tres. Los
+  CONTACTOS entran solo cuando alguien aprieta un botón, que hoy vive únicamente en la pestaña
+  Setter: llama a `/api/contactos/sincronizar`, que trae los dos territorios de una vez.
+
+  Esto pasó a importar cuando se quitó la lista completa del territorio de Mi Día, que era el otro
+  botón. **Consecuencia concreta: quien solo tenga la sección Closer no tiene forma de traer
+  contactos.** No es un defecto que dé error — la lista simplemente no se actualiza nunca, y se lee
+  como que no hay nadie.
+
+  Para cerrarlo hay que agregar `contactos` a `Tarea` y a `HORARIOS` en `barrido.ts`, y ampliar el
+  `check` de la `014` con una migración nueva. La cadencia es la decisión de producto que falta:
+  cada barrido gasta peticiones contra el límite de tasa de GoHighLevel, que es la razón por la que
+  traer nunca fue automático.
+- **El cuarto sabor de un seguimiento, `serie_agotada`.** Está declarado en
+  `lib/negocio/miDia.ts` y dibujado en `components/closer/MiDia.jsx` («Serie agotada»), y **nada lo
+  produce**: hoy un closer nunca lo ve. Significa «la serie automática se acabó sin respuesta, la
+  retoma una persona», o sea que debería SUMAR al contador de tareas.
+
+  La marca candidata es `seguimiento_terminado`, que existe en la subcuenta y figura en
+  `lib/ghl/contrato.ts` con `confianza: 'sin_confirmar'` y la nota *"nadie confirmó qué significa"*.
+  Conectarla es leer una etiqueta, no escribirla, así que es barato y no dispara ningún flujo del
+  CRM — lo único que falta es **confirmar que esa etiqueta significa eso**. Preguntado el
+  2026-08-27; la respuesta fue que hay que averiguarlo. Mientras no se confirme, esos contactos se
+  muestran como «Serie automática corriendo», que es lo que la etiqueta confirmada dice de ellos:
+  poner «Serie agotada» sobre alguien a quien el robot todavía persigue haría que el closer dejara
+  de perseguirlo.
 
 
 ## Anexo · Probarlo en tu máquina

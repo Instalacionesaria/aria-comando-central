@@ -411,31 +411,103 @@ test('la fila y sus seis íconos son UN archivo para las dos pestañas', () => {
   // El defecto que previene es concreto y silencioso: el tercer ícono cuenta llamadas
   // CONTESTADAS. Dos implementaciones terminan con una contando todas, y las dos muestran un
   // número plausible.
+  //
+  // ── LO QUE CAMBIÓ, Y POR QUÉ ESTA PRUEBA NO SE DEBILITÓ ───────────────────
+  //
+  // Antes exigía que las DOS vistas importaran la lista compartida. Ya no: la lista salió de
+  // Mi Día por pedido explícito, así que hoy solo el Setter la monta. Bajar la exigencia a «el
+  // Setter la usa» habría dejado sin defender la mitad interesante, porque lo que importa no es
+  // quién la monta — es que **nadie dibuje la fila por su cuenta**. Esa parte se conserva entera
+  // y ahora cubre las cuatro pantallas que muestran contactos, no dos.
   const closer = leer('components/views/CloserView.jsx');
   const setter = leer('components/views/SetterView.jsx');
 
-  for (const [nombre, src] of [['CloserView', closer], ['SetterView', setter]] as const) {
-    assert.match(
-      src,
-      /from '\.\.\/negocio\/ListaDeContactos\.jsx'/,
-      `${nombre} no usa la lista compartida`,
-    );
-  }
-
-  // Y que cada una pida SU ruta, con el territorio del lado del servidor.
-  assert.match(closer, /camino="\/api\/closer\/contactos"/);
+  // El Setter monta la lista compartida, con SU ruta.
+  assert.match(setter, /from '\.\.\/negocio\/ListaDeContactos\.jsx'/, 'SetterView no usa la lista compartida');
   assert.match(setter, /camino="\/api\/setter\/contactos"/);
-  // Ninguna pide la de la otra: sería la forma de que un setter vea la zona del closer sin que
-  // nada falle.
+  // Ninguna pide la ruta de la otra: sería la forma de que un setter vea la zona del closer sin
+  // que nada falle.
   assert.doesNotMatch(closer, /\/api\/setter\//);
   assert.doesNotMatch(setter, /\/api\/closer\//);
 
-  // La fila existe una sola vez, y la usa la lista compartida — no cada vista por su lado.
+  // La fila existe una sola vez, y la usan los que muestran contactos — no cada vista por su lado.
   const lista = leer('components/negocio/ListaDeContactos.jsx');
   assert.match(lista, /from '\.\/Fila\.jsx'/);
   for (const [nombre, src] of [['CloserView', closer], ['SetterView', setter]] as const) {
     assert.doesNotMatch(src, /Fila\.jsx/, `${nombre} dibuja la fila por su cuenta`);
   }
+});
+
+test('Mi Día muestra sus colas y NADA de la lista completa', () => {
+  // LA REGLA QUE SE PIDIÓ CON TODAS LAS LETRAS: *"ahí solo deben estar los pipelines indicados
+  // previamente y no una lista de traer de ghl"*.
+  //
+  // Debajo de las cinco colas se dibujaba la lista COMPLETA del territorio —124 contactos— con su
+  // botón «Traer de GoHighLevel». Dos cosas mal en un solo bloque: Mi Día contesta «qué tengo que
+  // hacer AHORA», y una lista entera no contesta eso; y el botón pone el nombre del CRM del
+  // proveedor delante de un cliente.
+  //
+  // Se comprueba por AUSENCIA, que es lo que se puede comprobar acá, y por eso la prueba nombra
+  // las dos formas en que esto puede volver: montando la lista otra vez, o pidiendo la ruta de
+  // contactos del closer desde la vista.
+  const closer = leer('components/views/CloserView.jsx');
+  const codigo = closer
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+  assert.ok(
+    !codigo.includes('ListaDeContactos'),
+    'volvió la lista completa a Mi Día. Contesta una pregunta que Mi Día no hace, y trae con ella ' +
+      'el botón que nombra a GoHighLevel delante de un cliente',
+  );
+  assert.ok(
+    !codigo.includes('/api/closer/contactos'),
+    'la vista del Closer volvió a pedir la lista completa del territorio',
+  );
+
+  // Y las colas siguen ahí: quitar la lista no puede haberse llevado el cuerpo de la pantalla.
+  assert.match(codigo, /<MiDia\s/, 'Mi Día dejó de dibujarse');
+  assert.match(codigo, /<Pipeline\s*\/>/, 'el Pipeline dejó de dibujarse');
+});
+
+test('el cockpit del Closer —Inicio, Mi Día y Pipeline— no nombra el CRM del proveedor', () => {
+  // La otra mitad del mismo pedido: *"recuerda que lo van a ver clientes"*.
+  //
+  // Se barren SOLO los textos que se pintan, y sin comentarios: los comentarios de este
+  // repositorio nombran «GoHighLevel» a propósito, para explicar de dónde sale cada dato, y eso
+  // no lo lee nadie más que quien abre el archivo.
+  //
+  // ── LAS DOS PANTALLAS QUE ESTA PRUEBA NO CUBRE, DICHAS EN VEZ DE OMITIDAS ─
+  //
+  // El nombre de la prueba dice «Inicio, Mi Día y Pipeline» y no «el Closer», porque el Closer
+  // tiene una cuarta pestaña —la Agenda— que SÍ nombra GoHighLevel cuatro veces, y una de ellas a
+  // propósito: la nota del botón de traer declara el coste de la operación. Meterla en la lista
+  // dejaría esta prueba en rojo el día uno; dejarla fuera con un nombre que dice «el Closer» sería
+  // peor, porque afirmaría una cobertura que no existe.
+  //
+  // Ajustes también queda fuera, y ahí sí es correcto por diseño: un administrador carga el token
+  // de su subcuenta, así que necesita leer el nombre de la herramienta y dónde encontrarlo.
+  const ARCHIVOS = [
+    'components/views/CloserView.jsx',
+    'components/closer/MiDia.jsx',
+    'components/closer/Pipeline.jsx',
+    'components/closer/Inicio.jsx',
+  ];
+  const colados: string[] = [];
+  for (const archivo of ARCHIVOS) {
+    const codigo = leer(archivo)
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    for (const m of codigo.matchAll(/GoHighLevel|\bGHL\b/g)) colados.push(`${archivo}: ${m[0]}`);
+  }
+  assert.deepEqual(
+    colados,
+    [],
+    'un texto del Closer nombra el CRM del proveedor. Lo lee un cliente, y no le dice nada que ' +
+      'pueda hacer: ' + colados.join(' · '),
+  );
 });
 
 test('los seis íconos distinguen "no medido" de "medido en cero"', () => {

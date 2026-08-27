@@ -274,7 +274,18 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 
   // ── Cola 4 · SEGUIMIENTOS DE HOY ──────────────────────────────────────────
   //
-  // Los que tocan hoy o ya vencieron, en cuatro sabores que NO piden lo mismo.
+  // Los que tocan hoy o ya vencieron. `CasoDeSeguimiento` declara CUATRO sabores y acá se
+  // producen TRES: `manual_de_hoy`, `manual_vencido` y `automatico_en_curso`.
+  //
+  // El que falta es `serie_agotada`, y no es un olvido: el cuarto sabor significa «la serie
+  // automática se acabó sin respuesta, ahora hace falta una persona». La marca candidata está
+  // en `lib/ghl/contrato.ts` —`seguimiento_terminado`— con `confianza: 'sin_confirmar'` y esta
+  // nota: *"existe en la subcuenta y nadie confirmó qué significa"*.
+  //
+  // Leerla sin confirmar pondría la píldora «Serie agotada» sobre contactos cuya serie quizá
+  // sigue corriendo, y el closer dejaría de perseguir a alguien que el robot todavía persigue.
+  // Ése es el costo de adivinar acá, y es peor que el de no mostrar el sabor: hoy esos contactos
+  // aparecen como `automatico_en_curso`, que es lo que la etiqueta CONFIRMADA dice de ellos.
   const tareas = await datos()
     .selectFrom('tareas')
     .select(['contacto_id', 'vence_el', 'modo', 'nota'])
@@ -283,8 +294,6 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     .orderBy('vence_el', 'asc')
     .execute();
 
-  const hoyLocal = sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now()))`;
-  void hoyLocal;
 
   for (const t of tareas) {
     const fila = porId.get(t.contacto_id);
