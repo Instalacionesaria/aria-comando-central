@@ -185,6 +185,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
   'app/api/tools/estado/route.ts',
   'app/api/tools/generar/route.ts',
+  // El proxy del motor de scraping. Necesita el `cliente_id` del alumno en el hub —la llave del
+  // monedero de leads del backend— y ése sale de la fila de credenciales de la organización, que
+  // el rol del inquilino no puede mirar. Acá el filtro protege el SALDO del alumno, no solo su
+  // trabajo: con el identificador llegando del navegador, cualquiera podría gastarle los leads.
+  'app/api/tools/scrape/route.ts',
   // ── Etapa 13 · el chat ───────────────────────────────────────────────────────
   //
   // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de

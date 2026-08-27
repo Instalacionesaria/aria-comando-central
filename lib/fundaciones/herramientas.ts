@@ -46,7 +46,7 @@ export interface FilaDeCampos {
 }
 
 /** Cómo se pinta la herramienta. `generica` = formulario + un botón + un documento. */
-export type FormaDeHerramienta = 'generica' | 'research';
+export type FormaDeHerramienta = 'generica' | 'research' | 'prospeccion';
 
 export interface Herramienta {
   /** El índice global del hub. Es la llave del almacén. NO renumerar. */
@@ -638,7 +638,9 @@ const PROSPECCION: Herramienta = {
   // El hub la declara con `hasEdit: false`: esta herramienta NO lleva el control de Ajustar. La
   // primera versión de este port se lo puso, porque el panel lo mostraba para todas.
   sinAjuste: true,
-  forma: 'generica',
+  // NO es 'generica': el hub la declara con cuatro campos y un formulario, y la pinta con un
+  // panel propio que usa solo dos de esos campos y pone un extractor de leads en su lugar.
+  forma: 'prospeccion',
 };
 
 /**

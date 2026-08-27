@@ -127,6 +127,22 @@ export const RECHAZOS = {
   // El archivo de metodología no se pudo leer. Sí es nuestro: falta en el paquete construido.
   metodologia_ilegible: 500,
 
+  // ── El motor de scraping ─────────────────────────────────────────────
+  //
+  // TRES códigos para un solo servicio externo, y la separación es la misma que ya se paga en
+  // Fundaciones: cada uno manda a una persona distinta.
+  //
+  //   · `motor_no_configurado` — falta `SCRAPER_BACKEND_URL` en el entorno. 409 y no 500: el
+  //     servidor anda, lo que falta es una variable, y lo arregla quien despliega.
+  //   · `motor_no_disponible`  — el backend no contesta. 503, como el almacén: es SU guardia el
+  //     que hay que mirar, no el nuestro.
+  //   · `motor_rechazo`        — el backend contestó que no, y su detalle viaja tal cual. 502
+  //     porque la respuesta que rompe vino de aguas arriba. El caso normal es el saldo de leads
+  //     agotado, y ése es el único mensaje accionable que la pantalla puede dar.
+  motor_no_configurado: 409,
+  motor_no_disponible: 503,
+  motor_rechazo: 502,
+
   // ── Etapa 11 · GoHighLevel ───────────────────────────────────────────
   //
   // Los tres son 409 y 503, nunca 500, y la distinción vale lo mismo que la de la Etapa 9:

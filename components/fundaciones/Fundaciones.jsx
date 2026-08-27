@@ -33,6 +33,7 @@ import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import PanelHerramienta from './PanelHerramienta';
 import PanelResearch from './PanelResearch';
+import PanelProspeccion from '../tools/PanelProspeccion';
 
 /* Lo que este componente necesita saber de SU pantalla.
 
@@ -199,7 +200,21 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           reutilizarse. Así cada panel inicializa su formulario desde el estado con un
           inicializador diferido, sin un efecto que sincronice — que es de donde salen los
           renders en cascada y los formularios que se pisan al navegar. */}
-      {herramienta.forma === 'research' ? (
+      {/* Tres formas, no dos. `prospeccion` tiene panel propio porque no es un formulario con un
+          botón: lleva un extractor de leads que habla con otro sistema. Ver `PanelProspeccion`. */}
+      {herramienta.forma === 'prospeccion' ? (
+        <PanelProspeccion
+          key={herramienta.id}
+          herramienta={herramienta}
+          estado={estadoUsable}
+          puedeEditar={puedeEditar}
+          faltaPermiso={faltaPermiso}
+          onIr={setActiva}
+          onEstadoCambiado={recargar}
+          rutaEstado={rutaEstado}
+          rutaGenerar={rutaGenerar}
+        />
+      ) : herramienta.forma === 'research' ? (
         <PanelResearch
           key={herramienta.id}
           herramienta={herramienta}

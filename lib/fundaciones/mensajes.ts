@@ -46,6 +46,14 @@ const TEXTOS: Readonly<Record<string, string>> = {
   almacen_no_disponible:
     'No se pudo hablar con el almacén donde vive tu trabajo. Esto NO significa que esté vacío — significa que no se pudo preguntar.',
 
+  // Del motor de scraping. Ver `respuesta.ts`: son tres porque mandan a tres personas distintas.
+  motor_no_configurado:
+    'El motor de scraping no está configurado en este servidor. Es un problema del despliegue, no de tus datos.',
+  motor_no_disponible:
+    'No se pudo hablar con el motor de scraping. No se gastó ningún lead: la petición no llegó.',
+  motor_rechazo:
+    'El motor de scraping rechazó la petición. El detalle de abajo viene de él — lo más común es que se te haya acabado el saldo de leads.',
+
   // Nuestros.
   metodologia_ilegible:
     'Falta el archivo de metodología de esta herramienta en el servidor. Es un problema del despliegue, no de tus datos.',

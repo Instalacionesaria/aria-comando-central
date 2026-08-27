@@ -707,3 +707,253 @@
     background-position: -100% 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Prospección en Frío — el panel propio y su extractor de leads
+   ═══════════════════════════════════════════════════════════════════════════
+   Puerto de los estilos de `ProspeccionPanel` / `ProspeccionScraper` de ARIA-brain, con los
+   TOKENS de este proyecto: ni un color literal. Es lo mismo que se hizo con el resto de
+   Fundaciones — la forma se conserva, la paleta es la del Command Center. */
+
+.pr-cols {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+/* Sin esto, una tabla de leads ancha estira su columna y aplasta la de outreach hasta hacerla
+   ilegible: los hijos de una rejilla tienen `min-width: auto` por omisión. */
+.pr-cols > * { min-width: 0; }
+
+@media (max-width: 1100px) {
+  .pr-cols { grid-template-columns: 1fr; }
+}
+
+.pr-tarjeta {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pr-tarjeta-titulo {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--txt);
+}
+.pr-nota {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Las pestañas de fuente ── */
+.sc-pestanias {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sc-pestania {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+.sc-pestania:hover { color: var(--txt); }
+.sc-pestania.on {
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border-color: var(--line-strong);
+}
+.sc-emoji { margin-right: 2px; }
+
+.sc-form { display: flex; flex-direction: column; gap: 12px; }
+.sc-rejilla { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.sc-rejilla.dos { grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) {
+  .sc-rejilla.dos { grid-template-columns: 1fr; }
+}
+
+/* La marca de que un campo vino del contexto heredado. Se ve, y no se puede confundir con lo
+   que escribió el alumno: si no se distinguiera, nadie sabría qué revisar antes de gastar. */
+.sc-heredado {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--acc);
+  margin-left: 6px;
+}
+
+.sc-pista,
+.sc-subpista {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 5px 0 0;
+  color: var(--txt-faint);
+}
+/* La pista de la localización avisa de algo que CUESTA PLATA equivocarse, así que no se pinta
+   con el color de una nota al pie. */
+.sc-pista { color: var(--warn); }
+
+.sc-btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--acc);
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.sc-btn:hover { filter: brightness(1.07); }
+.sc-btn:disabled { opacity: 0.5; cursor: default; filter: none; }
+.sc-btn.sec {
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-strong);
+}
+
+/* ── El aviso de estado del trabajo ── */
+.sc-aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+}
+.sc-aviso.ok { color: var(--ok); border-color: rgb(var(--c-ok) / 0.28); }
+.sc-aviso.err { color: var(--danger); border-color: rgb(var(--c-crit) / 0.28); }
+
+.sc-giro {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--acc);
+  animation: sc-girar 0.8s linear infinite;
+}
+@keyframes sc-girar { to { transform: rotate(360deg); } }
+/* Quien pidió menos movimiento no necesita un disco girando durante los minutos que tarda un
+   scraping. Se queda quieto y el texto sigue diciendo lo mismo. */
+@media (prefers-reduced-motion: reduce) {
+  .sc-giro { animation: none; }
+}
+
+/* ── Facebook: los dos pasos encadenados ── */
+.sc-pasos { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.sc-paso {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-sunk);
+}
+.sc-paso-titulo { font-size: 12px; font-weight: 700; color: var(--txt-dim); }
+.sc-puente {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-faint);
+  border-left: 2px solid var(--line-strong);
+  padding-left: 9px;
+}
+.sc-puente.listo { color: var(--ok); border-left-color: var(--ok); }
+
+/* ── La tabla de leads ── */
+.pr-resultados { margin-top: 14px; }
+.leads-bloque {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.leads-cabeza {
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--txt);
+}
+/* La tabla scrollea DENTRO de su caja. Sin esto, veinte columnas de LinkedIn hacen que scrollee
+   la página entera y el menú lateral se va de pantalla. */
+.leads-scroll { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+.leads-tabla { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.leads-tabla th,
+.leads-tabla td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.leads-tabla th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  z-index: 1;
+}
+.leads-tabla tr:last-child td { border-bottom: 0; }
+.lead-num { color: var(--txt-faint); width: 1%; }
+.lead-vacio { color: var(--txt-faint); }
+.lead-enlace { color: var(--acc); text-decoration: none; }
+.lead-enlace:hover { text-decoration: underline; }
+.lead-email { color: var(--ok); }
+
+/* ── La zona del plan ── */
+.pr-zona-plan {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+.pr-flujo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pr-paso {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--txt-faint);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.pr-paso.hecho { color: var(--ok); border-color: rgb(var(--c-ok) / 0.3); }
+.pr-paso.sigue { color: var(--acc); border-color: rgb(var(--c-acento) / 0.3); }
+.pr-flecha { color: var(--txt-faint); font-size: 12px; }
+.pr-btn-plan { width: 100%; justify-content: center; }
+.pr-nota-plan {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}

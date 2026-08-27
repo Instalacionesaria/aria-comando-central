@@ -134,6 +134,14 @@ test('Prospección está PORTADA del hub, no reinterpretada', () => {
   // que sin esta bandera Prospección tendría un botón que allá no existe.
   assert.equal(p.sinAjuste, true, 'volvió el control de Ajustar, que el hub no tiene');
 
+  // ── Y LA FORMA, QUE ES LO QUE SE PORTÓ MAL DOS VECES ────────────────────────
+  //
+  // `TOOL_20_PROSPECCION` declara cuatro campos y un formulario genérico, y el hub NO la pinta con
+  // eso: tiene un panel propio con un extractor de leads, que usa solo dos de los cuatro campos.
+  // Guiarse por la declaración es la conclusión equivocada a la que ya se llegó una vez, así que
+  // la forma queda congelada acá.
+  assert.equal(p.forma, 'prospeccion', 'Prospección volvió al formulario genérico');
+
   // Las tres listas nacen con su primera opción sembrada. Es lo ÚNICO que no está en el hub, y no
   // cambia nada visible: allá el `<select>` suelto muestra la primera y ésa se lee del DOM. Sin
   // esto, la pantalla mostraría "Multicanal" y el prompt recibiría `(no especificado)`.
