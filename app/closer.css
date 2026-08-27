@@ -1030,3 +1030,61 @@
 .tagx.nu {
   color: var(--txt-dim);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   12 · LAS DOS OPCIONES DE COMISIÓN
+   ═════════════════════════════════════════════════════════════════════════════
+   Los formularios se fueron a ventanas —el motivo está en `components/closer/Comision.jsx`— así
+   que en la columna del anillo sólo quedan los botones. En fila y no apilados: son dos acciones del
+   mismo rango, y una debajo de la otra estira la columna y descuadra el hero. */
+.ck-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ck-nota {
+  margin: 4px 0 0;
+}
+
+/* ── LOS PORCENTAJES DEL EQUIPO, DENTRO DE LA VENTANA ─────────────────────── */
+.cm-intro {
+  margin-bottom: 12px;
+}
+
+.cm-pie {
+  margin-top: 12px;
+}
+
+/* Sin `card`: el encabezado lo pone la ventana. Queda el marco para que la lista se lea como una
+   tabla y no como texto suelto sobre el fondo del modal. */
+.cm-lista {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-sunk);
+}
+
+/* Nombre · estado actual · controles. Antes iba como estilo en línea. */
+.cm-fila {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
+}
+
+.cm-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cm-pct {
+  width: 90px;
+}
+
+/* Por debajo de este ancho las tres columnas no entran y los botones se parten: la fila se apila. */
+@media (max-width: 620px) {
+  .cm-fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

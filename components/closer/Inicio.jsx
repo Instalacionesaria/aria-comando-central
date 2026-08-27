@@ -74,7 +74,9 @@ export default function Inicio({
   cockpit,
   comision,
   mirandoOtraOrganizacion,
+  puedeConfigurarComisiones,
   alGuardarLaMeta,
+  alRecargar,
   alIrAMiDia,
 }) {
   if (!cockpit) {
@@ -148,7 +150,9 @@ export default function Inicio({
         <Comision
           comision={comision}
           mirandoOtraOrganizacion={mirandoOtraOrganizacion}
+          puedeConfigurarPorcentajes={puedeConfigurarComisiones}
           alGuardar={alGuardarLaMeta}
+          alRecargar={alRecargar}
         />
       </div>
 

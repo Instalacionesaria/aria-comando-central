@@ -3,6 +3,27 @@
 /* Los porcentajes de comisión del equipo. Los fija quien administra, no cada persona.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
+ * SE MUDÓ DE AJUSTES AL COCKPIT DEL CLOSER, Y ES UNA VENTANA
+ *
+ * Era la cuarta pestaña de Ajustes. Ahora vive detrás de un botón al lado del anillo de comisión,
+ * que es **donde se ve el efecto**: quien cambia un porcentaje quiere ver el número que produce, y
+ * tenerlo a dos pantallas de distancia obliga a navegar para comprobar. Ajustes queda con las tres
+ * que configuran la EMPRESA —credenciales, empresas, usuarios— y esto, que configura a las personas
+ * de un equipo, se fue con el equipo.
+ *
+ * ── LO QUE **NO** CAMBIÓ, Y HAY QUE DECIRLO ────────────────────────────────
+ *
+ * La autorización. El endpoint sigue pidiendo `credenciales.ver` para leer y `credenciales.editar`
+ * para escribir, y sigue declarando `PANTALLA = 'credenciales'`. Mover el botón no puede ensanchar
+ * quién puede tocar esto — y el motivo por el que el marcador no pasó a `'closer'` está escrito en
+ * el encabezado de `app/api/admin/comisiones/route.ts`: con `'closer'`, su `GET` tendría que pedir
+ * `closer.ver` para cumplir `ADR-0304`, y eso le mostraría a cada closer lo que cobra cada
+ * compañero.
+ *
+ * El botón que abre esta ventana sólo se dibuja para quien puede editar, y eso lo responde el
+ * SERVIDOR (`sesion.puedeConfigurarComisiones`) con la condición exacta del endpoint.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
  * LA DISTINCIÓN QUE ESTA PANTALLA NO PUEDE PERDER
  *
  * **Vacío no es cero.** Un `0 %` guardado afirma que esa persona no cobra comisión; un campo vacío
@@ -34,7 +55,7 @@ function porQue(r) {
   return r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`;
 }
 
-export default function Comisiones() {
+export default function PorcentajesDelEquipo() {
   const [lista, setLista] = useState([]);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
@@ -114,10 +135,10 @@ export default function Comisiones() {
 
   return (
     <>
-      <div className="aj-ayuda" style={{ marginBottom: 12 }}>
+      <div className="aj-ayuda cm-intro">
         El porcentaje se aplica sobre <b>las ventas que cada persona registró con Avanzar</b> en el
-        mes, no sobre el cobrado de la empresa. Cada uno ve su propio número en Closer → Inicio, y
-        ahí fija su meta.
+        mes, no sobre el cobrado de la empresa. Cada uno ve su propio número en su anillo, y ahí fija
+        su meta.
       </div>
 
       {aviso ? (
@@ -127,11 +148,9 @@ export default function Comisiones() {
         </div>
       ) : null}
 
-      <div className="card">
-        <div className="card-head">
-          Comisiones
-          <span className="hint">{lista.length} persona(s) activa(s)</span>
-        </div>
+      {/* SIN `card` ni `card-head`: el título y el subtítulo los pone la ventana que la contiene, y
+          una tarjeta con su propio encabezado adentro de un modal son dos encabezados apilados. */}
+      <div className="cm-lista">
         <div className="rows">
           {lista.length === 0 ? (
             <div className="fd-aviso">
@@ -145,11 +164,7 @@ export default function Comisiones() {
             const numero = Number(valor);
             const valido = valor !== '' && Number.isFinite(numero) && numero >= 0 && numero <= 100;
             return (
-              <div
-                className="row-i"
-                key={u.usuarioId}
-                style={{ gridTemplateColumns: '1.6fr 1fr auto' }}
-              >
+              <div className="row-i cm-fila" key={u.usuarioId}>
                 <div>
                   <div className="rn">{u.nombre}</div>
                   <div className="rs">{u.email ?? 'sin correo'}</div>
@@ -163,7 +178,7 @@ export default function Comisiones() {
                     <span className="chip ok">{u.porcentaje} %</span>
                   )}
                 </div>
-                <div className="num" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div className="num cm-acciones">
                   <input
                     type="number"
                     min="0"
@@ -172,7 +187,7 @@ export default function Comisiones() {
                     inputMode="decimal"
                     aria-label={`Porcentaje de ${u.nombre}`}
                     value={valor}
-                    style={{ width: 90 }}
+                    className="cm-pct"
                     onChange={(e) =>
                       setBorradores((b) => ({ ...b, [u.usuarioId]: e.target.value }))
                     }
@@ -206,7 +221,7 @@ export default function Comisiones() {
         </div>
       </div>
 
-      <div className="aj-ayuda" style={{ marginTop: 12 }}>
+      <div className="aj-ayuda cm-pie">
         <b>Cero no es lo mismo que vacío.</b> Un <b>0 %</b> guardado dice que esa persona no cobra
         comisión, y su anillo muestra <b>$0</b>. «Sin configurar» dice que todavía nadie lo definió, y
         su anillo muestra <b>—</b> con el motivo.

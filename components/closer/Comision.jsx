@@ -20,6 +20,29 @@
  *   8 · mirando otra empresa  → `—`, y **sin ningún llamado a la acción**: mandarlo a configurar
  *       algo imposible es mentirle.
  *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * LAS DOS OPCIONES SON VENTANAS, Y ESTO REVIERTE UNA DECISIÓN ESCRITA ACÁ
+ *
+ * El comentario del botón decía, hasta este cambio: *"en línea y no un modal: el cockpit es lo que la
+ * persona está mirando, y taparlo para cargar un número lo obliga a cerrar para comprobar el
+ * efecto"*. **Se pidió al revés y se hace al revés**, así que la decisión vieja no queda escrita como
+ * si siguiera en pie.
+ *
+ * Y el argumento de entonces no era malo: sigue siendo cierto que hay que cerrar para ver el efecto.
+ * Lo que lo desequilibró es que ahora son DOS opciones y no una —la meta propia y los porcentajes
+ * del equipo—, y dos formularios que se despliegan en línea dentro de la columna del anillo la
+ * empujan hacia abajo y descuadran el hero. Con ventanas, el anillo no se mueve y cada formulario
+ * tiene su propio espacio.
+ *
+ * Lo que se conserva del argumento viejo: al guardar, la ventana **se cierra sola** y el número
+ * queda a la vista. Nadie tiene que cerrar nada para comprobar.
+ *
+ * ── EL SEGUNDO BOTÓN NO LO VE TODO EL MUNDO ────────────────────────────────
+ *
+ * «Porcentajes del equipo» sólo se dibuja cuando el SERVIDOR dice que esta persona puede editarlos,
+ * con la condición exacta del endpoint. Un closer no lo ve — y no es una cortesía: el `GET` de esa
+ * ruta pide `credenciales.ver`, así que si se dibujara para todos, sería un botón que devuelve 403.
+ *
  * ── Y EL RÓTULO ────────────────────────────────────────────────────────────
  *
  * Dice **«sobre las ventas que registraste»**, no «cobrado» ni «ganado». Las dos razones están
@@ -31,6 +54,8 @@
 
 import { useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import Ventana from '../Ventana.jsx';
+import PorcentajesDelEquipo from './PorcentajesDelEquipo.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -71,13 +96,24 @@ function Arco({ fraccion }) {
   );
 }
 
-export default function Comision({ comision, mirandoOtraOrganizacion, alGuardar }) {
+export default function Comision({
+  comision,
+  mirandoOtraOrganizacion,
+  /** Lo responde el servidor con la condición exacta del endpoint. Ver el encabezado. */
+  puedeConfigurarPorcentajes,
+  alGuardar,
+  /** Recargar el cockpit entero. Se usa al cerrar la ventana de los porcentajes: si alguien cambió
+   *  el suyo, su anillo tiene que reflejarlo. */
+  alRecargar,
+}) {
   /* El borrador y el «abierto» viven ACÁ y sobreviven a las recargas.
      `CloserView` se refresca cada 10 s, y ese archivo documenta un defecto medido de esta familia:
      poner 'cargando' en una recarga desmontaba el componente y se llevaba puesta la ficha abierta.
      Mientras el estado viva en este componente y la recarga no reemplace el árbol, lo que alguien
      está tipeando no se pierde. */
   const [abierto, setAbierto] = useState(false);
+  /** La ventana de los porcentajes del equipo. Aparte de la de la meta: son dos cosas distintas. */
+  const [porcentajesAbiertos, setPorcentajesAbiertos] = useState(false);
   const [borrador, setBorrador] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState(null);
@@ -190,15 +226,14 @@ export default function Comision({ comision, mirandoOtraOrganizacion, alGuardar 
         )}
       </div>
 
-      {/* ── EL BOTÓN QUE DESPLIEGA LA META ──────────────────────────────────
-          En línea y no un modal: el cockpit es lo que la persona está mirando, y taparlo para cargar
-          un número lo obliga a cerrar para comprobar el efecto.
+      {/* ── LOS DOS BOTONES ─────────────────────────────────────────────────
+          El de la meta no aparece cuando está mirando otra empresa —eso corta arriba— y sí aparece
+          cuando falta el porcentaje: la meta es suya y la puede fijar igual, aunque el número
+          todavía no se pueda calcular. Esconderlo ahí haría que la única acción disponible dependa
+          de algo que otra persona tiene que hacer primero.
 
-          No aparece cuando está mirando otra empresa —eso corta arriba— y sí aparece cuando falta el
-          porcentaje: la meta es suya y la puede fijar igual, aunque el número todavía no se pueda
-          calcular. Esconderlo ahí haría que la única acción disponible dependa de algo que otra
-          persona tiene que hacer primero. */}
-      {!abierto ? (
+          El de los porcentajes sólo lo ve quien puede editarlos, y lo decide el servidor. */}
+      <div className="ck-acciones">
         <button
           type="button"
           className="fd-btn sec"
@@ -208,12 +243,27 @@ export default function Comision({ comision, mirandoOtraOrganizacion, alGuardar 
             setAbierto(true);
           }}
         >
-          {k.meta === null ? 'Fijar mi meta del mes' : 'Cambiar mi meta'}
+          {k.meta === null ? 'Fijar mi meta' : 'Cambiar mi meta'}
         </button>
-      ) : (
-        <div style={{ width: '100%' }}>
+        {puedeConfigurarPorcentajes ? (
+          <button type="button" className="fd-btn sec" onClick={() => setPorcentajesAbiertos(true)}>
+            Porcentajes del equipo
+          </button>
+        ) : null}
+      </div>
+
+      {/* ── LA VENTANA DE LA META ───────────────────────────────────────────
+          Al guardar se cierra sola, así que el número nuevo queda a la vista sin que nadie tenga que
+          cerrar nada — es lo que se conserva del argumento contra el modal, escrito en el
+          encabezado. */}
+      {abierto ? (
+        <Ventana
+          titulo="Mi meta de comisión del mes"
+          subtitulo="Es tu meta de comisión, no de ventas."
+          alCerrar={() => setAbierto(false)}
+        >
           <div className="fd-campo">
-            <label htmlFor="ck-meta">Mi meta de comisión del mes</label>
+            <label htmlFor="ck-meta">Cuánto quiero cobrar de comisión este mes</label>
             <input
               id="ck-meta"
               type="number"
@@ -226,14 +276,14 @@ export default function Comision({ comision, mirandoOtraOrganizacion, alGuardar 
             />
             {/* Se dice QUÉ es y qué NO es. Sin esto, alguien carga acá el objetivo de ventas de la
                 empresa y el anillo queda midiendo otra cosa. */}
-            <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
+            <div className="aj-ayuda ck-nota">
               Es tu meta de <b>comisión</b>, no de ventas. Cero no se acepta: una meta de cero no
               significa nada.
             </div>
           </div>
 
           {aviso ? (
-            <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
+            <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="alert">
               <i>{aviso.mal ? '⚠' : '✓'}</i>
               <span>{aviso.texto}</span>
             </div>
@@ -269,8 +319,28 @@ export default function Comision({ comision, mirandoOtraOrganizacion, alGuardar 
               Cancelar
             </button>
           </div>
-        </div>
-      )}
+        </Ventana>
+      ) : null}
+
+      {/* ── LA VENTANA DE LOS PORCENTAJES DEL EQUIPO ────────────────────────
+          Lo que era la cuarta pestaña de Ajustes. Al cerrarla se recarga el cockpit: si alguien
+          cambió SU PROPIO porcentaje, su anillo tiene que reflejarlo — y sin esta recarga mostraría
+          el número viejo justo después de haberlo cambiado. */}
+      {porcentajesAbiertos ? (
+        <Ventana
+          titulo="Porcentajes de comisión del equipo"
+          subtitulo="Los fija quien administra. Cada persona ve el suyo en su propio anillo."
+          alCerrar={() => {
+            setPorcentajesAbiertos(false);
+            /* Una RECARGA, no `alGuardar(null)`: esa otra devolución PISA la comisión con lo que
+               recibe, así que un `null` la habría borrado de la pantalla en vez de refrescarla. Son
+               dos cosas distintas y por eso son dos propiedades. */
+            alRecargar?.();
+          }}
+        >
+          <PorcentajesDelEquipo />
+        </Ventana>
+      ) : null}
     </div>
   );
 }

@@ -51,7 +51,6 @@ import { useSesion } from '../../app/sesion-contexto.tsx';
 import Credenciales from '../ajustes/Credenciales.jsx';
 import Empresas from '../ajustes/Empresas.jsx';
 import Usuarios from '../ajustes/Usuarios.jsx';
-import Comisiones from '../ajustes/Comisiones.jsx';
 
 export default function AjustesView({ activa }) {
   const sesion = useSesion();
@@ -82,19 +81,21 @@ export default function AjustesView({ activa }) {
     { clave: 'credenciales', nombre: 'Credenciales', icono: '#i-ajustes', visible: puede('credenciales') },
     { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') },
     { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('usuarios') },
-    /* ── COMISIONES, Y VA CON LA MISMA LLAVE QUE CREDENCIALES ────────────────
+    /* ── COMISIONES SE FUE DE ACÁ, Y NO ES UN BORRADO ────────────────────────
      *
-     * No tiene sección propia en el catálogo y no debería: es una pestaña más de Ajustes, igual que
-     * Credenciales, y su endpoint declara `PANTALLA = 'credenciales'` — que es lo que hace que
-     * `ADR-0304` pueda comparar los dos GET y exigir que pidan el mismo conjunto.
+     * Era la cuarta pestaña. Ahora vive detrás de un botón al lado del anillo de comisión, en
+     * Closer → Inicio: `components/closer/PorcentajesDelEquipo.jsx`, abierta como ventana.
      *
-     * Que la llave sea `credenciales.%` y no una capacidad nueva es contraintuitivo y está razonado
-     * en el encabezado de `app/api/admin/comisiones/route.ts`: es la ÚNICA familia que el reparto ya
-     * le niega al rol `usuario`. Con `configuracion.editar` —la que parecía obvia— cualquier persona
-     * del equipo podría fijarse su propio porcentaje con una petición a mano, y la frontera viviría
-     * solo en esta pantalla. Ese defecto exacto ya se pagó una vez con `usuarios.%`.
+     * El criterio es el de esta pantalla: **Ajustes configura la EMPRESA** —sus credenciales, sus
+     * empresas, su gente— y los porcentajes configuran a las personas de un equipo. Se fueron con el
+     * equipo, y de paso quedan donde se ve el efecto: quien cambia un porcentaje quiere ver el número
+     * que produce, y tenerlo a dos pantallas obliga a navegar para comprobar.
+     *
+     * LO QUE NO CAMBIÓ: la autorización. El endpoint sigue pidiendo `credenciales.ver` / `.editar` y
+     * sigue declarando `PANTALLA = 'credenciales'`, así que mover el botón no ensanchó quién puede
+     * tocarlo. El botón sólo se dibuja para quien puede editar, y eso lo responde el servidor en
+     * `sesion.puedeConfigurarComisiones` con la condición exacta del endpoint.
      */
-    { clave: 'comisiones', nombre: 'Comisiones', icono: '#i-sales', visible: puede('credenciales') },
   ].filter((p) => p.visible);
 
   /* Si la pestaña activa dejó de existir se cae a la primera que quede. Sin esto, el cuerpo queda
@@ -144,7 +145,6 @@ export default function AjustesView({ activa }) {
           <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
         ) : null}
         {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
-        {activaAhora === 'comisiones' ? <Comisiones /> : null}
         {activaAhora === null ? (
           <div className="fd-aviso falta">
             <i>◍</i>

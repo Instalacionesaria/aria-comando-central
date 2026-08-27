@@ -105,6 +105,21 @@ export async function GET(peticion: Request): Promise<Response> {
      */
     puedeCambiarDeEmpresa:
       contexto.esRolDePlataforma && contexto.permisos.has('organizaciones.listar'),
+    /**
+     * ¿Puede configurar los porcentajes de comisión del equipo?
+     *
+     * Se responde ACÁ y con la condición EXACTA que comprueba
+     * `PUT /api/admin/comisiones` —`credenciales.editar`— por el mismo motivo escrito arriba para
+     * el conmutador de empresa: deducirlo en el navegador sería tener dos definiciones de lo mismo,
+     * y la que quede vieja ofrece un botón que va a recibir 403. El `07` § 4: *"mostrar un control
+     * que no puede cumplir"*.
+     *
+     * Se elige `editar` y no `ver` porque el botón abre una pantalla cuyo único propósito es
+     * cambiar números. Hoy no existe ningún rol con `credenciales.ver` y sin `credenciales.editar`
+     * —el reparto del catálogo le da las dos al administrador y ninguna al usuario— así que la
+     * elección no le quita nada a nadie. El día que exista uno de consulta, esto se parte en dos.
+     */
+    puedeConfigurarComisiones: contexto.permisos.has('credenciales.editar'),
     // El cartel permanente del 03 § 3: "cuando mira otra organización, la interfaz lo
     // muestra de forma permanente. No es decoración: sin eso, alguien puede mirar la
     // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro

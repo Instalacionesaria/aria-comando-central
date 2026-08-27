@@ -34,6 +34,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 import Pipeline from '../closer/Pipeline.jsx';
 import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
@@ -57,6 +58,9 @@ export default function CloserView({ activa }) {
   /* Inicio arranca, como se pidió: el cockpit responde «¿cómo voy este mes?» y es lo primero
      que alguien quiere ver al abrir su pestaña. */
   const [sub, setSub] = useState('inicio');
+  /* De la sesión sale una sola cosa acá: si esta persona puede configurar los porcentajes del
+     equipo. Lo responde el SERVIDOR con la condición exacta del endpoint, no se deduce del rol. */
+  const sesion = useSesion();
   const [datos, setDatos] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
@@ -183,6 +187,12 @@ export default function CloserView({ activa }) {
              meta, y una recarga completa acá es la que se lleva puesto lo que otro componente
              tenga abierto. */
           alGuardarLaMeta={(nueva) => setDatos((d) => (d ? { ...d, comision: nueva } : d))}
+          /* Quién puede configurar los porcentajes del equipo lo dice el SERVIDOR, con la condición
+             exacta del endpoint. Ver `app/api/auth/sesion/route.ts`. */
+          puedeConfigurarComisiones={sesion?.puedeConfigurarComisiones ?? false}
+          /* Y la recarga completa, para cuando se cierra la ventana de los porcentajes: ahí sí puede
+             haber cambiado el número de quien mira. */
+          alRecargar={() => void cargar()}
           alIrAMiDia={() => setSub('dia')}
         />
       );

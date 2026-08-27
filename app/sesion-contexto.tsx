@@ -67,6 +67,9 @@ export interface DatosDeSesion {
   /** ¿Puede moverse entre empresas? Lo responde el SERVIDOR con la misma condición que el
    *  endpoint que conmuta, para que el botón no ofrezca algo que va a ser rechazado. */
   puedeCambiarDeEmpresa: boolean;
+  /** ¿Puede configurar los porcentajes de comisión? Lo responde el servidor con la MISMA condición
+   *  que comprueba el endpoint, para que el botón no ofrezca algo que va a ser rechazado. */
+  puedeConfigurarComisiones: boolean;
   /**
    * Las secciones que esta persona puede ver, ya filtradas por el SERVIDOR con
    * `seccionesVisibles()`.
