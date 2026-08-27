@@ -594,28 +594,35 @@ test('la cola de HOY de Mi Día ya NO dice que el calendario no está conectado'
   assert.doesNotMatch(texto, /no está conectado/i);
 });
 
-test('LA COLA DE MI DÍA usa ese texto de verdad, y no uno propio', async () => {
-  // LA MUTACIÓN QUE SOBREVIVIÓ: la prueba de arriba llama a `porQueNoHayCitasHoy()` directamente, así
-  // que volver a poner un texto fijo en `miDia.ts` la dejaba pasar. O sea que probaba la función y no
-  // el cableado — y el defecto estaba justamente en el cableado.
+test('LA COLA DE MI DÍA no le manda al cliente ningún texto de diagnóstico', async () => {
+  // ── ESTA PRUEBA EXIGÍA LO CONTRARIO, Y SE DIO VUELTA A PROPÓSITO ──
   //
-  // Acá se pide la cola por el camino real y se comprueba que el texto viene de los tres estados.
+  // Pedía que un cero de citas viajara con una frase explicando por qué. La frase la ARMA bien
+  // `porQueNoHayCitasHoy()` —mira el pulso del barrido y distingue los tres estados— y sigue
+  // existiendo para la pantalla de estado de las conexiones. Lo que se quitó es que llegue a la
+  // pantalla de trabajo, por dos razones:
+  //
+  //   · **la lee un cliente.** Nombra la lectura del calendario y le sugiere apretar un botón de
+  //     una integración que no es suya;
+  //   · **el hermano de esa frase mintió.** El de los seguimientos afirmaba que Avanzar no existía
+  //     cuando ya existía completo. Un mensaje de falta que sobrevive a lo que describe enseña a no
+  //     creerle a los demás — y este archivo ya había pagado esa factura una vez.
+  //
+  // Lo que se comprueba ahora es que NINGUNA cola vacía viaje con texto: si alguien reintroduce el
+  // campo, esto rompe.
   await limpiar();
   await marcarPulso({ corrida: true });
-  const sinBarrer = await conOrganizacion(alfa, () => colasDelDia(ZONA));
-  assert.ok(sinBarrer.faltantes.agenda, 'un cero de citas sin motivo afirma «no tenés citas»');
-  assert.doesNotMatch(
-    sinBarrer.faltantes.agenda,
-    /no está conectado/i,
-    'el calendario SÍ está conectado desde que existe el barrido: un día tranquilo no es una integración rota',
+  const conBarrido = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  assert.equal(conBarrido.agenda.length, 0, 'el escenario tiene que ser un cero de citas');
+  assert.ok(
+    !('faltantes' in conBarrido),
+    'las colas no llevan explicaciones de diagnóstico: un cero se muestra como un cero',
   );
-  assert.match(sinBarrer.faltantes.agenda, /le[íy]/i, 'tiene que hablar de la lectura del calendario');
 
-  // Y el estado «nunca se barrió» también llega hasta la cola, con su consejo.
+  // Y con el barrido sin correr nunca, tampoco.
   await limpiar();
   const nunca = await conOrganizacion(alfa, () => colasDelDia(ZONA));
-  assert.ok(nunca.faltantes.agenda);
-  assert.match(nunca.faltantes.agenda, /Traer del calendario/);
+  assert.ok(!('faltantes' in nunca));
 });
 
 test('el cero de hoy dice CUÁNTAS hay más adelante, que es lo que decide qué hacer', async () => {

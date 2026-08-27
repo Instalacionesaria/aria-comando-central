@@ -31,7 +31,6 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { porQueNoHayCitasHoy } from './agenda.ts';
 import { noCancelada } from './citas.ts';
 import { filasDeTerritorio, type Fila } from './fila.ts';
 import { estadoDelAgente, SEGUIMIENTO_AUTOMATICO } from '../ghl/contrato.ts';
@@ -106,12 +105,28 @@ export interface MiDia {
   tareasPendientes: number;
   /** `true` si el territorio no cupo entero. Ver `TOPE_SIN_PAGINAR`. */
   truncado: boolean;
-  /**
-   * Por qué una cola está vacía, cuando la causa es que **falta una fuente** y no que no haya
-   * trabajo. Son dos hechos distintos y la pantalla los dibuja distinto.
-   */
-  faltantes: Partial<Record<'agenda' | 'buzon' | 'seguimientos', string>>;
 }
+
+/* ── POR QUÉ YA NO VIAJA UN «POR QUÉ ESTÁ VACÍA» ─────────────────────────────
+ *
+ * Había un campo `faltantes` con una frase por cola explicando que el cero venía de una fuente
+ * sin conectar: *"los seguimientos manuales los crea Avanzar, que todavía no existe"*, *"la
+ * búsqueda de GoHighLevel no devuelve la fecha del último entrante"*.
+ *
+ * Dos motivos para sacarlo, y el segundo es el que decide:
+ *
+ *   1. **Esos textos los lee un cliente.** Nombran endpoints, etiquetas y permisos de un CRM
+ *      que no es suyo, y no le dicen nada que pueda hacer. Un vacío que se explica con jerga
+ *      interna se lee como un producto roto.
+ *   2. **Envejecen sin que nada falle.** El de los seguimientos afirmaba que Avanzar no existía
+ *      cuando ya existía completo —interfaz, ruta y escritura— así que la pantalla mentía sobre
+ *      su propio sistema. Es el mismo defecto que este archivo ya había corregido una vez en el
+ *      mensaje de la agenda, con el comentario *"un mensaje de falta que sobrevive a lo que
+ *      describe es peor que no tenerlo: enseña a no creerle a los demás"*.
+ *
+ * Un cero se muestra como un cero, con la frase neutra de su cola. Y el diagnóstico de por qué
+ * una fuente no trae datos vive donde corresponde: en la pantalla de estado de las conexiones,
+ * que la mira quien puede arreglarlo. */
 
 /** ¿Tiene alguno de estos tags? Lectura TOLERANTE — ver el `02` regla 5. */
 function tiene(etiquetas: readonly string[], buscadas: readonly string[]): boolean {
@@ -144,7 +159,6 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     completadas: [],
     tareasPendientes: 0,
     truncado: hayMas,
-    faltantes: {},
   };
 
   const porId = new Map(filas.map((f) => [f.id, f]));
@@ -221,20 +235,6 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
   // Las vencidas ABAJO, no fuera. El orden dentro de cada grupo sigue siendo por hora.
   resultado.agenda.sort((a, b) => Number(a.cita?.vencida) - Number(b.cita?.vencida));
 
-  if (citas.length === 0) {
-    /* ── ESTE TEXTO DECÍA UNA MENTIRA, Y LA VOLVIÓ MENTIRA ESTE MISMO TRABAJO ──
-     *
-     * Decía *"las citas se leen del calendario de GoHighLevel, y eso todavía no está conectado"*.
-     * Era cierto cuando se escribió; desde que existe el barrido, **un día tranquilo se reporta como
-     * una integración rota**. Y con el 39 % de canceladas medido, un día cuyas citas están todas
-     * canceladas cae acá también.
-     *
-     * Ahora lo contesta `porQueNoHayCitasHoy()`, que mira el pulso del barrido: nunca corrió, corrió
-     * a medias, o corrió completo y entonces el cero está medido. Un mensaje de falta que sobrevive
-     * a lo que describe es peor que no tenerlo — enseña a no creerle a los demás. */
-    resultado.faltantes.agenda = await porQueNoHayCitasHoy('closer', zonaHoraria);
-  }
-
   // ── Cola 3 · BUZÓN ────────────────────────────────────────────────────────
   //
   // Las CINCO condiciones, todas obligatorias. La quinta es la que hace que la cola funcione, y
@@ -272,12 +272,6 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
   );
   resultado.tareasPendientes += resultado.buzon.length;
 
-  if (resultado.buzon.length === 0) {
-    resultado.faltantes.buzon =
-      'El buzón necesita la fecha del último mensaje entrante de cada contacto, y la búsqueda ' +
-      'de GoHighLevel no la devuelve. Hace falta leer las conversaciones.';
-  }
-
   // ── Cola 4 · SEGUIMIENTOS DE HOY ──────────────────────────────────────────
   //
   // Los que tocan hoy o ya vencieron, en cuatro sabores que NO piden lo mismo.
@@ -310,12 +304,6 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 
   // El contador cuenta SOLO los que piden manos. Ver el comentario de `tareasPendientes`.
   resultado.tareasPendientes += resultado.seguimientos.filter((s) => s.pideManos).length;
-
-  if (resultado.seguimientos.length === 0) {
-    resultado.faltantes.seguimientos =
-      'Los seguimientos manuales los crea Avanzar, que todavía no existe. Los automáticos se ' +
-      'leen de la etiqueta `seguimiento_recupero`, y ningún contacto la tiene puesta.';
-  }
 
   // ── Cola 5 · COMPLETADAS HOY ──────────────────────────────────────────────
   //

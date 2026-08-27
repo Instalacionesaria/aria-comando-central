@@ -51,7 +51,7 @@ const COLAS = [
     clave: 'seguimientos',
     titulo: 'Seguimientos de hoy',
     tono: 'warn',
-    vacio: 'Ninguno toca hoy ni quedó vencido.',
+    vacio: 'Nadie está en seguimiento hoy.',
   },
   {
     clave: 'completadas',
@@ -163,7 +163,6 @@ export default function MiDia({ colas, zonaHoraria }) {
       {/* ── Las cinco colas ── */}
       {COLAS.map((cola) => {
         const items = colas[cola.clave] ?? [];
-        const falta = colas.faltantes?.[cola.clave];
 
         return (
           <div className={`md-sec${cola.tono ? ` ${cola.tono}` : ''}`} key={cola.clave}>
@@ -175,17 +174,20 @@ export default function MiDia({ colas, zonaHoraria }) {
               <span className="b">{items.length}</span>
             </div>
 
-            {items.length === 0 ? (
-              /* LAS DOS CLASES DE VACÍO. Ver el encabezado. */
-              falta ? (
-                <div className="fd-aviso falta" style={{ margin: '4px 0' }}>
-                  <i>◍</i>
-                  <span>{falta}</span>
-                </div>
-              ) : (
-                <div className="dw-empty">{cola.vacio}</div>
-              )
-            ) : null}
+            {/* UN CERO SE MUESTRA COMO UN CERO.
+                Acá había dos clases de vacío: la frase neutra de la cola, y —cuando el servidor
+                mandaba un `faltantes`— un aviso ámbar explicando que la fuente no estaba
+                conectada. Ese segundo camino se eliminó, y no por estética:
+
+                  · **lo leía un cliente.** Nombraba endpoints, etiquetas y permisos de un CRM que
+                    no es suyo, y no le decía nada que pudiera hacer;
+                  · **envejecía sin que nada fallara.** El de los seguimientos afirmaba que Avanzar
+                    no existía cuando ya existía completo, así que la pantalla mentía sobre su
+                    propio sistema.
+
+                El diagnóstico de una fuente sin conectar vive en la pantalla de estado de las
+                conexiones, que la mira quien puede arreglarlo. */}
+            {items.length === 0 ? <div className="dw-empty">{cola.vacio}</div> : null}
 
             {items.map((item, i) => {
               if (cola.clave === 'agenda') {

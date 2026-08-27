@@ -128,36 +128,31 @@ export default function ListaDeContactos({ camino, zona }) {
       return;
     }
 
-    /* El resumen COMPLETO, no un «listo». Lo que importa que se vea son los dos casos en que
-       la lista queda corta y parece completa: contactos salteados, y el tope de páginas. */
+    /* EL RESULTADO EN CASTELLANO, NO EL DIAGNÓSTICO.
+     *
+     * Acá se armaba un resumen técnico que terminaba en el cliente: nombres de etiquetas del CRM,
+     * el catálogo entero de su subcuenta, y hasta el permiso que le faltaba al token. Nada de eso
+     * le dice a quien lo lee algo que pueda hacer — y lo que sí importaba se perdía entre la jerga.
+     *
+     * Lo que se conserva es lo único que cambia una decisión: **cuántos entraron**, y si la lista
+     * pudo quedar corta. Un "listo" a secas sobre una traída incompleta es un éxito que no ocurrió.
+     *
+     * El detalle técnico sigue existiendo del lado del servidor, para la pantalla de estado de las
+     * conexiones. Acá no. */
     const d = r.datos;
     const guardados = (d.guardados?.closer ?? 0) + (d.guardados?.setter ?? 0);
-    const partes = [`${guardados} contacto(s) guardado(s)`];
-    if (d.salteados?.length) partes.push(`${d.salteados.length} salteado(s): ${d.salteados[0].porque}`);
-    if (d.truncado) partes.push('se llegó al tope de páginas: puede faltar gente');
+    const corta = Boolean(d.salteados?.length || d.truncado);
 
-    /* Y si no vino NADA, el diagnóstico de etiquetas. Es la diferencia entre "no cargó" y
-       "busqué `zona_closer` y tu cuenta tiene `Zona Closer`".
-       `null` y `[]` son distintos: uno es "no pude leer el catálogo" —el token puede no tener
-       el alcance `locations/tags.readonly`, que es otro— y el otro es "no hay ninguna". */
+    let texto;
     if (guardados === 0) {
-      const cuales = d.etiquetasDeLaCuenta;
-      if (Array.isArray(cuales) && cuales.length > 0) {
-        partes.push(`se buscó \`zona_closer\` y \`zona_setter\`; tu subcuenta tiene: ${cuales.join(', ')}`);
-      } else if (Array.isArray(cuales)) {
-        partes.push('tu subcuenta de GoHighLevel no tiene ninguna etiqueta creada');
-      } else {
-        partes.push(
-          'no se pudo leer el catálogo de etiquetas: al token le falta el permiso ' +
-            '`locations/tags.readonly`, que es distinto del de contactos',
-        );
-      }
+      texto = 'No entró ningún contacto. Revisá la conexión en Ajustes.';
+    } else if (corta) {
+      texto = `${guardados} contacto(s). Puede faltar gente: volvé a traer en un rato.`;
+    } else {
+      texto = `${guardados} contacto(s) al día.`;
     }
 
-    setResultado({
-      mal: Boolean(d.salteados?.length || d.truncado || guardados === 0),
-      texto: partes.join(' · '),
-    });
+    setResultado({ mal: guardados === 0 || corta, texto });
 
     // Y se vuelve a leer la lista. Decir "guardados 12" sin releer sería reportar un éxito sin
     // verificar que se puede ver.
@@ -222,9 +217,8 @@ export default function ListaDeContactos({ camino, zona }) {
           <div className="e-ic">◔</div>
           <div className="e-t">Todavía no hay contactos en {zona}</div>
           <div className="e-d">
-            Los contactos llegan de GoHighLevel según su etiqueta: los de <b>{zona}</b> aparecen
-            acá. Si es la primera vez, traelos. Si ya lo hiciste y sigue vacío, revisá en{' '}
-            <b>Ajustes</b> que estén cargados el token y el Location ID de tu subcuenta.
+            Todavía no entró nadie a <b>{zona}</b>. Si es la primera vez, traelos con el botón. Si
+            ya lo hiciste y sigue vacío, revisá la conexión en <b>Ajustes</b>.
           </div>
           <div className="aj-fila" style={{ justifyContent: 'center', marginTop: 14 }}>{boton}</div>
         </div>
