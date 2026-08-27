@@ -249,6 +249,16 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // `organizaciones.borrar` las tiene solo el rol de plataforma, comprobado por el portero una
   // línea antes. El reparto del catálogo le niega al administrador la familia entera.
   'app/api/admin/organizaciones/[id]/route.ts',
+  // ── Etapa 12 · el alta de los Clientes High Ticket ───────────────────────────
+  //
+  // Crea organizaciones y usuarios, así que corre SIN contexto de organización — el mismo caso que
+  // `scripts/arranque.mjs` y que el alta de organizaciones de arriba, y el `05` § 2 lo nombra
+  // literal: *"es una de las pocas operaciones que legítimamente corre SIN contexto de
+  // organización: la está creando."*
+  //
+  // No es un endpoint: `EJECUCION` § 3 cerró que el alta de administradores es *"script contra la
+  // base, no endpoint HTTP"*, así que nunca está expuesto. Corre a mano, y por omisión no escribe.
+  'scripts/altas-high-ticket.mjs',
 ];
 
 /**

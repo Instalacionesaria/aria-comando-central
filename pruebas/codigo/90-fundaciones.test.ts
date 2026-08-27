@@ -95,6 +95,58 @@ test('los valores de las listas del VSL encienden las ramas del framework', () =
   );
 });
 
+test('Prospección está PORTADA del hub, no reinterpretada', () => {
+  // ── POR QUÉ ESTA PRUEBA EXISTE ──────────────────────────────────────────────
+  //
+  // La primera versión de este port reescribió las etiquetas "más conversacionales", cambió los
+  // marcadores y partió la única fila del hub en tres. Nada falló: la herramienta generaba igual.
+  // Lo que se rompió es lo que un port existe para no romper — que el alumno que entra por las dos
+  // puertas reconozca la misma herramienta.
+  //
+  // Es una lista congelada a mano, o sea una lista paralela, y va igual: no hay forma de leer
+  // `ARIA-brain/app-next/lib/tools.ts` desde este repositorio, así que la alternativa a congelarlo
+  // es no comprobarlo.
+  const p = herramienta(20);
+  assert.ok(p, 'Prospección(20) salió de TOOLS');
+
+  // UNA fila de DOS columnas con los CUATRO campos: en el hub se ven en una cuadrícula de 2×2.
+  // Partirla cambia dónde queda cada campo en la pantalla.
+  assert.equal(p.filas.length, 1, 'la fila única del hub se partió');
+  assert.equal(p.filas[0]!.columnas, 2);
+  assert.equal(p.filas[0]!.campos.length, 4);
+
+  assert.deepEqual(
+    camposDe(p).map((c) => [c.id, c.etiqueta]),
+    [
+      ['t20-ubicacion', 'Ubicación / mercado objetivo'],
+      ['t20-canal', 'Canal principal de outreach'],
+      ['t20-fuentes', 'Fuentes a usar'],
+      ['t20-tono', 'Tono de los mensajes (siempre dentro del marco consultivo)'],
+    ],
+    'las etiquetas o el orden no son los del hub',
+  );
+
+  assert.equal(p.titulo, 'Prospección Inteligente');
+  assert.equal(p.etiquetaBoton, 'Generar Plan de Prospección');
+  assert.equal(p.etiquetaSalida, 'Plan de Prospección Generado');
+
+  // `hasEdit: false` en el hub. El panel muestra el control de Ajustar para todas las demás, así
+  // que sin esta bandera Prospección tendría un botón que allá no existe.
+  assert.equal(p.sinAjuste, true, 'volvió el control de Ajustar, que el hub no tiene');
+
+  // Las tres listas nacen con su primera opción sembrada. Es lo ÚNICO que no está en el hub, y no
+  // cambia nada visible: allá el `<select>` suelto muestra la primera y ésa se lee del DOM. Sin
+  // esto, la pantalla mostraría "Multicanal" y el prompt recibiría `(no especificado)`.
+  for (const c of camposDe(p)) {
+    if (c.tipo !== 'lista') continue;
+    assert.equal(
+      c.valorPorOmision,
+      c.opciones![0]!.valor,
+      `"${c.etiqueta}" no siembra su primera opción: se vería llena y llegaría vacía`,
+    );
+  }
+});
+
 test('las claves de persistencia son las que ya escribió el hub', () => {
   // El almacén es COMPARTIDO. Estas claves cortas son las que el hub guarda hoy, copiadas de
   // `lib/legacy/fieldIds.ts` de ARIA-brain. Una diferencia acá no rompe nada visible: el port

@@ -61,6 +61,14 @@ export interface Herramienta {
   /** El párrafo de "¿cómo funciona?", plegado por omisión. */
   detalle?: string;
   filas: readonly FilaDeCampos[];
+  /**
+   * `true` = la herramienta NO ofrece regenerar con un ajuste. Puerto de `hasEdit: false`.
+   *
+   * Ausente = sí lo ofrece, que es el caso de las nueve de Fundaciones. La bandera se escribe en
+   * negativo a propósito: así agregar una herramienta nueva no obliga a acordarse de habilitar
+   * algo que casi todas tienen.
+   */
+  sinAjuste?: true;
   etiquetaBoton: string;
   etiquetaSalida: string;
   forma: FormaDeHerramienta;
@@ -542,29 +550,51 @@ const LANDING: Herramienta = {
 const PROSPECCION: Herramienta = {
   id: 20,
   clave: 'prospeccion',
-  pestania: 'Prospección',
-  titulo: 'Prospección en frío',
-  bajada: 'El plan de ataque completo para conseguir reuniones sin esperar a que te encuentren.',
+  pestania: 'Prospección en Frío',
+  // El título, la bajada y el detalle son los del hub PALABRA POR PALABRA —`title`, `desc` y
+  // `descMore` de `TOOL_20_PROSPECCION`—, igual que las etiquetas y los marcadores de abajo.
+  //
+  // La primera versión de este port los reescribió "más conversacionales" y partió la fila en
+  // tres. Se rechazó, y con razón: portar no es reinterpretar. Un alumno que usa las dos puertas
+  // tiene que reconocer la misma herramienta, y el texto de un campo es parte de la herramienta —
+  // no un envoltorio que se pueda mejorar de paso.
+  titulo: 'Prospección Inteligente',
+  bajada:
+    'No extrae leads por ti — te entrega el PLAN DE ATAQUE completo de prospección outbound ' +
+    'listo para ejecutar.',
   detalle:
-    'No extrae leads por vos: te entrega el plan listo para ejecutar. Los criterios y filtros ' +
-    'exactos de búsqueda en Google Maps, LinkedIn y Facebook; cómo calificar cada lead con el ' +
-    'modelo de tres niveles; el primer mensaje de dos preguntas en tono consultor; la secuencia ' +
-    'de siete toques para cargar en el CRM; y el manejo de objeciones. Hereda tu avatar, tu ' +
-    'categoría y tu oferta de ICP & Oferta.',
+    'Con base en el Outbound Setting Framework y la Direct Value DM Structure (enfoque ' +
+    'consultivo, no salesy), la IA genera: criterios y filtros de búsqueda exactos para Google ' +
+    'Maps, LinkedIn y Facebook; cómo calificar cada lead (modelo de 3 tiers); el primer DM de dos ' +
+    'preguntas estilo consultor; la secuencia de seguimiento de 7 toques lista para cargar en ' +
+    'GHL; y el manejo de objeciones. Hereda tu ICP, Categoría Única, Oferta y VSL de las ' +
+    'herramientas anteriores.',
+  // UNA fila de dos columnas con los CUATRO campos, que es como está en el hub: se ven en una
+  // cuadrícula de 2×2. Partirla en tres filas cambia dónde queda cada campo en la pantalla.
   filas: [
-    {
-      columnas: 1,
-      campos: [
-        { id: 't20-ubicacion', etiqueta: '¿Dónde están tus prospectos?', tipo: 'texto', marcador: 'Ej: Perú, México, LATAM completo' },
-      ],
-    },
     {
       columnas: 2,
       campos: [
         {
+          id: 't20-ubicacion',
+          etiqueta: 'Ubicación / mercado objetivo',
+          tipo: 'texto',
+          marcador: 'Ej: Perú, México, España, LATAM completo...',
+        },
+        {
+          // ── `valorPorOmision` ES LO ÚNICO QUE NO ESTÁ EN EL HUB, Y NO CAMBIA NADA VISIBLE ──
+          //
+          // En el hub esto es un `<select>` suelto: el navegador muestra la primera opción y ESA
+          // es la que se lee del DOM al generar. Acá el valor sale del estado de React, que nace
+          // vacío — así que la pantalla mostraría "Multicanal" y el prompt recibiría
+          // `(no especificado)`, sin que nada falle y sin forma de notarlo mirando.
+          //
+          // Sembrar la primera opción es lo que hace que lo que se ve sea lo que se manda. La
+          // alternativa —agregar un "Selecciona…" vacío— sí habría cambiado la pantalla.
           id: 't20-canal',
-          etiqueta: '¿Por dónde los vas a contactar?',
+          etiqueta: 'Canal principal de outreach',
           tipo: 'lista',
+          valorPorOmision: 'Multicanal (WhatsApp + Email + Llamada)',
           opciones: [
             { valor: 'Multicanal (WhatsApp + Email + Llamada)', etiqueta: 'Multicanal (WhatsApp + Email + Llamada)' },
             { valor: 'Instagram / Facebook DM', etiqueta: 'Instagram / Facebook DM' },
@@ -575,8 +605,9 @@ const PROSPECCION: Herramienta = {
         },
         {
           id: 't20-fuentes',
-          etiqueta: '¿De dónde los vas a sacar?',
+          etiqueta: 'Fuentes a usar',
           tipo: 'lista',
+          valorPorOmision: 'Las 3: Google Maps + LinkedIn + Facebook',
           opciones: [
             { valor: 'Las 3: Google Maps + LinkedIn + Facebook', etiqueta: 'Las 3: Google Maps + LinkedIn + Facebook' },
             { valor: 'Solo Google Maps', etiqueta: 'Solo Google Maps' },
@@ -585,19 +616,14 @@ const PROSPECCION: Herramienta = {
             { valor: 'Google Maps + LinkedIn', etiqueta: 'Google Maps + LinkedIn' },
           ],
         },
-      ],
-    },
-    {
-      columnas: 1,
-      campos: [
         {
-          // "Siempre dentro del marco consultivo" NO es adorno del texto: las tres opciones son
-          // variantes de tono DENTRO de ese marco, y el `SKILL.md` está escrito sobre esa premisa
-          // (Direct Value DM: consultor, no vendedor). Una cuarta opción "agresiva" no sería una
-          // opción más — contradiría la metodología entera.
+          // "Siempre dentro del marco consultivo" no es adorno: las tres son variantes de tono
+          // DENTRO de ese marco, y el `SKILL.md` está escrito sobre esa premisa (Direct Value DM:
+          // consultor, no vendedor). Una cuarta opción "agresiva" contradiría la metodología.
           id: 't20-tono',
-          etiqueta: '¿Con qué tono? (siempre dentro del marco consultivo)',
+          etiqueta: 'Tono de los mensajes (siempre dentro del marco consultivo)',
           tipo: 'lista',
+          valorPorOmision: 'Consultivo profesional (estilo doctor)',
           opciones: [
             { valor: 'Consultivo profesional (estilo doctor)', etiqueta: 'Consultivo profesional (estilo doctor)' },
             { valor: 'Consultivo cercano y conversacional', etiqueta: 'Consultivo cercano y conversacional' },
@@ -607,8 +633,11 @@ const PROSPECCION: Herramienta = {
       ],
     },
   ],
-  etiquetaBoton: 'Generar mi plan de prospección',
-  etiquetaSalida: 'Plan de Prospección',
+  etiquetaBoton: 'Generar Plan de Prospección',
+  etiquetaSalida: 'Plan de Prospección Generado',
+  // El hub la declara con `hasEdit: false`: esta herramienta NO lleva el control de Ajustar. La
+  // primera versión de este port se lo puso, porque el panel lo mostraba para todas.
+  sinAjuste: true,
   forma: 'generica',
 };
 
