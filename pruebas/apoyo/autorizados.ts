@@ -221,6 +221,18 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
   // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
   'app/api/contactos/[id]/avanzar/route.ts',
+  /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
+   *
+   * Usa `conIdentidad(` para DOS lecturas, y ninguna es un descuido:
+   *
+   *   1. buscar la empresa por el **hash de su secreto**. Es la llave de atribución: sin esta
+   *      lectura no hay forma de saber de quién es el aviso, y la alternativa —sacarla del cuerpo
+   *      del webhook— es la fuga que la plataforma anterior tenía, porque el cuerpo lo controla
+   *      quien manda el evento;
+   *   2. resolver su acceso al CRM, para poder releer el contacto y su territorio.
+   *
+   * Las dos son de solo lectura y las dos van ANTES de escribir nada. */
+  'app/api/avisos/crm/route.ts',
   // Traer las citas del calendario. Mismo motivo para el token, y **no llama a `conOrganizacion(`
   // en el manejador**: es una cáscara que delega en `lib/negocio/citas.ts`, que lo abre para cada
   // una de sus escrituras. Estar acá lo exime también de `ADR-0202`, así que queda dicho dónde vive
@@ -398,6 +410,21 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // que acá no existe: nadie sabría que pasó, no habría fila que reintentar, y no se repara solo.
   // Por eso el orden no es preferencia, y está escrito en el encabezado del manejador.
   'app/api/contactos/[id]/avanzar/route.ts',
+  /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
+   *
+   * Esta lista exige responder qué queda A MEDIAS si falla la segunda mitad. La respuesta es
+   * **NADA**, y sale del orden:
+   *
+   *   1. IDENTIDAD, y solo LEE: la empresa por el hash de su secreto, y su acceso al CRM. Dos
+   *      `select`, cero escrituras.
+   *   2. NEGOCIO, y ahí sí escribe: la fila de cuarentena, y después el contacto y el mensaje.
+   *
+   * Si falla la primera no hay nada escrito y se responde 503 — el proveedor reintenta, y el sondeo
+   * lo trae igual. Si falla la segunda, identidad no se tocó.
+   *
+   * Y el orden inverso no es «peor» sino imposible: sin la lectura de identidad no se sabe de qué
+   * empresa es el evento, así que no hay contexto de inquilino que abrir. */
+  'app/api/avisos/crm/route.ts',
 ];
 
 /**
@@ -473,4 +500,27 @@ export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = [
   // prefijo `Bearer ` COMO PARTE DEL VALOR de la cabecera. La sonda compara la cabecera entera; acá
   // hay que quitar el prefijo antes, o son 403 en todas las corridas para siempre.
   'app/api/cron/route.ts',
+  // ── Etapa 5.5 · el aviso del CRM ────────────────────────────────────
+  //
+  // La TERCERA entrada, y el comentario de arriba pide que sea deliberada. Lo es, y es la primera de
+  // las tres que **recibe datos** en vez de disparar trabajo nuestro — así que las dos razones son
+  // las mismas y la superficie es mayor:
+  //
+  //   · **No puede pasar por el portero**: no hay sesión. La llama un workflow de GoHighLevel, y
+  //     `exigir()` respondería 401 a CADA entrega. El síntoma no sería un error visible sino
+  //     «el CRM no nos avisa nada», y encima GoHighLevel desactiva un workflow ante fallos repetidos.
+  //   · **No puede ser pública**: cualquiera podría inyectar mensajes y contactos falsos en la base
+  //     de una empresa, y disparar llamadas al CRM a nuestra cuenta.
+  //
+  // Su autenticación tiene DOS mitades en una cabecera —`X-Webhook-Secret: <pimienta>.<secreto>`— y
+  // esa forma no se puede copiar de las otras dos:
+  //
+  //   · la mitad izquierda se compara contra `AVISO_PIMIENTA` **antes de tocar la base**, porque el
+  //     agrupador de `identidad` es `max: 5` y lo comparte con el login de todos los inquilinos: sin
+  //     ese portón, cualquiera que descubra la URL deja sin sesión a todo el mundo con un bucle;
+  //   · la derecha identifica la EMPRESA por el hash de su secreto, y eso es lo que hace que el
+  //     aislamiento no dependa de que el cuerpo del webhook diga la verdad.
+  //
+  // Y también con el guardia de «la variable no está definida» ANTES de comparar, igual que el cron.
+  'app/api/avisos/crm/route.ts',
 ];

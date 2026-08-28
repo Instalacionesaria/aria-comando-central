@@ -145,6 +145,20 @@ export interface Credenciales {
   pagosComercioId: string | null;
   /** El alumno del hub para Fundaciones. NO es secreto: va completo. */
   fundacionesClienteId: string | null;
+  /**
+   * ¿Hay secreto del aviso configurado? **Un booleano, nunca el valor ni el hash.**
+   *
+   * ── POR QUÉ NI SIQUIERA EL HASH ─────────────────────────────────────
+   *
+   * El hash no sirve para autenticarse —la ruta compara el hash de lo que le presentan— así que
+   * mandarlo parecería inocuo. No lo es: es sha256 sin sal de un valor que nosotros generamos, y
+   * publicarlo en una respuesta de la aplicación lo convierte en algo que se puede atacar sin límite
+   * de intentos y fuera de nuestros registros. Un booleano responde la única pregunta que la pantalla
+   * necesita: «¿hay que generarlo o ya está?».
+   *
+   * El valor completo se muestra **una sola vez**, en la respuesta del `POST` que lo genera.
+   */
+  avisoSecretoConfigurado: boolean;
   /** Cuándo se tocó por última vez esta configuración. `null` = nunca hubo fila. */
   actualizadoEl: Date | null;
 }
@@ -178,6 +192,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'pagos_clave_cifrada',
       'crm_cuenta_id',
       'crm_calendario_id',
+      'aviso_secreto_hash',
       'pagos_comercio_id',
       'fundaciones_cliente_id',
       'actualizado_el',
@@ -222,6 +237,8 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     pagos,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
     crmCalendarioId: fila?.crm_calendario_id ?? null,
+    // Un booleano y NO el hash. Ver el campo.
+    avisoSecretoConfigurado: (fila?.aviso_secreto_hash ?? null) !== null,
     pagosComercioId: fila?.pagos_comercio_id ?? null,
     fundacionesClienteId: fila?.fundaciones_cliente_id ?? null,
     actualizadoEl: fila?.actualizado_el ?? null,

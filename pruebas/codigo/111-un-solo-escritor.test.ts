@@ -151,14 +151,21 @@ test('el `insert` del real va ANTES del `delete` del fabricado', () => {
 // 4 · EL VALOR `aviso` DEL `check` SIGUE SIN ESCRITOR, Y ESO SE DECLARA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('`origen` admite `aviso` en el tipo y todavía NO lo escribe nadie', () => {
-  /* `db/migraciones/013_ingesta_de_mensajes.sql` admite `aviso` en el `check` de `origen` desde el
-     primer día y ninguna línea lo escribe: es el hueco del webhook del CRM, que no existe.
+test('`origen: aviso` lo escribe EXACTAMENTE un archivo, y es el receptor del CRM', () => {
+  /* ════════════════════════════════════════════════════════════════════
+     ESTA PRUEBA SE PUSO ROJA Y ERA LO QUE TENÍA QUE PASAR
 
-     Esta prueba no exige que se escriba — exige que el estado sea EXPLÍCITO. Mientras el tipo lo
-     admita y nadie lo escriba, el día que el receptor del aviso llegue, entra por el escritor único y
-     no por un `insert` nuevo. Y si alguien lo escribe antes de que exista el receptor, esta prueba se
-     pone roja y hay que venir a explicar por qué. */
+     Su versión anterior se llamaba *«todavía NO lo escribe nadie»* y exigía una lista vacía, con este
+     motivo escrito: *«si alguien lo escribe antes de que exista el receptor, esta prueba se pone roja
+     y hay que venir a explicar por qué»*.
+
+     El receptor existe. `origen: 'aviso'` estuvo en el `check` de `db/migraciones/013:113-115` desde
+     el primer día **sin un solo escritor**, y ahora lo escribe `lib/negocio/avisoDelCrm.ts`.
+
+     Lo que la prueba fija ahora es más fuerte que antes: que sea **exactamente uno**. Con dos, la
+     columna `origen` deja de medir de dónde vino el mensaje y pasa a medir qué archivo lo escribió,
+     que no es lo mismo y no sirve para nada.
+     ════════════════════════════════════════════════════════════════════ */
   assert.match(
     limpio(ESCRITOR),
     /'ingesta'\s*\|\s*'propio'\s*\|\s*'aviso'/,
@@ -170,9 +177,32 @@ test('`origen` admite `aviso` en el tipo y todavía NO lo escribe nadie', () => 
     .map((a) => a.ruta);
   assert.deepEqual(
     escriben,
-    [],
-    'alguien empezó a escribir `origen: \'aviso\'`. Si es el receptor del aviso del CRM, esta prueba ' +
-      'hay que actualizarla con su nombre; si no, es un valor puesto por costumbre y la métrica de ' +
-      'origen deja de medir de dónde vino el mensaje',
+    ['lib/negocio/avisoDelCrm.ts'],
+    'cambió quién escribe el origen del aviso. Si son dos, la columna deja de medir de dónde vino el ' +
+      'mensaje; si son cero, el receptor del aviso dejó de marcar sus filas y no hay forma de saber ' +
+      'qué llegó por el webhook y qué por el sondeo',
+  );
+
+  /* Y ese archivo escribe por el escritor ÚNICO, no por su cuenta. Es lo que hace que la regla del
+     gemelo se aplique a los mensajes del aviso — sin eso, cada mensaje entrante que llegue por
+     webhook se duplica cuando el sondeo trae el mismo con su identificador real. */
+  const receptor = limpio('lib/negocio/avisoDelCrm.ts');
+  assert.match(receptor, /escribirMensajes\(/, 'el receptor del aviso no usa el escritor único');
+  assert.doesNotMatch(
+    receptor,
+    /insertInto\(\s*['"`]mensajes['"`]\s*\)/,
+    'el receptor del aviso inserta directo: es el tercer escritor, y no aplica la regla del gemelo',
+  );
+
+  /* Y NO toca la marca de agua ni el candado. Los dos serían errores concretos: el antirrebote
+     significa «no correr», y para un aviso eso es descartar un cuerpo que YA llegó; y `marca_el` se
+     escribe con `greatest(...)`, así que empujarla declararía ingerido todo lo anterior y saltearía en
+     silencio las conversaciones que el sondeo no alcanzó. */
+  assert.doesNotMatch(receptor, /conElPulso/, 'el receptor del aviso pasa por el candado de la ingesta');
+  assert.doesNotMatch(receptor, /marca_el/, 'el receptor del aviso toca la marca de agua');
+  assert.match(
+    receptor,
+    /fijarPiso:\s*false/,
+    'el receptor fija la frontera de cobertura con UN mensaje: la ficha afirmaría una historia que no tiene',
   );
 });

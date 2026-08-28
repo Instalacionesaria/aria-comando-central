@@ -92,6 +92,11 @@ export type Accion =
   // adivinar cuál fue al leerlo.
   | 'closer_designado'
   | 'closer_quitado'
+  /* Se generó (o se rotó) el secreto del aviso del CRM. Se registra QUE pasó y quién, **nunca el
+     valor**: el tipo `Detalle` no tiene campo donde quepa un secreto, así que esto no depende de que
+     nadie se olvide. Rotar invalida el anterior en el acto, así que saber cuándo se rotó es lo que
+     explica por qué un workflow dejó de entregar. */
+  | 'aviso_secreto_generado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -198,6 +203,9 @@ export async function auditarAdministracion(
       // quién. En `closer_quitado` el objetivo es la persona que DEJA de ser closer.
       | 'closer_designado'
       | 'closer_quitado'
+      /* Etapa 5.5. Exige actor y objetivo, que es lo que esta puerta pide: quién generó el secreto y
+         para qué empresa. El objetivo es la empresa, igual que en `credenciales_cargadas`. */
+      | 'aviso_secreto_generado'
     >;
     actor: string;
     objetivo: string;

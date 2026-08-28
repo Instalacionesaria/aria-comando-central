@@ -105,6 +105,21 @@ export const RECHAZOS = {
   // registros parecería que a nadie le andaba la sesión (07 § 4)—. Es la regla 2 del
   // 07 § 0: un valor significa una sola cosa.
   base_no_disponible: 503,
+
+  // ── EL AVISO DEL CRM: dos códigos, y ninguno se podía reusar ─────────────
+  //
+  // `cuerpo_demasiado_grande` es 413, y no había ningún 413 en toda esta tabla: contra cuerpos
+  // enormes este repositorio no hacía nada. Ver `lib/http/cuerpoAcotado.ts`.
+  //
+  // Y NO lleva `detalle`: la ruta del aviso es alcanzable sin autenticar, así que cualquier texto
+  // extra es información que se le regala a quien golpea la puerta (`ADR-0704`).
+  cuerpo_demasiado_grande: 413,
+  //
+  // `avisos_demasiados` es 429, y **no se colapsa** con los tres 429 que ya había. Los tres dicen
+  // otra cosa: `cuenta_bloqueada` y `demasiados_intentos` son del login —«esta dirección está
+  // golpeando el inicio de sesión»— y `servicio_externo_saturado` es GoHighLevel limitándonos a
+  // NOSOTROS. Reusar cualquiera de los tres mandaría a mirar el lugar equivocado.
+  avisos_demasiados: 429,
   // ── Etapa 9 · Fundaciones (la pantalla `icp`) ───────────────────────────────
   //
   // Siete códigos nuevos, y la tentación era uno: `no_se_pudo_generar`. Cada uno de estos lleva a

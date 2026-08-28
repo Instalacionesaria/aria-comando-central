@@ -158,6 +158,17 @@ export interface TablaOrganizacionesCredenciales {
    * de los demás — medido: 27 de 376. Ver la migración 016.
    */
   crm_calendario_id: string | null;
+  /**
+   * sha256 hex del secreto que GoHighLevel presenta en `X-Webhook-Secret` (migración 022).
+   *
+   * HASH y no `_cifrado` como sus vecinos, y la diferencia es de uso: el token del CRM hay que
+   * DESCIFRARLO para llamar al proveedor; este secreto solo hay que COMPARARLO, porque lo presenta
+   * quien llama. Nunca hay que leerlo, así que un volcado de la base no entrega un secreto usable.
+   * Mismo motivo que `identidad.sesiones.token_hash`.
+   *
+   * Y es la llave de ATRIBUCIÓN: la empresa de un aviso sale de acá y no del cuerpo del webhook.
+   */
+  aviso_secreto_hash: string | null;
   pagos_comercio_id: string | null;
   crm_refresh_cifrado: string | null;
   crm_expira_el: Date | null;
@@ -415,6 +426,35 @@ export interface TablaTareasProgramadas {
   creado_el: Generated<Date>;
 }
 
+/**
+ * La cuarentena de avisos de GoHighLevel (migración 022).
+ *
+ * Todo cuerpo entra CRUDO acá antes de interpretarse, y se responde 200 enseguida. Si el mapeo falla,
+ * el evento no se perdió: queda la fila con su `error` para reprocesar.
+ */
+export interface TablaAvisosDelCrm {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  /** sha256 hex del cuerpo crudo. Es la idempotencia ante entregas duplicadas del proveedor. */
+  huella: string;
+  /**
+   * Del `?evento=` de la URL. **Nulo es la trampa**: si alguien pega la URL base sin el parámetro, el
+   * aviso se guarda, responde 200 y no se interpreta nunca. Por eso `procesado_el` tiene lector.
+   */
+  evento: string | null;
+  /** El cuerpo crudo. `text` y no `jsonb`: la huella es sobre estos bytes exactos. */
+  cuerpo: string;
+  bytes: number;
+  /** `coincide` | `ausente` | `discordante` | `ilegible`. Se COMPARA; no rutea. */
+  atribucion: string;
+  repeticiones: Generated<number>;
+  recibido_el: Generated<Date>;
+  visto_ultimo_el: Generated<Date>;
+  /** Cuándo se INTERPRETÓ. Nulo = llegó y no se pudo mapear, que no es lo mismo que «no llegó». */
+  procesado_el: Date | null;
+  error: string | null;
+}
+
 export interface TablaIngestaPulso {
   org_id: ColumnaInquilino;
   clave: string;
@@ -543,6 +583,7 @@ export interface BaseDeDatos {
   mensajes: TablaMensajes;
   ingesta_pulso: TablaIngestaPulso;
   tareas_programadas: TablaTareasProgramadas;
+  avisos_del_crm: TablaAvisosDelCrm;
   comisiones: TablaComisiones;
   closer_asignado: TablaCloserAsignado;
   llamadas: TablaLlamadas;

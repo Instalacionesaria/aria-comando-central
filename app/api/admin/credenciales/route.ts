@@ -53,6 +53,7 @@
 // organizaciones facturado a una, sin que nada falle.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { createHash, randomBytes } from 'node:crypto';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -224,5 +225,72 @@ export async function PUT(peticion: Request): Promise<Response> {
     // Se devuelve el estado resuelto, no un `{ ok: true }`: quien la cargó tiene que ver que quedó
     // activa y con qué vista previa, o el "se guardó" es un éxito reportado sin verificar.
     return ok(await resolverCredenciales(db, contexto.orgEfectiva));
+  });
+}
+
+
+/**
+ * `POST` — GENERAR (o rotar) el secreto del aviso del CRM.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * EL SECRETO SE LO DAMOS AL CLIENTE, NO SE LO PEDIMOS
+ *
+ * Es la decisión que la plataforma anterior ya tomó, con el motivo escrito: *«un campo que se puede
+ * dejar vacío se deja vacío»*. Si el secreto fuera un campo del formulario, la mitad de las empresas
+ * quedaría sin él — y una empresa sin secreto no puede recibir avisos, o peor, invita a poner uno
+ * corto y adivinable.
+ *
+ * Así que **no está en la tabla `CAMPOS`**: no se acepta un valor de afuera. Se generan 32 bytes con
+ * `randomBytes` en el servidor, se guarda su `sha256`, y el valor completo se devuelve **UNA sola
+ * vez**, en esta respuesta. El `GET` nunca lo trae, ni siquiera el hash.
+ *
+ * ── POR QUÉ ES UN `POST` EN ESTA MISMA RUTA Y NO UNA RUTA NUEVA ───────────
+ *
+ * Comparte la `PANTALLA` y la capacidad con el `PUT` que ya existe, así que una ruta aparte tendría
+ * que repetir las dos — y `ADR-0304` exige que las operaciones de una pantalla pidan el mismo
+ * conjunto, que es exactamente lo que estaría copiando.
+ *
+ * Y el portero se comprueba **método por método**, no por archivo: este `POST` llama a `exigir` por su
+ * cuenta, igual que el `GET` y el `PUT`. Olvidarlo dejaría un generador de secretos abierto a
+ * cualquiera con sesión.
+ */
+export async function POST(peticion: Request): Promise<Response> {
+  const contexto = await exigir(peticion, ['credenciales.editar'], PANTALLA);
+  if (contexto instanceof Response) return contexto;
+
+  /* 32 bytes en base64url: 43 caracteres sin caracteres que haya que escapar en una cabecera HTTP ni
+     en la interfaz de GoHighLevel. El mismo largo y la misma codificación que los tokens de sesión de
+     este sistema, por el mismo motivo. */
+  const secreto = randomBytes(32).toString('base64url');
+  const hash = createHash('sha256').update(secreto).digest('hex');
+
+  return conIdentidad(async (db) => {
+    /* `onConflict` porque la fila de credenciales puede no existir todavía: una empresa nueva puede
+       querer configurar el aviso antes que el token del CRM, y no hay motivo para forzar el orden. */
+    await db
+      .insertInto('organizaciones_credenciales')
+      .values({ org_id: contexto.orgEfectiva, aviso_secreto_hash: hash } as never)
+      .onConflict((oc) =>
+        oc.column('org_id').doUpdateSet({ aviso_secreto_hash: hash } as never),
+      )
+      .execute();
+
+    /* Se audita QUE se generó, nunca el valor. El tipo `Detalle` de la auditoría no tiene campo donde
+       quepa un secreto, así que esto no depende de que nadie se olvide. */
+    await auditarAdministracion(db, {
+      accion: 'aviso_secreto_generado',
+      actor: contexto.usuarioId,
+      objetivo: contexto.orgEfectiva,
+      orgId: contexto.orgEfectiva,
+    });
+
+    /* LA ÚNICA VEZ que el secreto sale de este servidor.
+       Va junto con el estado resuelto —que ya dice `avisoSecretoConfigurado: true`— para que la
+       pantalla pueda mostrar el valor y a la vez saber que quedó guardado. Rotar invalida el anterior
+       en el acto: el índice único es sobre una sola columna, así que no hay dos vigentes. */
+    return ok({
+      ...(await resolverCredenciales(db, contexto.orgEfectiva)),
+      avisoSecreto: secreto,
+    });
   });
 }
