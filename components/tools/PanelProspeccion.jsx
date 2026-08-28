@@ -49,6 +49,7 @@ export default function PanelProspeccion({
   herramienta,
   estado,
   puedeEditar,
+  organizacion,
   faltaPermiso,
   onIr,
   onEstadoCambiado,
@@ -260,6 +261,7 @@ export default function PanelProspeccion({
           cortado={reciente ? reciente.cortado : false}
           citas={reciente ? reciente.citas : []}
           meta={reciente}
+          organizacion={organizacion}
           /* `sinAjuste` — el hub declara esta herramienta con `hasEdit: false`. */
           onAjustar={null}
           ajustando={generando}

@@ -1045,3 +1045,54 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
     );
   }
 });
+
+// ─── Las opciones de descarga que el hub ya ofrecía ─────────────────────────
+
+test('un entregable se descarga como Word y como PDF, no solo como markdown', async () => {
+  // LLEGÓ COMO REPORTE: «antes había un PDF para descargar y ahora no». Y era cierto — el port
+  // entregaba un único botón «Descargar .md» donde el hub tiene un menú con Word y PDF
+  // (`DownloadButton.tsx`). Un alumno le manda el entregable a su coach o a un cliente, y nadie
+  // abre un `.md`.
+  //
+  // Lo que esta prueba fija NO es el formato: es que una afordancia del hub no se pierda en el port
+  // sin que nadie lo decida. El defecto no falla — la pantalla anda perfecto con menos opciones, y
+  // solo lo nota quien conocía la de antes.
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { RAIZ } = await import('../apoyo/fuente.ts');
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+
+  const documento = leer('components/fundaciones/Documento.jsx');
+  for (const formato of ['Word (.doc)', 'PDF (.pdf)', 'Markdown (.md)']) {
+    assert.ok(documento.includes(formato), `el menú de descarga perdió la opción ${formato}`);
+  }
+
+  // Los tres salen de `aTextoPlano`, que es lo mismo que se copia al portapapeles. Es LA regla del
+  // `<veredicto>`: si un exportador recibiera `texto` crudo, el Word y el PDF saldrían con
+  // etiquetas XML en las primeras líneas del Mapa de Proceso — y como el resto se ve bien, nadie
+  // lo reportaría.
+  const llamadas = documento.match(/descargarComo(?:Doc|Pdf)\([^)]*\)/g) || [];
+  assert.equal(llamadas.length, 2, 'cambió la forma de llamar a los exportadores');
+  for (const llamada of llamadas) {
+    assert.match(llamada, /aTextoPlano\(texto\)/, `${llamada} no limpia el veredicto antes de exportar`);
+  }
+
+  // `jspdf` pesa ~350 KB y no tiene por qué entrar al paquete de una pantalla que la mayoría abre
+  // sin descargar nada. El hub lo importa dinámico y acá también.
+  const exportar = leer('lib/fundaciones/exportar.ts');
+  assert.match(exportar, /await import\('jspdf'\)/, '`jspdf` dejó de importarse bajo demanda');
+  assert.doesNotMatch(
+    exportar.replace(/await import\('jspdf'\)/g, ''),
+    /^import .*jspdf/m,
+    '`jspdf` entró como import estático: se va al paquete principal',
+  );
+
+  // Y el markdown lo convierte `aHtml`, no un segundo renderizador. Dos renderizadores markdown en
+  // el mismo repositorio divergen sin que nada falle: el Word diría una cosa y la pantalla otra.
+  assert.match(exportar, /from '\.\/documento\.ts'/, 'el Word dejó de usar el renderizador del proyecto');
+  const paquete = JSON.parse(leer('package.json')) as { dependencies?: Record<string, string> };
+  assert.ok(
+    !(paquete.dependencies || {}).marked,
+    'entró `marked`: ya hay un renderizador markdown en `documento.ts`',
+  );
+});

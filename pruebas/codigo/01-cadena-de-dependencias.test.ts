@@ -78,12 +78,23 @@ test('ningún paquete con guion de instalación fuera de la lista de excepciones
   // El formato v3 del archivo de bloqueo registra `hasInstallScript`, así que esto es
   // una lectura de archivo, no una llamada a la red.
   //
-  // La lista tiene UNA entrada. `fsevents` es solo de macOS y opcional, así que en
-  // Windows y en la integración (Linux) no se instala nunca; y con
-  // `ignore-scripts=true` ningún guion corre de todos modos. Esta comprobación existe
-  // para AVISAR cuando entra un paquete NUEVO con guion — que es el evento que
-  // importa, no el estado de hoy.
-  const JUSTIFICADAS = ['node_modules/fsevents'];
+  // Esta comprobación existe para AVISAR cuando entra un paquete NUEVO con guion — que es el
+  // evento que importa, no el estado de hoy. Ya avisó una vez y funcionó: `core-js` entró sin que
+  // nadie lo pidiera, colgando de `jspdf`.
+  //
+  // Las dos entradas, cada una con su motivo:
+  //
+  //   · `fsevents` — solo de macOS y opcional, así que en Windows y en la integración (Linux) no se
+  //     instala nunca.
+  //   · `core-js` — llegó como dependencia OPCIONAL de `jspdf` (por `canvg`, su camino de SVG a
+  //     lienzo, que el exportador de Fundaciones no usa: sólo dibuja texto, líneas y rectángulos).
+  //     Su guion es el aviso de donación de opencollective, no una etapa de construcción: el
+  //     paquete funciona igual sin él.
+  //
+  // Y en los dos casos vale lo mismo, que es lo que hace aceptable la excepción: **`.npmrc` fija
+  // `ignore-scripts=true`**, comprobado por la prueba de arriba, así que ningún guion corre en el
+  // servidor de construcción — que es donde está la clave maestra de cifrado (`10` § 5).
+  const JUSTIFICADAS = ['node_modules/core-js', 'node_modules/fsevents'];
 
   const lock = JSON.parse(readFileSync(join(RAIZ, 'package-lock.json'), 'utf8')) as {
     packages?: Record<string, { hasInstallScript?: boolean }>;

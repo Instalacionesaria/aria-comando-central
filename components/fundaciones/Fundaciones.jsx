@@ -55,6 +55,11 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { herramientas, rutaEstado, rutaGenerar, capacidadEditar } = catalogo;
   const [estado, setEstado] = useState(null);
   const [permisos, setPermisos] = useState(null);
+  /* El nombre de la organización va al encabezado del Word y del PDF. Sale de la MISMA petición de
+     sesión que ya se hacía por los permisos: pedirlo aparte sería una segunda llamada por un dato
+     que ya viajó. Cadena vacía y no `null` — `exportar.ts` omite el renglón si no hay nombre, y no
+     escribe «undefined» en un archivo que alguien manda a su coach. */
+  const [organizacion, setOrganizacion] = useState('');
   const [problema, setProblema] = useState(null);
   const [activa, setActiva] = useState(catalogo.herramientas[0].id);
 
@@ -74,6 +79,10 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
       setPermisos(sesion.datos.permisos);
     } else {
       setPermisos([]);
+    }
+
+    if (sesion.tipo === 'datos' && sesion.datos.organizacion) {
+      setOrganizacion(sesion.datos.organizacion.nombre || '');
     }
 
     if (respuesta.tipo === 'datos') {
@@ -211,6 +220,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           herramienta={herramienta}
           estado={estadoUsable}
           puedeEditar={puedeEditar}
+          organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           onIr={setActiva}
           onEstadoCambiado={recargar}
@@ -223,6 +233,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           herramienta={herramienta}
           estado={estadoUsable}
           puedeEditar={puedeEditar}
+          organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
@@ -234,6 +245,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           herramienta={herramienta}
           estado={estadoUsable}
           puedeEditar={puedeEditar}
+          organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           onIr={setActiva}
           onEstadoCambiado={recargar}

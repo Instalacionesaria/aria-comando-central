@@ -401,6 +401,60 @@
   border-color: rgb(var(--c-acento) / 0.32);
 }
 
+/* El menú de descarga: Word, PDF y Markdown.
+   ==========================================================================
+   Es el puerto del menú del hub (`DownloadButton.tsx`). Flota sobre el documento, así que hay dos
+   cosas que se ven mal si faltan y ninguna da error:
+
+   · **El borde no es decoración.** En el tema claro `--bg-panel` y `--bg-raise` son los dos
+     `#ffffff` (ver `temas.css`), y sin `--line-strong` el menú sería un rectángulo blanco invisible
+     sobre fondo blanco. Y no se puede resolver con una sombra: están apagadas en todo el proyecto y
+     una regla acá le ganaría al barrido por especificidad — es el caso 3 de `107-sin-sombras`.
+   · **La superficie es la de `.menu-pop`** (`aios.css`), que es el molde de todo desplegable del
+     proyecto: el degradado `--bg-flota` → `--bg-panel` y el hover `rgb(var(--c-nube) / .07)`, que
+     es el velo que se da vuelta solo entre los dos temas. Inventar otra superficie acá daría dos
+     menús que se ven distinto sin que nadie lo haya decidido. */
+.fd-menu-ancla {
+  position: relative;
+  display: inline-block;
+}
+/* Tapa la pantalla para cerrar al hacer clic afuera. Por debajo del menú y por encima de todo lo
+   demás; sin fondo propio, porque oscurecer la pantalla por abrir un menú de tres ítems es de más. */
+.fd-menu-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+}
+.fd-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  z-index: 200;
+  min-width: 156px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: linear-gradient(180deg, var(--bg-flota), var(--bg-panel));
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+}
+.fd-menu button {
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  color: var(--txt-dim);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.fd-menu button:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / 0.07);
+}
+
 .fd-doc {
   font-size: 13px;
   line-height: 1.65;

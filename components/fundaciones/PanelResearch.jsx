@@ -45,6 +45,7 @@ export default function PanelResearch({
   herramienta,
   estado,
   puedeEditar,
+  organizacion,
   faltaPermiso,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
@@ -318,6 +319,7 @@ export default function PanelResearch({
                       cortado={meta[paso] ? meta[paso].cortado : false}
                       citas={meta[paso] ? meta[paso].citas : []}
                       meta={meta[paso]}
+                      organizacion={organizacion}
                       onAjustar={null}
                       ajustando={false}
                     />

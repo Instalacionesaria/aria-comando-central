@@ -11,9 +11,10 @@
    Mapa de Proceso serían etiquetas XML, y como el resto del documento se ve bien
    nadie lo reportaría — se asumiría que "así sale". */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { aHtml, aTextoPlano, leerDocumento } from '@/lib/fundaciones/documento';
+import { descargarComoDoc, descargarComoPdf, nombreDeArchivo } from '@/lib/fundaciones/exportar';
 
 export default function Documento({
   titulo,
@@ -26,10 +27,17 @@ export default function Documento({
   meta,
   onAjustar,
   ajustando,
+  organizacion,
 }) {
   const [notaAbierta, setNotaAbierta] = useState(false);
   const [nota, setNota] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  /* El PDF importa `jspdf` bajo demanda, así que hay una espera real entre el clic y la descarga.
+     Sin decirlo, un segundo de silencio se lee como que el botón no hizo nada — y el reflejo es
+     volver a apretarlo, que descarga el archivo dos veces. */
+  const [exportando, setExportando] = useState(null);
+  const menu = useRef(null);
 
   const { veredicto, cuerpo } = leerDocumento(texto);
 
@@ -44,14 +52,37 @@ export default function Documento({
     }
   };
 
-  const descargar = () => {
+  /* Los tres formatos salen del MISMO texto que se copia al portapapeles: el `<veredicto>` nunca
+     sale crudo a un archivo. Ver `aTextoPlano` y el encabezado de `exportar.ts`. */
+  const descargarMd = () => {
     const blob = new Blob([aTextoPlano(texto)], { type: 'text/markdown;charset=utf-8' });
+    bajarBlob(blob, `${nombreDeArchivo(titulo)}.md`);
+  };
+
+  const bajarBlob = (blob, nombre) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.md`;
+    a.download = nombre;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  /* Una sola puerta para los tres, y con `finally`: si el PDF falla a mitad de camino, el rótulo
+     tiene que volver igual. Un botón que se queda diciendo «Armando PDF…» para siempre es peor
+     que el error. */
+  const exportar = async (formato) => {
+    setMenuAbierto(false);
+    setExportando(formato);
+    try {
+      if (formato === 'pdf') await descargarComoPdf(titulo, aTextoPlano(texto), organizacion || '');
+      else if (formato === 'doc') descargarComoDoc(titulo, aTextoPlano(texto), organizacion || '');
+      else descargarMd();
+    } finally {
+      setExportando(null);
+    }
   };
 
   const pedirAjuste = () => {
@@ -77,9 +108,40 @@ export default function Documento({
             <button type="button" className={`fd-mini${copiado ? ' on' : ''}`} onClick={copiar}>
               {copiado ? 'Copiado' : 'Copiar'}
             </button>
-            <button type="button" className="fd-mini" onClick={descargar}>
-              Descargar .md
-            </button>
+            <span className="fd-menu-ancla" ref={menu}>
+              <button
+                type="button"
+                className={`fd-mini${menuAbierto ? ' on' : ''}`}
+                disabled={exportando !== null}
+                aria-expanded={menuAbierto}
+                onClick={() => setMenuAbierto((v) => !v)}
+              >
+                {exportando === 'pdf'
+                  ? 'Armando PDF…'
+                  : exportando
+                    ? 'Descargando…'
+                    : 'Descargar'}
+              </button>
+              {menuAbierto ? (
+                <>
+                  {/* La capa que cierra al hacer clic afuera. Es un elemento y no un `blur` del
+                      botón: un `blur` se dispara ANTES del clic en el propio menú, así que elegir
+                      una opción lo cerraría sin ejecutarla. */}
+                  <div className="fd-menu-fondo" onClick={() => setMenuAbierto(false)} />
+                  <div className="fd-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={() => exportar('doc')}>
+                      Word (.doc)
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => exportar('pdf')}>
+                      PDF (.pdf)
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => exportar('md')}>
+                      Markdown (.md)
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </span>
             {onAjustar ? (
               <button
                 type="button"

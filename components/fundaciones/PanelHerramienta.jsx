@@ -31,6 +31,7 @@ export default function PanelHerramienta({
   herramienta,
   estado,
   puedeEditar,
+  organizacion,
   faltaPermiso,
   onIr,
   onEstadoCambiado,
@@ -294,6 +295,7 @@ export default function PanelHerramienta({
           cortado={reciente ? reciente.cortado : false}
           citas={reciente ? reciente.citas : []}
           meta={reciente}
+          organizacion={organizacion}
           /* `sinAjuste` es el puerto de `hasEdit: false` del hub: hay herramientas que no
              ofrecen regenerar con un ajuste, y Prospección es una. `null` y no un botón
              deshabilitado — el `07` § 4 prohíbe mostrar un control que no puede cumplir. */
