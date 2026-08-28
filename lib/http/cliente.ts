@@ -94,6 +94,27 @@ export type Respuesta<T> =
 const ESPERA_MS = 15_000;
 
 /**
+ * Cuánto espera quien llama a una ruta que declara `maxDuration = 300`.
+ *
+ * Es el MISMO defecto del párrafo de arriba, cobrado por segunda vez y en otra pantalla. Llegó como
+ * queja al apretar **«Crear mi perfil de cliente»** en `ICP & Oferta`: cartel rojo de red caída
+ * sobre una generación que el servidor estaba haciendo bien. Las tres rutas de Fundaciones y de
+ * `tools` declaran `maxDuration = 300` —una generación de miles de tokens contra Anthropic tarda
+ * minutos, y la lectura del estado son nueve documentos del almacén del hub—, y el navegador
+ * abortaba a los quince segundos.
+ *
+ * Lo que lo hace peor que en la Agenda: `generarElDocumento` **guarda la versión antes de
+ * responder**. O sea que el documento quedaba escrito y el alumno leía «no se pudo llegar al
+ * servidor», lo veía aparecer recién al recargar, y no tenía forma de saber si podía volver a
+ * apretar sin gastar tokens de nuevo.
+ *
+ * El número acompaña al `maxDuration` de esas rutas: si allá sube, acá sube. Lo comprueba
+ * `pruebas/codigo/90-fundaciones.test.ts` comparando los dos números, no la presencia del
+ * argumento.
+ */
+export const ESPERA_DE_RUTA_LARGA_MS = 300_000;
+
+/**
  * Pide algo al API. **La única función del proyecto que hace una petición HTTP.**
  *
  * La unicidad no está escrita en la especificación —el `07` § 4 describe el defecto de tener

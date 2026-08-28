@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { pedir } from '@/lib/http/cliente';
+import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { FUNDACIONES } from '@/lib/fundaciones/herramientas';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -61,7 +61,10 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([
       pedir('/api/auth/sesion'),
-      pedir(rutaEstado),
+      /* La lectura del estado son NUEVE documentos del almacén del hub y su ruta declara
+         `maxDuration = 300`: con la espera por omisión, un alumno con Fundaciones ya trabajadas
+         veía «no se pudo llegar al servidor» sobre un almacén que estaba contestando. */
+      pedir(rutaEstado, { espera: ESPERA_DE_RUTA_LARGA_MS }),
     ]);
 
     /* La sesión se pide para saber si mostrar los botones que generan. Es comodidad, no

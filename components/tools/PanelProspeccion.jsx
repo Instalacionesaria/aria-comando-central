@@ -34,7 +34,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { pedir } from '@/lib/http/cliente';
+import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { aValoresDeFormulario, camposDe } from '@/lib/fundaciones/campos';
 import { FUENTES_POR_HERRAMIENTA, faltantes, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -110,6 +110,7 @@ export default function PanelProspeccion({
         herramienta: herramienta.id,
         valores: { ...valores, 't20-fuentes': TODAS_LAS_FUENTES },
       },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
     });
     setGenerando(false);
     const mal = problema(r);

@@ -672,3 +672,68 @@ test('`icp` salió de la comparación con el prototipo, y las otras nueve siguen
   assert.equal(vistas.length, 7, `la lista de paridad tiene ${vistas.length} vistas, no siete`);
   assert.ok(!vistas.includes('icp'), '`icp` volvió a la comparación: va a dar rojo permanente');
 });
+
+// ─── La espera del navegador contra lo que la ruta puede tardar ─────────────
+
+test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', async () => {
+  // ES EL DEFECTO DE LA AGENDA, COBRADO POR SEGUNDA VEZ. Llegó como queja al apretar «Crear mi
+  // perfil de cliente» en `ICP & Oferta`: cartel rojo de red caída sobre una generación que el
+  // servidor estaba haciendo bien. Las rutas declaran `maxDuration = 300` —una generación son
+  // miles de tokens contra Anthropic, y leer el estado son nueve documentos del almacén del hub— y
+  // el cliente abortaba a los quince segundos.
+  //
+  // Peor que en la Agenda: `generarElDocumento` GUARDA la versión antes de responder. El documento
+  // quedaba escrito y el alumno leía que no se había podido llegar al servidor.
+  //
+  // La regla, la misma de `104-temas.test.ts`: **quien llama a una ruta que declara `maxDuration`
+  // tiene que esperar al menos eso.** Se comprueba comparando los dos números, no la presencia del
+  // argumento.
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { RAIZ } = await import('../apoyo/fuente.ts');
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+
+  const cliente = leer('lib/http/cliente.ts');
+  const ms = Number(
+    /ESPERA_DE_RUTA_LARGA_MS\s*=\s*([\d_]+)/.exec(cliente)?.[1]?.replace(/_/g, ''),
+  );
+  assert.ok(ms > 0, 'el cliente dejó de fijar cuánto se espera a una ruta larga');
+
+  // Las cuatro rutas que las dos pantallas —Fundaciones y `tools`— pueden llamar.
+  const RUTAS = [
+    'app/api/fundaciones/estado/route.ts',
+    'app/api/fundaciones/generar/route.ts',
+    'app/api/tools/estado/route.ts',
+    'app/api/tools/generar/route.ts',
+  ];
+  for (const ruta of RUTAS) {
+    const segundos = Number(/maxDuration\s*=\s*(\d+)/.exec(leer(ruta))?.[1]);
+    assert.ok(segundos > 0, `${ruta} dejó de declarar \`maxDuration\``);
+    assert.ok(
+      ms >= segundos * 1000,
+      `las pantallas esperan ${ms / 1000}s y ${ruta} puede tardar ${segundos}s: el navegador va a ` +
+        'abortar y anunciar un fallo sobre una generación que se guardó',
+    );
+  }
+
+  // Y que la espera se declare Y se use: los cuatro llamadores, uno por uno. Sin esta mitad, la
+  // constante puede quedar exportada y sin pasar a `pedir()`, que es exactamente el estado en el
+  // que estaba el código cuando llegó la queja.
+  const LLAMADORES = [
+    'components/fundaciones/Fundaciones.jsx',
+    'components/fundaciones/PanelHerramienta.jsx',
+    'components/fundaciones/PanelResearch.jsx',
+    'components/tools/PanelProspeccion.jsx',
+  ];
+  for (const archivo of LLAMADORES) {
+    const fuente = leer(archivo);
+    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar)/g) || []).length;
+    const esperas = (fuente.match(/espera:\s*ESPERA_DE_RUTA_LARGA_MS/g) || []).length;
+    assert.equal(
+      esperas,
+      pedidos,
+      `${archivo} hace ${pedidos} llamadas a las rutas de Fundaciones y solo ${esperas} declaran ` +
+        'la espera larga: la que falta va a abortar a los quince segundos',
+    );
+  }
+});

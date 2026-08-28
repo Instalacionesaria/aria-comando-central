@@ -20,7 +20,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { pedir } from '@/lib/http/cliente';
+import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { aValoresDeFormulario, camposDe } from '@/lib/fundaciones/campos';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -95,6 +95,7 @@ export default function PanelHerramienta({
     const r = await pedir(rutaEstado, {
       metodo: 'POST',
       cuerpo: { herramienta: herramienta.id, valores },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
     });
     setGuardando(false);
     const mal = problema(r);
@@ -114,7 +115,7 @@ export default function PanelHerramienta({
       cuerpo.ajuste = ajuste;
       cuerpo.previa = documento;
     }
-    const r = await pedir(rutaGenerar, { metodo: 'POST', cuerpo });
+    const r = await pedir(rutaGenerar, { metodo: 'POST', cuerpo, espera: ESPERA_DE_RUTA_LARGA_MS });
     setGenerando(false);
     const mal = problema(r);
     if (mal) {

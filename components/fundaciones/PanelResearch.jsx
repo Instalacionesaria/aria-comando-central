@@ -26,7 +26,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { pedir } from '@/lib/http/cliente';
+import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { aValoresDeFormulario, camposDe } from '@/lib/fundaciones/campos';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -96,6 +96,7 @@ export default function PanelResearch({
     const r = await pedir(rutaEstado, {
       metodo: 'POST',
       cuerpo: { herramienta: 1, valores },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
     });
     setGuardando(false);
     if (r.tipo !== 'datos') {
@@ -116,6 +117,7 @@ export default function PanelResearch({
     const r = await pedir(rutaGenerar, {
       metodo: 'POST',
       cuerpo: { herramienta: 1, valores, paso },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
     });
 
     if (r.tipo !== 'datos') {
