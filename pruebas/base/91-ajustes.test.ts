@@ -23,15 +23,23 @@
 
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import type { Client } from 'pg';
-import { GET as leerAjustes, PUT as guardarAjustes } from '../../app/api/admin/credenciales/route.ts';
+import {
+  GET as leerAjustes,
+  POST as generarCabecera,
+  PUT as guardarAjustes,
+} from '../../app/api/admin/credenciales/route.ts';
+import { POST as recibirAviso } from '../../app/api/avisos/crm/route.ts';
 import { conIdentidad, cerrarClientes } from '../../lib/datos/capa.ts';
 import { conectar, cerrarTodo, unaFila } from '../apoyo/conexiones.ts';
 import { COOKIE_SESION, hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { cifrar, descifrar } from '../../lib/credenciales/cifrado.ts';
 
 const DOMINIO = 'ejemplo.test';
+const PIMIENTA = 'pimienta-de-prueba-91';
+const MARCA_DEL_AVISO = 'aviso-cabecera-prueba-91';
+let pimientaPrevia: string | undefined;
 
 let admin: Client;
 let alfa: string;
@@ -42,6 +50,10 @@ before(async () => {
   // El freno por origen del `08` § 5.3 compara con `DOMINIO_ESPERADO`, y sin esto TODA
   // petición que modifica responde 403 `origen_no_permitido`. Igual que `50-administracion`.
   process.env.DOMINIO_ESPERADO = DOMINIO;
+  /* La pimienta del aviso: sin esto, el `POST` devuelve la cabecera con `FALTA_LA_PIMIENTA` en la
+     mitad izquierda —que es su comportamiento correcto, pero no el que hay que probar acá. */
+  pimientaPrevia = process.env.AVISO_PIMIENTA;
+  process.env.AVISO_PIMIENTA = PIMIENTA;
   admin = await conectar('admin');
 
   const org = await unaFila<{ id: string }>(
@@ -79,12 +91,15 @@ before(async () => {
 after(async () => {
   await limpiar();
   await admin.query('delete from identidad.sesiones where usuario_id = $1', [usuarioAlfa]);
+  if (pimientaPrevia === undefined) delete process.env.AVISO_PIMIENTA;
+  else process.env.AVISO_PIMIENTA = pimientaPrevia;
   await cerrarTodo();
   await cerrarClientes();
 });
 
 async function limpiar(): Promise<void> {
   await admin.query('delete from identidad.organizaciones_credenciales where org_id = $1', [alfa]);
+  await admin.query('delete from negocio.avisos_del_crm where cuerpo like $1', [`%${MARCA_DEL_AVISO}%`]);
 }
 
 function peticion(cuerpo: unknown, metodo = 'PUT'): Request {
@@ -349,4 +364,99 @@ test('los ajustes son de la organización de la sesión, y de ninguna otra', asy
       beta.id,
     ]);
   }
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// GENERAR LA CABECERA DEL AVISO — la única prueba que recorre el camino entero
+//
+// El `POST` de esta ruta no tenía ni una prueba, y se descubrió mutando: cambiarlo para devolver el
+// secreto SUELTO en vez de la cabecera armada dejaba las 20 pruebas del aviso en verde. Y la
+// diferencia no es cosmética — con el secreto suelto, quien configura el workflow tiene que ir a
+// buscar la pimienta al panel de Vercel y pegar las dos mitades a mano, o sea copiar un secreto por
+// tres lugares donde queda escrito.
+//
+// Acá se genera por el endpoint y se golpea la ruta del aviso con ESA cabecera, sin tocarla. Es la
+// prueba que responde «¿va a funcionar cuando lo pegue en GoHighLevel?».
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Una entrega de GoHighLevel con la cabecera que se le dé. El `locationId` va ANIDADO, como llega. */
+function entregaDelCrm(cabecera: string, contactId: string): Request {
+  const url = new URL('https://ejemplo.test/api/avisos/crm');
+  url.searchParams.set('evento', 'contacto.actualizado');
+  return new Request(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-webhook-secret': cabecera },
+    body: JSON.stringify({ marca: MARCA_DEL_AVISO, contactId, location: { id: 'loc-cualquiera' } }),
+  });
+}
+
+async function avisosGuardados(): Promise<number> {
+  const f = await admin.query(`select count(*)::int as n from negocio.avisos_del_crm where cuerpo like $1`, [
+    `%${MARCA_DEL_AVISO}%`,
+  ]);
+  return (f.rows[0] as { n: number }).n;
+}
+
+test('generar la cabecera del aviso: se entrega completa, funciona de punta a punta, y rotar invalida la anterior', async () => {
+  await limpiar();
+
+  const generado = await generarCabecera(peticion(undefined, 'POST'));
+  assert.equal(generado.status, 200, JSON.stringify(await cuerpoDe(generado)));
+  const cuerpo = await cuerpoDe(generado);
+  const cabecera = cuerpo.avisoCabecera as string | undefined;
+
+  /* 1 · ES LA CABECERA ARMADA, con las dos mitades. El punto es el separador que la ruta parte. */
+  assert.ok(cabecera, 'no devolvió ninguna cabecera');
+  assert.ok(
+    cabecera.startsWith(`${PIMIENTA}.`),
+    'la mitad izquierda no es la pimienta del servidor, así que quien pegue esto en GoHighLevel va a ' +
+      'tener que ir a buscarla al panel de Vercel y armar la cabecera a mano',
+  );
+  assert.equal(cuerpo.avisoPimientaConfigurada, true);
+  assert.equal(cuerpo.avisoSecretoConfigurado, true, 'no informa que el secreto quedó configurado');
+
+  /* 2 · Y LA RUTA DEL AVISO LA ACEPTA. Es el punto entero de esta prueba: las dos mitades las arma
+         este endpoint y las parte la otra ruta, y son dos archivos distintos. */
+  const entregado = await recibirAviso(entregaDelCrm(cabecera, 'contacto-que-no-existe'));
+  assert.equal(
+    entregado.status,
+    200,
+    'la cabecera que la pantalla entrega NO sirve para la ruta que la tiene que aceptar. Es el defecto ' +
+      'que hace que alguien configure los siete workflows y no funcione nada, sin ningún error visible',
+  );
+  assert.equal(await avisosGuardados(), 1, 'la entrega no quedó guardada');
+
+  /* 3 · El `GET` NO trae el secreto ni su hash. Se busca la subcadena en el JSON entero y no campo
+         por campo: es lo único que atrapa un valor que alguien agregue por descuido más adelante. */
+  const visto = await leerAjustes(peticion(undefined, 'GET'));
+  assert.equal(visto.status, 200);
+  const texto = JSON.stringify(await cuerpoDe(visto));
+  const secretoSolo = cabecera.slice(cabecera.indexOf('.') + 1);
+  assert.equal(texto.includes(secretoSolo), false, 'el `GET` devuelve el secreto del aviso');
+  assert.equal(
+    texto.includes(createHash('sha256').update(secretoSolo).digest('hex')),
+    false,
+    'el `GET` devuelve el HASH del secreto: con él se puede confirmar un secreto adivinado',
+  );
+  assert.match(texto, /avisoSecretoConfigurado/, 'el `GET` no informa ni si hay un secreto configurado');
+
+  /* 4 · ROTAR INVALIDA LA ANTERIOR, y se comprueba de la única forma que vale: la cabecera vieja
+         pasa a ser rechazada. Sin este paso, «roté» podría ser nada más «escribí otra fila», y dos
+         secretos vigentes a la vez es exactamente lo que no puede pasar. */
+  const otra = await generarCabecera(peticion(undefined, 'POST'));
+  assert.equal(otra.status, 200);
+  const nueva = (await cuerpoDe(otra)).avisoCabecera as string;
+  assert.notEqual(nueva, cabecera, 'rotar devolvió la MISMA cabecera');
+
+  const conLaVieja = await recibirAviso(entregaDelCrm(cabecera, 'otro-contacto'));
+  assert.equal(
+    conLaVieja.status,
+    403,
+    'la cabecera anterior sigue siendo aceptada: rotar no invalidó nada, y quedaron dos vigentes',
+  );
+  const conLaNueva = await recibirAviso(entregaDelCrm(nueva, 'otro-contacto'));
+  assert.equal(conLaNueva.status, 200, 'la cabecera nueva no funciona');
+
+  await limpiar();
 });

@@ -29,6 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import AvisoDelCrm from './AvisoDelCrm.jsx';
 
 /* Los campos, en el orden en que se muestran: primero lo que hace falta para que las pestañas
  * Closer y Setter traigan datos, después lo de Fundaciones, y al final lo opcional.
@@ -320,6 +321,16 @@ export default function Credenciales() {
           corresponde, la parte que la necesita no funciona y lo dice.
         </p>
         <div className="fd-rejilla dos">{CAMPOS.map(tarjeta)}</div>
+
+        {/* ── EL AVISO DEL CRM, DEBAJO Y NO COMO UNA TARJETA MÁS ─────────────
+            Las tarjetas de arriba son todas la misma forma —un campo, un valor, guardar— y esto no
+            lo es: no se acepta un valor de afuera, se genera; y tiene un segundo paso (las siete
+            URLs) que ninguna otra credencial tiene. Meterlo en la rejilla obligaría a que la
+            tarjeta más distinta pareciera igual a las demás. */}
+        <AvisoDelCrm
+          configurado={datos?.avisoSecretoConfigurado === true}
+          alGenerar={() => void cargar()}
+        />
       </>
     );
   }

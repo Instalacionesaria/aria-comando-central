@@ -284,13 +284,28 @@ export async function POST(peticion: Request): Promise<Response> {
       orgId: contexto.orgEfectiva,
     });
 
-    /* LA ÚNICA VEZ que el secreto sale de este servidor.
-       Va junto con el estado resuelto —que ya dice `avisoSecretoConfigurado: true`— para que la
-       pantalla pueda mostrar el valor y a la vez saber que quedó guardado. Rotar invalida el anterior
-       en el acto: el índice único es sobre una sola columna, así que no hay dos vigentes. */
+    /* ── SE DEVUELVE LA CABECERA COMPLETA, NO EL SECRETO SUELTO ──────────────
+     *
+     * Lo que hay que pegar en GoHighLevel es `<pimienta>.<secreto>`, así que devolver solo la mitad
+     * derecha obligaría a alguien a armar la cabecera a mano — y la pimienta vive en una variable de
+     * entorno, o sea que habría que ir a buscarla al panel de Vercel y pegarla en un chat o en un
+     * documento. Cada uno de esos pasos es un lugar donde un secreto queda escrito.
+     *
+     * Devolviendo la cabecera armada, la pimienta **nunca sale de este servidor por otra vía**: la ve
+     * quien administra la empresa, una vez, en la pantalla, y la copia entera.
+     *
+     * Es la ÚNICA vez que estos dos valores salen de acá. El `GET` no los trae ni siquiera hasheados,
+     * y rotar invalida el anterior en el acto — el índice único es sobre una sola columna, así que no
+     * hay dos vigentes.
+     *
+     * Si la pimienta no está configurada, la cabecera igual se devuelve con la marca visible: es
+     * mejor que quien mira vea `FALTA_LA_PIMIENTA.<secreto>` y pregunte, que recibir una cabecera de
+     * apariencia normal que la ruta va a rechazar siempre. */
+    const pimienta = process.env.AVISO_PIMIENTA ?? 'FALTA_LA_PIMIENTA';
     return ok({
       ...(await resolverCredenciales(db, contexto.orgEfectiva)),
-      avisoSecreto: secreto,
+      avisoCabecera: `${pimienta}.${secreto}`,
+      avisoPimientaConfigurada: process.env.AVISO_PIMIENTA !== undefined,
     });
   });
 }

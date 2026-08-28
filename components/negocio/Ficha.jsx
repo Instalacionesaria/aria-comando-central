@@ -272,6 +272,18 @@ function Cuerpo({
     /* EL ATRASO VA ARRIBA Y EN LOS DOS CASOS: con mensajes y sin ellos. Es la diferencia entre
        «este contacto no escribió» y «hace tres días que no traemos nada de nadie», y sin esta línea
        las dos se ven igual — una conversación que termina el martes. */
+    /* ── DOS AVISOS Y NO UNO, PORQUE SON DOS VÍAS ───────────────────────
+       El del sondeo dice «hace cuánto que el barrido no pasa»; el del aviso dice «GoHighLevel no está
+       avisando, o avisa y no se interpreta». Se pueden dar por separado, y llevan a lugares
+       distintos: uno a la tarea programada, el otro a la configuración del workflow.
+       El del aviso es `falta` y no `mal`: los mensajes SÍ están entrando, solo más lento. */
+    const avisoDelCrm = p.aviso?.aviso ? (
+      <div className="fd-aviso falta" role="status">
+        <i>◍</i>
+        <span>{p.aviso.aviso}</span>
+      </div>
+    ) : null;
+
     const atraso = p.frescura?.aviso ? (
       <div className="fd-aviso falta" role="status">
         <i>◍</i>
@@ -283,6 +295,7 @@ function Cuerpo({
       return (
         <div className="cw-chat">
           {atraso}
+          {avisoDelCrm}
           <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />
         </div>
       );
@@ -304,6 +317,7 @@ function Cuerpo({
     return (
       <div className="cw-chat" aria-live="polite">
         {atraso}
+        {avisoDelCrm}
         {conSeparadores(p.filas, zona).map((r) =>
           r.tipo === 'dia' ? (
             <div className="cw-day" key={r.clave}>
@@ -665,6 +679,7 @@ export default function Ficha({ contactoId, alCerrar }) {
            al día?» y hace falta justamente cuando HAY mensajes — un chat con lo de anteayer se ve
            completo, y el mensaje de ayer es el que no está. */
         frescura: r.datos.frescura ?? null,
+        aviso: r.datos.aviso ?? null,
       },
     }));
   }, [contactoId]);

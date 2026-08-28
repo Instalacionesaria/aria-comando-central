@@ -22,7 +22,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { frescuraDe, type Frescura } from './frescura.ts';
+import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
 import { fechaDelDia } from './tiempo.ts';
 
@@ -169,7 +169,7 @@ const TOPE_DE_MENSAJES = 200;
  */
 export async function mensajesDeLaFicha(
   contactoId: string,
-): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura }> {
+): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura; aviso: FrescuraDelAviso }> {
   const crudos = await datos()
     .selectFrom('mensajes')
     .select([
@@ -213,6 +213,12 @@ export async function mensajesDeLaFicha(
      *
      * Por eso es un campo hermano y no una rama más de `falta`. */
     frescura: await frescuraDe('mensajes'),
+    /* Y cómo viene el AVISO, que es la otra vía. Son dos campos y no uno porque son dos hechos
+       distintos: el sondeo puede estar al día y el aviso inerte —y ahí los mensajes entran, pero con
+       hasta diez minutos de retraso— o al revés. Colapsarlos en uno obligaría a elegir cuál esconder.
+       Va como campo HERMANO y nunca dentro de `falta`: `falta` existe solo cuando no hay datos, y un
+       aviso inerte convive perfectamente con un chat lleno. */
+    aviso: await frescuraDelAviso(),
   };
 }
 

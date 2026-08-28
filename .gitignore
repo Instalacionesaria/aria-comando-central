@@ -48,6 +48,21 @@ secretos*
 !*.sql
 !*.css
 
+# ── Y LAS EXTENSIONES NO ALCANZAN: FALTABA EL DIRECTORIO ─────────────────
+#
+# `credenciales*` es por prefijo y sin barra, así que agarra también **la carpeta**
+# `app/api/admin/credenciales/`. Y git NO ENTRA en un directorio ignorado, o sea que
+# las seis negaciones de arriba no llegan a mirar los archivos de adentro.
+#
+# El síntoma es el mismo incidente del 2026-08-24 con una vuelta más de tuerca:
+# `git add app/api/admin/credenciales/route.ts` responde *"paths are ignored"* y **no
+# agrega nada**. El archivo YA está rastreado, así que `git commit -a` sí lo toma — lo
+# que hace que el problema aparezca de forma intermitente, según cómo se agregue.
+#
+# Se re-incluye la carpeta por nombre completo. No debilita nada: nombra UNA ruta de
+# código que existe, y un volcado de secretos no se llama `app/api/admin/`.
+!app/api/admin/credenciales/
+
 graphify-out/
 
 # TypeScript: los dos los genera la herramienta.

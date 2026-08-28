@@ -17,6 +17,8 @@ import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { POST as recibirAviso } from '../../app/api/avisos/crm/route.ts';
 import { interpretarAviso } from '../../lib/negocio/avisoDelCrm.ts';
+import { frescuraDelAviso } from '../../lib/negocio/frescura.ts';
+import { conOrganizacion } from '../../lib/datos/contexto.ts';
 
 const MARCA = 'aviso-crm-prueba';
 const PIMIENTA = 'pimienta-de-prueba-no-usar';
@@ -720,4 +722,235 @@ test('un cuerpo SIN contacto en ninguna de sus tres formas se dice, y no se inve
         'payload se corta la ingesta entera',
     );
   }
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 7 · EL MONITOR: DISTINGUIR «NO LLEGA» DE «LLEGA Y SE DESCARTA»
+//
+// Es la parte que decide si todo lo demás sirve. El modo de fallo insignia de este subsistema es uno
+// donde el POST llega PERFECTO: alguien pega la URL sin el `?evento=` —o con `mensaje_entrante` en
+// vez de `mensaje.entrante`— y entonces GoHighLevel entrega, nosotros guardamos, respondemos 200, y
+// el aviso queda **inerte para siempre** sin un solo error.
+//
+// Un monitor que lea `recibido_el` responde «¿llegó un POST?» y dice `al_dia` en ese caso exacto. Por
+// eso lee `procesado_el`, y por eso hay un cuarto estado.
+// ════════════════════════════════════════════════════════════════════════════════
+
+/** Una fila de cuarentena escrita a mano, con la antigüedad y el estado que se quiera. */
+async function unAviso(opciones: {
+  haceMinutos: number;
+  procesado: boolean;
+  error?: string | null;
+}): Promise<void> {
+  await admin.query(
+    `insert into negocio.avisos_del_crm
+       (org_id, huella, evento, cuerpo, bytes, atribucion, recibido_el, visto_ultimo_el, procesado_el, error)
+     values ($1, $2, 'mensaje.entrante', $3, 10, 'coincide',
+             now() - ($4 || ' minutes')::interval,
+             now() - ($4 || ' minutes')::interval,
+             case when $5 then now() - ($4 || ' minutes')::interval else null end,
+             $6)`,
+    [
+      alfa,
+      `${MARCA}-${randomUUID()}`,
+      JSON.stringify({ marca: MARCA }),
+      String(opciones.haceMinutos),
+      opciones.procesado,
+      opciones.error ?? null,
+    ],
+  );
+}
+
+const frescura = () => conOrganizacion(alfa, () => frescuraDelAviso());
+
+test('7a · sin un solo aviso dice `nunca`, y manda a configurar el workflow', async () => {
+  /* `nunca` y `atrasada` NO se colapsan: son dos investigaciones distintas. «Nunca llegó» manda a
+     pegar la URL; «hace rato que no» manda a mirar si el workflow se apagó. */
+  await barrer();
+  const f = await frescura();
+  assert.equal(f.estado, 'nunca');
+  assert.notEqual(f.aviso, null, 'un aviso que nunca llegó no dice nada: nadie va a ir a configurarlo');
+  assert.match(f.aviso ?? '', /Credenciales/, 'el texto no dice DÓNDE están la URL y la cabecera');
+});
+
+test('7b · LA MÁS IMPORTANTE: avisos frescos sin procesar dan `llega_sin_procesar`, no `al_dia`', async () => {
+  // ══════════════════════════════════════════════════════════════════════
+  // Mata leer `max(recibido_el)`, que es lo que uno escribe primero y lo que la referencia hacía.
+  //
+  // Con ese criterio, el caso de abajo —tres avisos de hace dos minutos, ninguno interpretado— dice
+  // `al_dia`, la pantalla no dibuja nada, y el aviso está 100 % inerte mientras cada mensaje sigue
+  // entrando por el sondeo con hasta diez minutos de retraso. Es exactamente el estado en el que un
+  // «ya lo configuré» es falso y nadie lo puede saber.
+  // ══════════════════════════════════════════════════════════════════════
+  await barrer();
+  for (const m of [2, 3, 5]) {
+    await unAviso({ haceMinutos: m, procesado: false, error: 'evento desconocido: (sin parámetro)' });
+  }
+
+  const f = await frescura();
+  assert.equal(
+    f.estado,
+    'llega_sin_procesar',
+    'con tres avisos frescos y NINGUNO interpretado, el monitor dijo otra cosa. Si dice `al_dia`, ' +
+      'está leyendo `recibido_el` — o sea «¿llegó un POST?» en vez de «¿se interpretó algo?»',
+  );
+  assert.equal(f.sinProcesar, 3, 'no cuenta cuántos quedaron sin interpretar');
+  assert.match(f.aviso ?? '', /evento/, 'el texto no manda a mirar el `?evento=`, que es donde está el problema');
+});
+
+test('7c · un aviso procesado y VIEJO da `atrasada`, con los minutos que calcula la base', async () => {
+  /* Los minutos los calcula PostgreSQL con `now()`, no el proceso con `Date.now()`: este archivo mide
+     una diferencia de tiempos, y con dos relojes la prueba no prueba nada. La fila se inserta con
+     `now() - interval` desde SQL por el mismo motivo. */
+  await barrer();
+  await unAviso({ haceMinutos: 200, procesado: true });
+
+  const f = await frescura();
+  assert.equal(f.estado, 'atrasada', 'un aviso procesado hace más de dos horas no dio `atrasada`');
+  assert.ok(
+    f.minutos !== null && f.minutos >= 195 && f.minutos <= 210,
+    `los minutos vinieron ${f.minutos}: o no los calcula la base, o los cuenta desde otra columna`,
+  );
+  assert.notEqual(f.aviso, null);
+});
+
+test('7d · un aviso procesado RECIENTE se calla', async () => {
+  /* Y esta mitad importa igual: sin ella, un estado que siempre avisa pasa las tres de arriba — y un
+     aviso que aparece siempre es un aviso que se aprende a ignorar. */
+  await barrer();
+  await unAviso({ haceMinutos: 3, procesado: true });
+
+  const f = await frescura();
+  assert.equal(f.estado, 'al_dia', 'un aviso interpretado hace tres minutos igual avisó de algo');
+  assert.equal(f.aviso, null, 'al día tiene que callarse: la pantalla no dibuja nada');
+});
+
+test('7e · lo FRESCO gana sobre lo viejo: el orden de los estados no es intercambiable', async () => {
+  /* Con un aviso interpretado hace tres horas Y tres frescos sin interpretar, el problema es la
+     configuración del evento —no que GoHighLevel haya dejado de entregar—. Si ganara `atrasada`, el
+     texto mandaría a revisar si el proveedor está avisando, y SÍ está avisando. */
+  await barrer();
+  await unAviso({ haceMinutos: 200, procesado: true });
+  for (const m of [1, 2]) await unAviso({ haceMinutos: m, procesado: false, error: 'evento desconocido' });
+
+  const f = await frescura();
+  assert.equal(f.sinProcesar, 2, 'no cuenta los frescos sin interpretar');
+  /* ── ESTA ASERCIÓN DECÍA `atrasada`, Y CONTRADECÍA EL TÍTULO DE SU PROPIA PRUEBA ──
+   *
+   * Se escribió describiendo lo que el código hacía —con un procesado viejo, `max(procesado_el)` no
+   * es nulo, así que ganaba `atrasada`— y se dejó anotado como una limitación. Pero el título dice
+   * «lo fresco gana sobre lo viejo» y el párrafo de arriba explica por qué tiene que ser así. La
+   * prueba argumentaba en contra de sí misma.
+   *
+   * Lo que la destrabó fue `7g`: el mismo colapso, un caso más adelante, hacía desaparecer el aviso
+   * por completo. Con la rama parcial adentro, las dos dicen lo mismo y el título se sostiene. */
+  assert.equal(
+    f.estado,
+    'llega_sin_procesar',
+    'con dos avisos frescos SIN interpretar, el texto manda a revisar si GoHighLevel está entregando ' +
+      '— y sí está entregando. Lo que hay que revisar es el `?evento=`',
+  );
+  assert.match(f.aviso ?? '', /evento/, 'el texto no nombra lo único que hay que ir a mirar');
+});
+
+test('7f · el monitor VIAJA en la respuesta del chat, como campo hermano', async () => {
+  /* La prueba que ninguna propuesta pedía y que es la que impide que todo esto sea código muerto: un
+     monitor perfecto que ninguna pantalla lee no avisa de nada.
+
+     Y viaja como HERMANO, nunca dentro de `falta`: `falta` existe solo cuando no hay datos, y un
+     aviso inerte convive perfectamente con un chat lleno de mensajes. */
+  const P = 'lib/negocio/ficha.ts';
+  const fuente = await import('node:fs').then((fs) => fs.readFileSync(P, 'utf8'));
+  assert.match(fuente, /frescuraDelAviso\(\)/, '`ficha.ts` no llama al monitor: es código muerto');
+  assert.match(fuente, /aviso: await frescuraDelAviso\(\)/, 'el monitor no viaja como campo propio');
+
+  const ruta = await import('node:fs').then((fs) =>
+    fs.readFileSync('app/api/contactos/[id]/mensajes/route.ts', 'utf8'),
+  );
+  assert.match(ruta, /aviso: r\.pestana\.aviso/, 'la ruta del chat no pasa el monitor a la pantalla');
+
+  const pantalla = await import('node:fs').then((fs) =>
+    fs.readFileSync('components/negocio/Ficha.jsx', 'utf8'),
+  );
+  assert.match(pantalla, /p\.aviso\?\.aviso/, 'la pantalla no dibuja el aviso del monitor');
+});
+
+test('7g · un aviso YA PROCESADO que después falla también se cuenta', async () => {
+  /* ── ESTE CASO EXISTE PORQUE UNA MUTACIÓN SOBREVIVIÓ ──────────────────
+   *
+   * Quitar `or error is not null` del conteo dejaba todo verde, porque en los casos de arriba toda
+   * fila sin procesar tiene las DOS cosas: `procesado_el` nulo Y un error. Así que la mitad del
+   * criterio no estaba ejercitada, y parecía una condición muerta que convenía borrar.
+   *
+   * No lo es. «Procesado Y con error» es alcanzable: el `on conflict` de la ruta bumpea
+   * `repeticiones` sin limpiar `procesado_el`, así que un aviso que se interpretó una vez y que en
+   * una reentrega falla —el contacto se borró del CRM, el token se venció— queda con las dos
+   * columnas puestas.
+   *
+   * Y es el que MÁS hay que contar: significa «esto funcionaba y ahora no», que es la señal más
+   * fuerte que este monitor puede dar. Sin la mitad del criterio se ve como si nada pasara. */
+  await barrer();
+  await admin.query(
+    `insert into negocio.avisos_del_crm
+       (org_id, huella, evento, cuerpo, bytes, atribucion, recibido_el, visto_ultimo_el, procesado_el, error)
+     values ($1, $2, 'mensaje.entrante', $3, 10, 'coincide',
+             now() - interval '4 minutes', now() - interval '1 minute',
+             now() - interval '4 minutes', 'el contacto ya no existe en el CRM')`,
+    [alfa, `${MARCA}-${randomUUID()}`, JSON.stringify({ marca: MARCA })],
+  );
+
+  const f = await frescura();
+  assert.equal(
+    f.sinProcesar,
+    1,
+    'un aviso que se interpretó una vez y que AHORA falla no se cuenta. Es la señal más fuerte que ' +
+      'hay —«esto funcionaba y dejó de funcionar»— y sin contarla la pantalla se ve tranquila',
+  );
+
+  /* Y ACÁ ESTABA EL SEGUNDO HUECO, que es el que de verdad importa: el conteo viajaba bien y el
+     estado igual decía `al_dia`, así que la pantalla no dibujaba nada. Un dato medido que nadie lee
+     es peor que no medirlo, porque parece cubierto. */
+  assert.equal(
+    f.estado,
+    'llega_sin_procesar',
+    'con un aviso fallando hace cuatro minutos, el monitor dice `al_dia`. Es el caso PARCIAL: uno de ' +
+      'los siete workflows con el `?evento=` mal escrito, los otros seis funcionando, y el estado ' +
+      'mirando solo a los que funcionan',
+  );
+  assert.notEqual(f.aviso, null, 'con un aviso fallando, el monitor no dice nada');
+  assert.match(
+    f.aviso ?? '',
+    /y otros sí/,
+    'el texto es el de «no se interpretó ninguno», y acá SÍ se interpretaron otros. Mandar a revisar ' +
+      'la URL entera cuando seis de siete funcionan es mandar a buscar en el lugar equivocado',
+  );
+});
+
+test('7h · un fallo VIEJO se calla: la ventana de una hora no es decorativa', async () => {
+  /* ── EL ÚLTIMO SOBREVIVIENTE DE LA MUTACIÓN ─────────────────────────
+   *
+   * Cambiar `interval '1 hour'` por `interval '100 years'` dejaba todo verde, porque los casos de
+   * arriba insertan avisos de hace uno a cinco minutos: caen dentro de cualquier ventana.
+   *
+   * Y la ventana es lo que hace que este monitor sirva. Un aviso que falla se guarda para siempre en
+   * la cuarentena; sin acotar por tiempo, UNA entrega mal configurada de hace tres meses —ya
+   * arreglada— pone el cartel en la pantalla todos los días. Y un cartel permanente se aprende a
+   * ignorar, así que el día que pase algo de verdad nadie lo va a leer.
+   *
+   * Acá: un fallo de hace tres días y un aviso interpretado hace un minuto. El estado tiene que ser
+   * silencio — lo viejo ya no es accionable. */
+  await barrer();
+  await unAviso({ haceMinutos: 3 * 24 * 60, procesado: false, error: 'evento desconocido' });
+  await unAviso({ haceMinutos: 1, procesado: true });
+
+  const f = await frescura();
+  assert.equal(
+    f.sinProcesar,
+    0,
+    'un fallo de hace tres días se sigue contando: la ventana de una hora no está acotando nada, y ' +
+      'el cartel va a quedar puesto para siempre',
+  );
+  assert.equal(f.estado, 'al_dia');
+  assert.equal(f.aviso, null, 'con todo funcionando hoy, la pantalla igual dibuja un aviso viejo');
 });
