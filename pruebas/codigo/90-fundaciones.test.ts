@@ -1096,3 +1096,63 @@ test('un entregable se descarga como Word y como PDF, no solo como markdown', as
     'entró `marked`: ya hay un renderizador markdown en `documento.ts`',
   );
 });
+
+// ─── Los cuatro defectos del PDF, que no fallaban ──────────────────────────
+
+test('el PDF no aplana las listas ni contradice a la pantalla', async () => {
+  // Los cuatro salieron de MIRAR un PDF generado, no de que algo fallara. Ése es el punto: el
+  // documento «sale», está completo, y solo alguien que lo compara contra la pantalla nota que dice
+  // otra cosa. Por eso quedan acá y no en la lista de estilo.
+  const { aBloques } = await import('../../lib/fundaciones/exportar.ts');
+
+  // 1 · La sangría es información. `aBloques` medía la línea DESPUÉS de recortarla, así que un
+  //     sub-ítem quedaba al mismo nivel que su padre: en el «Perfil de Cliente» eso ponía cuatro
+  //     tipos de freelancer como hermanos de «Perfil laboral:», que es lo contrario de lo que dice.
+  const anidada = aBloques('- Perfil laboral:\n  - Freelancers estancados\n    - Jóvenes sin trayectoria');
+  assert.deepEqual(
+    anidada.map((b) => b.nivel),
+    [0, 1, 2],
+    'las listas anidadas volvieron a aplanarse',
+  );
+
+  // 2 · La pantalla SÍ reconoce `1.` como lista (ver `aHtml`). Cuando el PDF no lo hacía, el mismo
+  //     documento se veía distinto en cada lado — y el PDF es el que sale de la empresa.
+  const numerada = aBloques('1. El miedo con fecha de vencimiento\n2) El techo invisible');
+  assert.deepEqual(
+    numerada.map((b) => [b.tipo, b.marca]),
+    [['vineta', '1.'], ['vineta', '2.']],
+    'las listas numeradas volvieron a dibujarse como párrafos',
+  );
+
+  // Y una viñeta sigue siendo una viñeta: el punto de arriba no se ganó a costa de éste.
+  assert.equal(aBloques('- Cobrar en dólares')[0]?.marca, '•');
+
+  // Un párrafo que EMPIEZA con algo parecido no es una lista. `2026 fue el año…` no lleva viñeta.
+  assert.equal(aBloques('2026 fue el año del cambio')[0]?.tipo, 'p');
+
+  const fuente = (await import('node:fs')).readFileSync(
+    (await import('node:path')).join((await import('../apoyo/fuente.ts')).RAIZ, 'lib/fundaciones/exportar.ts'),
+    'utf8',
+  );
+
+  // 3 · La sangría francesa. Sin ella, la segunda línea de una viñeta vuelve al margen y se lee como
+  //     un ítem nuevo. Se comprueba que la marca y el texto se dibujen en x DISTINTAS.
+  assert.match(fuente, /doc\.text\(marca, MARGEN \+ sangria, y\)/, 'la marca dejó de ir al margen');
+  assert.match(
+    fuente,
+    /doc\.text\(ln, MARGEN \+ sangria \+ anchoMarca, y\)/,
+    'el texto de la viñeta volvió a alinearse con la marca: se pierde la sangría francesa',
+  );
+
+  // 4 · Un solo lugar cambia de página, y por eso la cabecera corrida, el foliado y la repetición de
+  //     la cabecera de tabla no se pueden olvidar en uno de tres. El día que aparezca un
+  //     `addPage()` suelto, esa página sale sin encabezado y nadie lo ve hasta que imprime.
+  const sinComentarios = fuente.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const saltos = (sinComentarios.match(/doc\.addPage\(\)/g) || []).length;
+  assert.equal(saltos, 2, 'apareció un `addPage()` fuera de `saltarPagina()` y de la portada');
+  assert.match(
+    sinComentarios,
+    /saltarPagina\(\);\s*\n\s*if \(!esCabecera && encabezado\.some/,
+    'la tabla dejó de repetir su cabecera al partirse: se leen columnas sin saber cuál es cuál',
+  );
+});
