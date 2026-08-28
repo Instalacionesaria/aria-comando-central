@@ -810,6 +810,7 @@ test('Avanzar CIERRA los seguimientos abiertos del contacto', async () => {
     registrarResultado(id, {
       salida: 'no_interesa',
       rol: 'closer',
+      modo: null,
       detalle: 'Precio',
       monto: null,
       formaPago: null,
@@ -849,6 +850,8 @@ test('un Avanzar CON fecha nueva no cierra la tarea que acaba de crear', async (
     registrarResultado(id, {
       salida: 'seguimiento',
       rol: 'closer',
+      // La única salida con modos. `manual` es la que escribe la tarea en `negocio.tareas`.
+      modo: 'manual',
       detalle: 'Muy interesado',
       monto: null,
       formaPago: null,

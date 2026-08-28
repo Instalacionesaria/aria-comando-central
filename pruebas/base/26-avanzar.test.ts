@@ -96,6 +96,9 @@ const BASE = {
   monto: null,
   nota: null,
   volverEl: null,
+  /* `null` = la salida no admite modos, que es el caso de cinco de las seis. La única que los tiene
+     es `seguimiento`, y las pruebas que la usan lo pasan explícito. */
+  modo: null,
 };
 
 // ═══ 1 · Las cuatro escrituras ══════════════════════════════════════════════
@@ -466,4 +469,50 @@ test('el Pipeline de una empresa no ve los contactos de la otra', async () => {
   assert.equal(p.total, 0);
   const q = await conOrganizacion(beta, () => pipelineDelCloser());
   assert.equal(q.total, 1);
+});
+
+test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fecha', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POR QUÉ ESTA PRUEBA EXISTE, Y POR QUÉ ESTÁ ACÁ Y NO EN LA RUTA
+  //
+  // La ruta rechaza `automatico` + fecha, así que por ese camino la combinación no llega nunca. Una
+  // mutación que borrara el guardia del ESCRITOR sobrevivía entera: las pruebas de la ruta no la
+  // veían porque la ruta cortaba antes.
+  //
+  // Pero `registrarResultado` no es privado de la ruta —otras pruebas lo llaman directo, y el día que
+  // exista un segundo camino de registro también— y su regla es suya: **si al contacto lo persigue el
+  // CRM, no se escribe un recordatorio nuestro**. Escribirlo pondría al contacto en Mi Día como algo
+  // que una persona tiene que hacer, cuando no hay nada que hacer.
+  // ═══════════════════════════════════════════════════════════════════════════
+  await limpiar();
+  const id = await contactoEn(alfa);
+  const dia = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+
+  const r = await conOrganizacion(alfa, () =>
+    registrarResultado(id, {
+      ...BASE,
+      salida: 'seguimiento',
+      modo: 'automatico',
+      // La fecha llega, y el escritor la tiene que ignorar por su cuenta.
+      volverEl: dia,
+      quien,
+    }),
+  );
+
+  assert.equal(
+    r.tarea,
+    false,
+    'el escritor creó la tarea con el modo automático: el contacto va a aparecer en Mi Día como ' +
+      'trabajo de una persona, cuando lo persigue la secuencia del CRM',
+  );
+  const quedo = await conOrganizacion(alfa, async () =>
+    datos().selectFrom('tareas').select('id').where('contacto_id', '=', id).execute(),
+  );
+  assert.deepEqual(quedo, [], 'quedó una fila en `negocio.tareas`');
+
+  // Y la otra mitad, para que la prueba no pase por un escritor que nunca escribe tareas.
+  const manual = await conOrganizacion(alfa, () =>
+    registrarResultado(id, { ...BASE, salida: 'seguimiento', modo: 'manual', volverEl: dia, quien }),
+  );
+  assert.equal(manual.tarea, true, 'con el modo manual tampoco escribe: el guardia agarra de más');
 });

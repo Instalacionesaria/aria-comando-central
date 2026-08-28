@@ -236,6 +236,36 @@ export const ETAPAS_DEL_SETTER: readonly { etiqueta: string; etapa: string; conf
  * existe devuelve éxito y no hace nada. Preguntando acá antes de mandar, lo que no existe se
  * queda en nuestra base —donde sí sirve— en vez de perderse.
  */
+/**
+ * Qué etiquetas le corresponden a un resultado, ya filtradas por lo que se puede mandar.
+ *
+ * ── POR QUÉ ES UNA FUNCIÓN PURA Y NO CÓDIGO DENTRO DE LA RUTA ───────────────
+ *
+ * Estaba dentro de `avisarAlCrm`, y ahí **no se puede probar**: esa función resuelve credenciales y
+ * habla con el CRM, así que en una base de pruebas sin token devuelve `etiquetas: []` antes de
+ * llegar a decidir nada. La decisión de qué mandar es una regla de negocio —y la más fácil de
+ * romper en silencio, porque una etiqueta que falta no da error: el CRM simplemente no dispara su
+ * automatismo— así que vive donde se la puede interrogar sin red.
+ *
+ * Tres cosas, en orden:
+ *
+ *   1 · la etiqueta del resultado;
+ *   2 · la que apaga el bot, salvo en No-show —la única salida que lo deja vivo, porque dispara un
+ *       flujo de recuperación que necesita al agente trabajando—;
+ *   3 · la del MODO, cuando la salida tiene modos. Es la que hace que «automático» signifique algo
+ *       del otro lado.
+ *
+ * Y el filtro final no es opcional: una etiqueta que no existe en la subcuenta se responde con un
+ * 200 y no hace nada, así que mandarla es peor que no mandarla — queda la impresión de que se hizo.
+ */
+export function etiquetasDelResultado(salida: string, etiquetaDelModo?: string): readonly string[] {
+  const def = RESULTADOS.find((r) => r.salida === salida);
+  if (!def) return [];
+  const candidatas = def.apagaElBot ? [def.etiqueta, BOT_DESACTIVADO_POSTCALL] : [def.etiqueta];
+  if (etiquetaDelModo) candidatas.push(etiquetaDelModo);
+  return candidatas.filter((e) => sePuedeMandar(e));
+}
+
 export function sePuedeMandar(etiqueta: string): boolean {
   const todas = [
     ...TERRITORIOS.map((t) => ({ etiqueta: t.etiqueta, confianza: t.confianza })),

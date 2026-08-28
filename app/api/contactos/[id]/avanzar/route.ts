@@ -29,14 +29,10 @@ import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
-import {
-  BOT_DESACTIVADO_POSTCALL,
-  RESULTADOS,
-  sePuedeMandar,
-} from '../../../../../lib/ghl/contrato.ts';
+import { etiquetasDelResultado } from '../../../../../lib/ghl/contrato.ts';
 import { ponerEtiquetas } from '../../../../../lib/ghl/cliente.ts';
 import { registrarResultado } from '../../../../../lib/negocio/avanzar.ts';
-import { definicionDe, esSalidaDelCloser } from '../../../../../lib/negocio/salidas.ts';
+import { definicionDe, esSalidaDelCloser, modoDe, modosDe } from '../../../../../lib/negocio/salidas.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,6 +40,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOPE_NOTA = 4000;
 
 const MOTIVOS = {
+  falta_modo:
+    'Hay que decir cómo se persigue este seguimiento: lo retomás vos, o lo persigue la secuencia ' +
+    'del CRM. Son dos cosas distintas y ninguna es el valor por omisión de la otra.',
+  modo_invalido: 'Ese modo no existe para esta salida.',
+  modo_sin_fecha: 'Un seguimiento que retomás vos necesita el día en que hay que volver.',
+  modo_con_fecha:
+    'La secuencia del CRM no usa una fecha nuestra: la pone su propio flujo. Si querés elegir el ' +
+    'día, el seguimiento lo tenés que retomar vos.',
   cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
   salida_invalida: 'Esa no es una de las seis salidas de Avanzar.',
   falta_monto: 'Esta salida necesita el monto: sin él no hay número que sumar en Inicio.',
@@ -137,6 +141,42 @@ export async function POST(
     volverEl = dia;
   }
 
+  /* ── EL MODO, Y LAS TRES COSAS QUE HAY QUE RECHAZAR ────────────────────────
+   *
+   * El catálogo declara qué salidas tienen modos y cuáles son —hoy solo `seguimiento`—, así que la
+   * validación no es una lista de casos escrita acá: se pregunta a la misma tabla que dibuja la
+   * pantalla. Con dos listas, la que quede vieja ofrece un control que da 400.
+   *
+   *   1 · una salida CON modos que no manda ninguno. No hay valor por omisión posible: los dos
+   *       modos hacen cosas disjuntas —uno escribe una tarea nuestra, el otro dispara una secuencia
+   *       ajena— y elegir por quien registra sería decidir si a esa persona la persigue un robot.
+   *   2 · un modo que esa salida no admite.
+   *   3 · la combinación imposible, en sus dos direcciones. `manual` sin fecha no tiene día que
+   *       poner en Mi Día; `automatico` CON fecha pide una fecha que nadie va a usar — y aceptarla
+   *       en silencio sería exactamente la clase de «se guardó y no hizo nada» que este archivo
+   *       persigue en las etiquetas.
+   *
+   * Y una salida SIN modos que mande uno también se rechaza, por el punto 2: `modosDe` devuelve
+   * vacío y `modoDe` no encuentra nada. */
+  const modos = modosDe(salida);
+  let modo: string | null = null;
+  if (modos.length > 0) {
+    if (typeof cuerpo?.modo !== 'string' || cuerpo.modo.trim() === '') {
+      return rechazo('peticion_invalida', MOTIVOS.falta_modo);
+    }
+    const elegido = modoDe(salida, cuerpo.modo.trim());
+    if (!elegido) return rechazo('peticion_invalida', MOTIVOS.modo_invalido);
+    if (elegido.exigeFecha && volverEl === null) {
+      return rechazo('peticion_invalida', MOTIVOS.modo_sin_fecha);
+    }
+    if (!elegido.exigeFecha && volverEl !== null) {
+      return rechazo('peticion_invalida', MOTIVOS.modo_con_fecha);
+    }
+    modo = elegido.modo;
+  } else if (typeof cuerpo?.modo === 'string' && cuerpo.modo.trim() !== '') {
+    return rechazo('peticion_invalida', MOTIVOS.modo_invalido);
+  }
+
   // ── PASO 1 · LA BASE, en una transacción ──────────────────────────────────
   const registrado = await conOrganizacion(contexto.orgEfectiva, async () => {
     // Que el contacto exista EN ESTA ORGANIZACIÓN. La clave foránea compuesta ya lo garantiza,
@@ -161,6 +201,7 @@ export async function POST(
       monto,
       nota,
       volverEl,
+      modo,
       quien: contexto.usuarioId,
     });
     return { ...r, ghlContactId: contacto.ghl_contact_id };
@@ -169,7 +210,7 @@ export async function POST(
   if (!registrado) return rechazo('no_encontrado');
 
   // ── PASO 2 · EL CRM, y su fallo NO invalida el paso 1 ─────────────────────
-  const aviso = await avisarAlCrm(contexto.orgEfectiva, registrado.ghlContactId, salida);
+  const aviso = await avisarAlCrm(contexto.orgEfectiva, registrado.ghlContactId, salida, modo);
 
   return ok(
     {
@@ -206,6 +247,7 @@ async function avisarAlCrm(
   orgId: string,
   ghlContactId: string | null,
   salida: string,
+  modo: string | null,
 ): Promise<AvisoAlCrm> {
   if (!ghlContactId) {
     return {
@@ -217,21 +259,10 @@ async function avisarAlCrm(
     };
   }
 
-  const def = RESULTADOS.find((r) => r.salida === salida);
-  if (!def) {
-    return { avisado: false, etiquetas: [], porque: 'Esa salida no tiene etiqueta en el contrato.' };
-  }
-
-  // ── QUÉ ETIQUETAS SE MANDAN ───────────────────────────────────────────────
-  //
-  // La del resultado, y la que apaga el bot. **El No-show es la única salida que deja el bot
-  // vivo**, porque dispara un flujo de recuperación que necesita al agente trabajando — y
-  // apagárselo ahí sería romper justo el caso que más lo necesita.
-  const candidatas = def.apagaElBot ? [def.etiqueta, BOT_DESACTIVADO_POSTCALL] : [def.etiqueta];
-
-  // EL GUARDIÁN. Ver el encabezado: una etiqueta que no existe se acepta con un 200 y no hace
-  // nada, así que se filtra ANTES de mandarla.
-  const mandables = candidatas.filter((e) => sePuedeMandar(e));
+  /* Las etiquetas las decide `etiquetasDelResultado`, que es pura y vive en el contrato. Estaba
+     acá dentro, y acá no se puede probar: esta función resuelve credenciales primero, así que en una
+     base sin token devuelve la lista vacía antes de llegar a decidir nada. */
+  const mandables = etiquetasDelResultado(salida, modo !== null ? modoDe(salida, modo)?.etiqueta : undefined);
   if (mandables.length === 0) {
     return {
       avisado: false,
@@ -248,7 +279,10 @@ async function avisarAlCrm(
     return { avisado: false, etiquetas: [], porque: TEXTO_DE_FALTA_GHL[acceso.que] };
   }
 
-  const r = await ponerEtiquetas({ token: acceso.token }, ghlContactId, mandables);
+  /* Se copia porque `ponerEtiquetas` pide un arreglo mutable y `etiquetasDelResultado` devuelve
+     uno de solo lectura — que es lo correcto: nadie debería poder agregarle una etiqueta después
+     de que pasó por el filtro de lo que se puede mandar. */
+  const r = await ponerEtiquetas({ token: acceso.token }, ghlContactId, [...mandables]);
   if (r.tipo === 'fallo') {
     const f = r.fallo;
     const porque =
@@ -262,5 +296,7 @@ async function avisarAlCrm(
     return { avisado: false, etiquetas: [], porque };
   }
 
-  return { avisado: true, etiquetas: mandables, porque: null };
+  // Copia, por lo mismo que arriba: la lista que sale del filtro es de solo lectura, y esta
+  // respuesta viaja al cliente como JSON mutable.
+  return { avisado: true, etiquetas: [...mandables], porque: null };
 }

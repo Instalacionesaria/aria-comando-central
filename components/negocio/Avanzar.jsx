@@ -29,7 +29,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
-import { SALIDAS } from '../../lib/negocio/salidas.ts';
+import { SALIDAS, modosDe } from '../../lib/negocio/salidas.ts';
 import Ventana from '../Ventana.jsx';
 
 /** El día de hoy en `YYYY-MM-DD`, para el mínimo del campo de fecha. */
@@ -44,16 +44,38 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
   const [monto, setMonto] = useState('');
   const [nota, setNota] = useState('');
   const [volverEl, setVolverEl] = useState('');
+  /** El modo, para las salidas que los tienen. `''` = todavía no eligió, y el botón lo exige. */
+  const [modo, setModo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
   const def = useMemo(() => SALIDAS.find((s) => s.salida === elegida) ?? null, [elegida]);
+  /** Los modos que admite. Vacío en cinco de las seis salidas. */
+  const modos = useMemo(() => (elegida !== null ? modosDe(elegida) : []), [elegida]);
+  const elModo = useMemo(() => modos.find((m) => m.modo === modo) ?? null, [modos, modo]);
+
+  /* ── LA FECHA APARECE SEGÚN EL MODO, Y ES LA MITAD VISIBLE DE LA REGLA ─────
+   *
+   * Con `manual` hace falta —es el día en que el contacto aparece en Mi Día— y con `automatico`
+   * estorba: la persecución la hace la secuencia del CRM con su propio calendario, así que un día
+   * nuestro no lo usaría nadie. El servidor rechaza esa combinación; esto es para que no haya que
+   * descubrirlo con un rechazo.
+   *
+   * Y para las cinco salidas sin modos la fecha sigue estando: un recordatorio después de un no-show
+   * es útil, y ahí nadie del CRM persigue a nadie. */
+  const pideFecha = modos.length === 0 || elModo?.exigeFecha === true;
 
   /* El monto es obligatorio cuando la salida lo pide, y el botón lo respeta. NO es la defensa: el
      servidor valida lo mismo, porque cualquiera puede llamar al endpoint con una herramienta de
      línea de comandos. Esto es para que no haya que descubrirlo con un rechazo. */
   const puedeRegistrar =
-    def !== null && !enviando && (!def.pideMonto || (monto.trim() !== '' && Number(monto) >= 0));
+    def !== null &&
+    !enviando &&
+    (!def.pideMonto || (monto.trim() !== '' && Number(monto) >= 0)) &&
+    // Un modo sin elegir no tiene valor por omisión posible: los dos hacen cosas disjuntas.
+    (modos.length === 0 || elModo !== null) &&
+    // Y `manual` sin fecha no tiene día que poner en Mi Día.
+    (!pideFecha || modos.length === 0 || volverEl !== '');
 
   const registrar = useCallback(async () => {
     if (!def) return;
@@ -67,7 +89,11 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
         ...(detalle !== '' ? { detalle } : {}),
         ...(def.pideMonto ? { monto: monto.trim() } : {}),
         ...(nota.trim() !== '' ? { nota: nota.trim() } : {}),
-        ...(volverEl !== '' ? { volverEl } : {}),
+        ...(modos.length > 0 ? { modo } : {}),
+        /* La fecha se manda SOLO si el modo la usa. Mandándola con `automatico` el servidor
+           rechaza —y tiene razón—, y eso pasaría si alguien elige un día, cambia a automático y
+           registra: el campo está oculto pero su estado sigue teniendo el valor viejo. */
+        ...(pideFecha && volverEl !== '' ? { volverEl } : {}),
       },
     });
     setEnviando(false);
@@ -95,6 +121,7 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
       crm: r.datos.crm,
       nota: r.datos.nota,
       tarea: r.datos.tarea,
+      modo,
     });
     alCerrar?.();
   }, [def, contactoId, detalle, monto, nota, volverEl, alRegistrar, alCerrar]);
@@ -209,6 +236,34 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
         </div>
       </div>
 
+      {/* ── EL MODO, Y SOLO PARA LA SALIDA QUE LO TIENE ─────────────────────
+          Se dibuja desde el catálogo, no desde una lista escrita acá: es la misma tabla que valida
+          el servidor, así que esta pantalla no puede ofrecer un modo que dé 400.
+
+          Son botones y no un desplegable a propósito: las dos opciones hacen cosas disjuntas y cada
+          una necesita su renglon de explicación. Un `select` esconde el detalle justo cuando hay que
+          leerlo, y la diferencia —quién persigue a esta persona— no es obvia por el nombre. */}
+      {modos.length > 0 ? (
+        <div className="fd-campo">
+          <label>¿Quién lo persigue?</label>
+          <div className="av-modos">
+            {modos.map((m) => (
+              <button
+                key={m.modo}
+                type="button"
+                className={`av-modo${modo === m.modo ? ' on' : ''}`}
+                aria-pressed={modo === m.modo}
+                onClick={() => setModo(m.modo)}
+              >
+                <b>{m.nombre}</b>
+                <span>{m.detalle}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {pideFecha ? (
       <div className="fd-campo">
         <label htmlFor="av-volver">Volver el</label>
         <input
@@ -219,9 +274,12 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
           onChange={(e) => setVolverEl(e.target.value)}
         />
         <div className="aj-ayuda">
-          Crea una tarea para ese día en Mi Día. Opcional — dejalo vacío si no hay que volver.
+          {modos.length > 0
+            ? 'El día que este contacto te aparece en Mi Día.'
+            : 'Crea una tarea para ese día en Mi Día. Opcional — dejalo vacío si no hay que volver.'}
         </div>
       </div>
+      ) : null}
 
       {aviso ? (
         <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">

@@ -46,7 +46,8 @@ import {
 } from '../apoyo/closer.ts';
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { SALIDAS } from '../../lib/negocio/salidas.ts';
+import { SALIDAS, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
+import { etiquetasDelResultado } from '../../lib/ghl/contrato.ts';
 import { ETAPA_DE_LA_SALIDA } from '../../lib/negocio/etapas.ts';
 import { POST as avanzar } from '../../app/api/contactos/[id]/avanzar/route.ts';
 import {
@@ -153,6 +154,21 @@ test('cada salida del catálogo deja al contacto en la etapa que dice `ETAPA_DE_
     const k = await unContacto(esc, { nombre: `Avanzar etapa ${s.salida}` });
     const cuerpo: Record<string, unknown> = { salida: s.salida };
     if (s.pideMonto) cuerpo.monto = 1000;
+
+    /* ── EL MODO TAMBIÉN SALE DEL CATÁLOGO, Y POR EL MISMO MOTIVO ─────────────
+     *
+     * Escribir `if (s.salida === 'seguimiento') cuerpo.modo = 'manual'` habría vuelto a partir la
+     * lista en dos: el día que otra salida gane modos, esta prueba la mandaría sin modo y el 400 se
+     * leería como «la etapa no se movió», que es un síntoma que no tiene nada que ver.
+     *
+     * Se elige el primero que NO exija fecha, para no tener que inventar un día; si todos la
+     * exigen, se manda. Así la barrida sigue siendo total sin saber nada de quién tiene modos. */
+    const modos = modosDe(s.salida);
+    if (modos.length > 0) {
+      const m = modos.find((x) => !x.exigeFecha) ?? modos[0]!;
+      cuerpo.modo = m.modo;
+      if (m.exigeFecha) cuerpo.volverEl = MANANA;
+    }
 
     const r = await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, { metodo: 'POST', cuerpo }),
@@ -329,7 +345,9 @@ test('una fecha para volver imposible o pasada se rechaza, y no deja tarea ni re
     const r = await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
         metodo: 'POST',
-        cuerpo: { salida: 'seguimiento', volverEl: dia },
+        // `manual` es el modo que USA la fecha. Con `automatico` el servidor la rechaza, y
+        // tiene razon: la secuencia del CRM pone su propio calendario.
+        cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: dia },
       }),
       ctxDe(k.id),
     );
@@ -359,7 +377,7 @@ test('el día elegido llega a `tareas.vence_el` TAL CUAL, sin pasar por ninguna 
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'seguimiento', volverEl: MANANA, nota: 'volver mañana' },
+      cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: MANANA, nota: 'volver mañana' },
     }),
     ctxDe(k.id),
   );
@@ -843,7 +861,13 @@ test('la nota de AVANZAR se lee por la pestaña Notas: una tabla, un camino', as
   await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'seguimiento', nota: 'Dijo que lo consulta con la socia' },
+      // Sin fecha, asi que el modo es `automatico`: lo persigue la secuencia del CRM. `manual`
+      // sin dia se rechaza, porque no habria dia que poner en Mi Dia.
+      cuerpo: {
+        salida: 'seguimiento',
+        modo: 'automatico',
+        nota: 'Dijo que lo consulta con la socia',
+      },
     }),
     ctxDe(k.id),
   );
@@ -941,4 +965,189 @@ test('ADR-0306 · sin `origin`, Avanzar rechaza y no escribe: es la operación q
   const nada = await loEscrito(esc.org, k.id);
   assert.deepEqual(nada.resultados, [], 'una petición de otro sitio registró la venta igual');
   assert.equal(nada.etapa, null);
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS DOS MODOS DE UN SEGUIMIENTO — y antes no existía ninguno
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('el modo AUTOMÁTICO manda la etiqueta al CRM y NO escribe ninguna tarea', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESTO NO EXISTÍA, Y EL ÍCONO ⏱ DEPENDÍA DE UNA ETIQUETA QUE NADIE ESCRIBÍA
+  //
+  // `Avanzar` no tenía ningún selector de modo: el escritor cableaba `modo: 'manual'`. Y
+  // `seguimiento_recupero` —la etiqueta que dispara la secuencia de correos de la subcuenta y que
+  // enciende el ícono ⏱ de la fila— figuraba en el contrato como `confirmado` y **solo se leía**.
+  // Cero escritores en todo el repositorio.
+  //
+  // O sea que el ícono se encendía por una etiqueta que solo podía llegar de afuera, y el modo que
+  // se pidió —*«enviar la etiqueta correspondiente a GHL con ese contacto pues ahí se activa una
+  // secuencia de correos»*— no se podía elegir.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const k = await unContacto(esc, { nombre: 'Seguimiento automatico' });
+
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'seguimiento', modo: 'automatico', detalle: 'Muy interesado' },
+    }),
+    ctxDe(k.id),
+  );
+  const { estado, cuerpo } = await leerRespuesta<RespuestaAvanzar>(r);
+  assert.equal(estado, 201, JSON.stringify(cuerpo));
+
+  // 1 · NO se escribió tarea. Es la mitad que hace que no aparezca en Mi Día.
+  assert.equal(
+    cuerpo.tarea,
+    false,
+    'el modo automático escribió una tarea: el contacto va a aparecer en Mi Día como algo que una ' +
+      'persona tiene que hacer, cuando lo persigue la secuencia del CRM',
+  );
+  const tareas = await esc.admin.query(
+    'select count(*)::int as n from negocio.tareas where contacto_id = $1',
+    [k.id],
+  );
+  assert.equal(tareas.rows[0]?.n, 0, 'quedó una fila en `negocio.tareas`');
+
+  /* 2 · Y la etiqueta del modo está entre las que le corresponden a este resultado.
+   *
+   * Se pregunta a `etiquetasDelResultado` y NO a `cuerpo.crm.etiquetas`, y el motivo es que en esta
+   * base no hay credenciales de GoHighLevel: `avisarAlCrm` corta al resolverlas y devuelve la lista
+   * vacía **antes de llegar a decidir nada**. Afirmar sobre esa lista vacía sería una prueba que
+   * pasa cuando la decisión está mal.
+   *
+   * Por eso la decisión vive en una función pura del contrato, que es lo que se interroga acá. */
+  /* La etiqueta se LEE DEL CATÁLOGO, no se repite acá. Escrita a mano, una mutación del catálogo
+     —ponerle al modo manual la etiqueta de la serie automática— sobrevivía: la prueba seguía
+     preguntando por el literal correcto y pasaba. Lo que se quiere probar es el catálogo. */
+  const elAutomatico = modoDe('seguimiento', 'automatico');
+  assert.equal(
+    elAutomatico?.etiqueta,
+    'seguimiento_recupero',
+    'el modo automático cambió de etiqueta: es la que dispara la secuencia de correos de la subcuenta',
+  );
+  const delAutomatico = etiquetasDelResultado('seguimiento', elAutomatico?.etiqueta);
+  assert.ok(
+    delAutomatico.includes('seguimiento_recupero'),
+    `las etiquetas de este resultado son ${JSON.stringify(delAutomatico)}: falta la que dispara la ` +
+      'secuencia, así que el CRM no persigue a nadie y la aplicación tampoco',
+  );
+  assert.ok(delAutomatico.includes('seguimiento'), 'falta la etiqueta de la salida');
+  // Y la ruta dice por qué no avisó, en vez de callarse: no hay token en esta base.
+  assert.equal(cuerpo.crm?.avisado, false);
+  assert.ok((cuerpo.crm?.porque ?? '').length > 0, 'no avisó y no dice por qué');
+});
+
+test('el modo MANUAL escribe la tarea y le dice al CRM que NO persiga', async () => {
+  // La otra mitad, y la etiqueta importa tanto como la tarea: `seguimiento_manual` significa
+  // *«ninguna serie: lo retoma un humano»* según el contrato. Tampoco la escribía nadie, así que un
+  // seguimiento que una persona se asignaba dejaba al CRM libre de perseguir a ese contacto igual.
+  const k = await unContacto(esc, { nombre: 'Seguimiento manual' });
+
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: MANANA, detalle: 'Dudando' },
+    }),
+    ctxDe(k.id),
+  );
+  const { estado, cuerpo } = await leerRespuesta<RespuestaAvanzar>(r);
+  assert.equal(estado, 201, JSON.stringify(cuerpo));
+
+  assert.equal(cuerpo.tarea, true, 'el modo manual no escribió la tarea');
+  const tareas = await esc.admin.query<{ modo: string; dia: string }>(
+    `select modo, to_char(vence_el, 'YYYY-MM-DD') as dia
+       from negocio.tareas where contacto_id = $1`,
+    [k.id],
+  );
+  assert.equal(tareas.rows.length, 1);
+  assert.equal(tareas.rows[0]?.modo, 'manual');
+  assert.equal(tareas.rows[0]?.dia, MANANA, 'el día se corrió al guardarlo');
+
+  // Igual que arriba: la decisión se interroga en la función pura, y la etiqueta sale del catálogo.
+  const elManual = modoDe('seguimiento', 'manual');
+  assert.equal(
+    elManual?.etiqueta,
+    'seguimiento_manual',
+    'el modo manual cambió de etiqueta: la suya le dice al CRM que NO persiga',
+  );
+  assert.notEqual(
+    elManual?.etiqueta,
+    modoDe('seguimiento', 'automatico')?.etiqueta,
+    'los dos modos mandan la MISMA etiqueta, y son opuestos: uno pide que el CRM persiga y el otro ' +
+      'que no. Con la misma, elegir «Lo retomo yo» le pediría al CRM que persiga igual',
+  );
+  const delManual = etiquetasDelResultado('seguimiento', elManual?.etiqueta);
+  assert.ok(
+    delManual.includes('seguimiento_manual'),
+    `las etiquetas de este resultado son ${JSON.stringify(delManual)}: sin \`seguimiento_manual\` el ` +
+      'CRM queda libre de perseguir a alguien que una persona ya se asignó',
+  );
+  // Y los dos modos NO mandan lo mismo, que es el punto de que haya dos.
+  assert.ok(
+    !delManual.includes('seguimiento_recupero'),
+    'el modo manual manda la etiqueta de la serie automática: le pide al CRM que persiga a alguien ' +
+      'que una persona se acaba de asignar',
+  );
+});
+
+test('las tres combinaciones imposibles se RECHAZAN, y ninguna se acepta en silencio', async () => {
+  // Aceptar y no hacer nada es la clase de defecto que este endpoint persigue en las etiquetas
+  // —*«escribir una etiqueta que no existe se responde con éxito y no hace nada»*— y valdría igual
+  // acá: un cuerpo que pide algo imposible tiene que enterarse.
+  const k = await unContacto(esc, { nombre: 'Seguimiento imposible' });
+  const llamar = (cuerpo: Record<string, unknown>) =>
+    avanzar(
+      pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, { metodo: 'POST', cuerpo }),
+      ctxDe(k.id),
+    );
+
+  // 1 · Una salida CON modos que no manda ninguno. No hay valor por omisión posible: los dos hacen
+  //     cosas disjuntas, y elegir por quien registra sería decidir si a esa persona la persigue un
+  //     robot.
+  const sinModo = await leerRespuesta(await llamar({ salida: 'seguimiento' }));
+  assert.equal(sinModo.estado, 400, 'un seguimiento sin modo se aceptó');
+
+  // 2 · Un modo que no existe.
+  const inventado = await leerRespuesta(await llamar({ salida: 'seguimiento', modo: 'telepatia' }));
+  assert.equal(inventado.estado, 400, 'un modo inventado se aceptó');
+
+  // 3 · La combinación imposible, en las DOS direcciones.
+  const manualSinDia = await leerRespuesta(await llamar({ salida: 'seguimiento', modo: 'manual' }));
+  assert.equal(manualSinDia.estado, 400, '`manual` sin fecha se aceptó: no hay día que poner en Mi Día');
+
+  const autoConDia = await leerRespuesta(
+    await llamar({ salida: 'seguimiento', modo: 'automatico', volverEl: MANANA }),
+  );
+  assert.equal(
+    autoConDia.estado,
+    400,
+    '`automatico` CON fecha se aceptó: se guardaría un día que nadie va a usar, que es exactamente ' +
+      'el «se guardó y no hizo nada» que este endpoint evita en las etiquetas',
+  );
+
+  // Y NADA quedó escrito por ninguno de los cuatro rechazos.
+  const quedo = await esc.admin.query(
+    `select (select count(*) from negocio.resultados where contacto_id = $1)::int as r,
+            (select count(*) from negocio.tareas     where contacto_id = $1)::int as t`,
+    [k.id],
+  );
+  assert.deepEqual({ r: quedo.rows[0]?.r, t: quedo.rows[0]?.t }, { r: 0, t: 0 });
+});
+
+test('una salida SIN modos que manda uno también se rechaza', async () => {
+  // La simetría del punto 2, y no es lo mismo que ignorarlo: un cliente que manda un modo cree que
+  // eligió algo. Cinco de las seis salidas no tienen modos, y aceptar un campo que no hace nada es
+  // dejar que alguien crea que configuró algo.
+  const k = await unContacto(esc, { nombre: 'No-show con modo' });
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'no_show', modo: 'automatico' },
+    }),
+    ctxDe(k.id),
+  );
+  const { estado } = await leerRespuesta(r);
+  assert.equal(estado, 400, 'un no-show con modo se aceptó, y el modo no habría hecho nada');
 });

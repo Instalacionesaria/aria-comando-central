@@ -29,6 +29,7 @@
 import { datos } from '../datos/contexto.ts';
 import type { SalidaResultado, Territorio } from '../datos/esquema.ts';
 import { ETAPA_DE_LA_SALIDA } from './etapas.ts';
+import { modoDe } from './salidas.ts';
 import type { SalidaDelCloser } from './salidas.ts';
 
 export interface LoQueSeRegistra {
@@ -58,6 +59,14 @@ export interface LoQueSeRegistra {
    * la frontera la calcula la consulta con la zona"*.
    */
   volverEl: string | null;
+  /**
+   * El modo, cuando la salida los tiene. Hoy solo `seguimiento`: `'manual'` o `'automatico'`.
+   *
+   * `null` = la salida no admite modos, que es el caso de cinco de las seis. La validación de que
+   * el modo exista para esa salida la hace la ruta contra el catálogo, no este escritor: acuá
+   * llega ya comprobado, igual que la salida.
+   */
+  modo: string | null;
   quien: string;
 }
 
@@ -174,8 +183,19 @@ export async function registrarResultado(
     .where('completada_el', 'is', null)
     .executeTakeFirst();
 
+  /* ── QUIÉN PERSIGUE A ESTE CONTACTO, Y POR ESO NO SIEMPRE HAY TAREA ────────
+   *
+   * El modo `automatico` de un seguimiento significa que **lo persigue la secuencia de correos del
+   * CRM**. Escribir también una fila en `negocio.tareas` pondría al contacto en Mi Día como algo que
+   * una persona tiene que hacer, cuando no hay nada que hacer: es el defecto que se pidió evitar.
+   *
+   * Para las otras cinco salidas no hay modos, y una fecha sigue creando su recordatorio —es útil
+   * después de un no-show, por ejemplo—. Así que la condición no es «es seguimiento» sino «alguien
+   * de este lado lo va a retomar», que es lo que `exigeFecha` declara en el catálogo. */
+  const laPersigueElCrm = lo.modo !== null && modoDe(lo.salida, lo.modo)?.exigeFecha === false;
+
   let tarea = false;
-  if (lo.volverEl !== null) {
+  if (lo.volverEl !== null && !laPersigueElCrm) {
     await datos()
       .insertInto('tareas')
       .values({
@@ -183,9 +203,11 @@ export async function registrarResultado(
         vence_el: lo.volverEl,
         contacto_id: contactoId,
         situacion: 'seguimiento',
-        // `manual` y no `automatico`: la creó una persona eligiendo una fecha. De esa distinción
-        // depende el contador de Mi Día, que *"cuenta lo que necesita una persona, no las series
-        // automáticas"*.
+        /* `manual` SIEMPRE, y ahora es una consecuencia y no un cableado.
+           Antes esta línea decía `modo: 'manual'` con un comentario que afirmaba que de esa
+           distinción dependía el contador de Mi Día — y era falso por dos lados: no existía el modo
+           automático, y el contador nunca leía esta columna.
+           Hoy es verdad por construcción: si llegamos acá, es porque nadie del CRM lo persigue. */
         modo: 'manual',
         nota: lo.nota,
         creada_por: lo.quien,

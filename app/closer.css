@@ -1251,3 +1251,59 @@
   background: rgb(var(--c-warn) / .12);
   color: var(--warn);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   15 · LOS DOS MODOS DE UN SEGUIMIENTO
+   ═════════════════════════════════════════════════════════════════════════════
+   Dos botones y no un desplegable, y la decisión es del componente: las dos opciones hacen cosas
+   disjuntas —una escribe un recordatorio nuestro, la otra dispara una secuencia del CRM— y cada una
+   necesita su renglón de explicación. Un `select` esconde el detalle justo cuando hay que leerlo.
+
+   Se apilan en una columna y no en dos: los textos tienen largos distintos, y en dos columnas el
+   más corto queda con un hueco que se lee como si faltara algo. */
+.av-modos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.av-modo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--txt-dim);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.av-modo b {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.av-modo span {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.av-modo:hover {
+  border-color: var(--line-strong);
+}
+
+/* El elegido: canto de acento y fondo teñido. Y `aria-pressed` en el JSX lo dice para quien no ve
+   el color — el estado no puede vivir solo en el borde. */
+.av-modo.on {
+  color: var(--txt);
+  background: rgb(var(--c-acento) / 0.08);
+  border-color: rgb(var(--c-acento) / 0.45);
+}
+
+.av-modo.on b {
+  color: var(--accent);
+}
