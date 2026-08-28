@@ -31,9 +31,10 @@
  * una persona— y no en mirarlos.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import { estaALaVista } from '../../lib/vista.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import Pipeline from '../closer/Pipeline.jsx';
 import Agenda from '../closer/Agenda.jsx';
@@ -63,7 +64,12 @@ export default function CloserView({ activa }) {
   const [datos, setDatos] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
-  const yaPedido = useRef(false);
+
+  /* ¿Es ÉSTA la pantalla que se está mostrando? De esto cuelga todo el gasto de la sección — ver el
+     efecto de la primera carga. `activa` NO sirve: se calcula una sola vez al arrancar y el cambio
+     de pantalla es puro DOM, así que quien empieza en Ajustes tendría `activa: false` para siempre
+     y quien empieza en el Closer, `true` para siempre. */
+  const aLaVista = estaALaVista('closer');
 
   /* ── UNA RECARGA NO ES UNA PRIMERA CARGA, Y CONFUNDIRLAS CIERRA LA FICHA ────
    *
@@ -104,11 +110,33 @@ export default function CloserView({ activa }) {
     setSituacion('listo');
   }, []);
 
+  /* ════════════════════════════════════════════════════════════════════════
+     NADA DE ESTA PANTALLA CUESTA SI NADIE LA ESTÁ MIRANDO
+
+     `CommandCenter` monta las diez vistas de una sola vez, y el cambio de pantalla es puro DOM. Así
+     que este componente está montado desde que la aplicación arranca, para todo el mundo que tenga
+     la sección Closer en su menú — incluidos los administradores, que entran a Ajustes.
+
+     Lo que eso costaba, medido: la primera carga MÁS **360 llamadas al CRM por hora y por empresa**,
+     con el Closer sin abrir ni una vez. Ocho horas son 2.880 llamadas por empresa por día que no
+     mira nadie, y con M empresas se multiplica.
+
+     Ahora la primera carga y el reloj cuelgan los dos de `estaALaVista`. Para quien no abre el
+     Closer el gasto es **cero**: ni la llamada inicial.
+
+     ── Y AL ENTRAR SE TRAE UNA VEZ, QUE NO ES LO MISMO QUE ANTES ────────────
+
+     El reloj **no dispara al registrarse** —está documentado en `lib/reloj.ts`— así que sin este
+     efecto, abrir el Closer mostraría lo de hace diez segundos en el mejor caso y lo de hace una
+     hora en el peor, hasta el próximo tic. Con él, entrar cuesta un ciclo, que es lo que costaba
+     antes de todos modos.
+
+     Y se dispara CADA VEZ que se vuelve a entrar, no solo la primera: quien sale a Ajustes y vuelve
+     a los veinte minutos tiene que ver su día de ahora, no el de cuando se fue. */
   useEffect(() => {
-    if (yaPedido.current) return;
-    yaPedido.current = true;
-    void cargar();
-  }, [cargar]);
+    if (!aLaVista) return;
+    void tic();
+  }, [aLaVista, tic]);
 
   /* ── EL RELOJ DE 10 SEGUNDOS, QUE ESTUVO BLOQUEADO A PROPÓSITO ──────────────
    *
@@ -141,8 +169,12 @@ export default function CloserView({ activa }) {
   }, [cargar]);
 
   /* Una sola clave para toda la aplicación: si mañana el Setter tiene su propio tic, registrarlo
-     con esta misma clave lo REEMPLAZA en vez de duplicar el tráfico. */
-  usarReloj('operacion:tic', tic, CADENCIA.operacion);
+     con esta misma clave lo REEMPLAZA en vez de duplicar el tráfico.
+
+     Y `null` cuando el Closer no está a la vista, que es la palanca más grande y la más barata de
+     todo el consumo: `usarReloj` con clave nula **no registra nada**, así que no hay intervalo, no
+     hay pedido a la ingesta y no hay llamada al CRM. Ver el efecto de arriba. */
+  usarReloj(aLaVista ? 'operacion:tic' : null, tic, CADENCIA.operacion);
 
   function cuerpo() {
     if (situacion === 'cargando') {

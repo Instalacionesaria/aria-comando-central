@@ -179,9 +179,19 @@ export async function contactosPorEtiqueta(
 export async function todosLosContactosPorEtiqueta(
   acceso: { token: string; locationId: string },
   etiqueta: string,
-): Promise<ResultadoDeGhl<{ contactos: ContactoDeGhl[]; truncado: boolean }>> {
+): Promise<ResultadoDeGhl<{ contactos: ContactoDeGhl[]; truncado: boolean; paginas: number }>> {
   const juntos: ContactoDeGhl[] = [];
 
+  /* ── `paginas` SE INFORMA, Y ES UNA LLAMADA POR PÁGINA ──────────────────
+   *
+   * Se agregó porque esta función pasó a correr desde el CRON, y el reporte del barrido cuenta las
+   * llamadas por empresa y por tarea. Sin este número, la tarea de contactos tendría que informar
+   * `llamadas: null` —«no se midió»— y el reporte perdería justo la columna que sirve para saber si
+   * el cron se está comiendo el presupuesto del proveedor.
+   *
+   * Contarlo acá y no en quien llama es lo mismo que ya se hace en la ingesta: el que hace la llamada
+   * es el que sabe cuántas hizo. Deducirlo de la cantidad de contactos —`ceil(n / 100)`— daría cero
+   * para una etiqueta vacía, y una etiqueta vacía cuesta una llamada igual. */
   for (let pagina = 1; pagina <= TOPE_DE_PAGINAS; pagina += 1) {
     const r = await contactosPorEtiqueta(acceso, etiqueta, { pagina });
     if (r.tipo === 'fallo') return r;
@@ -191,11 +201,11 @@ export async function todosLosContactosPorEtiqueta(
     // Una página incompleta significa que no hay más. Es el corte fiable: `total` puede no
     // venir, y contarlo contra `total` fallaría justo cuando falta ese campo.
     if (r.datos.contactos.length < POR_PAGINA) {
-      return { tipo: 'datos', datos: { contactos: juntos, truncado: false } };
+      return { tipo: 'datos', datos: { contactos: juntos, truncado: false, paginas: pagina } };
     }
   }
 
-  return { tipo: 'datos', datos: { contactos: juntos, truncado: true } };
+  return { tipo: 'datos', datos: { contactos: juntos, truncado: true, paginas: TOPE_DE_PAGINAS } };
 }
 
 /**

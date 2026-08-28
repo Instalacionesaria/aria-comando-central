@@ -111,13 +111,54 @@ test('el umbral de atraso es al menos dos cadencias más una hora', () => {
   }
 });
 
-test('toda tarea nombrada en `HORARIOS` es una de las tres que el barrido sabe hacer', () => {
-  const conocidas: Tarea[] = ['sonda', 'mensajes', 'citas'];
+test('toda tarea nombrada en `HORARIOS` es una de las cuatro que el barrido sabe hacer', () => {
+  const conocidas: Tarea[] = ['sonda', 'contactos', 'mensajes', 'citas'];
   for (const [clave, v] of Object.entries(HORARIOS)) {
     for (const t of v.tareas) {
       assert.ok(conocidas.includes(t), `«${clave}» nombra la tarea «${t}», que no existe`);
     }
   }
+});
+
+test('`contactos` corre ANTES de `mensajes`, y eso no es una preferencia de orden', () => {
+  // ══════════════════════════════════════════════════════════════════════
+  // LO QUE SE PIERDE CON EL ORDEN AL REVÉS, Y ES PERMANENTE
+  //
+  // La ingesta de mensajes descarta toda conversación cuyo contacto no esté en `negocio.contactos`
+  // —para ella es ajena— y **avanza la marca de agua sobre ella**. Está en `lib/negocio/ingesta.ts`
+  // con su comentario: *«no es nuestra: ya está terminada, no hay nada que traer. La marca avanza
+  // igual»*.
+  //
+  // Entonces, con `mensajes` primero: llega un contacto nuevo con tres mensajes → la ingesta pasa, no
+  // lo conoce, corre la marca por encima → después `contactos` lo trae → **sus tres mensajes quedaron
+  // por debajo de la marca y no se recuperan nunca**, salvo retrocediéndola a mano. Y el síntoma es un
+  // contacto con el chat vacío, que se lee como «todavía no escribió».
+  //
+  // El `check` de la base no puede expresar esto —una restricción no ordena tareas— y el bucle de
+  // `barrerTodo` recorre la lista en orden, así que la garantía es esta prueba.
+  // ══════════════════════════════════════════════════════════════════════
+  const listas: readonly Tarea[][] = [
+    ...Object.values(HORARIOS).map((h) => [...h.tareas]),
+    // Y el respaldo del horario desconocido, que es otra lista y se olvida fácil.
+    [...tareasDelHorario('un horario que no existe').tareas],
+  ];
+
+  for (const tareas of listas) {
+    const iContactos = tareas.indexOf('contactos');
+    const iMensajes = tareas.indexOf('mensajes');
+    if (iContactos === -1 || iMensajes === -1) continue;
+    assert.ok(
+      iContactos < iMensajes,
+      `«${tareas.join(', ')}» corre la ingesta antes de releer las etiquetas: los mensajes de un ` +
+        'contacto nuevo quedan por debajo de la marca de agua y no se recuperan',
+    );
+  }
+
+  // Y las dos están en la lista principal: si alguien saca `contactos`, el bucle de arriba se salta
+  // solo con el `continue` y esta prueba quedaría vacía.
+  const principal = Object.values(HORARIOS)[0]!.tareas as readonly Tarea[];
+  assert.ok(principal.includes('contactos'), 'se sacó la tarea que trae los contactos nuevos');
+  assert.ok(principal.includes('mensajes'), 'se sacó la ingesta de mensajes');
 });
 
 // ─── 3 · Un horario desconocido corre TODO, nunca nada ──────────────────────
@@ -129,7 +170,7 @@ test('un horario ausente o desconocido corre TODAS las tareas y lo dice', () => 
   for (const raro of [null, '', '0 4 * * *', 'cualquier cosa']) {
     const r = tareasDelHorario(raro);
     assert.equal(r.desconocido, true, `«${raro}» tendría que ser desconocido`);
-    assert.deepEqual([...r.tareas].sort(), ['citas', 'mensajes', 'sonda']);
+    assert.deepEqual([...r.tareas].sort(), ['citas', 'contactos', 'mensajes', 'sonda']);
   }
 
   // Y un horario conocido corre exactamente lo suyo.

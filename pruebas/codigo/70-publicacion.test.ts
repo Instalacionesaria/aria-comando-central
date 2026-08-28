@@ -127,16 +127,39 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
   // Se busca la FORMA, porque el nombre puede ser cualquiera: una estructura mutable declarada en el
   // nivel superior de un módulo del servidor.
   const sospechosos: string[] = [];
+  const delNavegador: string[] = [];
   for (const a of archivosFuente(['app', 'lib'])) {
     // `lib/datos/capa.ts` tiene el agrupador de clientes por ROL de base, que no es un caché de
-    // datos y ya está justificado en su propio comentario. Es la única excepción, y está acá con
-    // nombre.
+    // datos y ya está justificado en su propio comentario. Es la única excepción POR NOMBRE, y está
+    // acá con nombre.
     if (a.ruta === 'lib/datos/capa.ts') continue;
+
+    /* ── Y LA EXENCIÓN POR DIRECTIVA, QUE NO ES UNA LISTA ───────────────────
+     *
+     * La regla es sobre módulos del SERVIDOR, y el motivo es específico de ahí: en funciones sin
+     * servidor las instancias se reutilizan entre peticiones de organizaciones distintas. Un módulo
+     * que declara `'use client'` no atiende peticiones — su estado es de UNA pestaña de UNA persona,
+     * y ahí un `Map` en el nivel superior es la forma correcta de tener un solo reloj por clave.
+     *
+     * Se exime por la DIRECTIVA y no por una lista de rutas: una lista crece, y cada línea que se le
+     * agrega es una decisión que se toma en la prueba en vez de en el código. La directiva la escribe
+     * el archivo sobre sí mismo, y `next build` la hace verdad — importar un módulo `'use client'`
+     * desde el servidor es un error de construcción, no una convención. */
+    if (/^\s*['"]use client['"]/.test(a.limpio)) {
+      delNavegador.push(a.ruta);
+      continue;
+    }
+
     const nivelSuperior = a.limpio
       .split('\n')
       .filter((l) => /^(const|let|var)\s+\w+/.test(l))
       .join('\n');
-    if (/new\s+(Map|WeakMap|Set|WeakSet)\s*\(/.test(nivelSuperior)) {
+    /* `Map<string, Tarea>(` y no solo `Map(`: los parámetros de tipo van ENTRE el nombre y el
+       paréntesis, así que el patrón de antes —`new\s+Map\s*\(`— no veía ninguna estructura genérica.
+       `lib/reloj.ts` tiene `const tareas = new Map<string, Tarea>()` en el nivel superior y pasaba
+       por ese hueco: está bien que pase —es del navegador— pero pasaba por el motivo equivocado, y
+       un módulo del servidor con `new Map<string, Token>()` habría pasado igual. */
+    if (/new\s+(Map|WeakMap|Set|WeakSet)\s*(<[^;=]*>)?\s*\(/.test(nivelSuperior)) {
       sospechosos.push(a.ruta);
     }
   }
@@ -145,6 +168,15 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
     [],
     'una estructura mutable en el nivel superior de un módulo del servidor se comparte entre ' +
       'peticiones de organizaciones distintas',
+  );
+
+  /* Y la exención está VIVA, igual que la de `capa.ts` de más abajo. Sin esta línea, el día que la
+     detección de la directiva se rompa —un cambio en `sinComentarios`, una directiva movida de
+     línea— el barrido eximiría CERO archivos o TODOS, y en los dos casos seguiría verde. */
+  assert.ok(
+    delNavegador.includes('lib/reloj.ts'),
+    'la exención por `use client` dejó de reconocer los módulos del navegador, así que este barrido ' +
+      'está mirando otra cosa que la que dice',
   );
 
   // Y la excepción está viva: si `capa.ts` dejara de tener su agrupador, la exención de arriba

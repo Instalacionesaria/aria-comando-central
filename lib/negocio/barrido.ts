@@ -33,11 +33,15 @@ import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
 import type { AccesoAGhl } from '../credenciales/resolver.ts';
 import { ingerirMensajes } from './ingesta.ts';
+import { sincronizarContactos } from './sincronizar.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 
-/** Las tareas que el cron sabe hacer. Es la misma lista que el `check` de la migración 014. */
-export type Tarea = 'sonda' | 'mensajes' | 'citas';
+/**
+ * Las tareas que el cron sabe hacer. Es la misma lista que el `check` de `tareas_programadas`,
+ * ampliada en la migración **021** con `contactos`.
+ */
+export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas';
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -85,7 +89,25 @@ export const HORARIOS = {
   //   '*/10 * * * *': { tareas: ['mensajes'], cadenciaMinutos: 10, umbralMinutos: 80 },
   //   '3 * * * *':    { tareas: ['citas', 'sonda'], cadenciaMinutos: 60, umbralMinutos: 180 },
   '0 12 * * *': {
-    tareas: ['sonda', 'mensajes', 'citas'],
+    /* ═══════════════════════════════════════════════════════════════════
+       EL ORDEN DE ESTA LISTA ES EL ORDEN DE EJECUCIÓN, Y `contactos` VA ANTES DE `mensajes`
+
+       No es una preferencia. La ingesta de mensajes descarta —y **avanza la marca de agua sobre**—
+       toda conversación cuyo contacto no esté en `negocio.contactos`, porque para ella es ajena.
+       Está en `lib/negocio/ingesta.ts`, con el comentario que lo dice: *«no es nuestra: ya está
+       terminada, no hay nada que traer. La marca avanza igual»*.
+
+       Entonces, con `mensajes` primero: llega un contacto nuevo con tres mensajes → la ingesta pasa,
+       no lo conoce, corre la marca por encima → después `contactos` lo trae → **sus tres mensajes
+       quedaron por debajo de la marca y no se recuperan nunca**. Y el síntoma es un contacto con el
+       chat vacío, que se lee como «todavía no escribió».
+
+       Con `contactos` primero, en la MISMA corrida, el contacto ya existe cuando la ingesta pasa.
+
+       La base no puede expresar esto —un `check` no ordena tareas— así que lo garantiza el bucle de
+       `barrerTodo`, que recorre esta lista en orden, y lo fija una prueba de
+       `pruebas/codigo/99-cron.test.ts`. ═════════════════════════════════════════════════ */
+    tareas: ['sonda', 'contactos', 'mensajes', 'citas'],
     cadenciaMinutos: 1440,
     umbralMinutos: 2940,
   },
@@ -155,7 +177,9 @@ export function tareasDelHorario(horario: string | null): {
   desconocido: boolean;
 } {
   const entrada = horario === null ? undefined : (HORARIOS as Record<string, { tareas: readonly Tarea[] }>)[horario];
-  if (!entrada) return { tareas: ['sonda', 'mensajes', 'citas'], desconocido: true };
+  // El respaldo lleva las cuatro y en el MISMO orden: un horario desconocido corre todo, y correr
+  // todo mal ordenado perdería mensajes igual que el orden equivocado de arriba.
+  if (!entrada) return { tareas: ['sonda', 'contactos', 'mensajes', 'citas'], desconocido: true };
   return { tareas: entrada.tareas, desconocido: false };
 }
 
@@ -246,9 +270,11 @@ export async function barrerTodo(
       // menciona, así que la lista queda corta y se ve completa.
       try {
         const r =
-          tarea === 'mensajes'
-            ? await ingerirMensajes(org.id, acceso)
-            : await barrerCitas(org.id, acceso);
+          tarea === 'contactos'
+            ? await releerContactos(org.id, acceso)
+            : tarea === 'mensajes'
+              ? await ingerirMensajes(org.id, acceso)
+              : await barrerCitas(org.id, acceso);
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -300,6 +326,40 @@ export async function barrerTodo(
     // Los que DE VERDAD corrieron. Ver el comentario del campo.
     corrieron: renglones.filter((r) => r.estado === 'corrio').length,
   };
+}
+
+/**
+ * Releer las etiquetas de los contactos, con la forma que espera el bucle de arriba.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ NO PASA POR `conElPulso`, A DIFERENCIA DE LAS OTRAS DOS
+ *
+ * `ingerirMensajes` y `barrerCitas` lo usan porque las dispara **el reloj del navegador cada diez
+ * segundos**, y sin candado N pestañas son N veces el tráfico contra el proveedor.
+ *
+ * Esta tarea no tiene reloj: la disparan el cron —una vez por día— y un botón de la pestaña Setter,
+ * que es una acción explícita de una persona. Meterla en el candado le pondría un antirrebote de diez
+ * segundos a ese botón sin que haya un tráfico que acotar, y el síntoma sería un botón que «no hace
+ * nada» cuando alguien lo aprieta dos veces.
+ *
+ * El día que esta tarea gane un reloj, el candado es lo primero que hay que ponerle.
+ *
+ * ── Y UN FALLO SE LANZA, no se devuelve ───────────────────────────────
+ *
+ * El bucle de arriba ya tiene su try/catch por vuelta, y su rama de `fallo` deja el sello con el
+ * motivo. Devolver `corrio: false` sería mentir con el vocabulario del candado: ese valor significa
+ * «no le tocaba» —que **no es un error**— y un token rechazado por el CRM sí lo es.
+ */
+async function releerContactos(
+  orgId: string,
+  acceso: { token: string; locationId: string },
+): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  const r = await conOrganizacion(orgId, () =>
+    sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
+  );
+  // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
+  if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
+  return { corrio: true, resultado: r.resumen, llamadas: r.resumen.llamadas };
 }
 
 /**

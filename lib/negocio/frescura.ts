@@ -81,6 +81,11 @@ const NOMBRE: Record<Tarea, string> = {
   mensajes: 'la lectura de mensajes',
   citas: 'la lectura del calendario',
   sonda: 'la sonda de aislamiento',
+  /* `Record<Tarea, string>` y no un mapa parcial: agregar la tarea `contactos` al cron dejó este
+     objeto en rojo, que es exactamente lo que tenía que pasar. Con un `Partial` o un `?? tarea`, el
+     aviso habría dicho «… y contactos tendría que correr cada …», con la palabra interna adentro de
+     una frase para una persona. */
+  contactos: 'la lectura de las etiquetas de los contactos',
 };
 
 /**

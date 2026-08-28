@@ -47,6 +47,7 @@
 
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { CADENCIA } from '../cadencia.ts';
 
 /**
  * Qué se está ingiriendo. Cada clave tiene su propio candado, su propia marca y su propio coste.
@@ -68,10 +69,37 @@ export type ClaveDePulso = 'mensajes' | 'citas';
  * desfasadas medio segundo son dos ciclos completos, cada uno tomando y soltando el candado sin
  * pisarse nunca.
  *
- * Ocho segundos contra un ciclo de diez: la ventana deja pasar el ciclo siguiente sin correrlo dos
- * veces, y no se come uno legítimo por un desfase de reloj.
+ * ════════════════════════════════════════════════════════════════════════════
+ * ERAN OCHO SEGUNDOS CONTRA UN CICLO DE DIEZ, Y ESO DEJABA PASAR UNA CORRIDA DE MÁS
+ *
+ * El comentario anterior justificaba el 8 así: *«la ventana deja pasar el ciclo siguiente sin
+ * correrlo dos veces, y no se come uno legítimo por un desfase de reloj»*. La primera mitad es
+ * cierta para UNA pestaña. Para dos, no:
+ *
+ *     pestaña A tira a los 0 s   → corre
+ *     pestaña B tira a los 9 s   → pasaron 9 > 8, **corre también**
+ *     pestaña A tira a los 10 s  → pasó 1 desde B, se frena
+ *
+ * O sea DOS corridas por ciclo de diez segundos en vez de una. Medido, el techo con varias pestañas
+ * subía de 360 a 450 llamadas por hora — el 25 % de más, por una ventana más corta que la cadencia.
+ *
+ * Con la ventana IGUAL a la cadencia, la de B a los 9 s se frena y solo queda una corrida por ciclo.
+ *
+ * ── Y POR QUÉ SE IMPORTA EN VEZ DE ESCRIBIR `10_000` ──────────────────────
+ *
+ * Porque el número **no significa nada por sí solo**: significa «la cadencia del tic». Escrito a
+ * mano, ya se había desalineado una vez, en silencio, y el síntoma era un 25 % de gasto extra que no
+ * se ve en ninguna pantalla. Mover la perilla de `CADENCIA.operacion` ahora mueve esta ventana.
+ *
+ * ── EL CASO DE LAS CITAS, QUE COMPARTE LA CONSTANTE ──────────────────────
+ *
+ * `citas` no la dispara ningún reloj sino un botón, así que dos pulsaciones a menos de diez segundos
+ * la segunda no corre. Ya pasaba con ocho, y es el comportamiento correcto: el barrido de la agenda
+ * cuesta 1+N llamadas y lo que cambió en diez segundos no lo justifica. La pantalla dice cuándo fue
+ * el último barrido, así que no es un botón que «no hace nada» sin explicación.
+ * ════════════════════════════════════════════════════════════════════════════
  */
-export const ANTIRREBOTE_MS = 8_000;
+export const ANTIRREBOTE_MS = CADENCIA.operacion;
 
 /** Lo que el ciclo necesita saber al empezar. */
 export interface Pulso {

@@ -29,10 +29,62 @@
 
 import { useEffect } from 'react';
 
+/** Lo que un reloj dispara. Puede devolver una promesa, y de eso depende el guard de vuelo. */
+type Disparo = () => void | Promise<unknown>;
+
 interface Tarea {
-  fn: () => void;
+  fn: Disparo;
   ms: number;
   timer: ReturnType<typeof setInterval> | null;
+  /**
+   * ¿El ciclo anterior todavía no terminó?
+   *
+   * ═════════════════════════════════════════════════════════════════════
+   * ESTE CAMPO NO EXISTÍA, Y ES LA «GARANTÍA 3» DEL DOCUMENTO `04`
+   *
+   * `setInterval` no espera nada: dispara cada `ms` haya terminado el anterior o no. El tic de la
+   * operación hace dos pedidos en serie —la ingesta y después las colas— y la ingesta habla con
+   * GoHighLevel, donde `pedirExterno` espera **hasta 240 segundos**.
+   *
+   * O sea que un ciclo lento **acumula compañía**: a los 10 segundos entra el segundo, a los 20 el
+   * tercero, y con el proveedor lento de verdad hay veinticuatro ciclos encima. Cada uno pide la
+   * ingesta y recarga las colas, así que la pantalla se llena de peticiones justo cuando el sistema
+   * ya está en problemas — y no falla nada: se ve como «va lento».
+   *
+   * El candado del servidor NO cubre esto: es un antirrebote por organización para que la INGESTA no
+   * corra dos veces, y los pedidos igual salen y las colas igual se recargan. Son dos límites
+   * distintos, y hacen falta los dos.
+   */
+  enVuelo: boolean;
+}
+
+/**
+ * Disparar un ciclo, **salvo que el anterior siga corriendo**.
+ *
+ * Todo disparo pasa por acá: el del intervalo y el de volver a la pestaña. Si alguno lo saltara, el
+ * guard tendría un agujero por el lado que menos se mira — volver a la pestaña con un ciclo lento en
+ * curso es exactamente cuando pasa.
+ *
+ * El ciclo saltado NO se encola: el próximo tic llega en `ms` y trae datos más nuevos que los que
+ * habría traído el que se salteó. Encolarlo sería pagar por ver algo viejo.
+ */
+function disparar(t: Tarea): void {
+  if (t.enVuelo) return;
+  const r = t.fn();
+  // Un disparo síncrono no tiene nada que esperar, y marcarlo en vuelo lo dejaría trabado para
+  // siempre: no hay `finally` que lo libere.
+  if (!(r instanceof Promise)) return;
+  t.enVuelo = true;
+  void r.then(
+    () => {
+      t.enVuelo = false;
+    },
+    // Y también si RECHAZA. Sin esta rama, un ciclo que falla apaga el reloj para siempre y el
+    // síntoma es una pantalla que deja de actualizarse sin decir nada.
+    () => {
+      t.enVuelo = false;
+    },
+  );
 }
 
 const tareas = new Map<string, Tarea>();
@@ -46,7 +98,7 @@ function arrancar(t: Tarea): void {
   t.timer = setInterval(() => {
     // Se vuelve a comprobar dentro del intervalo y no solo al pausarlo: entre que la pestaña se
     // oculta y corre el escucha puede caer un disparo.
-    if (visible()) t.fn();
+    if (visible()) disparar(t);
   }, t.ms);
 }
 
@@ -62,7 +114,7 @@ function escuchar(): void {
   document.addEventListener('visibilitychange', () => {
     if (visible()) {
       for (const t of tareas.values()) {
-        t.fn();
+        disparar(t);
         arrancar(t);
       }
     } else {
@@ -88,12 +140,12 @@ function escuchar(): void {
  * Lo que sí sigue haciendo, porque ahí sí es el único que puede: **disparar al volver de oculta**.
  * Quien vuelve a la pestaña quiere ver fresco, no esperar el próximo ciclo.
  */
-export function registrarReloj(clave: string, fn: () => void, ms: number): () => void {
+export function registrarReloj(clave: string, fn: Disparo, ms: number): () => void {
   escuchar();
   const previa = tareas.get(clave);
   if (previa) frenar(previa);
 
-  const t: Tarea = { fn, ms, timer: null };
+  const t: Tarea = { fn, ms, timer: null, enVuelo: false };
   tareas.set(clave, t);
   // Solo se arranca el intervalo. Con la pestaña oculta ni eso: el escucha de visibilidad lo
   // levanta al volver, y de paso dispara una vez.
@@ -112,7 +164,7 @@ export function registrarReloj(clave: string, fn: () => void, ms: number): () =>
 }
 
 /** El mismo registro, como hook: vive mientras el componente esté montado. */
-export function usarReloj(clave: string | null, fn: () => void, ms: number): void {
+export function usarReloj(clave: string | null, fn: Disparo, ms: number): void {
   useEffect(() => {
     // `null` = no hay nada que vigilar todavía (la ficha cerrada, por ejemplo). No se registra, y
     // así el componente no necesita romper la regla de los hooks para apagarlo.
@@ -121,23 +173,11 @@ export function usarReloj(clave: string | null, fn: () => void, ms: number): voi
   }, [clave, fn, ms]);
 }
 
-/**
- * Las cadencias oficiales, en un solo lugar para que nadie invente la suya.
+/* La cadencia se mudó a `lib/cadencia.ts` y se reexporta desde acá.
  *
- * Que el chat sea de 5 segundos **no es el límite de llamadas al CRM**: el candado del servidor
- * garantiza que la ingesta corra como mucho una vez por ciclo sin importar cuántas pestañas ni con
- * qué frecuencia pregunten. Esta perilla se puede mover sin tocar el presupuesto del proveedor.
- */
-export const CADENCIA = {
-  /** El chat con la ficha abierta. Lee de la caché: **cero llamadas al proveedor**. */
-  chat: 5_000,
-  /**
-   * EL tic de la operación: dispara la ingesta y recarga las colas.
-   *
-   * Que sean 10 segundos **no es el límite de llamadas al CRM**. El candado de
-   * `lib/negocio/pulso.ts` garantiza que la ingesta corra como mucho una vez por ciclo sin importar
-   * cuántas pestañas ni con qué frecuencia pidan, y medido contra la cuenta real un ciclo en
-   * régimen cuesta **una** llamada. Esta perilla se puede mover sin tocar ese presupuesto.
-   */
-  operacion: 10_000,
-} as const;
+ * El motivo está en el encabezado de ese archivo: `lib/negocio/pulso.ts` —que es del SERVIDOR—
+ * necesita el mismo número para su antirrebote, y este archivo lleva `'use client'`.
+ *
+ * Se reexporta y no se cambian las importaciones de los componentes porque este módulo sigue siendo
+ * el lugar natural donde buscarla: quien va a poner un reloj entra acá. */
+export { CADENCIA } from './cadencia.ts';

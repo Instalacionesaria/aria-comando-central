@@ -66,6 +66,16 @@ export interface Resumen {
   /** `true` si se llegó al tope de páginas sin agotar una etiqueta. Ver `TOPE_DE_PAGINAS`. */
   truncado: boolean;
   /**
+   * Cuántas llamadas a GoHighLevel costó esta corrida.
+   *
+   * Se agregó cuando esta función pasó a correr desde el cron: el reporte del barrido informa las
+   * llamadas por empresa y por tarea, y es la columna con la que se mira si el trabajo automático se
+   * está comiendo el presupuesto del proveedor.
+   *
+   * Es una por página de cada etiqueta, más la consulta de etiquetas de la cuenta cuando se hace.
+   */
+  llamadas: number;
+  /**
    * Las etiquetas que EXISTEN en la subcuenta. Solo se consulta cuando no vino ningún
    * contacto, que es cuando sirve para algo.
    *
@@ -98,6 +108,7 @@ export async function sincronizarContactos(acceso: {
     guardados: { closer: 0, setter: 0 },
     salteados: [],
     truncado: false,
+    llamadas: 0,
     etiquetasDeLaCuenta: null,
   };
 
@@ -110,6 +121,7 @@ export async function sincronizarContactos(acceso: {
     if (r.tipo === 'fallo') return r;
 
     resumen.traidos[etiqueta] = r.datos.contactos.length;
+    resumen.llamadas += r.datos.paginas;
     if (r.datos.truncado) resumen.truncado = true;
 
     for (const c of r.datos.contactos) {

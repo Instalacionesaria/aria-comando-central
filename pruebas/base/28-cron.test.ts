@@ -167,6 +167,41 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
   assert.equal(porSlug.get('rota'), 'fallo');
   assert.equal(porSlug.get('alfa'), 'saltada', 'la de antes tiene que estar');
   assert.equal(porSlug.get('beta'), 'saltada', 'la de DESPUÉS tiene que estar: es la que se perdía');
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     Y LAS TRES TAREAS DE LA EMPRESA ROTA FALLAN, CADA UNA POR SU CUENTA
+
+     Esta parte se agregó porque un mutante sobrevivió: reemplazar el despacho de `contactos` por un
+     `{ corrio: false }` fijo —o sea una tarea que se anuncia y no hace nada— dejaba TODO el archivo
+     en verde. El resto de las pruebas de acá usa empresas sin credencial, y ahí el despacho no se
+     alcanza nunca: se sellan como `saltada` antes de llegar.
+
+     Con la empresa de identificador inexistente y token «listo», cada tarea intenta abrir su contexto
+     de inquilino y lanza. Que las TRES digan `fallo` es lo que prueba que las tres se despachan de
+     verdad, y no que una es un adorno en la lista de `HORARIOS`.
+
+     `contactos` es la que importa de las tres, porque es la nueva y porque su ausencia no se ve: una
+     tarea que se anuncia, sella `frenada` y no lee ninguna etiqueta deja al sistema exactamente como
+     estaba —con la marca de agua pasándole por encima a los contactos nuevos— y el reporte del cron
+     se vería perfecto. ════════════════════════════════════════════════════════════════ */
+  const deLaRota = new Map(
+    r.renglones.filter((x) => x.slug === 'rota').map((x) => [x.tarea, x.estado]),
+  );
+  assert.deepEqual(
+    [...deLaRota.entries()].sort(),
+    [
+      ['citas', 'fallo'],
+      ['contactos', 'fallo'],
+      ['mensajes', 'fallo'],
+    ],
+    'una de las tres tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
+  );
+
+  /* El SELLO de «rota» no se comprueba, y conviene decir por qué: su identificador no existe en
+     `identidad.organizaciones`, así que `sellar` también falla por la clave foránea y no hay fila que
+     leer. Es lo que hace que este fixture sirva para probar el try/catch por vuelta —una empresa que
+     revienta de la forma más tonta posible— y a la vez lo que lo deja sin sello. El sello de cada
+     tarea lo cubren las dos pruebas de la sección 3. */
 });
 
 test('`corrieron` cuenta las que DE VERDAD corrieron, no las recorridas', async () => {
@@ -179,7 +214,11 @@ test('`corrieron` cuenta las que DE VERDAD corrieron, no las recorridas', async 
   ];
   const r = await barrerTodo('0 12 * * *', empresas);
   assert.equal(r.corrieron, 0, 'ninguna tenía credencial: nada corrió');
-  assert.ok(r.renglones.length >= 4, 'y aun así las cuatro filas (2 empresas × 2 tareas) se reportan');
+  assert.ok(
+    r.renglones.length >= 6,
+    'y aun así las seis filas se reportan: 2 empresas × 3 tareas por empresa — `contactos`, ' +
+      '`mensajes` y `citas`; la sonda no es de ninguna empresa',
+  );
 });
 
 test('los cinco motivos de credencial NO se colapsan', async () => {
@@ -222,9 +261,11 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
   ]);
   const s = await sellos();
+  // Las TRES tareas por empresa, y `contactos` entre ellas: una empresa sin token tampoco puede
+  // releer sus etiquetas, y el sello de esa tarea tiene que decirlo igual que los otros dos.
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
-    ['citas:saltada', 'mensajes:saltada'],
+    ['citas:saltada', 'contactos:saltada', 'mensajes:saltada'],
   );
   assert.ok(s.every((x) => x.motivo === 'sin_token'));
 });
@@ -240,8 +281,8 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
   await barrerTodo('0 12 * * *', empresas);
   const segunda = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(primera[0]?.n, '2');
-  assert.equal(segunda[0]?.n, '2', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
+  assert.equal(primera[0]?.n, '3', 'tres tareas por empresa: `contactos`, `mensajes` y `citas`');
+  assert.equal(segunda[0]?.n, '3', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
 });
 
 test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otra', async () => {
@@ -259,11 +300,11 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   const deBeta = await conOrganizacion(beta, () =>
     datos().selectFrom('tareas_programadas').select(['tarea']).execute(),
   );
-  assert.equal(deAlfa.length, 2, 'alfa tiene que ver sus dos sellos');
-  assert.equal(deBeta.length, 2);
-  // Y el total desde el propietario es cuatro: cada una vio la mitad, no todo.
+  assert.equal(deAlfa.length, 3, 'alfa tiene que ver sus tres sellos');
+  assert.equal(deBeta.length, 3);
+  // Y el total desde el propietario es SEIS: cada una vio la mitad, no todo.
   const todos = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(todos[0]?.n, '4');
+  assert.equal(todos[0]?.n, '6');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -332,7 +373,7 @@ test('un horario desconocido corre TODO y la respuesta lo dice', async () => {
   assert.equal(r.status, 200);
   const cuerpo = (await r.json()) as { horarioDesconocido?: boolean; tareas: string[] };
   assert.equal(cuerpo.horarioDesconocido, true);
-  assert.deepEqual([...cuerpo.tareas].sort(), ['citas', 'mensajes', 'sonda']);
+  assert.deepEqual([...cuerpo.tareas].sort(), ['citas', 'contactos', 'mensajes', 'sonda']);
 });
 
 test('las empresas DESACTIVADAS no se barren', async () => {

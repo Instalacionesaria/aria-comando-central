@@ -450,20 +450,26 @@ decisión y la prueba de regresión son de quien los mantiene.
 - **Los 5 usuarios de `closer_usuarios`.** Su `password_hash` usa `scrypt$16384$8$1$…`, **el mismo
   formato y los mismos parámetros** que `lib/datos/hash.ts`, así que se pueden copiar a
   `identidad.usuarios` y entrarían con sus contraseñas actuales. Falta escribir y probar ese guion.
-- **La sincronización de contactos no la hace el cron.** `lib/negocio/barrido.ts` corre `mensajes`,
-  `citas` y `sonda` — y el `check` de la migración `014` acepta exactamente esas tres. Los
-  CONTACTOS entran solo cuando alguien aprieta un botón, que hoy vive únicamente en la pestaña
-  Setter: llama a `/api/contactos/sincronizar`, que trae los dos territorios de una vez.
+- ~~**La sincronización de contactos no la hace el cron.**~~ **CERRADO.** `lib/negocio/barrido.ts`
+  corre ahora cuatro tareas —`sonda`, `contactos`, `mensajes`, `citas`— y la migración **`021`**
+  amplía el `check` de `tareas_programadas.tarea` para aceptar la nueva.
 
-  Esto pasó a importar cuando se quitó la lista completa del territorio de Mi Día, que era el otro
-  botón. **Consecuencia concreta: quien solo tenga la sección Closer no tiene forma de traer
-  contactos.** No es un defecto que dé error — la lista simplemente no se actualiza nunca, y se lee
-  como que no hay nadie.
+  Lo que estaba abierto era peor de lo que este párrafo decía, y conviene dejarlo escrito porque es
+  el motivo por el que se cerró primero: **no era una demora, era una pérdida de datos permanente.**
+  La ingesta de mensajes descarta toda conversación cuyo contacto no esté en `negocio.contactos` —para
+  ella es ajena— y **avanza la marca de agua sobre ella** (`lib/negocio/ingesta.ts`). O sea que los
+  mensajes de un contacto que todavía no se sincronizó quedan por debajo de la marca y **no se
+  recuperan nunca**, salvo retrocediéndola a mano. Y el síntoma es un contacto con el chat vacío, que
+  se lee como «todavía no escribió».
 
-  Para cerrarlo hay que agregar `contactos` a `Tarea` y a `HORARIOS` en `barrido.ts`, y ampliar el
-  `check` de la `014` con una migración nueva. La cadencia es la decisión de producto que falta:
-  cada barrido gasta peticiones contra el límite de tasa de GoHighLevel, que es la razón por la que
-  traer nunca fue automático.
+  Por eso `contactos` corre **antes** de `mensajes` en la misma corrida. La base no puede expresar ese
+  orden —un `check` no ordena tareas— así que lo garantiza el orden de la lista de `HORARIOS` y una
+  prueba de `pruebas/codigo/99-cron.test.ts`.
+
+  La cadencia sigue siendo diaria, por el límite del plan Hobby que está explicado en `barrido.ts`. Y
+  el botón manual de la pestaña Setter se queda: es la vía para «traelo ahora», y no pasa por el
+  candado a propósito —ponerle un antirrebote de diez segundos a un botón sería un botón que «no hace
+  nada» cuando alguien lo aprieta dos veces—.
 - **El auditor de IA no existe, y `negocio.hallazgos` lo espera vacía.** La tabla está completa
   desde la migración `011` —`titulo`, `categoria`, `severidad`, `diagnostico`, `resuelto_el`, su
   índice parcial de abiertos y su política de aislamiento— y **no tiene ni un lector ni un escritor**:
