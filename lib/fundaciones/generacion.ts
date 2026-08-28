@@ -26,13 +26,28 @@ import { pedirExterno } from '../http/cliente.ts';
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
  *
- * Decía `claude-sonnet-4-6` «porque es el que usa ARIA-brain», y **ese identificador no existe en la
- * API de Anthropic**, así que TODA generación fallaba con `404 not_found_error`. La pantalla mostraba
- * «el modelo no respondió» y quien lo leía revisaba la clave, que estaba perfecta.
+ * ══ CORRECCIÓN: EL COMENTARIO ANTERIOR AFIRMABA UNA COSA FALSA ═════════════
  *
- * El objetivo original sigue siendo válido —igualar el modelo del hub para que un alumno pueda
- * comparar su entregable de acá con el de allá— pero un identificador inválido no iguala nada: no
- * genera. Si el hub usa otro modelo hoy, esta línea es el único lugar que hay que cambiar.
+ * Decía que `claude-sonnet-4-6` «no existe en la API de Anthropic». **Sí existe** — es un modelo
+ * activo, con un millón de tokens de ventana. Lo afirmé sin comprobarlo, a partir de que la
+ * generación fallaba, y lo escribí en tres lugares con seguridad: acá, en `docs/ETAPA-9.md` y en la
+ * prueba que vigila esta línea.
+ *
+ * Y la diferencia no es anécdota, porque cambia el diagnóstico entero: si el identificador era
+ * válido, el `404` de entonces no decía «ese modelo no existe» sino **«esta llave no alcanza ese
+ * modelo»**. Que es una condición de la CUENTA de Anthropic detrás de la llave, no de este código — y
+ * encaja con lo que pasó después: con `claude-sonnet-5` el modelo resuelve, y el rechazo se corrió a
+ * un `400` sobre un cuerpo que está medido y es válido en todos sus campos.
+ *
+ * La lección, y es la razón por la que esto queda escrito: **«falla, entonces el valor es
+ * inválido» no es una medición.** Un identificador válido que una cuenta no alcanza y uno inventado
+ * dan el mismo `404`, y separarlos es una consulta a `GET /v1/models/<id>` que nadie hizo.
+ *
+ * ── Y EL OBJETIVO ORIGINAL SIGUE EN PIE ─────────────────────────────
+ *
+ * Igualar el modelo del hub para que un alumno pueda comparar su entregable de acá con el de allá.
+ * Si el hub usa otro modelo hoy, esta línea es el único lugar que hay que cambiar — y conviene
+ * comprobar primero que la llave de la organización LO ALCANCE, que es el paso que faltó.
  */
 export const MODELO = 'claude-sonnet-5';
 

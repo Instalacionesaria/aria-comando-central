@@ -232,14 +232,24 @@ Nombrado, no escondido:
 
 ## El modelo: la intención era el del hub, y el identificador no existía
 
-**Hoy es `claude-sonnet-5`.** Esta sección decía `claude-sonnet-4-6` «el mismo que usa ARIA-brain», y
-ese identificador **no es un modelo de la API de Anthropic**: toda generación fallaba, y la pantalla
-decía «el modelo no respondió» — que manda a revisar la credencial, que estaba bien.
+**Hoy es `claude-sonnet-5`.** Esta sección decía `claude-sonnet-4-6`, «el mismo que usa
+ARIA-brain», y con ese valor no generaba nada: la API respondía `404` y la pantalla decía «el
+modelo no respondió» — que manda a revisar la credencial, que estaba bien.
 
-Se corrigió el 2026-08-28. Este párrafo queda escrito y no se borra porque el documento fue parte
-del defecto: un valor inventado, escrito con seguridad en la especificación Y en el código Y en una
-prueba que lo exigía literalmente. Tres lugares diciendo lo mismo no lo vuelven cierto, y quien
-fuera a diagnosticarlo leyendo este archivo se iba a convencer de que el modelo estaba bien.
+**Y la explicación que se escribió el 2026-08-28 era falsa.** Decía que ese identificador «no
+existe en la API». Sí existe: es un modelo activo, con un millón de tokens de ventana. Lo que el
+`404` quería decir era otra cosa — **«esta llave no alcanza ese modelo»**, que es una condición de
+la cuenta de Anthropic detrás de la llave, no de este código.
+
+Los dos errores quedan escritos, porque son de la misma familia y se repiten solos:
+
+- **Un valor inventado sostenido por tres lugares.** Estaba en la especificación, en el código y
+  en una prueba que lo exigía literalmente. Tres lugares diciendo lo mismo no lo vuelven cierto, y
+  quien fuera a diagnosticarlo leyendo este archivo se iba a convencer de que el modelo estaba
+  bien.
+- **«Falla, entonces el valor es inválido» no es una medición.** Un identificador válido que una
+  cuenta no alcanza y uno inventado dan el MISMO `404`. Separarlos es una consulta a
+  `GET /v1/models/<id>` con la llave de la organización, y nadie la hizo.
 
 La intención original sigue en pie: mientras los dos sistemas estén en pie, un alumno tiene que
 poder comparar su avatar de acá con el de allá, porque un modelo distinto sobre el mismo prompt da

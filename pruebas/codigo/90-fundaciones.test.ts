@@ -474,15 +474,22 @@ test('los cuatro entregables largos llevan el presupuesto amplio', () => {
 });
 
 test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', () => {
-  /* ── ESTA PRUEBA FIJABA UN IDENTIFICADOR QUE NO EXISTE ──────────────────
+  /* ── FIJABA UN SOLO IDENTIFICADOR, Y EL COMENTARIO SE EQUIVOCABA ────────────
    *
-   * Pedía `claude-sonnet-4-6` «porque es el que usa ARIA-brain», y ese valor **no es un modelo de la
-   * API de Anthropic**: toda generación fallaba con `404 not_found_error`. La prueba estaba en verde
-   * fijando la causa del defecto — es el caso exacto de una prueba que confirma una suposición en vez
-   * de un hecho.
+   * Pedía `claude-sonnet-4-6` «porque es el que usa ARIA-brain». Fijar UNO es el defecto real: la
+   * prueba estaba en verde sosteniendo el valor con el que nada generaba — o sea confirmando una
+   * suposición en vez de un hecho.
    *
-   * Ahora se comprueba contra una lista de identificadores válidos, no contra uno solo. Un valor
-   * inventado no pasa, y cambiar de modelo por un motivo real sigue siendo una línea. */
+   * Pero la explicación que se escribió acá —«ese valor no es un modelo de la API»— **era falsa**.
+   * `claude-sonnet-4-6` es un modelo activo. El `404` de entonces no decía «no existe» sino «esta
+   * llave no lo alcanza», que es una condición de la cuenta y no de este código. El comentario de
+   * `MODELO` en `lib/fundaciones/generacion.ts` lo cuenta completo.
+   *
+   * Queda escrito porque el error de razonamiento se repite solo: **«falla, entonces el valor es
+   * inválido» no es una medición.**
+   *
+   * La lista de abajo no dice «los únicos que existen»: dice «los que este proyecto acepta usar».
+   * Un valor inventado no pasa, y cambiar de modelo por un motivo real sigue siendo una línea. */
   const VALIDOS = [
     'claude-opus-5',
     'claude-sonnet-5',
