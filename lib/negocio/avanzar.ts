@@ -67,6 +67,13 @@ export interface Registrado {
   /** `true` = se guardó la nota. `false` = se pidió y NO se pudo. Ver abajo. */
   nota: boolean;
   tarea: boolean;
+  /**
+   * Cuántos seguimientos abiertos de este contacto se cerraron con este resultado.
+   *
+   * Casi siempre 0 o 1. Puede ser más si alguien registró dos fechas sin cerrar la primera, que era
+   * lo único que se podía hacer antes de que esta columna tuviera un escritor.
+   */
+  seguimientosCerrados: number;
 }
 
 /**
@@ -135,6 +142,38 @@ export async function registrarResultado(
     nota = true;
   }
 
+  /* ── CERRAR LOS SEGUIMIENTOS ABIERTOS, Y ESTE ES SU PRIMER ESCRITOR ────────
+   *
+   * `negocio.tareas.completada_el` existía desde la migración 011, con su índice parcial
+   * `tareas_completadas_hoy` y un comentario largo que la justifica, y **no la escribía nadie**. Dos
+   * consultas la leían; cero la escribían.
+   *
+   * Consecuencia, que no da ningún error: un seguimiento creado acá no se podía cerrar NUNCA. Se
+   * quedaba en la cola de Mi Día para siempre y mantenía el ícono ⏱ encendido para siempre. El
+   * índice parcial no indexaba jamás ninguna fila.
+   *
+   * ── POR QUÉ LO CIERRA AVANZAR, Y NO RESPONDER UN MENSAJE ──────────────────
+   *
+   * Un seguimiento manual dice «volvé a esta persona el día X». Registrar un resultado es la prueba
+   * de que se volvió y de que la conversación llegó a alguna parte — es literalmente la acción que
+   * el seguimiento pedía. Responder un mensaje es más débil: se puede estar contestando otra cosa,
+   * y cerrar el recordatorio por eso lo haría desaparecer sin que nadie decidiera nada.
+   *
+   * ── Y VA ANTES DEL `insert`, QUE NO ES INDIFERENTE ────────────────────────
+   *
+   * Si fuera después, un Avanzar con fecha nueva cerraría **la tarea que acaba de crear**: el
+   * `update` no tiene forma de distinguirla de las viejas, porque las dos están abiertas. El
+   * síntoma sería «puse una fecha y el seguimiento no aparece», sin ningún error.
+   *
+   * Va en la MISMA transacción que el resto: o se registra el resultado y se cierra el seguimiento,
+   * o no pasa ninguna de las dos. */
+  const cerradas = await datos()
+    .updateTable('tareas')
+    .set({ completada_el: new Date() } as never)
+    .where('contacto_id', '=', contactoId)
+    .where('completada_el', 'is', null)
+    .executeTakeFirst();
+
   let tarea = false;
   if (lo.volverEl !== null) {
     await datos()
@@ -155,5 +194,14 @@ export async function registrarResultado(
     tarea = true;
   }
 
-  return { resultadoId: resultado.id, etapa, nota, tarea };
+  /* `cerradas` viaja en la respuesta por la misma regla que `nota` y `tarea`: **la respuesta cuenta
+     efecto por efecto**. Cerrar un recordatorio de otra persona es un efecto visible — desaparece de
+     su Mi Día — y colapsarlo en un «listo» es esconder lo que pasó. */
+  return {
+    resultadoId: resultado.id,
+    etapa,
+    nota,
+    tarea,
+    seguimientosCerrados: Number(cerradas?.numUpdatedRows ?? 0),
+  };
 }

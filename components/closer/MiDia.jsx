@@ -72,11 +72,13 @@ const COLAS = [
 ];
 
 /** El texto de cada uno de los cuatro sabores de seguimiento. */
+/* Los DOS sabores que el servidor produce, y ahora son exactamente los que dibuja.
+   Eran cuatro: `serie_agotada` nunca se produjo y `automatico_en_curso` salio por pedido —los
+   automaticos los corre el CRM, no son trabajo de esta pantalla—. Una rama de interfaz para un
+   caso que nada produce se lee como si funcionara. */
 const CASO = {
   manual_de_hoy: { texto: 'Le toca hoy', clase: 'seg' },
   manual_vencido: { texto: 'Vencido', clase: 'venc' },
-  serie_agotada: { texto: 'Serie agotada', clase: 'no' },
-  automatico_en_curso: { texto: 'Serie automática corriendo', clase: 'nu' },
 };
 
 /* La hora ya no se calcula acá: `horaEnZona` de `lib/negocio/tiempo.ts` es la ÚNICA definición de
@@ -152,7 +154,11 @@ export default function MiDia({ colas, zonaHoraria }) {
           <div className="md-s">
             {/* Se dice qué NO cuenta. Sin esto, un closer que ve la lista más larga que el
                 contador cree que el contador está roto. */}
-            <span className="md-chip o">las series automáticas no cuentan</span>
+            {/* El chip decia «las series automaticas no cuentan», y era necesario cuando la
+                cola las MOSTRABA sin sumarlas: sin esa aclaracion, quien veia la lista mas larga
+                que el contador creia que el contador estaba roto. Ahora no se muestran, asi que la
+                lista y el contador coinciden y la aclaracion sobra. */}
+            <span className="md-chip o">solo lo que necesita tus manos</span>
           </div>
         </div>
         <div className="md-c">
@@ -224,18 +230,24 @@ export default function MiDia({ colas, zonaHoraria }) {
                       <span className={`tagx ${CASO[item.caso]?.clase ?? 'nu'}`}>
                         {CASO[item.caso]?.texto ?? item.caso}
                       </span>
-                      {/* Los automáticos se MUESTRAN y no SUMAN. Decirlo en la fila es lo que
-                          hace que el contador y la lista no se contradigan a los ojos. */}
-                      {item.pideManos === false ? (
-                        <span style={{ color: 'var(--txt-faint)', marginLeft: 8 }}>
-                          no necesita que hagas nada
-                        </span>
-                      ) : null}
+                      {/* Acá se dibujaba «no necesita que hagas nada» para las series automáticas.
+                          Ya no hay ninguna fila así: todo lo que entra a esta cola pide manos, así
+                          que la aclaración describiría un caso que no puede ocurrir. El campo
+                          `pideManos` sigue viajando, y por eso el contador lo sigue filtrando en vez
+                          de sumar el largo de la lista. */}
                     </div>
                   ) : null}
+                  {/* DOS ORÍGENES, DOS FRASES. «Completadas hoy» junta dos cosas: un resultado
+                      registrado con Avanzar, y una respuesta a alguien que estaba en el buzón.
+                      «Registrado como Respondido» no es castellano y además confunde las dos: nadie
+                      registró nada, se contestó un mensaje. */}
                   {item.completadaPor ? (
                     <div className="md-sub" style={{ padding: '0 16px 10px 56px' }}>
-                      registrado como <b>{item.completadaPor}</b>
+                      {item.completadaPor === 'Respondido' ? (
+                        <>le respondiste hoy</>
+                      ) : (
+                        <>registrado como <b>{item.completadaPor}</b></>
+                      )}
                     </div>
                   ) : null}
                 </div>

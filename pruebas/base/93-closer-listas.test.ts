@@ -596,14 +596,18 @@ test('Mi Día: el contador cuenta las colas que PIDEN MANOS, y el cockpit recibe
   assert.equal(m.mirandoOtraOrganizacion, false);
   assert.equal(m.colas.truncado, false);
 
-  /* El contacto con `seguimiento_recupero` está EN la cola y NO pide manos.
-     Es lo que hace que la identidad de abajo no se cumpla por casualidad: sin un
-     `automatico_en_curso` presente, sumar todos los seguimientos y sumar sólo los que piden manos
-     dan el mismo número, y la mutación no se notaría. */
-  const auto = m.colas.seguimientos.find((x) => x.fila.id === s.automatico);
-  assert.ok(auto, 'el contacto con `seguimiento_recupero` no está en Seguimientos');
-  assert.equal(auto.caso, 'automatico_en_curso');
-  assert.equal(auto.pideManos, false);
+  /* El contacto con `seguimiento_recupero` **NO está en la cola**, y eso cambió por pedido: el
+     automático lo corre la secuencia del CRM, así que no es trabajo de esta pantalla. Antes esta
+     aserción exigía lo contrario —que estuviera con `pideManos: false`—.
+
+     Y hay una consecuencia para la identidad del contador que se comprueba más abajo: al no haber
+     ninguna fila con `pideManos: false`, sumar la cola entera y sumar solo las que piden manos dan
+     el mismo número. O sea que esa mutación dejó de ser detectable ACÁ — la cubre el `92`, con su
+     prueba de que el automático no entra y su ícono sigue encendido. */
+  assert.ok(
+    !m.colas.seguimientos.some((x) => x.fila.id === s.automatico),
+    'el contacto con `seguimiento_recupero` volvió a Seguimientos: el automático no se dibuja acá',
+  );
 
   /* Y EL OTRO LADO: el seguimiento MANUAL que sí pide manos.
    *
@@ -613,10 +617,11 @@ test('Mi Día: el contador cuenta las colas que PIDEN MANOS, y el cockpit recibe
    * las tareas que hay: el closer abre la pantalla, ve un seguimiento vencido en la cola, y el
    * contador dice que no le queda nada por hacer.
    *
-   * El `caso` se afirma tal como sale hoy: un vencimiento de HOY se lee `manual_vencido` porque
-   * `vence_el` es un `date` y comparar su medianoche contra `now()` da siempre «ya pasó». Cuál de
-   * los dos sabores corresponde en el borde es asunto del `92`; acá lo que importa es que el sabor
-   * sea uno de los manuales y que pida manos. */
+   * El `caso` se afirma como «uno de los manuales» y no como uno en particular: cuál corresponde en
+   * el borde del día es asunto del `92`, que lo prueba con su propio caso. Ese borde ESTABA MAL y se
+   * arregló: `vence_el` es un `date`, o sea medianoche, y compararlo contra `now()` daba siempre «ya
+   * pasó» — así que `manual_de_hoy` era inalcanzable y la pantalla decía «Vencido» en rojo sobre un
+   * seguimiento que tocaba justamente hoy. Ahora se compara el día con el día. */
   const manual = m.colas.seguimientos.find((x) => x.fila.id === s.conTarea);
   assert.ok(manual, 'la tarea sembrada para hoy no puso a su contacto en Seguimientos');
   assert.equal(manual.pideManos, true, 'un seguimiento manual pendiente TIENE que pedir manos');

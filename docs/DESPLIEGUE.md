@@ -464,6 +464,23 @@ decisión y la prueba de regresión son de quien los mantiene.
   `check` de la `014` con una migración nueva. La cadencia es la decisión de producto que falta:
   cada barrido gasta peticiones contra el límite de tasa de GoHighLevel, que es la razón por la que
   traer nunca fue automático.
+- **El auditor de IA no existe, y `negocio.hallazgos` lo espera vacía.** La tabla está completa
+  desde la migración `011` —`titulo`, `categoria`, `severidad`, `diagnostico`, `resuelto_el`, su
+  índice parcial de abiertos y su política de aislamiento— y **no tiene ni un lector ni un escritor**:
+  cero `insertInto('hallazgos')`, cero `selectFrom('hallazgos')` en todo el repositorio.
+
+  Dos consecuencias visibles, y ninguna da error:
+
+    1. **La cola «Intervenciones urgentes» de Mi Día está vacía siempre.** Entra quien tiene una de
+       las tres etiquetas de fallo —`bot_desactivado_appflow`, `bot_desactivado_leadflow`,
+       `bot_pausado_fallo`— y esas las pone el auditor. Sin auditor, nadie las tiene.
+    2. **El «motivo» de cada fila urgente es siempre el mismo texto de reserva** («Requiere
+       intervención: revisar la conversación»), pintado en rojo debajo de la fila. Es honesto —no
+       inventa un diagnóstico— pero se lee como si el auditor hubiera encontrado algo concreto.
+
+  No hace falta arreglar nada de la cola: está bien construida y esperando su fuente. Lo que falta es
+  el auditor, y con él el escritor de `hallazgos`.
+
 - **El cuarto sabor de un seguimiento, `serie_agotada`.** Está declarado en
   `lib/negocio/miDia.ts` y dibujado en `components/closer/MiDia.jsx` («Serie agotada»), y **nada lo
   produce**: hoy un closer nunca lo ve. Significa «la serie automática se acabó sin respuesta, la

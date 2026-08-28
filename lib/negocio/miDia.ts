@@ -33,7 +33,12 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
 import { filasDeTerritorio, type Fila } from './fila.ts';
-import { estadoDelAgente, SEGUIMIENTO_AUTOMATICO } from '../ghl/contrato.ts';
+/* `SEGUIMIENTO_AUTOMATICO` ya no se importa: la cola de seguimientos dejo de leer esa etiqueta
+   cuando los automaticos salieron de Mi Dia. Sigue viva en `lib/negocio/fila.ts`, que es la que
+   enciende el icono de la fila, y eso es lo correcto: la serie automatica es un HECHO del contacto,
+   no una tarea de nadie. */
+import { estadoDelAgente } from '../ghl/contrato.ts';
+import { definicionDe } from './salidas.ts';
 
 /**
  * Los tres tags de FALLO DEL AUDITOR. Son los únicos que meten a alguien en Urgentes.
@@ -58,12 +63,24 @@ const FALLOS_DEL_AUDITOR = [
 /** El texto de reserva de Urgentes. **Ninguna fila queda vacía.** */
 const SIN_MOTIVO = 'Requiere intervención: revisar la conversación.';
 
-/** Los cuatro sabores de un seguimiento del día. NO significan lo mismo para el trabajo. */
-export type CasoDeSeguimiento =
-  | 'manual_de_hoy'
-  | 'manual_vencido'
-  | 'serie_agotada'
-  | 'automatico_en_curso';
+/**
+ * Los DOS sabores de un seguimiento del día. Eran cuatro declarados y dos producidos.
+ *
+ * ── POR QUÉ SE FUERON DOS, Y NO ES LIMPIEZA COSMÉTICA ─────────────────────
+ *
+ * `automatico_en_curso` salió **por pedido explícito**: *«el automático solo pone la etiqueta
+ * correspondiente para que se dispare una automatización preparada en GHL y entre en ese flujo»*.
+ * O sea que un seguimiento automático no es trabajo de nadie en esta pantalla — lo hace el CRM — y
+ * Mi Día contesta «qué tengo que hacer ahora». La señal de que la serie corre no se pierde: sigue
+ * encendiendo el ícono ⏱ de la fila, que es donde corresponde que esté un hecho y no una tarea.
+ *
+ * `serie_agotada` salió porque **nunca se produjo**. Significaba «la serie automática se acabó sin
+ * respuesta, ahora hace falta una persona», y su marca candidata —`seguimiento_terminado`— figura en
+ * `lib/ghl/contrato.ts` con `confianza: 'sin_confirmar'` y la nota *«existe en la subcuenta y nadie
+ * confirmó qué significa»*. Un sabor declarado que nada produce es una rama de interfaz muerta que
+ * se lee como si funcionara; queda anotado en `docs/DESPLIEGUE.md` como lo que falta averiguar.
+ */
+export type CasoDeSeguimiento = 'manual_de_hoy' | 'manual_vencido';
 
 /** Una fila de una cola: el contacto con sus seis íconos, más lo propio de la cola. */
 export interface EnLaCola {
@@ -128,6 +145,25 @@ export interface MiDia {
  * una fuente no trae datos vive donde corresponde: en la pantalla de estado de las conexiones,
  * que la mira quien puede arreglarlo. */
 
+/**
+ * ¿Ya le respondimos? **`true` si el último mensaje del hilo es nuestro.**
+ *
+ * Sin saliente, no: nadie le contestó nunca. Con saliente y sin entrante no se llega acá —la
+ * condición anterior ya cortó— pero el orden de las comparaciones lo deja igual bien.
+ *
+ * El `>=` y no el `>` es deliberado, y cubre un caso real: los dos sellos los escribe el mismo
+ * disparador desde la misma fila de `negocio.mensajes`, y dos mensajes pueden compartir el instante
+ * al milisegundo cuando entran en la misma pasada de la ingesta. Con `>` estricto, un empate dejaría
+ * al contacto en el buzón; con `>=`, un empate se resuelve a favor de «ya está atendido», que es el
+ * lado seguro: el error es que desaparezca una fila que alguien iba a mirar, no que quede una fila
+ * fantasma sumando al contador para siempre.
+ */
+function leRespondieron(fila: { ultimoEntranteEl: Date | null; ultimoSalienteEl: Date | null }): boolean {
+  if (!fila.ultimoSalienteEl) return false;
+  if (!fila.ultimoEntranteEl) return true;
+  return new Date(fila.ultimoSalienteEl).getTime() >= new Date(fila.ultimoEntranteEl).getTime();
+}
+
 /** ¿Tiene alguno de estos tags? Lectura TOLERANTE — ver el `02` regla 5. */
 function tiene(etiquetas: readonly string[], buscadas: readonly string[]): boolean {
   const puestas = new Set(etiquetas.map((e) => e.trim().toLowerCase()));
@@ -163,6 +199,52 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 
   const porId = new Map(filas.map((f) => [f.id, f]));
 
+  /* ── LOS AVANCES DE HOY SE LEEN ACÁ ARRIBA, Y EL ORDEN NO ES CAPRICHO ──────
+   *
+   * Alimentan la cola 5, que va última en la pantalla. Pero el BUZÓN —cola 3— necesita saber quién
+   * ya se cerró hoy para no ponerlo en dos colas a la vez, así que la consulta tiene que estar
+   * resuelta antes de ese bucle.
+   *
+   * Se lee una vez y se usa dos. La alternativa era consultarla dos veces, y entonces las dos colas
+   * podrían discrepar: la misma tabla leída en dos instantes distintos de la misma petición. */
+  const avances = await datos()
+    .selectFrom('resultados')
+    .select(['contacto_id', 'salida', 'creado_el'])
+    .where('creado_el', '>=', sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`)
+    /* ── EL FILTRO POR ROL, QUE NO ESTABA ──────────────────────────────────
+     *
+     * Sin él, un resultado del SETTER de hoy —`agendo`, `venta_chica`— caía en las «Completadas
+     * hoy» del closer. Y como su contacto vive en territorio setter, no está en `porId`: salía como
+     * fila huérfana, o sea la línea «Contacto que ya no está en el pipeline» sobre alguien que
+     * está perfectamente en el pipeline del otro módulo. Dos afirmaciones falsas en una fila.
+     *
+     * Se filtra por `rol` y **no** por `registrado_por = <el closer designado>`, y la diferencia
+     * importa: las otras cuatro colas de esta pantalla son de TODO el territorio, no de una
+     * persona. «Completadas hoy» tiene que leerse igual — lo que se cerró en esta zona hoy — o
+     * sería la única sección con un sujeto distinto del resto de la pantalla. El cockpit SÍ es del
+     * designado, y eso es otra cosa: ahí se calcula plata. */
+    .where('rol', '=', 'closer')
+    .orderBy('creado_el', 'desc')
+    .execute();
+
+  /** Quiénes ya se cerraron hoy. Lo usan la cola 5 (para dibujarlos) y la 3 (para no repetirlos). */
+  const completadasDeHoy = new Set(avances.map((a) => a.contacto_id));
+
+  /* La medianoche de HOY en la zona de la organización, del mismo reloj que las consultas: `now()`
+     devuelve el instante en que empezó la TRANSACCIÓN, y `conOrganizacion()` envuelve todo esto en
+     una sola, así que es literalmente el mismo instante que ya usaron las de arriba. Comparar contra
+     el `Date.now()` del proceso sería otro reloj, y la misma fila podría caer de un lado en una cola
+     y del otro en la siguiente.
+
+     La usan DOS colas —seguimientos, para el borde del día, y completadas, para saber qué se atendió
+     hoy— así que se lee una vez acá arriba. */
+  const hoy = await datos()
+    .selectNoFrom(
+      sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`.as('dia'),
+    )
+    .executeTakeFirstOrThrow();
+  const medianocheDeHoy = hoy.dia.getTime();
+
   // ── Cola 1 · URGENTES ─────────────────────────────────────────────────────
   //
   // Solo los tres tags de fallo. Y los CONGELADOS no entran: un contacto sin territorio no es
@@ -174,8 +256,20 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     enUrgentes.add(fila.id);
     resultado.urgentes.push({
       fila,
-      // El motivo lo escribe el auditor en `negocio.hallazgos`. Todavía no hay auditor, así que
-      // hoy es siempre el texto de reserva — y eso es correcto: la fila NUNCA queda vacía.
+      /* ── EL MOTIVO ES SIEMPRE EL MISMO TEXTO, Y CONVIENE SABER POR QUÉ ────
+       *
+       * Se supone que lo escribe el auditor en `negocio.hallazgos`. Esa tabla **existe completa**
+       * —con `titulo`, `categoria`, `severidad`, `diagnostico`, su índice parcial de abiertos y su
+       * política de aislamiento, migración 011— y **no tiene ni un lector ni un escritor en todo el
+       * repositorio**. Se verificó: cero `insertInto('hallazgos')`, cero `selectFrom('hallazgos')`.
+       *
+       * Así que hoy este texto de reserva es el 100 % de los casos, y la pantalla lo pinta en rojo
+       * debajo de cada fila urgente. Es honesto —dice «revisar la conversación» y no inventa un
+       * diagnóstico— pero se lee como si el auditor hubiera encontrado algo y no lo hubiera dicho.
+       *
+       * Y por eso la cola está vacía: las tres etiquetas que la alimentan las pone el auditor, que
+       * no existe. No es un defecto de esta función; es una fuente que falta, y está anotada en
+       * `docs/DESPLIEGUE.md`. */
       motivo: SIN_MOTIVO,
     });
   }
@@ -237,27 +331,54 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 
   // ── Cola 3 · BUZÓN ────────────────────────────────────────────────────────
   //
-  // Las CINCO condiciones, todas obligatorias. La quinta es la que hace que la cola funcione, y
-  // no es una bandera: se comparan DOS FECHAS —el último entrante y la última resolución—.
+  // Contactos que escribieron y a los que **nadie les respondió todavía**.
   //
-  //   escribe → entrante nuevo → entra
-  //   lo atienden → se sella la resolución → sale
-  //   vuelve a escribir → el entrante es más nuevo → entra de nuevo, solo
+  // ── LA QUINTA CONDICIÓN, QUE ANTES NO EXISTÍA Y ERA EL DEFECTO CENTRAL ────
   //
-  // Con un flag, ese tercer paso habría que programarlo. Con dos fechas sale gratis.
+  // Este encabezado describía un mecanismo de dos fechas —el último entrante contra una «última
+  // resolución»— y el código de abajo tenía tres `continue` y ninguna fecha. La cuenta la dejaba
+  // escrita el propio comentario que estaba acá: *«`resueltoEl` todavía no existe como columna …
+  // así que hoy la condición se reduce a "escribió"»*.
+  //
+  // O sea que el buzón era ACUMULATIVO. Un contacto que escribió una vez se quedaba **para
+  // siempre** y sumaba al contador en cada ciclo de diez segundos, aunque se le hubiera respondido
+  // desde esta plataforma, desde el CRM, o registrando un Avanzar. No fallaba nada: el badge de
+  // «tareas pendientes» simplemente crecía y crecía hasta dejar de significar algo.
+  //
+  // ── Y LA CURA NO NECESITÓ NINGUNA COLUMNA NUEVA ───────────────────────────
+  //
+  // La pieza estaba puesta y nadie la leía: `contactos.ultimo_saliente_el`, que la migración 013
+  // mantiene con un disparador y que ya viajaba en esta misma `Fila` (`ultimoSalienteEl`).
+  //
+  // La regla es la que se pidió con estas palabras: *«solo debe estar cuando el último mensaje es
+  // de ellos y no nuestro»*. O sea **el último mensaje es ENTRANTE**:
+  //
+  //   escribe                    → entrante > saliente → entra
+  //   se le responde             → saliente > entrante → sale
+  //   vuelve a escribir          → entrante > saliente → entra de nuevo, solo
+  //
+  // Y cubre lo que un «sello de resolución» NO habría cubierto, que es la mitad del pedido:
+  // *«respondidos por nuestra parte, o de nuestra plataforma y/o de cualquier lado»*. Las dos vías
+  // escriben en `negocio.mensajes` con su dirección —el envío propio en
+  // `app/api/contactos/[id]/mensajes/route.ts` y la respuesta hecha en el CRM, que entra por
+  // `lib/negocio/ingesta.ts`— así que las dos mueven `ultimo_saliente_el`. Un sello que escribiera
+  // solo esta plataforma habría dejado en el buzón a todo el que se atendió desde el CRM.
   for (const fila of filas) {
     // 1 · no congelado → garantizado por el territorio de la consulta.
     // 2 · no está ya en Urgentes → gana la cola más específica.
     if (enUrgentes.has(fila.id)) continue;
+    // 3 · tampoco si YA SE CERRÓ HOY. Ver el comentario de `completadasDeHoy` más abajo: sin esto,
+    //     registrar un resultado deja al contacto en el buzón Y en «Completadas hoy» a la vez, que
+    //     es exactamente lo que la regla de «un contacto, una cola» venía a evitar.
+    if (completadasDeHoy.has(fila.id)) continue;
     // 4 · el bot está APAGADO. **La regla de fondo: una IA activa nunca genera tarea humana.**
     const agente = estadoDelAgente(fila.etiquetas);
     if (agente === 'atendiendo' || agente === 'atendiendo_pre_agenda' || agente === 'atendiendo_post_agenda') {
       continue;
     }
-    // 5 · escribió, y después de la última resolución. `resueltoEl` todavía no existe como
-    // columna —lo trae el sello de resolución del buzón, que es trabajo de Avanzar— así que
-    // hoy la condición se reduce a "escribió".
+    // 5 · escribió, y **el suyo es el último mensaje**.
     if (!fila.ultimoEntranteEl) continue;
+    if (leRespondieron(fila)) continue;
 
     resultado.buzon.push({
       fila,
@@ -274,57 +395,61 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
 
   // ── Cola 4 · SEGUIMIENTOS DE HOY ──────────────────────────────────────────
   //
-  // Los que tocan hoy o ya vencieron. `CasoDeSeguimiento` declara CUATRO sabores y acá se
-  // producen TRES: `manual_de_hoy`, `manual_vencido` y `automatico_en_curso`.
+  // **Solo los MANUALES**, que son los que pide una persona. Los automáticos los hace el CRM con su
+  // secuencia y no se dibujan acá; ver el comentario de `CasoDeSeguimiento`.
   //
-  // El que falta es `serie_agotada`, y no es un olvido: el cuarto sabor significa «la serie
-  // automática se acabó sin respuesta, ahora hace falta una persona». La marca candidata está
-  // en `lib/ghl/contrato.ts` —`seguimiento_terminado`— con `confianza: 'sin_confirmar'` y esta
-  // nota: *"existe en la subcuenta y nadie confirmó qué significa"*.
+  // ── EL DÍA SE COMPARA POR DÍA, Y ANTES SE COMPARABA POR INSTANTE ──────────
   //
-  // Leerla sin confirmar pondría la píldora «Serie agotada» sobre contactos cuya serie quizá
-  // sigue corriendo, y el closer dejaría de perseguir a alguien que el robot todavía persigue.
-  // Ése es el costo de adivinar acá, y es peor que el de no mostrar el sabor: hoy esos contactos
-  // aparecen como `automatico_en_curso`, que es lo que la etiqueta CONFIRMADA dice de ellos.
+  // `tareas.vence_el` es una columna `date`, así que su valor es **medianoche** de ese día. La
+  // condición de arriba admite `vence_el < mañana`, o sea que toda tarea admitida tiene una
+  // medianoche que ya pasó — y comparándola contra `now()` **todas salían `manual_vencido`**.
+  // `manual_de_hoy` era inalcanzable, y la pantalla ponía «Vencido» en rojo sobre un seguimiento que
+  // tocaba justamente hoy. Una prueba lo dejaba escrito como defecto conocido.
+  //
+  // La cura es comparar el DÍA con el día, no el instante con el instante: la base devuelve la
+  // medianoche de hoy en la zona de la organización y se compara contra ella.
   const tareas = await datos()
     .selectFrom('tareas')
-    .select(['contacto_id', 'vence_el', 'modo', 'nota'])
+    .select(['contacto_id', 'vence_el'])
     .where('completada_el', 'is', null)
     .where('vence_el', '<', sql<Date>`(date_trunc('day', timezone(${zonaHoraria}, now())) + interval '1 day') at time zone ${zonaHoraria}`)
     .orderBy('vence_el', 'asc')
     .execute();
 
-
   for (const t of tareas) {
     const fila = porId.get(t.contacto_id);
     if (!fila) continue;
-    const vencida = new Date(t.vence_el).getTime() < ahora;
+    const vencida = new Date(t.vence_el).getTime() < medianocheDeHoy;
     const caso: CasoDeSeguimiento = vencida ? 'manual_vencido' : 'manual_de_hoy';
     resultado.seguimientos.push({ fila, caso, pideManos: true });
   }
 
-  // Y los AUTOMÁTICOS EN CURSO, que salen de la etiqueta y **no piden manos**. Se muestran
-  // porque el closer quiere ver que la serie está corriendo.
-  for (const fila of filas) {
-    if (!tiene(fila.etiquetas, [SEGUIMIENTO_AUTOMATICO])) continue;
-    if (resultado.seguimientos.some((s) => s.fila.id === fila.id)) continue;
-    resultado.seguimientos.push({ fila, caso: 'automatico_en_curso', pideManos: false });
-  }
-
-  // El contador cuenta SOLO los que piden manos. Ver el comentario de `tareasPendientes`.
+  /* Todos piden manos, así que el contador suma la cola entera. El filtro `pideManos` se conserva
+     —en vez de sumar `.length`— porque el campo sigue viajando a la pantalla y un día podría volver
+     a haber una fila que no pida nada. Sumar el largo haría que agregar ese caso cambiara el
+     contador sin que nadie toque esta línea. */
   resultado.tareasPendientes += resultado.seguimientos.filter((s) => s.pideManos).length;
 
   // ── Cola 5 · COMPLETADAS HOY ──────────────────────────────────────────────
   //
   // **SIEMPRE se dibuja, vacía o no**: es el ancla de la pantalla y lo único que le dice al
-  // closer "esto ya lo hiciste". Y como filtra por fecha, se vacía sola a medianoche.
-  const avances = await datos()
-    .selectFrom('resultados')
-    .select(['contacto_id', 'salida', 'creado_el'])
-    .where('creado_el', '>=', sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`)
-    .orderBy('creado_el', 'desc')
-    .execute();
-
+  // closer "esto ya lo hiciste". Y como filtra por fecha, se vacía sola a medianoche — que es
+  // exactamente lo que se pidió: *«a medianoche se va solo»*, sin autorresolver nada por
+  // inactividad. Un contacto que nadie atendió NO entra acá: se queda en el buzón, porque decir
+  // «completado» de algo que nadie tocó es afirmar un trabajo que no ocurrió.
+  //
+  // La consulta vive más arriba: el buzón la necesita antes. Ver su comentario.
+  //
+  // ── DOS ORÍGENES, Y EL SEGUNDO SE AGREGÓ POR PEDIDO ──────────────────────
+  //
+  //   1 · un RESULTADO de Avanzar, registrado hoy;
+  //   2 · haberle RESPONDIDO hoy a alguien que estaba en el buzón.
+  //
+  // El segundo es esto: *«cuando se envía el mensaje de aquí, se pasa directamente a la casilla de
+  // completadas hoy»*. Antes no existía, así que responder sacaba al contacto del buzón y no lo
+  // dejaba en ninguna parte: el closer atendía a alguien y la pantalla no mostraba ni rastro de que
+  // lo hubiera hecho.
+  const yaEnCompletadas = new Set<string>();
   for (const a of avances) {
     const fila = porId.get(a.contacto_id);
     // ── LA FILA HUÉRFANA, QUE HAY QUE DEJAR ENTRAR ──
@@ -332,9 +457,67 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     // Si el contacto ya no está en la caché —lo sacaron del pipeline después— la fila SIGUE
     // apareciendo, sin nombre y sin íconos, pero apareciendo. El trabajo se hizo y tiene que
     // constar. Lo que NO se hace es inventarle datos.
+    yaEnCompletadas.add(a.contacto_id);
     resultado.completadas.push({
       fila: fila ?? filaHuerfana(a.contacto_id),
-      completadaPor: a.salida,
+      /* EL NOMBRE HUMANO, y antes acá viajaba el enum crudo. La pantalla lo imprimía tal cual, así
+         que decía «registrado como **acuerdo_sin_pago**». Es la misma clase de defecto que el commit
+         «Un cero se muestra como un cero, y no con jerga del CRM»: vocabulario interno delante de un
+         cliente.
+         El nombre sale de `SALIDAS`, que es el catálogo que ya usan Avanzar y el servidor para
+         validar — no una segunda tabla de traducción que quedaría vieja. Si la salida no está en el
+         catálogo se manda la clave: es preferible una jerga visible a inventar un nombre. */
+      completadaPor: definicionDe(a.salida)?.nombre ?? a.salida,
+    });
+  }
+
+  /* ── EL SEGUNDO ORIGEN: A QUIÉN LE RESPONDIMOS HOY ─────────────────────────
+   *
+   * Tres condiciones, y las tres hacen falta:
+   *
+   *   1 · **escribió alguna vez** (`ultimoEntranteEl`). Sin esto entraría todo contacto al que se le
+   *       mandó un mensaje proactivo, y eso no es «completar» nada: nunca estuvo en el buzón. Es la
+   *       condición que acota el pedido a lo que el pedido decía — *«el mensaje de AQUÍ»*.
+   *   2 · **el último mensaje es nuestro** (`leRespondieron`). Es exactamente la negación de la
+   *       condición del buzón, y por eso las dos colas no pueden contradecirse: la misma función las
+   *       decide. Si escribió después de nuestra respuesta, volvió al buzón y no está atendido.
+   *   3 · **respondimos HOY**. Es lo que hace que la sección se vacíe sola a medianoche, que es lo
+   *       que se pidió: *«a medianoche se va solo»*. Sin esta condición, «Completadas hoy» acumularía
+   *       para siempre a todo el que alguna vez se atendió — el mismo defecto que tenía el buzón.
+   *
+   * Y NO se autorresuelve nada por inactividad, también por pedido. Un contacto al que nadie
+   * respondió se queda en el buzón: decir «completado» de algo que nadie tocó es afirmar un trabajo
+   * que no ocurrió. */
+  const atendidos = filas
+    .filter((fila) => {
+      if (yaEnCompletadas.has(fila.id)) return false;
+      if (!fila.ultimoEntranteEl) return false;
+      if (!leRespondieron(fila)) return false;
+      if (!fila.ultimoSalienteEl) return false;
+      return new Date(fila.ultimoSalienteEl).getTime() >= medianocheDeHoy;
+    })
+    // El más reciente primero, entre ellos.
+    .sort(
+      (a, b) =>
+        new Date(b.ultimoSalienteEl ?? 0).getTime() - new Date(a.ultimoSalienteEl ?? 0).getTime(),
+    );
+
+  /* ── LOS DOS ORÍGENES VAN EN BLOQUES, Y NO INTERCALADOS ────────────────────
+   *
+   * Se intentó ordenar los dos juntos por hora y no se puede sin mentir: `EnLaCola` no lleva el
+   * instante en que se completó la fila, y el de un resultado vive en `resultados.creado_el`, que no
+   * viaja. Cualquier orden mezclado tendría que inventar una fecha para una de las dos mitades.
+   *
+   * Así que van en dos bloques, y el de los resultados primero a propósito: registrar una salida es
+   * más específico que contestar un mensaje. Dentro de cada bloque el orden sí es por hora
+   * descendente. */
+  for (const fila of atendidos) {
+    resultado.completadas.push({
+      fila,
+      /* Y no dice la salida, porque no hubo ninguna: dice que se contestó. Un resultado de Avanzar y
+         una respuesta cierran la fila por motivos distintos, y quien lee la columna quiere saber
+         cuál de los dos fue. */
+      completadaPor: 'Respondido',
     });
   }
 
