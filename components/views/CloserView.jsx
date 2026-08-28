@@ -110,33 +110,6 @@ export default function CloserView({ activa }) {
     setSituacion('listo');
   }, []);
 
-  /* ════════════════════════════════════════════════════════════════════════
-     NADA DE ESTA PANTALLA CUESTA SI NADIE LA ESTÁ MIRANDO
-
-     `CommandCenter` monta las diez vistas de una sola vez, y el cambio de pantalla es puro DOM. Así
-     que este componente está montado desde que la aplicación arranca, para todo el mundo que tenga
-     la sección Closer en su menú — incluidos los administradores, que entran a Ajustes.
-
-     Lo que eso costaba, medido: la primera carga MÁS **360 llamadas al CRM por hora y por empresa**,
-     con el Closer sin abrir ni una vez. Ocho horas son 2.880 llamadas por empresa por día que no
-     mira nadie, y con M empresas se multiplica.
-
-     Ahora la primera carga y el reloj cuelgan los dos de `estaALaVista`. Para quien no abre el
-     Closer el gasto es **cero**: ni la llamada inicial.
-
-     ── Y AL ENTRAR SE TRAE UNA VEZ, QUE NO ES LO MISMO QUE ANTES ────────────
-
-     El reloj **no dispara al registrarse** —está documentado en `lib/reloj.ts`— así que sin este
-     efecto, abrir el Closer mostraría lo de hace diez segundos en el mejor caso y lo de hace una
-     hora en el peor, hasta el próximo tic. Con él, entrar cuesta un ciclo, que es lo que costaba
-     antes de todos modos.
-
-     Y se dispara CADA VEZ que se vuelve a entrar, no solo la primera: quien sale a Ajustes y vuelve
-     a los veinte minutos tiene que ver su día de ahora, no el de cuando se fue. */
-  useEffect(() => {
-    if (!aLaVista) return;
-    void tic();
-  }, [aLaVista, tic]);
 
   /* ── EL RELOJ DE 10 SEGUNDOS, QUE ESTUVO BLOQUEADO A PROPÓSITO ──────────────
    *
@@ -175,6 +148,44 @@ export default function CloserView({ activa }) {
      todo el consumo: `usarReloj` con clave nula **no registra nada**, así que no hay intervalo, no
      hay pedido a la ingesta y no hay llamada al CRM. Ver el efecto de arriba. */
   usarReloj(aLaVista ? 'operacion:tic' : null, tic, CADENCIA.operacion);
+
+  /* ── ESTE EFECTO VA DESPUÉS DE `const tic`, Y NO ES ORDEN LIBRE ──────────────
+   *
+   * Estuvo arriba, donde vivía la carga inicial, y **la pantalla no abría**:
+   * `ReferenceError: Cannot access 'tic' before initialization`. Un `const` no está inicializado
+   * hasta su línea, así que leerlo antes revienta en tiempo de ejecución — y no en tiempo de
+   * compilación: `next build` compiló, `tsc` pasó y las 885 pruebas quedaron verdes. Lo encontró
+   * abrir la aplicación en el navegador.
+   *
+   * Y el síntoma fue el peor posible: la vista entera en blanco con «esta página no se pudo cargar»,
+   * porque el error ocurre durante el render del componente. */
+  /* ════════════════════════════════════════════════════════════════════════
+     NADA DE ESTA PANTALLA CUESTA SI NADIE LA ESTÁ MIRANDO
+
+     `CommandCenter` monta las diez vistas de una sola vez, y el cambio de pantalla es puro DOM. Así
+     que este componente está montado desde que la aplicación arranca, para todo el mundo que tenga
+     la sección Closer en su menú — incluidos los administradores, que entran a Ajustes.
+
+     Lo que eso costaba, medido: la primera carga MÁS **360 llamadas al CRM por hora y por empresa**,
+     con el Closer sin abrir ni una vez. Ocho horas son 2.880 llamadas por empresa por día que no
+     mira nadie, y con M empresas se multiplica.
+
+     Ahora la primera carga y el reloj cuelgan los dos de `estaALaVista`. Para quien no abre el
+     Closer el gasto es **cero**: ni la llamada inicial.
+
+     ── Y AL ENTRAR SE TRAE UNA VEZ, QUE NO ES LO MISMO QUE ANTES ────────────
+
+     El reloj **no dispara al registrarse** —está documentado en `lib/reloj.ts`— así que sin este
+     efecto, abrir el Closer mostraría lo de hace diez segundos en el mejor caso y lo de hace una
+     hora en el peor, hasta el próximo tic. Con él, entrar cuesta un ciclo, que es lo que costaba
+     antes de todos modos.
+
+     Y se dispara CADA VEZ que se vuelve a entrar, no solo la primera: quien sale a Ajustes y vuelve
+     a los veinte minutos tiene que ver su día de ahora, no el de cuando se fue. */
+  useEffect(() => {
+    if (!aLaVista) return;
+    void tic();
+  }, [aLaVista, tic]);
 
   function cuerpo() {
     if (situacion === 'cargando') {
