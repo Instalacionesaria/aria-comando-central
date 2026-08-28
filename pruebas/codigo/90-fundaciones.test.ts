@@ -470,11 +470,27 @@ test('los cuatro entregables largos llevan el presupuesto amplio', () => {
   }
 });
 
-test('el modelo es el del hub, y cambiarlo es una decisión', () => {
-  // No es una preferencia: mientras ARIA-brain siga en pie, un alumno tiene que poder comparar su
-  // avatar de acá con el de allá. Un modelo distinto sobre el mismo prompt da un documento
-  // distinto, y la diferencia se leería como un error del port.
-  assert.equal(MODELO, 'claude-sonnet-4-6');
+test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', () => {
+  /* ── ESTA PRUEBA FIJABA UN IDENTIFICADOR QUE NO EXISTE ──────────────────
+   *
+   * Pedía `claude-sonnet-4-6` «porque es el que usa ARIA-brain», y ese valor **no es un modelo de la
+   * API de Anthropic**: toda generación fallaba con `404 not_found_error`. La prueba estaba en verde
+   * fijando la causa del defecto — es el caso exacto de una prueba que confirma una suposición en vez
+   * de un hecho.
+   *
+   * Ahora se comprueba contra una lista de identificadores válidos, no contra uno solo. Un valor
+   * inventado no pasa, y cambiar de modelo por un motivo real sigue siendo una línea. */
+  const VALIDOS = [
+    'claude-opus-5',
+    'claude-sonnet-5',
+    'claude-fable-5',
+    'claude-haiku-4-5-20251001',
+  ];
+  assert.ok(
+    VALIDOS.includes(MODELO),
+    `«${MODELO}» no es un identificador de modelo válido, así que TODA generación va a fallar con 404 ` +
+      'y la pantalla va a decir «el modelo no respondió» — mandando a revisar la clave, que está bien',
+  );
 });
 
 // ─── El veredicto nunca sale crudo ─────────────────────────────────────────

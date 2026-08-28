@@ -81,7 +81,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
     setEstado(null);
     setProblema(
       respuesta.tipo === 'rechazado'
-        ? { texto: mensajeDeRechazo(respuesta.codigo, respuesta.estado), codigo: respuesta.codigo }
+        ? { texto: mensajeDeRechazo(respuesta.codigo, respuesta.estado, respuesta.detalle), codigo: respuesta.codigo }
         : { texto: SIN_RESPUESTA, codigo: 'sin_respuesta' },
     );
   }, [rutaEstado]);

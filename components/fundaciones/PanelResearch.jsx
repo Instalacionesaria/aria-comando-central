@@ -100,7 +100,7 @@ export default function PanelResearch({
     setGuardando(false);
     if (r.tipo !== 'datos') {
       setErrorAlGuardar(
-        r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado) : SIN_RESPUESTA,
+        r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado, r.detalle) : SIN_RESPUESTA,
       );
       return;
     }
@@ -120,7 +120,7 @@ export default function PanelResearch({
 
     if (r.tipo !== 'datos') {
       const mal =
-        r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado) : SIN_RESPUESTA;
+        r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado, r.detalle) : SIN_RESPUESTA;
       setError((previo) => ({ ...previo, [paso]: mal }));
       setCorriendo(null);
       return false;

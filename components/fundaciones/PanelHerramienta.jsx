@@ -85,7 +85,7 @@ export default function PanelHerramienta({
   /** Traduce las tres ramas del cliente a un mensaje, o `null` si trajo datos. */
   const problema = (respuesta) => {
     if (respuesta.tipo === 'datos') return null;
-    if (respuesta.tipo === 'rechazado') return mensajeDeRechazo(respuesta.codigo, respuesta.estado);
+    if (respuesta.tipo === 'rechazado') return mensajeDeRechazo(respuesta.codigo, respuesta.estado, respuesta.detalle);
     return SIN_RESPUESTA;
   };
 

@@ -97,7 +97,7 @@ export default function PanelProspeccion({
 
   const problema = (respuesta) => {
     if (respuesta.tipo === 'datos') return null;
-    if (respuesta.tipo === 'rechazado') return mensajeDeRechazo(respuesta.codigo, respuesta.estado);
+    if (respuesta.tipo === 'rechazado') return mensajeDeRechazo(respuesta.codigo, respuesta.estado, respuesta.detalle);
     return SIN_RESPUESTA;
   };
 

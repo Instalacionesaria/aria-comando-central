@@ -15,7 +15,7 @@
 //
 // ── EL MODELO ES EL DEL HUB, Y ESO ES UNA DECISIÓN ───────────────────────────
 //
-// Ver `MODELO`. No es el más capaz disponible: es el mismo que usa ARIA-brain, porque estas siete
+// Ver `MODELO`. La intención era usar el mismo que ARIA-brain, porque estas siete
 // herramientas van a convivir con las del hub durante meses y un alumno tiene que poder comparar su
 // avatar de acá con el de allá. Un modelo distinto sobre el mismo prompt da un documento distinto, y
 // la diferencia se leería como un error del port.
@@ -26,12 +26,15 @@ import { pedirExterno } from '../http/cliente.ts';
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
  *
- * `claude-sonnet-4-6` es el que usa ARIA-brain hoy. Mantenerlo es lo que hace comparables los
- * entregables de los dos sistemas mientras los dos estén en pie. Cuando el hub se apague, esta línea
- * es el único lugar que hay que cambiar — y conviene cambiarla ahí, no antes, porque subir de modelo
- * mientras hay comparación en curso convierte "el port genera distinto" en un diagnóstico imposible.
+ * Decía `claude-sonnet-4-6` «porque es el que usa ARIA-brain», y **ese identificador no existe en la
+ * API de Anthropic**, así que TODA generación fallaba con `404 not_found_error`. La pantalla mostraba
+ * «el modelo no respondió» y quien lo leía revisaba la clave, que estaba perfecta.
+ *
+ * El objetivo original sigue siendo válido —igualar el modelo del hub para que un alumno pueda
+ * comparar su entregable de acá con el de allá— pero un identificador inválido no iguala nada: no
+ * genera. Si el hub usa otro modelo hoy, esta línea es el único lugar que hay que cambiar.
  */
-export const MODELO = 'claude-sonnet-4-6';
+export const MODELO = 'claude-sonnet-5';
 
 const API = 'https://api.anthropic.com/v1/messages';
 const VERSION_API = '2023-06-01';

@@ -72,8 +72,23 @@ export const SIN_RESPUESTA =
  * Un código que no está en el mapa NO se muestra como un error genérico vacío: se muestra con el
  * código a la vista. Alguien lo puede buscar; "algo salió mal" no se puede buscar.
  */
-export function mensajeDeRechazo(codigo: string, estado: number): string {
+export function mensajeDeRechazo(codigo: string, estado: number, detalle?: string | null): string {
   const texto = TEXTOS[codigo];
-  if (texto) return texto;
-  return `El servidor rechazó la operación (${estado} · ${codigo}). Pasale este código a quien administra el sistema.`;
+  if (!texto) {
+    return `El servidor rechazó la operación (${estado} · ${codigo}). Pasale este código a quien administra el sistema.`;
+  }
+
+  /* ── EL DETALLE SE MUESTRA, Y ANTES SE PERDÍA ─────────────────────────
+   *
+   * Esta función devolvía solo el texto amable y **tiraba el `detalle`**. El servidor sí lo manda —
+   * `rechazoDeModelo` pasa el código de Anthropic a propósito, con su motivo escrito— y la pantalla lo
+   * descartaba.
+   *
+   * El costo fue concreto: `not_found_error` (modelo inválido), `authentication_error` (clave mal) y
+   * `overloaded_error` (el proveedor saturado) mostraban **el mismo mensaje**. Con un modelo cuyo
+   * identificador no existía, quien lo leía revisó la clave — que estaba bien guardada.
+   *
+   * Son tres investigaciones distintas y ahora se distinguen. El código y no el mensaje del proveedor,
+   * que es texto que no controlamos: el mismo criterio que ya usa el servidor. */
+  return detalle ? `${texto} (${detalle})` : texto;
 }
