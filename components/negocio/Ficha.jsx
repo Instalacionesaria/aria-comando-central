@@ -55,7 +55,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
-import { horaEnZona } from '../../lib/negocio/tiempo.ts';
+import { haceCuanto, horaEnZona } from '../../lib/negocio/tiempo.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import Avanzar from './Avanzar.jsx';
 import { SeisIconos } from './Fila.jsx';
@@ -133,17 +133,10 @@ function iniciales(nombre) {
  * preposición. Y el umbral de «ahora» se aplica al VALOR ABSOLUTO, porque un minuto para adelante
  * también es ahora.
  */
-function hace(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  const futuro = ms < 0;
-  const min = Math.round(Math.abs(ms) / 60000);
-  const decir = (cantidad, unidad) => (futuro ? `en ${cantidad} ${unidad}` : `hace ${cantidad} ${unidad}`);
-  if (min < 1) return 'ahora';
-  if (min < 60) return decir(min, 'min');
-  const h = Math.round(min / 60);
-  if (h < 24) return decir(h, 'h');
-  return decir(Math.round(h / 24), 'd');
-}
+/* La copia de esta función que vivía acá era la BUENA —la que maneja el futuro— y la de `Fila.jsx`
+   no, así que la lista y la ficha decían cosas distintas del mismo instante. La única definición
+   está en `lib/negocio/tiempo.ts`. */
+const hace = haceCuanto;
 
 /** El aviso de lo que falta medir. NO es un error: es un hecho sobre el sistema. */
 function LoQueFalta({ texto }) {
@@ -223,11 +216,254 @@ function EstadoDeEnvio({ m }) {
   return null;
 }
 
+/**
+ * El cuerpo de la pestaña activa de la ficha.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ESTÁ ACÁ AFUERA, Y NO ES UNA CUESTIÓN DE ESTILO
+ *
+ * Estaba declarada DENTRO de `Ficha` y usada como etiqueta JSX. React compara el tipo de un
+ * elemento **por identidad de referencia**, y una función declarada dentro de un componente es una
+ * función NUEVA en cada render. Así que en cada render de `Ficha`, React veía un tipo distinto y
+ * **desmontaba y volvía a montar todo el cuerpo de la pestaña activa**.
+ *
+ * Las dos consecuencias, medidas:
+ *
+ *   · **NOTAS.** Cada tecla llama `setNota` → render → se remonta el `<textarea>` → **se pierde el
+ *     foco y el cursor**. Escribir una nota era escribir una letra y volver a hacer clic. Es
+ *     exactamente el síntoma que se reportó como «las notas no se guardan» — y se guardaban
+ *     perfecto: una tabla, un endpoint, un orden, con su prueba. Lo que no se podía era escribirlas.
+ *   · **CHAT.** El reloj de 5 segundos dispara `setPestanas`, así que se remontaban las 200
+ *     burbujas cada cinco segundos.
+ *
+ * Y no hay React Compiler que lo mitigue: `next.config.mjs` no lo activa.
+ *
+ * Todo lo que antes tomaba del cierre entra ahora por propiedades. Es más verboso, y es la
+ * diferencia entre un `<textarea>` que conserva el foco y uno que no.
+ *
+ * Hay una prueba de forma que exige que esta función siga acá afuera
+ * (`pruebas/codigo/108-ficha-forma.test.ts`): es la clase de defecto que no rompe nada, no tira
+ * ningún error y solo se ve escribiendo en un campo, así que la guarda tiene que ser de código.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+function Cuerpo({
+  activa,
+  pestanas,
+  contacto,
+  zona,
+  nota,
+  setNota,
+  agregarNota,
+  guardandoNota,
+  avisoNota,
+}) {
+  const p = pestanas[activa];
+  if (p === undefined) return <div className="dw-empty">Cargando…</div>;
+  if (p.error) {
+    return (
+      <div className="fd-aviso mal">
+        <i>⚠</i>
+        <span>{p.error}</span>
+      </div>
+    );
+  }
+
+  if (activa === 'chat') {
+    /* EL ATRASO VA ARRIBA Y EN LOS DOS CASOS: con mensajes y sin ellos. Es la diferencia entre
+       «este contacto no escribió» y «hace tres días que no traemos nada de nadie», y sin esta línea
+       las dos se ven igual — una conversación que termina el martes. */
+    const atraso = p.frescura?.aviso ? (
+      <div className="fd-aviso falta" role="status">
+        <i>◍</i>
+        <span>{p.frescura.aviso}</span>
+      </div>
+    ) : null;
+
+    if (p.filas.length === 0) {
+      return (
+        <div className="cw-chat">
+          {atraso}
+          <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />
+        </div>
+      );
+    }
+    /* Los separadores de día los pone `conSeparadores`, no este JSX, y no es por prolijidad:
+       «donde cambia el día» es una decisión con dos zonas horarias adentro y en el JSX no se
+       puede probar. Sin ellos, una conversación de varios días se lee como si el tiempo
+       retrocediera — `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue el día. */
+    /* CONTENEDOR PROPIO, y es la mitad del arreglo.
+       `.cw-body` es un bloque, y un bloque hace que cada burbuja ocupe TODO el ancho: medido, las
+       nueve burbujas medían 419,3 px, la de «ok» igual que la de 193 caracteres, con la hora
+       alineada a la derecha a 380 px de su propio texto. `.cw-chat` es una columna flex, así que
+       cada burbuja mide lo que mide su contenido y `align-self` la manda a su lado.
+       No se vuelve flex `.cw-body` entero porque las otras cuatro pestañas necesitan bloques de
+       ancho completo, y ahí se encogerían al ancho de su texto.
+       `aria-live="polite"`: los mensajes entran solos con el reloj del chat, y sin esto quien usa
+       lector de pantalla no se entera. `polite` y no `assertive` a propósito — interrumpir la
+       lectura en curso por cada mensaje es peor que enterarse un momento después. */
+    return (
+      <div className="cw-chat" aria-live="polite">
+        {atraso}
+        {conSeparadores(p.filas, zona).map((r) =>
+          r.tipo === 'dia' ? (
+            <div className="cw-day" key={r.clave}>
+              {r.texto}
+            </div>
+          ) : (
+            <Burbuja key={r.clave} m={r.mensaje} zona={zona} />
+          ),
+        )}
+      </div>
+    );
+  }
+
+  if (activa === 'llamada') {
+    if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin llamadas.'} />;
+    return (
+      <>
+        {p.filas.map((l) => (
+          <div className="dw-block" key={l.id}>
+            <div className="dw-sec-t">
+              {l.agente ?? 'Llamada'}
+              <span className="r">{l.contestada ? 'contestada' : 'sin respuesta'}</span>
+            </div>
+            <div className="kv-box">
+              {/* Si el dato no existe, el bloque no se dibuja. El `04` § 1: *"un campo vacío
+                  afirma algo falso"*. */}
+              {l.inicioEl ? (
+                <div className="kv">
+                  <span>Cuándo</span>
+                  <b>{new Date(l.inicioEl).toLocaleString('es')}</b>
+                </div>
+              ) : null}
+              {l.duracionSegundos !== null ? (
+                <div className="kv">
+                  <span>Duración</span>
+                  <b>{Math.round(l.duracionSegundos / 60)} min</b>
+                </div>
+              ) : null}
+              {l.resumen ? (
+                <div className="kv">
+                  <span>Resumen</span>
+                  <b>{l.resumen}</b>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  if (activa === 'perfil') {
+    return (
+      <>
+        {GRUPOS_DEL_PERFIL.map((g) => {
+          const suyos = p.filas.filter((c) => c.grupo === g.clave);
+          // Los grupos sin campos NO se dibujan. Un encabezado con nada abajo es ruido.
+          if (suyos.length === 0) return null;
+          return (
+            <div className="dw-block" key={g.clave}>
+              <div className="dw-sec-t">{g.titulo}</div>
+              <div className="kv-box">
+                {/* Sin `style` en línea: el `text-align:left` apagaba la alineación de `.kv` pero
+                    no tocaba sus COLUMNAS, que son `1fr auto`. Cada fila calculaba su propio corte
+                    y los seis valores del Perfil arrancaban a 272, 400, 142, 472, 311 y 497 px.
+                    La columna de etiqueta fija vive ahora en `app/closer.css`. */}
+                {suyos.map((c) => (
+                  <div className="kv" key={c.etiqueta}>
+                    <span>{c.etiqueta}</span>
+                    <b>{c.valor}</b>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {p.falta ? <LoQueFalta texto={p.falta} /> : null}
+      </>
+    );
+  }
+
+  if (activa === 'historial') {
+    if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin eventos.'} />;
+    return (
+      <>
+        {p.filas.map((e) => (
+          <div className="ld-time" key={e.id}>
+            <span className="ld-dot ok" />
+            <div>
+              <div className="ld-t">{e.titulo}</div>
+              {/* El autor SIEMPRE, y `Sistema` cuando lo hizo un automatismo. El `04` § 3: esa
+                  distinción es lo que hace que el historial sirva para entender qué pasó. */}
+              <div className="ld-m">
+                {e.autor}
+                {e.detalle ? ` · ${e.detalle}` : ''}
+              </div>
+            </div>
+            <span className="ld-when">{hace(e.cuando)}</span>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  // Notas
+  return (
+    <>
+      <div className="fd-campo">
+        <label htmlFor="ficha-nota">Agregar una nota</label>
+        <textarea
+          id="ficha-nota"
+          rows={3}
+          value={nota}
+          placeholder="Lo que haya que recordar de este contacto…"
+          onChange={(e) => setNota(e.target.value)}
+        />
+      </div>
+      <div className="aj-fila">
+        <button
+          type="button"
+          className="fd-btn"
+          disabled={guardandoNota || nota.trim().length === 0}
+          onClick={() => void agregarNota()}
+        >
+          {guardandoNota ? 'Guardando…' : 'Guardar nota'}
+        </button>
+      </div>
+      {avisoNota ? (
+        /* `alert` y no `status`: es el fallo de algo que la persona acaba de hacer, y llega
+           cuando ya dejó de mirar el botón. Los avisos que NO son consecuencia de una acción
+           —el atraso del barrido— siguen siendo `status`, que no interrumpe. */
+        <div className="fd-aviso mal" role="alert">
+          <i>⚠</i>
+          <span>{avisoNota}</span>
+        </div>
+      ) : null}
+
+      {p.filas.length === 0 ? (
+        <LoQueFalta texto="Este contacto todavía no tiene notas." />
+      ) : (
+        p.filas.map((n) => (
+          <div className="pr-box cw-nota" key={n.id}>
+            <div className="cw-nota-cuerpo">{n.cuerpo}</div>
+            <div className="cw-nota-pie">
+              {/* `null` = la importó el sistema desde el CRM, y se dice así. Poner el nombre de
+                  quien mira sería atribuirle una nota que no escribió. */}
+              {n.autor ?? 'Sistema'} · {hace(n.creadoEl)}
+              {n.origen === 'importada' ? ' · importada del CRM' : ''}
+            </div>
+          </div>
+        ))
+      )}
+    </>
+  );
+}
+
 export default function Ficha({ contactoId, alCerrar }) {
   const [contacto, setContacto] = useState(null);
   const [refresco, setRefresco] = useState(null);
   /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
-  const [enlaceAgendar, setEnlaceAgendar] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
   const [activa, setActiva] = useState('chat');
@@ -320,12 +556,32 @@ export default function Ficha({ contactoId, alCerrar }) {
     }
     setContacto(r.datos.contacto);
     setRefresco(r.datos.refresco);
-    setEnlaceAgendar(r.datos.enlaceAgendar ?? null);
     setSituacion('listo');
   }, [contactoId]);
 
   useEffect(() => {
     setSituacion('cargando');
+    /* ── Y TODO LO QUE ES DE UN CONTACTO SE VACÍA CON ÉL ──────────────────
+     *
+     * Hoy los cuatro lugares que abren la ficha lo hacen con `{abierta ? <Ficha … /> : null}`, o sea
+     * que cerrar DESMONTA y el estado se va solo. Este bloque no arregla un síntoma visible: hace que
+     * la propiedad sea del componente y no del patrón de sus cuatro invocaciones.
+     *
+     * La diferencia importa porque lo que queda si `contactoId` cambia sin desmontar es de lo peor
+     * que puede pasar en esta pantalla: `pestanas` está indexado por PESTAÑA y no por contacto, así
+     * que la guarda `pestanas[activa] !== undefined` cortaría la carga y se verían **las notas y el
+     * historial del contacto anterior con el nombre del nuevo**. Y `loRegistrado` mostraría el recibo
+     * de un Avanzar de otra persona.
+     *
+     * Nada de eso falla ni se ve raro. Un quinto lugar que abra la ficha —una lista que quede
+     * clicable detrás del panel, un teclado que salte al siguiente— lo estrena sin aviso. */
+    setPestanas({});
+    setLoRegistrado(null);
+    setNota('');
+    setAvisoNota(null);
+    setBorrador('');
+    setAvisoEnvio(null);
+    setVentana(null);
     void cargarContacto();
   }, [cargarContacto]);
 
@@ -596,209 +852,6 @@ export default function Ficha({ contactoId, alCerrar }) {
 
   // ─── El cuerpo de cada pestaña ────────────────────────────────────────────
 
-  function Cuerpo() {
-    const p = pestanas[activa];
-    if (p === undefined) return <div className="dw-empty">Cargando…</div>;
-    if (p.error) {
-      return (
-        <div className="fd-aviso mal">
-          <i>⚠</i>
-          <span>{p.error}</span>
-        </div>
-      );
-    }
-
-    if (activa === 'chat') {
-      /* EL ATRASO VA ARRIBA Y EN LOS DOS CASOS: con mensajes y sin ellos. Es la diferencia entre
-         «este contacto no escribió» y «hace tres días que no traemos nada de nadie», y sin esta línea
-         las dos se ven igual — una conversación que termina el martes. */
-      const atraso = p.frescura?.aviso ? (
-        <div className="fd-aviso falta" role="status">
-          <i>◍</i>
-          <span>{p.frescura.aviso}</span>
-        </div>
-      ) : null;
-
-      if (p.filas.length === 0) {
-        return (
-          <div className="cw-chat">
-            {atraso}
-            <LoQueFalta texto={p.falta ?? 'Sin mensajes.'} />
-          </div>
-        );
-      }
-      /* Los separadores de día los pone `conSeparadores`, no este JSX, y no es por prolijidad:
-         «donde cambia el día» es una decisión con dos zonas horarias adentro y en el JSX no se
-         puede probar. Sin ellos, una conversación de varios días se lee como si el tiempo
-         retrocediera — `19:14` seguido de `08:09` parece desorden cuando lo que cambió fue el día. */
-      /* CONTENEDOR PROPIO, y es la mitad del arreglo.
-         `.cw-body` es un bloque, y un bloque hace que cada burbuja ocupe TODO el ancho: medido, las
-         nueve burbujas medían 419,3 px, la de «ok» igual que la de 193 caracteres, con la hora
-         alineada a la derecha a 380 px de su propio texto. `.cw-chat` es una columna flex, así que
-         cada burbuja mide lo que mide su contenido y `align-self` la manda a su lado.
-         No se vuelve flex `.cw-body` entero porque las otras cuatro pestañas necesitan bloques de
-         ancho completo, y ahí se encogerían al ancho de su texto.
-         `aria-live="polite"`: los mensajes entran solos con el reloj del chat, y sin esto quien usa
-         lector de pantalla no se entera. `polite` y no `assertive` a propósito — interrumpir la
-         lectura en curso por cada mensaje es peor que enterarse un momento después. */
-      return (
-        <div className="cw-chat" aria-live="polite">
-          {atraso}
-          {conSeparadores(p.filas, zona).map((r) =>
-            r.tipo === 'dia' ? (
-              <div className="cw-day" key={r.clave}>
-                {r.texto}
-              </div>
-            ) : (
-              <Burbuja key={r.clave} m={r.mensaje} zona={zona} />
-            ),
-          )}
-        </div>
-      );
-    }
-
-    if (activa === 'llamada') {
-      if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin llamadas.'} />;
-      return (
-        <>
-          {p.filas.map((l) => (
-            <div className="dw-block" key={l.id}>
-              <div className="dw-sec-t">
-                {l.agente ?? 'Llamada'}
-                <span className="r">{l.contestada ? 'contestada' : 'sin respuesta'}</span>
-              </div>
-              <div className="kv-box">
-                {/* Si el dato no existe, el bloque no se dibuja. El `04` § 1: *"un campo vacío
-                    afirma algo falso"*. */}
-                {l.inicioEl ? (
-                  <div className="kv">
-                    <span>Cuándo</span>
-                    <b>{new Date(l.inicioEl).toLocaleString('es')}</b>
-                  </div>
-                ) : null}
-                {l.duracionSegundos !== null ? (
-                  <div className="kv">
-                    <span>Duración</span>
-                    <b>{Math.round(l.duracionSegundos / 60)} min</b>
-                  </div>
-                ) : null}
-                {l.resumen ? (
-                  <div className="kv">
-                    <span>Resumen</span>
-                    <b>{l.resumen}</b>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </>
-      );
-    }
-
-    if (activa === 'perfil') {
-      return (
-        <>
-          {GRUPOS_DEL_PERFIL.map((g) => {
-            const suyos = p.filas.filter((c) => c.grupo === g.clave);
-            // Los grupos sin campos NO se dibujan. Un encabezado con nada abajo es ruido.
-            if (suyos.length === 0) return null;
-            return (
-              <div className="dw-block" key={g.clave}>
-                <div className="dw-sec-t">{g.titulo}</div>
-                <div className="kv-box">
-                  {/* Sin `style` en línea: el `text-align:left` apagaba la alineación de `.kv` pero
-                      no tocaba sus COLUMNAS, que son `1fr auto`. Cada fila calculaba su propio corte
-                      y los seis valores del Perfil arrancaban a 272, 400, 142, 472, 311 y 497 px.
-                      La columna de etiqueta fija vive ahora en `app/closer.css`. */}
-                  {suyos.map((c) => (
-                    <div className="kv" key={c.etiqueta}>
-                      <span>{c.etiqueta}</span>
-                      <b>{c.valor}</b>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {p.falta ? <LoQueFalta texto={p.falta} /> : null}
-        </>
-      );
-    }
-
-    if (activa === 'historial') {
-      if (p.filas.length === 0) return <LoQueFalta texto={p.falta ?? 'Sin eventos.'} />;
-      return (
-        <>
-          {p.filas.map((e) => (
-            <div className="ld-time" key={e.id}>
-              <span className="ld-dot ok" />
-              <div>
-                <div className="ld-t">{e.titulo}</div>
-                {/* El autor SIEMPRE, y `Sistema` cuando lo hizo un automatismo. El `04` § 3: esa
-                    distinción es lo que hace que el historial sirva para entender qué pasó. */}
-                <div className="ld-m">
-                  {e.autor}
-                  {e.detalle ? ` · ${e.detalle}` : ''}
-                </div>
-              </div>
-              <span className="ld-when">{hace(e.cuando)}</span>
-            </div>
-          ))}
-        </>
-      );
-    }
-
-    // Notas
-    return (
-      <>
-        <div className="fd-campo">
-          <label htmlFor="ficha-nota">Agregar una nota</label>
-          <textarea
-            id="ficha-nota"
-            rows={3}
-            value={nota}
-            placeholder="Lo que haya que recordar de este contacto…"
-            onChange={(e) => setNota(e.target.value)}
-          />
-        </div>
-        <div className="aj-fila">
-          <button
-            type="button"
-            className="fd-btn"
-            disabled={guardandoNota || nota.trim().length === 0}
-            onClick={() => void agregarNota()}
-          >
-            {guardandoNota ? 'Guardando…' : 'Guardar nota'}
-          </button>
-        </div>
-        {avisoNota ? (
-          /* `alert` y no `status`: es el fallo de algo que la persona acaba de hacer, y llega
-             cuando ya dejó de mirar el botón. Los avisos que NO son consecuencia de una acción
-             —el atraso del barrido— siguen siendo `status`, que no interrumpe. */
-          <div className="fd-aviso mal" role="alert">
-            <i>⚠</i>
-            <span>{avisoNota}</span>
-          </div>
-        ) : null}
-
-        {p.filas.length === 0 ? (
-          <LoQueFalta texto="Este contacto todavía no tiene notas." />
-        ) : (
-          p.filas.map((n) => (
-            <div className="pr-box cw-nota" key={n.id}>
-              <div className="cw-nota-cuerpo">{n.cuerpo}</div>
-              <div className="cw-nota-pie">
-                {/* `null` = la importó el sistema desde el CRM, y se dice así. Poner el nombre de
-                    quien mira sería atribuirle una nota que no escribió. */}
-                {n.autor ?? 'Sistema'} · {hace(n.creadoEl)}
-                {n.origen === 'importada' ? ' · importada del CRM' : ''}
-              </div>
-            </div>
-          ))
-        )}
-      </>
-    );
-  }
 
   // ─── El panel ─────────────────────────────────────────────────────────────
 
@@ -854,50 +907,29 @@ export default function Ficha({ contactoId, alCerrar }) {
             >
               Avanzar →
             </button>
-            {/* El enlace al CRM solo si se sabe a dónde. Con `enlaceCrm` nulo el botón NO se
-                dibuja, en vez de llevar a una página que no es la de este contacto. */}
-            {refresco?.enlaceCrm ? (
-              <button
-                type="button"
-                className="cw-pin"
-                onClick={() => window.open(refresco.enlaceCrm, '_blank', 'noopener')}
-              >
-                ↗ Ver en GHL
-              </button>
-            ) : null}
-            {/* ── AGENDAR: SE ATENÚA, NO DESAPARECE ────────────────────────────
-                Es la misma regla que el botón de la sala en la Agenda, y por el mismo motivo escrito
-                allá: *"atenuado con su explicación, el closer entiende que esa cita no tiene sala.
-                Desaparecido, cree que la interfaz se rompió — y va a buscar el enlace a mano en otro
-                lado"*.
+            {/* ── ACÁ HABÍA DOS BOTONES MÁS, Y SE QUITARON A PEDIDO ──────────────
+                «↗ Ver en GHL» abría la ficha del contacto en el CRM, y «◷ Agendar» el calendario de
+                agendamiento de la empresa. Los dos funcionaban.
 
-                Y la diferencia con «Ver en GHL», que sí desaparece: ese enlace depende de ESTE
-                contacto —sin identificador en el CRM no hay página a la que ir— y éste depende de una
-                configuración de la empresa. Lo primero no se puede arreglar desde acá; lo segundo sí,
-                y el `title` dice dónde. */}
-            {/* `aria-disabled` y NO `disabled`, y no es un detalle: un elemento `disabled` no
-                recibe foco, así que con teclado el `title` es inalcanzable y el lector de pantalla
-                salta el botón entero. O sea que la mitad del diseño de acá arriba —«atenuado con su
-                explicación»— no le llegaba a quien no usa ratón. Con `aria-disabled` el botón sigue
-                en el recorrido, anuncia que está deshabilitado, y su motivo se lee. Que no haga
-                nada al pulsarlo lo garantiza la guarda del `onClick`, que ya estaba. */}
-            <button
-              type="button"
-              className="cw-pin"
-              aria-disabled={!enlaceAgendar}
-              title={
-                enlaceAgendar
-                  ? 'Abre el calendario de agendamiento de la empresa'
-                  : 'No hay calendario de agendamiento configurado. Se carga en Ajustes → Credenciales.'
-              }
-              onClick={() => enlaceAgendar && window.open(enlaceAgendar, '_blank', 'noopener')}
-            >
-              ◷ Agendar
-            </button>
+                Se fueron porque las dos acciones mandan al closer FUERA de esta pantalla, y esta
+                pantalla es la que tiene todo: los mensajes, el historial, las notas, y Avanzar como
+                único escritor de resultados. Un trabajo que empieza acá y termina en el CRM deja la
+                mitad del registro del otro lado.
+
+                Con ellos se fueron los datos que **solo** ellos consumían: `refresco.enlaceCrm` y
+                `enlaceAgendar` de `app/api/contactos/[id]/route.ts`, y las reglas
+                `.cw-acciones .cw-pin` de `app/closer.css`. Un campo que ninguna pantalla lee es un
+                campo que dentro de seis meses nadie sabe si se puede tocar.
+
+                Lo que **no** se fue: `identidad.organizaciones_credenciales.crm_calendario_id`
+                sigue configurándose en Ajustes → Credenciales, y `lib/ghl/agendar.ts` sigue siendo
+                la única definición de la forma de esa URL, medida y con sus pruebas. El dato no se
+                borró; se dejó de sacar a la pantalla. */}
           </div>
 
-          {/* EL ENCABEZADO ES SOLO ESTADO. Nada de acá es clicable salvo cerrar y el enlace al
-              CRM: es una foto del contacto, no un panel de control (`02` § 2). */}
+          {/* EL ENCABEZADO ES SOLO ESTADO. Nada de acá es clicable salvo cerrar: es una foto
+              del contacto, no un panel de control (`02` § 2). Y desde que se quitaron los dos
+              enlaces al CRM, la única acción de este panel es Avanzar. */}
           <div className="cw-meta">
             {/* La píldora viene ARMADA del servidor, la misma que la fila que abrió la ficha. Es
                 el espejo que el `02` exige, y es cierto por construcción: no hay dos formatos que
@@ -961,7 +993,17 @@ export default function Ficha({ contactoId, alCerrar }) {
               <span>{causa}</span>
             </div>
           ) : (
-            <Cuerpo />
+            <Cuerpo
+            activa={activa}
+            pestanas={pestanas}
+            contacto={contacto}
+            zona={zona}
+            nota={nota}
+            setNota={setNota}
+            agregarNota={agregarNota}
+            guardandoNota={guardandoNota}
+            avisoNota={avisoNota}
+          />
           )}
         </div>
 

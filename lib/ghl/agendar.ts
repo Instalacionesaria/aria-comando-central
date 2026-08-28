@@ -16,6 +16,24 @@
 // el navegador recibiera el identificador y armara la URL, la forma quedaría escrita en un componente
 // —o en dos— y el día que GoHighLevel la cambie habría que encontrar todas las copias. Acá el
 // navegador recibe una URL o un `null`.
+//
+// ── HOY NO TIENE CONSUMIDOR, Y SE DEJA A PROPÓSITO ───────────────────────────
+//
+// El único que la llamaba era el botón «◷ Agendar» de la ficha, y ese botón se quitó a pedido. Así
+// que esta función queda **declarada y sin llamar**, lo cual normalmente sería código muerto que hay
+// que borrar. Se deja, y por tres motivos concretos:
+//
+//   · `identidad.organizaciones_credenciales.crm_calendario_id` **sigue existiendo y sigue
+//     configurándose** en Ajustes → Credenciales, porque se pidió explícitamente. Borrar esto
+//     dejaría un campo que se guarda y del que nada en el repositorio dice qué es;
+//   · lo que vale de este archivo no es la línea, es la **medición** de arriba: tres formas
+//     probadas contra la subcuenta real, dos descartadas con su motivo. Eso no se vuelve a deducir
+//     leyendo código, y su pérdida costaría otra tarde;
+//   · tiene sus pruebas en `pruebas/codigo/100-agendar.test.ts`, así que no es código sin verificar:
+//     si GoHighLevel cambiara la forma, la prueba sigue siendo el lugar donde dice cuál era.
+//
+// Si alguna vez se decide que el calendario tampoco se configura más, este archivo, su prueba y la
+// columna se van juntos — no antes.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** La base del widget de agendamiento. Es de GoHighLevel, no del dominio blanco del cliente. */

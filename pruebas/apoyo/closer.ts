@@ -236,7 +236,18 @@ export async function unMensaje(
 export async function unResultado(
   esc: Escenario,
   contactoId: string,
-  campos: { org?: string; salida: string; monto?: number | null; quien?: string },
+  /* `nota` y `detalle` NO son adorno: Avanzar escribe la MISMA cadena en `resultados.nota`,
+     `notas.cuerpo` y `tareas.nota` —está justificado en `lib/negocio/avanzar.ts`— y sin poder sembrar
+     esa columna, ninguna prueba podía ver que el historial la mostraba tres veces. Se comprobó por
+     mutación: devolver el `?? r.nota` que causaba la repetición dejaba la suite entera en verde. */
+  campos: {
+    org?: string;
+    salida: string;
+    monto?: number | null;
+    quien?: string;
+    nota?: string | null;
+    detalle?: string | null;
+  },
 ): Promise<void> {
   const org = campos.org ?? esc.org;
   await conOrganizacion(org, async () => {
@@ -246,6 +257,8 @@ export async function unResultado(
         contacto_id: contactoId,
         salida: campos.salida,
         monto: campos.monto ?? null,
+        nota: campos.nota ?? null,
+        detalle: campos.detalle ?? null,
         registrado_por: campos.quien ?? esc.quien,
         rol: 'closer',
       } as never)

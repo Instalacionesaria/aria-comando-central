@@ -60,9 +60,10 @@ import { GET as verContactos } from '../../app/api/closer/contactos/route.ts';
 // pruebas leen.
 
 interface IconosJson {
-  reunionesTenidas: number;
+  // Los dos conteos admiten `null` — «no hay de dónde medirlo». Ver `lib/negocio/fila.ts`.
+  reunionesTenidas: number | null;
   citaFutura: boolean;
-  llamadasContestadas: number;
+  llamadasContestadas: number | null;
   estadoAgente: string;
   seguimientoAbierto: boolean;
   montoVenta: string | null;
@@ -767,9 +768,27 @@ test('los seis íconos son EL MISMO dato en las tres listas, y no cuentan las ca
    * se veía plausible, que es por lo que estuvo mal sin que nadie lo notara. */
   assert.equal(delPipeline.iconos.reunionesTenidas, 1);
   assert.equal(delPipeline.iconos.citaFutura, true);
-  /* Cero MEDIDO, no nulo: las llamadas se leyeron y no hay ninguna. `null` significaría «no hay de
-     dónde medirlo» y el ícono no se dibujaría; son dos hechos distintos. */
-  assert.equal(delPipeline.iconos.llamadasContestadas, 0);
+  /* ── ESTA LÍNEA DECÍA `0`, Y AFIRMABA ALGO FALSO ────────────────────────
+   *
+   * Su comentario anterior decía: *«Cero MEDIDO, no nulo: las llamadas se leyeron y no hay
+   * ninguna»*. Lo segundo era cierto; lo primero no: **`negocio.llamadas` no tiene ni un escritor
+   * fuera de las pruebas**, así que nunca se leyó nada. La prueba fijaba la mentira que la
+   * migración `011` § 4 había pedido evitar textualmente —*«la pantalla tiene que mostrar eso como
+   * "no hay datos", no como "cero llamadas"»*— y así el ícono ✦ afirmaba, sobre cada uno de los
+   * contactos de cada empresa, que el agente los llamó y nunca le contestaron.
+   *
+   * Ahora es `null`, y la condición es por empresa: en cuanto la organización tenga una sola fila
+   * en `negocio.llamadas`, sus ceros vuelven a ser ceros medidos sin tocar código. */
+  assert.equal(
+    delPipeline.iconos.llamadasContestadas,
+    null,
+    'un cero donde `negocio.llamadas` no tiene escritor afirma que el agente llamó y no le ' +
+      'contestaron, sobre un contacto al que nadie llamó',
+  );
+  /* Y `reunionesTenidas` SÍ es un número medido en este caso, que es la otra mitad de la regla: la
+     empresa tiene citas sembradas, así que el calendario se leyó. Las dos ramas se ejercitan en la
+     misma fila. */
+  assert.equal(typeof delPipeline.iconos.reunionesTenidas, 'number');
   // Y sin monto: hay cita y no hay venta. Un `0` acá afirmaría «no vendiste nada».
   assert.equal(delPipeline.iconos.montoVenta, null);
   /* Los otros dos íconos, en su valor de reserva. Este contacto no tiene ninguna etiqueta de
@@ -887,4 +906,67 @@ test('el contador de la cartera DESGLOSA: activos y fuera de zona', async () => 
     filasDelPipeline(p).filter((f) => f.congelado).length,
     'el conteo de congelados no coincide con las filas que vienen marcadas',
   );
+});
+
+
+// ═════════════════════════════════════════════════════════════════════════════════
+// EL TERCER ÍCONO: «NO HAY DATOS» Y «CERO LLAMADAS» SON DOS HECHOS, Y LAS DOS DIRECCIONES
+// ═════════════════════════════════════════════════════════════════════════════════
+
+test('el ícono de llamadas pasa de «sin datos» a «cero medido» en cuanto la empresa tiene una, y vuelve', async () => {
+  // ── EL DEFECTO QUE ESTO ATRAPA, Y ESTUVO EN PRODUCCIÓN ─────────────────
+  //
+  // `negocio.llamadas` **no tiene ni un escritor** fuera de las pruebas: en el sistema anterior las
+  // escribe un webhook de la plataforma de voz, y esa integración no existe todavía. Su propia
+  // migración lo dejó escrito el primer día (`011` § 4): *«nacen vacías y se llenan cuando esa
+  // integración exista; la pantalla tiene que mostrar eso como "no hay datos", no como "cero
+  // llamadas"»*.
+  //
+  // El mapeo hacía `Number(… ?? 0)`, así que mostraba «cero llamadas» sobre **todos** los contactos
+  // de **todas** las empresas: el ícono ✦ afirmaba que el agente los llamó y no le contestaron. No
+  // fallaba nada —un cero es plausible— y es la clase de defecto que nadie reporta.
+  //
+  // Se prueban las DOS direcciones, y la segunda es la que importa tanto como la primera: un `null`
+  // fijo pasaría la mitad de arriba y sería igual de mentiroso al revés —el ícono apagado para
+  // siempre el día que la integración exista—. La distinción es POR EMPRESA, así que en cuanto haya
+  // una fila de esta organización los ceros de todos sus contactos pasan a ser ceros medidos sin
+  // tocar una línea de código.
+  const k = await unContacto(esc, { nombre: 'Sin llamadas' });
+  const iconos = async () => {
+    const l = await contactos();
+    return l.filas.find((f) => f.id === k.id)?.iconos.llamadasContestadas;
+  };
+
+  // 1 · La organización recién montada no tiene NI UNA llamada.
+  assert.equal(
+    await iconos(),
+    null,
+    'un cero acá afirma que el agente llamó a este contacto y no le contestaron, y a este contacto ' +
+      'nadie lo llamó: `negocio.llamadas` no tiene escritor',
+  );
+
+  // 2 · Una llamada de OTRO contacto de la misma empresa, y el cero de éste pasa a ser un hecho.
+  const otro = await unContacto(esc, { nombre: 'Con una llamada' });
+  await esc.admin.query(
+    `insert into negocio.llamadas (org_id, externa_id, contacto_id, contestada, inicio_el)
+     values ($1, $2, $3, true, now())`,
+    [esc.org, 'llam-' + esc.marca, otro.id],
+  );
+  assert.equal(
+    await iconos(),
+    0,
+    'con la fuente ya alimentada el cero de este contacto SÍ es un hecho, y siguió diciendo «no hay ' +
+      'datos»: el ícono quedaría apagado para siempre',
+  );
+
+  // 3 · Y la fila sembrada cuenta uno, para que el 0 de arriba no sea el de una consulta rota.
+  const l = await contactos();
+  assert.equal(l.filas.find((f) => f.id === otro.id)?.iconos.llamadasContestadas, 1);
+
+  /* 4 · Se deshace. No es cortesía: las pruebas de este archivo comparten la organización, y una
+         de ellas afirma `llamadasContestadas === null` sobre otro contacto. Dejar la fila acá la
+         pondría roja según el orden en que corran los archivos, que es exactamente la clase de
+         prueba frágil que este archivo evita en su encabezado. */
+  await esc.admin.query('delete from negocio.llamadas where externa_id = $1', ['llam-' + esc.marca]);
+  assert.equal(await iconos(), null, 'quitada la única llamada, vuelve a no haber de dónde medir');
 });

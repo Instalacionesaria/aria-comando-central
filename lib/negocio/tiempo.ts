@@ -180,6 +180,53 @@ export function etiquetaCorta(dia: string, hoy: string): string {
 }
 
 /** Suma días a un `YYYY-MM-DD` sin arrastrar la zona de quien lo corre. */
+/**
+ * `hace 3 min`, `en 2 h`, `ahora` — la distancia entre un instante y ahora, en palabras.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * ESTABA DOS VECES, Y LAS DOS COPIAS NO HACÍAN LO MISMO
+ *
+ * `components/negocio/Fila.jsx` y `components/negocio/Ficha.jsx` tenían cada uno su `hace(iso)`, y
+ * divergieron: la de la ficha maneja el FUTURO —dice `en 2 h`— y la de la fila no. Con un instante
+ * futuro, la lista decía `hace -120 min` y la ficha `en 2 h`, **sobre el mismo dato**.
+ *
+ * Y no es un caso raro: la fila dibuja `ultimoEntranteEl`, que llega del CRM. Un contacto cuyo
+ * teléfono tiene el reloj adelantado, o una subcuenta con la zona mal puesta, produce un instante
+ * futuro sin que nada falle.
+ *
+ * Este archivo existe exactamente por esto —su encabezado nombra a `Ficha.jsx` como el ofensor
+ * anterior con `hora(iso, zona)`— así que la tercera copia se corta acá.
+ *
+ * ── POR QUÉ NO USA `Intl.RelativeTimeFormat` ────────────────────────────
+ *
+ * Porque diría «hace 3 minutos» y estos textos van en chips de 11,5 px al lado del nombre: `min`,
+ * `h` y `d` están medidos contra ese ancho, y el formateador no tiene una forma corta en español.
+ *
+ * ── Y NO LLEVA ZONA, a diferencia del resto de este archivo ────────────────
+ *
+ * Una DISTANCIA entre dos instantes es la misma en cualquier huso. La zona hace falta para decir
+ * «qué hora es», no «cuánto pasó», y pedirla acá invitaría a pasarla por si acaso.
+ *
+ * @param ahora El instante de referencia. Se puede pasar para probarlo sin tocar el reloj.
+ */
+export function haceCuanto(
+  instante: Date | string | null | undefined,
+  ahora: number = Date.now(),
+): string {
+  const d = aFecha(instante);
+  if (d === null) return '—';
+  const ms = ahora - d.getTime();
+  const futuro = ms < 0;
+  const min = Math.round(Math.abs(ms) / 60000);
+  const decir = (cantidad: number, unidad: string) =>
+    futuro ? `en ${cantidad} ${unidad}` : `hace ${cantidad} ${unidad}`;
+  if (min < 1) return 'ahora';
+  if (min < 60) return decir(min, 'min');
+  const h = Math.round(min / 60);
+  if (h < 24) return decir(h, 'h');
+  return decir(Math.round(h / 24), 'd');
+}
+
 export function sumarDias(dia: string, delta: number): string {
   const d = new Date(`${dia}T12:00:00Z`);
   if (Number.isNaN(d.getTime())) return '';

@@ -761,6 +761,28 @@ test('la fila TAMPOCO cruza organizaciones: los íconos se cuentan dentro del in
       .execute();
   });
 
+  /* ── Y UNA LLAMADA PROPIA EN ALFA, PARA QUE EL CERO SIGNIFIQUE ALGO ────────
+   *
+   * Desde que `llamadasContestadas` distingue el cero medido del no medido, el valor esperado acá
+   * depende de si alfa tiene alguna fila en `negocio.llamadas` —y otra prueba de este mismo archivo
+   * ya deja dos—. Depender de eso es tener una prueba que se pone roja al REORDENAR el archivo, no
+   * al romperse el código. Con esta siembra el `0` de abajo afirma las dos cosas por su cuenta: la
+   * fuente existe para alfa, y la llamada contestada de beta no se coló.
+   *
+   * No contestada a propósito: si fuera contestada, el conteo daría 1 y una fuga desde beta —que
+   * es lo que esta prueba persigue— quedaría tapada dando 2 en vez de 1. */
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('llamadas')
+      .values({
+        externa_id: 'aa-' + marca,
+        contacto_id: enAlfa,
+        contestada: false,
+        inicio_el: new Date(),
+      } as never)
+      .execute();
+  });
+
   const r = await conOrganizacion(alfa, () => filasDeTerritorio('closer'));
   assert.ok(
     !r.filas.some((f) => f.nombre.includes('x-b-' + marca)),

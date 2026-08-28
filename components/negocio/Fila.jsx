@@ -108,16 +108,13 @@ function microtexto(fila) {
 }
 
 /** «hace 2 h». Del lado del cliente porque depende del reloj de quien mira. */
-function hace(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.round(ms / 60000);
-  if (min < 1) return 'ahora';
-  if (min < 60) return `hace ${min} min`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  const d = Math.round(h / 24);
-  return `hace ${d} d`;
-}
+import { haceCuanto } from '../../lib/negocio/tiempo.ts';
+
+/* `hace()` vivía acá y en `Ficha.jsx`, con DOS comportamientos distintos para un instante futuro.
+   Ahora hay uno: `haceCuanto` en `lib/negocio/tiempo.ts`, que es el archivo que existe por esta
+   clase de duplicación —su encabezado cuenta la vez anterior—. Se reexporta con el nombre local
+   para no tocar los seis usos de abajo. */
+const hace = haceCuanto;
 
 /** Los seis íconos de una fila. */
 export function SeisIconos({ iconos }) {
@@ -152,7 +149,10 @@ export function SeisIconos({ iconos }) {
         return (
           <i
             key={ic.clave}
-            title={ic.titulo}
+            /* Y el `title` LO DICE, porque una opacidad no se lee. Un ícono al 28 % y otro al 45 %
+               son dos hechos distintos —«no hay datos» y «es cero»— y a simple vista se ven casi
+               igual: sin esta línea, la distinción que el servidor calcula no le llega a nadie. */
+            title={sinMedir ? `${ic.titulo} — sin datos` : ic.titulo}
             style={{
               opacity: sinMedir ? 0.28 : activo ? 1 : 0.45,
               color: activo ? 'var(--txt)' : undefined,

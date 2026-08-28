@@ -37,10 +37,8 @@ import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import {
   resolverAccesoAGhl,
-  resolverCredenciales,
   TEXTO_DE_FALTA_GHL,
 } from '../../../../lib/credenciales/resolver.ts';
-import { enlaceDeAgendamiento } from '../../../../lib/ghl/agendar.ts';
 import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
 
@@ -91,18 +89,17 @@ export async function GET(
   //     inquilino— y por eso esta ruta está en `CRUZAN_LOS_DOS_DOMINIOS`. Lo que queda a medias si
   //     falla la segunda mitad es nada: la primera solo LEE.
   let porque: string | null = REFRESCO.listo;
-  /**
-   * El enlace al contacto EN el CRM, armado por el servidor.
+  /* ── ACÁ SE ARMABA `enlaceCrm`, Y SE FUE CON SU BOTÓN ──────────────────
    *
-   * Se arma acá y no en la pantalla porque hacen falta **dos** piezas: el identificador del
-   * contacto, que viaja en la fila, y el de la subcuenta, que vive en la credencial — una tabla de
-   * identidad que el navegador no ve ni debe ver.
+   * Era la URL de la ficha del contacto EN el CRM, armada con dos piezas: el identificador del
+   * contacto, que viaja en la fila, y el de la subcuenta, que vive en la credencial.
    *
-   * El prototipo resolvía esto abriendo `https://app.gohighlevel.com/` a secas, o sea la portada:
-   * un botón que dice «Ver en GHL» y lleva a buscar el contacto a mano. Con las dos piezas se
-   * llega a la ficha del contacto, y sin alguna de las dos el botón **no se dibuja**.
-   */
-  let enlaceCrm: string | null = null;
+   * El botón «↗ Ver en GHL» que la consumía se quitó a pedido, y el campo se fue con él en el
+   * mismo cambio. Devolver un campo que ninguna pantalla lee tiene un costo concreto: dentro de
+   * seis meses nadie sabe si se puede tocar.
+   *
+   * La forma de esa URL no se perdió —está en el historial— y volver a armarla son tres líneas con
+   * las dos piezas que esta función ya tiene a mano acá abajo. */
   if (!antes.ghlContactId) {
     porque = REFRESCO.sin_id;
   } else {
@@ -112,9 +109,6 @@ export async function GET(
       // empresa no tiene token manda a alguien a revisar la red.
       porque = `${REFRESCO.sin_credencial} ${TEXTO_DE_FALTA_GHL[acceso.que]}`;
     } else {
-      enlaceCrm =
-        `https://app.gohighlevel.com/v2/location/${encodeURIComponent(acceso.locationId)}` +
-        `/contacts/detail/${encodeURIComponent(antes.ghlContactId)}`;
       const r = await conOrganizacion(orgId, () =>
         refrescarUnContacto(acceso, antes.ghlContactId as string),
       );
@@ -130,26 +124,18 @@ export async function GET(
   //     404 acá sería un error inventado por nuestra propia consulta.
   const despues = (await conOrganizacion(orgId, () => filaDeContacto(id))) ?? antes;
 
-  /* ── EL ENLACE PARA AGENDAR ────────────────────────────────────────────────
+  /* ── ACÁ SE ARMABA `enlaceAgendar`, Y SE FUE CON SU BOTÓN ────────────────
    *
-   * Sale del calendario configurado en Ajustes → Credenciales, y **no** de los calendarios que la
-   * API devuelve: la subcuenta real tiene nueve y cinco son `round_robin`, así que nada en la API
-   * dice cuál es «el de la empresa». Elegir el que tiene más citas es una heurística que cambia sola
-   * con el uso.
+   * El botón «◷ Agendar» se quitó a pedido, y con él esta lectura: era una consulta a
+   * `identidad.organizaciones_credenciales` **por cada apertura de ficha**, para un enlace que ya
+   * nadie dibuja.
    *
-   * Va como URL ya armada o `null`, nunca como identificador: la forma de la URL está medida y vive
-   * en un solo archivo. Ver `lib/ghl/agendar.ts`.
-   */
-  /* Es una lectura APARTE de la del token, y no por descuido: el enlace para agendar es de la
-   * EMPRESA, no de este contacto. Colgarlo de `resolverAccesoAGhl` —que se resuelve solo cuando el
-   * contacto tiene identificador en el CRM— haría que el botón desapareciera para los contactos que
-   * todavía no están sincronizados, que no tiene nada que ver. */
-  const credenciales = await conIdentidad((db) => resolverCredenciales(db, orgId));
-  const enlaceAgendar = enlaceDeAgendamiento(credenciales.crmCalendarioId);
+   * El calendario NO se borró: `crm_calendario_id` se sigue guardando en Ajustes → Credenciales, y
+   * `lib/ghl/agendar.ts` sigue siendo la única definición de la forma de esa URL, con sus pruebas
+   * en `pruebas/codigo/100-agendar.test.ts`. Lo que se quitó es la salida a la pantalla. */
 
   return ok({
     contacto: despues,
-    refresco: { actualizado: porque === null, porque, enlaceCrm },
-    enlaceAgendar,
+    refresco: { actualizado: porque === null, porque },
   });
 }

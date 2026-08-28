@@ -156,9 +156,25 @@ test('la ficha NUNCA navega', () => {
   assert.doesNotMatch(ficha, /location\.href\s*=/, 'la ficha navega asignando `location.href`');
   assert.doesNotMatch(ficha, /location\.assign|location\.replace/, 'la ficha navega');
   assert.doesNotMatch(ficha, /useRouter|router\.push/, 'la ficha navega con el enrutador');
-  // `window.open` sí está permitido: abre el CRM en OTRA pestaña, y eso no es navegar — la ficha
-  // sigue abierta detrás.
-  assert.match(ficha, /window\.open\(/, 'desapareció el enlace al CRM');
+
+  /* ── Y AHORA NO SALE A NINGUNA PARTE, NI EN OTRA PESTAÑA ────────────────
+   *
+   * Esta línea pedía lo contrario: `assert.match(ficha, /window\.open\(/, 'desapareció el enlace al
+   * CRM')`, con este razonamiento al lado —*«`window.open` sí está permitido: abre el CRM en OTRA
+   * pestaña, y eso no es navegar, la ficha sigue abierta detrás»*—. El razonamiento sigue siendo
+   * cierto; lo que cambió es que los dos botones que lo usaban —«↗ Ver en GHL» y «◷ Agendar»— se
+   * quitaron a pedido.
+   *
+   * Así que la afirmación se da vuelta, y queda más fuerte que antes: de esta pantalla no se sale.
+   * Es lo que hace cierto el resto del diseño del panel —Avanzar como único escritor, el historial
+   * completo, las notas al lado— porque un trabajo que empieza acá y termina en el CRM deja la
+   * mitad del registro del otro lado. */
+  assert.doesNotMatch(
+    ficha,
+    /window\.open\(/,
+    'la ficha volvió a abrir algo afuera: los dos botones que lo hacían se quitaron a pedido, y con ' +
+      'ellos los campos del endpoint que los alimentaban',
+  );
 });
 
 test('ningún control de la ficha está inerte', () => {

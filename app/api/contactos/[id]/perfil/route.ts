@@ -7,7 +7,7 @@ import { exigir } from '../../../../../lib/autorizacion/portero.ts';
 import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../../lib/datos/contexto.ts';
-import { perfilDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
+import { existeElContacto, perfilDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,6 +21,16 @@ export async function GET(
   const { id } = await ctx.params;
   if (!UUID.test(id)) return rechazo('no_encontrado');
 
-  const r = await conOrganizacion(contexto.orgEfectiva, () => perfilDeLaFicha(id));
+  /* El contacto tiene que existir EN ESTA ORGANIZACIÓN, y las dos consultas van en el MISMO
+     contexto de inquilino: comprobar afuera y consultar adentro deja una ventana en la que el
+     contexto podría no ser el mismo, y el 404 pasaría a depender de cuál ganó.
+
+     Sin esta guarda la respuesta era `200` con la lista vacía —y con un `falta` que inventaba el
+     motivo—. Ver `existeElContacto` en `lib/negocio/ficha.ts`. */
+  const r = await conOrganizacion(contexto.orgEfectiva, async () =>
+    (await existeElContacto(id)) ? perfilDeLaFicha(id) : null,
+  );
+  if (r === null) return rechazo('no_encontrado');
+
   return ok({ campos: r.filas, falta: r.falta });
 }

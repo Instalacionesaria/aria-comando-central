@@ -618,26 +618,29 @@ test('las DOS rutas que ESCRIBEN responden 404 —nunca 403— sobre un contacto
   assert.equal(enBeta.etapa, null, 'se movió la etapa de un contacto de otra organización');
 });
 
-test('DEFECTO: el GET de notas de un contacto ajeno responde 200 con una lista VACÍA', async () => {
-  // ── ESTO NO ES EL COMPORTAMIENTO QUE EL REPOSITORIO PIDE, Y SE DEJA MEDIDO ──
+test('el GET de notas de un contacto ajeno responde 404, igual que un identificador inventado', async () => {
+  // ══════════════════════════════════════════════════════════════════════
+  // ESTA PRUEBA ERA UN DEFECTO MEDIDO, Y SE ARREGLÓ
   //
-  // El POST comprueba que el contacto exista en esta organización antes de escribir; el GET no
-  // comprueba nada: llama derecho a `notasDeLaFicha(id)`, y para un contacto de otra empresa el
-  // aislamiento por fila devuelve cero notas. La ruta las envuelve en `{ notas: [], falta: null }` y
-  // contesta 200.
+  // Su versión anterior se llamaba *«DEFECTO: … responde 200 con una lista VACÍA»* y pedía
+  // `estado === 200` con esta nota al lado: *«si esto pasa a 404, el defecto se arregló y hay que
+  // borrar esta prueba»*. No se borra — se da vuelta, que conserva el motivo escrito.
   //
-  // Rompe las dos reglas a la vez, y por eso la prueba existe en vez de omitirse:
+  // El defecto era que el `POST` comprobaba que el contacto existiera en esta organización y el
+  // `GET` no: llamaba derecho a `notasDeLaFicha(id)`, el aislamiento por fila devolvía cero notas, y
+  // la ruta contestaba `200` con `{ notas: [], falta: null }`. Rompía dos reglas a la vez:
   //
-  //   · `ADR-0501` — un recurso de otra organización **no existe**, así que corresponde 404. Acá el
-  //     404 solo sale cuando el identificador está MAL FORMADO, o sea que la ruta distingue «no es un
-  //     uuid» de «no es tuyo» justamente al revés de como hace falta.
+  //   · `ADR-0501` — un recurso de otra organización **no existe**, y «no existe» es 404. El 404
+  //     salía solo cuando el identificador estaba MAL FORMADO, o sea que la ruta distinguía «no es un
+  //     uuid» de «no es tuyo» justo al revés de como hace falta.
   //   · `ADR-0305` y la regla del cero — `falta: null` afirma que el cero está MEDIDO: «este contacto
-  //     no tiene ninguna nota». Sobre un contacto ajeno eso es una afirmación sobre datos que quien
-  //     pregunta no puede ver, indistinguible de la verdadera. Es exactamente la confusión que
-  //     `{ valor, falta }` existe para cerrar.
+  //     no tiene ninguna nota». Sobre un contacto ajeno es una afirmación sobre datos que quien
+  //     pregunta no puede ver, indistinguible de la verdadera.
   //
-  // No hay fuga de contenido —las notas ajenas no se devuelven— así que el daño es el oráculo y la
-  // mentira del cero, no los datos. Se reporta sin arreglar.
+  // La cura es `existeElContacto` en `lib/negocio/ficha.ts`, compartida por las cuatro pestañas de
+  // lectura — no una comprobación por ruta, que serían cuatro oportunidades de que una se quede sin
+  // el `where`.
+  // ══════════════════════════════════════════════════════════════════════
   const ajeno = await unContacto(esc, { org: esc.otraOrg, nombre: 'Avanzar de beta para leer' });
   // `autorId: null` no es un detalle: `notas` tiene clave foránea compuesta `(org_id, autor_id)`, y
   // quien mira es de `alfa`. Poner a esa persona como autora de una nota de `beta` es una fila que la
@@ -649,21 +652,35 @@ test('DEFECTO: el GET de notas de un contacto ajeno responde 200 con una lista V
     cuerpo: 'nota que no tiene que verse',
   });
 
-  const { estado, cuerpo } = await leerRespuesta<RespuestaNotas>(
+  const deAjeno = await leerRespuesta<RespuestaNotas>(
     await verNotas(pedirComo(`/api/contactos/${ajeno.id}/notas`, esc.token), ctxDe(ajeno.id)),
   );
-  assert.equal(estado, 200, 'si esto pasa a 404, el defecto se arregló y hay que borrar esta prueba');
-  assert.deepEqual(cuerpo.notas, [], 'lo único que NO puede pasar: que la nota ajena se devuelva');
-  assert.equal(cuerpo.falta, null);
+  assert.equal(
+    deAjeno.estado,
+    404,
+    'un contacto de otra organización volvió a responder 200: un cuerpo vacío con `falta: null` ' +
+      'afirma que el cero está medido sobre datos que quien pregunta no puede ver',
+  );
+  assert.notEqual(deAjeno.estado, 403, 'un 403 confirma que el contacto existe');
 
-  // Lo mismo con un uuid bien formado que no es de nadie: tampoco hay 404. Sirve para separar las
-  // dos causas — no es que el aislamiento vacíe la lista, es que la ruta no pregunta si existe.
+  // Un uuid bien formado que no es de nadie responde LO MISMO. Es lo que impide que la ruta sea un
+  // oráculo de existencia: si las dos respuestas se separaran, preguntar sería averiguar.
   const inventado = '11111111-2222-3333-4444-555555555555';
-  const dePeriodo = await leerRespuesta<RespuestaNotas>(
+  const deInventado = await leerRespuesta<RespuestaNotas>(
     await verNotas(pedirComo(`/api/contactos/${inventado}/notas`, esc.token), ctxDe(inventado)),
   );
-  assert.equal(dePeriodo.estado, 200);
-  assert.deepEqual(dePeriodo.cuerpo.notas, []);
+  assert.deepEqual(
+    { estado: deAjeno.estado, cuerpo: deAjeno.cuerpo },
+    { estado: deInventado.estado, cuerpo: deInventado.cuerpo },
+    'un contacto ajeno y uno inexistente tienen que responder EXACTAMENTE lo mismo',
+  );
+
+  // Y lo que nunca pudo pasar y sigue sin poder: la nota ajena no viaja.
+  assert.equal(
+    JSON.stringify(deAjeno.cuerpo).includes('nota que no tiene que verse'),
+    false,
+    'la nota de la otra organización se devolvió',
+  );
 });
 
 test('un identificador mal formado sí es 404, no 400', async () => {

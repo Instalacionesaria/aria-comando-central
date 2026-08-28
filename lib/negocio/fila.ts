@@ -63,8 +63,22 @@ import {
  * panel simplemente parece vacío.
  */
 export interface SeisIconos {
-  /** 📹 Reuniones que YA TUVO: citas cuyo inicio ya pasó. */
-  reunionesTenidas: number;
+  /**
+   * 📹 Reuniones que YA TUVO: citas cuyo inicio ya pasó. `null` = **no hay de dónde medirlo**.
+   *
+   * ── ERA `number` A SECAS, Y ESO HACÍA INALCANZABLE EL «NO MEDIDO» ────────
+   *
+   * El tipo decía `number` y el mapeo hacía `Number(… ?? 0)`, así que las dos ramas del encabezado
+   * de arriba —el `0` medido y el `null` sin medir— colapsaban en la primera. Una empresa cuyo
+   * calendario nunca se leyó veía «cero reuniones» en los 238 contactos, que es una afirmación
+   * sobre el pasado de cada uno de ellos, y falsa.
+   *
+   * La distinción es **por empresa y no por contacto**, y esa es la parte que importa: si
+   * `negocio.citas` tiene alguna fila de esta organización, entonces el calendario se leyó y un cero
+   * es un cero medido —ese contacto no tuvo reuniones—. Si no tiene ninguna, no hay nada que medir
+   * y el ícono se apaga del todo.
+   */
+  reunionesTenidas: number | null;
   /**
    * 📅 ¿Tiene una cita?
    *
@@ -76,8 +90,20 @@ export interface SeisIconos {
    * contactos reales; con solo la etiqueta, se pierde la cita que ya se leyó del calendario.
    */
   citaFutura: boolean;
-  /** 📞 Llamadas de agente IA **CONTESTADAS**. No las hechas — ver el encabezado. */
-  llamadasContestadas: number;
+  /**
+   * 📞 Llamadas de agente IA **CONTESTADAS**. No las hechas — ver el encabezado.
+   *
+   * `null` = no hay de dónde medirlo, y hoy es el caso de **todas** las empresas: `negocio.llamadas`
+   * no tiene ni un escritor fuera de las pruebas. Su propia migración lo dijo desde el primer día
+   * (`011` § 4): *«nacen vacías y se llenan cuando esa integración exista; la pantalla tiene que
+   * mostrar eso como "no hay datos", no como "cero llamadas"»*. La pantalla mostraba «cero
+   * llamadas» — el mapeo hacía `Number(… ?? 0)` y borraba la diferencia que este comentario pide.
+   *
+   * Y se resuelve por empresa, no con una constante en el código: el día que el webhook de la
+   * plataforma de voz escriba la primera fila de una organización, sus ceros pasan solos a ser ceros
+   * medidos, sin que haya que acordarse de cambiar una bandera.
+   */
+  llamadasContestadas: number | null;
   /**
    * 🤖 Estado del agente.
    *
@@ -268,6 +294,8 @@ function aFila(f: {
   territorio: string | null;
   etiquetas: string[] | null;
   reuniones_tenidas: string | null;
+  hay_citas: boolean | number;
+  hay_llamadas: boolean | number;
   cita_futura: unknown;
   llamadas_contestadas: string | null;
   seguimiento_abierto: unknown;
@@ -307,7 +335,10 @@ function aFila(f: {
       // texto para no perder precisión. Un `Number()` acá es seguro —no hay contacto con
       // 2^53 reuniones— pero pasarlo tal cual haría que el cliente reciba `"3"` y que
       // `n > 0` sea cierto para `"0"`.
-      reunionesTenidas: Number(f.reuniones_tenidas ?? 0),
+      /* `null` cuando la empresa no tiene NI UNA cita leída: ahí el cero no se midió, y dibujarlo
+         como cero afirma que este contacto no tuvo reuniones. Con al menos una fila en la
+         organización, el calendario se leyó y el cero de este contacto sí es un hecho. */
+      reunionesTenidas: Boolean(f.hay_citas) ? Number(f.reuniones_tenidas ?? 0) : null,
       // `Boolean(` y no el valor tal cual: kysely tipa `exists` como `SqlBool`, que admite
       // `0`/`1` además de booleanos porque otros motores devuelven eso. PostgreSQL devuelve
       // un booleano de verdad, pero dejar pasar el tipo ancho haría que el cliente pudiera
@@ -315,7 +346,8 @@ function aFila(f: {
       // con `!== false`.
       // La tabla O la etiqueta. Ver los comentarios de los campos.
       citaFutura: Boolean(f.cita_futura) || (f.etiquetas ?? []).includes(CITA_AGENDADA),
-      llamadasContestadas: Number(f.llamadas_contestadas ?? 0),
+      // Lo mismo, y hoy siempre `null`: `negocio.llamadas` no tiene escritor. Ver el campo.
+      llamadasContestadas: Boolean(f.hay_llamadas) ? Number(f.llamadas_contestadas ?? 0) : null,
       estadoAgente: estadoDelAgente(f.etiquetas ?? []),
       seguimientoAbierto:
         Boolean(f.seguimiento_abierto) || (f.etiquetas ?? []).includes(SEGUIMIENTO_AUTOMATICO),
@@ -406,6 +438,23 @@ function conLosSeisIconos() {
         .where('llamadas.contestada', '=', true)
         .select(({ fn }) => fn.countAll<string>().as('n'))
         .as('llamadas_contestadas'),
+
+      /* ── ¿HAY DE DÓNDE MEDIR? DOS BANDERAS POR EMPRESA ───────────────────
+       *
+       * Los dos conteos de arriba devuelven `0` cuando el contacto no tiene filas, y eso es
+       * ambiguo: puede ser «este contacto no tuvo reuniones» o «nadie leyó nunca el calendario».
+       * El § 9 regla 1 exige separarlas, y el `011` § 4 lo pide literal para las llamadas.
+       *
+       * Se resuelve con la existencia de CUALQUIER fila de la organización. Son subconsultas **sin
+       * correlación** —no mencionan `c.id`— así que PostgreSQL las evalúa una vez por sentencia
+       * (`InitPlan`) y no una vez por fila: el costo es de dos `exists` en total, no de dos por
+       * contacto.
+       *
+       * Y quedan confinadas a la empresa sin escribirlo: las dos tablas son de `negocio.*` y tienen
+       * el aislamiento puesto por `aplicar_aislamiento`, así que «cualquier fila» ya significa
+       * «cualquier fila de esta organización». */
+      eb.exists(eb.selectFrom('citas').select(sql`1`.as('x'))).as('hay_citas'),
+      eb.exists(eb.selectFrom('llamadas').select(sql`1`.as('x'))).as('hay_llamadas'),
 
       // ⏱ Seguimiento corriendo: una tarea sin completar. `completada_el is null` y no una
       // bandera, para que la cola no dependa de que alguien apague nada.

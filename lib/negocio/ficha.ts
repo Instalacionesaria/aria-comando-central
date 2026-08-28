@@ -23,6 +23,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
+import { definicionDe, modoDe } from './salidas.ts';
 import { fechaDelDia } from './tiempo.ts';
 
 /**
@@ -52,6 +53,41 @@ function diaDeLaColumna(d: Date | string): string {
 }
 
 /** Lo que devuelve cada pestaña: lo medido, y por qué no hay más. */
+/**
+ * ¿Existe este contacto **en la organización del contexto**?
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * EL DEFECTO QUE ESTO CIERRA, Y ESTABA DOCUMENTADO SIN ARREGLAR
+ *
+ * Las cuatro pestañas —perfil, historial, llamadas, notas— iban derecho a su consulta. El
+ * aislamiento por fila hace que un contacto de otra empresa no exista para esa consulta, así que la
+ * respuesta era **`200` con la lista vacía**: nada se filtraba, y eso es lo único que estaba bien.
+ *
+ * Lo que estaba mal son dos cosas, y ninguna es teórica:
+ *
+ *   · **`ADR-0501`.** Un contacto de otra organización tiene que ser indistinguible de uno que no
+ *     existe, y «no existe» es `404`. Un `200` vacío es una tercera respuesta: dice «existe y no
+ *     tiene nada». El `POST` de las notas sí comprobaba —con este mismo argumento escrito al
+ *     lado— así que la misma pantalla daba dos respuestas distintas al mismo hecho.
+ *   · **La regla del cero medido.** «Este contacto no tiene notas» y «este contacto no es tuyo» se
+ *     veían igual: una ficha abierta con las cuatro pestañas en blanco. Y el `falta` de cada
+ *     pestaña explicaba la ausencia con un motivo inventado —*«todavía no hay notas»*— sobre un
+ *     contacto que quizás tiene veinte.
+ *
+ * Es UNA consulta más por pedido, y es el precio de la distinción. `mensajes` no la usa porque ya
+ * lee la fila del contacto para `ultimo_entrante_el`: ahí la comprobación sale gratis, y hace
+ * exactamente lo mismo.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+export async function existeElContacto(contactoId: string): Promise<boolean> {
+  const fila = await datos()
+    .selectFrom('contactos')
+    .select('id')
+    .where('id', '=', contactoId)
+    .executeTakeFirst();
+  return fila !== undefined;
+}
+
 export interface Pestana<T> {
   filas: T[];
   /** `null` = la fuente está poblada y esto es todo lo que hay. Si no, qué falta para que haya. */
@@ -71,9 +107,18 @@ const FALTA = {
   llamadas:
     'Todavía no se conectó la plataforma de voz, así que no hay ninguna llamada registrada. Las ' +
     'llamadas llegan por aviso de Assistable, no se consultan.',
+  /* ── ESTE TEXTO DESCRIBÍA UN SISTEMA QUE YA NO ES ESTE ──────────────────
+     Decía *«hoy solo hay notas: el resto todavía no tiene de dónde venir»*, y era falso desde hacía
+     varias etapas: los resultados, los seguimientos y las citas tienen escritor y aparecen. Un
+     texto de «falta» que miente sobre lo que falta es peor que ninguno, porque lo lee alguien que
+     está tratando de entender por qué una pantalla está vacía.
+     Lo que SÍ falta, y ahora es lo único que dice: los eventos de sistema. No hay tabla ni escritor
+     para «se apagó el bot», «cambió una etiqueta» ni «se envió un mensaje» — son cambios de estado
+     que se pisan, y sin una tabla que los guarde no hay cómo saber cuándo ocurrieron. */
   historial:
-    'El historial se arma con los mensajes, las llamadas, las citas, los resultados y las notas. ' +
-    'Hoy solo hay notas: el resto todavía no tiene de dónde venir.',
+    'Este contacto no tiene todavía ningún resultado, seguimiento, cita ni nota. Los eventos de ' +
+    'sistema —cuando se apaga el bot o cambia una etiqueta— no se registran todavía, así que ' +
+    'tampoco aparecen acá.',
   perfil:
     'Los campos del formulario y de calificación viven en GoHighLevel y todavía no se leen. Lo ' +
     'que se muestra son los datos que sí se sincronizan.',
@@ -409,7 +454,15 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
       .leftJoin('usuarios as u', (j) =>
         j.onRef('u.id', '=', 't.creada_por').onRef('u.org_id', '=', 't.org_id'),
       )
-      .select(['t.id', 't.creado_el', 't.vence_el', 't.modo', 't.nota', 'u.nombre as autor'])
+      .select([
+        't.id',
+        't.creado_el',
+        't.vence_el',
+        't.modo',
+        // `completada_el` da un SEGUNDO evento en la línea de tiempo. Ver abajo.
+        't.completada_el',
+        'u.nombre as autor',
+      ])
       .where('t.contacto_id', '=', contactoId)
       .execute(),
     datos()
@@ -428,11 +481,35 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
   ]);
 
   const eventos: EventoDeHistorial[] = [
+    /* ════════════════════════════════════════════════════════════════════════
+       LA NOTA APARECÍA TRES VECES, Y ERAN TRES FILAS DEL MISMO TEXTO
+
+       Un solo Avanzar con nota escribe ese texto en TRES tablas, y a propósito —está justificado en
+       `lib/negocio/avanzar.ts`: `resultados.nota` es lo que se dijo al registrar y viaja con el
+       resultado para siempre, `notas` es el hilo donde la persona la va a buscar, y `tareas.nota` es
+       el recordatorio del día que toca—.
+
+       Lo que estaba mal es que el historial las LEÍA todas como detalle, y con `?? ` de reserva:
+
+           «Se registró «seguimiento»»        → Muy interesado
+           «Seguimiento para el 3 de marzo»    → Muy interesado
+           «Nota»                              → Muy interesado
+
+       Tres líneas seguidas con el mismo texto, en la pantalla cuyo punto es *entender qué pasó*. Y
+       no es cosmético: un historial que repite hace dudar de si hubo tres cosas o una.
+
+       La cura no es borrar ninguna columna —las tres tienen su motivo— sino que cada fila muestre
+       **solo lo suyo**: el resultado, lo que se eligió en su campo; el seguimiento, su modo; y la
+       nota, el texto. La nota queda una sola vez, y sigue estando.
+       ════════════════════════════════════════════════════════════════════════ */
     ...resultados.map((r) => ({
       id: `resultado:${r.id}`,
       cuando: r.creado_el,
-      titulo: `Se registró «${r.salida}»`,
-      detalle: r.detalle ?? r.nota,
+      // El NOMBRE humano de la salida y no su clave: `definicionDe` es el mismo catálogo que usa la
+      // pantalla, y «Se registró «acuerdo_sin_pago»» es jerga de la base en la cara de quien mira.
+      titulo: `Se registró «${definicionDe(r.salida)?.nombre ?? r.salida}»`,
+      // `r.detalle` y NO `?? r.nota`: la nota tiene su propia fila, del mismo segundo.
+      detalle: r.detalle,
       autor: nombreDe(r.autor),
     })),
     ...tareas.map((t) => ({
@@ -441,9 +518,34 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
       /* En español y con el año. Antes decía «Seguimiento para el Mon Mar 15» — ver
          `diaDeLaColumna` para las dos formas de equivocarse acá. */
       titulo: `Seguimiento para el ${fechaDelDia(diaDeLaColumna(t.vence_el))}`,
-      detalle: t.nota ?? t.modo,
+      /* El MODO, en palabras, y no la nota. «Lo retomo yo» y «Que lo persiga la secuencia» son dos
+         cosas distintas y es el único dato que esta fila aporta que ninguna otra tiene.
+         Solo `seguimiento` tiene modos, así que la salida se puede dar por sabida; si el modo no
+         está en el catálogo se muestra crudo, que es preferible a ocultarlo. */
+      detalle: t.modo === null ? null : (modoDe('seguimiento', t.modo)?.nombre ?? t.modo),
       autor: nombreDe(t.autor),
     })),
+    /* ── Y EL CIERRE DEL SEGUIMIENTO, QUE ES UN EVENTO Y NO SE VEÍA ──────────
+     *
+     * `tareas.completada_el` tenía dos lectores y **cero escritores** hasta hace poco: un seguimiento
+     * no se podía cerrar nunca. Ahora se cierra al responderle al contacto y al registrar un Avanzar
+     * nuevo, así que hay un instante que contar, y es de los importantes: sin él el historial muestra
+     * «Seguimiento para el 3 de marzo» y nada más, y no hay forma de saber si se atendió.
+     *
+     * El autor es `Sistema` y no se adivina: la tabla no tiene columna de quién cerró. Puede haber
+     * sido una respuesta o un Avanzar de una persona, y atribuirlo a `t.creada_por` —que es quien lo
+     * CREÓ— sería justo lo que el encabezado de esta función prohíbe: *«atribuirle a alguien una
+     * decisión que no tomó convierte el historial en algo que no se puede usar para entender qué
+     * pasó»*. */
+    ...tareas
+      .filter((t) => t.completada_el !== null)
+      .map((t) => ({
+        id: `tarea-cerrada:${t.id}`,
+        cuando: t.completada_el as Date,
+        titulo: 'Se cerró el seguimiento',
+        detalle: null,
+        autor: 'Sistema',
+      })),
     ...citas.map((c) => ({
       id: `cita:${c.id}`,
       /* LA HORA DE LA CITA, no la de la copia.
