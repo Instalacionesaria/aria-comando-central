@@ -74,6 +74,8 @@ interface FilaJson {
   etapa: string | null;
   etiquetas: string[];
   iconos: IconosJson;
+  /** `true` = no está en ningún territorio. Lo trae el Pipeline; Mi Día no lo trae nunca. */
+  congelado: boolean;
 }
 
 interface ColumnaJson {
@@ -88,6 +90,8 @@ interface PipelineJson {
   total: number;
   hayMas: boolean;
   clasificados: { porResultado: number; porEtiqueta: number; sinNada: number };
+  /** El desglose de la cartera: `activos + congelados === total`. */
+  cartera: { activos: number; congelados: number };
 }
 
 interface EnLaColaJson {
@@ -499,29 +503,37 @@ test('`clasificados` suma `total`: ningún contacto queda fuera de los tres cajo
   );
 });
 
-test('DEFECTO DOCUMENTADO: una etapa retirada cuenta como «por resultado» y cae por el respaldo', async () => {
+test('una etapa retirada cae por el respaldo Y NO cuenta como «por resultado»', async () => {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESTA PRUEBA ERA UN DEFECTO DOCUMENTADO, Y SE PUSO ROJA AL ARREGLARLO
+  //
+  // Su versión anterior decía: *«No se arregla acá — se reporta. Si algún día se arregla, esta línea
+  // se pone roja y hay que cambiarla, que es exactamente el aviso que se quiere»*. Y así fue.
+  //
+  // El defecto: `clasificados.porResultado` usaba `etapa !== null`, no «la etapa es una de las
+  // siete». Con una etapa retirada —`contactos.etapa` es `text` sin restricción en la base— el
+  // contacto se dibujaba en «Agendado» por el respaldo Y se contaba como «registrado por una
+  // persona». Dos afirmaciones contradictorias sobre el mismo contacto, y la cifra que la pantalla
+  // usa para decir «esto lo registró alguien» incluía a quien nadie registró.
+  //
+  // La cura fue una sola definición: `esUnaDeLasSiete` en `lib/negocio/etapas.ts`, que es la misma
+  // que usa `etapaDelContacto` para decidir si le cree a la columna. Antes existía dos veces, con
+  // dos condiciones distintas.
+  // ═══════════════════════════════════════════════════════════════════════════
   const p = await pipeline();
 
-  /* `contactos.etapa` es `text` sin restricción, así que una etapa que ya no está entre las siete
-     —renombrada, retirada— es un valor alcanzable.
-     Lo que hace la clasificación con ella está BIEN y hay que fijarlo: se valida contra las siete
-     y, al no estar, el contacto cae por el respaldo. Sin esa validación iría a una columna que no
-     se dibuja y desaparecería de la pantalla sin que nada falle. */
+  // Lo que ya estaba bien: cae por el respaldo, no a una columna que no se dibuja.
   assert.equal(columnaDe(p, s.etapaRetirada), 'agendado');
-
-  /* Y lo que NO está bien, y esta prueba deja escrito en vez de esconder: `clasificados` lo cuenta
-     igual como «clasificado por un Avanzar de verdad», porque el criterio es `etapa !== null` y no
-     «la etapa es una de las siete». La igualdad de abajo fija ese criterio: con el contacto de
-     arriba en la columna de entrada Y contado en `porResultado`, la cifra que la pantalla usa para
-     decir «esto lo registró una persona» incluye a alguien clasificado por el respaldo.
-     No se arregla acá — se reporta. Si algún día se arregla, esta línea se pone roja y hay que
-     cambiarla, que es exactamente el aviso que se quiere. */
-  assert.equal(
-    p.clasificados.porResultado,
-    filasDelPipeline(p).filter((f) => f.etapa !== null).length,
-  );
   const retirado = filasDelPipeline(p).find((f) => f.id === s.etapaRetirada);
   assert.equal(retirado?.etapa, 'etapa_que_ya_no_existe');
+
+  // Y lo que se arregló: NO se cuenta entre los que tienen un resultado registrado.
+  assert.equal(
+    p.clasificados.porResultado,
+    filasDelPipeline(p).filter((f) => f.etapa !== null && f.etapa !== 'etapa_que_ya_no_existe').length,
+    'una etapa retirada volvió a contarse como «registrado por una persona», y a la vez se dibuja ' +
+      'en la columna de entrada: las dos cosas no pueden ser ciertas del mismo contacto',
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -544,18 +556,55 @@ test('el territorio filtra de verdad: ni el del setter ni el congelado entran a 
     assert.ok(hay(filas, s.enBuzon), `${donde} no trae un contacto del closer que sí es suyo`);
   }
 
-  /* Y ahora sí: el del setter y el congelado NO están.
+  /* Y ahora sí: el del setter NO está en ninguna de las tres.
    *
    * Este defecto ya ocurrió en este repositorio, en la Agenda: devolvía las citas de cualquier
    * contacto de la empresa. No falla ni se ve raro — el closer trabaja contactos que no son suyos
-   * y el setter descubre que otro ya los llamó. Los dos sembrados tienen último entrante reciente,
-   * así que si el `where territorio` se cayera entrarían al Buzón y arriba en la lista paginada. */
+   * y el setter descubre que otro ya los llamó. El sembrado tiene último entrante reciente, así que
+   * si el `where territorio` se cayera entraría al Buzón y arriba en la lista paginada. */
   for (const [donde, filas] of enLasTres) {
     assert.equal(hay(filas, s.delSetter), false, `${donde} trae un contacto del SETTER`);
+  }
+
+  /* ── EL CONGELADO CAMBIÓ DE LADO, Y NO EN LAS TRES LISTAS ─────────────────
+   *
+   * Antes esta prueba exigía que NO estuviera en ninguna. Era la mitad correcta y la mitad
+   * equivocada, porque las tres listas no responden la misma pregunta:
+   *
+   *   · el **Pipeline** es la CARTERA, y `sincronizar.ts` afirma del congelado que *«sigue visible y
+   *     atenuado, sigue siendo movible, no se borra»*. Nada de eso existía: un contacto que perdía
+   *     su zona desaparecía de la aplicación sin rastro, y el closer veía bajar su cartera sin
+   *     ninguna explicación disponible;
+   *   · **Mi Día** son las COLAS DE TRABAJO, y ahí no va: no es trabajo de este closer. Los
+   *     documentos lo dicen dos veces — *«los congelados no entran ni a Urgentes ni al Buzón»*;
+   *   · la **lista paginada** es del territorio, y tampoco.
+   *
+   * Así que la aserción se parte en dos, y la del Pipeline es positiva. */
+  assert.ok(
+    hay(filasDelPipeline(p), s.congelado),
+    'el Pipeline no trae al congelado: un contacto que pierde su zona desaparece de la aplicación ' +
+      'sin rastro, y no hay dónde mirar por qué bajó la cartera',
+  );
+  // Y viene MARCADO, que es lo que impide que se lea como trabajo de esta pestaña.
+  assert.equal(
+    filasDelPipeline(p).find((f) => f.id === s.congelado)?.congelado,
+    true,
+    'el congelado viene sin marcar: la pantalla lo dibuja igual que uno activo',
+  );
+  // Y sus datos NO se resumen: los seis íconos siguen ahí, como en una fila completada.
+  assert.ok(
+    filasDelPipeline(p).find((f) => f.id === s.congelado)?.iconos !== undefined,
+    'al congelado se le sacaron los íconos: es justo lo que permite decidir si hay que volver a él',
+  );
+
+  for (const [donde, filas] of [
+    ['Mi Día', filasDeMiDia(m)],
+    ['la lista de contactos', l.filas],
+  ] as [string, FilaJson[]][]) {
     assert.equal(
       hay(filas, s.congelado),
       false,
-      `${donde} trae un contacto CONGELADO (territorio nulo)`,
+      `${donde} trae un contacto CONGELADO, y ahí no va: no es trabajo de este closer`,
     );
   }
 });
@@ -811,4 +860,31 @@ test('sin sesión válida las tres listas responden 401 `sin_sesion` y NINGUNA t
       assert.equal(cuerpo[clave], undefined, `${donde} devolvió \`${clave}\` en un rechazo`);
     }
   }
+});
+
+test('el contador de la cartera DESGLOSA: activos y fuera de zona', async () => {
+  // Los documentos lo piden con esa forma —*«el contador de la base total desglosa: N activos · M
+  // congelados»*— y el motivo es aritmético: `total` incluye a los dos y las colas de Mi Día a
+  // ninguno de los congelados. Sin el desglose, los números de esta pantalla no cierran con los de
+  // ninguna otra y hay que adivinar la diferencia.
+  const p = await pipeline();
+
+  assert.ok(p.cartera, 'el Pipeline no devuelve el desglose de la cartera');
+  assert.equal(
+    p.cartera.activos + p.cartera.congelados,
+    p.total,
+    `el desglose no suma el total: ${p.cartera.activos} + ${p.cartera.congelados} ≠ ${p.total}. Un ` +
+      'total que no cierra con sus partes es peor que no tener partes',
+  );
+  assert.ok(
+    p.cartera.congelados >= 1,
+    'el sembrado tiene un congelado y el desglose cuenta cero: la prueba no está midiendo nada',
+  );
+  // Y el desglose coincide con las filas, no con otra consulta: dos fuentes para el mismo número es
+  // exactamente el defecto que este archivo persigue en todas sus aserciones.
+  assert.equal(
+    p.cartera.congelados,
+    filasDelPipeline(p).filter((f) => f.congelado).length,
+    'el conteo de congelados no coincide con las filas que vienen marcadas',
+  );
 });

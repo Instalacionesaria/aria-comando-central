@@ -1307,3 +1307,18 @@
 .av-modo.on b {
   color: var(--accent);
 }
+
+/* ── LA FILA DE UN CONGELADO ───────────────────────────────────────────
+   Atenuada, y nada más: conserva su chip de fuente, su píldora y sus seis íconos con sus valores
+   reales. Es la misma decisión que la fila completada y por el mismo motivo — resumirla ahorra
+   píxeles y pierde justo lo que permite decidir si hay que volver sobre ese contacto.
+
+   La opacidad es 0,62 y no 0,4: tiene que leerse que está apagada sin que haya que forzar la vista
+   para leer el nombre. Y sigue siendo clicable, porque la ficha sirve igual. */
+.md-r.md-fuera {
+  opacity: 0.62;
+}
+
+.md-r.md-fuera:hover {
+  opacity: 0.85;
+}

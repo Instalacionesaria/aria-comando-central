@@ -185,9 +185,18 @@ export default function Fila({ fila, onAbrir }) {
   /* «Estancado» va en el COLOR de la fila y en el microtexto, NUNCA en la píldora. El § 7.1 es
      explícito: la píldora dice la situación REAL, no una condición temporal. Mezclarlas haría
      que «estancado» tapara «venta» o «seguimiento», que es el hecho que importa. */
+  /* ── EL CONGELADO SE VE, Y ESO ES LA MITAD DE LA REGLA ─────────────────────
+   *
+   * Un congelado es el que no está en ningún territorio: perdió su etiqueta de zona. Se atenúa y se
+   * marca, y **conserva todos sus datos** —sus seis íconos, su fuente, su píldora—, por lo mismo que
+   * una fila completada: resumirla ahorra píxeles y pierde justo lo que permite decidir si hay que
+   * volver sobre ese contacto.
+   *
+   * Antes no se veía: desaparecía de la aplicación sin rastro, y el closer veía bajar su cartera sin
+   * ninguna explicación disponible. */
   return (
     <div
-      className={`md-r${completada ? ' md-done' : ''}`}
+      className={`md-r${completada ? ' md-done' : ''}${fila.congelado ? ' md-fuera' : ''}`}
       style={
         fila.estancado && !completada
           ? { borderLeft: '2px solid var(--warn)', paddingLeft: 10, ...(onAbrir ? { cursor: 'pointer' } : {}) }
@@ -207,6 +216,17 @@ export default function Fila({ fila, onAbrir }) {
               camino por el que llegue vacío. */}
           <span className="tagx nu">{fila.fuente}</span>
           {sit ? <span className={`tagx ${sit.clase}`}>{sit.texto}</span> : null}
+          {/* Y la marca de fuera de zona, con su explicación en el `title`. Va como chip y no como
+              tinte de fila porque el tinte ya lo usa «estancado», y las dos condiciones pueden
+              coincidir: un contacto puede estar estancado Y haber perdido su zona. */}
+          {fila.congelado ? (
+            <span
+              className="tagx no"
+              title="Perdió su etiqueta de zona en el CRM, así que ya no es trabajo de esta pestaña. Se sigue viendo, y vuelve solo si la etiqueta reaparece."
+            >
+              fuera de zona
+            </span>
+          ) : null}
         </div>
         {micro || fila.estancado ? (
           <div className="md-sub">

@@ -111,7 +111,17 @@ export default function Pipeline() {
       <div className={`fd-aviso ${c.porResultado > 0 ? '' : 'falta'}`}>
         <i>◍</i>
         <span>
-          <b>{datos.total}</b> contacto(s) en el territorio.{' '}
+          {/* EL DESGLOSE, y sin él los números de esta pantalla no cierran con los de ninguna
+              otra: `total` incluye a los congelados y las colas de Mi Día a ninguno. Un total que
+              los suma sin distinguir obliga a adivinar la diferencia. */}
+          <b>{datos.total}</b> contacto(s) en la cartera
+          {datos.cartera && datos.cartera.congelados > 0 ? (
+            <>
+              {' '}— <b>{datos.cartera.activos}</b> en zona y{' '}
+              <b>{datos.cartera.congelados}</b> fuera de zona
+            </>
+          ) : null}
+          .{' '}
           {c.porResultado > 0 ? (
             <>
               <b>{c.porResultado}</b> con un resultado registrado en Avanzar

@@ -153,6 +153,18 @@ export interface Fila {
   /** Cuándo se le escribió por última vez. */
   ultimoSalienteEl: Date | null;
   /**
+   * `true` = **congelado**: no está en ningún territorio.
+   *
+   * Viaja en la fila y no se deduce en la pantalla por lo mismo que los seis íconos: es un hecho del
+   * contacto, y si dos vitrinas lo derivaran por su cuenta una de las dos quedaría vieja.
+   *
+   * Y la definición es «no está en NINGÚN territorio», no «perdió el mío». La diferencia ya costó
+   * caro una vez, y está escrita en `lib/negocio/sincronizar.ts`: con la segunda definición **todo
+   * contacto del setter nace congelado** —nunca tuvo `zona_closer`, la gana al agendar— y ese módulo
+   * queda inerte sin que nada falle.
+   */
+  congelado: boolean;
+  /**
    * La SITUACIÓN de la píldora. El § 7.1: *"la situación real, nunca una condición
    * temporal"*. "Estancado" y "vencido" NO salen de acá — son color de fila y microtexto,
    * que se calculan en el cliente con las fechas de arriba.
@@ -252,6 +264,8 @@ function aFila(f: {
   ultimo_entrante_el: Date | null;
   ultimo_entrante_texto: string | null;
   ultimo_saliente_el: Date | null;
+  /** `null` = congelado: no está en ningún territorio. Ver `Fila.congelado`. */
+  territorio: string | null;
   etiquetas: string[] | null;
   reuniones_tenidas: string | null;
   cita_futura: unknown;
@@ -275,6 +289,7 @@ function aFila(f: {
     ultimoEntranteEl: f.ultimo_entrante_el,
     ultimoEntranteTexto: f.ultimo_entrante_texto,
     ultimoSalienteEl: f.ultimo_saliente_el,
+    congelado: f.territorio === null,
     situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
     // LA PÍLDORA LA CALCULA EL SERVIDOR, igual que los seis íconos, y por el mismo motivo: así la
     // fila y la ficha reciben **el mismo objeto**, y el espejo que el `02` exige es cierto por
@@ -343,6 +358,11 @@ function conLosSeisIconos() {
       'c.ultimo_entrante_el',
       'c.ultimo_entrante_texto',
       'c.ultimo_saliente_el',
+      /* El territorio, del que sale una sola cosa en la fila: si está CONGELADO.
+         No es para filtrar —eso lo hace el `where` de quien llama— sino para poder DECIRLO. Sin esta
+         columna, un congelado traído a propósito llegaría indistinguible de uno activo, y la pantalla
+         lo dibujaría como si fuera trabajo de este closer. */
+      'c.territorio',
       // Las etiquetas crudas. De acá salen tres de los seis íconos y la marca de estancado.
       'c.etiquetas',
 
@@ -494,7 +514,7 @@ export async function filaDeContacto(contactoId: string): Promise<Fila | undefin
  */
 export async function filasDeTerritorio(
   territorio: Territorio,
-  opciones: { pagina?: number; todas?: boolean } = {},
+  opciones: { pagina?: number; todas?: boolean; conCongelados?: boolean } = {},
 ): Promise<{ filas: Fila[]; hayMas: boolean }> {
   const pagina = Math.max(0, Math.trunc(opciones.pagina ?? 0));
 
@@ -516,8 +536,29 @@ export async function filasDeTerritorio(
 
   // Se piden UNA MÁS que las que caben. Es cómo se sabe si hay más página sin pagar un
   // `count(*)` sobre toda la tabla — que con RLS encima es la consulta más cara de la lista.
+  /* ── `conCongelados`, Y POR QUÉ NO ES EL COMPORTAMIENTO POR OMISIÓN ────────
+   *
+   * Un contacto **congelado** es el que no está en NINGÚN territorio: perdió su etiqueta de zona y
+   * no ganó la otra. `lib/negocio/sincronizar.ts` afirma de él que *«sigue visible y atenuado, sigue
+   * siendo movible, no se borra»* — y nada de eso existía: con el `where` de abajo a secas,
+   * `territorio is null` queda afuera y el contacto **desaparece de la aplicación sin rastro y sin
+   * contador que lo cuente**. El closer ve bajar su cartera y no tiene dónde mirar por qué.
+   *
+   * Se pide explícitamente y NO es el valor por omisión, porque los dos usos son opuestos:
+   *
+   *   · el **Pipeline** es la base de datos de la cartera, y ahí un congelado tiene que verse: es
+   *     información sobre alguien que estuvo;
+   *   · **Mi Día** son las colas de trabajo, y ahí NO va: no es trabajo de este closer, y los
+   *     documentos lo dicen dos veces — *«los congelados no entran ni a Urgentes ni al Buzón»*.
+   *
+   * Con el valor por omisión al revés, agregar una cola nueva a Mi Día la llenaría de congelados sin
+   * que nadie lo pidiera, y el síntoma sería una cola con gente que no es de nadie. */
   const crudas = await conLosSeisIconos()
-    .where('c.territorio', '=', territorio)
+    .where((eb) =>
+      opciones.conCongelados
+        ? eb.or([eb('c.territorio', '=', territorio), eb('c.territorio', 'is', null)])
+        : eb('c.territorio', '=', territorio),
+    )
     // Por actividad entrante, y los que nunca escribieron al final. `nulls last` explícito:
     // en PostgreSQL `desc` pone los nulos PRIMERO por omisión, así que sin esto la lista
     // arranca con los contactos que nunca dijeron nada.

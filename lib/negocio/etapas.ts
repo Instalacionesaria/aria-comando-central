@@ -149,6 +149,22 @@ export function desenlaceDeLasEtiquetas(etiquetas: readonly string[]): Desenlace
 }
 
 /**
+ * ¿La etapa escrita en la base es una de las SIETE?
+ *
+ * `contactos.etapa` es `text` **sin restricción** en la base —a propósito: el `check` habría que
+ * migrarlo cada vez que cambia la lista— así que la validación vive en TypeScript y tiene que vivir
+ * en **un solo lugar**.
+ *
+ * Antes existía dos veces: acá abajo, dentro de `etapaDelContacto`, y en `lib/negocio/pipeline.ts`
+ * escrita como `f.etapa !== null`, que es una condición **distinta**. La consecuencia era una
+ * contradicción visible sobre el mismo contacto: con una etapa retirada, la columna lo dibujaba en
+ * «Agendado» —por el respaldo— y el contador lo contaba como «registrado por una persona».
+ */
+export function esUnaDeLasSiete(etapa: string | null): boolean {
+  return etapa !== null && (CLAVES as readonly string[]).includes(etapa);
+}
+
+/**
  * La etapa de un contacto. **Las tres vías del encabezado, en orden.**
  *
  * Las etiquetas que no conoce se ignoran a propósito: la subcuenta tiene decenas —de campañas, de
@@ -161,7 +177,7 @@ export function etapaDelContacto(c: {
   // 1 · Lo que escribió una persona con Avanzar. Se valida contra las siete: un valor que ya no
   // existe —una etapa retirada— no puede mandar a un contacto a una columna que no se dibuja,
   // donde desaparecería de la pantalla sin que nada falle.
-  if (c.etapa !== null && (CLAVES as readonly string[]).includes(c.etapa)) return c.etapa as Etapa;
+  if (esUnaDeLasSiete(c.etapa)) return c.etapa as Etapa;
 
   // 2 · Y si no, la etiqueta de más peso. 3 · Y si tampoco, la entrada.
   return desenlaceDeLasEtiquetas(c.etiquetas)?.etapa ?? ETAPA_DE_ENTRADA;

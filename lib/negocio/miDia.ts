@@ -551,6 +551,10 @@ function filaHuerfana(id: string): Fila {
     // contacto ya no esta en la cache, asi que no se sabe en que estado quedo.
     pildora: null,
     estancado: false,
+    /* `false` y no `true`: de este contacto no se sabe NADA —ni siquiera si tiene territorio—,
+       así que afirmar que está congelado sería inventarle un dato, que es lo único que esta fila
+       tiene prohibido. Ver el comentario de arriba. */
+    congelado: false,
     iconos: {
       reunionesTenidas: 0,
       citaFutura: false,
