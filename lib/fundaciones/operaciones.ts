@@ -101,10 +101,37 @@ function rechazoDeAlmacen(fallo: { tipo: string }): Response {
  * un servicio externo es texto que no controlamos dentro de una respuesta nuestra. Es el mismo
  * criterio de `ADR-0704` con otro origen.
  */
-function rechazoDeModelo(
-  fallo: { tipo: 'rechazado'; codigo: string } | { tipo: 'sin_respuesta' } | { tipo: 'sin_texto' },
+/* Se EXPORTA solo para que se pueda probar, y eso vale decirlo. Es el ultimo tramo de la cadena del
+   diagnostico — el que decide que queda en el registro del servidor y que ve la persona— y las dos
+   cosas sobrevivieron a la mutacion mientras la funcion fue privada: no habia por donde ejercitarla
+   sin base de datos ni sesion. La alternativa era una prueba de la ruta entera para afirmar dos
+   lineas. */
+export function rechazoDeModelo(
+  fallo:
+    | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
+    | { tipo: 'sin_respuesta' }
+    | { tipo: 'sin_texto' },
 ): Response {
-  if (fallo.tipo === 'rechazado') return rechazo('modelo_no_disponible', fallo.codigo);
+  if (fallo.tipo === 'rechazado') {
+    /* ── EL REGISTRO DEL SERVIDOR SE LO LLEVA SIEMPRE, PASE LO QUE PASE ARRIBA ──
+     *
+     * Antes de esto, un rechazo del modelo no dejaba rastro en NINGÚN lado: la pantalla mostraba un
+     * texto amable y los registros de Vercel no tenían una línea. O sea que el diagnóstico no se
+     * perdía en el camino: no existía.
+     *
+     * Va acá y no en `generacion.ts` porque acá se sabe de qué organización y de qué herramienta se
+     * trata, y eso es la mitad de lo que hace útil una línea de registro. `ADR-0407` prohíbe
+     * registrar CUERPOS; un código, un número y el motivo del proveedor no son un cuerpo. */
+    console.error(
+      `fundaciones: el modelo rechazó la generación · ${fallo.estado} ${fallo.codigo} · ` +
+        (fallo.motivo === null ? 'sin motivo' : fallo.motivo),
+    );
+    // Y a la pantalla van los dos: el código dice la familia, el motivo dice el problema.
+    return rechazo(
+      'modelo_no_disponible',
+      fallo.motivo === null ? fallo.codigo : `${fallo.codigo}: ${fallo.motivo}`,
+    );
+  }
   if (fallo.tipo === 'sin_texto') return rechazo('modelo_no_disponible', 'respuesta sin texto');
   return rechazo('modelo_no_disponible', 'sin respuesta');
 }

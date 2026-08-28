@@ -42,9 +42,17 @@ const VERSION_API = '2023-06-01';
 /**
  * La herramienta de búsqueda web, para el Research.
  *
- * Es la variante con filtrado dinámico, disponible en Sonnet 4.6. **No se declara `code_execution`
- * junto a ella**: la búsqueda ya ejecuta código por dentro, y un segundo entorno de ejecución
- * declarado confunde al modelo sobre dónde correr las cosas.
+ * Es la variante con filtrado dinámico. **No se declara `code_execution` junto a ella**: la
+ * búsqueda ya ejecuta código por dentro, y un segundo entorno de ejecución declarado confunde al
+ * modelo sobre dónde correr las cosas.
+ *
+ * El comentario decía «disponible en Sonnet 4.6», y `MODELO` dejó de ser ese modelo. El tipo sigue
+ * siendo el correcto —la variante también corre en Sonnet 5— pero la justificación había quedado
+ * apuntando a otro sitio, y un comentario que nombra la versión equivocada es peor que ninguno:
+ * manda a comprobar la compatibilidad contra un modelo que no es el que se usa.
+ *
+ * Por eso la prueba no fija la cadena entera, sino su FORMA (`web_search_AAAAMMDD`): un tipo que la
+ * API no conoce da 400 `invalid_request_error`, con el mismo texto amable de siempre en pantalla.
  */
 const BUSQUEDA_WEB = { type: 'web_search_20260209', name: 'web_search' } as const;
 
@@ -59,9 +67,16 @@ export interface Generacion {
   tokens: number | null;
 }
 
-/** Por qué no se pudo generar. Cada rama lleva lo que hace falta para decidir qué hacer. */
+/**
+ * Por qué no se pudo generar. Cada rama lleva lo que hace falta para decidir qué hacer.
+ *
+ * `motivo` es la frase que Anthropic manda en `error.message`, y es el único campo que dice QUÉ
+ * estuvo mal. Sin él, `invalid_request_error` cubre por igual un `max_tokens` fuera de rango, un
+ * campo de más y una cuenta sin saldo — tres investigaciones distintas con el mismo nombre. Es
+ * `null` cuando el servicio no mandó ninguna, que es un hecho distinto de una cadena vacía.
+ */
 export type FalloDeGeneracion =
-  | { tipo: 'rechazado'; estado: number; codigo: string }
+  | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
   | { tipo: 'sin_respuesta'; causa: string }
   | { tipo: 'sin_texto' };
 
@@ -106,7 +121,14 @@ export async function generar(opciones: {
     cuerpo,
   });
 
-  if (r.tipo === 'rechazado') return { tipo: 'rechazado', estado: r.estado, codigo: r.codigo };
+  if (r.tipo === 'rechazado') {
+    return {
+      tipo: 'rechazado',
+      estado: r.estado,
+      codigo: r.codigo,
+      motivo: r.detalle === undefined ? null : r.detalle,
+    };
+  }
   if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta', causa: r.causa };
 
   const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];

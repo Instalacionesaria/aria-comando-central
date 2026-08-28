@@ -20,6 +20,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { FUNDACIONES, IDS_FUNDACIONES, PASOS_RESEARCH, herramienta } from '../../lib/fundaciones/herramientas.ts';
 import { claveCorta, camposDe, idsDeCampos } from '../../lib/fundaciones/campos.ts';
@@ -36,7 +38,8 @@ import {
   tokensDeSalida,
 } from '../../lib/fundaciones/prompts.ts';
 import { aHtml, aTextoPlano, leerDocumento } from '../../lib/fundaciones/documento.ts';
-import { MODELO } from '../../lib/fundaciones/generacion.ts';
+import { MODELO, generar } from '../../lib/fundaciones/generacion.ts';
+import { rechazoDeModelo } from '../../lib/fundaciones/operaciones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
 import { SECCIONES, SIN_OPERACIONES_TODAVIA, seccionesVisibles } from '../../lib/autorizacion/secciones.ts';
 
@@ -490,6 +493,304 @@ test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', () => {
     VALIDOS.includes(MODELO),
     `«${MODELO}» no es un identificador de modelo válido, así que TODA generación va a fallar con 404 ` +
       'y la pantalla va a decir «el modelo no respondió» — mandando a revisar la clave, que está bien',
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// EL CUERPO QUE SALE HACIA ANTHROPIC — lo que nadie miraba
+//
+// Este archivo comprobaba el MODELO y el PRESUPUESTO por separado, y nunca el cuerpo armado. Y ese
+// hueco tiene una consecuencia medida: un cuerpo invalido llega a produccion, la API responde 400
+// `invalid_request_error`, y la pantalla dice «el modelo no respondio» — que manda a revisar la
+// credencial, que esta bien. Ya paso dos veces en la misma pantalla.
+//
+// Lo que hace que valga: NO reimplementa el cuerpo. Llama a `generar(` de verdad y le pone una
+// trampa a `fetch`, asi que lo que se afirma es lo que sale por el cable.
+//
+// ── EL CASO QUE MOTIVA LA COMPROBACION DEL VIAJE DE IDA Y VUELTA ──────────
+//
+// `JSON.stringify` **borra las claves cuyo valor es `undefined`**, sin ruido. Asi que un
+// `max_tokens: undefined` —una funcion que devuelve `undefined` para un id nuevo, digamos— no sale
+// como `null`: sale como si el campo no existiera, y la API responde *«max_tokens: Field required»*.
+// Por eso lo que se inspecciona es el JSON YA SERIALIZADO Y VUELTO A LEER, no el objeto.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Corre `generar(` con `fetch` interceptado, y devuelve lo que salio y lo que volvio. */
+async function conFetchInterceptado<T>(
+  respuesta: () => Response,
+  correr: () => Promise<T>,
+): Promise<{ salida: T; peticiones: { url: string; cuerpo: Record<string, unknown>; cabeceras: Headers }[] }> {
+  const peticiones: { url: string; cuerpo: Record<string, unknown>; cabeceras: Headers }[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    const enviado = typeof init?.body === 'string' ? init.body : '{}';
+    peticiones.push({
+      url: String(url),
+      // Se serializa y se vuelve a leer A PROPOSITO: ver el encabezado. Es la unica forma de ver
+      // los campos que `JSON.stringify` se comio.
+      cuerpo: JSON.parse(enviado) as Record<string, unknown>,
+      cabeceras: new Headers(init?.headers),
+    });
+    return respuesta();
+  }) as typeof globalThis.fetch;
+  try {
+    return { salida: await correr(), peticiones };
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+const RESPUESTA_BUENA = () =>
+  new Response(
+    JSON.stringify({
+      content: [{ type: 'text', text: 'un documento' }],
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 10, output_tokens: 20 },
+    }),
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  );
+
+test('el cuerpo que sale hacia Anthropic tiene los tres campos, y ninguno se lo come `JSON.stringify`', async () => {
+  /* Se recorren las herramientas con su prompt REAL y su presupuesto REAL. Si alguna arma un cuerpo
+     que la API rechazaria, esto falla ACA y no en produccion tres semanas despues. */
+  for (const id of [0, 2, 3, 4, 10, 26]) {
+    const estado = estadoVacio();
+    const prompt = armarPrompt(id, {}, estado);
+
+    const { peticiones } = await conFetchInterceptado(RESPUESTA_BUENA, () =>
+      generar({ claveIa: 'sk-de-prueba', prompt, tokens: tokensDeSalida(id) }),
+    );
+
+    assert.equal(peticiones.length, 1, `la herramienta ${id} no hizo exactamente una peticion`);
+    const p = peticiones[0]!;
+    assert.equal(p.url, 'https://api.anthropic.com/v1/messages');
+
+    // 1 · El modelo, presente y con el valor que el modulo declara.
+    assert.equal(p.cuerpo['model'], MODELO, `la herramienta ${id} manda otro modelo`);
+
+    /* 2 · `max_tokens` PRESENTE. La clave es `in`, no una comparacion de valor: un `undefined`
+           desaparece del JSON y `p.cuerpo['max_tokens'] === undefined` no distingue «no vino» de
+           «vino undefined». La API responde *«Field required»* y el sintoma en pantalla es el mismo
+           «el modelo no respondio» de siempre. */
+    assert.ok('max_tokens' in p.cuerpo, `la herramienta ${id} manda un cuerpo SIN max_tokens`);
+    const tope = p.cuerpo['max_tokens'];
+    assert.ok(
+      typeof tope === 'number' && Number.isInteger(tope) && tope > 0,
+      `la herramienta ${id} manda max_tokens = ${String(tope)}`,
+    );
+
+    // 3 · Un mensaje de usuario con contenido de verdad. La API rechaza los bloques vacios, y un
+    //     prompt que se interpola a nada es exactamente eso.
+    const mensajes = p.cuerpo['messages'] as { role?: string; content?: unknown }[] | undefined;
+    assert.ok(Array.isArray(mensajes) && mensajes.length === 1, `la herramienta ${id} no manda un mensaje`);
+    assert.equal(mensajes[0]?.role, 'user');
+    const contenido = mensajes[0]?.content;
+    assert.ok(typeof contenido === 'string', `la herramienta ${id} manda un content que no es texto`);
+    assert.ok(
+      contenido.trim().length > 0,
+      `la herramienta ${id} manda un content VACIO: la API lo rechaza con 400 y la pantalla dice ` +
+        '«el modelo no respondio», que manda a revisar la credencial',
+    );
+
+    /* 4 · NINGUN campo de mas. La API responde *«Extra inputs are not permitted»* —otro 400 con el
+           mismo texto amable en pantalla— y es el error tipico de copiar un cuerpo de otra API. */
+    assert.deepEqual(
+      Object.keys(p.cuerpo).sort(),
+      ['max_tokens', 'messages', 'model'],
+      `la herramienta ${id} manda campos que la API no espera`,
+    );
+
+    // 5 · Las dos cabeceras sin las que no hay peticion valida.
+    assert.equal(p.cabeceras.get('anthropic-version'), '2023-06-01');
+    assert.equal(p.cabeceras.get('x-api-key'), 'sk-de-prueba');
+  }
+});
+
+test('el prompt del Research SI declara la herramienta de busqueda, y las demas NO', async () => {
+  /* Las dos mitades importan. La busqueda de mas en una herramienta que no la necesita gasta y
+     cambia el documento; la de menos en el Research lo deja inventando referentes en vez de
+     buscarlos, que es el defecto que el Research existe para no tener. */
+  const { peticiones: conBusqueda } = await conFetchInterceptado(RESPUESTA_BUENA, () =>
+    generar({ claveIa: 'k', prompt: 'hola', tokens: 100, conBusquedaWeb: true }),
+  );
+  const herramientas = conBusqueda[0]?.cuerpo['tools'] as { type?: string; name?: string }[] | undefined;
+  assert.ok(Array.isArray(herramientas) && herramientas.length === 1, 'el Research no declara la busqueda');
+  assert.equal(herramientas[0]?.name, 'web_search');
+  assert.match(
+    String(herramientas[0]?.type),
+    /^web_search_\d{8}$/,
+    'el tipo de la herramienta de busqueda no tiene la forma `web_search_AAAAMMDD`. Un tipo que la ' +
+      'API no conoce da 400 `invalid_request_error`, con el mismo texto amable de siempre',
+  );
+
+  const { peticiones: sinBusqueda } = await conFetchInterceptado(RESPUESTA_BUENA, () =>
+    generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal('tools' in (sinBusqueda[0]?.cuerpo ?? {}), false, 'una herramienta sin busqueda la declara igual');
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// EL MOTIVO QUE VUELVE — el campo que decidia entre cuatro investigaciones y se tiraba
+// ════════════════════════════════════════════════════════════════════════════
+
+const rechazoDeAnthropic = (tipo: string, mensaje?: string) => () =>
+  new Response(
+    JSON.stringify({ type: 'error', error: mensaje === undefined ? { type: tipo } : { type: tipo, message: mensaje } }),
+    { status: 400, headers: { 'content-type': 'application/json' } },
+  );
+
+test('el `message` de Anthropic LLEGA, porque es lo unico que dice que estuvo mal', async () => {
+  /* ══ ESTA PRUEBA EXISTE POR UN DEFECTO QUE ME COSTO DOS RONDAS ═════════════
+   *
+   * `pedirExterno` leia `error.type` y descartaba `error.message`, por una decision escrita: *«el
+   * codigo y no el mensaje del proveedor, que es texto que no controlamos»*. El resultado es que
+   * estas cuatro situaciones se ven IDENTICAS en pantalla, y son cuatro cosas distintas:
+   *
+   *   · una cuenta sin saldo        → hay que recargar, y esperar no arregla nada;
+   *   · un `max_tokens` fuera de rango → es nuestro y se corrige en una linea;
+   *   · un campo de mas en el cuerpo  → tambien nuestro;
+   *   · un tipo de herramienta caducado → tambien nuestro.
+   *
+   * Las cuatro son `invalid_request_error`. Lo unico que las separa es la frase del `message`. */
+  const conSaldo = await conFetchInterceptado(
+    rechazoDeAnthropic('invalid_request_error', 'Your credit balance is too low to access the Anthropic API.'),
+    () => generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal(conSaldo.salida.tipo, 'rechazado');
+  assert.equal(
+    conSaldo.salida.tipo === 'rechazado' ? conSaldo.salida.motivo : null,
+    'Your credit balance is too low to access the Anthropic API.',
+    'el motivo del proveedor se perdio: en pantalla queda `invalid_request_error` a secas, que no ' +
+      'distingue una cuenta sin saldo de un cuerpo mal armado',
+  );
+  assert.equal(conSaldo.salida.tipo === 'rechazado' ? conSaldo.salida.codigo : '', 'invalid_request_error');
+
+  /* Y `null` cuando el servicio no dijo nada, que NO es lo mismo que una cadena vacia. «No dijo por
+     que» es un hecho, y la pantalla tiene que poder decirlo asi en vez de mostrar un parentesis
+     vacio. */
+  const sinMensaje = await conFetchInterceptado(rechazoDeAnthropic('overloaded_error'), () =>
+    generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal(sinMensaje.salida.tipo === 'rechazado' ? sinMensaje.salida.motivo : 'x', null);
+
+  // Y se acota. Un servicio verborragico no vuelca medio cuerpo de la peticion en una pantalla.
+  const largo = await conFetchInterceptado(
+    rechazoDeAnthropic('invalid_request_error', 'x'.repeat(5000)),
+    () => generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  const motivoLargo = largo.salida.tipo === 'rechazado' ? (largo.salida.motivo ?? '') : '';
+  assert.ok(motivoLargo.length > 0 && motivoLargo.length <= 320, `el motivo vino con ${motivoLargo.length} caracteres`);
+});
+
+test('el motivo queda en el REGISTRO del servidor y tambien en la pantalla', async () => {
+  /* ══ LOS DOS SOBREVIVIENTES DE LA MUTACION, Y SON EL ULTIMO TRAMO ══════════
+   *
+   * Que `pedirExterno` lea el motivo no sirve de nada si `rechazoDeModelo` lo tira. Y mientras esa
+   * funcion fue privada no habia por donde ejercitarla: borrarle el `console.error` y borrarle el
+   * motivo de la respuesta dejaban la suite entera en verde.
+   *
+   * Son las dos mitades del mismo arreglo, y NINGUNA reemplaza a la otra:
+   *
+   *   · el REGISTRO es lo que sobrevive. Cuando alguien reporta esto tres dias despues, la pantalla
+   *     ya se cerro y lo unico que queda es la linea de Vercel. Antes de este cambio no habia
+   *     NINGUNA: el diagnostico no se perdia en el camino, no existia.
+   *   · la PANTALLA es lo que hace que no haga falta ir a los registros. Quien esta mirando es quien
+   *     administra la organizacion, o sea la persona que puede recargar el saldo o avisar. */
+  const errores: string[] = [];
+  const original = console.error;
+  console.error = (...partes: unknown[]) => void errores.push(partes.map(String).join(' '));
+
+  let r: Response;
+  try {
+    r = rechazoDeModelo({
+      tipo: 'rechazado',
+      estado: 400,
+      codigo: 'invalid_request_error',
+      motivo: 'Your credit balance is too low to access the Anthropic API.',
+    });
+  } finally {
+    console.error = original;
+  }
+
+  // 1 · EL REGISTRO. Con el codigo, el numero y el motivo: los tres hacen falta para decidir.
+  assert.equal(errores.length, 1, 'un rechazo del modelo no dejo ni una linea en el registro del servidor');
+  assert.match(errores[0] ?? '', /invalid_request_error/, 'el registro no dice el codigo');
+  assert.match(errores[0] ?? '', /400/, 'el registro no dice el numero de situacion');
+  assert.match(
+    errores[0] ?? '',
+    /credit balance is too low/,
+    'el registro no dice el MOTIVO, que es lo unico que distingue una cuenta sin saldo de un cuerpo ' +
+      'mal armado. Sin eso, la linea de registro no vale mas que la pantalla',
+  );
+
+  // 2 · LA PANTALLA. El codigo dice la familia y el motivo dice el problema: van los dos.
+  assert.equal(r.status, 502, 'un rechazo del modelo dejo de ser 502: un 500 mandaria a revisar NUESTRO codigo');
+  const cuerpo = (await r.json()) as { codigo?: string; detalle?: string };
+  assert.equal(cuerpo.codigo, 'modelo_no_disponible');
+  assert.match(cuerpo.detalle ?? '', /invalid_request_error/, 'el detalle perdio el codigo');
+  assert.match(
+    cuerpo.detalle ?? '',
+    /credit balance is too low/,
+    'el detalle llega sin el motivo: en pantalla queda `invalid_request_error` a secas, que es ' +
+      'exactamente lo que hizo falta adivinar dos veces',
+  );
+
+  /* 3 · Y sin motivo, el registro lo DICE en vez de dejar un hueco. Un registro que termina en
+         «invalid_request_error ·» hace dudar de si el motivo no vino o si se perdio acá. */
+  const sinMotivo: string[] = [];
+  console.error = (...partes: unknown[]) => void sinMotivo.push(partes.map(String).join(' '));
+  try {
+    rechazoDeModelo({ tipo: 'rechazado', estado: 529, codigo: 'overloaded_error', motivo: null });
+  } finally {
+    console.error = original;
+  }
+  assert.match(sinMotivo[0] ?? '', /sin motivo/, 'sin motivo, el registro deja un hueco en vez de decirlo');
+});
+
+test('el frontmatter YAML NO llega al prompt, con cualquier final de línea', () => {
+  /* ══ UN DEFECTO QUE EXISTÍA EN LOCAL Y NO EN PRODUCCIÓN ══════════════════
+   *
+   * `sinFrontmatter` pedía un `---` seguido de salto de línea UNIX exacto. Los `SKILL.md` son copias
+   * byte a byte de las del hub y el desarrollo es en Windows con `core.autocrlf = true`, así que en
+   * el disco traen el retorno de carro: el patrón no coincidía, y el bloque YAML entero —nombre,
+   * descripción, versión— entraba al prompt como si fuera metodología. En Vercel, que construye
+   * sobre Linux, el mismo archivo está en LF y funcionaba bien.
+   *
+   * O sea: el prompt que se medía acá no era el que corría allá. Eso no se nota como un error — se
+   * nota como un diagnóstico que no cierra, y cuesta el doble.
+   *
+   * La prueba afirma la PROPIEDAD y no el patrón, así que dice lo mismo en las dos plataformas: en
+   * la de Windows atrapa el defecto, y en Linux sostiene que sigue arreglado. */
+  const conFrontmatterEnCrudo: string[] = [];
+
+  for (const metodologia of [...Object.values(METODOLOGIA), ...METODOLOGIA_RESEARCH]) {
+    const plantilla = leerPlantilla(metodologia);
+    assert.ok(plantilla, `no se pudo leer ${metodologia}`);
+
+    // Lo que llega al prompt no empieza por el separador del frontmatter.
+    assert.doesNotMatch(
+      plantilla,
+      /^---/,
+      `${metodologia} llega al prompt CON su frontmatter, así que el modelo recibe la metadata del ` +
+        'archivo como si fueran instrucciones',
+    );
+
+    // Ni nombra las claves del YAML en su arranque, que es la forma en que se colaba.
+    assert.doesNotMatch(
+      plantilla.slice(0, 200),
+      /^\s*(name|description|version)\s*:/m,
+      `${metodologia} arranca con una clave del frontmatter`,
+    );
+
+    /* Y LA COMPROBACIÓN DE ENTRADA MUERTA, que es la mitad que hace que esto valga algo: el archivo
+       EN CRUDO SÍ tiene frontmatter. Sin ella, un directorio vacío pasaría la prueba. */
+    const ruta = join(process.cwd(), 'lib', 'fundaciones', 'skills', metodologia, 'SKILL.md');
+    if (/^---\r?\n/.test(readFileSync(ruta, 'utf8'))) conFrontmatterEnCrudo.push(metodologia);
+  }
+
+  assert.ok(
+    conFrontmatterEnCrudo.length > 0,
+    'ningún SKILL.md tiene frontmatter en crudo, así que la afirmación de arriba no ejercita nada',
   );
 });
 

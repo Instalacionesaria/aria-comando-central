@@ -25,3 +25,14 @@
 # Los flujos de trabajo los lee una prueba como texto (fila ⛔ 1 de la Etapa 0).
 *.yml   text eol=lf
 *.yaml  text eol=lf
+
+# Las metodologías de Fundaciones. NO es cosmético: `sinFrontmatter` en
+# `lib/fundaciones/plantillas.ts` las parsea, y con CRLF en el disco el frontmatter
+# YAML se colaba entero dentro del prompt — solo en local, porque Vercel construye
+# sobre Linux con el mismo archivo en LF. Un defecto que existe acá y no allá es el
+# que más caro sale de diagnosticar: se mide una cosa y corre otra.
+#
+# La función ya no depende de esto. Esta línea es el segundo cinturón, y se declara la
+# ruta y no `*.md` porque renormalizar toda la documentación es justo el ruido que el
+# comentario de arriba dice que no se compra.
+lib/fundaciones/skills/**/SKILL.md text eol=lf

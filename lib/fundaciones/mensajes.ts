@@ -41,8 +41,15 @@ const TEXTOS: Readonly<Record<string, string>> = {
 
   // De los dos servicios externos. Están separados a propósito: son dos sistemas distintos y
   // confundirlos hace que se revise el que anda.
+  /* El detalle que sigue a este texto viene DEL PROVEEDOR y dice qué estuvo mal. Se nombran las dos
+     causas que no se arreglan probando de nuevo, porque «probá de nuevo en un momento» a secas manda
+     a esperar a alguien que tiene que ir a hacer algo — y esperar no recarga una cuenta. Mismo
+     encuadre que `motor_rechazo`, que ya resolvía esto para el motor de scraping. */
   modelo_no_disponible:
-    'El modelo no respondió. No se perdió nada de lo que escribiste: probá de nuevo en un momento.',
+    'El modelo no respondió, y el detalle de abajo viene de él. No se perdió nada de lo que ' +
+    'escribiste. Si dice que el saldo es insuficiente, hay que recargar la cuenta de IA; si nombra ' +
+    'un límite o un campo de la petición, es nuestro y hay que corregirlo. Cualquier otra cosa suele ' +
+    'ser pasajera: probá de nuevo en un momento.',
   almacen_no_disponible:
     'No se pudo hablar con el almacén donde vive tu trabajo. Esto NO significa que esté vacío — significa que no se pudo preguntar.',
 

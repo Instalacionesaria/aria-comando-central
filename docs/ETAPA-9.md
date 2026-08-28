@@ -230,18 +230,39 @@ Nombrado, no escondido:
   puede comprobar sin base —que la migración las nombra y las reparte— está en
   `pruebas/codigo/90-fundaciones.test.ts`.
 
-## El modelo es el del hub, a propósito
+## El modelo: la intención era el del hub, y el identificador no existía
 
-`claude-sonnet-4-6`, el mismo que usa ARIA-brain. No es el más capaz disponible.
+**Hoy es `claude-sonnet-5`.** Esta sección decía `claude-sonnet-4-6` «el mismo que usa ARIA-brain», y
+ese identificador **no es un modelo de la API de Anthropic**: toda generación fallaba, y la pantalla
+decía «el modelo no respondió» — que manda a revisar la credencial, que estaba bien.
 
-Mientras los dos sistemas estén en pie, un alumno tiene que poder comparar su avatar de acá con el de
-allá. Un modelo distinto sobre el mismo prompt da un documento distinto, y la diferencia se leería
-como un error del port. Cuando el hub se apague, `MODELO` en `lib/fundaciones/generacion.ts` es la
-única línea que hay que cambiar — y conviene cambiarla ahí, no antes.
+Se corrigió el 2026-08-28. Este párrafo queda escrito y no se borra porque el documento fue parte
+del defecto: un valor inventado, escrito con seguridad en la especificación Y en el código Y en una
+prueba que lo exigía literalmente. Tres lugares diciendo lo mismo no lo vuelven cierto, y quien
+fuera a diagnosticarlo leyendo este archivo se iba a convencer de que el modelo estaba bien.
 
-La búsqueda web del Research sí usa la variante nueva (`web_search_20260209`, con filtrado dinámico),
-que Sonnet 4.6 soporta y el hub todavía no usa. Es la única diferencia deliberada con el hub en la
-llamada al modelo.
+La intención original sigue en pie: mientras los dos sistemas estén en pie, un alumno tiene que
+poder comparar su avatar de acá con el de allá, porque un modelo distinto sobre el mismo prompt da
+un documento distinto y la diferencia se leería como un error del port. Pero un identificador
+inválido no iguala nada: no genera. `MODELO` en `lib/fundaciones/generacion.ts` sigue siendo la
+única línea que hay que cambiar, y la prueba que la vigila ahora comprueba contra la lista de
+identificadores válidos en vez de fijar uno solo.
+
+La búsqueda web del Research usa la variante con filtrado dinámico (`web_search_20260209`), que el
+hub todavía no usa. Es la única diferencia deliberada con el hub en la llamada al modelo.
+
+### Y el diagnóstico ya no depende de adivinar
+
+El mismo día, la pantalla volvió a fallar con `invalid_request_error` — otro código, misma
+impotencia. `pedirExterno` leía `error.type` y **descartaba `error.message`**, que es el único campo
+donde la API dice qué estuvo mal. Con el tipo a secas son indistinguibles una cuenta sin saldo, un
+`max_tokens` fuera de rango y un campo de más en el cuerpo: tres investigaciones con el mismo
+nombre.
+
+Ahora el motivo del proveedor queda **entero en el registro del servidor** y **acotado en la
+pantalla**, junto al código. Es el mismo criterio que `motor_rechazo` ya usaba para el motor de
+scraping, donde el caso normal es el saldo agotado — así que lo de acá no era un criterio distinto,
+era una inconsistencia.
 
 ## Puesta en marcha
 

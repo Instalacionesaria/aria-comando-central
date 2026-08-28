@@ -45,10 +45,28 @@ function rutaDeSkill(id: string): string {
   return join(process.cwd(), 'lib', 'fundaciones', 'skills', id, 'SKILL.md');
 }
 
-/** Quita el frontmatter YAML: es metadata, no plantilla. */
+/**
+ * Quita el frontmatter YAML: es metadata, no plantilla.
+ *
+ * ── EL `\r?` NO ES DEFENSA POR COSTUMBRE: SIN ÉL, ESTA FUNCIÓN NO HACE NADA ──
+ *
+ * El patrón pedía `---\n` exacto. Los `SKILL.md` son copias byte a byte de las del hub, y el
+ * desarrollo es en Windows con `core.autocrlf = true`, así que en el disco local dicen `---\r\n`:
+ * el patrón no coincide, la función devuelve el texto intacto, y el bloque YAML entero —`name`,
+ * `description`, `version`— entra al prompt como si fuera metodología.
+ *
+ * Y el modo de fallo es el peor de los dos posibles: **en producción funcionaba**. Vercel construye
+ * sobre Linux, donde el mismo archivo está en LF. O sea que el defecto vivía solo en la máquina
+ * donde se mide — cualquier medición local del prompt traía doscientos caracteres que allá no
+ * estaban, y una diferencia así es exactamente lo que descarrila un diagnóstico.
+ *
+ * Con el `\r?` la función da lo mismo en las dos plataformas y deja de depender de una
+ * configuración de git para ser correcta. El `.gitattributes` fija además el final de línea de
+ * estos archivos, que es el otro cinturón: así lo que se mide acá es lo que corre allá.
+ */
 function sinFrontmatter(texto: string): string {
-  const m = /^---\n[\s\S]*?\n---\n?/.exec(texto);
-  return m && m[0] ? texto.slice(m[0].length).replace(/^\n/, '') : texto;
+  const m = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/.exec(texto);
+  return m && m[0] ? texto.slice(m[0].length).replace(/^\r?\n/, '') : texto;
 }
 
 /**

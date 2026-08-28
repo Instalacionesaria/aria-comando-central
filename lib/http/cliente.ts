@@ -230,6 +230,43 @@ export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
 const ESPERA_EXTERNA_MS = 240_000;
 
 /**
+ * Cuánto del motivo de un servicio externo viaja hasta la pantalla.
+ *
+ * 300 caracteres alcanzan para las frases que estos servicios devuelven de verdad —*«max_tokens:
+ * 16000 > 8192»*, *«Your credit balance is too low»*, *«tools.0.type: Input tag … does not match»*—
+ * y no alcanzan para que un servicio verborrágico vuelque medio cuerpo de la petición en una
+ * pantalla. El motivo COMPLETO sí queda en el registro del servidor: ahí no molesta a nadie.
+ */
+const TOPE_DEL_MOTIVO = 300;
+
+/**
+ * El motivo que un servicio externo pone en su cuerpo de error, si lo pone.
+ *
+ * Tres formas porque son las tres que este proyecto encuentra de verdad:
+ *   · `{ error: { type, message } }`  — Anthropic;
+ *   · `{ message }`                   — GoHighLevel;
+ *   · `{ error: 'texto' }`            — varios servicios chicos, incluido el motor de scraping.
+ *
+ * Devuelve `null` cuando no hay nada legible, que NO es lo mismo que una cadena vacía: «el servicio
+ * no dijo por qué» es un hecho, y merece decirse así en el registro.
+ */
+function motivoDelServicio(cuerpo: unknown): string | null {
+  const c = cuerpo as { error?: { message?: unknown } | string; message?: unknown } | null;
+  const candidatos = [
+    typeof c?.error === 'object' && c.error !== null ? c.error.message : undefined,
+    typeof c?.error === 'string' ? c.error : undefined,
+    c?.message,
+  ];
+  for (const v of candidatos) {
+    if (typeof v !== 'string') continue;
+    const limpio = v.trim();
+    if (limpio.length === 0) continue;
+    return limpio.length > TOPE_DEL_MOTIVO ? `${limpio.slice(0, TOPE_DEL_MOTIVO)}…` : limpio;
+  }
+  return null;
+}
+
+/**
  * Pide algo a un servicio de terceros, desde el servidor.
  *
  * Diferencias con `pedir(`, todas obligadas por el destino:
@@ -272,11 +309,41 @@ export async function pedirExterno<T>(
   }
 
   if (!respuesta.ok) {
-    const codigo = (cuerpoLeido as { error?: { type?: unknown } } | null)?.error?.type;
+    /* ══ EL `message` DEL SERVICIO NO SE TIRA, Y ESTO REVIERTE UNA DECISIÓN MÍA ══
+     *
+     * Hasta acá se leía solo `error.type` y el `message` se descartaba. La decisión está escrita en
+     * el commit `e175959`: *«el código y no el mensaje del proveedor, que es texto que no
+     * controlamos»*. **Estaba mal, y el costo se cobró dos veces en la misma pantalla.**
+     *
+     * El tipo dice la FAMILIA del problema; el mensaje dice el problema. Con `invalid_request_error`
+     * a secas, un `max_tokens` fuera de rango, un cuerpo con un campo de más, un tipo de herramienta
+     * caducado y **una cuenta sin saldo** se ven todos idénticos — y son cuatro investigaciones
+     * distintas. Lo único que las separa es la frase que este `message` trae ya escrita.
+     *
+     * Y el proyecto ya había resuelto esto en el otro sentido para el motor de scraping. Su entrada
+     * en `lib/autorizacion/respuesta.ts` lo dice: *«el backend contestó que no, y su detalle viaja
+     * tal cual… el caso normal es el saldo de leads agotado, y ése es el único mensaje accionable
+     * que la pantalla puede dar»*. Un servicio de IA sin saldo es exactamente el mismo caso, así que
+     * lo de acá no era un criterio distinto: era una inconsistencia.
+     *
+     * ── DÓNDE SE LEE, Y POR QUÉ ESO IMPORTA ─────────────────────────────────
+     *
+     * `detalle` es el campo que ya existía para «texto que lee una persona», así que el tipo no
+     * cambia y la cadena hasta la pantalla ya estaba armada. Hoy **nadie más que
+     * `lib/fundaciones/generacion.ts` lo lee**, así que en los otros consumidores esto es inerte.
+     *
+     * Quien vaya a leerlo para GoHighLevel tiene que pensar antes en una cosa que acá no aplica: los
+     * mensajes de error de un CRM pueden nombrar un contacto, y eso son datos de una persona en una
+     * pantalla que quizá no le corresponde. Los de Anthropic hablan de la PETICIÓN —campos, límites,
+     * saldo—, nunca de datos de terceros. */
+    const error = (cuerpoLeido as { error?: { type?: unknown } } | null)?.error;
+    const codigo = typeof error === 'object' && error !== null ? error.type : undefined;
+    const motivo = motivoDelServicio(cuerpoLeido);
     return {
       tipo: 'rechazado',
       estado: respuesta.status,
       codigo: typeof codigo === 'string' ? codigo : 'sin_codigo',
+      ...(motivo === null ? {} : { detalle: motivo }),
     };
   }
 
