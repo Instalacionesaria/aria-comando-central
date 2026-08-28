@@ -31,6 +31,7 @@ import { join, relative, sep } from 'node:path';
 import { archivosFuente, archivosQueContienen, RAIZ } from '../apoyo/fuente.ts';
 import {
   ARCHIVOS_AUTORIZADOS,
+  MUTACIONES_CON_CAPACIDAD_DE_LECTURA,
   RUTAS_CON_SECRETO_PROPIO,
   RUTAS_CON_SESION_OPCIONAL,
   RUTAS_PUBLICAS,
@@ -409,6 +410,85 @@ test('ADR-0304 · las operaciones de una misma pantalla piden el MISMO conjunto'
       `la sección "${s.clave}" no tiene ninguna operación que la declare con PANTALLA`,
     );
   }
+});
+
+test('ADR-0304 · lo que MODIFICA no se conforma con una capacidad de LECTURA', () => {
+  /* ══ LA DIRECCIÓN QUE LA PRUEBA DE ARRIBA DEJA ABIERTA, Y A PROPÓSITO ════════════
+   *
+   * La prueba anterior corta en `if (metodo !== 'GET') continue` y explica bien por qué: comparar los
+   * conjuntos de las mutaciones forzaría a igualar `credenciales.ver` con `credenciales.editar`, y con
+   * `contieneAlguna` eso dejaría escribir a quien solo puede leer. Es correcto.
+   *
+   * Pero al no mirar las mutaciones tampoco mira ESTO: que una mutación pida únicamente `.ver`. Ese
+   * caso no lo atrapa nada. Y no es hipotético — se encontró mutando el `POST` que genera el secreto
+   * del aviso: cambiar su `credenciales.editar` por `credenciales.ver` dejaba TODA la suite en verde.
+   *
+   * Lo que habilitaba: un rol de consulta —uno con `.ver` y sin `.editar`, que es justo el rol que la
+   * prueba de arriba defiende que pueda existir— apretando «Generar otra cabecera» y **rotando el
+   * secreto**. Rotar invalida el anterior en el acto, así que los siete workflows de GoHighLevel
+   * dejan de entregar y no hay forma de volver atrás: el secreto viejo no se guarda en ninguna parte.
+   *
+   * Una capacidad de lectura autorizando la pérdida irreversible de una credencial.
+   *
+   * ── POR QUÉ ESTE INVARIANTE Y NO UNA PRUEBA DE ESA RUTA ──────────────────
+   *
+   * Una prueba de comportamiento sobre ese `POST` —rol de consulta, sesión, 403— cubre una línea. Esta
+   * cubre todas las que hay y todas las que vengan, y cuesta menos. El nombre de la capacidad es el
+   * dato: `.ver` es el sufijo de lectura del catálogo, y la regla se lee sola. */
+  const LECTURA = CAPACIDADES.filter((c) => c.endsWith('.ver'));
+  assert.ok(LECTURA.length > 0, 'el catálogo no tiene ninguna capacidad `.ver`: cambió la convención');
+
+  /* `organizaciones.listar` NO entra, y su propio catálogo dice por qué: *«Ver y cambiar entre todas
+     las organizaciones»*. Autoriza una mutación —conmutar la organización activa— a propósito, y su
+     comentario en la migración lo deja escrito. La regla se apoya solo en `.ver`, que no tiene ese
+     doble filo. */
+
+  const abiertas: string[] = [];
+  /* Las exentas se van tachando de esta copia. Lo que quede al final es una entrada de la lista que
+     ya NO describe nada — una exención huérfana, que es tan mala como una que falta: exime a la
+     próxima ruta que se llame igual sin que nadie haya pensado en ella. */
+  const sinUsar = new Set(MUTACIONES_CON_CAPACIDAD_DE_LECTURA);
+  for (const ruta of manejadoresDeRuta()) {
+    for (const { metodo, cuerpo } of metodosDe(fuenteDe(ruta))) {
+      if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS') continue;
+      const m = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([\s\S]*?)\)\s*;/.exec(cuerpo);
+      if (!m) continue; // sin portero: lo cubre ADR-0301, que corre antes que esto.
+
+      const arg = (m[1] ?? '').replace(/,\s*(PANTALLA|SIN_SECCION)\s*,?\s*$/, '').trim();
+      /* `NINGUNA` se saltea a propósito: es un valor explícito para las rutas públicas y los
+         disparadores, y quién puede tenerlo lo gobierna `RUTAS_PUBLICAS` en ADR-0301. Tratarlo acá
+         como «capacidad de lectura» sería decir dos veces lo mismo y en el lugar equivocado. */
+      if (arg === 'NINGUNA') continue;
+
+      const pedidas = [...arg.matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1] ?? '');
+      assert.ok(pedidas.length > 0, `no se pudo leer las capacidades de ${ruta} → ${metodo}`);
+
+      // El portero usa «alguna de», así que basta UNA que no sea de lectura para que el conjunto no
+      // quede satisfecho por un rol de consulta. Por eso `some` y no `every`.
+      if (!pedidas.some((c) => !LECTURA.includes(c as never))) {
+        if (MUTACIONES_CON_CAPACIDAD_DE_LECTURA.includes(ruta)) {
+          sinUsar.delete(ruta);
+          continue;
+        }
+        abiertas.push(`${ruta} → ${metodo} pide [${pedidas.join(', ')}]`);
+      }
+    }
+  }
+
+  assert.deepEqual(
+    abiertas,
+    [],
+    'estos métodos MODIFICAN y se conforman con una capacidad de lectura, así que un rol de consulta ' +
+      'los puede ejecutar. Si la ruta escribe la fila de quien pide, o refresca una caché con datos ' +
+      'que esa persona ya puede ver, declarala en `MUTACIONES_CON_CAPACIDAD_DE_LECTURA` con su razón',
+  );
+
+  assert.deepEqual(
+    [...sinUsar],
+    [],
+    'estas rutas están exentas y ya no lo necesitan: o se les endureció la capacidad, o el archivo se ' +
+      'movió. Una exención huérfana exime a la próxima ruta que se llame igual sin que nadie lo piense',
+  );
 });
 
 // ─── ADR-0305 · un solo cliente HTTP, y el 403 que no es vacío ──────────────

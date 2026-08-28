@@ -449,6 +449,56 @@ export const RUTAS_PUBLICAS: readonly string[] = [
 ];
 
 /**
+ * Las mutaciones que se autorizan con una capacidad de LECTURA, y por qué cada una.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * LA REGLA QUE ESTA LISTA EXIME, Y EL DEFECTO QUE LA REGLA ATRAPA
+ *
+ * Un método que modifica no puede quedar satisfecho por una capacidad `.ver`: eso deja a un rol de
+ * consulta —uno con `.ver` y sin `.editar`, que `ADR-0304` defiende explícitamente que pueda
+ * existir— ejecutando escrituras.
+ *
+ * Se descubrió mutando el `POST` que genera el secreto del aviso del CRM: cambiar su
+ * `credenciales.editar` por `credenciales.ver` dejaba la suite entera en verde, y habilitaba que
+ * alguien con permiso de solo mirar **rotara el secreto** — lo que invalida el anterior en el acto,
+ * corta las siete entregas de GoHighLevel, y no se puede deshacer porque el secreto viejo no queda
+ * guardado en ninguna parte.
+ *
+ * ── POR QUÉ HAY EXCEPCIONES, Y POR QUÉ SE DECLARAN UNA POR UNA ─────────────
+ *
+ * «Modifica» por método HTTP y «modifica algo que quien lee no tiene derecho a cambiar» no son lo
+ * mismo. Las cuatro de abajo son `POST`/`PATCH` porque escriben, pero lo que escriben es (a) nuestra
+ * propia caché con datos que la persona ya puede ver, o (b) una columna de su propia fila. Ninguna
+ * decide quién puede ver qué, y ninguna destruye nada.
+ *
+ * Esa distinción es un juicio, no un patrón — así que se ejerce una vez por ruta y queda escrita,
+ * igual que `RUTAS_PUBLICAS` y `SIN_PANTALLA`. Lo que importa es que la trampa sigue armada para la
+ * quinta: agregar una ruta así sin pensarlo pone la prueba en rojo.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export const MUTACIONES_CON_CAPACIDAD_DE_LECTURA: readonly string[] = [
+  /* Traer las citas del calendario de GoHighLevel a nuestra caché. No decide territorio y no crea
+     nada: reescribe con lo que el CRM dice, y lo que trae es exactamente lo que la Agenda ya muestra
+     a quien tiene `closer.ver`. El `POST` es por el costo —diez llamadas al proveedor— y porque un
+     `GET` con efectos no se puede poner detrás de una caché, no porque cambie autoridad. */
+  'app/api/closer/agenda/refrescar/route.ts',
+
+  /* La meta del mes de la propia persona, y su encabezado ya lo argumenta: *«se escribe una columna
+     de la fila de quien está pidiendo, y de ninguna otra»*. Exigir una capacidad de administración
+     acá sería MÁS estricto y estaría mal — el anillo diría «cargá tu meta» y el botón fallaría para
+     todo el equipo salvo quien administra. */
+  'app/api/closer/meta/route.ts',
+
+  /* Traer los contactos del CRM. Mismo caso que refrescar la agenda: trae las dos zonas y el
+     territorio se decide en el servidor al LEER, no acá. */
+  'app/api/contactos/sincronizar/route.ts',
+
+  /* Un ciclo de ingesta de mensajes. Escribe mensajes que vienen del CRM —no los inventa— y son los
+     mismos que la conversación ya muestra a quien tiene `contactos.ver`. */
+  'app/api/mensajes/ingesta/route.ts',
+];
+
+/**
  * Las rutas que usan `sesionOpcional(` en vez del portero.
  *
  * NO son públicas y no son una excepción cómoda: tienen su propio contrato, definido en el
