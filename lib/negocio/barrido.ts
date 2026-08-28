@@ -69,48 +69,84 @@ export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'f
  * Un umbral igual a la cadencia haría que la pantalla avisara de un atraso todos los días.
  */
 export const HORARIOS = {
-  // 12:00 UTC = 07:00 en `America/Lima`, antes de que el equipo empiece.
-  //
-  // ── UNA SOLA ENTRADA, Y DIARIA, Y NO ES LO QUE QUISIÉRAMOS ────────────────
-  //
-  // Es el único horario que funciona en los DOS planes de Vercel, y eso es una decisión con costo
-  // que conviene decir entera: **en Hobby, un horario más frecuente que un día no se ignora ni se
-  // ajusta — hace fallar el despliegue entero**, con un mensaje sobre cuentas Hobby. En Pro andaría
-  // `*/10 * * * *`.
-  //
-  // El plan de este proyecto no se pudo medir: el token disponible lee los proyectos pero no la
-  // facturación del equipo (403), y el panel de Vercel no expone el plan por API. Así que se eligió
-  // el horario que es correcto en los dos, porque los dos errores no cuestan lo mismo: con el diario
-  // en Pro la agenda se refresca menos seguido, y con `*/10` en Hobby **no se puede desplegar**.
-  //
-  // Para pasar a Pro: cambiar esta entrada y la de `vercel.json` por las dos comentadas abajo. Son
-  // dos renglones y la prueba de `pruebas/codigo/99-cron.test.ts` verifica que se muevan juntos.
-  //
-  //   '*/10 * * * *': { tareas: ['mensajes'], cadenciaMinutos: 10, umbralMinutos: 80 },
-  //   '3 * * * *':    { tareas: ['citas', 'sonda'], cadenciaMinutos: 60, umbralMinutos: 180 },
-  '0 12 * * *': {
-    /* ═══════════════════════════════════════════════════════════════════
-       EL ORDEN DE ESTA LISTA ES EL ORDEN DE EJECUCIÓN, Y `contactos` VA ANTES DE `mensajes`
+  /* ═════════════════════════════════════════════════════════════════════════════
+     DOS HORARIOS, Y EL PLAN DEJÓ DE SER UNA INCÓGNITA
 
-       No es una preferencia. La ingesta de mensajes descarta —y **avanza la marca de agua sobre**—
-       toda conversación cuyo contacto no esté en `negocio.contactos`, porque para ella es ajena.
-       Está en `lib/negocio/ingesta.ts`, con el comentario que lo dice: *«no es nuestra: ya está
-       terminada, no hay nada que traer. La marca avanza igual»*.
+     Hasta acá había **una sola entrada, diaria**, con este motivo escrito: *«es el único horario que
+     funciona en los DOS planes de Vercel — en Hobby, un horario más frecuente que un día no se ignora
+     ni se ajusta: hace fallar el despliegue entero»*. Y ese comentario también decía que el plan **no
+     se pudo medir**: el token lee los proyectos pero da 403 sobre la facturación, y la API no lo expone.
+     Se eligió el horario correcto en los dos porque los dos errores no cuestan lo mismo.
 
-       Entonces, con `mensajes` primero: llega un contacto nuevo con tres mensajes → la ingesta pasa,
-       no lo conoce, corre la marca por encima → después `contactos` lo trae → **sus tres mensajes
-       quedaron por debajo de la marca y no se recuperan nunca**. Y el síntoma es un contacto con el
-       chat vacío, que se lee como «todavía no escribió».
+     **Confirmado el 2026-08-28: el plan es Pro.** Así que se toma la decisión que estaba esperando ese
+     dato, y lo que compra es lo más grande de todo el trabajo de consumo:
 
-       Con `contactos` primero, en la MISMA corrida, el contacto ya existe cuando la ingesta pasa.
+       · antes, fuera del horario en que alguien tenía el Closer abierto, un mensaje entrante esperaba
+         **hasta 24 horas**;
+       · ahora espera **como máximo 10 minutos**, sin una línea de código nuevo, sin ruta pública y sin
+         una superficie de ataque nueva.
 
-       La base no puede expresar esto —un `check` no ordena tareas— así que lo garantiza el bucle de
-       `barrerTodo`, que recorre esta lista en orden, y lo fija una prueba de
-       `pruebas/codigo/99-cron.test.ts`. ═════════════════════════════════════════════════ */
-    tareas: ['sonda', 'contactos', 'mensajes', 'citas'],
-    cadenciaMinutos: 1440,
-    umbralMinutos: 2940,
+     ── Y `contactos` VA CON `mensajes`, QUE ES LO QUE EL COMENTARIO VIEJO NO PODÍA SABER ──
+
+     Los dos renglones que este archivo dejaba preparados decían `['mensajes']` y `['citas','sonda']`.
+     Se escribieron ANTES de la migración 021, o sea antes de que existiera la tarea `contactos` — y
+     descomentarlos tal cual la **apaga**, reabriendo una pérdida de datos permanente.
+
+     El motivo es el orden: la ingesta descarta toda conversación cuyo contacto no esté en
+     `negocio.contactos` y **avanza la marca de agua sobre ella**. Si `contactos` corriera cada hora y
+     `mensajes` cada diez minutos, un contacto nuevo pasaría hasta cinco ciclos siendo desconocido, y en
+     cada uno la marca se le adelantaría un poco más. Cuando por fin se sincroniza, **sus mensajes
+     quedaron por debajo de la marca y no se recuperan nunca**.
+
+     Así que las dos van juntas, en el mismo horario y en este orden. La garantía no es de la base —un
+     `check` no ordena tareas— sino del bucle de `barrerTodo` y de una prueba de
+     `pruebas/codigo/99-cron.test.ts`.
+
+     ── EL COSTO, CONTADO ──────────────────────────────────────────────
+
+     Por empresa: `contactos` son unas 5 llamadas (dos etiquetas, páginas de 100 sobre ~376 contactos)
+     y `mensajes` **una** en régimen, así que el horario de diez minutos cuesta ~36 llamadas por hora.
+     El de la hora —`citas` es 1+N con nueve calendarios— cuesta ~10.
+     Total ~46 por hora y por empresa, contra las ~20 por DÍA de antes.
+
+     Es un aumento grande y hay con qué compararlo: la plataforma anterior corrió en producción a
+     **~7 peticiones por minuto y por pestaña** —420 por hora— y GoHighLevel lo toleró
+     (`aria-project-closer-setter/docs/migracion/closer/09-INGESTA-Y-RECONCILIACION.md:138`). Queda un
+     orden de magnitud por debajo de lo ya probado.
+
+     Y no reemplaza al webhook: el aviso del CRM baja esto a segundos de latencia y a ~cero llamadas.
+     Lo que este cambio hace es cerrar el agujero de las 24 horas **hoy**, sin esperar una ruta pública.
+     Ver `docs/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
+
+  /* Cada diez minutos: releer las etiquetas y traer los mensajes, EN ESE ORDEN. Ver arriba. */
+  '*/10 * * * *': {
+    tareas: ['contactos', 'mensajes'],
+    cadenciaMinutos: 10,
+    umbralMinutos: 80,
   },
+
+  /* Al minuto 3 de cada hora: el calendario y la sonda de aislamiento.
+     El minuto 3 y no el 0 para no coincidir con el otro horario: dos corridas simultáneas de la misma
+     empresa se frenarían entre sí por el candado, y una de las dos quedaría como `frenada` sin haber
+     hecho nada — correcto pero ruidoso, y con el sello contando una corrida que no trabajó.
+     Y la sonda sube de una vez por día a veinticuatro: cuesta CERO llamadas al proveedor y es la
+     única señal de seguridad activa del sistema. */
+  '3 * * * *': {
+    tareas: ['citas', 'sonda'],
+    cadenciaMinutos: 60,
+    umbralMinutos: 180,
+  },
+
+  /* ── EL HORARIO DIARIO SE FUE, Y LA REGLA ES BIDIRECCIONAL ─────────────
+     Primero lo dejé acá «por si alguien vuelve a Hobby», con el argumento de que la prueba solo exige
+     que cada horario de `vercel.json` tenga entrada en este mapa. **Eso es falso**, y la prueba lo
+     dijo: `pruebas/codigo/99-cron.test.ts` exige las DOS direcciones, y tiene razón en exigirlas.
+
+     Una entrada acá que no está en la configuración es configuración muerta que engaña: se lee como
+     «esto corre a las 12» y no corre. Y lo que yo quería conservar ya está cubierto por otra vía:
+     `tareasDelHorario` corre TODAS las tareas ante un horario desconocido — así que volver a poner
+     `'0 12 * * *'` en `vercel.json` sin tocar este archivo hace más trabajo, no menos, y la respuesta
+     lo dice con `horarioDesconocido`. */
 } as const satisfies Record<string, { tareas: readonly Tarea[]; cadenciaMinutos: number; umbralMinutos: number }>;
 
 /**

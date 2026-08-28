@@ -154,11 +154,45 @@ test('`contactos` corre ANTES de `mensajes`, y eso no es una preferencia de orde
     );
   }
 
-  // Y las dos están en la lista principal: si alguien saca `contactos`, el bucle de arriba se salta
-  // solo con el `continue` y esta prueba quedaría vacía.
-  const principal = Object.values(HORARIOS)[0]!.tareas as readonly Tarea[];
-  assert.ok(principal.includes('contactos'), 'se sacó la tarea que trae los contactos nuevos');
-  assert.ok(principal.includes('mensajes'), 'se sacó la ingesta de mensajes');
+  /* ═════════════════════════════════════════════════════════════════════
+     Y LAS DOS EN EL MISMO HORARIO, QUE ES EL ERROR QUE EL BUCLE DE ARRIBA SALTEA EN SILENCIO
+
+     El bucle comprueba el orden DENTRO de cada lista y hace `continue` cuando a una lista le falta
+     alguna de las dos. Así que separarlas en dos horarios distintos —`['mensajes']` en uno y
+     `['contactos', …]` en otro— lo pasa entero sin una queja.
+
+     Y es exactamente el error que estuvo a punto de ocurrir: los dos renglones que `barrido.ts` dejaba
+     preparados para el plan Pro decían `['mensajes']` y `['citas','sonda']`, escritos ANTES de que
+     existiera la tarea `contactos`. Descomentarlos tal cual la apagaba del todo.
+
+     Con horarios separados la garantía del orden desaparece aunque cada lista esté bien ordenada: si
+     `mensajes` corre cada diez minutos y `contactos` cada hora, un contacto nuevo pasa hasta cinco
+     ciclos siendo desconocido, y en cada uno la marca de agua se le adelanta. Cuando por fin se
+     sincroniza, sus mensajes quedaron por debajo y **no se recuperan nunca**.
+     ═════════════════════════════════════════════════════════════════════ */
+  const conMensajes = Object.entries(HORARIOS).filter(([, v]) =>
+    (v.tareas as readonly Tarea[]).includes('mensajes'),
+  );
+  assert.ok(conMensajes.length > 0, 'ningún horario corre la ingesta de mensajes');
+  for (const [clave, v] of conMensajes) {
+    assert.ok(
+      (v.tareas as readonly Tarea[]).includes('contactos'),
+      `«${clave}» corre \`mensajes\` SIN \`contactos\`. Los mensajes de un contacto nuevo quedan por ` +
+        'debajo de la marca de agua y no se recuperan: las dos tareas tienen que ir en el MISMO horario',
+    );
+  }
+
+  /* Y `contactos` no corre en un horario donde no haya `mensajes`: sería pagar cinco llamadas al CRM
+     para releer etiquetas que nadie va a usar hasta el próximo ciclo de ingesta. */
+  for (const [clave, v] of Object.entries(HORARIOS)) {
+    const t = v.tareas as readonly Tarea[];
+    if (!t.includes('contactos')) continue;
+    assert.ok(
+      t.includes('mensajes'),
+      `«${clave}» relee las etiquetas sin traer mensajes después: son ~5 llamadas al CRM por corrida ` +
+        'para un dato que no se usa hasta el próximo ciclo',
+    );
+  }
 });
 
 // ─── 3 · Un horario desconocido corre TODO, nunca nada ──────────────────────
