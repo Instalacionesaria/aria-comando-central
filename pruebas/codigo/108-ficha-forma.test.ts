@@ -38,6 +38,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { archivosFuente } from '../apoyo/fuente.ts';
 import { haceCuanto } from '../../lib/negocio/tiempo.ts';
+import { EVENTOS_DEL_AVISO } from '../../lib/ghl/avisos.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 
@@ -284,4 +285,77 @@ test('los dos conteos de los seis íconos pueden decir «no medido»', () => {
   // Y las dos banderas por empresa, que son las que producen el `null`.
   assert.match(src, /hay_citas/, 'se fue la bandera de «¿hay citas leídas en esta empresa?»');
   assert.match(src, /hay_llamadas/, 'se fue la bandera de «¿hay llamadas en esta empresa?»');
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// EL PANEL DEL AVISO DEL CRM · dos afirmaciones que su encabezado hace y nada compraba
+// ════════════════════════════════════════════════════════════════════════════
+
+test('el panel del aviso no escribe NINGÚN nombre de evento: los saca del catálogo', () => {
+  /* El defecto que esto compra está escrito en el encabezado del propio panel, y viene de la
+     plataforma anterior: los nombres de evento vivían en dos listas —el tipo y el array— y el panel
+     necesitaba una tercera para mostrar las URLs. Tres listas del mismo hecho divergen en silencio, y
+     los dos síntomas son indistinguibles de «el webhook no funciona»:
+
+       · un evento en el `switch` y no en el panel → la URL nunca se configura;
+       · un evento en el panel y no en el `switch` → la URL responde 200 y no hace nada.
+
+     El encabezado dice *«una prueba de forma exige que no haya ninguna cadena literal de evento
+     acá»*. Es ésta. Sin ella, la afirmación del comentario no la compraba nada — y agregar un
+     `'mensaje.entrante'` a mano para «arreglar» algo pasaba sin ruido. */
+  const panel = limpio('components/ajustes/AvisoDelCrm.jsx');
+
+  const escritos = EVENTOS_DEL_AVISO.map((e) => e.evento).filter((e) => panel.includes(`'${e}'`) || panel.includes(`"${e}"`) || panel.includes(`\`${e}\``));
+  assert.deepEqual(
+    escritos,
+    [],
+    'el panel escribe nombres de evento como cadenas literales, así que ya hay dos listas de lo mismo',
+  );
+
+  /* Y la otra mitad: los saca de dónde tiene que sacarlos. Sin esto, borrar el `map` del catálogo y
+     dejar el panel vacío también pasaría la aserción de arriba. */
+  assert.match(panel, /EVENTOS_DEL_AVISO\.map/, 'el panel no recorre el catálogo de eventos');
+
+  /* ── SE AFIRMA SOBRE LA RUTA, NO SOBRE EL NOMBRE DE LA FUNCIÓN ─────────────
+   *
+   * La primera versión de esto pedía `/urlDelEvento/` y sobrevivió a la mutación que reemplaza la
+   * llamada por una plantilla escrita a mano: **la línea del `import` ya contenía ese nombre**, así
+   * que la aserción se cumplía sola.
+   *
+   * Lo que de verdad importa no es que se llame a una función con cierto nombre, es que la RUTA del
+   * aviso viva en un solo archivo. Si el panel la escribe, hay dos lugares que tienen que cambiar
+   * juntos el día que la ruta se mueva — y el síntoma de olvidarse es un workflow apuntando a un 404
+   * que GoHighLevel reporta como entrega fallida sin decir por qué. */
+  assert.equal(
+    panel.includes('/api/avisos/crm'),
+    false,
+    'el panel escribe la ruta del aviso, así que existe en dos archivos. Tiene que salir de ' +
+      '`urlDelEvento` en `lib/ghl/avisos.ts`, que es el único lugar que la conoce',
+  );
+});
+
+test('el panel no ofrece la URL sin `?evento=`, que es el error silencioso de la referencia', () => {
+  /* El único error que la plataforma anterior documentó de su propio panel: pegar la URL sin el
+     parámetro hace que GoHighLevel entregue, que nosotros respondamos 200, y que el aviso quede sin
+     interpretar **para siempre**. No hay error, no hay reintento, y la pantalla no dibuja nada.
+
+     Una URL base a la vista es una invitación a copiarla. Así que el panel no la tiene: cada fila
+     lleva su URL completa, y el texto de ayuda dice explícitamente que no hay una URL general. */
+  const panel = limpio('components/ajustes/AvisoDelCrm.jsx');
+
+  // La ruta a secas, sin que la siga el parámetro ni una llave de plantilla.
+  const suelta = /['"`]([^'"`]*\/api\/avisos\/crm)(?![?\w])[^'"`]*['"`]/.exec(panel);
+  assert.equal(
+    suelta,
+    null,
+    `el panel tiene la ruta del aviso sin \`?evento=\`: ${suelta?.[0] ?? ''}. Quien la copie va a ` +
+      'configurar un workflow que entrega, responde 200 y no interpreta nada',
+  );
+
+  assert.match(
+    panel,
+    /sin el <code>\?evento=<\/code>/,
+    'el panel no le dice a quien mira que sin el parámetro el aviso no se interpreta y no da error',
+  );
 });
