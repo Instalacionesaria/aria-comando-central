@@ -61,7 +61,7 @@ async function estado(orgId: string) {
   // Los candidatos salen de IDENTIDAD —capacidades y secciones concedidas— y los porcentajes de
   // NEGOCIO. Dos dominios, dos conexiones, y en ese orden: si la segunda falla no quedó nada a
   // medias, porque ninguna de las dos escribe. Es la forma que `ADR-0209` admite.
-  const candidatos = await conIdentidad((db) => candidatosAlCloser(db, orgId));
+  const { candidatos, porqueNinguno } = await conIdentidad((db) => candidatosAlCloser(db, orgId));
 
   const { porcentajes, asignado } = await conOrganizacion(orgId, async () => ({
     // Se reusa la MISMA función que alimentaba el panel de porcentajes del equipo, y no una consulta
@@ -80,6 +80,12 @@ async function estado(orgId: string) {
       // nadie configuró, y alguien lo leería como una decisión tomada.
       porcentaje: porUsuario.get(c.usuarioId) ?? null,
     })),
+    /* POR QUÉ NO HAY NINGUNO, cuando no hay ninguno. Es el patrón `{ valor, falta }` de siempre: una
+       lista vacía sola no dice si es una regla o un error, y acá la diferencia decide a qué pantalla
+       va el administrador. Medido contra producción: los tres usuarios que hay son administradores y
+       los tres YA tienen la pestaña Closer, así que el aviso anterior —«dale la pestaña a alguien»—
+       mandaba a una pantalla donde no hay nada que cambiar. Ver `PorqueNingunCandidato`. */
+    porqueNinguno,
     asignado: asignado === null ? null : { usuarioId: asignado.usuarioId, nombre: asignado.nombre },
   };
 }
@@ -119,7 +125,7 @@ export async function PUT(peticion: Request): Promise<Response> {
   }
   const objetivo = c.usuarioId;
 
-  const candidatos = await conIdentidad((db) => candidatosAlCloser(db, contexto.orgEfectiva));
+  const { candidatos } = await conIdentidad((db) => candidatosAlCloser(db, contexto.orgEfectiva));
   if (!candidatos.some((k) => k.usuarioId === objetivo)) {
     /* 404 y no 403, por `ADR-0501`: un identificador de otra empresa no se confirma ni se niega. Y el
        mismo 404 cubre los tres casos —no existe, es de otra empresa, o no puede ser closer— con un

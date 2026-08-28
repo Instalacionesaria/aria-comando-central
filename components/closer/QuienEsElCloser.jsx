@@ -56,8 +56,37 @@ function porQue(r) {
   return r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`;
 }
 
+/**
+ * Qué hacer cuando no hay nadie que pueda ser closer, según POR QUÉ no hay nadie.
+ *
+ * Los cuatro motivos los mide el servidor —`PorqueNingunCandidato` en `lib/negocio/closer.ts`— y
+ * llevan a DOS pantallas distintas. Un texto único para los cuatro manda a la equivocada en tres de
+ * ellos, que es lo que pasaba: ver el comentario del aviso, más abajo.
+ *
+ * Cada texto dice la ACCIÓN y dónde se hace. «No hay candidatos» sin decir qué hacer es un cartel.
+ */
+const SIN_CANDIDATOS = {
+  sin_gente:
+    'Esta empresa no tiene todavía ninguna persona activa con correo, así que no hay a quién ' +
+    'designar. Se dan de alta en Ajustes → Usuarios.',
+  todos_admin:
+    'Las personas de esta empresa administran la empresa, y quien configura no puede ser el ' +
+    'configurado. Hace falta dar de alta a alguien que NO sea administrador —en Ajustes → ' +
+    'Usuarios— y darle la pestaña Closer.',
+  sin_capacidad:
+    'Todavía no hay nadie que pueda ser closer. Hay que darle a alguien la pestaña Closer desde ' +
+    'Ajustes → Usuarios.',
+  sin_seccion:
+    'Hay personas con el rol adecuado, pero ninguna tiene concedida la sección Closer. Se concede ' +
+    'una por una en Ajustes → Usuarios, en la lista de pestañas de cada persona.',
+};
+
 export default function QuienEsElCloser({ alCambiar }) {
   const [candidatos, setCandidatos] = useState([]);
+  /* POR QUÉ no hay ninguno, cuando no hay ninguno. Lo responde el SERVIDOR y no se deduce acá: los
+     cuatro motivos se distinguen contando capacidades y secciones concedidas, y eso vive en identidad
+     —una tabla que el navegador no ve ni debe ver—. Ver `PorqueNingunCandidato`. */
+  const [porqueNinguno, setPorqueNinguno] = useState(null);
   const [asignado, setAsignado] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
@@ -70,6 +99,7 @@ export default function QuienEsElCloser({ alCambiar }) {
 
   const absorber = useCallback((datos) => {
     setCandidatos(datos.candidatos ?? []);
+    setPorqueNinguno(datos.porqueNinguno ?? null);
     setAsignado(datos.asignado ?? null);
     setBorrador(null);
   }, []);
@@ -214,13 +244,24 @@ export default function QuienEsElCloser({ alCambiar }) {
         </span>
       </div>
 
+      {/* ═════════════════════════════════════════════════════════════════════
+          EL AVISO NOMBRA LA ACCIÓN QUE RESUELVE, Y ANTES NO
+
+          Acá había un solo texto: *«hay que darle a alguien la pestaña Closer desde Ajustes →
+          Usuarios»*. Medido contra la base de producción el 2026-08-28: los tres usuarios que existen
+          son administradores y **los tres ya tienen la pestaña Closer** —`closer.ver` está concedida a
+          los tres roles del catálogo—. Lo que les falta es lo contrario: no administrar la empresa.
+
+          Así que el aviso mandaba a una pantalla donde no había nada que cambiar. No daba error, el
+          texto era amable, y dejaba trabado a quien lo leyera.
+
+          Los cuatro motivos los distingue el servidor contando descartes, y llevan a dos acciones
+          distintas. Sin el motivo, la pantalla no puede elegir cuál nombrar.
+          ═════════════════════════════════════════════════════════════════════ */}
       {candidatos.length === 0 ? (
         <div className="fd-aviso falta">
           <i>◍</i>
-          <span>
-            Todavía no hay nadie que pueda ser closer. Hay que darle a alguien la pestaña Closer
-            desde Ajustes → Usuarios.
-          </span>
+          <span>{SIN_CANDIDATOS[porqueNinguno] ?? SIN_CANDIDATOS.sin_capacidad}</span>
         </div>
       ) : null}
 

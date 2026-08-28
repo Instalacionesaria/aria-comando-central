@@ -182,6 +182,59 @@ test('la visibilidad la decide el SERVIDOR, y son DOS permisos distintos', () =>
   }
 });
 
+test('el aviso de «nadie puede ser closer» tiene un texto POR MOTIVO, y el motivo lo trae el servidor', () => {
+  // ══════════════════════════════════════════════════════════════════════
+  // UN AVISO QUE NOMBRA LA ACCIÓN EQUIVOCADA ES PEOR QUE NINGUNO
+  //
+  // Había UN texto para los cuatro motivos: *«hay que darle a alguien la pestaña Closer desde Ajustes
+  // → Usuarios»*. Medido en producción el 2026-08-28: los tres usuarios que existen son
+  // administradores y **los tres ya tienen la pestaña Closer**. El aviso mandaba a una pantalla donde
+  // no había nada que cambiar, sin dar ningún error.
+  //
+  // Esta prueba es de FORMA porque el defecto es de forma: el comportamiento —que el servidor mida
+  // bien el motivo— lo cubre `pruebas/base/31-closer-asignado.test.ts`. Lo que se fija acá es que la
+  // pantalla ELIJA por ese motivo en vez de tener una cadena sola, que es a lo que se vuelve por
+  // descuido cuando alguien «simplifica» el componente.
+  // ══════════════════════════════════════════════════════════════════════
+  const panel = codigo(leer('components/closer/QuienEsElCloser.jsx'));
+
+  // 1 · Los CUATRO motivos tienen su texto. Los cuatro, y no tres: el que falte es el que sale como
+  //     reserva el día que ocurra, y ahí vuelve el defecto en silencio.
+  for (const motivo of ['sin_gente', 'todos_admin', 'sin_capacidad', 'sin_seccion']) {
+    assert.match(
+      panel,
+      new RegExp(`\\b${motivo}\\b`),
+      `el panel no tiene texto para el motivo «${motivo}»: va a caer al de reserva, que nombra otra acción`,
+    );
+  }
+
+  // 2 · Y el aviso ELIGE por el motivo. Sin esta línea, los cuatro textos podrían estar declarados y
+  //     el aviso seguir dibujando uno fijo — que es exactamente el estado anterior, con más código.
+  assert.match(
+    panel,
+    /SIN_CANDIDATOS\[porqueNinguno\]/,
+    'el aviso no elige el texto por el motivo: cuatro textos declarados y uno dibujado es el mismo ' +
+      'defecto con más líneas',
+  );
+
+  // 3 · El motivo lo TRAE el servidor y no se deduce en la pantalla. Deducirlo acá exigiría que el
+  //     navegador supiera quién tiene `credenciales.editar`, que es una tabla de identidad que no ve.
+  assert.match(panel, /datos\.porqueNinguno/, 'la pantalla dejó de leer el motivo de la respuesta');
+  assert.match(
+    codigo(leer('app/api/admin/closer/route.ts')),
+    /porqueNinguno/,
+    'el endpoint dejó de responder por qué la lista está vacía',
+  );
+
+  // 4 · Y el motivo se DECIDE en un solo lugar: el módulo de negocio. Dos lugares que cuenten
+  //     descartes son dos criterios que se van a separar.
+  assert.match(
+    codigo(leer('lib/negocio/closer.ts')),
+    /export type PorqueNingunCandidato/,
+    'el catálogo de motivos dejó de estar declarado en el módulo que los mide',
+  );
+});
+
 test('designar a otro closer RECARGA el cockpit, y no borra la comisión', () => {
   // ── EL MISMO DEFECTO QUE ANTES, EN SU FORMA NUEVA Y MAS GRAVE ─────────────
   //

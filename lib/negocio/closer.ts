@@ -77,7 +77,40 @@ export interface CandidatoACloser {
  * El filtro por organización es explícito porque tiene que serlo: la política de `identidad.usuarios`
  * para `app_identidad` no acota por inquilino sola.
  */
-export async function candidatosAlCloser(db: Trx, orgId: string): Promise<CandidatoACloser[]> {
+/**
+ * Por qué la lista de candidatos quedó vacía. `null` = no quedó vacía.
+ *
+ * ════════════════════════════════════════════════════════════════════════════
+ * EL DEFECTO QUE ESTO CIERRA, Y SE VIO CONTRA LA BASE DE PRODUCCIÓN
+ *
+ * La pantalla ya avisaba cuando la lista salía vacía, y el aviso era «hay que darle a alguien la
+ * pestaña Closer desde Ajustes → Usuarios». Medido contra producción el 2026-08-28: los tres usuarios
+ * que existen son administradores, y **los tres YA tienen la pestaña Closer** —`closer.ver` está
+ * concedida a los tres roles del catálogo—. Lo que les falta es lo contrario: **no** administrar la
+ * empresa, porque `credenciales.editar` excluye.
+ *
+ * O sea que el aviso mandaba a la acción equivocada. Un administrador va a Ajustes → Usuarios, ve que
+ * todos tienen Closer, y queda trabado sin nada que mirar. Es la clase de defecto que no da error:
+ * la pantalla avisa, el texto es amable, y no resuelve nada.
+ *
+ * Los cuatro motivos llevan a DOS acciones distintas, y por eso se distinguen:
+ *
+ *   · `sin_gente`     → no hay ni una persona activa con correo. Hay que crear usuarios.
+ *   · `todos_admin`   → los hay, y todos administran la empresa. Hace falta alguien que NO administre.
+ *   · `sin_capacidad` → los hay, no administran, y no tienen la pestaña Closer. Ahí sí: Ajustes → Usuarios.
+ *   · `sin_seccion`   → tienen la capacidad por su rol pero la sección no está concedida.
+ *
+ * Se cuenta cuántos cayeron por cada motivo, y gana el que más explica — no el primero que aparece.
+ */
+export type PorqueNingunCandidato = 'sin_gente' | 'todos_admin' | 'sin_capacidad' | 'sin_seccion';
+
+export interface Candidatos {
+  candidatos: CandidatoACloser[];
+  /** `null` cuando hay al menos uno. Nunca se rellena con un motivo de reserva. */
+  porqueNinguno: PorqueNingunCandidato | null;
+}
+
+export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candidatos> {
   const filas = await db
     .selectFrom('usuarios as u')
     .where('u.org_id', '=', orgId)
@@ -98,7 +131,7 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
     .orderBy('u.nombre', 'asc')
     .execute();
 
-  if (filas.length === 0) return [];
+  if (filas.length === 0) return { candidatos: [], porqueNinguno: 'sin_gente' };
 
   const ids = filas.map((f) => f.id);
 
@@ -143,20 +176,49 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
     for (const c of concedidas) concedida.add(c.usuario_id);
   }
 
-  return filas
+  /* Se CUENTA por qué cayó cada uno, en vez de solo filtrar. El conteo es lo único que permite que el
+     aviso de la pantalla nombre la acción que de verdad resuelve la situación — ver el tipo de arriba.
+     El orden de los tres descartes es el mismo que antes y no es intercambiable: quien administra la
+     empresa queda afuera aunque tenga todo lo demás. */
+  const descartes = { todos_admin: 0, sin_capacidad: 0, sin_seccion: 0 };
+
+  const candidatos = filas
     .filter((f) => {
       const suyas = tiene.get(f.id) ?? new Set<string>();
       // Quien puede designar no puede ser designado.
-      if (suyas.has(CAPACIDAD_QUE_EXCLUYE)) return false;
-      if (!suyas.has(CAPACIDAD_CLOSER)) return false;
+      if (suyas.has(CAPACIDAD_QUE_EXCLUYE)) {
+        descartes.todos_admin += 1;
+        return false;
+      }
+      if (!suyas.has(CAPACIDAD_CLOSER)) {
+        descartes.sin_capacidad += 1;
+        return false;
+      }
       // Restringido sin la sección concedida = no ve la pestaña. Cero filas es cero secciones:
       // falla cerrado, igual que en `sesion.ts`.
-      if (restringido.get(f.id) === true && !concedida.has(f.id)) return false;
+      if (restringido.get(f.id) === true && !concedida.has(f.id)) {
+        descartes.sin_seccion += 1;
+        return false;
+      }
       return true;
     })
     // El `?? ''` no puede ocurrir: el `where` de arriba ya descartó los nulos. Está para que el
     // tipo no mienta, no para cubrir un caso.
     .map((f) => ({ usuarioId: f.id, nombre: f.nombre, email: f.email ?? '' }));
+
+  if (candidatos.length > 0) return { candidatos, porqueNinguno: null };
+
+  /* Gana el motivo que MÁS GENTE explica, no el primero que apareció. Con dos administradores y una
+     persona sin la sección concedida, la acción útil es «concedé la sección» y no «creá un usuario que
+     no administre»: el segundo es más trabajo para el mismo resultado.
+     Y el empate se rompe por el orden de esta lista, que va de la acción más barata a la más cara. */
+  const porMotivo: [PorqueNingunCandidato, number][] = [
+    ['sin_seccion', descartes.sin_seccion],
+    ['sin_capacidad', descartes.sin_capacidad],
+    ['todos_admin', descartes.todos_admin],
+  ];
+  const ganador = porMotivo.reduce((mejor, actual) => (actual[1] > mejor[1] ? actual : mejor));
+  return { candidatos, porqueNinguno: ganador[1] > 0 ? ganador[0] : 'sin_gente' };
 }
 
 /** La designación vigente. `null` = **nadie designó a nadie**, que no es «designó a nadie». */

@@ -133,7 +133,13 @@ async function limpiar(): Promise<void> {
 }
 
 /** Una persona con rol `usuario` y la sección `closer` concedida. */
-async function personaQueCierra(nombre: string, org?: string): Promise<string> {
+/**
+ * @param conSeccion `false` crea la persona con el rol `usuario` y **sin** la fila de la sección.
+ *   Es el caso normal de alguien recién dado de alta: `usuario` está marcado `secciones_restringidas`,
+ *   así que sin esa fila no ve la pestaña Closer y no puede ser designado. Hace falta poder crearlo
+ *   para distinguir «nadie tiene el rol» de «nadie tiene la sección», que llevan a acciones distintas.
+ */
+async function personaQueCierra(nombre: string, org?: string, conSeccion = true): Promise<string> {
   const fila = await unaFila<{ id: string }>(
     admin,
     `insert into identidad.usuarios (org_id, nombre, email, password_hash)
@@ -160,11 +166,13 @@ async function personaQueCierra(nombre: string, org?: string): Promise<string> {
      entre inquilinos lo pone el CÓDIGO, con `usuarioObjetivo(db, id, orgEfectiva)`, y por eso la
      tabla solo guarda `usuario_id`. Es también el motivo de que `candidatosAlCloser` filtre primero
      los usuarios por organización y después consulte esta tabla por esos identificadores. */
-  await admin.query(
-    `insert into identidad.usuarios_secciones (usuario_id, seccion)
-       values ($1, 'closer') on conflict do nothing`,
-    [fila.id],
-  );
+  if (conSeccion) {
+    await admin.query(
+      `insert into identidad.usuarios_secciones (usuario_id, seccion)
+         values ($1, 'closer') on conflict do nothing`,
+      [fila.id],
+    );
+  }
   return fila.id;
 }
 
@@ -262,6 +270,103 @@ test('la lista de candidatos excluye a quien administra, y por CAPACIDAD', async
   // Y nadie de la otra empresa, que es la otra mitad del aislamiento.
   assert.ok(!ids.includes(deBeta), 'aparece alguien de otra organización en la lista');
 });
+
+test('con la lista vacía, el servidor dice CUÁL de los motivos es — y llevan a pantallas distintas', async () => {
+  // ══════════════════════════════════════════════════════════════════════
+  // EL DEFECTO QUE ESTO CIERRA, Y SE MIDIÓ CONTRA LA BASE DE PRODUCCIÓN
+  //
+  // La pantalla ya avisaba cuando el desplegable salía vacío, con UN texto para los cuatro motivos:
+  // *«hay que darle a alguien la pestaña Closer desde Ajustes → Usuarios»*.
+  //
+  // Medido en producción el 2026-08-28, después de aplicar la migración 020: los tres usuarios que
+  // existen son administradores, y **los tres ya tienen la pestaña Closer** —`closer.ver` está
+  // concedida a los tres roles del catálogo—. Lo que les falta es lo contrario: no administrar la
+  // empresa. Así que el aviso mandaba a una pantalla donde no había nada que cambiar, y quien lo
+  // leyera quedaba trabado. No daba error y el texto era amable, que es lo peor de este defecto.
+  //
+  // El `before` de este archivo YA SABÍA el hecho —dice *«sin crear a nadie, la lista de candidatos es
+  // vacía por construcción: todo el que tiene closer.ver en el sembrado es administrador»*— y ninguna
+  // prueba miraba el motivo. Esta lo mira, y recorre los estados en orden.
+  // ══════════════════════════════════════════════════════════════════════
+  const t = await sesion(ana);
+  const motivo = async (): Promise<{ cuantos: number; porque: string | null }> => {
+    const r = await verEstado(pedir(t, undefined, 'GET'));
+    assert.equal(r.status, 200);
+    const c = (await r.json()) as {
+      candidatos: { usuarioId: string }[];
+      porqueNinguno: string | null;
+    };
+    return { cuantos: c.candidatos.length, porque: c.porqueNinguno };
+  };
+
+  // 0 · El estado de partida: hay candidatos, así que NO hay motivo. Un motivo con la lista llena
+  //     sería un texto de «no hay nadie» esperando a dibujarse por error.
+  const inicial = await motivo();
+  assert.ok(inicial.cuantos > 0, 'el escenario arranca sin candidatos');
+  assert.equal(inicial.porque, null, 'con candidatos en la lista, el motivo tiene que ser nulo');
+
+  let sinSeccion: string | null = null;
+  try {
+    // 1 · TODOS ADMINISTRAN — el caso de producción. Se desactivan las dos candidatas y en `alfa`
+    //     queda solo Ana, que es administradora.
+    await admin.query(
+      `update identidad.usuarios set activo = false where id = any($1::uuid[])`,
+      [[cierra, cierraDos]],
+    );
+    assert.deepEqual(
+      await motivo(),
+      { cuantos: 0, porque: 'todos_admin' },
+      'con todas las personas de la empresa administrando, el motivo tiene que ser `todos_admin`: ' +
+        'el aviso de «dale la pestaña Closer a alguien» manda a una pantalla donde ya la tienen todos',
+    );
+
+    // 2 · SIN LA SECCIÓN CONCEDIDA — el estado siguiente en producción, en cuanto alguien dé de alta
+    //     a una persona con rol `usuario`: ese rol está marcado `secciones_restringidas`, así que
+    //     nace sin ver la pestaña. Y la acción que resuelve ES otra: conceder la sección.
+    sinSeccion = await personaQueCierra('Sin Seccion', undefined, false);
+    assert.deepEqual(
+      await motivo(),
+      { cuantos: 0, porque: 'sin_seccion' },
+      'una persona con el rol adecuado y sin la sección concedida tiene que dar `sin_seccion`: gana ' +
+        'sobre `todos_admin` porque la acción es más barata y resuelve igual',
+    );
+
+    // 3 · Y CON UNA CANDIDATA DE VUELTA, el motivo desaparece. Sin esta mitad, un motivo fijo pasaría
+    //     los dos casos de arriba y la pantalla mostraría «no hay nadie» con el desplegable lleno.
+    await admin.query(`update identidad.usuarios set activo = true where id = $1`, [cierra]);
+    const conUna = await motivo();
+    assert.equal(conUna.cuantos, 1, 'la candidata reactivada no volvió a la lista');
+    assert.equal(conUna.porque, null, 'con una candidata en la lista sigue habiendo motivo');
+  } finally {
+    /* Se restaura TODO, y no por prolijidad: las otras pruebas de este archivo cuentan con que
+       `cierra` y `cierraDos` están activas, y una prueba que deja el escenario cambiado convierte a
+       las siguientes en rojas según el orden del archivo. */
+    await admin.query(
+      `update identidad.usuarios set activo = true where id = any($1::uuid[])`,
+      [[cierra, cierraDos]],
+    );
+    if (sinSeccion !== null) {
+      await admin.query(`delete from identidad.usuarios_roles where usuario_id = $1`, [sinSeccion]);
+      await admin.query(`delete from identidad.usuarios where id = $1`, [sinSeccion]);
+    }
+  }
+
+  // Y queda restaurado de verdad, comprobado y no supuesto.
+  const final = await motivo();
+  assert.ok(final.cuantos >= 2, 'el escenario no volvió a su estado: las pruebas de abajo van a fallar');
+  assert.equal(final.porque, null);
+});
+
+/* ── EL MOTIVO QUE ESTA PRUEBA NO EJERCITA, Y POR QUÉ ─────────────────────
+ *
+ * Son cuatro motivos y acá se recorren tres. Falta `sin_capacidad` —personas que no administran y
+ * tampoco tienen `closer.ver`— y es **inalcanzable con el catálogo de este sistema**: los tres roles
+ * tienen `closer.ver`, así que hacer falta un rol propio de la empresa que no la tenga.
+ *
+ * Se deja sin cubrir a propósito y escrito acá en vez de fingir que está: montar un rol a medida para
+ * ejercitar una rama que ninguna empresa puede alcanzar hoy es complejidad que hay que mantener. Es
+ * también por eso que `sin_capacidad` es el valor de reserva del catálogo de textos de la pantalla:
+ * si algún día un rol propio la alcanza, el mensaje que sale es el correcto. */
 
 test('una persona de OTRA empresa no se puede designar, y responde 404 y no 403', async () => {
   // `ADR-0501`: un 403 confirmaría que ese identificador existe. El mismo 404 cubre los tres casos
