@@ -359,3 +359,93 @@ test('el panel no ofrece la URL sin `?evento=`, que es el error silencioso de la
     'el panel no le dice a quien mira que sin el parámetro el aviso no se interpreta y no da error',
   );
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// RECARGAR NO PUEDE VACIAR LA PANTALLA — el mismo desmontaje que arriba, un piso más
+//
+// Las pruebas del principio de este archivo cuidan que `Cuerpo` viva al nivel del módulo, porque un
+// componente declarado adentro de otro es un TIPO nuevo en cada render y React lo desmonta. Ésta
+// cuida la otra forma de lo mismo: el componente está bien declarado, y aun así se desmonta porque
+// el padre CAMBIA DE RAMA mientras recarga.
+//
+// No es hipotético. Ocurrió, y perdió una credencial:
+//
+//   1. se apretó «Generar la cabecera» y el servidor la generó y la guardó;
+//   2. `AvisoDelCrm` la puso en su estado y avisó al padre para que refrescara;
+//   3. el padre hizo `setSituacion('cargando')` y devolvió «Cargando los ajustes…»;
+//   4. React desmontó `AvisoDelCrm` y con él la cabecera recién generada;
+//   5. al terminar, el panel se montó de cero y no mostró nada.
+//
+// El secreto quedó rotado en el servidor —invalidando el anterior— y es irrecuperable, porque solo
+// se guarda su hash. Y apretar de nuevo hacía exactamente lo mismo.
+//
+// ── POR QUÉ ES UNA PRUEBA DE FORMA, Y NO UNA DE COMPORTAMIENTO ────────────
+//
+// Lo que hay que afirmar es «el hijo conserva su estado entre dos renders del padre», y eso necesita
+// un renderizador de React que este proyecto no tiene en las pruebas. Se dice acá con honestidad
+// porque cambia lo que la prueba vale: compra la REGLA, no el comportamiento. Si alguien monta un
+// renderizador algún día, esta prueba se reemplaza por la de verdad.
+// ════════════════════════════════════════════════════════════════════════════
+
+test('una recarga de Credenciales no vacía la pantalla, que es lo que desmontaba al hijo', () => {
+  const fuente = limpio('components/ajustes/Credenciales.jsx');
+
+  /* Hay UN solo paso a «cargando». Dos sería peor que uno sin guardar: alguien arregla el que
+     encuentra y el otro sigue tirando el estado de los hijos en el otro camino. */
+  const pasos = [...fuente.matchAll(/setSituacion\(\s*'cargando'\s*\)/g)];
+  assert.equal(pasos.length, 1, `hay ${pasos.length} pasos a «cargando» y tiene que haber uno solo`);
+
+  // Y está GUARDADO por «todavía no hay nada dibujado».
+  assert.match(
+    fuente,
+    /if\s*\(\s*!\s*yaHayDatos\.current\s*\)\s*setSituacion\(\s*'cargando'\s*\)/,
+    'el paso a «cargando» no está guardado, así que una recarga cambia de rama y desmonta a los ' +
+      'hijos. El que tenía estado propio era `AvisoDelCrm`, y lo que se perdía era un secreto que ' +
+      'solo se muestra una vez',
+  );
+
+  /* Y la bandera se levanta cuando LLEGAN los datos. Sin esto, `yaHayDatos` queda siempre en falso
+     y el guarda de arriba no guarda nada — una condición que nunca se cumple se lee igual que una
+     que siempre falla. */
+  assert.match(fuente, /yaHayDatos\.current\s*=\s*true/, 'la bandera nunca se levanta');
+
+  /* La otra mitad, que es la que explica por qué esto importa acá y no en cualquier pantalla:
+     `AvisoDelCrm` tiene estado propio que NO se puede volver a pedir. Si algún día dejara de
+     tenerlo, esta prueba pasaría a cuidar algo que ya no duele, y conviene que se note. */
+  const panel = limpio('components/ajustes/AvisoDelCrm.jsx');
+  assert.match(
+    panel,
+    /useState\(null\)/,
+    'el panel del aviso ya no guarda la cabecera en su estado: revisar si esta prueba sigue haciendo falta',
+  );
+});
+
+test('rotar una cabecera VIVA pide confirmación; la primera vez no', () => {
+  /* Generar cuando no hay nada no destruye nada. Generar cuando ya hay un secreto configurado corta
+     las siete entregas de GoHighLevel en el acto y no se puede deshacer.
+
+     El texto de ayuda ya lo advertía y no alcanzó — un cartel al lado de un botón no frena un clic.
+     Lo que esta prueba fija es que las dos ramas sigan siendo DOS: colapsarlas «para simplificar»
+     devuelve el botón que destruye una credencial de un clic. */
+  const panel = limpio('components/ajustes/AvisoDelCrm.jsx');
+
+  assert.match(panel, /confirmandoRotacion/, 'no hay confirmación para rotar una cabecera viva');
+  assert.match(
+    panel,
+    /configurado\s*&&\s*!confirmandoRotacion/,
+    'el botón de rotar no distingue «ya hay una configurada» de «todavía no hay ninguna»',
+  );
+  assert.match(
+    panel,
+    /Cancelar/,
+    'la confirmación no ofrece salida: una confirmación sin «cancelar» es un botón con un paso más',
+  );
+
+  /* Y que la advertencia diga lo IRREVERSIBLE, no solo «¿estás seguro?». Lo que hay que saber antes
+     de apretar es que la anterior deja de funcionar en el momento. */
+  assert.match(
+    panel,
+    /dejar de funcionar/,
+    'la confirmación no dice que la cabecera actual deja de funcionar en el acto',
+  );
+});

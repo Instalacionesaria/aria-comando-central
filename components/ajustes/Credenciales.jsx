@@ -127,9 +127,30 @@ export default function Credenciales() {
      mostrara «guardado» al lado de la clave de Anthropic. */
   const [avisos, setAvisos] = useState({});
   const yaPedido = useRef(false);
+  /* Si la pantalla YA tiene datos dibujados. Ver `cargar`. */
+  const yaHayDatos = useRef(false);
 
   const cargar = useCallback(async () => {
-    setSituacion('cargando');
+    /* ══ UNA RECARGA NO VACÍA LO QUE YA SE ESTÁ MOSTRANDO ══════════════════
+     *
+     * Esta línea era `setSituacion('cargando')` a secas, y eso hacía **desaparecer el secreto del
+     * aviso del CRM sin que nadie lo viera nunca**. La cadena, medida:
+     *
+     *   1. se aprieta «Generar la cabecera» y el servidor la genera y la guarda;
+     *   2. `AvisoDelCrm` la pone en su estado y llama a `alGenerar`, que es esta función;
+     *   3. acá la pantalla pasa a «Cargando los ajustes…», o sea a OTRA rama del árbol;
+     *   4. React desmonta `AvisoDelCrm` y con él su estado;
+     *   5. cuando la carga termina, el panel se monta DE CERO: la cabecera vale `null`.
+     *
+     * Resultado: el secreto se rotó en el servidor —invalidando el anterior— y no se puede recuperar,
+     * porque solo se guarda su hash. Y apretar de nuevo hace exactamente lo mismo otra vez. Un botón
+     * que destruye una credencial cada vez que se usa y nunca entrega nada a cambio.
+     *
+     * La regla que lo evita es más general que este caso, y por eso no se resuelve en el llamador:
+     * **vaciar la pantalla solo tiene sentido cuando no hay nada que vaciar.** Recargar datos que ya
+     * están dibujados es una actualización, no una carga inicial — y tratarla como carga inicial tira
+     * todo el estado de los hijos, que es una categoría de defecto y no un detalle estético. */
+    if (!yaHayDatos.current) setSituacion('cargando');
     const r = await pedir('/api/admin/credenciales');
     /* Las tres ramas separadas, sin colapsar. Un rechazo por permiso NO es «no hay datos»
        (`ADR-0305`): con una sola rama, alguien sin `credenciales.ver` vería la pantalla vacía
@@ -147,6 +168,7 @@ export default function Credenciales() {
       return;
     }
     setDatos(r.datos);
+    yaHayDatos.current = true;
     setSituacion('listo');
   }, []);
 

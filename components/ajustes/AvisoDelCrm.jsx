@@ -61,8 +61,11 @@ export default function AvisoDelCrm({ configurado, alGenerar }) {
   const [generando, setGenerando] = useState(false);
   const [aviso, setAviso] = useState(null);
   const [copiado, setCopiado] = useState(null);
+  /* Solo cuando YA hay un secreto configurado. Ver el botón de abajo. */
+  const [confirmandoRotacion, setConfirmandoRotacion] = useState(false);
 
   const generar = useCallback(async () => {
+    setConfirmandoRotacion(false);
     setGenerando(true);
     setAviso(null);
     const r = await pedir('/api/admin/credenciales', { metodo: 'POST' });
@@ -157,11 +160,54 @@ export default function AvisoDelCrm({ configurado, alGenerar }) {
                 ? 'Ya hay un secreto configurado, y no se puede volver a mostrar. Si lo perdiste, generá otro: el anterior deja de funcionar en el momento.'
                 : 'Todavía no hay secreto, así que el aviso no puede autenticarse y GoHighLevel va a recibir un rechazo en cada entrega.'}
             </span>
-            <div className="aj-fila">
-              <button type="button" className="fd-btn" disabled={generando} onClick={() => void generar()}>
-                {generando ? 'Generando…' : configurado ? 'Generar otra cabecera' : 'Generar la cabecera'}
-              </button>
-            </div>
+            {/* ── ROTAR PIDE CONFIRMACIÓN; LA PRIMERA VEZ NO ────────────────────
+                Generar cuando no hay nada no destruye nada: un clic y listo. Generar cuando YA hay
+                un secreto configurado corta las siete entregas de GoHighLevel en el acto y no se
+                puede deshacer, porque del anterior solo queda el hash.
+
+                El texto de ayuda ya lo decía, y no alcanzó: un cartel al lado de un botón no frena
+                un clic. Las dos ramas son distintas porque las consecuencias son distintas. */}
+            {configurado && !confirmandoRotacion ? (
+              <div className="aj-fila">
+                <button type="button" className="fd-btn sec" onClick={() => setConfirmandoRotacion(true)}>
+                  Generar otra cabecera
+                </button>
+              </div>
+            ) : null}
+
+            {configurado && confirmandoRotacion ? (
+              <>
+                <div className="fd-aviso mal" role="alert">
+                  <i>⚠</i>
+                  <span>
+                    La cabecera actual va a dejar de funcionar <b>en el momento</b>, y GoHighLevel va
+                    a empezar a recibir un rechazo en cada entrega hasta que pegues la nueva en los
+                    siete workflows. Del secreto anterior solo queda su hash: no se puede recuperar.
+                  </span>
+                </div>
+                <div className="aj-fila">
+                  <button type="button" className="fd-btn" disabled={generando} onClick={() => void generar()}>
+                    {generando ? 'Generando…' : 'Sí, generar una nueva'}
+                  </button>
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={generando}
+                    onClick={() => setConfirmandoRotacion(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : null}
+
+            {configurado ? null : (
+              <div className="aj-fila">
+                <button type="button" className="fd-btn" disabled={generando} onClick={() => void generar()}>
+                  {generando ? 'Generando…' : 'Generar la cabecera'}
+                </button>
+              </div>
+            )}
           </>
         )}
         <span className="aj-ayuda">
