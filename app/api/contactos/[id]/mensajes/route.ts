@@ -32,6 +32,7 @@ import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/crede
 import { enviarMensaje, type CanalDeEnvio } from '../../../../../lib/ghl/conversaciones.ts';
 import { mensajesDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
 import { ventanaDeRespuesta } from '../../../../../lib/negocio/ventana.ts';
+import { escribirMensajes } from '../../../../../lib/negocio/mensajes.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -176,17 +177,39 @@ export async function POST(
   // devuelve 400, así que ni siquiera se distingue de un error transitorio.
   const fabricado = enviado.datos.mensajeId === null;
   const ahora = new Date();
-  const guardado = await conOrganizacion(contexto.orgEfectiva, async () =>
-    datos()
-      .insertInto('mensajes')
-      .values({
-        ghl_mensaje_id: enviado.datos.mensajeId ?? `propio:${id}:${ahora.getTime()}`,
+  /* ═══════════════════════════════════════════════════════════════════════
+     ESTA RUTA YA NO ESCRIBE EN `negocio.mensajes`, Y ESO ARREGLA UN DUPLICADO QUE ESTÁ EN PANTALLA
+
+     Insertaba directo, con este identificador cuando el proveedor no devolvía el suyo:
+     `propio:<contactoId>:<epoch>`. Un valor así **no puede colisionar nunca** con el real, así que
+     `unique (org_id, ghl_mensaje_id)` no salta — y cuando la ingesta trae de vuelta ese mismo mensaje
+     con su identificador de verdad (trae los salientes también, `lib/negocio/ingesta.ts:309`) quedan
+     **DOS filas para UN mensaje**, las dos dibujadas en el chat.
+
+     Ahora las dos vías pasan por `escribirMensajes`, que tiene la regla asimétrica del gemelo. La
+     cadena completa del defecto está en el encabezado de `lib/negocio/mensajes.ts`.
+
+     ── `fijarPiso: false`, Y ES LA MITAD QUE NO SE PUEDE PERDER ──────────────
+
+     `contactos.mensajes_desde_el` significa *«desde acá hacia adelante la conversación está
+     completa»* y se escribe con `coalesce`: una vez y para siempre. Esta ruta manda UN mensaje, así
+     que fijarlo con él haría que la ficha afirmara tener una historia que no tiene — y no habría
+     forma de corregirlo después. Solo la ingesta lo puede afirmar, porque caminó la conversación
+     entera hacia atrás. ══════════════════════════════════════════════════════════════ */
+  const ghlMensajeId = enviado.datos.mensajeId ?? `propio:${id}:${ahora.getTime()}`;
+  const escritura = await escribirMensajes(
+    contexto.orgEfectiva,
+    [
+      {
+        ghl_mensaje_id: ghlMensajeId,
         ghl_conversacion_id: enviado.datos.conversacionId,
         contacto_id: id,
         canal: CANAL,
         direccion: 'saliente',
         cuerpo: texto.trim(),
-        // Lo escribió una PERSONA, y acá sí se sabe con certeza: hay una sesión detrás.
+        // Lo escribió una PERSONA, y acá sí se sabe con certeza: hay una sesión detrás. Y si un
+        // gemelo real lo reemplaza, `escribirMensajes` le HEREDA esta atribución — sin eso, el
+        // mensaje pasaría a decir que lo mandó el agente de IA.
         autor: 'persona',
         autor_usuario_id: contexto.usuarioId,
         enviado_el: ahora,
@@ -195,18 +218,24 @@ export async function POST(
         estado_entrega_familia: 'en_curso',
         // Nunca revisado: es lo que lo pone al frente de la cola de la tercera pasada.
         estado_entrega_revisado_el: null,
+        estado_entrega_el: null,
         id_fabricado: fabricado,
         origen: 'propio',
-      } as never)
-      .returning(['id', 'enviado_el'])
-      .executeTakeFirst(),
+      },
+    ],
+    { fijarPiso: false },
   );
+
+  /* La fila que REPRESENTA a este mensaje, que no siempre es la que se acaba de insertar: si su
+     gemelo real ya estaba, `escribirMensajes` no inserta el fabricado y devuelve el real. Devolverle
+     `null` a la pantalla en ese caso sería decirle que el mensaje no quedó, cuando quedó. */
+  const guardado = escritura.representantes.get(ghlMensajeId);
 
   return ok(
     {
       enviado: true,
       id: guardado?.id ?? null,
-      enviadoEl: guardado?.enviado_el ?? ahora,
+      enviadoEl: guardado?.enviadoEl ?? ahora,
       entrega: 'en_curso',
       // Se avisa cuando el CRM no devolvió identificador: ese mensaje **no va a poder confirmarse
       // nunca**, y quien mira el chat tiene derecho a saber que el visto bueno no va a llegar.

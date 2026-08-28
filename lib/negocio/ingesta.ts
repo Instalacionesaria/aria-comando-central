@@ -1,4 +1,14 @@
-// EL único escritor de `negocio.mensajes`.
+// La INGESTA de mensajes: el barrido de conversaciones del CRM.
+//
+// ── ESTE ARCHIVO DECÍA SER «EL ÚNICO ESCRITOR DE `negocio.mensajes`», Y ERA FALSO ──
+//
+// El `POST` del chat —`app/api/contactos/[id]/mensajes/route.ts`— insertaba directo en la tabla. Dos
+// escritores, y uno de los dos afirmaba ser el único. La consecuencia estaba en pantalla: un mensaje
+// nuestro cuyo identificador el proveedor no devolvió se guardaba con uno fabricado, la ingesta lo
+// traía después con el real, y quedaban DOS filas para UN mensaje.
+//
+// Ahora el único escritor es `lib/negocio/mensajes.ts`, y los dos pasan por él. El encabezado de ese
+// archivo tiene la cadena completa del defecto y la regla asimétrica del gemelo.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA RESTRICCIÓN, Y CÓMO SE DA VUELTA
@@ -39,7 +49,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
-import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { datos, conOrganizacion } from '../datos/contexto.ts';
+import { escribirMensajes, type FilaDeMensaje } from './mensajes.ts';
 import {
   buscarConversaciones,
   mensajesDeConversacion,
@@ -79,23 +90,9 @@ export interface ResultadoDeIngesta {
 }
 
 /** Una fila lista para escribir. Se nombra para que `filas` no quede sin tipo. */
-interface FilaDeMensaje {
-  ghl_mensaje_id: string;
-  ghl_conversacion_id: string;
-  contacto_id: string;
-  canal: string | null;
-  direccion: 'entrante' | 'saliente';
-  cuerpo: string | null;
-  autor: 'contacto' | 'agente' | 'persona';
-  autor_ghl_usuario_id: string | null;
-  enviado_el: Date;
-  estado_entrega: string | null;
-  estado_entrega_familia: 'en_curso' | 'entregado' | 'fallido' | 'desconocido';
-  estado_entrega_revisado_el: Date;
-  estado_entrega_el: Date | null;
-  id_fabricado: boolean;
-  origen: 'ingesta';
-}
+/* `FilaDeMensaje` se mudó a `lib/negocio/mensajes.ts` junto con el escritor. Estaba declarada acá y
+   el `POST` del chat armaba su fila **a mano, sin el tipo** — que es parte de por qué los dos
+   escritores pudieron divergir sin que nada se quejara. */
 
 /** Un contacto nuestro, indexado por su identificador en el CRM. */
 interface ContactoConocido {
@@ -324,40 +321,18 @@ async function guardarMensajes(
 
   if (filas.length === 0) return { nuevos: 0, sinFecha };
 
-  const escritas = await conOrganizacion(orgId, async () => {
-    const r = await datos()
-      .insertInto('mensajes')
-      .values(filas as never)
-      .onConflict((oc) =>
-        oc
-          .columns(['org_id', 'ghl_mensaje_id'])
-          .doUpdateSet({
-            estado_entrega: sql`excluded.estado_entrega`,
-            estado_entrega_familia: sql`excluded.estado_entrega_familia`,
-            estado_entrega_el: sql`excluded.estado_entrega_el`,
-            estado_entrega_revisado_el: sql`excluded.estado_entrega_revisado_el`,
-          } as never)
-          .where(sql<boolean>`mensajes.estado_entrega is distinct from excluded.estado_entrega`),
-      )
-      .returning('id')
-      .execute();
-
-    // Y la frontera de cobertura de ESTE contacto. Sin ella, una ficha sin mensajes no se puede
-    // distinguir de una que nadie leyó todavía, y la ficha diría «nunca escribió» de las dos.
-    await datos()
-      .updateTable('contactos')
-      .set({ mensajes_desde_el: sql`coalesce(mensajes_desde_el, ${menorFecha(filas)})` } as never)
-      .where('id', '=', contacto.id)
-      .execute();
-
-    return r.length;
-  });
+  /* ── EL `insert` SE MUDÓ, Y `fijarPiso: true` ES DE ESTE LLAMADOR ──────────
+   *
+   * La escritura vive ahora en `lib/negocio/mensajes.ts`, junto con el `on conflict` que resuelve
+   * entregas de paso y con la regla del gemelo que impide el duplicado del chat.
+   *
+   * `fijarPiso: true` lo pasa **solo la ingesta**, y es la mitad del contrato que hay que no
+   * perder: `contactos.mensajes_desde_el` significa *«desde acá hacia adelante la conversación está
+   * completa»*, y se escribe con `coalesce`, o sea una vez y para siempre. La ingesta lo puede
+   * afirmar porque caminó la conversación entera hacia atrás. Un escritor de un mensaje suelto no. */
+  const { escritas } = await escribirMensajes(orgId, filas, { fijarPiso: true });
 
   return { nuevos: escritas, sinFecha };
-}
-
-function menorFecha(filas: readonly FilaDeMensaje[]): Date {
-  return filas.reduce((a, f) => (f.enviado_el < a ? f.enviado_el : a), filas[0]!.enviado_el);
 }
 
 /**
