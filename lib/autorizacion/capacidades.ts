@@ -85,18 +85,22 @@ export const CAPACIDADES = [
   // lea «credenciales» en una fila de auditoría no va a adivinar que también concede ver el
   // consumo de todas las empresas.
   //
-  // Así que es familia propia, y el costo se paga donde se ve: `db/arranque/001_catalogo.sql` lleva
-  // un `not like 'monitoreo.%'` escrito a mano en el reparto del rol `usuario`. Sin esa línea la
+  // Así que es familia propia, y el costo se paga donde se ve: `db/arranque/001_catalogo.sql` le
+  // niega `monitoreo.%` a mano a `usuario` **y a `administrador`**. Sin esas dos líneas la
   // capacidad cae SOLA en los tres roles —el reparto deriva por exclusión de prefijos— y el panel
   // que mide a todas las empresas se lo vería cualquier persona de cualquier empresa.
   //
-  // ── QUIÉN LA TIENE, Y LO QUE LA CAPACIDAD SOLA NO ALCANZA A DECIR ──────────
+  // ── QUIÉN LA TIENE: TRES PERSONAS, NO UN PUESTO ───────────────────────────
   //
-  // `superadministrador` y `administrador`. Y eso NO basta: un administrador existe en cada
-  // empresa cliente, así que la capacidad sola le daría a un cliente High Ticket el panel con los
-  // números de sus competidores. La segunda mitad de la regla —**ser de la organización
-  // principal**— vive en `Seccion.soloDesdeLaPrincipal` y la comprueba el manejador. Las dos
-  // mitades son necesarias; ninguna se puede leer sin la otra.
+  // `superadministrador`, y un rol propio llamado `monitoreo` que se asigna persona por persona.
+  // Se pidió así —*"solo nosotros 3"*— y ningún rol de puesto puede expresarlo: `administrador`
+  // es el mismo rol en ARIA y en cada empresa cliente, y el mismo para todos los administradores
+  // de ARIA, así que dárselo a él se lo da también al que entre mañana.
+  //
+  // Y aun con el rol bien asignado falta una mitad: si alguien le diera ese rol a una persona de
+  // una empresa cliente, esa persona vería los números de sus competidores. Eso lo atrapa
+  // `Seccion.soloDesdeLaPrincipal`, que comprueba el manejador. Las dos mitades son necesarias;
+  // ninguna se puede leer sin la otra.
   'monitoreo.ver',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //

@@ -27,15 +27,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA AUTORIZACIÓN SON DOS MITADES, Y NINGUNA ALCANZA SOLA
 //
-// 1 · **La capacidad `monitoreo.ver`.** La tienen `superadministrador` y `administrador`: el
-//     reparto de `db/arranque/001_catalogo.sql` le niega la familia `monitoreo.%` únicamente al
-//     rol `usuario`, con un `not like` escrito a mano.
+// 1 · **La capacidad `monitoreo.ver`.** No la da ningún rol de puesto: la tienen
+//     `superadministrador` y un rol propio, `monitoreo`, que se asigna persona por persona. Se
+//     pidió que el panel lo vean tres personas de ARIA, y eso no lo puede expresar un rol de
+//     puesto — `administrador` es el mismo rol en ARIA y en cada empresa cliente, y el mismo
+//     para todos los administradores de ARIA. El reparto le niega `monitoreo.%` a `usuario` y a
+//     `administrador` con dos `not like` escritos a mano.
 //
 // 2 · **Ser de la organización principal.** Y esto NO es de coherencia como la regla de la
 //     pestaña Empresas —que se sacó del servidor porque creaba un encierro—: acá **es la
-//     barrera**. Un `administrador` existe en CADA empresa cliente, así que sin esta mitad el
-//     administrador de un cliente High Ticket vería los números de los otros nueve, con la
-//     pantalla funcionando perfectamente y sin un solo error en ningún lado.
+//     barrera**, y es la red debajo del punto 1. Asignarle el rol `monitoreo` a una persona de
+//     una empresa cliente es un error de UNA fila que nadie revisa; sin esta mitad, esa persona
+//     vería los números de sus competidores con la pantalla funcionando perfectamente y sin un
+//     solo error en ningún lado.
 //
 //     Se mide sobre la organización PROPIA y no sobre la efectiva. La diferencia importa: un
 //     superadministrador conmutado a una empresa cliente sigue siendo de la casa, y medirlo

@@ -104,16 +104,24 @@ insert into identidad.permisos (clave, descripcion) values
   -- con qué scraper. Una `monitoreo.editar` sería una capacidad sin puerta.
   --
   -- **Es la primera capacidad de este archivo que el reparto NO puede derivar sola**, y por eso
-  -- lleva un `not like` escrito a mano abajo. Conviene entender por qué antes de tocarlo: el
-  -- reparto deriva por exclusión de prefijos, así que una familia nueva cae en LOS TRES roles.
-  -- Sin esa línea, el panel que mide a todas las empresas lo vería cualquier persona de
-  -- cualquier empresa cliente — y no fallaría nada, que es la forma de defecto que este archivo
-  -- persigue en todas partes.
+  -- se le niega a mano a DOS roles abajo. Conviene entender por qué antes de tocarlo: el reparto
+  -- deriva por exclusión de prefijos, así que una familia nueva cae en LOS TRES roles. Sin esas
+  -- dos líneas, el panel que mide a todas las empresas lo vería cualquier persona de cualquier
+  -- empresa cliente — y no fallaría nada, que es la forma de defecto que este archivo persigue
+  -- en todas partes.
   --
-  -- Y lo que la capacidad sola tampoco alcanza a decir: un `administrador` existe en CADA
-  -- empresa. La capacidad le da la pestaña; lo que se la quita es la segunda mitad de la regla,
-  -- **ser de la organización principal**, que vive en `Seccion.soloDesdeLaPrincipal` y la
-  -- comprueba `app/api/monitoreo/route.ts`. Las dos mitades hacen falta.
+  -- ── QUIÉN LA TIENE: EL SUPERADMINISTRADOR Y UN ROL PROPIO ──────────────────
+  --
+  -- Se pidió que el panel lo vean TRES PERSONAS de ARIA, no «los administradores». Un rol no
+  -- puede expresar eso —`administrador` es el mismo rol en ARIA y en cada empresa cliente, y el
+  -- mismo para todos los administradores de ARIA— así que la capacidad va a un rol propio,
+  -- `monitoreo`, que se le asigna a esas personas. El razonamiento largo está en su `insert`.
+  --
+  -- Y una mitad más, que ninguna fila de esta tabla puede expresar: la sección está marcada
+  -- `soloDesdeLaPrincipal`, y `app/api/monitoreo/route.ts` rechaza a quien no pertenece a la
+  -- organización principal. Es la red que atrapa el error de asignarle el rol a alguien de una
+  -- empresa cliente — un error de una sola fila, que sin ella no falla y le muestra a un cliente
+  -- los números de sus competidores.
   ('monitoreo.ver',      'Ver el Panel de Monitoreo: los scrapeos de todas las empresas, por empresa y por scraper'),
 
   -- ── Etapa 11 · Closer y Setter ─────────────────────────────────────────────
@@ -195,7 +203,38 @@ on conflict (clave) do nothing;
 
 insert into identidad.roles
     (clave, nombre, es_sistema, solo_principal, exige_segundo_factor, secciones_restringidas) values
-  ('usuario', 'Usuario', true, false, false, true)
+  ('usuario', 'Usuario', true, false, false, true),
+
+  -- ── EL ROL DEL PANEL DE MONITOREO, Y POR QUÉ ES UN ROL Y NO UNA CAPACIDAD MÁS ──
+  --
+  -- Se pidió que el Panel de Monitoreo lo vean TRES PERSONAS. No «los administradores»: tres
+  -- personas concretas de ARIA.
+  --
+  -- Eso no lo puede expresar el reparto de abajo, y conviene entender por qué antes de intentar
+  -- resolverlo ahí: los roles de sistema son GLOBALES (`org_id is null`), así que `administrador`
+  -- es el mismo rol en ARIA y en cada empresa cliente, y dentro de ARIA es el mismo rol para
+  -- todos sus administradores. Darle `monitoreo.ver` al rol `administrador` se la da a los tres
+  -- de hoy **y al cuarto que se dé de alta mañana**, sin que nadie lo decida.
+  --
+  -- La salida es la que la migración 003 escribe como regla general: *"si hace falta que alguien
+  -- tenga CASI un rol, la respuesta es un rol nuevo — que con este modelo cuesta una fila"*. Los
+  -- roles SUMAN, así que alguien con `administrador` + `monitoreo` tiene la unión de los dos, y
+  -- conceder o quitar el panel pasa a ser una fila en `identidad.usuarios_roles`.
+  --
+  -- ── LAS TRES BANDERAS, Y LA QUE PARECE OBVIA Y ESTÁ MAL ────────────────────
+  --
+  -- `solo_principal` en FALSO, y es lo que más tienta poner en `true`: la bandera existe para los
+  -- roles de plataforma y un disparador de la base hace cumplir que quien la tenga viva en la
+  -- organización principal — justo la garantía que este panel quiere. **Y sería una escalada.**
+  -- `resolverSesion` calcula `esRolDePlataforma` con `bool_or(solo_principal)`, y ese booleano es
+  -- lo único que decide si se respeta `sesiones.org_activa`: marcarla convertiría a estas tres
+  -- personas en gente que puede conmutar su sesión a cualquier empresa cliente. Se paga con un
+  -- eje distinto —`Seccion.soloDesdeLaPrincipal`— que no toca la identidad de nadie.
+  --
+  -- `secciones_restringidas` en FALSO: el alcance por persona se combina con `bool_and`, así que
+  -- marcarlo no restringiría a nadie que además sea `administrador` —y sí dejaría sin ninguna
+  -- pestaña a quien tuviera SOLO este rol—. El `update` de más abajo lo reafirma.
+  ('monitoreo', 'Panel de Monitoreo', true, false, false, false)
 on conflict do nothing;
 
 -- ── LA BANDERA DE LA RESTRICCIÓN POR SECCIÓN, DECLARATIVA ────────────────────
@@ -315,17 +354,33 @@ begin
       -- Le queda lo que se pidió: credenciales, configuración, auditoría, fundaciones, los
       -- tableros y las dos pestañas de operación con sus acciones.
       --
-      -- **Y `monitoreo.ver`, que le llega por derivación y se deja a propósito.** Se pidió que
-      -- el Panel de Monitoreo lo vea «gente de ARIA», no sólo el superadministrador: los dos
-      -- administradores de la empresa principal tienen que verlo. Lo que impide que también lo
-      -- vea el administrador de un cliente High Ticket NO es esta lista —no puede: los roles no
-      -- distinguen empresas— sino `Seccion.soloDesdeLaPrincipal`, comprobada en el servidor por
-      -- `app/api/monitoreo/route.ts`. Si esa comprobación desapareciera, esta línea se
-      -- convertiría en una fuga entre clientes sin que nada más cambiara.
+      -- ── Y LA CUARTA FAMILIA NEGADA: `monitoreo.%` ───────────────────────────
+      --
+      -- Ésta no se deduce de «todo lo de SU empresa», porque el Panel de Monitoreo no es de su
+      -- empresa: mide TODAS. Y la línea es necesaria aunque parezca redundante con la regla de
+      -- la organización principal, porque las dos protegen contra cosas distintas — aquélla
+      -- contra el administrador de una empresa cliente, ésta contra el administrador NÚMERO
+      -- CUATRO de ARIA, que la regla de la principal deja pasar.
+      --
+      -- Se pidió que el panel lo vean tres personas concretas. Eso es un rol —`monitoreo`, más
+      -- abajo— que se asigna de a una fila, no una capacidad de `administrador`.
       ('administrador', (select array_agg(clave) from identidad.permisos
                           where clave not like 'organizaciones.%'
                             and clave not like 'usuarios.%'
-                            and clave not like 'roles.%'))
+                            and clave not like 'roles.%'
+                            and clave not like 'monitoreo.%')),
+
+      -- ── El rol del Panel de Monitoreo: UNA capacidad, enumerada ──────────────
+      --
+      -- El único de los cuatro que NO se deriva, y es a propósito. Los otros tres se calculan
+      -- sobre `identidad.permisos` porque son «todas» o «todas menos N familias», y enumerarlos
+      -- obligaría a editar este archivo cada vez que se agrega una capacidad. Éste es al revés:
+      -- su definición ES una capacidad concreta, y una derivación que le diera más lo convertiría
+      -- en un rol que hace algo que su nombre no dice.
+      --
+      -- `ADR-0303` pide que todo rol asignable tenga al menos una pantalla. Ésta tiene una:
+      -- `monitoreo.ver` habilita la sección `monitoreo` y ninguna otra.
+      ('monitoreo', array['monitoreo.ver'])
     ) as t(rol, permisos)
   loop
     -- Un conjunto nulo significa que el catálogo no se pudo leer, y las dos sentencias de
@@ -394,7 +449,7 @@ begin
   -- significa "no se midió" leído como "está bien"— y lo tenía en su propia verificación.
   select string_agg(esperado, ', ')
     into v_falta_rol
-    from unnest(array['superadministrador','administrador','usuario']) as esperado
+    from unnest(array['superadministrador','administrador','usuario','monitoreo']) as esperado
    where not exists (
      select 1 from identidad.roles r where r.clave = esperado and r.org_id is null);
 
@@ -421,7 +476,7 @@ begin
     into v_sin_capacidades
     from identidad.roles r
    where r.es_sistema and r.org_id is null
-     and r.clave in ('superadministrador', 'administrador', 'usuario')
+     and r.clave in ('superadministrador', 'administrador', 'usuario', 'monitoreo')
      and not exists (select 1 from identidad.roles_permisos rp where rp.rol_id = r.id);
 
   if v_sin_capacidades is not null then

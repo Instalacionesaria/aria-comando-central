@@ -191,17 +191,56 @@ test('los roles retirados NO existen, y nadie quedó sin rol por el camino', asy
   );
 });
 
-test('el catálogo tiene EXACTAMENTE tres roles de sistema', async () => {
+test('el catálogo tiene EXACTAMENTE los roles de sistema que reparte', async () => {
   // Conjunto exacto, no «al menos éstos». La forma en que esto se rompe es por exceso: un rol
   // que se retiró a medias, o uno nuevo que alguien agrega sin repartirle nada, queda asignable
   // y no da ninguna pantalla.
+  //
+  // ── ERAN TRES Y SON CUATRO, Y EL CUARTO NO ES UN PUESTO ──────────────────
+  //
+  // Los tres primeros describen QUÉ HACE alguien —administra la plataforma, administra su
+  // empresa, opera— y por eso sus capacidades se DERIVAN («todas», «todas menos N familias»).
+  //
+  // `monitoreo` no es eso: es UNA pantalla que se le concede a personas concretas, con su
+  // capacidad enumerada a mano. Existe porque el pedido era *"solo nosotros 3"* y ningún rol de
+  // puesto puede expresarlo — `administrador` es el mismo rol en ARIA y en cada empresa cliente,
+  // y el mismo para todos los administradores de ARIA. Es la salida que la migración 003 escribe
+  // como regla: *"si hace falta que alguien tenga CASI un rol, la respuesta es un rol nuevo"*.
+  //
+  // Si aparece un quinto, la pregunta a hacerse es la misma: ¿es un puesto, o es una pantalla
+  // que se concede? Si es lo segundo, que llegue con su enumeración y su prueba.
   const r = await mig.query<{ clave: string }>(
     'select clave from identidad.roles where org_id is null and es_sistema order by clave',
   );
   assert.deepEqual(
     r.rows.map((f) => f.clave),
-    ['administrador', 'superadministrador', 'usuario'],
+    ['administrador', 'monitoreo', 'superadministrador', 'usuario'],
   );
+});
+
+test('el rol `monitoreo` da UNA capacidad, y no es de plataforma', async () => {
+  // Las dos mitades de por qué este rol es seguro de repartir.
+  //
+  // (1) UNA capacidad. Un rol que se le da a tres personas «para que vean un panel» no puede
+  //     traer nada más de arrastre; por eso su reparto está enumerado y no derivado.
+  assert.deepEqual(await capacidadesDe('monitoreo'), ['monitoreo.ver']);
+
+  // (2) `solo_principal` en FALSO, que es lo contraintuitivo. Ponerla en `true` daría una
+  //     garantía que el panel quiere —el disparador de la base obliga a que quien tenga el rol
+  //     viva en la organización principal— y sería una ESCALADA: `resolverSesion` calcula
+  //     `esRolDePlataforma` con `bool_or(solo_principal)`, y ese booleano es lo único que decide
+  //     si se respeta `sesiones.org_activa`. Las tres personas podrían conmutar su sesión a
+  //     cualquier empresa cliente. La garantía se consigue por otro eje:
+  //     `Seccion.soloDesdeLaPrincipal`.
+  const r = await mig.query<{ solo_principal: boolean; secciones_restringidas: boolean }>(
+    `select solo_principal, secciones_restringidas from identidad.roles
+      where org_id is null and clave = 'monitoreo'`,
+  );
+  assert.equal(r.rows[0]?.solo_principal, false, 'el rol `monitoreo` se volvió de plataforma');
+  // `secciones_restringidas` en falso: el alcance se combina con `bool_and`, así que en `true`
+  // no restringiría a nadie que además sea administrador, y sí dejaría sin ninguna pestaña a
+  // quien tuviera solo este rol.
+  assert.equal(r.rows[0]?.secciones_restringidas, false);
 });
 
 test('el superadministrador tiene TODAS, sin atajo en el portero', async () => {

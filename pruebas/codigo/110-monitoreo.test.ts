@@ -7,11 +7,12 @@
 // entre `CAPACIDADES` y `identidad.permisos`, y `ADR-0303`. Si desapareciera, la suite se pone
 // roja sola.
 //
-// La segunda —**ser de la organización principal**— no tiene ese respaldo, y es la que importa
-// más. El reparto de `db/arranque/001_catalogo.sql` le da `monitoreo.ver` al rol `administrador`,
-// y un administrador existe en CADA empresa cliente. O sea que si esta regla se cae:
+// La segunda —**ser de la organización principal**— no tiene ese respaldo. Es la red debajo de un
+// error de UNA fila: la capacidad la lleva el rol `monitoreo`, que se asigna persona por persona
+// desde la pantalla de Usuarios, y dárselo a alguien de una empresa cliente es un clic. Si esta
+// regla se cae:
 //
-//   · el administrador de un cliente High Ticket ve el consumo de los otros nueve,
+//   · esa persona ve el consumo de todas las demás empresas, incluidas sus competidoras,
 //   · la pantalla funciona perfecto,
 //   · ninguna otra prueba de este repositorio se pone roja.
 //
@@ -35,8 +36,8 @@ const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
 
 const SIN_ALCANCE = { restringido: false } as const;
-/** Las capacidades de un administrador en lo que a esta pantalla respecta. */
-const DE_UN_ADMINISTRADOR = new Set(['monitoreo.ver', 'credenciales.ver', 'tablero.ver']);
+/** Alguien con el rol `monitoreo` encima de su rol de puesto. Los roles SUMAN: es la unión. */
+const CON_EL_ROL_MONITOREO = new Set(['monitoreo.ver', 'credenciales.ver', 'tablero.ver']);
 
 // ─── La sección ─────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ test('la sección `monitoreo` existe, pide su capacidad y es de la principal', (
   assert.equal(
     s.soloDesdeLaPrincipal,
     true,
-    'sin esta bandera, el administrador de cada empresa cliente ve el consumo de las demás',
+    'sin esta bandera, un rol `monitoreo` mal asignado muestra el consumo de todas las empresas',
   );
   // Y NO lleva `sinOperacionesTodavia`: tiene su `GET`. La bandera puesta acá eximiría a la
   // pantalla de `ADR-0304`, que es la que compara los conjuntos de capacidades de sus rutas.
@@ -99,15 +100,15 @@ test('`esDeLaPrincipal` mira la organización PROPIA, no la que se está mirando
 
 test('el menú esconde el Panel de Monitoreo a quien no es de la principal', () => {
   const claves = (desdeLaPrincipal: boolean) =>
-    menuVisible(DE_UN_ADMINISTRADOR, SIN_ALCANCE, desdeLaPrincipal).flatMap((g) =>
+    menuVisible(CON_EL_ROL_MONITOREO, SIN_ALCANCE, desdeLaPrincipal).flatMap((g) =>
       g.secciones.map((s) => s.clave),
     );
 
-  assert.ok(claves(true).includes('monitoreo'), 'un administrador de ARIA no ve su propio panel');
+  assert.ok(claves(true).includes('monitoreo'), 'quien tiene el rol, en ARIA, no ve su panel');
   assert.ok(
     !claves(false).includes('monitoreo'),
-    'el administrador de una empresa cliente ve la entrada del menú: teniendo la capacidad, ' +
-      'la única cosa que se lo impide es esta bandera',
+    'alguien de una empresa cliente con el rol `monitoreo` ve la entrada del menú: teniendo la ' +
+      'capacidad, la única cosa que se lo impide es esta bandera',
   );
 });
 
@@ -116,7 +117,7 @@ test('la lista `secciones` de la sesión se corta con el MISMO criterio que el m
   // `secciones` las lee `AjustesView`—. Cortar una sola deja media interfaz sin restringir, y eso
   // ya pasó una vez con el alcance por persona.
   const claves = (desdeLaPrincipal: boolean) =>
-    seccionesConAlcance(DE_UN_ADMINISTRADOR, SIN_ALCANCE, desdeLaPrincipal).map((s) => s.clave);
+    seccionesConAlcance(CON_EL_ROL_MONITOREO, SIN_ALCANCE, desdeLaPrincipal).map((s) => s.clave);
 
   assert.ok(claves(true).includes('monitoreo'));
   assert.ok(!claves(false).includes('monitoreo'));
@@ -124,7 +125,7 @@ test('la lista `secciones` de la sesión se corta con el MISMO criterio que el m
 
 test('sin la capacidad no hay panel, esté quien esté en la principal', () => {
   // La primera mitad, para que no se pueda "arreglar" la segunda borrando la primera: alguien de
-  // ARIA con el rol `usuario` tampoco lo ve.
+  // ARIA sin el rol `monitoreo` —un administrador cualquiera de la casa— tampoco lo ve.
   const deUnUsuario = new Set(['tablero.ver', 'closer.ver']);
   assert.ok(
     !menuVisible(deUnUsuario, SIN_ALCANCE, true)
@@ -150,8 +151,9 @@ test('la ruta declara su pantalla y comprueba las DOS mitades', () => {
   assert.match(
     ruta,
     /if \(!esDeLaPrincipal\(contexto\)\)/,
-    'la ruta dejó de comprobar la organización principal: la capacidad sola le da este panel al ' +
-      'administrador de cada empresa cliente, y nada más en la suite lo detecta',
+    'la ruta dejó de comprobar la organización principal: sin eso, el rol `monitoreo` asignado ' +
+      'por error a alguien de una empresa cliente le muestra el consumo de todas, y nada más en ' +
+      'la suite lo detecta',
   );
   // Y que el rechazo esté ANTES de leer nada. Un `return` después de la primera consulta seguiría
   // negando la respuesta y ya habría cruzado las organizaciones.
@@ -183,7 +185,7 @@ test('la ruta lee de a una organización, y NO con una consulta que las cruce', 
 
 // ─── El catálogo y el reparto ───────────────────────────────────────────────
 
-test('el catálogo carga `monitoreo.ver` y se la NIEGA al rol `usuario`', () => {
+test('el catálogo carga `monitoreo.ver` y NO se la da a ningún rol de puesto', () => {
   const catalogo = leer('db/arranque/001_catalogo.sql');
 
   assert.ok(
@@ -191,18 +193,63 @@ test('el catálogo carga `monitoreo.ver` y se la NIEGA al rol `usuario`', () => 
     'la capacidad no se carga en `identidad.permisos`: el portero rechazaría a todo el mundo',
   );
 
-  // ── LA LÍNEA QUE NO SE DERIVA ────────────────────────────────────────────
+  // ── LAS DOS LÍNEAS QUE NO SE DERIVAN ─────────────────────────────────────
   //
-  // El reparto deriva por exclusión de prefijos, así que una familia nueva cae SOLA en los tres
-  // roles. Sin este `not like`, cualquier persona de cualquier empresa cliente tendría la
-  // capacidad — y con ella, sólo la regla de la organización principal separándola del panel.
-  // Las dos mitades tienen que estar.
-  const usuario = catalogo.slice(catalogo.indexOf("('usuario', (select"));
-  const finDelUsuario = usuario.indexOf('))'),
-    bloque = usuario.slice(0, finDelUsuario);
-  assert.ok(
-    bloque.includes("clave not like 'monitoreo.%'"),
-    'el reparto del rol `usuario` dejó de excluir `monitoreo.%`',
+  // El reparto deriva por EXCLUSIÓN de prefijos, así que una familia nueva cae SOLA en los tres
+  // roles de puesto. Cada `not like` que falte tiene una víctima distinta y ninguna de las dos
+  // falla:
+  //
+  //   · sin el de `usuario`      → cualquier persona de cualquier empresa cliente,
+  //   · sin el de `administrador`→ el administrador de cada empresa cliente **y el
+  //     administrador número cuatro de ARIA**, que es el que la regla de la organización
+  //     principal deja pasar y que es justamente lo que se pidió evitar.
+  const bloqueDe = (rol: string) => {
+    const desde = catalogo.indexOf(`('${rol}', (select`);
+    assert.ok(desde > 0, `no se encontró el reparto del rol \`${rol}\``);
+    return catalogo.slice(desde, catalogo.indexOf('))', desde));
+  };
+
+  for (const rol of ['usuario', 'administrador']) {
+    assert.ok(
+      bloqueDe(rol).includes("clave not like 'monitoreo.%'"),
+      `el reparto del rol \`${rol}\` dejó de excluir \`monitoreo.%\``,
+    );
+  }
+});
+
+test('existe el rol `monitoreo`, con esa capacidad y NADA más', () => {
+  // ── POR QUÉ UN ROL Y NO UNA CAPACIDAD DE `administrador` ─────────────────
+  //
+  // Se pidió que el panel lo vean TRES PERSONAS de ARIA, y ningún rol de puesto puede expresar
+  // eso: `administrador` es el mismo rol en ARIA y en cada empresa cliente, y el mismo para
+  // todos los administradores de ARIA. Es la salida que la migración 003 escribe como regla —
+  // *"si hace falta que alguien tenga CASI un rol, la respuesta es un rol nuevo"*— y lo que la
+  // hace viable es que los roles SUMAN: `administrador` + `monitoreo` da la unión.
+  const catalogo = leer('db/arranque/001_catalogo.sql');
+
+  // Enumerado, no derivado. Un `select … from identidad.permisos` acá le daría al rol más de lo
+  // que su nombre dice, y encima crecería solo con cada capacidad nueva.
+  assert.match(
+    catalogo,
+    /\('monitoreo',\s*array\['monitoreo\.ver'\]\)/,
+    'el rol `monitoreo` no reparte exactamente `monitoreo.ver`',
+  );
+
+  // ── LAS DOS BANDERAS QUE NO PUEDEN CAMBIAR ───────────────────────────────
+  //
+  // `solo_principal` en `true` sería la tentación —el disparador de la base obligaría a que
+  // quien tenga el rol viva en la organización principal, justo lo que el panel quiere— y sería
+  // una ESCALADA: `resolverSesion` calcula `esRolDePlataforma` con `bool_or(solo_principal)`, y
+  // ese booleano es lo único que decide si se respeta `sesiones.org_activa`. Marcarlo dejaría a
+  // estas tres personas conmutar su sesión a cualquier empresa cliente.
+  //
+  // `secciones_restringidas` en `true` no restringiría a nadie que además sea `administrador`
+  // —el alcance se combina con `bool_and`— y sí dejaría sin ninguna pestaña a quien tuviera solo
+  // este rol.
+  assert.match(
+    catalogo,
+    /\('monitoreo', 'Panel de Monitoreo', true, false, false, false\)/,
+    'las banderas del rol `monitoreo` cambiaron: revisá `solo_principal` antes que nada',
   );
 });
 

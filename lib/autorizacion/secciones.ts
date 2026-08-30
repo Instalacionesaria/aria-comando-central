@@ -95,13 +95,18 @@ export interface Seccion {
    * ── POR QUÉ ESTE EJE EXISTE Y NO SE PUEDE EXPRESAR CON UNA CAPACIDAD ───────
    *
    * Los roles del sistema son globales: `identidad.roles` los reparte con `org_id is null`, así
-   * que `administrador` es el mismo rol en ARIA y en cada empresa cliente. Una capacidad no
-   * puede distinguirlos — o la tienen los administradores de todas las empresas, o de ninguna.
+   * que ningún rol sabe de qué empresa es quien lo tiene. Una capacidad tampoco — o la tienen
+   * los de todas las empresas, o los de ninguna.
    *
    * Y hay una pantalla que necesita justo esa distinción: el Panel de Monitoreo mira el consumo
-   * de TODAS las empresas. Con la capacidad sola, el administrador de un cliente High Ticket
-   * vería los números de sus competidores, y **no fallaría nada** — se vería como una pantalla
-   * que funciona.
+   * de TODAS las empresas. Su capacidad la lleva un rol que se asigna persona por persona
+   * (`monitoreo`), y ahí está el agujero que esta bandera tapa: **asignar ese rol a la persona
+   * equivocada es un error de UNA fila**, hecho desde la pantalla de Usuarios, que nadie revisa.
+   * Sin la bandera, esa persona vería los números de sus competidores y **no fallaría nada** —
+   * se vería como una pantalla que funciona.
+   *
+   * O sea que no es la barrera principal: es la red debajo de la barrera principal. Las dos
+   * hacen falta, y por motivos distintos.
    *
    * ── LA REGLA SE MIDE SOBRE LA ORGANIZACIÓN PROPIA, NO SOBRE LA EFECTIVA ────
    *
@@ -321,11 +326,12 @@ export const SECCIONES: readonly Seccion[] = [
     // de este sistema; acá lee las tablas del scraper que la migración `006_aria_cc_scraper.sql`
     // trajo a esta base, y el eje pasó de `cliente_id` a `org_id`.
     //
-    // **Es la primera sección con `soloDesdeLaPrincipal`, y es lo que la hace segura.** Su
-    // capacidad la tienen `superadministrador` y `administrador` —el reparto de
-    // `db/arranque/001_catalogo.sql` solo le niega la familia al rol `usuario`—, y un
-    // administrador existe en CADA empresa cliente. Sin la bandera, el administrador de un
-    // cliente High Ticket vería el consumo de los otros nueve y la pantalla se vería bien.
+    // **Es la primera sección con `soloDesdeLaPrincipal`.** Su capacidad no la da ningún rol de
+    // puesto: la tienen `superadministrador` y un rol propio, `monitoreo`, que se asigna persona
+    // por persona — se pidió que el panel lo vean tres personas de ARIA, y `administrador` es el
+    // mismo rol en cada empresa cliente. La bandera es la red debajo de eso: si alguien le
+    // asignara ese rol a una persona de una empresa cliente —un error de UNA fila— vería el
+    // consumo de sus competidores, y la pantalla se vería perfecta.
     //
     // NO va en `scripts/paridad.mjs`, por el mismo motivo que `tools`: esta pantalla no existe
     // en `aios-command-center_1.html`, así que compararla daría un rojo permanente — y un rojo
