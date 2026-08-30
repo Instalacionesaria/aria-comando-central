@@ -31,6 +31,7 @@ import {
   menuVisible,
   seccionesConAlcance,
 } from '../../lib/autorizacion/secciones.ts';
+import { margen, totales, usd } from '../../lib/monitoreo/panel.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
@@ -243,6 +244,101 @@ test('la ruta lee de a una organización, y NO con una consulta que las cruce', 
       `${archivo} filtra por org_id a mano: el filtro lo pone RLS, no la consulta`,
     );
   }
+});
+
+// ─── La plata: ingreso, costo y margen ──────────────────────────────────────
+//
+// LO QUE ESTAS PRUEBAS PROTEGEN es UNA regla, aplicada en tres lugares: **la ausencia de un dato
+// no se dibuja ni se suma como un cero**. Es la regla más fácil de romper «simplificando», y la
+// que más caro sale: en un tablero de rentabilidad, un cero inventado no se ve como un error — se
+// ve como una conclusión.
+
+test('el margen es `null` si falta CUALQUIERA de los dos lados', () => {
+  // Rellenar el lado que falta con cero da un número con forma de margen que no describe a nadie,
+  // y **siempre en la dirección peligrosa**: sin costo medido, toda empresa se ve rentable.
+  assert.equal(margen({ precioMensual: 1500, costoUsd: null }), null, 'inventó un costo de cero');
+  assert.equal(margen({ precioMensual: null, costoUsd: 12 }), null, 'inventó un ingreso de cero');
+  assert.equal(margen({ precioMensual: null, costoUsd: null }), null);
+  // Y con los dos, resta de verdad. Incluido el cero MEDIDO, que sí es un número.
+  assert.equal(margen({ precioMensual: 1500, costoUsd: 12 }), 1488);
+  assert.equal(margen({ precioMensual: 0, costoUsd: 12 }), -12);
+});
+
+test('los totales ignoran los nulos, y DICEN cuántos ignoraron', () => {
+  // La segunda mitad es la que hace honesto al total: sin `empresasSinPrecio` y `scrapeosSinCosto`,
+  // un total parcial es indistinguible de uno completo — «$1.500» se lee como el ingreso de todas
+  // cuando puede ser el de una de cuatro.
+  const fila = (precioMensual: number | null, costoUsd: number | null, scrapeosSinCosto = 0) => ({
+    orgId: 'x', nombre: 'x', slug: 'x', activa: true, esPrincipal: false, ilegible: false,
+    scrapeos: 0, completados: 0, porFuente: {}, leads: 0, saldo: null,
+    precioMensual, costoUsd, scrapeosSinCosto,
+  });
+
+  const t = totales([fila(1500, 10), fila(null, null, 3), fila(0, 2)]);
+  assert.equal(t.ingreso, 1500, 'el nulo se contó como cero');
+  assert.equal(t.empresasSinPrecio, 1);
+  assert.equal(t.costo, 12);
+  assert.equal(t.scrapeosSinCosto, 3);
+
+  // Y si NADIE tiene el dato, el total es `null` y no `0`. Un cero acá diría «no cuesta nada».
+  const vacio = totales([fila(null, null), fila(null, null)]);
+  assert.equal(vacio.ingreso, null);
+  assert.equal(vacio.costo, null);
+});
+
+test('`usd` no dibuja un nulo como $0, y no redondea los centavos a cero', () => {
+  assert.equal(usd(null), '—');
+  assert.equal(usd(undefined), '—');
+  // Una corrida de Apify cuesta centavos: con dos decimales fijos, TODA la columna de costos sería
+  // `$0.00` — un número que se ve medido y no dice nada.
+  assert.ok(usd(0.0123).includes('0.0123'), 'redondeó el costo de una corrida a cero');
+  // Y el cero MEDIDO sí se dibuja, porque es un hecho.
+  assert.equal(usd(0), '$0.00');
+});
+
+test('el costo NO se estima: sale de Apify o no sale', () => {
+  // La alternativa descartada era una tarifa por lead configurable. Produce un número que se ve
+  // medido y no lo es. Si vuelve, tiene que ser una decisión escrita, no un `const` que apareció.
+  const apify = leer('lib/monitoreo/apify.ts');
+  assert.match(apify, /usageTotalUsd/, 'dejó de leer el costo real de Apify');
+  assert.match(apify, /'sin_token'/, 'sin token tiene que decirlo, no devolver cero');
+
+  const consumo = leer('lib/monitoreo/consumo.ts')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(
+    consumo,
+    /tarifa|porLead|costo_por_lead|COSTO_POR_LEAD/i,
+    'apareció una tarifa por lead: el costo se mide, no se estima',
+  );
+});
+
+test('el relleno de costos sella «se preguntó» aparte de «hay costo»', () => {
+  // Sin `costo_consultado_el`, un trabajo cuyo costo Apify no sabe reportar quedaría con
+  // `costo_usd` nulo para siempre y se volvería a consultar en CADA carga del panel: una llamada
+  // por vez, para siempre, sin avanzar nunca.
+  const costos = leer('lib/monitoreo/costos.ts');
+  assert.match(costos, /costo_consultado_el/);
+
+  // Y los dos casos que NO se sellan, que son los que hacen que esto se repare solo:
+  //   · `sin_token` → sellar marcaría las corridas como consultadas, y el día que el token
+  //     aparezca no se volverían a mirar nunca.
+  //   · `fallo`     → Apify caído es transitorio.
+  const codigo = costos.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(
+    codigo.indexOf("r.tipo === 'sin_token'") < codigo.indexOf('.updateTable('),
+    'el corte por falta de token quedó DESPUÉS de escribir: sellaría corridas que nadie consultó',
+  );
+  assert.match(codigo, /r\.tipo === 'fallo'\) continue/, 'un fallo transitorio se está sellando');
+});
+
+test('sólo se consulta el costo de corridas TERMINADAS', () => {
+  // Preguntarle a Apify por una corrida que sigue andando devuelve el costo PARCIAL, y guardarlo
+  // lo congelaría ahí para siempre: el trabajo seguiría gastando y la columna diría lo que gastó
+  // en el primer minuto.
+  const costos = leer('lib/monitoreo/costos.ts');
+  assert.match(costos, /'COMPLETED', 'FAILED', 'CANCELLED'/);
+  assert.doesNotMatch(costos, /TERMINADOS = \[[^\]]*'RUNNING'/, 'se consultan corridas en curso');
 });
 
 // ─── El catálogo y el reparto ───────────────────────────────────────────────

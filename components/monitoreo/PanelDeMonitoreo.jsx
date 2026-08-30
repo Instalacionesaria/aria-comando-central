@@ -35,7 +35,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { FUENTES, NOMBRE_DE_FUENTE } from '@/lib/monitoreo/fuentes';
-import { aCsv, leerPanel, num, totales } from '@/lib/monitoreo/panel';
+import { aCsv, leerPanel, margen, num, totales, usd } from '@/lib/monitoreo/panel';
 import DetalleDeEmpresa from './DetalleDeEmpresa';
 
 export default function PanelDeMonitoreo() {
@@ -43,6 +43,10 @@ export default function PanelDeMonitoreo() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [medidoEl, setMedidoEl] = useState(null);
+  /* `true` = falta `APIFY_API_TOKEN` en el entorno, así que la columna de costos NO se va a llenar
+     sola nunca. Viaja desde el servidor en vez de deducirse acá: la pantalla no puede distinguir
+     «todavía no se consultó» de «no se puede consultar», y son dos avisos distintos. */
+  const [sinApify, setSinApify] = useState(false);
   /* La empresa abierta, o `null` para la tabla. Se guarda la FILA entera y no sólo el
      identificador: así el detalle puede escribir el nombre en su encabezado desde el primer
      píxel, sin un instante de «Cargando…» donde va el título de lo que acabás de clickear. */
@@ -54,6 +58,7 @@ export default function PanelDeMonitoreo() {
     const r = await leerPanel();
     if (r.tipo === 'datos') {
       setEmpresas(r.empresas);
+      setSinApify(r.sinTokenDeApify);
       /* La hora de la medición, no la de la pantalla. Un tablero sin fecha se lee como «ahora»
          para siempre: la pestaña queda abierta, alguien vuelve a las tres horas y toma una
          decisión sobre números de la mañana. */
@@ -113,6 +118,26 @@ export default function PanelDeMonitoreo() {
           <span className="mon-rotulo">Empresas que scrapean</span>
           <span className="mon-pie">de {num(t.empresas)} dadas de alta</span>
         </div>
+        <div className="mon-tarjeta">
+          <span className="mon-cifra">{usd(t.ingreso)}</span>
+          <span className="mon-rotulo">Ingreso mensual</span>
+          {/* El pie DICE cuántas faltan. Sin eso, «$1.500» se lee como el ingreso total cuando
+              puede ser el de una empresa de cuatro. */}
+          <span className="mon-pie">
+            {t.empresasSinPrecio > 0
+              ? `${num(t.empresasSinPrecio)} sin precio cargado`
+              : 'todas las empresas con precio'}
+          </span>
+        </div>
+        <div className="mon-tarjeta">
+          <span className="mon-cifra">{usd(t.costo)}</span>
+          <span className="mon-rotulo">Costo de Apify</span>
+          <span className="mon-pie">
+            {t.scrapeosSinCosto > 0
+              ? `${num(t.scrapeosSinCosto)} corridas sin medir`
+              : 'todas las corridas medidas'}
+          </span>
+        </div>
         {FUENTES.filter((f) => t.porFuente[f] > 0).map((f) => (
           <div className="mon-tarjeta" key={f}>
             <span className="mon-cifra">{num(t.porFuente[f])}</span>
@@ -133,6 +158,19 @@ export default function PanelDeMonitoreo() {
               ? 'Una empresa no se pudo leer, así que los totales no la incluyen.'
               : `${t.ilegibles} empresas no se pudieron leer, así que los totales no las incluyen.`}{' '}
             Están marcadas abajo.
+          </span>
+        </div>
+      ) : null}
+
+      {/* El costo vacío se EXPLICA. Una columna en blanco en un tablero de gastos se lee como
+          «no nos cuestan nada», y el arreglo acá no es de código: es cargar una variable. */}
+      {sinApify ? (
+        <div className="fd-aviso falta">
+          <i>◍</i>
+          <span>
+            Los costos de Apify están <b>sin medir</b>: falta la variable de entorno{' '}
+            <code>APIFY_API_TOKEN</code> en Vercel (Production). Es la misma cuenta de Apify que usa
+            el backend de scraping. Mientras no esté, la columna «Costo» queda vacía — no en cero.
           </span>
         </div>
       ) : null}
@@ -185,6 +223,9 @@ export default function PanelDeMonitoreo() {
                   ))}
                   <th className="mon-n">Leads</th>
                   <th className="mon-n">Disponibles</th>
+                  <th className="mon-n">Ingreso</th>
+                  <th className="mon-n">Costo</th>
+                  <th className="mon-n">Margen</th>
                 </tr>
               </thead>
               <tbody>
@@ -240,6 +281,27 @@ export default function PanelDeMonitoreo() {
                         <span className="mon-cero">sin monedero</span>
                       )}
                     </td>
+                    {/* Los tres de plata. Cada ausencia se dibuja con SU palabra, no con un cero
+                        ni con un guion genérico: «sin cargar» se arregla en Ajustes → Empresas y
+                        «sin medir» se arregla con el token de Apify. Un guion para las dos
+                        mandaría a buscar al lugar equivocado. */}
+                    <td className="mon-n">
+                      {e.precioMensual === null ? (
+                        <span className="mon-cero">sin cargar</span>
+                      ) : (
+                        usd(e.precioMensual)
+                      )}
+                    </td>
+                    <td className="mon-n">
+                      {e.costoUsd === null ? (
+                        <span className="mon-cero">sin medir</span>
+                      ) : (
+                        usd(e.costoUsd)
+                      )}
+                    </td>
+                    <td className={margen(e) !== null && margen(e) < 0 ? 'mon-n mon-fallo' : 'mon-n'}>
+                      {margen(e) === null ? <span className="mon-cero">—</span> : usd(margen(e))}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -254,6 +316,18 @@ export default function PanelDeMonitoreo() {
                   {/* El saldo NO se suma. Sumar monederos de empresas distintas da un número que
                       no significa nada: nadie puede gastar el saldo de otra. */}
                   <td className="mon-n mon-cero">—</td>
+                  <td className="mon-n">{usd(t.ingreso)}</td>
+                  <td className="mon-n">{usd(t.costo)}</td>
+                  {/* El margen total se calcula sobre los DOS totales, y sale `—` si a alguno le
+                      falta un lado. Restar un total parcial de otro total parcial daría un número
+                      con forma de margen que no describe ninguna empresa. */}
+                  <td className="mon-n">
+                    {t.ingreso === null || t.costo === null ? (
+                      <span className="mon-cero">—</span>
+                    ) : (
+                      usd(t.ingreso - t.costo)
+                    )}
+                  </td>
                 </tr>
               </tfoot>
             </table>

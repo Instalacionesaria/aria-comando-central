@@ -67,6 +67,9 @@ function org(id: string, slug: string, activa = true): OrganizacionListada {
     activa,
     esPrincipal: false,
     tieneCredencialDeCrm: true,
+    // `null` y no un número: el barrido no mira el precio, y una fixture con un valor inventado
+    // haría que una prueba futura sobre el ingreso pasara por el dato falso de este archivo.
+    precioMensual: null,
     usuarios: 1,
     zonaHoraria: 'America/Lima',
     creadaEl: new Date(),

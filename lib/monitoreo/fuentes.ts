@@ -62,6 +62,16 @@ export interface ConsumoDeUnaOrganizacion {
   /** Cuántos leads quedaron guardados en el historial. */
   leads: number;
   /**
+   * Lo que estas corridas gastaron en Apify, en USD. `null` = **no se midió ninguna**.
+   *
+   * `null` y `0` son hechos distintos y no se colapsan: sin token de Apify, o con las corridas
+   * todavía sin consultar, el costo es desconocido — y un cero en una columna de gastos se lee
+   * como «esta empresa no nos cuesta nada», que es la conclusión opuesta a la verdadera.
+   */
+  costoUsd: number | null;
+  /** Cuántas corridas todavía no tienen costo medido. Si es > 0, `costoUsd` es un PARCIAL. */
+  scrapeosSinCosto: number;
+  /**
    * El saldo, o `null` si esta empresa **no tiene monedero**.
    *
    * `null` y cero son dos hechos distintos: sin fila, esta organización nunca fue provisionada
@@ -78,6 +88,13 @@ export interface FilaDelPanel extends ConsumoDeUnaOrganizacion {
   slug: string;
   activa: boolean;
   esPrincipal: boolean;
+  /**
+   * Cuánto paga esta empresa por mes, en USD. `null` = **nadie lo cargó** (no «no paga»).
+   *
+   * Se carga a mano en Ajustes → Empresas: no hay tabla de facturación en este sistema, y el panel
+   * de ARIA-brain ya tenía anotado ese hueco como su deuda más cara.
+   */
+  precioMensual: number | null;
   /**
    * `true` = **no se pudo leer el consumo de esta empresa**, y los ceros de la fila no son
    * ceros: son la ausencia de un dato.

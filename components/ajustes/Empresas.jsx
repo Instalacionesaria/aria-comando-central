@@ -99,6 +99,9 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const [editando, setEditando] = useState(null);
   const [edNombre, setEdNombre] = useState('');
   const [edZona, setEdZona] = useState('UTC');
+  /* El precio como TEXTO y no como número: la cadena vacía es un estado que hay que poder
+     representar —«sin cargar»— y `0` no sirve para eso. Se convierte al mandar. */
+  const [edPrecio, setEdPrecio] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [confirmaBorrado, setConfirmaBorrado] = useState(false);
 
@@ -189,6 +192,10 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
        proponer otra cosa que lo guardado haría que abrir y guardar sin tocar nada cambiara la
        zona de la empresa — un efecto que nadie pidió y que nada mostraría. */
     setEdZona(o.zonaHoraria ?? 'UTC');
+    /* Cadena vacía = «sin cargar», que es lo que la base guarda como `null`. Se propone `''` y no
+       `'0'`: proponer un cero convertiría «nadie lo definió» en «no paga» con sólo abrir y
+       guardar, y son dos hechos distintos que el Panel de Monitoreo dibuja distinto. */
+    setEdPrecio(o.precioMensual === null || o.precioMensual === undefined ? '' : String(o.precioMensual));
   };
   const cerrarEdicion = () => {
     setEditando(null);
@@ -201,7 +208,14 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setAviso(null);
     const r = await pedir(`/api/admin/organizaciones/${editando.id}`, {
       metodo: 'PATCH',
-      cuerpo: { nombre: edNombre.trim(), zonaHoraria: edZona },
+      cuerpo: {
+        nombre: edNombre.trim(),
+        zonaHoraria: edZona,
+        /* El campo vacío se manda como `null` EXPLÍCITO, no se omite: omitirlo significa «no lo
+           toques», así que borrar el precio sería imposible desde esta pantalla. Ver el endpoint,
+           que distingue las dos cosas con `Object.hasOwn`. */
+        precioMensual: edPrecio.trim() === '' ? null : Number(edPrecio),
+      },
     });
     setOcupado(false);
     if (r.tipo !== 'datos') {
@@ -211,7 +225,7 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
     setAviso({ mal: false, texto: `Se guardó «${edNombre.trim()}».` });
     cerrarEdicion();
     await recargar();
-  }, [editando, edNombre, edZona, recargar]);
+  }, [editando, edNombre, edZona, edPrecio, recargar]);
 
   /** Activar, desactivar o borrar la empresa abierta. */
   const accion = useCallback(
@@ -473,6 +487,27 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
             <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
               Decide qué es «hoy» y a qué hora se muestra cada cita de la agenda. Si queda mal, las
               citas de la tarde aparecen un día corridas — y nada lo avisa.
+            </div>
+          </div>
+
+          <div className="fd-campo">
+            <label htmlFor="ed-emp-precio">Precio mensual (USD)</label>
+            <input
+              id="ed-emp-precio"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Sin cargar"
+              value={edPrecio}
+              onChange={(e) => setEdPrecio(e.target.value)}
+            />
+            {/* SE DICE LA CONSECUENCIA. Vacío y cero no son lo mismo, y la diferencia decide qué
+                muestra el Panel de Monitoreo: un total que contara los vacíos como cero afirmaría
+                un ingreso medido sobre empresas que nadie miró. */}
+            <div className="aj-ayuda" style={{ margin: '4px 0 0' }}>
+              Lo que esta empresa te paga por mes. Déjalo <b>vacío</b> si todavía no lo definiste y
+              pon <b>0</b> si no paga: en el Panel de Monitoreo el vacío no suma al total y el cero
+              sí. Va en dólares — el costo de Apify también, y el margen es la resta de los dos.
             </div>
           </div>
 

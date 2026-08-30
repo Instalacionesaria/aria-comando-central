@@ -42,6 +42,18 @@ export interface OrganizacionListada {
    * empresa de a una. Ver `lib/negocio/zonas.ts`.
    */
   zonaHoraria: string;
+  /**
+   * Cuánto paga esta empresa por mes, en USD. `null` = **nadie lo cargó**.
+   *
+   * No se colapsa con cero, y es la distinción entera: `0` es un hecho medido —esta empresa no
+   * paga, y hay casos legítimos: una cuenta de prueba, un canje, la propia ARIA— mientras que
+   * `null` es la ausencia de un dato que alguien tiene que ir a cargar. El Panel de Monitoreo los
+   * dibuja distinto y **sólo suma el segundo**: un total que contara los nulos como cero afirmaría
+   * un ingreso medido sobre empresas que nadie miró.
+   *
+   * Viaja como texto porque `numeric` viaja como texto en `pg`. Ver `TablaOrganizaciones`.
+   */
+  precioMensual: string | null;
   /** Cuántos usuarios tiene. Una empresa sin usuarios es una empresa a la que nadie puede entrar. */
   usuarios: number;
   creadaEl: Date;
@@ -89,6 +101,7 @@ export async function listarOrganizaciones(db: Trx): Promise<OrganizacionListada
       'o.es_principal',
       'o.creada_el',
       'o.zona_horaria',
+      'o.precio_mensual',
       // `is not null`, no el valor. Ver el comentario de `tieneCredencialDeCrm`.
       eb('c.crm_token_cifrado', 'is not', null).as('tiene_credencial'),
       eb
@@ -112,6 +125,7 @@ export async function listarOrganizaciones(db: Trx): Promise<OrganizacionListada
     tieneCredencialDeCrm: Boolean(f.tiene_credencial),
     usuarios: Number(f.usuarios ?? 0),
     zonaHoraria: f.zona_horaria,
+    precioMensual: f.precio_mensual,
     creadaEl: f.creada_el,
   }));
 }

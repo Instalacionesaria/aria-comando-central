@@ -65,8 +65,8 @@ export async function consumoDeLaOrganizacion(): Promise<ConsumoDeUnaOrganizacio
    * Con tres transacciones sueltas, un trabajo que termina en el medio dejaría el conteo de
    * trabajos y el de leads describiendo instantes distintos. */
   const [porFuente, leads, monedero] = await Promise.all([
-    // Un `group by` que trae las dos cuentas de una vez. Contar dos veces —una por total y otra
-    // por completados— duplicaría el recorrido para responder sobre las mismas filas.
+    // Un `group by` que trae las cuentas y el costo de una vez. Contar tres veces —total,
+    // completados, costo— duplicaría el recorrido para responder sobre las mismas filas.
     db
       .selectFrom('public.aria_cc_scraper_trabajos')
       .select(({ fn, eb }) => [
@@ -76,6 +76,17 @@ export async function consumoDeLaOrganizacion(): Promise<ConsumoDeUnaOrganizacio
           .count<string>('id')
           .filterWhere(eb('status', '=', 'COMPLETED'))
           .as('completados'),
+        // El costo de Apify. `sum` sobre una columna con nulos los IGNORA —no los cuenta como
+        // cero— que es exactamente lo que hace falta: un trabajo sin costo medido no baja el
+        // promedio ni ensucia el total, simplemente no está.
+        fn.sum<string | null>('costo_usd').as('costo'),
+        // Y cuántos quedan sin medir, que es lo que convierte ese total en un número honesto:
+        // sin esta cuenta, «USD 0.42» se lee como el costo de la empresa cuando puede ser el de
+        // una corrida de doce.
+        fn
+          .count<string>('id')
+          .filterWhere('costo_usd', 'is', null)
+          .as('sin_costo'),
       ])
       .groupBy('fuente')
       .execute(),
@@ -107,10 +118,20 @@ export async function consumoDeLaOrganizacion(): Promise<ConsumoDeUnaOrganizacio
   const cuentas: Record<string, number> = Object.fromEntries(FUENTES.map((f) => [f, 0]));
   let scrapeos = 0;
   let completados = 0;
+  let costo = 0;
+  let sinCosto = 0;
+  let huboCosto = false;
   for (const fila of porFuente) {
     const n = Number(fila.total);
     scrapeos += n;
     completados += Number(fila.completados);
+    sinCosto += Number(fila.sin_costo);
+    // `null` = ninguna fila de este grupo tenía costo. Se distingue de `0` para poder devolver
+    // `costo: null` —«no se midió nada»— en vez de `0`, que sería «esta empresa no gastó».
+    if (fila.costo !== null && fila.costo !== undefined) {
+      costo += Number(fila.costo);
+      huboCosto = true;
+    }
     // Una fuente que el `check` no contempla no puede existir hoy, pero si el `check` cambiara
     // antes que esta lista, sumarla al total y no a ninguna columna dejaría una tabla cuyas
     // columnas no suman el total — sin ningún error. Se agrega la clave y se ve.
@@ -121,6 +142,10 @@ export async function consumoDeLaOrganizacion(): Promise<ConsumoDeUnaOrganizacio
     scrapeos,
     completados,
     porFuente: cuentas,
+    // `null` cuando ninguna corrida tiene costo medido. Es la misma regla que el saldo y que el
+    // precio: la ausencia de un dato no se dibuja como un cero medido.
+    costoUsd: huboCosto ? costo : null,
+    scrapeosSinCosto: sinCosto,
     leads: Number(leads?.n ?? 0),
     saldo: monedero
       ? {

@@ -49,6 +49,10 @@ const MOTIVOS = {
   sin_cambios: 'No se mandó ningún campo para cambiar.',
   falta_nombre: 'La empresa necesita un nombre.',
   activa_invalida: 'El campo «activa» tiene que ser verdadero o falso.',
+  precio_invalido:
+    'El precio mensual tiene que ser un número mayor o igual a cero, o `null` para dejarlo sin ' +
+    'cargar. No es lo mismo: `0` significa que esta empresa no paga, y `null` que todavía nadie lo ' +
+    'definió — el Panel de Monitoreo los muestra distinto y sólo suma el primero.',
   zona_invalida:
     'Esa no es una zona horaria de la lista. Se elige del selector; escribirla a mano no sirve ' +
     'porque el motor de fechas solo conoce los nombres del catálogo.',
@@ -76,7 +80,12 @@ export async function PATCH(
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { nombre?: unknown; activa?: unknown; zonaHoraria?: unknown } | null;
+  const c = cuerpo as {
+    nombre?: unknown;
+    activa?: unknown;
+    zonaHoraria?: unknown;
+    precioMensual?: unknown;
+  } | null;
   const nombre = c?.nombre;
   const activa = c?.activa;
 
@@ -107,7 +116,27 @@ export async function PATCH(
     return rechazo('peticion_invalida', MOTIVOS['zona_invalida']);
   }
 
-  if (nombre === undefined && activa === undefined && zonaHoraria === undefined) {
+  /* ── EL PRECIO MENSUAL, y `null` es un valor y no una ausencia ───────────────
+   *
+   * Es el ÚNICO campo de este endpoint donde `null` significa algo: «borrá el precio, volvé a
+   * “sin cargar”». Por eso se distingue de `undefined` —«no lo toques»— con `Object.hasOwn`, que
+   * es la forma que ya usan `PUT /api/admin/credenciales` y `PUT /api/admin/comisiones` para lo
+   * mismo.
+   *
+   * Sin esa distinción no habría manera de volver de «0 a propósito» a «nadie lo definió», que son
+   * dos hechos distintos: el Panel de Monitoreo suma el primero y no el segundo.
+   */
+  const tocaPrecio = c !== null && Object.hasOwn(c, 'precioMensual');
+  const precio = c?.precioMensual;
+  if (
+    tocaPrecio &&
+    precio !== null &&
+    !(typeof precio === 'number' && Number.isFinite(precio) && precio >= 0)
+  ) {
+    return rechazo('peticion_invalida', MOTIVOS['precio_invalido']);
+  }
+
+  if (nombre === undefined && activa === undefined && zonaHoraria === undefined && !tocaPrecio) {
     return rechazo('peticion_invalida', MOTIVOS['sin_cambios']);
   }
 
@@ -120,6 +149,13 @@ export async function PATCH(
           ...(typeof nombre === 'string' ? { nombre: nombre.trim() } : {}),
           ...(typeof activa === 'boolean' ? { activa } : {}),
           ...(typeof zonaHoraria === 'string' ? { zona_horaria: zonaHoraria.trim() } : {}),
+          /* Se guarda como TEXTO. `numeric` viaja como texto en `pg`, y pasar el número tal cual
+             lo haría atravesar un `double` justo con el dato que no lo tolera: 49.99 no existe en
+             coma flotante binaria, y el total de veinte empresas termina con colas de centavos
+             que nadie puede explicar. */
+          ...(tocaPrecio
+            ? { precio_mensual: precio === null ? null : String(precio) }
+            : {}),
         })
         .where('id', '=', id)
         .executeTakeFirst();

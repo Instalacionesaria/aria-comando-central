@@ -64,9 +64,23 @@ import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { esDeLaPrincipal } from '../../../lib/autorizacion/secciones.ts';
 import { listarOrganizaciones } from '../../../lib/administracion/organizaciones.ts';
 import { consumoDeLaOrganizacion } from '../../../lib/monitoreo/consumo.ts';
+import { rellenarCostos } from '../../../lib/monitoreo/costos.ts';
 import type { ConsumoDeUnaOrganizacion, FilaDelPanel } from '../../../lib/monitoreo/fuentes.ts';
 
 export const PANTALLA = 'monitoreo';
+
+/**
+ * Cuánto puede tardar esta ruta.
+ *
+ * El caso normal son décimas de segundo: cuatro consultas a la base por empresa, en tandas. Lo que
+ * lo estira es el relleno de costos de Apify —hasta `POR_CARGA` consultas de `ESPERA_MS` cada una—
+ * y **sólo mientras haya costos sin llenar**: el resultado se guarda, así que la carga siguiente ya
+ * no consulta nada.
+ *
+ * 60 y no 300: si esto tarda un minuto, algo está mal y es mejor que falle a que quede colgado
+ * cinco. Va en la ruta y no en `vercel.json`, que es donde el proyecto lo declara siempre.
+ */
+export const maxDuration = 60;
 
 /**
  * Cuántas organizaciones se consultan a la vez.
@@ -92,6 +106,8 @@ const SIN_LEER: ConsumoDeUnaOrganizacion = {
   scrapeos: 0,
   completados: 0,
   porFuente: {},
+  costoUsd: null,
+  scrapeosSinCosto: 0,
   leads: 0,
   saldo: null,
 };
@@ -121,6 +137,18 @@ export async function GET(peticion: Request): Promise<Response> {
   // cuenta ni las muestra vacías.
   const organizaciones = await conIdentidad(async (db) => listarOrganizaciones(db));
 
+  /* ── LOS COSTOS DE APIFY, ANTES DE CONTAR ──────────────────────────────────
+   *
+   * Va acá y no después de leer el consumo por un motivo de una sola línea: si corriera después,
+   * los costos que acaba de averiguar no estarían en los números de ESTA carga y aparecerían recién
+   * en la siguiente. La tabla diría «sin medir» sobre datos que ya tiene guardados.
+   *
+   * Está acotado a `POR_CARGA` corridas y **nunca lanza**: es trabajo accesorio, y si Apify se cae
+   * la tabla tiene que salir igual. Lo que no hace es disimularlo — `sinToken` viaja a la pantalla.
+   * El razonamiento completo (por qué no es una tarea del cron, y por qué no es un botón) está en
+   * `lib/monitoreo/costos.ts`. */
+  const costos = await rellenarCostos(organizaciones.map((o) => o.id));
+
   /* ── EL BUCLE, EN TANDAS ────────────────────────────────────────────────────
    *
    * Cada vuelta abre el contexto de UNA organización, o sea que cada lectura pasa por la misma
@@ -143,6 +171,9 @@ export async function GET(peticion: Request): Promise<Response> {
           slug: o.slug,
           activa: o.activa,
           esPrincipal: o.esPrincipal,
+          // `numeric` viaja como texto desde `pg`. Se convierte UNA vez, acá, en vez de dejar que
+          // cada lector de la pantalla decida si suma cadenas o números.
+          precioMensual: o.precioMensual === null ? null : Number(o.precioMensual),
         };
         try {
           const consumo = await conOrganizacion(o.id, () => consumoDeLaOrganizacion());
@@ -161,5 +192,8 @@ export async function GET(peticion: Request): Promise<Response> {
      lugar entre dos recargas. */
   filas.sort((a, b) => b.scrapeos - a.scrapeos || a.nombre.localeCompare(b.nombre, 'es'));
 
-  return ok({ empresas: filas });
+  /* `sinTokenDeApify` viaja a la pantalla en vez de quedarse en un `console.error`. Es la
+     diferencia entre una columna vacía que se lee como «no gastaron nada» y una que dice por qué
+     está vacía — y el arreglo es de configuración, no de código: cargar `APIFY_API_TOKEN`. */
+  return ok({ empresas: filas, sinTokenDeApify: costos.sinToken });
 }

@@ -12,13 +12,19 @@ import {
 const RUTA = '/api/monitoreo';
 
 export type ResultadoDelPanel =
-  | { tipo: 'datos'; empresas: readonly FilaDelPanel[] }
+  | { tipo: 'datos'; empresas: readonly FilaDelPanel[]; sinTokenDeApify: boolean }
   | { tipo: 'fallo'; mensaje: string };
 
 /** La foto entera: todas las empresas con su consumo. */
 export async function leerPanel(): Promise<ResultadoDelPanel> {
-  const r = await pedir<{ empresas: FilaDelPanel[] }>(RUTA);
-  if (r.tipo === 'datos') return { tipo: 'datos', empresas: r.datos.empresas };
+  const r = await pedir<{ empresas: FilaDelPanel[]; sinTokenDeApify: boolean }>(RUTA);
+  if (r.tipo === 'datos') {
+    return {
+      tipo: 'datos',
+      empresas: r.datos.empresas,
+      sinTokenDeApify: r.datos.sinTokenDeApify === true,
+    };
+  }
   if (r.tipo === 'rechazado') {
     return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo leer el Panel de Monitoreo.' };
   }
@@ -35,8 +41,26 @@ export function totales(empresas: readonly FilaDelPanel[]) {
     leads += e.leads;
     for (const f of FUENTES) porFuente[f] = (porFuente[f] ?? 0) + (e.porFuente[f] ?? 0);
   }
+  /* ── LOS TRES NÚMEROS DE PLATA, Y LO QUE CADA `null` PROTEGE ───────────────
+   *
+   * Los tres se suman IGNORANDO los nulos, y cada uno tiene una razón distinta para hacerlo:
+   *
+   *   · `ingreso` — un `null` es «nadie cargó el precio de esta empresa». Contarlo como cero
+   *     afirmaría un ingreso medido sobre empresas que nadie miró, y el número se vería bien.
+   *   · `costo`   — un `null` es «no se midió» (falta el token de Apify, o la corrida todavía no
+   *     se consultó). Cero significaría «no nos costó nada», que es la conclusión opuesta.
+   *
+   * Y por eso viajan además `empresasSinPrecio` y `scrapeosSinCosto`: sin ellos, un total parcial
+   * es indistinguible de un total completo. */
+  const conPrecio = empresas.filter((e) => e.precioMensual !== null);
+  const conCosto = empresas.filter((e) => e.costoUsd !== null);
+
   return {
     empresas: empresas.length,
+    ingreso: conPrecio.length > 0 ? conPrecio.reduce((s, e) => s + (e.precioMensual ?? 0), 0) : null,
+    empresasSinPrecio: empresas.length - conPrecio.length,
+    costo: conCosto.length > 0 ? conCosto.reduce((s, e) => s + (e.costoUsd ?? 0), 0) : null,
+    scrapeosSinCosto: empresas.reduce((s, e) => s + e.scrapeosSinCosto, 0),
     /* Las que scrapearon alguna vez. Es el número que dice si la herramienta se está usando —
        «diez empresas» y «tres empresas que scrapearon» son dos hechos distintos, y el segundo es
        el que hace falta para decidir a quién llamar. */
@@ -53,6 +77,31 @@ export function totales(empresas: readonly FilaDelPanel[]) {
 /** Un número como se lee en Perú, o un guion cuando no hay dato. */
 export function num(n: number | null | undefined): string {
   return typeof n === 'number' ? n.toLocaleString('es-PE') : '—';
+}
+
+/**
+ * Un monto en dólares. `null` **no** se dibuja como `$0`.
+ *
+ * Dos decimales para los precios y hasta cuatro para los costos: una corrida de Apify cuesta
+ * centavos, y con dos decimales toda la columna de costos sería `$0.00` — un número que se ve
+ * medido y no dice nada. `maximumFractionDigits` mayor que `minimumFractionDigits` deja que cada
+ * valor use lo que necesita.
+ */
+export function usd(n: number | null | undefined): string {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
+  return `$${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+}
+
+/**
+ * El margen de una empresa: lo que paga menos lo que cuesta.
+ *
+ * `null` si falta CUALQUIERA de los dos, y no se rellena con cero el que falte. Una resta con un
+ * lado inventado no es un margen parcial: es un número equivocado con forma de margen — y en la
+ * dirección peligrosa, porque sin costo medido toda empresa se vería rentable.
+ */
+export function margen(fila: { precioMensual: number | null; costoUsd: number | null }): number | null {
+  if (fila.precioMensual === null || fila.costoUsd === null) return null;
+  return fila.precioMensual - fila.costoUsd;
 }
 
 /**
@@ -77,6 +126,10 @@ export function aCsv(empresas: readonly FilaDelPanel[]): string {
     ...FUENTES.map((f) => NOMBRE_DE_FUENTE[f] ?? f),
     'Leads guardados',
     'Leads disponibles',
+    'Ingreso mensual USD',
+    'Costo Apify USD',
+    'Corridas sin costo medido',
+    'Margen USD',
   ];
   const cuerpo = empresas.map((e) => {
     const dato = (n: number | null) => escapar(e.ilegible ? 'sin leer' : (n ?? '—'));
@@ -89,6 +142,13 @@ export function aCsv(empresas: readonly FilaDelPanel[]): string {
       ...FUENTES.map((f) => dato(e.porFuente[f] ?? 0)),
       dato(e.leads),
       dato(e.saldo?.disponibles ?? null),
+      /* «sin cargar» y «sin medir» en vez de vacío o cero. Un CSV es justo donde el cero
+         silencioso hace más daño: se abre en una hoja de cálculo, se suma, y el total afirma algo
+         que nadie midió. */
+      escapar(e.ilegible ? 'sin leer' : e.precioMensual === null ? 'sin cargar' : e.precioMensual),
+      escapar(e.ilegible ? 'sin leer' : e.costoUsd === null ? 'sin medir' : e.costoUsd),
+      dato(e.scrapeosSinCosto),
+      escapar(e.ilegible ? 'sin leer' : (margen(e) ?? 'sin dato')),
     ].join(',');
   });
   return [cabecera.map(escapar).join(','), ...cuerpo].join('\n');

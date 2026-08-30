@@ -18,6 +18,17 @@ export interface TablaOrganizaciones {
   activa: Generated<boolean>;
   es_principal: Generated<boolean>;
   zona_horaria: Generated<string>;
+  /**
+   * Cuánto paga esta empresa por mes, en USD. Migración 024.
+   *
+   * `string | null` y no `number`: `numeric` viaja como texto en `pg`, y convertirlo acá sería
+   * pasar por un `double` justo con el dato que no lo tolera. Es la misma forma que
+   * `TablaResultados.monto`.
+   *
+   * **`null` no es cero.** `null` = nadie lo cargó; `0` = esta empresa no paga, que es un hecho
+   * legítimo. El panel los dibuja distinto y sólo suma el segundo.
+   */
+  precio_mensual: string | null;
   creada_el: Generated<Date>;
   actualizada_el: Generated<Date>;
 }
@@ -620,6 +631,27 @@ export interface TablaScraperTrabajos {
   max_leads: number | null;
   /** El texto del fallo, tal como lo dio Apify o el backend. Sin él, un `FAILED` no dice por qué. */
   error_message: string | null;
+  /**
+   * El identificador de la corrida en Apify. Lo escribe el backend de Python al lanzar el actor.
+   *
+   * Es lo único que ata un cargo de la factura de Apify a un trabajo nuestro, y por eso es la
+   * llave con la que se pregunta el costo.
+   */
+  apify_actor_run_id: string | null;
+  /**
+   * Lo que esta corrida gastó, tal como lo reporta Apify (`usageTotalUsd`). Migración 010.
+   *
+   * `string | null` por lo mismo que `precio_mensual`: `numeric` viaja como texto.
+   */
+  costo_usd: string | null;
+  /**
+   * Cuándo se le preguntó a Apify por esta corrida.
+   *
+   * Existe para separar **«nunca se preguntó»** de **«se preguntó y no había dato»**. Sin ella, un
+   * trabajo cuyo costo Apify no sabe reportar —una corrida borrada, un identificador viejo— se
+   * volvería a consultar en cada carga del panel, gastando una llamada por vez y sin avanzar nunca.
+   */
+  costo_consultado_el: Date | null;
   created_at: Generated<Date>;
 }
 
