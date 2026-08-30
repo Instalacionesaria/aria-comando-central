@@ -1060,6 +1060,83 @@
   margin-left: auto;
 }
 
+/* ── El color de la tabla de leads ──────────────────────────────────────────
+   Estaba todo del mismo gris: fuente, nombre, teléfono, correo y web pesaban igual, y para
+   saber de dónde salía un lead había que LEER la fila. La jerarquía de abajo es por lo que
+   sirve cada columna, no por decorar:
+
+     · la FUENTE es una pastilla de color — se lee de un vistazo, sin leer;
+     · el NOMBRE manda, es lo que identifica al negocio;
+     · el CORREO va en verde porque es la columna accionable: es con lo que se hace outreach;
+     · el TELÉFONO va monoespaciado y con cifras de ancho fijo, así las columnas de dígitos
+       se alinean y se comparan de un vistazo;
+     · ubicación, categoría y fecha se apagan: son contexto, no acción.
+
+   Todo con tokens de la paleta. El tema claro los redefine, así que esto se adapta solo. */
+
+/* La pastilla toma su color de `--c-f`, que fija cada modificador. Un solo bloque de reglas
+   para las cuatro fuentes en vez de cuatro copias. */
+.lead-fuente {
+  --c-f: var(--c-nube);
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  color: rgb(var(--c-f));
+  background: rgb(var(--c-f) / 0.12);
+  border: 1px solid rgb(var(--c-f) / 0.26);
+}
+.lead-fuente.maps { --c-f: var(--c-ok); }
+.lead-fuente.linkedin { --c-f: var(--c-nube); }
+.lead-fuente.facebook { --c-f: var(--c-dev); }
+.lead-fuente.espia { --c-f: var(--c-violeta); }
+
+.leads-tabla .lead-nombre {
+  color: var(--txt);
+  font-weight: 600;
+}
+/* Verde, igual que en la tabla del scraper: el correo es lo que convierte un lead en un
+   contacto, y merece el mismo color en las dos pantallas. */
+.leads-tabla .lead-email {
+  color: var(--ok);
+}
+.leads-tabla .lead-tel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--txt);
+}
+.leads-tabla .lead-enlace a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.leads-tabla .lead-enlace a:hover {
+  text-decoration: underline;
+}
+.leads-tabla .lead-fecha {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--txt-faint);
+  white-space: nowrap;
+}
+.leads-tabla .lead-vacio {
+  color: var(--txt-faint);
+}
+/* Las columnas de contexto, apagadas. Se nombran por posición porque no llevan clase propia:
+   son las que quedan. */
+.leads-tabla tbody td {
+  color: var(--txt-dim);
+}
+/* La fila bajo el cursor. Es lo que permite seguir una fila larga con la vista sin perder el
+   renglón — y esta tabla tiene ocho columnas y scroll horizontal. */
+.leads-tabla tbody tr:hover td {
+  background: rgb(var(--c-nube) / 0.04);
+}
+
 .leads-vacio {
   padding: 22px 14px;
   margin: 0;

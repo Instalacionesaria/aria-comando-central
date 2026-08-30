@@ -55,6 +55,34 @@ const ESPERA_DE_TECLEO_MS = 350;
 /** Las columnas que se pintan como enlace y no como texto. */
 const ES_ENLACE = new Set(['website']);
 
+/**
+ * El color de la pastilla de cada fuente.
+ *
+ * Un color por origen y no uno solo, porque la columna se lee de un vistazo: con todo del mismo
+ * gris hay que LEER cada fila para saber de dónde salió el lead. Las dos variantes de Facebook
+ * comparten color a propósito — para quien mira la tabla son "Facebook", y distinguirlas por
+ * tono sería una diferencia sin consecuencia.
+ *
+ * Son tokens de la paleta y no colores escritos: el tema claro los redefine, así que la tabla
+ * se adapta sola.
+ */
+const COLOR_DE_FUENTE = {
+  maps: 'maps',
+  linkedin: 'linkedin',
+  facebook: 'facebook',
+  'facebook-ads': 'facebook',
+  'facebook-pages': 'facebook',
+  'ad-spy': 'espia',
+};
+
+/** Las columnas que llevan tratamiento propio: el correo se destaca, el teléfono va monoespaciado. */
+const CLASE_DE_COLUMNA = {
+  name: 'lead-nombre',
+  email: 'lead-email',
+  phone: 'lead-tel',
+  website: 'lead-enlace',
+};
+
 export default function MisLeads() {
   const [pagina, setPagina] = useState(1);
   const [fuente, setFuente] = useState('');
@@ -187,19 +215,33 @@ export default function MisLeads() {
               <tbody>
                 {filas.map((lead) => (
                   <tr key={lead.id}>
-                    <td>{NOMBRE_DE_FUENTE[lead.source] ?? lead.source}</td>
-                    {COLUMNAS.map((c) => (
-                      <td key={c.clave}>
-                        {ES_ENLACE.has(c.clave) && lead[c.clave] ? (
-                          <a href={lead[c.clave]} target="_blank" rel="noopener noreferrer">
-                            {lead[c.clave]}
-                          </a>
-                        ) : (
-                          lead[c.clave] || '—'
-                        )}
-                      </td>
-                    ))}
-                    <td>{new Date(lead.created_at).toLocaleDateString('es-PE')}</td>
+                    <td>
+                      <span className={`lead-fuente ${COLOR_DE_FUENTE[lead.source] ?? ''}`}>
+                        {NOMBRE_DE_FUENTE[lead.source] ?? lead.source}
+                      </span>
+                    </td>
+                    {COLUMNAS.map((c) => {
+                      const valor = lead[c.clave];
+                      return (
+                        <td key={c.clave} className={valor ? CLASE_DE_COLUMNA[c.clave] : 'lead-vacio'}>
+                          {!valor ? (
+                            '—'
+                          ) : ES_ENLACE.has(c.clave) ? (
+                            <a href={valor} target="_blank" rel="noopener noreferrer">
+                              {/* Sin el esquema la columna se lee mejor y el enlace sigue yendo
+                                  al mismo lado: `https://` ocupa ocho caracteres en cada fila y
+                                  no distingue una de otra. */}
+                              {String(valor).replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                            </a>
+                          ) : (
+                            valor
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="lead-fecha">
+                      {new Date(lead.created_at).toLocaleDateString('es-PE')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
