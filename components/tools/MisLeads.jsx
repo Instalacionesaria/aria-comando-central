@@ -28,14 +28,29 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { COLUMNAS, NOMBRE_DE_FUENTE, aCsv, leerLeads } from '@/lib/tools/leads';
 
-/** Las fuentes que se pueden filtrar. El valor vacío es "todas". */
+/**
+ * Las fuentes, como BOTONES y no como desplegable.
+ *
+ * Un `select` esconde las opciones hasta que lo abrís: no se ve que hay filtros ni cuáles son.
+ * Con cinco opciones fijas, los botones dicen de un vistazo qué se puede filtrar y cuál está
+ * puesto — que es como estaba en el hub, y por eso Kevin lo pidió así.
+ */
 const FILTROS = [
-  { valor: '', etiqueta: 'Todas las fuentes' },
-  { valor: 'maps', etiqueta: 'Google Maps' },
+  { valor: '', etiqueta: 'Todos' },
+  { valor: 'maps', etiqueta: 'Maps' },
   { valor: 'linkedin', etiqueta: 'LinkedIn' },
   { valor: 'facebook', etiqueta: 'Facebook' },
-  { valor: 'ad-spy', etiqueta: 'Espía de Anuncios' },
+  { valor: 'ad-spy', etiqueta: 'Espía' },
 ];
+
+/**
+ * Lo que se espera desde la última tecla antes de consultar.
+ *
+ * Sin esta pausa, escribir "clínica" son SIETE consultas contra la base, seis de las cuales ya
+ * no le importan a nadie cuando llegan — y encima pueden volver desordenadas y pintar el
+ * resultado de "clín" encima del de "clínica".
+ */
+const ESPERA_DE_TECLEO_MS = 350;
 
 /** Las columnas que se pintan como enlace y no como texto. */
 const ES_ENLACE = new Set(['website']);
@@ -43,15 +58,31 @@ const ES_ENLACE = new Set(['website']);
 export default function MisLeads() {
   const [pagina, setPagina] = useState(1);
   const [fuente, setFuente] = useState('');
+  /* Dos estados para el buscador, no uno: `texto` es lo que se ve en el campo y cambia con
+     cada tecla; `busqueda` es lo que se consultó y sólo cambia cuando pasó la pausa. Con uno
+     solo, o el campo escribe a tirones o se consulta por cada letra. */
+  const [texto, setTexto] = useState('');
+  const [busqueda, setBusqueda] = useState('');
   const [filas, setFilas] = useState([]);
   const [hayMas, setHayMas] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  /* El reloj de la pausa. Al teclear de nuevo —o al desmontar— se cancela el anterior: sin el
+     `clearTimeout`, cerrar la pestaña con una búsqueda a medias dejaría un `setState` sobre un
+     componente que ya no existe. */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setBusqueda(texto.trim());
+      setPagina(1); // buscar desde la página 3 mostraría un vacío que parece "no hay resultados"
+    }, ESPERA_DE_TECLEO_MS);
+    return () => clearTimeout(t);
+  }, [texto]);
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError('');
-    const r = await leerLeads(pagina, fuente);
+    const r = await leerLeads(pagina, fuente, busqueda);
     if (r.tipo === 'datos') {
       setFilas(r.pagina.filas);
       setHayMas(r.pagina.hayMas);
@@ -61,7 +92,7 @@ export default function MisLeads() {
       setHayMas(false);
     }
     setCargando(false);
-  }, [pagina, fuente]);
+  }, [pagina, fuente, busqueda]);
 
   useEffect(() => {
     cargar();
@@ -87,24 +118,40 @@ export default function MisLeads() {
 
   return (
     <div className="leads-bloque">
-      <div className="leads-cabeza">
-        <span>Mis Leads</span>
-        <div className="leads-acciones">
-          <select
-            aria-label="Filtrar por fuente"
-            value={fuente}
-            onChange={(e) => alCambiarFuente(e.target.value)}
-          >
-            {FILTROS.map((f) => (
-              <option key={f.valor} value={f.valor}>{f.etiqueta}</option>
-            ))}
-          </select>
-          {filas.length > 0 ? (
-            <button type="button" className="fd-btn-menor" onClick={descargar}>
-              Descargar esta página (CSV)
+      <div className="leads-barra">
+        <div className="leads-filtros" role="group" aria-label="Filtrar por fuente">
+          {FILTROS.map((f) => (
+            <button
+              key={f.valor}
+              type="button"
+              aria-pressed={f.valor === fuente}
+              className={f.valor === fuente ? 'on' : ''}
+              onClick={() => alCambiarFuente(f.valor)}
+            >
+              {f.etiqueta}
             </button>
-          ) : null}
+          ))}
         </div>
+
+        <input
+          type="search"
+          className="leads-buscar"
+          placeholder="Buscar por nombre o email…"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          aria-label="Buscar por nombre o email"
+        />
+
+        {/* Se DESACTIVA en vez de esconderse: un botón que aparece y desaparece según los
+            resultados hace saltar la fila entera y cuesta volver a encontrarlo. */}
+        <button
+          type="button"
+          className="fd-btn-menor leads-csv"
+          disabled={filas.length === 0}
+          onClick={descargar}
+        >
+          Descargar CSV
+        </button>
       </div>
 
       {error ? (
@@ -118,9 +165,11 @@ export default function MisLeads() {
 
       {!cargando && !error && filas.length === 0 ? (
         <p className="leads-vacio">
-          {fuente
-            ? 'No hay leads de esa fuente todavía.'
-            : 'Todavía no scrapeaste ningún lead. Los que extraigas arriba van a quedar acá.'}
+          {busqueda
+            ? `Ningún lead coincide con «${busqueda}».`
+            : fuente
+              ? 'No hay leads de esa fuente todavía.'
+              : 'Todavía no scrapeaste ningún lead. Los que extraigas en Prospección van a quedar acá.'}
         </p>
       ) : null}
 

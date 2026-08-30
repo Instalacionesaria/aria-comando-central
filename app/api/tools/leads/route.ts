@@ -71,6 +71,22 @@ export async function GET(peticion: Request): Promise<Response> {
     return rechazo('peticion_invalida', 'Fuente desconocida.');
   }
 
+  /**
+   * Búsqueda por nombre o correo.
+   *
+   * ── LOS DOS ESCAPES, Y POR QUÉ NO SON LO MISMO ─────────────────────────────
+   *
+   * El valor va a un `ilike`, y ahí `%` y `_` son COMODINES. No es un problema de inyección
+   * —el constructor de consultas parametriza igual— sino de resultado: quien busque `100%`
+   * recibiría todo lo que empieza con `100`, y `_` haría de comodín de un carácter. Se
+   * escapan, y la barra invertida primero, o escaparía a los escapes que vienen después.
+   *
+   * El tope de largo es aparte: sin él, un texto de un megabyte se convierte en un `ilike`
+   * que recorre la tabla entera. 80 caracteres cubren cualquier nombre o correo real.
+   */
+  const crudo = (parametros.get('buscar') ?? '').trim().slice(0, 80);
+  const buscar = crudo ? `%${crudo.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : '';
+
   const { filas, hayMas } = await conOrganizacion(contexto.orgEfectiva, async () => {
     // Se piden POR_PAGINA + 1 para saber si hay página siguiente sin pagar un `count(*)`
     // sobre toda la tabla. Es el mismo truco que usa el resto del proyecto.
@@ -96,6 +112,16 @@ export async function GET(peticion: Request): Promise<Response> {
       .offset((pagina - 1) * POR_PAGINA);
 
     if (fuentePedida) consulta = consulta.where('source', '=', fuentePedida);
+
+    // `ilike` y no `like`: nadie escribe respetando mayúsculas al buscar un negocio. El `or`
+    // va agrupado —`eb.or`— porque suelto se mezclaría con el filtro de fuente de arriba y
+    // `A and (B or C)` pasaría a ser `(A and B) or C`: buscar dentro de LinkedIn devolvería
+    // también los de Maps que coincidan por correo.
+    if (buscar) {
+      consulta = consulta.where((eb) =>
+        eb.or([eb('name', 'ilike', buscar), eb('email', 'ilike', buscar)]),
+      );
+    }
 
     const resultado = await consulta.execute();
     return {

@@ -68,10 +68,15 @@ export type ResultadoDeLeads =
   | { tipo: 'datos'; pagina: PaginaDeLeads }
   | { tipo: 'fallo'; mensaje: string };
 
-/** Una página del historial. `fuente` vacía = todas. */
-export async function leerLeads(pagina: number, fuente?: string): Promise<ResultadoDeLeads> {
+/** Una página del historial. `fuente` vacía = todas; `buscar` vacío = sin filtrar por texto. */
+export async function leerLeads(
+  pagina: number,
+  fuente?: string,
+  buscar?: string,
+): Promise<ResultadoDeLeads> {
   const parametros = new URLSearchParams({ pagina: String(pagina) });
   if (fuente) parametros.set('fuente', fuente);
+  if (buscar) parametros.set('buscar', buscar);
 
   const r = await pedir<PaginaDeLeads>(`${RUTA}?${parametros.toString()}`);
   if (r.tipo === 'datos') return { tipo: 'datos', pagina: r.datos };

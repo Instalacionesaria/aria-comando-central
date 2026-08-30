@@ -981,29 +981,85 @@
   padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   color: var(--txt);
-  /* `flex` para que el título y las acciones de «Mis Leads» compartan la fila. La tabla que
-     `Scraper.jsx` pinta manda un solo hijo, así que sigue viéndose igual que antes. */
+}
+
+/* ── La barra de filtros de «Mis Leads» ─────────────────────────────────────
+   Reemplaza a un `<select>` de fuentes. Un desplegable esconde las opciones hasta que lo
+   abrís: no se ve que hay filtros ni cuáles son. Con cinco fijas, los botones lo dicen de un
+   vistazo — y es la forma que ya tenía el hub. */
+.leads-barra {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
 }
-.leads-acciones {
+.leads-filtros {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgb(var(--c-nube) / 0.06);
+  border: 1px solid var(--line);
 }
-.leads-acciones select {
+.leads-filtros button {
   font: inherit;
   font-size: 11.5px;
   font-weight: 500;
+  color: var(--txt-dim);
+  background: none;
+  /* Transparente y no `0`: el botón puesto lleva borde, y sin esta reserva de un píxel los
+     apagados serían dos píxeles más bajos y la fila saltaría al cambiar de filtro. */
+  border: 1px solid transparent;
+  padding: 5px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.leads-filtros button:hover {
+  color: var(--txt);
+}
+/* La puesta se levanta igual que una pestaña activa: es el mismo gesto y no merece otra
+   gramática visual.
+
+   SIN `box-shadow`, y no es un olvido: este diseño apaga las sombras con un barrido universal,
+   y una sombra escrita en esta capa se le escaparía —misma capa, gana la especificidad—. Copiar
+   la de `.cl-sub button.on` habría traído a la pantalla lo único que el barrido existe para
+   quitar. Los tokens `--sh-*` valen `none` igual, así que tampoco se perdió nada: el estado
+   puesto se lee por el fondo, el color y el peso. */
+.leads-filtros button.on {
+  color: var(--txt);
+  font-weight: 600;
+  background: linear-gradient(180deg, var(--bg-float), var(--bg-raise));
+  border: 1px solid var(--line);
+}
+
+/* Crece para ocupar lo que sobra, con un piso para que no se aplaste contra los filtros
+   cuando la fila envuelve en pantallas angostas. */
+.leads-buscar {
+  flex: 1 1 220px;
+  min-width: 180px;
+  font: inherit;
+  font-size: 12px;
   color: var(--txt);
   background: var(--bg-sunk);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 7px 11px;
+  outline: 0;
 }
+.leads-buscar::placeholder {
+  color: var(--txt-faint);
+}
+.leads-buscar:focus {
+  border-color: rgb(var(--c-acento) / 0.5);
+}
+/* A la derecha del todo, separado del buscador. */
+.leads-csv {
+  margin-left: auto;
+}
+
 .leads-vacio {
   padding: 22px 14px;
   margin: 0;
