@@ -12,10 +12,15 @@
    406 líneas de estilos no se portaron; `app/monitoreo.css` son ochenta y usan los tokens del
    sistema.
 
-   Y una cosa que aquél tenía y ésta no: la vista «Datos scrapeados», que abría los leads de un
-   usuario. No se portó porque **ya existe y es mejor**: es «Mis Leads», dentro de Tools, con
-   paginado y filtro por fuente. Duplicarla acá habría significado dos pantallas que muestran la
-   misma tabla y divergen en la primera corrección.
+   Aquél tenía además una vista «Datos scrapeados» que abría los leads de un usuario. Acá está, y
+   se llega igual —haciendo clic en la fila— pero muestra una cosa MÁS que la vieja: los scrapeos
+   disparados, con qué se buscó y en qué terminó cada uno. Ver `DetalleDeEmpresa.jsx`.
+
+   Lo que no se hizo es reusar «Mis Leads» de Tools para eso. Parece la misma tabla y no lo es:
+   aquélla lee la organización de la SESIÓN —`contexto.orgEfectiva`— y ésta lee la organización
+   que se pidió en la URL, con una autorización distinta (`monitoreo.ver` y ser de la principal,
+   contra `tools.ver`). Reusar el componente habría significado un componente que decide de quién
+   son los datos según quién lo monta, que es exactamente cómo se filtra un inquilino.
 
    ── LOS CEROS QUE NO SON CEROS ────────────────────────────────────────────
 
@@ -31,12 +36,17 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { FUENTES, NOMBRE_DE_FUENTE } from '@/lib/monitoreo/fuentes';
 import { aCsv, leerPanel, num, totales } from '@/lib/monitoreo/panel';
+import DetalleDeEmpresa from './DetalleDeEmpresa';
 
 export default function PanelDeMonitoreo() {
   const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [medidoEl, setMedidoEl] = useState(null);
+  /* La empresa abierta, o `null` para la tabla. Se guarda la FILA entera y no sólo el
+     identificador: así el detalle puede escribir el nombre en su encabezado desde el primer
+     píxel, sin un instante de «Cargando…» donde va el título de lo que acabás de clickear. */
+  const [abierta, setAbierta] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -58,6 +68,13 @@ export default function PanelDeMonitoreo() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  /* El detalle REEMPLAZA la tabla en vez de abrirse en una ventana: son dos tablas largas, y un
+     modal con scroll propio dentro de una pantalla con scroll propio es donde la gente se pierde.
+     Se dibuja antes de calcular los totales porque no los necesita. */
+  if (abierta) {
+    return <DetalleDeEmpresa empresa={abierta} alVolver={() => setAbierta(null)} />;
+  }
 
   const t = totales(empresas);
 
@@ -172,7 +189,23 @@ export default function PanelDeMonitoreo() {
               </thead>
               <tbody>
                 {empresas.map((e) => (
-                  <tr key={e.orgId} className={e.ilegible ? 'mon-ilegible' : undefined}>
+                  /* La fila entera abre el detalle. `onKeyDown` además del clic, y `tabIndex`,
+                     porque un `<tr>` clicable no es alcanzable con el teclado por sí solo: sin
+                     esto, la única forma de abrir una empresa sería el mouse. */
+                  <tr
+                    key={e.orgId}
+                    className={`mon-fila${e.ilegible ? ' mon-ilegible' : ''}`}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Ver qué scrapeó ${e.nombre}`}
+                    onClick={() => setAbierta(e)}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        setAbierta(e);
+                      }
+                    }}
+                  >
                     <td>
                       <span className="mon-empresa">
                         <b>{e.nombre}</b>
@@ -182,6 +215,9 @@ export default function PanelDeMonitoreo() {
                             se vea igual que una activa. */}
                         {!e.activa ? <span className="tagx nu">Inactiva</span> : null}
                         {e.ilegible ? <span className="tagx nu">Sin leer</span> : null}
+                        {/* El galón. Sin una pista visible, una tabla clicable se descubre por
+                            accidente — y la mitad de la pantalla queda sin usar. */}
+                        <span className="mon-galon" aria-hidden="true">›</span>
                       </span>
                     </td>
                     <td className="mon-n">

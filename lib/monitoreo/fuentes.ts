@@ -25,10 +25,23 @@ export const FUENTES = ['maps', 'linkedin', 'facebook-ads', 'facebook-pages', 'a
 
 export type Fuente = (typeof FUENTES)[number];
 
-/** Cómo se llama cada scraper en pantalla. */
+/**
+ * Cómo se llama cada scraper en pantalla.
+ *
+ * Tiene UNA clave más que `FUENTES`, y es a propósito: `facebook`. No es un valor válido de
+ * `aria_cc_scraper_trabajos.fuente` —su `check` no lo acepta— pero **sí es un valor real de
+ * `aria_cc_scraper_leads.source`**: el backend guarda las dos variantes de Facebook con esa
+ * etiqueta corta, y los leads copiados de la base vieja también la traen.
+ *
+ * O sea que `FUENTES` es «las columnas de la tabla de scrapeos» y esto es «cómo se muestra
+ * cualquier fuente que aparezca». Unificarlas obligaría a que una de las dos mienta: o la tabla
+ * gana una columna que nunca puede tener un número, o el historial de leads muestra la clave
+ * cruda `facebook` donde va un nombre.
+ */
 export const NOMBRE_DE_FUENTE: Readonly<Record<string, string>> = {
   maps: 'Google Maps',
   linkedin: 'LinkedIn',
+  facebook: 'Facebook',
   'facebook-ads': 'Facebook Ads',
   'facebook-pages': 'Facebook Pages',
   'ad-spy': 'Espía de Anuncios',
@@ -76,4 +89,64 @@ export interface FilaDelPanel extends ConsumoDeUnaOrganizacion {
    * reporta"*.
    */
   ilegible: boolean;
+}
+
+// ─── El detalle de UNA empresa ──────────────────────────────────────────────
+//
+// Lo que se ve al hacer clic en una fila del panel: qué buscó esa empresa y qué leads le quedaron.
+
+/**
+ * Un scraping disparado, tal como se lee en el detalle.
+ *
+ * ── POR QUÉ VIAJAN LOS PARÁMETROS DE BÚSQUEDA Y NO SÓLO EL CONTEO ─────────
+ *
+ * Porque son lo único que dice **qué se buscó** en un trabajo que falló y no dejó ni un lead. Sin
+ * `queBusco`, una corrida que reventó y una que no encontró nada se ven exactamente igual: cero
+ * leads, la misma fila. Y son dos problemas distintos —uno es del scraper, el otro del criterio
+ * de búsqueda— que se atienden de forma opuesta.
+ */
+export interface TrabajoDeScraping {
+  id: string;
+  fuente: string;
+  estado: string;
+  /** `"Peluquería · Cayma, Arequipa, Perú"`, armado con lo que la fuente haya llenado. */
+  queBusco: string;
+  /** El tope que se pidió. `null` cuando la fuente no lo usa. */
+  maxLeads: number | null;
+  /** Cuántos leads dejó ESTE trabajo. Sale de contar `aria_cc_scraper_leads` por `trabajo_id`. */
+  leads: number;
+  /** El texto del fallo, sólo si el trabajo falló. */
+  error: string | null;
+  fecha: string;
+}
+
+/** Un lead del historial de una empresa. Las seis columnas ya normalizadas por el backend. */
+export interface LeadDeLaEmpresa {
+  id: string;
+  source: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  location: string | null;
+  category: string | null;
+  created_at: string;
+}
+
+/** Lo que devuelve `GET /api/monitoreo/[orgId]`. */
+export interface DetalleDeEmpresa {
+  empresa: { orgId: string; nombre: string; slug: string; esPrincipal: boolean };
+  /**
+   * Los trabajos, del más nuevo al más viejo, **acotados**. `hayMasTrabajos` dice si se cortó.
+   *
+   * Se acota y se AVISA en vez de traerlos todos: una empresa con mil corridas convertiría esta
+   * respuesta en megabytes por una tabla que nadie va a leer entera. Y avisar importa más que
+   * acotar — una lista truncada en silencio se lee como «esto es todo lo que hizo».
+   */
+  trabajos: TrabajoDeScraping[];
+  hayMasTrabajos: boolean;
+  /** Una página de leads, con el mismo tamaño y el mismo criterio que «Mis Leads». */
+  leads: LeadDeLaEmpresa[];
+  pagina: number;
+  hayMasLeads: boolean;
 }

@@ -133,3 +133,69 @@
   color: var(--txt);
   border-top: 1px solid var(--line-strong);
 }
+
+/* ── La fila que se puede abrir ── */
+.mon-tabla tr.mon-fila { cursor: pointer; }
+/* El foco del teclado se ve. Sin esto, un `<tr>` con `tabIndex` es alcanzable con Tab y no hay
+   forma de saber dónde estás parado — que es peor que no poder tabular. */
+.mon-tabla tr.mon-fila:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.mon-galon {
+  margin-left: auto;
+  padding-left: 10px;
+  color: var(--txt-faint);
+}
+.mon-tabla tr.mon-fila:hover .mon-galon { color: var(--accent); }
+
+/* ── El detalle de una empresa ── */
+.mon-detalle-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mon-detalle-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt);
+  /* Empuja el botón de actualizar al extremo derecho sin necesitar un envoltorio más. */
+  margin-right: auto;
+}
+/* El motivo del fallo, debajo de lo que se buscó. Se envuelve —el resto de la tabla es
+   `nowrap`— porque un mensaje de Apify no entra en una línea y truncarlo tapa justo la parte
+   que dice qué pasó. */
+.mon-error {
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--warn);
+  white-space: normal;
+  max-width: 420px;
+}
+.mon-fallo { color: var(--warn); }
+.mon-paginado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+/* El selector de fuente, igual que el de «Mis Leads»: es el mismo control haciendo lo mismo. */
+.mon-acciones select {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+}

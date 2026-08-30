@@ -185,6 +185,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
   'app/api/tools/estado/route.ts',
   'app/api/tools/generar/route.ts',
+  // Subir leads seleccionados al CRM. Lee el Private Integration Token de GoHighLevel por
+  // identidad —`organizaciones_credenciales` es inalcanzable desde el rol del inquilino— con
+  // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo
+  // pone la propia función con `contexto.orgEfectiva`.
   //
   // ── EL PROXY DEL SCRAPER SALIÓ DE ESTA LISTA, Y VALE DECIR POR QUÉ ──────────
   //
@@ -311,6 +315,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Si lo intentara, el rol de identidad no tiene el privilegio y fallaría fuerte y a la vista,
   // que es la propiedad que hace que esta escotilla sea aceptable.
   'app/api/monitoreo/route.ts',
+  // El detalle de UNA empresa del panel. Lee identidad para UNA cosa: comprobar que el
+  // identificador pedido corresponde a una empresa real —y no a una de las dos organizaciones de
+  // control de la sonda—. Todo lo demás sale por `conOrganizacion(`. Usa `listarOrganizaciones`,
+  // la misma función que la tabla, para que la exclusión de las de control sea la MISMA: dos
+  // listas que tienen que coincidir son dos listas que se desincronizan.
+  'app/api/monitoreo/[orgId]/route.ts',
 ];
 
 /**
@@ -328,6 +338,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
  * defiende para la escotilla.
  */
 export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
+  // Subir leads al CRM. **Qué queda a medias si la segunda mitad falla: NADA.** Es el caso más
+  // benigno de esta lista, porque NINGUNA de las dos mitades escribe en nuestra base: la primera
+  // LEE el token de identidad, la segunda LEE los leads de negocio, y la única escritura es a un
+  // sistema externo, después de que las dos lecturas salieron bien. No hay confirmación parcial
+  // posible.
+  //
+  // Lo que sí puede quedar a medias es la escritura EXTERNA: si n8n crea los contactos y la
+  // respuesta se pierde en el camino, quien mira la pantalla ve un fallo y va a reintentar,
+  // duplicando contactos en el CRM. No es un problema de atomicidad entre dominios —el que esta
+  // lista vigila— y no se arregla con una transacción; haría falta una llave de idempotencia del
+  // lado del flujo. Queda dicho acá porque es la pregunta que alguien va a hacerse al leer esto.
   // Los porcentajes de comisión. **Qué queda a medias si la segunda mitad falla: nada**, porque la
   // primera no escribe — se lee de identidad quién es la persona y se escribe en negocio su
   // porcentaje. Es la misma forma y la misma justificación que la ingesta de mensajes.
@@ -459,6 +480,12 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // atomicidad —no hay nada que deshacer— es que un tablero que desaparece por una empresa con
   // problemas es un tablero que no sirve justo el día que hace falta.
   'app/api/monitoreo/route.ts',
+  // El detalle de una empresa: identidad para resolver cuál es, negocio por `conOrganizacion()`.
+  // **Qué queda a medias si la segunda mitad falla: nada, porque NO ESCRIBE.** Las dos mitades
+  // son lecturas, así que el "éxito reportado que no ocurrió" del 09 § 6 —que necesita dos
+  // escrituras— no es alcanzable. Y la lectura de identidad va PRIMERO a propósito: si la empresa
+  // no existe se responde 404 sin haber abierto ningún contexto de inquilino.
+  'app/api/monitoreo/[orgId]/route.ts',
 ];
 
 /**

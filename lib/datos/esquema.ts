@@ -609,6 +609,17 @@ export interface TablaScraperTrabajos {
   fuente: string;
   /** `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. Lo acota un `check`. */
   status: Generated<string>;
+  /**
+   * Qué se buscó. Admiten nulos porque cada fuente usa los suyos —Maps llena los dos, LinkedIn
+   * no— y ahí está su valor para el Panel de Monitoreo: es **lo único que dice qué se buscó en un
+   * trabajo que falló y no dejó ni un lead**. Sin estas columnas, una corrida fallida y una
+   * corrida vacía se ven exactamente igual.
+   */
+  business_type: string | null;
+  location: string | null;
+  max_leads: number | null;
+  /** El texto del fallo, tal como lo dio Apify o el backend. Sin él, un `FAILED` no dice por qué. */
+  error_message: string | null;
   created_at: Generated<Date>;
 }
 

@@ -1,7 +1,13 @@
 // El lado del navegador del Panel de Monitoreo: pedir la foto y bajarla como CSV.
 
 import { pedir } from '../http/cliente.ts';
-import { FUENTES, NOMBRE_DE_FUENTE, type FilaDelPanel } from './fuentes.ts';
+import {
+  FUENTES,
+  NOMBRE_DE_FUENTE,
+  type DetalleDeEmpresa,
+  type FilaDelPanel,
+  type LeadDeLaEmpresa,
+} from './fuentes.ts';
 
 const RUTA = '/api/monitoreo';
 
@@ -85,5 +91,67 @@ export function aCsv(empresas: readonly FilaDelPanel[]): string {
       dato(e.saldo?.disponibles ?? null),
     ].join(',');
   });
+  return [cabecera.map(escapar).join(','), ...cuerpo].join('\n');
+}
+
+// ─── El detalle de UNA empresa ──────────────────────────────────────────────
+
+export type ResultadoDelDetalle =
+  | { tipo: 'datos'; detalle: DetalleDeEmpresa }
+  | { tipo: 'fallo'; mensaje: string };
+
+/** Qué scrapeó una empresa y qué leads le quedaron. `fuente` vacía = todas. */
+export async function leerDetalle(
+  orgId: string,
+  pagina: number,
+  fuente: string,
+): Promise<ResultadoDelDetalle> {
+  const parametros = new URLSearchParams({ pagina: String(pagina) });
+  if (fuente) parametros.set('fuente', fuente);
+
+  const r = await pedir<DetalleDeEmpresa>(`${RUTA}/${orgId}?${parametros.toString()}`);
+  if (r.tipo === 'datos') return { tipo: 'datos', detalle: r.datos };
+  if (r.tipo === 'rechazado') {
+    return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo abrir el detalle de esta empresa.' };
+  }
+  return { tipo: 'fallo', mensaje: 'No se pudo conectar para abrir el detalle.' };
+}
+
+/** Cómo se lee cada estado de un trabajo. Los cinco del `check` de la tabla. */
+export const NOMBRE_DE_ESTADO: Readonly<Record<string, string>> = {
+  PENDING: 'En cola',
+  RUNNING: 'Corriendo',
+  COMPLETED: 'Completado',
+  FAILED: 'Falló',
+  CANCELLED: 'Cancelado',
+};
+
+/** Las seis columnas normalizadas de un lead, en el orden en que se leen. */
+export const COLUMNAS_DE_LEAD: readonly { clave: keyof LeadDeLaEmpresa; etiqueta: string }[] = [
+  { clave: 'name', etiqueta: 'Nombre' },
+  { clave: 'category', etiqueta: 'Categoría' },
+  { clave: 'location', etiqueta: 'Ubicación' },
+  { clave: 'phone', etiqueta: 'Teléfono' },
+  { clave: 'email', etiqueta: 'Email' },
+  { clave: 'website', etiqueta: 'Sitio web' },
+];
+
+/**
+ * Los leads de una empresa como CSV.
+ *
+ * Mismo escape que el resto del proyecto: cada campo entre comillas SIEMPRE y las internas
+ * duplicadas. Sin eso, un negocio llamado "Estudio Pérez, Gómez y Asociados" parte la fila en dos
+ * columnas y desplaza el resto de la línea.
+ */
+export function leadsACsv(leads: readonly LeadDeLaEmpresa[]): string {
+  const escapar = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const cabecera = ['Fuente', ...COLUMNAS_DE_LEAD.map((c) => c.etiqueta), 'Fecha'];
+  const cuerpo = leads.map((l) =>
+    [
+      escapar(NOMBRE_DE_FUENTE[l.source] ?? l.source),
+      ...COLUMNAS_DE_LEAD.map((c) => escapar(l[c.clave])),
+      escapar(new Date(l.created_at).toLocaleDateString('es-PE')),
+    ].join(','),
+  );
   return [cabecera.map(escapar).join(','), ...cuerpo].join('\n');
 }

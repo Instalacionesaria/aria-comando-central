@@ -163,24 +163,86 @@ test('la ruta declara su pantalla y comprueba las DOS mitades', () => {
   );
 });
 
+test('el DETALLE pide exactamente lo mismo que la tabla, y comprueba lo mismo', () => {
+  // ── ADR-0304 LLEVADO A SU CASO MÁS FEO ────────────────────────────────────
+  //
+  // Las dos rutas llenan la MISMA pantalla, así que tienen que pedir el mismo conjunto. Si el
+  // detalle pidiera algo distinto, el defecto no sería una pantalla en blanco: la tabla cargaría
+  // bien y **hacer clic en una empresa daría 403**, sin que nada en la interfaz explique por qué
+  // una mitad de la pantalla funciona y la otra no.
+  const detalle = leer('app/api/monitoreo/[orgId]/route.ts');
+  const tabla = leer('app/api/monitoreo/route.ts');
+
+  for (const [nombre, fuente] of [['la tabla', tabla], ['el detalle', detalle]] as const) {
+    assert.match(fuente, /export const PANTALLA = 'monitoreo'/, `${nombre} no declara la pantalla`);
+    assert.match(
+      fuente,
+      /exigir\(peticion, \['monitoreo\.ver'\], PANTALLA\)/,
+      `${nombre} no pide \`monitoreo.ver\``,
+    );
+    // ── Y LA SEGUNDA MITAD, COPIADA A PROPÓSITO ─────────────────────────────
+    //
+    // Una ruta que confía en que «la otra ya validó» es una ruta sin validación: nadie está
+    // obligado a pedir la tabla antes de pedir el detalle. Este `GET` se puede llamar solo.
+    assert.match(
+      fuente,
+      /if \(!esDeLaPrincipal\(contexto\)\)/,
+      `${nombre} no comprueba la organización principal`,
+    );
+  }
+});
+
+test('el detalle valida el identificador ANTES de abrir ningún contexto', () => {
+  // `conOrganizacion` LANZA sobre algo que no es un uuid, y ese error saldría como 500 desde el
+  // fondo de la capa de datos en vez de como el rechazo que es. Un 500 en un panel de
+  // administración se reporta como «se rompió», no como «ese identificador no existe».
+  const ruta = leer('app/api/monitoreo/[orgId]/route.ts');
+  /* SIN COMENTARIOS para la comparación de posiciones: el encabezado de la ruta EXPLICA que abre
+     `conOrganizacion(orgId, …)`, así que la prosa que documenta la decisión aparecía antes que el
+     código y hacía fallar la prueba que la protege. Un guardia que se dispara con su propia
+     documentación se termina desactivando. */
+  const codigo = ruta.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(
+    codigo.indexOf('UUID.test(orgId)') < codigo.indexOf('conOrganizacion('),
+    'la validación del identificador quedó después de abrir el contexto',
+  );
+
+  // Y la empresa se resuelve con `listarOrganizaciones`, que es la MISMA función que dibuja la
+  // tabla. No es comodidad: esa función deja afuera `control-a` y `control-b`, las dos
+  // organizaciones de la sonda de aislamiento. Con una consulta propia por `id`, un identificador
+  // escrito a mano abriría el detalle de una de ellas — y dos listas que tienen que coincidir son
+  // dos listas que se desincronizan.
+  assert.match(ruta, /listarOrganizaciones\(db\)/);
+});
+
 test('la ruta lee de a una organización, y NO con una consulta que las cruce', () => {
   // La propiedad que hace segura a esta pantalla: cada lectura pasa por la política de RLS de su
   // organización. Un `group by org_id` acá exigiría un camino que omita RLS, y ese camino no
   // existe hoy — pero el día que exista, esta pantalla es la primera candidata a usarlo.
   const ruta = leer('app/api/monitoreo/route.ts');
-  assert.match(ruta, /conOrganizacion\(o\.id,/);
+  assert.match(leer('app/api/monitoreo/route.ts'), /conOrganizacion\(o\.id,/);
+  assert.match(leer('app/api/monitoreo/[orgId]/route.ts'), /conOrganizacion\(orgId,/);
 
   /* SIN COMENTARIOS, y no es un detalle: el encabezado de `consumo.ts` explica por qué un
      `group by org_id` no funciona acá, así que la prosa que documenta la decisión hacía fallar
      la prueba que la protege. Un guardia que se dispara con su propia documentación se termina
      desactivando — es la misma lección que dejó escrita `91-closer-y-setter`. */
-  const consulta = leer('lib/monitoreo/consumo.ts')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-  assert.ok(
-    !/group\s*by\s*\(?['"`]?org_id/i.test(consulta) && !consulta.includes(".groupBy('org_id'"),
-    'la consulta del consumo agrupa por org_id: eso solo puede funcionar sin RLS',
-  );
+  for (const archivo of ['lib/monitoreo/consumo.ts', 'lib/monitoreo/detalle.ts']) {
+    const consulta = leer(archivo)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert.ok(
+      !/group\s*by\s*\(?['"`]?org_id/i.test(consulta) && !consulta.includes(".groupBy('org_id'"),
+      `${archivo} agrupa por org_id: eso solo puede funcionar sin RLS`,
+    );
+    // Y tampoco un `where org_id`. Acá el aislamiento lo pone `conOrganizacion(`, no la consulta:
+    // un `where` daría la impresión de que el filtro es ése, y el día que alguien lo quitara para
+    // "simplificar" no se notaría que la protección era otra.
+    assert.ok(
+      !consulta.includes(".where('org_id'"),
+      `${archivo} filtra por org_id a mano: el filtro lo pone RLS, no la consulta`,
+    );
+  }
 });
 
 // ─── El catálogo y el reparto ───────────────────────────────────────────────
