@@ -557,6 +557,40 @@ export interface TablaHallazgos {
   detectado_el: Generated<Date>;
 }
 
+/**
+ * Los leads que dejó un scraping, tal como los guarda el backend de scraping.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * LA ÚNICA TABLA CALIFICADA CON SU ESQUEMA, Y NO ES UN DESCUIDO
+ *
+ * Vive en `public.aria_cc_scraper_leads` y no en `negocio`, por una razón que no se puede
+ * cambiar desde este lado: **la escribe un proceso de Python por PostgREST**, y PostgREST sólo
+ * publica `public`. Mudarla a `negocio` la volvería inalcanzable para el backend.
+ *
+ * Y `public` no está en la ruta de búsqueda de ninguno de nuestros roles —a propósito—, así que
+ * acá hay que nombrar el esquema. Es la excepción que confirma la regla del bloque de abajo.
+ *
+ * El aislamiento NO se pierde por estar en `public`: la migración 006 le aplica
+ * `negocio.aplicar_aislamiento`, así que tiene RLS activada, forzada, y la política que filtra
+ * por `app.org_id`. Leerla por `conOrganizacion(` da exactamente las mismas garantías que
+ * cualquier tabla de negocio. Ver `migraciones/006_aria_cc_scraper.sql`.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export interface TablaScraperLeads {
+  org_id: string;
+  id: Generated<string>;
+  trabajo_id: string;
+  source: Generated<string>;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  location: string | null;
+  category: string | null;
+  raw_data: Generated<unknown>;
+  created_at: Generated<Date>;
+}
+
 /** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -591,4 +625,9 @@ export interface BaseDeDatos {
   resultados: TablaResultados;
   notas: TablaNotas;
   hallazgos: TablaHallazgos;
+
+  // La ÚNICA calificada con su esquema. El porqué está en `TablaScraperLeads`: la escribe el
+  // backend de Python por PostgREST, que sólo alcanza `public`. Tiene el mismo régimen de
+  // aislamiento que las de arriba — RLS forzada y política por `app.org_id`.
+  'public.aria_cc_scraper_leads': TablaScraperLeads;
 }

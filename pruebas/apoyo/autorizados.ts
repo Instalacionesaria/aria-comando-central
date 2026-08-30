@@ -185,11 +185,22 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
   'app/api/tools/estado/route.ts',
   'app/api/tools/generar/route.ts',
-  // El proxy del motor de scraping. Necesita el `cliente_id` del alumno en el hub —la llave del
-  // monedero de leads del backend— y ése sale de la fila de credenciales de la organización, que
-  // el rol del inquilino no puede mirar. Acá el filtro protege el SALDO del alumno, no solo su
-  // trabajo: con el identificador llegando del navegador, cualquiera podría gastarle los leads.
-  'app/api/tools/scrape/route.ts',
+  //
+  // ── EL PROXY DEL SCRAPER SALIÓ DE ESTA LISTA, Y VALE DECIR POR QUÉ ──────────
+  //
+  // `app/api/tools/scrape/route.ts` estuvo acá mientras el monedero de leads vivía en una base
+  // ajena indexada por `fundaciones_cliente_id`: para saber de quién era el saldo había que
+  // leer la fila de credenciales de la organización, que el rol del inquilino no puede mirar.
+  //
+  // Con `006_aria_cc_scraper.sql` el monedero pasó a esta base y su llave es `org_id`, que el
+  // portero ya entrega en `contexto.orgEfectiva`. La ruta dejó de necesitar identidad, así que
+  // la entrada quedó MUERTA — y la comprobación de entradas muertas de
+  // `10-arquitectura.test.ts` la habría delatado, que es exactamente para lo que está: *"una
+  // autorización que ya no hace falta queda habilitando algo que nadie va a volver a mirar"*.
+  //
+  // Lo mismo va a pasar con las dos de arriba cuando Fundaciones lea de `aria_cc_foundations`
+  // por `org_id`. Si alguien vuelve a agregar el proxy acá, es señal de que algo se reatipó al
+  // hub y hay que preguntar por qué.
   // ── Etapa 13 · el chat ───────────────────────────────────────────────────────
   //
   // Mandar un mensaje. Lee el token de GoHighLevel por identidad, exactamente como las dos de
@@ -573,4 +584,39 @@ export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = [
   //
   // Y también con el guardia de «la variable no está definida» ANTES de comparar, igual que el cron.
   'app/api/avisos/crm/route.ts',
+];
+
+/**
+ * Las rutas que NO abren contexto de organización porque **no tocan la base de datos**.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ESTA LISTA ES NUEVA Y NO UNA ENTRADA MÁS EN `ARCHIVOS_AUTORIZADOS`
+ *
+ * `ADR-0202` exige que todo manejador de ruta abra el contexto de su organización, y tiene
+ * razón: *"olvidarse no falla — la operación funciona y lee los datos de la organización
+ * equivocada"*. Las exenciones que existían eran dos, y ninguna describe este caso:
+ *
+ *   · `RUTAS_PUBLICAS` — no hay sesión. Acá sí la hay, y el portero corre.
+ *   · `ARCHIVOS_AUTORIZADOS` — usan `conIdentidad(`, el acceso sin filtro. Acá no se usa, y
+ *     meterlo ahí habría hecho fallar la comprobación de entradas muertas de esa misma lista.
+ *
+ * El caso real es un tercero: **un proxy autenticado que no lee ni escribe una sola fila**.
+ * `tools/scrape` valida la sesión, saca `org_id` del contexto del portero y se lo pasa al
+ * backend de scraping por HTTP. No hay contexto que abrir porque no hay consulta que aislar.
+ *
+ * Antes esta ruta SÍ tocaba la base —resolvía `fundaciones_cliente_id` con `conIdentidad(`— y
+ * por eso vivía en la otra lista. La migración `006_aria_cc_scraper.sql` le quitó esa lectura:
+ * `org_id` ya viene del portero. Ver el comentario en `ARCHIVOS_AUTORIZADOS`.
+ *
+ * ── LA EXENCIÓN SE VERIFICA, NO SE CREE ────────────────────────────────────────
+ *
+ * Una lista blanca cuya condición nadie comprueba es un permiso permanente. La prueba de
+ * `ADR-0202` no sólo salta estas rutas: **afirma que de verdad no tocan la base**. Si alguien
+ * agrega una consulta acá, la exención deja de valer y la prueba lo dice — en vez de dejar
+ * pasar en silencio la consulta sin aislar que la exención prometía que no existía.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export const RUTAS_SIN_BASE: readonly string[] = [
+  // El proxy del motor de scraping. Ver el bloque de arriba.
+  'app/api/tools/scrape/route.ts',
 ];

@@ -6,46 +6,49 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL NAVEGADOR NUNCA HABLA DIRECTO CON EL BACKEND, Y NO ES POR PROLIJIDAD
 //
-// El backend de scraping identifica al cliente por `usuarios_scraper.cliente_id`, y sobre esa
-// llave lleva **un monedero con saldo de leads**. Si el navegador pudiera llamarlo, cualquiera
-// podría mandar el `cliente_id` de otro y gastarle los leads. Así que ese identificador se
-// resuelve ACÁ, del lado del servidor, desde la organización de la sesión — nunca llega del
-// cuerpo de la petición.
+// El backend de scraping lleva **un monedero con saldo de leads por organización**. Si el
+// navegador pudiera llamarlo, cualquiera podría mandar el identificador de otra organización y
+// gastarle los leads. Así que ese identificador se resuelve ACÁ, del lado del servidor, desde
+// la sesión — nunca llega del cuerpo de la petición.
 //
-// Es la misma regla que `lib/fundaciones/almacen.ts` aplica al `cliente_id` del almacén, y por el
-// mismo motivo. Acá pesa más: allá lo que se protege es el trabajo del alumno; acá, su saldo.
+// Es la misma regla que `lib/fundaciones/almacen.ts` aplica al `cliente_id` del almacén, y por
+// el mismo motivo. Acá pesa más: allá lo que se protege es el trabajo del alumno; acá, su saldo.
 //
-// ── POR QUÉ ES EL ID DEL HUB Y NO EL `org_id` ───────────────────────────────
+// ── LA LLAVE ES `org_id`, Y ESO CAMBIÓ TODO ─────────────────────────────────
 //
-// Porque el monedero vive en la base del backend de scraping, que es un TERCER sistema y no lo
-// controlamos desde acá: su llave es `aria_brain_clientes.id`. Este proyecto la obtiene de
-// `identidad.organizaciones_credenciales.fundaciones_cliente_id`, igual que Fundaciones.
+// Hasta la migración `006_aria_cc_scraper.sql` esta ruta resolvía
+// `organizaciones_credenciales.fundaciones_cliente_id` —el identificador del alumno en el hub—
+// porque el monedero vivía en una base ajena (`urxu…`) indexada por esa llave. De ahí salía el
+// freno que este archivo documentaba en voz alta: *"una organización sin vínculo con el hub NO
+// PUEDE SCRAPEAR"*, y el código `sin_alumno_vinculado` que llegaba a la pantalla como un cartel
+// rojo que sólo se arreglaba corriendo SQL a mano.
 //
-// Consecuencia que hay que decir en voz alta: **una organización sin vínculo con el hub no puede
-// scrapear**, y eso NO se arregla mudando el almacén a `aria_cc_foundations` — el identificador
-// vive afuera. Para los alumnos que nazcan por Walter hay que decidir aparte quién les abre el
-// monedero. Responde `sin_alumno_vinculado`, que es exactamente lo que pasa.
+// **Ese freno ya no existe.** Las tres tablas del scraper viven en la base de este proyecto y
+// su llave es `org_id`, que toda organización tiene por existir. Un cliente High Ticket que
+// nazca por Walter scrapea desde su primer minuto, sin que nadie lo vincule.
+//
+// Queda dicho para que no se reintroduzca: si algún día hace falta `fundaciones_cliente_id`
+// acá, es señal de que algo volvió a atarse al hub. El vínculo sigue haciendo falta para
+// Fundaciones — no para esto.
 //
 // ── LAS RESPUESTAS DEL BACKEND SE DEJAN PASAR ───────────────────────────────
 //
-// Su 403 por saldo agotado, su 404 de cuenta inexistente y su detalle de error viajan tal cual. Es
-// una excepción deliberada a `ADR-0704`: ese texto no describe NUESTRA estructura —es el estado
-// del monedero del alumno— y traducirlo a "no se pudo" dejaría a la pantalla sin poder decir la
-// única cosa accionable, que es "se te acabaron los leads".
+// Su 403 por saldo agotado, su 404 de trabajo inexistente y su detalle de error viajan tal
+// cual. Es una excepción deliberada a `ADR-0704`: ese texto no describe NUESTRA estructura —es
+// el estado del monedero de la organización— y traducirlo a "no se pudo" dejaría a la pantalla
+// sin poder decir la única cosa accionable, que es "se te acabaron los leads".
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
-import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { pedirExterno } from '../../../../lib/http/cliente.ts';
-import { resolverAlumnoDeFundaciones } from '../../../../lib/credenciales/resolver.ts';
 
 export const PANTALLA = 'tools';
 
 /**
  * Un scraping tarda minutos, pero ESTA ruta no espera: arranca el trabajo y devuelve su
- * identificador. Lo que tarda es el sondeo, y cada sondeo es una petición corta. Aun así se sube el
- * tope, porque el backend a veces tarda en aceptar el arranque y cortar ahí dejaría un trabajo
+ * identificador. Lo que tarda es el sondeo, y cada sondeo es una petición corta. Aun así se sube
+ * el tope, porque el backend a veces tarda en aceptar el arranque y cortar ahí dejaría un trabajo
  * corriendo del que nadie sabe el identificador — leads pagados que no se pueden recuperar.
  */
 export const maxDuration = 60;
@@ -60,11 +63,6 @@ function backend(): string | null {
   return url && url.trim().length > 0 ? url.replace(/\/+$/, '') : null;
 }
 
-/** El `cliente_id` del alumno, resuelto desde la organización de la sesión. Nunca del navegador. */
-async function alumnoDe(orgEfectiva: string) {
-  return conIdentidad(async (db) => resolverAlumnoDeFundaciones(db, orgEfectiva));
-}
-
 /**
  * Fuente → ruta del backend y cuerpo con el formato que espera cada actor.
  *
@@ -76,9 +74,12 @@ async function alumnoDe(orgEfectiva: string) {
 function construirArranque(
   fuente: string,
   p: Record<string, unknown>,
-  clienteId: string,
+  orgId: string,
 ): { camino: string; cuerpo: Record<string, unknown> } | null {
-  const base = { cliente_id: clienteId, timestamp: new Date().toISOString() };
+  // `org_id` va en el cuerpo de las cuatro, y sale de la sesión. Que esté acá y no en el
+  // `switch` es deliberado: una fuente nueva que se agregue abajo lo hereda sin que nadie se
+  // acuerde de ponerlo, y olvidarlo significaría gastarle el saldo a la organización equivocada.
+  const base = { org_id: orgId, timestamp: new Date().toISOString() };
 
   switch (fuente) {
     case 'maps':
@@ -158,13 +159,16 @@ export async function GET(peticion: Request): Promise<Response> {
   const trabajo = new URL(peticion.url).searchParams.get('trabajo');
   if (!trabajo) return rechazo('peticion_invalida', 'Falta el identificador del trabajo.');
 
-  // El identificador del trabajo NO se usa para autorizar: el backend ya lo ata a su `cliente_id`.
-  // Se resuelve el alumno igual, para que una organización sin vínculo reciba el mismo código acá
-  // que al intentar arrancar — y no un sondeo que consulta el trabajo de otro.
-  const alumno = await alumnoDe(contexto.orgEfectiva);
-  if (alumno.tipo === 'falta') return rechazo(alumno.que);
+  // La organización va en la consulta, y el backend FILTRA por ella: un trabajo de otra
+  // organización responde 404. Antes bastaba conocer el identificador del trabajo para leer sus
+  // resultados —con el proxy por delante no era alcanzable desde fuera, pero el backend no lo
+  // impedía por sí mismo—. Ahora sí, y eso es lo que hace que el aislamiento no dependa de que
+  // esta ruta esté bien escrita.
+  const consulta =
+    `${url}/job/${encodeURIComponent(trabajo)}` +
+    `?org_id=${encodeURIComponent(contexto.orgEfectiva)}`;
 
-  const r = await alBackend(`${url}/job/${encodeURIComponent(trabajo)}`, {});
+  const r = await alBackend(consulta, {});
   if (r instanceof Response) return r;
   return ok(r.datos as Record<string, unknown>);
 }
@@ -174,7 +178,7 @@ export async function GET(peticion: Request): Promise<Response> {
  *
  * Es la segunda operación del proyecto que le cuesta plata a la organización —la otra es generar
  * un documento— y acá el gasto no es en tokens: son leads de un monedero con saldo. Pedir
- * `tools.ver` habría dejado que cualquiera con acceso de lectura vaciara el saldo del alumno.
+ * `tools.ver` habría dejado que cualquiera con acceso de lectura vaciara el saldo.
  */
 export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['tools.editar'], PANTALLA);
@@ -190,10 +194,11 @@ export async function POST(peticion: Request): Promise<Response> {
     return rechazo('peticion_invalida', 'El cuerpo no es JSON');
   }
 
-  const alumno = await alumnoDe(contexto.orgEfectiva);
-  if (alumno.tipo === 'falta') return rechazo(alumno.que);
-
-  const arranque = construirArranque(String(cuerpo.fuente ?? ''), cuerpo, alumno.clienteId);
+  const arranque = construirArranque(
+    String(cuerpo.fuente ?? ''),
+    cuerpo,
+    contexto.orgEfectiva,
+  );
   if (!arranque) return rechazo('no_encontrado');
 
   const r = await alBackend(`${url}${arranque.camino}`, {

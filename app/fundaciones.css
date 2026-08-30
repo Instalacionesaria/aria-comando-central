@@ -943,7 +943,61 @@
   padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   color: var(--txt);
+  /* `flex` para que el título y las acciones de «Mis Leads» compartan la fila. La tabla que
+     `Scraper.jsx` pinta manda un solo hijo, así que sigue viéndose igual que antes. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
+.leads-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.leads-acciones select {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+.leads-vacio {
+  padding: 22px 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+  text-align: center;
+}
+.leads-paginado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+/* El botón secundario del sistema: mismo lenguaje que `.fd-btn` pero sin el relleno de acento,
+   que está reservado para la acción principal de cada vista. */
+.fd-btn-menor {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.fd-btn-menor:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.fd-btn-menor:disabled { opacity: 0.45; cursor: not-allowed; }
 /* La tabla scrollea DENTRO de su caja. Sin esto, veinte columnas de LinkedIn hacen que scrollee
    la página entera y el menú lateral se va de pantalla. */
 .leads-scroll { overflow-x: auto; max-height: 460px; overflow-y: auto; }

@@ -32,6 +32,7 @@ import {
   ARCHIVOS_AUTORIZADOS,
   CRUZAN_LOS_DOS_DOMINIOS,
   RUTAS_PUBLICAS,
+  RUTAS_SIN_BASE,
 } from '../apoyo/autorizados.ts';
 
 /**
@@ -141,6 +142,36 @@ test('ADR-0203 · nada de `app/` ni `lib/` importa de `pruebas/`', () => {
   assert.deepEqual(malos, []);
 });
 
+// ─── La exención de `RUTAS_SIN_BASE` se comprueba, no se cree ───────────────
+
+test('ADR-0202 · las rutas exentas por no tocar la base, de verdad no la tocan', () => {
+  // Sin esta prueba, `RUTAS_SIN_BASE` sería un permiso permanente: alguien agrega una consulta
+  // a una ruta exenta, la exención la salta de `ADR-0202`, y queda una consulta SIN AISLAR que
+  // la lista prometía que no existía. Es el mismo argumento que la comprobación de entradas
+  // muertas de `ARCHIVOS_AUTORIZADOS` hace para la suya.
+  assert.ok(RUTAS_SIN_BASE.length > 0, 'la lista está vacía: el bucle pasaría en vacío');
+
+  for (const ruta of RUTAS_SIN_BASE) {
+    const contenido = archivosFuente(['app']).find((a) => a.ruta === ruta);
+    assert.ok(contenido, `RUTAS_SIN_BASE nombra ${ruta}, que no existe: sacala de la lista`);
+
+    // Las tres puertas a la base. `datos(` cubre las consultas de negocio, y las otras dos los
+    // dos contextos. Si aparece cualquiera, la ruta toca la base y la exención no corresponde.
+    for (const [patron, nombre] of [
+      [/\bconOrganizacion\s*\(/, 'conOrganizacion('],
+      [/\bconIdentidad\b\s*(?:<[^>]*>)?\s*\(/, 'conIdentidad('],
+      [/\bdatos\s*\(\s*\)/, 'datos()'],
+    ] as const) {
+      assert.doesNotMatch(
+        contenido.limpio,
+        patron,
+        `${ruta} está en RUTAS_SIN_BASE —"no toca la base"— pero usa \`${nombre}\`. O saca la ` +
+          'consulta, o saca la ruta de la lista y hacela abrir el contexto de su organización.',
+      );
+    }
+  }
+});
+
 // ─── ADR-0211 · la escotilla, solo donde está autorizada ────────────────────
 
 test('ADR-0211 · solo los archivos autorizados usan `conIdentidad(`', () => {
@@ -222,6 +253,10 @@ test('ADR-0202 · todo manejador de ruta abre el contexto de su organización', 
     // organización de control. Está en `ARCHIVOS_AUTORIZADOS` y `CRUZAN_LOS_DOS_DOMINIOS` con su
     // justificación; la ruta es una cáscara con autenticación propia.
     if (ruta === 'app/api/sonda/route.ts') continue;
+    // Los proxies autenticados que no tocan la base. No hay contexto que abrir porque no hay
+    // consulta que aislar — y más abajo se AFIRMA que de verdad no consultan nada, así que la
+    // exención no puede volverse mentira sin que una prueba lo diga.
+    if (RUTAS_SIN_BASE.includes(ruta)) continue;
 
     const contenido = archivosFuente(['app']).find((a) => a.ruta === ruta);
     assert.ok(contenido, `no se pudo leer ${ruta}`);
