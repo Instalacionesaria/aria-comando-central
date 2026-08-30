@@ -28,7 +28,10 @@ import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes, conIdentidad } from '../../lib/datos/capa.ts';
 import { COOKIE_SESION, hashDeToken, resolverSesion } from '../../lib/autorizacion/sesion.ts';
 import { exigir } from '../../lib/autorizacion/portero.ts';
-import { seccionesConAlcance, SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
+/* `esDeLaPrincipal(c)` y no un `true` fijo: así estas pruebas recorren el MISMO camino que la
+   sesión real, incluida la regla de la organización principal. Con un literal, una sección
+   `soloDesdeLaPrincipal` quedaría fuera del alcance de esta prueba para siempre. */
+import { esDeLaPrincipal, seccionesConAlcance, SIN_SECCION } from '../../lib/autorizacion/secciones.ts';
 import { POST as crearUsuario } from '../../app/api/admin/usuarios/route.ts';
 import { POST as asignarRoles } from '../../app/api/admin/usuarios/[id]/roles/route.ts';
 import { personasQuePuedeAdministrar } from '../../lib/administracion/usuarios.ts';
@@ -126,12 +129,12 @@ test('LOS DOS CEROS: cero filas con rol restringido es CERO; con rol no restring
 
   // Y lo que se ve, que es lo que importa.
   assert.equal(
-    seccionesConAlcance(cR.permisos, cR.alcance).length,
+    seccionesConAlcance(cR.permisos, cR.alcance, esDeLaPrincipal(cR)).length,
     0,
     'un rol restringido sin ninguna sección concedida tendría que ver CERO pestañas',
   );
   assert.ok(
-    seccionesConAlcance(cL.permisos, cL.alcance).length > 5,
+    seccionesConAlcance(cL.permisos, cL.alcance, esDeLaPrincipal(cL)).length > 5,
     'un rol no restringido tiene que ver todo lo que su capacidad habilita',
   );
 });
@@ -147,7 +150,7 @@ test('con una sección concedida se ve ESA, y las filas de otro no cuentan', asy
   ] as const) {
     const c = await resolverSesion(await sesionDe(id as string));
     assert.ok(c);
-    const claves = seccionesConAlcance(c.permisos, c.alcance)
+    const claves = seccionesConAlcance(c.permisos, c.alcance, esDeLaPrincipal(c))
       .map((s) => s.clave)
       .sort();
     assert.deepEqual(claves, [...esperadas].sort());
@@ -162,7 +165,7 @@ test('una sección concedida que el ROL no habilita no concede nada', async () =
   const p = await persona('usuario', ['credenciales', 'empresas', 'usuarios']);
   const c = await resolverSesion(await sesionDe(p));
   assert.ok(c);
-  assert.deepEqual(seccionesConAlcance(c.permisos, c.alcance), []);
+  assert.deepEqual(seccionesConAlcance(c.permisos, c.alcance, esDeLaPrincipal(c)), []);
 });
 
 test('con DOS roles y uno sin restricción, NO hay restricción', async () => {
@@ -179,7 +182,7 @@ test('con DOS roles y uno sin restricción, NO hay restricción', async () => {
   const c = await resolverSesion(await sesionDe(p));
   assert.ok(c);
   assert.equal(c.alcance.restringido, false, 'un rol sin restricción tiene que ganar');
-  assert.ok(seccionesConAlcance(c.permisos, c.alcance).length > 5);
+  assert.ok(seccionesConAlcance(c.permisos, c.alcance, esDeLaPrincipal(c)).length > 5);
 });
 
 test('el alcance NO se cachea: quitar una sección se ve en la petición siguiente', async () => {
@@ -192,7 +195,7 @@ test('el alcance NO se cachea: quitar una sección se ve en la petición siguien
 
   const antes = await resolverSesion(token);
   assert.ok(antes);
-  assert.equal(seccionesConAlcance(antes.permisos, antes.alcance).length, 2);
+  assert.equal(seccionesConAlcance(antes.permisos, antes.alcance, esDeLaPrincipal(antes)).length, 2);
 
   await admin.query(
     `delete from identidad.usuarios_secciones where usuario_id = $1 and seccion = 'setter'`,
@@ -202,7 +205,7 @@ test('el alcance NO se cachea: quitar una sección se ve en la petición siguien
   const despues = await resolverSesion(token);
   assert.ok(despues);
   assert.deepEqual(
-    seccionesConAlcance(despues.permisos, despues.alcance).map((s) => s.clave),
+    seccionesConAlcance(despues.permisos, despues.alcance, esDeLaPrincipal(despues)).map((s) => s.clave),
     ['closer'],
   );
 });

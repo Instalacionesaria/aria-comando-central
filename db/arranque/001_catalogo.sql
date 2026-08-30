@@ -98,6 +98,24 @@ insert into identidad.permisos (clave, descripcion) values
   ('tools.ver',          'Ver las herramientas de la pantalla Tools y sus documentos'),
   ('tools.editar',       'Generar y editar los documentos de Tools (consume tokens de la organización)'),
 
+  -- ── El Panel de Monitoreo ──────────────────────────────────────────────────
+  --
+  -- UNA sola y de lectura: el panel no escribe nada, mira cuántos scrapeos hizo cada empresa y
+  -- con qué scraper. Una `monitoreo.editar` sería una capacidad sin puerta.
+  --
+  -- **Es la primera capacidad de este archivo que el reparto NO puede derivar sola**, y por eso
+  -- lleva un `not like` escrito a mano abajo. Conviene entender por qué antes de tocarlo: el
+  -- reparto deriva por exclusión de prefijos, así que una familia nueva cae en LOS TRES roles.
+  -- Sin esa línea, el panel que mide a todas las empresas lo vería cualquier persona de
+  -- cualquier empresa cliente — y no fallaría nada, que es la forma de defecto que este archivo
+  -- persigue en todas partes.
+  --
+  -- Y lo que la capacidad sola tampoco alcanza a decir: un `administrador` existe en CADA
+  -- empresa. La capacidad le da la pestaña; lo que se la quita es la segunda mitad de la regla,
+  -- **ser de la organización principal**, que vive en `Seccion.soloDesdeLaPrincipal` y la
+  -- comprueba `app/api/monitoreo/route.ts`. Las dos mitades hacen falta.
+  ('monitoreo.ver',      'Ver el Panel de Monitoreo: los scrapeos de todas las empresas, por empresa y por scraper'),
+
   -- ── Etapa 11 · Closer y Setter ─────────────────────────────────────────────
   --
   -- UNA capacidad de lectura POR PESTAÑA, y acá está la decisión que hubo que tomar.
@@ -265,11 +283,22 @@ begin
       -- quedaría la pestaña Ajustes mostrando un panel que no puede tocar, y eso es el `07`
       -- § 4 —*"mostrar un control que no puede cumplir"*— con la agravante de que ahí se ven
       -- los estados de conexión de la empresa.
+      --
+      -- ── Y LA CUARTA EXCLUSIÓN, QUE NO SE DERIVA DE «TODO MENOS CREDENCIALES» ──
+      --
+      -- `monitoreo.%` está acá **a mano**, y es la primera vez que este reparto necesita una
+      -- exclusión que la frase de arriba no explica. El Panel de Monitoreo mira el consumo de
+      -- TODAS las empresas: si cayera sola en este rol —que es lo que hace la derivación por
+      -- prefijos— cualquier persona de cualquier empresa cliente vería los números de las demás,
+      -- y no fallaría nada. Es exactamente lo que `app/api/admin/comisiones/route.ts` anticipó
+      -- que costaría una capacidad propia: *"excluirla exigiría agregar a mano un cuarto `not
+      -- like` al reparto y volver a correr `db/arranque` contra producción"*. Este es ese cuarto.
       ('usuario', (select array_agg(clave) from identidad.permisos
                     where clave not like 'organizaciones.%'
                       and clave not like 'usuarios.%'
                       and clave not like 'roles.%'
-                      and clave not like 'credenciales.%')),
+                      and clave not like 'credenciales.%'
+                      and clave not like 'monitoreo.%')),
 
       -- El administrador: todo lo de SU empresa. Se le niegan tres familias completas:
       --
@@ -285,6 +314,14 @@ begin
       --
       -- Le queda lo que se pidió: credenciales, configuración, auditoría, fundaciones, los
       -- tableros y las dos pestañas de operación con sus acciones.
+      --
+      -- **Y `monitoreo.ver`, que le llega por derivación y se deja a propósito.** Se pidió que
+      -- el Panel de Monitoreo lo vea «gente de ARIA», no sólo el superadministrador: los dos
+      -- administradores de la empresa principal tienen que verlo. Lo que impide que también lo
+      -- vea el administrador de un cliente High Ticket NO es esta lista —no puede: los roles no
+      -- distinguen empresas— sino `Seccion.soloDesdeLaPrincipal`, comprobada en el servidor por
+      -- `app/api/monitoreo/route.ts`. Si esa comprobación desapareciera, esta línea se
+      -- convertiría en una fuga entre clientes sin que nada más cambiara.
       ('administrador', (select array_agg(clave) from identidad.permisos
                           where clave not like 'organizaciones.%'
                             and clave not like 'usuarios.%'

@@ -34,17 +34,24 @@ const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
 
 const TODAS = new Set(SECCIONES.map((s) => s.capacidadRequerida));
 
+/* Desde la organización principal. Es el valor que hace que estas pruebas sigan midiendo lo que
+   medían: sin él, las secciones `soloDesdeLaPrincipal` desaparecerían de todos los conjuntos de
+   abajo y las afirmaciones pasarían por una razón distinta de la que dicen. La regla en sí tiene
+   su propia prueba — no se comprueba de refilón acá. */
+const DESDE_LA_PRINCIPAL = true;
+
+
 test('sin restricción arranca en Executive, que es lo que el prototipo daba por sentado', () => {
   // La comprobación de que esto NO cambió el caso de siempre. El literal viejo acertaba acá, y por
   // eso el defecto duró: hay que ver los dos casos juntos para que el segundo signifique algo.
-  const inicio = seccionDeArranque(menuVisible(TODAS, { restringido: false }));
+  const inicio = seccionDeArranque(menuVisible(TODAS, { restringido: false }, DESDE_LA_PRINCIPAL));
   assert.equal(inicio?.seccion.clave, 'executive');
   assert.equal(inicio?.grupo, 'AIOS');
 });
 
 test('EL CASO QUE ROMPIÓ: restringido a Closer, arranca en Closer y NO en Executive', () => {
   const inicio = seccionDeArranque(
-    menuVisible(TODAS, { restringido: true, concedidas: new Set(['closer', 'tools']) }),
+    menuVisible(TODAS, { restringido: true, concedidas: new Set(['closer', 'tools']) }, DESDE_LA_PRINCIPAL),
   );
   assert.equal(inicio?.seccion.clave, 'closer');
   assert.equal(inicio?.seccion.nombre, 'Closer');
@@ -58,11 +65,11 @@ test('el CUERPO antes que el pie, aunque el pie venga primero en el catálogo', 
   const menu = menuVisible(TODAS, {
     restringido: true,
     concedidas: new Set(['credenciales', 'closer']),
-  });
+  }, DESDE_LA_PRINCIPAL);
   const alReves = [...menu].reverse();
   assert.equal(seccionDeArranque(alReves)?.seccion.clave, 'closer');
   // Y al revés sí: si lo único que tiene es el pie, abre ahí.
-  const soloPie = menuVisible(TODAS, { restringido: true, concedidas: new Set(['credenciales']) });
+  const soloPie = menuVisible(TODAS, { restringido: true, concedidas: new Set(['credenciales']) }, DESDE_LA_PRINCIPAL);
   assert.equal(seccionDeArranque(soloPie)?.seccion.clave, 'credenciales');
 });
 
@@ -70,7 +77,7 @@ test('sin ninguna sección devuelve `null`, y no inventa una pantalla', () => {
   // Es un estado alcanzable —un rol restringido sin secciones concedidas— y hoy no tiene pantalla
   // propia. Devolver `'executive'` acá sería exactamente el defecto que esto vino a cerrar, con la
   // diferencia de que lo escribiría el servidor.
-  assert.equal(seccionDeArranque(menuVisible(TODAS, { restringido: true, concedidas: new Set() })), null);
+  assert.equal(seccionDeArranque(menuVisible(TODAS, { restringido: true, concedidas: new Set() }, DESDE_LA_PRINCIPAL)), null);
   assert.equal(seccionDeArranque([]), null);
 });
 

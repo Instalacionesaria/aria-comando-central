@@ -23,6 +23,7 @@ import ContactsView from './views/ContactsView';
 import SetterView from './views/SetterView';
 import CloserView from './views/CloserView';
 import ToolsView from './views/ToolsView';
+import MonitoreoView from './views/MonitoreoView';
 import AjustesView from './views/AjustesView';
 
 /* La vista de cada pantalla, por su clave.
@@ -43,6 +44,7 @@ const VISTAS = {
   setter: SetterView,
   closer: CloserView,
   tools: ToolsView,
+  monitoreo: MonitoreoView,
   credenciales: AjustesView,
 };
 

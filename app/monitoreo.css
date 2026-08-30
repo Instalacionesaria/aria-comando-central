@@ -1,0 +1,135 @@
+/* El Panel de Monitoreo. NO viene del prototipo.
+   ==========================================================================
+
+   Va en la capa `components`, como `fundaciones.css`, `ajustes.css` y `closer.css`, y por el
+   mismo motivo: `aios.css` tiene que seguir siendo comparable línea a línea contra
+   `aios-command-center_1.html` —es lo que hace que `npm run paridad` signifique algo— así que
+   nada de acá lo toca.
+
+   ── NI UN COLOR ESCRITO A MANO ──────────────────────────────────────────
+
+   Todo sale de los tokens de `app/temas.css`. La regla no es de estilo: un `rgba(…)` copiado de
+   una regla vecina se ve bien en el tema oscuro y **desaparece en el claro**, sin fallar y sin
+   avisar. Está medido y comprobado por `pruebas/codigo/104-temas.test.ts`, que lee esta hoja.
+
+   ── Y NI UNA SOMBRA ─────────────────────────────────────────────────────
+
+   Se pidió sacar la profundidad de toda la aplicación. Esta capa es la misma en la que vive el
+   barrido de `app/temas.css`, así que una regla con `box-shadow` acá le ganaría por
+   especificidad. `pruebas/codigo/107-sin-sombras.test.ts` también lee esta hoja. */
+
+/* ── La tira de totales ── */
+.mon-totales {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.mon-tarjeta {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  /* `--bg-panel` y NO `--bg-card`, que es lo que usan las tarjetas de `fundaciones.css`:
+     **ese token no existe en `app/temas.css`**, así que aquellas reglas caen a transparente sin
+     que nada falle. Copiarlo por analogía habría traído el mismo hueco acá. */
+  background: var(--bg-panel);
+  padding: 12px 14px;
+}
+.mon-tarjeta .mon-cifra {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.mon-tarjeta .mon-rotulo {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--txt-dim);
+}
+/* La nota al pie de una tarjeta: el desglose que explica la cifra de arriba. */
+.mon-tarjeta .mon-pie {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+
+/* ── La caja de la tabla ── */
+.mon-bloque {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+.mon-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--txt);
+}
+.mon-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* La tabla scrollea DENTRO de su caja: con nueve columnas y el menú lateral fijo, dejar que
+   scrollee la página entera se lleva el menú fuera de la pantalla. */
+.mon-scroll { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+.mon-tabla { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.mon-tabla th,
+.mon-tabla td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.mon-tabla th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+/* Los números a la derecha y con cifras de ancho fijo. Sin `tabular-nums`, una columna de
+   miles baila de fila en fila y comparar dos empresas de un vistazo deja de funcionar. */
+.mon-tabla .mon-n { text-align: right; font-variant-numeric: tabular-nums; }
+.mon-tabla tbody tr:hover { background: var(--bg-sunk); }
+.mon-empresa { display: flex; align-items: center; gap: 8px; }
+.mon-empresa b { font-weight: 600; color: var(--txt); }
+/* El cero de una columna se apaga: con cinco columnas de scrapers, la mayoría de las celdas
+   son cero, y a la misma intensidad que los números que sí hay tapan lo que se vino a ver. */
+.mon-cero { color: var(--txt-faint); }
+/* Una fila que no se pudo leer. Sus ceros NO son ceros. */
+.mon-tabla tr.mon-ilegible td { color: var(--txt-faint); }
+.mon-tabla tr.mon-ilegible .mon-empresa b { color: var(--warn); }
+.mon-vacio {
+  padding: 22px 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+  text-align: center;
+}
+/* El pie de la tabla: los mismos totales, para no tener que volver arriba después de scrollear
+   veinte filas. */
+.mon-tabla tfoot td {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-sunk);
+  font-weight: 700;
+  color: var(--txt);
+  border-top: 1px solid var(--line-strong);
+}

@@ -34,6 +34,11 @@ import { seccionesVisibles, menuVisible, type Alcance } from '../../lib/autoriza
    nombre en vez de un objeto suelto: deja escrito que la medición es del rol y que el alcance es otra
    pregunta — la que mide `pruebas/base/31-alcance.test.ts`. */
 const SIN_ALCANCE: Alcance = { restringido: false };
+/* Desde la organización principal. Es el valor que hace que estas pruebas sigan midiendo lo que
+   medían: sin él, las secciones `soloDesdeLaPrincipal` desaparecerían de todos los conjuntos de
+   abajo y las afirmaciones pasarían por una razón distinta de la que dicen. La regla en sí tiene
+   su propia prueba — no se comprueba de refilón acá. */
+const DESDE_LA_PRINCIPAL = true;
 import { personasQuePuedeAdministrar } from '../../lib/administracion/usuarios.ts';
 import { cerrarClientes, conIdentidad } from '../../lib/datos/capa.ts';
 
@@ -249,8 +254,8 @@ test('lo que cada rol ve en pantalla sale de su reparto, y es lo que se pidió',
     'el usuario y el administrador ven exactamente lo mismo: la diferencia se perdió',
   );
   assert.ok(
-    menuVisible(delUsuario, SIN_ALCANCE).length < menuVisible(delAdmin, SIN_ALCANCE).length ||
-      menuVisible(delUsuario, SIN_ALCANCE).length > 0,
+    menuVisible(delUsuario, SIN_ALCANCE, DESDE_LA_PRINCIPAL).length < menuVisible(delAdmin, SIN_ALCANCE, DESDE_LA_PRINCIPAL).length ||
+      menuVisible(delUsuario, SIN_ALCANCE, DESDE_LA_PRINCIPAL).length > 0,
     'el usuario no ve ningún grupo de menú',
   );
 });

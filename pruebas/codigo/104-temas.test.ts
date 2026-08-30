@@ -24,7 +24,10 @@ const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
 
 /** Las hojas donde un color literal es un defecto. `temas.css` es donde viven los valores. */
-const HOJAS = ['app/aios.css', 'app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css'];
+// `monitoreo.css` entra acá el día que se crea, y no después: una hoja fuera de esta lista puede
+// escribir un color a mano y **la prueba sigue en verde** — que es exactamente el modo de falla
+// que el encabezado describe, con el agravante de que nadie lo busca en una prueba que pasa.
+const HOJAS = ['app/aios.css', 'app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css', 'app/monitoreo.css'];
 
 /** El cuerpo de una hoja sin comentarios y sin su bloque `:root`, que es donde SÍ van los valores. */
 function cuerpo(css: string): string {

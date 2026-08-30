@@ -591,6 +591,43 @@ export interface TablaScraperLeads {
   created_at: Generated<Date>;
 }
 
+/**
+ * Un scraping disparado. **Es la fila que el Panel de Monitoreo cuenta como «un scrapeo».**
+ *
+ * Mismo régimen y misma excepción que `TablaScraperLeads`: vive en `public` porque la escribe el
+ * backend de Python por PostgREST, y tiene RLS forzada con la política por `app.org_id`.
+ *
+ * Se declaran SOLO las columnas que el panel lee. No es pereza: una columna declarada de más es
+ * una columna que Kysely deja escribir, y este proyecto no escribe en esta tabla — la escribe el
+ * backend. `results_data` y `apify_actor_run_id` quedan afuera a propósito; el panel cuenta
+ * trabajos, no muestra sus resultados.
+ */
+export interface TablaScraperTrabajos {
+  org_id: string;
+  id: Generated<string>;
+  /** `maps`, `linkedin`, `facebook-ads`, `facebook-pages`, `ad-spy`. Lo acota un `check`. */
+  fuente: string;
+  /** `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. Lo acota un `check`. */
+  status: Generated<string>;
+  created_at: Generated<Date>;
+}
+
+/**
+ * El saldo de leads de una organización. Una fila por empresa, o **ninguna**.
+ *
+ * Que pueda no haber fila es el dato: significa que esa empresa nunca scrapeó. El panel lo
+ * muestra como «sin monedero» y no como cero — son dos hechos distintos, y confundirlos haría
+ * que una empresa recién dada de alta se vea igual que una que gastó todo su saldo.
+ */
+export interface TablaScraperMonedero {
+  org_id: string;
+  numero_leads_scrapeados: Generated<number>;
+  leads_base_gratuitos: Generated<number>;
+  leads_adicionales_pagados: Generated<number>;
+  /** Columna GENERADA por la base: `gratuitos + pagados`. Nunca se escribe desde acá. */
+  leads_disponibles_en_total: Generated<number>;
+}
+
 /** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -626,8 +663,10 @@ export interface BaseDeDatos {
   notas: TablaNotas;
   hallazgos: TablaHallazgos;
 
-  // La ÚNICA calificada con su esquema. El porqué está en `TablaScraperLeads`: la escribe el
-  // backend de Python por PostgREST, que sólo alcanza `public`. Tiene el mismo régimen de
+  // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
+  // backend de Python por PostgREST, que sólo alcanza `public`. Tienen el mismo régimen de
   // aislamiento que las de arriba — RLS forzada y política por `app.org_id`.
   'public.aria_cc_scraper_leads': TablaScraperLeads;
+  'public.aria_cc_scraper_trabajos': TablaScraperTrabajos;
+  'public.aria_cc_scraper_monedero': TablaScraperMonedero;
 }

@@ -230,10 +230,17 @@ export async function POST(peticion: Request): Promise<Response> {
             .execute()
         ).map((x) => x.permiso),
       );
-      const efectivas = seccionesConAlcance(capacidades, {
-        restringido: true,
-        concedidas: new Set(pedidas),
-      });
+      /* El tercer argumento va en `true`, y no es un descuido: acá no se está decidiendo qué ve
+         NADIE, se está validando que el alcance pedido no deje al rol sin ninguna pestaña. La
+         regla de la organización principal es de otro eje —quién mira, desde dónde— y aplicarla
+         acá haría que el mismo alcance se acepte o se rechace según quién esté dando de alta.
+         Que una sección `soloDesdeLaPrincipal` no la vea el destinatario lo decide su sesión,
+         no este `check`. */
+      const efectivas = seccionesConAlcance(
+        capacidades,
+        { restringido: true, concedidas: new Set(pedidas) },
+        true,
+      );
       if (efectivas.length === 0) {
         return rechazo('peticion_invalida', MOTIVOS['alcance_vacio']);
       }

@@ -148,6 +148,20 @@ export default function IconSprite() {
             strokeLinejoin="round"
            />
         </symbol>
+        {/* Panel de Monitoreo · un pulso sobre una línea de base. `currentColor` como los demás:
+            el color lo pone el menú según si la entrada está activa. Se dibuja distinto de
+            `#i-exec` —que es el tablero ejecutivo— a propósito: dos entradas del menú con el
+            mismo icono se eligen mal cuando se navega rápido. */}
+        <symbol id="i-monitoreo" viewBox="0 0 16 16">
+          <path
+            d="M1.6 8.4h2.6l1.7-4.6 2.5 8.4 1.7-3.8h4.3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+           />
+        </symbol>
         <symbol id="i-closer" viewBox="0 0 16 16">
           <path
             d="M3 9.4V8a5 5 0 0 1 10 0v1.4"

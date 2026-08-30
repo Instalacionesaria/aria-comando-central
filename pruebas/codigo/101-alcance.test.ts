@@ -28,6 +28,12 @@ const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
 
 const FORMULARIO = 'components/ajustes/Usuarios.jsx';
 
+/* Desde la organización principal. Es el valor que hace que estas pruebas sigan midiendo lo que
+   medían: sin él, las secciones `soloDesdeLaPrincipal` desaparecerían de todos los conjuntos de
+   abajo y las afirmaciones pasarían por una razón distinta de la que dicen. La regla en sí tiene
+   su propia prueba — no se comprueba de refilón acá. */
+const DESDE_LA_PRINCIPAL = true;
+
 test('el formulario NO trae ningún nombre de sección escrito a mano', () => {
   const fuente = leer(FORMULARIO);
   const colados = SECCIONES.filter(
@@ -84,7 +90,7 @@ test('`alcanceOfrecible` no devuelve grupos vacíos', () => {
 test('el corte del alcance se aplica ANTES de agrupar el menú', () => {
   // Aplicado afuera, sobre el menú ya agrupado, quedarían grupos con título y nada adentro.
   const todas = new Set(SECCIONES.map((s) => s.capacidadRequerida));
-  const menu = menuVisible(todas, { restringido: true, concedidas: new Set(['executive']) });
+  const menu = menuVisible(todas, { restringido: true, concedidas: new Set(['executive']) }, DESDE_LA_PRINCIPAL);
   assert.equal(menu.length, 1, 'quedaron grupos vacíos al aplicar el alcance');
   assert.deepEqual(
     menu[0]?.secciones.map((s) => s.clave),
@@ -97,10 +103,11 @@ test('el alcance es una INTERSECCIÓN, nunca una unión', () => {
   // no habilita nada que el rol no habilite. Si alguna vez sumara, habría que volver a discutir la
   // regla de la migración 003 en vez de explicar por qué no aplica.
   const soloCloser = new Set(['closer.ver']);
-  const efectivas = seccionesConAlcance(soloCloser, {
-    restringido: true,
-    concedidas: new Set(clavesDeSeccion()),
-  });
+  const efectivas = seccionesConAlcance(
+    soloCloser,
+    { restringido: true, concedidas: new Set(clavesDeSeccion()) },
+    DESDE_LA_PRINCIPAL,
+  );
   assert.deepEqual(
     efectivas.map((s) => s.clave),
     ['closer'],

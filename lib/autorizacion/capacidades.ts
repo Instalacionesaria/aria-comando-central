@@ -70,6 +70,34 @@ export const CAPACIDADES = [
   // nada falle.
   'tools.ver',
   'tools.editar',
+  // ── El Panel de Monitoreo ────────────────────────────────────────────────────
+  //
+  // UNA sola, y de LECTURA. El panel no tiene nada que escribir: mira cuántos scrapeos hizo cada
+  // empresa y con qué scraper. Una capacidad de edición sería una capacidad sin puerta, que es lo
+  // que este archivo le reprocha a `roles.administrar`.
+  //
+  // ── POR QUÉ UNA FAMILIA NUEVA Y NO `credenciales.%` ────────────────────────
+  //
+  // `credenciales.%` era la salida barata y tiene precedente escrito: `app/api/admin/comisiones`
+  // la usa justamente porque es la única familia que ya excluye al rol `usuario` **sin tocar el
+  // reparto**. Su propio encabezado dice el costo — *"la descripción de esa capacidad habla de
+  // credenciales y ahora también gobierna sueldos"*— y colgarle una tercera cosa lo agrava: quien
+  // lea «credenciales» en una fila de auditoría no va a adivinar que también concede ver el
+  // consumo de todas las empresas.
+  //
+  // Así que es familia propia, y el costo se paga donde se ve: `db/arranque/001_catalogo.sql` lleva
+  // un `not like 'monitoreo.%'` escrito a mano en el reparto del rol `usuario`. Sin esa línea la
+  // capacidad cae SOLA en los tres roles —el reparto deriva por exclusión de prefijos— y el panel
+  // que mide a todas las empresas se lo vería cualquier persona de cualquier empresa.
+  //
+  // ── QUIÉN LA TIENE, Y LO QUE LA CAPACIDAD SOLA NO ALCANZA A DECIR ──────────
+  //
+  // `superadministrador` y `administrador`. Y eso NO basta: un administrador existe en cada
+  // empresa cliente, así que la capacidad sola le daría a un cliente High Ticket el panel con los
+  // números de sus competidores. La segunda mitad de la regla —**ser de la organización
+  // principal**— vive en `Seccion.soloDesdeLaPrincipal` y la comprueba el manejador. Las dos
+  // mitades son necesarias; ninguna se puede leer sin la otra.
+  'monitoreo.ver',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //
   // UNA de lectura por PESTAÑA, y son dos porque de eso depende que un closer no vea la

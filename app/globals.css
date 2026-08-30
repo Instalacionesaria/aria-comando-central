@@ -33,6 +33,11 @@
    signifique algo. El motivo largo está en el encabezado del archivo. */
 @import "./closer.css" layer(components);
 
+/* El Panel de Monitoreo: la tabla de consumo de todas las empresas. Misma capa y mismo motivo
+   que las de arriba — esta pantalla no existe en el prototipo, así que `aios.css` no tiene nada
+   que decir sobre ella y no se toca. */
+@import "./monitoreo.css" layer(components);
+
 /* Los dos temas. VA ÚLTIMO de la capa `components` a propósito: redefine tokens que las hojas de
    arriba usan, así que tiene que ganarles a todas. El motivo de que sea un archivo aparte y no una
    edición del `:root` de `aios.css` está en su encabezado. */

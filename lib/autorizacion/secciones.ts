@@ -89,6 +89,31 @@ export interface Seccion {
    */
   sinOperacionesTodavia?: true;
   /**
+   * `true` = la pantalla **solo la ve quien es de la organización principal**, además de tener
+   * su capacidad.
+   *
+   * ── POR QUÉ ESTE EJE EXISTE Y NO SE PUEDE EXPRESAR CON UNA CAPACIDAD ───────
+   *
+   * Los roles del sistema son globales: `identidad.roles` los reparte con `org_id is null`, así
+   * que `administrador` es el mismo rol en ARIA y en cada empresa cliente. Una capacidad no
+   * puede distinguirlos — o la tienen los administradores de todas las empresas, o de ninguna.
+   *
+   * Y hay una pantalla que necesita justo esa distinción: el Panel de Monitoreo mira el consumo
+   * de TODAS las empresas. Con la capacidad sola, el administrador de un cliente High Ticket
+   * vería los números de sus competidores, y **no fallaría nada** — se vería como una pantalla
+   * que funciona.
+   *
+   * ── LA REGLA SE MIDE SOBRE LA ORGANIZACIÓN PROPIA, NO SOBRE LA EFECTIVA ────
+   *
+   * Es lo que la separa del encierro que ya se pagó con la pestaña Empresas: allá la condición
+   * miraba dónde estabas parado, así que conmutar a un cliente **quitaba de la pantalla el
+   * control con el que se volvía** (ver `components/views/AjustesView.jsx`). Acá se mira a qué
+   * organización PERTENECÉS, que no cambia al conmutar: el panel no aparece y desaparece.
+   *
+   * Quien lo evalúa es `esDeLaPrincipal(contexto)`, en este mismo archivo.
+   */
+  soloDesdeLaPrincipal?: true;
+  /**
    * Cómo se dibuja en el menú lateral. **Ausente = no tiene entrada en el menú.**
    *
    * `usuarios` y `credenciales` son así: tienen operaciones y capacidad, y no tienen pantalla
@@ -287,6 +312,32 @@ export const SECCIONES: readonly Seccion[] = [
     nombre: 'Tools',
     capacidadRequerida: 'tools.ver',
     menu: { grupo: 'Operación', icono: '#i-tools' },
+  },
+  {
+    // ── El Panel de Monitoreo ──────────────────────────────────────────────
+    //
+    // La pantalla con la que ARIA mira a sus clientes: cuántos scrapeos hizo cada empresa y con
+    // qué scraper. Viene del «Panel de Control» de ARIA-brain, que leía el hub y quedaba fuera
+    // de este sistema; acá lee las tablas del scraper que la migración `006_aria_cc_scraper.sql`
+    // trajo a esta base, y el eje pasó de `cliente_id` a `org_id`.
+    //
+    // **Es la primera sección con `soloDesdeLaPrincipal`, y es lo que la hace segura.** Su
+    // capacidad la tienen `superadministrador` y `administrador` —el reparto de
+    // `db/arranque/001_catalogo.sql` solo le niega la familia al rol `usuario`—, y un
+    // administrador existe en CADA empresa cliente. Sin la bandera, el administrador de un
+    // cliente High Ticket vería el consumo de los otros nueve y la pantalla se vería bien.
+    //
+    // NO va en `scripts/paridad.mjs`, por el mismo motivo que `tools`: esta pantalla no existe
+    // en `aios-command-center_1.html`, así que compararla daría un rojo permanente — y un rojo
+    // permanente no se arregla, se ignora, y con él se ignoran los demás.
+    //
+    // Va en «Operación» y no en el pie: el pie solo dibuja `enElPie[0]` (`components/Nav.jsx`),
+    // así que una segunda sección ahí **no se vería y nada fallaría**.
+    clave: 'monitoreo',
+    nombre: 'Panel de Monitoreo',
+    capacidadRequerida: 'monitoreo.ver',
+    soloDesdeLaPrincipal: true,
+    menu: { grupo: 'Operación', icono: '#i-monitoreo' },
   },
 ];
 
@@ -558,11 +609,68 @@ export type Alcance =
   | { readonly restringido: false }
   | { readonly restringido: true; readonly concedidas: ReadonlySet<string> };
 
+/**
+ * ¿Esta persona es de la organización principal? **Se pregunta sobre la SUYA, no sobre la que
+ * está mirando.**
+ *
+ * ── LA FÓRMULA, Y POR QUÉ NO HACE FALTA UNA CONSULTA MÁS ───────────────────
+ *
+ * `contexto.organizacion` describe `orgEfectiva`, no `orgPropia`, así que su `esPrincipal` no
+ * responde directamente la pregunta. Las dos ramas la responden entre las dos, y cada una se
+ * apoya en un hecho que ya está garantizado en otro lado:
+ *
+ *   · `esRolDePlataforma` → la bandera `solo_principal` del rol, que el 03 § 3 llama *"LA
+ *     BARRERA contra la escalada entre inquilinos"* y que un disparador de la base hace
+ *     cumplir: **un rol de plataforma solo puede vivir en la organización principal**. O sea
+ *     que para el superadministrador `orgPropia` ES la principal, esté mirando lo que esté
+ *     mirando. Sin esta rama, conmutarse a una empresa cliente le apagaría el panel — el
+ *     encierro exacto que la pestaña Empresas ya pagó una vez.
+ *
+ *   · Para todos los demás, `orgEfectiva === orgPropia` **por construcción**: la fórmula del
+ *     04 § 8 solo respeta `sesiones.org_activa` si el rol es de plataforma. Así que para un
+ *     administrador o un usuario, `organizacion.esPrincipal` sí habla de su propia empresa.
+ *
+ * Lo que está PROHIBIDO acá es la tercera vía, la que aparece sola: comparar el nombre de la
+ * organización con la cadena `'ARIA'`. Es lo que `Contexto.organizacion` ya advierte — *"el día
+ * que alguien renombre la organización, la pantalla cambia de comportamiento sin que nadie
+ * toque una línea"*.
+ */
+export function esDeLaPrincipal(contexto: {
+  esRolDePlataforma: boolean;
+  organizacion: { esPrincipal: boolean };
+}): boolean {
+  return contexto.esRolDePlataforma || contexto.organizacion.esPrincipal;
+}
+
+/**
+ * Las secciones que sobreviven a la regla de la organización principal.
+ *
+ * Está separada de `puede(` a propósito, y no es cosmética: `puede(` responde *"¿el rol lo
+ * habilita?"* y la usan el formulario de alcance y las pruebas del catálogo, donde no hay
+ * ninguna organización de la que hablar. Mezclarlas obligaría a inventar un valor para ese
+ * parámetro en lugares donde la pregunta no tiene sentido, y un valor inventado en una función
+ * de permisos es cómo se abre una puerta sin que nadie lo decida.
+ */
+function filtrarPorOrganizacion(
+  secciones: readonly Seccion[],
+  desdeLaPrincipal: boolean,
+): readonly Seccion[] {
+  if (desdeLaPrincipal) return secciones;
+  return secciones.filter((s) => !s.soloDesdeLaPrincipal);
+}
+
+/**
+ * @param desdeLaPrincipal lo que devuelve `esDeLaPrincipal(contexto)`. Va OBLIGATORIO y no
+ *   opcional por el mismo motivo que el alcance (ver `menuVisible`): opcional deja que un
+ *   llamador nuevo se lo olvide y muestre de más **sin fallar**; obligatorio rompe la
+ *   compilación en cada llamador, que es el resultado buscado.
+ */
 export function seccionesConAlcance(
   permisos: ReadonlySet<string>,
   alcance: Alcance,
+  desdeLaPrincipal: boolean,
 ): readonly Seccion[] {
-  const delRol = seccionesVisibles(permisos);
+  const delRol = filtrarPorOrganizacion(seccionesVisibles(permisos), desdeLaPrincipal);
   if (!alcance.restringido) return delRol;
   return delRol.filter((s) => alcance.concedidas.has(s.clave));
 }
@@ -582,6 +690,7 @@ export function seccionesConAlcance(
 export function menuVisible(
   permisos: ReadonlySet<string>,
   alcance: Alcance,
+  desdeLaPrincipal: boolean,
 ): readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly Seccion[] }[] {
   /* El alcance va OBLIGATORIO, no opcional, y la diferencia es todo: opcional deja que un llamador
      nuevo se lo olvide y muestre el menú entero **sin fallar**. Obligatorio rompe la compilación en
@@ -590,7 +699,7 @@ export function menuVisible(
      Y el corte se aplica ACÁ, antes de agrupar. Aplicarlo afuera sobre el menú ya agrupado dejaría
      grupos con título y nada adentro — un título flotando sobre el vacío, que es lo que la regla de
      abajo prohíbe. */
-  const visibles = seccionesConAlcance(permisos, alcance).filter((s) => s.menu);
+  const visibles = seccionesConAlcance(permisos, alcance, desdeLaPrincipal).filter((s) => s.menu);
   return GRUPOS_DEL_MENU.map((grupo) => ({
     grupo,
     secciones: visibles.filter((s) => s.menu!.grupo === grupo.clave),

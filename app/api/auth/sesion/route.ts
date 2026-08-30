@@ -43,6 +43,7 @@ import { auditar } from '../../../../lib/autenticacion/auditoria.ts';
 import { estadoQueCorresponde } from '../../../../lib/autenticacion/estado.ts';
 import { MINIMO_PASSWORD } from '../../../../lib/autenticacion/politica.ts';
 import {
+  esDeLaPrincipal,
   menuVisible,
   seccionDeArranque,
   seccionesConAlcance,
@@ -62,7 +63,12 @@ export async function GET(peticion: Request): Promise<Response> {
   /* Una sola vez: el menú y la pantalla de arranque tienen que salir de la MISMA lista. Llamar a
      `menuVisible` dos veces daría el mismo resultado hoy y es exactamente la forma de que mañana
      no lo dé. */
-  const menu = menuVisible(contexto.permisos, contexto.alcance);
+  /* ¿Es de la casa? Se calcula UNA vez y se pasa a las dos listas, por el mismo motivo que el
+     menú se arma una sola vez: son dos mitades de la misma interfaz —`menu` lo lee `Nav` y
+     `secciones` las lee `AjustesView`— y filtrar una sola deja la otra entera. Ver
+     `esDeLaPrincipal`, que explica por qué la pregunta es sobre la organización PROPIA. */
+  const deLaPrincipal = esDeLaPrincipal(contexto);
+  const menu = menuVisible(contexto.permisos, contexto.alcance, deLaPrincipal);
 
   return ok({
     autenticado: true,
@@ -76,7 +82,7 @@ export async function GET(peticion: Request): Promise<Response> {
     // Las dos mitades cortadas por el MISMO alcance. Si se filtrara solo una, la otra quedaría
     // entera: `secciones` la lee `AjustesView` para decidir sus pestañas y `menu` lo lee `Nav`, así
     // que cortar una sola deja media interfaz sin restringir.
-    secciones: seccionesConAlcance(contexto.permisos, contexto.alcance),
+    secciones: seccionesConAlcance(contexto.permisos, contexto.alcance, deLaPrincipal),
     // El menú YA AGRUPADO y en orden, no una lista para que el cliente ordene. Es el § 9
     // regla 3 aplicado a la interfaz: si el componente supiera el orden de los grupos,
     // tendríamos otra vez dos listas que se pueden desordenar una respecto de la otra — que

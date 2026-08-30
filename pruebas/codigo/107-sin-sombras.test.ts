@@ -145,7 +145,7 @@ test('ninguna hoja de la capa `components` estrena una sombra sin nombrarla', ()
   //
   // Se cuentan las declaraciones que PONEN una sombra. `box-shadow: none` no cuenta: apagarla es
   // justamente lo que se quiere.
-  const HOJAS = ['app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css'];
+  const HOJAS = ['app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css', 'app/monitoreo.css'];
   const puestas: string[] = [];
   for (const hoja of HOJAS) {
     const css = leer(hoja).replace(/\/\*[\s\S]*?\*\//g, '');

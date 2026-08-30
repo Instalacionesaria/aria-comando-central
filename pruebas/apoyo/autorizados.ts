@@ -299,6 +299,18 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // No es un endpoint: `EJECUCION` § 3 cerró que el alta de administradores es *"script contra la
   // base, no endpoint HTTP"*, así que nunca está expuesto. Corre a mano, y por omisión no escribe.
   'scripts/altas-high-ticket.mjs',
+  // ── El Panel de Monitoreo ────────────────────────────────────────────────────
+  //
+  // Lee la LISTA de organizaciones y nada más. Es literalmente el caso que el 04 § 4 nombra como
+  // legítimo —*"necesitan la lista de organizaciones, y después trabajar de una en una, abriendo
+  // el contexto en cada vuelta como una petición normal"*— y es exactamente lo que hace: el
+  // consumo de cada empresa sale por `conOrganizacion(`, o sea por la misma política de RLS que
+  // pasaría una petición de esa empresa.
+  //
+  // Lo que NO hace, y es la mitad que importa: **no lee ni una fila de negocio por esta puerta.**
+  // Si lo intentara, el rol de identidad no tiene el privilegio y fallaría fuerte y a la vista,
+  // que es la propiedad que hace que esta escotilla sea aceptable.
+  'app/api/monitoreo/route.ts',
 ];
 
 /**
@@ -436,6 +448,17 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
    * Y el orden inverso no es «peor» sino imposible: sin la lectura de identidad no se sabe de qué
    * empresa es el evento, así que no hay contexto de inquilino que abrir. */
   'app/api/avisos/crm/route.ts',
+  // El Panel de Monitoreo: identidad para la lista de empresas, negocio por un bucle de
+  // `conOrganizacion()`. **Qué queda a medias si la segunda mitad falla: nada, porque NO
+  // ESCRIBE.** Las dos mitades son lecturas, así que el "éxito reportado que no ocurrió" del
+  // 09 § 6 —que necesita dos escrituras— no es alcanzable acá. Es la misma forma y la misma
+  // justificación que la fase `verificar` de `db.mjs`, que recorre las organizaciones igual.
+  //
+  // Y la lectura de cada empresa está envuelta en su propio `try`: una que falle deja su fila
+  // marcada `ilegible` en vez de tumbar el panel entero. Eso NO es tolerancia a la falta de
+  // atomicidad —no hay nada que deshacer— es que un tablero que desaparece por una empresa con
+  // problemas es un tablero que no sirve justo el día que hace falta.
+  'app/api/monitoreo/route.ts',
 ];
 
 /**
