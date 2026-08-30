@@ -32,7 +32,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
-import { filasDeTerritorio, type Fila } from './fila.ts';
+import { estaCerrado, filasDeTerritorio, type Fila } from './fila.ts';
 /* `SEGUIMIENTO_AUTOMATICO` ya no se importa: la cola de seguimientos dejo de leer esa etiqueta
    cuando los automaticos salieron de Mi Dia. Sigue viva en `lib/negocio/fila.ts`, que es la que
    enciende el icono de la fila, y eso es lo correcto: la serie automatica es un HECHO del contacto,
@@ -253,6 +253,16 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
   const enUrgentes = new Set<string>();
   for (const fila of filas) {
     if (!tiene(fila.etiquetas, FALLOS_DEL_AUDITOR)) continue;
+    /* ── Y UN CONTACTO CERRADO NO ENTRA, POR MÁS QUE EL BOT HAYA FALLADO ─────
+     *
+     * Las tres etiquetas de arriba viven en el CRM y **nadie las quita**: registrar un resultado
+     * solo AGREGA etiquetas (`etiquetasDelResultado`). Así que sin esta línea un contacto
+     * descalificado se queda en la cola roja para siempre, tachado y con su píldora
+     * `NO LE INTERESA` al lado, mientras la fila dice «revisar la conversación» sobre alguien que
+     * ya se revisó y se cerró. Pasó, y así se encontró.
+     *
+     * La cola contesta «qué necesita mis manos ahora». Un contacto cerrado no necesita manos. */
+    if (estaCerrado(fila.situacion)) continue;
     enUrgentes.add(fila.id);
     resultado.urgentes.push({
       fila,
@@ -376,7 +386,12 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
     if (agente === 'atendiendo' || agente === 'atendiendo_pre_agenda' || agente === 'atendiendo_post_agenda') {
       continue;
     }
-    // 5 · escribió, y **el suyo es el último mensaje**.
+    /* 5 · y NO ESTÁ CERRADO. Va junto a la condición 3 y no la reemplaza: aquella mira lo que se
+     *     cerró HOY, y un contacto descalificado hace trece días que escribió y no fue respondido
+     *     entra igual. Sin esto, arreglar Urgentes lo único que hacía era MUDARLO acá — el mismo
+     *     contacto en otra lista, que no es arreglarlo. */
+    if (estaCerrado(fila.situacion)) continue;
+    // 6 · escribió, y **el suyo es el último mensaje**.
     if (!fila.ultimoEntranteEl) continue;
     if (leRespondieron(fila)) continue;
 

@@ -250,6 +250,51 @@ export type Situacion =
   | 'venta_chica'
   | 'no_califica';
 
+/**
+ * Las situaciones que CIERRAN un contacto: no queda trabajo pendiente sobre él.
+ *
+ * ══ PARA QUÉ EXISTE: UN CONTACTO CERRADO NO GENERA TAREA EN NINGUNA COLA ════
+ *
+ * Lo reportó alguien mirando su propia pantalla: descalificó a un contacto y **siguió apareciendo en
+ * «Intervenciones urgentes»**, tachado y con su píldora `NO LE INTERESA` al lado. O sea que la fila
+ * probaba que el sistema sabía que estaba cerrado, y la cola lo listaba igual.
+ *
+ * El motivo era que esa cola solo mira tres etiquetas del CRM —las que dicen «el bot se apagó porque
+ * falló»— y **registrar un resultado nunca quita una etiqueta**: `etiquetasDelResultado` en
+ * `lib/ghl/contrato.ts` solo AGREGA. Así que la etiqueta se queda para siempre y la cola también.
+ *
+ * No es solo ruido: esas filas suman al contador de «tareas de hoy», o sea que el número miente. Y el
+ * propio Mi Día ya tiene escrito adónde lleva eso — *«a la tercera vez deja de creerle al contador»*.
+ *
+ * ── QUÉ ESTÁ ADENTRO Y QUÉ NO, CON EL MOTIVO DE CADA UNO ─────────────────
+ *
+ * Adentro van los desenlaces de los que **no se vuelve**:
+ *
+ *   · `venta` y `venta_chica` — se cobró;
+ *   · `no_interesa` y `no_califica` — cerrado en negativo por una decisión humana.
+ *
+ * Y afuera quedan cuatro que PARECEN cerrados y no lo son, que es donde está el filo:
+ *
+ *   · `acuerdo_sin_pago` — hay plata comprometida y sin cobrar. Es el contacto que MÁS trabajo pide.
+ *   · `nurture` — `lib/negocio/etapas.ts` lo describe como *«frío, pero explícitamente reversible
+ *     («no es ahora»)»*. Un «no es ahora» no es un «no».
+ *   · `no_show` — *«un hecho operativo, no una resolución: el contacto sigue vivo»*.
+ *   · `seguimiento` — el estado de trabajo activo por definición.
+ *
+ * Tampoco entra `agendo`: agendar ABRE trabajo, no lo cierra.
+ */
+export const SITUACIONES_CERRADAS: readonly Situacion[] = [
+  'venta',
+  'venta_chica',
+  'no_interesa',
+  'no_califica',
+];
+
+/** Si sobre este contacto ya no queda trabajo. Ver `SITUACIONES_CERRADAS`. */
+export function estaCerrado(situacion: Situacion): boolean {
+  return SITUACIONES_CERRADAS.includes(situacion);
+}
+
 /** El tope de filas por página. */
 const POR_PAGINA = 100;
 

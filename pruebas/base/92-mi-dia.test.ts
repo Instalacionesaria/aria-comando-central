@@ -172,6 +172,118 @@ test('ninguna fila de Urgentes queda sin motivo', async () => {
   assert.ok(c.urgentes[0]!.motivo && c.urgentes[0]!.motivo.length > 0, 'la fila urgente no trae motivo');
 });
 
+/** Registra un resultado sobre un contacto, con la antigüedad que se quiera. */
+async function resultado(contactoId: string, salida: string, haceDias = 0): Promise<void> {
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('resultados')
+      .values({
+        contacto_id: contactoId,
+        salida,
+        rol: 'closer',
+        creado_el: new Date(Date.now() - haceDias * 24 * 3600 * 1000),
+      } as never)
+      .execute();
+  });
+}
+
+test('un contacto CERRADO sale de Urgentes, por más que el bot haya fallado', async () => {
+  /* ══ LO REPORTÓ ALGUIEN MIRANDO SU PROPIA PANTALLA ════════════════════
+   *
+   * Descalificó un contacto y **siguió en «Intervenciones urgentes»**: tachado, con su píldora
+   * `NO LE INTERESA` al lado, y la línea roja «revisar la conversación» debajo. O sea que la fila
+   * probaba que el sistema sabía que estaba cerrado, y la cola lo listaba igual.
+   *
+   * La causa: esta cola solo mira las tres etiquetas del CRM, y **registrar un resultado nunca
+   * quita una etiqueta** — `etiquetasDelResultado` solo agrega. Así que la etiqueta se queda para
+   * siempre, y la fila también.
+   *
+   * No era solo ruido: esas filas SUMAN al contador de tareas del día. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  const cerrado = await contacto(`c1-${marca}`, ['bot_desactivado_appflow']);
+  await resultado(cerrado, 'no_interesa');
+
+  /* El control, y sin él esta prueba no vale nada: MISMA etiqueta, sin resultado. Si desapareciera
+     también, lo que se rompió es la cola entera y no habría forma de notarlo desde acá. */
+  const sigueAbierto = await contacto(`c2-${marca}`, ['bot_desactivado_appflow']);
+
+  const c = await colas();
+  const ids = c.urgentes.map((x) => x.fila.id);
+
+  assert.deepEqual(
+    ids,
+    [sigueAbierto],
+    'un contacto con resultado `no_interesa` sigue en la cola que dice «requiere intervención», ' +
+      'sobre alguien que ya se revisó y se cerró',
+  );
+  assert.equal(
+    c.tareasPendientes,
+    1,
+    'el contacto cerrado sigue sumando al contador de tareas del día: el número miente',
+  );
+});
+
+test('los cuatro que PARECEN cerrados y no lo están siguen en Urgentes', async () => {
+  /* Es la mitad que hace que la regla no sea «vaciar la cola». Los cuatro tienen trabajo por
+     delante, y cada uno por un motivo distinto que `lib/negocio/etapas.ts` ya tenía escrito:
+
+       · `acuerdo_sin_pago` — hay plata comprometida y sin cobrar: es el que MÁS pide;
+       · `nurture`          — *«frío, pero explícitamente reversible»*; un «no es ahora» no es un «no»;
+       · `no_show`          — *«un hecho operativo, no una resolución: el contacto sigue vivo»*;
+       · `seguimiento`      — el estado de trabajo activo por definición.
+
+     Si alguno se colara en la lista de cerradas, un contacto con trabajo pendiente desaparecería
+     de la única cola que lo estaba mostrando — y desaparecer no da error. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+  const abiertos: string[] = [];
+
+  for (const salida of ['acuerdo_sin_pago', 'nurture', 'no_show', 'seguimiento']) {
+    const id = await contacto(`a-${salida}-${marca}`, ['bot_desactivado_leadflow']);
+    await resultado(id, salida);
+    abiertos.push(id);
+  }
+
+  const c = await colas();
+  assert.deepEqual(
+    c.urgentes.map((x) => x.fila.id).sort(),
+    [...abiertos].sort(),
+    'alguno de los cuatro estados VIVOS se trató como cerrado y desapareció de Urgentes',
+  );
+});
+
+test('y tampoco cae en el Buzón: arreglar una cola no puede ser MUDARLO a la otra', async () => {
+  /* ══ EL ARREGLO A MEDIAS QUE HABRÍA PARECIDO UN ARREGLO ══════════════════
+   *
+   * El caso real era un contacto que había escrito hace trece días, sin respuesta, y que se
+   * descalificó. Sacándolo solo de Urgentes cumple las cinco condiciones del Buzón y **aparece
+   * ahí**: el mismo contacto en otra lista, sumando al mismo contador.
+   *
+   * Y la condición 3 del Buzón no lo cubre, aunque lo parezca: mira lo que se cerró HOY. Un
+   * contacto cerrado hace trece días la pasa entera. Por eso el resultado de esta prueba es
+   * VIEJO — si fuera de hoy, pasaría por el motivo equivocado y la prueba sería vacua. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  const cerrado = await contacto(`b1-${marca}`, []);
+  await mensaje(cerrado, 'entrante', new Date(Date.now() - 13 * 24 * 3600 * 1000), 'hola, me interesa');
+  await resultado(cerrado, 'no_interesa', 13);
+
+  // El control: mismo escenario exacto, pero con un resultado que NO cierra.
+  const enSeguimiento = await contacto(`b2-${marca}`, []);
+  await mensaje(enSeguimiento, 'entrante', new Date(Date.now() - 13 * 24 * 3600 * 1000), 'hola, me interesa');
+  await resultado(enSeguimiento, 'seguimiento', 13);
+
+  const c = await colas();
+  assert.deepEqual(
+    c.buzon.map((x) => x.fila.id),
+    [enSeguimiento],
+    'el contacto cerrado hace trece días aparece en el Buzón: sacarlo de Urgentes solo lo mudó',
+  );
+});
+
 // ─── 2 · Un contacto en UNA sola cola ──────────────────────────────────────
 
 test('un contacto en Urgentes NO aparece en el Buzón, aunque cumpla sus condiciones', async () => {
