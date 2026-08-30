@@ -26,7 +26,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { COLUMNAS, NOMBRE_DE_FUENTE, aCsv, leerLeads } from '@/lib/tools/leads';
+import {
+  COLUMNAS,
+  NOMBRE_DE_FUENTE,
+  aCsv,
+  enviarLeadsAlCrm,
+  leerLeads,
+} from '@/lib/tools/leads';
 
 /**
  * Las fuentes, como BOTONES y no como desplegable.
@@ -96,6 +102,14 @@ export default function MisLeads() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  /* ── La selección y el envío al CRM ───────────────────────────────────────
+     `Set` y no array: marcar y desmarcar son la operación más frecuente de esta pantalla, y con
+     un array cada clic sería un `filter` sobre cien elementos. */
+  const [marcados, setMarcados] = useState(() => new Set());
+  const [etiqueta, setEtiqueta] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState(null);
+
   /* El reloj de la pausa. Al teclear de nuevo —o al desmontar— se cancela el anterior: sin el
      `clearTimeout`, cerrar la pestaña con una búsqueda a medias dejaría un `setState` sobre un
      componente que ya no existe. */
@@ -119,6 +133,10 @@ export default function MisLeads() {
       setFilas([]);
       setHayMas(false);
     }
+    /* La selección se limpia al cambiar de página, filtro o búsqueda, y es a propósito: si
+       sobreviviera, el contador diría «12 seleccionados» mientras en pantalla hay otros cuatro,
+       y nadie podría saber qué se va a enviar. La selección es sobre lo que se ve. */
+    setMarcados(new Set());
     setCargando(false);
   }, [pagina, fuente, busqueda]);
 
@@ -142,6 +160,37 @@ export default function MisLeads() {
   const alCambiarFuente = (v) => {
     setFuente(v);
     setPagina(1); // sin esto, filtrar desde la página 3 muestra un vacío que parece "no hay leads"
+  };
+
+  const alternar = (id) => {
+    setMarcados((antes) => {
+      const ahora = new Set(antes);
+      if (ahora.has(id)) ahora.delete(id);
+      else ahora.add(id);
+      return ahora;
+    });
+  };
+
+  const todosMarcados = filas.length > 0 && filas.every((f) => marcados.has(f.id));
+  const alternarTodos = () =>
+    setMarcados(todosMarcados ? new Set() : new Set(filas.map((f) => f.id)));
+
+  const enviar = async () => {
+    setEnviando(true);
+    setAviso(null);
+    const r = await enviarLeadsAlCrm([...marcados], etiqueta);
+    if (r.tipo === 'ok') {
+      setAviso({
+        mal: false,
+        texto: `${r.enviados} leads subidos a HighLevel con la etiqueta «${r.etiqueta}».`,
+      });
+      /* Se limpia la selección pero NO la etiqueta: lo normal es subir varios lotes al mismo
+         sitio, y volver a escribirla cada vez sería trabajo de más. */
+      setMarcados(new Set());
+    } else {
+      setAviso({ mal: true, texto: r.mensaje });
+    }
+    setEnviando(false);
   };
 
   return (
@@ -207,6 +256,16 @@ export default function MisLeads() {
             <table className="leads-tabla">
               <thead>
                 <tr>
+                  {/* La casilla de la cabecera marca y desmarca LO QUE SE VE, no toda la tabla.
+                      Prometer "todos" y marcar cien de tres mil seria peor que no ofrecerlo. */}
+                  <th className="lead-casilla">
+                    <input
+                      type="checkbox"
+                      checked={todosMarcados}
+                      onChange={alternarTodos}
+                      aria-label="Marcar todos los de esta página"
+                    />
+                  </th>
                   <th>Fuente</th>
                   {COLUMNAS.map((c) => <th key={c.clave}>{c.etiqueta}</th>)}
                   <th>Fecha</th>
@@ -214,7 +273,15 @@ export default function MisLeads() {
               </thead>
               <tbody>
                 {filas.map((lead) => (
-                  <tr key={lead.id}>
+                  <tr key={lead.id} className={marcados.has(lead.id) ? 'marcada' : ''}>
+                    <td className="lead-casilla">
+                      <input
+                        type="checkbox"
+                        checked={marcados.has(lead.id)}
+                        onChange={() => alternar(lead.id)}
+                        aria-label={`Seleccionar ${lead.name ?? 'este lead'}`}
+                      />
+                    </td>
                     <td>
                       <span className={`lead-fuente ${COLOR_DE_FUENTE[lead.source] ?? ''}`}>
                         {NOMBRE_DE_FUENTE[lead.source] ?? lead.source}
@@ -247,6 +314,40 @@ export default function MisLeads() {
               </tbody>
             </table>
           </div>
+
+          {/* ── Subir al CRM ──────────────────────────────────────────────────
+              Aparece SÓLO con algo marcado. Una barra permanente con el botón apagado ocuparía
+              sitio todo el tiempo para una acción que se usa al final, y encima no diría que
+              hace falta seleccionar — que es justamente lo que el aviso de ARIA-brain tenía que
+              explicar con texto ("Se habilita al enviar leads desde Mis Leads").
+
+              Y NO pide token ni Location ID: los dos ya viven cifrados en las credenciales de
+              la organización, cargados una vez en Ajustes. Sólo la etiqueta es de este envío. */}
+          {marcados.size > 0 ? (
+            <div className="leads-envio">
+              <b>{marcados.size}</b>
+              <span>{marcados.size === 1 ? 'lead seleccionado' : 'leads seleccionados'}</span>
+              <input
+                type="text"
+                className="leads-etiqueta"
+                placeholder="Etiqueta — ej: Clínicas Arequipa"
+                value={etiqueta}
+                onChange={(e) => setEtiqueta(e.target.value)}
+                maxLength={60}
+                aria-label="Etiqueta para identificar este lote en HighLevel"
+              />
+              <button type="button" className="fd-btn" disabled={enviando} onClick={enviar}>
+                {enviando ? 'Subiendo…' : `Subir ${marcados.size} a HighLevel`}
+              </button>
+            </div>
+          ) : null}
+
+          {aviso ? (
+            <div className={aviso.mal ? 'fd-aviso mal' : 'fd-aviso'}>
+              <i>◍</i>
+              <span>{aviso.texto}</span>
+            </div>
+          ) : null}
 
           {/* Sin total de páginas: saberlo cuesta un `count(*)` sobre toda la tabla en cada
               carga, y lo único que la pantalla necesita es si hay una más. */}

@@ -189,6 +189,7 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // identidad —`organizaciones_credenciales` es inalcanzable desde el rol del inquilino— con
   // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo
   // pone la propia función con `contexto.orgEfectiva`.
+  'app/api/tools/leads/enviar/route.ts',
   //
   // ── EL PROXY DEL SCRAPER SALIÓ DE ESTA LISTA, Y VALE DECIR POR QUÉ ──────────
   //
@@ -349,6 +350,7 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // duplicando contactos en el CRM. No es un problema de atomicidad entre dominios —el que esta
   // lista vigila— y no se arregla con una transacción; haría falta una llave de idempotencia del
   // lado del flujo. Queda dicho acá porque es la pregunta que alguien va a hacerse al leer esto.
+  'app/api/tools/leads/enviar/route.ts',
   // Los porcentajes de comisión. **Qué queda a medias si la segunda mitad falla: nada**, porque la
   // primera no escribe — se lee de identidad quién es la persona y se escribe en negocio su
   // porcentaje. Es la misma forma y la misma justificación que la ingesta de mensajes.

@@ -107,3 +107,35 @@ export function aCsv(filas: readonly LeadGuardado[]): string {
   ]);
   return [cabecera.map(escapar).join(','), ...cuerpo.map((l) => l.join(','))].join('\n');
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUBIR AL CRM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type ResultadoDeEnvio =
+  | { tipo: 'ok'; enviados: number; etiqueta: string }
+  | { tipo: 'fallo'; mensaje: string };
+
+/**
+ * Sube los leads seleccionados a GoHighLevel con una etiqueta.
+ *
+ * Se mandan **identificadores y nada más**: los datos los lee el servidor de la base, filtrados
+ * por la organización de la sesión. Ni el token ni el Location ID viajan por acá — ya viven
+ * cifrados en las credenciales de la organización. Ver `app/api/tools/leads/enviar/route.ts`.
+ */
+export async function enviarLeadsAlCrm(
+  ids: readonly string[],
+  etiqueta: string,
+): Promise<ResultadoDeEnvio> {
+  const r = await pedir<{ enviados: number; etiqueta: string }>(`${RUTA}/enviar`, {
+    metodo: 'POST',
+    cuerpo: { ids, etiqueta },
+  });
+  if (r.tipo === 'datos') {
+    return { tipo: 'ok', enviados: r.datos.enviados, etiqueta: r.datos.etiqueta };
+  }
+  if (r.tipo === 'rechazado') {
+    return { tipo: 'fallo', mensaje: r.detalle || 'No se pudieron subir los leads.' };
+  }
+  return { tipo: 'fallo', mensaje: 'No se pudo conectar para subir los leads.' };
+}
