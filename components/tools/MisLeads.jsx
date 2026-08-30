@@ -194,7 +194,17 @@ export default function MisLeads() {
   };
 
   return (
-    <div className="leads-bloque">
+    /* ── DOS COLUMNAS: la tabla y el panel de envío ────────────────────────────
+       El panel va a la DERECHA y no debajo, y es la forma que tenía el hub. La razón no es
+       estética: la selección se hace en la tabla y el envío se dispara en el panel, así que los
+       dos tienen que estar visibles A LA VEZ. Con el panel debajo de cien filas, marcar y
+       enviar quedan a dos pantallas de distancia.
+
+       Y es PERMANENTE, con el contador en cero cuando no hay nada marcado. Así la pantalla dice
+       que la acción existe antes de que alguien descubra las casillas — que es exactamente lo
+       que le pasó a Kevin con la pestaña. */
+    <div className="leads-con-panel">
+      <div className="leads-bloque">
       <div className="leads-barra">
         <div className="leads-filtros" role="group" aria-label="Filtrar por fuente">
           {FILTROS.map((f) => (
@@ -315,40 +325,6 @@ export default function MisLeads() {
             </table>
           </div>
 
-          {/* ── Subir al CRM ──────────────────────────────────────────────────
-              Aparece SÓLO con algo marcado. Una barra permanente con el botón apagado ocuparía
-              sitio todo el tiempo para una acción que se usa al final, y encima no diría que
-              hace falta seleccionar — que es justamente lo que el aviso de ARIA-brain tenía que
-              explicar con texto ("Se habilita al enviar leads desde Mis Leads").
-
-              Y NO pide token ni Location ID: los dos ya viven cifrados en las credenciales de
-              la organización, cargados una vez en Ajustes. Sólo la etiqueta es de este envío. */}
-          {marcados.size > 0 ? (
-            <div className="leads-envio">
-              <b>{marcados.size}</b>
-              <span>{marcados.size === 1 ? 'lead seleccionado' : 'leads seleccionados'}</span>
-              <input
-                type="text"
-                className="leads-etiqueta"
-                placeholder="Etiqueta — ej: Clínicas Arequipa"
-                value={etiqueta}
-                onChange={(e) => setEtiqueta(e.target.value)}
-                maxLength={60}
-                aria-label="Etiqueta para identificar este lote en HighLevel"
-              />
-              <button type="button" className="fd-btn" disabled={enviando} onClick={enviar}>
-                {enviando ? 'Subiendo…' : `Subir ${marcados.size} a HighLevel`}
-              </button>
-            </div>
-          ) : null}
-
-          {aviso ? (
-            <div className={aviso.mal ? 'fd-aviso mal' : 'fd-aviso'}>
-              <i>◍</i>
-              <span>{aviso.texto}</span>
-            </div>
-          ) : null}
-
           {/* Sin total de páginas: saberlo cuesta un `count(*)` sobre toda la tabla en cada
               carga, y lo único que la pantalla necesita es si hay una más. */}
           <div className="leads-paginado">
@@ -372,6 +348,65 @@ export default function MisLeads() {
           </div>
         </>
       ) : null}
+      </div>
+
+      {/* ── El panel de envío ─────────────────────────────────────────────────
+          NO pide API Token ni Location ID, y ésa es la diferencia con el del hub. Los dos ya
+          viven en las credenciales de la organización —el token cifrado— cargados una vez en
+          Ajustes por un administrador. Pedirlos otra vez acá sería duplicar un secreto y
+          dejar que cualquiera con permiso de editar pegue el de otra empresa.
+
+          Sólo la ETIQUETA es de este envío, porque es lo único que cambia entre un lote y el
+          siguiente. */}
+      <aside className="leads-panel">
+        <div className="lp-cuenta">
+          <span>Leads para enviar</span>
+          <b>{marcados.size}</b>
+        </div>
+
+        {marcados.size === 0 ? (
+          <p className="lp-pista">
+            Marcá los leads que querés subir con las casillas de la izquierda.
+          </p>
+        ) : null}
+
+        <label className="lp-campo">
+          Etiqueta
+          <input
+            type="text"
+            placeholder="Ej: Clínicas Arequipa"
+            value={etiqueta}
+            onChange={(e) => setEtiqueta(e.target.value)}
+            maxLength={60}
+          />
+          <em>Para identificar este lote en HighLevel.</em>
+        </label>
+
+        <button
+          type="button"
+          className="fd-btn lp-enviar"
+          disabled={marcados.size === 0 || enviando}
+          onClick={enviar}
+        >
+          {enviando
+            ? 'Subiendo…'
+            : `Subir ${marcados.size || ''} ${marcados.size === 1 ? 'lead' : 'leads'} a HighLevel`}
+        </button>
+
+        {aviso ? (
+          <div className={aviso.mal ? 'fd-aviso mal' : 'fd-aviso'}>
+            <i>◍</i>
+            <span>{aviso.texto}</span>
+          </div>
+        ) : null}
+
+        {/* Dónde se cargan las credenciales. Va SIEMPRE y no sólo cuando fallan: quien abre esta
+            pantalla por primera vez se pregunta a qué cuenta van los leads, y la respuesta no
+            debería requerir provocar un error para verla. */}
+        <p className="lp-nota">
+          El token y la subcuenta de HighLevel son los de tu organización, cargados en Ajustes.
+        </p>
+      </aside>
     </div>
   );
 }

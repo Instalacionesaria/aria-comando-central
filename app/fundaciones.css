@@ -1172,46 +1172,115 @@
   background: rgb(var(--c-acento) / 0.1);
 }
 
-.leads-envio {
+/* ── Dos columnas: la tabla y el panel de envío ─────────────────────────────
+   El panel a la DERECHA y no debajo, como lo tenía el hub. No es estética: la selección se hace
+   en la tabla y el envío se dispara en el panel, así que los dos tienen que estar visibles a la
+   vez. Con el panel debajo de cien filas, marcar y enviar quedan a dos pantallas. */
+.leads-con-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px;
+  gap: 14px;
+  align-items: start;
+}
+/* Debajo de 1180px se apilan. El mismo umbral que `.fd-rejilla.dos`, para que las dos pantallas
+   de la aplicación quiebren en el mismo punto y no una antes que la otra. */
+@media (max-width: 1180px) {
+  .leads-con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leads-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  /* Se queda a la vista al recorrer la tabla: en una página de cien filas, el botón tiene que
+     seguir ahí cuando se marca la número noventa. */
+  position: sticky;
+  top: 8px;
+}
+
+.lp-cuenta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
-  padding: 11px 14px;
-  border-top: 1px solid var(--line);
-  /* Teñida con el acento, igual que las filas marcadas: la barra y lo que va a subir son la
-     misma cosa, y compartir color lo dice sin una flecha. */
-  background: rgb(var(--c-acento) / 0.05);
+  padding: 11px 13px;
+  border-radius: 11px;
+  /* Teñido con el acento, igual que las filas marcadas: el contador y lo que está marcado son
+     la misma cosa, y compartir color lo dice sin una flecha. */
+  background: rgb(var(--c-acento) / 0.07);
+  border: 1px solid rgb(var(--c-acento) / 0.2);
 }
-.leads-envio b {
+.lp-cuenta span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.lp-cuenta b {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
-.leads-envio > span {
-  font-size: 12px;
+
+.lp-pista {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
   color: var(--txt-dim);
 }
-.leads-etiqueta {
-  flex: 1 1 200px;
-  min-width: 160px;
+
+.lp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--txt-dim);
+}
+.lp-campo input {
   font: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 400;
   color: var(--txt);
   background: var(--bg-sunk);
   border: 1px solid var(--line-strong);
   border-radius: 9px;
-  padding: 7px 11px;
+  padding: 9px 11px;
   outline: 0;
-  margin-left: auto;
 }
-.leads-etiqueta::placeholder {
+.lp-campo input::placeholder {
   color: var(--txt-faint);
 }
-.leads-etiqueta:focus {
+.lp-campo input:focus {
   border-color: rgb(var(--c-acento) / 0.5);
+}
+.lp-campo em {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--txt-faint);
+}
+
+.lp-enviar {
+  justify-content: center;
+  width: 100%;
+  padding: 11px 14px;
+}
+
+.lp-nota {
+  margin: 0;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--txt-faint);
 }
 
 .leads-paginado {
