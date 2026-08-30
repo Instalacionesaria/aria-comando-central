@@ -49,6 +49,44 @@
   box-shadow: 0 0 6px rgb(var(--c-ok) / 0.5);
 }
 
+/* ── La pestaña de VISTA (Mis Leads) ────────────────────────────────────────
+   Las pestañas de herramienta apagadas son sólo texto tenue, y así está bien: son varias
+   juntas y el grupo se lee como grupo. Una vista suelta, al lado de la barra de avance, no
+   tenía ninguna señal de ser tocable — Kevin la tuvo en pantalla y no la vio.
+
+   Así que ésta lleva borde y fondo SIEMPRE, encendida o apagada. No compite con la pestaña
+   activa —esa sigue teniendo el relieve y la sombra— pero deja de parecer una etiqueta. */
+.fd-sub .fd-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 5px;
+  background: var(--line);
+}
+.fd-sub button.fd-vista {
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  padding: 7px 13px;
+}
+.fd-sub button.fd-vista svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.75;
+  color: var(--accent);
+}
+.fd-sub button.fd-vista:hover {
+  border-color: rgb(var(--c-acento) / 0.45);
+  background: var(--bg-raise);
+}
+/* Encendida gana el mismo relieve que cualquier pestaña activa, y el borde se apaga para que
+   no se vea un doble contorno contra la sombra. */
+.fd-sub button.fd-vista.on {
+  border-color: transparent;
+}
+.fd-sub button.fd-vista.on svg {
+  opacity: 1;
+}
+
 .fd-avance {
   display: flex;
   align-items: center;

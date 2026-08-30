@@ -199,17 +199,30 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
             </button>
           );
         })}
+        {/* La raya separa dos cosas que NO son lo mismo: a la izquierda el recorrido numerado de
+            herramientas, a la derecha las vistas. Sin ella, «Mis Leads» se leía como la etiqueta
+            de la barra de progreso que viene justo después, y no como algo que se pueda tocar. */}
+        {vistas.length > 0 ? <span className="fd-sep" aria-hidden="true" /> : null}
+
         {vistas.map((v) => (
           <button
             key={v.clave}
             type="button"
             role="tab"
             aria-selected={v.clave === activa}
-            className={v.clave === activa ? 'on' : ''}
+            /* `.fd-vista` le da borde y fondo INCLUSO apagada. Las pestañas de herramienta
+               apagadas son sólo texto tenue, y eso funciona cuando hay varias juntas: el grupo
+               se lee como grupo. Una sola vista suelta al lado del medidor no tenía ninguna
+               señal de ser un botón. */
+            className={`fd-vista${v.clave === activa ? ' on' : ''}`}
             onClick={() => setActiva(v.clave)}
           >
             {/* Sin `.fd-n`: la numeración es del recorrido de herramientas, y esto no es un paso
-                del recorrido. Numerarla diría que hay algo que completar. */}
+                del recorrido. Numerarla diría que hay algo que completar. El icono ocupa ese
+                lugar y dice lo contrario: es una lista, no un paso. */}
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M2 4h12M2 8h12M2 12h8" strokeLinecap="round" />
+            </svg>
             {v.pestania}
           </button>
         ))}
