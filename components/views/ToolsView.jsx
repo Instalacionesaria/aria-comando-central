@@ -25,6 +25,7 @@
    encabezado, el mismo lugar. */
 
 import Fundaciones from '../fundaciones/Fundaciones';
+import MisLeads from '../tools/MisLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
 const CATALOGO_TOOLS = {
@@ -32,6 +33,14 @@ const CATALOGO_TOOLS = {
   rutaEstado: '/api/tools/estado',
   rutaGenerar: '/api/tools/generar',
   capacidadEditar: 'tools.editar',
+  /* «Mis Leads» es una pestaña más de Tools, al lado de Prospección, y no una sección enterrada
+     debajo del scraper: el historial se consulta en momentos distintos de cuando se scrapea
+     —para exportarlo, para ver si un negocio ya salió antes— y no tiene por qué obligar a pasar
+     por un panel de extracción para llegar.
+
+     Va como `vista` y no como herramienta porque no genera nada ni se completa. Ver el bloque de
+     `vistas` en `Fundaciones.jsx`. */
+  vistas: [{ clave: 'mis-leads', pestania: 'Mis Leads', render: () => <MisLeads /> }],
 };
 
 export default function ToolsView({ activa }) {

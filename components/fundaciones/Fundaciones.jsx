@@ -53,6 +53,19 @@ const CATALOGO_ICP = {
 
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { herramientas, rutaEstado, rutaGenerar, capacidadEditar } = catalogo;
+
+  /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
+     Una herramienta es un formulario que produce un documento y que se puede dar por
+     «completa». «Mis Leads» no es eso: es el historial de lo que trajo el scraper, no se
+     completa nunca y no gasta nada.
+
+     Se listan aparte y no como una `Herramienta` con los campos vacíos porque el tipo exige
+     `filas`, `etiquetaBoton` y `etiquetaSalida` —o sea, promete un botón que genera— y además
+     la barra de avance cuenta `hechos/herramientas.length`. Una vista ahí adentro haría que
+     el contador dijera «0/2» para siempre, con el segundo paso imposible de completar.
+
+     Opcional: la pantalla ICP & Oferta no manda ninguna y se comporta igual que antes. */
+  const vistas = catalogo.vistas ?? [];
   const [estado, setEstado] = useState(null);
   const [permisos, setPermisos] = useState(null);
   /* El nombre de la organización va al encabezado del Word y del PDF. Sale de la MISMA petición de
@@ -156,6 +169,9 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const puedeEditar = !problema && tienePermisoDeEditar;
   const faltaPermiso = !problema && !tienePermisoDeEditar;
   const hechos = herramientas.filter((h) => pasoCompleto(estadoUsable, h.id)).length;
+  /* `activa` guarda un id de herramienta (número) o la clave de una vista (texto). No chocan
+     entre sí, así que una sola variable alcanza y no hay dos estados que puedan contradecirse. */
+  const vistaActiva = vistas.find((v) => v.clave === activa) ?? null;
   const herramienta = herramientas.find((h) => h.id === activa) || herramientas[0];
   const esConfiguracion =
     problema !== null &&
@@ -183,6 +199,20 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
             </button>
           );
         })}
+        {vistas.map((v) => (
+          <button
+            key={v.clave}
+            type="button"
+            role="tab"
+            aria-selected={v.clave === activa}
+            className={v.clave === activa ? 'on' : ''}
+            onClick={() => setActiva(v.clave)}
+          >
+            {/* Sin `.fd-n`: la numeración es del recorrido de herramientas, y esto no es un paso
+                del recorrido. Numerarla diría que hay algo que completar. */}
+            {v.pestania}
+          </button>
+        ))}
         <div className="fd-avance">
           <span className="fd-barra">
             <i style={{ width: `${(hechos / herramientas.length) * 100}%` }} />
@@ -212,9 +242,11 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           reutilizarse. Así cada panel inicializa su formulario desde el estado con un
           inicializador diferido, sin un efecto que sincronice — que es de donde salen los
           renders en cascada y los formularios que se pisan al navegar. */}
-      {/* Tres formas, no dos. `prospeccion` tiene panel propio porque no es un formulario con un
-          botón: lleva un extractor de leads que habla con otro sistema. Ver `PanelProspeccion`. */}
-      {herramienta.forma === 'prospeccion' ? (
+      {/* Una vista gana sobre las herramientas: si la pestaña activa es «Mis Leads», no se pinta
+          ningún panel de herramienta. */}
+      {vistaActiva ? (
+        vistaActiva.render()
+      ) : herramienta.forma === 'prospeccion' ? (
         <PanelProspeccion
           key={herramienta.id}
           herramienta={herramienta}

@@ -40,7 +40,6 @@ import { FUENTES_POR_HERRAMIENTA, faltantes, fuentes } from '@/lib/fundaciones/h
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import Documento from '../fundaciones/Documento';
-import MisLeads from './MisLeads';
 import Scraper, { TablaDeLeads } from './Scraper';
 
 /** Las fuentes quedan fijas: la elección real la hacen las pestañas del scraper. */
@@ -199,16 +198,9 @@ export default function PanelProspeccion({
         </div>
       ) : null}
 
-      {/* El historial completo, que sobrevive a recargar la pantalla. Va acá y no en una
-          pestaña aparte porque se lee de arriba abajo como el flujo real: lo que acabás de
-          traer, después todo lo que tenés, después qué hacer con eso.
-
-          `clave` lo remonta cuando termina un scraping, y eso NO es cosmético: sin ello, los
-          leads que acaba de pagar el alumno no aparecerían en el historial hasta la próxima
-          recarga — exactamente el problema que esta vista existe para resolver. */}
-      <div className="pr-resultados">
-        <MisLeads key={`leads-${leads.length}`} />
-      </div>
+      {/* El historial NO se pinta acá: vive en su propia pestaña «Mis Leads», al lado de
+          Prospección. Estuvo un rato embebido debajo de esta tabla y el problema fue de
+          descubrimiento — quedaba bajo el pliegue, después de un panel largo, y no se veía. */}
 
       <div className="pr-zona-plan">
         {/* El orden recomendado, no un requisito: se puede generar el plan sin scrapear. */}
