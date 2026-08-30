@@ -296,49 +296,41 @@ test('`usd` no dibuja un nulo como $0, y no redondea los centavos a cero', () =>
   assert.equal(usd(0), '$0.00');
 });
 
-test('el costo NO se estima: sale de Apify o no sale', () => {
-  // La alternativa descartada era una tarifa por lead configurable. Produce un número que se ve
-  // medido y no lo es. Si vuelve, tiene que ser una decisión escrita, no un `const` que apareció.
-  const apify = leer('lib/monitoreo/apify.ts');
-  assert.match(apify, /usageTotalUsd/, 'dejó de leer el costo real de Apify');
-  assert.match(apify, /'sin_token'/, 'sin token tiene que decirlo, no devolver cero');
-
-  const consumo = leer('lib/monitoreo/consumo.ts')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-  assert.doesNotMatch(
-    consumo,
-    /tarifa|porLead|costo_por_lead|COSTO_POR_LEAD/i,
-    'apareció una tarifa por lead: el costo se mide, no se estima',
+test('el costo NO se estima, y este proyecto NO lo consulta', () => {
+  // ── DOS REGLAS EN UNA PRUEBA, Y LAS DOS SE ROMPEN «SIMPLIFICANDO» ─────────
+  //
+  // 1 · El costo se MIDE. La alternativa descartada era una tarifa por lead configurable: produce
+  //     un número que se ve medido y no lo es, y en un tablero que existe para decidir si un
+  //     cliente deja plata eso es peor que no tener la columna.
+  //
+  // 2 · Y lo mide **el backend de scraping**, no este proyecto. Hubo una versión que le preguntaba
+  //     a Apify desde acá y se revirtió por dos motivos, escritos en
+  //     `COSTO-DE-APIFY-EN-EL-BACKEND.md`: creaba una segunda copia del token de Apify —una
+  //     credencial que hoy vive en un solo sistema— y medía DE MENOS, porque el
+  //     `apify_actor_run_id` que guardamos es el del PRIMER actor y Google Maps encadena un
+  //     segundo cuyo identificador no se guarda en ningún lado.
+  //
+  // Si alguien vuelve a traer la consulta acá, que sea con esos dos problemas resueltos y no por
+  // parecer más directo.
+  const fuentes = ['lib/monitoreo/consumo.ts', 'app/api/monitoreo/route.ts'].map((r) =>
+    leer(r).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''),
   );
-});
 
-test('el relleno de costos sella «se preguntó» aparte de «hay costo»', () => {
-  // Sin `costo_consultado_el`, un trabajo cuyo costo Apify no sabe reportar quedaría con
-  // `costo_usd` nulo para siempre y se volvería a consultar en CADA carga del panel: una llamada
-  // por vez, para siempre, sin avanzar nunca.
-  const costos = leer('lib/monitoreo/costos.ts');
-  assert.match(costos, /costo_consultado_el/);
+  for (const codigo of fuentes) {
+    assert.doesNotMatch(
+      codigo,
+      /tarifa|porLead|COSTO_POR_LEAD/i,
+      'apareció una tarifa por lead: el costo se mide, no se estima',
+    );
+    assert.doesNotMatch(
+      codigo,
+      /apify\.com|APIFY_API_TOKEN/i,
+      'este proyecto volvió a consultarle a Apify: eso lo hace el backend de scraping',
+    );
+  }
 
-  // Y los dos casos que NO se sellan, que son los que hacen que esto se repare solo:
-  //   · `sin_token` → sellar marcaría las corridas como consultadas, y el día que el token
-  //     aparezca no se volverían a mirar nunca.
-  //   · `fallo`     → Apify caído es transitorio.
-  const codigo = costos.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-  assert.ok(
-    codigo.indexOf("r.tipo === 'sin_token'") < codigo.indexOf('.updateTable('),
-    'el corte por falta de token quedó DESPUÉS de escribir: sellaría corridas que nadie consultó',
-  );
-  assert.match(codigo, /r\.tipo === 'fallo'\) continue/, 'un fallo transitorio se está sellando');
-});
-
-test('sólo se consulta el costo de corridas TERMINADAS', () => {
-  // Preguntarle a Apify por una corrida que sigue andando devuelve el costo PARCIAL, y guardarlo
-  // lo congelaría ahí para siempre: el trabajo seguiría gastando y la columna diría lo que gastó
-  // en el primer minuto.
-  const costos = leer('lib/monitoreo/costos.ts');
-  assert.match(costos, /'COMPLETED', 'FAILED', 'CANCELLED'/);
-  assert.doesNotMatch(costos, /TERMINADOS = \[[^\]]*'RUNNING'/, 'se consultan corridas en curso');
+  // Y la columna se sigue LEYENDO, que es lo que el panel hace con ella.
+  assert.match(leer('lib/monitoreo/consumo.ts'), /costo_usd/);
 });
 
 // ─── El catálogo y el reparto ───────────────────────────────────────────────

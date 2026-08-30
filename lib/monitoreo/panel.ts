@@ -12,19 +12,13 @@ import {
 const RUTA = '/api/monitoreo';
 
 export type ResultadoDelPanel =
-  | { tipo: 'datos'; empresas: readonly FilaDelPanel[]; sinTokenDeApify: boolean }
+  | { tipo: 'datos'; empresas: readonly FilaDelPanel[] }
   | { tipo: 'fallo'; mensaje: string };
 
 /** La foto entera: todas las empresas con su consumo. */
 export async function leerPanel(): Promise<ResultadoDelPanel> {
-  const r = await pedir<{ empresas: FilaDelPanel[]; sinTokenDeApify: boolean }>(RUTA);
-  if (r.tipo === 'datos') {
-    return {
-      tipo: 'datos',
-      empresas: r.datos.empresas,
-      sinTokenDeApify: r.datos.sinTokenDeApify === true,
-    };
-  }
+  const r = await pedir<{ empresas: FilaDelPanel[] }>(RUTA);
+  if (r.tipo === 'datos') return { tipo: 'datos', empresas: r.datos.empresas };
   if (r.tipo === 'rechazado') {
     return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo leer el Panel de Monitoreo.' };
   }

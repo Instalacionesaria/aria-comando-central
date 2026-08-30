@@ -281,25 +281,9 @@ function motivoDelServicio(cuerpo: unknown): string | null {
  */
 export async function pedirExterno<T>(
   url: string,
-  opciones: {
-    metodo?: string;
-    cabeceras?: Record<string, string>;
-    cuerpo?: unknown;
-    /**
-     * Cuánto esperar, en milisegundos. Por omisión `ESPERA_EXTERNA_MS`, que son cuatro minutos.
-     *
-     * Existe porque esos cuatro minutos están calibrados para UN caso —una generación de IA, que
-     * de verdad tarda minutos— y son catastróficos para otro: el Panel de Monitoreo consulta el
-     * costo de Apify DENTRO de la petición que dibuja la tabla, así que un servicio colgado
-     * convertiría un dato accesorio en una pantalla que no carga.
-     *
-     * Es un parámetro y no una constante nueva porque la diferencia es del LLAMADOR: lo que se
-     * puede esperar depende de si alguien está mirando una pantalla en blanco mientras tanto.
-     */
-    espera?: number;
-  } = {},
+  opciones: { metodo?: string; cabeceras?: Record<string, string>; cuerpo?: unknown } = {},
 ): Promise<Respuesta<T>> {
-  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS } = opciones;
+  const { metodo = 'GET', cabeceras = {}, cuerpo } = opciones;
 
   let respuesta: Response;
   try {
@@ -307,7 +291,7 @@ export async function pedirExterno<T>(
       method: metodo,
       headers: cuerpo === undefined ? cabeceras : { 'content-type': 'application/json', ...cabeceras },
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(espera),
+      signal: AbortSignal.timeout(ESPERA_EXTERNA_MS),
     });
   } catch (e) {
     return { tipo: 'sin_respuesta', causa: e instanceof Error ? e.message : 'desconocida' };

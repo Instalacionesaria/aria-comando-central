@@ -43,10 +43,6 @@ export default function PanelDeMonitoreo() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [medidoEl, setMedidoEl] = useState(null);
-  /* `true` = falta `APIFY_API_TOKEN` en el entorno, así que la columna de costos NO se va a llenar
-     sola nunca. Viaja desde el servidor en vez de deducirse acá: la pantalla no puede distinguir
-     «todavía no se consultó» de «no se puede consultar», y son dos avisos distintos. */
-  const [sinApify, setSinApify] = useState(false);
   /* La empresa abierta, o `null` para la tabla. Se guarda la FILA entera y no sólo el
      identificador: así el detalle puede escribir el nombre en su encabezado desde el primer
      píxel, sin un instante de «Cargando…» donde va el título de lo que acabás de clickear. */
@@ -58,7 +54,6 @@ export default function PanelDeMonitoreo() {
     const r = await leerPanel();
     if (r.tipo === 'datos') {
       setEmpresas(r.empresas);
-      setSinApify(r.sinTokenDeApify);
       /* La hora de la medición, no la de la pantalla. Un tablero sin fecha se lee como «ahora»
          para siempre: la pestaña queda abierta, alguien vuelve a las tres horas y toma una
          decisión sobre números de la mañana. */
@@ -163,14 +158,24 @@ export default function PanelDeMonitoreo() {
       ) : null}
 
       {/* El costo vacío se EXPLICA. Una columna en blanco en un tablero de gastos se lee como
-          «no nos cuestan nada», y el arreglo acá no es de código: es cargar una variable. */}
-      {sinApify ? (
+          «no nos cuestan nada», y decir por qué está vacía es la diferencia entre un tablero y un
+          tablero en el que se puede confiar.
+
+          Quién llena esa columna: el BACKEND de scraping, al terminar cada trabajo. No este
+          proyecto — el razonamiento está en `COSTO-DE-APIFY-EN-EL-BACKEND.md`, y el resumen es que
+          copiar el token de Apify acá habría creado una segunda copia de una credencial y habría
+          medido de menos, porque el `apify_actor_run_id` que guardamos es el del PRIMER actor y
+          Google Maps encadena un segundo. */}
+      {t.scrapeosSinCosto > 0 ? (
         <div className="fd-aviso falta">
           <i>◍</i>
           <span>
-            Los costos de Apify están <b>sin medir</b>: falta la variable de entorno{' '}
-            <code>APIFY_API_TOKEN</code> en Vercel (Production). Es la misma cuenta de Apify que usa
-            el backend de scraping. Mientras no esté, la columna «Costo» queda vacía — no en cero.
+            {t.scrapeosSinCosto === 1
+              ? 'Un scrapeo todavía no tiene costo medido'
+              : `${num(t.scrapeosSinCosto)} scrapeos todavía no tienen costo medido`}
+            , así que la columna «Costo» es un parcial. El costo lo reporta el backend de scraping
+            al terminar cada trabajo; los que se hicieron antes de eso quedan sin número — no en
+            cero.
           </span>
         </div>
       ) : null}
