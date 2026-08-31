@@ -68,7 +68,7 @@ test('la configuración del closer vive en el Closer, y el panel de EQUIPO ya no
   // Nadie lo importa, ni desde la ruta vieja ni desde la nueva.
   for (const archivo of [
     'components/views/AjustesView.jsx',
-    'components/closer/Comision.jsx',
+    'components/negocio/Comision.jsx',
     'components/closer/Inicio.jsx',
   ]) {
     const c = codigo(leer(archivo));
@@ -81,7 +81,7 @@ test('la configuración del closer vive en el Closer, y el panel de EQUIPO ya no
 });
 
 test('queda UNA ventana —la meta— y la configuración del closer va en línea', () => {
-  const comision = leer('components/closer/Comision.jsx');
+  const comision = leer('components/negocio/Comision.jsx');
   const c = codigo(comision);
   assert.match(c, /import Ventana from '\.\.\/Ventana\.jsx'/, 'no usa el modal del proyecto');
 
@@ -152,8 +152,33 @@ test('la visibilidad la decide el SERVIDOR, y son DOS permisos distintos', () =>
     'el panel de configuración no depende de lo que dice el servidor',
   );
 
-  const comision = codigo(leer('components/closer/Comision.jsx'));
-  assert.match(comision, /soyElCloser \?/, 'el boton de la meta no depende de quien es el closer');
+  /* ── EL ANILLO SE COMPARTE, ASÍ QUE LA CONDICIÓN SE PARTIÓ EN DOS ──────
+   *
+   * `Comision.jsx` ahora lo usan los TRES tramos —el del closer y los dos del setter— desde
+   * `components/negocio/`. Los ocho estados y la regla del cero medido son lo compartido; QUIÉN puede
+   * fijar la meta lo decide cada pantalla y llega en `puedeFijarLaMeta`.
+   *
+   * Y por eso son dos afirmaciones y no una: el anillo tiene que respetar el parámetro, y el cockpit
+   * del closer tiene que pasarle **`soyElCloser`** y no un `true`. Con una sola de las dos, poner
+   * `puedeFijarLaMeta={true}` en el closer volvería a dejar que un administrador escriba la meta de
+   * otro, y esta prueba seguiría en verde. */
+  const comision = codigo(leer('components/negocio/Comision.jsx'));
+  assert.match(
+    comision,
+    /puedeFijarLaMeta \?/,
+    'el boton de la meta no depende del parametro que cada pantalla decide',
+  );
+  assert.ok(
+    !comision.includes('soyElCloser'),
+    'el anillo compartido volvio a nombrar al closer: lo usan los dos territorios, y el del setter ' +
+      'no tiene designado al que preguntarle',
+  );
+  assert.match(
+    inicio,
+    /puedeFijarLaMeta=\{soyElCloser\}/,
+    'el cockpit del closer dejo de pasarle QUIEN es el closer al anillo: con un `true` ahi, un ' +
+      'administrador vuelve a poder escribir la meta de otra persona',
+  );
   assert.ok(
     !comision.includes('puedeConfigurarPorcentajes'),
     'el boton de la meta sigue atado al permiso de administrar: eso deja que un administrador ' +
@@ -167,8 +192,42 @@ test('la visibilidad la decide el SERVIDOR, y son DOS permisos distintos', () =>
     'el servidor dejo de responder si quien mira es el closer',
   );
 
+  /* ── Y EL DEL SETTER: DOS ANILLOS, DOS TRAMOS, DOS METAS DISTINTAS ──────
+   *
+   * Los dos anillos son el mismo componente con distinto `cuerpoExtra`, y ese es el único lugar donde
+   * se decide **cuál de las dos metas se escribe**. Copiado y pegado, los dos anillos mandan el mismo
+   * tramo: el síntoma es que fijar la meta del diferido mueve el arco del directo, y el arco del
+   * diferido no se mueve nunca.
+   *
+   * Y como la meta acá es siempre de quien mira —el sujeto de ese cockpit ES quien mira— lo único que
+   * la apaga es estar mirando otra empresa: su `usuarioId` no pertenece a esa empresa, así que la
+   * fila es imposible por la clave foránea compuesta. */
+  const delSetter = codigo(leer('components/setter/Inicio.jsx'));
+  for (const tramo of ['setter_directo', 'setter_diferido']) {
+    assert.equal(
+      [...delSetter.matchAll(new RegExp(`tramo: '${tramo}'`, 'g'))].length,
+      1,
+      `el tramo «${tramo}» no aparece exactamente una vez: con dos anillos mandando el mismo tramo, ` +
+        'fijar una meta mueve el arco del otro',
+    );
+  }
+  assert.equal(
+    [...delSetter.matchAll(/puedeFijarLaMeta=\{!mirandoOtraOrganizacion\}/g)].length,
+    2,
+    'los dos anillos del setter tienen que habilitar la meta con la MISMA condicion: es siempre de ' +
+      'quien mira, salvo que este mirando otra empresa',
+  );
+  assert.ok(
+    !delSetter.includes("rutaDeLaMeta={'/api/closer/meta'}"),
+    'el cockpit del setter le manda la meta a la ruta del CLOSER: eso escribiria el tramo de otro',
+  );
+
   // NO por nombre de rol, en ninguna de sus formas, y ahora también en el panel nuevo.
-  for (const archivo of ['components/closer/Comision.jsx', 'components/closer/QuienEsElCloser.jsx']) {
+  for (const archivo of [
+    'components/negocio/Comision.jsx',
+    'components/closer/QuienEsElCloser.jsx',
+    'components/setter/Inicio.jsx',
+  ]) {
     const c = codigo(leer(archivo));
     for (const rol of ['administrador', 'superadministrador', 'usuario']) {
       for (const patron of [
@@ -281,7 +340,7 @@ test('designar a otro closer RECARGA el cockpit, y no borra la comisión', () =>
 
   // Y sigue siendo una RECARGA, no `alGuardar(null)`: esa devolución PISA la comisión con lo que
   // recibe, así que un `null` la borraría de la pantalla en vez de refrescarla.
-  const c = codigo(leer('components/closer/Comision.jsx'));
+  const c = codigo(leer('components/negocio/Comision.jsx'));
   assert.ok(
     !/alGuardar\?\.\(null\)/.test(c),
     'se recarga llamando `alGuardar(null)`: esa devolución PISA la comisión, así que la borraría',
@@ -353,7 +412,7 @@ test('el anillo NO revienta cuando no hay closer asignado, que es el estado de T
   // Se comprueba el ORDEN, que es lo que importa: el corte tiene que estar ANTES de la primera
   // desreferencia. Comprobar solo que el `if` existe pasaría igual si estuviera debajo.
   // ═══════════════════════════════════════════════════════════════════════════
-  const c = codigo(leer('components/closer/Comision.jsx'));
+  const c = codigo(leer('components/negocio/Comision.jsx'));
 
   const corte = c.indexOf('if (!comision)');
   assert.ok(

@@ -36,7 +36,7 @@
  * vez, cuando cambian.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import Comision from './Comision.jsx';
+import Comision from '../negocio/Comision.jsx';
 import QuienEsElCloser from './QuienEsElCloser.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
@@ -166,7 +166,8 @@ export default function Inicio({
         <Comision
           comision={comision}
           mirandoOtraOrganizacion={mirandoOtraOrganizacion}
-          soyElCloser={soyElCloser}
+          puedeFijarLaMeta={soyElCloser}
+          rutaDeLaMeta={'/api/closer/meta'}
           alGuardar={alGuardarLaMeta}
           alRecargar={alRecargar}
         />

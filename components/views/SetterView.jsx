@@ -35,6 +35,7 @@ import Pipeline from '../closer/Pipeline.jsx';
 /* Y el MISMO Mi Día, con OTRAS secciones. El dibujo de una sección —su título, su conteo aunque sea
    cero, su frase de vacío— es idéntico; lo que cambia son las colas, que las trae el servidor. */
 import MiDia from '../closer/MiDia.jsx';
+import Inicio from '../setter/Inicio.jsx';
 
 /**
  * Las SEIS colas del setter, en el orden en que se trabajan.
@@ -108,23 +109,6 @@ const SUB = [
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
 ];
 
-function Falta({ titulo, detalle, puntos }) {
-  return (
-    <div className="empty">
-      <div className="e-ic">◇</div>
-      <div className="e-t">{titulo}</div>
-      <div className="e-d">{detalle}</div>
-      {puntos ? (
-        <ul>
-          {puntos.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
 export default function SetterView({ activa }) {
   const [sub, setSub] = useState('dia');
 
@@ -152,6 +136,13 @@ export default function SetterView({ activa }) {
   const [colas, setColas] = useState(null);
   const [zonaHoraria, setZonaHoraria] = useState('UTC');
   const [causa, setCausa] = useState(null);
+  /* El cockpit y las dos comisiones vienen en LA MISMA respuesta que las colas, y por eso viven acá
+     y no en el componente de Inicio. El motivo está en la ruta: el contador de tareas lo calcula Mi
+     Día y el cockpit lo muestra, así que con dos peticiones habría dos implementaciones del mismo
+     número. Acá el cockpit RECIBE el que ya se calculó. */
+  const [cockpit, setCockpit] = useState(null);
+  const [comision, setComision] = useState(null);
+  const [otraOrg, setOtraOrg] = useState(false);
 
   const cargar = useCallback(async () => {
     const r = await pedir('/api/setter/mi-dia');
@@ -169,6 +160,9 @@ export default function SetterView({ activa }) {
     setCausa(null);
     setColas(r.datos.colas);
     setZonaHoraria(r.datos.zonaHoraria);
+    setCockpit(r.datos.cockpit);
+    setComision(r.datos.comision);
+    setOtraOrg(r.datos.mirandoOtraOrganizacion);
   }, []);
 
   const tic = useCallback(async () => {
@@ -242,20 +236,37 @@ export default function SetterView({ activa }) {
             <Pipeline camino="/api/setter/pipeline" pulso={pulso} />
           ) : null}
 
+          {/* ── EL TABLERO, Y EL CARTEL QUE ESTABA ACÁ ─────────────────────
+              Hasta ahora esta sub-pestaña era un `Falta` que decía *«todavía no tiene de dónde sacar los
+              números»*, y era **cierto**: sin las salidas del setter no existía un solo resultado de
+              setter, y sin sello no había atribución. Los tres puntos que ese cartel enumeraba son
+              exactamente lo que este tablero muestra ahora, menos uno —la tasa de calificación— que
+              sigue faltando y por eso no se dibuja.
+
+              El cartel se va entero. Un texto que sobrevive a lo que describe enseña a no creerle a
+              los demás. */}
           {sub === 'inicio' ? (
-            <Falta
-              titulo="El tablero del mes todavía no tiene de dónde sacar los números"
-              detalle={
-                'Los agendamientos, las ventas chicas y la tasa de calificación se calculan de ' +
-                'los resultados que se registran con Avanzar. Todavía no hay ninguno, así que ' +
-                'acá iría un “—” y no un “0”: son dos cosas distintas y sólo una es cierta.'
-              }
-              puntos={[
-                'Agendamientos del mes y tasa de calificación',
-                'Ventas chicas cerradas por el setter',
-                'La atribución: qué agendamientos terminaron en venta del closer',
-              ]}
-            />
+            <>
+              {/* El mismo aviso que en Mi Día, y por lo mismo (`ADR-0305`): un rechazo por permiso no
+                  puede parecerse a un tablero en cero. Sin esto, alguien sin `setter.ver` vería
+                  «Cargando el tablero…» para siempre y no sabría por qué. */}
+              {causa ? (
+                <div className="fd-aviso mal" role="alert">
+                  <i>⚠</i>
+                  <span>{causa}</span>
+                </div>
+              ) : null}
+              <Inicio
+                cockpit={cockpit}
+                comision={comision}
+                mirandoOtraOrganizacion={otraOrg}
+                /* Lo que vuelve del `PATCH` son LOS DOS tramos recalculados, así que se reemplaza el
+                   objeto entero. Fusionar solo el tramo tocado dejaría el otro anillo con un número
+                   viejo, y un número viejo en un tablero de sueldos no se distingue de uno actual. */
+                alGuardarLaMeta={(nueva) => setComision(nueva)}
+                alIrAMiDia={() => setSub('dia')}
+              />
+            </>
           ) : null}
         </div>
       </div>

@@ -62,8 +62,14 @@ export async function PATCH(peticion: Request): Promise<Response> {
   }
   const c = cuerpo as { meta?: unknown } | null;
 
-  // Presencia, no `!== undefined`: con la otra forma, `{"meta": null}` se leería como «no vino» y
-  // quitar la meta dejaría de funcionar en silencio.
+  /* `Object.hasOwn` y no `c.meta !== undefined`, y hay que decir exactamente cuánto vale esa
+     elección: **sobre JSON las dos formas se comportan igual**. `JSON.parse` no produce claves con
+     valor `undefined`, así que «vino en `null`» y «no vino» ya se distinguen con cualquiera de las
+     dos, y una mutación de una a la otra **sobrevive** — medido, no supuesto.
+
+     Se escribe así igual porque dice la intención —la pregunta es si la clave ESTÁ, no qué vale— y
+     porque deja de ser equivalente el día que este cuerpo no venga de `JSON.parse`. Lo que no hay
+     acá es una guarda: es una forma de escribir. */
   if (!c || !Object.hasOwn(c, 'meta')) {
     return rechazo('peticion_invalida', MOTIVOS['meta_invalida']);
   }

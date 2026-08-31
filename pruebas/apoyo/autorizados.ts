@@ -552,6 +552,14 @@ export const MUTACIONES_CON_CAPACIDAD_DE_LECTURA: readonly string[] = [
      todo el equipo salvo quien administra. */
   'app/api/closer/meta/route.ts',
 
+  /* Y la del setter, por lo mismo. Es la misma operación sobre la misma tabla —una columna de la
+     fila de quien pide— con una diferencia que **no cambia la autoridad**: son dos filas en vez de
+     una, porque el `tipo` está en la clave primaria y el setter tiene dos tramos.
+     El `tramo` llega del navegador y se valida contra una lista de DOS, no contra las tres de la
+     base: dejar pasar `'closer'` le permitiría a un setter escribirle la meta al closer, y el `check`
+     de la base no lo impediría porque ese tipo es válido. Esa guarda está en la ruta y probada. */
+  'app/api/setter/meta/route.ts',
+
   /* Traer los contactos del CRM. Mismo caso que refrescar la agenda: trae las dos zonas y el
      territorio se decide en el servidor al LEER, no acá. */
   'app/api/contactos/sincronizar/route.ts',

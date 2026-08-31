@@ -41,6 +41,7 @@ import {
   TIPO_SETTER_DIRECTO,
 } from '../../lib/negocio/comisionDelSetter.ts';
 import { GET as miDia } from '../../app/api/setter/mi-dia/route.ts';
+import { PATCH as fijarMeta } from '../../app/api/setter/meta/route.ts';
 
 let esc: Escenario;
 before(async () => {
@@ -480,6 +481,140 @@ test('el contador de tareas del cockpit es EL MISMO que el de las colas, no otro
       'fórmulas',
   );
 });
+
+
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// 6 · LA META: SON DOS, Y EL `tramo` LLEGA DEL NAVEGADOR
+// ════════════════════════════════════════════════════════════════════════════════════════════
+
+/** El `PATCH` de la meta, y lo que responde. */
+async function meta(cuerpo: unknown): Promise<{ estado: number; cuerpo: Record<string, unknown> }> {
+  const r = await fijarMeta(
+    pedirComo('/api/setter/meta', esc.token, { metodo: 'PATCH', cuerpo }),
+  );
+  return { estado: r.status, cuerpo: (await r.clone().json()) as Record<string, unknown> };
+}
+
+/** Las metas que hay en la base, por tramo. Se lee CRUDO, no por la respuesta de la ruta. */
+async function metasEnLaBase(): Promise<Record<string, string | null>> {
+  const f = await esc.admin.query(
+    'select tipo, meta_mensual, porcentaje from negocio.comisiones where usuario_id = $1',
+    [esc.quien],
+  );
+  const salida: Record<string, string | null> = {};
+  for (const fila of f.rows as { tipo: string; meta_mensual: string | null }[]) {
+    salida[fila.tipo] = fila.meta_mensual;
+  }
+  return salida;
+}
+
+test('cada tramo tiene SU meta, y fijar una no toca la otra', async () => {
+  /* El defecto que esta prueba busca es de los que se ven al revés de lo que son: con los dos
+     anillos mandando el mismo `tramo`, fijar la meta del diferido mueve el arco del DIRECTO y el del
+     diferido no se mueve nunca. Nadie lo lee como «escribió el tramo equivocado»: se lee como «el
+     anillo de abajo está roto». */
+  await desdeCero();
+
+  const uno = await meta({ tramo: TIPO_SETTER_DIRECTO, meta: 2000 });
+  assert.equal(uno.estado, 200, JSON.stringify(uno.cuerpo));
+
+  const dos = await meta({ tramo: TIPO_SETTER_DIFERIDO, meta: 5000 });
+  assert.equal(dos.estado, 200, JSON.stringify(dos.cuerpo));
+
+  const enLaBase = await metasEnLaBase();
+  assert.equal(enLaBase[TIPO_SETTER_DIRECTO], '2000.00', 'la meta del tramo directo no quedó');
+  assert.equal(
+    enLaBase[TIPO_SETTER_DIFERIDO],
+    '5000.00',
+    'la meta del diferido no quedó, o se escribió sobre la fila del directo',
+  );
+
+  /* Y la respuesta trae LOS DOS tramos recalculados, no solo el que se tocó. Con uno solo, la
+     pantalla tendría que fusionarlo con lo que ya tenía — y cualquier error de fusión deja el otro
+     anillo mostrando un número viejo, que en un tablero de sueldos no se distingue de uno actual. */
+  const c = dos.cuerpo['comision'] as { directo: Tramo; diferido: Tramo } | undefined;
+  assert.ok(c, 'la respuesta no trae la comisión recalculada: entonces dice «guardado» sin leer');
+  assert.equal(c.directo.meta, 2000, 'la respuesta perdió la meta del OTRO tramo');
+  assert.equal(c.diferido.meta, 5000);
+})
+
+test('un tramo que no es del setter se RECHAZA, y «closer» es el que importa', async () => {
+  /* ══ LA GUARDA QUE LA BASE NO PUEDE DAR ══════════════════════════
+   *
+   * El `check` de la migración 025 admite TRES tipos, y `'closer'` es uno de ellos. Así que un
+   * `tramo: 'closer'` desde el navegador **pasaría la base sin una queja** y le escribiría la meta al
+   * closer. Lo único que lo impide es la lista de DOS de la ruta.
+   *
+   * Y se comprueba la tabla después, que es la mitad que importa: un rechazo que igual escribe deja
+   * la meta puesta con un 400 en la pantalla, y nadie va a buscar la fila que no cree que exista. */
+  await desdeCero();
+
+  for (const tramo of ['closer', 'setter', 'setter_lo_que_sea', '', 42, null, undefined]) {
+    const r = await meta({ tramo, meta: 999 });
+    assert.equal(
+      r.estado,
+      400,
+      `el tramo ${JSON.stringify(tramo)} se aceptó: ${JSON.stringify(r.cuerpo)}`,
+    );
+  }
+
+  assert.deepEqual(
+    await metasEnLaBase(),
+    {},
+    'un tramo rechazado igual escribió una fila: el 400 en la pantalla no dice que quedó guardado',
+  );
+})
+
+test('una meta imposible se rechaza con motivo, y `null` SÍ la quita', async () => {
+  await desdeCero();
+  await meta({ tramo: TIPO_SETTER_DIRECTO, meta: 3000 });
+
+  /* El CERO es el caso de esta prueba, y no es un valor raro: es lo que sale de un campo vacío
+     leído con `Number('')`. La base también lo rechazaría —tiene un `check`— pero el motivo propio
+     es lo que hace que quien lo escribió entienda por qué, en vez de recibir el mensaje del motor. */
+  for (const valor of [0, -5, 'mucho', true, {}]) {
+    const r = await meta({ tramo: TIPO_SETTER_DIRECTO, meta: valor });
+    assert.equal(r.estado, 400, `la meta ${JSON.stringify(valor)} se aceptó`);
+  }
+  assert.equal(
+    (await metasEnLaBase())[TIPO_SETTER_DIRECTO],
+    '3000.00',
+    'una meta rechazada pisó la que estaba: el rechazo no puede escribir',
+  );
+
+  // Y sin la clave `meta`, tampoco: el cuerpo no dice qué hacer.
+  assert.equal((await meta({ tramo: TIPO_SETTER_DIRECTO })).estado, 400);
+
+  /* `null` sí pasa, y es una operación de verdad: sin ella, el único camino de vuelta a «sin meta»
+     sería cargar un 1 — y eso dibujaría una meta superada. Se comprueba con `Object.hasOwn` en la
+     ruta justamente para que `{meta: null}` no se lea como «no vino». */
+  const quitada = await meta({ tramo: TIPO_SETTER_DIRECTO, meta: null });
+  assert.equal(quitada.estado, 200, JSON.stringify(quitada.cuerpo));
+  assert.equal(
+    (await metasEnLaBase())[TIPO_SETTER_DIRECTO],
+    null,
+    'quitar la meta no la quitó: la pantalla no tiene otro camino de vuelta a «sin meta»',
+  );
+})
+
+test('guardar la meta NO pisa el porcentaje, que lo fija otra persona', async () => {
+  /* Las dos columnas de la misma fila las escriben dos endpoints y dos personas distintas. Un
+     `onConflict` que incluyera `porcentaje` lo borraría en cada guardado de meta — y el síntoma,
+     «se me borró el porcentaje», no tendría ninguna pista de quién lo borró: quien lo pisó fue la
+     propia persona guardando su meta. */
+  await desdeCero();
+  await porcentaje(TIPO_SETTER_DIRECTO, 12.5);
+
+  await meta({ tramo: TIPO_SETTER_DIRECTO, meta: 4000 });
+
+  const f = await esc.admin.query(
+    'select porcentaje, meta_mensual from negocio.comisiones where usuario_id = $1 and tipo = $2',
+    [esc.quien, TIPO_SETTER_DIRECTO],
+  );
+  const fila = f.rows[0] as { porcentaje: string | null; meta_mensual: string | null };
+  assert.equal(fila.porcentaje, '12.50', 'guardar la meta borró el porcentaje que fijó otra persona');
+  assert.equal(fila.meta_mensual, '4000.00');
+})
 
 test('el mes del cockpit sale de la zona de la EMPRESA, y viene escrito', async () => {
   // No es decoración: es lo único que le dice a quien mira a qué período pertenecen los números.

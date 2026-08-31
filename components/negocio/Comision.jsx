@@ -1,6 +1,21 @@
 'use client';
 
-/* El anillo de comisión del cockpit, y el botón que despliega la meta.
+/* El anillo de comisión del cockpit, y el botón que despliega la meta. **Lo usan los TRES tramos.**
+ *
+ * ══════════════════════════════════════════════════════════════════════════════════
+ * VIVÍA EN `components/closer/` Y AHORA ES DE LOS DOS, Y NO ES UN ORDENAMIENTO
+ *
+ * Desde que el setter tiene sus dos tramos —directo y diferido— hay **tres anillos** con los mismos
+ * ocho estados. Copiarlo era la opción barata y es exactamente el defecto que este archivo existe
+ * para evitar: un `?? 0` metido en una de las copias convierte «nadie lo configuró» en «no cobás
+ * comisión» **en un solo anillo**, y los otros dos se ven bien al lado.
+ *
+ * Lo que difiere entre los tres se pasa por parámetro y **no necesita explicación**: a qué endpoint le
+ * manda la meta, qué tramo escribe, y el rótulo de sobre qué se calcula. Es la prueba que este
+ * repositorio usa para decidir si algo se comparte —*«¿se expresa la diferencia como un parámetro sin
+ * explicar por qué?»*— y acá se pasa.
+ *
+ * Lo que NO se parametriza son los ocho estados ni la regla del cero medido. Eso es lo compartido.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * OCHO ESTADOS, Y NINGUNO AFIRMA UN CERO QUE NADIE MIDIÓ
@@ -106,12 +121,31 @@ export default function Comision({
   comision,
   mirandoOtraOrganizacion,
   /** Lo responde el servidor con la condición exacta del endpoint. Ver el encabezado. */
-  /* `soyElCloser` —y no `puedeConfigurarPorcentajes`— es lo que habilita la META.
-     Son dos permisos distintos y antes estaban colapsados en uno. La meta es de la persona: dice
-     cuánto QUIERE cobrar este mes. Un administrador fija el porcentaje, que es una condición de
-     trabajo, pero ponerle a otro su meta personal no tiene sentido — y con el cockpit mostrando
-     siempre al designado, un administrador que abriera esta pantalla habría podido escribirla. */
-  soyElCloser,
+  /* Lo que habilita la META, y **no** es la capacidad de configurar porcentajes. Son dos permisos
+     distintos y antes estaban colapsados en uno. La meta es de la persona: dice cuánto QUIERE cobrar
+     este mes. Un administrador fija el porcentaje, que es una condición de trabajo, pero ponerle a
+     otro su meta personal no tiene sentido.
+     En el closer lo responde `soyElCloser`; en el setter es siempre quien mira, porque el sujeto de
+     ese cockpit ES quien mira. */
+  puedeFijarLaMeta,
+  /** A dónde va la meta. **Sin valor por omisión**: uno haría que un anillo mal montado escriba la
+   *  meta de OTRO tramo sin fallar, y las dos metas se ven igual en la pantalla. */
+  rutaDeLaMeta,
+  /** Lo que viaja junto a `meta` en el cuerpo. En el setter lleva el `tramo`. */
+  cuerpoExtra = {},
+  /** Sobre qué se calcula, en una frase que arranca en minúscula. Va en los tres estados con monto. */
+  rotulo = 'las ventas que registraste este mes',
+  /** El título de la ventana de la meta. Dice de QUÉ meta se trata cuando hay más de una. */
+  tituloDeLaMeta = 'Mi meta de comisión del mes',
+  /**
+   * Un rótulo corto ARRIBA del anillo. `null` = sin rótulo, que es lo correcto cuando hay uno solo.
+   *
+   * Con DOS anillos apilados deja de ser opcional: los dos dibujan el mismo círculo con un monto y un
+   * porcentaje adentro, así que sin rótulo la única pista de cuál es cuál está en el texto de abajo —y
+   * el botón que se aprieta está arriba de ese texto. Alguien fijaría la meta del tramo equivocado, y
+   * el síntoma es un arco que no se mueve.
+   */
+  etiqueta = null,
   alGuardar,
   /** Recargar el cockpit entero. Se usa al cerrar la ventana de los porcentajes: si alguien cambió
    *  el suyo, su anillo tiene que reflejarlo. */
@@ -132,6 +166,9 @@ export default function Comision({
   if (mirandoOtraOrganizacion) {
     return (
       <div className="ck-ring">
+        {/* El rótulo va también acá. Sin él, mirando otra empresa se verían dos círculos vacíos e
+            idénticos, y ni siquiera se sabría que son dos tramos distintos. */}
+        {etiqueta ? <span className="ck-rotulo">{etiqueta}</span> : null}
         <div className="ring">
           <div>
             <b>—</b>
@@ -180,7 +217,12 @@ export default function Comision({
   const guardar = async (valor) => {
     setGuardando(true);
     setAviso(null);
-    const r = await pedir('/api/closer/meta', { metodo: 'PATCH', cuerpo: { meta: valor } });
+    /* `meta` va DESPUÉS del resto a propósito: así un `cuerpoExtra` con una clave `meta` no puede
+       pisar el valor que este formulario acaba de leer. */
+    const r = await pedir(rutaDeLaMeta, {
+      metodo: 'PATCH',
+      cuerpo: { ...cuerpoExtra, meta: valor },
+    });
     setGuardando(false);
     if (r.tipo !== 'datos') {
       setAviso({
@@ -206,6 +248,7 @@ export default function Comision({
 
   return (
     <div className="ck-ring">
+      {etiqueta ? <span className="ck-rotulo">{etiqueta}</span> : null}
       <div className="ring" style={{ position: 'relative' }}>
         {hayArco ? <Arco fraccion={fraccion} /> : null}
         <div style={{ position: 'relative', textAlign: 'center' }}>
@@ -230,21 +273,19 @@ export default function Comision({
         ) : k.meta === null ? (
           /* Estado 5 · sin meta. Acá sí hay algo que la persona puede hacer. */
           <span>
-            Comisión estimada sobre las ventas que registraste este mes.{' '}
-            <b>Sin meta del mes.</b>
+            Comisión estimada sobre {rotulo}. <b>Sin meta del mes.</b>
           </span>
         ) : k.metaSuperada ? (
           /* Estado 7 · meta superada. Las tres condiciones las decide el servidor, no esta línea. */
           <span>
-            Comisión estimada sobre las ventas que registraste este mes.{' '}
+            Comisión estimada sobre {rotulo}.{' '}
             <b>Meta superada por {plata(Math.abs(k.faltaParaLaMeta))}.</b>
           </span>
         ) : (
           /* Estado 6 · con meta, sin alcanzar. La estimación de cuántas ventas faltan **no se
              dibuja sin promedio**: sin ventas no hay promedio, y `falta / 0` es infinito. */
           <span>
-            Comisión estimada sobre las ventas que registraste este mes. Faltan{' '}
-            <b>{plata(k.faltaParaLaMeta)}</b>
+            Comisión estimada sobre {rotulo}. Faltan <b>{plata(k.faltaParaLaMeta)}</b>
             {k.ventas !== null && k.ventas > 0 && k.valor > 0
               ? ` — unas ${Math.ceil(k.faltaParaLaMeta / (k.valor / k.ventas))} venta(s) más.`
               : '.'}
@@ -257,15 +298,18 @@ export default function Comision({
           número todavía no se pueda calcular. Esconderlo ahí haría que la única acción disponible
           dependa de algo que otra persona tiene que hacer primero.
 
-          Y NO aparece para quien no es el closer designado, que es lo que cambió. Este anillo ahora
-          muestra siempre a esa persona —el cockpit tiene un sujeto— así que sin esta condición un
-          administrador que abriera la pantalla vería «Fijar mi meta» y estaría fijando la de otro.
-          El «mi» del rótulo era verdad cuando el anillo era de quien miraba; ya no lo es.
+          En el cockpit del CLOSER no aparece para quien no es el designado. Ese anillo muestra siempre
+          a esa persona —ese cockpit tiene un sujeto— así que sin la condición un administrador que
+          abriera la pantalla vería «Fijar mi meta» y estaría fijando la de otro: el «mi» del rótulo
+          era verdad cuando el anillo era de quien miraba, y ahí ya no lo es.
 
-          Lo decide el SERVIDOR (`soyElCloser`), comparando identificadores del lado donde están: la
-          pantalla no recibe el identificador del designado para compararlo, justamente para que no
-          haya dos lugares que respondan la misma pregunta. */}
-      {soyElCloser ? (
+          En el del SETTER sí lo es siempre, porque el sujeto de ese cockpit ES quien mira — no hay
+          designación posible: el setter es multi-persona por construcción.
+
+          Las dos veces lo decide el SERVIDOR y llega en `puedeFijarLaMeta`. La pantalla no recibe el
+          identificador del designado para compararlo, justamente para que no haya dos lugares que
+          respondan la misma pregunta. */}
+      {puedeFijarLaMeta ? (
         <div className="ck-acciones">
           <button
             type="button"
@@ -287,7 +331,7 @@ export default function Comision({
           encabezado. */}
       {abierto ? (
         <Ventana
-          titulo="Mi meta de comisión del mes"
+          titulo={tituloDeLaMeta}
           subtitulo="Es tu meta de comisión, no de ventas."
           alCerrar={() => setAbierto(false)}
         >
