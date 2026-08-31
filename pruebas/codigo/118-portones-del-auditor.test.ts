@@ -45,6 +45,7 @@ const hace = (min: number): Date => new Date(AHORA.getTime() - min * 60_000);
 function candidato(cambios: Partial<CandidatoAAuditar> = {}): CandidatoAAuditar {
   return {
     contactoId: '11111111-1111-4111-8111-111111111111',
+    ghlContactId: 'ghl-del-contacto',
     territorio: 'closer',
     etiquetas: ['bot_activado_appflow'],
     tieneAvisoAbierto: false,

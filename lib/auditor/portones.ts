@@ -355,6 +355,11 @@ export const ATIENDE_EL_AGENTE: Readonly<Record<Territorio, readonly EstadoDelAg
 /** Un candidato, con todo lo que los portones 1 a 4 necesitan. **Todo de nuestra base.** */
 export interface CandidatoAAuditar {
   contactoId: string;
+  /**
+   * El identificador de ese contacto en el CRM. **No decide nada acá**: viaja para que quien marque
+   * una intervención no tenga que volver a consultarlo.
+   */
+  ghlContactId: string;
   territorio: Territorio | null;
   etiquetas: readonly string[];
   /** ¿Tiene un hallazgo abierto? Es el portón 3. */

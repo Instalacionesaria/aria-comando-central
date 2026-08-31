@@ -234,9 +234,19 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // La escritura va entera por `conOrganizacion(`, incluida la auditoría, por el mismo motivo que
   // arriba: la designación y su rastro en la misma transacción.
   'app/api/admin/closer/route.ts',
-  // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa es la ÚNICA
-  // escritura al CRM de todo el sistema. Todo lo que escribe en la base va por `conOrganizacion(`.
+  // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa era la ÚNICA
+  // escritura al CRM de todo el sistema hasta que apareció la de abajo. Todo lo que escribe en la
+  // base va por `conOrganizacion(`.
   'app/api/contactos/[id]/avanzar/route.ts',
+  /* ── Etapa 13 · resolver una intervención ─────────────────────────────
+   *
+   * Lee el token por el mismo motivo que Avanzar y para la operación simétrica: **quitarle al CRM
+   * las etiquetas que tienen pausado al agente**. Es la segunda escritura al CRM del sistema.
+   *
+   * Y la lectura es la mínima: `resolverAccesoAGhl` de SU propia organización, la que el portero ya
+   * resolvió. No hay ninguna consulta sin filtro. Todo lo que escribe en la base va por
+   * `conOrganizacion(`, dentro de `resolverLaIntervencion`. */
+  'app/api/contactos/[id]/resolver/route.ts',
   /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
    *
    * Usa `conIdentidad(` para DOS lecturas, y ninguna es un descuido:
@@ -456,6 +466,20 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // que acá no existe: nadie sabría que pasó, no habría fila que reintentar, y no se repara solo.
   // Por eso el orden no es preferencia, y está escrito en el encabezado del manejador.
   'app/api/contactos/[id]/avanzar/route.ts',
+  /* ── Etapa 13 · resolver una intervención ─────────────────────────────
+   *
+   * Qué queda a medias si falla la segunda mitad: **la etiqueta sigue puesta en el CRM, así que el
+   * agente sigue pausado**. El aviso está cerrado acá, el contacto ya salió de la cola roja y quedó
+   * el rastro de quién lo tomó; lo único que falta es reactivar el agente, y hay que hacerlo a mano
+   * en el CRM. **La respuesta lo dice en su propio campo `crm`** en vez de colapsarlo en el éxito.
+   *
+   * Y NO se devuelve un error: la resolución ya ocurrió. Un 502 haría que el vendedor apretara el
+   * botón otra vez sobre algo que ya está hecho, y a la tercera dejaría de leer la respuesta.
+   *
+   * Al revés —CRM primero— un fallo de la base dejaría al contacto sin etiqueta y con la
+   * intervención abierta: el agente vuelve a atender **y la cola sigue pidiendo que alguien lo
+   * tome**. Los dos estados que no queremos, a la vez. */
+  'app/api/contactos/[id]/resolver/route.ts',
   /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
    *
    * Esta lista exige responder qué queda A MEDIAS si falla la segunda mitad. La respuesta es

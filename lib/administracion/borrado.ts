@@ -47,6 +47,7 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   tareas_org_id_creada_por_fkey: 'creó tareas',
   tareas_org_id_completada_por_fkey: 'completó tareas',
   hallazgos_org_id_resuelto_por_fkey: 'resolvió avisos del sistema',
+  analisis_resuelto_por_fk: 'resolvió intervenciones del auditor de IA',
   usuarios_creado_por_fkey: 'dio de alta a otras personas',
   // Ésta faltaba, y la encontró la comprobación de entradas muertas de la prueba: recorre las
   // claves foráneas `no action` que apuntan a usuarios y exige traducción para cada una. Sin ella,

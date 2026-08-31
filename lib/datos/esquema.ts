@@ -571,7 +571,13 @@ export interface TablaNotas {
   /** `null` solo para las importadas: el endpoint de notas de GHL no devuelve autor. */
   autor_id: string | null;
   /** Y esto distingue "importada sin autor" de "escrita acá". Sin él, el nulo miente. */
-  origen: Generated<'plataforma' | 'importada'>;
+  /**
+   * De dónde salió. **Los TRES se distinguen porque el nulo de `autor_id` significa algo distinto.**
+   *
+   * `plataforma` = la escribió una persona acá, y `autor_id` dice quién. `importada` = vino del CRM,
+   * que no devuelve autor. `auditor` = la escribió el auditor de IA, que no es una persona.
+   */
+  origen: Generated<'plataforma' | 'importada' | 'auditor'>;
   creado_el: Generated<Date>;
 }
 
@@ -679,6 +685,14 @@ export interface TablaAnalisisDelAgente {
   prompt_hash: string | null;
   /** La línea base del antirrebote: cuántos mensajes del agente había al analizar. */
   mensajes_del_agente: number;
+  /**
+   * Cuándo un humano tomó esta intervención. **Abierto = sin fecha.** Migración 031.
+   *
+   * Y no significa que el patrón esté arreglado: un vendedor puede resolver el caso puntual y la
+   * falla del agente sigue exactamente donde estaba. Son dos estados distintos.
+   */
+  resuelto_el: Date | null;
+  resuelto_por: string | null;
   analizado_el: Generated<Date>;
 }
 

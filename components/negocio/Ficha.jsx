@@ -462,9 +462,12 @@ function Cuerpo({
           <div className="pr-box cw-nota" key={n.id}>
             <div className="cw-nota-cuerpo">{n.cuerpo}</div>
             <div className="cw-nota-pie">
-              {/* `null` = la importó el sistema desde el CRM, y se dice así. Poner el nombre de
-                  quien mira sería atribuirle una nota que no escribió. */}
-              {n.autor ?? 'Sistema'} · {hace(n.creadoEl)}
+              {/* `null` en el autor significa DOS cosas distintas, y el pie tiene que separarlas:
+                  la importó el CRM, o la escribió el auditor de IA. Con «Sistema» para las dos, una
+                  nota del auditor se leería como traída del CRM — que es exactamente la confusión
+                  que el tercer valor de `origen` existe para evitar (migración 031). Y poner el
+                  nombre de quien mira sería atribuirle una nota que no escribió. */}
+              {n.origen === 'auditor' ? 'Auditor de IA' : (n.autor ?? 'Sistema')} · {hace(n.creadoEl)}
               {n.origen === 'importada' ? ' · importada del CRM' : ''}
             </div>
           </div>

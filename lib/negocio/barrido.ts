@@ -399,7 +399,7 @@ export async function barrerTodo(
             : tarea === 'mensajes'
               ? await ingerirMensajes(org.id, conToken(acceso))
               : tarea === 'auditoria'
-                ? await auditar(org, auditor, arranque, ahora)
+                ? await auditar(org, auditor, acceso, arranque, ahora)
                 : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
@@ -478,6 +478,7 @@ export async function barrerTodo(
 async function auditar(
   org: OrganizacionListada,
   auditor: AccesoAlAuditor,
+  acceso: AccesoAGhl,
   arranque: number,
   ahora: () => number,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number } | { corrio: false; porque: string }> {
@@ -493,6 +494,11 @@ async function auditar(
       auditorActivo: true,
       claveIa: auditor.claveIa,
       idDelAgente: auditor.idDelAgente,
+      /* El token del CRM va aparte, y puede faltar: auditar no le habla al CRM, solo MARCAR lo
+         necesita. Una empresa sin token audita igual —los verdes, los amarillos y los hallazgos no
+         lo usan— y lo único que no puede es pausarle el agente al CRM. Exigirlo acá apagaría el
+         auditor entero por la última milla. */
+      tokenDelCrm: acceso.tipo === 'listo' ? acceso.token : null,
     },
     { hasta: arranque + PRESUPUESTO_MS, reloj: ahora },
   );

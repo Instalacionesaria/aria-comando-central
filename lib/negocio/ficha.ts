@@ -292,9 +292,12 @@ export async function llamadasDeLaFicha(contactoId: string): Promise<Pestana<Lla
 export interface NotaDeFicha {
   id: string;
   cuerpo: string;
-  /** El nombre de quien la escribió, o `null` = la importó el sistema desde el CRM. */
+  /**
+   * El nombre de quien la escribió. `null` = **no la escribió una persona**, y `origen` dice cuál de
+   * los dos casos es: la importó el sistema desde el CRM, o la escribió el auditor de IA.
+   */
   autor: string | null;
-  origen: 'plataforma' | 'importada';
+  origen: 'plataforma' | 'importada' | 'auditor';
   creadoEl: Date;
 }
 

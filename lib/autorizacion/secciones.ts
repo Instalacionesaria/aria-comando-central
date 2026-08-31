@@ -473,6 +473,14 @@ export const SIN_PANTALLA: readonly string[] = [
   // MIRAR una ficha de REGISTRAR un resultado a propósito, porque existe un rol plausible que
   // necesite lo primero y no lo segundo.
   'app/api/contactos/[id]/avanzar/route.ts',
+  /* Resolver una intervención del auditor. Va acá por el mismo motivo que Avanzar, y con una razón
+     más: **la cola roja está en las DOS pestañas**. Con `PANTALLA = 'closer'`, un setter resolviendo
+     desde su propia cola recibiría un 403 sobre un contacto suyo.
+
+     Pide `contactos.resolver`, que es propia y no `contactos.avanzar`: avanzar registra un RESULTADO
+     —cambia la etapa, alimenta la comisión— y esto cierra un aviso. Con una sola capacidad,
+     conceder lo primero concedería lo segundo en silencio. */
+  'app/api/contactos/[id]/resolver/route.ts',
   // El ciclo de ingesta de mensajes. No lo abre una pantalla: lo pide un reloj, y lo va a pedir
   // también una tarea programada. No muestra nada, así que el defecto que `ADR-0304` previene
   // —una pantalla con secciones en blanco— no lo puede producir.

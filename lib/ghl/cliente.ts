@@ -364,9 +364,10 @@ export async function contactoPorId(
 /**
  * Le pone etiquetas a un contacto. **Suma, no reemplaza.**
  *
- * ── LA ÚNICA ESCRITURA AL CRM DE TODO EL SISTEMA ────────────────────────────
+ * ── UNA DE LAS DOS ESCRITURAS AL CRM DE TODO EL SISTEMA ─────────────────────
  *
- * Todo lo demás lee. Esto escribe, y por eso lleva su propia advertencia: el endpoint AGREGA a las
+ * Era la única hasta que `quitarEtiquetas` apareció acá abajo, para resolver una intervención. Todo
+ * lo demás lee. Esto escribe, y por eso lleva su propia advertencia: el endpoint AGREGA a las
  * que el contacto ya tiene. Es lo correcto y es lo que el contrato pide —*"escribir un resultado
  * nuevo no borra los anteriores"*, porque un contacto puede haber sido no-show en junio y venta en
  * julio, y las dos cosas ocurrieron—.
@@ -399,4 +400,50 @@ export async function ponerEtiquetas(
   );
   if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
   return { tipo: 'datos', datos: { puestas: etiquetas.length } };
+}
+
+/**
+ * Le QUITA etiquetas a un contacto. **La segunda escritura al CRM de todo el sistema.**
+ *
+ * ── POR QUÉ HACE FALTA UNA FUNCIÓN QUE BORRA, Y QUÉ LA HACE DISTINTA ───────
+ *
+ * Las etiquetas del CRM **nadie las quita**: registrar un resultado solo agrega, y eso está escrito
+ * en `lib/negocio/colas.ts` como el motivo por el que un contacto cerrado tiene que salir de la cola
+ * por otra vía. Resolver una intervención es la primera operación del sistema que necesita lo
+ * contrario, porque la etiqueta de fallo **dispara un automatismo del CRM**: mientras esté puesta, el
+ * agente sigue pausado.
+ *
+ * Y eso la vuelve más peligrosa que `ponerEtiquetas`, en una forma que conviene tener escrita: **una
+ * etiqueta de más se ve y se puede sacar; una de menos no se ve.** Quitar la equivocada apaga un
+ * estado que nadie va a notar que falta — el territorio de un contacto, su resultado, su serie de
+ * seguimiento. Por eso quien llama tiene que pasar una lista corta y decidida, nunca un filtro.
+ *
+ * ── LO QUE ESTA FUNCIÓN NO PUEDE COMPROBAR ────────────────────────────────
+ *
+ * Lo mismo que su gemela: que la etiqueta EXISTIERA. El CRM acepta con un 200 el borrado de una que
+ * el contacto no tenía, así que **devolver éxito significa «el CRM aceptó la petición»**, nunca «la
+ * etiqueta ya no está». La comprobación real es la relectura del barrido.
+ *
+ * `DELETE` con cuerpo, que es lo que este endpoint pide. No es lo habitual y por eso se dice: es el
+ * contrato del proveedor, no una elección nuestra.
+ */
+export async function quitarEtiquetas(
+  acceso: { token: string },
+  ghlContactId: string,
+  etiquetas: readonly string[],
+): Promise<ResultadoDeGhl<{ quitadas: number }>> {
+  // Una lista vacía NO se manda, igual que en `ponerEtiquetas`: sería una petición que no puede
+  // lograr nada, y el proveedor podría contestar un 400 que se leería como un fallo real.
+  if (etiquetas.length === 0) return { tipo: 'datos', datos: { quitadas: 0 } };
+
+  const r = await pedirExterno<unknown>(
+    `${BASE}/contacts/${encodeURIComponent(ghlContactId)}/tags`,
+    {
+      metodo: 'DELETE',
+      cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS),
+      cuerpo: { tags: [...etiquetas] },
+    },
+  );
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+  return { tipo: 'datos', datos: { quitadas: etiquetas.length } };
 }

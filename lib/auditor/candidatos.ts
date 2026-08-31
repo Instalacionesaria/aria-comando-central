@@ -93,6 +93,7 @@ export async function candidatosDecididos(ahora: Date): Promise<{
     .selectFrom('contactos as c')
     .select((eb) => [
       'c.id',
+      'c.ghl_contact_id',
       'c.nombre',
       'c.territorio',
       'c.etiquetas',
@@ -120,7 +121,15 @@ export async function candidatosDecididos(ahora: Date): Promise<{
         .limit(1)
         .as('mensajes_en_el_ultimo_analisis'),
 
-      // El portón 3, como `exists`: la pregunta es sí o no, no cuántos.
+      /* ── EL PORTÓN 3, Y SON DOS FUENTES ────────────────────────────────────
+       *
+       * «Ya está marcado» son dos cosas: un hallazgo abierto **o una intervención sin resolver**. La
+       * segunda no es redundante, y cerrarla tapó un agujero real: **un veredicto rojo puede no
+       * traer ningún hallazgo** —la intervención y el hallazgo son salidas independientes, que es la
+       * separación que este módulo entero vino a hacer— y sin esta mitad ese contacto se volvía a
+       * auditar en cuanto el antirrebote se cumpliera, mientras un vendedor lo tenía en su cola.
+       *
+       * `exists` y no un conteo, en las dos: la pregunta es sí o no. */
       eb
         .exists(
           eb
@@ -129,7 +138,17 @@ export async function candidatosDecididos(ahora: Date): Promise<{
             .where('hallazgos.resuelto_el', 'is', null)
             .select(sql`1`.as('x')),
         )
-        .as('tiene_aviso_abierto'),
+        .as('tiene_hallazgo_abierto'),
+      eb
+        .exists(
+          eb
+            .selectFrom('analisis_del_agente')
+            .whereRef('analisis_del_agente.contacto_id', '=', 'c.id')
+            .where('analisis_del_agente.intervencion', '=', true)
+            .where('analisis_del_agente.resuelto_el', 'is', null)
+            .select(sql`1`.as('x')),
+        )
+        .as('tiene_intervencion_abierta'),
     ])
     /* Los dos portones baratos, en SQL. Ver el encabezado: hacerlos en memoria funcionaría igual y
        llenaría la corrida en seco de ruido. */
@@ -150,13 +169,15 @@ export async function candidatosDecididos(ahora: Date): Promise<{
   const decididos = filas.slice(0, TOPE_DE_CANDIDATOS).map((f) => {
     const candidato: CandidatoAAuditar = {
       contactoId: f.id,
+      ghlContactId: f.ghl_contact_id,
       territorio: f.territorio,
       etiquetas: f.etiquetas,
       /* `Boolean(...)` y no el valor crudo: un `exists` de Kysely llega tipado como `boolean |
          number`, y el mismo `Boolean(` está en `lib/negocio/fila.ts` por lo mismo. Un `1` en un campo
          declarado booleano es verdadero en JavaScript, así que sin esto **funcionaría igual** —y el día
          que alguien compare con `=== true`, el portón 3 se apagaría entero y en silencio. */
-      tieneAvisoAbierto: Boolean(f.tiene_aviso_abierto),
+      tieneAvisoAbierto:
+        Boolean(f.tiene_hallazgo_abierto) || Boolean(f.tiene_intervencion_abierta),
       /* `count(*)` viaja como TEXTO en `pg` —es un `bigint`—, así que sin el `Number` la resta sería
          una concatenación de cadenas: `'12' - 5` da 7 por coerción, pero `'12' - null` da 12 y
          `'12' + 1` daría `'121'`. Se convierte una vez, acá. */

@@ -46,6 +46,9 @@ const EMPRESA = () => ({
   auditorActivo: true,
   claveIa: 'una-clave-que-nunca-se-usa',
   idDelAgente: AGENTE_CRM,
+  /* Sin token: estas pruebas no llaman al CRM. Marcar una intervención sale como `sin_token_de_crm`,
+     que es el caso real de cuatro de las cinco empresas de producción. */
+  tokenDelCrm: null,
 });
 
 before(async () => {

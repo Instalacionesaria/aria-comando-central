@@ -217,13 +217,13 @@ export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promi
    * histórico— y se paga una sola vez. */
   const conIntervencion = await datos()
     .selectFrom('analisis_del_agente')
-    .select(['contacto_id', 'motivo'])
+    .select(['contacto_id', 'motivo', 'resuelto_el'])
     .distinctOn('contacto_id')
     .where('intervencion', '=', true)
     .orderBy('contacto_id')
     .orderBy('analizado_el', 'desc')
     .execute();
-  const motivoDe = new Map(conIntervencion.map((a) => [a.contacto_id, a.motivo]));
+  const intervencionDe = new Map(conIntervencion.map((a) => [a.contacto_id, a]));
 
   /* La medianoche de HOY en la zona de la organización, del mismo reloj que las consultas: `now()`
      devuelve el instante en que empezó la TRANSACCIÓN, así que es literalmente el mismo instante que
@@ -243,6 +243,22 @@ export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promi
   const enUrgentes = new Set<string>();
   for (const fila of filas) {
     if (!tiene(fila.etiquetas, FALLOS_DEL_AUDITOR[rol])) continue;
+    /* ── EL ENGANCHE: LA COLA MIRA LAS DOS COSAS ───────────────────────────
+     *
+     * Entrar es por la ETIQUETA, y salir tiene que poder ser por LA RESOLUCIÓN. Con la etiqueta
+     * sola quedaban dos agujeros, uno temporal y uno permanente:
+     *
+     *   · Las etiquetas viven en el CRM y acá se leen de la caché, que se refresca cuando el
+     *     barrido relee los contactos. Entre resolver y ese barrido pasan **hasta diez minutos** en
+     *     los que alguien ya atendió el caso y la pantalla sigue pidiendo que lo atiendan.
+     *
+     *   · Y si el CRM rechaza el borrado —es otro sistema y puede fallar— la etiqueta **no se va
+     *     nunca**: el contacto se queda en la cola roja para siempre, resuelto.
+     *
+     * La resolución es nuestra y es inmediata, así que es la que manda. Lo que el CRM no haya
+     * aceptado se reporta aparte —«se hizo» y «salió bien» son dos hechos— y el agente sigue
+     * pausado hasta que alguien saque la etiqueta a mano. */
+    if (intervencionDe.get(fila.id)?.resuelto_el != null) continue;
     /* Un contacto CERRADO no entra, por más que el bot haya fallado. Las etiquetas viven en el CRM y
        **nadie las quita**: registrar un resultado solo agrega. Sin esta línea, un contacto
        descalificado se queda en la cola roja para siempre, tachado y con su píldora al lado, mientras
@@ -259,7 +275,7 @@ export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promi
      * Y `?? SIN_MOTIVO` cubre además el caso en que el modelo pidió intervención y **no dejó una
      * frase**: el escritor guarda `null` en vez de una fila muda, justamente para que el respaldo
      * de acá haga su trabajo. Ninguna fila de esta cola queda vacía. */
-    urgentes.push({ fila, motivo: motivoDe.get(fila.id) ?? SIN_MOTIVO });
+    urgentes.push({ fila, motivo: intervencionDe.get(fila.id)?.motivo ?? SIN_MOTIVO });
   }
 
   // ── BUZÓN ─────────────────────────────────────────────────────────────────

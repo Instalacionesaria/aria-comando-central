@@ -165,6 +165,18 @@ insert into identidad.permisos (clave, descripcion) values
   ('contactos.comentar',       'Escribir notas en la ficha de un contacto'),
   ('conversaciones.responder', 'Enviar mensajes y encender o apagar el agente de un contacto'),
 
+  -- ── Etapa 13 · El auditor ──────────────────────────────────────────────────
+  --
+  -- Resolver una intervención: cerrar el aviso del auditor y quitarle al CRM las etiquetas que
+  -- lo tienen pausado. NO se reusa `contactos.avanzar` — avanzar registra un RESULTADO, que
+  -- cambia la etapa y alimenta la comisión; esto cierra un aviso. Con una sola capacidad,
+  -- conceder lo primero concedería lo segundo sin que nadie lo decida, que es exactamente la
+  -- lección que la Etapa 12 escribió arriba para borrar y desactivar.
+  --
+  -- El reparto de abajo la da por EXCLUSIÓN de prefijos, así que `contactos.%` cae sola en
+  -- `usuario` y en `administrador`: no hace falta tocar nada más.
+  ('contactos.resolver', 'Resolver una intervención del auditor de IA y reactivar el agente'),
+
   -- ── Etapa 12 · Borrar ──────────────────────────────────────────────────────
   --
   -- DOS capacidades nuevas, y no se reusan las de editar ni las de desactivar.

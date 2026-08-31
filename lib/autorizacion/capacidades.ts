@@ -126,12 +126,17 @@ export const CAPACIDADES = [
   'setter.ver',
   // La ficha del contacto. De las DOS pestañas, así que no puede pedir la de una sola.
   'contactos.ver',
-  // Las tres de MUTACIÓN. Éstas sí pueden diferir de la lectura de la pantalla: el defecto
+  // Las CUATRO de MUTACIÓN. Éstas sí pueden diferir de la lectura de la pantalla: el defecto
   // que esa regla previene es de lecturas —"una sección con datos y cuatro en blanco"— y un
   // botón deshabilitado no es un panel vacío.
   'contactos.avanzar',
   'contactos.comentar',
   'conversaciones.responder',
+  // Resolver una intervención del auditor. **No se reusa `contactos.avanzar`**: avanzar registra
+  // un RESULTADO —cambia la etapa, alimenta la comisión— y resolver cierra un aviso y le quita
+  // etiquetas al CRM. Con una sola capacidad, conceder lo primero concedería lo segundo en
+  // silencio, que es la lección que la Etapa 12 dejó escrita para borrar y desactivar.
+  'contactos.resolver',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

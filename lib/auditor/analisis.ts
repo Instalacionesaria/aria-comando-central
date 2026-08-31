@@ -44,6 +44,7 @@ import { datos, conOrganizacion } from '../datos/contexto.ts';
 import { conElPulso } from '../negocio/pulso.ts';
 import { candidatosDecididos } from './candidatos.ts';
 import { escribirAnalisis } from './escritura.ts';
+import { marcarLaIntervencion, type LoMarcado } from './intervencion.ts';
 import { MODELO_DEL_AUDITOR, pedirVeredicto, type ResultadoDelAuditor } from './modelo.ts';
 import { porQueNoSeAuditaLaEmpresa, type MotivoDeLaEmpresa } from './portones.ts';
 import { leerPromptDelAgente } from './prompts.ts';
@@ -99,6 +100,20 @@ export interface ParaAuditar {
   claveIa: string | null;
   /** El identificador del agente en el CRM de esa empresa. Sin él no hay atribución. */
   idDelAgente: string | null;
+  /**
+   * El token del CRM, para MARCAR una intervención. `null` = esa empresa no lo tiene cargado.
+   *
+   * ── SIN TOKEN SE AUDITA IGUAL, Y ESO ES DELIBERADO ──────────────────────
+   *
+   * Auditar no le habla al CRM: lee de nuestra base y llama al modelo. Lo único que necesita el
+   * token es **poner la etiqueta** de una intervención, y eso es la última milla.
+   *
+   * Con el token como requisito, una empresa que lo perdió dejaría de auditar del todo — y perdería
+   * también los verdes, los amarillos y los hallazgos, que no lo necesitan. Sin él se audita, se
+   * escribe, la cola roja muestra el motivo desde nuestra base, y lo único que falta es que el CRM
+   * pause el agente. El reporte lo dice.
+   */
+  tokenDelCrm: string | null;
 }
 
 /** Qué pasó con un contacto. Cinco finales, y **tres son normales**. */
@@ -128,6 +143,13 @@ export interface RenglonDelAnalisis {
   nivel?: string | null;
   intervencion?: boolean;
   hallazgos?: number;
+  /**
+   * Qué pasó con la marca, cuando hubo intervención. **Separado del análisis a propósito.**
+   *
+   * El análisis se escribió o no se escribió; la marca es otro sistema. Colapsarlos haría que «el
+   * veredicto se guardó y el CRM no pausó el agente» se reportara como un éxito completo.
+   */
+  marca?: { nota: boolean; etiqueta: boolean; porque?: string };
   /** Qué salió mal, o por qué no se pudo juzgar. **Nunca se colapsan dos motivos distintos.** */
   porque?: string;
 }
@@ -418,6 +440,30 @@ async function trabajar(
       }),
     );
 
+    /* ── LA MARCA, DESPUÉS DE ESCRIBIR Y SOLO EN ROJO ─────────────────────
+     *
+     * Va después de la escritura y **fuera de su transacción**: son dos escrituras a nuestra base y
+     * una a un sistema ajeno, y sostener la transacción mientras se habla con el CRM retiene una
+     * conexión del agrupador — lo que el encabezado de `pulso.ts` prohíbe.
+     *
+     * Y su fallo **no invalida el análisis**: el veredicto ya está guardado y la cola roja ya lo va a
+     * mostrar, porque su motivo sale de nuestra base y no de la etiqueta. Lo que falta cuando esto
+     * falla es que el CRM pause el agente, y eso viaja en el renglón. */
+    let marca: LoMarcado | undefined;
+    if (escrito.intervencion) {
+      marca =
+        e.tokenDelCrm === null
+          ? { nota: false, etiqueta: false, porque: 'sin_token_de_crm' }
+          : await marcarLaIntervencion({
+              orgId: e.orgId,
+              contactoId: candidato.contactoId,
+              ghlContactId: candidato.ghlContactId,
+              agente,
+              motivo: r.datos.veredicto.intervencion?.motivo ?? null,
+              acceso: { token: e.tokenDelCrm },
+            });
+    }
+
     renglones.push({
       contactoId: candidato.contactoId,
       agente,
@@ -425,6 +471,7 @@ async function trabajar(
       nivel: escrito.nivel,
       intervencion: escrito.intervencion,
       hallazgos: escrito.hallazgos,
+      ...(marca === undefined ? {} : { marca }),
       ...(escrito.descartados.length > 0 ? { porque: escrito.descartados.join('; ') } : {}),
     });
   }
