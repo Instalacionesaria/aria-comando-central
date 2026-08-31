@@ -33,6 +33,7 @@ import { enviarMensaje, type CanalDeEnvio } from '../../../../../lib/ghl/convers
 import { mensajesDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
 import { ventanaDeRespuesta } from '../../../../../lib/negocio/ventana.ts';
 import { escribirMensajes } from '../../../../../lib/negocio/mensajes.ts';
+import { sellarSiEsDelSetter } from '../../../../../lib/negocio/sello.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -227,6 +228,31 @@ export async function POST(
     ],
     { fijarPiso: false },
   );
+
+  /* ── EL SELLO DE ATRIBUCIÓN ───────────────────────────────────────────────
+   *
+   * Responder es una intervención manual: una persona leyó y contestó. Si el contacto es del setter
+   * y no tenía sello, se enciende con quien respondió — y de ahí sale su comisión diferida cuando el
+   * closer venda sobre ese lead.
+   *
+   * Va DESPUÉS del envío y no antes, y eso es deliberado: sellar a alguien por un mensaje que el
+   * canal rechazó sería atribuirle un trabajo que no ocurrió. Acá el mensaje ya salió.
+   *
+   * Y su fallo NO se propaga, y el `catch` es el que lo garantiza: acá el mensaje ya salió y ya está
+   * guardado, así que un 500 le diría a quien respondió que no salió — y lo mandaría de nuevo. Un
+   * mensaje repetido a un lead real es peor que un sello que falta: el sello se puede volver a poner
+   * en la próxima acción, el mensaje enviado dos veces no se recoge.
+   *
+   * Es la asimetría con `registrarResultado`, y es deliberada: **ahí el fallo SÍ tira abajo todo**,
+   * porque corre dentro de la transacción y nada se había confirmado todavía. La política de fallo es
+   * de cada llamador, no del sellador. */
+  try {
+    await conOrganizacion(contexto.orgEfectiva, () => sellarSiEsDelSetter(id, contexto.usuarioId));
+  } catch (e) {
+    // Se anota y sigue. Tragarlo en silencio haría que una comisión diferida que nadie puede
+    // reclamar no deje rastro en ninguna parte.
+    console.error('sello del setter: no se pudo sellar al responder', e);
+  }
 
   /* La fila que REPRESENTA a este mensaje, que no siempre es la que se acaba de insertar: si su
      gemelo real ya estaba, `escribirMensajes` no inserta el fabricado y devuelve el real. Devolverle

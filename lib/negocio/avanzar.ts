@@ -30,6 +30,7 @@ import { datos } from '../datos/contexto.ts';
 import type { SalidaResultado, Territorio } from '../datos/esquema.ts';
 import { etapaDeLaSalida } from './etapas.ts';
 import { modoDe } from './salidas.ts';
+import { sellarSiEsDelSetter } from './sello.ts';
 import type { ParDeResultado } from './salidas.ts';
 
 /**
@@ -161,6 +162,20 @@ export async function registrarResultado(
     .set({ etapa } as never)
     .where('id', '=', contactoId)
     .execute();
+
+  /* ── EL SELLO DE ATRIBUCIÓN, EN LA MISMA TRANSACCIÓN ──────────────────────
+   *
+   * Registrar un resultado es la intervención manual más fuerte que existe: alguien mira la
+   * conversación y decide en qué terminó. Si el contacto es del setter y todavía no tenía sello, se
+   * enciende con quien lo registró.
+   *
+   * Va DENTRO de la transacción y no después por el mismo motivo que la nota: si el sello falla, el
+   * resultado tampoco queda. La alternativa —sellar afuera— dejaría resultados sin atribución y
+   * comisión diferida que nadie puede reclamar, sin ningún error visible.
+   *
+   * `sellarSiEsDelSetter` decide sola si corresponde: mira el TERRITORIO del contacto y que el sello
+   * esté vacío. Que no haga nada es el caso normal, no un fallo. */
+  await sellarSiEsDelSetter(contactoId, lo.quien);
 
   let nota = false;
   if (lo.nota !== null) {

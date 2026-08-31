@@ -47,6 +47,7 @@ import {
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { pipelineDe } from '../../lib/negocio/pipeline.ts';
+import { sellarSiEsDelSetter } from '../../lib/negocio/sello.ts';
 import { GET as pipelineDelSetter } from '../../app/api/setter/pipeline/route.ts';
 import { SALIDAS_DEL_CLOSER, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
 import { etiquetasDelResultado } from '../../lib/ghl/contrato.ts';
@@ -405,6 +406,106 @@ test('la heurística de «clasificado por etiqueta» usa la entrada DE SU embudo
       'haciendo contra la entrada del OTRO embudo',
   );
   assert.ok(p.clasificados.sinNada >= 1, 'no cayó en «sin nada», que es lo que de verdad es');
+});
+
+/** El sello de un contacto, leído en crudo. */
+async function selloDe(contactoId: string): Promise<{ id: string | null; el: Date | null }> {
+  const f = await esc.admin.query(
+    'select sello_setter_id, sello_setter_el from negocio.contactos where id = $1',
+    [contactoId],
+  );
+  const r = f.rows[0] as { sello_setter_id: string | null; sello_setter_el: Date | null } | undefined;
+  return { id: r?.sello_setter_id ?? null, el: r?.sello_setter_el ?? null };
+}
+
+test('el SELLO DE ATRIBUCIÓN se enciende al registrar, y no se reescribe', async () => {
+  /* ══ LA COLUMNA EXISTÍA DESDE LA MIGRACIÓN 011 Y NO TENÍA ESCRITOR ══════
+   *
+   * De este sello depende la **comisión diferida** del setter: el tramo que se paga sobre las
+   * ventas grandes que cierra el closer sobre leads que él originó. Sin sello no hay de dónde
+   * sacarlo, y en la plataforma anterior vivía en el navegador —se escribía en seis lugares y no se
+   * leía en ninguno— así que moría al refrescar.
+   *
+   * El disparador de la base ya estaba probado. Lo que falta probar es el ESCRITOR, y son casos
+   * distintos: el disparador deja pasar cualquier `update`, y la restricción de a QUIÉN se le pone
+   * es de este lado. */
+  const delSetter = await unContacto(esc, { territorio: 'setter', nombre: 'Sello setter' });
+  assert.equal((await selloDe(delSetter.id)).id, null, 'nació con sello');
+
+  // 1 · Se enciende con quien registra, y LA FECHA LA PONE LA BASE.
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'agendo' },
+    }),
+    ctxDe(delSetter.id),
+  );
+  assert.equal(r.status, 201, await r.clone().text());
+
+  const primero = await selloDe(delSetter.id);
+  assert.equal(primero.id, esc.quien, 'el sello no se encendió con quien registró');
+  assert.notEqual(
+    primero.el,
+    null,
+    'la fecha del sello quedó nula: la pone el disparador, y sin ella no se sabe cuándo se originó',
+  );
+
+  /* 2 · EL SELLADOR NO INTENTA PISAR UN SELLO YA PUESTO.
+   *
+   * Que el segundo setter no le robe al primero lo garantiza el DISPARADOR, y eso ya está probado en
+   * `pruebas/base/90-negocio-closer-setter.test.ts`. Lo que le toca al ESCRITOR es no intentarlo: su
+   * `where sello_setter_id is null` hace que la segunda llamada afecte CERO filas.
+   *
+   * Y no es prolijidad: con un reloj de diez segundos, un `update` por cada acción sobre cada
+   * contacto ya sellado se paga en cada ciclo. */
+  const otraVez = await conOrganizacion(esc.org, () =>
+    sellarSiEsDelSetter(delSetter.id, esc.quien),
+  );
+  assert.equal(
+    otraVez,
+    false,
+    'el sellador intentó escribir sobre un sello ya puesto: el disparador lo salva, pero es un ' +
+      '`update` por acción y por contacto que nadie necesita',
+  );
+
+  const despues = await selloDe(delSetter.id);
+  assert.equal(despues.id, esc.quien, 'el sello se movió de dueño');
+  assert.equal(
+    despues.el?.getTime(),
+    primero.el?.getTime(),
+    'la fecha del sello se movió: entonces «cuándo se originó» dejaría de ser cierto',
+  );
+});
+
+test('el sello NO se enciende fuera del territorio del setter', async () => {
+  /* Este caso el disparador **no lo puede dar**: deja pasar cualquier `update`, así que la
+     restricción es del escritor. Y es la que impide que un closer se lleve la atribución de un
+     lead — esa columna paga la comisión DEL SETTER. */
+  const delCloser = await unContacto(esc, { territorio: 'closer', nombre: 'Sello closer' });
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${delCloser.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'venta', detalle: 'Contado', monto: 1000 },
+    }),
+    ctxDe(delCloser.id),
+  );
+  assert.equal(r.status, 201, await r.clone().text());
+  assert.equal(
+    (await selloDe(delCloser.id)).id,
+    null,
+    'un contacto del CLOSER quedó con sello de setter: le paga a alguien el tramo de otro',
+  );
+
+  /* Y un CONGELADO tampoco. Acá se llama al sellador DIRECTO y no por la ruta, a propósito: la ruta
+     rechaza a un congelado antes de llegar al sello, así que pasar por ella no mediría nada de este
+     lado. Un contacto sin territorio no tiene a quién atribuirle el lead, y `territorio = 'setter'`
+     en SQL **no** iguala a `null`. */
+  const congelado = await unContacto(esc, { territorio: null, nombre: 'Sello congelado' });
+  const sello = await conOrganizacion(esc.org, () =>
+    sellarSiEsDelSetter(congelado.id, esc.quien),
+  );
+  assert.equal(sello, false, 'el sellador dijo que selló un contacto sin territorio');
+  assert.equal((await selloDe(congelado.id)).id, null, 'un congelado quedó sellado');
 });
 
 // 2 · LO QUE SE RECHAZA NO ESCRIBE
