@@ -69,6 +69,11 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   resultados_org_id_fkey: 'tiene resultados de ventas registrados',
   tareas_org_id_fkey: 'tiene tareas pendientes o hechas',
   hallazgos_org_id_fkey: 'tiene avisos del sistema registrados',
+  /* El veredicto del auditor. Dice «auditoría» y no «avisos» —como su tabla hija de arriba— porque
+     son dos cosas distintas para quien lee el rechazo: un hallazgo es una falla del agente, y un
+     análisis es el veredicto completo de una conversación, verde incluido. Y la frase tiene detrás
+     una acción posible, que es lo que esta lista exige: se borran los análisis de esa empresa. */
+  analisis_del_agente_org_id_fkey: 'tiene análisis de auditoría registrados',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 
