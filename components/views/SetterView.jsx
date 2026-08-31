@@ -50,8 +50,9 @@ import Inicio from '../setter/Inicio.jsx';
  * *«Nadie escribió sin respuesta»* es cierto.
  *
  * `urgentes`, `oportunidades` y `estancadas` salen de **etiquetas que pone el CRM** y que **ninguna
- * línea de esta aplicación escribe**. Medido el 2026-08-31: **0 de 163** contactos de territorio
- * setter llevan alguna de ellas. Así que su cero no es un cero medido — es «nadie nos dijo nada».
+ * línea de esta aplicación escribe**. Medido el 2026-08-31 en producción: de 165 contactos de
+ * territorio setter, **ninguno** lleva una etiqueta de fallo del agente. Así que su cero no es un cero
+ * medido — es «nadie nos dijo nada».
  *
  * Las frases decían *«El agente de IA no falló en ningún contacto»*, *«El agente no derivó a nadie al
  * producto chico»* y *«Ninguna conversación se apagó»*. Las tres afirmaban algo sobre el mundo que
@@ -63,9 +64,9 @@ import Inicio from '../setter/Inicio.jsx';
  * Ahora nombran **cuándo aparece algo acá**. Eso sí es cierto siempre, y encima le dice a quien mira
  * qué tiene que pasar para que la sección se llene.
  *
- * ⚠ El Closer tiene la MISMA frase para su cola de urgentes
- * (`components/closer/MiDia.jsx`), con el mismo defecto y por el mismo motivo. No se tocó acá porque
- * este cambio era del Setter; queda dicho para que no se lea como que ese archivo está bien.
+ * El Closer tenía la MISMA frase para su cola de urgentes y se arregló igual — la regla la fija UNA
+ * prueba para los dos territorios, en `pruebas/codigo/91-closer-y-setter.test.ts`. Sin eso, la
+ * próxima persona que mire un archivo copiaría la frase del otro.
  *
  * Dos son propias —estancadas y oportunidades chicas— y la agenda del closer **no está**: el setter
  * trabaja por definición antes de que haya cita, así que una sección de citas sería una sección

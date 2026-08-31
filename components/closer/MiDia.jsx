@@ -43,13 +43,39 @@ import Fila, { SeisIconos } from '../negocio/Fila.jsx';
 import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
 
-/** Las cinco colas, en el orden fijo del `01`. */
+/**
+ * Las cinco colas, en el orden fijo del `01`.
+ *
+ * ══ UNA FRASE DE VACÍO NOMBRA LA CONDICIÓN DE ENTRADA, Y CUATRO AFIRMAN EL HECHO ══
+ *
+ * La división es **de quién es el dato**, y es la misma que rige en el Setter.
+ *
+ * `agenda`, `buzon`, `seguimientos` y `completadas` salen de NUESTRAS tablas —`citas`, `mensajes`,
+ * `tareas`, `resultados`—, que las escribe código de esta aplicación. Un cero ahí es un cero MEDIDO,
+ * así que la frase puede afirmar el hecho: *«Nadie escribió sin respuesta»* es cierto.
+ *
+ * `urgentes` sale de **dos etiquetas que pone el CRM** —`bot_desactivado_appflow` y
+ * `bot_pausado_fallo`, ver `FALLOS_DEL_AUDITOR`— y **ninguna línea de esta aplicación las escribe**:
+ * `lib/ghl/contrato.ts` solo las declara para leerlas. Así que su cero no es un cero medido — es
+ * «nadie nos dijo nada».
+ *
+ * La frase decía *«El agente de IA no falló en ningún contacto»*, y eso este sistema **no tiene con
+ * qué saberlo**: si el CRM deja de aplicar la etiqueta, o si el barrido quedó atrasado, la pantalla
+ * afirma que el agente no falló mientras fallaba. Se veía exactamente igual que si fuera verdad.
+ *
+ * Medido el 2026-08-31 en producción: de 155 contactos del closer, **1** lleva una de esas dos
+ * etiquetas. O sea que la cola puede tener algo — y aun así la frase no podía afirmar lo contrario.
+ *
+ * Ahora nombra **cuándo aparece algo acá**: es cierto siempre, y encima dice qué tiene que pasar para
+ * que la sección se llene.
+ */
 export const COLAS_DEL_CLOSER = [
   {
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
     tono: 'crit',
-    vacio: 'Ninguna. El agente de IA no falló en ningún contacto.',
+    /* NOMBRA LA CONDICIÓN DE ENTRADA, no el estado del mundo. Ver el bloque de arriba. */
+    vacio: 'Ninguna. Acá aparece un contacto cuando el CRM marca que su agente falló.',
   },
   { clave: 'agenda', titulo: 'Agenda de hoy', vacio: 'No hay citas para hoy.' },
   {

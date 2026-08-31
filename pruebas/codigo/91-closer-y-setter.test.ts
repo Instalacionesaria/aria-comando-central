@@ -484,89 +484,125 @@ test('Mi Día muestra sus colas y NADA de la lista completa', () => {
   );
 });
 
-test('las frases de vacío del Setter no afirman lo que el sistema no puede saber', () => {
-  /* ══ TRES DE LAS SEIS SALEN DE ETIQUETAS QUE NADIE NUESTRO ESCRIBE ═══════
+test('ninguna frase de vacío afirma lo que el sistema no puede saber — en los DOS territorios', () => {
+  /* ══ LA DIVISIÓN ES DE QUIÉN ES EL DATO, Y VALE PARA LAS ONCE COLAS ══════
    *
-   * `urgentes`, `oportunidades` y `estancadas` se llenan con etiquetas que **pone el CRM** y que
-   * **ninguna línea de esta aplicación escribe**. Así que su cero no es un cero medido: es «nadie nos
-   * dijo nada». Las frases decían *«El agente de IA no falló en ningún contacto»*, *«El agente no
-   * derivó a nadie al producto chico»* y *«Ninguna conversación se apagó»* — tres afirmaciones sobre
-   * el mundo, que se veían igual que si fueran verdad.
+   * Una cola cuyo dato sale de **nuestras tablas** —`citas`, `mensajes`, `tareas`, `resultados`—
+   * puede afirmar el hecho cuando está vacía: *«Nadie escribió sin respuesta»* es cierto, porque
+   * código de esta aplicación escribe esas filas y su cero está MEDIDO.
    *
-   * ── LO QUE SE FIJA, Y POR QUÉ NO ES «NO DIGAS ESTAS TRES FRASES» ────────────
+   * Una cola cuyo dato sale de **una etiqueta que pone el CRM** y que **ninguna línea nuestra
+   * escribe** no puede: su cero es «nadie nos dijo nada». Si el CRM deja de aplicar la etiqueta, o si
+   * el barrido quedó atrasado, la pantalla afirma el hecho contrario y **se ve igual que si fuera
+   * verdad**.
    *
-   * Una prueba que persiguiera esos tres textos exactos se satisface cambiándoles una coma. Lo que
-   * se fija es la FORMA del defecto: **una frase de vacío que nombra al agente o a las
-   * conversaciones sin nombrar la condición de entrada**. Cualquier redacción nueva que vuelva a
-   * afirmar el estado del mundo cae en la misma red.
+   * Había cuatro frases así —tres en el Setter y una en el Closer, la MISMA cadena en dos archivos—:
+   * *«El agente de IA no falló en ningún contacto»*, *«El agente no derivó a nadie al producto
+   * chico»* y *«Ninguna conversación se apagó»*.
    *
-   * Y las OTRAS TRES no se tocan, que es la mitad que hace honesta a esta prueba: `buzon`,
-   * `seguimientos` y `completadas` salen de nuestras tablas —`mensajes`, `tareas`, `resultados`—, así
-   * que su cero SÍ está medido y su frase puede afirmar el hecho. Una regla que las obligara a las
-   * seis a hablar de condiciones de entrada haría el texto peor: *«Nadie escribió sin respuesta»* es
-   * cierto y es lo que quien mira necesita leer. */
-  const vista = archivosFuente(['components']).find(
-    (a) => a.ruta === 'components/views/SetterView.jsx',
-  )?.limpio;
-  assert.ok(vista, 'no se encontró la vista del setter');
+   * ── POR QUÉ UNA SOLA PRUEBA PARA LOS DOS Y NO UNA POR ARCHIVO ────────────
+   *
+   * Porque la frase estaba **duplicada carácter por carácter** en los dos archivos, y así es como
+   * vuelve: alguien mira una cola del otro territorio y copia su texto. Con la regla en un solo
+   * lugar, copiar la frase mala del vecino pone esto en rojo del lado del que copia.
+   *
+   * ── Y LO QUE SE FIJA NO ES «NO DIGAS ESTAS CUATRO FRASES» ────────────────
+   *
+   * Una prueba que persiguiera esos textos exactos se satisface cambiándoles una coma. Se fija la
+   * FORMA del defecto: una frase de vacío de una cola del CRM que **no nombra la condición de
+   * entrada**. Cualquier redacción nueva que vuelva a afirmar el estado del mundo cae en la misma
+   * red — está medido por mutación con una redacción distinta. */
+  const TERRITORIOS = [
+    {
+      ruta: 'components/views/SetterView.jsx',
+      lista: 'COLAS_DEL_SETTER',
+      /** Su dato lo pone el CRM. Su cero NO está medido. */
+      delCrm: ['urgentes', 'oportunidades', 'estancadas'],
+      /** Su dato lo escribimos nosotros. Su cero SÍ lo está. */
+      nuestras: ['buzon', 'seguimientos', 'completadas'],
+    },
+    {
+      ruta: 'components/closer/MiDia.jsx',
+      lista: 'COLAS_DEL_CLOSER',
+      delCrm: ['urgentes'],
+      /* `agenda` cae de este lado y vale decir por qué: sale de `negocio.citas`, y esas filas las
+         escribe el barrido del calendario — código NUESTRO. Que el origen del dato sea el CRM no la
+         mueve al otro lado: lo que decide es quién escribe la fila que la cola lee. */
+      nuestras: ['agenda', 'buzon', 'seguimientos', 'completadas'],
+    },
+  ];
 
-  /* Las seis frases, con su clave. Se extraen del texto SIN comentarios: el encabezado de ese
-     archivo cita las tres frases viejas para explicar por qué se cambiaron, y sin quitar los
-     comentarios esta prueba se comería su propia explicación — el defecto que `pruebas/apoyo/fuente`
-     documenta como «la comprobación daba verde POR UN COMENTARIO», al revés. */
-  const colas = [...vista.matchAll(/clave:\s*'([a-z]+)'[\s\S]{0,400}?vacio:\s*'([^']*)'/g)].map(
-    (m) => ({ clave: m[1] as string, vacio: m[2] as string }),
-  );
-  assert.equal(colas.length, 6, `se esperaban las seis colas del setter, se leyeron ${colas.length}`);
+  /** Nombra CUÁNDO aparece algo en la sección, que es lo único cierto de una cola del CRM. */
+  const NOMBRA_LA_ENTRADA = /Acá aparece|aparece un contacto cuando/;
+  /** Afirmaciones sobre el mundo que este sistema no puede sostener. */
+  const AFIRMA_EL_MUNDO = [/no falló/i, /no derivó/i, /se apagó/i, /ninguna conversación/i];
 
-  /** Las que dependen de una etiqueta del CRM. Su cero NO está medido. */
-  const DEL_CRM = ['urgentes', 'oportunidades', 'estancadas'];
-  /** Y las que salen de nuestras tablas. Su cero SÍ lo está. */
-  const NUESTRAS = ['buzon', 'seguimientos', 'completadas'];
-  assert.deepEqual(
-    colas.map((c) => c.clave).sort(),
-    [...DEL_CRM, ...NUESTRAS].sort(),
-    'cambiaron las colas del setter: hay que decidir de cuál lado cae la nueva antes de escribir su ' +
-      'frase de vacío — si su dato lo pone el CRM, no puede afirmar el hecho',
-  );
+  for (const t of TERRITORIOS) {
+    /* Se lee el texto SIN comentarios. El `04` § 7 lo pide y esta prueba lo necesita más que
+       ninguna: los dos archivos citan las frases viejas para explicar por qué se cambiaron, así que
+       sin quitar los comentarios esta prueba se comería su propia explicación. */
+    const fuente = archivosFuente(['components']).find((a) => a.ruta === t.ruta)?.limpio;
+    assert.ok(fuente, `no se encontró ${t.ruta}`);
 
-  for (const clave of DEL_CRM) {
-    const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
-
-    /* La afirmación prohibida: hablar del agente o de las conversaciones **sin** decir cuándo
-       aparece algo acá. Se pide la condición de entrada explícita, que es lo único cierto y además
-       lo único útil: le dice a quien mira qué tiene que pasar para que la sección se llene. */
-    assert.match(
-      frase,
-      /Acá aparece|aparece un contacto cuando/,
-      `la frase de vacío de «${clave}» no dice CUÁNDO aparece algo acá: «${frase}». Esa cola se ` +
-        'llena con una etiqueta que pone el CRM y que ninguna línea nuestra escribe, así que su cero ' +
-        'no está medido — y una frase que afirme el hecho se ve igual que si fuera verdad',
+    const colas = [...fuente.matchAll(/clave:\s*'([a-z]+)'[\s\S]{0,400}?vacio:\s*'([^']*)'/g)].map(
+      (m) => ({ clave: m[1] as string, vacio: m[2] as string }),
     );
 
-    for (const afirmacion of [
-      /no falló/i,
-      /no derivó/i,
-      /se apagó/i,
-      /ninguna conversación/i,
-    ]) {
+    assert.deepEqual(
+      colas.map((c) => c.clave).sort(),
+      [...t.delCrm, ...t.nuestras].sort(),
+      `cambiaron las colas de ${t.lista}. Hay que decidir de cuál lado cae la nueva ANTES de ` +
+        'escribir su frase de vacío: si el dato que lee lo pone el CRM, esa frase no puede afirmar ' +
+        'el hecho',
+    );
+
+    for (const clave of t.delCrm) {
+      const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
+      assert.match(
+        frase,
+        NOMBRA_LA_ENTRADA,
+        `${t.lista} → «${clave}» no dice CUÁNDO aparece algo ahí: «${frase}». Esa cola se llena con ` +
+          'una etiqueta que pone el CRM y que ninguna línea nuestra escribe, así que su cero no ' +
+          'está medido — y una frase que afirme el hecho se ve igual que si fuera verdad',
+      );
+      for (const afirmacion of AFIRMA_EL_MUNDO) {
+        assert.ok(
+          !afirmacion.test(frase),
+          `${t.lista} → «${clave}» volvió a afirmar el estado del mundo: «${frase}»`,
+        );
+      }
+    }
+
+    /* Y las nuestras siguen afirmando el hecho. Sin esta mitad la regla se «satisface» poniendo
+       «Acá aparece…» en las once, y siete textos ciertos y útiles se vuelven tibios. */
+    for (const clave of t.nuestras) {
+      const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
       assert.ok(
-        !afirmacion.test(frase),
-        `la frase de «${clave}» volvió a afirmar el estado del mundo: «${frase}»`,
+        !NOMBRA_LA_ENTRADA.test(frase),
+        `${t.lista} → «${clave}» pasó a hablar de condiciones de entrada, y no hace falta: esa cola ` +
+          `sale de nuestras tablas, así que su cero está medido y puede decirlo. «${frase}»`,
       );
     }
   }
 
-  /* Y las nuestras siguen afirmando el hecho. Sin esta mitad, la regla se podría «satisfacer»
-     poniendo «Acá aparece…» en las seis, y tres textos ciertos y útiles se volverían tibios. */
-  for (const clave of NUESTRAS) {
-    const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
-    assert.ok(
-      !/Acá aparece/.test(frase),
-      `la frase de «${clave}» pasó a hablar de condiciones de entrada, y no hace falta: esa cola sale ` +
-        `de nuestras tablas, así que su cero está medido y puede decirlo. «${frase}»`,
-    );
+  /* ══ Y LA FRASE MALA NO PUEDE VOLVER POR NINGÚN OTRO ARCHIVO ════════════
+   *
+   * Las dos listas de arriba son las que hay HOY. El día que aparezca una tercera pantalla con
+   * colas —el auditor, por ejemplo— sus frases no estarían cubiertas. Este barrido las alcanza:
+   * busca la afirmación en TODOS los componentes, sin lista que mantener. */
+  const culpables: string[] = [];
+  for (const a of archivosFuente(['components'])) {
+    for (const m of a.limpio.matchAll(/vacio:\s*'([^']*)'/g)) {
+      const frase = m[1] as string;
+      if (AFIRMA_EL_MUNDO.some((r) => r.test(frase))) culpables.push(`${a.ruta}: «${frase}»`);
+    }
   }
+  assert.deepEqual(
+    culpables,
+    [],
+    'una frase de vacío afirma que el agente no falló, que no derivó, o que una conversación no se ' +
+      'apagó. Ninguna de esas cosas la sabe este sistema: las etiquetas las pone el CRM',
+  );
 })
 
 test('el cockpit del SETTER no vuelve a contar lo que Mi Día ya contó', () => {
