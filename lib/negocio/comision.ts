@@ -125,7 +125,58 @@ export async function comisionDelMes(
   const base = huboResultadosPropios ? Number(r?.base ?? 0) : null;
   const ventas = huboResultadosPropios ? Number(r?.ventas ?? 0) : null;
 
-  // ── LOS DOS MOTIVOS DE AUSENCIA, SEPARADOS ────────────────────────────────
+  return armarTramo({
+    porcentaje,
+    meta,
+    base,
+    ventas,
+    sinPorcentaje:
+      'Nadie cargó tu porcentaje de comisión todavía. Lo fija quien administra la empresa, en ' +
+      'Ajustes → Comisiones.',
+    sinBase: 'Todavía no registraste ningún resultado este mes. La comisión sale de Avanzar.',
+  });
+}
+
+/** Lo que hace falta para armar un tramo. Los dos textos son obligatorios: ver `armarTramo`. */
+export interface InsumosDelTramo {
+  porcentaje: number | null;
+  meta: number | null;
+  /** La base MEDIDA, o `null` si no se pudo medir. Un cero acá es un cero de verdad. */
+  base: number | null;
+  ventas: number | null;
+  /** Qué falta, cuando falta el porcentaje. */
+  sinPorcentaje: string;
+  /** Qué falta, cuando la base no está medida. **Distinto en cada tramo**, y por eso se pasa. */
+  sinBase: string;
+}
+
+/**
+ * Los CUATRO ESTADOS del número, en un solo lugar para los tres tramos.
+ *
+ * ══════════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ES UNA FUNCIÓN Y NO EL CUERPO DE `comisionDelMes`
+ *
+ * Porque desde que existe el setter hay **tres** tramos —el del closer, el directo del setter y su
+ * diferido— y los tres tienen exactamente estos cuatro estados. Con la lógica copiada tres veces, un
+ * `?? 0` metido en una copia convierte «nadie lo cargó» en «cobra cero» **en un solo tramo**, y la
+ * pantalla muestra los otros dos bien. Es el defecto más difícil de ver que este archivo puede tener.
+ *
+ * Y es el `01` aplicado tal cual: *«si dos pantallas muestran el mismo número, comparten la función
+ * que lo calcula»*. Acá son tres números distintos con la MISMA regla de ausencia, que es el mismo
+ * caso.
+ *
+ * ── LO QUE **NO** SE COMPARTE, Y ES DELIBERADO ──────────────────────────────
+ *
+ * Los dos textos de `falta`. El del closer manda a Avanzar; el diferido del setter tiene que decir
+ * *«tu closer todavía no vendió sobre tus leads»*, que no es algo que esa persona pueda ir a hacer.
+ * Un texto único para los tres mandaría a dos tercios de la gente a hacer lo que no corresponde.
+ * Por eso son parámetros obligatorios y no tienen valor por omisión.
+ * ══════════════════════════════════════════════════════════════════════════════════
+ */
+export function armarTramo(i: InsumosDelTramo): ComisionDelMes {
+  const { porcentaje, meta, base, ventas } = i;
+
+  // ── LOS DOS MOTIVOS DE AUSENCIA, SEPARADOS ────────────────────────
   //
   // Se comprueban en este orden porque el primero es el que la persona no puede resolver sola, y
   // decirle «no registraste ventas» a quien no tiene porcentaje cargado lo manda a trabajar para que
@@ -135,9 +186,7 @@ export async function comisionDelMes(
       porcentaje: null,
       meta,
       valor: null,
-      falta:
-        'Nadie cargó tu porcentaje de comisión todavía. Lo fija quien administra la empresa, en ' +
-        'Ajustes → Comisiones.',
+      falta: i.sinPorcentaje,
       ventas,
       base,
       faltaParaLaMeta: null,
@@ -149,7 +198,7 @@ export async function comisionDelMes(
       porcentaje,
       meta,
       valor: null,
-      falta: 'Todavía no registraste ningún resultado este mes. La comisión sale de Avanzar.',
+      falta: i.sinBase,
       ventas,
       base,
       faltaParaLaMeta: null,

@@ -484,6 +484,42 @@ test('Mi Día muestra sus colas y NADA de la lista completa', () => {
   );
 });
 
+test('el cockpit del SETTER no vuelve a contar lo que Mi Día ya contó', () => {
+  /* ══ DOS DERIVACIONES DEL MISMO HECHO, Y ES DE LAS QUE NADIE REPORTA ══════
+   *
+   * Dos de las seis colas del setter —**estancadas** y **oportunidades chicas**— salen de etiquetas:
+   * `estancado` y `derivado_lt`. Tentaba contarlas también en el cockpit con un `count` por etiqueta,
+   * porque es una consulta de tres líneas y da un número grande para el tablero.
+   *
+   * Sería un número DISTINTO del de la cola, y no por poco: las colas descuentan a los contactos
+   * CERRADOS y a los que ya están en otra cola por precedencia. El cockpit diría «7 estancados» arriba
+   * y abajo habría cinco tarjetas, en la misma pantalla y sin nada que lo explique.
+   *
+   * Así que los dos números salen de `colasDelSetter` y viajan en la misma respuesta. Esta prueba fija
+   * que el cockpit **no los derive por su cuenta**: se busca la FORMA —las etiquetas— en el archivo
+   * sin comentarios, que es lo único que un `count` nuevo no puede esconder. */
+  const cockpit = archivosFuente(['lib']).find((a) => a.ruta === 'lib/negocio/inicioDelSetter.ts');
+  assert.ok(cockpit, 'no se encontró el cockpit del setter');
+
+  for (const etiqueta of ['derivado_lt', 'estancado', 'cita_agendada', 'noshow']) {
+    assert.ok(
+      !cockpit.limpio.includes(etiqueta),
+      `el cockpit del setter cuenta por la etiqueta «${etiqueta}». Si es una de las colas, el número ` +
+        'va a discrepar con la cola porque ésta descuenta cerrados y precedencias; y si no lo es, ' +
+        'entonces el cockpit del setter empezó a contar cosas del closer',
+    );
+  }
+
+  /* Y la otra mitad: el contador de tareas se RECIBE, no se calcula. Un `colasDelSetter(` acá dentro
+     sería la segunda implementación del mismo número — y además las seis colas consultadas dos veces
+     por cada ciclo del reloj de diez segundos. */
+  assert.ok(
+    !cockpit.limpio.includes('colasDelSetter'),
+    'el cockpit llama a `colasDelSetter`: el contador de tareas se le pasa desde la ruta, que es la ' +
+      'que ya lo tiene calculado',
+  );
+});
+
 test('el cockpit del Closer —Inicio, Mi Día y Pipeline— no nombra el CRM del proveedor', () => {
   // La otra mitad del mismo pedido: *"recuerda que lo van a ver clientes"*.
   //
