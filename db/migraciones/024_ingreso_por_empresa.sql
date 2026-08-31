@@ -60,6 +60,33 @@ comment on column identidad.organizaciones.precio_mensual is
 -- el margen sería una resta entre unidades distintas: un número que se ve bien, se suma bien, y
 -- está mal. Si algún día hace falta cobrar en soles, lo que hay que agregar es la conversión —una
 -- fecha y un tipo de cambio— no una columna de texto que nadie mira.
+-- ── EL `drop … if exists` ES UN GUARDADO, Y HAY QUE DECIR CONTRA QUÉ ────
+--
+-- **Esta restricción ya existe en producción.** Alguien aplicó el DDL de esta migración a mano y no
+-- la registró: la contabilidad de `migraciones.migraciones_aplicadas` llega a `022_aviso_del_crm`
+-- —medido el 2026-08-31— mientras la columna y su restricción están puestas. Y el comentario de la
+-- columna allá está TRUNCADO respecto de este archivo, que es la prueba de que se tipeó otra versión
+-- en vez de correr este texto.
+--
+-- PostgreSQL no tiene `add constraint if not exists`, así que sin este `drop` el corredor muere con
+-- **42710 «constraint already exists»** — y como Kysely mete TODAS las migraciones pendientes en una
+-- sola transacción, revierte también la 023 y la 025, que no tienen nada que ver.
+--
+-- ── Y POR QUÉ ACÁ Y NO SOLTANDO EL CHECK DESDE AFUERA ───────────────────────
+--
+-- Porque no se puede: `identidad.organizaciones` la posee `migrador`, y el rol con el que escribe la
+-- Management API es `postgres`, que no es superusuario y cuya membresía en `migrador` es
+-- `inherit=false, set=false`. Ese `alter table` responde **42501 «must be owner of table»**.
+--
+-- El par `drop if exists` + `add` deja **una sola escritura atómica** contra producción y ningún
+-- instante en que `precio_mensual` acepte un negativo: los dos van dentro de la misma transacción.
+--
+-- Sobre una base nueva el estado final es idéntico al del texto original, y eso está medido: el
+-- `pg_get_constraintdef` sale igual con el check presente, ausente, y corriendo el par dos veces
+-- seguidas.
+alter table identidad.organizaciones
+  drop constraint if exists organizaciones_precio_no_negativo;
+
 alter table identidad.organizaciones
   add constraint organizaciones_precio_no_negativo
   check (precio_mensual is null or precio_mensual >= 0);

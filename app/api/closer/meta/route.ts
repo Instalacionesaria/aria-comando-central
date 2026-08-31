@@ -20,7 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
-import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import { comisionDelMes, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
 
@@ -82,30 +82,60 @@ export async function PATCH(peticion: Request): Promise<Response> {
   }
   const meta = m === null ? null : (m as number);
 
-  const comision = await conOrganizacion(contexto.orgEfectiva, async () => {
-    await datos()
-      .insertInto('comisiones')
-      .values({
-        usuario_id: contexto.usuarioId,
-        tipo: TIPO_CLOSER,
-        meta_mensual: meta,
-        actualizado_el: new Date(),
-        actualizado_por: contexto.usuarioId,
-      } as never)
-      .onConflict((oc) =>
-        // **Solo `meta_mensual`.** `porcentaje` no aparece: no se puede pisar desde acá.
-        oc.columns(['org_id', 'usuario_id', 'tipo']).doUpdateSet({
+  /* ── UN RECHAZO DE LA BASE NO PUEDE SALIR COMO 500 SIN CUERPO ──────────
+   *
+   * Medido, y era un defecto VIVO en producción: sin este `try`, una violación del `check` de
+   * `comisiones.tipo` **escapa del manejador**. Next devuelve 500 con el cuerpo vacío, `pedir()` no
+   * puede parsear un cuerpo vacío y cae en su rama genérica, y la pantalla termina diciendo
+   * «El servidor respondió 500» — que no le dice a nadie que falta una migración.
+   *
+   * El caso concreto: producción estuvo con el `check` viejo —solo `'closer'`— mientras este código
+   * ya estaba desplegado, así que cualquiera que apretara «Fijar mi meta» veía ese 500.
+   *
+   * ── Y EL `try` ENVUELVE LA TRANSACCIÓN ENTERA, NO SU CUERPO ────────────────
+   *
+   * Un `try/catch` DENTRO del callback de `conOrganizacion` compila igual y está mal: el `return
+   * rechazo(…)` saldría del callback y no del manejador, así que la `Response` terminaría **serializada
+   * adentro de un 200**. El tipo no lo atrapa porque `ok()` recibe `unknown`. Medido: se escribió así
+   * primero y `tsc` no dijo una palabra.
+   *
+   * `mensajeDeDisparador` solo deja pasar `P0001`, o sea un `raise` escrito por nosotros. Una
+   * violación de `check` es `23514`, así que devuelve `null` y el rechazo va **sin detalle**: es lo
+   * correcto, porque `ADR-0704` prohibe que un cuerpo de error revele estructura y el mensaje del
+   * motor nombra la tabla y la restricción. El código `rechazo_de_la_base` (409) es lo que manda a
+   * mirar la base en vez de este archivo. */
+  let comision;
+  try {
+    comision = await conOrganizacion(contexto.orgEfectiva, async () => {
+      await datos()
+        .insertInto('comisiones')
+        .values({
+          usuario_id: contexto.usuarioId,
+          tipo: TIPO_CLOSER,
           meta_mensual: meta,
           actualizado_el: new Date(),
           actualizado_por: contexto.usuarioId,
-        } as never),
-      )
-      .execute();
+        } as never)
+        .onConflict((oc) =>
+          // **Solo `meta_mensual`.** `porcentaje` no aparece: no se puede pisar desde acá.
+          oc.columns(['org_id', 'usuario_id', 'tipo']).doUpdateSet({
+            meta_mensual: meta,
+            actualizado_el: new Date(),
+            actualizado_por: contexto.usuarioId,
+          } as never),
+        )
+        .execute();
 
-    // Se devuelve la comisión RECALCULADA, no un `{ ok: true }`: la meta cambia «cuánto falta» y
-    // «meta superada», y mostrar «guardado» sin leer lo que quedó es reportar un éxito sin verificar.
-    return comisionDelMes(contexto.usuarioId, contexto.organizacion.zonaHoraria);
-  });
+      // Se devuelve la comisión RECALCULADA, no un `{ ok: true }`: la meta cambia «cuánto falta» y
+      // «meta superada», y mostrar «guardado» sin leer lo que quedó es reportar un éxito sin verificar.
+      return comisionDelMes(contexto.usuarioId, contexto.organizacion.zonaHoraria);
+    });
+  } catch (e) {
+    const deDisparador = mensajeDeDisparador(e);
+    return deDisparador
+      ? rechazo('rechazo_de_la_base', deDisparador)
+      : rechazo('rechazo_de_la_base');
+  }
 
   return ok({ comision });
 }

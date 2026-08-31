@@ -35,7 +35,7 @@ import {
   revisarMigraciones,
 } from '../../lib/datos/migrador.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 let mig: Client;
@@ -351,6 +351,111 @@ test('volver a migrar no aplica nada', async () => {
 });
 
 // ─── Las revisiones estáticas del corredor ──────────────────────────────────
+
+test('desde la 024, una migración con `add constraint` es REAPLICABLE', async () => {
+  /* ══ EL DEFECTO QUE ESTA PRUEBA CIERRA, Y OCURRIÓ EN PRODUCCIÓN ═════════
+   *
+   * PostgreSQL **no tiene `add constraint if not exists`**. Así que una migración cuyo DDL alguien
+   * ya aplicó a mano —sin registrarla— muere con **42710** al correr por su camino. Y como Kysely
+   * mete todas las pendientes en UNA transacción, se lleva puestas a las demás: la que venía antes
+   * y la que venía después, que no tienen nada que ver.
+   *
+   * Pasó con la **024**: medido el 2026-08-31, producción tiene `precio_mensual` y su restricción
+   * puestas mientras su contabilidad llega a `022_aviso_del_crm`.
+   *
+   * ── POR QUÉ NINGUNA OTRA PRUEBA LO ATRAPA ──────────────────────────────────
+   *
+   * Porque la base local **ya tiene la 024 registrada**, así que el corredor no vuelve a leer el
+   * archivo. Quitarle el `drop … if exists` deja la suite ENTERA en verde — medido por mutación. La
+   * única forma de medirlo es correr las sentencias **de verdad** contra una base que ya las tiene.
+   *
+   * ── POR QUÉ «DESDE LA 024» Y NO PARA TODAS ─────────────────────────────────
+   *
+   * Porque es una regla con fecha de inicio, no una regla con cuatro excepciones calladas. Medido:
+   * de las diez migraciones que hacen `alter table … add constraint`, cinco (018, 019, 021, 023,
+   * 025) sueltan la restricción antes de reponerla — así que ya son reaplicables sobre una base que
+   * la tiene. Las otras cuatro (002, 003, 006, 008) hacen un `add` pelado y son historia: están
+   * aplicadas y registradas en todas las bases, y editarlas hoy es riesgo sin nada que ganar.
+   *
+   * La 024 es la única anterior que se edita, y por un motivo concreto: es la única que **falta
+   * registrar en producción** teniendo su DDL ya puesto. */
+  const DESDE = 24;
+
+  /* Se busca la FORMA en el texto SIN comentarios. El `04` § 7 lo pide y esta prueba lo necesita más
+     que ninguna: su propio comentario dice `add constraint` cuatro veces. */
+  const migraciones = archivosFuente(['db']).filter((a) => a.ruta.startsWith('db/migraciones/'));
+  const sinSoltar: string[] = [];
+  for (const a of migraciones) {
+    const numero = Number(a.ruta.split('/').pop()?.slice(0, 3));
+    if (!Number.isFinite(numero) || numero < DESDE) continue;
+    for (const m of a.limpio.matchAll(/add\s+constraint\s+([a-z0-9_]+)/gi)) {
+      const nombre = m[1] as string;
+      const suelta = new RegExp(`drop\\s+constraint\\s+(if\\s+exists\\s+)?${nombre}\\b`, 'i');
+      if (!suelta.test(a.limpio)) sinSoltar.push(`${a.ruta} → ${nombre}`);
+    }
+  }
+
+  assert.deepEqual(
+    sinSoltar,
+    [],
+    'una migración agrega una restricción sin soltarla antes. Sobre una base que ya la tiene —por ' +
+      'ejemplo porque alguien aplicó el SQL a mano— el corredor muere con 42710 y revierte TODAS las ' +
+      'migraciones pendientes de esa corrida, incluidas las que no tienen nada que ver',
+  );
+
+  /* ── Y AHORA LA MITAD QUE DE VERDAD MIDE ─────────────────────────
+   *
+   * La regla de arriba es estática y se puede satisfacer con un `drop` que no sirva. Así que las
+   * sentencias de la 024 se **corren**, en los DOS estados que importan:
+   *
+   *   1 · con la restricción puesta — el estado de producción hoy;
+   *   2 · con la restricción ausente — el estado de una base nueva, que es lo que prueba que el
+   *       `if exists` hace falta: un `drop` pelado revienta ahí.
+   *
+   * Todo dentro de una transacción con `rollback` en `finally`, así que la base local queda como
+   * estaba aunque una aserción falle en el medio. */
+  const DEL_ARCHIVO = join(RAIZ, 'db', 'migraciones', '024_ingreso_por_empresa.sql');
+  const bloque = readFileSync(DEL_ARCHIVO, 'utf8')
+    .replace(/^\s*--.*$/gm, '')
+    .split(';')
+    .map((x) => x.trim())
+    .filter((x) => /^alter\s+table/i.test(x) && /constraint/i.test(x));
+
+  const definicion = async () =>
+    (
+      await filas<{ def: string }>(
+        mig,
+        `select pg_get_constraintdef(oid) as def from pg_constraint
+           where conname = 'organizaciones_precio_no_negativo'`,
+      )
+    )[0]?.def ?? 'AUSENTE';
+
+  await mig.query('begin');
+  try {
+    const original = await definicion();
+    assert.notEqual(original, 'AUSENTE', 'la base local no tiene la restricción: el caso 1 no aplica');
+
+    // 1 · CON la restricción puesta. Un `add` pelado muere acá con 42710.
+    for (const sentencia of bloque) await mig.query(sentencia);
+    assert.equal(await definicion(), original, 'reaplicar la 024 cambió la restricción');
+
+    // 2 · SIN la restricción. Un `drop` sin `if exists` muere acá.
+    await mig.query(
+      'alter table identidad.organizaciones drop constraint organizaciones_precio_no_negativo',
+    );
+    assert.equal(await definicion(), 'AUSENTE');
+    for (const sentencia of bloque) await mig.query(sentencia);
+    assert.equal(
+      await definicion(),
+      original,
+      'sobre una base sin la restricción, la 024 no la deja igual que sobre una que la tenía: ' +
+        'entonces el archivo editado y el original no producen el mismo estado',
+    );
+  } finally {
+    // Pase lo que pase. Sin esto, una aserción roja deja la base local sin la restricción.
+    await mig.query('rollback');
+  }
+})
 
 test('las migraciones pasan las revisiones estáticas del corredor', () => {
   assert.deepEqual(revisarMigraciones(), []);

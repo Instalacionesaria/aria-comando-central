@@ -616,6 +616,73 @@ test('guardar la meta NO pisa el porcentaje, que lo fija otra persona', async ()
   assert.equal(fila.meta_mensual, '4000.00');
 })
 
+test('con el check VIEJO de la base, la meta rechaza 409 LEGIBLE y no un 500 pelado', async () => {
+  /* ══ ESTE DEFECTO ESTUVO VIVO EN PRODUCCIÓN, Y ASÍ SE VEÍA ════════════
+   *
+   * El código del Setter se desplego antes de que la migración 025 estuviera en producción, así que
+   * el `check` de `comisiones.tipo` allá admitía **solo `'closer'`** mientras esta ruta ya intentaba
+   * escribir `setter_directo`. Medido: la excepción **escapaba del manejador**, Next devolvía 500 con
+   * el cuerpo vacío, y la pantalla decía «El servidor respondió 500» — que no manda a nadie a mirar
+   * la base.
+   *
+   * Esta prueba REPRODUCE ese estado: baja el `check` al de producción, mide, y lo repone. Y no es
+   * una prueba de arqueología: mientras esta ruta pueda escribir una tabla con restricciones, el
+   * próximo rechazo de la base tiene que salir por el mismo camino legible.
+   *
+   * ── POR QUÉ EL `finally` NO ES OPCIONAL ────────────────────────────────────
+   *
+   * Si esta prueba se corta en el medio y no repone el `check`, deja la base local con el esquema
+   * de producción y **nueve pruebas de este mismo archivo se ponen rojas** — medido. El reposicion
+   * va en `finally` para que eso no dependa de que las aserciones pasen. */
+  await desdeCero();
+
+  const VIEJO = "check (tipo in ('closer'))";
+  const NUEVO = "check (tipo in ('closer','setter_directo','setter_diferido'))";
+  const ponerCheck = async (definicion: string) => {
+    await esc.admin.query('alter table negocio.comisiones drop constraint comisiones_tipo_check');
+    await esc.admin.query(
+      `alter table negocio.comisiones add constraint comisiones_tipo_check ${definicion}`,
+    );
+  };
+
+  await ponerCheck(VIEJO);
+  try {
+    const r = await meta({ tramo: TIPO_SETTER_DIRECTO, meta: 2000 });
+
+    assert.notEqual(
+      r.estado,
+      500,
+      'el rechazo de la base salió como error del servidor: eso manda a revisar este código cuando ' +
+        'lo que falta es una migración, y la pantalla no puede decir nada útil con un cuerpo vacío',
+    );
+    assert.equal(r.estado, 409, `un rechazo de la base es 409: vino ${r.estado}`);
+    assert.equal(
+      r.cuerpo['codigo'],
+      'rechazo_de_la_base',
+      'el código tiene que decir que fue la BASE la que rechazó, no la petición',
+    );
+
+    /* Y el cuerpo NO puede traer el mensaje del motor: nombra la tabla y la restricción, y
+       `ADR-0704` prohibe que un cuerpo de error revele estructura. `mensajeDeDisparador` solo deja
+       pasar `P0001` —un `raise` nuestro— y una violación de `check` es `23514`. */
+    const detalle = String(r.cuerpo['detalle'] ?? '');
+    assert.ok(
+      !detalle.includes('comisiones') && !detalle.includes('check constraint'),
+      `el detalle filtró la estructura de la base: ${JSON.stringify(detalle)}`,
+    );
+
+    // Y no escribió nada, que es la mitad que un código de estado no prueba.
+    assert.deepEqual(await metasEnLaBase(), {}, 'el rechazo igual dejó una fila escrita');
+  } finally {
+    await ponerCheck(NUEVO);
+  }
+
+  // Y con el check al día, la misma petición pasa. Sin esto, la prueba pasaría con una ruta
+  // que rechaza SIEMPRE.
+  const alDia = await meta({ tramo: TIPO_SETTER_DIRECTO, meta: 2000 });
+  assert.equal(alDia.estado, 200, JSON.stringify(alDia.cuerpo));
+})
+
 test('el mes del cockpit sale de la zona de la EMPRESA, y viene escrito', async () => {
   // No es decoración: es lo único que le dice a quien mira a qué período pertenecen los números.
   // Un tablero sin mes no se puede desmentir.
