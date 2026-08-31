@@ -39,6 +39,8 @@ import {
   PRECEDENCIA,
   type Etapa,
 } from '../../lib/negocio/etapas.ts';
+import { etapaDeEntrada, etapaDeLaSalida } from '../../lib/negocio/etapas.ts';
+import { ETAPAS_DEL_SETTER } from '../../lib/negocio/etapasDelSetter.ts';
 import {
   definicionDe,
   esSalidaDelCloser,
@@ -66,12 +68,41 @@ test('la etapa de entrada es una de las siete', () => {
   assert.ok(CLAVES.includes(ETAPA_DE_ENTRADA));
 });
 
-test('TODA salida lleva a una de las siete', () => {
-  // El `Record<SalidaResultado, Etapa>` obliga a que estén las nueve; esto comprueba que ninguna
-  // apunte a una columna inexistente, que el tipo no puede ver.
+test('TODA salida lleva a una columna de SU embudo, en los dos', () => {
+  /* Cada `Record` obliga a que estén todas las salidas de su rol; esto comprueba lo que el tipo no
+     puede ver: que ninguna apunte a una columna inexistente.
+
+     Y se recorre los DOS embudos. Antes había un mapa único con las nueve salidas, y mandaba
+     `venta_chica` a `ganado` —una columna del closer— con un comentario que admitía que estaba mal.
+     Con dos mapas eso es inexpresable: la venta chica solo puede apuntar a una columna del setter. */
   for (const [salida, etapa] of Object.entries(ETAPA_DE_LA_SALIDA)) {
-    assert.ok(CLAVES.includes(etapa as Etapa), `«${salida}» lleva a «${etapa}», que no existe`);
+    assert.ok(CLAVES.includes(etapa), `del closer: «${salida}» lleva a «${etapa}», que no existe`);
   }
+  const delSetter = ETAPAS_DEL_SETTER.map((e) => e.clave) as readonly string[];
+  for (const s of SALIDAS_DEL_SETTER) {
+    const etapa = etapaDeLaSalida('setter', s.salida);
+    assert.ok(
+      etapa !== undefined && delSetter.includes(etapa),
+      `del setter: «${s.salida}» lleva a «${String(etapa)}», que no es una de sus ocho columnas`,
+    );
+  }
+
+  /* Y la venta chica NO cae en la columna de la oferta: «ofrecida» y «cobrada» son dos hechos, y
+     con una sola columna una venta y una oferta sin respuesta se verían iguales. */
+  assert.equal(etapaDeLaSalida('setter', 'venta_chica'), 'vendido');
+  assert.equal(etapaDeLaSalida('setter', 'agendo'), 'agendado', 'el traspaso dejó de ser `agendado`');
+});
+
+test('la entrada de cada embudo es la SUYA, y no la del otro', () => {
+  /* Para el closer es `agendado`, con su motivo: un contacto de su territorio sin desenlace **ya
+     agendó**, porque el traspaso lo hace el CRM justo al agendar.
+
+     Para el setter ese razonamiento se invierte, y reusar la constante del closer tendría una
+     consecuencia visible: hoy no hay ni un resultado de setter registrado, así que el 100 % de su
+     cartera abriría en `agendado` —la columna TERMINAL— y el setter vería toda su base en la
+     columna que significa «ya está, no hay nada que hacer». */
+  assert.equal(etapaDeEntrada('closer'), 'agendado');
+  assert.equal(etapaDeEntrada('setter'), 'nuevo');
 });
 
 // ═══ 2 · La precedencia ═════════════════════════════════════════════════════
@@ -138,35 +169,35 @@ test('lo que registró una PERSONA gana sobre lo que dicen las etiquetas', () =>
   // que cuando existe es un hecho, no una inferencia"*. Al revés, una etiqueta vieja del CRM
   // taparía un Avanzar de hoy.
   assert.equal(
-    etapaDelContacto({ etapa: 'ganado', etiquetas: ['noshow'] }),
+    etapaDelContacto('closer', { etapa: 'ganado', etiquetas: ['noshow'] }),
     'ganado',
     'una etiqueta vieja tapó un resultado registrado',
   );
 });
 
 test('sin etapa propia se deduce de las etiquetas', () => {
-  assert.equal(etapaDelContacto({ etapa: null, etiquetas: ['noshow'] }), 'no_show');
+  assert.equal(etapaDelContacto('closer', { etapa: null, etiquetas: ['noshow'] }), 'no_show');
 });
 
 test('sin etapa y sin desenlace cae en la ENTRADA, no en un limbo', () => {
   // Un contacto del territorio del closer sin ningún Avanzar es alguien que ya agendó. Ésa es la
   // entrada del Pipeline, no un «no sé dónde ponerlo».
-  assert.equal(etapaDelContacto({ etapa: null, etiquetas: [] }), ETAPA_DE_ENTRADA);
-  assert.equal(etapaDelContacto({ etapa: null, etiquetas: ['lead_meta_ads'] }), 'agendado');
+  assert.equal(etapaDelContacto('closer', { etapa: null, etiquetas: [] }), ETAPA_DE_ENTRADA);
+  assert.equal(etapaDelContacto('closer', { etapa: null, etiquetas: ['lead_meta_ads'] }), 'agendado');
 });
 
 test('una etapa guardada que ya no existe NO hace desaparecer al contacto', () => {
   // Si mañana se retira una columna, las filas que la tenían escrita apuntarían a algo que no se
   // dibuja: el contacto se iría de la pantalla sin que nada falle. Se cae a las etiquetas.
-  assert.equal(etapaDelContacto({ etapa: 'limbo', etiquetas: ['noshow'] }), 'no_show');
-  assert.equal(etapaDelContacto({ etapa: 'limbo', etiquetas: [] }), ETAPA_DE_ENTRADA);
+  assert.equal(etapaDelContacto('closer', { etapa: 'limbo', etiquetas: ['noshow'] }), 'no_show');
+  assert.equal(etapaDelContacto('closer', { etapa: 'limbo', etiquetas: [] }), ETAPA_DE_ENTRADA);
 });
 
 // ═══ 4 · El conteo ══════════════════════════════════════════════════════════
 
 test('el conteo trae las SIETE claves, también las que dan cero', () => {
   // Una columna que desaparece cuando está vacía hace que nadie note que está vacía.
-  const c = contarPorEtapa(['ganado', 'ganado', 'no_show']);
+  const c = contarPorEtapa('closer', ['ganado', 'ganado', 'no_show']);
   assert.deepEqual(Object.keys(c).sort(), [...CLAVES].sort());
   assert.equal(c.ganado, 2);
   assert.equal(c.no_show, 1);

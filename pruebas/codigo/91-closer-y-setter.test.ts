@@ -473,7 +473,15 @@ test('Mi Día muestra sus colas y NADA de la lista completa', () => {
 
   // Y las colas siguen ahí: quitar la lista no puede haberse llevado el cuerpo de la pantalla.
   assert.match(codigo, /<MiDia\s/, 'Mi Día dejó de dibujarse');
-  assert.match(codigo, /<Pipeline\s*\/>/, 'el Pipeline dejó de dibujarse');
+  /* El Pipeline pasó a recibir su camino: es UN componente para los dos embudos, porque el dibujo
+     —una columna con su nombre, su conteo y su tinte— es idéntico y lo que cambia son los datos.
+     Se afirma el camino y no solo la etiqueta: sin eso, la vista del Closer podría pedir el del
+     setter y la prueba no lo vería. */
+  assert.match(
+    codigo,
+    /<Pipeline camino="\/api\/closer\/pipeline"/,
+    'el Pipeline dejó de dibujarse, o dejó de pedir el embudo del closer',
+  );
 });
 
 test('el cockpit del Closer —Inicio, Mi Día y Pipeline— no nombra el CRM del proveedor', () => {

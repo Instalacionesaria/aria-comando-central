@@ -26,9 +26,16 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { RESULTADOS } from '../ghl/contrato.ts';
-import type { SalidaResultado } from '../datos/esquema.ts';
+import type { Territorio } from '../datos/esquema.ts';
+import type { SalidaDelCloser } from './salidas.ts';
+import {
+  ETAPAS_DEL_SETTER,
+  ETAPA_DE_ENTRADA_DEL_SETTER,
+  ETAPA_DE_LA_SALIDA_DEL_SETTER,
+  type EtapaDelSetter,
+} from './etapasDelSetter.ts';
 
-/** Las siete columnas, en orden de recorrido: de la entrada al desenlace. */
+/** Las siete columnas del CLOSER, en orden de recorrido: de la entrada al desenlace. */
 export const ETAPAS = [
   { clave: 'agendado', nombre: 'Agendado' },
   { clave: 'seguimiento', nombre: 'Seguimiento' },
@@ -39,9 +46,19 @@ export const ETAPAS = [
   { clave: 'descalificado', nombre: 'Descalificado' },
 ] as const;
 
-export type Etapa = (typeof ETAPAS)[number]['clave'];
+export type EtapaDelCloser = (typeof ETAPAS)[number]['clave'];
 
-const CLAVES: readonly Etapa[] = ETAPAS.map((e) => e.clave);
+/**
+ * Una etapa de cualquiera de los dos embudos.
+ *
+ * La unión y no una lista compartida: cada pipeline valida contra **las suyas**, y eso es lo que
+ * hace que un contacto que cruzó de territorio caiga a la etapa de entrada del nuevo en vez de
+ * quedarse en una columna que allá no se dibuja. Ver el encabezado de `etapasDelSetter.ts`.
+ */
+export type Etapa = EtapaDelCloser | EtapaDelSetter;
+
+const CLAVES: readonly EtapaDelCloser[] = ETAPAS.map((e) => e.clave);
+const CLAVES_DEL_SETTER: readonly EtapaDelSetter[] = ETAPAS_DEL_SETTER.map((e) => e.clave);
 
 /**
  * LA ETAPA DE ENTRADA — un respaldo con nombre, no un valor por omisión escondido.
@@ -53,30 +70,59 @@ const CLAVES: readonly Etapa[] = ETAPAS.map((e) => e.clave);
  * Por eso es una constante y no un `?? 'agendado'` al final de una función: es una regla de
  * negocio, y escondida en un operador se lee como un descuido.
  */
-export const ETAPA_DE_ENTRADA: Etapa = 'agendado';
+export const ETAPA_DE_ENTRADA: EtapaDelCloser = 'agendado';
 
-/** A qué columna lleva cada salida de Avanzar. */
-export const ETAPA_DE_LA_SALIDA: Readonly<Record<SalidaResultado, Etapa>> = {
+/** A qué columna del CLOSER lleva cada una de sus seis salidas. */
+export const ETAPA_DE_LA_SALIDA: Readonly<Record<SalidaDelCloser, EtapaDelCloser>> = {
   venta: 'ganado',
   // Hay plata comprometida y no cobrada: más que cualquier estado pendiente, menos que la venta.
   acuerdo_sin_pago: 'cierre',
   seguimiento: 'seguimiento',
   no_interesa: 'descalificado',
-  no_califica: 'descalificado',
   no_show: 'no_show',
   nurture: 'nurture',
-  // ── LAS DOS DEL SETTER, y no son del Pipeline del closer ──────────────────
-  //
-  // `agendo` es el traspaso: el contacto pasa a ser del closer y entra por la puerta. `venta_chica`
-  // es un desenlace del setter que el closer nunca ve, porque ese contacto ya no está en su
-  // territorio.
-  //
-  // Se mapean igual, y **sin ningún casteo**: el `Record<SalidaResultado, Etapa>` obliga a que
-  // estén las nueve. Es lo que hace que agregar una salida al tipo **no compile** hasta que alguien
-  // decida a qué columna va — en vez de caer en `undefined` y desaparecer de la pantalla.
-  agendo: 'agendado',
-  venta_chica: 'ganado',
 };
+
+/* ── LAS TRES DEL SETTER YA NO ESTÁN ACÁ, Y ES UNA CORRECCIÓN ────────────────
+ *
+ * Este mapa tenía las nueve salidas y mandaba `venta_chica` a `ganado` —la columna de una venta del
+ * closer— con un comentario que **admitía que estaban mal**: «no son del Pipeline del closer». Una
+ * venta chica de $497 dibujada en la misma columna que un cierre de $12.000 no es un detalle de
+ * presentación: son dos negocios sumados en un número.
+ *
+ * Ahora cada catálogo mapea SUS salidas a SUS etapas, y la garantía de exhaustividad no se pierde:
+ * sigue siendo un `Record` completo dentro de cada negocio. Se gana exactitud sin perder nada. */
+
+/** El índice rol → embudo. Existe una sola vez, como el de las salidas. */
+const EMBUDOS = {
+  closer: {
+    etapas: ETAPAS as readonly { clave: string; nombre: string }[],
+    claves: CLAVES as readonly string[],
+    entrada: ETAPA_DE_ENTRADA as Etapa,
+    deLaSalida: ETAPA_DE_LA_SALIDA as Readonly<Record<string, Etapa>>,
+  },
+  setter: {
+    etapas: ETAPAS_DEL_SETTER as readonly { clave: string; nombre: string }[],
+    claves: CLAVES_DEL_SETTER as readonly string[],
+    entrada: ETAPA_DE_ENTRADA_DEL_SETTER as Etapa,
+    deLaSalida: ETAPA_DE_LA_SALIDA_DEL_SETTER as Readonly<Record<string, Etapa>>,
+  },
+} as const satisfies Record<Territorio, unknown>;
+
+/** Las columnas de ese embudo, en orden. */
+export function etapasDe(rol: Territorio): readonly { clave: string; nombre: string }[] {
+  return EMBUDOS[rol].etapas;
+}
+
+/** La etapa de entrada de ese embudo. Ver por qué NO es una sola para los dos. */
+export function etapaDeEntrada(rol: Territorio): Etapa {
+  return EMBUDOS[rol].entrada;
+}
+
+/** A qué columna de ESE embudo lleva una salida suya. */
+export function etapaDeLaSalida(rol: Territorio, salida: string): Etapa | undefined {
+  return EMBUDOS[rol].deLaSalida[salida];
+}
 
 /**
  * LA PRECEDENCIA, para cuando hay varias etiquetas de desenlace a la vez.
@@ -108,7 +154,7 @@ export const ETAPA_DE_LA_SALIDA: Readonly<Record<SalidaResultado, Etapa>> = {
  * contacto con las dos etiquetas. Con `seguimiento` arriba seguiría apareciendo en la columna de
  * trabajo activo de alguien que ya lo dio por perdido.
  */
-export const PRECEDENCIA: readonly SalidaResultado[] = [
+export const PRECEDENCIA: readonly SalidaDelCloser[] = [
   'venta',
   'acuerdo_sin_pago',
   'no_interesa',
@@ -128,7 +174,7 @@ export const PRECEDENCIA: readonly SalidaResultado[] = [
 const normalizar = (t: string) => t.trim().toLowerCase();
 
 export interface Desenlace {
-  salida: SalidaResultado;
+  salida: SalidaDelCloser;
   /** La etiqueta literal que se encontró. Es lo que permite responder «¿por qué está acá?». */
   etiqueta: string;
   etapa: Etapa;
@@ -163,8 +209,8 @@ export function desenlaceDeLasEtiquetas(etiquetas: readonly string[]): Desenlace
  * contradicción visible sobre el mismo contacto: con una etapa retirada, la columna lo dibujaba en
  * «Agendado» —por el respaldo— y el contador lo contaba como «registrado por una persona».
  */
-export function esUnaDeLasSiete(etapa: string | null): boolean {
-  return etapa !== null && (CLAVES as readonly string[]).includes(etapa);
+export function esEtapaDe(rol: Territorio, etapa: string | null): boolean {
+  return etapa !== null && EMBUDOS[rol].claves.includes(etapa);
 }
 
 /**
@@ -173,22 +219,29 @@ export function esUnaDeLasSiete(etapa: string | null): boolean {
  * Las etiquetas que no conoce se ignoran a propósito: la subcuenta tiene decenas —de campañas, de
  * origen, de estado— y ninguna dice en qué terminó la llamada.
  */
-export function etapaDelContacto(c: {
-  etapa: string | null;
-  etiquetas: readonly string[];
-}): Etapa {
-  // 1 · Lo que escribió una persona con Avanzar. Se valida contra las siete: un valor que ya no
-  // existe —una etapa retirada— no puede mandar a un contacto a una columna que no se dibuja,
-  // donde desaparecería de la pantalla sin que nada falle.
-  if (esUnaDeLasSiete(c.etapa)) return c.etapa as Etapa;
+export function etapaDelContacto(
+  rol: Territorio,
+  c: { etapa: string | null; etiquetas: readonly string[] },
+): Etapa {
+  /* 1 · Lo que escribió una persona con Avanzar. Se valida contra las de ESTE embudo: un valor que
+     acá no existe —una etapa retirada, o una del otro territorio en un contacto que cruzó— no puede
+     mandar a nadie a una columna que no se dibuja, donde desaparecería sin que nada falle.
 
-  // 2 · Y si no, la etiqueta de más peso. 3 · Y si tampoco, la entrada.
-  return desenlaceDeLasEtiquetas(c.etiquetas)?.etapa ?? ETAPA_DE_ENTRADA;
+     Y es lo que hace que el traspaso se resuelva solo: la etapa del setter no es una de las siete
+     del closer, así que cae a las vías 2 y 3 y termina en la entrada del closer. */
+  if (esEtapaDe(rol, c.etapa)) return c.etapa as Etapa;
+
+  // 2 · Y si no, la etiqueta de más peso. 3 · Y si tampoco, la entrada DE ESTE embudo.
+  return desenlaceDeLasEtiquetas(c.etiquetas)?.etapa ?? etapaDeEntrada(rol);
 }
 
-/** Contador con las SIETE claves siempre presentes, incluidas las que dan cero. */
-export function contarPorEtapa(etapas: readonly Etapa[]): Record<Etapa, number> {
-  const conteo = Object.fromEntries(CLAVES.map((e) => [e, 0])) as Record<Etapa, number>;
-  for (const e of etapas) conteo[e] += 1;
+/** Contador con TODAS las claves de ese embudo presentes, incluidas las que dan cero. */
+export function contarPorEtapa(rol: Territorio, etapas: readonly Etapa[]): Record<string, number> {
+  const conteo: Record<string, number> = Object.fromEntries(EMBUDOS[rol].claves.map((e) => [e, 0]));
+  for (const e of etapas) {
+    // Una etapa que no es de este embudo no se cuenta: `etapaDelContacto` ya garantiza que no llegue,
+    // y sumarla crearía una clave que ninguna columna dibuja — un total que no cierra con la suma.
+    if (e in conteo) conteo[e] = (conteo[e] ?? 0) + 1;
+  }
   return conteo;
 }

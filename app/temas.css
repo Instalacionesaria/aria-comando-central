@@ -157,6 +157,28 @@
   --etapa-descalificado: #f58080;
   --c-etapa-descalificado: 245 128 128;
 
+  /* ── LAS CINCO PROPIAS DEL SETTER ────────────────────────────────────────
+   *
+   * Su embudo tiene ocho columnas y comparte tres claves con el del closer —`agendado`, `nurture`
+   * y `descalificado`, que significan lo mismo—, así que solo hacen falta cinco tonos más.
+   *
+   * Los dos embudos **nunca se ven en la misma pantalla**, así que lo que hay que distinguir es
+   * dentro de cada uno. Aun así los doce valores son distintos: un color repetido en la hoja hace
+   * que cambiar uno cambie el otro sin que nadie lo note.
+   *
+   * `calificado` es el más saturado a propósito: es la columna caliente del setter —califica y
+   * todavía no agendó— y es donde se gana o se pierde el día. */
+  --etapa-nuevo:         #8b98a8;
+  --c-etapa-nuevo:       139 152 168;
+  --etapa-en-calificacion: #b8d94a;
+  --c-etapa-en-calificacion: 184 217  74;
+  --etapa-calificado:    #e858b0;
+  --c-etapa-calificado:  232  88 176;
+  --etapa-oferta-chica:  #b478f0;
+  --c-etapa-oferta-chica: 180 120 240;
+  --etapa-vendido:       #34d399;
+  --c-etapa-vendido:      52 211 153;
+
   /* El carril del arco del anillo de comisión. Es el mismo caso que `--c-nube`: sobre negro ACLARA
      y sobre blanco tiene que oscurecer, así que un literal se vuelve invisible en un tema. */
   --carril-del-arco: rgb(170 212 255 / 0.14);
@@ -333,6 +355,18 @@
   --c-etapa-nurture:      31  78 121;
   --etapa-descalificado: #a81b1b;
   --c-etapa-descalificado: 168 27  27;
+
+  /* Las cinco del setter, en su versión oscura sobre claro. Ver el bloque del tema oscuro. */
+  --etapa-nuevo:         #47535f;
+  --c-etapa-nuevo:        71  83  95;
+  --etapa-en-calificacion: #5c6b12;
+  --c-etapa-en-calificacion: 92 107  18;
+  --etapa-calificado:    #8a1c5e;
+  --c-etapa-calificado:  138  28  94;
+  --etapa-oferta-chica:  #5b2a94;
+  --c-etapa-oferta-chica:  91  42 148;
+  --etapa-vendido:       #0a6b4a;
+  --c-etapa-vendido:      10 107  74;
 
   --carril-del-arco: rgb(22 32 48 / 0.16);
   /* El lienzo de «Equipo de inteligencia». El motivo de estos cuatro está en el bloque oscuro,

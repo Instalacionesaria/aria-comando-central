@@ -435,7 +435,7 @@ test('cada columna: `cuantos` es el largo de `filas`, y `total` es la suma de la
 
   /* El defecto que esto atrapa está documentado con su síntoma: «la tarjeta anunciaba seis
      llamadas que no existían: el conteo venía de un lado y la lista del otro». Acá el conteo sale
-     de `contarPorEtapa()` y la lista de un `Map`, o sea de DOS recorridos sobre el mismo arreglo —
+     de `contarPorEtapa('closer', )` y la lista de un `Map`, o sea de DOS recorridos sobre el mismo arreglo —
      y dos recorridos se separan. Con el encabezado diciendo «Ganado 6» sobre cuatro tarjetas,
      nadie sabe cuál de los dos números creer. */
   for (const c of p.columnas) {

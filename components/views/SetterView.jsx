@@ -29,6 +29,9 @@ import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { estaALaVista } from '../../lib/vista.ts';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
+/* El MISMO componente que el Closer, con otro camino. El dibujo de una columna con su nombre, su
+   conteo y su tinte es idéntico; lo que cambia son las etapas, que las trae el servidor. */
+import Pipeline from '../closer/Pipeline.jsx';
 
 const SUB = [
   { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
@@ -133,18 +136,7 @@ export default function SetterView({ activa }) {
           ) : null}
 
           {sub === 'pipeline' ? (
-            <Falta
-              titulo="El pipeline del setter necesita la etapa de cada contacto"
-              detalle={
-                'GoHighLevel no expone un campo de etapa: la mueve un workflow disparado por ' +
-                'una etiqueta. Hasta que eso se lea, las columnas estarían todas vacías.'
-              }
-              puntos={[
-                'Nuevo · Contactado · Calificando · Agendado · Descalificado',
-                'Cada columna con su conteo, aunque esté vacía',
-                'Antigüedad por contacto',
-              ]}
-            />
+            <Pipeline camino="/api/setter/pipeline" pulso={pulso} />
           ) : null}
 
           {sub === 'inicio' ? (

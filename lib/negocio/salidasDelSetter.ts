@@ -156,29 +156,3 @@ export const SALIDAS_DEL_SETTER = [
     pideMonto: false,
   },
 ] as const satisfies readonly DefinicionDeSalida[];
-
-/**
- * A qué etapa manda cada salida del setter.
- *
- * ── POR QUÉ ESTE MAPA NO ES EL DEL CLOSER ───────────────────────────────────
- *
- * Los dos embudos tienen siete columnas y **ninguna es la misma**. El mapa único que había mandaba
- * `venta_chica` a `ganado` —la columna de una venta del closer— con un comentario que admitía que
- * estaba mal. Una venta chica de $497 dibujada en la misma columna que un cierre de $12.000 no es
- * un detalle de presentación: son dos negocios distintos sumados en un número.
- *
- * `vendido` es propia y **no existe en el embudo del closer**. Y no se colapsa con `oferta_chica`,
- * que significa *ofrecida*: una venta cobrada y una oferta sin respuesta no pueden verse iguales,
- * porque una tiene trabajo pendiente y la otra no.
- *
- * `agendado`, `nurture` y `descalificado` **comparten clave a propósito** con las del closer:
- * significan lo mismo en los dos negocios. Y en el caso de `agendado` la coincidencia es el punto —
- * es el traspaso: el setter la escribe y el closer la lee como su etapa de entrada.
- */
-export const ETAPA_DE_LA_SALIDA_DEL_SETTER = {
-  agendo: 'agendado',
-  venta_chica: 'vendido',
-  seguimiento: 'en_calificacion',
-  no_califica: 'descalificado',
-  nurture: 'nurture',
-} as const satisfies Readonly<Record<(typeof SALIDAS_DEL_SETTER)[number]['salida'], string>>;

@@ -244,7 +244,7 @@ export default function CloserView({ activa }) {
     if (sub === 'dia') {
       return <MiDia colas={datos.colas} zonaHoraria={datos.zonaHoraria} />;
     }
-    if (sub === 'pipeline') return <Pipeline />;
+    if (sub === 'pipeline') return <Pipeline camino="/api/closer/pipeline" />;
 
     return <Agenda zonaHoraria={datos.zonaHoraria} />;
   }

@@ -27,7 +27,7 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import type { SalidaDelCloser } from '../../lib/negocio/salidas.ts';
 import { registrarResultado } from '../../lib/negocio/avanzar.ts';
-import { pipelineDelCloser } from '../../lib/negocio/pipeline.ts';
+import { pipelineDe } from '../../lib/negocio/pipeline.ts';
 import { cockpitDelMes } from '../../lib/negocio/inicio.ts';
 
 let admin: Client;
@@ -430,7 +430,7 @@ test('el Pipeline devuelve las SIETE columnas, con las vacías en cero', async (
     registrarResultado(id, { ...BASE, que: del('no_show'), quien }),
   );
 
-  const p = await conOrganizacion(alfa, () => pipelineDelCloser());
+  const p = await conOrganizacion(alfa, () => pipelineDe('closer', { conCongelados: true }));
   assert.equal(p.columnas.length, 7);
   assert.equal(p.total, 1);
   const noShow = p.columnas.find((c) => c.clave === 'no_show');
@@ -455,7 +455,7 @@ test('un contacto SIN Avanzar cae en la entrada, y el Pipeline dice de dónde sa
     registrarResultado(conResultado, { ...BASE, que: del('venta'), monto: '1.00', quien }),
   );
 
-  const p = await conOrganizacion(alfa, () => pipelineDelCloser());
+  const p = await conOrganizacion(alfa, () => pipelineDe('closer', { conCongelados: true }));
   assert.equal(p.total, 3);
   assert.equal(p.clasificados.porResultado, 1);
   assert.equal(p.clasificados.porEtiqueta, 1);
@@ -471,9 +471,9 @@ test('un contacto SIN Avanzar cae en la entrada, y el Pipeline dice de dónde sa
 test('el Pipeline de una empresa no ve los contactos de la otra', async () => {
   await limpiar();
   await contactoEn(beta);
-  const p = await conOrganizacion(alfa, () => pipelineDelCloser());
+  const p = await conOrganizacion(alfa, () => pipelineDe('closer', { conCongelados: true }));
   assert.equal(p.total, 0);
-  const q = await conOrganizacion(beta, () => pipelineDelCloser());
+  const q = await conOrganizacion(beta, () => pipelineDe('closer', { conCongelados: true }));
   assert.equal(q.total, 1);
 });
 

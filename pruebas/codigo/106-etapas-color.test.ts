@@ -19,6 +19,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { ETAPAS_DEL_SETTER } from '../../lib/negocio/etapasDelSetter.ts';
 import { ETAPAS } from '../../lib/negocio/etapas.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
@@ -34,6 +35,13 @@ function bloqueDelTema(css: string, tema: string): string {
 /** El nombre del token de una clave de etapa. `no_show` → `--etapa-no-show`. */
 const tokenDe = (clave: string) => `--etapa-${clave.replace(/_/g, '-')}`;
 
+/* Los DOS embudos. Las tres claves que comparten —`agendado`, `nurture`, `descalificado`— se
+   cuentan una sola vez: son la misma columna vista desde los dos lados, y exigirles dos colores
+   distintos sería pedir que el traspaso cambie de color. */
+const TODAS = [...ETAPAS, ...ETAPAS_DEL_SETTER].filter(
+  (e, i, todas) => todas.findIndex((o) => o.clave === e.clave) === i,
+);
+
 test('las SIETE etapas tienen color, en los DOS temas', () => {
   // Se recorre `ETAPAS`, no una lista escrita acá: así una etapa nueva rompe esta prueba en vez de
   // salir a producción sin color. Es la misma razón por la que la migración 018 existe — el `check`
@@ -41,7 +49,7 @@ test('las SIETE etapas tienen color, en los DOS temas', () => {
   const css = leer('app/temas.css');
   for (const tema of ['oscuro', 'claro']) {
     const bloque = bloqueDelTema(css, tema);
-    for (const e of ETAPAS) {
+    for (const e of TODAS) {
       const t = tokenDe(e.clave);
       assert.match(bloque, new RegExp(`${t}\\s*:`), `falta ${t} en el tema ${tema}`);
       // Y su canal, que es lo que permite teñir el fondo con opacidad.
@@ -58,7 +66,7 @@ test('ninguna etapa comparte su color con otra, en ninguno de los dos temas', ()
   for (const tema of ['oscuro', 'claro']) {
     const bloque = bloqueDelTema(css, tema);
     const valores = new Map<string, string>();
-    for (const e of ETAPAS) {
+    for (const e of TODAS) {
       const v = new RegExp(`${tokenDe(e.clave)}\\s*:\\s*([^;]+);`).exec(bloque)?.[1]?.trim();
       assert.ok(v, `no se pudo leer el color de «${e.nombre}» en ${tema}`);
       const yaEsta = valores.get(v!);
@@ -70,7 +78,7 @@ test('ninguna etapa comparte su color con otra, en ninguno de los dos temas', ()
       );
       valores.set(v!, e.nombre);
     }
-    assert.equal(valores.size, ETAPAS.length);
+    assert.equal(valores.size, TODAS.length, 'faltan colores o hay uno repetido');
   }
 });
 
@@ -81,7 +89,7 @@ test('el canal de cada etapa coincide con su color: el tinte y el texto son el M
   const css = leer('app/temas.css');
   for (const tema of ['oscuro', 'claro']) {
     const bloque = bloqueDelTema(css, tema);
-    for (const e of ETAPAS) {
+    for (const e of TODAS) {
       const guion = e.clave.replace(/_/g, '-');
       const hex = new RegExp(`--etapa-${guion}\\s*:\\s*#([0-9a-fA-F]{6})\\s*;`).exec(bloque)?.[1];
       const canal = new RegExp(`--c-etapa-${guion}\\s*:\\s*([\\d\\s]+);`).exec(bloque)?.[1];
@@ -106,7 +114,7 @@ test('cada etapa tiene su regla en el CSS, y el estilo se escribe UNA vez', () =
   // el grosor del canto son siete ediciones y la séptima se olvida: el defecto queda como una etapa
   // que se ve distinta de las otras seis sin que nada falle.
   const css = leer('app/closer.css');
-  for (const e of ETAPAS) {
+  for (const e of TODAS) {
     assert.match(
       css,
       new RegExp(`\\.md-sec\\[data-etapa='${e.clave}'\\]\\s*\\{`),

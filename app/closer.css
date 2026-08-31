@@ -1152,6 +1152,34 @@
   --c-etapa: var(--c-etapa-nurture);
 }
 
+/* Las cinco propias del setter. Las otras tres de su embudo —`agendado`, `nurture` y
+   `descalificado`— usan las reglas de arriba, porque son la misma clave. */
+
+.md-sec[data-etapa='nuevo'] {
+  --etapa: var(--etapa-nuevo);
+  --c-etapa: var(--c-etapa-nuevo);
+}
+
+.md-sec[data-etapa='en_calificacion'] {
+  --etapa: var(--etapa-en-calificacion);
+  --c-etapa: var(--c-etapa-en-calificacion);
+}
+
+.md-sec[data-etapa='calificado'] {
+  --etapa: var(--etapa-calificado);
+  --c-etapa: var(--c-etapa-calificado);
+}
+
+.md-sec[data-etapa='oferta_chica'] {
+  --etapa: var(--etapa-oferta-chica);
+  --c-etapa: var(--c-etapa-oferta-chica);
+}
+
+.md-sec[data-etapa='vendido'] {
+  --etapa: var(--etapa-vendido);
+  --c-etapa: var(--c-etapa-vendido);
+}
+
 .md-sec[data-etapa='descalificado'] {
   --etapa: var(--etapa-descalificado);
   --c-etapa: var(--c-etapa-descalificado);

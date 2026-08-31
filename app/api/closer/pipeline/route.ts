@@ -16,7 +16,7 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
-import { pipelineDelCloser } from '../../../../lib/negocio/pipeline.ts';
+import { pipelineDe } from '../../../../lib/negocio/pipeline.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'closer';
@@ -25,6 +25,11 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['closer.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
-  const pipeline = await conOrganizacion(contexto.orgEfectiva, () => pipelineDelCloser());
+  /* `conCongelados: true` — el Closer es el dueño del congelado, y esa decisión está escrita en
+     `pipelineDe`. Un contacto sin territorio no está en ninguno de los dos, así que si las dos
+     carteras lo pidieran se contaría dos veces. */
+  const pipeline = await conOrganizacion(contexto.orgEfectiva, () =>
+    pipelineDe('closer', { conCongelados: true }),
+  );
   return ok(pipeline);
 }

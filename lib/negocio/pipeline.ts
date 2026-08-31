@@ -23,10 +23,21 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { filasDeTerritorio, type Fila } from './fila.ts';
-import { contarPorEtapa, ETAPAS, etapaDelContacto, type Etapa, esUnaDeLasSiete } from './etapas.ts';
+import {
+  contarPorEtapa,
+  esEtapaDe,
+  etapaDeEntrada,
+  etapaDelContacto,
+  etapasDe,
+  type Etapa,
+} from './etapas.ts';
+import type { Territorio } from '../datos/esquema.ts';
 
 export interface ColumnaDelPipeline {
-  clave: Etapa;
+  /* `string` y no `Etapa`: la columna viaja a una pantalla que la dibuja, y las claves de los dos
+     embudos son un conjunto abierto desde el punto de vista de esta interfaz. La garantía de que
+     solo salgan claves reales la da `etapasDe(rol)`, que es de dónde se arman. */
+  clave: string;
   nombre: string;
   /** Cuántos hay. **Se dibuja aunque sea cero.** Ver el encabezado. */
   cuantos: number;
@@ -67,19 +78,34 @@ export interface Pipeline {
 /**
  * El Pipeline completo. **Corre dentro de `conOrganizacion(`.**
  */
-export async function pipelineDelCloser(): Promise<Pipeline> {
-  /* ── `conCongelados`, Y ES LO QUE HACÍA FALTA PARA QUE SE VEAN ─────────────
+export async function pipelineDe(
+  rol: Territorio,
+  opciones: { conCongelados: boolean },
+): Promise<Pipeline> {
+  /* ── `conCongelados` NO ES UNA PERILLA DE GUSTO: DECIDE DE QUIÉN ES UN CONGELADO ──
    *
    * `sincronizar.ts` afirma del congelado que *«sigue visible y atenuado, sigue siendo movible, no
    * se borra»*. Lo único que era cierto es que no se borra: sin esta opción, `filasDeTerritorio`
-   * filtra `territorio = 'closer'` y un contacto que pierde su zona **desaparece de la aplicación
-   * sin rastro y sin contador que lo cuente**. El closer ve bajar su cartera y no tiene dónde mirar.
+   * filtra por territorio y un contacto que pierde su zona **desaparece de la aplicación sin rastro
+   * y sin contador que lo cuente**.
    *
-   * Mi Día NO la pide, y eso es correcto: sus colas son trabajo, y un congelado no es trabajo de
-   * este closer. El Pipeline es la cartera, y ahí un congelado es información. */
-  const { filas, hayMas } = await filasDeTerritorio('closer', { todas: true, conCongelados: true });
+   * Y con dos pipelines el argumento cambia de forma: un congelado **no está en ningún territorio**,
+   * así que si los dos lo pidieran aparecería en las dos carteras y se contaría dos veces — en
+   * contradicción directa con que los territorios sean excluyentes.
+   *
+   * Se elige un dueño y se dice: hoy es el Closer, que es donde ya se veía. El costo, que hay que
+   * saber: un contacto que era del setter y perdió su zona deja de verse donde se trabajaba. La
+   * alternativa —guardar cuál fue su último territorio— es una columna que hoy no existe.
+   *
+   * Mi Día NO lo pide en ninguno de los dos, y eso es correcto: sus colas son trabajo, y un
+   * congelado no es trabajo de nadie. El Pipeline es la cartera, y ahí un congelado es información. */
+  const { filas, hayMas } = await filasDeTerritorio(rol, {
+    todas: true,
+    conCongelados: opciones.conCongelados,
+  });
 
-  const porEtapa = new Map<Etapa, Fila[]>(ETAPAS.map((e) => [e.clave, []]));
+  const columnas = etapasDe(rol);
+  const porEtapa = new Map<string, Fila[]>(columnas.map((e) => [e.clave, []]));
   const etapas: Etapa[] = [];
   let porResultado = 0;
   let porEtiqueta = 0;
@@ -87,7 +113,7 @@ export async function pipelineDelCloser(): Promise<Pipeline> {
   let congelados = 0;
 
   for (const f of filas) {
-    const etapa = etapaDelContacto({ etapa: f.etapa, etiquetas: f.etiquetas });
+    const etapa = etapaDelContacto(rol, { etapa: f.etapa, etiquetas: f.etiquetas });
     etapas.push(etapa);
     porEtapa.get(etapa)?.push(f);
     if (f.congelado) congelados++;
@@ -104,18 +130,21 @@ export async function pipelineDelCloser(): Promise<Pipeline> {
        Las dos cosas a la vez son la contradicción: la columna dice «nadie lo tocó» y el contador
        dice «alguien lo registró», sobre el mismo contacto. Ahora la condición es la misma que usa
        `etapaDelContacto` para decidir si le cree a la columna. */
-    if (esUnaDeLasSiete(f.etapa)) porResultado++;
-    else if (f.etiquetas.length > 0 && etapa !== 'agendado') porEtiqueta++;
+    if (esEtapaDe(rol, f.etapa)) porResultado++;
+    /* Y la comparación es contra la ENTRADA DE ESTE EMBUDO, no contra `'agendado'` cableado. Con el
+       literal, la heurística del setter contaría mal: su entrada es `nuevo`, así que todo contacto
+       con alguna etiqueta habría contado como «clasificado por etiqueta» aunque no lo estuviera. */
+    else if (f.etiquetas.length > 0 && etapa !== etapaDeEntrada(rol)) porEtiqueta++;
     else sinNada++;
   }
 
-  const conteo = contarPorEtapa(etapas);
+  const conteo = contarPorEtapa(rol, etapas);
 
   return {
-    columnas: ETAPAS.map((e) => ({
+    columnas: columnas.map((e) => ({
       clave: e.clave,
       nombre: e.nombre,
-      cuantos: conteo[e.clave],
+      cuantos: conteo[e.clave] ?? 0,
       filas: porEtapa.get(e.clave) ?? [],
     })),
     total: filas.length,

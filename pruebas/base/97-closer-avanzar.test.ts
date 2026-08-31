@@ -46,6 +46,8 @@ import {
 } from '../apoyo/closer.ts';
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
+import { pipelineDe } from '../../lib/negocio/pipeline.ts';
+import { GET as pipelineDelSetter } from '../../app/api/setter/pipeline/route.ts';
 import { SALIDAS_DEL_CLOSER, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
 import { etiquetasDelResultado } from '../../lib/ghl/contrato.ts';
 import { ETAPA_DE_LA_SALIDA } from '../../lib/negocio/etapas.ts';
@@ -281,6 +283,128 @@ test('un contacto CONGELADO no tiene con qué vocabulario registrarse, y se dice
   const escrito = await loEscrito(esc.org, congelado.id);
   assert.equal(escrito.resultados.length, 0, 'el congelado dejó un resultado escrito');
   assert.equal(escrito.etapa, null, 'el congelado se quedó con la etapa movida');
+});
+
+test('el embudo del SETTER es otro, y el traspaso se resuelve solo', async () => {
+  /* ══ UNA COLUMNA POR EMBUDO, Y EL CRUCE NO NECESITA CÓDIGO EXTRA ════════
+   *
+   * `contactos.etapa` es UNA columna de texto sin restricción, y el traspaso de territorio no la
+   * limpia. Así que un contacto que cruza llega con la etapa del otro embudo escrita.
+   *
+   * La regla que lo resuelve es «cada pipeline valida contra las suyas»: una etapa del setter no es
+   * ninguna de las siete del closer, así que cae a la derivación por etiquetas y de ahí a la etapa
+   * de ENTRADA del closer — que es la respuesta correcta, porque ningún closer registró nada
+   * todavía. Sin esa regla el contacto se quedaría en una columna que allá no se dibuja: presente
+   * en el total y ausente de todas las columnas, con la suma sin cerrar. */
+  const enSetter = await unContacto(esc, { territorio: 'setter', nombre: 'Embudo setter' });
+
+  // Una venta chica NO va a la columna del cierre grande: va a la suya.
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${enSetter.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'venta_chica', detalle: 'Efectivo', monto: 497 },
+    }),
+    ctxDe(enSetter.id),
+  );
+  assert.equal(r.status, 201, await r.clone().text());
+
+  const escrito = await loEscrito(esc.org, enSetter.id);
+  assert.equal(
+    escrito.etapa,
+    'vendido',
+    'la venta chica cayó en otra columna. Si cae en `ganado`, se dibuja junto a los cierres del ' +
+      'closer y dos negocios distintos quedan sumados en un número; si cae en `oferta_chica`, una ' +
+      'venta cobrada y una oferta sin respuesta se ven iguales',
+  );
+
+  /* Y AHORA EL CRUCE: ese contacto pasa al territorio del closer con su etapa del setter puesta.
+     El pipeline del closer no puede dejarlo fuera de todas sus columnas. */
+  await conOrganizacion(esc.org, async () => {
+    await datos()
+      .updateTable('contactos')
+      .set({ territorio: 'closer' })
+      .where('id', '=', enSetter.id)
+      .execute();
+  });
+
+  const p = await conOrganizacion(esc.org, () => pipelineDe('closer', { conCongelados: true }));
+  const suColumna = p.columnas.find((c) => c.filas.some((f) => f.id === enSetter.id));
+  assert.ok(
+    suColumna,
+    'un contacto que cruzó de territorio no cayó en NINGUNA columna del closer: está en el total y ' +
+      'no en la suma, y desaparecer no da error',
+  );
+  assert.equal(
+    suColumna.clave,
+    'agendado',
+    'no cayó en la etapa de ENTRADA del closer, que es la respuesta correcta: ningún closer ' +
+      'registró nada sobre él todavía',
+  );
+
+  // Y la suma cierra: es la invariante que un contacto perdido rompe sin avisar.
+  const enColumnas = p.columnas.reduce((n, c) => n + c.filas.length, 0);
+  assert.equal(enColumnas, p.total, 'la suma de las columnas no cierra con el total');
+});
+
+test('el congelado tiene UN dueño: está en la cartera del closer y no en la del setter', async () => {
+  /* Un congelado **no está en ningún territorio**. Si las dos carteras lo trajeran, aparecería en
+     las dos y se contaría dos veces — en contradicción directa con que los territorios sean
+     excluyentes, y con un total que suma más contactos de los que hay.
+
+     Se eligió el Closer, que es donde ya se veía. El costo, que se acepta sabiéndolo: un contacto
+     que era del setter y perdió su zona deja de verse donde se trabajaba. */
+  const congelado = await unContacto(esc, { territorio: null, nombre: 'Cartera congelado' });
+
+  const delCloser = await conOrganizacion(esc.org, () =>
+    pipelineDe('closer', { conCongelados: true }),
+  );
+  /* Por LA RUTA y no por la función: la decisión de quién se lleva los congelados vive ahí, en el
+     argumento que la ruta pasa. Llamando a la función con el argumento a mano, esta prueba pasaría
+     verde con la ruta pidiendo lo contrario — que es exactamente lo que hay que impedir. */
+  const respuesta = await pipelineDelSetter(
+    pedirComo('/api/setter/pipeline', esc.token, { metodo: 'GET' }),
+  );
+  const delSetter = (await leerRespuesta<{
+    columnas: { filas: { id: string }[] }[];
+    cartera: { congelados: number };
+  }>(respuesta)).cuerpo;
+
+  const estaEn = (p: { columnas: { filas: { id: string }[] }[] }) =>
+    p.columnas.some((c) => c.filas.some((f) => f.id === congelado.id));
+
+  assert.equal(estaEn(delCloser), true, 'el congelado desapareció de la única cartera que lo mostraba');
+  assert.equal(
+    estaEn(delSetter),
+    false,
+    'el congelado aparece en las DOS carteras: el mismo contacto contado dos veces, y los ' +
+      'territorios se suponían excluyentes',
+  );
+  assert.equal(delSetter.cartera.congelados, 0, 'la cartera del setter cuenta congelados que no trae');
+});
+
+test('la heurística de «clasificado por etiqueta» usa la entrada DE SU embudo', async () => {
+  /* `clasificados` reparte la cartera en tres: registrado por una persona, deducido de una
+     etiqueta, y sin nada. La tercera rama compara contra la etapa de ENTRADA — porque caer en la
+     entrada significa justamente que no se dedujo nada.
+
+     Con `'agendado'` cableado, esa comparación es la del closer. Para el setter, cuya entrada es
+     `nuevo`, un contacto sin resultado y con etiquetas de campaña contaría como «deducido de una
+     etiqueta» sin que ninguna etiqueta lo haya clasificado. El número sale plausible y está mal. */
+  await unContacto(esc, {
+    territorio: 'setter',
+    nombre: 'Clasificado setter',
+    // Etiquetas REALES de la subcuenta que no son ningún desenlace: no clasifican nada.
+    etiquetas: ['zona_setter', 'bot_activado_leadflow'],
+  });
+
+  const p = await conOrganizacion(esc.org, () => pipelineDe('setter', { conCongelados: false }));
+  assert.equal(
+    p.clasificados.porEtiqueta,
+    0,
+    'un contacto sin desenlace contó como «clasificado por etiqueta»: la comparación se está ' +
+      'haciendo contra la entrada del OTRO embudo',
+  );
+  assert.ok(p.clasificados.sinNada >= 1, 'no cayó en «sin nada», que es lo que de verdad es');
 });
 
 // 2 · LO QUE SE RECHAZA NO ESCRIBE

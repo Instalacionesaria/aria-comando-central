@@ -1,6 +1,16 @@
 'use client';
 
-/* El Pipeline del closer: las siete etapas, una debajo de la otra.
+/* El Pipeline: las etapas del embudo que se le pida, una debajo de la otra.
+
+ * ── UN SOLO COMPONENTE PARA LOS DOS EMBUDOS ─────────────────────────────────
+ *
+ * El closer tiene siete columnas y el setter ocho, con nombres distintos, y aun así **el dibujo es
+ * el mismo**: cada columna con su nombre, su conteo —aunque sea cero— y su tinte, que sale de la
+ * clave por CSS. Lo que cambia son los datos, no la acción, así que se comparte.
+ *
+ * El `camino` es lo único que difiere, y llega como propiedad para que la pantalla no lo deduzca de
+ * en qué pestaña está: el territorio lo escribe el servidor en cada ruta.
+ *
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * UNA COLUMNA VACÍA SE DIBUJA IGUAL, CON SU CERO
@@ -41,7 +51,7 @@ import { pedir } from '../../lib/http/cliente.ts';
 import Ficha from '../negocio/Ficha.jsx';
 import Fila from '../negocio/Fila.jsx';
 
-export default function Pipeline() {
+export default function Pipeline({ camino, pulso = 0 }) {
   const [datos, setDatos] = useState(null);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
@@ -49,11 +59,11 @@ export default function Pipeline() {
   const yaPedido = useRef(false);
 
   const cargar = useCallback(async () => {
-    const r = await pedir('/api/closer/pipeline');
+    const r = await pedir(camino);
     if (r.tipo !== 'datos') {
       /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»: con
-         una sola rama, alguien sin `closer.ver` vería siete columnas en cero y creería que no tiene
-         contactos. */
+         una sola rama, alguien sin la capacidad de esa pantalla vería todas las columnas en cero y
+         creería que no tiene contactos. */
       setCausa(
         r.tipo === 'rechazado'
           ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
@@ -64,13 +74,19 @@ export default function Pipeline() {
     }
     setDatos(r.datos);
     setSituacion('listo');
-  }, []);
+  }, [camino]);
 
   useEffect(() => {
     if (yaPedido.current) return;
     yaPedido.current = true;
     void cargar();
   }, [cargar]);
+  /* El pulso: el reloj de la vista lo incrementa después de traer mensajes nuevos, y acá se vuelve a
+     preguntar. `> 0` saltea el montaje, o la primera carga sale dos veces. */
+  useEffect(() => {
+    if (pulso > 0) void cargar();
+  }, [pulso, cargar]);
+
 
   /* Se recarga al cerrar la ficha, y no siempre: registrar un resultado ahí adentro mueve al
      contacto de columna, y dejar el tablero como estaba mostraría el contacto en la columna vieja

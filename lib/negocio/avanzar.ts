@@ -28,7 +28,7 @@
 
 import { datos } from '../datos/contexto.ts';
 import type { SalidaResultado, Territorio } from '../datos/esquema.ts';
-import { ETAPA_DE_LA_SALIDA } from './etapas.ts';
+import { etapaDeLaSalida } from './etapas.ts';
 import { modoDe } from './salidas.ts';
 import type { ParDeResultado } from './salidas.ts';
 
@@ -122,7 +122,15 @@ export async function registrarResultado(
   contactoId: string,
   lo: LoQueSeRegistra,
 ): Promise<Registrado> {
-  const etapa = ETAPA_DE_LA_SALIDA[lo.que.salida as SalidaResultado];
+  /* El mapa es el DEL ROL. Con el mapa único que había, un `venta_chica` del setter escribía
+     `ganado` —una columna del closer— sobre un contacto del setter: una etapa que su Pipeline no
+     dibuja, o sea un contacto que desaparece de todas sus columnas sin que nada falle. */
+  const etapa = etapaDeLaSalida(lo.que.rol, lo.que.salida);
+  if (etapa === undefined) {
+    // Inalcanzable: el `Record` de cada embudo obliga a que estén todas sus salidas, y el par ya
+    // pasó por la guarda. Se dice en vez de escribir `undefined` en la columna.
+    throw new Error(`la salida «${lo.que.salida}» no tiene columna en el embudo de ${lo.que.rol}`);
+  }
 
   const resultado = await datos()
     .insertInto('resultados')
