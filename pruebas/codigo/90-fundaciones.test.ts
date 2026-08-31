@@ -23,7 +23,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { FUNDACIONES, IDS_FUNDACIONES, PASOS_RESEARCH, herramienta } from '../../lib/fundaciones/herramientas.ts';
+import {
+  FUNDACIONES,
+  IDS_FUNDACIONES,
+  PASOS_RESEARCH,
+  TOOLS,
+  herramienta,
+} from '../../lib/fundaciones/herramientas.ts';
 import { claveCorta, camposDe, idsDeCampos } from '../../lib/fundaciones/campos.ts';
 import { estadoVacio, pasoCompleto, type EstadoDeFundaciones } from '../../lib/fundaciones/estado.ts';
 import { FUENTES_POR_HERRAMIENTA, faltantes, fuentes } from '../../lib/fundaciones/herencia.ts';
@@ -45,14 +51,24 @@ import { SECCIONES, SIN_OPERACIONES_TODAVIA, seccionesVisibles } from '../../lib
 
 // ─── El contrato con ARIA-brain: los identificadores y las claves ───────────
 
-test('las nueve herramientas son las nueve del hub, en el ORDEN DEL MÉTODO', () => {
+test('las ocho de ICP & Oferta son las del hub, en el ORDEN DEL MÉTODO', () => {
   // El orden es el de `FOUNDATIONS_JOURNEY` de ARIA-brain. NO es el orden de los identificadores, y
   // esta lista literal es la que lo congela: sin ella, reordenar las pestañas "para que queden por
   // número" pasaría desapercibido y dejaría a Categoría generando antes de que exista el avatar del
   // que lee.
+  //
+  // ── ERAN NUEVE Y EL VSL(5) SE FUE A `TOOLS` ────────────────────────────────
+  //
+  // Por pedido de Jorge, el 2026-08-31. En ARIA-brain es el paso 8 de 9 de «Construye tu base»,
+  // y acá pasó a ser una pestaña de Tools al lado de Prospección.
+  //
+  // La lista sigue congelada y el `5` sigue afirmado, sólo que del otro lado: la prueba de más
+  // abajo exige que el VSL esté en `TOOLS`. O sea que la herramienta no se puede perder en el
+  // camino —desaparecer de los dos catálogos pondría roja una de las dos— que es la garantía
+  // que esta lista literal da y que un `length` no daría.
   assert.deepEqual(
     IDS_FUNDACIONES,
-    [0, 1, 3, 2, 4, 10, 26, 5, 6],
+    [0, 1, 3, 2, 4, 10, 26, 6],
     'los identificadores son los del hub y el orden es el del método: Perfil, Research, ICP, ' +
       'Categoría, Oferta, Pricing, Mapa, VSL, Landing',
   );
@@ -111,6 +127,15 @@ test('Prospección está PORTADA del hub, no reinterpretada', () => {
   // es no comprobarlo.
   const p = herramienta(20);
   assert.ok(p, 'Prospección(20) salió de TOOLS');
+
+  // El VSL vive en `TOOLS` desde que se movió de Fundaciones. Se afirma acá para que no pueda
+  // desaparecer de los dos catálogos a la vez: sacarlo de `FUNDACIONES` y olvidarse de ponerlo
+  // en `TOOLS` dejaría la herramienta inalcanzable sin que nada mas fallara.
+  assert.deepEqual(
+    TOOLS.map((h) => h.id),
+    [20, 5],
+    'TOOLS son Prospección(20) y el VSL(5), en ese orden',
+  );
 
   // UNA fila de DOS columnas con los CUATRO campos: en el hub se ven en una cuadrícula de 2×2.
   // Partirla cambia dónde queda cada campo en la pantalla.

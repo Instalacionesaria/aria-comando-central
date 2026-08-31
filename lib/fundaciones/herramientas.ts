@@ -404,7 +404,7 @@ const MAPA: Herramienta = {
 const VSL: Herramienta = {
   id: 5,
   clave: 'vsl',
-  pestania: 'Tus videos',
+  pestania: 'Tu video de ventas (VSL)',
   titulo: 'Tu video de ventas (VSL)',
   bajada: 'El guion completo del video que convence y lleva a agendar la llamada.',
   detalle:
@@ -658,7 +658,6 @@ export const FUNDACIONES: readonly Herramienta[] = [
   OFERTA,
   PRICING,
   MAPA,
-  VSL,
   LANDING,
 ];
 
@@ -668,9 +667,21 @@ export const IDS_FUNDACIONES: readonly number[] = FUNDACIONES.map((h) => h.id);
 /**
  * Las herramientas de la pantalla `tools`, en el orden en que se muestran.
  *
- * Hoy una. Va a haber más, y por eso es una lista y no una constante suelta.
+ * ── EL VSL VIVE ACÁ Y NO EN FUNDACIONES, POR PEDIDO DE JORGE ────────────────
+ *
+ * En ARIA-brain es el paso 8 de 9 de «Construye tu base», y el port lo trajo ahí. Se movió a
+ * esta pantalla el 2026-08-31.
+ *
+ * Lo que NO cambia con la mudanza, y por eso es segura: `/api/tools/estado` y
+ * `/api/fundaciones/estado` llaman las dos a `leerElEstado`, o sea que **comparten almacén**.
+ * El trabajo ya guardado del VSL sigue estando, y sus chips de herencia —ICP, categoría,
+ * oferta y precio, ver `FUENTES_POR_HERRAMIENTA[5]`— siguen resolviendo, porque `fuentes()`
+ * lee el estado completo y no sólo el de su catálogo.
+ *
+ * Lo que SÍ cambia, y hay que saberlo: el VSL pasa a pedir `tools.ver` / `tools.editar` en vez
+ * de `fundaciones.*`. Quien tenga uno y no el otro cambia de lado.
  */
-export const TOOLS: readonly Herramienta[] = [PROSPECCION];
+export const TOOLS: readonly Herramienta[] = [PROSPECCION, VSL];
 
 /**
  * Todas las herramientas del proyecto, de las dos pantallas.
