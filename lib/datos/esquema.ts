@@ -170,6 +170,19 @@ export interface TablaOrganizacionesCredenciales {
    */
   crm_calendario_id: string | null;
   /**
+   * El identificador del usuario del CRM con el que manda mensajes el **AGENTE DE IA**.
+   *
+   * Es el cimiento de la regla de atribución del auditor. Sin él, `mensajes.autor = 'agente'` mezcla
+   * al agente con las automatizaciones del CRM —lo pone `lib/negocio/ingesta.ts` para todo saliente
+   * cuya fuente no sea `app`— y el veredicto le imputa al agente lo que escribió un flujo.
+   *
+   * **Uno alcanza para los dos agentes**, y está medido: el mismo identificador aparece en contactos
+   * de los dos territorios. Cuál de los dos atendía sale del TERRITORIO del contacto, no del mensaje.
+   *
+   * `null` = nadie lo configuró, y entonces esa empresa **no se audita**. Ver la migración 026.
+   */
+  crm_agente_usuario_id: string | null;
+  /**
    * sha256 hex del secreto que GoHighLevel presenta en `X-Webhook-Secret` (migración 022).
    *
    * HASH y no `_cifrado` como sus vecinos, y la diferencia es de uso: el token del CRM hay que
