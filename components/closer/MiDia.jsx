@@ -44,7 +44,7 @@ import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
 
 /** Las cinco colas, en el orden fijo del `01`. */
-const COLAS = [
+export const COLAS_DEL_CLOSER = [
   {
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
@@ -122,7 +122,18 @@ function FilaDeAgenda({ item, zona }) {
   );
 }
 
-export default function MiDia({ colas, zonaHoraria }) {
+/**
+ * ── UN SOLO COMPONENTE PARA LOS DOS MI DÍA ─────────────────────────────────
+ *
+ * El Closer tiene cinco colas y el Setter seis, y aun así **el dibujo de una sección es idéntico**:
+ * su título, su conteo —aunque sea cero—, su frase de vacío, y debajo de cada fila lo propio de esa
+ * cola. Lo que cambia son los datos y la lista, no la acción.
+ *
+ * `secciones` llega como propiedad para que la pantalla no la deduzca de en qué pestaña está, y
+ * `segundaTarjeta` porque el resumen de arriba SÍ difiere: el closer muestra sus citas de hoy y el
+ * setter no tiene agenda — dibujarle una tarjeta de citas sería una tarjeta permanentemente vacía.
+ */
+export default function MiDia({ colas, zonaHoraria, secciones = COLAS_DEL_CLOSER, segundaTarjeta = null }) {
   /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
      llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
      se pasa, la fila no es clicable"*. Este es ese paso.
@@ -161,23 +172,11 @@ export default function MiDia({ colas, zonaHoraria }) {
             <span className="md-chip o">solo lo que necesita tus manos</span>
           </div>
         </div>
-        <div className="md-c">
-          <div>
-            <div className="md-k">Citas de hoy</div>
-            <div className="md-v" style={{ color: colas.agenda.length ? 'var(--accent)' : 'var(--txt-faint)' }}>
-              {colas.agenda.length}
-            </div>
-          </div>
-          <div className="md-s">
-            {colas.agenda[0]?.cita
-              ? `próxima a las ${horaEnZona(colas.agenda[0].cita.inicioEl, zonaHoraria)}`
-              : 'sin citas leídas'}
-          </div>
-        </div>
+        {segundaTarjeta}
       </div>
 
-      {/* ── Las cinco colas ── */}
-      {COLAS.map((cola) => {
+      {/* ── Las colas de este módulo ── */}
+      {secciones.map((cola) => {
         const items = colas[cola.clave] ?? [];
 
         return (

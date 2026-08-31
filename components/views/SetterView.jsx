@@ -32,9 +32,78 @@ import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 /* El MISMO componente que el Closer, con otro camino. El dibujo de una columna con su nombre, su
    conteo y su tinte es idéntico; lo que cambia son las etapas, que las trae el servidor. */
 import Pipeline from '../closer/Pipeline.jsx';
+/* Y el MISMO Mi Día, con OTRAS secciones. El dibujo de una sección —su título, su conteo aunque sea
+   cero, su frase de vacío— es idéntico; lo que cambia son las colas, que las trae el servidor. */
+import MiDia from '../closer/MiDia.jsx';
 
+/**
+ * Las SEIS colas del setter, en el orden en que se trabajan.
+ *
+ * Dos son propias —estancadas y oportunidades chicas— y la agenda del closer **no está**: el setter
+ * trabaja por definición antes de que haya cita, así que una sección de citas sería una sección
+ * permanentemente vacía.
+ *
+ * ── Y URGENTES VA A ESTAR VACÍA, SIN DECIR POR QUÉ ─────────────────────────
+ *
+ * El auditor del setter todavía no existe, así que nadie aplica una etiqueta de fallo sobre un
+ * contacto de pre-agenda. La sección **no se atenúa ni se oculta**: vacía porque su auditor no
+ * existe es un hecho distinto de vacía porque hoy no hay urgencias, y esconderla haría que nadie
+ * note cuál de los dos es.
+ *
+ * Y su frase de vacío **no explica que falta el auditor**. Eso es jerga interna: quien la lee no
+ * puede hacer nada con ella, y el día que el auditor exista el texto queda mintiendo — que es
+ * exactamente el defecto que este proyecto ya pagó con los avisos de «fuente sin conectar».
+ */
+const COLAS_DEL_SETTER = [
+  {
+    clave: 'urgentes',
+    titulo: 'Intervenciones urgentes',
+    tono: 'crit',
+    vacio: 'Ninguna. El agente de IA no falló en ningún contacto.',
+  },
+  {
+    clave: 'buzon',
+    titulo: 'Respondieron · buzón general',
+    vacio: 'Nadie escribió sin respuesta.',
+  },
+  {
+    clave: 'oportunidades',
+    titulo: 'Oportunidades chicas',
+    vacio: 'El agente no derivó a nadie al producto chico.',
+  },
+  {
+    clave: 'estancadas',
+    titulo: 'Conversaciones estancadas',
+    tono: 'warn',
+    vacio: 'Ninguna conversación se apagó.',
+  },
+  {
+    clave: 'seguimientos',
+    titulo: 'Seguimientos de hoy',
+    tono: 'warn',
+    vacio: 'Nadie está en seguimiento hoy.',
+  },
+  {
+    clave: 'completadas',
+    titulo: 'Completadas hoy',
+    tono: 'done',
+    vacio: 'Todavía no cerraste nada hoy.',
+  },
+];
+
+/* ── LA LISTA COMPLETA SALIÓ DE «MI DÍA» Y GANÓ SU PROPIA PESTAÑA ────────────
+ *
+ * Es el mismo movimiento que el Closer ya hizo, con el mismo argumento: Mi Día contesta «¿qué tengo
+ * que hacer ahora?», y la lista de todo el territorio contesta otra pregunta. Mezclarlas hace que la
+ * pantalla del trabajo del día arranque con doscientas filas que no piden nada.
+ *
+ * Pero la lista **no se borra**, y eso es deliberado: trae con ella el botón de traer contactos del
+ * CRM, que hoy es **el único de toda la aplicación**. Sacarla sin darle lugar habría quitado la
+ * única forma manual de sincronizar, y el síntoma sería «los contactos nuevos tardan diez minutos»
+ * sin que nadie sepa que antes había un botón. */
 const SUB = [
   { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
+  { clave: 'contactos', nombre: 'Contactos', icono: '#i-leads' },
   { clave: 'pipeline', nombre: 'Pipeline', icono: '#i-conv' },
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
 ];
@@ -80,13 +149,35 @@ export default function SetterView({ activa }) {
    * ingesta por ciclo sin importar cuántas pestañas ni cuántas personas pregunten. */
   const aLaVista = estaALaVista('setter');
   const [pulso, setPulso] = useState(0);
+  const [colas, setColas] = useState(null);
+  const [zonaHoraria, setZonaHoraria] = useState('UTC');
+  const [causa, setCausa] = useState(null);
+
+  const cargar = useCallback(async () => {
+    const r = await pedir('/api/setter/mi-dia');
+    if (r.tipo !== 'datos') {
+      /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»: con
+         una sola rama, alguien sin `setter.ver` vería seis colas en cero y creería que no tiene
+         trabajo. Y una recarga que falla **no vacía** lo que ya está en pantalla. */
+      setCausa(
+        r.tipo === 'rechazado'
+          ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
+          : 'No se pudo contactar al servidor. No es que no tengas tareas: no se pudo preguntar.',
+      );
+      return;
+    }
+    setCausa(null);
+    setColas(r.datos.colas);
+    setZonaHoraria(r.datos.zonaHoraria);
+  }, []);
 
   const tic = useCallback(async () => {
     // Un fallo de la ingesta NO impide recargar: son dos cosas, y que el CRM esté caído no es
     // motivo para dejar de mostrar el trabajo que ya está en la base. Mismo criterio que el Closer.
     await pedir('/api/mensajes/ingesta', { metodo: 'POST' });
+    await cargar();
     setPulso((n) => n + 1);
-  }, []);
+  }, [cargar]);
 
   usarReloj(aLaVista ? 'operacion:tic' : null, tic, CADENCIA.operacion);
 
@@ -132,6 +223,18 @@ export default function SetterView({ activa }) {
 
         <div className="cl-page">
           {sub === 'dia' ? (
+            <>
+              {causa ? (
+                <div className="fd-aviso mal" role="alert">
+                  <i>⚠</i>
+                  <span>{causa}</span>
+                </div>
+              ) : null}
+              <MiDia colas={colas} zonaHoraria={zonaHoraria} secciones={COLAS_DEL_SETTER} />
+            </>
+          ) : null}
+
+          {sub === 'contactos' ? (
             <ListaDeContactos camino="/api/setter/contactos" zona="zona setter" pulso={pulso} />
           ) : null}
 

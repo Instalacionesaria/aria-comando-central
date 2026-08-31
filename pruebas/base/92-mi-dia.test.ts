@@ -27,6 +27,10 @@ import { conectar, cerrarTodo, unaFila } from '../apoyo/conexiones.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { colasDelDia } from '../../lib/negocio/miDia.ts';
+import {
+  colasDelSetter,
+  PRECEDENCIA_DE_LAS_COLAS,
+} from '../../lib/negocio/miDiaDelSetter.ts';
 import { filaDeContacto } from '../../lib/negocio/fila.ts';
 import { registrarResultado } from '../../lib/negocio/avanzar.ts';
 import { cockpitDelMes } from '../../lib/negocio/inicio.ts';
@@ -128,7 +132,7 @@ const colas = () => conOrganizacion(alfa, () => colasDelDia(ZONA));
 
 // ─── 1 · Urgentes: los TRES tags, y no el que empieza igual ─────────────────
 
-test('Urgentes lleva los tres tags de fallo, y NO `bot_desactivado_postcall`', async () => {
+test('Urgentes del closer lleva SU fallo, no el del agente del setter', async () => {
   // ES LA PRUEBA MÁS IMPORTANTE DEL ARCHIVO, y el contrato la pide con todas las letras: *"no
   // armes el workflow con un filtro «contiene `bot_desactivado`». `bot_desactivado_postcall` ya
   // existe y significa lo CONTRARIO — «esta persona ya pasó por la llamada», no «el bot falló»"*.
@@ -139,7 +143,15 @@ test('Urgentes lleva los tres tags de fallo, y NO `bot_desactivado_postcall`', a
   const marca = randomUUID().slice(0, 6);
 
   const conFalloApp = await contacto(`u1-${marca}`, ['bot_desactivado_appflow']);
-  const conFalloLead = await contacto(`u2-${marca}`, ['bot_desactivado_leadflow']);
+  /* ── ÉSTE ES EL QUE CAMBIÓ, Y ANTES ESTABA MAL ──────────────────────────
+   *
+   * `bot_desactivado_leadflow` es el fallo del agente de **pre-agenda**, o sea el del SETTER. Con la
+   * lista sin separar, un closer veía en su cola roja el fallo de un agente que no es el suyo, con
+   * el texto «revisar la conversación» sobre trabajo de otra persona.
+   *
+   * Y no es hipotético: durante el traspaso conviven `zona_closer` y el agente de pre-agenda, y el
+   * contrato mide que hay contactos con las dos zonas a la vez. */
+  const conFalloDelSetter = await contacto(`u2-${marca}`, ['bot_desactivado_leadflow']);
   const conLegado = await contacto(`u3-${marca}`, ['bot_pausado_fallo']);
   const yaPasoLaLlamada = await contacto(`u4-${marca}`, ['bot_desactivado_postcall']);
   const sinNada = await contacto(`u5-${marca}`, []);
@@ -149,9 +161,19 @@ test('Urgentes lleva los tres tags de fallo, y NO `bot_desactivado_postcall`', a
 
   assert.deepEqual(
     ids,
-    [conFalloApp, conFalloLead, conLegado].sort(),
-    'la cola de Urgentes no tiene exactamente los tres tags de fallo del auditor',
+    [conFalloApp, conLegado].sort(),
+    'la cola de Urgentes del closer no tiene exactamente SU fallo más el legado',
   );
+  assert.ok(
+    !ids.includes(conFalloDelSetter),
+    'el fallo del agente de PRE-AGENDA entró a la cola roja del closer: es trabajo del setter, y la ' +
+      'fila dice «revisar la conversación» sobre una conversación que no es suya',
+  );
+
+  /* El LEGADO va en los dos y eso sí es correcto: `bot_pausado_fallo` era el tag único antes de
+     separarlos, así que puede ser de cualquiera de los dos agentes y no hay forma de saberlo. Una
+     intervención de más se descarta mirando; una de menos no se ve. */
+  assert.ok(ids.includes(conLegado), 'el tag legado dejó de entrar: los contactos que lo tienen quedan sin cola');
   assert.ok(
     !ids.includes(yaPasoLaLlamada),
     '`bot_desactivado_postcall` entró a Urgentes: significa que YA PASÓ la llamada, no que el bot falló',
@@ -241,7 +263,9 @@ test('los cuatro que PARECEN cerrados y no lo están siguen en Urgentes', async 
   const abiertos: string[] = [];
 
   for (const salida of ['acuerdo_sin_pago', 'nurture', 'no_show', 'seguimiento']) {
-    const id = await contacto(`a-${salida}-${marca}`, ['bot_desactivado_leadflow']);
+    /* `appflow` y no `leadflow`: es la cola del CLOSER, y desde que los fallos se separan por
+       territorio la del setter ya no entra acá. */
+    const id = await contacto(`a-${salida}-${marca}`, ['bot_desactivado_appflow']);
     await resultado(id, salida);
     abiertos.push(id);
   }
@@ -978,4 +1002,136 @@ test('un Avanzar CON fecha nueva no cierra la tarea que acaba de crear', async (
     1,
     'el seguimiento que Avanzar acaba de crear se cerró solo: el cierre corre después del insert',
   );
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAS SEIS COLAS DEL SETTER
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Un contacto del SETTER. El territorio es lo que decide en qué módulo existe. */
+const contactoSetter = (ghl: string, etiquetas: string[] = [], extra: Record<string, unknown> = {}) =>
+  contacto(ghl, etiquetas, { territorio: 'setter', ...extra });
+
+const colasSetter = () => conOrganizacion(alfa, () => colasDelSetter(ZONA));
+
+test('las dos colas PROPIAS del setter salen de sus etiquetas, y el closer no las tiene', async () => {
+  /* «Estancadas» y «oportunidades chicas» no existen en el Closer. Y las dos se derivan de una
+     etiqueta que pone el CRM — acá solo se lee. Medir el estancamiento por nuestra cuenta sería una
+     segunda fuente para el mismo hecho, y dos fuentes divergen. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  const estancado = await contactoSetter(`s1-${marca}`, ['estancado']);
+  const derivado = await contactoSetter(`s2-${marca}`, ['derivado_lt']);
+  await contactoSetter(`s3-${marca}`, []);
+
+  const c = await colasSetter();
+  assert.deepEqual(c.estancadas.map((x) => x.fila.id), [estancado]);
+  assert.deepEqual(c.oportunidades.map((x) => x.fila.id), [derivado]);
+
+  /* Y NO aparecen en el Mi Día del closer, que es la otra mitad: el territorio separa de verdad.
+     Sin esta afirmación, las dos colas podrían estar leyendo todo el padrón. */
+  const delCloser = await colas();
+  const idsDelCloser = [
+    ...delCloser.urgentes,
+    ...delCloser.buzon,
+    ...delCloser.seguimientos,
+    ...delCloser.completadas,
+  ].map((x) => x.fila.id);
+  assert.ok(!idsDelCloser.includes(estancado), 'un contacto del setter entró a una cola del closer');
+});
+
+test('el contador del setter suma CINCO categorías, no las tres del closer', async () => {
+  /* Y es lo que hace que el número del menú, el del título y el del encabezado sean el mismo: una
+     sola función lo calcula. Con tres fórmulas salen tres números para lo mismo.
+
+     Las COMPLETADAS no suman —ya no son trabajo— y no hay agenda que excluir. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  await contactoSetter(`c1-${marca}`, ['bot_desactivado_leadflow']); // urgente
+  await contactoSetter(`c2-${marca}`, ['estancado']); // estancada
+  await contactoSetter(`c3-${marca}`, ['derivado_lt']); // oportunidad
+  const escribio = await contactoSetter(`c4-${marca}`, []);
+  await mensaje(escribio, 'entrante', new Date(), 'hola'); // buzón
+
+  const c = await colasSetter();
+  assert.equal(
+    c.tareasPendientes,
+    4,
+    'el contador no suma las cinco categorías: ' +
+      `urgentes=${c.urgentes.length} estancadas=${c.estancadas.length} ` +
+      `oportunidades=${c.oportunidades.length} buzón=${c.buzon.length}`,
+  );
+
+  // Y las completadas NO suman.
+  const antes = c.tareasPendientes;
+  const cerrado = await contactoSetter(`c5-${marca}`, []);
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('resultados')
+      .values({ contacto_id: cerrado, salida: 'agendo', rol: 'setter' } as never)
+      .execute(),
+  );
+  const d = await colasSetter();
+  assert.equal(d.completadas.length, 1, 'el resultado de hoy no cayó en Completadas');
+  assert.equal(d.tareasPendientes, antes, 'las completadas sumaron al contador: ya no son trabajo');
+});
+
+test('un contacto está en UNA cola, y el orden entre las cuatro es el declarado', async () => {
+  /* «Dos colas para la misma persona hacen que atender una no cierre la otra». Con dos colas
+     alcanzaba un `Set`; con cuatro que se solapan hace falta un orden escrito.
+
+     Este contacto cumple las CUATRO a la vez: el bot le falló, escribió sin respuesta, lo derivaron
+     al producto chico, y está estancado. Tiene que aparecer una sola vez, y en la primera. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+  const todas = await contactoSetter(`p1-${marca}`, [
+    'bot_desactivado_leadflow',
+    'derivado_lt',
+    'estancado',
+  ]);
+  await mensaje(todas, 'entrante', new Date(), 'escribió y nadie contestó');
+
+  const c = await colasSetter();
+  const dondeEsta = [
+    ['urgentes', c.urgentes],
+    ['buzon', c.buzon],
+    ['oportunidades', c.oportunidades],
+    ['estancadas', c.estancadas],
+  ].filter(([, cola]) => (cola as { fila: { id: string } }[]).some((x) => x.fila.id === todas));
+
+  assert.equal(
+    dondeEsta.length,
+    1,
+    `el mismo contacto está en ${dondeEsta.length} colas (${dondeEsta.map(([n]) => n).join(', ')}): ` +
+      'atender una no cierra la otra, y el mismo caso se trabaja dos veces sin saberlo',
+  );
+  assert.equal(dondeEsta[0]?.[0], PRECEDENCIA_DE_LAS_COLAS[0], 'no ganó la cola más específica');
+});
+
+test('un contacto CERRADO no entra a ninguna de las dos colas propias', async () => {
+  /* Las etiquetas viven en el CRM y **nadie las quita**: registrar un resultado solo agrega. Así
+     que un contacto descalificado sigue teniendo `estancado` y `derivado_lt` para siempre, y sin
+     esta guarda se queda en las dos colas — con la píldora `NO CALIFICA` al lado. Es el mismo
+     defecto que ya se arregló en Urgentes y en el Buzón del closer. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+  const cerrado = await contactoSetter(`x1-${marca}`, ['estancado', 'derivado_lt']);
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('resultados')
+      .values({
+        contacto_id: cerrado,
+        salida: 'no_califica',
+        rol: 'setter',
+        creado_el: new Date(Date.now() - 13 * 24 * 3600 * 1000),
+      } as never)
+      .execute(),
+  );
+
+  const c = await colasSetter();
+  assert.equal(c.estancadas.length, 0, 'un contacto cerrado sigue en la cola de estancadas');
+  assert.equal(c.oportunidades.length, 0, 'un contacto cerrado sigue en oportunidades chicas');
+  assert.equal(c.tareasPendientes, 0, 'y sigue sumando al contador: el número miente');
 });

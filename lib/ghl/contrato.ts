@@ -173,6 +173,23 @@ export const CITA_AGENDADA = 'cita_agendada';
 /** `estancado` lo pone el barrido de inactividad del CRM. Pinta la cola de estancadas. */
 export const ESTANCADO = 'estancado';
 
+/**
+ * `derivado_lt` la pone el agente cuando deriva a alguien al producto chico. **Solo se lee.**
+ *
+ * ── TIENE DOS LECTURAS, Y NO SON LA MISMA ──────────────────────────
+ *
+ *   · en la **cola de oportunidades chicas** y en la **columna Oferta chica**: el agente lo derivó,
+ *     o sea que hay una oferta para hacer;
+ *   · en el **registro de resultados**: **nada — no se usa**.
+ *
+ * La segunda es la trampa. Es el único candidato a etiqueta de «vendió el producto chico», y
+ * significa otra cosa: *derivado* a producto chico es un **ruteo**, no un cobro. Usarla como
+ * etiqueta de venta marcaría como venta **a todo el que recibió la oferta**.
+ *
+ * Por eso está acá, entre las de solo lectura, y no en la tabla de resultados del setter.
+ */
+export const DERIVADO_LT = 'derivado_lt';
+
 // ═════════════════════════════════════════════════════════════════════════════
 // A.3 · LOS RESULTADOS DE AVANZAR — los escribe la APLICACIÓN
 // ═════════════════════════════════════════════════════════════════════════════

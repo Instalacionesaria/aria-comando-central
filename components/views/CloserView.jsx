@@ -39,6 +39,7 @@ import { useSesion } from '../../app/sesion-contexto.tsx';
 import Pipeline from '../closer/Pipeline.jsx';
 import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
+import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import MiDia from '../closer/MiDia.jsx';
 
 const SUB = [
@@ -242,7 +243,30 @@ export default function CloserView({ activa }) {
       );
     }
     if (sub === 'dia') {
-      return <MiDia colas={datos.colas} zonaHoraria={datos.zonaHoraria} />;
+      return <MiDia
+          colas={datos.colas}
+          zonaHoraria={datos.zonaHoraria}
+          segundaTarjeta={
+            /* Las citas de hoy. Es la tarjeta que el Setter NO tiene: trabaja antes de que exista
+               una cita, así que dibujarle este número sería un cero permanente. */
+            <div className="md-c">
+              <div>
+                <div className="md-k">Citas de hoy</div>
+                <div
+                  className="md-v"
+                  style={{ color: datos.colas.agenda.length ? 'var(--accent)' : 'var(--txt-faint)' }}
+                >
+                  {datos.colas.agenda.length}
+                </div>
+              </div>
+              <div className="md-s">
+                {datos.colas.agenda[0]?.cita
+                  ? `próxima a las ${horaEnZona(datos.colas.agenda[0].cita.inicioEl, datos.zonaHoraria)}`
+                  : 'sin citas leídas'}
+              </div>
+            </div>
+          }
+        />;
     }
     if (sub === 'pipeline') return <Pipeline camino="/api/closer/pipeline" />;
 
