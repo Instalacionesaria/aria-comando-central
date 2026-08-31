@@ -33,6 +33,13 @@ import { GET as verPorcentajes, PUT as fijarPorcentaje } from '../../app/api/adm
 import { PATCH as fijarMeta } from '../../app/api/closer/meta/route.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { comisionDelMes, porcentajesDeLaEmpresa, TIPO_CLOSER } from '../../lib/negocio/comision.ts';
+import { GET as verSetter } from '../../app/api/admin/setter/route.ts';
+import { GET as miDiaDelSetter } from '../../app/api/setter/mi-dia/route.ts';
+import {
+  TIPO_SETTER_DIFERIDO,
+  TIPO_SETTER_DIRECTO,
+  comisionDelSetter,
+} from '../../lib/negocio/comisionDelSetter.ts';
 
 const ZONA = 'America/Lima';
 const DOMINIO = 'ejemplo.test';
@@ -388,7 +395,7 @@ test('el panel lista los usuarios ACTIVOS, con o sin fila de comisión', async (
   await limpiar();
   await config(alfa, ana, { porcentaje: 15 });
 
-  const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa());
+  const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa(TIPO_CLOSER));
   const porId = new Map(lista.map((x) => [x.usuarioId, x]));
   assert.ok(porId.has(ana));
   assert.ok(porId.has(dos), 'la persona sin fila de comisión también tiene que aparecer');
@@ -398,7 +405,7 @@ test('el panel lista los usuarios ACTIVOS, con o sin fila de comisión', async (
 
 test('el panel de una empresa no muestra a la gente de otra', async () => {
   await limpiar();
-  const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa());
+  const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa(TIPO_CLOSER));
   assert.ok(!lista.some((x) => x.usuarioId === bruno), 'apareció alguien de beta en el panel de alfa');
 });
 
@@ -406,7 +413,7 @@ test('un usuario DESACTIVADO no aparece en el panel', async () => {
   await limpiar();
   await admin.query('update identidad.usuarios set activo = false where id = $1', [dos]);
   try {
-    const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa());
+    const lista = await conOrganizacion(alfa, () => porcentajesDeLaEmpresa(TIPO_CLOSER));
     assert.ok(!lista.some((x) => x.usuarioId === dos));
   } finally {
     await admin.query('update identidad.usuarios set activo = true where id = $1', [dos]);
@@ -499,7 +506,7 @@ test('LA CAPACIDAD: un rol `usuario` NO puede fijar porcentajes; un `administrad
   const tokenUsuario = await sesion(dos);
 
   const negado = await fijarPorcentaje(
-    pedir('/api/admin/comisiones', tokenUsuario, { usuarioId: ana, porcentaje: 50 }, 'PUT'),
+    pedir('/api/admin/comisiones', tokenUsuario, { usuarioId: ana, tramo: TIPO_CLOSER, porcentaje: 50 }, 'PUT'),
   );
   assert.equal(negado.status, 403, 'un rol operativo pudo fijar un porcentaje');
 
@@ -510,7 +517,7 @@ test('LA CAPACIDAD: un rol `usuario` NO puede fijar porcentajes; un `administrad
   // El administrador del sembrado sí.
   const tokenAdmin = await sesion(ana);
   const ok = await fijarPorcentaje(
-    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: dos, porcentaje: 12.5 }, 'PUT'),
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: dos, tramo: TIPO_CLOSER, porcentaje: 12.5 }, 'PUT'),
   );
   assert.equal(ok.status, 200);
   const cuerpo = (await ok.json()) as { usuarios: { usuarioId: string; porcentaje: number | null }[] };
@@ -522,11 +529,11 @@ test('el porcentaje se puede DEJAR SIN CONFIGURAR, y eso no es ponerlo en cero',
   // `{"porcentaje": null}` se leería como «no vino» y este camino desaparecería en silencio.
   await limpiar();
   const t = await sesion(ana);
-  await fijarPorcentaje(pedir('/api/admin/comisiones', t, { usuarioId: dos, porcentaje: 0 }, 'PUT'));
+  await fijarPorcentaje(pedir('/api/admin/comisiones', t, { usuarioId: dos, tramo: TIPO_CLOSER, porcentaje: 0 }, 'PUT'));
   const enCero = await leer(alfa, dos);
   assert.equal(enCero.porcentaje, 0, 'el cero a propósito tiene que quedar como cero');
 
-  await fijarPorcentaje(pedir('/api/admin/comisiones', t, { usuarioId: dos, porcentaje: null }, 'PUT'));
+  await fijarPorcentaje(pedir('/api/admin/comisiones', t, { usuarioId: dos, tramo: TIPO_CLOSER, porcentaje: null }, 'PUT'));
   const sinConfigurar = await leer(alfa, dos);
   assert.equal(sinConfigurar.porcentaje, null, 'no volvió al estado «sin configurar»');
 });
@@ -540,7 +547,7 @@ test('un porcentaje fuera de rango o de otro tipo se RECHAZA', async () => {
      que no era el que decía. */
   for (const malo of [101, -1, '10', '', {}, true, [10]]) {
     const r = await fijarPorcentaje(
-      pedir('/api/admin/comisiones', t, { usuarioId: dos, porcentaje: malo }, 'PUT'),
+      pedir('/api/admin/comisiones', t, { usuarioId: dos, tramo: TIPO_CLOSER, porcentaje: malo }, 'PUT'),
     );
     assert.equal(r.status, 400, `se aceptó ${JSON.stringify(malo)} como porcentaje`);
   }
@@ -554,7 +561,7 @@ test('una persona de OTRA empresa responde 404, no 409 con el mensaje de la base
   await limpiar();
   const t = await sesion(ana);
   const r = await fijarPorcentaje(
-    pedir('/api/admin/comisiones', t, { usuarioId: bruno, porcentaje: 10 }, 'PUT'),
+    pedir('/api/admin/comisiones', t, { usuarioId: bruno, tramo: TIPO_CLOSER, porcentaje: 10 }, 'PUT'),
   );
   assert.equal(r.status, 404, 'la existencia de un usuario de otra empresa no se confirma ni se niega');
   const cuerpo = await r.text();
@@ -570,7 +577,7 @@ test('LAS DOS COLUMNAS NO SE PISAN: la meta no toca el porcentaje y el porcentaj
   const tPropio = await sesion(ana);
 
   // El administrador fija el porcentaje de Ana; Ana fija su meta.
-  await fijarPorcentaje(pedir('/api/admin/comisiones', tAdmin, { usuarioId: ana, porcentaje: 20 }, 'PUT'));
+  await fijarPorcentaje(pedir('/api/admin/comisiones', tAdmin, { usuarioId: ana, tramo: TIPO_CLOSER, porcentaje: 20 }, 'PUT'));
   const conMeta = await fijarMeta(pedir('/api/closer/meta', tPropio, { meta: 800 }, 'PATCH'));
   assert.equal(conMeta.status, 200);
 
@@ -579,7 +586,7 @@ test('LAS DOS COLUMNAS NO SE PISAN: la meta no toca el porcentaje y el porcentaj
   assert.equal(k1.meta, 800);
 
   // Y ahora al revés: el administrador cambia el porcentaje y la meta sobrevive.
-  await fijarPorcentaje(pedir('/api/admin/comisiones', tAdmin, { usuarioId: ana, porcentaje: 30 }, 'PUT'));
+  await fijarPorcentaje(pedir('/api/admin/comisiones', tAdmin, { usuarioId: ana, tramo: TIPO_CLOSER, porcentaje: 30 }, 'PUT'));
   const k2 = await leer(alfa, ana);
   assert.equal(k2.porcentaje, 30);
   assert.equal(k2.meta, 800, 'fijar el porcentaje pisó la meta');
@@ -618,3 +625,281 @@ test('el PATCH de la meta devuelve la comisión RECALCULADA, no un «listo»', a
   assert.equal(cuerpo.comision.faltaParaLaMeta, -300);
   assert.equal(cuerpo.comision.metaSuperada, true);
 });
+
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// 6 · LOS DOS TRAMOS DEL SETTER: EL ESCRITOR QUE FALTABA
+//
+// La migración 025 abrió `setter_directo` y `setter_diferido`, y hasta acá **no había dónde
+// cargarlos**: el `PUT` escribía `tipo: 'closer'` clavado y la consulta de la lista filtraba por ese
+// mismo tipo. O sea que los dos anillos del Inicio del Setter estaban condenados a decir «nadie
+// cargó tu porcentaje» para siempre — el defecto que la migración 015 dejó documentado.
+// ════════════════════════════════════════════════════════════════════════════════════════════
+
+interface PersonaDelPanel {
+  usuarioId: string;
+  nombre: string;
+  email: string | null;
+  directo: number | null;
+  diferido: number | null;
+}
+
+/** El panel de porcentajes del setter, leído por su ruta de verdad. */
+async function panelDelSetter(token: string) {
+  const r = await verSetter(pedir('/api/admin/setter', token, undefined, 'GET'));
+  const cuerpo = (await r.clone().json()) as {
+    personas?: PersonaDelPanel[];
+    tramos?: { directo: string; diferido: string };
+    codigo?: string;
+  };
+  return { estado: r.status, ...cuerpo };
+}
+
+test('cargar un porcentaje de setter HACE QUE EL ANILLO deje de decir «nadie lo cargó»', async () => {
+  /* ══ LA PRUEBA DE PUNTA A PUNTA, Y ES LA QUE JUSTIFICA TODO ESTO ═══════
+   *
+   * Se mide el estado ANTES y DESPUÉS por los mismos dos caminos que usa la pantalla: el `PUT` que
+   * carga el porcentaje, y `comisionDelSetter` que es lo que alimenta los anillos. Comprobar solo
+   * que la fila quedó en la tabla no alcanza: la fila ya se podía escribir a mano antes de este
+   * trabajo, y el problema era que **ninguna pantalla la iba a leer con ese tipo**. */
+  await limpiar();
+  const tokenAdmin = await sesion(ana);
+
+  const antes = await conOrganizacion(alfa, () => comisionDelSetter(ana, ZONA));
+  assert.equal(antes.directo.porcentaje, null, 'nació con porcentaje');
+  assert.ok(antes.directo.falta, 'y sin porcentaje tiene que decir qué falta');
+
+  const r = await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo: TIPO_SETTER_DIRECTO, porcentaje: 8 }, 'PUT'),
+  );
+  assert.equal(r.status, 200, await r.clone().text());
+
+  const despues = await conOrganizacion(alfa, () => comisionDelSetter(ana, ZONA));
+  assert.equal(
+    despues.directo.porcentaje,
+    8,
+    'el porcentaje se guardó y el anillo NO lo lee: es el defecto entero — una fila que ninguna ' +
+      'pantalla mira',
+  );
+  /* Y el MOTIVO cambió de dueño, que es mejor prueba que su ausencia: sigue faltando algo —la
+     BASE, porque nadie registró una venta chica este mes— pero ya no es el porcentaje. Las dos
+     ausencias son independientes y no se colapsan, y ésa es la línea que `comision.ts` dedica
+     treinta a no perder: colapsarlas mandaría a esta persona a pedir un porcentaje que ya tiene. */
+  assert.notEqual(
+    despues.directo.falta,
+    antes.directo.falta,
+    'con el porcentaje cargado sigue diciendo lo MISMO que sin él: entonces manda a esta persona a '+
+      'pedir algo que ya tiene',
+  );
+  assert.match(
+    despues.directo.falta ?? '',
+    /Avanzar/,
+    'lo que falta ahora es la BASE, y el texto tiene que decir de dónde sale',
+  );
+
+  /* Y el OTRO tramo sigue sin configurar. Los dos comparten tabla y se distinguen solo por el
+     `tipo`: si el `PUT` lo ignorara, cargar uno cargaría los dos y nadie podría tener porcentajes
+     distintos para dos negocios distintos. */
+  assert.equal(
+    despues.diferido.porcentaje,
+    null,
+    'cargar el tramo directo también cargó el diferido: el `tipo` no está discriminando',
+  );
+
+  // Y tampoco tocó el del closer, que es una tercera fila de la misma tabla.
+  assert.equal((await leer(alfa, ana)).porcentaje, null, 'se pisó el porcentaje del closer');
+})
+
+test('el PUT sin `tramo` se RECHAZA, y no escribe: un valor por omisión pagaría el sueldo de otro', async () => {
+  /* ══ POR QUÉ ES OBLIGATORIO Y NO TIENE OMISIÓN ════════════════════
+   *
+   * Un `?? TIPO_CLOSER` en el servidor convierte el olvido de una pantalla en **escribirle el sueldo
+   * de closer** a esa persona, en una fila que la pantalla del setter no muestra. Dos defectos de un
+   * solo descuido: el porcentaje que se quería cargar no aparece, y aparece uno que nadie decidió.
+   *
+   * Y se comprueba la TABLA después. Un rechazo que igual escribe deja el sueldo cambiado con un 400
+   * en la pantalla, y nadie va a buscar la fila que no cree que exista. */
+  await limpiar();
+  const tokenAdmin = await sesion(ana);
+
+  for (const tramo of [undefined, null, '', 'closerr', 'setter', 'setter_lo_que_sea', 42]) {
+    const r = await fijarPorcentaje(
+      pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo, porcentaje: 99 }, 'PUT'),
+    );
+    assert.equal(
+      r.status,
+      400,
+      `el tramo ${JSON.stringify(tramo)} se aceptó: ${await r.clone().text()}`,
+    );
+  }
+
+  const filas = await conOrganizacion(alfa, () =>
+    datos().selectFrom('comisiones').select(['tipo']).execute(),
+  );
+  assert.deepEqual(filas, [], 'un tramo rechazado igual escribió una fila de sueldo');
+})
+
+test('el panel trae a TODA la gente con sus DOS tramos, y el nulo se conserva', async () => {
+  /* Dos personas y tres filas cruzadas a propósito: `ana` con directo y sin diferido, `dos` con
+     diferido y sin directo. Con una sola persona o un solo tramo cargado, un cruce en el `Map` que
+     junta las dos consultas da el mismo resultado y la prueba pasa igual. */
+  await limpiar();
+  const tokenAdmin = await sesion(ana);
+
+  await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo: TIPO_SETTER_DIRECTO, porcentaje: 8 }, 'PUT'),
+  );
+  await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: dos, tramo: TIPO_SETTER_DIFERIDO, porcentaje: 3.5 }, 'PUT'),
+  );
+
+  const panel = await panelDelSetter(tokenAdmin);
+  assert.equal(panel.estado, 200, JSON.stringify(panel));
+
+  const deAna = panel.personas?.find((p) => p.usuarioId === ana);
+  const deDos = panel.personas?.find((p) => p.usuarioId === dos);
+  assert.ok(deAna && deDos, 'el panel no trae a las dos personas activas de la empresa');
+
+  assert.equal(deAna.directo, 8);
+  assert.equal(deAna.diferido, null, 'el diferido de otra persona se le atribuyó a ésta');
+  assert.equal(deDos.diferido, 3.5);
+  assert.equal(deDos.directo, null, 'el directo de otra persona se le atribuyó a ésta');
+
+  /* Y el nulo NO es cero. Es la línea que este panel existe para no perder: con un `?? 0` el panel
+     mostraría «0 %» para todo el mundo y quien administra lo leería como una decisión ya tomada. */
+  assert.notEqual(deAna.diferido, 0, 'un porcentaje sin cargar se leyó como cero');
+  assert.notEqual(deDos.directo, 0, 'un porcentaje sin cargar se leyó como cero');
+
+  // Los nombres de tramo viajan del servidor, no se tipean en la pantalla.
+  assert.equal(panel.tramos?.directo, TIPO_SETTER_DIRECTO);
+  assert.equal(panel.tramos?.diferido, TIPO_SETTER_DIFERIDO);
+})
+
+test('un porcentaje de setter en CERO es un cero MEDIDO, y `null` lo deja sin configurar', async () => {
+  await limpiar();
+  const tokenAdmin = await sesion(ana);
+
+  await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo: TIPO_SETTER_DIRECTO, porcentaje: 0 }, 'PUT'),
+  );
+  const enCero = await conOrganizacion(alfa, () => comisionDelSetter(ana, ZONA));
+  assert.equal(enCero.directo.porcentaje, 0, 'un 0 % decidido se leyó como «sin configurar»');
+  assert.equal(
+    (await panelDelSetter(tokenAdmin)).personas?.find((p) => p.usuarioId === ana)?.directo,
+    0,
+    'el panel colapsó un cero decidido a «sin configurar»: son dos hechos distintos',
+  );
+
+  /* Y `null` vuelve a «sin configurar». Es una operación de verdad: sin ella, el único camino de
+     vuelta desde un cero decidido sería no tenerlo, y las dos cosas se ven igual — un campo vacío. */
+  await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo: TIPO_SETTER_DIRECTO, porcentaje: null }, 'PUT'),
+  );
+  const sinConfigurar = await conOrganizacion(alfa, () => comisionDelSetter(ana, ZONA));
+  assert.equal(sinConfigurar.directo.porcentaje, null, 'no se pudo volver a «sin configurar»');
+  assert.ok(sinConfigurar.directo.falta, 'y sin porcentaje tiene que volver a decir qué falta');
+})
+
+test('el panel del setter pide la capacidad de ADMINISTRAR, no la del Setter', async () => {
+  /* El panel se dibuja DENTRO del Setter y es una operación de administración. Con `setter.ver`,
+     cualquier setter podría leer el porcentaje de sus compañeros — que es información de sueldos.
+     Es el mismo arreglo que `/api/admin/closer`, que se dibuja en el Closer y pide `credenciales`.
+
+     ══ Y LA PERSONA TIENE QUE FALLAR **SOLO** POR LA CAPACIDAD ════════════
+
+     Medido: el rol `usuario` **sí tiene `setter.ver`** y no tiene `credenciales.ver`. Pero también
+     tiene `secciones_restringidas`, y `usuarios_secciones` arranca vacía — o sea **ninguna pantalla**.
+     Así que sin la fila de abajo esta persona recibe 403 por la PANTALLA y no por la capacidad, y la
+     prueba pasa igual si alguien cambia el `exigir` a `setter.ver`. La mutación sobrevivió así.
+
+     Con la sección `setter` concedida, lo único que puede negarle el paso es la capacidad. */
+  await limpiar();
+  await darRol(dos, 'usuario');
+  await admin.query(
+    `insert into identidad.usuarios_secciones (usuario_id, seccion)
+       values ($1, 'setter') on conflict do nothing`,
+    [dos],
+  );
+  const tokenUsuario = await sesion(dos);
+
+  const negado = await panelDelSetter(tokenUsuario);
+  assert.equal(
+    negado.estado,
+    403,
+    `un rol \`usuario\` pudo leer los sueldos del equipo: ${JSON.stringify(negado)}`,
+  );
+  /* Y el rechazo NO se parece a una lista vacía (`ADR-0305`): sin esto, la pantalla dibujaría «no hay
+     nadie» y quien lo lee creería que la empresa está vacía en vez de que no tiene permiso. */
+  assert.equal(negado.personas, undefined, 'el rechazo trajo una lista, aunque sea vacía');
+  assert.ok(negado.codigo, 'el rechazo no trae código');
+
+  /* Y la mitad que prueba que el 403 fue por la CAPACIDAD y no por la pantalla: esta misma persona,
+     con esta misma sesión, SÍ puede entrar a Mi Día del Setter — que pide `setter.ver` y la pantalla
+     `setter`, las dos cosas que tiene. Sin esta aserción, un 403 por cualquier motivo pasaría. */
+  const suPropiaPantalla = await miDiaDelSetter(
+    new Request(`https://${DOMINIO}/api/setter/mi-dia`, {
+      headers: { origin: `https://${DOMINIO}`, cookie: `${COOKIE_SESION}=${tokenUsuario}` },
+    }),
+  );
+  assert.equal(
+    suPropiaPantalla.status,
+    200,
+    'esta persona no pudo entrar ni a su propia pantalla, así que el 403 de arriba no prueba nada ' +
+      `sobre la capacidad: ${await suPropiaPantalla.clone().text()}`,
+  );
+
+  // Y quien administra sí puede.
+  const permitido = await panelDelSetter(await sesion(ana));
+  assert.equal(permitido.estado, 200, JSON.stringify(permitido));
+})
+
+test('el GET de comisiones sigue respondiendo el tramo del CLOSER si no le piden otro', async () => {
+  /* La asimetría con el `PUT`, y es deliberada: **leer el tramo equivocado se ve, escribirlo no.**
+     Quien lea `closer` cuando quería el setter ve nombres con números que no reconoce; quien ESCRIBA
+     `closer` sin querer le cambia el sueldo a alguien en una fila que la otra pantalla no muestra.
+     Y la omisión conserva el contrato que ese `GET` ya tenía antes de que existieran tres tramos. */
+  await limpiar();
+  const tokenAdmin = await sesion(ana);
+  await config(alfa, ana, { porcentaje: 21 });
+  await fijarPorcentaje(
+    pedir('/api/admin/comisiones', tokenAdmin, { usuarioId: ana, tramo: TIPO_SETTER_DIRECTO, porcentaje: 8 }, 'PUT'),
+  );
+
+  const sinPedir = await verPorcentajes(pedir('/api/admin/comisiones', tokenAdmin, undefined, 'GET'));
+  const cuerpo = (await sinPedir.clone().json()) as {
+    usuarios: { usuarioId: string; porcentaje: number | null }[];
+    tramo: string;
+  };
+  assert.equal(cuerpo.tramo, TIPO_CLOSER, 'el GET dejó de responder el tramo del closer por omisión');
+  assert.equal(
+    cuerpo.usuarios.find((u) => u.usuarioId === ana)?.porcentaje,
+    21,
+    'el GET por omisión devolvió el porcentaje del SETTER como si fuera el del closer',
+  );
+
+  // Y pidiendo el tramo del setter, devuelve el del setter. Si no, la omisión sería lo único que hay.
+  const delSetter = await verPorcentajes(
+    pedir(`/api/admin/comisiones?tramo=${TIPO_SETTER_DIRECTO}`, tokenAdmin, undefined, 'GET'),
+  );
+  const cuerpoSetter = (await delSetter.clone().json()) as {
+    usuarios: { usuarioId: string; porcentaje: number | null }[];
+    tramo: string;
+  };
+  assert.equal(cuerpoSetter.tramo, TIPO_SETTER_DIRECTO);
+  assert.equal(cuerpoSetter.usuarios.find((u) => u.usuarioId === ana)?.porcentaje, 8);
+
+  /* ══ Y UN TRAMO INVENTADO SE RECHAZA, NO SE CONSULTA ══════════════════
+   *
+   * Sin la validación, `?tramo=cualquier_cosa` llega a la consulta, el `join` no encuentra ninguna
+   * fila, y el panel devuelve a **toda la gente con los dos porcentajes en `null`**. O sea: una
+   * pantalla que dice «nadie configuró nada» por un error de tipeo en la dirección, sin un solo error.
+   * Es el modo de falla que este proyecto persigue en todas las demás pantallas. */
+  const inventado = await verPorcentajes(
+    pedir('/api/admin/comisiones?tramo=setter_lo_que_sea', tokenAdmin, undefined, 'GET'),
+  );
+  assert.equal(
+    inventado.status,
+    400,
+    `un tramo inventado en la dirección se consultó igual: ${await inventado.clone().text()}`,
+  );
+})
+

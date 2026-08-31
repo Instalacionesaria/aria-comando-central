@@ -42,7 +42,7 @@ import {
   closerAsignado,
   quitarCloser,
 } from '../../../../lib/negocio/closer.ts';
-import { porcentajesDeLaEmpresa } from '../../../../lib/negocio/comision.ts';
+import { porcentajesDeLaEmpresa, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { datos } from '../../../../lib/datos/contexto.ts';
 
@@ -67,7 +67,9 @@ async function estado(orgId: string) {
     // Se reusa la MISMA función que alimentaba el panel de porcentajes del equipo, y no una consulta
     // nueva: es el único lugar del sistema que sabe leer esa columna conservando el `null`, y un
     // segundo lector es un segundo lugar donde escribir `?? 0` por costumbre.
-    porcentajes: await porcentajesDeLaEmpresa(),
+    // El tramo se dice EXPLÍCITO: esta pantalla es la del closer, y con tres tramos en la tabla,
+    // omitirlo mostraría el porcentaje de otro negocio con los mismos nombres al lado.
+    porcentajes: await porcentajesDeLaEmpresa(TIPO_CLOSER),
     asignado: await closerAsignado(),
   }));
 

@@ -131,8 +131,13 @@ export async function comisionDelMes(
     base,
     ventas,
     sinPorcentaje:
-      'Nadie cargó tu porcentaje de comisión todavía. Lo fija quien administra la empresa, en ' +
-      'Ajustes → Comisiones.',
+      /* Decía «en Ajustes → Comisiones», y esa pestaña **no existe ni puede existir**:
+         `pruebas/codigo/105-comisiones.test.ts` afirma que Ajustes tiene exactamente tres pestañas y
+         que ninguna es Comisiones. El control vive en el panel «Quién es el closer», al final de esta
+         misma pantalla — unos bloques más abajo de donde se lee este texto, y quien lo lee casi
+         seguro no lo ve nunca porque solo se dibuja para quien administra. */
+      'Nadie cargó tu porcentaje de comisión todavía. Lo fija quien administra la empresa, al final ' +
+      'de esta pantalla.',
     sinBase: 'Todavía no registraste ningún resultado este mes. La comisión sale de Avanzar.',
   });
 }
@@ -271,12 +276,29 @@ export interface PorcentajeDeUnaPersona {
  * El `join` con `identidad.usuarios` se hace desde el cliente del INQUILINO, y se puede: tiene
  * `select` sobre las cuatro columnas que hacen falta y su política filtra por `app.org_id`. O sea que
  * el filtro por empresa lo pone la política, no un `where` escrito a mano.
+ *
+ * ── EL TRAMO ES OBLIGATORIO, Y NO TIENE VALOR POR OMISIÓN ────────────────────
+ *
+ * Desde la migración 025 hay TRES tramos, y esta consulta devuelve **una fila por persona**. Con un
+ * `tipo = TIPO_CLOSER` por omisión, el panel del setter mostraría los porcentajes del closer como si
+ * fueran los suyos: los mismos nombres, los mismos números, ningún error. Y al revés, quien administra
+ * cargaría un sueldo sobre la fila equivocada.
+ *
+ * ── Y LA FORMA NO CAMBIA: SIGUE SIENDO UNA FILA POR PERSONA ────────────────
+ *
+ * Devolver una fila por (persona, tramo) parece más general y es peor: `app/api/admin/closer/route.ts`
+ * aplana el resultado con `new Map(…)`, que **se queda con la última** de las filas repetidas. O sea
+ * que el desplegable del closer empezaría a mostrar el porcentaje del setter. Silencioso.
+ *
+ * Quien necesite los dos tramos llama dos veces. Es una consulta más y no un modo de falla nuevo.
+ *
+ * @param tipo Qué tramo. Ver `TIPO_CLOSER` y los dos de `lib/negocio/comisionDelSetter.ts`.
  */
-export async function porcentajesDeLaEmpresa(): Promise<PorcentajeDeUnaPersona[]> {
+export async function porcentajesDeLaEmpresa(tipo: string): Promise<PorcentajeDeUnaPersona[]> {
   const filas = await datos()
     .selectFrom('usuarios as u')
     .leftJoin('comisiones as c', (j) =>
-      j.onRef('c.usuario_id', '=', 'u.id').on('c.tipo', '=', TIPO_CLOSER),
+      j.onRef('c.usuario_id', '=', 'u.id').on('c.tipo', '=', tipo),
     )
     .where('u.activo', '=', true)
     .select(['u.id', 'u.nombre', 'u.email', 'c.porcentaje', 'c.actualizado_el'])

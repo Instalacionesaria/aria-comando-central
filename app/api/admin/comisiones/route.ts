@@ -34,14 +34,31 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { porcentajesDeLaEmpresa, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
+import {
+  TIPO_SETTER_DIFERIDO,
+  TIPO_SETTER_DIRECTO,
+} from '../../../../lib/negocio/comisionDelSetter.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { usuarioObjetivo } from '../../../../lib/administracion/objetivo.ts';
 
 export const PANTALLA = 'credenciales';
 
+/**
+ * Los TRES tramos que este endpoint puede escribir. **Lista cerrada.**
+ *
+ * Es la misma lista del `check` de la migración 025, y se repite acá a propósito: el `check` rechaza
+ * un tramo inventado con el mensaje del motor —un 409 que no explica nada— y esto lo rechaza con un
+ * motivo que dice qué valores hay. Y con `find` sobre la lista y no un `startsWith('setter')`: con
+ * eso, un `setter_lo_que_sea` pasaría la validación y llegaría a la base.
+ */
+const TRAMOS = [TIPO_CLOSER, TIPO_SETTER_DIRECTO, TIPO_SETTER_DIFERIDO] as const;
+
 const MOTIVOS: Record<string, string> = {
   cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
   falta_usuario: 'Hay que decir de quién es el porcentaje.',
+  tramo_invalido:
+    'Hay que decir de qué tramo es el porcentaje: «closer», «setter_directo» (sus ventas chicas) o ' +
+    '«setter_diferido» (lo que cobra sobre las ventas del closer en los leads que originó).',
   porcentaje_invalido:
     'El porcentaje tiene que ser un número entre 0 y 100, o `null` para dejarlo sin configurar. ' +
     'No es lo mismo: `0` significa que esa persona no cobra comisión, y `null` que todavía nadie ' +
@@ -52,8 +69,21 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['credenciales.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
-  const usuarios = await conOrganizacion(contexto.orgEfectiva, () => porcentajesDeLaEmpresa());
-  return ok({ usuarios });
+  /* ── EL TRAMO VIENE EN LA CADENA DE CONSULTA, Y TIENE OMISIÓN ────────────────
+   *
+   * Acá sí hay valor por omisión —`closer`— y en el `PUT` no, y la asimetría es deliberada: **leer
+   * el tramo equivocado se ve, escribirlo no.** Quien lea `closer` cuando quería el setter ve nombres
+   * con números que no reconoce; quien ESCRIBA `closer` sin querer le cambia el sueldo a alguien en una
+   * fila que la otra pantalla no muestra, y nadie lo nota.
+   *
+   * Y la omisión es la que conserva el contrato que ya existía: este `GET` respondía los porcentajes
+   * del closer, y sigue haciendo eso para quien no pida otra cosa. */
+  const pedido = new URL(peticion.url).searchParams.get('tramo');
+  const tramo = pedido === null ? TIPO_CLOSER : TRAMOS.find((t) => t === pedido);
+  if (tramo === undefined) return rechazo('peticion_invalida', MOTIVOS['tramo_invalido']);
+
+  const usuarios = await conOrganizacion(contexto.orgEfectiva, () => porcentajesDeLaEmpresa(tramo));
+  return ok({ usuarios, tramo });
 }
 
 /**
@@ -74,7 +104,18 @@ export async function PUT(peticion: Request): Promise<Response> {
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { usuarioId?: unknown; porcentaje?: unknown } | null;
+  const c = cuerpo as { usuarioId?: unknown; porcentaje?: unknown; tramo?: unknown } | null;
+
+  /* ── EL TRAMO, Y POR QUÉ ES OBLIGATORIO SIN VALOR POR OMISIÓN ──────────────
+   *
+   * Un `?? TIPO_CLOSER` acá convierte un olvido del navegador en **escribirle el sueldo de closer** a
+   * esa persona, en una fila que la pantalla del setter no muestra. Dos defectos de un solo descuido:
+   * el porcentaje que se quería cargar no aparece, y aparece uno que nadie decidió.
+   *
+   * Se valida contra la lista y no contra el `check` de la base: el `check` también lo rechazaría,
+   * pero con un 409 y el mensaje del motor. */
+  const tramo = TRAMOS.find((t) => t === c?.tramo);
+  if (tramo === undefined) return rechazo('peticion_invalida', MOTIVOS['tramo_invalido']);
 
   // Solo que VENGA. Que sea un uuid válido lo decide `usuarioObjetivo(`, que devuelve 404 tanto para
   // un identificador mal formado como para uno de otra empresa — *"distinguirlos también es un
@@ -147,7 +188,7 @@ export async function PUT(peticion: Request): Promise<Response> {
       .insertInto('comisiones')
       .values({
         usuario_id: objetivo,
-        tipo: TIPO_CLOSER,
+        tipo: tramo,
         porcentaje,
         actualizado_el: new Date(),
         actualizado_por: contexto.usuarioId,
@@ -182,8 +223,10 @@ export async function PUT(peticion: Request): Promise<Response> {
     });
   });
 
-  // Se devuelve la lista COMPLETA, no un `{ ok: true }`: quien guardó tiene que ver lo que quedó. Un
-  // «se guardó» sin haber leído de vuelta es un éxito reportado sin verificar.
-  const usuarios = await conOrganizacion(contexto.orgEfectiva, () => porcentajesDeLaEmpresa());
-  return ok({ usuarios });
+  /* Se devuelve la lista COMPLETA **del tramo que se tocó**, no un `{ ok: true }`: quien guardó tiene
+     que ver lo que quedó, y un «se guardó» sin haber leído de vuelta es un éxito sin verificar.
+     Del tramo que se tocó y no de los tres: devolver los tres obligaría a cada pantalla a elegir el
+     suyo, y elegir mal se ve como un número plausible. */
+  const usuarios = await conOrganizacion(contexto.orgEfectiva, () => porcentajesDeLaEmpresa(tramo));
+  return ok({ usuarios, tramo });
 }

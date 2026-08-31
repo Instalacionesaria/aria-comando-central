@@ -37,6 +37,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import Comision from '../negocio/Comision.jsx';
+import PorcentajesDelSetter from './PorcentajesDelSetter.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -74,7 +75,14 @@ export default function Inicio({
   cockpit,
   comision,
   mirandoOtraOrganizacion,
+  /* Lo responde el SERVIDOR con la condición exacta de los endpoints que el panel llama
+     (`credenciales.editar`). Una condición propia acá sería una segunda respuesta a la misma
+     pregunta, y la que dibuja la pantalla podría discrepar de la que el endpoint exige — el modo de
+     falla del `07` § 2: la pantalla se ve completa y una parte devuelve 403. */
+  puedeConfigurarComisiones,
   alGuardarLaMeta,
+  /** Recargar el tablero entero. Se usa cuando alguien cambia un porcentaje del equipo. */
+  alRecargar,
   alIrAMiDia,
 }) {
   if (!cockpit || !comision) {
@@ -247,6 +255,18 @@ export default function Inicio({
           </div>
         </div>
       </div>
+
+      {/* ── LOS PORCENTAJES DEL EQUIPO, SOLO PARA QUIEN ADMINISTRA ──────────
+          Va al FINAL y no arriba, por el mismo motivo que el panel gemelo del Closer: quien administra
+          entra a esta pantalla de vez en cuando, y quien la usa todos los días es el setter. Poner la
+          configuración primero le daría el lugar de honor a lo que casi nunca se toca.
+
+          Y NO se dibuja mirando otra empresa: los dos endpoints que llama escriben sobre la empresa
+          visitada, pero el porcentaje que se cargue ahí no lo va a ver nadie desde acá — y sobre todo,
+          es plata de otra empresa. */}
+      {puedeConfigurarComisiones && !mirandoOtraOrganizacion ? (
+        <PorcentajesDelSetter alCambiar={alRecargar} />
+      ) : null}
     </>
   );
 }

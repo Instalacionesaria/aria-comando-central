@@ -28,6 +28,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { estaALaVista } from '../../lib/vista.ts';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 /* El MISMO componente que el Closer, con otro camino. El dibujo de una columna con su nombre, su
    conteo y su tinte es idéntico; lo que cambia son las etapas, que las trae el servidor. */
@@ -111,6 +112,9 @@ const SUB = [
 
 export default function SetterView({ activa }) {
   const [sub, setSub] = useState('dia');
+  /* La sesión, para saber si quien mira puede configurar los porcentajes del equipo. Lo responde el
+     SERVIDOR con la condición exacta de esos endpoints; acá solo se pasa hacia abajo. */
+  const sesion = useSesion();
 
   /* ══ EL SETTER ALIMENTA SU PROPIO CHAT, Y ANTES NO LO HACÍA ════════════════
    *
@@ -264,6 +268,11 @@ export default function SetterView({ activa }) {
                    objeto entero. Fusionar solo el tramo tocado dejaría el otro anillo con un número
                    viejo, y un número viejo en un tablero de sueldos no se distingue de uno actual. */
                 alGuardarLaMeta={(nueva) => setComision(nueva)}
+                puedeConfigurarComisiones={sesion?.puedeConfigurarComisiones ?? false}
+                /* Cambiar el porcentaje de alguien cambia SU anillo, no el de quien mira — salvo que
+                   sea la misma persona, que es el caso normal de un administrador que también hace de
+                   setter. Recargar es lo único honesto: el número nuevo sale del servidor. */
+                alRecargar={() => void cargar()}
                 alIrAMiDia={() => setSub('dia')}
               />
             </>

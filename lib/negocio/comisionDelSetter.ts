@@ -121,9 +121,22 @@ export async function comisionDelSetter(
     ...config(TIPO_SETTER_DIRECTO),
     base: huboResultadosPropios ? Number(propio?.base ?? 0) : null,
     ventas: huboResultadosPropios ? Number(propio?.ventas ?? 0) : null,
+    /* ── EL DESTINO QUE ESTE TEXTO NOMBRABA NO EXISTE, Y NO PUEDE EXISTIR ───
+     *
+     * Decía «en Ajustes → Comisiones». Medido: `pruebas/codigo/105-comisiones.test.ts` afirma que
+     * Ajustes tiene **exactamente tres** pestañas y que **ninguna es Comisiones** — se decidió a
+     * propósito y hay una prueba que lo defiende. O sea que el texto mandaba a un lugar que el propio
+     * repositorio se prohíbe tener.
+     *
+     * Ahora nombra dónde está de verdad: **al final de esta misma pantalla**, en el panel que solo ve
+     * quien administra. Y no es un enlace, a propósito: este texto lo lee el setter, y el panel solo
+     * lo ve quien administra. Un enlace a una pantalla a la que no tenés acceso es peor que un texto.
+     *
+     * La palabra «administra» tiene que quedar: `pruebas/base/98-setter-inicio` la exige, porque es lo
+     * que impide que el texto le diga a esta persona que vaya a cargar algo que no puede cargar. */
     sinPorcentaje:
       'Nadie cargó tu porcentaje sobre ventas chicas todavía. Lo fija quien administra la empresa, ' +
-      'en Ajustes → Comisiones.',
+      'al final de esta pantalla.',
     sinBase: 'Todavía no registraste ningún resultado este mes. La comisión sale de Avanzar.',
   });
 
@@ -184,7 +197,8 @@ export async function comisionDelSetter(
     ventas: leadsAtribuidos === 0 ? null : Number(delCloser?.ventas ?? 0),
     sinPorcentaje:
       'Nadie cargó tu porcentaje diferido todavía. Es el que se paga sobre las ventas que cierra el ' +
-      'closer en los leads que originaste, y lo fija quien administra la empresa.',
+      'closer en los leads que originaste, y lo fija quien administra la empresa al final de esta ' +
+      'pantalla.',
     sinBase:
       'Todavía no hay ningún lead atribuido a vos. El sello se pone solo, cuando trabajás un ' +
       'contacto: al registrar un resultado o al responder un mensaje.',

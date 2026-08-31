@@ -158,7 +158,10 @@ export default function QuienEsElCloser({ alCambiar }) {
       setAviso(null);
       const r = await pedir('/api/admin/comisiones', {
         metodo: 'PUT',
-        cuerpo: { usuarioId: asignado.usuarioId, porcentaje },
+        /* El TRAMO va explícito y el endpoint lo exige. Sin él sería un 400: es a propósito, porque
+           un valor por omisión del lado del servidor convierte un olvido de una pantalla en
+           escribirle el sueldo de closer a alguien en una fila que la otra pantalla no muestra. */
+        cuerpo: { usuarioId: asignado.usuarioId, tramo: 'closer', porcentaje },
       });
       setOcupado(false);
       if (r.tipo !== 'datos') {
