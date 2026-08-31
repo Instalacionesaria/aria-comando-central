@@ -20,7 +20,15 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RESULTADOS, sePuedeMandar } from '../../lib/ghl/contrato.ts';
+import { readFileSync } from 'node:fs';
+import {
+  BOT_DESACTIVADO_POSTCALL,
+  RESULTADOS,
+  etiquetasDelResultado,
+  etiquetasDelResultadoDelSetter,
+  noAvisaAPropositoDelSetter,
+  sePuedeMandar,
+} from '../../lib/ghl/contrato.ts';
 import {
   contarPorEtapa,
   desenlaceDeLasEtiquetas,
@@ -31,7 +39,14 @@ import {
   PRECEDENCIA,
   type Etapa,
 } from '../../lib/negocio/etapas.ts';
-import { definicionDe, esSalidaDelCloser, SALIDAS } from '../../lib/negocio/salidas.ts';
+import {
+  definicionDe,
+  esSalidaDelCloser,
+  esSalidaDelSetter,
+  modosDe,
+  SALIDAS_DEL_CLOSER,
+  SALIDAS_DEL_SETTER,
+} from '../../lib/negocio/salidas.ts';
 
 const CLAVES = ETAPAS.map((e) => e.clave);
 
@@ -162,8 +177,8 @@ test('el conteo trae las SIETE claves, también las que dan cero', () => {
 // ═══ 5 · El catálogo de salidas ═════════════════════════════════════════════
 
 test('son SEIS salidas para el closer, cada una con su etapa', () => {
-  assert.equal(SALIDAS.length, 6);
-  for (const s of SALIDAS) {
+  assert.equal(SALIDAS_DEL_CLOSER.length, 6);
+  for (const s of SALIDAS_DEL_CLOSER) {
     assert.ok(s.nombre.length > 0, `${s.salida} sin nombre`);
     assert.ok(s.detalle.length > 0, `${s.salida} sin descripción: la tarjeta quedaría muda`);
     assert.ok(CLAVES.includes(ETAPA_DE_LA_SALIDA[s.salida]), `${s.salida} sin etapa válida`);
@@ -174,11 +189,138 @@ test('TODA salida del closer tiene su etiqueta en el contrato del CRM', () => {
   // Son dos archivos, y una salida sin etiqueta se registra igual: el resultado entra a la base y
   // el CRM nunca se entera. No falla nada — no dispara el flujo de recuperación de un no-show, y
   // eso se descubre cuando alguien pregunta por qué no salió la secuencia.
-  for (const s of SALIDAS) {
+  for (const s of SALIDAS_DEL_CLOSER) {
     const def = RESULTADOS.find((r) => r.salida === s.salida);
     assert.ok(def, `la salida «${s.salida}» no tiene etiqueta en el contrato`);
-    assert.ok(sePuedeMandar(def.etiqueta), `«${def.etiqueta}» no se puede mandar al CRM`);
+    /* Las seis del closer SÍ declaran etiqueta: ninguna es de las que «no avisan a propósito», que
+       son dos del setter. Se afirma y no se saltea: una etiqueta nula acá sería una salida del
+       closer que dejó de disparar su automatismo sin que nada falle. */
+    assert.notEqual(def.etiqueta, null, `la salida «${s.salida}» dejó de declarar etiqueta`);
+    assert.ok(sePuedeMandar(def.etiqueta ?? ''), `«${def.etiqueta}» no se puede mandar al CRM`);
   }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// EL SETTER NO APAGA EL AGENTE, Y ES LA AFIRMACIÓN QUE MÁS PESA DEL MÓDULO
+// ════════════════════════════════════════════════════════════════════════════
+
+test('NINGUNA salida del setter apaga el agente, y una del closer SÍ', () => {
+  /* ══ LA MINA QUE HABÍA CARGADA ════════════════════════════════
+   *
+   * `no_califica` —una salida del SETTER— vivía en la tabla del closer con `apagaElBot: true`. Lo
+   * único que lo contenía era que la ruta rechazaba esa salida con un 400: el día que el setter
+   * pudiera registrarla, le habría puesto `bot_desactivado_postcall` —que significa literalmente
+   * «ya pasó la llamada de cierre»— a un lead que **nunca tuvo una llamada**. Y esa etiqueta la
+   * aplicación no la sabe quitar.
+   *
+   * El Closer apaga el agente en seis de sus siete salidas porque cualquier resultado suyo prueba
+   * que hubo llamada. **Ninguna de las cinco del setter lo prueba**: es pre-agenda por definición.
+   * Apagarlo desde ahí mata al agente que todavía tiene que calificar al lead — y peor en
+   * `seguimiento`, que es justo la salida que lo deja en manos del agente por días.
+   *
+   * ── POR QUÉ ESTA PRUEBA ES DE CÓDIGO Y NO DE COMPORTAMIENTO ───────────
+   *
+   * `etiquetasDelResultado*` son puras y viven en el contrato justamente para esto. Una prueba por
+   * HTTP no sirve: la ruta resuelve credenciales ANTES de decidir qué mandar, así que en una base
+   * sin token devuelve la lista vacía sin llegar a la decisión — y pasaría en verde con el apagado
+   * encendido. */
+  for (const s of SALIDAS_DEL_SETTER) {
+    for (const modo of [undefined, ...modosDe('setter', s.salida).map((m) => m.etiqueta)]) {
+      const etiquetas = etiquetasDelResultadoDelSetter(s.salida, modo);
+      assert.ok(
+        !etiquetas.includes(BOT_DESACTIVADO_POSTCALL),
+        `la salida «${s.salida}» del setter manda ${BOT_DESACTIVADO_POSTCALL}, que significa «ya ` +
+          'pasó la llamada de cierre» sobre un lead que nunca tuvo una',
+      );
+    }
+  }
+
+  /* Y LA MITAD SIMÉTRICA, sin la cual esto pasa en vacío: si alguien borrara la etiqueta del
+     archivo, el bucle de arriba seguiría verde afirmando nada. */
+  assert.ok(
+    etiquetasDelResultado('venta').includes(BOT_DESACTIVADO_POSTCALL),
+    'la venta del closer dejó de apagar el agente: entonces la prueba de arriba no prueba nada',
+  );
+});
+
+test('el catálogo del setter no tiene siquiera DÓNDE escribir el apagado', () => {
+  /* La otra mitad, y es la que impide que esto vuelva por copia-pega. La prueba de arriba mira el
+     COMPORTAMIENTO; ésta mira la FORMA: el tipo de la tabla del setter no tiene el campo, así que
+     escribir `apagaElBot: true` ahí es un error de compilación.
+
+     No es una bandera en `false` que alguien pueda cambiar de opinión: la diferencia es
+     **inexpresable**, que es el único grado de garantía que no depende de que nadie se olvide. */
+  const fuente = readFileSync(new URL('../../lib/ghl/contrato.ts', import.meta.url), 'utf8');
+  const tabla = /RESULTADOS_DEL_SETTER[\s\S]*?\n\];/.exec(fuente)?.[0] ?? '';
+  assert.notEqual(tabla, '', 'no se encontró la tabla de resultados del setter');
+  assert.doesNotMatch(
+    tabla,
+    /apagaElBot/,
+    'la tabla del setter nombra `apagaElBot`: el apagado dejó de ser inexpresable y pasó a ser una ' +
+      'bandera que alguien puede cambiar',
+  );
+  assert.doesNotMatch(
+    tabla,
+    /BOT_DESACTIVADO_POSTCALL/,
+    'la tabla del setter nombra la etiqueta que apaga el agente',
+  );
+});
+
+test('las cinco salidas del setter, y las dos que NO avisan a propósito', () => {
+  /* Las cinco de la documentación. El conteo se fija para que agregar una sexta sea una decisión y
+     no un descuido — igual que las seis del closer. */
+  assert.deepEqual(
+    SALIDAS_DEL_SETTER.map((s) => s.salida),
+    ['agendo', 'venta_chica', 'seguimiento', 'no_califica', 'nurture'],
+  );
+
+  /* Los dos catálogos NO se filtran uno en el otro. Es lo que impide que un closer registre
+     `agendo` sobre su contacto —que le borraría el desenlace— y que un setter registre la venta
+     grande, que le pagaría el tramo de comisión equivocado. */
+  assert.equal(esSalidaDelSetter('venta'), false, 'la venta grande entró al catálogo del setter');
+  assert.equal(esSalidaDelCloser('agendo'), false, '`agendo` entró al catálogo del closer');
+  assert.equal(esSalidaDelCloser('venta_chica'), false);
+
+  /* ── LAS DOS QUE NO AVISAN, Y POR QUÉ ES DISTINTO DE «NO CONFIRMADA» ────
+   *
+   * `agendo` no manda etiqueta porque el traspaso lo hace el CRM cuando la cita se crea de verdad;
+   * `venta_chica` porque **no existe ninguna etiqueta que signifique «vendió el producto chico»**.
+   * El único candidato es la de derivación, y significa un ruteo, no un cobro: usarla marcaría como
+   * venta a todo el que recibió la oferta.
+   *
+   * Sin el tercer estado, las dos se reportaban con «ninguna de las etiquetas está confirmada en la
+   * subcuenta» — que es FALSO, y manda a alguien a crear en el CRM una etiqueta que nadie tiene que
+   * crear. */
+  assert.equal(noAvisaAPropositoDelSetter('agendo'), true);
+  assert.equal(noAvisaAPropositoDelSetter('venta_chica'), true);
+  assert.equal(
+    noAvisaAPropositoDelSetter('no_califica'),
+    false,
+    '`no_califica` SÍ tiene etiqueta: decir que no avisa a propósito taparia que dejó de mandarla',
+  );
+})
+;
+
+test('el `seguimiento` del setter tiene un modo MANUAL, o su cola nace muerta', () => {
+  /* Las dos series del setter las corre el CRM: `exigeFecha: false` significa que **no se escribe
+     fila en `negocio.tareas`**, y esa tabla es la única fuente de la cola «Seguimientos de hoy».
+
+     O sea que con SOLO las dos series, esa cola del Mi Día del setter nace vacía para siempre: una
+     sección que se dibuja y nunca tiene nada, que es la rama de interfaz muerta que `miDia.ts` ya
+     retiró una vez con `serie_agotada`. */
+  const modos = modosDe('setter', 'seguimiento');
+  assert.ok(
+    modos.some((m) => m.exigeFecha),
+    'ningún modo del seguimiento del setter escribe una tarea nuestra, así que su cola de ' +
+      'seguimientos no puede tener una sola fila nunca',
+  );
+
+  // Y las dos series propias siguen ahí: son 5 y 3 días contra los 7 del closer porque persiguen
+  // una CITA y no un cierre.
+  assert.deepEqual(
+    modos.map((m) => m.etiqueta).sort(),
+    ['seguimiento_decision_lt', 'seguimiento_manual', 'seguimiento_para_agendar'],
+  );
 });
 
 test('el NO-SHOW es la única que deja el bot vivo', () => {
@@ -186,7 +328,7 @@ test('el NO-SHOW es la única que deja el bot vivo', () => {
   // romper justo el caso que más lo necesita.
   const noShow = RESULTADOS.find((r) => r.salida === 'no_show');
   assert.equal(noShow?.apagaElBot, false);
-  for (const s of SALIDAS) {
+  for (const s of SALIDAS_DEL_CLOSER) {
     if (s.salida === 'no_show') continue;
     assert.equal(
       RESULTADOS.find((r) => r.salida === s.salida)?.apagaElBot,
@@ -199,16 +341,16 @@ test('el NO-SHOW es la única que deja el bot vivo', () => {
 test('las dos salidas que piden MONTO son las dos que hablan de dinero', () => {
   // De esto dependen los números de Inicio: una venta sin monto suma uno menos en «cobrado» y
   // nada falla.
-  const conMonto = SALIDAS.filter((s) => s.pideMonto).map((s) => s.salida);
+  const conMonto = SALIDAS_DEL_CLOSER.filter((s) => s.pideMonto).map((s) => s.salida);
   assert.deepEqual([...conMonto].sort(), ['acuerdo_sin_pago', 'venta']);
 });
 
 test('la que NO tiene subcategoría es exactamente «acordó comprar»', () => {
   // Lo que la describe es el monto. Las otras cinco tienen su pregunta, y una salida sin opciones
   // dejaría el segundo paso del formulario en blanco sin decir por qué.
-  const sinCampo = SALIDAS.filter((s) => s.etiquetaDelCampo === null).map((s) => s.salida);
+  const sinCampo = SALIDAS_DEL_CLOSER.filter((s) => s.etiquetaDelCampo === null).map((s) => s.salida);
   assert.deepEqual(sinCampo, ['acuerdo_sin_pago']);
-  for (const s of SALIDAS) {
+  for (const s of SALIDAS_DEL_CLOSER) {
     if (s.etiquetaDelCampo === null) continue;
     assert.ok(s.opciones.length > 0, `«${s.salida}» pregunta algo y no ofrece ninguna opción`);
   }
@@ -230,6 +372,6 @@ test('esSalidaDelCloser no se deja engañar por la cadena de prototipos', () => 
 });
 
 test('definicionDe devuelve undefined para lo que no es una salida', () => {
-  assert.equal(definicionDe('constructor'), undefined);
-  assert.equal(definicionDe('venta')?.pideMonto, true);
+  assert.equal(definicionDe('closer', 'constructor'), undefined);
+  assert.equal(definicionDe('closer', 'venta')?.pideMonto, true);
 });

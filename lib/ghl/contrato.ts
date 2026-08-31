@@ -187,23 +187,71 @@ export const ESTANCADO = 'estancado';
  * bot vivo**, porque dispara un flujo de recuperación que necesita al agente trabajando. Las
  * otras cinco lo apagan con `bot_desactivado_postcall`.
  */
-export const RESULTADOS: readonly {
+interface ResultadoEnElCrm {
   salida: string;
-  etiqueta: string;
-  apagaElBot: boolean;
+  /** `null` = esta salida **no avisa a nadie, a propósito**. Ver `agendo`. */
+  etiqueta: string | null;
   confianza: Confianza;
-}[] = [
+}
+
+export const RESULTADOS: readonly (ResultadoEnElCrm & { apagaElBot: boolean })[] = [
   { salida: 'venta', etiqueta: 'venta_ganada', apagaElBot: true, confianza: 'confirmado' },
   { salida: 'acuerdo_sin_pago', etiqueta: 'adelanto_ganado', apagaElBot: true, confianza: 'confirmado' },
   { salida: 'seguimiento', etiqueta: 'seguimiento', apagaElBot: true, confianza: 'confirmado' },
   { salida: 'no_interesa', etiqueta: 'descalificado', apagaElBot: true, confianza: 'confirmado' },
-  { salida: 'no_califica', etiqueta: 'descalificado', apagaElBot: true, confianza: 'confirmado' },
   { salida: 'no_show', etiqueta: 'noshow', apagaElBot: false, confianza: 'confirmado' },
   { salida: 'nurture', etiqueta: 'nurture_appflow', apagaElBot: true, confianza: 'confirmado' },
 ];
 
 /** La etiqueta que apaga el bot tras la llamada. La aplica Avanzar, no el CRM. */
 export const BOT_DESACTIVADO_POSTCALL = 'bot_desactivado_postcall';
+
+/**
+ * Qué etiqueta manda cada salida del SETTER.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * NO TIENE `apagaElBot`, Y ÉSE ES TODO EL PUNTO
+ *
+ * El Closer apaga el agente en seis de sus siete salidas, porque cualquier resultado suyo demuestra
+ * que el contacto **ya tuvo su llamada de venta**. El Setter es pre-agenda por definición: ninguna
+ * de sus cinco lo prueba. Apagar el agente desde acá mataría al que todavía tiene que calificar al
+ * lead — y peor en `seguimiento`, que es justo la salida que lo deja en manos del agente por días.
+ *
+ * Por eso el campo **no existe en este tipo**: escribir `apagaElBot: true` en esta tabla es un error
+ * de compilación. No es un `if` que alguien pueda invertir ni una bandera en `false` que alguien
+ * pueda cambiar de opinión: la diferencia es **inexpresable**.
+ *
+ * ── Y `no_califica` VENÍA DE LA TABLA DEL CLOSER, CON EL APAGADO ENCENDIDO ─
+ *
+ * Estaba en `RESULTADOS` con `apagaElBot: true`. Lo único que lo contenía era que la ruta rechazaba
+ * esa salida con un 400. El día que el setter pudiera registrarla —o sea hoy— le habría puesto a un
+ * lead `bot_desactivado_postcall`, que significa literalmente *«ya pasó la llamada de cierre»*, a
+ * alguien que nunca tuvo una. Y esa etiqueta la aplicación no la sabe quitar.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export const RESULTADOS_DEL_SETTER: readonly ResultadoEnElCrm[] = [
+  /* ── `agendo` NO MANDA NADA, Y ES DELIBERADO ────────────────────────────
+   *
+   * La intuición dice que agendar debería mover al contacto al territorio del closer. **El traspaso
+   * lo hace un automatismo del CRM cuando la cita se crea de verdad**, y esta aplicación no crea
+   * citas: el contacto reserva por su propio enlace.
+   *
+   * Aplicar `zona_closer` desde acá sería PEOR que no hacerlo: movería el contacto al territorio
+   * del closer **sin que exista ninguna cita**, y el closer se encontraría con un lead en su cola
+   * sin nada agendado.
+   *
+   * Consecuencia que hay que saber: la columna «Agendado» del setter **no se vacía sola** salvo que
+   * el lead reserve de verdad. Un setter que agenda por teléfono deja el contacto en su territorio
+   * hasta que la cita exista. */
+  { salida: 'agendo', etiqueta: null, confianza: 'confirmado' },
+  /* Y `venta_chica` tampoco: **no existe ninguna etiqueta que signifique «vendió el producto
+     chico»**. El único candidato es `derivado_lt`, y significa otra cosa —*derivado* a producto
+     chico es un ruteo, no un cobro—: usarla marcaría como venta a todo el que recibió la oferta. */
+  { salida: 'venta_chica', etiqueta: null, confianza: 'confirmado' },
+  { salida: 'seguimiento', etiqueta: 'seguimiento', confianza: 'confirmado' },
+  { salida: 'no_califica', etiqueta: 'descalificado', confianza: 'confirmado' },
+  { salida: 'nurture', etiqueta: 'nurture_appflow', confianza: 'confirmado' },
+];
 
 // ═════════════════════════════════════════════════════════════════════════════
 // A.5 · LAS ETAPAS DEL SETTER — las tres PENDIENTES
@@ -262,8 +310,53 @@ export function etiquetasDelResultado(salida: string, etiquetaDelModo?: string):
   const def = RESULTADOS.find((r) => r.salida === salida);
   if (!def) return [];
   const candidatas = def.apagaElBot ? [def.etiqueta, BOT_DESACTIVADO_POSTCALL] : [def.etiqueta];
-  if (etiquetaDelModo) candidatas.push(etiquetaDelModo);
-  return candidatas.filter((e) => sePuedeMandar(e));
+  return soloLasMandables(candidatas, etiquetaDelModo);
+}
+
+/**
+ * Las etiquetas de un resultado del SETTER.
+ *
+ * Es otra función y no un parámetro de la de arriba porque **la diferencia es de negocio, no de
+ * valor**: acá `BOT_DESACTIVADO_POSTCALL` no se nombra nunca. Un `if (rol === 'setter')` adentro de
+ * la del closer dejaría dos reglas trenzadas donde ninguna se lee, y una bandera se puede cambiar.
+ */
+export function etiquetasDelResultadoDelSetter(
+  salida: string,
+  etiquetaDelModo?: string,
+): readonly string[] {
+  const def = RESULTADOS_DEL_SETTER.find((r) => r.salida === salida);
+  if (!def) return [];
+  return soloLasMandables([def.etiqueta], etiquetaDelModo);
+}
+
+/**
+ * La parte que SÍ es la misma acción sobre el mismo dato: quitar lo que no hay que mandar.
+ *
+ * Un `null` es una salida que **a propósito** no avisa a nadie; lo que no está confirmado en la
+ * subcuenta se cae por `sePuedeMandar`. Las dos exclusiones terminan en una lista vacía, y por eso
+ * la respuesta de la ruta necesita distinguirlas — ver `AvisoAlCrm`.
+ */
+function soloLasMandables(
+  candidatas: readonly (string | null)[],
+  etiquetaDelModo?: string,
+): readonly string[] {
+  const todas = [...candidatas];
+  if (etiquetaDelModo) todas.push(etiquetaDelModo);
+  return todas.filter((e): e is string => e !== null && sePuedeMandar(e));
+}
+
+/**
+ * ¿Esta salida declara que **no avisa a nadie**, a propósito?
+ *
+ * Es el tercer estado que la respuesta de Avanzar necesitaba. Sin él, `agendo` y `venta_chica`
+ * —que no mandan nada porque no hay etiqueta que signifique eso— se reportaban con el texto
+ * *«ninguna de las etiquetas de esta salida está confirmada en la subcuenta»*, que es **falso**: no
+ * es que estén sin confirmar, es que no existen. Un mensaje que afirma un problema que no existe
+ * manda a alguien a buscar en la subcuenta una etiqueta que nadie tiene que crear.
+ */
+export function noAvisaAPropositoDelSetter(salida: string): boolean {
+  const def = RESULTADOS_DEL_SETTER.find((r) => r.salida === salida);
+  return def !== undefined && def.etiqueta === null;
 }
 
 export function sePuedeMandar(etiqueta: string): boolean {
@@ -272,6 +365,7 @@ export function sePuedeMandar(etiqueta: string): boolean {
     ...ETIQUETAS_DEL_AGENTE,
     ...SERIES_DE_SEGUIMIENTO,
     ...RESULTADOS.map((r) => ({ etiqueta: r.etiqueta, confianza: r.confianza })),
+    ...RESULTADOS_DEL_SETTER.map((r) => ({ etiqueta: r.etiqueta, confianza: r.confianza })),
     ...ETAPAS_DEL_SETTER,
   ];
   const fila = todas.find((t) => t.etiqueta === etiqueta);

@@ -920,8 +920,7 @@ test('Avanzar CIERRA los seguimientos abiertos del contacto', async () => {
   // Y ahora se registra un resultado: el seguimiento pedía «volvé a esta persona», y se volvió.
   const cerrados = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
-      salida: 'no_interesa',
-      rol: 'closer',
+      que: { rol: 'closer', salida: 'no_interesa' },
       modo: null,
       detalle: 'Precio',
       monto: null,
@@ -960,8 +959,7 @@ test('un Avanzar CON fecha nueva no cierra la tarea que acaba de crear', async (
 
   const r = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
-      salida: 'seguimiento',
-      rol: 'closer',
+      que: { rol: 'closer', salida: 'seguimiento' },
       // La única salida con modos. `manual` es la que escribe la tarea en `negocio.tareas`.
       modo: 'manual',
       detalle: 'Muy interesado',

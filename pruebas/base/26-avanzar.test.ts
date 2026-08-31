@@ -25,6 +25,7 @@ import type { Client } from 'pg';
 import { conectar, cerrarTodo, filas } from '../apoyo/conexiones.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
+import type { SalidaDelCloser } from '../../lib/negocio/salidas.ts';
 import { registrarResultado } from '../../lib/negocio/avanzar.ts';
 import { pipelineDelCloser } from '../../lib/negocio/pipeline.ts';
 import { cockpitDelMes } from '../../lib/negocio/inicio.ts';
@@ -89,8 +90,10 @@ async function contactoEn(org: string, extra: Record<string, unknown> = {}): Pro
   });
 }
 
+/* El par (rol, salida) viaja ANIDADO en `que`, así que no está en `BASE`: cada prueba arma el suyo
+   con `del(salida)`. Sueltos, TypeScript ensancha el esparcido de la unión y `{ rol: 'closer',
+   salida: 'agendo' }` volvería a compilar. */
 const BASE = {
-  rol: 'closer' as const,
   detalle: null,
   formaPago: null,
   monto: null,
@@ -101,6 +104,9 @@ const BASE = {
   modo: null,
 };
 
+/** El par de un resultado del closer, que es el rol de todas las pruebas de este archivo. */
+const del = (salida: SalidaDelCloser) => ({ rol: 'closer' as const, salida });
+
 // ═══ 1 · Las cuatro escrituras ══════════════════════════════════════════════
 
 test('una VENTA escribe el resultado, mueve la etapa, y deja el monto en su columna', async () => {
@@ -110,7 +116,7 @@ test('una VENTA escribe el resultado, mueve la etapa, y deja el monto en su colu
   const r = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
       ...BASE,
-      salida: 'venta',
+      que: del('venta'),
       detalle: 'Contado',
       formaPago: 'Contado',
       monto: '1500.00',
@@ -149,7 +155,7 @@ test('la nota va a la MISMA tabla que la pestaña Notas, y con su autor', async 
   const id = await contactoEn(alfa);
 
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'seguimiento', nota: 'Pidió llamar el lunes', quien }),
+    registrarResultado(id, { ...BASE, que: del('seguimiento'), nota: 'Pidió llamar el lunes', quien }),
   );
   assert.equal(r.nota, true);
 
@@ -175,7 +181,7 @@ test('sin nota NO se escribe ninguna, y la respuesta lo dice', async () => {
   await limpiar();
   const id = await contactoEn(alfa);
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'nurture', quien }),
+    registrarResultado(id, { ...BASE, que: del('nurture'), quien }),
   );
   assert.equal(r.nota, false);
   const n = await conOrganizacion(alfa, async () =>
@@ -191,7 +197,7 @@ test('el seguimiento crea una tarea MANUAL, que es la que cuenta en Mi Día', as
   const id = await contactoEn(alfa);
 
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'seguimiento', volverEl: '2026-12-01', quien }),
+    registrarResultado(id, { ...BASE, que: del('seguimiento'), volverEl: '2026-12-01', quien }),
   );
   assert.equal(r.tarea, true);
 
@@ -220,7 +226,7 @@ test('EL DÍA DE LA TAREA NO SE CORRE, y por eso viaja como texto', async () => 
     await limpiar();
     const id = await contactoEn(alfa);
     await conOrganizacion(alfa, () =>
-      registrarResultado(id, { ...BASE, salida: 'seguimiento', volverEl: dia, quien }),
+      registrarResultado(id, { ...BASE, que: del('seguimiento'), volverEl: dia, quien }),
     );
     const guardado = await filas<{ dia: string }>(
       admin,
@@ -247,7 +253,7 @@ test('LAS CUATRO ESCRITURAS SON ATÓMICAS: si una falla, no queda ninguna', asyn
     conOrganizacion(alfa, () =>
       registrarResultado(id, {
         ...BASE,
-        salida: 'seguimiento',
+        que: del('seguimiento'),
         nota: 'esta nota no debería quedar',
         // Un 31 de febrero. Tiene la forma correcta —el endpoint lo rechaza antes de llegar acá—
         // así que sirve justo para lo que se quiere medir: **que la base sea la última línea**. La
@@ -288,10 +294,10 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
   assert.ok(antes.cobrado.falta, 'y tiene que decir por qué');
 
   await conOrganizacion(alfa, () =>
-    registrarResultado(a, { ...BASE, salida: 'venta', monto: '1000.00', formaPago: 'Contado', quien }),
+    registrarResultado(a, { ...BASE, que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
   );
   await conOrganizacion(alfa, () =>
-    registrarResultado(b, { ...BASE, salida: 'acuerdo_sin_pago', monto: '500.00', quien }),
+    registrarResultado(b, { ...BASE, que: del('acuerdo_sin_pago'), monto: '500.00', quien }),
   );
 
   const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
@@ -341,12 +347,12 @@ test('el cockpit es del closer DESIGNADO: las ventas de otro no entran', async (
   const ajeno = await contactoEn(alfa);
 
   await conOrganizacion(alfa, () =>
-    registrarResultado(mio, { ...BASE, salida: 'venta', monto: '1000.00', formaPago: 'Contado', quien }),
+    registrarResultado(mio, { ...BASE, que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
   );
   await conOrganizacion(alfa, () =>
     registrarResultado(ajeno, {
       ...BASE,
-      salida: 'venta',
+      que: del('venta'),
       monto: '500.00',
       formaPago: 'Contado',
       quien: otro,
@@ -382,7 +388,7 @@ test('sin closer designado el cockpit dice que FALTA, y no cero', async () => {
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'venta', monto: '2000.00', formaPago: 'Contado', quien }),
+    registrarResultado(id, { ...BASE, que: del('venta'), monto: '2000.00', formaPago: 'Contado', quien }),
   );
 
   const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, null));
@@ -405,7 +411,7 @@ test('un acuerdo sin pago NO suma al cobrado: es plata comprometida, no cobrada'
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'acuerdo_sin_pago', monto: '900.00', quien }),
+    registrarResultado(id, { ...BASE, que: del('acuerdo_sin_pago'), monto: '900.00', quien }),
   );
 
   const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
@@ -421,7 +427,7 @@ test('el Pipeline devuelve las SIETE columnas, con las vacías en cero', async (
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'no_show', quien }),
+    registrarResultado(id, { ...BASE, que: del('no_show'), quien }),
   );
 
   const p = await conOrganizacion(alfa, () => pipelineDelCloser());
@@ -446,7 +452,7 @@ test('un contacto SIN Avanzar cae en la entrada, y el Pipeline dice de dónde sa
   const conEtiqueta = await contactoEn(alfa, { etiquetas: ['noshow'] });
   const conResultado = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(conResultado, { ...BASE, salida: 'venta', monto: '1.00', quien }),
+    registrarResultado(conResultado, { ...BASE, que: del('venta'), monto: '1.00', quien }),
   );
 
   const p = await conOrganizacion(alfa, () => pipelineDelCloser());
@@ -491,7 +497,7 @@ test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fec
   const r = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
       ...BASE,
-      salida: 'seguimiento',
+      que: del('seguimiento'),
       modo: 'automatico',
       // La fecha llega, y el escritor la tiene que ignorar por su cuenta.
       volverEl: dia,
@@ -512,7 +518,7 @@ test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fec
 
   // Y la otra mitad, para que la prueba no pase por un escritor que nunca escribe tareas.
   const manual = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, salida: 'seguimiento', modo: 'manual', volverEl: dia, quien }),
+    registrarResultado(id, { ...BASE, que: del('seguimiento'), modo: 'manual', volverEl: dia, quien }),
   );
   assert.equal(manual.tarea, true, 'con el modo manual tampoco escribe: el guardia agarra de más');
 });

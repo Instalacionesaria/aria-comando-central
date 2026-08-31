@@ -30,11 +30,30 @@ import { datos } from '../datos/contexto.ts';
 import type { SalidaResultado, Territorio } from '../datos/esquema.ts';
 import { ETAPA_DE_LA_SALIDA } from './etapas.ts';
 import { modoDe } from './salidas.ts';
-import type { SalidaDelCloser } from './salidas.ts';
+import type { ParDeResultado } from './salidas.ts';
 
-export interface LoQueSeRegistra {
-  salida: SalidaDelCloser;
-  rol: Territorio;
+/**
+ * ── EL PAR (rol, salida) ES CORRECTO POR CONSTRUCCIÓN ───────────────────────
+ *
+ * Es una unión discriminada por `rol` y no dos campos sueltos, así que
+ * `{ rol: 'closer', salida: 'agendo' }` **no compila**. Con dos campos independientes ese par
+ * pasaría el compilador y llegaría a escribir una fila con el rol de un negocio y la salida del
+ * otro — que después alimenta la comisión equivocada, con un número igual de plausible.
+ *
+ * Lo demás es común a los dos y por eso está aparte: son las mismas cuatro escrituras.
+ */
+export interface LoQueSeRegistra extends LoComunDeUnResultado {
+  /**
+   * El par (territorio, salida), ANIDADO y no como dos campos al mismo nivel.
+   *
+   * TypeScript **ensancha el esparcido de una unión**: con `rol` y `salida` sueltos, un
+   * `{ ...par, ...resto }` en cualquier llamador devuelve el par ensanchado y la garantía se pierde
+   * justo donde más importa. Anidado no hay nada que esparcir.
+   */
+  que: ParDeResultado;
+}
+
+interface LoComunDeUnResultado {
   /** La subcategoría. `null` cuando la salida no tiene, o cuando no se eligió ninguna. */
   detalle: string | null;
   /** Solo en una venta. Es la subcategoría de esa salida y tiene su propia columna. */
@@ -103,14 +122,14 @@ export async function registrarResultado(
   contactoId: string,
   lo: LoQueSeRegistra,
 ): Promise<Registrado> {
-  const etapa = ETAPA_DE_LA_SALIDA[lo.salida as SalidaResultado];
+  const etapa = ETAPA_DE_LA_SALIDA[lo.que.salida as SalidaResultado];
 
   const resultado = await datos()
     .insertInto('resultados')
     .values({
       contacto_id: contactoId,
-      salida: lo.salida,
-      rol: lo.rol,
+      salida: lo.que.salida,
+      rol: lo.que.rol,
       monto: lo.monto,
       forma_pago: lo.formaPago,
       detalle: lo.detalle,
@@ -192,7 +211,11 @@ export async function registrarResultado(
    * Para las otras cinco salidas no hay modos, y una fecha sigue creando su recordatorio —es útil
    * después de un no-show, por ejemplo—. Así que la condición no es «es seguimiento» sino «alguien
    * de este lado lo va a retomar», que es lo que `exigeFecha` declara en el catálogo. */
-  const laPersigueElCrm = lo.modo !== null && modoDe(lo.salida, lo.modo)?.exigeFecha === false;
+  /* El rol sale de `lo`, que lo trae del TERRITORIO del contacto. No hace falta buscarlo: los dos
+     catálogos tienen una salida `seguimiento` con modos distintos, y preguntarle al equivocado
+     devolvería `undefined` — o sea que un seguimiento del setter escribiría tarea cuando no debe. */
+  const laPersigueElCrm =
+    lo.modo !== null && modoDe(lo.que.rol, lo.que.salida, lo.modo)?.exigeFecha === false;
 
   let tarea = false;
   if (lo.volverEl !== null && !laPersigueElCrm) {

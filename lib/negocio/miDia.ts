@@ -482,7 +482,11 @@ export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
          El nombre sale de `SALIDAS`, que es el catálogo que ya usan Avanzar y el servidor para
          validar — no una segunda tabla de traducción que quedaría vieja. Si la salida no está en el
          catálogo se manda la clave: es preferible una jerga visible a inventar un nombre. */
-      completadaPor: definicionDe(a.salida)?.nombre ?? a.salida,
+      // `'closer'` fijo y no una variable: la consulta de arriba ya filtra `rol = 'closer'`, así
+      // que acá no puede llegar una salida del setter. El día que esta función se parametrice, los
+      // dos literales tienen que moverse JUNTOS — separarlos es cómo se llega a las colas de un
+      // territorio traducidas con el vocabulario del otro.
+      completadaPor: definicionDe('closer', a.salida)?.nombre ?? a.salida,
     });
   }
 
@@ -570,6 +574,10 @@ function filaHuerfana(id: string): Fila {
        así que afirmar que está congelado sería inventarle un dato, que es lo único que esta fila
        tiene prohibido. Ver el comentario de arriba. */
     congelado: false,
+    /* `null` por el mismo motivo que `congelado: false`: de este contacto **no se sabe nada**, y
+       afirmarle un territorio sería inventarle un dato. Un `null` acá dice «no medido», que es lo
+       único cierto. */
+    territorio: null,
     iconos: {
       reunionesTenidas: 0,
       citaFutura: false,

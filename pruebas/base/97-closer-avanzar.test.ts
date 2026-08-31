@@ -46,7 +46,7 @@ import {
 } from '../apoyo/closer.ts';
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { SALIDAS, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
+import { SALIDAS_DEL_CLOSER, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
 import { etiquetasDelResultado } from '../../lib/ghl/contrato.ts';
 import { ETAPA_DE_LA_SALIDA } from '../../lib/negocio/etapas.ts';
 import { POST as avanzar } from '../../app/api/contactos/[id]/avanzar/route.ts';
@@ -150,7 +150,7 @@ test('cada salida del catálogo deja al contacto en la etapa que dice `ETAPA_DE_
   // Y se comprueba en `contactos.etapa` y no solo en la respuesta: la respuesta puede devolver la
   // etapa correcta calculada en memoria mientras el `update` no corre. El síntoma de eso es
   // «registré y no se movió», sin ningún error.
-  for (const s of SALIDAS) {
+  for (const s of SALIDAS_DEL_CLOSER) {
     const k = await unContacto(esc, { nombre: `Avanzar etapa ${s.salida}` });
     const cuerpo: Record<string, unknown> = { salida: s.salida };
     if (s.pideMonto) cuerpo.monto = 1000;
@@ -163,7 +163,7 @@ test('cada salida del catálogo deja al contacto en la etapa que dice `ETAPA_DE_
      *
      * Se elige el primero que NO exija fecha, para no tener que inventar un día; si todos la
      * exigen, se manda. Así la barrida sigue siendo total sin saber nada de quién tiene modos. */
-    const modos = modosDe(s.salida);
+    const modos = modosDe('closer', s.salida);
     if (modos.length > 0) {
       const m = modos.find((x) => !x.exigeFecha) ?? modos[0]!;
       cuerpo.modo = m.modo;
@@ -194,7 +194,7 @@ test('las seis salidas NO se aplastan en la misma etapa', async () => {
   // La mitad complementaria de la de arriba, y no es redundante: un mapeo que devolviera siempre
   // `'agendado'` la pasaría entera si `ETAPA_DE_LA_SALIDA` también dijera `'agendado'` en las seis.
   // Esto fija los destinos que importan y que están decididos por escrito en `etapas.ts`.
-  const destinos = SALIDAS.map((s) => ETAPA_DE_LA_SALIDA[s.salida]);
+  const destinos = SALIDAS_DEL_CLOSER.map((s) => ETAPA_DE_LA_SALIDA[s.salida]);
   assert.deepEqual(destinos, ['ganado', 'cierre', 'seguimiento', 'descalificado', 'no_show', 'nurture']);
   assert.equal(new Set(destinos).size, 6, 'dos salidas caen en la misma columna del Pipeline');
 });
@@ -204,11 +204,22 @@ test('el ROL del resultado es el TERRITORIO del contacto, no el rol de quien reg
   // registrar sobre un contacto de cualquiera de los dos territorios, así que escribir su propio rol
   // acá le pagaría la comisión de closer a una venta de un setter — y el número sale igual de
   // plausible, que es lo que lo hace caro.
+  /* ── LA SALIDA ES DEL SETTER, Y ANTES ERA `venta` ─────────────────────────
+   *
+   * Esta prueba mandaba `venta` —una salida del CLOSER— sobre un contacto del setter y esperaba un
+   * 201. Eso funcionaba mientras hubiera un solo catálogo, y **hoy se rechaza**: cada territorio
+   * tiene sus salidas, y registrar `venta` con `rol = 'setter'` le pagaría a un setter el tramo de
+   * comisión de una venta grande que no es suya.
+   *
+   * Lo que la prueba afirma no cambió —el rol sale del CONTACTO, no de quien aprieta el botón— y
+   * ahora lo afirma con una salida que ese contacto admite. Quien registra sigue siendo la persona
+   * administradora del sembrado, o sea alguien de rol distinto del territorio del contacto: si el
+   * rol saliera de quien registra, esto diría `closer`. */
   const delSetter = await unContacto(esc, { territorio: 'setter', nombre: 'Avanzar territorio' });
   const r = await avanzar(
     pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 500 },
+      cuerpo: { salida: 'venta_chica', detalle: 'Transferencia', monto: 500 },
     }),
     ctxDe(delSetter.id),
   );
@@ -216,9 +227,62 @@ test('el ROL del resultado es el TERRITORIO del contacto, no el rol de quien reg
 
   const escrito = await loEscrito(esc.org, delSetter.id);
   assert.equal(escrito.resultados[0]?.rol, 'setter', 'el rol se tomó de quien registra, no del contacto');
+  assert.equal(escrito.resultados[0]?.salida, 'venta_chica');
+
+  /* Y LA OTRA MITAD, que es la que la guarda agrega: una salida del CLOSER sobre ese mismo contacto
+     se rechaza. Sin esto, la prueba de arriba pasaría igual con la guarda apagada. */
+  const conLaDelOtro = await avanzar(
+    pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'venta', monto: 500 },
+    }),
+    ctxDe(delSetter.id),
+  );
+  assert.equal(
+    conLaDelOtro.status,
+    400,
+    'una salida del closer se registró sobre un contacto del setter: eso le paga el tramo de ' +
+      'comisión equivocado, con un número igual de plausible',
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
+test('un contacto CONGELADO no tiene con qué vocabulario registrarse, y se dice', async () => {
+  /* ══ ACÁ HABÍA UN `?? 'closer'` QUE ELEGÍA UN NEGOCIO EN SILENCIO ════════
+   *
+   * El rol de un resultado sale del territorio del contacto. Un congelado —sin ninguna etiqueta de
+   * zona— no tiene territorio, y la ruta tenía un respaldo: `contacto.territorio ?? 'closer'`.
+   *
+   * Con un solo catálogo eso era una etiqueta en una columna. Con dos vocabularios **elige un
+   * negocio**: un contacto que era del setter y perdió su zona quedaría registrado con el rol del
+   * closer, y esa columna es de la que dependen las dos comisiones. El síntoma sería un número
+   * plausible en el tablero equivocado.
+   *
+   * Se rechaza y se dice por qué. No es un error del usuario: es un estado del contacto, y el texto
+   * cuenta cómo sale de él. */
+  const congelado = await unContacto(esc, { territorio: null, nombre: 'Avanzar congelado' });
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${congelado.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'venta', monto: 500 },
+    }),
+    ctxDe(congelado.id),
+  );
+
+  const { estado, cuerpo } = await leerRespuesta<RespuestaAvanzar>(r);
+  assert.equal(estado, 400, JSON.stringify(cuerpo));
+  assert.match(
+    cuerpo.detalle ?? '',
+    /ningún territorio/i,
+    'el rechazo no dice que el problema es el territorio, así que se lee como un error del cuerpo',
+  );
+
+  // Y NO ESCRIBIÓ NADA. Un rechazo que ya movió la etapa es peor que uno que no rechaza.
+  const escrito = await loEscrito(esc.org, congelado.id);
+  assert.equal(escrito.resultados.length, 0, 'el congelado dejó un resultado escrito');
+  assert.equal(escrito.etapa, null, 'el congelado se quedó con la etapa movida');
+});
+
 // 2 · LO QUE SE RECHAZA NO ESCRIBE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -229,7 +293,7 @@ test('la salida que PIDE MONTO se rechaza sin monto, y no deja ninguna fila', as
   //
   // Se recorre `pideMonto` del catálogo: son dos hoy —`venta` y `acuerdo_sin_pago`— y si mañana una
   // tercera lo pide, queda medida sin tocar esta prueba.
-  const conMonto = SALIDAS.filter((s) => s.pideMonto);
+  const conMonto = SALIDAS_DEL_CLOSER.filter((s) => s.pideMonto);
   assert.ok(conMonto.length >= 2, 'el catálogo dejó de tener salidas con monto: revisar la prueba');
 
   for (const s of conMonto) {
@@ -321,8 +385,21 @@ test('una salida INVENTADA se rechaza con un motivo legible, sin nombrar la base
     assert.equal(estado, 400, `salida ${JSON.stringify(mala)}: ${JSON.stringify(cuerpo)}`);
     assert.equal(cuerpo.codigo, 'peticion_invalida', `salida ${JSON.stringify(mala)}`);
 
+    /* ── DOS RECHAZOS DISTINTOS, Y SEPARARLOS ES EL PUNTO ──────────────────
+     *
+     * «eso no existe» y «eso existe pero no es de este contacto» mandan a mirar dos cosas distintas.
+     * Colapsarlos haría que quien lee revise el nombre de la salida cuando el problema es el
+     * territorio — y al revés.
+     *
+     * `no_califica` y `agendo` son salidas REALES: del setter. El contacto de esta prueba es del
+     * closer, así que caen por territorio. Las otras seis no existen en ningún catálogo. */
     const detalle = cuerpo.detalle ?? '';
-    assert.match(detalle, /salidas de Avanzar/i, `salida ${JSON.stringify(mala)}: motivo ilegible`);
+    const esDelSetter = mala === 'no_califica' || mala === 'agendo';
+    assert.match(
+      detalle,
+      esDelSetter ? /no es de este contacto/i : /no es una salida de Avanzar/i,
+      `salida ${JSON.stringify(mala)}: el motivo no distingue «no existe» de «no es de acá»`,
+    );
     assert.doesNotMatch(
       detalle,
       /relation|column|constraint|violates|check|negocio\.|resultados_/i,
@@ -1038,7 +1115,7 @@ test('el modo AUTOMÁTICO manda la etiqueta al CRM y NO escribe ninguna tarea', 
   /* La etiqueta se LEE DEL CATÁLOGO, no se repite acá. Escrita a mano, una mutación del catálogo
      —ponerle al modo manual la etiqueta de la serie automática— sobrevivía: la prueba seguía
      preguntando por el literal correcto y pasaba. Lo que se quiere probar es el catálogo. */
-  const elAutomatico = modoDe('seguimiento', 'automatico');
+  const elAutomatico = modoDe('closer', 'seguimiento', 'automatico');
   assert.equal(
     elAutomatico?.etiqueta,
     'seguimiento_recupero',
@@ -1083,7 +1160,7 @@ test('el modo MANUAL escribe la tarea y le dice al CRM que NO persiga', async ()
   assert.equal(tareas.rows[0]?.dia, MANANA, 'el día se corrió al guardarlo');
 
   // Igual que arriba: la decisión se interroga en la función pura, y la etiqueta sale del catálogo.
-  const elManual = modoDe('seguimiento', 'manual');
+  const elManual = modoDe('closer', 'seguimiento', 'manual');
   assert.equal(
     elManual?.etiqueta,
     'seguimiento_manual',
@@ -1091,7 +1168,7 @@ test('el modo MANUAL escribe la tarea y le dice al CRM que NO persiga', async ()
   );
   assert.notEqual(
     elManual?.etiqueta,
-    modoDe('seguimiento', 'automatico')?.etiqueta,
+    modoDe('closer', 'seguimiento', 'automatico')?.etiqueta,
     'los dos modos mandan la MISMA etiqueta, y son opuestos: uno pide que el CRM persiga y el otro ' +
       'que no. Con la misma, elegir «Lo retomo yo» le pediría al CRM que persiga igual',
   );

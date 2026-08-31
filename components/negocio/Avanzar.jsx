@@ -29,7 +29,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
-import { SALIDAS, modosDe } from '../../lib/negocio/salidas.ts';
+import { salidasDe, modosDe } from '../../lib/negocio/salidas.ts';
 import Ventana from '../Ventana.jsx';
 
 /** El día de hoy en `YYYY-MM-DD`, para el mínimo del campo de fecha. */
@@ -37,7 +37,21 @@ function hoy() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
+/**
+ * ── `territorio` DECIDE QUÉ TARJETAS SE DIBUJAN ─────────────────────────────
+ *
+ * El closer tiene seis salidas y el setter cinco, y **ninguna de las dos listas sirve para el otro**:
+ * las dos tienen una `seguimiento` que pide cosas distintas y ofrece modos distintos.
+ *
+ * Llega como propiedad y no se lee de un global porque la ficha se abre desde las dos pestañas sobre
+ * el mismo componente. Y viene del SERVIDOR, dentro de la fila del contacto: dejar que la pantalla
+ * lo dedujera de en qué pestaña está sería dejar que el navegador elija el negocio.
+ *
+ * `null` —un contacto congelado— no dibuja ninguna: no hay vocabulario con el que registrar, y el
+ * servidor lo rechaza con ese motivo. Es lo mismo que decir el `07` § 4: no se muestra un control
+ * que no puede cumplir.
+ */
+export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRegistrar }) {
   /** La salida elegida. `null` = paso 1. */
   const [elegida, setElegida] = useState(null);
   const [detalle, setDetalle] = useState('');
@@ -49,9 +63,14 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
-  const def = useMemo(() => SALIDAS.find((s) => s.salida === elegida) ?? null, [elegida]);
-  /** Los modos que admite. Vacío en cinco de las seis salidas. */
-  const modos = useMemo(() => (elegida !== null ? modosDe(elegida) : []), [elegida]);
+  /** Las salidas de ESTE territorio. Vacío cuando el contacto está congelado. */
+  const salidas = useMemo(() => (territorio === null ? [] : salidasDe(territorio)), [territorio]);
+  const def = useMemo(() => salidas.find((s) => s.salida === elegida) ?? null, [salidas, elegida]);
+  /** Los modos que admite. Vacío en las salidas que no tienen. */
+  const modos = useMemo(
+    () => (territorio !== null && elegida !== null ? modosDe(territorio, elegida) : []),
+    [territorio, elegida],
+  );
   const elModo = useMemo(() => modos.find((m) => m.modo === modo) ?? null, [modos, modo]);
 
   /* ── LA FECHA APARECE SEGÚN EL MODO, Y ES LA MITAD VISIBLE DE LA REGLA ─────
@@ -140,7 +159,7 @@ export default function Avanzar({ contactoId, nombre, alCerrar, alRegistrar }) {
         alCerrar={alCerrar}
       >
         <div className="res-g">
-          {SALIDAS.map((s) => (
+          {salidas.map((s) => (
             <button
               key={s.salida}
               type="button"

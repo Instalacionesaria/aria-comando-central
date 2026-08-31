@@ -33,7 +33,12 @@ function todasLasEtiquetas(): { etiqueta: string; familia: string }[] {
     ...TERRITORIOS.map((t) => ({ etiqueta: t.etiqueta, familia: 'territorio' })),
     ...ETIQUETAS_DEL_AGENTE.map((t) => ({ etiqueta: t.etiqueta, familia: 'agente' })),
     ...SERIES_DE_SEGUIMIENTO.map((t) => ({ etiqueta: t.etiqueta, familia: 'seguimiento' })),
-    ...RESULTADOS.map((t) => ({ etiqueta: t.etiqueta, familia: 'resultado' })),
+    /* Una salida puede declarar `etiqueta: null` —no avisa a nadie, a propósito— y esas no son
+       etiquetas del contrato: no hay literal que cotejar contra la subcuenta. */
+    ...RESULTADOS.filter((t) => t.etiqueta !== null).map((t) => ({
+      etiqueta: t.etiqueta as string,
+      familia: 'resultado',
+    })),
     ...ETAPAS_DEL_SETTER.map((t) => ({ etiqueta: t.etiqueta, familia: 'etapa' })),
   ];
 }

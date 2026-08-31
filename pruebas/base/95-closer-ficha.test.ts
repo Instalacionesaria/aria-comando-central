@@ -312,7 +312,7 @@ test('el historial junta la nota, el resultado, la cita y la TAREA, cada uno con
    * acá, así que renombrarlo en `salidas.ts` no deja esta prueba fijando un texto que ya nadie usa. */
   assert.equal(
     porOrigen('tarea')[0]?.detalle,
-    modoDe('seguimiento', 'manual')?.nombre,
+    modoDe('closer', 'seguimiento', 'manual')?.nombre,
     'el seguimiento no dice su modo: es el único dato que esa fila aporta',
   );
 
@@ -322,7 +322,7 @@ test('el historial junta la nota, el resultado, la cita y la TAREA, cada uno con
      Día—. Sale de `definicionDe`, el catálogo que usa la pantalla. */
   assert.equal(
     porOrigen('resultado')[0]?.titulo,
-    `Se registró «${definicionDe('venta')?.nombre}»`,
+    `Se registró «${definicionDe('closer', 'venta')?.nombre}»`,
   );
   assert.equal(porOrigen('nota')[0]?.detalle, 'Ficha nota de Ana');
 

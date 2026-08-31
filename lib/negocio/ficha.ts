@@ -452,7 +452,19 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
       .leftJoin('usuarios as u', (j) =>
         j.onRef('u.id', '=', 'r.registrado_por').onRef('u.org_id', '=', 'r.org_id'),
       )
-      .select(['r.id', 'r.creado_el', 'r.salida', 'r.detalle', 'r.nota', 'u.nombre as autor'])
+      /* `r.rol` viaja porque el historial se traduce con el catálogo CON EL QUE SE REGISTRÓ, no
+         con el del territorio en que el contacto está hoy. Un contacto que cruzó de territorio tiene
+         resultados de los dos vocabularios, y leerlos todos con uno solo haría que la mitad
+         apareciera con su clave cruda. */
+      .select([
+        'r.id',
+        'r.creado_el',
+        'r.salida',
+        'r.rol',
+        'r.detalle',
+        'r.nota',
+        'u.nombre as autor',
+      ])
       .where('r.contacto_id', '=', contactoId)
       .execute(),
     datos()
@@ -513,7 +525,7 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
       cuando: r.creado_el,
       // El NOMBRE humano de la salida y no su clave: `definicionDe` es el mismo catálogo que usa la
       // pantalla, y «Se registró «acuerdo_sin_pago»» es jerga de la base en la cara de quien mira.
-      titulo: `Se registró «${definicionDe(r.salida)?.nombre ?? r.salida}»`,
+      titulo: `Se registró «${definicionDe(r.rol, r.salida)?.nombre ?? r.salida}»`,
       // `r.detalle` y NO `?? r.nota`: la nota tiene su propia fila, del mismo segundo.
       detalle: r.detalle,
       autor: nombreDe(r.autor),
@@ -527,8 +539,22 @@ export async function historialDeLaFicha(contactoId: string): Promise<Pestana<Ev
       /* El MODO, en palabras, y no la nota. «Lo retomo yo» y «Que lo persiga la secuencia» son dos
          cosas distintas y es el único dato que esta fila aporta que ninguna otra tiene.
          Solo `seguimiento` tiene modos, así que la salida se puede dar por sabida; si el modo no
-         está en el catálogo se muestra crudo, que es preferible a ocultarlo. */
-      detalle: t.modo === null ? null : (modoDe('seguimiento', t.modo)?.nombre ?? t.modo),
+         está en el catálogo se muestra crudo, que es preferible a ocultarlo.
+
+         ── Y SE BUSCA EN LOS DOS CATÁLOGOS, PORQUE LA TAREA NO GUARDA SU ROL ──
+
+         `negocio.tareas` no tiene columna de rol: lo que la acota a un territorio es el contacto al
+         que cuelga. Así que acá no hay a quién preguntarle, y se prueban los dos.
+
+         Los nombres de modo no chocan salvo `manual`, que significa lo mismo en los dos —«lo retomo
+         yo»— así que el orden no cambia el resultado. Preguntarle a uno solo dejaría los dos modos
+         propios del setter mostrándose con su clave cruda. */
+      detalle:
+        t.modo === null
+          ? null
+          : (modoDe('closer', 'seguimiento', t.modo)?.nombre ??
+            modoDe('setter', 'seguimiento', t.modo)?.nombre ??
+            t.modo),
       autor: nombreDe(t.autor),
     })),
     /* ── Y EL CIERRE DEL SEGUIMIENTO, QUE ES UN EVENTO Y NO SE VEÍA ──────────

@@ -1062,6 +1062,9 @@ export default function Ficha({ contactoId, alCerrar }) {
         <Avanzar
           contactoId={contactoId}
           nombre={contacto?.nombre}
+          /* Del SERVIDOR, no de en qué pestaña se abrió la ficha: es lo que decide qué catálogo de
+             salidas se dibuja, y dejarlo al navegador sería dejarle elegir el negocio. */
+          territorio={contacto?.territorio ?? null}
           alCerrar={() => setAvanzando(false)}
           alRegistrar={(lo) => {
             setLoRegistrado(lo);

@@ -140,9 +140,12 @@ export function desenlaceDeLasEtiquetas(etiquetas: readonly string[]): Desenlace
 
   for (const salida of PRECEDENCIA) {
     const def = RESULTADOS.find((r) => r.salida === salida);
-    if (!def) continue;
-    if (presentes.has(normalizar(def.etiqueta))) {
-      return { salida, etiqueta: def.etiqueta, etapa: ETAPA_DE_LA_SALIDA[salida] };
+    /* Una salida sin etiqueta declarada NO clasifica por etiquetas, y no es un caso hipotético: hay
+       salidas que a propósito no avisan a nadie. Sin esta guarda, `normalizar(null)` reventaría. */
+    if (!def || def.etiqueta === null) continue;
+    const etiqueta = def.etiqueta;
+    if (presentes.has(normalizar(etiqueta))) {
+      return { salida, etiqueta, etapa: ETAPA_DE_LA_SALIDA[salida] };
     }
   }
   return null;

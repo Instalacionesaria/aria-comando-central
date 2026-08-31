@@ -191,6 +191,22 @@ export interface Fila {
    */
   congelado: boolean;
   /**
+   * En qué territorio está. `null` = congelado, y es la misma verdad que `congelado` dice en corto.
+   *
+   * ── VIAJA ADEMÁS DEL DERIVADO, Y NO ES REDUNDANCIA ────────────────────────
+   *
+   * `congelado` contesta «¿se puede operar sobre él?». Esto contesta **«¿con qué vocabulario?»**, y
+   * son dos preguntas distintas: el closer y el setter tienen catálogos de salidas propios, con una
+   * salida `seguimiento` en cada uno que pide cosas distintas.
+   *
+   * Sin este campo la ficha no tiene con qué elegir, y dibujaría las seis tarjetas del closer sobre
+   * un contacto del setter — que el servidor después rechaza, pero recién al apretar.
+   *
+   * La autoridad sigue siendo el servidor: esto es **para dibujar**. Si la pantalla y la base
+   * discrepan, gana la base y la petición se rechaza, que es el lado correcto del que fallar.
+   */
+  territorio: Territorio | null;
+  /**
    * La SITUACIÓN de la píldora. El § 7.1: *"la situación real, nunca una condición
    * temporal"*. "Estancado" y "vencido" NO salen de acá — son color de fila y microtexto,
    * que se calculan en el cliente con las fechas de arriba.
@@ -336,7 +352,9 @@ function aFila(f: {
   ultimo_entrante_texto: string | null;
   ultimo_saliente_el: Date | null;
   /** `null` = congelado: no está en ningún territorio. Ver `Fila.congelado`. */
-  territorio: string | null;
+  /* `Territorio` y no `string`: la columna tiene un `check` con esos dos valores, y el tipo lo dice
+     acá para que la fila no tenga que castear al armarse. */
+  territorio: Territorio | null;
   etiquetas: string[] | null;
   reuniones_tenidas: string | null;
   hay_citas: boolean | number;
@@ -363,6 +381,7 @@ function aFila(f: {
     ultimoEntranteTexto: f.ultimo_entrante_texto,
     ultimoSalienteEl: f.ultimo_saliente_el,
     congelado: f.territorio === null,
+    territorio: f.territorio,
     situacion: (f.ultima_salida ?? 'sin_resultado') as Situacion,
     // LA PÍLDORA LA CALCULA EL SERVIDOR, igual que los seis íconos, y por el mismo motivo: así la
     // fila y la ficha reciben **el mismo objeto**, y el espejo que el `02` exige es cierto por
