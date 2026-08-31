@@ -39,7 +39,7 @@ const MOTIVOS = {
   // local lo taparía, y esos cinco faltantes llevan a cinco acciones distintas.
 };
 
-export default function ListaDeContactos({ camino, zona }) {
+export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
   /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
      llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
      se pasa, la fila no es clicable"*. Este es ese paso.
@@ -64,7 +64,19 @@ export default function ListaDeContactos({ camino, zona }) {
   const yaPedido = useRef(false);
 
   const cargar = useCallback(async () => {
-    setSituacion('cargando');
+    /* ══ UNA RECARGA NO ES UNA PRIMERA CARGA, Y CONFUNDIRLAS CIERRA LA FICHA ════
+     *
+     * Esta línea era `setSituacion('cargando')` a secas, y con una lista que solo se cargaba una
+     * vez eso no se notaba. Con un reloj cada diez segundos se nota mucho: reemplaza el cuerpo
+     * entero por el aviso de espera, y al desmontarse **se lleva puesta la ficha abierta**.
+     *
+     * No es una hipótesis. Es el mismo defecto que `components/views/CloserView.jsx` ya midió en el
+     * navegador y resolvió con esta misma forma: *«con una ficha abierta, volver a la pestaña la
+     * cerraba»*. Se copia la regla junto con el reloj, porque el reloj es lo que la vuelve constante.
+     *
+     * La regla, entonces: **la pantalla solo se vacía cuando no hay nada que mostrar.** Teniendo
+     * datos, una recarga los reemplaza cuando llega la respuesta, y hasta entonces no se toca nada. */
+    setSituacion((antes) => (antes === 'listo' ? antes : 'cargando'));
     const r = await pedir(camino);
     if (r.tipo === 'sin_respuesta') {
       setCausa('No se pudo contactar al servidor.');
@@ -107,6 +119,18 @@ export default function ListaDeContactos({ camino, zona }) {
     yaPedido.current = true;
     void cargar();
   }, [cargar]);
+
+  /* ── EL PULSO: cómo el reloj de la vista recarga esta lista ─────────────────
+   *
+   * Un contador que sube. Quien monta esta lista lo incrementa después de traer mensajes nuevos, y
+   * acá se vuelve a preguntar. Es un número y no una función a propósito: una función nueva en cada
+   * render del padre dispararía una recarga por render.
+   *
+   * El `pulso > 0` saltea el montaje — el valor inicial no es un pulso, y sin esta guarda la primera
+   * carga saldría dos veces. */
+  useEffect(() => {
+    if (pulso > 0) void cargar();
+  }, [pulso, cargar]);
 
   /* Traer de GoHighLevel. Es una operación APARTE de cargar la lista, y se ve aparte.
    *

@@ -24,7 +24,10 @@
  * Las otras dos sub-pestañas dicen qué falta, y sus botones ahora sí responden.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { pedir } from '../../lib/http/cliente.ts';
+import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import { estaALaVista } from '../../lib/vista.ts';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 
 const SUB = [
@@ -52,6 +55,44 @@ function Falta({ titulo, detalle, puntos }) {
 
 export default function SetterView({ activa }) {
   const [sub, setSub] = useState('dia');
+
+  /* ══ EL SETTER ALIMENTA SU PROPIO CHAT, Y ANTES NO LO HACÍA ════════════════
+   *
+   * `CloserView` era el **único** lugar de toda la aplicación que disparaba la ingesta de mensajes.
+   * Consecuencia medida en el código: un setter que abría una conversación veía el chat repintarse
+   * cada cinco segundos con lo que ya estaba en la base, y **nada traía mensajes nuevos del CRM**
+   * salvo que pasara el ciclo de diez minutos o que otra persona tuviera el Closer abierto.
+   *
+   * El chat es donde el setter trabaja — es la pantalla que MÁS necesita estar al día, y era la
+   * única sin nadie que la alimentara.
+   *
+   * ── LA MISMA CLAVE QUE EL CLOSER, Y ESO NO ES UN DESCUIDO ───────────────
+   *
+   * `registrarReloj` reemplaza por clave, así que con `'operacion:tic'` en las dos vistas **nunca
+   * corren las dos**: la que está a la vista registra y la otra pasa `null`. Lo dejó anticipado el
+   * comentario del Closer — *«si mañana el Setter tiene su propio tic, registrarlo con esta misma
+   * clave lo REEMPLAZA en vez de duplicar el tráfico»*.
+   *
+   * Y el gasto hacia el CRM no sube igual: el candado de `lib/negocio/pulso.ts` garantiza una
+   * ingesta por ciclo sin importar cuántas pestañas ni cuántas personas pregunten. */
+  const aLaVista = estaALaVista('setter');
+  const [pulso, setPulso] = useState(0);
+
+  const tic = useCallback(async () => {
+    // Un fallo de la ingesta NO impide recargar: son dos cosas, y que el CRM esté caído no es
+    // motivo para dejar de mostrar el trabajo que ya está en la base. Mismo criterio que el Closer.
+    await pedir('/api/mensajes/ingesta', { metodo: 'POST' });
+    setPulso((n) => n + 1);
+  }, []);
+
+  usarReloj(aLaVista ? 'operacion:tic' : null, tic, CADENCIA.operacion);
+
+  /* Y una vez AL ENTRAR, sin esperar los diez segundos. Quien abre la pestaña quiere ver lo de
+     ahora, no lo de hace un ciclo. */
+  useEffect(() => {
+    if (!aLaVista) return;
+    void tic();
+  }, [aLaVista, tic]);
 
   return (
     <>
@@ -88,7 +129,7 @@ export default function SetterView({ activa }) {
 
         <div className="cl-page">
           {sub === 'dia' ? (
-            <ListaDeContactos camino="/api/setter/contactos" zona="zona setter" />
+            <ListaDeContactos camino="/api/setter/contactos" zona="zona setter" pulso={pulso} />
           ) : null}
 
           {sub === 'pipeline' ? (

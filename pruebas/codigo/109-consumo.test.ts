@@ -73,6 +73,81 @@ test('el reloj de la operación cuelga de que el Closer esté a la vista, no de 
   );
 });
 
+test('el Setter tiene su propio tic, y con LA MISMA clave que el Closer', () => {
+  /* ══ EL SETTER NO ALIMENTABA SU PROPIO CHAT, Y ES DONDE TRABAJA ═══════════
+   *
+   * `CloserView` era el ÚNICO lugar de toda la aplicación que disparaba la ingesta. Un setter que
+   * abría una conversación veía el chat repintarse cada cinco segundos con lo que ya estaba en la
+   * base, y **nada traía mensajes nuevos del CRM** salvo que pasara el ciclo de diez minutos o que
+   * otra persona tuviera el Closer abierto. La capacidad nunca fue el obstáculo: la ruta de
+   * ingesta pide `contactos.ver` y su propio comentario dice que la tienen los dos.
+   *
+   * ── Y LA CLAVE COMPARTIDA ES LO QUE HACE QUE ESTO NO CUESTE EL DOBLE ─────
+   *
+   * `registrarReloj` reemplaza por clave. Con `'operacion:tic'` en las dos vistas, la que está a
+   * la vista registra y la otra pasa `null`, así que **nunca corren las dos**. Dos claves distintas
+   * duplicarían el tráfico sin que nada fallara — y el comentario del Closer ya lo había
+   * anticipado. Por eso esto se afirma y no se deja a la buena memoria. */
+  const setter = limpio('components/views/SetterView.jsx');
+
+  assert.match(
+    setter,
+    /usarReloj\(\s*aLaVista \? 'operacion:tic' : null/,
+    'el Setter no registra su tic, o lo registra sin condición. Sin él, su chat solo se alimenta ' +
+      'de rebote cuando otra persona tiene el Closer abierto',
+  );
+  assert.match(
+    setter,
+    /const aLaVista = estaALaVista\('setter'\)/,
+    'el Setter no pregunta si es la pantalla que se está mirando: paga el reloj sin que nadie lo abra',
+  );
+  assert.match(
+    setter,
+    /\/api\/mensajes\/ingesta/,
+    'el tic del Setter no llama a la ingesta, así que recarga sin traer nada nuevo',
+  );
+
+  /* Y LA CLAVE ES UNA SOLA EN TODA LA APLICACIÓN. Se cuenta sobre el código sin comentarios: dos
+     vistas la usan, y cualquier tercera clave de operación sería tráfico que se suma en vez de
+     reemplazar. */
+  const conLaClave = archivosFuente(['components'])
+    .filter((a) => /'operacion:tic'/.test(a.limpio))
+    .map((a) => a.ruta)
+    .sort();
+  assert.deepEqual(
+    conLaClave,
+    ['components/views/CloserView.jsx', 'components/views/SetterView.jsx'],
+    'la clave del tic de operación aparece en otro lado: `registrarReloj` reemplaza por clave, así ' +
+      'que una clave distinta NO reemplaza — duplica el tráfico sin que nada falle',
+  );
+});
+
+test('una recarga de la lista NO vacía la pantalla, que es lo que cierra la ficha abierta', () => {
+  /* Con la lista cargándose una sola vez esto no se notaba. Con un reloj cada diez segundos se
+     nota mucho: `setSituacion('cargando')` reemplaza el cuerpo entero por el aviso de espera, y al
+     desmontarse **se lleva puesta la ficha abierta**.
+
+     No es una hipótesis: es el mismo defecto que `CloserView` ya midió en el navegador —*«con una
+     ficha abierta, volver a la pestaña la cerraba»*— y resolvió con esta forma exacta. La regla
+     viaja junto con el reloj, porque el reloj es lo que la vuelve constante. */
+  const lista = limpio('components/negocio/ListaDeContactos.jsx');
+
+  assert.match(
+    lista,
+    /setSituacion\(\(antes\) => \(antes === 'listo' \? antes : 'cargando'\)\)/,
+    'la recarga de la lista vuelve a vaciar la pantalla, así que cada tic cierra la ficha que ' +
+      'alguien tenga abierta',
+  );
+  assert.doesNotMatch(
+    lista,
+    /setSituacion\('cargando'\)/,
+    'quedó un paso a «cargando» sin guarda: alcanza uno para reintroducir el defecto',
+  );
+
+  // Y el pulso saltea el montaje, o la primera carga sale dos veces.
+  assert.match(lista, /if \(pulso > 0\) void cargar\(\)/, 'el pulso no saltea el montaje');
+});
+
 test('la pantalla activa se pregunta en un solo lugar, y es el que decide abrirla', () => {
   /* `irALaVista` es —dice su propio encabezado— *«el único lugar que decide qué significa abrir una
      pantalla»*. El aviso sale de ahí y no de un `MutationObserver` ni de un segundo estado en React,
