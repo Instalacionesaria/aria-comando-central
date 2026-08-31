@@ -198,6 +198,33 @@ export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promi
 
   const completadasDeHoy = new Set(avances.map((a) => a.contacto_id));
 
+  /* ── EL MOTIVO REAL DE CADA URGENCIA ──────────────────────────────────────
+   *
+   * Hasta acá esta cola decía siempre lo mismo: *«Requiere intervención: revisar la conversación»*.
+   * Era honesto —no inventaba un diagnóstico— y se leía mal: como si el auditor hubiera encontrado
+   * algo y no lo hubiera dicho. La causa era que el auditor **no existía**, y ahora existe.
+   *
+   * Se lee del análisis con intervención MÁS RECIENTE de cada contacto. `distinct on` y no un
+   * `group by` con subconsulta: es una sola pasada por el índice `analisis_por_contacto`, y sobre
+   * todo dice lo que se quiere sin que haya que leerlo dos veces.
+   *
+   * ── Y SE CONSULTA PARA TODOS, NO SOLO PARA LOS QUE ENTRAN A LA COLA ──────
+   *
+   * Porque quién entra se decide **después**, en el bucle de abajo, y para decidirlo hace falta el
+   * territorio y la situación de cada fila. Filtrar acá exigiría adelantar esa decisión o hacer dos
+   * consultas: una lista con las intervenciones abiertas de la empresa es más chica que cualquiera
+   * de las dos alternativas —son las conversaciones que un humano tiene que tomar ahora, no un
+   * histórico— y se paga una sola vez. */
+  const conIntervencion = await datos()
+    .selectFrom('analisis_del_agente')
+    .select(['contacto_id', 'motivo'])
+    .distinctOn('contacto_id')
+    .where('intervencion', '=', true)
+    .orderBy('contacto_id')
+    .orderBy('analizado_el', 'desc')
+    .execute();
+  const motivoDe = new Map(conIntervencion.map((a) => [a.contacto_id, a.motivo]));
+
   /* La medianoche de HOY en la zona de la organización, del mismo reloj que las consultas: `now()`
      devuelve el instante en que empezó la TRANSACCIÓN, así que es literalmente el mismo instante que
      usaron las de arriba. Comparar contra el `Date.now()` del proceso sería otro reloj, y la misma
@@ -222,11 +249,17 @@ export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promi
        la fila dice «revisar la conversación» sobre alguien que ya se revisó y se cerró. */
     if (estaCerrado(fila.situacion)) continue;
     enUrgentes.add(fila.id);
-    /* El motivo lo escribiría el auditor en `negocio.hallazgos`. Esa tabla existe completa y **no
-       tiene ni un lector ni un escritor**, así que hoy este texto de reserva es el 100 % de los
-       casos. Es honesto —dice «revisar la conversación» y no inventa un diagnóstico— pero se lee
-       como si el auditor hubiera encontrado algo y no lo hubiera dicho. */
-    urgentes.push({ fila, motivo: SIN_MOTIVO });
+    /* ── EL TEXTO DE RESERVA NO SE BORRA, Y ES DELIBERADO ──────────────────
+     *
+     * Un contacto puede tener la etiqueta **sin** análisis con intervención, y no es un error: son
+     * dos fuentes independientes. La etiqueta la pone el CRM y la escribe también la plataforma
+     * anterior; el análisis lo escribe este módulo, que empezó a correr un día concreto. Todo lo
+     * marcado antes de ese día entra a la cola sin motivo nuestro.
+     *
+     * Y `?? SIN_MOTIVO` cubre además el caso en que el modelo pidió intervención y **no dejó una
+     * frase**: el escritor guarda `null` en vez de una fila muda, justamente para que el respaldo
+     * de acá haga su trabajo. Ninguna fila de esta cola queda vacía. */
+    urgentes.push({ fila, motivo: motivoDe.get(fila.id) ?? SIN_MOTIVO });
   }
 
   // ── BUZÓN ─────────────────────────────────────────────────────────────────

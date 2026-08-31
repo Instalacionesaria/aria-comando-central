@@ -27,7 +27,18 @@ import type { Client } from 'pg';
 import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
+import { TAREAS, barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
+import type { AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
+
+/**
+ * El acceso al auditor de estas empresas: **ninguna lo tiene**, y es el caso real.
+ *
+ * Medido en producción: de cinco organizaciones, **una** tiene llave de IA. Estas pruebas miden el
+ * orden de las tareas, el presupuesto y los sellos —no el auditor— y con la falta puesta la tarea
+ * `auditoria` sale `saltada` con su motivo, que es exactamente lo que hace hoy en produccion para
+ * cuatro de las cinco.
+ */
+const SIN_AUDITOR: AccesoAlAuditor = { tipo: 'falta', que: 'sin_llave_de_ia' };
 import { GET as cron } from '../../app/api/cron/route.ts';
 import type { OrganizacionListada } from '../../lib/administracion/organizaciones.ts';
 
@@ -160,9 +171,9 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
   // la ingesta va a lanzar al intentar abrir su contexto.
   const inexistente = randomUUID();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
-    { org: org(inexistente, 'rota'), acceso: CON_TOKEN },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(inexistente, 'rota'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ];
 
   const r = await barrerTodo('0 12 * * *', empresas);
@@ -193,11 +204,16 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
   assert.deepEqual(
     [...deLaRota.entries()].sort(),
     [
+      /* `auditoria` sale SALTADA y no `fallo`, y la diferencia es exactamente lo que la tarea nueva
+         agrega: **no le habla al CRM**. Esta empresa tiene un identificador inexistente, así que las
+         tres tareas del CRM revientan contra la base; el auditor ni llega a intentarlo porque no tiene
+         llave de IA, que es una falta distinta y con su propio texto. */
+      ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],
       ['mensajes', 'fallo'],
     ],
-    'una de las tres tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
+    'una de las cuatro tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );
 
   /* El SELLO de «rota» no se comprueba, y conviene decir por qué: su identificador no existe en
@@ -212,8 +228,8 @@ test('`corrieron` cuenta las que DE VERDAD corrieron, no las recorridas', async 
   // recorridas diría «3 corrieron» sobre una corrida que no hizo absolutamente nada.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR },
   ];
   const r = await barrerTodo('0 12 * * *', empresas);
   assert.equal(r.corrieron, 0, 'ninguna tenía credencial: nada corrió');
@@ -230,8 +246,8 @@ test('los cinco motivos de credencial NO se colapsan', async () => {
   // las empresas a la vez— se lee como cinco clientes desconectando su CRM.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR },
   ];
   const r = await barrerTodo('0 12 * * *', empresas);
   const motivos = new Map(r.renglones.filter((x) => x.tarea === 'citas').map((x) => [x.slug, x.porque]));
@@ -247,7 +263,7 @@ test('los cinco motivos de credencial NO se colapsan', async () => {
 test('una empresa sin credencial cuesta CERO llamadas', async () => {
   await limpiar();
   const r = await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
   for (const x of r.renglones) assert.equal(x.llamadas, 0, `${x.tarea} gastó llamadas sin credencial`);
 });
@@ -261,16 +277,26 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   // «el cron nunca pasó por acá» se ven exactamente igual: no hay fila.
   await limpiar();
   await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
   const s = await sellos();
-  // Las TRES tareas por empresa, y `contactos` entre ellas: una empresa sin token tampoco puede
-  // releer sus etiquetas, y el sello de esa tarea tiene que decirlo igual que los otros dos.
+  // Las CUATRO tareas por empresa. `contactos` entre ellas porque una empresa sin token tampoco puede
+  // releer sus etiquetas; y `auditoria` porque **su falta es otra** —no tiene llave de IA— y el sello
+  // tiene que decir esa y no la del CRM: son dos proveedores y dos acciones distintas para arreglarlo.
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
-    ['citas:saltada', 'contactos:saltada', 'mensajes:saltada'],
+    ['auditoria:saltada', 'citas:saltada', 'contactos:saltada', 'mensajes:saltada'],
   );
-  assert.ok(s.every((x) => x.motivo === 'sin_token'));
+  /* ── Y CADA SELLO LLEVA SU PROPIO MOTIVO, QUE ES LO QUE SE GANÓ ACÁ ──────
+   *
+   * Las tres del CRM dicen `sin_token`; la del auditor dice lo suyo. Un motivo compartido haría que
+   * quien mire la pantalla fuera a cargar el token del CRM para arreglar el auditor — son dos
+   * proveedores, dos llaves y dos acciones distintas. */
+  const porTarea = new Map(s.map((x) => [x.tarea, x.motivo]));
+  assert.equal(porTarea.get('contactos'), 'sin_token');
+  assert.equal(porTarea.get('mensajes'), 'sin_token');
+  assert.equal(porTarea.get('citas'), 'sin_token');
+  assert.match(String(porTarea.get('auditoria')), /llave de IA/);
 });
 
 test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadores que crezcan', async () => {
@@ -278,14 +304,16 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   // más con una entrega doble y de menos con una perdida, y nadie podría saber cuál pasó.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ];
   await barrerTodo('0 12 * * *', empresas);
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
   await barrerTodo('0 12 * * *', empresas);
   const segunda = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(primera[0]?.n, '3', 'tres tareas por empresa: `contactos`, `mensajes` y `citas`');
-  assert.equal(segunda[0]?.n, '3', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
+  /* CUATRO por empresa —`contactos`, `mensajes`, `auditoria` y `citas`— y no cinco: `sonda` no es de
+     ninguna empresa y no deja sello, que es una decisión escrita en el pie de `barrerTodo`. */
+  assert.equal(primera[0]?.n, '4', 'cuatro tareas por empresa; `sonda` no deja sello');
+  assert.equal(segunda[0]?.n, '4', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
 });
 
 test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otra', async () => {
@@ -293,8 +321,8 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   // vería —y podría pisar— los sellos de las demás.
   await limpiar();
   await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
 
   const deAlfa = await conOrganizacion(alfa, () =>
@@ -303,11 +331,11 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   const deBeta = await conOrganizacion(beta, () =>
     datos().selectFrom('tareas_programadas').select(['tarea']).execute(),
   );
-  assert.equal(deAlfa.length, 3, 'alfa tiene que ver sus tres sellos');
-  assert.equal(deBeta.length, 3);
-  // Y el total desde el propietario es SEIS: cada una vio la mitad, no todo.
+  assert.equal(deAlfa.length, 4, 'alfa tiene que ver sus cuatro sellos');
+  assert.equal(deBeta.length, 4);
+  // Y el total desde el propietario es OCHO: cada una vio la mitad, no todo.
   const todos = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(todos[0]?.n, '6');
+  assert.equal(todos[0]?.n, '8', 'cada empresa tiene que ver solo sus cuatro sellos');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -319,11 +347,11 @@ test('la empresa SIN sello va antes que la que ya tiene uno', async () => {
   // haría que la última empresa de la lista fuera siempre la que se queda sin tiempo, para siempre.
   await limpiar();
   // `beta` ya fue barrida; `alfa` nunca.
-  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' } }]);
+  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR }]);
 
   const r = await barrerTodo('0 12 * * *', [
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' } },
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' } },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
   // El primer renglón tiene que ser de `alfa`, que nunca se barrió, aunque venga segunda en la lista.
   assert.equal(r.renglones[0]?.slug, 'alfa', 'la que nunca se barrió tiene que ir primera');
@@ -342,8 +370,8 @@ test('con el presupuesto agotado, las que faltan salen como `sin_tiempo` y NO se
   const r = await barrerTodo(
     '0 12 * * *',
     [
-      { org: org(alfa, 'alfa'), acceso: CON_TOKEN },
-      { org: org(beta, 'beta'), acceso: CON_TOKEN },
+      { org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
+      { org: org(beta, 'beta'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
     ],
     reloj,
   );
@@ -376,7 +404,9 @@ test('un horario desconocido corre TODO y la respuesta lo dice', async () => {
   assert.equal(r.status, 200);
   const cuerpo = (await r.json()) as { horarioDesconocido?: boolean; tareas: string[] };
   assert.equal(cuerpo.horarioDesconocido, true);
-  assert.deepEqual([...cuerpo.tareas].sort(), ['citas', 'contactos', 'mensajes', 'sonda']);
+  /* Contra `TAREAS` y no contra una lista escrita acá: es la única lista en tiempo de ejecución, y una
+     copia divergiría diciendo que el respaldo está mal cuando está bien. */
+  assert.deepEqual([...cuerpo.tareas].sort(), [...(TAREAS as readonly string[])].sort());
 });
 
 test('las empresas DESACTIVADAS no se barren', async () => {

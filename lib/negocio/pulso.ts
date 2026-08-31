@@ -61,8 +61,19 @@ import { CADENCIA } from '../cadencia.ts';
  * Con una sola clave las dos compartirían el antirrebote, y la que corriera primero bloquearía a la
  * otra: la agenda se barrería a la cadencia del chat —seis veces por minuto— para un dato que
  * cambia cuando alguien agenda.
+ *
+ * ── Y LA TERCERA, `auditoria`, QUE NO INGIERE NADA ─────────────────────────
+ *
+ * Es la más caras de las tres y la que menos se parece a las otras dos: no habla con el CRM, habla
+ * con el modelo, y lo que cuenta en `ultima_corrida_llamadas` son **inferencias pagadas** y no
+ * peticiones a GoHighLevel. Comparte candado con nadie, que es el punto.
+ *
+ * **No usa las marcas de agua**, y eso hay que decirlo porque las columnas están ahí: `marca_el`
+ * afirma «toda conversación anterior a esto ya se leyó», y el auditor no camina por fecha sino por la
+ * resta del antirrebote. Escribirle una marca sería dejar una afirmación que nadie lee — y que el día
+ * que alguien la lea sería falsa.
  */
-export type ClaveDePulso = 'mensajes' | 'citas';
+export type ClaveDePulso = 'mensajes' | 'citas' | 'auditoria';
 
 /**
  * El antirrebote. **El candado impide corridas simultáneas, no seguidas**: sin esto, dos pestañas

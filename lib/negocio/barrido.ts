@@ -31,7 +31,9 @@
 
 import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
-import type { AccesoAGhl } from '../credenciales/resolver.ts';
+import type { AccesoAGhl, AccesoAlAuditor } from '../credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
+import { auditarEmpresa } from '../auditor/analisis.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { barrerCitas } from './citas.ts';
@@ -39,9 +41,36 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 
 /**
  * Las tareas que el cron sabe hacer. Es la misma lista que el `check` de `tareas_programadas`,
- * ampliada en la migración **021** con `contactos`.
+ * ampliada en la **021** con `contactos` y en la **030** con `auditoria`.
+ *
+ * ── `auditoria` ES LA PRIMERA QUE NO LE HABLA AL CRM ──────────────────────
+ *
+ * Las otras cuatro cuentan peticiones a GoHighLevel. Ésta cuenta **inferencias pagadas al proveedor
+ * del modelo**, que es otra unidad y mucho más cara: una petición al CRM cuesta una fracción de
+ * centavo y una inferencia cuesta centavos. Van en la misma columna porque la pregunta es la misma
+ * —«cuánto costó esta corrida»— y conviene saberlo antes de sumar las cinco.
  */
-export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas';
+export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria';
+
+/**
+ * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
+ *
+ * ── POR QUÉ EXISTE, Y QUÉ DEJÓ DE ESTAR ESCRITO TRES VECES ────────────────
+ *
+ * El tipo `Tarea` es de compilación, así que hasta acá «las tareas que existen» estaba escrita a mano
+ * en tres lugares: el respaldo de `tareasDelHorario`, y dos pruebas de `99-cron.test.ts`. Agregar la
+ * quinta puso las tres en rojo a la vez, y ahí se ve el problema: **arreglarlas es escribir el mismo
+ * nombre tres veces**, y la que se olvide no falla igual.
+ *
+ * La del respaldo es la peor de las tres, porque su modo de fallo es silencioso: un horario
+ * desconocido correría cuatro de las cinco tareas y la respuesta diría que corrió «todas».
+ *
+ * El ORDEN es el mismo que exigen los horarios y por los mismos motivos: `contactos` antes de
+ * `mensajes` —o los mensajes de un contacto nuevo quedan bajo la marca de agua para siempre— y
+ * `auditoria` después de `mensajes`, o el antirrebote cuenta los mensajes de la corrida anterior.
+ */
+export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas'] as const satisfies
+  readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -118,9 +147,30 @@ export const HORARIOS = {
      Lo que este cambio hace es cerrar el agujero de las 24 horas **hoy**, sin esperar una ruta pública.
      Ver `docs/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
 
-  /* Cada diez minutos: releer las etiquetas y traer los mensajes, EN ESE ORDEN. Ver arriba. */
+  /* ── CADA DIEZ MINUTOS, Y `auditoria` VA TERCERA ─────────────────────────
+
+     Releer las etiquetas, traer los mensajes, y auditar. **En ese orden, y el orden es corrección.**
+
+     `contactos` antes de `mensajes` es pérdida de datos permanente si se rompe, y está explicado en
+     el bloque de arriba. Lo nuevo es la tercera, y su motivo es más directo: el antirrebote del
+     auditor cuenta los mensajes del agente que hay en NUESTRA base. Corriendo antes de la ingesta
+     contaría los de la corrida anterior, así que un contacto con cinco mensajes nuevos se auditaría
+     diez minutos tarde **y con el transcript incompleto** — un veredicto sobre una conversación que
+     ya siguió, que es peor que no auditar.
+
+     ── Y VA EN EL HORARIO DE DIEZ MINUTOS Y NO EN EL DE LA HORA ─────────
+
+     Es la cola que dice «alguien tiene que tomar esto ahora». En el horario de la hora, una
+     conversación con daño en curso esperaría hasta sesenta minutos, y el encabezado de este módulo
+     ya dice que pasar de segundos a diez minutos es el precio que este presupuesto impone. Sesenta
+     sería regalar lo que no hace falta regalar.
+
+     El costo, contado: la primera corrida son hasta veinte inferencias por empresa —medido en
+     producción, dieciocho— y después el antirrebote las baja a las conversaciones que de verdad
+     avanzaron. Y el presupuesto de tiempo del propio auditor evita que una empresa con cola larga se
+     coma los 300 segundos de la función. */
   '*/10 * * * *': {
-    tareas: ['contactos', 'mensajes'],
+    tareas: ['contactos', 'mensajes', 'auditoria'],
     cadenciaMinutos: 10,
     umbralMinutos: 80,
   },
@@ -167,6 +217,22 @@ export const HORARIOS = {
  */
 const PRESUPUESTO_MS = 180_000;
 
+/**
+ * El acceso al CRM ya estrechado. **El bucle lo garantizó; el tipo no lo sabe.**
+ *
+ * Hasta la tarea `auditoria` el guardia de la credencial era una sola condición y TypeScript podía
+ * estrechar el tipo solo. Ahora son dos guardias —una tarea que no usa el CRM y otra que no usa la
+ * llave de IA— y el estrechamiento no cruza esa bifurcación.
+ *
+ * El `throw` es preferible a un valor por omisión, y es el mismo criterio que usa `auditar(`: un token
+ * vacío llamaría al proveedor y gastaría un rechazo, mientras que la excepción cae en el try/catch por
+ * vuelta del bucle y sale reportada como `fallo` de esa empresa sin llevarse a las demás.
+ */
+function conToken(acceso: AccesoAGhl): { token: string; locationId: string } {
+  if (acceso.tipo !== 'listo') throw new Error('barrido: la empresa no tiene token resuelto');
+  return acceso;
+}
+
 /** Qué pasó con un par (empresa, tarea). Es la unidad del reporte. */
 export interface RenglonDelBarrido {
   slug: string;
@@ -195,10 +261,18 @@ export interface ResultadoDelBarridoCompleto {
   corrieron: number;
 }
 
-/** Lo que el manejador resuelve antes de entrar: la empresa y su acceso al CRM, ya descifrado. */
+/**
+ * Lo que el manejador resuelve antes de entrar: la empresa y sus DOS accesos, ya descifrados.
+ *
+ * Son dos y no uno porque son dos proveedores distintos con dos llaves distintas, y una empresa
+ * puede tener una y no la otra: hoy en producción **solo una de cinco tiene llave de IA**, y todas
+ * las que trabajan tienen token del CRM. Con un solo campo, la falta de una apagaría la otra.
+ */
 export interface EmpresaParaBarrer {
   org: OrganizacionListada;
   acceso: AccesoAGhl;
+  /** La llave de IA y el identificador del agente. `falta` es el caso normal de casi toda empresa. */
+  auditor: AccesoAlAuditor;
 }
 
 /**
@@ -213,9 +287,10 @@ export function tareasDelHorario(horario: string | null): {
   desconocido: boolean;
 } {
   const entrada = horario === null ? undefined : (HORARIOS as Record<string, { tareas: readonly Tarea[] }>)[horario];
-  // El respaldo lleva las cuatro y en el MISMO orden: un horario desconocido corre todo, y correr
-  // todo mal ordenado perdería mensajes igual que el orden equivocado de arriba.
-  if (!entrada) return { tareas: ['sonda', 'contactos', 'mensajes', 'citas'], desconocido: true };
+  // El respaldo son TODAS, de `TAREAS` y no de una lista escrita acá: una lista propia se olvidaría
+  // de la tarea siguiente y **el modo de fallo es silencioso** — el horario desconocido correría
+  // cuatro de cinco y la respuesta diría que corrió todas. El orden ya viene bien de allá.
+  if (!entrada) return { tareas: TAREAS, desconocido: true };
   return { tareas: entrada.tareas, desconocido: false };
 }
 
@@ -273,7 +348,7 @@ export async function barrerTodo(
     return a.sello - b.sello;
   });
 
-  for (const { org, acceso } of conSello) {
+  for (const { org, acceso, auditor } of conSello) {
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
@@ -293,9 +368,22 @@ export async function barrerTodo(
       // faltas se distinguen porque significan cosas distintas: `token_ilegible` en todas las
       // empresas a la vez significa que cambió la clave maestra del servidor, no que todos los
       // clientes desconectaron su CRM el mismo día.
-      if (acceso.tipo !== 'listo') {
+      /* ── `auditoria` NO PIDE EL TOKEN DEL CRM, Y ESO CAMBIA ESTA RAMA ────
+       *
+       * Es la primera tarea que no le habla a GoHighLevel: lee de nuestra base y llama al modelo. Sin
+       * esta distinción, una empresa sin token del CRM —el caso NORMAL de una empresa recién creada—
+       * saldría como `saltada` en una tarea que no necesita ese token, y el motivo diría
+       * `sin_token_de_crm` sobre algo que no lo usa. */
+      if (tarea !== 'auditoria' && acceso.tipo !== 'listo') {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', acceso.que, 0);
+        continue;
+      }
+      // Y su propia falta, con su propio texto: cuatro motivos que llevan a cuatro acciones distintas.
+      if (tarea === 'auditoria' && auditor.tipo !== 'listo') {
+        const que = TEXTO_DE_FALTA_AUDITOR[auditor.que];
+        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellar(org.id, tarea, 'saltada', que, 0);
         continue;
       }
 
@@ -307,10 +395,12 @@ export async function barrerTodo(
       try {
         const r =
           tarea === 'contactos'
-            ? await releerContactos(org.id, acceso)
+            ? await releerContactos(org.id, conToken(acceso))
             : tarea === 'mensajes'
-              ? await ingerirMensajes(org.id, acceso)
-              : await barrerCitas(org.id, acceso);
+              ? await ingerirMensajes(org.id, conToken(acceso))
+              : tarea === 'auditoria'
+                ? await auditar(org, auditor, arranque, ahora)
+                : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -362,6 +452,53 @@ export async function barrerTodo(
     // Los que DE VERDAD corrieron. Ver el comentario del campo.
     corrieron: renglones.filter((r) => r.estado === 'corrio').length,
   };
+}
+
+/**
+ * Auditar a los agentes de esa empresa, con la forma que espera el bucle de arriba.
+ *
+ * ── EL PRESUPUESTO SE LE PASA, NO SE LO INVENTA ───────────────────────────
+ *
+ * El guardia de `PRESUPUESTO_MS` de arriba comprueba el reloj **antes de empezar cada empresa**, y
+ * para las otras cuatro tareas eso alcanza: cuestan unas pocas llamadas al CRM y terminan en
+ * segundos. Esta puede hacer veinte llamadas al modelo, que pasan cómodamente los 300 segundos de
+ * `maxDuration` — y la plataforma **no reintenta**, así que lo que se corta se pierde y la llamada en
+ * vuelo se paga igual.
+ *
+ * Así que el auditor recibe la misma fecha límite que usa este bucle y se detiene solo antes de cada
+ * inferencia. Los que quedan salen como `sin_tiempo` en su reporte, y la corrida siguiente empieza
+ * por ellos porque los candidatos vienen ordenados por el análisis más viejo primero.
+ *
+ * ── Y UN FRENO DEL CANDADO NO ES UN FALLO ────────────────────────────────
+ *
+ * `auditarEmpresa` usa `conElPulso`, igual que la ingesta, así que puede devolver que no le tocaba.
+ * Eso se traduce al vocabulario del bucle —`frenada`— y no a un error: reintentar lo que frenó a
+ * propósito convertiría el candado en un generador de gasto.
+ */
+async function auditar(
+  org: OrganizacionListada,
+  auditor: AccesoAlAuditor,
+  arranque: number,
+  ahora: () => number,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number } | { corrio: false; porque: string }> {
+  // El bucle ya garantizó que está `listo` antes de llamar acá. El tipo no lo sabe, y el `throw` es
+  // preferible a un valor por omisión: una llave vacía llamaría al proveedor y gastaría un rechazo.
+  if (auditor.tipo !== 'listo') throw new Error('auditar: la empresa no tiene acceso resuelto');
+
+  const r = await auditarEmpresa(
+    {
+      orgId: org.id,
+      zona: org.zonaHoraria,
+      // El interruptor y las dos faltas ya las resolvió `resolverAccesoAlAuditor`.
+      auditorActivo: true,
+      claveIa: auditor.claveIa,
+      idDelAgente: auditor.idDelAgente,
+    },
+    { hasta: arranque + PRESUPUESTO_MS, reloj: ahora },
+  );
+
+  if (r.frenado !== undefined) return { corrio: false, porque: r.frenado };
+  return { corrio: true, resultado: r, llamadas: r.llamadas };
 }
 
 /**

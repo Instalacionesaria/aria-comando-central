@@ -64,7 +64,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { listarOrganizaciones } from '../../../lib/administracion/organizaciones.ts';
-import { resolverAccesoAGhl } from '../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl, resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { barrerTodo, type EmpresaParaBarrer } from '../../../lib/negocio/barrido.ts';
 
@@ -142,7 +142,16 @@ export async function GET(peticion: Request): Promise<Response> {
     // gastar diez llamadas al proveedor por una empresa a la que nadie puede entrar.
     const activas = todas.filter((o) => o.activa);
     return Promise.all(
-      activas.map(async (org) => ({ org, acceso: await resolverAccesoAGhl(db, org.id) })),
+      activas.map(async (org) => ({
+        org,
+        acceso: await resolverAccesoAGhl(db, org.id),
+        /* El segundo acceso, en la MISMA transacción de identidad. Dos proveedores distintos con dos
+           llaves distintas: hoy en producción solo una empresa de cinco tiene llave de IA, y todas las
+           que trabajan tienen token del CRM. Resolverlos en dos transacciones dejaría la puerta a
+           leerlos en dos instantes, y el registro de `credencial_ilegible` de los dos tiene que caer
+           en la misma transacción que su lectura — `ADR-0809`. */
+        auditor: await resolverAccesoAlAuditor(db, org.id),
+      })),
     );
   });
 

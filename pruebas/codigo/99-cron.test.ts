@@ -21,7 +21,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { HORARIOS, tareasDelHorario, type Tarea } from '../../lib/negocio/barrido.ts';
+import { HORARIOS, TAREAS, tareasDelHorario, type Tarea } from '../../lib/negocio/barrido.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (ruta: string) => readFileSync(new URL(ruta, RAIZ), 'utf8');
@@ -111,13 +111,34 @@ test('el umbral de atraso es al menos dos cadencias más una hora', () => {
   }
 });
 
-test('toda tarea nombrada en `HORARIOS` es una de las cuatro que el barrido sabe hacer', () => {
-  const conocidas: Tarea[] = ['sonda', 'contactos', 'mensajes', 'citas'];
+test('toda tarea nombrada en `HORARIOS` está en `TAREAS`, y el despachador la sabe hacer', () => {
+  /* ── ESTA PRUEBA CAMBIÓ DE FUENTE, Y ES LA MITAD DE LO QUE ARREGLA ────────
+   *
+   * Antes tenía las cuatro tareas escritas a mano acá adentro. Agregar la quinta la puso en rojo con
+   * el mensaje «la tarea auditoria no existe» — sobre una tarea que sí existe. Un mensaje falso en
+   * una prueba roja es peor que ninguna prueba: manda a buscar donde no está.
+   *
+   * Ahora la fuente es `TAREAS`, que es la única lista en tiempo de ejecución. Lo que esto sigue
+   * afirmando es real y no lo cubre el compilador de `npm test`: que un horario no nombre algo que el
+   * despachador de `barrerTodo` no sabe hacer. */
   for (const [clave, v] of Object.entries(HORARIOS)) {
     for (const t of v.tareas) {
-      assert.ok(conocidas.includes(t), `«${clave}» nombra la tarea «${t}», que no existe`);
+      assert.ok(
+        (TAREAS as readonly Tarea[]).includes(t),
+        `«${clave}» nombra la tarea «${t}», que no está en TAREAS`,
+      );
     }
   }
+});
+
+test('`TAREAS` respeta el orden que las otras dos pruebas exigen de los horarios', () => {
+  /* `TAREAS` es también el respaldo del horario desconocido, así que su orden **corre de verdad**.
+     Sin esta prueba, el orden de los horarios estaría comprobado y el del respaldo no — y el respaldo
+     es el camino que se toma cuando alguien se equivoca en `vercel.json`, o sea justo cuando menos
+     conviene perder mensajes. */
+  const t = TAREAS as readonly Tarea[];
+  assert.ok(t.indexOf('contactos') < t.indexOf('mensajes'), '`contactos` tiene que ir antes');
+  assert.ok(t.indexOf('mensajes') < t.indexOf('auditoria'), '`auditoria` tiene que ir después');
 });
 
 test('`contactos` corre ANTES de `mensajes`, y eso no es una preferencia de orden', () => {
@@ -204,7 +225,10 @@ test('un horario ausente o desconocido corre TODAS las tareas y lo dice', () => 
   for (const raro of [null, '', '0 4 * * *', 'cualquier cosa']) {
     const r = tareasDelHorario(raro);
     assert.equal(r.desconocido, true, `«${raro}» tendría que ser desconocido`);
-    assert.deepEqual([...r.tareas].sort(), ['citas', 'contactos', 'mensajes', 'sonda']);
+    /* Contra `TAREAS` y no contra una lista escrita acá: eran dos listas del mismo hecho, y cuando
+       divergieran esta prueba diría que el respaldo está mal justo cuando está bien. */
+    assert.deepEqual([...r.tareas].sort(), [...(TAREAS as readonly Tarea[])].sort());
+    assert.equal(r.tareas.length, TAREAS.length, 'el respaldo tiene que correr TODAS');
   }
 
   // Y un horario conocido corre exactamente lo suyo.

@@ -387,6 +387,88 @@ export async function resolverAccesoAFundaciones(
   return { tipo: 'listo', claveIa, clienteId: fila.fundaciones_cliente_id };
 }
 
+/**
+ * Lo que le falta a una empresa para poder auditar. **Cuatro, y ninguno es un error.**
+ *
+ * ── POR QUÉ NO SE REUSA `resolverAccesoAFundaciones`, QUE YA LEE LA MISMA LLAVE ──
+ *
+ * Porque esa función exige además `fundaciones_cliente_id`, y **el auditor no lo necesita**: es el
+ * identificador del alumno en el hub, que no tiene nada que ver con auditar agentes. Reusarla haría
+ * que una empresa sin Fundaciones —perfectamente capaz de auditar— saliera como
+ * `sin_alumno_vinculado`, y alguien iría a vincular una cuenta del hub para arreglar el auditor.
+ *
+ * Y las cuatro faltas se distinguen porque llevan a cuatro acciones distintas: cargar la llave,
+ * revisar la clave maestra del servidor, escribir el identificador del agente en el CRM, y encender
+ * el interruptor. Colapsarlas en «no se puede auditar» manda a las cuatro personas al lugar
+ * equivocado — es la misma lección que el comentario de `FaltaParaGenerar` de más arriba.
+ */
+export type FaltaParaAuditar =
+  | 'auditor_apagado'
+  | 'sin_llave_de_ia'
+  | 'llave_de_ia_ilegible'
+  | 'sin_id_del_agente';
+
+export type AccesoAlAuditor =
+  | { tipo: 'listo'; claveIa: string; idDelAgente: string }
+  | { tipo: 'falta'; que: FaltaParaAuditar };
+
+export const TEXTO_DE_FALTA_AUDITOR: Readonly<Record<FaltaParaAuditar, string>> = {
+  auditor_apagado: 'El auditor de IA está apagado para esta empresa.',
+  sin_llave_de_ia:
+    'Esta empresa no tiene su llave de IA cargada. Se carga en Integraciones, y sin ella no se puede ' +
+    'auditar.',
+  llave_de_ia_ilegible:
+    'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
+  sin_id_del_agente:
+    'Falta el identificador del agente de IA en el CRM. Sin él no se puede saber qué líneas de la ' +
+    'conversación escribió el agente, así que no se audita.',
+};
+
+/**
+ * La llave de IA, el identificador del agente y el interruptor. O **qué falta**.
+ *
+ * ── EL ORDEN DE LAS COMPROBACIONES ES EL DEL PORTÓN 0 ──────────────────────
+ *
+ * El interruptor primero, y por el mismo motivo que en `lib/auditor/portones.ts`: es el único de los
+ * cuatro que alguien apretó a propósito. Con el orden al revés, una empresa apagada Y sin llave
+ * saldría reportada como «sin llave», y quien la apagó iría a arreglar algo que no está roto.
+ *
+ * Y **corta antes de descifrar**: descifrar una llave que no se va a usar es trabajo criptográfico
+ * por cada empresa apagada en cada corrida del cron.
+ */
+export async function resolverAccesoAlAuditor(db: Trx, orgId: string): Promise<AccesoAlAuditor> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['auditor_activo', 'ia_clave_cifrada', 'crm_agente_usuario_id'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  /* Sin fila de credenciales, la falta que corresponde es la de la llave y no «apagado»: el
+     interruptor nace ENCENDIDO (`default true`), así que una empresa sin fila no tiene el auditor
+     apagado — tiene todo por cargar. Decir «apagado» mandaría a buscar un interruptor que nadie tocó. */
+  if (!fila) return { tipo: 'falta', que: 'sin_llave_de_ia' };
+  if (fila.auditor_activo === false) return { tipo: 'falta', que: 'auditor_apagado' };
+  if (!fila.ia_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_ia' };
+
+  const idDelAgente = (fila.crm_agente_usuario_id ?? '').trim();
+  /* Se comprueba ANTES de descifrar. Es el orden barato, y además el que evita el caso peor: con el
+     identificador vacío, el atribuidor no encontraría ni una línea del agente y cada conversación se
+     auditaría para producir un «no auditable» — gasto puro con apariencia de funcionar. */
+  if (idDelAgente === '') return { tipo: 'falta', que: 'sin_id_del_agente' };
+
+  let claveIa: string;
+  try {
+    claveIa = descifrar(fila.ia_clave_cifrada);
+  } catch {
+    // `ADR-0809` · el mismo punto de emisión y la misma transacción que los otros dos resolvedores:
+    // un descifrado que falla y no queda registrado es el cero indistinguible de «nadie cableó la señal».
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
+  }
+
+  return { tipo: 'listo', claveIa, idDelAgente };
+}
+
 /** El texto que se le muestra a quien no puede generar. Uno por faltante. */
 export const TEXTO_DE_FALTA: Readonly<Record<FaltaParaGenerar, string>> = {
   sin_llave_de_ia:

@@ -86,6 +86,8 @@ const NOMBRE: Record<Tarea, string> = {
      aviso habría dicho «… y contactos tendría que correr cada …», con la palabra interna adentro de
      una frase para una persona. */
   contactos: 'la lectura de las etiquetas de los contactos',
+  // Y la quinta dejó este objeto en rojo otra vez, que es la prueba de que el `Record` total sirve.
+  auditoria: 'la auditoría de los agentes de IA',
 };
 
 /**
