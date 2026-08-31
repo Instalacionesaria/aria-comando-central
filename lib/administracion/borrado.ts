@@ -58,6 +58,7 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   // no está no significa nada.
   usuarios_secciones_concedida_por_fkey: 'definió las pestañas de otras personas',
   organizaciones_credenciales_org_id_actualizado_por_fkey: 'cargó credenciales de la empresa',
+  prompts_del_agente_org_id_actualizado_por_fkey: 'editó el prompt de un agente de IA',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
   usuarios_org_id_fkey: 'todavía tiene personas dadas de alta',

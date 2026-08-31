@@ -567,6 +567,26 @@ export interface TablaNotas {
   creado_el: Generated<Date>;
 }
 
+/**
+ * El prompt de un agente de IA, por empresa. **Una fila por `(org_id, agente)`.**
+ *
+ * `prompt_hash` es el hash que TENÍA al guardarse, y no el actual: el actual se recalcula del texto
+ * en cada lectura. Leer esta columna como si fuera el vigente dejaría hallazgos viejos pasando por
+ * frescos para siempre en cuanto una escritura se olvidara de actualizarla.
+ *
+ * Y no existe el estado «fila con texto vacío»: un `check` de la base lo hace inescribible, porque
+ * vaciar el texto SIGNIFICA borrar el prompt. Ver la migración 028.
+ */
+export interface TablaPromptsDelAgente {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  agente: string;
+  texto: string;
+  prompt_hash: string;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
 export interface TablaHallazgos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -700,11 +720,13 @@ export interface BaseDeDatos {
   organizaciones_credenciales: TablaOrganizacionesCredenciales;
   usuarios_permisos: VistaUsuariosPermisos;
 
-  // Las DOCE de negocio. Sin calificar, como las demas: la ruta de busqueda por rol las
-  // resuelve en `negocio`, y `public` no esta en la ruta de ningun rol nuestro.
+  // Las de negocio. Sin calificar, como las demás: la ruta de búsqueda por rol las resuelve en
+  // `negocio`, y `public` no está en la ruta de ningún rol nuestro.
   //
-  // El comentario decía «ocho» y ya listaba once: un conteo escrito a mano envejece con cada
-  // tabla nueva y nada falla. Se corrige al agregar la doceava.
+  // **Acá no va un número.** Decía «ocho» listando once, se corrigió a «doce» listando doce, y con
+  // la trece volvió a mentir sin que nada fallara. La lección que ese comentario ya había aprendido
+  // —*«un conteo escrito a mano envejece con cada tabla nueva»*— se aplica QUITÁNDOLO, no
+  // actualizándolo: la lista de abajo ya dice cuántas son.
   contactos: TablaContactos;
   citas: TablaCitas;
   mensajes: TablaMensajes;
@@ -718,6 +740,7 @@ export interface BaseDeDatos {
   resultados: TablaResultados;
   notas: TablaNotas;
   hallazgos: TablaHallazgos;
+  prompts_del_agente: TablaPromptsDelAgente;
 
   // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
   // backend de Python por PostgREST, que sólo alcanza `public`. Tienen el mismo régimen de
