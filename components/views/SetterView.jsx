@@ -41,6 +41,32 @@ import Inicio from '../setter/Inicio.jsx';
 /**
  * Las SEIS colas del setter, en el orden en que se trabajan.
  *
+ * ══ TRES FRASES DE VACÍO NOMBRAN LA CONDICIÓN DE ENTRADA, Y TRES AFIRMAN EL HECHO ══
+ *
+ * La división no es de estilo: es **de quién es el dato**.
+ *
+ * `buzon`, `seguimientos` y `completadas` salen de NUESTRAS tablas —`mensajes`, `tareas`,
+ * `resultados`—. Un cero ahí es un cero MEDIDO, así que la frase puede afirmar el hecho:
+ * *«Nadie escribió sin respuesta»* es cierto.
+ *
+ * `urgentes`, `oportunidades` y `estancadas` salen de **etiquetas que pone el CRM** y que **ninguna
+ * línea de esta aplicación escribe**. Medido el 2026-08-31: **0 de 163** contactos de territorio
+ * setter llevan alguna de ellas. Así que su cero no es un cero medido — es «nadie nos dijo nada».
+ *
+ * Las frases decían *«El agente de IA no falló en ningún contacto»*, *«El agente no derivó a nadie al
+ * producto chico»* y *«Ninguna conversación se apagó»*. Las tres afirmaban algo sobre el mundo que
+ * este sistema **no tiene con qué saber**, y las tres se veían exactamente igual que si fueran
+ * verdad. Es la misma regla que `components/setter/Inicio.jsx` aplica a cada número del cockpit
+ * —*«un cero medido y un cero no medido no son el mismo hecho»*— y que a estas tres frases se le
+ * había pasado.
+ *
+ * Ahora nombran **cuándo aparece algo acá**. Eso sí es cierto siempre, y encima le dice a quien mira
+ * qué tiene que pasar para que la sección se llene.
+ *
+ * ⚠ El Closer tiene la MISMA frase para su cola de urgentes
+ * (`components/closer/MiDia.jsx`), con el mismo defecto y por el mismo motivo. No se tocó acá porque
+ * este cambio era del Setter; queda dicho para que no se lea como que ese archivo está bien.
+ *
  * Dos son propias —estancadas y oportunidades chicas— y la agenda del closer **no está**: el setter
  * trabaja por definición antes de que haya cita, así que una sección de citas sería una sección
  * permanentemente vacía.
@@ -61,7 +87,8 @@ const COLAS_DEL_SETTER = [
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
     tono: 'crit',
-    vacio: 'Ninguna. El agente de IA no falló en ningún contacto.',
+    /* NOMBRA LA CONDICIÓN DE ENTRADA, no el estado del mundo. Ver el bloque de arriba. */
+    vacio: 'Ninguna. Acá aparece un contacto cuando el CRM marca que su agente falló.',
   },
   {
     clave: 'buzon',
@@ -71,13 +98,13 @@ const COLAS_DEL_SETTER = [
   {
     clave: 'oportunidades',
     titulo: 'Oportunidades chicas',
-    vacio: 'El agente no derivó a nadie al producto chico.',
+    vacio: 'Ninguna. Acá aparece un contacto cuando el agente lo deriva al producto chico.',
   },
   {
     clave: 'estancadas',
     titulo: 'Conversaciones estancadas',
     tono: 'warn',
-    vacio: 'Ninguna conversación se apagó.',
+    vacio: 'Ninguna. Acá aparece un contacto cuando el CRM lo marca como estancado.',
   },
   {
     clave: 'seguimientos',

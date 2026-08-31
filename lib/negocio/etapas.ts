@@ -231,16 +231,47 @@ export function etapaDelContacto(
      del closer, así que cae a las vías 2 y 3 y termina en la entrada del closer. */
   if (esEtapaDe(rol, c.etapa)) return c.etapa as Etapa;
 
-  // 2 · Y si no, la etiqueta de más peso. 3 · Y si tampoco, la entrada DE ESTE embudo.
-  return desenlaceDeLasEtiquetas(c.etiquetas)?.etapa ?? etapaDeEntrada(rol);
+  /* 2 · Y si no, la etiqueta de más peso — **validada contra este embudo, igual que la vía 1.**
+   *
+   * ══ SIN ESTA VALIDACIÓN EL CONTACTO DESAPARECE, Y EL TOTAL LO SIGUE CONTANDO ══
+   *
+   * `desenlaceDeLasEtiquetas` deriva la etapa con `ETAPA_DE_LA_SALIDA`, que es el mapa **del
+   * closer**. Así que sobre un contacto del SETTER siempre devuelve una etapa del closer, y esa
+   * etapa **nunca** está en el embudo del setter.
+   *
+   * El síntoma es el peor de los posibles: `lib/negocio/pipeline.ts` reparte con
+   * `porEtapa.get(etapa)?.push(f)` —ese `?.` **descarta la fila en silencio**— mientras `total` sale
+   * de `filas.length` y la sigue contando. O sea un Pipeline que dice «8 contactos» y dibuja 7, sin
+   * un error, sin un aviso, y sin que la suma de las columnas cierre con el total.
+   *
+   * Y el comentario de `contarPorEtapa`, abajo, afirmaba que *«`etapaDelContacto` ya garantiza que no
+   * llegue»*. Era falso para el setter: lo garantizaba la vía 1 y no la vía 2. Ahora sí lo garantiza.
+   *
+   * ── ESTÁ INACTIVO HOY, Y SE ARREGLA IGUAL ─────────────────────────────────
+   *
+   * Medido el 2026-08-31: cero contactos de territorio setter con etapa escrita y cero con la
+   * etiqueta que lo dispara. Se activa el día que un contacto vuelva del territorio del closer con su
+   * etapa puesta, o que el CRM aplique una etiqueta de desenlace sobre un contacto de pre-agenda — o
+   * sea el día que el módulo empiece a usarse de verdad.
+   *
+   * 3 · Y si tampoco, la entrada DE ESTE embudo. */
+  const porEtiqueta = desenlaceDeLasEtiquetas(c.etiquetas)?.etapa;
+  if (esEtapaDe(rol, porEtiqueta ?? null)) return porEtiqueta as Etapa;
+  return etapaDeEntrada(rol);
 }
 
 /** Contador con TODAS las claves de ese embudo presentes, incluidas las que dan cero. */
 export function contarPorEtapa(rol: Territorio, etapas: readonly Etapa[]): Record<string, number> {
   const conteo: Record<string, number> = Object.fromEntries(EMBUDOS[rol].claves.map((e) => [e, 0]));
   for (const e of etapas) {
-    // Una etapa que no es de este embudo no se cuenta: `etapaDelContacto` ya garantiza que no llegue,
-    // y sumarla crearía una clave que ninguna columna dibuja — un total que no cierra con la suma.
+    /* Una etapa que no es de este embudo no se cuenta, y sumarla crearía una clave que ninguna columna
+       dibuja — un total que no cierra con la suma.
+
+       `etapaDelContacto` garantiza que no llegue, y hay que decir que **antes no lo garantizaba**:
+       validaba la etapa escrita contra el embudo y la derivada de las etiquetas no, así que sobre un
+       contacto del setter llegaba siempre una etapa del closer. Este `if` era lo único que la
+       descartaba — en silencio, y del lado del contador, mientras la columna la descartaba del otro.
+       Las dos mitades calladas son la razon por la que el defecto no tenía síntoma. */
     if (e in conteo) conteo[e] = (conteo[e] ?? 0) + 1;
   }
   return conteo;

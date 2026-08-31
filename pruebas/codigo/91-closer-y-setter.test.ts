@@ -484,6 +484,91 @@ test('Mi Día muestra sus colas y NADA de la lista completa', () => {
   );
 });
 
+test('las frases de vacío del Setter no afirman lo que el sistema no puede saber', () => {
+  /* ══ TRES DE LAS SEIS SALEN DE ETIQUETAS QUE NADIE NUESTRO ESCRIBE ═══════
+   *
+   * `urgentes`, `oportunidades` y `estancadas` se llenan con etiquetas que **pone el CRM** y que
+   * **ninguna línea de esta aplicación escribe**. Así que su cero no es un cero medido: es «nadie nos
+   * dijo nada». Las frases decían *«El agente de IA no falló en ningún contacto»*, *«El agente no
+   * derivó a nadie al producto chico»* y *«Ninguna conversación se apagó»* — tres afirmaciones sobre
+   * el mundo, que se veían igual que si fueran verdad.
+   *
+   * ── LO QUE SE FIJA, Y POR QUÉ NO ES «NO DIGAS ESTAS TRES FRASES» ────────────
+   *
+   * Una prueba que persiguiera esos tres textos exactos se satisface cambiándoles una coma. Lo que
+   * se fija es la FORMA del defecto: **una frase de vacío que nombra al agente o a las
+   * conversaciones sin nombrar la condición de entrada**. Cualquier redacción nueva que vuelva a
+   * afirmar el estado del mundo cae en la misma red.
+   *
+   * Y las OTRAS TRES no se tocan, que es la mitad que hace honesta a esta prueba: `buzon`,
+   * `seguimientos` y `completadas` salen de nuestras tablas —`mensajes`, `tareas`, `resultados`—, así
+   * que su cero SÍ está medido y su frase puede afirmar el hecho. Una regla que las obligara a las
+   * seis a hablar de condiciones de entrada haría el texto peor: *«Nadie escribió sin respuesta»* es
+   * cierto y es lo que quien mira necesita leer. */
+  const vista = archivosFuente(['components']).find(
+    (a) => a.ruta === 'components/views/SetterView.jsx',
+  )?.limpio;
+  assert.ok(vista, 'no se encontró la vista del setter');
+
+  /* Las seis frases, con su clave. Se extraen del texto SIN comentarios: el encabezado de ese
+     archivo cita las tres frases viejas para explicar por qué se cambiaron, y sin quitar los
+     comentarios esta prueba se comería su propia explicación — el defecto que `pruebas/apoyo/fuente`
+     documenta como «la comprobación daba verde POR UN COMENTARIO», al revés. */
+  const colas = [...vista.matchAll(/clave:\s*'([a-z]+)'[\s\S]{0,400}?vacio:\s*'([^']*)'/g)].map(
+    (m) => ({ clave: m[1] as string, vacio: m[2] as string }),
+  );
+  assert.equal(colas.length, 6, `se esperaban las seis colas del setter, se leyeron ${colas.length}`);
+
+  /** Las que dependen de una etiqueta del CRM. Su cero NO está medido. */
+  const DEL_CRM = ['urgentes', 'oportunidades', 'estancadas'];
+  /** Y las que salen de nuestras tablas. Su cero SÍ lo está. */
+  const NUESTRAS = ['buzon', 'seguimientos', 'completadas'];
+  assert.deepEqual(
+    colas.map((c) => c.clave).sort(),
+    [...DEL_CRM, ...NUESTRAS].sort(),
+    'cambiaron las colas del setter: hay que decidir de cuál lado cae la nueva antes de escribir su ' +
+      'frase de vacío — si su dato lo pone el CRM, no puede afirmar el hecho',
+  );
+
+  for (const clave of DEL_CRM) {
+    const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
+
+    /* La afirmación prohibida: hablar del agente o de las conversaciones **sin** decir cuándo
+       aparece algo acá. Se pide la condición de entrada explícita, que es lo único cierto y además
+       lo único útil: le dice a quien mira qué tiene que pasar para que la sección se llene. */
+    assert.match(
+      frase,
+      /Acá aparece|aparece un contacto cuando/,
+      `la frase de vacío de «${clave}» no dice CUÁNDO aparece algo acá: «${frase}». Esa cola se ` +
+        'llena con una etiqueta que pone el CRM y que ninguna línea nuestra escribe, así que su cero ' +
+        'no está medido — y una frase que afirme el hecho se ve igual que si fuera verdad',
+    );
+
+    for (const afirmacion of [
+      /no falló/i,
+      /no derivó/i,
+      /se apagó/i,
+      /ninguna conversación/i,
+    ]) {
+      assert.ok(
+        !afirmacion.test(frase),
+        `la frase de «${clave}» volvió a afirmar el estado del mundo: «${frase}»`,
+      );
+    }
+  }
+
+  /* Y las nuestras siguen afirmando el hecho. Sin esta mitad, la regla se podría «satisfacer»
+     poniendo «Acá aparece…» en las seis, y tres textos ciertos y útiles se volverían tibios. */
+  for (const clave of NUESTRAS) {
+    const frase = colas.find((c) => c.clave === clave)?.vacio ?? '';
+    assert.ok(
+      !/Acá aparece/.test(frase),
+      `la frase de «${clave}» pasó a hablar de condiciones de entrada, y no hace falta: esa cola sale ` +
+        `de nuestras tablas, así que su cero está medido y puede decirlo. «${frase}»`,
+    );
+  }
+})
+
 test('el cockpit del SETTER no vuelve a contar lo que Mi Día ya contó', () => {
   /* ══ DOS DERIVACIONES DEL MISMO HECHO, Y ES DE LAS QUE NADIE REPORTA ══════
    *

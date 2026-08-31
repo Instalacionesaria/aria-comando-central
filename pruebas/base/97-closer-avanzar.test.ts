@@ -49,6 +49,8 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { pipelineDe } from '../../lib/negocio/pipeline.ts';
 import { sellarSiEsDelSetter } from '../../lib/negocio/sello.ts';
 import { GET as pipelineDelSetter } from '../../app/api/setter/pipeline/route.ts';
+import { ETAPA_DE_ENTRADA_DEL_SETTER } from '../../lib/negocio/etapasDelSetter.ts';
+import { RESULTADOS } from '../../lib/ghl/contrato.ts';
 import { SALIDAS_DEL_CLOSER, modoDe, modosDe } from '../../lib/negocio/salidas.ts';
 import { etiquetasDelResultado } from '../../lib/ghl/contrato.ts';
 import { ETAPA_DE_LA_SALIDA } from '../../lib/negocio/etapas.ts';
@@ -507,6 +509,112 @@ test('el sello NO se enciende fuera del territorio del setter', async () => {
   assert.equal(sello, false, 'el sellador dijo que selló un contacto sin territorio');
   assert.equal((await selloDe(congelado.id)).id, null, 'un congelado quedó sellado');
 });
+
+
+test('una etapa que viene de una ETIQUETA no puede sacar al contacto de todas las columnas', async () => {
+  /* ══ EL DEFECTO, Y POR QUÉ NO TENÍA SÍNTOMA ════════════════════════
+   *
+   * `etapaDelContacto` tiene tres vías: la etapa escrita, la etiqueta de más peso, y la entrada del
+   * embudo. La primera **se validaba** contra el embudo del rol y la segunda **no**.
+   *
+   * Y `desenlaceDeLasEtiquetas` deriva con `ETAPA_DE_LA_SALIDA`, que es el mapa **del closer**. Así
+   * que sobre un contacto del SETTER la vía 2 devolvía siempre una etapa del closer — una que el
+   * Pipeline del setter no dibuja.
+   *
+   * Las dos mitades del síntoma estaban calladas, y ahí está todo el problema:
+   *
+   *   · `pipeline.ts` reparte con `porEtapa.get(etapa)?.push(f)` — el `?.` **descarta la fila**.
+   *   · `contarPorEtapa` la salta con su `if (e in conteo)`.
+   *   · Y `total` sale de `filas.length`, así que la sigue contando.
+   *
+   * Resultado: un Pipeline que dice «N contactos» y dibuja N−1. Sin error, sin aviso, y sin nada que
+   * lo delate salvo sumar las columnas a mano.
+   *
+   * ── POR QUÉ ESTA PRUEBA VA POR LA RUTA Y NO LLAMA A `pipelineDe` ────────────
+   *
+   * Porque el rol es lo único que decide el defecto, y la ruta es la que lo escribe en el servidor.
+   * Llamando a la función directo, la prueba elegiría el rol — y una mutación del argumento de la
+   * ruta pasaría entera. */
+  /* La etiqueta se DERIVA del catálogo del closer y no se escribe a mano: es la que
+     `desenlaceDeLasEtiquetas` reconoce, y si ese catálogo cambia la prueba tiene que seguirlo en vez
+     de quedarse midiendo una etiqueta que ya no clasifica nada. */
+  const deSeguimiento = RESULTADOS.find((r) => r.salida === 'seguimiento');
+  assert.ok(deSeguimiento?.etiqueta, 'el catálogo del closer dejó de declarar la de seguimiento');
+  const etiquetaQueElCloserReconoce = deSeguimiento.etiqueta;
+
+  interface CuerpoDelPipeline {
+    columnas: { clave: string; cuantos: number; filas: { id: string }[] }[];
+    total: number;
+  }
+
+  const antes = await pipelineDelSetter(pedirComo('/api/setter/pipeline', esc.token));
+  assert.equal(antes.status, 200, await antes.clone().text());
+  const partida = (await antes.clone().json()) as CuerpoDelPipeline;
+
+  /* Un contacto del setter SIN etapa escrita y CON una etiqueta de desenlace del closer. Es el caso
+     real: el CRM aplica sus etiquetas sobre contactos de los dos territorios, y esta aplicación no
+     controla cuándo. Se usa `seguimiento` porque es la etiqueta del desenlace de menos peso, o sea
+     la más fácil de que aparezca sola. */
+  const k = await unContacto(esc, {
+    territorio: 'setter',
+    nombre: 'Etapa de la otra mitad',
+    etapa: null,
+    etiquetas: [etiquetaQueElCloserReconoce],
+  });
+
+  const r = await pipelineDelSetter(pedirComo('/api/setter/pipeline', esc.token));
+  assert.equal(r.status, 200, await r.clone().text());
+  const cuerpo = (await r.clone().json()) as CuerpoDelPipeline;
+
+  // 1 · El contacto ESTÁ en alguna columna. Antes no estaba en ninguna.
+  const columnaConEl = cuerpo.columnas.find((c) =>
+    c.filas.some((f) => f.id === k.id),
+  );
+  assert.ok(
+    columnaConEl,
+    'el contacto no aparece en NINGUNA columna del Pipeline del setter: su etapa se derivó de una ' +
+      'etiqueta del closer y ninguna columna de este embudo la dibuja',
+  );
+
+  /* 2 · Y cayó en la etapa de ENTRADA, que es la respuesta honesta: nadie registró un resultado de
+     setter sobre él, así que está al principio del embudo. Cualquier otra columna sería inventarle un
+     avance que no tuvo. */
+  assert.equal(
+    columnaConEl.clave,
+    ETAPA_DE_ENTRADA_DEL_SETTER,
+    'la etiqueta del closer lo mandó a una columna que no le corresponde',
+  );
+
+  /* 3 · LA MITAD QUE NINGUNA OTRA ASERCIÓN DA: la suma de las columnas cierra con el total.
+     Es lo único que detecta una fila descartada en silencio — la aserción 1 solo mira a ESTE contacto,
+     y el defecto puede volver por otro camino sobre otro.
+
+     ══ Y UNA MUTACIÓN DE ESTA LÍNEA **SOBREVIVE**, A PROPÓSITO ══════════════
+
+     Medido: cambiar `total: filas.length` por la suma de las columnas deja esta aserción en verde,
+     porque con la guarda de `etapaDelContacto` puesta **nada se descarta** y las dos definiciones de
+     `total` coinciden. Es un mutante que no cambia el comportamiento mientras el otro guardia esté.
+
+     Lo que SÍ muere son **las dos juntas** — quitar la validación de la vía 2 y hacer que el total
+     salga de la suma —, y la mata la aserción 1. Es la defensa en profundidad que este repositorio ya
+     documenta: el mutante de un guardia sobrevive solo, y el par muere.
+
+     Queda escrito para que nadie lo redescubra y lo tome por una prueba vacua. */
+  const sumaDeColumnas = cuerpo.columnas.reduce((n, c) => n + c.filas.length, 0);
+  assert.equal(
+    sumaDeColumnas,
+    cuerpo.total,
+    `las columnas suman ${sumaDeColumnas} y el total dice ${cuerpo.total}: hay ` +
+      `${cuerpo.total - sumaDeColumnas} contacto(s) que el Pipeline cuenta y no dibuja`,
+  );
+
+  // Y el total se movió en uno, para que la aserción de arriba no pase con un Pipeline vacío.
+  assert.equal(
+    cuerpo.total,
+    partida.total + 1,
+    'el total no contó al contacto nuevo, así que la suma cerraba por no tener nada que contar',
+  );
+})
 
 // 2 · LO QUE SE RECHAZA NO ESCRIBE
 // ═══════════════════════════════════════════════════════════════════════════════
