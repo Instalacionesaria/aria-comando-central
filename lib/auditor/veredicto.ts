@@ -110,6 +110,7 @@ export const CRITERIOS_POST_AGENDA = [
   /** Pregunta razonable que debería estar en su base de conocimiento. */
   'dato_faltante',
 ] as const;
+export type CriterioPostAgenda = (typeof CRITERIOS_POST_AGENDA)[number];
 
 /**
  * Los siete de **pre-agenda** — calificar y conseguir la cita.
@@ -146,6 +147,7 @@ export const CRITERIOS_PRE_AGENDA = [
   /** El compartido. Preguntó algo **que el prompt sí contesta** y el agente derivó sin necesidad. */
   'dato_faltante',
 ] as const;
+export type CriterioPreAgenda = (typeof CRITERIOS_PRE_AGENDA)[number];
 
 /** Los criterios de cada auditor. **Indexado por agente**, que es lo que la fila guarda. */
 export const CRITERIOS_DEL_AGENTE: Readonly<Record<Agente, readonly string[]>> = {
