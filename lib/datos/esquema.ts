@@ -192,6 +192,14 @@ export interface TablaOrganizacionesCredenciales {
    *
    * Y es la llave de ATRIBUCIÓN: la empresa de un aviso sale de acá y no del cuerpo del webhook.
    */
+  /**
+   * El interruptor del auditor de IA de esta empresa. Migración 029.
+   *
+   * **Nace encendido**, y eso no habilita ningún gasto: lo que lo habilita es `crm_agente_usuario_id`,
+   * que una persona tiene que escribir a mano. Apagarlo detiene el análisis **sin borrar la
+   * configuración**, que es lo que vaciar el identificador no permitía.
+   */
+  auditor_activo: Generated<boolean>;
   aviso_secreto_hash: string | null;
   pagos_comercio_id: string | null;
   crm_refresh_cifrado: string | null;
@@ -587,18 +595,91 @@ export interface TablaPromptsDelAgente {
   actualizado_por: string | null;
 }
 
+/**
+ * Un hallazgo: algo que se corrige EN EL PROMPT del agente. **No interrumpe a nadie.**
+ *
+ * ── LAS DIEZ COLUMNAS DE LA 027, Y POR QUÉ EL TIPO LAS NECESITA ─────────────
+ *
+ * La tabla existía desde la migración 011 con cero lectores y cero escritores, y la 027 le agregó
+ * las diez de abajo —tres de ellas **obligatorias**— para colgarla del análisis que la produjo.
+ *
+ * Mientras el tipo no las declaraba no fallaba nada, y eso es justo lo peligroso: el primer
+ * `insertInto('hallazgos')` habría compilado sin `analisis_id`, `patron`, `correccion` ni
+ * `evidencia_agente`, y habría reventado en tiempo de ejecución con un `23502` **dentro de la
+ * transacción que escribe el análisis** — perdiendo la inferencia entera por una columna faltante.
+ */
 export interface TablaHallazgos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
   contacto_id: string;
+  /** De qué análisis salió. Obligatoria: un hallazgo sin análisis no se puede fechar ni explicar. */
+  analisis_id: string;
+  agente: string;
   titulo: string;
+  /**
+   * El código que AGRUPA casos iguales. Es lo que permite ver «×15 casos» en vez de quince
+   * problemas sueltos, y por eso es obligatorio y tiene formato en la base.
+   */
+  patron: string;
+  criterio: string | null;
   categoria: string | null;
   severidad: string | null;
   diagnostico: string | null;
+  /** El texto EXACTO del prompt que causa la falla. `null` = no había prompt, o no se encontró. */
+  fragmento_prompt: string | null;
+  prompt_seccion: string | null;
+  /** El reemplazo listo para pegar, o la instrucción autónoma. **Obligatoria**: un hallazgo sin
+   * corrección es un reclamo. */
+  correccion: string;
+  /** Qué versión del prompt vio el auditor. Es lo que permite avisar que el fragmento ya no existe. */
+  prompt_hash: string | null;
+  /** La línea EXACTA del agente que prueba el hallazgo. **Sin ella el hallazgo no existe.** */
+  evidencia_agente: string;
+  evidencia_contacto: string | null;
   /** Abierto = sin fecha. Así la cola no depende de que alguien apague una bandera. */
   resuelto_el: Date | null;
   resuelto_por: string | null;
   detectado_el: Generated<Date>;
+}
+
+/**
+ * Un análisis del auditor de IA. La tabla padre, de la migración 027.
+ *
+ * `nivel` es **anulable y eso no es un descuido**: `null` es la ausencia de veredicto, no un cuarto
+ * nivel. Lo producen una conversación no auditable y una siembra de línea base.
+ *
+ * `alarmas` tiene TRES estados que significan cosas distintas: `null` = nadie las miró porque el
+ * antirrebote alcanzó; `[]` = se miraron y no había; con elementos = son las que adelantaron el
+ * análisis. Ver `lib/auditor/portones.ts`.
+ */
+export interface TablaAnalisisDelAgente {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  agente: string;
+  /** ¿Se pudo juzgar? Lo decide la precondición, ANTES de llamar al modelo. */
+  auditable: boolean;
+  no_auditable_motivo: string | null;
+  intervencion: Generated<boolean>;
+  /** Una frase concreta de ESTA conversación. La lee un vendedor en su cola de urgencias. */
+  motivo: string | null;
+  criterio: string | null;
+  /** `null` = **ausencia de veredicto**, no un cuarto nivel. */
+  nivel: string | null;
+  /** Se escribe SIEMPRE, incluso cuando la conversación no es auditable. */
+  resumen: string;
+  destacado: string | null;
+  evidencia: string | null;
+  observaciones: unknown;
+  sentimiento: string | null;
+  disparo: string;
+  /** Tres estados. Ver el encabezado de este tipo. */
+  alarmas: string[] | null;
+  modelo: string | null;
+  prompt_hash: string | null;
+  /** La línea base del antirrebote: cuántos mensajes del agente había al analizar. */
+  mensajes_del_agente: number;
+  analizado_el: Generated<Date>;
 }
 
 /**
@@ -740,6 +821,7 @@ export interface BaseDeDatos {
   resultados: TablaResultados;
   notas: TablaNotas;
   hallazgos: TablaHallazgos;
+  analisis_del_agente: TablaAnalisisDelAgente;
   prompts_del_agente: TablaPromptsDelAgente;
 
   // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
