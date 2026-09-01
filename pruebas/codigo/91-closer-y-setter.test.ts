@@ -70,6 +70,48 @@ test('TODA pantalla del menú tiene su vista en `CommandCenter`', () => {
   );
 });
 
+/** Las sub-pestañas de una vista, en el orden en que se dibujan, y cuál abre. */
+function subPestanas(vista: string): { orden: string[]; abreEn: string } {
+  const fuente = leer(vista);
+  const bloque = fuente.slice(fuente.indexOf('const SUB = ['), fuente.indexOf('];', fuente.indexOf('const SUB = [')));
+  const orden = [...bloque.matchAll(/clave: '(\w+)'/g)].map((m) => m[1]!);
+  const abre = /useState\('(\w+)'\)/.exec(fuente.slice(fuente.indexOf('const [sub, setSub]')));
+  assert.ok(orden.length > 0, `${vista} no tiene sub-pestañas`);
+  assert.ok(abre, `${vista} no dice en qué sub-pestaña abre`);
+  return { orden, abreEn: abre[1]! };
+}
+
+test('las dos pestañas tienen la MISMA forma de sub-pestañas, y abren en la primera', () => {
+  /* ── DOS ÓRDENES DISTINTOS SON UN CLIC MEMORIZADO QUE FALLA ────────────────
+   *
+   * La misma persona abre el Closer y el Setter, y hasta este cambio el orden era distinto: el Closer
+   * empezaba en `Inicio` y el Setter en `Mi Día`. Con dos órdenes, el clic memorizado en una cae en
+   * otra cosa en la otra — y no falla nada, simplemente se abre la pantalla equivocada.
+   *
+   * Se afirma **la forma**, no la lista: los tres primeros iguales y el cuarto propio de cada
+   * territorio. Congelar las cuatro claves haría que agregar una quinta a una sola de las dos se
+   * pusiera rojo por un cambio legítimo.
+   *
+   * Y **cada una abre en su primera**. Abrir en otra deja la pestaña de la izquierda sin usar, y eso
+   * se lee como que no responde — que es exactamente lo que habría pasado reordenando sin tocar el
+   * valor inicial. */
+  const closer = subPestanas('components/views/CloserView.jsx');
+  const setter = subPestanas('components/views/SetterView.jsx');
+
+  assert.deepEqual(
+    setter.orden.slice(0, 3),
+    closer.orden.slice(0, 3),
+    'las tres primeras sub-pestañas de las dos vistas tienen que coincidir',
+  );
+  assert.deepEqual(setter.orden.slice(0, 3), ['inicio', 'dia', 'pipeline']);
+
+  assert.equal(closer.abreEn, closer.orden[0], 'el Closer no abre en su primera sub-pestaña');
+  assert.equal(setter.abreEn, setter.orden[0], 'el Setter no abre en su primera sub-pestaña');
+
+  // Y la cuarta es propia de cada uno: la agenda no existe antes de que exista una cita.
+  assert.notEqual(setter.orden[3], closer.orden[3]);
+});
+
 test('la auditoría va INMEDIATAMENTE después de Closer en el menú', () => {
   /* ── UNA POSICIÓN PEDIDA POR PRODUCTO, Y POR ESO FIJADA ────────────────────
    *

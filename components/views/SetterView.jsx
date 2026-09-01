@@ -131,15 +131,33 @@ const COLAS_DEL_SETTER = [
  * CRM, que hoy es **el único de toda la aplicación**. Sacarla sin darle lugar habría quitado la
  * única forma manual de sincronizar, y el síntoma sería «los contactos nuevos tardan diez minutos»
  * sin que nadie sepa que antes había un botón. */
+/* ── EL ORDEN, Y ES EL MISMO QUE EL DEL CLOSER ──────────────────────────────
+ *
+ * `Inicio · Mi Día · Pipeline · Contactos`, por pedido de producto. El Closer ya tenía
+ * `Inicio · Mi Día · Pipeline · Agenda`, así que las dos pestañas quedan con la misma forma: los
+ * tres primeros iguales y el cuarto propio de cada territorio.
+ *
+ * Que coincidan no es prolijidad: la misma persona abre las dos, y dos ordenes distintos hacen que
+ * el clic memorizado en una caiga en otra cosa en la otra.
+ *
+ * El orden de este arreglo **es** el orden que se dibuja: el bucle de abajo lo recorre tal cual.
+ */
 const SUB = [
-  { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
-  { clave: 'contactos', nombre: 'Contactos', icono: '#i-leads' },
-  { clave: 'pipeline', nombre: 'Pipeline', icono: '#i-conv' },
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
+  { clave: 'dia', nombre: 'Mi Día', icono: '#i-setter' },
+  { clave: 'pipeline', nombre: 'Pipeline', icono: '#i-conv' },
+  { clave: 'contactos', nombre: 'Contactos', icono: '#i-leads' },
 ];
 
 export default function SetterView({ activa }) {
-  const [sub, setSub] = useState('dia');
+  /* ── Y ABRE EN LA PRIMERA, QUE AHORA ES OTRA ──────────────────────────────
+   *
+   * Abría en `dia` cuando `dia` era la primera. Con el orden nuevo eso dejaría la pestaña ABIERTA
+   * en la segunda y la MARCADA en la segunda, con la primera a la izquierda sin usar — se lee como
+   * que Inicio no responde.
+   *
+   * El Closer abre en su primera por el mismo motivo, así que las dos vuelven a coincidir. */
+  const [sub, setSub] = useState('inicio');
   /* La sesión, para saber si quien mira puede configurar los porcentajes del equipo. Lo responde el
      SERVIDOR con la condición exacta de esos endpoints; acá solo se pasa hacia abajo. */
   const sesion = useSesion();
