@@ -26,6 +26,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import { estadoDelAgente } from '../ghl/contrato.ts';
+import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import { estaCerrado, filasDeTerritorio, type Fila } from './fila.ts';
 import { definicionDe } from './salidas.ts';
 
@@ -162,10 +163,15 @@ export interface NucleoDeColas {
  *
  * Cero llamadas al CRM: todo sale de la caché propia.
  */
-export async function nucleoDeColas(rol: Territorio, zonaHoraria: string): Promise<NucleoDeColas> {
+export async function nucleoDeColas(
+  rol: Territorio,
+  zonaHoraria: string,
+  /** De quién son los leads. Ausente = todo el territorio, que es lo que hace el Setter. */
+  alcance?: AlcanceDelCloser,
+): Promise<NucleoDeColas> {
   /* Sin `conCongelados`: un contacto sin territorio no es trabajo de nadie, y las colas son
      trabajo. El Pipeline sí los trae, porque ahí es información. */
-  const { filas, hayMas } = await filasDeTerritorio(rol, { todas: true });
+  const { filas, hayMas } = await filasDeTerritorio(rol, { todas: true, alcance });
   const porId = new Map(filas.map((f) => [f.id, f]));
 
   /* ── LOS AVANCES DE HOY SE LEEN ACÁ ARRIBA, Y EL ORDEN NO ES CAPRICHO ──────

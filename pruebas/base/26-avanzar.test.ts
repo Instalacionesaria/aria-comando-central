@@ -289,7 +289,7 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
   const b = await contactoEn(alfa);
 
   // Antes: sin ningún resultado, «cobrado» NO es cero — es que nadie registró nada.
-  const antes = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
+  const antes = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(antes.cobrado.valor, null, 'sin resultados, cobrado tiene que ser un cero NO medido');
   assert.ok(antes.cobrado.falta, 'y tiene que decir por qué');
 
@@ -300,7 +300,7 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
     registrarResultado(b, { ...BASE, que: del('acuerdo_sin_pago'), monto: '500.00', quien }),
   );
 
-  const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
+  const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(despues.cobrado.valor, 1000, 'el cobrado no cuenta la venta');
   assert.equal(despues.ventas.valor, 1);
   assert.equal(despues.acuerdos.valor, 1);
@@ -359,7 +359,7 @@ test('el cockpit es del closer DESIGNADO: las ventas de otro no entran', async (
     }),
   );
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(
     ck.cobrado.valor,
     1000,
@@ -369,7 +369,7 @@ test('el cockpit es del closer DESIGNADO: las ventas de otro no entran', async (
   assert.equal(ck.ventas.valor, 1, 'la cuenta de ventas incluye las de otra persona');
 
   // Y el del OTRO ve las suyas, que es la otra mitad: el filtro filtra, no esconde.
-  const suyo = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, otro));
+  const suyo = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: otro, crmUsuarioId: null }));
   assert.equal(suyo.cobrado.valor, 500);
 
   /* Se borra el usuario creado, y EN ESTE ORDEN: primero los resultados, porque
@@ -391,7 +391,7 @@ test('sin closer designado el cockpit dice que FALTA, y no cero', async () => {
     registrarResultado(id, { ...BASE, que: del('venta'), monto: '2000.00', formaPago: 'Contado', quien }),
   );
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, null));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'nadie' }));
   assert.equal(
     ck.cobrado.valor,
     null,
@@ -400,7 +400,7 @@ test('sin closer designado el cockpit dice que FALTA, y no cero', async () => {
   );
   assert.match(
     ck.cobrado.falta ?? '',
-    /closer asignado/i,
+    /closer configurado/i,
     'el texto de falta no dice que lo que falta es designar al closer, así que manda a cargar un ' +
       'resultado que ya existe',
   );
@@ -414,7 +414,7 @@ test('un acuerdo sin pago NO suma al cobrado: es plata comprometida, no cobrada'
     registrarResultado(id, { ...BASE, que: del('acuerdo_sin_pago'), monto: '900.00', quien }),
   );
 
-  const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, quien));
+  const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(c.cobrado.valor, 0, 'un acuerdo sin pago entró al cobrado');
   assert.equal(c.acuerdos.valor, 1);
   // Y el cero de arriba es MEDIDO: hubo un resultado, no hubo ventas. Sin `falta`.

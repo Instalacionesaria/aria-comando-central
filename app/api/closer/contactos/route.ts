@@ -32,6 +32,10 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
+import {
+  alcanceDeQuienMira,
+  verComoDeLaUrl,
+} from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { filasDeTerritorio } from '../../../../lib/negocio/fila.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
@@ -51,12 +55,34 @@ export async function GET(peticion: Request): Promise<Response> {
 
   // `orgEfectiva`, no `orgPropia`. Es la línea que decide si un usuario de plataforma ve lo
   // que cree estar viendo. El aislamiento lo pone la política de fila con este valor.
-  const { filas, hayMas } = await conOrganizacion(contexto.orgEfectiva, async () =>
-    filasDeTerritorio(TERRITORIO, { pagina }),
-  );
+  /* ── DE QUIEN SON ESTOS CONTACTOS ─────────────────────────────────────────
+   *
+   * La MISMA pregunta que Mi Dia y el Pipeline, con la misma funcion. Si esta pantalla no la
+   * hiciera, un closer veria aca los leads que las otras dos le esconden — y no fallaria nada:
+   * tres listas correctas, una mas larga que las otras dos.
+   *
+   * Los closers viajan tambien, para poner el nombre del asignado en cada fila. Es la misma
+   * llamada, asi que no cuesta una consulta mas. */
+  const { filas, hayMas, closers } = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const { closers, alcance } = await alcanceDeQuienMira(
+      contexto.usuarioId,
+      verComoDeLaUrl(peticion),
+    );
+    const { filas, hayMas } = await filasDeTerritorio(TERRITORIO, { pagina, alcance });
+    return { filas, hayMas, closers };
+  });
 
   // `ok` siempre, incluso con cero filas — y de eso depende que el frontend distinga *"no hay
   // datos"* de *"no pude averiguarlo"* (`11` § 8). Un error que se ve como lista vacía es un
   // error que nadie reporta.
-  return ok({ filas, pagina, hayMas });
+  /* El vinculo CRM→nuestro usuario, para que la fila diga «asignado a Fabio» y no un identificador
+     del CRM. Se manda el mapa y no el nombre ya resuelto en cada fila: `filasDeTerritorio` devuelve
+     `Fila`, que es el mismo tipo que usan las cinco colas y el Pipeline, y agregarle un campo aca
+     obligaria a resolverlo en los otros cinco lugares o a que el tipo mienta en cinco. */
+  return ok({
+    filas,
+    pagina,
+    hayMas,
+    closers: closers.map((k) => ({ nombre: k.nombre, crmUsuarioId: k.crmUsuarioId })),
+  });
 }

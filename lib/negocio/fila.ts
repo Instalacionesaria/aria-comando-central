@@ -26,9 +26,21 @@
 // negocio que vive en la consulta. Si fuera una capacidad, haría falta un rol nuevo por cada
 // variante y el modelo de permisos se llenaría de casos particulares."*
 //
-// La respuesta que se eligió: **por territorio**. Un closer ve los contactos con
-// `territorio = 'closer'`, que es la etiqueta `zona_closer` de GoHighLevel. No por
-// responsable asignado, porque GHL no da asignación — da zona.
+// La primera respuesta fue **por territorio**: un closer veía todos los contactos con
+// `territorio = 'closer'`, la etiqueta `zona_closer` de GoHighLevel. El motivo escrito era
+// *«no por responsable asignado, porque GHL no da asignación — da zona»*.
+//
+// ── Y ESA PREMISA RESULTÓ FALSA, MEDIDA ──────────────────────────────────────
+//
+// El 2026-09-01, contra la subcuenta real y con la MISMA llamada que la aplicación ya hacía:
+// `POST /contacts/search` devuelve `assignedTo`, y **87 de cada 100 contactos de `zona_closer`
+// lo traen poblado** (en `zona_setter`, 3 de 100 — la señal es del closer).
+//
+// Así que la pregunta recibió su segunda respuesta —**por asignación**— cuando se pidieron
+// varios closers. Lo que NO cambió es la parte del `11` § 8 que sigue valiendo: esto es un
+// filtro de negocio, vive en la consulta, y no toca el modelo de permisos ni una línea. El
+// territorio sigue siendo el primer corte; la asignación es el segundo, y **solo se aplica
+// cuando quien mira es un closer vinculado** — ver `lib/negocio/alcanceDelCloser.ts`.
 //
 // Y el aislamiento por organización NO está acá: lo pone la política de fila, con el
 // `org_id` que `conOrganizacion(` dejó en la transacción. Este archivo no nombra `org_id` ni
@@ -39,6 +51,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
 import { armarPildora, type Pildora } from './pildora.ts';
+import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
   CITA_AGENDADA,
@@ -627,7 +640,24 @@ export async function filaDeContacto(contactoId: string): Promise<Fila | undefin
  */
 export async function filasDeTerritorio(
   territorio: Territorio,
-  opciones: { pagina?: number; todas?: boolean; conCongelados?: boolean } = {},
+  /**
+   * `alcance` va OPCIONAL y su ausencia significa **todo el territorio**, que es lo que esta
+   * función hacía antes de que existieran varios closers.
+   *
+   * Opcional y no obligatorio a propósito, al revés que el `alcance` de `seccionesConAlcance`:
+   * allá el valor por omisión peligroso es «muestra de más» y acá es «muestra de menos». Un
+   * llamador nuevo que se lo olvide muestra el territorio entero —visible, y alguien lo dice— en
+   * vez de esconderle a un closer los leads que sí son suyos, que no se ve nunca.
+   *
+   * Los cinco llamadores del Setter no lo pasan y no deben: la asignación es una señal del
+   * closer (3 de cada 100 en `zona_setter`), y acotar allá dejaría a los setters sin trabajo.
+   */
+  opciones: {
+    pagina?: number;
+    todas?: boolean;
+    conCongelados?: boolean;
+    alcance?: AlcanceDelCloser;
+  } = {},
 ): Promise<{ filas: Fila[]; hayMas: boolean }> {
   const pagina = Math.max(0, Math.trunc(opciones.pagina ?? 0));
 
@@ -671,6 +701,22 @@ export async function filasDeTerritorio(
       opciones.conCongelados
         ? eb.or([eb('c.territorio', '=', territorio), eb('c.territorio', 'is', null)])
         : eb('c.territorio', '=', territorio),
+    )
+    /* ── EL SEGUNDO CORTE: DE QUIÉN SON ESTOS LEADS ─────────────────────────
+     *
+     * Va como `$if` y no como un `where` condicional suelto porque tiene que poder NO estar: sin
+     * alcance, o con alcance `todo`, la consulta sale exactamente como salía antes.
+     *
+     * Se compara contra `crm_asignado_a`, el identificador del usuario del CRM guardado crudo, y
+     * no contra `responsable_id`. El motivo está en la migración 034: resolver el vínculo al
+     * escribir obligaría a re-sincronizar todos los contactos cada vez que se corrige a qué
+     * persona corresponde un usuario del CRM.
+     *
+     * Los SIN asignar quedan afuera, y es la decisión de producto: los ve quien no es closer, con
+     * un contador para que alguien los asigne en el CRM. Un `or … is null` acá se los daría a los
+     * tres closers a la vez, y dos closers llamarían al mismo contacto sin saberlo. */
+    .$if(opciones.alcance?.tipo === 'mio', (q) =>
+      q.where('c.crm_asignado_a', '=', (opciones.alcance as { crmUsuarioId: string }).crmUsuarioId),
     )
     // Por actividad entrante, y los que nunca escribieron al final. `nulls last` explícito:
     // en PostgreSQL `desc` pone los nulos PRIMERO por omisión, así que sin esto la lista

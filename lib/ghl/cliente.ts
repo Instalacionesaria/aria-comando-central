@@ -77,6 +77,23 @@ export interface ContactoDeGhl {
   /** Texto libre que pone quien creó el contacto: `"Website"`, `"public api"`, `"xyz form"`. */
   source?: string;
   dateAdded?: string;
+  /**
+   * A QUÉ USUARIO DEL CRM está asignado este contacto. **Es la señal que reparte los leads.**
+   *
+   * ── VIENE HACE RATO Y SE ESTABA DESCARTANDO ─────────────────────────────
+   *
+   * `lib/negocio/fila.ts` y la migración 011 dicen los dos que *«GHL no da asignación — da
+   * zona»*, y sobre eso se decidió que un closer viera el territorio entero. Medido el
+   * 2026-09-01 contra la subcuenta real, con esta misma llamada: **el campo viene**, y de 100
+   * contactos de `zona_closer` 87 lo traen poblado. En `zona_setter`, 3 de 100.
+   *
+   * O sea que la señal existe, es del closer, y llega en la respuesta que ya se pide. Leerlo
+   * cuesta **cero llamadas nuevas**: es una clave más del objeto que ya está en memoria.
+   *
+   * Nulo o ausente = el CRM no tiene a nadie asignado. No es un error ni un caso raro: son 13
+   * de cada 100, y la aplicación tiene que saber decir «sin asignar» en vez de esconderlos.
+   */
+  assignedTo?: string;
 }
 
 /** Lo que devuelve la búsqueda. */
@@ -315,6 +332,67 @@ export async function etiquetasDeLaSubcuenta(acceso: {
   return (r.datos.tags as { name?: unknown }[])
     .map((t) => (typeof t?.name === 'string' ? t.name : null))
     .filter((n): n is string => n !== null);
+}
+
+/** Un usuario de la subcuenta, tal como lo devuelve `GET /users/`. */
+export interface UsuarioDeGhl {
+  id: string;
+  nombre: string;
+  email: string | null;
+}
+
+/**
+ * Los usuarios de la subcuenta. `GET /users/?locationId=…`.
+ *
+ * ── PARA QUÉ, Y POR QUÉ NO ALCANZA UN CAMPO DE TEXTO ──────────────────────
+ *
+ * Es lo que llena el desplegable con el que se vincula a cada closer con su usuario del CRM. Sin
+ * esta llamada habría que pegar a mano un identificador de veinte caracteres como
+ * `0peGoq7VvFqnDGA7gxtX`, y un carácter cambiado no da error: da un closer que ve **cero leads**,
+ * indistinguible de un closer sin trabajo. Es el mismo defecto que el identificador del agente de
+ * IA ya tuvo, y ahí se pagó con una medición truncada a diez caracteres.
+ *
+ * Medido el 2026-09-01 contra la subcuenta real: responde 200 con 19 usuarios, cada uno con `id`,
+ * `name`, `email` y `roles`.
+ *
+ * ── LA PAGINACIÓN NO SE IMPLEMENTA, Y SE DICE ─────────────────────────────
+ *
+ * Este endpoint no la ofrece: devuelve los usuarios de la subcuenta de una vez. Una subcuenta con
+ * cientos de usuarios no existe —son las personas de una agencia, no sus contactos— y si algún día
+ * existiera, el síntoma sería un desplegable incompleto, no una lista silenciosamente cortada:
+ * quien no ve a su closer en la lista lo dice.
+ */
+export async function usuariosDelCrm(acceso: {
+  token: string;
+  locationId: string;
+}): Promise<ResultadoDeGhl<UsuarioDeGhl[]>> {
+  const r = await pedirExterno<{ users?: unknown }>(
+    `${BASE}/users/?locationId=${encodeURIComponent(acceso.locationId)}`,
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+  );
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+
+  const crudos = Array.isArray(r.datos?.users) ? r.datos.users : [];
+  const usuarios = crudos
+    .map((u) => u as { id?: unknown; name?: unknown; firstName?: unknown; lastName?: unknown; email?: unknown; deleted?: unknown })
+    /* Los BORRADOS no se ofrecen. GoHighLevel los sigue devolviendo con `deleted: true`, y
+       vincular a un closer con un usuario borrado da cero leads sin ningún error. */
+    .filter((u) => typeof u.id === 'string' && u.deleted !== true)
+    .map((u) => ({
+      id: u.id as string,
+      /* El nombre con la fuente que haya, igual que `nombreDe` hace con los contactos. Un usuario
+         sin nombre existe —se midió uno en la subcuenta real— y sin este respaldo su opción del
+         desplegable saldría en blanco: imposible de elegir a propósito. */
+      nombre:
+        (typeof u.name === 'string' && u.name.trim()) ||
+        [u.firstName, u.lastName].filter((x) => typeof x === 'string' && x.trim()).join(' ').trim() ||
+        (typeof u.email === 'string' ? u.email : '') ||
+        (u.id as string),
+      email: typeof u.email === 'string' ? u.email : null,
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  return { tipo: 'datos', datos: usuarios };
 }
 
 /**

@@ -32,6 +32,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
+import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import { nucleoDeColas, type CasoDeSeguimiento, type EnLaCola } from './colas.ts';
 
 /* `CasoDeSeguimiento` y `EnLaCola` se reexportan: viven en `colas.ts` porque las usan las dos
@@ -70,8 +71,12 @@ export interface MiDia {
  * Cuatro salen del núcleo compartido y la agenda se arma acá: es la única propia, y el setter no
  * la tiene porque trabaja **antes** de que exista una cita. Ver `lib/negocio/colas.ts`.
  */
-export async function colasDelDia(zonaHoraria: string): Promise<MiDia> {
-  const nucleo = await nucleoDeColas('closer', zonaHoraria);
+export async function colasDelDia(
+  zonaHoraria: string,
+  /** De quién son los leads. Ausente = todo el territorio. Ver `lib/negocio/alcanceDelCloser.ts`. */
+  alcance?: AlcanceDelCloser,
+): Promise<MiDia> {
+  const nucleo = await nucleoDeColas('closer', zonaHoraria, alcance);
   const { porId } = nucleo;
 
   const resultado: MiDia = {

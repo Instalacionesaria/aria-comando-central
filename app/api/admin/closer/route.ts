@@ -39,9 +39,10 @@ import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import {
   asignarCloser,
   candidatosAlCloser,
-  closerAsignado,
+  TOPE_DE_CLOSERS,
   quitarCloser,
 } from '../../../../lib/negocio/closer.ts';
+import { closersDeLaEmpresa } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { porcentajesDeLaEmpresa, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { datos } from '../../../../lib/datos/contexto.ts';
@@ -52,8 +53,14 @@ const MOTIVOS: Record<string, string> = {
   cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
   falta_usuario: 'Hay que decir a quién se designa.',
   no_es_candidato:
-    'Esa persona no puede ser el closer. Para poder serlo tiene que tener la pestaña Closer ' +
-    'habilitada y no administrar la empresa: quien configura no puede ser el configurado.',
+    'Esa persona no puede ser closer. Para poder serlo tiene que tener la pestaña Closer ' +
+    'habilitada.',
+  tope:
+    `Ya hay ${TOPE_DE_CLOSERS} closers configurados, que es el máximo. Quitá a uno antes de ` +
+    'agregar otro.',
+  crm_ya_vinculado:
+    'Ese usuario de GoHighLevel ya está vinculado a otra persona. Cada usuario del CRM ' +
+    'corresponde a un solo closer: si los dos lo tuvieran, los dos verían los mismos leads.',
 };
 
 /** Lo que la pantalla necesita para dibujar el panel completo. */
@@ -70,7 +77,7 @@ async function estado(orgId: string) {
     // El tramo se dice EXPLÍCITO: esta pantalla es la del closer, y con tres tramos en la tabla,
     // omitirlo mostraría el porcentaje de otro negocio con los mismos nombres al lado.
     porcentajes: await porcentajesDeLaEmpresa(TIPO_CLOSER),
-    asignado: await closerAsignado(),
+    asignado: await closersDeLaEmpresa(),
   }));
 
   const porUsuario = new Map(porcentajes.map((p) => [p.usuarioId, p.porcentaje]));
@@ -88,7 +95,17 @@ async function estado(orgId: string) {
        los tres YA tienen la pestaña Closer, así que el aviso anterior —«dale la pestaña a alguien»—
        mandaba a una pantalla donde no hay nada que cambiar. Ver `PorqueNingunCandidato`. */
     porqueNinguno,
-    asignado: asignado === null ? null : { usuarioId: asignado.usuarioId, nombre: asignado.nombre },
+    /* La LISTA de closers, con su vínculo. Era uno solo hasta la migración 034.
+
+       `crmUsuarioId` viaja aunque sea nulo, y no es lo mismo que omitirlo: nulo significa
+       «designado y sin vincular», que es un estado que la pantalla dibuja distinto —esa persona ve
+       todos los leads, como cualquiera que no sea closer— y hay que decírselo. */
+    closers: asignado.map((a) => ({
+      usuarioId: a.usuarioId,
+      nombre: a.nombre,
+      crmUsuarioId: a.crmUsuarioId,
+    })),
+    tope: TOPE_DE_CLOSERS,
   };
 }
 
@@ -121,11 +138,23 @@ export async function PUT(peticion: Request): Promise<Response> {
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { usuarioId?: unknown } | null;
+  const c = cuerpo as { usuarioId?: unknown; crmUsuarioId?: unknown } | null;
   if (typeof c?.usuarioId !== 'string' || c.usuarioId.trim() === '') {
     return rechazo('peticion_invalida', MOTIVOS['falta_usuario']);
   }
   const objetivo = c.usuarioId;
+
+  /* El vínculo con GoHighLevel. **Ausente y vacío significan lo mismo: sin vincular**, y por eso
+     los dos caen en `null` — el desplegable manda `''` cuando se elige «sin vincular», y tratar esa
+     cadena como un identificador dejaría filas con un vínculo de cero caracteres que no coincide
+     con ningún contacto: esa persona vería cero leads y la pantalla diría que está vinculada.
+
+     No se comprueba que el identificador exista en el CRM. Podría —la lista está a una llamada— y
+     sería una llamada externa dentro de un `PUT` de configuración para rechazar algo que ya es
+     visible: un vínculo a un usuario inexistente da cero leads, y la pantalla muestra el nombre
+     desconocido al lado. Falla a la vista. */
+  const crmUsuarioId =
+    typeof c.crmUsuarioId === 'string' && c.crmUsuarioId.trim() !== '' ? c.crmUsuarioId.trim() : null;
 
   const { candidatos } = await conIdentidad((db) => candidatosAlCloser(db, contexto.orgEfectiva));
   if (!candidatos.some((k) => k.usuarioId === objetivo)) {
@@ -135,8 +164,11 @@ export async function PUT(peticion: Request): Promise<Response> {
     return rechazo('no_encontrado', MOTIVOS['no_es_candidato']);
   }
 
-  await conOrganizacion(contexto.orgEfectiva, async () => {
-    await asignarCloser(objetivo, contexto.usuarioId);
+  const porque = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const porque = await asignarCloser(objetivo, crmUsuarioId, contexto.usuarioId);
+    /* Si no se designó, no se audita: el registro se lee para reconstruir cambios, y una fila que
+       describe algo que no pasó es ruido que hace desconfiar del resto. */
+    if (porque !== null) return porque;
     /* La auditoría en la MISMA transacción, y por la conexión del inquilino. Decide de quién son los
        números y el sueldo que muestra una pantalla, así que quién lo cambió tiene que ser
        reconstruible — y con la misma conexión no existe el estado «se designó y no quedó registrado
@@ -147,7 +179,13 @@ export async function PUT(peticion: Request): Promise<Response> {
       objetivo,
       orgId: contexto.orgEfectiva,
     });
+    return null;
   });
+
+  /* Los dos rechazos salen con 409 y no con 400: la petición está bien formada y el estado del
+     servidor es el que no la admite — ya hay tres closers, o ese usuario del CRM ya es de otro.
+     Un 400 mandaría a revisar el cuerpo, que está impecable. */
+  if (porque !== null) return rechazo('rechazo_de_la_base', MOTIVOS[porque]);
 
   // Se devuelve el estado completo, no un `{ ok: true }`: quien guardó tiene que ver lo que quedó.
   return ok(await estado(contexto.orgEfectiva));
@@ -164,19 +202,24 @@ export async function DELETE(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['credenciales.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
+  /* A QUIÉN se quita, por parámetro. Antes no hacía falta —había uno— y ahora es obligatorio: sin
+     él, `quitarCloser()` borraría a los tres, y la política de aislamiento no lo impediría porque
+     acota por organización, que es justo lo que ese borrado ya hace. */
+  const objetivo = new URL(peticion.url).searchParams.get('usuarioId');
+  if (!objetivo) return rechazo('peticion_invalida', MOTIVOS['falta_usuario']);
+
   await conOrganizacion(contexto.orgEfectiva, async () => {
-    const antes = await closerAsignado();
-    await quitarCloser();
+    const antes = await closersDeLaEmpresa();
+    if (!antes.some((a) => a.usuarioId === objetivo)) return;
+    await quitarCloser(objetivo);
     // Solo se audita si HABÍA alguien. Auditar un borrado que no borró nada llena el registro de
     // filas que no describen ningún cambio, y el registro se lee para reconstruir cambios.
-    if (antes !== null) {
-      await auditarAdministracion(datos(), {
-        accion: 'closer_quitado',
-        actor: contexto.usuarioId,
-        objetivo: antes.usuarioId,
-        orgId: contexto.orgEfectiva,
-      });
-    }
+    await auditarAdministracion(datos(), {
+      accion: 'closer_quitado',
+      actor: contexto.usuarioId,
+      objetivo,
+      orgId: contexto.orgEfectiva,
+    });
   });
 
   return ok(await estado(contexto.orgEfectiva));

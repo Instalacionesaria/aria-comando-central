@@ -100,10 +100,37 @@ export interface Cockpit {
  *   día en los dos extremos del mes.
  * @param closerId El usuario designado closer, o `null` si nadie lo está.
  */
+/**
+ * DE QUIÉN son los números del cockpit. Tres formas, y las tres se ven distinto en pantalla.
+ *
+ * ── ERA `closerId: string | null` Y ESE NULO SE VOLVIÓ AMBIGUO ──────────────
+ *
+ * Con un solo closer, `null` significaba una cosa sola: nadie designado, y la pantalla decía
+ * *«todavía no hay un closer asignado»*. Con varios closers y el selector «ver como», `null`
+ * pasaría a significar también «toda la empresa» — y esos dos estados llevan a pantallas
+ * opuestas: uno es un aviso para configurar, el otro es el total real de tres personas.
+ *
+ * Un `string | null` los escribe igual y obliga a quien lea a acordarse de cuál era. La unión los
+ * separa en el tipo, que es donde este proyecto separa los estados que no se pueden confundir.
+ */
+export type SujetoDelCockpit =
+  /** No hay ningún closer configurado. Los números salen `—` con el aviso, nunca `0`. */
+  | { tipo: 'nadie' }
+  /**
+   * Todos los closers juntos: lo que ve quien administra y no es closer.
+   *
+   * Lleva los identificadores porque el total es **la suma de los closers**, no la de la empresa
+   * entera: un resultado registrado por alguien que no es closer no es venta de nadie del equipo
+   * de cierre, y sumarlo inflaría el número sin que nada fallara.
+   */
+  | { tipo: 'empresa'; usuarioIds: readonly string[] }
+  /** Un closer concreto. `crmUsuarioId` nulo = designado sin vincular: sus contactos son todos. */
+  | { tipo: 'persona'; usuarioId: string; crmUsuarioId: string | null };
+
 export async function cockpitDelMes(
   zonaHoraria: string,
   tareasPendientes: number,
-  closerId: string | null,
+  sujeto: SujetoDelCockpit,
 ): Promise<Cockpit> {
   const desdeElPrimero = sql<Date>`date_trunc('month', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`;
 
@@ -117,15 +144,27 @@ export async function cockpitDelMes(
    * ORGANIZACIÓN, no por persona. Sin esta línea el cobrado vuelve a ser de todos y sale más alto,
    * que es la forma en que este defecto se ve: un número plausible y equivocado.
    *
-   * Con `closerId` nulo no se consulta nada. Correr la consulta sin el filtro para «tener algo que
-   * mostrar» es exactamente el error: mostraría el cobrado de la empresa como si fuera de un closer
-   * que nadie eligió. */
-  const r = closerId === null
+   * Sin ningún closer configurado no se consulta nada. Correr la consulta sin el filtro para «tener
+   * algo que mostrar» es exactamente el error: mostraría el cobrado de la empresa como si fuera de
+   * un closer que nadie eligió.
+   *
+   * Con varios closers el filtro es `in` en vez de `=`, y la lista son los closers CONFIGURADOS. Un
+   * `in` sobre una lista vacía es SQL inválido, así que `{tipo:'empresa'}` sin identificadores no
+   * puede llegar acá: la construye `app/api/closer/mi-dia/route.ts` a partir de la lista, y sin
+   * closers el sujeto es `nadie`. */
+  const deQuien: readonly string[] =
+    sujeto.tipo === 'nadie'
+      ? []
+      : sujeto.tipo === 'empresa'
+        ? sujeto.usuarioIds
+        : [sujeto.usuarioId];
+
+  const r = deQuien.length === 0
     ? undefined
     : await datos()
     .selectFrom('resultados')
     .where('creado_el', '>=', desdeElPrimero)
-    .where('registrado_por', '=', closerId)
+    .where('registrado_por', 'in', deQuien)
     .select(({ fn, eb }) => [
       fn
         .sum<string | null>(
@@ -159,14 +198,36 @@ export async function cockpitDelMes(
      medir. Separarlos es lo único que permite que la pantalla diga qué hacer — cargar un resultado,
      o elegir al closer. Un solo texto para los dos casos mandaría a la mitad de la gente a hacer lo
      que no corresponde. */
-  const SIN_CLOSER = 'Todavía no hay un closer asignado, así que no hay de quién mostrar números.';
-  const porQueFalta = closerId === null ? SIN_CLOSER : SIN_AVANZAR;
+  const SIN_CLOSER = 'Todavía no hay ningún closer configurado, así que no hay de quién mostrar ' +
+    'números. Se configuran más abajo, en esta misma pantalla.';
+  const porQueFalta = sujeto.tipo === 'nadie' ? SIN_CLOSER : SIN_AVANZAR;
 
   // Los conteos por etiqueta. Éstos SÍ tienen dato hoy, y son la mitad útil del cockpit
   // mientras Avanzar no exista.
   const porEtiqueta = await datos()
     .selectFrom('contactos')
     .where('territorio', '=', 'closer')
+    /* ── Y ACÁ TAMBIÉN, O LOS DOS NÚMEROS DE ABAJO SERÍAN DE OTRA GENTE ──────
+     *
+     * Los conteos por etiqueta —con cita agendada, no-shows— son de la MISMA persona que el número
+     * grande. Sin este corte, un closer vería sus tres ventas arriba y los 152 contactos de la
+     * empresa abajo: dos bases distintas en la misma tarjeta, que es exactamente el defecto que la
+     * migración 020 vino a cerrar cuando el número grande era de la empresa y el anillo de al lado
+     * de quien miraba.
+     *
+     * Se corta por `crm_asignado_a` y no por `registrado_por`: son dos ejes distintos y ninguno
+     * sirve para lo del otro. Un contacto es de un closer porque el CRM se lo asignó; un resultado
+     * es de un closer porque él lo registró acá. Cruzarlos daría los contactos de quien registró.
+     *
+     * `empresa` y `nadie` no cortan: los dos miran el territorio entero, que es lo correcto para
+     * quien administra y lo único posible cuando no hay closers. */
+    .$if(sujeto.tipo === 'persona' && sujeto.crmUsuarioId !== null, (q) =>
+      q.where(
+        'crm_asignado_a',
+        '=',
+        (sujeto as { crmUsuarioId: string }).crmUsuarioId,
+      ),
+    )
     .select(({ fn }) => [
       fn
         .countAll<string>()

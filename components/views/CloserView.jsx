@@ -59,6 +59,16 @@ export default function CloserView({ activa }) {
   /* Inicio arranca, como se pidió: el cockpit responde «¿cómo voy este mes?» y es lo primero
      que alguien quiere ver al abrir su pestaña. */
   const [sub, setSub] = useState('inicio');
+  /* ── DE QUIEN SE ESTAN MIRANDO LOS NUMEROS ────────────────────────────────
+   *
+   * `null` = de toda la empresa, que es lo que ve quien administra por omision. Viaja en la URL de
+   * la peticion y no en el cuerpo porque este `GET` lo repite un reloj cada diez segundos: en el
+   * parametro, la recarga lo arrastra sola.
+   *
+   * Quien es closer NO puede cambiarlo, y no porque la pantalla lo esconda: el servidor ignora el
+   * parametro cuando el alcance propio no es `todo`. Esconder el selector es comodidad; lo que
+   * cierra la puerta esta en `alcancePedido`. */
+  const [verComo, setVerComo] = useState(null);
   /* De la sesión sale una sola cosa acá: si esta persona puede configurar los porcentajes del
      equipo. Lo responde el SERVIDOR con la condición exacta del endpoint, no se deduce del rol. */
   const sesion = useSesion();
@@ -87,7 +97,9 @@ export default function CloserView({ activa }) {
    */
   const cargar = useCallback(async () => {
     setSituacion((antes) => (antes === 'listo' ? antes : 'cargando'));
-    const r = await pedir('/api/closer/mi-dia');
+    const r = await pedir(
+      verComo ? `/api/closer/mi-dia?verComo=${encodeURIComponent(verComo)}` : '/api/closer/mi-dia',
+    );
     /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»:
        con una sola rama, alguien sin `closer.ver` vería un cockpit en cero y creería que no
        vendió nada. */
@@ -109,7 +121,7 @@ export default function CloserView({ activa }) {
     // Y se limpia el aviso: un fallo viejo que no se borra es como se aprende a ignorar un cartel.
     setCausa(null);
     setSituacion('listo');
-  }, []);
+  }, [verComo, ]);
 
 
   /* ── EL RELOJ DE 10 SEGUNDOS, QUE ESTUVO BLOQUEADO A PROPÓSITO ──────────────
@@ -233,7 +245,11 @@ export default function CloserView({ activa }) {
           /* Quién puede configurar los porcentajes del equipo lo dice el SERVIDOR, con la condición
              exacta del endpoint. Ver `app/api/auth/sesion/route.ts`. */
           puedeConfigurarComisiones={sesion?.puedeConfigurarComisiones ?? false}
-          closer={datos?.closer ?? null}
+          closers={datos?.closers ?? []}
+          mirando={datos?.mirando ?? null}
+          puedeVerTodo={datos?.puedeVerTodo ?? false}
+          verComo={verComo}
+          alVerComo={setVerComo}
           soyElCloser={datos?.soyElCloser ?? false}
           /* Y la recarga completa, para cuando se cierra la ventana de los porcentajes: ahí sí puede
              haber cambiado el número de quien mira. */

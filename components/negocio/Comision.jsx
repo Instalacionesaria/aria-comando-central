@@ -128,6 +128,23 @@ export default function Comision({
      En el closer lo responde `soyElCloser`; en el setter es siempre quien mira, porque el sujeto de
      ese cockpit ES quien mira. */
   puedeFijarLaMeta,
+  /**
+   * POR QUÉ no hay comisión que mostrar. Solo importa cuando `comision` es nula.
+   *
+   * ── ERAN UN SOLO HECHO Y AHORA SON DOS ────────────────────────────────────
+   *
+   * Con un closer por empresa, `comision` nula significaba una cosa sola: nadie designado. Con
+   * varios y el selector «ver como», también significa **estoy mirando toda la empresa**, y ahí no
+   * hay comisión porque sumar las de tres closers da un número que no es de nadie y que nadie
+   * cobra.
+   *
+   * Los dos llevan a acciones opuestas: uno manda a configurar un closer, el otro a elegir a cuál
+   * mirar. Con un texto solo, quien administra lee «no hay closer asignado» teniendo tres.
+   *
+   * El valor por omisión es `'sin_closer'`, que es lo que el Setter necesita: ese cockpit tiene un
+   * sujeto solo —quien mira— y no tiene selector.
+   */
+  sinComision = 'sin_closer',
   /** A dónde va la meta. **Sin valor por omisión**: uno haría que un anillo mal montado escriba la
    *  meta de OTRO tramo sin fallar, y las dos metas se ven igual en la pantalla. */
   rutaDeLaMeta,
@@ -202,12 +219,15 @@ export default function Comision({
         <div className="ring">
           <div>
             <b>—</b>
-            <span>SIN CLOSER</span>
+            <span>{sinComision === 'toda_la_empresa' ? 'TODA LA EMPRESA' : 'SIN CLOSER'}</span>
           </div>
         </div>
         <p className="ck-nota">
-          Todavía no hay un closer asignado. Lo elige quien administra la empresa, acá mismo en esta
-          pantalla, y a partir de ahí los números son suyos.
+          {sinComision === 'toda_la_empresa'
+            ? 'La comisión es de una persona, así que sumada no sería de nadie. Elegí un closer ' +
+              'arriba para ver la suya.'
+            : 'Todavía no hay ningún closer configurado. Lo elige quien administra la empresa, acá ' +
+              'mismo en esta pantalla, y a partir de ahí los números son suyos.'}
         </p>
       </div>
     );

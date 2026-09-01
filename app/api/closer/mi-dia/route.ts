@@ -35,7 +35,10 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { cockpitDelMes } from '../../../../lib/negocio/inicio.ts';
-import { closerAsignado } from '../../../../lib/negocio/closer.ts';
+import {
+  alcanceDeQuienMira,
+  verComoDeLaUrl,
+} from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
 import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
 
@@ -51,54 +54,118 @@ export async function GET(peticion: Request): Promise<Response> {
   // día. Viene resuelta en el contexto de la sesión.
   const zona = contexto.organizacion.zonaHoraria;
 
-  const { colas, cockpit, comision, closer } = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const colas = await colasDelDia(zona);
+  /* ── EL SELECTOR «VER COMO», Y POR QUÉ VIAJA EN LA URL ────────────────────
+   *
+   * Quien administra y no es closer puede mirar los números de UNO de ellos. Va como parámetro
+   * de consulta y no en el cuerpo porque esto es un `GET` que el navegador repite cada diez
+   * segundos: en la URL, el reloj lo arrastra solo y la pantalla no tiene que recordarlo.
+   *
+   * Lo que impide que sea una escalada está en `alcancePedido`: solo se atiende cuando el
+   * alcance propio es `todo`, y el identificador tiene que estar en la lista de SU empresa.
+   * Un closer vinculado que lo mande a mano recibe su propio alcance igual. */
+  const verComo = verComoDeLaUrl(peticion);
 
-    /* ── DE QUIÉN SON LOS NÚMEROS DE ESTA PANTALLA ───────────────────────────
-     *
-     * Del closer DESIGNADO, no de quien mira. «Closer» dejó de ser un rol y pasó a ser una
-     * designación que hace quien administra —ver `lib/negocio/closer.ts` y la migración 020—, así que
-     * el cockpit tiene un sujeto y es el mismo para todos los que abren la pantalla.
-     *
-     * Antes el número grande era de TODA la empresa y el anillo de al lado de quien miraba: dos
-     * bases distintas en la misma pantalla. Ahora las dos salen de acá.
-     */
-    const closer = await closerAsignado();
+  const { colas, cockpit, comision, closers, alcance, propio } = await conOrganizacion(
+    contexto.orgEfectiva,
+    async () => {
+      /* ── DE QUIÉN SON LOS LEADS DE ESTA PANTALLA ─────────────────────────
+       *
+       * Antes había UN closer designado y el cockpit tenía un sujeto para todos: *«el mismo para
+       * todos los que abren la pantalla»*. Con varios, la pregunta cambió de forma — ya no es
+       * «quién es el closer» sino «de quién son los leads de QUIEN MIRA» — y la contesta
+       * `lib/negocio/alcanceDelCloser.ts`, que es el único lugar donde se decide.
+       *
+       * Se resuelve ANTES de las colas porque las colas lo necesitan: sin el alcance,
+       * `colasDelDia` trae el territorio entero y el filtro tendría que hacerse después, sobre
+       * filas ya traídas — trabajo de más y, peor, un segundo lugar donde filtrar. */
+      const { closers, alcance, propio } = await alcanceDeQuienMira(contexto.usuarioId, verComo);
 
-    // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
-    const cockpit = await cockpitDelMes(zona, colas.tareasPendientes, closer?.usuarioId ?? null);
-    /* ── LA COMISIÓN VIAJA ACÁ Y NO EN UN GET PROPIO ────────────────────────
-     *
-     * Si tuviera endpoint propio con `PANTALLA = 'closer'` tendría que pedir el mismo conjunto de
-     * capacidades que los otros cinco —eso lo exige `ADR-0304`— y no ganaría nada; y con otra
-     * capacidad, alguien vería el cockpit con la columna derecha en blanco y sin ningún error, que es
-     * justo el defecto que esa regla existe para prevenir.
-     *
-     * Y cabe en la regla de admisión de este endpoint: leer una fila es más barato que un viaje de
-     * ida y vuelta al CRM. Cero llamadas externas, igual que todo lo demás de esta pantalla.
-     */
-    /* Y sin closer designado no hay comisión que calcular: `null`, no una comisión en cero. Un cero
-       afirmaría que el closer no cobra nada este mes; lo que pasa es que nadie eligió quién es. */
-    const comision = closer === null ? null : await comisionDelMes(closer.usuarioId, zona);
-    return { colas, cockpit, comision, closer };
-  });
+      const colas = await colasDelDia(zona, alcance);
+
+      /* ── EL SUJETO DEL COCKPIT, QUE SALE DEL ALCANCE Y NO AL REVÉS ───────
+       *
+       * Tres formas, y las tres se ven distinto: sin closers configurados no hay de quién mostrar
+       * números; con alcance `todo` se suman los closers; con `mio` es una persona.
+       *
+       * El identificador de NUESTRO usuario se busca por el vínculo del CRM y no se arrastra en el
+       * alcance, porque el alcance habla del CRM y el cockpit de quién registró el resultado acá:
+       * son dos ejes, y meterlos en un solo valor es cómo se llega a contar los resultados de una
+       * persona sobre los contactos de otra. */
+      const sujeto =
+        closers.length === 0
+          ? ({ tipo: 'nadie' } as const)
+          : alcance.tipo === 'todo'
+            ? ({ tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) } as const)
+            : ({
+                tipo: 'persona',
+                usuarioId:
+                  closers.find((k) => k.crmUsuarioId === alcance.crmUsuarioId)?.usuarioId ?? '',
+                crmUsuarioId: alcance.crmUsuarioId,
+              } as const);
+
+      // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
+      const cockpit = await cockpitDelMes(zona, colas.tareasPendientes, sujeto);
+
+      /* ── LA COMISIÓN VIAJA ACÁ Y NO EN UN GET PROPIO ────────────────────────
+       *
+       * Si tuviera endpoint propio con `PANTALLA = 'closer'` tendría que pedir el mismo conjunto
+       * de capacidades que los otros cinco —eso lo exige `ADR-0304`— y no ganaría nada; y con otra
+       * capacidad, alguien vería el cockpit con la columna derecha en blanco y sin ningún error,
+       * que es justo el defecto que esa regla existe para prevenir.
+       *
+       * Y es de UNA persona o de NADIE, nunca una suma. Quien mira «toda la empresa» no tiene
+       * comisión que mostrar: sumar las de tres closers daría un número que no es de nadie y que
+       * nadie cobra. `null`, que la pantalla ya sabe dibujar. */
+      const comision =
+        sujeto.tipo === 'persona' && sujeto.usuarioId !== ''
+          ? await comisionDelMes(sujeto.usuarioId, zona)
+          : null;
+      return { colas, cockpit, comision, closers, alcance, propio };
+    },
+  );
+  /* De quién son los números que se están mostrando. `null` = de toda la empresa, que no es lo
+     mismo que «no hay nadie»: eso lo dice `closers` vacío. */
+  const mirando =
+    alcance.tipo === 'mio'
+      ? (closers.find((k) => k.crmUsuarioId === alcance.crmUsuarioId) ?? null)
+      : null;
 
   return ok({
     cockpit,
     colas,
     comision,
-    /* Quién es el closer, para que la pantalla pueda decir de quién son los números en vez de
-       mostrarlos como si fueran de quien mira. `null` = nadie designado. */
-    closer: closer === null ? null : { usuarioId: closer.usuarioId, nombre: closer.nombre },
-    /* Y si quien mira ES el closer designado. Lo decide el SERVIDOR y no la pantalla comparando
-       identificadores, por lo mismo que todo lo demás: es lo que habilita el formulario de la META,
-       que es del closer y no de quien administra. Un administrador ve los números y el porcentaje
-       —lo fija él— pero no le pone la meta a otra persona. */
-    soyElCloser: closer !== null && closer.usuarioId === contexto.usuarioId,
+    /**
+     * Los closers configurados. Antes era `closer`, uno solo.
+     *
+     * Va la lista completa —con quién está vinculado y quién no— porque la pantalla la necesita
+     * para dos cosas: el selector «ver como» y el nombre del asignado en cada fila de contacto.
+     * Vacía = nadie configurado, y el cockpit lo dice con su propio texto.
+     */
+    closers: closers.map((k) => ({
+      usuarioId: k.usuarioId,
+      nombre: k.nombre,
+      vinculado: k.crmUsuarioId !== null,
+    })),
+    /* De quién son los números en pantalla, o `null` si son de toda la empresa. */
+    mirando: mirando === null ? null : { usuarioId: mirando.usuarioId, nombre: mirando.nombre },
+    /**
+     * `true` = esta persona ve TODO, así que se le puede ofrecer el selector «ver como».
+     *
+     * Lo decide el SERVIDOR y no la pantalla comparando identificadores, por lo mismo que
+     * `soyElCloser`: es lo único que impide que el selector aparezca para un closer, que lo
+     * apretaría y no pasaría nada —`alcancePedido` lo ignora— y desconfiaría de la pantalla.
+     */
+    puedeVerTodo: propio.tipo === 'todo',
+    /* Y si quien mira ES el closer cuyos números se muestran. Lo decide el SERVIDOR, por lo mismo
+       que todo lo demás: es lo que habilita el formulario de la META, que es del closer y no de
+       quien administra. Un administrador ve los números y el porcentaje —lo fija él— pero no le
+       pone la meta a otra persona. */
+    soyElCloser: mirando !== null && mirando.usuarioId === contexto.usuarioId,
     zonaHoraria: zona,
-    /* La pantalla necesita saberlo para NO ofrecerle a un superadministrador que configure una meta
-       en la empresa de otro: su `usuarioId` no pertenece a esa empresa, así que la fila es imposible
-       por la clave foránea compuesta. Mandarlo a configurar algo imposible es mentirle. */
+    /* La pantalla necesita saberlo para NO ofrecerle a un superadministrador que configure una
+       meta en la empresa de otro: su `usuarioId` no pertenece a esa empresa, así que la fila es
+       imposible por la clave foránea compuesta. Mandarlo a configurar algo imposible es
+       mentirle. */
     mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
   });
 }

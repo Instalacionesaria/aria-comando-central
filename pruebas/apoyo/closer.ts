@@ -145,6 +145,8 @@ export async function unContacto(
     telefono?: string | null;
     ultimoEntranteEl?: Date | null;
     ultimoEntranteTexto?: string | null;
+    /** El usuario de GoHighLevel que lo tiene asignado. `null` = el CRM no lo trae. */
+    crmAsignadoA?: string | null;
   } = {},
 ): Promise<ContactoSembrado> {
   const ghlId = `${esc.marca.toLowerCase()}-${randomUUID()}`;
@@ -163,6 +165,7 @@ export async function unContacto(
         telefono: campos.telefono ?? null,
         ultimo_entrante_el: campos.ultimoEntranteEl ?? null,
         ultimo_entrante_texto: campos.ultimoEntranteTexto ?? null,
+        crm_asignado_a: campos.crmAsignadoA ?? null,
       } as never)
       .returning('id')
       .executeTakeFirstOrThrow();

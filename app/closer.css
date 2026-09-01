@@ -1360,3 +1360,112 @@
 .md-r.md-fuera:hover {
   opacity: 0.85;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOS CLOSERS: LA TABLA DE CONFIGURACIÓN Y EL SELECTOR «VER COMO»
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Era un `<select>` de una fila —había UN closer por empresa hasta la migración 034— y ahora son
+   hasta tres filas con dos columnas: nuestra persona y su usuario en GoHighLevel. */
+
+.ck-closers {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Una fila. En pantalla ancha las cuatro partes van en línea; abajo de 900 px se apilan, porque un
+   desplegable de nombres de usuario del CRM comprimido a 120 px no deja leer ninguno. */
+.ck-closer {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.4fr) auto auto;
+  align-items: start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgb(var(--c-nube) / 0.03);
+}
+@media (max-width: 900px) {
+  .ck-closer {
+    grid-template-columns: 1fr auto;
+  }
+  .ck-closer-crm {
+    grid-column: 1 / -1;
+  }
+}
+
+.ck-closer-quien {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ck-closer-quien b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.ck-closer-crm,
+.ck-alta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ck-closer-crm select {
+  width: 100%;
+}
+
+.ck-closer-pct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ck-closer-pct input {
+  width: 84px;
+}
+
+/* La cruz de quitar. Cuadrada y del ancho de su contenido: con el `fd-btn sec` a secas queda del
+   ancho de un botón de texto y se lee como una acción principal, que es lo contrario de lo que es. */
+.ck-quitar {
+  align-self: center;
+  width: 30px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* El texto de «sin vincular» y el aviso del agente de IA. Ámbar y no rojo: no es un error —una
+   persona sin vincular ve todo, que es un estado que funciona— es algo que hay que saber. */
+.ck-sin-vincular {
+  color: var(--warn);
+}
+
+/* El selector «ver como», arriba del cockpit. Va a la derecha y en línea: es una herramienta de
+   quien administra, y ponerlo centrado le daría el peso de un título. */
+.ck-vercomo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.ck-vercomo label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--txt-faint);
+}
+.ck-vercomo select {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 10px;
+}

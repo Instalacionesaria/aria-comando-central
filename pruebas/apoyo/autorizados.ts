@@ -234,6 +234,13 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // La escritura va entera por `conOrganizacion(`, incluida la auditoría, por el mismo motivo que
   // arriba: la designación y su rastro en la misma transacción.
   'app/api/admin/closer/route.ts',
+  // Los usuarios de la subcuenta de GoHighLevel, para vincular a cada closer con el suyo.
+  //
+  // **Qué queda a medias si algo falla: nada.** Es un `GET` que no escribe una sola fila. Abre
+  // identidad para dos cosas de la misma tabla y en la misma transacción —el token del CRM y el
+  // identificador del agente de IA, que vive en la fila de al lado— y después habla con el
+  // proveedor. No toca `negocio` ni una vez, así que no hay dos dominios que cruzar.
+  'app/api/admin/closer/usuarios-crm/route.ts',
   // Avanzar. Lee el token para avisarle al CRM qué resultado se registró, y esa era la ÚNICA
   // escritura al CRM de todo el sistema hasta que apareció la de abajo. Todo lo que escribe en la
   // base va por `conOrganizacion(`.

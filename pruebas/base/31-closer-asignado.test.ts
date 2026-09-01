@@ -33,7 +33,8 @@ import {
   DELETE as quitar,
 } from '../../app/api/admin/closer/route.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { closerAsignado } from '../../lib/negocio/closer.ts';
+import { closersDeLaEmpresa } from '../../lib/negocio/alcanceDelCloser.ts';
+import { candidatosAlCloser } from '../../lib/negocio/closer.ts';
 import { cockpitDelMes } from '../../lib/negocio/inicio.ts';
 
 const ZONA = 'America/Lima';
@@ -63,6 +64,8 @@ let ana: string;
 let cierra: string;
 /** Otra igual, para comprobar que designar a una reemplaza a la otra. */
 let cierraDos: string;
+/** El CUARTO, que existe solo para que el tope de tres se pueda medir de verdad. */
+let otroMas: string;
 /** Una de la otra empresa: no tiene que existir para esta organización. */
 let deBeta: string;
 
@@ -95,6 +98,7 @@ before(async () => {
 
   cierra = await personaQueCierra('Cierra Alfa');
   cierraDos = await personaQueCierra('Cierra Dos');
+  otroMas = await personaQueCierra('Cierra Cuatro');
   deBeta = await personaQueCierra('Cierra Beta', beta);
 
   await limpiar();
@@ -192,8 +196,14 @@ async function sesion(usuarioId: string): Promise<string> {
   return token;
 }
 
-function pedir(token: string, cuerpo?: unknown, metodo = 'PUT'): Request {
-  return new Request(`https://${DOMINIO}/api/admin/closer`, {
+/**
+ * Una petición al panel del closer.
+ *
+ * `cola` es la cadena de consulta, y existe porque el `DELETE` pasó a necesitar A QUIÉN se quita:
+ * con un closer no hacía falta, con tres un borrado sin identificador se llevaría a los tres.
+ */
+function pedir(token: string, cuerpo?: unknown, metodo = 'PUT', cola = ''): Request {
+  return new Request(`https://${DOMINIO}/api/admin/closer${cola}`, {
     method: metodo,
     headers: {
       'content-type': 'application/json',
@@ -234,40 +244,51 @@ async function venta(org: string, contactoId: string, quien: string, monto: numb
 // 1 · LA PRUEBA: UN ADMINISTRADOR NO PUEDE SER CLOSER
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('LA PRUEBA: un administrador NO puede designarse closer, ni mandando su propio id', async () => {
-  // El desplegable no la ofrece. Eso no alcanza: lo que llega al endpoint es un identificador en un
-  // cuerpo JSON, y quien lo manda es la misma persona que tiene permiso de escribir acá.
-  //
-  // Si esto pasara, un administrador se habría dado a sí mismo el anillo de comisión del cockpit.
+test('un ADMINISTRADOR puede ser closer, que es lo contrario de lo que esta prueba decía', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     ESTA PRUEBA AFIRMABA LO OPUESTO, Y SE LLAMABA «LA PRUEBA»
+
+     Decía que un administrador NO podía designarse closer ni mandando su propio identificador, y
+     el argumento era bueno mientras hubo UN closer: los números del cockpit eran de esa persona,
+     así que designarse a uno mismo era escribirse el propio tablero.
+
+     Se pidió sacar la regla —*«ahora cualquiera puede ser configurado como closer, admin
+     superadmin o usuario»*— y el argumento que la sostenía se cayó solo con el cambio a varios
+     closers: lo que decide qué leads ve cada uno ya no es la designación, es **el vínculo con un
+     usuario de GoHighLevel**, y ese reparto lo hace el CRM.
+
+     Medido, además: las tres personas de la empresa de producción son administradoras. La regla
+     no protegía a nadie — dejaba el panel vacío mandando a crear un usuario más.
+     ══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
   const t = await sesion(ana);
 
   const r = await designar(pedir(t, { usuarioId: ana }));
-  assert.equal(
-    r.status,
-    404,
-    'un administrador se pudo designar closer: comprobar que el usuario EXISTE no alcanza, porque ' +
-      'un administrador existe y es de su propia empresa',
-  );
+  assert.equal(r.status, 200, await r.clone().text());
 
-  // Y no quedó nada escrito.
-  const quedo = await conOrganizacion(alfa, () => closerAsignado());
-  assert.equal(quedo, null, 'quedó una designación de una petición rechazada');
+  const quedo = await conOrganizacion(alfa, () => closersDeLaEmpresa());
+  assert.deepEqual(
+    quedo.map((k) => k.usuarioId),
+    [ana],
+    'la administradora no quedó designada',
+  );
 });
 
-test('la lista de candidatos excluye a quien administra, y por CAPACIDAD', async () => {
-  // La regla se escribe con `credenciales.editar` y no con el nombre del rol —`ADR-0302`—, y la
-  // capacidad elegida es la misma que habilita designar: quien puede designar no puede ser
-  // designado. Un rol nuevo que administre la empresa queda excluido solo.
+test('la lista de candidatos INCLUYE a quien administra, y sigue acotada a la empresa', async () => {
+  /* La otra mitad del cambio de arriba: antes esta prueba afirmaba que la administradora NO
+     aparecía. Ahora aparece, y lo que sigue valiendo —y es lo que esta prueba cuida— es el
+     aislamiento: nadie de otra organización entra a la lista.
+
+     Las dos afirmaciones van juntas a propósito. Sacar la exclusión del administrador es aflojar
+     un filtro, y aflojar un filtro es cuándo conviene comprobar que el otro sigue apretado. */
   const t = await sesion(ana);
   const r = await verEstado(pedir(t, undefined, 'GET'));
   assert.equal(r.status, 200);
-  const cuerpo = (await r.json()) as { candidatos: { usuarioId: string }[]; asignado: unknown };
+  const cuerpo = (await r.json()) as { candidatos: { usuarioId: string }[] };
 
   const ids = cuerpo.candidatos.map((k) => k.usuarioId);
-  assert.ok(!ids.includes(ana), 'la administradora aparece en la lista de candidatos a closer');
-  assert.ok(ids.includes(cierra), 'quien tiene la pestaña closer y no administra NO aparece');
-  // Y nadie de la otra empresa, que es la otra mitad del aislamiento.
+  assert.ok(ids.includes(ana), 'la administradora NO aparece: la exclusión volvió');
+  assert.ok(ids.includes(cierra), 'quien tiene la pestaña closer no aparece');
   assert.ok(!ids.includes(deBeta), 'aparece alguien de otra organización en la lista');
 });
 
@@ -288,14 +309,22 @@ test('con la lista vacía, el servidor dice CUÁL de los motivos es — y llevan
   // vacía por construcción: todo el que tiene closer.ver en el sembrado es administrador»*— y ninguna
   // prueba miraba el motivo. Esta lo mira, y recorre los estados en orden.
   // ══════════════════════════════════════════════════════════════════════
-  const t = await sesion(ana);
+  /* ── SE MIDE LA FUNCIÓN, NO EL ENDPOINT, Y ESO CAMBIÓ CON ESTE PEDIDO ─────
+   *
+   * Antes se medía por el `GET`: se desactivaban las candidatas y la lista salía vacía. **Eso ya
+   * no se puede alcanzar por ahí**, y el motivo es el cambio mismo: quien abre este panel tiene
+   * `credenciales.editar`, y desde que la exclusión del administrador se fue, esa persona es
+   * candidata de sí misma. La lista nunca sale vacía para quien la puede pedir.
+   *
+   * No es una prueba que perdió su objeto: el estado sigue existiendo —una empresa donde nadie
+   * tiene la sección concedida— y sigue habiendo un texto por motivo que la pantalla dibuja. Lo
+   * que cambió es dónde se puede medir, y es una capa más adentro: `candidatosAlCloser` recibe la
+   * transacción y el `org_id`, así que se le puede preguntar por una empresa donde TODOS estén
+   * desactivados, incluida la administradora.
+   *
+   * Se mide la misma función que el endpoint llama, no una copia. */
   const motivo = async (): Promise<{ cuantos: number; porque: string | null }> => {
-    const r = await verEstado(pedir(t, undefined, 'GET'));
-    assert.equal(r.status, 200);
-    const c = (await r.json()) as {
-      candidatos: { usuarioId: string }[];
-      porqueNinguno: string | null;
-    };
+    const c = await conIdentidad((db) => candidatosAlCloser(db, alfa));
     return { cuantos: c.candidatos.length, porque: c.porqueNinguno };
   };
 
@@ -307,44 +336,43 @@ test('con la lista vacía, el servidor dice CUÁL de los motivos es — y llevan
 
   let sinSeccion: string | null = null;
   try {
-    // 1 · TODOS ADMINISTRAN — el caso de producción. Se desactivan las dos candidatas y en `alfa`
-    //     queda solo Ana, que es administradora.
-    await admin.query(
-      `update identidad.usuarios set activo = false where id = any($1::uuid[])`,
-      [[cierra, cierraDos]],
-    );
-    assert.deepEqual(
-      await motivo(),
-      { cuantos: 0, porque: 'todos_admin' },
-      'con todas las personas de la empresa administrando, el motivo tiene que ser `todos_admin`: ' +
-        'el aviso de «dale la pestaña Closer a alguien» manda a una pantalla donde ya la tienen todos',
-    );
-
-    // 2 · SIN LA SECCIÓN CONCEDIDA — el estado siguiente en producción, en cuanto alguien dé de alta
-    //     a una persona con rol `usuario`: ese rol está marcado `secciones_restringidas`, así que
-    //     nace sin ver la pestaña. Y la acción que resuelve ES otra: conceder la sección.
+    /* 1 · SIN LA SECCIÓN CONCEDIDA. Se desactivan TODAS las personas de `alfa` —incluida la
+     *     administradora, que ahora es candidata— y queda una sola con rol `usuario` y sin la
+     *     fila de la sección. Ese rol está marcado `secciones_restringidas`, así que nace sin ver
+     *     la pestaña, y la acción que resuelve es concederla.
+     *
+     *     Desactivar a la administradora es lo que el endpoint no permitía: es ella quien hace la
+     *     petición. Midiendo la función, el escenario se puede armar entero. */
     sinSeccion = await personaQueCierra('Sin Seccion', undefined, false);
+    await admin.query(
+      `update identidad.usuarios set activo = false where org_id = $1 and id <> $2`,
+      [alfa, sinSeccion],
+    );
     assert.deepEqual(
       await motivo(),
       { cuantos: 0, porque: 'sin_seccion' },
-      'una persona con el rol adecuado y sin la sección concedida tiene que dar `sin_seccion`: gana ' +
-        'sobre `todos_admin` porque la acción es más barata y resuelve igual',
+      'una persona con el rol adecuado y sin la sección concedida tiene que dar `sin_seccion`: la ' +
+        'acción que resuelve es concederla, y es la única que resuelve',
     );
 
-    // 3 · Y CON UNA CANDIDATA DE VUELTA, el motivo desaparece. Sin esta mitad, un motivo fijo pasaría
-    //     los dos casos de arriba y la pantalla mostraría «no hay nadie» con el desplegable lleno.
+    /* 2 · SIN NADIE. Desactivada también ésa, el motivo pasa a `sin_gente`, que manda a otra
+     *     pantalla: dar de alta a una persona. Sin esta mitad, un motivo fijo pasaría el caso de
+     *     arriba y la pantalla mandaría a conceder una sección a nadie. */
+    await admin.query(`update identidad.usuarios set activo = false where org_id = $1`, [alfa]);
+    assert.deepEqual(await motivo(), { cuantos: 0, porque: 'sin_gente' });
+
+    /* 3 · Y CON UNA CANDIDATA DE VUELTA, el motivo desaparece. Sin esta mitad, un motivo fijo
+     *     pasaría los dos casos de arriba y la pantalla mostraría «no hay nadie» con el
+     *     desplegable lleno. */
     await admin.query(`update identidad.usuarios set activo = true where id = $1`, [cierra]);
     const conUna = await motivo();
     assert.equal(conUna.cuantos, 1, 'la candidata reactivada no volvió a la lista');
     assert.equal(conUna.porque, null, 'con una candidata en la lista sigue habiendo motivo');
   } finally {
     /* Se restaura TODO, y no por prolijidad: las otras pruebas de este archivo cuentan con que
-       `cierra` y `cierraDos` están activas, y una prueba que deja el escenario cambiado convierte a
-       las siguientes en rojas según el orden del archivo. */
-    await admin.query(
-      `update identidad.usuarios set activo = true where id = any($1::uuid[])`,
-      [[cierra, cierraDos]],
-    );
+       las personas de `alfa` están activas, y una prueba que deja el escenario cambiado convierte
+       a las siguientes en rojas según el orden del archivo. */
+    await admin.query(`update identidad.usuarios set activo = true where org_id = $1`, [alfa]);
     if (sinSeccion !== null) {
       await admin.query(`delete from identidad.usuarios_roles where usuario_id = $1`, [sinSeccion]);
       await admin.query(`delete from identidad.usuarios where id = $1`, [sinSeccion]);
@@ -359,15 +387,14 @@ test('con la lista vacía, el servidor dice CUÁL de los motivos es — y llevan
 
 /* ── EL MOTIVO QUE ESTA PRUEBA NO EJERCITA, Y POR QUÉ ─────────────────────
  *
- * Son cuatro motivos y acá se recorren tres. Falta `sin_capacidad` —personas que no administran y
- * tampoco tienen `closer.ver`— y es **inalcanzable con el catálogo de este sistema**: los tres roles
- * tienen `closer.ver`, así que hacer falta un rol propio de la empresa que no la tenga.
+ * Son tres motivos y acá se recorren dos. Falta `sin_capacidad` —personas que no tienen
+ * `closer.ver`— y es **inalcanzable con el catálogo de este sistema**: los tres roles la tienen,
+ * así que haría falta un rol propio de la empresa que no la tuviera.
  *
- * Se deja sin cubrir a propósito y escrito acá en vez de fingir que está: montar un rol a medida para
- * ejercitar una rama que ninguna empresa puede alcanzar hoy es complejidad que hay que mantener. Es
- * también por eso que `sin_capacidad` es el valor de reserva del catálogo de textos de la pantalla:
- * si algún día un rol propio la alcanza, el mensaje que sale es el correcto. */
-
+ * Se deja sin cubrir a propósito y escrito acá en vez de fingir que está: montar un rol a medida
+ * para ejercitar una rama que ninguna empresa puede alcanzar hoy es complejidad que hay que
+ * mantener. Es también por eso que `sin_capacidad` es el valor de reserva del catálogo de textos
+ * de la pantalla: si algún día un rol propio la alcanza, el mensaje que sale es el correcto. */
 test('una persona de OTRA empresa no se puede designar, y responde 404 y no 403', async () => {
   // `ADR-0501`: un 403 confirmaría que ese identificador existe. El mismo 404 cubre los tres casos
   // —no existe, es de otra empresa, o no puede ser closer— sin decir cuál fue.
@@ -381,26 +408,71 @@ test('una persona de OTRA empresa no se puede designar, y responde 404 y no 403'
 // 2 · DESIGNAR, REEMPLAZAR Y QUITAR
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('designar escribe UNA fila, y designar a otro la REEMPLAZA', async () => {
-  // La clave primaria es `org_id` entero, así que una organización no puede tener dos closers: no es
-  // una convención del código, es una fila que la base no acepta. Y el `on conflict` hace el cambio
-  // atómico: no existe el instante con dos designados ni el instante con ninguno.
+test('designar a otro AGREGA, no reemplaza, y el cuarto se rechaza con su motivo', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     ERA «UNA FILA Y LA SEGUNDA REEMPLAZA», Y AHORA SON HASTA TRES
+
+     La clave primaria era `org_id` entero: la base **no aceptaba** un segundo closer, y esta
+     prueba afirmaba justamente eso. La migración 034 la abrió a `(org_id, usuario_id)` porque se
+     pidieron hasta tres.
+
+     Lo que se afirma ahora es lo que reemplaza a aquella garantía: designar **agrega** —el segundo
+     no se lleva puesto al primero, que sería perder un closer sin decirlo— y el tope existe y se
+     rechaza con un motivo que la pantalla puede decir.
+     ══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
   const t = await sesion(ana);
 
   assert.equal((await designar(pedir(t, { usuarioId: cierra }))).status, 200);
-  assert.equal((await conOrganizacion(alfa, () => closerAsignado()))?.usuarioId, cierra);
-
   assert.equal((await designar(pedir(t, { usuarioId: cierraDos }))).status, 200);
-  const ahora = await conOrganizacion(alfa, () => closerAsignado());
-  assert.equal(ahora?.usuarioId, cierraDos, 'designar a otro no reemplazó al anterior');
+
+  const dos = await conOrganizacion(alfa, () => closersDeLaEmpresa());
+  assert.deepEqual(
+    dos.map((k) => k.usuarioId).sort(),
+    [cierra, cierraDos].sort(),
+    'designar al segundo se llevó puesto al primero',
+  );
+
+  // El tercero entra —el tope es tres— y el CUARTO no.
+  assert.equal((await designar(pedir(t, { usuarioId: ana }))).status, 200);
+  const r = await designar(pedir(t, { usuarioId: otroMas }));
+  assert.equal(r.status, 409, await r.clone().text());
+  assert.match((await r.json() as { detalle?: string }).detalle ?? '', /m[áa]ximo|Quit[áa]/i);
 
   const cuantas = await unaFila<{ n: string }>(
     admin,
     'select count(*) as n from negocio.closer_asignado where org_id = $1',
     [alfa],
   );
-  assert.equal(cuantas?.n, '1', 'quedaron dos designaciones para la misma empresa');
+  assert.equal(cuantas?.n, '3', 'el tope de tres no se respetó');
+});
+
+test('dos personas NO se pueden vincular al mismo usuario del CRM', async () => {
+  /* Es lo único que la BASE hace cumplir de todo esto, con el índice único parcial de la 034, y
+     por eso vale la pena medirlo: dos closers vinculados al mismo usuario de GoHighLevel
+     reclamarían **los mismos leads**. Cada uno vería la lista completa del otro y los dos
+     llamarían al mismo contacto. Nada fallaría: las dos filas son válidas y las dos consultas
+     devuelven resultados.
+
+     El endpoint lo comprueba antes para poder devolver un motivo legible; si no lo hiciera, el
+     índice devolvería un `23505` que nombra un índice y nadie sabría qué hacer. */
+  await limpiar();
+  const t = await sesion(ana);
+
+  assert.equal(
+    (await designar(pedir(t, { usuarioId: cierra, crmUsuarioId: 'usuarioDelCrm1' }))).status,
+    200,
+  );
+  const r = await designar(pedir(t, { usuarioId: cierraDos, crmUsuarioId: 'usuarioDelCrm1' }));
+  assert.equal(r.status, 409, await r.clone().text());
+  assert.match((await r.json() as { detalle?: string }).detalle ?? '', /ya está vinculado/i);
+
+  // Y volver a guardar al MISMO con su mismo vínculo sí se puede: no es un cambio, pero tiene
+  // que poder hacerse — es lo que pasa al tocar el porcentaje sin tocar el desplegable.
+  assert.equal(
+    (await designar(pedir(t, { usuarioId: cierra, crmUsuarioId: 'usuarioDelCrm1' }))).status,
+    200,
+  );
 });
 
 test('quitar deja la empresa SIN closer, que no es lo mismo que sin configurar el porcentaje', async () => {
@@ -410,10 +482,16 @@ test('quitar deja la empresa SIN closer, que no es lo mismo que sin configurar e
   const t = await sesion(ana);
   await designar(pedir(t, { usuarioId: cierra }));
 
-  assert.equal((await quitar(pedir(t, undefined, 'DELETE'))).status, 200);
+  /* A QUIÉN se quita va por parámetro, y antes no hacía falta porque había uno. Sin él,
+     `quitarCloser()` borraría a los tres: la política de aislamiento no lo impediría porque acota
+     por organización, que es justo lo que ese borrado ya hace. */
   assert.equal(
-    await conOrganizacion(alfa, () => closerAsignado()),
-    null,
+    (await quitar(pedir(t, undefined, 'DELETE', `?usuarioId=${cierra}`))).status,
+    200,
+  );
+  assert.deepEqual(
+    await conOrganizacion(alfa, () => closersDeLaEmpresa()),
+    [],
     'quitar no borró la designación',
   );
 });
@@ -452,11 +530,11 @@ test('el cockpit sigue al designado: cambiarlo cambia TODOS los números', async
   const t = await sesion(ana);
 
   await designar(pedir(t, { usuarioId: cierra }));
-  let ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, cierra));
+  let ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierra, crmUsuarioId: null }));
   assert.equal(ck.cobrado.valor, 1000, 'el cockpit sumó ventas que no son del designado');
 
   await designar(pedir(t, { usuarioId: cierraDos }));
-  ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, cierraDos));
+  ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierraDos, crmUsuarioId: null }));
   assert.equal(ck.cobrado.valor, 2000, 'cambiar el designado no cambió los números');
 });
 
@@ -468,14 +546,18 @@ test('sin closer designado el cockpit dice que FALTA elegirlo, y no cero', async
   const c = await contacto(alfa);
   await venta(alfa, c, cierra, 5000);
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, null));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'nadie' }));
   assert.equal(
     ck.cobrado.valor,
     null,
     'sin closer designado el cockpit devolvió un número: son las ventas de la empresa mostradas ' +
       'como si fueran de un closer que nadie eligió',
   );
-  assert.match(ck.cobrado.falta ?? '', /closer asignado/i, 'el texto no dice que falta designarlo');
+  assert.match(
+    ck.cobrado.falta ?? '',
+    /closer configurado/i,
+    'el texto no dice que falta configurar un closer',
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -501,7 +583,7 @@ test('designar y quitar quedan en la auditoría, con actor y objetivo', async ()
   const t = await sesion(ana);
 
   await designar(pedir(t, { usuarioId: cierra }));
-  await quitar(pedir(t, undefined, 'DELETE'));
+  await quitar(pedir(t, undefined, 'DELETE', `?usuarioId=${cierra}`));
 
   /* Las columnas son `usuario_id` —EL ACTOR— y `detalle`, un JSON donde `auditarAdministracion`
      guarda el objetivo. No hay `actor_id` ni `objetivo_id`: la primera versión de esta prueba los

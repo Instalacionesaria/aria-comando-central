@@ -318,6 +318,17 @@ export interface TablaContactos {
   responsable_id: string | null;
   responsable_rol: Territorio | null;
   /**
+   * El usuario de GoHighLevel al que el CRM tiene asignado este contacto. **Crudo.**
+   *
+   * Va al lado de `responsable_id` y no lo reemplaza, y la diferencia es la que importa: aquél
+   * es NUESTRO usuario y esto es el del CRM. Resolver el vínculo al escribir obligaría a
+   * re-sincronizar todos los contactos cada vez que se corrige a qué persona corresponde un
+   * usuario del CRM. El motivo largo está en `db/migraciones/034_varios_closers.sql`.
+   *
+   * `null` = el CRM no trae asignación, que son 13 de cada 100 y es un estado normal.
+   */
+  crm_asignado_a: string | null;
+  /**
    * El sello de atribución del setter. La ÚNICA excepción a "lo calculado no se guarda"
    * (`11` § 2 regla 4), y un disparador impide sobreescribirlo o apagarlo.
    *
@@ -438,9 +449,23 @@ export interface TablaComisiones {
  * Sin fila = nadie designó a nadie, que NO es lo mismo que «designó a nadie». La pantalla muestra
  * `—` y un aviso, nunca `0`. Ver la migración 020.
  */
+/**
+ * Los closers de la organización. **Hasta tres, no uno.**
+ *
+ * El nombre en singular quedó de la migración 020, cuando la clave primaria era `org_id` sola y
+ * la base impedía un segundo. La 034 la abrió a `(org_id, usuario_id)`; el nombre se conserva
+ * porque renombrar la tabla arrastra este archivo, el borrado y tres consultas para ganar una `s`.
+ */
 export interface TablaCloserAsignado {
   org_id: ColumnaInquilino;
   usuario_id: string;
+  /**
+   * El usuario de GoHighLevel con el que se vincula. **Lo que decide de quién es cada lead.**
+   *
+   * `null` = designado pero SIN vincular. No tiene leads propios que reclamar, así que ve todo,
+   * como cualquiera que no sea closer — nunca una lista vacía sin explicación.
+   */
+  crm_usuario_id: string | null;
   actualizado_el: Generated<Date>;
   actualizado_por: string | null;
 }

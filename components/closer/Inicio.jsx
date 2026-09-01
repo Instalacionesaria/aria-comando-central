@@ -79,8 +79,15 @@ export default function Inicio({
      miraba. Ahora el cockpit tiene un sujeto y la pantalla tiene que decir cuál es — mostrar los
      números de una persona sin nombrarla es lo que hacía que dos lecturas del mismo tablero
      significaran cosas distintas según quién lo abriera. */
-  closer,
-  /** `true` si quien mira ES el closer designado. Lo decide el servidor. Habilita la META. */
+  /** Los closers configurados. Vacia = nadie, y entonces todos ven todo. */
+  closers,
+  /** De quien son los numeros que se estan mostrando. `null` = de toda la empresa. */
+  mirando,
+  /** `true` = esta persona ve TODO, asi que se le puede ofrecer el selector. Lo decide el servidor. */
+  puedeVerTodo,
+  verComo,
+  alVerComo,
+  /** `true` si quien mira ES el closer cuyos numeros se muestran. Lo decide el servidor. La META. */
   soyElCloser,
   mirandoOtraOrganizacion,
   puedeConfigurarComisiones,
@@ -102,6 +109,33 @@ export default function Inicio({
 
   return (
     <>
+      {/* ── EL SELECTOR «VER COMO» ────────────────────────────────────────
+          Solo para quien ve todo, y lo decide el SERVIDOR con `puedeVerTodo`. Ofrecerselo a un
+          closer seria un control que no puede cumplir: el servidor ignora el parametro cuando el
+          alcance propio no es `todo`, asi que lo apretaria y no pasaria nada.
+
+          Y solo si hay al menos un closer VINCULADO: sin vinculo esa persona no tiene numeros
+          propios, asi que su opcion daria exactamente lo mismo que «toda la empresa». */}
+      {puedeVerTodo && (closers ?? []).some((k) => k.vinculado) ? (
+        <div className="ck-vercomo">
+          <label htmlFor="ck-vercomo">Ver los números de</label>
+          <select
+            id="ck-vercomo"
+            value={verComo ?? ''}
+            onChange={(e) => alVerComo?.(e.target.value || null)}
+          >
+            <option value="">Toda la empresa</option>
+            {(closers ?? [])
+              .filter((k) => k.vinculado)
+              .map((k) => (
+                <option key={k.usuarioId} value={k.usuarioId}>
+                  {k.nombre}
+                </option>
+              ))}
+          </select>
+        </div>
+      ) : null}
+
       {/* ── El hero: lo cobrado del mes ── */}
       <div className="ck-hero">
         <div>
@@ -111,7 +145,7 @@ export default function Inicio({
               segundo con la forma del primero. */}
           <span className="ck-tag">
             ◈ Cobrado · {c.mes}
-            {closer ? <> · {closer.nombre}</> : null}
+            {mirando ? <> · {mirando.nombre}</> : null}
           </span>
           <div className="ck-big" style={sinCobrado ? { color: 'var(--txt-faint)' } : undefined}>
             {plata(c.cobrado.valor)}
@@ -167,6 +201,9 @@ export default function Inicio({
           comision={comision}
           mirandoOtraOrganizacion={mirandoOtraOrganizacion}
           puedeFijarLaMeta={soyElCloser}
+          /* Los DOS motivos de que no haya comisión, separados. Sin esto, quien mira toda la
+             empresa lee «todavía no hay ningún closer configurado» teniendo tres. */
+          sinComision={(closers ?? []).length === 0 ? 'sin_closer' : 'toda_la_empresa'}
           rutaDeLaMeta={'/api/closer/meta'}
           alGuardar={alGuardarLaMeta}
           alRecargar={alRecargar}

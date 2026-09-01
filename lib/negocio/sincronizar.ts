@@ -163,6 +163,15 @@ export async function sincronizarContactos(acceso: {
  * `set`. Son datos NUESTROS, no de GoHighLevel: pisarlos en cada sincronización borraría la
  * atribución del setter y el trabajo hecho acá. El sello además tiene un disparador que lo
  * protege, así que esto es el cinturón además del tirante.
+ *
+ * ── Y `crm_asignado_a` SÍ ESTÁ, QUE ES LA OTRA MITAD DE LA MISMA REGLA ─────
+ *
+ * Es un hecho de GoHighLevel, no nuestro. Si allá reasignan un contacto a otro closer, acá
+ * tiene que moverse — y si quedara fuera del `set`, el primer valor sería el definitivo: el
+ * lead se quedaría para siempre con el closer que lo tuvo el día que se sincronizó por primera
+ * vez, y ninguna reasignación en el CRM tendría efecto. Nada fallaría.
+ *
+ * La regla completa, entonces: **lo que decide GoHighLevel se pisa; lo que decidimos acá, no.**
  */
 async function guardar(
   c: ContactoDeGhl,
@@ -198,6 +207,10 @@ async function guardar(
     // base ponga su valor de reserva: el `11` § 7.1 exige que ninguna fila quede sin chip de
     // fuente, y la reserva vive en la base para que no dependa de este archivo.
     ...(c.source ? { fuente: c.source } : {}),
+    /* A quién lo tiene asignado el CRM. Crudo, sin resolver a nuestro usuario: el motivo está
+       en `db/migraciones/034_varios_closers.sql` y en el tipo. `null` cuando no viene, que son
+       13 de cada 100 y no es un error. */
+    crm_asignado_a: c.assignedTo ?? null,
     sincronizado_el: sql<Date>`now()`,
   };
 
@@ -215,6 +228,7 @@ async function guardar(
         email: valores.email,
         etiquetas: valores.etiquetas,
         territorio: valores.territorio,
+        crm_asignado_a: valores.crm_asignado_a,
         ...(c.source ? { fuente: c.source } : {}),
         sincronizado_el: valores.sincronizado_el,
       } as never),

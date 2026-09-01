@@ -22,6 +22,7 @@
 // el mismo contacto con una píldora distinta según la pantalla, y las dos pareciendo correctas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import { filasDeTerritorio, type Fila } from './fila.ts';
 import {
   contarPorEtapa,
@@ -80,7 +81,8 @@ export interface Pipeline {
  */
 export async function pipelineDe(
   rol: Territorio,
-  opciones: { conCongelados: boolean },
+  /** `alcance` ausente = todo el territorio. Ver `lib/negocio/alcanceDelCloser.ts`. */
+  opciones: { conCongelados: boolean; alcance?: AlcanceDelCloser },
 ): Promise<Pipeline> {
   /* ── `conCongelados` NO ES UNA PERILLA DE GUSTO: DECIDE DE QUIÉN ES UN CONGELADO ──
    *
@@ -100,6 +102,7 @@ export async function pipelineDe(
    * Mi Día NO lo pide en ninguno de los dos, y eso es correcto: sus colas son trabajo, y un
    * congelado no es trabajo de nadie. El Pipeline es la cartera, y ahí un congelado es información. */
   const { filas, hayMas } = await filasDeTerritorio(rol, {
+    alcance: opciones.alcance,
     todas: true,
     conCongelados: opciones.conCongelados,
   });

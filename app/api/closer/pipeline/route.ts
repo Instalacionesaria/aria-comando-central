@@ -16,6 +16,10 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
+import {
+  alcanceDeQuienMira,
+  verComoDeLaUrl,
+} from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { pipelineDe } from '../../../../lib/negocio/pipeline.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
@@ -28,8 +32,11 @@ export async function GET(peticion: Request): Promise<Response> {
   /* `conCongelados: true` — el Closer es el dueño del congelado, y esa decisión está escrita en
      `pipelineDe`. Un contacto sin territorio no está en ninguno de los dos, así que si las dos
      carteras lo pidieran se contaría dos veces. */
-  const pipeline = await conOrganizacion(contexto.orgEfectiva, () =>
-    pipelineDe('closer', { conCongelados: true }),
-  );
+  /* El alcance, igual que en Mi Dia y en Contactos. Las tres pantallas del Closer hacen la misma
+     pregunta con la misma funcion: tres respuestas distintas serian tres listas que no coinciden. */
+  const pipeline = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion));
+    return pipelineDe('closer', { conCongelados: true, alcance });
+  });
   return ok(pipeline);
 }

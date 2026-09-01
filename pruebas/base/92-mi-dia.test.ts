@@ -569,7 +569,7 @@ test('sin ningún resultado, el cockpit devuelve NULO y no cero', async () => {
   await limpiar();
   await contacto(`ck-${randomUUID().slice(0, 6)}`, ['cita_agendada', 'noshow']);
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, quien));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
 
   assert.equal(ck.cobrado.valor, null, 'el cobrado devolvió un número sin ningún resultado cargado');
   assert.ok(ck.cobrado.falta, 'el cobrado nulo no dice qué falta');
@@ -600,7 +600,7 @@ test('CON resultados y sin ventas, el cockpit devuelve CERO y no nulo', async ()
       .execute();
   });
 
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, quien));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(ck.cobrado.valor, 0, 'con resultados registrados, el cobrado tiene que ser un cero medido');
   assert.equal(ck.cobrado.falta, undefined, 'un cero medido no lleva texto de "falta"');
   assert.equal(ck.ventas.valor, 0);
@@ -611,7 +611,7 @@ test('el cockpit recibe el contador de tareas, no lo recalcula', async () => {
   // El contador tiene una regla propia —los automáticos no suman— y recalcularlo acá sería una
   // segunda implementación de esa regla.
   await limpiar();
-  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 7, quien));
+  const ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 7, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
   assert.equal(ck.tareasPendientes.valor, 7, 'el cockpit recalculó el contador en vez de recibirlo');
 });
 

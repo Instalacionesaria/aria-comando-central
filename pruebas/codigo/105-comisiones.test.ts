@@ -186,9 +186,12 @@ test('la visibilidad la decide el SERVIDOR, y son DOS permisos distintos', () =>
   );
   // Y que el servidor lo responda, en vez de que la pantalla compare identificadores.
   const ruta = leer('app/api/closer/mi-dia/route.ts');
+  /* La fórmula cambió de nombre con los varios closers —el sujeto pasó de `closer` a `mirando`,
+     que es DE QUIÉN son los números que se están mostrando— y lo que se afirma es lo mismo: que la
+     decisión la toma el SERVIDOR y no la pantalla comparando identificadores. */
   assert.match(
     ruta,
-    /soyElCloser: closer !== null && closer\.usuarioId === contexto\.usuarioId/,
+    /soyElCloser: mirando !== null && mirando\.usuarioId === contexto\.usuarioId/,
     'el servidor dejo de responder si quien mira es el closer',
   );
 
@@ -257,9 +260,14 @@ test('el aviso de «nadie puede ser closer» tiene un texto POR MOTIVO, y el mot
   // ══════════════════════════════════════════════════════════════════════
   const panel = codigo(leer('components/closer/QuienEsElCloser.jsx'));
 
-  // 1 · Los CUATRO motivos tienen su texto. Los cuatro, y no tres: el que falte es el que sale como
-  //     reserva el día que ocurra, y ahí vuelve el defecto en silencio.
-  for (const motivo of ['sin_gente', 'todos_admin', 'sin_capacidad', 'sin_seccion']) {
+  /* 1 · Los TRES motivos tienen su texto. Los tres, y no dos: el que falte es el que sale como
+   *     reserva el día que ocurra, y ahí vuelve el defecto en silencio.
+   *
+   *     **Eran cuatro.** El que se fue es `todos_admin` —*«las personas de esta empresa administran
+   *     la empresa, y quien configura no puede ser el configurado»*—, y se fue con la regla que lo
+   *     producía: se pidió que cualquier rol pueda ser closer. No se adapta su texto: el motivo
+   *     dejó de poder ocurrir, así que un texto para él sería una rama muerta. */
+  for (const motivo of ['sin_gente', 'sin_capacidad', 'sin_seccion']) {
     assert.match(
       panel,
       new RegExp(`\\b${motivo}\\b`),
@@ -313,8 +321,12 @@ test('designar a otro closer RECARGA el cockpit, y no borra la comisión', () =>
    *
    * O sea que la aserción comprobaba «alguien avisa» cuando lo que importa es «avisa el que cambia de
    * persona» — que es el caso grave: al designar a otro, TODO el cockpit pasa a ser de otra gente. */
+  /* La función se llama `guardar` desde que designar y vincular son el mismo gesto: se elige a la
+     persona y su usuario del CRM en la misma fila. Lo que se afirma es lo mismo — que avisa hacia
+     arriba— y por el mismo motivo, que ahora es más fuerte: al agregar o quitar un closer, los
+     leads que ve cada uno cambian, no solo los números. */
   const cuerpoDeDesignar = (() => {
-    const i = panel.indexOf('const designar = useCallback(');
+    const i = panel.indexOf('const guardar = useCallback(');
     assert.ok(i >= 0, 'el panel dejó de tener la función que designa');
     return panel.slice(i, panel.indexOf('[absorber, alCambiar],', i));
   })();
@@ -324,11 +336,17 @@ test('designar a otro closer RECARGA el cockpit, y no borra la comisión', () =>
     'designar no avisa hacia arriba: el cockpit sigue mostrando los números del closer ANTERIOR ' +
       'bajo el nombre del nuevo',
   );
-  // Y el otro camino también: cambiar el PORCENTAJE cambia la comisión que el anillo dibuja.
+  /* Y los OTROS caminos también. Eran dos avisos y ahora son tres, porque apareció una operación
+     que antes no existía: **quitar a un closer**. Con un solo closer eso era el `DELETE` que dejaba
+     la empresa sin nadie; con varios es sacar a una persona de la lista, y el efecto es más grande
+     que el de los otros dos — los contactos que veía vuelven a verlos todos.
+
+     Se cuenta el número EXACTO y no «al menos dos»: el aviso que falte es el que deja la pantalla
+     mostrando los números de antes bajo el nombre de después, y un `>=` no lo vería. */
   assert.equal(
     [...panel.matchAll(/alCambiar\?\.\(\)/g)].length,
-    2,
-    'tendrían que ser DOS avisos: uno al designar y uno al guardar el porcentaje',
+    3,
+    'tendrían que ser TRES avisos: al designar, al quitar y al guardar el porcentaje',
   );
 
   const inicio = codigo(leer('components/closer/Inicio.jsx'));
@@ -383,11 +401,23 @@ test('la designación NO ensancha la autorización, y un administrador no puede 
       'un administrador existe',
   );
 
-  // La regla se escribe con una CAPACIDAD y no con un nombre de rol —`ADR-0302`—, y la capacidad
-  // elegida es la misma que habilita designar: quien puede designar no puede ser designado.
+  /* ── LA REGLA DE EXCLUSIÓN SE FUE, Y ESTA AFIRMACIÓN CON ELLA ────────────
+   *
+   * Acá se exigía `CAPACIDAD_QUE_EXCLUYE = 'credenciales.editar'`: quien puede designar no puede
+   * ser designado. Se pidió sacarla —*«ahora cualquiera puede ser configurado como closer, admin
+   * superadmin o usuario»*— y la constante ya no existe.
+   *
+   * Lo que se afirma en su lugar es lo CONTRARIO y es igual de comprobable: que esa constante NO
+   * volvió. Sin esto, reponerla sería un cambio de una línea que deja el panel vacío en cualquier
+   * empresa cuyas personas administren — que es el caso de producción. */
   const modulo = leer('lib/negocio/closer.ts');
-  assert.match(modulo, /CAPACIDAD_QUE_EXCLUYE = 'credenciales\.editar'/, 'cambio la regla de exclusion');
   const cod = codigo(modulo);
+  assert.equal(
+    /CAPACIDAD_QUE_EXCLUYE/.test(cod),
+    false,
+    'volvió la exclusión del administrador: con ella, el panel queda vacío en una empresa donde ' +
+      'todas las personas administran, que es el caso de producción',
+  );
   for (const rol of ['administrador', 'superadministrador']) {
     assert.ok(
       !new RegExp(`['\"\`]${rol}['\"\`]`).test(cod),

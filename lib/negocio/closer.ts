@@ -18,19 +18,28 @@
 //     la migración 015 escribió para las comisiones.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LA REGLA QUE DECIDE QUIÉN ENTRA A LA LISTA, Y POR QUÉ SE ESCRIBE CON CAPACIDADES
+// LA REGLA QUE EXCLUÍA AL ADMINISTRADOR SE FUE, Y CONVIENE SABER QUÉ ERA
 //
-// Se pidió que **un administrador no pueda ser closer**. Escrito como `clave !== 'administrador'`
-// eso funciona hoy y miente el día que exista un segundo rol que administre — que es exactamente lo
-// que `ADR-0302` prohíbe buscar en el código: *"la comparación es la CAPACIDAD, nunca el nombre del
-// rol"*.
+// Decía: *quien puede designar no puede ser designado.* Estaba escrita con la capacidad
+// `credenciales.editar` y no con el nombre del rol —`ADR-0302`— y era una buena regla mientras
+// hubo **un** closer: los números del cockpit eran de esa persona, así que designarse a uno mismo
+// era escribirse el propio tablero.
 //
-// Así que la condición es `credenciales.editar`, y la elección no es cómoda sino significativa:
-// **es la misma capacidad que habilita designar.** La regla queda en una frase que se puede
-// comprobar leyéndola: *quien puede designar no puede ser designado.* Un rol nuevo que administre
-// la empresa queda excluido solo, sin tocar este archivo.
+// Se pidió sacarla con todas las letras: *«no te olvides de cambiar que ahora cualquiera puede ser
+// configurado como closer, admin superadmin o usuario»*, y *«quitame esa alerta»* — la que decía
+// que hacía falta dar de alta a alguien que NO fuera administrador.
 //
-// Y las otras dos condiciones son las que definen «tiene la pestaña», copiadas de la fórmula que
+// Y el argumento que la sostenía se cayó solo con el cambio a varios closers: lo que decide qué
+// leads ve cada uno ya no es la designación, es **el vínculo con un usuario de GoHighLevel**, y eso
+// lo reparte el CRM, no quien configura. Un administrador que se designa closer se da de alta a sí
+// mismo en una lista; los leads que va a ver son los que el CRM ya le asignó.
+//
+// Medido, además, contra producción el 2026-08-28 y otra vez el 2026-09-01: **las tres personas de
+// la empresa son administradoras**. La regla no protegía nada — dejaba la lista vacía y mandaba a
+// crear un usuario que no administrara, que era trabajo para el mismo resultado.
+//
+// Lo que SÍ se conserva son las dos condiciones que definen «tiene la pestaña», copiadas de la
+// fórmula que
 // `lib/autorizacion/sesion.ts` usa para una sola persona:
 //
 //   1 · su unión de capacidades incluye `closer.ver`;
@@ -49,12 +58,6 @@ import type { Trx } from '../datos/capa.ts';
 /** La capacidad que habilita la pestaña del closer. La declara `lib/autorizacion/secciones.ts`. */
 export const CAPACIDAD_CLOSER = 'closer.ver';
 
-/**
- * La capacidad que EXCLUYE de la lista, y es la misma que habilita designar.
- *
- * No es `'administrador'` a propósito. Ver el encabezado.
- */
-export const CAPACIDAD_QUE_EXCLUYE = 'credenciales.editar';
 
 /** La sección cuya concesión hace falta cuando la persona está restringida por secciones. */
 export const SECCION_CLOSER = 'closer';
@@ -93,16 +96,20 @@ export interface CandidatoACloser {
  * todos tienen Closer, y queda trabado sin nada que mirar. Es la clase de defecto que no da error:
  * la pantalla avisa, el texto es amable, y no resuelve nada.
  *
- * Los cuatro motivos llevan a DOS acciones distintas, y por eso se distinguen:
+ * Los TRES motivos que quedan llevan a acciones distintas, y por eso se distinguen:
  *
  *   · `sin_gente`     → no hay ni una persona activa con correo. Hay que crear usuarios.
- *   · `todos_admin`   → los hay, y todos administran la empresa. Hace falta alguien que NO administre.
- *   · `sin_capacidad` → los hay, no administran, y no tienen la pestaña Closer. Ahí sí: Ajustes → Usuarios.
+ *   · `sin_capacidad` → los hay y no tienen la pestaña Closer. Ahí sí: Ajustes → Usuarios.
  *   · `sin_seccion`   → tienen la capacidad por su rol pero la sección no está concedida.
+ *
+ * **Eran cuatro.** El que se fue es `todos_admin` —*«todos administran la empresa, hace falta
+ * alguien que NO administre»*— y se fue con la regla que lo producía, no por prolijidad: hoy
+ * cualquier rol puede ser closer. Era además el motivo que MÁS se veía en producción, porque las
+ * tres personas de la empresa son administradoras.
  *
  * Se cuenta cuántos cayeron por cada motivo, y gana el que más explica — no el primero que aparece.
  */
-export type PorqueNingunCandidato = 'sin_gente' | 'todos_admin' | 'sin_capacidad' | 'sin_seccion';
+export type PorqueNingunCandidato = 'sin_gente' | 'sin_capacidad' | 'sin_seccion';
 
 export interface Candidatos {
   candidatos: CandidatoACloser[];
@@ -139,7 +146,7 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
   const permisos = await db
     .selectFrom('usuarios_permisos')
     .where('usuario_id', 'in', ids)
-    .where('permiso', 'in', [CAPACIDAD_CLOSER, CAPACIDAD_QUE_EXCLUYE])
+    .where('permiso', '=', CAPACIDAD_CLOSER)
     .select(['usuario_id', 'permiso'])
     .execute();
 
@@ -177,19 +184,14 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
   }
 
   /* Se CUENTA por qué cayó cada uno, en vez de solo filtrar. El conteo es lo único que permite que el
-     aviso de la pantalla nombre la acción que de verdad resuelve la situación — ver el tipo de arriba.
-     El orden de los tres descartes es el mismo que antes y no es intercambiable: quien administra la
-     empresa queda afuera aunque tenga todo lo demás. */
-  const descartes = { todos_admin: 0, sin_capacidad: 0, sin_seccion: 0 };
+     aviso de la pantalla nombre la acción que de verdad resuelve la situación — ver el tipo de arriba. */
+  const descartes = { sin_capacidad: 0, sin_seccion: 0 };
 
   const candidatos = filas
     .filter((f) => {
       const suyas = tiene.get(f.id) ?? new Set<string>();
-      // Quien puede designar no puede ser designado.
-      if (suyas.has(CAPACIDAD_QUE_EXCLUYE)) {
-        descartes.todos_admin += 1;
-        return false;
-      }
+      /* Acá había un tercer descarte, el primero de los tres: quien tuviera `credenciales.editar`
+         quedaba afuera. Se fue con la regla, y el motivo largo está en el encabezado. */
       if (!suyas.has(CAPACIDAD_CLOSER)) {
         descartes.sin_capacidad += 1;
         return false;
@@ -215,83 +217,97 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
   const porMotivo: [PorqueNingunCandidato, number][] = [
     ['sin_seccion', descartes.sin_seccion],
     ['sin_capacidad', descartes.sin_capacidad],
-    ['todos_admin', descartes.todos_admin],
   ];
   const ganador = porMotivo.reduce((mejor, actual) => (actual[1] > mejor[1] ? actual : mejor));
   return { candidatos, porqueNinguno: ganador[1] > 0 ? ganador[0] : 'sin_gente' };
 }
 
-/** La designación vigente. `null` = **nadie designó a nadie**, que no es «designó a nadie». */
-export interface Designacion {
-  usuarioId: string;
-  /** El nombre, para que la pantalla diga de quién son los números que muestra. */
-  nombre: string;
-  actualizadoEl: Date;
-  actualizadoPor: string | null;
-}
+/**
+ * El tope de closers por empresa. **Acá y no en la base**, y eso fue deliberado.
+ *
+ * Se pidió *«por ahora pongamos hasta un máximo de 3 closers»*, y «por ahora» es la palabra que
+ * decide dónde vive el número. Como constante, subirlo es esta línea. Como `check` en la base, es
+ * otra migración contra producción para un número que se sabe provisorio.
+ */
+export const TOPE_DE_CLOSERS = 3;
+
+/** Por qué se rechazó una designación. `null` = se hizo. */
+export type PorqueNoSeDesigno = 'tope' | 'crm_ya_vinculado';
 
 /**
- * Quién es el closer de la organización activa, o `null`.
+ * Designa a un closer, o le cambia el vínculo con el CRM si ya estaba.
  *
- * Va por la conexión del INQUILINO: la tabla está en `negocio` y su política de aislamiento acota
- * por organización sola, así que acá no hace falta —ni se debe— filtrar por `org_id` a mano.
- */
-export async function closerAsignado(): Promise<Designacion | null> {
-  /* El nombre se trae en la MISMA consulta, con un `join` a `usuarios`. Se puede desde la conexión
-     del inquilino: ese rol tiene concedidas cinco columnas de esa tabla, y `nombre` es una de ellas
-     —lo demuestra `porcentajesDeLaEmpresa`, que lee `u.id`, `u.nombre` y `u.email` por acá—. Lo que
-     NO se puede leer por esta conexión es `es_admin_principal`, y eso ya está escrito en la ruta de
-     comisiones.
-
-     Y es un `innerJoin`, no un `leftJoin`: sin fila en `usuarios` la designación no existe, porque
-     la clave foránea con `on delete cascade` se la lleva. Un `leftJoin` dejaría entrar una fila con
-     el nombre nulo, o sea un estado que la base ya hace imposible. */
-  const f = await datos()
-    .selectFrom('closer_asignado as ca')
-    .innerJoin('usuarios as u', 'u.id', 'ca.usuario_id')
-    .select(['ca.usuario_id', 'u.nombre', 'ca.actualizado_el', 'ca.actualizado_por'])
-    .executeTakeFirst();
-  if (!f) return null;
-  return {
-    usuarioId: f.usuario_id,
-    nombre: f.nombre,
-    actualizadoEl: f.actualizado_el,
-    actualizadoPor: f.actualizado_por,
-  };
-}
-
-/**
- * Designa al closer. **Reemplaza al anterior en una sola sentencia.**
+ * ── ERA UN REEMPLAZO ATÓMICO Y AHORA ES UN ALTA ────────────────────────────
  *
- * El `on conflict (org_id)` es lo que hace que el cambio sea atómico: no existe el instante con dos
- * designados ni el instante con ninguno. Un `delete` seguido de un `insert` tendría los dos, y el
- * segundo es el que se ve —un cockpit en blanco— si algo falla en el medio.
+ * La versión de un solo closer hacía `on conflict (org_id) do update`, y su motivo escrito era
+ * bueno: *«no existe el instante con dos designados ni el instante con ninguno»*. Con la clave
+ * primaria en `(org_id, usuario_id)` desde la migración 034, ese conflicto ya no ocurre — designar
+ * a otro **agrega**, no reemplaza. El `on conflict` que queda es por la clave nueva, y sirve para
+ * lo que ahora se necesita: cambiarle el vínculo a quien ya es closer sin borrarlo y volver a
+ * crearlo.
+ *
+ * ── LOS DOS RECHAZOS, Y POR QUÉ SE MIDEN ACÁ Y NO EN LA BASE ───────────────
+ *
+ *   · `tope` — ya hay `TOPE_DE_CLOSERS`. Se cuenta antes de insertar, dentro de la misma
+ *     transacción del inquilino. No es una carrera que importe: dos altas simultáneas que pasen
+ *     el conteo dejarían un cuarto closer, y el costo de eso es una fila de más que se puede
+ *     borrar desde la misma pantalla. Un `check` en la base para cubrir eso sería una migración
+ *     por un número provisorio.
+ *   · `crm_ya_vinculado` — ese usuario del CRM ya es de otro. **Eso SÍ lo hace cumplir la base**,
+ *     con el índice único parcial de la 034: dos personas vinculadas al mismo usuario partirían
+ *     los mismos leads a las dos y nada fallaría. Acá se comprueba antes solo para devolver un
+ *     motivo que la pantalla pueda decir, en vez de un `23505` que nombra un índice.
  */
-export async function asignarCloser(usuarioId: string, actor: string): Promise<void> {
+export async function asignarCloser(
+  usuarioId: string,
+  crmUsuarioId: string | null,
+  actor: string,
+): Promise<PorqueNoSeDesigno | null> {
+  const yaEs = await datos()
+    .selectFrom('closer_asignado')
+    .select(['usuario_id', 'crm_usuario_id'])
+    .execute();
+
+  const esNuevo = !yaEs.some((c) => c.usuario_id === usuarioId);
+  if (esNuevo && yaEs.length >= TOPE_DE_CLOSERS) return 'tope';
+
+  /* El vínculo, contra los OTROS. Sin excluirse a sí mismo, volver a guardar a alguien con el
+     mismo usuario del CRM que ya tenía se rechazaría — y eso es guardar sin cambiar nada, que
+     tiene que poder hacerse. */
+  if (
+    crmUsuarioId !== null &&
+    yaEs.some((c) => c.crm_usuario_id === crmUsuarioId && c.usuario_id !== usuarioId)
+  ) {
+    return 'crm_ya_vinculado';
+  }
+
   await datos()
     .insertInto('closer_asignado')
     .values({
       usuario_id: usuarioId,
+      crm_usuario_id: crmUsuarioId,
       actualizado_el: new Date(),
       actualizado_por: actor,
     } as never)
     .onConflict((oc: any) =>
-      oc.column('org_id').doUpdateSet({
-        usuario_id: usuarioId,
+      oc.columns(['org_id', 'usuario_id']).doUpdateSet({
+        crm_usuario_id: crmUsuarioId,
         actualizado_el: new Date(),
         actualizado_por: actor,
       } as never),
     )
     .execute();
+  return null;
 }
 
 /**
- * Quita la designación: la organización queda **sin closer**.
+ * Saca a UNA persona de la lista de closers.
  *
- * Existe por lo mismo que «Dejar sin configurar» existe para el porcentaje: hay que poder volver de
- * «es Ana» a «todavía nadie», y sin esta operación el único camino sería designar a otro. No es lo
- * mismo, y la pantalla lo dibuja distinto.
+ * Antes borraba la fila de la organización sin nombrar a nadie, porque había una sola. Ahora el
+ * identificador es obligatorio: sin él, `deleteFrom` sin `where` se lleva **a los tres**, y la
+ * política de aislamiento no lo impediría — acota por organización, que es justo lo que este
+ * borrado ya tiene.
  */
-export async function quitarCloser(): Promise<void> {
-  await datos().deleteFrom('closer_asignado').execute();
+export async function quitarCloser(usuarioId: string): Promise<void> {
+  await datos().deleteFrom('closer_asignado').where('usuario_id', '=', usuarioId).execute();
 }
