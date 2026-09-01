@@ -33,7 +33,7 @@
 // ── Y ESA PREMISA RESULTÓ FALSA, MEDIDA ──────────────────────────────────────
 //
 // El 2026-09-01, contra la subcuenta real y con la MISMA llamada que la aplicación ya hacía:
-// `POST /contacts/search` devuelve `assignedTo`, y **87 de cada 100 contactos de `zona_closer`
+// `POST /contacts/search` devuelve `assignedTo`, y de los **152 contactos de `zona_closer`, 135
 // lo traen poblado** (en `zona_setter`, 3 de 100 — la señal es del closer).
 //
 // Así que la pregunta recibió su segunda respuesta —**por asignación**— cuando se pidieron

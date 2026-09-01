@@ -23,10 +23,10 @@
 
    ── EL AVISO DEL AGENTE DE IA ─────────────────────────────────────────────
 
-   Medido contra producción el 2026-09-01: los 87 contactos de `zona_closer` están asignados al
-   MISMO usuario del CRM, y ese usuario es el que la empresa tiene cargado como cuenta del agente de
-   IA. Vincular a alguien con él es legítimo —es lo que el CRM dice— y significa llevarse todos los
-   leads. Se avisa al lado de la opción, no se prohíbe.
+   Medido contra producción el 2026-09-01: de los 152 contactos de `zona_closer`, los **135** que
+   traen asignado apuntan al MISMO usuario del CRM, y ese usuario es el que la empresa tiene cargado
+   como cuenta del agente de IA. Vincular a alguien con él es legítimo —es lo que el CRM dice— y
+   significa llevarse esos 135. Se avisa al lado de la opción, no se prohíbe.
 
    ── QUIÉN APARECE EN LA LISTA ─────────────────────────────────────────────
 
@@ -500,9 +500,10 @@ function SelectorDelCrm({ id, valor, usuariosCrm, fallaCrm, agenteId, ocupado, a
           </option>
         ))}
       </select>
-      {/* EL AVISO DEL AGENTE, cuando está elegido. Medido: en producción los 87 contactos del closer
-          están asignados a esa cuenta, así que vincular a alguien con ella le da todos los leads. No
-          se prohíbe —es lo que el CRM dice— pero nadie debería descubrirlo después. */}
+      {/* EL AVISO DEL AGENTE, cuando está elegido. Medido: en producción los 135 contactos del
+          closer que tienen asignado apuntan a esa cuenta, así que vincular a alguien con ella le da
+          todos esos leads. No se prohíbe —es lo que el CRM dice— pero nadie debería descubrirlo
+          después. */}
       {agenteId && valor === agenteId ? (
         <span className="aj-ayuda ck-sin-vincular">
           Es la cuenta con la que escribe el agente de IA. Todo lo que el CRM le asigne a ella va a

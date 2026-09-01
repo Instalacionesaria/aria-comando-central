@@ -325,7 +325,7 @@ export interface TablaContactos {
    * re-sincronizar todos los contactos cada vez que se corrige a qué persona corresponde un
    * usuario del CRM. El motivo largo está en `db/migraciones/034_varios_closers.sql`.
    *
-   * `null` = el CRM no trae asignación, que son 13 de cada 100 y es un estado normal.
+   * `null` = el CRM no trae asignación, que son 17 de los 152 medidos y es un estado normal.
    */
   crm_asignado_a: string | null;
   /**

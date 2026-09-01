@@ -14,8 +14,8 @@
 // asignación** — da zona»*.
 //
 // **Esa premisa dejó de ser cierta**, medida el 2026-09-01 contra la subcuenta real: `assignedTo`
-// viene en la misma respuesta de `POST /contacts/search` que la aplicación ya pide, y 87 de cada
-// 100 contactos de `zona_closer` lo traen. Así que la pregunta recibe su segunda respuesta —**por
+// viene en la misma respuesta de `POST /contacts/search` que la aplicación ya pide, y 135 de los
+// 152 contactos de `zona_closer` lo traen. Así que la pregunta recibe su segunda respuesta —**por
 // asignación**— sin cambiar la parte que sigue valiendo: esto es un filtro de negocio, vive en la
 // consulta, y no toca el modelo de permisos ni una línea.
 //
@@ -33,7 +33,7 @@
 // esa persona se va a su casa. Fallar del lado de mostrar de más es visible y reparable; fallar del
 // lado de mostrar de menos esconde el trabajo y nadie se entera.
 //
-// Los contactos **sin asignar** —13 de cada 100— quedan fuera de todo `mio` y dentro de `todo`. Fue
+// Los contactos **sin asignar** —17 de los 152— quedan fuera de todo `mio` y dentro de `todo`. Fue
 // la decisión de producto: *«solo quien no es closer»*, con un contador para que alguien los asigne
 // en el CRM. Ningún lead desaparece, y dos closers nunca trabajan el mismo.
 // ═══════════════════════════════════════════════════════════════════════════════

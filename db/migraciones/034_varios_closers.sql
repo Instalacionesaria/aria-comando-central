@@ -26,9 +26,21 @@
 -- uno hará falta otra señal (owner de la oportunidad)»*.
 --
 -- **Esa premisa es falsa.** Medido el 2026-09-01 contra la subcuenta real, con el mismo
--- `POST /contacts/search` que la aplicación ya llama: `assignedTo` viene en la respuesta, y de 100
--- contactos de `zona_closer` **87 lo traen poblado**. En `zona_setter` solo 3 de 100 — o sea que la
--- señal es del closer, que es exactamente donde se pidió usarla.
+-- `POST /contacts/search` que la aplicación ya llama: `assignedTo` viene en la respuesta, y de los
+-- **152 contactos de `zona_closer`, 135 lo traen poblado** — el 89 %. En `zona_setter`, 3 de 100 —
+-- o sea que la señal es del closer, que es exactamente donde se pidió usarla.
+--
+-- ── Y LA PRIMERA MEDICIÓN DE ESTO ESTUVO MAL DICHA ─────────────────────────
+--
+-- La sonda pidió UNA página de 100 sobre un total de 152 y dio «87 con asignado». La TASA era
+-- correcta —87 %, contra el 89 % real— pero el número absoluto se escribió después como si fuera
+-- el total, y no lo era: es la cuenta de una muestra. La corrección la trajo quien mira el CRM
+-- todos los días: *«en GHL me salen 135 asignados a Quiroz y 152 en total»*.
+--
+-- Queda escrito porque el error no fue de medición sino de REDACCIÓN, y es el que más fácil se
+-- repite: una muestra citada como si fuera un censo. Cuando la cifra va a un comentario que
+-- alguien va a creer, hay que paginar hasta el final — que es lo que hace
+-- `todosLosContactosPorEtiqueta`, la función que la aplicación ya usaba.
 --
 -- No hace falta ninguna llamada nueva: el campo llega en la misma respuesta que hoy se descarta.
 -- ═════════════════════════════════════════════════════════════════════════════
@@ -87,7 +99,7 @@ create unique index closer_por_usuario_del_crm
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- El identificador del usuario de GoHighLevel, **crudo, tal como viene**. Nulo = el CRM no lo trae
--- (13 de cada 100 en la medición) o el contacto todavía no se sincronizó desde este cambio.
+-- (17 de los 152 medidos) o el contacto todavía no se sincronizó desde este cambio.
 --
 -- ── POR QUÉ CRUDO Y NO RESUELTO A `responsable_id` ─────────────────────────
 --

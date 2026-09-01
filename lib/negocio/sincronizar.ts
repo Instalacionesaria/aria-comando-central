@@ -209,7 +209,7 @@ async function guardar(
     ...(c.source ? { fuente: c.source } : {}),
     /* A quién lo tiene asignado el CRM. Crudo, sin resolver a nuestro usuario: el motivo está
        en `db/migraciones/034_varios_closers.sql` y en el tipo. `null` cuando no viene, que son
-       13 de cada 100 y no es un error. */
+       17 de los 152 medidos y no es un error. */
     crm_asignado_a: c.assignedTo ?? null,
     sincronizado_el: sql<Date>`now()`,
   };

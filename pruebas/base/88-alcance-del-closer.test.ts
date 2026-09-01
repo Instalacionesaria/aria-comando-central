@@ -10,7 +10,7 @@
 //   asignación — da zona.»*
 //
 // Esa premisa resultó falsa, medida el 2026-09-01 con la MISMA llamada que la aplicación ya hacía:
-// `assignedTo` viene poblado en 87 de cada 100 contactos de `zona_closer`. Así que ahora un closer
+// `assignedTo` viene poblado en 135 de los 152 contactos de `zona_closer`. Así que ahora un closer
 // vinculado ve solo lo suyo.
 //
 // ── LOS DOS LADOS POR LOS QUE ESTO SE ROMPE, Y NINGUNO FALLA ────────────────
@@ -412,7 +412,7 @@ test('`crm_asignado_a` se PISA al sincronizar, y `responsable_id` NO', async () 
   }
 });
 
-test('la columna existe y acepta nulos, que es el caso de 13 de cada 100', async () => {
+test('la columna existe y acepta nulos, que es el caso de 17 de los 152', async () => {
   await limpiar();
   const c = await unContacto(esc, { nombre: 'Alcance sin nada', crmAsignadoA: null });
   const leido = await conOrganizacion(esc.org, async () =>

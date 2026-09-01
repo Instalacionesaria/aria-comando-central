@@ -84,14 +84,14 @@ export interface ContactoDeGhl {
    *
    * `lib/negocio/fila.ts` y la migración 011 dicen los dos que *«GHL no da asignación — da
    * zona»*, y sobre eso se decidió que un closer viera el territorio entero. Medido el
-   * 2026-09-01 contra la subcuenta real, con esta misma llamada: **el campo viene**, y de 100
-   * contactos de `zona_closer` 87 lo traen poblado. En `zona_setter`, 3 de 100.
+   * 2026-09-01 contra la subcuenta real, con esta misma llamada y **paginando hasta el final**:
+   * de los 152 contactos de `zona_closer`, **135 lo traen poblado**. En `zona_setter`, 3 de 100.
    *
    * O sea que la señal existe, es del closer, y llega en la respuesta que ya se pide. Leerlo
    * cuesta **cero llamadas nuevas**: es una clave más del objeto que ya está en memoria.
    *
-   * Nulo o ausente = el CRM no tiene a nadie asignado. No es un error ni un caso raro: son 13
-   * de cada 100, y la aplicación tiene que saber decir «sin asignar» en vez de esconderlos.
+   * Nulo o ausente = el CRM no tiene a nadie asignado. No es un error ni un caso raro: son 17 de
+   * los 152, y la aplicación tiene que saber decir «sin asignar» en vez de esconderlos.
    */
   assignedTo?: string;
 }

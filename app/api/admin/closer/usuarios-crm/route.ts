@@ -38,8 +38,8 @@ export async function GET(peticion: Request): Promise<Response> {
 
   /* El acceso al CRM y, en la MISMA lectura, cuál de esos usuarios es el del agente de IA.
 
-     Sirve para avisar al vincular. Medido en producción el 2026-09-01: los 87 contactos de
-     `zona_closer` están asignados a `0peGoq7VvFqnDGA7gxtX`, que es exactamente el identificador
+     Sirve para avisar al vincular. Medido en producción el 2026-09-01: los **135** contactos de
+     `zona_closer` con asignado —de 152— apuntan a `0peGoq7VvFqnDGA7gxtX`, que es el identificador
      cargado como `crm_agente_usuario_id` para el auditor. O sea que quien vincule a un closer con
      ese usuario se lleva TODOS los leads — no es un error, pero hay que saberlo antes de elegir. */
   const { acceso, agenteId } = await conIdentidad(async (db) => ({
