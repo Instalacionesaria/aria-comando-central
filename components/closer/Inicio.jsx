@@ -38,6 +38,7 @@
 
 import Comision from '../negocio/Comision.jsx';
 import QuienEsElCloser from './QuienEsElCloser.jsx';
+import EnlacesDePago from './EnlacesDePago.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -219,6 +220,17 @@ export default function Inicio({
           cuando, y quien la usa todos los días es el closer. Poner la configuración primero le
           daría el lugar de honor a lo que casi nunca se toca. */}
       {puedeConfigurarComisiones ? <QuienEsElCloser alCambiar={alRecargar} /> : null}
+
+      {/* ── LOS LINKS DE COBRO ──────────────────────────────────────────
+          Misma puerta y por la misma razón: `credenciales.editar` es «quién configura la
+          empresa», y estos links deciden **a qué cuenta le paga un lead**. La bandera se llama
+          `puedeConfigurarComisiones` porque nació con las comisiones; hoy abre más de lo que su
+          nombre dice, y renombrarla toca la ruta de sesión y sus pruebas.
+
+          Debajo de los closers y no arriba: los closers son QUIÉN cierra, y esto es una
+          herramienta que usan. `alCambiar` no le hace falta — no mueve ningún número del
+          cockpit, así que recargarlo sería pedir datos que no cambiaron. */}
+      {puedeConfigurarComisiones ? <EnlacesDePago /> : null}
 
       {/* ── El no-show, que sí es un conteo real ── */}
       <div className="md-counters">

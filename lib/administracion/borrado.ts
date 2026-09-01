@@ -60,6 +60,7 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   usuarios_secciones_concedida_por_fkey: 'definió las pestañas de otras personas',
   organizaciones_credenciales_org_id_actualizado_por_fkey: 'cargó credenciales de la empresa',
   prompts_del_agente_org_id_actualizado_por_fkey: 'editó el prompt de un agente de IA',
+  enlaces_de_pago_org_id_actualizado_por_fkey: 'cargó links de cobro de la empresa',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
   usuarios_org_id_fkey: 'todavía tiene personas dadas de alta',
@@ -76,6 +77,7 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      análisis es el veredicto completo de una conversación, verde incluido. Y la frase tiene detrás
      una acción posible, que es lo que esta lista exige: se borran los análisis de esa empresa. */
   analisis_del_agente_org_id_fkey: 'tiene análisis de auditoría registrados',
+  enlaces_de_pago_org_id_fkey: 'tiene links de cobro cargados',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

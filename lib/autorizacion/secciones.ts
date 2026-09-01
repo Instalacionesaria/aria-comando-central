@@ -535,6 +535,14 @@ export const SIN_PANTALLA: readonly string[] = [
   // Pide `contactos.ver`, la misma capacidad que las cinco pestañas de la ficha, y a propósito:
   // es lo que hace que la ficha tenga qué leer.
   'app/api/mensajes/ingesta/route.ts',
+  /* Los links de cobro de la empresa, que lee el menú del botón `+` del compositor. Va acá por lo
+     mismo que las cinco pestañas de la ficha: la ficha se abre desde el closer, desde el setter y
+     desde la auditoría, así que declarar `PANTALLA = 'closer'` le daría un 403 a un setter mirando
+     un contacto suyo.
+
+     Pide `contactos.ver`, la misma que esas cinco. La ESCRITURA no está acá: vive en
+     `app/api/admin/enlaces-de-pago`, con `PANTALLA = 'credenciales'` y `credenciales.editar`. */
+  'app/api/enlaces-de-pago/route.ts',
 ];
 
 /**

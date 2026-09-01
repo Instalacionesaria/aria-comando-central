@@ -97,6 +97,19 @@ export type Accion =
      nadie se olvide. Rotar invalida el anterior en el acto, así que saber cuándo se rotó es lo que
      explica por qué un workflow dejó de entregar. */
   | 'aviso_secreto_generado'
+  /* Se agregó o se sacó un link de cobro de la empresa. Es la configuración que decide **a qué
+     cuenta le paga un lead**, y quien la cambia no es quien la usa: la cargan quienes administran,
+     la mandan los closers desde el chat.
+
+     Un link reemplazado por otro no rompe nada visible —el menú se ve igual, el mensaje sale
+     igual, el lead paga igual— y por eso el registro es lo único que después permite contestar
+     quién lo cambió y por cuál. La dirección va en `detalle.enlace`: sin ella la fila diría
+     «alguien tocó los links», que no alcanza para reconstruir nada.
+
+     Son DOS y no una con un campo vacío, por el mismo criterio que el closer: «cargué el de
+     $4.000» y «saqué el de $4.000» son hechos distintos. */
+  | 'enlace_de_pago_creado'
+  | 'enlace_de_pago_borrado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -166,6 +179,13 @@ export interface Detalle {
    * un cero por falta de datos se lee como "nadie miró nada".
    */
   org_destino?: string | null;
+  /**
+   * El link de cobro que se agregó o se sacó, en `enlace_de_pago_creado` y `enlace_de_pago_borrado`.
+   *
+   * Es una dirección de checkout pública, no un secreto: guardarla es lo que hace que el registro
+   * pueda contestar **cuál** link cambió, y no solo que alguien tocó la lista.
+   */
+  enlace?: string;
 }
 
 /**
@@ -206,6 +226,11 @@ export async function auditarAdministracion(
       /* Etapa 5.5. Exige actor y objetivo, que es lo que esta puerta pide: quién generó el secreto y
          para qué empresa. El objetivo es la empresa, igual que en `credenciales_cargadas`. */
       | 'aviso_secreto_generado'
+      /* Los links de cobro. Exigen actor y objetivo, que es lo que esta puerta pide: quién lo
+         cargó o lo sacó, y para qué empresa. El objetivo es la empresa, igual que en
+         `credenciales_cargadas`: lo que se tocó es su configuración, no una persona. */
+      | 'enlace_de_pago_creado'
+      | 'enlace_de_pago_borrado'
     >;
     actor: string;
     objetivo: string;

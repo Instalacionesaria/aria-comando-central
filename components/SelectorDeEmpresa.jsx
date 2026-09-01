@@ -38,6 +38,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../lib/http/cliente.ts';
+import { usarCierreDeMenu } from '../lib/menu.ts';
 
 /** Las iniciales para el avatar. */
 function iniciales(nombre) {
@@ -76,21 +77,12 @@ export default function SelectorDeEmpresa({ sesion }) {
     setLista(r.datos.organizaciones ?? []);
   }, []);
 
-  useEffect(() => {
-    if (!abierto) return undefined;
-    const afuera = (e) => {
-      if (caja.current && !caja.current.contains(e.target)) setAbierto(false);
-    };
-    const escape = (e) => {
-      if (e.key === 'Escape') setAbierto(false);
-    };
-    document.addEventListener('click', afuera);
-    document.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('click', afuera);
-      document.removeEventListener('keydown', escape);
-    };
-  }, [abierto]);
+  const cerrar = useCallback(() => setAbierto(false), []);
+
+  /* Clic afuera y `Escape`. El efecto estaba escrito acá y letra por letra en
+     `MenuDeUsuario`; con el menú de links de pago del compositor iban a ser tres copias, así
+     que se mudó a `lib/menu.ts` con su motivo. */
+  usarCierreDeMenu(abierto, caja, cerrar);
 
   const irA = useCallback(async (orgId) => {
     setYendo(orgId ?? 'propia');

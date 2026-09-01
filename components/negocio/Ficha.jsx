@@ -57,6 +57,7 @@ import { useSesion } from '../../app/sesion-contexto.tsx';
 import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
 import { haceCuanto, horaEnZona } from '../../lib/negocio/tiempo.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
+import { usarCierreDeMenu } from '../../lib/menu.ts';
 import Avanzar from './Avanzar.jsx';
 import { SeisIconos } from './Fila.jsx';
 
@@ -496,6 +497,8 @@ export default function Ficha({ contactoId, alCerrar }) {
   const [loRegistrado, setLoRegistrado] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [avisoEnvio, setAvisoEnvio] = useState(null);
+  /** Los links de cobro de la empresa. Vacío = no hay, o no se pudieron leer: el botón no se dibuja. */
+  const [enlaces, setEnlaces] = useState([]);
 
   const sesion = useSesion();
   /* La zona de la EMPRESA y no la del navegador. Un mensaje de las 22:00 en Lima son las 03:00 del
@@ -601,6 +604,29 @@ export default function Ficha({ contactoId, alCerrar }) {
     setVentana(null);
     void cargarContacto();
   }, [cargarContacto]);
+
+  /* ── LOS LINKS DE COBRO, UNA SOLA VEZ Y SIN RELOJ ─────────────────────────
+   *
+   * El efecto NO lleva `contactoId` en sus dependencias, y es deliberado: los links son de la
+   * EMPRESA, no del contacto. Son los mismos en todas las fichas, así que volver a pedirlos al
+   * cambiar de contacto sería una petición por apertura sin un dato nuevo.
+   *
+   * Y no entran al reloj del chat. Cambian cuando alguien edita la lista en Closer → Inicio, o sea
+   * casi nunca; meterlos en un ciclo de cinco segundos sería repetir exactamente lo que se acaba de
+   * sacar del puntito de Tools — peticiones baratas, muchas veces, que nadie nota.
+   *
+   * Si la lectura falla, la lista queda vacía y el botón no aparece. Es un atajo, no un dato: el
+   * chat sigue funcionando igual y el link se puede pegar a mano, que es lo que se hacía antes. */
+  useEffect(() => {
+    let vigente = true;
+    void (async () => {
+      const r = await pedir('/api/enlaces-de-pago');
+      if (vigente && r.tipo === 'datos') setEnlaces(r.datos.enlaces ?? []);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   /* Cada pestaña se pide AL ABRIRLA, no al abrir la ficha. El `02` § 4: traer las cinco de una
      serían cuatro llamadas para pantallas que nadie va a mirar.
@@ -822,6 +848,22 @@ export default function Ficha({ contactoId, alCerrar }) {
     // fue aceptado.
     void cargarChat();
   }, [borrador, cargarChat, contactoId]);
+
+  /**
+   * Un link elegido del menú entra en la caja. **No se manda solo.**
+   *
+   * Se pidió así, y el motivo aguanta solo: son diez opciones muy parecidas entre sí —los montos se
+   * repiten entre Stripe y WHOP— y un mensaje que salió a un lead no se recoge. Verlo en la caja
+   * antes de apretar Enter es la única marcha atrás que existe.
+   *
+   * Y se AGREGA a lo que hubiera escrito en vez de reemplazarlo: escribir «Te dejo el de 4k» y
+   * después elegir el link es el orden natural, y pisar ese texto lo perdería sin forma de
+   * recuperarlo. Entra solo la URL: el nombre y el monto son etiquetas NUESTRAS para elegir bien, y
+   * quien manda ya está escribiendo sus propias palabras al lado.
+   */
+  const elegirEnlace = useCallback((url) => {
+    setBorrador((antes) => (antes.trim() === '' ? url : `${antes.trimEnd()} ${url}`));
+  }, []);
 
   const agregarNota = useCallback(async () => {
     const texto = nota.trim();
@@ -1057,7 +1099,9 @@ export default function Ficha({ contactoId, alCerrar }) {
             alMandar={mandar}
             enviando={enviando}
             aviso={avisoEnvio}
-                      />
+            enlaces={enlaces}
+            alElegirEnlace={elegirEnlace}
+          />
         ) : null}
       </aside>
 
@@ -1103,10 +1147,45 @@ export default function Ficha({ contactoId, alCerrar }) {
  * cerrado en ese instante haría parpadear el motivo del vencimiento en cada apertura de ficha, y
  * quien lo lee no tiene forma de saber que fue mentira por medio segundo.
  */
-function Compositor({ ventana, borrador, alEscribir, alMandar, enviando, aviso }) {
+function Compositor({
+  ventana,
+  borrador,
+  alEscribir,
+  alMandar,
+  enviando,
+  aviso,
+  enlaces,
+  alElegirEnlace,
+}) {
   const sinRespuesta = ventana === null;
   const cerrada = ventana !== null && !ventana.abierta;
   const bloqueado = sinRespuesta || cerrada || enviando;
+
+  const [menu, setMenu] = useState(false);
+  const cajaDelMenu = useRef(null);
+  const campo = useRef(null);
+  /* Un contador y no un booleano: elegir DOS links seguidos tiene que devolver el foco las dos
+     veces, y con un booleano el segundo cambio no existe. */
+  const [elecciones, setElecciones] = useState(0);
+
+  const cerrarMenu = useCallback(() => setMenu(false), []);
+  usarCierreDeMenu(menu, cajaDelMenu, cerrarMenu);
+
+  /* ── EL FOCO VUELVE A LA CAJA, CON EL CURSOR AL FINAL ─────────────────────
+   *
+   * Quien elige un link casi siempre va a apretar Enter enseguida. Dejar el foco en el botón del
+   * menú obliga a un clic más para volver a escribir, y con el teclado directamente encierra.
+   *
+   * Va en un efecto y no en el manejador del clic porque el valor del `input` lo pone el estado del
+   * PADRE: en el manejador todavía tiene el texto anterior, así que `setSelectionRange` dejaría el
+   * cursor a mitad del link recién pegado. */
+  useEffect(() => {
+    if (elecciones === 0) return;
+    const el = campo.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [elecciones]);
 
   return (
     <>
@@ -1123,7 +1202,61 @@ function Compositor({ ventana, borrador, alEscribir, alMandar, enviando, aviso }
         </div>
       ) : null}
       <div className="cw-input">
+        {/* ── EL BOTÓN DE LOS LINKS DE COBRO ────────────────────────────────────
+
+            **Solo si hay links cargados.** Un `+` que abre un menú vacío es un control muerto para
+            siempre en toda empresa que no cobre así, y no hay nada que esa persona pueda hacer al
+            respecto desde acá: los links se cargan en Closer → Inicio, y esa pantalla es de quien
+            administra.
+
+            Y se apaga con el MISMO `bloqueado` que la caja. Pasadas las 24 horas el canal no acepta
+            texto libre, así que ofrecer un link que va a ser rechazado sería una trampa: se ve
+            elegible, se elige, y el mensaje vuelve con un error. */}
+        {enlaces.length > 0 ? (
+          <div className={`menu-wrap cw-pagos${menu ? ' open' : ''}`} ref={cajaDelMenu}>
+            <button
+              type="button"
+              className="cw-mas"
+              aria-haspopup="menu"
+              aria-expanded={menu}
+              disabled={bloqueado}
+              onClick={(e) => {
+                /* Se corta la propagación: el oyente de «clic afuera» está en `document`, y sin esto
+                   el mismo clic que abre el menú llega arriba y lo cierra en el acto. */
+                e.stopPropagation();
+                setMenu((v) => !v);
+              }}
+              aria-label="Links de pago"
+              title="Links de pago"
+            >
+              +
+            </button>
+            <div className="menu-pop" role="menu">
+              <div className="cw-pagos-t">Links de pago</div>
+              {enlaces.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  role="menuitem"
+                  className="cw-pago"
+                  onClick={() => {
+                    alElegirEnlace(e.url);
+                    setMenu(false);
+                    setElecciones((n) => n + 1);
+                  }}
+                >
+                  <span className="cw-pago-n">{e.nombre}</span>
+                  {/* El monto y la descripción solo si los hay. Un hueco donde debería ir un monto
+                      no se distingue de un defecto de la pantalla. */}
+                  {e.monto ? <span className="cw-pago-m">{e.monto}</span> : null}
+                  {e.descripcion ? <span className="cw-pago-d">{e.descripcion}</span> : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <input
+          ref={campo}
           type="text"
           value={borrador}
           onChange={(e) => alEscribir(e.target.value)}

@@ -32,6 +32,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../lib/http/cliente.ts';
+import { usarCierreDeMenu } from '../lib/menu.ts';
 
 /** Las iniciales, igual que en el resto del menú. */
 function iniciales(nombre) {
@@ -49,23 +50,12 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
   const [saliendo, setSaliendo] = useState(false);
   const caja = useRef(null);
 
-  /* Cerrar al hacer clic afuera y con Escape. Las dos, porque un desplegable que solo cierra
-     con un clic exacto queda abierto tapando el menú. Es lo mismo que hacía `shell.js`. */
-  useEffect(() => {
-    if (!abierto) return undefined;
-    const afuera = (e) => {
-      if (caja.current && !caja.current.contains(e.target)) setAbierto(false);
-    };
-    const escape = (e) => {
-      if (e.key === 'Escape') setAbierto(false);
-    };
-    document.addEventListener('click', afuera);
-    document.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('click', afuera);
-      document.removeEventListener('keydown', escape);
-    };
-  }, [abierto]);
+  const cerrar = useCallback(() => setAbierto(false), []);
+
+  /* Clic afuera y `Escape`. Las dos, porque un desplegable que solo cierra con un clic exacto
+     queda abierto tapando el menú — es lo mismo que hacía `shell.js`. El efecto se mudó a
+     `lib/menu.ts` cuando iba a ser la tercera copia idéntica. */
+  usarCierreDeMenu(abierto, caja, cerrar);
 
   const salir = useCallback(async () => {
     setSaliendo(true);

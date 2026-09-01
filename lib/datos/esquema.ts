@@ -627,6 +627,30 @@ export interface TablaPromptsDelAgente {
 }
 
 /**
+ * Un link de cobro de la empresa, para mandarlo desde el chat de la ficha.
+ *
+ * ── `monto` ES TEXTO Y ESO ES DELIBERADO ───────────────────────────────────
+ *
+ * «Monto libre» es uno de los links reales —el cliente escribe cuánto paga— y no es un número.
+ * Con una columna numérica ese caso se representaría con `null`, que ya significa «no le puse
+ * monto»: dos estados distintos, indistinguibles. El motivo completo está en la migración 035.
+ *
+ * Acá el monto solo se DIBUJA: nadie suma, ordena ni compara con él.
+ */
+export interface TablaEnlacesDePago {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  nombre: string;
+  monto: string | null;
+  descripcion: string | null;
+  url: string;
+  orden: Generated<number>;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
+/**
  * Un hallazgo: algo que se corrige EN EL PROMPT del agente. **No interrumpe a nadie.**
  *
  * ── LAS DIEZ COLUMNAS DE LA 027, Y POR QUÉ EL TIPO LAS NECESITA ─────────────
@@ -862,6 +886,7 @@ export interface BaseDeDatos {
   hallazgos: TablaHallazgos;
   analisis_del_agente: TablaAnalisisDelAgente;
   prompts_del_agente: TablaPromptsDelAgente;
+  enlaces_de_pago: TablaEnlacesDePago;
 
   // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
   // backend de Python por PostgREST, que sólo alcanza `public`. Tienen el mismo régimen de

@@ -1445,6 +1445,218 @@
   color: var(--warn);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL BOTÓN `+` DEL COMPOSITOR: EL MENÚ DE LINKS DE COBRO
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Va acá y no en `aios.css` por el motivo del encabezado de este archivo: esa hoja es el port
+   literal del prototipo y tiene que seguir siendo comparable contra él. Este botón no existe en el
+   prototipo — es de la aplicación.
+
+   Se dibuja como el hermano callado de `.cw-send`: mismo tamaño y mismo radio, y sin el color de
+   acento. El botón que MANDA es uno solo, y dos controles con el mismo peso visual al lado de la
+   caja harían dudar de cuál es. */
+.cw-mas {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  background: var(--bg-sunk);
+  color: var(--txt-dim);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.cw-mas:hover:not(:disabled) {
+  background: rgb(var(--c-nube) / 0.09);
+  color: var(--txt);
+  border-color: var(--line-strong);
+}
+/* Apagado igual que el de enviar, y no es cosmético: es la MISMA ventana de 24 horas la que apaga a
+   los dos. Que se vean distinto sugeriría que uno todavía se puede usar. */
+.cw-mas:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.menu-wrap.cw-pagos.open .cw-mas {
+  border-color: rgb(var(--c-acento) / 0.5);
+  color: var(--accent);
+}
+
+/* HACIA ARRIBA, y no es un gusto: el compositor está pegado al borde de abajo de la ficha, y
+   `.menu-pop` abre hacia abajo por omisión — ahí el menú se sale de la pantalla entero. Es el mismo
+   ajuste que `armazon.css` le hace al menú de la cuenta en el pie del menú lateral.
+
+   Y anclado a la IZQUIERDA, porque el disparador está a la izquierda de la fila: con el `right:0` de
+   base, el menú colgaría del otro extremo del compositor, lejos del botón que lo abrió. */
+.menu-wrap.cw-pagos .menu-pop {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  width: 262px;
+  max-height: min(56vh, 380px);
+  overflow-y: auto;
+  transform: translateY(4px) scale(.98);
+}
+.menu-wrap.cw-pagos.open .menu-pop {
+  transform: translateY(0) scale(1);
+}
+
+/* El título. El menú se abre SOBRE la conversación, así que sin él lo primero que se ve es una lista
+   de montos flotando encima de los mensajes. */
+.cw-pagos-t {
+  padding: 7px 10px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+
+/* Cada link: nombre y monto en un renglón, la nota debajo. El monto va a la DERECHA y en cifras
+   alineadas — diez entradas cuyos montos se repiten entre proveedores se eligen mal si hay que leer
+   cada línea entera para encontrarlo. */
+.cw-pago {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background .13s ease;
+}
+.cw-pago:hover {
+  background: rgb(var(--c-nube) / 0.07);
+}
+.cw-pago-n {
+  font-size: 13px;
+  color: var(--txt);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cw-pago-m {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* La descripción ocupa las dos columnas: es la línea que termina de distinguir dos links del mismo
+   monto —«pago único» contra «en cuotas»— y recortarla sería perder justo eso. */
+.cw-pago-d {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOS LINKS DE COBRO: LA TABLA DE CONFIGURACIÓN
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ck-enlaces {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Dos renglones por link: arriba nombre, monto y nota; abajo la dirección entera. La cruz de
+   quitar ocupa las dos filas a la derecha, así que queda a la misma altura sin importar si el
+   enlace ocupó uno o dos renglones. */
+.ck-enlace {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgb(var(--c-nube) / 0.03);
+}
+/* La columna va EXPLÍCITA junto con la fila. Con solo `grid-row`, la colocación automática mete la
+   cruz en la columna 1 y empuja el nombre a la 2: el resultado es la ✕ a la izquierda y el nombre
+   pegado al borde derecho. Se ve mal y además invierte el orden de lectura. */
+.ck-enlace .ck-quitar {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  /* Alto explícito: con `align-self:center` heredado y `padding:0`, el botón medía 16 px de alto —un
+     blanco de clic más chico que el ícono que dibuja—. Cuadrado de 30, como su ancho. */
+  height: 30px;
+}
+
+.ck-enlace-q {
+  grid-column: 1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.ck-enlace-q b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt);
+}
+/* El monto con el color de acento y en cifras alineadas, igual que en el menú del chat: es lo
+   que se busca primero al revisar la lista. */
+.ck-enlace-m {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.ck-enlace-d {
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+
+/* ENTERA, y por eso `word-break`: una dirección de Stripe con parámetros no entra en un renglón,
+   y cortarla con puntos suspensivos taparía justo lo que hay que revisar — dos enlaces del mismo
+   proveedor se diferencian en los últimos caracteres. */
+.ck-enlace-u {
+  grid-column: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--txt-dim);
+  word-break: break-all;
+  min-width: 0;
+}
+
+/* El formulario de alta. Nombre, monto y descripción en tres columnas; el link solo, abajo y a lo
+   ancho, porque es el campo largo y el único que se pega. */
+.ck-alta-enlace {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  background: var(--bg-sunk);
+}
+.ck-alta-enlace .ck-alta-url,
+.ck-alta-enlace .fd-acciones {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .ck-alta-enlace {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* El selector «ver como», arriba del cockpit. Va a la derecha y en línea: es una herramienta de
    quien administra, y ponerlo centrado le daría el peso de un título. */
 .ck-vercomo {
