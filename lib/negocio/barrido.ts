@@ -34,6 +34,7 @@ import type { OrganizacionListada } from '../administracion/organizaciones.ts';
 import type { AccesoAGhl, AccesoAlAuditor } from '../credenciales/resolver.ts';
 import { TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
+import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { barrerCitas } from './citas.ts';
@@ -50,7 +51,7 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
  * centavo y una inferencia cuesta centavos. Van en la misma columna porque la pregunta es la misma
  * —«cuánto costó esta corrida»— y conviene saberlo antes de sumar las cinco.
  */
-export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria';
+export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' | 'mejora';
 
 /**
  * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -69,7 +70,7 @@ export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria';
  * `mensajes` —o los mensajes de un contacto nuevo quedan bajo la marca de agua para siempre— y
  * `auditoria` después de `mensajes`, o el antirrebote cuenta los mensajes de la corrida anterior.
  */
-export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas'] as const satisfies
+export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas', 'mejora'] as const satisfies
   readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
@@ -185,6 +186,30 @@ export const HORARIOS = {
     tareas: ['citas', 'sonda'],
     cadenciaMinutos: 60,
     umbralMinutos: 180,
+  },
+
+  /* ── UNA VEZ POR DÍA: EL CARRIL AMARILLO ──────────────────────────────
+
+     Es el único horario diario del sistema, y es diario porque **el tope lo es**: una mejora por
+     día y por empresa. Ponerlo cada diez minutos no produciría más mejoras —el tope las corta— y
+     produciría ciento cuarenta consultas del tope por día para no hacer nada.
+
+     ── LA HORA, Y POR QUÉ NO ES REDONDA ────────────────────────────────
+
+     `17 6 * * *` son las 06:17 UTC, o sea la madrugada en las zonas donde trabajan estas empresas
+     (01:17 en Lima, 03:17 en Buenos Aires). Corre **en frío**, así que la madrugada es cuando menos
+     compite con el barrido de diez minutos por el presupuesto de la función.
+
+     Y el minuto 17 y no el 0 por lo mismo que el otro horario usa el 3: dos horarios que caen en el
+     mismo minuto se frenan entre sí por el candado, y uno de los dos queda como `frenada` sin haber
+     hecho nada — correcto pero ruidoso, con el sello contando una corrida que no trabajó.
+
+     El umbral respeta la regla `>= 2 × cadencia + 60`: 2 × 1440 + 60 = 2940, y va 3000 para dejar
+     margen a la imprecisión del disparo. */
+  '17 6 * * *': {
+    tareas: ['mejora'],
+    cadenciaMinutos: 1440,
+    umbralMinutos: 3000,
   },
 
   /* ── EL HORARIO DIARIO SE FUE, Y LA REGLA ES BIDIRECCIONAL ─────────────
@@ -374,13 +399,13 @@ export async function barrerTodo(
        * esta distinción, una empresa sin token del CRM —el caso NORMAL de una empresa recién creada—
        * saldría como `saltada` en una tarea que no necesita ese token, y el motivo diría
        * `sin_token_de_crm` sobre algo que no lo usa. */
-      if (tarea !== 'auditoria' && acceso.tipo !== 'listo') {
+      if (tarea !== 'auditoria' && tarea !== 'mejora' && acceso.tipo !== 'listo') {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', acceso.que, 0);
         continue;
       }
       // Y su propia falta, con su propio texto: cuatro motivos que llevan a cuatro acciones distintas.
-      if (tarea === 'auditoria' && auditor.tipo !== 'listo') {
+      if ((tarea === 'auditoria' || tarea === 'mejora') && auditor.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_AUDITOR[auditor.que];
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', que, 0);
@@ -400,7 +425,9 @@ export async function barrerTodo(
               ? await ingerirMensajes(org.id, conToken(acceso))
               : tarea === 'auditoria'
                 ? await auditar(org, auditor, acceso, arranque, ahora)
-                : await barrerCitas(org.id, conToken(acceso));
+                : tarea === 'mejora'
+                  ? await mejorar(org, auditor)
+                  : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -504,6 +531,36 @@ async function auditar(
   );
 
   if (r.frenado !== undefined) return { corrio: false, porque: r.frenado };
+  return { corrio: true, resultado: r, llamadas: r.llamadas };
+}
+
+/**
+ * El carril amarillo, con la forma que espera el bucle de arriba.
+ *
+ * ── NO RECIBE PRESUPUESTO DE TIEMPO, Y ESO NO ES UN OLVIDO ────────────────
+ *
+ * `auditar` sí lo recibe porque puede hacer veinte llamadas al modelo. Éste hace **como mucho una**
+ * —el tope del día lo corta— así que el guardia de `PRESUPUESTO_MS` que el bucle ya comprueba antes
+ * de cada empresa alcanza: entre dos empresas hay a lo sumo una inferencia.
+ *
+ * Y no pasa por `conElPulso`: dos corridas simultáneas del mismo horario diario no existen —lo
+ * frena el propio candado de Vercel— y si existieran, **el tope del día las hace inofensivas**: la
+ * segunda cuenta la fila que escribió la primera y se va. Es la misma propiedad que hace idempotente
+ * una entrega duplicada del carril rojo, y acá es todavía más directa.
+ */
+async function mejorar(
+  org: OrganizacionListada,
+  auditor: AccesoAlAuditor,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  // El bucle ya garantizó que está `listo`. Ver el mismo criterio en `auditar(`.
+  if (auditor.tipo !== 'listo') throw new Error('mejorar: la empresa no tiene acceso resuelto');
+
+  const r = await buscarUnaMejora({
+    orgId: org.id,
+    zona: org.zonaHoraria,
+    claveIa: auditor.claveIa,
+    idDelAgente: auditor.idDelAgente,
+  });
   return { corrio: true, resultado: r, llamadas: r.llamadas };
 }
 

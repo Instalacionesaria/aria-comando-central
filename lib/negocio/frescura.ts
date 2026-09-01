@@ -88,6 +88,7 @@ const NOMBRE: Record<Tarea, string> = {
   contactos: 'la lectura de las etiquetas de los contactos',
   // Y la quinta dejó este objeto en rojo otra vez, que es la prueba de que el `Record` total sirve.
   auditoria: 'la auditoría de los agentes de IA',
+  mejora: 'la revisión en frío del carril amarillo',
 };
 
 /**

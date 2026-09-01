@@ -136,7 +136,27 @@ export async function pedirVeredicto(opciones: {
   instrucciones: string;
   patrones: readonly string[];
   conversacion: string;
+  /**
+   * La herramienta y su esquema, **opcionales**. Sin ellos, los del veredicto.
+   *
+   * ── POR QUÉ ES UN PARÁMETRO Y NO UNA SEGUNDA FUNCIÓN ────────────────────
+   *
+   * El carril amarillo hace **otra pregunta**: una sola, con tres peldaños y siete campos, contra
+   * los quince del veredicto. Lo que NO cambia es el transporte — la misma dirección, la misma
+   * versión de la API, la misma cabecera, las mismas cinco ramas de fallo y el mismo corte del
+   * prefijo estable.
+   *
+   * Una segunda función sería la **tercera copia** de ese transporte, y la prueba que hoy exige que
+   * este archivo y `generacion.ts` coincidan en la dirección tendría que exigirlo entre tres. La
+   * divergencia aparecería como «el carril amarillo dejó de funcionar» meses después de que alguien
+   * tocó el otro archivo.
+   *
+   * Así que lo que varía viaja como dato y lo que no varía se escribe una vez.
+   */
+  herramienta?: string;
+  esquema?: Record<string, unknown>;
 }): Promise<ResultadoDelAuditor> {
+  const herramienta = opciones.herramienta ?? NOMBRE_DE_LA_HERRAMIENTA;
   const desde = Date.now();
 
   /* ── EL PREFIJO ESTABLE Y LO QUE CAMBIA, SEPARADOS ────────────────────────
@@ -166,11 +186,11 @@ export async function pedirVeredicto(opciones: {
     messages: [{ role: 'user', content: opciones.conversacion }],
     tools: [
       {
-        name: NOMBRE_DE_LA_HERRAMIENTA,
+        name: herramienta,
         description:
           'Registrá el veredicto de esta conversación. Es la única forma de responder: no escribas ' +
           'texto suelto.',
-        input_schema: esquemaDelVeredicto(opciones.agente),
+        input_schema: opciones.esquema ?? esquemaDelVeredicto(opciones.agente),
       },
     ],
     /* ── LA HERRAMIENTA SE FUERZA, Y NO SE PIDE PENSAMIENTO EXTENDIDO ────────
@@ -187,7 +207,7 @@ export async function pedirVeredicto(opciones: {
      * El techo de 16.000 queda igual y sobra para una salida sin pensamiento — lo que NO se hace es
      * bajarlo: la regla operativa dice que este número sube cuando se agregan campos, nunca al
      * revés, y el día que se agregue el pensamiento ya está cubierto. */
-    tool_choice: { type: 'tool', name: NOMBRE_DE_LA_HERRAMIENTA },
+    tool_choice: { type: 'tool', name: herramienta },
   };
 
   const r = await pedirExterno<RespuestaDeAnthropic>(API, {
@@ -224,7 +244,7 @@ export async function pedirVeredicto(opciones: {
 
   const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
   const usada = bloques.find(
-    (b) => b.type === 'tool_use' && b.name === NOMBRE_DE_LA_HERRAMIENTA,
+    (b) => b.type === 'tool_use' && b.name === herramienta,
   );
 
   /* Un 200 sin el bloque de la herramienta no es un veredicto vacío: es una respuesta que no sirve. Se

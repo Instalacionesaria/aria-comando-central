@@ -208,12 +208,17 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          agrega: **no le habla al CRM**. Esta empresa tiene un identificador inexistente, así que las
          tres tareas del CRM revientan contra la base; el auditor ni llega a intentarlo porque no tiene
          llave de IA, que es una falta distinta y con su propio texto. */
+      /* Las DOS del auditor salen saltadas y las tres del CRM revientan, y esa asimetría es el punto:
+         ninguna de las dos le habla a GoHighLevel. Esta empresa tiene un identificador inexistente,
+         así que las del CRM fallan contra la base; las del auditor ni llegan a intentarlo porque no
+         tienen llave de IA — otra falta, con su propio texto. */
       ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],
+      ['mejora', 'saltada'],
       ['mensajes', 'fallo'],
     ],
-    'una de las cuatro tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
+    'una de las cinco tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );
 
   /* El SELLO de «rota» no se comprueba, y conviene decir por qué: su identificador no existe en
@@ -280,12 +285,12 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
   const s = await sellos();
-  // Las CUATRO tareas por empresa. `contactos` entre ellas porque una empresa sin token tampoco puede
+  // Las CINCO tareas por empresa. `contactos` entre ellas porque una empresa sin token tampoco puede
   // releer sus etiquetas; y `auditoria` porque **su falta es otra** —no tiene llave de IA— y el sello
   // tiene que decir esa y no la del CRM: son dos proveedores y dos acciones distintas para arreglarlo.
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
-    ['auditoria:saltada', 'citas:saltada', 'contactos:saltada', 'mensajes:saltada'],
+    ['auditoria:saltada', 'citas:saltada', 'contactos:saltada', 'mejora:saltada', 'mensajes:saltada'],
   );
   /* ── Y CADA SELLO LLEVA SU PROPIO MOTIVO, QUE ES LO QUE SE GANÓ ACÁ ──────
    *
@@ -297,6 +302,7 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   assert.equal(porTarea.get('mensajes'), 'sin_token');
   assert.equal(porTarea.get('citas'), 'sin_token');
   assert.match(String(porTarea.get('auditoria')), /llave de IA/);
+  assert.match(String(porTarea.get('mejora')), /llave de IA/);
 });
 
 test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadores que crezcan', async () => {
@@ -310,10 +316,10 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
   await barrerTodo('0 12 * * *', empresas);
   const segunda = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  /* CUATRO por empresa —`contactos`, `mensajes`, `auditoria` y `citas`— y no cinco: `sonda` no es de
-     ninguna empresa y no deja sello, que es una decisión escrita en el pie de `barrerTodo`. */
-  assert.equal(primera[0]?.n, '4', 'cuatro tareas por empresa; `sonda` no deja sello');
-  assert.equal(segunda[0]?.n, '4', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
+  /* CINCO por empresa —`contactos`, `mensajes`, `auditoria`, `citas` y `mejora`— y no seis: `sonda`
+     no es de ninguna empresa y no deja sello, que es una decisión escrita en el pie de `barrerTodo`. */
+  assert.equal(primera[0]?.n, '5', 'cinco tareas por empresa; `sonda` no deja sello');
+  assert.equal(segunda[0]?.n, '5', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
 });
 
 test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otra', async () => {
@@ -331,11 +337,11 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   const deBeta = await conOrganizacion(beta, () =>
     datos().selectFrom('tareas_programadas').select(['tarea']).execute(),
   );
-  assert.equal(deAlfa.length, 4, 'alfa tiene que ver sus cuatro sellos');
-  assert.equal(deBeta.length, 4);
-  // Y el total desde el propietario es OCHO: cada una vio la mitad, no todo.
+  assert.equal(deAlfa.length, 5, 'alfa tiene que ver sus cinco sellos');
+  assert.equal(deBeta.length, 5);
+  // Y el total desde el propietario es DIEZ: cada una vio la mitad, no todo.
   const todos = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(todos[0]?.n, '8', 'cada empresa tiene que ver solo sus cuatro sellos');
+  assert.equal(todos[0]?.n, '10', 'cada empresa tiene que ver solo sus cinco sellos');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
