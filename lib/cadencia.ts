@@ -38,4 +38,28 @@ export const CADENCIA = {
    * abriera la pestaña.
    */
   operacion: 10_000,
+  /**
+   * El puntito de «hay un scraping corriendo», en la entrada Tools del menú.
+   *
+   * ── ESTABA ESCRITO EN `Nav.jsx`, Y POR ESO SE ESCAPÓ DE LA REGLA ──────────
+   *
+   * Este archivo dice que las cadencias viven acá *«para que nadie invente la suya»*, y ésta se
+   * inventó igual: vivía como `ESPERA_DEL_PUNTITO_MS` dentro del componente, con su propio bucle
+   * de `setTimeout`. Al no pasar por `lib/reloj.ts` **no respetaba la pestaña oculta**, que es la
+   * garantía número uno de ese módulo — y era el único reloj de la aplicación que no lo hacía.
+   *
+   * Medido: 180 peticiones por hora y por persona conectada, corrieran o no scrapings, estuviera o
+   * no la pestaña a la vista. Con la persona trabajando en otra aplicación y la nuestra abierta
+   * atrás, eran todas desperdiciadas.
+   *
+   * ── VEINTE SEGUNDOS, Y NO CINCO ───────────────────────────────────────────
+   *
+   * El sondeo del scraper va cada cinco porque ahí alguien está esperando el resultado. Esto solo
+   * enciende un punto en el menú, y un scraping tarda minutos.
+   *
+   * Y sigue preguntando desde CUALQUIER sección, que es el punto del indicador: se arranca un
+   * scraping en Tools, se vuelve a trabajar al Closer, y el punto dice que sigue corriendo.
+   * Acotarlo a la pantalla de Tools lo apagaría justo cuando sirve.
+   */
+  puntitoDeTools: 20_000,
 } as const;

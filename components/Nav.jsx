@@ -40,7 +40,7 @@
  * en `pruebas/codigo/91-closer-y-setter.test.ts`, que es donde corresponde.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSesion } from '../app/sesion-contexto.tsx';
 import { aplicar, recordar, TEMA_POR_OMISION } from '../app/tema.ts';
 import BotonDeTema from './BotonDeTema.jsx';
@@ -48,16 +48,15 @@ import { irALaVista } from '../lib/aios/shell.js';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 import { leerTrabajosEnVuelo } from '../lib/tools/scrapers.ts';
+import { CADENCIA, usarReloj } from '../lib/reloj.ts';
 
 /**
  * Cada cuánto se pregunta si hay un scraping corriendo.
  *
- * Veinte segundos y no cinco. El sondeo del propio scraper va cada cinco porque ahí alguien está
- * esperando el resultado; esto sólo enciende un punto en el menú, y un scraping tarda minutos.
- * A cinco segundos serían doce peticiones por minuto por persona conectada, todo el día, por un
- * indicador que nadie está mirando fijo.
+ * La cadencia se mudó a `lib/cadencia.ts` con el resto, y no es un traslado cosmético: mientras
+ * vivió acá, este reloj tuvo su propio bucle de `setTimeout` y **no respetaba la pestaña oculta**.
+ * El motivo largo está allá.
  */
-const ESPERA_DEL_PUNTITO_MS = 20000;
 
 /** Las iniciales para el avatar. Dos letras, de las dos primeras palabras. */
 function iniciales(nombre) {
@@ -86,24 +85,36 @@ export default function Nav() {
     .some((x) => x.clave === 'tools');
   const [scrapeando, setScrapeando] = useState(0);
 
+  /* ── ESTE RELOJ ERA EL ÚNICO QUE NO MIRABA SI LA PESTAÑA ESTABA A LA VISTA ──
+   *
+   * Acá había un bucle de `setTimeout` propio que se reprogramaba solo. Hacía bien una cosa —no
+   * apilar peticiones cuando la respuesta tarda— y por hacerla a mano se perdía la otra:
+   * `lib/reloj.ts` **frena todos sus relojes con la pestaña oculta**, y éste no estaba entre
+   * ellos. Resultado medido: 180 peticiones por hora y por persona conectada, corrieran o no
+   * scrapings, mirara o no alguien la aplicación.
+   *
+   * `usarReloj` da las dos cosas y una tercera: al volver de una pestaña oculta dispara enseguida,
+   * así que el punto está al día apenas se vuelve, en vez de hasta veinte segundos después.
+   *
+   * ── LA PRIMERA LECTURA LA HACE ESTE COMPONENTE, NO EL RELOJ ───────────────
+   *
+   * Es la división que `registrarReloj` documenta y que aprendió fallando: el reloj REPITE, y
+   * quien abre pide sus datos. Si la primera lectura dependiera del reloj, montar con la pestaña
+   * oculta dejaría el punto apagado hasta volver — y un punto apagado no se distingue de «no hay
+   * ningún scraping». */
+  const mirar = useCallback(async () => {
+    const enVuelo = await leerTrabajosEnVuelo();
+    setScrapeando(enVuelo.length);
+  }, []);
+
   useEffect(() => {
-    if (!puedeVerTools) return undefined;
+    if (!puedeVerTools) return;
+    void mirar();
+  }, [puedeVerTools, mirar]);
 
-    let vivo = true;
-    let reloj = null;
-
-    const mirar = async () => {
-      const enVuelo = await leerTrabajosEnVuelo();
-      if (!vivo) return;
-      setScrapeando(enVuelo.length);
-      /* Se reprograma DESPUÉS de que la respuesta llegó, y no con un `setInterval`: con el
-         intervalo, una respuesta lenta hace que las peticiones se apilen y salgan de orden. */
-      reloj = setTimeout(mirar, ESPERA_DEL_PUNTITO_MS);
-    };
-    mirar();
-
-    return () => { vivo = false; if (reloj) clearTimeout(reloj); };
-  }, [puedeVerTools]);
+  /* Con `null` no se registra nada: quien no tiene Tools no paga ni una petición por un punto que
+     su menú ni siquiera dibuja. */
+  usarReloj(puedeVerTools ? 'tools:enVuelo' : null, mirar, CADENCIA.puntitoDeTools);
 
   // Sin datos de sesión no se dibuja NINGUNA entrada. Es el `03` § 5 —*"una operación nueva
   // nace cerrada"*— llevado al menú: ante la duda, ninguna puerta, no todas.
