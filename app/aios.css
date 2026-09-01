@@ -340,8 +340,22 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .node-sub  { font-size: 10px; fill: var(--txt-faint); }
 .node-tag  { font-size: 10px; letter-spacing: -0.005em; }
 
-.edge { stroke: rgb(var(--c-nube) / 0.13); stroke-width: 1.2; fill: none; }
-.edge.hot { stroke: rgb(var(--c-exec) / 0.35); }
+/* LAS CINCO LÍNEAS DEL MAPA EJECUTIVO, DEL MISMO COLOR.
+
+   Eran dos colores: un gris de nube al 13 % para tres de las líneas y el ámbar ejecutivo al
+   35 % para las otras dos, por una clase `hot` que venía del maquetado. Se pidió unificarlas, y
+   el motivo se ve en pantalla: las cinco expresan LO MISMO —un área que reporta a la capa
+   ejecutiva— así que dos colores prometían una distinción que no existe. Con el gris al 13 %,
+   además, tres de las cinco líneas casi no se veían sobre el fondo oscuro: el mapa parecía tener
+   dos áreas conectadas y tres sueltas.
+
+   El ámbar es el del NÚCLEO —el mismo token que su borde y su rótulo «CAPA EJECUTIVA»—, así que
+   el color dice a dónde va el cable. Y va por token, no por literal: en tema claro un literal
+   dejaría las cinco líneas del color del tema oscuro sobre blanco.
+
+   La clase `hot` se fue del marcado en la misma pasada: con un solo color no distinguía nada, y
+   una clase que no cambia nada es una que alguien va a copiar creyendo que sí. */
+.edge { stroke: rgb(var(--c-exec) / 0.35); stroke-width: 1.2; fill: none; }
 .pulse { fill: var(--accent); }
 .pulse.gold { fill: var(--exec); }
 
@@ -2516,5 +2530,24 @@ svg.graph { width: 100%; height: 100%; display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .live::before { animation: none; }
+
+  /* SE ESCONDE EL PUNTO, NO SU ANIMACIÓN. LA DIFERENCIA SE VIO EN PANTALLA.
+
+     Acá decía `.pulse animateMotion { display: none; }`, y el efecto no es «el punto se queda
+     quieto en el borde»: es que **queda estacionado donde estaba** cuando la regla se aplicó. Medido
+     en un navegador con «reducir movimiento» activo —que en Windows es «Mostrar animaciones: No»—:
+     los cinco puntos aparecían clavados a mitad de sus líneas, en posiciones arbitrarias.
+
+     Y eso no se lee como una animación apagada. Se lee como información: cinco marcas sobre los
+     cables, una por área, cada una en un lugar distinto. En un mapa donde todo lo demás significa
+     algo, es lo peor que puede hacer un adorno apagado.
+
+     El punto solo dice «esto fluye». Sin movimiento no hay flujo que mostrar, así que no va el
+     punto. La línea sigue diciendo que el área reporta, que es la información de verdad.
+
+     Se apaga también la animación, y no es redundante: un `<animateMotion>` corriendo sobre un
+     elemento invisible sigue despertando al compositor cada cuadro. Quien pide menos movimiento
+     suele estar pidiendo menos batería también. */
+  .pulse { display: none; }
   .pulse animateMotion { display: none; }
 }

@@ -8,8 +8,9 @@
  * cosas por vista — forma del DOM, texto e geometría — y luego recorre las
  * capas que sólo aparecen al interactuar.
  *
- * Ruido conocido: los cuatro `circle.pulse` del mapa ejecutivo se mueven
- * por una animación SVG, así que su posición nunca coincide.
+ * Ruido conocido: los `circle.pulse` del mapa ejecutivo se mueven por una
+ * animación SVG, así que su posición nunca coincide. Se descuentan más
+ * abajo, y de todos modos `executive` ya salió de la comparación.
  */
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
@@ -52,7 +53,31 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // de coincidir con el prototipo A PROPÓSITO. Sus datos ya no son los del maquetado —vienen de
 // `negocio.*`— y sus dos menús ya no se muestran a todo el mundo. Compararlas daría un rojo
 // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
-const VISTAS = ['executive', 'acquisition', 'creative', 'conversion', 'conversation',
+//
+// ── Y `executive` SALIÓ POR EL MAPA DE ÁREAS ────────────────────────────────
+//
+// Es la cuarta, y es la primera que sale por un cambio de DISEÑO y no de datos. Se pidió pulir
+// el organigrama —*«es la primera parte que se ve al ingresar»*— y el prototipo tenía ahí tres
+// cosas que se decidió cambiar: dos colores de línea para cinco conexiones que dicen lo mismo,
+// CUATRO puntos animados para cinco líneas, y la línea de Creative en una curva que arrancaba
+// dentro de su propia tarjeta.
+//
+// Las tres divergen del maquetado a propósito, y cada una rompe la comparación por un eje
+// distinto: el quinto punto agrega un nodo (la `forma()`), y la recta cambia la caja de `#e3`
+// (las `cajas()`). O sea que no hay forma de hacer el cambio y seguir comparando: el prototipo
+// dejó de ser la autoridad de esta vista.
+//
+// **Y no se toca `aios-command-center_1.html` para que dé verde**, que era la salida corta y la
+// peor: editar el original para que coincida con el port deja la comparación circular — verde
+// siempre, porque las dos mitades las escribimos nosotros el mismo día. El archivo sigue siendo
+// el maquetado tal como llegó, y eso es lo que hace que las tres vistas que quedan sirvan.
+//
+// Lo que reemplaza la red: `pruebas/codigo/120-mapa-ejecutivo.test.ts`, que afirma el cableado
+// del mapa —las cinco líneas, un punto por cada una, y la recta calculada desde las
+// coordenadas reales de las dos tarjetas— y corre en cada `npm test`, no solo cuando alguien
+// levanta el navegador. Los dos pasos de `PASOS` que entran a esta vista se quedan: comparan
+// interacción, no la forma del mapa.
+const VISTAS = ['acquisition', 'creative', 'conversion', 'conversation',
                 'sales', 'contacts'];
 
 /* Cada paso deja la página lista para el siguiente, así que el orden importa. */

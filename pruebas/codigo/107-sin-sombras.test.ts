@@ -225,15 +225,26 @@ test('las tarjetas de inteligencia se pintan por TOKEN y no por literal', () => 
     'el relleno de las tarjetas volvió a un color escrito a mano, o dejó de ser plano',
   );
 
-  // Los tres degradados siguen ahí aunque dos queden en nada: `scripts/paridad.mjs` compara esta
-  // vista contra el prototipo con una huella de `tag + id + clases` (su `forma()`), así que sacar un
-  // nodo del `<defs>` la deja en rojo permanente — y un rojo permanente no se arregla, se ignora.
+  // Los tres degradados siguen ahí aunque dos queden en nada. El motivo CAMBIÓ y conviene decirlo:
+  // era que `scripts/paridad.mjs` comparaba esta vista contra el prototipo con una huella de
+  // `tag + id + clases`, así que sacar un nodo del `<defs>` la dejaba en rojo permanente. Ese
+  // motivo ya no aplica —`executive` salió de la comparación al pulirse el mapa de áreas— y se
+  // conservan igual por uno más chico: `coreGlow` SÍ lo referencia un `fill`, y quitar los dos
+  // muertos es una limpieza que no pertenece a este archivo.
   for (const id of ['coreGlow', 'nodeFill', 'dataGlow']) {
-    assert.ok(jsx.includes(`id="${id}"`), `se borró \`${id}\` del \`<defs>\`: paridad queda en rojo`);
+    assert.ok(jsx.includes(`id="${id}"`), `se borró \`${id}\` del \`<defs>\``);
   }
-  assert.ok(
-    jsx.includes('executive') || true,
-    'recordatorio: `executive` sigue en la lista `VISTAS` de `scripts/paridad.mjs`',
+
+  /* Y acá había un `assert.ok(… || true)`: un recordatorio disfrazado de afirmación, que no podía
+     fallar ni cuando lo que recordaba dejó de ser cierto. Ahora dice algo comprobable, y lo que
+     dice es lo contrario de lo que decía — el motivo está en `scripts/paridad.mjs`. */
+  const paridad = leer('scripts/paridad.mjs');
+  const lista = paridad.slice(paridad.indexOf('const VISTAS = ['), paridad.indexOf('];', paridad.indexOf('const VISTAS = [')));
+  assert.equal(
+    lista.includes("'executive'"),
+    false,
+    '`executive` volvió a `VISTAS` de paridad: el mapa de áreas diverge del prototipo a propósito ' +
+      '(cinco líneas de un color, cinco puntos, la de Creative recta) y la comparación queda en rojo',
   );
 
   // Y el fósforo, que es lo que se pidió: que las letras de adentro resalten.

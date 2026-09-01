@@ -124,11 +124,41 @@ export default function ExecutiveView({ activa }) {
                 <stop offset="100%" stopColor="transparent" />
               </radialGradient>
             </defs>
-            {/* conexiones: cada área con el núcleo */}
-            <path id="e1" className="edge hot" d="M 305 168 C 385 200, 430 228, 452 248" />
+            {/* ══════════════════════════════════════════════════════════════════════
+                LAS CINCO CONEXIONES: CADA ÁREA CON EL NÚCLEO
+
+                Son cinco líneas que dicen lo mismo, así que se dibujan iguales: un solo color
+                —el ámbar del núcleo, en `.edge` de `app/aios.css`— y un punto viajando por cada
+                una. Antes había dos colores y CUATRO puntos, y las dos cosas se leían como
+                información: parecía que Acquisition y Conversation estaban conectadas y las
+                otras tres no, y que Creative no mandaba nada.
+
+                ── LA DE CREATIVE ES RECTA, Y NO ES UNA PREFERENCIA ─────────────────
+
+                Creative está EXACTAMENTE debajo del núcleo: su tarjeta va de x=386 a x=574 y el
+                núcleo de 398 a 562 — las dos centradas en x=480. Con los dos centros alineados,
+                una curva no une nada mejor que una recta: solo dobla sin motivo, y la que había
+                doblaba MAL — arrancaba en (400,512), que está DENTRO de la tarjeta, y terminaba
+                en (470,300), que está dentro del núcleo y desalineado 10 px. En pantalla se veía
+                como una diagonal que salía del texto de la tarjeta.
+
+                La recta va del borde de arriba de Creative (y=440) al borde de abajo del núcleo
+                (y=308): 132 px enteramente visibles, sin un tramo tapado por ninguna tarjeta.
+
+                ── POR QUÉ LAS OTRAS CUATRO SIGUEN CURVAS Y NO SE TOCAN ────────────
+
+                Ninguna de las cuatro está alineada con el núcleo: llegan en diagonal, y ahí la
+                curva sí hace algo — entra al núcleo perpendicular a su borde en vez de cortarle
+                la esquina. Enderezarlas por simetría empeoraría las cuatro para que la quinta no
+                sea distinta.
+
+                Sus tramos finales quedan por dentro del núcleo a propósito: la tarjeta se dibuja
+                DESPUÉS y es opaca, así que tapa el remate y la línea no muere en el aire.
+                ══════════════════════════════════════════════════════════════════════ */}
+            <path id="e1" className="edge" d="M 305 168 C 385 200, 430 228, 452 248" />
             <path id="e2" className="edge" d="M 268 372 C 350 352, 410 300, 444 276" />
-            <path id="e3" className="edge" d="M 400 512 C 440 460, 462 340, 470 300" />
-            <path id="e4" className="edge hot" d="M 655 168 C 575 200, 530 228, 508 248" />
+            <path id="e3" className="edge" d="M 480 440 L 480 308" />
+            <path id="e4" className="edge" d="M 655 168 C 575 200, 530 228, 508 248" />
             <path id="e5" className="edge" d="M 692 372 C 610 352, 550 300, 516 276" />
             <circle className="pulse" r="2.4">
               <animateMotion dur="4.4s" repeatCount="indefinite">
@@ -148,6 +178,21 @@ export default function ExecutiveView({ activa }) {
             <circle className="pulse" r="2.4">
               <animateMotion dur="6s" begin="0.6s" repeatCount="indefinite">
                 <mpath href="#e2" />
+              </animateMotion>
+            </circle>
+            {/* EL QUINTO PUNTO, QUE FALTABA. `e3` era la única línea sin animación, y eso se leía
+                como que Creative no manda nada — la única de las seis áreas apagada.
+
+                Su duración es la más corta de las cinco y sale de una cuenta, no del gusto: la
+                recta mide 132 px y las otras cuatro 168 y 202, que a 4.4–6 s dan entre 31 y 42
+                px/s. 3.6 s deja este punto en 36.7, o sea a la MISMA velocidad. Copiarle la
+                duración a otra lo dejaría arrastrándose, y el ojo compara velocidades, no tiempos.
+
+                El `begin` de 1.7 s es el hueco que quedaba entre 1.2 y 2.2: con los cinco
+                arrancando juntos, el mapa late en vez de fluir. */}
+            <circle className="pulse" r="2.4">
+              <animateMotion dur="3.6s" begin="1.7s" repeatCount="indefinite">
+                <mpath href="#e3" />
               </animateMotion>
             </circle>
             {/* ====== NÚCLEO ====== */}

@@ -989,12 +989,21 @@ test('las dos capacidades están en el archivo que las carga, y no en la migraci
 
 // ─── La compuerta de paridad ───────────────────────────────────────────────
 
-test('`icp` salió de la comparación con el prototipo, y las otras nueve siguen', async () => {
+test('`icp` salió de la comparación con el prototipo, y las que quedan siguen', async () => {
   // La vista ya no coincide con el prototipo A PROPÓSITO. Dejarla en la lista daría un rojo
-  // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros nueve.
+  // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
   //
   // Lo que esta prueba protege es la otra mitad: que sacar una vista no se vuelva la salida fácil
-  // para cualquier rojo. Si mañana quedan siete, esto falla y alguien tiene que explicar por qué.
+  // para cualquier rojo. El número es EXACTO, así que bajarlo pone esto rojo y alguien tiene que
+  // venir a escribir el motivo — que es lo único que hace que una compuerta que se encoge no se
+  // encoja sola.
+  //
+  // Van cuatro salidas y cada una con su motivo escrito en `scripts/paridad.mjs`: `icp` en la
+  // Etapa 9, `setter` y `closer` en la 11 —las tres porque sus DATOS dejaron de ser los del
+  // maquetado— y `executive` acá, que es la primera por un cambio de DISEÑO: el mapa de áreas se
+  // pulió (cinco líneas de un solo color, un punto animado en cada una, la de Creative recta) y
+  // eso mueve la forma y las cajas del SVG a propósito. Su red de reemplazo es
+  // `pruebas/codigo/120-mapa-ejecutivo.test.ts`.
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { RAIZ } = await import('../apoyo/fuente.ts');
@@ -1002,8 +1011,14 @@ test('`icp` salió de la comparación con el prototipo, y las otras nueve siguen
   const lista = /const VISTAS = \[([\s\S]*?)\];/.exec(paridad);
   assert.ok(lista && lista[1], 'no se pudo leer la lista de vistas de paridad.mjs');
   const vistas = [...lista[1].matchAll(/'([\w-]+)'/g)].map((m) => m[1]);
-  assert.equal(vistas.length, 7, `la lista de paridad tiene ${vistas.length} vistas, no siete`);
-  assert.ok(!vistas.includes('icp'), '`icp` volvió a la comparación: va a dar rojo permanente');
+  assert.equal(vistas.length, 6, `la lista de paridad tiene ${vistas.length} vistas, no seis`);
+  for (const fuera of ['icp', 'setter', 'closer', 'executive']) {
+    assert.ok(
+      !vistas.includes(fuera),
+      `\`${fuera}\` volvió a la comparación: diverge del prototipo a propósito y va a dar rojo ` +
+        'permanente',
+    );
+  }
 });
 
 // ─── La espera del navegador contra lo que la ruta puede tardar ─────────────
