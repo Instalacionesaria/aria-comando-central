@@ -72,6 +72,24 @@ const CAMPOS = [
     secreto: true,
   },
   {
+    entrada: 'crmAgenteUsuarioId',
+    valor: 'crmAgenteUsuarioId',
+    titulo: 'Usuario del agente de IA en el CRM',
+    /* La ayuda dice CÓMO SACARLO y QUÉ PASA SIN ÉL, y las dos mitades hacen falta. Sin la primera,
+       el campo queda vacío porque nadie sabe de dónde sale un identificador de veinte caracteres.
+       Sin la segunda, se lee como opcional — y sin él el auditor no corre, que es lo contrario de
+       opcional.
+
+       Va DEBAJO de la clave de IA a propósito: son las dos mitades de lo mismo, y ninguna sirve
+       sola. Con la clave y sin esto, el auditor sigue apagado y la pantalla de auditoría lo dice. */
+    ayuda:
+      'El identificador del usuario con el que tu agente automático manda mensajes en GoHighLevel. ' +
+      'Se ve en el CRM abriendo una conversación que haya contestado el agente. Sin este dato NO SE ' +
+      'AUDITA: no hay forma de distinguir lo que escribió el agente de lo que escribió una ' +
+      'automatización del CRM, y el auditor le imputaría al agente lo que no dijo. No es un secreto.',
+    secreto: false,
+  },
+  {
     entrada: 'fundacionesClienteId',
     valor: 'fundacionesClienteId',
     titulo: 'Alumno de Fundaciones',

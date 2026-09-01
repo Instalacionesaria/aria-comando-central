@@ -92,6 +92,23 @@ const CAMPOS = [
   // El calendario de agendamiento. `secreto: false`: es el identificador de un calendario ajeno, va y
   // viene completo. Y NO es un filtro del barrido — ver la migración 016.
   { entrada: 'crmCalendarioId', columna: 'crm_calendario_id', secreto: false },
+  /* ── EL IDENTIFICADOR DEL AGENTE DE IA, Y POR QUÉ NO ES UN SECRETO ────────
+   *
+   * Es el identificador de un usuario de una cuenta ajena, de la misma clase que `crm_cuenta_id` y
+   * `crm_calendario_id`: va y viene completo. Cifrarlo no protegería nada —quien tiene acceso a la
+   * subcuenta lo ve en su propia pantalla— y haría imposible mostrarlo para comprobar que es el
+   * correcto, que es justo lo que alguien necesita hacer con él.
+   *
+   * ── Y ESTE CAMPO FALTABA, QUE ES UN DEFECTO CON NOMBRE ───────────────────
+   *
+   * La columna existe desde la migración 026, el auditor la lee, y **la pantalla de la auditoría
+   * dice literalmente «se carga en Integraciones»** — donde no había dónde cargarla. Un estado sin
+   * salida: el sistema pide una acción que no se puede hacer.
+   *
+   * Es exactamente el defecto que la migración 015 dejó documentado —*«un texto que manda a cargar
+   * algo que no se puede cargar»*— y que la Etapa 12 pagó con los porcentajes del setter.
+   */
+  { entrada: 'crmAgenteUsuarioId', columna: 'crm_agente_usuario_id', secreto: false },
   { entrada: 'pagosComercioId', columna: 'pagos_comercio_id', secreto: false },
   { entrada: 'fundacionesClienteId', columna: 'fundaciones_cliente_id', secreto: false },
 ] as const;

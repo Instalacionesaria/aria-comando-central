@@ -141,6 +141,13 @@ export interface Credenciales {
    * en la de los tokens.
    */
   crmCalendarioId: string | null;
+  /**
+   * El usuario con el que el agente de IA manda mensajes en el CRM. **Sin esto no se audita.**
+   *
+   * No es un secreto —es el identificador de un usuario de una cuenta ajena, como `crmCuentaId`— y
+   * va y viene completo: quien lo carga necesita poder VERLO para comprobar que puso el correcto.
+   */
+  crmAgenteUsuarioId: string | null;
   /** El comercio de la pasarela. NO es secreto: va completo. */
   pagosComercioId: string | null;
   /** El alumno del hub para Fundaciones. NO es secreto: va completo. */
@@ -192,6 +199,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'pagos_clave_cifrada',
       'crm_cuenta_id',
       'crm_calendario_id',
+      'crm_agente_usuario_id',
       'aviso_secreto_hash',
       'pagos_comercio_id',
       'fundaciones_cliente_id',
@@ -237,6 +245,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     pagos,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
     crmCalendarioId: fila?.crm_calendario_id ?? null,
+    crmAgenteUsuarioId: fila?.crm_agente_usuario_id ?? null,
     // Un booleano y NO el hash. Ver el campo.
     avisoSecretoConfigurado: (fila?.aviso_secreto_hash ?? null) !== null,
     pagosComercioId: fila?.pagos_comercio_id ?? null,
