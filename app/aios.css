@@ -2531,23 +2531,29 @@ svg.graph { width: 100%; height: 100%; display: block; }
 @media (prefers-reduced-motion: reduce) {
   .live::before { animation: none; }
 
-  /* SE ESCONDE EL PUNTO, NO SU ANIMACIÓN. LA DIFERENCIA SE VIO EN PANTALLA.
+  /* ── EL PUNTO DEL MAPA EJECUTIVO NO SE APAGA ACÁ, Y ES UNA DECISIÓN ─────
+   *
+   * Acá vivía `.pulse animateMotion { display: none; }` —viene del maquetado— y por un rato tuvo
+   * también un `.pulse { display: none; }` que puse yo. Las dos se fueron, y el motivo se pagó en
+   * pantalla: **la queja fue que las bolitas ya no se movían.**
 
-     Acá decía `.pulse animateMotion { display: none; }`, y el efecto no es «el punto se queda
-     quieto en el borde»: es que **queda estacionado donde estaba** cuando la regla se aplicó. Medido
-     en un navegador con «reducir movimiento» activo —que en Windows es «Mostrar animaciones: No»—:
-     los cinco puntos aparecían clavados a mitad de sus líneas, en posiciones arbitrarias.
+   * Lo que hacía la regla del maquetado no es «el punto se queda quieto en el borde»: lo deja
+   * ESTACIONADO donde estaba, así que en un navegador con «reducir movimiento» activo —en Windows,
+   * «Mostrar animaciones: No»— aparecían cinco puntos clavados a mitad de sus líneas. Y esconderlos,
+   * que fue mi arreglo, deja el mapa sin lo único que dice «esta área está reportando».
 
-     Y eso no se lee como una animación apagada. Se lee como información: cinco marcas sobre los
-     cables, una por área, cada una en un lugar distinto. En un mapa donde todo lo demás significa
-     algo, es lo peor que puede hacer un adorno apagado.
+   * ── POR QUÉ ESTE MOVIMIENTO SE QUEDA, TENIENDO LA PREFERENCIA EN CONTRA ──
+   *
+   * `prefers-reduced-motion` existe por el movimiento que marea: superficies grandes, paralaje,
+   * cosas que entran y salen de pantalla. Esto es un punto de 2.4 px recorriendo una línea de 130 a
+   * 200 px en cuatro segundos, más cerca de un indicador de carga —que nadie apaga— que de una
+   * transición. Y no es decorativo: es el estado de las seis áreas del mapa, que es lo primero que
+   * se ve al entrar.
 
-     El punto solo dice «esto fluye». Sin movimiento no hay flujo que mostrar, así que no va el
-     punto. La línea sigue diciendo que el área reporta, que es la información de verdad.
+   * Lo que se pierde, dicho sin adornos: alguien que le pidió a su sistema menos movimiento igual
+   * ve cinco puntos moviéndose. Si eso molesta, la vuelta es una línea acá — pero que la pida quien
+   * la sufre, no yo adivinando.
 
-     Se apaga también la animación, y no es redundante: un `<animateMotion>` corriendo sobre un
-     elemento invisible sigue despertando al compositor cada cuadro. Quien pide menos movimiento
-     suele estar pidiendo menos batería también. */
-  .pulse { display: none; }
-  .pulse animateMotion { display: none; }
+   * `.live::before` SÍ se sigue apagando: es un punto que PALPITA cambiando de tamaño en el lugar,
+   * y eso es exactamente lo que la preferencia viene a callar. */
 }

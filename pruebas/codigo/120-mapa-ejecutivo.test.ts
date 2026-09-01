@@ -207,53 +207,74 @@ test('los cinco puntos NO arrancan juntos', () => {
   );
 });
 
-test('con «reducir movimiento» se esconde el PUNTO, no solo su animación', () => {
-  /* ── SE ENCONTRÓ MIRANDO LA PANTALLA, NO LEYENDO ─────────────────────────
-   *
-   * La regla era `.pulse animateMotion { display: none }` a secas, y el efecto no es «el punto se
-   * queda quieto»: queda **estacionado donde estaba** cuando la regla se aplicó. Medido en un
-   * navegador con «reducir movimiento» activo: los cinco puntos clavados a mitad de sus líneas, en
-   * posiciones arbitrarias.
-   *
-   * Y eso no se lee como una animación apagada: se lee como cinco marcas sobre los cables, una por
-   * área, cada una en un lugar distinto. En un mapa donde todo lo demás significa algo, un adorno
-   * apagado que parece información es peor que ningún adorno.
-   *
-   * Se afirman las dos líneas. Sin la primera vuelve el punto estacionado; sin la segunda queda un
-   * `<animateMotion>` corriendo sobre algo invisible, despertando al compositor cada cuadro — y
-   * quien pide menos movimiento suele estar pidiendo menos batería. */
+test('el punto se mueve TAMBIÉN con «reducir movimiento»', () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     ESTA PRUEBA AFIRMABA LO CONTRARIO, Y EL CAMBIO SE PAGÓ EN PANTALLA
+
+     Decía que con «reducir movimiento» el punto tenía que ESCONDERSE, y el razonamiento parecía
+     bueno: la regla del maquetado apagaba el `<animateMotion>`, que no deja el punto quieto en el
+     borde sino ESTACIONADO donde estaba — cinco marcas clavadas a mitad de las líneas, que en un
+     mapa donde todo significa algo se leen como información.
+
+     Lo que faltaba en ese razonamiento es a quién le pasa. La preferencia está activa en más
+     máquinas de las que uno supone —en Windows es «Mostrar animaciones: No»— y esconder el punto
+     dejó el mapa sin lo único que dice «esta área está reportando». La queja llegó en una frase:
+     *«falta que todas tengan esa animación de una bolita moviéndose en dirección al executive»*.
+
+     Así que el punto se mueve siempre, y lo que se afirma es eso. `prefers-reduced-motion` existe
+     por el movimiento que marea —superficies grandes, paralaje— y esto es un punto de 2.4 px sobre
+     una línea de 130 a 200 px: más cerca de un indicador de carga, que nadie apaga.
+
+     Se afirma sobre el CSS y no sobre el navegador porque el reloj de animación **no avanza en un
+     panel que no pinta**: medido con `requestAnimationFrame`, cero cuadros en 900 ms. O sea que
+     una prueba de navegador acá diría «no se mueve» siempre, para cualquier código.
+     ══════════════════════════════════════════════════════════════════════════ */
   const css = leer('app/aios.css');
   const i = css.indexOf('@media (prefers-reduced-motion: reduce)');
   assert.ok(i > 0, 'se fue el bloque de «reducir movimiento»');
-  /* ── SE LEE EL CSS, NO LA PROSA, Y ESTO LO ENCONTRÓ UNA MUTACIÓN ────────
-   *
-   * La primera versión afirmaba sobre el bloque crudo y **sobrevivía a que se borrara la regla**:
-   * el comentario de arriba de esa regla CITA la que reemplazó, así que el patrón la encontraba en
-   * la prosa. Una prueba que no distingue el código del comentario obliga a no poder nombrar lo que
-   * se quitó — que es lo contrario de lo que este repositorio quiere de un comentario.
-   *
-   * Es el mismo error, en el mismo día, que en `110-monitoreo`. Vale escribirlo dos veces: el
-   * patrón que busca una regla en un archivo tiene que quitar los comentarios primero.
-   *
-   * El corte va hasta la primera llave sola al principio de una línea, que es el cierre del
-   * `@media`. Cortar en la primera `}` a secas tomaría solo la primera regla de adentro. */
+
+  /* Se le quitan los COMENTARIOS antes de mirar, y eso lo encontró una mutación: el comentario de
+     ese bloque cita las dos reglas que se quitaron —para que quien lea sepa qué había ahí— así que
+     un patrón sobre el texto crudo las encuentra en la prosa y la prueba sobrevive a que vuelvan.
+     Mismo error, el mismo día, que en `110-monitoreo`: el patrón que busca una regla tiene que
+     quitar los comentarios primero.
+
+     El corte va hasta la primera llave sola al principio de una línea, que es el cierre del
+     `@media`. Cortar en la primera `}` a secas tomaría solo la primera regla de adentro. */
   const bloque = css
     .slice(i, css.indexOf('\n}', i) + 2)
     .replace(/\/\*[\s\S]*?\*\//g, '');
 
+  /* Los dos patrones ESCRITOS, no armados con una plantilla. La primera versión los construía con
+     `new RegExp(...)` y un `${}` que quedó escapado, así que el patrón nunca interpolaba: buscaba el
+     texto literal `${regla...}` y no encontraba nada NUNCA. La prueba pasaba en vacío — verde con
+     las dos reglas puestas y verde sin ellas.
+
+     Y no se pisan entre sí: `\.pulse \{` exige la llave pegada a `.pulse`, así que no matchea
+     `.pulse animateMotion {`. Son dos afirmaciones distintas y cada una tiene su mensaje. */
+  const apagadas = [
+    { regla: '.pulse', patron: /\.pulse \{[^}]*display:\s*none/ },
+    { regla: '.pulse animateMotion', patron: /\.pulse animateMotion \{[^}]*display:\s*none/ },
+  ];
+  for (const { regla, patron } of apagadas) {
+    assert.equal(
+      patron.test(bloque),
+      false,
+      `\`${regla}\` volvió a apagarse con «reducir movimiento»: el mapa se queda sin lo único que ` +
+        'dice qué área está reportando, y quien tiene la preferencia activa ve cinco líneas muertas',
+    );
+  }
+
+  /* Y la otra mitad, que es la que justifica la de arriba: lo que SÍ se apaga sigue apagado. Sin
+     esto, «el punto se mueve siempre» se lee como que la preferencia se ignora en general — y no:
+     `.live::before` palpita cambiando de tamaño en el lugar, que es exactamente lo que la
+     preferencia viene a callar. */
   assert.match(
     bloque,
-    /\.pulse \{[^}]*display:\s*none/,
-    'el punto sigue dibujándose con «reducir movimiento»: queda estacionado a mitad de la línea y ' +
-      'se lee como una marca puesta a propósito',
-  );
-  assert.match(
-    bloque,
-    /\.pulse animateMotion \{[^}]*display:\s*none/,
-    'la animación sigue corriendo sobre un punto invisible',
+    /\.live::before \{[^}]*animation:\s*none/,
+    'se dejó de apagar el latido de `.live`: ahí la preferencia sí tiene razón',
   );
 });
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA GEOMETRÍA DE LA RECTA
 // ═══════════════════════════════════════════════════════════════════════════════
