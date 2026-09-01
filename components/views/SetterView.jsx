@@ -256,7 +256,14 @@ export default function SetterView({ activa }) {
                   <span>{causa}</span>
                 </div>
               ) : null}
-              <MiDia colas={colas} zonaHoraria={zonaHoraria} secciones={COLAS_DEL_SETTER} />
+              <MiDia
+                colas={colas}
+                zonaHoraria={zonaHoraria}
+                secciones={COLAS_DEL_SETTER}
+                /* Igual que en el Closer: resolver saca al contacto de la cola en el servidor, y
+                   sin recargar la pantalla lo seguiría mostrando. */
+                alResolver={() => void cargar()}
+              />
             </>
           ) : null}
 

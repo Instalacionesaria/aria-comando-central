@@ -42,6 +42,7 @@ import { useState } from 'react';
 import Fila, { SeisIconos } from '../negocio/Fila.jsx';
 import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
+import { queDecir, resolverIntervencion } from '../../lib/auditor/resolverDesdeLaCola.ts';
 
 /**
  * Las cinco colas, en el orden fijo del `01`.
@@ -54,10 +55,15 @@ import Ficha from '../negocio/Ficha.jsx';
  * `tareas`, `resultados`—, que las escribe código de esta aplicación. Un cero ahí es un cero MEDIDO,
  * así que la frase puede afirmar el hecho: *«Nadie escribió sin respuesta»* es cierto.
  *
- * `urgentes` sale de **dos etiquetas que pone el CRM** —`bot_desactivado_appflow` y
- * `bot_pausado_fallo`, ver `FALLOS_DEL_AUDITOR`— y **ninguna línea de esta aplicación las escribe**:
- * `lib/ghl/contrato.ts` solo las declara para leerlas. Así que su cero no es un cero medido — es
- * «nadie nos dijo nada».
+ * `urgentes` sale de **dos etiquetas** —`bot_desactivado_appflow` y `bot_pausado_fallo`, ver
+ * `FALLOS_DEL_AUDITOR`— y hasta la Etapa 13 **ninguna línea de esta aplicación las escribía**, así
+ * que su cero era «nadie nos dijo nada» y no un cero medido.
+ *
+ * **Eso cambió y hay que decirlo:** el auditor de IA ahora escribe la específica del territorio
+ * cuando pide una intervención (`lib/auditor/intervencion.ts`). Su cero sigue sin ser del todo
+ * medido —el CRM también las pone, y la plataforma anterior también— pero ya no es cierto que
+ * nadie de acá las escriba. Un encabezado que afirma lo contrario de lo que hace el código es la
+ * clase de documentación que envejece sin que nada falle.
  *
  * La frase decía *«El agente de IA no falló en ningún contacto»*, y eso este sistema **no tiene con
  * qué saberlo**: si el CRM deja de aplicar la etiqueta, o si el barrido quedó atrasado, la pantalla
@@ -159,7 +165,22 @@ function FilaDeAgenda({ item, zona }) {
  * `segundaTarjeta` porque el resumen de arriba SÍ difiere: el closer muestra sus citas de hoy y el
  * setter no tiene agenda — dibujarle una tarjeta de citas sería una tarjeta permanentemente vacía.
  */
-export default function MiDia({ colas, zonaHoraria, secciones = COLAS_DEL_CLOSER, segundaTarjeta = null }) {
+export default function MiDia({
+  colas,
+  zonaHoraria,
+  secciones = COLAS_DEL_CLOSER,
+  segundaTarjeta = null,
+  /**
+   * Qué hacer después de resolver. **Sin esto, el botón no se dibuja.**
+   *
+   * No es una comodidad: resolver saca al contacto de la cola en el servidor, y sin recargar la
+   * pantalla sigue mostrándolo. El vendedor apretaría el botón otra vez sobre algo ya hecho.
+   *
+   * Y que sea obligatorio para dibujarlo es deliberado: una pantalla que monte `MiDia` sin poder
+   * recargar **no tiene que ofrecer el botón**, en vez de ofrecer uno que deja la vista mintiendo.
+   */
+  alResolver = null,
+}) {
   /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
      llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
      se pasa, la fila no es clicable"*. Este es ese paso.
@@ -245,6 +266,17 @@ export default function MiDia({ colas, zonaHoraria, secciones = COLAS_DEL_CLOSER
                       {item.motivo}
                     </div>
                   ) : null}
+                  {/* ── RESOLVER, Y SOLO EN URGENTES ──────────────────────────────
+                      La ruta existía desde la Etapa 13 y **no la llamaba nadie**: el vendedor podía
+                      ver el motivo de la urgencia y no tenía cómo cerrarla, así que el contacto se
+                      quedaba en la cola para siempre.
+
+                      Va acá y no dentro de `Fila`: la fila es el mismo componente en las cinco
+                      colas y en el Pipeline, y meterle un botón que solo tiene sentido en una es el
+                      camino a cinco variantes que divergen. */}
+                  {cola.clave === 'urgentes' ? (
+                    <BotonDeResolver contactoId={item.fila.id} alResolver={alResolver} />
+                  ) : null}
                   {item.fragmento ? (
                     <div className="md-quote" style={{ padding: '0 16px 10px 56px' }}>
                       “{item.fragmento}”
@@ -303,5 +335,43 @@ export default function MiDia({ colas, zonaHoraria, secciones = COLAS_DEL_CLOSER
           se estaba. Ver `components/negocio/Ficha.jsx`. */}
       {abierta ? <Ficha contactoId={abierta} alCerrar={() => setAbierta(null)} /> : null}
     </>
+  );
+}
+
+/**
+ * El botón de resolver una intervención.
+ *
+ * ── LAS TRES RESPUESTAS, Y LA DEL MEDIO ES LA QUE IMPORTA ─────────────────
+ *
+ * «Resuelto», «resuelto pero el CRM no aceptó» y «no se pudo». La del medio **no es un error**: la
+ * resolución ya ocurrió y el contacto ya salió de la cola. Pero el agente sigue pausado en el CRM,
+ * y si eso se dibuja como un éxito nadie lo va a reactivar.
+ *
+ * Y se recarga en los dos casos que escribieron algo, no solo en el limpio: si no se recargara tras
+ * el del medio, la pantalla seguiría mostrando una urgencia que ya está cerrada.
+ */
+function BotonDeResolver({ contactoId, alResolver }) {
+  const [resolviendo, setResolviendo] = useState(false);
+  const [dice, setDice] = useState('');
+
+  // Sin forma de recargar, no se ofrece. Ver el comentario de `alResolver`.
+  if (!alResolver) return null;
+
+  const resolver = async () => {
+    setResolviendo(true);
+    setDice('');
+    const r = await resolverIntervencion(contactoId);
+    setDice(queDecir(r));
+    setResolviendo(false);
+    if (r.tipo === 'ok') alResolver();
+  };
+
+  return (
+    <div className="md-sub" style={{ padding: '0 16px 10px 56px' }}>
+      <button type="button" className="fd-btn sec" onClick={resolver} disabled={resolviendo}>
+        {resolviendo ? 'Resolviendo…' : 'Ya lo atendí'}
+      </button>
+      {dice ? <span style={{ marginLeft: 10 }}>{dice}</span> : null}
+    </div>
   );
 }

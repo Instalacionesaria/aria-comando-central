@@ -246,6 +246,9 @@ export default function CloserView({ activa }) {
       return <MiDia
           colas={datos.colas}
           zonaHoraria={datos.zonaHoraria}
+          /* Resolver saca al contacto de la cola en el servidor. Sin la recarga, la pantalla lo
+             seguiría mostrando y el vendedor apretaría el botón otra vez sobre algo ya hecho. */
+          alResolver={() => void cargar()}
           segundaTarjeta={
             /* Las citas de hoy. Es la tarjeta que el Setter NO tiene: trabaja antes de que exista
                una cita, así que dibujarle este número sería un cero permanente. */
