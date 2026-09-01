@@ -928,7 +928,10 @@
   color: var(--txt-dim);
 }
 .sc-aviso.ok { color: var(--ok); border-color: rgb(var(--c-ok) / 0.28); }
-.sc-aviso.err { color: var(--danger); border-color: rgb(var(--c-crit) / 0.28); }
+/* `--crit` y no `--danger`: ese token nunca existió, así que el aviso de error salía con el
+   color heredado —casi blanco— y su borde rojo al lado. Es el mismo defecto que el archivo de
+   al lado ya documenta para `--bg-card`. */
+.sc-aviso.err { color: var(--crit); border-color: rgb(var(--c-crit) / 0.28); }
 
 .sc-giro {
   width: 12px;

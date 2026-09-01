@@ -16,7 +16,7 @@
 
 import { pedir } from '../http/cliente.ts';
 import type { CasoDelPatron, LaPantalla } from './pantalla.ts';
-import type { Agente } from './veredicto.ts';
+import { AGENTES, type Agente } from './veredicto.ts';
 
 const RUTA = '/api/auditoria';
 
@@ -121,17 +121,70 @@ export function agruparPorPatron(casos: readonly CasoDelPatron[]): PatronAgrupad
   });
 }
 
-/** El nombre de cada agente para una persona. El interno no va a una pantalla. */
+/**
+ * El nombre de cada agente **con el que la gente lo llama**, que es el del CRM.
+ *
+ * ── DECÍA «AGENTE DE POST-AGENDA», Y ESO NO SE USA EN NINGUNA CONVERSACIÓN ──
+ *
+ * `chat_pre_agenda` y `chat_post_agenda` son buenos nombres INTERNOS: dicen dónde del embudo
+ * trabaja cada uno y por eso el código los usa. Pero nadie los dice en voz alta. En GoHighLevel las
+ * etiquetas son `bot_activado_leadflow` y `bot_activado_appflow`, y así se pidió verlos acá.
+ *
+ * El mapeo no se adivina: sale del contrato del CRM (`lib/ghl/contrato.ts`), donde
+ * `bot_activado_leadflow` da el estado `atendiendo_pre_agenda` y `bot_activado_appflow` da
+ * `atendiendo_post_agenda`. O sea **LeadFlow = pre-agenda = zona del Setter** y **AppFlow =
+ * post-agenda = zona del Closer**, que es exactamente como se pidió.
+ *
+ * Es un `Record` sobre el enumerado, así que un agente nuevo sin nombre no compila. Un objeto
+ * suelto lo dibujaría con su clave interna en pantalla.
+ */
 export const NOMBRE_DEL_AGENTE: Readonly<Record<Agente, string>> = {
-  chat_post_agenda: 'Agente de post-agenda',
-  chat_pre_agenda: 'Agente de pre-agenda',
+  chat_pre_agenda: 'LeadFlow',
+  chat_post_agenda: 'AppFlow',
+};
+
+/**
+ * La zona de trabajo que atiende cada agente.
+ *
+ * Va al lado del nombre y no es decoración: «LeadFlow» y «AppFlow» no dicen a quién le hablan, y
+ * la pregunta que sigue siempre es la misma —*¿este es el de los que ya agendaron?*—. Con la zona
+ * al lado, la tarjeta se lee sin preguntar.
+ *
+ * Y ata esta pantalla a las otras dos: quien mira los hallazgos de AppFlow sabe que las urgencias
+ * que produce caen en la cola del **Closer**, no en la del Setter.
+ */
+export const ZONA_DEL_AGENTE: Readonly<Record<Agente, string>> = {
+  chat_pre_agenda: 'Zona Setter',
+  chat_post_agenda: 'Zona Closer',
 };
 
 /** Qué hace cada agente, en una línea. Es lo que vuelve legible una tarjeta sin datos. */
 export const QUE_HACE_EL_AGENTE: Readonly<Record<Agente, string>> = {
-  chat_post_agenda: 'Acompaña al contacto que ya agendó, hasta la llamada',
   chat_pre_agenda: 'Califica al contacto y consigue la cita',
+  chat_post_agenda: 'Acompaña al que ya agendó, hasta la llamada',
 };
+
+/**
+ * En qué orden se dibujan los agentes: **el del embudo.** Primero el que consigue la cita, después
+ * el que la acompaña.
+ *
+ * ── SE DERIVA DE `AGENTES`, Y ESO ES LO QUE LA HACE SEGURA ────────────────
+ *
+ * Escribir el arreglo a mano sería más corto y traería el defecto `4.1` del origen —*«la causa es
+ * una lista escrita a mano»*—: un agente nuevo que alguien agregue a `AGENTES` **no aparecería en
+ * esta pantalla**, sin que nada falle. Sus análisis existirían y nadie los vería.
+ *
+ * Así, el orden es un `Record` sobre el enumerado —un agente sin rango no compila— y la LISTA sale
+ * de `AGENTES`, así que ninguno se puede quedar afuera.
+ */
+const RANGO_DEL_AGENTE: Readonly<Record<Agente, number>> = {
+  chat_pre_agenda: 1,
+  chat_post_agenda: 2,
+};
+
+export const ORDEN_DE_LOS_AGENTES: readonly Agente[] = [...AGENTES].sort(
+  (a, b) => RANGO_DEL_AGENTE[a] - RANGO_DEL_AGENTE[b],
+);
 
 /**
  * Por qué esta empresa no audita, en palabras y **con la acción que lo arregla**.

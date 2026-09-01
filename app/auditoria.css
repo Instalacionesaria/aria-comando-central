@@ -1,8 +1,18 @@
 /* La pantalla del técnico — la auditoría de los agentes de IA.
    ==========================================================================
-   Reusa `mon-totales`, `mon-tarjeta`, `mon-bloque` y `mon-cabeza` de `monitoreo.css`: son el mismo
-   idioma visual —tarjetas arriba, bloques abajo— y copiarlos acá sería una segunda definición del
-   mismo estilo que un día diverge. Lo de este archivo es lo que aquella pantalla no tiene.
+   ── DOS PESTAÑAS Y UN BLOQUE POR AGENTE ───────────────────────────────────
+
+   Antes era una sola página con cuatro secciones apiladas: dos tarjetas, los patrones, los dos
+   cuadros de prompt y las conversaciones. Los `textarea` de ocho filas en el medio empujaban las
+   conversaciones debajo del borde de la pantalla. Ahora los prompts tienen su pestaña y los
+   análisis van en un bloque por agente, con sus patrones y sus conversaciones adentro.
+
+   Se reusan `mon-cifra`, `mon-rotulo` y `mon-pie` de `monitoreo.css` —tipografías de dato, el
+   mismo idioma visual— y **ya no** `mon-totales`, `mon-tarjeta` ni `mon-bloque`: aquellas son una
+   grilla de tarjetas chicas, y esto son dos bloques anchos con secciones adentro.
+
+   La barra de sub-pestañas es `cl-sub`, la MISMA del Closer y del Setter. Un tercer estilo de
+   sub-pestaña para la tercera pantalla que las necesita es cómo tres barras terminan distintas.
 
    ── NI UN COLOR LITERAL ───────────────────────────────────────────────────
    Todo sale de los tokens de `app/temas.css`, y una prueba lo hace cumplir sobre la lista de hojas
@@ -35,7 +45,7 @@
   color: var(--txt-dim);
 }
 .aud-error {
-  color: var(--danger);
+  color: var(--crit);
 }
 .aud-error .pr-btn {
   margin-top: 8px;
@@ -67,29 +77,32 @@
   color: var(--warn);
 }
 .aud-chip-rojo {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--crit);
+  color: var(--crit);
 }
+/* Un nivel en CERO, en neutro. El motivo está en `Nivel` de `PanelDeAuditoria.jsx`: «0 rojo» con
+   borde rojo llama la atención sobre lo que no pasó. Va DESPUÉS de los tres niveles para ganarles
+   por orden con la misma especificidad. */
+.aud-chip-cero {
+  border-color: var(--line);
+  color: var(--txt-faint);
+}
+
 /* El chip de «sin datos». Deliberadamente NEUTRO y no gris apagado: no es un cero, es la ausencia
    de una medición, y un gris se lee como «cero y salió mal». */
 .aud-chip-vacio {
   border-style: dashed;
   color: var(--txt-faint);
 }
-.aud-tarjeta .mon-cifra {
-  margin-top: 2px;
-}
+/* `.aud-tarjeta` se fue con las tarjetas chicas: la cifra ahora vive en `.aud-agente-cifras`. */
 .aud-urgente {
-  color: var(--danger);
+  color: var(--crit);
 }
 .aud-resuelto {
   color: var(--txt-faint);
 }
 
-/* ── Los bloques ── */
-.aud-bloque {
-  margin-top: 14px;
-}
+/* ── Los vacíos ── */
 .aud-vacio {
   padding: 16px 14px;
   font-size: 12.5px;
@@ -113,8 +126,11 @@
   color: var(--txt);
   font-size: 13px;
 }
+/* El hover de la fila del patrón. `var(--bg-hover)` NO EXISTE, así que esto no hacía nada: una
+   fila que se puede abrir y no responde al cursor no se lee como clicable. El valor es el que usa
+   el resto de la aplicación para lo mismo — cinco reglas de `app/aios.css` con este número. */
 .aud-patron-cabeza:hover {
-  background: var(--bg-hover);
+  background: rgb(var(--c-nube) / 0.035);
 }
 .aud-patron-titulo {
   flex: 1;
@@ -126,7 +142,7 @@
   color: var(--txt-dim);
 }
 .aud-patron-codigo {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--txt-faint);
 }
@@ -146,13 +162,16 @@
 .aud-corr {
   margin-bottom: 10px;
 }
+/* El bloque de texto del prompt: fragmento a reemplazar y corrección. Iba con `var(--bg-hover)`,
+   que no existe, así que quedaba transparente — un bloque de código sin fondo no se distingue de
+   la prosa que lo rodea, y esto es justo lo que hay que copiar y pegar. */
 .aud-texto {
   margin: 4px 0 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--bg-hover);
+  background: var(--bg-sunk);
   padding: 8px 10px;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--txt-dim);
@@ -206,9 +225,17 @@
 }
 
 /* ── El cuadro del prompt ── */
+/* El cuadro del prompt, ahora TARJETA y no fila.
+
+   Tenia un `border-top` y nada mas: era una fila dentro de un `mon-bloque` compartido. Con su
+   pestaña propia, cada prompt es una tarjeta con la misma forma que el bloque de su agente en
+   Inicio — mismo radio, mismo fondo, mismo relleno— para que se lea como la otra cara de lo mismo. */
 .aud-prompt {
-  border-top: 1px solid var(--line);
-  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  padding: 15px 17px 17px;
+  margin-bottom: 14px;
 }
 .aud-prompt-caja {
   display: block;
@@ -216,9 +243,9 @@
   margin-top: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--bg-input);
+  background: var(--bg-sunk);
   padding: 8px 10px;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--txt);
@@ -239,3 +266,187 @@
   font-size: 11.5px;
   color: var(--txt-dim);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAS DOS PESTAÑAS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* La barra usa `cl-sub`; esto es solo su separación del encabezado de la vista. */
+.aud-sub {
+  margin-bottom: 14px;
+}
+
+/* El contador de prompts que FALTAN, en ámbar y no en acento. `cl-sub .cnt` es ámbar ejecutivo
+   para «tenés tareas»; acá el número es «te falta cargar esto», que es una advertencia. Dos
+   significados con el mismo color se leen como el mismo aviso. */
+.cl-sub .aud-cnt-falta {
+  background: rgb(var(--c-warn) / 0.16);
+  color: var(--warn);
+}
+
+/* El alcance y la aclaración del prompt de referencia. Texto de nota, no de dato: chico y
+   apagado, porque se lee una vez y después es ruido. */
+.aud-alcance {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--txt-faint);
+}
+.aud-alcance b {
+  font-weight: 600;
+  color: var(--txt-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL BLOQUE DE UN AGENTE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aud-agente {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  padding: 15px 17px 17px;
+  margin-bottom: 14px;
+}
+.aud-agente-cabeza {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* El icono es el de la ZONA que atiende el agente —`#i-setter` o `#i-closer`— y no un icono de
+   robot igual para los dos: de un vistazo dice en qué cola caen sus urgencias. */
+.aud-agente-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgb(var(--c-nube) / 0.05);
+  color: var(--accent);
+}
+.aud-agente-icono svg {
+  width: 16px;
+  height: 16px;
+}
+.aud-agente-quien {
+  flex: 1;
+  min-width: 0;
+}
+.aud-agente-quien h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--txt);
+}
+
+/* La zona, como píldora al lado del nombre. «LeadFlow» no dice a quién le habla, y la pregunta
+   que sigue siempre es la misma: ¿este es el de los que ya agendaron? */
+.aud-agente-zona {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(var(--c-acento) / 0.12);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Las cifras a la derecha, alineadas al borde: la cifra grande y el semáforo debajo. */
+.aud-agente-cifras {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+}
+.aud-agente-cifras .aud-semaforo {
+  margin-top: 2px;
+  justify-content: flex-end;
+}
+.aud-agente-pie {
+  margin: 11px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-faint);
+}
+
+/* ── Una sección dentro del bloque: patrones, conversaciones ── */
+.aud-seccion {
+  margin-top: 15px;
+}
+.aud-seccion-cabeza {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+.aud-seccion-cabeza h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--txt-dim);
+}
+.aud-seccion-cabeza .cre-desc {
+  margin-left: auto;
+}
+
+/* La cabecera plegable de las conversaciones. Es un `<button>` de ancho completo para que toda la
+   fila sea el área de clic: un triángulo de diez píxeles es un blanco que se falla. */
+.aud-plegable {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.aud-plegable:hover h4 {
+  color: var(--accent);
+}
+.aud-flecha {
+  width: 10px;
+  font-size: 10px;
+  color: var(--txt-faint);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LA PESTAÑA DE PROMPTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aud-prompt-cabeza {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+.aud-prompt-cabeza h4 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--txt);
+}
+.aud-prompt-cabeza .cre-desc {
+  margin-left: auto;
+}
+

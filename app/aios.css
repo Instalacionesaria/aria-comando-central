@@ -838,7 +838,15 @@ svg.graph { width: 100%; height: 100%; display: block; }
 /* etiqueta de etapa del embudo */
 .stage{display:inline-block; font-size:8px; font-weight:700; letter-spacing:.09em; padding:1px 5px; border-radius:4px; line-height:1.5; vertical-align:middle;}
 .stage.tof{background:var(--accent-dim); color:var(--accent);}
-.stage.mof{background:var(--mof-dim); color:var(--mof);}
+/* `--mof` y `--mof-dim` NUNCA EXISTIERON, así que esta etiqueta salía sin fondo y con el color
+   heredado. Nadie la dibuja hoy —se comprobó en todo el repositorio— y por eso no se notó, pero
+   una regla muerta que además no puede funcionar es la que alguien copia mañana.
+
+   Se le pone la forma que usan sus dos hermanas: `.tof` es acento y `.bof` es ámbar ejecutivo,
+   las dos con el fondo al 14 %. El medio del embudo es el naranja de atención, escrito con el
+   mismo patrón `rgb(<token> / .14)` en vez de inventar un `--mof-dim` que habría que definir en
+   los dos temas. */
+.stage.mof{background:rgb(var(--c-warn) / .14); color:var(--warn);}
 .stage.bof{background:var(--exec-dim); color:var(--exec);}
 
 /* control unico */
