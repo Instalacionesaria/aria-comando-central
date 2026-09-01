@@ -47,6 +47,17 @@ import BotonDeTema from './BotonDeTema.jsx';
 import { irALaVista } from '../lib/aios/shell.js';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
+import { leerTrabajosEnVuelo } from '../lib/tools/scrapers.ts';
+
+/**
+ * Cada cuánto se pregunta si hay un scraping corriendo.
+ *
+ * Veinte segundos y no cinco. El sondeo del propio scraper va cada cinco porque ahí alguien está
+ * esperando el resultado; esto sólo enciende un punto en el menú, y un scraping tarda minutos.
+ * A cinco segundos serían doce peticiones por minuto por persona conectada, todo el día, por un
+ * indicador que nadie está mirando fijo.
+ */
+const ESPERA_DEL_PUNTITO_MS = 20000;
 
 /** Las iniciales para el avatar. Dos letras, de las dos primeras palabras. */
 function iniciales(nombre) {
@@ -61,6 +72,38 @@ function iniciales(nombre) {
 
 export default function Nav() {
   const sesion = useSesion();
+
+  /* ── EL PUNTITO DE «HAY UN SCRAPING CORRIENDO» ────────────────────────────
+     Vive acá y no en la pantalla Tools porque el punto es justamente verlo DESDE OTRA PANTALLA:
+     un scraping tarda minutos y lo normal es irse a Setter o a Closer mientras corre. El menú
+     está montado siempre, así que es el único lugar desde donde se ve estando en cualquier
+     parte.
+
+     Sólo consulta si la persona puede ver Tools. Un closer que nunca va a scrapear no tiene por
+     qué hacer una petición cada veinte segundos por un indicador que no le sirve. */
+  const puedeVerTools = (sesion?.menu ?? [])
+    .flatMap((g) => g.secciones)
+    .some((x) => x.clave === 'tools');
+  const [scrapeando, setScrapeando] = useState(0);
+
+  useEffect(() => {
+    if (!puedeVerTools) return undefined;
+
+    let vivo = true;
+    let reloj = null;
+
+    const mirar = async () => {
+      const enVuelo = await leerTrabajosEnVuelo();
+      if (!vivo) return;
+      setScrapeando(enVuelo.length);
+      /* Se reprograma DESPUÉS de que la respuesta llegó, y no con un `setInterval`: con el
+         intervalo, una respuesta lenta hace que las peticiones se apilen y salgan de orden. */
+      reloj = setTimeout(mirar, ESPERA_DEL_PUNTITO_MS);
+    };
+    mirar();
+
+    return () => { vivo = false; if (reloj) clearTimeout(reloj); };
+  }, [puedeVerTools]);
 
   // Sin datos de sesión no se dibuja NINGUNA entrada. Es el `03` § 5 —*"una operación nueva
   // nace cerrada"*— llevado al menú: ante la duda, ninguna puerta, no todas.
@@ -123,6 +166,20 @@ export default function Nav() {
               <span className="n">
                 {s.nombre}
               </span>
+              {/* El puntito late sólo en la fila de Tools y sólo si hay algo corriendo. Lleva
+                  `title` y texto para lectores de pantalla porque un punto de color no dice
+                  nada por sí solo — y esto es información, no decoración. */}
+              {s.clave === 'tools' && scrapeando > 0 ? (
+                <span
+                  className="nav-scrapeando"
+                  /* `role="status"` y `aria-label`, no un `<i>` mudo: un punto de color no dice
+                     nada por sí solo, y esto es información —hay plata corriendo— no adorno.
+                     El `title` da lo mismo al pasar el cursor. */
+                  role="status"
+                  title={scrapeando === 1 ? 'Un scraping corriendo' : `${scrapeando} scrapings corriendo`}
+                  aria-label={scrapeando === 1 ? 'Un scraping corriendo' : `${scrapeando} scrapings corriendo`}
+                />
+              ) : null}
               {s.menu.galon ? <span className="chev">›</span> : null}
             </div>
           ))}

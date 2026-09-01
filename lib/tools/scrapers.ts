@@ -132,3 +132,36 @@ export async function consultarTrabajo(id: string): Promise<EstadoDeTrabajo | nu
   const r = await pedir<EstadoDeTrabajo>(`${RUTA}?trabajo=${encodeURIComponent(id)}`);
   return r.tipo === 'datos' ? r.datos : null;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS TRABAJOS EN VUELO
+//
+// Un scraping tarda minutos, y durante esos minutos el alumno se va a otra pantalla. Antes eso
+// mataba el sondeo: el identificador vivía en `useState` y el reloj en un `useRef`, así que
+// desmontar la pestaña dejaba el trabajo corriendo en Apify sin nadie mirándolo.
+//
+// Con esto el sondeo deja de depender de que una pestaña siga abierta: al montar se pregunta
+// qué hay en vuelo y se retoma. La fuente de verdad es la tabla, no la memoria del navegador.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Un scraping que todavía no terminó. */
+export interface TrabajoEnVuelo {
+  id: string;
+  fuente: string;
+  status: string;
+  business_type: string | null;
+  location: string | null;
+  created_at: string;
+}
+
+/**
+ * Qué está corriendo para esta organización.
+ *
+ * Devuelve lista vacía ante cualquier fallo, y eso es deliberado: esta consulta alimenta un
+ * indicador, no una decisión. Un error de red no tiene que pintar «error» en el menú de alguien
+ * que está trabajando en otra pantalla — como mucho, el puntito tarda un ciclo más en aparecer.
+ */
+export async function leerTrabajosEnVuelo(): Promise<TrabajoEnVuelo[]> {
+  const r = await pedir<{ enCurso: TrabajoEnVuelo[] }>('/api/tools/trabajos');
+  return r.tipo === 'datos' ? (r.datos.enCurso ?? []) : [];
+}

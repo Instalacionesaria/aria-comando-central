@@ -29,11 +29,12 @@ import {
   MINIMO_LEADS_MAPS,
   consultarTrabajo,
   iniciarScraping,
+  leerTrabajosEnVuelo,
 } from '@/lib/tools/scrapers';
 
 /* Las cuatro fases de un trabajo. `error` incluye tanto los fallos del motor como las
    validaciones de acá: para quien mira, las dos son "esto no arrancó y acá está el motivo". */
-function useTrabajo() {
+function useTrabajo(fuente) {
   const [fase, setFase] = useState('quieto');
   const [mensaje, setMensaje] = useState('');
   const [leads, setLeads] = useState([]);
@@ -67,6 +68,29 @@ function useTrabajo() {
     };
     tic();
   }, []);
+
+  /* ── RETOMAR UN TRABAJO QUE YA ESTABA CORRIENDO ──────────────────────────
+     Esto es lo que arregla «me muevo a otra pestaña y se pierde el avance». El sondeo vivía en
+     este componente, así que desmontarlo —cambiar a Mis Leads, al VSL— mataba el reloj y el
+     trabajo seguía corriendo en Apify sin nadie mirándolo. No se perdía el scraping: se perdía
+     la referencia para preguntar por él.
+
+     Al montar se le pregunta a la BASE qué hay en vuelo para esta fuente y se retoma. Corre una
+     sola vez, no en cada render, y `vivo` evita fijar estado si la pestaña se cerró mientras la
+     consulta viajaba.
+
+     Se filtra POR FUENTE: si hay un scraping de Maps corriendo, la pestaña de LinkedIn no tiene
+     por qué mostrarlo — mostraría un progreso que no es el suyo y un resultado que no pidió. */
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const enVuelo = await leerTrabajosEnVuelo();
+      if (!vivo) return;
+      const mio = enVuelo.find((t) => t.fuente === fuente);
+      if (mio) sondear(mio.id);
+    })();
+    return () => { vivo = false; };
+  }, [fuente, sondear]);
 
   const arrancar = useCallback(async (fuente, parametros) => {
     setFase('arrancando');
@@ -147,7 +171,7 @@ export function TablaDeLeads({ leads }) {
 // ── Google Maps ─────────────────────────────────────────────────────────────
 
 function FormularioMaps({ nicho, onLeads }) {
-  const t = useTrabajo();
+  const t = useTrabajo('maps');
   const [tipoDeNegocio, setTipoDeNegocio] = useState(nicho);
   const [localizacion, setLocalizacion] = useState('');
   const [maximo, setMaximo] = useState(MINIMO_LEADS_MAPS);
@@ -215,7 +239,7 @@ function FormularioMaps({ nicho, onLeads }) {
 // ── LinkedIn ────────────────────────────────────────────────────────────────
 
 function FormularioLinkedIn({ nicho, onLeads }) {
-  const t = useTrabajo();
+  const t = useTrabajo('linkedin');
   const [cargo, setCargo] = useState(nicho);
   const [pais, setPais] = useState('');
   const [region, setRegion] = useState('');
@@ -282,8 +306,8 @@ function FormularioFacebook({ onLeads }) {
      descubre quién anuncia, y recién el segundo paso saca sus datos de contacto. Cada uno se
      cobra por separado, así que el segundo se deshabilita hasta que el primero devolvió páginas
      — arrancarlo en vacío gastaría una corrida para procesar cero. */
-  const anuncios = useTrabajo();
-  const paginas = useTrabajo();
+  const anuncios = useTrabajo('facebook-ads');
+  const paginas = useTrabajo('facebook-pages');
   const [url, setUrl] = useState('');
 
   const vigentes = paginas.leads.length > 0 ? paginas.leads : anuncios.leads;

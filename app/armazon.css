@@ -247,3 +247,44 @@
   background: var(--line);
   margin: 4px 0;
 }
+
+/* ── «Hay un scraping corriendo» ────────────────────────────────────────────
+   Un punto que late en la fila de Tools del menú. Existe porque un scraping tarda minutos y lo
+   normal es irse a Setter o a Closer mientras corre: sin esto, la única forma de saber si
+   terminó era volver a la pestaña y esperar.
+
+   Va acá y no en `aios.css`: esa hoja es el prototipo íntegro y la regla del proyecto es no
+   editarla. Y con animación de opacidad y escala, sin `box-shadow` — este diseño apaga las
+   sombras con un barrido universal y una escrita en esta capa se le escaparía. */
+.nav-item .nav-scrapeando {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: nav-scrapeando-late 1.3s ease-in-out infinite;
+}
+/* Si la fila ya lleva galón, el punto no le roba el `margin-left: auto`. */
+.nav-item .nav-scrapeando + .chev {
+  margin-left: 7px;
+}
+@keyframes nav-scrapeando-late {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Quien pidió menos movimiento ve el punto fijo, no parpadeando. El dato es el punto; el latido
+   es sólo para que se note. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item .nav-scrapeando {
+    animation: none;
+    opacity: 1;
+  }
+}
