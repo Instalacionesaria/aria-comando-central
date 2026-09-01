@@ -161,7 +161,18 @@ async function filaDe(org: string, ghlId: string) {
   return conOrganizacion(org, async () =>
     datos()
       .selectFrom('contactos')
-      .select(['nombre', 'territorio', 'etapa', 'score', 'etiquetas', 'telefono', 'email', 'fuente'])
+      .select([
+        'nombre',
+        'territorio',
+        'etapa',
+        'score',
+        'etiquetas',
+        'telefono',
+        'email',
+        'fuente',
+        // El asignado del CRM: lo que la conciliación NO tiene que tocar al congelar.
+        'crm_asignado_a',
+      ])
       .where('ghl_contact_id', '=', ghlId)
       .executeTakeFirst(),
   );
@@ -404,6 +415,197 @@ test('un contacto sin nombre se saltea CON MOTIVO y no entra como «Sin nombre»
   // cuyo nombre no es el nombre de nadie, y la lista del closer la mostraría como un dato.
   assert.equal(await filaDe(esc.org, mudo), undefined);
   assert.equal((await filaDe(esc.org, bueno))?.nombre, 'Sincro Con Nombre');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LA CONCILIACIÓN: LO QUE **YA NO** VINO
+//
+// La búsqueda es por etiqueta, así que un contacto que PIERDE las dos zonas deja de aparecer en
+// cualquier respuesta y nadie vuelve a leerlo. Su fila se quedaba con el territorio viejo para
+// siempre, y el estado «congelado» que el módulo describe no se alcanzaba nunca.
+//
+// Medido en producción el 2026-09-01: 157 contactos con `territorio = 'closer'` en nuestra base
+// contra 152 con la etiqueta en GoHighLevel. Cinco leads en el Pipeline de un closer que el CRM ya
+// había sacado de su zona.
+//
+// Lo que se afirma acá son las DOS mitades, y la segunda importa más:
+//
+//   · que congele cuando corresponde, sin una llamada más;
+//   · que **NO congele** cuando la traída no fue completa. Sin esas guardas, esta función deja a la
+//     empresa entera sin territorios y sin un solo error: la lista de trabajo de todos, vacía.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('el que PIERDE las dos etiquetas queda congelado en la sincronización, sin llamadas de más', async () => {
+  /* El caso de producción, montado: un contacto que estaba en el territorio del closer y que la
+     búsqueda ya no devuelve. Antes se quedaba con `territorio = 'closer'` para siempre. */
+  /* La base limpia ANTES de sembrar: la resta mira TODA la organización, así que los contactos
+     que dejaron las pruebas de arriba también se congelan —correctamente— y la cuenta exacta
+     dejaría de medir lo que dice. */
+  await limpiar(esc);
+  const salido = await unContacto(esc, { nombre: 'Sincro Salido', territorio: 'closer' });
+  const sigue = idDeGhl();
+
+  preparar(porEtiqueta({
+    zona_closer: [{ id: sigue, contactName: 'Sincro Sigue', tags: ['zona_closer'] }],
+    zona_setter: [],
+  }));
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+  if (r.tipo !== 'listo') return;
+
+  assert.equal(r.resumen.congelados, 1, 'el que perdió las etiquetas no se congeló');
+
+  const fila = await filaDe(esc.org, salido.ghlId);
+  assert.ok(fila, 'el contacto congelado desapareció de la base');
+  assert.equal(fila.territorio, null, 'sigue con el territorio viejo');
+
+  // Y el que SÍ vino no se tocó. Sin esta mitad, un `not in` mal escrito congelaría a todos y la
+  // afirmación de arriba pasaría igual.
+  assert.equal((await filaDe(esc.org, sigue))?.territorio, 'closer');
+
+  /* ── CERO LLAMADAS MÁS, QUE ERA LA CONDICIÓN ────────────────────────────
+   *
+   * Se pidió así: *«no haciendo más llamadas sino aprovechando las que ya hacemos»*. La
+   * conciliación es un `update` sobre nuestra base y no toca GoHighLevel, así que el costo tiene
+   * que ser exactamente el de las dos búsquedas: una página por etiqueta.
+   *
+   * Se cuentan las peticiones REALES al proveedor, no el contador del resumen: el contador es lo
+   * que este archivo también podría equivocarse. */
+  const aGhl = llamadasAGhl().filter((p) => p.url.startsWith(`${GHL}/contacts/search`));
+  assert.equal(aGhl.length, 2, 'la conciliación agregó llamadas a GoHighLevel');
+});
+
+test('con la traída TRUNCADA no se congela nada, y se dice que no se pudo', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     LA GUARDA QUE EVITA EL DESASTRE
+
+     La conciliación afirma *«todo lo que no vino, ya no está»*, y eso es cierto SOLO si la traída
+     fue completa. Con la lista cortada por el tope de páginas, los que no entraron se ven
+     exactamente igual que los que perdieron la etiqueta — y congelarlos deja a la empresa sin
+     territorios, sin un solo error en ninguna parte.
+
+     Se devuelve `null` y no `0`: un cero afirmaría que se miró y no había ninguno.
+     ══════════════════════════════════════════════════════════════════════════ */
+  /* La base limpia ANTES de sembrar: la resta mira TODA la organización, así que los contactos
+     que dejaron las pruebas de arriba también se congelan —correctamente— y la cuenta exacta
+     dejaría de medir lo que dice. */
+  await limpiar(esc);
+  const salido = await unContacto(esc, { nombre: 'Sincro No Congelar', territorio: 'closer' });
+  const unico = idDeGhl();
+  const cien = Array.from({ length: 100 }, () => ({
+    id: unico,
+    contactName: 'Sincro Lleno',
+    tags: ['zona_closer'],
+  }));
+  preparar((p) => {
+    if (p.url.startsWith(`${GHL}/contacts/search`)) {
+      return pagina(etiquetaPedida(p) === 'zona_closer' ? cien : []);
+    }
+    return { estado: 200, cuerpo: { tags: [] } };
+  });
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+  if (r.tipo !== 'listo') return;
+
+  assert.equal(r.resumen.truncado, true);
+  assert.equal(r.resumen.congelados, null, 'se concilió sobre una lista incompleta');
+  assert.equal(
+    (await filaDe(esc.org, salido.ghlId))?.territorio,
+    'closer',
+    'una traída truncada congeló un contacto que sí puede tener la etiqueta',
+  );
+});
+
+test('sin NINGÚN contacto no se congela nada: el conjunto vacío no significa «no hay»', async () => {
+  /* La otra guarda, y el peor caso de los dos. `vistos` vacío no significa «esta empresa no tiene
+     contactos»: es también lo que devuelve una etiqueta mal escrita, un token recién rotado o una
+     subcuenta que todavía no cargó nada. Restar contra el conjunto vacío congela TODO.
+
+     Es el mismo cero indistinguible que este archivo persigue en otras cuatro formas, con la
+     diferencia de que acá el cero no se muestra: se ejecuta. */
+  /* La base limpia ANTES de sembrar: la resta mira TODA la organización, así que los contactos
+     que dejaron las pruebas de arriba también se congelan —correctamente— y la cuenta exacta
+     dejaría de medir lo que dice. */
+  await limpiar(esc);
+  const salido = await unContacto(esc, { nombre: 'Sincro Vacio', territorio: 'closer' });
+  preparar(porEtiqueta({ zona_closer: [], zona_setter: [] }));
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+  if (r.tipo !== 'listo') return;
+
+  assert.equal(r.resumen.congelados, null, 'se concilió contra un conjunto vacío');
+  assert.equal(
+    (await filaDe(esc.org, salido.ghlId))?.territorio,
+    'closer',
+    'una respuesta vacía congeló la cartera entera',
+  );
+});
+
+test('congelar toca SOLO el territorio, y la segunda corrida no vuelve a contarlos', async () => {
+  /* Dos afirmaciones que se rompen distinto:
+
+     · Las etiquetas y el asignado del CRM se conservan. Las etiquetas son la última foto real que
+       tuvimos y son lo único con que se contesta «por qué éste cayó acá»; borrarlas al congelar
+       dejaría la pregunta sin respuesta posible.
+     · Sin el `where territorio is not null`, cada corrida reescribiría las filas ya congeladas: el
+       mismo resultado en la base, y un contador que dice «congelé uno» todas las veces. La pantalla
+       avisaría de una salida que ocurrió hace semanas. */
+  /* La base limpia ANTES de sembrar: la resta mira TODA la organización, así que los contactos
+     que dejaron las pruebas de arriba también se congelan —correctamente— y la cuenta exacta
+     dejaría de medir lo que dice. */
+  await limpiar(esc);
+  const salido = await unContacto(esc, {
+    nombre: 'Sincro Solo Territorio',
+    territorio: 'closer',
+    etiquetas: ['zona_closer', 'cliente'],
+    crmAsignadoA: 'usuarioDelCrmQueSeQueda',
+  });
+  const sigue = idDeGhl();
+  preparar(porEtiqueta({
+    zona_closer: [{ id: sigue, contactName: 'Sincro Otro', tags: ['zona_closer'] }],
+    zona_setter: [],
+  }));
+
+  const primera = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(primera.tipo, 'listo');
+  if (primera.tipo !== 'listo') return;
+  assert.equal(primera.resumen.congelados, 1);
+
+  const fila = await filaDe(esc.org, salido.ghlId);
+  assert.equal(fila?.territorio, null);
+  assert.deepEqual([...(fila?.etiquetas ?? [])].sort(), ['cliente', 'zona_closer']);
+  assert.equal(fila?.crm_asignado_a, 'usuarioDelCrmQueSeQueda');
+
+  const segunda = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(segunda.tipo, 'listo');
+  if (segunda.tipo !== 'listo') return;
+  assert.equal(segunda.resumen.congelados, 0, 'la segunda corrida volvió a contar al mismo');
+});
+
+test('el que vuelve a ganar la etiqueta se DESCONGELA solo', async () => {
+  /* La otra mitad de «congelar y no borrar»: el módulo afirma que *«se descongela solo si una
+     etiqueta de territorio reaparece»*, y eso no necesita código nuevo — la búsqueda lo devuelve y
+     `guardar` le repone el territorio. Se comprueba igual, porque es la afirmación que hace que
+     congelar sea reversible y no una pérdida. */
+  /* La base limpia ANTES de sembrar: la resta mira TODA la organización, así que los contactos
+     que dejaron las pruebas de arriba también se congelan —correctamente— y la cuenta exacta
+     dejaría de medir lo que dice. */
+  await limpiar(esc);
+  const vuelve = await unContacto(esc, { nombre: 'Sincro Vuelve', territorio: null });
+  preparar(porEtiqueta({
+    zona_closer: [{ id: vuelve.ghlId, contactName: 'Sincro Vuelve', tags: ['zona_closer'] }],
+    zona_setter: [],
+  }));
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+  if (r.tipo !== 'listo') return;
+
+  assert.equal((await filaDe(esc.org, vuelve.ghlId))?.territorio, 'closer');
+  assert.equal(r.resumen.congelados, 0);
 });
 
 test('el tope de páginas se INFORMA en vez de devolver lo traído como si fuera todo', async () => {

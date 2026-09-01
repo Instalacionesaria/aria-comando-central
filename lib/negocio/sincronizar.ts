@@ -24,8 +24,37 @@
 // La consecuencia es visible y es correcta: la fila no muestra microtexto de actividad. Poner
 // `dateAdded` ahí sería más fácil y diría "respondió hace 3 días" de alguien que nunca escribió.
 //
-// Lo mismo con `etapa` (GHL no expone un campo de etapa: la mueve un workflow), `score` (nada
-// lo calcula) y `responsable_id` (las etiquetas dicen territorio, no asignación).
+// Lo mismo con `etapa` (GHL no expone un campo de etapa: la mueve un workflow) y `score` (nada lo
+// calcula). Lo de `responsable_id` **dejó de ser cierto** y su lugar lo ocupa `crm_asignado_a`,
+// que se explica abajo, en el `on conflict`.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRAER NO ALCANZA: HAY QUE MIRAR LO QUE **YA NO** VINO
+//
+// La búsqueda es POR ETIQUETA. Un contacto que gana `zona_closer` aparece en la respuesta y se
+// escribe; uno que pasa de setter a closer aparece en la otra etiqueta y se mueve. Los dos casos
+// funcionaban.
+//
+// El que no: **el contacto que pierde las dos etiquetas**. Deja de aparecer en cualquier búsqueda,
+// así que nadie vuelve a leerlo y su fila se queda con el territorio viejo **para siempre**. El
+// estado «congelado» que este archivo describe —*«sigue visible y atenuado, no se borra, no entra
+// a las colas»*— existía para exactamente eso y **no se alcanzaba nunca**, porque para congelarlo
+// había que volver a mirarlo.
+//
+// Medido en producción el 2026-09-01: nuestra base tenía **157** contactos con `territorio =
+// 'closer'` y GoHighLevel devolvía **152** con la etiqueta. Los cinco de más existen en el CRM y ya
+// no la tienen. Cinco leads en el Pipeline de un closer que el CRM ya sacó de su zona.
+//
+// ── LA CORRECCIÓN NO CUESTA NI UNA LLAMADA MÁS ─────────────────────────────
+//
+// Y ésa era la condición: *«no haciendo más llamadas sino aprovechando las que ya hacemos»*.
+//
+// El bucle de abajo ya construye `vistos` —el conjunto de identificadores que HOY tienen alguna
+// etiqueta de zona— porque lo necesita para que el closer gane sobre el setter. Ese conjunto es,
+// sin pedir nada más, **la lista completa de quién sigue estando**. Lo que falta es la resta: todo
+// lo que tenemos con territorio y no está ahí, lo perdió.
+//
+// Es una sentencia `update` sobre nuestra propia base. Cero peticiones a GoHighLevel.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -65,6 +94,19 @@ export interface Resumen {
   salteados: { id: string; porque: string }[];
   /** `true` si se llegó al tope de páginas sin agotar una etiqueta. Ver `TOPE_DE_PAGINAS`. */
   truncado: boolean;
+  /**
+   * Cuántos contactos se CONGELARON: tenían territorio y ya no traen ninguna etiqueta de zona.
+   *
+   * Se informa como los salteados y por el mismo motivo: un contacto que sale de las colas en
+   * silencio es indistinguible de uno que nunca estuvo. El closer ve bajar su cartera y no tiene
+   * dónde mirar por qué.
+   *
+   * `null` = **no se pudo conciliar**, que no es lo mismo que cero. Pasa cuando la traída quedó
+   * truncada o cuando no vino ningún contacto: en los dos casos `vistos` está incompleto, y una
+   * resta contra un conjunto incompleto congelaría contactos que sí tienen la etiqueta. Ver
+   * `congelarLosQueYaNoEstan`.
+   */
+  congelados: number | null;
   /**
    * Cuántas llamadas a GoHighLevel costó esta corrida.
    *
@@ -108,6 +150,7 @@ export async function sincronizarContactos(acceso: {
     guardados: { closer: 0, setter: 0 },
     salteados: [],
     truncado: false,
+    congelados: null,
     llamadas: 0,
     etiquetasDeLaCuenta: null,
   };
@@ -134,6 +177,17 @@ export async function sincronizarContactos(acceso: {
     }
   }
 
+  /* ── LA RESTA, QUE ES LA MITAD QUE FALTABA ────────────────────────────────
+   *
+   * `vistos` ya está armado y no costó nada: es el mismo conjunto que hizo que el closer ganara
+   * sobre el setter. Acá se usa para lo otro que sabe decir — quién sigue estando— y de ahí sale
+   * quién no.
+   *
+   * Va DESPUÉS del bucle entero y no dentro de cada etiqueta: un contacto que perdió `zona_setter`
+   * pero tiene `zona_closer` aparece en la segunda vuelta, y congelarlo al terminar la primera lo
+   * sacaría de las colas hasta la sincronización siguiente. */
+  resumen.congelados = await congelarLosQueYaNoEstan(vistos, resumen.truncado);
+
   // Si no vino NI UN contacto, la pregunta siguiente siempre es la misma: ¿estarán mal los
   // nombres de las etiquetas? Se contesta antes de que alguien la haga.
   //
@@ -145,6 +199,67 @@ export async function sincronizarContactos(acceso: {
   }
 
   return { tipo: 'listo', resumen };
+}
+
+/**
+ * Congela los contactos que YA NO traen ninguna etiqueta de zona. **Cero llamadas al CRM.**
+ *
+ * @param vistos  Los identificadores de GoHighLevel que la búsqueda devolvió en esta corrida.
+ * @param truncado `true` si alguna etiqueta se cortó por el tope de páginas.
+ * @returns Cuántos se congelaron, o `null` si no se pudo conciliar.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * LAS DOS GUARDAS, Y SIN ELLAS ESTO BORRA EL TRABAJO DE TODOS
+ *
+ * Esta función afirma algo muy fuerte: *«todo lo que no vino, ya no está»*. Es cierto **solo si la
+ * traída fue completa**, y hay dos formas de que no lo sea. En las dos, correr la resta igual
+ * dejaría a la empresa entera sin territorios — la lista de trabajo de todos, vacía, sin un solo
+ * error en ninguna parte.
+ *
+ *   1 · **Truncado.** `todosLosContactosPorEtiqueta` corta a las 100 páginas y lo informa. Con la
+ *       lista cortada, los que no entraron se ven exactamente igual que los que perdieron la
+ *       etiqueta.
+ *   2 · **Ningún contacto.** `vistos` vacío no significa «la empresa no tiene contactos»: también
+ *       es lo que devuelve una etiqueta mal escrita o una subcuenta recién conectada. Restar
+ *       contra el conjunto vacío congela TODO.
+ *
+ * En los dos casos se devuelve `null` —«no se pudo conciliar»— y no `0`. Un cero afirmaría que se
+ * miró y no había ninguno que congelar, que es la clase de cero que este proyecto persigue en
+ * todas partes.
+ *
+ * ── POR QUÉ CONGELAR Y NO BORRAR ──────────────────────────────────────────
+ *
+ * Lo dice el `01` § 2 y este archivo lo repite: el congelado *«sigue visible y atenuado, sigue
+ * siendo movible, no se borra»*. Un contacto que sale de una zona no deja de haber existido —
+ * tiene mensajes, resultados, quizá una comisión— y borrarlo se llevaría todo eso. Y se descongela
+ * solo: si la etiqueta reaparece, la búsqueda lo devuelve y `guardar` le repone el territorio.
+ *
+ * ── LO QUE NO SE TOCA ─────────────────────────────────────────────────────
+ *
+ * Solo `territorio`. Ni las etiquetas —que son la última foto real que tuvimos y sirven para
+ * diagnosticar por qué cayó donde cayó— ni `crm_asignado_a`, ni nada nuestro. Congelar es un
+ * hecho sobre la ZONA, no sobre el contacto.
+ *
+ * Y no lleva `org_id`: la política de fila lo pone con lo que `conOrganizacion(` dejó en la
+ * transacción. Este archivo no lo nombra ni una vez, que es la propiedad que se busca.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export async function congelarLosQueYaNoEstan(
+  vistos: ReadonlySet<string>,
+  truncado: boolean,
+): Promise<number | null> {
+  if (truncado || vistos.size === 0) return null;
+
+  const r = await datos()
+    .updateTable('contactos')
+    .set({ territorio: null } as never)
+    // Solo los que HOY tienen territorio. Sin esto, cada corrida reescribiría las filas ya
+    // congeladas: el mismo resultado, y un contador que dice que congeló doscientos cada vez.
+    .where('territorio', 'is not', null)
+    .where('ghl_contact_id', 'not in', [...vistos])
+    .executeTakeFirst();
+
+  return Number(r?.numUpdatedRows ?? 0);
 }
 
 /**

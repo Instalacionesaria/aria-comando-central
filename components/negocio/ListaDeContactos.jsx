@@ -167,13 +167,24 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
     const guardados = (d.guardados?.closer ?? 0) + (d.guardados?.setter ?? 0);
     const corta = Boolean(d.salteados?.length || d.truncado);
 
+    /* LOS QUE SALIERON se dicen, y no son un detalle técnico: son contactos que estaban en esta
+       lista y ya no van a estar. Sin la frase, la cartera baja de 157 a 152 entre dos clics y no
+       hay nada que mirar — que es exactamente cómo se ve un defecto.
+
+       `congelados` es `null` cuando no se pudo conciliar (traída truncada, o ninguna respuesta), y
+       ahí no se dice nada: afirmar «salieron 0» sería afirmar que se miró. */
+    const salieron = typeof d.congelados === 'number' && d.congelados > 0 ? d.congelados : 0;
+    const yQueSalieron = salieron
+      ? ` ${salieron} salió(eron) de su zona en el CRM y quedaron atenuados.`
+      : '';
+
     let texto;
     if (guardados === 0) {
       texto = 'No entró ningún contacto. Revisá la conexión en Ajustes.';
     } else if (corta) {
       texto = `${guardados} contacto(s). Puede faltar gente: volvé a traer en un rato.`;
     } else {
-      texto = `${guardados} contacto(s) al día.`;
+      texto = `${guardados} contacto(s) al día.${yQueSalieron}`;
     }
 
     setResultado({ mal: guardados === 0 || corta, texto });
