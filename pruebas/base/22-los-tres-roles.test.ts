@@ -1,4 +1,4 @@
-// Los cuatro roles, y lo que cada uno puede. Tipo: Base.
+// Los tres roles, y lo que cada uno puede. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ SE PIDIÓ, Y CUÁL DE ESAS COSAS NO ERA CIERTA
@@ -28,7 +28,12 @@ import assert from 'node:assert/strict';
 import type { Client } from 'pg';
 import { conectar, cerrarTodo } from '../apoyo/conexiones.ts';
 import { CAPACIDADES } from '../../lib/autorizacion/capacidades.ts';
-import { seccionesVisibles, menuVisible, type Alcance } from '../../lib/autorizacion/secciones.ts';
+import {
+  seccionesVisibles,
+  seccionesConAlcance,
+  menuVisible,
+  type Alcance,
+} from '../../lib/autorizacion/secciones.ts';
 
 /* Esta prueba mide qué habilita cada ROL, así que el alcance por persona no interviene. Se pasa con
    nombre en vez de un objeto suelto: deja escrito que la medición es del rol y que el alcance es otra
@@ -143,8 +148,28 @@ test('la diferencia entre `usuario` y `administrador` es EXACTAMENTE las credenc
     'la diferencia entre administrador y usuario dejó de ser exactamente las credenciales',
   );
 
+  /* ── Y LA ASIMETRÍA AL REVÉS, QUE ERA VACÍA Y AHORA TIENE UNA COSA ───────
+   *
+   * Esto afirmaba `[]`: el usuario era un subconjunto del administrador. Dejó de serlo al
+   * retirarse el rol `monitoreo`, y **es la decisión, no una regresión**.
+   *
+   * `monitoreo.ver` cae en `usuario` por derivación y se le niega a `administrador` a mano. Parece
+   * al revés y la razón es una sola bandera: `usuario` es el único rol con
+   * `secciones_restringidas`, así que ahí la capacidad **no alcanza** —hace falta además la fila de
+   * `identidad.usuarios_secciones`— y en `administrador`, que no restringe, la capacidad ES la
+   * puerta. Dársela ahí se la daría al administrador de ARIA que se dé de alta mañana, que es
+   * exactamente lo que se pidió evitar.
+   *
+   * El conjunto sigue CERRADO y no se afloja a «al menos éstas». Si mañana aparece una segunda
+   * capacidad que el usuario tiene y el administrador no, esto se pone rojo — y eso es lo que se
+   * quiere: la excepción se decidió una vez, con su motivo escrito, y la siguiente también tiene
+   * que decidirse. Un `filter` que la deje pasar convertiría esta prueba en decorado. */
   const soloDelUsuario = [...usuario].filter((c) => !admin.has(c)).sort();
-  assert.deepEqual(soloDelUsuario, [], 'el usuario tiene algo que el administrador no');
+  assert.deepEqual(
+    soloDelUsuario,
+    ['monitoreo.ver'],
+    'el usuario tiene algo que el administrador no, y no es `monitoreo.ver`',
+  );
 });
 
 test('el `usuario` tampoco administra personas, ni empresas, ni roles', async () => {
@@ -196,51 +221,86 @@ test('el catálogo tiene EXACTAMENTE los roles de sistema que reparte', async ()
   // que se retiró a medias, o uno nuevo que alguien agrega sin repartirle nada, queda asignable
   // y no da ninguna pantalla.
   //
-  // ── ERAN TRES Y SON CUATRO, Y EL CUARTO NO ES UN PUESTO ──────────────────
+  // ── FUERON CUATRO POR UN RATO, Y VOLVIERON A SER TRES ────────────────────
   //
-  // Los tres primeros describen QUÉ HACE alguien —administra la plataforma, administra su
-  // empresa, opera— y por eso sus capacidades se DERIVAN («todas», «todas menos N familias»).
+  // Los tres describen QUÉ HACE alguien —administra la plataforma, administra su empresa, opera—
+  // y por eso sus capacidades se DERIVAN («todas», «todas menos N familias»).
   //
-  // `monitoreo` no es eso: es UNA pantalla que se le concede a personas concretas, con su
-  // capacidad enumerada a mano. Existe porque el pedido era *"solo nosotros 3"* y ningún rol de
-  // puesto puede expresarlo — `administrador` es el mismo rol en ARIA y en cada empresa cliente,
-  // y el mismo para todos los administradores de ARIA. Es la salida que la migración 003 escribe
-  // como regla: *"si hace falta que alguien tenga CASI un rol, la respuesta es un rol nuevo"*.
+  // El cuarto era `monitoreo`, y no era un puesto: era UNA pantalla concedida a tres personas,
+  // con su capacidad enumerada a mano. Se retiró —*«lo que debe ser es el rol de usuario con
+  // acceso a monitoreo»*— porque «tres personas concretas» se dice mejor con tres filas de
+  // `identidad.usuarios_secciones` que con un rol, y así se dice **en la pantalla de Usuarios**
+  // en vez de en el catálogo. El retiro está en `db/arranque/003_retiro_de_roles.sql`.
   //
-  // Si aparece un quinto, la pregunta a hacerse es la misma: ¿es un puesto, o es una pantalla
-  // que se concede? Si es lo segundo, que llegue con su enumeración y su prueba.
+  // Si aparece un cuarto otra vez, la pregunta es la misma: ¿es un puesto, o es una pantalla que
+  // se concede? Si es lo segundo, ya hay un eje para eso y no hace falta un rol.
   const r = await mig.query<{ clave: string }>(
     'select clave from identidad.roles where org_id is null and es_sistema order by clave',
   );
-  assert.deepEqual(
-    r.rows.map((f) => f.clave),
-    ['administrador', 'monitoreo', 'superadministrador', 'usuario'],
-  );
+  assert.deepEqual(r.rows.map((f) => f.clave), ['administrador', 'superadministrador', 'usuario']);
 });
 
-test('el rol `monitoreo` da UNA capacidad, y no es de plataforma', async () => {
-  // Las dos mitades de por qué este rol es seguro de repartir.
-  //
-  // (1) UNA capacidad. Un rol que se le da a tres personas «para que vean un panel» no puede
-  //     traer nada más de arrastre; por eso su reparto está enumerado y no derivado.
-  assert.deepEqual(await capacidadesDe('monitoreo'), ['monitoreo.ver']);
+test('el Panel de Monitoreo lo da `usuario` + la pestaña, y NUNCA `administrador`', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     LAS DOS MITADES DEL PERMISO, Y LA ASIMETRÍA QUE PARECE UN ERROR
 
-  // (2) `solo_principal` en FALSO, que es lo contraintuitivo. Ponerla en `true` daría una
-  //     garantía que el panel quiere —el disparador de la base obliga a que quien tenga el rol
-  //     viva en la organización principal— y sería una ESCALADA: `resolverSesion` calcula
-  //     `esRolDePlataforma` con `bool_or(solo_principal)`, y ese booleano es lo único que decide
-  //     si se respeta `sesiones.org_activa`. Las tres personas podrían conmutar su sesión a
-  //     cualquier empresa cliente. La garantía se consigue por otro eje:
-  //     `Seccion.soloDesdeLaPrincipal`.
-  const r = await mig.query<{ solo_principal: boolean; secciones_restringidas: boolean }>(
-    `select solo_principal, secciones_restringidas from identidad.roles
-      where org_id is null and clave = 'monitoreo'`,
+     Al retirarse el rol `monitoreo`, su capacidad pasó a caer en `usuario` por derivación de
+     prefijos. Eso deja a `usuario` con una capacidad que `administrador` NO tiene, que es al
+     revés de lo que dice el resto de este archivo — y es la decisión, no un descuido.
+
+     Lo que la hace segura es UNA bandera: `usuario` es el único rol con
+     `secciones_restringidas`, así que ahí la capacidad **no alcanza** y hace falta además la
+     fila de alcance. `administrador` no restringe, así que ahí la capacidad ES la puerta: se le
+     abriría al administrador de ARIA que se dé de alta mañana, sin que nadie lo decida.
+
+     Las tres afirmaciones se hacen juntas porque ninguna se puede leer sin las otras dos:
+     quitar la bandera abre el panel a todos, quitar la capacidad deja una pestaña que nadie
+     puede conceder, y agregarla al administrador es el defecto que se pidió evitar.
+     ══════════════════════════════════════════════════════════════════════════ */
+  const delUsuario = new Set(await capacidadesDe('usuario'));
+  const delAdmin = new Set(await capacidadesDe('administrador'));
+
+  assert.ok(
+    delUsuario.has('monitoreo.ver'),
+    'el rol `usuario` no tiene `monitoreo.ver`: nadie puede conceder la pestaña del panel',
   );
-  assert.equal(r.rows[0]?.solo_principal, false, 'el rol `monitoreo` se volvió de plataforma');
-  // `secciones_restringidas` en falso: el alcance se combina con `bool_and`, así que en `true`
-  // no restringiría a nadie que además sea administrador, y sí dejaría sin ninguna pestaña a
-  // quien tuviera solo este rol.
-  assert.equal(r.rows[0]?.secciones_restringidas, false);
+  assert.equal(
+    delAdmin.has('monitoreo.ver'),
+    false,
+    'el administrador tiene `monitoreo.ver`, y su rol NO restringe por sección: todo ' +
+      'administrador de la principal ve el consumo de todas las empresas sin que nadie lo decida',
+  );
+
+  const r = await mig.query<{ secciones_restringidas: boolean }>(
+    `select secciones_restringidas from identidad.roles
+      where org_id is null and clave = 'usuario'`,
+  );
+  assert.equal(
+    r.rows[0]?.secciones_restringidas,
+    true,
+    'el rol `usuario` dejó de restringirse por sección, y tiene `monitoreo.ver`: la capacidad ' +
+      'pasó a ser la puerta',
+  );
+
+  /* Y la mitad que se ve: con la capacidad y SIN la pestaña concedida, cero pantallas. Es el
+     mismo camino que recorre la sesión, así que esto mide el sistema y no una lista al lado. */
+  const conLaPestana = seccionesConAlcance(
+    delUsuario,
+    { restringido: true, concedidas: new Set(['monitoreo']) },
+    DESDE_LA_PRINCIPAL,
+  ).map((s) => s.clave);
+  assert.deepEqual(conLaPestana, ['monitoreo']);
+
+  const sinLaPestana = seccionesConAlcance(
+    delUsuario,
+    { restringido: true, concedidas: new Set(['closer']) },
+    DESDE_LA_PRINCIPAL,
+  ).map((s) => s.clave);
+  assert.equal(
+    sinLaPestana.includes('monitoreo'),
+    false,
+    'la capacidad sola muestra el panel: la fila de alcance dejó de ser necesaria',
+  );
 });
 
 test('el superadministrador tiene TODAS, sin atajo en el portero', async () => {

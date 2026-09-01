@@ -40,6 +40,9 @@ const DOMINIO = 'ejemplo.test';
 
 let admin: Client;
 let alfa: string;
+/* La principal, y hace falta porque hay una sección que solo existe ahí. Sin las DOS empresas, la
+   comprobación del alcance se mediría en un solo lado y aceptaría lo que rechaza. */
+let principal: string;
 
 before(async () => {
   process.env.DOMINIO_ESPERADO = DOMINIO;
@@ -47,6 +50,15 @@ before(async () => {
   const a = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug='alfa'`);
   assert.ok(a);
   alfa = a.id;
+  /* Se busca por la BANDERA y no por el slug `principal`: la bandera es lo que decide
+     `soloDesdeLaPrincipal`, y `identidad.organizaciones_una_principal` garantiza que haya una sola.
+     Buscándola por nombre, renombrar el sembrado dejaría esta prueba midiendo otra cosa. */
+  const p = await unaFila<{ id: string }>(
+    admin,
+    `select id from identidad.organizaciones where es_principal`,
+  );
+  assert.ok(p, 'no hay organización principal en el sembrado');
+  principal = p.id;
   await limpiar();
 });
 
@@ -444,6 +456,95 @@ test('el alta con una sección que el ROL no alcanza se RECHAZA', async () => {
   assert.equal(r.status, 400, await r.clone().text());
   const cuerpo = (await r.json()) as { detalle?: string };
   assert.match(cuerpo.detalle ?? '', /no ver[íi]a|ninguna/i);
+});
+
+test('el alta con SOLO el Panel de Monitoreo: se acepta en ARIA y se RECHAZA en un cliente', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     EL AGUJERO QUE ABRIÓ EL RETIRO DEL ROL `monitoreo`, Y QUE ANTES NO PODÍA EXISTIR
+
+     `monitoreo` es la única sección con `soloDesdeLaPrincipal`: no existe para quien no vive en la
+     organización principal. Hasta el retiro de su rol, ningún rol que restringiera por sección
+     tenía su capacidad, así que nadie podía concederla como alcance y esto era inalcanzable.
+
+     Ahora `usuario` la tiene, y `{rol:'usuario', secciones:['monitoreo']}` para alguien de una
+     empresa cliente **pasa toda validación de lista** —la sección existe, el rol la alcanza— y
+     produce CERO pestañas. Es literalmente lo que `alcance_vacio` existe para impedir, por un eje
+     nuevo: la comprobación pasaba `true` fijo como «desde la principal».
+
+     Se afirman los DOS lados en la misma prueba a propósito. Solo con el rechazo, la corrección
+     más simple que la hace pasar es rechazar `monitoreo` siempre — y eso rompería el caso real,
+     que es el único motivo por el que el rol se retiró.
+     ══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  const token = await tokenDeQuienAdministra();
+
+  // 1 · En ARIA sí: es exactamente para lo que se hizo el cambio.
+  const enLaPrincipal = await crearUsuario(
+    conCuerpo('/api/admin/usuarios', token, {
+      nombre: MARCA,
+      email: `mon-si-${randomUUID().slice(0, 8)}@alfa.ejemplo`,
+      orgId: principal,
+      rol: 'usuario',
+      secciones: ['monitoreo'],
+    }),
+  );
+  assert.equal(enLaPrincipal.status, 201, await enLaPrincipal.clone().text());
+
+  /* Y que la fila se haya guardado, no solo que la respuesta diga 201. Sin esto, un `insert` que
+     no corre pasa igual — y el síntoma sería una persona con la casilla tildada y sin la pestaña. */
+  const guardadas = await filas<{ seccion: string }>(
+    admin,
+    `select us.seccion from identidad.usuarios_secciones us
+       join identidad.usuarios u on u.id = us.usuario_id
+      where u.nombre = $1 and u.org_id = $2`,
+    [MARCA, principal],
+  );
+  assert.deepEqual(
+    guardadas.map((f) => f.seccion),
+    ['monitoreo'],
+  );
+
+  // 2 · En una empresa cliente no: esa persona no vería NINGUNA pestaña.
+  const enUnCliente = await crearUsuario(
+    conCuerpo('/api/admin/usuarios', token, {
+      nombre: MARCA,
+      email: `mon-no-${randomUUID().slice(0, 8)}@alfa.ejemplo`,
+      orgId: alfa,
+      rol: 'usuario',
+      secciones: ['monitoreo'],
+    }),
+  );
+  assert.equal(enUnCliente.status, 400, await enUnCliente.clone().text());
+  const cuerpo = (await enUnCliente.json()) as { detalle?: string };
+  assert.match(cuerpo.detalle ?? '', /no ver[íi]a|ninguna/i);
+
+  /* ── Y LA OTRA PUERTA, QUE ES LA MISMA COMPROBACIÓN EN OTRO ARCHIVO ──────
+   *
+   * `POST /api/admin/usuarios/{id}/roles` tiene su propia copia de esta validación. Sin medirla,
+   * arreglar el alta y olvidarse del cambio de rol pasa en verde: alguien de una empresa cliente
+   * queda degradado a `usuario` con solo esta pestaña, y su menú queda vacío.
+   *
+   * Acá el dato sale del contexto —`usuarioObjetivo(` filtra por la organización efectiva— y la
+   * sesión está conmutada a `alfa`, así que la persona es de un cliente por construcción. */
+  const deUnCliente = await persona('administrador');
+  const degradar = await asignarRoles(
+    conCuerpo(`/api/admin/usuarios/${deUnCliente}/roles`, token, {
+      roles: ['usuario'],
+      secciones: ['monitoreo'],
+    }),
+    { params: Promise.resolve({ id: deUnCliente }) },
+  );
+  assert.equal(degradar.status, 400, await degradar.clone().text());
+  assert.equal(((await degradar.json()) as { motivo?: string }).motivo, 'alcance_vacio');
+
+  // Y el rol NO cambió: se rechaza antes de tocar nada, igual que sin secciones.
+  const roles = await filas<{ clave: string }>(
+    admin,
+    `select r.clave from identidad.usuarios_roles ur
+       join identidad.roles r on r.id = ur.rol_id where ur.usuario_id = $1`,
+    [deUnCliente],
+  );
+  assert.deepEqual(roles.map((x) => x.clave), ['administrador']);
 });
 
 test('PROMOVER a un rol sin restricción BORRA el alcance viejo', async () => {

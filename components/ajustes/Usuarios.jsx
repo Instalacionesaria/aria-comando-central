@@ -71,11 +71,25 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * `grupos` es el ALCANCE OFRECIBLE del rol, ya agrupado por el servidor. Lo que se ofrece es el
  * techo del rol: `usuario` no alcanza Ajustes, así que esa casilla no aparece. Ofrecerla sería un
  * control que se ve y no puede cumplir.
+ *
+ * ── Y EL SEGUNDO TECHO, QUE NO ES DEL ROL SINO DE LA EMPRESA ───────────────
+ *
+ * `desdeLaPrincipal` dice si la persona a la que se le concede el alcance vive en la organización
+ * principal. Las secciones con `soloDesdeLaPrincipal` —hoy solo el Panel de Monitoreo— no existen
+ * para nadie más, así que ofrecer su casilla es exactamente el mismo defecto que ofrecer Ajustes a
+ * quien no alcanza Ajustes — se tilda, se guarda, y no aparece ninguna pestaña.
+ *
+ * Antes no podía pasar y ahora sí: hasta el retiro del rol `monitoreo`, ningún rol que restringiera
+ * por sección tenía esa capacidad, así que la casilla no llegaba nunca a esta lista.
+ *
+ * Va sin valor por defecto A PROPÓSITO. Un llamador que se lo olvide manda `undefined`, que es
+ * falso, y la casilla no se ofrece: falla del lado de mostrar de menos. Con `= true` por defecto,
+ * olvidarse la ofrecería a todo el mundo y nada fallaría.
  */
-function CasillasDeSecciones({ id, grupos, elegidas, alCambiar }) {
+function CasillasDeSecciones({ id, grupos, elegidas, alCambiar, desdeLaPrincipal }) {
   return (
     <div className="aj-casillas" id={id}>
-      {(grupos ?? []).map((g) => (
+      {ofrecibles(grupos, desdeLaPrincipal).map((g) => (
         <div className="aj-grupo" key={g.grupo.clave}>
           {g.grupo.etiqueta ? <span className="aj-grupo-t">{g.grupo.etiqueta}</span> : null}
           {g.secciones.map((sec) => (
@@ -96,6 +110,25 @@ function CasillasDeSecciones({ id, grupos, elegidas, alCambiar }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Las casillas que de verdad se pueden ofrecer, ya sin los grupos que quedaron vacíos.
+ *
+ * Los grupos vacíos se descartan por lo mismo que `menuVisible` los descarta: un título de grupo
+ * con nada debajo le dice a quien mira que ahí hay algo que no puede ver.
+ *
+ * Es una función suelta y no un `filter` en el JSX porque la usan dos cosas —el dibujo y el efecto
+ * que poda la selección— y las dos tienen que estar de acuerdo. Con dos copias, una casilla podría
+ * dejar de dibujarse y seguir viajando en el cuerpo de la petición.
+ */
+function ofrecibles(grupos, desdeLaPrincipal) {
+  return (grupos ?? [])
+    .map((g) => ({
+      ...g,
+      secciones: g.secciones.filter((s) => desdeLaPrincipal || !s.soloDesdeLaPrincipal),
+    }))
+    .filter((g) => g.secciones.length > 0);
 }
 
 /** Agregar o quitar una clave de un `Set`, sin tocar el original. */
@@ -247,6 +280,43 @@ export default function Usuarios({ sesion }) {
      después, el componente lanza `Cannot access 'elRol' before initialization` al renderizar — y el
      síntoma es una pantalla en blanco, no un error de compilación. */
   const elRol = roles.find((r) => r.clave === rolNuevo) ?? null;
+
+  /* ── ¿LA EMPRESA DESTINO ES LA PRINCIPAL? ────────────────────────────────
+   *
+   * Se calcula con la MISMA fórmula que el servidor usa para `orgDestino`: la elegida si hay una,
+   * y la de la sesión si no (`app/api/admin/usuarios/route.ts`). Dos fórmulas distintas harían que
+   * la pantalla ofrezca una casilla que la petición rechaza, o al revés.
+   *
+   * Sale de datos que el servidor manda —`esPrincipal` de cada empresa y de la organización de la
+   * sesión— y no de comparar el nombre con `'ARIA'`, que es lo que `Contexto.organizacion` advierte:
+   * *el día que alguien renombre la organización, la pantalla cambia de comportamiento sin que
+   * nadie toque una línea*. */
+  const destinoEsPrincipal = orgNueva
+    ? Boolean(empresas.find((o) => o.id === orgNueva)?.esPrincipal)
+    : Boolean(sesion?.organizacion?.esPrincipal);
+
+  /* ── Y LA SELECCIÓN SE PODA CUANDO LA CASILLA DEJA DE OFRECERSE ──────────
+   *
+   * Sin esto queda un estado que no se puede ver: tildar «Panel de Monitoreo» con ARIA elegida y
+   * después cambiar a una empresa cliente esconde la casilla **y deja la clave en el conjunto**.
+   * Se manda una pestaña que la pantalla ya no muestra, y si era la única el servidor responde
+   * `alcance_vacio` señalando algo que nadie ve tildado.
+   *
+   * Solo hace falta en el alta: es el único formulario donde la empresa se elige. En la edición la
+   * persona ya pertenece a una y no se la mueve.
+   *
+   * El `setState` va dentro del `if`, y no es cosmético: llamarlo con un `Set` nuevo en cada
+   * render dispara el efecto otra vez y el ciclo no termina. */
+  useEffect(() => {
+    if (!elRol?.restringePorSeccion) return;
+    const vigentes = new Set(
+      ofrecibles(elRol.alcance, destinoEsPrincipal).flatMap((g) => g.secciones.map((x) => x.clave)),
+    );
+    setSeccionesNuevas((antes) => {
+      const podadas = [...antes].filter((c) => vigentes.has(c));
+      return podadas.length === antes.size ? antes : new Set(podadas);
+    });
+  }, [elRol, destinoEsPrincipal]);
 
   const crear = useCallback(async () => {
     setCreando(true);
@@ -763,6 +833,7 @@ export default function Usuarios({ sesion }) {
                   <CasillasDeSecciones
                     id="alta-secciones"
                     grupos={elRol.alcance}
+                    desdeLaPrincipal={destinoEsPrincipal}
                     elegidas={seccionesNuevas}
                     alCambiar={(clave, puesta) =>
                       setSeccionesNuevas((antes) => conmutar(antes, clave, puesta))
@@ -910,6 +981,10 @@ export default function Usuarios({ sesion }) {
                   <CasillasDeSecciones
                     id="ed-secciones"
                     grupos={elRolEditado.alcance}
+                    /* La empresa de QUIEN SE EDITA, que el listado ya trae. No la de la sesión:
+                       coinciden hoy —`usuarioObjetivo(` filtra por la organización efectiva— y
+                       usar la del que mira sería cierto por casualidad. */
+                    desdeLaPrincipal={Boolean(editando?.organizacion?.esPrincipal)}
                     elegidas={edSecciones}
                     alCambiar={(clave, puesta) =>
                       setEdSecciones((previas) => conmutar(previas, clave, puesta))

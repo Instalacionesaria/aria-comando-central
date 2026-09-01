@@ -157,6 +157,20 @@ export async function POST(peticion: Request): Promise<Response> {
     // mismo hecho: un identificador de empresa que no existe es «no lo encontré» (404), y lo que
     // subiría de la base es un `23503` que acaba en `rechazo_de_la_base` (409) nombrando una
     // tabla. `ADR-0501` pide 404, nunca 403 ni un error estructural.
+    /* ── SI LA EMPRESA DESTINO ES LA PRINCIPAL, Y PARA QUÉ SE USA ────────────
+     *
+     * Lo decide la comprobación del alcance de más abajo. `usuario` ahora alcanza la sección
+     * `monitoreo`, que es `soloDesdeLaPrincipal`, así que `{rol:'usuario', secciones:['monitoreo']}`
+     * para alguien de una empresa cliente pasa toda validación de lista y produce **cero
+     * pestañas** — la persona entra y el menú está vacío. Es el mismo defecto que `alcance_vacio`
+     * existe para impedir, por un eje que antes no podía ocurrir: hasta el retiro del rol
+     * `monitoreo`, ningún rol restringido tenía esa capacidad.
+     *
+     * Es de la empresa DESTINO y no de quien da de alta. Esa distinción es la que salva el motivo
+     * escrito abajo —*«el mismo alcance no puede aceptarse o rechazarse según quién esté dando de
+     * alta»*—: esto no depende de quién pide, sino de quién va a mirar. */
+    let destinoEsPrincipal = contexto.organizacion.esPrincipal;
+
     if (orgDestino !== contexto.orgEfectiva) {
       /* Y que TENGA FORMA de uuid, antes de preguntar.
        *
@@ -169,10 +183,13 @@ export async function POST(peticion: Request): Promise<Response> {
       if (!UUID_ORG.test(orgDestino)) return rechazo('no_encontrado');
       const existe = await db
         .selectFrom('organizaciones')
-        .select('id')
+        // `es_principal` viaja en la MISMA consulta que ya había: preguntarlo aparte sería una
+        // segunda ida a la base por un dato que esta fila ya trae.
+        .select(['id', 'es_principal'])
         .where('id', '=', orgDestino)
         .executeTakeFirst();
       if (!existe) return rechazo('no_encontrado');
+      destinoEsPrincipal = existe.es_principal;
     }
 
     // El rol pedido, si hay. Un rol inexistente es 400 y no 404 — el 404 es de la empresa y de la
@@ -230,16 +247,20 @@ export async function POST(peticion: Request): Promise<Response> {
             .execute()
         ).map((x) => x.permiso),
       );
-      /* El tercer argumento va en `true`, y no es un descuido: acá no se está decidiendo qué ve
-         NADIE, se está validando que el alcance pedido no deje al rol sin ninguna pestaña. La
-         regla de la organización principal es de otro eje —quién mira, desde dónde— y aplicarla
-         acá haría que el mismo alcance se acepte o se rechace según quién esté dando de alta.
-         Que una sección `soloDesdeLaPrincipal` no la vea el destinatario lo decide su sesión,
-         no este `check`. */
+      /* ── EL TERCER ARGUMENTO ERA `true` FIJO, Y ESO SE VOLVIÓ FALSO ────────
+       *
+       * Decía, con razón para entonces: *«acá no se está decidiendo qué ve NADIE… aplicar la regla
+       * de la organización principal haría que el mismo alcance se acepte o se rechace según quién
+       * esté dando de alta»*. Lo segundo sigue siendo cierto y por eso NO se usa la organización
+       * de quien pide: se usa la del DESTINATARIO, que es de quien habla la pregunta.
+       *
+       * Lo que cambió es que ya existe un alcance que un rol habilita y el destinatario no puede
+       * ver: `monitoreo` para alguien de una empresa cliente. Con `true` fijo, eso se aceptaba y
+       * dejaba a la persona con cero pestañas — que es literalmente lo que `alcance_vacio` mide. */
       const efectivas = seccionesConAlcance(
         capacidades,
         { restringido: true, concedidas: new Set(pedidas) },
-        true,
+        destinoEsPrincipal,
       );
       if (efectivas.length === 0) {
         return rechazo('peticion_invalida', MOTIVOS['alcance_vacio']);

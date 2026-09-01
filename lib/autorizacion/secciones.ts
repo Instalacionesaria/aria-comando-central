@@ -365,12 +365,20 @@ export const SECCIONES: readonly Seccion[] = [
     // de este sistema; acá lee las tablas del scraper que la migración `006_aria_cc_scraper.sql`
     // trajo a esta base, y el eje pasó de `cliente_id` a `org_id`.
     //
-    // **Es la primera sección con `soloDesdeLaPrincipal`.** Su capacidad no la da ningún rol de
-    // puesto: la tienen `superadministrador` y un rol propio, `monitoreo`, que se asigna persona
-    // por persona — se pidió que el panel lo vean tres personas de ARIA, y `administrador` es el
-    // mismo rol en cada empresa cliente. La bandera es la red debajo de eso: si alguien le
-    // asignara ese rol a una persona de una empresa cliente —un error de UNA fila— vería el
-    // consumo de sus competidores, y la pantalla se vería perfecta.
+    // **Es la única sección con `soloDesdeLaPrincipal`, y es la TERCERA mitad de su permiso.**
+    //
+    // Las otras dos son la capacidad `monitoreo.ver` —que `usuario` recibe por derivación— y la
+    // fila de alcance con esta pestaña, que hace falta porque `usuario` es el único rol que
+    // restringe por sección. Hasta el retiro del rol `monitoreo` la primera mitad era el rol; el
+    // pedido fue *«lo que debe ser es el rol de usuario con acceso a monitoreo»*.
+    //
+    // Esta bandera es la red debajo del error de UNA fila: conceder la pestaña por equivocación a
+    // una persona de una empresa cliente le mostraría el consumo de sus competidores, y la
+    // pantalla se vería perfecta. Con la bandera, no ve la pantalla.
+    //
+    // Y el formulario que concede pestañas la lee para NO OFRECER esta casilla cuando la empresa
+    // elegida no es la principal (`components/ajustes/Usuarios.jsx`): tildarla no haría nada, y
+    // ofrecer un control que no puede cumplir es el `07` § 4.
     //
     // NO va en `scripts/paridad.mjs`, por el mismo motivo que `tools`: esta pantalla no existe
     // en `aios-command-center_1.html`, así que compararla daría un rojo permanente — y un rojo

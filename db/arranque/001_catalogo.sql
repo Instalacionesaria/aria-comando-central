@@ -230,38 +230,37 @@ on conflict (clave) do nothing;
 
 insert into identidad.roles
     (clave, nombre, es_sistema, solo_principal, exige_segundo_factor, secciones_restringidas) values
-  ('usuario', 'Usuario', true, false, false, true),
+  ('usuario', 'Usuario', true, false, false, true)
 
-  -- ── EL ROL DEL PANEL DE MONITOREO, Y POR QUÉ ES UN ROL Y NO UNA CAPACIDAD MÁS ──
+  -- ── ERAN CUATRO Y SON TRES: EL ROL `monitoreo` SE RETIRÓ ──────────────────
   --
-  -- Se pidió que el Panel de Monitoreo lo vean TRES PERSONAS. No «los administradores»: tres
-  -- personas concretas de ARIA.
+  -- Acá vivía un cuarto rol, `Panel de Monitoreo`, con una sola capacidad y asignado persona
+  -- por persona. Se pidió retirarlo: *«lo que debe ser es el rol de usuario con acceso a
+  -- monitoreo»*. La forma en que se retira está en `db/arranque/003_retiro_de_roles.sql`, que es
+  -- el único archivo con política sobre `identidad.usuarios_roles`.
   --
-  -- Eso no lo puede expresar el reparto de abajo, y conviene entender por qué antes de intentar
-  -- resolverlo ahí: los roles de sistema son GLOBALES (`org_id is null`), así que `administrador`
-  -- es el mismo rol en ARIA y en cada empresa cliente, y dentro de ARIA es el mismo rol para
-  -- todos sus administradores. Darle `monitoreo.ver` al rol `administrador` se la da a los tres
-  -- de hoy **y al cuarto que se dé de alta mañana**, sin que nadie lo decida.
+  -- ── POR QUÉ ERA UN ROL, Y QUÉ CAMBIÓ PARA QUE YA NO HAGA FALTA ────────────
   --
-  -- La salida es la que la migración 003 escribe como regla general: *"si hace falta que alguien
-  -- tenga CASI un rol, la respuesta es un rol nuevo — que con este modelo cuesta una fila"*. Los
-  -- roles SUMAN, así que alguien con `administrador` + `monitoreo` tiene la unión de los dos, y
-  -- conceder o quitar el panel pasa a ser una fila en `identidad.usuarios_roles`.
+  -- El pedido original era *«solo nosotros 3»*, y ningún rol de PUESTO puede expresar eso:
+  -- `administrador` es el mismo rol en ARIA y en cada empresa cliente. Así que un rol propio era
+  -- la respuesta correcta **con las piezas que existían entonces**.
   --
-  -- ── LAS TRES BANDERAS, Y LA QUE PARECE OBVIA Y ESTÁ MAL ────────────────────
+  -- Lo que cambió es que ahora hay un eje más fino que el rol: el ALCANCE POR PERSONA de
+  -- `identidad.usuarios_secciones`, que la migración 017 trajo y la 023 abrió a esta pantalla.
+  -- «Tres personas concretas» se dice mejor con tres filas de alcance que con un rol, y se dice
+  -- **en la pantalla de Usuarios** en vez de en este archivo. Es el mismo movimiento que ya se
+  -- hizo con la auditoría: *«técnico sería otro usuario más, solo que pueda tener acceso a la
+  -- pestaña de auditoría»*.
   --
-  -- `solo_principal` en FALSO, y es lo que más tienta poner en `true`: la bandera existe para los
-  -- roles de plataforma y un disparador de la base hace cumplir que quien la tenga viva en la
-  -- organización principal — justo la garantía que este panel quiere. **Y sería una escalada.**
-  -- `resolverSesion` calcula `esRolDePlataforma` con `bool_or(solo_principal)`, y ese booleano es
-  -- lo único que decide si se respeta `sesiones.org_activa`: marcarla convertiría a estas tres
-  -- personas en gente que puede conmutar su sesión a cualquier empresa cliente. Se paga con un
-  -- eje distinto —`Seccion.soloDesdeLaPrincipal`— que no toca la identidad de nadie.
+  -- ── Y LA MITAD QUE SOSTIENE TODO ESTO, QUE NO SE VE ACÁ ───────────────────
   --
-  -- `secciones_restringidas` en FALSO: el alcance por persona se combina con `bool_and`, así que
-  -- marcarlo no restringiría a nadie que además sea `administrador` —y sí dejaría sin ninguna
-  -- pestaña a quien tuviera SOLO este rol—. El `update` de más abajo lo reafirma.
-  ('monitoreo', 'Panel de Monitoreo', true, false, false, false)
+  -- `usuario` es el ÚNICO rol con `secciones_restringidas = true`. Eso es lo que hace seguro
+  -- darle `monitoreo.ver` en el reparto de más abajo: la capacidad no alcanza sola, hace falta
+  -- además la fila de alcance. En un rol sin restricción —`administrador`— la misma capacidad
+  -- sería automática e innegable, y por eso ahí sigue excluida a mano.
+  --
+  -- Esa dependencia está afirmada abajo, en el bloque de comprobaciones, porque desmarcar la
+  -- bandera no falla: le abriría el panel a todos los `usuario` de ARIA en silencio.
 on conflict do nothing;
 
 -- ── LA BANDERA DE LA RESTRICCIÓN POR SECCIÓN, DECLARATIVA ────────────────────
@@ -350,21 +349,32 @@ begin
       -- § 4 —*"mostrar un control que no puede cumplir"*— con la agravante de que ahí se ven
       -- los estados de conexión de la empresa.
       --
-      -- ── Y LA CUARTA EXCLUSIÓN, QUE NO SE DERIVA DE «TODO MENOS CREDENCIALES» ──
+      -- ── Y `monitoreo.%` SÍ CAE ACÁ, QUE ES UN CAMBIO Y HAY QUE DECIRLO ────────
       --
-      -- `monitoreo.%` está acá **a mano**, y es la primera vez que este reparto necesita una
-      -- exclusión que la frase de arriba no explica. El Panel de Monitoreo mira el consumo de
-      -- TODAS las empresas: si cayera sola en este rol —que es lo que hace la derivación por
-      -- prefijos— cualquier persona de cualquier empresa cliente vería los números de las demás,
-      -- y no fallaría nada. Es exactamente lo que `app/api/admin/comisiones/route.ts` anticipó
-      -- que costaría una capacidad propia: *"excluirla exigiría agregar a mano un cuarto `not
-      -- like` al reparto y volver a correr `db/arranque` contra producción"*. Este es ese cuarto.
+      -- Hasta el retiro del rol `monitoreo` había un quinto `not like` en esta lista, y su motivo
+      -- escrito era bueno: *«el Panel de Monitoreo mira el consumo de TODAS las empresas; si cayera
+      -- sola en este rol, cualquier persona de cualquier empresa cliente vería los números de las
+      -- demás, y no fallaría nada»*.
+      --
+      -- **Ese razonamiento tenía un agujero: hablaba de la capacidad como si fuera la puerta.** Para
+      -- este rol no lo es, y hacen falta las DOS mitades para que alguien vea el panel:
+      --
+      --   1 · la capacidad —que ahora sí cae por derivación—, y
+      --   2 · la fila de `identidad.usuarios_secciones` con la pestaña `monitoreo`, porque
+      --       `usuario` es el único rol con `secciones_restringidas = true`.
+      --
+      -- Y hay una TERCERA, en otro eje y para el peor caso: `Seccion.soloDesdeLaPrincipal` esconde
+      -- la pantalla a quien no vive en la organización principal. O sea que aun concediéndole la
+      -- pestaña por error a una persona de una empresa cliente, no ve los números de nadie.
+      --
+      -- Con eso, «solo estas personas» se dice donde se puede leer —la pantalla de Usuarios— en vez
+      -- de en un rol que hay que venir a buscar acá. Fue el pedido: *«lo que debe ser es el rol de
+      -- usuario con acceso a monitoreo»*.
       ('usuario', (select array_agg(clave) from identidad.permisos
                     where clave not like 'organizaciones.%'
                       and clave not like 'usuarios.%'
                       and clave not like 'roles.%'
-                      and clave not like 'credenciales.%'
-                      and clave not like 'monitoreo.%')),
+                      and clave not like 'credenciales.%')),
 
       -- El administrador: todo lo de SU empresa. Se le niegan tres familias completas:
       --
@@ -381,33 +391,36 @@ begin
       -- Le queda lo que se pidió: credenciales, configuración, auditoría, fundaciones, los
       -- tableros y las dos pestañas de operación con sus acciones.
       --
-      -- ── Y LA CUARTA FAMILIA NEGADA: `monitoreo.%` ───────────────────────────
+      -- ── Y LA CUARTA FAMILIA NEGADA: `monitoreo.%`, LA ÚNICA A MANO QUE QUEDA ──
       --
       -- Ésta no se deduce de «todo lo de SU empresa», porque el Panel de Monitoreo no es de su
-      -- empresa: mide TODAS. Y la línea es necesaria aunque parezca redundante con la regla de
-      -- la organización principal, porque las dos protegen contra cosas distintas — aquélla
-      -- contra el administrador de una empresa cliente, ésta contra el administrador NÚMERO
-      -- CUATRO de ARIA, que la regla de la principal deja pasar.
+      -- empresa: mide TODAS.
       --
-      -- Se pidió que el panel lo vean tres personas concretas. Eso es un rol —`monitoreo`, más
-      -- abajo— que se asigna de a una fila, no una capacidad de `administrador`.
+      -- ── POR QUÉ ACÁ SÍ Y EN `usuario` YA NO ───────────────────────────────
+      --
+      -- Parece una incoherencia —`usuario` termina con una capacidad que `administrador` no tiene—
+      -- y es la decisión, no un descuido. La diferencia está en UNA bandera: `usuario` es el único
+      -- rol con `secciones_restringidas = true`, así que ahí la capacidad todavía necesita que
+      -- alguien conceda la pestaña. **Acá no hay segunda mitad.** Un `administrador` ve toda
+      -- sección que su rol habilite, sin alcance que la corte, así que la capacidad ES la puerta.
+      --
+      -- Y esa puerta se la abriría a gente que nadie eligió: el administrador NÚMERO CUATRO de
+      -- ARIA, que es el caso que la regla de la organización principal deja pasar y el que se pidió
+      -- evitar. Quitar esta línea no falla en ninguna prueba de permisos: agrega espectadores.
+      --
+      -- Si mañana un administrador de ARIA necesita el panel, la salida ya existe y no pasa por
+      -- acá: los roles SUMAN, así que `administrador` + `usuario` con la pestaña concedida se lo
+      -- da a esa persona y a nadie más.
       ('administrador', (select array_agg(clave) from identidad.permisos
                           where clave not like 'organizaciones.%'
                             and clave not like 'usuarios.%'
                             and clave not like 'roles.%'
-                            and clave not like 'monitoreo.%')),
+                            and clave not like 'monitoreo.%'))
 
-      -- ── El rol del Panel de Monitoreo: UNA capacidad, enumerada ──────────────
-      --
-      -- El único de los cuatro que NO se deriva, y es a propósito. Los otros tres se calculan
-      -- sobre `identidad.permisos` porque son «todas» o «todas menos N familias», y enumerarlos
-      -- obligaría a editar este archivo cada vez que se agrega una capacidad. Éste es al revés:
-      -- su definición ES una capacidad concreta, y una derivación que le diera más lo convertiría
-      -- en un rol que hace algo que su nombre no dice.
-      --
-      -- `ADR-0303` pide que todo rol asignable tenga al menos una pantalla. Ésta tiene una:
-      -- `monitoreo.ver` habilita la sección `monitoreo` y ninguna otra.
-      ('monitoreo', array['monitoreo.ver'])
+      -- Acá había una cuarta fila, `('monitoreo', array['monitoreo.ver'])`, y era la única
+      -- enumerada en vez de derivada. Se fue con su rol: el motivo está arriba, en el `insert`.
+      -- Los TRES que quedan se derivan, que es lo que hace que agregar una capacidad al catálogo
+      -- no exija tocar este bloque.
     ) as t(rol, permisos)
   loop
     -- Un conjunto nulo significa que el catálogo no se pudo leer, y las dos sentencias de
@@ -476,7 +489,7 @@ begin
   -- significa "no se midió" leído como "está bien"— y lo tenía en su propia verificación.
   select string_agg(esperado, ', ')
     into v_falta_rol
-    from unnest(array['superadministrador','administrador','usuario','monitoreo']) as esperado
+    from unnest(array['superadministrador','administrador','usuario']) as esperado
    where not exists (
      select 1 from identidad.roles r where r.clave = esperado and r.org_id is null);
 
@@ -503,7 +516,7 @@ begin
     into v_sin_capacidades
     from identidad.roles r
    where r.es_sistema and r.org_id is null
-     and r.clave in ('superadministrador', 'administrador', 'usuario', 'monitoreo')
+     and r.clave in ('superadministrador', 'administrador', 'usuario')
      and not exists (select 1 from identidad.roles_permisos rp where rp.rol_id = r.id);
 
   if v_sin_capacidades is not null then
@@ -606,6 +619,42 @@ begin
     raise exception
       'el rol `usuario` no recibió ninguna capacidad de pestaña operativa: quien lo tenga '
       'puede entrar y no ve dónde trabajar.';
+  end if;
+
+  -- ── LA BANDERA QUE SOSTIENE EL PANEL DE MONITOREO ────────────────────────
+  --
+  -- `monitoreo.ver` cae en `usuario` por derivación, y lo único que impide que eso se lo muestre
+  -- a TODA persona de ARIA con ese rol es `secciones_restringidas`: con la bandera puesta, la
+  -- capacidad no alcanza y hace falta además la fila de `identidad.usuarios_secciones`.
+  --
+  -- El `update` de más arriba la declara y converge, así que esto no debería poder fallar. Se
+  -- comprueba igual porque **el modo de falla es silencioso y grande**: si alguien la desmarcara
+  -- —o si el `update` afectara cero filas por falta de privilegio, que ya pasó una vez con
+  -- `permission denied for table roles`— el panel que mide a todas las empresas se abriría a
+  -- todos los `usuario` de la casa y ninguna pantalla diría nada.
+  --
+  -- Se afirman las DOS mitades juntas, en un solo lugar, porque ninguna se puede leer sin la
+  -- otra: la capacidad sin la bandera es una puerta abierta, y la bandera sin la capacidad es
+  -- una pestaña que nadie puede conceder.
+  if not exists (
+    select 1 from identidad.roles r
+      join identidad.roles_permisos rp on rp.rol_id = r.id
+     where r.clave = 'usuario' and r.org_id is null and rp.permiso = 'monitoreo.ver'
+  ) then
+    raise exception
+      'el rol `usuario` no recibió `monitoreo.ver`: nadie puede conceder la pestaña del Panel '
+      'de Monitoreo, porque el rol propio que la daba se retiró en '
+      'db/arranque/003_retiro_de_roles.sql.';
+  end if;
+
+  if exists (
+    select 1 from identidad.roles
+     where clave = 'usuario' and org_id is null and not secciones_restringidas
+  ) then
+    raise exception
+      'el rol `usuario` dejó de restringirse por sección, y ahora tiene `monitoreo.ver`: todas '
+      'las personas con ese rol en la organización principal ven el Panel de Monitoreo sin que '
+      'nadie se lo haya concedido.';
   end if;
 
   -- ── LA FRONTERA DEL ADMINISTRADOR ──────────────────────────────────────────

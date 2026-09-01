@@ -44,11 +44,27 @@ declare
   --
   -- Qué se retira y a dónde va la gente. Se nombra acá arriba, una sola vez, para que
   -- agregar un retiro futuro sea agregar una clave y no leer el archivo entero.
-  v_retirados text[] := array['closer', 'setter'];
+  -- ── EL TERCERO, Y NO SE RETIRA POR LO MISMO QUE LOS DOS PRIMEROS ──────────
+  --
+  -- `closer` y `setter` se retiraron porque los reemplazó un rol más ancho: sus capacidades
+  -- caen en `usuario` por derivación, así que su gente no perdió nada al moverse.
+  --
+  -- `monitoreo` es distinto y hay que decirlo: su única capacidad estaba **excluida a mano** del
+  -- reparto de `usuario`. Moverlo sin más le habría quitado el panel a quien lo tenía. Por eso el
+  -- retiro viene en dos mitades que hay que leer juntas:
+  --
+  --   · `001_catalogo.sql` quitó esa exclusión, así que `monitoreo.ver` ahora cae en `usuario`;
+  --   · y acá abajo, el bloque de la PESTAÑA le concede el alcance a quien tenía el rol — porque
+  --     `usuario` sí restringe por sección, y sin esa fila la capacidad no muestra nada.
+  --
+  -- Fue el pedido, con estas palabras: *«desactiva el rol de monitoreo, lo que debe ser es el rol
+  -- de usuario con acceso a monitoreo»*.
+  v_retirados text[] := array['closer', 'setter', 'monitoreo'];
   v_destino   text   := 'usuario';
   v_destino_id uuid;
   v_movidos   int;
   v_borrados  int;
+  v_pestanas  int;
 begin
   -- ── PRIMERO: QUE EL DESTINO EXISTA ──────────────────────────────────────────
   --
@@ -90,6 +106,38 @@ begin
 
   get diagnostics v_movidos = row_count;
 
+  -- ── LA PESTAÑA, Y VA ANTES DEL `delete` PORQUE ÉL BORRA LA EVIDENCIA ───────
+  --
+  -- Quien tenía el rol `monitoreo` tenía el panel por su ROL. El rol se va, y el acceso se
+  -- traduce al otro eje: una fila de alcance con la pestaña. Sin esto, el retiro le saca el panel
+  -- a esa persona y **no falla nada** — es el modo de falla que todo este archivo persigue.
+  --
+  -- Va acá, entre el traspaso y el borrado, porque `usuarios_roles` es lo único que dice QUIÉN
+  -- tenía el rol: después del `delete` esa lista no existe.
+  --
+  -- ── SE ESCRIBE LA FILA AUNQUE HOY NO HAGA FALTA, Y ESO ES DELIBERADO ──────
+  --
+  -- El alcance se combina con `bool_and`, así que a alguien que además sea `administrador` —un
+  -- rol sin restricción— esta fila no le cambia nada hoy: ya ve el panel por la capacidad.
+  -- `app/api/admin/usuarios/route.ts` tiene escrita la regla contraria para el alta: *«un rol NO
+  -- restringido ignora las secciones que vengan, y no las guarda»*.
+  --
+  -- Acá se guarda igual, y el motivo es que estas filas **no son un alcance que nadie eligió**:
+  -- son el único registro de que esa persona tenía el panel. El día que se le cambie el rol a
+  -- `usuario` a secas —una operación de una sola pantalla— la fila es lo que hace que no lo
+  -- pierda en silencio.
+  --
+  -- La clave de sección tiene que existir en el `check` de la tabla, y existe desde
+  -- `db/migraciones/023_seccion_monitoreo.sql`.
+  insert into identidad.usuarios_secciones (usuario_id, seccion, concedida_por)
+  select distinct ur.usuario_id, 'monitoreo', null::uuid
+    from identidad.usuarios_roles ur
+    join identidad.roles r on r.id = ur.rol_id
+   where r.org_id is null and r.clave = 'monitoreo'
+  on conflict do nothing;
+
+  get diagnostics v_pestanas = row_count;
+
   -- Y ahora sí, quitarles la asignación vieja.
   delete from identidad.usuarios_roles ur
    using identidad.roles r
@@ -109,6 +157,11 @@ begin
     raise notice
       '% persona(s) que tenían un rol retirado pasaron a «%».', v_movidos, v_destino;
   end if;
+  if v_pestanas > 0 then
+    raise notice
+      '% persona(s) que tenían el rol `monitoreo` recibieron la pestaña como alcance.',
+      v_pestanas;
+  end if;
   if v_borrados > 0 then
     raise notice 'roles retirados: %.', array_to_string(v_retirados, ', ');
   end if;
@@ -127,25 +180,69 @@ $retiro$;
 
 do $comprobar$
 declare
-  v_quedan   text;
-  v_sin_rol  text;
+  v_quedan        text;
+  v_sin_rol       text;
+  v_sin_pestanas  text;
 begin
-  -- Que no quede ninguno de los retirados. Si queda, o el `delete` no vio filas o algo los
-  -- volvió a crear entre medio.
+  -- ── SE DERIVA, Y ANTES ERA UNA SEGUNDA LISTA ESCRITA A MANO ───────────────
+  --
+  -- Acá decía `clave in ('closer', 'setter')`: una copia de `v_retirados` que este bloque no
+  -- puede ver, porque `v_retirados` vive en el `do` de arriba y los bloques no comparten
+  -- variables. Agregar un retiro exigía editar las dos, y **olvidarse de la segunda no falla**:
+  -- deja el rol nuevo sin comprobar, que es justo el archivo donde eso importa.
+  --
+  -- La invariante correcta no necesita la lista: **los roles de sistema globales son TRES.** Los
+  -- nombra `001_catalogo.sql`, que es quien los reparte, y cualquier otro que exista es un retiro
+  -- que no terminó. Así esto también atrapa el cuarto que alguien agregue mañana y no retire.
+  --
+  -- Un rol de una organización (`org_id is not null`) o uno que no sea de sistema no es asunto de
+  -- este archivo y no se cuenta.
   select string_agg(clave, ', ')
     into v_quedan
     from identidad.roles
-   where org_id is null and clave in ('closer', 'setter');
+   where org_id is null and es_sistema
+     and clave not in ('superadministrador', 'administrador', 'usuario');
 
   if v_quedan is not null then
     raise exception
-      'siguen existiendo roles que este archivo tenía que retirar: %. El `delete` afectó cero '
-      'filas: probablemente el rol que corre este archivo no tiene política sobre '
-      'identidad.roles y el forzado de RLS lo dejó sin ver nada.', v_quedan;
+      'siguen existiendo roles de sistema que este archivo tenía que retirar: %. O el `delete` '
+      'afectó cero filas —probablemente el rol que corre este archivo no tiene política sobre '
+      'identidad.roles y el forzado de RLS lo dejó sin ver nada— o alguien agregó un rol y no lo '
+      'sumó a `v_retirados`.', v_quedan;
   end if;
 
-  -- Y —lo que de verdad importa— que nadie haya quedado sin rol por el camino. Una persona
-  -- sin rol puede entrar y no ve ninguna pantalla, y lo descubre ella, no nosotros.
+  -- ── LA OTRA FORMA DE QUEDAR SIN NINGUNA PANTALLA, Y ES LA QUE ESTE ARCHIVO CAUSA ──
+  --
+  -- El traspaso mueve gente a `usuario`, que es el único rol con `secciones_restringidas`. Para
+  -- ese rol, **cero filas de alcance son cero pestañas**: la persona entra, se autentica bien, y
+  -- el menú está vacío. Tener rol no alcanza, y la comprobación de abajo —que mira si tiene
+  -- alguno— pasa igual.
+  --
+  -- Es un agujero de este archivo desde que existe el alcance por sección, y no se notó porque
+  -- nadie tenía `closer` ni `setter` cuando se retiraron. El retiro de `monitoreo` sí mueve a una
+  -- persona real, así que ahora se comprueba.
+  --
+  -- Se pregunta por `bool_and`, que es la misma fórmula con la que la sesión decide si restringe:
+  -- alguien que además tenga un rol sin restricción no está restringido, y sus filas se ignoran.
+  select string_agg(u.email, ', ')
+    into v_sin_pestanas
+    from identidad.usuarios u
+   where u.email is not null
+     and (select bool_and(r.secciones_restringidas)
+            from identidad.usuarios_roles ur
+            join identidad.roles r on r.id = ur.rol_id
+           where ur.usuario_id = u.id)
+     and not exists (
+       select 1 from identidad.usuarios_secciones us where us.usuario_id = u.id);
+
+  if v_sin_pestanas is not null then
+    raise warning
+      'hay personas con un rol restringido y NINGUNA pestaña concedida: %. Pueden entrar y el '
+      'menú les queda vacío. Concedeles el alcance desde Ajustes → Usuarios.', v_sin_pestanas;
+  end if;
+
+  -- Y que nadie haya quedado sin rol por el camino. Una persona sin rol puede entrar y no ve
+  -- ninguna pantalla, y lo descubre ella, no nosotros.
   select string_agg(u.email, ', ')
     into v_sin_rol
     from identidad.usuarios u

@@ -37,8 +37,12 @@ const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
 
 const SIN_ALCANCE = { restringido: false } as const;
-/** Alguien con el rol `monitoreo` encima de su rol de puesto. Los roles SUMAN: es la unión. */
-const CON_EL_ROL_MONITOREO = new Set(['monitoreo.ver', 'credenciales.ver', 'tablero.ver']);
+/**
+ * Las capacidades de alguien que puede llegar al panel. `monitoreo.ver` la trae su rol —hoy
+ * `usuario` o `superadministrador`—; las otras dos están para que la sección no sea la única visible
+ * y las afirmaciones no pasen por un conjunto de uno.
+ */
+const CON_LA_CAPACIDAD = new Set(['monitoreo.ver', 'credenciales.ver', 'tablero.ver']);
 
 // ─── La sección ─────────────────────────────────────────────────────────────
 
@@ -101,14 +105,14 @@ test('`esDeLaPrincipal` mira la organización PROPIA, no la que se está mirando
 
 test('el menú esconde el Panel de Monitoreo a quien no es de la principal', () => {
   const claves = (desdeLaPrincipal: boolean) =>
-    menuVisible(CON_EL_ROL_MONITOREO, SIN_ALCANCE, desdeLaPrincipal).flatMap((g) =>
+    menuVisible(CON_LA_CAPACIDAD, SIN_ALCANCE, desdeLaPrincipal).flatMap((g) =>
       g.secciones.map((s) => s.clave),
     );
 
-  assert.ok(claves(true).includes('monitoreo'), 'quien tiene el rol, en ARIA, no ve su panel');
+  assert.ok(claves(true).includes('monitoreo'), 'quien tiene la capacidad, en ARIA, no ve el panel');
   assert.ok(
     !claves(false).includes('monitoreo'),
-    'alguien de una empresa cliente con el rol `monitoreo` ve la entrada del menú: teniendo la ' +
+    'alguien de una empresa cliente con `monitoreo.ver` ve la entrada del menú: teniendo la ' +
       'capacidad, la única cosa que se lo impide es esta bandera',
   );
 });
@@ -118,7 +122,7 @@ test('la lista `secciones` de la sesión se corta con el MISMO criterio que el m
   // `secciones` las lee `AjustesView`—. Cortar una sola deja media interfaz sin restringir, y eso
   // ya pasó una vez con el alcance por persona.
   const claves = (desdeLaPrincipal: boolean) =>
-    seccionesConAlcance(CON_EL_ROL_MONITOREO, SIN_ALCANCE, desdeLaPrincipal).map((s) => s.clave);
+    seccionesConAlcance(CON_LA_CAPACIDAD, SIN_ALCANCE, desdeLaPrincipal).map((s) => s.clave);
 
   assert.ok(claves(true).includes('monitoreo'));
   assert.ok(!claves(false).includes('monitoreo'));
@@ -126,7 +130,7 @@ test('la lista `secciones` de la sesión se corta con el MISMO criterio que el m
 
 test('sin la capacidad no hay panel, esté quien esté en la principal', () => {
   // La primera mitad, para que no se pueda "arreglar" la segunda borrando la primera: alguien de
-  // ARIA sin el rol `monitoreo` —un administrador cualquiera de la casa— tampoco lo ve.
+  // ARIA sin `monitoreo.ver` —un administrador cualquiera de la casa— tampoco lo ve.
   const deUnUsuario = new Set(['tablero.ver', 'closer.ver']);
   assert.ok(
     !menuVisible(deUnUsuario, SIN_ALCANCE, true)
@@ -343,64 +347,143 @@ test('el catálogo carga `monitoreo.ver` y NO se la da a ningún rol de puesto',
     'la capacidad no se carga en `identidad.permisos`: el portero rechazaría a todo el mundo',
   );
 
-  // ── LAS DOS LÍNEAS QUE NO SE DERIVAN ─────────────────────────────────────
+  // ── LA LÍNEA QUE NO SE DERIVA, Y ES UNA SOLA ─────────────────────────────
   //
-  // El reparto deriva por EXCLUSIÓN de prefijos, así que una familia nueva cae SOLA en los tres
-  // roles de puesto. Cada `not like` que falte tiene una víctima distinta y ninguna de las dos
-  // falla:
+  // Eran dos `not like` a mano, uno por rol de puesto, y con el retiro del rol `monitoreo` quedó
+  // uno. Se afirman los DOS lados, porque el cambio se rompe en las dos direcciones y ninguna
+  // falla al mirar:
   //
-  //   · sin el de `usuario`      → cualquier persona de cualquier empresa cliente,
-  //   · sin el de `administrador`→ el administrador de cada empresa cliente **y el
-  //     administrador número cuatro de ARIA**, que es el que la regla de la organización
-  //     principal deja pasar y que es justamente lo que se pidió evitar.
+  //   · si `usuario` VUELVE a excluirla → nadie puede conceder la pestaña, y el panel queda sin
+  //     ninguna forma de llegar: el rol que lo daba ya no existe.
+  //   · si `administrador` DEJA de excluirla → se la lleva el administrador de cada empresa
+  //     cliente **y el administrador número cuatro de ARIA**, que es el que la regla de la
+  //     organización principal deja pasar. Y ahí no hay segunda mitad que lo frene: ese rol no
+  //     restringe por sección, así que la capacidad es la puerta.
   const bloqueDe = (rol: string) => {
     const desde = catalogo.indexOf(`('${rol}', (select`);
     assert.ok(desde > 0, `no se encontró el reparto del rol \`${rol}\``);
     return catalogo.slice(desde, catalogo.indexOf('))', desde));
   };
 
-  for (const rol of ['usuario', 'administrador']) {
-    assert.ok(
-      bloqueDe(rol).includes("clave not like 'monitoreo.%'"),
-      `el reparto del rol \`${rol}\` dejó de excluir \`monitoreo.%\``,
-    );
-  }
+  assert.ok(
+    bloqueDe('administrador').includes("clave not like 'monitoreo.%'"),
+    'el reparto del rol `administrador` dejó de excluir `monitoreo.%`: todo administrador de la ' +
+      'organización principal pasa a ver el consumo de todas las empresas',
+  );
+  assert.equal(
+    bloqueDe('usuario').includes("clave not like 'monitoreo.%'"),
+    false,
+    'el reparto del rol `usuario` volvió a excluir `monitoreo.%`, y el rol que daba el panel ya ' +
+      'no existe: la pestaña queda sin nadie que la pueda conceder',
+  );
 });
 
-test('existe el rol `monitoreo`, con esa capacidad y NADA más', () => {
-  // ── POR QUÉ UN ROL Y NO UNA CAPACIDAD DE `administrador` ─────────────────
-  //
-  // Se pidió que el panel lo vean TRES PERSONAS de ARIA, y ningún rol de puesto puede expresar
-  // eso: `administrador` es el mismo rol en ARIA y en cada empresa cliente, y el mismo para
-  // todos los administradores de ARIA. Es la salida que la migración 003 escribe como regla —
-  // *"si hace falta que alguien tenga CASI un rol, la respuesta es un rol nuevo"*— y lo que la
-  // hace viable es que los roles SUMAN: `administrador` + `monitoreo` da la unión.
-  const catalogo = leer('db/arranque/001_catalogo.sql');
+test('el rol `monitoreo` está RETIRADO, y su retiro trae la pestaña con él', () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     EL ROL SE FUE, Y LO QUE IMPORTA ES QUE NO SE FUE SOLO
 
-  // Enumerado, no derivado. Un `select … from identidad.permisos` acá le daría al rol más de lo
-  // que su nombre dice, y encima crecería solo con cada capacidad nueva.
-  assert.match(
-    catalogo,
-    /\('monitoreo',\s*array\['monitoreo\.ver'\]\)/,
-    'el rol `monitoreo` no reparte exactamente `monitoreo.ver`',
+     Había un rol `Panel de Monitoreo` con una capacidad enumerada, asignado persona por persona.
+     Se retiró por pedido: *«desactiva el rol de monitoreo, lo que debe ser es el rol de usuario
+     con acceso a monitoreo»*.
+
+     Un retiro a medias es lo que este archivo tiene que impedir, y tiene DOS formas de quedar a
+     medias, ninguna de las cuales falla al mirar:
+
+       · el rol se borra del catálogo y nadie lo retira de la base → queda asignable, sin
+         capacidades, dando cero pantallas. Lo atrapa `db/arranque/003_retiro_de_roles.sql`.
+       · el rol se retira y a su gente no se le concede la pestaña → **pierden el panel en
+         silencio**. Su rol pasa a `usuario`, que sí restringe por sección, y cero filas de
+         alcance son cero pestañas.
+     ══════════════════════════════════════════════════════════════════════════ */
+  /* ── SE LEE EL SQL, NO LA PROSA, Y ESO LO ENCONTRÓ ESTA PRUEBA ──────────
+   *
+   * La primera versión afirmaba sobre el archivo entero y se puso roja: el comentario que explica
+   * el retiro **cita la línea que se borró**, para que quien lea el archivo sepa qué había ahí.
+   * Una prueba que no distingue el código del comentario obliga a no poder nombrar lo que se quitó,
+   * que es justo lo contrario de lo que este repositorio quiere de un comentario.
+   *
+   * Se quitan las líneas `--` y se afirma sobre lo que la base va a ejecutar. No se intenta
+   * respetar los `--` que puedan vivir dentro de una cadena: en este archivo no hay ninguno, y una
+   * tokenización de SQL acá sería más código que el que se está comprobando. */
+  const soloSql = (ruta: string) =>
+    leer(ruta)
+      .split(/\r?\n/)
+      .filter((l) => !l.trimStart().startsWith('--'))
+      .join('\n');
+
+  const catalogo = soloSql('db/arranque/001_catalogo.sql');
+  const retiro = soloSql('db/arranque/003_retiro_de_roles.sql');
+
+  // El catálogo ya no lo crea ni le reparte nada.
+  assert.equal(
+    /\('monitoreo', 'Panel de Monitoreo'/.test(catalogo),
+    false,
+    'el catálogo sigue creando el rol `monitoreo`',
+  );
+  assert.equal(
+    /\('monitoreo',\s*array\[/.test(catalogo),
+    false,
+    'el catálogo sigue repartiéndole capacidades al rol `monitoreo`',
   );
 
-  // ── LAS DOS BANDERAS QUE NO PUEDEN CAMBIAR ───────────────────────────────
-  //
-  // `solo_principal` en `true` sería la tentación —el disparador de la base obligaría a que
-  // quien tenga el rol viva en la organización principal, justo lo que el panel quiere— y sería
-  // una ESCALADA: `resolverSesion` calcula `esRolDePlataforma` con `bool_or(solo_principal)`, y
-  // ese booleano es lo único que decide si se respeta `sesiones.org_activa`. Marcarlo dejaría a
-  // estas tres personas conmutar su sesión a cualquier empresa cliente.
-  //
-  // `secciones_restringidas` en `true` no restringiría a nadie que además sea `administrador`
-  // —el alcance se combina con `bool_and`— y sí dejaría sin ninguna pestaña a quien tuviera solo
-  // este rol.
+  // Y el retiro lo nombra, o el rol queda vivo en la base con el catálogo diciendo que no existe.
   assert.match(
-    catalogo,
-    /\('monitoreo', 'Panel de Monitoreo', true, false, false, false\)/,
-    'las banderas del rol `monitoreo` cambiaron: revisá `solo_principal` antes que nada',
+    retiro,
+    /v_retirados text\[\] := array\[[^\]]*'monitoreo'[^\]]*\]/,
+    'el rol no está en la lista de retirados: se va del catálogo y sobrevive en la base',
   );
+
+  /* ── LA MITAD QUE SE OLVIDA: LA PESTAÑA ────────────────────────────────
+   *
+   * Se afirma el `insert` a `usuarios_secciones` **y su orden**: tiene que ir ANTES del `delete`
+   * de `usuarios_roles`, porque esa tabla es lo único que dice QUIÉN tenía el rol. Después del
+   * borrado, la consulta que elige a quién concederle la pestaña devuelve cero filas — y el
+   * `insert` sale con éxito. */
+  const iPestana = retiro.indexOf('insert into identidad.usuarios_secciones');
+  const iBorrado = retiro.indexOf('delete from identidad.usuarios_roles');
+  assert.ok(iPestana > 0, 'el retiro no le concede la pestaña a quien tenía el rol');
+  assert.ok(iBorrado > 0, 'el retiro no borra las asignaciones del rol viejo');
+  assert.ok(
+    iPestana < iBorrado,
+    'la pestaña se concede DESPUÉS de borrar las asignaciones: no queda a quién concederla, y el ' +
+      '`insert` no falla — afecta cero filas',
+  );
+});
+
+test('el formulario NO ofrece la casilla del panel fuera de la organización principal', () => {
+  /* ── EL CONTROL QUE SE VE Y NO PUEDE CUMPLIR, EN SU FORMA NUEVA ──────────
+   *
+   * Antes del retiro esto no podía pasar: ningún rol que restringiera por sección tenía
+   * `monitoreo.ver`, así que la casilla no llegaba nunca al formulario. Ahora `usuario` la tiene, y
+   * sin filtro se le ofrecería «Panel de Monitoreo» a una persona de una empresa cliente — se
+   * tilda, se guarda, y no aparece ninguna pestaña.
+   *
+   * Se comprueba la FUNCIÓN, no el texto del componente: es la que usan el dibujo y el efecto que
+   * poda la selección, y las dos tienen que decir lo mismo. */
+  const fuente = leer('components/ajustes/Usuarios.jsx');
+
+  assert.match(
+    fuente,
+    /desdeLaPrincipal \|\| !s\.soloDesdeLaPrincipal/,
+    'la lista de casillas dejó de filtrar por `soloDesdeLaPrincipal`',
+  );
+
+  // Y los DOS usos le pasan el dato. Sin uno de los dos, el filtro existe y no se aplica ahí.
+  assert.equal(
+    (fuente.match(/desdeLaPrincipal=\{/g) ?? []).length,
+    2,
+    'el alta y la edición tienen que pasarle `desdeLaPrincipal` a las casillas',
+  );
+
+  /* La edición usa la empresa de QUIEN SE EDITA. Con la de la sesión sería cierto por casualidad
+     —coinciden porque `usuarioObjetivo(` filtra por la organización efectiva— y dejaría de serlo
+     el día que esa línea cambie. */
+  assert.match(fuente, /desdeLaPrincipal=\{Boolean\(editando\?\.organizacion\?\.esPrincipal\)\}/);
+
+  /* Y el alta lo calcula con la MISMA fórmula que el servidor usa para `orgDestino`: la empresa
+     elegida si hay una, la de la sesión si no. Dos fórmulas distintas hacen que la pantalla ofrezca
+     lo que la petición rechaza. */
+  assert.match(fuente, /const destinoEsPrincipal = orgNueva/);
 });
 
 test('la migración deja conceder `monitoreo` como alcance por persona', () => {

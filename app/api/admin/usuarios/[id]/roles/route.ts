@@ -161,16 +161,21 @@ export async function POST(
             .execute()
         ).map((x) => x.permiso),
       );
-      /* El tercer argumento va en `true`, y no es un descuido: acá no se está decidiendo qué ve
-         NADIE, se está validando que el alcance pedido no deje al rol sin ninguna pestaña. La
-         regla de la organización principal es de otro eje —quién mira, desde dónde— y aplicarla
-         acá haría que el mismo alcance se acepte o se rechace según quién esté dando de alta.
-         Que una sección `soloDesdeLaPrincipal` no la vea el destinatario lo decide su sesión,
-         no este `check`. */
+      /* ── EL TERCER ARGUMENTO ERA `true` FIJO, Y ESO SE VOLVIÓ FALSO ────────
+       *
+       * Mismo cambio y mismo motivo que en `POST /api/admin/usuarios`, donde está escrito largo:
+       * `usuario` ahora alcanza la sección `monitoreo`, que es `soloDesdeLaPrincipal`, así que un
+       * alcance de solo esa pestaña deja a alguien de una empresa cliente con cero pestañas — el
+       * defecto que este mismo `if` existe para impedir.
+       *
+       * Acá el dato sale del contexto y no de una consulta, y no por comodidad: `usuarioObjetivo(`
+       * filtra por `org_id = orgEfectiva`, así que la persona que se está editando **pertenece a la
+       * organización efectiva por construcción**. Preguntarle su empresa a la base sería preguntar
+       * algo que la línea de aislamiento ya garantizó. */
       const efectivas = seccionesConAlcance(
         capacidades,
         { restringido: true, concedidas: new Set(pedidas) },
-        true,
+        contexto.organizacion.esPrincipal,
       );
       if (efectivas.length === 0) {
         return ok({ asignados: false, motivo: 'alcance_vacio' }, 400);

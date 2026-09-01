@@ -85,22 +85,29 @@ export const CAPACIDADES = [
   // lea «credenciales» en una fila de auditoría no va a adivinar que también concede ver el
   // consumo de todas las empresas.
   //
-  // Así que es familia propia, y el costo se paga donde se ve: `db/arranque/001_catalogo.sql` le
-  // niega `monitoreo.%` a mano a `usuario` **y a `administrador`**. Sin esas dos líneas la
-  // capacidad cae SOLA en los tres roles —el reparto deriva por exclusión de prefijos— y el panel
-  // que mide a todas las empresas se lo vería cualquier persona de cualquier empresa.
+  // ── QUIÉN LA TIENE: TRES MITADES, Y NINGUNA ALCANZA SOLA ──────────────────
   //
-  // ── QUIÉN LA TIENE: TRES PERSONAS, NO UN PUESTO ───────────────────────────
+  // Acá decía que la tenían `superadministrador` y **un rol propio llamado `monitoreo`**, asignado
+  // persona por persona. Ese rol se retiró: se pidió *«lo que debe ser es el rol de usuario con
+  // acceso a monitoreo»*, y el retiro vive en `db/arranque/003_retiro_de_roles.sql`.
   //
-  // `superadministrador`, y un rol propio llamado `monitoreo` que se asigna persona por persona.
-  // Se pidió así —*"solo nosotros 3"*— y ningún rol de puesto puede expresarlo: `administrador`
-  // es el mismo rol en ARIA y en cada empresa cliente, y el mismo para todos los administradores
-  // de ARIA, así que dárselo a él se lo da también al que entre mañana.
+  // Ahora la capacidad cae en `usuario` por derivación de prefijos, como cualquier otra, y lo que
+  // decide quién ve el panel son tres cosas que hay que leer juntas:
   //
-  // Y aun con el rol bien asignado falta una mitad: si alguien le diera ese rol a una persona de
-  // una empresa cliente, esa persona vería los números de sus competidores. Eso lo atrapa
-  // `Seccion.soloDesdeLaPrincipal`, que comprueba el manejador. Las dos mitades son necesarias;
-  // ninguna se puede leer sin la otra.
+  //   1 · la capacidad — la da el rol;
+  //   2 · la fila de `identidad.usuarios_secciones` con la pestaña `monitoreo` — `usuario` es el
+  //       único rol con `secciones_restringidas`, así que sin ella la capacidad no muestra nada;
+  //   3 · `Seccion.soloDesdeLaPrincipal` — la pantalla no existe para quien no vive en la
+  //       organización principal, ni aunque tenga las dos primeras.
+  //
+  // La 2 es la que reemplaza al rol, y por eso «solo estas personas» se dice ahora en la pantalla
+  // de Usuarios en vez de en el catálogo. La 3 es la red debajo del error de UNA fila: conceder la
+  // pestaña por equivocación a alguien de una empresa cliente no le muestra los números de nadie.
+  //
+  // **Y `administrador` sigue SIN la capacidad, a mano.** No es un olvido: ese rol no restringe
+  // por sección, así que ahí la mitad 2 no existe y la capacidad sería la puerta — se la abriría
+  // al administrador que se dé de alta mañana, sin que nadie lo decida. El motivo largo está en el
+  // reparto de `db/arranque/001_catalogo.sql`.
   'monitoreo.ver',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //
