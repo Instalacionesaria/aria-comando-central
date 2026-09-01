@@ -70,6 +70,30 @@ test('TODA pantalla del menú tiene su vista en `CommandCenter`', () => {
   );
 });
 
+test('la auditoría va INMEDIATAMENTE después de Closer en el menú', () => {
+  /* ── UNA POSICIÓN PEDIDA POR PRODUCTO, Y POR ESO FIJADA ────────────────────
+   *
+   * `seccionesVisibles` es un `filter` sobre `SECCIONES`, así que **la posición en el arreglo es la
+   * posición en el menú**. Eso hace que mover una pestaña sea mover un bloque — y también que
+   * moverla sin querer sea igual de fácil.
+   *
+   * Las otras cuatro pruebas de este archivo comparan CONJUNTOS, no orden: con una pestaña que se
+   * desliza tres lugares, las cuatro siguen en verde. Y el síntoma no es un error sino una pestaña
+   * lejos de la que le da sentido — la cola roja que este módulo alimenta vive en Closer.
+   *
+   * Se afirma la ADYACENCIA y no el índice: entre las dos no puede entrar nada, y el grupo entero
+   * puede crecer por arriba o por abajo sin que esto se ponga rojo por un cambio que no la afecta. */
+  const enOperacion = SECCIONES.filter((x) => x.menu?.grupo === 'Operación').map((x) => x.clave);
+  const iCloser = enOperacion.indexOf('closer');
+  const iAuditoria = enOperacion.indexOf('auditoria');
+  assert.ok(iCloser >= 0 && iAuditoria >= 0, 'falta una de las dos en el grupo Operación');
+  assert.equal(
+    iAuditoria,
+    iCloser + 1,
+    `la auditoría tiene que ir justo debajo de Closer, y el orden es: ${enOperacion.join(', ')}`,
+  );
+});
+
 test('los `id="v-…"` de las vistas son exactamente las claves con menú', () => {
   // La tercera copia. Se lee del disco y no de una lista, porque el defecto que busca es
   // justamente que alguien agregue un archivo de vista y no lo enganche a ninguna sección — o
