@@ -152,6 +152,27 @@ export default function IconSprite() {
             el color lo pone el menú según si la entrada está activa. Se dibuja distinto de
             `#i-exec` —que es el tablero ejecutivo— a propósito: dos entradas del menú con el
             mismo icono se eligen mal cuando se navega rápido. */}
+        {/* Auditoría de agentes · una lupa sobre una conversación. `currentColor` como los demás.
+            Se dibuja distinto de `#i-monitoreo` —que es el pulso del panel de scrapeos— y de
+            `#i-closer`: tres entradas del mismo grupo del menú con iconos parecidos se eligen mal
+            cuando se navega rápido. */}
+        <symbol id="i-auditor" viewBox="0 0 16 16">
+          <path
+            d="M13.5 8.2a5.6 5.6 0 0 1-6.9 5.5L3 14.5l.8-3.4A5.6 5.6 0 1 1 13.5 8.2Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinejoin="round"
+           />
+          <circle cx="7.6" cy="7.4" r="2" fill="none" stroke="currentColor" strokeWidth="1.25" />
+          <path
+            d="M9.1 8.9 10.6 10.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+           />
+        </symbol>
         <symbol id="i-monitoreo" viewBox="0 0 16 16">
           <path
             d="M1.6 8.4h2.6l1.7-4.6 2.5 8.4 1.7-3.8h4.3"

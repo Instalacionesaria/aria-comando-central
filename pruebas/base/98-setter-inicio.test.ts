@@ -686,12 +686,40 @@ test('con el check VIEJO de la base, la meta rechaza 409 LEGIBLE y no un 500 pel
 test('el mes del cockpit sale de la zona de la EMPRESA, y viene escrito', async () => {
   // No es decoración: es lo único que le dice a quien mira a qué período pertenecen los números.
   // Un tablero sin mes no se puede desmentir.
+  //
+  /* ══════════════════════════════════════════════════════════════════════════
+     ESTA PRUEBA SE CONTRADECÍA A SÍ MISMA, Y FALLABA CINCO HORAS POR MES
+
+     Su nombre dice «de la zona de la EMPRESA» y el valor esperado se calculaba en **UTC**. La
+     organización del sembrado es `America/Lima`, o sea UTC−5, así que las dos coinciden **el 99 %
+     del tiempo** — y no coinciden en la ventana entre la medianoche UTC del día 1 y la medianoche
+     de Lima, cuando allá todavía es el mes anterior.
+
+     Se cayó el 2026-09-01 a las 00:0x UTC: la ruta dijo «agosto» —correcto, en Lima era el 31— y la
+     prueba esperaba «septiembre». **El código estaba bien; la afirmación estaba mal.**
+
+     Y es la peor forma de estar mal: una prueba que pasa por coincidencia geográfica no afirma lo
+     que dice afirmar. Con la organización en `Asia/Tokyo` habría fallado casi todos los días, y con
+     una en UTC habría pasado siempre **sin comprobar nada**.
+
+     La zona se lee de la BASE y no se escribe acá: escribir `'America/Lima'` a mano sería la misma
+     clase de defecto un nivel más abajo — el día que el sembrado cambie de zona, la prueba volvería
+     a comparar contra un valor inventado.
+     ══════════════════════════════════════════════════════════════════════════ */
   const t = await tablero();
   assert.ok(t.cockpit.mes.length > 0, 'el cockpit no dice de qué mes son los números');
+
+  const { rows } = await esc.admin.query<{ zona_horaria: string }>(
+    'select zona_horaria from identidad.organizaciones where id = $1',
+    [esc.org],
+  );
+  const zona = rows[0]?.zona_horaria;
+  assert.ok(zona, 'la organización del sembrado no tiene zona horaria');
+
   const esperado = new Intl.DateTimeFormat('es', {
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: zona,
   }).format(new Date());
   assert.equal(t.cockpit.mes, esperado);
 });

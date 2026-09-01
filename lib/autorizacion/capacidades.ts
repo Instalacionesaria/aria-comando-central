@@ -137,6 +137,20 @@ export const CAPACIDADES = [
   // etiquetas al CRM. Con una sola capacidad, conceder lo primero concedería lo segundo en
   // silencio, que es la lección que la Etapa 12 dejó escrita para borrar y desactivar.
   'contactos.resolver',
+  // ── Etapa 13 · La pantalla del técnico ────────────────────────────────
+  //
+  // DOS y no una, y la separación es la misma que el `03` § 2 hace entre MIRAR una ficha y
+  // REGISTRAR un resultado: existe un puesto plausible que necesite ver los hallazgos y no
+  // pueda tocar el prompt de un agente. Con una sola capacidad, conceder lo primero concede
+  // lo segundo — y editar el prompt cambia cómo le habla el agente a TODOS los contactos de
+  // esa empresa.
+  //
+  // Y **no se reusa `auditoria.ver`**, que ya existe arriba y es otra cosa: el registro de
+  // accesos de identidad. Reusarla ensancharía permisos sin que nada fallara — quien puede
+  // ver quién entró al sistema pasaría a ver los hallazgos de los agentes. La familia de este
+  // módulo es `auditor.*`, en singular.
+  'auditor.ver',
+  'auditor.editar',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

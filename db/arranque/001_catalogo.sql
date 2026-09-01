@@ -177,6 +177,21 @@ insert into identidad.permisos (clave, descripcion) values
   -- `usuario` y en `administrador`: no hace falta tocar nada más.
   ('contactos.resolver', 'Resolver una intervención del auditor de IA y reactivar el agente'),
 
+  -- La pantalla del técnico. DOS y no una: existe un puesto plausible que necesite VER los
+  -- hallazgos y no pueda tocar el prompt de un agente, y editar ese prompt cambia cómo le habla
+  -- el agente a TODOS los contactos de esa empresa. Es la misma separación que el `03` § 2 hace
+  -- entre mirar una ficha y registrar un resultado.
+  --
+  -- Y NO se reusa `auditoria.ver`, que está más arriba y es otra cosa: el registro de accesos de
+  -- identidad. Reusarla haría que quien puede ver quién entró al sistema pasara a ver los
+  -- hallazgos de los agentes, sin que nada fallara. La familia de este módulo es `auditor.*`.
+  --
+  -- El reparto de abajo las da por EXCLUSIÓN de prefijos, así que `auditor.%` cae sola en
+  -- `usuario` y en `administrador` — que es lo que se pidió: el «técnico» es una persona más con
+  -- la pestaña concedida, no un rol nuevo.
+  ('auditor.ver',    'Ver la auditoría de los agentes de IA: patrones, casos y correcciones'),
+  ('auditor.editar', 'Editar el prompt de referencia de cada agente de IA'),
+
   -- ── Etapa 12 · Borrar ──────────────────────────────────────────────────────
   --
   -- DOS capacidades nuevas, y no se reusan las de editar ni las de desactivar.

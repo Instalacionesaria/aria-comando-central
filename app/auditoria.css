@@ -1,0 +1,241 @@
+/* La pantalla del técnico — la auditoría de los agentes de IA.
+   ==========================================================================
+   Reusa `mon-totales`, `mon-tarjeta`, `mon-bloque` y `mon-cabeza` de `monitoreo.css`: son el mismo
+   idioma visual —tarjetas arriba, bloques abajo— y copiarlos acá sería una segunda definición del
+   mismo estilo que un día diverge. Lo de este archivo es lo que aquella pantalla no tiene.
+
+   ── NI UN COLOR LITERAL ───────────────────────────────────────────────────
+   Todo sale de los tokens de `app/temas.css`, y una prueba lo hace cumplir sobre la lista de hojas
+   de `pruebas/codigo/104-temas.test.ts` — donde esta hoja entra el día que se crea, que es hoy. Un
+   literal acá se vería bien en un tema y mal en el otro, y nadie lo buscaría en una prueba verde. */
+
+/* ── El aviso de que la empresa no audita ── */
+.aud-aviso {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: 10px;
+  background: var(--bg-panel);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: var(--txt-dim);
+}
+.aud-aviso strong {
+  color: var(--txt);
+}
+.aud-aviso-chico {
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+/* ── Los estados de la carga. Los tres distintos: ver el encabezado del panel. ── */
+.aud-estado {
+  padding: 18px 4px;
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+.aud-error {
+  color: var(--danger);
+}
+.aud-error .pr-btn {
+  margin-top: 8px;
+}
+
+/* ── Los chips del semáforo ── */
+.aud-semaforo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.aud-chip {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+.aud-chip-verde {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.aud-chip-amarillo {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.aud-chip-rojo {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+/* El chip de «sin datos». Deliberadamente NEUTRO y no gris apagado: no es un cero, es la ausencia
+   de una medición, y un gris se lee como «cero y salió mal». */
+.aud-chip-vacio {
+  border-style: dashed;
+  color: var(--txt-faint);
+}
+.aud-tarjeta .mon-cifra {
+  margin-top: 2px;
+}
+.aud-urgente {
+  color: var(--danger);
+}
+.aud-resuelto {
+  color: var(--txt-faint);
+}
+
+/* ── Los bloques ── */
+.aud-bloque {
+  margin-top: 14px;
+}
+.aud-vacio {
+  padding: 16px 14px;
+  font-size: 12.5px;
+  color: var(--txt-faint);
+}
+
+/* ── Un patrón ── */
+.aud-patron {
+  border-top: 1px solid var(--line);
+}
+.aud-patron-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--txt);
+  font-size: 13px;
+}
+.aud-patron-cabeza:hover {
+  background: var(--bg-hover);
+}
+.aud-patron-titulo {
+  flex: 1;
+  font-weight: 600;
+}
+.aud-patron-casos {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--txt-dim);
+}
+.aud-patron-codigo {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.aud-patron-cuerpo {
+  padding: 0 14px 14px;
+}
+.aud-diagnostico {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--txt-dim);
+}
+
+/* ── El bloque de corrección ──
+   `pre` y `white-space: pre-wrap`: un fragmento de prompt tiene viñetas y sangría, y sin conservar
+   los espacios llega como un chorizo que no se puede pegar. `pre-wrap` y no `pre` a secas para que
+   una línea larga no abra un scroll horizontal en toda la pantalla. */
+.aud-corr {
+  margin-bottom: 10px;
+}
+.aud-texto {
+  margin: 4px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-hover);
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.aud-texto-corr {
+  border-left: 3px solid var(--ok);
+  color: var(--txt);
+}
+
+/* ── Los casos ── */
+.aud-casos,
+.aud-lista {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.aud-casos li,
+.aud-conv {
+  border-top: 1px solid var(--line);
+  padding: 8px 0;
+  font-size: 12.5px;
+}
+.aud-caso-quien {
+  font-weight: 600;
+  color: var(--txt);
+}
+.aud-caso-cuando {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.aud-cita {
+  margin: 4px 0 0;
+  border-left: 2px solid var(--line);
+  padding-left: 8px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.aud-cita-contacto {
+  color: var(--txt-faint);
+}
+.aud-resumen {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.aud-conv {
+  padding: 10px 14px;
+}
+
+/* ── El cuadro del prompt ── */
+.aud-prompt {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+}
+.aud-prompt-caja {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-input);
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt);
+  resize: vertical;
+}
+.aud-prompt-caja:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.aud-prompt-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.aud-dice {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}

@@ -345,6 +345,36 @@ export const SECCIONES: readonly Seccion[] = [
     soloDesdeLaPrincipal: true,
     menu: { grupo: 'Operación', icono: '#i-monitoreo' },
   },
+  {
+    // ── Etapa 13 · La auditoría de los agentes de IA ────────────────────────
+    //
+    // La pantalla del «técnico»: qué patrones fallan en los agentes, con su corrección lista para
+    // pegar en el prompt. **No es la cola roja** —ésa vive en el Closer y en el Setter, donde
+    // trabaja el vendedor— y esa separación es todo el módulo: una interrumpe a alguien ahora,
+    // ésta es una lista que se mira cuando se puede.
+    //
+    // ── LO QUE NO LLEVA, Y NINGUNO ES UN OLVIDO ───────────────────────────
+    //
+    // **`soloDesdeLaPrincipal` NO**, al revés que `monitoreo`. Aquella muestra el consumo de
+    // TODAS las empresas, así que una persona de una empresa cliente vería a sus competidores.
+    // Ésta muestra los agentes **de su propia empresa** y nada más: el aislamiento lo pone la
+    // política de la base, igual que en el Closer. Marcarla sería impedirle a un cliente ver sus
+    // propios agentes.
+    //
+    // **NO va en `scripts/paridad.mjs`**, por el mismo motivo que `tools` y `monitoreo`: esta
+    // pantalla no existe en `aios-command-center_1.html`, así que compararla daría un rojo
+    // permanente — y un rojo permanente no se arregla, se ignora, y con él se ignoran los demás.
+    //
+    // **Y CERO líneas en `Nav.jsx`**: el menú se dibuja desde esta lista. Tocarlo sería la
+    // séptima copia de un hecho que ya está acá.
+    //
+    // Va en «Operación» y no en el pie: el pie solo dibuja `enElPie[0]` (`components/Nav.jsx`),
+    // así que una segunda sección ahí **no se vería y nada fallaría**.
+    clave: 'auditoria',
+    nombre: 'Auditoría de agentes',
+    capacidadRequerida: 'auditor.ver',
+    menu: { grupo: 'Operación', icono: '#i-auditor' },
+  },
 ];
 
 /**

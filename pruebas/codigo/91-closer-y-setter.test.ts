@@ -50,7 +50,11 @@ const CON_MENU = SECCIONES.filter((s) => s.menu).map((s) => s.clave);
 
 // ─── Las cuatro copias, que ahora tienen que concordar ──────────────────────
 
-test('las diez pantallas del menú tienen su vista en `CommandCenter`', () => {
+test('TODA pantalla del menú tiene su vista en `CommandCenter`', () => {
+  /* El título decía «las diez» y eran CATORCE — lo era ya antes de que la auditoría sumara la
+     decimoquinta. Se corrige **quitando el número, no actualizándolo**: la afirmación de abajo es
+     total y no depende de cuántas haya, así que el conteo del título no compraba nada y solo podía
+     envejecer. Es la misma corrección que se le hizo al comentario de `BaseDeDatos`. */
   // La cuarta copia. Una clave del menú sin entrada en `VISTAS` produce una entrada clicable
   // que no dibuja nada: `shell.js` hace `document.getElementById('v-' + id).classList.add(…)`
   // sobre un nulo, tira una excepción en el manejador del clic, y el usuario ve que el menú

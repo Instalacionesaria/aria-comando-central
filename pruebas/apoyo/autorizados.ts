@@ -246,6 +246,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
    * Y la lectura es la mínima: `resolverAccesoAGhl` de SU propia organización, la que el portero ya
    * resolvió. No hay ninguna consulta sin filtro. Todo lo que escribe en la base va por
    * `conOrganizacion(`, dentro de `resolverLaIntervencion`. */
+  /* ── Etapa 13 · la pantalla del técnico ───────────────────────────────
+   *
+   * Lee `resolverAccesoAlAuditor` de SU propia organización —la que el portero ya resolvió— para
+   * saber si esta empresa audita, que es el primero de los tres estados de las tarjetas. No hay
+   * ninguna consulta sin filtro, y **la pantalla no escribe nada**: es un `GET`. */
+  'app/api/auditoria/route.ts',
   'app/api/contactos/[id]/resolver/route.ts',
   /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
    *
@@ -479,6 +485,19 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
    * Al revés —CRM primero— un fallo de la base dejaría al contacto sin etiqueta y con la
    * intervención abierta: el agente vuelve a atender **y la cola sigue pidiendo que alguien lo
    * tome**. Los dos estados que no queremos, a la vez. */
+  /* ── Etapa 13 · la pantalla del técnico ───────────────────────────────
+   *
+   * Qué queda a medias si falla la segunda mitad: **NADA**, y sale de que este archivo NO ESCRIBE.
+   * Es un `GET` con dos lecturas: si esta empresa audita (identidad) y qué encontró el auditor
+   * (negocio). La única escritura que hay en el camino es ajena y ya está resuelta —
+   * `resolverAccesoAlAuditor` registra `credencial_ilegible` **en su propia transacción de
+   * identidad**, que es lo que `ADR-0809` exige.
+   *
+   * Está en la lista igual porque la comprobación es sintáctica —cruza `conIdentidad(` con
+   * `conOrganizacion(`— y **así tiene que ser**: distinguir lectura de escritura leyendo el código
+   * es justo lo que una prueba no puede hacer bien, y el lado por el que conviene equivocarse es
+   * pedir que alguien escriba estas cinco líneas. */
+  'app/api/auditoria/route.ts',
   'app/api/contactos/[id]/resolver/route.ts',
   /* ── Etapa 5.5 · el aviso del CRM ───────────────────────────────────
    *
