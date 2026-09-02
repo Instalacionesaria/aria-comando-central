@@ -577,22 +577,20 @@ Devuelve el documento en Markdown: un título con #, secciones con ##, subseccio
  * mismo prompt divergen en la primera corrección y el síntoma es un documento generado con la
  * metodología vieja, sin ningún error. Ver `docs/ETAPA-9.md`.
  */
-export function armarPrompt(
+/**
+ * Los datos que interpola la plantilla de una herramienta.
+ *
+ * Se separó de `armarPrompt` para que se pueda comprobar QUÉ produce cada constructor sin tener que
+ * mirar el texto ya interpolado — donde una clave que falta no deja rastro. Ver `conFaltantes` en
+ * `plantillas.ts`: la comprobación de que ningún `SKILL.md` pide algo que nadie produce necesita las
+ * dos mitades, y hasta que esto fue una función con nombre solo se podía llegar a una.
+ */
+export function datosDe(
   id: number,
   valores: Record<string, string>,
   estado: EstadoDeFundaciones,
-): string {
-  const metodologia = METODOLOGIA[id];
-  if (!metodologia) throw new Error(`La herramienta ${id} no tiene metodología asignada`);
-  const plantilla = leerPlantilla(metodologia);
-  if (plantilla === null) throw new MetodologiaIlegible(metodologia);
-
-  if (id === 2) {
-    return plantilla + MODO_DOCUMENTO_CATEGORIA + diagnosticoDeCategoria(valores, estado);
-  }
-
-  const datos: DatosDePlantilla =
-    id === 0
+): DatosDePlantilla {
+  return id === 0
       ? datosDeFicha(valores)
       : id === 3
         ? datosDeIcp(valores, estado)
@@ -607,8 +605,23 @@ export function armarPrompt(
                 : id === 20
                   ? datosDeProspeccion(valores, estado)
                   : datosDeMapa(valores, estado);
+}
 
-  return interpolar(plantilla, datos);
+export function armarPrompt(
+  id: number,
+  valores: Record<string, string>,
+  estado: EstadoDeFundaciones,
+): string {
+  const metodologia = METODOLOGIA[id];
+  if (!metodologia) throw new Error(`La herramienta ${id} no tiene metodología asignada`);
+  const plantilla = leerPlantilla(metodologia);
+  if (plantilla === null) throw new MetodologiaIlegible(metodologia);
+
+  if (id === 2) {
+    return plantilla + MODO_DOCUMENTO_CATEGORIA + diagnosticoDeCategoria(valores, estado);
+  }
+
+  return interpolar(plantilla, datosDe(id, valores, estado));
 }
 
 /**

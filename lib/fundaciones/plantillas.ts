@@ -100,20 +100,62 @@ function porRuta(datos: DatosDePlantilla, ruta: string): unknown {
  * (un bloque se reemplaza por su cuerpo o por nada), nunca agregarlo.
  */
 export function interpolar(plantilla: string, datos: DatosDePlantilla): string {
+  return conFaltantes(plantilla, datos).texto;
+}
+
+/**
+ * Lo mismo, y ADEMÁS qué claves de la plantilla el constructor de datos no produjo.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ HACE FALTA SABER ESO, SI LA INTERPOLACIÓN NO FALLA NUNCA
+ *
+ * Justamente por eso. Una `{{clave}}` que nadie produce se reemplaza por **cadena vacía**: el prompt
+ * sale con un hueco, el modelo lo rellena inventando, y el documento se ve perfecto. Es el defecto
+ * que `pruebas/codigo/90-fundaciones.test.ts` dice perseguir en su comentario más largo.
+ *
+ * Y no lo perseguía. Esa prueba busca `{{…}}` en la SALIDA, y en la salida no queda nada: la clave
+ * desaparecida no deja marca. O sea que comprobaba lo único que este motor no puede producir —una
+ * llave sin resolver— y daba verde sobre el defecto real. Un bloque sin cerrar sí lo atrapa, que es
+ * bastante menos de lo que su comentario prometía.
+ *
+ * Acá la ausencia se puede ver, porque se mira mientras se reemplaza y no después.
+ *
+ * ── `undefined` ES LA FALTA; `null` ES UN DATO ───────────────────────────────
+ *
+ * Los constructores ponen `null` a propósito cuando algo no existe todavía —`_crossContext: null`
+ * cuando el alumno no generó nada, `_vslCommitments: null` cuando no hay VSL— y los `SKILL.md`
+ * tienen una rama entera para ese caso (`{{^_crossContext}}`). Eso NO es una falta: es la respuesta
+ * correcta. La falta es que la clave no exista, que es lo que pasa cuando alguien agrega una
+ * variable a un `SKILL.md` y se olvida del constructor, o le cambia el nombre a una.
+ */
+export function conFaltantes(
+  plantilla: string,
+  datos: DatosDePlantilla,
+): { texto: string; faltantes: readonly string[] } {
+  const faltantes = new Set<string>();
+  const anotar = (clave: string): unknown => {
+    const v = porRuta(datos, clave);
+    if (v === undefined) faltantes.add(clave);
+    return v;
+  };
+
   const bloque = /\{\{([#^])([\w.]+)\}\}([\s\S]*?)\{\{\/\2\}\}/g;
   let anterior: string | null = null;
   let salida = plantilla;
   while (anterior !== salida) {
     anterior = salida;
     salida = salida.replace(bloque, (_m, tipo: string, clave: string, cuerpo: string) => {
-      const verdadero = !!porRuta(datos, clave);
+      const verdadero = !!anotar(clave);
       return (tipo === '#' ? verdadero : !verdadero) ? cuerpo : '';
     });
   }
-  return salida.replace(/\{\{([\w.]+)\}\}/g, (_m, clave: string) => {
-    const v = porRuta(datos, clave);
+
+  const texto = salida.replace(/\{\{([\w.]+)\}\}/g, (_m, clave: string) => {
+    const v = anotar(clave);
     return v === undefined || v === null ? '' : String(v);
   });
+
+  return { texto, faltantes: [...faltantes] };
 }
 
 /** El prompt final: el archivo de metodología si se pudo leer, y si no el suplente embebido. */

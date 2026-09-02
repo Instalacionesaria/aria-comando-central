@@ -34,13 +34,14 @@ import {
 import { claveCorta, camposDe, idsDeCampos } from '../../lib/fundaciones/campos.ts';
 import { estadoVacio, pasoCompleto, type EstadoDeFundaciones } from '../../lib/fundaciones/estado.ts';
 import { FUENTES_POR_HERRAMIENTA, faltantes, fuentes } from '../../lib/fundaciones/herencia.ts';
-import { interpolar, leerPlantilla } from '../../lib/fundaciones/plantillas.ts';
+import { conFaltantes, interpolar, leerPlantilla } from '../../lib/fundaciones/plantillas.ts';
 import {
   METODOLOGIA,
   METODOLOGIA_RESEARCH,
   MetodologiaIlegible,
   armarPrompt,
   armarPromptResearch,
+  datosDe,
   pasoDeResearchListo,
   tokensDeSalida,
 } from '../../lib/fundaciones/prompts.ts';
@@ -388,8 +389,74 @@ test('ningún prompt sale con una variable de plantilla sin resolver', () => {
         `"${h.pestania}" con estado ${nombre} interpoló \`undefined\``,
       );
       assert.ok(prompt.length > 400, `el prompt de "${h.pestania}" salió sospechosamente corto`);
+
+      /* ── Y ESTA ES LA MITAD QUE FALTABA, QUE ES LA QUE IMPORTA ──────────────
+       *
+       * Lo de arriba busca `{{…}}` en la SALIDA, y en la salida no queda nada: `interpolar`
+       * reemplaza por CADENA VACÍA la clave que nadie produjo, así que la variable perdida no deja
+       * marca. O sea que el comentario de este `test` describía un defecto que este `test` no podía
+       * ver — daba verde justo sobre el caso que dice perseguir. Lo que sí atrapaba es un bloque sin
+       * cerrar, que es bastante menos.
+       *
+       * `conFaltantes` mira mientras reemplaza, no después. `undefined` es la falta —la clave no
+       * existe— y `null` no: los constructores lo ponen a propósito cuando algo todavía no se generó
+       * y los `SKILL.md` tienen una rama para ese caso. */
+      const { faltantes } = conFaltantes(
+        leerPlantilla(METODOLOGIA[h.id]!)!,
+        datosDe(h.id, valoresLlenos(h.id), estado),
+      );
+      assert.deepEqual(
+        faltantes,
+        [],
+        `el \`SKILL.md\` de "${h.pestania}" pide variables que su constructor de datos no produce, ` +
+          'y se interpolan como cadena vacía: el prompt sale con un hueco y el modelo lo rellena ' +
+          'inventando',
+      );
     }
   }
+});
+
+test('las tres ramas del VSL cambian el prompt de verdad, no solo el dato', () => {
+  /* Los tres booleanos —`_isB2C`, `_hasProof`, `_isScreenShare`— encienden ramas ENTERAS del
+     `killer-framework`. Ya hay una prueba de que los valores de las listas empiezan con el prefijo
+     que los enciende; ésta comprueba lo de más abajo en la cadena: que la plantilla efectivamente
+     cambie. Entre las dos cubren el camino completo, porque un prefijo correcto sobre una plantilla
+     que perdió su `{{#_isB2C}}` seguiría dando verde arriba y un guion con el molde equivocado acá. */
+  const estado = estadoCompleto();
+  const base = {
+    't6-program': 'ARIA IA Accelerator',
+    't6-duration': 'medio',
+    't6-promise': 'Lanza tu AI Firm en 90 días',
+    't6-story': 'Marcos pasó de 4 a 19 llamadas',
+    't6-obj': 'no tengo tiempo',
+  };
+  const con = (extra: Record<string, string>) => armarPrompt(5, { ...base, ...extra }, estado);
+
+  const campos = new Map(camposDe(herramienta(5)!).map((c) => [c.id, c]));
+  const opcion = (id: string, prefijo: string): string => {
+    const v = campos.get(id)!.opciones!.find((o) => o.valor.startsWith(prefijo));
+    assert.ok(v, `no hay opción de \`${id}\` que empiece con "${prefijo}"`);
+    return v.valor;
+  };
+
+  const b2b = con({ 't6-market': opcion('t6-market', 'B2B') });
+  const b2c = con({ 't6-market': opcion('t6-market', 'B2C') });
+  assert.notEqual(b2b, b2c, 'B2B y B2C producen el MISMO prompt: la rama del mercado no enciende');
+
+  const conProof = con({ 't6-socialproof': opcion('t6-socialproof', 'Sí') });
+  const sinProof = con({ 't6-socialproof': opcion('t6-socialproof', 'No') });
+  assert.notEqual(conProof, sinProof, 'la rama de la prueba social no enciende');
+
+  const pantalla = con({ 't6-format': opcion('t6-format', 'Case study') });
+  const camara = con({ 't6-format': opcion('t6-format', 'Raw talking-head') });
+  assert.notEqual(pantalla, camara, 'la rama del formato de grabación no enciende');
+  /* Y la de pantalla compartida entrega ADEMÁS el documento visual, que es media herramienta: el
+     alumno narra sobre él. Si esa rama se apagara, el guion saldría igual de convincente y sin la
+     mitad que se ve. */
+  assert.ok(
+    pantalla.length > camara.length,
+    'la rama de screen share no agrega el documento visual que la distingue',
+  );
 });
 
 test('los cinco pasos del research tampoco dejan huecos, y encadenan de verdad', () => {
