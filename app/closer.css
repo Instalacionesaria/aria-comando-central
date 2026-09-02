@@ -595,6 +595,56 @@
   padding: 14px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL BOTÓN DE REPLEGAR, EN EL ENCABEZADO DE CADA SECCIÓN
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Va acá y no en `aios.css` por el motivo del encabezado de este archivo: esa hoja es el port
+   literal del prototipo, y este botón no existe en el prototipo.
+
+   `margin-left:auto` dentro de un `.md-h` que ya es flex: se va al borde derecho sin mover el
+   título ni el conteo, y sin depender de cuántas cosas haya en el medio. */
+.sec-plegar {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  /* `currentColor` y no un token: el encabezado de una cola crítica es rojo y el de una
+     completada gris, y un color fijo acá haría que la flecha se despegara de su sección. */
+  color: currentColor;
+  opacity: 0.5;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity .14s ease, background .14s ease, transform .18s cubic-bezier(.32, .72, 0, 1);
+}
+.sec-plegar:hover {
+  opacity: 1;
+  background: rgb(var(--c-nube) / 0.09);
+}
+.sec-plegar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* Replegada, la MISMA flecha girada. Un segundo glifo sería una segunda fuente de verdad para el
+   mismo estado, y el día que una se olvide la flecha apunta para donde la lista no está. */
+.md-sec.plegada .sec-plegar {
+  transform: rotate(-90deg);
+}
+
+/* Y el borde de abajo del encabezado se va con la lista: sin esto queda una línea de 1 px pegada
+   al borde redondeado de la sección, que se lee como un renglón vacío a medio cargar. */
+.md-sec.plegada .md-h {
+  border-bottom: 0;
+}
+
 /* Y una lista larga no empuja la etapa siguiente fuera de la pantalla: cada sección se desplaza
    sola a partir de cierto alto. Es lo único que la disposición en columnas hacía bien. */
 .md-sec > .md-r:first-of-type {

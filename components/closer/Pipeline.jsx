@@ -49,6 +49,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import Ficha from '../negocio/Ficha.jsx';
+import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import Fila from '../negocio/Fila.jsx';
 
 export default function Pipeline({ camino, pulso = 0 }) {
@@ -174,15 +175,18 @@ export default function Pipeline({ camino, pulso = 0 }) {
           se agregue una etapa, el CSS es el único lugar donde hay que darle el suyo. Hasta que se lo
           den, la sección se dibuja sin canto de color en vez de heredar el de la anterior. */}
       {datos.columnas.map((col) => (
-        <div className="md-sec" data-etapa={col.clave} key={col.clave}>
-          <div className="md-h">
-            {col.nombre}{' '}
-            {/* El conteo va SIEMPRE, incluido el cero. Es la mitad visible de la regla del
-                encabezado: `Ganado 0` es una afirmación y un Ganado ausente es una pregunta que
-                nadie se hace. */}
-            <span className="b">{col.cuantos}</span>
-          </div>
+        /* ── EL CONTEO VA SIEMPRE, INCLUIDO EL CERO ───────────────────────────
+           Es la mitad visible de la regla del encabezado: `Ganado 0` es una afirmación y un
+           Ganado ausente es una pregunta que nadie se hace.
 
+           Replegada la sección sigue mostrándolo, y por eso replegar sirve: se cierran las siete
+           etapas y queda el embudo entero en siete renglones con sus números. */
+        <SeccionPlegable
+          key={col.clave}
+          titulo={col.nombre}
+          cuantos={col.cuantos}
+          etapa={col.clave}
+        >
           {col.filas.length === 0 ? (
             /* Vacía CON SU MOTIVO, no en blanco. Una sección en blanco se lee como un error de
                carga; «Nadie acá» dice que se miró y no hay. */
@@ -190,7 +194,7 @@ export default function Pipeline({ camino, pulso = 0 }) {
           ) : (
             col.filas.map((f) => <Fila key={f.id} fila={f} onAbrir={(fila) => setAbierta(fila.id)} />)
           )}
-        </div>
+        </SeccionPlegable>
       ))}
 
       {/* La ficha se abre DONDE se la invoca y nunca navega: al cerrarla se vuelve al mismo

@@ -160,11 +160,33 @@ test('el Pipeline usa la MISMA fila que Mi Día', () => {
   for (const muerta of ['pipe-col', 'pipe-t', 'pipe-nm', 'pipe-h', 'pipe-b', '"pipe"']) {
     assert.ok(!pipeline.includes(muerta), `el Pipeline volvió a las columnas: usa \`${muerta}\``);
   }
-  // Y las secciones son las de Mi Día, con su conteo SIEMPRE — incluido el cero, que es la regla
-  // que el archivo defiende: «Ganado 0» es una afirmación y un Ganado ausente es una pregunta que
-  // nadie se hace.
-  assert.match(pipeline, /className="md-sec"/, 'el Pipeline no usa el molde de secciones de Mi Día');
-  assert.match(pipeline, /\{col\.cuantos\}/, 'el Pipeline dejó de mostrar el conteo de cada etapa');
+  /* ── Y LAS SECCIONES SON LAS DE MI DÍA, AHORA POR UN COMPONENTE ─────────
+
+     Esto comparó `className="md-sec"` en este archivo hasta que el botón de replegar entró: el
+     molde —`.md-sec` + `.md-h` + su conteo— se mudó a `components/negocio/SeccionPlegable.jsx`,
+     que es lo que hace que los CUATRO tableros lo compartan en vez de copiarlo.
+
+     La afirmación no cambia, cambia dónde mirar: que el Pipeline use ESE componente y no una
+     tarjeta propia. La clase se sigue comprobando —en el archivo donde ahora vive— porque el
+     CSS de las etapas cuelga de ella.
+
+     Y el conteo SIEMPRE, incluido el cero, que es la regla que el archivo defiende: «Ganado 0» es
+     una afirmación y un Ganado ausente es una pregunta que nadie se hace. */
+  assert.match(
+    pipeline,
+    /<SeccionPlegable/,
+    'el Pipeline no usa el molde de secciones de Mi Día: volvió a dibujar el suyo',
+  );
+  assert.match(pipeline, /cuantos=\{col\.cuantos\}/, 'el Pipeline dejó de pasar el conteo de cada etapa');
+  /* Y la clase se busca en su FORMA DE CÓDIGO, no como palabra suelta. Es la cuarta vez que este
+     repositorio paga la misma leccioncita: una mutación que renombró la clase **sobrevivió**,
+     porque `md-sec` sigue apareciendo en los comentarios de ese archivo, que la explican. */
+  assert.match(
+    leer('components/negocio/SeccionPlegable.jsx'),
+    /className=\{`md-sec/,
+    'el componente compartido dejó de dibujar `.md-sec`, que es de donde el CSS saca el tinte de ' +
+      'cada etapa',
+  );
 });
 
 test('el barrido manual espera lo que la ruta puede tardar', () => {

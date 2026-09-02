@@ -153,7 +153,21 @@ test('la pantalla NO elige tonos: pasa la clave del servidor', () => {
   // adentro. Si eligiera tonos, habría dos lugares que definen el mismo color y uno quedaría viejo —
   // y encima el tema claro no lo seguiría, porque un literal no cambia con el tema.
   const jsx = leer('components/closer/Pipeline.jsx');
-  assert.match(jsx, /data-etapa=\{col\.clave\}/, 'el Pipeline dejó de marcar la etapa de cada sección');
+  /* ── LA CLAVE VIAJA EN DOS SALTOS, Y LOS DOS SE COMPRUEBAN ────────────
+
+     Esto buscaba `data-etapa={col.clave}` acá hasta que el botón de replegar entró y el molde de
+     la sección se mudó a `SeccionPlegable`. Ahora el Pipeline le pasa la clave por propiedad y el
+     componente la pone en el atributo.
+
+     Se afirman LOS DOS saltos y no solo el primero: con el atributo suelto en el componente
+     compartido y sin nadie que le pase la clave, las siete etapas se dibujarían sin su tinte y
+     esta prueba pasaría igual. */
+  assert.match(jsx, /etapa=\{col\.clave\}/, 'el Pipeline dejó de pasarle la etapa a la sección');
+  assert.match(
+    leer('components/negocio/SeccionPlegable.jsx'),
+    /'data-etapa': etapa/,
+    'la sección compartida dejó de marcar la etapa: el CSS no tiene de dónde sacar el tinte',
+  );
   const codigo = jsx.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(
     !/#[0-9a-fA-F]{3,6}\b/.test(codigo) && !/rgba?\(/.test(codigo),

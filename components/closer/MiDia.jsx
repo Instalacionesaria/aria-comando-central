@@ -42,6 +42,7 @@ import { useState } from 'react';
 import Fila, { SeisIconos } from '../negocio/Fila.jsx';
 import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
+import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import { queDecir, resolverIntervencion } from '../../lib/auditor/resolverDesdeLaCola.ts';
 
 /**
@@ -264,14 +265,19 @@ export default function MiDia({
         const items = colas[cola.clave] ?? [];
 
         return (
-          <div className={`md-sec${cola.tono ? ` ${cola.tono}` : ''}`} key={cola.clave}>
-            <div className="md-h">
-              {cola.titulo}{' '}
-              {/* El conteo va SIEMPRE, incluso en cero. El `02` regla 6 lo pide para las
-                  columnas del Pipeline y vale igual acá: una sección sin número no dice si
-                  está vacía o si no se pudo contar. */}
-              <span className="b">{items.length}</span>
-            </div>
+          /* ── EL CONTEO VA SIEMPRE, INCLUSO EN CERO ─────────────────────────
+             El `02` regla 6 lo pide para las columnas del Pipeline y vale igual acá: una sección
+             sin número no dice si está vacía o si no se pudo contar.
+
+             Y sigue valiéndolo REPLEGADA, que es lo que hace que replegar sea útil: la sección
+             cerrada sigue diciendo cuántos hay adentro. Vive en `SeccionPlegable`, que es el
+             mismo encabezado que usa el Pipeline. */
+          <SeccionPlegable
+            key={cola.clave}
+            titulo={cola.titulo}
+            cuantos={items.length}
+            tono={cola.tono ?? null}
+          >
 
             {/* UN CERO SE MUESTRA COMO UN CERO.
                 Acá había dos clases de vacío: la frase neutra de la cola, y —cuando el servidor
@@ -357,7 +363,7 @@ export default function MiDia({
                 </div>
               );
             })}
-          </div>
+          </SeccionPlegable>
         );
       })}
 
