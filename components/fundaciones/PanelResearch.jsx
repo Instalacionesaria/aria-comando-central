@@ -371,6 +371,20 @@ export default function PanelResearch({
         </div>
       ) : null}
 
+      {/* La barra del método va ACÁ y no al pie, y la diferencia la reportó Kevin: «no lo veo».
+          Estaba al final del panel, que es donde el hub la pone — pero allá los cinco pasos son
+          chips y el panel entra en una pantalla. Acá cada paso es una tarjeta con su documento
+          adentro, así que el pie queda a varios scrolls de distancia y el botón no existe para quien
+          no baja hasta el fondo. Pegada a los controles se ve al llegar, que es cuando hace falta. */}
+      {onIr ? (
+        <BarraDePasos
+          herramienta={herramienta}
+          estado={estado}
+          pantalla={pantalla}
+          onIr={onIr}
+        />
+      ) : null}
+
       <div className="fd-pasos">
         {TITULOS.map((titulo, paso) => {
           const salida = salidas[paso];
@@ -448,17 +462,6 @@ export default function PanelResearch({
         </div>
       ) : null}
 
-      {/* La barra del método, al pie y SIEMPRE — no solo con los cinco pasos hechos. Es navegación:
-          quien quiera volver al paso anterior o adelantarse tiene que poder, y el indicador dice
-          cuánto del método está construido aunque este research esté a medias. */}
-      {onIr ? (
-        <BarraDePasos
-          herramienta={herramienta}
-          estado={estado}
-          pantalla={pantalla}
-          onIr={onIr}
-        />
-      ) : null}
     </div>
   );
 }
