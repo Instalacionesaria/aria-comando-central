@@ -98,3 +98,60 @@ export function presente(valores: Record<string, string>, id: string): boolean {
   const v = valor(valores, id);
   return v !== SIN_ESPECIFICAR;
 }
+
+/**
+ * Los campos que hay que tener SÍ O SÍ y todavía están vacíos.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * ESTA REGLA LA COMPARTEN EL FORMULARIO Y EL AGENTE, Y POR ESO VIVE ACÁ
+ *
+ * «Obligatorio» es lo que queda después de sacar dos cosas, y ninguna de las dos es una lista:
+ *
+ *   · los `opcional` — la etiqueta ya se lo dice a la persona (`Contrato inicial mínimo
+ *     (opcional)`), y la bandera se lo dice al código;
+ *   · los que tienen `valorPorOmision` — nunca están vacíos: si nadie escribe nada, vale el
+ *     valor de omisión, que es lo que el formulario ya muestra al abrirse.
+ *
+ * El Research tenía esta regla escrita a mano y DOS VECES en `PanelResearch`: `faltaNicho` y
+ * `faltaExperiencia`, dos constantes con los identificadores adentro. Funcionaba, y era la lista
+ * paralela de siempre esperando el día en que alguien agregara un sexto criterio obligatorio y se
+ * olvidara de la constante: el botón se habilitaría igual, el paso 1 buscaría sin ese dato y el
+ * documento saldría genérico sin que nada fallara.
+ *
+ * Con el agente conversacional la misma regla necesitaba un TERCER lugar —el servidor, que decide
+ * si ya se puede arrancar— y tres copias de una regla es donde este repositorio ya sabe cómo
+ * termina. Es una sola, derivada del catálogo, y las tres la llaman.
+ */
+export function obligatoriosQueFaltan(
+  h: Herramienta,
+  valores: Record<string, string>,
+): readonly Campo[] {
+  return camposDe(h).filter((campo) => {
+    if (campo.opcional) return false;
+    if (campo.valorPorOmision) return false;
+    return !presente(valores, campo.id);
+  });
+}
+
+/**
+ * Los valores con el `valorPorOmision` puesto donde el campo quedó vacío.
+ *
+ * El formulario hace esto al abrirse —por eso «Compradores potenciales mínimos» ya dice `50,000+`
+ * sin que nadie lo escriba—, y el agente conversacional necesita exactamente lo mismo del otro
+ * lado: si la persona no dijo un número de compradores, el criterio no queda vacío, queda en el
+ * valor de omisión. Sin esto, los dos modos generarían el research con criterios distintos a partir
+ * de la misma conversación.
+ */
+export function conValoresPorOmision(
+  h: Herramienta,
+  valores: Record<string, string>,
+): Record<string, string> {
+  const salida: Record<string, string> = { ...valores };
+  for (const campo of camposDe(h)) {
+    const v = salida[campo.id];
+    if ((v === undefined || v.trim() === '') && campo.valorPorOmision) {
+      salida[campo.id] = campo.valorPorOmision;
+    }
+  }
+  return salida;
+}

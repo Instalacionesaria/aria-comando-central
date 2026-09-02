@@ -1047,10 +1047,13 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
   );
   assert.ok(ms > 0, 'el cliente dejó de fijar cuánto se espera a una ruta larga');
 
-  // Las cuatro rutas que las dos pantallas —Fundaciones y `tools`— pueden llamar.
+  // Las rutas que las dos pantallas —Fundaciones y `tools`— pueden llamar. La quinta es la del
+  // agente conversacional del Research: sus turnos son cortos, pero cada uno lee las seis llaves
+  // del almacén antes de llamar al modelo, así que hereda el mismo `maxDuration` que las demás.
   const RUTAS = [
     'app/api/fundaciones/estado/route.ts',
     'app/api/fundaciones/generar/route.ts',
+    'app/api/fundaciones/conversar/route.ts',
     'app/api/tools/estado/route.ts',
     'app/api/tools/generar/route.ts',
   ];
@@ -1071,11 +1074,12 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
     'components/fundaciones/Fundaciones.jsx',
     'components/fundaciones/PanelHerramienta.jsx',
     'components/fundaciones/PanelResearch.jsx',
+    'components/fundaciones/ChatDeResearch.jsx',
     'components/tools/PanelProspeccion.jsx',
   ];
   for (const archivo of LLAMADORES) {
     const fuente = leer(archivo);
-    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar)/g) || []).length;
+    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar|Conversar)/g) || []).length;
     const esperas = (fuente.match(/espera:\s*ESPERA_DE_RUTA_LARGA_MS/g) || []).length;
     assert.equal(
       esperas,
@@ -1083,6 +1087,30 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
       `${archivo} hace ${pedidos} llamadas a las rutas de Fundaciones y solo ${esperas} declaran ` +
         'la espera larga: la que falta va a abortar a los quince segundos',
     );
+  }
+});
+
+test('la bandera `opcional` y el «(opcional)» de la etiqueta van SIEMPRE juntos', () => {
+  // La etiqueta es lo que lee la persona y la bandera es lo que lee el código —`obligatoriosQueFaltan`
+  // decide con ella si el botón se habilita y si el agente conversacional puede seguir de largo—.
+  // Que se contradigan no falla en ninguna parte, y da las dos formas del mismo defecto:
+  //
+  //   · etiqueta sin bandera → el formulario dice «(opcional)» y el botón queda deshabilitado hasta
+  //     que lo llenes, sin decir por qué;
+  //   · bandera sin etiqueta → un campo que parece obligatorio se puede saltear, y el entregable sale
+  //     con un dato menos sin que nadie lo haya decidido.
+  //
+  // Se comprueba en las DOS direcciones sobre las nueve herramientas, no solo sobre el Research.
+  for (const h of [...FUNDACIONES, ...TOOLS]) {
+    for (const campo of camposDe(h)) {
+      const loDice = campo.etiqueta.toLowerCase().includes('(opcional)');
+      assert.equal(
+        !!campo.opcional,
+        loDice,
+        `\`${campo.id}\` dice «${campo.etiqueta}» y su bandera \`opcional\` es ` +
+          `${campo.opcional ? 'true' : 'false'}: la etiqueta y el código no dicen lo mismo`,
+      );
+    }
   }
 });
 

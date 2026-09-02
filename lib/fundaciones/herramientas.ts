@@ -38,6 +38,21 @@ export interface Campo {
   marcador?: string;
   opciones?: readonly OpcionCampo[];
   valorPorOmision?: string;
+  /**
+   * Se puede dejar vacío y el entregable sale igual. **La etiqueta ya lo dice y esto lo hace
+   * legible por código.**
+   *
+   * Entró con el agente conversacional del Research, que necesita saber qué preguntas puede dejar
+   * pasar y cuáles no. La alternativa era una lista de identificadores obligatorios en el módulo
+   * del agente, y esa lista es la que diverge: alguien marca un campo como opcional en la etiqueta,
+   * el formulario deja de exigirlo, y el agente sigue insistiendo con una pregunta que ya no hace
+   * falta — sin que nada falle.
+   *
+   * La bandera y el `(opcional)` de la etiqueta van juntos, y una prueba lo exige en las dos
+   * direcciones: la etiqueta es lo que lee la persona y la bandera es lo que lee el código, así que
+   * la única forma de que no se contradigan es que no se puedan poner una sin la otra.
+   */
+  opcional?: boolean;
 }
 
 export interface FilaDeCampos {
@@ -149,7 +164,7 @@ const RESEARCH: Herramienta = {
       columnas: 2,
       campos: [
         { id: 'mr-ltv', etiqueta: 'LTV mínimo de SUS clientes', tipo: 'texto', marcador: 'Ej: $3,000+', valorPorOmision: '$3,000+' },
-        { id: 'mr-contract', etiqueta: 'Contrato inicial mínimo (opcional)', tipo: 'texto', marcador: 'Ej: $1,000+' },
+        { id: 'mr-contract', etiqueta: 'Contrato inicial mínimo (opcional)', tipo: 'texto', marcador: 'Ej: $1,000+', opcional: true },
       ],
     },
     {
@@ -210,7 +225,7 @@ const ICP: Herramienta = {
     {
       columnas: 1,
       campos: [
-        { id: 't4-tried', etiqueta: '¿Qué han intentado antes? (opcional)', tipo: 'area', marcador: 'Ej: contrataron freelancers, compraron cursos, probaron agencias' },
+        { id: 't4-tried', etiqueta: '¿Qué han intentado antes? (opcional)', tipo: 'area', marcador: 'Ej: contrataron freelancers, compraron cursos, probaron agencias', opcional: true },
       ],
     },
   ],
@@ -264,7 +279,7 @@ const OFERTA: Herramienta = {
       columnas: 2,
       campos: [
         { id: 't5-name', etiqueta: 'Nombre de tu oferta o programa', tipo: 'texto', marcador: 'Ej: Protocolo de Adquisición Predecible' },
-        { id: 't5-price', etiqueta: 'Precio (opcional)', tipo: 'texto', marcador: 'Déjalo vacío si aún no lo definiste' },
+        { id: 't5-price', etiqueta: 'Precio (opcional)', tipo: 'texto', marcador: 'Déjalo vacío si aún no lo definiste', opcional: true },
       ],
     },
     {
@@ -295,7 +310,7 @@ const OFERTA: Herramienta = {
     {
       columnas: 1,
       campos: [
-        { id: 't5-urgency', etiqueta: '¿Qué hace que sea urgente? (opcional)', tipo: 'area', marcador: 'Escasez SOLO real: cupos de delivery, temporada, cambio de precio ya decidido' },
+        { id: 't5-urgency', etiqueta: '¿Qué hace que sea urgente? (opcional)', tipo: 'area', marcador: 'Escasez SOLO real: cupos de delivery, temporada, cambio de precio ya decidido', opcional: true },
       ],
     },
   ],
@@ -345,7 +360,7 @@ const PRICING: Herramienta = {
     {
       columnas: 1,
       campos: [
-        { id: 't11-pastresults', etiqueta: 'Resultados pasados con cifras (opcional)', tipo: 'area', marcador: 'Solo cifras reales. Lo que falte se marca como pendiente, no se inventa' },
+        { id: 't11-pastresults', etiqueta: 'Resultados pasados con cifras (opcional)', tipo: 'area', marcador: 'Solo cifras reales. Lo que falte se marca como pendiente, no se inventa', opcional: true },
       ],
     },
   ],
@@ -368,13 +383,13 @@ const MAPA: Herramienta = {
     {
       columnas: 1,
       campos: [
-        { id: 't26-caso', etiqueta: 'Un caso real tuyo (opcional)', tipo: 'area', marcador: 'Ej: Marcos pasó de 4 a 19 llamadas al mes en 11 semanas' },
+        { id: 't26-caso', etiqueta: 'Un caso real tuyo (opcional)', tipo: 'area', marcador: 'Ej: Marcos pasó de 4 a 19 llamadas al mes en 11 semanas', opcional: true },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't26-responsables', etiqueta: 'Responsables por fase (opcional)', tipo: 'area', marcador: 'Si no tienes equipo, déjalo vacío: se cubre con [tú / agente IA]' },
+        { id: 't26-responsables', etiqueta: 'Responsables por fase (opcional)', tipo: 'area', marcador: 'Si no tienes equipo, déjalo vacío: se cubre con [tú / agente IA]', opcional: true },
       ],
     },
   ],

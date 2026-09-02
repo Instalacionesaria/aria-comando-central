@@ -23,6 +23,16 @@ export const LLAVES = {
   research: 'market_research',
   researchProfundo: 'deep_research',
   categoriaLegado: 'cat_chat',
+  /**
+   * La conversación del agente del Research. **Es la única llave que el hub NO escribe.**
+   *
+   * Y aun así sus campos van en inglés como los de al lado. No es coherencia decorativa: la fila
+   * vive en la MISMA tabla que las otras cinco, y el día que alguien mire `aria_brain_client_state`
+   * a mano —que es como se diagnostica esto— un documento con `contenido` entre cinco con `content`
+   * se lee como un dato roto. Lo que sí es nuestro es el nombre: `research_chat`, y no `cat_chat`,
+   * que es el del chat viejo de Categoría Única del hub y guarda otra cosa.
+   */
+  researchChat: 'research_chat',
 } as const;
 
 /**
@@ -42,6 +52,35 @@ export interface Version {
   sources?: Record<number, { version: number; hash: string } | number>;
 }
 
+/**
+ * Un turno de la conversación con el agente del Research.
+ *
+ * Los dos únicos papeles que existen: quien pregunta y quien contesta. **El `system` no está y no
+ * puede estar** — las instrucciones del entrevistador las arma el servidor en cada llamada (ver
+ * `conversacion.ts`), y guardarlas acá significaría que una conversación vieja sigue corriendo con
+ * las instrucciones del día que empezó, sin que nadie lo note al corregirlas.
+ */
+export interface MensajeDeChat {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Lo que el agente del Research juntó hasta ahora: los turnos y los criterios.
+ *
+ * Los criterios viven ACÁ y no en `market_research.inputs` mientras la conversación está a medias,
+ * y esa separación es la que impide una pérdida de trabajo concreta: alguien llenó el formulario,
+ * abre el chat para revisar un dato, y a la segunda pregunta el documento de criterios ya estaría
+ * pisado con lo que el agente lleva juntado — que a esa altura es casi nada. Lo que junta el agente
+ * pasa a `market_research.inputs` en UN solo momento: cuando arranca el research, que es el mismo
+ * momento en que lo hace el botón del formulario.
+ */
+export interface ChatDeResearch {
+  messages: MensajeDeChat[];
+  /** Claves cortas, como en `researchInputs`. Vacío = el agente todavía no lo sabe. */
+  criteria: Record<string, string>;
+}
+
 /** El estado completo, tal como lo devuelve `GET /api/fundaciones/estado`. */
 export interface EstadoDeFundaciones {
   /** Inputs por herramienta, con claves cortas. Índice = id del hub. */
@@ -52,6 +91,8 @@ export interface EstadoDeFundaciones {
   researchInputs: Record<string, string>;
   /** Las salidas de los cinco pasos del Research, en orden. */
   researchSalidas: string[];
+  /** La conversación con el agente del Research, si el alumno usó ese modo. */
+  researchChat: ChatDeResearch;
   /** Investigación profunda y lenguaje de campo, si el alumno los corrió en el hub. Solo lectura. */
   researchProfundo: string | null;
   researchCampo: string | null;
@@ -66,6 +107,7 @@ export function estadoVacio(): EstadoDeFundaciones {
     historial: {},
     researchInputs: {},
     researchSalidas: [],
+    researchChat: { messages: [], criteria: {} },
     researchProfundo: null,
     researchCampo: null,
     categoriaLegado: null,

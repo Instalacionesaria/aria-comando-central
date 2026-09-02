@@ -150,6 +150,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // donde olvidarse un `where` devuelve datos de otra organización sin ningún error.
   'app/api/fundaciones/estado/route.ts',
   'app/api/fundaciones/generar/route.ts',
+  // El agente conversacional del Research, que llegó después y es el MISMO caso que `generar`: lee
+  // la fila de credenciales de la organización —la llave de IA y el `cliente_id` del hub— y todo lo
+  // demás lo lee y lo escribe en el almacén de ARIA-brain, que no es esta base. El filtro por
+  // organización lo pone esa consulta a mano, con `contexto.orgEfectiva`.
+  'app/api/fundaciones/conversar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
   // Location ID de la organización, que viven en `identidad.organizaciones_credenciales` — una

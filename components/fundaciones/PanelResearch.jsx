@@ -17,6 +17,23 @@
    servidor lee las salidas anteriores DEL ALMACÉN (ver `generar/route.ts`). El
    navegador no puede mandar un encadenamiento equivocado porque no lo manda.
 
+   ── DOS CAMINOS HASTA LOS MISMOS CINCO CRITERIOS ──────────────────────────
+
+   El formulario y el agente conversacional. Lo que cambia es cómo se llega a los cinco
+   valores; de ahí para abajo —los cinco pasos, sus documentos, lo que hereda el ICP— es
+   exactamente el mismo código, y por eso la lista de pasos vive FUERA del selector: si
+   cada modo dibujara la suya, arreglar una sería arreglar la mitad.
+
+   ── Y POR ESO `correrPaso` RECIBE LOS VALORES ─────────────────────────────
+
+   Antes los leía del estado del componente, que alcanzaba: los escribía el formulario y
+   estaban ahí desde antes de apretar. El agente los trae en la RESPUESTA del turno que
+   dice «arrancá», así que arrancar con los del estado sería leerlos un render antes de
+   que existan — el mismo `setState` asíncrono que en el hub dejó al paso 5 generando
+   sobre una lista vacía, entrando esta vez por la puerta de al lado.
+
+   Pasarlos por argumento es lo que hace que ese defecto no se pueda escribir.
+
    ── UNA PETICIÓN POR PASO, NO UNA POR LOS CINCO ───────────────────────────
 
    Son cinco llamadas al modelo con búsqueda web. Encadenarlas en una sola petición
@@ -27,10 +44,16 @@
 import { useMemo, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { aValoresDeFormulario, camposDe } from '@/lib/fundaciones/campos';
+import {
+  aValoresDeFormulario,
+  camposDe,
+  conValoresPorOmision,
+  obligatoriosQueFaltan,
+} from '@/lib/fundaciones/campos';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
+import ChatDeResearch from './ChatDeResearch';
 import Documento from './Documento';
 
 const TITULOS = [
@@ -53,6 +76,7 @@ export default function PanelResearch({
      para que ESTE archivo sepa a cuál pertenece. */
   rutaEstado,
   rutaGenerar,
+  rutaConversar,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -65,6 +89,11 @@ export default function PanelResearch({
     }
     return guardados;
   });
+
+  /* Arranca en el formulario, y no en el último modo que se usó: es lo que esta pantalla ya
+     mostraba, y una pantalla que cambia de forma según algo que uno no recuerda haber elegido se
+     lee como un error. Elegir el chat es un clic, y el chat que quedó a medias sigue ahí. */
+  const [modo, setModo] = useState('formulario');
 
   const [salidas, setSalidas] = useState(() => [...estado.researchSalidas]);
   const [corriendo, setCorriendo] = useState(null);
@@ -91,12 +120,12 @@ export default function PanelResearch({
      cinco campos, y perderlos por cerrar la pestaña es la peor forma de perder trabajo. Acá
      pesa más todavía, porque el research son cinco generaciones y nadie las arranca sin
      haber pensado los criterios primero. */
-  const guardar = async () => {
+  const guardar = async (v = valores) => {
     setErrorAlGuardar(null);
     setGuardando(true);
     const r = await pedir(rutaEstado, {
       metodo: 'POST',
-      cuerpo: { herramienta: 1, valores },
+      cuerpo: { herramienta: 1, valores: v },
       espera: ESPERA_DE_RUTA_LARGA_MS,
     });
     setGuardando(false);
@@ -110,14 +139,19 @@ export default function PanelResearch({
     onEstadoCambiado();
   };
 
-  /** Corre UN paso. Devuelve si salió bien, para que el recorrido de los cinco pueda cortar. */
-  const correrPaso = async (paso) => {
+  /**
+   * Corre UN paso. Devuelve si salió bien, para que el recorrido de los cinco pueda cortar.
+   *
+   * Los valores llegan por argumento y el estado es solo el valor por omisión. Ver el encabezado:
+   * el agente los trae en la respuesta del turno, un render antes de que el estado los tenga.
+   */
+  const correrPaso = async (paso, v = valores) => {
     setCorriendo(paso);
     setError((previo) => ({ ...previo, [paso]: null }));
 
     const r = await pedir(rutaGenerar, {
       metodo: 'POST',
-      cuerpo: { herramienta: 1, valores, paso },
+      cuerpo: { herramienta: 1, valores: v, paso },
       espera: ESPERA_DE_RUTA_LARGA_MS,
     });
 
@@ -140,15 +174,42 @@ export default function PanelResearch({
   };
 
   /** Los cinco, de a uno. Corta en el primero que falle: el siguiente lo necesitaba. */
-  const correrTodo = async () => {
+  const correrTodo = async (v = valores) => {
     for (let paso = 0; paso < PASOS_RESEARCH; paso += 1) {
-      const bien = await correrPaso(paso);
+      const bien = await correrPaso(paso, v);
       if (!bien) return;
     }
   };
 
-  const faltaNicho = !valores['mr-niche'] || valores['mr-niche'].trim() === '';
-  const faltaExperiencia = !valores['mr-experience'] || valores['mr-experience'].trim() === '';
+  /* Lo que el agente devuelve en cada turno, puesto en el formulario. Son claves cortas y el
+     formulario usa identificadores de campo, así que la traducción es la de siempre.
+
+     No se guarda en el almacén acá: mientras la conversación está a medias, los criterios viven en
+     el documento del chat (ver `estado.ts`). Esto es para que cambiarse al formulario muestre lo
+     que el agente entendió, y se pueda corregir a mano. */
+  const anotarLoDelAgente = (criterios) => {
+    setValores(aValoresDeFormulario(ids, criterios));
+    setGuardado(false);
+  };
+
+  /* El agente terminó y la persona confirmó. Se guardan los criterios y arrancan los cinco pasos,
+     que es exactamente lo que hace el botón del formulario — el mismo camino, disparado por la
+     conversación en vez de por un clic.
+
+     `conValoresPorOmision` es lo que iguala los dos modos: el formulario muestra `50,000+` desde
+     que se abre, así que quien nunca tocó ese campo genera con ese valor. Sin esta línea, la misma
+     conversación produciría un research con un criterio menos. */
+  const arrancarDesdeElAgente = async (criterios) => {
+    const v = conValoresPorOmision(herramienta, aValoresDeFormulario(ids, criterios));
+    setValores(v);
+    await guardar(v);
+    await correrTodo(v);
+  };
+
+  /* La regla de qué es obligatorio sale del catálogo y la comparten el formulario, el agente y el
+     servidor. Ver `obligatoriosQueFaltan`: antes eran dos constantes con los identificadores
+     escritos a mano, acá y solo acá. */
+  const faltan = obligatoriosQueFaltan(herramienta, valores);
 
   return (
     <div className="cl-page">
@@ -165,113 +226,170 @@ export default function PanelResearch({
         ) : null}
       </div>
 
-      <div className="card">
-        <div className="card-head">
-          <span>Criterios de búsqueda</span>
-          <span className="hint">{hechos} de {PASOS_RESEARCH} pasos</span>
-        </div>
-        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {herramienta.filas.map((fila, i) => (
-            <div key={i} className={`fd-rejilla${fila.columnas === 2 ? ' dos' : ''}`}>
-              {fila.campos.map((campo) => (
-                <div className="fd-campo" key={campo.id}>
-                  <label htmlFor={campo.id}>{campo.etiqueta}</label>
-                  {campo.tipo === 'area' ? (
-                    <textarea
-                      id={campo.id}
-                      value={valores[campo.id] || ''}
-                      placeholder={campo.marcador}
-                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id={campo.id}
-                      type="text"
-                      value={valores[campo.id] || ''}
-                      placeholder={campo.marcador}
-                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
+      {/* Los dos caminos. Es un `tablist` de verdad y no dos botones sueltos: son dos vistas
+          excluyentes de lo mismo, y quien navega con teclado o con lector de pantalla tiene que
+          escuchar «pestaña 1 de 2», no dos botones sin relación entre sí. */}
+      <div className="fd-modos" role="tablist" aria-label="Cómo llenar los criterios">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={modo === 'formulario'}
+          className={modo === 'formulario' ? 'on' : ''}
+          disabled={corriendo !== null}
+          onClick={() => setModo('formulario')}
+        >
+          <b>Opción 1</b> Formulario
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={modo === 'agente'}
+          className={modo === 'agente' ? 'on' : ''}
+          disabled={corriendo !== null}
+          onClick={() => setModo('agente')}
+        >
+          <b>Opción 2</b> Agente conversacional
+        </button>
+        <span className="fd-modos-nota">
+          {modo === 'formulario'
+            ? 'Llenás los cinco criterios y apretás ejecutar.'
+            : 'Te hace las mismas cinco preguntas y arranca solo cuando confirmes.'}
+        </span>
+      </div>
 
-          {/* El nicho y el trasfondo no son opcionales, y se dice ANTES de gastar cinco
-              generaciones: el paso 1 busca dentro del nicho y el paso 5 elige el segmento
-              contra la experiencia real de quien va a venderlo. Sin ellos, los cinco pasos
-              salen genéricos y el alumno no tiene forma de saber por qué. */}
-          {faltaNicho || faltaExperiencia ? (
-            <div className="fd-aviso falta">
-              <i>◍</i>
-              <span>
-                Falta {faltaNicho ? <b>tu nicho</b> : null}
-                {faltaNicho && faltaExperiencia ? ' y ' : null}
-                {faltaExperiencia ? <b>tu experiencia</b> : null}. Sin eso el research sale
-                genérico: el paso 1 busca dentro del nicho y el paso 5 elige el segmento contra
-                tu trasfondo.
-              </span>
-            </div>
-          ) : null}
+      {modo === 'agente' ? (
+        <ChatDeResearch
+          herramienta={herramienta}
+          inicial={estado.researchChat}
+          puedeEditar={puedeEditar}
+          corriendo={corriendo}
+          onCriterios={anotarLoDelAgente}
+          onArrancar={arrancarDesdeElAgente}
+          rutaConversar={rutaConversar}
+        />
+      ) : (
+        <div className="card">
+          <div className="card-head">
+            <span>Criterios de búsqueda</span>
+            <span className="hint">{hechos} de {PASOS_RESEARCH} pasos</span>
+          </div>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {herramienta.filas.map((fila, i) => (
+              <div key={i} className={`fd-rejilla${fila.columnas === 2 ? ' dos' : ''}`}>
+                {fila.campos.map((campo) => (
+                  <div className="fd-campo" key={campo.id}>
+                    <label htmlFor={campo.id}>{campo.etiqueta}</label>
+                    {campo.tipo === 'area' ? (
+                      <textarea
+                        id={campo.id}
+                        value={valores[campo.id] || ''}
+                        placeholder={campo.marcador}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id={campo.id}
+                        type="text"
+                        value={valores[campo.id] || ''}
+                        placeholder={campo.marcador}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
 
-          {puedeEditar ? (
-            <div className="fd-acciones">
-              <button
-                type="button"
-                className="fd-btn"
-                disabled={corriendo !== null || faltaNicho || faltaExperiencia}
-                onClick={correrTodo}
-              >
-                {corriendo !== null
-                  ? `Paso ${corriendo + 1} de ${PASOS_RESEARCH}…`
-                  : hechos > 0
-                    ? 'Volver a ejecutar todo'
-                    : herramienta.etiquetaBoton}
-              </button>
-              {hechos > 0 && hechos < PASOS_RESEARCH ? (
+            {/* Lo obligatorio se dice ANTES de gastar cinco generaciones: el paso 1 busca dentro
+                del nicho y el paso 5 elige el segmento contra la experiencia real de quien va a
+                venderlo. Sin eso, los cinco pasos salen genéricos y el alumno no tiene forma de
+                saber por qué.
+
+                La lista sale del catálogo y las etiquetas también: antes estaban acá escritas a
+                mano —«tu nicho», «tu experiencia»— y un sexto criterio obligatorio habría dejado
+                este aviso mintiendo, con el botón habilitado igual. */}
+            {faltan.length > 0 ? (
+              <div className="fd-aviso falta">
+                <i>◍</i>
+                <span>
+                  Falta{' '}
+                  {faltan.map((campo, i) => (
+                    <span key={campo.id}>
+                      {i > 0 ? (i === faltan.length - 1 ? ' y ' : ', ') : null}
+                      <b>{campo.etiqueta}</b>
+                    </span>
+                  ))}
+                  . Sin eso el research sale genérico: el paso 1 busca dentro del nicho y el paso 5
+                  elige el segmento contra tu trasfondo.
+                </span>
+              </div>
+            ) : null}
+
+            {puedeEditar ? (
+              <div className="fd-acciones">
+                <button
+                  type="button"
+                  className="fd-btn"
+                  disabled={corriendo !== null || faltan.length > 0}
+                  /* `() => correrTodo()` y no `correrTodo`: como manejador directo recibiría el
+                     evento de React donde ahora van los valores, y el paso 1 se generaría con un
+                     `SyntheticEvent` en vez de con los criterios. */
+                  onClick={() => correrTodo()}
+                >
+                  {corriendo !== null
+                    ? `Paso ${corriendo + 1} de ${PASOS_RESEARCH}…`
+                    : hechos > 0
+                      ? 'Volver a ejecutar todo'
+                      : herramienta.etiquetaBoton}
+                </button>
+                {hechos > 0 && hechos < PASOS_RESEARCH ? (
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={corriendo !== null}
+                    onClick={() => correrPaso(hechos)}
+                  >
+                    Seguir desde el paso {hechos + 1}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="fd-btn sec"
-                  disabled={corriendo !== null}
-                  onClick={() => correrPaso(hechos)}
+                  disabled={corriendo !== null || guardando}
+                  onClick={() => guardar()}
                 >
-                  Seguir desde el paso {hechos + 1}
+                  {guardando ? 'Guardando…' : 'Guardar criterios'}
                 </button>
-              ) : null}
-              <button
-                type="button"
-                className="fd-btn sec"
-                disabled={corriendo !== null || guardando}
-                onClick={guardar}
-              >
-                {guardando ? 'Guardando…' : 'Guardar criterios'}
-              </button>
-              {guardado ? <span className="fd-guardado">Guardado</span> : null}
-            </div>
-          ) : faltaPermiso ? (
-            <div className="fd-aviso">
-              <i>◍</i>
-              <span>
-                Tu rol puede <b>ver</b> este research pero no ejecutarlo.
-              </span>
-            </div>
-          ) : null}
+                {guardado ? <span className="fd-guardado">Guardado</span> : null}
+              </div>
+            ) : faltaPermiso ? (
+              <div className="fd-aviso">
+                <i>◍</i>
+                <span>
+                  Tu rol puede <b>ver</b> este research pero no ejecutarlo.
+                </span>
+              </div>
+            ) : null}
 
-          {errorAlGuardar ? (
-            <div className="fd-aviso mal">
-              <i>◍</i>
-              <span>{errorAlGuardar}</span>
-            </div>
-          ) : null}
-
-          {corriendo !== null ? (
-            <div className="fd-cargando">
-              <span className="fd-punto" />
-              Paso {corriendo + 1}: {TITULOS[corriendo]}. Busca en la web, así que tarda.
-            </div>
-          ) : null}
+            {errorAlGuardar ? (
+              <div className="fd-aviso mal">
+                <i>◍</i>
+                <span>{errorAlGuardar}</span>
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* El progreso vive FUERA del selector, y por eso se dibuja acá y no adentro de la tarjeta
+          del formulario: los cinco pasos son los mismos vengan de donde vengan, y quien arrancó
+          desde el chat tiene que ver lo mismo que quien apretó el botón. */}
+      {corriendo !== null ? (
+        <div className="fd-cargando">
+          <span className="fd-punto" />
+          Paso {corriendo + 1}: {TITULOS[corriendo]}. Busca en la web, así que tarda.
+        </div>
+      ) : null}
 
       <div className="fd-pasos">
         {TITULOS.map((titulo, paso) => {

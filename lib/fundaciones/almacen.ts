@@ -25,7 +25,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedirExterno, type Respuesta } from '../http/cliente.ts';
-import { LLAVES, estadoVacio, type EstadoDeFundaciones, type Version } from './estado.ts';
+import {
+  LLAVES,
+  estadoVacio,
+  type ChatDeResearch,
+  type EstadoDeFundaciones,
+  type MensajeDeChat,
+  type Version,
+} from './estado.ts';
 
 /** Lo que puede salir mal al hablar con el almacén. Tres cosas, no una. */
 export type FalloDeAlmacen =
@@ -172,6 +179,28 @@ function porHerramienta<T>(x: unknown, lee: (v: unknown) => T | null): Record<nu
   return salida;
 }
 
+/**
+ * El chat del agente, leído con la misma desconfianza que todo lo demás de esta tabla.
+ *
+ * Un turno con un `role` que no es ninguno de los dos **se descarta**, y no se convierte en
+ * `assistant` por omisión: un mensaje de la persona leído como si lo hubiera dicho el agente cambia
+ * de quién es cada afirmación, y a partir de ahí el modelo contesta sobre una conversación que no
+ * ocurrió. Descartarlo deja un hueco visible; traducirlo deja una mentira invisible.
+ */
+function chat(x: unknown): ChatDeResearch {
+  const o = objeto(x);
+  const mensajes: MensajeDeChat[] = [];
+  const crudos = Array.isArray(o['messages']) ? o['messages'] : [];
+  for (const item of crudos) {
+    const m = objeto(item);
+    const papel = m['role'];
+    const texto = m['content'];
+    if ((papel !== 'user' && papel !== 'assistant') || typeof texto !== 'string') continue;
+    mensajes.push({ role: papel, content: texto });
+  }
+  return { messages: mensajes, criteria: textos(o['criteria']) };
+}
+
 function versiones(x: unknown): Version[] | null {
   if (!Array.isArray(x)) return null;
   const salida: Version[] = [];
@@ -191,10 +220,14 @@ function versiones(x: unknown): Version[] | null {
 /**
  * El estado completo del alumno.
  *
- * Se piden las cinco llaves **en paralelo**: son cinco filas de la misma tabla y la latencia de la
+ * Se piden las seis llaves **en paralelo**: son seis filas de la misma tabla y la latencia de la
  * pantalla es la de la más lenta, no la suma. Si CUALQUIERA falla por red o por rechazo, se
  * devuelve ese fallo: un estado a medias haría que una herramienta creyera que no hereda nada y
  * generara el documento con marcadores `[COMPLETAR]` sobre datos que sí existen.
+ *
+ * Eran cinco hasta que entró el agente conversacional del Research, que trajo la sexta. Se suma al
+ * mismo `Promise.all` y no a una lectura aparte: una segunda vuelta de red para el chat haría que
+ * la pantalla tardara la suma de las dos, y por un documento que casi siempre está vacío.
  */
 export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<EstadoDeFundaciones>> {
   const llaves = [
@@ -203,15 +236,15 @@ export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<
     LLAVES.research,
     LLAVES.researchProfundo,
     LLAVES.categoriaLegado,
+    LLAVES.researchChat,
   ] as const;
 
   const leidas = await Promise.all(llaves.map((ll) => leer(clienteId, ll)));
   for (const r of leidas) {
     if (r.tipo !== 'datos') return r;
   }
-  const [crudoPerfil, crudoHistorial, crudoResearch, crudoProfundo, crudoCategoria] = leidas.map(
-    (r) => (r.tipo === 'datos' ? r.datos : null),
-  );
+  const [crudoPerfil, crudoHistorial, crudoResearch, crudoProfundo, crudoCategoria, crudoChat] =
+    leidas.map((r) => (r.tipo === 'datos' ? r.datos : null));
 
   const estado = estadoVacio();
   estado.perfil = porHerramienta(crudoPerfil, (v) => {
@@ -225,6 +258,8 @@ export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<
   estado.researchSalidas = Array.isArray(research['outputs'])
     ? research['outputs'].map((s) => (typeof s === 'string' ? s : ''))
     : [];
+
+  estado.researchChat = chat(crudoChat);
 
   const profundo = objeto(crudoProfundo);
   estado.researchProfundo = typeof profundo['deep'] === 'string' ? profundo['deep'] : null;
@@ -275,6 +310,22 @@ export async function guardarResearch(
   salidas: string[],
 ): Promise<ResultadoDeAlmacen<null>> {
   return escribir(clienteId, LLAVES.research, { inputs, outputs: salidas });
+}
+
+/**
+ * Guarda la conversación del agente del Research: los turnos y lo que lleva juntado.
+ *
+ * Las dos cosas van en la MISMA escritura, y no en dos, porque son un solo hecho: «después de este
+ * turno, el agente sabe esto». Separarlas abre la ventana en la que los turnos ya están guardados y
+ * los criterios todavía no — y ahí la próxima llamada le manda al modelo una conversación en la que
+ * ya preguntó el nicho, junto con un juego de criterios donde el nicho está vacío. El modelo no
+ * tiene forma de saber cuál de los dos miente.
+ */
+export async function guardarChatDeResearch(
+  clienteId: string,
+  chatDeResearch: ChatDeResearch,
+): Promise<ResultadoDeAlmacen<null>> {
+  return escribir(clienteId, LLAVES.researchChat, chatDeResearch);
 }
 
 /** La fecha con el formato que escribe el hub, para que el historial se lea igual en los dos. */
