@@ -26,6 +26,7 @@ import { join } from 'node:path';
 import {
   FUNDACIONES,
   IDS_FUNDACIONES,
+  TODAS,
   PASOS_RESEARCH,
   TOOLS,
   herramienta,
@@ -353,10 +354,29 @@ test('ningún prompt sale con una variable de plantilla sin resolver', () => {
   const completo = estadoCompleto();
   const vacio = estadoVacio();
 
-  for (const h of FUNDACIONES) {
+  /* ── SE RECORREN LAS DOS PANTALLAS, Y ANTES NO ─────────────────────────────
+   *
+   * Decía `for (const h of FUNDACIONES)`, y con eso el VSL y la Landing SALIERON DE ESTA PRUEBA el
+   * día que se mudaron a `tools` — el 2026-08-31 y el 2026-09-02. La mudanza no les cambió ni el
+   * prompt ni el constructor de datos, así que nada se rompió; lo que se perdió fue la comprobación,
+   * que es peor: un hueco en la plantilla del VSL habría dejado de verse sin que nadie tocara el VSL.
+   *
+   * Prospección(20) entra por primera vez, y tiene el mismo derecho: su prompt se arma igual.
+   *
+   * La lección, escrita para el próximo que mueva una herramienta de pantalla: **una prueba que
+   * recorre un catálogo pierde cobertura en silencio cuando algo se va de ese catálogo.** Se recorre
+   * `TODAS`, que es el catálogo de las dos, y así una mudanza futura no puede sacar nada de acá. */
+  for (const h of TODAS) {
     if (h.id === 1) continue;
     for (const [nombre, estado] of [['completo', completo], ['vacío', vacio]] as const) {
-      const prompt = armarPrompt(h.id, valoresLlenos(h.id), estado);
+      const crudo = armarPrompt(h.id, valoresLlenos(h.id), estado);
+      /* Las DOS llaves que sí tienen que sobrevivir, y sólo en Prospección: `{{nombre}}` y
+         `{{empresa}}` son los campos de combinación de GoHighLevel. El constructor de datos los pasa
+         a propósito —ver la nota de `datosDeProspeccion`— para que lleguen TAL CUAL al documento y
+         el CRM los reemplace por el nombre de cada prospecto. Quitarlos acá antes de comprobar es lo
+         que permite que la herramienta entre a esta prueba en vez de quedar exenta entera. */
+      const prompt =
+        h.id === 20 ? crudo.replace(/\{\{(nombre|empresa)\}\}/g, 'CAMPO_DEL_CRM') : crudo;
       assert.doesNotMatch(
         prompt,
         /\{\{[\w.#^/]+\}\}/,
