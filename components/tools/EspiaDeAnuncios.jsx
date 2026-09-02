@@ -32,64 +32,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  PAISES,
   PREFIJO_DE_BUSQUEDA,
-  TIPO_DE_ANUNCIO,
   analizarAnuncios,
   consultarTrabajo,
   espiarAnuncios,
   leerTrabajosEnVuelo,
 } from '@/lib/tools/scrapers';
 
+import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
+
 /** Cada cuánto se le pregunta al motor si ya terminó. Cinco segundos, el número del hub. */
 const CADA_MS = 5000;
-
-function Anuncio({ anuncio }) {
-  const [imagenOk, setImagenOk] = useState(true);
-  const dias = anuncio.days_active ?? 0;
-  const copy = anuncio.body_text || anuncio.title || '';
-
-  return (
-    <div className="es-tarjeta">
-      <div className="es-media">
-        {anuncio.thumbnail_url && imagenOk ? (
-          /* eslint-disable-next-line @next/next/no-img-element -- la miniatura la sirve el CDN de
-             Meta con una URL firmada y de vida corta: `next/image` la optimizaría contra un dominio
-             que no podemos declarar de antemano y que además cambia. */
-          <img src={anuncio.thumbnail_url} alt="" onError={() => setImagenOk(false)} />
-        ) : (
-          <svg width="30" height="30" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke="currentColor" strokeWidth="1.5" d="M4 5h16v14H4zM4 9h16M9 5v4" />
-          </svg>
-        )}
-      </div>
-      <div className="es-cuerpo">
-        <div className="es-meta">
-          {/* La longevidad es LA señal de esta herramienta: un anuncio que lleva meses corriendo es
-              uno que le está funcionando a alguien. Por eso va primero y resaltada. */}
-          <span className={`es-pastilla${anuncio.is_active ? ' vivo' : ''}`}>
-            Activo {dias} día{dias === 1 ? '' : 's'}
-          </span>
-          <span className="es-pastilla">
-            {TIPO_DE_ANUNCIO[anuncio.media_type || ''] || 'Anuncio'}
-          </span>
-        </div>
-        {anuncio.page_name ? <div className="es-pagina">{anuncio.page_name}</div> : null}
-        {copy ? <div className="es-copy">{copy}</div> : null}
-        {anuncio.ad_library_url ? (
-          <a
-            className="es-enlace"
-            href={anuncio.ad_library_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Ver en Ad Library ↗
-          </a>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 export default function EspiaDeAnuncios({ puedeEditar }) {
   const [consulta, setConsulta] = useState('');
@@ -208,47 +161,17 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
 
       <div className="card">
         <div className="card-body">
-          <div className="es-barra">
-            <select
-              className="es-select"
-              value="meta"
-              onChange={() => {}}
-              aria-label="Dónde espiar"
-            >
-              <option value="meta">Meta Ad Library</option>
-              {/* Deshabilitada y a la vista, como en el hub: dice qué falta sin prometer que anda. */}
-              <option value="tiktok" disabled>
-                TikTok Creative Center (pronto)
-              </option>
-            </select>
-            <select
-              className="es-select"
-              value={pais}
-              onChange={(e) => setPais(e.target.value)}
-              aria-label="País donde espiar los anuncios"
-            >
-              {PAISES.map((p) => (
-                <option key={p.codigo} value={p.codigo}>
-                  {p.etiqueta}
-                </option>
-              ))}
-            </select>
-            <input
-              className="es-consulta"
-              type="text"
-              value={consulta}
-              onChange={(e) => setConsulta(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !ocupado && puedeEditar) espiar();
-              }}
-              placeholder="Buscá por nicho, marca o página… (ej: agencias de marketing IA)"
+          {puedeEditar ? (
+            <BuscadorDeAnuncios
+              consulta={consulta}
+              onConsulta={setConsulta}
+              pais={pais}
+              onPais={setPais}
+              onBuscar={espiar}
+              ocupado={ocupado}
+              etiqueta="Espiar"
             />
-            {puedeEditar ? (
-              <button type="button" className="fd-btn" disabled={ocupado} onClick={espiar}>
-                {ocupado ? 'Espiando…' : 'Espiar'}
-              </button>
-            ) : null}
-          </div>
+          ) : null}
 
           {!puedeEditar ? (
             <div className="fd-aviso">
@@ -318,7 +241,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
 
           <div className="es-rejilla">
             {anuncios.map((a, i) => (
-              <Anuncio key={a.ad_archive_id || i} anuncio={a} />
+              <TarjetaDeAnuncio key={a.ad_archive_id || i} anuncio={a} />
             ))}
           </div>
         </>

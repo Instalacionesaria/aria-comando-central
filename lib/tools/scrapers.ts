@@ -202,6 +202,19 @@ export interface AnuncioEspiado {
   ad_archive_id?: string;
   page_name?: string;
   page_id?: string;
+  /**
+   * La URL de la página de Facebook que puso el anuncio.
+   *
+   * **No es para la tarjeta: es lo que hace que el Espía pueda alimentar el paso 2 de Prospección.**
+   * `apify/facebook-pages-scraper` —el que saca teléfono, email y web— no acepta otra cosa como
+   * entrada, así que sin este campo se pueden descubrir anunciantes y no se les puede sacar nada.
+   *
+   * Puede venir vacía, y por dos motivos distintos que la pantalla tiene que saber distinguir: un
+   * anuncio suelto al que el actor no le resolvió la página, o un backend viejo —`build_ad_spy_items`
+   * la tiró hasta el 2026-09-02—. En los dos casos ese anunciante no se puede procesar, y decirlo
+   * antes vale una corrida que se cobra igual aunque procese cero.
+   */
+  page_profile_uri?: string;
   is_active?: boolean;
   days_active?: number;
   start_date_formatted?: string;
@@ -260,12 +273,96 @@ export const PAISES: readonly { codigo: string; etiqueta: string }[] = [
  */
 export const PREFIJO_DE_BUSQUEDA = 'AdSpy: ';
 
+/**
+ * Cuántos anuncios trae una búsqueda, según para qué se busca. **Son dos números y no uno.**
+ *
+ * Espiar es mirar: sesenta anuncios ordenados por longevidad ya muestran los patrones del nicho, y
+ * son sesenta tarjetas que alguien puede leer.
+ *
+ * Prospectar es cosechar anunciantes, y ahí el número que importa es el de PÁGINAS distintas — que
+ * es mucho menor que el de anuncios, porque un anunciante que va en serio tiene varios corriendo.
+ * Mil es el número que el paso 1 de Prospección usa desde siempre (`facebook_ads_scraper` lo tiene
+ * escrito en su `run_input`), y se conserva a propósito: si los dos caminos de la pestaña Facebook
+ * trajeran cantidades distintas, cambiar de camino cambiaría lo que se paga y lo que se encuentra
+ * sin que nadie lo haya pedido.
+ */
+export const ANUNCIOS_PARA_ESPIAR = 60;
+export const ANUNCIOS_PARA_PROSPECTAR = 1000;
+
 /** Arranca una búsqueda de anuncios. Devuelve el identificador del trabajo, como las otras cuatro. */
 export async function espiarAnuncios(
   consulta: string,
   pais: string,
+  cuantos: number = ANUNCIOS_PARA_ESPIAR,
 ): Promise<ResultadoDeInicio> {
-  return iniciarScraping('ad-spy', { query: consulta, country: pais });
+  return iniciarScraping('ad-spy', { query: consulta, country: pais, count: cuantos });
+}
+
+/** Un anunciante: la página de Facebook detrás de uno o varios anuncios. */
+export interface Anunciante {
+  page_name: string;
+  page_profile_uri: string;
+  page_id: string;
+  /** Cuántos anuncios suyos trajo la búsqueda. */
+  anuncios: number;
+  /** Los días del anuncio suyo que lleva más tiempo corriendo. */
+  diasMax: number;
+}
+
+/**
+ * Los anunciantes detrás de una lista de anuncios, sin repetir.
+ *
+ * ── POR QUÉ ESTO NO ES UN DETALLE DE PRESENTACIÓN ───────────────────────────
+ *
+ * Una búsqueda devuelve ANUNCIOS y el paso 2 procesa PÁGINAS. Un anunciante que va en serio tiene
+ * cinco o diez anuncios corriendo, así que «trescientos anuncios» pueden ser cuarenta anunciantes.
+ * Mandarlos sin agrupar no rompe nada —el backend deduplica por `page_profile_uri` antes de llamar
+ * al actor— pero deja a la pantalla diciendo «300 páginas listas» cuando son cuarenta, y a quien
+ * elige sin poder elegir: vería el mismo anunciante diez veces.
+ *
+ * Se agrupa por la URL y no por el nombre: dos páginas distintas pueden llamarse igual, y una misma
+ * página puede cambiarse el nombre entre anuncios.
+ *
+ * Los que vienen sin URL **no se descartan acá**. Se cuentan y se muestran apagados, porque «este
+ * anunciante no se puede procesar» es información: descartarlos en silencio haría que la lista
+ * mostrara menos anunciantes de los que la búsqueda encontró, sin decir por qué.
+ */
+export function anunciantesDe(anuncios: readonly AnuncioEspiado[]): Anunciante[] {
+  const porPagina = new Map<string, Anunciante>();
+
+  for (const [i, a] of anuncios.entries()) {
+    const uri = (a.page_profile_uri ?? '').trim();
+    /* Sin URL, cada anuncio es su propia fila: no hay con qué saber si dos son del mismo. La llave
+       lleva la POSICIÓN y no un número al azar —`ADR-0507` prohíbe `Math.random` en todo el
+       proyecto, y acá además sería peor: una llave distinta en cada render haría que la lista se
+       reordenara sola entre dibujos. */
+    const llave = uri !== '' ? uri : `sin-url:${a.ad_archive_id ?? ''}:${i}`;
+    const previo = porPagina.get(llave);
+    const dias = a.days_active ?? 0;
+
+    if (previo) {
+      previo.anuncios += 1;
+      if (dias > previo.diasMax) previo.diasMax = dias;
+      continue;
+    }
+    porPagina.set(llave, {
+      page_name: (a.page_name ?? '').trim(),
+      page_profile_uri: uri,
+      page_id: (a.page_id ?? '').trim(),
+      anuncios: 1,
+      diasMax: dias,
+    });
+  }
+
+  /* Por longevidad, que es la señal de la herramienta: el anunciante cuyo anuncio más viejo sigue
+     corriendo es el que más probablemente esté convirtiendo. Los sin URL caen al final solos, no por
+     una regla aparte: son los que menos se pueden aprovechar. */
+  return [...porPagina.values()].sort((a, b) => {
+    if ((a.page_profile_uri === '') !== (b.page_profile_uri === '')) {
+      return a.page_profile_uri === '' ? 1 : -1;
+    }
+    return b.diasMax - a.diasMax;
+  });
 }
 
 export type ResultadoDelAnalisis =

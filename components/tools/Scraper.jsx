@@ -21,30 +21,53 @@
    cinco segundos, el número del hub. El temporizador se limpia al desmontar: sin eso, cambiar de
    pestaña deja una consulta corriendo contra un trabajo que ya nadie mira. */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  ANUNCIOS_PARA_PROSPECTAR,
   ETIQUETAS_DE_COLUMNA,
   COLUMNAS_ENLACE,
   MINIMO_LEADS_MAPS,
+  anunciantesDe,
   consultarTrabajo,
   iniciarScraping,
   leerTrabajosEnVuelo,
 } from '@/lib/tools/scrapers';
 
+import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
+
+/**
+ * Cuántas tarjetas de anuncio se dibujan bajo la pestaña Facebook.
+ *
+ * La búsqueda de prospección pide mil anuncios —ver `ANUNCIOS_PARA_PROSPECTAR`— y mil tarjetas con
+ * su miniatura es una pantalla que no termina de cargar nunca. Acá las tarjetas son para RECONOCER
+ * a quién se está por procesar, no para leer el nicho entero: para eso está el Espía de Tools, que
+ * trae sesenta y las muestra todas.
+ *
+ * Los anunciantes de la lista de arriba NO se recortan: ésos son la decisión, y esconder uno sería
+ * esconder a quién se le va a sacar el contacto.
+ */
+const TARJETAS_A_LA_VISTA = 60;
+
 /* Las cuatro fases de un trabajo. `error` incluye tanto los fallos del motor como las
    validaciones de acá: para quien mira, las dos son "esto no arrancó y acá está el motivo". */
-function useTrabajo(fuente) {
+function useTrabajo(fuente, textos = {}) {
   const [fase, setFase] = useState('quieto');
   const [mensaje, setMensaje] = useState('');
   const [leads, setLeads] = useState([]);
   const temporizador = useRef(null);
 
+  /* Los dos textos que cambian según qué se está trayendo. El Espía no está «scrapeando leads»:
+     está buscando anuncios, y de ahí no sale un lead sino un anunciante. Decirlo mal es decirle a
+     alguien que ya gastó saldo cuando esa corrida no cobra ninguno. */
+  const trabajando = textos.trabajando ?? 'Scrapeando leads… esto puede tomar unos minutos.';
+  const contar = textos.contar ?? ((n) => `Listo. ${n} ${n === 1 ? 'resultado' : 'resultados'} encontrados.`);
+
   useEffect(() => () => { if (temporizador.current) clearTimeout(temporizador.current); }, []);
 
   const sondear = useCallback((id) => {
     setFase('sondeando');
-    setMensaje('Scrapeando leads… esto puede tomar unos minutos.');
+    setMensaje(trabajando);
     const tic = async () => {
       const d = await consultarTrabajo(id);
       if (!d) {
@@ -56,7 +79,7 @@ function useTrabajo(fuente) {
         const ls = (d.results && d.results.data) || [];
         setLeads(ls);
         setFase('listo');
-        setMensaje(`Listo. ${ls.length} ${ls.length === 1 ? 'resultado' : 'resultados'} encontrados.`);
+        setMensaje(contar(ls.length));
         return;
       }
       if (d.status === 'FAILED' || d.status === 'CANCELLED') {
@@ -67,6 +90,9 @@ function useTrabajo(fuente) {
       temporizador.current = setTimeout(tic, 5000);
     };
     tic();
+    // `trabajando` y `contar` se leen al vuelo y no se listan: son literales del render, así que
+    // listarlas rearmaría el sondeo en cada dibujo y el reloj se reiniciaría solo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── RETOMAR UN TRABAJO QUE YA ESTABA CORRIENDO ──────────────────────────
@@ -299,72 +325,281 @@ function FormularioLinkedIn({ nicho, onLeads }) {
   );
 }
 
-// ── Facebook: dos pasos encadenados ─────────────────────────────────────────
+// ── Facebook: dos formas de descubrir, y UN paso para sacar los contactos ───
+
+/**
+ * Los anunciantes que la opción 1 devuelve, con la misma forma que los de la opción 2.
+ *
+ * El paso 1 clásico entrega tres campos por ANUNCIO —nombre, URL de página, id— y el Espía entrega
+ * anuncios ricos que hay que agrupar. Se normalizan a la misma lista para que abajo haya una sola
+ * tabla de selección y un solo botón: dos listas con la misma pinta y distinta forma es de donde
+ * salen los «funciona por un camino y por el otro no».
+ */
+function anunciantesDeLaUrl(filas) {
+  const porPagina = new Map();
+  for (const [i, f] of filas.entries()) {
+    const uri = (f.page_profile_uri || '').trim();
+    const llave = uri !== '' ? uri : `sin-url:${i}`;
+    const previo = porPagina.get(llave);
+    if (previo) {
+      previo.anuncios += 1;
+      continue;
+    }
+    porPagina.set(llave, {
+      page_name: (f.page_name || '').trim(),
+      page_profile_uri: uri,
+      page_id: (f.page_id || '').trim(),
+      anuncios: 1,
+      /* El paso 1 clásico NO trae la longevidad: su normalizador se queda con tres campos y los
+         días activo no es uno. `-1` y no `0` para que la fila pueda decir «no se sabe» en vez de
+         «cero días», que sería una medición que nadie hizo. */
+      diasMax: -1,
+    });
+  }
+  return [...porPagina.values()];
+}
 
 function FormularioFacebook({ onLeads }) {
-  /* DOS trabajos y no uno, porque son dos corridas del backend: la biblioteca de anuncios
-     descubre quién anuncia, y recién el segundo paso saca sus datos de contacto. Cada uno se
-     cobra por separado, así que el segundo se deshabilita hasta que el primero devolvió páginas
-     — arrancarlo en vacío gastaría una corrida para procesar cero. */
-  const anuncios = useTrabajo('facebook-ads');
+  /* TRES trabajos, y no dos como antes.
+     ────────────────────────────────────────────────────────────────────────────
+     Las dos primeras son dos maneras de descubrir anunciantes, y la tercera —la que saca los
+     contactos— es UNA sola para las dos.
+
+     Que el paso 2 no esté duplicado es la decisión de este componente: es el mismo actor
+     (`apify/facebook-pages-scraper`), la misma corrida y el mismo cobro vengan de donde vengan las
+     páginas. Dos botones que hacen exactamente lo mismo se leen como dos cosas distintas, y el día
+     que uno se corrija el otro se queda atrás.
+
+     ── LAS DOS OPCIONES USAN EL MISMO ACTOR DE APIFY, Y ESO NO ES CASUAL ──────
+     `curious_coder/facebook-ads-library-scraper` para las dos. La diferencia es de dónde sale la
+     URL de la Ad Library: en la opción 1 la pega la persona, en la opción 2 la arma el backend a
+     partir del nicho y el país. Por eso la opción 2 puede reemplazar a la 1 sin cambiar lo que se
+     gasta — y encima devuelve el copy y los días que lleva corriendo cada anuncio, que es lo que
+     permite elegir a quién procesar en vez de procesarlos a todos a ciegas. */
+  const porUrl = useTrabajo('facebook-ads');
+  const porNicho = useTrabajo('ad-spy', {
+    trabajando: 'Buscando anuncios… esto puede tomar unos minutos.',
+    contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
+  });
   const paginas = useTrabajo('facebook-pages');
+
   const [url, setUrl] = useState('');
+  const [consulta, setConsulta] = useState('');
+  const [pais, setPais] = useState('ALL');
+  /* Qué opción produjo la lista que se está mirando. Se fija al arrancar, y si al montar se retomó
+     un trabajo en vuelo se deduce de cuál trajo resultados: sin esto, volver a la pestaña con una
+     búsqueda ya terminada dejaría el paso 2 sin saber a quién procesar. */
+  const [origen, setOrigen] = useState(null);
+  const desde = origen ?? (porNicho.leads.length > 0 ? 'nicho' : porUrl.leads.length > 0 ? 'url' : null);
 
-  const vigentes = paginas.leads.length > 0 ? paginas.leads : anuncios.leads;
-  useEffect(() => { onLeads(vigentes); }, [vigentes, onLeads]);
+  const anunciantes = useMemo(() => {
+    if (desde === 'nicho') return anunciantesDe(porNicho.leads);
+    if (desde === 'url') return anunciantesDeLaUrl(porUrl.leads);
+    return [];
+  }, [desde, porNicho.leads, porUrl.leads]);
 
-  const correrAnuncios = () => {
-    if (!url.trim()) {
-      anuncios.setFase('error'); anuncios.setMensaje('Ingresá la URL de la biblioteca de anuncios de Facebook.');
-      return;
-    }
-    anuncios.arrancar('facebook-ads', { url: url.trim() });
+  /* Los que se pueden procesar son los que tienen URL de página: es lo ÚNICO que acepta el actor
+     del paso 2. Los otros se muestran apagados en vez de esconderse — «este anunciante no se puede
+     procesar» es información, y esconderlos haría que la cuenta no cuadre sin decir por qué. */
+  const procesables = useMemo(
+    () => anunciantes.filter((a) => a.page_profile_uri !== ''),
+    [anunciantes],
+  );
+
+  const [elegidos, setElegidos] = useState(() => new Set());
+  /* Al llegar una lista nueva se marcan todos los procesables. Es lo que hacía el paso 2 de antes
+     —procesaba todo— así que quien no quiera elegir aprieta y listo; quien quiera, desmarca. */
+  useEffect(() => {
+    setElegidos(new Set(procesables.map((a) => a.page_profile_uri)));
+  }, [procesables]);
+
+  const marcados = procesables.filter((a) => elegidos.has(a.page_profile_uri));
+
+  const alternar = (uri) => {
+    setElegidos((previo) => {
+      const proximo = new Set(previo);
+      if (proximo.has(uri)) proximo.delete(uri);
+      else proximo.add(uri);
+      return proximo;
+    });
   };
 
-  const correrPaginas = () => {
-    if (anuncios.leads.length === 0) {
-      paginas.setFase('error'); paginas.setMensaje('Primero completá el scraping de la biblioteca de anuncios.');
+  const todosMarcados = procesables.length > 0 && marcados.length === procesables.length;
+  const alternarTodos = () => {
+    setElegidos(todosMarcados ? new Set() : new Set(procesables.map((a) => a.page_profile_uri)));
+  };
+
+  /* La tabla de abajo muestra los CONTACTOS cuando ya se sacaron. Antes de eso muestra lo que trajo
+     la opción 1, que son filas con datos; la opción 2 no manda nada a la tabla porque sus
+     resultados son anuncios y se ven como tarjetas, no como columnas. */
+  const vigentes = paginas.leads.length > 0
+    ? paginas.leads
+    : desde === 'url' ? porUrl.leads : [];
+  useEffect(() => { onLeads(vigentes); }, [vigentes, onLeads]);
+
+  const buscarPorUrl = () => {
+    if (!url.trim()) {
+      porUrl.setFase('error');
+      porUrl.setMensaje('Ingresá la URL de la biblioteca de anuncios de Facebook.');
+      return;
+    }
+    setOrigen('url');
+    porUrl.arrancar('facebook-ads', { url: url.trim() });
+  };
+
+  const buscarPorNicho = () => {
+    if (!consulta.trim()) {
+      porNicho.setFase('error');
+      porNicho.setMensaje('Escribí un nicho, marca o página a buscar.');
+      return;
+    }
+    setOrigen('nicho');
+    /* El número de anuncios es el del paso 1 de siempre y no el del Espía de Tools. Ver
+       `ANUNCIOS_PARA_PROSPECTAR`: acá se cosechan anunciantes, no se miran patrones. */
+    porNicho.arrancar('ad-spy', {
+      query: consulta.trim(),
+      country: pais || 'ALL',
+      count: ANUNCIOS_PARA_PROSPECTAR,
+    });
+  };
+
+  const sacarContactos = () => {
+    if (marcados.length === 0) {
+      paginas.setFase('error');
+      paginas.setMensaje('Elegí al menos un anunciante con página para sacarle los contactos.');
       return;
     }
     paginas.arrancar('facebook-pages', {
-      pages: anuncios.leads.map((a) => ({
-        page_name: a.page_name || '',
-        page_profile_uri: a.page_profile_uri || '',
-        page_id: a.page_id || '',
+      pages: marcados.map((a) => ({
+        page_name: a.page_name,
+        page_profile_uri: a.page_profile_uri,
+        page_id: a.page_id,
       })),
     });
   };
 
   return (
     <div className="sc-form">
-      <div className="sc-pasos">
+      <div className="sc-paso-titulo">1 · Descubrir anunciantes</div>
+      <div className="sc-dos">
         <div className="sc-paso">
-          <div className="sc-paso-titulo">1 · Biblioteca de anuncios</div>
+          <div className="sc-opcion">Opción 1 · Pegando la URL</div>
           <div className="fd-campo">
             <label htmlFor="sc-fb">URL de la biblioteca de anuncios de Facebook</label>
-            <input id="sc-fb" value={url} placeholder="https://www.facebook.com/ads/library/..."
-                   onChange={(e) => setUrl(e.target.value)} />
+            <input
+              id="sc-fb"
+              value={url}
+              placeholder="https://www.facebook.com/ads/library/..."
+              onChange={(e) => setUrl(e.target.value)}
+            />
           </div>
-          <Aviso fase={anuncios.fase} mensaje={anuncios.mensaje} />
-          <button type="button" className="sc-btn sec" disabled={anuncios.ocupado} onClick={correrAnuncios}>
-            {anuncios.ocupado ? 'Scrapeando…' : '🔍 Buscar anunciantes'}
+          <Aviso fase={porUrl.fase} mensaje={porUrl.mensaje} />
+          <button
+            type="button"
+            className="sc-btn sec"
+            disabled={porUrl.ocupado || porNicho.ocupado}
+            onClick={buscarPorUrl}
+          >
+            {porUrl.ocupado ? 'Buscando…' : '🔍 Buscar anunciantes'}
           </button>
+          <div className="sc-subpista">
+            La de siempre. Si ya armaste la búsqueda en la Ad Library, pegá acá su URL.
+          </div>
         </div>
 
         <div className="sc-paso">
-          <div className="sc-paso-titulo">2 · Sacar contactos</div>
-          <div className={`sc-puente${anuncios.leads.length ? ' listo' : ''}`}>
-            {anuncios.leads.length > 0
-              ? `${anuncios.leads.length} páginas listas para obtener sus datos de contacto.`
-              : 'Primero buscá anunciantes en el paso 1 para obtener las páginas a procesar.'}
+          <div className="sc-opcion">Opción 2 · Buscando por nicho</div>
+          <BuscadorDeAnuncios
+            consulta={consulta}
+            onConsulta={setConsulta}
+            pais={pais}
+            onPais={setPais}
+            onBuscar={buscarPorNicho}
+            ocupado={porNicho.ocupado || porUrl.ocupado}
+            etiqueta="Buscar anuncios"
+          />
+          <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
+          <div className="sc-subpista">
+            El mismo Espía de Anuncios: arma la búsqueda por vos y te deja ver <b>qué</b> anuncia
+            cada uno, y hace cuánto, antes de gastar el paso 2.
           </div>
-          <Aviso fase={paginas.fase} mensaje={paginas.mensaje} />
-          <button type="button" className="sc-btn"
-                  disabled={paginas.ocupado || anuncios.leads.length === 0} onClick={correrPaginas}>
-            {paginas.ocupado ? 'Scrapeando…' : '📘 Extraer contactos'}
-          </button>
         </div>
       </div>
+
+      <div className="sc-paso-titulo">2 · Sacar contactos</div>
+      <div className="sc-paso">
+        {anunciantes.length === 0 ? (
+          <div className="sc-puente">
+            Primero descubrí anunciantes arriba, por cualquiera de las dos opciones.
+          </div>
+        ) : (
+          <>
+            <div className="sc-cuenta">
+              <label className="sc-todos">
+                <input type="checkbox" checked={todosMarcados} onChange={alternarTodos} />
+                <span>Todos</span>
+              </label>
+              <span>
+                {anunciantes.length} anunciante{anunciantes.length === 1 ? '' : 's'} ·{' '}
+                {procesables.length} con página
+                {anunciantes.length > procesables.length
+                  ? ` · ${anunciantes.length - procesables.length} sin página, no se pueden procesar`
+                  : ''}
+              </span>
+            </div>
+
+            <div className="sc-lista">
+              {anunciantes.map((a, i) => {
+                const puede = a.page_profile_uri !== '';
+                return (
+                  <label
+                    key={a.page_profile_uri || `sin-url-${i}`}
+                    className={`sc-fila${puede ? '' : ' sin-pagina'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={puede && elegidos.has(a.page_profile_uri)}
+                      disabled={!puede || paginas.ocupado}
+                      onChange={() => alternar(a.page_profile_uri)}
+                    />
+                    <span className="sc-fila-nombre">{a.page_name || 'Anunciante sin nombre'}</span>
+                    <span className="sc-fila-dato">
+                      {a.anuncios} anuncio{a.anuncios === 1 ? '' : 's'}
+                      {a.diasMax >= 0
+                        ? ` · el más viejo lleva ${a.diasMax} día${a.diasMax === 1 ? '' : 's'}`
+                        : ''}
+                      {puede ? '' : ' · sin página, no se puede procesar'}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <Aviso fase={paginas.fase} mensaje={paginas.mensaje} />
+            <button
+              type="button"
+              className="sc-btn"
+              disabled={paginas.ocupado || marcados.length === 0}
+              onClick={sacarContactos}
+            >
+              {paginas.ocupado
+                ? 'Scrapeando…'
+                : `📘 Extraer contactos de ${marcados.length} ${marcados.length === 1 ? 'anunciante' : 'anunciantes'}`}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Las tarjetas, solo cuando la lista vino del Espía: son lo que hace que elegir arriba tenga
+          sentido. La opción 1 no las puede mostrar —su normalizador se queda con tres campos— y
+          dibujar tarjetas vacías sería peor que no dibujarlas. */}
+      {desde === 'nicho' && porNicho.leads.length > 0 ? (
+        <div className="es-rejilla sc-anuncios">
+          {porNicho.leads.slice(0, TARJETAS_A_LA_VISTA).map((a, i) => (
+            <TarjetaDeAnuncio key={a.ad_archive_id || i} anuncio={a} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

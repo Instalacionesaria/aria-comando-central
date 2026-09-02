@@ -1706,3 +1706,104 @@
   line-height: 1.55;
   color: var(--txt-dim);
 }
+
+/* ── Facebook: las dos formas de descubrir anunciantes ───────────────────── */
+
+/* Dos columnas donde entra, y una sola donde no. El corte es el mismo de `.fd-rejilla.dos` porque
+   es la misma pregunta: dos formularios al lado del otro dejan de leerse cuando la columna se
+   angosta, y acá cada uno tiene su propio botón que dispara una corrida que se cobra. */
+.sc-dos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 1180px) {
+  .sc-dos {
+    grid-template-columns: 1fr;
+  }
+}
+.sc-opcion {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* La lista de anunciantes: es donde se decide a quién se le gasta el paso 2. */
+.sc-cuenta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+.sc-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--txt);
+  cursor: pointer;
+}
+.sc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--line);
+}
+.sc-fila {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  background: var(--bg-panel);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sc-fila:hover {
+  background: var(--bg-raise);
+}
+.sc-fila input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.sc-fila-nombre {
+  color: var(--txt);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-fila-dato {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--txt-faint);
+  white-space: nowrap;
+}
+/* El que no se puede procesar se ve apagado y sigue estando: esconderlo haría que la cuenta de
+   arriba no cuadre y que nadie sepa dónde se fue. */
+.sc-fila.sin-pagina {
+  cursor: default;
+}
+.sc-fila.sin-pagina .sc-fila-nombre {
+  color: var(--txt-faint);
+  text-decoration: line-through;
+}
+.sc-fila.sin-pagina:hover {
+  background: var(--bg-panel);
+}
+
+/* Las tarjetas de anuncio dentro de Prospección: más chicas que en el Espía de Tools, porque acá
+   comparten la columna con el formulario y con la tabla de leads. */
+.sc-anuncios {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+.sc-anuncios .es-media {
+  height: 130px;
+}
