@@ -51,26 +51,27 @@ import { SECCIONES, SIN_OPERACIONES_TODAVIA, seccionesVisibles } from '../../lib
 
 // ─── El contrato con ARIA-brain: los identificadores y las claves ───────────
 
-test('las ocho de ICP & Oferta son las del hub, en el ORDEN DEL MÉTODO', () => {
+test('las siete de ICP & Oferta son las del hub, en el ORDEN DEL MÉTODO', () => {
   // El orden es el de `FOUNDATIONS_JOURNEY` de ARIA-brain. NO es el orden de los identificadores, y
   // esta lista literal es la que lo congela: sin ella, reordenar las pestañas "para que queden por
   // número" pasaría desapercibido y dejaría a Categoría generando antes de que exista el avatar del
   // que lee.
   //
-  // ── ERAN NUEVE Y EL VSL(5) SE FUE A `TOOLS` ────────────────────────────────
+  // ── ERAN NUEVE, Y LAS DOS ÚLTIMAS SE FUERON A `TOOLS` ──────────────────────
   //
-  // Por pedido de Jorge, el 2026-08-31. En ARIA-brain es el paso 8 de 9 de «Construye tu base»,
-  // y acá pasó a ser una pestaña de Tools al lado de Prospección.
+  // El VSL(5) el 2026-08-31 por pedido de Jorge; la Landing(6) —la pestaña 8 de esta pantalla— el
+  // 2026-09-02 por pedido de Kevin. En ARIA-brain son los pasos 8 y 9 de «Construye tu base», y el
+  // port las trajo ahí.
   //
-  // La lista sigue congelada y el `5` sigue afirmado, sólo que del otro lado: la prueba de más
-  // abajo exige que el VSL esté en `TOOLS`. O sea que la herramienta no se puede perder en el
-  // camino —desaparecer de los dos catálogos pondría roja una de las dos— que es la garantía
-  // que esta lista literal da y que un `length` no daría.
+  // La lista sigue congelada y los dos identificadores siguen afirmados, sólo que del otro lado: la
+  // prueba de más abajo exige que el VSL y la Landing estén en `TOOLS`. O sea que una herramienta
+  // no se puede perder en el camino —desaparecer de los dos catálogos pondría roja una de las dos—
+  // que es la garantía que esta lista literal da y que un `length` no daría.
   assert.deepEqual(
     IDS_FUNDACIONES,
-    [0, 1, 3, 2, 4, 10, 26, 6],
+    [0, 1, 3, 2, 4, 10, 26],
     'los identificadores son los del hub y el orden es el del método: Perfil, Research, ICP, ' +
-      'Categoría, Oferta, Pricing, Mapa, VSL, Landing',
+      'Categoría, Oferta, Pricing, Mapa',
   );
 
   // ── ESTA AFIRMACIÓN ESTABA INVERTIDA, Y SE INVIERTE, NO SE BORRA ───────────
@@ -81,6 +82,11 @@ test('las ocho de ICP & Oferta son las del hub, en el ORDEN DEL MÉTODO', () => 
   // contrario — que no se caigan sin que nadie lo note.
   assert.ok(herramienta(5), 'VSL(5) salió de las nueve');
   assert.ok(herramienta(6), 'Landing(6) salió de las nueve');
+  // Y ninguna de las dos quedó en el catálogo del que se fueron: una herramienta en las DOS
+  // pantallas se vería dos veces y se generaría con dos capacidades distintas según por dónde
+  // se entrara.
+  assert.ok(!IDS_FUNDACIONES.includes(5), 'el VSL volvió a «ICP & Oferta» sin que nadie lo decidiera');
+  assert.ok(!IDS_FUNDACIONES.includes(6), 'la Landing volvió a «ICP & Oferta» sin que nadie lo decidiera');
 
   // Los prefijos de campo del hub NO coinciden con el id de la herramienta, y esa rareza se
   // congela: el VSL es la 5 y sus campos son `t6-`; la Landing es la 6 y el suyo es `t7-`.
@@ -128,13 +134,15 @@ test('Prospección está PORTADA del hub, no reinterpretada', () => {
   const p = herramienta(20);
   assert.ok(p, 'Prospección(20) salió de TOOLS');
 
-  // El VSL vive en `TOOLS` desde que se movió de Fundaciones. Se afirma acá para que no pueda
+  // El VSL y la Landing viven en `TOOLS` desde que se movieron de Fundaciones. Se afirma acá para que no pueda
   // desaparecer de los dos catálogos a la vez: sacarlo de `FUNDACIONES` y olvidarse de ponerlo
   // en `TOOLS` dejaría la herramienta inalcanzable sin que nada mas fallara.
+  /* El orden importa: la Landing hereda del VSL, así que va después. Al revés, la pantalla
+     ofrecería primero la herramienta que necesita la salida de la que viene atrás. */
   assert.deepEqual(
     TOOLS.map((h) => h.id),
-    [20, 5],
-    'TOOLS son Prospección(20) y el VSL(5), en ese orden',
+    [20, 5, 6],
+    'TOOLS son Prospección(20), el VSL(5) y la Landing(6), en ese orden',
   );
 
   // UNA fila de DOS columnas con los CUATRO campos: en el hub se ven en una cuadrícula de 2×2.

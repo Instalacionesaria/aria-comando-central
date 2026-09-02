@@ -1,4 +1,6 @@
-// Las nueve herramientas de Fundaciones que viven dentro de la pantalla `icp` (ICP & Oferta).
+// Las nueve herramientas de Fundaciones: SIETE en la pantalla `icp` (ICP & Oferta) y dos en
+// `tools`, al lado de Prospección. El VSL se mudó el 2026-08-31 y la Landing el 2026-09-02; ver
+// `TOOLS`, más abajo, para el motivo y para lo que la mudanza cambia.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // DE DÓNDE VIENE ESTE ARCHIVO, Y QUÉ NO SE PUEDE CAMBIAR
@@ -693,7 +695,6 @@ export const FUNDACIONES: readonly Herramienta[] = [
   OFERTA,
   PRICING,
   MAPA,
-  LANDING,
 ];
 
 /** Los nueve identificadores, para las comprobaciones y para recorrer sin buscar. */
@@ -702,21 +703,27 @@ export const IDS_FUNDACIONES: readonly number[] = FUNDACIONES.map((h) => h.id);
 /**
  * Las herramientas de la pantalla `tools`, en el orden en que se muestran.
  *
- * ── EL VSL VIVE ACÁ Y NO EN FUNDACIONES, POR PEDIDO DE JORGE ────────────────
+ * ── EL VSL Y LA LANDING VIVEN ACÁ Y NO EN FUNDACIONES ───────────────────────
  *
- * En ARIA-brain es el paso 8 de 9 de «Construye tu base», y el port lo trajo ahí. Se movió a
- * esta pantalla el 2026-08-31.
+ * En ARIA-brain son los pasos 8 y 9 de «Construye tu base», y el port las trajo ahí. El VSL se
+ * movió el 2026-08-31 por pedido de Jorge; la Landing —la pestaña 8 de «ICP & Oferta»— el
+ * 2026-09-02 por pedido de Kevin. Son las dos últimas del método, y las dos son de producción:
+ * lo que sale de ellas es un prompt para construir algo, no una pieza del posicionamiento.
+ *
+ * La Landing va DESPUÉS del VSL, y no es cosmético: hereda de él (`FUENTES_POR_HERRAMIENTA[6]`
+ * incluye `vsl`). Con las dos en esta pantalla, la fuente que más le importa queda del mismo
+ * lado — que es más de lo que tenía cuando estaba en «ICP & Oferta» y su VSL ya se había mudado.
  *
  * Lo que NO cambia con la mudanza, y por eso es segura: `/api/tools/estado` y
  * `/api/fundaciones/estado` llaman las dos a `leerElEstado`, o sea que **comparten almacén**.
- * El trabajo ya guardado del VSL sigue estando, y sus chips de herencia —ICP, categoría,
- * oferta y precio, ver `FUENTES_POR_HERRAMIENTA[5]`— siguen resolviendo, porque `fuentes()`
- * lee el estado completo y no sólo el de su catálogo.
+ * El trabajo ya guardado sigue estando, y los chips de herencia —ICP, categoría, oferta,
+ * precio y VSL— siguen resolviendo, porque `fuentes()` lee el estado completo y no sólo el del
+ * catálogo de su pantalla.
  *
- * Lo que SÍ cambia, y hay que saberlo: el VSL pasa a pedir `tools.ver` / `tools.editar` en vez
- * de `fundaciones.*`. Quien tenga uno y no el otro cambia de lado.
+ * Lo que SÍ cambia, y hay que saberlo: pasan a pedir `tools.ver` / `tools.editar` en vez de
+ * `fundaciones.*`. Quien tenga uno y no el otro cambia de lado.
  */
-export const TOOLS: readonly Herramienta[] = [PROSPECCION, VSL];
+export const TOOLS: readonly Herramienta[] = [PROSPECCION, VSL, LANDING];
 
 /**
  * Todas las herramientas del proyecto, de las dos pantallas.
