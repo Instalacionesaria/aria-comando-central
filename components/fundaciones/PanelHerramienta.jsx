@@ -42,7 +42,6 @@ import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
-import BandaDeMomento from './BandaDeMomento';
 import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
 import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
@@ -54,7 +53,6 @@ export default function PanelHerramienta({
   organizacion,
   faltaPermiso,
   onIr,
-  onSiguientePaso,
   onEstadoCambiado,
   /* Las dos rutas de SU pantalla. Llegan por props y no están escritas acá porque el mismo
      panel sirve a ICP & Oferta y a Tools, que tienen capacidades distintas: una ruta escrita
@@ -365,13 +363,6 @@ export default function PanelHerramienta({
             <span style={{ width: '71%' }} />
           </div>
         </>
-      ) : null}
-
-      {/* La banda va DEBAJO del documento y no arriba: es lo que se lee después de mirar lo que
-          salió, y arriba competiría con el entregable — que es a lo que se vino. Solo aparece con
-          documento: sin él no hay nada terminado que desbloquee un paso siguiente. */}
-      {documento && onSiguientePaso ? (
-        <BandaDeMomento herramienta={herramienta} estado={estado} onIr={onSiguientePaso} />
       ) : null}
 
       {documento ? (

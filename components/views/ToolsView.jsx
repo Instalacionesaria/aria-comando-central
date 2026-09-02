@@ -30,9 +30,6 @@ import MisLeads from '../tools/MisLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
 const CATALOGO_TOOLS = {
-  /* Cuál de las dos pantallas es. La travesía la usa para saber si el paso siguiente vive acá o
-     enfrente: el VSL y la Landing son los pasos 8 y 9 del método y viven de este lado. */
-  pantalla: 'tools',
   herramientas: TOOLS,
   rutaEstado: '/api/tools/estado',
   rutaGenerar: '/api/tools/generar',

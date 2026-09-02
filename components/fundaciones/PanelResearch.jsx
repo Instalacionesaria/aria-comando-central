@@ -53,7 +53,6 @@ import {
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
-import BandaDeMomento from './BandaDeMomento';
 import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
 import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
@@ -72,7 +71,6 @@ export default function PanelResearch({
   puedeEditar,
   organizacion,
   faltaPermiso,
-  onSiguientePaso,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
      sus rutas igual: que una pantalla tenga una sola herramienta de este tipo no es motivo
@@ -438,21 +436,13 @@ export default function PanelResearch({
       </div>
 
       {hechos >= PASOS_RESEARCH ? (
-        <>
-          <div className="fd-aviso">
-            <i>◍</i>
-            <span>
-              Los cinco pasos están. <b>El paso 5 es lo que hereda tu ICP</b>: si volvés a
-              ejecutar el research, conviene regenerar el ICP después.
-            </span>
-          </div>
-          {/* Con los CINCO, no con uno: el Research desbloquea el paso siguiente recién cuando su
-              segmento ganador existe, que es lo que el ICP hereda. Con cuatro pasos la banda estaría
-              invitando a generar sobre un research a medias. */}
-          {onSiguientePaso ? (
-            <BandaDeMomento herramienta={herramienta} estado={estado} onIr={onSiguientePaso} />
-          ) : null}
-        </>
+        <div className="fd-aviso">
+          <i>◍</i>
+          <span>
+            Los cinco pasos están. <b>El paso 5 es lo que hereda tu ICP</b>: si volvés a
+            ejecutar el research, conviene regenerar el ICP después.
+          </span>
+        </div>
       ) : null}
     </div>
   );
