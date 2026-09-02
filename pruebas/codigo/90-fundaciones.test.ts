@@ -1047,15 +1047,16 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
   );
   assert.ok(ms > 0, 'el cliente dejó de fijar cuánto se espera a una ruta larga');
 
-  // Las rutas que las dos pantallas —Fundaciones y `tools`— pueden llamar. La quinta es la del
-  // agente conversacional del Research: sus turnos son cortos, pero cada uno lee las seis llaves
-  // del almacén antes de llamar al modelo, así que hereda el mismo `maxDuration` que las demás.
+  // Las seis rutas que las dos pantallas —Fundaciones y `tools`— pueden llamar. Las dos del agente
+  // conversacional entraron después: sus turnos son cortos, pero cada uno lee las seis llaves del
+  // almacén antes de llamar al modelo, así que heredan el mismo `maxDuration` que las demás.
   const RUTAS = [
     'app/api/fundaciones/estado/route.ts',
     'app/api/fundaciones/generar/route.ts',
     'app/api/fundaciones/conversar/route.ts',
     'app/api/tools/estado/route.ts',
     'app/api/tools/generar/route.ts',
+    'app/api/tools/conversar/route.ts',
   ];
   for (const ruta of RUTAS) {
     const segundos = Number(/maxDuration\s*=\s*(\d+)/.exec(leer(ruta))?.[1]);
@@ -1074,7 +1075,7 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
     'components/fundaciones/Fundaciones.jsx',
     'components/fundaciones/PanelHerramienta.jsx',
     'components/fundaciones/PanelResearch.jsx',
-    'components/fundaciones/ChatDeResearch.jsx',
+    'components/fundaciones/ChatDeHerramienta.jsx',
     'components/tools/PanelProspeccion.jsx',
   ];
   for (const archivo of LLAMADORES) {

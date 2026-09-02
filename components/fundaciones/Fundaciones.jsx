@@ -300,6 +300,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
+          rutaConversar={rutaConversar}
         />
       )}
     </>

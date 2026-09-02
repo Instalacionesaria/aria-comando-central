@@ -44,7 +44,7 @@
 import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import {
   fechaDeVersion,
-  guardarChatDeResearch,
+  guardarChat,
   guardarInputs,
   guardarResearch,
   guardarVersion,
@@ -58,9 +58,9 @@ import {
   mensajeDeApertura,
   type FalloDeConversacion,
 } from './conversacion.ts';
-import type { ChatDeResearch, EstadoDeFundaciones } from './estado.ts';
+import type { ChatDeHerramienta, EstadoDeFundaciones } from './estado.ts';
 import { generar } from './generacion.ts';
-import { PASOS_RESEARCH, type Herramienta } from './herramientas.ts';
+import { PASOS_RESEARCH, tieneAgente, type Herramienta } from './herramientas.ts';
 import {
   MetodologiaIlegible,
   TOKENS_RESEARCH,
@@ -378,19 +378,19 @@ export async function generarElDocumento(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 4 · Conversar con el agente del Research
+// 4 · Conversar con el agente de una herramienta
 //
-// La cuarta operación de la pantalla, y la única que existe para NO llenar un formulario: el mismo
-// juego de criterios, hablando. Ver `lib/fundaciones/conversacion.ts` para qué hace el agente y qué
-// no; acá está lo que hace el servidor con lo que devuelve.
+// La cuarta operación de la pantalla, y la única que existe para NO llenar un formulario: las mismas
+// preguntas, hablando. Ver `lib/fundaciones/conversacion.ts` para qué hace el agente y qué no; acá
+// está lo que hace el servidor con lo que devuelve.
 //
 // ── EL HISTORIAL NO VIAJA POR EL NAVEGADOR. NUNCA. ──────────────────────────
 //
-// El navegador manda UNA línea: lo que la persona acaba de escribir. El servidor lee la
-// conversación del almacén, le agrega ese turno, llama al modelo y guarda el resultado.
+// El navegador manda UNA línea: lo que la persona acaba de escribir. El servidor lee la conversación
+// del almacén, le agrega ese turno, llama al modelo y guarda el resultado.
 //
-// Es la misma decisión que el encadenamiento de los cinco pasos, y por el mismo motivo, que acá
-// tiene una segunda punta: si el historial viajara, cualquiera podría mandar una conversación
+// Es la misma decisión que el encadenamiento de los cinco pasos del Research, y por el mismo motivo,
+// que acá tiene una segunda punta: si el historial viajara, cualquiera podría mandar una conversación
 // inventada en la que la persona ya confirmó, y el agente devolvería `listo` en true en el primer
 // turno. Con el historial del lado del servidor, la confirmación es un hecho guardado, no una
 // afirmación del cliente.
@@ -398,10 +398,9 @@ export async function generarElDocumento(
 // ── CUÁNDO SE ESCRIBE, Y CUÁNDO NO ─────────────────────────────────────────
 //
 // Si el modelo falla, **no se guarda nada** — ni siquiera el turno de la persona. Guardarlo dejaría
-// la conversación terminando en una pregunta sin respuesta, y el próximo turno le mandaría al
-// modelo dos mensajes seguidos de la persona. Lo que ve la pantalla es su texto todavía en el
-// cuadro y el aviso de siempre: *"no se perdió nada de lo que escribiste"*, que en este camino es
-// literal.
+// la conversación terminando en una pregunta sin respuesta, y el próximo turno le mandaría al modelo
+// dos mensajes seguidos de la persona. Lo que ve la pantalla es su texto todavía en el cuadro y el
+// aviso de siempre: *"no se perdió nada de lo que escribiste"*, que en este camino es literal.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** El rechazo de un fallo de la conversación. Las tres ramas nuevas NO se colapsan con las otras. */
@@ -411,8 +410,8 @@ function rechazoDeConversacion(fallo: FalloDeConversacion): Response {
        incluido: es el mismo proveedor, el mismo tipo de fallo y la misma acción del otro lado. */
     return rechazoDeModelo(fallo);
   }
-  /* Las tres nuestras. Van con detalle propio y no con el código del proveedor —no hay ninguno—,
-     y separadas porque mandan a mirar cosas distintas: el techo de tokens, la conversación que el
+  /* Las tres nuestras. Van con detalle propio y no con el código del proveedor —no hay ninguno—, y
+     separadas porque mandan a mirar cosas distintas: el techo de tokens, la conversación que el
      modelo no quiso seguir, y un esquema que dejó de encajar. */
   if (fallo.tipo === 'truncado') return rechazo('modelo_no_disponible', 'respuesta truncada');
   if (fallo.tipo === 'declino') return rechazo('modelo_no_disponible', 'el modelo declinó');
@@ -420,24 +419,34 @@ function rechazoDeConversacion(fallo: FalloDeConversacion): Response {
 }
 
 /**
- * Los criterios ya guardados, con las claves cortas del almacén y sin los huecos.
+ * Lo que la herramienta ya tiene guardado, con las claves cortas del almacén y sin los huecos.
  *
- * `(no especificado)` es lo que el formulario escribe en un campo vacío, y para el agente eso es un
- * criterio que NO tiene: pasárselo tal cual haría que salude con *"veo que tu contrato inicial
- * mínimo es (no especificado)"* y, peor, que dé por contestada una pregunta que nadie contestó.
+ * ── DOS LUGARES, Y NO ES UNA IRREGULARIDAD DE ESTE CÓDIGO ───────────────────
+ *
+ * El Research guarda sus criterios en su propia llave, junto a sus cinco salidas, porque ése es el
+ * formato que ARIA-brain ya escribe; las otras ocho guardan los suyos en `profile`, indexados por
+ * herramienta. La rama está también en `guardarLosInputs`, con el mismo `id === 1` y el mismo motivo.
+ *
+ * `(no especificado)` es lo que el formulario escribe en un campo vacío, y para el agente eso es una
+ * respuesta que NO tiene: pasárselo tal cual haría que salude con *"veo que tu precio es (no
+ * especificado)"* y, peor, que dé por contestada una pregunta que nadie contestó.
  */
-function criteriosGuardados(estado: EstadoDeFundaciones): Record<string, string> {
+function respuestasGuardadas(
+  estado: EstadoDeFundaciones,
+  h: Herramienta,
+): Record<string, string> {
+  const crudas = h.forma === 'research' ? estado.researchInputs : estado.perfil[h.id];
   const salida: Record<string, string> = {};
-  for (const [clave, valor] of Object.entries(estado.researchInputs)) {
+  for (const [clave, valor] of Object.entries(crudas ?? {})) {
     if (valor && valor.trim() !== '' && valor !== SIN_ESPECIFICAR) salida[clave] = valor;
   }
   return salida;
 }
 
 /** La conversación recién abierta: el saludo del agente, y lo que ya estuviera guardado. */
-function abrir(h: Herramienta, criterios: Record<string, string>): ChatDeResearch {
-  const chat = chatVacio(criterios);
-  chat.messages.push({ role: 'assistant', content: mensajeDeApertura(h, criterios) });
+function abrir(h: Herramienta, respuestas: Record<string, string>): ChatDeHerramienta {
+  const chat = chatVacio(respuestas);
+  chat.messages.push({ role: 'assistant', content: mensajeDeApertura(h, respuestas) });
   return chat;
 }
 
@@ -462,11 +471,11 @@ export async function conversarConElAgente(
 
   const id = typeof cuerpo.herramienta === 'number' ? cuerpo.herramienta : null;
   const h = deLaPantalla(admitidas, id);
-  /* Y además tiene que ser LA de los cinco pasos. Sin esta línea, `herramienta: 3` abriría una
-     conversación sobre el ICP con las preguntas del ICP y la guardaría en la llave del Research,
-     pisando la del chat de criterios. Es el mismo filtro que el encabezado del archivo describe
-     para `admitidas`, un escalón más adentro. */
-  if (h === undefined || h.forma !== 'research') return rechazo('no_encontrado');
+  /* Y además tiene que ser una herramienta CON agente. Ver `tieneAgente`: Prospección no lo tiene
+     porque su formulario no genera un documento, gasta leads del monedero. La misma función la usan
+     las pantallas para decidir si dibujan el selector, así que no hay forma de que una ofrezca un
+     modo que la otra rechace. */
+  if (h === undefined || !tieneAgente(h)) return rechazo('no_encontrado');
 
   const mensaje = typeof cuerpo.mensaje === 'string' ? cuerpo.mensaje.trim() : '';
   if (mensaje.length > TOPE_DE_UN_TURNO) {
@@ -477,46 +486,47 @@ export async function conversarConElAgente(
   const estado = await leerEstado(acceso.clienteId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
 
-  let chat = estado.datos.researchChat;
+  const guardada = estado.datos.chats[h.id];
+  let chat: ChatDeHerramienta = guardada ?? { messages: [], answers: {} };
   /* Abrir la conversación NO llama al modelo: el saludo lo arma el código (ver `mensajeDeApertura`).
-     La pantalla se abre sola al tocar la pestaña, y una inferencia por cada vistazo se la cobra a
-     la organización sin que nadie haya preguntado nada. */
+     La pantalla se abre sola al tocar la pestaña, y una inferencia por cada vistazo se la cobra a la
+     organización sin que nadie haya preguntado nada. */
   const recienAbierta = reiniciar || chat.messages.length === 0;
-  if (recienAbierta) chat = abrir(h, criteriosGuardados(estado.datos));
+  if (recienAbierta) chat = abrir(h, respuestasGuardadas(estado.datos, h));
 
   if (mensaje === '') {
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.
     if (recienAbierta) {
-      const guardado = await guardarChatDeResearch(acceso.clienteId, chat);
+      const guardado = await guardarChat(acceso.clienteId, estado.datos, h.id, chat);
       if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
     }
-    return ok({ mensajes: chat.messages, criterios: chat.criteria, listo: false });
+    return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: false });
   }
 
-  const previos = chat.criteria;
+  const previas = chat.answers;
   const conElTurno = [...chat.messages, { role: 'user' as const, content: mensaje }];
 
   const salida = await conversar({
     claveIa: acceso.claveIa,
     herramienta: h,
     mensajes: conElTurno,
-    criterios: previos,
+    respuestas: previas,
   });
   if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);
 
-  const proximo: ChatDeResearch = {
+  const proximo: ChatDeHerramienta = {
     messages: [...conElTurno, { role: 'assistant', content: salida.datos.mensaje }],
-    criteria: salida.datos.criterios,
+    answers: salida.datos.respuestas,
   };
-  const guardado = await guardarChatDeResearch(acceso.clienteId, proximo);
+  const guardado = await guardarChat(acceso.clienteId, estado.datos, h.id, proximo);
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
   /* `listo` es lo que el SERVIDOR concluye, no lo que el modelo afirmó. Ver `arranca`: comprueba que
-     no falte ningún criterio obligatorio y que el agente ya los tuviera ANTES de este turno — o sea
-     que hubo un turno donde pudo resumir y esperar el sí. */
+     no falte ninguna respuesta obligatoria y que este turno no haya agregado información — o sea que
+     hubo un turno donde el agente pudo resumir y esperar el sí. */
   return ok({
     mensajes: proximo.messages,
-    criterios: proximo.criteria,
-    listo: arranca(h, salida.datos, previos),
+    respuestas: proximo.answers,
+    listo: arranca(h, salida.datos, previas),
   });
 }

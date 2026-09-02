@@ -32,14 +32,13 @@ const CATALOGO_TOOLS = {
   herramientas: TOOLS,
   rutaEstado: '/api/tools/estado',
   rutaGenerar: '/api/tools/generar',
-  /* Tools NO tiene ninguna herramienta con `forma: 'research'`, así que no hay agente con quien
-     conversar y no hay ruta. Va en `null` explícito y no ausente, por lo que dice el encabezado de
-     `Fundaciones.jsx`: los valores por omisión son los de ICP & Oferta, y heredar el de allá sería
-     llamar a una ruta que pide `fundaciones.editar` desde una pantalla cuya capacidad es
-     `tools.editar` — exactamente el defecto que separó las rutas de las dos pantallas.
+  /* La del agente conversacional. Se declara explícita, como las otras dos: heredar la de ICP &
+     Oferta sería llamar a una ruta que pide `fundaciones.editar` desde una pantalla cuya capacidad
+     es `tools.editar` — exactamente el defecto que separó las rutas de las dos pantallas.
 
-     El día que Tools tenga su propio research, esto deja de ser `null` y pasa a ser su ruta. */
-  rutaConversar: null,
+     La usa el VSL, que es una herramienta genérica como las ocho de al lado. Prospección no: no
+     tiene agente (ver `tieneAgente`), y su panel es otro. */
+  rutaConversar: '/api/tools/conversar',
   capacidadEditar: 'tools.editar',
   /* «Mis Leads» es una pestaña más de Tools, al lado de Prospección, y no una sección enterrada
      debajo del scraper: el historial se consulta en momentos distintos de cuando se scrapea

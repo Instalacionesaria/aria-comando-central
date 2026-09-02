@@ -53,8 +53,9 @@ import {
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
-import ChatDeResearch from './ChatDeResearch';
+import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
+import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
 
 const TITULOS = [
   'Encontrar los segmentos',
@@ -93,7 +94,7 @@ export default function PanelResearch({
   /* Arranca en el formulario, y no en el último modo que se usó: es lo que esta pantalla ya
      mostraba, y una pantalla que cambia de forma según algo que uno no recuerda haber elegido se
      lee como un error. Elegir el chat es un clic, y el chat que quedó a medias sigue ahí. */
-  const [modo, setModo] = useState('formulario');
+  const [modo, setModo] = useState(MODO_FORMULARIO);
 
   const [salidas, setSalidas] = useState(() => [...estado.researchSalidas]);
   const [corriendo, setCorriendo] = useState(null);
@@ -187,8 +188,8 @@ export default function PanelResearch({
      No se guarda en el almacén acá: mientras la conversación está a medias, los criterios viven en
      el documento del chat (ver `estado.ts`). Esto es para que cambiarse al formulario muestre lo
      que el agente entendió, y se pueda corregir a mano. */
-  const anotarLoDelAgente = (criterios) => {
-    setValores(aValoresDeFormulario(ids, criterios));
+  const anotarLoDelAgente = (respuestas) => {
+    setValores(aValoresDeFormulario(ids, respuestas));
     setGuardado(false);
   };
 
@@ -199,8 +200,8 @@ export default function PanelResearch({
      `conValoresPorOmision` es lo que iguala los dos modos: el formulario muestra `50,000+` desde
      que se abre, así que quien nunca tocó ese campo genera con ese valor. Sin esta línea, la misma
      conversación produciría un research con un criterio menos. */
-  const arrancarDesdeElAgente = async (criterios) => {
-    const v = conValoresPorOmision(herramienta, aValoresDeFormulario(ids, criterios));
+  const arrancarDesdeElAgente = async (respuestas) => {
+    const v = conValoresPorOmision(herramienta, aValoresDeFormulario(ids, respuestas));
     setValores(v);
     await guardar(v);
     await correrTodo(v);
@@ -226,44 +227,20 @@ export default function PanelResearch({
         ) : null}
       </div>
 
-      {/* Los dos caminos. Es un `tablist` de verdad y no dos botones sueltos: son dos vistas
-          excluyentes de lo mismo, y quien navega con teclado o con lector de pantalla tiene que
-          escuchar «pestaña 1 de 2», no dos botones sin relación entre sí. */}
-      <div className="fd-modos" role="tablist" aria-label="Cómo llenar los criterios">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={modo === 'formulario'}
-          className={modo === 'formulario' ? 'on' : ''}
-          disabled={corriendo !== null}
-          onClick={() => setModo('formulario')}
-        >
-          <b>Opción 1</b> Formulario
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={modo === 'agente'}
-          className={modo === 'agente' ? 'on' : ''}
-          disabled={corriendo !== null}
-          onClick={() => setModo('agente')}
-        >
-          <b>Opción 2</b> Agente conversacional
-        </button>
-        <span className="fd-modos-nota">
-          {modo === 'formulario'
-            ? 'Llenás los cinco criterios y apretás ejecutar.'
-            : 'Te hace las mismas cinco preguntas y arranca solo cuando confirmes.'}
-        </span>
-      </div>
+      <SelectorDeModo
+        modo={modo}
+        onElegir={setModo}
+        bloqueado={corriendo !== null}
+        queHaceElAgente="Te hace las mismas cinco preguntas y arranca los cinco pasos cuando confirmes."
+      />
 
-      {modo === 'agente' ? (
-        <ChatDeResearch
+      {modo === MODO_AGENTE ? (
+        <ChatDeHerramienta
           herramienta={herramienta}
-          inicial={estado.researchChat}
+          inicial={estado.chats[herramienta.id]}
           puedeEditar={puedeEditar}
-          corriendo={corriendo}
-          onCriterios={anotarLoDelAgente}
+          corriendo={corriendo !== null}
+          onRespuestas={anotarLoDelAgente}
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
         />

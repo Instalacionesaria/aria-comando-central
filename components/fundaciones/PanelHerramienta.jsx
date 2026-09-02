@@ -1,10 +1,26 @@
 'use client';
 
-/* Una herramienta de formulario: seis de las siete.
+/* Una herramienta de formulario: ocho de las nueve.
    ==========================================================================
-   Tu ficha, ICP, Categoría, Oferta, Tu precio y Mapa comparten forma: llenás campos,
-   apretás un botón, sale un documento. La séptima (Research) tiene su propio panel,
-   porque son cinco pasos encadenados y eso no es la misma interacción.
+   Tu ficha, ICP, Categoría, Oferta, Tu precio, Mapa, el VSL y la Landing comparten
+   forma: llenás campos, apretás un botón, sale un documento. La novena (Research)
+   tiene su propio panel, porque son cinco pasos encadenados y eso no es la misma
+   interacción.
+
+   ── DOS CAMINOS HASTA LOS MISMOS CAMPOS ───────────────────────────────────
+
+   El formulario y el agente conversacional, que hace LAS MISMAS preguntas —las
+   etiquetas de este mismo catálogo, derivadas en el servidor— y cuando la persona
+   confirma dispara esta misma generación, con este mismo cuerpo. Lo que cambia es
+   cómo se llega a los valores; de ahí para abajo no cambia nada, y por eso el
+   documento y lo que se hereda viven FUERA del selector.
+
+   Y por eso también `guardar` y `generar` reciben los valores por argumento: el
+   agente los trae en la RESPUESTA del turno que dice «generá», así que generar con
+   los del estado sería leerlos un render antes de que existan. Es el mismo
+   `setState` asíncrono que en ARIA-brain dejó al paso 5 del Research generando
+   sobre una lista vacía — el documento salía, se veía bien, y estaba construido
+   sobre nada. Pasarlos por argumento hace que eso no se pueda escribir.
 
    ── LO QUE ESTE COMPONENTE HACE Y NO SE VE ────────────────────────────────
 
@@ -21,11 +37,14 @@
 import { useMemo, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { aValoresDeFormulario, camposDe } from '@/lib/fundaciones/campos';
+import { aValoresDeFormulario, camposDe, conValoresPorOmision } from '@/lib/fundaciones/campos';
+import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
+import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
+import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
 
 export default function PanelHerramienta({
   herramienta,
@@ -40,6 +59,7 @@ export default function PanelHerramienta({
      adentro haría que Tools guardara y generara con la capacidad de Fundaciones. */
   rutaEstado,
   rutaGenerar,
+  rutaConversar,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -68,6 +88,16 @@ export default function PanelHerramienta({
 
   const [detalleAbierto, setDetalleAbierto] = useState(false);
 
+  /* Arranca en el formulario, y no en el último modo que se usó: es lo que esta pantalla ya
+     mostraba, y una pantalla que cambia de forma según algo que uno no recuerda haber elegido se lee
+     como un error. Elegir el chat es un clic, y el que quedó a medias sigue ahí.
+
+     `rutaConversar` puede no venir —`ToolsView` la pasa en `null` para las herramientas sin agente—
+     y `tieneAgente` es la misma función que usa el servidor para decidir si acepta la conversación:
+     ofrecer el modo donde la ruta lo va a rechazar es mostrar un control que no puede cumplir. */
+  const conAgente = !!rutaConversar && tieneAgente(herramienta);
+  const [modo, setModo] = useState(MODO_FORMULARIO);
+
   const todas = useMemo(() => fuentes(estado), [estado]);
   const heredadas = FUENTES_POR_HERRAMIENTA[herramienta.id] || [];
   const criticasQueFaltan = useMemo(() => faltantes(estado, herramienta.id), [estado, herramienta.id]);
@@ -90,12 +120,12 @@ export default function PanelHerramienta({
     return SIN_RESPUESTA;
   };
 
-  const guardar = async () => {
+  const guardar = async (v = valores) => {
     setError(null);
     setGuardando(true);
     const r = await pedir(rutaEstado, {
       metodo: 'POST',
-      cuerpo: { herramienta: herramienta.id, valores },
+      cuerpo: { herramienta: herramienta.id, valores: v },
       espera: ESPERA_DE_RUTA_LARGA_MS,
     });
     setGuardando(false);
@@ -108,10 +138,10 @@ export default function PanelHerramienta({
     onEstadoCambiado();
   };
 
-  const generar = async (ajuste) => {
+  const generar = async (ajuste, v = valores) => {
     setError(null);
     setGenerando(true);
-    const cuerpo = { herramienta: herramienta.id, valores };
+    const cuerpo = { herramienta: herramienta.id, valores: v };
     if (ajuste) {
       cuerpo.ajuste = ajuste;
       cuerpo.previa = documento;
@@ -129,6 +159,31 @@ export default function PanelHerramienta({
     // la Oferta que se acaba de generar es lo que el Mapa hereda, y sin esto su pestaña
     // seguiría diciendo que falta.
     onEstadoCambiado();
+  };
+
+  /* Lo que el agente devuelve en cada turno, puesto en el formulario. Son claves cortas y el
+     formulario usa identificadores de campo, así que la traducción es la de siempre.
+
+     No se guarda en el almacén acá: mientras la conversación está a medias, las respuestas viven en
+     el documento del chat (ver `estado.ts`). Esto es para que cambiarse al formulario muestre lo que
+     el agente entendió, y se pueda corregir a mano. */
+  const anotarLoDelAgente = (respuestas) => {
+    setValores(aValoresDeFormulario(ids, respuestas));
+    setGuardado(false);
+  };
+
+  /* El agente terminó y la persona confirmó. Se guarda y se genera, que es exactamente lo que hacen
+     los dos botones del formulario — el mismo camino, disparado por la conversación en vez de por un
+     clic.
+
+     `conValoresPorOmision` es lo que iguala los dos modos: el formulario muestra el valor de omisión
+     desde que se abre, así que quien nunca tocó ese campo genera con ese valor. Sin esta línea, la
+     misma conversación produciría un entregable con un dato menos. */
+  const generarDesdeElAgente = async (respuestas) => {
+    const v = conValoresPorOmision(herramienta, aValoresDeFormulario(ids, respuestas));
+    setValores(v);
+    await guardar(v);
+    await generar(null, v);
   };
 
   return (
@@ -180,107 +235,135 @@ export default function PanelHerramienta({
         </div>
       ) : null}
 
-      <div className="card">
-        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {herramienta.filas.map((fila, i) => (
-            <div key={i} className={`fd-rejilla${fila.columnas === 2 ? ' dos' : ''}`}>
-              {fila.campos.map((campo) => (
-                <div className="fd-campo" key={campo.id}>
-                  <label htmlFor={campo.id}>{campo.etiqueta}</label>
-                  {campo.tipo === 'area' ? (
-                    <textarea
-                      id={campo.id}
-                      value={valores[campo.id] || ''}
-                      placeholder={campo.marcador}
-                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
-                    />
-                  ) : campo.tipo === 'lista' ? (
-                    /* El desplegable entró con el VSL, que tiene tres.
-                       ── POR QUÉ NO ES UN `input` CON SUGERENCIAS ──────────────────────
-                       Los valores de estas listas NO son etiquetas: son el texto que entra
-                       al prompt, y el `SKILL.md` del VSL deriva de ellos tres booleanos que
-                       encienden ramas enteras del framework (`_isB2C`, `_hasProof`,
-                       `_isScreenShare`). La derivación mira el principio de la cadena, así
-                       que un valor escrito a mano —"b2c", "si"— apaga la rama y el documento
-                       sale igual, con el molde equivocado. Un desplegable hace que solo
-                       existan los valores que el framework entiende. */
-                    <select
-                      id={campo.id}
-                      value={valores[campo.id] ?? campo.valorPorOmision ?? ''}
-                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
-                    >
-                      {/* Sin opción vacía inyectada: cuando la lista necesita una, viene en
-                          `opciones` con su propio texto (el `Selecciona…` de la prueba
-                          social). Agregar una acá dejaría dos vacíos en esa lista. */}
-                      {campo.opciones?.map((o) => (
-                        <option key={o.valor} value={o.valor}>
-                          {o.etiqueta}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      id={campo.id}
-                      type={campo.tipo === 'numero' ? 'number' : 'text'}
-                      value={valores[campo.id] || ''}
-                      placeholder={campo.marcador}
-                      onChange={(e) => ponerCampo(campo.id, e.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
+      {conAgente ? (
+        <SelectorDeModo
+          modo={modo}
+          onElegir={setModo}
+          bloqueado={generando}
+          queHaceElAgente={`Te hace las mismas preguntas y genera tu ${herramienta.etiquetaSalida} cuando confirmes.`}
+        />
+      ) : null}
 
-          {puedeEditar ? (
-            <div className="fd-acciones">
-              <button type="button" className="fd-btn" disabled={generando} onClick={() => generar(null)}>
-                {generando ? 'Generando…' : herramienta.etiquetaBoton}
-              </button>
-              <button type="button" className="fd-btn sec" disabled={guardando} onClick={guardar}>
-                {guardando ? 'Guardando…' : 'Guardar sin generar'}
-              </button>
-              {guardado ? <span className="fd-guardado">Guardado</span> : null}
-            </div>
-          ) : faltaPermiso ? (
-            /* El control no se renderiza en vez de mostrarse y dar 403. Es el `07` § 4:
-               "mostrar un control que no puede cumplir".
-
-               Y este cartel aparece SOLO cuando la causa es el permiso. Si la causa fuera que no
-               se pudo leer el estado, decir "tu rol" mandaría a pedirle un permiso a alguien que
-               no tiene nada que darle — el aviso de arriba ya dice qué pasó de verdad. */
-            <div className="fd-aviso">
-              <i>◍</i>
-              <span>
-                Tu rol puede <b>ver</b> este trabajo pero no generarlo. Lo de abajo es lo último
-                que se generó.
-              </span>
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="fd-aviso mal">
-              <i>◍</i>
-              <span>{error}</span>
-            </div>
-          ) : null}
-
-          {generando ? (
-            <>
-              <div className="fd-cargando">
-                <span className="fd-punto" />
-                Esto tarda entre uno y tres minutos. No cierres la pestaña.
+      {conAgente && modo === MODO_AGENTE ? (
+        <ChatDeHerramienta
+          herramienta={herramienta}
+          inicial={estado.chats[herramienta.id]}
+          puedeEditar={puedeEditar}
+          corriendo={generando}
+          onRespuestas={anotarLoDelAgente}
+          onArrancar={generarDesdeElAgente}
+          rutaConversar={rutaConversar}
+        />
+      ) : (
+        <div className="card">
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {herramienta.filas.map((fila, i) => (
+              <div key={i} className={`fd-rejilla${fila.columnas === 2 ? ' dos' : ''}`}>
+                {fila.campos.map((campo) => (
+                  <div className="fd-campo" key={campo.id}>
+                    <label htmlFor={campo.id}>{campo.etiqueta}</label>
+                    {campo.tipo === 'area' ? (
+                      <textarea
+                        id={campo.id}
+                        value={valores[campo.id] || ''}
+                        placeholder={campo.marcador}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      />
+                    ) : campo.tipo === 'lista' ? (
+                      /* El desplegable entró con el VSL, que tiene tres.
+                         ── POR QUÉ NO ES UN `input` CON SUGERENCIAS ──────────────────────
+                         Los valores de estas listas NO son etiquetas: son el texto que entra
+                         al prompt, y el `SKILL.md` del VSL deriva de ellos tres booleanos que
+                         encienden ramas enteras del framework (`_isB2C`, `_hasProof`,
+                         `_isScreenShare`). La derivación mira el principio de la cadena, así
+                         que un valor escrito a mano —"b2c", "si"— apaga la rama y el documento
+                         sale igual, con el molde equivocado. Un desplegable hace que solo
+                         existan los valores que el framework entiende. */
+                      <select
+                        id={campo.id}
+                        value={valores[campo.id] ?? campo.valorPorOmision ?? ''}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      >
+                        {/* Sin opción vacía inyectada: cuando la lista necesita una, viene en
+                            `opciones` con su propio texto (el `Selecciona…` de la prueba
+                            social). Agregar una acá dejaría dos vacíos en esa lista. */}
+                        {campo.opciones?.map((o) => (
+                          <option key={o.valor} value={o.valor}>
+                            {o.etiqueta}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id={campo.id}
+                        type={campo.tipo === 'numero' ? 'number' : 'text'}
+                        value={valores[campo.id] || ''}
+                        placeholder={campo.marcador}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="fd-esqueleto">
-                <span style={{ width: '62%' }} />
-                <span style={{ width: '94%' }} />
-                <span style={{ width: '88%' }} />
-                <span style={{ width: '71%' }} />
+            ))}
+
+            {puedeEditar ? (
+              <div className="fd-acciones">
+                <button type="button" className="fd-btn" disabled={generando} onClick={() => generar(null)}>
+                  {generando ? 'Generando…' : herramienta.etiquetaBoton}
+                </button>
+                {/* `() => guardar()` y no `guardar`: como manejador directo recibiría el evento de
+                    React donde ahora van los valores, y el cuerpo saldría con un `SyntheticEvent`
+                    en vez de con el formulario. */}
+                <button type="button" className="fd-btn sec" disabled={guardando} onClick={() => guardar()}>
+                  {guardando ? 'Guardando…' : 'Guardar sin generar'}
+                </button>
+                {guardado ? <span className="fd-guardado">Guardado</span> : null}
               </div>
-            </>
-          ) : null}
+            ) : faltaPermiso ? (
+              /* El control no se renderiza en vez de mostrarse y dar 403. Es el `07` § 4:
+                 "mostrar un control que no puede cumplir".
+
+                 Y este cartel aparece SOLO cuando la causa es el permiso. Si la causa fuera que no
+                 se pudo leer el estado, decir "tu rol" mandaría a pedirle un permiso a alguien que
+                 no tiene nada que darle — el aviso de arriba ya dice qué pasó de verdad. */
+              <div className="fd-aviso">
+                <i>◍</i>
+                <span>
+                  Tu rol puede <b>ver</b> este trabajo pero no generarlo. Lo de abajo es lo último
+                  que se generó.
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* El progreso y el error viven FUERA del selector: la generación es la misma venga del botón
+          o de la conversación, y quien arrancó desde el chat tiene que ver lo mismo que quien apretó
+          el botón. Adentro de la tarjeta del formulario, el modo agente se quedaba sin ninguna
+          señal de que su documento estaba en camino. */}
+      {error ? (
+        <div className="fd-aviso mal">
+          <i>◍</i>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {generando ? (
+        <>
+          <div className="fd-cargando">
+            <span className="fd-punto" />
+            Esto tarda entre uno y tres minutos. No cierres la pestaña.
+          </div>
+          <div className="fd-esqueleto">
+            <span style={{ width: '62%' }} />
+            <span style={{ width: '94%' }} />
+            <span style={{ width: '88%' }} />
+            <span style={{ width: '71%' }} />
+          </div>
+        </>
+      ) : null}
 
       {documento ? (
         <Documento

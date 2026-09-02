@@ -87,6 +87,23 @@ export interface Herramienta {
   etiquetaBoton: string;
   etiquetaSalida: string;
   forma: FormaDeHerramienta;
+  /**
+   * No se genera con los campos obligatorios vacíos. **Lo tiene UNA sola, y es una excepción con
+   * motivo, no una categoría.**
+   *
+   * Las ocho genéricas generan con lo que haya: el entregable marca los huecos con `[COMPLETAR]` y
+   * eso es una decisión de producto escrita en `PanelHerramienta` — *"hay alumnos que llegan con el
+   * posicionamiento hecho fuera del sistema, y bloquearlos sería peor que avisarles"*.
+   *
+   * El Research no puede hacer eso porque sus campos no se interpolan en un documento, se usan para
+   * BUSCAR EN LA WEB: sin nicho, el paso 1 no deja un hueco visible, trae cuatro segmentos genéricos
+   * que se ven perfectos. El hueco existe y no se nota, que es la única forma de defecto que este
+   * repositorio trata como grave.
+   *
+   * La leen `obligatoriosQueFaltan` —o sea el botón del formulario y el agente conversacional, los
+   * dos— así que agregársela a una herramienta le cambia las dos puertas a la vez.
+   */
+  exigeSusCampos?: boolean;
 }
 
 const PERFIL: Herramienta = {
@@ -177,6 +194,9 @@ const RESEARCH: Herramienta = {
   etiquetaBoton: 'Ejecutar research completo',
   etiquetaSalida: 'Market Research',
   forma: 'research',
+  /* La única. Ver la definición: sus criterios no se interpolan en un documento, se buscan en la
+     web, y un criterio vacío no deja un `[COMPLETAR]` — deja un research genérico que se ve bien. */
+  exigeSusCampos: true,
 };
 
 const ICP: Herramienta = {
@@ -714,3 +734,27 @@ export function herramienta(id: number): Herramienta | undefined {
 
 /** Los identificadores de los cinco pasos de Market Research, en orden. */
 export const PASOS_RESEARCH = 5;
+
+/**
+ * ¿Esta herramienta tiene agente conversacional?
+ *
+ * Lo tienen las que son «un formulario y un documento»: las ocho genéricas y el Research, que es un
+ * formulario y cinco documentos encadenados. **Prospección no**, y no es un olvido: su formulario no
+ * produce un documento sino que dispara un scraping que gasta leads del monedero de la organización,
+ * y «arrancar cuando la persona confirme» no significa lo mismo cuando lo que se gasta no se puede
+ * volver a generar. El día que se decida, se decide acá.
+ *
+ * ── POR QUÉ VIVE EN EL CATÁLOGO Y NO EN EL MÓDULO DEL AGENTE ────────────────
+ *
+ * Porque la usan las DOS mitades: la ruta, para decidir si acepta la conversación, y la pantalla,
+ * para decidir si dibuja el selector. Si la pantalla ofreciera el modo donde el servidor lo rechaza,
+ * el botón daría un error sin explicación; si lo ofreciera solo el servidor, no habría cómo llegar.
+ *
+ * Y en el catálogo, que es lo único que el navegador ya importa: puesta en `conversacion.ts`,
+ * cualquier pantalla que la use se arrastra al paquete del navegador el módulo que le habla a
+ * Anthropic —su URL, su esquema y las instrucciones enteras del entrevistador— para preguntar por un
+ * `forma`. Es una propiedad de la herramienta, no de la llamada.
+ */
+export function tieneAgente(h: Herramienta): boolean {
+  return h.forma === 'generica' || h.forma === 'research';
+}

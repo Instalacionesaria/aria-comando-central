@@ -24,15 +24,22 @@ export const LLAVES = {
   researchProfundo: 'deep_research',
   categoriaLegado: 'cat_chat',
   /**
-   * La conversación del agente del Research. **Es la única llave que el hub NO escribe.**
+   * Las conversaciones con el agente, **una por herramienta, todas en un documento**.
+   * Es la única llave que el hub NO escribe.
+   *
+   * ── UNA LLAVE Y NO NUEVE ──────────────────────────────────────────────────
+   *
+   * Nueve llaves serían nueve filas y nueve lecturas por pantalla, cuando la pantalla ya lee las
+   * cinco del hub en paralelo y tarda lo que la más lenta. La forma es la misma que `profile` y
+   * `history` ya usan —`{"0": …, "3": …}`, el id del hub como clave— así que no estrena nada.
    *
    * Y aun así sus campos van en inglés como los de al lado. No es coherencia decorativa: la fila
    * vive en la MISMA tabla que las otras cinco, y el día que alguien mire `aria_brain_client_state`
    * a mano —que es como se diagnostica esto— un documento con `contenido` entre cinco con `content`
-   * se lee como un dato roto. Lo que sí es nuestro es el nombre: `research_chat`, y no `cat_chat`,
-   * que es el del chat viejo de Categoría Única del hub y guarda otra cosa.
+   * se lee como un dato roto. Lo que sí es nuestro es el nombre: `tool_chats`, y no `cat_chat`, que
+   * es el del chat viejo de Categoría Única del hub y guarda otra cosa.
    */
-  researchChat: 'research_chat',
+  chats: 'tool_chats',
 } as const;
 
 /**
@@ -66,19 +73,19 @@ export interface MensajeDeChat {
 }
 
 /**
- * Lo que el agente del Research juntó hasta ahora: los turnos y los criterios.
+ * Lo que el agente de UNA herramienta juntó hasta ahora: los turnos y las respuestas.
  *
- * Los criterios viven ACÁ y no en `market_research.inputs` mientras la conversación está a medias,
- * y esa separación es la que impide una pérdida de trabajo concreta: alguien llenó el formulario,
- * abre el chat para revisar un dato, y a la segunda pregunta el documento de criterios ya estaría
- * pisado con lo que el agente lleva juntado — que a esa altura es casi nada. Lo que junta el agente
- * pasa a `market_research.inputs` en UN solo momento: cuando arranca el research, que es el mismo
- * momento en que lo hace el botón del formulario.
+ * Las respuestas viven ACÁ y no en los inputs de la herramienta mientras la conversación está a
+ * medias, y esa separación es la que impide una pérdida de trabajo concreta: alguien llenó el
+ * formulario, abre el chat para revisar un dato, y a la segunda pregunta sus inputs guardados ya
+ * estarían pisados con lo que el agente lleva juntado — que a esa altura es casi nada. Lo que junta
+ * el agente pasa a los inputs en UN solo momento: cuando se genera, que es el mismo momento en que
+ * lo hace el botón del formulario.
  */
-export interface ChatDeResearch {
+export interface ChatDeHerramienta {
   messages: MensajeDeChat[];
-  /** Claves cortas, como en `researchInputs`. Vacío = el agente todavía no lo sabe. */
-  criteria: Record<string, string>;
+  /** Claves cortas, como en los inputs. Vacío = el agente todavía no lo sabe. */
+  answers: Record<string, string>;
 }
 
 /** El estado completo, tal como lo devuelve `GET /api/fundaciones/estado`. */
@@ -91,8 +98,8 @@ export interface EstadoDeFundaciones {
   researchInputs: Record<string, string>;
   /** Las salidas de los cinco pasos del Research, en orden. */
   researchSalidas: string[];
-  /** La conversación con el agente del Research, si el alumno usó ese modo. */
-  researchChat: ChatDeResearch;
+  /** Las conversaciones con el agente, por herramienta. Índice = id del hub. */
+  chats: Record<number, ChatDeHerramienta>;
   /** Investigación profunda y lenguaje de campo, si el alumno los corrió en el hub. Solo lectura. */
   researchProfundo: string | null;
   researchCampo: string | null;
@@ -107,7 +114,7 @@ export function estadoVacio(): EstadoDeFundaciones {
     historial: {},
     researchInputs: {},
     researchSalidas: [],
-    researchChat: { messages: [], criteria: {} },
+    chats: {},
     researchProfundo: null,
     researchCampo: null,
     categoriaLegado: null,

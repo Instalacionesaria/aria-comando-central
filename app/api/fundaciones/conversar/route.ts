@@ -2,7 +2,7 @@
 // ADR-0604 — Sin credencial, la organización no opera y lo dice.
 // ADR-0704 — Las respuestas de error no revelan estructura.
 //
-// Un turno de la conversación con el agente del Research. **También gasta dinero.**
+// Un turno de la conversación con el agente de una herramienta. **También gasta dinero.**
 //
 // Es la hermana de `generar/route.ts` y pide lo mismo que ella —`fundaciones.editar` y la llave de
 // IA de la organización—, y por el mismo motivo: cada turno es una inferencia. Que el resultado sea
@@ -15,9 +15,9 @@
 // portero deja de poder auditarse de un vistazo. El trabajo, como en las otras tres, vive en
 // `lib/fundaciones/operaciones.ts`; acá se quedan la capacidad y la resolución de la llave.
 //
-// Y no tiene gemela en `tools`: el agente conversacional es del Research, y el Research es de esta
-// pantalla. El día que otra herramienta quiera uno, esta ruta no se comparte — se escribe la suya,
-// con su capacidad, y las dos llaman al mismo trabajo.
+// Y tiene gemela en `tools` —`app/api/tools/conversar/route.ts`—, con la misma forma que las otras
+// dos parejas: el trabajo es uno y las rutas son dos, porque `tools.editar` y `fundaciones.editar`
+// son capacidades distintas y una ruta pertenece a UNA pantalla.
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { rechazo } from '../../../../lib/autorizacion/respuesta.ts';

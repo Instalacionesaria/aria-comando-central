@@ -2,15 +2,19 @@
 
 /* El agente que hace las preguntas del formulario, hablando.
    ==========================================================================
-   La otra mitad de `PanelResearch`: mismos cinco criterios, mismos cinco pasos después. Lo único
-   que cambia es cómo se llega a los criterios.
+   La otra mitad de los dos paneles —`PanelHerramienta` y `PanelResearch`—: las mismas preguntas y
+   el mismo entregable después. Lo único que cambia es cómo se llega a las respuestas.
+
+   UNO SOLO para las nueve herramientas, por lo mismo que hay un solo módulo de agente en el
+   servidor: nueve chats con su propia burbuja y su propio manejo de errores divergen en la primera
+   corrección, y ocho quedan con el defecto que se arregló en la novena.
 
    ── ESTE COMPONENTE NO SABE LAS PREGUNTAS, Y NO PUEDE SABERLAS ─────────────
 
    Las hace el servidor a partir del catálogo de campos (ver `lib/fundaciones/conversacion.ts`), y
    acá solo se dibujan los turnos. Es a propósito: una copia de las preguntas en el navegador sería
-   la lista paralela con la peor forma posible — la de arriba se vería perfecta mientras el research
-   se genera con otros criterios.
+   la lista paralela con la peor forma posible — la de arriba se vería perfecta mientras el
+   entregable se genera con otras respuestas.
 
    ── EL HISTORIAL NO SE ARMA ACÁ ────────────────────────────────────────────
 
@@ -29,21 +33,21 @@ import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { camposDe, claveCorta } from '@/lib/fundaciones/campos';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
-export default function ChatDeResearch({
+export default function ChatDeHerramienta({
   herramienta,
   /* El valor por omisión cubre UNA ventana concreta: la de un despliegue a mitad de camino, con la
      pantalla nueva pidiéndole el estado a un servidor que todavía no devuelve la llave del chat.
-     Sin él, `inicial.messages` revienta la pestaña entera del Research —incluida la lista de pasos,
-     que no tiene nada que ver— por un documento que casi siempre está vacío. */
-  inicial = { messages: [], criteria: {} },
+     Sin él, `inicial.messages` revienta la pestaña entera —incluido el documento ya generado, que
+     no tiene nada que ver— por un documento del almacén que casi siempre está vacío. */
+  inicial = { messages: [], answers: {} },
   puedeEditar,
   corriendo,
-  onCriterios,
+  onRespuestas,
   onArrancar,
   rutaConversar,
 }) {
   const [mensajes, setMensajes] = useState(() => [...inicial.messages]);
-  const [criterios, setCriterios] = useState(() => ({ ...inicial.criteria }));
+  const [respuestas, setRespuestas] = useState(() => ({ ...inicial.answers }));
   const [texto, setTexto] = useState('');
   const [pendiente, setPendiente] = useState(null);
   const [esperando, setEsperando] = useState(false);
@@ -58,9 +62,9 @@ export default function ChatDeResearch({
 
   const aplicar = (datos) => {
     setMensajes(datos.mensajes);
-    setCriterios(datos.criterios);
-    onCriterios(datos.criterios);
-    if (datos.listo) onArrancar(datos.criterios);
+    setRespuestas(datos.respuestas);
+    onRespuestas(datos.respuestas);
+    if (datos.listo) onArrancar(datos.respuestas);
   };
 
   const hablar = async (cuerpo) => {
@@ -98,7 +102,10 @@ export default function ChatDeResearch({
     if (hilo.current) hilo.current.scrollTop = hilo.current.scrollHeight;
   }, [mensajes, pendiente, esperando]);
 
-  const bloqueado = !puedeEditar || esperando || corriendo !== null;
+  /* `corriendo` es lo que la pantalla esté haciendo con lo que el agente entregó: los cinco pasos
+     del Research o la generación de un documento. Mientras eso pasa el chat no acepta turnos — un
+     mensaje nuevo cambiaría las respuestas por debajo de una generación en curso. */
+  const bloqueado = !puedeEditar || esperando || corriendo;
 
   const enviar = async () => {
     const limpio = texto.trim();
@@ -123,7 +130,9 @@ export default function ChatDeResearch({
       <div className="card-head">
         <span>Agente conversacional</span>
         <span className="hint">
-          {esperando ? 'pensando…' : `${cuantosHay(campos, criterios)} de ${campos.length} criterios`}
+          {esperando
+            ? 'pensando…'
+            : `${cuantosHay(campos, respuestas)} de ${campos.length} respuestas`}
         </span>
       </div>
       <div className="card-body fd-chat">
@@ -144,11 +153,11 @@ export default function ChatDeResearch({
 
         {/* Lo que el agente lleva anotado, a la vista. No es decorativo: es lo que va a quedar en
             el formulario y lo que se va a usar para generar, y verlo mientras se habla es lo que
-            permite corregir un dato mal entendido ANTES de que arranquen las cinco generaciones. */}
-        {cuantosHay(campos, criterios) > 0 ? (
+            permite corregir un dato mal entendido ANTES de pagar la generación. */}
+        {cuantosHay(campos, respuestas) > 0 ? (
           <div className="fd-anotado">
             {campos.map((campo) => {
-              const v = criterios[claveCorta(campo.id)];
+              const v = respuestas[claveCorta(campo.id)];
               if (!v || v.trim() === '') return null;
               return (
                 <span key={campo.id} className="fd-anotado-uno">
@@ -175,9 +184,7 @@ export default function ChatDeResearch({
             <div className="fd-campo">
             <textarea
               value={texto}
-              placeholder={
-                corriendo !== null ? 'El research está corriendo…' : 'Escribí tu respuesta…'
-              }
+              placeholder={corriendo ? 'Generando…' : 'Escribí tu respuesta…'}
               disabled={bloqueado}
               onChange={(e) => setTexto(e.target.value)}
               onKeyDown={(e) => {
@@ -199,7 +206,7 @@ export default function ChatDeResearch({
                 className="fd-btn sec"
                 disabled={bloqueado}
                 onClick={reiniciar}
-                title="Borra la conversación y empieza de cero. Los criterios guardados no se tocan."
+                title="Borra la conversación y empieza de cero. Lo guardado no se toca."
               >
                 Empezar de nuevo
               </button>
@@ -218,13 +225,13 @@ export default function ChatDeResearch({
   );
 }
 
-/* Cuántos criterios tiene anotados el agente. La traducción de identificador a clave corta sale de
+/* Cuántas respuestas tiene anotadas el agente. La traducción de identificador a clave corta sale de
    `campos.ts` —la misma función que usa el servidor—, no de una copia local: es UNA línea de código
    y sería igual la lista paralela, con las dos mitades del chat leyendo claves distintas. */
 
-function cuantosHay(campos, criterios) {
+function cuantosHay(campos, respuestas) {
   return campos.filter((c) => {
-    const v = criterios[claveCorta(c.id)];
+    const v = respuestas[claveCorta(c.id)];
     return v !== undefined && v.trim() !== '';
   }).length;
 }

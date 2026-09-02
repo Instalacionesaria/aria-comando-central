@@ -150,10 +150,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // donde olvidarse un `where` devuelve datos de otra organización sin ningún error.
   'app/api/fundaciones/estado/route.ts',
   'app/api/fundaciones/generar/route.ts',
-  // El agente conversacional del Research, que llegó después y es el MISMO caso que `generar`: lee
-  // la fila de credenciales de la organización —la llave de IA y el `cliente_id` del hub— y todo lo
-  // demás lo lee y lo escribe en el almacén de ARIA-brain, que no es esta base. El filtro por
-  // organización lo pone esa consulta a mano, con `contexto.orgEfectiva`.
+  // El agente conversacional, que llegó después y es el MISMO caso que `generar`: lee la fila de
+  // credenciales de la organización —la llave de IA y el `cliente_id` del hub— y todo lo demás lo
+  // lee y lo escribe en el almacén de ARIA-brain, que no es esta base. El filtro por organización lo
+  // pone esa consulta a mano, con `contexto.orgEfectiva`.
   'app/api/fundaciones/conversar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
@@ -190,6 +190,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
   'app/api/tools/estado/route.ts',
   'app/api/tools/generar/route.ts',
+  // Y el agente conversacional de esta pantalla, gemelo del de Fundaciones y por el mismo motivo:
+  // lee la fila de credenciales de la organización y todo lo demás vive en el almacén del hub.
+  'app/api/tools/conversar/route.ts',
   // Subir leads seleccionados al CRM. Lee el Private Integration Token de GoHighLevel por
   // identidad —`organizaciones_credenciales` es inalcanzable desde el rol del inquilino— con
   // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo

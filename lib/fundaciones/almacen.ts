@@ -28,7 +28,7 @@ import { pedirExterno, type Respuesta } from '../http/cliente.ts';
 import {
   LLAVES,
   estadoVacio,
-  type ChatDeResearch,
+  type ChatDeHerramienta,
   type EstadoDeFundaciones,
   type MensajeDeChat,
   type Version,
@@ -180,14 +180,18 @@ function porHerramienta<T>(x: unknown, lee: (v: unknown) => T | null): Record<nu
 }
 
 /**
- * El chat del agente, leído con la misma desconfianza que todo lo demás de esta tabla.
+ * El chat del agente de UNA herramienta, leído con la misma desconfianza que todo lo demás.
  *
  * Un turno con un `role` que no es ninguno de los dos **se descarta**, y no se convierte en
  * `assistant` por omisión: un mensaje de la persona leído como si lo hubiera dicho el agente cambia
  * de quién es cada afirmación, y a partir de ahí el modelo contesta sobre una conversación que no
  * ocurrió. Descartarlo deja un hueco visible; traducirlo deja una mentira invisible.
+ *
+ * Devuelve `null` cuando el documento no tiene ni turnos ni respuestas, porque así lo pide
+ * `porHerramienta(`: una entrada vacía no se guarda como una conversación que existe y está en
+ * blanco.
  */
-function chat(x: unknown): ChatDeResearch {
+function chat(x: unknown): ChatDeHerramienta | null {
   const o = objeto(x);
   const mensajes: MensajeDeChat[] = [];
   const crudos = Array.isArray(o['messages']) ? o['messages'] : [];
@@ -198,7 +202,9 @@ function chat(x: unknown): ChatDeResearch {
     if ((papel !== 'user' && papel !== 'assistant') || typeof texto !== 'string') continue;
     mensajes.push({ role: papel, content: texto });
   }
-  return { messages: mensajes, criteria: textos(o['criteria']) };
+  const respuestas = textos(o['answers']);
+  if (mensajes.length === 0 && Object.keys(respuestas).length === 0) return null;
+  return { messages: mensajes, answers: respuestas };
 }
 
 function versiones(x: unknown): Version[] | null {
@@ -236,7 +242,7 @@ export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<
     LLAVES.research,
     LLAVES.researchProfundo,
     LLAVES.categoriaLegado,
-    LLAVES.researchChat,
+    LLAVES.chats,
   ] as const;
 
   const leidas = await Promise.all(llaves.map((ll) => leer(clienteId, ll)));
@@ -259,7 +265,7 @@ export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<
     ? research['outputs'].map((s) => (typeof s === 'string' ? s : ''))
     : [];
 
-  estado.researchChat = chat(crudoChat);
+  estado.chats = porHerramienta(crudoChat, chat);
 
   const profundo = objeto(crudoProfundo);
   estado.researchProfundo = typeof profundo['deep'] === 'string' ? profundo['deep'] : null;
@@ -313,19 +319,26 @@ export async function guardarResearch(
 }
 
 /**
- * Guarda la conversación del agente del Research: los turnos y lo que lleva juntado.
+ * Guarda la conversación del agente de UNA herramienta: los turnos y lo que lleva juntado.
  *
  * Las dos cosas van en la MISMA escritura, y no en dos, porque son un solo hecho: «después de este
  * turno, el agente sabe esto». Separarlas abre la ventana en la que los turnos ya están guardados y
- * los criterios todavía no — y ahí la próxima llamada le manda al modelo una conversación en la que
- * ya preguntó el nicho, junto con un juego de criterios donde el nicho está vacío. El modelo no
+ * las respuestas todavía no — y ahí la próxima llamada le manda al modelo una conversación en la que
+ * ya preguntó el nicho, junto con un juego de respuestas donde el nicho está vacío. El modelo no
  * tiene forma de saber cuál de los dos miente.
+ *
+ * Y se relee el estado antes de escribir por lo mismo que `guardarInputs`: las nueve conversaciones
+ * viven en UN documento, así que escribir solo con la que cambió borraría las otras ocho — en
+ * silencio.
  */
-export async function guardarChatDeResearch(
+export async function guardarChat(
   clienteId: string,
-  chatDeResearch: ChatDeResearch,
+  estado: EstadoDeFundaciones,
+  id: number,
+  chatDeHerramienta: ChatDeHerramienta,
 ): Promise<ResultadoDeAlmacen<null>> {
-  return escribir(clienteId, LLAVES.researchChat, chatDeResearch);
+  const proximo: Record<number, ChatDeHerramienta> = { ...estado.chats, [id]: chatDeHerramienta };
+  return escribir(clienteId, LLAVES.chats, proximo);
 }
 
 /** La fecha con el formato que escribe el hub, para que el historial se lea igual en los dos. */

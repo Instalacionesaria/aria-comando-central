@@ -105,7 +105,19 @@ export function presente(valores: Record<string, string>, id: string): boolean {
  * ═════════════════════════════════════════════════════════════════════════════
  * ESTA REGLA LA COMPARTEN EL FORMULARIO Y EL AGENTE, Y POR ESO VIVE ACÁ
  *
- * «Obligatorio» es lo que queda después de sacar dos cosas, y ninguna de las dos es una lista:
+ * ── PRIMERO: CASI NINGUNA HERRAMIENTA EXIGE NADA, Y ESO ES DELIBERADO ────────
+ *
+ * Ocho de las nueve generan con los campos vacíos y el entregable marca los huecos con
+ * `[COMPLETAR]` — `PanelHerramienta` lo dice con todas las letras: *"lo que no sepas se puede dejar
+ * vacío: sale marcado como pendiente, no inventado"*. Exigirles algo sería un cambio de producto,
+ * no una mejora de esta función, así que para ellas esto devuelve SIEMPRE la lista vacía.
+ *
+ * La que sí exige es el Research (`exigeSusCampos`), y por un motivo que no aplica a las otras: sus
+ * criterios no se interpolan en un documento donde el hueco se ve, se usan para BUSCAR EN LA WEB. Un
+ * nicho vacío no produce un `[COMPLETAR]`, produce cuatro segmentos genéricos que se ven perfectos y
+ * cinco generaciones ya pagadas.
+ *
+ * ── Y DENTRO DE ÉSA, «OBLIGATORIO» ES LO QUE QUEDA DESPUÉS DE SACAR DOS COSAS ─
  *
  *   · los `opcional` — la etiqueta ya se lo dice a la persona (`Contrato inicial mínimo
  *     (opcional)`), y la bandera se lo dice al código;
@@ -126,6 +138,7 @@ export function obligatoriosQueFaltan(
   h: Herramienta,
   valores: Record<string, string>,
 ): readonly Campo[] {
+  if (!h.exigeSusCampos) return [];
   return camposDe(h).filter((campo) => {
     if (campo.opcional) return false;
     if (campo.valorPorOmision) return false;
