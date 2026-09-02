@@ -1,20 +1,24 @@
 'use client';
 
-/* Los links de cobro de la empresa: cargarlos y sacarlos.
+/* Los links rápidos de UNA zona: cargarlos y sacarlos.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * VIVE EN CLOSER → INICIO Y NO EN AJUSTES, Y NO ES INDIFERENTE
+ * UN SOLO COMPONENTE PARA LAS DOS PESTAÑAS
  *
- * Se usan en el chat de la ficha, que se abre desde acá al lado. Quien los carga es quien
- * configura la empresa —la misma puerta que designa closers y fija porcentajes— y verlos junto a
- * la tabla de closers es lo que hace que se entiendan como parte de lo mismo: cómo trabaja el
- * equipo de cierre.
+ * Lo dibujan Closer → Inicio y Setter → Inicio, con la zona por propiedad. Es el mismo formulario,
+ * la misma lista y las mismas dos llamadas; lo único que cambia es el rótulo y los ejemplos del
+ * formulario.
+ *
+ * Copiarlo habría sido más rápido de escribir y es exactamente lo que después diverge: se arregla un
+ * mensaje en uno, el otro queda con el viejo, y nadie lo nota porque las dos pantallas se ven bien
+ * por separado. Vive en `components/negocio/` por eso — como `Ficha` y `Avanzar`, que también son de
+ * las dos.
  *
  * ── SE AGREGA Y SE BORRA. NO SE EDITA ─────────────────────────────────────
  *
- * Corregir un monto es sacar el link y volver a cargarlo. Cuesta un renglón más de tipeo y ahorra
- * un formulario de edición entero, para un dato que una empresa toca cuando cambia su lista de
- * precios. El motivo largo está en `lib/negocio/enlacesDePago.ts`.
+ * Corregir un monto es sacar el link y volver a cargarlo. Cuesta un renglón más de tipeo y ahorra un
+ * formulario de edición entero, para un dato que una empresa toca cuando cambia su lista de precios.
+ * El motivo largo está en `lib/negocio/enlacesRapidos.ts`.
  *
  * ── LA DIRECCIÓN SE MUESTRA ENTERA ────────────────────────────────────────
  *
@@ -25,6 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { TITULO_DE_LOS_ENLACES } from '../../lib/enlaces.ts';
 
 /** Por qué falló, con las tres formas que puede tomar. Igual que en `QuienEsElCloser`. */
 function porQue(r) {
@@ -36,8 +41,28 @@ function porQue(r) {
 /** El formulario vacío. Una constante para que «cancelar» y «guardó bien» dejen lo mismo. */
 const EN_BLANCO = { nombre: '', monto: '', descripcion: '', url: '' };
 
-export default function EnlacesDePago() {
-  const [enlaces, setEnlaces] = useState([]);
+/**
+ * Los ejemplos de cada campo, POR ZONA.
+ *
+ * No es adorno: un campo llamado «Monto» delante de un setter no dice qué poner, y el ejemplo sí
+ * —el suyo casi siempre va vacío—. Son los dos trabajos distintos otra vez: el closer cobra y el
+ * setter agenda.
+ */
+const EJEMPLOS = {
+  /* El ejemplo del monto es 'Monto libre' y no una cifra, por dos motivos que coinciden:
+     enseña que el campo es TEXTO —ese link real deja que el cliente escriba cuánto paga— y evita
+     escribir una cifra en la interfaz. `pruebas/codigo/91-closer-y-setter` prohibe lo segundo con
+     todas las letras: *«un monto con dígitos es una AFIRMACIÓN sobre el dinero de un cliente»*, y un
+     «$4.000» gris en un formulario vacío se lee como que ese link existe. */
+  closer: { nombre: 'Stripe', monto: 'Monto libre', descripcion: 'Pago único' },
+  setter: { nombre: 'Calendario', monto: '', descripcion: 'Para agendar la llamada' },
+};
+
+export default function EnlacesRapidos({ territorio }) {
+  /* TODOS los de la empresa, y se filtran acá. La lectura es la MISMA que usa el menú del
+     compositor: dos consultas de la misma lista divergen en silencio y dejan el menú mostrando siete
+     links donde la pantalla que los administra muestra ocho. */
+  const [todos, setTodos] = useState([]);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -46,17 +71,18 @@ export default function EnlacesDePago() {
   const [nuevo, setNuevo] = useState(null);
   const yaPedido = useRef(false);
 
+  const titulo = TITULO_DE_LOS_ENLACES[territorio];
+  const ejemplo = EJEMPLOS[territorio];
+  const enlaces = todos.filter((e) => e.territorio === territorio);
+
   const cargar = useCallback(async () => {
-    /* La MISMA lectura que usa el menú del compositor. No hay un `GET` de administración aparte: dos
-       consultas de la misma lista divergen en silencio y dejan el menú mostrando siete links donde
-       la pantalla que los administra muestra ocho. */
-    const r = await pedir('/api/enlaces-de-pago');
+    const r = await pedir('/api/enlaces-rapidos');
     if (r.tipo !== 'datos') {
       setCausa(porQue(r));
       setSituacion(r.tipo);
       return;
     }
-    setEnlaces(r.datos.enlaces ?? []);
+    setTodos(r.datos.enlaces ?? []);
     setSituacion('listo');
   }, []);
 
@@ -69,7 +95,12 @@ export default function EnlacesDePago() {
   const agregar = useCallback(async () => {
     setOcupado(true);
     setAviso(null);
-    const r = await pedir('/api/admin/enlaces-de-pago', { metodo: 'POST', cuerpo: nuevo });
+    /* La zona va SIEMPRE en el cuerpo, y el servidor la exige sin valor por omisión: si esta pantalla
+       se la olvidara, el link caería en la otra zona y aparecería en un menú que nadie pidió. */
+    const r = await pedir('/api/admin/enlaces-rapidos', {
+      metodo: 'POST',
+      cuerpo: { ...nuevo, territorio },
+    });
     setOcupado(false);
     if (r.tipo !== 'datos') {
       setAviso({ mal: true, texto: porQue(r) });
@@ -77,15 +108,15 @@ export default function EnlacesDePago() {
     }
     /* La respuesta trae la lista completa, y se usa esa: releer con otra petición mostraría
        «guardado» antes de saber qué quedó. */
-    setEnlaces(r.datos.enlaces ?? []);
+    setTodos(r.datos.enlaces ?? []);
     setNuevo(null);
     setAviso({ mal: false, texto: 'Listo. Ya se puede mandar desde el chat con el botón +.' });
-  }, [nuevo]);
+  }, [nuevo, territorio]);
 
   const quitar = useCallback(async (id) => {
     setOcupado(true);
     setAviso(null);
-    const r = await pedir(`/api/admin/enlaces-de-pago?id=${encodeURIComponent(id)}`, {
+    const r = await pedir(`/api/admin/enlaces-rapidos?id=${encodeURIComponent(id)}`, {
       metodo: 'DELETE',
     });
     setOcupado(false);
@@ -93,7 +124,7 @@ export default function EnlacesDePago() {
       setAviso({ mal: true, texto: porQue(r) });
       return;
     }
-    setEnlaces(r.datos.enlaces ?? []);
+    setTodos(r.datos.enlaces ?? []);
     setAviso({ mal: false, texto: 'Sacado. Ya no aparece en el menú del chat.' });
   }, []);
 
@@ -101,7 +132,7 @@ export default function EnlacesDePago() {
     return (
       <div className="aj-tarjeta ck-admin">
         <div className="fd-cab">
-          <h3>Links de pago</h3>
+          <h3>{titulo}</h3>
         </div>
         <div className="fd-aviso">
           <i>◍</i>
@@ -114,10 +145,10 @@ export default function EnlacesDePago() {
   return (
     <div className="aj-tarjeta ck-admin">
       <div className="fd-cab">
-        <h3>Links de pago</h3>
+        <h3>{titulo}</h3>
         <span className="fd-bajada">
-          Salen en el botón <b>+</b> del chat de cualquier contacto. Los ve y los puede mandar
-          cualquiera que abra una ficha; cargarlos y sacarlos es de quien administra.
+          Salen en el botón <b>+</b> del chat de un contacto de esta zona. Los ve y los puede mandar
+          cualquiera que abra esa ficha; cargarlos y sacarlos es de quien administra.
         </span>
       </div>
 
@@ -141,17 +172,18 @@ export default function EnlacesDePago() {
         <div className="fd-aviso">
           <i>◍</i>
           <span>
-            Todavía no hay links cargados, así que el botón <b>+</b> no aparece en el chat.
+            Todavía no hay links cargados en esta zona, así que el botón <b>+</b> no aparece en el
+            chat de sus contactos.
           </span>
         </div>
       ) : (
-        <ul className="ck-enlaces">
+        <ul className="er-lista">
           {enlaces.map((e) => (
-            <li key={e.id} className="ck-enlace">
-              <div className="ck-enlace-q">
+            <li key={e.id} className="er-fila">
+              <div className="er-quien">
                 <b>{e.nombre}</b>
-                {e.monto ? <span className="ck-enlace-m">{e.monto}</span> : null}
-                {e.descripcion ? <span className="ck-enlace-d">{e.descripcion}</span> : null}
+                {e.monto ? <span className="er-monto">{e.monto}</span> : null}
+                {e.descripcion ? <span className="er-nota">{e.descripcion}</span> : null}
               </div>
               <button
                 type="button"
@@ -164,7 +196,7 @@ export default function EnlacesDePago() {
                 ✕
               </button>
               {/* Entera, sin cortar: ver el encabezado. */}
-              <code className="ck-enlace-u">{e.url}</code>
+              <code className="er-url">{e.url}</code>
             </li>
           ))}
         </ul>
@@ -187,49 +219,49 @@ export default function EnlacesDePago() {
           </button>
         </div>
       ) : (
-        <div className="ck-alta-enlace">
+        <div className="er-alta">
           <div className="fd-campo">
-            <label htmlFor="ep-nombre">Nombre</label>
+            <label htmlFor={`er-nombre-${territorio}`}>Nombre</label>
             <input
-              id="ep-nombre"
+              id={`er-nombre-${territorio}`}
               type="text"
               value={nuevo.nombre}
               maxLength={60}
               disabled={ocupado}
-              placeholder="Stripe"
+              placeholder={ejemplo.nombre}
               onChange={(ev) => setNuevo({ ...nuevo, nombre: ev.target.value })}
             />
           </div>
           <div className="fd-campo">
-            <label htmlFor="ep-monto">Monto</label>
-            {/* Texto y no un número, a propósito: «Monto libre» es uno de los links reales. El
-                motivo completo está en la migración 035. */}
+            <label htmlFor={`er-monto-${territorio}`}>Monto</label>
+            {/* Texto y no un número, a propósito: «Monto libre» es uno de los links reales del
+                closer. El motivo completo está en la migración 035. */}
             <input
-              id="ep-monto"
+              id={`er-monto-${territorio}`}
               type="text"
               value={nuevo.monto}
               maxLength={24}
               disabled={ocupado}
-              placeholder="$4.000"
+              placeholder={ejemplo.monto}
               onChange={(ev) => setNuevo({ ...nuevo, monto: ev.target.value })}
             />
           </div>
           <div className="fd-campo">
-            <label htmlFor="ep-desc">Descripción</label>
+            <label htmlFor={`er-desc-${territorio}`}>Descripción</label>
             <input
-              id="ep-desc"
+              id={`er-desc-${territorio}`}
               type="text"
               value={nuevo.descripcion}
               maxLength={120}
               disabled={ocupado}
-              placeholder="Pago único"
+              placeholder={ejemplo.descripcion}
               onChange={(ev) => setNuevo({ ...nuevo, descripcion: ev.target.value })}
             />
           </div>
-          <div className="fd-campo ck-alta-url">
-            <label htmlFor="ep-url">Link</label>
+          <div className="fd-campo er-alta-url">
+            <label htmlFor={`er-url-${territorio}`}>Link</label>
             <input
-              id="ep-url"
+              id={`er-url-${territorio}`}
               type="url"
               value={nuevo.url}
               maxLength={500}

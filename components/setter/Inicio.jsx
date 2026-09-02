@@ -38,6 +38,7 @@
 
 import Comision from '../negocio/Comision.jsx';
 import PorcentajesDelSetter from './PorcentajesDelSetter.jsx';
+import EnlacesRapidos from '../negocio/EnlacesRapidos.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -266,6 +267,18 @@ export default function Inicio({
           es plata de otra empresa. */}
       {puedeConfigurarComisiones && !mirandoOtraOrganizacion ? (
         <PorcentajesDelSetter alCambiar={alRecargar} />
+      ) : null}
+
+      {/* ── LOS LINKS RÁPIDOS DEL SETTER ─────────────────────────
+          El mismo componente que dibuja Closer → Inicio, con la zona por propiedad. Y son DOS
+          listas y no una: el closer cobra —Stripe, WHOP— y el setter agenda —calendario, video—,
+          así que un solo menú le pondría al setter diez links de cobro delante para encontrar el
+          suyo.
+
+          Misma puerta y mismas dos condiciones que el panel de arriba, y por el mismo motivo:
+          configurar la empresa es de quien administra, y no desde una visita a otra. */}
+      {puedeConfigurarComisiones && !mirandoOtraOrganizacion ? (
+        <EnlacesRapidos territorio="setter" />
       ) : null}
     </>
   );

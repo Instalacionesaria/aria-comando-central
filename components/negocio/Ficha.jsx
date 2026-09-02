@@ -51,13 +51,14 @@
  * mitad de los casos.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import { conSeparadores, fusionarMensajes } from '../../lib/negocio/chat.ts';
 import { haceCuanto, horaEnZona } from '../../lib/negocio/tiempo.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { usarCierreDeMenu } from '../../lib/menu.ts';
+import { NOMBRE_DE_LA_ZONA, TITULO_DE_LOS_ENLACES } from '../../lib/enlaces.ts';
 import Avanzar from './Avanzar.jsx';
 import { SeisIconos } from './Fila.jsx';
 
@@ -497,7 +498,7 @@ export default function Ficha({ contactoId, alCerrar }) {
   const [loRegistrado, setLoRegistrado] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [avisoEnvio, setAvisoEnvio] = useState(null);
-  /** Los links de cobro de la empresa. Vacío = no hay, o no se pudieron leer: el botón no se dibuja. */
+  /** TODOS los links rápidos de la empresa, de las dos zonas. Se filtran por la del contacto. */
   const [enlaces, setEnlaces] = useState([]);
 
   const sesion = useSesion();
@@ -605,7 +606,7 @@ export default function Ficha({ contactoId, alCerrar }) {
     void cargarContacto();
   }, [cargarContacto]);
 
-  /* ── LOS LINKS DE COBRO, UNA SOLA VEZ Y SIN RELOJ ─────────────────────────
+  /* ── LOS LINKS RÁPIDOS, UNA SOLA VEZ Y SIN RELOJ ────────────────────────
    *
    * El efecto NO lleva `contactoId` en sus dependencias, y es deliberado: los links son de la
    * EMPRESA, no del contacto. Son los mismos en todas las fichas, así que volver a pedirlos al
@@ -620,7 +621,7 @@ export default function Ficha({ contactoId, alCerrar }) {
   useEffect(() => {
     let vigente = true;
     void (async () => {
-      const r = await pedir('/api/enlaces-de-pago');
+      const r = await pedir('/api/enlaces-rapidos');
       if (vigente && r.tipo === 'datos') setEnlaces(r.datos.enlaces ?? []);
     })();
     return () => {
@@ -848,6 +849,32 @@ export default function Ficha({ contactoId, alCerrar }) {
     // fue aceptado.
     void cargarChat();
   }, [borrador, cargarChat, contactoId]);
+
+  /**
+   * Los links que se ofrecen en ESTA ficha: los de la zona del contacto.
+   *
+   * ── POR QUÉ SE FILTRA POR EL CONTACTO Y NO POR QUIÉN MIRA ─────────────
+   *
+   * Un closer puede abrir la ficha de un contacto del setter, y al revés; desde Contactos se abren
+   * las dos. Lo que decide qué link corresponde mandar no es el puesto de quien mira: es **en qué
+   * momento de la conversación está el contacto**. A uno que todavía no agendó se le manda el
+   * calendario, no un checkout de $4.000.
+   *
+   * ── EL CONTACTO SIN ZONA VE LAS DOS, Y CON SUS RÓTULOS ───────────────
+   *
+   * `territorio` es nulo cuando el CRM le sacó las dos etiquetas —el estado «congelado» que la
+   * conciliación escribe—. Ahí no se puede saber cuál de los dos menús corresponde, y esconder los
+   * dos dejaría sin botón a una conversación que sigue abierta. Se muestran los dos, separados por
+   * el nombre de su zona: catorce links seguidos con el de Stripe al lado del calendario no se
+   * pueden leer.
+   */
+  const visibles = useMemo(
+    () =>
+      contacto?.territorio
+        ? enlaces.filter((e) => e.territorio === contacto.territorio)
+        : enlaces,
+    [enlaces, contacto?.territorio],
+  );
 
   /**
    * Un link elegido del menú entra en la caja. **No se manda solo.**
@@ -1099,7 +1126,7 @@ export default function Ficha({ contactoId, alCerrar }) {
             alMandar={mandar}
             enviando={enviando}
             aviso={avisoEnvio}
-            enlaces={enlaces}
+            enlaces={visibles}
             alElegirEnlace={elegirEnlace}
           />
         ) : null}
@@ -1171,6 +1198,18 @@ function Compositor({
   const cerrarMenu = useCallback(() => setMenu(false), []);
   usarCierreDeMenu(menu, cajaDelMenu, cerrarMenu);
 
+  /* ¿Vienen links de las DOS zonas? Solo pasa con un contacto sin territorio, y es lo que decide si
+     hacen falta los rótulos de grupo. Se deduce de lo que llegó en vez de recibirse por propiedad:
+     así no puede quedar en `true` con una sola zona en pantalla. */
+  const zonas = new Set(enlaces.map((e) => e.territorio));
+  const conZonas = zonas.size > 1;
+
+  /* El título del menú nombra lo que hay adentro: los del closer son de cobro y los del setter no.
+     Con las dos zonas juntas gana el rótulo genérico, y cada grupo dice el suyo más abajo. */
+  const titulo = conZonas
+    ? 'Links rápidos'
+    : TITULO_DE_LOS_ENLACES[enlaces[0]?.territorio ?? 'closer'];
+
   /* ── EL FOCO VUELVE A LA CAJA, CON EL CURSOR AL FINAL ─────────────────────
    *
    * Quien elige un link casi siempre va a apretar Enter enseguida. Dejar el foco en el botón del
@@ -1213,7 +1252,7 @@ function Compositor({
             texto libre, así que ofrecer un link que va a ser rechazado sería una trampa: se ve
             elegible, se elige, y el mensaje vuelve con un error. */}
         {enlaces.length > 0 ? (
-          <div className={`menu-wrap cw-pagos${menu ? ' open' : ''}`} ref={cajaDelMenu}>
+          <div className={`menu-wrap cw-rapidos${menu ? ' open' : ''}`} ref={cajaDelMenu}>
             <button
               type="button"
               className="cw-mas"
@@ -1226,31 +1265,39 @@ function Compositor({
                 e.stopPropagation();
                 setMenu((v) => !v);
               }}
-              aria-label="Links de pago"
-              title="Links de pago"
+              aria-label={titulo}
+              title={titulo}
             >
               +
             </button>
             <div className="menu-pop" role="menu">
-              <div className="cw-pagos-t">Links de pago</div>
-              {enlaces.map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  role="menuitem"
-                  className="cw-pago"
-                  onClick={() => {
-                    alElegirEnlace(e.url);
-                    setMenu(false);
-                    setElecciones((n) => n + 1);
-                  }}
-                >
-                  <span className="cw-pago-n">{e.nombre}</span>
-                  {/* El monto y la descripción solo si los hay. Un hueco donde debería ir un monto
-                      no se distingue de un defecto de la pantalla. */}
-                  {e.monto ? <span className="cw-pago-m">{e.monto}</span> : null}
-                  {e.descripcion ? <span className="cw-pago-d">{e.descripcion}</span> : null}
-                </button>
+              <div className="cw-rapidos-t">{titulo}</div>
+              {enlaces.map((e, i) => (
+                <Fragment key={e.id}>
+                  {/* El rótulo de la zona, SOLO cuando el menú trae las dos —un contacto congelado,
+                      que perdió sus etiquetas en el CRM—. La lista viene ordenada por zona, así que
+                      alcanza con mirar el anterior: el rótulo cae al empezar cada grupo. */}
+                  {conZonas && (i === 0 || enlaces[i - 1].territorio !== e.territorio) ? (
+                    <div className="cw-rapidos-g">{NOMBRE_DE_LA_ZONA[e.territorio]}</div>
+                  ) : null}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="cw-rapido"
+                    onClick={() => {
+                      alElegirEnlace(e.url);
+                      setMenu(false);
+                      setElecciones((n) => n + 1);
+                    }}
+                  >
+                    <span className="cw-rapido-n">{e.nombre}</span>
+                    {/* El monto y la descripción solo si los hay. Un hueco donde debería ir un monto
+                        no se distingue de un defecto de la pantalla — y los del setter casi nunca
+                        tienen monto. */}
+                    {e.monto ? <span className="cw-rapido-m">{e.monto}</span> : null}
+                    {e.descripcion ? <span className="cw-rapido-d">{e.descripcion}</span> : null}
+                  </button>
+                </Fragment>
               ))}
             </div>
           </div>

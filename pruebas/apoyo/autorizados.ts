@@ -340,6 +340,19 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // No es un endpoint: `EJECUCION` § 3 cerró que el alta de administradores es *"script contra la
   // base, no endpoint HTTP"*, así que nunca está expuesto. Corre a mano, y por omisión no escribe.
   'scripts/altas-high-ticket.mjs',
+  /* ── La carga inicial de los links de cobro ──────────────────────────────────
+   *
+   * Usa `conIdentidad(` para DOS lecturas y ninguna escritura: buscar la empresa por su slug, y a
+   * quién atribuirle la carga. Las dos son de `identidad`, que el inquilino no alcanza, y las dos
+   * corren antes de saber sobre qué organización se va a trabajar — que es justo el caso que el
+   * `04` § 4 nombra como legítimo.
+   *
+   * Lo que ESCRIBE no pasa por acá: los links entran por `conOrganizacion(`, o sea por la misma
+   * política de RLS que pasaría una petición de esa empresa. Es la mitad que importa — cargar links
+   * de cobro sin contexto de organización es exactamente el defecto que esta lista persigue.
+   *
+   * Y no es un endpoint: corre a mano, y por omisión no escribe. */
+  'scripts/enlaces-rapidos.mjs',
   // ── El Panel de Monitoreo ────────────────────────────────────────────────────
   //
   // Lee la LISTA de organizaciones y nada más. Es literalmente el caso que el 04 § 4 nombra como
@@ -375,6 +388,16 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
  * defiende para la escotilla.
  */
 export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
+  /* La carga inicial de los links de cobro. **Qué queda a medias si la segunda mitad falla: nada**,
+     porque la primera NO ESCRIBE: de identidad se leen la empresa y a quién atribuirle la carga, y
+     lo único que se escribe es en negocio.
+
+     Lo que sí puede quedar a medias es la carga en sí: son diez `insert` sueltos y no una
+     transacción, así que un fallo en el séptimo deja seis links cargados. Es deliberado y está
+     dicho en el guion: cada uno informa su propio motivo, y volver a correrlo carga los que faltan
+     porque se saltea los que ya están. Envolverlo en una transacción cambiaría «seis cargados y
+     cuatro que faltan, dicho» por «nada cargado», que no es mejor para lo que esto hace. */
+  'scripts/enlaces-rapidos.mjs',
   // Subir leads al CRM. **Qué queda a medias si la segunda mitad falla: NADA.** Es el caso más
   // benigno de esta lista, porque NINGUNA de las dos mitades escribe en nuestra base: la primera
   // LEE el token de identidad, la segunda LEE los leads de negocio, y la única escritura es a un

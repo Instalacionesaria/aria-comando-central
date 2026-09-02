@@ -38,7 +38,7 @@
 
 import Comision from '../negocio/Comision.jsx';
 import QuienEsElCloser from './QuienEsElCloser.jsx';
-import EnlacesDePago from './EnlacesDePago.jsx';
+import EnlacesRapidos from '../negocio/EnlacesRapidos.jsx';
 
 /** Un monto. `null` → `—`. Nunca `$0` sin dato medido. */
 function plata(v) {
@@ -227,10 +227,17 @@ export default function Inicio({
           `puedeConfigurarComisiones` porque nació con las comisiones; hoy abre más de lo que su
           nombre dice, y renombrarla toca la ruta de sesión y sus pruebas.
 
+          Y NO se dibuja mirando otra empresa, igual que el panel gemelo del Setter: estos links
+          son la cuenta a la que le paga un lead, y cargarlos desde una visita significa poner
+          NUESTRO cobro en el menú de un cliente. Es exactamente el defecto por el que los links
+          se configuran por empresa y no en el código.
+
           Debajo de los closers y no arriba: los closers son QUIÉN cierra, y esto es una
           herramienta que usan. `alCambiar` no le hace falta — no mueve ningún número del
           cockpit, así que recargarlo sería pedir datos que no cambiaron. */}
-      {puedeConfigurarComisiones ? <EnlacesDePago /> : null}
+      {puedeConfigurarComisiones && !mirandoOtraOrganizacion ? (
+        <EnlacesRapidos territorio="closer" />
+      ) : null}
 
       {/* ── El no-show, que sí es un conteo real ── */}
       <div className="md-counters">

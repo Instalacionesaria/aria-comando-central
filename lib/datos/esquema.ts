@@ -627,7 +627,13 @@ export interface TablaPromptsDelAgente {
 }
 
 /**
- * Un link de cobro de la empresa, para mandarlo desde el chat de la ficha.
+ * Un link rápido de la empresa, para mandarlo desde el chat de la ficha.
+ *
+ * ── UNA LISTA POR ZONA ────────────────────────────────────────
+ *
+ * `territorio` usa el MISMO vocabulario que `contactos.territorio`, y por eso el menú de la ficha
+ * se resuelve sin traducir nada. El closer cobra —Stripe, WHOP— y el setter agenda —calendario,
+ * video—: son dos menús porque son dos trabajos. La migración 036 tiene el motivo largo.
  *
  * ── `monto` ES TEXTO Y ESO ES DELIBERADO ───────────────────────────────────
  *
@@ -637,9 +643,10 @@ export interface TablaPromptsDelAgente {
  *
  * Acá el monto solo se DIBUJA: nadie suma, ordena ni compara con él.
  */
-export interface TablaEnlacesDePago {
+export interface TablaEnlacesRapidos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  territorio: Territorio;
   nombre: string;
   monto: string | null;
   descripcion: string | null;
@@ -886,7 +893,7 @@ export interface BaseDeDatos {
   hallazgos: TablaHallazgos;
   analisis_del_agente: TablaAnalisisDelAgente;
   prompts_del_agente: TablaPromptsDelAgente;
-  enlaces_de_pago: TablaEnlacesDePago;
+  enlaces_rapidos: TablaEnlacesRapidos;
 
   // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
   // backend de Python por PostgREST, que sólo alcanza `public`. Tienen el mismo régimen de

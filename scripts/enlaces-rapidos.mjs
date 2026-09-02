@@ -1,4 +1,4 @@
-// La carga inicial de los links de cobro de UNA empresa.
+// La carga inicial de los links de cobro del CLOSER de UNA empresa.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ ES UN SCRIPT Y NO UNA MIGRACIÓN
@@ -11,10 +11,18 @@
 // La otra mitad del motivo: estos diez se cargan UNA vez. De ahí en adelante se administran en
 // Closer → Inicio, que es donde tiene que estar — cambiar un precio no puede ser un despliegue.
 //
+// ── SOLO LA ZONA DEL CLOSER, Y NO HAY UN `--territorio` ──────────────────────
+//
+// La lista de abajo son diez links de cobro: Stripe y WHOP. El setter no cobra —agenda—, así que
+// **no hay una lista suya que sembrar**: los suyos los carga cada empresa desde Setter → Inicio.
+//
+// Agregar una opción para elegir la zona sería ofrecer cargar estos diez en el menú del setter, que
+// es justo lo que no tiene que pasar. La zona va fija abajo, en un solo lugar.
+//
 // ── POR OMISIÓN NO ESCRIBE ───────────────────────────────────────────────────
 //
-//   node --env-file=.env.supabase scripts/enlaces-de-pago.mjs --empresa=<slug>
-//   node --env-file=.env.supabase scripts/enlaces-de-pago.mjs --empresa=<slug> --aplicar
+//   node --env-file=.env.supabase scripts/enlaces-rapidos.mjs --empresa=<slug>
+//   node --env-file=.env.supabase scripts/enlaces-rapidos.mjs --empresa=<slug> --aplicar
 //
 // El primero muestra el plan con el NOMBRE de la empresa que encontró, que es la comprobación que
 // importa: `--empresa` recibe un slug, y un slug equivocado escribiría los links de cobro de ARIA en
@@ -29,7 +37,7 @@
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../lib/datos/contexto.ts';
-import { crearEnlace, listarEnlaces, urlDePagoValida } from '../lib/negocio/enlacesDePago.ts';
+import { crearEnlace, listarEnlaces, urlDePagoValida } from '../lib/negocio/enlacesRapidos.ts';
 
 const APLICAR = process.argv.includes('--aplicar');
 const EMPRESA = (() => {
@@ -51,6 +59,9 @@ const EMPRESA = (() => {
  * Es el link donde el cliente escribe cuánto paga. Va como texto porque no es un número, y ése es
  * el motivo por el que la columna es de texto — el largo está en la migración 035.
  */
+/** Todos son de la zona del closer. Ver el encabezado: no hay opción para cambiarla. */
+const ZONA = 'closer';
+
 const ENLACES = [
   { nombre: 'Stripe', monto: '$4.000', descripcion: 'Pago único', url: 'https://buy.stripe.com/3cI9AUg2xeMc1bD1I97N60c' },
   { nombre: 'Stripe', monto: '$3.000', descripcion: 'Pago único', url: 'https://buy.stripe.com/4gMeVecQl8nOcUl0E57N60d' },
@@ -67,7 +78,7 @@ const ENLACES = [
 /**
  * Quién queda como autor de la carga.
  *
- * `enlaces_de_pago.actualizado_por` tiene una clave foránea COMPUESTA contra
+ * `enlaces_rapidos.actualizado_por` tiene una clave foránea COMPUESTA contra
  * `identidad.usuarios (org_id, id)`, así que un identificador inventado no pasa — y eso está bien.
  * Se usa el administrador principal de la empresa: es quien habría hecho esto desde la pantalla.
  */
@@ -114,7 +125,9 @@ async function principal() {
   }
 
   const persona = await quienCarga(org.id);
-  const yaHay = await conOrganizacion(org.id, listarEnlaces);
+  /* Solo los de la zona que este guion carga: un link con la misma dirección en la zona del setter
+     es legítimo y no tiene que hacer que éste se salte. */
+  const yaHay = (await conOrganizacion(org.id, listarEnlaces)).filter((e) => e.territorio === ZONA);
   const porUrl = new Set(yaHay.map((e) => e.url));
   const faltan = ENLACES.filter((e) => !porUrl.has(e.url));
 
@@ -145,7 +158,9 @@ async function principal() {
      `url_repetida`— y tragarse eso dejaría una carga a medias que se ve igual que una completa. */
   let cargados = 0;
   for (const e of faltan) {
-    const porque = await conOrganizacion(org.id, () => crearEnlace(e, persona.id));
+    const porque = await conOrganizacion(org.id, () =>
+      crearEnlace({ ...e, territorio: ZONA }, persona.id),
+    );
     if (porque !== null) {
       console.error(`  NO se cargó ${e.nombre} ${e.monto}: ${porque}`);
       continue;

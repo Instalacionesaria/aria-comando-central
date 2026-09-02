@@ -97,9 +97,9 @@ export type Accion =
      nadie se olvide. Rotar invalida el anterior en el acto, así que saber cuándo se rotó es lo que
      explica por qué un workflow dejó de entregar. */
   | 'aviso_secreto_generado'
-  /* Se agregó o se sacó un link de cobro de la empresa. Es la configuración que decide **a qué
-     cuenta le paga un lead**, y quien la cambia no es quien la usa: la cargan quienes administran,
-     la mandan los closers desde el chat.
+  /* Se agregó o se sacó un link rápido de la empresa. En la zona del closer eso decide **a qué
+     cuenta le paga un lead**, y quien la cambia no es quien la usa: los cargan quienes administran,
+     los mandan closers y setters desde el chat.
 
      Un link reemplazado por otro no rompe nada visible —el menú se ve igual, el mensaje sale
      igual, el lead paga igual— y por eso el registro es lo único que después permite contestar
@@ -107,9 +107,20 @@ export type Accion =
      «alguien tocó los links», que no alcanza para reconstruir nada.
 
      Son DOS y no una con un campo vacío, por el mismo criterio que el closer: «cargué el de
-     $4.000» y «saqué el de $4.000» son hechos distintos. */
-  | 'enlace_de_pago_creado'
-  | 'enlace_de_pago_borrado'
+     $4.000» y «saqué el de $4.000» son hechos distintos.
+
+     ── EL REGISTRO VIEJO NO SE PUEDE RENOMBRAR, Y HAY QUE BUSCAR LOS DOS ──
+
+     Hasta la migración 036 estas acciones se llamaban `enlace_de_pago_creado` y
+     `enlace_de_pago_borrado`. Las filas ya escritas conservan ESOS nombres para siempre:
+     `identidad.auditoria_accesos` es de solo inserción y `identidad.evitar_mutacion()` lo hace
+     cumplir —que es exactamente lo que se quiere de un registro—.
+
+     Medido el 2026-09-02: diez filas `enlace_de_pago_creado` en producción, de la carga inicial de
+     ARIA. Una consulta que busque cambios de links tiene que mirar los dos prefijos, o va a
+     reportar que antes de esa fecha nadie tocó nada. */
+  | 'enlace_rapido_creado'
+  | 'enlace_rapido_borrado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -180,7 +191,7 @@ export interface Detalle {
    */
   org_destino?: string | null;
   /**
-   * El link de cobro que se agregó o se sacó, en `enlace_de_pago_creado` y `enlace_de_pago_borrado`.
+   * El link que se agregó o se sacó, en `enlace_rapido_creado` y `enlace_rapido_borrado`.
    *
    * Es una dirección de checkout pública, no un secreto: guardarla es lo que hace que el registro
    * pueda contestar **cuál** link cambió, y no solo que alguien tocó la lista.
@@ -226,11 +237,11 @@ export async function auditarAdministracion(
       /* Etapa 5.5. Exige actor y objetivo, que es lo que esta puerta pide: quién generó el secreto y
          para qué empresa. El objetivo es la empresa, igual que en `credenciales_cargadas`. */
       | 'aviso_secreto_generado'
-      /* Los links de cobro. Exigen actor y objetivo, que es lo que esta puerta pide: quién lo
+      /* Los links rápidos. Exigen actor y objetivo, que es lo que esta puerta pide: quién lo
          cargó o lo sacó, y para qué empresa. El objetivo es la empresa, igual que en
          `credenciales_cargadas`: lo que se tocó es su configuración, no una persona. */
-      | 'enlace_de_pago_creado'
-      | 'enlace_de_pago_borrado'
+      | 'enlace_rapido_creado'
+      | 'enlace_rapido_borrado'
     >;
     actor: string;
     objetivo: string;

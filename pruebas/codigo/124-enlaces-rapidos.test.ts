@@ -1,4 +1,4 @@
-// El botón `+` del compositor y su menú de links de cobro. Tipo: Código.
+// El botón `+` del compositor y su menú de links rápidos. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE PERSIGUE: UN CONTROL QUE OFRECE MANDAR ALGO QUE NO SE PUEDE MANDAR
@@ -7,10 +7,14 @@
 // con el motivo a la vista. Un `+` que quede encendido al lado de una caja apagada es una trampa:
 // se ve elegible, se elige, y el mensaje vuelve rechazado por un motivo que ya estaba escrito arriba.
 //
-// La otra mitad es el borrador. Se pidió que el link **se escriba en la caja** y no que salga solo,
-// y el motivo es que son diez opciones casi idénticas —los montos se repiten entre Stripe y WHOP— y
-// un mensaje que salió a un lead no se recoge. Si el clic PISARA lo escrito, se perdería «Te dejo el
-// de 4k» sin forma de recuperarlo, que es la misma clase de pérdida silenciosa.
+// La segunda mitad es el borrador. Se pidió que el link **se escriba en la caja** y no que salga
+// solo, y el motivo es que son diez opciones casi idénticas —los montos se repiten entre Stripe y
+// WHOP— y un mensaje que salió a un lead no se recoge. Si el clic PISARA lo escrito, se perdería «Te
+// dejo el de 4k» sin forma de recuperarlo, que es la misma clase de pérdida silenciosa.
+//
+// Y la tercera, desde que el setter tiene los suyos: **el menú es el de la zona del CONTACTO**. Un
+// menú que no filtre le pone al setter diez checkouts delante para encontrar su calendario, y —peor—
+// le ofrece cobrarle a alguien que todavía no agendó.
 //
 // Nada de esto se puede comprobar renderizando: no hay navegador en esta suite. Se comprueba sobre
 // la fuente, que es donde el defecto se introduce.
@@ -32,7 +36,7 @@ const codigo = (r: string): string =>
     .replace(/{\/\*[\s\S]*?\*\/}/g, '');
 
 const FICHA = 'components/negocio/Ficha.jsx';
-const PANEL = 'components/closer/EnlacesDePago.jsx';
+const PANEL = 'components/negocio/EnlacesRapidos.jsx';
 
 test('el `+` se apaga con la MISMA condición que la caja de texto', () => {
   /* No se compara contra `ventana.abierta` ni contra `enviando` por separado: el defecto que esto
@@ -55,17 +59,73 @@ test('el `+` se apaga con la MISMA condición que la caja de texto', () => {
   assert.match(ficha, /const bloqueado = sinRespuesta \|\| cerrada \|\| enviando;/);
 });
 
-test('sin links cargados el `+` no se dibuja', () => {
+test('sin links de su zona el `+` no se dibuja', () => {
   /* Un botón que abre un menú vacío es un control muerto para siempre en toda empresa que no cobre
-     con links — y quien lo aprieta no puede hacer nada al respecto desde el chat: se cargan en
-     Closer → Inicio, que es una pantalla de quien administra.
+     con links — y quien lo aprieta no puede hacer nada al respecto desde el chat: se cargan en el
+     Inicio de su pestaña, que es una pantalla de quien administra.
 
      Es lo contrario de lo que se hace con un DATO vacío (un día sin citas se dibuja igual, con su
      cero) y la diferencia es que esto no es un dato: es un atajo. */
   assert.match(
     codigo(FICHA),
     /\{enlaces\.length > 0 \? \(/,
-    'el `+` se dibuja siempre: una empresa sin links de cobro tiene un botón que no hace nada',
+    'el `+` se dibuja siempre: una zona sin links tiene un botón que no hace nada',
+  );
+});
+
+test('el menú es el de la zona del CONTACTO, no el de quien mira', () => {
+  /* ── EL DEFECTO CONCRETO ────────────────────────────────────────────────
+   *
+   * Sin este filtro, un setter abre la ficha de alguien que todavía no agendó y ve diez links de
+   * cobro. No falla nada: se ven, se pueden elegir, y salen. Mandarle un checkout de $4.000 a un
+   * lead que ni siquiera tiene la llamada agendada es el peor mensaje posible de esa conversación.
+   *
+   * Y se filtra por el CONTACTO y no por el puesto de quien mira, que es la parte que se puede
+   * equivocar: un closer abre fichas del setter y al revés, y desde Contactos se abren las dos. Lo
+   * que decide qué link corresponde es en qué momento está la conversación.
+   *
+   * ── Y EL CONTACTO SIN ZONA VE LAS DOS ──────────────────────────────────
+   *
+   * `territorio` es nulo cuando el CRM le sacó las dos etiquetas. Ahí no se puede saber cuál
+   * corresponde, y esconder los dos menús dejaría sin botón una conversación que sigue abierta. */
+  const ficha = codigo(FICHA);
+
+  const fn = ficha.match(/const visibles = useMemo\([\s\S]*?\);/);
+  assert.ok(fn, 'no está `visibles`: el menú no filtra por zona');
+  assert.match(
+    fn[0],
+    /e\.territorio === contacto\.territorio/,
+    'el menú no se acota a la zona del contacto',
+  );
+  assert.match(
+    fn[0],
+    /contacto\?\.territorio\s*\n?\s*\?/,
+    'no se distingue el contacto SIN zona: con el territorio nulo el menú quedaría vacío',
+  );
+
+  // Y lo que llega al compositor es la lista FILTRADA, no la cruda. Pasar `enlaces` sería tener el
+  // filtro escrito y no usarlo, que es peor que no tenerlo: se lee como si estuviera resuelto.
+  assert.match(ficha, /enlaces=\{visibles\}/, 'el compositor recibe la lista sin filtrar');
+});
+
+test('el menú rotula las zonas SOLO cuando trae las dos', () => {
+  /* Catorce links seguidos con el checkout de $4.000 al lado del calendario no se pueden leer. Y al
+     revés: un rótulo de zona sobre una lista que es toda de esa zona es ruido que ocupa el lugar de
+     un link.
+
+     La bandera se DEDUCE de lo que llegó y no se recibe por propiedad: así no puede quedar en `true`
+     con una sola zona en pantalla. */
+  const ficha = codigo(FICHA);
+  assert.match(
+    ficha,
+    /const zonas = new Set\(enlaces\.map\(\(e\) => e\.territorio\)\);/,
+    'la bandera de zonas no sale de la lista que se está dibujando',
+  );
+  assert.match(ficha, /const conZonas = zonas\.size > 1;/);
+  assert.match(
+    ficha,
+    /conZonas && \(i === 0 \|\| enlaces\[i - 1\]\.territorio !== e\.territorio\)/,
+    'el rótulo no cae al empezar cada grupo',
   );
 });
 
@@ -101,15 +161,15 @@ test('los links se leen UNA vez y no entran al reloj del chat', () => {
   /* `lib/reloj.ts` existe porque hubo ocho sondeos sueltos pegándole al servidor con la pestaña
      oculta, y el puntito de Tools acaba de costar 180 peticiones por hora y por persona conectada.
 
-     Los links cambian cuando alguien edita la lista en Closer → Inicio, o sea casi nunca. Meterlos en
-     el ciclo de cinco segundos del chat sería repetir el mismo error con el mismo disfraz: peticiones
-     baratas, muchas veces, que nadie nota.
+     Los links cambian cuando alguien edita la lista en el Inicio de su pestaña, o sea casi nunca.
+     Meterlos en el ciclo de cinco segundos del chat sería repetir el mismo error con el mismo
+     disfraz: peticiones baratas, muchas veces, que nadie nota.
 
      Y el efecto no lleva `contactoId`: son de la EMPRESA, iguales en todas las fichas. Con esa
      dependencia se pediría una vez por apertura de ficha sin un dato nuevo. */
   const ficha = codigo(FICHA);
 
-  const efecto = ficha.match(/useEffect\(\(\) => \{[^]*?enlaces-de-pago[^]*?\}, \[[^\]]*\]\);/);
+  const efecto = ficha.match(/useEffect\(\(\) => \{[^]*?enlaces-rapidos[^]*?\}, \[[^\]]*\]\);/);
   assert.ok(efecto, 'no está el efecto que lee los links');
   assert.match(efecto[0], /\}, \[\]\);$/, 'la lectura de los links depende de algo: se repite sin necesidad');
 
@@ -118,9 +178,47 @@ test('los links se leen UNA vez y no entran al reloj del chat', () => {
     assert.doesNotMatch(
       m[0],
       /enlace/i,
-      'los links de cobro entraron a un reloj: son configuración, no un dato que cambie solo',
+      'los links entraron a un reloj: son configuración, no un dato que cambie solo',
     );
   }
+});
+
+test('el panel es UNO y las dos pestañas le pasan su zona', () => {
+  /* ── POR QUÉ NO SON DOS COMPONENTES ─────────────────────────────────────
+   *
+   * Copiar el panel habría sido más rápido de escribir y es exactamente lo que después diverge: se
+   * arregla un mensaje en uno, el otro queda con el viejo, y nadie lo nota porque las dos pantallas
+   * se ven bien por separado.
+   *
+   * Y la zona va SIEMPRE explícita en el `POST`. El servidor no tiene una por omisión —a propósito—
+   * así que una pantalla que se la olvide recibe un 400 en vez de cargar el link en la otra zona en
+   * silencio. */
+  const closer = codigo('components/closer/Inicio.jsx');
+  const setter = codigo('components/setter/Inicio.jsx');
+
+  assert.match(closer, /<EnlacesRapidos territorio="closer" \/>/, 'el Closer no dibuja el panel');
+  assert.match(setter, /<EnlacesRapidos territorio="setter" \/>/, 'el Setter no dibuja el panel');
+
+  /* Las dos con la MISMA puerta, y las dos condiciones. `credenciales.editar` es quien configura la
+     empresa; `mirandoOtraOrganizacion` impide cargar NUESTROS links de cobro en el menú de un
+     cliente durante una visita, que es el defecto por el que los links se configuran por empresa. */
+  for (const [donde, fuente] of [
+    ['closer', closer],
+    ['setter', setter],
+  ] as const) {
+    assert.match(
+      fuente,
+      /puedeConfigurarComisiones && !mirandoOtraOrganizacion \? \(\s*<EnlacesRapidos/,
+      `el panel del ${donde} no tiene las dos condiciones`,
+    );
+  }
+
+  // Y el panel manda la zona que recibe, sin inventar una por omisión.
+  assert.match(
+    codigo(PANEL),
+    /cuerpo: \{ \.\.\.nuevo, territorio \}/,
+    'el panel no manda la zona: el link caería donde el servidor decida',
+  );
 });
 
 test('el CSS del menú NO está en `aios.css`', () => {
@@ -132,7 +230,7 @@ test('el CSS del menú NO está en `aios.css`', () => {
      sin un solo `!important`. Escribirlo en `aios.css` no falla nada hoy: rompe en silencio la
      comparación que hace que un diff de esa hoja signifique algo. */
   const aios = leer('app/aios.css');
-  for (const clase of ['cw-mas', 'cw-pago', 'cw-pagos']) {
+  for (const clase of ['cw-mas', 'cw-rapido', 'cw-rapidos', 'er-fila', 'er-lista']) {
     assert.equal(
       aios.includes(`.${clase}`),
       false,
@@ -178,9 +276,7 @@ test('toda clase de esta función existe en alguna hoja de estilo', () => {
   /* Solo las familias de esta función. Un barrido de TODAS las clases encontraría además
      `aj-tarjeta`, que ya estaba sin definir antes de esto y que arreglar acá cambiaría el aspecto de
      dos pantallas que nadie pidió tocar. */
-  const mias = [...clasesDe(FICHA), ...clasesDe(PANEL)].filter(
-    (c) => /^(cw-mas|cw-pago|ck-enlace|ck-alta-enlace|ck-alta-url)/.test(c),
-  );
+  const mias = [...clasesDe(FICHA), ...clasesDe(PANEL)].filter((c) => /^(cw-mas|cw-rapido|er-)/.test(c));
 
   assert.ok(mias.length >= 10, `se leyeron muy pocas clases (${mias.length}): el barrido no está mirando el JSX`);
 
@@ -194,9 +290,7 @@ test('toda clase de esta función existe en alguna hoja de estilo', () => {
   /* Y al revés: una regla de CSS que ya nadie escribe es una regla muerta. Se compara con la misma
      frontera de palabra, que es lo que hace que renombrar una clase en el JSX se note en los dos
      sentidos. */
-  const enCss = [
-    ...css.matchAll(/\.((?:cw-mas|cw-pago|ck-enlace|ck-alta-enlace|ck-alta-url)[\w-]*)/g),
-  ].map((m) => m[1]!);
+  const enCss = [...css.matchAll(/\.((?:cw-mas|cw-rapido|er-)[\w-]*)/g)].map((m) => m[1]!);
   const escritas = new Set(mias);
   const muertas = [...new Set(enCss)].filter((c) => !escritas.has(c)).sort();
   assert.deepEqual(muertas, [], 'hay reglas de CSS que ningún componente usa ya');
@@ -205,7 +299,7 @@ test('toda clase de esta función existe en alguna hoja de estilo', () => {
 test('`listarEnlaces` ordena en la CONSULTA, y no confía en el orden que devuelva la base', () => {
   /* ── UNA MUTACIÓN QUE SOBREVIVIÓ A LA PRUEBA DE COMPORTAMIENTO ───────────
    *
-   * Sacar los dos `orderBy` del `select` y correr la prueba que compara el orden del menú: **pasó**.
+   * Sacar los `orderBy` del `select` y correr la prueba que compara el orden del menú: **pasó**.
    * PostgreSQL devolvió las filas en el orden en que se insertaron porque la tabla es chica y recién
    * escrita, y eso coincidía con lo que se esperaba.
    *
@@ -215,9 +309,14 @@ test('`listarEnlaces` ordena en la CONSULTA, y no confía en el orden que devuel
    *
    * Por eso se afirma sobre la CONSULTA. Es una prueba de forma y no de resultado, a propósito: el
    * resultado no puede distinguir «ordenado» de «casualmente en orden». */
-  const lib = codigo('lib/negocio/enlacesDePago.ts');
+  const lib = codigo('lib/negocio/enlacesRapidos.ts');
   const fn = lib.match(/export async function listarEnlaces\([\s\S]*?\n\}/);
   assert.ok(fn, 'no está `listarEnlaces`');
+  assert.match(
+    fn[0],
+    /\.orderBy\('territorio'\)/,
+    'la lista no agrupa por zona: con un contacto sin territorio las dos quedan intercaladas',
+  );
   assert.match(fn[0], /\.orderBy\('orden'\)/, 'la lista no ordena por `orden`');
   assert.match(
     fn[0],
