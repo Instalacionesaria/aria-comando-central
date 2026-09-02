@@ -154,3 +154,61 @@ test('las dos opciones no pueden dispararse a la vez', () => {
   assert.match(scraper, /disabled=\{porUrl\.ocupado \|\| porNicho\.ocupado\}/);
   assert.match(scraper, /ocupado=\{porNicho\.ocupado \|\| porUrl\.ocupado\}/);
 });
+
+// ─── Volver a la pestaña no pierde lo que se escribió ───────────────────────
+
+test('los cuatro formularios reponen sus campos al retomar un scraping en vuelo', () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * EL DEFECTO, REPORTADO EN VIVO: *"dejé al scraper de Maps scrapeando y me cambié de pestaña;
+   * cuando volví me indicaba que estaba scrapeando, pero se perdieron los datos que puse — volvieron
+   * a aparecer los placeholders"*.
+   *
+   * El sondeo YA se retomaba: eso se arregló antes leyendo de la base qué había en vuelo. Lo que
+   * seguía viviendo sólo en `useState` eran los CAMPOS, y React los tira al desmontar la pestaña. La
+   * pantalla quedaba diciendo «scrapeando» sobre un formulario en blanco: el trabajo no se perdía,
+   * pero no había forma de saber qué se había pedido.
+   *
+   * La base lo sabía todo el tiempo. `business_type`, `location` y el tope guardado en
+   * `results_data` son lo que el backend escribe al crear el trabajo, y esta prueba exige que cada
+   * formulario los lea. Es la misma lección que el sondeo, un escalón más adentro.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const scraper = codigo('components/tools/Scraper.jsx');
+
+  const cuantos = (scraper.match(/alRetomar:/g) || []).length;
+  assert.equal(
+    cuantos,
+    4,
+    'no son cuatro los formularios que reponen sus campos: Maps, LinkedIn y las dos opciones de ' +
+      'Facebook. El que falte deja «scrapeando» sobre un formulario en blanco',
+  );
+
+  // Maps guarda lo escrito tal cual, y el tope aparte.
+  assert.match(scraper, /setTipoDeNegocio\(trabajo\.business_type\)/);
+  assert.match(scraper, /setLocalizacion\(trabajo\.location\)/);
+  assert.match(scraper, /setMaximo\(trabajo\.max_leads\)/);
+
+  // LinkedIn guarda el cargo con prefijo y junta región y país en una cadena.
+  assert.match(scraper, /PREFIJO_LINKEDIN/);
+  // Facebook: la opción 1 su URL, la opción 2 su búsqueda con el prefijo del Espía.
+  assert.match(scraper, /setUrl\(trabajo\.location\)/);
+  assert.match(scraper, /PREFIJO_DE_BUSQUEDA/);
+});
+
+test('el tope pedido sale del JSON del trabajo, no de la columna que nadie escribe', () => {
+  /* `max_leads` existe como columna y el backend NUNCA la escribe: guarda el tope dentro de
+     `results_data`. Leer la columna devolvería `null` siempre y el formulario volvería al mínimo sin
+     decir que perdió el número — que es peor que no reponerlo, porque el número afecta lo que se
+     cobra.
+
+     Y se extrae SOLO ese campo con `->>`: seleccionar `results_data` entero traería, el día que
+     alguien afloje el filtro de estado, los cientos de kilobytes de resultados de cada trabajo
+     terminado. */
+  const ruta = codigo('app/api/tools/trabajos/route.ts');
+  assert.match(ruta, /results_data ->> 'max_leads'/);
+  assert.ok(
+    !/\.select\(\[[^\]]*'results_data'/.test(ruta),
+    'la ruta selecciona `results_data` entero: una fila terminada son cientos de kilobytes',
+  );
+  // Y sigue devolviendo sólo lo que está en vuelo, que es lo que hace segura la extracción.
+  assert.match(ruta, /\.where\('status', 'in', \[\.\.\.EN_VUELO\]\)/);
+});

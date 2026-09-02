@@ -31,6 +31,8 @@
 // reiniciando. Saber si algo está en vuelo no debería depender del sistema que puede estar caído.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { sql } from 'kysely';
+
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
@@ -67,7 +69,22 @@ export async function GET(peticion: Request): Promise<Response> {
     datos()
       .selectFrom('public.aria_cc_scraper_trabajos')
       .select(['id', 'fuente', 'status', 'business_type', 'location', 'created_at'])
-      // `raw`/`results_data` NO se seleccionan: acá sólo interesa QUÉ está corriendo, y
+      /* ── EL TOPE PEDIDO, Y POR QUÉ SALE DE UN JSON EN VEZ DE SU COLUMNA ──────
+       *
+       * `max_leads` existe como columna y **el backend nunca la escribe**: guarda el tope dentro de
+       * `results_data` (`{"max_leads": N}`) para recortar los resultados en el webhook. Leer la
+       * columna devolvería `null` siempre, que en la pantalla se vería como «el alumno no pidió un
+       * tope» — y el formulario volvería al mínimo sin decir que perdió el número.
+       *
+       * Se extrae SOLO ese campo con `->>` en vez de seleccionar `results_data` entero, aunque para
+       * un trabajo en vuelo ese documento sea diminuto: el día que alguien afloje el filtro de
+       * estado, seleccionarlo traería los cientos de kilobytes de resultados de cada trabajo
+       * terminado. Pedir un campo no puede volverse pedir la tabla.
+       */
+      .select(
+        sql<number | null>`(results_data ->> 'max_leads')::int`.as('max_leads'),
+      )
+      // `raw`/`results_data` NO se seleccionan enteros: acá sólo interesa QUÉ está corriendo, y
       // `results_data` de un trabajo terminado son cientos de kilobytes por fila.
       .where('status', 'in', [...EN_VUELO])
       .orderBy('created_at', 'desc')

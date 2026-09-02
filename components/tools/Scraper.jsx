@@ -28,6 +28,8 @@ import {
   ETIQUETAS_DE_COLUMNA,
   COLUMNAS_ENLACE,
   MINIMO_LEADS_MAPS,
+  PREFIJO_DE_BUSQUEDA,
+  PREFIJO_LINKEDIN,
   anunciantesDe,
   consultarTrabajo,
   iniciarScraping,
@@ -62,6 +64,10 @@ function useTrabajo(fuente, textos = {}) {
      alguien que ya gastó saldo cuando esa corrida no cobra ninguno. */
   const trabajando = textos.trabajando ?? 'Scrapeando leads… esto puede tomar unos minutos.';
   const contar = textos.contar ?? ((n) => `Listo. ${n} ${n === 1 ? 'resultado' : 'resultados'} encontrados.`);
+  /* Qué hacer con el trabajo que se retomó. Lo usa cada formulario para volver a llenar SUS campos
+     con lo que la base dice que se estaba buscando: el hook no sabe qué campos tiene cada fuente, y
+     escribirlo acá sería un `switch` por fuente en el único lugar que hoy no lo necesita. */
+  const alRetomar = textos.alRetomar;
 
   useEffect(() => () => { if (temporizador.current) clearTimeout(temporizador.current); }, []);
 
@@ -113,9 +119,15 @@ function useTrabajo(fuente, textos = {}) {
       const enVuelo = await leerTrabajosEnVuelo();
       if (!vivo) return;
       const mio = enVuelo.find((t) => t.fuente === fuente);
-      if (mio) sondear(mio.id);
+      if (!mio) return;
+      // Primero los campos y después el sondeo: así el formulario ya se ve completo cuando aparece
+      // el aviso de «scrapeando», y no un instante después.
+      if (alRetomar) alRetomar(mio);
+      sondear(mio.id);
     })();
     return () => { vivo = false; };
+    // `alRetomar` no se lista por lo mismo que los textos: se redefine en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fuente, sondear]);
 
   const arrancar = useCallback(async (fuente, parametros) => {
@@ -197,10 +209,20 @@ export function TablaDeLeads({ leads }) {
 // ── Google Maps ─────────────────────────────────────────────────────────────
 
 function FormularioMaps({ nicho, onLeads }) {
-  const t = useTrabajo('maps');
   const [tipoDeNegocio, setTipoDeNegocio] = useState(nicho);
   const [localizacion, setLocalizacion] = useState('');
   const [maximo, setMaximo] = useState(MINIMO_LEADS_MAPS);
+
+  /* Al volver a la pestaña con un scraping en vuelo, los campos se reponen con lo que la base dice
+     que se estaba buscando. Maps los guarda tal cual: `business_type` y `location` son lo que se
+     escribió, y el tope viaja aparte porque el backend lo mete dentro de `results_data`. */
+  const t = useTrabajo('maps', {
+    alRetomar: (trabajo) => {
+      if (trabajo.business_type) setTipoDeNegocio(trabajo.business_type);
+      if (trabajo.location) setLocalizacion(trabajo.location);
+      if (trabajo.max_leads) setMaximo(trabajo.max_leads);
+    },
+  });
 
   useEffect(() => { onLeads(t.leads); }, [t.leads, onLeads]);
 
@@ -265,11 +287,32 @@ function FormularioMaps({ nicho, onLeads }) {
 // ── LinkedIn ────────────────────────────────────────────────────────────────
 
 function FormularioLinkedIn({ nicho, onLeads }) {
-  const t = useTrabajo('linkedin');
   const [cargo, setCargo] = useState(nicho);
   const [pais, setPais] = useState('');
   const [region, setRegion] = useState('');
   const [cantidad, setCantidad] = useState(100);
+
+  /* LinkedIn guarda el cargo con el prefijo `LinkedIn: ` y junta región y país en una sola cadena
+     —`f"{state}, {country}"`— así que reponerlos es deshacer eso. La cantidad NO se puede reponer:
+     el backend no la guarda en ningún lado, ni en columna ni en el JSON. Queda en su valor por
+     omisión, y eso es mejor que inventarlo: el número afecta lo que se cobra. */
+  const t = useTrabajo('linkedin', {
+    alRetomar: (trabajo) => {
+      const titulo = trabajo.business_type ?? '';
+      if (titulo) setCargo(titulo.startsWith(PREFIJO_LINKEDIN) ? titulo.slice(PREFIJO_LINKEDIN.length) : titulo);
+      const donde = trabajo.location ?? '';
+      if (donde) {
+        const coma = donde.indexOf(',');
+        // Con coma es `región, país`; sin coma, el país solo. Es el formato que arma el backend.
+        if (coma >= 0) {
+          setRegion(donde.slice(0, coma).trim());
+          setPais(donde.slice(coma + 1).trim());
+        } else {
+          setPais(donde.trim());
+        }
+      }
+    },
+  });
 
   useEffect(() => { onLeads(t.leads); }, [t.leads, onLeads]);
 
@@ -376,20 +419,36 @@ function FormularioFacebook({ onLeads }) {
      partir del nicho y el país. Por eso la opción 2 puede reemplazar a la 1 sin cambiar lo que se
      gasta — y encima devuelve el copy y los días que lleva corriendo cada anuncio, que es lo que
      permite elegir a quién procesar en vez de procesarlos a todos a ciegas. */
-  const porUrl = useTrabajo('facebook-ads');
-  const porNicho = useTrabajo('ad-spy', {
-    trabajando: 'Buscando anuncios… esto puede tomar unos minutos.',
-    contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
-  });
-  const paginas = useTrabajo('facebook-pages');
-
   const [url, setUrl] = useState('');
   const [consulta, setConsulta] = useState('');
   const [pais, setPais] = useState('ALL');
-  /* Qué opción produjo la lista que se está mirando. Se fija al arrancar, y si al montar se retomó
-     un trabajo en vuelo se deduce de cuál trajo resultados: sin esto, volver a la pestaña con una
-     búsqueda ya terminada dejaría el paso 2 sin saber a quién procesar. */
+  /* Qué opción produjo la lista que se está mirando. Se fija al arrancar y al retomar; si no hay
+     ninguna de las dos, se deduce de cuál trajo resultados. Va declarado ACÁ, antes de los hooks
+     que lo fijan, porque `alRetomar` lo usa. */
   const [origen, setOrigen] = useState(null);
+
+  /* La opción 1 guarda la URL que se pegó en `location` —su `business_type` es la constante
+     "Facebook Ads"— y la opción 2 guarda la búsqueda con el prefijo `AdSpy: ` y el país en
+     `location`. Cada una repone lo suyo al volver a la pestaña. */
+  const porUrl = useTrabajo('facebook-ads', {
+    alRetomar: (trabajo) => {
+      if (trabajo.location) setUrl(trabajo.location);
+    },
+  });
+  const porNicho = useTrabajo('ad-spy', {
+    trabajando: 'Buscando anuncios… esto puede tomar unos minutos.',
+    contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
+    alRetomar: (trabajo) => {
+      const buscado = (trabajo.business_type || '').startsWith(PREFIJO_DE_BUSQUEDA)
+        ? trabajo.business_type.slice(PREFIJO_DE_BUSQUEDA.length)
+        : '';
+      if (buscado) setConsulta(buscado);
+      if (trabajo.location) setPais(trabajo.location);
+      setOrigen('nicho');
+    },
+  });
+  const paginas = useTrabajo('facebook-pages');
+
   const desde = origen ?? (porNicho.leads.length > 0 ? 'nicho' : porUrl.leads.length > 0 ? 'url' : null);
 
   const anunciantes = useMemo(() => {

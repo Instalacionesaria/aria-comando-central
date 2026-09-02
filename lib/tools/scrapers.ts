@@ -159,13 +159,32 @@ export async function consultarTrabajo<T = Lead>(id: string): Promise<EstadoDeTr
 // qué hay en vuelo y se retoma. La fuente de verdad es la tabla, no la memoria del navegador.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Un scraping que todavía no terminó. */
+/**
+ * Un scraping que todavía no terminó.
+ *
+ * ── LOS TRES CAMPOS QUE DESCRIBEN LA BÚSQUEDA NO SON ADORNO ─────────────────
+ *
+ * `business_type`, `location` y `max_leads` son **lo único que dice qué se estaba buscando**, y por
+ * eso viajan acá: al volver a la pestaña, el formulario se vuelve a llenar con ellos.
+ *
+ * Sin eso pasaba lo que reportó Kevin: *"dejé al scraper de Maps scrapeando, me cambié de pestaña, y
+ * cuando volví se perdieron los datos que puse"*. El scraping seguía corriendo —el aviso lo decía— y
+ * los campos habían vuelto a los marcadores, porque vivían en `useState` y React desmontó la
+ * pestaña. Es la misma lección que ya se pagó con el sondeo, un escalón más adentro: **lo que sólo
+ * existe en `useState` se pierde, y lo que está en la base se puede volver a pedir.**
+ *
+ * Cada fuente los llena a su manera y el formulario que los lee sabe cuál es la suya. Ver
+ * `Scraper.jsx`: LinkedIn guarda el cargo con el prefijo `LinkedIn: `, Facebook guarda la URL en
+ * `location`, y el Espía la búsqueda con el prefijo `AdSpy: `.
+ */
 export interface TrabajoEnVuelo {
   id: string;
   fuente: string;
   status: string;
   business_type: string | null;
   location: string | null;
+  /** El tope de leads que se pidió. Solo Maps lo usa; en las demás viene nulo. */
+  max_leads: number | null;
   created_at: string;
 }
 
@@ -272,6 +291,15 @@ export const PAISES: readonly { codigo: string; etiqueta: string }[] = [
  * atar a su origen.
  */
 export const PREFIJO_DE_BUSQUEDA = 'AdSpy: ';
+
+/**
+ * El prefijo con el que el backend guarda el cargo de una búsqueda de LinkedIn.
+ *
+ * Mismo caso que el del Espía y misma razón para tenerlo con nombre: es un dato ajeno —`f"LinkedIn:
+ * {job_title}"`— y un `slice(10)` suelto en el componente sería un número que nadie puede atar a su
+ * origen. Se usa para reponer el formulario cuando se vuelve a la pestaña con un scraping en vuelo.
+ */
+export const PREFIJO_LINKEDIN = 'LinkedIn: ';
 
 /**
  * Cuántos anuncios trae una búsqueda, según para qué se busca. **Son dos números y no uno.**
