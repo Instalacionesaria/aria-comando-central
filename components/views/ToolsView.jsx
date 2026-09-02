@@ -25,6 +25,7 @@
    encabezado, el mismo lugar. */
 
 import Fundaciones from '../fundaciones/Fundaciones';
+import EspiaDeAnuncios from '../tools/EspiaDeAnuncios';
 import MisLeads from '../tools/MisLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
@@ -47,7 +48,17 @@ const CATALOGO_TOOLS = {
 
      Va como `vista` y no como herramienta porque no genera nada ni se completa. Ver el bloque de
      `vistas` en `Fundaciones.jsx`. */
-  vistas: [{ clave: 'mis-leads', pestania: 'Mis Leads', render: () => <MisLeads /> }],
+  vistas: [
+    {
+      clave: 'espia',
+      pestania: 'Espía de Anuncios',
+      /* La quinta fuente del motor de scraping, y la única que no gasta saldo de leads. Va como
+         vista y no como herramienta por lo mismo que «Mis Leads»: no llena un formulario ni produce
+         un entregable que se pueda dar por completo. */
+      render: ({ puedeEditar }) => <EspiaDeAnuncios puedeEditar={puedeEditar} />,
+    },
+    { clave: 'mis-leads', pestania: 'Mis Leads', render: () => <MisLeads /> },
+  ],
 };
 
 export default function ToolsView({ activa }) {

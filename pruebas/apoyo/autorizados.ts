@@ -193,6 +193,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Y el agente conversacional de esta pantalla, gemelo del de Fundaciones y por el mismo motivo:
   // lee la fila de credenciales de la organización y todo lo demás vive en el almacén del hub.
   'app/api/tools/conversar/route.ts',
+  // El análisis con IA del Espía de Anuncios. Lee UNA columna de `organizaciones_credenciales` —la
+  // llave de IA cifrada— que es una tabla de identidad sobre la que el rol del inquilino no tiene ni
+  // `select`. Los anuncios no salen de esta base: se los pide al backend de scraping con el
+  // `org_id` de la sesión. El filtro por organización lo pone esa consulta a mano.
+  'app/api/tools/espia/route.ts',
   // Subir leads seleccionados al CRM. Lee el Private Integration Token de GoHighLevel por
   // identidad —`organizaciones_credenciales` es inalcanzable desde el rol del inquilino— con
   // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo

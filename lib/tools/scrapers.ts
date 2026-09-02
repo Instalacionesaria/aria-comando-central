@@ -23,7 +23,8 @@
 // igual que las llaves del almacén.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { pedir } from '../http/cliente.ts';
+import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '../http/cliente.ts';
+import { SIN_RESPUESTA, mensajeDeRechazo } from '../fundaciones/mensajes.ts';
 
 /** Un lead como lo devuelve el backend. Los campos varían según la fuente. */
 export interface Lead {
@@ -40,7 +41,15 @@ export interface Lead {
   [clave: string]: unknown;
 }
 
-export type FuenteDeScraping = 'maps' | 'linkedin' | 'facebook-ads' | 'facebook-pages';
+export type FuenteDeScraping =
+  | 'maps'
+  | 'linkedin'
+  | 'facebook-ads'
+  | 'facebook-pages'
+  /* El Espía de Anuncios. Va en esta lista porque arranca y se sondea igual que las otras cuatro
+     —mismo proxy, misma tabla de trabajos, mismo `results.data`— y NO porque traiga leads: no trae.
+     Sus resultados son anuncios y viven en el trabajo. Ver `AnuncioEspiado`. */
+  | 'ad-spy';
 
 /**
  * El mínimo de leads por búsqueda de Google Maps.
@@ -122,14 +131,20 @@ export async function iniciarScraping(
   return { tipo: 'fallo', mensaje: 'No se pudo conectar con el motor de scraping.' };
 }
 
-export interface EstadoDeTrabajo {
+/**
+ * El estado de un trabajo. Genérico en lo que trae `results.data`, y no por elegancia: cuatro
+ * fuentes devuelven leads y el Espía devuelve anuncios, que no comparten un solo campo. Con `Lead`
+ * fijo, el panel del Espía tendría que castear cada tarjeta —o peor, se escribiría una segunda
+ * función de sondeo idéntica con otro tipo de retorno.
+ */
+export interface EstadoDeTrabajo<T = Lead> {
   status?: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | string;
-  results?: { data?: Lead[] };
+  results?: { data?: T[] };
 }
 
 /** Consulta el estado de un trabajo. El backend devuelve `results.data` recién al terminar. */
-export async function consultarTrabajo(id: string): Promise<EstadoDeTrabajo | null> {
-  const r = await pedir<EstadoDeTrabajo>(`${RUTA}?trabajo=${encodeURIComponent(id)}`);
+export async function consultarTrabajo<T = Lead>(id: string): Promise<EstadoDeTrabajo<T> | null> {
+  const r = await pedir<EstadoDeTrabajo<T>>(`${RUTA}?trabajo=${encodeURIComponent(id)}`);
   return r.tipo === 'datos' ? r.datos : null;
 }
 
@@ -164,4 +179,116 @@ export interface TrabajoEnVuelo {
 export async function leerTrabajosEnVuelo(): Promise<TrabajoEnVuelo[]> {
   const r = await pedir<{ enCurso: TrabajoEnVuelo[] }>('/api/tools/trabajos');
   return r.tipo === 'datos' ? (r.datos.enCurso ?? []) : [];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL ESPÍA DE ANUNCIOS
+//
+// Puerto de `ARIA-brain/app-next/components/AdSpyPanel.tsx` + su mitad de `lib/scrapers.ts`.
+//
+// Arranca y se sondea como cualquier otra fuente —el proxy, la tabla de trabajos, `results.data`—
+// y se diferencia en dos cosas que conviene tener presentes:
+//
+//   1. **No gasta saldo de leads.** El backend lo dice con todas las letras: *"es investigación de
+//      competencia, no generación de leads"*. Abre el monedero de la organización para provisionarla
+//      y no valida saldo. Sí gasta una corrida de Apify, que se cobra en la factura.
+//   2. **Sus resultados no son leads y no van a «Mis Leads».** Viven en el `results_data` del
+//      trabajo. Por eso el filtro «Espía» de esa pantalla no va a mostrar filas — está en la lista
+//      porque la columna lo admite, no porque el backend escriba ahí.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Un anuncio espiado, ya normalizado por el backend (`build_ad_spy_items`). */
+export interface AnuncioEspiado {
+  ad_archive_id?: string;
+  page_name?: string;
+  page_id?: string;
+  is_active?: boolean;
+  days_active?: number;
+  start_date_formatted?: string;
+  media_type?: string;
+  thumbnail_url?: string;
+  body_text?: string;
+  title?: string;
+  caption?: string;
+  cta_text?: string;
+  link_url?: string;
+  ad_library_url?: string;
+}
+
+/** Cómo se nombra el tipo de anuncio en la tarjeta. Las claves las escribe el backend. */
+export const TIPO_DE_ANUNCIO: Readonly<Record<string, string>> = {
+  video: 'Video',
+  imagen: 'Imagen',
+  carrusel: 'Carrusel',
+};
+
+/**
+ * Los países donde se puede espiar.
+ *
+ * La persona elige un NOMBRE y por el cable viaja el código ISO que espera la Meta Ad Library. La
+ * lista es la del hub y se conserva entera: es la que Jorge armó, con los países donde están los
+ * alumnos, y recortarla acá haría que una búsqueda que allá se puede hacer, acá no.
+ */
+export const PAISES: readonly { codigo: string; etiqueta: string }[] = [
+  { codigo: 'ALL', etiqueta: '🌎 Todos los países' },
+  { codigo: 'PE', etiqueta: 'Perú' },
+  { codigo: 'MX', etiqueta: 'México' },
+  { codigo: 'CO', etiqueta: 'Colombia' },
+  { codigo: 'AR', etiqueta: 'Argentina' },
+  { codigo: 'CL', etiqueta: 'Chile' },
+  { codigo: 'EC', etiqueta: 'Ecuador' },
+  { codigo: 'BO', etiqueta: 'Bolivia' },
+  { codigo: 'VE', etiqueta: 'Venezuela' },
+  { codigo: 'UY', etiqueta: 'Uruguay' },
+  { codigo: 'PY', etiqueta: 'Paraguay' },
+  { codigo: 'CR', etiqueta: 'Costa Rica' },
+  { codigo: 'PA', etiqueta: 'Panamá' },
+  { codigo: 'GT', etiqueta: 'Guatemala' },
+  { codigo: 'DO', etiqueta: 'Rep. Dominicana' },
+  { codigo: 'ES', etiqueta: 'España' },
+  { codigo: 'US', etiqueta: 'Estados Unidos' },
+  { codigo: 'BR', etiqueta: 'Brasil' },
+];
+
+/**
+ * El prefijo con el que el backend guarda la búsqueda en `business_type`, para poder recuperar qué
+ * se estaba espiando al retomar un trabajo en vuelo.
+ *
+ * Es un dato ajeno —lo escribe `start_ad_spy` como `f"AdSpy: {query}"`— y por eso está acá con su
+ * nombre: leerlo con un `slice(7)` suelto en el componente sería un número mágico que nadie puede
+ * atar a su origen.
+ */
+export const PREFIJO_DE_BUSQUEDA = 'AdSpy: ';
+
+/** Arranca una búsqueda de anuncios. Devuelve el identificador del trabajo, como las otras cuatro. */
+export async function espiarAnuncios(
+  consulta: string,
+  pais: string,
+): Promise<ResultadoDeInicio> {
+  return iniciarScraping('ad-spy', { query: consulta, country: pais });
+}
+
+export type ResultadoDelAnalisis =
+  | { tipo: 'datos'; texto: string; cortado: boolean }
+  | { tipo: 'fallo'; mensaje: string };
+
+/**
+ * Le pide al modelo los patrones de una búsqueda ya hecha.
+ *
+ * Viaja el identificador del TRABAJO y no los anuncios: ver `lib/tools/espia.ts`. Acá eso se nota en
+ * que esta función no recibe la lista aunque la pantalla la tenga en la mano.
+ */
+export async function analizarAnuncios(trabajo: string): Promise<ResultadoDelAnalisis> {
+  const r = await pedir<{ texto?: string; cortado?: boolean }>('/api/tools/espia', {
+    metodo: 'POST',
+    cuerpo: { trabajo },
+    espera: ESPERA_DE_RUTA_LARGA_MS,
+  });
+  if (r.tipo === 'datos') {
+    return { tipo: 'datos', texto: r.datos.texto ?? '', cortado: r.datos.cortado === true };
+  }
+  if (r.tipo === 'rechazado') {
+    return { tipo: 'fallo', mensaje: mensajeDeRechazo(r.codigo, r.estado, r.detalle) };
+  }
+  return { tipo: 'fallo', mensaje: SIN_RESPUESTA };
 }

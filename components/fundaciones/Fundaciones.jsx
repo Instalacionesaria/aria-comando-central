@@ -67,7 +67,16 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
      la barra de avance cuenta `hechos/herramientas.length`. Una vista ahí adentro haría que
      el contador dijera «0/2» para siempre, con el segundo paso imposible de completar.
 
-     Opcional: la pantalla ICP & Oferta no manda ninguna y se comporta igual que antes. */
+     Opcional: la pantalla ICP & Oferta no manda ninguna y se comporta igual que antes.
+
+     ── QUÉ RECIBE `render` ─────────────────────────────────────────────────
+     Un objeto con `puedeEditar`, que es lo mismo que reciben los paneles y sale del mismo lugar
+     (los permisos de la sesión, no un nombre de rol). Entró con el Espía de Anuncios, que tiene
+     botones que GASTAN —una corrida de Apify, tokens de la llave de IA— y por lo tanto tiene que
+     poder no dibujarlos: el `07` § 4 prohíbe mostrar un control que no puede cumplir.
+
+     Va como objeto y no como argumento suelto para que la próxima vista que necesite otra cosa no
+     obligue a tocar todas las que ya existen. */
   const vistas = catalogo.vistas ?? [];
   const [estado, setEstado] = useState(null);
   const [permisos, setPermisos] = useState(null);
@@ -261,7 +270,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
       {/* Una vista gana sobre las herramientas: si la pestaña activa es «Mis Leads», no se pinta
           ningún panel de herramienta. */}
       {vistaActiva ? (
-        vistaActiva.render()
+        vistaActiva.render({ puedeEditar })
       ) : herramienta.forma === 'prospeccion' ? (
         <PanelProspeccion
           key={herramienta.id}

@@ -61,6 +61,13 @@ const RELOJES_A_MANO: readonly { archivo: string; porque: string }[] = [
       'justo el caso en el que frenar con la pestaña oculta sería peor — se vuelve a la pestaña y ' +
       'el resultado ya tendría que estar. Es un sondeo acotado, no un reloj de fondo.',
   },
+  {
+    archivo: 'components/tools/EspiaDeAnuncios.jsx',
+    porque:
+      'El mismo caso que `Scraper.jsx`, con el mismo motor detrás: sondea UNA búsqueda de anuncios ' +
+      'cada 5 s y se apaga sola al terminar. Comparte hasta el número, y a propósito — dos cadencias ' +
+      'distintas para el mismo backend serían dos comportamientos que nadie eligió.',
+  },
 ];
 
 test('ningún componente sondea en bucle fuera de `lib/reloj.ts`', () => {

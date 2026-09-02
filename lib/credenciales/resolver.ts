@@ -396,6 +396,47 @@ export async function resolverAccesoAFundaciones(
   return { tipo: 'listo', claveIa, clienteId: fila.fundaciones_cliente_id };
 }
 
+/** Lo que hace falta para pedirle algo al modelo SIN ser una herramienta de Fundaciones. */
+export type FaltaLaLlave = 'sin_llave_de_ia' | 'llave_de_ia_ilegible';
+
+export type LlaveDeIa =
+  | { tipo: 'listo'; claveIa: string }
+  | { tipo: 'falta'; que: FaltaLaLlave };
+
+/**
+ * La llave de IA de la organización, y nada más.
+ *
+ * ── POR QUÉ NO SE REUSA `resolverAccesoAFundaciones`, QUE YA LEE ESTA MISMA COLUMNA ──
+ *
+ * Es el mismo argumento que ya está escrito para el auditor, un caso más abajo: esa función exige
+ * además `fundaciones_cliente_id`, el identificador del alumno en el hub. Quien la reusara para algo
+ * que no es Fundaciones haría que una organización perfectamente capaz de operar saliera como
+ * `sin_alumno_vinculado`, y alguien iría a vincular una cuenta del hub para arreglar una pantalla
+ * que no tiene nada que ver con el hub.
+ *
+ * Ese error ya se pagó una vez en el scraper: estuvo atado a `fundaciones_cliente_id` hasta la
+ * migración 006 y el síntoma era un cartel rojo que sólo se arreglaba corriendo SQL a mano. La usa
+ * el análisis del Espía de Anuncios, que es de la pantalla `tools` y no sabe nada del hub.
+ */
+export async function resolverLlaveDeIa(db: Trx, orgId: string): Promise<LlaveDeIa> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['ia_clave_cifrada'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.ia_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_ia' };
+
+  try {
+    return { tipo: 'listo', claveIa: descifrar(fila.ia_clave_cifrada) };
+  } catch {
+    // ADR-0809 · mismo punto de emisión que las otras dos, y en la misma transacción: un descifrado
+    // que falla y no queda registrado es el cero indistinguible de «nadie cableó la señal».
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
+  }
+}
+
 /**
  * Lo que le falta a una empresa para poder auditar. **Cuatro, y ninguno es un error.**
  *

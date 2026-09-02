@@ -46,6 +46,16 @@ import { pedirExterno } from '../../../../lib/http/cliente.ts';
 export const PANTALLA = 'tools';
 
 /**
+ * Cuántos anuncios pide una búsqueda del Espía.
+ *
+ * Es el número del hub, y el backend lo usa como valor por omisión si no llega. Se manda igual y
+ * explícito: que el tamaño de una corrida —lo que se le pide a un actor que se cobra— dependa de un
+ * valor por omisión del otro lado significa que cambiarlo allá cambia lo que gastamos acá sin que
+ * nadie lo decida.
+ */
+const ANUNCIOS_POR_BUSQUEDA = 60;
+
+/**
  * Un scraping tarda minutos, pero ESTA ruta no espera: arranca el trabajo y devuelve su
  * identificador. Lo que tarda es el sondeo, y cada sondeo es una petición corta. Aun así se sube
  * el tope, porque el backend a veces tarda en aceptar el arranque y cortar ahí dejaría un trabajo
@@ -114,6 +124,25 @@ function construirArranque(
       return {
         camino: '/start-facebook-pages-scraping',
         cuerpo: { ...base, pages: Array.isArray(p.pages) ? p.pages : [] },
+      };
+    /* El Espía de Anuncios. **Es la única fuente que NO gasta saldo de leads**, y así está escrito
+       del otro lado: `start_ad_spy` abre el monedero de la organización —para que quede
+       provisionada— y no valida saldo, porque espiar a la competencia es investigación y no
+       produce leads. Sus resultados tampoco entran a `aria_cc_scraper_leads`: viven en el
+       `results_data` del trabajo.
+
+       Eso NO la saca de esta ruta ni de `tools.editar`. Sigue lanzando un actor de Apify que se
+       cobra en la factura, y el trabajo queda en la misma tabla que los otros cuatro — que es de
+       donde el Panel de Monitoreo cuenta los scrapeos y su costo. */
+    case 'ad-spy':
+      return {
+        camino: '/start-ad-spy',
+        cuerpo: {
+          ...base,
+          query: String(p.query ?? ''),
+          country: String(p.country ?? 'ALL'),
+          count: Number(p.count) || ANUNCIOS_POR_BUSQUEDA,
+        },
       };
     default:
       return null;

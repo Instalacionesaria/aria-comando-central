@@ -1057,6 +1057,10 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
     'app/api/tools/estado/route.ts',
     'app/api/tools/generar/route.ts',
     'app/api/tools/conversar/route.ts',
+    // El análisis del Espía de Anuncios: no es de Fundaciones, y declara `maxDuration` y llama al
+    // modelo igual que las otras. La regla que se comprueba es la misma —quien llama a una ruta que
+    // puede tardar minutos tiene que esperarla— y dejarla afuera de esta lista la volvería a abrir.
+    'app/api/tools/espia/route.ts',
   ];
   for (const ruta of RUTAS) {
     const segundos = Number(/maxDuration\s*=\s*(\d+)/.exec(leer(ruta))?.[1]);

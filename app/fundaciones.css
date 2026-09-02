@@ -1524,3 +1524,185 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* ── Espía de Anuncios ───────────────────────────────────────────────────── */
+
+/* La barra de búsqueda: dos desplegables, el cuadro y el botón. En una fila mientras entre, y
+   apilada cuando no — el cuadro de búsqueda es lo que crece. */
+.es-barra {
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.es-select,
+.es-consulta {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--txt);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 11px;
+  outline: 0;
+  min-width: 0;
+}
+.es-consulta {
+  flex: 1 1 260px;
+}
+.es-consulta::placeholder {
+  color: var(--txt-faint);
+}
+.es-consulta:focus,
+.es-select:focus {
+  border-color: rgb(var(--c-acento) / 0.4);
+}
+/* Sin `appearance: none` el navegador pinta su propio control, que en macOS ignora el fondo y el
+   borde: un cuadro blanco en medio de la pantalla oscura. Es la misma nota de `.fd-campo select`,
+   con la misma flecha por imagen de fondo — un `::after` sobre un `select` no se pinta. */
+.es-select {
+  appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23ffffff' stroke-opacity='.55' stroke-width='1.5'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 11px;
+}
+/* Las opciones las pinta el sistema operativo, no esta hoja: sin esto, en Windows el menú abierto
+   sale con texto claro sobre fondo claro. */
+.es-select option {
+  background: var(--bg-sunk);
+  color: var(--txt);
+}
+.es-select option:disabled {
+  color: var(--txt-faint);
+}
+
+.es-herramientas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.es-cuenta {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  margin-right: auto;
+}
+
+.es-analisis-cuerpo {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--txt);
+  /* El modelo devuelve markdown y acá se muestra tal cual: lo que hace falta conservar son los
+     saltos de línea, o las cuatro secciones se leen como un párrafo corrido. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Las tarjetas de anuncios. `auto-fill` y no un número de columnas: la pantalla vive dentro de la
+   vista de Tools, que cambia de ancho con el menú lateral. */
+.es-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 12px;
+}
+.es-tarjeta {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+.es-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 168px;
+  background: var(--bg-sunk);
+  color: var(--txt-faint);
+  overflow: hidden;
+}
+.es-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.es-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 13px 13px;
+}
+.es-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.es-pastilla {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+/* Verde para el que sigue corriendo: es la señal por la que existe esta pantalla. */
+.es-pastilla.vivo {
+  color: var(--ok);
+  border-color: rgb(var(--c-ok) / 0.3);
+}
+.es-pagina {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+/* El copy se recorta a seis líneas: sin esto, un anuncio largo estira su tarjeta y rompe la
+   cuadrícula. Quien quiera leerlo entero tiene el enlace a la Ad Library abajo. */
+.es-copy {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--txt-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.es-enlace {
+  font-size: 11.5px;
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: auto;
+}
+.es-enlace:hover {
+  text-decoration: underline;
+}
+
+/* El pie explicativo, con el diseño de Jorge. */
+.es-rasgos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.es-rasgo {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  padding: 14px 16px;
+}
+.es-rasgo h4 {
+  margin: 0 0 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.es-rasgo p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--txt-dim);
+}
