@@ -119,10 +119,38 @@ const CASO = {
    cita"*—, y este archivo era una de las dos. */
 
 /** Una fila de la Agenda: la hora, el estado, la sala y los seis íconos. */
-function FilaDeAgenda({ item, zona }) {
+/**
+ * Una fila de la Agenda de hoy.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * EL DEFECTO QUE TUVO: LA ÚNICA FILA DE LA PANTALLA QUE NO SE PODÍA ABRIR
+ *
+ * Las otras cuatro colas dibujan `Fila`, que recibe `onAbrir` y abre la ficha. Esta cola dibuja
+ * su propio componente —necesita la HORA en la primera columna y el botón de la sala, que `Fila`
+ * no tiene— y al escribirlo se le olvidó la mitad clicable.
+ *
+ * Y no fallaba: **`.md-r:hover` ilumina TODA fila con esa clase**, así que la de agenda se
+ * encendía al pasar el ratón igual que las demás y no hacía nada al hacer clic. Es literalmente
+ * lo que el comentario de `Fila` describe como *«la forma más rápida de que alguien deje de
+ * confiar en la pantalla»* — y le pasaba justo en la cola que un closer abre primero cada
+ * mañana, donde está la gente a la que va a llamar en un rato.
+ *
+ * ── `onAbrir` ES OBLIGATORIO, AL REVÉS QUE EN `Fila` ──────────────────
+ *
+ * `Fila` lo tiene opcional y no es clicable sin él: es un componente compartido, y su comentario
+ * viene de la Etapa 11, cuando la ficha todavía no existía. Acá hay UN llamador y siempre lo pasa,
+ * así que una condición sería una rama que no corre nunca — y una rama que no corre es dónde se
+ * esconde el próximo defecto de éstos.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+function FilaDeAgenda({ item, zona, onAbrir }) {
   const c = item.cita;
   return (
-    <div className="md-r">
+    <div
+      className="md-r"
+      style={{ cursor: 'pointer' }}
+      onClick={() => onAbrir(item.fila)}
+    >
       <span className="md-time" style={c.vencida ? { color: 'var(--crit)' } : undefined}>
         {horaEnZona(c.inicioEl, zona)}
       </span>
@@ -140,7 +168,16 @@ function FilaDeAgenda({ item, zona }) {
             explicación. Desaparecido, el closer cree que la interfaz se rompió y va a buscar
             el enlace a mano. (`03` § 2.) */}
         {c.salaUrl ? (
-          <a className="md-join" href={c.salaUrl} target="_blank" rel="noreferrer">
+          <a
+            className="md-join"
+            href={c.salaUrl}
+            target="_blank"
+            rel="noreferrer"
+            /* Se corta la propagación, y sin esto el arreglo de arriba estrena un defecto: un clic
+               en «Unirse» abriría la videollamada en otra pestaña **y** la ficha acá detrás. Quien
+               vuelve de la llamada se encuentra un panel abierto que no pidió, encima de la lista. */
+            onClick={(e) => e.stopPropagation()}
+          >
             Unirse
           </a>
         ) : (
@@ -253,7 +290,17 @@ export default function MiDia({
 
             {items.map((item, i) => {
               if (cola.clave === 'agenda') {
-                return <FilaDeAgenda key={item.fila.id + i} item={item} zona={zonaHoraria} />;
+                return (
+                  <FilaDeAgenda
+                    key={item.fila.id + i}
+                    item={item}
+                    zona={zonaHoraria}
+                    /* El MISMO manejador que las otras cuatro colas: `item.fila` es una `Fila`
+                       completa —la arma `lib/negocio/miDia.ts` desde la caché de contactos— así
+                       que su `id` es el del contacto, no el de la cita. */
+                    onAbrir={(fila) => setAbierta(fila.id)}
+                  />
+                );
               }
               return (
                 <div key={item.fila.id + i}>
