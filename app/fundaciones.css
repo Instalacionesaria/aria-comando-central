@@ -1807,3 +1807,44 @@
 .sc-anuncios .es-media {
   height: 130px;
 }
+
+/* ── La banda de momento: qué se desbloqueó al terminar un entregable ─────── */
+
+/* Verde y no acento: es una confirmación de que algo se completó, y el acento ya lo usan los
+   controles que invitan a hacer algo. Que se distinga de un aviso normal es el punto — aparece sola
+   después de una generación, y quien la ve tiene que reconocer que es buena noticia. */
+.fd-momento {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--c-ok) / 0.28);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--txt);
+}
+.fd-momento-tic {
+  color: var(--ok);
+  font-size: 14px;
+  line-height: 1;
+}
+.fd-momento-texto {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.fd-momento b {
+  font-weight: 600;
+}
+.fd-momento-hereda {
+  color: var(--txt-faint);
+}
+/* El último paso no ofrece nada: solo cierra. Sin botón, el texto ocupa la banda entera. */
+.fd-momento.final {
+  border-color: rgb(var(--c-acento) / 0.32);
+}
+.fd-momento.final .fd-momento-tic {
+  color: var(--accent);
+}

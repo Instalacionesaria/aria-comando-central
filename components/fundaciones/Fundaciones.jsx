@@ -29,6 +29,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { FUNDACIONES } from '@/lib/fundaciones/herramientas';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
+import { anotarDestino, tomarDestino } from '@/lib/fundaciones/travesia';
+import { alCambiarDeVista, irALaVista, vistaActiva } from '@/lib/aios/shell.js';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import PanelHerramienta from './PanelHerramienta';
@@ -44,7 +46,19 @@ import PanelProspeccion from '../tools/PanelProspeccion';
 
    Los valores por omisión son los de ICP & Oferta y existen para que `IcpView` no cambiara. Lo
    que NO hacen es adivinar: `ToolsView` los pasa todos, explícitos. */
+/**
+ * Cómo se llama cada pantalla en la miga de pan del armazón.
+ *
+ * `irALaVista` lo recibe por parámetro y no lo sabe: el armazón sí tiene el nombre del GRUPO, pero
+ * el de la pantalla lo pone quien navega, porque en el HTML original lo ponía el elemento del menú
+ * que se apretaba. Son dos, escritas acá, y una prueba las cruza con `SECCIONES`.
+ */
+const NOMBRE_DE_PANTALLA = { icp: 'ICP & Oferta', tools: 'Tools' };
+
 const CATALOGO_ICP = {
+  /* Cuál de las dos pantallas es. Lo usa la travesía para saber si el paso siguiente vive acá
+     —y entonces es un `setActiva`— o del otro lado, que es abrir la otra vista. */
+  pantalla: 'icp',
   herramientas: FUNDACIONES,
   rutaEstado: '/api/fundaciones/estado',
   rutaGenerar: '/api/fundaciones/generar',
@@ -55,7 +69,7 @@ const CATALOGO_ICP = {
 };
 
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
-  const { herramientas, rutaEstado, rutaGenerar, rutaConversar, capacidadEditar } = catalogo;
+  const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, capacidadEditar } = catalogo;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
      Una herramienta es un formulario que produce un documento y que se puede dar por
@@ -87,6 +101,38 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const [organizacion, setOrganizacion] = useState('');
   const [problema, setProblema] = useState(null);
   const [activa, setActiva] = useState(catalogo.herramientas[0].id);
+
+  /* ── EL PASO SIGUIENTE QUE VIENE DE LA OTRA PANTALLA ───────────────────────
+     Cuando la travesía cruza —del Mapa al VSL, que vive en `tools`— quien aprieta el botón deja el
+     destino anotado y abre la otra vista. Este componente, que allá ya está montado pero oculto, se
+     entera por el aviso del armazón y abre la herramienta que se pidió.
+
+     Se mira también al montar: la primera vez que se entra a una pantalla, su `Fundaciones` no
+     existía cuando se apretó el botón, así que no hubo aviso que escuchar. */
+  useEffect(() => {
+    const abrirSiEsMio = () => {
+      if (vistaActiva() !== pantalla) return;
+      const destino = tomarDestino(pantalla);
+      if (destino !== null) setActiva(destino);
+    };
+    abrirSiEsMio();
+    return alCambiarDeVista(abrirSiEsMio);
+  }, [pantalla]);
+
+  /* Ir al paso siguiente de la travesía. Dentro de la pantalla es cambiar de subpestaña; cruzando,
+     es anotar el destino y abrir la otra vista. **Navega, no genera**: ver `BandaDeMomento`. */
+  const irAlPaso = useCallback(
+    (siguiente) => {
+      if (siguiente.tipo !== 'paso') return;
+      if (siguiente.pantalla === pantalla) {
+        setActiva(siguiente.herramienta.id);
+        return;
+      }
+      anotarDestino(siguiente.pantalla, siguiente.herramienta.id);
+      irALaVista(siguiente.pantalla, NOMBRE_DE_PANTALLA[siguiente.pantalla]);
+    },
+    [pantalla],
+  );
 
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([
@@ -292,6 +338,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           puedeEditar={puedeEditar}
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
+          onSiguientePaso={irAlPaso}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
@@ -306,6 +353,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           onIr={setActiva}
+          onSiguientePaso={irAlPaso}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
