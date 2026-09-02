@@ -212,3 +212,38 @@ test('el tope pedido sale del JSON del trabajo, no de la columna que nadie escri
   // Y sigue devolviendo sólo lo que está en vuelo, que es lo que hace segura la extracción.
   assert.match(ruta, /\.where\('status', 'in', \[\.\.\.EN_VUELO\]\)/);
 });
+
+test('ninguna dependencia de efecto es un literal construido en el render', () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * ESTO TIRÓ LA PANTALLA ENTERA, Y NO DEJÓ NI UNA LÍNEA EN NINGÚN REGISTRO.
+   *
+   * `const vigentes = … : [];` — un literal nace NUEVO en cada render, así que la dependencia del
+   * efecto cambiaba siempre. El efecto llama a `onLeads`, que es el `setLeads` del panel de arriba:
+   * fija estado, eso vuelve a renderizar, el literal nace otra vez, y el ciclo no para.
+   *
+   * React NO lo atrapa con «Maximum update depth exceeded», porque cada vuelta es un commit aparte y
+   * no una actualización anidada. No hay excepción, no hay error en la consola del servidor, no hay
+   * nada en los registros de Vercel: hay un bucle que consume el proceso hasta que el navegador mata
+   * la pestaña. Lo que ve la persona es «This page couldn't load».
+   *
+   * La prueba mira el ARCHIVO y no el comportamiento, y eso es a propósito: reproducir el bucle
+   * significaría montar React y colgar el corredor. Lo que se puede afirmar barato es la forma que
+   * lo causa — un `[]` o un `{}` a la derecha de un `=` dentro del cuerpo del componente, en una
+   * variable que después entra a un `useEffect`.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const fuente = codigo('components/tools/Scraper.jsx');
+
+  // Las dependencias que hoy existen, todas por nombre y ninguna literal.
+  const deps = [...fuente.matchAll(/\}, \[([^\]]*)\]\);/g)].map((m) => m[1]!.trim());
+  assert.ok(deps.length > 0, 'no se encontró ningún efecto: la prueba pasaría en vacío');
+  for (const d of deps) {
+    assert.ok(
+      !/\[\]|\{\}/.test(d),
+      `una dependencia de efecto es un literal y cambia en cada render: [${d}]`,
+    );
+  }
+
+  // Y el caso concreto que lo causó, congelado: el vacío sale de una constante del módulo.
+  assert.match(fuente, /const SIN_LEADS = \[\];/);
+  assert.match(fuente, /: desde === 'url' \? porUrl\.leads : SIN_LEADS;/);
+});

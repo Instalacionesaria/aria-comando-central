@@ -51,6 +51,15 @@ import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
  */
 const TARJETAS_A_LA_VISTA = 60;
 
+/**
+ * La lista vacía, UNA sola para todo el módulo.
+ *
+ * No es una micro-optimización: es lo que impide que un `[]` escrito dentro del render entre como
+ * dependencia de un efecto que fija estado. Ver la nota de `vigentes` — ese literal tiró la pantalla
+ * entera, y sin dejar rastro en ningún registro.
+ */
+const SIN_LEADS = [];
+
 /* Las cuatro fases de un trabajo. `error` incluye tanto los fallos del motor como las
    validaciones de acá: para quien mira, las dos son "esto no arrancó y acá está el motivo". */
 function useTrabajo(fuente, textos = {}) {
@@ -490,10 +499,21 @@ function FormularioFacebook({ onLeads }) {
 
   /* La tabla de abajo muestra los CONTACTOS cuando ya se sacaron. Antes de eso muestra lo que trajo
      la opción 1, que son filas con datos; la opción 2 no manda nada a la tabla porque sus
-     resultados son anuncios y se ven como tarjetas, no como columnas. */
+     resultados son anuncios y se ven como tarjetas, no como columnas.
+
+     ── EL VACÍO ES UNA CONSTANTE, Y ESTO TIRÓ LA PANTALLA ENTERA ─────────────
+
+     Acá decía `: []`. Un literal se construye NUEVO en cada render, así que la dependencia del
+     efecto cambiaba siempre: `onLeads` —que es el `setLeads` del panel de arriba— fijaba estado,
+     eso volvía a renderizar, el literal nacía otra vez, y el ciclo no paraba. React no lo atrapa
+     con «Maximum update depth» porque cada vuelta es un commit aparte: no hay error, hay un bucle
+     que consume el proceso hasta que el navegador mata la pestaña. Lo que se ve es
+     «This page couldn't load», sin una sola línea en ningún registro.
+
+     Con una constante del módulo la identidad no cambia, el efecto corre una vez, y se acabó. */
   const vigentes = paginas.leads.length > 0
     ? paginas.leads
-    : desde === 'url' ? porUrl.leads : [];
+    : desde === 'url' ? porUrl.leads : SIN_LEADS;
   useEffect(() => { onLeads(vigentes); }, [vigentes, onLeads]);
 
   const buscarPorUrl = () => {
