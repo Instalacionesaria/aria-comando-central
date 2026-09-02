@@ -42,6 +42,7 @@ import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
+import BarraDePasos from './BarraDePasos';
 import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
 import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
@@ -52,6 +53,7 @@ export default function PanelHerramienta({
   puedeEditar,
   organizacion,
   faltaPermiso,
+  pantalla,
   onIr,
   onEstadoCambiado,
   /* Las dos rutas de SU pantalla. Llegan por props y no están escritas acá porque el mismo
@@ -396,6 +398,16 @@ export default function PanelHerramienta({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/* La barra del método, al pie y siempre: es navegación, no depende de haber generado. */}
+      {onIr ? (
+        <BarraDePasos
+          herramienta={herramienta}
+          estado={estado}
+          pantalla={pantalla}
+          onIr={onIr}
+        />
       ) : null}
     </div>
   );

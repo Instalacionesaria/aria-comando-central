@@ -45,6 +45,9 @@ import PanelProspeccion from '../tools/PanelProspeccion';
    Los valores por omisión son los de ICP & Oferta y existen para que `IcpView` no cambiara. Lo
    que NO hacen es adivinar: `ToolsView` los pasa todos, explícitos. */
 const CATALOGO_ICP = {
+  /* Cuál de las dos pantallas es. La barra del pie la usa para saber si el paso siguiente se puede
+     abrir con un `setActiva` —está acá— o vive del otro lado. */
+  pantalla: 'icp',
   herramientas: FUNDACIONES,
   rutaEstado: '/api/fundaciones/estado',
   rutaGenerar: '/api/fundaciones/generar',
@@ -55,7 +58,7 @@ const CATALOGO_ICP = {
 };
 
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
-  const { herramientas, rutaEstado, rutaGenerar, rutaConversar, capacidadEditar } = catalogo;
+  const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, capacidadEditar } = catalogo;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
      Una herramienta es un formulario que produce un documento y que se puede dar por
@@ -292,6 +295,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           puedeEditar={puedeEditar}
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
+          pantalla={pantalla}
+          onIr={setActiva}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
@@ -305,6 +310,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           puedeEditar={puedeEditar}
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
+          pantalla={pantalla}
           onIr={setActiva}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}

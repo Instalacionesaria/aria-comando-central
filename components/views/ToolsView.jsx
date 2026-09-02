@@ -30,6 +30,9 @@ import MisLeads from '../tools/MisLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
 const CATALOGO_TOOLS = {
+  /* Cuál de las dos pantallas es. Ver el catálogo de ICP & Oferta: lo usa la barra del pie del
+     método, y acá viven los pasos 8 y 9 —el VSL y la Landing—. */
+  pantalla: 'tools',
   herramientas: TOOLS,
   rutaEstado: '/api/tools/estado',
   rutaGenerar: '/api/tools/generar',

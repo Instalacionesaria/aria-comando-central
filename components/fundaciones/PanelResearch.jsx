@@ -53,6 +53,7 @@ import {
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
+import BarraDePasos from './BarraDePasos';
 import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
 import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
@@ -71,6 +72,8 @@ export default function PanelResearch({
   puedeEditar,
   organizacion,
   faltaPermiso,
+  pantalla,
+  onIr,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
      sus rutas igual: que una pantalla tenga una sola herramienta de este tipo no es motivo
@@ -443,6 +446,18 @@ export default function PanelResearch({
             ejecutar el research, conviene regenerar el ICP después.
           </span>
         </div>
+      ) : null}
+
+      {/* La barra del método, al pie y SIEMPRE — no solo con los cinco pasos hechos. Es navegación:
+          quien quiera volver al paso anterior o adelantarse tiene que poder, y el indicador dice
+          cuánto del método está construido aunque este research esté a medias. */}
+      {onIr ? (
+        <BarraDePasos
+          herramienta={herramienta}
+          estado={estado}
+          pantalla={pantalla}
+          onIr={onIr}
+        />
       ) : null}
     </div>
   );
