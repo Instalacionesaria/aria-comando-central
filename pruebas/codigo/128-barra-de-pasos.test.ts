@@ -186,3 +186,26 @@ test('el viaje espera al puente, y un fallo del puente no bloquea el viaje', () 
   const panel = codigo('components/fundaciones/PanelResearch.jsx');
   assert.match(panel, /if \(r\.tipo === 'datos'\) await onEstadoCambiado\(\);/);
 });
+
+test('recargar el estado DEVUELVE la promesa: sin eso, esperar la recarga es mentira', () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * REPORTADO EN VIVO: «le doy click a Continuar al paso 3 pero el formulario del ICP sigue vacío».
+   *
+   * El puente guardaba bien el segmento. Lo que fallaba era el `await`: `recargar` estaba escrito
+   * como `() => { cargar(); }` —con llaves— así que TRAGABA la promesa. `await onEstadoCambiado()`
+   * resolvía al instante, se navegaba al paso 3, y el panel se montaba leyendo el estado ANTERIOR.
+   *
+   * Y no se corregía solo cuando la recarga terminaba: `PanelHerramienta` lee sus valores en un
+   * inicializador de `useState` y su `key` no cambia, así que el dato recién guardado aparecía
+   * recién a la próxima visita a la pestaña.
+   *
+   * Es un defecto de UNA llave, invisible en el tipo y en el build: una función que devuelve
+   * `undefined` se puede esperar igual, y `await undefined` no falla.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const armazon = codigo('components/fundaciones/Fundaciones.jsx');
+  assert.match(
+    armazon,
+    /const recargar = useCallback\(\(\) => cargar\(\), \[cargar\]\);/,
+    '`recargar` volvió a tragarse la promesa: quien la espere va a seguir con el estado viejo',
+  );
+});

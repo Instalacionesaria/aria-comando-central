@@ -134,9 +134,25 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
      más rápido, pero la herencia depende de siete documentos que se cruzan: una actualización
      parcial mal hecha deja al Mapa creyendo que la Oferta no existe. Releer es una petición
      que ya se sabe barata contra un fallo que es muy difícil de ver. */
-  const recargar = useCallback(() => {
-    cargar();
-  }, [cargar]);
+  /**
+   * Volver a leer el estado. **DEVUELVE la promesa, y eso no es un detalle de estilo.**
+   *
+   * Decía `() => { cargar(); }`: tragaba la promesa, así que `await onEstadoCambiado()` resolvía al
+   * instante y quien esperaba seguía con el estado viejo en la mano.
+   *
+   * El defecto que eso produjo, reportado en vivo: el puente del Research al ICP guardaba el
+   * segmento ganador, «esperaba» la recarga, y navegaba al paso 3 — que se montaba leyendo el
+   * estado ANTERIOR y dibujaba su formulario vacío. Y no se arreglaba solo cuando la recarga
+   * terminaba: `PanelHerramienta` lee sus valores en un inicializador de `useState` y su `key` no
+   * cambia, así que el dato recién guardado aparecía recién a la próxima visita.
+   *
+   * Con la promesa devuelta, `setEstado` ya ocurrió cuando el que esperaba continúa, y su
+   * `setActiva` entra en el mismo lote: la herramienta siguiente se monta leyendo lo nuevo.
+   *
+   * Los llamadores que no la esperan siguen funcionando igual — devolver una promesa que nadie mira
+   * no cambia nada para ellos.
+   */
+  const recargar = useCallback(() => cargar(), [cargar]);
 
   /* Mientras no llegó nada todavía, no se pinta la estructura a medias: un formulario que
      aparece vacío y medio segundo después se rellena solo hace que alguien empiece a escribir
