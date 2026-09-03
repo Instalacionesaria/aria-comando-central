@@ -34,7 +34,7 @@
    3. **Distingue rechazo de vacío de "no pude preguntar"** (`ADR-0305`). Los tres
       llegan por ramas distintas del cliente HTTP y se muestran distinto. */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import {
@@ -60,6 +60,10 @@ export default function PanelHerramienta({
   faltaPermiso,
   pantalla,
   onIr,
+  /* Se llegó por «Continuar al paso N» y el formulario tiene que completarse solo. Ver
+     `Fundaciones.jsx`: es un pedido de una sola vez, y acá se consume al montarse. */
+  rellenarAlLlegar,
+  onRellenadoAlLlegar,
   onEstadoCambiado,
   /* Las dos rutas de SU pantalla. Llegan por props y no están escritas acá porque el mismo
      panel sirve a ICP & Oferta y a Tools, que tienen capacidades distintas: una ruta escrita
@@ -184,6 +188,38 @@ export default function PanelHerramienta({
     });
     setGuardado(false);
   };
+
+  /* ── EL RELLENO AUTOMÁTICO AL LLEGAR POR EL MÉTODO ─────────────────────────
+   *
+   * Corre UNA vez, al montarse, y solo si se llegó por «Continuar al paso N», hay de dónde sacar
+   * los datos, y el formulario está en blanco. Las tres condiciones tienen su motivo:
+   *
+   *   · solo por el botón del método: abrir la pestaña a mano no gasta una inferencia;
+   *   · solo con contexto heredado presente: sin él el servidor rechaza igual, y el rechazo se vería
+   *     como un error rojo en una pantalla a la que se acaba de llegar;
+   *   · solo con el formulario vacío: lo que alguien escribió y guardó no se toca. Un formulario con
+   *     UN campo escrito es un formulario en el que alguien ya trabajó, y el relleno queda a un clic
+   *     en el botón de al lado.
+   *
+   * El `ref` evita el doble disparo del modo estricto de React en desarrollo: son dos inferencias
+   * por una sola llegada, y el segundo resultado pisaría al primero a mitad de camino. */
+  const yaRellenoAlLlegar = useRef(false);
+  useEffect(() => {
+    if (!rellenarAlLlegar || yaRellenoAlLlegar.current) return;
+    yaRellenoAlLlegar.current = true;
+    if (onRellenadoAlLlegar) onRellenadoAlLlegar();
+
+    const hayContexto = heredadas.length > 0 && criticasQueFaltan.length < heredadas.length;
+    const enBlanco = camposDe(herramienta).every((campo) => {
+      const v = valores[campo.id];
+      // Un valor por omisión no es algo que alguien escribió: el formulario nace con él.
+      return !v || v.trim() === '' || v === campo.valorPorOmision;
+    });
+    if (rutaRellenar && puedeEditar && hayContexto && enBlanco) void rellenar();
+    // Solo al montar. Las referencias que lee son las del primer render a propósito: es la
+    // fotografía del formulario tal como se lo encontró al llegar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const generar = async (ajuste, v = valores) => {
     setError(null);

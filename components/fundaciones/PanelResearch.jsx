@@ -48,10 +48,8 @@ import {
   aValoresDeFormulario,
   camposDe,
   conValoresPorOmision,
-  idsDeCampos,
   obligatoriosQueFaltan,
 } from '@/lib/fundaciones/campos';
-import { nombreDelSegmento } from '@/lib/fundaciones/segmento';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
@@ -59,17 +57,6 @@ import BarraDePasos from './BarraDePasos';
 import ChatDeHerramienta from './ChatDeHerramienta';
 import Documento from './Documento';
 import SelectorDeModo, { MODO_AGENTE, MODO_FORMULARIO } from './SelectorDeModo';
-
-/**
- * El identificador del ICP y el de su campo de nicho. **Son los del hub y no se renumeran.**
- *
- * Están acá con nombre en vez de sueltos en el código: `3` y `'t4-niche'` son dos números mágicos
- * cuya relación —la herramienta 3 usa campos con prefijo `t4-`— es una rareza heredada que ya está
- * documentada en `herramientas.ts`, y escribirlos crudos dentro de una función invita a
- * «corregirla».
- */
-const ICP = 3;
-const CAMPO_NICHO_DEL_ICP = 't4-niche';
 
 const TITULOS = [
   'Encontrar los segmentos',
@@ -227,50 +214,6 @@ export default function PanelResearch({
      servidor. Ver `obligatoriosQueFaltan`: antes eran dos constantes con los identificadores
      escritos a mano, acá y solo acá. */
   const faltan = obligatoriosQueFaltan(herramienta, valores);
-
-  /* ── EL PUENTE AL ICP ──────────────────────────────────────────────────────
-   *
-   * Puerto de `goToICP` del hub. Continuar al paso 3 no es solo cambiar de pestaña: le deja al ICP
-   * el NOMBRE DEL SEGMENTO que el research eligió, así su formulario no arranca en blanco pidiendo
-   * que alguien vuelva a escribir a mano el nicho —y lo escriba distinto de como lo nombró la
-   * investigación—.
-   *
-   * Tres condiciones, las tres del hub y las tres con motivo:
-   *
-   *   1. **Solo con los cinco pasos.** El nombre sale del paso 5, que es el que elige. Con cuatro
-   *      no hay segmento ganador que copiar.
-   *   2. **Solo si el nicho del ICP está vacío.** NUNCA pisa lo que alguien escribió: quien afinó
-   *      su nicho a mano lo hizo por algo, y perderlo al pasar de pestaña sería peor que no llenar
-   *      nada.
-   *   3. **Solo `niche`, y ningún otro campo.** Los demás —ingresos, edad, país, ocupación,
-   *      dolores, deseos— no se pueden sacar del texto sin inventarlos, y un dato inventado en el
-   *      formulario se ve idéntico a uno que la persona escribió. El resto del research igual llega
-   *      al ICP, pero por donde corresponde: el prompt, con el paso 5 y los dolores del paso 2
-   *      enteros. Ver `contextoDeResearch`.
-   *
-   * Se manda el juego COMPLETO de valores del ICP y no solo el nicho, porque el servidor rellena
-   * con `(no especificado)` todo campo que no venga: mandar uno solo borraría los otros siete. */
-  const pasarElSegmentoAlIcp = async () => {
-    if (!puedeEditar || hechos < PASOS_RESEARCH) return;
-
-    const idsDelIcp = idsDeCampos(ICP);
-    const actuales = aValoresDeFormulario(idsDelIcp, estado.perfil[ICP]);
-    if (actuales[CAMPO_NICHO_DEL_ICP] && actuales[CAMPO_NICHO_DEL_ICP].trim() !== '') return;
-
-    // Del paso 5; si no se pudo leer un nombre, el nicho que se usó para buscar.
-    const nombre = nombreDelSegmento(salidas[PASOS_RESEARCH - 1] || '') || valores['mr-niche'] || '';
-    if (nombre.trim() === '') return;
-
-    const r = await pedir(rutaEstado, {
-      metodo: 'POST',
-      cuerpo: { herramienta: ICP, valores: { ...actuales, [CAMPO_NICHO_DEL_ICP]: nombre } },
-      espera: ESPERA_DE_RUTA_LARGA_MS,
-    });
-    /* Si falla no se avisa acá y tampoco se frena la navegación: el paso 3 se abre igual y su campo
-       queda vacío, que es exactamente lo que pasaba antes de que este puente existiera. Cortar el
-       viaje por no haber podido prellenar un campo sería cambiar un inconveniente por un bloqueo. */
-    if (r.tipo === 'datos') await onEstadoCambiado();
-  };
 
   return (
     <div className="cl-page">
@@ -439,7 +382,6 @@ export default function PanelResearch({
           estado={estado}
           pantalla={pantalla}
           onIr={onIr}
-          alSalir={pasarElSegmentoAlIcp}
         />
       ) : null}
 

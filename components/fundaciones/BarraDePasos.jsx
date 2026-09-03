@@ -25,14 +25,7 @@
 import { pasoAnterior, pasoSiguiente, TRAVESIA, posicionEnLaTravesia } from '@/lib/fundaciones/travesia';
 import { pasoCompleto } from '@/lib/fundaciones/estado';
 
-/**
- * `alSalir` corre ANTES de navegar, y devuelve una promesa.
- *
- * Existe para el puente del Research al ICP: continuar al paso 3 no es solo cambiar de pestaña, es
- * dejarle al ICP el segmento que el research eligió. La barra no sabe qué hace ese trabajo —lo pone
- * el panel que la usa— porque el puente es de UNA herramienta y la barra es de las nueve.
- */
-export default function BarraDePasos({ herramienta, estado, pantalla, onIr, alSalir }) {
+export default function BarraDePasos({ herramienta, estado, pantalla, onIr }) {
   const posicion = posicionEnLaTravesia(herramienta.id);
   // Prospección y el Espía no son pasos del método: no se dibuja nada.
   if (posicion === 0) return null;
@@ -72,19 +65,17 @@ export default function BarraDePasos({ herramienta, estado, pantalla, onIr, alSa
         ))}
       </div>
 
+      {/* `rellenar: true` en el botón de continuar: seguir por el método significa llegar con el
+          formulario completo. Es lo que distingue este botón de la pestaña de arriba —que solo
+          abre— y es lo que se pidió de él: que haga su trabajo, no que lleve a una pantalla en
+          blanco. */}
       {siguiente === null ? (
         <span className="fd-paso-nota">Es el último paso del método.</span>
       ) : puedeIr(siguiente) ? (
         <button
           type="button"
           className="fd-btn"
-          onClick={async () => {
-            /* El trabajo previo se espera ANTES de navegar. Sin el `await`, la herramienta siguiente
-               se monta leyendo el estado de antes: llenaría su formulario con lo que había, y el dato
-               recién guardado aparecería recién a la próxima visita. */
-            if (alSalir) await alSalir(siguiente.herramienta.id);
-            onIr(siguiente.herramienta.id);
-          }}
+          onClick={() => onIr(siguiente.herramienta.id, { rellenar: true })}
         >
           Continuar al paso {siguiente.posicion} →
         </button>

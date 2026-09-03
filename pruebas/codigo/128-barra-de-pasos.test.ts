@@ -21,6 +21,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 import { join } from 'node:path';
 
 import { RAIZ } from '../apoyo/fuente.ts';
@@ -90,7 +92,7 @@ test('la barra NAVEGA y no genera', () => {
   const barra = codigo('components/fundaciones/BarraDePasos.jsx');
   assert.ok(!/pedir\(/.test(barra), 'la barra hace una petición: está generando');
   assert.ok(!/rutaGenerar|correrTodo|generar\(/.test(barra), 'la barra dispara una generación');
-  assert.match(barra, /onIr\(siguiente\.herramienta\.id\)/);
+  assert.match(barra, /onIr\(siguiente\.herramienta\.id, \{ rellenar: true \}\)/);
 });
 
 test('no se dibuja un botón que no puede cumplir', () => {
@@ -118,73 +120,6 @@ test('la barra está en los dos paneles del método', () => {
   const armazon = codigo('components/fundaciones/Fundaciones.jsx');
   assert.match(armazon, /pantalla: 'icp'/);
   assert.match(codigo('components/views/ToolsView.jsx'), /pantalla: 'tools'/);
-});
-
-// ─── El puente del Research al ICP ─────────────────────────────────────────
-
-test('el nombre del segmento se saca del paso 5, y el preámbulo del modelo no cuenta', async () => {
-  /* Puerto verbatim de `extractSegmentName` del hub. Se copia el ALGORITMO porque allá lleva meses
-     corriendo contra las salidas reales del modelo: su forma es el resultado de esa medición, y
-     reescribirlo «mejor» significa fallar en textos que allá funcionan. */
-  const { nombreDelSegmento } = await import('../../lib/fundaciones/segmento.ts');
-
-  // Primera pasada: la línea que nombra el segmento explícitamente.
-  assert.equal(
-    nombreDelSegmento(
-      'Perfecto, ahora que analicé los cuatro.\n\n**SEGMENTO GANADOR: Agencias de marketing de 5 a 20 personas**\n\nCumple los cuatro criterios.',
-    ),
-    'Agencias de marketing de 5 a 20 personas',
-  );
-
-  /* Segunda pasada: sin esa línea, el primer título que no sea una frase de transición. Sin esta
-     lista, el nicho del ICP terminaría siendo «Ahora te presento el análisis» — y eso se propaga a
-     todo lo que hereda del avatar. */
-  assert.equal(
-    nombreDelSegmento('Ahora te presento el análisis.\n\nClínicas dentales con dos o más sedes\n\nSon las mejores.'),
-    'Clínicas dentales con dos o más sedes',
-  );
-
-  // Y sin nada legible devuelve vacío: es preferible no llenar el campo a llenarlo mal.
-  assert.equal(nombreDelSegmento(''), '');
-  assert.equal(nombreDelSegmento('Analizando los segmentos...'), '');
-});
-
-test('el puente llena el nicho del ICP, NO pisa lo escrito, y manda los ocho campos', () => {
-  const panel = codigo('components/fundaciones/PanelResearch.jsx');
-
-  // Solo con los cinco pasos: el nombre sale del paso 5, que es el que elige.
-  assert.match(panel, /if \(!puedeEditar \|\| hechos < PASOS_RESEARCH\) return;/);
-
-  /* NUNCA pisa lo que alguien escribió. Quien afinó su nicho a mano lo hizo por algo, y perderlo al
-     cambiar de pestaña sería peor que no llenar nada. */
-  assert.match(
-    panel,
-    /if \(actuales\[CAMPO_NICHO_DEL_ICP\] && actuales\[CAMPO_NICHO_DEL_ICP\]\.trim\(\) !== ''\) return;/,
-  );
-
-  /* Se manda el juego COMPLETO de valores del ICP. El servidor rellena con `(no especificado)` todo
-     campo que no venga (`aValoresDeAlmacen`), así que mandar solo el nicho borraría los otros siete
-     — en silencio, y recién se notaría al generar el avatar. */
-  assert.match(panel, /valores: \{ \.\.\.actuales, \[CAMPO_NICHO_DEL_ICP\]: nombre \}/);
-  assert.match(panel, /const actuales = aValoresDeFormulario\(idsDelIcp, estado\.perfil\[ICP\]\)/);
-
-  // Y solo el nicho: los otros campos no se pueden sacar del texto sin inventarlos.
-  const puente = panel.slice(panel.indexOf('const pasarElSegmentoAlIcp'), panel.indexOf('return ('));
-  const camposTocados = [...puente.matchAll(/'t4-[a-z]+'/g)].map((m) => m[0]);
-  assert.deepEqual(camposTocados, [], 'el puente escribe campos del ICP por su nombre literal');
-});
-
-test('el viaje espera al puente, y un fallo del puente no bloquea el viaje', () => {
-  /* Sin el `await`, el ICP se monta leyendo el estado anterior: llenaría su formulario con lo que
-     había y el nicho recién guardado aparecería recién a la próxima visita. */
-  const barra = codigo('components/fundaciones/BarraDePasos.jsx');
-  assert.match(barra, /if \(alSalir\) await alSalir\(siguiente\.herramienta\.id\);/);
-
-  /* Y si el guardado falla, se navega igual: el paso 3 se abre con su campo vacío, que es lo que
-     pasaba antes de que el puente existiera. Cortar el viaje por no haber podido prellenar un campo
-     sería cambiar un inconveniente por un bloqueo. */
-  const panel = codigo('components/fundaciones/PanelResearch.jsx');
-  assert.match(panel, /if \(r\.tipo === 'datos'\) await onEstadoCambiado\(\);/);
 });
 
 test('recargar el estado DEVUELVE la promesa: sin eso, esperar la recarga es mentira', () => {
@@ -262,4 +197,51 @@ test('un valor inventado en un desplegable se descarta, también acá', () => {
      uno inventado apaga la rama sin que nada falle. */
   const relleno = codigo('lib/fundaciones/relleno.ts');
   assert.match(relleno, /campo\.opciones\.some\(\(o\) => o\.valor === texto\) \? texto : ''/);
+});
+
+// ─── Llegar por el método significa llegar con el formulario completo ─────────
+
+test('«Continuar al paso N» pide el relleno, y la pestaña de arriba no', () => {
+  /* Reportado tres veces: «Continuar al paso 3 no me completa el formulario del ICP». En ARIA-brain
+     ese botón solo navega y el research se ve como chips arriba del formulario; acá se decidió que
+     llegar por el método signifique llegar con los campos completos. Lo que distingue este botón de
+     la pestaña de arriba —que solo abre— es exactamente ese pedido. */
+  const barra = codigo('components/fundaciones/BarraDePasos.jsx');
+  assert.match(barra, /onIr\(siguiente\.herramienta\.id, \{ rellenar: true \}\)/);
+
+  const armazon = codigo('components/fundaciones/Fundaciones.jsx');
+  // El pedido se guarda POR herramienta y se entrega solo a la que se pidió.
+  assert.match(armazon, /setRellenarAlLlegar\(opciones && opciones\.rellenar \? id : null\)/);
+  assert.match(armazon, /rellenarAlLlegar=\{rellenarAlLlegar === herramienta\.id\}/);
+  // Y las pestañas de arriba siguen abriendo sin pedir nada: `setActiva` a secas.
+  assert.match(armazon, /onClick=\{\(\) => setActiva\(h\.id\)\}/);
+});
+
+test('el relleno al llegar corre UNA vez, y solo sobre un formulario en blanco con contexto', () => {
+  /* Tres condiciones y un guard, cada uno contra un gasto o una pérdida concreta:
+       · el `ref`, contra el doble disparo del modo estricto — dos inferencias por una llegada;
+       · el contexto presente, contra un rechazo rojo en una pantalla a la que se acaba de llegar;
+       · el formulario en blanco, contra pisar lo que alguien escribió y guardó. */
+  const panel = codigo('components/fundaciones/PanelHerramienta.jsx');
+  const efecto = panel.slice(panel.indexOf('const yaRellenoAlLlegar = useRef(false);'), panel.indexOf('const generar = async'));
+
+  assert.match(efecto, /if \(!rellenarAlLlegar \|\| yaRellenoAlLlegar\.current\) return;/);
+  assert.match(efecto, /yaRellenoAlLlegar\.current = true;/);
+  assert.match(efecto, /const hayContexto = heredadas\.length > 0 && criticasQueFaltan\.length < heredadas\.length;/);
+  assert.match(efecto, /if \(rutaRellenar && puedeEditar && hayContexto && enBlanco\) void rellenar\(\);/);
+  // El pedido se consume al llegar, se rellene o no: si quedara puesto, la próxima visita manual
+  // a esa pestaña dispararía una inferencia que nadie pidió.
+  assert.match(efecto, /if \(onRellenadoAlLlegar\) onRellenadoAlLlegar\(\);/);
+  // Y corre al montar, con dependencias vacías: no es un bucle, es una fotografía de la llegada.
+  assert.match(efecto, /\}, \[\]\);/);
+});
+
+test('el puente con expresión regular se fue, y no volvió por otro nombre', () => {
+  /* Sobre un research real devolvió media oración del medio de un párrafo —«comunicación
+     automatizada, portales de reporte… es decir, la cura exacta para»— y la guardó como nicho. Un
+     extractor de texto no sabe qué es un segmento; el relleno con el modelo lo reemplaza entero. */
+  const { existsSync } = require('node:fs');
+  assert.ok(!existsSync(join(RAIZ, 'lib/fundaciones/segmento.ts')), 'el extractor por regex sigue en el repo');
+  const research = codigo('components/fundaciones/PanelResearch.jsx');
+  assert.ok(!/nombreDelSegmento|pasarElSegmentoAlIcp|alSalir/.test(research), 'el Research sigue copiando el nicho a mano');
 });

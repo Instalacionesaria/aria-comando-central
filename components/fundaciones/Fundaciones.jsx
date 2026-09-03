@@ -94,6 +94,25 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const [problema, setProblema] = useState(null);
   const [activa, setActiva] = useState(catalogo.herramientas[0].id);
 
+  /* ── LLEGAR CON EL FORMULARIO YA COMPLETO ─────────────────────────────────
+     Reportado por Kevin, tres veces: «Continuar al paso 3 no me completa el formulario del ICP».
+     En ARIA-brain ese botón solo navega y el research se ve como chips arriba del formulario, con
+     los campos vacíos. Acá se decidió que llegar por el botón del método signifique llegar con los
+     campos completos: quien navega a un paso desde el anterior está construyendo la cadena, y el
+     paso siguiente tiene todo lo que necesita para proponerse solo.
+
+     Se guarda A QUÉ herramienta se le pidió, y ella lo consume al montarse. Es un pedido, no un
+     estado permanente: si quedara puesto, la próxima visita manual a esa pestaña dispararía una
+     inferencia que nadie pidió. */
+  const [rellenarAlLlegar, setRellenarAlLlegar] = useState(null);
+
+  /* Navegar a una herramienta. `opciones.rellenar` es lo que la barra del método pide al continuar:
+     que la herramienta siguiente se llene con lo que hereda, antes de que nadie tenga que escribir. */
+  const irA = useCallback((id, opciones) => {
+    setActiva(id);
+    setRellenarAlLlegar(opciones && opciones.rellenar ? id : null);
+  }, []);
+
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([
       pedir('/api/auth/sesion'),
@@ -315,7 +334,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           pantalla={pantalla}
-          onIr={setActiva}
+          onIr={irA}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
@@ -330,7 +349,9 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           pantalla={pantalla}
-          onIr={setActiva}
+          onIr={irA}
+          rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
+          onRellenadoAlLlegar={() => setRellenarAlLlegar(null)}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
