@@ -36,10 +36,10 @@ import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import { camposDe, claveCorta } from './campos.ts';
 import { NOMBRE_DE_LA_HERRAMIENTA, esquemaDeCampos } from './conversacion.ts';
 import type { EstadoDeFundaciones } from './estado.ts';
-import { FUENTES_POR_HERRAMIENTA, fuentes } from './herencia.ts';
 import type { Herramienta } from './herramientas.ts';
 import { pedirExterno } from '../http/cliente.ts';
 import { MODELO } from './generacion.ts';
+import { datosDe } from './prompts.ts';
 
 const API = 'https://api.anthropic.com/v1/messages';
 const VERSION_API = '2023-06-01';
@@ -55,24 +55,46 @@ export const TECHO_DE_TOKENS = 2_000;
 export const CARACTERES_POR_FUENTE = 3_000;
 
 /**
- * El contexto que esta herramienta hereda, en texto.
+ * El contexto que esta herramienta hereda, en texto. **El MISMO que lee su prompt.**
  *
- * Sale de `FUENTES_POR_HERRAMIENTA` —la misma lista que dibuja los chips de «Hereda de»— así que lo
- * que el modelo lee para rellenar es exactamente lo que la pantalla promete que hereda. Una segunda
- * lista acá haría que el formulario se rellenara con algo que los chips no nombran.
+ * ── LA PRIMERA VERSIÓN LEÍA MENOS QUE LA GENERACIÓN, Y SE VIO EN PANTALLA ──
+ *
+ * Salía de `FUENTES_POR_HERRAMIENTA`, la lista que dibuja los chips de «Hereda de». Para el ICP esa
+ * lista dice solo `marketResearch` — pero el prompt del ICP (`datosDeIcp`) lee ADEMÁS la ficha de
+ * negocio (`_profileContext`). Así que el relleno completaba el nicho y los dolores, que están en el
+ * research, y dejaba vacío lo que estaba en la ficha. Kevin lo describió exacto: *«esto es como un
+ * dominó: el ICP debe usar la información de Tu ficha y de Research»*.
+ *
+ * Ahora el contexto se toma del mismo constructor de datos que arma el prompt —`datosDe(id)`— y se
+ * quedan las claves de contexto que ese constructor produce (`_researchContext`, `_profileContext`,
+ * `_crossContext`, `_icpContext`, `_pricingContext`, `_growthContext`, `_vslCommitments`). Lo que el
+ * modelo lee para proponer los campos es, por construcción, lo que va a leer para generar el
+ * entregable. No puede haber una fuente que una mitad use y la otra no.
+ *
+ * Los valores del formulario se pasan VACÍOS al constructor: acá se quiere el contexto heredado, no
+ * lo que la persona ya escribió — eso ya está en el formulario y no hay que proponérselo de vuelta.
  */
 export function contextoHeredado(h: Herramienta, estado: EstadoDeFundaciones): string {
-  const todas = fuentes(estado);
+  const datos = datosDe(h.id, {}, estado);
   const partes: string[] = [];
 
-  for (const clave of FUENTES_POR_HERRAMIENTA[h.id] || []) {
-    const fuente = todas[clave];
-    if (!fuente || !fuente.presente) continue;
-    partes.push(`### ${fuente.etiqueta}\n${fuente.completo.slice(0, CARACTERES_POR_FUENTE)}`);
+  for (const [clave, valor] of Object.entries(datos)) {
+    if (!ES_CONTEXTO.test(clave)) continue;
+    if (typeof valor !== 'string' || valor.trim() === '') continue;
+    partes.push(valor.slice(0, CARACTERES_POR_FUENTE));
   }
 
   return partes.join('\n\n');
 }
+
+/**
+ * Qué claves del constructor son CONTEXTO heredado y no derivados del formulario.
+ *
+ * Los constructores producen dos clases de claves con guion bajo: las de contexto (`…Context` y los
+ * compromisos del VSL) y los derivados de lo que la persona eligió (`_isB2C`, `_hasProof`, `_tried`,
+ * `_ghlNombre`…). Los segundos no son datos de donde sacar nada: son banderas del propio formulario.
+ */
+const ES_CONTEXTO = /^_([a-zA-Z]+Context|vslCommitments)$/;
 
 /** Las instrucciones. Derivadas del catálogo, como las del agente conversacional. */
 export function instruccionesDeRelleno(h: Herramienta, contexto: string): string {

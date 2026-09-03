@@ -160,13 +160,26 @@ test('el relleno usa EL MISMO esquema que el agente conversacional', async () =>
   assert.deepEqual(dentroDelChat, suelto, 'el chat y el relleno dejaron de compartir el esquema');
 });
 
-test('el relleno lee lo que la pantalla PROMETE que se hereda', async () => {
-  /* El contexto sale de `FUENTES_POR_HERRAMIENTA`, la misma lista que dibuja los chips de «Hereda
-     de». Una segunda lista haría que el formulario se rellenara con algo que los chips no nombran, y
-     nadie podría explicar de dónde salió un dato. */
+test('el relleno lee EXACTAMENTE lo que el prompt de la herramienta va a leer', async () => {
+  /* La primera versión leía los chips de «Hereda de», que para el ICP dicen solo `marketResearch`.
+     Pero el prompt del ICP lee además la ficha de negocio, así que el relleno completaba el nicho y
+     los dolores y dejaba vacío lo que estaba en la ficha. Ahora sale del mismo constructor que arma
+     el prompt: no puede haber una fuente que una mitad use y la otra no. */
   const relleno = codigo('lib/fundaciones/relleno.ts');
-  assert.match(relleno, /FUENTES_POR_HERRAMIENTA\[h\.id\]/);
-  assert.match(relleno, /fuente\.completo\.slice\(0, CARACTERES_POR_FUENTE\)/);
+  assert.match(relleno, /datosDe\(h\.id, \{\}, estado\)/);
+  assert.ok(!/FUENTES_POR_HERRAMIENTA/.test(relleno), 'volvió a leer la lista de los chips, que es más corta que el prompt');
+
+  // Y se comprueba contra el ICP real: con ficha y research presentes, los dos llegan al relleno.
+  const { contextoHeredado } = await import('../../lib/fundaciones/relleno.ts');
+  const { herramienta } = await import('../../lib/fundaciones/herramientas.ts');
+  const { estadoVacio } = await import('../../lib/fundaciones/estado.ts');
+  const e = estadoVacio();
+  e.perfil = { 0: { biz: 'ARIA IA', niche: 'agencias', service: 'sistemas de IA', price: '$3k', pain: 'leads', result: '15 llamadas', before: 'ads' } };
+  e.researchSalidas = ['s1', 'DOLORES DEL MERCADO', 's3', 's4', 'SEGMENTO GANADOR: agencias PPC'];
+  const ctx = contextoHeredado(herramienta(3)!, e);
+  assert.ok(ctx.includes('SEGMENTO GANADOR'), 'el research no llega al relleno del ICP');
+  assert.ok(ctx.includes('ARIA IA'), 'la ficha no llega al relleno del ICP: el dominó se corta en el paso 1');
+  assert.ok(ctx.includes('DOLORES DEL MERCADO'), 'los dolores del paso 2 no llegan');
 });
 
 test('sin contexto no se llama al modelo', () => {
