@@ -197,9 +197,16 @@ export default function PanelHerramienta({
    *   · solo por el botón del método: abrir la pestaña a mano no gasta una inferencia;
    *   · solo con contexto heredado presente: sin él el servidor rechaza igual, y el rechazo se vería
    *     como un error rojo en una pantalla a la que se acaba de llegar;
-   *   · solo con el formulario vacío: lo que alguien escribió y guardó no se toca. Un formulario con
-   *     UN campo escrito es un formulario en el que alguien ya trabajó, y el relleno queda a un clic
-   *     en el botón de al lado.
+   *   · solo si queda algo por llenar: lo que ya tiene texto no se toca nunca —el relleno solo
+   *     escribe en campos vacíos—, así que con todo completo no hay nada que hacer ni que pagar.
+   *
+   * ── LA REGLA ANTERIOR ERA «SOLO CON EL FORMULARIO EN BLANCO», Y SE CAYÓ EN EL PRIMER USO ──
+   *
+   * Protegía de gastar una inferencia sobre un formulario en el que alguien ya trabajó. Pero el
+   * primer relleno dejó cuatro campos guardados, y a la segunda vez que Kevin apretó «Continuar al
+   * paso 3» el botón no hizo nada: *«no llena nada aún, no completa nada»*. Un campo con texto
+   * bastaba para apagarlo, y desde afuera eso es indistinguible de un botón roto. Lo que hay que
+   * proteger es lo escrito, y eso ya lo protege el relleno al no pisar; el resto se completa.
    *
    * El `ref` evita el doble disparo del modo estricto de React en desarrollo: son dos inferencias
    * por una sola llegada, y el segundo resultado pisaría al primero a mitad de camino. */
@@ -210,12 +217,12 @@ export default function PanelHerramienta({
     if (onRellenadoAlLlegar) onRellenadoAlLlegar();
 
     const hayContexto = heredadas.length > 0 && criticasQueFaltan.length < heredadas.length;
-    const enBlanco = camposDe(herramienta).every((campo) => {
+    const faltaAlgo = camposDe(herramienta).some((campo) => {
       const v = valores[campo.id];
       // Un valor por omisión no es algo que alguien escribió: el formulario nace con él.
       return !v || v.trim() === '' || v === campo.valorPorOmision;
     });
-    if (rutaRellenar && puedeEditar && hayContexto && enBlanco) void rellenar();
+    if (rutaRellenar && puedeEditar && hayContexto && faltaAlgo) void rellenar();
     // Solo al montar. Las referencias que lee son las del primer render a propósito: es la
     // fotografía del formulario tal como se lo encontró al llegar.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -230,18 +230,23 @@ test('«Continuar al paso N» pide el relleno, y la pestaña de arriba no', () =
   assert.match(armazon, /onClick=\{\(\) => setActiva\(h\.id\)\}/);
 });
 
-test('el relleno al llegar corre UNA vez, y solo sobre un formulario en blanco con contexto', () => {
+test('el relleno al llegar corre UNA vez, con contexto, y mientras quede algo por llenar', () => {
   /* Tres condiciones y un guard, cada uno contra un gasto o una pérdida concreta:
        · el `ref`, contra el doble disparo del modo estricto — dos inferencias por una llegada;
        · el contexto presente, contra un rechazo rojo en una pantalla a la que se acaba de llegar;
-       · el formulario en blanco, contra pisar lo que alguien escribió y guardó. */
+       · que quede algo vacío, contra pagar una inferencia que no puede escribir nada.
+     La regla anterior exigía el formulario ENTERO en blanco y se cayó en el primer uso: cuatro
+     campos guardados por el primer relleno bastaron para que el botón no hiciera nada la segunda
+     vez. Lo escrito lo protege el relleno al no pisar, no la condición de entrada. */
   const panel = codigo('components/fundaciones/PanelHerramienta.jsx');
   const efecto = panel.slice(panel.indexOf('const yaRellenoAlLlegar = useRef(false);'), panel.indexOf('const generar = async'));
 
   assert.match(efecto, /if \(!rellenarAlLlegar \|\| yaRellenoAlLlegar\.current\) return;/);
   assert.match(efecto, /yaRellenoAlLlegar\.current = true;/);
   assert.match(efecto, /const hayContexto = heredadas\.length > 0 && criticasQueFaltan\.length < heredadas\.length;/);
-  assert.match(efecto, /if \(rutaRellenar && puedeEditar && hayContexto && enBlanco\) void rellenar\(\);/);
+  assert.match(efecto, /const faltaAlgo = camposDe\(herramienta\)\.some\(/);
+  assert.ok(!/const enBlanco = camposDe\(herramienta\)\.every\(/.test(efecto), 'volvió la regla del formulario entero en blanco');
+  assert.match(efecto, /if \(rutaRellenar && puedeEditar && hayContexto && faltaAlgo\) void rellenar\(\);/);
   // El pedido se consume al llegar, se rellene o no: si quedara puesto, la próxima visita manual
   // a esa pestaña dispararía una inferencia que nadie pidió.
   assert.match(efecto, /if \(onRellenadoAlLlegar\) onRellenadoAlLlegar\(\);/);
