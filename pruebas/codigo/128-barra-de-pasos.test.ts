@@ -209,3 +209,57 @@ test('recargar el estado DEVUELVE la promesa: sin eso, esperar la recarga es men
     '`recargar` volvió a tragarse la promesa: quien la espere va a seguir con el estado viejo',
   );
 });
+
+// ─── Rellenar el formulario con lo que ya se generó ────────────────────────
+
+test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
+  /* Son dos caminos que llenan los mismos campos del mismo formulario. Con dos esquemas, uno
+     aceptaría un campo que el otro rechaza, y el defecto se vería como «por el chat sí y por el
+     relleno no» — sin que nada falle en ninguno de los dos. */
+  const { esquemaDeCampos, esquemaDeRespuestas } = await import('../../lib/fundaciones/conversacion.ts');
+  const { herramienta } = await import('../../lib/fundaciones/herramientas.ts');
+  const icp = herramienta(3)!;
+
+  const suelto = esquemaDeCampos(icp);
+  const dentroDelChat = (esquemaDeRespuestas(icp)['properties'] as Record<string, unknown>)['respuestas'];
+  assert.deepEqual(dentroDelChat, suelto, 'el chat y el relleno dejaron de compartir el esquema');
+});
+
+test('el relleno lee lo que la pantalla PROMETE que se hereda', async () => {
+  /* El contexto sale de `FUENTES_POR_HERRAMIENTA`, la misma lista que dibuja los chips de «Hereda
+     de». Una segunda lista haría que el formulario se rellenara con algo que los chips no nombran, y
+     nadie podría explicar de dónde salió un dato. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  assert.match(relleno, /FUENTES_POR_HERRAMIENTA\[h\.id\]/);
+  assert.match(relleno, /fuente\.completo\.slice\(0, CARACTERES_POR_FUENTE\)/);
+});
+
+test('sin contexto no se llama al modelo', () => {
+  /* El prompt saldría con la sección vacía y el modelo llenaría los campos con lo típico del rubro
+     —justo lo que sus reglas le prohíben— con la inferencia pagada igual. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  const corte = relleno.indexOf("if (contexto.trim() === '')");
+  const llamada = relleno.indexOf('pedirExterno<RespuestaDeAnthropic>');
+  assert.ok(corte > 0 && llamada > corte, 'se llama al modelo antes de comprobar que haya contexto');
+});
+
+test('el relleno PROPONE: no guarda ni genera', () => {
+  /* Un dato que no se vio antes de guardarse es indistinguible de uno que la persona escribió, y de
+     estos campos heredan las ocho herramientas siguientes. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  assert.ok(!/guardarInputs|guardarVersion|guardarResearch/.test(relleno), 'el relleno escribe en el almacén');
+
+  const panel = codigo('components/fundaciones/PanelHerramienta.jsx');
+  const cuerpo = panel.slice(panel.indexOf('const rellenar = async'), panel.indexOf('const generar = async'));
+  assert.ok(!/pedir\(rutaEstado/.test(cuerpo), 'el botón de rellenar guarda sin que nadie lo pida');
+  assert.ok(!/pedir\(rutaGenerar/.test(cuerpo), 'el botón de rellenar genera');
+  // Y no pisa con vacío lo que ya estaba escrito.
+  assert.match(cuerpo, /if \(v && v\.trim\(\) !== ''\) proximo\[campo\.id\] = v;/);
+});
+
+test('un valor inventado en un desplegable se descarta, también acá', () => {
+  /* Misma defensa que en el chat: el `SKILL.md` del VSL deriva booleanos del principio del valor, y
+     uno inventado apaga la rama sin que nada falle. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  assert.match(relleno, /campo\.opciones\.some\(\(o\) => o\.valor === texto\) \? texto : ''/);
+});

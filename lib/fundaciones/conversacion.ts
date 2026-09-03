@@ -169,10 +169,18 @@ function esquemaDeCampo(campo: Campo): Record<string, unknown> {
  * research las manda el servidor enteras en vez de que el navegador agregue la última — y es lo que
  * hace comprobable la regla de `arranca`.
  */
-export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
+export function esquemaDeCampos(h: Herramienta): Record<string, unknown> {
   const propiedades: Record<string, unknown> = {};
   for (const campo of camposDe(h)) propiedades[claveCorta(campo.id)] = esquemaDeCampo(campo);
+  return {
+    type: 'object',
+    properties: propiedades,
+    required: [...claves(h)],
+    additionalProperties: false,
+  };
+}
 
+export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
   return {
     type: 'object',
     properties: {
@@ -182,12 +190,11 @@ export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
           'Lo que la persona va a leer. Una sola pregunta, o el resumen final. En español ' +
           'rioplatense, corto, sin viñetas salvo en el resumen final.',
       },
-      respuestas: {
-        type: 'object',
-        properties: propiedades,
-        required: [...claves(h)],
-        additionalProperties: false,
-      },
+      /* El MISMO bloque que usa el relleno desde el contexto heredado (`lib/fundaciones/relleno.ts`).
+         Compartirlo no es ahorro: son dos caminos que llenan los mismos campos del mismo formulario,
+         y con dos esquemas uno aceptaría un campo que el otro rechaza — el defecto se vería como
+         «por el chat sí se guarda y por el relleno no». */
+      respuestas: esquemaDeCampos(h),
       listo: {
         type: 'boolean',
         description:

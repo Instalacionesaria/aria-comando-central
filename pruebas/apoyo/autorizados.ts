@@ -155,6 +155,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // lee y lo escribe en el almacén de ARIA-brain, que no es esta base. El filtro por organización lo
   // pone esa consulta a mano, con `contexto.orgEfectiva`.
   'app/api/fundaciones/conversar/route.ts',
+  // Y el relleno del formulario desde el contexto heredado, mismo caso que los otros dos: lee la
+  // llave de IA y el `cliente_id` del hub de la fila de credenciales, y todo lo demás vive en el
+  // almacén de ARIA-brain.
+  'app/api/fundaciones/rellenar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
   // Location ID de la organización, que viven en `identidad.organizaciones_credenciales` — una
@@ -193,6 +197,8 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Y el agente conversacional de esta pantalla, gemelo del de Fundaciones y por el mismo motivo:
   // lee la fila de credenciales de la organización y todo lo demás vive en el almacén del hub.
   'app/api/tools/conversar/route.ts',
+  // Su gemela del relleno, por el mismo motivo y con la capacidad de esta pantalla.
+  'app/api/tools/rellenar/route.ts',
   // El análisis con IA del Espía de Anuncios. Lee UNA columna de `organizaciones_credenciales` —la
   // llave de IA cifrada— que es una tabla de identidad sobre la que el rol del inquilino no tiene ni
   // `select`. Los anuncios no salen de esta base: se los pide al backend de scraping con el

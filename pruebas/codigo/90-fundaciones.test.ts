@@ -1152,6 +1152,8 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
     'app/api/tools/estado/route.ts',
     'app/api/tools/generar/route.ts',
     'app/api/tools/conversar/route.ts',
+    'app/api/fundaciones/rellenar/route.ts',
+    'app/api/tools/rellenar/route.ts',
     // El análisis del Espía de Anuncios: no es de Fundaciones, y declara `maxDuration` y llama al
     // modelo igual que las otras. La regla que se comprueba es la misma —quien llama a una ruta que
     // puede tardar minutos tiene que esperarla— y dejarla afuera de esta lista la volvería a abrir.
@@ -1179,7 +1181,7 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
   ];
   for (const archivo of LLAMADORES) {
     const fuente = leer(archivo);
-    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar|Conversar)/g) || []).length;
+    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar|Conversar|Rellenar)/g) || []).length;
     const esperas = (fuente.match(/espera:\s*ESPERA_DE_RUTA_LARGA_MS/g) || []).length;
     assert.equal(
       esperas,

@@ -43,6 +43,8 @@ const CATALOGO_TOOLS = {
      La usa el VSL, que es una herramienta genérica como las ocho de al lado. Prospección no: no
      tiene agente (ver `tieneAgente`), y su panel es otro. */
   rutaConversar: '/api/tools/conversar',
+  /* La del relleno del formulario con el contexto heredado. */
+  rutaRellenar: '/api/tools/rellenar',
   capacidadEditar: 'tools.editar',
   /* «Mis Leads» es una pestaña más de Tools, al lado de Prospección, y no una sección enterrada
      debajo del scraper: el historial se consulta en momentos distintos de cuando se scrapea

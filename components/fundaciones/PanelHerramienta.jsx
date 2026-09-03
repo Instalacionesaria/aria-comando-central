@@ -37,7 +37,12 @@
 import { useMemo, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { aValoresDeFormulario, camposDe, conValoresPorOmision } from '@/lib/fundaciones/campos';
+import {
+  aValoresDeFormulario,
+  camposDe,
+  claveCorta,
+  conValoresPorOmision,
+} from '@/lib/fundaciones/campos';
 import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -62,6 +67,7 @@ export default function PanelHerramienta({
   rutaEstado,
   rutaGenerar,
   rutaConversar,
+  rutaRellenar,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -138,6 +144,45 @@ export default function PanelHerramienta({
     }
     setGuardado(true);
     onEstadoCambiado();
+  };
+
+  /* ── RELLENAR CON LO QUE YA SE GENERÓ ──────────────────────────────────────
+   *
+   * El research eligió un segmento, dijo sus dolores y su lenguaje; sin esto, nada de eso aparece en
+   * los campos y la única forma de saber con qué se va a generar es volver a leer los documentos.
+   *
+   * **Propone, no decide.** Los valores caen en el formulario y ahí se quedan, editables, hasta que
+   * alguien guarde o genere: un dato que no se vio antes de guardarse es indistinguible de uno que
+   * la persona escribió, y de acá heredan las ocho herramientas siguientes.
+   *
+   * Cuesta una inferencia corta, así que es un botón y no algo que pase solo al abrir la pestaña. */
+  const [rellenando, setRellenando] = useState(false);
+
+  const rellenar = async () => {
+    setError(null);
+    setRellenando(true);
+    const r = await pedir(rutaRellenar, {
+      metodo: 'POST',
+      cuerpo: { herramienta: herramienta.id },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
+    });
+    setRellenando(false);
+    const mal = problema(r);
+    if (mal) {
+      setError(mal);
+      return;
+    }
+    /* Solo se pisan los campos que el modelo llenó: lo que devolvió vacío deja lo que hubiera. Quien
+       ya escribió algo y aprieta el botón espera completar lo que falta, no perder lo suyo. */
+    setValores((previo) => {
+      const proximo = { ...previo };
+      for (const campo of camposDe(herramienta)) {
+        const v = r.datos.valores[claveCorta(campo.id)];
+        if (v && v.trim() !== '') proximo[campo.id] = v;
+      }
+      return proximo;
+    });
+    setGuardado(false);
   };
 
   const generar = async (ajuste, v = valores) => {
@@ -314,6 +359,21 @@ export default function PanelHerramienta({
                 <button type="button" className="fd-btn" disabled={generando} onClick={() => generar(null)}>
                   {generando ? 'Generando…' : herramienta.etiquetaBoton}
                 </button>
+                {/* El relleno va con los otros dos y no arriba del formulario: es una acción sobre
+                    los campos, como guardar. Solo aparece si esta herramienta hereda algo y ese algo
+                    ya existe — ofrecerlo sin contexto sería un botón que solo puede decir que no hay
+                    de dónde sacar los datos. */}
+                {rutaRellenar && heredadas.length > 0 && criticasQueFaltan.length < heredadas.length ? (
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={rellenando || generando}
+                    onClick={rellenar}
+                    title="Lee lo que ya generaste en las herramientas anteriores y completa estos campos. No genera nada: los revisás antes."
+                  >
+                    {rellenando ? 'Leyendo lo anterior…' : '↩ Rellenar con lo que ya generaste'}
+                  </button>
+                ) : null}
                 {/* `() => guardar()` y no `guardar`: como manejador directo recibiría el evento de
                     React donde ahora van los valores, y el cuerpo saldría con un `SyntheticEvent`
                     en vez de con el formulario. */}

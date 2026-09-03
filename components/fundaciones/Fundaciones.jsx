@@ -54,11 +54,14 @@ const CATALOGO_ICP = {
   /* La del agente conversacional del Research. Solo la usa el panel de la herramienta con
      `forma: 'research'`; las demás no la miran. */
   rutaConversar: '/api/fundaciones/conversar',
+  /* La del relleno del formulario con el contexto heredado. */
+  rutaRellenar: '/api/fundaciones/rellenar',
   capacidadEditar: 'fundaciones.editar',
 };
 
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
-  const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, capacidadEditar } = catalogo;
+  const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, rutaRellenar, capacidadEditar } =
+    catalogo;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
      Una herramienta es un formulario que produce un documento y que se puede dar por
@@ -332,6 +335,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
           rutaConversar={rutaConversar}
+          rutaRellenar={rutaRellenar}
         />
       )}
     </>
