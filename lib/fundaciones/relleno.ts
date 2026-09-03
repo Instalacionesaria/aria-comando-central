@@ -25,11 +25,16 @@
 // idéntico a uno que alguien escribió, así que tiene que pasar por delante de sus ojos antes de
 // convertirse en la fuente de todo lo que hereda.
 //
-// ── Y POR QUÉ NO SE INVENTA NADA ────────────────────────────────────────────
+// ── QUÉ SE PUEDE PROPONER Y QUÉ NO ──────────────────────────────────────────
 //
-// La herramienta se fuerza con el MISMO esquema que usa el agente conversacional, y la instrucción
-// es la misma que ahí: lo que el contexto no diga va vacío. Un campo vacío se completa a mano en
-// diez segundos; un campo con un dato plausible que nadie dijo se propaga a las nueve herramientas.
+// La herramienta se fuerza con el MISMO esquema que usa el agente conversacional. La primera versión
+// le prohibía deducir: «lo que el contexto no diga textualmente va vacío». Resultado medido: edad,
+// país y ocupación quedaban vacíos aunque el research describiera al dueño de una agencia PPC en
+// LATAM — Kevin lo llamó «muy mecánico». Ahora se le pide completar lo que el contexto SOSTIENE
+// (un país que es el mercado donde se buscó, un perfil de ocupación que se desprende del segmento)
+// y dejar vacío lo que no se sostiene con nada (una cifra exacta que nadie mencionó). Los valores
+// caen en el formulario a la vista, así que un dato propuesto pasa por delante de los ojos de la
+// persona antes de convertirse en fuente de lo que hereda.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ok, rechazo } from '../autorizacion/respuesta.ts';
@@ -84,6 +89,19 @@ export function contextoHeredado(h: Herramienta, estado: EstadoDeFundaciones): s
     partes.push(valor.slice(0, CARACTERES_POR_FUENTE));
   }
 
+  /* Los CRITERIOS del Research —lo que la persona escribió para buscar— no viajan en ningún
+     `_…Context`: los prompts leen las SALIDAS del research, no sus entradas. Pero para llenar un
+     formulario son oro: «¿Cuál es tu experiencia o trasfondo?» suele decir a quién le vende y dónde,
+     y el nicho escrito es la mejor pista del país y del perfil del comprador. Kevin lo pidió así —
+     *«con la información que ya tiene de las 2 primeras pestañas»*— y la ficha ya entraba por
+     `_profileContext`; esto es la mitad que faltaba de la segunda. */
+  const criterios = Object.entries(estado.researchInputs)
+    .filter(([, v]) => v && v.trim() !== '' && v !== '(no especificado)')
+    .map(([k, v]) => `${k}: ${v}`);
+  if (criterios.length > 0 && partes.length > 0) {
+    partes.push(`CRITERIOS CON LOS QUE SE HIZO EL RESEARCH:\n${criterios.join('\n')}`);
+  }
+
   return partes.join('\n\n');
 }
 
@@ -113,8 +131,13 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
     'en las herramientas anteriores. No estás escribiendo el entregable: solo completás campos.\n\n' +
     `LOS CAMPOS:\n${preguntas}\n\n` +
     'REGLAS:\n' +
-    '· Cada campo se llena SOLO con lo que el contexto de abajo dice. Si el contexto no lo dice, va ' +
-    'VACÍO. No deduzcas, no completes con lo típico del rubro, no inventes cifras.\n' +
+    '· Completá TODOS los campos que el contexto sostenga, no solo los que dice textualmente. El ' +
+    'research describe a quién se le vende, dónde y en qué situación: de ahí salen el país o región ' +
+    '(el mercado donde se buscó), el rango de edad y la ocupación típicos del dueño de ese segmento, ' +
+    'y el rango de ingresos que el propio research menciona. Proponelos.\n' +
+    '· Lo que NO podés sostener con nada del contexto va VACÍO. La diferencia: «dueños de agencias ' +
+    'PPC en LATAM» sostiene un país o región y un perfil de ocupación; no sostiene una cifra exacta ' +
+    'de facturación que nadie mencionó. No inventes cifras ni nombres propios.\n' +
     '· Escribí como escribiría la persona en ese campo: corto, concreto, con el formato del ejemplo. ' +
     'No copies párrafos enteros del contexto ni pegues frases a medias.\n' +
     '· Usá el lenguaje exacto del contexto cuando nombre algo (el segmento, el mecanismo, los ' +

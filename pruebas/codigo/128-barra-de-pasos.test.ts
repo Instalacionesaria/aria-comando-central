@@ -201,8 +201,31 @@ test('el relleno PROPONE: no guarda ni genera', () => {
   const cuerpo = panel.slice(panel.indexOf('const rellenar = async'), panel.indexOf('const generar = async'));
   assert.ok(!/pedir\(rutaEstado/.test(cuerpo), 'el botón de rellenar guarda sin que nadie lo pida');
   assert.ok(!/pedir\(rutaGenerar/.test(cuerpo), 'el botón de rellenar genera');
-  // Y no pisa con vacío lo que ya estaba escrito.
-  assert.match(cuerpo, /if \(v && v\.trim\(\) !== ''\) proximo\[campo\.id\] = v;/);
+  // Solo completa los VACÍOS, y devuelve el resultado para que la llegada pueda seguir generando
+  // con los valores en la mano y no con un estado que llega un render después.
+  assert.match(cuerpo, /if \(vacio && v && v\.trim\(\) !== ''\) proximo\[campo\.id\] = v;/);
+  assert.match(cuerpo, /return proximo;/);
+});
+
+test('los criterios del Research entran al relleno, y las reglas dejan deducir lo que se sostiene', async () => {
+  /* «Muy mecánico»: la primera versión prohibía deducir y edad, país y ocupación quedaban vacíos
+     aunque el research describiera al dueño de una agencia PPC en LATAM. Y los criterios con los
+     que se hizo el research —el trasfondo suele decir a quién se le vende y dónde— no viajaban en
+     ningún `_…Context`, porque los prompts leen las salidas del research, no sus entradas. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  assert.match(relleno, /CRITERIOS CON LOS QUE SE HIZO EL RESEARCH/);
+  assert.match(relleno, /Completá TODOS los campos que el contexto sostenga/);
+  assert.match(relleno, /No inventes cifras ni nombres propios/);
+
+  const { contextoHeredado } = await import('../../lib/fundaciones/relleno.ts');
+  const { herramienta } = await import('../../lib/fundaciones/herramientas.ts');
+  const { estadoVacio } = await import('../../lib/fundaciones/estado.ts');
+  const e = estadoVacio();
+  e.researchInputs = { niche: 'Agencias de Marketing', experience: 'consultor para agencias en Perú', contract: '(no especificado)' };
+  e.researchSalidas = ['s1', 's2', 's3', 's4', 'SEGMENTO GANADOR: agencias PPC'];
+  const ctx = contextoHeredado(herramienta(3)!, e);
+  assert.ok(ctx.includes('consultor para agencias en Perú'), 'el trasfondo del research no llega al relleno');
+  assert.ok(!ctx.includes('(no especificado)'), 'los huecos del almacén llegaron como criterios');
 });
 
 test('un valor inventado en un desplegable se descarta, también acá', () => {
@@ -246,7 +269,13 @@ test('el relleno al llegar corre UNA vez, con contexto, y mientras quede algo po
   assert.match(efecto, /const hayContexto = heredadas\.length > 0 && criticasQueFaltan\.length < heredadas\.length;/);
   assert.match(efecto, /const faltaAlgo = camposDe\(herramienta\)\.some\(/);
   assert.ok(!/const enBlanco = camposDe\(herramienta\)\.every\(/.test(efecto), 'volvió la regla del formulario entero en blanco');
-  assert.match(efecto, /if \(rutaRellenar && puedeEditar && hayContexto && faltaAlgo\) void rellenar\(\);/);
+  assert.match(efecto, /if \(!rutaRellenar \|\| !puedeEditar \|\| !hayContexto\) return;/);
+
+  /* Y después de rellenar, GENERA — pero solo si todavía no hay entregable. Una generación son hasta
+     16.000 tokens; regenerar cada vez que alguien pasa por el paso pisaría un documento que quizás
+     se quería conservar. Los valores van por argumento, nunca por el estado. */
+  assert.match(efecto, /const v = faltaAlgo \? await rellenar\(\) : valores;/);
+  assert.match(efecto, /if \(v && versionesGuardadas\.length === 0\) await generar\(null, v\);/);
   // El pedido se consume al llegar, se rellene o no: si quedara puesto, la próxima visita manual
   // a esa pestaña dispararía una inferencia que nadie pidió.
   assert.match(efecto, /if \(onRellenadoAlLlegar\) onRellenadoAlLlegar\(\);/);

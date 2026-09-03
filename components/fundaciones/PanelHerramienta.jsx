@@ -174,19 +174,24 @@ export default function PanelHerramienta({
     const mal = problema(r);
     if (mal) {
       setError(mal);
-      return;
+      return null;
     }
-    /* Solo se pisan los campos que el modelo llenó: lo que devolvió vacío deja lo que hubiera. Quien
-       ya escribió algo y aprieta el botón espera completar lo que falta, no perder lo suyo. */
-    setValores((previo) => {
-      const proximo = { ...previo };
-      for (const campo of camposDe(herramienta)) {
-        const v = r.datos.valores[claveCorta(campo.id)];
-        if (v && v.trim() !== '') proximo[campo.id] = v;
-      }
-      return proximo;
-    });
+    /* Solo se completan los campos VACÍOS: lo que ya tiene texto no se toca nunca. Quien escribió
+       algo y aprieta el botón espera completar lo que falta, no perder lo suyo.
+
+       Se calcula sobre `valores` y se DEVUELVE, además de fijarse en el estado: quien lo llame para
+       seguir generando necesita los valores en la mano, no en un estado que se actualiza un render
+       después — el mismo `setState` asíncrono del que habla el encabezado de este archivo. */
+    const proximo = { ...valores };
+    for (const campo of camposDe(herramienta)) {
+      const actual = proximo[campo.id];
+      const vacio = !actual || actual.trim() === '' || actual === campo.valorPorOmision;
+      const v = r.datos.valores[claveCorta(campo.id)];
+      if (vacio && v && v.trim() !== '') proximo[campo.id] = v;
+    }
+    setValores(proximo);
     setGuardado(false);
+    return proximo;
   };
 
   /* ── EL RELLENO AUTOMÁTICO AL LLEGAR POR EL MÉTODO ─────────────────────────
@@ -222,7 +227,26 @@ export default function PanelHerramienta({
       // Un valor por omisión no es algo que alguien escribió: el formulario nace con él.
       return !v || v.trim() === '' || v === campo.valorPorOmision;
     });
-    if (rutaRellenar && puedeEditar && hayContexto && faltaAlgo) void rellenar();
+    if (!rutaRellenar || !puedeEditar || !hayContexto) return;
+
+    /* ── Y DESPUÉS DE RELLENAR, GENERA — SI TODAVÍA NO HAY ENTREGABLE ─────────
+     *
+     * Lo pidió Kevin con todas las letras: *«solito comienza a correr todo el ICP con los datos que ya
+     * tiene de Tu ficha y de Investiga tu mercado»*. Llegar por el método significa que la cadena se
+     * está construyendo; pedir un clic más para lo único que se puede hacer acá es fricción sin
+     * motivo.
+     *
+     * Con UNA condición, y es la que protege la plata: si esta herramienta YA tiene un entregable, no
+     * se regenera solo. Una generación son hasta 16.000 tokens de la llave de la organización, y
+     * regenerar cada vez que alguien pasa por el paso pisaría un documento que quizás se quería
+     * conservar. Con documento, el paso se abre con los campos propuestos y el botón a un clic.
+     *
+     * Los valores van por argumento (`generar(null, v)`), no por el estado: es el defecto de
+     * ARIA-brain con el paso 5 del Research, entrando por la puerta de al lado. */
+    void (async () => {
+      const v = faltaAlgo ? await rellenar() : valores;
+      if (v && versionesGuardadas.length === 0) await generar(null, v);
+    })();
     // Solo al montar. Las referencias que lee son las del primer render a propósito: es la
     // fotografía del formulario tal como se lo encontró al llegar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
