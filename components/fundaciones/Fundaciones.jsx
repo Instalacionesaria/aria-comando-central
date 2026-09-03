@@ -48,6 +48,11 @@ const CATALOGO_ICP = {
   /* Cuál de las dos pantallas es. La barra del pie la usa para saber si el paso siguiente se puede
      abrir con un `setActiva` —está acá— o vive del otro lado. */
   pantalla: 'icp',
+  /* Las siete de esta pantalla se trabajan SOLO por chat: sin formulario, sin selector de opciones.
+     Pedido de Kevin (2026-09-03): «ya no habrá formularios, solo los chats» — y aclaró que el alcance
+     es esta pantalla, no Tools. Los inputs se siguen guardando igual en `profile[N]`; lo que cambia es
+     cómo se cargan: se dicen al agente, que abre proponiendo lo que hereda. */
+  soloChat: true,
   herramientas: FUNDACIONES,
   rutaEstado: '/api/fundaciones/estado',
   rutaGenerar: '/api/fundaciones/generar',
@@ -62,6 +67,7 @@ const CATALOGO_ICP = {
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, rutaRellenar, capacidadEditar } =
     catalogo;
+  const soloChat = catalogo.soloChat === true;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
      Una herramienta es un formulario que produce un documento y que se puede dar por
@@ -334,6 +340,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           pantalla={pantalla}
+          soloChat={soloChat}
           onIr={irA}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
@@ -349,6 +356,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           organizacion={organizacion}
           faltaPermiso={faltaPermiso}
           pantalla={pantalla}
+          soloChat={soloChat}
           onIr={irA}
           rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
           onRellenadoAlLlegar={() => setRellenarAlLlegar(null)}

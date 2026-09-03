@@ -50,14 +50,16 @@ import {
   guardarVersion,
   leerEstado,
 } from './almacen.ts';
-import { SIN_ESPECIFICAR, aValoresDeAlmacen, idsDeCampos } from './campos.ts';
+import { SIN_ESPECIFICAR, aValoresDeAlmacen, camposDe, claveCorta, idsDeCampos } from './campos.ts';
 import {
   arranca,
   chatVacio,
   conversar,
   mensajeDeApertura,
+  mensajeDeAperturaConPropuesta,
   type FalloDeConversacion,
 } from './conversacion.ts';
+import { proponerRespuestas } from './relleno.ts';
 import type { ChatDeHerramienta, EstadoDeFundaciones } from './estado.ts';
 import { generar } from './generacion.ts';
 import { PASOS_RESEARCH, tieneAgente, type Herramienta } from './herramientas.ts';
@@ -443,10 +445,51 @@ function respuestasGuardadas(
   return salida;
 }
 
-/** La conversación recién abierta: el saludo del agente, y lo que ya estuviera guardado. */
-function abrir(h: Herramienta, respuestas: Record<string, string>): ChatDeHerramienta {
+/**
+ * La conversación recién abierta: el saludo del agente, lo guardado, y lo que puede PROPONER.
+ *
+ * ── LA APERTURA GASTA UNA INFERENCIA, Y ES A PROPÓSITO ──────────────────────
+ *
+ * Antes el saludo lo armaba el código y no costaba nada: «¿Cuál es tu nicho?». Con los formularios
+ * fuera de «ICP & Oferta», el agente es la única puerta, y saludar preguntando desde cero lo que las
+ * herramientas anteriores ya contestaron es hacer que la persona vuelva a escribir su research.
+ *
+ * Así que si hay campos vacíos Y hay contexto heredado, se llama a `proponerRespuestas` —la misma
+ * función del botón «↩ Rellenar»— y el saludo enumera lo deducido. Es una inferencia corta, una sola
+ * vez por conversación (la apertura se guarda; las visitas siguientes no vuelven a proponer).
+ *
+ * Si proponer falla, el chat NO falla: abre con el saludo de antes, preguntando. Un modelo caído no
+ * puede dejar a la persona sin poder empezar su herramienta.
+ */
+async function abrir(
+  h: Herramienta,
+  estado: EstadoDeFundaciones,
+  claveIa: string,
+): Promise<ChatDeHerramienta> {
+  const guardadas = respuestasGuardadas(estado, h);
+  const faltaAlgo = camposDe(h).some((c) => !(guardadas[claveCorta(c.id)] ?? '').trim());
+
+  let propuestas: Record<string, string> = {};
+  if (faltaAlgo) {
+    const p = await proponerRespuestas({ claveIa, herramienta: h, estado });
+    if (p.tipo === 'datos') propuestas = p.valores;
+  }
+
+  /* Lo guardado manda sobre lo propuesto: la persona lo escribió o lo confirmó antes. Lo propuesto
+     solo entra donde no había nada. */
+  const respuestas: Record<string, string> = { ...guardadas };
+  for (const [k, v] of Object.entries(propuestas)) {
+    if (!(respuestas[k] ?? '').trim() && v.trim()) respuestas[k] = v;
+  }
+
   const chat = chatVacio(respuestas);
-  chat.messages.push({ role: 'assistant', content: mensajeDeApertura(h, respuestas) });
+  const hayPropuesta = Object.values(propuestas).some((v) => v.trim() !== '');
+  chat.messages.push({
+    role: 'assistant',
+    content: hayPropuesta
+      ? mensajeDeAperturaConPropuesta(h, guardadas, propuestas)
+      : mensajeDeApertura(h, guardadas),
+  });
   return chat;
 }
 
@@ -492,7 +535,7 @@ export async function conversarConElAgente(
      La pantalla se abre sola al tocar la pestaña, y una inferencia por cada vistazo se la cobra a la
      organización sin que nadie haya preguntado nada. */
   const recienAbierta = reiniciar || chat.messages.length === 0;
-  if (recienAbierta) chat = abrir(h, respuestasGuardadas(estado.datos, h));
+  if (recienAbierta) chat = await abrir(h, estado.datos, acceso.claveIa);
 
   if (mensaje === '') {
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.

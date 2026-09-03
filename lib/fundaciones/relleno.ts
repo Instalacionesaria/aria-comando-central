@@ -157,11 +157,91 @@ interface RespuestaDeAnthropic {
   stop_reason?: string;
 }
 
+export type PropuestaDeRespuestas =
+  | { tipo: 'datos'; valores: Record<string, string> }
+  /** No hay nada generado de donde sacar los datos. No es un error: es el primer paso del método. */
+  | { tipo: 'sin_contexto' }
+  | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
+  | { tipo: 'sin_respuesta' }
+  | { tipo: 'truncado' }
+  | { tipo: 'sin_estructura' };
+
 /**
- * Rellena los campos de una herramienta con su contexto heredado.
+ * Propone los valores de los campos de una herramienta a partir de su contexto heredado.
  *
- * Devuelve los valores con CLAVES CORTAS, como los guarda el almacén: la pantalla los traduce a
- * identificadores de campo con la misma función de siempre.
+ * Es UNA función y la usan dos caminos: el botón «↩ Rellenar» de las herramientas que conservan
+ * formulario (Tools), y la APERTURA del chat en las que ya no lo tienen (ICP & Oferta), donde el
+ * agente saluda con lo que ya sabe en vez de preguntar desde cero. Dos copias de esta llamada
+ * divergirían en la primera corrección del prompt, y el síntoma sería «por el botón propone bien y
+ * por el chat no».
+ *
+ * Devuelve los valores con CLAVES CORTAS, como los guarda el almacén.
+ */
+export async function proponerRespuestas(opciones: {
+  claveIa: string;
+  herramienta: Herramienta;
+  estado: EstadoDeFundaciones;
+}): Promise<PropuestaDeRespuestas> {
+  const h = opciones.herramienta;
+  const contexto = contextoHeredado(h, opciones.estado);
+  /* Sin contexto no se llama al modelo. El prompt saldría con la sección vacía, el modelo llenaría
+     los campos con lo típico del rubro —justo lo que las reglas le prohíben— y la inferencia se paga
+     igual. */
+  if (contexto.trim() === '') return { tipo: 'sin_contexto' };
+
+  const r = await pedirExterno<RespuestaDeAnthropic>(API, {
+    metodo: 'POST',
+    cabeceras: { 'x-api-key': opciones.claveIa, 'anthropic-version': VERSION_API },
+    cuerpo: {
+      model: MODELO,
+      max_tokens: TECHO_DE_TOKENS,
+      messages: [{ role: 'user', content: instruccionesDeRelleno(h, contexto) }],
+      tools: [
+        {
+          name: NOMBRE_DE_LA_HERRAMIENTA,
+          description:
+            'Registrá los valores de los campos. Es la única forma de responder: no escribas texto ' +
+            'suelto.',
+          input_schema: esquemaDeCampos(h),
+        },
+      ],
+      tool_choice: { type: 'tool', name: NOMBRE_DE_LA_HERRAMIENTA },
+    },
+  });
+
+  if (r.tipo === 'rechazado') {
+    console.error(`relleno: el modelo rechazó · ${r.estado} ${r.codigo} · ${r.detalle ?? 'sin motivo'}`);
+    return { tipo: 'rechazado', estado: r.estado, codigo: r.codigo, motivo: r.detalle ?? null };
+  }
+  if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta' };
+  if (r.datos.stop_reason === 'max_tokens') return { tipo: 'truncado' };
+
+  const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
+  const usada = bloques.find((b) => b.type === 'tool_use' && b.name === NOMBRE_DE_LA_HERRAMIENTA);
+  if (usada === undefined || usada.input === null || typeof usada.input !== 'object') {
+    return { tipo: 'sin_estructura' };
+  }
+
+  /* Se recorre el CATÁLOGO y no lo que vino: una clave inventada no entra al formulario, y un campo
+     que el modelo no mandó queda vacío en vez de desaparecer. Es la misma lectura que hace el agente
+     conversacional, y por el mismo motivo. */
+  const crudos = usada.input as Record<string, unknown>;
+  const valores: Record<string, string> = {};
+  for (const campo of camposDe(h)) {
+    const v = crudos[claveCorta(campo.id)];
+    const texto = typeof v === 'string' ? v.trim() : '';
+    if (campo.tipo === 'lista' && campo.opciones && campo.opciones.length > 0) {
+      valores[claveCorta(campo.id)] = campo.opciones.some((o) => o.valor === texto) ? texto : '';
+      continue;
+    }
+    valores[claveCorta(campo.id)] = texto;
+  }
+  return { tipo: 'datos', valores };
+}
+
+/**
+ * La ruta del botón «↩ Rellenar»: lee el cuerpo, resuelve la herramienta y traduce el resultado a
+ * una respuesta. El trabajo está arriba, en `proponerRespuestas`.
  */
 export async function rellenarLosCampos(
   peticion: Request,
@@ -185,65 +265,23 @@ export async function rellenarLosCampos(
   const estado = await leerEstado(acceso.clienteId);
   if (estado.tipo !== 'datos') return rechazo('almacen_no_disponible');
 
-  const contexto = contextoHeredado(h, (estado as { datos: EstadoDeFundaciones }).datos);
-  /* Sin contexto no se llama al modelo. El prompt saldría con la sección vacía, el modelo llenaría
-     los campos con lo típico del rubro —que es exactamente lo que las reglas le prohíben— y la
-     inferencia se paga igual. */
-  if (contexto.trim() === '') {
-    return rechazo('peticion_invalida', 'Todavía no hay nada generado de donde sacar los datos.');
-  }
-
-  const r = await pedirExterno<RespuestaDeAnthropic>(API, {
-    metodo: 'POST',
-    cabeceras: { 'x-api-key': acceso.claveIa, 'anthropic-version': VERSION_API },
-    cuerpo: {
-      model: MODELO,
-      max_tokens: TECHO_DE_TOKENS,
-      messages: [{ role: 'user', content: instruccionesDeRelleno(h, contexto) }],
-      tools: [
-        {
-          name: NOMBRE_DE_LA_HERRAMIENTA,
-          description:
-            'Registrá los valores de los campos. Es la única forma de responder: no escribas texto ' +
-            'suelto.',
-          input_schema: esquemaDeCampos(h),
-        },
-      ],
-      tool_choice: { type: 'tool', name: NOMBRE_DE_LA_HERRAMIENTA },
-    },
+  const propuesta = await proponerRespuestas({
+    claveIa: acceso.claveIa,
+    herramienta: h,
+    estado: (estado as { datos: EstadoDeFundaciones }).datos,
   });
 
-  if (r.tipo === 'rechazado') {
-    console.error(
-      `relleno: el modelo rechazó · ${r.estado} ${r.codigo} · ${r.detalle ?? 'sin motivo'}`,
+  if (propuesta.tipo === 'datos') return ok({ valores: propuesta.valores });
+  if (propuesta.tipo === 'sin_contexto') {
+    return rechazo('peticion_invalida', 'Todavía no hay nada generado de donde sacar los datos.');
+  }
+  if (propuesta.tipo === 'rechazado') {
+    return rechazo(
+      'modelo_no_disponible',
+      propuesta.motivo === null ? propuesta.codigo : `${propuesta.codigo}: ${propuesta.motivo}`,
     );
-    return rechazo('modelo_no_disponible', r.detalle ?? r.codigo);
   }
-  if (r.tipo === 'sin_respuesta') return rechazo('modelo_no_disponible', 'sin respuesta');
-  if (r.datos.stop_reason === 'max_tokens') {
-    return rechazo('modelo_no_disponible', 'respuesta truncada');
-  }
-
-  const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
-  const usada = bloques.find((b) => b.type === 'tool_use' && b.name === NOMBRE_DE_LA_HERRAMIENTA);
-  if (usada === undefined || usada.input === null || typeof usada.input !== 'object') {
-    return rechazo('modelo_no_disponible', 'respuesta sin estructura');
-  }
-
-  /* Se recorre el CATÁLOGO y no lo que vino: una clave inventada no entra al formulario, y un campo
-     que el modelo no mandó queda vacío en vez de desaparecer. Es la misma lectura que hace el agente
-     conversacional, y por el mismo motivo. */
-  const crudos = usada.input as Record<string, unknown>;
-  const valores: Record<string, string> = {};
-  for (const campo of camposDe(h)) {
-    const v = crudos[claveCorta(campo.id)];
-    const texto = typeof v === 'string' ? v.trim() : '';
-    if (campo.tipo === 'lista' && campo.opciones && campo.opciones.length > 0) {
-      valores[claveCorta(campo.id)] = campo.opciones.some((o) => o.valor === texto) ? texto : '';
-      continue;
-    }
-    valores[claveCorta(campo.id)] = texto;
-  }
-
-  return ok({ valores });
+  if (propuesta.tipo === 'truncado') return rechazo('modelo_no_disponible', 'respuesta truncada');
+  if (propuesta.tipo === 'sin_estructura') return rechazo('modelo_no_disponible', 'respuesta sin estructura');
+  return rechazo('modelo_no_disponible', 'sin respuesta');
 }

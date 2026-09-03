@@ -59,6 +59,9 @@ export default function PanelHerramienta({
   organizacion,
   faltaPermiso,
   pantalla,
+  /* Sin formulario: la herramienta se trabaja por chat. Lo declara el catálogo de la pantalla, no
+     esta prop suelta: es una decisión de producto por pantalla, y así queda en un solo lugar. */
+  soloChat,
   onIr,
   /* Se llegó por «Continuar al paso N» y el formulario tiene que completarse solo. Ver
      `Fundaciones.jsx`: es un pedido de una sola vez, y acá se consume al montarse. */
@@ -108,7 +111,7 @@ export default function PanelHerramienta({
      y `tieneAgente` es la misma función que usa el servidor para decidir si acepta la conversación:
      ofrecer el modo donde la ruta lo va a rechazar es mostrar un control que no puede cumplir. */
   const conAgente = !!rutaConversar && tieneAgente(herramienta);
-  const [modo, setModo] = useState(MODO_FORMULARIO);
+  const [modo, setModo] = useState(soloChat ? MODO_AGENTE : MODO_FORMULARIO);
 
   const todas = useMemo(() => fuentes(estado), [estado]);
   const heredadas = FUENTES_POR_HERRAMIENTA[herramienta.id] || [];
@@ -220,6 +223,10 @@ export default function PanelHerramienta({
     if (!rellenarAlLlegar || yaRellenoAlLlegar.current) return;
     yaRellenoAlLlegar.current = true;
     if (onRellenadoAlLlegar) onRellenadoAlLlegar();
+    /* Sin formulario, el relleno al llegar no tiene dónde caer: el AGENTE abre proponiendo lo que
+       hereda (ver `abrir` en `operaciones.ts`) y genera cuando la persona confirma. El pedido se
+       consume igual, para que no quede puesto. */
+    if (soloChat) return;
 
     const hayContexto = heredadas.length > 0 && criticasQueFaltan.length < heredadas.length;
     const faltaAlgo = camposDe(herramienta).some((campo) => {
@@ -349,7 +356,9 @@ export default function PanelHerramienta({
         </div>
       ) : null}
 
-      {conAgente ? (
+      {/* El selector solo existe donde hay dos caminos. En «ICP & Oferta» hay uno —el chat— y un
+          selector con una sola opción sería un botón que no elige nada. */}
+      {conAgente && !soloChat ? (
         <SelectorDeModo
           modo={modo}
           onElegir={setModo}
@@ -358,7 +367,7 @@ export default function PanelHerramienta({
         />
       ) : null}
 
-      {conAgente && modo === MODO_AGENTE ? (
+      {conAgente && (soloChat || modo === MODO_AGENTE) ? (
         <ChatDeHerramienta
           herramienta={herramienta}
           inicial={estado.chats[herramienta.id]}

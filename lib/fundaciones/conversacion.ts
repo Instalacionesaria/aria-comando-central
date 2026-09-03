@@ -326,6 +326,43 @@ export function mensajeDeApertura(h: Herramienta, respuestas: Record<string, str
 }
 
 /**
+ * El primer mensaje cuando el agente abre CON propuestas: lo que ya estaba guardado, lo que dedujo
+ * de las herramientas anteriores, y lo que todavía le falta.
+ *
+ * ── ESTO ES LO QUE REEMPLAZA AL FORMULARIO EN «ICP & OFERTA» ─────────────────
+ *
+ * Sin campos a la vista, la única forma de que la persona sepa con qué se va a generar es que el
+ * agente lo DIGA antes de generar. Por eso el saludo enumera cada dato con su etiqueta de catálogo y
+ * marca cuáles propuso él (para que se lean como lo que son: una deducción, no algo que alguien
+ * dijo), y cierra pidiendo dos cosas concretas: confirmar lo listado y contestar lo que falta.
+ *
+ * Y `arranca` se encarga del resto: con las obligatorias presentes y un turno que no cambie nada, un
+ * «sí» genera. Con un «cambiá el país», el agente anota y vuelve a mostrar. */
+export function mensajeDeAperturaConPropuesta(
+  h: Herramienta,
+  guardadas: Record<string, string>,
+  propuestas: Record<string, string>,
+): string {
+  const lineas: string[] = [];
+  const faltan: string[] = [];
+  for (const c of camposDe(h)) {
+    const k = claveCorta(c.id);
+    const g = (guardadas[k] ?? '').trim();
+    const p = (propuestas[k] ?? '').trim();
+    if (g !== '') lineas.push(`· ${c.etiqueta} ${g}`);
+    else if (p !== '') lineas.push(`· ${c.etiqueta} ${p} (lo deduje de lo anterior)`);
+    else if (!c.opcional) faltan.push(c.etiqueta);
+  }
+
+  const cabeza = `Hola. Vamos con «${h.titulo}». Con lo que ya construiste antes, esto es lo que tengo:\n\n${lineas.join('\n')}`;
+  const pie =
+    faltan.length > 0
+      ? `\n\nMe falta: ${faltan.join(' · ')}. Contame eso, y decime si lo de arriba va bien o cambio algo.`
+      : `\n\n¿Va bien así? Si confirmás, genero tu ${h.etiquetaSalida}. Si querés cambiar algo, decime qué.`;
+  return cabeza + pie;
+}
+
+/**
  * ¿Se puede generar? **La respuesta del modelo es un dato, no una orden.**
  *
  * ── LO QUE SE COMPRUEBA, Y LO QUE NO SE PUEDE COMPROBAR ────────────────────

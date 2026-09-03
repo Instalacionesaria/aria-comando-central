@@ -147,6 +147,28 @@ test('recargar el estado DEVUELVE la promesa: sin eso, esperar la recarga es men
 
 // ─── Rellenar el formulario con lo que ya se generó ────────────────────────
 
+test('«ICP & Oferta» se trabaja solo por chat, y Tools conserva las dos opciones', () => {
+  /* Pedido de Kevin (2026-09-03): «ya no habrá formularios, solo los chats», con alcance explícito:
+     las siete de ICP & Oferta. Tools no se toca. Lo declara el catálogo de cada pantalla, en un solo
+     lugar, y los dos paneles lo obedecen: sin selector, abren en el agente. */
+  const armazon = codigo('components/fundaciones/Fundaciones.jsx');
+  assert.match(armazon, /pantalla: 'icp',[\s\S]*?soloChat: true,/);
+  assert.ok(!/soloChat: true/.test(codigo('components/views/ToolsView.jsx')), 'Tools perdió sus formularios');
+
+  for (const panel of ['components/fundaciones/PanelHerramienta.jsx', 'components/fundaciones/PanelResearch.jsx']) {
+    const fuente = codigo(panel);
+    assert.match(fuente, /useState\(soloChat \? MODO_AGENTE : MODO_FORMULARIO\)/, `${panel} no abre en el agente`);
+    assert.match(fuente, /!soloChat \?/, `${panel} sigue mostrando el selector sin formulario`);
+  }
+
+  // Y los inputs se siguen guardando igual: el chat escribe donde escribía el formulario.
+  const operaciones = codigo('lib/fundaciones/operaciones.ts');
+  assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa\)/);
+  assert.match(operaciones, /proponerRespuestas\(\{ claveIa, herramienta: h, estado \}\)/);
+  // Si proponer falla, el chat abre igual, preguntando.
+  assert.match(operaciones, /if \(p\.tipo === 'datos'\) propuestas = p\.valores;/);
+});
+
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
   /* Son dos caminos que llenan los mismos campos del mismo formulario. Con dos esquemas, uno
      aceptaría un campo que el otro rechaza, y el defecto se vería como «por el chat sí y por el

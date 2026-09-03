@@ -73,6 +73,8 @@ export default function PanelResearch({
   organizacion,
   faltaPermiso,
   pantalla,
+  /* Sin formulario: ver la misma prop en `PanelHerramienta`. */
+  soloChat,
   onIr,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
@@ -97,7 +99,7 @@ export default function PanelResearch({
   /* Arranca en el formulario, y no en el último modo que se usó: es lo que esta pantalla ya
      mostraba, y una pantalla que cambia de forma según algo que uno no recuerda haber elegido se
      lee como un error. Elegir el chat es un clic, y el chat que quedó a medias sigue ahí. */
-  const [modo, setModo] = useState(MODO_FORMULARIO);
+  const [modo, setModo] = useState(soloChat ? MODO_AGENTE : MODO_FORMULARIO);
 
   const [salidas, setSalidas] = useState(() => [...estado.researchSalidas]);
   const [corriendo, setCorriendo] = useState(null);
@@ -230,14 +232,16 @@ export default function PanelResearch({
         ) : null}
       </div>
 
-      <SelectorDeModo
-        modo={modo}
-        onElegir={setModo}
-        bloqueado={corriendo !== null}
-        queHaceElAgente="Te hace las mismas cinco preguntas y arranca los cinco pasos cuando confirmes."
-      />
+      {!soloChat ? (
+        <SelectorDeModo
+          modo={modo}
+          onElegir={setModo}
+          bloqueado={corriendo !== null}
+          queHaceElAgente="Te hace las mismas cinco preguntas y arranca los cinco pasos cuando confirmes."
+        />
+      ) : null}
 
-      {modo === MODO_AGENTE ? (
+      {soloChat || modo === MODO_AGENTE ? (
         <ChatDeHerramienta
           herramienta={herramienta}
           inicial={estado.chats[herramienta.id]}
