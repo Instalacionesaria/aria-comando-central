@@ -39,8 +39,9 @@
  * dos mitades no puedan desalinearse.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { usarLectura } from '../../lib/usarLectura.ts';
 import { etiquetaCorta, fechaDelDia, horaEnZona, sumarDias } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
 
@@ -98,9 +99,6 @@ const dosDigitos = (n) => String(n).padStart(2, '0');
 const armarDia = (a, m, d) => `${a}-${dosDigitos(m)}-${dosDigitos(d)}`;
 
 export default function Agenda({ zonaHoraria }) {
-  const [datos, setDatos] = useState(null);
-  const [situacion, setSituacion] = useState('cargando');
-  const [causa, setCausa] = useState(null);
   const [abierta, setAbierta] = useState(null);
   const [diaElegido, setDiaElegido] = useState(null);
   /** El mes que muestra la grilla, `{a, m}`. `null` = el de hoy, que todavía no se sabe. */
@@ -109,7 +107,22 @@ export default function Agenda({ zonaHoraria }) {
   const [desplegada, setDesplegada] = useState(null);
   const [trayendo, setTrayendo] = useState(false);
   const [aviso, setAviso] = useState(null);
-  const yaPedido = useRef(false);
+
+  /* ── VOLVER A ESTA PESTAÑA NO CUESTA UN «CARGANDO» ─────────────────────────
+   *
+   * Igual que en el Pipeline: `CloserView` desmonta esta pantalla al cambiar de sub-pestaña, así
+   * que el que volvía nacía sin datos y pedía de nuevo. `usarLectura` guarda lo traído con la
+   * empresa en la clave —`ADR-0703`— y lo devuelve en el primer render.
+   *
+   * El camino lleva los días adentro, así que forma parte de la clave: cambiar `DIAS_QUE_SE_PIDEN`
+   * no puede devolver lo guardado con el valor viejo. */
+  const { datos, situacion, causa, refrescar } = usarLectura(
+    `/api/closer/agenda?dias=${DIAS_QUE_SE_PIDEN}`,
+    {
+      sinRespuesta:
+        'No se pudo contactar al servidor. No es que no tengas citas: no se pudo preguntar.',
+    },
+  );
 
   /* La zona la manda el SERVIDOR en la respuesta, y la propiedad queda como respaldo para el primer
      dibujo. Es la misma zona con la que el servidor agrupó los días: si acá se usara otra, las horas
@@ -117,38 +130,18 @@ export default function Agenda({ zonaHoraria }) {
      el defecto que `lib/negocio/tiempo.ts` vino a cerrar, un piso más arriba. */
   const zona = datos?.zonaHoraria ?? zonaHoraria ?? 'UTC';
 
-  const cargar = useCallback(async () => {
-    const r = await pedir(`/api/closer/agenda?dias=${DIAS_QUE_SE_PIDEN}`);
-    if (r.tipo !== 'datos') {
-      /* Las tres ramas sin colapsar (`ADR-0305`): un rechazo por permiso NO es «no hay citas». Con
-         una sola rama, alguien sin `closer.ver` vería una agenda vacía y creería que no tiene nada. */
-      setCausa(
-        r.tipo === 'rechazado'
-          ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
-          : 'No se pudo contactar al servidor. No es que no tengas citas: no se pudo preguntar.',
-      );
-      setSituacion(r.tipo);
-      return;
-    }
-    setDatos(r.datos);
-    setSituacion('listo');
-  }, []);
+  /* Al recuperar el foco, un disparo. Es lo que el documento pide en vez de un reloj: quien vuelve
+     a la pestaña quiere ver fresco, y esto NO llama al CRM — lee la caché de nuestra base.
 
-  useEffect(() => {
-    if (yaPedido.current) return;
-    yaPedido.current = true;
-    void cargar();
-  }, [cargar]);
-
-  /* Al recuperar el foco, un disparo. Es lo que el documento pide en vez de un reloj: quien vuelve a
-     la pestaña quiere ver fresco, y esto NO llama al CRM — lee la caché. */
+     Va por `refrescar` y no por una lectura normal: volver a la pestaña del navegador después de un
+     rato es justo cuando la ventana de frescura sobra. */
   useEffect(() => {
     const alVolver = () => {
-      if (document.visibilityState === 'visible') void cargar();
+      if (document.visibilityState === 'visible') void refrescar();
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => document.removeEventListener('visibilitychange', alVolver);
-  }, [cargar]);
+  }, [refrescar]);
 
   /* El mes que se muestra arranca en el de hoy, y sólo la primera vez: si se recalculara en cada
      carga, el disparo por foco devolvería la grilla al mes actual mientras alguien mira el siguiente. */
@@ -202,8 +195,10 @@ export default function Agenda({ zonaHoraria }) {
           : '.') +
         (d.atrasado ? ' Algún calendario falló: la lista puede estar incompleta.' : ''),
     });
-    await cargar();
-  }, [cargar]);
+    /* Y se invalida lo guardado: el barrido acaba de escribir citas en nuestra base, así que
+       respetar la ventana de frescura mostraría la agenda de antes de haberlas traído. */
+    await refrescar();
+  }, [refrescar]);
 
   /* ── EL CONTEO POR DÍA, SOBRE LA MISMA LISTA QUE SE DIBUJA ─────────────────
    * Regla 2 del encabezado. El mapa se arma una vez y lo usan la grilla y los próximos días, así que
@@ -260,7 +255,7 @@ export default function Agenda({ zonaHoraria }) {
           <i>◍</i>
           <span>{causa}</span>
         </div>
-        <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
+        <button type="button" className="fd-btn sec" onClick={() => void refrescar()}>
           Reintentar
         </button>
       </div>
@@ -526,7 +521,7 @@ export default function Agenda({ zonaHoraria }) {
           contactoId={abierta}
           alCerrar={() => {
             setAbierta(null);
-            void cargar();
+            void refrescar();
           }}
         />
       ) : null}

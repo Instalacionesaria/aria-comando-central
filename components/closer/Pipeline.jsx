@@ -46,57 +46,54 @@
  * parecer más firme de lo que es**. El servidor lo cuenta y esto lo muestra.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { pedir } from '../../lib/http/cliente.ts';
+import { useCallback, useEffect, useState } from 'react';
+import { usarLectura } from '../../lib/usarLectura.ts';
 import Ficha from '../negocio/Ficha.jsx';
 import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import Fila from '../negocio/Fila.jsx';
 
 export default function Pipeline({ camino, pulso = 0 }) {
-  const [datos, setDatos] = useState(null);
-  const [situacion, setSituacion] = useState('cargando');
-  const [causa, setCausa] = useState(null);
   const [abierta, setAbierta] = useState(null);
-  const yaPedido = useRef(false);
 
-  const cargar = useCallback(async () => {
-    const r = await pedir(camino);
-    if (r.tipo !== 'datos') {
-      /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»: con
-         una sola rama, alguien sin la capacidad de esa pantalla vería todas las columnas en cero y
-         creería que no tiene contactos. */
-      setCausa(
-        r.tipo === 'rechazado'
-          ? (r.detalle ?? `El servidor respondió ${r.estado}.`)
-          : 'No se pudo contactar al servidor. No es que no tengas contactos: no se pudo preguntar.',
-      );
-      setSituacion(r.tipo);
-      return;
-    }
-    setDatos(r.datos);
-    setSituacion('listo');
-  }, [camino]);
+  /* ── VOLVER A ESTA PESTAÑA NO CUESTA UN «CARGANDO» ─────────────────────────
+   *
+   * Acá vivía el bloque de siempre —`datos` + `situacion` + `causa` + `yaPedido` + `cargar`— y con
+   * él el defecto que llegó como queja: `CloserView` dibuja `{sub === 'pipeline' ? <Pipeline/> : null}`,
+   * así que ir a Mi Día y volver **desmontaba** esto y el que volvía nacía sin datos.
+   *
+   * `usarLectura` guarda lo traído con la empresa en la clave y lo devuelve en el primer render, así
+   * que volver pinta al instante; y si lo guardado tiene más de diez segundos, lo refresca por
+   * detrás **sin vaciar la pantalla**. El motivo largo y la fila `ADR-0703` que lo gobierna están en
+   * `lib/lecturas.ts`.
+   *
+   * Las tres ramas siguen sin colapsar (`ADR-0305`), y la frase del corte de red se sigue eligiendo
+   * acá: es propia de esta pantalla —quien no tiene la capacidad vería todas las columnas en cero y
+   * creería que no tiene contactos—. */
+  const { datos, situacion, causa, refrescar } = usarLectura(camino, {
+    sinRespuesta:
+      'No se pudo contactar al servidor. No es que no tengas contactos: no se pudo preguntar.',
+  });
 
+  /* El pulso: el reloj de la vista lo incrementa después de traer mensajes nuevos, y acá se vuelve
+     a preguntar. `> 0` saltea el montaje, o la primera carga sale dos veces.
+
+     Llama a `refrescar` y no a una lectura normal: el pulso ES el reloj, así que respetar la
+     ventana de frescura acá lo dejaría sin efecto la mitad de las veces. */
   useEffect(() => {
-    if (yaPedido.current) return;
-    yaPedido.current = true;
-    void cargar();
-  }, [cargar]);
-  /* El pulso: el reloj de la vista lo incrementa después de traer mensajes nuevos, y acá se vuelve a
-     preguntar. `> 0` saltea el montaje, o la primera carga sale dos veces. */
-  useEffect(() => {
-    if (pulso > 0) void cargar();
-  }, [pulso, cargar]);
-
+    if (pulso > 0) void refrescar();
+  }, [pulso, refrescar]);
 
   /* Se recarga al cerrar la ficha, y no siempre: registrar un resultado ahí adentro mueve al
      contacto de columna, y dejar el tablero como estaba mostraría el contacto en la columna vieja
-     justo después de haberlo movido. */
+     justo después de haberlo movido.
+
+     `refrescar` **tira lo guardado** antes de pedir, que es la mitad que la caché vuelve
+     obligatoria: sin eso, cerrar la ficha y volver a entrar mostraría el tablero de antes del
+     Avanzar. Una escritura que no invalida es la única forma en que esta caché miente. */
   const cerrarFicha = useCallback(() => {
     setAbierta(null);
-    yaPedido.current = false;
-    void cargar();
-  }, [cargar]);
+    void refrescar();
+  }, [refrescar]);
 
   if (situacion === 'cargando') {
     return (
@@ -113,7 +110,7 @@ export default function Pipeline({ camino, pulso = 0 }) {
           <i>◍</i>
           <span>{causa}</span>
         </div>
-        <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
+        <button type="button" className="fd-btn sec" onClick={() => void refrescar()}>
           Reintentar
         </button>
       </div>

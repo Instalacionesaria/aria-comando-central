@@ -40,8 +40,9 @@
  * impide — `sesiones.org_activa` se pone en nulo y el borrado pasaría.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { usarLectura } from '../../lib/usarLectura.ts';
 import { ZONAS } from '../../lib/negocio/zonas.ts';
 import Ventana from '../Ventana.jsx';
 
@@ -72,9 +73,30 @@ function porQue(r) {
 }
 
 export default function Empresas({ sesion, alCambiarDeEmpresa }) {
-  const [lista, setLista] = useState(null);
-  const [situacion, setSituacion] = useState('cargando');
-  const [causa, setCausa] = useState(null);
+  /* ── DOS DEFECTOS EN LA MISMA LÍNEA, Y EL SEGUNDO ERA EL PEOR ──────────
+   *
+   * Acá había `datos` + `situacion` + `causa` + `yaPedido` + `cargar`, y `cargar` empezaba con un
+   * `setSituacion('cargando')` a secas. Eso costaba dos cosas:
+   *
+   *   · **el parpadeo al entrar**, porque `AjustesView` desmonta el panel al cambiar de pestaña;
+   *   · y **vaciar la pantalla en cada recarga**, incluso después de crear o editar una empresa —
+   *     el mismo defecto que `CloserView` y `Credenciales` ya midieron y arreglaron por separado.
+   *     Acá no lo había arreglado nadie.
+   *
+   * `usarLectura` trae las dos mitades: memoria entre visitas, y la regla de que **teniendo datos
+   * la pantalla no se vacía nunca**. El motivo largo está en `lib/lecturas.ts`. */
+  const {
+    datos,
+    situacion,
+    causa,
+    refrescar,
+  } = usarLectura('/api/admin/organizaciones', {
+    sinRespuesta: 'No se pudo contactar al servidor.',
+    /* El mapa que este panel ya tenía. Sin pasárselo, un rechazo sin `detalle` mostraría «El
+       servidor respondió 403» en vez de la frase que explica qué falta. */
+    motivos: MOTIVOS,
+  });
+  const lista = datos?.organizaciones ?? null;
   const [aviso, setAviso] = useState(null);
 
   // ── El alta ──
@@ -105,35 +127,10 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
   const [ocupado, setOcupado] = useState(false);
   const [confirmaBorrado, setConfirmaBorrado] = useState(false);
 
-  const yaPedido = useRef(false);
-
-  const cargar = useCallback(async () => {
-    setSituacion('cargando');
-    const r = await pedir('/api/admin/organizaciones');
-    if (r.tipo === 'sin_respuesta') {
-      setCausa('No se pudo contactar al servidor.');
-      setSituacion('sin_respuesta');
-      return;
-    }
-    if (r.tipo === 'rechazado') {
-      setCausa(r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`);
-      setSituacion('rechazado');
-      return;
-    }
-    setLista(r.datos.organizaciones ?? []);
-    setSituacion('listo');
-  }, []);
-
-  useEffect(() => {
-    if (yaPedido.current) return;
-    yaPedido.current = true;
-    void cargar();
-  }, [cargar]);
-
-  const recargar = useCallback(async () => {
-    yaPedido.current = false;
-    await cargar();
-  }, [cargar]);
+  /* Después de escribir se relee ignorando la ventana de frescura: crear o editar una empresa
+     cambia justo lo que esta lista muestra, y respetar la ventana la dejaría vieja hasta diez
+     segundos. Es la mitad que la caché vuelve obligatoria. */
+  const recargar = refrescar;
 
   /* El slug que se ENVÍA es el que se MUESTRA.
      La primera versión mandaba el estado `slug`, que está vacío mientras nadie toque el campo

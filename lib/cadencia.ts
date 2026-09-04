@@ -62,4 +62,24 @@ export const CADENCIA = {
    * Acotarlo a la pantalla de Tools lo apagaría justo cuando sirve.
    */
   puntitoDeTools: 20_000,
+  /**
+   * Cuánto vale una lectura ya traída, para `lib/lecturas.ts`.
+   *
+   * ── NO ES UN RELOJ, PERO VIVE ACÁ Y NO ES POR ORDEN ──────────────────────
+   *
+   * Las demás entradas son «cada cuánto preguntar»; ésta es «cuánto dura lo que ya pregunté». Y
+   * está al lado de las otras porque **se define en relación con ellas**: el mismo argumento que
+   * el encabezado usa para el antirrebote del candado, que quedó desalineado cuando eran dos
+   * números en dos archivos.
+   *
+   * ── POR QUÉ DIEZ, Y NO UN NÚMERO ELEGIDO ─────────────────────────────────
+   *
+   * Es la cadencia de `operacion`. Con esta ventana, volver a una pestaña **nunca muestra algo
+   * más viejo de lo que esa misma pantalla ya mostraba** entre dos tics de su reloj: el techo del
+   * dato que se ve es el mismo que antes de tener caché.
+   *
+   * Subirla es afirmar que se puede ver algo más viejo que eso, y eso es una decisión de producto,
+   * no una perilla de rendimiento.
+   */
+  lecturas: 10_000,
 } as const;

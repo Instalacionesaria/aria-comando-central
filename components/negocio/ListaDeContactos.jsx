@@ -27,6 +27,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { estaFresco, guardar, leerGuardado } from '../../lib/lecturas.ts';
+import { usarClaveDeLectura } from '../../lib/usarLectura.ts';
 import { pedir } from '../../lib/http/cliente.ts';
 import Fila from './Fila.jsx';
 import Ficha from './Ficha.jsx';
@@ -48,16 +50,39 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
      -con eso refresca sus etiquetas contra el CRM- y quedarse con una copia de la fila haria que el
      encabezado mostrara el estado viejo al lado de los datos nuevos. */
   const [abierta, setAbierta] = useState(null);
-  const [filas, setFilas] = useState(null);
-  const [situacion, setSituacion] = useState('cargando');
+
+  /* ── VOLVER A ESTA PESTAÑA NO CUESTA UN «CARGANDO» ─────────────────────────
+   *
+   * `SetterView` dibuja `{sub === 'contactos' ? <ListaDeContactos/> : null}`, así que cambiar de
+   * sub-pestaña **desmonta** esto y el que vuelve nace sin nada. La regla de no vaciar la pantalla
+   * teniendo datos ya estaba acá abajo —copiada de `CloserView`— y no alcanzaba: al remontar no
+   * hay datos que conservar.
+   *
+   * ── POR QUÉ LA PRIMITIVA Y NO `usarLectura` ──────────────────────────────
+   *
+   * Porque lo que esta pantalla muestra **no es una respuesta**: es la página 0 más las que se
+   * pidieron con «Ver más». Un hook que memoriza una respuesta guardaría solo la primera, y volver
+   * a la pestaña haría desaparecer las páginas siguientes — que es peor que el «Cargando», porque
+   * se ve como una lista completa que se acortó.
+   *
+   * Así que se guarda el estado ENTERO: las filas, la página y si hay más. La clave la arma
+   * `usarClaveDeLectura`, que le pone la empresa —`ADR-0703`— sin que esta pantalla tenga que
+   * acordarse. */
+  const clave = usarClaveDeLectura(camino);
+  /* Se lee en el PRIMER render y no en un efecto: en un efecto habría un render con «Cargando» en
+     el medio, o sea el parpadeo que esto vino a sacar. */
+  const guardadoAlMontar = clave === null ? null : leerGuardado(clave);
+
+  const [filas, setFilas] = useState(guardadoAlMontar?.valor.filas ?? null);
+  const [situacion, setSituacion] = useState(guardadoAlMontar ? 'listo' : 'cargando');
   const [causa, setCausa] = useState(null);
   const [codigo, setCodigo] = useState(null);
   /* La página que ya se pidió, y si el servidor dijo que hay más.
      Sin esto la lista corta en 100 y **se ve completa**: medido contra la cuenta real, el
      closer tiene 123 contactos y la primera página trae 100. Una lista truncada que parece
      entera es el mismo defecto que un dato inventado — nadie reporta lo que no sabe que falta. */
-  const [pagina, setPagina] = useState(0);
-  const [hayMas, setHayMas] = useState(false);
+  const [pagina, setPagina] = useState(guardadoAlMontar?.valor.pagina ?? 0);
+  const [hayMas, setHayMas] = useState(guardadoAlMontar?.valor.hayMas ?? false);
   const [trayendoPagina, setTrayendoPagina] = useState(false);
   const [trayendo, setTrayendo] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -90,11 +115,17 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
       setSituacion('rechazado');
       return;
     }
-    setFilas(r.datos.filas ?? []);
-    setHayMas(Boolean(r.datos.hayMas));
+    const traidas = r.datos.filas ?? [];
+    const mas = Boolean(r.datos.hayMas);
+    setFilas(traidas);
+    setHayMas(mas);
     setPagina(0);
     setSituacion('listo');
-  }, [camino]);
+    /* Y se guarda para la próxima visita. Una carga completa **reinicia la acumulación**: la
+       página vuelve a 0, así que lo guardado no puede quedarse con las páginas de antes o la lista
+       tendría filas repetidas al volver. */
+    if (clave !== null) guardar(clave, { filas: traidas, hayMas: mas, pagina: 0 });
+  }, [camino, clave]);
 
   /* Traer la página siguiente y AGREGARLA, no reemplazar. Quien está mirando la lista no
      pierde el lugar, que es lo que pasa cuando "ver más" repinta desde cero. */
@@ -109,16 +140,28 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
       setResultado({ mal: true, texto: 'No se pudo traer la página siguiente. Lo que ves sigue siendo correcto.' });
       return;
     }
-    setFilas((antes) => [...antes, ...(r.datos.filas ?? [])]);
-    setHayMas(Boolean(r.datos.hayMas));
+    /* La lista junta se calcula ACÁ y no dentro del `set`: hace falta el valor para guardarlo, y
+       desde dentro del actualizador no se puede sacar. */
+    const juntas = [...(filas ?? []), ...(r.datos.filas ?? [])];
+    const mas = Boolean(r.datos.hayMas);
+    setFilas(juntas);
+    setHayMas(mas);
     setPagina(siguiente);
-  }, [camino, pagina]);
+    /* Lo guardado incluye las páginas de más: volver a la pestaña devuelve la lista tal como
+       estaba, no recortada a la primera página. */
+    if (clave !== null) guardar(clave, { filas: juntas, hayMas: mas, pagina: siguiente });
+  }, [camino, pagina, filas, clave]);
 
   useEffect(() => {
     if (yaPedido.current) return;
     yaPedido.current = true;
+    /* Fresco: no se pide NADA. Es el ahorro medible — ir y volver cinco veces entre dos
+       sub-pestañas cuesta una consulta en vez de cinco. Se relee acá dentro y no se usa
+       `guardadoAlMontar` para no meter un objeto nuevo de cada render en las dependencias. */
+    const g = clave === null ? null : leerGuardado(clave);
+    if (g && estaFresco(g.cuando)) return;
     void cargar();
-  }, [cargar]);
+  }, [cargar, clave]);
 
   /* ── EL PULSO: cómo el reloj de la vista recarga esta lista ─────────────────
    *

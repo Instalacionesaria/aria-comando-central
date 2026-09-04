@@ -116,13 +116,51 @@ test('ADR-0702 · el constructor único pone `no-store`, y nadie más pone `Cach
 
 // ─── ADR-0703 · toda memorización incluye la organización ───────────────────
 
-test('ADR-0703 · no hay ninguna memorización, así que no hay clave que auditar', () => {
-  // La fila pide *"ninguna clave de caché sin la organización"*. La forma más fuerte de cumplirla es
-  // que **no exista ninguna memorización**, y así está: `EJECUCION` § 2 prohíbe las primitivas del
-  // framework, y el `07` § 3 explica por qué tampoco vale una a mano —*"en funciones sin servidor
-  // las instancias se reutilizan entre peticiones de ORGANIZACIONES DISTINTAS; un caché de proceso
-  // 'para no descifrar dos veces' es exactamente cómo el token de una organización termina usándose
-  // para otra"*—.
+/**
+ * Las memorizaciones DEL NAVEGADOR, con su motivo.
+ *
+ * ── ESTA LISTA NACIÓ VACÍA, Y ESO YA NO ES CIERTO ─────────────────────────
+ *
+ * Esta prueba se llamaba *«no hay ninguna memorización, así que no hay clave que auditar»*, y era
+ * la forma más fuerte de cumplir la fila. Dejó de serlo el día que `lib/lecturas.ts` entró: volver
+ * a una sub-pestaña remontaba la pantalla y la hacía pedir de nuevo, así que ahora lo traído
+ * sobrevive al desmontaje.
+ *
+ * Con eso la fila pasa de cumplirse **por ausencia** a cumplirse **por construcción**, y esta
+ * lista es lo que lo hace comprobable. Cada entrada dice qué guarda y por qué está permitido.
+ */
+const MEMORIZACIONES_DEL_NAVEGADOR: readonly { archivo: string; porque: string }[] = [
+  {
+    archivo: 'lib/reloj.ts',
+    porque:
+      '**No es una caché de datos.** Su `Map` guarda temporizadores por clave de reloj — no hay ni ' +
+      'una fila de ninguna organización adentro, así que no hay clave que pueda cruzarse. Es el ' +
+      'archivo que la exención por `use client` ya nombraba.',
+  },
+  {
+    archivo: 'lib/lecturas.ts',
+    porque:
+      'SÍ es una caché de datos —el `Map` vive acá— y **la clave lleva el id de la empresa**, que se ' +
+      'comprueba abajo. Es la primera memorización del proyecto: existe para que volver a una ' +
+      'sub-pestaña no cueste un «Cargando», porque `CloserView` y `SetterView` desmontan la ' +
+      'pantalla al cambiar de pestaña. No importa React, y eso es lo que la vuelve comprobable de ' +
+      'verdad en `pruebas/codigo/129-lecturas.test.ts`.',
+  },
+  {
+    archivo: 'lib/usarLectura.ts',
+    porque:
+      'Los hooks. **No guarda nada por su cuenta** —su `Map` no existe: usa el de `lecturas.ts`— y ' +
+      'es el único que arma claves, leyendo la empresa de la sesión él mismo para que ninguna ' +
+      'pantalla pueda olvidársela. Está en esta lista porque lleva `use client` y el barrido de ' +
+      'arriba tiene que seguir reconociéndolo.',
+  },
+];
+
+test('ADR-0703 · ningún módulo del SERVIDOR memoriza', () => {
+  // El motivo es específico del servidor y el `07` § 3 lo escribe: *«en funciones sin servidor las
+  // instancias se reutilizan entre peticiones de ORGANIZACIONES DISTINTAS; un caché de proceso
+  // 'para no descifrar dos veces' es exactamente cómo el token de una organización termina
+  // usándose para otra»*.
   //
   // Se busca la FORMA, porque el nombre puede ser cualquiera: una estructura mutable declarada en el
   // nivel superior de un módulo del servidor.
@@ -136,15 +174,16 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
 
     /* ── Y LA EXENCIÓN POR DIRECTIVA, QUE NO ES UNA LISTA ───────────────────
      *
-     * La regla es sobre módulos del SERVIDOR, y el motivo es específico de ahí: en funciones sin
-     * servidor las instancias se reutilizan entre peticiones de organizaciones distintas. Un módulo
-     * que declara `'use client'` no atiende peticiones — su estado es de UNA pestaña de UNA persona,
-     * y ahí un `Map` en el nivel superior es la forma correcta de tener un solo reloj por clave.
+     * La regla es sobre módulos del SERVIDOR. Un módulo que declara `'use client'` no atiende
+     * peticiones — su estado es de UNA pestaña de UNA persona, y ahí un `Map` en el nivel superior
+     * es la forma correcta.
      *
      * Se exime por la DIRECTIVA y no por una lista de rutas: una lista crece, y cada línea que se le
      * agrega es una decisión que se toma en la prueba en vez de en el código. La directiva la escribe
      * el archivo sobre sí mismo, y `next build` la hace verdad — importar un módulo `'use client'`
-     * desde el servidor es un error de construcción, no una convención. */
+     * desde el servidor es un error de construcción, no una convención.
+     *
+     * Lo que SÍ es una lista es la de abajo: eximir no es no auditar. Ver la prueba siguiente. */
     if (/^\s*['"]use client['"]/.test(a.limpio)) {
       delNavegador.push(a.ruta);
       continue;
@@ -156,9 +195,9 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
       .join('\n');
     /* `Map<string, Tarea>(` y no solo `Map(`: los parámetros de tipo van ENTRE el nombre y el
        paréntesis, así que el patrón de antes —`new\s+Map\s*\(`— no veía ninguna estructura genérica.
-       `lib/reloj.ts` tiene `const tareas = new Map<string, Tarea>()` en el nivel superior y pasaba
-       por ese hueco: está bien que pase —es del navegador— pero pasaba por el motivo equivocado, y
-       un módulo del servidor con `new Map<string, Token>()` habría pasado igual. */
+       `lib/reloj.ts` tenía `const tareas = new Map<string, Tarea>()` y pasaba por ese hueco: está
+       bien que pase —es del navegador— pero pasaba por el motivo equivocado, y un módulo del
+       servidor con `new Map<string, Token>()` habría pasado igual. */
     if (/new\s+(Map|WeakMap|Set|WeakSet)\s*(<[^;=]*>)?\s*\(/.test(nivelSuperior)) {
       sospechosos.push(a.ruta);
     }
@@ -170,16 +209,18 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
       'peticiones de organizaciones distintas',
   );
 
-  /* Y la exención está VIVA, igual que la de `capa.ts` de más abajo. Sin esta línea, el día que la
-     detección de la directiva se rompa —un cambio en `sinComentarios`, una directiva movida de
-     línea— el barrido eximiría CERO archivos o TODOS, y en los dos casos seguiría verde. */
-  assert.ok(
-    delNavegador.includes('lib/reloj.ts'),
-    'la exención por `use client` dejó de reconocer los módulos del navegador, así que este barrido ' +
-      'está mirando otra cosa que la que dice',
-  );
+  /* Y la exención está VIVA. Sin esta línea, el día que la detección de la directiva se rompa —un
+     cambio en `sinComentarios`, una directiva movida de línea— el barrido eximiría CERO archivos o
+     TODOS, y en los dos casos seguiría verde. */
+  for (const { archivo } of MEMORIZACIONES_DEL_NAVEGADOR) {
+    assert.ok(
+      delNavegador.includes(archivo),
+      `la exención por \`use client\` dejó de reconocer \`${archivo}\`, así que este barrido está ` +
+        'mirando otra cosa que la que dice',
+    );
+  }
 
-  // Y la excepción está viva: si `capa.ts` dejara de tener su agrupador, la exención de arriba
+  // Y la excepción por nombre está viva: si `capa.ts` dejara de tener su agrupador, la exención
   // pasaría a ser una entrada muerta que exime a un archivo que ya no lo necesita.
   const capa = archivosFuente(['lib']).find((a) => a.ruta === 'lib/datos/capa.ts');
   assert.match(
@@ -187,6 +228,77 @@ test('ADR-0703 · no hay ninguna memorización, así que no hay clave que audita
     /new\s+Map\s*</,
     'la exención de capa.ts quedó muerta: sacala de esta prueba',
   );
+});
+
+test('ADR-0703 · la memorización del navegador lleva la EMPRESA en la clave', () => {
+  /* ── LA FILA, AHORA QUE HAY ALGO QUE AUDITAR ─────────────────────────────
+   *
+   * *«Toda memorización incluye la organización efectiva. INNEGOCIABLE.»* Mientras no hubo ninguna,
+   * la fila se cumplía sola. `lib/lecturas.ts` es la primera, así que hace falta el guardia.
+   *
+   * ── Y NO ALCANZA CON QUE HOY SE RECARGUE LA PÁGINA ──────────────────────
+   *
+   * Cambiar de empresa hace `window.location.reload()` en `components/SelectorDeEmpresa.jsx`, así
+   * que una caché en memoria muere con el cambio y la fila se cumpliría igual sin la clave. Eso es
+   * exactamente lo que esta prueba impide que sea suficiente: se cumpliría **por un efecto
+   * secundario de otro componente**, y el día que alguien haga que el selector no recargue —una
+   * optimización obvia— un superadmin empezaría a ver los datos de la empresa anterior **sin que
+   * nada falle en ninguna parte**. */
+  const lecturas = archivosFuente(['lib']).find((a) => a.ruta === 'lib/lecturas.ts');
+  const hooks = archivosFuente(['lib']).find((a) => a.ruta === 'lib/usarLectura.ts');
+  assert.ok(lecturas, 'no está `lib/lecturas.ts`: si se fue, sacá su entrada de la lista');
+  assert.ok(hooks, 'no está `lib/usarLectura.ts`: si se fue, sacá su entrada de la lista');
+
+  /* La clave se arma en UN lugar y la empresa es su primer argumento. Se afirma la firma y el
+     cuerpo: una función que reciba la empresa y no la use pasaría la primera mitad. */
+  assert.match(
+    lecturas.limpio,
+    /export function claveDeLectura\(empresaId: string, camino: string\): string {/,
+    'la clave dejó de recibir la empresa como primer argumento',
+  );
+  assert.match(
+    lecturas.limpio,
+    /return `\$\{empresaId\}\\n\$\{camino\}`;/,
+    'la clave ya no se arma con la empresa adentro',
+  );
+
+  /* Y NADIE arma una clave por su cuenta. Es la mitad que importa: con `claveDeLectura` perfecta y
+     una pantalla que llame a `guardar('mi-lista', …)`, la fila se rompe y la prueba de arriba sigue
+     verde. Las dos formas de obtenerla —el hook completo y el que solo devuelve la clave— leen la
+     sesión ellas mismas, así que ninguna pantalla puede olvidarse de la empresa. */
+  assert.match(hooks.limpio, /function usarEmpresaDeLaSesion\(\): string \| null {/);
+  for (const quien of ['usarLectura', 'usarClaveDeLectura']) {
+    const fn = hooks.limpio.match(new RegExp(`export function ${quien}[\\s\\S]*?\\n}`));
+    assert.ok(fn, `no está \`${quien}\``);
+    assert.match(
+      fn[0],
+      /usarEmpresaDeLaSesion\(\)/,
+      `\`${quien}\` dejó de leer la empresa de la sesión: pasaría a depender de que el llamador se ` +
+        'acuerde, y olvidarse no falla en ninguna parte',
+    );
+  }
+
+  /* `claveDeLectura(` se puede LLAMAR desde un solo lugar: el hook que lee la sesión. Es la mitad
+     que importa — con la función perfecta y una pantalla que llame a `guardar('mi-lista', …)`, la
+     fila se rompe y todo lo de arriba sigue verde. */
+  const fuera = archivosQueContienen(/claveDeLectura\s*\(/).filter(
+    (x) => x !== 'lib/lecturas.ts' && x !== 'lib/usarLectura.ts',
+  );
+  assert.deepEqual(
+    fuera,
+    [],
+    'alguien arma una clave de caché fuera de los dos archivos de lecturas: la empresa deja de ' +
+      'estar garantizada por construcción',
+  );
+
+  // Y la lista de memorizaciones no tiene entradas muertas ni motivos vacíos.
+  for (const m of MEMORIZACIONES_DEL_NAVEGADOR) {
+    assert.ok(
+      archivosFuente(['lib']).some((a) => a.ruta === m.archivo),
+      `\`${m.archivo}\` ya no existe: sacalo de \`MEMORIZACIONES_DEL_NAVEGADOR\``,
+    );
+    assert.ok(m.porque.length > 40, `la entrada de \`${m.archivo}\` no dice por qué está permitida`);
+  }
 });
 
 // ─── ADR-0704 · los errores no revelan estructura ──────────────────────────
