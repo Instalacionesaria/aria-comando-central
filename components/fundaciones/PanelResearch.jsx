@@ -243,6 +243,16 @@ export default function PanelResearch({
         />
       ) : null}
 
+      {corriendo !== null ? (
+        <div className="fd-construyendo" role="status" aria-live="polite">
+          <span className="fd-punto" />
+          <span>
+            <b>Construyendo tu Market Research</b> — paso {corriendo + 1} de {PASOS_RESEARCH}:{' '}
+            {TITULOS[corriendo]}. Busca en la web, así que tarda.
+          </span>
+        </div>
+      ) : null}
+
       {soloChat || modo === MODO_AGENTE ? (
         <ChatDeHerramienta
           herramienta={herramienta}

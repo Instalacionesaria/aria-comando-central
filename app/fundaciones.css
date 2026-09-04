@@ -1850,3 +1850,24 @@
   color: var(--txt-dim);
   font-weight: 600;
 }
+
+/* ── «Construyendo tu …»: la señal de que hay una generación en curso ────── */
+
+/* Arriba del chat y del documento, en acento y con el punto latiendo: es lo único de la pantalla que
+   se está moviendo, y tiene que leerse desde lejos. Un aviso gris debajo de todo no lo lograba. */
+.fd-construyendo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--c-acento) / 0.45);
+  border-radius: 12px;
+  background: var(--accent-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--txt);
+}
+.fd-construyendo b {
+  color: var(--accent);
+  font-weight: 700;
+}

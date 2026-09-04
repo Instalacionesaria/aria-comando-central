@@ -367,6 +367,20 @@ export default function PanelHerramienta({
         />
       ) : null}
 
+      {/* EL CARTEL DE QUE SE ESTÁ CONSTRUYENDO, arriba de todo y no debajo del chat. Kevin: «tiene que
+          haber algo que me diga que el ICP está siendo construido». La línea de abajo con el esqueleto
+          era fácil de no ver: esto es una banda con el nombre del entregable, y mientras dura, el chat
+          queda deshabilitado para que no se cambie nada por debajo de la generación. */}
+      {generando ? (
+        <div className="fd-construyendo" role="status" aria-live="polite">
+          <span className="fd-punto" />
+          <span>
+            <b>Construyendo tu {herramienta.etiquetaSalida}</b> con lo que ya tenés de las
+            herramientas anteriores. Tarda entre uno y tres minutos; no cierres la pestaña.
+          </span>
+        </div>
+      ) : null}
+
       {conAgente && (soloChat || modo === MODO_AGENTE) ? (
         <ChatDeHerramienta
           herramienta={herramienta}

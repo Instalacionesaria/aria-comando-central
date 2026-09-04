@@ -210,6 +210,17 @@ test('«Continuar al paso N» ARMA el paso: reabre, propone y genera si alcanza,
   assert.ok(!/listo: true/.test(operaciones), 'la apertura genera aunque nadie haya venido por el método');
 });
 
+test('mientras se genera, hay un cartel que dice QUÉ se está construyendo', () => {
+  /* Kevin: «tiene que haber algo que me diga que el ICP está siendo construido, no sé, una burbuja
+     cargando o un mensaje». La línea con el esqueleto debajo del chat no bastaba. */
+  const generica = codigo('components/fundaciones/PanelHerramienta.jsx');
+  assert.match(generica, /\{generando \? \(\s*<div className="fd-construyendo"/);
+  assert.match(generica, /Construyendo tu \{herramienta\.etiquetaSalida\}/);
+  const research = codigo('components/fundaciones/PanelResearch.jsx');
+  assert.match(research, /\{corriendo !== null \? \(\s*<div className="fd-construyendo"/);
+  assert.match(research, /Construyendo tu Market Research/);
+});
+
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
   /* Son dos caminos que llenan los mismos campos del mismo formulario. Con dos esquemas, uno
      aceptaría un campo que el otro rechaza, y el defecto se vería como «por el chat sí y por el
