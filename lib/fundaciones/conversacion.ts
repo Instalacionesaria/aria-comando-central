@@ -252,6 +252,12 @@ export function instruccionesDeEntrevista(
    * datos» con la ficha y el research a un paso. Kevin lo llamó, con razón, una estupidez.
    */
   contexto = '',
+  /**
+   * El entregable que ESTA herramienta ya generó, si existe. Reportado con captura: a «¿cuál es mi
+   * ICP?» el agente contestaba «eso todavía no existe» con el Avatar Buyer Profile a diez centímetros,
+   * debajo del chat. Recibía la ficha y el research —lo heredado— pero no lo suyo.
+   */
+  entregable = '',
 ): string {
   const campos = camposDe(h);
   const preguntas = campos.map((c, i) => lineaDePregunta(c, i + 1)).join('\n');
@@ -281,6 +287,13 @@ export function instruccionesDeEntrevista(
       ? 'LO QUE LA PERSONA YA CONSTRUYÓ EN LAS HERRAMIENTAS ANTERIORES (usalo: de acá salen la ' +
         'mayoría de las respuestas, y con esto respondés cualquier pregunta que te haga sobre su ' +
         `negocio o su mercado):\n${contexto}\n\n`
+      : '') +
+    (entregable.trim() !== ''
+      ? `EL ENTREGABLE DE ESTA HERRAMIENTA («${h.etiquetaSalida}») YA EXISTE. Ésta es su versión más ` +
+        'reciente. Si en esta conversación dijiste antes que no existía, eso quedó viejo: ahora existe. ' +
+        'Si te preguntan por él, respondé CON ÉL —resumilo, citá sus partes—, nunca digas que falta ' +
+        'armarlo. Si te piden un cambio, anotalo en `respuestas` y preguntá si regenerás con ese cambio; ' +
+        `con la confirmación, \`listo\` en true regenera.\n${entregable}\n\n`
       : '') +
     'SI TE PREGUNTA ALGO —«¿cuál es mi ICP?», «¿qué dolor tiene mi cliente?»— RESPONDÉ con lo que ' +
     'el contexto de arriba dice, corto y concreto, citando de dónde lo sacaste (su research, su ' +
@@ -491,13 +504,20 @@ export async function conversar(opciones: {
   respuestas: Record<string, string>;
   /** El contexto heredado, en texto. Ver `instruccionesDeEntrevista`. */
   contexto?: string;
+  /** El entregable ya generado de esta herramienta, si existe. Ver `instruccionesDeEntrevista`. */
+  entregable?: string;
 }): Promise<ResultadoDeConversacion> {
   const cola = opciones.mensajes.slice(-TURNOS_QUE_VE_EL_MODELO);
 
   const cuerpo: Record<string, unknown> = {
     model: MODELO,
     max_tokens: TECHO_DE_TOKENS,
-    system: instruccionesDeEntrevista(opciones.herramienta, opciones.respuestas, opciones.contexto ?? ''),
+    system: instruccionesDeEntrevista(
+      opciones.herramienta,
+      opciones.respuestas,
+      opciones.contexto ?? '',
+      opciones.entregable ?? '',
+    ),
     messages: cola.map((m) => ({ role: m.role, content: m.content })),
     tools: [
       {

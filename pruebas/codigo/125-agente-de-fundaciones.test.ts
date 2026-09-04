@@ -199,6 +199,24 @@ test('el agente recibe el contexto heredado, responde con él, y los ejemplos no
   assert.match(operaciones, /contexto: contextoHeredado\(h, estado\.datos\),/);
 });
 
+test('el agente conoce su PROPIO entregable, y no dice que no existe si existe', () => {
+  /* Reportado con captura: «cuál es mi ICP» → «eso todavía no existe», con el Avatar Buyer Profile
+     generado debajo del chat. Recibía lo heredado, no lo suyo. Y la conversación vieja ya tenía turnos
+     del agente diciendo que no existía, así que la instrucción tiene que corregirlos explícitamente. */
+  const icp = herramienta(3)!;
+  const con = instruccionesDeEntrevista(icp, {}, '', 'AVATAR: dueño de agencia PPC en EE.UU.');
+  assert.ok(con.includes('YA EXISTE'), 'no le dice al agente que el entregable existe');
+  assert.ok(con.includes('AVATAR: dueño de agencia PPC en EE.UU.'), 'el entregable no llega al agente');
+  assert.ok(con.includes('Si en esta conversación dijiste antes que no existía, eso quedó viejo'));
+  assert.ok(!instruccionesDeEntrevista(icp, {}).includes('YA EXISTE'), 'afirma que existe cuando no hay nada');
+
+  const operaciones = leer('lib/fundaciones/operaciones.ts');
+  assert.match(operaciones, /entregable: entregableDe\(h, estado\.datos\),/);
+  // El Research manda sus cinco pasos; las demás, la última versión con su fecha.
+  assert.match(operaciones, /if \(h\.forma === 'research'\) \{[\s\S]*?estado\.researchSalidas/);
+  assert.match(operaciones, /\(versión del \$\{ultima\.date\}\)/);
+});
+
 test('las instrucciones dicen lo que YA se sabe: el estado no vive en el historial', () => {
   /* Al modelo se le manda la cola de la conversación, no la conversación entera. Lo que hace que
      recortarla no pierda nada es que las respuestas viajan enteras en cada llamada. Sin esto, el

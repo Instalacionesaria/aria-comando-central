@@ -505,6 +505,28 @@ async function abrir(
 /** Cuántos caracteres se aceptan en un turno de la persona. */
 export const TOPE_DE_UN_TURNO = 4_000;
 
+/** Cuánto del entregable propio ve el agente por turno. Alcanza para responder sobre él. */
+export const CARACTERES_DEL_ENTREGABLE = 6_000;
+
+/**
+ * El entregable ya generado de una herramienta, en texto, o vacío si no hay.
+ *
+ * El Research no tiene «una» versión: son cinco pasos, y se mandan los cinco con su título. Las otras
+ * ocho tienen historial; se manda la versión más reciente con su fecha, para que el agente pueda decir
+ * «tu avatar del 2 de septiembre dice…».
+ */
+function entregableDe(h: Herramienta, estado: EstadoDeFundaciones): string {
+  if (h.forma === 'research') {
+    const pasos = estado.researchSalidas.filter((s) => !!s && s.trim() !== '');
+    if (pasos.length === 0) return '';
+    return pasos.map((s, i) => `## Paso ${i + 1}\n${s}`).join('\n\n').slice(0, CARACTERES_DEL_ENTREGABLE);
+  }
+  const versiones = estado.historial[h.id];
+  const ultima = versiones && versiones.length > 0 ? versiones[0] : undefined;
+  if (!ultima || !ultima.output) return '';
+  return `(versión del ${ultima.date})\n${ultima.output.slice(0, CARACTERES_DEL_ENTREGABLE)}`;
+}
+
 export async function conversarConElAgente(
   peticion: Request,
   acceso: Acceso,
@@ -579,6 +601,9 @@ export async function conversarConElAgente(
     /* El mismo contexto que lee el prompt de generación. Es lo que hace que el agente pueda contestar
        «¿cuál es mi ICP?» con el research en vez de con «todavía no tengo datos». */
     contexto: contextoHeredado(h, estado.datos),
+    /* Y SU PROPIO entregable, si ya existe: sin esto contestaba «eso todavía no existe» con el avatar
+       generado debajo del chat. Se manda recortado —es un documento largo— y con su fecha. */
+    entregable: entregableDe(h, estado.datos),
   });
   if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);
 
