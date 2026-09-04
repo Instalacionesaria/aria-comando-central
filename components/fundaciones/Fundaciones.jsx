@@ -24,11 +24,12 @@
    vive en la interfaz. Pintar siete formularios en blanco en los tres casos sería el
    defecto del `07` § 2 con un disfraz nuevo. */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { FUNDACIONES } from '@/lib/fundaciones/herramientas';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
+import { aValoresDeFormulario, conValoresPorOmision, idsDeCampos } from '@/lib/fundaciones/campos';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import PanelHerramienta from './PanelHerramienta';
@@ -182,6 +183,81 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
    */
   const recargar = useCallback(() => cargar(), [cargar]);
 
+  /* ── CONSTRUIR EL MÉTODO EN CADENA ────────────────────────────────────────
+   *
+   * Pedido de Kevin: «un botón en el Research que me permita ejecutar el 3, 4, 5, 6 y 7 en
+   * secuencia». Con los cinco pasos del research listos, las herramientas que siguen en ESTA
+   * pantalla se construyen una tras otra, cada una con lo que la anterior acaba de producir.
+   *
+   * Vive acá y no en el panel del Research a propósito: el panel se desmonta al cambiar de
+   * subpestaña, y una cadena de cinco generaciones —diez minutos— no puede depender de que nadie
+   * toque nada. El armazón de la pantalla sigue montado aunque se cambie de vista.
+   *
+   * Cada eslabón es lo mismo que hace «Continuar al paso N» a una herramienta sin entregable, y por
+   * los mismos caminos: el agente abre proponiendo con `generar`, y si con lo heredado alcanza, se
+   * genera. La diferencia es que acá se REGENERA aunque ya exista entregable —«ejecutar todos» es
+   * eso— y las versiones se apilan, no se pisan. Si a una herramienta le falta un obligatorio que
+   * lo heredado no cubre, la cadena se detiene ahí y abre esa herramienta: el agente ya tiene la
+   * pregunta hecha.
+   *
+   * El orden es el del catálogo de la pantalla, DESPUÉS del Research: hoy ICP, Categoría, Oferta,
+   * Tu precio, Mapa. No está escrito acá; sale de `herramientas`. */
+  const [cadena, setCadena] = useState(null);
+  const cadenaViva = useRef(false);
+
+  const eslabonesDelMetodo = useCallback(() => {
+    const i = herramientas.findIndex((h) => h.forma === 'research');
+    return i < 0 ? [] : herramientas.slice(i + 1).filter((h) => h.forma === 'generica');
+  }, [herramientas]);
+
+  const construirElMetodo = useCallback(async () => {
+    const eslabones = eslabonesDelMetodo();
+    if (eslabones.length === 0 || cadenaViva.current) return;
+    cadenaViva.current = true;
+    const hechos = [];
+
+    for (const [indice, h] of eslabones.entries()) {
+      setCadena({ indice, total: eslabones.length, actual: h, hechos: [...hechos], detenida: null });
+      setActiva(h.id);
+
+      const apertura = await pedir(rutaConversar, {
+        metodo: 'POST',
+        cuerpo: { herramienta: h.id, reiniciar: true, generar: true },
+        espera: ESPERA_DE_RUTA_LARGA_MS,
+      });
+      if (apertura.tipo !== 'datos' || !apertura.datos.listo) {
+        /* Se detiene y se queda en esa herramienta: si fue por un obligatorio que faltaba, el agente
+           ya la dejó preguntada; si fue por un fallo, el chat muestra el error. Seguir con la
+           siguiente sería construirla sobre un hueco. */
+        setCadena({ indice, total: eslabones.length, actual: h, hechos, detenida: h });
+        cadenaViva.current = false;
+        return;
+      }
+
+      /* Los valores van por argumento, con el mismo cuidado de siempre: son los que el agente acaba de
+         proponer, no los de ningún estado de React. */
+      const ids = idsDeCampos(h.id);
+      const valores = conValoresPorOmision(h, aValoresDeFormulario(ids, apertura.datos.respuestas));
+      const generacion = await pedir(rutaGenerar, {
+        metodo: 'POST',
+        cuerpo: { herramienta: h.id, valores },
+        espera: ESPERA_DE_RUTA_LARGA_MS,
+      });
+      if (generacion.tipo !== 'datos') {
+        setCadena({ indice, total: eslabones.length, actual: h, hechos, detenida: h });
+        cadenaViva.current = false;
+        return;
+      }
+      hechos.push(h.id);
+      /* Se recarga antes del siguiente eslabón para que la pantalla muestre el documento nuevo. El
+         servidor no lo necesita —lee el almacén en cada llamada—; es para quien mira. */
+      await cargar();
+    }
+
+    setCadena(null);
+    cadenaViva.current = false;
+  }, [eslabonesDelMetodo, rutaConversar, rutaGenerar, cargar]);
+
   /* Mientras no llegó nada todavía, no se pinta la estructura a medias: un formulario que
      aparece vacío y medio segundo después se rellena solo hace que alguien empiece a escribir
      sobre lo que estaba por cargar. */
@@ -240,6 +316,44 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
 
   return (
     <>
+      {/* La banda de la cadena, arriba de TODO: sigue visible aunque se cambie de subpestaña, que es
+          justo cuando alguien quiere saber si aquello sigue andando. Cinco generaciones son unos diez
+          minutos, y un proceso de diez minutos sin señal es un proceso que parece muerto. */}
+      {cadena ? (
+        <div className={`fd-cadena${cadena.detenida ? ' detenida' : ''}`} role="status" aria-live="polite">
+          {cadena.detenida ? null : <span className="fd-punto" />}
+          <span className="fd-cadena-texto">
+            {cadena.detenida ? (
+              <>
+                <b>La cadena se detuvo en {cadena.detenida.titulo}.</b> Mirá el chat de esa
+                herramienta: o le falta un dato que no pude deducir, o la generación falló.
+              </>
+            ) : (
+              <>
+                <b>Construyendo el método</b> · {cadena.indice + 1} de {cadena.total} ·{' '}
+                {cadena.actual.titulo}
+              </>
+            )}
+          </span>
+          <span className="fd-cadena-eslabones">
+            {eslabonesDelMetodo().map((h) => (
+              <span
+                key={h.id}
+                className={`fd-eslabon${cadena.hechos.includes(h.id) ? ' hecho' : ''}${cadena.actual.id === h.id && !cadena.detenida ? ' aqui' : ''}`}
+                title={h.titulo}
+              >
+                {h.pestania}
+              </span>
+            ))}
+          </span>
+          {cadena.detenida ? (
+            <button type="button" className="fd-btn sec" onClick={() => setCadena(null)}>
+              Entendido
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="cl-sub fd-sub" role="tablist">
         {herramientas.map((h, i) => {
           const completo = pasoCompleto(estadoUsable, h.id);
@@ -343,6 +457,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           soloChat={soloChat}
           rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
           onIr={irA}
+          onConstruirElMetodo={cadena ? null : construirElMetodo}
+          eslabonesDelMetodo={eslabonesDelMetodo()}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}

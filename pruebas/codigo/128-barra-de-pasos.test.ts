@@ -234,6 +234,30 @@ test('mientras se genera, hay un cartel que dice QUÉ se está construyendo', ()
   assert.match(research, /Construyendo tu Market Research/);
 });
 
+test('«Construir el método completo» encadena los pasos que siguen al Research, en orden y con freno', () => {
+  /* Pedido de Kevin: «un botón en el Research que me permita ejecutar el 3, 4, 5, 6 y 7 en secuencia».
+     Vive en el armazón —el panel se desmonta al cambiar de subpestaña, y son diez minutos—, el orden
+     sale del catálogo, cada eslabón es el mismo camino que «Continuar al paso N», y se detiene donde
+     falte un obligatorio que lo heredado no cubra: seguir sería construir sobre un hueco. */
+  const armazon = codigo('components/fundaciones/Fundaciones.jsx');
+  // El orden no está escrito: son las genéricas de la pantalla DESPUÉS del Research.
+  assert.match(armazon, /herramientas\.slice\(i \+ 1\)\.filter\(\(h\) => h\.forma === 'generica'\)/);
+  // Cada eslabón abre proponiendo y pidiendo generar, y espera lo que la ruta puede tardar.
+  assert.match(armazon, /cuerpo: \{ herramienta: h\.id, reiniciar: true, generar: true \}/);
+  // Se detiene si el agente no pudo arrancar, y se queda en esa herramienta.
+  assert.match(armazon, /if \(apertura\.tipo !== 'datos' \|\| !apertura\.datos\.listo\) \{/);
+  assert.match(armazon, /detenida: h \}/);
+  // Los valores van por argumento, desde la respuesta del agente, nunca desde un estado.
+  assert.match(armazon, /conValoresPorOmision\(h, aValoresDeFormulario\(ids, apertura\.datos\.respuestas\)\)/);
+  // Y la banda de progreso vive en el armazón, arriba de las subpestañas.
+  assert.match(armazon, /className=\{`fd-cadena/);
+
+  const research = codigo('components/fundaciones/PanelResearch.jsx');
+  // El botón aparece solo con los cinco pasos, con permiso de editar, y mientras no corra otra cadena.
+  assert.match(research, /hechos >= PASOS_RESEARCH && puedeEditar && onConstruirElMetodo && eslabonesDelMetodo/);
+  assert.match(armazon, /onConstruirElMetodo=\{cadena \? null : construirElMetodo\}/);
+});
+
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
   /* Son dos caminos que llenan los mismos campos del mismo formulario. Con dos esquemas, uno
      aceptaría un campo que el otro rechaza, y el defecto se vería como «por el chat sí y por el

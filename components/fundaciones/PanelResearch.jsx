@@ -78,6 +78,9 @@ export default function PanelResearch({
   /* Se llegó por «Continuar al paso 2». Ver `PanelHerramienta`. */
   rellenarAlLlegar,
   onIr,
+  /* Construir en cadena los pasos que siguen. `null` mientras una cadena corre. Ver `Fundaciones`. */
+  onConstruirElMetodo,
+  eslabonesDelMetodo,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
      sus rutas igual: que una pantalla tenga una sola herramienta de este tipo no es motivo
@@ -477,6 +480,25 @@ export default function PanelResearch({
             Los cinco pasos están. <b>El paso 5 es lo que hereda tu ICP</b>: si volvés a
             ejecutar el research, conviene regenerar el ICP después.
           </span>
+        </div>
+      ) : null}
+
+      {/* Con los cinco pasos, el botón que construye lo que sigue, en cadena. Solo con permiso de
+          editar —son cinco generaciones de la llave de la organización— y solo si hay eslabones:
+          cuántos y cuáles sale del catálogo, no de este archivo. */}
+      {hechos >= PASOS_RESEARCH && puedeEditar && onConstruirElMetodo && eslabonesDelMetodo && eslabonesDelMetodo.length > 0 ? (
+        <div className="fd-construir">
+          <div className="fd-construir-texto">
+            <b>⚡ Construir el método completo (pasos 3 → {2 + eslabonesDelMetodo.length})</b>
+            <span>
+              {eslabonesDelMetodo.map((h) => h.pestania).join(' → ')}, uno tras otro, cada uno con lo
+              que el anterior acaba de producir. Son {eslabonesDelMetodo.length} generaciones, unos{' '}
+              {eslabonesDelMetodo.length * 2} minutos. Las versiones anteriores se conservan.
+            </span>
+          </div>
+          <button type="button" className="fd-btn" onClick={onConstruirElMetodo}>
+            Construir
+          </button>
         </div>
       ) : null}
 

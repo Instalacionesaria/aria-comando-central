@@ -1871,3 +1871,66 @@
   color: var(--accent);
   font-weight: 700;
 }
+
+/* ── Construir el método en cadena ───────────────────────────────────────── */
+
+.fd-construir {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgb(var(--c-acento) / 0.35);
+  border-radius: 12px;
+  background: var(--bg-panel);
+}
+.fd-construir-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 320px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+.fd-construir-texto b {
+  font-size: 13px;
+  color: var(--txt);
+  font-weight: 600;
+}
+
+/* La banda de la cadena: arriba de la barra de subpestañas, visible desde cualquier herramienta. */
+.fd-cadena {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--c-acento) / 0.45);
+  border-radius: 12px;
+  background: var(--accent-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--txt);
+}
+.fd-cadena b { color: var(--accent); font-weight: 700; }
+.fd-cadena.detenida {
+  border-color: rgb(var(--c-warn) / 0.45);
+  background: var(--bg-panel);
+}
+.fd-cadena.detenida b { color: var(--warn); }
+.fd-cadena-texto { flex: 1 1 260px; min-width: 0; }
+.fd-cadena-eslabones { display: flex; gap: 6px; flex-wrap: wrap; }
+.fd-eslabon {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.fd-eslabon.hecho { color: var(--ok); border-color: rgb(var(--c-ok) / 0.35); }
+.fd-eslabon.aqui { color: var(--accent); border-color: rgb(var(--c-acento) / 0.5); }
