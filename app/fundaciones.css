@@ -394,6 +394,34 @@
   margin-top: 5px;
 }
 
+/* El contraste del ICP: "Dónde están hoy" | "Dónde quieren estar". Mismo cuerpo que el veredicto,
+   pero vive en mitad del documento, donde el modelo puso el <icp-mirror>. */
+.fd-espejo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.fd-espejo > div {
+  background: var(--bg-raise);
+  padding: 11px 13px;
+}
+.fd-espejo .fd-vt {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+  margin-bottom: 4px;
+}
+.fd-espejo > div + div .fd-vt {
+  color: var(--ok);
+}
+
 /* ── El documento ────────────────────────────────────────────────────────── */
 
 .fd-doc-cab {

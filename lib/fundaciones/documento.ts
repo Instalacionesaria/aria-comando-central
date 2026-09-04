@@ -30,6 +30,20 @@ export interface DocumentoLeido {
 }
 
 const BLOQUE = /<veredicto>([\s\S]*?)<\/veredicto>/i;
+
+/**
+ * El bloque de contraste del ICP: `<icp-mirror><now>…</now><after>…</after></icp-mirror>`.
+ *
+ * La skill `icp/avatar` lo exige "con EXACTAMENTE esta sintaxis" en mitad del documento. A diferencia
+ * del veredicto no se saca del cuerpo: se pinta EN SU LUGAR como dos columnas —"Dónde están hoy" y
+ * "Dónde quieren estar"— que es lo que ARIA-brain hace en `OutputRenderer`. Sin esto el alumno ve
+ * `<icp-mirror>` crudo en su cliente ideal, y como el resto sale bien, nadie lo reporta.
+ */
+const ESPEJO = /<icp-mirror>\s*<now>([\s\S]*?)<\/now>\s*<after>([\s\S]*?)<\/after>\s*<\/icp-mirror>/gi;
+/** Etiquetas del espejo que quedaron sueltas (un modelo que abrió `<now>` y no cerró). Se quitan. */
+const RESTOS_DEL_ESPEJO = /<\/?(icp-mirror|now|after)>/gi;
+const HOY = 'Dónde están hoy';
+const DESPUES = 'Dónde quieren estar';
 const ITEM = /<item\s+titulo\s*=\s*"([^"]*)"\s*>([\s\S]*?)<\/item>/gi;
 
 /**
@@ -83,6 +97,42 @@ function celdas(linea: string): string[] {
  * ninguna separación. Las clases están en `app/fundaciones.css`.
  */
 export function aHtml(texto: string): string {
+  if (!texto) return '';
+  // El espejo se separa ANTES de escapar, pero cada pedazo de texto del modelo —las dos columnas y
+  // lo de afuera— entra a `bloqueAHtml`, que escapa primero. Lo único que se agrega sin escapar son
+  // las dos etiquetas fijas de este archivo. La regla del encabezado sigue en pie.
+  let html = '';
+  let desde = 0;
+  ESPEJO.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = ESPEJO.exec(texto)) !== null) {
+    html += bloqueAHtml(sinRestos(texto.slice(desde, m.index)));
+    html +=
+      '<div class="fd-espejo">' +
+      `<div><div class="fd-vt">${HOY}</div>${bloqueAHtml((m[1] ?? '').trim())}</div>` +
+      `<div><div class="fd-vt">${DESPUES}</div>${bloqueAHtml((m[2] ?? '').trim())}</div>` +
+      '</div>';
+    desde = m.index + m[0].length;
+  }
+  html += bloqueAHtml(sinRestos(texto.slice(desde)));
+  return html;
+}
+
+function sinRestos(texto: string): string {
+  return texto.replace(RESTOS_DEL_ESPEJO, '');
+}
+
+/** El espejo como Markdown plano, para el portapapeles y los archivos. */
+function aplanarEspejo(texto: string): string {
+  ESPEJO.lastIndex = 0;
+  return sinRestos(
+    texto.replace(ESPEJO, (_, hoy: string, despues: string) =>
+      `**${HOY}**\n${hoy.trim()}\n\n**${DESPUES}**\n${despues.trim()}`,
+    ),
+  );
+}
+
+function bloqueAHtml(texto: string): string {
   if (!texto) return '';
   const lineas = escapar(texto).split('\n');
   let html = '';
@@ -167,11 +217,12 @@ export function aHtml(texto: string): string {
 /**
  * El documento listo para copiar o descargar: el veredicto como lista, y el cuerpo.
  *
- * El bloque `<veredicto>` NUNCA sale crudo al portapapeles. Es la misma regla que en pantalla, y por
+ * Ni el bloque `<veredicto>` ni el `<icp-mirror>` salen crudos al portapapeles. Es la misma regla que en pantalla, y por
  * el mismo motivo: quien pega esto en un documento para su coach no tiene por qué recibir etiquetas.
  */
 export function aTextoPlano(texto: string): string {
-  const { veredicto, cuerpo } = leerDocumento(texto);
+  const { veredicto, cuerpo: crudo } = leerDocumento(texto);
+  const cuerpo = aplanarEspejo(crudo);
   if (veredicto.length === 0) return cuerpo;
   const cabecera = veredicto.map((v) => `- **${v.titulo}:** ${v.conclusion}`).join('\n');
   return `## En una mirada\n${cabecera}\n\n${cuerpo}`;

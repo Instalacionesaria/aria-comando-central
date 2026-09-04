@@ -923,6 +923,37 @@ test('el frontmatter YAML NO llega al prompt, con cualquier final de línea', ()
 
 // ─── El veredicto nunca sale crudo ─────────────────────────────────────────
 
+test('el bloque <icp-mirror> se pinta como dos columnas y NUNCA llega crudo a la pantalla ni al portapapeles', () => {
+  const crudo =
+    '# Avatar\n\nResumen.\n\n<icp-mirror>\n<now>\nHoy vende **a mano**.\n</now>\n<after>\n' +
+    'Quiere un sistema.\n</after>\n</icp-mirror>\n\n## Dolores\n\n- Uno';
+
+  // En pantalla: dos columnas con sus rótulos, el contenido adentro, y NINGUNA etiqueta —ni cruda
+  // ni escapada— del bloque.
+  const html = aHtml(crudo);
+  assert.match(html, /class="fd-espejo"/, 'el espejo no se pintó como bloque propio');
+  assert.match(html, /Dónde están hoy/);
+  assert.match(html, /Dónde quieren estar/);
+  assert.match(html, /<strong>a mano<\/strong>/, 'el Markdown de adentro del espejo se perdió');
+  assert.match(html, /Quiere un sistema/);
+  assert.doesNotMatch(html, /icp-mirror>|&lt;now|&lt;after|<now>|<after>/, 'salió una etiqueta del espejo');
+  // Lo de antes y lo de después del espejo se sigue renderizando.
+  assert.match(html, /fd-h1[^>]*>Avatar/);
+  assert.match(html, /fd-h2[^>]*>Dolores/);
+
+  // Al copiar o descargar: Markdown con los dos rótulos, sin etiquetas.
+  const plano = aTextoPlano(crudo);
+  assert.doesNotMatch(plano, /<\/?(icp-mirror|now|after)>/, 'el espejo salió crudo al portapapeles');
+  assert.match(plano, /\*\*Dónde están hoy\*\*\nHoy vende \*\*a mano\*\*/);
+  assert.match(plano, /\*\*Dónde quieren estar\*\*\nQuiere un sistema/);
+
+  // Una etiqueta suelta (el modelo abrió <now> y no cerró) se quita en vez de mostrarse.
+  const roto = 'Texto <now>sin cierre y </icp-mirror> algo más';
+  assert.doesNotMatch(aHtml(roto), /now|icp-mirror/);
+  assert.match(aHtml(roto), /sin cierre y/, 'quitar la etiqueta suelta se llevó el texto');
+  assert.doesNotMatch(aTextoPlano(roto), /<now>|<\/icp-mirror>/);
+});
+
 test('el bloque <veredicto> se separa y NUNCA llega crudo a la pantalla ni al portapapeles', () => {
   const crudo =
     '<veredicto>\n<item titulo="Transformación">de X a Y</item>\n' +
