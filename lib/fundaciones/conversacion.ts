@@ -244,6 +244,14 @@ function lineaDePregunta(campo: Campo, n: number): string {
 export function instruccionesDeEntrevista(
   h: Herramienta,
   respuestas: Record<string, string>,
+  /**
+   * Lo que las herramientas anteriores ya produjeron, en texto. Es el MISMO contexto que lee el
+   * prompt de generación (`contextoHeredado`), y viaja en cada turno.
+   *
+   * Sin esto el agente era un cuestionario ciego: a «¿cuál es mi ICP?» respondía «todavía no tengo
+   * datos» con la ficha y el research a un paso. Kevin lo llamó, con razón, una estupidez.
+   */
+  contexto = '',
 ): string {
   const campos = camposDe(h);
   const preguntas = campos.map((c, i) => lineaDePregunta(c, i + 1)).join('\n');
@@ -269,7 +277,20 @@ export function instruccionesDeEntrevista(
     'primero necesitás las respuestas y seguí preguntando.\n\n' +
     `LAS PREGUNTAS, EN ORDEN:\n${preguntas}\n\n` +
     `LO QUE YA SABÉS:\n${estado}\n\n` +
+    (contexto.trim() !== ''
+      ? 'LO QUE LA PERSONA YA CONSTRUYÓ EN LAS HERRAMIENTAS ANTERIORES (usalo: de acá salen la ' +
+        'mayoría de las respuestas, y con esto respondés cualquier pregunta que te haga sobre su ' +
+        `negocio o su mercado):\n${contexto}\n\n`
+      : '') +
+    'SI TE PREGUNTA ALGO —«¿cuál es mi ICP?», «¿qué dolor tiene mi cliente?»— RESPONDÉ con lo que ' +
+    'el contexto de arriba dice, corto y concreto, citando de dónde lo sacaste (su research, su ' +
+    'ficha). No contestes «todavía no tengo datos» si los datos están arriba. Si pregunta por el ' +
+    'entregable completo y todavía no existe, resumile lo que ya tenés para armarlo y preguntale ' +
+    'si genera: el documento completo lo produce otro proceso cuando confirme.\n\n' +
     'CÓMO PREGUNTAR:\n' +
+    '· Los «Ejemplo de respuesta» de arriba son FORMATO, no datos. Nunca los anotes como respuesta.\n' +
+    '· Antes de preguntar algo, mirá si el contexto ya lo contesta. Si lo contesta, ANOTALO y ' +
+    'confirmalo en una línea en vez de preguntarlo.\n' +
     '· Una pregunta por turno. La que sigue sin responder, en el orden de arriba.\n' +
     '· Si en una sola respuesta te contesta varias, tomalas todas y no las vuelvas a preguntar.\n' +
     '· Si la respuesta es vaga, pedí que la concrete UNA vez; si la segunda sigue vaga, tomá lo que ' +
@@ -450,13 +471,15 @@ export async function conversar(opciones: {
   herramienta: Herramienta;
   mensajes: readonly MensajeDeChat[];
   respuestas: Record<string, string>;
+  /** El contexto heredado, en texto. Ver `instruccionesDeEntrevista`. */
+  contexto?: string;
 }): Promise<ResultadoDeConversacion> {
   const cola = opciones.mensajes.slice(-TURNOS_QUE_VE_EL_MODELO);
 
   const cuerpo: Record<string, unknown> = {
     model: MODELO,
     max_tokens: TECHO_DE_TOKENS,
-    system: instruccionesDeEntrevista(opciones.herramienta, opciones.respuestas),
+    system: instruccionesDeEntrevista(opciones.herramienta, opciones.respuestas, opciones.contexto ?? ''),
     messages: cola.map((m) => ({ role: m.role, content: m.content })),
     tools: [
       {

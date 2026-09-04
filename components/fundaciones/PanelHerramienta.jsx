@@ -376,6 +376,9 @@ export default function PanelHerramienta({
           onRespuestas={anotarLoDelAgente}
           onArrancar={generarDesdeElAgente}
           rutaConversar={rutaConversar}
+          /* Sin entregable todavía y llegando por el método: la conversación arranca de nuevo, con
+             las propuestas hechas sobre lo que existe HOY. Con entregable, se respeta la que había. */
+          reiniciarAlAbrir={!!rellenarAlLlegar && !!soloChat && versionesGuardadas.length === 0}
         />
       ) : (
         <div className="card">

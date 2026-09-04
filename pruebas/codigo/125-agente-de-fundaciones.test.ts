@@ -182,6 +182,23 @@ test('lo opcional se puede saltear, lo que tiene omisión no se insiste, y eso s
   }
 });
 
+test('el agente recibe el contexto heredado, responde con él, y los ejemplos no son respuestas', () => {
+  /* Reportado con captura: a «¿cuál es mi ICP?» el agente contestaba «todavía no tengo suficientes
+     datos» con la ficha y el research a un paso, y había anotado como nicho el TEXTO DEL EJEMPLO del
+     campo («dueños de agencias de marketing»). Las dos cosas eran del prompt: no recibía el contexto,
+     y nadie le decía que los ejemplos son formato. */
+  const conContexto = instruccionesDeEntrevista(RESEARCH, {}, 'SEGMENTO GANADOR: agencias PPC');
+  assert.ok(conContexto.includes('SEGMENTO GANADOR: agencias PPC'), 'el contexto heredado no llega al agente');
+  assert.ok(conContexto.includes('No contestes «todavía no tengo datos» si los datos están arriba'));
+  assert.ok(conContexto.includes('son FORMATO, no datos. Nunca los anotes como respuesta'));
+  // Sin contexto, la sección no aparece: no se le promete al modelo algo que no viene.
+  assert.ok(!instruccionesDeEntrevista(RESEARCH, {}).includes('YA CONSTRUYÓ EN LAS HERRAMIENTAS ANTERIORES'));
+
+  // Y el servidor lo manda en cada turno, con el mismo constructor que usa el prompt de generación.
+  const operaciones = leer('lib/fundaciones/operaciones.ts');
+  assert.match(operaciones, /contexto: contextoHeredado\(h, estado\.datos\),/);
+});
+
 test('las instrucciones dicen lo que YA se sabe: el estado no vive en el historial', () => {
   /* Al modelo se le manda la cola de la conversación, no la conversación entera. Lo que hace que
      recortarla no pierda nada es que las respuestas viajan enteras en cada llamada. Sin esto, el

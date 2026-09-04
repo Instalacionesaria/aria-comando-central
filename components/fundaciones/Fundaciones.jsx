@@ -341,6 +341,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           faltaPermiso={faltaPermiso}
           pantalla={pantalla}
           soloChat={soloChat}
+          rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
           onIr={irA}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}

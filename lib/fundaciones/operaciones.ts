@@ -59,7 +59,7 @@ import {
   mensajeDeAperturaConPropuesta,
   type FalloDeConversacion,
 } from './conversacion.ts';
-import { proponerRespuestas } from './relleno.ts';
+import { contextoHeredado, proponerRespuestas } from './relleno.ts';
 import type { ChatDeHerramienta, EstadoDeFundaciones } from './estado.ts';
 import { generar } from './generacion.ts';
 import { PASOS_RESEARCH, tieneAgente, type Herramienta } from './herramientas.ts';
@@ -554,6 +554,9 @@ export async function conversarConElAgente(
     herramienta: h,
     mensajes: conElTurno,
     respuestas: previas,
+    /* El mismo contexto que lee el prompt de generación. Es lo que hace que el agente pueda contestar
+       «¿cuál es mi ICP?» con el research en vez de con «todavía no tengo datos». */
+    contexto: contextoHeredado(h, estado.datos),
   });
   if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);
 

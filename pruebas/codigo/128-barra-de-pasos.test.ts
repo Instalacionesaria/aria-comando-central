@@ -169,6 +169,23 @@ test('«ICP & Oferta» se trabaja solo por chat, y Tools conserva las dos opcion
   assert.match(operaciones, /if \(p\.tipo === 'datos'\) propuestas = p\.valores;/);
 });
 
+test('llegar por el método a una herramienta sin entregable reinicia el chat, con propuestas nuevas', () => {
+  /* Reportado: «Continuar al paso 3» llevaba a una conversación vieja —de antes de que el agente
+     supiera proponer— y no pasaba nada visible. La apertura que propone solo corre en una conversación
+     NUEVA, así que llegar por el método a una herramienta sin entregable la reinicia. Con entregable,
+     la conversación que había se respeta: ahí sí hubo trabajo. */
+  const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
+  assert.match(chat, /if \(mensajes\.length > 0 && !reiniciarAlAbrir\) return;/);
+  assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true \} : \{\}\)/);
+  // Y se ve que está trabajando: la apertura lee, no «escribe».
+  assert.match(chat, /Leyendo tu ficha y tu research para proponerte las respuestas/);
+
+  const generica = codigo('components/fundaciones/PanelHerramienta.jsx');
+  assert.match(generica, /reiniciarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && versionesGuardadas\.length === 0\}/);
+  const research = codigo('components/fundaciones/PanelResearch.jsx');
+  assert.match(research, /reiniciarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && hechos === 0\}/);
+});
+
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
   /* Son dos caminos que llenan los mismos campos del mismo formulario. Con dos esquemas, uno
      aceptaría un campo que el otro rechaza, y el defecto se vería como «por el chat sí y por el

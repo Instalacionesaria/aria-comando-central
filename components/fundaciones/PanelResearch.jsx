@@ -75,6 +75,8 @@ export default function PanelResearch({
   pantalla,
   /* Sin formulario: ver la misma prop en `PanelHerramienta`. */
   soloChat,
+  /* Se llegó por «Continuar al paso 2». Ver `PanelHerramienta`. */
+  rellenarAlLlegar,
   onIr,
   onEstadoCambiado,
   /* Ver la nota de `PanelHerramienta`. El Research hoy solo existe en ICP & Oferta, y recibe
@@ -250,6 +252,7 @@ export default function PanelResearch({
           onRespuestas={anotarLoDelAgente}
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
+          reiniciarAlAbrir={!!rellenarAlLlegar && !!soloChat && hechos === 0}
         />
       ) : (
         <div className="card">

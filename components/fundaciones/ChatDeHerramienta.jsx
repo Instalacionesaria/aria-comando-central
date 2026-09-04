@@ -45,12 +45,21 @@ export default function ChatDeHerramienta({
   onRespuestas,
   onArrancar,
   rutaConversar,
+  /* Al montar, en vez de retomar la conversación guardada, empezar una nueva. Lo pide el panel
+     cuando se llegó por «Continuar al paso N» y la herramienta todavía no tiene entregable: la
+     conversación vieja —de antes de que el agente supiera proponer, o abandonada a medias— no sirve
+     para arrancar, y una apertura nueva trae las propuestas hechas con lo que HOY existe. */
+  reiniciarAlAbrir = false,
 }) {
   const [mensajes, setMensajes] = useState(() => [...inicial.messages]);
   const [respuestas, setRespuestas] = useState(() => ({ ...inicial.answers }));
   const [texto, setTexto] = useState('');
   const [pendiente, setPendiente] = useState(null);
   const [esperando, setEsperando] = useState(false);
+  /* Distinto de `esperando`: la apertura lee la ficha y el research para proponer, y tarda. Un
+     «escribiendo…» ahí es mentira chica —no está escribiendo, está leyendo— y sin ninguna señal la
+     pantalla parece muerta. Kevin: «no miro ni una bolita dando vueltas ni nada». */
+  const [abriendo, setAbriendo] = useState(false);
   const [error, setError] = useState(null);
 
   const campos = camposDe(herramienta);
@@ -89,9 +98,11 @@ export default function ChatDeHerramienta({
 
   // Abrir la conversación. No gasta una inferencia: el saludo lo arma el servidor con el código.
   useEffect(() => {
-    if (yaSeAbrio.current || mensajes.length > 0) return;
+    if (yaSeAbrio.current) return;
+    if (mensajes.length > 0 && !reiniciarAlAbrir) return;
     yaSeAbrio.current = true;
-    void hablar({});
+    setAbriendo(true);
+    void hablar(reiniciarAlAbrir ? { reiniciar: true } : {}).finally(() => setAbriendo(false));
     // Una sola vez, al montar. `hablar` no se lista a propósito: se redefine en cada render y
     // volvería a abrir la conversación en cada uno.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,7 +157,7 @@ export default function ChatDeHerramienta({
           {esperando ? (
             <div className="fd-burbuja agente esperando">
               <span className="fd-punto" />
-              escribiendo…
+              {abriendo ? 'Leyendo tu ficha y tu research para proponerte las respuestas…' : 'escribiendo…'}
             </div>
           ) : null}
         </div>
