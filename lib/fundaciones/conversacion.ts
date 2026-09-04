@@ -46,6 +46,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedirExterno } from '../http/cliente.ts';
+import { VERSION_DEL_AGENTE } from './version-del-agente.ts';
 import { camposDe, claveCorta, obligatoriosQueFaltan } from './campos.ts';
 import { MODELO } from './generacion.ts';
 import type { Campo, Herramienta } from './herramientas.ts';
@@ -56,6 +57,20 @@ const VERSION_API = '2023-06-01';
 
 /** El nombre de la herramienta forzada. Se comprueba al leer la respuesta, no solo el tipo. */
 export const NOMBRE_DE_LA_HERRAMIENTA = 'registrar_respuestas';
+
+/**
+ * La versión del agente. **Se sube cuando cambia lo que el agente sabe hacer**, no con cada retoque
+ * de redacción.
+ *
+ * Una conversación guardada con una versión menor se reabre una vez al entrar —conservando lo
+ * contestado— porque sus turnos viejos ya no son ciertos y el modelo se los cree: la del 2026-09-03
+ * tenía al agente diciendo «eso todavía no existe» con el avatar generado debajo, y preguntando de a
+ * una cosas que hoy propone desde la ficha y el research. Kevin: «me preguntó de todo».
+ *
+ *   1 · el cuestionario ciego (implícita: las conversaciones sin versión).
+ *   2 · recibe el contexto heredado y su propio entregable; abre proponiendo.
+ */
+export { VERSION_DEL_AGENTE };
 
 /**
  * El techo de tokens de un turno.
@@ -600,5 +615,18 @@ function leerTurno(h: Herramienta, entrada: Record<string, unknown>): Turno | nu
 
 /** La conversación vacía, con las respuestas que ya estuvieran guardadas. */
 export function chatVacio(respuestas: Record<string, string>): ChatDeHerramienta {
-  return { messages: [], answers: { ...respuestas } };
+  return { messages: [], answers: { ...respuestas }, agent_version: VERSION_DEL_AGENTE };
+}
+
+/**
+ * El primer mensaje cuando el entregable YA existe. No propone ni pregunta: ofrece.
+ *
+ * Abrir una herramienta ya generada con un cuestionario es lo que se vio en pantalla: el agente pidiendo
+ * ingresos y edad con el avatar terminado debajo. Acá el trabajo cambió de «armarlo» a «usarlo».
+ */
+export function mensajeDeAperturaConEntregable(h: Herramienta, fecha: string): string {
+  return (
+    `Tu ${h.etiquetaSalida} ya está generado${fecha ? ` (versión del ${fecha})` : ''} — lo tenés debajo.\n\n` +
+    'Preguntame lo que quieras sobre él, o decime qué cambiarle y lo regenero con el cambio.'
+  );
 }

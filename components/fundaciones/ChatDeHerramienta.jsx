@@ -31,6 +31,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { camposDe, claveCorta } from '@/lib/fundaciones/campos';
+import { VERSION_DEL_AGENTE } from '@/lib/fundaciones/version-del-agente';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 export default function ChatDeHerramienta({
@@ -102,7 +103,11 @@ export default function ChatDeHerramienta({
   // Abrir la conversación. No gasta una inferencia: el saludo lo arma el servidor con el código.
   useEffect(() => {
     if (yaSeAbrio.current) return;
-    if (mensajes.length > 0 && !reiniciarAlAbrir) return;
+    /* Una conversación guardada por una versión anterior del agente se manda igual al servidor: él la
+       reabre una vez, conservando lo contestado. Sin esto quedaría en pantalla tal como se guardó,
+       con el agente viejo diciendo cosas que ya no son ciertas. */
+    const anticuada = mensajes.length > 0 && (inicial.agent_version ?? 0) < VERSION_DEL_AGENTE;
+    if (mensajes.length > 0 && !reiniciarAlAbrir && !anticuada) return;
     yaSeAbrio.current = true;
     setAbriendo(true);
     void hablar(reiniciarAlAbrir ? { reiniciar: true, generar: generarAlAbrir } : {}).finally(() =>

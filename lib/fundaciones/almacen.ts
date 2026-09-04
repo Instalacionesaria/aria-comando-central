@@ -204,7 +204,10 @@ function chat(x: unknown): ChatDeHerramienta | null {
   }
   const respuestas = textos(o['answers']);
   if (mensajes.length === 0 && Object.keys(respuestas).length === 0) return null;
-  return { messages: mensajes, answers: respuestas };
+  const version = typeof o['agent_version'] === 'number' ? o['agent_version'] : undefined;
+  return version === undefined
+    ? { messages: mensajes, answers: respuestas }
+    : { messages: mensajes, answers: respuestas, agent_version: version };
 }
 
 function versiones(x: unknown): Version[] | null {

@@ -179,7 +179,20 @@ test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserv
   assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa, chat\.answers\)/);
   assert.match(operaciones, /previas: Record<string, string> = \{\},/);
   const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
-  assert.match(chat, /if \(mensajes\.length > 0 && !reiniciarAlAbrir\) return;/);
+  assert.match(chat, /if \(mensajes\.length > 0 && !reiniciarAlAbrir && !anticuada\) return;/);
+
+  /* ── Y LAS CONVERSACIONES DE UNA VERSIÓN ANTERIOR SE REABREN UNA VEZ ──────────
+     Kevin, con captura: «me preguntó de todo». Esa conversación venía del agente viejo —cuestionario
+     ciego, y turnos suyos diciendo «eso todavía no existe»— y el modelo se los creía. Cada chat guarda
+     con qué versión nació; una anterior se reabre conservando lo contestado, y la nueva nace sellada. */
+  assert.match(chat, /\(inicial\.agent_version \?\? 0\) < VERSION_DEL_AGENTE/);
+  const operacionesV = codigo('lib/fundaciones/operaciones.ts');
+  assert.match(operacionesV, /const anticuada = chat\.messages\.length > 0 && \(chat\.agent_version \?\? 0\) < VERSION_DEL_AGENTE;/);
+  assert.match(operacionesV, /const recienAbierta = reiniciar \|\| chat\.messages\.length === 0 \|\| anticuada;/);
+  const conversacion = codigo('lib/fundaciones/conversacion.ts');
+  assert.match(conversacion, /agent_version: VERSION_DEL_AGENTE/, 'la conversación nueva no nace sellada con su versión');
+  // Con entregable ya generado, la reapertura no propone: ofrece responder sobre él o cambiarlo.
+  assert.match(operacionesV, /mensajeDeAperturaConEntregable\(h, fecha\)/);
   assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true, generar: generarAlAbrir \} : \{\}\)/);
   // Y se ve que está trabajando: la apertura lee, no «escribe».
   assert.match(chat, /Leyendo tu ficha y tu research para proponerte las respuestas/);

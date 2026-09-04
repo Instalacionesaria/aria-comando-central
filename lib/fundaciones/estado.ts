@@ -86,6 +86,14 @@ export interface ChatDeHerramienta {
   messages: MensajeDeChat[];
   /** Claves cortas, como en los inputs. Vacío = el agente todavía no lo sabe. */
   answers: Record<string, string>;
+  /**
+   * Con qué versión del agente nació esta conversación. Ver `VERSION_DEL_AGENTE`.
+   *
+   * Una conversación de una versión anterior arrastra turnos del agente que ya no son ciertos («eso
+   * todavía no existe», o un cuestionario que hoy se resolvería proponiendo). El servidor la reabre
+   * UNA vez, conservando lo contestado. Ausente = anterior a que esto existiera.
+   */
+  agent_version?: number;
 }
 
 /** El estado completo, tal como lo devuelve `GET /api/fundaciones/estado`. */

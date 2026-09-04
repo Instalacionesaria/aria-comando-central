@@ -52,11 +52,13 @@ import {
 } from './almacen.ts';
 import { SIN_ESPECIFICAR, aValoresDeAlmacen, camposDe, claveCorta, idsDeCampos } from './campos.ts';
 import {
+  VERSION_DEL_AGENTE,
   arranca,
   chatVacio,
   conversar,
   faltanObligatorias,
   mensajeDeApertura,
+  mensajeDeAperturaConEntregable,
   mensajeDeAperturaConPropuesta,
   mensajeDeArranque,
   type FalloDeConversacion,
@@ -476,6 +478,17 @@ async function abrir(
   for (const [k, v] of Object.entries(previas)) {
     if (!(guardadas[k] ?? '').trim() && v.trim()) guardadas[k] = v;
   }
+
+  /* Con el entregable ya generado no se propone nada —no hay nada que armar— y no se gasta la
+     inferencia de proponer: el saludo ofrece responder sobre él o cambiarlo. */
+  const existente = entregableDe(h, estado);
+  if (existente !== '') {
+    const chat = chatVacio(guardadas);
+    const fecha = /^\(versión del (.+?)\)/.exec(existente)?.[1] ?? '';
+    chat.messages.push({ role: 'assistant', content: mensajeDeAperturaConEntregable(h, fecha) });
+    return chat;
+  }
+
   const faltaAlgo = camposDe(h).some((c) => !(guardadas[claveCorta(c.id)] ?? '').trim());
 
   let propuestas: Record<string, string> = {};
@@ -570,7 +583,11 @@ export async function conversarConElAgente(
   /* Abrir la conversación NO llama al modelo: el saludo lo arma el código (ver `mensajeDeApertura`).
      La pantalla se abre sola al tocar la pestaña, y una inferencia por cada vistazo se la cobra a la
      organización sin que nadie haya preguntado nada. */
-  const recienAbierta = reiniciar || chat.messages.length === 0;
+  /* Se reabre también una conversación de una versión ANTERIOR del agente: arrastra turnos que ya no
+     son ciertos y el modelo se los cree. Pasa una sola vez —la nueva nace sellada con la versión
+     vigente— y no pierde nada: `abrir` recibe lo que la anterior había anotado. */
+  const anticuada = chat.messages.length > 0 && (chat.agent_version ?? 0) < VERSION_DEL_AGENTE;
+  const recienAbierta = reiniciar || chat.messages.length === 0 || anticuada;
   if (recienAbierta) chat = await abrir(h, estado.datos, acceso.claveIa, chat.answers);
 
   if (mensaje === '') {
