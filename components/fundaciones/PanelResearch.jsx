@@ -253,6 +253,7 @@ export default function PanelResearch({
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
           reiniciarAlAbrir={!!soloChat && hechos === 0}
+          generarAlAbrir={!!rellenarAlLlegar && !!soloChat && hechos === 0}
         />
       ) : (
         <div className="card">

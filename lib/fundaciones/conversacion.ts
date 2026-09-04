@@ -384,6 +384,24 @@ export function mensajeDeAperturaConPropuesta(
 }
 
 /**
+ * El primer mensaje cuando el paso se ARMA solo: se llegó por «Continuar al paso N», la herramienta
+ * no tiene entregable, y con lo heredado alcanza. No pregunta: avisa qué usa y arranca.
+ *
+ * Es lo que Kevin pidió del botón del método, con todas las letras: *«debe armar el ICP con los datos
+ * de Tu ficha y de Research»*. Proponer y esperar un «sí» era quedarse a un paso.
+ */
+export function mensajeDeArranque(h: Herramienta, respuestas: Record<string, string>): string {
+  const lineas = camposDe(h)
+    .filter((c) => (respuestas[claveCorta(c.id)] ?? '').trim() !== '')
+    .map((c) => `· ${c.etiqueta} ${respuestas[claveCorta(c.id)]}`);
+  return (
+    `Vamos con «${h.titulo}». Con tu ficha y tu research ya tengo lo que hace falta, así que lo armo ` +
+    `ahora con esto:\n\n${lineas.join('\n')}\n\n` +
+    `Generando tu ${h.etiquetaSalida}. Cuando termine, si algo no va, decímelo y lo regenero con el cambio.`
+  );
+}
+
+/**
  * ¿Se puede generar? **La respuesta del modelo es un dato, no una orden.**
  *
  * ── LO QUE SE COMPRUEBA, Y LO QUE NO SE PUEDE COMPROBAR ────────────────────

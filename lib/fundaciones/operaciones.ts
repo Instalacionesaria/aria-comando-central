@@ -55,8 +55,10 @@ import {
   arranca,
   chatVacio,
   conversar,
+  faltanObligatorias,
   mensajeDeApertura,
   mensajeDeAperturaConPropuesta,
+  mensajeDeArranque,
   type FalloDeConversacion,
 } from './conversacion.ts';
 import { contextoHeredado, proponerRespuestas } from './relleno.ts';
@@ -508,12 +510,13 @@ export async function conversarConElAgente(
   acceso: Acceso,
   admitidas: Admitidas,
 ): Promise<Response> {
-  let cuerpo: { herramienta?: unknown; mensaje?: unknown; reiniciar?: unknown };
+  let cuerpo: { herramienta?: unknown; mensaje?: unknown; reiniciar?: unknown; generar?: unknown };
   try {
     cuerpo = (await peticion.json()) as {
       herramienta?: unknown;
       mensaje?: unknown;
       reiniciar?: unknown;
+      generar?: unknown;
     };
   } catch {
     return rechazo('peticion_invalida', 'El cuerpo no es JSON');
@@ -532,6 +535,10 @@ export async function conversarConElAgente(
     return rechazo('peticion_invalida', 'El mensaje es demasiado largo');
   }
   const reiniciar = cuerpo.reiniciar === true;
+  /* «Continuar al paso N» sobre una herramienta sin entregable: abrir proponiendo y, si con lo
+     heredado alcanza, ARRANCAR sin esperar un «sí». La pantalla es la que genera (recibe `listo`);
+     acá solo se decide si alcanza, con la misma regla de obligatorias que usa `arranca`. */
+  const generar = cuerpo.generar === true;
 
   const estado = await leerEstado(acceso.clienteId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
@@ -545,12 +552,20 @@ export async function conversarConElAgente(
   if (recienAbierta) chat = await abrir(h, estado.datos, acceso.claveIa, chat.answers);
 
   if (mensaje === '') {
+    /* Arranque automático: si se pidió generar y no falta ninguna obligatoria, el saludo cambia —ya
+       no propone ni pregunta, avisa qué usa— y `listo` sale en true para que la pantalla genere. Si
+       falta algo, se queda el saludo que propone y pregunta: generar con un obligatorio vacío es el
+       research genérico que `exigeSusCampos` existe para impedir. */
+    const arrancaSolo = recienAbierta && generar && !faltanObligatorias(h, chat.answers);
+    if (arrancaSolo) {
+      chat = { ...chat, messages: [{ role: 'assistant', content: mensajeDeArranque(h, chat.answers) }] };
+    }
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.
     if (recienAbierta) {
       const guardado = await guardarChat(acceso.clienteId, estado.datos, h.id, chat);
       if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
     }
-    return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: false });
+    return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: arrancaSolo });
   }
 
   const previas = chat.answers;

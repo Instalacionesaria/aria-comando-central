@@ -382,6 +382,7 @@ export default function PanelHerramienta({
              entrando por la pestaña se veía una conversación vieja y muerta: Kevin, con razón,
              «¿dónde veo que se está procesando el paso 3?». Con entregable, se respeta la que había. */
           reiniciarAlAbrir={!!soloChat && versionesGuardadas.length === 0}
+          generarAlAbrir={!!rellenarAlLlegar && !!soloChat && versionesGuardadas.length === 0}
         />
       ) : (
         <div className="card">

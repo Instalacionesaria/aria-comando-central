@@ -465,10 +465,11 @@ test('el historial NO viaja por el navegador', () => {
   assert.match(chat, /cuerpo:\s*\{\s*herramienta:\s*herramienta\.id,\s*\.\.\.cuerpo\s*\}/);
 
   const operaciones = leer('lib/fundaciones/operaciones.ts');
-  // El manejador lee del almacén y solo acepta `herramienta`, `mensaje` y `reiniciar`.
+  // El manejador lee del almacén y solo acepta `herramienta`, `mensaje`, `reiniciar` y `generar`:
+  // ninguno de los cuatro es una lista de mensajes.
   assert.match(
     operaciones,
-    /cuerpo: \{ herramienta\?: unknown; mensaje\?: unknown; reiniciar\?: unknown \}/,
+    /cuerpo: \{ herramienta\?: unknown; mensaje\?: unknown; reiniciar\?: unknown; generar\?: unknown \}/,
   );
 });
 

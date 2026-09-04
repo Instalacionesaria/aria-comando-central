@@ -180,7 +180,7 @@ test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserv
   assert.match(operaciones, /previas: Record<string, string> = \{\},/);
   const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
   assert.match(chat, /if \(mensajes\.length > 0 && !reiniciarAlAbrir\) return;/);
-  assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true \} : \{\}\)/);
+  assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true, generar: generarAlAbrir \} : \{\}\)/);
   // Y se ve que está trabajando: la apertura lee, no «escribe».
   assert.match(chat, /Leyendo tu ficha y tu research para proponerte las respuestas/);
 
@@ -188,6 +188,26 @@ test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserv
   assert.match(generica, /reiniciarAlAbrir=\{!!soloChat && versionesGuardadas\.length === 0\}/);
   const research = codigo('components/fundaciones/PanelResearch.jsx');
   assert.match(research, /reiniciarAlAbrir=\{!!soloChat && hechos === 0\}/);
+});
+
+test('«Continuar al paso N» ARMA el paso: reabre, propone y genera si alcanza, sin esperar un «sí»', () => {
+  /* Pedido con todas las letras: «el botón Continuar al paso 3 debe armar el ICP con los datos de Tu
+     ficha y de Research». Proponer y esperar la confirmación era quedarse a un paso. Ahora la
+     llegada por el método pide `generar`; el servidor arranca si no falta ninguna obligatoria —la
+     misma regla de `arranca`— y la pantalla genera. Si falta algo, propone y pregunta. */
+  const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
+  assert.match(chat, /\{ reiniciar: true, generar: generarAlAbrir \}/);
+
+  const generica = codigo('components/fundaciones/PanelHerramienta.jsx');
+  assert.match(generica, /generarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && versionesGuardadas\.length === 0\}/);
+  const research = codigo('components/fundaciones/PanelResearch.jsx');
+  assert.match(research, /generarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && hechos === 0\}/);
+
+  const operaciones = codigo('lib/fundaciones/operaciones.ts');
+  assert.match(operaciones, /const arrancaSolo = recienAbierta && generar && !faltanObligatorias\(h, chat\.answers\);/);
+  assert.match(operaciones, /listo: arrancaSolo/);
+  // Sin `generar`, la apertura sigue proponiendo y esperando: entrar por la pestaña no gasta una generación.
+  assert.ok(!/listo: true/.test(operaciones), 'la apertura genera aunque nadie haya venido por el método');
 });
 
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {

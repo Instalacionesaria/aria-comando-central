@@ -50,6 +50,9 @@ export default function ChatDeHerramienta({
      conversación vieja —de antes de que el agente supiera proponer, o abandonada a medias— no sirve
      para arrancar, y una apertura nueva trae las propuestas hechas con lo que HOY existe. */
   reiniciarAlAbrir = false,
+  /* Se llegó por «Continuar al paso N»: además de reabrir proponiendo, ARRANCAR si alcanza. El
+     servidor decide si alcanza; si sí, devuelve `listo` y `aplicar` dispara la generación. */
+  generarAlAbrir = false,
 }) {
   const [mensajes, setMensajes] = useState(() => [...inicial.messages]);
   const [respuestas, setRespuestas] = useState(() => ({ ...inicial.answers }));
@@ -102,7 +105,9 @@ export default function ChatDeHerramienta({
     if (mensajes.length > 0 && !reiniciarAlAbrir) return;
     yaSeAbrio.current = true;
     setAbriendo(true);
-    void hablar(reiniciarAlAbrir ? { reiniciar: true } : {}).finally(() => setAbriendo(false));
+    void hablar(reiniciarAlAbrir ? { reiniciar: true, generar: generarAlAbrir } : {}).finally(() =>
+      setAbriendo(false),
+    );
     // Una sola vez, al montar. `hablar` no se lista a propósito: se redefine en cada render y
     // volvería a abrir la conversación en cada uno.
     // eslint-disable-next-line react-hooks/exhaustive-deps
