@@ -376,9 +376,12 @@ export default function PanelHerramienta({
           onRespuestas={anotarLoDelAgente}
           onArrancar={generarDesdeElAgente}
           rutaConversar={rutaConversar}
-          /* Sin entregable todavía y llegando por el método: la conversación arranca de nuevo, con
-             las propuestas hechas sobre lo que existe HOY. Con entregable, se respeta la que había. */
-          reiniciarAlAbrir={!!rellenarAlLlegar && !!soloChat && versionesGuardadas.length === 0}
+          /* Sin entregable todavía, la conversación arranca de nuevo CADA vez que se entra —por la
+             pestaña o por «Continuar»—, con las propuestas hechas sobre lo que existe hoy y
+             conservando lo ya contestado. La regla anterior solo reabría llegando por el método, y
+             entrando por la pestaña se veía una conversación vieja y muerta: Kevin, con razón,
+             «¿dónde veo que se está procesando el paso 3?». Con entregable, se respeta la que había. */
+          reiniciarAlAbrir={!!soloChat && versionesGuardadas.length === 0}
         />
       ) : (
         <div className="card">

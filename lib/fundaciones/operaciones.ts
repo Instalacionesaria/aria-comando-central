@@ -465,8 +465,15 @@ async function abrir(
   h: Herramienta,
   estado: EstadoDeFundaciones,
   claveIa: string,
+  /* Lo que la conversación ANTERIOR había anotado, cuando se reabre. Reabrir no puede costar lo que
+     la persona ya contestó: las respuestas del chat viven solo en el chat hasta que se genera, así
+     que sin esto un «Empezar de nuevo» —o la reapertura automática— las tiraba. */
+  previas: Record<string, string> = {},
 ): Promise<ChatDeHerramienta> {
-  const guardadas = respuestasGuardadas(estado, h);
+  const guardadas: Record<string, string> = { ...respuestasGuardadas(estado, h) };
+  for (const [k, v] of Object.entries(previas)) {
+    if (!(guardadas[k] ?? '').trim() && v.trim()) guardadas[k] = v;
+  }
   const faltaAlgo = camposDe(h).some((c) => !(guardadas[claveCorta(c.id)] ?? '').trim());
 
   let propuestas: Record<string, string> = {};
@@ -535,7 +542,7 @@ export async function conversarConElAgente(
      La pantalla se abre sola al tocar la pestaña, y una inferencia por cada vistazo se la cobra a la
      organización sin que nadie haya preguntado nada. */
   const recienAbierta = reiniciar || chat.messages.length === 0;
-  if (recienAbierta) chat = await abrir(h, estado.datos, acceso.claveIa);
+  if (recienAbierta) chat = await abrir(h, estado.datos, acceso.claveIa, chat.answers);
 
   if (mensaje === '') {
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.

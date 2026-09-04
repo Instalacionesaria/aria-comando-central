@@ -163,17 +163,21 @@ test('«ICP & Oferta» se trabaja solo por chat, y Tools conserva las dos opcion
 
   // Y los inputs se siguen guardando igual: el chat escribe donde escribía el formulario.
   const operaciones = codigo('lib/fundaciones/operaciones.ts');
-  assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa\)/);
+  assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa, chat\.answers\)/);
   assert.match(operaciones, /proponerRespuestas\(\{ claveIa, herramienta: h, estado \}\)/);
   // Si proponer falla, el chat abre igual, preguntando.
   assert.match(operaciones, /if \(p\.tipo === 'datos'\) propuestas = p\.valores;/);
 });
 
-test('llegar por el método a una herramienta sin entregable reinicia el chat, con propuestas nuevas', () => {
-  /* Reportado: «Continuar al paso 3» llevaba a una conversación vieja —de antes de que el agente
-     supiera proponer— y no pasaba nada visible. La apertura que propone solo corre en una conversación
-     NUEVA, así que llegar por el método a una herramienta sin entregable la reinicia. Con entregable,
-     la conversación que había se respeta: ahí sí hubo trabajo. */
+test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserva lo contestado', () => {
+  /* Reportado dos veces: el chat mostraba una conversación vieja y muerta, sin ninguna señal de que el
+     paso se estuviera preparando. La primera regla reabría solo llegando por «Continuar»; entrando
+     por la pestaña —que es lo que uno hace— no pasaba nada, y el log lo confirmó: ni un POST al
+     servidor. Ahora sin entregable se reabre siempre, y el servidor conserva lo que la conversación
+     anterior había anotado, así que reabrir no cuesta trabajo. Con entregable, se respeta. */
+  const operaciones = codigo('lib/fundaciones/operaciones.ts');
+  assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa, chat\.answers\)/);
+  assert.match(operaciones, /previas: Record<string, string> = \{\},/);
   const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
   assert.match(chat, /if \(mensajes\.length > 0 && !reiniciarAlAbrir\) return;/);
   assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true \} : \{\}\)/);
@@ -181,9 +185,9 @@ test('llegar por el método a una herramienta sin entregable reinicia el chat, c
   assert.match(chat, /Leyendo tu ficha y tu research para proponerte las respuestas/);
 
   const generica = codigo('components/fundaciones/PanelHerramienta.jsx');
-  assert.match(generica, /reiniciarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && versionesGuardadas\.length === 0\}/);
+  assert.match(generica, /reiniciarAlAbrir=\{!!soloChat && versionesGuardadas\.length === 0\}/);
   const research = codigo('components/fundaciones/PanelResearch.jsx');
-  assert.match(research, /reiniciarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && hechos === 0\}/);
+  assert.match(research, /reiniciarAlAbrir=\{!!soloChat && hechos === 0\}/);
 });
 
 test('el relleno usa EL MISMO esquema que el agente conversacional', async () => {
