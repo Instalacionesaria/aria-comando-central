@@ -154,6 +154,16 @@ const MEMORIZACIONES_DEL_NAVEGADOR: readonly { archivo: string; porque: string }
       'pantalla pueda olvidársela. Está en esta lista porque lleva `use client` y el barrido de ' +
       'arriba tiene que seguir reconociéndolo.',
   },
+  {
+    archivo: 'lib/usarMemoriaDeVista.ts',
+    porque:
+      'Lo que la pantalla recuerda de cómo la dejaste —qué secciones estaban replegadas, dónde ' +
+      'quedó el scroll—. **Tampoco tiene `Map` propio**: guarda en el de `lecturas.ts` con una ' +
+      'clave que sale de `usarClaveDeLectura`, así que la empresa entra sola. Y hace falta que ' +
+      'entre: los títulos de etapa son idénticos entre empresas, así que sin ella un superadmin ' +
+      'vería en una cuenta los pliegues que hizo en la otra. Es un pliegue y no es grave, pero es ' +
+      'la misma clase de cruce y esta fila no distingue por gravedad.',
+  },
 ];
 
 test('ADR-0703 · ningún módulo del SERVIDOR memoriza', () => {

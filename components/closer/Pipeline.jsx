@@ -52,7 +52,16 @@ import Ficha from '../negocio/Ficha.jsx';
 import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import Fila from '../negocio/Fila.jsx';
 
-export default function Pipeline({ camino, pulso = 0 }) {
+/**
+ * @param camino  De dónde salen las etapas. Es lo que distingue al Pipeline del closer del del
+ *                setter: el componente es el mismo.
+ * @param tablero Dónde se recuerdan los pliegues: `closer/pipeline` o `setter/pipeline`. Se pasa
+ *                aparte y NO se deriva del `camino` —sería un `replace('/api/', '')— porque
+ *                `MiDia` no tiene camino y necesita el mismo prop: derivarlo acá dejaría dos
+ *                mecanismos para lo mismo, y el día que un camino cambie de forma, el pliegue se
+ *                guardaría en otro lado sin que nada falle.
+ */
+export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
   const [abierta, setAbierta] = useState(null);
 
   /* ── VOLVER A ESTA PESTAÑA NO CUESTA UN «CARGANDO» ─────────────────────────
@@ -183,6 +192,7 @@ export default function Pipeline({ camino, pulso = 0 }) {
           titulo={col.nombre}
           cuantos={col.cuantos}
           etapa={col.clave}
+          tablero={tablero}
         >
           {col.filas.length === 0 ? (
             /* Vacía CON SU MOTIVO, no en blanco. Una sección en blanco se lee como un error de

@@ -116,11 +116,20 @@ test('los CUATRO tableros pasan por el componente compartido', () => {
 test('la sección nace ABIERTA', () => {
   /* Se pidió con todas las letras. Y no es un detalle de gusto: nace cerrada y la pantalla arranca
      mostrando siete renglones de títulos donde antes estaba el trabajo del día — se vería como que
-     no hay datos. */
-  assert.match(
-    codigo(PLEGABLE),
-    /const \[abierta, setAbierta\] = useState\(true\);/,
-    'la sección no nace abierta',
+     no hay datos.
+
+     Esto ANTES afirmaba `useState(true)` acá mismo, y dejó de ser cierto cuando el pliegue empezó a
+     recordarse: la verdad se movió a `lib/memoriaDeVista.ts`, donde lo guardado lista solo las
+     REPLEGADAS y ausente significa abierta. Que eso se cumpla se prueba LLAMANDO, en
+     `130-memoria-de-vista.test.ts`; lo que queda acá es que este componente siga sacando su estado
+     de ahí y no de una copia propia, que es la parte que se ve desde este archivo. */
+  const fuente = codigo(PLEGABLE);
+  assert.match(fuente, /usarPliegue\(tablero, titulo\)/, 'la sección no saca su pliegue de la memoria');
+  assert.match(fuente, /const abierta = !plegada;/, 'la sección dejó de derivar `abierta` del pliegue');
+  assert.doesNotMatch(
+    fuente,
+    /useState/,
+    'la sección tiene un estado propio al lado del recordado: son dos fuentes de verdad y una no se guarda',
   );
 });
 
@@ -185,6 +194,27 @@ test('el control es un `button` de verdad, y dice si está abierta', () => {
   assert.match(boton[0], /className="sec-plegar"/);
   assert.match(boton[0], /aria-expanded=\{abierta\}/, 'el botón no dice si la lista está abierta');
   assert.match(boton[0], /aria-label=/, 'el botón no tiene nombre: un lector de pantalla lee la flecha');
+});
+
+test('el botón ALTERNA — y eso no lo comprobaba nadie', () => {
+  /* Lo encontró una mutación: con `onClick={() => {}}` toda esta función queda muerta —el botón
+     se dibuja, se alcanza con el tabulador, tiene su `aria-expanded` y su título, y no hace
+     nada— y las siete pruebas de este archivo seguían en verde. Se comprobaba todo del botón
+     menos lo único que el botón existe para hacer.
+
+     Se afirma que el manejador es el que devuelve la memoria, no una función cualquiera: un
+     `onClick` que cambie un estado propio se vería igual y no se guardaría. */
+  const fuente = codigo(PLEGABLE);
+  assert.match(
+    fuente,
+    /onClick=\{alternar\}/,
+    'el botón no alterna el pliegue recordado: o no hace nada, o cambia algo que no se guarda',
+  );
+  assert.match(
+    fuente,
+    /const \[plegada, alternar\] = usarPliegue\(/,
+    '`alternar` dejó de venir de la memoria',
+  );
 });
 
 test('el botón va TODO a la derecha, y su estilo no está en `aios.css`', () => {

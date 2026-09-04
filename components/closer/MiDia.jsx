@@ -218,6 +218,14 @@ export default function MiDia({
    * recargar **no tiene que ofrecer el botón**, en vez de ofrecer uno que deja la vista mintiendo.
    */
   alResolver = null,
+  /**
+   * Dónde se recuerdan los pliegues: `closer/dia` o `setter/dia`.
+   *
+   * Hace falta que lo pase la vista y no se puede sacar de acá: este componente es EL MISMO en
+   * las dos pestañas —con `secciones` distintas— y varios títulos coinciden, empezando por
+   * «Seguimientos de hoy». Sin el nombre adelante, replegar en el Closer replegaría en el Setter.
+   */
+  tablero = null,
 }) {
   /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
      llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
@@ -277,6 +285,7 @@ export default function MiDia({
             titulo={cola.titulo}
             cuantos={items.length}
             tono={cola.tono ?? null}
+            tablero={tablero}
           >
 
             {/* UN CERO SE MUESTRA COMO UN CERO.

@@ -35,6 +35,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { estaALaVista } from '../../lib/vista.ts';
+import { usarScrollDeSubPestana } from '../../lib/usarMemoriaDeVista.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import Pipeline from '../closer/Pipeline.jsx';
 import Agenda from '../closer/Agenda.jsx';
@@ -59,6 +60,25 @@ export default function CloserView({ activa }) {
   /* Inicio arranca, como se pidió: el cockpit responde «¿cómo voy este mes?» y es lo primero
      que alguien quiere ver al abrir su pestaña. */
   const [sub, setSub] = useState('inicio');
+
+  /* ── VOLVER A UNA SUB-PESTAÑA LA ENCUENTRA DONDE LA DEJASTE ───────────────
+   *
+   * `.view-scroll` es de acá y nunca se desmonta, pero el navegador RECORTA su `scrollTop` cuando
+   * la sub-pestaña nueva trae contenido más corto, así que al volver el número ya se perdió. Se
+   * anota antes de cambiar, mientras el contenido viejo todavía está en el DOM. El motivo largo
+   * —y por qué un `onScroll` no sirve— está en `lib/usarMemoriaDeVista.ts`.
+   *
+   * TODO cambio de sub-pestaña pasa por `irASub`, y eso es lo que hace que funcione: hay DOS
+   * caminos —los botones de la barra y el «ver mi día» de Inicio— y el que se saltara la anotación
+   * perdería el scroll sin que nada falle. */
+  const { caja, anotarScroll } = usarScrollDeSubPestana('closer', sub);
+  const irASub = useCallback(
+    (clave) => {
+      anotarScroll();
+      setSub(clave);
+    },
+    [anotarScroll],
+  );
   /* ── DE QUIEN SE ESTAN MIRANDO LOS NUMEROS ────────────────────────────────
    *
    * `null` = de toda la empresa, que es lo que ve quien administra por omision. Viaja en la URL de
@@ -254,12 +274,13 @@ export default function CloserView({ activa }) {
           /* Y la recarga completa, para cuando se cierra la ventana de los porcentajes: ahí sí puede
              haber cambiado el número de quien mira. */
           alRecargar={() => void cargar()}
-          alIrAMiDia={() => setSub('dia')}
+          alIrAMiDia={() => irASub('dia')}
         />
       );
     }
     if (sub === 'dia') {
       return <MiDia
+          tablero="closer/dia"
           colas={datos.colas}
           zonaHoraria={datos.zonaHoraria}
           /* Resolver saca al contacto de la cola en el servidor. Sin la recarga, la pantalla lo
@@ -287,7 +308,7 @@ export default function CloserView({ activa }) {
           }
         />;
     }
-    if (sub === 'pipeline') return <Pipeline camino="/api/closer/pipeline" />;
+    if (sub === 'pipeline') return <Pipeline camino="/api/closer/pipeline" tablero="closer/pipeline" />;
 
     return <Agenda zonaHoraria={datos.zonaHoraria} />;
   }
@@ -295,7 +316,7 @@ export default function CloserView({ activa }) {
   return (
     <>
     <section className={activa ? 'view on' : 'view'} id="v-closer">
-      <div className="view-scroll cre-scroll">
+      <div className="view-scroll cre-scroll" ref={caja}>
         <div className="cre-head">
           <div className="ch-l stack">
             <div className="ch-title">
@@ -313,7 +334,7 @@ export default function CloserView({ activa }) {
                   type="button"
                   data-c={s.clave}
                   className={sub === s.clave ? 'on' : undefined}
-                  onClick={() => setSub(s.clave)}
+                  onClick={() => irASub(s.clave)}
                 >
                   <svg viewBox="0 0 16 16">
                     <use href={s.icono} />

@@ -28,6 +28,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { estaALaVista } from '../../lib/vista.ts';
+import { usarScrollDeSubPestana } from '../../lib/usarMemoriaDeVista.ts';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import ListaDeContactos from '../negocio/ListaDeContactos.jsx';
 /* El MISMO componente que el Closer, con otro camino. El dibujo de una columna con su nombre, su
@@ -158,6 +159,25 @@ export default function SetterView({ activa }) {
    *
    * El Closer abre en su primera por el mismo motivo, así que las dos vuelven a coincidir. */
   const [sub, setSub] = useState('inicio');
+
+  /* ── VOLVER A UNA SUB-PESTAÑA LA ENCUENTRA DONDE LA DEJASTE ───────────────
+   *
+   * `.view-scroll` es de acá y nunca se desmonta, pero el navegador RECORTA su `scrollTop` cuando
+   * la sub-pestaña nueva trae contenido más corto, así que al volver el número ya se perdió. Se
+   * anota antes de cambiar, mientras el contenido viejo todavía está en el DOM. El motivo largo
+   * —y por qué un `onScroll` no sirve— está en `lib/usarMemoriaDeVista.ts`.
+   *
+   * TODO cambio de sub-pestaña pasa por `irASub`, y eso es lo que hace que funcione: hay DOS
+   * caminos —los botones de la barra y el «ver mi día» de Inicio— y el que se saltara la anotación
+   * perdería el scroll sin que nada falle. */
+  const { caja, anotarScroll } = usarScrollDeSubPestana('setter', sub);
+  const irASub = useCallback(
+    (clave) => {
+      anotarScroll();
+      setSub(clave);
+    },
+    [anotarScroll],
+  );
   /* La sesión, para saber si quien mira puede configurar los porcentajes del equipo. Lo responde el
      SERVIDOR con la condición exacta de esos endpoints; acá solo se pasa hacia abajo. */
   const sesion = useSesion();
@@ -235,7 +255,7 @@ export default function SetterView({ activa }) {
   return (
     <>
     <section className={activa ? 'view on' : 'view'} id="v-setter">
-      <div className="view-scroll cre-scroll">
+      <div className="view-scroll cre-scroll" ref={caja}>
         <div className="cre-head">
           <div className="ch-l stack">
             <div className="ch-title">
@@ -253,7 +273,7 @@ export default function SetterView({ activa }) {
                   type="button"
                   data-c={s.clave}
                   className={sub === s.clave ? 'on' : undefined}
-                  onClick={() => setSub(s.clave)}
+                  onClick={() => irASub(s.clave)}
                 >
                   <svg viewBox="0 0 16 16">
                     <use href={s.icono} />
@@ -275,6 +295,7 @@ export default function SetterView({ activa }) {
                 </div>
               ) : null}
               <MiDia
+                tablero="setter/dia"
                 colas={colas}
                 zonaHoraria={zonaHoraria}
                 secciones={COLAS_DEL_SETTER}
@@ -290,7 +311,7 @@ export default function SetterView({ activa }) {
           ) : null}
 
           {sub === 'pipeline' ? (
-            <Pipeline camino="/api/setter/pipeline" pulso={pulso} />
+            <Pipeline camino="/api/setter/pipeline" tablero="setter/pipeline" pulso={pulso} />
           ) : null}
 
           {/* ── EL TABLERO, Y EL CARTEL QUE ESTABA ACÁ ─────────────────────
@@ -326,7 +347,7 @@ export default function SetterView({ activa }) {
                    sea la misma persona, que es el caso normal de un administrador que también hace de
                    setter. Recargar es lo único honesto: el número nuevo sale del servidor. */
                 alRecargar={() => void cargar()}
-                alIrAMiDia={() => setSub('dia')}
+                alIrAMiDia={() => irASub('dia')}
               />
             </>
           ) : null}

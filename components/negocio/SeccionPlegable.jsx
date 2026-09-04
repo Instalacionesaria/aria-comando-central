@@ -14,29 +14,35 @@
  * arregla el `aria-expanded` en uno, el otro queda sin él, y las dos pantallas se ven idénticas.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * ABIERTA POR OMISIÓN, Y NO SE RECUERDA — CON LO QUE ESO SIGNIFICA, MEDIDO
+ * ABIERTA POR OMISIÓN, Y SE RECUERDA POR TABLERO
  *
- * Se pidió abierta por omisión, y el estado vive acá y no se guarda en ninguna parte. Hasta dónde
- * llega eso **está medido en el navegador**, porque la primera versión de este comentario lo dijo
- * al revés:
+ * Se pidió abierta por omisión, y eso no cambió: lo que se guarda es solo la lista de las
+ * REPLEGADAS, así que una sección nueva —una cola que se agregue, una etapa del embudo— nace
+ * abierta sin que nadie tenga que acordarse de nada.
  *
- *   · **Sobrevive abrir y cerrar una ficha.** La ficha es un panel superpuesto y no desmonta el
- *     tablero, así que se pliega una etapa, se abre un contacto, se cierra, y sigue plegada. Es el
- *     recorrido normal de esta pantalla.
- *   · **NO sobrevive cambiar de sub-pestaña.** `CloserView` y `SetterView` dibujan solo la
- *     sub-pestaña activa —`if (sub === 'pipeline') return <Pipeline …>`— así que ir al Pipeline y
- *     volver a Mi Día DESMONTA y el estado se va con el componente. Medido: se pliega «Nuevo», se
- *     va a Mi Día, se vuelve, y está abierta otra vez.
+ * Lo que sí cambió es cuánto dura, y hasta dónde llegaba **estaba medido en el navegador**:
  *
- * Se deja así a propósito. Plegar acá es un gesto del momento —«esta lista es larga, la cierro
- * para ver la de abajo»—, no una preferencia que alguien fije una vez; y guardarla en algún lado
- * abre la pregunta de dónde, que para un pliegue de lista no vale una columna ni una ruta.
+ *   · **Sobrevivía abrir y cerrar una ficha.** La ficha es un panel superpuesto y no desmonta el
+ *     tablero, así que se pliega una etapa, se abre un contacto, se cierra, y sigue plegada.
+ *   · **NO sobrevivía cambiar de sub-pestaña.** `CloserView` y `SetterView` dibujan solo la
+ *     sub-pestaña activa, así que ir al Pipeline y volver a Mi Día DESMONTA y el estado se iba
+ *     con el componente. Medido: se plegaba «Nuevo», se iba a Mi Día, se volvía, y estaba abierta.
  *
- * Si algún día molesta, el arreglo NO es un `localStorage` acá adentro: los títulos se repiten
- * entre tableros —«Seguimientos de hoy» está en el Mi Día del closer y en el del setter— así que
- * haría falta primero un nombre de tablero para no acoplarlos.
+ * Esa segunda mitad es la que `lib/usarMemoriaDeVista.ts` cierra, y llega en el mismo paso que hizo
+ * que el DATO sobreviva al desmontaje: sin eso, volver ya costaba un «Cargando» y el pliegue era
+ * el menor de los problemas. Con el dato ya instantáneo, la lista aparece completa y **desarma
+ * sola** lo que uno había dejado armado, que se nota más que antes.
  *
- * ═══════════════════════════════════════════════════════════════════════════════
+ * ── POR QUÉ HACE FALTA UN `tablero`, Y NO ALCANZA EL TÍTULO ────────────────
+ *
+ * Este mismo comentario ya lo había dicho: los títulos se repiten entre tableros —«Seguimientos
+ * de hoy» está en el Mi Día del closer y en el del setter— así que sin un nombre de tablero
+ * adelante, replegar uno replegaría el otro. Los cuatro nombres los pasan las vistas.
+ *
+ * Y no se guarda en `localStorage`, que era el otro camino: un pliegue es un gesto del momento
+ * —«esta lista es larga, la cierro para ver la de abajo»—, no una preferencia que alguien fije
+ * una vez. Vive en memoria y muere al recargar, igual que la memoria de lecturas.
+ * * ═══════════════════════════════════════════════════════════════════════════════
  * EL CONTEO NO SE PLIEGA, Y ESO ES LA MITAD QUE IMPORTA
  *
  * El encabezado se queda: replegada, la sección sigue diciendo «Ganado 12». Es la regla que las
@@ -52,7 +58,7 @@
  * el vacío pierde su margen y la primera fila queda con doble línea.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useState } from 'react';
+import { usarPliegue } from '../../lib/usarMemoriaDeVista.ts';
 
 /**
  * @param titulo    El nombre de la sección. Va también en la etiqueta del botón.
@@ -61,6 +67,10 @@ import { useState } from 'react';
  * @param etapa     La clave de la etapa, para `data-etapa`. La usa el Pipeline, que saca su
  *                  canto de color de ahí.
  * @param extra     Lo que va en el encabezado DESPUÉS del conteo, antes del botón.
+ * @param tablero   `closer/dia`, `closer/pipeline`, `setter/dia` o `setter/pipeline`. Es dónde se
+ *                  recuerda el pliegue. Sin él la sección funciona y no recuerda nada — y eso es
+ *                  mejor que recordar cruzado con otro tablero, que es lo que pasaría usando solo
+ *                  el título.
  */
 export default function SeccionPlegable({
   titulo,
@@ -68,9 +78,13 @@ export default function SeccionPlegable({
   tono = null,
   etapa = null,
   extra = null,
+  tablero = null,
   children,
 }) {
-  const [abierta, setAbierta] = useState(true);
+  /* Invertido a propósito: lo guardado lista las REPLEGADAS, y acá se pregunta por `abierta`
+     porque es lo que usan las tres líneas de abajo. */
+  const [plegada, alternar] = usarPliegue(tablero, titulo);
+  const abierta = !plegada;
 
   return (
     <div
@@ -98,7 +112,7 @@ export default function SeccionPlegable({
           type="button"
           className="sec-plegar"
           aria-expanded={abierta}
-          onClick={() => setAbierta((v) => !v)}
+          onClick={alternar}
           title={abierta ? 'Replegar la lista' : 'Abrir la lista'}
           aria-label={`${abierta ? 'Replegar' : 'Abrir'} ${titulo}`}
         >
