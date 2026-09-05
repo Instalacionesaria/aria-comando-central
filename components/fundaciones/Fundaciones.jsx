@@ -54,8 +54,8 @@ const CATALOGO_ICP = {
      es esta pantalla, no Tools. Los inputs se siguen guardando igual en `profile[N]`; lo que cambia es
      cómo se cargan: se dicen al agente, que abre proponiendo lo que hereda.
 
-     Una herramienta suelta puede declarar lo mismo por su cuenta (`Herramienta.soloChat`): así entró
-     el VSL de Tools el 2026-09-05, sin arrastrar a Prospección ni a la Landing. */
+     Una herramienta suelta puede declarar lo mismo por su cuenta (`Herramienta.soloChat`): así
+     entraron el VSL y la Landing de Tools el 2026-09-05, sin arrastrar a Prospección. */
   soloChat: true,
   herramientas: FUNDACIONES,
   rutaEstado: '/api/fundaciones/estado',
@@ -312,7 +312,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const vistaActiva = vistas.find((v) => v.clave === activa) ?? null;
   const herramienta = herramientas.find((h) => h.id === activa) || herramientas[0];
   /* Solo chat si lo dice la pantalla entera (ICP & Oferta) o esta herramienta en particular (el VSL
-     en Tools). Se calcula acá y no arriba porque depende de cuál está activa. */
+     y la Landing en Tools). Se calcula acá y no arriba porque depende de cuál está activa. */
   const soloChat = soloChatDePantalla || herramienta.soloChat === true;
   const esConfiguracion =
     problema !== null &&

@@ -111,9 +111,9 @@ export interface Herramienta {
    * proponiendo lo que hereda, y los inputs se guardan igual en `perfil[N]`.
    *
    * Es la MISMA regla que `soloChat` en el catálogo de una pantalla (`Fundaciones.jsx`), pero para
-   * una herramienta suelta. ICP & Oferta la declara para sus siete de una vez; en Tools la lleva el
-   * VSL y nadie más —Prospección tiene su panel propio y la Landing conserva las dos opciones—, así
-   * que declararla a nivel de pantalla habría arrastrado a las tres.
+   * una herramienta suelta. ICP & Oferta la declara para sus siete de una vez; en Tools la llevan el
+   * VSL y la Landing, y Prospección no —tiene su panel propio, sin agente—, así que declararla a
+   * nivel de pantalla habría arrastrado también a esa.
    */
   soloChat?: true;
 }
@@ -584,6 +584,10 @@ const LANDING: Herramienta = {
   etiquetaBoton: 'Generar mi página',
   etiquetaSalida: 'Prompt para AI Studio',
   forma: 'generica',
+  // Kevin (2026-09-05), el mismo día que el VSL: «¿podemos hacer lo mismo con Tu página?». Solo chat.
+  // Tiene UN campo —el nicho— y lo hereda casi siempre del ICP, así que el agente suele abrir con
+  // todo propuesto y la persona solo confirma. Prospección queda como la única de Tools con panel.
+  soloChat: true,
 };
 
 // ═════════════════════════════════════════════════════════════════════════════

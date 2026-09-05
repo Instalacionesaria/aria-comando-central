@@ -147,21 +147,23 @@ test('recargar el estado DEVUELVE la promesa: sin eso, esperar la recarga es men
 
 // ─── Rellenar el formulario con lo que ya se generó ────────────────────────
 
-test('«ICP & Oferta» se trabaja solo por chat; en Tools, solo el VSL', () => {
+test('«ICP & Oferta» se trabaja solo por chat; en Tools, el VSL y la Landing', () => {
   /* Pedido de Kevin (2026-09-03): «ya no habrá formularios, solo los chats», con alcance explícito:
      las siete de ICP & Oferta. Lo declara el catálogo de la pantalla, en un solo lugar, y los dos
      paneles lo obedecen: sin selector, abren en el agente.
 
-     Y el 2026-09-05 pidió «lo mismo» para el VSL de Tools — la herramienta, no la pantalla: Prospección
-     tiene su panel propio y la Landing conserva las dos opciones. Por eso la bandera vive en la
-     herramienta y el armazón la combina con la de pantalla. */
+     Y el 2026-09-05 pidió «lo mismo» para el VSL y después para «Tu página» — herramienta por
+     herramienta, no la pantalla: Prospección tiene su panel propio, sin agente. Por eso la bandera
+     vive en la herramienta y el armazón la combina con la de pantalla. */
   const armazon = codigo('components/fundaciones/Fundaciones.jsx');
   assert.match(armazon, /pantalla: 'icp',[\s\S]*?soloChat: true,/);
   assert.ok(!/soloChat: true/.test(codigo('components/views/ToolsView.jsx')), 'Tools entera perdió sus formularios');
   assert.match(armazon, /const soloChat = soloChatDePantalla \|\| herramienta\.soloChat === true;/);
 
   const soloChatEnTools = TOOLS.filter((h) => h.soloChat === true).map((h) => h.id);
-  assert.deepEqual(soloChatEnTools, [5], 'en Tools el único solo-chat es el VSL (5)');
+  assert.deepEqual(soloChatEnTools, [5, 6], 'en Tools son solo-chat el VSL (5) y la Landing (6)');
+  // Y ninguna solo-chat puede quedar sin agente: sería una pestaña sin ninguna forma de trabajarse.
+  for (const h of TODAS) if (h.soloChat) assert.ok(tieneAgente(h), `${h.clave} es solo-chat y no tiene agente`);
 
   for (const panel of ['components/fundaciones/PanelHerramienta.jsx', 'components/fundaciones/PanelResearch.jsx']) {
     const fuente = codigo(panel);
