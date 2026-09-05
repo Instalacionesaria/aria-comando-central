@@ -423,7 +423,7 @@ export function mensajeDeArranque(h: Herramienta, respuestas: Record<string, str
     .filter((c) => (respuestas[claveCorta(c.id)] ?? '').trim() !== '')
     .map((c) => `· ${c.etiqueta} ${respuestas[claveCorta(c.id)]}`);
   return (
-    `Vamos con «${h.titulo}». Con tu ficha y tu research ya tengo lo que hace falta, así que lo armo ` +
+    `Vamos con «${h.titulo}». Con lo que ya construiste en las herramientas anteriores tengo lo que hace falta, así que lo armo ` +
     `ahora con esto:\n\n${lineas.join('\n')}\n\n` +
     `Generando tu ${h.etiquetaSalida}. Cuando termine, si algo no va, decímelo y lo regenero con el cambio.`
   );

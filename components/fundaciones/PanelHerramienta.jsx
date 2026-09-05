@@ -59,8 +59,9 @@ export default function PanelHerramienta({
   organizacion,
   faltaPermiso,
   pantalla,
-  /* Sin formulario: la herramienta se trabaja por chat. Lo declara el catálogo de la pantalla, no
-     esta prop suelta: es una decisión de producto por pantalla, y así queda en un solo lugar. */
+  /* Sin formulario: la herramienta se trabaja por chat. Lo declara el catálogo —el de la pantalla
+     para las siete de ICP & Oferta, o la herramienta misma para el VSL de Tools— y el armazón lo
+     resuelve; esta prop no se decide acá. */
   soloChat,
   onIr,
   /* Se llegó por «Continuar al paso N» y el formulario tiene que completarse solo. Ver

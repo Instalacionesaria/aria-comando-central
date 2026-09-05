@@ -52,7 +52,10 @@ const CATALOGO_ICP = {
   /* Las siete de esta pantalla se trabajan SOLO por chat: sin formulario, sin selector de opciones.
      Pedido de Kevin (2026-09-03): «ya no habrá formularios, solo los chats» — y aclaró que el alcance
      es esta pantalla, no Tools. Los inputs se siguen guardando igual en `profile[N]`; lo que cambia es
-     cómo se cargan: se dicen al agente, que abre proponiendo lo que hereda. */
+     cómo se cargan: se dicen al agente, que abre proponiendo lo que hereda.
+
+     Una herramienta suelta puede declarar lo mismo por su cuenta (`Herramienta.soloChat`): así entró
+     el VSL de Tools el 2026-09-05, sin arrastrar a Prospección ni a la Landing. */
   soloChat: true,
   herramientas: FUNDACIONES,
   rutaEstado: '/api/fundaciones/estado',
@@ -68,7 +71,7 @@ const CATALOGO_ICP = {
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, rutaRellenar, capacidadEditar } =
     catalogo;
-  const soloChat = catalogo.soloChat === true;
+  const soloChatDePantalla = catalogo.soloChat === true;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
      Una herramienta es un formulario que produce un documento y que se puede dar por
@@ -308,6 +311,9 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
      entre sí, así que una sola variable alcanza y no hay dos estados que puedan contradecirse. */
   const vistaActiva = vistas.find((v) => v.clave === activa) ?? null;
   const herramienta = herramientas.find((h) => h.id === activa) || herramientas[0];
+  /* Solo chat si lo dice la pantalla entera (ICP & Oferta) o esta herramienta en particular (el VSL
+     en Tools). Se calcula acá y no arriba porque depende de cuál está activa. */
+  const soloChat = soloChatDePantalla || herramienta.soloChat === true;
   const esConfiguracion =
     problema !== null &&
     (problema.codigo === 'sin_llave_de_ia' ||

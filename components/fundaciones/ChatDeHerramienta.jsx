@@ -167,7 +167,7 @@ export default function ChatDeHerramienta({
           {esperando ? (
             <div className="fd-burbuja agente esperando">
               <span className="fd-punto" />
-              {abriendo ? 'Leyendo tu ficha y tu research para proponerte las respuestas…' : 'escribiendo…'}
+              {abriendo ? 'Leyendo lo que ya construiste en las herramientas anteriores para proponerte las respuestas…' : 'escribiendo…'}
             </div>
           ) : null}
         </div>

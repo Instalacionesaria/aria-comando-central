@@ -106,6 +106,16 @@ export interface Herramienta {
    * dos— así que agregársela a una herramienta le cambia las dos puertas a la vez.
    */
   exigeSusCampos?: boolean;
+  /**
+   * Se trabaja SOLO por chat: sin formulario, sin selector «Opción 1 / Opción 2». El agente abre
+   * proponiendo lo que hereda, y los inputs se guardan igual en `perfil[N]`.
+   *
+   * Es la MISMA regla que `soloChat` en el catálogo de una pantalla (`Fundaciones.jsx`), pero para
+   * una herramienta suelta. ICP & Oferta la declara para sus siete de una vez; en Tools la lleva el
+   * VSL y nadie más —Prospección tiene su panel propio y la Landing conserva las dos opciones—, así
+   * que declararla a nivel de pantalla habría arrastrado a las tres.
+   */
+  soloChat?: true;
 }
 
 const PERFIL: Herramienta = {
@@ -546,6 +556,10 @@ const VSL: Herramienta = {
   etiquetaBoton: 'Redactar mi VSL',
   etiquetaSalida: 'Guion del VSL',
   forma: 'generica',
+  // Pedido de Kevin (2026-09-05): «lo mismo que hicimos con ICP & Oferta» — el VSL se trabaja solo
+  // por chat. Hereda de ICP, Categoría, Oferta y Tu precio (`FUENTES_POR_HERRAMIENTA[5]`), y eso es
+  // lo que el agente lee para proponer las respuestas antes de que nadie escriba.
+  soloChat: true,
 };
 
 const LANDING: Herramienta = {
