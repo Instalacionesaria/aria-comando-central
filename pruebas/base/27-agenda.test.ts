@@ -32,6 +32,7 @@ import { agendaDelCloser, porQueNoHayCitasHoy } from '../../lib/negocio/agenda.t
 import { barrerCitas, type LectoresDelCalendario } from '../../lib/negocio/citas.ts';
 import { filasDeTerritorio } from '../../lib/negocio/fila.ts';
 import { colasDelDia } from '../../lib/negocio/miDia.ts';
+import { enlacesDeLaCita } from '../../lib/negocio/enlacesDeLaCita.ts';
 
 const ZONA = 'America/Lima';
 const ACCESO = { token: 'no-se-usa', locationId: 'loc1' };
@@ -174,6 +175,127 @@ const laAgenda = (opciones: { dias?: number; incluirCanceladas?: boolean } = {},
 // 1 · EL BARRIDO
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ═══ Los dos enlaces de la cita ═══════════════════════════════
+
+const EN_UNA_HORA = () => new Date(Date.now() + 60 * 60 * 1000);
+const HACE_UNA_HORA = () => new Date(Date.now() - 60 * 60 * 1000);
+const EN_TRES_DIAS = () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+test('gana la PRÓXIMA cita, aunque haya una pasada más cerca en el tiempo', async () => {
+  /* ────────────────────────── «LA MÁS CERCANA A AHORA» NO ES LA MÁS CERCANA EN TIEMPO ──────────────────────────
+   *
+   * Lo que se pidió es: la próxima si hay una, y si no la última que pasó. Con una cita de hace una
+   * hora y otra dentro de tres días, la más cercana en tiempo ABSOLUTO es la pasada — y gana la
+   * futura.
+   *
+   * Es la diferencia entre mandarle la sala de la reunión que viene y mandarle la de una que ya
+   * terminó. Y se ve igual desde la pantalla, así que sin esta prueba el orden se «simplifica» a
+   * un `order by abs(...)` sin que nadie lo note. */
+  await limpiar();
+  const c = await contacto('ghl-enlaces-1');
+  await citaEnTabla(c, HACE_UNA_HORA(), {
+    sala_url: 'https://meet.google.com/pasada',
+    ghl_calendario_id: 'cal-pasada',
+  });
+  await citaEnTabla(c, EN_TRES_DIAS(), {
+    sala_url: 'https://meet.google.com/futura',
+    ghl_calendario_id: 'cal-futura',
+  });
+
+  const e = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.equal(e?.meet, 'https://meet.google.com/futura', 'ganó la cita pasada');
+  assert.match(e?.reagendar ?? '', /cal-futura/);
+});
+
+test('entre dos futuras gana la MÁS PRÓXIMA', async () => {
+  await limpiar();
+  const c = await contacto('ghl-enlaces-2');
+  await citaEnTabla(c, EN_TRES_DIAS(), { sala_url: 'https://meet.google.com/lejana' });
+  await citaEnTabla(c, EN_UNA_HORA(), { sala_url: 'https://meet.google.com/cercana' });
+
+  const e = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.equal(e?.meet, 'https://meet.google.com/cercana');
+});
+
+test('sin ninguna futura, gana la ÚLTIMA que pasó — el caso del plantón', async () => {
+  /* Es el caso que motivó todo esto: alguien no se conectó al meet, y lo que hay que mandarle es
+     el link para reagendar. Con «solo la próxima» no habría ninguno justo en ese momento. */
+  await limpiar();
+  const c = await contacto('ghl-enlaces-3');
+  await citaEnTabla(c, new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), {
+    sala_url: 'https://meet.google.com/vieja',
+  });
+  await citaEnTabla(c, HACE_UNA_HORA(), { sala_url: 'https://meet.google.com/reciente' });
+
+  const e = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.equal(e?.meet, 'https://meet.google.com/reciente', 'eligió una cita más vieja');
+});
+
+test('las CANCELADAS no cuentan, ni siquiera si son la única', async () => {
+  /* Medido en el primer barrido real: **411 de 1052 citas están canceladas, el 39 %**. Mandar la
+     sala de una cancelada hace entrar a alguien a una reunión que nadie va a atender, y su link de
+     reagendar abre una cita que ya no existe.
+
+     El filtro es `noCancelada()`, la MISMA función que la cola de Mi Día y el ícono de la fila.
+     Cuando esa definición estuvo en dos lugares, un ícono contaba reuniones que nadie tuvo. */
+  await limpiar();
+  const c = await contacto('ghl-enlaces-4');
+  await citaEnTabla(c, EN_UNA_HORA(), {
+    estado_ghl: 'cancelled',
+    sala_url: 'https://meet.google.com/cancelada',
+  });
+  assert.equal(
+    await conOrganizacion(alfa, () => enlacesDeLaCita(c, null)),
+    null,
+    'una cita cancelada ofreció sus enlaces',
+  );
+
+  // Y con una cancelada y una viva, gana la viva aunque la cancelada sea más próxima.
+  await citaEnTabla(c, EN_TRES_DIAS(), { sala_url: 'https://meet.google.com/viva' });
+  const e = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.equal(e?.meet, 'https://meet.google.com/viva');
+});
+
+test('sin sala Y sin calendario no hay nada que ofrecer, y devuelve nulo', async () => {
+  /* Las citas guardadas antes de la migración `038` no tienen calendario, y la sala falta en 23 de
+     1052. Con las dos ausentes, el objeto con dos nulos obligaría a la interfaz a volver a decidir
+     lo mismo — y en dos lugares eso divergiría. */
+  await limpiar();
+  const c = await contacto('ghl-enlaces-5');
+  await citaEnTabla(c, EN_UNA_HORA(), { sala_url: null });
+  assert.equal(await conOrganizacion(alfa, () => enlacesDeLaCita(c, null)), null);
+
+  // La cadena vacía cuenta como ausencia: `address` viene `''` en 23 de 1052 citas.
+  await limpiar();
+  const c2 = await contacto('ghl-enlaces-6');
+  await citaEnTabla(c2, EN_UNA_HORA(), { sala_url: '   ' });
+  assert.equal(await conOrganizacion(alfa, () => enlacesDeLaCita(c2, null)), null);
+});
+
+test('con solo el calendario alcanza: se ofrece el reagendar sin sala', async () => {
+  /* Es el caso del plantón de una cita sin sala cargada, y es justo cuando el reagendar sirve. */
+  await limpiar();
+  const c = await contacto('ghl-enlaces-7');
+  await citaEnTabla(c, HACE_UNA_HORA(), { sala_url: null, ghl_calendario_id: 'cal-x' });
+
+  const e = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.equal(e?.meet, null);
+  assert.match(e?.reagendar ?? '', /widget\/booking\/cal-x\?event_id=/);
+});
+
+test('el dominio propio de la empresa manda, y el del proveedor es la reserva', async () => {
+  await limpiar();
+  const c = await contacto('ghl-enlaces-8');
+  await citaEnTabla(c, EN_UNA_HORA(), { ghl_calendario_id: 'cal-y' });
+
+  const propio = await conOrganizacion(alfa, () =>
+    enlacesDeLaCita(c, 'https://calls.ariaia.com'),
+  );
+  assert.match(propio?.reagendar ?? '', /^https:\/\/calls\.ariaia\.com\/widget\/booking\/cal-y\?/);
+
+  const reserva = await conOrganizacion(alfa, () => enlacesDeLaCita(c, null));
+  assert.match(reserva?.reagendar ?? '', /^https:\/\/api\.leadconnectorhq\.com\//);
+});
 test('el barrido cuesta 1 + N llamadas: una por calendario, y no crece con las citas', async () => {
   // Medido: `GET /calendars/events` **exige** `calendarId` —sin él responde 422 *"Either of userId,
   // calendarId or groupId is required"*—, así que no hay una consulta por subcuenta. El documento

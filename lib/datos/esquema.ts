@@ -170,6 +170,14 @@ export interface TablaOrganizacionesCredenciales {
    */
   crm_calendario_id: string | null;
   /**
+   * El dominio propio del widget de reservas, sin barra final: `https://calls.ariaia.com`.
+   *
+   * `null` usa el de GoHighLevel, que está medido y funciona para toda empresa. La reserva es
+   * peor pero no rota: un link que dice `leadconnectorhq.com` le cuenta al prospecto con qué
+   * CRM trabaja la empresa.
+   */
+  crm_dominio_reservas: string | null;
+  /**
    * El identificador del usuario del CRM con el que manda mensajes el **AGENTE DE IA**.
    *
    * Es el cimiento de la regla de atribución del auditor. Sin él, `mensajes.autor = 'agente'` mezcla
@@ -361,6 +369,14 @@ export interface TablaCitas {
   estado_ghl: string | null;
   /** La sala. `null` es un caso con tratamiento propio en la interfaz (`11` § 5.4). */
   sala_url: string | null;
+  /**
+   * El calendario de GoHighLevel de ESTA cita.
+   *
+   * No alcanza el `crm_calendario_id` de la empresa: la subcuenta tiene nueve calendarios y el
+   * barrido lee todos, así que la cita puede no ser del configurado. Es lo que hace que el
+   * enlace de reagendar abra el calendario correcto. `null` en las citas de antes de la `038`.
+   */
+  ghl_calendario_id: string | null;
   sincronizado_el: Date | null;
   creado_el: Generated<Date>;
 }

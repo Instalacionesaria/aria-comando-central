@@ -65,6 +65,20 @@ const CAMPOS = [
     secreto: false,
   },
   {
+    entrada: 'crmDominioReservas',
+    valor: 'crmDominioReservas',
+    titulo: 'Dominio de reservas',
+    /* Se dice qué pasa si se deja vacío, porque «vacío» acá no significa «no funciona» sino
+       «funciona con el dominio de otro» — y eso es algo que quien administra querría saber ANTES
+       de que su prospecto reciba el link, no después. */
+    ayuda:
+      'Tu dominio propio del widget de reservas de GoHighLevel, por ejemplo ' +
+      'https://calls.tuempresa.com — sin barra al final. Es de donde salen los links de ' +
+      'reagendar que el chat ofrece solo. Vacío funciona igual, pero con el dominio de ' +
+      'GoHighLevel: el link le muestra al prospecto con qué CRM trabajás. No es un secreto.',
+    secreto: false,
+  },
+  {
     entrada: 'iaClave',
     estado: 'ia',
     titulo: 'Clave de API de Anthropic',

@@ -90,8 +90,12 @@ test('el menú es el de la zona del CONTACTO, no el de quien mira', () => {
    * corresponde, y esconder los dos menús dejaría sin botón una conversación que sigue abierta. */
   const ficha = codigo(FICHA);
 
-  const fn = ficha.match(/const visibles = useMemo\([\s\S]*?\);/);
-  assert.ok(fn, 'no está `visibles`: el menú no filtra por zona');
+  /* El filtro se llama `configurados` desde que el menú también ofrece los dos enlaces DE LA CITA.
+     Se separaron a propósito: los de la cita no tienen zona —son de un contacto, no de un puesto—
+     así que pasarlos por este filtro los borraría a todos. Lo que este archivo protege no cambió:
+     que los CONFIGURADOS se acoten a la zona del contacto. */
+  const fn = ficha.match(/const configurados = useMemo\([\s\S]*?\);/);
+  assert.ok(fn, 'no está el filtro por zona de los links configurados');
   assert.match(
     fn[0],
     /e\.territorio === contacto\.territorio/,
@@ -106,6 +110,15 @@ test('el menú es el de la zona del CONTACTO, no el de quien mira', () => {
   // Y lo que llega al compositor es la lista FILTRADA, no la cruda. Pasar `enlaces` sería tener el
   // filtro escrito y no usarlo, que es peor que no tenerlo: se lee como si estuviera resuelto.
   assert.match(ficha, /enlaces=\{visibles\}/, 'el compositor recibe la lista sin filtrar');
+
+  /* Y `visibles` sale de `configurados`, no de `enlaces`. Es la parte que se puede romper sin
+     que se note: con el filtro escrito y `visibles` armado de la lista cruda, el setter vuelve a
+     ver los diez links de cobro y todo lo de arriba sigue en verde. */
+  assert.match(
+    ficha,
+    /const visibles = useMemo\(\(\) => \{[\s\S]*?configurados\.map\(/,
+    '`visibles` no sale de la lista filtrada: el setter vuelve a ver los links de cobro',
+  );
 });
 
 test('el menú rotula las zonas SOLO cuando trae las dos', () => {
@@ -115,16 +128,20 @@ test('el menú rotula las zonas SOLO cuando trae las dos', () => {
 
      La bandera se DEDUCE de lo que llegó y no se recibe por propiedad: así no puede quedar en `true`
      con una sola zona en pantalla. */
+  /* Se agrupa por `grupo` y no por `territorio` desde que el menú también trae los dos enlaces de
+     la cita: ésos no son de una zona, así que con el agrupado viejo caerían en el grupo del closer
+     o en ninguno. Lo que se protege es lo mismo — que el rótulo no aparezca sobre una lista de un
+     solo grupo, y que la bandera se deduzca de lo que llegó. */
   const ficha = codigo(FICHA);
   assert.match(
     ficha,
-    /const zonas = new Set\(enlaces\.map\(\(e\) => e\.territorio\)\);/,
-    'la bandera de zonas no sale de la lista que se está dibujando',
+    /const grupos = new Set\(enlaces\.map\(\(e\) => e\.grupo\)\);/,
+    'la bandera de grupos no sale de la lista que se está dibujando',
   );
-  assert.match(ficha, /const conZonas = zonas\.size > 1;/);
+  assert.match(ficha, /const conGrupos = grupos\.size > 1;/);
   assert.match(
     ficha,
-    /conZonas && \(i === 0 \|\| enlaces\[i - 1\]\.territorio !== e\.territorio\)/,
+    /conGrupos && \(i === 0 \|\| enlaces\[i - 1\]\.grupo !== e\.grupo\)/,
     'el rótulo no cae al empezar cada grupo',
   );
 });

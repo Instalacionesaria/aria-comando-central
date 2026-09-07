@@ -92,6 +92,7 @@ const CAMPOS = [
   // El calendario de agendamiento. `secreto: false`: es el identificador de un calendario ajeno, va y
   // viene completo. Y NO es un filtro del barrido — ver la migración 016.
   { entrada: 'crmCalendarioId', columna: 'crm_calendario_id', secreto: false },
+  { entrada: 'crmDominioReservas', columna: 'crm_dominio_reservas', secreto: false },
   /* ── EL IDENTIFICADOR DEL AGENTE DE IA, Y POR QUÉ NO ES UN SECRETO ────────
    *
    * Es el identificador de un usuario de una cuenta ajena, de la misma clase que `crm_cuenta_id` y

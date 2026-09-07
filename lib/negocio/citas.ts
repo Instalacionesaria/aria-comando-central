@@ -289,6 +289,9 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
     titulo: cita.titulo,
     estado_ghl: cita.estado,
     sala_url: cita.sala,
+    /* Ya se leía de la respuesta del CRM y se tiraba acá. Se guarda porque el enlace de
+       reagendar necesita el calendario de ESTA cita, y el de la empresa es uno de nueve. */
+    ghl_calendario_id: cita.calendarioId,
     sincronizado_el: new Date(),
   };
 
@@ -307,6 +310,9 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
           titulo: valores.titulo,
           estado_ghl: valores.estado_ghl,
           sala_url: valores.sala_url,
+          /* Se pisa igual que la sala: reagendar en el CRM puede mover la cita de calendario, y el
+             enlace tiene que seguirla. */
+          ghl_calendario_id: valores.ghl_calendario_id,
           sincronizado_el: valores.sincronizado_el,
         } as never),
       )

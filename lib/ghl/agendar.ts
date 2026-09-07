@@ -9,8 +9,11 @@
 //   · `…/widget/bookings/<widgetSlug>` también responde 200, y se descartó porque el `widgetSlug`
 //     lo puede cambiar quien administra el calendario en GoHighLevel sin avisarle a nadie. El
 //     identificador no cambia.
-//   · `https://link.<dominio propio>/widget/booking/<id>` responde **404**: el dominio blanco del
-//     cliente no sirve para esto.
+//   · `https://link.<dominio propio>/widget/booking/<id>` responde **404**: ese host del dominio
+//     blanco no sirve para esto. **Ojo con generalizarlo**, que es lo que decía este comentario
+//     hasta hoy: medido el 2026-09-07, el dominio de RESERVAS propio —`calls.ariaia.com`, que no
+//     es `link.…`— responde 200 igual que el de GoHighLevel. Lo que 404 es `link.`, no el dominio
+//     propio en general.
 //
 // La arma el SERVIDOR y no el navegador, y eso es la única razón por la que este archivo existe: si
 // el navegador recibiera el identificador y armara la URL, la forma quedaría escrita en un componente
@@ -55,4 +58,49 @@ export function enlaceDeAgendamiento(calendarioId: string | null | undefined): s
   // un campo de texto guardado sin tocar llega como `''` y no como nulo.
   if (id === '') return null;
   return `${BASE_DEL_WIDGET}/${encodeURIComponent(id)}`;
+}
+
+/**
+ * El enlace para REAGENDAR una cita concreta. `null` si falta cualquiera de las dos piezas.
+ *
+ * ────────────────────────── POR QUÉ `event_id` Y NO EL LINK DE AGENDAR A SECAS ──────────────────────────
+ *
+ * Medido contra la subcuenta real el 2026-09-07: con `?event_id=<evento>`, el widget devuelve la
+ * cita de verdad en los datos de la página —el id del evento y su fecha, junto a `event_address` y
+ * `selected_timezone`— y las menciones de «reschedule» pasan de 1 a 3. Sin el parámetro esos datos
+ * no están: es una reserva nueva, no un reagendado.
+ *
+ * La diferencia importa para quien lo recibe. Un link de reserva nueva le pide elegir todo otra
+ * vez y **deja la cita vieja en pie**, así que el closer termina con dos citas y una que nadie va
+ * a atender.
+ *
+ * ────────────────────────── EL CALENDARIO ES EL DE LA CITA, NO EL DE LA EMPRESA ──────────────────────────
+ *
+ * `crm_calendario_id` es uno y la subcuenta tiene nueve. Con el de la empresa, el link abriría el
+ * calendario de otro closer: la persona vería horarios que no son y reservaría ahí. Por eso el
+ * calendario entra por parámetro y sale de `negocio.citas.ghl_calendario_id`.
+ *
+ * @param dominio      El de reservas de la empresa, o `null` para el de GoHighLevel.
+ * @param calendarioId El calendario DE LA CITA.
+ * @param eventoId     El `ghl_evento_id` de la cita.
+ */
+export function enlaceDeReagendamiento(
+  dominio: string | null | undefined,
+  calendarioId: string | null | undefined,
+  eventoId: string | null | undefined,
+): string | null {
+  const cal = typeof calendarioId === 'string' ? calendarioId.trim() : '';
+  const ev = typeof eventoId === 'string' ? eventoId.trim() : '';
+  // Las dos hacen falta. Con una sola, la URL llevaría a una reserva nueva o a un 404, y las dos
+  // son peores que no ofrecer el link: la primera crea una segunda cita.
+  if (cal === '' || ev === '') return null;
+
+  /* La barra final se saca acá y no se le pide a quien configura: un dominio pegado de la barra
+     del navegador la trae, y `https://x.com//widget/...` no es la misma URL. */
+  const base =
+    typeof dominio === 'string' && dominio.trim() !== ''
+      ? `${dominio.trim().replace(/\/+$/, '')}/widget/booking`
+      : BASE_DEL_WIDGET;
+
+  return `${base}/${encodeURIComponent(cal)}?event_id=${encodeURIComponent(ev)}`;
 }

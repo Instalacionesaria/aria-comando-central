@@ -141,6 +141,8 @@ export interface Credenciales {
    * en la de los tokens.
    */
   crmCalendarioId: string | null;
+  /** El dominio propio del widget de reservas. `null` usa el de GoHighLevel. */
+  crmDominioReservas: string | null;
   /**
    * El usuario con el que el agente de IA manda mensajes en el CRM. **Sin esto no se audita.**
    *
@@ -197,6 +199,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'pagos_clave_cifrada',
       'crm_cuenta_id',
       'crm_calendario_id',
+      'crm_dominio_reservas',
       'crm_agente_usuario_id',
       'aviso_secreto_hash',
       'pagos_comercio_id',
@@ -242,6 +245,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     pagos,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
     crmCalendarioId: fila?.crm_calendario_id ?? null,
+    crmDominioReservas: fila?.crm_dominio_reservas ?? null,
     crmAgenteUsuarioId: fila?.crm_agente_usuario_id ?? null,
     // Un booleano y NO el hash. Ver el campo.
     avisoSecretoConfigurado: (fila?.aviso_secreto_hash ?? null) !== null,
@@ -571,4 +575,31 @@ export async function resolverAccesoAGhl(db: Trx, orgId: string): Promise<Acceso
   if (!fila.crm_cuenta_id) return { tipo: 'falta', que: 'sin_subcuenta' };
 
   return { tipo: 'listo', token, locationId: fila.crm_cuenta_id };
+}
+
+/**
+ * Solo el dominio de reservas. **Una columna, sin descifrar nada.**
+ *
+ * ────────────────────────── POR QUÉ UNA FUNCIÓN PROPIA Y NO `resolverAccesoAGhl` ──────────────────────────
+ *
+ * Esa otra resuelve el acceso al CRM: lee el token cifrado y lo DESCIFRA. Usarla para sacar un
+ * dominio público sería descifrar un secreto en cada apertura de ficha para no mirarlo — trabajo
+ * de criptografía y una copia del token en memoria, las dos por nada.
+ *
+ * Devuelve `null` cuando no hay fila o el campo está vacío, y con `null` se usa el dominio de
+ * GoHighLevel. La cadena vacía cuenta como ausencia: un campo de texto guardado sin tocar llega
+ * como `''`.
+ */
+export async function dominioDeReservasDe(
+  db: Trx,
+  orgId: string,
+): Promise<string | null> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select('crm_dominio_reservas')
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  const d = (fila?.crm_dominio_reservas ?? '').trim();
+  return d === '' ? null : d;
 }

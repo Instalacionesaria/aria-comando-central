@@ -36,10 +36,12 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import {
+  dominioDeReservasDe,
   resolverAccesoAGhl,
   TEXTO_DE_FALTA_GHL,
 } from '../../../../lib/credenciales/resolver.ts';
 import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
+import { enlacesDeLaCita } from '../../../../lib/negocio/enlacesDeLaCita.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -124,6 +126,23 @@ export async function GET(
   //     404 acá sería un error inventado por nuestra propia consulta.
   const despues = (await conOrganizacion(orgId, () => filaDeContacto(id))) ?? antes;
 
+  /* ────────────────────────── LOS DOS ENLACES DE LA CITA ──────────────────────────
+   *
+   * Se piden acá y no en `/api/enlaces-rapidos` porque son DE ESTE CONTACTO: los de ahí son de
+   * la empresa y se leen una vez por ficha, éstos cambian con cada contacto y con cada
+   * reagendado.
+   *
+   * SÍ, ESTO REPONE UNA LECTURA DE CREDENCIALES QUE SE HABÍA QUITADO, y el comentario de abajo
+   * explica por qué se fue: era *«una consulta por cada apertura de ficha, para un enlace que ya
+   * nadie dibuja»*. Lo que la hacía mala era la segunda mitad. Estos dos enlaces Sí se dibujan y
+   * se mandan, así que la consulta compra algo.
+   *
+   * Y es una columna sola, sin descifrar nada: `dominioDeReservasDe` existe para eso, en vez de
+   * pasar por `resolverAccesoAGhl`, que descifraría el token del CRM para no mirarlo.
+   */
+  const dominio = await conIdentidad((db) => dominioDeReservasDe(db, orgId));
+  const enlacesDeCita = await conOrganizacion(orgId, () => enlacesDeLaCita(id, dominio));
+
   /* ── ACÁ SE ARMABA `enlaceAgendar`, Y SE FUE CON SU BOTÓN ────────────────
    *
    * El botón «◷ Agendar» se quitó a pedido, y con él esta lectura: era una consulta a
@@ -136,6 +155,9 @@ export async function GET(
 
   return ok({
     contacto: despues,
+    /* `null` cuando no tiene ninguna cita aprovechable. La interfaz no dibuja nada, que es
+       distinto de dibujar una opción vacía. */
+    enlacesDeCita,
     refresco: { actualizado: porque === null, porque },
   });
 }

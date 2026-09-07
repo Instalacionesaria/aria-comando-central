@@ -481,6 +481,8 @@ function Cuerpo({
 
 export default function Ficha({ contactoId, alCerrar }) {
   const [contacto, setContacto] = useState(null);
+  /** Los dos de la cita, que vienen con el contacto. `null` = no tiene cita aprovechable. */
+  const [enlacesDeCita, setEnlacesDeCita] = useState(null);
   const [refresco, setRefresco] = useState(null);
   /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
   const [situacion, setSituacion] = useState('cargando');
@@ -576,6 +578,7 @@ export default function Ficha({ contactoId, alCerrar }) {
       return;
     }
     setContacto(r.datos.contacto);
+    setEnlacesDeCita(r.datos.enlacesDeCita ?? null);
     setRefresco(r.datos.refresco);
     setSituacion('listo');
   }, [contactoId]);
@@ -868,13 +871,60 @@ export default function Ficha({ contactoId, alCerrar }) {
    * el nombre de su zona: catorce links seguidos con el de Stripe al lado del calendario no se
    * pueden leer.
    */
-  const visibles = useMemo(
+  const configurados = useMemo(
     () =>
       contacto?.territorio
         ? enlaces.filter((e) => e.territorio === contacto.territorio)
         : enlaces,
     [enlaces, contacto?.territorio],
   );
+
+  /* ────────────────────────── LOS DOS DE LA CITA, ADELANTE DE LOS CONFIGURADOS ──────────────────────────
+   *
+   * Adelante y no al final, porque son los que cambian con la conversación: mandar la sala
+   * antes de la reunión y el reagendar después de un plantón son los dos gestos del momento. Los
+   * de cobro son una lista estable que quien vende ya conoce de memoria.
+   *
+   * `grupo` es lo que el menú usa para separar. Antes agrupaba por `territorio`, que no sirve
+   * para éstos —no son de una zona, son de un contacto—; con `grupo` el caso nuevo cae solo en
+   * vez de ser una excepción en el dibujado.
+   *
+   * Cada uno aparece SOLO si el servidor mandó su URL. La sala falta en 23 de 1052 citas
+   * medidas, y el reagendar falta en las citas guardadas antes de la migración `038`, que no
+   * tienen calendario. Una opción que no lleva a ninguna parte es peor que no tenerla. */
+  const visibles = useMemo(() => {
+    const configuradosConGrupo = configurados.map((e) => ({
+      ...e,
+      grupo: NOMBRE_DE_LA_ZONA[e.territorio],
+    }));
+    if (enlacesDeCita === null) return configuradosConGrupo;
+
+    const cuando = cuandoEsLaCita(enlacesDeCita.inicioEl, zona);
+    const deLaCita = [
+      enlacesDeCita.meet
+        ? {
+            id: 'cita-meet',
+            grupo: 'De esta cita',
+            nombre: 'Link del meet',
+            url: enlacesDeCita.meet,
+            monto: null,
+            descripcion: cuando,
+          }
+        : null,
+      enlacesDeCita.reagendar
+        ? {
+            id: 'cita-reagendar',
+            grupo: 'De esta cita',
+            nombre: 'Link para reagendar',
+            url: enlacesDeCita.reagendar,
+            monto: null,
+            descripcion: cuando,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return [...deLaCita, ...configuradosConGrupo];
+  }, [configurados, enlacesDeCita, zona]);
 
   /**
    * Un link elegido del menú entra en la caja. **No se manda solo.**
@@ -1174,6 +1224,33 @@ export default function Ficha({ contactoId, alCerrar }) {
  * cerrado en ese instante haría parpadear el motivo del vencimiento en cada apertura de ficha, y
  * quien lo lee no tiene forma de saber que fue mentira por medio segundo.
  */
+/**
+ * Cuándo es o fue la cita, para que se vea DE CUÁL es el link.
+ *
+ * Sin esto, «Link para reagendar» no dice nada sobre qué cita se está por reagendar — y con un
+ * contacto que tuvo tres, elegir a ciegas manda el link de la equivocada.
+ *
+ * «ya pasó» es la mitad que importa: es el caso del plantón, y es cuando este link se usa de
+ * verdad. Verlo dice que el link sirve para mover una cita vencida y no para entrar a una que
+ * viene.
+ *
+ * Se formatea en la ZONA DE LA EMPRESA y no en la del navegador: quien vende puede estar en otro
+ * país que su empresa, y una hora corrida hace que mande el link de otra cita.
+ */
+function cuandoEsLaCita(inicioEl, zona) {
+  const d = new Date(inicioEl);
+  if (Number.isNaN(d.getTime())) return null;
+  const fecha = new Intl.DateTimeFormat('es', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zona,
+  }).format(d);
+  return d.getTime() < Date.now() ? `${fecha} · ya pasó` : fecha;
+}
+
 function Compositor({
   ventana,
   borrador,
@@ -1198,17 +1275,26 @@ function Compositor({
   const cerrarMenu = useCallback(() => setMenu(false), []);
   usarCierreDeMenu(menu, cajaDelMenu, cerrarMenu);
 
-  /* ¿Vienen links de las DOS zonas? Solo pasa con un contacto sin territorio, y es lo que decide si
-     hacen falta los rótulos de grupo. Se deduce de lo que llegó en vez de recibirse por propiedad:
-     así no puede quedar en `true` con una sola zona en pantalla. */
-  const zonas = new Set(enlaces.map((e) => e.territorio));
-  const conZonas = zonas.size > 1;
+  /* ¿Viene más de un GRUPO? Se deduce de lo que llegó en vez de recibirse por propiedad: así no
+     puede quedar en `true` con un solo grupo en pantalla.
+
+     Antes esto miraba `territorio`, y el único caso de dos grupos era un contacto congelado que
+     perdió sus etiquetas en el CRM. Ahora los de la cita son un grupo propio —no son de una zona,
+     son de un contacto— así que dos grupos es el caso NORMAL. Agrupar por `grupo` es lo que hace
+     que eso no necesite una rama aparte en el dibujado. */
+  const grupos = new Set(enlaces.map((e) => e.grupo));
+  const conGrupos = grupos.size > 1;
 
   /* El título del menú nombra lo que hay adentro: los del closer son de cobro y los del setter no.
      Con las dos zonas juntas gana el rótulo genérico, y cada grupo dice el suyo más abajo. */
-  const titulo = conZonas
+  /* Con un solo grupo, el título lo nombra. Los configurados tienen `territorio` y su rótulo sale
+     del catálogo —los del closer son de cobro y los del setter no—; los de la cita no tienen zona,
+     así que el título es su propio grupo. */
+  const titulo = conGrupos
     ? 'Links rápidos'
-    : TITULO_DE_LOS_ENLACES[enlaces[0]?.territorio ?? 'closer'];
+    : enlaces[0]?.territorio
+      ? TITULO_DE_LOS_ENLACES[enlaces[0].territorio]
+      : (enlaces[0]?.grupo ?? 'Links rápidos');
 
   /* ── EL FOCO VUELVE A LA CAJA, CON EL CURSOR AL FINAL ─────────────────────
    *
@@ -1274,11 +1360,10 @@ function Compositor({
               <div className="cw-rapidos-t">{titulo}</div>
               {enlaces.map((e, i) => (
                 <Fragment key={e.id}>
-                  {/* El rótulo de la zona, SOLO cuando el menú trae las dos —un contacto congelado,
-                      que perdió sus etiquetas en el CRM—. La lista viene ordenada por zona, así que
-                      alcanza con mirar el anterior: el rótulo cae al empezar cada grupo. */}
-                  {conZonas && (i === 0 || enlaces[i - 1].territorio !== e.territorio) ? (
-                    <div className="cw-rapidos-g">{NOMBRE_DE_LA_ZONA[e.territorio]}</div>
+                  {/* El rótulo del grupo. La lista viene ordenada por grupo, así que alcanza con
+                      mirar el anterior: el rótulo cae al empezar cada uno. */}
+                  {conGrupos && (i === 0 || enlaces[i - 1].grupo !== e.grupo) ? (
+                    <div className="cw-rapidos-g">{e.grupo}</div>
                   ) : null}
                   <button
                     type="button"

@@ -26,7 +26,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { enlaceDeAgendamiento } from '../../lib/ghl/agendar.ts';
+import { enlaceDeAgendamiento, enlaceDeReagendamiento } from '../../lib/ghl/agendar.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (ruta: string) => readFileSync(new URL(ruta, RAIZ), 'utf8');
@@ -60,8 +60,13 @@ test('el identificador se escapa', () => {
 });
 
 test('la base es del proveedor, no un dominio blanco', () => {
-  // Medido: `https://link.<dominio del cliente>/widget/booking/<id>` responde **404**. Poner el
-  // dominio blanco daría un botón que no abre nada, y la falla se vería recién al apretarlo.
+  /* Medido: `https://link.<dominio del cliente>/widget/booking/<id>` responde **404**, así que
+     esta función no acepta dominio y usa el del proveedor.
+
+     OJO CON GENERALIZARLO, que es lo que decía este comentario: lo que 404 es el host `link.`, no
+     el dominio propio en general. Medido el 2026-09-07, el dominio de RESERVAS propio
+     —`calls.ariaia.com`— responde 200, y por eso `enlaceDeReagendamiento` sí lo usa. Las dos cosas
+     son ciertas a la vez porque son dos hosts distintos. */
   const url = enlaceDeAgendamiento('x');
   assert.ok(url?.startsWith('https://api.leadconnectorhq.com/'));
 });
@@ -96,6 +101,165 @@ test('NO es un secreto, y se declara así', () => {
   const renglon = fuente.split('\n').find((l) => l.includes("columna: 'crm_calendario_id'"));
   assert.ok(renglon, 'no se encontró la declaración del campo');
   assert.match(renglon, /secreto:\s*false/);
+});
+
+// ─── 4 · EL ENLACE DE REAGENDAR ───────────────────────────────────
+
+test('la URL de reagendar lleva el calendario Y el evento, que es lo que la hace reagendar', () => {
+  /* ────────────────────────── POR QUÉ `event_id` NO ES OPCIONAL ──────────────────────────
+   *
+   * Medido contra la subcuenta real el 2026-09-07: con `?event_id=<evento>` el widget devuelve la
+   * cita de verdad en los datos de la página —el id del evento y su fecha, junto a `event_address`
+   * y `selected_timezone`— y las menciones de «reschedule» pasan de 1 a 3. Sin el parámetro esos
+   * datos no están.
+   *
+   * O sea que sin él no es un reagendado sino una reserva NUEVA, y eso **deja la cita vieja en
+   * pie**: el closer termina con dos y una que nadie va a atender. */
+  assert.equal(
+    enlaceDeReagendamiento(null, 'cal-1', 'ev-1'),
+    'https://api.leadconnectorhq.com/widget/booking/cal-1?event_id=ev-1',
+  );
+});
+
+test('sin calendario o sin evento es NULO, y las dos faltas duelen distinto', () => {
+  /* No es simetría por prolijidad. Sin el EVENTO, la URL abriría una reserva nueva — crea una
+     segunda cita. Sin el CALENDARIO, un 404. La primera es peor porque parece que funcionó.
+
+     El calendario falta en las citas guardadas antes de la migración `038`, así que este caso no
+     es hipotético: es toda cita vieja. */
+  assert.equal(enlaceDeReagendamiento(null, null, 'ev-1'), null, 'sin calendario dio una URL');
+  assert.equal(enlaceDeReagendamiento(null, 'cal-1', null), null, 'sin evento dio una URL');
+  // Y la cadena vacía cuenta como ausencia: un campo guardado sin tocar llega como `''`.
+  assert.equal(enlaceDeReagendamiento(null, '  ', 'ev-1'), null);
+  assert.equal(enlaceDeReagendamiento(null, 'cal-1', '  '), null);
+});
+
+test('con dominio propio se usa ese, y la barra final no rompe la URL', () => {
+  /* El dominio propio es lo que evita mandarle a un prospecto un link que dice
+     `leadconnectorhq.com`, o sea contarle con qué CRM trabaja la empresa.
+
+     La barra final se saca acá y no se le pide a quien configura: un dominio pegado de la barra
+     del navegador la trae, y `https://x.com//widget/booking/...` no es la misma URL. */
+  assert.equal(
+    enlaceDeReagendamiento('https://calls.ariaia.com', 'cal-1', 'ev-1'),
+    'https://calls.ariaia.com/widget/booking/cal-1?event_id=ev-1',
+  );
+  assert.equal(
+    enlaceDeReagendamiento('https://calls.ariaia.com/', 'cal-1', 'ev-1'),
+    'https://calls.ariaia.com/widget/booking/cal-1?event_id=ev-1',
+    'la barra final dejó una doble barra en la URL',
+  );
+  // Vacío cae al del proveedor, que está medido y funciona para toda empresa.
+  assert.ok(
+    enlaceDeReagendamiento('   ', 'cal-1', 'ev-1')?.startsWith('https://api.leadconnectorhq.com/'),
+  );
+});
+
+test('los dos identificadores se escapan', () => {
+  // Vienen del CRM. Uno con `/` o `?` adentro cambiaría la ruta o agregaría parámetros.
+  const url = enlaceDeReagendamiento(null, 'a b/../otro', 'ev?x=1&y=2');
+  assert.equal(
+    url,
+    'https://api.leadconnectorhq.com/widget/booking/a%20b%2F..%2Fotro?event_id=ev%3Fx%3D1%26y%3D2',
+  );
+});
+
+test('el calendario DE LA CITA se guarda, y se pisa al reagendar', () => {
+  /* Es la pieza sin la que todo lo de arriba no sirve: `crm_calendario_id` es UNO y la subcuenta
+     tiene nueve. Con el de la empresa, el link abriría el calendario de otro closer — la persona
+     vería horarios que no son y reservaría ahí, y se vería como que funcionó.
+
+     Y se PISA en el `do update` por el mismo motivo que la sala: reagendar en el CRM puede mover
+     la cita de calendario, y el enlace tiene que seguirla. */
+  const fuente = leer('lib/negocio/citas.ts');
+  assert.match(
+    fuente,
+    /ghl_calendario_id: cita\.calendarioId,/,
+    'el calendario de la cita se vuelve a tirar al guardar',
+  );
+  assert.match(
+    fuente,
+    /ghl_calendario_id: valores\.ghl_calendario_id,/,
+    'el calendario no se pisa al actualizar: una cita movida de calendario deja el enlace viejo',
+  );
+});
+
+test('el dominio se puede cargar: está en el endpoint, en la pantalla y en el resolvedor', () => {
+  // La misma comprobación de entrada muerta que el calendario. Una columna que ningún formulario
+  // escribe es una columna que nadie va a llenar.
+  assert.match(
+    leer('app/api/admin/credenciales/route.ts'),
+    /crm_dominio_reservas/,
+    'el endpoint de credenciales no acepta el dominio',
+  );
+  assert.match(
+    leer('components/ajustes/Credenciales.jsx'),
+    /crmDominioReservas/,
+    'la pantalla de credenciales no ofrece el campo',
+  );
+  assert.match(
+    leer('lib/credenciales/resolver.ts'),
+    /crm_dominio_reservas/,
+    'el resolvedor no lee la columna',
+  );
+
+  // Y NO es un secreto: es un dominio público, y cifrarlo haría que nadie pueda comprobarlo.
+  const renglon = leer('app/api/admin/credenciales/route.ts')
+    .split('\n')
+    .find((l) => l.includes("columna: 'crm_dominio_reservas'"));
+  assert.ok(renglon, 'no se encontró la declaración del campo');
+  assert.match(renglon, /secreto:\s*false/);
+});
+
+test('el menú del chat ofrece los dos, y solo cuando el servidor mandó su URL', () => {
+  /* Una opción que no lleva a ninguna parte es peor que no tenerla: la sala falta en 23 de 1052
+     citas medidas, y el reagendar falta en toda cita guardada antes de la `038`. */
+  /* Y el ENDPOINT los manda. Sin esto, el hueco es de los que quedan verdes: la ficha sabe
+     dibujarlos, la consulta sabe armarlos, y en el medio nadie los pasa — el menú se ve igual que
+     antes de todo este trabajo. */
+  const ruta = leer('app/api/contactos/[id]/route.ts');
+  assert.match(ruta, /enlacesDeCita,/, 'el endpoint del contacto no manda los enlaces de la cita');
+  assert.match(
+    ruta,
+    /await conOrganizacion\(orgId, \(\) => enlacesDeLaCita\(id, dominio\)\)/,
+    'el endpoint dejó de pedirlos',
+  );
+
+  const ficha = leer('components/negocio/Ficha.jsx');
+
+  /* Cada uno tiene que aparecer DOS veces: en su condición y en su `url`. Lo encontró una
+     mutación — rompió la condición dejando la línea del `url` intacta, y una aserción que solo
+     buscaba el nombre seguía pasando. Con la condición en `false`, la opción desaparece del menú
+     para siempre y el archivo se ve igual. */
+  for (const cual of ['meet', 'reagendar']) {
+    const veces = (ficha.match(new RegExp(`enlacesDeCita\.${cual}`, 'g')) ?? []).length;
+    assert.equal(
+      veces,
+      2,
+      `\`enlacesDeCita.${cual}\` aparece ${veces} veces y tienen que ser 2 —la condición que ` +
+        'decide si la opción se ofrece, y la URL que se manda. Con una sola, la condición se ' +
+        'rompió y esa opción ya no aparece en el menú.',
+    );
+    assert.match(
+      ficha,
+      new RegExp(`url: enlacesDeCita\.${cual},`),
+      `la entrada de ${cual} dejó de mandar su propia URL`,
+    );
+  }
+  assert.match(
+    ficha,
+    /if \(enlacesDeCita === null\) return configuradosConGrupo;/,
+    'sin cita, la ficha dejaría de caer en los configurados a secas',
+  );
+
+  /* Y el menú agrupa por `grupo` y no por `territorio`. Los de la cita no son de una zona, así
+     que con el agrupado viejo caerían en el grupo del closer o en ninguno. */
+  assert.match(ficha, /const grupos = new Set\(enlaces\.map\(\(e\) => e\.grupo\)\);/);
+  assert.doesNotMatch(
+    ficha,
+    /const conZonas/,
+    'volvió el agrupado por zona: los enlaces de la cita no tienen zona',
+  );
 });
 
 // ─── 3 · EL CABLE TRAMPA ───────────────────────────────────────────────────
