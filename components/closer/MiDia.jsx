@@ -80,7 +80,6 @@ export const COLAS_DEL_CLOSER = [
   {
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
-    tono: 'crit',
     /* NOMBRA LA CONDICIÓN DE ENTRADA, no el estado del mundo. Ver el bloque de arriba. */
     vacio: 'Ninguna. Acá aparece un contacto cuando el CRM marca que su agente falló.',
   },
@@ -93,13 +92,11 @@ export const COLAS_DEL_CLOSER = [
   {
     clave: 'seguimientos',
     titulo: 'Seguimientos de hoy',
-    tono: 'warn',
     vacio: 'Nadie está en seguimiento hoy.',
   },
   {
     clave: 'completadas',
     titulo: 'Completadas hoy',
-    tono: 'done',
     vacio: 'Todavía no cerraste nada hoy.',
   },
 ];
@@ -300,7 +297,7 @@ export default function MiDia({
             key={cola.clave}
             titulo={cola.titulo}
             cuantos={items.length}
-            tono={cola.tono ?? null}
+            cola={cola.clave}
             tablero={tablero}
           >
 

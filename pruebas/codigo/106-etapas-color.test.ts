@@ -121,12 +121,166 @@ test('cada etapa tiene su regla en el CSS, y el estilo se escribe UNA vez', () =
       `«${e.nombre}» no tiene su regla de color`,
     );
   }
-  // Y el canto, la banda y la píldora se escriben una sola vez, contra el selector genérico.
+  /* Y el canto, la banda y la píldora se escriben una sola vez.
+
+     Se cuenta la DECLARACIÓN y no el selector pegado a su llave. Antes el patrón exigía
+     `[data-etapa] {`, y desde que las colas de Mi Día usan el mismo mecanismo el selector es una
+     lista de dos —`[data-etapa], [data-cola]`— y el patrón dejaba de coincidir. Lo que esta
+     prueba defiende no cambió: que el canto esté escrito UNA vez, no siete. */
   assert.equal(
-    [...css.matchAll(/\.md-sec\[data-etapa\]\s*\{\s*border-left/g)].length,
+    [...css.matchAll(/border-left: 3px solid var\(--etapa\)/g)].length,
     1,
-    'el canto de color se escribe más de una vez: siete copias es una que se va a olvidar',
+    'el canto de color se escribe más de una vez: copiarlo es cómo una etapa se queda distinta',
   );
+
+  /* Y las dos pantallas comparten esas reglas en vez de tener cada una las suyas. Es la mitad que
+     hace que agregar una cola cueste dos líneas y no un bloque. */
+  for (const generica of [
+    /border-left: 3px solid var\(--etapa\)/,
+    /background: rgb\(var\(--c-etapa\)\s*\/\s*\.07\)/,
+  ]) {
+    const i = css.search(generica);
+    assert.ok(i > 0, 'se fue una de las reglas genéricas de color');
+    const selector = css.slice(css.lastIndexOf('}', i) + 1, i);
+    assert.match(
+      selector,
+      /\[data-cola\]/,
+      'las colas de Mi Día quedaron fuera de una regla genérica: heredan el color a medias, que se ' +
+        've como un defecto de la pantalla',
+    );
+  }
+});
+
+test('cada COLA de Mi Día tiene su color, con el mismo mecanismo que las etapas', () => {
+  /* ────────────────────────── LO QUE SE PIDIÓ, Y LO QUE HABÍA ──────────────────────────
+   *
+   * Se pidió que las colas de Mi Día tengan color como las columnas del Pipeline. Tenían una
+   * versión pobre —un `tono` de tres valores que hacía tres cosas distintas— y **dos de las cinco
+   * colas del closer no tenían ninguno**.
+   *
+   * Se afirman las SIETE claves: las cinco del closer y las dos propias del setter. Una cola sin
+   * su regla no falla — hereda `--etapa` sin definir, o sea canto y banda transparentes. Se ve
+   * como una sección a medio pintar, que es exactamente lo que pasaba con `agenda` y `buzon`. */
+  const css = leer('app/closer.css');
+  for (const cola of [
+    'urgentes',
+    'agenda',
+    'buzon',
+    'seguimientos',
+    'completadas',
+    'oportunidades',
+    'estancadas',
+  ]) {
+    assert.match(
+      css,
+      new RegExp(`\\.\\md-sec\\[data-cola='${cola}'\\]\\s*\\{`),
+      `la cola \`${cola}\` no tiene su regla de color: queda con el canto transparente`,
+    );
+  }
+
+  /* ── Y ALGUIEN TIENE QUE ESCRIBIR EL ATRIBUTO ────────────────────────────
+   *
+   * Lo encontró una mutación: borrando el `data-cola` del componente, las catorce reglas de arriba
+   * quedan perfectas y **ninguna se aplica**. La función entera no hace nada y el CSS se lee como
+   * si funcionara — es el mismo hueco que ya apareció dos veces en esta sesión, con la memoria de
+   * lecturas y con los enlaces de la cita.
+   *
+   * Y `Mi Día` tiene que pasar la CLAVE de la cola: pasando otra cosa —el título, por ejemplo—
+   * ninguna regla coincide y el resultado se ve igual que no pasar nada. */
+  assert.match(
+    leer('components/negocio/SeccionPlegable.jsx'),
+    /\{\.\.\.\(cola \? \{ 'data-cola': cola \} : \{\}\)\}/,
+    'la sección no escribe `data-cola`: todas las reglas de color de las colas quedan muertas',
+  );
+  assert.match(
+    leer('components/closer/MiDia.jsx'),
+    /cola=\{cola\.clave\}/,
+    'Mi Día no pasa la clave de la cola, así que ninguna regla de color coincide',
+  );
+});
+
+test('el tono de «Completadas hoy» existe en los DOS temas', () => {
+  /* Lo encontró otra mutación. Es el único color de este archivo que no sale de la paleta de etapas
+     —porque esa cola no es una etapa— así que es el único que se puede olvidar en un tema. Faltando
+     en el claro, el canto y la píldora de esa sección quedan transparentes: se ve como una sección
+     a medio pintar, y solo en un tema. */
+  const css = leer('app/temas.css');
+  for (const tema of ['oscuro', 'claro']) {
+    const bloque = bloqueDelTema(css, tema);
+    assert.match(bloque, /--cola-hecho\s*:/, `falta --cola-hecho en el tema ${tema}`);
+    assert.match(bloque, /--c-cola-hecho\s*:/, `falta su canal en el tema ${tema}`);
+
+    // Y el canal es el MISMO color que el hex, igual que se exige de cada etapa más arriba.
+    const hex = /--cola-hecho\s*:\s*#([0-9a-fA-F]{6})\s*;/.exec(bloque)?.[1];
+    const canal = /--c-cola-hecho\s*:\s*([\d\s]+);/.exec(bloque)?.[1];
+    assert.ok(hex && canal, `--cola-hecho no declara las dos formas en ${tema}`);
+    assert.deepEqual(
+      canal.trim().split(/\s+/).map(Number),
+      [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)),
+      `en ${tema}, el canal de --cola-hecho no es el mismo color que su hexadecimal`,
+    );
+  }
+});
+
+test('el color de una cola sale de la VARIABLE de su etapa gemela, no de un hex copiado', () => {
+  /* Tres colas son el mismo concepto que una columna del embudo. Un contacto en «Seguimientos de
+     hoy» ES uno de la columna Seguimiento, así que tienen que ser el mismo naranja — y para que
+     siga siendo cierto cuando alguien ajuste la paleta, se reusa la VARIABLE.
+
+     Con el hex copiado, cambiar el tono del embudo deja la cola en el color viejo y las dos
+     pantallas empiezan a decir cosas distintas sobre lo mismo, sin que nada falle. */
+  const css = leer('app/closer.css');
+  for (const [cola, etapa] of [
+    ['agenda', 'agendado'],
+    ['seguimientos', 'seguimiento'],
+    ['oportunidades', 'oferta-chica'],
+  ]) {
+    const i = css.indexOf(`.md-sec[data-cola='${cola}']`);
+    assert.ok(i > 0, `no está la regla de \`${cola}\``);
+    const bloque = css.slice(i, css.indexOf('}', i));
+    assert.match(
+      bloque,
+      new RegExp(`var\\(--etapa-${etapa}\\)`),
+      `la cola \`${cola}\` no usa la variable de \`${etapa}\`: con el hex copiado, las dos ` +
+        'pantallas se separan el día que alguien ajuste la paleta',
+    );
+  }
+
+  /* Y «Completadas hoy» NO usa el verde de `ganado`, que es el error tentador: esa cola junta lo
+     ganado Y lo perdido del día, así que en verde una jornada de cinco pérdidas se vería como
+     cinco victorias. Nadie lo reporta, porque el color dice algo agradable. */
+  const i = css.indexOf(".md-sec[data-cola='completadas']");
+  assert.ok(i > 0, 'no está la regla de `completadas`');
+  const bloque = css.slice(i, css.indexOf('}', i));
+  assert.doesNotMatch(
+    bloque,
+    /--etapa-ganado/,
+    '«Completadas hoy» quedó en verde: esa cola junta las ventas y las pérdidas del día',
+  );
+  assert.match(bloque, /--cola-hecho/, 'perdió su tono neutro propio');
+});
+
+test('el `tono` viejo se fue del todo, y no quedó peleando con el nuevo', () => {
+  /* Las reglas `.md-sec.crit/.warn/.done` vivían en `aios.css`, otra capa. Dejarlas conviviendo
+     con `data-cola` era una pelea silenciosa por el mismo píxel: dos fuentes de verdad para el
+     tinte de un encabezado, y cuál gana depende del orden de las hojas. */
+  /* SIN COMENTARIOS, y la primera versión de esta prueba falló por eso: el único `.md-sec.crit`
+     que quedaba en la hoja era el de MI PROPIO comentario, el que explica que las reglas se
+     fueron. Es la sexta vez que este repositorio paga la misma lección —`110`, `120`, `123`,
+     `127`, `128`— así que acá va explícito: lo que se afirma es el CÓDIGO. */
+  const sinComentarios = (hoja: string) => leer(hoja).replace(/\/\*[\s\S]*?\*\//g, '');
+
+  for (const hoja of ['app/aios.css', 'app/closer.css']) {
+    assert.doesNotMatch(
+      sinComentarios(hoja),
+      /\.md-sec\.(crit|warn|done)\b/,
+      `${hoja} conserva el color viejo de las colas: pelea con \`data-cola\` por el mismo píxel`,
+    );
+  }
+  // Y ninguna pantalla lo sigue declarando: un tono que nada dibuja se lee como si funcionara.
+  for (const jsx of ['components/closer/MiDia.jsx', 'components/views/SetterView.jsx']) {
+    assert.doesNotMatch(leer(jsx), /tono:/, `${jsx} sigue declarando tonos que ya nadie dibuja`);
+  }
 });
 
 test('el color NO es la única señal: el punto también cambia de forma', () => {

@@ -64,7 +64,12 @@ import { usarPliegue } from '../../lib/usarMemoriaDeVista.ts';
 /**
  * @param titulo    El nombre de la sección. Va también en la etiqueta del botón.
  * @param cuantos   El conteo. Se dibuja SIEMPRE, plegada o no — ver el encabezado.
- * @param tono      `crit` / `warn` / `done`, el modificador de `.md-sec`. Lo usa Mi Día.
+ * @param cola      La clave de la cola, para `data-cola`. La usa Mi Día, y de ahí sale su color.
+ *
+ *                  Reemplazó a un `tono` de tres valores que hacía tres cosas distintas —uno
+ *                  teñía el encabezado, otro solo la píldora, el tercero apagaba el título— y
+ *                  dejaba dos de las cinco colas sin ninguno. Con `data-cola`, las colas usan el
+ *                  MISMO mecanismo que las etapas del Pipeline y heredan su trato entero.
  * @param etapa     La clave de la etapa, para `data-etapa`. La usa el Pipeline, que saca su
  *                  canto de color de ahí.
  * @param extra     Lo que va en el encabezado DESPUÉS del conteo, antes del botón.
@@ -76,7 +81,7 @@ import { usarPliegue } from '../../lib/usarMemoriaDeVista.ts';
 export default function SeccionPlegable({
   titulo,
   cuantos,
-  tono = null,
+  cola = null,
   etapa = null,
   extra = null,
   tablero = null,
@@ -89,10 +94,13 @@ export default function SeccionPlegable({
 
   return (
     <div
-      className={`md-sec${tono ? ` ${tono}` : ''}${abierta ? '' : ' plegada'}`}
-      /* `data-etapa` solo cuando hay etapa. Puesto siempre, un `data-etapa="null"` en Mi Día
-         sería un atributo que el CSS podría llegar a usar por error. */
+      className={`md-sec${abierta ? '' : ' plegada'}`}
+      /* Cada uno SOLO cuando lo hay. Puesto siempre, un `data-etapa="null"` sería un atributo
+         que el CSS podría llegar a usar por error — y los selectores de color son
+         `[data-etapa]` y `[data-cola]` a secas, o sea que un nulo escrito los activaría con
+         `--etapa` sin definir: canto y banda transparentes, que se ve como un defecto. */
       {...(etapa ? { 'data-etapa': etapa } : {})}
+      {...(cola ? { 'data-cola': cola } : {})}
     >
       <div className="md-h">
         {titulo} <span className="b">{cuantos}</span>

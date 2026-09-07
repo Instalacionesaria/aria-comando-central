@@ -176,6 +176,20 @@
   --c-etapa-calificado:  232  88 176;
   --etapa-oferta-chica:  #b478f0;
   --c-etapa-oferta-chica: 180 120 240;
+
+  /* ────────────────────────── EL TONO DE «COMPLETADAS HOY», Y POR QUÉ NO ES VERDE ──────────────────────────
+   *
+   * Esa cola junta TODO lo que se registró hoy: una venta y un «no le interesa» caen en la misma.
+   * Con el verde de `ganado`, una jornada de cinco pérdidas se vería como cinco victorias — y es
+   * el tipo de error que nadie reporta, porque el color dice algo agradable.
+   *
+   * Así que es un gris azulado, deliberadamente apagado: dice «hecho, fuera del camino» sin
+   * opinar del resultado. El resultado lo dice la píldora de cada fila, con palabras.
+   *
+   * No se reusa `--txt-faint`: los cantos y los tintes se escriben contra un `--c-` —el triplete
+   * RGB— para poder usarlos con opacidad, y los neutros de texto no tienen ese par. */
+  --cola-hecho:          #8fa3bd;
+  --c-cola-hecho:        143 163 189;
   --etapa-vendido:       #34d399;
   --c-etapa-vendido:      52 211 153;
 
@@ -365,6 +379,9 @@
   --c-etapa-calificado:  138  28  94;
   --etapa-oferta-chica:  #5b2a94;
   --c-etapa-oferta-chica:  91  42 148;
+  /* Ver el tema oscuro: apagado a propósito, y no verde. */
+  --cola-hecho:          #5a6b82;
+  --c-cola-hecho:         90 107 130;
   --etapa-vendido:       #0a6b4a;
   --c-etapa-vendido:      10 107  74;
 

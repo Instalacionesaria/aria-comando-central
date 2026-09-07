@@ -1235,22 +1235,101 @@
   --c-etapa: var(--c-etapa-descalificado);
 }
 
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   13-bis · EL COLOR DE CADA COLA DE MI DÍA
+   ═════════════════════════════════════════════════════════════════════════════
+   Se pidió que las colas de Mi Día tengan color como las columnas del Pipeline, y hasta ahora
+   tenían una versión pobre: un `tono` de tres valores donde uno teñía el encabezado, otro solo la
+   píldora del conteo y el tercero apagaba el título. Dos de las cinco colas no tenían ninguno.
+
+   Estas reglas hacen lo mismo que las de arriba y nada más: definir `--etapa` y `--c-etapa`. Todo
+   el trato —el canto, la banda, el punto, la píldora— ya está escrito una vez contra esas dos, así
+   que Mi Día lo hereda entero sin copiar una línea.
+
+   ── EL MISMO COLOR PARA EL MISMO CONCEPTO, Y ES LA DECISIÓN ───────────────────────────
+
+   Tres colas son el mismo concepto que una columna del embudo, y llevan su color:
+
+     · «Agenda de hoy»        → el de `agendado`
+     · «Seguimientos de hoy»  → el de `seguimiento`
+     · «Oportunidades chicas» → el de `oferta_chica` (setter)
+
+   Un contacto en «Seguimientos de hoy» ES uno de la columna Seguimiento: darles dos naranjas
+   distintos —o peor, dos colores distintos— obligaría a aprender dos vocabularios visuales para
+   la misma cosa. Reusar la variable, y no copiar el hex, es lo que mantiene eso cierto cuando
+   alguien ajuste la paleta.
+
+   ── Y LAS QUE NO TIENEN GEMELA ──────────────────────────────────────────────
+
+     · «Intervenciones urgentes» → `--crit`, el rojo de la aplicación. Es el único que ya tenía
+       color, y se conserva: cambiarlo por un tono del embudo bajaría la urgencia a una etapa más.
+     · «Respondieron · buzón general» → el de `nurture`, que la paleta describe como *«frío pero
+       reversible»*: una conversación viva que no es urgente es exactamente eso.
+     · «Conversaciones estancadas» → el de `cierre`, el ámbar de «hay que empujar».
+     · «Completadas hoy» → `--cola-hecho`, y NO el verde de `ganado`: ver su motivo en `temas.css`.
+
+   ── Y EL COLOR SIGUE SIN INFORMAR SOLO ───────────────────────────────────────
+
+   Cada cola conserva su nombre escrito y su conteo, igual que en el Pipeline y por el mismo
+   motivo: cinco tonos no los distingue todo el mundo. El color refuerza, nunca informa solo. */
+
+.md-sec[data-cola='urgentes'] {
+  --etapa: var(--crit);
+  --c-etapa: var(--c-crit);
+}
+
+.md-sec[data-cola='agenda'] {
+  --etapa: var(--etapa-agendado);
+  --c-etapa: var(--c-etapa-agendado);
+}
+
+.md-sec[data-cola='buzon'] {
+  --etapa: var(--etapa-nurture);
+  --c-etapa: var(--c-etapa-nurture);
+}
+
+.md-sec[data-cola='seguimientos'] {
+  --etapa: var(--etapa-seguimiento);
+  --c-etapa: var(--c-etapa-seguimiento);
+}
+
+.md-sec[data-cola='completadas'] {
+  --etapa: var(--cola-hecho);
+  --c-etapa: var(--c-cola-hecho);
+}
+
+/* Las dos propias del setter. `urgentes`, `buzon` y `seguimientos` las comparte con el closer y
+   ya están arriba: las claves son las mismas porque significan lo mismo. */
+.md-sec[data-cola='oportunidades'] {
+  --etapa: var(--etapa-oferta-chica);
+  --c-etapa: var(--c-etapa-oferta-chica);
+}
+
+.md-sec[data-cola='estancadas'] {
+  --etapa: var(--etapa-cierre);
+  --c-etapa: var(--c-etapa-cierre);
+}
+
 /* El canto de color, que es la señal que se ve de reojo al desplazarse. Va a la IZQUIERDA y con
    3 px: un borde de 1 px se pierde contra el borde propio de la tarjeta. */
-.md-sec[data-etapa] {
+.md-sec[data-etapa],
+.md-sec[data-cola] {
   border-left: 3px solid var(--etapa);
 }
 
 /* El encabezado teñido. Al 7 % — suficiente para leerse como una banda de color y no tanto como
    para pelear con el nombre de la etapa, que es el dato. */
-.md-sec[data-etapa] .md-h {
+.md-sec[data-etapa] .md-h,
+.md-sec[data-cola] .md-h {
   background: rgb(var(--c-etapa) / .07);
   gap: 9px;
 }
 
 /* El punto, antes del nombre. Es la tercera señal —canto, banda, punto— y la que funciona cuando la
    sección está colapsada contra el borde de la pantalla. */
-.md-sec[data-etapa] .md-h::before {
+.md-sec[data-etapa] .md-h::before,
+.md-sec[data-cola] .md-h::before {
   content: '';
   flex-shrink: 0;
   width: 7px;
@@ -1261,7 +1340,8 @@
 
 /* Y el conteo, en el color de su etapa. El número es lo que más se mira de una columna del Pipeline
    —«cuántos tengo en Cierre»— así que es donde el color rinde más. */
-.md-sec[data-etapa] .md-h .b {
+.md-sec[data-etapa] .md-h .b,
+.md-sec[data-cola] .md-h .b {
   background: rgb(var(--c-etapa) / .16);
   color: var(--etapa);
 }
@@ -1269,7 +1349,10 @@
 /* Una etapa VACÍA conserva su color entero: es la mitad visible de la regla que el Pipeline
    defiende. «Ganado 0» tiene que verse tan Ganado como «Ganado 4», o el cero deja de ser una
    afirmación y vuelve a ser un hueco. */
-.md-sec[data-etapa] > .pipe-vacia {
+/* El vacío de cada pantalla se llama distinto —`pipe-vacia` en el Pipeline, `dw-empty` en Mi
+   Día— y las dos van acá: la regla es la misma y el nombre de la clase es un accidente. */
+.md-sec[data-etapa] > .pipe-vacia,
+.md-sec[data-cola] > .dw-empty {
   border-color: rgb(var(--c-etapa) / .28);
 }
 

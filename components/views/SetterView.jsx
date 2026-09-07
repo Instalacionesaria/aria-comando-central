@@ -88,7 +88,6 @@ const COLAS_DEL_SETTER = [
   {
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
-    tono: 'crit',
     /* NOMBRA LA CONDICIÓN DE ENTRADA, no el estado del mundo. Ver el bloque de arriba. */
     vacio: 'Ninguna. Acá aparece un contacto cuando el CRM marca que su agente falló.',
   },
@@ -105,19 +104,16 @@ const COLAS_DEL_SETTER = [
   {
     clave: 'estancadas',
     titulo: 'Conversaciones estancadas',
-    tono: 'warn',
     vacio: 'Ninguna. Acá aparece un contacto cuando el CRM lo marca como estancado.',
   },
   {
     clave: 'seguimientos',
     titulo: 'Seguimientos de hoy',
-    tono: 'warn',
     vacio: 'Nadie está en seguimiento hoy.',
   },
   {
     clave: 'completadas',
     titulo: 'Completadas hoy',
-    tono: 'done',
     vacio: 'Todavía no cerraste nada hoy.',
   },
 ];
