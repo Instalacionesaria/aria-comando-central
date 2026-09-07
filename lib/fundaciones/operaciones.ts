@@ -76,12 +76,18 @@ import {
   tokensDeSalida,
 } from './prompts.ts';
 
-/** El alumno del hub cuyo trabajo se lee o se escribe, ya resuelto por la ruta. */
+/**
+ * La organización cuyo trabajo se lee o se escribe, ya resuelta por la ruta desde la sesión.
+ *
+ * Se llamaba `Alumno` y llevaba el `cliente_id` del hub. Desde el 2026-09-07 el almacén es por
+ * organización (`lib/fundaciones/almacen.ts`), así que lo único que hace falta es el `org_id` del
+ * portero. El nombre del tipo se conserva para que las ocho rutas no cambien de forma.
+ */
 export interface Alumno {
-  clienteId: string;
+  orgId: string;
 }
 
-/** El alumno MÁS la llave de IA de su organización. Solo generar la necesita. */
+/** La organización MÁS su llave de IA. Solo generar y conversar la necesitan. */
 export interface Acceso extends Alumno {
   claveIa: string;
 }
@@ -180,7 +186,7 @@ function deLaPantalla(admitidas: Admitidas, id: number | null): Herramienta | un
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function leerElEstado(alumno: Alumno): Promise<Response> {
-  const estado = await leerEstado(alumno.clienteId);
+  const estado = await leerEstado(alumno.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
 
   // El estado se devuelve ENTERO y no recortado a las herramientas de esta pantalla, a propósito:
@@ -220,7 +226,7 @@ export async function guardarLosInputs(
   // Se relee el estado antes de escribir porque las dos llaves del almacén guardan TODAS las
   // herramientas juntas en un solo documento. Escribir solo con lo que mandó el navegador borraría
   // los inputs de las otras — y las borraría en silencio.
-  const estado = await leerEstado(alumno.clienteId);
+  const estado = await leerEstado(alumno.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
 
   const guardado =
@@ -228,12 +234,12 @@ export async function guardarLosInputs(
       ? // El Research guarda sus criterios junto a sus salidas, en su propia llave: es el formato
         // que el hub ya escribe, y separarlos haría que el hub leyera un documento a medias.
         await guardarResearch(
-          alumno.clienteId,
+          alumno.orgId,
           aValoresDeAlmacen(idsDeCampos(1), valores),
           estado.datos.researchSalidas,
         )
       : await guardarInputs(
-          alumno.clienteId,
+          alumno.orgId,
           estado.datos,
           id,
           aValoresDeAlmacen(idsDeCampos(id), valores),
@@ -287,7 +293,7 @@ export async function generarElDocumento(
   const valores = soloTextos(cuerpo.valores);
   if (valores === null) return rechazo('peticion_invalida', 'Los valores tienen que ser texto');
 
-  const estado = await leerEstado(acceso.clienteId);
+  const estado = await leerEstado(acceso.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
 
   const inputs = aValoresDeAlmacen(idsDeCampos(id), valores);
@@ -329,7 +335,7 @@ export async function generarElDocumento(
 
     const proximas = [...previas];
     proximas[paso] = salida.datos.texto;
-    const guardado = await guardarResearch(acceso.clienteId, inputs, proximas);
+    const guardado = await guardarResearch(acceso.orgId, inputs, proximas);
     if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
     return ok({
@@ -358,7 +364,7 @@ export async function generarElDocumento(
 
   // Los inputs se guardan ANTES de generar, y salga como salga la generación. El alumno acaba de
   // escribir ocho campos: perderlos porque el modelo devolvió un 529 sería cobrarle el fallo a él.
-  const guardadoDeInputs = await guardarInputs(acceso.clienteId, estado.datos, id, inputs);
+  const guardadoDeInputs = await guardarInputs(acceso.orgId, estado.datos, id, inputs);
   if (guardadoDeInputs.tipo !== 'datos') return rechazoDeAlmacen(guardadoDeInputs);
 
   const salida = await generar({
@@ -368,7 +374,7 @@ export async function generarElDocumento(
   });
   if (salida.tipo !== 'datos') return rechazoDeModelo(salida);
 
-  const guardado = await guardarVersion(acceso.clienteId, estado.datos, id, {
+  const guardado = await guardarVersion(acceso.orgId, estado.datos, id, {
     date: fechaDeVersion(),
     output: salida.datos.texto,
   });
@@ -575,7 +581,7 @@ export async function conversarConElAgente(
      acá solo se decide si alcanza, con la misma regla de obligatorias que usa `arranca`. */
   const generar = cuerpo.generar === true;
 
-  const estado = await leerEstado(acceso.clienteId);
+  const estado = await leerEstado(acceso.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
 
   const guardada = estado.datos.chats[h.id];
@@ -601,7 +607,7 @@ export async function conversarConElAgente(
     }
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.
     if (recienAbierta) {
-      const guardado = await guardarChat(acceso.clienteId, estado.datos, h.id, chat);
+      const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, chat);
       if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
     }
     return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: arrancaSolo });
@@ -628,7 +634,7 @@ export async function conversarConElAgente(
     messages: [...conElTurno, { role: 'assistant', content: salida.datos.mensaje }],
     answers: salida.datos.respuestas,
   };
-  const guardado = await guardarChat(acceso.clienteId, estado.datos, h.id, proximo);
+  const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, proximo);
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
   /* `listo` es lo que el SERVIDOR concluye, no lo que el modelo afirmó. Ver `arranca`: comprueba que

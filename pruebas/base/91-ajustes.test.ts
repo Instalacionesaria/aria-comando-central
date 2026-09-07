@@ -118,7 +118,7 @@ function peticion(cuerpo: unknown, metodo = 'PUT'): Request {
 async function enLaBase(): Promise<Record<string, string | null>> {
   const f = await admin.query(
     `select crm_token_cifrado, crm_refresh_cifrado, crm_expira_el, crm_estado,
-            ia_clave_cifrada, pagos_clave_cifrada, crm_cuenta_id, fundaciones_cliente_id
+            ia_clave_cifrada, pagos_clave_cifrada, crm_cuenta_id, pagos_comercio_id
        from identidad.organizaciones_credenciales where org_id = $1`,
     [alfa],
   );
@@ -315,11 +315,11 @@ test('los identificadores públicos SÍ van completos: no son secretos', async (
   // que apuntan a la subcuenta correcta.
   await limpiar();
   await guardarAjustes(
-    peticion({ crmCuentaId: 'loc_ABC123', fundacionesClienteId: 'alumno-42' }),
+    peticion({ crmCuentaId: 'loc_ABC123', pagosComercioId: 'comercio-42' }),
   );
   const cuerpo = await cuerpoDe(await leerAjustes(peticion(undefined, 'GET')));
   assert.equal(cuerpo['crmCuentaId'], 'loc_ABC123');
-  assert.equal(cuerpo['fundacionesClienteId'], 'alumno-42');
+  assert.equal(cuerpo['pagosComercioId'], 'comercio-42');
   // Y no se cifraron en la base: cifrar un identificador público solo lo vuelve ilegible para
   // quien tenga que diagnosticar.
   assert.equal((await enLaBase())['crm_cuenta_id'], 'loc_ABC123');

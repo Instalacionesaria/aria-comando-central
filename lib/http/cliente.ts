@@ -100,7 +100,7 @@ const ESPERA_MS = 15_000;
  * queja al apretar **«Crear mi perfil de cliente»** en `ICP & Oferta`: cartel rojo de red caída
  * sobre una generación que el servidor estaba haciendo bien. Las tres rutas de Fundaciones y de
  * `tools` declaran `maxDuration = 300` —una generación de miles de tokens contra Anthropic tarda
- * minutos, y la lectura del estado son nueve documentos del almacén del hub—, y el navegador
+ * minutos, y la lectura del estado es una fila con seis documentos—, y el navegador
  * abortaba a los quince segundos.
  *
  * Lo que lo hace peor que en la Agenda: `generarElDocumento` **guarda la versión antes de
@@ -211,7 +211,7 @@ export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
 // LAS PETICIONES SALIENTES, Y POR QUÉ VIVEN EN ESTE MISMO ARCHIVO
 //
 // `pedir(` habla con NUESTRO API desde el navegador. `pedirExterno(` habla desde el SERVIDOR con un
-// servicio de terceros: la API de Anthropic y el almacén del hub (ver `lib/fundaciones/`).
+// servicio de terceros: la API de Anthropic (ver `lib/fundaciones/generacion.ts`).
 //
 // Son dos cosas distintas y comparten archivo por una razón concreta: `ADR-0305` afirma que
 // `fetch(` aparece en **exactamente dos** archivos del proyecto, y esa afirmación es lo que impide

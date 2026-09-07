@@ -245,9 +245,9 @@ export async function proponerRespuestas(opciones: {
  */
 export async function rellenarLosCampos(
   peticion: Request,
-  acceso: { claveIa: string; clienteId: string },
+  acceso: { claveIa: string; orgId: string },
   admitidas: readonly Herramienta[],
-  leerEstado: (clienteId: string) => Promise<
+  leerEstado: (orgId: string) => Promise<
     { tipo: 'datos'; datos: EstadoDeFundaciones } | { tipo: string }
   >,
 ): Promise<Response> {
@@ -262,7 +262,7 @@ export async function rellenarLosCampos(
   const h = id === null ? undefined : admitidas.find((x) => x.id === id);
   if (h === undefined) return rechazo('no_encontrado');
 
-  const estado = await leerEstado(acceso.clienteId);
+  const estado = await leerEstado(acceso.orgId);
   if (estado.tipo !== 'datos') return rechazo('almacen_no_disponible');
 
   const propuesta = await proponerRespuestas({

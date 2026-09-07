@@ -206,16 +206,13 @@ export interface TablaOrganizacionesCredenciales {
   crm_expira_el: Date | null;
   crm_estado: Generated<EstadoCredencial>;
   /**
-   * A qué alumno del hub (ARIA-brain) corresponde esta organización. Migración 009.
+   * A qué alumno del hub (ARIA-brain) correspondía esta organización. Migración 009.
    *
-   * **No es un secreto**, y por eso no está cifrada: es un identificador de cuenta ajena, de la
-   * misma clase que `crm_cuenta_id` y `pagos_comercio_id`, que tampoco lo están. Lo que protege el
-   * trabajo del alumno no es que este número sea difícil de adivinar —es un UUID en la base de otro
-   * sistema— sino que la llave de servicio del almacén nunca sale del servidor.
-   *
-   * Nulo significa *"esta organización no tiene Fundaciones"*, y Fundaciones responde
-   * `sin_alumno_vinculado`. No hay valor por omisión: uno cualquiera dejaría a una organización
-   * leyendo y ESCRIBIENDO el trabajo de otro alumno.
+   * **YA NO LA LEE NADIE.** Desde el 2026-09-07 el estado de Fundaciones vive en
+   * `public.aria_cc_foundations`, por `org_id`, y una organización no necesita existir en el hub
+   * para trabajar (ver `lib/fundaciones/almacen.ts`). La columna queda declarada porque existe en la
+   * base y la usó `migraciones/011_foundations_sin_hub.sql` para copiar el trabajo de las
+   * organizaciones que sí estaban vinculadas. Se borra con una migración cuando Kevin decida.
    */
   fundaciones_cliente_id: string | null;
   actualizado_el: Generated<Date>;
@@ -855,6 +852,31 @@ export interface TablaScraperMonedero {
   leads_disponibles_en_total: Generated<number>;
 }
 
+/**
+ * El estado de Fundaciones —ICP & Oferta y Tools— de una organización. **Una fila por organización.**
+ *
+ * Vive en `public.aria_cc_foundations` (migración 004 de `/migraciones`, en la raíz del proyecto) y
+ * está calificada con su esquema por lo mismo que las del scraper: el `public` de ese proyecto de
+ * Supabase es compartido con ARIA-brain y el prefijo `aria_cc_` es lo que dice de quién es cada
+ * tabla. Tiene el mismo régimen que todas: RLS forzada y la política por `app.org_id`.
+ *
+ * Las columnas son las llaves que escribía el hub (`LLAVES` en `lib/fundaciones/estado.ts`), con el
+ * mismo contenido; el lector tolerante del almacén no distingue una fila copiada de una nueva. Todas
+ * admiten nulo: `null` es "todavía no tiene este documento", distinto de `{}`.
+ */
+export interface TablaFoundations {
+  org_id: string;
+  profile: unknown;
+  history: unknown;
+  market_research: unknown;
+  deep_research: unknown;
+  cat_chat: unknown;
+  intake: unknown;
+  /** Las conversaciones con el agente, una por herramienta. Entró con la migración 011. */
+  tool_chats: unknown;
+  actualizado_el: Generated<Date>;
+}
+
 /** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -895,10 +917,11 @@ export interface BaseDeDatos {
   prompts_del_agente: TablaPromptsDelAgente;
   enlaces_rapidos: TablaEnlacesRapidos;
 
-  // Las TRES calificadas con su esquema. El porqué está en `TablaScraperLeads`: las escribe el
-  // backend de Python por PostgREST, que sólo alcanza `public`. Tienen el mismo régimen de
-  // aislamiento que las de arriba — RLS forzada y política por `app.org_id`.
+  // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
+  // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo
+  // régimen de aislamiento que las de arriba — RLS forzada y política por `app.org_id`.
   'public.aria_cc_scraper_leads': TablaScraperLeads;
   'public.aria_cc_scraper_trabajos': TablaScraperTrabajos;
   'public.aria_cc_scraper_monedero': TablaScraperMonedero;
+  'public.aria_cc_foundations': TablaFoundations;
 }

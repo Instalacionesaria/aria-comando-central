@@ -126,9 +126,9 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([
       pedir('/api/auth/sesion'),
-      /* La lectura del estado son NUEVE documentos del almacén del hub y su ruta declara
-         `maxDuration = 300`: con la espera por omisión, un alumno con Fundaciones ya trabajadas
-         veía «no se pudo llegar al servidor» sobre un almacén que estaba contestando. */
+      /* La lectura del estado trae seis documentos y su ruta declara `maxDuration = 300`: con la
+         espera por omisión, un alumno con Fundaciones ya trabajadas veía «no se pudo llegar al
+         servidor» sobre un almacén que estaba contestando. */
       pedir(rutaEstado, { espera: ESPERA_DE_RUTA_LARGA_MS }),
     ]);
 
@@ -316,9 +316,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const soloChat = soloChatDePantalla || herramienta.soloChat === true;
   const esConfiguracion =
     problema !== null &&
-    (problema.codigo === 'sin_llave_de_ia' ||
-      problema.codigo === 'sin_alumno_vinculado' ||
-      problema.codigo === 'llave_de_ia_ilegible');
+    (problema.codigo === 'sin_llave_de_ia' || problema.codigo === 'llave_de_ia_ilegible');
 
   return (
     <>

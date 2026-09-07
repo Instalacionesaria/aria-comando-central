@@ -9,8 +9,8 @@
 // sigue siendo el sistema que los alumnos usan hoy: este port CONVIVE con él, no lo reemplaza.
 //
 // Y de esa convivencia sale la única regla dura del archivo: **los `id` son los del hub, no un
-// número nuevo**. El estado del alumno vive en el mismo almacén que ARIA-brain
-// (`aria_brain_client_state`, ver `almacen.ts`), y ahí las llaves son POSICIONALES: `perfil[3]` es
+// número nuevo**. El estado nació copiado del almacén de ARIA-brain (hoy vive en
+// `aria_cc_foundations`, ver `almacen.ts`), y ahí las llaves son POSICIONALES: `perfil[3]` es
 // el ICP, `historial[10]` es el Pricing. Renumerar acá —"que queden 0..6, más ordenado"— no rompe
 // nada visible: rompe la HERENCIA, y el síntoma es un documento generado con el contexto de otra
 // herramienta. Un éxito reportado que no ocurrió.

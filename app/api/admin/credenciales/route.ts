@@ -110,7 +110,9 @@ const CAMPOS = [
    */
   { entrada: 'crmAgenteUsuarioId', columna: 'crm_agente_usuario_id', secreto: false },
   { entrada: 'pagosComercioId', columna: 'pagos_comercio_id', secreto: false },
-  { entrada: 'fundacionesClienteId', columna: 'fundaciones_cliente_id', secreto: false },
+  /* «Alumno de Fundaciones» (`fundaciones_cliente_id`) estuvo acá hasta el 2026-09-07. Le pedía al
+     cliente el identificador de su cuenta en ARIA-brain, que un cliente nacido en Comando Central no
+     tiene. El almacén de Fundaciones es ahora por organización y ese dato no lo lee nadie. */
 ] as const;
 
 export async function GET(peticion: Request): Promise<Response> {

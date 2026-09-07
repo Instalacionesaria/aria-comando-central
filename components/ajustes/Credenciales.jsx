@@ -90,13 +90,6 @@ const CAMPOS = [
     secreto: false,
   },
   {
-    entrada: 'fundacionesClienteId',
-    valor: 'fundacionesClienteId',
-    titulo: 'Alumno de Fundaciones',
-    ayuda: 'A qué alumno del hub corresponde esta organización. Sin esto, ICP & Oferta no abre.',
-    secreto: false,
-  },
-  {
     entrada: 'pagosClave',
     estado: 'pagos',
     titulo: 'Clave de la pasarela de pagos',

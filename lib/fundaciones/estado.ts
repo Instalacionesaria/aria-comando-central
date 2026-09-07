@@ -3,12 +3,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOS NOMBRES DE ESTOS CAMPOS SON UN CONTRATO, NO UNA ELECCIÓN
 //
-// Este estado NO vive en la base de este proyecto: vive en el mismo almacén que ARIA-brain
-// (`aria_brain_client_state`, una fila por llave), porque la decisión de esta etapa fue que los dos
-// sistemas COMPARTAN los datos del alumno mientras el hub siga en pie. Ver `docs/ETAPA-9.md`.
+// Este estado vive en `public.aria_cc_foundations`, una fila por organización y una COLUMNA por
+// llave. Nació como una copia de `aria_brain_client_state`, la tabla de ARIA-brain, cuando la Etapa 9
+// compartía el almacén con el hub; el 2026-09-07 el almacén pasó a la base propia y el trabajo ya
+// hecho se copió tal cual (`migraciones/011_foundations_sin_hub.sql`). Ver `docs/ETAPA-9.md`.
 //
-// Consecuencia directa: los nombres de las llaves y de los campos de cada documento JSON son los
-// que ya escribió el hub, en inglés, y **no se traducen**. `date` no puede pasar a ser `fecha`:
+// Consecuencia directa: los nombres de las llaves —que son los de las columnas— y de los campos de
+// cada documento JSON son los que ya escribió el hub, en inglés, y **no se traducen**. `date` no puede pasar a ser `fecha`:
 // serían dos formas distintas del mismo dato, cada sistema escribiría la suya, y el otro leería
 // `undefined` sin ningún error — un historial que se ve vacío con las filas ahí.
 //
@@ -33,8 +34,8 @@ export const LLAVES = {
    * cinco del hub en paralelo y tarda lo que la más lenta. La forma es la misma que `profile` y
    * `history` ya usan —`{"0": …, "3": …}`, el id del hub como clave— así que no estrena nada.
    *
-   * Y aun así sus campos van en inglés como los de al lado. No es coherencia decorativa: la fila
-   * vive en la MISMA tabla que las otras cinco, y el día que alguien mire `aria_brain_client_state`
+   * Y aun así sus campos van en inglés como los de al lado. No es coherencia decorativa: la columna
+   * vive en la MISMA fila que las otras cinco, y el día que alguien mire `aria_cc_foundations`
    * a mano —que es como se diagnostica esto— un documento con `contenido` entre cinco con `content`
    * se lee como un dato roto. Lo que sí es nuestro es el nombre: `tool_chats`, y no `cat_chat`, que
    * es el del chat viejo de Categoría Única del hub y guarda otra cosa.

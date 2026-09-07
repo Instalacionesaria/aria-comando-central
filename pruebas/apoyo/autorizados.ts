@@ -134,30 +134,20 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'scripts/organizacion-principal.mjs',
   // ── Etapa 9 · Fundaciones ────────────────────────────────────────────────────
   //
-  // Las dos operaciones de la pantalla `icp`. Es un caso NUEVO en esta lista y hay que leerlo
-  // entero antes de tomarlo como precedente: no abren contexto de inquilino porque **los datos que
-  // manejan no están en esta base**. El estado de Fundaciones vive en el almacén de ARIA-brain
-  // (ver `lib/fundaciones/almacen.ts`), y de acá leen UNA fila: la de
-  // `identidad.organizaciones_credenciales`, que trae la llave de IA de la organización y a qué
-  // alumno del hub corresponde. Esa tabla es la que guarda los secretos de todas las
-  // organizaciones y el rol del inquilino no tiene ni `select` sobre ella — es el mismo caso que
-  // `app/api/admin/credenciales/route.ts`.
+  // Las rutas de ICP & Oferta que GASTAN: generar, conversar con el agente y rellenar. Usan la
+  // escotilla para UNA cosa: leer la llave de IA de la organización, que vive en
+  // `identidad.organizaciones_credenciales` —la tabla que guarda los secretos de todas las
+  // organizaciones y sobre la que el rol del inquilino no tiene ni `select`—. Es el mismo caso que
+  // `app/api/admin/credenciales/route.ts`, y el filtro por organización lo pone esa consulta a mano
+  // con `contexto.orgEfectiva`.
   //
-  // Y por eso están acá y no en una exención cómoda: **el filtro por organización lo ponen estas
-  // consultas a mano**, con `contexto.orgEfectiva`. Hay un segundo filtro que ninguna política de
-  // esta base puede cubrir —el `cliente_id` con el que se le habla al almacén— y sale de esa misma
-  // fila, nunca del navegador. Las dos rutas son, junto a `app/api/usuarios/route.ts`, los lugares
-  // donde olvidarse un `where` devuelve datos de otra organización sin ningún error.
-  'app/api/fundaciones/estado/route.ts',
+  // Todo lo demás —leer y escribir el estado— va por `conOrganizacion(` y la política de fila,
+  // desde `lib/fundaciones/almacen.ts`, sobre `public.aria_cc_foundations`. Hasta el 2026-09-07 el
+  // estado vivía en el almacén de ARIA-brain y estas rutas leían además el `cliente_id` del hub;
+  // las de ESTADO estaban en esta lista por eso, y salieron: ya no usan la escotilla y abren el
+  // contexto de su organización como cualquier otra ruta.
   'app/api/fundaciones/generar/route.ts',
-  // El agente conversacional, que llegó después y es el MISMO caso que `generar`: lee la fila de
-  // credenciales de la organización —la llave de IA y el `cliente_id` del hub— y todo lo demás lo
-  // lee y lo escribe en el almacén de ARIA-brain, que no es esta base. El filtro por organización lo
-  // pone esa consulta a mano, con `contexto.orgEfectiva`.
   'app/api/fundaciones/conversar/route.ts',
-  // Y el relleno del formulario desde el contexto heredado, mismo caso que los otros dos: lee la
-  // llave de IA y el `cliente_id` del hub de la fila de credenciales, y todo lo demás vive en el
-  // almacén de ARIA-brain.
   'app/api/fundaciones/rellenar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
@@ -186,18 +176,14 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // El catálogo de roles. Lee `identidad.roles`, que es de ese dominio. No cruza nada: los
   // roles globales no pertenecen a ninguna organización.
   'app/api/admin/roles/route.ts',
-  // ── Las dos rutas de la pantalla `tools` ────────────────────────────────────
+  // ── Las rutas de la pantalla `tools` que gastan ─────────────────────────────
   //
-  // Mismo caso que las de Fundaciones, y por el mismo motivo: el estado de las herramientas no
-  // está en esta base —vive en el almacén de ARIA-brain—, y de acá se lee UNA fila, la de
-  // credenciales, que el rol del inquilino no puede ni mirar. Así que el filtro por organización
-  // lo pone la consulta a mano con `contexto.orgEfectiva`, y eso es lo que necesita lista blanca.
-  'app/api/tools/estado/route.ts',
+  // Gemelas de las tres de Fundaciones y por el mismo motivo: leen la llave de IA de la fila de
+  // credenciales, que el rol del inquilino no puede ni mirar, con el filtro puesto a mano. El
+  // estado va por `conOrganizacion(` desde el almacén. `tools/estado` salió de esta lista el
+  // 2026-09-07 junto con `fundaciones/estado`.
   'app/api/tools/generar/route.ts',
-  // Y el agente conversacional de esta pantalla, gemelo del de Fundaciones y por el mismo motivo:
-  // lee la fila de credenciales de la organización y todo lo demás vive en el almacén del hub.
   'app/api/tools/conversar/route.ts',
-  // Su gemela del relleno, por el mismo motivo y con la capacidad de esta pantalla.
   'app/api/tools/rellenar/route.ts',
   // El análisis con IA del Espía de Anuncios. Lee UNA columna de `organizaciones_credenciales` —la
   // llave de IA cifrada— que es una tabla de identidad sobre la que el rol del inquilino no tiene ni

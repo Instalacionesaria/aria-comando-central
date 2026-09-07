@@ -118,7 +118,7 @@ export function enmascarar(valor: string): string {
  *
  * ── Y LOS IDENTIFICADORES PÚBLICOS VAN COMPLETOS, NO ENMASCARADOS ───────────
  *
- * `crm_cuenta_id`, `pagos_comercio_id` y `fundaciones_cliente_id` **no son secretos**: son el
+ * `crm_cuenta_id` y `pagos_comercio_id` **no son secretos**: son el
  * identificador de esta organización en una cuenta ajena. Enmascararlos daría la impresión
  * contraria —que son lo que protege algo— y volvería imposible la única cosa que hace falta
  * hacer con ellos: mirarlos para comprobar que apuntan a la subcuenta correcta.
@@ -150,8 +150,6 @@ export interface Credenciales {
   crmAgenteUsuarioId: string | null;
   /** El comercio de la pasarela. NO es secreto: va completo. */
   pagosComercioId: string | null;
-  /** El alumno del hub para Fundaciones. NO es secreto: va completo. */
-  fundacionesClienteId: string | null;
   /**
    * ¿Hay secreto del aviso configurado? **Un booleano, nunca el valor ni el hash.**
    *
@@ -202,7 +200,6 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'crm_agente_usuario_id',
       'aviso_secreto_hash',
       'pagos_comercio_id',
-      'fundaciones_cliente_id',
       'actualizado_el',
     ])
     .where('org_id', '=', orgId)
@@ -249,7 +246,6 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     // Un booleano y NO el hash. Ver el campo.
     avisoSecretoConfigurado: (fila?.aviso_secreto_hash ?? null) !== null,
     pagosComercioId: fila?.pagos_comercio_id ?? null,
-    fundacionesClienteId: fila?.fundaciones_cliente_id ?? null,
     actualizadoEl: fila?.actualizado_el ?? null,
   };
 }
@@ -304,14 +300,14 @@ function verCredencial(cifrado: string | null, estado: EstadoCredencial): Creden
 // ETAPA 9 · LAS DOS COSAS QUE FUNDACIONES NECESITA DE ESTA TABLA
 //
 // La pantalla `icp` (ICP & Oferta) genera documentos con un modelo de lenguaje y guarda el estado
-// del alumno en el almacén del hub. Para eso necesita dos valores POR ORGANIZACIÓN, y los dos ya
-// tenían columna en `organizaciones_credenciales`:
+// en `public.aria_cc_foundations`, por organización. Para GENERAR necesita UN valor de
+// `organizaciones_credenciales`:
 //
 //   · `ia_clave_cifrada` — la llave de la API de Anthropic **de esta organización**. La columna
-//     existía desde la migración 006 y hasta ahora nadie la leía.
-//   · `fundaciones_cliente_id` — a qué alumno del hub corresponde esta organización. La agrega la
-//     migración 009, junto a `crm_cuenta_id` y `pagos_comercio_id`, que son de la misma clase:
-//     identificadores de cuenta ajena, NO secretos.
+//     existía desde la migración 006 y hasta la Etapa 9 nadie la leía.
+//
+// Hasta el 2026-09-07 necesitaba además `fundaciones_cliente_id` —el alumno del hub—, porque el
+// estado vivía en la tabla de ARIA-brain. Ya no: ver `lib/fundaciones/almacen.ts`.
 //
 // ── POR QUÉ NO HAY RESPALDO AL ENTORNO, OTRA VEZ ─────────────────────────────
 //
@@ -325,75 +321,38 @@ function verCredencial(cifrado: string | null, estado: EstadoCredencial): Creden
 // Sin llave propia, la organización no genera y lo dice. `ADR-0604`, sin excepción.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Por qué una organización no puede generar. Cada valor significa una sola cosa. */
-export type FaltaParaGenerar = 'sin_llave_de_ia' | 'llave_de_ia_ilegible' | 'sin_alumno_vinculado';
-
 /**
- * Quién es el alumno del hub de esta organización.
+ * Por qué una organización no puede generar. Cada valor significa una sola cosa.
  *
- * Está separado de la llave de IA a propósito, y no es una duplicación: **leer no necesita la
- * llave**. Una organización a la que todavía no le cargaron la llave de IA tiene que poder ABRIR la
- * pantalla y ver los siete documentos que ya generó en el hub. Si las dos cosas se resolvieran
- * juntas, esa organización recibiría "falta la llave de IA" al intentar leer, y la respuesta
- * honesta —"acá está tu trabajo, y para generar de nuevo falta la llave"— sería imposible de dar.
+ * Eran tres. `sin_alumno_vinculado` se fue el 2026-09-07 con el almacén del hub: el estado de
+ * Fundaciones vive ahora en la base propia, por `org_id`, y **una organización no necesita existir en
+ * ARIA-brain para trabajar**. Lo único que le hace falta para generar es su llave de IA.
  */
-export type AlumnoDeFundaciones =
-  | { tipo: 'listo'; clienteId: string }
-  | { tipo: 'falta'; que: 'sin_alumno_vinculado' };
+export type FaltaParaGenerar = 'sin_llave_de_ia' | 'llave_de_ia_ilegible';
 
-export async function resolverAlumnoDeFundaciones(
-  db: Trx,
-  orgId: string,
-): Promise<AlumnoDeFundaciones> {
-  const fila = await db
-    .selectFrom('organizaciones_credenciales')
-    .select(['fundaciones_cliente_id'])
-    .where('org_id', '=', orgId)
-    .executeTakeFirst();
-
-  if (!fila || !fila.fundaciones_cliente_id) return { tipo: 'falta', que: 'sin_alumno_vinculado' };
-  return { tipo: 'listo', clienteId: fila.fundaciones_cliente_id };
-}
-
-/** Lo que hace falta para GENERAR: el alumno y la llave. */
+/** Lo que hace falta para GENERAR: la llave, y la organización a la que se le carga el trabajo. */
 export type AccesoAFundaciones =
-  | { tipo: 'listo'; claveIa: string; clienteId: string }
+  | { tipo: 'listo'; claveIa: string; orgId: string }
   | { tipo: 'falta'; que: FaltaParaGenerar };
 
 /**
- * La llave de IA y el alumno del hub de esta organización, o **qué falta**.
+ * La llave de IA de esta organización, o **qué falta**, con el `org_id` que el almacén necesita.
  *
- * Los tres faltantes son tres y no uno. "No cargaron la llave", "la llave está cargada y no la
- * puedo descifrar" (pasa al restaurar una copia de la base con otra clave maestra — ver `ILEGIBLE`
- * arriba) y "esta organización no está vinculada a ningún alumno del hub" llevan a tres acciones
- * distintas —cargar la llave, revisar la clave maestra del servidor, vincular la cuenta— y
- * colapsarlas en *"no se pudo generar"* manda a las tres personas al lugar equivocado.
+ * Es `resolverLlaveDeIa` con el identificador de la organización pegado, y nada más. Existe con
+ * nombre propio porque ocho rutas la llaman y porque el tipo de retorno —`Acceso` en
+ * `operaciones.ts`— lleva el `org_id` que el almacén usa como llave. Ese `org_id` sale del portero
+ * (la sesión), nunca del navegador.
+ *
+ * **Leer no necesita la llave**, y por eso las rutas de estado no la llaman: una organización a la
+ * que todavía no le cargaron la llave tiene que poder abrir la pantalla y ver lo que ya generó.
  */
 export async function resolverAccesoAFundaciones(
   db: Trx,
   orgId: string,
 ): Promise<AccesoAFundaciones> {
-  const fila = await db
-    .selectFrom('organizaciones_credenciales')
-    .select(['ia_clave_cifrada', 'fundaciones_cliente_id'])
-    .where('org_id', '=', orgId)
-    .executeTakeFirst();
-
-  if (!fila || !fila.fundaciones_cliente_id) return { tipo: 'falta', que: 'sin_alumno_vinculado' };
-  if (!fila.ia_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_ia' };
-
-  let claveIa: string;
-  try {
-    claveIa = descifrar(fila.ia_clave_cifrada);
-  } catch {
-    // ADR-0809 · el mismo punto de emisión que `resolverCredenciales`, y en la misma transacción:
-    // un descifrado que falla y no queda registrado es el cero indistinguible de "nadie cableó la
-    // señal".
-    await auditar(db, { accion: 'credencial_ilegible', orgId });
-    return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
-  }
-
-  return { tipo: 'listo', claveIa, clienteId: fila.fundaciones_cliente_id };
+  const llave = await resolverLlaveDeIa(db, orgId);
+  if (llave.tipo === 'falta') return llave;
+  return { tipo: 'listo', claveIa: llave.claveIa, orgId };
 }
 
 /** Lo que hace falta para pedirle algo al modelo SIN ser una herramienta de Fundaciones. */
@@ -406,17 +365,12 @@ export type LlaveDeIa =
 /**
  * La llave de IA de la organización, y nada más.
  *
- * ── POR QUÉ NO SE REUSA `resolverAccesoAFundaciones`, QUE YA LEE ESTA MISMA COLUMNA ──
- *
- * Es el mismo argumento que ya está escrito para el auditor, un caso más abajo: esa función exige
- * además `fundaciones_cliente_id`, el identificador del alumno en el hub. Quien la reusara para algo
- * que no es Fundaciones haría que una organización perfectamente capaz de operar saliera como
- * `sin_alumno_vinculado`, y alguien iría a vincular una cuenta del hub para arreglar una pantalla
- * que no tiene nada que ver con el hub.
- *
- * Ese error ya se pagó una vez en el scraper: estuvo atado a `fundaciones_cliente_id` hasta la
- * migración 006 y el síntoma era un cartel rojo que sólo se arreglaba corriendo SQL a mano. La usa
- * el análisis del Espía de Anuncios, que es de la pantalla `tools` y no sabe nada del hub.
+ * Es la base de `resolverAccesoAFundaciones` (que le agrega el `org_id`) y la que usan el Espía de
+ * Anuncios y el auditor directamente. Hasta el 2026-09-07 había un motivo para no reusar la de
+ * Fundaciones: exigía además el vínculo con el alumno del hub, y una organización sin ese vínculo
+ * salía como `sin_alumno_vinculado` en pantallas que no tenían nada que ver con el hub. Ese error se
+ * pagó dos veces —el scraper hasta la migración 006, y un cliente real en ICP & Oferta— y ya no
+ * puede volver: la falta no existe más.
  */
 export async function resolverLlaveDeIa(db: Trx, orgId: string): Promise<LlaveDeIa> {
   const fila = await db
@@ -440,14 +394,7 @@ export async function resolverLlaveDeIa(db: Trx, orgId: string): Promise<LlaveDe
 /**
  * Lo que le falta a una empresa para poder auditar. **Cuatro, y ninguno es un error.**
  *
- * ── POR QUÉ NO SE REUSA `resolverAccesoAFundaciones`, QUE YA LEE LA MISMA LLAVE ──
- *
- * Porque esa función exige además `fundaciones_cliente_id`, y **el auditor no lo necesita**: es el
- * identificador del alumno en el hub, que no tiene nada que ver con auditar agentes. Reusarla haría
- * que una empresa sin Fundaciones —perfectamente capaz de auditar— saliera como
- * `sin_alumno_vinculado`, y alguien iría a vincular una cuenta del hub para arreglar el auditor.
- *
- * Y las cuatro faltas se distinguen porque llevan a cuatro acciones distintas: cargar la llave,
+ * Las cuatro faltas se distinguen porque llevan a cuatro acciones distintas: cargar la llave,
  * revisar la clave maestra del servidor, escribir el identificador del agente en el CRM, y encender
  * el interruptor. Colapsarlas en «no se puede auditar» manda a las cuatro personas al lugar
  * equivocado — es la misma lección que el comentario de `FaltaParaGenerar` de más arriba.
@@ -525,8 +472,6 @@ export const TEXTO_DE_FALTA: Readonly<Record<FaltaParaGenerar, string>> = {
     'Esta organización todavía no tiene su llave de IA. Se carga en Integraciones, y sin ella no se puede generar.',
   llave_de_ia_ilegible:
     'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
-  sin_alumno_vinculado:
-    'Esta organización no está vinculada a una cuenta del hub, así que no hay dónde leer ni guardar el trabajo de Fundaciones.',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

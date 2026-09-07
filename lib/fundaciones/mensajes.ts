@@ -36,9 +36,6 @@ const TEXTOS: Readonly<Record<string, string>> = {
     'Esta organización todavía no tiene su llave de IA cargada. Se carga en Integraciones, y sin ella no se puede generar (lo ya generado sí se ve).',
   llave_de_ia_ilegible:
     'La llave de IA está cargada pero el servidor no puede leerla — pasa cuando cambia la clave maestra. Hay que volver a cargarla.',
-  sin_alumno_vinculado:
-    'Esta organización no está vinculada a una cuenta del hub, así que no hay dónde leer ni guardar el trabajo de Fundaciones.',
-
   // De los dos servicios externos. Están separados a propósito: son dos sistemas distintos y
   // confundirlos hace que se revise el que anda.
   /* El detalle que sigue a este texto viene DEL PROVEEDOR y dice qué estuvo mal. Se nombran las dos
@@ -51,7 +48,7 @@ const TEXTOS: Readonly<Record<string, string>> = {
     'un límite o un campo de la petición, es nuestro y hay que corregirlo. Cualquier otra cosa suele ' +
     'ser pasajera: probá de nuevo en un momento.',
   almacen_no_disponible:
-    'No se pudo hablar con el almacén donde vive tu trabajo. Esto NO significa que esté vacío — significa que no se pudo preguntar.',
+    'No se pudo leer tu trabajo guardado. Esto NO significa que esté vacío — significa que no se pudo preguntar. Probá de nuevo en un momento.',
 
   // Del motor de scraping. Ver `respuesta.ts`: son tres porque mandan a tres personas distintas.
   motor_no_configurado:

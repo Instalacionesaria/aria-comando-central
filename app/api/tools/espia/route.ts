@@ -11,12 +11,12 @@
 // en el mismo manejador obligaría a ramificar por el cuerpo de la petición para saber cuál de las
 // dos credenciales resolver — y ahí el portero deja de poder auditarse de un vistazo.
 //
-// ── Y POR QUÉ NO USA `resolverAccesoAFundaciones` ──────────────────────────
+// ── Y POR QUÉ USA `resolverLlaveDeIa` Y NO `resolverAccesoAFundaciones` ─────
 //
-// Porque ésa exige además el vínculo con el alumno del hub, y el Espía no tiene nada que ver con
-// Fundaciones. Reusarla haría que una organización sin ese vínculo —un cliente High Ticket recién
-// creado— viera `sin_alumno_vinculado` al apretar un botón de la pantalla `tools`. Ese error ya se
-// pagó una vez acá: el scraper estuvo atado a ese vínculo hasta la migración 006.
+// Porque el Espía no es Fundaciones: necesita la llave y nada más. Hasta el 2026-09-07 había además
+// un motivo de defensa —la de Fundaciones exigía el vínculo con el alumno del hub, y una
+// organización sin ese vínculo veía `sin_alumno_vinculado` acá—. Esa falta ya no existe, pero la
+// separación se conserva: cada ruta pide exactamente lo que usa.
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { rechazo } from '../../../../lib/autorizacion/respuesta.ts';

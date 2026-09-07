@@ -336,3 +336,42 @@ Mapa más el guion.
 
 Las trece metodologías (once más las dos nuevas) entran al paquete construido por el glob de
 `outputFileTracingIncludes`; se verificó en el `.nft.json` de la ruta que genera, no se supuso.
+
+## 2026-09-07 · El almacén dejó de ser el del hub
+
+Todo lo que este documento dice sobre `aria_brain_client_state`, `fundaciones_cliente_id` y
+`sin_alumno_vinculado` quedó **superado ese día**. Se deja escrito arriba porque explica las
+decisiones que siguen vigentes (los ids del hub, los nombres en inglés, los lectores tolerantes); lo
+que cambió es esto.
+
+**El disparador fue un cliente real.** Jorge se registró en Comando Central como cliente —la
+organización «Miguel Colón Vazquez», creada por el flujo de Walter— y ICP & Oferta no abrió: pedía
+el identificador de su cuenta en ARIA-brain, y un cliente nacido en Comando Central no tiene cuenta
+en ARIA-brain. Kevin: *«no quiero que dependa de ARIA-brain… el cliente solo debería preocuparse por
+poner su API Key de Anthropic para empezar a usar el ICP & Oferta»*.
+
+**Lo que cambió, en una frase:** `lib/fundaciones/almacen.ts` lee y escribe en
+`public.aria_cc_foundations` —la tabla que la migración 004 de `/migraciones` había creado el
+2026-08-26 y nadie usaba—, una fila por organización, con RLS forzada y la política por `app.org_id`
+como cualquier otra tabla del proyecto. Las nueve herramientas, el agente y las pantallas no se
+enteraron: pasaban todas por esa capa.
+
+Consecuencias, cada una con su lugar en el código:
+
+- **La llave del almacén es `org_id`, del portero.** El tipo `Alumno` de `operaciones.ts` lleva
+  `orgId` y no `clienteId`. Las rutas de ESTADO abren `conOrganizacion(` y salieron de
+  `ARCHIVOS_AUTORIZADOS`; las que GENERAN siguen ahí solo por la llave de IA, y el almacén abre una
+  transacción corta por operación para no retener una conexión durante los minutos del modelo.
+- **`sin_alumno_vinculado` no existe más.** `FaltaParaGenerar` tiene dos valores. Para generar hace
+  falta la llave de IA y nada más; para leer, ni eso.
+- **La tarjeta «Alumno de Fundaciones» de Ajustes se fue**, y con ella `fundacionesClienteId` de la
+  ruta y del resolver de credenciales. La columna `fundaciones_cliente_id` sigue en la base, sin
+  lectores; borrarla es una migración aparte cuando Kevin decida.
+- **`ALMACEN_HUB_URL` y `ALMACEN_HUB_LLAVE_SERVICIO` ya no las lee la aplicación.** Solo
+  `scripts/altas-high-ticket.mjs`, que lee las cuentas del hub para dar de alta.
+- **El trabajo ya hecho se copió una vez** con `migraciones/011_foundations_sin_hub.sql`, que
+  además agrega la columna `tool_chats` que la 004 no tenía. Al 2026-09-07 la única organización
+  vinculada al hub era ARIA. A partir de ahí los dos sistemas divergen a propósito.
+
+La prueba `pruebas/codigo/130-foundations-sin-hub.test.ts` custodia el corte en las tres capas
+donde podría volver: el almacén, el resolver y Ajustes.

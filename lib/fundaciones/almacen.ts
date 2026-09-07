@@ -1,30 +1,48 @@
-// El almacén del estado de Fundaciones. **Vive fuera de la base de este proyecto.**
+// El almacén del estado de Fundaciones. **Vive en la base de este proyecto, por organización.**
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LA DECISIÓN, Y LO QUE CUESTA
+// DE DÓNDE VIENE, Y QUÉ CAMBIÓ EL 2026-09-07
 //
-// Las siete herramientas leen y escriben en `aria_brain_client_state`, la MISMA tabla que usa
-// ARIA-brain hoy. La decisión es de la Etapa 9 y está tomada a la vista: el hub va a seguir en pie
-// unos meses, los alumnos van a entrar por las dos puertas, y un alumno que genera su avatar acá y
-// lo ve vacío allá no tiene forma de entender qué pasó. Compartir el almacén es lo que hace que
-// las dos puertas den al mismo cuarto.
+// Hasta hoy las nueve herramientas leían y escribían en `aria_brain_client_state`, la tabla de
+// ARIA-brain, indexada por el ALUMNO DEL HUB. La decisión era de la Etapa 9 —los dos sistemas iban
+// a convivir y el alumno tenía que ver lo mismo por las dos puertas— y tenía un costo que se pagó
+// con un cliente real: una organización que nace en Comando Central **no existe en el hub**, así
+// que no tenía ningún `cliente_id` que poner en «Alumno de Fundaciones», y la pantalla no abría.
+// Kevin, con todas las letras: *«no sé por qué tendría el cliente poner su propio ID de Hub. El
+// cliente solo debería preocuparse por poner su API Key de Anthropic»*.
 //
-// Lo que cuesta, escrito para que nadie lo descubra después:
+// Ahora el estado vive en `public.aria_cc_foundations` —la tabla que la migración 004 creó para
+// esto el 2026-08-26 y que nadie usaba—, UNA fila por organización, y la llave es `org_id`. Con
+// eso:
 //
-//   1. **El aislamiento de este proyecto no cubre estos datos.** No hay `org_id`, no hay política de
-//      seguridad a nivel de fila, no hay `conOrganizacion(`. El filtro es la columna `cliente_id`
-//      de la tabla ajena, y lo pone ESTA capa. Por eso `cliente_id` NUNCA llega del navegador: se
-//      resuelve desde la organización de la sesión (`fundaciones_cliente_id`), igual que
-//      `orgEfectiva`. Un `cliente_id` que viaje en el cuerpo de una petición es la fuga entera.
-//   2. **La llave de servicio de Supabase pasa por acá.** Es una credencial de infraestructura
-//      —una sola para todo el proyecto, como la cadena de conexión—, no una credencial POR
-//      organización: lo que separa a una organización de otra es el `cliente_id`, no la llave.
-//   3. **La migración a la base propia es un trabajo pendiente y nombrado.** Está en
-//      `docs/ETAPA-9.md`. Este archivo es la única puerta: cuando llegue ese día, se reescribe
-//      acá y las siete herramientas no se enteran.
+//   1. **El aislamiento es el de todas las demás tablas del proyecto.** RLS forzada y la política
+//      por `app.org_id` que `conOrganizacion(` fija. Ya no hay un segundo filtro que esta capa
+//      tenga que poner a mano, ni una llave de servicio ajena que pase por acá.
+//   2. **No hace falta ningún vínculo con el hub.** Una organización con su llave de IA cargada
+//      genera. Sin nada más.
+//   3. **ARIA-brain no se toca.** Su tabla sigue como estaba; lo que había de las organizaciones ya
+//      vinculadas se copió UNA vez con `migraciones/011_foundations_sin_hub.sql`.
+//
+// Las columnas son las mismas llaves que escribía el hub (`LLAVES`, en `estado.ts`), con el mismo
+// contenido: los lectores tolerantes de abajo no cambiaron, y los ids de herramienta siguen siendo
+// los del hub porque son la llave de la herencia (ver `herramientas.ts`).
+//
+// ── DÓNDE CORRE CADA CONSULTA ─────────────────────────────────────────────────
+//
+// Toda consulta de negocio corre dentro de `conOrganizacion(`. Acá hay dos casos y los dos son
+// deliberados:
+//
+//   · Las rutas de ESTADO abren el contexto ellas mismas —leer y guardar inputs es corto— y esta
+//     capa lo reutiliza (`hayOrganizacion()`). Es lo que `ADR-0202` exige ver en la ruta.
+//   · Las rutas que GENERAN o CONVERSAN no lo abren: una transacción abierta durante los minutos
+//     que tarda el modelo retiene una conexión del agrupador por nada. Esta capa abre una corta
+//     por cada lectura y cada escritura, con el `org_id` que la ruta ya resolvió del portero.
+//
+// En los dos casos el `org_id` sale de la sesión y **nunca del navegador**.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { pedirExterno, type Respuesta } from '../http/cliente.ts';
+import type { Trx } from '../datos/capa.ts';
+import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
 import {
   LLAVES,
   estadoVacio,
@@ -34,126 +52,72 @@ import {
   type Version,
 } from './estado.ts';
 
-/** Lo que puede salir mal al hablar con el almacén. Tres cosas, no una. */
+/**
+ * Lo que puede salir mal al hablar con el almacén.
+ *
+ * `sin_configurar` es la base sin cadena de conexión; `sin_respuesta` es todo lo demás que la base
+ * pueda decir. Se conservan como dos porque llevan a dos personas distintas: la primera es del
+ * despliegue, la segunda hay que mirarla en el registro.
+ */
 export type FalloDeAlmacen =
   | { tipo: 'sin_configurar'; detalle: string }
-  | { tipo: 'rechazado'; estado: number }
   | { tipo: 'sin_respuesta'; causa: string };
 
 export type ResultadoDeAlmacen<T> = { tipo: 'datos'; datos: T } | FalloDeAlmacen;
 
-interface Conexion {
-  url: string;
-  llave: string;
-}
+const TABLA = 'public.aria_cc_foundations' as const;
 
 /**
- * Las dos variables de entorno del almacén, o el fallo que las nombra.
+ * Corre `trabajo` con la transacción de la organización, abriéndola si hace falta.
  *
- * Sin `??` y sin valor por omisión: una cadena vacía produciría una URL como `/rest/v1/…` que el
- * `fetch` interpreta como relativa, la petición sale contra nuestro propio dominio, devuelve un 404
- * y el síntoma es *"el alumno no tiene nada guardado"*. Es el mismo defecto del `07` § 1 con otro
- * disfraz: un respaldo implícito que convierte "no está configurado" en "está vacío".
+ * Si ya hay un contexto abierto tiene que ser EL DE ESTA organización: un contexto ajeno no se
+ * reutiliza ni se anida en silencio — se rechaza, porque leería el trabajo de otra.
  */
-function conexion(): Conexion | FalloDeAlmacen {
-  const url = process.env.ALMACEN_HUB_URL;
-  const llave = process.env.ALMACEN_HUB_LLAVE_SERVICIO;
-  if (!url || !llave) {
-    return {
-      tipo: 'sin_configurar',
-      detalle: 'Faltan ALMACEN_HUB_URL y ALMACEN_HUB_LLAVE_SERVICIO',
-    };
+async function enOrganizacion<T>(
+  orgId: string,
+  trabajo: (db: Trx) => Promise<T>,
+): Promise<ResultadoDeAlmacen<T>> {
+  try {
+    if (hayOrganizacion()) {
+      const abierta = organizacionActual();
+      if (abierta !== orgId) {
+        throw new Error(`el contexto abierto es de la organización ${abierta}, no de ${orgId}`);
+      }
+      return { tipo: 'datos', datos: await trabajo(datos()) };
+    }
+    return { tipo: 'datos', datos: await conOrganizacion(orgId, () => trabajo(datos())) };
+  } catch (e) {
+    const causa = e instanceof Error ? e.message : String(e);
+    if (/DATABASE_URL/.test(causa)) return { tipo: 'sin_configurar', detalle: causa };
+    return { tipo: 'sin_respuesta', causa };
   }
-  return { url, llave };
 }
 
-function esFallo(x: Conexion | FalloDeAlmacen): x is FalloDeAlmacen {
-  return 'tipo' in x;
-}
-
-function cabeceras(c: Conexion): Record<string, string> {
-  return { apikey: c.llave, authorization: `Bearer ${c.llave}` };
-}
-
-const TABLA = 'aria_brain_client_state';
-
-/** Traduce las tres ramas del cliente HTTP a las tres del almacén, sin colapsar ninguna. */
-function traducir<T>(r: Respuesta<T>): ResultadoDeAlmacen<T> {
-  if (r.tipo === 'datos') return { tipo: 'datos', datos: r.datos };
-  if (r.tipo === 'rechazado') return { tipo: 'rechazado', estado: r.estado };
-  return { tipo: 'sin_respuesta', causa: r.causa };
-}
-
-/**
- * Lee una llave. Una llave ausente devuelve `null` **como dato**, no como fallo.
- *
- * La distinción es la regla 2 del `07` § 0 y acá se paga a diario: "este alumno todavía no generó
- * su avatar" y "no pude preguntarle al almacén" tienen que ser dos cosas, o la pantalla muestra
- * formularios en blanco cuando en realidad hay un problema de red.
- */
-async function leer(
-  clienteId: string,
-  llave: string,
-): Promise<ResultadoDeAlmacen<unknown | null>> {
-  const c = conexion();
-  if (esFallo(c)) return c;
-
-  const camino =
-    `${c.url}/rest/v1/${TABLA}` +
-    `?cliente_id=eq.${encodeURIComponent(clienteId)}` +
-    `&key=eq.${encodeURIComponent(llave)}` +
-    `&select=value`;
-
-  const r = await pedirExterno<{ value: unknown }[]>(camino, { cabeceras: cabeceras(c) });
-  const t = traducir(r);
-  if (t.tipo !== 'datos') return t;
-  const filas = Array.isArray(t.datos) ? t.datos : [];
-  const primera = filas.length > 0 ? filas[0] : undefined;
-  return { tipo: 'datos', datos: primera === undefined ? null : primera.value };
-}
-
-/** Escribe una llave, creándola o reemplazándola. */
-async function escribir(
-  clienteId: string,
-  llave: string,
-  valor: unknown,
-): Promise<ResultadoDeAlmacen<null>> {
-  const c = conexion();
-  if (esFallo(c)) return c;
-
-  const r = await pedirExterno<unknown>(
-    `${c.url}/rest/v1/${TABLA}?on_conflict=cliente_id,key`,
-    {
-      metodo: 'POST',
-      cabeceras: {
-        ...cabeceras(c),
-        prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      cuerpo: {
-        cliente_id: clienteId,
-        key: llave,
-        value: valor,
-        updated_at: new Date().toISOString(),
-      },
-    },
-  );
-  // `return=minimal` responde 201 con cuerpo vacío, y un cuerpo vacío no es JSON: el cliente lo
-  // reporta como `sin_respuesta`. Es la única situación donde eso NO significa que algo falló.
-  if (r.tipo === 'sin_respuesta' && r.causa === 'el cuerpo no es JSON') {
-    return { tipo: 'datos', datos: null };
-  }
-  const t = traducir(r);
-  return t.tipo === 'datos' ? { tipo: 'datos', datos: null } : t;
+/** Escribe una columna de la fila de la organización, creando la fila si no existía. */
+async function escribir(orgId: string, columna: string, valor: unknown): Promise<ResultadoDeAlmacen<null>> {
+  // `JSON.stringify` y no el objeto: el controlador de Postgres serializa un objeto igual, pero un
+  // arreglo lo mandaría como arreglo de Postgres y no como JSON. El texto es JSON siempre.
+  const json = JSON.stringify(valor);
+  const r = await enOrganizacion(orgId, async (db) => {
+    await db
+      .insertInto(TABLA)
+      .values({ org_id: orgId, [columna]: json } as never)
+      .onConflict((oc) =>
+        oc.column('org_id').doUpdateSet({ [columna]: json, actualizado_el: new Date() } as never),
+      )
+      .execute();
+    return null;
+  });
+  return r;
 }
 
 // ── Lectores tolerantes ──────────────────────────────────────────────────────
 //
-// Cada documento del almacén lo escribió otro sistema y puede venir a medias: un alumno de hace un
-// año, una migración a mitad de camino, una llave que alguien editó a mano. Un lector que asume la
-// forma perfecta convierte eso en una pantalla que no carga. Un lector tolerante lo convierte en un
-// formulario vacío, que es recuperable.
+// Cada documento puede venir a medias: lo escribió el hub hace un año, lo copió la migración 011, o
+// alguien lo editó a mano. Un lector que asume la forma perfecta convierte eso en una pantalla que
+// no carga. Un lector tolerante lo convierte en un formulario vacío, que es recuperable.
 //
-// Lo que NO se tolera es confundir "vino mal" con "no vino": el fallo de red sigue siendo un fallo.
+// Lo que NO se tolera es confundir "vino mal" con "no vino": el fallo de la base sigue siendo un fallo.
 
 function objeto(x: unknown): Record<string, unknown> {
   return x !== null && typeof x === 'object' && !Array.isArray(x) ? (x as Record<string, unknown>) : {};
@@ -227,56 +191,53 @@ function versiones(x: unknown): Version[] | null {
 }
 
 /**
- * El estado completo del alumno.
+ * El estado completo de la organización.
  *
- * Se piden las seis llaves **en paralelo**: son seis filas de la misma tabla y la latencia de la
- * pantalla es la de la más lenta, no la suma. Si CUALQUIERA falla por red o por rechazo, se
- * devuelve ese fallo: un estado a medias haría que una herramienta creyera que no hereda nada y
- * generara el documento con marcadores `[COMPLETAR]` sobre datos que sí existen.
- *
- * Eran cinco hasta que entró el agente conversacional del Research, que trajo la sexta. Se suma al
- * mismo `Promise.all` y no a una lectura aparte: una segunda vuelta de red para el chat haría que
- * la pantalla tardara la suma de las dos, y por un documento que casi siempre está vacío.
+ * Es UNA fila con seis columnas, así que es una sola lectura. Sin fila = organización que todavía
+ * no empezó: se devuelve el estado vacío COMO DATO, no como fallo. La distinción es la regla 2 del
+ * `07` § 0 y acá se paga a diario: "todavía no generó su avatar" y "no pude leer la base" tienen
+ * que ser dos cosas, o la pantalla muestra formularios en blanco cuando hay un problema real.
  */
-export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<EstadoDeFundaciones>> {
-  const llaves = [
-    LLAVES.perfil,
-    LLAVES.historial,
-    LLAVES.research,
-    LLAVES.researchProfundo,
-    LLAVES.categoriaLegado,
-    LLAVES.chats,
-  ] as const;
-
-  const leidas = await Promise.all(llaves.map((ll) => leer(clienteId, ll)));
-  for (const r of leidas) {
-    if (r.tipo !== 'datos') return r;
-  }
-  const [crudoPerfil, crudoHistorial, crudoResearch, crudoProfundo, crudoCategoria, crudoChat] =
-    leidas.map((r) => (r.tipo === 'datos' ? r.datos : null));
+export async function leerEstado(orgId: string): Promise<ResultadoDeAlmacen<EstadoDeFundaciones>> {
+  const r = await enOrganizacion(orgId, (db) =>
+    db
+      .selectFrom(TABLA)
+      .select([
+        LLAVES.perfil,
+        LLAVES.historial,
+        LLAVES.research,
+        LLAVES.researchProfundo,
+        LLAVES.categoriaLegado,
+        LLAVES.chats,
+      ])
+      .where('org_id', '=', orgId)
+      .executeTakeFirst(),
+  );
+  if (r.tipo !== 'datos') return r;
+  const fila = objeto(r.datos);
 
   const estado = estadoVacio();
-  estado.perfil = porHerramienta(crudoPerfil, (v) => {
+  estado.perfil = porHerramienta(fila[LLAVES.perfil], (v) => {
     const t = textos(v);
     return Object.keys(t).length > 0 ? t : null;
   });
-  estado.historial = porHerramienta(crudoHistorial, versiones);
+  estado.historial = porHerramienta(fila[LLAVES.historial], versiones);
 
-  const research = objeto(crudoResearch);
+  const research = objeto(fila[LLAVES.research]);
   estado.researchInputs = textos(research['inputs']);
   estado.researchSalidas = Array.isArray(research['outputs'])
     ? research['outputs'].map((s) => (typeof s === 'string' ? s : ''))
     : [];
 
-  estado.chats = porHerramienta(crudoChat, chat);
+  estado.chats = porHerramienta(fila[LLAVES.chats], chat);
 
-  const profundo = objeto(crudoProfundo);
+  const profundo = objeto(fila[LLAVES.researchProfundo]);
   estado.researchProfundo = typeof profundo['deep'] === 'string' ? profundo['deep'] : null;
   estado.researchCampo = typeof profundo['fieldAnalysis'] === 'string' ? profundo['fieldAnalysis'] : null;
 
-  // El chat viejo de Categoría Única guardaba una lista de mensajes o un objeto con el entregable.
-  // Solo el objeto trae algo heredable.
-  const categoria = objeto(crudoCategoria);
+  // El chat viejo de Categoría Única del hub guardaba una lista de mensajes o un objeto con el
+  // entregable. Solo el objeto trae algo heredable.
+  const categoria = objeto(fila[LLAVES.categoriaLegado]);
   estado.categoriaLegado = typeof categoria['deliverable'] === 'string' ? categoria['deliverable'] : null;
 
   return { tipo: 'datos', datos: estado };
@@ -284,21 +245,21 @@ export async function leerEstado(clienteId: string): Promise<ResultadoDeAlmacen<
 
 /** Guarda los inputs de una herramienta, mezclándolos con los de las demás. */
 export async function guardarInputs(
-  clienteId: string,
+  orgId: string,
   estado: EstadoDeFundaciones,
   id: number,
   inputs: Record<string, string>,
 ): Promise<ResultadoDeAlmacen<null>> {
   const proximo: Record<number, Record<string, string>> = { ...estado.perfil, [id]: inputs };
-  return escribir(clienteId, LLAVES.perfil, proximo);
+  return escribir(orgId, LLAVES.perfil, proximo);
 }
 
-/** Cuántas versiones se conservan por herramienta. El hub usa diez; se conserva el número. */
+/** Cuántas versiones se conservan por herramienta. El hub usaba diez; se conserva el número. */
 export const MAX_VERSIONES = 10;
 
 /** Agrega una versión al historial de una herramienta y lo guarda. */
 export async function guardarVersion(
-  clienteId: string,
+  orgId: string,
   estado: EstadoDeFundaciones,
   id: number,
   version: Version,
@@ -309,16 +270,16 @@ export async function guardarVersion(
     ...estado.historial,
     [id]: lista.slice(0, MAX_VERSIONES),
   };
-  return escribir(clienteId, LLAVES.historial, proximo);
+  return escribir(orgId, LLAVES.historial, proximo);
 }
 
-/** Guarda los criterios y las salidas del Research (una sola llave, las dos cosas juntas). */
+/** Guarda los criterios y las salidas del Research (una sola columna, las dos cosas juntas). */
 export async function guardarResearch(
-  clienteId: string,
+  orgId: string,
   inputs: Record<string, string>,
   salidas: string[],
 ): Promise<ResultadoDeAlmacen<null>> {
-  return escribir(clienteId, LLAVES.research, { inputs, outputs: salidas });
+  return escribir(orgId, LLAVES.research, { inputs, outputs: salidas });
 }
 
 /**
@@ -331,20 +292,20 @@ export async function guardarResearch(
  * tiene forma de saber cuál de los dos miente.
  *
  * Y se relee el estado antes de escribir por lo mismo que `guardarInputs`: las nueve conversaciones
- * viven en UN documento, así que escribir solo con la que cambió borraría las otras ocho — en
+ * viven en UNA columna, así que escribir solo con la que cambió borraría las otras ocho — en
  * silencio.
  */
 export async function guardarChat(
-  clienteId: string,
+  orgId: string,
   estado: EstadoDeFundaciones,
   id: number,
   chatDeHerramienta: ChatDeHerramienta,
 ): Promise<ResultadoDeAlmacen<null>> {
   const proximo: Record<number, ChatDeHerramienta> = { ...estado.chats, [id]: chatDeHerramienta };
-  return escribir(clienteId, LLAVES.chats, proximo);
+  return escribir(orgId, LLAVES.chats, proximo);
 }
 
-/** La fecha con el formato que escribe el hub, para que el historial se lea igual en los dos. */
+/** La fecha con el formato que escribía el hub, para que el historial copiado se lea igual. */
 export function fechaDeVersion(): string {
   return new Date().toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' });
 }

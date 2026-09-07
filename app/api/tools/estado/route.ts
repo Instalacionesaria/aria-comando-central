@@ -14,23 +14,22 @@
 //
 // El trabajo es el mismo y vive en `lib/fundaciones/operaciones.ts`.
 //
-// Lo que NO se mudó es la autorización: el `exigir(` y el `conIdentidad(` se quedan acá. Tres
+// Lo que NO se mudó es la autorización: el `exigir(` y el `conOrganizacion(` se quedan acá. Tres
 // pruebas lo exigen —`ADR-0301`, `ADR-0202`, `ADR-0211`— y leen ESTE archivo, no lo que llama. Y
 // hacen bien: delegar el portero a una función compartida convierte *"toda ruta pide permiso"* en
 // algo que ya no se puede comprobar mirando la ruta.
 //
-// ── POR QUÉ SIGUE EN `ARCHIVOS_AUTORIZADOS` ─────────────────────────────────
+// ── ABRE EL CONTEXTO DE SU ORGANIZACIÓN, COMO CUALQUIER OTRA RUTA ──────────
 //
-// Porque el estado de Fundaciones **no está en esta base**: está en el almacén de ARIA-brain, y de
-// esta base se lee UNA cosa —a qué alumno del hub corresponde la organización de la sesión—. Esa
-// tabla es de identidad y el rol del inquilino no tiene ni `select` sobre ella. Así que el filtro
-// por organización lo pone la consulta de abajo a mano, con `contexto.orgEfectiva`.
+// Hasta el 2026-09-07 estaba en `ARCHIVOS_AUTORIZADOS`: el estado vivía en el almacén de ARIA-brain
+// y de esta base se leía UNA fila de identidad —a qué alumno del hub correspondía la organización—.
+// Ahora el estado vive en `public.aria_cc_foundations`, con RLS y la política por `app.org_id`, así
+// que esta ruta abre `conOrganizacion(` y el almacén reutiliza esa transacción. Leer y guardar
+// inputs es corto; las rutas que generan no abren el contexto acá (ver `almacen.ts`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
-import { rechazo } from '../../../../lib/autorizacion/respuesta.ts';
-import { conIdentidad } from '../../../../lib/datos/capa.ts';
-import { resolverAlumnoDeFundaciones } from '../../../../lib/credenciales/resolver.ts';
+import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { TOOLS } from '../../../../lib/fundaciones/herramientas.ts';
 import { guardarLosInputs, leerElEstado } from '../../../../lib/fundaciones/operaciones.ts';
 
@@ -50,23 +49,15 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['tools.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
-  // EL FILTRO, a mano y a la vista: con el rol de identidad no hay política que lo ponga.
-  const alumno = await conIdentidad(async (db) =>
-    resolverAlumnoDeFundaciones(db, contexto.orgEfectiva),
-  );
-  if (alumno.tipo === 'falta') return rechazo(alumno.que);
-
-  return leerElEstado(alumno);
+  // La organización sale del portero y va como llave del almacén. Nunca del navegador.
+  const alumno = { orgId: contexto.orgEfectiva };
+  return conOrganizacion(contexto.orgEfectiva, () => leerElEstado(alumno));
 }
 
 export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['tools.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
-  const alumno = await conIdentidad(async (db) =>
-    resolverAlumnoDeFundaciones(db, contexto.orgEfectiva),
-  );
-  if (alumno.tipo === 'falta') return rechazo(alumno.que);
-
-  return guardarLosInputs(peticion, alumno, TOOLS);
+  const alumno = { orgId: contexto.orgEfectiva };
+  return conOrganizacion(contexto.orgEfectiva, () => guardarLosInputs(peticion, alumno, TOOLS));
 }
