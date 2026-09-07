@@ -23,6 +23,25 @@
 // se queda en nuestra base —donde sí sirve— en vez de perderse creyendo que salió.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/* ────────────────────────── CUÁNTO PUEDE TARDAR ESTO, DECLARADO ──────────────────────────
+ *
+ * Esta ruta hace DOS cosas y la segunda es de red: escribe el resultado en la base y después le
+ * avisa a GoHighLevel. Sin un tope declarado, nadie del lado del navegador tenía con qué calcular
+ * cuánto esperar, y `pedir()` usaba su omisión de 15 s.
+ *
+ * Y eso ya se pagó caro una vez, en otra ruta: `lib/http/cliente.ts` lo cuenta arriba de
+ * `ESPERA_MS` —el barrido de calendarios tardaba más de quince segundos contra la subcuenta real,
+ * el navegador abortaba, y se reportaba un fallo sobre **118 citas que sí se habían escrito**— y
+ * deja la regla: *«quien llama a una ruta que declara `maxDuration` tiene que esperar al menos
+ * eso, o está construyendo el mismo defecto de nuevo»*. Acá no había `maxDuration` que respetar.
+ *
+ * TREINTA Y NO TRESCIENTOS. Los 300 de los barridos son para rutas que hacen diez llamadas o más;
+ * esta hace una escritura instantánea y a lo sumo dos llamadas al CRM. Con 300, un GoHighLevel
+ * colgado dejaría a alguien cinco minutos mirando un botón que gira. El tope bajo y declarado es
+ * lo que hace `app/api/avisos/crm/route.ts`, y por el mismo motivo.
+ */
+export const maxDuration = 30;
+
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
 import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';

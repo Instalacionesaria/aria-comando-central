@@ -29,6 +29,16 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+
+/* Lo que declara `app/api/contactos/[id]/avanzar/route.ts` en su `maxDuration`, en milisegundos.
+
+   La regla está escrita en `lib/http/cliente.ts`: quien llama a una ruta con tope tiene que
+   esperar AL MENOS ese tope. Esperando menos, el navegador aborta mientras el servidor sigue
+   trabajando, y entonces se reporta un fallo sobre algo que salió bien — que es exactamente lo
+   que pasó acá: la escritura ya estaba confirmada y el cartel decía que no se había registrado
+   nada. `pruebas/codigo/132-avanzar-sin-respuesta.test.ts` ata los dos números para que no puedan
+   separarse. */
+const ESPERA_DE_AVANZAR_MS = 30_000;
 import { salidasDe, modosDe } from '../../lib/negocio/salidas.ts';
 import Ventana from '../Ventana.jsx';
 
@@ -103,6 +113,7 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
 
     const r = await pedir(`/api/contactos/${contactoId}/avanzar`, {
       metodo: 'POST',
+      espera: ESPERA_DE_AVANZAR_MS,
       cuerpo: {
         salida: def.salida,
         ...(detalle !== '' ? { detalle } : {}),
@@ -118,12 +129,39 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
     setEnviando(false);
 
     if (r.tipo !== 'datos') {
+      /* ────────────────────────── LO QUE ESTE CARTEL NO PUEDE AFIRMAR ──────────────────────────
+       *
+       * Acá decía **«No se registró nada»**, y era falso. La ruta está escrita en dos pasos y su
+       * propio comentario lo dice: *«PASO 1 · LA BASE, en una transacción»* y *«PASO 2 · EL CRM, y
+       * su fallo NO invalida el paso 1»*. O sea que cuando la respuesta no llega, **el resultado
+       * ya puede estar escrito**: el corte pudo caer después de confirmar la transacción.
+       *
+       * Y `registrarResultado` hace un `insertInto('resultados')` sin guarda de duplicado. Así que
+       * el cartel no era solo impreciso: **invitaba a duplicar el resultado**, con su nota, su
+       * tarea en Mi Día y su comisión.
+       *
+       * ────────────────────────── SON DOS FAMILIAS Y HAY QUE SEPARARLAS ──────────────────────────
+       *
+       *   · **Rechazos con código** —`no_encontrado`, `peticion_invalida`, `sin_permiso`— salen de
+       *     la ruta ANTES de escribir, o desde la transacción sin insertar. Sobre ésos sí se puede
+       *     decir qué pasó, y se dice con el detalle que manda el servidor.
+       *   · **Corte sin respuesta, y `sin_codigo`** —que es lo que devuelve `pedir()` cuando el
+       *     cuerpo no es JSON, o sea un 502/504 de la plataforma con HTML— son DESENLACE
+       *     DESCONOCIDO. Un 504 por el tope de la ruta llega justo después de escribir.
+       *
+       * Sobre la segunda familia lo único honesto es decir que no se sabe, y mandar a mirar. El
+       * Historial del contacto es la pestaña de al lado: comprobarlo cuesta un clic, y registrar
+       * dos veces cuesta una comisión mal pagada. */
+      const desenlaceDesconocido =
+        r.tipo === 'sin_respuesta' || (r.tipo === 'rechazado' && r.codigo === 'sin_codigo');
+
       setAviso({
         mal: true,
-        texto:
-          r.tipo === 'rechazado'
-            ? (r.detalle ?? `No se pudo registrar (${r.estado}).`)
-            : 'No se pudo contactar al servidor. No se registró nada.',
+        texto: desenlaceDesconocido
+          ? 'Se cortó antes de saber cómo terminó, así que PUEDE haber quedado registrado. ' +
+            'Revisá el Historial de este contacto antes de volver a registrarlo: si ya está, ' +
+            'registrarlo otra vez lo cuenta dos veces.'
+          : (r.detalle ?? `No se pudo registrar (${r.estado}).`),
       });
       return;
     }
