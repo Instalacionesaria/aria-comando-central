@@ -175,6 +175,94 @@ const laAgenda = (opciones: { dias?: number; incluirCanceladas?: boolean } = {},
 // 1 · EL BARRIDO
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ═══ «Terminó» no es «vencida» ═════════════════════════════════
+
+const MIN = 60 * 1000;
+
+test('una reunión EN CURSO está vencida y NO terminó — conserva su botón', async () => {
+  /* ────────────────────────── LA PRUEBA QUE JUSTIFICA QUE HAYA DOS CAMPOS ──────────────────────────
+   *
+   * Se pidió sacar el botón de unirse de las citas cuya hora ya pasó, y el campo que ya existía
+   * —`vencida`— es la trampa: es cierto desde el segundo en que la cita EMPIEZA. Usándolo, toda
+   * reunión en curso queda sin botón, que es exactamente el momento en que hace falta.
+   *
+   * Una cita que empezó hace diez minutos y termina en veinte tiene que dar `vencida: true` y
+   * `termino: false`. Las dos cosas a la vez, y por eso son dos campos y no uno. */
+  await limpiar();
+  const c = await contacto('ghl-en-curso');
+  await citaEnTabla(c, new Date(Date.now() - 10 * MIN), {
+    fin_el: new Date(Date.now() + 20 * MIN),
+    sala_url: 'https://meet.google.com/en-curso',
+  });
+
+  const colas = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  const enCola = colas.agenda[0]?.cita;
+  assert.ok(enCola, 'la cita en curso no llegó a la cola de Mi Día');
+  assert.equal(enCola.vencida, true, 'una cita que empezó no está marcada como vencida');
+  assert.equal(
+    enCola.termino,
+    false,
+    'una reunión EN CURSO quedó marcada como terminada: el closer pierde el botón justo cuando ' +
+      'tiene que entrar',
+  );
+
+  const ag = await laAgenda();
+  const enAgenda = ag.dias.flatMap((d) => d.citas)[0];
+  assert.ok(enAgenda, 'la cita en curso no llegó a la Agenda');
+  assert.equal(enAgenda.vencida, true);
+  assert.equal(enAgenda.termino, false, 'la Agenda marca como terminada una reunión en curso');
+});
+
+test('una reunión que YA TERMINÓ lo dice, en las dos pantallas', async () => {
+  await limpiar();
+  const c = await contacto('ghl-termino');
+  await citaEnTabla(c, new Date(Date.now() - 60 * MIN), {
+    fin_el: new Date(Date.now() - 10 * MIN),
+    sala_url: 'https://meet.google.com/vieja',
+  });
+
+  const colas = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  assert.equal(colas.agenda[0]?.cita?.termino, true, 'Mi Día sigue ofreciendo entrar a una sala vacía');
+
+  const ag = await laAgenda();
+  assert.equal(ag.dias.flatMap((d) => d.citas)[0]?.termino, true, 'la Agenda también la ofrece');
+});
+
+test('sin hora de fin cuenta como NO terminada, y el botón se queda', async () => {
+  /* Medido contra producción el 2026-09-07: 0 de 266 citas sin `fin_el`, así que este caso no
+     pasa — y se elige la dirección prudente igual. Un botón de más abre una sala vacía; uno que
+     falta hace perder una reunión. */
+  await limpiar();
+  const c = await contacto('ghl-sin-fin');
+  await citaEnTabla(c, new Date(Date.now() - 60 * MIN), {
+    fin_el: null,
+    sala_url: 'https://meet.google.com/sin-fin',
+  });
+
+  const colas = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  assert.equal(colas.agenda[0]?.cita?.vencida, true, 'sin fin igual empezó, así que está vencida');
+  assert.equal(
+    colas.agenda[0]?.cita?.termino,
+    false,
+    'sin hora de fin se dio por terminada: eso saca el botón de una reunión que puede estar viva',
+  );
+});
+
+test('una cita que TODAVÍA NO empezó no está vencida ni terminó', async () => {
+  // El caso normal, y va escrito porque un `termino` que devolviera `true` para todo pasaría las
+  // dos pruebas de arriba a medias.
+  await limpiar();
+  const c = await contacto('ghl-futura');
+  await citaEnTabla(c, new Date(Date.now() + 30 * MIN), {
+    fin_el: new Date(Date.now() + 60 * MIN),
+    sala_url: 'https://meet.google.com/futura',
+  });
+
+  const colas = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  assert.equal(colas.agenda[0]?.cita?.vencida, false);
+  assert.equal(colas.agenda[0]?.cita?.termino, false);
+});
+
 // ═══ Los dos enlaces de la cita ═══════════════════════════════
 
 const EN_UNA_HORA = () => new Date(Date.now() + 60 * 60 * 1000);

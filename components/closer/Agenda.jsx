@@ -447,14 +447,26 @@ export default function Agenda({ zonaHoraria }) {
                       <button
                         type="button"
                         className="ag-sala"
-                        disabled={!c.salaUrl}
+                        /* También cuando la reunión TERMINÓ, y esta pantalla es donde más
+                           importa: muestra un mes entero, así que sin esto todos los días
+                           pasados ofrecen un botón que abre una sala vacía. Se mira `termino`
+                           y no `vencida`: ver el tipo en `lib/negocio/agenda.ts`. */
+                        disabled={!c.salaUrl || c.termino}
                         title={
-                          c.salaUrl
-                            ? 'Abre la sala de videollamada de esta cita'
-                            : 'Esta cita no tiene sala de videollamada en GoHighLevel'
+                          c.termino
+                            ? 'La reunión ya terminó'
+                            : c.salaUrl
+                              ? 'Abre la sala de videollamada de esta cita'
+                              : 'Esta cita no tiene sala de videollamada en GoHighLevel'
                         }
-                        onClick={() => c.salaUrl && window.open(c.salaUrl, '_blank', 'noopener')}
-                        aria-label={c.salaUrl ? 'Abrir la sala' : 'Sin sala de videollamada'}
+                        onClick={() => !c.termino && c.salaUrl && window.open(c.salaUrl, '_blank', 'noopener')}
+                        aria-label={
+                          c.termino
+                            ? 'La reunión ya terminó'
+                            : c.salaUrl
+                              ? 'Abrir la sala'
+                              : 'Sin sala de videollamada'
+                        }
                       >
                         ▢
                       </button>
@@ -494,13 +506,19 @@ export default function Agenda({ zonaHoraria }) {
                             <button
                               type="button"
                               className="fd-btn sec"
-                              disabled={!c.salaUrl}
+                              /* El MISMO trato que el botón chico de arriba. Los dos abren la
+                                 sala de esta cita, así que dejar uno vivo y el otro no sería una
+                                 divergencia silenciosa: el panel se abre con un clic y ahí
+                                 estaría el botón que el de arriba acaba de negar. */
+                              disabled={!c.salaUrl || c.termino}
                               title={
-                                c.salaUrl
-                                  ? 'Abre la sala de esta cita'
-                                  : 'Esta cita no tiene sala de videollamada en GoHighLevel'
+                                c.termino
+                                  ? 'La reunión ya terminó'
+                                  : c.salaUrl
+                                    ? 'Abre la sala de esta cita'
+                                    : 'Esta cita no tiene sala de videollamada en GoHighLevel'
                               }
-                              onClick={() => c.salaUrl && window.open(c.salaUrl, '_blank', 'noopener')}
+                              onClick={() => !c.termino && c.salaUrl && window.open(c.salaUrl, '_blank', 'noopener')}
                             >
                               ▢ Entrar a la sala
                             </button>

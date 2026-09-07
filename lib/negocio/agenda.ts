@@ -43,6 +43,31 @@ export interface CitaDeLaAgenda {
   telefono: string | null;
   inicioEl: Date;
   finEl: Date | null;
+  /**
+   * ¿La reunión ya terminó? Es lo que decide si el botón de la sala sigue sirviendo.
+   *
+   * ────────────────────────── «TERMINÓ» NO ES LO MISMO QUE «VENCIDA» ──────────────────────────
+   *
+   * `vencida` es `inicio < ahora`: la cita YA EMPEZÓ. Sirve para bajarla en la lista y marcarla,
+   * que es lo que hace desde siempre. Pero es cierta a las 14:00:01 de una reunión de 14:00, y en
+   * ese momento unirse es exactamente lo que hay que hacer.
+   *
+   * `termino` es `fin < ahora`. Se puede tener porque GoHighLevel manda la hora de fin y **la
+   * manda siempre**: medido contra producción el 2026-09-07, 0 de 266 citas sin `fin_el`.
+   *
+   * Por eso no hay ninguna ventana de gracia inventada, y conviene decir por qué una ventana fija
+   * habría estado mal: en esas mismas 266 citas la duración va **de 30 a 300 minutos**, media 46.
+   * Una ventana de una hora escondería el botón de una reunión de cinco horas que sigue en curso.
+   *
+   * Con el reloj del SERVIDOR, igual que `vencida` y por el mismo motivo que ya está escrito más
+   * abajo: un navegador atrasado dejaría el botón de una reunión que terminó, o lo sacaría de una
+   * que no.
+   *
+   * `fin_el` nulo cuenta como NO terminada, a propósito: no pasa en lo medido, y si pasara, un
+   * botón de más es mejor que uno que falta — el de más abre una sala vacía, el que falta hace
+   * perder una reunión.
+   */
+  termino: boolean;
   titulo: string | null;
   estado: string | null;
   /** `null` = esta cita no tiene sala. **La pantalla atenúa el botón, no lo esconde.** */
@@ -241,6 +266,8 @@ export async function agendaDelCloser(
       // Con el reloj del SERVIDOR y no del navegador: un navegador atrasado marcaría como pendiente
       // una cita que ya pasó, y quien la mire creería que todavía tiene tiempo.
       vencida: f.inicio_el.getTime() < ahora,
+      // Y `termino` es `fin < ahora`, que NO es lo mismo: ver el campo en el tipo.
+      termino: f.fin_el !== null && f.fin_el.getTime() < ahora,
       cancelada: estaCancelada(f.estado_ghl),
     });
   }

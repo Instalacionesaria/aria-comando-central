@@ -76,7 +76,15 @@ export interface EnLaCola {
   /** Urgentes: qué encontró el auditor. Nunca vacío — ver `SIN_MOTIVO`. */
   motivo?: string;
   /** Agenda: la hora, el estado y la sala. Solo la usa el Closer. */
-  cita?: { inicioEl: Date | null; estado: string | null; salaUrl: string | null; vencida: boolean };
+  cita?: {
+    inicioEl: Date | null;
+    estado: string | null;
+    salaUrl: string | null;
+    /** `inicio < ahora`: ya empezó. Baja la fila en la lista y la marca. */
+    vencida: boolean;
+    /** `fin < ahora`: ya terminó. Es la que decide si el botón de unirse sigue sirviendo. */
+    termino: boolean;
+  };
   /** Buzón: los primeros 80 caracteres de lo que escribió, para decidir sin abrir la ficha. */
   fragmento?: string;
   /** Seguimientos: cuál de los dos casos, y si pide manos. */

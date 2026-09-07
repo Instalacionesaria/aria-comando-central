@@ -99,7 +99,7 @@ export async function colasDelDia(
   // registrar"*.
   const citas = await datos()
     .selectFrom('citas')
-    .select(['contacto_id', 'inicio_el', 'estado_ghl', 'sala_url'])
+    .select(['contacto_id', 'inicio_el', 'fin_el', 'estado_ghl', 'sala_url'])
     // El día en la zona de la organización. `timezone(zona, now())` da el ahora local, y
     // `date_trunc('day', …)` su medianoche. Comparar contra `current_date` usaría la zona del
     // SERVIDOR, que no es la de nadie.
@@ -137,6 +137,10 @@ export async function colasDelDia(
         estado: c.estado_ghl,
         salaUrl: c.sala_url,
         vencida: c.inicio_el !== null && new Date(c.inicio_el).getTime() < ahora,
+        /* `termino` es `fin < ahora`, y NO es lo mismo que `vencida`: ésa es cierta desde el
+           segundo en que la cita empieza, cuando unirse es justo lo que hay que hacer. El motivo
+           largo —y la medición que lo permite— está en `lib/negocio/agenda.ts`. */
+        termino: c.fin_el !== null && new Date(c.fin_el).getTime() < ahora,
       },
     });
   }

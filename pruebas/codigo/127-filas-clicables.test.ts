@@ -149,6 +149,66 @@ test('el enlace de la sala NO abre la ficha detrás', () => {
   );
 });
 
+test('el botón de unirse mira `termino`, y NUNCA `vencida`', () => {
+  /* ────────────────────────── EL ERROR FÁCIL, Y POR QUÉ SE AFIRMA ──────────────────────────
+   *
+   * Se pidió sacar el botón de unirse de las citas cuya hora ya pasó, y había un campo listo que
+   * parece justo eso: `vencida`. No lo es. `vencida` es `inicio < ahora`, o sea cierto desde el
+   * segundo en que la cita empieza — y ahí unirse es exactamente lo que hay que hacer.
+   *
+   * Usándolo, toda reunión EN CURSO queda sin botón. Y no se ve en ninguna prueba de dibujado: el
+   * botón aparece y desaparece a la hora correcta para cualquiera que mire una cita futura o una
+   * de ayer. Solo falla en la media hora que importa.
+   *
+   * `termino` es `fin < ahora`. Lo que hace que exista es que GoHighLevel manda la hora de fin
+   * siempre: 0 de 266 citas sin `fin_el`, medido contra producción el 2026-09-07. */
+  const midia = codigo('components/closer/MiDia.jsx');
+  const agenda = codigo('components/closer/Agenda.jsx');
+
+  assert.match(midia, /\{c\.termino \? \(/, 'Mi Día no mira si la reunión terminó');
+  assert.doesNotMatch(
+    midia,
+    /c\.vencida \? \(\s*<i/,
+    'Mi Día decide el botón con `vencida`: eso lo saca de toda reunión en curso',
+  );
+
+  /* Los DOS botones de la Agenda, no uno. El panel de la cita se abre con un clic y ahí hay un
+     segundo botón que abre la misma sala: arreglar solo el chico dejaría el grande vivo, y eso se
+     ve como que la pantalla se contradice consigo misma. */
+  const deshabilitados = agenda.match(/disabled=\{!c\.salaUrl \|\| c\.termino\}/g) ?? [];
+  assert.equal(
+    deshabilitados.length,
+    2,
+    `la Agenda tiene ${deshabilitados.length} botones de sala atados a \`termino\` y tienen que ` +
+      'ser 2: el chico de la fila y el de adentro del panel',
+  );
+  // Y el clic también se corta, no solo el `disabled`: un `disabled` sin esto sigue navegando si
+  // alguien cambia el elemento por un enlace.
+  const cortados = agenda.match(/!c\.termino && c\.salaUrl && window\.open/g) ?? [];
+  assert.equal(cortados.length, 2, 'algún botón de la Agenda todavía abre la sala de una reunión terminada');
+});
+
+test('el botón no se va del todo: se atenúa con su explicación', () => {
+  /* Se ofreció sacarlo, y este bloque ya tenía la regla escrita para el caso hermano —la cita sin
+     sala—: *«el botón de video NO desaparece: se atenúa con su explicación. Desaparecido, el closer
+     cree que la interfaz se rompió y va a buscar el enlace a mano»* (`03` § 2).
+
+     Aplica igual acá: la fila vencida se queda en la lista A PROPÓSITO —para registrarla—, así
+     que un hueco donde estaba el botón se lee como un defecto. Atenuado no invita al clic Y dice
+     por qué. */
+  const midia = codigo('components/closer/MiDia.jsx');
+  assert.match(
+    midia,
+    /title="La reunión ya terminó"/,
+    'la cita terminada no explica por qué no hay botón',
+  );
+  assert.match(
+    codigo('components/closer/Agenda.jsx'),
+    /'La reunión ya terminó'/,
+    'la Agenda deshabilita el botón sin decir por qué',
+  );
+});
+
 test('el Setter no tiene cola de agenda, y por eso no tenía este defecto', () => {
   /* Se comprobó y hay que dejarlo comprobado, porque es la pregunta que se hizo al reportar el
      defecto: ¿le pasa también al setter?

@@ -165,10 +165,26 @@ function FilaDeAgenda({ item, zona, onAbrir }) {
         </div>
       </div>
       <div className="md-acts">
-        {/* El botón de video NO desaparece cuando la cita no tiene sala: se atenúa con su
-            explicación. Desaparecido, el closer cree que la interfaz se rompió y va a buscar
-            el enlace a mano. (`03` § 2.) */}
-        {c.salaUrl ? (
+        {/* ────────────────────────── CUANDO LA REUNIÓN TERMINÓ, NO HAY A QUÉ UNIRSE ──────────────────────────
+
+            Se pidió sacar el botón de las citas cuya hora ya pasó, y hay una diferencia que
+            decide todo: **no se mira `vencida`**. `vencida` es cierta desde el segundo en que
+            la cita empieza, y en ese momento unirse es justo lo que hay que hacer — sacarlo ahí
+            dejaría sin botón a toda reunión en curso. Se mira `termino`, que es `fin < ahora`.
+
+            Y NO desaparece: se atenúa con su explicación, que es la regla que este mismo bloque
+            ya tenía escrita para la cita sin sala —*«desaparecido, el closer cree que la
+            interfaz se rompió y va a buscar el enlace a mano»* (`03` § 2)—. Acá aplica igual: la
+            fila se queda en la lista a propósito para registrarla, así que un hueco donde estaba
+            el botón se lee como un defecto. Atenúado no invita al clic Y dice por qué.
+
+            El orden de las dos ramas importa: `termino` va PRIMERO. Al revés, una cita
+            terminada con sala mostraría el botón vivo. */}
+        {c.termino ? (
+          <i title="La reunión ya terminó" style={{ opacity: 0.35 }}>
+            ▢
+          </i>
+        ) : c.salaUrl ? (
           <a
             className="md-join"
             href={c.salaUrl}
