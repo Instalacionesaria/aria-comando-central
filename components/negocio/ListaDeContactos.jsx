@@ -34,6 +34,22 @@ import Fila from './Fila.jsx';
 import Ficha from './Ficha.jsx';
 import AvisoDesactualizado from './AvisoDesactualizado.jsx';
 
+/**
+ * Cuánto se espera la traída manual antes de darla por perdida.
+ *
+ * Su ruta declara `maxDuration = 300` —traer cientos de contactos son **varias páginas contra
+ * GoHighLevel**— y acá se esperaban los quince segundos por omisión de `pedir()`. La regla está
+ * escrita en `lib/http/cliente.ts`: *«quien llama a una ruta que declara `maxDuration` tiene que
+ * esperar al menos eso, o está construyendo el mismo defecto de nuevo»*.
+ *
+ * Y era el TERCER caso del mismo defecto. El primero fue el barrido de calendarios —118 citas
+ * escritas y reportadas como fallo—, el segundo `avanzar`, y éste seguía abierto con la cura ya
+ * escrita al lado, en `components/closer/Agenda.jsx`. Por eso ahora hay un guardia genérico en
+ * `pruebas/codigo/133-esperas-contra-topes.test.ts`, que cruza TODAS las rutas con tope contra
+ * sus llamadores en vez de ir caso por caso.
+ */
+const ESPERA_DE_LA_TRAIDA_MS = 300_000;
+
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no tiene permiso para ver esta pestaña.',
   organizacion_inactiva: 'Esta organización está desactivada.',
@@ -215,11 +231,45 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
   const traer = useCallback(async () => {
     setTrayendo(true);
     setResultado(null);
-    const r = await pedir('/api/contactos/sincronizar', { metodo: 'POST' });
+    const r = await pedir('/api/contactos/sincronizar', {
+      metodo: 'POST',
+      /* Ver `ESPERA_DE_LA_TRAIDA_MS`. Sin esta línea el navegador abortaba a los quince segundos
+         mientras el servidor seguía trayendo, y la pantalla anunciaba un fallo sobre una traída
+         que terminaba bien. */
+      espera: ESPERA_DE_LA_TRAIDA_MS,
+    });
     setTrayendo(false);
 
-    if (r.tipo === 'sin_respuesta') {
-      setResultado({ mal: true, texto: 'No llegó al servidor. No se trajo nada.' });
+    /* ────────────────────────── LO QUE ESTE CARTEL NO PUEDE AFIRMAR ──────────────────────────
+     *
+     * Acá decía **«No se trajo nada»**, y era falso. La traída confirma su transacción al final:
+     * cuando la respuesta no llega, puede estar confirmándose en ese momento. Y no escribe solo
+     * contactos nuevos — también **congela los que ya no están** en la subcuenta, o sea que los
+     * saca de las colas de trabajo de TODO el equipo. Un cartel que dice que no pasó nada sobre
+     * una base que quedó reorganizada es la peor versión de este defecto.
+     *
+     * Dos familias, como en `components/negocio/Avanzar.jsx`:
+     *
+     *   · **Rechazos CON código** —sin permiso, organización inactiva, los cuatro de GoHighLevel—
+     *     salen antes de tocar nada. Sobre ésos se dice qué pasó, con el detalle del servidor.
+     *   · **Corte sin respuesta, y `sin_codigo`** —que es lo que devuelve `pedir()` cuando el
+     *     cuerpo no es JSON, o sea un 502/504 de la plataforma con HTML— son DESENLACE
+     *     DESCONOCIDO. Con el tope de la ruta en 300 s, un 504 llega justo al final.
+     *
+     * Y se manda a esperar antes de reintentar, no solo a mirar: repetir la traída gasta otra vez
+     * todas las páginas contra el límite de tasa de GoHighLevel, que es ajeno. Es la misma cura
+     * que ya tenía `components/closer/Agenda.jsx`, con su mismo texto. */
+    const desenlaceDesconocido =
+      r.tipo === 'sin_respuesta' || (r.tipo === 'rechazado' && r.codigo === 'sin_codigo');
+
+    if (desenlaceDesconocido) {
+      setResultado({
+        mal: true,
+        texto:
+          'No llegó la respuesta del servidor. La traída puede haber corrido igual: volvé a ' +
+          'entrar en un minuto y mirá la lista antes de reintentar, para no gastar otra vez ' +
+          'todas las páginas contra GoHighLevel.',
+      });
       return;
     }
     if (r.tipo === 'rechazado') {
