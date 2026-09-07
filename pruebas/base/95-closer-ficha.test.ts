@@ -563,7 +563,7 @@ test('un contacto sin nada en el historial dice QUÉ falta, no «sin datos»', a
 
 test('las llamadas sin la plataforma de voz conectada traen `falta`, no una lista vacía muda', async () => {
   // `negocio.llamadas` está vacía en producción porque la plataforma de voz no está conectada: las
-  // llamadas llegan por aviso de Assistable, no se consultan. Una lista vacía sin `falta` afirma
+  // llamadas llegan por aviso de esa plataforma, no se consultan. Una lista vacía sin `falta` afirma
   // «nunca se lo llamó», y con eso alguien lo llama de nuevo o lo descarta por frío.
   //
   // Y por eso se comprueba que `falta` NOMBRA la pieza: si el texto fuera «no hay llamadas», quien
@@ -576,7 +576,7 @@ test('las llamadas sin la plataforma de voz conectada traen `falta`, no una list
   assert.equal(r.estado, 200);
   assert.deepEqual(r.cuerpo.llamadas, []);
   assert.notEqual(r.cuerpo.falta, null, 'cero llamadas SIN medir no puede viajar igual que cero medido');
-  assert.match(r.cuerpo.falta ?? '', /voz|Assistable/i, 'el motivo tiene que nombrar la pieza que falta');
+  assert.match(r.cuerpo.falta ?? '', /voz/i, 'el motivo tiene que nombrar la pieza que falta');
 });
 
 interface CuerpoDePerfil {

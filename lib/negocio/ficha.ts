@@ -104,9 +104,22 @@ const FALTA = {
   mensajesAMedias:
     'La ingesta todavía está recorriendo la cuenta hacia atrás. Esta conversación puede tener ' +
     'mensajes que aún no se copiaron.',
+  /* ────────────────────────── SIN NOMBRAR AL PROVEEDOR, Y NO ES UN DETALLE ──────────────────────────
+
+     Acá decía el nombre de la empresa de voz que hay detrás, y eso no va: para quien usa esto,
+     **el proveedor somos nosotros**. Nombrar al de abajo le cuenta a un cliente —y a cualquiera
+     que mire su pantalla— con quién subcontratamos, que no es información que le sirva y sí es
+     información que puede usar.
+
+     El texto no perdió nada: la primera frase ya decía «la plataforma de voz», así que el nombre
+     era redundante además de filtrado. Lo que la segunda frase tiene que decir sigue dicho, y es
+     lo único que cambia una decisión: las llamadas llegan por AVISO y no se consultan, o sea que
+     una lista vacía no significa «no hubo llamadas» sino «no llegó ningún aviso».
+
+     Lo vigila `pruebas/codigo/135-sin-nombrar-proveedores.test.ts`. */
   llamadas:
     'Todavía no se conectó la plataforma de voz, así que no hay ninguna llamada registrada. Las ' +
-    'llamadas llegan por aviso de Assistable, no se consultan.',
+    'llamadas llegan por aviso de esa plataforma, no se consultan.',
   /* ── ESTE TEXTO DESCRIBÍA UN SISTEMA QUE YA NO ES ESTE ──────────────────
      Decía *«hoy solo hay notas: el resto todavía no tiene de dónde venir»*, y era falso desde hacía
      varias etapas: los resultados, los seguimientos y las citas tienen escritor y aparecen. Un

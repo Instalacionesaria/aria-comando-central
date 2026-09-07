@@ -428,7 +428,9 @@ test('las pestañas sin fuente dicen qué falta; el historial se arma con lo que
   ]);
 
   assert.deepEqual(llamadas.filas, []);
-  assert.match(String(llamadas.falta), /voz|Assistable/i, 'las llamadas no dicen de dónde vendrían');
+  /* `voz` a secas: el nombre del proveedor salió del texto a propósito —ver `FALTA` en
+     `lib/negocio/ficha.ts`— así que buscarlo acá sería pedir que vuelva. */
+  assert.match(String(llamadas.falta), /voz/i, 'las llamadas no dicen de dónde vendrían');
 
   // El perfil SÍ tiene datos hoy —los que la sincronización trae— y además dice que falta el resto.
   assert.ok(
