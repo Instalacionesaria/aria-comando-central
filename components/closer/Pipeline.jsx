@@ -50,6 +50,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { usarLectura } from '../../lib/usarLectura.ts';
 import Ficha from '../negocio/Ficha.jsx';
 import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
+import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 import Fila from '../negocio/Fila.jsx';
 
 /**
@@ -130,6 +131,9 @@ export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
 
   return (
     <>
+      {/* Un refresco que falló teniendo datos. Va ARRIBA de todo: el resto de la pantalla son
+          números que se usan para decidir a quién llamar, y hay que saber de cuándo son. */}
+      <AvisoDesactualizado causa={causa} alReintentar={refrescar} />
       {/* DE DÓNDE SALE LA CLASIFICACIÓN. Ver el encabezado. */}
       <div className={`fd-aviso ${c.porResultado > 0 ? '' : 'falta'}`}>
         <i>◍</i>

@@ -44,6 +44,7 @@ import { pedir } from '../../lib/http/cliente.ts';
 import { usarLectura } from '../../lib/usarLectura.ts';
 import { etiquetaCorta, fechaDelDia, horaEnZona, sumarDias } from '../../lib/negocio/tiempo.ts';
 import Ficha from '../negocio/Ficha.jsx';
+import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 
 /** Cuántos días muestra la lista de «Próximos días». */
 const PROXIMOS = 5;
@@ -285,6 +286,7 @@ export default function Agenda({ zonaHoraria }) {
 
   return (
     <>
+      <AvisoDesactualizado causa={causa} alReintentar={refrescar} />
       <div className="aj-fila ag-barra">
         <button type="button" className="fd-btn sec" disabled={trayendo} onClick={() => void traer()}>
           {trayendo ? 'Leyendo el calendario…' : 'Traer del calendario'}

@@ -319,6 +319,40 @@ test('`usarClaveDeLectura` se llama SIEMPRE, nunca dentro de un ternario', () =>
   }
 });
 
+test('el scroll se LEE de lo guardado, no solo se escribe', () => {
+  /* ── EL HUECO QUE LA REVISIÓN ENCONTRÓ ───────────────────────────────────
+   *
+   * La mitad de ESCRITURA estaba afirmada con su llamada completa. La de LECTURA no estaba
+   * afirmada en ninguna parte: `el.scrollTop = 0` a secas —o sea, tirar a todo el mundo arriba y
+   * no restaurar nunca nada— pasaba las 1427 pruebas sin que fallara una.
+   *
+   * Es el mismo hueco que ya había aparecido dos veces: se comprobaba que se guarda y no que se
+   * usa lo guardado. La función entera puede no hacer nada y todo queda verde. */
+  assert.match(
+    codigo(HOOKS),
+    /el\.scrollTop = scrollDe\(leer\(\), sub\);/,
+    'el scroll ya no sale de lo guardado: restaurar dejó de restaurar, y nadie se entera',
+  );
+});
+
+test('cada vista pasa SU nombre de pestaña, y no el de la otra', () => {
+  /* Sin esto, Closer y Setter comparten el registro de scroll — y sus sub-pestañas se llaman
+     igual (`inicio`, `dia`, `pipeline`), así que la posición de una aparecería en la otra.
+
+     Se afirma por archivo y no sobre la unión de los dos: mirando el texto junto, intercambiar
+     los dos nombres entre las vistas no lo nota nadie. */
+  assert.match(
+    codigo('components/views/CloserView.jsx'),
+    /usarScrollDeSubPestana\('closer', sub\)/,
+    'CloserView dejó de pasar su propio nombre de pestaña',
+  );
+  assert.match(
+    codigo('components/views/SetterView.jsx'),
+    /usarScrollDeSubPestana\('setter', sub\)/,
+    'SetterView dejó de pasar su propio nombre de pestaña',
+  );
+});
+
 test('la parte pura NO importa React, que es lo que hace comprobable todo lo de arriba', () => {
   /* Es la mitad estructural de este archivo. Con las cuatro funciones dentro del módulo de hooks,
      Node no puede importarlas —la sesión llega por un `.tsx`— y las pruebas de las secciones 1 y 2

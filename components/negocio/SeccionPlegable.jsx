@@ -42,7 +42,8 @@
  * Y no se guarda en `localStorage`, que era el otro camino: un pliegue es un gesto del momento
  * —«esta lista es larga, la cierro para ver la de abajo»—, no una preferencia que alguien fije
  * una vez. Vive en memoria y muere al recargar, igual que la memoria de lecturas.
- * * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
  * EL CONTEO NO SE PLIEGA, Y ESO ES LA MITAD QUE IMPORTA
  *
  * El encabezado se queda: replegada, la sección sigue diciendo «Ganado 12». Es la regla que las

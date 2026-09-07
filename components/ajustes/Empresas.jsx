@@ -45,6 +45,7 @@ import { pedir } from '../../lib/http/cliente.ts';
 import { usarLectura } from '../../lib/usarLectura.ts';
 import { ZONAS } from '../../lib/negocio/zonas.ts';
 import Ventana from '../Ventana.jsx';
+import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede administrar empresas.',
@@ -296,6 +297,7 @@ export default function Empresas({ sesion, alCambiarDeEmpresa }) {
 
   return (
     <>
+      <AvisoDesactualizado causa={causa} alReintentar={refrescar} />
       <p className="aj-intro">
         Cada empresa tiene <b>sus propios datos y sus propias credenciales</b>. Una empresa recién
         creada existe pero <b>no opera</b>: hay que cargarle su conexión de GoHighLevel y crearle

@@ -32,6 +32,7 @@ import { usarClaveDeLectura } from '../../lib/usarLectura.ts';
 import { pedir } from '../../lib/http/cliente.ts';
 import Fila from './Fila.jsx';
 import Ficha from './Ficha.jsx';
+import AvisoDesactualizado from './AvisoDesactualizado.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no tiene permiso para ver esta pestaña.',
@@ -83,6 +84,11 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
      entera es el mismo defecto que un dato inventado — nadie reporta lo que no sabe que falta. */
   const [pagina, setPagina] = useState(guardadoAlMontar?.valor.pagina ?? 0);
   const [hayMas, setHayMas] = useState(guardadoAlMontar?.valor.hayMas ?? false);
+
+  /* ¿Le dieron «Ver más»? Lo miran las recargas automáticas, que sobre una lista expandida la
+     encogerían. Se actualiza en cada render a propósito: lo lee un efecto, nunca el dibujado. */
+  const expandida = useRef(false);
+  expandida.current = pagina > 0;
   const [trayendoPagina, setTrayendoPagina] = useState(false);
   const [trayendo, setTrayendo] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -103,16 +109,25 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
      * datos, una recarga los reemplaza cuando llega la respuesta, y hasta entonces no se toca nada. */
     setSituacion((antes) => (antes === 'listo' ? antes : 'cargando'));
     const r = await pedir(camino);
-    if (r.tipo === 'sin_respuesta') {
-      setCausa('No se pudo contactar al servidor.');
-      setCodigo(null);
-      setSituacion('sin_respuesta');
-      return;
-    }
-    if (r.tipo === 'rechazado') {
-      setCausa(r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`);
-      setCodigo(r.codigo);
-      setSituacion('rechazado');
+    /* ────────────────────────── LAS RAMAS DE FALLO TAMBIÉN RESPETAN LA REGLA ──────────────────────────
+
+       La línea de arriba dice «la pantalla solo se vacía cuando no hay nada que mostrar», y estas
+       dos ramas la ignoraban: escribían la situación a secas. Con eso, un pulso fallido —el reloj
+       de la vista, cada diez segundos— cambiaba la pantalla entera por un cartel de error,
+       **teniendo las filas en la mano**; y como el cartel sale por un `return` de más arriba, se
+       llevaba puesta la FICHA que alguien tuviera abierta.
+
+       O sea: se estaba leyendo un contacto, se cae la red dos segundos, y la ficha se cierra
+       sola con la lista debajo. Ahora el fallo se dice sin tirar nada — `causa` queda con el
+       motivo y `AvisoDesactualizado` lo dibuja arriba de la lista. */
+    if (r.tipo === 'sin_respuesta' || r.tipo === 'rechazado') {
+      setCausa(
+        r.tipo === 'rechazado'
+          ? (r.detalle ?? MOTIVOS[r.codigo] ?? `El servidor respondió ${r.estado}.`)
+          : 'No se pudo contactar al servidor.',
+      );
+      setCodigo(r.tipo === 'rechazado' ? r.codigo : null);
+      setSituacion((antes) => (antes === 'listo' ? antes : r.tipo));
       return;
     }
     const traidas = r.datos.filas ?? [];
@@ -160,6 +175,16 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
        `guardadoAlMontar` para no meter un objeto nuevo de cada render en las dependencias. */
     const g = clave === null ? null : leerGuardado(clave);
     if (g && estaFresco(g.cuando)) return;
+    /* ────────────────────────── Y UNA LISTA EXPANDIDA TAMPOCO SE RECARGA SOLA ──────────────────────────
+
+       `cargar` trae la página 0 y REEMPLAZA. Sobre una lista a la que alguien le dio «Ver más»
+       tres veces, eso la **encoge a la vista**: sesenta filas pasan a veinte, sin que nadie
+       haya tocado nada. Es peor que el atraso que la recarga vendría a arreglar — una lista que
+       se acorta sola se lee como que se perdieron contactos.
+
+       Así que expandida se queda como está. Lo que la actualiza sigue estando y es explícito: el
+       botón de traer de GoHighLevel, y «Ver más», que pide la página siguiente de verdad. */
+    if (g && (g.valor.pagina ?? 0) > 0) return;
     void cargar();
   }, [cargar, clave]);
 
@@ -172,7 +197,14 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
    * El `pulso > 0` saltea el montaje — el valor inicial no es un pulso, y sin esta guarda la primera
    * carga saldría dos veces. */
   useEffect(() => {
-    if (pulso > 0) void cargar();
+    /* Por el mismo motivo que el montaje: el pulso recarga cada diez segundos, y sobre una lista
+       expandida eso la encogería sola una y otra vez.
+
+       Sale de un REF y no de `pagina` directamente: puesto en el cuerpo sin estar en las
+       dependencias, se leería el valor del render en que cambió el pulso —que hoy es el correcto,
+       pero por accidente— y puesto EN las dependencias, el efecto se dispararía al cambiar de
+       página y pediría de más. El ref no tiene ninguno de los dos problemas. */
+    if (pulso > 0 && !expandida.current) void cargar();
   }, [pulso, cargar]);
 
   /* Traer de GoHighLevel. Es una operación APARTE de cargar la lista, y se ve aparte.
@@ -306,6 +338,9 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
 
   return (
     <>
+      {/* Un pulso que falló teniendo filas. Antes esto cambiaba la pantalla entera por un cartel
+          —y cerraba la ficha abierta—; ahora se dice sin tirar nada. */}
+      <AvisoDesactualizado causa={causa} alReintentar={cargar} />
       <div className="aj-fila">
         {boton}
         {avisoDeTraida}

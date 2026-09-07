@@ -301,6 +301,61 @@ test('ADR-0703 · la memorización del navegador lleva la EMPRESA en la clave', 
       'estar garantizada por construcción',
   );
 
+  /* ── Y EL AGUJERO NO ERA QUIÉN ARMA LA CLAVE, SINO QUIÉN GUARDA ─────────
+
+     La afirmación de arriba escribe el escenario con todas las letras —«con `claveDeLectura`
+     perfecta y una pantalla que llame a `guardar('mi-lista', …)`, la fila se rompe»— y después
+     NO lo comprobaba: miraba quién puede LLAMAR a `claveDeLectura`, no quién puede escribir en
+     el `Map`. Una pantalla con su propia cadena como clave pasaba por delante de todo esto, y
+     entonces dos empresas comparten esa entrada.
+
+     Se comprueba sobre TODO el que escribe, no sobre una lista: quien guarde tiene que sacar su
+     clave de una de las dos formas bendecidas —las dos leen la sesión ellas mismas— y ninguna
+     llamada puede llevar una cadena escrita a mano.
+
+     Se busca a quien IMPORTA `guardar` de `lecturas.ts`, y no a quien llame a algo con ese
+     nombre: `Credenciales.jsx` tiene su propio `guardar` —manda un campo al API— y no tiene nada
+     que ver con esto. La forma correcta es la importación, que es lo que de verdad da acceso al
+     `Map`. */
+  const escritores = archivosQueContienen(
+    /import\s*{[^}]*\bguardar\b[^}]*}\s*from\s*'[^']*lecturas\.ts'/,
+    ['app', 'components', 'lib'],
+  );
+  assert.ok(escritores.length > 0, 'nadie guarda: este barrido está mirando otra cosa que la que dice');
+
+  for (const ruta of escritores) {
+    const fuente = archivosFuente(['app', 'components', 'lib']).find((a) => a.ruta === ruta)?.limpio ?? '';
+
+    assert.doesNotMatch(
+      fuente,
+      /[^A-Za-z]guardar\(\s*['\"`]/,
+      `\`${ruta}\` guarda con una clave escrita a mano: esa entrada no lleva la empresa, así que ` +
+        'dos organizaciones comparten lo que haya adentro y no falla nada',
+    );
+
+    /* Se exige la IMPORTACIÓN, y no que el nombre aparezca. Una mutación definió su propio
+       `usarClaveDeLectura` de una línea en el mismo archivo y pasaba por delante: lo que garantiza
+       la empresa no es cómo se llame la función, es que sea la de `lecturas.ts`, que lee la sesión
+       ella misma. */
+    assert.match(
+      fuente,
+      /import\s*\{[^}]*\b(usarClaveDeLectura|claveDeLectura)\b[^}]*\}\s*from\s*'[^']*(usarLectura|lecturas)\.ts'/,
+      `\`${ruta}\` escribe en la memoria y su clave no sale de \`claveDeLectura\` ni de ` +
+        '`usarClaveDeLectura`: la empresa deja de estar garantizada por construcción',
+    );
+
+    /* Y toda escritura pasa por una variable llamada `clave`. Es una convención y se afirma como
+       tal: no demuestra de dónde salió el valor —eso lo cubren las dos afirmaciones de arriba—,
+       pero cierra el caso de un archivo que importe el armador para una cosa y guarde con otra. */
+    for (const llamada of fuente.match(/[^A-Za-z]guardar\(\s*([^,]+),/g) ?? []) {
+      assert.match(
+        llamada,
+        /guardar\(\s*clave,/,
+        `\`${ruta}\` guarda con algo que no es la \`clave\` que armó: ${llamada.trim()}`,
+      );
+    }
+  }
+
   // Y la lista de memorizaciones no tiene entradas muertas ni motivos vacíos.
   for (const m of MEMORIZACIONES_DEL_NAVEGADOR) {
     assert.ok(

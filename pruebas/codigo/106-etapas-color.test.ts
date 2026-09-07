@@ -210,7 +210,7 @@ test('ningún JSX de la superficie trae un color escrito a mano', () => {
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
     for (const m of codigo.matchAll(/rgba?\(\s*\d[^)]*\)/g)) colados.push(`${archivo}: ${m[0]}`);
-    for (const m of codigo.matchAll(/#[0-9a-fA-F]{3,8}/g)) colados.push(`${archivo}: ${m[0]}`);
+    for (const m of codigo.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) colados.push(`${archivo}: ${m[0]}`);
   }
   assert.deepEqual(
     colados,

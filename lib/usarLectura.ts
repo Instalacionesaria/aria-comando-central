@@ -132,6 +132,36 @@ export function usarLectura<T>(
     motivos = {},
   } = opciones;
 
+  /* ────────────────────────── LAS OPCIONES VAN EN UN REF, Y NO EN LAS DEPENDENCIAS ──────────────────────────
+
+     ESTO ARREGLA UN DEFECTO MEDIDO, no es una optimización. `motivos = {}` es un valor por
+     omisión de desestructuración: cuando el llamador no lo pasa —el Pipeline y la Agenda no lo
+     pasan— ese `{}` es un OBJETO NUEVO en cada render. Con `motivos` en las dependencias de
+     `traer`, `traer` cambiaba de identidad en cada render, y con él `refrescar`.
+
+     Y `refrescar` es lo que las pantallas ponen en las dependencias de sus efectos:
+
+         useEffect(() => { if (pulso > 0) void refrescar(); }, [pulso, refrescar]);
+
+     o sea que ese efecto corría en CADA render en vez de cuando cambia el pulso — y cada
+     vuelta termina en `setDatos(r.datos)` con el objeto recién salido de `respuesta.json()`,
+     que nunca es el mismo, así que React no puede descartar el render. Render → efecto →
+     petición → `setDatos` → render: una cadena de consultas al API que no para sola.
+
+     El Pipeline del Closer se salvaba de casualidad, porque `CloserView` no le pasa `pulso` y
+     la guarda `pulso > 0` cortaba. El del Setter sí lo recibe, y ahí pasaba de verdad. Y no
+     solo pedía de más: `refrescar` empieza con `olvidar(clave)`, así que borraba su propia
+     entrada en cada vuelta y la memoria **nunca servía** en esa pantalla.
+
+     `Empresas` no lo sufría porque pasa `motivos: MOTIVOS`, una constante de módulo. O sea que
+     el defecto aparecía solo cuando la opción se OMITE, que es el caso cómodo y el más común.
+
+     Son ajustes, no identidad: qué texto mostrar y con qué ventana. Lo que decide si hay que
+     volver a pedir es el `camino` y la `clave`, y esos dos son cadenas — se comparan por valor
+     y son estables. Por eso las dependencias de abajo son exactamente esas dos. */
+  const ajustes = useRef({ sinRespuesta, frescura, motivos });
+  ajustes.current = { sinRespuesta, frescura, motivos };
+
   const empresaId = usarEmpresaDeLaSesion();
   const clave = empresaId === null ? null : claveDeLectura(empresaId, camino);
 
@@ -177,17 +207,30 @@ export function usarLectura<T>(
        no tiene trabajo. */
     setCausa(
       r.tipo === 'rechazado'
-        ? (r.detalle ?? motivos[r.codigo] ?? `El servidor respondió ${r.estado}.`)
-        : sinRespuesta,
+        ? (r.detalle ?? ajustes.current.motivos[r.codigo] ?? `El servidor respondió ${r.estado}.`)
+        : ajustes.current.sinRespuesta,
     );
     setCodigo(r.tipo === 'rechazado' ? r.codigo : null);
     /* Y ACÁ está la regla: teniendo datos NO se cambia de situación. La pantalla sigue mostrando lo
        de hace un momento con el aviso al lado, en vez de borrarle el día de trabajo a alguien por
        un corte de red de dos segundos. */
     setSituacion((antes) => (antes === 'listo' ? antes : r.tipo));
-  }, [camino, clave, sinRespuesta, motivos]);
+  }, [camino, clave]);
 
-  /** Ignora la ventana. Es lo que hay que llamar DESPUÉS DE ESCRIBIR. */
+  /**
+   * Ignora la ventana. Es lo que hay que llamar DESPUÉS DE ESCRIBIR.
+   *
+   * ────────────────────────── OLVIDA ANTES DE PREGUNTAR, Y ESO TIENE UN PRECIO ──────────────────────────
+   *
+   * `traer` solo vuelve a guardar si la respuesta trae datos, así que un refresco que falla deja
+   * la entrada VACÍA: la pantalla sigue mostrando lo suyo —eso no se toca— pero la próxima visita
+   * a esta sub-pestaña vuelve a costar un «Cargando».
+   *
+   * Se elige así igual. Esto se llama después de ESCRIBIR, o sea que lo guardado ya se sabe
+   * equivocado; conservarlo lo mostraría como actual hasta diez segundos después de un cambio
+   * que la persona acaba de hacer, y eso es la única forma en que esta memoria puede mentir.
+   * Un «Cargando» de más en un camino de fallo es mejor que un dato viejo dado por bueno.
+   */
   const refrescar = useCallback(async () => {
     if (clave !== null) olvidar(clave);
     await traer();
@@ -205,13 +248,13 @@ export function usarLectura<T>(
     /* Fresco: no se pide NADA. Es el ahorro medible de este archivo — ir y volver cinco veces
        entre dos sub-pestañas cuesta una consulta en vez de cinco. */
     const g = clave === null ? null : leerGuardado<T>(clave);
-    if (g && estaFresco(g.cuando, frescura)) {
+    if (g && estaFresco(g.cuando, ajustes.current.frescura)) {
       setDatos(g.valor);
       setSituacion('listo');
       return;
     }
     void traer();
-  }, [clave, camino, frescura, traer]);
+  }, [clave, camino, traer]);
 
   return { datos, situacion, causa, codigo, refrescar };
 }

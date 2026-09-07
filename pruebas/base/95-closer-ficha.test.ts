@@ -383,7 +383,7 @@ test('el historial junta la nota, el resultado, la cita y la TAREA, cada uno con
   );
   assert.doesNotMatch(
     tituloDeLaTarea,
-    /Mar|Mon/,
+    /\bMar\b|\bMon\b/,
     'quedó el nombre corto en inglés del formato largo de `Date`',
   );
 

@@ -144,8 +144,18 @@ test('una recarga de la lista NO vacía la pantalla, que es lo que cierra la fic
     'quedó un paso a «cargando» sin guarda: alcanza uno para reintroducir el defecto',
   );
 
-  // Y el pulso saltea el montaje, o la primera carga sale dos veces.
-  assert.match(lista, /if \(pulso > 0\) void cargar\(\)/, 'el pulso no saltea el montaje');
+  /* Y el pulso saltea el montaje, o la primera carga sale dos veces.
+
+     La guarda creció: además del montaje saltea una lista EXPANDIDA, porque `cargar` trae la página
+     0 y reemplaza, así que sobre una lista a la que alguien le dio «Ver más» tres veces la encogería
+     de sesenta filas a veinte, cada diez segundos. Ese lado lo afirma
+     `131-avisos-desactualizado.test.ts`; acá se comprueba lo de siempre: que `pulso > 0` siga
+     estando, que es lo que impide la carga doble al montar. */
+  assert.match(
+    lista,
+    /if \(pulso > 0 && !expandida\.current\) void cargar\(\)/,
+    'el pulso no saltea el montaje',
+  );
 });
 
 test('la pantalla activa se pregunta en un solo lugar, y es el que decide abrirla', () => {
