@@ -52,6 +52,14 @@ export interface LoQueSeRegistra extends LoComunDeUnResultado {
    * justo donde más importa. Anidado no hay nada que esparcir.
    */
   que: ParDeResultado;
+  /**
+   * La apertura de «Avanzar» de la que sale este registro. **Una por apertura, no por clic.**
+   *
+   * Es lo que hace que reintentar después de un corte sea inofensivo: el segundo intento trae
+   * la misma clave, choca contra el índice único, y esta función devuelve el resultado que ya
+   * estaba en vez de escribir otro. Ver la migración `037`.
+   */
+  claveDeIntento: string;
 }
 
 interface LoComunDeUnResultado {
@@ -103,6 +111,15 @@ export interface Registrado {
    * lo único que se podía hacer antes de que esta columna tuviera un escritor.
    */
   seguimientosCerrados: number;
+  /**
+   * `true` = esta clave ya había registrado, así que **esta llamada no escribió nada**.
+   *
+   * Y entonces `nota`, `tarea` y `seguimientosCerrados` valen todos su cero: los tres cuentan
+   * lo que ESTA llamada hizo, no lo que hay guardado. Quien lea esta respuesta tiene que mirar
+   * `yaEstaba` primero — leer `nota: false` sin mirarlo diría «se pidió y no se pudo», que es
+   * otra cosa.
+   */
+  yaEstaba: boolean;
 }
 
 /**
@@ -133,9 +150,18 @@ export async function registrarResultado(
     throw new Error(`la salida «${lo.que.salida}» no tiene columna en el embudo de ${lo.que.rol}`);
   }
 
+  /* ────────────────────────── EL INSERT CHOCA EN VEZ DE DUPLICAR ──────────────────────────
+
+     `doNothing()` y no un `try/catch` del error de la base: `ADR-0704` prohíbe pasar el mensaje
+     crudo de PostgreSQL al cliente, y atrapar un SQLSTATE para decidir el camino normal deja el
+     control de flujo colgado de un código de error. Así el choque es un dato —no hay fila
+     devuelta— y no una excepción que alguien tenga que interpretar.
+
+     Es la misma forma que usa `lib/negocio/sincronizar.ts` para sus upserts. */
   const resultado = await datos()
     .insertInto('resultados')
     .values({
+      clave_de_intento: lo.claveDeIntento,
       contacto_id: contactoId,
       salida: lo.que.salida,
       rol: lo.que.rol,
@@ -149,8 +175,33 @@ export async function registrarResultado(
       nota: lo.nota,
       registrado_por: lo.quien,
     } as never)
+    .onConflict((oc) => oc.columns(['org_id', 'clave_de_intento']).doNothing())
     .returning('id')
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+
+  /* ────────────────────────── YA ESTABA: NO SE ESCRIBE NINGUNA DE LAS CUATRO ──────────────────────────
+
+     El corte no dice en qué paso quedó, así que un reintento tiene que ser inofensivo ENTERO:
+     salir acá y no más abajo es lo que impide una segunda nota y una segunda tarea en Mi Día.
+
+     Y se devuelve el identificador de la fila que SÍ está, no un «no pasó nada»: la ruta lo usa
+     para completar el aviso al CRM, que es justo la mitad que un corte pudo dejar sin hacer. */
+  if (resultado === undefined) {
+    const yaEstaba = await datos()
+      .selectFrom('resultados')
+      .select('id')
+      .where('clave_de_intento', '=', lo.claveDeIntento)
+      .executeTakeFirstOrThrow();
+
+    return {
+      resultadoId: yaEstaba.id,
+      etapa,
+      nota: false,
+      tarea: false,
+      seguimientosCerrados: 0,
+      yaEstaba: true,
+    };
+  }
 
   // ── LA ETAPA, que es lo que mueve el Pipeline ─────────────────────────────
   //
@@ -271,5 +322,6 @@ export async function registrarResultado(
     nota,
     tarea,
     seguimientosCerrados: Number(cerradas?.numUpdatedRows ?? 0),
+    yaEstaba: false,
   };
 }

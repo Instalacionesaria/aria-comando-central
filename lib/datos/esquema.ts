@@ -575,6 +575,14 @@ export interface TablaResultados {
   detalle: string | null;
   nota: string | null;
   registrado_por: string | null;
+  /**
+   * La apertura de «Avanzar» que produjo este resultado, para que un reintento no escriba dos.
+   *
+   * `null` solo en las filas anteriores a la migración `037`: la ruta rechaza una petición sin
+   * clave, así que no aparecen nuevas. El índice único `(org_id, clave_de_intento)` es lo que
+   * hace que el segundo intento choque en vez de duplicar la comisión.
+   */
+  clave_de_intento: string | null;
   creado_el: Generated<Date>;
 }
 

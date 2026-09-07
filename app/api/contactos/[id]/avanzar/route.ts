@@ -80,6 +80,11 @@ const MOTIVOS = {
     'La secuencia del CRM no usa una fecha nuestra: la pone su propio flujo. Si querés elegir el ' +
     'día, el seguimiento lo tenés que retomar vos.',
   cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
+  /* Le habla a una persona, no a quien programa: el único caso real es una pestaña abierta de
+     antes del despliegue que agregó la clave, y lo que esa persona tiene que hacer es recargar. */
+  falta_clave:
+    'Esta pestaña está desactualizada y no puede registrar sin duplicar. Recargá la página y ' +
+    'volvé a intentarlo — no se registró nada.',
   salida_invalida: 'Esa no es una salida de Avanzar.',
   /* Los dos motivos de la fase B. Van SEPARADOS de `salida_invalida` a propósito: «eso no existe» y
      «eso existe pero no es de este contacto» mandan a mirar dos cosas distintas, y colapsarlos haría
@@ -140,6 +145,23 @@ export async function POST(
    * transacción. */
   const salida = cuerpo?.salida;
   if (!esAlgunaSalida(salida)) return rechazo('peticion_invalida', MOTIVOS.salida_invalida);
+
+  /* ────────────────────────── LA CLAVE DE INTENTO ES OBLIGATORIA, Y ESO TIENE UN PRECIO ──────────────────────────
+   *
+   * Sin ella, el índice único de la migración `037` no protege nada: varios `null` no chocan
+   * entre sí en PostgreSQL, así que una petición sin clave vuelve a poder duplicar. Aceptarla
+   * «por compatibilidad» dejaría la garantía colgada de que el navegador se acuerde de mandarla,
+   * que es exactamente la forma de agujero que este proyecto rechaza en todas partes.
+   *
+   * EL PRECIO, dicho: una pestaña que quedó abierta desde antes del despliegue manda el paquete
+   * viejo, sin clave, y recibe un rechazo. Si eso pasa en medio de una llamada, molesta. Se
+   * elige igual, porque el rechazo es visible y dice qué hacer — recargar— mientras que una
+   * comisión duplicada es invisible y sale de la caja. Y dura un despliegue.
+   */
+  const claveDeIntento = cuerpo?.claveDeIntento;
+  if (typeof claveDeIntento !== 'string' || !UUID.test(claveDeIntento)) {
+    return rechazo('peticion_invalida', MOTIVOS.falta_clave);
+  }
 
   // ── LA NOTA ───────────────────────────────────────────────────────────────
   const notaCruda = typeof cuerpo?.nota === 'string' ? cuerpo.nota.trim() : '';
@@ -244,6 +266,7 @@ export async function POST(
       volverEl,
       modo: lo.modo,
       quien: contexto.usuarioId,
+      claveDeIntento,
     });
     return {
       tipo: 'listo' as const,
@@ -280,8 +303,21 @@ export async function POST(
       // tiene que poder saberlo. Colapsarlo en el éxito general sería reportar un éxito a medias
       // como completo.
       crm: aviso,
+      /* ────────────────────────── ESTA CLAVE YA HABÍA REGISTRADO ──────────────────────────
+       *
+       * Se dice en vez de esconderse, y no es un detalle: quien reintenta después de un corte
+       * necesita saber que lo que ve es lo de ANTES y no un registro nuevo. Colapsarlo en el
+       * éxito normal le haría creer que registró dos veces — y entonces iría a «corregir» algo
+       * que está bien.
+       *
+       * Y el aviso al CRM se manda IGUAL en este caso, a propósito: el corte pudo caer entre el
+       * paso 1 y el paso 2, o sea con el resultado escrito y el CRM sin enterarse. Reintentar
+       * completa esa mitad en vez de saltearla — el reintento pasa de peligroso a reparador. */
+      yaEstaba: registrado.yaEstaba,
     },
-    201,
+    /* 200 y no 201 cuando ya estaba: no se creó nada. El código es parte de la respuesta y
+       decirlo mal es mentirle a cualquier cosa que lea la ruta sin leer el cuerpo. */
+    registrado.yaEstaba ? 200 : 201,
   );
 }
 

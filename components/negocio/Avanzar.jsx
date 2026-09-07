@@ -71,6 +71,25 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
   /** El modo, para las salidas que los tienen. `''` = todavía no eligió, y el botón lo exige. */
   const [modo, setModo] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  /* ────────────────────────── UNA CLAVE POR APERTURA DE ESTE PANEL ──────────────────────────
+
+     `Ficha.jsx` dibuja `{avanzando ? <Avanzar/> : null}`, así que este componente nace y muere
+     con cada apertura y el inicializador de `useState` corre UNA vez por apertura. Eso es
+     exactamente el alcance que se pidió:
+
+       · reintentar después de un corte manda la MISMA clave, choca contra el índice único, y no
+         escribe un segundo resultado — ni una segunda nota, ni una segunda tarea en Mi Día;
+       · cerrar el panel y volver a abrirlo genera otra, porque eso ya es una decisión de la
+         persona y no un reintento.
+
+     Va en `useState` y no en un `useRef` ni en una constante del módulo: en un `useRef` habría
+     que inicializarlo aparte, y en el módulo la compartirían TODAS las fichas de la sesión — o
+     sea que registrar sobre el segundo contacto chocaría con el primero y no escribiría nada.
+
+     `crypto.randomUUID()` está en todo navegador con `https` o `localhost`, que es donde esta
+     aplicación corre. */
+  const [claveDeIntento] = useState(() => crypto.randomUUID());
   const [aviso, setAviso] = useState(null);
 
   /** Las salidas de ESTE territorio. Vacío cuando el contacto está congelado. */
@@ -115,6 +134,7 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
       metodo: 'POST',
       espera: ESPERA_DE_AVANZAR_MS,
       cuerpo: {
+        claveDeIntento,
         salida: def.salida,
         ...(detalle !== '' ? { detalle } : {}),
         ...(def.pideMonto ? { monto: monto.trim() } : {}),
@@ -172,7 +192,11 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
      * aviso no llegue **el CRM no disparó sus automatismos**: la secuencia de recuperación de un
      * no-show, por ejemplo. Colapsarlo en «listo» sería reportar un éxito a medias como completo.
      */
+    /* Si esta clave ya había registrado, lo que sigue en pantalla es lo de ANTES. Se dice: sin
+       esto, quien reintentó después de un corte creería que registró dos veces e iría a
+       «corregir» algo que está bien. */
     alRegistrar?.({
+      yaEstaba: Boolean(r.datos.yaEstaba),
       salida: def.salida,
       etapa: r.datos.etapa,
       crm: r.datos.crm,

@@ -34,6 +34,9 @@ let admin: Client;
 let alfa: string;
 let beta: string;
 let quien: string;
+/** Quien registra en `beta`. Hace falta porque `registrado_por` tiene clave foránea POR
+ *  organización: el usuario de alfa no existe para beta, así que no se puede reusar. */
+let quienBeta: string;
 
 before(async () => {
   admin = await conectar('admin');
@@ -53,6 +56,14 @@ before(async () => {
   );
   assert.ok(u[0], 'la organización alfa no tiene usuarios: ¿corrió el sembrado?');
   quien = u[0]!.id;
+
+  const uBeta = await filas<{ id: string }>(
+    admin,
+    `select id from identidad.usuarios where org_id = $1 limit 1`,
+    [beta],
+  );
+  assert.ok(uBeta[0], 'la organización beta no tiene usuarios: ¿corrió el sembrado?');
+  quienBeta = uBeta[0]!.id;
   await limpiar();
 });
 
@@ -93,7 +104,15 @@ async function contactoEn(org: string, extra: Record<string, unknown> = {}): Pro
 /* El par (rol, salida) viaja ANIDADO en `que`, así que no está en `BASE`: cada prueba arma el suyo
    con `del(salida)`. Sueltos, TypeScript ensancha el esparcido de la unión y `{ rol: 'closer',
    salida: 'agendo' }` volvería a compilar. */
-const BASE = {
+/**
+ * Lo común de un registro. Es una FUNCIÓN y no una constante, y el motivo importa:
+ *
+ * `claveDeIntento` tiene que ser distinta en cada llamada. Con una constante compartida, la
+ * segunda llamada de cada prueba traería la misma clave, chocaría contra el índice único de la
+ * migración `037` y **no escribiría nada** — que es justo el comportamiento que se busca en
+ * producción y una trampa acá: las pruebas quedarían midiendo el reintento sin querer.
+ */
+const base = () => ({
   detalle: null,
   formaPago: null,
   monto: null,
@@ -102,10 +121,133 @@ const BASE = {
   /* `null` = la salida no admite modos, que es el caso de cinco de las seis. La única que los tiene
      es `seguimiento`, y las pruebas que la usan lo pasan explícito. */
   modo: null,
-};
+  claveDeIntento: randomUUID(),
+});
 
 /** El par de un resultado del closer, que es el rol de todas las pruebas de este archivo. */
 const del = (salida: SalidaDelCloser) => ({ rol: 'closer' as const, salida });
+
+// ═══ 0 · La clave de intento: reintentar no duplica ═════════════════════════
+
+test('la MISMA clave dos veces escribe UN resultado, y la segunda lo dice', async () => {
+  /* ────────────────────────── LO QUE ESTA PRUEBA MIDE, Y POR QUÉ CONTRA LA BASE ──────────────────────────
+   *
+   * La ruta escribe en dos pasos —la transacción primero, el aviso al CRM después—, así que
+   * cuando la respuesta no llega, quien registró no puede saber si quedó. Antes de la migración
+   * `037`, reintentar escribía una SEGUNDA fila — y las comisiones no están guardadas: se calculan
+   * leyendo esta tabla, así que una venta duplicada duplica la comisión.
+   *
+   * Se mide contra la base y no leyendo el código porque lo que protege es un ÍNDICE ÚNICO. Un
+   * `onConflict` perfecto contra un índice que no existe se ve igual desde la fuente, y falla
+   * exactamente cuando importa. */
+  await limpiar();
+  const id = await contactoEn(alfa);
+  const clave = randomUUID();
+
+  const primera = await conOrganizacion(alfa, () =>
+    registrarResultado(id, {
+      ...base(),
+      claveDeIntento: clave,
+      que: del('venta'),
+      monto: '1500.00',
+      formaPago: 'Contado',
+      nota: 'Cerró en la llamada',
+      quien,
+    }),
+  );
+  assert.equal(primera.yaEstaba, false, 'la primera dice que ya estaba');
+
+  // EL REINTENTO: la misma clave, todo lo demás igual, como cuando alguien vuelve a apretar.
+  const segunda = await conOrganizacion(alfa, () =>
+    registrarResultado(id, {
+      ...base(),
+      claveDeIntento: clave,
+      que: del('venta'),
+      monto: '1500.00',
+      formaPago: 'Contado',
+      nota: 'Cerró en la llamada',
+      quien,
+    }),
+  );
+
+  assert.equal(segunda.yaEstaba, true, 'el reintento no se reconoce como reintento');
+  assert.equal(
+    segunda.resultadoId,
+    primera.resultadoId,
+    'el reintento devuelve OTRO identificador: entonces escribió una segunda fila',
+  );
+
+  const cuentas = await conOrganizacion(alfa, async () => ({
+    resultados: await datos()
+      .selectFrom('resultados')
+      .select(({ fn }) => fn.countAll<string>().as('n'))
+      .where('contacto_id', '=', id)
+      .executeTakeFirst(),
+    notas: await datos()
+      .selectFrom('notas')
+      .select(({ fn }) => fn.countAll<string>().as('n'))
+      .where('contacto_id', '=', id)
+      .executeTakeFirst(),
+  }));
+
+  assert.equal(
+    Number(cuentas.resultados?.n),
+    1,
+    'quedaron dos resultados: la comisión de esta venta sale al doble y nadie lo reporta',
+  );
+  /* Y la nota tampoco se duplica. Es lo que obliga a que el corte por reintento salga ANTES de
+     las otras tres escrituras y no solo antes del insert del resultado. */
+  assert.equal(Number(cuentas.notas?.n), 1, 'quedó la nota escrita dos veces en el hilo del contacto');
+});
+
+test('dos APERTURAS distintas sí registran dos veces, y eso es lo correcto', async () => {
+  /* La otra mitad del alcance que se eligió: la clave vive por apertura del panel. Cerrar y volver
+     a abrir a propósito es una decisión de la persona, no un reintento — dos llamadas de verdad al
+     mismo contacto el mismo día son un caso legítimo.
+
+     Sin esta prueba, «arreglar» el duplicado bloqueando cualquier segundo resultado igual pasaría
+     la prueba de arriba y rompería el trabajo real, en silencio. */
+  await limpiar();
+  const id = await contactoEn(alfa);
+
+  const una = await conOrganizacion(alfa, () =>
+    registrarResultado(id, { ...base(), que: del('seguimiento'), modo: 'manual', volverEl: '2026-12-01', quien }),
+  );
+  const otra = await conOrganizacion(alfa, () =>
+    registrarResultado(id, { ...base(), que: del('seguimiento'), modo: 'manual', volverEl: '2026-12-02', quien }),
+  );
+
+  assert.equal(una.yaEstaba, false);
+  assert.equal(otra.yaEstaba, false, 'la segunda apertura se tomó por un reintento');
+  assert.notEqual(una.resultadoId, otra.resultadoId, 'dos aperturas distintas escribieron una sola fila');
+});
+
+test('la clave NO se cruza entre organizaciones', async () => {
+  /* El índice es `(org_id, clave_de_intento)` y no solo la clave. Global, la clave de una empresa
+     podría bloquear el registro de otra: un choque imposible de diagnosticar desde la pantalla,
+     porque lo que se vería es «esto ya estaba registrado» sobre un contacto que nadie tocó.
+
+     Con uuids la colisión espontánea no pasa; lo que se comprueba acá es que el aislamiento esté
+     en el ÍNDICE, forzando la misma clave a propósito en las dos organizaciones. */
+  await limpiar();
+  const enAlfa = await contactoEn(alfa);
+  const enBeta = await contactoEn(beta);
+  const clave = randomUUID();
+
+  const deAlfa = await conOrganizacion(alfa, () =>
+    registrarResultado(enAlfa, { ...base(), claveDeIntento: clave, que: del('no_show'), quien }),
+  );
+  const deBeta = await conOrganizacion(beta, () =>
+    registrarResultado(enBeta, { ...base(), claveDeIntento: clave, que: del('no_show'), quien: quienBeta }),
+  );
+
+  assert.equal(deAlfa.yaEstaba, false);
+  assert.equal(
+    deBeta.yaEstaba,
+    false,
+    'la clave de una organización bloqueó el registro de la otra: el índice perdió el `org_id`',
+  );
+});
 
 // ═══ 1 · Las cuatro escrituras ══════════════════════════════════════════════
 
@@ -115,7 +257,7 @@ test('una VENTA escribe el resultado, mueve la etapa, y deja el monto en su colu
 
   const r = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
-      ...BASE,
+      ...base(),
       que: del('venta'),
       detalle: 'Contado',
       formaPago: 'Contado',
@@ -155,7 +297,7 @@ test('la nota va a la MISMA tabla que la pestaña Notas, y con su autor', async 
   const id = await contactoEn(alfa);
 
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('seguimiento'), nota: 'Pidió llamar el lunes', quien }),
+    registrarResultado(id, { ...base(), que: del('seguimiento'), nota: 'Pidió llamar el lunes', quien }),
   );
   assert.equal(r.nota, true);
 
@@ -181,7 +323,7 @@ test('sin nota NO se escribe ninguna, y la respuesta lo dice', async () => {
   await limpiar();
   const id = await contactoEn(alfa);
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('nurture'), quien }),
+    registrarResultado(id, { ...base(), que: del('nurture'), quien }),
   );
   assert.equal(r.nota, false);
   const n = await conOrganizacion(alfa, async () =>
@@ -197,7 +339,7 @@ test('el seguimiento crea una tarea MANUAL, que es la que cuenta en Mi Día', as
   const id = await contactoEn(alfa);
 
   const r = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('seguimiento'), volverEl: '2026-12-01', quien }),
+    registrarResultado(id, { ...base(), que: del('seguimiento'), volverEl: '2026-12-01', quien }),
   );
   assert.equal(r.tarea, true);
 
@@ -226,7 +368,7 @@ test('EL DÍA DE LA TAREA NO SE CORRE, y por eso viaja como texto', async () => 
     await limpiar();
     const id = await contactoEn(alfa);
     await conOrganizacion(alfa, () =>
-      registrarResultado(id, { ...BASE, que: del('seguimiento'), volverEl: dia, quien }),
+      registrarResultado(id, { ...base(), que: del('seguimiento'), volverEl: dia, quien }),
     );
     const guardado = await filas<{ dia: string }>(
       admin,
@@ -252,7 +394,7 @@ test('LAS CUATRO ESCRITURAS SON ATÓMICAS: si una falla, no queda ninguna', asyn
   await assert.rejects(
     conOrganizacion(alfa, () =>
       registrarResultado(id, {
-        ...BASE,
+        ...base(),
         que: del('seguimiento'),
         nota: 'esta nota no debería quedar',
         // Un 31 de febrero. Tiene la forma correcta —el endpoint lo rechaza antes de llegar acá—
@@ -294,10 +436,10 @@ test('los números de Inicio dejan de decir `—` en cuanto hay un resultado', a
   assert.ok(antes.cobrado.falta, 'y tiene que decir por qué');
 
   await conOrganizacion(alfa, () =>
-    registrarResultado(a, { ...BASE, que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
+    registrarResultado(a, { ...base(), que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
   );
   await conOrganizacion(alfa, () =>
-    registrarResultado(b, { ...BASE, que: del('acuerdo_sin_pago'), monto: '500.00', quien }),
+    registrarResultado(b, { ...base(), que: del('acuerdo_sin_pago'), monto: '500.00', quien }),
   );
 
   const despues = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
@@ -347,11 +489,11 @@ test('el cockpit es del closer DESIGNADO: las ventas de otro no entran', async (
   const ajeno = await contactoEn(alfa);
 
   await conOrganizacion(alfa, () =>
-    registrarResultado(mio, { ...BASE, que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
+    registrarResultado(mio, { ...base(), que: del('venta'), monto: '1000.00', formaPago: 'Contado', quien }),
   );
   await conOrganizacion(alfa, () =>
     registrarResultado(ajeno, {
-      ...BASE,
+      ...base(),
       que: del('venta'),
       monto: '500.00',
       formaPago: 'Contado',
@@ -388,7 +530,7 @@ test('sin closer designado el cockpit dice que FALTA, y no cero', async () => {
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('venta'), monto: '2000.00', formaPago: 'Contado', quien }),
+    registrarResultado(id, { ...base(), que: del('venta'), monto: '2000.00', formaPago: 'Contado', quien }),
   );
 
   const ck = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'nadie' }));
@@ -411,7 +553,7 @@ test('un acuerdo sin pago NO suma al cobrado: es plata comprometida, no cobrada'
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('acuerdo_sin_pago'), monto: '900.00', quien }),
+    registrarResultado(id, { ...base(), que: del('acuerdo_sin_pago'), monto: '900.00', quien }),
   );
 
   const c = await conOrganizacion(alfa, () => cockpitDelMes('UTC', 0, { tipo: 'persona', usuarioId: quien, crmUsuarioId: null }));
@@ -427,7 +569,7 @@ test('el Pipeline devuelve las SIETE columnas, con las vacías en cero', async (
   await limpiar();
   const id = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('no_show'), quien }),
+    registrarResultado(id, { ...base(), que: del('no_show'), quien }),
   );
 
   const p = await conOrganizacion(alfa, () => pipelineDe('closer', { conCongelados: true }));
@@ -452,7 +594,7 @@ test('un contacto SIN Avanzar cae en la entrada, y el Pipeline dice de dónde sa
   const conEtiqueta = await contactoEn(alfa, { etiquetas: ['noshow'] });
   const conResultado = await contactoEn(alfa);
   await conOrganizacion(alfa, () =>
-    registrarResultado(conResultado, { ...BASE, que: del('venta'), monto: '1.00', quien }),
+    registrarResultado(conResultado, { ...base(), que: del('venta'), monto: '1.00', quien }),
   );
 
   const p = await conOrganizacion(alfa, () => pipelineDe('closer', { conCongelados: true }));
@@ -496,7 +638,7 @@ test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fec
 
   const r = await conOrganizacion(alfa, () =>
     registrarResultado(id, {
-      ...BASE,
+      ...base(),
       que: del('seguimiento'),
       modo: 'automatico',
       // La fecha llega, y el escritor la tiene que ignorar por su cuenta.
@@ -518,7 +660,7 @@ test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fec
 
   // Y la otra mitad, para que la prueba no pase por un escritor que nunca escribe tareas.
   const manual = await conOrganizacion(alfa, () =>
-    registrarResultado(id, { ...BASE, que: del('seguimiento'), modo: 'manual', volverEl: dia, quien }),
+    registrarResultado(id, { ...base(), que: del('seguimiento'), modo: 'manual', volverEl: dia, quien }),
   );
   assert.equal(manual.tarea, true, 'con el modo manual tampoco escribe: el guardia agarra de más');
 });

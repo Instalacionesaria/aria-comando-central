@@ -32,6 +32,7 @@
 
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import {
@@ -157,7 +158,10 @@ test('cada salida del catálogo deja al contacto en la etapa que dice `ETAPA_DE_
   // «registré y no se movió», sin ningún error.
   for (const s of SALIDAS_DEL_CLOSER) {
     const k = await unContacto(esc, { nombre: `Avanzar etapa ${s.salida}` });
-    const cuerpo: Record<string, unknown> = { salida: s.salida };
+    /* La clave va POR SALIDA y no una para toda la barrida: con una compartida, la segunda
+       salida chocaria contra el indice unico de la migracion `037` y la ruta responderia 200
+       con `yaEstaba`, en vez del 201 que esta prueba espera. */
+    const cuerpo: Record<string, unknown> = { claveDeIntento: randomUUID(), salida: s.salida };
     if (s.pideMonto) cuerpo.monto = 1000;
 
     /* ── EL MODO TAMBIÉN SALE DEL CATÁLOGO, Y POR EL MISMO MOTIVO ─────────────
@@ -224,7 +228,7 @@ test('el ROL del resultado es el TERRITORIO del contacto, no el rol de quien reg
   const r = await avanzar(
     pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta_chica', detalle: 'Transferencia', monto: 500 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta_chica', detalle: 'Transferencia', monto: 500  },
     }),
     ctxDe(delSetter.id),
   );
@@ -239,7 +243,7 @@ test('el ROL del resultado es el TERRITORIO del contacto, no el rol de quien reg
   const conLaDelOtro = await avanzar(
     pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 500 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 500  },
     }),
     ctxDe(delSetter.id),
   );
@@ -269,7 +273,7 @@ test('un contacto CONGELADO no tiene con qué vocabulario registrarse, y se dice
   const r = await avanzar(
     pedirComo(`/api/contactos/${congelado.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 500 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 500  },
     }),
     ctxDe(congelado.id),
   );
@@ -305,7 +309,7 @@ test('el embudo del SETTER es otro, y el traspaso se resuelve solo', async () =>
   const r = await avanzar(
     pedirComo(`/api/contactos/${enSetter.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta_chica', detalle: 'Efectivo', monto: 497 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta_chica', detalle: 'Efectivo', monto: 497  },
     }),
     ctxDe(enSetter.id),
   );
@@ -438,7 +442,7 @@ test('el SELLO DE ATRIBUCIÓN se enciende al registrar, y no se reescribe', asyn
   const r = await avanzar(
     pedirComo(`/api/contactos/${delSetter.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'agendo' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'agendo'  },
     }),
     ctxDe(delSetter.id),
   );
@@ -487,7 +491,7 @@ test('el sello NO se enciende fuera del territorio del setter', async () => {
   const r = await avanzar(
     pedirComo(`/api/contactos/${delCloser.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', detalle: 'Contado', monto: 1000 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', detalle: 'Contado', monto: 1000  },
     }),
     ctxDe(delCloser.id),
   );
@@ -634,7 +638,7 @@ test('la salida que PIDE MONTO se rechaza sin monto, y no deja ninguna fila', as
     const r = await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
         metodo: 'POST',
-        cuerpo: { salida: s.salida, nota: 'esta nota tampoco tiene que quedar' },
+        cuerpo: { claveDeIntento: randomUUID(), salida: s.salida, nota: 'esta nota tampoco tiene que quedar'  },
       }),
       ctxDe(k.id),
     );
@@ -652,6 +656,83 @@ test('la salida que PIDE MONTO se rechaza sin monto, y no deja ninguna fila', as
   }
 });
 
+test('sin CLAVE DE INTENTO la ruta rechaza, y no escribe nada', async () => {
+  /* ────────────────────────── POR QUÉ ES OBLIGATORIA Y NO OPCIONAL ──────────────────────────
+   *
+   * El índice único de la migración `037` es `(org_id, clave_de_intento)`, y en PostgreSQL varios
+   * `null` NO chocan entre sí. Así que una petición sin clave escribe una fila que no puede chocar
+   * con nada: duplicar vuelve a ser posible, con toda la función en su lugar y nada fallando.
+   *
+   * Aceptarla «por compatibilidad» dejaría la garantía colgada de que el navegador se acuerde de
+   * mandarla. El único caso real es una pestaña abierta desde antes del despliegue, y a esa persona
+   * el mensaje le dice que recargue. */
+  const k = await unContacto(esc, { nombre: 'Avanzar sin clave' });
+  const r = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { salida: 'venta', monto: 100 },
+    }),
+    ctxDe(k.id),
+  );
+  const { estado, cuerpo } = await leerRespuesta<RespuestaAvanzar>(r);
+  assert.equal(estado, 400, JSON.stringify(cuerpo));
+  assert.deepEqual(
+    (await loEscrito(esc.org, k.id)).resultados,
+    [],
+    'el rechazo por falta de clave igual escribió: entonces no rechazó antes de la transacción',
+  );
+
+  // Y una clave que no es un uuid tampoco pasa: la columna es `uuid` y el índice cuenta con eso.
+  const k2 = await unContacto(esc, { nombre: 'Avanzar clave basura' });
+  const r2 = await avanzar(
+    pedirComo(`/api/contactos/${k2.id}/avanzar`, esc.token, {
+      metodo: 'POST',
+      cuerpo: { claveDeIntento: 'no-soy-un-uuid', salida: 'venta', monto: 100 },
+    }),
+    ctxDe(k2.id),
+  );
+  assert.equal(r2.status, 400, await r2.clone().text());
+});
+
+test('la MISMA clave por la ruta: 201, después 200 con `yaEstaba`, y UNA sola fila', async () => {
+  /* El recorrido completo del defecto que esto cierra: se registra, la respuesta no llega, la
+     persona vuelve a apretar. Antes quedaban DOS resultados — y las comisiones se calculan leyendo
+     esa tabla, así que la venta se pagaba dos veces.
+
+     El código de estado se afirma aparte del cuerpo: 201 dice «se creó», y en el reintento no se
+     creó nada. Decirlo mal es mentirle a cualquier cosa que lea la ruta sin leer el cuerpo. */
+  const k = await unContacto(esc, { nombre: 'Avanzar reintento' });
+  const clave = randomUUID();
+  const cuerpo = { claveDeIntento: clave, salida: 'venta', monto: 1200, detalle: 'Contado' };
+
+  const primera = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, { metodo: 'POST', cuerpo }),
+    ctxDe(k.id),
+  );
+  const uno = await leerRespuesta<RespuestaAvanzar>(primera);
+  assert.equal(uno.estado, 201, JSON.stringify(uno.cuerpo));
+
+  const segunda = await avanzar(
+    pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, { metodo: 'POST', cuerpo }),
+    ctxDe(k.id),
+  );
+  const dos = await leerRespuesta<RespuestaAvanzar>(segunda);
+
+  assert.equal(dos.estado, 200, `el reintento respondió ${dos.estado}: ${JSON.stringify(dos.cuerpo)}`);
+  assert.equal(
+    (dos.cuerpo as { yaEstaba?: boolean }).yaEstaba,
+    true,
+    'el reintento no dice que ya estaba, así que la pantalla va a anunciar un registro nuevo',
+  );
+
+  const escrito = await loEscrito(esc.org, k.id);
+  assert.equal(
+    escrito.resultados.length,
+    1,
+    'quedaron dos resultados por reintentar: la comisión de esta venta sale al doble',
+  );
+});
+
 test('un monto que no es un número, o negativo, se rechaza — y CERO se acepta', async () => {
   // Cero es un monto MEDIDO: una venta de cero pesos es raro y es un hecho, y confundirlo con «no
   // vino monto» es la misma confusión que la regla de `{ valor, falta }` persigue en los
@@ -661,7 +742,7 @@ test('un monto que no es un número, o negativo, se rechaza — y CERO se acepta
     const r = await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
         metodo: 'POST',
-        cuerpo: { salida: 'venta', monto: malo },
+        cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: malo  },
       }),
       ctxDe(k.id),
     );
@@ -674,7 +755,7 @@ test('un monto que no es un número, o negativo, se rechaza — y CERO se acepta
   const r = await avanzar(
     pedirComo(`/api/contactos/${cero.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 0 },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 0  },
     }),
     ctxDe(cero.id),
   );
@@ -710,7 +791,7 @@ test('una salida INVENTADA se rechaza con un motivo legible, sin nombrar la base
     const r = await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
         metodo: 'POST',
-        cuerpo: { salida: mala, monto: 100 },
+        cuerpo: { claveDeIntento: randomUUID(), salida: mala, monto: 100  },
       }),
       ctxDe(k.id),
     );
@@ -757,7 +838,7 @@ test('una fecha para volver imposible o pasada se rechaza, y no deja tarea ni re
         metodo: 'POST',
         // `manual` es el modo que USA la fecha. Con `automatico` el servidor la rechaza, y
         // tiene razon: la secuencia del CRM pone su propio calendario.
-        cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: dia },
+        cuerpo: { claveDeIntento: randomUUID(), salida: 'seguimiento', modo: 'manual', volverEl: dia  },
       }),
       ctxDe(k.id),
     );
@@ -787,7 +868,7 @@ test('el día elegido llega a `tareas.vence_el` TAL CUAL, sin pasar por ninguna 
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: MANANA, nota: 'volver mañana' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'seguimiento', modo: 'manual', volverEl: MANANA, nota: 'volver mañana'  },
     }),
     ctxDe(k.id),
   );
@@ -814,7 +895,7 @@ test('una subcategoría que NO está en las opciones de esa salida se descarta, 
   await avanzar(
     pedirComo(`/api/contactos/${libre.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 10, detalle: 'Trueque por dos vacas' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 10, detalle: 'Trueque por dos vacas'  },
     }),
     ctxDe(libre.id),
   );
@@ -828,7 +909,7 @@ test('una subcategoría que NO está en las opciones de esa salida se descarta, 
   await avanzar(
     pedirComo(`/api/contactos/${valida.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'venta', monto: 10, detalle: 'Cuotas' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 10, detalle: 'Cuotas'  },
     }),
     ctxDe(valida.id),
   );
@@ -858,7 +939,7 @@ test('si la NOTA falla, no queda ni el resultado ni la etapa ni la tarea', async
       avanzar(
         pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
           metodo: 'POST',
-          cuerpo: { salida: 'venta', monto: 900, nota: NOTA_CON_NUL, volverEl: MANANA },
+          cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 900, nota: NOTA_CON_NUL, volverEl: MANANA  },
         }),
         ctxDe(k.id),
       ),
@@ -895,7 +976,7 @@ test('la respuesta trae `registrado`, la etapa, si hubo nota y tarea, y el aviso
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'no_show', detalle: 'Plantón sin aviso', nota: 'no apareció', volverEl: MANANA },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'no_show', detalle: 'Plantón sin aviso', nota: 'no apareció', volverEl: MANANA  },
     }),
     ctxDe(k.id),
   );
@@ -933,7 +1014,7 @@ test('sin nota y sin fecha, `nota` y `tarea` vienen en `false` y no se escribe n
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'nurture' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'nurture'  },
     }),
     ctxDe(k.id),
   );
@@ -994,7 +1075,7 @@ test('las DOS rutas que ESCRIBEN responden 404 —nunca 403— sobre un contacto
       await avanzar(
         pedirComo(`/api/contactos/${ajeno.id}/avanzar`, esc.token, {
           metodo: 'POST',
-          cuerpo: { salida: 'venta', monto: 999 },
+          cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 999  },
         }),
         ctxDe(ajeno.id),
       ),
@@ -1105,7 +1186,7 @@ test('un identificador mal formado sí es 404, no 400', async () => {
         await avanzar(
           pedirComo(`/api/contactos/${malo}/avanzar`, esc.token, {
             metodo: 'POST',
-            cuerpo: { salida: 'venta', monto: 1 },
+            cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 1  },
           }),
           ctxDe(malo),
         ),
@@ -1291,6 +1372,7 @@ test('la nota de AVANZAR se lee por la pestaña Notas: una tabla, un camino', as
       // Sin fecha, asi que el modo es `automatico`: lo persigue la secuencia del CRM. `manual`
       // sin dia se rechaza, porque no habria dia que poner en Mi Dia.
       cuerpo: {
+        claveDeIntento: randomUUID(),
         salida: 'seguimiento',
         modo: 'automatico',
         nota: 'Dijo que lo consulta con la socia',
@@ -1330,7 +1412,7 @@ test('sin sesión válida Avanzar y las Notas responden 401 `sin_sesion`, y no e
     await avanzar(
       pedirComo(`/api/contactos/${k.id}/avanzar`, sinSesion, {
         metodo: 'POST',
-        cuerpo: { salida: 'venta', monto: 5000, nota: 'una venta de nadie', volverEl: MANANA },
+        cuerpo: { claveDeIntento: randomUUID(), salida: 'venta', monto: 5000, nota: 'una venta de nadie', volverEl: MANANA  },
       }),
       ctxDe(k.id),
     ),
@@ -1417,7 +1499,7 @@ test('el modo AUTOMÁTICO manda la etiqueta al CRM y NO escribe ninguna tarea', 
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'seguimiento', modo: 'automatico', detalle: 'Muy interesado' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'seguimiento', modo: 'automatico', detalle: 'Muy interesado'  },
     }),
     ctxDe(k.id),
   );
@@ -1475,7 +1557,7 @@ test('el modo MANUAL escribe la tarea y le dice al CRM que NO persiga', async ()
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'seguimiento', modo: 'manual', volverEl: MANANA, detalle: 'Dudando' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'seguimiento', modo: 'manual', volverEl: MANANA, detalle: 'Dudando'  },
     }),
     ctxDe(k.id),
   );
@@ -1571,7 +1653,7 @@ test('una salida SIN modos que manda uno también se rechaza', async () => {
   const r = await avanzar(
     pedirComo(`/api/contactos/${k.id}/avanzar`, esc.token, {
       metodo: 'POST',
-      cuerpo: { salida: 'no_show', modo: 'automatico' },
+      cuerpo: { claveDeIntento: randomUUID(), salida: 'no_show', modo: 'automatico'  },
     }),
     ctxDe(k.id),
   );
