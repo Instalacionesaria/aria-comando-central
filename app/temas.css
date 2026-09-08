@@ -758,3 +758,252 @@
 :root[data-tema] .cc-media {
   background-color: var(--fondo-medio);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LA ESTÉTICA NUEVA DEL CLOSER — LOS TOKENS, CON ALCANCE `#v-closer`
+
+   Se está trasladando el sistema visual descrito en `docs/migracion/front/01…14` del proyecto
+   hermano, y se empieza por el Closer para verlo antes de extenderlo. Por eso estos dos bloques
+   NO redefinen `:root`: redefinen los MISMOS tokens que ya usan todas las reglas del Closer, pero
+   solo dentro de `#v-closer`. Así el resto de la aplicación no se mueve un píxel, y el Closer
+   entero cambia de paleta sin reescribir una regla — que es exactamente para lo que este archivo
+   convirtió 402 colores literales en once tokens.
+
+   Van DESPUÉS de los dos bloques `:root[data-tema]` a propósito: `pruebas/codigo/104-temas` y `106`
+   leen el PRIMER bloque de cada tema —«el conjunto de tokens es idéntico», «las siete etapas no
+   comparten color»—, así que estos no los alcanzan. Se cumple la misma disciplina igual: los dos
+   bloques declaran el mismo conjunto, y cada `--etapa-x` va con su `--c-etapa-x` del mismo tono.
+
+   ── LO QUE CAMBIA DE NATURALEZA, EN UNA LÍNEA CADA COSA ────────────────────
+   · El acento deja de ser cian: es el violeta de la marca, `262.1 83.3% 57.8%` = #7c3aed. Como
+     RELLENO es el mismo en los dos temas (`--accent-hondo`); como TEXTO sobre negro sube a #a78bfa,
+     porque #7c3aed sobre #09090b da 3,2:1 y no se lee.
+   · El oscuro es una escala de elevación (lienzo → tarjeta → interactivo), no una inversión.
+   · El lienzo claro es un hueso (#fcfcfd), no blanco: sobre blanco puro una tarjeta translúcida
+     deja de leerse como tarjeta.
+   · Sin sombras. El `01` § 2 lo prescribe para el oscuro y acá vale para los dos, porque este
+     proyecto ya decidió quitar toda sombra (ver `107-sin-sombras`). La separación la dan la escala
+     y las líneas.
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+:root[data-tema='oscuro'] #v-closer {
+  /* Nivel 0 · el lienzo (240 10% 4%). */
+  --bg:            #09090b;
+  --bg-sunk:       #09090b;
+  --bg-hondo:      #09090b;
+  --bg-fondo:      #09090b;
+  /* Nivel 1 · tarjetas, paneles, emergentes. El `--card` del sistema es `240 5% 15%` y se dibuja
+     al 50 % sobre el lienzo; acá el token es ese resultado, ya compuesto. */
+  --bg-panel:      #18181b;
+  --bg-cajon:      #18181b;
+  --bg-float:      #242428;
+  --bg-flota:      #242428;
+  /* Nivel 2 · lo interactivo DENTRO de una tarjeta (240 3.7% 22%). */
+  --bg-raise:      #27272a;
+
+  --c-velo:        0 0 0;
+  --c-base:        9 9 11;
+  --c-hondo:       9 9 11;
+  --c-hundido:     9 9 11;
+  --c-panel:       36 36 40;
+  --c-alto:        36 36 40;
+
+  /* La capa tenue por encima del fondo: sobre negro, aclara. */
+  --c-nube:        228 228 236;
+  --line:          rgb(228 228 236 / 0.10);
+  --line-strong:   rgb(228 228 236 / 0.20);
+  --c-brillo:      255 255 255;
+
+  --txt:           #fafafa;
+  --txt-dim:       #b1b1b8;
+  --txt-faint:     #8b8b94;
+
+  /* El violeta. Texto legible sobre negro arriba; el de la marca, para rellenos, abajo. */
+  --c-acento:      167 139 250;
+  --accent:        #a78bfa;
+  --accent-dim:    rgb(167 139 250 / 0.14);
+  --accent-alto:   #a78bfa;
+  --accent-hondo:  #7c3aed;
+  --sobre-acento:  #f8fafc;
+  --c-sobre-acento: 248 250 252;
+
+  /* Las señales, en su tono 400: son texto sobre oscuro. */
+  --c-crit:        251 113 133;
+  --crit:          #fb7185;
+  --c-ok:          52 211 153;
+  --ok:            #34d399;
+  --c-warn:        251 191 36;
+  --warn:          #fbbf24;
+  --c-dev:         196 181 253;
+  --dev:           #c4b5fd;
+  /* `--exec` pasa a ser el dorado: es lo que pinta el anillo de comisión y la tasa del cockpit,
+     que son dinero. */
+  --c-exec:        212 175 55;
+  --exec:          #d4af37;
+  --exec-dim:      rgb(212 175 55 / 0.14);
+
+  --sobre-lleno:   #ffffff;
+  --sobre-ok:      #052e16;
+  --sobre-dev:     #2e1065;
+
+  /* Las siete etapas del closer. Un tono 400 cada una, siete matices distintos (el `03` § 2 da
+     ámbar a seguimiento Y a cierre; acá cierre toma el índigo de su píldora, porque siete columnas
+     con dos iguales son seis). */
+  --etapa-agendado:        #38bdf8;
+  --c-etapa-agendado:      56 189 248;
+  --etapa-seguimiento:     #fbbf24;
+  --c-etapa-seguimiento:   251 191 36;
+  --etapa-cierre:          #818cf8;
+  --c-etapa-cierre:        129 140 248;
+  --etapa-ganado:          #34d399;
+  --c-etapa-ganado:        52 211 153;
+  --etapa-no-show:         #fb923c;
+  --c-etapa-no-show:       251 146 60;
+  --etapa-nurture:         #a78bfa;
+  --c-etapa-nurture:       167 139 250;
+  --etapa-descalificado:   #fb7185;
+  --c-etapa-descalificado: 251 113 133;
+  --cola-hecho:            #a1a1aa;
+  --c-cola-hecho:          161 161 170;
+  --carril-del-arco:       rgb(255 255 255 / 0.06);
+
+  /* ── El bloque negro y dorado de Inicio (`07`) ──────────────────────────── */
+  --negro-hero:    #0a0a0a;
+  --c-blanco:      255 255 255;
+  --oro:           #d4af37;
+  --c-oro:         212 175 55;
+  --oro-claro:     #f5d78d;
+  --oro-hondo:     #c99738;
+  /* Las señales SOBRE NEGRO, iguales en los dos temas: el bloque es negro también en claro, y los
+     tokens del tema claro son oscuros — encima del negro no se leerían. */
+  --en-negro-ok:        #34d399;
+  --c-en-negro-ok:      52 211 153;
+  --en-negro-warn:      #fbbf24;
+  --c-en-negro-warn:    251 191 36;
+  --en-negro-acento:    #a78bfa;
+  --c-en-negro-acento:  167 139 250;
+
+  /* El gris de los seis iconos de estado (`03` § 5): literal e igual en los dos temas, porque con
+     `--txt-dim` los apagados se veían encendidos en oscuro. */
+  --icono:         #6b6980;
+  --c-icono:       107 105 128;
+  /* El verde de RELLENO del botón «Unirse». `--ok` es el verde de texto. */
+  --ok-lleno:      #22c55e;
+  --sobre-ok-lleno: #ffffff;
+
+  /* ── El chat imita a WhatsApp, y usa sus colores (`12` § 4) ─────────────── */
+  --chat-fondo:       #0b141a;
+  --chat-propia:      #005c4b;
+  --chat-ajena:       #202c33;
+  --chat-texto:       #e9edef;
+  --chat-meta:        #8696a0;
+  --chat-compositor:  #202c33;
+  --chat-campo:       #2a3942;
+  --chat-dia:         #111b21;
+  /* El panel de la ficha: nivel 1 en oscuro, un gris claro en claro. */
+  --ficha-fondo:   #18181b;
+}
+
+:root[data-tema='claro'] #v-closer {
+  /* El lienzo es un hueso, y las tarjetas blancas encima. */
+  --bg:            #fcfcfd;
+  --bg-sunk:       #f4f4f5;
+  --bg-hondo:      #f4f4f5;
+  --bg-fondo:      #fcfcfd;
+  --bg-panel:      #ffffff;
+  --bg-cajon:      #ffffff;
+  --bg-float:      #ffffff;
+  --bg-flota:      #ffffff;
+  /* `secondary`/`muted`/`accent` comparten valor en claro (240 4.8% 95.9%), y son tres roles. */
+  --bg-raise:      #f4f4f5;
+
+  --c-velo:        0 0 0;
+  --c-base:        252 252 253;
+  --c-hondo:       244 244 245;
+  --c-hundido:     244 244 245;
+  --c-panel:       255 255 255;
+  --c-alto:        255 255 255;
+
+  /* Sobre blanco, separar es OSCURECER. Y sin sombra, la línea sostiene sola cada tarjeta: por
+     eso va al 10 % y no al 40 % de un gris claro, que es lo que el sistema original usa con sombra. */
+  --c-nube:        24 24 27;
+  --line:          rgb(24 24 27 / 0.10);
+  --line-strong:   rgb(24 24 27 / 0.18);
+  --c-brillo:      24 24 27;
+
+  --txt:           #09090b;
+  --txt-dim:       #52525b;
+  --txt-faint:     #71717a;
+
+  /* El violeta de la marca sirve como texto sobre blanco (6,2:1), así que es uno solo. */
+  --c-acento:      124 58 237;
+  --accent:        #7c3aed;
+  --accent-dim:    rgb(124 58 237 / 0.08);
+  --accent-alto:   #8b5cf6;
+  --accent-hondo:  #7c3aed;
+  --sobre-acento:  #f8fafc;
+  --c-sobre-acento: 248 250 252;
+
+  /* Las señales en su tono 700: texto sobre blanco. */
+  --c-crit:        190 18 60;
+  --crit:          #be123c;
+  --c-ok:          4 120 87;
+  --ok:            #047857;
+  --c-warn:        180 83 9;
+  --warn:          #b45309;
+  --c-dev:         109 40 217;
+  --dev:           #6d28d9;
+  --c-exec:        146 112 12;
+  --exec:          #92700c;
+  --exec-dim:      rgb(146 112 12 / 0.12);
+
+  --sobre-lleno:   #ffffff;
+  --sobre-ok:      #064e3b;
+  --sobre-dev:     #4c1d95;
+
+  --etapa-agendado:        #0369a1;
+  --c-etapa-agendado:      3 105 161;
+  --etapa-seguimiento:     #b45309;
+  --c-etapa-seguimiento:   180 83 9;
+  --etapa-cierre:          #4338ca;
+  --c-etapa-cierre:        67 56 202;
+  --etapa-ganado:          #047857;
+  --c-etapa-ganado:        4 120 87;
+  --etapa-no-show:         #c2410c;
+  --c-etapa-no-show:       194 65 12;
+  --etapa-nurture:         #6d28d9;
+  --c-etapa-nurture:       109 40 217;
+  --etapa-descalificado:   #be123c;
+  --c-etapa-descalificado: 190 18 60;
+  --cola-hecho:            #71717a;
+  --c-cola-hecho:          113 113 122;
+  --carril-del-arco:       rgb(255 255 255 / 0.06);
+
+  --negro-hero:    #0a0a0a;
+  --c-blanco:      255 255 255;
+  --oro:           #d4af37;
+  --c-oro:         212 175 55;
+  --oro-claro:     #f5d78d;
+  --oro-hondo:     #c99738;
+  --en-negro-ok:        #34d399;
+  --c-en-negro-ok:      52 211 153;
+  --en-negro-warn:      #fbbf24;
+  --c-en-negro-warn:    251 191 36;
+  --en-negro-acento:    #a78bfa;
+  --c-en-negro-acento:  167 139 250;
+
+  --icono:         #6b6980;
+  --c-icono:       107 105 128;
+  --ok-lleno:      #22c55e;
+  --sobre-ok-lleno: #ffffff;
+
+  --chat-fondo:       #efeae2;
+  --chat-propia:      #d9fdd3;
+  --chat-ajena:       #ffffff;
+  --chat-texto:       #111b21;
+  --chat-meta:        #54656f;
+  --chat-compositor:  #f0f2f5;
+  --chat-campo:       #ffffff;
+  --chat-dia:         #ffffff;
+  --ficha-fondo:   #f5f5f7;
+}

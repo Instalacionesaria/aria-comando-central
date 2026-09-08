@@ -1,0 +1,952 @@
+/* La estética nueva del Closer: la FORMA. Los colores viven en `temas.css`, con alcance `#v-closer`.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * QUÉ ES ESTO Y POR QUÉ ES UNA HOJA APARTE
+ *
+ * Se traslada el sistema visual de `docs/migracion/front/01…14` del proyecto hermano, y se
+ * empieza por el Closer para verlo en local antes de extenderlo. Todo lo de acá cuelga de
+ * `#v-closer`, así que:
+ *
+ *   · el resto de la aplicación —barra lateral, Setter, Ajustes— no se mueve. Es la forma de poder
+ *     comparar las dos estéticas en la misma pantalla y decidir hasta dónde extenderla;
+ *   · gana por especificidad (un `#id` delante) y no por `!important` ni por orden, así que no
+ *     depende de en qué lugar de `globals.css` se importe;
+ *   · `aios.css` y `closer.css` no se tocan. La primera tiene que seguir siendo comparable contra
+ *     el prototipo; la segunda tiene reglas que las pruebas leen por su forma exacta (`106`).
+ *
+ * ── LO QUE SE TRASLADA, Y LO QUE SE DECIDIÓ DISTINTO ────────────────────────
+ *
+ * Se copian las «diez cadenas exactas» del `14` § 2 traducidas a este CSS: tarjeta grande de 2 rem
+ * translúcida, sección opaca, fila `24/16`, rótulo de 11 px en mayúsculas con `0.15em`, cifra
+ * `font-weight: 300`, píldora de 9 px, contador sólido, cápsula de pestañas con la activa en violeta
+ * sólido, acordeón de rejilla. Y las doce reglas del `14` § 1 que esta aplicación YA cumplía siguen
+ * cumplidas —nada de esto toca qué se dibuja, solo cómo—.
+ *
+ * Tres cosas se apartan del documento a propósito, y conviene saberlo antes de buscarlas:
+ *
+ *   1 · **Sin sombras.** El sistema original flota sus tarjetas con `0 8px 30px rgb(0 0 0 / .04)`.
+ *       Este proyecto decidió quitar TODA sombra en los dos temas y `107-sin-sombras` lo vigila.
+ *       Se respeta esa decisión: la separación la dan la escala de elevación y las líneas, que es
+ *       lo que el propio `01` § 2 prescribe para el oscuro. Volver a la sombra es una línea y una
+ *       prueba, si al verlo hace falta.
+ *   2 · **El titular de dinero no brilla.** El `07` § 4 le pone un `drop-shadow` dorado de 24 px.
+ *       Es un efecto de profundidad, y se pidió que no hubiera. Queda el degradado recortado al
+ *       texto, que es lo que hace el número.
+ *   3 · **Cierre en curso es índigo, no ámbar.** El `03` § 2 le da ámbar a seguimiento y a cierre;
+ *       `106` exige siete colores distintos, así que cierre toma el índigo de su propia píldora.
+ *
+ * ── LA FUENTE ─────────────────────────────────────────────────────────────────
+ *
+ * El sistema usa la del sistema operativo y ninguna web (`02` § 1). Acá se declara sobre
+ * `#v-closer` y se hereda hacia abajo; `next/font` sigue cargando Inter para el resto de la
+ * aplicación, y sacarlo es decisión de cuando esto se extienda.
+ * ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 0 · La base ──────────────────────────────────────────────────────────── */
+
+#v-closer {
+  --radio:         12px;
+  --radio-tarjeta: 2rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0;
+  color: var(--txt);
+}
+
+/* ── EL LIENZO ES PLANO, Y LA VISTA LO PINTA ────────────────────────────────
+   El armazón heredado dibuja detrás de TODO una cuadrícula de 44 px y un viñeteado radial
+   (`body::before` / `body::after` en `aios.css`). En oscuro no se nota; en claro se ve como un
+   halo gris alrededor de cada tarjeta, y el sistema que se traslada pide un lienzo liso — un hueso
+   en claro, el nivel 0 en oscuro (`05` § 3). Como el armazón no se toca todavía, la vista pinta
+   su propio lienzo y se estira sobre el relleno de `.main` (14 / 18 / 8 px) para que no quede una
+   franja del fondo viejo asomando por los bordes. El día que el armazón se migre, esto sobra. */
+#v-closer.view {
+  margin: -14px -18px -8px;
+  padding: 14px 18px 8px;
+  height: calc(100% + 22px);
+  background: var(--bg);
+}
+
+/* El lienzo del Closer: `p-8 max-w-[1600px] mx-auto space-y-8` (`05` § 3). Y la barra de
+   desplazamiento fina del `01` § 5, que en el sistema se aplica a mano donde hace falta. */
+#v-closer .view-scroll {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 32px 48px;
+  gap: 32px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+#v-closer .view-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+#v-closer .view-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 9999px; }
+#v-closer .view-scroll::-webkit-scrollbar-track { background: transparent; }
+
+#v-closer .cl-page { gap: 24px; }
+
+/* ── Cómo entra cada pestaña (`06` § 6): aparece y sube 16 px en medio segundo. Es
+   deliberadamente lenta —media el movimiento más grande de la pantalla— y la cabecera NO se
+   anima: solo cambia el contenido. */
+@keyframes cl-entrar {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+#v-closer .cl-page > * { animation: cl-entrar .5s ease both; }
+
+/* ── 1 · La cabecera y la cápsula de pestañas (`06`) ───────────────────────── */
+
+/* La cabecera se separa del contenido con UNA LÍNEA al 30 %, no con un fondo. */
+#v-closer .cre-head {
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0;
+}
+/* Título a la izquierda, pestañas a la derecha; en pantalla angosta, una debajo de la otra. */
+#v-closer .ch-l.stack {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  #v-closer .ch-l.stack { flex-direction: column; align-items: flex-start; }
+}
+
+/* El rótulo superior y el título. El HTML trae `<h2>Closer</h2>` y debajo la descripción de la
+   pestaña; el sistema pone el ROL arriba, chico y violeta, y el NOMBRE de la pantalla abajo, grande.
+   Se invierte el peso visual sin tocar el marcado: el `h2` es el rótulo, la descripción el título. */
+#v-closer .ch-title {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+#v-closer .cre-head h2 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: .8;
+  margin: 0;
+}
+#v-closer .cre-head .cre-desc {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.15;
+  color: var(--txt);
+}
+
+/* La cápsula: opaca, redonda, con `p-1.5` de aire alrededor de la activa. Sin la sombra propia
+   que el sistema le da —ver el encabezado—. */
+#v-closer .cl-sub {
+  gap: 6px;
+  padding: 6px;
+  border-radius: 9999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  align-self: center;
+}
+#v-closer .cl-sub button {
+  height: 36px;
+  padding: 0 20px;
+  gap: 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  transition: background .15s ease, color .15s ease;
+}
+#v-closer .cl-sub button svg { width: 16px; height: 16px; opacity: 1; }
+#v-closer .cl-sub button:hover { color: var(--txt); background: rgb(var(--c-nube) / .06); }
+/* La activa es el ÚNICO violeta sólido del armazón. */
+#v-closer .cl-sub button.on {
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+  font-weight: 500;
+  box-shadow: none;
+}
+#v-closer .cl-sub button.on svg { color: inherit; }
+/* El contador cambia de paleta según el estado de la pestaña: sobre violeta sólido, un violeta al
+   10 % sería invisible, así que ahí usa el color del TEXTO al 20 %. */
+#v-closer .cl-sub .cnt {
+  margin-left: 2px;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgb(var(--c-acento) / .10);
+  color: var(--accent);
+}
+#v-closer .cl-sub button.on .cnt {
+  background: rgb(var(--c-sobre-acento) / .20);
+  color: inherit;
+}
+
+/* ── 2 · La tarjeta grande y la sección opaca (`14` § 2) ───────────────────── */
+
+/* Tarjeta translúcida: `bg-card/50 backdrop-blur-sm border-border/40 rounded-[2rem] p-8`. Sin
+   `backdrop-filter` la tarjeta se ve como un rectángulo semitransparente; van siempre juntos. */
+#v-closer .md-c,
+#v-closer .card,
+#v-closer .aj-tarjeta {
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: none;
+}
+#v-closer .md-top { gap: 24px; }
+#v-closer .md-c {
+  padding: 32px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+/* El rótulo de tarjeta y la cifra grande: la combinación de firma del sistema (`02` § 3). Una
+   cifra de 48 px liviana junto a un rótulo de 11 px semibold en mayúsculas con `0.15em`. */
+#v-closer .md-k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+#v-closer .md-v {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -.025em;
+  line-height: 1;
+  margin-top: 16px;
+}
+#v-closer .md-s {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  max-width: 45%;
+}
+#v-closer .md-chip {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-left: 0;
+  border: 1px solid transparent;
+}
+#v-closer .md-chip.o { background: rgb(var(--c-ok) / .10); color: var(--ok); border-color: rgb(var(--c-ok) / .20); }
+#v-closer .md-chip.u { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .20); }
+
+/* La sección OPACA (`08` § 4): es el trabajo, y el trabajo no es translúcido. */
+#v-closer .md-sec {
+  border-radius: var(--radio-tarjeta);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  box-shadow: none;
+  overflow: hidden;
+}
+/* El canto de color de 3 px que `closer.css` le pone a cada etapa y cola se apaga acá: en el
+   sistema el color de la sección lo dice su ENCABEZADO teñido, y un canto sobre un radio de 2 rem
+   se ve como un defecto. La regla de `closer.css` queda como está —`106` la lee por su forma—. */
+#v-closer .md-sec[data-etapa],
+#v-closer .md-sec[data-cola] { border-left: 1px solid var(--line); }
+
+/* El encabezado de sección: `px-6 py-4`, título de 13 px en mayúsculas, y —cuando tiene color—
+   el fondo al 10 %, el título en el tono de la cola y el contador SÓLIDO con texto blanco. */
+#v-closer .md-h {
+  padding: 16px 24px;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+  color: var(--txt);
+}
+#v-closer .md-sec[data-etapa] .md-h,
+#v-closer .md-sec[data-cola] .md-h {
+  background: rgb(var(--c-etapa) / .10);
+  color: var(--etapa);
+}
+#v-closer .md-h .b {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgb(var(--c-nube) / .10);
+  color: var(--txt-dim);
+}
+#v-closer .md-sec[data-etapa] .md-h .b,
+#v-closer .md-sec[data-cola] .md-h .b {
+  background: var(--etapa);
+  color: var(--sobre-lleno);
+}
+#v-closer .md-sec[data-etapa] .md-h::before,
+#v-closer .md-sec[data-cola] .md-h::before { width: 8px; height: 8px; }
+#v-closer .sec-plegar { width: 28px; height: 28px; border-radius: 9999px; }
+
+/* El estado vacío de una sección: solo texto, centrado. Un recuadro punteado dentro de una
+   tarjeta de 2 rem es un marco dentro de un marco. */
+#v-closer .dw-empty,
+#v-closer .md-sec > .pipe-vacia {
+  margin: 0;
+  padding: 32px 24px;
+  border: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+
+/* ── 3 · La fila (`09`) ────────────────────────────────────────────────────── */
+
+/* `px-6 py-4` es la medida más importante del sistema. La primera columna es el avatar del
+   score: 32 px, círculo. */
+#v-closer .md-r {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  transition: background .15s ease, opacity .15s ease;
+}
+#v-closer .md-r:hover { background: rgb(var(--c-nube) / .04); }
+#v-closer .md-time {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt-dim);
+  background: rgb(var(--c-nube) / .08);
+}
+/* En la agenda de hoy la primera columna es una HORA, no un score: no cabe en un círculo. */
+#v-closer .md-sec[data-cola='agenda'] .md-r { grid-template-columns: 44px minmax(0, 1fr) auto; }
+#v-closer .md-sec[data-cola='agenda'] .md-time {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--etapa-agendado);
+  font-variant-numeric: tabular-nums;
+}
+#v-closer .md-nm {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* El microtexto se recorta antes de empujar los iconos: sin el tope, un texto largo desalinea la
+   fila de iconos con las demás filas (`09` § 2.4). Solo el de la fila, no los bloques de abajo. */
+#v-closer .md-r > div > .md-sub {
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--txt-dim);
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* La completada se atenúa y conserva todo; solo el nombre se tacha, con su propio color de raya.
+   Y todo lo atenuado recupera opacidad al pasar el mouse (`02` § 8). */
+#v-closer .md-r.md-done { opacity: .75; }
+#v-closer .md-r.md-done:hover { opacity: 1; }
+#v-closer .md-done .md-nm {
+  text-decoration: line-through;
+  text-decoration-color: rgb(var(--c-nube) / .4);
+  color: var(--txt-dim);
+}
+#v-closer .md-quote { margin-left: calc(24px + 32px + 16px); }
+
+/* La píldora: 9 px, negrita, mayúsculas, círculo completo, con borde. Tono 50 sólido en claro y
+   500 al 20 % en oscuro es lo que hace el par `rgb(var(--c-…) / .10)` + texto en el token. */
+#v-closer .tagx {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+#v-closer .tagx.nu   { background: rgb(var(--c-nube) / .06); color: var(--txt-dim); border-color: var(--line); }
+#v-closer .tagx.ag   { background: rgb(var(--c-acento) / .10); color: var(--accent); border-color: rgb(var(--c-acento) / .25); }
+#v-closer .tagx.seg  { background: rgb(var(--c-warn) / .10); color: var(--warn); border-color: rgb(var(--c-warn) / .25); }
+#v-closer .tagx.venc,
+#v-closer .tagx.no   { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .25); }
+
+/* Los seis iconos usan un gris LITERAL y no `--txt` (`03` § 5). El componente pinta el encendido
+   con `color: var(--txt)` en línea, y un estilo en línea no se puede pisar desde una hoja — pero sí
+   se puede redefinir el token que lee, solo dentro de este bloque. */
+#v-closer .md-acts {
+  --txt: var(--icono);
+  gap: 6px;
+  font-size: 14px;
+  color: var(--icono);
+}
+#v-closer .md-acts i { min-width: 14px; text-align: center; }
+/* «Unirse»: verde sólido, reservado para la próxima llamada con sala (`08` § 3). */
+#v-closer .md-join {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--ok-lleno);
+  color: var(--sobre-ok-lleno);
+}
+
+/* ── 4 · Inicio: el bloque negro y dorado (`07`) ───────────────────────────── */
+
+/* Es el único bloque que no sigue los tokens del tema, en NINGUNO de los dos: es negro en claro
+   también. Para que todo lo que vive adentro —baldosas, anillo, notas— se lea sobre negro sin
+   reescribir sus reglas, el bloque redefine los tokens que esas reglas consumen. Es un tema oscuro
+   de un solo elemento. */
+#v-closer .ck-hero {
+  --txt:          rgb(var(--c-blanco) / .92);
+  --txt-dim:      rgb(var(--c-blanco) / .60);
+  --txt-faint:    rgb(var(--c-blanco) / .40);
+  --line:         rgb(var(--c-blanco) / .10);
+  --line-strong:  rgb(var(--c-blanco) / .18);
+  --c-nube:       var(--c-blanco);
+  --bg-sunk:      rgb(var(--c-blanco) / .05);
+  --bg-panel:     rgb(var(--c-blanco) / .05);
+  --bg-raise:     rgb(var(--c-blanco) / .08);
+  --bg-float:     rgb(var(--c-blanco) / .08);
+  --ok:           var(--en-negro-ok);
+  --c-ok:         var(--c-en-negro-ok);
+  --warn:         var(--en-negro-warn);
+  --c-warn:       var(--c-en-negro-warn);
+  --accent:       var(--en-negro-acento);
+  --c-acento:     var(--c-en-negro-acento);
+  --exec:         var(--oro);
+  --c-exec:       var(--c-oro);
+  --carril-del-arco: rgb(var(--c-blanco) / .06);
+
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  padding: 32px;
+  background: var(--negro-hero);
+  border: 1px solid rgb(var(--c-blanco) / .05);
+  box-shadow: none;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 32px;
+  align-items: center;
+  color: var(--txt);
+}
+@media (min-width: 640px) {
+  #v-closer .ck-hero { padding: 48px; }
+}
+@media (max-width: 760px) {
+  #v-closer .ck-hero { grid-template-columns: minmax(0, 1fr); }
+}
+/* El resplandor dorado: un círculo de 800 px al 5 %, difuminado 100 px, latiendo cada 4 s. Se
+   promueve a su propia capa para que el difuminado se rasterice una vez y el pulso corra en el
+   compositor. Y respeta a quien pidió menos movimiento. */
+#v-closer .ck-hero::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 800px;
+  height: 800px;
+  border-radius: 50%;
+  background: rgb(var(--c-oro) / .05);
+  filter: blur(100px);
+  transform: translate(-50%, -50%) translateZ(0);
+  will-change: opacity;
+  pointer-events: none;
+  animation: ck-pulso 4s ease-in-out infinite;
+}
+@keyframes ck-pulso {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .5; }
+}
+#v-closer .ck-hero > * { position: relative; z-index: 1; }
+
+/* El chip del período: «cristal sobre negro» — borde blanco al 10 %, fondo al 5 %, desenfoque. */
+#v-closer .ck-tag {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgb(var(--c-blanco) / .10);
+  background: rgb(var(--c-blanco) / .05);
+  backdrop-filter: blur(12px);
+  color: var(--oro);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+/* El titular de dinero: 90 px livianos y apretados, con el degradado blanco → dorado claro →
+   dorado oscuro recortado al texto. Sin el brillo exterior del documento — ver el encabezado. */
+#v-closer .ck-big {
+  margin-top: 0;
+  font-size: clamp(60px, 7vw, 90px);
+  font-weight: 300;
+  letter-spacing: -.05em;
+  line-height: .9;
+  background: linear-gradient(to bottom right, rgb(var(--c-blanco)), var(--oro-claro), var(--oro-hondo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--oro);
+}
+#v-closer .ck-big span {
+  display: block;
+  margin: 16px 0 0;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0;
+  color: rgb(var(--c-blanco) / .6);
+  -webkit-text-fill-color: rgb(var(--c-blanco) / .6);
+  background: none;
+}
+#v-closer .ck-note {
+  margin-top: 24px;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 300;
+  color: rgb(var(--c-blanco) / .6);
+}
+#v-closer .ck-note em { color: inherit; }
+/* El punto que pulsa significa «esto está vivo». */
+#v-closer .ck-note .pt {
+  width: 6px;
+  height: 6px;
+  background: rgb(var(--c-en-negro-ok) / .8);
+  animation: ck-pulso 2s ease-in-out infinite;
+}
+/* La rejilla de cuatro cifras: rótulo 10 px al 40 %, valor 24 px liviano, base 10 px al 30 %.
+   La jerarquía dentro del bloque es opacidad del blanco: 90 / 60 / 40 / 30. */
+#v-closer .ck-row {
+  margin-top: 40px;
+  padding-top: 24px;
+  gap: 16px;
+  border-top: 1px solid rgb(var(--c-blanco) / .10);
+}
+#v-closer .ck-i { padding: 0; border-right: 0; }
+#v-closer .ck-i .k {
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgb(var(--c-blanco) / .4);
+}
+#v-closer .ck-i .v {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: -.02em;
+}
+#v-closer .ck-i .s { margin-top: 4px; font-size: 10px; color: rgb(var(--c-blanco) / .3); }
+@media (max-width: 640px) {
+  #v-closer .ck-row { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
+}
+
+/* El anillo de comisión: trazo fino sobre un carril blanco al 5 %. La caja pierde su borde y su
+   degradado: el SVG dibuja el aro. */
+#v-closer .ring {
+  width: 192px;
+  height: 192px;
+  border: 0;
+  background: none;
+}
+#v-closer .ring b { font-size: 30px; font-weight: 300; letter-spacing: -.025em; color: var(--txt); }
+#v-closer .ring span {
+  margin-top: 4px;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgb(var(--c-blanco) / .4);
+}
+#v-closer .ck-rotulo { font-size: 9px; letter-spacing: .1em; color: rgb(var(--c-blanco) / .4); }
+/* La tarjeta de la meta: cristal sobre negro, `rounded-2xl p-4`. */
+#v-closer .ck-cta {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgb(var(--c-blanco) / .10);
+  background: rgb(var(--c-blanco) / .05);
+  backdrop-filter: blur(4px);
+  font-size: 12px;
+  font-weight: 300;
+  color: rgb(var(--c-blanco) / .7);
+}
+#v-closer .ck-cta b { color: var(--oro); font-weight: 500; }
+#v-closer .ck-hero .fd-btn.sec {
+  background: rgb(var(--c-blanco) / .05);
+  border-color: rgb(var(--c-blanco) / .10);
+  color: rgb(var(--c-blanco) / .8);
+}
+#v-closer .ck-hero .fd-aviso { background: rgb(var(--c-blanco) / .04); }
+
+/* El selector «ver como»: una cápsula. */
+#v-closer .ck-vercomo label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+#v-closer select {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--txt);
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+}
+#v-closer .aj-tarjeta { padding: 24px; }
+#v-closer .ck-closer {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgb(var(--c-nube) / .03);
+  border: 1px solid var(--line);
+}
+
+/* ── 5 · Agenda (`11`) ─────────────────────────────────────────────────────── */
+
+/* Dos columnas con la separación más grande de la aplicación (40 px), alineadas ARRIBA: sin
+   `items-start` el calendario se estira a la altura del día. */
+#v-closer .ag { gap: 40px; }
+#v-closer .ag-lado { gap: 24px; }
+#v-closer .ag-mes,
+#v-closer .ag-proximos { padding: 24px; }
+#v-closer .ag-dia { padding: 32px; }
+#v-closer .ag-mes-t { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+#v-closer .ag-mes-nav button { width: 28px; height: 28px; border-radius: 9999px; }
+#v-closer .ag-grilla { gap: 4px; }
+#v-closer .ag-sem { font-size: 10px; font-weight: 700; letter-spacing: 0; height: 24px; }
+#v-closer .ag-hueco { height: 32px; }
+/* El día: círculo de 32 px. Seleccionado y hoy son estados DISTINTOS y se ven distintos: el
+   seleccionado es un círculo violeta sólido; hoy es solo un anillo de 1 px al 40 %. Si coinciden,
+   gana el seleccionado — y el punto de citas se esconde sobre el violeta sólido. */
+#v-closer .ag-celda {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border-radius: 50%;
+  font-size: 12px;
+  border: 1px solid transparent;
+}
+#v-closer .ag-celda:hover:not(:disabled) { background: rgb(var(--c-nube) / .08); }
+#v-closer .ag-celda.hoy,
+#v-closer .ag-celda.hoy:hover:not(:disabled) {
+  background: none;
+  color: var(--txt);
+  font-weight: 400;
+  border-color: rgb(var(--c-acento) / .4);
+}
+#v-closer .ag-celda.abierta,
+#v-closer .ag-celda.abierta:not(.hoy),
+#v-closer .ag-celda.abierta:hover:not(:disabled) {
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+  font-weight: 600;
+  border-color: transparent;
+}
+#v-closer .ag-punto { width: 4px; height: 4px; bottom: 4px; background: var(--etapa-agendado); }
+#v-closer .ag-celda.abierta .ag-punto,
+#v-closer .ag-celda.hoy .ag-punto { display: none; }
+#v-closer .ag-celda.hoy .ag-punto { display: block; background: var(--etapa-agendado); }
+#v-closer .ag-leyenda { font-size: 11px; }
+
+#v-closer .ag-proximos-t { font-size: 12px; letter-spacing: .1em; margin-bottom: 16px; }
+/* El inactivo lleva borde transparente, no ausencia de borde: si no, el elemento salta 1 px al
+   activarse. */
+#v-closer .ag-prox {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+#v-closer .ag-prox:hover:not(:disabled) { background: rgb(var(--c-nube) / .05); }
+#v-closer .ag-prox.on {
+  background: rgb(var(--c-acento) / .05);
+  border-color: rgb(var(--c-acento) / .10);
+  color: var(--accent);
+  font-weight: 500;
+}
+#v-closer .ag-prox-n { font-size: 14px; font-weight: 500; }
+#v-closer .ag-prox-c {
+  height: 24px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgb(var(--c-nube) / .08);
+  color: var(--txt-dim);
+}
+#v-closer .ag-prox-c.hay { background: rgb(var(--c-acento) / .10); color: var(--accent); }
+
+#v-closer .ag-dia-h { margin-bottom: 24px; align-items: flex-end; }
+#v-closer .ag-dia-t { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+#v-closer .ag-dia-s { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+#v-closer .ag-linea { gap: 16px 24px; }
+#v-closer .ag-hora { font-size: 14px; font-weight: 700; padding-top: 16px; }
+/* Una cita vencida es ATENCIÓN, no urgencia: ámbar, no rojo (`03` § 1). */
+#v-closer .ag-hora.pasada { color: var(--warn); }
+/* El nodo de la sala: 32 px, círculo, celeste, con un anillo del color del lienzo. */
+#v-closer .ag-sala {
+  width: 32px;
+  height: 32px;
+  margin-top: 10px;
+  border-radius: 50%;
+  border: 0;
+  background: rgb(var(--c-etapa-agendado) / .15);
+  color: var(--etapa-agendado);
+}
+#v-closer .ag-sala:hover:not(:disabled) { background: rgb(var(--c-etapa-agendado) / .28); }
+/* La tarjeta de la cita es OPACA: está sobre otra translúcida, y dos capas translúcidas apiladas
+   dejan de leerse. Su `hover` cambia el color del borde a celeste — el único lugar. */
+#v-closer .ag-cita {
+  border-radius: 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+}
+#v-closer .ag-cita:hover,
+#v-closer .ag-cita.abierta { border-color: rgb(var(--c-etapa-agendado) / .6); }
+#v-closer .ag-cita-h { padding: 20px; gap: 12px; }
+#v-closer .ag-cita-av { background: rgb(var(--c-acento) / .10); color: var(--accent); }
+#v-closer .ag-cita-n { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+#v-closer .ag-cita-m { font-size: 12px; }
+#v-closer .ag-cita-cuerpo { padding: 0 20px 20px 64px; gap: 12px; }
+#v-closer .ag-mas { border-radius: 9999px; }
+#v-closer .ag-barra { margin-bottom: 8px; }
+
+/* ── 6 · La ficha (`12`) ───────────────────────────────────────────────────── */
+
+/* La capa de fondo: negro al 40 % con 1 px de desenfoque. Aparta la pantalla de atrás, no la
+   oculta: quien abre la ficha tiene que seguir viendo dónde estaba. */
+#v-closer .scrim {
+  background: rgb(var(--c-sombra) / .4);
+  backdrop-filter: blur(1px);
+}
+/* El panel: 540 px, borde solo a la izquierda, sin sombra, entra desde la derecha en 300 ms. */
+#v-closer .cw {
+  width: 540px;
+  background: var(--ficha-fondo);
+  border-left: 1px solid rgb(var(--c-nube) / .20);
+  box-shadow: none;
+  transition: transform .3s cubic-bezier(.32, .72, 0, 1);
+}
+/* La cabecera: cristal sobre el panel, con el desenfoque más fuerte del sistema (24 px) sobre un
+   fondo al 80 %. */
+#v-closer .cw-h {
+  padding: 32px 24px 24px;
+  background: rgb(var(--c-panel) / .8);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--line);
+}
+#v-closer .cw-av {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  font-size: 14px;
+  background: rgb(var(--c-acento) / .10);
+  color: var(--accent);
+}
+#v-closer .cw-n { font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+#v-closer .cw-p { font-size: 12px; margin-top: 2px; }
+#v-closer .cw .cw-x {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: none;
+  border-color: transparent;
+}
+#v-closer .cw .cw-x:hover { background: rgb(var(--c-nube) / .08); border-color: transparent; }
+/* Avanzar es el botón más importante de la aplicación y su tratamiento lo dice: el más alto, el
+   más ancho, el de texto más grande, y del color del texto — invertido entre temas. */
+#v-closer .cw-acciones .cw-go {
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 0;
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--txt);
+  color: var(--bg);
+  transition: opacity .15s ease;
+}
+#v-closer .cw-acciones .cw-go:hover { background: var(--txt); opacity: .9; }
+#v-closer .cw-meta { margin-top: 20px; }
+/* La barra de pestañas de la ficha es el patrón INVERTIDO al del Closer: fondo más oscuro que el
+   panel y la activa más clara. Cinco pestañas de 11 px no aguantan un violeta sólido. El hijo
+   lleva menos radio que el padre: 16 → 12. */
+#v-closer .cw-tabs {
+  margin: 16px 24px 0;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgb(var(--c-nube) / .06);
+}
+#v-closer .cw-tabs button {
+  flex: 1;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+#v-closer .cw-tabs button:hover { background: none; color: var(--txt); }
+#v-closer .cw-tabs button.on {
+  background: var(--bg-panel);
+  color: var(--txt);
+  font-weight: 500;
+}
+#v-closer .cw-body { padding: 16px 24px 20px; }
+
+/* El chat imita a WhatsApp, y la imitación es la función. Sus colores son prestados, no del tema;
+   viven en `temas.css` como `--chat-*`. */
+#v-closer .cw-body:has(> .cw-chat) { background: var(--chat-fondo); padding: 16px; }
+#v-closer .cw-chat .msgw {
+  max-width: 85%;
+  padding: 6px 12px 8px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--chat-texto);
+}
+/* La esquina cuadrada del lado del hablante es lo que convierte un rectángulo en una burbuja. */
+#v-closer .cw-chat .msgw-sale,
+#v-closer .cw-chat .msgw-sale:has(+ .msgw-sale) {
+  background: var(--chat-propia);
+  border-radius: 12px 0 12px 12px;
+}
+#v-closer .cw-chat .msgw-entra,
+#v-closer .cw-chat .msgw-entra:has(+ .msgw-entra) {
+  background: var(--chat-ajena);
+  border-radius: 0 12px 12px 12px;
+}
+#v-closer .cw-chat .msgw.mal {
+  background: rgb(var(--c-crit) / .12);
+  border: 1px solid rgb(var(--c-crit) / .4);
+}
+#v-closer .cw-chat .msgw .t { font-size: 10px; margin-top: 4px; color: var(--chat-meta); }
+#v-closer .cw-chat .cw-day {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--chat-dia);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--chat-meta);
+}
+#v-closer .cw-chat > .cw-day:first-child { margin-top: 0; }
+/* El compositor: `p-2` —el relleno más chico de la aplicación—, `items-end` para que los botones
+   queden abajo cuando el campo crece, y el campo `rounded-3xl`, el más redondo del sistema. */
+#v-closer .cw-input {
+  padding: 8px;
+  gap: 6px;
+  align-items: flex-end;
+  background: var(--chat-compositor);
+  border-top: 0;
+}
+#v-closer .cw-input input {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--chat-campo);
+  color: var(--chat-texto);
+  font-size: 14px;
+}
+#v-closer .cw-input input::placeholder { color: var(--chat-meta); }
+#v-closer .cw-input input:focus { border: 0; outline: 0; }
+#v-closer .cw-mas {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: none;
+  color: var(--chat-meta);
+  font-size: 22px;
+}
+#v-closer .cw-mas:hover:not(:disabled) { background: rgb(var(--c-nube) / .06); color: var(--chat-texto); }
+#v-closer .cw-send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+}
+#v-closer .cw-send:not(:disabled):hover { background: var(--accent-hondo); opacity: .9; }
+#v-closer .menu-pop {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-float);
+  box-shadow: none;
+}
+#v-closer .kv-box,
+#v-closer .pr-box {
+  border-radius: 12px;
+  background: rgb(var(--c-nube) / .04);
+}
+
+/* ── 7 · Avisos, botones y estados (`13`) ──────────────────────────────────── */
+
+#v-closer .fd-aviso {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  background: rgb(var(--c-nube) / .04);
+  border-color: var(--line);
+}
+/* La superficie usa el tinte del token; el texto va en el token mismo. Ámbar es atención sin daño,
+   rosa es urgencia y fallo. */
+#v-closer .fd-aviso.falta { background: rgb(var(--c-warn) / .08); border-color: rgb(var(--c-warn) / .25); }
+#v-closer .fd-aviso.mal   { background: rgb(var(--c-crit) / .06); border-color: rgb(var(--c-crit) / .25); }
+#v-closer .fd-aviso.bien  { background: rgb(var(--c-ok) / .08); border-color: rgb(var(--c-ok) / .25); color: var(--ok); }
+
+/* Los botones son cápsulas de 36 px. El principal es el ÚNICO violeta sólido de su pantalla; el
+   secundario lleva contorno. */
+#v-closer .fd-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+  box-shadow: none;
+  transition: opacity .15s ease, background .15s ease;
+}
+#v-closer .fd-btn:hover:not(:disabled) { filter: none; opacity: .9; }
+#v-closer .fd-btn.sec {
+  background: var(--bg-panel);
+  color: var(--txt-dim);
+  border: 1px solid var(--line-strong);
+}
+#v-closer .fd-btn.sec:hover:not(:disabled) { color: var(--txt); background: rgb(var(--c-nube) / .05); border-color: var(--line-strong); }
+#v-closer .fd-btn-menor { border-radius: 9999px; font-size: 11px; font-weight: 500; padding: 4px 12px; }
+
+/* El foco es de la marca: el anillo violeta, como `--ring` en el sistema. */
+#v-closer button:focus-visible,
+#v-closer select:focus-visible,
+#v-closer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Y todo lo que se mueve se queda quieto para quien pidió menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  #v-closer .cl-page > *,
+  #v-closer .ck-hero::before,
+  #v-closer .ck-note .pt { animation: none; }
+  #v-closer .cw { transition: none; }
+}
