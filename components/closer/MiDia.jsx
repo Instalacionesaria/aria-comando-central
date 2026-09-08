@@ -46,7 +46,25 @@ import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import { queDecir, resolverIntervencion } from '../../lib/auditor/resolverDesdeLaCola.ts';
 
 /**
- * Las cinco colas, en el orden fijo del `01`.
+ * Las cinco colas, en el orden en que se dibujan.
+ *
+ * ══ LA AGENDA VA PRIMERA, Y ESO **NO** ES EL ORDEN DEL `01` ══
+ *
+ * El `01` fija el orden `urgentes → agenda → buzón → seguimientos → completadas` y esta lista lo
+ * seguía. Se pidió invertir los dos primeros, y vale la pena escribir por qué es correcto en vez de
+ * dejarlo como una preferencia: **la agenda es la única cola con hora**.
+ *
+ * Una intervención urgente se puede atender a las 9 o a las 18 y sigue siendo el mismo trabajo. Una
+ * llamada a las 15:07 no se puede mover. Poner arriba lo que tiene hora fija es poner arriba lo
+ * único que se pierde si no se mira temprano — y el resto de la pantalla no cambia de significado.
+ *
+ * Lo que esto **no** cambia: `urgentes` sigue siendo la cola que pide manos con más apuro dentro de
+ * un día ya empezado, sigue contando para el contador de tareas y sigue siendo la única de las cinco
+ * con un botón para cerrarla. Se movió su POSICIÓN, no su prioridad.
+ *
+ * `pruebas/codigo/91-closer-y-setter` compara estas claves **ordenadas**, así que no ata la
+ * posición; lo que ata es que las cinco sigan estando y que cada frase de vacío sea del tipo que le
+ * corresponde. Eso vale igual acá abajo.
  *
  * ══ UNA FRASE DE VACÍO NOMBRA LA CONDICIÓN DE ENTRADA, Y CUATRO AFIRMAN EL HECHO ══
  *
@@ -77,13 +95,13 @@ import { queDecir, resolverIntervencion } from '../../lib/auditor/resolverDesdeL
  * que la sección se llene.
  */
 export const COLAS_DEL_CLOSER = [
+  { clave: 'agenda', titulo: 'Agenda de hoy', vacio: 'No hay citas para hoy.' },
   {
     clave: 'urgentes',
     titulo: 'Intervenciones urgentes',
     /* NOMBRA LA CONDICIÓN DE ENTRADA, no el estado del mundo. Ver el bloque de arriba. */
     vacio: 'Ninguna. Acá aparece un contacto cuando el CRM marca que su agente falló.',
   },
-  { clave: 'agenda', titulo: 'Agenda de hoy', vacio: 'No hay citas para hoy.' },
   {
     clave: 'buzon',
     titulo: 'Respondieron · buzón general',
