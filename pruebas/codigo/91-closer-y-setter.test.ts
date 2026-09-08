@@ -546,10 +546,19 @@ test('Mi Día muestra sus colas y NADA de la lista completa', () => {
   /* El Pipeline pasó a recibir su camino: es UN componente para los dos embudos, porque el dibujo
      —una columna con su nombre, su conteo y su tinte— es idéntico y lo que cambia son los datos.
      Se afirma el camino y no solo la etiqueta: sin eso, la vista del Closer podría pedir el del
-     setter y la prueba no lo vería. */
+     setter y la prueba no lo vería.
+
+     ── EL CAMINO YA NO ES UN LITERAL, Y LA AFIRMACIÓN SIGUE SIENDO LA MISMA ──
+     Desde que «ver como» viaja a las cuatro sub-pestañas, el camino pasa por un envoltorio que le
+     agrega el parámetro. Lo que esta prueba vino a cuidar no era la forma —una cadena entre
+     comillas— sino QUÉ embudo se pide, y eso se sigue afirmando: con `/api/setter/pipeline` acá,
+     esto falla igual que antes. Quién es el dueño de los datos lo cuida
+     `142-alcance-en-las-cuatro`. */
   assert.match(
     codigo,
-    /<Pipeline camino="\/api\/closer\/pipeline"/,
+    /* El `\s` obligatorio después del nombre no es adorno: sin él, `<PipelineViejo` también coincide
+       —`Pipeline` es su prefijo— y una mutación que cambiaba el componente quedaba en verde. */
+    /<Pipeline\s[^>]*\/api\/closer\/pipeline/,
     'el Pipeline dejó de dibujarse, o dejó de pedir el embudo del closer',
   );
 });

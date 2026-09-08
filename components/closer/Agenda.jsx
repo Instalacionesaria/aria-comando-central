@@ -99,7 +99,17 @@ function primerDiaSemana(a, m) {
 const dosDigitos = (n) => String(n).padStart(2, '0');
 const armarDia = (a, m, d) => `${a}-${dosDigitos(m)}-${dosDigitos(d)}`;
 
-export default function Agenda({ zonaHoraria }) {
+/**
+ * @param verComo El closer que eligió quien administra en el selector de Inicio, o `null`.
+ *
+ * ── VIAJA AL SERVIDOR Y NO SE USA ACÁ PARA NADA MÁS ────────────────────────
+ *
+ * De quién son las citas lo decide el servidor con la sesión, nunca esta pantalla comparando
+ * identificadores: `alcancePedido` solo atiende el parámetro cuando el alcance propio es `todo`, así
+ * que un closer que lo mande a mano recibe sus propias citas igual. Ver
+ * `lib/negocio/alcanceDelCloser.ts`.
+ */
+export default function Agenda({ zonaHoraria, verComo = null }) {
   const [abierta, setAbierta] = useState(null);
   const [diaElegido, setDiaElegido] = useState(null);
   /** El mes que muestra la grilla, `{a, m}`. `null` = el de hoy, que todavía no se sabe. */
@@ -118,7 +128,11 @@ export default function Agenda({ zonaHoraria }) {
    * El camino lleva los días adentro, así que forma parte de la clave: cambiar `DIAS_QUE_SE_PIDEN`
    * no puede devolver lo guardado con el valor viejo. */
   const { datos, situacion, causa, refrescar } = usarLectura(
-    `/api/closer/agenda?dias=${DIAS_QUE_SE_PIDEN}`,
+    /* `verComo` va DENTRO del camino, así que forma parte de la clave de `usarLectura`. No es un
+       detalle: con la clave sin él, elegir otro closer en el selector devolvería en el primer dibujo
+       la agenda guardada del anterior —con su nombre en el encabezado— hasta que llegara la
+       respuesta nueva. Es el mismo motivo por el que los días también están adentro. */
+    `/api/closer/agenda?dias=${DIAS_QUE_SE_PIDEN}${verComo ? `&verComo=${encodeURIComponent(verComo)}` : ''}`,
     {
       sinRespuesta:
         'No se pudo contactar al servidor. No es que no tengas citas: no se pudo preguntar.',

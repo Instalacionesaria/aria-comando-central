@@ -31,6 +31,10 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { agendaDelCloser, DIAS_DE_LA_AGENDA } from '../../../../lib/negocio/agenda.ts';
+import {
+  alcanceDeQuienMira,
+  verComoDeLaUrl,
+} from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { DIAS_ADELANTE } from '../../../../lib/negocio/citas.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
@@ -65,15 +69,33 @@ export async function GET(peticion: Request): Promise<Response> {
   // El mismo endpoint sirve a los tres consumidores que el documento nombra —el widget de Mi Día
   // con `dias=1`, la pestaña Agenda con quince, y quien quiera más— y **la forma de la respuesta no
   // cambia**. Eso es lo que permitió que el origen de los datos cambiara sin tocar el frontend.
-  const agenda = await conOrganizacion(contexto.orgEfectiva, () =>
+  const agenda = await conOrganizacion(contexto.orgEfectiva, async () => {
+    /* ── DE QUIÉN SON LAS CITAS DE ESTA PANTALLA ─────────────────────────────
+     *
+     * La MISMA función que Mi Día, el Pipeline y Contactos, y por lo que dice su encabezado: cuatro
+     * respuestas distintas serían cuatro listas que no coinciden. Esta ruta era la que no la
+     * llamaba, y el efecto está contado en el encabezado de `lib/negocio/agenda.ts` — cada closer
+     * veía las citas de los tres, con nombre, teléfono y el botón de la sala.
+     *
+     * `verComo` se atiende igual que en las otras tres, y lo que impide que sea una escalada está en
+     * `alcancePedido`: solo se contesta cuando el alcance PROPIO es `todo`, y el identificador tiene
+     * que estar en la lista de su empresa. Un closer vinculado que lo mande a mano recibe su propio
+     * alcance de todas formas.
+     *
+     * Va adentro de `conOrganizacion` porque `closersDeLaEmpresa` lee `negocio.closer_asignado` por
+     * la conexión del inquilino: afuera, la política de fila no tiene organización con la que
+     * acotar y la consulta no devuelve nada. */
+    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion));
+
     // El territorio va EXPLÍCITO. Esta ruta es la de la pantalla del closer, así que es `closer` —y
     // decirlo acá en vez de dejar que la consulta lo suponga es lo que hizo visible que antes no
     // filtraba nada: devolvía las citas del setter y de los contactos congelados.
-    agendaDelCloser('closer', contexto.organizacion.zonaHoraria, {
+    return agendaDelCloser('closer', contexto.organizacion.zonaHoraria, {
       dias,
       incluirCanceladas: url.searchParams.get('canceladas') === 'si',
-    }),
-  );
+      alcance,
+    });
+  });
 
   return ok(agenda);
 }

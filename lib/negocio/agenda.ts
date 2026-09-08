@@ -25,6 +25,35 @@
 // Agrupar por día se hace con `diaEnZona` de `lib/negocio/tiempo.ts`, la única definición del
 // proyecto. Una cita de las 22:00 en Lima son las 03:00 del día siguiente en tiempo universal:
 // agrupando por el instante crudo, la última cita de cada día aparecería en el día siguiente.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// Y LA AGENDA ES DE QUIEN MIRA, NO DEL CALENDARIO ENTERO
+//
+// `lib/negocio/alcanceDelCloser.ts` dejó escrito, en el encabezado de `alcanceDeQuienMira`, el
+// defecto que este archivo tenía:
+//
+//   *«Existe para que las tres pantallas del Closer —Mi Día, Pipeline y Contactos— hagan la misma
+//   pregunta con una sola llamada. Repetir los tres pasos en cada ruta es cómo se llega a que una
+//   de las tres se olvide de aplicar el alcance: las otras dos filtran, ésa no, y el closer ve en
+//   Contactos los leads que Mi Día le esconde. **No falla nada.**»*
+//
+// La Agenda es la CUARTA pantalla y era justamente la que se olvidaba. Con tres closers vinculados
+// a tres usuarios de GoHighLevel, cada uno abría la Agenda y veía las citas de los tres — con el
+// nombre y el teléfono del contacto, y el botón para entrar a la sala de una reunión ajena.
+//
+// Y por eso no se notaba: Mi Día ya filtraba, y su cola «Agenda de hoy» filtra **sin una línea
+// propia** —arma las citas contra `porId`, que sale del núcleo de colas ya acotado, y una cita cuyo
+// contacto no está ahí se saltea—. O sea que las citas de hoy salían bien en una pantalla y de más
+// en la otra: la contradicción estaba a un clic de distancia y ninguna de las dos parecía mal.
+//
+// El corte es el mismo que el de las otras tres, `crm_asignado_a` contra el usuario del CRM del
+// closer, porque una cita no tiene dueño propio: **la cita es del contacto**, y de quién es el
+// contacto ya está decidido en un solo lugar. Darle un eje propio a la Agenda —el dueño del
+// calendario de GoHighLevel, por ejemplo— sería una segunda respuesta a la misma pregunta, y el día
+// que las dos discrepen no hay forma de saber cuál manda.
+//
+// El alcance se pasa por PARÁMETRO, igual que el territorio y por lo mismo: así no se puede llamar
+// esta función sin haber decidido de quién son las citas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -33,6 +62,7 @@ import { estaCancelada } from '../ghl/calendarios.ts';
 import { noCancelada } from './citas.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
+import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
 
 export interface CitaDeLaAgenda {
@@ -136,6 +166,28 @@ export interface Agenda {
 export const DIAS_DE_LA_AGENDA = 15;
 
 /**
+ * El usuario del CRM cuyas citas hay que mostrar, o `null` para no cortar.
+ *
+ * ── EXISTE PARA QUE LAS TRES CONSULTAS DE ESTE ARCHIVO CORTEN IGUAL ─────────
+ *
+ * Son tres: la lista, y los dos conteos que explican un cero —«quedaron 12 citas de días
+ * anteriores» y «hay 3 citas más adelante»—. Un conteo que explica un cero contando las citas de
+ * otro closer es **peor que no tenerlo**: manda a buscar doce citas que esa persona no puede ver, y
+ * el consejo que trae encima —«así que la lectura funcionó»— pasa a ser falso.
+ *
+ * Es la misma razón por la que esos dos conteos ya filtran por territorio, con el comentario ya
+ * escrito ahí abajo: *«explicar un cero con un número de otra pantalla»*. El alcance es el mismo
+ * problema un piso más adentro.
+ *
+ * Devuelve el identificador y no un booleano para que quien llama pueda hacer `if (mio !== null)` y
+ * usarlo ya estrechado: sin eso, cada uno de los tres sitios necesitaría su propia conversión de
+ * tipo, que es tres lugares donde equivocarse.
+ */
+function soloDe(alcance: AlcanceDelCloser | undefined): string | null {
+  return alcance?.tipo === 'mio' ? alcance.crmUsuarioId : null;
+}
+
+/**
  * Las citas de una ventana de días. **Corre dentro de `conOrganizacion(`.**
  *
  * @param zonaHoraria La de la ORGANIZACIÓN. El corte del día se hace con ella y no con la del
@@ -143,13 +195,16 @@ export const DIAS_DE_LA_AGENDA = 15;
  * @param incluirCanceladas Por omisión NO. El documento: *"las canceladas se ocultan por omisión,
  *   con un parámetro para incluirlas"*. Se ocultan y no se borran — están en la tabla, y son el 39 %
  *   de lo que el CRM devuelve.
+ * @param alcance De quién son las citas. **Ausente = el territorio entero**, que es lo que ve quien
+ *   no es closer. Ver el encabezado del archivo y `lib/negocio/alcanceDelCloser.ts`.
  */
 export async function agendaDelCloser(
   territorio: Territorio,
   zonaHoraria: string,
-  opciones: { dias?: number; incluirCanceladas?: boolean } = {},
+  opciones: { dias?: number; incluirCanceladas?: boolean; alcance?: AlcanceDelCloser } = {},
 ): Promise<Agenda> {
   const dias = Math.max(1, Math.trunc(opciones.dias ?? DIAS_DE_LA_AGENDA));
+  const mio = soloDe(opciones.alcance);
 
   /* ── UN SOLO RELOJ, Y ANTES HABÍA DOS ──────────────────────────────────────
    *
@@ -223,6 +278,19 @@ export async function agendaDelCloser(
     ])
     .orderBy('c.inicio_el', 'asc');
 
+  /* ── EL SEGUNDO CORTE: DE QUIÉN SON ESTAS CITAS ────────────────────────────
+   *
+   * El primero es el territorio, arriba. Éste es el que faltaba, y el encabezado del archivo cuenta
+   * lo que costaba: con tres closers vinculados, los tres veían las citas de los tres.
+   *
+   * Va contra `k.crm_asignado_a` —el contacto— y no contra ninguna columna de `citas`, porque la
+   * cita no tiene dueño propio: es del contacto, y de quién es el contacto ya se decide en un solo
+   * lugar. Es el mismo corte que `fila.ts` aplica a las otras tres pantallas.
+   *
+   * Los SIN asignar quedan afuera, igual que allá y por el mismo motivo de producto: un contacto que
+   * el CRM no asignó no es de nadie, y un `or … is null` acá le daría la misma cita a los tres. */
+  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+
   if (opciones.incluirCanceladas !== true) {
     /* La condición estaba escrita a mano acá, otra vez a mano en `miDia.ts`, y en ningún lado en
        `fila.ts` —que era el defecto: los íconos 📹 y 📅 contaban las canceladas—. El comentario que
@@ -282,7 +350,11 @@ export async function agendaDelCloser(
     zonaHoraria,
     avisoDeZona: avisoDeZona(zonaHoraria),
     frescura: await frescuraDe('citas'),
-    falta: filas.length === 0 ? await porQueNoHayCitas(territorio, zonaHoraria) : null,
+    /* Y el motivo del vacío se calcula con el MISMO alcance. Sin eso, un closer sin ninguna cita
+       propia leería «de los días anteriores quedaron 12 citas — así que la lectura funcionó»
+       contando las de sus compañeros: un consejo correcto sobre un número que no es suyo. */
+    falta:
+      filas.length === 0 ? await porQueNoHayCitas(territorio, zonaHoraria, opciones.alcance) : null,
   };
 }
 
@@ -371,11 +443,13 @@ async function faltaDelBarrido(): Promise<string | null> {
 export async function porQueNoHayCitasHoy(
   territorio: Territorio,
   zonaHoraria: string,
+  /** De quién son las citas que se cuentan. Ausente = el territorio entero. */
+  alcance?: AlcanceDelCloser,
 ): Promise<string> {
   const delBarrido = await faltaDelBarrido();
   if (delBarrido !== null) return delBarrido;
 
-  const adelante = await datos()
+  let q = datos()
     .selectFrom('citas as c')
     // El mismo territorio que la ventana: «hay 3 citas más adelante» tiene que ser de esta pantalla
     // y no del setter, o el número que explica un cero es de otro lado.
@@ -387,8 +461,14 @@ export async function porQueNoHayCitasHoy(
       '>=',
       sql<Date>`(date_trunc('day', timezone(${zonaHoraria}, now())) + interval '1 day') at time zone ${zonaHoraria}`,
     )
-    .where(noCancelada('c.estado_ghl'))
-    .executeTakeFirst();
+    .where(noCancelada('c.estado_ghl'));
+
+  /* Y el mismo alcance, por lo mismo un piso más adentro: «se ven en Closer → Agenda» sobre citas
+     que la Agenda de esa persona NO le va a mostrar es mandarla a una pantalla vacía. */
+  const mio = soloDe(alcance);
+  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+
+  const adelante = await q.executeTakeFirst();
 
   const n = Number(adelante?.n ?? 0);
   if (n === 0) {
@@ -406,7 +486,11 @@ export async function porQueNoHayCitasHoy(
 /**
  * Un cero de citas de la ventana de la Agenda, explicado. Tres estados, no dos.
  */
-async function porQueNoHayCitas(territorio: Territorio, zonaHoraria: string): Promise<string> {
+async function porQueNoHayCitas(
+  territorio: Territorio,
+  zonaHoraria: string,
+  alcance?: AlcanceDelCloser,
+): Promise<string> {
   const delBarrido = await faltaDelBarrido();
   if (delBarrido !== null) return delBarrido;
 
@@ -422,7 +506,7 @@ async function porQueNoHayCitas(territorio: Territorio, zonaHoraria: string): Pr
    *
    * Así que el cero viene con el dato que lo vuelve una afirmación: cuántas hubo antes.
    */
-  const recientes = await datos()
+  let q = datos()
     .selectFrom('citas as c')
     // Y acá también: «quedaron 12 citas de días anteriores» contando las del setter sería explicar
     // un cero con un número de otra pantalla.
@@ -433,8 +517,14 @@ async function porQueNoHayCitas(territorio: Territorio, zonaHoraria: string): Pr
       'c.inicio_el',
       '<',
       sql<Date>`date_trunc('day', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`,
-    )
-    .executeTakeFirst();
+    );
+
+  // Y el alcance, que es la otra mitad del mismo cuidado: el número que vuelve honesto a un cero
+  // tiene que ser de las MISMAS citas que la lista habría mostrado.
+  const mio = soloDe(alcance);
+  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+
+  const recientes = await q.executeTakeFirst();
 
   const antes = Number(recientes?.n ?? 0);
   if (antes === 0) {

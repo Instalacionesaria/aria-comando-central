@@ -308,9 +308,28 @@ export default function CloserView({ activa }) {
           }
         />;
     }
-    if (sub === 'pipeline') return <Pipeline camino="/api/closer/pipeline" tablero="closer/pipeline" />;
+    /* ── «VER COMO» VALE PARA LAS CUATRO SUB-PESTAÑAS, Y VALÍA PARA UNA ────────
+     *
+     * Las cuatro rutas atienden `verComo` —con el candado de `alcancePedido`, que solo lo contesta
+     * cuando el alcance propio es `todo`— pero solo Mi Día lo MANDABA. O sea que quien administra
+     * elegía a un closer, veía su día, cambiaba de sub-pestaña, y el Pipeline y la Agenda le
+     * mostraban la empresa entera sin decir que habían dejado de obedecer al selector.
+     *
+     * El selector sigue arriba anunciando el nombre elegido, así que las dos pantallas se leen como
+     * si esa persona tuviera toda la cartera. No falla nada: es la contradicción a un clic de
+     * distancia otra vez, la misma que este trabajo cerró entre Mi Día y la Agenda.
+     *
+     * Para quien ES closer esto no cambia nada —el servidor le ignora el parámetro— y va en la URL
+     * y no en el cuerpo por lo mismo que en Mi Día: forma parte de la clave de `usarLectura`, así
+     * que cambiar de closer no puede devolver lo que quedó guardado del anterior. */
+    const conVerComo = (camino) =>
+      verComo ? `${camino}${camino.includes('?') ? '&' : '?'}verComo=${encodeURIComponent(verComo)}` : camino;
 
-    return <Agenda zonaHoraria={datos.zonaHoraria} />;
+    if (sub === 'pipeline') {
+      return <Pipeline camino={conVerComo('/api/closer/pipeline')} tablero="closer/pipeline" />;
+    }
+
+    return <Agenda zonaHoraria={datos.zonaHoraria} verComo={verComo} />;
   }
 
   return (
