@@ -40,13 +40,48 @@
  * El sistema usa la del sistema operativo y ninguna web (`02` § 1). Acá se declara sobre
  * `#v-closer` y se hereda hacia abajo; `next/font` sigue cargando Inter para el resto de la
  * aplicación, y sacarlo es decisión de cuando esto se extienda.
+ *
+ * ═════════════════════════════════════════════════════════════════════════════
+ * LA ESCALA: 13/16. POR QUÉ TODO SE VEÍA «CON ZOOM»
+ *
+ * La primera versión de esta hoja copió los tamaños del sistema hermano **en píxeles absolutos**:
+ * pestañas de 36 px de alto con 20 px de relleno, título de 30 px, tarjetas de 32 px, cifra de
+ * 48 px. Llegó el reporte de que las pestañas se veían gigantes y ocupaban media pantalla, y la
+ * causa no era el gusto de nadie: es una razón medible.
+ *
+ *   · el sistema hermano corre sobre la base del navegador, **16 px**. Su `text-xs` (12 px) es el
+ *     0,75 de su base, y su título de 30 px es 1,9 veces la base;
+ *   · esta aplicación declara `body { font-size: 13px }` en `aios.css`. Los mismos 12 px son el
+ *     **0,92** de su base, y los mismos 30 px son **2,3 veces**.
+ *
+ * O sea que cada valor importado se veía `16/13 ≈ 1,23×` más grande **en relación con todo lo que
+ * tiene alrededor** — la barra lateral, la barra superior, el resto de las pantallas. No era una
+ * hoja mal calibrada: era una hoja calibrada para otra base.
+ *
+ * Medido antes de tocar nada: la cápsula de pestañas ocupaba **466 × 49 px** y había **289 px**
+ * desde el borde de la vista hasta la primera tarjeta.
+ *
+ * ── LA CORRECCIÓN, Y CÓMO SEGUIRLA ────────────────────────────────────────
+ *
+ * Se aplicó la razón inversa —**0,8125**— a los 80 valores absolutos de esta hoja, redondeando a
+ * medios píxeles en la tipografía y a enteros en la geometría. Lo que **no** se toca son los
+ * valores que no vienen del sistema: los grosores de línea (1 px), los radios de círculo completo,
+ * y los tamaños que ya eran del tamaño del entorno.
+ *
+ * **Si hace falta más o menos, es esa razón la que se mueve, no un valor suelto.** Cambiar la
+ * cápsula sola la desalinea del título y de las tarjetas, que es cómo una pantalla queda con dos
+ * escalas y se lee como un error de maquetación.
  * ═════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 0 · La base ──────────────────────────────────────────────────────────── */
 
 #v-closer {
-  --radio:         12px;
-  --radio-tarjeta: 2rem;
+  --radio:         10px;
+  /* 26 px, que son los 32 del sistema por la escala. Era `2rem` escrito así porque el sistema lo
+     escribe así; acá se pone en píxeles porque un `rem` depende de la raíz y esta hoja se calibra
+     contra el cuerpo de 13 px — dejarlo en `rem` haría que el radio fuera el único valor que NO
+     sigue la escala. */
+  --radio-tarjeta: 26px;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -74,8 +109,8 @@
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 16px 32px 48px;
-  gap: 32px;
+  padding: 12px 24px 40px;
+  gap: 24px;
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
@@ -83,7 +118,7 @@
 #v-closer .view-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 9999px; }
 #v-closer .view-scroll::-webkit-scrollbar-track { background: transparent; }
 
-#v-closer .cl-page { gap: 24px; }
+#v-closer .cl-page { gap: 18px; }
 
 /* ── Cómo entra cada pestaña (`06` § 6): aparece y sube 16 px en medio segundo. Es
    deliberadamente lenta —media el movimiento más grande de la pantalla— y la cabecera NO se
@@ -98,7 +133,7 @@
 
 /* La cabecera se separa del contenido con UNA LÍNEA al 30 %, no con un fondo. */
 #v-closer .cre-head {
-  padding-bottom: 32px;
+  padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 0;
 }
@@ -108,7 +143,7 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
 }
 @media (max-width: 900px) {
   #v-closer .ch-l.stack { flex-direction: column; align-items: flex-start; }
@@ -120,10 +155,10 @@
 #v-closer .ch-title {
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 5px;
 }
 #v-closer .cre-head h2 {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: .2em;
   text-transform: uppercase;
@@ -132,7 +167,7 @@
   margin: 0;
 }
 #v-closer .cre-head .cre-desc {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -.025em;
   line-height: 1.15;
@@ -142,24 +177,24 @@
 /* La cápsula: opaca, redonda, con `p-1.5` de aire alrededor de la activa. Sin la sombra propia
    que el sistema le da —ver el encabezado—. */
 #v-closer .cl-sub {
-  gap: 6px;
-  padding: 6px;
+  gap: 3px;
+  padding: 4px;
   border-radius: 9999px;
   background: var(--bg-panel);
   border: 1px solid var(--line);
   align-self: center;
 }
 #v-closer .cl-sub button {
-  height: 36px;
-  padding: 0 20px;
-  gap: 8px;
+  height: 30px;
+  padding: 0 14px;
+  gap: 6px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--txt-dim);
   transition: background .15s ease, color .15s ease;
 }
-#v-closer .cl-sub button svg { width: 16px; height: 16px; opacity: 1; }
+#v-closer .cl-sub button svg { width: 14px; height: 14px; opacity: 1; }
 #v-closer .cl-sub button:hover { color: var(--txt); background: rgb(var(--c-nube) / .06); }
 /* La activa es el ÚNICO violeta sólido del armazón. */
 #v-closer .cl-sub button.on {
@@ -172,10 +207,10 @@
 /* El contador cambia de paleta según el estado de la pestaña: sobre violeta sólido, un violeta al
    10 % sería invisible, así que ahí usa el color del TEXTO al 20 %. */
 #v-closer .cl-sub .cnt {
-  margin-left: 2px;
-  padding: 2px 6px;
+  margin-left: 1px;
+  padding: 1px 5px;
   border-radius: 9999px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   background: rgb(var(--c-acento) / .10);
   color: var(--accent);
@@ -198,40 +233,40 @@
   border-radius: var(--radio-tarjeta);
   box-shadow: none;
 }
-#v-closer .md-top { gap: 24px; }
+#v-closer .md-top { gap: 18px; }
 #v-closer .md-c {
-  padding: 32px;
+  padding: 22px;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 18px;
 }
 /* El rótulo de tarjeta y la cifra grande: la combinación de firma del sistema (`02` § 3). Una
    cifra de 48 px liviana junto a un rótulo de 11 px semibold en mayúsculas con `0.15em`. */
 #v-closer .md-k {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: .15em;
   text-transform: uppercase;
   color: var(--txt-dim);
 }
 #v-closer .md-v {
-  font-size: 48px;
+  font-size: 38px;
   font-weight: 300;
   letter-spacing: -.025em;
   line-height: 1;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 #v-closer .md-s {
   text-align: right;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--txt-dim);
   max-width: 45%;
 }
 #v-closer .md-chip {
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -258,10 +293,10 @@
 /* El encabezado de sección: `px-6 py-4`, título de 13 px en mayúsculas, y —cuando tiene color—
    el fondo al 10 %, el título en el tono de la cola y el contador SÓLIDO con texto blanco. */
 #v-closer .md-h {
-  padding: 16px 24px;
-  gap: 12px;
+  padding: 12px 20px;
+  gap: 10px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .025em;
   text-transform: uppercase;
@@ -273,9 +308,9 @@
   color: var(--etapa);
 }
 #v-closer .md-h .b {
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 9999px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   background: rgb(var(--c-nube) / .10);
   color: var(--txt-dim);
@@ -287,18 +322,18 @@
 }
 #v-closer .md-sec[data-etapa] .md-h::before,
 #v-closer .md-sec[data-cola] .md-h::before { width: 8px; height: 8px; }
-#v-closer .sec-plegar { width: 28px; height: 28px; border-radius: 9999px; }
+#v-closer .sec-plegar { width: 24px; height: 24px; border-radius: 9999px; }
 
 /* El estado vacío de una sección: solo texto, centrado. Un recuadro punteado dentro de una
    tarjeta de 2 rem es un marco dentro de un marco. */
 #v-closer .dw-empty,
 #v-closer .md-sec > .pipe-vacia {
   margin: 0;
-  padding: 32px 24px;
+  padding: 24px 20px;
   border: 0;
   background: none;
   border-radius: 0;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--txt-dim);
 }
 
@@ -307,26 +342,26 @@
 /* `px-6 py-4` es la medida más importante del sistema. La primera columna es el avatar del
    score: 32 px, círculo. */
 #v-closer .md-r {
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  gap: 16px;
-  padding: 16px 24px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--line);
   transition: background .15s ease, opacity .15s ease;
 }
 #v-closer .md-r:hover { background: rgb(var(--c-nube) / .04); }
 #v-closer .md-time {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--txt-dim);
   background: rgb(var(--c-nube) / .08);
 }
 /* En la agenda de hoy la primera columna es una HORA, no un score: no cabe en un círculo. */
-#v-closer .md-sec[data-cola='agenda'] .md-r { grid-template-columns: 44px minmax(0, 1fr) auto; }
+#v-closer .md-sec[data-cola='agenda'] .md-r { grid-template-columns: 40px minmax(0, 1fr) auto; }
 #v-closer .md-sec[data-cola='agenda'] .md-time {
   width: auto;
   height: auto;
@@ -336,17 +371,17 @@
   font-variant-numeric: tabular-nums;
 }
 #v-closer .md-nm {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 /* El microtexto se recorta antes de empujar los iconos: sin el tope, un texto largo desalinea la
    fila de iconos con las demás filas (`09` § 2.4). Solo el de la fila, no los bloques de abajo. */
 #v-closer .md-r > div > .md-sub {
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 11.5px;
+  margin-top: 3px;
   color: var(--txt-dim);
   max-width: 420px;
   overflow: hidden;
@@ -362,14 +397,14 @@
   text-decoration-color: rgb(var(--c-nube) / .4);
   color: var(--txt-dim);
 }
-#v-closer .md-quote { margin-left: calc(24px + 32px + 16px); }
+#v-closer .md-quote { margin-left: calc(20px + 28px + 12px); }
 
 /* La píldora: 9 px, negrita, mayúsculas, círculo completo, con borde. Tono 50 sólido en claro y
    500 al 20 % en oscuro es lo que hace el par `rgb(var(--c-…) / .10)` + texto en el token. */
 #v-closer .tagx {
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 9999px;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -387,16 +422,16 @@
    se puede redefinir el token que lee, solo dentro de este bloque. */
 #v-closer .md-acts {
   --txt: var(--icono);
-  gap: 6px;
-  font-size: 14px;
+  gap: 5px;
+  font-size: 13px;
   color: var(--icono);
 }
 #v-closer .md-acts i { min-width: 14px; text-align: center; }
 /* «Unirse»: verde sólido, reservado para la próxima llamada con sala (`08` § 3). */
 #v-closer .md-join {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 9999px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   background: var(--ok-lleno);
   color: var(--sobre-ok-lleno);
@@ -431,18 +466,18 @@
 
   position: relative;
   overflow: hidden;
-  border-radius: 32px;
-  padding: 32px;
+  border-radius: 26px;
+  padding: 24px;
   background: var(--negro-hero);
   border: 1px solid rgb(var(--c-blanco) / .05);
   box-shadow: none;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 24px;
   align-items: center;
   color: var(--txt);
 }
 @media (min-width: 640px) {
-  #v-closer .ck-hero { padding: 48px; }
+  #v-closer .ck-hero { padding: 34px; }
 }
 @media (max-width: 760px) {
   #v-closer .ck-hero { grid-template-columns: minmax(0, 1fr); }
@@ -473,23 +508,23 @@
 
 /* El chip del período: «cristal sobre negro» — borde blanco al 10 %, fondo al 5 %, desenfoque. */
 #v-closer .ck-tag {
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 9999px;
   border: 1px solid rgb(var(--c-blanco) / .10);
   background: rgb(var(--c-blanco) / .05);
   backdrop-filter: blur(12px);
   color: var(--oro);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
   letter-spacing: .1em;
   text-transform: uppercase;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 /* El titular de dinero: 90 px livianos y apretados, con el degradado blanco → dorado claro →
    dorado oscuro recortado al texto. Sin el brillo exterior del documento — ver el encabezado. */
 #v-closer .ck-big {
   margin-top: 0;
-  font-size: clamp(60px, 7vw, 90px);
+  font-size: clamp(46px, 5.4vw, 70px);
   font-weight: 300;
   letter-spacing: -.05em;
   line-height: .9;
@@ -501,8 +536,8 @@
 }
 #v-closer .ck-big span {
   display: block;
-  margin: 16px 0 0;
-  font-size: 14px;
+  margin: 12px 0 0;
+  font-size: 13px;
   font-weight: 300;
   letter-spacing: 0;
   color: rgb(var(--c-blanco) / .6);
@@ -510,9 +545,9 @@
   background: none;
 }
 #v-closer .ck-note {
-  margin-top: 24px;
-  gap: 12px;
-  font-size: 14px;
+  margin-top: 18px;
+  gap: 10px;
+  font-size: 13px;
   font-weight: 300;
   color: rgb(var(--c-blanco) / .6);
 }
@@ -527,9 +562,9 @@
 /* La rejilla de cuatro cifras: rótulo 10 px al 40 %, valor 24 px liviano, base 10 px al 30 %.
    La jerarquía dentro del bloque es opacidad del blanco: 90 / 60 / 40 / 30. */
 #v-closer .ck-row {
-  margin-top: 40px;
-  padding-top: 24px;
-  gap: 16px;
+  margin-top: 28px;
+  padding-top: 18px;
+  gap: 12px;
   border-top: 1px solid rgb(var(--c-blanco) / .10);
 }
 #v-closer .ck-i { padding: 0; border-right: 0; }
@@ -540,8 +575,8 @@
   color: rgb(var(--c-blanco) / .4);
 }
 #v-closer .ck-i .v {
-  margin-top: 4px;
-  font-size: 24px;
+  margin-top: 3px;
+  font-size: 20px;
   font-weight: 300;
   letter-spacing: -.02em;
 }
@@ -553,12 +588,12 @@
 /* El anillo de comisión: trazo fino sobre un carril blanco al 5 %. La caja pierde su borde y su
    degradado: el SVG dibuja el aro. */
 #v-closer .ring {
-  width: 192px;
-  height: 192px;
+  width: 158px;
+  height: 158px;
   border: 0;
   background: none;
 }
-#v-closer .ring b { font-size: 30px; font-weight: 300; letter-spacing: -.025em; color: var(--txt); }
+#v-closer .ring b { font-size: 25px; font-weight: 300; letter-spacing: -.025em; color: var(--txt); }
 #v-closer .ring span {
   margin-top: 4px;
   font-size: 9px;
@@ -569,12 +604,12 @@
 #v-closer .ck-rotulo { font-size: 9px; letter-spacing: .1em; color: rgb(var(--c-blanco) / .4); }
 /* La tarjeta de la meta: cristal sobre negro, `rounded-2xl p-4`. */
 #v-closer .ck-cta {
-  padding: 16px;
-  border-radius: 16px;
+  padding: 13px;
+  border-radius: 14px;
   border: 1px solid rgb(var(--c-blanco) / .10);
   background: rgb(var(--c-blanco) / .05);
   backdrop-filter: blur(4px);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 300;
   color: rgb(var(--c-blanco) / .7);
 }
@@ -588,15 +623,15 @@
 
 /* El selector «ver como»: una cápsula. */
 #v-closer .ck-vercomo label {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   letter-spacing: .15em;
   text-transform: uppercase;
   color: var(--txt-dim);
 }
 #v-closer select {
-  height: 36px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 12px;
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
@@ -604,10 +639,10 @@
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
 }
-#v-closer .aj-tarjeta { padding: 24px; }
+#v-closer .aj-tarjeta { padding: 18px; }
 #v-closer .ck-closer {
-  padding: 16px;
-  border-radius: 16px;
+  padding: 13px;
+  border-radius: 14px;
   background: rgb(var(--c-nube) / .03);
   border: 1px solid var(--line);
 }
@@ -616,22 +651,22 @@
 
 /* Dos columnas con la separación más grande de la aplicación (40 px), alineadas ARRIBA: sin
    `items-start` el calendario se estira a la altura del día. */
-#v-closer .ag { gap: 40px; }
-#v-closer .ag-lado { gap: 24px; }
+#v-closer .ag { gap: 28px; }
+#v-closer .ag-lado { gap: 18px; }
 #v-closer .ag-mes,
-#v-closer .ag-proximos { padding: 24px; }
-#v-closer .ag-dia { padding: 32px; }
-#v-closer .ag-mes-t { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+#v-closer .ag-proximos { padding: 18px; }
+#v-closer .ag-dia { padding: 24px; }
+#v-closer .ag-mes-t { font-size: 13px; font-weight: 600; letter-spacing: 0; }
 #v-closer .ag-mes-nav button { width: 28px; height: 28px; border-radius: 9999px; }
 #v-closer .ag-grilla { gap: 4px; }
 #v-closer .ag-sem { font-size: 10px; font-weight: 700; letter-spacing: 0; height: 24px; }
-#v-closer .ag-hueco { height: 32px; }
+#v-closer .ag-hueco { height: 28px; }
 /* El día: círculo de 32 px. Seleccionado y hoy son estados DISTINTOS y se ven distintos: el
    seleccionado es un círculo violeta sólido; hoy es solo un anillo de 1 px al 40 %. Si coinciden,
    gana el seleccionado — y el punto de citas se esconde sobre el violeta sólido. */
 #v-closer .ag-celda {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   margin: 0 auto;
   border-radius: 50%;
   font-size: 12px;
@@ -659,11 +694,11 @@
 #v-closer .ag-celda.hoy .ag-punto { display: block; background: var(--etapa-agendado); }
 #v-closer .ag-leyenda { font-size: 11px; }
 
-#v-closer .ag-proximos-t { font-size: 12px; letter-spacing: .1em; margin-bottom: 16px; }
+#v-closer .ag-proximos-t { font-size: 11px; letter-spacing: .1em; margin-bottom: 12px; }
 /* El inactivo lleva borde transparente, no ausencia de borde: si no, el elemento salta 1 px al
    activarse. */
 #v-closer .ag-prox {
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
   border: 1px solid transparent;
 }
@@ -674,10 +709,10 @@
   color: var(--accent);
   font-weight: 500;
 }
-#v-closer .ag-prox-n { font-size: 14px; font-weight: 500; }
+#v-closer .ag-prox-n { font-size: 13px; font-weight: 500; }
 #v-closer .ag-prox-c {
-  height: 24px;
-  padding: 0 10px;
+  height: 22px;
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
@@ -688,18 +723,18 @@
 }
 #v-closer .ag-prox-c.hay { background: rgb(var(--c-acento) / .10); color: var(--accent); }
 
-#v-closer .ag-dia-h { margin-bottom: 24px; align-items: flex-end; }
-#v-closer .ag-dia-t { font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
-#v-closer .ag-dia-s { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
-#v-closer .ag-linea { gap: 16px 24px; }
-#v-closer .ag-hora { font-size: 14px; font-weight: 700; padding-top: 16px; }
+#v-closer .ag-dia-h { margin-bottom: 18px; align-items: flex-end; }
+#v-closer .ag-dia-t { font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
+#v-closer .ag-dia-s { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+#v-closer .ag-linea { gap: 12px 18px; }
+#v-closer .ag-hora { font-size: 13px; font-weight: 700; padding-top: 13px; }
 /* Una cita vencida es ATENCIÓN, no urgencia: ámbar, no rojo (`03` § 1). */
 #v-closer .ag-hora.pasada { color: var(--warn); }
 /* El nodo de la sala: 32 px, círculo, celeste, con un anillo del color del lienzo. */
 #v-closer .ag-sala {
-  width: 32px;
-  height: 32px;
-  margin-top: 10px;
+  width: 28px;
+  height: 28px;
+  margin-top: 9px;
   border-radius: 50%;
   border: 0;
   background: rgb(var(--c-etapa-agendado) / .15);
@@ -715,11 +750,11 @@
 }
 #v-closer .ag-cita:hover,
 #v-closer .ag-cita.abierta { border-color: rgb(var(--c-etapa-agendado) / .6); }
-#v-closer .ag-cita-h { padding: 20px; gap: 12px; }
+#v-closer .ag-cita-h { padding: 16px; gap: 10px; }
 #v-closer .ag-cita-av { background: rgb(var(--c-acento) / .10); color: var(--accent); }
-#v-closer .ag-cita-n { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
-#v-closer .ag-cita-m { font-size: 12px; }
-#v-closer .ag-cita-cuerpo { padding: 0 20px 20px 64px; gap: 12px; }
+#v-closer .ag-cita-n { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+#v-closer .ag-cita-m { font-size: 11.5px; }
+#v-closer .ag-cita-cuerpo { padding: 0 16px 16px 54px; gap: 10px; }
 #v-closer .ag-mas { border-radius: 9999px; }
 #v-closer .ag-barra { margin-bottom: 8px; }
 
@@ -742,21 +777,21 @@
 /* La cabecera: cristal sobre el panel, con el desenfoque más fuerte del sistema (24 px) sobre un
    fondo al 80 %. */
 #v-closer .cw-h {
-  padding: 32px 24px 24px;
+  padding: 24px 20px 18px;
   background: rgb(var(--c-panel) / .8);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--line);
 }
 #v-closer .cw-av {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 0;
-  font-size: 14px;
+  font-size: 13px;
   background: rgb(var(--c-acento) / .10);
   color: var(--accent);
 }
-#v-closer .cw-n { font-size: 18px; font-weight: 600; letter-spacing: -.025em; }
+#v-closer .cw-n { font-size: 15px; font-weight: 600; letter-spacing: -.025em; }
 #v-closer .cw-p { font-size: 12px; margin-top: 2px; }
 #v-closer .cw .cw-x {
   width: 32px;
@@ -769,36 +804,36 @@
 /* Avanzar es el botón más importante de la aplicación y su tratamiento lo dice: el más alto, el
    más ancho, el de texto más grande, y del color del texto — invertido entre temas. */
 #v-closer .cw-acciones .cw-go {
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 12px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 11px;
   border: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   background: var(--txt);
   color: var(--bg);
   transition: opacity .15s ease;
 }
 #v-closer .cw-acciones .cw-go:hover { background: var(--txt); opacity: .9; }
-#v-closer .cw-meta { margin-top: 20px; }
+#v-closer .cw-meta { margin-top: 15px; }
 /* La barra de pestañas de la ficha es el patrón INVERTIDO al del Closer: fondo más oscuro que el
    panel y la activa más clara. Cinco pestañas de 11 px no aguantan un violeta sólido. El hijo
    lleva menos radio que el padre: 16 → 12. */
 #v-closer .cw-tabs {
-  margin: 16px 24px 0;
-  padding: 4px;
-  gap: 4px;
+  margin: 12px 20px 0;
+  padding: 3px;
+  gap: 3px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 13px;
   background: rgb(var(--c-nube) / .06);
 }
 #v-closer .cw-tabs button {
   flex: 1;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 4px;
-  border-radius: 12px;
-  font-size: 11px;
+  gap: 5px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  font-size: 10.5px;
   font-weight: 500;
 }
 #v-closer .cw-tabs button:hover { background: none; color: var(--txt); }
@@ -807,11 +842,18 @@
   color: var(--txt);
   font-weight: 500;
 }
-#v-closer .cw-body { padding: 16px 24px 20px; }
+#v-closer .cw-body { padding: 12px 20px 16px; }
 
 /* El chat imita a WhatsApp, y la imitación es la función. Sus colores son prestados, no del tema;
    viven en `temas.css` como `--chat-*`. */
 #v-closer .cw-body:has(> .cw-chat) { background: var(--chat-fondo); padding: 16px; }
+/* ── LOS DOS VALORES QUE **NO** SIGUEN LA ESCALA, Y ES A PROPÓSITO ─────────
+   El ancho del panel (540 px) y el cuerpo de la burbuja (14,5 px). Ninguno de los dos viene de la
+   escala tipográfica del sistema: el ancho es una medida de panel —no se lee «con zoom», se lee
+   angosto o ancho— y el 14,5 es el tamaño del cliente que el chat IMITA. Achicarlo rompería
+   justamente lo que el `12` § 4 dice que es la función: *«el vendedor pasa el día en WhatsApp, y una
+   conversación que se ve distinta se lee como si fuera otra cosa»*. Es el único texto de la pantalla
+   más grande que el cuerpo de la aplicación, y tiene que serlo. */
 #v-closer .cw-chat .msgw {
   max-width: 85%;
   padding: 6px 12px 8px;
@@ -903,9 +945,9 @@
 /* ── 7 · Avisos, botones y estados (`13`) ──────────────────────────────────── */
 
 #v-closer .fd-aviso {
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 9px 13px;
+  border-radius: 10px;
+  font-size: 11.5px;
   line-height: 1.6;
   background: rgb(var(--c-nube) / .04);
   border-color: var(--line);
@@ -919,10 +961,10 @@
 /* Los botones son cápsulas de 36 px. El principal es el ÚNICO violeta sólido de su pantalla; el
    secundario lleva contorno. */
 #v-closer .fd-btn {
-  height: 36px;
-  padding: 0 16px;
+  height: 30px;
+  padding: 0 14px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   background: var(--accent-hondo);
   color: var(--sobre-acento);
@@ -936,7 +978,7 @@
   border: 1px solid var(--line-strong);
 }
 #v-closer .fd-btn.sec:hover:not(:disabled) { color: var(--txt); background: rgb(var(--c-nube) / .05); border-color: var(--line-strong); }
-#v-closer .fd-btn-menor { border-radius: 9999px; font-size: 11px; font-weight: 500; padding: 4px 12px; }
+#v-closer .fd-btn-menor { border-radius: 9999px; font-size: 10.5px; font-weight: 500; padding: 3px 10px; }
 
 /* El foco es de la marca: el anillo violeta, como `--ring` en el sistema. */
 #v-closer button:focus-visible,
