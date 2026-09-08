@@ -354,7 +354,61 @@ export interface TablaContactos {
    * diría «nunca escribió» de las dos.
    */
   mensajes_desde_el: Date | null;
+  /**
+   * Los campos personalizados de GoHighLevel, crudos: `{id del campo: valor}`.
+   *
+   * Se LEE como el mapa ya armado —el controlador de PostgreSQL devuelve `jsonb` parseado— y se
+   * ESCRIBE como texto, que es la misma disciplina que `analisis_del_agente.observaciones`.
+   *
+   * Por identificador y no por nombre: el nombre lo pone `negocio.campos_del_crm`, y un contacto
+   * guardado con nombres quedaría congelado el día que alguien renombre un campo en el CRM.
+   *
+   * `{}` = no trae ninguno. Distinguirlo de «nunca se sincronizó» es trabajo de `sincronizado_el`.
+   */
+  campos_del_crm: ColumnType<Record<string, string>, string | undefined, string | undefined>;
   creado_el: Generated<Date>;
+}
+
+/**
+ * Las carpetas de campos personalizados de GoHighLevel, y **nuestra** decisión sobre cada una.
+ *
+ * Va separada de `TablaCamposDelCrm` porque las dos tablas tienen dueños distintos: aquélla es un
+ * espejo del CRM que se reemplaza al refrescar, y ésta guarda una elección humana que un refresco
+ * no puede pisar. El motivo largo está en `db/migraciones/039_campos_del_crm.sql`.
+ */
+export interface TablaCarpetasDelCrm {
+  org_id: ColumnaInquilino;
+  carpeta_id: string;
+  /** `null` = la carpeta existe y su nombre no se pudo leer. GoHighLevel no lista carpetas. */
+  nombre: string | null;
+  /** `null` = sus campos NO se muestran. Es el valor por omisión de una carpeta recién vista. */
+  grupo: GrupoDePerfil | null;
+  visto_el: Generated<Date>;
+}
+
+/** Los cuatro grupos de la pestaña Perfil. El mismo vocabulario que `CampoDePerfil['grupo']`. */
+export type GrupoDePerfil = 'detalles' | 'origen' | 'calificacion' | 'interacciones';
+
+/** El espejo del catálogo de campos personalizados de la subcuenta. Una fila por campo. */
+export interface TablaCamposDelCrm {
+  org_id: ColumnaInquilino;
+  campo_id: string;
+  /** El `name` de GoHighLevel, tal cual. */
+  nombre: string;
+  /** La etiqueta corta, NUESTRA. `null` = usar `nombre`. Un refresco del catálogo no la pisa. */
+  etiqueta_corta: string | null;
+  carpeta_id: string;
+  tipo: string;
+  /**
+   * El `position` de GoHighLevel. Es `numeric` porque llega fraccionario —se midió `12.5`—, que es
+   * como el CRM mete un campo entre otros dos sin renumerar.
+   *
+   * Se LEE como texto por lo mismo que `precio_mensual` de más arriba: `numeric` viaja como texto
+   * en `pg`. Nadie hace cuentas con él —solo ordena, y ordena la base—, así que convertirlo sería
+   * agregar una conversión que no sirve a nadie y puede perder precisión.
+   */
+  posicion: ColumnType<string, number | string | undefined, number | string | undefined>;
+  visto_el: Generated<Date>;
 }
 
 export interface TablaCitas {
@@ -940,6 +994,8 @@ export interface BaseDeDatos {
   analisis_del_agente: TablaAnalisisDelAgente;
   prompts_del_agente: TablaPromptsDelAgente;
   enlaces_rapidos: TablaEnlacesRapidos;
+  carpetas_del_crm: TablaCarpetasDelCrm;
+  campos_del_crm: TablaCamposDelCrm;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

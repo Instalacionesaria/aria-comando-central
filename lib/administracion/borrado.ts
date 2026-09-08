@@ -78,6 +78,15 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      una acción posible, que es lo que esta lista exige: se borran los análisis de esa empresa. */
   analisis_del_agente_org_id_fkey: 'tiene análisis de auditoría registrados',
   enlaces_rapidos_org_id_fkey: 'tiene links rápidos cargados',
+  /* El catálogo de campos personalizados de su CRM, en dos tablas. Se nombran las dos por separado
+     aunque la frase sea parecida: la que llega es la restricción que efectivamente bloqueó, y decir
+     «campos» cuando lo que quedó fueron las carpetas mandaría a vaciar la tabla equivocada.
+
+     Las dos las escribe la sincronización sola, así que la acción es la misma y es fácil: se borran
+     y se vuelven a leer del CRM. Eso es lo que esta lista exige de cada frase — que detrás haya algo
+     que alguien pueda hacer. */
+  campos_del_crm_org_id_fkey: 'tiene el catálogo de campos de su CRM cargado',
+  carpetas_del_crm_org_id_fkey: 'tiene las carpetas de campos de su CRM cargadas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

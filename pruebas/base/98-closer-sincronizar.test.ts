@@ -322,6 +322,77 @@ test('sin ninguna etiqueta de territorio el contacto queda CONGELADO, no borrado
   assert.equal(fila.territorio, null);
 });
 
+test('sincronizar guarda los campos personalizados, y refrescar la ficha NO los borra', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * EL DEFECTO SILENCIOSO QUE ESTA PRUEBA EXISTE PARA IMPEDIR
+   *
+   * `POST /contacts/search` y `GET /contacts/{id}` devuelven los dos `customFields`, y por eso el
+   * refresco de la ficha puede pisar la columna sin perder nada. Se midió contra la subcuenta real
+   * el 2026-09-07 —24 y 27 valores del mismo contacto, misma forma— antes de escribir una línea.
+   *
+   * Pero es una propiedad DEL PROVEEDOR, no del código, y si algún día deja de valer —o si alguien
+   * borra `customFields` de `ContactoDeGhl` «porque no se usa en el GET»— el síntoma sería el peor
+   * posible: los campos aparecen al sincronizar y desaparecen al abrir la ficha, que es justo
+   * cuando alguien los mira. Nada falla, nada se registra.
+   *
+   * Acá el doble contesta con campos en la BÚSQUEDA y SIN campos en el GET: es exactamente el
+   * mundo en el que el defecto ocurre, y la aserción del final es que igual no ocurre.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const id = idDeGhl();
+  const CAMPO = 'campo-de-la-sincro';
+  const contacto: ContactoDeGhl = {
+    id,
+    contactName: 'Sincro Con Campos',
+    tags: ['zona_closer'],
+    customFields: [
+      { id: CAMPO, value: 'Más de $3,000' },
+      // Un `NUMERICAL`, que el proveedor devuelve como número. Si el normalizador asumiera texto,
+      // este valor se perdería sin error.
+      { id: 'campo-numerico', value: 68 },
+      // Y uno sin contestar: no tiene que ocupar una clave.
+      { id: 'campo-vacio', value: '' },
+    ],
+  };
+  preparar(porEtiqueta({ zona_closer: [contacto] }));
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+
+  const guardados = async () =>
+    conOrganizacion(esc.org, async () =>
+      datos()
+        .selectFrom('contactos')
+        .select('campos_del_crm')
+        .where('ghl_contact_id', '=', id)
+        .executeTakeFirst(),
+    );
+
+  const antes = await guardados();
+  assert.deepEqual(
+    antes?.campos_del_crm,
+    { [CAMPO]: 'Más de $3,000', 'campo-numerico': '68' },
+    'la sincronización no guardó los campos personalizados que venían en la misma respuesta',
+  );
+
+  // Y ahora se abre la ficha: `refrescarUnContacto` llama a `guardar()` de nuevo, con lo que el
+  // GET devuelva. El doble devuelve el contacto SIN `customFields`.
+  preparar((p) => {
+    if (p.url.startsWith(`${GHL}/contacts/`) && p.metodo === 'GET') {
+      return { estado: 200, cuerpo: { contact: { id, contactName: 'Sincro Con Campos', tags: ['zona_closer'] } } };
+    }
+    return { estado: 200, cuerpo: {} };
+  });
+  const refresco = await conOrganizacion(esc.org, async () => refrescarUnContacto(ACCESO, id));
+  assert.equal(refresco.tipo, 'listo');
+
+  const despues = await guardados();
+  assert.deepEqual(
+    despues?.campos_del_crm,
+    antes?.campos_del_crm,
+    'abrir la ficha borró los campos que había traído la sincronización',
+  );
+});
+
 test('refrescar recalcula el territorio y NO pisa `etapa` ni `score`', async () => {
   // Datos NUESTROS, no de GoHighLevel: el proveedor no expone etapa ni score y nada allá los
   // calcula. Si entraran al `do update`, cada apertura de ficha borraría el trabajo hecho acá.

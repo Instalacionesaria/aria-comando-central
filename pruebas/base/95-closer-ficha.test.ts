@@ -584,12 +584,19 @@ interface CuerpoDePerfil {
   falta: string | null;
 }
 
-test('el perfil trae `falta` INCLUSO con campos, porque los 160 del CRM no se leen todavía', async () => {
-  // Es el caso que se rompe si alguien condiciona `falta` a que la lista esté vacía, «por simetría»
-  // con las llamadas y el historial. No es simétrico y no puede serlo: el perfil devuelve seis
-  // columnas sincronizadas y la calificación entera —los 160 campos personalizados— sigue en
-  // GoHighLevel sin leerse. Un perfil con seis campos y `falta: null` afirma «esto es todo lo que
-  // hay de esta persona», y eso es falso hoy.
+test('un perfil con los datos básicos y sin campos del CRM sigue diciendo por qué no hay más', async () => {
+  /* ── ESTA PRUEBA EXIGÍA UN `falta` QUE VIAJARA SIEMPRE, Y ESO YA NO ES CIERTO ──
+   *
+   * Se llamaba *«el perfil trae `falta` INCLUSO con campos, porque los 160 del CRM no se leen
+   * todavía»*, y era correcta mientras la calificación entera viviera en GoHighLevel sin leerse.
+   * **Ya se lee** (migración 039), así que un `falta` incondicional habría pasado a decir algo
+   * falso justo en los perfiles completos — y un «falta» que miente sobre lo que falta lo lee
+   * alguien que está tratando de entender por qué una pantalla está a medias.
+   *
+   * Lo que la prueba defendía sigue defendido, y es lo importante: **un perfil con seis columnas y
+   * `falta: null` afirma «esto es todo lo que hay de esta persona»**. Este contacto se siembra sin
+   * ningún campo del CRM, así que ese `falta` tiene que estar. El caso contrario —con campos, y
+   * entonces sí `falta: null`— lo cubre la `136`. */
   const k = await unContacto(esc, {
     nombre: 'Ficha perfil',
     telefono: '+5491100000000',
@@ -601,8 +608,11 @@ test('el perfil trae `falta` INCLUSO con campos, porque los 160 del CRM no se le
   );
   assert.equal(r.estado, 200);
   assert.ok(r.cuerpo.campos.length > 0, 'el nombre y el teléfono sembrados tienen que venir');
-  assert.notEqual(r.cuerpo.falta, null, 'el perfil declara SIEMPRE que la calificación no se lee');
-  assert.match(r.cuerpo.falta ?? '', /GoHighLevel/i);
+  assert.notEqual(
+    r.cuerpo.falta,
+    null,
+    'sin ningún campo del CRM, el perfil tiene que decir por qué no hay más',
+  );
 
   const etiquetas = r.cuerpo.campos.map((c) => c.etiqueta);
   assert.ok(etiquetas.includes('Nombre'));

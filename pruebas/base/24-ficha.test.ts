@@ -437,13 +437,17 @@ test('las pestañas sin fuente dicen qué falta; el historial se arma con lo que
     perfil.filas.some((c) => c.etiqueta === 'Nombre'),
     'el perfil no muestra ni los datos que sí se sincronizan',
   );
-  assert.ok(perfil.falta, 'el perfil no dice que los campos de calificación todavía no se leen');
-  // Y NO inventa los grupos que no puede llenar. Un encabezado «Interacciones» con nada abajo
-  // afirma que se midió y no hay.
+  assert.ok(perfil.falta, 'el perfil no dice por qué no hay más que los datos básicos');
+  /* ── ESTA AFIRMACIÓN ERA AL REVÉS, Y CAMBIÓ POR UN MOTIVO ──────────────────
+     Decía que el grupo «Interacciones» NO podía tener campos, *«que todavía no tiene fuente»*. Ya
+     la tiene: son los campos personalizados de GoHighLevel (migración 039). Lo que se afirma ahora
+     es lo mismo que se afirmaba entonces —**el perfil no inventa grupos que no puede llenar**—
+     contra la fuente nueva: este contacto no tiene ni un campo del CRM guardado, así que el grupo
+     sigue sin aparecer. La prueba que cubre el caso lleno es la `136`. */
   assert.equal(
     perfil.filas.some((c) => c.grupo === 'interacciones'),
     false,
-    'el perfil inventó un campo del grupo Interacciones, que todavía no tiene fuente',
+    'el contacto no tiene campos del CRM y aun así apareció el grupo Interacciones',
   );
 
   assert.deepEqual(vacio.filas, []);

@@ -191,6 +191,100 @@ export const ESTANCADO = 'estancado';
 export const DERIVADO_LT = 'derivado_lt';
 
 // ═════════════════════════════════════════════════════════════════════════════
+// A.7 · LAS CARPETAS DE CAMPOS PERSONALIZADOS QUE SE MUESTRAN EN EL PERFIL
+//
+// La subcuenta tiene **170 campos personalizados repartidos en 24 carpetas** (medido el
+// 2026-09-07). Mostrarlos todos traería la atribución de campañas, los enlaces internos del sistema
+// y una carpeta llamada «OLD FIELDS» a la pantalla del closer. Se muestran cuatro.
+//
+// ── POR QUÉ LOS IDENTIFICADORES ESTÁN ACÁ Y NO EN UNA MIGRACIÓN ──────────────
+//
+// Porque **ninguna migración puede sembrar datos por organización**: el migrador es dueño de
+// `identidad.organizaciones` pero la tabla tiene `force row level security` sin política para él,
+// así que ve cero filas, y no puede asumir otro rol ni saltar RLS. Se midió con un `insert` que se
+// aplicó a producción y escribió cero filas sin error. Está contado en
+// `db/migraciones/039_campos_del_crm.sql`.
+//
+// Así que viven donde ya viven los otros literales de GoHighLevel, por el motivo que el encabezado
+// de este archivo da: un solo lugar donde mirar cuando algo no llega. La aplica
+// `lib/negocio/camposDelCrm.ts` **al descubrir una carpeta por primera vez**, y nunca después: una
+// carpeta que alguien esconda a mano en producción no se vuelve a encender sola.
+//
+// ── LA QUINTA QUE NO ESTÁ, QUE ES LA DECISIÓN MENOS OBVIA ────────────────────
+//
+// Existe «📁 Score | ICP» (9 campos), que NO es «Score | ICP Nuevo»: es la versión vieja de la misma
+// encuesta. Con las dos, cada pregunta se dibujaría dos veces con dos redacciones —«Clientes
+// activos» y «Clientes activos que tienes»— y nadie sabría cuál mirar, que es el defecto que
+// `lib/negocio/ficha.ts` describe. Queda afuera, y con ella se pierde «Confirmación Agendamiento».
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Una carpeta de campos personalizados, y a qué grupo del Perfil van sus campos. */
+export interface CarpetaDelPerfil {
+  /** El `parentId` que traen los campos de esa carpeta. */
+  id: string;
+  /** Cómo se llama en GoHighLevel. **Solo para poder leer esta lista** — no se usa para filtrar. */
+  nombre: string;
+  /** El grupo de `CampoDePerfil` donde caen sus campos. */
+  grupo: 'detalles' | 'origen' | 'calificacion' | 'interacciones';
+  confianza: Confianza;
+}
+
+export const CARPETAS_DEL_PERFIL: readonly CarpetaDelPerfil[] = [
+  // 1 campo: «Puntaje | ICP», el score que calcula el CRM.
+  { id: 'sVdAfUBdIWUzYedio9NZ', nombre: 'Contact', grupo: 'calificacion', confianza: 'confirmado' },
+  // 7 campos. El formulario de calificación vigente.
+  { id: 'wl94HF4LeeVKSncXJd7n', nombre: '📁 Score | ICP Nuevo', grupo: 'calificacion', confianza: 'confirmado' },
+  // 9 campos. El mismo cuestionario para quien entra por el formulario de Meta.
+  { id: 'HUuEIjbHAuPHZq7mT50v', nombre: '📁 Score | ICP Lead Form (Meta)', grupo: 'calificacion', confianza: 'confirmado' },
+  // 4 campos: confirmación de asistencia, video pre-call y las dos preguntas de la llamada. Es el
+  // primer grupo `interacciones` que el Perfil llega a dibujar — estaba declarado y vacío.
+  { id: 'snYRxsxScyRwlmYmPXWp', nombre: '📁 Interacciones', grupo: 'interacciones', confianza: 'confirmado' },
+];
+
+/**
+ * La etiqueta corta de los campos cuyo nombre en GoHighLevel es la PREGUNTA ENTERA.
+ *
+ * ── QUÉ ARREGLA ─────────────────────────────────────────────────────────────
+ *
+ * El `04` § 2 pide *«Objetivo de facturación», no la pregunta entera*. El formulario de Meta manda
+ * el nombre del campo tal como se lo lee el lead: *«¿A quien ayudas y que resultado entregas? Se
+ * especifico o sera rechazado»* son 72 caracteres en la columna de etiquetas de un perfil.
+ *
+ * Son siete, todos de la carpeta de Meta. Los demás campos ya llegan cortos —«Clientes activos»,
+ * «Tipo de negocio»— y darles una copia acá sería un segundo lugar donde equivocarse.
+ *
+ * ── POR QUÉ NO SE LES PONE LA MISMA ETIQUETA QUE A SU EQUIVALENTE ───────────
+ *
+ * Es la tentación obvia: «¿Cual es tu ticket promedio mensual por cliente?» pregunta exactamente lo
+ * mismo que «Ticket promedio mensual por cliente» de la otra carpeta, y unificarlas parece cumplir
+ * el `04` § 2 mejor todavía.
+ *
+ * **Medido: 5 contactos tienen los DOS formularios contestados.** Con la misma etiqueta, esos cinco
+ * perfiles mostrarían dos filas idénticas con valores distintos — que se lee como un defecto, no
+ * como dos respuestas. Así que se acortan, pero cada una conserva su voz.
+ *
+ * Se aplican solo cuando la columna está vacía (ver `lib/negocio/camposDelCrm.ts`): lo que alguien
+ * escriba a mano en producción gana.
+ */
+export const ETIQUETAS_CORTAS: Readonly<Record<string, string>> = {
+  // «¿A quien ayudas y que resultado entregas? Se especifico o sera rechazado»
+  oluk0uGxs3VRf3ZCUD7M: 'A quién ayuda y qué entrega',
+  // «¿Estas listo para empezar ahora a invertir entre USD 2.5k o USD8k?»
+  mTQp2wYrXZ9qA3ulkZqi: 'Listo para invertir',
+  // «¿A cuanto quieres llevar tu facturacion mensual en 6 meses?»
+  '2urjmy2X2Xztcgpq3hCi': 'Facturación a 6 meses',
+  // «URL de tus redes (Instagram, Facebook o LinkedIn)»
+  '8kCTyzlrI5OFbzWr2f8H': 'Redes',
+  // «¿Cual es tu ticket promedio mensual por cliente?»
+  NIU0mgYo2D9FoNQKqWnH: 'Ticket promedio',
+  // «¿Tienes un sistema de adquisicion de clientes?»
+  ooImXseTgh3uGGFUPkm8: 'Tiene sistema de adquisición',
+  // «URL de tu web (opcional)» — el «(opcional)» es una instrucción del formulario, no parte del
+  // dato: en un perfil ya contestado no informa nada y ocupa la mitad de la etiqueta.
+  cCAbRTykaDnt9Ns2u0Na: 'Web',
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
 // A.3 · LOS RESULTADOS DE AVANZAR — los escribe la APLICACIÓN
 // ═════════════════════════════════════════════════════════════════════════════
 

@@ -61,6 +61,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
+  camposDelContacto,
   contactoPorId,
   etiquetasDeLaSubcuenta,
   nombreDe,
@@ -68,6 +69,7 @@ import {
   type ContactoDeGhl,
   type FalloDeGhl,
 } from '../ghl/cliente.ts';
+import { refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
 
 /**
  * Las etiquetas de GoHighLevel, y a qué territorio corresponde cada una.
@@ -126,6 +128,14 @@ export interface Resumen {
    * etiqueta. Los dos NO son lo mismo: uno manda a revisar el token y el otro las etiquetas.
    */
   etiquetasDeLaCuenta: string[] | null;
+  /**
+   * Qué pasó con el catálogo de campos personalizados. `null` = **no se pudo leer**.
+   *
+   * Se informa por lo mismo que los salteados y los congelados: sin esto, un token sin el alcance
+   * para leer campos personalizados daría un Perfil con seis campos —el de siempre— y ninguna
+   * señal de por qué. `saltado: true` es el caso normal: el catálogo estaba fresco y no se pidió.
+   */
+  catalogoDeCampos: ResumenDelCatalogo | null;
 }
 
 export type ResultadoDeSincronizar =
@@ -153,6 +163,7 @@ export async function sincronizarContactos(acceso: {
     congelados: null,
     llamadas: 0,
     etiquetasDeLaCuenta: null,
+    catalogoDeCampos: null,
   };
 
   // Se recorren las etiquetas en orden de precedencia y se queda el PRIMER territorio que le
@@ -187,6 +198,29 @@ export async function sincronizarContactos(acceso: {
    * pero tiene `zona_closer` aparece en la segunda vuelta, y congelarlo al terminar la primera lo
    * sacaría de las colas hasta la sincronización siguiente. */
   resumen.congelados = await congelarLosQueYaNoEstan(vistos, resumen.truncado);
+
+  /* ── EL CATÁLOGO DE CAMPOS VA DESPUÉS DEL BUCLE, Y ESO SE MIDIÓ ────────────
+   *
+   * Los contactos ya guardaron sus campos personalizados: vienen crudos, como `{id: valor}`, y no
+   * necesitan el catálogo para escribirse. Lo único que el catálogo agrega es **cómo se llama cada
+   * id**, y eso se lee al abrir una ficha, no al sincronizar. Así que puede ir al final, y una
+   * empresa recién conectada igual termina esta misma corrida con el Perfil completo.
+   *
+   * Ponerlo ANTES parecía indistinto y no lo era: con un token rechazado, la sincronización se
+   * corta en la PRIMERA llamada —*«no se sigue preguntando con un token que ya se sabe malo»*, y
+   * `98-closer-sincronizar` lo afirma— y una lectura de catálogo adelante convertía esa promesa en
+   * dos llamadas. Lo cazó esa prueba, que es exactamente para lo que estaba escrita.
+   *
+   * Y su fallo NO rompe nada: `null` se informa y la sincronización sigue. Leer campos
+   * personalizados puede necesitar un alcance del token que la búsqueda de contactos no necesita
+   * —lo mismo que pasa con el catálogo de etiquetas—, y convertir un permiso que falta en «la
+   * sincronización falló» mandaría a mirar el lugar equivocado. */
+  resumen.catalogoDeCampos = await refrescarCatalogoDeCampos(acceso);
+  /* El `?? 1` no es una reserva arbitraria: `null` solo se devuelve DESPUÉS de intentar la lectura
+     —si el catálogo estaba fresco vuelve un resumen con `llamadas: 0`—, así que un fallo costó
+     exactamente una llamada. Poner `0` ahí haría que el reporte del cron subestime el gasto justo
+     en las corridas que fallan, que son las que se miran. */
+  resumen.llamadas += resumen.catalogoDeCampos?.llamadas ?? 1;
 
   // Si no vino NI UN contacto, la pregunta siguiente siempre es la misma: ¿estarán mal los
   // nombres de las etiquetas? Se contesta antes de que alguien la haga.
@@ -326,6 +360,30 @@ async function guardar(
        en `db/migraciones/034_varios_closers.sql` y en el tipo. `null` cuando no viene, que son
        17 de los 152 medidos y no es un error. */
     crm_asignado_a: c.assignedTo ?? null,
+    /* ── LOS CAMPOS PERSONALIZADOS, QUE YA VENÍAN EN ESTA MISMA RESPUESTA ──
+     *
+     * Cero llamadas nuevas: es una clave más del objeto que ya está en memoria, igual que
+     * `crm_asignado_a` acá arriba. Se guardan CRUDOS y por identificador — quién es cada id lo dice
+     * `negocio.campos_del_crm`, y guardarlos por nombre los congelaría el día que alguien renombre
+     * un campo en el CRM.
+     *
+     * ── LA CLAVE AUSENTE Y LA LISTA VACÍA NO SON LO MISMO ───────────────
+     *
+     * Si la respuesta NO TRAE `customFields`, no se escribe nada: se deja lo que había. Si la trae
+     * vacía, se escribe `{}` — el CRM está diciendo que este contacto no tiene ninguno.
+     *
+     * La diferencia es la que impide un defecto que no falla en ninguna parte. `guardar()` corre
+     * también al ABRIR LA FICHA, con lo que devuelva `GET /contacts/{id}`. Hoy ese endpoint los
+     * trae —medido el 2026-09-07, 27 valores del mismo contacto que la búsqueda—, pero eso es una
+     * propiedad del proveedor, no nuestra. El día que dejara de traerlos, o que alguien sacara
+     * `customFields` de `ContactoDeGhl` «porque el GET no lo usa», los campos aparecerían al
+     * sincronizar y se irían al abrir la ficha: justo cuando alguien los mira, y sin un solo error.
+     *
+     * `JSON.stringify` porque la columna es `jsonb`: es la misma disciplina que
+     * `analisis_del_agente.observaciones`. */
+    ...(c.customFields === undefined
+      ? {}
+      : { campos_del_crm: JSON.stringify(camposDelContacto(c)) }),
     sincronizado_el: sql<Date>`now()`,
   };
 
@@ -345,6 +403,10 @@ async function guardar(
         territorio: valores.territorio,
         crm_asignado_a: valores.crm_asignado_a,
         ...(c.source ? { fuente: c.source } : {}),
+        /* Los campos son un hecho de GoHighLevel, así que se pisan — la regla de arriba. Pero
+           SOLO si la respuesta los traía: el `...` de arriba deja la clave afuera cuando no
+           vinieron, y entonces acá tampoco entra y la fila conserva los suyos. */
+        ...('campos_del_crm' in valores ? { campos_del_crm: valores.campos_del_crm } : {}),
         sincronizado_el: valores.sincronizado_el,
       } as never),
     )

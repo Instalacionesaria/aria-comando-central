@@ -94,6 +94,60 @@ export interface ContactoDeGhl {
    * los 152, y la aplicación tiene que saber decir «sin asignar» en vez de esconderlos.
    */
   assignedTo?: string;
+  /**
+   * Los campos personalizados del contacto. **Solo `id` y `value`: ni el nombre ni la carpeta.**
+   *
+   * ── LLEGAN EN LAS DOS LLAMADAS QUE YA SE HACEN ──────────────────────────
+   *
+   * Medido el 2026-09-07 contra la subcuenta real: `POST /contacts/search` trae 24 valores en el
+   * primer contacto y `GET /contacts/{id}` trae 27 del mismo contacto, **con la misma forma**.
+   * Leerlos cuesta cero llamadas nuevas, igual que `assignedTo` acá arriba.
+   *
+   * Que las dos formas sean iguales es lo que hace seguro escribirlos: si el `GET` no los trajera,
+   * abrir una ficha borraría lo que la sincronización guardó, sin fallar en ninguna parte.
+   *
+   * ── `value` ES `unknown` A PROPÓSITO ────────────────────────────────────
+   *
+   * **No siempre es texto.** «Puntaje | ICP» es `NUMERICAL` y vuelve como el número `68`. Declararlo
+   * `string` lo haría pasar el compilador y llegar a la pantalla como `"[object Object]"` el día
+   * que aparezca un campo de casillas, que devuelve un arreglo. Lo normaliza `camposDelContacto`.
+   */
+  customFields?: { id?: unknown; value?: unknown }[];
+}
+
+/**
+ * Los campos personalizados de un contacto, normalizados a `{id: texto}`.
+ *
+ * ── UN CAMPO SIN VALOR NO ENTRA AL MAPA ─────────────────────────────────────
+ *
+ * No se guarda con cadena vacía: se OMITE la clave. GoHighLevel manda el campo igual cuando el
+ * lead no lo respondió, y una clave con `""` guardada haría que el Perfil tuviera que volver a
+ * filtrar lo mismo más tarde — dos filtros del mismo hecho, y el día que discrepen gana el que
+ * nadie mira. Acá se decide una vez y lo que queda guardado ya es lo que se puede mostrar.
+ *
+ * Un arreglo se une con comas: es lo que devuelve un campo de casillas, y la alternativa sería
+ * `"[object Object]"` en la pantalla del closer.
+ */
+export function camposDelContacto(c: ContactoDeGhl): Record<string, string> {
+  const mapa: Record<string, string> = {};
+  for (const campo of c.customFields ?? []) {
+    if (typeof campo?.id !== 'string' || campo.id === '') continue;
+    const v = campo.value;
+    let texto: string;
+    if (Array.isArray(v)) {
+      texto = v.filter((x) => x !== null && x !== undefined && String(x).trim() !== '').join(', ');
+    } else if (v === null || v === undefined || typeof v === 'object') {
+      // Un objeto que no es arreglo no tiene representación honesta —`String()` da
+      // `"[object Object]"`, que se dibujaría como si fuera la respuesta del lead—, así que se
+      // saltea. No se ha visto ninguno; está por si aparece.
+      continue;
+    } else {
+      texto = String(v);
+    }
+    if (texto.trim() === '') continue;
+    mapa[campo.id] = texto;
+  }
+  return mapa;
 }
 
 /** Lo que devuelve la búsqueda. */
@@ -524,4 +578,112 @@ export async function quitarEtiquetas(
   );
   if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
   return { tipo: 'datos', datos: { quitadas: etiquetas.length } };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL CATÁLOGO DE CAMPOS PERSONALIZADOS
+//
+// El contacto trae `[{id, value}]` y nada más. Para saber que `9HXxl5DW6aayQgKUPiOS` se llama
+// «Puntaje | ICP» y vive en la carpeta «Contact» hay que leer el catálogo de la subcuenta, que es
+// una llamada aparte y **no es por contacto**: son 170 campos en 24 carpetas, iguales para todos.
+//
+// ── LAS CARPETAS NO SE PUEDEN LISTAR. SE MIDIÓ. ───────────────────────────────
+//
+// `GET /locations/{loc}/customFields` devuelve los campos con su `parentId`, pero **ninguna forma
+// de pedir las carpetas funciona**. Probadas el 2026-09-07 contra la subcuenta real:
+//
+//   `…/customFields?model=contact`                → 200, pero devuelve CAMPOS, no carpetas
+//   `…/customFields/folder`                       → 400 «CustomField with id folder not found»
+//   `/custom-fields/folder?locationId=…`          → 400, el mismo error
+//   `/objects/contact/fields?locationId=…`        → 404
+//
+// La única que sirve es `…/customFields/{id}` con el id de la carpeta, **una por una**. Por eso
+// `nombreDeCarpeta` está separada de `camposPersonalizados`: quien llama decide cuáles pedir, y
+// `lib/negocio/camposDelCrm.ts` pide solo las que todavía no conoce. La primera vez son 24
+// llamadas; después, cero, y una sola cada vez que aparece una carpeta nueva.
+//
+// Es la misma cota dura que `calendarios.ts` documenta para su barrido, y se dice por lo mismo:
+// un número que nadie escribió es un número que nadie mira cuando la factura sube.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Una definición de campo personalizado, ya podada a lo que se guarda. */
+export interface CampoDelCrm {
+  id: string;
+  /** El `name` de GoHighLevel, tal cual. */
+  nombre: string;
+  /** La carpeta a la que pertenece. */
+  carpetaId: string;
+  /** El `dataType`: `LARGE_TEXT`, `RADIO`, `SINGLE_OPTIONS`, `TEXT`, `NUMERICAL`… */
+  tipo: string;
+  /** El `position` dentro de su carpeta. Llega fraccionario: se midió `12.5`. */
+  posicion: number;
+}
+
+/**
+ * El catálogo de campos personalizados de la subcuenta. **Una llamada.**
+ *
+ * `null` = no se pudo leer. Como `etiquetasDeLaSubcuenta`, y por el mismo motivo: esto puede
+ * necesitar un alcance del token que la búsqueda de contactos no necesita, y convertir un permiso
+ * que falta en «la sincronización falló» mandaría a revisar el lugar equivocado.
+ *
+ * ── LO QUE SE DESCARTA, Y POR QUÉ NO ES UN FILTRO DE NEGOCIO ────────────────
+ *
+ * Las entradas con `documentType` distinto de `'field'` — las carpetas se devuelven mezcladas con
+ * los campos en algunas respuestas. Y las que no traen `parentId`: medido, **0 de 170** están en
+ * ese caso, así que un campo sin carpeta sería una forma nueva y guardarlo obligaría a inventar a
+ * qué carpeta pertenece. Cuál carpeta se MUESTRA no se decide acá: eso vive en la base.
+ */
+export async function camposPersonalizados(acceso: {
+  token: string;
+  locationId: string;
+}): Promise<CampoDelCrm[] | null> {
+  const r = await pedirExterno<{ customFields?: unknown }>(
+    `${BASE}/locations/${encodeURIComponent(acceso.locationId)}/customFields`,
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+  );
+  if (r.tipo !== 'datos') return null;
+  if (!Array.isArray(r.datos?.customFields)) return null;
+
+  return (r.datos.customFields as Record<string, unknown>[])
+    .filter(
+      (f) =>
+        typeof f?.id === 'string' &&
+        f.id !== '' &&
+        typeof f.name === 'string' &&
+        f.name.trim() !== '' &&
+        typeof f.parentId === 'string' &&
+        f.parentId !== '' &&
+        // Solo campos. Una carpeta que se colara acá entraría al catálogo como si fuera un dato
+        // del contacto, con un nombre que parece una etiqueta y un valor que nunca llega.
+        (f.documentType === undefined || f.documentType === 'field'),
+    )
+    .map((f) => ({
+      id: f.id as string,
+      nombre: (f.name as string).trim(),
+      carpetaId: f.parentId as string,
+      tipo: typeof f.dataType === 'string' && f.dataType !== '' ? f.dataType : 'DESCONOCIDO',
+      posicion: typeof f.position === 'number' && Number.isFinite(f.position) ? f.position : 0,
+    }));
+}
+
+/**
+ * El nombre de UNA carpeta. `null` = no se pudo leer.
+ *
+ * Se llama una vez por carpeta desconocida — ver el bloque de arriba: GoHighLevel no las lista.
+ *
+ * El `null` se guarda tal cual y no se reemplaza por el identificador: una carpeta sin nombre sigue
+ * funcionando entera —el filtro es por id— y poner `sVdAfUBdIWUzYedio9NZ` de reserva lo dibujaría
+ * como si fuera un título que alguien eligió.
+ */
+export async function nombreDeCarpeta(
+  acceso: { token: string; locationId: string },
+  carpetaId: string,
+): Promise<string | null> {
+  const r = await pedirExterno<{ customField?: { name?: unknown } }>(
+    `${BASE}/locations/${encodeURIComponent(acceso.locationId)}/customFields/${encodeURIComponent(carpetaId)}`,
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+  );
+  if (r.tipo !== 'datos') return null;
+  const n = r.datos?.customField?.name;
+  return typeof n === 'string' && n.trim() !== '' ? n.trim() : null;
 }

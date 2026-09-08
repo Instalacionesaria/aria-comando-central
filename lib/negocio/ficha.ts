@@ -22,6 +22,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { camposQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
 import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
 import { fechaDelDia } from './tiempo.ts';
@@ -132,9 +133,20 @@ const FALTA = {
     'Este contacto no tiene todavía ningún resultado, seguimiento, cita ni nota. Los eventos de ' +
     'sistema —cuando se apaga el bot o cambia una etiqueta— no se registran todavía, así que ' +
     'tampoco aparecen acá.',
-  perfil:
-    'Los campos del formulario y de calificación viven en GoHighLevel y todavía no se leen. Lo ' +
-    'que se muestra son los datos que sí se sincronizan.',
+  /* ── ESTE TEXTO DECÍA QUE LOS CAMPOS «TODAVÍA NO SE LEEN», Y AHORA SE LEEN ──
+     Era uno solo y viajaba SIEMPRE. Dejarlo habría sido peor que borrarlo: un «falta» que miente
+     sobre lo que falta lo lee justamente alguien que está tratando de entender por qué una pantalla
+     está a medias, y lo manda al lugar equivocado. Es lo mismo que ya le pasó a `historial`.
+
+     Ahora son dos, y dicen cosas distintas porque mandan a mirar lugares distintos: uno es un
+     estado del sistema —nadie leyó el catálogo todavía— y el otro es un hecho sobre este contacto.
+     Cuando hay campos no viaja ninguno. */
+  perfilSinCatalogo:
+    'Todavía no se leyó el catálogo de campos de GoHighLevel, así que solo se muestran los datos ' +
+    'básicos del contacto. Se lee al sincronizar contactos.',
+  perfilSinRespuestas:
+    'Este contacto no completó ninguno de los formularios de calificación, así que no hay más ' +
+    'datos que mostrar.',
 } as const;
 
 // ─── Chat ───────────────────────────────────────────────────────────────────
@@ -381,13 +393,16 @@ export interface CampoDePerfil {
  * acentuada y sin acentuar, **las dos existiendo a la vez**. Agrupando por formulario, ese dato
  * aparecería dos veces con dos nombres y nadie sabría cuál mirar.
  *
- * ── LO QUE HOY SE PUEDE MOSTRAR, Y NADA MÁS ─────────────────────────────────
+ * ── Y AHORA SÍ SE LEEN, PERO SOLO LAS CARPETAS ELEGIDAS ─────────────────────
  *
- * Solo las columnas que la sincronización trae de verdad. Los 160 campos personalizados —la
- * calificación entera— viven en GoHighLevel y todavía no se leen; el `falta` lo dice. Inventar los
- * grupos de Calificación e Interacciones con etiquetas vacías sería la forma exacta del defecto que
- * `components/negocio/Fila.jsx` documenta: datos que solo existían en el ejemplo, en producción,
- * mostrando cifras que no eran de nadie.
+ * Este comentario decía que los campos personalizados *«viven en GoHighLevel y todavía no se
+ * leen»*. Ya se leen: llegaban en la misma respuesta que la sincronización ya pedía y nadie los
+ * miraba. El cómo está en `db/migraciones/039_campos_del_crm.sql`.
+ *
+ * Lo que **no** cambió es la disciplina: no se muestran los 170. Se muestran los de las carpetas
+ * que alguien eligió, y esa elección vive en `negocio.carpetas_del_crm` — una carpeta nueva en el
+ * CRM nace invisible. Mostrarlos todos habría traído la atribución de campañas, los enlaces de
+ * sistema y una carpeta llamada «OLD FIELDS» a la pantalla del closer.
  *
  * **Los grupos sin campos no se dibujan** (`04` § 2), y eso lo decide la pantalla contando lo que
  * llega — no hace falta mandar grupos vacíos para que los descarte.
@@ -395,11 +410,23 @@ export interface CampoDePerfil {
 export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<CampoDePerfil>> {
   const c = await datos()
     .selectFrom('contactos')
-    .select(['nombre', 'telefono', 'email', 'fuente', 'etiquetas', 'score', 'sincronizado_el'])
+    .select([
+      'nombre',
+      'telefono',
+      'email',
+      'fuente',
+      'etiquetas',
+      'score',
+      'campos_del_crm',
+      'sincronizado_el',
+    ])
     .where('id', '=', contactoId)
     .executeTakeFirst();
 
-  if (!c) return { filas: [], falta: FALTA.perfil };
+  /* Un contacto que no existe no tiene ni catálogo que consultar. Se devuelve el texto del catálogo
+     porque es el único de los dos que no afirma nada sobre este contacto — decir «no completó los
+     formularios» de una fila que no está sería inventar un hecho. */
+  if (!c) return { filas: [], falta: FALTA.perfilSinCatalogo };
 
   const campos: CampoDePerfil[] = [];
   const poner = (etiqueta: string, valor: string | null, grupo: CampoDePerfil['grupo']) => {
@@ -421,7 +448,37 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
   // para la primera pregunta cuando alguien dice «éste no va acá».
   poner('Etiquetas', (c.etiquetas ?? []).join(', '), 'origen');
 
-  return { filas: campos, falta: FALTA.perfil };
+  /* ── LOS CAMPOS DEL CRM, POR EL MISMO `poner` QUE TODO LO DEMÁS ───────────
+   *
+   * No se escribe un filtro nuevo a propósito. `poner` ya descarta lo vacío, y el `04` § 2 —*«un
+   * campo vacío afirma algo falso»*— tiene que valer igual para «Correo» que para «Ticket promedio
+   * mensual». Dos filtros del mismo hecho es un lugar donde divergir, y el día que diverjan gana el
+   * que nadie está mirando.
+   *
+   * El orden lo pone `camposQueSeMuestran` —carpeta y después posición dentro de ella—, que es lo
+   * que mantiene juntas las preguntas de un mismo formulario. */
+  const mostrables = await camposQueSeMuestran();
+  const valores = c.campos_del_crm ?? {};
+  const antes = campos.length;
+  for (const m of mostrables) poner(m.etiqueta, valores[m.campoId] ?? null, m.grupo);
+  const cuantosDelCrm = campos.length - antes;
+
+  /* ── EL «FALTA», QUE AHORA DEPENDE DE POR QUÉ NO HAY MÁS ───────────────────
+   *
+   * Tres situaciones y tres respuestas distintas. Colapsarlas devolvería un texto que a veces
+   * miente, que es exactamente lo que este archivo acaba de arreglar.
+   *
+   * Y se cuenta lo que ENTRÓ, no lo que el catálogo ofrece: un catálogo con veintiún campos y un
+   * contacto que no respondió ninguno no es «todo en orden», es un contacto sin formulario. Mirar
+   * `mostrables.length` habría devuelto `null` ahí y dejado la pantalla sin explicación. */
+  if (cuantosDelCrm > 0) return { filas: campos, falta: null };
+  return {
+    filas: campos,
+    // `mostrables` vacío no distingue «nadie leyó el catálogo» de «se leyó y ninguna carpeta está
+    // elegida»: las dos son estados del sistema y las dos mandan al mismo lado. Por eso la
+    // pregunta que se hace es si HAY catálogo.
+    falta: (await hayCatalogo()) ? FALTA.perfilSinRespuestas : FALTA.perfilSinCatalogo,
+  };
 }
 
 // ─── Historial ──────────────────────────────────────────────────────────────
