@@ -45,7 +45,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir, hayQueVolverAEntrar, type Respuesta } from '../../lib/http/cliente.ts';
 import { destinoSeguro } from '../../lib/autorizacion/destino.ts';
-import { MINIMO_PASSWORD } from '../../lib/autenticacion/politica.ts';
+import { MINIMO_PASSWORD, problemaDeLaNueva } from '../../lib/autenticacion/politica.ts';
 import './entrar.css';
 
 /** Los estados de sesión, tal como los escribe `lib/autorizacion/estados.ts`. */
@@ -371,15 +371,17 @@ export default function Entrar() {
 
   async function cambiarPassword(e: React.FormEvent) {
     e.preventDefault();
-    // Las dos comprobaciones del cliente: el largo lo exige también el servidor y esto evita
-    // el viaje (ver `MINIMO_PASSWORD`); la igualdad de las dos copias NO la puede comprobar el
-    // servidor, porque solo recibe una.
-    if (nueva !== repetida) {
-      setError('Las dos contraseñas no coinciden.');
-      return;
-    }
-    if (nueva.length < MINIMO_PASSWORD) {
-      setError(`La contraseña nueva necesita al menos ${MINIMO_PASSWORD} caracteres.`);
+    /* Las dos comprobaciones del cliente: el largo lo exige también el servidor y esto evita el
+       viaje (ver `MINIMO_PASSWORD`); la igualdad de las dos copias NO la puede comprobar el
+       servidor, porque solo recibe una.
+
+       Estaban escritas acá, con sus dos mensajes, y se mudaron a `politica.ts` —donde ya vivía el
+       número— cuando el menú de la cuenta estrenó su propio formulario de cambio. Con la copia,
+       las dos pantallas habrían dicho lo mismo con palabras propias sobre el mismo rechazo, y ése
+       es el defecto que ese archivo existe para no repetir. */
+    const problema = problemaDeLaNueva(nueva, repetida);
+    if (problema) {
+      setError(problema);
       return;
     }
     const r = await enviar(

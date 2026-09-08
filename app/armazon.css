@@ -221,6 +221,26 @@
   gap: 10px;
 }
 
+/* ── UN FORMULARIO DENTRO DE LA VENTANA ──────────────────────────────────────
+ *
+ * `.vt-cuerpo` separa a sus hijos DIRECTOS, y un `<form>` es uno solo: sus campos quedarían
+ * pegados entre sí. Los formularios que ya vivían en ventanas —el alta de una persona, la meta de
+ * comisión— ponen los campos como hijos directos con un fragmento, así que nunca hizo falta.
+ *
+ * El del cambio de contraseña sí necesita ser un `<form>` de verdad: son tres campos y tiene que
+ * enviarse con Enter, que es como se completa un formulario de contraseñas —y como lo llena un
+ * gestor de contraseñas—. Con los campos sueltos habría que escuchar la tecla a mano, que es la
+ * versión frágil de algo que el navegador ya hace.
+ *
+ * Así que hereda la misma separación en vez de inventarle otra: dos formularios de ventana con
+ * aires distintos se leen como dos diseños. */
+.vt-cuerpo > form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
 /* Quien pidió menos movimiento recibe la ventana sin animación, no una animación más lenta. */
 @media (prefers-reduced-motion: reduce) {
   .vt-caja,

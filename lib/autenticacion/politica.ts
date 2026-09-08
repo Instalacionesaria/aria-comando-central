@@ -57,3 +57,49 @@
  * produce 14 caracteres con muestreo por rechazo, y ese largo lo fija el `05` § 3.
  */
 export const MINIMO_PASSWORD = 9;
+
+/**
+ * Qué le falta a una contraseña nueva, o `null` si está bien. **El texto es el que se muestra.**
+ *
+ * ── POR QUÉ ACÁ Y NO EN CADA FORMULARIO ────────────────────────────────────
+ *
+ * Porque ahora hay DOS pantallas que eligen una contraseña, y por el mismo motivo por el que este
+ * archivo existe: el número estaba escrito dos veces y la nota de arriba cuenta cómo se llega a
+ * *«un formulario que acepta una contraseña que el servidor rechaza — o peor, a uno que la rechaza
+ * cuando el servidor la habría aceptado, y nadie sabe por qué»*.
+ *
+ *   · `app/entrar/page.tsx`, cuando la sesión está en `debe_cambiar_password` — la única salida de
+ *     ese estado;
+ *   · el menú de la cuenta, donde cualquiera cambia la suya cuando quiere.
+ *
+ * Las dos comprobaciones viajaban juntas con sus dos mensajes, y copiarlas era copiar también la
+ * redacción: dos pantallas diciendo lo mismo con palabras distintas sobre el mismo rechazo.
+ *
+ * ── LA COMPROBACIÓN QUE EL SERVIDOR **NO** PUEDE HACER ─────────────────────
+ *
+ * La igualdad de las dos copias. El endpoint recibe UNA sola contraseña nueva, así que la
+ * confirmación es necesariamente del lado de la pantalla — y es la única de las dos que no tiene
+ * una segunda línea de defensa. El largo lo vuelve a exigir el servidor.
+ */
+export function problemaDeLaNueva(nueva: string, repetida: string): string | null {
+  if (nueva !== repetida) return 'Las dos contraseñas no coinciden.';
+  if (nueva.length < MINIMO_PASSWORD) {
+    return `La contraseña nueva necesita al menos ${MINIMO_PASSWORD} caracteres.`;
+  }
+  return null;
+}
+
+/**
+ * Lo que pasa además de cambiar la contraseña, dicho ANTES de apretar el botón.
+ *
+ * `POST /api/auth/sesion` cierra **todas las demás sesiones** del usuario, y ese comentario explica
+ * por qué: *«cambiar la contraseña es lo que hace alguien que sospecha que le entraron; dejar las
+ * otras sesiones vivas lo volvería inútil»*.
+ *
+ * Es correcto y hay que anunciarlo, porque de lo contrario alguien la cambia en la computadora y se
+ * encuentra afuera en el teléfono sin saber por qué — y lo va a leer como que la aplicación se
+ * rompió, no como que hizo lo que pidió. El texto vive acá para que las dos pantallas lo digan
+ * igual.
+ */
+export const AVISO_DE_OTRAS_SESIONES =
+  'Al cambiarla, se cierran tus sesiones en los demás dispositivos. Esta no.';
