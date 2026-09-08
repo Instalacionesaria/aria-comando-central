@@ -161,6 +161,61 @@ export const NO_SON_MENSAJES: readonly string[] = [
   'TYPE_INTERNAL_COMMENT',
 ];
 
+/**
+ * Los canales que el chat muestra. **WhatsApp y SMS, y nada más.**
+ *
+ * ── ES UNA LISTA DE INCLUSIÓN, Y ARRIBA DICE LO CONTRARIO ───────────────────
+ *
+ * `NO_SON_MENSAJES` es de EXCLUSIÓN a propósito, y su motivo sigue en pie: un tipo de actividad
+ * nuevo aparece como renglón confuso en vez de desaparecer en silencio. Acá se hace al revés, y no
+ * por inconsistencia — las dos listas contestan preguntas distintas:
+ *
+ *   · aquélla: «¿esto es un mensaje o es una entrada del registro del CRM?»
+ *   · ésta:    «¿este mensaje viajó por un canal que esta aplicación puede contestar?»
+ *
+ * Y la segunda tiene una respuesta cerrada que no depende de lo que el proveedor invente: se puede
+ * mandar por **WhatsApp o SMS**, y por nada más. Lo dice el tipo `CanalDeEnvio` de
+ * `lib/ghl/conversaciones.ts`, que tiene exactamente esos dos valores.
+ *
+ * Por eso un canal nuevo tiene que quedar AFUERA hasta que alguien lo agregue: el compositor del
+ * chat abre una caja de texto que sale por WhatsApp. Mostrar ahí un correo o un mensaje de Instagram
+ * invita a contestar por un canal por el que el contacto no escribió — y el closer no tiene forma de
+ * notarlo, porque la burbuja se ve igual que las demás.
+ *
+ * ── QUÉ SE VEÍA, MEDIDO ────────────────────────────────────────────────────
+ *
+ * Sobre 392 mensajes de nuestros contactos (2026-09-08): **17 correos** y **9 registros de llamada**
+ * se dibujaban como burbujas. Los nueve de llamada traen `body: ""`, así que salían con el marcador
+ * `[mensaje sin texto]` —el que existe para los audios y las imágenes— sobre algo que no fue un
+ * mensaje. El detalle completo está en `db/migraciones/040_canal_del_mensaje.sql`.
+ *
+ * ── LOS TRES VALORES, Y CUÁL NO ESTÁ MEDIDO ────────────────────────────────
+ *
+ * `TYPE_WHATSAPP` y `TYPE_CUSTOM_SMS` se midieron en la cuenta real (167 y 110). `TYPE_SMS` está
+ * por la especificación y **no se vio ni una vez**: va igual porque el enumerado documentado lo
+ * declara y dejarlo afuera esconde SMS de verdad. Al revés —que sobre— no cuesta nada.
+ */
+export const CANALES_DEL_CHAT: readonly string[] = ['TYPE_WHATSAPP', 'TYPE_CUSTOM_SMS', 'TYPE_SMS'];
+
+/**
+ * `true` si el mensaje viajó por un canal que el chat muestra.
+ *
+ * **Sin tipo devuelve `false`**, y acá sí es al revés que en `esUnMensaje`. No es una contradicción:
+ * esta función decide si una fila **se guarda**, y sin `messageType` no se sabe el canal — guardarla
+ * sería meter a la tabla del chat algo que quizá es un correo. Medido: de 392 mensajes, **ninguno**
+ * llegó sin `messageType`, así que el caso no ocurre y la decisión no le cuesta nada a nadie.
+ *
+ * Lo que sí ocurre es el otro lado: las filas guardadas ANTES de que existiera la columna no tienen
+ * tipo. Ésas las decide `lib/negocio/ficha.ts` al leer, y ahí la respuesta es la contraria —se
+ * muestran— porque de ellas no hay nada que averiguar y son casi todas WhatsApp. Las dos preguntas
+ * son distintas y por eso las respuestas no coinciden.
+ */
+export function esDeUnCanalDelChat(messageType: string | null | undefined): boolean {
+  const t = String(messageType ?? '').trim();
+  if (t === '') return false;
+  return CANALES_DEL_CHAT.includes(t);
+}
+
 /** `true` si esto es un mensaje de verdad y no un registro de actividad del CRM. */
 export function esUnMensaje(messageType: string | null | undefined): boolean {
   const t = String(messageType ?? '').trim();

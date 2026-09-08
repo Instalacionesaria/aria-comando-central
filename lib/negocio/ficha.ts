@@ -22,6 +22,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { CANALES_DEL_CHAT } from '../ghl/entrega.ts';
 import { camposQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
 import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
@@ -172,6 +173,19 @@ export interface MensajeDeFicha {
 const TOPE_DE_MENSAJES = 200;
 
 /**
+ * El canal de una fila de `negocio.mensajes`, mirando las dos columnas.
+ *
+ * `tipo_ghl` es el canal y lo escriben los escritores desde la migración 040. Las filas anteriores
+ * lo tienen nulo, y para ellas el respaldo es `canal` **solo cuando empieza con `TYPE`**: esa
+ * columna guarda el `from` del CRM, que salía de `from ?? messageType`, así que un `TYPE_…` ahí es
+ * el tipo que se colaba por el respaldo. Un teléfono o un nombre no dicen nada y quedan en nulo.
+ *
+ * Está en una constante y no escrito dos veces en el `where` porque son dos comparaciones sobre la
+ * MISMA expresión: copiarla es cómo una de las dos se queda vieja.
+ */
+const CANAL_EFECTIVO = sql<string | null>`coalesce(tipo_ghl, case when canal like 'TYPE%' then canal end)`;
+
+/**
  * Los mensajes del contacto, del más viejo al más nuevo.
  *
  * ── EL TOPE SE PIDE DESCENDENTE Y SE DA VUELTA ──────────────────────────────
@@ -208,6 +222,41 @@ export async function mensajesDeLaFicha(
       'fallo_del_canal',
     ])
     .where('contacto_id', '=', contactoId)
+    /* ── SOLO WHATSAPP Y SMS ───────────────────────────────────────────────
+     *
+     * La ingesta ya no guarda otros canales, así que este `where` es para las **5.124 filas que ya
+     * estaban**, escritas antes de que `tipo_ghl` existiera.
+     *
+     * ── EL CANAL EFECTIVO, Y POR QUÉ SE INFIERE ACÁ Y NO EN LA MIGRACIÓN ─
+     *
+     * `canal` guarda el `from` del CRM, que salía de `from ?? messageType`: cuando `from` vino nulo
+     * quedó ahí el TIPO. Medido, los correos traen `from: null` los 17 de la muestra y ningún
+     * WhatsApp ni SMS lo trae nulo, así que un `canal` que empieza con `TYPE` **es** el canal — de
+     * ahí las 378 filas con `TYPE_EMAIL`.
+     *
+     * La 040 intentó etiquetarlas con un `update` y escribió **cero filas sin error**: el migrador no
+     * ve filas de inquilino bajo la RLS forzada. Está contado en su encabezado. Acá el rol es
+     * `app_inquilino`, así que la misma inferencia sí ve las filas — y encima vale para cualquier
+     * organización sin que nadie corra un arreglo por empresa.
+     *
+     * ── UN NULO SE MUESTRA, Y ES LA DECISIÓN CONTRARIA A LA DE ESCRITURA ──
+     *
+     * `esDeUnCanalDelChat` descarta lo que no tiene canal; acá el nulo pasa. Las dos son correctas
+     * porque las preguntas son distintas: allá se decide si una fila NUEVA entra a la tabla, y sin
+     * canal no se sabe qué es. Acá la fila ya está, y su nulo significa «se guardó cuando el canal no
+     * se leía», no «sin canal». Esconderlas vaciaría el chat de todos los contactos por un cambio de
+     * esquema, que es exactamente el defecto que el `03` § 7 nombra —*«para el auditor ese mensaje no
+     * existió y el turno anterior parecía sin respuesta»*— multiplicado por todas las conversaciones.
+     *
+     * Lo que esto NO esconde, dicho de frente: los registros de llamada viejos. Su `from` trae
+     * teléfono, así que no hay de dónde inferir el tipo. Son el 2,3 % medido, todos salientes, y se
+     * dibujan como `[mensaje sin texto]`. Las nuevas ya no entran. */
+    .where((eb) =>
+      eb.or([
+        eb(CANAL_EFECTIVO, 'is', null),
+        eb(CANAL_EFECTIVO, 'in', [...CANALES_DEL_CHAT]),
+      ]),
+    )
     .orderBy('enviado_el', 'desc')
     // Desempate estable: dos mensajes con el mismo instante —pasa con los importados— saldrían en
     // orden distinto en cada pedido, y el reloj del chat los vería como mensajes nuevos.

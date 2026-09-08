@@ -321,6 +321,81 @@ test('el POST con la ventana CERRADA se rechaza Y NO ESCRIBE NINGÚN MENSAJE', a
   );
 });
 
+test('el POST que SÍ manda escribe la fila declarando su canal', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * EL ÚNICO CAMINO DEL `POST` QUE NINGUNA PRUEBA RECORRÍA
+   *
+   * Las tres pruebas de acá al lado cubren los rechazos —ventana cerrada, texto vacío, sin
+   * credencial— y **ninguna llega a escribir**, porque en pruebas ninguna empresa tiene token del
+   * CRM. Así que la fila que este `POST` escribe no la miraba nadie.
+   *
+   * Lo encontró el arnés de mutación del canal del chat: poner `tipo_ghl: null` en esta ruta dejaba
+   * las 1.500 pruebas en verde. Y la consecuencia no es visible —una fila sin canal se muestra
+   * igual, por la regla de las 5.124 anteriores a la migración 040— que es justamente lo que la
+   * hace difícil de notar: el mensaje propio aparecería en el chat **por la regla de las filas
+   * viejas** y no porque se sepa por dónde salió.
+   *
+   * ── LO QUE HAY QUE ARMAR PARA LLEGAR ACÁ, Y POR QUÉ VALE ─────────────────
+   *
+   * Una credencial de verdad —cifrada con la clave maestra del entorno— y un doble de
+   * `globalThis.fetch`, que es la única salida del proyecto (`ADR-0305`). Con eso, la ruta corre
+   * completa: resuelve el acceso, «manda», y escribe por `escribirMensajes`, que es el único
+   * escritor.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const { cifrar } = await import('../../lib/credenciales/cifrado.ts');
+  const { TIPO_DEL_CANAL } = await import('../../lib/ghl/conversaciones.ts');
+
+  await esc.admin.query('delete from identidad.organizaciones_credenciales where org_id = $1', [esc.org]);
+  await esc.admin.query(
+    `insert into identidad.organizaciones_credenciales (org_id, crm_token_cifrado, crm_cuenta_id, crm_estado)
+     values ($1, $2, 'loc-de-prueba', 'activa')`,
+    [esc.org, cifrar('token-de-prueba')],
+  );
+
+  // La ventana abierta: un entrante reciente. Sin esto la ruta rechaza antes de mandar.
+  const k = await unContacto(esc, { ultimoEntranteEl: new Date(Date.now() - HORA) });
+  await unMensaje(esc, k.id, { direccion: 'entrante', enviadoEl: new Date(Date.now() - HORA) });
+  const antes = await cuantosMensajes(k.id);
+
+  const original = globalThis.fetch;
+  let mandado: unknown = null;
+  globalThis.fetch = (async (entrada: RequestInfo | URL, opciones?: RequestInit) => {
+    const url = typeof entrada === 'string' ? entrada : String((entrada as Request).url ?? entrada);
+    if (url.includes('/conversations/messages')) {
+      mandado = typeof opciones?.body === 'string' ? JSON.parse(opciones.body) : null;
+      return new Response(JSON.stringify({ messageId: 'del-crm-1', conversationId: 'conv-1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const r = await escribirChat(k.id, 'Ahí va el link, Camila');
+    assert.equal(r.status, 201, `el envío tenía que quedar aceptado: vino ${r.status}`);
+    assert.equal(await cuantosMensajes(k.id), antes + 1, 'el envío no escribió su fila');
+
+    // Se mandó por WhatsApp, que es el canal que el compositor usa.
+    assert.equal((mandado as { type?: string } | null)?.type, 'WhatsApp');
+
+    const fila = await esc.admin.query<{ tipo_ghl: string | null; canal: string | null }>(
+      `select tipo_ghl, canal from negocio.mensajes
+        where contacto_id = $1 and direccion = 'saliente' order by creado_el desc limit 1`,
+      [k.id],
+    );
+    assert.equal(
+      fila.rows[0]?.tipo_ghl,
+      TIPO_DEL_CANAL.WhatsApp,
+      'el mensaje propio se guardó sin declarar su canal: se mostraría en el chat por la regla de ' +
+        'las filas anteriores a la migración 040, o sea por casualidad',
+    );
+  } finally {
+    globalThis.fetch = original;
+    await esc.admin.query('delete from identidad.organizaciones_credenciales where org_id = $1', [esc.org]);
+  }
+});
+
 test('el POST con el texto VACÍO se rechaza como petición inválida, y tampoco escribe', async () => {
   // Y con la ventana ABIERTA, que es lo que hace la prueba: si el orden de las comprobaciones se
   // invirtiera, un texto vacío sobre una ventana cerrada respondería `ventana_cerrada` y el

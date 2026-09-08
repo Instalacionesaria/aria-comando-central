@@ -1,0 +1,102 @@
+-- El canal de cada mensaje, que hasta ahora NO se guardaba.
+--
+-- ═════════════════════════════════════════════════════════════════════════════
+-- LO QUE `canal` GUARDA NO ES EL CANAL, Y POR ESO EL CHAT MOSTRABA CORREOS
+--
+-- `negocio.mensajes.canal` se llenaba con `texto(o.from) ?? texto(o.messageType)` —el campo `from`
+-- de GoHighLevel—, y `from` **no es el canal**: es quién manda. Medido el 2026-09-08 sobre los
+-- 5.123 mensajes de la cuenta real, agrupados por lo que había en esa columna:
+--
+--     un número de teléfono   3.563   (+51981155217, +573168235026, …)
+--     WhatsApp                  666
+--     ARIA IA - High Ticket     393   ← el nombre del remitente en los SMS salientes
+--     TYPE_EMAIL                378
+--     nombres de personas      123   (Daniel Alvarez, Caro BinRed, …)
+--
+-- O sea que la columna que decía «canal» tenía teléfonos y nombres propios, y **ninguna consulta
+-- podía filtrar por canal** — que es lo que se pidió: el chat solo tiene que mostrar WhatsApp y SMS.
+--
+-- Se pidió porque el defecto es visible: se veían **correos** en la burbuja de un chat de WhatsApp.
+--
+-- ── LO QUE GOHIGHLEVEL SÍ DA, MEDIDO ───────────────────────────────────────
+--
+-- `messageType`, y hasta ahora se leía y se tiraba. En 25 conversaciones de NUESTROS contactos,
+-- 392 mensajes:
+--
+--     TYPE_WHATSAPP                167   42,6 %   ← va al chat
+--     TYPE_CUSTOM_SMS              110   28,1 %   ← va al chat
+--     TYPE_ACTIVITY_OPPORTUNITY     48   12,2 %   ya se filtraba (`esUnMensaje`)
+--     TYPE_ACTIVITY_APPOINTMENT     24    6,1 %   ídem
+--     TYPE_EMAIL                    17    4,3 %   **se veía en el chat**
+--     TYPE_ACTIVITY_EMPLOYEE_…      15    3,8 %   ya se filtraba
+--     TYPE_CUSTOM_CALL               9    2,3 %   **se veía en el chat, y peor: con el cuerpo vacío**
+--     TYPE_ACTIVITY_CONTACT          2    0,5 %   ya se filtraba
+--
+-- Los nueve `TYPE_CUSTOM_CALL` traen `body: ""`, así que el chat los dibujaba como
+-- `[mensaje sin texto]` — el marcador que existe para los audios y las imágenes, puesto sobre el
+-- registro de una llamada saliente. Un renglón que afirma que hubo un mensaje donde hubo una llamada.
+--
+-- ═════════════════════════════════════════════════════════════════════════════
+-- POR QUÉ UNA COLUMNA NUEVA Y NO SE ARREGLA `canal`
+--
+-- Porque las 5.123 filas que ya están **no se pueden reinterpretar**: un teléfono en esa columna no
+-- dice por dónde entró el mensaje. Renombrarla o reusarla dejaría un valor viejo con un significado
+-- nuevo, que es la forma exacta de que una consulta correcta devuelva algo falso.
+--
+-- `canal` se queda con lo que de verdad tiene —quién manda— y su nombre queda dicho en el esquema.
+-- La pantalla nunca la usó: viajaba hasta la ficha y no se dibujaba en ninguna parte.
+-- ═════════════════════════════════════════════════════════════════════════════
+
+alter table negocio.mensajes
+  add column if not exists tipo_ghl text;
+
+comment on column negocio.mensajes.tipo_ghl is
+  'El `messageType` CRUDO de GoHighLevel: TYPE_WHATSAPP, TYPE_CUSTOM_SMS, TYPE_EMAIL… Es el canal. `canal` NO lo es: guarda `from`.';
+
+comment on column negocio.mensajes.canal is
+  'El `from` de GoHighLevel: un teléfono, o el nombre del remitente. NO es el canal — ese es `tipo_ghl`.';
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- Y LOS 5.124 MENSAJES QUE YA ESTÁN NO SE ETIQUETAN ACÁ. **NO SE PUEDE.**
+--
+-- La primera versión de este archivo terminaba con la repesca obvia:
+--
+--     update negocio.mensajes set tipo_ghl = canal where canal like 'TYPE\_%';
+--
+-- Es exacta —`canal` salía de `from ?? messageType`, así que un valor que empieza con `TYPE_` solo
+-- pudo llegar ahí por el respaldo, o sea cuando `from` vino nulo; medido, los 17 correos de la
+-- muestra traen `from: null` los 17 y ningún WhatsApp ni SMS lo trae nulo— y **se aplicó a
+-- producción escribiendo cero filas, sin error**.
+--
+-- El motivo es el mismo que la 039 ya dejó medido, del otro lado: **el migrador no ve ni escribe
+-- filas de inquilino**. `negocio.mensajes` tiene RLS forzada y una sola política, la de
+-- `app_inquilino`; el migrador es el dueño de la tabla y `force` alcanza también al dueño, así que
+-- su `update` recorre cero filas y `UPDATE 0` no es un error.
+--
+-- Vale escribirlo dos veces porque el síntoma es distinto y peor: la 039 no insertó nada y se notó
+-- al mirar la tabla vacía; acá el `update` habría pasado por correcto para siempre y el chat
+-- seguiría mostrando correos, con una migración aplicada que dice haberlos etiquetado.
+--
+-- **La regla, entonces: una migración solo puede cambiar la FORMA de `negocio.*`, nunca su
+-- contenido.** Los datos los mueve código que corra como `app_inquilino`.
+--
+-- ── DÓNDE SE RESUELVE, Y POR QUÉ ES MEJOR ASÍ ──────────────────────────────
+--
+-- En `lib/negocio/ficha.ts`, al LEER: el canal efectivo de una fila es
+-- `coalesce(tipo_ghl, canal cuando empieza con 'TYPE')`. La misma inferencia, aplicada donde el rol
+-- sí puede, y con dos ventajas sobre haberla escrito acá:
+--
+--   · vale para **cualquier** organización, incluidas las que conecten el CRM mañana, sin que nadie
+--     tenga que acordarse de correr un arreglo por empresa;
+--   · no toca ni una fila. Las 378 conservan su texto y su fecha; lo único que cambia es que el chat
+--     ya sabe que no son suyas.
+--
+-- Y borrarlas no era una opción mejor: además de perder historia por un defecto de lectura, no
+-- arreglaría lo único que sí quedó torcido —`contactos.ultimo_entrante_el` avanzó con seis correos
+-- entrantes y **solo avanza**, lo hace cumplir un disparador de la 011—. Seis contactos de 503
+-- tienen esa marca un poco adelantada, y se corrige sola en cuanto escriban por WhatsApp.
+--
+-- Las llamadas viejas quedan afuera de la inferencia y se siguen mostrando: su `from` trae teléfono,
+-- así que `canal` no dice el tipo. Son el 2,3 % medido, todas salientes. Las nuevas ya no entran —
+-- la ingesta las filtra desde ahora.
+-- ═════════════════════════════════════════════════════════════════════════════

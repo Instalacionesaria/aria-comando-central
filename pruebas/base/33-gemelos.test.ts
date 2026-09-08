@@ -132,6 +132,7 @@ function fila(campos: Partial<FilaDeMensaje> & { ghl_mensaje_id: string }): Fila
     ghl_conversacion_id: `${MARCA}-conv`,
     contacto_id: contactoId,
     canal: 'WhatsApp',
+    tipo_ghl: 'TYPE_WHATSAPP',
     direccion: 'saliente',
     cuerpo: 'Buenas, te escribo por la propuesta',
     autor: 'agente',

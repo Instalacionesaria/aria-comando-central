@@ -224,6 +224,20 @@ export async function interpretarAviso(
         // El canal no viene en el payload nativo de forma fiable. Nulo y no `'WhatsApp'` inventado:
         // el disparador del workflow filtra por canal, pero eso lo sabe GoHighLevel, no nosotros.
         canal: null,
+        /* ── Y EL CANAL DE VERDAD TAMBIÉN QUEDA NULO, CON UNA CONSECUENCIA ──
+         *
+         * Es el mismo hecho que la línea de arriba: el aviso no lo dice. Y acá el nulo tiene un
+         * efecto que conviene tener escrito: `mensajesDeLaFicha` MUESTRA las filas sin canal —son
+         * las 5.123 anteriores a la migración 040— así que un mensaje que entre por acá se dibuja
+         * en el chat sin que nadie haya comprobado por dónde vino.
+         *
+         * Eso es correcto hoy y hay que saber por qué: **quien decide el canal es el workflow del
+         * CRM**, que se configura para disparar sobre WhatsApp. Si algún día se configura sobre
+         * correo, entrarían correos por esta puerta y el filtro no los vería.
+         *
+         * La alternativa —escribir `TYPE_WHATSAPP` acá— sería peor: afirmaría un canal que este
+         * payload no trae, y el día que el workflow cambie, la columna mentiría en vez de callar. */
+        tipo_ghl: null,
         direccion: entrante ? 'entrante' : 'saliente',
         cuerpo: texto,
         /* Un ENTRANTE es del contacto y no hay ambigüedad: es el único autor que el aviso puede

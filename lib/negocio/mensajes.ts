@@ -79,7 +79,10 @@ export interface FilaDeMensaje {
   ghl_mensaje_id: string;
   ghl_conversacion_id: string | null;
   contacto_id: string;
+  /** El `from` del CRM: un teléfono o un nombre. **No es el canal** — ver el esquema. */
   canal: string | null;
+  /** El canal de verdad: el `messageType` crudo. Es lo que decide si la fila entra al chat. */
+  tipo_ghl: string | null;
   direccion: 'entrante' | 'saliente';
   cuerpo: string | null;
   autor: 'contacto' | 'agente' | 'persona';

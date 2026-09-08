@@ -29,7 +29,11 @@ import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
-import { enviarMensaje, type CanalDeEnvio } from '../../../../../lib/ghl/conversaciones.ts';
+import {
+  enviarMensaje,
+  TIPO_DEL_CANAL,
+  type CanalDeEnvio,
+} from '../../../../../lib/ghl/conversaciones.ts';
 import { mensajesDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
 import { ventanaDeRespuesta } from '../../../../../lib/negocio/ventana.ts';
 import { escribirMensajes } from '../../../../../lib/negocio/mensajes.ts';
@@ -208,6 +212,9 @@ export async function POST(
         ghl_conversacion_id: enviado.datos.conversacionId,
         contacto_id: id,
         canal: CANAL,
+        /* El canal de verdad. `canal` guarda el `from` del CRM —que para un mensaje propio es el
+           nombre del canal por casualidad— y `tipo_ghl` es el que las consultas leen. */
+        tipo_ghl: TIPO_DEL_CANAL[CANAL],
         direccion: 'saliente',
         cuerpo: texto.trim(),
         // Lo escribió una PERSONA, y acá sí se sabe con certeza: hay una sesión detrás. Y si un

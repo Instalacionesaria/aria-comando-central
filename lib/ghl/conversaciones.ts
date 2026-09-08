@@ -357,6 +357,23 @@ function texto(v: unknown): string | null {
 /** Los canales por los que esta aplicación manda. Del enumerado documentado de `type`. */
 export type CanalDeEnvio = 'WhatsApp' | 'SMS';
 
+/**
+ * El `messageType` que le corresponde a cada canal de envío.
+ *
+ * Es lo que se guarda en `negocio.mensajes.tipo_ghl` cuando el mensaje lo manda esta aplicación, y
+ * **no es una suposición sobre lo que el CRM va a devolver**: es lo que acabamos de mandar. Sin
+ * esto, un mensaje propio quedaría con el canal nulo y el chat lo mostraría por la regla de las
+ * filas viejas —o sea, por casualidad— en vez de porque se sabe por dónde salió.
+ *
+ * Los dos valores están en `CANALES_DEL_CHAT` (`lib/ghl/entrega.ts`), y hay una prueba que lo exige:
+ * un canal por el que se puede mandar y que el chat no muestra sería un mensaje que sale de esta
+ * pantalla y no aparece en ella.
+ */
+export const TIPO_DEL_CANAL: Readonly<Record<CanalDeEnvio, string>> = {
+  WhatsApp: 'TYPE_WHATSAPP',
+  SMS: 'TYPE_SMS',
+};
+
 export interface EnvioAceptado {
   /** El identificador del mensaje en el CRM. **Puede no venir**, y por eso es anulable. */
   mensajeId: string | null;

@@ -57,7 +57,7 @@ import {
   type ConversacionDeGhl,
   type MensajeDeGhl,
 } from '../ghl/conversaciones.ts';
-import { esUnMensaje, familiaDeEntrega } from '../ghl/entrega.ts';
+import { esDeUnCanalDelChat, esUnMensaje, familiaDeEntrega } from '../ghl/entrega.ts';
 import { revisarEntregas } from './entregas.ts';
 import { conElPulso, type Cierre, type ResultadoDelPulso } from './pulso.ts';
 
@@ -284,7 +284,42 @@ async function guardarMensajes(
   for (const m of crudos) {
     // Las actividades del CRM no son mensajes. Es el 15 % de lo que llega y traen texto: sin este
     // filtro, el título de una cita aparecería como si lo hubiera escrito el contacto.
+    /* ── ESTA LÍNEA HOY NO PUEDE CAMBIAR NADA, Y SE QUEDA A PROPÓSITO ──────
+     *
+     * Medido con el arnés de mutación: borrarla deja la suite entera en verde. Y es correcto que la
+     * deje, porque el filtro de canal de abajo **la subsume**: `CANALES_DEL_CHAT` es una lista de
+     * INCLUSIÓN de tres valores, y ningún `TYPE_ACTIVITY_*` ni `TYPE_INTERNAL_COMMENT` está en ella.
+     * Todo lo que ésta rechaza, aquélla también.
+     *
+     * Se queda por dos motivos, y el segundo es el que importa:
+     *
+     *   · `NO_SON_MENSAJES` es el catálogo que EXPLICA los datos —el 15 % de registros de actividad,
+     *     el `"Iiliana Diaz - ARIA "` que se dibujaba como si el contacto lo hubiera escrito— y
+     *     borrar la llamada invitaría a borrar el catálogo con ella;
+     *   · el día que alguien agregue un canal a `CANALES_DEL_CHAT` —Telegram, Instagram— esta línea
+     *     vuelve a ser la única que separa un mensaje de ese canal de una ACTIVIDAD de ese canal.
+     *     `TYPE_ACTIVITY_WHATSAPP` existe y está en la lista de exclusión justamente por eso.
+     *
+     * Que la redundancia sea real y no una suposición lo afirma `137-canal-del-chat`: ningún tipo de
+     * actividad puede entrar a `CANALES_DEL_CHAT`. Sin esa prueba, esto sería un guardia muerto; con
+     * ella, es un guardia cuya redundancia está demostrada. */
     if (!esUnMensaje(m.tipo)) continue;
+    /* ── Y EL CANAL: SOLO WHATSAPP Y SMS ENTRAN A LA TABLA ──────────────────
+     *
+     * Se pidió que el chat muestre solo esos dos, y el filtro va acá —al ESCRIBIR— y no solo al
+     * leer, por una razón que no es de ahorro: de cada fila de `negocio.mensajes` cuelga un
+     * disparador de la base (`negocio.marcar_actividad_del_contacto`, migración 013) que mueve
+     * `contactos.ultimo_entrante_el`, y de esa columna cuelgan **el Buzón, la ventana de respuesta
+     * de 24 horas y la reapertura de una tarea cerrada**.
+     *
+     * O sea que un correo entrante no era solo un renglón de más en el chat: ponía al contacto en
+     * el Buzón como que le debemos respuesta, por un canal que esta aplicación **no puede
+     * contestar**. Filtrando solo al leer, ese defecto quedaba vivo e invisible.
+     *
+     * Medido: son 6 correos entrantes en 5.123 mensajes, así que lo que esto corrige hacia adelante
+     * es chico — pero es la clase de cero que nadie reporta, porque el contacto aparece en la cola y
+     * parece que tiene que estar ahí. */
+    if (!esDeUnCanalDelChat(m.tipo)) continue;
     if (m.id === '') continue;
 
     // Sin fecha no se puede ubicar en el chat. Se cae a la de la conversación —es la mejor
@@ -303,6 +338,7 @@ async function guardarMensajes(
       ghl_conversacion_id: conv.id,
       contacto_id: contacto.id,
       canal: m.canal,
+      tipo_ghl: m.tipo,
       direccion: entrante ? 'entrante' : 'saliente',
       cuerpo: m.cuerpo,
       autor: autorDe(entrante, m.fuente),

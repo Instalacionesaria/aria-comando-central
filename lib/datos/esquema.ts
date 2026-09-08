@@ -442,7 +442,26 @@ export interface TablaMensajes {
   /** De qué conversación del CRM salió. Es lo que permite pedir el resto sin buscarla de nuevo. */
   ghl_conversacion_id: string | null;
   contacto_id: string;
+  /**
+   * El `from` de GoHighLevel: un teléfono, o el nombre del remitente. **NO es el canal.**
+   *
+   * El nombre miente y por eso queda dicho acá: la columna se llenaba con
+   * `from ?? messageType`, y medido sobre las 5.123 filas de la cuenta real tiene 3.563 números de
+   * teléfono, 393 veces «ARIA IA - High Ticket» y 123 nombres de personas. Confiar en el nombre es
+   * lo que dejó correos dentro del chat de WhatsApp durante toda la Etapa 13.
+   *
+   * El canal es `tipo_ghl`. La pantalla no usa ninguna de las dos para dibujar.
+   */
   canal: string | null;
+  /**
+   * El `messageType` crudo de GoHighLevel: `TYPE_WHATSAPP`, `TYPE_CUSTOM_SMS`, `TYPE_EMAIL`…
+   * **Éste sí es el canal**, y es lo que decide si la fila entra al chat (`CANALES_DEL_CHAT`).
+   *
+   * `null` = la fila se escribió antes de que existiera la columna (migración 040). No es lo mismo
+   * que «sin canal»: es «no se guardó», y por eso `mensajesDeLaFicha` las muestra igual — ver su
+   * `where`.
+   */
+  tipo_ghl: string | null;
   direccion: 'entrante' | 'saliente';
   cuerpo: string | null;
   /** Tres estados y no dos: el bot y una persona ausente no son lo mismo. */

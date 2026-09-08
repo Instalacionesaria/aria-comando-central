@@ -212,6 +212,13 @@ export async function unMensaje(
     enviadoEl?: Date;
     autor?: string;
     entrega?: string | null;
+    /**
+     * El canal, o `null` para una fila anterior a la migración 040.
+     *
+     * Por omisión `TYPE_WHATSAPP`, que es el caso normal y el que el chat muestra: sin un valor por
+     * omisión del lado visible, cada prueba que cuenta burbujas dependería de acordarse de ponerlo.
+     */
+    tipoGhl?: string | null;
   },
 ): Promise<string> {
   const org = campos.org ?? esc.org;
@@ -222,6 +229,7 @@ export async function unMensaje(
         ghl_mensaje_id: `${esc.marca.toLowerCase()}-m-${randomUUID()}`,
         contacto_id: contactoId,
         canal: 'whatsapp',
+        tipo_ghl: campos.tipoGhl === undefined ? 'TYPE_WHATSAPP' : campos.tipoGhl,
         direccion: campos.direccion,
         cuerpo: campos.cuerpo === undefined ? `${esc.marca} mensaje` : campos.cuerpo,
         autor: campos.autor ?? (campos.direccion === 'entrante' ? 'contacto' : 'persona'),
