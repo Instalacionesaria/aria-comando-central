@@ -169,8 +169,23 @@ test('el Pipeline usa la MISMA fila que Mi Día', () => {
   const pipeline = leer('components/closer/Pipeline.jsx');
   assert.match(pipeline, /import Fila from '\.\.\/negocio\/Fila\.jsx'/, 'el Pipeline no usa la fila compartida');
   assert.match(pipeline, /<Fila\s/, 'el Pipeline no dibuja la fila compartida');
-  for (const muerta of ['pipe-col', 'pipe-t', 'pipe-nm', 'pipe-h', 'pipe-b', '"pipe"']) {
-    assert.ok(!pipeline.includes(muerta), `el Pipeline volvió a las columnas: usa \`${muerta}\``);
+  /* ── LOS NOMBRES VAN ENTRECOMILLADOS, Y NO ES ESTILO ──────────────────────
+   *
+   * La lista comparaba las clases muertas por SUBCADENA, y `"pipe"` ya estaba entrecomillada
+   * justamente porque sin las comillas coincide con las otras cinco. El resto no lo estaba, y eso
+   * convirtió el guardia en un falso positivo el día que el Pipeline estrenó su buscador:
+   * `pipe-buscar` **contiene** `pipe-b`, así que una clase nueva y legítima hacía fallar una prueba
+   * que existe para detectar una regresión que no ocurrió.
+   *
+   * Con las comillas se compara el nombre COMPLETO tal como se escribe en el JSX
+   * —`className="pipe-b"`— y el guardia conserva sus dientes: una vuelta de verdad a las columnas
+   * escribiría exactamente eso. Comprobado por mutación: con `className="pipe-b"` en el archivo,
+   * esto falla igual que antes. */
+  for (const muerta of ['pipe-col', 'pipe-t', 'pipe-nm', 'pipe-h', 'pipe-b', 'pipe']) {
+    assert.ok(
+      !pipeline.includes(`"${muerta}"`),
+      `el Pipeline volvió a las columnas: usa \`${muerta}\``,
+    );
   }
   /* ── Y LAS SECCIONES SON LAS DE MI DÍA, AHORA POR UN COMPONENTE ─────────
 

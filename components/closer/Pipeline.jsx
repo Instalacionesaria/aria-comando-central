@@ -48,6 +48,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { usarLectura } from '../../lib/usarLectura.ts';
+import { buscar } from '../../lib/negocio/buscarLead.ts';
 import Ficha from '../negocio/Ficha.jsx';
 import SeccionPlegable from '../negocio/SeccionPlegable.jsx';
 import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
@@ -64,6 +65,9 @@ import Fila from '../negocio/Fila.jsx';
  */
 export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
   const [abierta, setAbierta] = useState(null);
+  /* Lo escrito en el buscador. Vive acá y no en `memoriaDeVista` a propósito — ver el bloque
+     del buscador, más abajo. */
+  const [consulta, setConsulta] = useState('');
 
   /* ── VOLVER A ESTA PESTAÑA NO CUESTA UN «CARGANDO» ─────────────────────────
    *
@@ -128,6 +132,11 @@ export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
   }
 
   const c = datos.clasificados;
+  /* El tablero filtrado. Se calcula en cada render y no en un `useMemo`: son 268 filas y tres
+     comparaciones de texto cada una, y un `useMemo` acá agregaría una lista de dependencias
+     —`datos.columnas`, que cambia de identidad en cada recarga del reloj— para ahorrar menos de
+     lo que cuesta compararla. */
+  const b = buscar(datos.columnas, consulta, { hayMas: datos.hayMas });
 
   return (
     <>
@@ -178,13 +187,95 @@ export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
         </div>
       ) : null}
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          EL BUSCADOR DE LEADS
+
+          Va ANTES de las columnas, que es donde se pidió y donde corresponde: filtra el tablero
+          entero, así que un control que filtra siete secciones no puede vivir dentro de una.
+
+          ── FILTRA EN LA PANTALLA, Y ESO CUESTA CERO ──────────────────────
+          El tablero ya trae TODO —`pipelineDe` pide `todas: true`, y la cartera real son 268
+          contactos contra un tope de 5.000— así que no hace falta preguntarle nada al servidor.
+          Es lo que el `04` § 8 exige de esta pantalla: las cuatro que el closer mira todo el día
+          gastan cero presupuesto del proveedor. El porqué largo está en `lib/negocio/buscarLead.ts`.
+
+          ── Y ESTÁ EN EL COMPONENTE COMPARTIDO, NO SOLO EN EL CLOSER ──────
+          `Pipeline.jsx` es el mismo en las dos pestañas, así que el Setter lo estrena igual. Se
+          pidió para el Closer y se pudo haber bifurcado; no se hizo porque bifurcar este
+          componente es exactamente cómo se desincronizan las dos pantallas — el archivo de la fila
+          tiene la historia de la vez que pasó. Un buscador que existe en un embudo y no en el otro
+          es una diferencia que nadie decidió.
+
+          ── LO QUE **NO** RECUERDA ────────────────────────────────────────
+          La consulta vive en el estado del componente, y el componente se desmonta al cambiar de
+          sub-pestaña. O sea que volver al Pipeline lo encuentra limpio, a propósito: un filtro
+          guardado que no se ve es la forma más rápida de creer que la cartera se vació. Los
+          pliegues y el scroll sí se recuerdan, y ésos no esconden filas — las tapan a la vista, que
+          es distinto. */}
+      <div className="pipe-buscar">
+        <label className="aj-ayuda" htmlFor="pipe-q">
+          Buscar un lead
+        </label>
+        <div className="pipe-buscar-caja">
+          <input
+            id="pipe-q"
+            type="search"
+            className="pipe-q"
+            value={consulta}
+            onChange={(e) => setConsulta(e.target.value)}
+            placeholder="Nombre, teléfono o correo"
+            /* `search` para que el navegador ofrezca su propio botón de borrar, y `off` en el
+               autocompletado porque las sugerencias del navegador acá serían nombres de contactos
+               de OTRAS empresas que alguien buscó en la misma máquina. */
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {/* El botón de limpiar. Existe además del que ofrece el navegador porque ése no está en
+              todos: en Firefox un `type="search"` no dibuja ninguno. */}
+          {consulta !== '' ? (
+            <button
+              type="button"
+              className="pipe-q-x"
+              onClick={() => setConsulta('')}
+              title="Limpiar la búsqueda"
+              aria-label="Limpiar la búsqueda"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
+        {/* CUÁNTAS COINCIDEN, SOBRE CUÁNTAS. Los dos números, y no solo el primero: «3
+            coincidencias» no dice si se buscó sobre la cartera entera o sobre lo que quedó de un
+            filtro anterior, y este tablero puede llegar truncado. */}
+        {b.filtrando ? (
+          <span className="pipe-q-n" role="status">
+            {b.coincidencias === 0 ? (
+              <b>Ninguno</b>
+            ) : (
+              <>
+                <b>{b.coincidencias}</b> de {b.deCuantas}
+              </>
+            )}{' '}
+            {/* `> 1` y no `=== 1`: con cero el sujeto es «Ninguno», que es singular. La primera
+                versión comparaba contra uno y la pantalla decía «Ninguno coinciden». */}
+            {b.coincidencias > 1 ? 'coinciden' : 'coincide'}
+            {/* Y SI EL TABLERO LLEGÓ CORTADO, EL CERO NO SIGNIFICA «NO ESTÁ».
+                Significa «no está entre los que llegaron», y sin decirlo el vendedor concluye que
+                el contacto no existe y se va a buscarlo al CRM. */}
+            {b.parcial ? (
+              <em> — sobre una parte del territorio, así que puede estar y no aparecer</em>
+            ) : null}
+          </span>
+        ) : null}
+      </div>
+
       {/* Las siete etapas, cada una una sección. El orden lo manda el SERVIDOR: es el del embudo,
           y ordenarlo acá sería una segunda lista que puede desordenarse respecto de la suya. */}
       {/* `data-etapa` lleva la CLAVE del servidor, no un color ni un nombre. El color lo pone
           `app/closer.css` a partir de esa clave, así que esta pantalla no elige tonos — y el día que
           se agregue una etapa, el CSS es el único lugar donde hay que darle el suyo. Hasta que se lo
           den, la sección se dibuja sin canto de color en vez de heredar el de la anterior. */}
-      {datos.columnas.map((col) => (
+      {b.columnas.map((col) => (
         /* ── EL CONTEO VA SIEMPRE, INCLUIDO EL CERO ───────────────────────────
            Es la mitad visible de la regla del encabezado: `Ganado 0` es una afirmación y un
            Ganado ausente es una pregunta que nadie se hace.
@@ -201,7 +292,16 @@ export default function Pipeline({ camino, tablero = null, pulso = 0 }) {
           {col.filas.length === 0 ? (
             /* Vacía CON SU MOTIVO, no en blanco. Una sección en blanco se lee como un error de
                carga; «Nadie acá» dice que se miró y no hay. */
-            <div className="dw-empty pipe-vacia">Nadie en esta etapa.</div>
+            <div className="dw-empty pipe-vacia">
+              {/* ── EL VACÍO DISTINGUE LAS DOS CAUSAS, Y ES LA MITAD DEL BUSCADOR ──
+                  Con un solo mensaje, alguien con algo escrito lee «Nadie en esta etapa» y concluye
+                  que la etapa está vacía cuando lo que pasa es que su filtro los tapó. Es el vacío
+                  más importante de la pantalla: los otros seis dicen lo mismo al mismo tiempo, así
+                  que el tablero entero parecería una cartera sin contactos. */}
+              {b.filtrando
+                ? `Ninguno de esta etapa coincide con «${consulta.trim()}».`
+                : 'Nadie en esta etapa.'}
+            </div>
           ) : (
             col.filas.map((f) => <Fila key={f.id} fila={f} onAbrir={(fila) => setAbierta(fila.id)} />)
           )}

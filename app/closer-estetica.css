@@ -437,6 +437,100 @@
   color: var(--sobre-ok-lleno);
 }
 
+/* ── 3-bis · El buscador de leads del Pipeline ─────────────────────────────
+ *
+ * El `10` § 1 lo dibuja dentro de una barra de filtros —una bandeja `bg-muted/10` con seis
+ * controles a la misma altura—. Acá hay un control y no seis, así que la bandeja sería un marco
+ * alrededor de un solo campo: queda el campo, con la forma que esa barra le da a los suyos
+ * (cápsula, contorno al 60 %, foco de la marca).
+ *
+ * Las medidas siguen la escala de la hoja: el `10` le pone `h-10` (40 px) sobre una base de 16, que
+ * acá son 32.
+ *
+ * ── EL TAMAÑO DEL TEXTO ES 16 px EN MÓVIL, Y NO ES UN DESCUIDO ────────────
+ *
+ * Es el único lugar de esta hoja donde un valor SUBE en pantalla angosta. El `10` § 1 lo explica y
+ * es un comportamiento del navegador, no una preferencia: con menos de 16 px, Safari y Chrome de
+ * móvil **hacen acercamiento al enfocar el campo** y dejan la pantalla corrida. Con 16 no. */
+
+#v-closer .pipe-buscar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#v-closer .pipe-buscar > label {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+#v-closer .pipe-buscar-caja {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+#v-closer .pipe-q {
+  width: 260px;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 30px 0 13px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--txt);
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 9999px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+@media (min-width: 768px) {
+  #v-closer .pipe-q { font-size: 11.5px; }
+}
+#v-closer .pipe-q::placeholder { color: var(--txt-faint); opacity: 1; }
+/* El foco es de la marca, como el `--ring` del sistema, y va como `outline`. La primera versión lo
+   dibujó con un `box-shadow` de tres píxeles y `107-sin-sombras` lo rechazó — con razón: este
+   proyecto pasó TODO el foco de sombra a contorno, y una sombra nueva en esta capa es la que el
+   barrido universal no puede apagar. El contorno sigue el radio de la cápsula solo. */
+#v-closer .pipe-q:focus-visible {
+  border-color: rgb(var(--c-acento) / .5);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* El botón de limpiar, dentro del campo. `absolute` y no un hermano al costado para que el campo
+   siga siendo una sola cápsula: al lado, la cápsula se partiría en dos formas. */
+#v-closer .pipe-q-x {
+  position: absolute;
+  right: 3px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--txt-faint);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  transition: color .15s ease, background .15s ease;
+}
+#v-closer .pipe-q-x:hover { color: var(--txt); background: rgb(var(--c-nube) / .1); }
+/* Y se esconde el botón nativo de `type="search"` en los navegadores que lo dibujan: con los dos
+   quedan dos cruces, y la nativa no sigue el tema. */
+#v-closer .pipe-q::-webkit-search-cancel-button { display: none; }
+
+#v-closer .pipe-q-n {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+#v-closer .pipe-q-n b { color: var(--txt); font-weight: 600; }
+#v-closer .pipe-q-n em { font-style: normal; color: var(--warn); }
+
 /* ── 4 · Inicio: el bloque negro y dorado (`07`) ───────────────────────────── */
 
 /* Es el único bloque que no sigue los tokens del tema, en NINGUNO de los dos: es negro en claro
