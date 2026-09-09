@@ -20,6 +20,22 @@
 // contador**. El contador se suma explícito en cada composición y no se deriva de las colas: un
 // `Object.values(colas).flat().length` haría que agregar una cola cambie el número sin que nadie lo
 // decida — que es justo lo que `miDia.ts` ya argumenta para no sumar `.length` en los seguimientos.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// Y EL ORDEN DE ESTE ARCHIVO ES LA PRECEDENCIA DE LAS COLAS
+//
+// «Un contacto, una cola» se cumple con **un conjunto que crece** mientras las colas se arman, en
+// el orden en que están escritas: Urgentes → Agenda de hoy → Seguimientos → Buzón. Cada una saltea
+// a los que ya tienen cola.
+//
+// Eso significa que **mover un bloque de lugar en este archivo cambia el comportamiento**, y hay
+// que decirlo porque no se ve: el bug que lo enseñó fue exactamente ese. Los seguimientos estaban
+// escritos DEBAJO del buzón, así que cuando el buzón se armaba la lista de seguimientos todavía no
+// existía y no había nada que excluir. Un contacto con un seguimiento de hoy que además había
+// escrito aparecía en las dos listas, y el contador de tareas pendientes lo sumaba dos veces.
+//
+// La agenda del closer es la excepción y por eso entra por parámetro (`yaEnUnaColaPropia`): se
+// construye en `miDia.ts`, así que su lugar en el orden lo tiene que traer resuelto quien llama.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -166,6 +182,15 @@ export interface NucleoDeColas {
   urgentes: EnLaCola[];
   /** Quiénes están en Urgentes: gana la cola más específica. */
   enUrgentes: Set<string>;
+  /**
+   * Quiénes ya tienen ALGUNA de las colas que arma esta función, más las que llegaron por
+   * `yaEnUnaColaPropia`. Es la regla «un contacto, una cola» hecha un dato.
+   *
+   * Viaja para que una composición pueda seguir la cadena con sus colas de MENOS precedencia — hoy
+   * las dos del setter, que van debajo del buzón. Antes el setter armaba su propio `Set` a partir
+   * de `enUrgentes` y del buzón, y esa copia era el segundo lugar donde estaba escrito el orden.
+   */
+  yaTieneCola: Set<string>;
   buzon: EnLaCola[];
   seguimientos: EnLaCola[];
   completadas: EnLaCola[];
@@ -181,6 +206,18 @@ export async function nucleoDeColas(
   zonaHoraria: string,
   /** De quién son los leads. Ausente = todo el territorio, que es lo que hace el Setter. */
   alcance?: AlcanceDelCloser,
+  /**
+   * Los que la composición YA puso en una cola propia de más precedencia que los seguimientos.
+   *
+   * Hoy es una sola: la **Agenda de hoy** del closer. Entra por parámetro y no se calcula acá
+   * porque las citas son del closer y este archivo es el núcleo compartido — deducirlo sería meter
+   * un concepto de una pantalla en la función que sirve a las dos.
+   *
+   * Va por parámetro y no como un `Set` que el llamador rellene después, y esa es la parte que
+   * importa: **el buzón se arma acá adentro**, así que si la exclusión llegara tarde el buzón ya
+   * estaría hecho. Es lo que pasaba con los seguimientos antes de este arreglo.
+   */
+  yaEnUnaColaPropia: ReadonlySet<string> = new Set(),
 ): Promise<NucleoDeColas> {
   /* Sin `conCongelados`: un contacto sin territorio no es trabajo de nadie, y las colas son
      trabajo. El Pipeline sí los trae, porque ahí es información. */
@@ -257,7 +294,41 @@ export async function nucleoDeColas(
     .executeTakeFirstOrThrow();
   const medianocheDeHoy = hoy.dia.getTime();
 
-  // ── URGENTES ──────────────────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════════
+   * UN CONTACTO, UNA COLA — Y ACÁ ESTÁ EL ORDEN, ESCRITO
+   *
+   * La regla ya estaba escrita, en `miDiaDelSetter.ts`, con su motivo medido: *«dos colas para la
+   * misma persona hacen que atender una no cierre la otra, y el closer termina trabajando el mismo
+   * caso dos veces sin saberlo»*. Y tenía DOS agujeros, los dos porque el orden del archivo no era
+   * el orden de la precedencia:
+   *
+   *   · **Los seguimientos se armaban DESPUÉS del buzón**, así que el buzón no los podía excluir.
+   *   · **La agenda del closer se arma en otra función**, después de que ésta devuelve.
+   *
+   * No era hipotético. Medido en producción el 2026-09-09, antes de tocar nada: 1 contacto en
+   * `buzón ∩ seguimientos` —el que lo reportó— y 1 en `urgentes ∩ seguimientos`. Y una consecuencia
+   * que nadie había mirado: `tareasPendientes` suma `urgentes + buzón + seguimientos`, así que los
+   * dos se contaban **dos veces** y el número del menú, del título de Inicio y del encabezado de Mi
+   * Día estaba inflado en 2.
+   *
+   * El orden, de más específico a más general:
+   *
+   *   1 · **Urgentes** — el agente falló. Alguien tiene que mirar la conversación antes que nada.
+   *   2 · **Agenda de hoy** — hay una reunión a una hora concreta. Llega por `yaEnUnaColaPropia`.
+   *   3 · **Seguimientos** — hay un compromiso con fecha, puesto a mano.
+   *   4 · **Buzón** — escribió y nadie contestó. Es el general: *«lo que no cayó en ninguna otra»*.
+   *
+   * Las dos colas propias del setter —oportunidades y estancadas— siguen DEBAJO del buzón, con el
+   * argumento que ya está escrito allá: el buzón es la única cola con una contraparte esperando del
+   * otro lado, y las otras dos son pasivas.
+   *
+   * Se hace con UN conjunto que crece, y no con una cadena de `continue` por cola: con la cadena
+   * hay que leer las cuatro colas enteras para saber el orden, y agregar una quinta obliga a
+   * acordarse de tocar las cuatro.
+   * ══════════════════════════════════════════════════════════════════════════ */
+  const yaTieneCola = new Set<string>();
+
+  // ── 1 · URGENTES ──────────────────────────────────────────────────────────
   const urgentes: EnLaCola[] = [];
   const enUrgentes = new Set<string>();
   for (const fila of filas) {
@@ -296,52 +367,29 @@ export async function nucleoDeColas(
      * de acá haga su trabajo. Ninguna fila de esta cola queda vacía. */
     urgentes.push({ fila, motivo: intervencionDe.get(fila.id)?.motivo ?? SIN_MOTIVO });
   }
+  for (const x of enUrgentes) yaTieneCola.add(x);
 
-  // ── BUZÓN ─────────────────────────────────────────────────────────────────
-  //
-  // La regla, en una línea: **el último mensaje es de ellos y no nuestro.**
-  //
-  //   escribe                    → entrante > saliente → entra
-  //   se le responde             → saliente > entrante → sale
-  //   vuelve a escribir          → entrante > saliente → entra de nuevo, solo
-  //
-  // Y cubre las dos vías de responder: el envío desde esta plataforma y la respuesta hecha en el
-  // CRM, que entra por la ingesta. Las dos mueven `ultimo_saliente_el`.
-  const buzon: EnLaCola[] = [];
-  for (const fila of filas) {
-    // 1 · no congelado → garantizado por el territorio de la consulta.
-    // 2 · no está ya en Urgentes → gana la cola más específica.
-    if (enUrgentes.has(fila.id)) continue;
-    // 3 · tampoco si YA SE CERRÓ HOY: sin esto, registrar un resultado deja al contacto en el buzón
-    //     Y en «Completadas hoy» a la vez.
-    if (completadasDeHoy.has(fila.id)) continue;
-    // 4 · el bot está APAGADO. **La regla de fondo: una IA activa nunca genera tarea humana.**
-    const agente = estadoDelAgente(fila.etiquetas);
-    if (
-      agente === 'atendiendo' ||
-      agente === 'atendiendo_pre_agenda' ||
-      agente === 'atendiendo_post_agenda'
-    ) {
-      continue;
-    }
-    /* 5 · y NO ESTÁ CERRADO. Va junto a la condición 3 y no la reemplaza: aquella mira lo que se
-     *     cerró HOY, y un contacto descalificado hace trece días que escribió y no fue respondido
-     *     entra igual. */
-    if (estaCerrado(fila.situacion)) continue;
-    // 6 · escribió, y **el suyo es el último mensaje**.
-    if (!fila.ultimoEntranteEl) continue;
-    if (leRespondieron(fila)) continue;
+  /* ── 2 · LA AGENDA DE HOY, QUE NO SE ARMA ACÁ ──────────────────────────────
+   *
+   * Es la única cola de la precedencia que esta función no construye: las citas son del closer.
+   * Llega ya resuelta por parámetro, y se anota acá —en su lugar del orden— para que las dos colas
+   * de abajo la excluyan.
+   *
+   * Va DESPUÉS de urgentes, así que un contacto con cita hoy y con el bot fallado queda en
+   * Urgentes: `miDia.ts` saltea a los de `enUrgentes` al armar sus filas de agenda, para que la
+   * exclusión sea de verdad y no solo en un sentido. */
+  for (const x of yaEnUnaColaPropia) yaTieneCola.add(x);
 
-    buzon.push({ fila });
-  }
-  // El mensaje MÁS RECIENTE primero.
-  buzon.sort(
-    (a, b) =>
-      new Date(b.fila.ultimoEntranteEl ?? 0).getTime() -
-      new Date(a.fila.ultimoEntranteEl ?? 0).getTime(),
-  );
-
-  // ── SEGUIMIENTOS DE HOY ───────────────────────────────────────────────────
+  // ── 3 · SEGUIMIENTOS DE HOY ───────────────────────────────────────────────
+  //
+  // ── ESTE BLOQUE ESTABA DEBAJO DEL BUZÓN, Y ESO ERA EL DEFECTO ─────────────
+  //
+  // Se armaba después, así que el buzón no lo podía excluir: un contacto con un seguimiento de hoy
+  // que además había escrito aparecía en las DOS listas. Es el bug que se reportó, con la captura.
+  //
+  // Subirlo es todo el arreglo del lado del buzón. Y no alcanzaba con excluirlo desde el buzón
+  // «leyendo los seguimientos»: el buzón se arma en este mismo recorrido, así que la lista tenía
+  // que existir antes. El orden del archivo ES la precedencia.
   //
   // **Solo los MANUALES**: los automáticos los hace el CRM con su secuencia y no escriben tarea.
   //
@@ -367,9 +415,90 @@ export async function nucleoDeColas(
        falla: simplemente ve tareas que no son suyas. */
     const fila = porId.get(t.contacto_id);
     if (!fila) continue;
+    /* Y la precedencia: los de Urgentes y los de la Agenda de hoy ya tienen cola. Medido en
+       producción, `urgentes ∩ seguimientos` era 1 — un contacto en las dos listas, contado dos
+       veces en el número de tareas pendientes. */
+    if (yaTieneCola.has(fila.id)) continue;
+    /* ── Y «COMPLETADAS HOY» **NO** EXCLUYE ACÁ, QUE ES LO CONTRARIO DEL BUZÓN ──
+     *
+     * Puse la exclusión por analogía con el buzón —que sí la tiene, con el motivo *«registrar un
+     * resultado deja al contacto en el buzón Y en Completadas hoy a la vez»*— y la analogía era
+     * FALSA. Lo dijo `pruebas/base/92-mi-dia`: «un Avanzar CON fecha nueva no cierra la tarea que
+     * acaba de crear» se puso roja al instante.
+     *
+     * El motivo, que es el que hay que conservar escrito: **`seguimiento` es una salida de
+     * Avanzar**, y registrarla es lo que CREA la tarea. O sea que todo seguimiento manual nace con
+     * su contacto dentro de `completadasDeHoy`, y con la exclusión desaparecía en el mismo momento
+     * de crearse. El síntoma habría sido «puse una fecha y el seguimiento no aparece», sin ningún
+     * error — el defecto que esa prueba ya vigilaba por otro camino.
+     *
+     * Y mirado de frente, no es un solapamiento: «hoy avancé este contacto poniéndole un
+     * seguimiento» y «ese seguimiento está pendiente» son las dos ciertas. **Completadas hoy no es
+     * una cola de trabajo, es el registro de lo que se hizo** — por eso tampoco suma al contador de
+     * tareas pendientes. La regla «un contacto, una cola» habla de las colas de trabajo.
+     *
+     * Lo había medido en producción y daba cero casos, así que la medición no me protegió: era un
+     * cero de los datos de hoy, no una propiedad. La prueba sí. */
     const vencida = new Date(t.vence_el).getTime() < medianocheDeHoy;
     seguimientos.push({ fila, caso: vencida ? 'manual_vencido' : 'manual_de_hoy', pideManos: true });
+    yaTieneCola.add(fila.id);
   }
+
+  // ── 4 · BUZÓN, QUE ES EL GENERAL ──────────────────────────────────────────
+  //
+  // La regla, en una línea: **el último mensaje es de ellos y no nuestro.**
+  //
+  //   escribe                    → entrante > saliente → entra
+  //   se le responde             → saliente > entrante → sale
+  //   vuelve a escribir          → entrante > saliente → entra de nuevo, solo
+  //
+  // Y cubre las dos vías de responder: el envío desde esta plataforma y la respuesta hecha en el
+  // CRM, que entra por la ingesta. Las dos mueven `ultimo_saliente_el`.
+  //
+  // ── Y ES EL ÚLTIMO DE LA PRECEDENCIA, QUE ES LO QUE SIGNIFICA «GENERAL» ───
+  //
+  // Se pidió con estas palabras: *«como dice su nombre, buzón general es de forma general, que no
+  // estén en seguimiento o intervenciones urgentes o agenda de hoy»*. O sea: no es una cola más, es
+  // **el resto**. Por eso la condición 2 dejó de ser «no está en Urgentes» y pasa a ser «no tiene
+  // ninguna cola»: con la lista de colas nombrada una por una, agregar una quinta obliga a
+  // acordarse de venir a agregarla acá — y olvidarse no falla, duplica.
+  const buzon: EnLaCola[] = [];
+  for (const fila of filas) {
+    // 1 · no congelado → garantizado por el territorio de la consulta.
+    // 2 · no tiene ya una cola: Urgentes, Agenda de hoy o Seguimientos. Gana la más específica.
+    if (yaTieneCola.has(fila.id)) continue;
+    // 3 · tampoco si YA SE CERRÓ HOY: sin esto, registrar un resultado deja al contacto en el buzón
+    //     Y en «Completadas hoy» a la vez.
+    if (completadasDeHoy.has(fila.id)) continue;
+    // 4 · el bot está APAGADO. **La regla de fondo: una IA activa nunca genera tarea humana.**
+    const agente = estadoDelAgente(fila.etiquetas);
+    if (
+      agente === 'atendiendo' ||
+      agente === 'atendiendo_pre_agenda' ||
+      agente === 'atendiendo_post_agenda'
+    ) {
+      continue;
+    }
+    /* 5 · y NO ESTÁ CERRADO. Va junto a la condición 3 y no la reemplaza: aquella mira lo que se
+     *     cerró HOY, y un contacto descalificado hace trece días que escribió y no fue respondido
+     *     entra igual. */
+    if (estaCerrado(fila.situacion)) continue;
+    // 6 · escribió, y **el suyo es el último mensaje**.
+    if (!fila.ultimoEntranteEl) continue;
+    if (leRespondieron(fila)) continue;
+
+    buzon.push({ fila });
+    /* Y se anota, para que las colas propias del setter —que van debajo— lo excluyan. Antes eso lo
+       hacía `miDiaDelSetter` con un `Set` propio que rellenaba después; ahora la cadena es una y
+       vive donde vive el orden. */
+    yaTieneCola.add(fila.id);
+  }
+  // El mensaje MÁS RECIENTE primero.
+  buzon.sort(
+    (a, b) =>
+      new Date(b.fila.ultimoEntranteEl ?? 0).getTime() -
+      new Date(a.fila.ultimoEntranteEl ?? 0).getTime(),
+  );
 
   // ── COMPLETADAS HOY ───────────────────────────────────────────────────────
   //
@@ -422,6 +551,7 @@ export async function nucleoDeColas(
     medianocheDeHoy,
     urgentes,
     enUrgentes,
+    yaTieneCola,
     buzon,
     seguimientos,
     completadas,

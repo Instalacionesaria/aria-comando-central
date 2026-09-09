@@ -76,27 +76,25 @@ export async function colasDelDia(
   /** De quién son los leads. Ausente = todo el territorio. Ver `lib/negocio/alcanceDelCloser.ts`. */
   alcance?: AlcanceDelCloser,
 ): Promise<MiDia> {
-  const nucleo = await nucleoDeColas('closer', zonaHoraria, alcance);
-  const { porId } = nucleo;
-
-  const resultado: MiDia = {
-    urgentes: nucleo.urgentes,
-    agenda: [],
-    buzon: nucleo.buzon,
-    seguimientos: nucleo.seguimientos,
-    completadas: nucleo.completadas,
-    tareasPendientes: 0,
-    truncado: nucleo.truncado,
-  };
-
-  // ── LA ÚNICA COLA PROPIA DEL CLOSER: LA AGENDA DE HOY ────────────────────────────────────────────────
-  //
-  // Las citas de hoy en la zona de la ORGANIZACIÓN, sin las canceladas.
-  //
-  // Y las VENCIDAS SÍ VAN, que es lo que sorprende: *"una cita cuya hora ya pasó y que nadie
-  // cerró con Avanzar sigue en la lista, marcada como vencida y ordenada abajo. NO desaparece.
-  // Si desapareciera, el closer perdería de vista exactamente la cita que tiene pendiente de
-  // registrar"*.
+  /* ── LA ÚNICA COLA PROPIA DEL CLOSER: LA AGENDA DE HOY ────────────────────
+   *
+   * Las citas de hoy en la zona de la ORGANIZACIÓN, sin las canceladas.
+   *
+   * Y las VENCIDAS SÍ VAN, que es lo que sorprende: *"una cita cuya hora ya pasó y que nadie cerró
+   * con Avanzar sigue en la lista, marcada como vencida y ordenada abajo. NO desaparece. Si
+   * desapareciera, el closer perdería de vista exactamente la cita que tiene pendiente de
+   * registrar"*.
+   *
+   * ── SE CONSULTA ANTES DEL NÚCLEO, Y ESO ES PARTE DEL ARREGLO ─────────────
+   *
+   * Esta consulta estaba DESPUÉS de `nucleoDeColas`, y por eso la agenda quedaba fuera de la
+   * precedencia «un contacto, una cola»: el buzón ya estaba armado cuando esta cola existía, así
+   * que un contacto con reunión hoy que además había escrito aparecía en las dos listas.
+   *
+   * Subirla se puede porque no depende del núcleo: la ventana del día sale de la base y el filtro
+   * de canceladas es de la cita. Lo único que necesita `porId` es armar las FILAS, y eso sigue
+   * abajo. Así que primero se resuelve QUIÉNES tienen cita hoy, eso entra en la precedencia, y
+   * después se dibuja. */
   const citas = await datos()
     .selectFrom('citas')
     .select(['contacto_id', 'inicio_el', 'fin_el', 'estado_ghl', 'sala_url'])
@@ -112,6 +110,25 @@ export async function colasDelDia(
     .where(noCancelada('estado_ghl'))
     .orderBy('inicio_el', 'asc')
     .execute();
+
+  /* Quiénes tienen cita hoy. Es lo que la agenda le aporta a la precedencia, y va al núcleo para
+     que los seguimientos y el buzón lo excluyan. El conjunto se arma sobre TODAS las citas del día
+     —no solo las de contactos en `porId`— y eso no sobra: uno que no está en `porId` tampoco está
+     en `filas`, así que no puede entrar a ninguna cola. */
+  const conCitaHoy = new Set(citas.map((c) => c.contacto_id));
+
+  const nucleo = await nucleoDeColas('closer', zonaHoraria, alcance, conCitaHoy);
+  const { porId } = nucleo;
+
+  const resultado: MiDia = {
+    urgentes: nucleo.urgentes,
+    agenda: [],
+    buzon: nucleo.buzon,
+    seguimientos: nucleo.seguimientos,
+    completadas: nucleo.completadas,
+    tareasPendientes: 0,
+    truncado: nucleo.truncado,
+  };
 
   /* ── EL MISMO RELOJ QUE LA CONSULTA, Y ANTES ERAN DOS ──────────────────────
    *
@@ -130,6 +147,11 @@ export async function colasDelDia(
     // "ninguna fila sin nombre", y una fila con el nombre de la cita es trabajo de la Agenda,
     // no de esta cola.
     if (!fila) continue;
+    /* Y la precedencia, en el sentido que falta: Urgentes va ARRIBA de la agenda, así que un
+       contacto con cita hoy y con el bot fallado se queda en Urgentes. Sin esta línea la exclusión
+       sería de un solo lado —el buzón lo excluiría por tener cita, y aparecería en Urgentes Y en la
+       agenda— que es exactamente el defecto que se está cerrando, corrido un lugar. */
+    if (nucleo.enUrgentes.has(c.contacto_id)) continue;
     resultado.agenda.push({
       fila,
       cita: {

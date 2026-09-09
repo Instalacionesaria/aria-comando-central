@@ -1089,12 +1089,182 @@ test('el contador del setter suma CINCO categorías, no las tres del closer', as
   assert.equal(d.tareasPendientes, antes, 'las completadas sumaron al contador: ya no son trabajo');
 });
 
-test('un contacto está en UNA cola, y el orden entre las cuatro es el declarado', async () => {
-  /* «Dos colas para la misma persona hacen que atender una no cierre la otra». Con dos colas
-     alcanzaba un `Set`; con cuatro que se solapan hace falta un orden escrito.
+// ═══════════════════════════════════════════════════════════════════════════════
+// UN CONTACTO, UNA COLA — el bug de los duplicados
+// ═══════════════════════════════════════════════════════════════════════════════
 
-     Este contacto cumple las CUATRO a la vez: el bot le falló, escribió sin respuesta, lo derivaron
-     al producto chico, y está estancado. Tiene que aparecer una sola vez, y en la primera. */
+/** Un seguimiento manual que vence hoy. Es lo que pone al contacto en la cola de Seguimientos. */
+async function seguimientoDeHoy(contactoId: string): Promise<void> {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, dateStyle: 'short' });
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('tareas')
+      .values({
+        contacto_id: contactoId,
+        vence_el: f.format(new Date()),
+        situacion: 'seguimiento',
+        modo: 'manual',
+      } as never)
+      .execute();
+  });
+}
+
+/** Una cita de HOY, que es lo que lo pone en la Agenda de hoy. */
+async function citaDeHoy(contactoId: string): Promise<void> {
+  await conOrganizacion(alfa, async () => {
+    await datos()
+      .insertInto('citas')
+      .values({
+        ghl_evento_id: `ev-${randomUUID().slice(0, 8)}`,
+        contacto_id: contactoId,
+        inicio_el: new Date(),
+      } as never)
+      .execute();
+  });
+}
+
+/** En qué colas del closer está un contacto, en el orden de la precedencia. */
+function dondeEstaEnElCloser(c: Awaited<ReturnType<typeof colas>>, id: string): string[] {
+  return (
+    [
+      ['urgentes', c.urgentes],
+      ['agenda', c.agenda],
+      ['seguimientos', c.seguimientos],
+      ['buzon', c.buzon],
+    ] as const
+  )
+    .filter(([, cola]) => cola.some((x) => x.fila.id === id))
+    .map(([nombre]) => nombre);
+}
+
+test('EL BUG · quien tiene un seguimiento de hoy NO aparece además en el Buzón', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+   * EL CASO REPORTADO, CON CAPTURA
+   *
+   * «Hay 2 María Taveras»: la misma persona en «Respondieron · Buzón general» y en «Seguimientos de
+   * hoy». Se pidió con estas palabras: *«como dice su nombre, buzón general es de forma general,
+   * que no estén en seguimiento o intervenciones urgentes o agenda de hoy»*.
+   *
+   * La causa no era una condición que faltara: era **el orden del archivo**. Los seguimientos se
+   * armaban DEBAJO del buzón en `lib/negocio/colas.ts`, así que cuando el buzón se armaba la lista
+   * de seguimientos todavía no existía y no había nada que excluir.
+   *
+   * Medido en producción el 2026-09-09, antes de tocar nada: 1 contacto en `buzón ∩ seguimientos`.
+   * ══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+  const id = await contacto(`dup-${marca}`, []);
+  // Las dos condiciones a la vez: escribió y nadie le contestó, Y tiene un seguimiento para hoy.
+  await mensaje(id, 'entrante', new Date(), 'escribió y nadie contestó');
+  await seguimientoDeHoy(id);
+
+  const c = await colas();
+  assert.deepEqual(
+    dondeEstaEnElCloser(c, id),
+    ['seguimientos'],
+    'el contacto está en el Buzón Y en Seguimientos: atender una no cierra la otra, y el mismo ' +
+      'caso se trabaja dos veces sin saberlo',
+  );
+
+  /* Y la guarda de que la prueba mide lo que dice: sin el seguimiento, el MISMO contacto sí tiene
+     que estar en el buzón. Sin esto, un buzón roto que devuelva siempre vacío pasaría la
+     afirmación de arriba. */
+  await limpiar();
+  const solo = await contacto(`solo-${marca}`, []);
+  await mensaje(solo, 'entrante', new Date(), 'escribió y nadie contestó');
+  assert.deepEqual(
+    dondeEstaEnElCloser(await colas(), solo),
+    ['buzon'],
+    'sin seguimiento, el contacto tampoco entra al buzón: la exclusión se llevó la cola entera',
+  );
+});
+
+test('un contacto está en UNA de las CINCO colas del closer, y gana la más específica', async () => {
+  /* Las cuatro condiciones a la vez, en un solo contacto: el bot le falló, tiene reunión hoy, tiene
+     un seguimiento para hoy, y escribió sin respuesta. Tiene que aparecer una vez y en Urgentes.
+
+     Los dos solapamientos que esto cierra estaban VIVOS en producción el 2026-09-09:
+     `buzón ∩ seguimientos` = 1 y `urgentes ∩ seguimientos` = 1. El segundo no se había reportado. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+  const todas = await contacto(`cinco-${marca}`, ['bot_desactivado_appflow']);
+  await mensaje(todas, 'entrante', new Date(), 'escribió y nadie contestó');
+  await seguimientoDeHoy(todas);
+  await citaDeHoy(todas);
+
+  const donde = dondeEstaEnElCloser(await colas(), todas);
+  assert.deepEqual(
+    donde,
+    ['urgentes'],
+    `el mismo contacto está en ${donde.length} colas (${donde.join(', ')})`,
+  );
+});
+
+test('la Agenda de hoy le gana a Seguimientos y al Buzón, y pierde con Urgentes', async () => {
+  /* El orden entre las de en medio, que es donde la exclusión puede quedar de un solo lado: el
+     buzón podría excluir a un contacto «porque tiene cita» y la agenda dejarlo entrar igual estando
+     en Urgentes — o sea el mismo defecto, corrido un lugar. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  // Cita de hoy + seguimiento de hoy + escribió → gana la Agenda.
+  const conCita = await contacto(`cita-${marca}`, []);
+  await mensaje(conCita, 'entrante', new Date(), 'escribió');
+  await seguimientoDeHoy(conCita);
+  await citaDeHoy(conCita);
+
+  // Cita de hoy + el bot falló → gana Urgentes, y NO aparece en la agenda.
+  const conFallo = await contacto(`fallo-${marca}`, ['bot_desactivado_appflow']);
+  await citaDeHoy(conFallo);
+
+  const c = await colas();
+  assert.deepEqual(dondeEstaEnElCloser(c, conCita), ['agenda'], 'la Agenda no le ganó a Seguimientos');
+  assert.deepEqual(dondeEstaEnElCloser(c, conFallo), ['urgentes'], 'la Agenda le ganó a Urgentes');
+});
+
+test('el contador de tareas pendientes NO cuenta a nadie dos veces', async () => {
+  /* La consecuencia que nadie había mirado: `tareasPendientes` suma `urgentes + buzón +
+     seguimientos`, así que un contacto en dos colas se contaba DOS veces — y ese número alimenta
+     las tres vitrinas donde aparece (la marca del menú, el título de Inicio y el encabezado de Mi
+     Día). Con los dos solapamientos vivos de producción, estaba inflado en 2.
+
+     Dos contactos, dos tareas. Con el bug daban 4. */
+  await limpiar();
+  const marca = randomUUID().slice(0, 6);
+
+  const a = await contacto(`ct1-${marca}`, []);
+  await mensaje(a, 'entrante', new Date(), 'escribió');
+  await seguimientoDeHoy(a);
+
+  const b = await contacto(`ct2-${marca}`, ['bot_desactivado_appflow']);
+  await seguimientoDeHoy(b);
+
+  const c = await colas();
+  assert.equal(
+    c.tareasPendientes,
+    2,
+    `el contador dice ${c.tareasPendientes} para dos contactos: está contando a alguien dos veces`,
+  );
+  /* Y la comprobación cruzada: la suma de las colas de trabajo tiene que dar el mismo número. Si
+     divergen, una cola tiene a alguien que el contador no ve o al revés. */
+  assert.equal(
+    c.urgentes.length + c.buzon.length + c.seguimientos.filter((x) => x.pideManos).length,
+    c.tareasPendientes,
+    'el contador y las colas no coinciden',
+  );
+});
+
+test('un contacto está en UNA cola, y el orden entre las CINCO es el declarado', async () => {
+  /* «Dos colas para la misma persona hacen que atender una no cierre la otra». Con dos colas
+     alcanzaba un `Set`; con cinco que se solapan hace falta un orden escrito.
+
+     Este contacto cumple las CINCO a la vez: el bot le falló, tiene un seguimiento para hoy,
+     escribió sin respuesta, lo derivaron al producto chico, y está estancado. Tiene que aparecer una
+     sola vez, y en la primera.
+
+     Los **seguimientos** se agregaron a esta prueba con el arreglo de los duplicados: no estaban en
+     `PRECEDENCIA_DE_LAS_COLAS` ni en esta lista, y el núcleo los armaba debajo del buzón — así que
+     esta prueba pasaba en verde sobre un solapamiento que existía. */
   await limpiar();
   const marca = randomUUID().slice(0, 6);
   const todas = await contactoSetter(`p1-${marca}`, [
@@ -1103,10 +1273,12 @@ test('un contacto está en UNA cola, y el orden entre las cuatro es el declarado
     'estancado',
   ]);
   await mensaje(todas, 'entrante', new Date(), 'escribió y nadie contestó');
+  await seguimientoDeHoy(todas);
 
   const c = await colasSetter();
   const dondeEsta = [
     ['urgentes', c.urgentes],
+    ['seguimientos', c.seguimientos],
     ['buzon', c.buzon],
     ['oportunidades', c.oportunidades],
     ['estancadas', c.estancadas],
@@ -1119,6 +1291,69 @@ test('un contacto está en UNA cola, y el orden entre las cuatro es el declarado
       'atender una no cierra la otra, y el mismo caso se trabaja dos veces sin saberlo',
   );
   assert.equal(dondeEsta[0]?.[0], PRECEDENCIA_DE_LAS_COLAS[0], 'no ganó la cola más específica');
+});
+
+test('la precedencia del setter se cumple PAR POR PAR, bajando por las cinco', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+   * ESTA PRUEBA EXISTE PORQUE DOS MUTACIONES SOBREVIVIERON
+   *
+   * La prueba de arriba siembra un contacto que cumple las cinco condiciones y comprueba que gane
+   * la primera. Eso deja sin medir **todo lo que está debajo de la primera**: si el buzón deja de
+   * anotarse en la precedencia, o si el setter la reconstruye olvidándose de los seguimientos, ese
+   * contacto sigue ganando Urgentes y la prueba sigue en verde.
+   *
+   * Las dos mutaciones que pasaban eran exactamente eso, y las dos duplican contactos de verdad:
+   * un contacto del buzón apareciendo además en Oportunidades, y un contacto con seguimiento
+   * apareciendo además en Oportunidades.
+   *
+   * Así que acá se baja por la precedencia quitando una condición a la vez. Cada paso ejercita **el
+   * par** —quién le gana a quién— y el conjunto cubre las cinco posiciones, no solo la primera.
+   * ══════════════════════════════════════════════════════════════════════════ */
+  const marca = randomUUID().slice(0, 6);
+
+  /* Cada caso es «las condiciones que quedan» → «la cola que tiene que ganar». Se va sacando la de
+     más arriba, así que el ganador esperado baja un lugar cada vez. */
+  const casos = [
+    { etiquetas: ['bot_desactivado_leadflow', 'derivado_lt', 'estancado'], escribe: true, seguimiento: true, gana: 'urgentes' },
+    { etiquetas: ['derivado_lt', 'estancado'], escribe: true, seguimiento: true, gana: 'seguimientos' },
+    { etiquetas: ['derivado_lt', 'estancado'], escribe: true, seguimiento: false, gana: 'buzon' },
+    { etiquetas: ['derivado_lt', 'estancado'], escribe: false, seguimiento: false, gana: 'oportunidades' },
+    { etiquetas: ['estancado'], escribe: false, seguimiento: false, gana: 'estancadas' },
+  ] as const;
+
+  for (const [i, caso] of casos.entries()) {
+    await limpiar();
+    const id = await contactoSetter(`pp${i}-${marca}`, [...caso.etiquetas]);
+    if (caso.escribe) await mensaje(id, 'entrante', new Date(), 'escribió y nadie contestó');
+    if (caso.seguimiento) await seguimientoDeHoy(id);
+
+    const c = await colasSetter();
+    const donde = (
+      [
+        ['urgentes', c.urgentes],
+        ['seguimientos', c.seguimientos],
+        ['buzon', c.buzon],
+        ['oportunidades', c.oportunidades],
+        ['estancadas', c.estancadas],
+      ] as const
+    )
+      .filter(([, cola]) => cola.some((x) => x.fila.id === id))
+      .map(([nombre]) => nombre);
+
+    assert.deepEqual(
+      donde,
+      [caso.gana],
+      `paso ${i}: con esas condiciones tenía que quedar solo en «${caso.gana}» y quedó en ` +
+        `[${donde.join(', ')}]`,
+    );
+    /* Y que el orden esperado sea el DECLARADO, no uno escrito acá al lado: si alguien cambia la
+       precedencia de producto, esta prueba tiene que fallar en vez de seguir midiendo la vieja. */
+    assert.equal(
+      caso.gana,
+      PRECEDENCIA_DE_LAS_COLAS[i],
+      `paso ${i}: esta prueba y \`PRECEDENCIA_DE_LAS_COLAS\` dejaron de decir lo mismo`,
+    );
+  }
 });
 
 test('un contacto CERRADO no entra a ninguna de las dos colas propias', async () => {

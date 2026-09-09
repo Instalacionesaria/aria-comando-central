@@ -41,16 +41,33 @@ import { nucleoDeColas, tiene, type EnLaCola } from './colas.ts';
  *
  *   1 · **Urgentes** — el agente falló. Es el hecho más específico: alguien tiene que mirar la
  *       conversación antes que nada.
- *   2 · **Buzón** — escribió y nadie le contestó. Es la única cola con **una contraparte esperando
- *       del otro lado**, y por eso va antes que las dos pasivas. Un lead que rompe treinta días de
- *       silencio para escribir es el que más urge, y con las estancadas arriba quedaría escondido
- *       justo en el momento en que dejó de estar estancado.
- *   3 · **Oportunidades chicas** — hay una oferta concreta que hacer.
- *   4 · **Estancadas** — se apagó. Es la ausencia de lo que el buzón mide.
+ *   2 · **Seguimientos de hoy** — hay un compromiso con fecha, puesto a mano. **Faltaba en esta
+ *       lista**, y no era una omisión de la lista: el núcleo los armaba DESPUÉS del buzón, así que
+ *       ninguna de las dos podía excluir a la otra. Medido en producción el 2026-09-09, había un
+ *       contacto en `buzón ∩ seguimientos` y otro en `urgentes ∩ seguimientos`.
+ *   3 · **Buzón** — escribió y nadie le contestó. Va antes que las dos pasivas de abajo porque es
+ *       la única cola con **una contraparte esperando del otro lado**: un lead que rompe treinta
+ *       días de silencio para escribir es el que más urge, y con las estancadas arriba quedaría
+ *       escondido justo en el momento en que dejó de estar estancado. Y va DEBAJO de las dos de
+ *       arriba porque es el general: *«que no estén en seguimiento o intervenciones urgentes»*.
+ *   4 · **Oportunidades chicas** — hay una oferta concreta que hacer.
+ *   5 · **Estancadas** — se apagó. Es la ausencia de lo que el buzón mide.
  *
  * Es una decisión de producto y se puede cambiar: es este arreglo.
+ *
+ * ── Y LA LISTA YA NO ES SOLO UN COMENTARIO ────────────────────────────────
+ *
+ * Las tres primeras las decide `nucleoDeColas` en ese orden, y devuelve `yaTieneCola` con los que
+ * ya tienen una. Acá abajo se sigue esa cadena en vez de reconstruirla desde `enUrgentes` y el
+ * buzón, que era el segundo lugar donde estaba escrito el orden.
  */
-const PRECEDENCIA_DE_LAS_COLAS = ['urgentes', 'buzon', 'oportunidades', 'estancadas'] as const;
+const PRECEDENCIA_DE_LAS_COLAS = [
+  'urgentes',
+  'seguimientos',
+  'buzon',
+  'oportunidades',
+  'estancadas',
+] as const;
 
 export interface MiDiaDelSetter {
   urgentes: EnLaCola[];
@@ -80,15 +97,14 @@ export interface MiDiaDelSetter {
 export async function colasDelSetter(zonaHoraria: string): Promise<MiDiaDelSetter> {
   const nucleo = await nucleoDeColas('setter', zonaHoraria);
 
-  /* Quiénes ya tienen cola, en el orden declarado arriba. Se va llenando a medida que se arman, y
-     cada cola siguiente saltea lo que ya está: es la regla «un contacto, una cola» hecha explícita
-     en vez de una cadena de `continue` que hay que leer entera para saber el orden. */
-  const yaTieneCola = new Set(nucleo.enUrgentes);
+  /* Quiénes ya tienen cola: los de las TRES primeras, que el núcleo ya resolvió en orden. Se sigue
+     llenando abajo con las dos propias.
+     Antes acá se reconstruía a partir de `nucleo.enUrgentes` y del buzón, y esa reconstrucción tenía
+     el mismo agujero que el núcleo: los seguimientos no estaban. Ahora el orden vive en un solo
+     lugar y esto lo continúa. */
+  const yaTieneCola = new Set(nucleo.yaTieneCola);
 
-  /* El BUZÓN va segundo, y el núcleo ya lo armó excluyendo a los de Urgentes. Se toma tal cual y se
-     anota a los suyos. */
   const buzon = nucleo.buzon;
-  for (const x of buzon) yaTieneCola.add(x.fila.id);
 
   // ── Cola propia · OPORTUNIDADES CHICAS ────────────────────────────────────
   //

@@ -677,8 +677,30 @@ test('Mi Día: el contador cuenta las colas que PIDEN MANOS, y el cockpit recibe
   assert.equal(manual.pideManos, true, 'un seguimiento manual pendiente TIENE que pedir manos');
   assert.match(manual.caso ?? '', /^manual_/, 'una tarea de `negocio.tareas` no es un automático');
 
-  // Y el del Buzón está en el Buzón: es el sumando que hace que el contador no sea cero.
-  assert.ok(m.colas.buzon.some((x) => x.fila.id === s.enBuzon), 'el del Buzón no está en el Buzón');
+  /* ── Y EL CONTACTO QUE ESCRIBIÓ ESTÁ EN LA AGENDA, NO EN EL BUZÓN ─────────
+   *
+   * Esta línea decía «el del Buzón está en el Buzón», y pasó a ser falsa con el arreglo de los
+   * contactos duplicados. No porque el buzón se rompiera: porque **`s.enBuzon` tiene una cita de
+   * hoy**. La siembra le pone tres —una pasada, una pasada cancelada y una futura— para que sus
+   * seis íconos no sean todos cero, y dos de esas tres caen dentro del día.
+   *
+   * Con la precedencia «un contacto, una cola», una cita de hoy le gana al buzón. Así que el
+   * nombre de la variable quedó viejo y el hecho es otro: este contacto es el de la AGENDA.
+   *
+   * No se le quitan las citas para que el nombre vuelva a ser cierto: son lo que hace medibles los
+   * seis íconos en la prueba de más abajo, y cambiarlas dejaría esa comparación sobre ceros.
+   *
+   * Y lo que esta línea vino a cuidar —que el contador tenga de dónde salir distinto de cero— lo
+   * cuida el sumando de los seguimientos, que se afirma arriba. La identidad de abajo lo cierra. */
+  assert.ok(
+    m.colas.agenda.some((x) => x.fila.id === s.enBuzon),
+    'el contacto con cita de hoy no está en la Agenda',
+  );
+  assert.ok(
+    !m.colas.buzon.some((x) => x.fila.id === s.enBuzon),
+    'un contacto con cita de hoy volvió a aparecer TAMBIÉN en el Buzón: es el bug de los ' +
+      'duplicados, que `92-mi-dia` mide de frente',
+  );
 
   /* LA IDENTIDAD.
    *
@@ -756,7 +778,23 @@ test('los seis íconos son EL MISMO dato en las tres listas, y no cuentan las ca
   const [p, m, l] = [await pipeline(), await miDia(), await contactos()];
 
   const delPipeline = filasDelPipeline(p).find((f) => f.id === s.enBuzon);
-  const deMiDia = m.colas.buzon.find((x) => x.fila.id === s.enBuzon)?.fila;
+  /* ── SE BUSCA EN TODA MI DÍA, NO EN UNA COLA ───────────────────────────────
+   *
+   * Decía `m.colas.buzon.find(...)`, y se rompió con el arreglo de los duplicados: `s.enBuzon`
+   * tiene una cita de hoy —se la pone la siembra para que estos íconos no sean todos cero— y con la
+   * precedencia «un contacto, una cola» eso lo manda a la Agenda.
+   *
+   * Y buscarlo en la Agenda en vez del Buzón sería cambiar un acoplamiento por otro: lo que esta
+   * prueba afirma es que **el dato es el mismo en las tres listas**, y en qué cola de Mi Día cae no
+   * tiene nada que ver con eso. Así que se busca en las cinco: la prueba deja de romperse cada vez
+   * que la precedencia cambie, y sigue midiendo lo suyo. */
+  const deMiDia = [
+    ...m.colas.urgentes,
+    ...m.colas.agenda,
+    ...m.colas.seguimientos,
+    ...m.colas.buzon,
+    ...m.colas.completadas,
+  ].find((x) => x.fila.id === s.enBuzon)?.fila;
   const deLaLista = l.filas.find((f) => f.id === s.enBuzon);
   assert.ok(delPipeline && deMiDia && deLaLista, 'el contacto no llegó a las tres listas');
 
