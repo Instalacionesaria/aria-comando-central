@@ -24,7 +24,29 @@ import {
 } from '../../lib/autorizacion/secciones.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
-const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
+const leerCrudo = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
+
+/**
+ * El archivo SIN sus comentarios, que es lo único que estas dos pruebas pueden medir.
+ *
+ * ── POR QUÉ SE AGREGÓ, Y LO ENCONTRÓ UN COMENTARIO NUEVO ───────────────────
+ *
+ * Leían el fuente crudo, así que un comentario que **explica** la regla la rompía: el formulario
+ * ganó una nota diciendo que *«una lista con la clave del rol acá funcionaría hoy y mentiría
+ * mañana»* —el motivo por el que la condición pregunta la cantidad de opciones y no el nombre— y
+ * esta prueba falló señalando la cita en vez del código.
+ *
+ * Es la regla de este repositorio, y van diez veces: una prueba que lee código fuente saca los
+ * comentarios antes de afirmar. Acá quitarlos **no afloja nada**, y conviene decir por qué: las dos
+ * afirmaciones son de AUSENCIA, y un comentario no decide nada — no compara un rol ni escribe una
+ * clave en el JSX. Lo único que cambia es que dejan de castigar a quien documenta la regla, que era
+ * justamente el efecto contrario al que buscan.
+ */
+const leer = (r: string) =>
+  leerCrudo(r)
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
 
 const FORMULARIO = 'components/ajustes/Usuarios.jsx';
 
