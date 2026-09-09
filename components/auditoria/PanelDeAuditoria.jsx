@@ -158,7 +158,17 @@ function Cuerpo({ cargando, error, pantalla, patrones, sub, abierto, alAbrir, al
     return (
       <div className="aud-estado aud-error">
         <p>{error}</p>
-        <button className="pr-btn" type="button" onClick={alRecargar}>
+        {/* ── ERA `pr-btn`, Y ESA CLASE NO EXISTE EN NINGUNA HOJA ─────────────
+         *
+         * Los dos botones de esta pantalla se dibujaban como botones NATIVOS del navegador —gris
+         * de sistema, esquinas cuadradas, la letra del sistema operativo— en medio de un tablero.
+         * No era una regla que se hubiera roto: `.pr-btn` nunca tuvo una. Lo único que existía era
+         * `.aud-error .pr-btn { margin-top: 8px }`, que le daba un margen a algo sin forma.
+         *
+         * `.fd-btn` es el botón de esta aplicación y la estética ya lo viste. Éste va `sec`
+         * —contorno, no relleno— porque reintentar no es la acción principal de la pantalla: es
+         * salir de un error. */}
+        <button className="fd-btn sec" type="button" onClick={alRecargar}>
           Reintentar
         </button>
       </div>
@@ -548,7 +558,9 @@ function CuadroDePrompt({ p, alGuardar }) {
         placeholder="Sin prompt cargado. Se audita igual: las correcciones salen como instrucciones para agregar, en vez de reemplazos citados."
       />
       <div className="aud-prompt-pie">
-        <button className="pr-btn" type="button" onClick={guardar} disabled={guardando || !cambio}>
+        {/* Y éste va LLENO: guardar el prompt es la única acción de esta pestaña. Ver arriba por
+            qué dejó de ser `pr-btn`. */}
+        <button className="fd-btn" type="button" onClick={guardar} disabled={guardando || !cambio}>
           {guardando ? 'Guardando…' : 'Guardar'}
         </button>
         {/* VACIAR ES BORRAR, y se dice antes de que alguien lo descubra. Es al revés que en una

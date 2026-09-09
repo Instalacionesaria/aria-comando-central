@@ -7,9 +7,17 @@
    conversaciones debajo del borde de la pantalla. Ahora los prompts tienen su pestaña y los
    análisis van en un bloque por agente, con sus patrones y sus conversaciones adentro.
 
-   Se reusan `mon-cifra`, `mon-rotulo` y `mon-pie` de `monitoreo.css` —tipografías de dato, el
-   mismo idioma visual— y **ya no** `mon-totales`, `mon-tarjeta` ni `mon-bloque`: aquellas son una
-   grilla de tarjetas chicas, y esto son dos bloques anchos con secciones adentro.
+   ── UNA AFIRMACIÓN DE ESTE ENCABEZADO ERA FALSA, Y HAY QUE DECIRLO ────────
+
+   Decía que «se reusan `mon-cifra`, `mon-rotulo` y `mon-pie` de `monitoreo.css`». **No se reusan
+   nada**: las tres están escritas allá como `.mon-tarjeta .mon-cifra`, y esta pantalla dejó de
+   tener un ancestro `.mon-tarjeta` cuando pasó de una grilla de tarjetas chicas a dos bloques
+   anchos. O sea que la cifra grande de cada agente y los rótulos de sus secciones se dibujan con
+   la tipografía heredada, y se ven así desde entonces.
+
+   Se deja anotado y no se arregla acá: son tres clases que hay que decidir si se acotan a esta
+   pantalla o se sacan de `monitoreo.css` para que las dos las compartan, y eso es un trabajo con
+   su propia decisión. Lo que no puede quedar es el encabezado afirmando que funciona.
 
    La barra de sub-pestañas es `cl-sub`, la MISMA del Closer y del Setter. Un tercer estilo de
    sub-pestaña para la tercera pantalla que las necesita es cómo tres barras terminan distintas.
@@ -47,7 +55,10 @@
 .aud-error {
   color: var(--crit);
 }
-.aud-error .pr-btn {
+/* El margen del botón de reintentar. Colgaba de `.pr-btn`, una clase que NUNCA tuvo forma en
+   ninguna hoja: los dos botones de esta pantalla se dibujaban nativos. Pasaron a `.fd-btn`, que es
+   el botón de esta aplicación, y el margen lo sigue poniendo el contenedor del error. */
+.aud-error .fd-btn {
   margin-top: 8px;
 }
 

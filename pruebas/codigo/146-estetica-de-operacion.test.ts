@@ -5,9 +5,15 @@
 //
 // `app/operacion-estetica.css` se llamaba `closer-estetica.css` y colgaba de `#v-closer`. Su propio
 // encabezado decía que ese alcance era provisional: *«se empieza por el Closer para verlo en local
-// antes de extenderlo… decidir hasta dónde extenderla»*. Se extendió al Setter, que es la otra
-// pantalla de operación y **dibuja los mismos componentes**: `MiDia`, `Pipeline`, `Fila`, `Ficha`,
-// `SeccionPlegable`, `Comision`, `Avanzar` y `EnlacesRapidos` son literalmente los mismos archivos.
+// antes de extenderlo… decidir hasta dónde extenderla»*. Se extendió en dos pasos, y los dos casos
+// fueron distintos:
+//
+//   · **el Setter** dibuja los MISMOS componentes —`MiDia`, `Pipeline`, `Fila`, `Ficha`,
+//     `SeccionPlegable`, `Comision`, `Avanzar` y `EnlacesRapidos` son literalmente los mismos
+//     archivos—, así que alcanzó con el cambio de selector;
+//   · **Auditoría de agentes** no comparte ni uno: reimplementó los siete conceptos con su propia
+//     familia `aud-*`, así que además hizo falta una sección que los refine (la 8) y tres clases de
+//     chrome que le faltaban en el JSX.
 //
 // Lo que hace falta cuidar no es que el CSS «funcione» —una hoja de estilos no falla— sino las tres
 // formas en que este alcance se deshace sin que nada avise:
@@ -53,7 +59,7 @@ const sinComentarios = (s: string) =>
 const leer = (r: string) => sinComentarios(leerCrudo(r));
 
 const ESTETICA = 'app/operacion-estetica.css';
-const ALCANCE = ':is(#v-closer, #v-setter)';
+const ALCANCE = ':is(#v-closer, #v-setter, #v-auditoria)';
 
 /** Las líneas de SELECTOR de la hoja: las que abren una regla, sin los comentarios. */
 function selectores(): string[] {
@@ -70,7 +76,7 @@ test('la hoja de operación alcanza a las dos pantallas, y no queda nada suelto'
   /* Toda línea de selector nombra las dos vistas, o es una de las dos excepciones declaradas. Se
      mide por LÍNEA y no por regla porque los selectores agrupados van uno por línea en esta hoja. */
   const sueltos = conAlcance.filter(
-    (l) => !l.includes(ALCANCE) && !esDeLaAgenda(l) && !esDelCloserSolo(l),
+    (l) => !l.includes(ALCANCE) && !esDeLaAgenda(l) && !esDelCloserSolo(l) && !esDeAuditoria(l),
   );
   assert.deepEqual(
     sueltos,
@@ -86,21 +92,33 @@ function esDeLaAgenda(linea: string): boolean {
   return /#v-closer \.ag[- ]|#v-closer \.ag\b|data-cola='agenda'/.test(linea);
 }
 
-/** `QuienEsElCloser` y el selector «ver como». No tienen equivalente en el Setter. */
+/** `QuienEsElCloser` y el selector «ver como». No tienen equivalente en las otras dos. */
 function esDelCloserSolo(linea: string): boolean {
   return /#v-closer \.ck-closer|#v-closer \.ck-vercomo/.test(linea);
+}
+
+/**
+ * La sección 8: las siete familias `aud-*`.
+ *
+ * Es la tercera excepción, y por el motivo CONTRARIO a las otras dos. Aquellas son cosas del
+ * Closer que las demás no tienen; ésta es al revés — son las piezas propias de Auditoría, que
+ * ninguna otra pantalla dibuja. Acotarlas a `#v-auditoria` es lo correcto: aplicarlas en las tres
+ * sería declarar reglas para clases que en dos de ellas no existen.
+ */
+function esDeAuditoria(linea: string): boolean {
+  return /^#v-auditoria /.test(linea);
 }
 
 test('lo que NO se comparte sigue acotado al Closer, y es solo lo que se decidió', () => {
   /* La otra dirección. Sin esto, «extender el alcance» se puede hacer con un reemplazo global que
      también se lleva la Agenda — y entonces la hoja deja de decir de quién es cada cosa. */
-  const soloCloser = selectores().filter((l) => !l.includes(ALCANCE));
-  assert.ok(soloCloser.length > 0, 'ya no queda nada acotado al Closer: se extendió también la Agenda');
-  for (const l of soloCloser) {
+  const acotados = selectores().filter((l) => !l.includes(ALCANCE));
+  assert.ok(acotados.length > 0, 'ya no queda nada acotado: se extendió también la Agenda');
+  for (const l of acotados) {
     assert.ok(
-      esDeLaAgenda(l) || esDelCloserSolo(l),
-      `\`${l}\` quedó acotado al Closer y no es ni de la Agenda ni de «ver como». Si es de un ` +
-        'componente compartido, tiene que alcanzar a las dos pantallas',
+      esDeLaAgenda(l) || esDelCloserSolo(l) || esDeAuditoria(l),
+      `\`${l}\` quedó acotado a una pantalla y no es de la Agenda, ni de «ver como», ni de las ` +
+        'piezas propias de Auditoría. Si es de un componente compartido, tiene que alcanzar a las tres',
     );
   }
 });
@@ -145,4 +163,71 @@ test('el hero de DOS anillos conserva su columna', () => {
     hoja.indexOf(`${ALCANCE} .ck-hero {`) < i,
     'la regla del hero de dos anillos quedó ANTES que la general, así que no la pisa',
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDITORÍA: LOS TRES CHOQUES, Y EL CHROME QUE LE FALTABA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('el chrome de Auditoría es el MISMO que el de las otras dos', () => {
+  /* Le faltaban tres clases, y cada una tenía consecuencia:
+       · `.stack` y `.ch-title` — la estética INVIERTE el encabezado (el `h2` pasa a rótulo chico y
+         la descripción a titular de 24 px) y esas dos son las que lo apilan;
+       · `.cl-page` — sin el envoltorio, el `gap: 24px` del scroller se aplicaba entre TODOS los
+         bloques en vez de separar la cabecera del cuerpo una vez.
+     Se agregaron en el JSX en vez de compensarlas con reglas: dos de los tres choques
+     desaparecieron solos. */
+  const vista = leer('components/views/AuditoriaView.jsx');
+  for (const clase of ['ch-l stack', 'ch-title', 'cl-page']) {
+    assert.ok(
+      vista.includes(`className="${clase}"`),
+      `\`AuditoriaView\` perdió \`${clase}\`: su chrome deja de ser el de Closer y Setter, y la ` +
+        'estética se le aplica a medias',
+    );
+  }
+});
+
+test('el contador de prompts que faltan sigue en ámbar, no en el acento', () => {
+  /* El choque que sí necesitaba regla. `app/auditoria.css` lo pinta con `.cl-sub .aud-cnt-falta`
+     —dos clases— y la regla de la estética lleva un `#id`, así que le ganaba y lo devolvía al
+     acento. Su comentario dice por qué importa: `cnt` en acento es «tenés tareas», y este número es
+     «te falta cargar esto». Dos significados con el mismo color se leen como el mismo aviso. */
+  const hoja = sinComentarios(leerCrudo(ESTETICA));
+  const i = hoja.indexOf('#v-auditoria .cl-sub .aud-cnt-falta {');
+  assert.ok(i > 0, 'se fue la regla que le devuelve el ámbar al contador de prompts que faltan');
+  const regla = hoja.slice(i, hoja.indexOf('}', i));
+  assert.match(regla, /var\(--warn\)/, 'el contador dejó de usar el token de advertencia');
+
+  /* Y va DESPUÉS de la regla general del contador, porque con la misma especificidad gana la
+     última. Acá además la gana por el `#id`, pero el orden es lo que la hace legible. */
+  assert.ok(
+    hoja.indexOf(`${ALCANCE} .cl-sub .cnt`) < i,
+    'la regla del contador de Auditoría quedó ANTES que la general, así que no la pisa',
+  );
+});
+
+test('la barra de pestañas de Auditoría no queda centrada', () => {
+  /* El tercer choque, y el que menos se ve venir: `align-self: center` centra la cápsula dentro de
+     la fila del encabezado, que es donde vive en las otras dos. En Auditoría la barra la emite el
+     panel —componente de cliente contra vista de servidor— y cuelga de `.cl-page`, un flex en
+     columna: ahí `center` la deja centrada HORIZONTALMENTE, sola en medio de la pantalla. */
+  const hoja = sinComentarios(leerCrudo(ESTETICA));
+  const i = hoja.indexOf('#v-auditoria .cl-sub {');
+  assert.ok(i > 0, 'se fue la regla que alinea la barra de Auditoría a la izquierda');
+  assert.match(hoja.slice(i, hoja.indexOf('}', i)), /align-self:\s*flex-start/);
+});
+
+test('los botones de Auditoría usan el botón de la aplicación, no una clase sin forma', () => {
+  /* `.pr-btn` NUNCA tuvo regla en ninguna hoja: los dos botones de esta pantalla —«Reintentar» y
+     «Guardar»— se dibujaban nativos del navegador, grises y cuadrados, en medio de un tablero. Lo
+     único que existía era `.aud-error .pr-btn { margin-top: 8px }`, un margen sobre algo sin forma.
+     No es una regresión de este trabajo: es un defecto que salió a la luz al mirar la pantalla. */
+  const panel = leer('components/auditoria/PanelDeAuditoria.jsx');
+  assert.ok(
+    !panel.includes('className="pr-btn"'),
+    'volvió `pr-btn` al panel de Auditoría, y esa clase no tiene forma en ninguna hoja: el botón ' +
+      'se dibuja nativo',
+  );
+  assert.match(panel, /className="fd-btn sec"/, 'el botón de reintentar dejó de ser el de la aplicación');
+  assert.match(panel, /className="fd-btn"/, 'el botón de guardar dejó de ser el de la aplicación');
 });

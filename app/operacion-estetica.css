@@ -1,11 +1,11 @@
-/* La estética de las dos pantallas de OPERACIÓN —Closer y Setter—: la FORMA. Los colores viven en
- * `temas.css`, con el mismo alcance.
+/* La estética de las TRES pantallas de operación —Closer, Setter y Auditoría de agentes—: la
+ * FORMA. Los colores viven en `temas.css`, con el mismo alcance.
  *
  * ═════════════════════════════════════════════════════════════════════════════
  * QUÉ ES ESTO Y POR QUÉ ES UNA HOJA APARTE
  *
  * Se traslada el sistema visual de `docs/migracion/front/01…14` del proyecto hermano. Todo lo de
- * acá cuelga de `:is(#v-closer, #v-setter)`, así que:
+ * acá cuelga de `:is(#v-closer, #v-setter, #v-auditoria)`, así que:
  *
  *   · el resto de la aplicación —barra lateral, Ajustes, los tableros de inteligencia— no se
  *     mueve;
@@ -14,13 +14,21 @@
  *   · `aios.css` y `closer.css` no se tocan. La primera tiene que seguir siendo comparable contra
  *     el prototipo; la segunda tiene reglas que las pruebas leen por su forma exacta (`106`).
  *
- * ── EL ALCANCE ERA PROVISIONAL, Y ESTA ES LA SEGUNDA MITAD ─────────────────
+ * ── EL ALCANCE CRECIÓ EN DOS PASOS, Y CADA UNO FUE DISTINTO ────────────────
  *
  * El archivo se llamaba `closer-estetica.css` y colgaba solo de `#v-closer`. Acá decía por qué:
  * *«se empieza por el Closer para verlo en local antes de extenderlo… es la forma de poder comparar
- * las dos estéticas en la misma pantalla y decidir hasta dónde extenderla»*. Se decidió: hasta el
- * Setter. El nombre cambió con el alcance — una hoja llamada «closer» que pinta `#v-setter` es de
- * las cosas que hacen perder media hora buscando por qué algo se ve distinto.
+ * las dos estéticas en la misma pantalla y decidir hasta dónde extenderla»*. El nombre cambió con
+ * el alcance — una hoja llamada «closer» que pinta otras vistas es de las cosas que hacen perder
+ * media hora buscando por qué algo se ve distinto.
+ *
+ *   · **El Setter** fue casi solo el cambio de selector: su chrome es el MISMO DOM clase por clase
+ *     y los componentes de adentro son literalmente los mismos archivos. Un solo choque real.
+ *   · **Auditoría de agentes** fue otra cosa, y conviene saberlo antes de tocarla: **no comparte
+ *     un solo componente**. Reimplementó por su cuenta los siete conceptos —tarjeta, sección,
+ *     fila, avisos, botones, píldoras y plegable— con su propia familia `aud-*`. Así que el
+ *     alcance le trajo la paleta, la tipografía y la barra de pestañas, y su hoja
+ *     (`app/auditoria.css`) tuvo que adaptar las siete a esta forma. Ahí está esa mitad.
  *
  * Y se extiende con `:is()` y no duplicando cada selector, por una razón que no es de prolijidad:
  * **`:is()` toma la especificidad de su argumento MÁS específico**, o sea la de un `#id`. Es
@@ -30,22 +38,29 @@
  *
  * ── LO QUE NO SE EXTIENDE, Y NO ES UN OLVIDO ──────────────────────────────
  *
- * Dos familias siguen colgadas de `#v-closer` solo, porque son de cosas que el Setter no tiene:
+ * Dos familias siguen colgadas de `#v-closer` solo, porque son de cosas que las otras no tienen:
  *
- *   · **la Agenda** (sección 5) — la cuarta sub-pestaña del Setter es Contactos, no Agenda;
+ *   · **la Agenda** (sección 5) — la cuarta sub-pestaña del Setter es Contactos, y Auditoría tiene
+ *     dos pestañas y ninguna es un calendario;
  *   · **`.ck-closer` y `.ck-vercomo`** — de `QuienEsElCloser` y del selector «ver como», que no
- *     tienen equivalente del otro lado.
+ *     tienen equivalente en ninguna de las otras dos.
  *
  * Extenderlas no rompería nada —una regla que no coincide no pinta— pero dejarlas acotadas dice de
  * quién es cada cosa, que es para lo que sirve leer una hoja de estilos.
  *
  * ── Y LO QUE SÍ SE COMPARTE, QUE ES CASI TODO ─────────────────────────────
  *
- * No por generosidad: el chrome de las dos vistas es el MISMO DOM clase por clase —sección,
- * scroller, cabecera, cápsula de pestañas, `.cl-page`— y `MiDia`, `Pipeline`, `Fila`, `Ficha`,
- * `SeccionPlegable`, `Comision`, `Avanzar` y `EnlacesRapidos` son literalmente los mismos archivos.
- * Con el alcance en una sola vista, el Setter dibujaba esos componentes con la forma vieja: el
- * mismo componente con dos aires según en qué pestaña se lo mirara.
+ * No por generosidad: el chrome de las TRES vistas es el MISMO DOM clase por clase —sección,
+ * scroller, cabecera, cápsula de pestañas, `.cl-page`— y entre Closer y Setter, además, `MiDia`,
+ * `Pipeline`, `Fila`, `Ficha`, `SeccionPlegable`, `Comision`, `Avanzar` y `EnlacesRapidos` son
+ * literalmente los mismos archivos. Con el alcance en una sola vista, las otras dibujaban esos
+ * componentes con la forma vieja: el mismo componente con dos aires según en qué pestaña se lo
+ * mirara.
+ *
+ * Auditoría no tenía las tres últimas clases de su chrome —`.stack`, `.ch-title` y `.cl-page`— y se
+ * le agregaron en el JSX en vez de compensarlas con reglas. Es lo que hizo desaparecer dos de sus
+ * tres choques: el encabezado invertido necesita las dos primeras para apilarse, y sin la tercera el
+ * `gap` del scroller se aplicaba entre TODOS los bloques en vez de una vez.
  *
  * ── LO QUE SE TRASLADA, Y LO QUE SE DECIDIÓ DISTINTO ────────────────────────
  *
@@ -71,7 +86,7 @@
  * ── LA FUENTE ─────────────────────────────────────────────────────────────────
  *
  * El sistema usa la del sistema operativo y ninguna web (`02` § 1). Acá se declara sobre
- * `:is(#v-closer, #v-setter)` y se hereda hacia abajo; `next/font` sigue cargando Inter para el resto de la
+ * `:is(#v-closer, #v-setter, #v-auditoria)` y se hereda hacia abajo; `next/font` sigue cargando Inter para el resto de la
  * aplicación, y sacarlo es decisión de cuando esto se extienda.
  *
  * ═════════════════════════════════════════════════════════════════════════════
@@ -108,7 +123,7 @@
 
 /* ── 0 · La base ──────────────────────────────────────────────────────────── */
 
-:is(#v-closer, #v-setter) {
+:is(#v-closer, #v-setter, #v-auditoria) {
   --radio:         10px;
   /* 26 px, que son los 32 del sistema por la escala. Era `2rem` escrito así porque el sistema lo
      escribe así; acá se pone en píxeles porque un `rem` depende de la raíz y esta hoja se calibra
@@ -129,7 +144,7 @@
    en claro, el nivel 0 en oscuro (`05` § 3). Como el armazón no se toca todavía, la vista pinta
    su propio lienzo y se estira sobre el relleno de `.main` (14 / 18 / 8 px) para que no quede una
    franja del fondo viejo asomando por los bordes. El día que el armazón se migre, esto sobra. */
-:is(#v-closer, #v-setter).view {
+:is(#v-closer, #v-setter, #v-auditoria).view {
   margin: -14px -18px -8px;
   padding: 14px 18px 8px;
   height: calc(100% + 22px);
@@ -138,7 +153,7 @@
 
 /* El lienzo del Closer: `p-8 max-w-[1600px] mx-auto space-y-8` (`05` § 3). Y la barra de
    desplazamiento fina del `01` § 5, que en el sistema se aplica a mano donde hace falta. */
-:is(#v-closer, #v-setter) .view-scroll {
+:is(#v-closer, #v-setter, #v-auditoria) .view-scroll {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
@@ -147,11 +162,11 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
-:is(#v-closer, #v-setter) .view-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-:is(#v-closer, #v-setter) .view-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 9999px; }
-:is(#v-closer, #v-setter) .view-scroll::-webkit-scrollbar-track { background: transparent; }
+:is(#v-closer, #v-setter, #v-auditoria) .view-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+:is(#v-closer, #v-setter, #v-auditoria) .view-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 9999px; }
+:is(#v-closer, #v-setter, #v-auditoria) .view-scroll::-webkit-scrollbar-track { background: transparent; }
 
-:is(#v-closer, #v-setter) .cl-page { gap: 18px; }
+:is(#v-closer, #v-setter, #v-auditoria) .cl-page { gap: 18px; }
 
 /* ── Cómo entra cada pestaña (`06` § 6): aparece y sube 16 px en medio segundo. Es
    deliberadamente lenta —media el movimiento más grande de la pantalla— y la cabecera NO se
@@ -160,18 +175,18 @@
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: none; }
 }
-:is(#v-closer, #v-setter) .cl-page > * { animation: cl-entrar .5s ease both; }
+:is(#v-closer, #v-setter, #v-auditoria) .cl-page > * { animation: cl-entrar .5s ease both; }
 
 /* ── 1 · La cabecera y la cápsula de pestañas (`06`) ───────────────────────── */
 
 /* La cabecera se separa del contenido con UNA LÍNEA al 30 %, no con un fondo. */
-:is(#v-closer, #v-setter) .cre-head {
+:is(#v-closer, #v-setter, #v-auditoria) .cre-head {
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 0;
 }
 /* Título a la izquierda, pestañas a la derecha; en pantalla angosta, una debajo de la otra. */
-:is(#v-closer, #v-setter) .ch-l.stack {
+:is(#v-closer, #v-setter, #v-auditoria) .ch-l.stack {
   width: 100%;
   flex-direction: row;
   justify-content: space-between;
@@ -179,18 +194,18 @@
   gap: 18px;
 }
 @media (max-width: 900px) {
-  :is(#v-closer, #v-setter) .ch-l.stack { flex-direction: column; align-items: flex-start; }
+  :is(#v-closer, #v-setter, #v-auditoria) .ch-l.stack { flex-direction: column; align-items: flex-start; }
 }
 
 /* El rótulo superior y el título. El HTML trae `<h2>Closer</h2>` y debajo la descripción de la
    pestaña; el sistema pone el ROL arriba, chico y en el acento, y el NOMBRE de la pantalla abajo, grande.
    Se invierte el peso visual sin tocar el marcado: el `h2` es el rótulo, la descripción el título. */
-:is(#v-closer, #v-setter) .ch-title {
+:is(#v-closer, #v-setter, #v-auditoria) .ch-title {
   flex-direction: column;
   align-items: flex-start;
   gap: 5px;
 }
-:is(#v-closer, #v-setter) .cre-head h2 {
+:is(#v-closer, #v-setter, #v-auditoria) .cre-head h2 {
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: .2em;
@@ -199,7 +214,7 @@
   opacity: .8;
   margin: 0;
 }
-:is(#v-closer, #v-setter) .cre-head .cre-desc {
+:is(#v-closer, #v-setter, #v-auditoria) .cre-head .cre-desc {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -.025em;
@@ -209,7 +224,7 @@
 
 /* La cápsula: opaca, redonda, con `p-1.5` de aire alrededor de la activa. Sin la sombra propia
    que el sistema le da —ver el encabezado—. */
-:is(#v-closer, #v-setter) .cl-sub {
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub {
   gap: 3px;
   padding: 4px;
   border-radius: 9999px;
@@ -217,7 +232,7 @@
   border: 1px solid var(--line);
   align-self: center;
 }
-:is(#v-closer, #v-setter) .cl-sub button {
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button {
   height: 30px;
   padding: 0 14px;
   gap: 6px;
@@ -227,19 +242,19 @@
   color: var(--txt-dim);
   transition: background .15s ease, color .15s ease;
 }
-:is(#v-closer, #v-setter) .cl-sub button svg { width: 14px; height: 14px; opacity: 1; }
-:is(#v-closer, #v-setter) .cl-sub button:hover { color: var(--txt); background: rgb(var(--c-nube) / .06); }
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button svg { width: 14px; height: 14px; opacity: 1; }
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button:hover { color: var(--txt); background: rgb(var(--c-nube) / .06); }
 /* La activa es el ÚNICO fondo sólido del acento en el armazón. */
-:is(#v-closer, #v-setter) .cl-sub button.on {
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button.on {
   background: var(--accent-hondo);
   color: var(--sobre-acento);
   font-weight: 500;
   box-shadow: none;
 }
-:is(#v-closer, #v-setter) .cl-sub button.on svg { color: inherit; }
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button.on svg { color: inherit; }
 /* El contador cambia de paleta según el estado de la pestaña: sobre el acento sólido, un acento al
    10 % sería invisible, así que ahí usa el color del TEXTO al 20 %. */
-:is(#v-closer, #v-setter) .cl-sub .cnt {
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub .cnt {
   margin-left: 1px;
   padding: 1px 5px;
   border-radius: 9999px;
@@ -248,7 +263,7 @@
   background: rgb(var(--c-acento) / .10);
   color: var(--accent);
 }
-:is(#v-closer, #v-setter) .cl-sub button.on .cnt {
+:is(#v-closer, #v-setter, #v-auditoria) .cl-sub button.on .cnt {
   background: rgb(var(--c-sobre-acento) / .20);
   color: inherit;
 }
@@ -257,17 +272,17 @@
 
 /* Tarjeta translúcida: `bg-card/50 backdrop-blur-sm border-border/40 rounded-[2rem] p-8`. Sin
    `backdrop-filter` la tarjeta se ve como un rectángulo semitransparente; van siempre juntos. */
-:is(#v-closer, #v-setter) .md-c,
-:is(#v-closer, #v-setter) .card,
-:is(#v-closer, #v-setter) .aj-tarjeta {
+:is(#v-closer, #v-setter, #v-auditoria) .md-c,
+:is(#v-closer, #v-setter, #v-auditoria) .card,
+:is(#v-closer, #v-setter, #v-auditoria) .aj-tarjeta {
   background: rgb(var(--c-panel) / .5);
   backdrop-filter: blur(4px);
   border: 1px solid var(--line);
   border-radius: var(--radio-tarjeta);
   box-shadow: none;
 }
-:is(#v-closer, #v-setter) .md-top { gap: 18px; }
-:is(#v-closer, #v-setter) .md-c {
+:is(#v-closer, #v-setter, #v-auditoria) .md-top { gap: 18px; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-c {
   padding: 22px;
   align-items: flex-end;
   justify-content: space-between;
@@ -275,28 +290,28 @@
 }
 /* El rótulo de tarjeta y la cifra grande: la combinación de firma del sistema (`02` § 3). Una
    cifra de 48 px liviana junto a un rótulo de 11 px semibold en mayúsculas con `0.15em`. */
-:is(#v-closer, #v-setter) .md-k {
+:is(#v-closer, #v-setter, #v-auditoria) .md-k {
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: .15em;
   text-transform: uppercase;
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) .md-v {
+:is(#v-closer, #v-setter, #v-auditoria) .md-v {
   font-size: 38px;
   font-weight: 300;
   letter-spacing: -.025em;
   line-height: 1;
   margin-top: 10px;
 }
-:is(#v-closer, #v-setter) .md-s {
+:is(#v-closer, #v-setter, #v-auditoria) .md-s {
   text-align: right;
   font-size: 11.5px;
   font-weight: 500;
   color: var(--txt-dim);
   max-width: 45%;
 }
-:is(#v-closer, #v-setter) .md-chip {
+:is(#v-closer, #v-setter, #v-auditoria) .md-chip {
   padding: 3px 10px;
   border-radius: 9999px;
   font-size: 10.5px;
@@ -306,11 +321,11 @@
   margin-left: 0;
   border: 1px solid transparent;
 }
-:is(#v-closer, #v-setter) .md-chip.o { background: rgb(var(--c-ok) / .10); color: var(--ok); border-color: rgb(var(--c-ok) / .20); }
-:is(#v-closer, #v-setter) .md-chip.u { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .20); }
+:is(#v-closer, #v-setter, #v-auditoria) .md-chip.o { background: rgb(var(--c-ok) / .10); color: var(--ok); border-color: rgb(var(--c-ok) / .20); }
+:is(#v-closer, #v-setter, #v-auditoria) .md-chip.u { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .20); }
 
 /* La sección OPACA (`08` § 4): es el trabajo, y el trabajo no es translúcido. */
-:is(#v-closer, #v-setter) .md-sec {
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec {
   border-radius: var(--radio-tarjeta);
   border: 1px solid var(--line);
   background: var(--bg-panel);
@@ -320,12 +335,12 @@
 /* El canto de color de 3 px que `closer.css` le pone a cada etapa y cola se apaga acá: en el
    sistema el color de la sección lo dice su ENCABEZADO teñido, y un canto sobre un radio de 2 rem
    se ve como un defecto. La regla de `closer.css` queda como está —`106` la lee por su forma—. */
-:is(#v-closer, #v-setter) .md-sec[data-etapa],
-:is(#v-closer, #v-setter) .md-sec[data-cola] { border-left: 1px solid var(--line); }
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-etapa],
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola] { border-left: 1px solid var(--line); }
 
 /* El encabezado de sección: `px-6 py-4`, título de 13 px en mayúsculas, y —cuando tiene color—
    el fondo al 10 %, el título en el tono de la cola y el contador SÓLIDO con texto blanco. */
-:is(#v-closer, #v-setter) .md-h {
+:is(#v-closer, #v-setter, #v-auditoria) .md-h {
   padding: 12px 20px;
   gap: 10px;
   border-bottom: 1px solid var(--line);
@@ -335,12 +350,12 @@
   text-transform: uppercase;
   color: var(--txt);
 }
-:is(#v-closer, #v-setter) .md-sec[data-etapa] .md-h,
-:is(#v-closer, #v-setter) .md-sec[data-cola] .md-h {
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-etapa] .md-h,
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola] .md-h {
   background: rgb(var(--c-etapa) / .10);
   color: var(--etapa);
 }
-:is(#v-closer, #v-setter) .md-h .b {
+:is(#v-closer, #v-setter, #v-auditoria) .md-h .b {
   padding: 1px 7px;
   border-radius: 9999px;
   font-size: 9.5px;
@@ -348,19 +363,19 @@
   background: rgb(var(--c-nube) / .10);
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) .md-sec[data-etapa] .md-h .b,
-:is(#v-closer, #v-setter) .md-sec[data-cola] .md-h .b {
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-etapa] .md-h .b,
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola] .md-h .b {
   background: var(--etapa);
   color: var(--sobre-lleno);
 }
-:is(#v-closer, #v-setter) .md-sec[data-etapa] .md-h::before,
-:is(#v-closer, #v-setter) .md-sec[data-cola] .md-h::before { width: 8px; height: 8px; }
-:is(#v-closer, #v-setter) .sec-plegar { width: 24px; height: 24px; border-radius: 9999px; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-etapa] .md-h::before,
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola] .md-h::before { width: 8px; height: 8px; }
+:is(#v-closer, #v-setter, #v-auditoria) .sec-plegar { width: 24px; height: 24px; border-radius: 9999px; }
 
 /* El estado vacío de una sección: solo texto, centrado. Un recuadro punteado dentro de una
    tarjeta de 2 rem es un marco dentro de un marco. */
-:is(#v-closer, #v-setter) .dw-empty,
-:is(#v-closer, #v-setter) .md-sec > .pipe-vacia {
+:is(#v-closer, #v-setter, #v-auditoria) .dw-empty,
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec > .pipe-vacia {
   margin: 0;
   padding: 24px 20px;
   border: 0;
@@ -374,15 +389,15 @@
 
 /* `px-6 py-4` es la medida más importante del sistema. La primera columna es el avatar del
    score: 32 px, círculo. */
-:is(#v-closer, #v-setter) .md-r {
+:is(#v-closer, #v-setter, #v-auditoria) .md-r {
   grid-template-columns: 28px minmax(0, 1fr) auto;
   gap: 12px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--line);
   transition: background .15s ease, opacity .15s ease;
 }
-:is(#v-closer, #v-setter) .md-r:hover { background: rgb(var(--c-nube) / .04); }
-:is(#v-closer, #v-setter) .md-time {
+:is(#v-closer, #v-setter, #v-auditoria) .md-r:hover { background: rgb(var(--c-nube) / .04); }
+:is(#v-closer, #v-setter, #v-auditoria) .md-time {
   width: 28px;
   height: 28px;
   display: grid;
@@ -394,8 +409,8 @@
   background: rgb(var(--c-nube) / .08);
 }
 /* En la agenda de hoy la primera columna es una HORA, no un score: no cabe en un círculo. */
-:is(#v-closer, #v-setter) .md-sec[data-cola='agenda'] .md-r { grid-template-columns: 40px minmax(0, 1fr) auto; }
-:is(#v-closer, #v-setter) .md-sec[data-cola='agenda'] .md-time {
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola='agenda'] .md-r { grid-template-columns: 40px minmax(0, 1fr) auto; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-sec[data-cola='agenda'] .md-time {
   width: auto;
   height: auto;
   border-radius: 0;
@@ -403,7 +418,7 @@
   color: var(--etapa-agendado);
   font-variant-numeric: tabular-nums;
 }
-:is(#v-closer, #v-setter) .md-nm {
+:is(#v-closer, #v-setter, #v-auditoria) .md-nm {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
@@ -412,7 +427,7 @@
 }
 /* El microtexto se recorta antes de empujar los iconos: sin el tope, un texto largo desalinea la
    fila de iconos con las demás filas (`09` § 2.4). Solo el de la fila, no los bloques de abajo. */
-:is(#v-closer, #v-setter) .md-r > div > .md-sub {
+:is(#v-closer, #v-setter, #v-auditoria) .md-r > div > .md-sub {
   font-size: 11.5px;
   margin-top: 3px;
   color: var(--txt-dim);
@@ -423,18 +438,18 @@
 }
 /* La completada se atenúa y conserva todo; solo el nombre se tacha, con su propio color de raya.
    Y todo lo atenuado recupera opacidad al pasar el mouse (`02` § 8). */
-:is(#v-closer, #v-setter) .md-r.md-done { opacity: .75; }
-:is(#v-closer, #v-setter) .md-r.md-done:hover { opacity: 1; }
-:is(#v-closer, #v-setter) .md-done .md-nm {
+:is(#v-closer, #v-setter, #v-auditoria) .md-r.md-done { opacity: .75; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-r.md-done:hover { opacity: 1; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-done .md-nm {
   text-decoration: line-through;
   text-decoration-color: rgb(var(--c-nube) / .4);
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) .md-quote { margin-left: calc(20px + 28px + 12px); }
+:is(#v-closer, #v-setter, #v-auditoria) .md-quote { margin-left: calc(20px + 28px + 12px); }
 
 /* La píldora: 9 px, negrita, mayúsculas, círculo completo, con borde. Tono 50 sólido en claro y
    500 al 20 % en oscuro es lo que hace el par `rgb(var(--c-…) / .10)` + texto en el token. */
-:is(#v-closer, #v-setter) .tagx {
+:is(#v-closer, #v-setter, #v-auditoria) .tagx {
   padding: 1px 7px;
   border-radius: 9999px;
   font-size: 8.5px;
@@ -444,11 +459,11 @@
   border: 1px solid transparent;
   white-space: nowrap;
 }
-:is(#v-closer, #v-setter) .tagx.nu   { background: rgb(var(--c-nube) / .06); color: var(--txt-dim); border-color: var(--line); }
-:is(#v-closer, #v-setter) .tagx.ag   { background: rgb(var(--c-acento) / .10); color: var(--accent); border-color: rgb(var(--c-acento) / .25); }
-:is(#v-closer, #v-setter) .tagx.seg  { background: rgb(var(--c-warn) / .10); color: var(--warn); border-color: rgb(var(--c-warn) / .25); }
-:is(#v-closer, #v-setter) .tagx.venc,
-:is(#v-closer, #v-setter) .tagx.no   { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .25); }
+:is(#v-closer, #v-setter, #v-auditoria) .tagx.nu   { background: rgb(var(--c-nube) / .06); color: var(--txt-dim); border-color: var(--line); }
+:is(#v-closer, #v-setter, #v-auditoria) .tagx.ag   { background: rgb(var(--c-acento) / .10); color: var(--accent); border-color: rgb(var(--c-acento) / .25); }
+:is(#v-closer, #v-setter, #v-auditoria) .tagx.seg  { background: rgb(var(--c-warn) / .10); color: var(--warn); border-color: rgb(var(--c-warn) / .25); }
+:is(#v-closer, #v-setter, #v-auditoria) .tagx.venc,
+:is(#v-closer, #v-setter, #v-auditoria) .tagx.no   { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .25); }
 
 /* ── LOS SEIS ICONOS DE ESTADO ──────────────────────────────────────────────
  *
@@ -463,16 +478,16 @@
  * una trampa: dejaba `--txt` valiendo un gris para todo descendiente de `.md-acts`. Ahora el
  * componente pone CLASES y el color lo decide esta hoja, así que el token vuelve a significar una
  * sola cosa. */
-:is(#v-closer, #v-setter) .md-acts {
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts {
   gap: 7px;
   color: var(--icono);
 }
-:is(#v-closer, #v-setter) .md-acts i {
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts i {
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
-:is(#v-closer, #v-setter) .md-acts svg {
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts svg {
   width: 15px;
   height: 15px;
   display: block;
@@ -482,25 +497,25 @@
 /* Los TRES estados, que el `11` § 9 regla 1 exige mantener separados: «no medido» y «medido en
    cero» no son el mismo hecho, y a simple vista se parecen — de ahí que el componente además lo
    diga en el `title`. */
-:is(#v-closer, #v-setter) .md-acts i.sin-medir { opacity: .28; }
-:is(#v-closer, #v-setter) .md-acts i.apagado   { opacity: .5; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts i.sin-medir { opacity: .28; }
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts i.apagado   { opacity: .5; }
 /* Y el encendido en el ACENTO, que es lo que se pidió: hasta ahora el encendido era el gris del
    texto, un tono más oscuro que el apagado, y no se leía como encendido. */
-:is(#v-closer, #v-setter) .md-acts i.on {
+:is(#v-closer, #v-setter, #v-auditoria) .md-acts i.on {
   opacity: 1;
   color: var(--accent);
 }
 
 /* El número al lado del dibujo. `tabular-nums` para que un 2 y un 11 no muevan el icono de la
    derecha: la fila tiene seis y cualquier corrimiento se ve como desalineación. */
-:is(#v-closer, #v-setter) .md-cnt {
+:is(#v-closer, #v-setter, #v-auditoria) .md-cnt {
   font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 /* «Unirse»: verde sólido, reservado para la próxima llamada con sala (`08` § 3). */
-:is(#v-closer, #v-setter) .md-join {
+:is(#v-closer, #v-setter, #v-auditoria) .md-join {
   padding: 3px 9px;
   border-radius: 9999px;
   font-size: 9.5px;
@@ -525,13 +540,13 @@
  * es un comportamiento del navegador, no una preferencia: con menos de 16 px, Safari y Chrome de
  * móvil **hacen acercamiento al enfocar el campo** y dejan la pantalla corrida. Con 16 no. */
 
-:is(#v-closer, #v-setter) .pipe-buscar {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-buscar {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
-:is(#v-closer, #v-setter) .pipe-buscar > label {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-buscar > label {
   margin: 0;
   font-size: 9.5px;
   font-weight: 600;
@@ -539,13 +554,13 @@
   text-transform: uppercase;
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) .pipe-buscar-caja {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-buscar-caja {
   position: relative;
   display: flex;
   align-items: center;
   min-width: 0;
 }
-:is(#v-closer, #v-setter) .pipe-q {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q {
   width: 260px;
   max-width: 100%;
   height: 32px;
@@ -560,21 +575,21 @@
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 @media (min-width: 768px) {
-  :is(#v-closer, #v-setter) .pipe-q { font-size: 11.5px; }
+  :is(#v-closer, #v-setter, #v-auditoria) .pipe-q { font-size: 11.5px; }
 }
-:is(#v-closer, #v-setter) .pipe-q::placeholder { color: var(--txt-faint); opacity: 1; }
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q::placeholder { color: var(--txt-faint); opacity: 1; }
 /* El foco es de la marca, como el `--ring` del sistema, y va como `outline`. La primera versión lo
    dibujó con un `box-shadow` de tres píxeles y `107-sin-sombras` lo rechazó — con razón: este
    proyecto pasó TODO el foco de sombra a contorno, y una sombra nueva en esta capa es la que el
    barrido universal no puede apagar. El contorno sigue el radio de la cápsula solo. */
-:is(#v-closer, #v-setter) .pipe-q:focus-visible {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q:focus-visible {
   border-color: rgb(var(--c-acento) / .5);
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 /* El botón de limpiar, dentro del campo. `absolute` y no un hermano al costado para que el campo
    siga siendo una sola cápsula: al lado, la cápsula se partiría en dos formas. */
-:is(#v-closer, #v-setter) .pipe-q-x {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q-x {
   position: absolute;
   right: 3px;
   width: 24px;
@@ -591,17 +606,17 @@
   border-radius: 50%;
   transition: color .15s ease, background .15s ease;
 }
-:is(#v-closer, #v-setter) .pipe-q-x:hover { color: var(--txt); background: rgb(var(--c-nube) / .1); }
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q-x:hover { color: var(--txt); background: rgb(var(--c-nube) / .1); }
 /* Y se esconde el botón nativo de `type="search"` en los navegadores que lo dibujan: con los dos
    quedan dos cruces, y la nativa no sigue el tema. */
-:is(#v-closer, #v-setter) .pipe-q::-webkit-search-cancel-button { display: none; }
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q::-webkit-search-cancel-button { display: none; }
 
-:is(#v-closer, #v-setter) .pipe-q-n {
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q-n {
   font-size: 11.5px;
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) .pipe-q-n b { color: var(--txt); font-weight: 600; }
-:is(#v-closer, #v-setter) .pipe-q-n em { font-style: normal; color: var(--warn); }
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q-n b { color: var(--txt); font-weight: 600; }
+:is(#v-closer, #v-setter, #v-auditoria) .pipe-q-n em { font-style: normal; color: var(--warn); }
 
 /* ── 4 · Inicio: el bloque negro y dorado (`07`) ───────────────────────────── */
 
@@ -609,7 +624,7 @@
    también. Para que todo lo que vive adentro —baldosas, anillo, notas— se lea sobre negro sin
    reescribir sus reglas, el bloque redefine los tokens que esas reglas consumen. Es un tema oscuro
    de un solo elemento. */
-:is(#v-closer, #v-setter) .ck-hero {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero {
   --txt:          rgb(var(--c-blanco) / .92);
   --txt-dim:      rgb(var(--c-blanco) / .60);
   --txt-faint:    rgb(var(--c-blanco) / .40);
@@ -643,10 +658,10 @@
   color: var(--txt);
 }
 @media (min-width: 640px) {
-  :is(#v-closer, #v-setter) .ck-hero { padding: 34px; }
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-hero { padding: 34px; }
 }
 @media (max-width: 760px) {
-  :is(#v-closer, #v-setter) .ck-hero { grid-template-columns: minmax(0, 1fr); }
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-hero { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── EL HERO DEL SETTER LLEVA DOS ANILLOS, Y ESO NECESITA SU PROPIA COLUMNA ──
@@ -661,17 +676,17 @@
  * Va DESPUÉS y con la misma especificidad más una clase, así que gana por las dos vías. Y repone
  * los dos valores del prototipo en vez de inventar otros: lo que cambia con la estética nueva es el
  * aire y el radio, no cuántos anillos entran. */
-:is(#v-closer, #v-setter) .ck-hero.ck-hero-dos {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero.ck-hero-dos {
   grid-template-columns: minmax(0, 1fr) 260px;
   align-items: start;
 }
 @media (max-width: 760px) {
-  :is(#v-closer, #v-setter) .ck-hero.ck-hero-dos { grid-template-columns: minmax(0, 1fr); }
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-hero.ck-hero-dos { grid-template-columns: minmax(0, 1fr); }
 }
 /* El resplandor dorado: un círculo de 800 px al 5 %, difuminado 100 px, latiendo cada 4 s. Se
    promueve a su propia capa para que el difuminado se rasterice una vez y el pulso corra en el
    compositor. Y respeta a quien pidió menos movimiento. */
-:is(#v-closer, #v-setter) .ck-hero::before {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -690,10 +705,10 @@
   0%, 100% { opacity: 1; }
   50%      { opacity: .5; }
 }
-:is(#v-closer, #v-setter) .ck-hero > * { position: relative; z-index: 1; }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero > * { position: relative; z-index: 1; }
 
 /* El chip del período: «cristal sobre negro» — borde blanco al 10 %, fondo al 5 %, desenfoque. */
-:is(#v-closer, #v-setter) .ck-tag {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-tag {
   padding: 3px 10px;
   border-radius: 9999px;
   border: 1px solid rgb(var(--c-blanco) / .10);
@@ -708,7 +723,7 @@
 }
 /* El titular de dinero: 90 px livianos y apretados, con el degradado blanco → dorado claro →
    dorado oscuro recortado al texto. Sin el brillo exterior del documento — ver el encabezado. */
-:is(#v-closer, #v-setter) .ck-big {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-big {
   margin-top: 0;
   font-size: clamp(46px, 5.4vw, 70px);
   font-weight: 300;
@@ -720,7 +735,7 @@
   -webkit-text-fill-color: transparent;
   color: var(--oro);
 }
-:is(#v-closer, #v-setter) .ck-big span {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-big span {
   display: block;
   margin: 12px 0 0;
   font-size: 13px;
@@ -730,16 +745,16 @@
   -webkit-text-fill-color: rgb(var(--c-blanco) / .6);
   background: none;
 }
-:is(#v-closer, #v-setter) .ck-note {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-note {
   margin-top: 18px;
   gap: 10px;
   font-size: 13px;
   font-weight: 300;
   color: rgb(var(--c-blanco) / .6);
 }
-:is(#v-closer, #v-setter) .ck-note em { color: inherit; }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-note em { color: inherit; }
 /* El punto que pulsa significa «esto está vivo». */
-:is(#v-closer, #v-setter) .ck-note .pt {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-note .pt {
   width: 6px;
   height: 6px;
   background: rgb(var(--c-en-negro-ok) / .8);
@@ -747,49 +762,49 @@
 }
 /* La rejilla de cuatro cifras: rótulo 10 px al 40 %, valor 24 px liviano, base 10 px al 30 %.
    La jerarquía dentro del bloque es opacidad del blanco: 90 / 60 / 40 / 30. */
-:is(#v-closer, #v-setter) .ck-row {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-row {
   margin-top: 28px;
   padding-top: 18px;
   gap: 12px;
   border-top: 1px solid rgb(var(--c-blanco) / .10);
 }
-:is(#v-closer, #v-setter) .ck-i { padding: 0; border-right: 0; }
-:is(#v-closer, #v-setter) .ck-i .k {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-i { padding: 0; border-right: 0; }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-i .k {
   font-size: 10px;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: rgb(var(--c-blanco) / .4);
 }
-:is(#v-closer, #v-setter) .ck-i .v {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-i .v {
   margin-top: 3px;
   font-size: 20px;
   font-weight: 300;
   letter-spacing: -.02em;
 }
-:is(#v-closer, #v-setter) .ck-i .s { margin-top: 4px; font-size: 10px; color: rgb(var(--c-blanco) / .3); }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-i .s { margin-top: 4px; font-size: 10px; color: rgb(var(--c-blanco) / .3); }
 @media (max-width: 640px) {
-  :is(#v-closer, #v-setter) .ck-row { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-row { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
 }
 
 /* El anillo de comisión: trazo fino sobre un carril blanco al 5 %. La caja pierde su borde y su
    degradado: el SVG dibuja el aro. */
-:is(#v-closer, #v-setter) .ring {
+:is(#v-closer, #v-setter, #v-auditoria) .ring {
   width: 158px;
   height: 158px;
   border: 0;
   background: none;
 }
-:is(#v-closer, #v-setter) .ring b { font-size: 25px; font-weight: 300; letter-spacing: -.025em; color: var(--txt); }
-:is(#v-closer, #v-setter) .ring span {
+:is(#v-closer, #v-setter, #v-auditoria) .ring b { font-size: 25px; font-weight: 300; letter-spacing: -.025em; color: var(--txt); }
+:is(#v-closer, #v-setter, #v-auditoria) .ring span {
   margin-top: 4px;
   font-size: 9px;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: rgb(var(--c-blanco) / .4);
 }
-:is(#v-closer, #v-setter) .ck-rotulo { font-size: 9px; letter-spacing: .1em; color: rgb(var(--c-blanco) / .4); }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-rotulo { font-size: 9px; letter-spacing: .1em; color: rgb(var(--c-blanco) / .4); }
 /* La tarjeta de la meta: cristal sobre negro, `rounded-2xl p-4`. */
-:is(#v-closer, #v-setter) .ck-cta {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-cta {
   padding: 13px;
   border-radius: 14px;
   border: 1px solid rgb(var(--c-blanco) / .10);
@@ -799,13 +814,13 @@
   font-weight: 300;
   color: rgb(var(--c-blanco) / .7);
 }
-:is(#v-closer, #v-setter) .ck-cta b { color: var(--oro); font-weight: 500; }
-:is(#v-closer, #v-setter) .ck-hero .fd-btn.sec {
+:is(#v-closer, #v-setter, #v-auditoria) .ck-cta b { color: var(--oro); font-weight: 500; }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero .fd-btn.sec {
   background: rgb(var(--c-blanco) / .05);
   border-color: rgb(var(--c-blanco) / .10);
   color: rgb(var(--c-blanco) / .8);
 }
-:is(#v-closer, #v-setter) .ck-hero .fd-aviso { background: rgb(var(--c-blanco) / .04); }
+:is(#v-closer, #v-setter, #v-auditoria) .ck-hero .fd-aviso { background: rgb(var(--c-blanco) / .04); }
 
 /* El selector «ver como»: una cápsula. */
 #v-closer .ck-vercomo label {
@@ -815,7 +830,7 @@
   text-transform: uppercase;
   color: var(--txt-dim);
 }
-:is(#v-closer, #v-setter) select {
+:is(#v-closer, #v-setter, #v-auditoria) select {
   height: 30px;
   padding: 0 12px;
   border-radius: 9999px;
@@ -825,7 +840,7 @@
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
 }
-:is(#v-closer, #v-setter) .aj-tarjeta { padding: 18px; }
+:is(#v-closer, #v-setter, #v-auditoria) .aj-tarjeta { padding: 18px; }
 #v-closer .ck-closer {
   padding: 13px;
   border-radius: 14px;
@@ -948,12 +963,12 @@
 
 /* La capa de fondo: negro al 40 % con 1 px de desenfoque. Aparta la pantalla de atrás, no la
    oculta: quien abre la ficha tiene que seguir viendo dónde estaba. */
-:is(#v-closer, #v-setter) .scrim {
+:is(#v-closer, #v-setter, #v-auditoria) .scrim {
   background: rgb(var(--c-sombra) / .4);
   backdrop-filter: blur(1px);
 }
 /* El panel: 540 px, borde solo a la izquierda, sin sombra, entra desde la derecha en 300 ms. */
-:is(#v-closer, #v-setter) .cw {
+:is(#v-closer, #v-setter, #v-auditoria) .cw {
   width: 540px;
   background: var(--ficha-fondo);
   border-left: 1px solid rgb(var(--c-nube) / .20);
@@ -962,13 +977,13 @@
 }
 /* La cabecera: cristal sobre el panel, con el desenfoque más fuerte del sistema (24 px) sobre un
    fondo al 80 %. */
-:is(#v-closer, #v-setter) .cw-h {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-h {
   padding: 24px 20px 18px;
   background: rgb(var(--c-panel) / .8);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--line);
 }
-:is(#v-closer, #v-setter) .cw-av {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-av {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -977,19 +992,19 @@
   background: rgb(var(--c-acento) / .10);
   color: var(--accent);
 }
-:is(#v-closer, #v-setter) .cw-n { font-size: 15px; font-weight: 600; letter-spacing: -.025em; }
-:is(#v-closer, #v-setter) .cw-p { font-size: 12px; margin-top: 2px; }
-:is(#v-closer, #v-setter) .cw .cw-x {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-n { font-size: 15px; font-weight: 600; letter-spacing: -.025em; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-p { font-size: 12px; margin-top: 2px; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw .cw-x {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: none;
   border-color: transparent;
 }
-:is(#v-closer, #v-setter) .cw .cw-x:hover { background: rgb(var(--c-nube) / .08); border-color: transparent; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw .cw-x:hover { background: rgb(var(--c-nube) / .08); border-color: transparent; }
 /* Avanzar es el botón más importante de la aplicación y su tratamiento lo dice: el más alto, el
    más ancho, el de texto más grande, y del color del texto — invertido entre temas. */
-:is(#v-closer, #v-setter) .cw-acciones .cw-go {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-acciones .cw-go {
   height: 40px;
   padding: 0 14px;
   border-radius: 11px;
@@ -1000,12 +1015,12 @@
   color: var(--bg);
   transition: opacity .15s ease;
 }
-:is(#v-closer, #v-setter) .cw-acciones .cw-go:hover { background: var(--txt); opacity: .9; }
-:is(#v-closer, #v-setter) .cw-meta { margin-top: 15px; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-acciones .cw-go:hover { background: var(--txt); opacity: .9; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-meta { margin-top: 15px; }
 /* La barra de pestañas de la ficha es el patrón INVERTIDO al del Closer: fondo más oscuro que el
    panel y la activa más clara. Cinco pestañas de 11 px no aguantan un relleno sólido. El hijo
    lleva menos radio que el padre: 16 → 12. */
-:is(#v-closer, #v-setter) .cw-tabs {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-tabs {
   margin: 12px 20px 0;
   padding: 3px;
   gap: 3px;
@@ -1013,7 +1028,7 @@
   border-radius: 13px;
   background: rgb(var(--c-nube) / .06);
 }
-:is(#v-closer, #v-setter) .cw-tabs button {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-tabs button {
   flex: 1;
   justify-content: center;
   gap: 5px;
@@ -1022,17 +1037,17 @@
   font-size: 10.5px;
   font-weight: 500;
 }
-:is(#v-closer, #v-setter) .cw-tabs button:hover { background: none; color: var(--txt); }
-:is(#v-closer, #v-setter) .cw-tabs button.on {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-tabs button:hover { background: none; color: var(--txt); }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-tabs button.on {
   background: var(--bg-panel);
   color: var(--txt);
   font-weight: 500;
 }
-:is(#v-closer, #v-setter) .cw-body { padding: 12px 20px 16px; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-body { padding: 12px 20px 16px; }
 
 /* El chat imita a WhatsApp, y la imitación es la función. Sus colores son prestados, no del tema;
    viven en `temas.css` como `--chat-*`. */
-:is(#v-closer, #v-setter) .cw-body:has(> .cw-chat) { background: var(--chat-fondo); padding: 16px; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-body:has(> .cw-chat) { background: var(--chat-fondo); padding: 16px; }
 /* ── LOS DOS VALORES QUE **NO** SIGUEN LA ESCALA, Y ES A PROPÓSITO ─────────
    El ancho del panel (540 px) y el cuerpo de la burbuja (14,5 px). Ninguno de los dos viene de la
    escala tipográfica del sistema: el ancho es una medida de panel —no se lee «con zoom», se lee
@@ -1040,7 +1055,7 @@
    justamente lo que el `12` § 4 dice que es la función: *«el vendedor pasa el día en WhatsApp, y una
    conversación que se ve distinta se lee como si fuera otra cosa»*. Es el único texto de la pantalla
    más grande que el cuerpo de la aplicación, y tiene que serlo. */
-:is(#v-closer, #v-setter) .cw-chat .msgw {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw {
   max-width: 85%;
   padding: 6px 12px 8px;
   border: 0;
@@ -1050,22 +1065,22 @@
   color: var(--chat-texto);
 }
 /* La esquina cuadrada del lado del hablante es lo que convierte un rectángulo en una burbuja. */
-:is(#v-closer, #v-setter) .cw-chat .msgw-sale,
-:is(#v-closer, #v-setter) .cw-chat .msgw-sale:has(+ .msgw-sale) {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw-sale,
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw-sale:has(+ .msgw-sale) {
   background: var(--chat-propia);
   border-radius: 12px 0 12px 12px;
 }
-:is(#v-closer, #v-setter) .cw-chat .msgw-entra,
-:is(#v-closer, #v-setter) .cw-chat .msgw-entra:has(+ .msgw-entra) {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw-entra,
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw-entra:has(+ .msgw-entra) {
   background: var(--chat-ajena);
   border-radius: 0 12px 12px 12px;
 }
-:is(#v-closer, #v-setter) .cw-chat .msgw.mal {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw.mal {
   background: rgb(var(--c-crit) / .12);
   border: 1px solid rgb(var(--c-crit) / .4);
 }
-:is(#v-closer, #v-setter) .cw-chat .msgw .t { font-size: 10px; margin-top: 4px; color: var(--chat-meta); }
-:is(#v-closer, #v-setter) .cw-chat .cw-day {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .msgw .t { font-size: 10px; margin-top: 4px; color: var(--chat-meta); }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat .cw-day {
   margin: 8px 0;
   padding: 4px 12px;
   border-radius: 12px;
@@ -1076,17 +1091,17 @@
   text-transform: none;
   color: var(--chat-meta);
 }
-:is(#v-closer, #v-setter) .cw-chat > .cw-day:first-child { margin-top: 0; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-chat > .cw-day:first-child { margin-top: 0; }
 /* El compositor: `p-2` —el relleno más chico de la aplicación—, `items-end` para que los botones
    queden abajo cuando el campo crece, y el campo `rounded-3xl`, el más redondo del sistema. */
-:is(#v-closer, #v-setter) .cw-input {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-input {
   padding: 8px;
   gap: 6px;
   align-items: flex-end;
   background: var(--chat-compositor);
   border-top: 0;
 }
-:is(#v-closer, #v-setter) .cw-input input {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-input input {
   min-height: 40px;
   padding: 10px 14px;
   border: 0;
@@ -1095,9 +1110,9 @@
   color: var(--chat-texto);
   font-size: 14px;
 }
-:is(#v-closer, #v-setter) .cw-input input::placeholder { color: var(--chat-meta); }
-:is(#v-closer, #v-setter) .cw-input input:focus { border: 0; outline: 0; }
-:is(#v-closer, #v-setter) .cw-mas {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-input input::placeholder { color: var(--chat-meta); }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-input input:focus { border: 0; outline: 0; }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-mas {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1106,8 +1121,8 @@
   color: var(--chat-meta);
   font-size: 22px;
 }
-:is(#v-closer, #v-setter) .cw-mas:hover:not(:disabled) { background: rgb(var(--c-nube) / .06); color: var(--chat-texto); }
-:is(#v-closer, #v-setter) .cw-send {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-mas:hover:not(:disabled) { background: rgb(var(--c-nube) / .06); color: var(--chat-texto); }
+:is(#v-closer, #v-setter, #v-auditoria) .cw-send {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1115,22 +1130,166 @@
   background: var(--accent-hondo);
   color: var(--sobre-acento);
 }
-:is(#v-closer, #v-setter) .cw-send:not(:disabled):hover { background: var(--accent-hondo); opacity: .9; }
-:is(#v-closer, #v-setter) .menu-pop {
+:is(#v-closer, #v-setter, #v-auditoria) .cw-send:not(:disabled):hover { background: var(--accent-hondo); opacity: .9; }
+:is(#v-closer, #v-setter, #v-auditoria) .menu-pop {
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--bg-float);
   box-shadow: none;
 }
-:is(#v-closer, #v-setter) .kv-box,
-:is(#v-closer, #v-setter) .pr-box {
+:is(#v-closer, #v-setter, #v-auditoria) .kv-box,
+:is(#v-closer, #v-setter, #v-auditoria) .pr-box {
   border-radius: 12px;
   background: rgb(var(--c-nube) / .04);
 }
 
+/* ── 8 · Auditoría de agentes (`aud-*`) ─────────────────────────────────────
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ESTA SECCIÓN EXISTE PORQUE AUDITORÍA NO COMPARTE UN SOLO COMPONENTE
+ *
+ * Con el Setter alcanzó el cambio de selector: su chrome es el mismo DOM y `MiDia`, `Fila`,
+ * `Ficha` y las demás son literalmente los mismos archivos, así que las reglas de arriba ya lo
+ * vestían. Auditoría es otro caso: **reimplementó por su cuenta los siete conceptos** —tarjeta,
+ * sección, fila, avisos, botones, píldoras y plegable— con su propia familia `aud-*`.
+ *
+ * O sea que extender el alcance le trajo la paleta, la tipografía, los anillos de foco y la
+ * cápsula de pestañas, y **nada más**: sus tarjetas seguían con radio de 14 px y fondo opaco al
+ * lado de los 26 px translúcidos de las otras dos. Esto es esa mitad.
+ *
+ * Va acá y no en `app/auditoria.css` por la misma división que el resto de la hoja: allá vive la
+ * FORMA base —la que hace que la pantalla funcione en cualquier parte— y acá el refinamiento de
+ * esta estética. Es lo mismo que pasa con `.fd-aviso`, `.fd-btn` y el buscador del Pipeline.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── LA BARRA DE PESTAÑAS, Y EL PRIMER CHOQUE ──────────────────────────────
+ *
+ * `align-self: center` centra la cápsula dentro de la fila del encabezado, que es donde vive en
+ * el Closer y en el Setter. En Auditoría la barra la emite el panel —es un componente de cliente
+ * y la vista es de servidor, así que no puede subir al encabezado sin mover el estado— y cuelga
+ * de `.cl-page`, un flex en columna. Ahí `center` la centraría HORIZONTALMENTE, sola en medio de
+ * la pantalla. */
+#v-auditoria .cl-sub { align-self: flex-start; }
+
+/* Y el segundo: el contador de prompts que FALTAN. `app/auditoria.css` lo pinta en ámbar con
+   `.cl-sub .aud-cnt-falta` —especificidad de dos clases— y la regla de arriba lleva un `#id`, así
+   que le ganaba y lo devolvía al acento. Es exactamente el doble significado que ese comentario
+   existe para impedir: `cnt` en acento es «tenés tareas», y este número es «te falta cargar algo». */
+#v-auditoria .cl-sub .aud-cnt-falta {
+  background: rgb(var(--c-warn) / .16);
+  color: var(--warn);
+}
+
+/* ── LA TARJETA: el bloque de un agente y el cuadro de un prompt ───────────
+ *
+ * Son las dos tarjetas grandes de esta pantalla, y pasan a la misma forma que `.md-c` y
+ * `.aj-tarjeta`: radio de 26 px, translúcida con desenfoque. Sin el `backdrop-filter` la tarjeta
+ * se ve como un rectángulo semitransparente — van siempre juntos, igual que arriba. */
+#v-auditoria .aud-agente,
+#v-auditoria .aud-prompt {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  padding: 20px 22px 22px;
+  margin-bottom: 0;
+}
+
+/* El icono de la zona, alineado con el radio nuevo. */
+#v-auditoria .aud-agente-icono {
+  border-radius: var(--radio);
+  background: rgb(var(--c-nube) / .06);
+}
+
+/* El nombre del agente toma el peso de los titulares de la estética: 300 y apretado, no 650. */
+#v-auditoria .aud-agente-quien h3,
+#v-auditoria .aud-prompt-cabeza h4 {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
+
+/* ── LA PÍLDORA: los chips del semáforo y la zona del agente ───────────────
+ *
+ * `.tagx` es 8,5 px en mayúsculas con `.05em`; `.aud-chip` era 10,5 px en minúsculas. Se igualan,
+ * porque son lo mismo: una etiqueta corta al lado de un nombre.
+ *
+ * Lo que NO se toca es qué color lleva cada uno. El semáforo tiene su regla —verde, amarillo,
+ * rojo, y el cero en neutro, en ese orden y ganando por orden— y `122-pantalla-de-auditoria` la
+ * lee. Acá solo cambia la forma. */
+#v-auditoria .aud-chip {
+  padding: 1px 7px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+#v-auditoria .aud-agente-zona {
+  padding: 1px 7px;
+  font-size: 8.5px;
+  letter-spacing: .05em;
+  border: 1px solid rgb(var(--c-acento) / .25);
+}
+
+/* ── LA SECCIÓN: el encabezado de patrones y de conversaciones ─────────────
+ *
+ * `.md-h` es el rótulo de sección de las otras dos: 12 px, mayúsculas, `.025em`. `.aud-seccion-
+ * cabeza h4` era 12 px en minúsculas con `.01em`. Se iguala el idioma; la línea de abajo se
+ * queda, porque acá la sección no es una caja con fondo sino un título con su regla. */
+#v-auditoria .aud-seccion-cabeza h4 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+/* ── LA FILA: la cabecera de un patrón ─────────────────────────────────────
+ *
+ * `.md-r` es `12px 20px`. La del patrón era `10px 14px`, calibrada contra el relleno viejo de la
+ * tarjeta. Y el hover sube de 3,5 % a 4 %: ese valor estaba copiado de `aios.css`, o sea
+ * calibrado contra el lienzo VIEJO, y el lienzo de esta estética es más claro en el tema claro. */
+#v-auditoria .aud-patron-cabeza {
+  padding: 11px 4px;
+  font-size: 12.5px;
+}
+#v-auditoria .aud-patron-cabeza:hover { background: rgb(var(--c-nube) / .04); }
+#v-auditoria .aud-patron-cuerpo { padding: 0 4px 14px; }
+#v-auditoria .aud-conv { padding: 10px 4px; }
+
+/* ── EL PLEGABLE ───────────────────────────────────────────────────────────
+ *
+ * Acá el botón es la CABECERA ENTERA y no un círculo de 24 px como `.sec-plegar`, y eso se
+ * conserva a propósito: su comentario en `app/auditoria.css` dice que *«un triángulo de diez
+ * píxeles es un blanco que se falla»*, y tiene razón. Solo se alinea la flecha con el resto. */
+#v-auditoria .aud-flecha { color: var(--txt-faint); font-size: 9px; }
+
+/* ── EL AVISO ──────────────────────────────────────────────────────────────
+ *
+ * `.aud-aviso` es el `.fd-aviso.falta` de esta pantalla: la misma advertencia sin daño. Se le da
+ * el mismo tinte y el mismo borde en vez del canto izquierdo de 3 px, que es de otra gramática. */
+#v-auditoria .aud-aviso {
+  border: 1px solid rgb(var(--c-warn) / .25);
+  border-radius: var(--radio);
+  background: rgb(var(--c-warn) / .08);
+  padding: 9px 13px;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+/* ── EL CÓDIGO ─────────────────────────────────────────────────────────────
+ *
+ * El fragmento de prompt y el `textarea`. La monoespaciada NO se toca —es lo que hace legible una
+ * cita con viñetas y sangría— y tampoco el `pre-wrap`. Solo el radio, para que el bloque hundido
+ * no sea el único con esquinas de otra escala. */
+#v-auditoria .aud-texto,
+#v-auditoria .aud-prompt-caja {
+  border-radius: var(--radio);
+  padding: 10px 12px;
+}
+
 /* ── 7 · Avisos, botones y estados (`13`) ──────────────────────────────────── */
 
-:is(#v-closer, #v-setter) .fd-aviso {
+:is(#v-closer, #v-setter, #v-auditoria) .fd-aviso {
   padding: 9px 13px;
   border-radius: 10px;
   font-size: 11.5px;
@@ -1140,14 +1299,14 @@
 }
 /* La superficie usa el tinte del token; el texto va en el token mismo. Ámbar es atención sin daño,
    rosa es urgencia y fallo. */
-:is(#v-closer, #v-setter) .fd-aviso.falta { background: rgb(var(--c-warn) / .08); border-color: rgb(var(--c-warn) / .25); }
-:is(#v-closer, #v-setter) .fd-aviso.mal   { background: rgb(var(--c-crit) / .06); border-color: rgb(var(--c-crit) / .25); }
-:is(#v-closer, #v-setter) .fd-aviso.bien  { background: rgb(var(--c-ok) / .08); border-color: rgb(var(--c-ok) / .25); color: var(--ok); }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-aviso.falta { background: rgb(var(--c-warn) / .08); border-color: rgb(var(--c-warn) / .25); }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-aviso.mal   { background: rgb(var(--c-crit) / .06); border-color: rgb(var(--c-crit) / .25); }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-aviso.bien  { background: rgb(var(--c-ok) / .08); border-color: rgb(var(--c-ok) / .25); color: var(--ok); }
 
 /* Los botones son cápsulas de 36 px. El principal es el ÚNICO relleno sólido del acento de su
    pantalla; el
    secundario lleva contorno. */
-:is(#v-closer, #v-setter) .fd-btn {
+:is(#v-closer, #v-setter, #v-auditoria) .fd-btn {
   height: 30px;
   padding: 0 14px;
   border-radius: 9999px;
@@ -1158,24 +1317,24 @@
   box-shadow: none;
   transition: opacity .15s ease, background .15s ease;
 }
-:is(#v-closer, #v-setter) .fd-btn:hover:not(:disabled) { filter: none; opacity: .9; }
-:is(#v-closer, #v-setter) .fd-btn.sec {
+:is(#v-closer, #v-setter, #v-auditoria) .fd-btn:hover:not(:disabled) { filter: none; opacity: .9; }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-btn.sec {
   background: var(--bg-panel);
   color: var(--txt-dim);
   border: 1px solid var(--line-strong);
 }
-:is(#v-closer, #v-setter) .fd-btn.sec:hover:not(:disabled) { color: var(--txt); background: rgb(var(--c-nube) / .05); border-color: var(--line-strong); }
-:is(#v-closer, #v-setter) .fd-btn-menor { border-radius: 9999px; font-size: 10.5px; font-weight: 500; padding: 3px 10px; }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-btn.sec:hover:not(:disabled) { color: var(--txt); background: rgb(var(--c-nube) / .05); border-color: var(--line-strong); }
+:is(#v-closer, #v-setter, #v-auditoria) .fd-btn-menor { border-radius: 9999px; font-size: 10.5px; font-weight: 500; padding: 3px 10px; }
 
 /* El foco es de la marca: el anillo del acento, como `--ring` en el sistema. */
-:is(#v-closer, #v-setter) button:focus-visible,
-:is(#v-closer, #v-setter) select:focus-visible,
-:is(#v-closer, #v-setter) input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(#v-closer, #v-setter, #v-auditoria) button:focus-visible,
+:is(#v-closer, #v-setter, #v-auditoria) select:focus-visible,
+:is(#v-closer, #v-setter, #v-auditoria) input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Y todo lo que se mueve se queda quieto para quien pidió menos movimiento. */
 @media (prefers-reduced-motion: reduce) {
-  :is(#v-closer, #v-setter) .cl-page > *,
-  :is(#v-closer, #v-setter) .ck-hero::before,
-  :is(#v-closer, #v-setter) .ck-note .pt { animation: none; }
-  :is(#v-closer, #v-setter) .cw { transition: none; }
+  :is(#v-closer, #v-setter, #v-auditoria) .cl-page > *,
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-hero::before,
+  :is(#v-closer, #v-setter, #v-auditoria) .ck-note .pt { animation: none; }
+  :is(#v-closer, #v-setter, #v-auditoria) .cw { transition: none; }
 }
