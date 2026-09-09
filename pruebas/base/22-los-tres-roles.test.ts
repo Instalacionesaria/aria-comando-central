@@ -91,19 +91,46 @@ async function capacidadesDe(clave: string): Promise<string[]> {
 
 // ─── El reparto ─────────────────────────────────────────────────────────────
 
-test('el administrador NO administra personas, ni empresas, ni roles', async () => {
+test('el administrador NO administra empresas, y administra las PERSONAS de la suya', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+   * ESTA PRUEBA AFIRMABA LO CONTRARIO, Y EL CAMBIO ES EL PEDIDO
+   *
+   * Se llamaba «el administrador NO administra personas, ni empresas, ni roles» y exigía que las
+   * TRES familias estuvieran vacías. Se pidió lo contrario para una de las tres: *«que los admins
+   * puedan ver el panel de usuarios para crear sus propios usuarios pero solo para su empresa»*.
+   *
+   * Lo que NO se aflojó es `organizaciones.%`, y ahora carga más peso que antes: sin
+   * `organizaciones.listar` un administrador no puede conmutar su sesión a otra empresa —así que
+   * «solo su empresa» no depende de un condicional— y no puede otorgar un rol que administre
+   * personas, porque es la capacidad que `lib/autorizacion/delegacion.ts` usa como frontera.
+   *
+   * Y las cinco de personas se afirman UNA POR UNA en vez de por familia, que es lo que hace que
+   * esto siga sirviendo: aceptar `usuarios.%` completo dejaría entrar `usuarios.borrar` —borrar no
+   * se deshace y no se pidió— y `roles.administrar` —fabricar roles propios, que es la puerta de al
+   * lado de la escalada que `delegacion.ts` cierra por adelante— sin que nada lo dijera.
+   * ══════════════════════════════════════════════════════════════════════════ */
   const suyas = await capacidadesDe('administrador');
   assert.ok(suyas.length > 0, 'el administrador quedó sin capacidades: el reparto no corrió');
 
-  const noLeToca = suyas.filter(
-    (c) => c.startsWith('organizaciones.') || c.startsWith('usuarios.') || c.startsWith('roles.'),
-  );
+  const deEmpresas = suyas.filter((c) => c.startsWith('organizaciones.'));
   assert.deepEqual(
-    noLeToca,
+    deEmpresas,
     [],
-    'el administrador conserva capacidades de administración de la plataforma. Si el reparto de ' +
+    'el administrador conserva capacidades de empresas. Con `organizaciones.listar` puede ' +
+      'conmutarse a otra empresa y puede otorgar roles que administran personas: las dos reglas ' +
+      'nuevas se sostienen sobre que NO la tenga. Si el reparto de ' +
       '`db/arranque/001_catalogo.sql` es correcto, lo que falta es el `delete` sobre ' +
       'roles_permisos: sin él el catálogo solo puede AGREGAR, y las filas viejas sobreviven',
+  );
+
+  const dePersonas = suyas.filter((c) => c.startsWith('usuarios.') || c.startsWith('roles.')).sort();
+  assert.deepEqual(
+    dePersonas,
+    ['roles.asignar', 'usuarios.crear', 'usuarios.desactivar', 'usuarios.editar', 'usuarios.ver'],
+    'la administración de personas del administrador dejó de ser la que se pidió: tiene que poder ' +
+      'ver el panel de su empresa, crear, editar, desactivar y asignar el rol — y NO ' +
+      '`usuarios.borrar` (no se deshace, no se pidió) ni `roles.administrar` (fabricar roles ' +
+      'propios burla la regla de delegación por la puerta de al lado)',
   );
 });
 
@@ -118,24 +145,28 @@ test('y SÍ tiene lo que se pidió que tuviera: credenciales y las dos pestañas
   }
 });
 
-test('la diferencia entre `usuario` y `administrador` es EXACTAMENTE las credenciales', async () => {
+test('la diferencia entre `usuario` y `administrador` es las credenciales Y LAS PERSONAS', async () => {
   // ═══════════════════════════════════════════════════════════════════════════
-  // ES LA ÚNICA DIFERENCIA, ASÍ QUE ES LA ÚNICA COSA QUE PUEDE ESTAR MAL SIN QUE SE VEA
+  // SON LAS DOS ÚNICAS DIFERENCIAS, ASÍ QUE SON LO ÚNICO QUE PUEDE ESTAR MAL SIN QUE SE VEA
   //
-  // Se pidió con estas palabras: *"la diferencia entre administrador y usuario será que el
-  // administrador sí puede modificar las credenciales de su empresa"*.
+  // Se pidió primero con estas palabras: *"la diferencia entre administrador y usuario será que el
+  // administrador sí puede modificar las credenciales de su empresa"*. Y después se agregó la
+  // segunda: *"que los admins puedan ver el panel de usuarios para crear sus propios usuarios pero
+  // solo para su empresa"*.
   //
   // Se comprueba en las DOS direcciones, porque se rompe de las dos y ninguna da error:
   //
-  //   · **de más** — el usuario conserva credenciales, y entonces los dos roles son el mismo
-  //     rol con dos nombres. La pantalla se dibuja igual para ambos y nada falla.
-  //   · **de menos** — al usuario le falta algo que no son credenciales. Ahí la diferencia
+  //   · **de más** — el usuario conserva credenciales o personas, y entonces los dos roles son casi
+  //     el mismo rol con dos nombres. La pantalla se dibuja igual para ambos y nada falla; y con las
+  //     de personas es una escalada, porque un `usuario` daría de alta usuarios.
+  //   · **de menos** — al usuario le falta algo que no es de las dos listas. Ahí la diferencia
   //     dejó de ser la que se pidió, y el síntoma es un 403 en una pantalla suelta que alguien
   //     va a reportar como «no me carga».
   //
-  // Y se hace por DIFERENCIA DE CONJUNTOS y no enumerando: enumerar obligaría a editar esta
-  // prueba cada vez que se agrega una capacidad, y olvidarse la dejaría pasando en verde sobre
-  // un reparto que ya no es el que dice.
+  // Y se hace por DIFERENCIA DE CONJUNTOS y no enumerando el reparto entero: enumerarlo obligaría a
+  // editar esta prueba cada vez que se agrega una capacidad, y olvidarse la dejaría pasando en verde
+  // sobre un reparto que ya no es el que dice. Lo que sí se enumera es la diferencia, que es chica y
+  // es lo que se decidió.
   // ═══════════════════════════════════════════════════════════════════════════
   const usuario = new Set(await capacidadesDe('usuario'));
   const admin = new Set(await capacidadesDe('administrador'));
@@ -144,8 +175,17 @@ test('la diferencia entre `usuario` y `administrador` es EXACTAMENTE las credenc
   const soloDelAdmin = [...admin].filter((c) => !usuario.has(c)).sort();
   assert.deepEqual(
     soloDelAdmin,
-    ['credenciales.editar', 'credenciales.ver'],
-    'la diferencia entre administrador y usuario dejó de ser exactamente las credenciales',
+    [
+      'credenciales.editar',
+      'credenciales.ver',
+      'roles.asignar',
+      'usuarios.crear',
+      'usuarios.desactivar',
+      'usuarios.editar',
+      'usuarios.ver',
+    ],
+    'la diferencia entre administrador y usuario dejó de ser las credenciales y las personas de su ' +
+      'empresa',
   );
 
   /* ── Y LA ASIMETRÍA AL REVÉS, QUE ERA VACÍA Y AHORA TIENE UNA COSA ───────
@@ -332,12 +372,21 @@ test('lo que cada rol ve en pantalla sale de su reparto, y es lo que se pidió',
   assert.equal(suyasUsuario.has('empresas'), false, 'el usuario ve la pestaña Empresas');
   assert.equal(suyasUsuario.has('usuarios'), false, 'el usuario ve la pestaña Usuarios');
 
-  // El administrador: Ajustes SÍ, y sus dos pestañas de plataforma NO.
+  /* El administrador: Ajustes SÍ, Usuarios SÍ, y Empresas NO.
+   *
+   * Acá decía «sus dos pestañas de plataforma NO», con Usuarios entre ellas. Usuarios dejó de ser
+   * una pestaña de plataforma: se pidió que el administrador la vea para su empresa. **Empresas
+   * sigue siendo la frontera**, y es la que importa — sin `organizaciones.listar` no puede
+   * conmutarse a otra empresa, así que la lista de personas que ve es la suya y nada más. Eso lo
+   * mide la prueba «SIN alcance de plataforma, la lista se queda en su empresa». */
   const delAdmin = await ve('administrador');
   const claves = new Set(seccionesVisibles(delAdmin).map((s) => s.clave));
   assert.ok(claves.has('credenciales'), 'el administrador no llega a Ajustes');
   assert.equal(claves.has('empresas'), false, 'el administrador ve la pestaña Empresas');
-  assert.equal(claves.has('usuarios'), false, 'el administrador ve la pestaña Usuarios');
+  assert.ok(
+    claves.has('usuarios'),
+    'el administrador no ve la pestaña Usuarios, y sin ella no puede crear a nadie de su empresa',
+  );
 
   // El superadministrador: las dos.
   const delSuper = await ve('superadministrador');

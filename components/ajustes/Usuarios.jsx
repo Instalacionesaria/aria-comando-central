@@ -193,6 +193,10 @@ export default function Usuarios({ sesion }) {
      `orgId` ajeno. Deducirlo acá —por ejemplo mirando si hay más de una empresa— daría un selector
      que ofrece destinos para los que la petición va a responder 404. */
   const puedeElegirEmpresa = Boolean(sesion?.puedeCambiarDeEmpresa);
+  /* ¿Puede eliminar personas? Lo responde el SERVIDOR con la capacidad exacta del endpoint. Ver el
+     bloque del botón «Eliminar» más abajo: un administrador administra las personas de su empresa
+     sin `usuarios.borrar`, y un botón que va a recibir 403 es el `07` § 4. */
+  const puedeBorrarPersonas = Boolean(sesion?.puedeBorrarPersonas);
 
   const cargar = useCallback(async () => {
     setSituacion('cargando');
@@ -558,7 +562,27 @@ export default function Usuarios({ sesion }) {
    * `rol_de_plataforma_acotado` exige que la persona pertenezca a la empresa principal. El
    * formulario la respeta en vez de dejar que la base rechace con un mensaje que nadie entiende.
    */
-  const asignables = roles.filter((r) => !r.soloPrincipal || puedeElegirEmpresa);
+  /* ── Y EL SEGUNDO FILTRO: LOS QUE QUIEN MIRA PUEDE OTORGAR ─────────────────
+   *
+   * `otorgable` lo calcula el SERVIDOR con la misma función que usan las dos rutas que otorgan
+   * (`lib/autorizacion/delegacion.ts`): un rol que administra personas solo lo reparte la
+   * plataforma. Para un administrador, eso deja `usuario` y nada más.
+   *
+   * No se recalcula acá, y no es comodidad: hacerlo exigiría conocer las capacidades de cada rol y
+   * las propias, o sea la regla entera duplicada en el navegador. La copia que quede vieja ofrece un
+   * rol que va a recibir 403 — el `07` § 4.
+   *
+   * Y va como filtro además del de arriba porque son dos ejes distintos. `soloPrincipal` pregunta si
+   * el rol alcanza otras empresas; `otorgable`, si reparte poder sobre personas. Un rol podría fallar
+   * uno y pasar el otro.
+   *
+   * `!== false` y no `=== true`: si el servidor dejara de mandar el campo, esto ofrece los roles y
+   * el servidor rechaza —un error visible, en la operación—. Con `=== true` no ofrecería NINGUNO y
+   * nadie podría crear a nadie, que es el fallo silencioso. Que el campo viaje lo cuida
+   * `pruebas/codigo/144-delegacion-de-roles.test.ts`. */
+  const asignables = roles.filter(
+    (r) => (!r.soloPrincipal || puedeElegirEmpresa) && r.otorgable !== false,
+  );
   /**
    * El rol de plataforma, tal como lo trae el catálogo. Se guarda la fila entera y no solo su
    * clave porque **su nombre también sale de acá**: escribirlo a mano en la pantalla sería
@@ -854,11 +878,28 @@ export default function Usuarios({ sesion }) {
 
               {/* Los NOMBRES salen del catálogo y la diferencia se describe en palabras. Escribir
                   «Closer ve la pestaña Closer» era cierto con cuatro roles y quedó falso al pasar
-                  a tres, y una ayuda que miente es peor que ninguna: se lee con confianza. */}
+                  a tres, y una ayuda que miente es peor que ninguna: se lee con confianza.
+
+                  Y volvió a quedar falsa: decía que las credenciales eran *«la única diferencia
+                  entre los dos»*, y el administrador ahora administra además las personas de su
+                  empresa. La segunda frase solo se dibuja para quien puede otorgar ese rol: a un
+                  administrador, describirle el rol que el selector de arriba no le ofrece es
+                  explicarle una opción que no tiene. */}
               <div className="aj-ayuda">
                 Un <b>Usuario</b> trabaja en las dos pestañas de operación y ve los tableros de su
-                empresa. Un <b>Administrador</b> puede además cargar y rotar las credenciales de su
-                empresa — es la única diferencia entre los dos.
+                empresa.
+                {/* Por la CANTIDAD de opciones y no por el nombre del rol: `ADR-0302` prohíbe
+                    comparar nombres de rol, y además una lista `['usuario']` acá funcionaría hoy y
+                    mentiría el día que exista un segundo rol sin administración de personas. Con una
+                    sola opción no hay diferencia que explicar. */}
+                {asignables.length > 1 ? (
+                  <>
+                    {' '}
+                    Un <b>Administrador</b> puede además cargar las credenciales de su empresa y
+                    administrar a las personas de su empresa — no a las de otras, y no puede crear
+                    otros administradores.
+                  </>
+                ) : null}
                 {creandoPlataforma ? (
                   <>
                     {' '}
@@ -1058,7 +1099,23 @@ export default function Usuarios({ sesion }) {
                       base de datos, no esta pantalla: es el único usuario que garantiza que la
                       plataforma siempre tenga quién la administre.
                     </div>
-                  ) : confirmaBorrado ? (
+                  ) : /* ── ELIMINAR SOLO SI SE PUEDE ELIMINAR ─────────────────────────────────
+                       *
+                       * Lo dice el SERVIDOR (`puedeBorrarPersonas`, con la capacidad exacta que
+                       * exige `DELETE /api/admin/usuarios/{id}`), no esta pantalla deduciéndolo del
+                       * rol.
+                       *
+                       * Hasta ahora este panel lo veía solo el superadministrador, que tiene las
+                       * seis capacidades, así que ningún control por fila necesitaba condición. Un
+                       * administrador ahora administra las personas de su empresa **sin**
+                       * `usuarios.borrar`: sin esto vería el botón, leería la advertencia de que no
+                       * se puede deshacer, apretaría, y recibiría un 403 sin explicación.
+                       *
+                       * Y en su lugar NO va un cartel de «no podés»: desactivar está justo arriba y
+                       * es la operación que cubre el caso real —alguien se va de la empresa—. Un
+                       * aviso sobre algo que esa persona no tiene que hacer es ruido en la pantalla
+                       * donde importa leer. */
+                  !puedeBorrarPersonas ? null : confirmaBorrado ? (
                     <div className="fd-aviso falta">
                       <i>⚠</i>
                       <span>

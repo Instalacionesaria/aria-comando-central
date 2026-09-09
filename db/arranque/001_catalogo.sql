@@ -376,20 +376,58 @@ begin
                       and clave not like 'roles.%'
                       and clave not like 'credenciales.%')),
 
-      -- El administrador: todo lo de SU empresa. Se le niegan tres familias completas:
+      -- El administrador: todo lo de SU empresa, **incluidas las personas de su empresa**.
       --
-      --   · `organizaciones.%` — no ve ni crea ni borra empresas. Es lo que lo mantiene
-      --     zonificado: sin `organizaciones.listar` no puede conmutarse a otra.
-      --   · `usuarios.%`       — no administra personas. Hasta ahora SÍ las tenía y la
-      --     frontera vivía solo en la interfaz: la pestaña se filtraba por
-      --     `organizaciones.listar`, así que no la veía, pero una petición a mano a
-      --     `POST /api/admin/usuarios` funcionaba. La regla era cosmética.
-      --   · `roles.%`          — ni asignar ni administrar. `roles.administrar` además no la
-      --     exige ninguna ruta (la barrera del rol de plataforma usa `organizaciones.listar`),
-      --     así que dejársela era una capacidad sin puerta.
+      -- ══ ESTO REVIERTE UNA DECISIÓN ANTERIOR DE ESTE MISMO ARCHIVO ═════════
       --
-      -- Le queda lo que se pidió: credenciales, configuración, auditoría, fundaciones, los
-      -- tableros y las dos pestañas de operación con sus acciones.
+      -- Acá decía *«`usuarios.%` — no administra personas»*, y el bloque 3 de arriba lo cuenta
+      -- como el recorte que hizo declarativo a este archivo: *«Se pidió que el administrador
+      -- dejara de administrar personas»*.
+      --
+      -- Se pidió lo contrario, con estas palabras: *«que los admins puedan ver el panel de
+      -- usuarios para crear sus propios usuarios pero solo para su empresa»*. Y hay que decir por
+      -- qué ahora es seguro y entonces no lo era, porque el motivo escrito para quitárselas sigue
+      -- estando y es bueno:
+      --
+      --   *«la frontera vivía solo en la interfaz: la pestaña se filtraba por
+      --   `organizaciones.listar`, así que no la veía, pero una petición a mano a
+      --   `POST /api/admin/usuarios` funcionaba. La regla era cosmética.»*
+      --
+      -- **Lo que cambió es que ahora la frontera NO es cosmética, y está medida:**
+      --
+      --   1 · «solo su empresa» lo hace cumplir el servidor, no la pantalla. `usuarioObjetivo(`
+      --       filtra por `org_id` en las rutas de una persona, y las escrituras van por
+      --       `conOrganizacion(contexto.orgEfectiva, …)`, o sea por política de fila. Un
+      --       administrador no puede nombrar otra empresa: sin `organizaciones.listar` un `orgId`
+      --       ajeno en el alta es 404, y no puede conmutar su sesión para cambiarlo.
+      --   2 · «no puede fabricar otro administrador» lo hace cumplir
+      --       `lib/autorizacion/delegacion.ts`, en los DOS caminos que otorgan un rol. Sin esa
+      --       regla, esta línea sería una escalada: el administrador de un cliente se clona, y el
+      --       clon vuelve a clonarse, sin que nada falle.
+      --
+      -- Sin la segunda mitad, esta línea no se puede escribir. Están hechas para leerse juntas.
+      --
+      -- ── LAS DOS QUE SÍ SE LE SIGUEN NEGANDO DE LA FAMILIA ─────────────────
+      --
+      --   · `usuarios.borrar`    — borrar una persona no se deshace, y no se pidió. El panel le
+      --     esconde el botón (`puedeBorrarPersonas` en la sesión), así que no ve un control que
+      --     vaya a recibir 403. Desactivar sí puede, que es la operación reversible que cubre el
+      --     caso real: alguien se va de la empresa.
+      --   · `roles.administrar` — crear y editar roles PROPIOS de su organización. Ninguna ruta la
+      --     exige todavía, así que dársela sería una capacidad sin puerta; y el día que la puerta
+      --     exista, quien la tenga podrá fabricar un rol con las capacidades que quiera — que es
+      --     por la puerta de al lado lo mismo que `delegacion.ts` cierra por la de adelante.
+      --
+      -- Se niegan por CLAVE y no por familia, a diferencia de las otras: la familia entera es
+      -- justamente lo que ahora sí le corresponde, y negarla por prefijo dejaría fuera las cuatro
+      -- que tiene que tener.
+      --
+      -- Y `organizaciones.%` sigue negada COMPLETA: no ve ni crea ni borra empresas. Es lo que lo
+      -- mantiene zonificado, y es la misma capacidad que `delegacion.ts` usa como frontera — así
+      -- que las dos reglas se sostienen sobre el mismo hecho y no sobre dos.
+      --
+      -- Le queda lo que se pidió: las personas de su empresa, credenciales, configuración,
+      -- auditoría, fundaciones, los tableros y las dos pestañas de operación con sus acciones.
       --
       -- ── Y LA CUARTA FAMILIA NEGADA: `monitoreo.%`, LA ÚNICA A MANO QUE QUEDA ──
       --
@@ -413,9 +451,9 @@ begin
       -- da a esa persona y a nadie más.
       ('administrador', (select array_agg(clave) from identidad.permisos
                           where clave not like 'organizaciones.%'
-                            and clave not like 'usuarios.%'
-                            and clave not like 'roles.%'
-                            and clave not like 'monitoreo.%'))
+                            and clave not like 'monitoreo.%'
+                            and clave <> 'usuarios.borrar'
+                            and clave <> 'roles.administrar'))
 
       -- Acá había una cuarta fila, `('monitoreo', array['monitoreo.ver'])`, y era la única
       -- enumerada en vez de derivada. Se fue con su rol: el motivo está arriba, en el `insert`.
@@ -560,17 +598,34 @@ begin
       'tiene TODAS por diseño, sin atajo en el portero.', v_faltan;
   end if;
 
-  -- ── LA FRONTERA DEL USUARIO: las credenciales, y NADA MÁS ─────────────────
+  -- ── LA FRONTERA DEL USUARIO: las credenciales Y LAS PERSONAS, y nada más ──
   --
-  -- Es la única diferencia entre `usuario` y `administrador`, así que es la única cosa que
-  -- puede estar mal de una forma que nadie note. Se verifica en las DOS direcciones, porque
-  -- se rompe de las dos:
+  -- ══ ESTA INVARIANTE CAMBIÓ, Y EL CAMBIO ES EL PEDIDO ══════════════════════
   --
-  --   · **de más** — el usuario conserva `credenciales.%` y entonces los dos roles son el
-  --     mismo rol con dos nombres. Nada falla: la pantalla se dibuja igual para ambos.
-  --   · **de menos** — al usuario le falta algo que el administrador sí tiene y que no son
-  --     credenciales. Ahí la diferencia dejó de ser la que se pidió, y el síntoma es un 403
-  --     en una pantalla suelta que alguien va a reportar como «no me carga».
+  -- Decía *«las credenciales, y NADA MÁS: es la única diferencia entre `usuario` y
+  -- `administrador`»*, y esa afirmación **atrapó este mismo trabajo**: al darle al administrador
+  -- las personas de su empresa, `catalogo` falló con las cinco capacidades nuevas en el mensaje.
+  -- Fue la comprobación haciendo exactamente lo que vino a hacer.
+  --
+  -- Ahora la diferencia son DOS cosas, y las dos se pidieron:
+  --
+  --   · las **credenciales** de su empresa;
+  --   · las **personas** de su empresa — *«que los admins puedan ver el panel de usuarios para
+  --     crear sus propios usuarios pero solo para su empresa»*.
+  --
+  -- Se enumeran las cinco a mano y NO se acepta la familia por prefijo, que era lo cómodo. La
+  -- diferencia es lo que hace que esto siga sirviendo: con `usuarios.%` y `roles.%` aceptados por
+  -- prefijo, el día que alguien le dé al administrador `usuarios.borrar` o `roles.administrar` esta
+  -- comprobación se quedaría callada — y son justo las dos que se le niegan.
+  --
+  -- Se verifica en las DOS direcciones, porque se rompe de las dos:
+  --
+  --   · **de más** — el usuario conserva algo de las dos familias y entonces los dos roles son
+  --     casi el mismo rol con dos nombres. Nada falla: la pantalla se dibuja igual para ambos, y
+  --     en el caso de las personas es una escalada — un `usuario` que crea usuarios.
+  --   · **de menos** — al usuario le falta algo que el administrador sí tiene y que no es de las
+  --     dos listas. Ahí la diferencia dejó de ser la que se pidió, y el síntoma es un 403 en una
+  --     pantalla suelta que alguien va a reportar como «no me carga».
   --
   -- Se verifica acá y no solo en la suite porque este archivo es lo que corre contra
   -- producción: la suite mide la base local.
@@ -579,21 +634,51 @@ begin
     from identidad.roles r
     join identidad.roles_permisos rp on rp.rol_id = r.id
    where r.clave = 'usuario' and r.org_id is null
-     and rp.permiso like 'credenciales.%';
+     and (rp.permiso like 'credenciales.%'
+       or rp.permiso like 'usuarios.%'
+       or rp.permiso like 'roles.%');
 
   if v_sobran is not null then
     raise exception
-      'el usuario conserva capacidades de credenciales: %. Con eso `usuario` y '
-      '`administrador` son el mismo rol con dos nombres, y nada falla al mirar.', v_sobran;
+      'el usuario conserva capacidades que son del administrador: %. Las de credenciales lo '
+      'vuelven el mismo rol con dos nombres; las de personas y roles son una escalada — un '
+      '`usuario` que da de alta usuarios. Y nada falla al mirar.', v_sobran;
   end if;
 
-  -- Y la otra dirección: la diferencia tiene que ser EXACTAMENTE las credenciales.
+  -- Y las DOS que se le niegan al administrador. Van por clave y por separado del bloque de
+  -- abajo porque ese bloque compara contra `usuario`, que tampoco las tiene: sin esto, dárselas
+  -- al administrador no aparecería en ninguna de las dos direcciones.
+  --
+  --   · `usuarios.borrar`   — borrar una persona no se deshace, y no se pidió. Desactivar sí.
+  --   · `roles.administrar` — fabricar roles propios es la puerta de al lado de lo que
+  --     `lib/autorizacion/delegacion.ts` cierra por adelante: con ella, un administrador armaría
+  --     un rol con las capacidades que quiera y lo otorgaría.
+  select string_agg(rp.permiso, ', ' order by rp.permiso)
+    into v_sobran
+    from identidad.roles a
+    join identidad.roles_permisos rp on rp.rol_id = a.id
+   where a.clave = 'administrador' and a.org_id is null
+     and rp.permiso in ('usuarios.borrar', 'roles.administrar');
+
+  if v_sobran is not null then
+    raise exception
+      'el administrador tiene capacidades que se le niegan a propósito: %. `usuarios.borrar` no '
+      'se deshace y no se pidió; `roles.administrar` le dejaría fabricar un rol con las '
+      'capacidades que quiera y otorgarlo, o sea la escalada que delegacion.ts cierra.', v_sobran;
+  end if;
+
+  -- Y la otra dirección: la diferencia tiene que ser EXACTAMENTE esas dos listas.
   select string_agg(rp.permiso, ', ' order by rp.permiso)
     into v_sobran
     from identidad.roles a
     join identidad.roles_permisos rp on rp.rol_id = a.id
    where a.clave = 'administrador' and a.org_id is null
      and rp.permiso not like 'credenciales.%'
+     -- Las cinco de personas, enumeradas. Ver arriba por qué no va `like 'usuarios.%'`.
+     and rp.permiso <> all (array[
+           'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.desactivar',
+           'roles.asignar'
+         ])
      and not exists (
        select 1 from identidad.roles u
          join identidad.roles_permisos ru on ru.rol_id = u.id
@@ -601,8 +686,9 @@ begin
 
   if v_sobran is not null then
     raise exception
-      'el administrador tiene capacidades que el usuario no, y que no son credenciales: %. '
-      'La diferencia entre los dos roles dejó de ser la que se pidió.', v_sobran;
+      'el administrador tiene capacidades que el usuario no, y que no son credenciales ni la '
+      'administración de personas de su empresa: %. La diferencia entre los dos roles dejó de '
+      'ser la que se pidió.', v_sobran;
   end if;
 
   -- ── Y QUE EL USUARIO VEA ALGO ─────────────────────────────────────────────
@@ -657,10 +743,21 @@ begin
       'nadie se lo haya concedido.';
   end if;
 
-  -- ── LA FRONTERA DEL ADMINISTRADOR ──────────────────────────────────────────
+  -- ── LA FRONTERA DEL ADMINISTRADOR: LAS EMPRESAS ────────────────────────────
   --
-  -- Se pidió que el administrador vea credenciales y NO Empresas ni Usuarios. Que no las vea
-  -- ya se cumplía en la interfaz; lo que faltaba es que el servidor lo haga cumplir.
+  -- Decía *«se pidió que el administrador vea credenciales y NO Empresas ni Usuarios»*, y
+  -- **Usuarios dejó de estar en esa frase**: se pidió lo contrario, que administre las personas de
+  -- SU empresa. Las cinco capacidades que eso implica las cuida la frontera de más arriba, que las
+  -- enumera; y las dos que se le siguen negando —`usuarios.borrar`, `roles.administrar`— tienen su
+  -- propia comprobación ahí mismo.
+  --
+  -- Lo que queda acá es `organizaciones.%`, y **es lo que sostiene todo el resto**: sin
+  -- `organizaciones.listar` un administrador no puede conmutar su sesión a otra empresa —así que
+  -- «solo su empresa» no depende de un condicional— y no puede otorgar un rol que administre
+  -- personas, porque es la capacidad que `lib/autorizacion/delegacion.ts` usa como frontera.
+  --
+  -- O sea que esta línea pasó de ser una de tres a ser la única, y de cosmética a estructural: es
+  -- el único hecho del que dependen las dos reglas nuevas.
   --
   -- Se verifica acá y no solo en la suite porque este archivo es lo que corre contra
   -- producción: la suite mide la base local. Si el reparto declarativo no borró las filas
@@ -671,15 +768,15 @@ begin
     from identidad.roles r
     join identidad.roles_permisos rp on rp.rol_id = r.id
    where r.clave = 'administrador' and r.org_id is null
-     and (rp.permiso like 'organizaciones.%'
-       or rp.permiso like 'usuarios.%'
-       or rp.permiso like 'roles.%');
+     and rp.permiso like 'organizaciones.%';
 
   if v_sobran is not null then
     raise exception
-      'el administrador conserva capacidades que no le corresponden: %. El reparto '
-      'declarativo no borró las filas viejas — comprobá que el rol que corre este archivo '
-      'tenga `delete` sobre identidad.roles_permisos (db/arranque/002_escritura_del_catalogo.sql).',
+      'el administrador conserva capacidades de organizaciones: %. Con `organizaciones.listar` '
+      'puede conmutarse a otra empresa —así que «solo su empresa» deja de ser cierto— y puede '
+      'otorgar roles que administran personas. Si el reparto declarativo no borró las filas '
+      'viejas, comprobá que el rol que corre este archivo tenga `delete` sobre '
+      'identidad.roles_permisos (db/arranque/002_escritura_del_catalogo.sql).',
       v_sobran;
   end if;
 

@@ -98,6 +98,37 @@ async function limpiarTodo(): Promise<void> {
        (select id from identidad.usuarios ${donde})`,
     SEMBRADOS,
   );
+  /* ── LAS PESTAÑAS, Y LAS DOS COLUMNAS DE «QUIÉN LO HIZO» ───────────────────
+   *
+   * `usuarios_secciones` no estaba acá, y no era un olvido: hasta ahora ninguna prueba de este
+   * archivo concedía pestañas, así que la tabla quedaba vacía. Dejó de ser cierto cuando la prueba
+   * de las cinco operaciones pasó a asignar `usuario` —el único rol que restringe por sección, así
+   * que el endpoint exige al menos una— y el borrado de usuarios empezó a fallar con
+   * `usuarios_secciones_concedida_por_fkey`.
+   *
+   * Y por eso son DOS pasos y no uno: `usuario_id` se borra, pero `concedida_por` y `asignado_por`
+   * apuntan a QUIEN concedió, que puede ser un usuario de prueba mientras la fila es de otro. Se
+   * anulan en vez de borrarse por lo mismo que `creado_por` acá arriba: borrar por esa columna se
+   * llevaría filas ajenas, y una limpieza tiene que devolver la base a donde estaba.
+   *
+   * El fallo subía desde el gancho `before`, así que **todas** las pruebas del archivo fallaban en
+   * bloque y el proceso quedaba colgado sin mostrar la causa. Es el mismo modo de falla que ya
+   * documenta el borrado del rol privado, más abajo. */
+  await admin.query(
+    `delete from identidad.usuarios_secciones where usuario_id in
+       (select id from identidad.usuarios ${donde})`,
+    SEMBRADOS,
+  );
+  await admin.query(
+    `update identidad.usuarios_secciones set concedida_por = null
+      where concedida_por in (select id from identidad.usuarios ${donde})`,
+    SEMBRADOS,
+  );
+  await admin.query(
+    `update identidad.usuarios_roles set asignado_por = null
+      where asignado_por in (select id from identidad.usuarios ${donde})`,
+    SEMBRADOS,
+  );
   await admin.query(`delete from identidad.usuarios ${donde}`, SEMBRADOS);
   // Y las sesiones de los sembrados, que las pruebas abren.
   await admin.query('delete from identidad.sesiones');
@@ -390,8 +421,22 @@ test('ADR-0501 · y sobre un usuario PROPIO las cinco funcionan', async () => {
   );
   assert.equal(editado.status, 200, `editar: ${await editado.clone().text()}`);
 
+  /* ── EL ROL QUE SE ASIGNA ACÁ ES INCIDENTAL, Y ANTES ERA `administrador` ────
+   *
+   * Esta prueba mide que las CINCO operaciones funcionen sobre alguien de la propia empresa; cuál
+   * rol se asigna no es lo que afirma. Y con `administrador` dejó de poder hacerlo: el gestor de
+   * esta prueba administra personas y **no** tiene `organizaciones.listar`, así que
+   * `lib/autorizacion/delegacion.ts` le niega otorgar un rol que administra personas — que es
+   * exactamente la regla nueva funcionando, no una regresión.
+   *
+   * Se cambia por `usuario`, que es lo que un gestor sí puede otorgar. Y con su sección, porque ese
+   * rol restringe por sección y sin ninguna la persona entraría sin ver ninguna pantalla — lo
+   * rechaza el propio endpoint. */
   const rol = await asignarRoles(
-    pedir(`/api/admin/usuarios/${propio.id}/roles`, token, { roles: ['administrador'] }),
+    pedir(`/api/admin/usuarios/${propio.id}/roles`, token, {
+      roles: ['usuario'],
+      secciones: ['closer'],
+    }),
     ctx(propio.id) as never,
   );
   assert.equal(rol.status, 200, `roles: ${await rol.clone().text()}`);

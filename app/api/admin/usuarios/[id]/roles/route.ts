@@ -27,6 +27,10 @@
 // —que hoy solo tiene el superadministrador— puede otorgar un rol `solo_principal`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import {
+  MOTIVO_SIN_DELEGACION,
+  puedeOtorgar,
+} from '../../../../../../lib/autorizacion/delegacion.ts';
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
 import {
   clavesDeSeccion,
@@ -127,6 +131,39 @@ export async function POST(
         'Otorgar un rol de plataforma requiere la capacidad organizaciones.listar: ' +
           'no se puede otorgar el alcance que uno no tiene.',
       );
+    }
+
+    /* ── LA SEGUNDA BARRERA: NO SE DELEGA LA ADMINISTRACIÓN DE PERSONAS ───────
+     *
+     * La de arriba cuida el rol de plataforma. Ésta cuida el rol IGUAL al propio, que era el hueco:
+     * con `administrador` administrando las personas de su empresa, sin esto el administrador de un
+     * cliente puede crear otro administrador, y ése otro. Ninguna de las dos altas falla.
+     *
+     * Se pregunta por lo que el rol CONFIERE y no por su nombre (`ADR-0302`), así que un rol nuevo
+     * que administre personas queda cubierto sin tocar esta línea. El argumento completo —y las dos
+     * reglas de subconjunto que se descartaron— está en `lib/autorizacion/delegacion.ts`.
+     *
+     * Las capacidades de TODOS los roles pedidos en una consulta, no una por rol. Y con la guarda
+     * de la lista vacía por el mismo motivo que ya está escrito arriba: `in ()` no es SQL válido, y
+     * acá `roles` puede venir vacío —es la forma documentada de dejar a alguien sin capacidades—. */
+    if (roles.length > 0) {
+      const capacidades = await db
+        .selectFrom('roles_permisos')
+        .select(['rol_id', 'permiso'])
+        .where(
+          'rol_id',
+          'in',
+          roles.map((r) => r.id),
+        )
+        .execute();
+
+      const sinDelegacion = roles.filter((r) =>
+        !puedeOtorgar(
+          new Set(capacidades.filter((c) => c.rol_id === r.id).map((c) => c.permiso)),
+          contexto.permisos,
+        ),
+      );
+      if (sinDelegacion.length > 0) return rechazo('sin_permiso', MOTIVO_SIN_DELEGACION);
     }
 
     /* ── EL ALCANCE, Y LAS DOS DIRECCIONES DEL CAMBIO ─────────────────────────

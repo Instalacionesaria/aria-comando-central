@@ -31,6 +31,7 @@
 // `organizaciones.listar`. Eso no cambia.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { puedeOtorgar } from '../../../../lib/autorizacion/delegacion.ts';
 import { alcanceOfrecible } from '../../../../lib/autorizacion/secciones.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
@@ -101,7 +102,16 @@ export async function GET(peticion: Request): Promise<Response> {
        * de claves los escribiría en el JSX, y serían la quinta copia de los trece nombres — el
        * defecto que `secciones.ts` existe para cerrar. El mismo argumento que el menú, que ya viaja
        * agrupado por eso. */
-      return { ...f, alcance: alcanceOfrecible(capacidades) };
+      /* ── Y SI QUIEN PREGUNTA PUEDE OTORGARLO ──────────────────────────────
+       *
+       * Lo decide el SERVIDOR, con la misma función que usan las dos rutas que otorgan. La
+       * pantalla no puede calcularlo: tendría que conocer las capacidades de cada rol Y las
+       * propias, o sea la regla entera duplicada en el navegador — y la copia que quede vieja
+       * ofrece un rol que va a recibir 403, que es el `07` § 4.
+       *
+       * Es el mismo criterio con el que `soloPrincipal` ya viaja: *«la pantalla tiene que poder
+       * decirlo ANTES de intentar»*. */
+      return { ...f, alcance: alcanceOfrecible(capacidades), otorgable: puedeOtorgar(capacidades, contexto.permisos) };
     });
   });
 
@@ -136,6 +146,19 @@ export async function GET(peticion: Request): Promise<Response> {
        * pruebas estáticas la vería, porque solo atrapan comparaciones directas.
        */
       restringePorSeccion: r.secciones_restringidas,
+      /**
+       * `true` = quien pide este catálogo puede otorgar este rol.
+       *
+       * Es la regla de `lib/autorizacion/delegacion.ts`: un rol que administra personas solo lo
+       * otorga la plataforma. Con el reparto de hoy, un administrador recibe `otorgable: false` en
+       * `administrador` y en `superadministrador`, y `true` en `usuario`.
+       *
+       * Viaja aparte de `soloPrincipal` y no fundido con él porque son dos ejes: uno pregunta si el
+       * rol alcanza otras empresas, el otro si reparte poder sobre personas. Fundirlos daría un
+       * booleano que la pantalla no puede explicar — y el formulario tiene que poder decir POR QUÉ
+       * un rol no está en la lista.
+       */
+      otorgable: r.otorgable,
     })),
   });
 }

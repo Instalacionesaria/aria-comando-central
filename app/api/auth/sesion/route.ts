@@ -126,6 +126,21 @@ export async function GET(peticion: Request): Promise<Response> {
      * elección no le quita nada a nadie. El día que exista uno de consulta, esto se parte en dos.
      */
     puedeConfigurarComisiones: contexto.permisos.has('credenciales.editar'),
+    /**
+     * ¿Puede eliminar personas definitivamente?
+     *
+     * Se responde acá con la capacidad EXACTA que exige `DELETE /api/admin/usuarios/{id}`
+     * —`usuarios.borrar`— por el mismo motivo escrito arriba dos veces: deducirlo en el navegador
+     * sería una segunda definición de lo mismo.
+     *
+     * Existe porque el panel de Usuarios dejó de tener un solo público. Hasta ahora lo veía solo el
+     * superadministrador, que tiene las seis capacidades, así que ningún control por fila
+     * necesitaba condición. Un administrador ahora administra las personas de su empresa **sin**
+     * `usuarios.borrar` —borrar no se deshace y no se pidió—, y sin esta bandera vería el botón
+     * «Eliminar» junto a una advertencia que dice que no se puede deshacer, apretaría, y recibiría
+     * un 403 sin explicación. El `07` § 4: *mostrar un control que no puede cumplir*.
+     */
+    puedeBorrarPersonas: contexto.permisos.has('usuarios.borrar'),
     // El cartel permanente del 03 § 3: "cuando mira otra organización, la interfaz lo
     // muestra de forma permanente. No es decoración: sin eso, alguien puede mirar la
     // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro

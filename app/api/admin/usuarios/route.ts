@@ -43,6 +43,7 @@
 // rol o no queda.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { MOTIVO_SIN_DELEGACION, puedeOtorgar } from '../../../../lib/autorizacion/delegacion.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import {
   clavesDeSeccion,
@@ -195,6 +196,12 @@ export async function POST(peticion: Request): Promise<Response> {
     // El rol pedido, si hay. Un rol inexistente es 400 y no 404 — el 404 es de la empresa y de la
     // persona, y `05` § 3 lo pone en la tabla de validaciones.
     let rolDestino: { id: string; solo_principal: boolean; secciones_restringidas: boolean } | undefined;
+    /* Las capacidades del rol que se va a otorgar. Se leen ACÁ ARRIBA y se usan dos veces: la
+       barrera de la delegación y la validación de las secciones de más abajo.
+       Antes se leían dentro del `if (secciones_restringidas)`, o sea **solo para uno de los tres
+       roles**: la barrera nueva las necesita para todos, y volver a consultarlas ahí abajo sería la
+       misma pregunta dos veces en la misma petición — con la posibilidad de dos respuestas. */
+    let capacidadesDelRol: Set<string> = new Set();
     if (typeof rol === 'string' && rol.length > 0) {
       rolDestino = await db
         .selectFrom('roles')
@@ -204,17 +211,44 @@ export async function POST(peticion: Request): Promise<Response> {
         .executeTakeFirst();
       if (!rolDestino) return rechazo('peticion_invalida', MOTIVOS['rol_invalido']);
 
+      capacidadesDelRol = new Set(
+        (
+          await db
+            .selectFrom('roles_permisos')
+            .select('permiso')
+            .where('rol_id', '=', rolDestino.id)
+            .execute()
+        ).map((x) => x.permiso),
+      );
+
       // ADR-0504 · el mismo rechazo que `POST /api/admin/usuarios/[id]/roles`, y por el mismo
-      // motivo: **no se puede otorgar el alcance que uno no tiene.** Hoy nadie llega acá sin la
-      // capacidad —solo el rol de plataforma tiene `usuarios.crear`— y va igual: la regla no puede
-      // depender de que el reparto no cambie nunca. La base también lo impide fuera de la
-      // organización principal, con el disparador `rol_de_plataforma_acotado`.
+      // motivo: **no se puede otorgar el alcance que uno no tiene.** La base también lo impide
+      // fuera de la organización principal, con el disparador `rol_de_plataforma_acotado`.
+      //
+      // Acá decía además *«hoy nadie llega acá sin la capacidad —solo el rol de plataforma tiene
+      // `usuarios.crear`— y va igual: la regla no puede depender de que el reparto no cambie
+      // nunca»*. **El reparto cambió**: `administrador` ahora tiene `usuarios.crear` para su
+      // empresa, así que esta línea dejó de ser una precaución y es la que trabaja.
       if (rolDestino.solo_principal && !contexto.permisos.has('organizaciones.listar')) {
         return rechazo(
           'sin_permiso',
           'Otorgar un rol de plataforma requiere la capacidad organizaciones.listar: ' +
             'no se puede otorgar el alcance que uno no tiene.',
         );
+      }
+
+      /* ── Y LA SEGUNDA BARRERA: NO SE DELEGA LA ADMINISTRACIÓN DE PERSONAS ──
+       *
+       * La de arriba cuida el rol de plataforma; ésta cuida el rol IGUAL al propio, que era el
+       * hueco. Sin esto, el administrador de una empresa cliente crea otro administrador en el
+       * mismo formulario con el que crea un usuario, y ése otro vuelve a hacerlo. No falla nada:
+       * el reparto de administradores crece, y cada uno puede restablecer la contraseña de
+       * cualquiera de su empresa — incluida la del fundador.
+       *
+       * Va en las DOS rutas que otorgan un rol y con la misma función, porque la pregunta es una.
+       * El argumento completo está en `lib/autorizacion/delegacion.ts`. */
+      if (!puedeOtorgar(capacidadesDelRol, contexto.permisos)) {
+        return rechazo('sin_permiso', MOTIVO_SIN_DELEGACION);
       }
     }
 
@@ -238,15 +272,9 @@ export async function POST(peticion: Request): Promise<Response> {
         return rechazo('peticion_invalida', MOTIVOS['sin_secciones']);
       }
 
-      const capacidades = new Set(
-        (
-          await db
-            .selectFrom('roles_permisos')
-            .select('permiso')
-            .where('rol_id', '=', rolDestino.id)
-            .execute()
-        ).map((x) => x.permiso),
-      );
+      // Las MISMAS que ya se leyeron arriba para la barrera de la delegación. Ver el comentario
+      // de su declaración: consultarlas otra vez acá sería la misma pregunta dos veces.
+      const capacidades = capacidadesDelRol;
       /* ── EL TERCER ARGUMENTO ERA `true` FIJO, Y ESO SE VOLVIÓ FALSO ────────
        *
        * Decía, con razón para entonces: *«acá no se está decidiendo qué ve NADIE… aplicar la regla
