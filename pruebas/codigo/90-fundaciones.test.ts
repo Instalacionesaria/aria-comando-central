@@ -479,6 +479,24 @@ test('los cinco pasos del research tampoco dejan huecos, y encadenan de verdad',
   assert.match(paso5, /SALIDA DOS/, 'el paso 5 no leyó los dolores del paso 2');
   assert.match(paso5, /SALIDA CUATRO/, 'el paso 5 no leyó los precios del paso 4');
 
+  // ── EL RESEARCH HEREDA LA FICHA (Kevin, 2026-09-09) ──────────────────────────
+  // Con estado, el paso 1 lleva el perfil del negocio; sin estado, la clave va en `null` y el bloque
+  // se omite entero — no queda ni el rótulo ni un hueco.
+  const conFicha = armarPromptResearch(0, inputs, [], estadoCompleto());
+  assert.match(conFicha, /PERFIL DE CLIENTE \(raíz/, 'el paso 1 no recibió la ficha del negocio');
+  assert.match(conFicha, /CONTEXTO DEL NEGOCIO DEL ALUMNO/);
+  const sinFicha = armarPromptResearch(0, inputs, []);
+  assert.doesNotMatch(sinFicha, /CONTEXTO DEL NEGOCIO DEL ALUMNO/, 'sin ficha el rótulo quedó suelto');
+  assert.doesNotMatch(sinFicha, /\{\{[\w.#^/]+\}\}/);
+  // Lo que el agente y el relleno leen es lo mismo que el prompt: `datosDe(1)` produce la misma clave.
+  assert.equal(typeof datosDe(1, {}, estadoCompleto())['_profileContext'], 'string');
+  assert.deepEqual(FUENTES_POR_HERRAMIENTA[1], ['perfil']);
+  // Y el panel del Research muestra la fila de «Hereda de», igual que las genéricas.
+  assert.match(
+    readFileSync(join(process.cwd(), 'components', 'fundaciones', 'PanelResearch.jsx'), 'utf8'),
+    /className="fd-herencia"/,
+  );
+
   // Y la compuerta: un paso sin su anterior NO se puede pedir.
   assert.equal(pasoDeResearchListo(0, []), true, 'el primer paso no necesita nada');
   assert.equal(pasoDeResearchListo(1, []), false);

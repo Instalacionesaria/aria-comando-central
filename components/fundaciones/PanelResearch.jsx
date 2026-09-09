@@ -50,6 +50,7 @@ import {
   conValoresPorOmision,
   obligatoriosQueFaltan,
 } from '@/lib/fundaciones/campos';
+import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
@@ -121,6 +122,13 @@ export default function PanelResearch({
   const [errorAlGuardar, setErrorAlGuardar] = useState(null);
 
   const hechos = salidas.filter((s) => !!s).length;
+
+  /* Lo que el Research hereda —la ficha del negocio—, con la misma fila de chips que las genéricas
+     (`PanelHerramienta`). Este panel no la tenía porque el Research no heredaba de nada; desde el
+     2026-09-09 hereda de «Tu ficha» y tiene que verse igual que en las demás herramientas. */
+  const todas = useMemo(() => fuentes(estado), [estado]);
+  const heredadas = FUENTES_POR_HERRAMIENTA[herramienta.id] || [];
+  const criticasQueFaltan = useMemo(() => faltantes(estado, herramienta.id), [estado, herramienta.id]);
 
   const ponerCampo = (id, v) => {
     setValores((previo) => ({ ...previo, [id]: v }));
@@ -236,6 +244,28 @@ export default function PanelResearch({
           </>
         ) : null}
       </div>
+
+      {heredadas.length > 0 ? (
+        <div className="fd-herencia">
+          <span className="fd-etq">Hereda de</span>
+          {heredadas.map((clave) => {
+            const f = todas[clave];
+            const critica = criticasQueFaltan.includes(clave);
+            return (
+              <button
+                key={clave}
+                type="button"
+                className={`fd-fuente${f.presente ? ' ok' : critica ? ' falta' : ''}`}
+                onClick={() => onIr(f.herramienta)}
+                title={f.presente ? 'Ir a la herramienta que lo produjo' : 'Ir a completarlo'}
+              >
+                <b>{f.etiqueta}</b>
+                {f.presente ? (f.resumen ? f.resumen : 'listo') : 'sin hacer'}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {!soloChat ? (
         <SelectorDeModo

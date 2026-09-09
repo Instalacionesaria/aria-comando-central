@@ -162,7 +162,10 @@ export function fuentes(estado: EstadoDeFundaciones): Record<ClaveDeFuente, Fuen
  */
 export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFuente[]>> = {
   0: [],
-  1: [],
+  // El Research hereda la ficha del negocio (Kevin, 2026-09-09): el paso 1 la lee en su prompt y el
+  // agente la recibe para proponer los cinco criterios sin volver a preguntar el nicho ni la
+  // experiencia. No es crítica: hay alumnos que llegan sin onboarding y el Research igual sirve.
+  1: ['perfil'],
   3: ['marketResearch'],
   2: ['niche', 'icp'],
   4: ['niche', 'icp', 'categoria'],

@@ -144,6 +144,30 @@ function datosDeFicha(valores: Record<string, string>): DatosDePlantilla {
   };
 }
 
+/**
+ * Los datos del Research, con lo que hereda: la ficha del negocio.
+ *
+ * Pedido de Kevin (2026-09-09): *«quiero que Research también herede de Tu ficha»*. Hasta acá el
+ * Research era la única herramienta con contexto heredado igual a NADA: `datosDe(1)` caía en el
+ * `datosDeMapa` por omisión —o sea, el agente del Research recibía el contexto del Mapa—, y sus
+ * cinco prompts leían solo los cinco criterios. El nicho y la experiencia del alumno ya estaban
+ * escritos en «Tu ficha», y el paso 1 los volvía a preguntar.
+ *
+ * `_profileContext` es la MISMA clave y el mismo constructor que usa el ICP, y por eso el relleno
+ * (`contextoHeredado`) y el prompt (`armarPromptResearch`) leen lo mismo: el paso 1 del `SKILL.md`
+ * la interpola, y el agente la recibe para proponer los criterios sin volver a preguntarlos.
+ */
+function datosDeResearch(valores: Record<string, string>, estado: EstadoDeFundaciones): DatosDePlantilla {
+  return {
+    niche: valor(valores, 'mr-niche'),
+    buyers: valor(valores, 'mr-buyers'),
+    ltv: valor(valores, 'mr-ltv'),
+    contract: valor(valores, 'mr-contract'),
+    experience: valor(valores, 'mr-experience'),
+    _profileContext: contextoDeFicha(estado),
+  };
+}
+
 function datosDeIcp(valores: Record<string, string>, estado: EstadoDeFundaciones): DatosDePlantilla {
   const tried = valor(valores, 't4-tried');
   return {
@@ -592,6 +616,8 @@ export function datosDe(
 ): DatosDePlantilla {
   return id === 0
       ? datosDeFicha(valores)
+      : id === 1
+        ? datosDeResearch(valores, estado)
       : id === 3
         ? datosDeIcp(valores, estado)
         : id === 4
@@ -636,6 +662,12 @@ export function armarPromptResearch(
   paso: number,
   inputs: Record<string, string>,
   previas: readonly string[],
+  /**
+   * El estado, para lo que el Research HEREDA: la ficha del negocio (`_profileContext`, la misma
+   * clave que lee el ICP). Opcional porque el Research nació sin herencia y sus pruebas lo llaman
+   * con tres argumentos; sin estado la clave va en `null`, que es «no hay ficha», no una falta.
+   */
+  estado?: EstadoDeFundaciones,
 ): string {
   const metodologia = METODOLOGIA_RESEARCH[paso];
   if (!metodologia) throw new Error(`El Research no tiene un paso ${paso}`);
@@ -644,6 +676,7 @@ export function armarPromptResearch(
 
   const contrato = inputs['contract'];
   return interpolar(plantilla, {
+    _profileContext: estado ? contextoDeFicha(estado) : null,
     niche: inputs['niche'] ? inputs['niche'] : SIN_ESPECIFICAR,
     buyers: inputs['buyers'] ? inputs['buyers'] : SIN_ESPECIFICAR,
     ltv: inputs['ltv'] ? inputs['ltv'] : SIN_ESPECIFICAR,

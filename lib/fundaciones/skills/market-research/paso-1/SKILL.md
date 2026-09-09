@@ -8,6 +8,10 @@ metadata:
 
 SIN PREÁMBULO CONVERSACIONAL: empieza tu respuesta DIRECTO en el contenido del entregable (primer encabezado o punto). No incluyas frases de transición ni preámbulos (p. ej. "Ahora tengo toda la información necesaria para hacer el análisis…", "Perfecto, aquí está…"). Nada de texto antes del contenido.
 
+{{#_profileContext}}
+CONTEXTO DEL NEGOCIO DEL ALUMNO (de su ficha — lee el nicho y los criterios de abajo a la luz de esto: los segmentos tienen que ser alcanzables para ESTE negocio, con ESTE servicio y ESTA experiencia, no para uno genérico):
+{{_profileContext}}
+{{/_profileContext}}
 Estoy buscando el segmento de mercado perfecto para venderle una solución/sistema de crecimiento dentro del nicho: {{niche}}.
 
 Quiero que le vendan a empresas (B2B) y que tengan más de {{buyers}} compradores potenciales a los que pueda apuntar.

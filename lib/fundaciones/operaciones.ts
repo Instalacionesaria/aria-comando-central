@@ -319,7 +319,8 @@ export async function generarElDocumento(
 
     let prompt: string;
     try {
-      prompt = armarPromptResearch(paso, inputs, previas);
+      // Con el estado: el paso 1 hereda la ficha del negocio (Kevin, 2026-09-09).
+      prompt = armarPromptResearch(paso, inputs, previas, estado.datos);
     } catch (e) {
       if (e instanceof MetodologiaIlegible) return rechazo('metodologia_ilegible', e.metodologia);
       throw e;
