@@ -166,7 +166,11 @@ export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFu
   3: ['marketResearch'],
   2: ['niche', 'icp'],
   4: ['niche', 'icp', 'categoria'],
-  10: [],
+  // «Tu precio» decía `[]` y era mentira a medias: su prompt (`datosDePricing`) lee el stack de valor
+  // de la Oferta y los datos del ICP desde siempre —el hub también lo hacía, sin chips—. Kevin
+  // (2026-09-09): «quiero que Tu Precio herede información de Oferta». Declararlo es lo que hace
+  // que se VEA: los chips de «Hereda de», y el aviso antes de gastar si la Oferta no existe.
+  10: ['icp', 'oferta'],
   26: ['icp', 'categoria', 'oferta', 'pricing'],
   5: ['icp', 'categoria', 'oferta', 'pricing'],
   // La Landing es la que MÁS hereda: las cuatro del VSL más el guion. No es acumulación por
@@ -183,6 +187,9 @@ export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFu
  */
 export const FUENTES_CRITICAS: Readonly<Record<number, readonly ClaveDeFuente[]>> = {
   4: ['icp', 'categoria'],
+  // Sin el stack de valor de la Oferta, el precio no tiene de dónde sacar el Valor Transformacional
+  // y sale como una fracción de un número que el alumno tipeó. Se avisa antes de gastar; no bloquea.
+  10: ['oferta'],
   26: ['icp', 'categoria', 'oferta', 'pricing'],
   // El VSL sin avatar ni oferta se puede escribir, y sale genérico: el Pattern Interrupt no tiene
   // el lenguaje del cliente y la sección del programa no tiene stack. Se avisa antes de gastar la

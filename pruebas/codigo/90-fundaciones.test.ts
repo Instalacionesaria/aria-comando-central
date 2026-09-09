@@ -562,8 +562,13 @@ test('las fuentes críticas que faltan se pueden nombrar antes de gastar la gene
   const vacio = estadoVacio();
   assert.deepEqual(faltantes(vacio, 4), ['icp', 'categoria']);
   assert.deepEqual(faltantes(vacio, 26), ['icp', 'categoria', 'oferta', 'pricing']);
+  // «Tu precio» hereda de la Oferta (Kevin, 2026-09-09) y la exige: sin stack de valor no hay de
+  // dónde sacar el Valor Transformacional. El prompt ya la leía; ahora se declara y se ve.
+  assert.deepEqual(faltantes(vacio, 10), ['oferta']);
+  assert.deepEqual(FUENTES_POR_HERRAMIENTA[10], ['icp', 'oferta']);
   // Con todo hecho, no falta nada.
   assert.deepEqual(faltantes(estadoCompleto(), 26), []);
+  assert.deepEqual(faltantes(estadoCompleto(), 10), []);
   // Y las herramientas raíz no tienen fuentes críticas: exigirle algo a la primera pantalla del
   // método sería pedirle al alumno que empiece por el final.
   assert.deepEqual(faltantes(vacio, 0), []);
@@ -571,7 +576,7 @@ test('las fuentes críticas que faltan se pueden nombrar antes de gastar la gene
 
   // Toda fuente que una herramienta declara como crítica tiene que estar entre las que MUESTRA, o
   // el aviso hablaría de algo que no está en pantalla.
-  for (const [id, criticas] of Object.entries({ 4: ['icp', 'categoria'], 26: ['icp', 'categoria', 'oferta', 'pricing'] })) {
+  for (const [id, criticas] of Object.entries({ 4: ['icp', 'categoria'], 10: ['oferta'], 26: ['icp', 'categoria', 'oferta', 'pricing'] })) {
     const mostradas = FUENTES_POR_HERRAMIENTA[Number(id)] ?? [];
     for (const c of criticas) {
       assert.ok(mostradas.includes(c as never), `la herramienta ${id} exige ${c} y no lo muestra`);
