@@ -33,15 +33,24 @@
 
 /* Los seis íconos, en el orden del `11` § 7.2. **Siempre los seis, nunca un "0".**
  *
- * `glifo` sale del mismo juego que usaba el prototipo en `.md-acts`, para que la fila se vea
- * igual que antes. Lo que cambia es que ahora los valores son medidos. */
+ * ── DEJARON DE SER GLIFOS, Y ESO ERA EL PROBLEMA ───────────────────────────
+ *
+ * Acá había un `glifo` por ícono —`▢ ▤ ✆ ◈ ◷ $`—, heredado del juego que usaba el prototipo en
+ * `.md-acts`. Eran caracteres de texto, no dibujos: cada tipografía resuelve `✆` y `◷` a su manera,
+ * el `$` es una letra con la altura de una letra, y ninguno se alinea con los otros. Se veían
+ * pobres y desparejos, y se pidió el dibujo de verdad.
+ *
+ * Ahora es un `icono` que apunta al sprite (`components/IconSprite.jsx`), con el mismo mecanismo
+ * que el menú lateral: `<use href="#i-f-…">` sobre un `<symbol>` que dibuja con `currentColor`. De
+ * ahí sale gratis lo otro que se pidió —que el encendido resalte en el acento— porque el color lo
+ * pone el CSS y no hace falta un color por ícono. */
 const ICONOS = [
-  { clave: 'reunionesTenidas', glifo: '▢', titulo: 'Reuniones que ya tuvo', conteo: true },
-  { clave: 'citaFutura', glifo: '▤', titulo: 'Tiene una cita agendada' },
-  { clave: 'llamadasContestadas', glifo: '✆', titulo: 'Llamadas del agente contestadas', conteo: true },
-  { clave: 'estadoAgente', glifo: '◈', titulo: 'Estado del agente', agente: true },
-  { clave: 'seguimientoAbierto', glifo: '◷', titulo: 'Tiene un seguimiento corriendo' },
-  { clave: 'montoVenta', glifo: '$', titulo: 'Venta registrada' },
+  { clave: 'reunionesTenidas', icono: '#i-f-reunion', titulo: 'Reuniones que ya tuvo', conteo: true },
+  { clave: 'citaFutura', icono: '#i-f-cita', titulo: 'Tiene una cita agendada' },
+  { clave: 'llamadasContestadas', icono: '#i-f-llamada', titulo: 'Llamadas del agente contestadas', conteo: true },
+  { clave: 'estadoAgente', icono: '#i-f-agente', titulo: 'Estado del agente', agente: true },
+  { clave: 'seguimientoAbierto', icono: '#i-f-seguimiento', titulo: 'Tiene un seguimiento corriendo' },
+  { clave: 'montoVenta', icono: '#i-f-venta', titulo: 'Venta registrada' },
 ];
 
 /* El color del ícono del agente, por estado.
@@ -63,7 +72,8 @@ const COLOR_DEL_AGENTE = {
 };
 
 /* El texto del título, por estado. Es lo que se lee al pasar el puntero, y es donde vive la
- * diferencia entre los cinco: el glifo es el mismo. */
+ * diferencia entre los cinco: el DIBUJO es el mismo para los cinco, y lo único que los separa a
+ * simple vista son los tres colores de la tabla de arriba. */
 const TITULO_DEL_AGENTE = {
   atendiendo_pre_agenda: 'El agente pre-agenda está atendiendo',
   atendiendo_post_agenda: 'El agente post-agenda está atendiendo',
@@ -87,36 +97,40 @@ const TITULO_DEL_AGENTE = {
  * y no por coincidencia. Ver `lib/negocio/pildora.ts`.
  */
 
-/** El microtexto de actividad: un evento REAL, nunca una frase genérica (§ 7.1). */
-function microtexto(fila) {
-  if (!fila.ultimoEntranteEl) return null;
-  const cuando = hace(fila.ultimoEntranteEl);
-  /* El texto de lo que escribió viaja junto a la fecha a propósito: el disparador de la base
-     los mueve juntos, así que no puede pasar que la fecha sea de un mensaje y el texto de
-     otro. */
-  /* Y UN MENSAJE SIN TEXTO NO SE CALLA: se marca.
+/* ── EL MICROTEXTO SE FUE, Y CON ÉL EL RELOJ DEL CLIENTE ────────────────────
+ *
+ * Acá vivían `microtexto(fila)` —que armaba `respondió hace 2 d: “…”`— y el reexport de
+ * `haceCuanto` que le daba el «hace 2 d». Se pidió que la fila no muestre lo último que dijo el
+ * contacto, así que la función quedó sin llamador y se fue entera: una función que nadie usa es la
+ * que vuelve mal cuando alguien la encuentra y la cree vigente.
+ *
+ * Se conserva por escrito lo que esa función había aprendido, porque el dato sigue existiendo y
+ * alguien lo va a querer dibujar en otra parte: **un mensaje sin texto no se calla, se marca.** Esa
+ * rama devolvía solo «respondió hace 1 h» y la fila quedaba indistinguible de una en la que nadie
+ * escribió nada; se vio en el navegador con un contacto cuyo último entrante era un audio, y se
+ * arregló con un `[mensaje sin texto]` explícito. Es la misma regla que el chat aplica burbuja por
+ * burbuja.
+ *
+ * `haceCuanto` sigue en `lib/negocio/tiempo.ts` y la ficha lo usa; lo que se fue de acá es el
+ * reexport local, que existía solo para los usos de esta función.
+ */
 
-     Antes esta rama devolvía solo «respondió hace 1 h» y la fila quedaba sin cita, indistinguible
-     de una en la que nadie escribió nada. Se vio en el navegador con un contacto cuyo último
-     entrante era un audio.
-
-     Es la misma regla que el chat ya aplica burbuja por burbuja —un audio o una imagen existieron,
-     y descartarlos hace que para el auditor ese turno no haya ocurrido—, aplicada acá también para
-     que las dos pantallas no cuenten historias distintas del mismo mensaje. */
-  const texto = fila.ultimoEntranteTexto ?? '[mensaje sin texto]';
-  return `respondió ${cuando}: “${texto}”`;
-}
-
-/** «hace 2 h». Del lado del cliente porque depende del reloj de quien mira. */
-import { haceCuanto } from '../../lib/negocio/tiempo.ts';
-
-/* `hace()` vivía acá y en `Ficha.jsx`, con DOS comportamientos distintos para un instante futuro.
-   Ahora hay uno: `haceCuanto` en `lib/negocio/tiempo.ts`, que es el archivo que existe por esta
-   clase de duplicación —su encabezado cuenta la vez anterior—. Se reexporta con el nombre local
-   para no tocar los seis usos de abajo. */
-const hace = haceCuanto;
-
-/** Los seis íconos de una fila. */
+/**
+ * Los seis íconos de una fila.
+ *
+ * ── LOS TRES ESTADOS PASARON DE `style` EN LÍNEA A CLASE, Y NO ES ESTILO ────
+ *
+ * La opacidad y el color iban en un `style={{…}}`, y eso tenía una consecuencia que se pagó en
+ * otra parte: una hoja de estilos **no puede pisar un estilo en línea**, así que para que los
+ * íconos usaran su gris propio en vez del color de texto del tema,
+ * `app/closer-estetica.css` tuvo que secuestrar el token que el componente leía
+ * (`--txt: var(--icono)` dentro de `.md-acts`). Un token con dos significados según dónde se
+ * mire, para poder ganarle a esta función.
+ *
+ * Con clases, el CSS decide y el secuestro se pudo retirar. El `<i>` se conserva como envoltorio
+ * —ahora envuelve un `<svg>` en vez de un carácter— porque de él cuelgan las reglas que apagan el
+ * cursor y el hover, y porque le da al número un lugar donde ir al lado del dibujo.
+ */
 export function SeisIconos({ iconos }) {
   return (
     <div className="md-acts">
@@ -126,16 +140,24 @@ export function SeisIconos({ iconos }) {
         /* El agente no es un contador ni un sí/no: son cinco estados, y cada uno tiene su
            color y su texto. `sin_agente` se dibuja como el resto de los ceros medidos —
            atenuado, sin número— porque eso es lo que es: se miraron las etiquetas y no hay
-           ninguna del agente. */
+           ninguna del agente.
+
+           Es el único que conserva un color en línea, y con motivo: son TRES colores según el
+           estado —el acento cuando trabaja, coral cuando el auditor lo pausó, gris cuando está
+           apagado— y una clase por estado serían cinco clases para decir lo que `COLOR_DEL_AGENTE`
+           ya dice en una tabla. */
         if (ic.agente) {
           const hay = v && v !== 'sin_agente';
           return (
             <i
               key={ic.clave}
+              className={hay ? 'on' : 'apagado'}
               title={TITULO_DEL_AGENTE[v] ?? ic.titulo}
-              style={{ opacity: hay ? 1 : 0.45, color: COLOR_DEL_AGENTE[v] ?? undefined }}
+              style={{ color: COLOR_DEL_AGENTE[v] ?? undefined }}
             >
-              {ic.glifo}
+              <svg viewBox="0 0 16 16">
+                <use href={ic.icono} />
+              </svg>
             </i>
           );
         }
@@ -149,19 +171,23 @@ export function SeisIconos({ iconos }) {
         return (
           <i
             key={ic.clave}
-            /* Y el `title` LO DICE, porque una opacidad no se lee. Un ícono al 28 % y otro al 45 %
+            className={sinMedir ? 'sin-medir' : activo ? 'on' : 'apagado'}
+            /* Y el `title` LO DICE, porque una opacidad no se lee. Un ícono al 28 % y otro al 50 %
                son dos hechos distintos —«no hay datos» y «es cero»— y a simple vista se ven casi
                igual: sin esta línea, la distinción que el servidor calcula no le llega a nadie. */
             title={sinMedir ? `${ic.titulo} — sin datos` : ic.titulo}
-            style={{
-              opacity: sinMedir ? 0.28 : activo ? 1 : 0.45,
-              color: activo ? 'var(--txt)' : undefined,
-            }}
           >
-            {ic.glifo}
-            {/* El número solo cuando hay más de uno. Un "+1" al lado de un ícono que ya dice
-                "tiene una" es ruido, y un "0" es una afirmación falsa. */}
-            {ic.conteo && activo && v > 1 ? <span style={{ fontSize: '10px' }}> +{v}</span> : null}
+            <svg viewBox="0 0 16 16">
+              <use href={ic.icono} />
+            </svg>
+            {/* El número, al lado del dibujo y SIN el `+`.
+                Decía `+2`, y se pidió que diga `2`. El `+` prometía algo que no era: no es «dos
+                más», es «dos». Y con él la condición tenía que ser `v > 1`, porque `+1` se lee
+                como «uno más» y era falso — así que un contacto con UNA reunión no mostraba
+                ningún número y se veía igual que uno con cero medido.
+                Ahora el uno se dibuja: `v > 0`. El cero sigue sin número, que es lo que la regla
+                de arriba pide — un «0» es una afirmación falsa sobre algo que no ocurrió. */}
+            {ic.conteo && activo && v > 0 ? <span className="md-cnt">{v}</span> : null}
           </i>
         );
       })}
@@ -178,22 +204,22 @@ export function SeisIconos({ iconos }) {
  * confiar en la pantalla.
  */
 export default function Fila({ fila, onAbrir }) {
-  const sit = fila.pildora ?? null;
-  const micro = microtexto(fila);
   const completada = fila.situacion === 'venta' || fila.situacion === 'no_interesa';
 
-  /* «Estancado» va en el COLOR de la fila y en el microtexto, NUNCA en la píldora. El § 7.1 es
-     explícito: la píldora dice la situación REAL, no una condición temporal. Mezclarlas haría
-     que «estancado» tapara «venta» o «seguimiento», que es el hecho que importa. */
+  /* «Estancado» va en el COLOR de la fila, NUNCA en la píldora. El § 7.1 es explícito: la píldora
+     dice la situación REAL, no una condición temporal. Mezclarlas haría que «estancado» tapara
+     «venta» o «seguimiento», que es el hecho que importa.
+     Y ahora el color es lo ÚNICO que lo dice: el microtexto que además lo escribía se fue con la
+     simplificación de la fila. */
   /* ── EL CONGELADO SE VE, Y ESO ES LA MITAD DE LA REGLA ─────────────────────
    *
-   * Un congelado es el que no está en ningún territorio: perdió su etiqueta de zona. Se atenúa y se
-   * marca, y **conserva todos sus datos** —sus seis íconos, su fuente, su píldora—, por lo mismo que
-   * una fila completada: resumirla ahorra píxeles y pierde justo lo que permite decidir si hay que
-   * volver sobre ese contacto.
+   * Un congelado es el que no está en ningún territorio: perdió su etiqueta de zona. Se atenúa, y
+   * **conserva sus seis íconos** por lo mismo que una fila completada: resumirla ahorra píxeles y
+   * pierde justo lo que permite decidir si hay que volver sobre ese contacto.
    *
    * Antes no se veía: desaparecía de la aplicación sin rastro, y el closer veía bajar su cartera sin
-   * ninguna explicación disponible. */
+   * ninguna explicación disponible. El chip que lo nombraba se fue con la simplificación, así que
+   * ahora la atenuación es la única señal en la lista — el motivo está en la ficha. */
   return (
     <div
       className={`md-r${completada ? ' md-done' : ''}${fila.congelado ? ' md-fuera' : ''}`}
@@ -210,31 +236,30 @@ export default function Fila({ fila, onAbrir }) {
           pide el guión, porque un hueco se lee como "todavía cargando". */}
       <span className="md-time">{fila.score ?? '—'}</span>
       <div>
-        <div className="md-nm">
-          {fila.nombre}
-          {/* El chip de fuente. NUNCA falta: la base tiene un valor de reserva, así que no hay
-              camino por el que llegue vacío. */}
-          <span className="tagx nu">{fila.fuente}</span>
-          {sit ? <span className={`tagx ${sit.clase}`}>{sit.texto}</span> : null}
-          {/* Y la marca de fuera de zona, con su explicación en el `title`. Va como chip y no como
-              tinte de fila porque el tinte ya lo usa «estancado», y las dos condiciones pueden
-              coincidir: un contacto puede estar estancado Y haber perdido su zona. */}
-          {fila.congelado ? (
-            <span
-              className="tagx no"
-              title="Perdió su etiqueta de zona en el CRM, así que ya no es trabajo de esta pestaña. Se sigue viendo, y vuelve solo si la etiqueta reaparece."
-            >
-              fuera de zona
-            </span>
-          ) : null}
-        </div>
-        {micro || fila.estancado ? (
-          <div className="md-sub">
-            {fila.estancado ? <span style={{ color: 'var(--warn)' }}>estancado</span> : null}
-            {fila.estancado && micro ? ' · ' : null}
-            {micro}
-          </div>
-        ) : null}
+        {/* ── SOLO EL NOMBRE ──────────────────────────────────────────────────
+         *
+         * Acá había, al lado del nombre, hasta tres chips y debajo una línea con lo último que
+         * dijo el contacto. Se pidió que quede el nombre: *«que solo aparezca el nombre… tampoco
+         * que abajo salga lo último que respondió»*.
+         *
+         * Lo que se fue, y dónde sigue estando cada cosa — porque ninguna se perdió:
+         *
+         *   · **La fuente** (`EXTERNAL_FORM`, `FACEBOOK`, y las largas como
+         *     `LLAMADA DE DIAGNOSTICO · AGENCIA AI NATIVE`, que son todas el mismo campo: el
+         *     `source` crudo del CRM). Ya estaba en la ficha, pestaña Perfil, grupo «Origen», con
+         *     la etiqueta «Fuente». O sea que «que salga dentro del contacto» ya estaba cumplido
+         *     y esto era la copia de más.
+         *   · **La píldora de situación** (`SEGUIMIENTO`, `SEGUIMIENTO · PRÓXIMO A PAGAR`). Sigue
+         *     en el ENCABEZADO de la ficha, que es mejor que el Perfil: se ve desde las cuatro
+         *     pestañas.
+         *   · **«fuera de zona»**. La fila conserva la clase `md-fuera`, que la atenúa. Se ve que
+         *     algo pasa; el detalle está en la ficha.
+         *   · **«estancado»**. Sigue marcado con el borde izquierdo ámbar de acá arriba, que es de
+         *     donde salía el color de esa palabra.
+         *
+         * El dato sigue viajando en `fila.fuente` y `fila.pildora`: la ficha los usa. Lo que se
+         * quitó es el dibujo, no la medición. */}
+        <div className="md-nm">{fila.nombre}</div>
       </div>
       <SeisIconos iconos={fila.iconos} />
     </div>

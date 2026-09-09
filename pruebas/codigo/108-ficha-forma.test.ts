@@ -224,8 +224,10 @@ test('la distancia en palabras se calcula en un solo lugar, y maneja el futuro',
   assert.equal(haceCuanto(undefined), '—');
 
   /* Y la forma: ni un solo componente vuelve a declararla. Se busca la DECLARACIÓN y no el nombre,
-     porque los dos archivos siguen usando `hace(...)` en sus plantillas — el alias local es
-     deliberado, para no tocar los usos. */
+     porque la ficha sigue usando `hace(...)` en sus plantillas — el alias local es deliberado, para
+     no tocar los usos.
+     La prohibición vale para los DOS archivos: aunque la fila ya no muestre ninguna fecha, volver a
+     declarar ahí una `hace()` propia es exactamente el defecto que esto persigue. */
   for (const ruta of ['components/negocio/Ficha.jsx', 'components/negocio/Fila.jsx']) {
     assert.doesNotMatch(
       limpio(ruta),
@@ -233,8 +235,22 @@ test('la distancia en palabras se calcula en un solo lugar, y maneja el futuro',
       `${ruta} volvió a declarar su propia \`hace()\`: es como la lista y la ficha llegaron a decir ` +
         'dos cosas distintas del mismo instante',
     );
-    assert.match(limpio(ruta), /haceCuanto/, `${ruta} no usa la definición compartida`);
   }
+
+  /* ── Y EL USO SE EXIGE SOLO DONDE HAY UNA FECHA QUE MOSTRAR ────────────────
+   *
+   * Esta lista tenía también `Fila.jsx`, y era correcto mientras la fila dibujaba «respondió hace
+   * 2 d». Ese microtexto se fue con la simplificación de la fila —se pidió que muestre el nombre y
+   * nada más— y con él el único uso de `haceCuanto` ahí.
+   *
+   * Exigirlo igual obligaría a mantener un import que nadie usa para que una prueba pase, que es
+   * la forma de que una prueba empiece a dirigir el código en vez de medirlo. La mitad que importa
+   * —«nadie declara su propia versión»— la cuida el bucle de arriba, y sigue cubriendo los dos. */
+  assert.match(
+    limpio('components/negocio/Ficha.jsx'),
+    /haceCuanto/,
+    'la ficha no usa la definición compartida de la distancia en palabras',
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

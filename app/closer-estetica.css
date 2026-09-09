@@ -18,7 +18,7 @@
  *
  * Se copian las «diez cadenas exactas» del `14` § 2 traducidas a este CSS: tarjeta grande de 2 rem
  * translúcida, sección opaca, fila `24/16`, rótulo de 11 px en mayúsculas con `0.15em`, cifra
- * `font-weight: 300`, píldora de 9 px, contador sólido, cápsula de pestañas con la activa en violeta
+ * `font-weight: 300`, píldora de 9 px, contador sólido, cápsula de pestañas con la activa en el acento
  * sólido, acordeón de rejilla. Y las doce reglas del `14` § 1 que esta aplicación YA cumplía siguen
  * cumplidas —nada de esto toca qué se dibuja, solo cómo—.
  *
@@ -150,7 +150,7 @@
 }
 
 /* El rótulo superior y el título. El HTML trae `<h2>Closer</h2>` y debajo la descripción de la
-   pestaña; el sistema pone el ROL arriba, chico y violeta, y el NOMBRE de la pantalla abajo, grande.
+   pestaña; el sistema pone el ROL arriba, chico y en el acento, y el NOMBRE de la pantalla abajo, grande.
    Se invierte el peso visual sin tocar el marcado: el `h2` es el rótulo, la descripción el título. */
 #v-closer .ch-title {
   flex-direction: column;
@@ -196,7 +196,7 @@
 }
 #v-closer .cl-sub button svg { width: 14px; height: 14px; opacity: 1; }
 #v-closer .cl-sub button:hover { color: var(--txt); background: rgb(var(--c-nube) / .06); }
-/* La activa es el ÚNICO violeta sólido del armazón. */
+/* La activa es el ÚNICO fondo sólido del acento en el armazón. */
 #v-closer .cl-sub button.on {
   background: var(--accent-hondo);
   color: var(--sobre-acento);
@@ -204,7 +204,7 @@
   box-shadow: none;
 }
 #v-closer .cl-sub button.on svg { color: inherit; }
-/* El contador cambia de paleta según el estado de la pestaña: sobre violeta sólido, un violeta al
+/* El contador cambia de paleta según el estado de la pestaña: sobre el acento sólido, un acento al
    10 % sería invisible, así que ahí usa el color del TEXTO al 20 %. */
 #v-closer .cl-sub .cnt {
   margin-left: 1px;
@@ -417,16 +417,55 @@
 #v-closer .tagx.venc,
 #v-closer .tagx.no   { background: rgb(var(--c-crit) / .10); color: var(--crit); border-color: rgb(var(--c-crit) / .25); }
 
-/* Los seis iconos usan un gris LITERAL y no `--txt` (`03` § 5). El componente pinta el encendido
-   con `color: var(--txt)` en línea, y un estilo en línea no se puede pisar desde una hoja — pero sí
-   se puede redefinir el token que lee, solo dentro de este bloque. */
+/* ── LOS SEIS ICONOS DE ESTADO ──────────────────────────────────────────────
+ *
+ * Dejaron de ser glifos de texto: ahora es un `<svg><use href="#i-f-…"></svg>` del sprite. Eso
+ * cambia qué reglas hacen algo, y conviene decirlo porque las de antes NO se pueden reciclar: un
+ * `<svg>` no responde a `font-size` ni a `text-align`, que era todo lo que la regla anterior le
+ * daba. Hay que dimensionarlo.
+ *
+ * Y se fue el secuestro de token que había acá. Decía `--txt: var(--icono)`, con este motivo:
+ * *«el componente pinta el encendido con `color: var(--txt)` en línea, y un estilo en línea no se
+ * puede pisar desde una hoja — pero sí se puede redefinir el token que lee»*. Era correcto y era
+ * una trampa: dejaba `--txt` valiendo un gris para todo descendiente de `.md-acts`. Ahora el
+ * componente pone CLASES y el color lo decide esta hoja, así que el token vuelve a significar una
+ * sola cosa. */
 #v-closer .md-acts {
-  --txt: var(--icono);
-  gap: 5px;
-  font-size: 13px;
+  gap: 7px;
   color: var(--icono);
 }
-#v-closer .md-acts i { min-width: 14px; text-align: center; }
+#v-closer .md-acts i {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+#v-closer .md-acts svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* Los TRES estados, que el `11` § 9 regla 1 exige mantener separados: «no medido» y «medido en
+   cero» no son el mismo hecho, y a simple vista se parecen — de ahí que el componente además lo
+   diga en el `title`. */
+#v-closer .md-acts i.sin-medir { opacity: .28; }
+#v-closer .md-acts i.apagado   { opacity: .5; }
+/* Y el encendido en el ACENTO, que es lo que se pidió: hasta ahora el encendido era el gris del
+   texto, un tono más oscuro que el apagado, y no se leía como encendido. */
+#v-closer .md-acts i.on {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* El número al lado del dibujo. `tabular-nums` para que un 2 y un 11 no muevan el icono de la
+   derecha: la fila tiene seis y cualquier corrimiento se ve como desalineación. */
+#v-closer .md-cnt {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 /* «Unirse»: verde sólido, reservado para la próxima llamada con sala (`08` § 3). */
 #v-closer .md-join {
   padding: 3px 9px;
@@ -756,8 +795,8 @@
 #v-closer .ag-sem { font-size: 10px; font-weight: 700; letter-spacing: 0; height: 24px; }
 #v-closer .ag-hueco { height: 28px; }
 /* El día: círculo de 32 px. Seleccionado y hoy son estados DISTINTOS y se ven distintos: el
-   seleccionado es un círculo violeta sólido; hoy es solo un anillo de 1 px al 40 %. Si coinciden,
-   gana el seleccionado — y el punto de citas se esconde sobre el violeta sólido. */
+   seleccionado es un círculo sólido del acento; hoy es solo un anillo de 1 px al 40 %. Si coinciden,
+   gana el seleccionado — y el punto de citas se esconde sobre el relleno sólido. */
 #v-closer .ag-celda {
   width: 28px;
   height: 28px;
@@ -911,7 +950,7 @@
 #v-closer .cw-acciones .cw-go:hover { background: var(--txt); opacity: .9; }
 #v-closer .cw-meta { margin-top: 15px; }
 /* La barra de pestañas de la ficha es el patrón INVERTIDO al del Closer: fondo más oscuro que el
-   panel y la activa más clara. Cinco pestañas de 11 px no aguantan un violeta sólido. El hijo
+   panel y la activa más clara. Cinco pestañas de 11 px no aguantan un relleno sólido. El hijo
    lleva menos radio que el padre: 16 → 12. */
 #v-closer .cw-tabs {
   margin: 12px 20px 0;
@@ -1052,7 +1091,8 @@
 #v-closer .fd-aviso.mal   { background: rgb(var(--c-crit) / .06); border-color: rgb(var(--c-crit) / .25); }
 #v-closer .fd-aviso.bien  { background: rgb(var(--c-ok) / .08); border-color: rgb(var(--c-ok) / .25); color: var(--ok); }
 
-/* Los botones son cápsulas de 36 px. El principal es el ÚNICO violeta sólido de su pantalla; el
+/* Los botones son cápsulas de 36 px. El principal es el ÚNICO relleno sólido del acento de su
+   pantalla; el
    secundario lleva contorno. */
 #v-closer .fd-btn {
   height: 30px;
@@ -1074,7 +1114,7 @@
 #v-closer .fd-btn.sec:hover:not(:disabled) { color: var(--txt); background: rgb(var(--c-nube) / .05); border-color: var(--line-strong); }
 #v-closer .fd-btn-menor { border-radius: 9999px; font-size: 10.5px; font-weight: 500; padding: 3px 10px; }
 
-/* El foco es de la marca: el anillo violeta, como `--ring` en el sistema. */
+/* El foco es de la marca: el anillo del acento, como `--ring` en el sistema. */
 #v-closer button:focus-visible,
 #v-closer select:focus-visible,
 #v-closer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

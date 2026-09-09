@@ -134,17 +134,44 @@ test('la ficha y la fila dibujan los seis íconos con el MISMO componente', () =
   assert.deepEqual(donde, ['components/negocio/Fila.jsx'], 'hay más de una implementación de los seis íconos');
 });
 
-test('la píldora del encabezado es la MISMA que la de la fila', () => {
-  // El espejo del `02` § 2, y acá se puede afirmar de verdad: las dos leen el mismo campo del
-  // mismo objeto. Si una lo derivara, esta prueba no lo vería — por eso además se prohíbe el
-  // diccionario en la prueba de arriba.
-  for (const ruta of ['components/negocio/Fila.jsx', 'components/negocio/Ficha.jsx']) {
-    assert.match(
-      fuente(ruta),
-      /\.pildora\b/,
-      `${ruta} no lee la píldora armada: si la calcula, puede decir algo distinto del otro lado`,
-    );
-  }
+test('la píldora se LEE armada, y la fila ya no la dibuja', () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+   * ESTA PRUEBA CAMBIÓ DE SUJETO, Y CONVIENE DECIR QUÉ CUIDA AHORA
+   *
+   * Se llamaba «la píldora del encabezado es la MISMA que la de la fila» y exigía `.pildora` en
+   * los DOS archivos. Era el espejo del `02` § 2 — la fila y la ficha tenían que decir lo mismo
+   * del mismo estado— y se podía afirmar así porque las dos la dibujaban.
+   *
+   * La fila dejó de dibujarla: se pidió que muestre el nombre y nada más, y la píldora ya estaba
+   * en el encabezado de la ficha, que es donde se ve desde las cuatro pestañas. Con un solo
+   * dibujante, «el espejo» no tiene dos lados que comparar.
+   *
+   * Lo que **sí** sigue siendo un riesgo, y es lo que esta prueba pasa a cuidar: que quien la
+   * dibuje la LEA armada en vez de calcularla. Eso, más la prohibición del diccionario de la
+   * prueba de arriba, es lo que impedía las dos redacciones del mismo estado — y esa mitad no
+   * dependía de que la fila la dibujara.
+   *
+   * Y se agrega la afirmación que la simplificación necesita cuidada: que la fila **no** vuelva a
+   * dibujarla. Sin esto, devolverla es un `<span>` que nadie nota en una revisión.
+   * ══════════════════════════════════════════════════════════════════════════ */
+  assert.match(
+    fuente('components/negocio/Ficha.jsx'),
+    /\.pildora\b/,
+    'la ficha no lee la píldora armada: si la calcula, puede decir algo distinto del servidor',
+  );
+
+  /* Y la fila no la dibuja. Se mide el DIBUJO —la clase `tagx`, que es la que la pinta— y no la
+     mención del campo: `Fila.jsx` sigue nombrando `pildora` en sus comentarios, que cuentan por qué
+     se fue, y eso no es dibujarla.
+     `fuente()` ya devuelve el archivo sin comentarios (`archivosFuente` los saca), así que la
+     distinción está garantizada acá arriba y no hace falta repetirla. */
+  const fila = fuente('components/negocio/Fila.jsx');
+  assert.doesNotMatch(
+    fila,
+    /tagx/,
+    'la fila volvió a dibujar píldoras. Se pidió que muestre el nombre y nada más: la situación ' +
+      'está en el encabezado de la ficha y la fuente en su pestaña Perfil',
+  );
 });
 
 // ─── La ficha, como panel ───────────────────────────────────────────────────

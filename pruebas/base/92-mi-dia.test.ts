@@ -365,9 +365,19 @@ test('con el bot ATENDIENDO, el contacto no entra al Buzón', async () => {
   for (const a of atendidos) assert.ok(!enBuzon.includes(a));
 });
 
-test('el Buzón trae un fragmento del mensaje, y ordena por el más reciente', async () => {
-  // El fragmento es *"para decidir sin abrir la ficha"*. Sin él, cada fila obliga a abrir el
-  // panel para saber si vale la pena.
+test('el Buzón ordena por el mensaje más reciente', async () => {
+  /* ── ESTA PRUEBA MEDÍA DOS COSAS Y AHORA MIDE UNA ──────────────────────────
+   *
+   * Se llamaba «trae un fragmento del mensaje, y ordena por el más reciente», y afirmaba además
+   * `c.buzon[0].fragmento.length === 80`. El fragmento se fue: era *«para decidir sin abrir la
+   * ficha»* y en la pantalla **duplicaba** el microtexto que la fila ya mostraba entero, así que
+   * el mismo mensaje se leía dos veces. Al quitar los dos textos de la fila quedó sin lector, y un
+   * campo que el servidor calcula y nadie lee se borra.
+   *
+   * El ORDEN se queda, y es la mitad que importaba: el Buzón contesta «quién escribió y nadie le
+   * respondió», y sin este orden el que escribió hace un mes va antes que el de hace diez minutos.
+   * El texto largo del segundo contacto se conserva en la siembra a propósito — ya no se recorta,
+   * pero sigue siendo el caso que hacía falta para que el orden no pase por coincidencia. */
   await limpiar();
   const marca = randomUUID().slice(0, 6);
   const viejo = await contacto(`f1-${marca}`, [], {
@@ -385,7 +395,6 @@ test('el Buzón trae un fragmento del mensaje, y ordena por el más reciente', a
     [nuevo, viejo],
     'el Buzón no ordena por el mensaje más reciente primero',
   );
-  assert.equal(c.buzon[0]!.fragmento!.length, 80, 'el fragmento no está acotado a 80 caracteres');
 });
 
 // ─── 4 · El contador que casi siempre se implementa mal ────────────────────

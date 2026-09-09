@@ -775,9 +775,24 @@
    bloques declaran el mismo conjunto, y cada `--etapa-x` va con su `--c-etapa-x` del mismo tono.
 
    ── LO QUE CAMBIA DE NATURALEZA, EN UNA LÍNEA CADA COSA ────────────────────
-   · El acento deja de ser cian: es el violeta de la marca, `262.1 83.3% 57.8%` = #7c3aed. Como
-     RELLENO es el mismo en los dos temas (`--accent-hondo`); como TEXTO sobre negro sube a #a78bfa,
-     porque #7c3aed sobre #09090b da 3,2:1 y no se lee.
+   · EL ACENTO NO SE TOCA. Acá vivía un violeta —#7c3aed de relleno, #a78bfa como texto sobre
+     negro— que redefinía las seis declaraciones de la familia del acento. Se fue: el Closer usa
+     el mismo verde que el resto de la aplicación.
+
+     Se pidió con estas palabras: *«como vemos en la parte superior izquierda del logo de AIOS es
+     de un color verde el mismo que resalta las pestañas del menú de la izquierda, ese mismo
+     verde, que es el color principal que se está usando para la plataforma»*.
+
+     Y conviene decir de qué tamaño era el violeta, porque no se veía: no era el color de las
+     sub-pestañas. Era el de TODOS los botones primarios del Closer, el día elegido del calendario
+     de la Agenda, el botón de enviar del chat, el rótulo, los anillos de foco, el contador de las
+     sub-pestañas, la píldora «agendado» y el avatar del chat. Un `--accent` redefinido lo pinta
+     todo, y por eso el arreglo es BORRAR seis líneas por tema en vez de cambiar una regla: una
+     regla sola habría dejado una pestaña verde encima de botones violetas.
+
+     Lo único que sobrevive de ese bloque es `--c-sobre-acento`, y no por costumbre: lo referencia
+     `#v-closer .cl-sub button.on .cnt` y el acento global no lo declara, así que borrarlo dejaría
+     una `var()` huérfana — que es exactamente lo que cuenta `pruebas/codigo/121-tokens-de-css`.
    · El oscuro es una escala de elevación (lienzo → tarjeta → interactivo), no una inversión.
    · El lienzo claro es un hueso (#fcfcfd), no blanco: sobre blanco puro una tarjeta translúcida
      deja de leerse como tarjeta.
@@ -818,14 +833,10 @@
   --txt-dim:       #b1b1b8;
   --txt-faint:     #8b8b94;
 
-  /* El violeta. Texto legible sobre negro arriba; el de la marca, para rellenos, abajo. */
-  --c-acento:      167 139 250;
-  --accent:        #a78bfa;
-  --accent-dim:    rgb(167 139 250 / 0.14);
-  --accent-alto:   #a78bfa;
-  --accent-hondo:  #7c3aed;
-  --sobre-acento:  #f8fafc;
-  --c-sobre-acento: 248 250 252;
+  /* El acento se HEREDA del bloque global: el mismo verde que el logo y el menú lateral. Ver el
+     encabezado. Solo queda el canal del compañero de contraste, que el global no declara y que
+     `#v-closer .cl-sub button.on .cnt` referencia. Es el `--sobre-acento` oscuro (#04121a). */
+  --c-sobre-acento: 4 18 26;
 
   /* Las señales, en su tono 400: son texto sobre oscuro. */
   --c-crit:        251 113 133;
@@ -880,8 +891,11 @@
   --c-en-negro-ok:      52 211 153;
   --en-negro-warn:      #fbbf24;
   --c-en-negro-warn:    251 191 36;
-  --en-negro-acento:    #a78bfa;
-  --c-en-negro-acento:  167 139 250;
+  /* El acento sobre negro. Era el violeta claro; ahora es el verde de la plataforma. No sale de
+     `--accent` por el mismo motivo que los dos de arriba: en el tema claro ese token es un teal
+     oscuro, y encima del negro no se leería. */
+  --en-negro-acento:    #3ff2e2;
+  --c-en-negro-acento:  63 242 226;
 
   /* El gris de los seis iconos de estado (`03` § 5): literal e igual en los dos temas, porque con
      `--txt-dim` los apagados se veían encendidos en oscuro. */
@@ -935,14 +949,9 @@
   --txt-dim:       #52525b;
   --txt-faint:     #71717a;
 
-  /* El violeta de la marca sirve como texto sobre blanco (6,2:1), así que es uno solo. */
-  --c-acento:      124 58 237;
-  --accent:        #7c3aed;
-  --accent-dim:    rgb(124 58 237 / 0.08);
-  --accent-alto:   #8b5cf6;
-  --accent-hondo:  #7c3aed;
-  --sobre-acento:  #f8fafc;
-  --c-sobre-acento: 248 250 252;
+  /* El acento se HEREDA del bloque global, igual que en el oscuro. Acá el compañero de contraste
+     es blanco, porque el verde claro (#075c54) es oscuro y el texto encima va claro. */
+  --c-sobre-acento: 255 255 255;
 
   /* Las señales en su tono 700: texto sobre blanco. */
   --c-crit:        190 18 60;
@@ -989,8 +998,11 @@
   --c-en-negro-ok:      52 211 153;
   --en-negro-warn:      #fbbf24;
   --c-en-negro-warn:    251 191 36;
-  --en-negro-acento:    #a78bfa;
-  --c-en-negro-acento:  167 139 250;
+  /* El acento sobre negro. Era el violeta claro; ahora es el verde de la plataforma. No sale de
+     `--accent` por el mismo motivo que los dos de arriba: en el tema claro ese token es un teal
+     oscuro, y encima del negro no se leería. */
+  --en-negro-acento:    #3ff2e2;
+  --c-en-negro-acento:  63 242 226;
 
   --icono:         #6b6980;
   --c-icono:       107 105 128;

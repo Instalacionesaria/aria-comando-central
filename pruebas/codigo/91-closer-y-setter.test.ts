@@ -771,9 +771,22 @@ test('los seis íconos distinguen "no medido" de "medido en cero"', () => {
   assert.match(fila, /sinMedir/, 'la fila dejó de distinguir "no medido"');
   assert.match(fila, /v === null \|\| v === undefined/, 'la distinción de "no medido" cambió de forma');
 
-  // Y el número solo se dibuja si hay MÁS de uno. Un `+1` al lado de un ícono que ya dice
-  // "tiene una" es ruido; un `0` es falso.
-  assert.match(fila, /activo && v > 1/, 'la fila dibujaría un contador en cero o en uno');
+  /* Y el número NUNCA se dibuja en cero. Un `0` es falso: el ícono ya está atenuado, y un cero al
+     lado afirma que se contó algo que no ocurrió.
+     Decía `activo && v > 1` con este motivo: *«un `+1` al lado de un ícono que ya dice "tiene una"
+     es ruido»*. Era cierto **del `+`**, no del número: `+1` se lee «uno más» y era falso, así que
+     había que esconderlo. Se pidió que el número vaya solo —`1`, no `+1`— y con eso el uno se
+     puede dibujar, que es lo que un contacto con una reunión tenía que decir en vez de verse igual
+     que uno con cero medido.
+     Se afirma `v > 0` y no `activo`, porque `activo` ya excluye el cero: son dos guardas de lo
+     mismo y la que importa acá es la del número. */
+  assert.match(fila, /activo && v > 0/, 'la fila dibujaría un contador en cero');
+  assert.doesNotMatch(
+    fila,
+    /\+\{v\}/,
+    'volvió el `+` delante del número. Se pidió el número solo, y con el `+` la condición tiene ' +
+      'que esconder el uno para no mentir',
+  );
 
   // Los seis, en el orden del § 7.2, y ninguno de más ni de menos.
   const bloque = fila.slice(fila.indexOf('const ICONOS = ['), fila.indexOf('];', fila.indexOf('const ICONOS = [')));

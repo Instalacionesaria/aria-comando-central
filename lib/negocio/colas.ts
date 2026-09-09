@@ -85,8 +85,13 @@ export interface EnLaCola {
     /** `fin < ahora`: ya terminó. Es la que decide si el botón de unirse sigue sirviendo. */
     termino: boolean;
   };
-  /** Buzón: los primeros 80 caracteres de lo que escribió, para decidir sin abrir la ficha. */
-  fragmento?: string;
+  /* Acá vivía `fragmento`: los primeros 80 caracteres de lo que escribió el contacto, «para
+     decidir sin abrir la ficha». Se fue con la simplificación de la fila (`components/closer/
+     MiDia.jsx` lo dibujaba en cursiva debajo de la fila del Buzón) y el motivo es el que lo
+     condena: **duplicaba** el microtexto que la fila ya mostraba entero, así que el mismo mensaje
+     se leía dos veces.
+     Se quita el campo y no solo su dibujo, porque un campo que el servidor calcula y nadie lee es
+     el que vuelve mal el día que alguien lo encuentra y lo cree vigente. */
   /** Seguimientos: cuál de los dos casos, y si pide manos. */
   caso?: CasoDeSeguimiento;
   pideManos?: boolean;
@@ -327,7 +332,7 @@ export async function nucleoDeColas(
     if (!fila.ultimoEntranteEl) continue;
     if (leRespondieron(fila)) continue;
 
-    buzon.push({ fila, fragmento: (fila.ultimoEntranteTexto ?? '').slice(0, 80) });
+    buzon.push({ fila });
   }
   // El mensaje MÁS RECIENTE primero.
   buzon.sort(

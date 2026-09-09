@@ -171,13 +171,13 @@ function FilaDeAgenda({ item, zona, onAbrir }) {
         {horaEnZona(c.inicioEl, zona)}
       </span>
       <div>
-        <div className="md-nm">
-          {item.fila.nombre}
-          {/* Las VENCIDAS no desaparecen: bajan y se marcan. Si desaparecieran, el closer
-              perdería de vista justo la cita que tiene pendiente de registrar. */}
-          {c.vencida ? <span className="tagx venc">Vencida</span> : null}
-          {c.estado ? <span className="tagx nu">{c.estado}</span> : null}
-        </div>
+        {/* Las VENCIDAS no desaparecen: bajan y se marcan. Si desaparecieran, el closer perdería
+            de vista justo la cita que tiene pendiente de registrar.
+            Acá estaba el chip «Vencida» y el del estado de la cita, y se fueron con la
+            simplificación de la fila. La marca **no se perdió**: la hora de arriba se pinta con
+            `var(--crit)` cuando la cita venció, que es la misma información en el lugar donde se
+            mira — y el estado crudo del CRM (`booked`, `confirmed`) está en la ficha. */}
+        <div className="md-nm">{item.fila.nombre}</div>
       </div>
       <div className="md-acts">
         {/* ────────────────────────── CUANDO LA REUNIÓN TERMINÓ, NO HAY A QUÉ UNIRSE ──────────────────────────
@@ -370,11 +370,12 @@ export default function MiDia({
                   {cola.clave === 'urgentes' ? (
                     <BotonDeResolver contactoId={item.fila.id} alResolver={alResolver} />
                   ) : null}
-                  {item.fragmento ? (
-                    <div className="md-quote" style={{ padding: '0 16px 10px 56px' }}>
-                      “{item.fragmento}”
-                    </div>
-                  ) : null}
+                  {/* Acá iba `item.fragmento` en cursiva: los primeros 80 caracteres de lo último
+                      que dijo el contacto. Se fue con la simplificación de la fila, y era el peor
+                      de los dos textos que se quitaron — **duplicaba** el microtexto de la fila,
+                      así que el mismo mensaje se leía dos veces, entero arriba y recortado abajo.
+                      El campo `fragmento` se quitó también de `lib/negocio/colas.ts`: sin este
+                      bloque no le quedaba ningún lector. */}
                   {item.caso ? (
                     <div className="md-sub" style={{ padding: '0 16px 10px 56px' }}>
                       <span className={`tagx ${CASO[item.caso]?.clase ?? 'nu'}`}>
