@@ -278,11 +278,18 @@ test('la pantalla distingue los dos vacíos y usa la función compartida', () =>
 });
 
 test('el buscador tiene forma en las DOS estéticas, porque el componente es compartido', () => {
-  /* `components/closer/Pipeline.jsx` es el mismo en el Closer y en el Setter, y
-     `closer-estetica.css` cuelga de `#v-closer`. Con el estilo sólo ahí, el Setter estrenaría el
-     `<input>` crudo del navegador —blanco, cuadrado— en medio de un tablero oscuro. */
+  /* `components/closer/Pipeline.jsx` es el mismo en el Closer y en el Setter, así que su buscador
+     necesita forma en las dos.
+     El riesgo que esta prueba nombraba era que `closer-estetica.css` colgaba de `#v-closer`: con el
+     estilo sólo ahí, el Setter estrenaba el `<input>` crudo del navegador —blanco, cuadrado— en
+     medio de un tablero oscuro. Esa hoja pasó a llamarse `operacion-estetica.css` y alcanza a las
+     dos pantallas, así que ese riesgo se fue.
+     La prueba se queda, y ahora cuida lo otro: la división **base en `closer.css`, refinamiento en
+     la estética** —la misma que tienen `.fd-aviso` y `.fd-btn`— y sobre todo que los 16 px del
+     campo estén en las DOS hojas. Ese valor sí está escrito dos veces, y es el que rompe una
+     pantalla de teléfono si una copia se queda atrás. */
   const base = leer('app/closer.css');
-  const nueva = leer('app/closer-estetica.css');
+  const nueva = leer('app/operacion-estetica.css');
 
   for (const clase of ['.pipe-buscar', '.pipe-q', '.pipe-q-x', '.pipe-q-n']) {
     assert.ok(
@@ -295,7 +302,7 @@ test('el buscador tiene forma en las DOS estéticas, porque el componente es com
   /* Y LOS 16 px EN MÓVIL, que es el único valor de esta pantalla que SUBE en pantalla angosta.
      No es una preferencia: con menos, el navegador de un teléfono hace acercamiento al enfocar el
      campo y deja la pantalla corrida. Está en las dos hojas y en las dos tiene que quedar. */
-  for (const [nombre, hoja] of [['closer.css', base], ['closer-estetica.css', nueva]] as const) {
+  for (const [nombre, hoja] of [['closer.css', base], ['operacion-estetica.css', nueva]] as const) {
     const i = hoja.indexOf('.pipe-q {');
     assert.ok(i > 0, `no está la regla del campo en ${nombre}`);
     const regla = hoja.slice(i, hoja.indexOf('}', i));

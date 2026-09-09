@@ -540,13 +540,18 @@
 
 /* ── EL BUSCADOR DE LEADS DEL PIPELINE ───────────────────────────────────────
  *
- * Va acá y no solo en `closer-estetica.css`, y el motivo es concreto: `components/closer/Pipeline.jsx`
- * es el MISMO componente en las dos pestañas, y la hoja de la estética nueva cuelga de `#v-closer`.
- * Con el estilo solo allá, el Setter estrenaría un campo sin ninguna regla — el `<input>` crudo del
- * navegador, blanco, cuadrado y con la letra del sistema, en medio de un tablero oscuro.
+ * Va acá y no solo en `operacion-estetica.css`: **la forma base vive acá y la estética la refina**,
+ * que es la misma división que ya tienen `.fd-aviso` y `.fd-btn`.
  *
- * Así que la forma base vive acá, en el idioma de esta hoja, y la estética nueva la refina para su
- * propia pestaña. Es la misma división que ya tienen `.fd-aviso` y `.fd-btn`. */
+ * El motivo original era otro y conviene decir que caducó: la hoja de la estética colgaba de
+ * `#v-closer` solo, y `components/closer/Pipeline.jsx` es el MISMO componente en las dos pestañas —
+ * con el estilo solo allá, el Setter estrenaba el `<input>` crudo del navegador, blanco y cuadrado,
+ * en medio de un tablero oscuro. Esa hoja ahora alcanza también al Setter, así que ese peligro se
+ * fue.
+ *
+ * Y esto se queda igual, porque la división base/refinamiento no dependía de eso: `.pipe-buscar`
+ * tiene forma para cualquier lugar donde se dibuje, y la estética le pone su aire donde
+ * corresponde. */
 .pipe-buscar {
   display: flex;
   align-items: center;

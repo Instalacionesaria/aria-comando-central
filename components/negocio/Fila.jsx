@@ -123,7 +123,7 @@ const TITULO_DEL_AGENTE = {
  * La opacidad y el color iban en un `style={{…}}`, y eso tenía una consecuencia que se pagó en
  * otra parte: una hoja de estilos **no puede pisar un estilo en línea**, así que para que los
  * íconos usaran su gris propio en vez del color de texto del tema,
- * `app/closer-estetica.css` tuvo que secuestrar el token que el componente leía
+ * `app/operacion-estetica.css` tuvo que secuestrar el token que el componente leía
  * (`--txt: var(--icono)` dentro de `.md-acts`). Un token con dos significados según dónde se
  * mire, para poder ganarle a esta función.
  *

@@ -36,7 +36,7 @@ const HOJAS = [
   // La estética nueva del Closer. Sus colores viven en `temas.css` con alcance `#v-closer`, así
   // que un literal acá sería un color que existe en un tema y no en el otro — el mismo defecto
   // que esta lista existe para impedir.
-  'app/closer-estetica.css',
+  'app/operacion-estetica.css',
   'app/monitoreo.css',
   'app/auditoria.css',
 ];

@@ -760,14 +760,17 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════════════════
-   LA ESTÉTICA NUEVA DEL CLOSER — LOS TOKENS, CON ALCANCE `#v-closer`
+   LA ESTÉTICA DE OPERACIÓN — LOS TOKENS, CON ALCANCE `:is(#v-closer, #v-setter)`
 
-   Se está trasladando el sistema visual descrito en `docs/migracion/front/01…14` del proyecto
-   hermano, y se empieza por el Closer para verlo antes de extenderlo. Por eso estos dos bloques
-   NO redefinen `:root`: redefinen los MISMOS tokens que ya usan todas las reglas del Closer, pero
-   solo dentro de `#v-closer`. Así el resto de la aplicación no se mueve un píxel, y el Closer
-   entero cambia de paleta sin reescribir una regla — que es exactamente para lo que este archivo
-   convirtió 402 colores literales en once tokens.
+   Se traslada el sistema visual descrito en `docs/migracion/front/01…14` del proyecto hermano. Por
+   eso estos dos bloques NO redefinen `:root`: redefinen los MISMOS tokens que ya usan todas las
+   reglas, pero solo dentro de las dos pantallas de operación. Así el resto de la aplicación no se
+   mueve y ellas cambian de paleta enteras sin reescribir una regla — que es exactamente para lo que
+   este archivo convirtió 402 colores literales en once tokens.
+
+   El alcance era `#v-closer` solo, y decía por qué: se empezó por el Closer para verlo antes de
+   extenderlo. Se extendió al Setter, que es la otra pantalla de operación y dibuja los MISMOS
+   componentes.
 
    Van DESPUÉS de los dos bloques `:root[data-tema]` a propósito: `pruebas/codigo/104-temas` y `106`
    leen el PRIMER bloque de cada tema —«el conjunto de tokens es idéntico», «las siete etapas no
@@ -801,7 +804,7 @@
      y las líneas.
    ═════════════════════════════════════════════════════════════════════════════ */
 
-:root[data-tema='oscuro'] #v-closer {
+:root[data-tema='oscuro'] :is(#v-closer, #v-setter) {
   /* Nivel 0 · el lienzo (240 10% 4%). */
   --bg:            #09090b;
   --bg-sunk:       #09090b;
@@ -918,7 +921,7 @@
   --ficha-fondo:   #18181b;
 }
 
-:root[data-tema='claro'] #v-closer {
+:root[data-tema='claro'] :is(#v-closer, #v-setter) {
   /* El lienzo es un hueso, y las tarjetas blancas encima. */
   --bg:            #fcfcfd;
   --bg-sunk:       #f4f4f5;

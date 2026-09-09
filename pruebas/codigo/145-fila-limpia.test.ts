@@ -54,7 +54,7 @@ const leer = (r: string) => sinComentarios(leerCrudo(r));
 const FILA = 'components/negocio/Fila.jsx';
 const MIDIA = 'components/closer/MiDia.jsx';
 const SPRITE = 'components/IconSprite.jsx';
-const ESTETICA = 'app/closer-estetica.css';
+const ESTETICA = 'app/operacion-estetica.css';
 const TEMAS = 'app/temas.css';
 
 /** El cuerpo de `SeisIconos`, que es donde viven el dibujo y el contador. */
@@ -230,7 +230,7 @@ test('el estado del icono va por CLASE, no en un `style`', () => {
 // 3 · UN SOLO ACENTO
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('el Closer NO redefine el acento: usa el de la plataforma', () => {
+test('las pantallas de operación NO redefinen el acento: usan el de la plataforma', () => {
   /* ══════════════════════════════════════════════════════════════════════════
    * Y SE COMPRUEBA EN LOS DOS TEMAS, QUE ES DONDE ESTÁ EL DEFECTO CARO
    *
@@ -243,9 +243,24 @@ test('el Closer NO redefine el acento: usa el de la plataforma', () => {
   const temas = leerCrudo(TEMAS);
 
   for (const tema of ['oscuro', 'claro']) {
-    const desde = temas.indexOf(`:root[data-tema='${tema}'] #v-closer`);
-    assert.ok(desde > 0, `no se encontró el bloque \`#v-closer\` del tema ${tema}`);
+    /* El bloque se busca por el TEMA y por el arranque del `:is()`, no por el nombre de una vista:
+       el selector pasó de `#v-closer` a `:is(#v-closer, #v-setter)` cuando la estética se extendió
+       al Setter, y con la cadena literal esta prueba se caía por el cambio de alcance en vez de por
+       lo que mide. Que el bloque cubra las DOS pantallas se afirma aparte, abajo. */
+    const desde = temas.indexOf(`:root[data-tema='${tema}'] :is(`);
+    assert.ok(desde > 0, `no se encontró el bloque de operación del tema ${tema}`);
     const bloque = sinComentarios(temas.slice(desde, temas.indexOf('\n}', desde)));
+
+    /* Y alcanza a las dos. Sin esto, sacar una vista del selector la devuelve a la paleta vieja
+       —tokens de otro lienzo, otro texto, otras señales— y no falla nada: se ve. */
+    const selector = bloque.slice(0, bloque.indexOf('{'));
+    for (const vista of ['#v-closer', '#v-setter']) {
+      assert.ok(
+        selector.includes(vista),
+        `el bloque de tokens del tema ${tema} no alcanza a ${vista}: las dos pantallas de ` +
+          'operación comparten la estética, y con una afuera se queda con la paleta vieja',
+      );
+    }
 
     for (const token of ['--accent', '--accent-hondo', '--accent-alto', '--accent-dim', '--c-acento', '--sobre-acento']) {
       assert.ok(
@@ -268,7 +283,7 @@ test('el Closer NO redefine el acento: usa el de la plataforma', () => {
 
 /* ── LA PRUEBA QUE NO SE ESCRIBIÓ, Y POR QUÉ ────────────────────────────────
  *
- * Acá había una que barría `closer-estetica.css` y `temas.css` buscando la palabra «violeta», para
+ * Acá había una que barría `operacion-estetica.css` y `temas.css` buscando la palabra «violeta», para
  * que ningún comentario siguiera describiendo como violeta un color que ahora es verde. Se escribió,
  * falló, y lo que encontró la condena: `no_show` **es** violeta —`#a396f8`, la etapa «no se
  * presentó»— y dos notas de contraste comparan el verde con el violeta de esa etapa. Las tres son
