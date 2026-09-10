@@ -342,3 +342,129 @@ test('`listarEnlaces` ordena en la CONSULTA, y no confía en el orden que devuel
       'dos aperturas del menú, y un menú que se reordena solo hace elegir mal',
   );
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LA LISTA VIVE EN UNA VENTANA, Y ESO TIENE TRES CONDICIONES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * El bloque de la tarjeta que se dibuja en Inicio: desde su apertura hasta su cierre.
+ *
+ * ── LAS DOS TRAMPAS QUE LA MUTACIÓN ENCONTRÓ, Y POR ESO ESTO EXISTE ────────
+ *
+ * 1 · **Hay DOS `.aj-tarjeta ck-admin` en el archivo.** La primera es el estado «Cargando…», que
+ *     vuelve temprano. Anclar en la primera coincidencia medía esa, cuyo `</div>` cierra mucho
+ *     antes de `<Ventana` — así que la afirmación de «la ventana está afuera» pasaba en verde
+ *     incluso anidándola adentro. Se toma la ÚLTIMA coincidencia, que es la tarjeta de verdad.
+ *
+ * 2 · **La sangría se lee, no se escribe.** Fijada a mano, esto se rompería con un reformateo en
+ *     vez de con el defecto.
+ */
+function tarjetaDeInicio(panel: string): { sangria: string; inicio: number; fin: number } {
+  const todas = [...panel.matchAll(/^([ \t]*)<div className="aj-tarjeta ck-admin">$/gm)];
+  assert.ok(todas.length >= 1, 'no se encontró la tarjeta de Inicio: cambió su marcado');
+  const ultima = todas[todas.length - 1]!;
+  const sangria = ultima[1]!;
+  const inicio = ultima.index!;
+  const cierre = panel.indexOf(`\n${sangria}</div>`, inicio);
+  assert.ok(cierre > 0, 'la tarjeta de Inicio no cierra a su propia sangría');
+  return { sangria, inicio, fin: cierre };
+}
+
+test('en Inicio quedan los dos botones, y la lista NO se dibuja ahí', () => {
+  /* Las dos decisiones de este panel —la URL entera y la descripción completa— son correctas y
+     cuestan dos renglones por link. Medido en 1440×900 con cinco links cargados: la tarjeta medía
+     463 px, de los cuales 329 px eran la lista. Media pantalla, en lo primero que se ve al entrar,
+     empujando hacia abajo el cockpit y las cifras del mes.
+
+     Se pidió mover la lista, no acortarla: *«pasar la lista a una pestaña emergente en vez de
+     ponerlo de frente en la pestaña de inicio»*. Después del cambio la tarjeta mide 134 px y no
+     crece con la cantidad de links, que es la propiedad que hay que conservar. */
+  const panel = codigo(PANEL);
+
+  assert.match(panel, /\+ Agregar link/, 'se fue el botón de agregar');
+  assert.match(
+    panel,
+    /Editar lista \(\{enlaces\.length\}\)/,
+    'el botón de la lista dejó de decir CUÁNTOS hay: es el único dato que la lista daba de un ' +
+      'vistazo y que al esconderla se perdería',
+  );
+
+  /* Y la lista NO está adentro de la tarjeta. Contar `className="er-lista"` NO servía —lo probé y
+     la mutación pasó por delante—: la lista es una variable (`laLista`), así que reusarla en dos
+     sitios no duplica ninguna cadena. Hay que mirar el BLOQUE de la tarjeta, que es lo que de
+     verdad se dibuja en Inicio. */
+  const { inicio, fin } = tarjetaDeInicio(panel);
+  const enLaTarjeta = panel.slice(inicio, fin);
+  for (const señal of ['laLista', 'er-lista', 'er-fila', 'er-alta']) {
+    assert.ok(
+      !enLaTarjeta.includes(señal),
+      `\`${señal}\` volvió a la tarjeta de Inicio: la pantalla vuelve a crecer con cada link, que ` +
+        'es exactamente lo que este cambio deshizo',
+    );
+  }
+});
+
+test('la ventana es HERMANA de la tarjeta, no hija', () => {
+  /* ── EL DEFECTO QUE ESTO IMPIDE NO ES DE ESTILO, Y NO SE VE LEYENDO EL JSX ──
+   *
+   * `Ventana` es `position: fixed; inset: 0`. La tarjeta es `.aj-tarjeta`, y la estética de
+   * operación le pone `backdrop-filter: blur(4px)` — **un `backdrop-filter` crea bloque contenedor
+   * para los descendientes `fixed`**. Medido en el navegador: un `inset: 0` dentro de la tarjeta se
+   * resolvió a `36×914` en la posición de la tarjeta, o sea la ventana atrapada adentro de la caja.
+   * El `z-index: 101` no salva nada: el problema no es el apilado, es contra qué se mide `inset`.
+   *
+   * Se comprobó la cadena entera de ancestros y la tarjeta es el ÚNICO eslabón que atrapa; de
+   * `.cl-page` hacia arriba no hay `transform`, `filter` ni `contain`. Así que alcanza con que la
+   * ventana esté un nivel afuera — y esta prueba es lo que impide que alguien la mueva adentro
+   * «para tenerla al lado de lo que abre», que es un cambio que se ve razonable y rompe la
+   * pantalla.
+   *
+   * Se afirma por la posición en el archivo: entre la apertura de la tarjeta y el `<Ventana` tiene
+   * que estar el cierre de la tarjeta. Si se anidara, ese cierre pasaría a estar DESPUÉS. */
+  const panel = codigo(PANEL);
+  const { fin } = tarjetaDeInicio(panel);
+  const laVentana = panel.indexOf('<Ventana', 0);
+  assert.ok(laVentana > 0, 'el panel dejó de usar `Ventana`');
+  assert.ok(
+    laVentana > fin,
+    'la ventana quedó ADENTRO de `.aj-tarjeta`, que tiene `backdrop-filter` y por lo tanto es el ' +
+      'bloque contenedor de sus descendientes `fixed`: el modal se dibuja del tamaño de la tarjeta',
+  );
+
+  /* Y las dos mitades del porqué, para que el motivo no dependa de este comentario: la ventana es
+     `fixed` y la tarjeta lleva desenfoque. Si alguna de las dos deja de ser cierta, esta prueba
+     pasa a proteger algo que ya no hace falta — y conviene saberlo acá y no en la pantalla. */
+  assert.match(leer('app/armazon.css'), /\.vt \{[^}]*position: fixed/, '`.vt` dejó de ser `fixed`');
+  assert.match(
+    leer('app/operacion-estetica.css'),
+    /\.aj-tarjeta \{[^}]*backdrop-filter/,
+    'la tarjeta dejó de llevar `backdrop-filter`: revisá si esta prueba sigue haciendo falta',
+  );
+});
+
+test('la ✕ pregunta antes de sacar un link de cobro', () => {
+  /* Antes borraba en el acto. Adentro de la ventana las filas quedan más juntas, y un link de
+     cobro borrado por error hay que volver a cargarlo con su URL exacta — que es justo el dato que
+     este panel muestra entero porque *«un link cambiado por otro es dinero que entra en otra
+     cuenta»*.
+     La confirmación es EN LA FILA y no otra ventana encima: un modal sobre un modal es donde el
+     foco y el Escape se enredan. Y la pregunta NOMBRA el link, que es de dónde sale la seguridad —
+     en una lista de filas parecidas, el nombre distingue el clic correcto del equivocado. */
+  const panel = codigo(PANEL);
+
+  assert.match(
+    panel,
+    /onClick=\{\(\) => setPorSacar\(e\.id\)\}/,
+    'la ✕ volvió a llamar a `quitar` directo: un clic errado borra un link de cobro sin preguntar',
+  );
+  assert.match(panel, /¿Sacar \{e\.nombre\}\?/, 'la pregunta dejó de nombrar el link');
+
+  /* Y el «sí» es el único que borra. Con dos llamadas a `quitar` habría un camino sin pregunta. */
+  const borra = panel.match(/void quitar\(e\.id\)/g) ?? [];
+  assert.equal(
+    borra.length,
+    1,
+    `hay ${borra.length} llamadas a \`quitar\` en la fila y tiene que haber una, la del «sí»`,
+  );
+});

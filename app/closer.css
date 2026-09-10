@@ -1910,6 +1910,30 @@
   min-width: 0;
 }
 
+/* ── LA CONFIRMACIÓN DE SACAR, EN LA FILA ────────────────────────────────────
+   Ocupa el mismo hueco que la ✕ —columna 2, las dos filas— así que la fila NO cambia de alto al
+   preguntar: el resto de la lista se queda quieto, que es lo que permite leer la pregunta sin
+   perder de vista de qué link es.
+
+   Y por eso mismo la pregunta va en una sola línea con `white-space: nowrap`: si envuelve, la fila
+   crece y empuja las de abajo justo cuando hay que apuntar a un botón. */
+.er-confirmar {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+/* El «sí» en el color de peligro, y sólo el texto: un relleno rojo en una lista de seis filas
+   convierte la ventana en una alarma. Es la misma decisión que `ajustes.css` toma para su botón de
+   borrar, con su motivo escrito allá. */
+.er-confirmar .er-si {
+  color: var(--crit);
+}
+
 /* El formulario de alta. Nombre, monto y descripción en tres columnas; el link solo, abajo y a lo
    ancho, porque es el campo largo y el único que se pega. */
 .er-alta {
