@@ -149,6 +149,29 @@ test('ninguna hoja de la capa `components` estrena una sombra sin nombrarla', ()
   // (`0 8px 30px rgb(0 0 0 / .04)` en cada tarjeta) y la decisión de este proyecto fue no tenerlas:
   // es exactamente la hoja donde alguien va a querer copiar una.
   const HOJAS = ['app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css', 'app/operacion-estetica.css', 'app/monitoreo.css', 'app/auditoria.css', 'app/inteligencia-estetica.css'];
+
+  /* Y la lista cubre TODAS las hojas propias, para que una nueva no se cuele sin vigilancia. Es
+     el mismo agujero que `104-temas` tenía y que su propio comentario describía: una hoja fuera
+     de la lista puede estrenar una sombra y esto sigue contando tres.
+
+     Las tres exclusiones, nombradas una por una:
+       · `aios.css` es el port literal del maquetado y NO es de la capa `components` — sus sombras
+         las apaga el barrido universal de `temas.css`, que es de lo que trata la prueba de más
+         arriba;
+       · `temas.css` es donde vive ese barrido, y donde las tres permitidas están nombradas;
+       · `globals.css` son los `@import` y el orden de capas: no declara una sola propiedad. */
+  const FUERA = ['app/aios.css', 'app/temas.css', 'app/globals.css'];
+  const enDisco = readdirSync(new URL('app/', RAIZ))
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => `app/${f}`)
+    .sort();
+  assert.deepEqual(
+    enDisco,
+    [...HOJAS, ...FUERA].sort(),
+    'hay una hoja en `app/` que esta prueba no mira: puede estrenar una `box-shadow` y el conteo ' +
+      'de tres sigue dando. Agregala a `HOJAS` o a `FUERA`, y decí a cuál',
+  );
+
   const puestas: string[] = [];
   for (const hoja of HOJAS) {
     const css = leer(hoja).replace(/\/\*[\s\S]*?\*\//g, '');

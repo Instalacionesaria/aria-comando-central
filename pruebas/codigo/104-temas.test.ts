@@ -18,7 +18,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
@@ -57,6 +57,39 @@ function tokensDe(css: string, tema: string): Set<string> {
   const bloque = css.slice(css.indexOf('{', abre) + 1, css.indexOf('}', abre));
   return new Set([...bloque.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]!));
 }
+
+
+test('la lista de hojas vigiladas cubre TODO `app/*.css`', () => {
+  /* EL DEFECTO QUE ESTA PRUEBA IMPIDE ESTÁ ESCRITO ARRIBA, EN EL COMENTARIO DE `HOJAS`:
+     *«una hoja fuera de esta lista puede escribir un color a mano y la prueba sigue en verde»*.
+     Ese comentario decía la verdad y no hacía nada al respecto — la única defensa era que alguien
+     se acordara de agregar la hoja el día que la creaba.
+
+     Dejó de ser hipotético al crear `app/inteligencia-estetica.css`: el momento de agregarla a
+     mano es exactamente el minuto en que es más fácil olvidarla.
+
+     Las dos exclusiones están nombradas una por una en vez de por patrón, porque son las únicas
+     que tienen sentido:
+       · `temas.css` es DONDE VAN los valores. Prohibirle colores literales sería prohibirle
+         existir;
+       · `globals.css` no declara ni un color: son los `@import`, el orden de capas y el puente de
+         tokens a Tailwind.
+
+     Una hoja nueva en `app/` cae en una de las dos listas o rompe esto. No hay tercera opción, y
+     ésa es la idea: la decisión se toma, no se omite. */
+  const SIN_VIGILAR = ['app/temas.css', 'app/globals.css'];
+  const enDisco = readdirSync(new URL('app/', RAIZ))
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => `app/${f}`)
+    .sort();
+
+  assert.deepEqual(
+    enDisco,
+    [...HOJAS, ...SIN_VIGILAR].sort(),
+    'hay una hoja en `app/` que no está ni en `HOJAS` ni en la lista de exclusiones: si escribe ' +
+      'un color literal, nadie se entera. Agregala a una de las dos, y decí a cuál',
+  );
+});
 
 test('ninguna hoja vuelve a escribir un color a mano', () => {
   // Eran 402 y son cero. El paso mecánico que los convirtió está descrito en `app/temas.css`, y se

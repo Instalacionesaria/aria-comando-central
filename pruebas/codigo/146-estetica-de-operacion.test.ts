@@ -309,3 +309,117 @@ test('los botones de Auditoría usan el botón de la aplicación, no una clase s
   assert.match(panel, /className="fd-btn sec"/, 'el botón de reintentar dejó de ser el de la aplicación');
   assert.match(panel, /className="fd-btn"/, 'el botón de guardar dejó de ser el de la aplicación');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS DOS CHOQUES DEL GRUPO A QUE SÍ HACEN DAÑO
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('la cápsula del `select` no toca los desplegables de formulario', () => {
+  /* LA REGLA MÁS PELIGROSA DE LA HOJA, Y LA QUE MENOS LO PARECE.
+     Se escribió para UN control —el «ver como» del Closer, su comentario sigue pegado a él— pero
+     como `select` a secas alcanzaba a todos. Con cuatro pantallas de formularios en el alcance,
+     hacía dos cosas, las dos medidas antes de arreglarlas:
+
+       1 · un `<select>` de formulario se dibujaba como píldora de radio completo al lado de un
+           `<input>` de 9 px;
+       2 · peor y más difícil de ver: `background:` de atajo BORRA el `background-image` donde
+           `fundaciones.css` y `ajustes.css` dibujan la flecha, y el `appearance: none` que esas
+           hojas ponen sobrevive. Resultado: un desplegable SIN NINGUNA FLECHA, indistinguible de
+           un campo de texto. Sin error y sin consola.
+
+     Se afirman las dos mitades, porque son dos defectos distintos con un solo origen. */
+  const hoja = sinComentarios(leerCrudo(ESTETICA));
+  const i = hoja.indexOf(`${ALCANCE} :not(`);
+  assert.ok(
+    i > 0,
+    'la regla del `select` volvió a alcanzar a TODOS los desplegables: los de `.fd-campo` y ' +
+      '`.row-i` se dibujan como píldora al lado de un `input` de 9 px',
+  );
+  const selector = hoja.slice(i, hoja.indexOf('{', i));
+  assert.match(selector, /select/, 'el `:not(` que se encontró no es el de la regla del select');
+  for (const campo of ['.fd-campo', '.row-i']) {
+    assert.ok(
+      selector.includes(campo),
+      `\`${campo}\` salió de la exclusión: sus desplegables vuelven a tomar la cápsula`,
+    );
+  }
+
+  /* Y el atajo. Es la mitad que no se ve en el selector y hace el daño peor. */
+  const regla = hoja.slice(i, hoja.indexOf('}', i));
+  assert.match(
+    regla,
+    /background-color:/,
+    'la regla del `select` volvió a `background:` de atajo, que borra el `background-image` con ' +
+      'el que otra hoja dibuja la flecha — y `appearance: none` sobrevive, así que el desplegable ' +
+      'queda sin flecha',
+  );
+  assert.doesNotMatch(regla, /^\s*background:/m, 'quedó un `background:` de atajo en la regla del select');
+});
+
+test('el botón de borrar de Ajustes sigue siendo rojo', () => {
+  /* `ajustes.css` lo pinta con `.fd-btn.sec.aj-peligro` —`0-3-0`— y `:is(…) .fd-btn.sec` lleva un
+     `#id`, o sea `1-2-0`. Le gana. Medido antes de arreglarlo: el botón quedaba en
+     `rgb(82 82 91)`, el mismo gris que un secundario cualquiera, y el `border:` de atajo se
+     llevaba también el borde rojo.
+
+     Son los seis «Borrar» de Credenciales, Empresas y Usuarios. Es la misma forma que el contador
+     ámbar de Auditoría, con peor consecuencia: allá dos avisos se leían igual; acá una acción que
+     borra se ve idéntica a una que no hace nada. */
+  const hoja = sinComentarios(leerCrudo(ESTETICA));
+  const i = hoja.indexOf('#v-credenciales .fd-btn.sec.aj-peligro {');
+  assert.ok(i > 0, 'se fue la regla que le devuelve el rojo al botón de borrar');
+  const regla = hoja.slice(i, hoja.indexOf('}', i));
+  assert.match(regla, /color:\s*var\(--crit\)/, 'el botón destructivo dejó de usar el token de peligro');
+  assert.match(regla, /border-color:/, 'le falta el borde: el `border:` de la regla general se lo come');
+
+  /* Y va DESPUÉS de la general. Le gana igual por especificidad —tres clases contra dos— pero el
+     orden es lo que hace que se lea como lo que es: una compensación. */
+  assert.ok(
+    hoja.indexOf(`${ALCANCE} .fd-btn.sec`) < i,
+    'la compensación quedó ANTES de la regla que compensa, y así no se entiende qué corrige',
+  );
+});
+
+test('nada de lo que va DENTRO de la pestaña activa se pinta con el acento', () => {
+  /* LA PESTAÑA ACTIVA SE RELLENA CON EL ACENTO SÓLIDO. Todo lo que adentro estaba pintado con el
+     acento —porque sobre el lienzo del maquetado el acento era la forma de destacar— desaparece.
+
+     Van tres veces el mismo defecto, en tres familias distintas:
+       · `.cnt`, el contador de las sub-pestañas del Closer;
+       · `.aud-cnt-falta`, el de prompts que faltan en Auditoría;
+       · `.fd-n`, el número del paso en ICP y Tools — medido: `rgb(7 92 84)` sobre `rgb(7 92 84)`.
+     Y un cuarto en otro tono: `.fd-hecho`, el punto verde de «paso hecho», sobre el verde del
+     relleno.
+
+     Tres veces no es una coincidencia, es una propiedad de la cápsula: **el interior de la activa
+     no puede usar el mismo token que su relleno.** La forma correcta de resolverlo no es elegir
+     un color nuevo sino `inherit` —el que la propia pestaña ya calculó como legible sobre sí
+     misma—, así que sigue siendo correcto el día que el acento cambie. Eso es lo que se afirma.
+
+     Se lee la hoja SIN comentarios: los de arriba nombran `var(--accent)` al contar el defecto, y
+     una prueba que lea el fuente crudo señalaría la explicación en vez del código. Van trece. */
+  const hoja = sinComentarios(leerCrudo(ESTETICA));
+  /* El `[.\w]` obligatorio después de `.on ` es lo que separa el interior del botón MISMO: la
+     regla `.cl-sub button.on { background: var(--accent-hondo) }` es correcta y no tiene que
+     entrar acá — es justamente el relleno contra el que se mide todo lo demás. */
+  const dentroDeLaActiva = [...hoja.matchAll(/^[^\n{]*\.cl-sub button\.on +[.\w][^\n{]*\{([^}]*)\}/gm)];
+  /* El conteo es EXACTO y no un piso: con `>= 3`, borrar una de las cuatro pasaba en verde —
+     comprobado por mutación, sobrevivía—. Son el icono, el contador, el número del paso y el
+     punto de hecho. */
+  assert.equal(
+    dentroDeLaActiva.length,
+    4,
+    `hay ${dentroDeLaActiva.length} reglas para el interior de la pestaña activa y son cuatro: ` +
+      'el icono, el contador, el número del paso y el punto de hecho. Si desapareció una, eso ' +
+      'volvió a quedar del color del relleno; si apareció una, sumá el número y revisá su color',
+  );
+  for (const m of dentroDeLaActiva) {
+    assert.doesNotMatch(
+      m[1]!,
+      /var\(--accent[\w-]*\)|var\(--c-acento\)/,
+      `\`${m[0]!.split('{')[0]!.trim()}\` pinta con el acento algo que va DENTRO de la pestaña ` +
+        'activa, y la activa está rellena con el acento sólido: el resultado es invisible. Usá ' +
+        '`inherit` o el token de «sobre el acento»',
+    );
+  }
+});
