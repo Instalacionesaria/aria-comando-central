@@ -17,6 +17,8 @@
 // las funciones, las variables). Los campos serializados son datos ajenos, y se copian tal cual.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import type { Onboarding } from './onboarding.ts';
+
 /** Las llaves del almacén compartido que usa Fundaciones. */
 export const LLAVES = {
   perfil: 'profile',
@@ -41,6 +43,15 @@ export const LLAVES = {
    * es el del chat viejo de Categoría Única del hub y guarda otra cosa.
    */
   chats: 'tool_chats',
+  /**
+   * El onboarding que el cliente contestó en el formulario de Walter. **Solo lectura.**
+   *
+   * La escribe un disparador de la base desde `aria_cc_icp_oferta`
+   * (`migraciones/014_onboarding_a_la_ficha.sql`); la aplicación nunca la toca. El nombre `intake`
+   * es el de la columna que la migración 004 creó para esto, y el mismo que usa el hub para la
+   * síntesis de onboarding — dos sistemas, un solo nombre para el mismo hecho.
+   */
+  onboarding: 'intake',
 } as const;
 
 /**
@@ -114,6 +125,13 @@ export interface EstadoDeFundaciones {
   researchCampo: string | null;
   /** El entregable de Categoría Única del chat viejo del hub, si existe. Solo lectura. */
   categoriaLegado: string | null;
+  /**
+   * Lo que el cliente contestó en el formulario de onboarding de Walter. Solo lectura.
+   *
+   * `null` = esta organización no pasó por el formulario, que es el caso de las cuentas creadas a
+   * mano desde Ajustes. Es un dato, no una falta. Ver `lib/fundaciones/onboarding.ts`.
+   */
+  onboarding: Onboarding | null;
 }
 
 /** Un estado sin nada. No es un error: es un alumno que todavía no empezó. */
@@ -127,6 +145,7 @@ export function estadoVacio(): EstadoDeFundaciones {
     researchProfundo: null,
     researchCampo: null,
     categoriaLegado: null,
+    onboarding: null,
   };
 }
 

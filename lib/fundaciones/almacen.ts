@@ -43,6 +43,7 @@
 
 import type { Trx } from '../datos/capa.ts';
 import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
+import { leerOnboarding } from './onboarding.ts';
 import {
   LLAVES,
   estadoVacio,
@@ -209,6 +210,7 @@ export async function leerEstado(orgId: string): Promise<ResultadoDeAlmacen<Esta
         LLAVES.researchProfundo,
         LLAVES.categoriaLegado,
         LLAVES.chats,
+        LLAVES.onboarding,
       ])
       .where('org_id', '=', orgId)
       .executeTakeFirst(),
@@ -239,6 +241,10 @@ export async function leerEstado(orgId: string): Promise<ResultadoDeAlmacen<Esta
   // entregable. Solo el objeto trae algo heredable.
   const categoria = objeto(fila[LLAVES.categoriaLegado]);
   estado.categoriaLegado = typeof categoria['deliverable'] === 'string' ? categoria['deliverable'] : null;
+
+  /* El onboarding del formulario de Walter. Lo escribe un disparador de la base y lo lee el lector
+     tolerante de `onboarding.ts`: un HTML con otra forma devuelve `null`, no una excepción. */
+  estado.onboarding = leerOnboarding(fila[LLAVES.onboarding]);
 
   return { tipo: 'datos', datos: estado };
 }

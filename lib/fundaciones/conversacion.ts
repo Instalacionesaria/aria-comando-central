@@ -299,9 +299,9 @@ export function instruccionesDeEntrevista(
     `LAS PREGUNTAS, EN ORDEN:\n${preguntas}\n\n` +
     `LO QUE YA SABÉS:\n${estado}\n\n` +
     (contexto.trim() !== ''
-      ? 'LO QUE LA PERSONA YA CONSTRUYÓ EN LAS HERRAMIENTAS ANTERIORES (usalo: de acá salen la ' +
-        'mayoría de las respuestas, y con esto respondés cualquier pregunta que te haga sobre su ' +
-        `negocio o su mercado):\n${contexto}\n\n`
+      ? 'LO QUE YA SE SABE DE SU NEGOCIO — de su formulario de onboarding y de las herramientas que ' +
+        'ya completó (usalo: de acá salen la mayoría de las respuestas, y con esto respondés ' +
+        `cualquier pregunta que te haga sobre sus propios datos, su negocio o su mercado):\n${contexto}\n\n`
       : '') +
     (entregable.trim() !== ''
       ? `EL ENTREGABLE DE ESTA HERRAMIENTA («${h.etiquetaSalida}») YA EXISTE. Ésta es su versión más ` +
@@ -310,9 +310,9 @@ export function instruccionesDeEntrevista(
         'armarlo. Si te piden un cambio, anotalo en `respuestas` y preguntá si regenerás con ese cambio; ' +
         `con la confirmación, \`listo\` en true regenera.\n${entregable}\n\n`
       : '') +
-    'SI TE PREGUNTA ALGO —«¿cuál es mi ICP?», «¿qué dolor tiene mi cliente?»— RESPONDÉ con lo que ' +
-    'el contexto de arriba dice, corto y concreto, citando de dónde lo sacaste (su research, su ' +
-    'ficha). No contestes «todavía no tengo datos» si los datos están arriba. Si pregunta por el ' +
+    'SI TE PREGUNTA ALGO —«¿cuál es mi ICP?», «¿qué puse en el formulario?», «¿qué dolor tiene mi ' +
+    'cliente?»— RESPONDÉ con lo que el contexto de arriba dice, corto y concreto, citando de dónde ' +
+    'lo sacaste (su formulario de onboarding, su research, su ficha). No contestes «todavía no tengo datos» si los datos están arriba. Si pregunta por el ' +
     'entregable completo y todavía no existe, resumile lo que ya tenés para armarlo y preguntale ' +
     'si genera: el documento completo lo produce otro proceso cuando confirme.\n\n' +
     'CÓMO PREGUNTAR:\n' +
@@ -403,7 +403,10 @@ export function mensajeDeAperturaConPropuesta(
     else if (!c.opcional) faltan.push(c.etiqueta);
   }
 
-  const cabeza = `Hola. Vamos con «${h.titulo}». Con lo que ya construiste antes, esto es lo que tengo:\n\n${lineas.join('\n')}`;
+  /* «Con lo que ya sé de tu negocio» y no «con lo que ya construiste antes»: para «Tu ficha» lo
+     anterior no es una herramienta, es el formulario de onboarding que la persona llenó al
+     inscribirse. La frase vieja era falsa justo en la primera pestaña del método. */
+  const cabeza = `Hola. Vamos con «${h.titulo}». Con lo que ya sé de tu negocio, esto es lo que tengo:\n\n${lineas.join('\n')}`;
   const pie =
     faltan.length > 0
       ? `\n\nMe falta: ${faltan.join(' · ')}. Contame eso, y decime si lo de arriba va bien o cambio algo.`

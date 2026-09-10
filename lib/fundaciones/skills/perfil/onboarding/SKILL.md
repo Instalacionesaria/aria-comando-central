@@ -8,6 +8,12 @@ metadata:
 
 Eres un experto en marketing estratégico y construcción de negocios de IA. 
 Tu tarea es crear un PERFIL DE CLIENTE DETALLADO (Onboarding Form Analysis) basado en estos datos:
+{{#_onboardingContext}}
+
+{{_onboardingContext}}
+
+USA ESE FORMULARIO como fuente principal cuando los campos de abajo estén vacíos o digan "(no especificado)": lo escribió esta misma persona al inscribirse. No lo contradigas y no inventes por encima de él.
+{{/_onboardingContext}}
 
 NEGOCIO: {{biz}}
 NICHO: {{niche}}

@@ -24,6 +24,7 @@ import { SIN_ESPECIFICAR, presente, valor } from './campos.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
 import { fuentes } from './herencia.ts';
+import { contextoDeOnboarding } from './onboarding.ts';
 import { interpolar, leerPlantilla, type DatosDePlantilla } from './plantillas.ts';
 
 /** Qué archivo de metodología usa cada herramienta. */
@@ -132,7 +133,15 @@ function contextoDeFicha(estado: EstadoDeFundaciones): string | null {
 
 // ── Los datos de cada herramienta ────────────────────────────────────────────
 
-function datosDeFicha(valores: Record<string, string>): DatosDePlantilla {
+/**
+ * Los datos de «Tu ficha», con lo único que hereda: el onboarding del formulario de Walter.
+ *
+ * La ficha es la raíz del método y no hereda de ninguna herramienta, pero **sí de fuera del
+ * sistema**: lo que el cliente contestó al inscribirse. Hasta el 2026-09-10 ese contexto no
+ * existía, y el agente saludaba preguntando el nombre del negocio con la respuesta guardada en la
+ * base. Ver `onboarding.ts`.
+ */
+function datosDeFicha(valores: Record<string, string>, estado: EstadoDeFundaciones): DatosDePlantilla {
   return {
     biz: valor(valores, 't1-biz'),
     niche: valor(valores, 't1-niche'),
@@ -141,6 +150,7 @@ function datosDeFicha(valores: Record<string, string>): DatosDePlantilla {
     pain: valor(valores, 't1-pain'),
     result: valor(valores, 't1-result'),
     before: valor(valores, 't1-before'),
+    _onboardingContext: contextoDeOnboarding(estado.onboarding),
   };
 }
 
@@ -615,7 +625,7 @@ export function datosDe(
   estado: EstadoDeFundaciones,
 ): DatosDePlantilla {
   return id === 0
-      ? datosDeFicha(valores)
+      ? datosDeFicha(valores, estado)
       : id === 1
         ? datosDeResearch(valores, estado)
       : id === 3
