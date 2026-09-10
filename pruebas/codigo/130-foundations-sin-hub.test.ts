@@ -100,10 +100,52 @@ test('la tabla está declarada en el esquema con la columna de los chats', () =>
   for (const col of ['profile', 'history', 'market_research', 'deep_research', 'cat_chat', 'intake', 'tool_chats']) {
     assert.match(esquema, new RegExp(`\\b${col}: unknown;`), `falta la columna ${col} en TablaFoundations`);
   }
-  // La migración que agrega `tool_chats` y copia el trabajo existe en la raíz, donde van las de Supabase.
-  const migracion = readFileSync(join(RAIZ, '..', 'migraciones', '011_foundations_sin_hub.sql'), 'utf8');
-  assert.match(migracion, /add column if not exists tool_chats\s+jsonb/);
-  assert.match(migracion, /insert into public\.aria_cc_foundations/);
-  assert.match(migracion, /from identidad\.organizaciones_credenciales/);
-  assert.match(migracion, /fundaciones_cliente_id is not null/);
+});
+
+test('este repositorio NO migra `public.aria_cc_foundations`: la tabla es de otro dueño', async () => {
+  /* ── ACÁ HABÍA UNA AFIRMACIÓN QUE NO PODÍA PASAR EN NINGUNA MÁQUINA ────────
+   *
+   * Leía `<raíz>/../migraciones/011_foundations_sin_hub.sql` —un directorio HERMANO de este
+   * repositorio— y comprobaba cuatro líneas de su SQL. Ese archivo no está en el repositorio, no
+   * está en el disco de nadie y nunca estuvo versionado acá: comprobado con `git log --all`. O sea
+   * que la prueba venía ROJA desde que se escribió, en local y en la integración continua.
+   *
+   * Y un rojo permanente no se arregla, se ignora — y con él se ignoran los demás. Es el mismo
+   * argumento que este proyecto usa cinco veces en `scripts/paridad.mjs` para sacar una vista de
+   * la comparación. Vale igual para una prueba.
+   *
+   * ── POR QUÉ EL ARCHIVO ESTÁ AFUERA, QUE NO ES UN DESCUIDO ─────────────────
+   *
+   * `esquema.ts` lo dice: el esquema `public` **se comparte con la plataforma anterior**
+   * (`public.closer_*`), así que sus migraciones viven en `/migraciones`, en la raíz del proyecto,
+   * y no en `db/migraciones/`, que es lo que este repositorio aplica. Traer el archivo acá sería
+   * peor que no tenerlo: dos repositorios migrando el mismo esquema compartido.
+   *
+   * ── Y LO QUE SÍ SE PUEDE AFIRMAR DESDE ACÁ ────────────────────────────────
+   *
+   * Justamente eso: que la frontera se respete en la dirección que este repositorio controla.
+   * Ninguna migración de `db/migraciones/` puede crear ni alterar esa tabla. El defecto que impide
+   * es el que traer el archivo habría causado — dos dueños para una tabla compartida, y el orden
+   * en que se apliquen decidiendo quién gana.
+   *
+   * Lo que se pierde, dicho de frente: nadie comprueba automáticamente el CONTENIDO de esa
+   * migración. Se pierde poco —una migración ya aplicada no cambia— y lo que de verdad falta es
+   * otra cosa, que queda anotada: `public.aria_cc_foundations` **no existe en la base local**, así
+   * que ICP & Oferta y Tools no pueden guardar nada en una máquina de desarrollo. Eso no es una
+   * prueba que falte: es una pieza del arranque local que falta. */
+  const { readdirSync } = await import('node:fs');
+  const migraciones = readdirSync(join(RAIZ, 'db/migraciones')).filter((f) => f.endsWith('.sql'));
+  assert.ok(migraciones.length > 30, `solo ${migraciones.length} migraciones: la lista cambió de sitio`);
+
+  const invasoras = migraciones.filter((f) =>
+    /(create|alter|drop)\s+table[^;]*aria_cc_foundations/i.test(
+      sinComentarios(codigo(join('db/migraciones', f))),
+    ),
+  );
+  assert.deepEqual(
+    invasoras,
+    [],
+    'una migración de este repositorio toca `public.aria_cc_foundations`, que la comparte con la ' +
+      'plataforma anterior y se migra desde `/migraciones`: quedan dos dueños para una misma tabla',
+  );
 });

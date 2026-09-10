@@ -766,12 +766,79 @@ test('un seguimiento que vence HOY dice «le toca hoy», no «vencido»', async 
   // «Vencido» en rojo. El closer lee que llegó tarde a algo a lo que no llegó tarde, todos los días.
   // Y la rama «Le toca hoy» del diccionario de la pantalla estaba escrita y muerta.
   //
-  // Se compara el DÍA con el día. Esta prueba es el borde: hoy → `manual_de_hoy`; ayer → vencido.
+  // ── Y EL ARREGLO SE ESCRIBIÓ A MEDIAS: PASABA EN LIMA Y EN NINGÚN OTRO LADO ─
+  //
+  // El comentario de `lib/negocio/colas.ts` decía *«el DÍA se compara con el DÍA y no el instante
+  // con el instante»* y la línea de abajo seguía comparando instantes:
+  //
+  //     new Date(t.vence_el).getTime() < medianocheDeHoy
+  //
+  // El controlador devuelve una columna `date` como un `Date` en la medianoche **LOCAL DEL
+  // PROCESO** —está medido en `lib/negocio/ficha.ts`— mientras `medianocheDeHoy` es la medianoche
+  // de la zona de la ORGANIZACIÓN. Los dos relojes coinciden sólo cuando el servidor está puesto
+  // en la zona de la empresa, y **Vercel corre en UTC**.
+  //
+  // Esta prueba pasaba porque la máquina donde se escribió está en `America/Lima`. Con `TZ=UTC`
+  // fallaba, y en producción el defecto estaba VIVO: todo seguimiento que tocaba hoy se veía
+  // «Vencido» en rojo. Es la peor forma de tener una prueba — verde donde se escribe y roja donde
+  // corre— y por eso ahora esta prueba se corre en las dos zonas (`pruebas/base/93-zona.test.ts`).
+  //
+  // ── EL BORDE TIENE TRES POSICIONES, NO DOS ─────────────────────────────────
+  //
+  // hoy → `manual_de_hoy`; ayer → vencido; **mañana → no está**. La tercera es la mitad que
+  // faltaba: el mismo error de mezclar días con instantes la metía en la cola un día antes, con la
+  // etiqueta «le toca hoy» encima de algo que toca mañana. El `where` comparaba `date` contra
+  // `timestamptz`, y esa promoción la hace PostgreSQL con la zona de la SESIÓN — que tampoco es la
+  // de la empresa. Ésa fallaba en TODAS las zonas y no la cubría nada.
+  //
+  // ── Y LA ZONA DEL PROCESO ES UN PARÁMETRO, NO UNA PROPIEDAD DE LA MÁQUINA ──
+  //
+  // Ésta es la parte que hay que conservar aunque el arreglo se reescriba. Con la prueba corriendo
+  // en una sola zona —la de quien la escribe— la mitad de la clasificación **no tiene filo**:
+  // comprobado por mutación, devolviendo la línea vieja `new Date(t.vence_el).getTime()` la prueba
+  // seguía verde en `America/Lima` y sólo moría en UTC. O sea que una prueba en una zona sola no
+  // afirmaba lo que dice afirmar: afirmaba «esto anda en la máquina de quien lo escribió».
+  //
+  // Así que el recorrido va por tres zonas de proceso, y cada una está por un motivo:
+  //
+  //   · `America/Lima` — la MISMA que la organización. Es el caso que ya pasaba, y sigue acá para
+  //     que el arreglo no se convierta en «anda en todas menos en la de casa»;
+  //   · `UTC` — la de Vercel, o sea PRODUCCIÓN. Es donde el defecto estaba vivo;
+  //   · `Asia/Tokyo` — por DELANTE de UTC. `lib/negocio/ficha.ts` avisa de esta dirección con su
+  //     propio defecto: en una zona adelantada, la medianoche local es el día anterior en UTC, y
+  //     un arreglo que sólo piense en zonas atrasadas se rompe justo ahí.
+  //
+  // `process.env.TZ` reasignado SÍ afecta a los `Date` que se construyen después (comprobado en
+  // este mismo Node), que es lo que hace posible cubrir el eje desde acá en vez de pedirle a la
+  // integración continua que corra la suite tres veces. Se restaura en un `finally`, y el
+  // ejecutor de Node da un proceso por archivo, así que no se le escapa a nadie más.
   // ═══════════════════════════════════════════════════════════════════════════
+  const zonaOriginal = process.env.TZ;
+  try {
+    for (const zonaDelProceso of ['America/Lima', 'UTC', 'Asia/Tokyo']) {
+      process.env.TZ = zonaDelProceso;
+      await elBordeDelDia(zonaDelProceso);
+    }
+  } finally {
+    if (zonaOriginal === undefined) delete process.env.TZ;
+    else process.env.TZ = zonaOriginal;
+  }
+});
+
+/**
+ * Las tres posiciones del borde, con la zona del proceso como parámetro.
+ *
+ * `zonaDelProceso` no se usa para calcular nada: entra sólo para que, cuando esto se ponga rojo,
+ * el mensaje diga EN QUÉ ZONA falló. Un «esperaba manual_de_hoy» sin la zona manda a buscar el
+ * defecto en el lugar equivocado.
+ */
+async function elBordeDelDia(zonaDelProceso: string): Promise<void> {
+  const en = (m: string) => `${m} (zona del proceso: ${zonaDelProceso})`;
   await limpiar();
   const marca = randomUUID().slice(0, 6);
   const hoy = await contacto(`hoy-${marca}`, []);
   const ayer = await contacto(`ayer-${marca}`, []);
+  const manana = await contacto(`man-${marca}`, []);
 
   await conOrganizacion(alfa, async () => {
     // Las fechas se escriben como TEXTO `YYYY-MM-DD` y en la zona de la organización, que es lo que
@@ -784,6 +851,7 @@ test('un seguimiento que vence HOY dice «le toca hoy», no «vencido»', async 
     for (const [id, cuando] of [
       [hoy, dia(0)],
       [ayer, dia(-1)],
+      [manana, dia(1)],
     ] as const) {
       await datos()
         .insertInto('tareas')
@@ -795,19 +863,35 @@ test('un seguimiento que vence HOY dice «le toca hoy», no «vencido»', async 
   const c = await colas();
   const deHoy = c.seguimientos.find((x) => x.fila.id === hoy);
   const deAyer = c.seguimientos.find((x) => x.fila.id === ayer);
-  assert.ok(deHoy, 'el seguimiento que vence hoy no entró a la cola');
-  assert.ok(deAyer, 'el seguimiento vencido no entró a la cola');
+  const deManana = c.seguimientos.find((x) => x.fila.id === manana);
+  assert.ok(deHoy, en('el seguimiento que vence hoy no entró a la cola'));
+  assert.ok(deAyer, en('el seguimiento vencido no entró a la cola'));
 
   assert.equal(
     deHoy.caso,
     'manual_de_hoy',
-    'un seguimiento que vence HOY se marca como vencido: el closer lee que llegó tarde a algo a lo ' +
-      'que no llegó tarde',
+    en(
+      'un seguimiento que vence HOY se marca como vencido: el closer lee que llegó tarde a algo a ' +
+        'lo que no llegó tarde',
+    ),
   );
-  assert.equal(deAyer.caso, 'manual_vencido', 'uno de ayer dejó de contar como vencido');
-  // Y los dos piden manos: el sabor cambia el color, no si hay trabajo.
-  assert.ok(deHoy.pideManos && deAyer.pideManos);
-});
+  assert.equal(deAyer.caso, 'manual_vencido', en('uno de ayer dejó de contar como vencido'));
+
+  /* La tercera posición. Aparecer un día antes no es una molestia estética: infla el contador de
+     tareas pendientes y adelanta un seguimiento que la persona decidió para otro día. */
+  assert.equal(
+    deManana,
+    undefined,
+    en(
+      'un seguimiento que vence MAÑANA entró a la cola de hoy: el filtro está mezclando el día ' +
+        'con un instante, y la promoción `date` → `timestamptz` la hace la base con la zona de la ' +
+        'sesión',
+    ),
+  );
+
+  // Y los dos que sí piden manos: el sabor cambia el color, no si hay trabajo.
+  assert.ok(deHoy.pideManos && deAyer.pideManos, en('dejaron de pedir manos'));
+}
 
 test('un resultado del SETTER no entra a las «Completadas hoy» del closer', async () => {
   // ═══════════════════════════════════════════════════════════════════════════

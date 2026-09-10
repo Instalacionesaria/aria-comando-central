@@ -393,18 +393,51 @@ export async function nucleoDeColas(
   //
   // **Solo los MANUALES**: los automáticos los hace el CRM con su secuencia y no escriben tarea.
   //
-  // El DÍA se compara con el DÍA y no el instante con el instante. `tareas.vence_el` es una columna
-  // `date`, así que su valor es medianoche de ese día: comparándolo contra `now()` **todo** salía
-  // vencido, y la pantalla ponía «Vencido» en rojo sobre un seguimiento que tocaba justamente hoy.
+  /* ── EL DÍA SE COMPARA CON EL DÍA, Y ESTA VEZ DE VERDAD ────────────────────
+   *
+   * Esa frase ya estaba escrita acá, y las dos comparaciones de abajo seguían mezclando un día
+   * con un instante. Cada una por un camino distinto, y las dos llegaban a la pantalla:
+   *
+   *   · **el filtro** comparaba `vence_el` (una columna `date`) contra un `timestamptz`.
+   *     PostgreSQL promueve el `date` con la zona de la **SESIÓN**, que nadie fija acá y por lo
+   *     tanto es UTC. Contra una empresa en Lima eso pone la medianoche del día cinco horas ANTES
+   *     de la que el límite quería, así que una tarea de MAÑANA entraba en la cola de hoy —
+   *     siempre, en cualquier zona, y con la etiqueta «le toca hoy» encima de algo que toca
+   *     mañana. Nada lo cubría.
+   *   · **la clasificación** hacía `new Date(t.vence_el).getTime()`. El controlador devuelve una
+   *     columna `date` como un `Date` en la medianoche **LOCAL DEL PROCESO** (medido en
+   *     `lib/negocio/ficha.ts`), mientras `medianocheDeHoy` es la de la zona de la organización.
+   *     Coinciden sólo si el servidor está puesto en la zona de la empresa. En la máquina donde se
+   *     escribió —`America/Lima`— coincidían, y la prueba pasaba; en Vercel, que corre en UTC,
+   *     TODO seguimiento que tocaba hoy se dibujaba «Vencido» en rojo.
+   *
+   * El arreglo es el mismo para las dos: **no hay ningún instante en juego.** `vence_el` es un día
+   * del calendario y «hoy» es un día del calendario; se comparan como días, y la zona aparece una
+   * sola vez —al preguntar qué día es hoy PARA LA EMPRESA— y no vuelve a aparecer. Con eso el
+   * resultado deja de depender de la zona del proceso y de la de la sesión, que son las dos cosas
+   * que este archivo no controla.
+   *
+   * `<= hoy` es lo mismo que el `< mañana` que había, escrito sin necesitar un límite: un día es
+   * anterior o igual a hoy, o no está. */
+  /* El genérico dice `Date` porque es el tipo con el que `esquema.ts` declara la columna y el
+     `where` exige que coincidan. No significa que acá haya un instante: este valor **nunca cruza a
+     JavaScript** — se usa sólo del lado de la base, contra otra `date`. Cruzarlo sería volver a
+     abrir el mismo agujero. */
+  const hoyEnLaZona = () => sql<Date>`(timezone(${zonaHoraria}, now()))::date`;
+
   const tareas = await datos()
     .selectFrom('tareas')
-    .select(['contacto_id', 'vence_el'])
+    /* `vence_el` NO se trae. El `where`, el `order by` y la clasificación de abajo la usan del lado
+       de la base, donde es una `date` de verdad; traerla a JavaScript la convierte en un `Date` que
+       ya perdió el día, y tener ese valor a mano es lo que hizo posible el defecto de arriba. Si
+       nadie la lee, nadie la puede volver a leer mal. */
+    .select('contacto_id')
+    /* Y la clasificación la decide la BASE, con los dos lados en `date`. Traerla resuelta es lo
+       que impide que alguien la vuelva a rehacer en JavaScript sobre un `Date` que ya perdió el
+       día: acá no hay nada que convertir. */
+    .select(sql<boolean>`vence_el < ${hoyEnLaZona()}`.as('vencida'))
     .where('completada_el', 'is', null)
-    .where(
-      'vence_el',
-      '<',
-      sql<Date>`(date_trunc('day', timezone(${zonaHoraria}, now())) + interval '1 day') at time zone ${zonaHoraria}`,
-    )
+    .where('vence_el', '<=', hoyEnLaZona())
     .orderBy('vence_el', 'asc')
     .execute();
 
@@ -439,7 +472,10 @@ export async function nucleoDeColas(
      *
      * Lo había medido en producción y daba cero casos, así que la medición no me protegió: era un
      * cero de los datos de hoy, no una propiedad. La prueba sí. */
-    const vencida = new Date(t.vence_el).getTime() < medianocheDeHoy;
+    /* La trae la consulta, comparando `date` con `date`. Ver el bloque grande de arriba: hacer
+       esto acá con `new Date(t.vence_el)` es lo que ponía «Vencido» sobre lo de hoy en cuanto el
+       servidor no estaba en la zona de la empresa. */
+    const vencida = t.vencida;
     seguimientos.push({ fila, caso: vencida ? 'manual_vencido' : 'manual_de_hoy', pideManos: true });
     yaTieneCola.add(fila.id);
   }
