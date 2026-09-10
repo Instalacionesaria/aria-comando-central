@@ -68,17 +68,25 @@ const CATALOGO_TOOLS = {
 
 export default function ToolsView({ activa }) {
   return (
-    <section className={activa ? 'view on' : 'view'} id="v-tools">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-tools">
       <div className="view-scroll cre-scroll">
+        {/* El encabezado apilado y el cuerpo en `.cl-page`: las tres clases que la estética
+            de operación necesita en el marcado. Sin `.stack` y `.ch-title` el encabezado no se
+            invierte —el `h2` tiene que pasar a rótulo y la bajada a titular— y sin `.cl-page` el
+            `gap` del scroller se reparte entre todos los bloques. */}
         <div className="cre-head">
-          <div className="ch-l">
-            <h2>Tools</h2>
-            <span className="cre-desc">
-              Las herramientas de la operación, que heredan de tu ICP y tu oferta
-            </span>
+          <div className="ch-l stack">
+            <div className="ch-title">
+              <h2>Tools</h2>
+              <span className="cre-desc">
+                Las herramientas de la operación, que heredan de tu ICP y tu oferta
+              </span>
+            </div>
           </div>
         </div>
-        <Fundaciones catalogo={CATALOGO_TOOLS} />
+        <div className="cl-page">
+          <Fundaciones catalogo={CATALOGO_TOOLS} />
+        </div>
       </div>
     </section>
   );

@@ -857,14 +857,44 @@
   text-transform: uppercase;
   color: var(--txt-dim);
 }
-:is(#v-closer, .estetica-op) select {
+/* ── LA CÁPSULA ES DEL CONTROL SUELTO, NO DEL CAMPO DE FORMULARIO ──────────
+ *
+ * Esta regla se escribió acá abajo, pegada al comentario de «ver como», para UN control: el
+ * `<select>` de `components/closer/Inicio.jsx`, que es un mando de la pantalla y por eso toma la
+ * forma de píldora. Y estaba escrita como `select` a secas.
+ *
+ * Con el alcance en una sola vista eso ya se derramaba, y nadie lo miró: `QuienEsElCloser` y
+ * `Avanzar` tienen sus `<select>` dentro de un `.fd-campo`, o sea que HOY, en el Closer, un
+ * desplegable de formulario se dibuja como píldora de radio completo al lado de un `<input>` de
+ * 9 px. Con nueve pantallas más —Ajustes, ICP, Tools y Monitoreo están llenas de formularios— eso
+ * pasaba de una rareza a la forma normal de la aplicación.
+ *
+ * Y traía algo peor que la forma. `background:` de atajo BORRA `background-image`, que es donde
+ * `fundaciones.css` y `ajustes.css` dibujan la flecha del desplegable; y `appearance: none`, que
+ * esas hojas también ponen, sobrevive. Resultado medido: un desplegable **sin ninguna flecha**,
+ * indistinguible de un campo de texto. No hay error, no hay consola.
+ *
+ * Así que la cápsula queda para el `<select>` que NO es un campo: el de `.fd-campo` y el de
+ * `.row-i` siguen con la gramática del formulario, que es la que tiene su etiqueta arriba, su
+ * flecha y su radio de 9 px. Y `background-color` en vez del atajo, para no volver a borrar el
+ * dibujo de nadie.
+ *
+ * `.es-select` —el «dónde espiar» del Espía de Anuncios— también queda afuera, y por una razón
+ * que se ve sólo al medirla: cambiar a `background-color` le devolvió la flecha, pero la cápsula
+ * le imponía `padding: 0 12px` y su flecha se dibuja a 10 px del borde derecho contando con el
+ * `padding-right: 30px` que su propia regla reserva. O sea que la flecha volvía encima del texto.
+ * La regla general puede devolver un dibujo; no puede devolver el sitio donde ese dibujo cabe.
+ *
+ * El criterio, dicho de una vez: si otra hoja YA diseñó ese desplegable entero —`appearance:
+ * none`, su flecha y el hueco para ella—, esta hoja no se mete. */
+:is(#v-closer, .estetica-op) :not(.fd-campo, .row-i) > select:not(.es-select) {
   height: 30px;
   padding: 0 12px;
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
   color: var(--txt);
-  background: var(--bg-panel);
+  background-color: var(--bg-panel);
   border: 1px solid var(--line-strong);
 }
 :is(#v-closer, .estetica-op) .aj-tarjeta { padding: 18px; }
@@ -1364,4 +1394,85 @@
   :is(#v-closer, .estetica-op) .ck-hero::before,
   :is(#v-closer, .estetica-op) .ck-note .pt { animation: none; }
   :is(#v-closer, .estetica-op) .cw { transition: none; }
+}
+
+
+/* ── 9 · Las cuatro pantallas NUESTRAS (Ajustes, ICP, Tools, Monitoreo) ─────
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ACÁ NO HUBO QUE VESTIR NADA: HUBO QUE DESPINTAR TRES COSAS
+ *
+ * Al revés que Auditoría, que reimplementó los siete conceptos con su propia familia y necesitó
+ * quince reglas de traducción. Estas cuatro ya hablan `.fd-btn`, `.fd-aviso`, `.pr-box`, `.card`,
+ * `.chip` y `.tagx` —la Etapa 9 las escribió reusando lo que había, a propósito— así que el
+ * cambio de alcance las vistió enteras. Es el caso del Setter.
+ *
+ * Lo que quedó son TRES choques, y los tres tienen la misma forma: una regla de dos o tres clases
+ * que decía algo —«esto es destructivo», «este número es el paso»— pisada por una regla de esta
+ * hoja que lleva un `#id`. Ninguno falla. Los tres se ven, si uno mira la pantalla correcta.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── EL BOTÓN DE BORRAR VUELVE A SER ROJO ──────────────────────────────────
+ *
+ * `ajustes.css` lo pinta con `.fd-btn.sec.aj-peligro` —tres clases, `0-3-0`— y la regla de arriba
+ * `.fd-btn.sec` lleva un `#id`, o sea `1-2-0`. Le gana. Medido: el botón quedaba en
+ * `rgb(82 82 91)`, exactamente el mismo gris que un secundario cualquiera. Y el `border:` de atajo
+ * se llevaba también el borde rojo.
+ *
+ * Son los seis botones de «Borrar» de Credenciales, Empresas y Usuarios. Es el mismo defecto que
+ * el contador ámbar de Auditoría, con peor consecuencia: allá dos avisos se leían igual; acá una
+ * acción que borra se ve idéntica a una que no hace nada.
+ *
+ * Su comentario original explica por qué es un secundario recoloreado y no un bloque rojo —*«seis
+ * botones rojos rellenos harían que la pantalla entera pareciera una alarma»*— y eso se conserva:
+ * vuelve el color, no el relleno. */
+#v-credenciales .fd-btn.sec.aj-peligro {
+  color: var(--crit);
+  border-color: rgb(var(--c-crit) / .26);
+}
+#v-credenciales .fd-btn.sec.aj-peligro:hover:not(:disabled) {
+  color: var(--crit);
+  border-color: rgb(var(--c-crit) / .45);
+  background: rgb(var(--c-crit) / .07);
+}
+
+/* ── LA CÁPSULA DE ICP Y TOOLS NO QUEDA CENTRADA ───────────────────────────
+ *
+ * El mismo choque de Auditoría, por el mismo motivo y en dos pantallas más: `align-self: center`
+ * centra la cápsula dentro de la FILA del encabezado, que es donde vive en Closer, Setter y
+ * Ajustes. Acá la emite `Fundaciones.jsx` como hermano de `.cre-head` —el componente dibuja las
+ * pestañas y el cuerpo juntos, y separarlos exigiría subir el estado— así que cuelga de
+ * `.cl-page`, un flex en columna, y ahí `center` la manda al medio de la pantalla.
+ *
+ * Van tres pantallas con esta misma línea. Es la señal de que el `align-self: center` de la regla
+ * general está describiendo un caso particular —la cápsula que vive en el encabezado— y no el
+ * concepto; pero moverlo ahora obliga a revisar Closer, Setter y Ajustes a la vez, y eso es un
+ * cambio aparte. Queda anotado. */
+#v-icp .cl-sub,
+#v-tools .cl-sub { align-self: flex-start; }
+
+/* ── EL NÚMERO DEL PASO NO PUEDE SER ACENTO SOBRE ACENTO ───────────────────
+ *
+ * El gemelo exacto de `.cl-sub button.on .cnt`, y la prueba de que aquella regla no era un parche
+ * sino un concepto: cuando la pestaña activa se rellena con el acento SÓLIDO, todo lo que adentro
+ * estaba pintado con el acento desaparece.
+ *
+ * `fundaciones.css` pone `.fd-sub button.on .fd-n { color: var(--accent) }` — el número del paso
+ * en verde para marcar el paso en curso. Medido sobre la cápsula nueva: `rgb(7 92 84)` sobre
+ * `rgb(7 92 84)`. Invisible.
+ *
+ * Se resuelve igual que el contador: `inherit`, o sea el color que la propia pestaña activa ya
+ * definió como legible sobre su relleno. No se elige un color nuevo — se hereda el que el sistema
+ * ya calculó, así que sigue siendo correcto el día que el acento cambie. */
+:is(#v-closer, .estetica-op) .cl-sub button.on .fd-n { color: inherit; }
+
+/* Y el punto de «hecho», que es el mismo problema en otro tono: `var(--ok)` es
+ * `rgb(4 120 87)` y el relleno de la activa es `rgb(7 92 84)`. Dos verdes oscuros, uno encima del
+ * otro. Pasa al color legible sobre el acento, con algo de transparencia para que siga leyéndose
+ * como una marca y no como un botón.
+ *
+ * NO se toca su `box-shadow`: es una de las TRES que `107-sin-sombras` cuenta, y esa prueba falla
+ * tanto si aparece una cuarta como si desaparece una de las tres. */
+:is(#v-closer, .estetica-op) .cl-sub button.on .fd-hecho {
+  background: rgb(var(--c-sobre-acento) / .85);
 }

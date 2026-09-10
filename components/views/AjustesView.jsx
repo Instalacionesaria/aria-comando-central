@@ -106,7 +106,7 @@ export default function AjustesView({ activa }) {
 
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-credenciales">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-credenciales">
       <div className="view-scroll cre-scroll">
         <div className="cre-head">
           <div className="ch-l stack">
@@ -142,17 +142,26 @@ export default function AjustesView({ activa }) {
           </div>
         </div>
 
-        {activaAhora === 'credenciales' ? <Credenciales /> : null}
-        {activaAhora === 'empresas' ? (
-          <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
-        ) : null}
-        {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
-        {activaAhora === null ? (
-          <div className="fd-aviso falta">
-            <i>◍</i>
-            <span>Tu usuario no tiene ninguna sección de ajustes.</span>
-          </div>
-        ) : null}
+        {/* ── EL CUERPO VA EN `.cl-page`, COMO EN LAS DE OPERACIÓN ───────────
+         *
+         * Es la única de las tres clases del chrome que le faltaba. Sin el envoltorio, el
+         * `gap: 24px` que la estética le pone al scroller se aplica entre TODOS los hijos —la
+         * cabecera y cada bloque de la pestaña— en vez de separar la cabecera del cuerpo una
+         * sola vez. Adentro manda el `gap: 18px` de `.cl-page`, y de paso hereda la animación
+         * de entrada. Es el mismo arreglo que necesitó Auditoría. */}
+        <div className="cl-page">
+          {activaAhora === 'credenciales' ? <Credenciales /> : null}
+          {activaAhora === 'empresas' ? (
+            <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
+          ) : null}
+          {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
+          {activaAhora === null ? (
+            <div className="fd-aviso falta">
+              <i>◍</i>
+              <span>Tu usuario no tiene ninguna sección de ajustes.</span>
+            </div>
+          ) : null}
+        </div>
       </div>
     </section>
     </>

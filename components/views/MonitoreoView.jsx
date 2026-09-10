@@ -21,17 +21,25 @@ import PanelDeMonitoreo from '../monitoreo/PanelDeMonitoreo';
 
 export default function MonitoreoView({ activa }) {
   return (
-    <section className={activa ? 'view on' : 'view'} id="v-monitoreo">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-monitoreo">
       <div className="view-scroll cre-scroll">
+        {/* El encabezado apilado y el cuerpo en `.cl-page`: las tres clases que la estética
+            de operación necesita en el marcado. Sin `.stack` y `.ch-title` el encabezado no se
+            invierte —el `h2` tiene que pasar a rótulo y la bajada a titular— y sin `.cl-page` el
+            `gap` del scroller se reparte entre todos los bloques. */}
         <div className="cre-head">
-          <div className="ch-l">
-            <h2>Panel de Monitoreo</h2>
-            <span className="cre-desc">
-              Cuántos scrapeos hizo cada empresa y con qué scraper
-            </span>
+          <div className="ch-l stack">
+            <div className="ch-title">
+              <h2>Panel de Monitoreo</h2>
+              <span className="cre-desc">
+                Cuántos scrapeos hizo cada empresa y con qué scraper
+              </span>
+            </div>
           </div>
         </div>
-        <PanelDeMonitoreo />
+        <div className="cl-page">
+          <PanelDeMonitoreo />
+        </div>
       </div>
     </section>
   );

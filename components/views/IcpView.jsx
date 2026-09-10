@@ -20,17 +20,25 @@ import Fundaciones from '../fundaciones/Fundaciones';
 
 export default function IcpView({ activa }) {
   return (
-    <section className={activa ? 'view on' : 'view'} id="v-icp">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-icp">
       <div className="view-scroll cre-scroll">
+        {/* El encabezado apilado y el cuerpo en `.cl-page`: las tres clases que la estética
+            de operación necesita en el marcado. Sin `.stack` y `.ch-title` el encabezado no se
+            invierte —el `h2` tiene que pasar a rótulo y la bajada a titular— y sin `.cl-page` el
+            `gap` del scroller se reparte entre todos los bloques. */}
         <div className="cre-head">
-          <div className="ch-l">
-            <h2>ICP &amp; Oferta</h2>
-            <span className="cre-desc">
-              Tu cliente ideal y tu oferta, y cómo evolucionan con los datos reales
-            </span>
+          <div className="ch-l stack">
+            <div className="ch-title">
+              <h2>ICP &amp; Oferta</h2>
+              <span className="cre-desc">
+                Tu cliente ideal y tu oferta, y cómo evolucionan con los datos reales
+              </span>
+            </div>
           </div>
         </div>
-        <Fundaciones />
+        <div className="cl-page">
+          <Fundaciones />
+        </div>
       </div>
     </section>
   );

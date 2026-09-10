@@ -76,7 +76,11 @@ test('todo selector de la hoja usa el alcance, y no queda nada suelto', () => {
   /* Toda línea de selector nombra las dos vistas, o es una de las dos excepciones declaradas. Se
      mide por LÍNEA y no por regla porque los selectores agrupados van uno por línea en esta hoja. */
   const sueltos = conAlcance.filter(
-    (l) => !l.includes(ALCANCE) && !esDeLaAgenda(l) && !esDelCloserSolo(l) && !esDeAuditoria(l),
+    (l) =>
+      !l.includes(ALCANCE) &&
+      !esDeLaAgenda(l) &&
+      !esDelCloserSolo(l) &&
+      !esCompensacionDeUnaPantalla(l),
   );
   assert.deepEqual(
     sueltos,
@@ -98,15 +102,27 @@ function esDelCloserSolo(linea: string): boolean {
 }
 
 /**
- * La sección 8: las siete familias `aud-*`.
+ * Las compensaciones de UNA pantalla: las secciones 8 y 9.
  *
  * Es la tercera excepción, y por el motivo CONTRARIO a las otras dos. Aquellas son cosas del
- * Closer que las demás no tienen; ésta es al revés — son las piezas propias de Auditoría, que
- * ninguna otra pantalla dibuja. Acotarlas a `#v-auditoria` es lo correcto: aplicarlas en las tres
- * sería declarar reglas para clases que en dos de ellas no existen.
+ * Closer que las demás no tienen; ésta es al revés — o son piezas que sólo esa pantalla dibuja
+ * (las siete familias `aud-*` de la sección 8), o son choques que sólo ahí ocurren (la sección 9:
+ * el botón de borrar de Ajustes, la cápsula que ICP y Tools emiten fuera del encabezado).
+ * Aplicarlas en todas sería declarar reglas para clases que en la mayoría no existen.
+ *
+ * ── Y POR QUÉ ES UNA LISTA Y NO `^#v-\w+ ` ────────────────────────────────
+ *
+ * Porque con el comodín esta prueba deja de tener filo. Su trabajo es cazar la regla escrita con
+ * UNA pantalla cuando debería alcanzar a todas —el defecto de «lo probé en el Closer y lo dejé
+ * ahí»— y un `^#v-` que acepta cualquier id no distingue eso de una compensación deliberada.
+ *
+ * Con la lista, sumar una pantalla cuesta venir acá y escribir su nombre. Es barato, y es
+ * exactamente el momento en que conviene preguntarse si la regla es de verdad de esa sola.
  */
-function esDeAuditoria(linea: string): boolean {
-  return /^#v-auditoria /.test(linea);
+const CON_COMPENSACION_PROPIA = ['auditoria', 'credenciales', 'icp', 'tools'];
+
+function esCompensacionDeUnaPantalla(linea: string): boolean {
+  return CON_COMPENSACION_PROPIA.some((v) => linea.startsWith(`#v-${v} `));
 }
 
 test('lo que NO se comparte sigue acotado al Closer, y es solo lo que se decidió', () => {
@@ -116,9 +132,10 @@ test('lo que NO se comparte sigue acotado al Closer, y es solo lo que se decidi�
   assert.ok(acotados.length > 0, 'ya no queda nada acotado: se extendió también la Agenda');
   for (const l of acotados) {
     assert.ok(
-      esDeLaAgenda(l) || esDelCloserSolo(l) || esDeAuditoria(l),
-      `\`${l}\` quedó acotado a una pantalla y no es de la Agenda, ni de «ver como», ni de las ` +
-        'piezas propias de Auditoría. Si es de un componente compartido, tiene que alcanzar a las tres',
+      esDeLaAgenda(l) || esDelCloserSolo(l) || esCompensacionDeUnaPantalla(l),
+      `\`${l}\` quedó acotado a una pantalla y no es de la Agenda, ni de «ver como», ni una de ` +
+        'las compensaciones declaradas en `CON_COMPENSACION_PROPIA`. Si es de un componente ' +
+        'compartido, tiene que alcanzar a todas; y si de verdad es de una sola, decilo en esa lista',
     );
   }
 });
@@ -197,7 +214,7 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      exacto, sumar o sacar una obliga a venir acá y decirlo. */
   assert.equal(
     vistas.length,
-    3,
+    7,
     `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 3: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
