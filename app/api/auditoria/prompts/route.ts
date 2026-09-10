@@ -34,7 +34,14 @@ import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { guardarPromptDelAgente } from '../../../../lib/auditor/prompts.ts';
 import { AGENTES, type Agente } from '../../../../lib/auditor/veredicto.ts';
 
-export const PANTALLA = 'auditoria';
+/* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
+   `auditoria` a propósito: la RUTA es del auditor —su capacidad, su modelo, sus tablas— y la
+   PANTALLA es dónde se dibuja. Desde que el supervisor pasó a ser dos pestañas de Conversation,
+   son dos cosas distintas y conviene que el código lo muestre.
+
+   `PANTALLA` decide qué sección concedida hace falta (el alcance por persona); la capacidad se
+   pide aparte, abajo, y no cambió. */
+export const PANTALLA = 'conversation';
 
 /**
  * El tope del prompt.

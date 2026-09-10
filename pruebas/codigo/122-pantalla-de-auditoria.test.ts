@@ -39,6 +39,9 @@ import {
 
 const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
 const PANEL = 'components/auditoria/PanelDeAuditoria.jsx';
+/* El envoltorio: las cuatro pestañas, la carga y los contadores. El panel quedó con lo que dibuja
+   las dos caras del supervisor. Ver el encabezado de los dos archivos. */
+const CONVERSATION = 'components/conversation/PanelDeConversation.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL NOMBRE, ATADO AL CONTRATO DEL CRM
@@ -156,36 +159,52 @@ test('el ORDEN de los agentes es el del embudo, y no deja a ninguno afuera', () 
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAS DOS PESTAÑAS
+// LAS PESTAÑAS, QUE AHORA SON CUATRO Y SON DE CONVERSATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('la pantalla tiene DOS sub-pestañas, abre en Inicio, y los prompts están solo en la otra', () => {
-  const jsx = leer(PANEL);
+test('el supervisor son DOS de las cuatro pestañas de Conversation, y abre en la primera', () => {
+  /* ── ESTA PANTALLA ERA PROPIA Y AHORA VIVE ADENTRO DE OTRA ─────────────────
+   *
+   * «Auditoría de agentes» tenía su barra con dos pestañas —Inicio y Prompts— y colgaba del grupo
+   * «Operación». Audita `chat_pre_agenda` y `chat_post_agenda`, que son **exactamente** Lead Flow y
+   * Appointment Flow: los dos módulos que la arquitectura funcional pone dentro de Conversation
+   * Intelligence. Se archivó donde correspondía.
+   *
+   * Las dos pestañas subieron al primer nivel en vez de anidarse, y eso es lo que se afirma: la
+   * estética de operación dibuja UNA barra por pantalla, así que anidarlas habría puesto dos
+   * encimadas con la misma forma y distinto contenido. */
+  const jsx = leer(CONVERSATION);
 
   const bloque = jsx.slice(jsx.indexOf('const SUB = ['), jsx.indexOf('];', jsx.indexOf('const SUB = [')));
   const orden = [...bloque.matchAll(/clave: '(\w+)'/g)].map((m) => m[1]!);
-  assert.deepEqual(orden, ['inicio', 'prompts'], 'las sub-pestañas no son Inicio y después Prompts');
+  assert.deepEqual(
+    orden,
+    ['leadflow', 'appflow', 'auditoria', 'prompts'],
+    'las cuatro pestañas de Conversation no son los dos flujos y después el supervisor',
+  );
 
-  /* Abre en la PRIMERA. Abrir en la segunda deja la pestaña de la izquierda sin usar y eso se lee
-     como que no responde — es la misma regla que el Closer y el Setter. */
+  /* Abre en la PRIMERA. Abrir en otra deja la pestaña de la izquierda sin usar y eso se lee como
+     que no responde — es la misma regla que el Closer y el Setter. Y se afirma derivado de `SUB`,
+     no contra la cadena `'leadflow'`: reordenar las pestañas no tiene que romper esto. */
   assert.match(
     jsx,
-    /useState\('inicio'\)/,
-    'la pantalla no abre en Inicio: la pestaña de la izquierda queda sin usar',
+    /useState\(SUB\[0\]\.clave\)/,
+    'la pantalla no abre en su primera pestaña, o la fija a mano en vez de derivarla de `SUB`',
   );
 
   /* ── LOS PROMPTS, SOLO EN SU PESTAÑA ────────────────────────────────────
    *
-   * Es el pedido literal, y lo que hay que impedir es que el cuadro quede en las dos: dos `textarea`
-   * en Inicio son los que empujaban las conversaciones fuera de la pantalla. Se comprueba que el
-   * componente `Prompts` se monte UNA sola vez y detrás de la condición de la pestaña. */
+   * Lo que hay que impedir es que el cuadro quede en las dos: dos `textarea` en la pestaña de los
+   * análisis son los que empujaban las conversaciones fuera de la pantalla. Sigue detrás de su
+   * condición, ahora dentro del panel, que entiende dos caras. */
+  const panel = leer(PANEL);
   assert.equal(
-    (jsx.match(/<Prompts\s/g) ?? []).length,
+    (panel.match(/<Prompts\s/g) ?? []).length,
     1,
     'el bloque de prompts se dibuja más de una vez',
   );
   assert.match(
-    jsx,
+    panel,
     /sub === 'prompts'\) return <Prompts /,
     'el bloque de prompts no está detrás de su pestaña',
   );
@@ -194,15 +213,25 @@ test('la pantalla tiene DOS sub-pestañas, abre en Inicio, y los prompts están 
 test('la barra de pestañas se dibuja también mientras carga y con error', () => {
   /* Si la barra viviera después de los `return` de carga y de error, aparecería junto con los datos
      —la pantalla salta— y quien entra con un error de red se queda sin ninguna pestaña que apretar.
-     Se comprueba por POSICIÓN: la barra tiene que estar antes del componente que decide los estados. */
-  const jsx = leer(PANEL);
-  const barra = jsx.indexOf('className="cl-sub aud-sub"');
-  const cuerpo = jsx.indexOf('function Cuerpo(');
-  const cargando = jsx.indexOf("if (cargando) return");
-
+     Se comprueba por POSICIÓN: la barra tiene que estar antes de todo lo que puede volver temprano.
+     Con la mudanza son dos archivos: la barra vive en el envoltorio y los `return` en el panel, y
+     eso **por construcción** ya la deja afuera. Se afirma igual, porque lo que protege es que no
+     vuelva a meterse adentro. */
+  const jsx = leer(CONVERSATION);
+  const barra = jsx.indexOf('className="cl-sub"');
   assert.ok(barra > 0, 'no está la barra de sub-pestañas');
-  assert.ok(barra < cuerpo, 'la barra se dibuja dentro del cuerpo, así que desaparece con un error');
-  assert.ok(barra < cargando, 'la barra se dibuja después del estado de carga');
+  assert.ok(
+    barra < jsx.indexOf('<Cuerpo'),
+    'la barra se dibuja después del cuerpo, así que desaparece con un error',
+  );
+  assert.ok(
+    !/if \(cargando\) return/.test(jsx),
+    'el envoltorio volvió a decidir los estados de carga: eso vive en el panel, y la barra tiene ' +
+      'que quedar por encima de los dos',
+  );
+  /* Y el panel sigue devolviendo temprano en sus cuatro estados, que es lo que hace que valga la
+     pena que la barra esté afuera. */
+  assert.match(leer(PANEL), /if \(cargando\) return/);
 
   // Y usa la MISMA barra que el Closer y el Setter, no un tercer estilo.
   assert.match(leer('components/views/CloserView.jsx'), /className="cl-sub"/);

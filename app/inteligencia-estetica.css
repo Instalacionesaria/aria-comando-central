@@ -119,36 +119,46 @@
   font-weight: 500;
 }
 
-/* El segmentado de MODO de Conversation (Estado / Agentes) es un `.cl-sub` con otro nombre: vive
-   en el mismo sitio del encabezado y hace lo mismo. Se le da la misma forma en vez de dejar dos
-   cápsulas distintas en pantallas hermanas. Ídem la barra de incidencias de su cuerpo. */
-#v-conversation .mode-seg,
-#v-conversation .iss-bar {
-  gap: 2px;
-  padding: 3px;
-  border-radius: 9999px;
-  background: rgb(var(--c-nube) / .05);
+/* ── CONVERSATION YA NO ES UNA PANTALLA DEL MAQUETADO ──────────────────────
+ *
+ * Acá había reglas para `.mode-seg` (el segmentado Estado / Agentes) y `.iss-bar` (Por resolver /
+ * Resueltas). Las dos se fueron con `lib/aios/conversation.js`, que dibujaba esta pantalla con
+ * datos inventados. Ahora Conversation usa la barra `.cl-sub` de la estética, como Closer, Setter
+ * y Ajustes, y el supervisor real ocupa dos de sus cuatro pestañas.
+ *
+ * Lo que queda propio de esta pantalla es la lista de «qué falta para medir esto», que es lo que
+ * reemplazó a los números inventados. */
+
+/* Cada falta: qué no se puede medir, en negrita, y por qué debajo. Las dos cosas en la misma fila
+   y no un `<summary>` plegable — se leen una vez, y esconderlas detrás de un clic convierte la
+   explicación en algo que nadie abre. */
+#v-conversation .cs-falta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#v-conversation .cs-falta li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 15px;
   border: 1px solid var(--line);
-  align-self: flex-start;
+  border-radius: var(--radio);
+  background: rgb(var(--c-nube) / .03);
 }
-#v-conversation .mode-seg button,
-#v-conversation .iss-bar button {
-  height: 26px;
-  padding: 0 13px;
-  border: 0;
-  border-radius: 9999px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--txt-dim);
-  background: transparent;
-}
-#v-conversation .mode-seg button.on,
-#v-conversation .iss-bar button.on {
-  background: var(--accent-hondo);
-  color: var(--sobre-acento);
+#v-conversation .cs-falta b {
+  font-size: 12.5px;
   font-weight: 600;
+  color: var(--txt);
 }
-#v-conversation .mode-seg button svg { width: 13px; height: 13px; }
+#v-conversation .cs-falta span {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--txt-dim);
+}
 
 /* ── 2 · LAS CAJAS COMPARTIDAS ──────────────────────────────────────────────
  *
@@ -226,13 +236,8 @@
 #v-conversion :is(.journey, .jstep) { border-radius: var(--radio); }
 
 /* Conversation: los paneles, los flujos y las fichas de agente. */
-#v-conversation :is(.cs-panels > *, .cs-flows > *, .csa) {
-  border-radius: var(--radio-tarjeta);
-  background: rgb(var(--c-panel) / .5);
-  backdrop-filter: blur(4px);
-}
-#v-conversation .csa-n { font-size: 13px; font-weight: 500; }
-#v-conversation .iss { border-radius: var(--radio); }
+/* Conversation no tiene tarjetas propias: su cuerpo son las pestañas del supervisor, que visten
+   `app/auditoria.css` y la sección 8 de la estética. */
 
 /* Sales: la única sin módulo imperativo. Sus tarjetas ya son `.card`, así que hereda la forma
    entera; lo que queda es la cifra grande, que toma el peso ligero de los titulares de la

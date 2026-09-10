@@ -34,7 +34,7 @@
  * `#v-closer` NO ES REDUNDANTE: ES EL ANCLA DE ESPECIFICIDAD. NO SE BORRA.
  *
  * El alcance fue tres veces una lista de ids —`#v-closer`, después `, #v-setter`, después
- * `, #v-auditoria`—, o sea que cada pantalla nueva costaba editar las 169 líneas de selector de
+ * `, #v-conversation`—, o sea que cada pantalla nueva costaba editar las 169 líneas de selector de
  * esta hoja más los dos bloques de `temas.css`. Con nueve pantallas más en camino, cada línea
  * habría pasado de ~120 a ~200 caracteres.
  *
@@ -1200,10 +1200,21 @@
   background: rgb(var(--c-nube) / .04);
 }
 
-/* ── 8 · Auditoría de agentes (`aud-*`) ─────────────────────────────────────
+/* ── 8 · El supervisor de Conversation (`aud-*`) ────────────────────────────
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * ESTA SECCIÓN EXISTE PORQUE AUDITORÍA NO COMPARTE UN SOLO COMPONENTE
+ * ERA `#v-conversation`, Y AHORA ES `#v-conversation`
+ *
+ * Estas reglas visten las dos pestañas del supervisor —«Auditoría» y «Prompts»—, que hasta la
+ * mudanza eran una pantalla propia del grupo «Operación». No cambió ni una declaración: cambió el
+ * `#id` del que cuelgan, porque el mismo panel se dibuja ahora dentro de Conversation.
+ *
+ * La familia sigue llamándose `aud-*` y su hoja sigue siendo `app/auditoria.css`, a propósito: es
+ * el vocabulario del AUDITOR —`lib/auditor/`, sus tablas, sus rutas—, y eso no se mudó. Renombrar
+ * cuarenta clases para que dijeran `cs-` habría sido un cambio grande que no arregla nada y rompe
+ * las tres pruebas que leen esos nombres.
+ *
+ * ESTA SECCIÓN EXISTE PORQUE EL SUPERVISOR NO COMPARTE UN SOLO COMPONENTE
  *
  * Con el Setter alcanzó el cambio de selector: su chrome es el mismo DOM y `MiDia`, `Fila`,
  * `Ficha` y las demás son literalmente los mismos archivos, así que las reglas de arriba ya lo
@@ -1226,13 +1237,13 @@
  * y la vista es de servidor, así que no puede subir al encabezado sin mover el estado— y cuelga
  * de `.cl-page`, un flex en columna. Ahí `center` la centraría HORIZONTALMENTE, sola en medio de
  * la pantalla. */
-#v-auditoria .cl-sub { align-self: flex-start; }
+#v-conversation .cl-sub { align-self: flex-start; }
 
 /* Y el segundo: el contador de prompts que FALTAN. `app/auditoria.css` lo pinta en ámbar con
    `.cl-sub .aud-cnt-falta` —especificidad de dos clases— y la regla de arriba lleva un `#id`, así
    que le ganaba y lo devolvía al acento. Es exactamente el doble significado que ese comentario
    existe para impedir: `cnt` en acento es «tenés tareas», y este número es «te falta cargar algo». */
-#v-auditoria .cl-sub .aud-cnt-falta {
+#v-conversation .cl-sub .aud-cnt-falta {
   background: rgb(var(--c-warn) / .16);
   color: var(--warn);
 }
@@ -1242,8 +1253,8 @@
  * Son las dos tarjetas grandes de esta pantalla, y pasan a la misma forma que `.md-c` y
  * `.aj-tarjeta`: radio de 26 px, translúcida con desenfoque. Sin el `backdrop-filter` la tarjeta
  * se ve como un rectángulo semitransparente — van siempre juntos, igual que arriba. */
-#v-auditoria .aud-agente,
-#v-auditoria .aud-prompt {
+#v-conversation .aud-agente,
+#v-conversation .aud-prompt {
   border-radius: var(--radio-tarjeta);
   background: rgb(var(--c-panel) / .5);
   backdrop-filter: blur(4px);
@@ -1253,14 +1264,14 @@
 }
 
 /* El icono de la zona, alineado con el radio nuevo. */
-#v-auditoria .aud-agente-icono {
+#v-conversation .aud-agente-icono {
   border-radius: var(--radio);
   background: rgb(var(--c-nube) / .06);
 }
 
 /* El nombre del agente toma el peso de los titulares de la estética: 300 y apretado, no 650. */
-#v-auditoria .aud-agente-quien h3,
-#v-auditoria .aud-prompt-cabeza h4 {
+#v-conversation .aud-agente-quien h3,
+#v-conversation .aud-prompt-cabeza h4 {
   font-size: 17px;
   font-weight: 500;
   letter-spacing: -.02em;
@@ -1274,14 +1285,14 @@
  * Lo que NO se toca es qué color lleva cada uno. El semáforo tiene su regla —verde, amarillo,
  * rojo, y el cero en neutro, en ese orden y ganando por orden— y `122-pantalla-de-auditoria` la
  * lee. Acá solo cambia la forma. */
-#v-auditoria .aud-chip {
+#v-conversation .aud-chip {
   padding: 1px 7px;
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
 }
-#v-auditoria .aud-agente-zona {
+#v-conversation .aud-agente-zona {
   padding: 1px 7px;
   font-size: 8.5px;
   letter-spacing: .05em;
@@ -1293,7 +1304,7 @@
  * `.md-h` es el rótulo de sección de las otras dos: 12 px, mayúsculas, `.025em`. `.aud-seccion-
  * cabeza h4` era 12 px en minúsculas con `.01em`. Se iguala el idioma; la línea de abajo se
  * queda, porque acá la sección no es una caja con fondo sino un título con su regla. */
-#v-auditoria .aud-seccion-cabeza h4 {
+#v-conversation .aud-seccion-cabeza h4 {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .025em;
@@ -1305,26 +1316,26 @@
  * `.md-r` es `12px 20px`. La del patrón era `10px 14px`, calibrada contra el relleno viejo de la
  * tarjeta. Y el hover sube de 3,5 % a 4 %: ese valor estaba copiado de `aios.css`, o sea
  * calibrado contra el lienzo VIEJO, y el lienzo de esta estética es más claro en el tema claro. */
-#v-auditoria .aud-patron-cabeza {
+#v-conversation .aud-patron-cabeza {
   padding: 11px 4px;
   font-size: 12.5px;
 }
-#v-auditoria .aud-patron-cabeza:hover { background: rgb(var(--c-nube) / .04); }
-#v-auditoria .aud-patron-cuerpo { padding: 0 4px 14px; }
-#v-auditoria .aud-conv { padding: 10px 4px; }
+#v-conversation .aud-patron-cabeza:hover { background: rgb(var(--c-nube) / .04); }
+#v-conversation .aud-patron-cuerpo { padding: 0 4px 14px; }
+#v-conversation .aud-conv { padding: 10px 4px; }
 
 /* ── EL PLEGABLE ───────────────────────────────────────────────────────────
  *
  * Acá el botón es la CABECERA ENTERA y no un círculo de 24 px como `.sec-plegar`, y eso se
  * conserva a propósito: su comentario en `app/auditoria.css` dice que *«un triángulo de diez
  * píxeles es un blanco que se falla»*, y tiene razón. Solo se alinea la flecha con el resto. */
-#v-auditoria .aud-flecha { color: var(--txt-faint); font-size: 9px; }
+#v-conversation .aud-flecha { color: var(--txt-faint); font-size: 9px; }
 
 /* ── EL AVISO ──────────────────────────────────────────────────────────────
  *
  * `.aud-aviso` es el `.fd-aviso.falta` de esta pantalla: la misma advertencia sin daño. Se le da
  * el mismo tinte y el mismo borde en vez del canto izquierdo de 3 px, que es de otra gramática. */
-#v-auditoria .aud-aviso {
+#v-conversation .aud-aviso {
   border: 1px solid rgb(var(--c-warn) / .25);
   border-radius: var(--radio);
   background: rgb(var(--c-warn) / .08);
@@ -1338,8 +1349,8 @@
  * El fragmento de prompt y el `textarea`. La monoespaciada NO se toca —es lo que hace legible una
  * cita con viñetas y sangría— y tampoco el `pre-wrap`. Solo el radio, para que el bloque hundido
  * no sea el único con esquinas de otra escala. */
-#v-auditoria .aud-texto,
-#v-auditoria .aud-prompt-caja {
+#v-conversation .aud-texto,
+#v-conversation .aud-prompt-caja {
   border-radius: var(--radio);
   padding: 10px 12px;
 }

@@ -10,7 +10,7 @@
    correcciones para el prompt. Que fueran una sola cosa es el defecto que este módulo entero existe
    para arreglar — hacía que un *«podría ser más breve»* le apagara el agente a una persona real.
 
-   ── DOS PESTAÑAS, Y LA SEGUNDA SE PIDIÓ ───────────────────────────────────
+   ── DOS CARAS, Y LA SEGUNDA SE PIDIÓ ──────────────────────────────────────
 
    Los cuadros de prompt vivían en el medio de esta misma página, entre los patrones y las
    conversaciones. Dos `textarea` de ocho filas empujaban las conversaciones auditadas debajo del
@@ -18,6 +18,23 @@
 
      · **Inicio** — los análisis. Es lo que se mira todos los días.
      · **Prompts** — los dos cuadros. Se abre cuando hay algo que corregir, que es otro momento.
+
+   ── Y LAS PESTAÑAS YA NO SON DE ACÁ ───────────────────────────────────────
+
+   Este panel tenía su propia barra `.cl-sub` y su propia carga. Las dos subieron a
+   `components/conversation/PanelDeConversation.jsx` cuando esta pantalla pasó a ser dos pestañas
+   de **Conversation**, y el motivo no es de prolijidad: la estética de operación dibuja **una**
+   barra de sub-pestañas por pantalla, así que dejar la suya acá habría puesto dos barras
+   encimadas — la de Conversation arriba y la del panel abajo, con la misma forma y distinto
+   contenido.
+
+   Lo que queda acá es `Cuerpo` y todo lo que dibuja. Recibe `sub` por propiedad y **no sabe** de
+   dónde viene: le da igual si el conmutador está en su propia barra o dos niveles más arriba.
+
+   Y por qué la CARGA también subió, que es lo menos obvio: los contadores de las pestañas —cuántos
+   patrones abiertos, cuántos prompts sin cargar— salen de los datos. Con la carga acá, la barra de
+   arriba habría necesitado que este componente le avisara hacia atrás, y ese es el cableado que
+   deja dos fuentes para el mismo número. Con la carga arriba, hay una.
 
    La barra se dibuja SIEMPRE, también mientras carga y con error. Una barra que aparece cuando
    llegan los datos hace que la pantalla salte, y deja sin salida a quien entró con un error.
@@ -47,7 +64,7 @@
    El servidor manda un caso por hallazgo y acá se agrupan. Con un contador que viaje al lado, un tope
    o un filtro de más harían que la pantalla dijera «×15 casos» mostrando tres. */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   NOMBRE_DEL_AGENTE,
@@ -55,9 +72,7 @@ import {
   POR_QUE_NO_AUDITA,
   QUE_HACE_EL_AGENTE,
   ZONA_DEL_AGENTE,
-  agruparPorPatron,
   guardarElPrompt,
-  leerLaPantalla,
 } from '@/lib/auditor/vista';
 
 /** Una fecha corta y legible. `null` se dibuja como un guion, nunca como «hoy». */
@@ -72,85 +87,13 @@ const ICONO_DEL_AGENTE = {
   chat_post_agenda: '#i-closer',
 };
 
-const SUB = [
-  { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
-  { clave: 'prompts', nombre: 'Prompts', icono: '#i-tools' },
-];
-
-export default function PanelDeAuditoria() {
-  const [pantalla, setPantalla] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-  /* Qué patrón está abierto. Se guarda el CÓDIGO y no un índice: la lista se reordena al recargar
-     —el orden es por cantidad de casos— y con un índice quedaría abierto otro patrón. */
-  const [abierto, setAbierto] = useState(null);
-  const [sub, setSub] = useState('inicio');
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    const r = await leerLaPantalla();
-    if (r.tipo === 'datos') setPantalla(r.pantalla);
-    else {
-      setError(r.mensaje);
-      setPantalla(null);
-    }
-    setCargando(false);
-  }, []);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
-  /* Los patrones agrupados UNA vez, acá, y repartidos por agente más abajo. Agruparlos dentro de
-     cada bloque recorrería la lista dos veces y —peor— dejaría dos llamadas que alguien puede
-     cambiar de a una. */
-  const patrones = pantalla ? agruparPorPatron(pantalla.casos) : [];
-  const abiertos = patrones.length;
-  const sinPrompt = pantalla ? pantalla.prompts.filter((p) => !p.texto).length : 0;
-
-  return (
-    <>
-      {/* La barra, SIEMPRE. Ver el encabezado: si apareciera con los datos, la pantalla salta. */}
-      <div className="cl-sub aud-sub">
-        {SUB.map((s) => (
-          <button
-            key={s.clave}
-            type="button"
-            data-c={s.clave}
-            className={sub === s.clave ? 'on' : undefined}
-            onClick={() => setSub(s.clave)}
-          >
-            <svg viewBox="0 0 16 16">
-              <use href={s.icono} />
-            </svg>
-            {s.nombre}
-            {/* Los contadores solo si hay algo. Un `0` en una píldora al lado del nombre es ruido
-                que se aprende a ignorar, y acá además sería un cero de dos significados. */}
-            {s.clave === 'inicio' && abiertos > 0 ? <span className="cnt">{abiertos}</span> : null}
-            {s.clave === 'prompts' && sinPrompt > 0 ? (
-              <span className="cnt aud-cnt-falta">{sinPrompt}</span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
-      <Cuerpo
-        cargando={cargando}
-        error={error}
-        pantalla={pantalla}
-        patrones={patrones}
-        sub={sub}
-        abierto={abierto}
-        alAbrir={(p) => setAbierto(abierto === p ? null : p)}
-        alRecargar={cargar}
-      />
-    </>
-  );
-}
-
-/** Los cuatro estados de la carga, y los cuatro distintos. */
-function Cuerpo({ cargando, error, pantalla, patrones, sub, abierto, alAbrir, alRecargar }) {
+/**
+ * Los cuatro estados de la carga, y los cuatro distintos.
+ *
+ * Es lo que `PanelDeConversation` dibuja en sus dos pestañas de auditoría. `sub` vale `'inicio'` o
+ * `'prompts'` y llega por propiedad: ver el encabezado del archivo.
+ */
+export function Cuerpo({ cargando, error, pantalla, patrones, sub, abierto, alAbrir, alRecargar }) {
   if (cargando) return <p className="aud-estado">Cargando la auditoría…</p>;
   /* Un error dibujado como «no hay hallazgos» es el cero indistinguible que este módulo persigue en
      otras cuatro formas. */

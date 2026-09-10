@@ -25,6 +25,14 @@
  * Rutas relativas a la raíz del repo, siempre con `/`.
  */
 export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
+  // Mueve el alcance `auditoria` a `conversation` cuando el supervisor pasó a ser dos pestañas de
+  // Conversation. Escribe en `identidad.usuarios_secciones`, que ES identidad, y por eso está acá.
+  //
+  // Y no podía ser una migración, que es lo que lo hace legítimo y no una comodidad: esa tabla
+  // tiene `force row level security` sin política para `migrador`, así que desde una migración se
+  // ven **cero filas** y un `update` informaría éxito sin tocar nada. Es el mismo argumento con el
+  // que `scripts/organizacion-principal.mjs` está en esta lista.
+  'scripts/mudar-auditoria.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.

@@ -260,10 +260,26 @@ export const SECCIONES: readonly Seccion[] = [
     menu: { grupo: 'Inteligencia', icono: '#i-conv', galon: true },
   },
   {
+    // ── CONVERSATION SE QUEDÓ CON EL SUPERVISOR, Y POR ESO YA NO ES DEL PROTOTIPO ──
+    //
+    // `AIOS_Arquitectura_Funcional_v0.2.md` § 8 define este departamento con dos módulos —Lead
+    // Flow y Appointment Flow— y un Supervisor por módulo. Ese supervisor **ya estaba escrito**,
+    // archivado como la pantalla «Auditoría de agentes» del grupo «Operación»: audita
+    // `chat_pre_agenda` y `chat_post_agenda`, que el CRM llama `bot_activado_leadflow` y
+    // `bot_activado_appflow`, o sea exactamente los dos módulos. Se archivó donde correspondía y
+    // la sección `auditoria` se retiró.
+    //
+    // **Y con eso se le cayó `sinOperacionesTodavia`.** No es una formalidad: `30-portero` afirma
+    // que ninguna sección con esa bandera tiene manejadores, así que dejarla puesta con las dos
+    // rutas del auditor apuntando acá pone la suite en rojo — que es exactamente para lo que ese
+    // cable trampa existe.
+    //
+    // La capacidad de la SECCIÓN sigue siendo `tablero.ver`. Las dos rutas del auditor siguen
+    // exigiendo `auditor.ver` y `auditor.editar` **además**: el portero comprueba la capacidad y
+    // el alcance por separado, así que la pestaña no abre nada a quien no tenga la capacidad.
     clave: 'conversation',
     nombre: 'Conversation',
     capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
     menu: { grupo: 'Inteligencia', icono: '#i-chat' },
   },
   {
@@ -298,45 +314,25 @@ export const SECCIONES: readonly Seccion[] = [
     capacidadRequerida: 'closer.ver',
     menu: { grupo: 'Operación', icono: '#i-closer' },
   },
-  {
-    // ── Etapa 13 · La auditoría de los agentes de IA ────────────────────────
-    //
-    // La pantalla del «técnico»: qué patrones fallan en los agentes, con su corrección lista para
-    // pegar en el prompt. **No es la cola roja** —ésa vive en el Closer y en el Setter, donde
-    // trabaja el vendedor— y esa separación es todo el módulo: una interrumpe a alguien ahora,
-    // ésta es una lista que se mira cuando se puede.
-    //
-    // ── LO QUE NO LLEVA, Y NINGUNO ES UN OLVIDO ───────────────────────────
-    //
-    // **`soloDesdeLaPrincipal` NO**, al revés que `monitoreo`. Aquella muestra el consumo de
-    // TODAS las empresas, así que una persona de una empresa cliente vería a sus competidores.
-    // Ésta muestra los agentes **de su propia empresa** y nada más: el aislamiento lo pone la
-    // política de la base, igual que en el Closer. Marcarla sería impedirle a un cliente ver sus
-    // propios agentes.
-    //
-    // **NO va en `scripts/paridad.mjs`**, por el mismo motivo que `tools` y `monitoreo`: esta
-    // pantalla no existe en `aios-command-center_1.html`, así que compararla daría un rojo
-    // permanente — y un rojo permanente no se arregla, se ignora, y con él se ignoran los demás.
-    //
-    // **Y CERO líneas en `Nav.jsx`**: el menú se dibuja desde esta lista. Tocarlo sería la
-    // séptima copia de un hecho que ya está acá.
-    //
-    // ── EL ORDEN DEL MENÚ ES EL ORDEN DE ESTE ARREGLO ──────────────────────
-    //
-    // `seccionesVisibles` es un `filter` sobre `SECCIONES`, así que la posición acá **es** la
-    // posición en el menú. Va inmediatamente después de `closer` por pedido de producto, y el
-    // lugar tiene sentido: la cola roja que este módulo alimenta vive ahí al lado.
-    //
-    // No hay ninguna otra lista que ordene el menú — `Nav.jsx` lo dibuja desde acá y no tiene ni una
-    // entrada escrita a mano, que es lo que hace que mover una pestaña sea mover un bloque.
-    //
-    // Va en «Operación» y no en el pie: el pie solo dibuja `enElPie[0]` (`components/Nav.jsx`),
-    // así que una segunda sección ahí **no se vería y nada fallaría**.
-    clave: 'auditoria',
-    nombre: 'Auditoría de agentes',
-    capacidadRequerida: 'auditor.ver',
-    menu: { grupo: 'Operación', icono: '#i-auditor' },
-  },
+  /* ── LA SECCIÓN `auditoria` SE RETIRÓ, Y NO SE PERDIÓ NADA ────────────────
+   *
+   * «Auditoría de agentes» estaba acá, entre `closer` y `tools`, y ahora son **dos pestañas de
+   * `conversation`**: «Auditoría» y «Prompts». No se borró ni una línea del auditor —sus tablas,
+   * sus rutas y sus 4500 líneas de `lib/auditor/` siguen intactas—; cambió dónde se dibuja.
+   *
+   * El motivo, en una línea: audita `chat_pre_agenda` y `chat_post_agenda`, que el CRM llama
+   * `bot_activado_leadflow` y `bot_activado_appflow`, o sea **exactamente los dos módulos que
+   * `AIOS_Arquitectura_Funcional_v0.2.md` § 8 pone dentro de Conversation Intelligence**. Estaba
+   * archivada en «Operación» por historia, no por diseño.
+   *
+   * Tres consecuencias que hay que conocer antes de deshacer esto:
+   *
+   *   · las dos rutas de `app/api/auditoria/` declaran `PANTALLA = 'conversation'`, así que el
+   *     alcance por persona ahora se concede como «Conversation»;
+   *   · por eso `conversation` perdió `sinOperacionesTodavia`;
+   *   · y `identidad.usuarios_secciones` dejó de aceptar la clave `'auditoria'` en su `check`
+   *     (migración 041). Volver a ponerla acá sin devolverla al `check` deja una sección que no se
+   *     le puede conceder a nadie. */
   {
     // ── Tools ──
     //

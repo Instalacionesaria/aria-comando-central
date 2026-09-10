@@ -119,7 +119,7 @@ function esDelCloserSolo(linea: string): boolean {
  * Con la lista, sumar una pantalla cuesta venir acá y escribir su nombre. Es barato, y es
  * exactamente el momento en que conviene preguntarse si la regla es de verdad de esa sola.
  */
-const CON_COMPENSACION_PROPIA = ['auditoria', 'credenciales', 'icp', 'tools'];
+const CON_COMPENSACION_PROPIA = ['conversation', 'credenciales', 'icp', 'tools'];
 
 function esCompensacionDeUnaPantalla(linea: string): boolean {
   return CON_COMPENSACION_PROPIA.some((v) => linea.startsWith(`#v-${v} `));
@@ -214,8 +214,8 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      exacto, sumar o sacar una obliga a venir acá y decirlo. */
   assert.equal(
     vistas.length,
-    12,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 12: si entró una pantalla ` +
+    11,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 11: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 
@@ -271,7 +271,7 @@ test('el contador de prompts que faltan sigue en ámbar, no en el acento', () =>
      acento. Su comentario dice por qué importa: `cnt` en acento es «tenés tareas», y este número es
      «te falta cargar esto». Dos significados con el mismo color se leen como el mismo aviso. */
   const hoja = sinComentarios(leerCrudo(ESTETICA));
-  const i = hoja.indexOf('#v-auditoria .cl-sub .aud-cnt-falta {');
+  const i = hoja.indexOf('#v-conversation .cl-sub .aud-cnt-falta {');
   assert.ok(i > 0, 'se fue la regla que le devuelve el ámbar al contador de prompts que faltan');
   const regla = hoja.slice(i, hoja.indexOf('}', i));
   assert.match(regla, /var\(--warn\)/, 'el contador dejó de usar el token de advertencia');
@@ -284,18 +284,18 @@ test('el contador de prompts que faltan sigue en ámbar, no en el acento', () =>
   );
 });
 
-test('la barra de pestañas de Auditoría no queda centrada', () => {
+test('la barra de pestañas de Conversation no queda centrada', () => {
   /* El tercer choque, y el que menos se ve venir: `align-self: center` centra la cápsula dentro de
      la fila del encabezado, que es donde vive en las otras dos. En Auditoría la barra la emite el
      panel —componente de cliente contra vista de servidor— y cuelga de `.cl-page`, un flex en
      columna: ahí `center` la deja centrada HORIZONTALMENTE, sola en medio de la pantalla. */
   const hoja = sinComentarios(leerCrudo(ESTETICA));
-  const i = hoja.indexOf('#v-auditoria .cl-sub {');
+  const i = hoja.indexOf('#v-conversation .cl-sub {');
   assert.ok(i > 0, 'se fue la regla que alinea la barra de Auditoría a la izquierda');
   assert.match(hoja.slice(i, hoja.indexOf('}', i)), /align-self:\s*flex-start/);
 });
 
-test('los botones de Auditoría usan el botón de la aplicación, no una clase sin forma', () => {
+test('los botones del supervisor usan el botón de la aplicación, no una clase sin forma', () => {
   /* `.pr-btn` NUNCA tuvo regla en ninguna hoja: los dos botones de esta pantalla —«Reintentar» y
      «Guardar»— se dibujaban nativos del navegador, grises y cuadrados, en medio de un tablero. Lo
      único que existía era `.aud-error .pr-btn { margin-top: 8px }`, un margen sobre algo sin forma.

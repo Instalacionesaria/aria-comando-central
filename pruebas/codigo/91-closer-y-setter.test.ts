@@ -112,28 +112,37 @@ test('las dos pestañas tienen la MISMA forma de sub-pestañas, y abren en la pr
   assert.notEqual(setter.orden[3], closer.orden[3]);
 });
 
-test('la auditoría va INMEDIATAMENTE después de Closer en el menú', () => {
-  /* ── UNA POSICIÓN PEDIDA POR PRODUCTO, Y POR ESO FIJADA ────────────────────
+test('la auditoría ya no es una sección: vive dentro de Conversation', () => {
+  /* ── ACÁ SE AFIRMABA UNA ADYACENCIA, Y LA PANTALLA SE MUDÓ ─────────────────
    *
-   * `seccionesVisibles` es un `filter` sobre `SECCIONES`, así que **la posición en el arreglo es la
-   * posición en el menú**. Eso hace que mover una pestaña sea mover un bloque — y también que
-   * moverla sin querer sea igual de fácil.
+   * Decía que «Auditoría de agentes» iba inmediatamente después de Closer en el grupo Operación,
+   * porque la cola roja que ese módulo alimenta vive en Closer y una pestaña lejos de la que le da
+   * sentido no produce ningún error, solo distancia.
    *
-   * Las otras cuatro pruebas de este archivo comparan CONJUNTOS, no orden: con una pestaña que se
-   * desliza tres lugares, las cuatro siguen en verde. Y el síntoma no es un error sino una pestaña
-   * lejos de la que le da sentido — la cola roja que este módulo alimenta vive en Closer.
+   * Dejó de aplicar por un motivo mejor: el supervisor audita `chat_pre_agenda` y
+   * `chat_post_agenda` —lo que el CRM llama `bot_activado_leadflow` y `bot_activado_appflow`— o
+   * sea **exactamente los dos módulos que la arquitectura funcional pone dentro de Conversation
+   * Intelligence**. Estaba en «Operación» por historia. Ahora son dos pestañas de `conversation`.
    *
-   * Se afirma la ADYACENCIA y no el índice: entre las dos no puede entrar nada, y el grupo entero
-   * puede crecer por arriba o por abajo sin que esto se ponga rojo por un cambio que no la afecta. */
-  const enOperacion = SECCIONES.filter((x) => x.menu?.grupo === 'Operación').map((x) => x.clave);
-  const iCloser = enOperacion.indexOf('closer');
-  const iAuditoria = enOperacion.indexOf('auditoria');
-  assert.ok(iCloser >= 0 && iAuditoria >= 0, 'falta una de las dos en el grupo Operación');
-  assert.equal(
-    iAuditoria,
-    iCloser + 1,
-    `la auditoría tiene que ir justo debajo de Closer, y el orden es: ${enOperacion.join(', ')}`,
+   * Lo que se afirma en su lugar es que la mudanza esté COMPLETA en las dos direcciones, porque
+   * media mudanza es lo que deja una entrada de menú que no dibuja nada:
+   *
+   *   · la clave `auditoria` no está en `SECCIONES` —ni en el menú ni fuera de él—;
+   *   · y las rutas del auditor declaran la pantalla nueva, que es lo que decide qué sección
+   *     concedida hace falta para llegar. Sin esto, la sección se retira y el alcance por persona
+   *     sigue pidiendo una que ya no existe: nadie entra, y no falla nada. */
+  assert.ok(
+    !SECCIONES.some((x) => x.clave === 'auditoria'),
+    'volvió la sección `auditoria`: su pantalla son dos pestañas de Conversation',
   );
+
+  for (const ruta of ['app/api/auditoria/route.ts', 'app/api/auditoria/prompts/route.ts']) {
+    assert.match(
+      readFileSync(join(RAIZ, ruta), 'utf8'),
+      /export const PANTALLA = 'conversation';/,
+      `${ruta} sigue declarando la pantalla vieja: su alcance pide una sección que ya no existe`,
+    );
+  }
 });
 
 test('los `id="v-…"` de las vistas son exactamente las claves con menú', () => {

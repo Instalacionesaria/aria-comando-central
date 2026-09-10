@@ -1047,17 +1047,22 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   );
   assert.ok(CAPACIDADES.includes('fundaciones.ver'));
   assert.ok(CAPACIDADES.includes('fundaciones.editar'));
-  // Las SIETE que siguen esperando su primera operación.
+  // Las SEIS que siguen esperando su primera operación.
   //
   // Eran nueve hasta la Etapa 11, que se llevó `setter` y `closer` por el mismo camino que la 9
   // se llevó `icp`. `tools` nació sin operaciones y las tuvo el mismo día: Prospección en Frío le
   // dio las suyas, así que entró y salió de esta lista sin llegar a contarse.
   //
-  // El número literal es el cable trampa: **el día que una de estas ocho reciba su primera
+  // Y la séptima salida es **`conversation`**: el supervisor de los agentes —lo que se llamaba
+  // «Auditoría de agentes»— pasó a ser dos de sus pestañas, así que sus dos rutas declaran
+  // `PANTALLA = 'conversation'` y la pantalla dejó de no decidir nada. El cable trampa disparó
+  // exactamente para eso y se le hizo caso: la bandera se bajó en `SECCIONES`.
+  //
+  // El número literal es el cable trampa: **el día que una de estas seis reciba su primera
   // operación de servidor, esta línea falla** y alguien tiene que bajarle la bandera
   // `sinOperacionesTodavia` en `SECCIONES` en vez de dejar una pantalla que decide por
   // capacidad figurando como si no decidiera nada. Derivarlo lo apagaría.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 7);
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 6);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {
