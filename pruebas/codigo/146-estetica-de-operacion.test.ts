@@ -214,8 +214,8 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      exacto, sumar o sacar una obliga a venir acá y decirlo. */
   assert.equal(
     vistas.length,
-    7,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 3: si entró una pantalla ` +
+    12,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 12: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 

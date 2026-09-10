@@ -39,6 +39,9 @@ const HOJAS = [
   'app/operacion-estetica.css',
   'app/monitoreo.css',
   'app/auditoria.css',
+  // Los cinco tableros. Entra el día que se crea, no después: es la regla que el comentario de
+  // arriba se pone a sí misma, y una hoja nueva es justo cuando se olvida.
+  'app/inteligencia-estetica.css',
 ];
 
 /** El cuerpo de una hoja sin comentarios y sin su bloque `:root`, que es donde SÍ van los valores. */

@@ -44,6 +44,11 @@
 /* El Panel de Monitoreo: la tabla de consumo de todas las empresas. Misma capa y mismo motivo
    que las de arriba — esta pantalla no existe en el prototipo, así que `aios.css` no tiene nada
    que decir sobre ella y no se toca. */
+/* Los cinco tableros de Inteligencia, con el mismo alcance. Hoja aparte y no una sección más de
+   la de operación porque son un bloque coherente —el port congelado del maquetado, con su propio
+   vocabulario— y aquélla ya tiene 1400 líneas. */
+@import "./inteligencia-estetica.css" layer(components);
+
 @import "./monitoreo.css" layer(components);
 @import "./auditoria.css" layer(components);
 

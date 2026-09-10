@@ -2,17 +2,23 @@
 export default function CreativeView({ activa }) {
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-creative">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-creative">
       <div className="view-scroll cre-scroll">
         <div className="cre-wrap">
+          {/* La estética de operación INVIERTE el encabezado: el `h2` pasa a rótulo de 9,5 px en
+            mayúsculas y la bajada a titular de 24 px. `.stack` y `.ch-title` son las que lo
+            apilan, y `.cl-page` da el `gap: 18px` del cuerpo — sin ella, el `gap: 24px` del
+            scroller se aplica entre TODOS los bloques. */}
           <div className="cre-head">
-            <div className="ch-l">
-              <h2>
-                Creative
-              </h2>
-              <span className="cre-desc">
-                Qué funciona, qué no, y por qué
-              </span>
+            <div className="ch-l stack">
+              <div className="ch-title">
+                <h2>
+                  Creative
+                </h2>
+                <span className="cre-desc">
+                  Qué funciona, qué no, y por qué
+                </span>
+              </div>
             </div>
             <div className="ch-r">
               <button className="reco-btn" id="recoBtn">
@@ -44,45 +50,47 @@ export default function CreativeView({ activa }) {
               </div>
             </div>
           </div>
-          <section className="cre-stats" id="statRow" />
-          <div className="filterbar">
-            <div className="pill-wrap" id="sortWrap">
-              <button className="pill" id="sortPill" aria-haspopup="true" aria-expanded="false">
-                <span className="pk">
-                  Ordenar por
-                </span>
-                <span className="pv" id="sortPillVal">
-                  Agenda
-                </span>
-                <span className="pc">
-                  ⌄
-                </span>
-              </button>
-              <div className="pill-menu" id="sortMenu" role="menu">
-                <div className="pm-list" id="sortSeg" />
+          <div className="cl-page">
+            <section className="cre-stats" id="statRow" />
+            <div className="filterbar">
+              <div className="pill-wrap" id="sortWrap">
+                <button className="pill" id="sortPill" aria-haspopup="true" aria-expanded="false">
+                  <span className="pk">
+                    Ordenar por
+                  </span>
+                  <span className="pv" id="sortPillVal">
+                    Agenda
+                  </span>
+                  <span className="pc">
+                    ⌄
+                  </span>
+                </button>
+                <div className="pill-menu" id="sortMenu" role="menu">
+                  <div className="pm-list" id="sortSeg" />
+                </div>
               </div>
+              <span className="db-info" id="dbInfo" />
+              <span id="critName" hidden />
             </div>
-            <span className="db-info" id="dbInfo" />
-            <span id="critName" hidden />
+            <div className="ghead good">
+              <span className="gdot" />
+              <span className="gt">
+                Funciona
+              </span>
+              <span className="gsub" id="goodSub" />
+              <span className="gn" id="goodN" />
+            </div>
+            <section className="cg" id="goodGrid" />
+            <div className="ghead bad">
+              <span className="gdot" />
+              <span className="gt">
+                No funciona
+              </span>
+              <span className="gsub" id="badSub" />
+              <span className="gn" id="badN" />
+            </div>
+            <section className="cg" id="badGrid" />
           </div>
-          <div className="ghead good">
-            <span className="gdot" />
-            <span className="gt">
-              Funciona
-            </span>
-            <span className="gsub" id="goodSub" />
-            <span className="gn" id="goodN" />
-          </div>
-          <section className="cg" id="goodGrid" />
-          <div className="ghead bad">
-            <span className="gdot" />
-            <span className="gt">
-              No funciona
-            </span>
-            <span className="gsub" id="badSub" />
-            <span className="gn" id="badN" />
-          </div>
-          <section className="cg" id="badGrid" />
         </div>
       </div>
     </section>

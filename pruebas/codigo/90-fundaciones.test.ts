@@ -1138,7 +1138,7 @@ test('las dos capacidades están en el archivo que las carga, y no en la migraci
 
 // ─── La compuerta de paridad ───────────────────────────────────────────────
 
-test('`icp` salió de la comparación con el prototipo, y las que quedan siguen', async () => {
+test('nueve vistas salieron de la comparación con el prototipo, y queda `contacts`', async () => {
   // La vista ya no coincide con el prototipo A PROPÓSITO. Dejarla en la lista daría un rojo
   // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
   //
@@ -1147,12 +1147,22 @@ test('`icp` salió de la comparación con el prototipo, y las que quedan siguen'
   // venir a escribir el motivo — que es lo único que hace que una compuerta que se encoge no se
   // encoja sola.
   //
-  // Van cuatro salidas y cada una con su motivo escrito en `scripts/paridad.mjs`: `icp` en la
-  // Etapa 9, `setter` y `closer` en la 11 —las tres porque sus DATOS dejaron de ser los del
-  // maquetado— y `executive` acá, que es la primera por un cambio de DISEÑO: el mapa de áreas se
-  // pulió (cinco líneas de un solo color, un punto animado en cada una, la de Creative recta) y
-  // eso mueve la forma y las cajas del SVG a propósito. Su red de reemplazo es
-  // `pruebas/codigo/120-mapa-ejecutivo.test.ts`.
+  // Van CINCO salidas y nueve vistas, cada una con su motivo escrito en `scripts/paridad.mjs`:
+  //
+  //   · `icp` en la Etapa 9, `setter` y `closer` en la 11 — las tres porque sus DATOS dejaron de
+  //     ser los del maquetado;
+  //   · `executive`, la primera por un cambio de DISEÑO: el mapa de áreas se pulió (cinco líneas
+  //     de un solo color, un punto animado en cada una, la de Creative recta) y eso mueve la
+  //     forma y las cajas del SVG a propósito. Su red de reemplazo es
+  //     `pruebas/codigo/120-mapa-ejecutivo.test.ts`;
+  //   · **las cinco de Inteligencia**, por la estética de operación. Es la salida más grande y la
+  //     que deja la lista en una sola vista, así que es la que más merece el trinquete.
+  //
+  // Y acá va la parte incómoda, que es la que esta prueba existe para obligar a escribir: con
+  // `contacts` sola, esta compuerta ya casi no compara nada. Se acepta porque **hace tiempo que no
+  // corría**: no está en `verificar.yml`, necesita los navegadores de Playwright instalados a mano
+  // y una sesión. Lo que la reemplaza corre en `npm test`, que sí está en CI. Pero que quede
+  // dicho: sacar la novena vista no fue gratis, fue el reconocimiento de una compuerta dormida.
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { RAIZ } = await import('../apoyo/fuente.ts');
@@ -1160,8 +1170,17 @@ test('`icp` salió de la comparación con el prototipo, y las que quedan siguen'
   const lista = /const VISTAS = \[([\s\S]*?)\];/.exec(paridad);
   assert.ok(lista && lista[1], 'no se pudo leer la lista de vistas de paridad.mjs');
   const vistas = [...lista[1].matchAll(/'([\w-]+)'/g)].map((m) => m[1]);
-  assert.equal(vistas.length, 6, `la lista de paridad tiene ${vistas.length} vistas, no seis`);
-  for (const fuera of ['icp', 'setter', 'closer', 'executive']) {
+  // Con UNA sola entrada, «longitud 1» ya no distingue nada: cualquier vista daría verde. Por eso
+  // se afirma cuál es, y no cuántas hay.
+  assert.deepEqual(
+    vistas,
+    ['contacts'],
+    `la lista de paridad es ${JSON.stringify(vistas)} y tendría que ser sólo \`contacts\`: si ` +
+      'sacaste una vista más, vení a escribir por qué; si volviste a meter una, va a dar rojo ' +
+      'permanente',
+  );
+  for (const fuera of ['icp', 'setter', 'closer', 'executive',
+                       'acquisition', 'creative', 'conversion', 'conversation', 'sales']) {
     assert.ok(
       !vistas.includes(fuera),
       `\`${fuera}\` volvió a la comparación: diverge del prototipo a propósito y va a dar rojo ` +

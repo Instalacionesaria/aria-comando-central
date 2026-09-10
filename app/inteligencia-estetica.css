@@ -1,0 +1,247 @@
+/* La estética de operación aplicada a los cinco TABLEROS DE INTELIGENCIA.
+   ==========================================================================
+   Acquisition, Creative, Conversion, Conversation y Sales. Mismo alcance que
+   `operacion-estetica.css` —`:is(#v-closer, .estetica-op)`, acotado acá a cada `#v-*`— y misma
+   división de trabajo: allá vive el sistema visual, acá la traducción de las piezas que sólo
+   estas cinco dibujan.
+
+   ── POR QUÉ ES UNA HOJA APARTE Y NO UNA SECCIÓN MÁS ────────────────────────
+
+   `operacion-estetica.css` ya tiene 1400 líneas y nueve secciones. Estas cinco pantallas son un
+   bloque coherente —el port congelado del prototipo, con su propio vocabulario— y meterlas ahí
+   haría un archivo que nadie abre entero. La regla de siempre: `app/aios.css` NO SE TOCA, porque
+   es el port literal del maquetado; las correcciones van en una hoja hermana de la capa
+   `components`, que le gana por capa y por especificidad.
+
+   ── LO QUE HACE FALTA SABER ANTES DE AGREGAR UNA REGLA ─────────────────────
+
+   1 · **Estas cinco no comparten un solo componente con Closer, Setter y Auditoría.** Son
+       cascarones JSX sin estado, y buena parte de lo que se ve en pantalla **no está en el
+       JSX**: lo inyectan `lib/aios/acquisition.js`, `creative.js`, `conversion.js` y
+       `conversation.js` con plantillas de texto. Si una clase no aparece en el componente,
+       buscala ahí. Sales es la excepción: no tiene módulo, su marcado está entero en el JSX.
+
+   2 · **Casi todo su encabezado es COMPARTIDO entre las cinco.** `.ch-r`, `.reco-btn`,
+       `.ch-period`, `.db-seg` y `.pill` están en las cinco, idénticos. Por eso la sección 1 las
+       viste a todas de una vez, y no hay cinco copias de lo mismo.
+
+   3 · **`.ch-r` es la pieza que la estética nunca trató.** Ninguna pantalla de operación tiene
+       una mitad derecha en el encabezado —Closer, Setter y Auditoría llevan sólo el título y su
+       cápsula de pestañas—, así que los controles de periodo no tenían ninguna regla en la
+       estética. Sin la sección 1, el lado izquierdo del encabezado se invierte a la forma nueva
+       y el derecho se queda con la del maquetado: dos gramáticas en la misma línea.
+
+   4 · **Lo que estos módulos escriben en `#drawer` y `#recoModal` queda FUERA de alcance, y no
+       es un olvido.** `components/Overlays.jsx` los monta como hermanos de las vistas, no
+       adentro, así que ningún selector que cuelgue de `#v-*` los alcanza. Vestir el cajón y el
+       modal necesita otro gancho y es un trabajo aparte.
+
+   ── Y LAS TRES REGLAS DE SIEMPRE ───────────────────────────────────────────
+
+   Ni un color literal (`104-temas` vigila esta hoja), ni una `box-shadow` (`107-sin-sombras`
+   cuenta exactamente tres en todo el proyecto), y ningún `var(--x)` sin definición
+   (`121-tokens-de-css` lee todo `app/`).
+   ========================================================================= */
+
+/* ── 1 · EL ENCABEZADO: LA MITAD DERECHA ────────────────────────────────────
+ *
+ * Las cinco tienen el mismo `.ch-r`: un botón «Plan de acción», un segmentado de periodo
+ * (Hoy / 7 días / 30 días) y una píldora «Personalizado» que abre el calendario. Medido antes de
+ * tocar nada: `.reco-btn` y `.pill` con radio de 10 px y 12,5 px de texto, o sea la escala del
+ * maquetado, al lado de un titular que ahora mide 24 px. */
+
+/* La fila, alineada con el título ya invertido. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ch-r {
+  gap: 8px;
+  align-items: center;
+}
+
+/* «Plan de acción» es la acción principal de estas pantallas: toma la forma del botón de la
+   aplicación —cápsula, acento sólido— igual que `.fd-btn` en las de operación. No se le pone la
+   clase en el JSX porque el marcado es el port del maquetado y `paridad` lo compara. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .reco-btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .reco-btn .rb-ic {
+  opacity: .75;
+}
+
+/* El segmentado de periodo es una cápsula de pestañas más chica: el MISMO objeto conceptual que
+   `.cl-sub`, con el mismo relleno de 4 px y la misma activa en acento sólido. Que dos controles
+   que hacen lo mismo se vean igual es la mitad del trabajo de esta hoja. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .db-seg {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: rgb(var(--c-nube) / .05);
+  border: 1px solid var(--line);
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .db-seg button {
+  height: 24px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  background: transparent;
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .db-seg button.on {
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+  font-weight: 600;
+}
+
+/* La píldora del calendario y la de «ordenar por»: mismo alto que el segmentado, para que la
+   fila no tenga tres alturas distintas. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .pill {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+  color: var(--txt-dim);
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .pill .pk {
+  color: var(--txt-faint);
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .pill .pv {
+  color: var(--txt);
+  font-weight: 500;
+}
+
+/* El segmentado de MODO de Conversation (Estado / Agentes) es un `.cl-sub` con otro nombre: vive
+   en el mismo sitio del encabezado y hace lo mismo. Se le da la misma forma en vez de dejar dos
+   cápsulas distintas en pantallas hermanas. Ídem la barra de incidencias de su cuerpo. */
+#v-conversation .mode-seg,
+#v-conversation .iss-bar {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: rgb(var(--c-nube) / .05);
+  border: 1px solid var(--line);
+  align-self: flex-start;
+}
+#v-conversation .mode-seg button,
+#v-conversation .iss-bar button {
+  height: 26px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  background: transparent;
+}
+#v-conversation .mode-seg button.on,
+#v-conversation .iss-bar button.on {
+  background: var(--accent-hondo);
+  color: var(--sobre-acento);
+  font-weight: 600;
+}
+#v-conversation .mode-seg button svg { width: 13px; height: 13px; }
+
+/* ── 2 · LAS CAJAS COMPARTIDAS ──────────────────────────────────────────────
+ *
+ * `.card` ya la refina `operacion-estetica.css` —tarjeta translúcida de 26 px— y llega sola a
+ * Acquisition, Conversation y Sales. Lo que falta es el resto del vocabulario de cajas del
+ * maquetado, que esas tres comparten con Creative y Conversion. */
+
+/* El rótulo de grupo: es el `.md-h` de estas pantallas —«Los dos flujos», «Requiere acción
+ * ahora»— y toma su misma voz: 12 px, mayúsculas, `.025em`. El punto de color y el contador de
+ * la derecha se quedan: dicen cuántos y de qué gravedad, que es información. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead {
+  padding: 0 2px 2px;
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead .gt {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead .gsub {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+
+/* La barra de filtros deja de tener línea propia: con las tarjetas translúcidas de 26 px, una
+   regla horizontal más es un borde que no separa nada. El espacio ya lo da el `gap` de
+   `.cl-page`. */
+:is(#v-acquisition, #v-creative, #v-conversion) .filterbar {
+  border: 0;
+  padding: 0 2px;
+  gap: 8px;
+}
+
+/* Las rejillas de tarjetas y los paneles de cifras: sólo la separación, para que respiren como
+   las de operación. La forma de cada tarjeta la da `.card`, que ya está refinada. */
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) :is(.grid-4, .cs-panels, .cg, .acq-kpis, .acq-fgrid, .cre-stats) {
+  gap: 12px;
+}
+
+/* ── 3 · LO PROPIO DE CADA PANTALLA ─────────────────────────────────────────
+ *
+ * Cada una reimplementó su tarjeta con su prefijo. Lo que se iguala es la FORMA —radio y
+ * superficie—, nunca qué color lleva cada cosa: el semáforo de cada tablero significa algo y sus
+ * pruebas lo leen. */
+
+/* Acquisition: los KPI y las tarjetas de funnel. La de funnel traía un `linear-gradient` propio
+   en `aios.css:1738` que la tarjeta translúcida pisa — y está bien que la pise: el degradado
+   existía para separarla del lienzo plano del maquetado, y acá esa separación la da el
+   desenfoque. */
+#v-acquisition :is(.acq-kpis > *, .acq-fgrid > .card) {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+}
+#v-acquisition .acq-range { border-radius: var(--radio); }
+#v-acquisition .acq-sub { font-size: 11.5px; color: var(--txt-dim); }
+
+/* Creative: la tira de cifras y las tarjetas de contenido. */
+#v-creative :is(.cre-stats > *, .cg > .cc) {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+}
+#v-creative .cc-name { font-size: 13px; font-weight: 500; letter-spacing: -.01em; }
+#v-creative .cc-status { border-radius: 9999px; font-size: 8.5px; letter-spacing: .05em; text-transform: uppercase; }
+
+/* Conversion: los paneles de cifras y el recorrido. El `.jstep` se queda con su forma —es un
+   diagrama, no una tarjeta— y sólo toma el radio de la escala. */
+#v-conversion .cs-panels > * {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+}
+#v-conversion :is(.journey, .jstep) { border-radius: var(--radio); }
+
+/* Conversation: los paneles, los flujos y las fichas de agente. */
+#v-conversation :is(.cs-panels > *, .cs-flows > *, .csa) {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+}
+#v-conversation .csa-n { font-size: 13px; font-weight: 500; }
+#v-conversation .iss { border-radius: var(--radio); }
+
+/* Sales: la única sin módulo imperativo. Sus tarjetas ya son `.card`, así que hereda la forma
+   entera; lo que queda es la cifra grande, que toma el peso ligero de los titulares de la
+   estética en vez del 650 del maquetado. */
+#v-sales .stat .s-v { font-weight: 300; letter-spacing: -.02em; }
+#v-sales .stat .s-l {
+  font-size: 11px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+#v-sales .mini-bar { border-radius: 9999px; }

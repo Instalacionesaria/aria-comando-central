@@ -2,16 +2,22 @@
 export default function SalesView({ activa }) {
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-sales">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-sales">
       <div className="view-scroll cre-scroll">
+        {/* La estética de operación INVIERTE el encabezado: el `h2` pasa a rótulo de 9,5 px en
+            mayúsculas y la bajada a titular de 24 px. `.stack` y `.ch-title` son las que lo
+            apilan, y `.cl-page` da el `gap: 18px` del cuerpo — sin ella, el `gap: 24px` del
+            scroller se aplica entre TODOS los bloques. */}
         <div className="cre-head">
-          <div className="ch-l">
-            <h2>
-              Sales
-            </h2>
-            <span className="cre-desc">
-              Cierre, closers y motivos de pérdida
-            </span>
+          <div className="ch-l stack">
+            <div className="ch-title">
+              <h2>
+                Sales
+              </h2>
+              <span className="cre-desc">
+                Cierre, closers y motivos de pérdida
+              </span>
+            </div>
           </div>
           <div className="ch-r">
             <button className="reco-btn" id="slPlanBtn">
@@ -43,175 +49,177 @@ export default function SalesView({ activa }) {
             </div>
           </div>
         </div>
-        <div className="grid-4">
-          <div className="card">
-            <div className="card-body stat">
-              <div className="s-l">
-                Asistencias
+        <div className="cl-page">
+          <div className="grid-4">
+            <div className="card">
+              <div className="card-body stat">
+                <div className="s-l">
+                  Asistencias
+                </div>
+                <div className="s-v">
+                  74
+                </div>
               </div>
-              <div className="s-v">
-                74
+            </div>
+            <div className="card">
+              <div className="card-body stat">
+                <div className="s-l">
+                  Tasa de cierre
+                </div>
+                <div className="s-v">
+                  24%
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body stat">
+                <div className="s-l">
+                  Ventas
+                </div>
+                <div className="s-v">
+                  18
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body stat">
+                <div className="s-l">
+                  Revenue reportado
+                </div>
+                <div className="s-v" style={{ color: 'var(--exec)' }}>
+                  $55,200
+                </div>
               </div>
             </div>
           </div>
           <div className="card">
-            <div className="card-body stat">
-              <div className="s-l">
-                Tasa de cierre
-              </div>
-              <div className="s-v">
-                24%
-              </div>
+            <div className="card-head">
+              Closers
             </div>
-          </div>
-          <div className="card">
-            <div className="card-body stat">
-              <div className="s-l">
+            <div className="col-head" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
+              <span>
+                Closer
+              </span>
+              <span>
+                Agendadas
+              </span>
+              <span>
+                Asistieron
+              </span>
+              <span>
                 Ventas
+              </span>
+              <span>
+                Cierre
+              </span>
+              <span>
+                Revenue
+              </span>
+            </div>
+            <div className="rows">
+              <div className="row-i" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
+                <div>
+                  <div className="rn">
+                    Jorge Veramendi
+                  </div>
+                  <div className="rs">
+                    ICP alto asignado
+                  </div>
+                </div>
+                <div className="num">
+                  44
+                </div>
+                <div className="num">
+                  31
+                </div>
+                <div className="num">
+                  10
+                </div>
+                <div className="num" style={{ color: 'var(--ok)' }}>
+                  32%
+                </div>
+                <div className="num rev">
+                  $31,000
+                </div>
               </div>
-              <div className="s-v">
-                18
+              <div className="row-i" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
+                <div>
+                  <div className="rn">
+                    Asesor comercial
+                  </div>
+                  <div className="rs">
+                    ICP medio y bajo
+                  </div>
+                </div>
+                <div className="num">
+                  63
+                </div>
+                <div className="num">
+                  43
+                </div>
+                <div className="num">
+                  8
+                </div>
+                <div className="num">
+                  19%
+                </div>
+                <div className="num rev">
+                  $24,200
+                </div>
               </div>
             </div>
           </div>
           <div className="card">
-            <div className="card-body stat">
-              <div className="s-l">
-                Revenue reportado
-              </div>
-              <div className="s-v" style={{ color: 'var(--exec)' }}>
-                $55,200
-              </div>
+            <div className="card-head">
+              Motivos de no venta{' '}
+              <span className="hint">
+                56 llamadas sin cierre
+              </span>
             </div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head">
-            Closers
-          </div>
-          <div className="col-head" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
-            <span>
-              Closer
-            </span>
-            <span>
-              Agendadas
-            </span>
-            <span>
-              Asistieron
-            </span>
-            <span>
-              Ventas
-            </span>
-            <span>
-              Cierre
-            </span>
-            <span>
-              Revenue
-            </span>
-          </div>
-          <div className="rows">
-            <div className="row-i" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
-              <div>
+            <div className="rows">
+              <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
                 <div className="rn">
-                  Jorge Veramendi
+                  Precio
                 </div>
-                <div className="rs">
-                  ICP alto asignado
+                <div className="num">
+                  21
+                </div>
+                <div className="mini-bar">
+                  <i style={{ width: '38%', background: 'var(--warn)' }} />
                 </div>
               </div>
-              <div className="num">
-                44
-              </div>
-              <div className="num">
-                31
-              </div>
-              <div className="num">
-                10
-              </div>
-              <div className="num" style={{ color: 'var(--ok)' }}>
-                32%
-              </div>
-              <div className="num rev">
-                $31,000
-              </div>
-            </div>
-            <div className="row-i" style={{ gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr 1.1fr' }}>
-              <div>
+              <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
                 <div className="rn">
-                  Asesor comercial
+                  No es quien decide
                 </div>
-                <div className="rs">
-                  ICP medio y bajo
+                <div className="num">
+                  13
+                </div>
+                <div className="mini-bar">
+                  <i style={{ width: '23%', background: 'var(--warn)' }} />
                 </div>
               </div>
-              <div className="num">
-                63
+              <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
+                <div className="rn">
+                  Sin necesidad clara
+                </div>
+                <div className="num">
+                  12
+                </div>
+                <div className="mini-bar">
+                  <i style={{ width: '21%', background: 'var(--txt-faint)' }} />
+                </div>
               </div>
-              <div className="num">
-                43
-              </div>
-              <div className="num">
-                8
-              </div>
-              <div className="num">
-                19%
-              </div>
-              <div className="num rev">
-                $24,200
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head">
-            Motivos de no venta{' '}
-            <span className="hint">
-              56 llamadas sin cierre
-            </span>
-          </div>
-          <div className="rows">
-            <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
-              <div className="rn">
-                Precio
-              </div>
-              <div className="num">
-                21
-              </div>
-              <div className="mini-bar">
-                <i style={{ width: '38%', background: 'var(--warn)' }} />
-              </div>
-            </div>
-            <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
-              <div className="rn">
-                No es quien decide
-              </div>
-              <div className="num">
-                13
-              </div>
-              <div className="mini-bar">
-                <i style={{ width: '23%', background: 'var(--warn)' }} />
-              </div>
-            </div>
-            <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
-              <div className="rn">
-                Sin necesidad clara
-              </div>
-              <div className="num">
-                12
-              </div>
-              <div className="mini-bar">
-                <i style={{ width: '21%', background: 'var(--txt-faint)' }} />
-              </div>
-            </div>
-            <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
-              <div className="rn">
-                Pidió tiempo
-              </div>
-              <div className="num">
-                10
-              </div>
-              <div className="mini-bar">
-                <i style={{ width: '18%', background: 'var(--txt-faint)' }} />
+              <div className="row-i" style={{ gridTemplateColumns: '1.6fr .6fr 2fr' }}>
+                <div className="rn">
+                  Pidió tiempo
+                </div>
+                <div className="num">
+                  10
+                </div>
+                <div className="mini-bar">
+                  <i style={{ width: '18%', background: 'var(--txt-faint)' }} />
+                </div>
               </div>
             </div>
           </div>

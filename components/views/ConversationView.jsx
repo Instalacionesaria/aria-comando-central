@@ -2,8 +2,11 @@
 export default function ConversationView({ activa }) {
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-conversation">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-conversation">
       <div className="view-scroll cre-scroll">
+        {/* Es la única de las cinco que YA traía el encabezado apilado. Le faltaba `.cl-page`, que
+            da el `gap: 18px` del cuerpo: sin ella el `gap: 24px` del scroller se reparte entre
+            todos los bloques y se suma a los márgenes que cada uno ya trae. */}
         <div className="cre-head">
           <div className="ch-l stack">
             <div className="ch-title">
@@ -62,53 +65,55 @@ export default function ConversationView({ activa }) {
             </div>
           </div>
         </div>
-        <section className="cs-panels" id="csStats" />
-        <div className="cs-view" id="csEstado">
-          <div className="ghead">
-            <span
-              className="gdot"
-              style={{ background: 'var(--accent)' }}
-             />
-            <span className="gt">
-              Los dos flujos
-            </span>
-            <span className="gsub">
-              cada uno con su propia misión y su cadena
-            </span>
+        <div className="cl-page">
+          <section className="cs-panels" id="csStats" />
+          <div className="cs-view" id="csEstado">
+            <div className="ghead">
+              <span
+                className="gdot"
+                style={{ background: 'var(--accent)' }}
+               />
+              <span className="gt">
+                Los dos flujos
+              </span>
+              <span className="gsub">
+                cada uno con su propia misión y su cadena
+              </span>
+            </div>
+            <div className="cs-flows" id="csFlows" />
           </div>
-          <div className="cs-flows" id="csFlows" />
-        </div>
-        <div className="cs-view" id="csAgentes" hidden>
-          <div className="ghead">
-            <span className="gdot" style={{ background: 'var(--txt-faint)' }} />
-            <span className="gt">
-              Los cuatro agentes
-            </span>
-            <span className="gsub">
-              no todos convierten · cada uno se mide por su rol
-            </span>
-          </div>
-          <div className="cs-agents" id="csAgents" />
-          <div className="ghead bad" id="csIssues">
-            <span className="gdot" />
-            <span className="gt">
-              Qué corregir
-            </span>
-            <span className="gsub">
-              prompts, datos inválidos y conversaciones marcadas
-            </span>
-            <span className="gn" id="csIssN" />
-          </div>
-          <div className="iss-bar" id="csIssFilter">
-            <button data-c="abiertos" className="on">
-              Por resolver
-            </button>
-            <button data-c="resueltos">
-              Resueltas
-            </button>
-          </div>
-          <div className="card">
-            <div id="csFixes" />
+          <div className="cs-view" id="csAgentes" hidden>
+            <div className="ghead">
+              <span className="gdot" style={{ background: 'var(--txt-faint)' }} />
+              <span className="gt">
+                Los cuatro agentes
+              </span>
+              <span className="gsub">
+                no todos convierten · cada uno se mide por su rol
+              </span>
+            </div>
+            <div className="cs-agents" id="csAgents" />
+            <div className="ghead bad" id="csIssues">
+              <span className="gdot" />
+              <span className="gt">
+                Qué corregir
+              </span>
+              <span className="gsub">
+                prompts, datos inválidos y conversaciones marcadas
+              </span>
+              <span className="gn" id="csIssN" />
+            </div>
+            <div className="iss-bar" id="csIssFilter">
+              <button data-c="abiertos" className="on">
+                Por resolver
+              </button>
+              <button data-c="resueltos">
+                Resueltas
+              </button>
+            </div>
+            <div className="card">
+              <div id="csFixes" />
+            </div>
           </div>
         </div>
       </div>
