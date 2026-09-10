@@ -65,12 +65,16 @@ const CATALOGO_ICP = {
   rutaConversar: '/api/fundaciones/conversar',
   /* La del relleno del formulario con el contexto heredado. */
   rutaRellenar: '/api/fundaciones/rellenar',
+  /* «Traer del onboarding»: vuelve a copiar el formulario de Walter a la ficha, a pedido. Solo la
+     tiene esta pantalla porque solo acá vive «Tu ficha»; Tools no la pasa y el panel no la dibuja. */
+  rutaOnboarding: '/api/fundaciones/onboarding',
   capacidadEditar: 'fundaciones.editar',
 };
 
 export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, rutaRellenar, capacidadEditar } =
     catalogo;
+  const rutaOnboarding = catalogo.rutaOnboarding ?? null;
   const soloChatDePantalla = catalogo.soloChat === true;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
@@ -486,6 +490,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           rutaGenerar={rutaGenerar}
           rutaConversar={rutaConversar}
           rutaRellenar={rutaRellenar}
+          rutaOnboarding={rutaOnboarding}
         />
       )}
     </>

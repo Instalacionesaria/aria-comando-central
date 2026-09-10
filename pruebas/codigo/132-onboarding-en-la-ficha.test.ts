@@ -158,6 +158,52 @@ test('el almacén lee la columna `intake` con el lector tolerante', () => {
   assert.match(almacen, /estado\.onboarding = leerOnboarding\(fila\[LLAVES\.onboarding\]\)/);
 });
 
+test('«Traer del onboarding»: el plan B manual, solo en «Tu ficha», y la empresa sale de la sesión', () => {
+  /* Kevin (2026-09-10): «¿habrá algún botón para jalar del onboarding, por si acaso, como una opción
+     B, y no depender de que se extraiga solito?». Aprobado sobre mockup. Tres piezas, y cada una tiene
+     su propia forma de fallar en silencio. */
+
+  // 1 · La ruta: portero, contexto de organización, y la función de la base. Nada más.
+  const ruta = sinComentarios(codigo('app/api/fundaciones/onboarding/route.ts'));
+  assert.match(ruta, /exigir\(peticion, \['fundaciones\.editar'\], PANTALLA\)/, 'la ruta no pide editar');
+  assert.match(ruta, /conOrganizacion\(contexto\.orgEfectiva/);
+  assert.match(ruta, /select public\.aria_cc_traer_onboarding\(\) as r/);
+  assert.ok(!/aria_cc_icp_oferta/.test(ruta), 'la ruta lee la tabla de Walter directamente: eso es de la función');
+  assert.ok(!/conIdentidad/.test(ruta));
+
+  // 2 · La función: security definer, la empresa de `app.org_id` y NO de un parámetro, y solo el
+  //     rol del inquilino la ejecuta.
+  const sql = migracion('015_traer_onboarding.sql');
+  assert.match(sql, /create or replace function public\.aria_cc_traer_onboarding\(\)\s*\n\s*returns jsonb/);
+  assert.match(sql, /security definer/);
+  assert.match(sql, /current_setting\('app\.org_id', true\)/);
+  assert.match(sql, /raise exception 'aria_cc_traer_onboarding: no hay organización en la sesión/);
+  assert.match(sql, /revoke all on function public\.aria_cc_traer_onboarding\(\) from public/);
+  assert.match(sql, /grant execute on function public\.aria_cc_traer_onboarding\(\) to app_inquilino/);
+  // Misma forma que escribe el disparador de la 014: si divergen, el lector deja de entender una.
+  for (const clave of ['captura_id', 'capturado_el', 'telefono', 'pais_ciudad', 'website', 'html']) {
+    assert.match(sql, new RegExp(`'${clave}'`), `la 015 dejó de escribir ${clave}`);
+    assert.match(migracion('014_onboarding_a_la_ficha.sql'), new RegExp(`'${clave}'`));
+  }
+
+  // 3 · El panel: la línea existe, solo para la ficha, y remonta el chat después de traer.
+  const panel = codigo('components/fundaciones/PanelHerramienta.jsx');
+  assert.match(panel, /const esLaFicha = herramienta\.id === 0 && !!rutaOnboarding;/);
+  assert.match(panel, /className=\{`fd-onboarding /);
+  assert.match(panel, /Traer del onboarding/);
+  assert.match(panel, /Esta empresa no tiene formulario de onboarding guardado/, 'sin formulario no se distingue de un error');
+  assert.match(panel, /key=\{`chat-\$\{reinicios\}`\}/, 'después de traer, el chat no vuelve a abrir proponiendo');
+  assert.match(panel, /await onEstadoCambiado\(\);\s*\n\s*setReinicios/, 'remonta el chat ANTES de recargar el estado');
+
+  // Y solo ICP & Oferta pasa la ruta: en Tools no hay ficha.
+  assert.match(codigo('components/fundaciones/Fundaciones.jsx'), /rutaOnboarding: '\/api\/fundaciones\/onboarding'/);
+  assert.ok(!/rutaOnboarding/.test(codigo('components/views/ToolsView.jsx')));
+
+  // La fecha que muestra la línea viene de la captura.
+  assert.equal(leerOnboarding({ ...CAPTURA, capturado_el: '2026-09-10T16:22:46Z' })?.capturadoEl, '2026-09-10T16:22:46Z');
+  assert.equal(leerOnboarding(CAPTURA)?.capturadoEl, null);
+});
+
 test('la migración 014 copia la captura a la ficha, y no puede romper el alta de Walter', () => {
   const sql = migracion('014_onboarding_a_la_ficha.sql');
 

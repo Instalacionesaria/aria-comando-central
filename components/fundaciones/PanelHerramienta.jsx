@@ -76,6 +76,9 @@ export default function PanelHerramienta({
   rutaGenerar,
   rutaConversar,
   rutaRellenar,
+  /* «Traer del onboarding». Solo llega en ICP & Oferta, y solo la dibuja «Tu ficha» (id 0): el
+     onboarding es la raíz, y las demás herramientas ya heredan de la ficha. */
+  rutaOnboarding = null,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -165,6 +168,49 @@ export default function PanelHerramienta({
    *
    * Cuesta una inferencia corta, así que es un botón y no algo que pase solo al abrir la pestaña. */
   const [rellenando, setRellenando] = useState(false);
+
+  /* ── TRAER DEL ONBOARDING (plan B del disparador) ───────────────────────────
+   *
+   * El formulario de Walter llega a la ficha solo, por un disparador de la base (migración 014)
+   * que traga sus errores a propósito. Kevin: «una opción B para no depender de que se extraiga
+   * solito». Esto rehace la copia a pedido, para la empresa de la sesión, y después reabre el chat
+   * para que el agente proponga con lo que trajo.
+   *
+   * Tres resultados y los tres se muestran distintos: se trajo, no hay formulario para esta empresa
+   * (que NO es un error), o no se pudo. Colapsarlos en «no se pudo» mandaría a la persona sin
+   * onboarding a reintentar algo que nunca va a existir. */
+  const esLaFicha = herramienta.id === 0 && !!rutaOnboarding;
+  const [trayendo, setTrayendo] = useState(false);
+  const [traido, setTraido] = useState(null);
+  /* Cambiar esta clave remonta el chat: con la ficha sin entregable, al montarse reabre proponiendo
+     (`reiniciarAlAbrir`), que es exactamente lo que hace falta después de traer el formulario. */
+  const [reinicios, setReinicios] = useState(0);
+
+  const traerOnboarding = async () => {
+    setTraido(null);
+    setTrayendo(true);
+    // Sin espera larga: esta ruta copia una fila, no llama al modelo.
+    const r = await pedir(rutaOnboarding, { metodo: 'POST' });
+    setTrayendo(false);
+    const mal = problema(r);
+    if (mal) {
+      setTraido({ tipo: 'mal', texto: mal });
+      return;
+    }
+    if (!r.datos.encontrado) {
+      setTraido({ tipo: 'nada' });
+      return;
+    }
+    setTraido({ tipo: 'ok', fecha: r.datos.capturadoEl });
+    await onEstadoCambiado();
+    setReinicios((n) => n + 1);
+  };
+
+  const fechaLarga = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
+  };
 
   const rellenar = async () => {
     setError(null);
@@ -357,6 +403,71 @@ export default function PanelHerramienta({
         </div>
       ) : null}
 
+      {/* EL FORMULARIO DE ONBOARDING, solo en «Tu ficha». Dice en qué estado está y trae el botón
+          que lo vuelve a buscar. Aprobado por Kevin sobre el mockup del 2026-09-10. */}
+      {esLaFicha ? (
+        <div
+          className={`fd-onboarding ${
+            traido?.tipo === 'mal' ? 'mal' : traido?.tipo === 'nada' ? 'mal' : estado.onboarding ? 'ok' : 'falta'
+          }`}
+          role="status"
+        >
+          <span className="fd-marca">{trayendo ? <span className="fd-punto" /> : '◍'}</span>
+          <div className="fd-onboarding-texto">
+            {trayendo ? (
+              <>
+                <b>Buscando tu formulario…</b>
+                <small>Un segundo.</small>
+              </>
+            ) : traido?.tipo === 'mal' ? (
+              <>
+                <b>No se pudo traer tu formulario</b>
+                <small>{traido.texto}</small>
+              </>
+            ) : traido?.tipo === 'nada' ? (
+              <>
+                <b>Esta empresa no tiene formulario de onboarding guardado</b>
+                <small>No es un error de la ficha: no hay nada que traer. Podés completarla conversando con el agente.</small>
+              </>
+            ) : estado.onboarding ? (
+              <>
+                <b>
+                  {traido?.tipo === 'ok'
+                    ? 'Listo: tu formulario ya está en la ficha'
+                    : 'Tu formulario de onboarding está cargado'}
+                </b>
+                <small>
+                  {[
+                    estado.onboarding.nombreDelNegocio,
+                    `${estado.onboarding.secciones.length} ${estado.onboarding.secciones.length === 1 ? 'sección' : 'secciones'}`,
+                    fechaLarga(estado.onboarding.capturadoEl) ? `llenado el ${fechaLarga(estado.onboarding.capturadoEl)}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  {traido?.tipo === 'ok' ? ' · El agente vuelve a abrir con tus datos.' : ''}
+                </small>
+              </>
+            ) : (
+              <>
+                <b>Tu formulario de onboarding todavía no está en la ficha</b>
+                <small>Si te inscribiste por el formulario, este botón lo trae. Si no, seguí conversando: la ficha se arma igual.</small>
+              </>
+            )}
+          </div>
+          {puedeEditar ? (
+            <button
+              type="button"
+              className={`fd-btn${estado.onboarding || traido?.tipo === 'nada' ? ' sec' : ''}`}
+              disabled={trayendo || generando}
+              onClick={traerOnboarding}
+              title="Vuelve a copiar a la ficha lo que contestaste en el formulario de onboarding"
+            >
+              {estado.onboarding ? '↻ Volver a traer' : traido?.tipo === 'nada' ? 'Reintentar' : 'Traer del onboarding'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* El selector solo existe donde hay dos caminos. En «ICP & Oferta» hay uno —el chat— y un
           selector con una sola opción sería un botón que no elige nada. */}
       {conAgente && !soloChat ? (
@@ -384,6 +495,7 @@ export default function PanelHerramienta({
 
       {conAgente && (soloChat || modo === MODO_AGENTE) ? (
         <ChatDeHerramienta
+          key={`chat-${reinicios}`}
           herramienta={herramienta}
           inicial={estado.chats[herramienta.id]}
           puedeEditar={puedeEditar}

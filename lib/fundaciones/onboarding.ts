@@ -58,6 +58,8 @@ export interface Onboarding {
   telefono: string | null;
   paisCiudad: string | null;
   website: string | null;
+  /** Cuándo llenó el formulario, ISO. Es lo que la ficha muestra: «llenado el 10 de septiembre». */
+  capturadoEl: string | null;
 }
 
 /**
@@ -146,6 +148,7 @@ export function leerOnboarding(crudo: unknown): Onboarding | null {
     telefono: texto(o['telefono']),
     paisCiudad: texto(o['pais_ciudad']),
     website: texto(o['website']),
+    capturadoEl: typeof o['capturado_el'] === 'string' && o['capturado_el'] !== '' ? o['capturado_el'] : null,
   };
 
   /* Hace falta una sección o el nombre del negocio. El teléfono, el sitio y la ciudad NO alcanzan
