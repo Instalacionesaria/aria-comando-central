@@ -39,7 +39,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -59,7 +59,7 @@ const sinComentarios = (s: string) =>
 const leer = (r: string) => sinComentarios(leerCrudo(r));
 
 const ESTETICA = 'app/operacion-estetica.css';
-const ALCANCE = ':is(#v-closer, #v-setter, #v-auditoria)';
+const ALCANCE = ':is(#v-closer, .estetica-op)';
 
 /** Las líneas de SELECTOR de la hoja: las que abren una regla, sin los comentarios. */
 function selectores(): string[] {
@@ -69,7 +69,7 @@ function selectores(): string[] {
     .filter((l) => l.includes('#v-'));
 }
 
-test('la hoja de operación alcanza a las dos pantallas, y no queda nada suelto', () => {
+test('todo selector de la hoja usa el alcance, y no queda nada suelto', () => {
   const conAlcance = selectores();
   assert.ok(conAlcance.length > 100, `solo ${conAlcance.length} selectores: la hoja cambió de forma`);
 
@@ -169,22 +169,83 @@ test('el hero de DOS anillos conserva su columna', () => {
 // AUDITORÍA: LOS TRES CHOQUES, Y EL CHROME QUE LE FALTABA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('el chrome de Auditoría es el MISMO que el de las otras dos', () => {
-  /* Le faltaban tres clases, y cada una tenía consecuencia:
+test('toda vista que se anota en la estética trae el chrome entero', () => {
+  /* Auditoría llegó sin tres clases, y cada una tenía consecuencia:
        · `.stack` y `.ch-title` — la estética INVIERTE el encabezado (el `h2` pasa a rótulo chico y
          la descripción a titular de 24 px) y esas dos son las que lo apilan;
        · `.cl-page` — sin el envoltorio, el `gap: 24px` del scroller se aplicaba entre TODOS los
          bloques en vez de separar la cabecera del cuerpo una vez.
      Se agregaron en el JSX en vez de compensarlas con reglas: dos de los tres choques
-     desaparecieron solos. */
-  const vista = leer('components/views/AuditoriaView.jsx');
-  for (const clase of ['ch-l stack', 'ch-title', 'cl-page']) {
-    assert.ok(
-      vista.includes(`className="${clase}"`),
-      `\`AuditoriaView\` perdió \`${clase}\`: su chrome deja de ser el de Closer y Setter, y la ` +
-        'estética se le aplica a medias',
-    );
+     desaparecieron solos.
+
+     La prueba miraba `AuditoriaView` por su nombre. Ahora recorre TODA vista que lleve
+     `estetica-op`, porque anotarse a la estética pasó a ser una clase en el `<section>` — o sea
+     que entrar es de una línea, y entrar a medias también. Sin esto, la pantalla número diez se
+     suma al alcance, hereda la paleta y la tipografía, y se queda con el encabezado sin invertir:
+     no falla nada, se ve distinta.
+
+     Ojo: se lee el JSX **crudo** para encontrar las vistas, y **sin comentarios** para afirmar.
+     Un `estetica-op` nombrado en un comentario no anota a nadie, pero tampoco tiene que hacer
+     fallar a nadie. */
+  const vistas = readdirSync(join(RAIZ, 'components/views'))
+    .filter((f) => f.endsWith('.jsx'))
+    .filter((f) => leer(`components/views/${f}`).includes('estetica-op'));
+
+  /* El conteo es EXACTO, y es un trinquete —el mismo que `90-fundaciones` le pone a la lista de
+     paridad—. Con un piso (`>= 3`), quitarle la clase a una pantalla cuando haya doce pasaría en
+     verde, y el síntoma de eso es una pestaña que vuelve sola a la estética vieja. Con el número
+     exacto, sumar o sacar una obliga a venir acá y decirlo. */
+  assert.equal(
+    vistas.length,
+    3,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 3: si entró una pantalla ` +
+      'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
+  );
+
+  for (const archivo of vistas) {
+    const vista = leer(`components/views/${archivo}`);
+    for (const clase of ['ch-l stack', 'ch-title', 'cl-page']) {
+      assert.ok(
+        vista.includes(`className="${clase}"`),
+        `\`${archivo}\` se anotó en la estética con \`estetica-op\` pero le falta \`${clase}\`: ` +
+          'hereda la paleta y la tipografía, y el encabezado se le queda sin invertir',
+      );
+    }
   }
+});
+
+test('el alcance conserva su ancla de especificidad: un `#id` Y una clase', () => {
+  /* LA PIEZA DE LA QUE CUELGA TODA LA HOJA, Y LA QUE MÁS SE PARECE A CÓDIGO MUERTO.
+
+     El alcance es `:is(#v-closer, .estetica-op)`, y las tres vistas de operación llevan la clase
+     —el Closer incluido—. O sea que `#v-closer` no hace falta para que ninguna regla COINCIDA, y
+     ahí está la trampa: parece repetido y se borra en un minuto.
+
+     Hace otra cosa. `:is()` toma la especificidad de su argumento MÁS específico, sin importar
+     cuál coincidió, así que el `#id` es lo que mantiene las 210 reglas en `1-x-0`. Sin él caen a
+     `0-x+1-0` **todas a la vez**, y las pisan `closer.css` y `aios.css`, que declaran varias de
+     estas mismas clases. No hay error, no hay consola: se despintan pedazos sueltos en pantallas
+     distintas.
+
+     Se afirma la FORMA —hay un `#id` y hay una clase—, no la cadena exacta, para que sumar o
+     quitar un id anclado no rompa la prueba por algo que no es lo que cuida. */
+  assert.match(ALCANCE, /^:is\(/, 'el alcance dejó de ser un `:is()`');
+  assert.match(
+    ALCANCE,
+    /#[\w-]+/,
+    'el alcance se quedó SIN `#id`: las 210 reglas de esta hoja acaban de bajar un escalón de ' +
+      'especificidad todas juntas, y las pisan `closer.css` y `aios.css` sin decir una palabra',
+  );
+  assert.match(
+    ALCANCE,
+    /\.[\w-]+/,
+    'el alcance se quedó sin clase: volvió a ser una lista de ids, que es lo que hay que editar ' +
+      'línea por línea cada vez que entra una pantalla',
+  );
+
+  /* Y que la hoja diga eso mismo. La constante de acá es una copia; la fuente es el archivo. */
+  const primera = /^(:is\([^)]*\))/m.exec(sinComentarios(leerCrudo(ESTETICA)))?.[1];
+  assert.equal(primera, ALCANCE, 'la hoja y esta prueba dejaron de hablar del mismo alcance');
 });
 
 test('el contador de prompts que faltan sigue en ámbar, no en el acento', () => {

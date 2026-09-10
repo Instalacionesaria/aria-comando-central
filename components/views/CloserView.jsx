@@ -334,7 +334,7 @@ export default function CloserView({ activa }) {
 
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-closer">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-closer">
       <div className="view-scroll cre-scroll" ref={caja}>
         <div className="cre-head">
           <div className="ch-l stack">

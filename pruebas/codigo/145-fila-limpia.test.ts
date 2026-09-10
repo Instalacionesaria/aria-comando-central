@@ -244,23 +244,32 @@ test('las pantallas de operación NO redefinen el acento: usan el de la platafor
 
   for (const tema of ['oscuro', 'claro']) {
     /* El bloque se busca por el TEMA y por el arranque del `:is()`, no por el nombre de una vista:
-       el selector pasó de `#v-closer` a `:is(#v-closer, #v-setter)` cuando la estética se extendió
-       al Setter, y con la cadena literal esta prueba se caía por el cambio de alcance en vez de por
-       lo que mide. Que el bloque cubra las DOS pantallas se afirma aparte, abajo. */
+       el selector pasó de `#v-closer` a una lista de tres ids y de ahí a
+       `:is(#v-closer, .estetica-op)`, y con la cadena literal esta prueba se caía por el cambio de
+       alcance en vez de por lo que mide. */
     const desde = temas.indexOf(`:root[data-tema='${tema}'] :is(`);
     assert.ok(desde > 0, `no se encontró el bloque de operación del tema ${tema}`);
     const bloque = sinComentarios(temas.slice(desde, temas.indexOf('\n}', desde)));
 
-    /* Y alcanza a las dos. Sin esto, sacar una vista del selector la devuelve a la paleta vieja
-       —tokens de otro lienzo, otro texto, otras señales— y no falla nada: se ve. */
-    const selector = bloque.slice(0, bloque.indexOf('{'));
-    for (const vista of ['#v-closer', '#v-setter']) {
-      assert.ok(
-        selector.includes(vista),
-        `el bloque de tokens del tema ${tema} no alcanza a ${vista}: las dos pantallas de ` +
-          'operación comparten la estética, y con una afuera se queda con la paleta vieja',
-      );
-    }
+    /* ── Y ALCANZA A LO MISMO QUE LA HOJA DE FORMAS. ──────────────────────
+       Acá había una lista escrita a mano —`['#v-closer', '#v-setter']`— y **se desincronizó**:
+       Auditoría entró a la estética y esta prueba siguió mirando dos de las tres pantallas
+       durante todo ese tiempo, en verde. Ése es el defecto que se arregla, y no con una tercera
+       entrada: el alcance se LEE de `operacion-estetica.css` y se exige idéntico acá.
+
+       Por qué importa que sean idénticos y no que uno contenga al otro: la forma y el color están
+       en dos hojas, y una pantalla que entra a una sola queda con los radios y la tipografía
+       nuevos sobre la paleta vieja. No falla nada — se ve perfectamente bien, solo que distinta,
+       que es el modo de falla más caro de encontrar. */
+    const alcanceDeLaHoja = /^(:is\([^)]*\))/m.exec(sinComentarios(leerCrudo(ESTETICA)))?.[1];
+    assert.ok(alcanceDeLaHoja, 'no se pudo leer el alcance de la hoja de formas');
+    const selector = bloque.slice(0, bloque.indexOf('{')).trim();
+    assert.equal(
+      selector,
+      `:root[data-tema='${tema}'] ${alcanceDeLaHoja}`,
+      `el bloque de tokens del tema ${tema} no alcanza a lo mismo que la hoja de formas: alguna ` +
+        'pantalla va a quedar con la forma nueva y la paleta vieja, y eso no falla, se ve',
+    );
 
     for (const token of ['--accent', '--accent-hondo', '--accent-alto', '--accent-dim', '--c-acento', '--sobre-acento']) {
       assert.ok(

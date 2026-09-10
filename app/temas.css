@@ -760,7 +760,7 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════════════════
-   LA ESTÉTICA DE OPERACIÓN — LOS TOKENS, CON ALCANCE `:is(#v-closer, #v-setter, #v-auditoria)`
+   LA ESTÉTICA DE OPERACIÓN — LOS TOKENS, CON ALCANCE `:is(#v-closer, .estetica-op)`
 
    Se traslada el sistema visual descrito en `docs/migracion/front/01…14` del proyecto hermano. Por
    eso estos dos bloques NO redefinen `:root`: redefinen los MISMOS tokens que ya usan todas las
@@ -804,7 +804,7 @@
      y las líneas.
    ═════════════════════════════════════════════════════════════════════════════ */
 
-:root[data-tema='oscuro'] :is(#v-closer, #v-setter, #v-auditoria) {
+:root[data-tema='oscuro'] :is(#v-closer, .estetica-op) {
   /* Nivel 0 · el lienzo (240 10% 4%). */
   --bg:            #09090b;
   --bg-sunk:       #09090b;
@@ -921,7 +921,7 @@
   --ficha-fondo:   #18181b;
 }
 
-:root[data-tema='claro'] :is(#v-closer, #v-setter, #v-auditoria) {
+:root[data-tema='claro'] :is(#v-closer, .estetica-op) {
   /* El lienzo es un hueso, y las tarjetas blancas encima. */
   --bg:            #fcfcfd;
   --bg-sunk:       #f4f4f5;

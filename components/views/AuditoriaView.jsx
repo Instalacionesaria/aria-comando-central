@@ -25,7 +25,7 @@ import PanelDeAuditoria from '../auditoria/PanelDeAuditoria';
 
 export default function AuditoriaView({ activa }) {
   return (
-    <section className={activa ? 'view on' : 'view'} id="v-auditoria">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-auditoria">
       <div className="view-scroll cre-scroll">
         {/* ── EL ENCABEZADO ES EL MISMO QUE EL DE CLOSER Y SETTER ────────────
          *

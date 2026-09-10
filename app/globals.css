@@ -33,11 +33,12 @@
    signifique algo. El motivo largo está en el encabezado del archivo. */
 @import "./closer.css" layer(components);
 
-/* La estética de las dos pantallas de operación, con alcance `:is(#v-closer, #v-setter)`. Hoja
-   aparte porque `closer.css` tiene reglas que las pruebas leen por su forma exacta, y porque así el
-   resto de la aplicación —barra lateral, Ajustes, los tableros— no se mueve. Se llamaba
-   `closer-estetica.css` mientras colgaba de una sola vista. Sus colores están en `temas.css`; el
-   porqué de cada decisión, en su encabezado. */
+/* La estética de operación, con alcance `:is(#v-closer, .estetica-op)`: la lleva toda vista que
+   se anote con esa clase en su `<section>`. Hoja aparte porque `closer.css` tiene reglas que las
+   pruebas leen por su forma exacta. Se llamaba `closer-estetica.css` mientras colgaba de una sola
+   vista, y este comentario decía que Ajustes y los tableros no se movían — dejó de ser cierto, y
+   un comentario viejo acá cuesta media hora de buscar por qué algo se ve distinto. Sus colores
+   están en `temas.css`, con el mismo alcance; el porqué de cada decisión, en su encabezado. */
 @import "./operacion-estetica.css" layer(components);
 
 /* El Panel de Monitoreo: la tabla de consumo de todas las empresas. Misma capa y mismo motivo

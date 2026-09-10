@@ -250,7 +250,7 @@ export default function SetterView({ activa }) {
 
   return (
     <>
-    <section className={activa ? 'view on' : 'view'} id="v-setter">
+    <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-setter">
       <div className="view-scroll cre-scroll" ref={caja}>
         <div className="cre-head">
           <div className="ch-l stack">
