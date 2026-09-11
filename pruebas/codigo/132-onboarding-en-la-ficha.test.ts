@@ -31,7 +31,22 @@ import { contextoHeredado } from '../../lib/fundaciones/relleno.ts';
 import { FUNDACIONES } from '../../lib/fundaciones/herramientas.ts';
 
 const codigo = (ruta: string): string => readFileSync(join(RAIZ, ruta), 'utf8');
-const migracion = (nombre: string): string => readFileSync(join(RAIZ, '..', 'migraciones', nombre), 'utf8');
+
+/* ── ACÁ HABÍA UN LECTOR DE UN REPOSITORIO HERMANO ─────────────────────────
+ *
+ * `migracion()` leía `<raíz>/../migraciones/0NN.sql` y dos pruebas comprobaban el SQL de la `014` y
+ * la `015`. Esos archivos **no están en este repositorio, ni en el disco de nadie**: el esquema
+ * `public` se comparte con la plataforma anterior, así que sus migraciones viven en el otro
+ * proyecto. Las dos pruebas venían ROJAS desde que se escribieron, en local y en la integración
+ * continua — el mismo defecto que la `130` ya había pagado, con el mismo argumento: un rojo
+ * permanente no se arregla, se ignora, y con él se ignoran los demás.
+ *
+ * Traer los archivos acá sería peor que no tenerlos: dos repositorios migrando el mismo esquema
+ * compartido, y el orden de aplicación decidiendo quién gana.
+ *
+ * Lo que se pierde, dicho de frente: nadie comprueba desde acá el CONTENIDO de esas dos
+ * migraciones. Lo que se conserva está abajo, y es lo que este repositorio de verdad controla —
+ * la frontera y el contrato de lectura. */
 
 /* Un recorte FIEL de la captura real de «Innat8 Technologies» (2026-09-10): el encabezado con el
    nombre, dos tarjetas del formulario con contenido, y una de la llamada que dice «Sin dato» porque
@@ -171,20 +186,17 @@ test('«Traer del onboarding»: el plan B manual, solo en «Tu ficha», y la emp
   assert.ok(!/aria_cc_icp_oferta/.test(ruta), 'la ruta lee la tabla de Walter directamente: eso es de la función');
   assert.ok(!/conIdentidad/.test(ruta));
 
-  // 2 · La función: security definer, la empresa de `app.org_id` y NO de un parámetro, y solo el
-  //     rol del inquilino la ejecuta.
-  const sql = migracion('015_traer_onboarding.sql');
-  assert.match(sql, /create or replace function public\.aria_cc_traer_onboarding\(\)\s*\n\s*returns jsonb/);
-  assert.match(sql, /security definer/);
-  assert.match(sql, /current_setting\('app\.org_id', true\)/);
-  assert.match(sql, /raise exception 'aria_cc_traer_onboarding: no hay organización en la sesión/);
-  assert.match(sql, /revoke all on function public\.aria_cc_traer_onboarding\(\) from public/);
-  assert.match(sql, /grant execute on function public\.aria_cc_traer_onboarding\(\) to app_inquilino/);
-  // Misma forma que escribe el disparador de la 014: si divergen, el lector deja de entender una.
-  for (const clave of ['captura_id', 'capturado_el', 'telefono', 'pais_ciudad', 'website', 'html']) {
-    assert.match(sql, new RegExp(`'${clave}'`), `la 015 dejó de escribir ${clave}`);
-    assert.match(migracion('014_onboarding_a_la_ficha.sql'), new RegExp(`'${clave}'`));
-  }
+  /* 2 · La llamada va SIN ARGUMENTOS, y es lo único de la función que este repositorio controla.
+   *
+   * La función vive en el otro proyecto (ver la nota de arriba), pero de qué empresa trae los datos
+   * se decide acá: sin parámetro, la función sólo puede mirar `app.org_id` —la empresa que el
+   * contexto ya abrió— y no hay nada que un llamador pueda pasarle para pedir la de otro. El día
+   * que alguien le agregue un argumento «por comodidad», esto salta. */
+  assert.match(ruta, /aria_cc_traer_onboarding\(\)/, 'la función dejó de llamarse sin argumentos');
+  assert.ok(
+    !/aria_cc_traer_onboarding\(\s*[^)\s]/.test(ruta),
+    'la llamada pasó a recibir un parámetro: la empresa dejó de salir de la sesión',
+  );
 
   // 3 · El panel: la línea existe, solo para la ficha, y remonta el chat después de traer.
   const panel = codigo('components/fundaciones/PanelHerramienta.jsx');
@@ -204,24 +216,55 @@ test('«Traer del onboarding»: el plan B manual, solo en «Tu ficha», y la emp
   assert.equal(leerOnboarding(CAPTURA)?.capturadoEl, null);
 });
 
-test('la migración 014 copia la captura a la ficha, y no puede romper el alta de Walter', () => {
-  const sql = migracion('014_onboarding_a_la_ficha.sql');
+test('la frontera con el repositorio de Walter se respeta, y el contrato de lectura no se mueve', async () => {
+  /* Lo que reemplaza a la prueba que leía la `014` del repositorio hermano. Son las dos mitades que
+     SÍ se pueden afirmar desde acá, y cada una impide un defecto distinto. */
 
-  // El disparador, sobre las dos operaciones: Walter reintenta y actualiza su captura.
-  assert.match(sql, /create trigger aria_cc_icp_oferta_alimenta_la_ficha/);
-  assert.match(sql, /after insert or update on public\.aria_cc_icp_oferta/);
+  /* ── 1 · La frontera ───────────────────────────────────────────────────────
+   *
+   * `public.aria_cc_icp_oferta` es la tabla donde el formulario de Walter deposita la captura, y se
+   * migra desde el otro proyecto. Si una migración de ESTE repositorio la creara, la alterara o le
+   * colgara un disparador, la tabla quedaría con dos dueños y el orden en que se apliquen decidiría
+   * cuál gana — que es exactamente el defecto que la `130` documentó para `aria_cc_foundations`. */
+  const { readdirSync } = await import('node:fs');
+  const migraciones = readdirSync(join(RAIZ, 'db/migraciones')).filter((f) => f.endsWith('.sql'));
+  assert.ok(migraciones.length > 30, `solo ${migraciones.length} migraciones: la lista cambió de sitio`);
 
-  // La copia va a la columna que la 004 creó para esto.
-  assert.match(sql, /insert into public\.aria_cc_foundations \(org_id, intake\)/);
-  assert.match(sql, /on conflict \(org_id\) do update/);
+  const invasoras = migraciones.filter((f) =>
+    /(create|alter|drop)\s+(table|trigger|function)[^;]*aria_cc_(icp_oferta|traer_onboarding)/i.test(
+      sinComentarios(codigo(join('db/migraciones', f))),
+    ),
+  );
+  assert.deepEqual(
+    invasoras,
+    [],
+    'una migración de este repositorio toca la captura de Walter, que se migra desde el otro ' +
+      'proyecto: quedan dos dueños para una misma tabla',
+  );
 
-  /* LO QUE NO SE PUEDE PERDER: si la copia falla, la captura entra igual. Es la lección de la 013 —
-     un disparador que falla se lleva el `insert` entero— y acá el `insert` es el dato más caro del
-     pipeline. */
-  assert.match(sql, /exception\s*\n\s*when others then/);
-  assert.match(sql, /raise warning/);
-
-  // Y el respaldo de las que ya estaban, más la comprobación que convierte «no copió» en un error.
-  assert.match(sql, /from public\.aria_cc_icp_oferta c\s*\n\s*where c\.org_id is not null/);
-  assert.match(sql, /quedaron sin copiar a la ficha/);
+  /* ── 2 · El contrato de lectura ────────────────────────────────────────────
+   *
+   * De la forma que el disparador escribe en `intake`, el lector de acá depende de CINCO claves. El
+   * defecto que esto impide es el que no se ve: `leerOnboarding` devuelve un objeto igual de válido
+   * cuando una clave no se entiende —el campo queda en `null`— así que renombrar `pais_ciudad` a
+   * `ciudad` no rompe nada, no tira ningún error, y deja al agente preguntando lo que ya sabe. Que
+   * es textualmente el reporte de Walter con el que empieza este archivo.
+   *
+   * `captura_id` NO está en la lista a propósito: el disparador la escribe y este lector no la usa.
+   * Meterla acá afirmaría una dependencia que no existe. */
+  const conTodo = {
+    ...CAPTURA,
+    pais_ciudad: 'San Juan, Puerto Rico',
+    capturado_el: '2026-09-10T16:22:46Z',
+  };
+  for (const clave of ['html', 'telefono', 'pais_ciudad', 'website', 'capturado_el']) {
+    const sinEsa: Record<string, unknown> = { ...conTodo };
+    delete sinEsa[clave];
+    assert.notDeepEqual(
+      leerOnboarding(sinEsa),
+      leerOnboarding(conTodo),
+      `quitar «${clave}» no cambió nada de lo leído: el lector dejó de depender de esa clave, ` +
+        'así que el disparador puede renombrarla y nadie se entera',
+    );
+  }
 });
