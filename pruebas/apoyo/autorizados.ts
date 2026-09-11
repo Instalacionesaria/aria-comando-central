@@ -40,6 +40,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   //
   // Y sólo hace `GET`: no escribe ni en el CRM ni en la base, y no imprime datos de nadie.
   'scripts/medir-cita.mjs',
+  // Hermano del de arriba, y con el mismo argumento: mide contra la subcuenta real si el
+  // identificador de usuario del CRM alcanza para saber que un mensaje lo escribió el agente, o si
+  // hace falta guardar `source`. Necesita la lista de organizaciones y sus credenciales —identidad—
+  // y después trabaja de una en una. Sólo `GET`, y no imprime ningún mensaje de nadie.
+  'scripts/medir-mensaje.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.
@@ -399,6 +404,18 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
  * defiende para la escotilla.
  */
 export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
+  /* La medición de `source` contra el CRM. **Qué queda a medias si la segunda mitad falla: NADA, y
+     es el caso más benigno posible de esta lista** — más que el de n8n, que al menos escribe afuera.
+     Acá NO SE ESCRIBE EN NINGUNA PARTE: de identidad se leen las organizaciones, sus credenciales y
+     el identificador del agente; de negocio se leen nuestros mensajes salientes; y contra el CRM
+     sólo se hace `GET`. No hay confirmación parcial que pueda existir.
+
+     Cruza los dos dominios porque la pregunta lo exige: el identificador del agente vive en
+     identidad y las filas cuya atribución está en disputa viven en negocio, y la medición consiste
+     justamente en ponerlas una contra la otra. Separarlo en dos guiones no compraría nada — no hay
+     escritura que proteger — y perdería el emparejamiento, que es lo único que hace que esto sea una
+     auditoría y no una muestra. */
+  'scripts/medir-mensaje.mjs',
   /* La carga inicial de los links de cobro. **Qué queda a medias si la segunda mitad falla: nada**,
      porque la primera NO ESCRIBE: de identidad se leen la empresa y a quién atribuirle la carga, y
      lo único que se escribe es en negocio.
