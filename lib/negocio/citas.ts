@@ -279,6 +279,16 @@ function describir(f: { tipo: string; estado?: number; causa?: string }): string
  *
  * Y el `do update` es lo que hace que reagendar funcione: la misma cita vuelve con otra hora, y la
  * fila se mueve. Con `do nothing` la agenda mostraría la hora vieja para siempre.
+ *
+ * ── LA MISMA LÍNEA ERA LA VIRTUD Y EL DEFECTO ───────────────────────────────
+ *
+ * Ese `inicio_el: valores.inicio_el` movía la fila **y borraba la hora anterior sin dejar rastro**.
+ * Las dos cosas a la vez, y la segunda no estaba escrita en ninguna parte hasta que la pantalla de
+ * Conversation tuvo que declararla como un dato que falta.
+ *
+ * Ahora el `do update` guarda la hora que está pisando, en la misma sentencia que la pisa: en un
+ * `on conflict do update`, toda referencia a `citas.x` es la fila VIEJA, sin importar el orden de
+ * las asignaciones. No hace falta un `select` de más.
  */
 async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Promise<boolean> {
   const valores = {
@@ -292,6 +302,10 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
     /* Ya se leía de la respuesta del CRM y se tiraba acá. Se guarda porque el enlace de
        reagendar necesita el calendario de ESTA cita, y el de la empresa es uno de nueve. */
     ghl_calendario_id: cita.calendarioId,
+    /* Los otros dos que hacían el mismo viaje: `lib/ghl/calendarios.ts` los lee de la respuesta
+       —`rescheduledAt` y `assignedUserId`—, los normaliza, y morían en este objeto. */
+    reagendada_el: cita.reagendadaEl,
+    crm_asignado_a: cita.usuarioAsignadoId,
     sincronizado_el: new Date(),
   };
 
@@ -313,6 +327,38 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
           /* Se pisa igual que la sala: reagendar en el CRM puede mover la cita de calendario, y el
              enlace tiene que seguirla. */
           ghl_calendario_id: valores.ghl_calendario_id,
+
+          /* ── Y ACÁ VAN TRES REGLAS DISTINTAS, QUE ES EL PUNTO ────────────────
+           *
+           * `reagendada_el` NO se pisa derecho: cae el valor nuevo sólo si trae algo. Si una
+           * respuesta viniera sin el campo —el CRM lo omite, lo renombra, un calendario contesta
+           * distinto— un pisado directo pondría en nulo el único rastro de que la cita se movió,
+           * en TODAS las citas de ese barrido, de una vez, sin error y sin que nada se ponga
+           * rojo. Con `coalesce`, lo que ya se midió gana sobre lo que no vino. */
+          reagendada_el: sql`coalesce(excluded.reagendada_el, citas.reagendada_el)`,
+
+          /* Éste SÍ se pisa derecho, nulo incluido, y la asimetría con el de arriba es a
+           * propósito: reasignar una cita a otro closer —o DESASIGNARLA— es un hecho del CRM que
+           * pasó hoy, no un dato que se pierde. Que el nulo gane es lo que hace que «ya no tiene
+           * asignado» se pueda ver. */
+          crm_asignado_a: valores.crm_asignado_a,
+
+          /* ── LA HORA QUE SE ESTÁ PISANDO, GUARDADA ANTES DE PISARLA ────────
+           *
+           * La guarda `when` no es una optimización: **sin ella el barrido inventa
+           * reagendamientos**. Corre cada hora sobre las mismas citas, así que la primera pasada
+           * siguiente marcaría todas como movidas y «cuántas se reagendaron» diría el 100 % — un
+           * número alarmante que sería un artefacto del cron.
+           *
+           * `is distinct from` y no `<>`: con `<>` un nulo daría nulo y el `case` caería al
+           * `else`. Hoy `inicio_el` es `not null` (migración 011), así que esa diferencia no se
+           * puede ejercitar con una prueba — y por eso queda dicha acá en vez de fingir una que
+           * pasaría igual con las dos versiones. */
+          inicio_anterior_el: sql`
+            case when citas.inicio_el is distinct from excluded.inicio_el
+                 then citas.inicio_el
+                 else citas.inicio_anterior_el end`,
+
           sincronizado_el: valores.sincronizado_el,
         } as never),
       )

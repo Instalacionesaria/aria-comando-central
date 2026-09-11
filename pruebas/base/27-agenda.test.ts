@@ -990,3 +990,163 @@ test('el conteo que explica un cero también es del territorio', async () => {
   // El texto del cero medido, NO el que cuenta citas anteriores: para el closer no hubo ninguna.
   assert.doesNotMatch(a.falta, /1 cita|quedaron/i, 'contó una cita del setter para explicar el cero');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LO QUE EL CRM DICE DE LA CITA, Y QUE HASTA LA 042 SE TIRABA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Lee de la TABLA las columnas nuevas de una cita, por su id de evento. */
+async function comoQuedo(eventoId: string): Promise<Record<string, unknown> | undefined> {
+  return conOrganizacion(alfa, async () =>
+    datos()
+      .selectFrom('citas')
+      .select(['inicio_el', 'reagendada_el', 'crm_asignado_a', 'inicio_anterior_el'])
+      .where('ghl_evento_id', '=', eventoId)
+      .executeTakeFirst(),
+  ) as Promise<Record<string, unknown> | undefined>;
+}
+
+test('lo que el CRM dice de la cita se GUARDA, en vez de morir en el upsert', async () => {
+  /* `lib/ghl/calendarios.ts` leía `rescheduledAt` y `assignedUserId` en cada barrido, los
+     normalizaba… y `guardar()` no los ponía en `valores`. Es el mismo caso que `ghl_calendario_id`
+     antes de la `038`, y su comentario lo decía con todas las letras: «ya se leía de la respuesta
+     del CRM y se tiraba acá».
+
+     Se leen las COLUMNAS y no el fuente: una prueba que buscara `reagendada_el:` en el archivo la
+     satisface un comentario. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const movidaEl = new Date(Date.now() - 86_400_000);
+
+  await barrerCitas(
+    alfa,
+    ACCESO,
+    lectores([calendario('a')], {
+      a: [delCrm('ev-guarda', marca, cuando, { reagendadaEl: movidaEl, usuarioAsignadoId: 'u9' })],
+    }),
+  );
+
+  const f = await comoQuedo('ev-guarda');
+  assert.ok(f, 'la cita no se guardó');
+  assert.equal(
+    (f.reagendada_el as Date | null)?.toISOString(),
+    movidaEl.toISOString(),
+    'la marca de reagendamiento se perdió entre el lector del CRM y la tabla',
+  );
+  assert.equal(f.crm_asignado_a, 'u9', 'el usuario que el CRM asignó se perdió en el upsert');
+});
+
+test('un barrido sin la marca de reagendamiento NO borra la que ya teníamos', async () => {
+  /* ── EL DEFECTO MÁS CARO DE ESTE CAMBIO, Y ES SILENCIOSO Y MASIVO ──────────
+   *
+   * Si el proveedor deja de mandar `rescheduledAt` —lo omite, lo renombra, un calendario contesta
+   * distinto— un pisado directo pondría en nulo la marca de TODAS las citas de la ventana en un
+   * solo barrido. El `UPDATE` no falla, nada se pone rojo, y el único rastro de que una cita se
+   * movió desaparece de golpe.
+   *
+   * Por eso en el `do update` va `coalesce(excluded.…, citas.…)`: lo que ya se midió gana sobre lo
+   * que no vino. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const movidaEl = new Date(Date.now() - 86_400_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-coalesce', marca, cuando, { reagendadaEl: movidaEl })],
+  }));
+  await liberarPulso();
+  // La misma cita, misma hora, pero el CRM ya no manda la marca.
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-coalesce', marca, cuando, { reagendadaEl: null })],
+  }));
+
+  const f = await comoQuedo('ev-coalesce');
+  assert.equal(
+    (f?.reagendada_el as Date | null)?.toISOString(),
+    movidaEl.toISOString(),
+    'un barrido sin el campo borró la marca: el `coalesce` del `do update` se perdió',
+  );
+});
+
+test('reagendar deja rastro: queda la hora nueva Y la que tenía antes', async () => {
+  /* El defecto que esto cierra estaba escrito en dos lados a la vez: el `do update` movía la fila
+     —que es la virtud— y borraba la hora anterior sin dejar rastro. La prueba que ya existía para
+     el segundo barrido sólo comprobaba que la hora NUEVA quedara; nadie comprobaba la vieja porque
+     no había dónde guardarla. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const antes = new Date(Date.now() + 3_600_000);
+  const despues = new Date(Date.now() + 7_200_000);
+  const movidaEl = new Date(Date.now() - 60_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-mueve', marca, antes)] }));
+  await liberarPulso();
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-mueve', marca, despues, { reagendadaEl: movidaEl })],
+  }));
+
+  const f = await comoQuedo('ev-mueve');
+  assert.equal((f?.inicio_el as Date).toISOString(), despues.toISOString(), 'la cita no se movió');
+  assert.equal(
+    (f?.inicio_anterior_el as Date | null)?.toISOString(),
+    antes.toISOString(),
+    'la hora anterior se perdió: el `case` del `do update` no guardó la fila vieja',
+  );
+});
+
+test('un barrido que NO mueve nada no inventa un reagendamiento', async () => {
+  /* ── LA GUARDA `when`, Y POR QUÉ NO ES UNA OPTIMIZACIÓN ────────────────────
+   *
+   * El barrido corre una vez por hora sobre las mismas citas. Sin el `when`, la primera pasada
+   * siguiente copiaría `inicio_el` a `inicio_anterior_el` en TODAS, y «cuántas se reagendaron»
+   * diría el 100 % — un número alarmante que sería un artefacto del cron y no un hecho del
+   * negocio. Es el tipo de cifra que se mira una vez, se cree, y se decide con ella. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
+  await liberarPulso();
+  // Exactamente la misma cita, otra vez. Es lo que hace el cron cada hora.
+  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
+
+  const f = await comoQuedo('ev-quieta');
+  assert.equal(
+    f?.inicio_anterior_el,
+    null,
+    'el barrido marcó como movida una cita que no se movió: falta la guarda `is distinct from`',
+  );
+});
+
+test('desasignar la cita en el CRM se ve: el nulo gana', async () => {
+  /* La asimetría con `reagendada_el`, y es a propósito. Reasignar —o desasignar— es un hecho que
+     pasó hoy, no un dato que se pierde: si el nulo no ganara, una cita que el CRM dejó sin dueño
+     seguiría mostrando al anterior para siempre. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-dueno', marca, cuando, { usuarioAsignadoId: 'u9' })],
+  }));
+  await liberarPulso();
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-dueno', marca, cuando, { usuarioAsignadoId: null })],
+  }));
+
+  assert.equal(
+    (await comoQuedo('ev-dueno'))?.crm_asignado_a,
+    null,
+    'la cita siguió mostrando al closer anterior después de que el CRM la desasignara',
+  );
+});

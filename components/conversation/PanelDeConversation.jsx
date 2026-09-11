@@ -89,7 +89,7 @@ const FLUJOS = {
     falta: [
       ['La asistencia', 'El CRM tiene los campos «asistió» y «no apareció» y están casi vacíos: 3 citas de 1052. La única señal de no-show con volumen la registra el closer al cerrar el intento, y eso es un dato reportado por una persona, no por el calendario.'],
       ['El video precall', 'Llega como campo suelto del CRM, sin fecha ni porcentaje visto, así que no se puede decir quién lo vio ni cuánto.'],
-      ['El reagendamiento', 'Cuando una cita se mueve, la hora nueva pisa a la anterior y no queda rastro.'],
+      ['El historial de reagendamientos', 'Desde ahora se guarda el ÚLTIMO movimiento —la hora anterior y cuándo lo movieron—, pero no la cadena completa: el barrido mira una vez por hora, así que dos movimientos seguidos se ven como uno. Y cancelar para volver a reservar produce otra cita en el CRM, no un reagendamiento.'],
     ],
   },
 };

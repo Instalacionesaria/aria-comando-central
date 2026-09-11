@@ -431,6 +431,25 @@ export interface TablaCitas {
    * enlace de reagendar abra el calendario correcto. `null` en las citas de antes de la `038`.
    */
   ghl_calendario_id: string | null;
+  /**
+   * Cuándo el CRM dice que se reagendó (`rescheduledAt`), y a quién le asignó la cita
+   * (`assignedUserId`). Los dos se leían en `lib/ghl/calendarios.ts` y morían en el upsert, igual
+   * que `ghl_calendario_id` antes de la `038`.
+   *
+   * `crm_asignado_a` lleva el MISMO nombre que en `contactos` porque es el mismo dato y se resuelve
+   * con el mismo vínculo. Y **no** decide en qué agenda aparece la cita: eso sale del contacto, en
+   * un solo lugar.
+   */
+  reagendada_el: Date | null;
+  crm_asignado_a: string | null;
+  /**
+   * La hora que la cita tenía antes del último movimiento que vimos. Nuestra, no del CRM: la
+   * escribe el `do update` leyendo la fila vieja en la misma sentencia que la pisa.
+   *
+   * Guarda el último salto, no el historial — el barrido mira una vez por hora. Su límite completo
+   * está en la migración `042` y en el `comment on column`.
+   */
+  inicio_anterior_el: Date | null;
   sincronizado_el: Date | null;
   creado_el: Generated<Date>;
 }
