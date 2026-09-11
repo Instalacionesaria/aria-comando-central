@@ -68,6 +68,14 @@ const RELOJES_A_MANO: readonly { archivo: string; porque: string }[] = [
       'cada 5 s y se apaga sola al terminar. Comparte hasta el número, y a propósito — dos cadencias ' +
       'distintas para el mismo backend serían dos comportamientos que nadie eligió.',
   },
+  {
+    archivo: 'components/fundaciones/PanelResearch.jsx',
+    porque:
+      'La mirada al mercado real (2026-09-10): entre el paso 1 y el 2 el Research arranca Maps y el ' +
+      'Espía y espera a que terminen, cada 5 s como `Scraper.jsx`, con un tope de diez minutos y ' +
+      'dentro de una cadena que ya está corriendo con alguien mirándola. Se apaga solo al terminar o ' +
+      'al vencer el tope; no es un reloj de fondo, es un `await` con paciencia.',
+  },
 ];
 
 test('ningún componente sondea en bucle fuera de `lib/reloj.ts`', () => {

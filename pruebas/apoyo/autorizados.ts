@@ -149,6 +149,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/fundaciones/generar/route.ts',
   'app/api/fundaciones/conversar/route.ts',
   'app/api/fundaciones/rellenar/route.ts',
+  // La mirada al mercado real, primera punta: pide al modelo el rubro del paso 1, así que resuelve
+  // la llave de IA por la escotilla, como las tres de arriba. Su segunda punta
+  // (`mercado/route.ts`) no está acá: no gasta tokens y abre `conOrganizacion(` como cualquiera.
+  'app/api/fundaciones/mercado/preparar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
   // Location ID de la organización, que viven en `identidad.organizaciones_credenciales` — una

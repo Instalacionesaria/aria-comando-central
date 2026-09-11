@@ -24,6 +24,7 @@ import { SIN_ESPECIFICAR, presente, valor } from './campos.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
 import { fuentes } from './herencia.ts';
+import { contextoDeMercado } from './mercado.ts';
 import { contextoDeOnboarding } from './onboarding.ts';
 import { interpolar, leerPlantilla, type DatosDePlantilla } from './plantillas.ts';
 
@@ -174,7 +175,10 @@ function datosDeResearch(valores: Record<string, string>, estado: EstadoDeFundac
     ltv: valor(valores, 'mr-ltv'),
     contract: valor(valores, 'mr-contract'),
     experience: valor(valores, 'mr-experience'),
+    location: valor(valores, 'mr-location'),
     _profileContext: contextoDeFicha(estado),
+    // La mirada al mercado real, para que el agente la tenga y pueda contestar «¿cuántos tienen web?».
+    _mercadoContext: contextoDeMercado(estado.researchMercado),
   };
 }
 
@@ -687,6 +691,9 @@ export function armarPromptResearch(
   const contrato = inputs['contract'];
   return interpolar(plantilla, {
     _profileContext: estado ? contextoDeFicha(estado) : null,
+    // Los pasos 2 al 5 lo interpolan; el 1 no, porque la mirada ocurre DESPUÉS de él.
+    _mercadoContext: estado ? contextoDeMercado(estado.researchMercado) : null,
+    location: inputs['location'] ? inputs['location'] : SIN_ESPECIFICAR,
     niche: inputs['niche'] ? inputs['niche'] : SIN_ESPECIFICAR,
     buyers: inputs['buyers'] ? inputs['buyers'] : SIN_ESPECIFICAR,
     ltv: inputs['ltv'] ? inputs['ltv'] : SIN_ESPECIFICAR,

@@ -1990,3 +1990,47 @@
 .fd-onboarding.falta .fd-marca { color: var(--warn); }
 .fd-onboarding.mal { border-color: rgb(var(--c-crit) / 0.35); }
 .fd-onboarding.mal .fd-marca { color: var(--crit); }
+
+/* ── La mirada al mercado real del Research ─────────────────────────────────
+   Entre el paso 1 y el 2, con borde punteado y sangría: no es un paso del método. Aprobado sobre
+   mockup (2026-09-10). Mismos tokens que `.fd-aviso`, `.fd-paso` y `.fd-eslabon`. */
+.fd-paso-y-mirada { display: grid; gap: 8px; }
+.fd-mirada {
+  margin-left: 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg-sunk);
+  display: grid;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--txt-dim);
+}
+.fd-mirada p { margin: 0; font-size: 12px; line-height: 1.5; }
+.fd-mirada p b { color: var(--txt); font-weight: 600; }
+.fd-mirada-titulo { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--txt-faint); }
+.fd-mirada-link { text-transform: none; letter-spacing: 0; color: var(--accent); font-size: 11.5px; }
+.fd-mirada-fuente { display: flex; align-items: center; gap: 10px; }
+.fd-mirada-pt { width: 8px; height: 8px; border-radius: 50%; background: var(--txt-faint); flex: 0 0 auto; }
+.fd-mirada-fuente.ok .fd-mirada-pt { background: var(--ok); }
+.fd-mirada-fuente.corriendo .fd-mirada-pt { background: var(--accent); outline: 4px solid var(--accent-dim); }
+.fd-mirada-fuente.mal .fd-mirada-pt { background: var(--crit); }
+.fd-mirada-e { margin-left: auto; font-size: 11px; color: var(--txt-faint); text-align: right; }
+.fd-mirada-fuente.ok .fd-mirada-e { color: var(--ok); }
+.fd-mirada-fuente.corriendo .fd-mirada-e { color: var(--accent); }
+.fd-mirada-fuente.mal .fd-mirada-e { color: var(--crit); }
+.fd-mirada-nota { font-size: 11px; color: var(--txt-faint); }
+.fd-mirada.gasto { border-color: rgb(var(--c-warn) / 0.45); }
+.fd-mirada-t { display: flex; gap: 10px; align-items: flex-start; }
+.fd-mirada-t i { font-style: normal; color: var(--warn); font-size: 14px; line-height: 1.2; }
+.fd-mirada-t b { color: var(--txt); font-weight: 600; }
+.fd-mirada-t small { display: block; margin-top: 3px; font-size: 11.5px; color: var(--txt-faint); line-height: 1.5; }
+.fd-mirada-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.fd-mirada.lista { border-style: solid; border-color: rgb(var(--c-acento) / 0.3); background: var(--accent-dim); }
+.fd-cifras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fd-cifra { background: var(--bg-panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 1px; }
+.fd-cifra b { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; color: var(--txt); font-variant-numeric: tabular-nums; }
+.fd-cifra span { font-size: 11px; color: var(--txt-dim); }
+.fd-mirada.omitida { grid-template-columns: auto 1fr; align-items: start; border-style: solid; }
+.fd-mirada.omitida i { font-style: normal; color: var(--warn); }
+@media (max-width: 640px) { .fd-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

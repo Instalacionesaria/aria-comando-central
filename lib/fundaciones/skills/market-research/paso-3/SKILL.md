@@ -8,6 +8,12 @@ metadata:
 
 SIN PREÁMBULO CONVERSACIONAL: empieza tu respuesta DIRECTO en el contenido del entregable (primer encabezado o punto). No incluyas frases de transición ni preámbulos (p. ej. "Ahora tengo toda la información necesaria para hacer el análisis…", "Perfecto, aquí está…"). Nada de texto antes del contenido.
 
+{{#_mercadoContext}}
+{{_mercadoContext}}
+
+USA ESOS DATOS OBSERVADOS: son negocios y anuncios reales del mercado que se está analizando. Donde el análisis de abajo hable de tamaño del mercado, presencia digital, competencia o cómo se venden hoy, apoyate en estas cifras y citalas como observadas. No las contradigas con estimaciones.
+{{/_mercadoContext}}
+
 El análisis de dolores y el dolor crítico de cada segmento es:
 
 {{_prev.1}}

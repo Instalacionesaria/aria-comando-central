@@ -17,6 +17,7 @@
 // las funciones, las variables). Los campos serializados son datos ajenos, y se copian tal cual.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import type { MercadoReal } from './mercado.ts';
 import type { Onboarding } from './onboarding.ts';
 
 /** Las llaves del almacén compartido que usa Fundaciones. */
@@ -132,6 +133,12 @@ export interface EstadoDeFundaciones {
    * mano desde Ajustes. Es un dato, no una falta. Ver `lib/fundaciones/onboarding.ts`.
    */
   onboarding: Onboarding | null;
+  /**
+   * La mirada al mercado real del Research: lo que vieron Google Maps y el Espía de Anuncios,
+   * resumido. Vive dentro del documento `market_research` (`mercado`), junto a los criterios y las
+   * salidas, porque es parte del mismo research. `null` = no se miró. Ver `mercado.ts`.
+   */
+  researchMercado: MercadoReal | null;
 }
 
 /** Un estado sin nada. No es un error: es un alumno que todavía no empezó. */
@@ -146,6 +153,7 @@ export function estadoVacio(): EstadoDeFundaciones {
     researchCampo: null,
     categoriaLegado: null,
     onboarding: null,
+    researchMercado: null,
   };
 }
 

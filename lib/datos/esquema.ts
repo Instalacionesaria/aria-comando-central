@@ -906,6 +906,13 @@ export interface TablaScraperTrabajos {
    */
   business_type: string | null;
   location: string | null;
+  /**
+   * Lo que devolvió el actor, entero. Cientos de kilobytes por trabajo terminado: **se lee de UN
+   * trabajo por identificador y nunca en un listado**. Entró el 2026-09-10 para que la mirada al
+   * mercado real del Research cuente los anuncios del Espía, que no van a `aria_cc_scraper_leads`
+   * (ver `lib/fundaciones/mercado.ts`). El proyecto sigue sin escribir en esta tabla.
+   */
+  results_data: unknown;
   max_leads: number | null;
   /** El texto del fallo, tal como lo dio Apify o el backend. Sin él, un `FAILED` no dice por qué. */
   error_message: string | null;

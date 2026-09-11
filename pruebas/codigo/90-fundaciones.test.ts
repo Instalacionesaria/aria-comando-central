@@ -199,7 +199,9 @@ test('las claves de persistencia son las que ya escribió el hub', () => {
   // escribe `nicho` donde el hub escribe `niche`, y cada sistema ve el campo del otro en blanco.
   const esperadas: Readonly<Record<number, readonly string[]>> = {
     0: ['biz', 'niche', 'service', 'price', 'pain', 'result', 'before'],
-    1: ['niche', 'buyers', 'ltv', 'contract', 'experience'],
+    // Las cinco del hub más `location`, que NO es del hub: es el sexto criterio que la mirada al
+    // mercado real necesita (2026-09-10). El hub la ve en blanco y no le cambia nada.
+    1: ['niche', 'buyers', 'ltv', 'contract', 'experience', 'location'],
     3: ['niche', 'income', 'age', 'country', 'occupation', 'pains', 'desires', 'tried'],
     2: ['current', 'alternatives', 'notworking'],
     4: ['name', 'price', 'result', 'format', 'why', 'when', 'includes', 'urgency'],
@@ -1254,7 +1256,9 @@ test('las pantallas esperan lo que las rutas de Fundaciones pueden tardar', asyn
   ];
   for (const archivo of LLAMADORES) {
     const fuente = leer(archivo);
-    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar|Conversar|Rellenar)/g) || []).length;
+    // `rutaMercadoPreparar` pide el rubro al modelo y declara `maxDuration`: es larga. `rutaMercado`
+    // (sin «Preparar») cuenta filas y no lo es, y el patrón la deja afuera a propósito.
+    const pedidos = (fuente.match(/pedir\(\s*ruta(Estado|Generar|Conversar|Rellenar|MercadoPreparar)/g) || []).length;
     const esperas = (fuente.match(/espera:\s*ESPERA_DE_RUTA_LARGA_MS/g) || []).length;
     assert.equal(
       esperas,

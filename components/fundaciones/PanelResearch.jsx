@@ -41,9 +41,10 @@
    bien. Así, el botón "ejecutar todo" recorre los cinco de a uno y cada uno que sale
    queda guardado. */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
+import { consultarTrabajo, iniciarScraping } from '@/lib/tools/scrapers';
 import {
   aValoresDeFormulario,
   camposDe,
@@ -52,6 +53,7 @@ import {
 } from '@/lib/fundaciones/campos';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
+import { TOPE_DE_NEGOCIOS as TOPE_MAPS } from '@/lib/fundaciones/mercado';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import BarraDePasos from './BarraDePasos';
@@ -89,6 +91,10 @@ export default function PanelResearch({
   rutaEstado,
   rutaGenerar,
   rutaConversar,
+  /* La mirada al mercado real: qué buscar y qué se vio. Solo las pasa ICP & Oferta. Sin ellas el
+     Research corre como siempre, sin scrapers. */
+  rutaMercadoPreparar = null,
+  rutaMercado = null,
 }) {
   const ids = useMemo(() => camposDe(herramienta).map((c) => c.id), [herramienta]);
 
@@ -192,11 +198,124 @@ export default function PanelResearch({
     return true;
   };
 
+  /* ── LA MIRADA AL MERCADO REAL ─────────────────────────────────────────────
+   *
+   * Pedido de Jorge (2026-09-10): que el Research «también por dentro ejecute los scrapers de Google
+   * Maps y Meta, pocos leads», y que lo visto sea contexto del agente y se vea en Mis Leads. Aprobado
+   * sobre mockup con cuatro decisiones: DESPUÉS del paso 1 (ya hay segmentos), una confirmación porque
+   * gasta saldo, Facebook páginas después, y sin saldo o sin ubicación el Research sigue y lo dice.
+   *
+   * El scraping lo arranca y lo sondea ESTE componente con las funciones de la pantalla Tools —mismo
+   * proxy, misma capacidad `tools.editar`—; el servidor da las dos puntas: el rubro (preparar) y el
+   * resumen contado desde la base (resumir). Los pasos 2 al 5 leen ese resumen del almacén.
+   *
+   * `mirada` es la única fuente de la interfaz de este tramo. Sus fases: `confirmar`, `buscando`,
+   * `lista`, `omitida`. Con una mirada ya guardada, el panel abre en `lista`. */
+  const [mirada, setMirada] = useState(() =>
+    estado.researchMercado ? { fase: 'lista', mercado: estado.researchMercado } : null,
+  );
+  /* La confirmación es una promesa que resuelve el botón. Así la cadena de los cinco pasos se queda
+     esperando en un `await`, sin desarmarse en estados. */
+  const decision = useRef(null);
+  const esperarDecision = () =>
+    new Promise((resolver) => {
+      decision.current = resolver;
+    });
+  const decidir = (si) => {
+    const r = decision.current;
+    decision.current = null;
+    if (r) r(si);
+  };
+
+  const TERMINADOS = ['COMPLETED', 'FAILED', 'CANCELLED'];
+  const esperarTrabajo = async (id) => {
+    // Cada cinco segundos, hasta diez minutos. Un trabajo que no termina en ese tiempo se da por
+    // caído y la mirada sigue con lo que haya: nunca se cuelga la cadena entera por un actor.
+    for (let intento = 0; intento < 120; intento += 1) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const t = await consultarTrabajo(id);
+      if (t && TERMINADOS.includes(String(t.status))) return String(t.status);
+    }
+    return 'TIMEOUT';
+  };
+
+  const mirarElMercado = async (v) => {
+    const ubicacion = (v['mr-location'] || '').trim();
+    if (!rutaMercado || !rutaMercadoPreparar || ubicacion === '') return;
+
+    // 1 · Qué buscar. Cuesta una inferencia corta: el rubro es el primer segmento del paso 1.
+    const prep = await pedir(rutaMercadoPreparar, { metodo: 'POST', espera: ESPERA_DE_RUTA_LARGA_MS });
+    if (prep.tipo !== 'datos' || !prep.datos.preparado) {
+      setMirada({ fase: 'omitida', motivo: prep.tipo === 'datos' ? 'sin_ubicacion' : 'sin_preparar' });
+      return;
+    }
+    const { rubro, topeDeNegocios, anuncios } = prep.datos;
+
+    // 2 · La confirmación, una sola vez.
+    setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios });
+    const si = await esperarDecision();
+    if (!si) {
+      setMirada({ fase: 'omitida', motivo: 'no_quiso', rubro, ubicacion });
+      return;
+    }
+
+    // 3 · Los dos scrapers, en paralelo. Maps descuenta saldo; el Espía no.
+    setMirada({ fase: 'buscando', rubro, ubicacion, maps: { estado: 'arrancando' }, espia: { estado: 'arrancando' } });
+    const [maps, espia] = await Promise.all([
+      iniciarScraping('maps', { businessType: rubro, location: ubicacion, maxLeads: topeDeNegocios, getEmails: true }),
+      iniciarScraping('ad-spy', { query: rubro, country: 'ALL', count: anuncios }),
+    ]);
+    if (maps.tipo !== 'trabajo' && espia.tipo !== 'trabajo') {
+      // Sin saldo, o sin permiso de Tools: el Research sigue con lo que el modelo sabe.
+      setMirada({ fase: 'omitida', motivo: 'sin_saldo', detalle: maps.mensaje, rubro, ubicacion });
+      return;
+    }
+    const pinta = (r) => (r.tipo === 'trabajo' ? { id: r.id, estado: 'corriendo' } : { estado: 'fallo', mensaje: r.mensaje });
+    setMirada({ fase: 'buscando', rubro, ubicacion, maps: pinta(maps), espia: pinta(espia) });
+
+    // 4 · Esperar a los dos. Cada uno actualiza su renglón al terminar.
+    const esperas = [];
+    if (maps.tipo === 'trabajo') {
+      esperas.push(
+        esperarTrabajo(maps.id).then((st) =>
+          setMirada((m) => (m && m.fase === 'buscando' ? { ...m, maps: { ...m.maps, estado: st === 'COMPLETED' ? 'listo' : 'fallo' } } : m)),
+        ),
+      );
+    }
+    if (espia.tipo === 'trabajo') {
+      esperas.push(
+        esperarTrabajo(espia.id).then((st) =>
+          setMirada((m) => (m && m.fase === 'buscando' ? { ...m, espia: { ...m.espia, estado: st === 'COMPLETED' ? 'listo' : 'fallo' } } : m)),
+        ),
+      );
+    }
+    await Promise.all(esperas);
+
+    // 5 · Qué se vio, contado en el servidor desde la base, y guardado en el Research.
+    const r = await pedir(rutaMercado, {
+      metodo: 'POST',
+      cuerpo: {
+        rubro,
+        ubicacion,
+        trabajoMaps: maps.tipo === 'trabajo' ? maps.id : null,
+        trabajoEspia: espia.tipo === 'trabajo' ? espia.id : null,
+      },
+    });
+    if (r.tipo !== 'datos') {
+      setMirada({ fase: 'omitida', motivo: 'sin_resumen', rubro, ubicacion });
+      return;
+    }
+    setMirada({ fase: 'lista', mercado: r.datos });
+    onEstadoCambiado();
+  };
+
   /** Los cinco, de a uno. Corta en el primero que falle: el siguiente lo necesitaba. */
   const correrTodo = async (v = valores) => {
     for (let paso = 0; paso < PASOS_RESEARCH; paso += 1) {
       const bien = await correrPaso(paso, v);
       if (!bien) return;
+      // Entre el paso 1 y el 2: mirar el mercado real, si hay dónde. Los pasos 2 al 5 lo leen.
+      if (paso === 0) await mirarElMercado(v);
     }
   };
 
@@ -443,8 +562,9 @@ export default function PanelResearch({
           const estaCorriendo = corriendo === paso;
           const abiertoEste = abierto === paso;
           return (
+            <div key={paso} className="fd-paso-y-mirada">
+            {paso === 1 && mirada ? <Mirada mirada={mirada} onDecidir={decidir} /> : null}
             <div
-              key={paso}
               className={`fd-paso${estaHecho ? ' hecho' : ''}${estaCorriendo ? ' corriendo' : ''}`}
             >
               <div
@@ -499,6 +619,7 @@ export default function PanelResearch({
                 </div>
               ) : null}
             </div>
+            </div>
           );
         })}
       </div>
@@ -532,6 +653,113 @@ export default function PanelResearch({
         </div>
       ) : null}
 
+    </div>
+  );
+}
+
+/* ── LA MIRADA AL MERCADO REAL, DIBUJADA ─────────────────────────────────────
+   Vive entre el paso 1 y el 2, con borde punteado y sangría: NO es un paso del método —los cinco
+   siguen siendo cinco— sino algo que el Research hace entre dos de ellos. Cuatro fases, cuatro
+   formas. Aprobado sobre mockup (2026-09-10). */
+function Mirada({ mirada, onDecidir }) {
+  const titulo = (
+    <div className="fd-mirada-titulo">
+      <span>Mirada al mercado real{mirada.rubro ? ` · ${mirada.rubro}` : ''}{mirada.ubicacion ? ` · ${mirada.ubicacion}` : ''}</span>
+    </div>
+  );
+
+  if (mirada.fase === 'confirmar') {
+    return (
+      <div className="fd-mirada gasto" role="status">
+        <div className="fd-mirada-t">
+          <i>◍</i>
+          <div>
+            <b>¿Buscamos negocios reales de «{mirada.rubro}» en {mirada.ubicacion}?</b>
+            <small>
+              Google Maps trae hasta {mirada.tope} negocios con web y correo cuando los tienen, y el Espía de Anuncios mira
+              qué publicidad corre ese segmento. Los pasos 2 al 5 se construyen sobre eso.{' '}
+              <b>Descuenta hasta {mirada.tope} leads de tu saldo.</b> El Espía no descuenta.
+            </small>
+          </div>
+        </div>
+        <div className="fd-mirada-acciones">
+          <button type="button" className="fd-btn" onClick={() => onDecidir(true)}>
+            Sí, buscar {mirada.tope} negocios
+          </button>
+          <button type="button" className="fd-btn sec" onClick={() => onDecidir(false)}>
+            Seguir sin datos reales
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mirada.fase === 'buscando') {
+    const renglon = (nombre, que, f) => (
+      <div className={`fd-mirada-fuente ${f.estado === 'listo' ? 'ok' : f.estado === 'fallo' ? 'mal' : 'corriendo'}`}>
+        <span className="fd-mirada-pt" />
+        <span>
+          {nombre} · {que}
+        </span>
+        <span className="fd-mirada-e">
+          {f.estado === 'listo' ? 'listo' : f.estado === 'fallo' ? (f.mensaje || 'no se pudo') : f.estado === 'arrancando' ? 'arrancando…' : 'corriendo…'}
+        </span>
+      </div>
+    );
+    return (
+      <div className="fd-mirada" role="status" aria-live="polite">
+        {titulo}
+        {renglon('Google Maps', `hasta ${TOPE_MAPS} negocios`, mirada.maps)}
+        {renglon('Espía de Anuncios', 'qué publicidad corre el segmento', mirada.espia)}
+        <small className="fd-mirada-nota">Tarda unos minutos. El paso 2 arranca cuando terminen los dos.</small>
+      </div>
+    );
+  }
+
+  if (mirada.fase === 'lista') {
+    const m = mirada.mercado;
+    const x = m.maps;
+    const a = m.anuncios;
+    return (
+      <div className="fd-mirada lista">
+        <div className="fd-mirada-titulo">
+          <span>Lo que vimos en el mercado real · {m.rubro} · {m.ubicacion}</span>
+          {x ? <span className="fd-mirada-link">Los {x.total} negocios están en Tools → Mis Leads</span> : null}
+        </div>
+        <div className="fd-cifras">
+          {x ? <div className="fd-cifra"><b>{x.total}</b><span>negocios en Google Maps</span></div> : null}
+          {x ? <div className="fd-cifra"><b>{x.conWeb}</b><span>con sitio web</span></div> : null}
+          {x ? <div className="fd-cifra"><b>{x.conEmail}</b><span>con correo visible</span></div> : null}
+          {a ? <div className="fd-cifra"><b>{a.total}</b><span>anuncios activos del segmento</span></div> : null}
+        </div>
+        {x && (x.ciudades.length > 0 || x.calificacionPromedio !== null) ? (
+          <p>
+            {x.ciudades.length > 0 ? `Concentrados en ${x.ciudades.join(', ')}. ` : ''}
+            {x.calificacionPromedio !== null ? `Calificación promedio ${x.calificacionPromedio}. ` : ''}
+            {x.total > 0 ? `${x.total - x.conWeb} de ${x.total} no tienen sitio web propio.` : ''}
+          </p>
+        ) : null}
+        {a && a.muestras.length > 0 ? (
+          <p>
+            <b>Qué prometen los anuncios:</b> {a.muestras.slice(0, 3).join(' · ')}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  // omitida
+  const textos = {
+    no_quiso: 'El Research sigue sin datos reales, como pediste.',
+    sin_saldo: `No se pudo buscar en Google Maps${mirada.detalle ? `: ${mirada.detalle}` : ''}. El Research sigue con lo que el modelo sabe del mercado.`,
+    sin_ubicacion: 'Sin una ubicación en los criterios no hay dónde buscar negocios reales. El Research sigue igual.',
+    sin_preparar: 'No se pudo preparar la búsqueda. El Research sigue con lo que el modelo sabe.',
+    sin_resumen: 'Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en Tools → Mis Leads.',
+  };
+  return (
+    <div className="fd-mirada omitida" role="status">
+      <i>◍</i>
+      <span>{textos[mirada.motivo] || textos.sin_preparar}</span>
     </div>
   );
 }

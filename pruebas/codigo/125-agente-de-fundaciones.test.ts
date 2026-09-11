@@ -427,6 +427,7 @@ test('una clave inventada no entra, y una respuesta que no vino queda vacía', a
     'buyers',
     'contract',
     'experience',
+    'location', // el sexto criterio, el de la mirada al mercado real
     'ltv',
     'niche',
   ]);

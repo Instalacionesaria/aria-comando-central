@@ -43,6 +43,7 @@
 
 import type { Trx } from '../datos/capa.ts';
 import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
+import { leerMercado, type MercadoReal } from './mercado.ts';
 import { leerOnboarding } from './onboarding.ts';
 import {
   LLAVES,
@@ -230,6 +231,9 @@ export async function leerEstado(orgId: string): Promise<ResultadoDeAlmacen<Esta
   estado.researchSalidas = Array.isArray(research['outputs'])
     ? research['outputs'].map((s) => (typeof s === 'string' ? s : ''))
     : [];
+  // La mirada al mercado real, si el Research la hizo. Lector tolerante: un documento del hub no la
+  // tiene y eso es `null`, no un fallo.
+  estado.researchMercado = leerMercado(research['mercado']);
 
   estado.chats = porHerramienta(fila[LLAVES.chats], chat);
 
@@ -279,13 +283,33 @@ export async function guardarVersion(
   return escribir(orgId, LLAVES.historial, proximo);
 }
 
-/** Guarda los criterios y las salidas del Research (una sola columna, las dos cosas juntas). */
+/**
+ * Guarda los criterios y las salidas del Research (una sola columna, las dos cosas juntas).
+ *
+ * `mercado` viaja SIEMPRE, aunque sea `null`: el documento se reescribe entero, así que omitirlo
+ * borraría la mirada al mercado cada vez que sale un paso. Quien guarda pasa la que el estado ya
+ * tiene; solo `guardarMercado` la cambia.
+ */
 export async function guardarResearch(
   orgId: string,
   inputs: Record<string, string>,
   salidas: string[],
+  mercado: MercadoReal | null,
 ): Promise<ResultadoDeAlmacen<null>> {
-  return escribir(orgId, LLAVES.research, { inputs, outputs: salidas });
+  return escribir(orgId, LLAVES.research, { inputs, outputs: salidas, mercado });
+}
+
+/** Guarda la mirada al mercado real, conservando criterios y salidas tal como están. */
+export async function guardarMercado(
+  orgId: string,
+  estado: EstadoDeFundaciones,
+  mercado: MercadoReal,
+): Promise<ResultadoDeAlmacen<null>> {
+  return escribir(orgId, LLAVES.research, {
+    inputs: estado.researchInputs,
+    outputs: estado.researchSalidas,
+    mercado,
+  });
 }
 
 /**

@@ -46,10 +46,19 @@ import {
   fechaDeVersion,
   guardarChat,
   guardarInputs,
+  guardarMercado,
   guardarResearch,
   guardarVersion,
   leerEstado,
 } from './almacen.ts';
+import { datos } from '../datos/contexto.ts';
+import {
+  ANUNCIOS_DE_LA_MIRADA,
+  TOPE_DE_NEGOCIOS,
+  resumirAnuncios,
+  resumirLeads,
+  type MercadoReal,
+} from './mercado.ts';
 import { SIN_ESPECIFICAR, aValoresDeAlmacen, camposDe, claveCorta, idsDeCampos } from './campos.ts';
 import {
   VERSION_DEL_AGENTE,
@@ -237,6 +246,7 @@ export async function guardarLosInputs(
           alumno.orgId,
           aValoresDeAlmacen(idsDeCampos(1), valores),
           estado.datos.researchSalidas,
+          estado.datos.researchMercado,
         )
       : await guardarInputs(
           alumno.orgId,
@@ -336,7 +346,7 @@ export async function generarElDocumento(
 
     const proximas = [...previas];
     proximas[paso] = salida.datos.texto;
-    const guardado = await guardarResearch(acceso.orgId, inputs, proximas);
+    const guardado = await guardarResearch(acceso.orgId, inputs, proximas, estado.datos.researchMercado);
     if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
     return ok({
@@ -646,4 +656,120 @@ export async function conversarConElAgente(
     respuestas: proximo.answers,
     listo: arranca(h, salida.datos, previas),
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LA MIRADA AL MERCADO REAL DEL RESEARCH
+//
+// Pedido de Jorge, transmitido por Kevin (2026-09-10): que el Research «también por dentro ejecute
+// los scrapers de Google Maps y Meta, pocos leads, y que la salida esté como contexto del agente y
+// se vea en Mis Leads». Aprobado sobre mockup con cuatro decisiones: se dispara DESPUÉS del paso 1
+// (con los segmentos encontrados), pide confirmación una vez porque gasta saldo, Facebook páginas
+// queda para después, y sin saldo el Research sigue y lo dice.
+//
+// Dos operaciones, y el scraping en sí NO está en ninguna: lo arranca y lo sondea el navegador con
+// las mismas funciones que la pantalla Tools (`lib/tools/scrapers.ts`), contra el mismo proxy y con
+// la misma capacidad `tools.editar`. Acá viven las dos puntas que necesitan el servidor:
+//
+//   · PREPARAR: qué buscar. El rubro es el primer segmento del paso 1, que es prosa; se le pide al
+//     modelo el nombre corto (una inferencia de cien tokens). La ubicación es el sexto criterio.
+//   · RESUMIR: qué se vio. Cuenta los leads del trabajo de Maps y los anuncios del Espía, y guarda
+//     el resumen en el documento del Research. Los números se leen de la BASE por identificador de
+//     trabajo, no del cuerpo: el navegador no elige qué dicen cuatro prompts.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
+export type Preparacion =
+  | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; anuncios: number }
+  | { preparado: false; motivo: 'sin_ubicacion' | 'sin_paso_1' };
+
+/** El nombre corto del primer segmento, como rubro buscable en Google Maps. */
+async function rubroDelSegmento(claveIa: string, paso1: string, nichoDeReserva: string): Promise<string> {
+  const salida = await generar({
+    claveIa,
+    tokens: 100,
+    prompt:
+      'Del siguiente análisis de segmentos de mercado, devolvé SOLO el nombre del PRIMER segmento como ' +
+      'rubro buscable en Google Maps: de 2 a 5 palabras, en español, en plural, sin comillas, sin punto ' +
+      'y sin ninguna otra palabra. Ejemplos de forma: «clínicas dentales», «agencias de marketing», ' +
+      `«talleres mecánicos».\n\n${paso1.slice(0, 6_000)}`,
+  });
+  if (salida.tipo !== 'datos') return nichoDeReserva;
+  const linea = salida.datos.texto.split('\n').map((l) => l.trim()).find((l) => l !== '') ?? '';
+  const limpio = linea.replace(/^[#*\-•\s]+/, '').replace(/[«»"'.]/g, '').trim();
+  // Una respuesta larga es una explicación, no un rubro: se prefiere el nicho a un prompt raro.
+  return limpio !== '' && limpio.length <= 60 ? limpio : nichoDeReserva;
+}
+
+export async function prepararMercado(acceso: Acceso): Promise<Response> {
+  const estado = await leerEstado(acceso.orgId);
+  if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
+
+  const ubicacion = (estado.datos.researchInputs['location'] ?? '').trim();
+  if (ubicacion === '' || ubicacion === SIN_ESPECIFICAR) {
+    return ok({ preparado: false, motivo: 'sin_ubicacion' } satisfies Preparacion);
+  }
+  const paso1 = (estado.datos.researchSalidas[0] ?? '').trim();
+  if (paso1 === '') return ok({ preparado: false, motivo: 'sin_paso_1' } satisfies Preparacion);
+
+  const nicho = (estado.datos.researchInputs['niche'] ?? '').trim();
+  const rubro = await rubroDelSegmento(acceso.claveIa, paso1, nicho !== '' && nicho !== SIN_ESPECIFICAR ? nicho : 'negocios');
+
+  return ok({
+    preparado: true,
+    rubro,
+    ubicacion,
+    topeDeNegocios: TOPE_DE_NEGOCIOS,
+    anuncios: ANUNCIOS_DE_LA_MIRADA,
+  } satisfies Preparacion);
+}
+
+/**
+ * Cuenta lo que vieron los scrapers y lo guarda en el Research. **Corre dentro de `conOrganizacion(`**,
+ * que abre la ruta: las dos lecturas son de tablas con aislamiento por fila, y un identificador de
+ * trabajo ajeno devuelve cero filas, no las de otro.
+ */
+export async function resumirMercado(peticion: Request, alumno: Alumno): Promise<Response> {
+  let cuerpo: { rubro?: unknown; ubicacion?: unknown; trabajoMaps?: unknown; trabajoEspia?: unknown };
+  try {
+    cuerpo = (await peticion.json()) as typeof cuerpo;
+  } catch {
+    return rechazo('peticion_invalida', 'El cuerpo no es JSON');
+  }
+  const rubro = typeof cuerpo.rubro === 'string' ? cuerpo.rubro.trim() : '';
+  const ubicacion = typeof cuerpo.ubicacion === 'string' ? cuerpo.ubicacion.trim() : '';
+  const trabajoMaps = typeof cuerpo.trabajoMaps === 'string' && cuerpo.trabajoMaps !== '' ? cuerpo.trabajoMaps : null;
+  const trabajoEspia = typeof cuerpo.trabajoEspia === 'string' && cuerpo.trabajoEspia !== '' ? cuerpo.trabajoEspia : null;
+  if (rubro === '' || ubicacion === '') return rechazo('peticion_invalida', 'Falta el rubro o la ubicación');
+  if (!trabajoMaps && !trabajoEspia) return rechazo('peticion_invalida', 'Falta el trabajo de Maps o del Espía');
+
+  const estado = await leerEstado(alumno.orgId);
+  if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
+
+  const db = datos();
+  const maps = trabajoMaps
+    ? resumirLeads(
+        trabajoMaps,
+        await db
+          .selectFrom('public.aria_cc_scraper_leads')
+          .select(['name', 'email', 'phone', 'website', 'location', 'category', 'raw_data'])
+          .where('trabajo_id', '=', trabajoMaps)
+          .execute(),
+      )
+    : null;
+
+  let anuncios: MercadoReal['anuncios'] = null;
+  if (trabajoEspia) {
+    const fila = await db
+      .selectFrom('public.aria_cc_scraper_trabajos')
+      .select(['id', 'results_data'])
+      .where('id', '=', trabajoEspia)
+      .executeTakeFirst();
+    anuncios = fila ? resumirAnuncios(trabajoEspia, fila.results_data) : null;
+  }
+
+  const mercado: MercadoReal = { rubro, ubicacion, miradoEl: new Date().toISOString(), maps, anuncios };
+  const guardado = await guardarMercado(alumno.orgId, estado.datos, mercado);
+  if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
+  return ok(mercado);
 }

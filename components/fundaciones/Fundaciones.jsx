@@ -68,6 +68,10 @@ const CATALOGO_ICP = {
   /* «Traer del onboarding»: vuelve a copiar el formulario de Walter a la ficha, a pedido. Solo la
      tiene esta pantalla porque solo acá vive «Tu ficha»; Tools no la pasa y el panel no la dibuja. */
   rutaOnboarding: '/api/fundaciones/onboarding',
+  /* La mirada al mercado real del Research: qué buscar (pide el rubro al modelo) y qué se vio (cuenta
+     los leads y anuncios y lo guarda). Solo esta pantalla tiene el Research. */
+  rutaMercadoPreparar: '/api/fundaciones/mercado/preparar',
+  rutaMercado: '/api/fundaciones/mercado',
   capacidadEditar: 'fundaciones.editar',
 };
 
@@ -75,6 +79,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
   const { pantalla, herramientas, rutaEstado, rutaGenerar, rutaConversar, rutaRellenar, capacidadEditar } =
     catalogo;
   const rutaOnboarding = catalogo.rutaOnboarding ?? null;
+  const rutaMercadoPreparar = catalogo.rutaMercadoPreparar ?? null;
+  const rutaMercado = catalogo.rutaMercado ?? null;
   const soloChatDePantalla = catalogo.soloChat === true;
 
   /* ── LAS VISTAS: pestañas que NO generan nada ────────────────────────────────
@@ -471,6 +477,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}
           rutaConversar={rutaConversar}
+          rutaMercadoPreparar={rutaMercadoPreparar}
+          rutaMercado={rutaMercado}
         />
       ) : (
         <PanelHerramienta

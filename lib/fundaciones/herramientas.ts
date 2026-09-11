@@ -202,6 +202,22 @@ const RESEARCH: Herramienta = {
         { id: 'mr-experience', etiqueta: '¿Cuál es tu experiencia o trasfondo?', tipo: 'area', marcador: 'Ej: soy consultor de crecimiento con experiencia en marketing y ventas para agencias...' },
       ],
     },
+    {
+      columnas: 1,
+      campos: [
+        /* El sexto criterio, y el único que no viene del hub. Es lo que la MIRADA AL MERCADO REAL
+           necesita para buscar en Google Maps: un rubro (el primer segmento del paso 1) y una
+           ubicación. Sin ubicación no hay scraping y el Research corre igual, por eso es opcional.
+           El agente lo propone desde el onboarding cuando dice el mercado geográfico. Ver `mercado.ts`. */
+        {
+          id: 'mr-location',
+          etiqueta: '¿Dónde buscar negocios reales? (opcional)',
+          tipo: 'texto',
+          marcador: 'Ej: Lima, Perú · Puerto Rico · Ciudad de México',
+          opcional: true,
+        },
+      ],
+    },
   ],
   etiquetaBoton: 'Ejecutar research completo',
   etiquetaSalida: 'Market Research',
