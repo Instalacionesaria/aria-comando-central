@@ -33,6 +33,13 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // ven **cero filas** y un `update` informaría éxito sin tocar nada. Es el mismo argumento con el
   // que `scripts/organizacion-principal.mjs` está en esta lista.
   'scripts/mudar-auditoria.mjs',
+  // Mide la respuesta de citas del CRM contra la subcuenta real para saber si trae un sello de
+  // creación y cómo se llama. Necesita la LISTA de organizaciones —y las credenciales de cada una,
+  // que son de identidad— y después trabaja de una en una: es textualmente el caso que el 04 § 4
+  // nombra como legítimo, el mismo de `scripts/db.mjs verificar`.
+  //
+  // Y sólo hace `GET`: no escribe ni en el CRM ni en la base, y no imprime datos de nadie.
+  'scripts/medir-cita.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.

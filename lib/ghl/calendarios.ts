@@ -69,6 +69,31 @@
 // siguiente. Por eso este módulo usa **solo** el de calendarios, y por eso el otro está nombrado
 // acá — para que quien lo encuentre sepa que ya se descartó.
 //
+// ── HALLAZGO 7 · EL SELLO DE CREACIÓN SE LLAMA `dateAdded`, NO `createdAt` ─
+//
+// Medido el 2026-09-11 con `scripts/medir-cita.mjs` sobre 402 eventos del calendario principal:
+//
+//   dateAdded        402 de 402     ← cuándo se RESERVÓ
+//   dateUpdated      402 de 402
+//   rescheduledAt     60 de 402     ← sólo las movidas, que es lo correcto
+//   assignedUserId   402 de 402
+//   address          396 de 402
+//   description        0 de 402     ← viene siempre vacía
+//   notes              0 de 402     ← ídem
+//
+// **`createdAt` no existe en la respuesta.** Era el nombre que uno escribiría por costumbre, y el
+// que las dos familias vecinas de esta misma API desmienten: contactos y mensajes también usan
+// `dateAdded`. Escribirlo a ciegas habría dejado la columna nula para siempre, sin error.
+//
+// Y la comprobación que decide si el campo SIRVE, que no es que exista: **`dateAdded` difiere de
+// `startTime` en 402 de 402, y es anterior en 402 de 402**. Si viniera igual sería la hora de la
+// cita con otro nombre, y una tasa «por período» calculada con eso daría lo mismo que una por
+// fecha de ocurrencia — idéntica, plausible y falsa.
+//
+// Ojo con el formato, que es distinto del de las otras dos fechas: `dateAdded` llega en UTC con
+// `Z` (`"2026-05-14T02:18:36.000Z"`) mientras `startTime` llega con desfase (`"…-05:00"`). Las dos
+// las resuelve `aInstante` sin ambigüedad, pero conviene saberlo antes de comparar a mano.
+//
 // ── HALLAZGO 6 · EL ESTADO TIENE UN CAMPO CON EL NOMBRE MAL ESCRITO ───────
 //
 // Cada cita trae **los dos**, con el mismo valor:
@@ -185,8 +210,13 @@ export interface CitaDeGhl {
   usuarioAsignadoId: string | null;
   /** `true` = el CRM la marcó como borrada y **la sigue devolviendo en la lista**. */
   borrada: boolean;
-  /** Cuándo se reagendó, si se reagendó. */
+  /** Cuándo se reagendó, si se reagendó. Medido: presente en 60 de 402. */
   reagendadaEl: Date | null;
+  /**
+   * Cuándo se RESERVÓ, que no es cuándo ocurre. Medido: presente en 402 de 402, y anterior a
+   * `inicioEl` en 402 de 402. Ver el HALLAZGO 7.
+   */
+  reservadaEl: Date | null;
 }
 
 /**
@@ -243,6 +273,11 @@ export function leerCita(c: unknown): CitaDeGhl {
     usuarioAsignadoId: texto(o.assignedUserId),
     borrada: o.deleted === true,
     reagendadaEl: aInstante(o.rescheduledAt),
+    /* `dateAdded` y no `createdAt`: ver el HALLAZGO 7. Y **sin respaldo encadenado** —nada de
+       `?? aInstante(o.createdAt)`—: el único respaldo de este archivo, `appointmentStatus ??
+       appoinmentStatus`, existe porque los DOS están medidos y traen el mismo valor. Encadenar un
+       nombre que nadie vio sería copiar la forma sin el motivo. */
+    reservadaEl: aInstante(o.dateAdded),
   };
 }
 

@@ -111,6 +111,7 @@ function delCrm(id: string, contactId: string | null, inicio: Date | null, extra
     usuarioAsignadoId: 'u1',
     borrada: false,
     reagendadaEl: null,
+    reservadaEl: null,
     ...extra,
   };
 }
@@ -1000,7 +1001,7 @@ async function comoQuedo(eventoId: string): Promise<Record<string, unknown> | un
   return conOrganizacion(alfa, async () =>
     datos()
       .selectFrom('citas')
-      .select(['inicio_el', 'reagendada_el', 'crm_asignado_a', 'inicio_anterior_el'])
+      .select(['inicio_el', 'reagendada_el', 'crm_asignado_a', 'inicio_anterior_el', 'reservada_el'])
       .where('ghl_evento_id', '=', eventoId)
       .executeTakeFirst(),
   ) as Promise<Record<string, unknown> | undefined>;
@@ -1019,12 +1020,21 @@ test('lo que el CRM dice de la cita se GUARDA, en vez de morir en el upsert', as
   await contacto(marca);
   const cuando = new Date(Date.now() + 3_600_000);
   const movidaEl = new Date(Date.now() - 86_400_000);
+  /* Bien lejos de `cuando` y de `movidaEl`: con las tres fechas cerca, una prueba que leyera la
+     columna equivocada podría pasar igual. */
+  const reservadaEl = new Date(Date.now() - 30 * 86_400_000);
 
   await barrerCitas(
     alfa,
     ACCESO,
     lectores([calendario('a')], {
-      a: [delCrm('ev-guarda', marca, cuando, { reagendadaEl: movidaEl, usuarioAsignadoId: 'u9' })],
+      a: [
+        delCrm('ev-guarda', marca, cuando, {
+          reagendadaEl: movidaEl,
+          usuarioAsignadoId: 'u9',
+          reservadaEl,
+        }),
+      ],
     }),
   );
 
@@ -1036,6 +1046,11 @@ test('lo que el CRM dice de la cita se GUARDA, en vez de morir en el upsert', as
     'la marca de reagendamiento se perdió entre el lector del CRM y la tabla',
   );
   assert.equal(f.crm_asignado_a, 'u9', 'el usuario que el CRM asignó se perdió en el upsert');
+  assert.equal(
+    (f.reservada_el as Date | null)?.toISOString(),
+    reservadaEl.toISOString(),
+    'la fecha de reserva se perdió entre el lector del CRM y la tabla',
+  );
 });
 
 test('un barrido sin la marca de reagendamiento NO borra la que ya teníamos', async () => {
@@ -1148,5 +1163,33 @@ test('desasignar la cita en el CRM se ve: el nulo gana', async () => {
     (await comoQuedo('ev-dueno'))?.crm_asignado_a,
     null,
     'la cita siguió mostrando al closer anterior después de que el CRM la desasignara',
+  );
+});
+
+test('un barrido sin la fecha de reserva NO borra la que ya teníamos', async () => {
+  /* La gemela de la del reagendamiento, y la que más daño evita, por un motivo propio: **una cita
+     se reserva UNA vez**. Ese valor no puede cambiar, así que un nulo que pisara borraría la única
+     fecha con la que se pueden dar tasas por período — y como el barrido recorre una ventana móvil,
+     las citas que quedan fuera de ella **no se vuelven a tocar nunca**: lo borrado no se recupera
+     en la pasada siguiente. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const reservadaEl = new Date(Date.now() - 30 * 86_400_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-reserva', marca, cuando, { reservadaEl })],
+  }));
+  await liberarPulso();
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-reserva', marca, cuando, { reservadaEl: null })],
+  }));
+
+  assert.equal(
+    ((await comoQuedo('ev-reserva'))?.reservada_el as Date | null)?.toISOString(),
+    reservadaEl.toISOString(),
+    'un barrido sin el campo borró la fecha de reserva: falta el `coalesce` del `do update`',
   );
 });

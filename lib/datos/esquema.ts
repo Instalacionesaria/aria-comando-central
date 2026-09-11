@@ -443,6 +443,15 @@ export interface TablaCitas {
   reagendada_el: Date | null;
   crm_asignado_a: string | null;
   /**
+   * Cuándo se RESERVÓ la cita (`dateAdded` del CRM), que no es cuándo ocurre. Es lo único que
+   * permite dar una tasa del embudo por período en vez de acumulada.
+   *
+   * Nula en las citas sincronizadas antes de la `043` y en las que quedaron fuera de la ventana
+   * móvil del barrido — ésas **no se completan solas nunca**. Quien la use tiene que decir desde
+   * cuándo mide.
+   */
+  reservada_el: Date | null;
+  /**
    * La hora que la cita tenía antes del último movimiento que vimos. Nuestra, no del CRM: la
    * escribe el `do update` leyendo la fila vieja en la misma sentencia que la pisa.
    *

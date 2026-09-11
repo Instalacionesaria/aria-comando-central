@@ -306,6 +306,7 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
        —`rescheduledAt` y `assignedUserId`—, los normaliza, y morían en este objeto. */
     reagendada_el: cita.reagendadaEl,
     crm_asignado_a: cita.usuarioAsignadoId,
+    reservada_el: cita.reservadaEl,
     sincronizado_el: new Date(),
   };
 
@@ -336,6 +337,12 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
            * en TODAS las citas de ese barrido, de una vez, sin error y sin que nada se ponga
            * rojo. Con `coalesce`, lo que ya se midió gana sobre lo que no vino. */
           reagendada_el: sql`coalesce(excluded.reagendada_el, citas.reagendada_el)`,
+
+          /* La fecha de reserva se protege igual, y por un motivo propio además del compartido:
+             **una cita se reserva UNA vez**. Su valor no puede cambiar, así que un valor nuevo que
+             viniera distinto es una señal de que algo se rompió, no un dato mejor — y un nulo que
+             pisara borraría la única fecha con la que se pueden dar tasas por período. */
+          reservada_el: sql`coalesce(excluded.reservada_el, citas.reservada_el)`,
 
           /* Éste SÍ se pisa derecho, nulo incluido, y la asimetría con el de arriba es a
            * propósito: reasignar una cita a otro closer —o DESASIGNARLA— es un hecho del CRM que

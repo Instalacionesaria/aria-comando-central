@@ -78,7 +78,7 @@ const FLUJOS = {
     agente: 'LeadFlow',
     falta: [
       ['El recorrido hasta la landing', 'Enlace enviado, enlace abierto, visita y formulario no se registran en ninguna parte. Hace falta un trigger link, que es un sistema aparte —un redirector con un token por contacto— y no un campo que se pueda agregar.'],
-      ['Las tasas por período', 'La cita no guarda cuándo se reservó, así que el booking rate solo se puede dar acumulado y no «en los últimos 7 días».'],
+      ['El histórico de las tasas por período', 'La cita ya guarda cuándo se reservó, pero solo desde que empezó a guardarse: las anteriores tienen el dato vacío y NO se van a llenar solas —el barrido mira una ventana de días alrededor de hoy y no vuelve a pasar por las viejas—. Hasta que haya historia, un «últimos 90 días» cuenta de menos sin avisar.'],
       ['El agente de voz', 'Sus llamadas no dejan transcripción en esta base: la tabla existe y tiene cero filas.'],
     ],
   },

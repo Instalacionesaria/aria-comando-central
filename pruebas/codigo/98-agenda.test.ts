@@ -52,6 +52,12 @@ function comoLaManda(extra: Record<string, unknown> = {}): Record<string, unknow
     appoinmentStatus: 'confirmed',
     address: 'https://meet.example/abc',
     assignedUserId: 'u1',
+    /* Medido el 2026-09-11 contra la subcuenta real y ausente de este literal hasta entonces — o
+       sea que el comentario de arriba, «como el CRM la manda de verdad», era falso para este campo.
+       `dateAdded` viene en 402 de 402. En OTRO DÍA que `startTime` a propósito: ver la prueba de la
+       fecha de reserva, más abajo. (`rescheduledAt` también está medido, en 60 de 402 — sólo las
+       movidas —, así que va por `extra` donde hace falta y no acá.) */
+    dateAdded: '2026-08-01T15:00:00.000Z',
     ...extra,
   };
 }
@@ -280,4 +286,38 @@ test('la etiqueta CORTA suelta el año, y la larga lo sigue llevando', () => {
   // Y la larga NO cambió: es la que encabeza el chat.
   assert.match(etiquetaDeDia('2026-08-28', '2026-08-26'), /2026/);
   assert.equal(etiquetaCorta('vaya-a-saber', '2026-08-26'), 'vaya-a-saber');
+});
+
+// ─── 5 · La fecha de RESERVA, que no es la de la cita ───────────────────────
+
+test('la fecha de reserva sale de `dateAdded`, y no de la hora de la cita', () => {
+  /* ── EL DEFECTO QUE ESTO IMPIDE SE VE PERFECTO EN UN TABLERO ───────────────
+   *
+   * Si esta línea leyera `startTime`, toda tasa «de los últimos 7 días» quedaría idéntica a la de
+   * fecha de ocurrencia: un número plausible, estable, y que contesta otra pregunta. Por eso el
+   * fixture reserva en AGOSTO una cita que ocurre otro día — con los dos valores en el mismo
+   * instante, la prueba pasaría con las dos versiones y no diría nada.
+   *
+   * Y el nombre del campo está medido, no supuesto: `createdAt` NO existe en la respuesta del CRM
+   * (HALLAZGO 7 de `lib/ghl/calendarios.ts`). Es justo el que uno escribiría por costumbre. */
+  const c = leerCita(comoLaManda());
+  assert.equal(c.reservadaEl?.toISOString(), '2026-08-01T15:00:00.000Z');
+  assert.equal(c.inicioEl?.toISOString(), '2026-08-25T13:00:00.000Z');
+  assert.notEqual(
+    c.reservadaEl?.toISOString(),
+    c.inicioEl?.toISOString(),
+    'el fixture dejó de distinguir las dos fechas, y con eso esta prueba dejó de probar algo',
+  );
+});
+
+test('sin `dateAdded` la reserva es NULA, no 1970 ni una fecha inválida', () => {
+  /* Los dos finales malos de un `new Date` crudo: `new Date(undefined)` da `Invalid Date` —que
+     viaja hasta la base y falla allá, lejos de acá— y `new Date(0)` da 1970, que no falla nunca y
+     mete citas «reservadas en 1970» dentro de cualquier cifra mensual. `aInstante` da `null`, que
+     es lo único que significa «el CRM no lo dijo». */
+  const sinFecha = comoLaManda();
+  delete sinFecha.dateAdded;
+  assert.equal(leerCita(sinFecha).reservadaEl, null);
+  assert.equal(leerCita(comoLaManda({ dateAdded: '' })).reservadaEl, null);
+  assert.equal(leerCita(comoLaManda({ dateAdded: 'la semana pasada' })).reservadaEl, null);
 });
