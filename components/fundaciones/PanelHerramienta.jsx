@@ -440,6 +440,7 @@ export default function PanelHerramienta({
                   {[
                     estado.onboarding.nombreDelNegocio,
                     `${estado.onboarding.secciones.length} ${estado.onboarding.secciones.length === 1 ? 'sección' : 'secciones'}`,
+                    estado.onboarding.respuestas.length > 0 ? `${estado.onboarding.respuestas.length} respuestas del formulario` : null,
                     fechaLarga(estado.onboarding.capturadoEl) ? `llenado el ${fechaLarga(estado.onboarding.capturadoEl)}` : null,
                   ]
                     .filter(Boolean)

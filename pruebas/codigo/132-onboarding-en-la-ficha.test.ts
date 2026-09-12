@@ -24,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { RAIZ, sinComentarios } from '../apoyo/fuente.ts';
-import { CARACTERES_DE_ONBOARDING, contextoDeOnboarding, leerOnboarding } from '../../lib/fundaciones/onboarding.ts';
+import { CARACTERES_DE_ONBOARDING, contextoDeOnboarding, leerOnboarding, paresDelChat } from '../../lib/fundaciones/onboarding.ts';
 import { LLAVES, estadoVacio } from '../../lib/fundaciones/estado.ts';
 import { armarPrompt, datosDe } from '../../lib/fundaciones/prompts.ts';
 import { contextoHeredado } from '../../lib/fundaciones/relleno.ts';
@@ -162,6 +162,45 @@ test('«Tu ficha» lo recibe en su prompt Y en el contexto del agente, que son e
   assert.doesNotMatch(sin, /FORMULARIO DE ONBOARDING/);
   assert.doesNotMatch(sin, /\{\{[\w.#^/]+\}\}/);
   assert.equal(contextoHeredado(ficha, estadoVacio()), '');
+});
+
+test('las preguntas y respuestas del chat de Walter llegan textuales, sin los botones del formulario', () => {
+  /* Kevin (2026-09-12): «¿estamos trayendo el jsonb de chat_history? ¿el agente toma conciencia de
+     esas preguntas y respuestas?». Un recorte fiel del chat de Innat8: la pregunta viene con los
+     botones del formulario incrustados, y la respuesta es la opción elegida. */
+  const chat = {
+    messages: [
+      { role: 'ARIA', content: '¡Hola! Cuéntame, ¿cuál es tu modelo de negocio actual?\n\n[BOTONES:UNICA]\nAgencia\nConsultor de IA\nOtro\n[/BOTONES]\n[BLOQUE: 1]' },
+      { role: 'Cliente', content: 'Consultor o implementador de IA' },
+      { role: 'ARIA', content: 'Perfecto. ¿Cuánto cobras típicamente por el setup?\n\n[BOTONES:UNICA]\n$1,000–$3,000\n[/BOTONES]' },
+      { role: 'Cliente', content: '$1,000–$3,000' },
+      { role: 'ARIA', content: 'Si quieres agregar algo, escríbelo. Si no, escribe "listo" y seguimos.' },
+      { role: 'Cliente', content: 'Listo' },
+      { role: 'ARIA', content: 'Listo, Miguel. Todo arranca en esa llamada. [ONBOARDING_COMPLETO]' },
+    ],
+  };
+  const pares = paresDelChat(chat);
+  assert.deepEqual(pares, [
+    { pregunta: '¡Hola! Cuéntame, ¿cuál es tu modelo de negocio actual?', respuesta: 'Consultor o implementador de IA' },
+    { pregunta: 'Perfecto. ¿Cuánto cobras típicamente por el setup?', respuesta: '$1,000–$3,000' },
+  ]);
+  // Los botones y las marcas NO quedan en ningún lado, y la transición «listo» no cuenta.
+  assert.ok(!JSON.stringify(pares).includes('BOTONES') && !JSON.stringify(pares).includes('BLOQUE'));
+  // Tolerante: sin chat, o con otra forma, cero pares y ninguna excepción.
+  assert.deepEqual(paresDelChat(null), []);
+  assert.deepEqual(paresDelChat('x'), []);
+  assert.deepEqual(paresDelChat([{ role: 'user', content: 'suelto' }]), []);
+
+  // Y entran al contexto del agente, después de la síntesis y marcadas como textuales.
+  const o = leerOnboarding({ ...CAPTURA, chat_history: chat });
+  assert.equal(o?.respuestas.length, 2);
+  const texto = contextoDeOnboarding(o);
+  assert.ok(texto);
+  assert.match(texto, /PREGUNTAS DEL FORMULARIO Y LO QUE CONTESTÓ, TEXTUAL:/);
+  assert.match(texto, /→ Consultor o implementador de IA/);
+  assert.ok(texto.indexOf('El negocio:') < texto.indexOf('PREGUNTAS DEL FORMULARIO'), 'las respuestas van antes que la síntesis');
+  // Con solo el chat —sin HTML— también hay onboarding: es lo que la persona dijo.
+  assert.equal(leerOnboarding({ chat_history: chat })?.respuestas.length, 2);
 });
 
 test('el agente deduce el problema y el resultado del cliente desde lo que la oferta promete', () => {

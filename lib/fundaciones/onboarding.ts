@@ -60,6 +60,19 @@ export interface Onboarding {
   website: string | null;
   /** Cuándo llenó el formulario, ISO. Es lo que la ficha muestra: «llenado el 10 de septiembre». */
   capturadoEl: string | null;
+  /**
+   * Las preguntas del formulario con lo que la persona contestó, textual y en orden. Salen del
+   * `chat_history` de Walter, limpias de los botones del formulario. Kevin (2026-09-12): *«¿el
+   * agente de Tu ficha toma conciencia de esas preguntas y respuestas?»*. La síntesis del HTML es
+   * una interpretación del pipeline; esto es lo que la persona eligió, opción por opción.
+   */
+  respuestas: readonly ParDeOnboarding[];
+}
+
+/** Una pregunta del formulario de Walter y la respuesta que eligió la persona. */
+export interface ParDeOnboarding {
+  pregunta: string;
+  respuesta: string;
 }
 
 /**
@@ -69,7 +82,44 @@ export interface Onboarding {
  * hoy. Existe para el día que el pipeline agregue el análisis de la llamada: ahí el documento crece
  * y el contexto de UNA herramienta no puede comerse el presupuesto de la generación.
  */
-export const CARACTERES_DE_ONBOARDING = 4_000;
+export const CARACTERES_DE_ONBOARDING = 9_000;
+
+/**
+ * Los pares pregunta/respuesta del `chat_history` de Walter.
+ *
+ * El chat es `{messages: [{role: 'ARIA' | 'Cliente', content}]}`, y cada turno de ARIA trae la
+ * pregunta MÁS los botones del formulario en marcas propias (`[BOTONES:UNICA] … [/BOTONES]`,
+ * `[BLOQUE: 1]`, `[ONBOARDING_COMPLETO]`). Se quitan las marcas y se empareja cada pregunta con la
+ * respuesta que la sigue. Medido sobre la captura de Innat8 (2026-09-12): 55 turnos → 27 pares,
+ * 4.300 caracteres. Se aceptan también `assistant`/`user` por si el pipeline cambia de nombres.
+ *
+ * Los pares cuya respuesta es «listo» son los de transición («escribí listo y seguimos») y no dicen
+ * nada del negocio: quedan afuera.
+ */
+export function paresDelChat(crudo: unknown): ParDeOnboarding[] {
+  const o = crudo !== null && typeof crudo === 'object' && !Array.isArray(crudo) ? (crudo as Record<string, unknown>) : {};
+  const lista: unknown[] = Array.isArray(crudo) ? crudo : Array.isArray(o['messages']) ? (o['messages'] as unknown[]) : [];
+  const limpiar = (s: unknown): string =>
+    String(s ?? '')
+      .replace(/\[BOTONES[^\]]*\][\s\S]*?\[\/BOTONES\]/g, ' ')
+      .replace(/\[[A-Z_]+(?::[^\]]*)?\]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const esAgente = (r: unknown) => r === 'ARIA' || r === 'assistant';
+  const esPersona = (r: unknown) => r === 'Cliente' || r === 'user';
+
+  const pares: ParDeOnboarding[] = [];
+  for (let i = 0; i < lista.length - 1; i += 1) {
+    const m = lista[i] as Record<string, unknown> | null;
+    const sig = lista[i + 1] as Record<string, unknown> | null;
+    if (!m || !sig || !esAgente(m['role']) || !esPersona(sig['role'])) continue;
+    const pregunta = limpiar(m['content']);
+    const respuesta = limpiar(sig['content']);
+    if (pregunta === '' || respuesta === '' || /^listo$/i.test(respuesta)) continue;
+    pares.push({ pregunta, respuesta });
+  }
+  return pares;
+}
 
 /** Un valor de texto con contenido, o `null`. Trata «sin dato» como ausencia, igual que el pipeline. */
 function texto(x: unknown): string | null {
@@ -149,14 +199,16 @@ export function leerOnboarding(crudo: unknown): Onboarding | null {
     paisCiudad: texto(o['pais_ciudad']),
     website: texto(o['website']),
     capturadoEl: typeof o['capturado_el'] === 'string' && o['capturado_el'] !== '' ? o['capturado_el'] : null,
+    respuestas: paresDelChat(o['chat_history']),
   };
 
-  /* Hace falta una sección o el nombre del negocio. El teléfono, el sitio y la ciudad NO alcanzan
+  /* Hace falta una sección, el nombre del negocio, o las respuestas del chat. El teléfono, el sitio y la ciudad NO alcanzan
      solos, y eso está medido: de las nueve capturas de producción al 2026-09-10, una tiene solo el
      teléfono —una conversación que se cortó antes de la síntesis—. Aceptarla haría que el agente
      abriera diciendo «esto es lo que tengo de tu onboarding: teléfono», que es peor que no decir
      nada: promete datos precargados y no hay ninguno de los siete campos. */
-  const hayAlgo = onboarding.secciones.length > 0 || !!onboarding.nombreDelNegocio;
+  const hayAlgo =
+    onboarding.secciones.length > 0 || !!onboarding.nombreDelNegocio || onboarding.respuestas.length > 0;
   return hayAlgo ? onboarding : null;
 }
 
@@ -179,6 +231,14 @@ export function contextoDeOnboarding(onboarding: Onboarding | null): string | nu
   if (datos.length > 0) partes.push(datos.join(' · '));
 
   for (const s of onboarding.secciones) partes.push(`${s.titulo}: ${s.texto}`);
+
+  /* Las respuestas textuales van DESPUÉS de la síntesis: si el tope recorta, se pierde el final del
+     cuestionario (las metas), no el resumen del negocio. Son lo que la persona eligió, opción por
+     opción, y el agente puede citarlas cuando le pregunten «¿qué puse en el formulario?». */
+  if (onboarding.respuestas.length > 0) {
+    partes.push('PREGUNTAS DEL FORMULARIO Y LO QUE CONTESTÓ, TEXTUAL:');
+    for (const p of onboarding.respuestas) partes.push(`- ${p.pregunta}\n  → ${p.respuesta}`);
+  }
 
   return (
     'LO QUE ESTA PERSONA CONTESTÓ EN SU FORMULARIO DE ONBOARDING (lo escribió ella misma al ' +
