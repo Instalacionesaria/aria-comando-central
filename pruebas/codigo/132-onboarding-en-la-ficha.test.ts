@@ -164,6 +164,16 @@ test('«Tu ficha» lo recibe en su prompt Y en el contexto del agente, que son e
   assert.equal(contextoHeredado(ficha, estadoVacio()), '');
 });
 
+test('el agente deduce el problema y el resultado del cliente desde lo que la oferta promete', () => {
+  /* Kevin, con captura de Innat8 (2026-09-12): el agente dejaba «me falta: ¿cuál es el mayor problema
+     de tu cliente? · ¿qué resultado obtienen contigo?» con la oferta a la vista. El formulario de
+     Walter nunca pregunta por el cliente final, así que esos dos solo salen por deducción — y la
+     instrucción tiene que pedirla con todas las letras, marcada como propuesta. */
+  const relleno = codigo('lib/fundaciones/relleno.ts');
+  assert.match(relleno, /Si el contexto es un FORMULARIO DE ONBOARDING, deducí el problema del cliente y el resultado/);
+  assert.match(relleno, /Solo dejalos vacíos si la oferta no dice qué hace/);
+});
+
 test('el almacén lee la columna `intake` con el lector tolerante', () => {
   assert.equal(LLAVES.onboarding, 'intake', 'cambió el nombre de la columna del onboarding');
   assert.equal(estadoVacio().onboarding, null, 'el estado vacío ya no nace sin onboarding');

@@ -138,6 +138,17 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
     '· Lo que NO podés sostener con nada del contexto va VACÍO. La diferencia: «dueños de agencias ' +
     'PPC en LATAM» sostiene un país o región y un perfil de ocupación; no sostiene una cifra exacta ' +
     'de facturación que nadie mencionó. No inventes cifras ni nombres propios.\n' +
+    /* El formulario de onboarding de Walter habla del NEGOCIO (modelo, facturación, oferta, cómo
+       opera, metas) y nunca pregunta por el cliente final. Con la regla de arriba sola, el modelo
+       dejaba vacíos «el mayor problema de tu cliente» y «qué resultado obtienen contigo» —Kevin, con
+       captura de Innat8: «debería ser suficiente con lo que trajimos de las tablas»—. Y sí alcanza:
+       una oferta que promete responder, dar seguimiento y agendar está diciendo qué problema
+       resuelve y qué resultado entrega. Se propone como deducción y la persona confirma. */
+    '· Si el contexto es un FORMULARIO DE ONBOARDING, deducí el problema del cliente y el resultado ' +
+    'que obtiene A PARTIR DE LO QUE LA OFERTA PROMETE RESOLVER: «un agente que responde, da ' +
+    'seguimiento y agenda» sostiene que el problema es no responder ni dar seguimiento a tiempo y ' +
+    'que el resultado es más citas agendadas sin trabajo manual. Proponelos en esos términos; la ' +
+    'persona los corrige si no son así. Solo dejalos vacíos si la oferta no dice qué hace.\n' +
     '· Escribí como escribiría la persona en ese campo: corto, concreto, con el formato del ejemplo. ' +
     'No copies párrafos enteros del contexto ni pegues frases a medias.\n' +
     '· Usá el lenguaje exacto del contexto cuando nombre algo (el segmento, el mecanismo, los ' +
