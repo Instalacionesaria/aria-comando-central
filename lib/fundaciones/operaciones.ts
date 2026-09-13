@@ -641,7 +641,15 @@ export async function conversarConElAgente(
   });
   if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);
 
+  /* `...chat` y no un objeto nuevo: el turno guardado tiene que conservar `agent_version`. Sin el
+     sello, la petición siguiente veía una conversación «de una versión anterior», la reabría desde
+     cero con las respuestas, y el nuevo «sí» de la persona caía sobre un saludo fresco: el agente
+     mostraba el resumen otra vez y pedía confirmación otra vez, para siempre. Kevin, con Allpa
+     (2026-09-13): *«le estoy diciendo sí a cada rato y no avanza»*. En la base, su chat tenía tres
+     mensajes y `agent_version: null` después de cada intento. Ninguna conversación podía pasar del
+     primer turno. */
   const proximo: ChatDeHerramienta = {
+    ...chat,
     messages: [...conElTurno, { role: 'assistant', content: salida.datos.mensaje }],
     answers: salida.datos.respuestas,
   };

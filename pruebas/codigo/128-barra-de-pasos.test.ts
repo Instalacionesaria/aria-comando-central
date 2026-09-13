@@ -201,6 +201,15 @@ test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserv
   assert.match(operacionesV, /const recienAbierta = reiniciar \|\| chat\.messages\.length === 0 \|\| anticuada;/);
   const conversacion = codigo('lib/fundaciones/conversacion.ts');
   assert.match(conversacion, /agent_version: VERSION_DEL_AGENTE/, 'la conversación nueva no nace sellada con su versión');
+  /* Y el sello SOBREVIVE al turno. El turno guardaba `{ messages, answers }` a secas, sin
+     `agent_version`; la petición siguiente veía una conversación «anterior», la reabría, y el «sí» de
+     la persona caía sobre un saludo nuevo: resumen y pregunta otra vez, sin fin. Kevin, con Allpa
+     (2026-09-13): «le estoy diciendo sí a cada rato y no avanza». */
+  assert.match(
+    operacionesV,
+    /const proximo: ChatDeHerramienta = \{\s*\.\.\.chat,\s*messages: \[\.\.\.conElTurno/,
+    'el turno guardado tiene que conservar el sello de versión de la conversación (`...chat`)',
+  );
   // Con entregable ya generado, la reapertura no propone: ofrece responder sobre él o cambiarlo.
   assert.match(operacionesV, /mensajeDeAperturaConEntregable\(h, fecha\)/);
   assert.match(chat, /hablar\(reiniciarAlAbrir \? \{ reiniciar: true, generar: generarAlAbrir \} : \{\}\)/);
