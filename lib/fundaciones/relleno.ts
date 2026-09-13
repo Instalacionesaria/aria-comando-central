@@ -44,6 +44,7 @@ import type { EstadoDeFundaciones } from './estado.ts';
 import type { Herramienta } from './herramientas.ts';
 import { pedirExterno } from '../http/cliente.ts';
 import { MODELO } from './generacion.ts';
+import { CARACTERES_DE_ONBOARDING } from './onboarding.ts';
 import { datosDe } from './prompts.ts';
 
 const API = 'https://api.anthropic.com/v1/messages';
@@ -58,6 +59,30 @@ const VERSION_API = '2023-06-01';
  */
 export const TECHO_DE_TOKENS = 2_000;
 export const CARACTERES_POR_FUENTE = 3_000;
+
+/**
+ * Cuánto entra de cada fuente. Todas 3.000, MENOS el formulario de onboarding.
+ *
+ * ── EL RECORTE QUE DEJABA AL AGENTE SIN LAS RESPUESTAS DEL FORMULARIO ────────
+ *
+ * Kevin se registró como «Allpa» (2026-09-12), llenó el formulario de Walter, y la ficha le dijo
+ * *«Me falta: ¿Cuál es el mayor problema de tu cliente? · ¿Qué resultado obtienen contigo?»* — dos
+ * cosas que él recordaba haber contestado. Las había contestado. El contexto del onboarding son la
+ * síntesis (~1.700 caracteres) y DESPUÉS las 27 preguntas con lo que la persona eligió (~4.300):
+ * unos 6.900 en total. Cortado a 3.000, del cuestionario sobrevivían las primeras cuatro
+ * respuestas. Las del final —donde el formulario habla de a quién le vende y qué le resuelve—
+ * nunca llegaban al modelo, ni al abrir el chat ni en los turnos siguientes, que reciben este
+ * mismo texto.
+ *
+ * El onboarding ya trae su propio tope (`CARACTERES_DE_ONBOARDING`, 9.000, puesto pensando en el
+ * día que se sume el análisis de la llamada). Acá se respeta ese, y no el genérico: el genérico
+ * existe para que cinco documentos largos de research no se coman el presupuesto de la
+ * generación, y el formulario no es eso — es la única fuente de «Tu ficha», y recortarlo es
+ * recortar lo único que la ficha tiene.
+ */
+function topeDeLaFuente(clave: string): number {
+  return clave === '_onboardingContext' ? CARACTERES_DE_ONBOARDING : CARACTERES_POR_FUENTE;
+}
 
 /**
  * El contexto que esta herramienta hereda, en texto. **El MISMO que lee su prompt.**
@@ -86,7 +111,7 @@ export function contextoHeredado(h: Herramienta, estado: EstadoDeFundaciones): s
   for (const [clave, valor] of Object.entries(datos)) {
     if (!ES_CONTEXTO.test(clave)) continue;
     if (typeof valor !== 'string' || valor.trim() === '') continue;
-    partes.push(valor.slice(0, CARACTERES_POR_FUENTE));
+    partes.push(valor.slice(0, topeDeLaFuente(clave)));
   }
 
   /* Los CRITERIOS del Research —lo que la persona escribió para buscar— no viajan en ningún

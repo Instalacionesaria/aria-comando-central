@@ -213,6 +213,31 @@ test('el agente deduce el problema y el resultado del cliente desde lo que la of
   assert.match(relleno, /Solo dejalos vacíos si la oferta no dice qué hace/);
 });
 
+test('las respuestas del FINAL del formulario llegan al agente: el recorte por fuente no aplica al onboarding', () => {
+  /* Kevin, registrado como «Allpa» (2026-09-12): la ficha le pedía el problema y el resultado del
+     cliente, que él había contestado en el formulario. Un onboarding del tamaño real —cinco
+     secciones y 27 pares— mide ~6.900 caracteres; el recorte genérico de 3.000 por fuente dejaba
+     pasar CUATRO pares y tiraba los 23 restantes, con lo que la persona eligió al final. Esta
+     prueba construye ese tamaño y exige que la última respuesta llegue al contexto del agente. */
+  const ficha = FUNDACIONES[0];
+  const messages: { role: string; content: string }[] = [];
+  for (let i = 1; i <= 27; i += 1) {
+    messages.push({ role: 'ARIA', content: `Pregunta ${i} del formulario, ¿qué elegís?\n\n[BOTONES:UNICA]\nA\nB\n[/BOTONES]` });
+    messages.push({ role: 'Cliente', content: `Respuesta ${i}: ${'lo que la persona eligió '.repeat(4)}` });
+  }
+  messages.push({ role: 'ARIA', content: '¿Cuál es el mayor problema que le resolvés a tu cliente?' });
+  messages.push({ role: 'Cliente', content: 'Pierden citas porque nadie responde a tiempo' });
+
+  const estado = estadoVacio();
+  estado.onboarding = leerOnboarding({ ...CAPTURA, chat_history: { messages } });
+  const completo = contextoDeOnboarding(estado.onboarding);
+  assert.ok(completo && completo.length > 3_000, 'el onboarding de prueba tiene que superar el recorte genérico');
+
+  const contexto = contextoHeredado(ficha, estado);
+  assert.match(contexto, /Pierden citas porque nadie responde a tiempo/, 'la última respuesta del formulario no llegó al agente');
+  assert.equal(contexto, completo, 'el contexto de la ficha tiene que ser el onboarding entero, no un recorte');
+});
+
 test('el almacén lee la columna `intake` con el lector tolerante', () => {
   assert.equal(LLAVES.onboarding, 'intake', 'cambió el nombre de la columna del onboarding');
   assert.equal(estadoVacio().onboarding, null, 'el estado vacío ya no nace sin onboarding');
