@@ -27,6 +27,7 @@
 import Fundaciones from '../fundaciones/Fundaciones';
 import EspiaDeAnuncios from '../tools/EspiaDeAnuncios';
 import MisLeads from '../tools/MisLeads';
+import SaldoDeLeads from '../tools/SaldoDeLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
 const CATALOGO_TOOLS = {
@@ -85,6 +86,8 @@ export default function ToolsView({ activa }) {
           </div>
         </div>
         <div className="cl-page">
+          {/* El saldo, arriba de las pestañas: se gasta desde tres y se consulta desde la cuarta. */}
+          <SaldoDeLeads />
           <Fundaciones catalogo={CATALOGO_TOOLS} />
         </div>
       </div>

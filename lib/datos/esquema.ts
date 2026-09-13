@@ -1070,6 +1070,14 @@ export interface TablaScraperMonedero {
   leads_adicionales_pagados: Generated<number>;
   /** Columna GENERADA por la base: `gratuitos + pagados`. Nunca se escribe desde acá. */
   leads_disponibles_en_total: Generated<number>;
+  /** La casa (migración 008): scrapea sin tope y su saldo no se mira. */
+  sin_limite: Generated<boolean>;
+  /**
+   * Cuántos leads se le REGALARON a la organización en total (migración 018). Es lo que la pantalla
+   * muestra como «500 de regalo»: `leads_base_gratuitos` es lo que QUEDA de ese regalo, y con solo
+   * el resto no se puede decir cuánto fue. Lo escribe el backend al abrir el monedero.
+   */
+  leads_regalados: Generated<number>;
 }
 
 /**

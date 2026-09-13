@@ -2035,3 +2035,28 @@
 .fd-mirada.omitida { grid-template-columns: auto 1fr; align-items: start; border-style: solid; }
 .fd-mirada.omitida i { font-style: normal; color: var(--warn); }
 @media (max-width: 640px) { .fd-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ── La franja de saldo de Tools (SaldoDeLeads.jsx) ─────────────────────────── */
+.sl-franja { border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunk); padding: 10px 14px; display: grid; gap: 8px; }
+.sl-linea { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sl-n { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--txt); }
+.sl-n small { font-size: 12px; font-weight: 500; color: var(--txt-dim); margin-left: 6px; }
+.sl-barra { flex: 1 1 220px; height: 6px; border-radius: 3px; background: var(--line); position: relative; overflow: hidden; }
+.sl-barra i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 3px; }
+.sl-barra i.bajo { background: var(--warn); }
+.sl-barra i.cero { background: var(--crit); }
+.sl-desglose { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+.sl-desglose b { color: var(--txt); font-weight: 600; }
+.sl-desglose span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; background: var(--txt-faint); }
+.sl-desglose .g::before { background: var(--accent); }
+.sl-desglose .u::before { background: var(--line-strong); }
+.sl-desglose .p::before { background: var(--ok); }
+.sl-como { margin-left: auto; background: none; border: 0; padding: 0; font: inherit; font-size: 12.5px; color: var(--accent); cursor: pointer; white-space: nowrap; }
+.sl-como:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sl-aviso { font-size: 12.5px; }
+.sl-franja.alerta { border-color: rgb(var(--c-warn) / 0.45); }
+.sl-franja.alerta .sl-aviso { color: var(--warn); }
+.sl-franja.agotado { border-color: rgb(var(--c-crit) / 0.45); }
+.sl-franja.agotado .sl-aviso { color: var(--crit); }
+.sl-nota, .sl-explica { margin: 0; font-size: 12px; color: var(--txt-dim); line-height: 1.5; }
+@media (max-width: 640px) { .sl-como { margin-left: 0; } }

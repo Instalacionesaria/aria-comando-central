@@ -45,6 +45,7 @@ import { useMemo, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { anunciantesDe, consultarTrabajo, iniciarScraping } from '@/lib/tools/scrapers';
+import { leerSaldo } from '@/lib/tools/saldo';
 import {
   aValoresDeFormulario,
   camposDe,
@@ -255,8 +256,10 @@ export default function PanelResearch({
     }
     const { rubro, pais, topeDeNegocios, topeDePaginas, anuncios } = prep.datos;
 
-    // 2 · La confirmación, una sola vez.
-    setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios, topePaginas: topeDePaginas });
+    // 2 · La confirmación, una sola vez. Con el saldo a la vista: la persona decide con el número.
+    const saldo = await leerSaldo();
+    const disponibles = saldo.tipo === 'datos' && saldo.saldo.estado !== 'sin_limite' ? saldo.saldo.disponibles : null;
+    setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios, topePaginas: topeDePaginas, disponibles });
     const si = await esperarDecision();
     if (!si) {
       setMirada({ fase: 'omitida', motivo: 'no_quiso', rubro, ubicacion });
@@ -725,6 +728,9 @@ function Mirada({ mirada, onDecidir }) {
               {mirada.topePaginas} páginas de Facebook. Los pasos 2 al 5 se construyen sobre eso.{' '}
               <b>Descuenta hasta {mirada.tope + mirada.topePaginas} leads de tu saldo: {mirada.tope} de Maps y {mirada.topePaginas} de Facebook.</b>{' '}
               El Espía no descuenta.
+              {typeof mirada.disponibles === 'number'
+                ? ` Tenés ${mirada.disponibles} disponibles; después de esta mirada te quedarían al menos ${Math.max(0, mirada.disponibles - mirada.tope - mirada.topePaginas)}.`
+                : ''}
             </small>
           </div>
         </div>
