@@ -21,6 +21,7 @@ import {
   ANUNCIOS_DE_LA_MIRADA,
   TOPE_DE_NEGOCIOS,
   TOPE_DE_PAGINAS,
+  esUbicacionAmplia,
   contextoDeMercado,
   leerMercado,
   localidadDe,
@@ -161,6 +162,43 @@ test('la mirada se lee tolerante y se conserva al guardar los pasos', () => {
   const llamadas = operaciones.match(/guardarResearch\([\s\S]*?\);/g) ?? [];
   assert.ok(llamadas.length >= 2);
   for (const l of llamadas) assert.match(l, /researchMercado/, `una llamada a guardarResearch no pasa la mirada: ${l}`);
+});
+
+test('una región no es un lugar: la mirada se omite ANTES de gastar y dice qué poner', () => {
+  /* Allpa (2026-09-13): el agente propuso «Latinoamérica (México, Colombia, Perú, Ecuador, Argentina)»,
+     Maps la recibió tal cual y Apify contestó LOCATION NOT FOUND. Es el mismo actor que en Tools;
+     la diferencia es que acá la ubicación la propone un modelo, así que se revisa. */
+  for (const amplia of [
+    'Latinoamérica (México, Colombia, Perú, Ecuador, Argentina)',
+    'Latinoamérica en general',
+    'LATAM',
+    'México, Colombia y Perú',
+    'Perú, Chile, Argentina',
+    'Toda Europa',
+    '',
+  ]) {
+    assert.equal(esUbicacionAmplia(amplia), true, `«${amplia}» tendría que ser amplia`);
+  }
+  for (const concreta of ['Lima, Perú', 'Puerto Rico', 'Ciudad de México', 'San Juan, Puerto Rico', 'Bogotá', 'Miami, FL']) {
+    assert.equal(esUbicacionAmplia(concreta), false, `«${concreta}» tendría que servir`);
+  }
+  const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
+  assert.match(operaciones, /if \(esUbicacionAmplia\(ubicacion\)\)[\s\S]*?motivo: 'ubicacion_amplia', ubicacion/);
+  // El rubro se pide como CATEGORÍA, sin los adjetivos que lo vuelven un desierto para buscar.
+  assert.match(operaciones, /SIN los adjetivos que acotan el segmento/);
+  assert.match(operaciones, /«agencias inmobiliarias franquiciadas» se devuelve como/);
+  assert.match(operaciones, /nada de «franquiciadas», «premium», «boutique»/);
+  // El panel lo explica y dice qué criterio cambiar; el criterio pide una CIUDAD.
+  const panel = codigo('components/fundaciones/PanelResearch.jsx');
+  assert.match(panel, /ubicacion_amplia: `«\$\{mirada\.ubicacion \|\| 'la ubicación'\}» es una región/);
+  const research = FUNDACIONES.find((h) => h.id === 1)!;
+  const criterio = camposDe(research).find((c) => c.id === 'mr-location')!;
+  assert.match(criterio.etiqueta, /ciudad/i);
+
+  // Y una búsqueda del Espía sin resultados es CERO anuncios, no uno: el actor devuelve un ítem vacío.
+  const vacio = resumirAnuncios('t', { data: [{ title: '', page_name: '', page_id: null, body_text: '', ad_library_url: 'https://…' }] });
+  assert.equal(vacio.total, 0);
+  assert.equal(vacio.anunciantes, 0);
 });
 
 test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cuenta desde la BASE', () => {

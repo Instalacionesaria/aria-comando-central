@@ -56,6 +56,7 @@ import {
   ANUNCIOS_DE_LA_MIRADA,
   TOPE_DE_NEGOCIOS,
   TOPE_DE_PAGINAS,
+  esUbicacionAmplia,
   resumirAnuncios,
   resumirLeads,
   type MercadoReal,
@@ -690,18 +691,29 @@ export async function conversarConElAgente(
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
   | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
-  | { preparado: false; motivo: 'sin_ubicacion' | 'sin_paso_1' };
+  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'sin_paso_1'; ubicacion?: string };
 
-/** El nombre corto del primer segmento, como rubro buscable en Google Maps. */
+/**
+ * La CATEGORÍA del primer segmento, como se busca en Google Maps y en la biblioteca de anuncios.
+ *
+ * La primera versión pedía «el nombre del primer segmento», y el modelo devolvía el segmento con su
+ * acotación: «agencias inmobiliarias franquiciadas» (Allpa, 2026-09-13). Como nombre de segmento
+ * es correcto; como búsqueda es un desierto: el Espía trajo cero anuncios y Maps habría traído
+ * casi nada. En Tools funciona porque la persona escribe «inmobiliarias». Acá se le pide al modelo
+ * lo mismo que escribiría una persona: la categoría, sin los adjetivos que la vuelven un segmento.
+ */
 async function rubroDelSegmento(claveIa: string, paso1: string, nichoDeReserva: string): Promise<string> {
   const salida = await generar({
     claveIa,
     tokens: 100,
     prompt:
-      'Del siguiente análisis de segmentos de mercado, devolvé SOLO el nombre del PRIMER segmento como ' +
-      'rubro buscable en Google Maps: de 2 a 5 palabras, en español, en plural, sin comillas, sin punto ' +
-      'y sin ninguna otra palabra. Ejemplos de forma: «clínicas dentales», «agencias de marketing», ' +
-      `«talleres mecánicos».\n\n${paso1.slice(0, 6_000)}`,
+      'Del siguiente análisis de segmentos de mercado, devolvé SOLO la CATEGORÍA DE NEGOCIO del PRIMER ' +
+      'segmento, tal como alguien la escribiría para buscar en Google Maps o en la biblioteca de anuncios ' +
+      'de Facebook: de 1 a 3 palabras, en español, en plural, sin comillas, sin punto y sin ninguna otra ' +
+      'palabra. SIN los adjetivos que acotan el segmento (nada de «franquiciadas», «premium», «boutique», ' +
+      '«de lujo», «medianas», «con sucursales»): «agencias inmobiliarias franquiciadas» se devuelve como ' +
+      '«inmobiliarias»; «clínicas estéticas premium de Lima» como «clínicas estéticas». Ejemplos de forma: ' +
+      `«clínicas dentales», «agencias de marketing», «talleres mecánicos».\n\n${paso1.slice(0, 6_000)}`,
   });
   if (salida.tipo !== 'datos') return nichoDeReserva;
   const linea = salida.datos.texto.split('\n').map((l) => l.trim()).find((l) => l !== '') ?? '';
@@ -717,6 +729,10 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
   const ubicacion = (estado.datos.researchInputs['location'] ?? '').trim();
   if (ubicacion === '' || ubicacion === SIN_ESPECIFICAR) {
     return ok({ preparado: false, motivo: 'sin_ubicacion' } satisfies Preparacion);
+  }
+  // Una región no es un lugar para Maps (`LOCATION NOT FOUND`). Se dice ANTES de gastar. Ver `mercado.ts`.
+  if (esUbicacionAmplia(ubicacion)) {
+    return ok({ preparado: false, motivo: 'ubicacion_amplia', ubicacion } satisfies Preparacion);
   }
   const paso1 = (estado.datos.researchSalidas[0] ?? '').trim();
   if (paso1 === '') return ok({ preparado: false, motivo: 'sin_paso_1' } satisfies Preparacion);

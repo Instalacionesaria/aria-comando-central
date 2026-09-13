@@ -211,9 +211,12 @@ const RESEARCH: Herramienta = {
            El agente lo propone desde el onboarding cuando dice el mercado geográfico. Ver `mercado.ts`. */
         {
           id: 'mr-location',
-          etiqueta: '¿Dónde buscar negocios reales? (opcional)',
+          /* «Ciudad» y no «dónde»: con «dónde», el agente propuso «Latinoamérica (México, Colombia, …)»
+             desde un onboarding que decía «Latinoamérica en general», y Maps no encontró el lugar.
+             El scraper necesita un lugar concreto; la etiqueta lo pide y `esUbicacionAmplia` lo revisa. */
+          etiqueta: '¿En qué ciudad buscar negocios reales? (opcional)',
           tipo: 'texto',
-          marcador: 'Ej: Lima, Perú · Puerto Rico · Ciudad de México',
+          marcador: 'Ej: Lima, Perú · San Juan, Puerto Rico · Ciudad de México',
           opcional: true,
         },
       ],

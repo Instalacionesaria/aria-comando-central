@@ -81,6 +81,25 @@ export const TOPE_DE_NEGOCIOS = 100;
  */
 export const ANUNCIOS_DE_LA_MIRADA = 300;
 /**
+ * Si una ubicación es una REGIÓN y no un lugar buscable.
+ *
+ * Medido con Allpa (2026-09-13): el agente propuso «Latinoamérica (México, Colombia, Perú, Ecuador,
+ * Argentina)» desde el onboarding, Maps la recibió tal cual y Apify contestó `LOCATION NOT FOUND`.
+ * Peor: el trabajo quedó en RUNNING y la mirada esperando. Es el mismo actor y la misma llamada que
+ * en Tools —ahí funciona porque la persona escribe una ciudad—. Acá la ubicación la propone un
+ * modelo, así que se revisa antes de gastar: un paréntesis, dos o más comas, o una palabra de región
+ * es «esto no es un lugar», y la mirada se omite diciendo qué poner.
+ */
+export function esUbicacionAmplia(ubicacion: string): boolean {
+  const u = ubicacion.trim().toLowerCase();
+  if (u === '') return true;
+  if (/[()]/.test(u)) return true;
+  if ((u.match(/,/g) ?? []).length >= 2) return true;
+  if (/\b(y|e|o|u)\b/.test(u) && /,/.test(u)) return true;
+  return /latinoam|latam|sudam|suram|centroam|norteam|iberoam|hispanoam|en general|varios pa|toda |todo el|internacional|global|mundial|europa|caribe|regi[oó]n andina/.test(u);
+}
+
+/**
  * El tope de páginas de Facebook por mirada. Es lo que SÍ gasta: cada página es un lead. Con Maps
  * suman 200, y ésa es la regla de Jorge: *«desgastar como mucho 200 leads en Research»*, para que de
  * los 500 de regalo le queden al menos 300 al cliente. Vale solo acá: en Tools el usuario decide.
@@ -193,9 +212,16 @@ export function resumirAnuncios(trabajo: string, resultados: unknown): MiradaAAn
 
   const anunciantes = new Set<string>();
   const muestras: string[] = [];
+  let total = 0;
   for (const item of lista) {
     const a = objeto(item);
     const pagina = texto(a['page_name']) ?? texto(a['page_id']);
+    /* Una búsqueda sin resultados NO vuelve vacía: el actor devuelve UN ítem con todo en blanco y la
+       URL de la búsqueda (Allpa, 2026-09-13: «agencias inmobiliarias franquiciadas» → 1 ítem sin
+       página ni texto). Contarlo como anuncio diría «1 anuncio activo» donde hubo cero. */
+    const cuerpoCrudo = texto(a['body_text']) ?? texto(a['title']) ?? texto(a['caption']);
+    if (!pagina && !cuerpoCrudo && !texto(a['ad_archive_id'])) continue;
+    total += 1;
     if (pagina) anunciantes.add(pagina);
     const cuerpo = texto(a['body_text']) ?? texto(a['title']) ?? texto(a['caption']);
     if (cuerpo && muestras.length < 8) {
@@ -203,7 +229,7 @@ export function resumirAnuncios(trabajo: string, resultados: unknown): MiradaAAn
       muestras.push(limpio.length > LARGO_DE_MUESTRA ? `${limpio.slice(0, LARGO_DE_MUESTRA)}…` : limpio);
     }
   }
-  return { trabajo, total: lista.length, anunciantes: anunciantes.size, muestras };
+  return { trabajo, total, anunciantes: anunciantes.size, muestras };
 }
 
 /** El mercado guardado en el documento del Research, o `null` si no hay nada aprovechable. */
