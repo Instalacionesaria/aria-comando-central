@@ -221,6 +221,7 @@ test('las respuestas del FINAL del formulario llegan al agente: el recorte por f
      pasar CUATRO pares y tiraba los 23 restantes, con lo que la persona eligió al final. Esta
      prueba construye ese tamaño y exige que la última respuesta llegue al contexto del agente. */
   const ficha = FUNDACIONES[0];
+  assert.ok(ficha, 'la primera herramienta del método dejó de ser Tu ficha');
   const messages: { role: string; content: string }[] = [];
   for (let i = 1; i <= 27; i += 1) {
     messages.push({ role: 'ARIA', content: `Pregunta ${i} del formulario, ¿qué elegís?\n\n[BOTONES:UNICA]\nA\nB\n[/BOTONES]` });
@@ -244,6 +245,7 @@ test('lo que falta en la apertura se puede saltear, salvo en la herramienta que 
      sean 5». El servidor ya generaba con 5 —la ficha no exige sus campos— pero el pie decía
      «Contame eso» como si fuera requisito. Ahora dice cómo seguir sin ellos. */
   const ficha = FUNDACIONES[0];
+  assert.ok(ficha, 'la primera herramienta del método dejó de ser Tu ficha');
   const guardadas = { biz: 'Allpa', niche: 'inmobiliarias', service: 'agentes IA', price: '$1,000', before: 'orgánico' };
   const apertura = mensajeDeAperturaConPropuesta(ficha, guardadas, {});
   assert.match(apertura, /Me falta: ¿Cuál es el mayor problema de tu cliente\? · ¿Qué resultado obtienen contigo\?\./);
