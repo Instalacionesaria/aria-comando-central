@@ -65,8 +65,10 @@ function respuestasCompletas(h: Herramienta): Record<string, string> {
     /* En las listas se elige la primera opción CON valor: algunas abren con un «Selecciona…» cuyo
        valor es la cadena vacía, y tomarlo dejaría el campo en «todavía no» sin que se note. */
     const conValor = campo.opciones?.find((o) => o.valor !== '');
-    salida[claveCorta(campo.id)] =
-      campo.tipo === 'lista' && conValor ? conValor.valor : `respuesta de ${campo.id}`;
+    /* Un campo que sabe juzgar su respuesta (`valeComoRespuesta`, como la ciudad del Research, que
+       exige zona, ciudad y país) recibe una que le sirva; el relleno genérico no le valdría. */
+    const generica = campo.valeComoRespuesta ? 'Cayma, Arequipa, Perú' : `respuesta de ${campo.id}`;
+    salida[claveCorta(campo.id)] = campo.tipo === 'lista' && conValor ? conValor.valor : generica;
   }
   return salida;
 }

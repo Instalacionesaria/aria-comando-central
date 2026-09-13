@@ -25,7 +25,7 @@
 // haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { SIN_DATOS_REALES, esUbicacionAmplia } from './mercado.ts';
+import { SIN_DATOS_REALES, esUbicacionBuscable } from './mercado.ts';
 
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
 
@@ -241,22 +241,25 @@ const RESEARCH: Herramienta = {
              El scraper necesita un lugar concreto; la etiqueta lo pide y `esUbicacionAmplia` lo revisa. */
           etiqueta: '¿En qué ciudad buscar negocios reales? (opcional)',
           tipo: 'texto',
-          marcador: 'Ej: Lima, Perú · San Juan, Puerto Rico · Ciudad de México',
+          marcador: 'Ej: Cayma, Arequipa, Perú · Miraflores, Lima, Perú (zona, ciudad, país)',
           opcional: true,
           pedirAntesDeGenerar: true,
           /* «sin datos reales» es la salida explícita: la persona decide seguir sin buscar negocios, y
              lo dice. Vale como respuesta para que el arranque no quede trabado, y `prepararMercado` la
              lee como «no quiso». */
-          valeComoRespuesta: (v) => SIN_DATOS_REALES.test(v) || !esUbicacionAmplia(v),
+          valeComoRespuesta: (v) => SIN_DATOS_REALES.test(v) || esUbicacionBuscable(v),
           guia:
-            'Tiene que ser un lugar concreto donde buscar negocios: una ciudad o región DENTRO de un país, ' +
-            'con el país (ej: «Lima, Perú», «Guadalajara, México»). NUNCA una región de varios países ni ' +
-            '«Latinoamérica»: eso no se puede buscar y no vale como respuesta. Para PROPONERLA desde el ' +
-            'contexto: solo si el onboarding dice una ciudad o un país concreto; si dice una región o ' +
-            '«en general», va vacía. Para PREGUNTARLA: recomendale empezar por SU país —si el onboarding, ' +
-            'el sitio web o el prefijo del teléfono lo dicen, nombralo— y pedile la ciudad o región donde ' +
-            'vive o vende. Si no está claro, preguntale con qué país quiere empezar a extraer leads y en ' +
-            'qué ciudad. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
+            'Tiene que ser un lugar concreto donde buscar negocios, con TRES partes separadas por coma: ' +
+            'zona o distrito, ciudad, país (ej: «Cayma, Arequipa, Perú», «Polanco, Ciudad de México, ' +
+            'México»). El buscador de negocios exige las tres; «Arequipa, Perú» a secas no vale. NUNCA una ' +
+            'región de varios países ni «Latinoamérica». Para PROPONERLA desde el contexto: solo si el ' +
+            'onboarding dice una ciudad concreta, y completá la zona con el centro de esa ciudad (ej: ' +
+            '«Centro, Arequipa, Perú»); si dice una región o «en general», va vacía. Para PREGUNTARLA: ' +
+            'recomendale empezar por SU país —si el onboarding, el sitio web o el prefijo del teléfono lo ' +
+            'dicen, nombralo— y pedile la ciudad y la zona o distrito donde vive o vende. Si te da solo la ' +
+            'ciudad, pedile la zona o distrito por donde empezar (o proponé el centro) y anotá las tres ' +
+            'partes juntas. Si no está claro, preguntale con qué país quiere empezar a extraer leads, en ' +
+            'qué ciudad y en qué zona. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
             'extracción de negocios reales arranca en un solo lugar, hasta 100 negocios, que quedan en ' +
             'Tools → Mis Leads; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ' +
             'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anotá ' +

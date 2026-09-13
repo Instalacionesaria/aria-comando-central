@@ -101,9 +101,26 @@ export function esUbicacionAmplia(ubicacion: string): boolean {
   const u = ubicacion.trim().toLowerCase();
   if (u === '') return true;
   if (/[()]/.test(u)) return true;
-  if ((u.match(/,/g) ?? []).length >= 2) return true;
+  // Cuatro partes o más es una lista, no un lugar. Tres pueden ser «Cayma, Arequipa, Perú».
+  if (partesDeUbicacion(u).length >= 4) return true;
   if (/\b(y|e|o|u)\b/.test(u) && /,/.test(u)) return true;
   return /latinoam|latam|sudam|suram|centroam|norteam|iberoam|hispanoam|en general|varios pa|toda |todo el|internacional|global|mundial|europa|caribe|regi[oó]n andina/.test(u);
+}
+
+/** Las partes de una ubicación separadas por coma, sin vacías. */
+export function partesDeUbicacion(ubicacion: string): string[] {
+  return ubicacion.split(',').map((p) => p.trim()).filter((p) => p !== '');
+}
+
+/**
+ * Si una ubicación SIRVE para buscar en Google Maps: concreta y con tres partes —zona o distrito,
+ * ciudad, país—, que es lo que el backend exige (`La localización debe tener al menos 3 partes`),
+ * igual que en Tools. «Arequipa, Perú» a secas fue el 400 de Allpa (2026-09-13): el actor con una
+ * ciudad entera trae lo que quiere de donde quiere, y la regla existe para que los 100 negocios
+ * salgan de una zona que la persona eligió.
+ */
+export function esUbicacionBuscable(ubicacion: string): boolean {
+  return !esUbicacionAmplia(ubicacion) && partesDeUbicacion(ubicacion).length >= 3;
 }
 
 /**

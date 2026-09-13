@@ -22,6 +22,7 @@ import {
   TOPE_DE_NEGOCIOS,
   TOPE_DE_PAGINAS,
   esUbicacionAmplia,
+  esUbicacionBuscable,
   contextoDeMercado,
   leerMercado,
   localidadDe,
@@ -179,15 +180,26 @@ test('una región no es un lugar: la mirada se omite ANTES de gastar y dice qué
     'Latinoamérica en general',
     'LATAM',
     'México, Colombia y Perú',
-    'Perú, Chile, Argentina',
+    'Perú, Chile, Argentina, Colombia',
     'Toda Europa',
     '',
   ]) {
     assert.equal(esUbicacionAmplia(amplia), true, `«${amplia}» tendría que ser amplia`);
   }
-  for (const concreta of ['Lima, Perú', 'Puerto Rico', 'Ciudad de México', 'San Juan, Puerto Rico', 'Bogotá', 'Miami, FL']) {
-    assert.equal(esUbicacionAmplia(concreta), false, `«${concreta}» tendría que servir`);
+  for (const concreta of ['Lima, Perú', 'Puerto Rico', 'Ciudad de México', 'San Juan, Puerto Rico', 'Bogotá', 'Miami, FL', 'Cayma, Arequipa, Perú']) {
+    assert.equal(esUbicacionAmplia(concreta), false, `«${concreta}» no es una región`);
   }
+  /* Y BUSCABLE es más que «no amplia»: el backend exige tres partes (zona, ciudad, país), igual que
+     Tools. «Arequipa, Perú» fue el 400 de Allpa (2026-09-13). */
+  for (const buscable of ['Cayma, Arequipa, Perú', 'Miraflores, Lima, Perú', 'Polanco, Ciudad de México, México']) {
+    assert.equal(esUbicacionBuscable(buscable), true, `«${buscable}» tendría que servir`);
+  }
+  for (const corta of ['Arequipa, Perú', 'Lima', 'Puerto Rico', 'Latinoamérica (México, Perú)', '']) {
+    assert.equal(esUbicacionBuscable(corta), false, `«${corta}» no alcanza para Maps`);
+  }
+  const ops = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
+  assert.match(ops, /if \(!esUbicacionBuscable\(ubicacion\)\)[\s\S]*?motivo: 'ubicacion_incompleta', ubicacion/);
+  assert.match(codigo('components/fundaciones/PanelResearch.jsx'), /ubicacion_incompleta: `«\$\{mirada\.ubicacion \|\| 'la ubicación'\}» necesita tres partes/);
   const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   assert.match(operaciones, /if \(esUbicacionAmplia\(ubicacion\)\)[\s\S]*?motivo: 'ubicacion_amplia', ubicacion/);
   // El rubro se pide como CATEGORÍA, sin los adjetivos que lo vuelven un desierto para buscar.
@@ -216,6 +228,8 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.equal(ciudad.pedirAntesDeGenerar, true);
   assert.ok(ciudad.guia);
   assert.match(ciudad.guia, /NUNCA una región de varios países ni «Latinoamérica»/);
+  assert.match(ciudad.guia, /TRES partes separadas por coma/);
+  assert.match(ciudad.guia, /pedile la ciudad y la zona o distrito/);
   assert.match(ciudad.guia, /empezar por SU país/);
   assert.match(ciudad.guia, /con qué país quiere empezar a extraer leads/);
   assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Tools → Mis Leads/);
@@ -230,7 +244,8 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   // Sin ciudad, «Continuar al paso 2» NO arranca solo: la apertura la pide. Con ciudad, sí.
   const sinCiudad = { niche: 'inmobiliarias', ltv: '$3,000+', experience: 'x' };
   assert.equal(faltanAntesDeArrancar(research, sinCiudad), true);
-  assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Lima, Perú' }), false);
+  assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Miraflores, Lima, Perú' }), false);
+  assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Arequipa, Perú' }), true, 'dos partes no alcanzan: el backend las rechaza');
   assert.match(mensajeDeAperturaConPropuesta(research, sinCiudad, {}), /Me falta: .*¿En qué ciudad buscar negocios reales\? \(opcional\)/);
   const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   assert.match(operaciones, /!faltanObligatorias\(h, chat\.answers\) &&\s*!faltanAntesDeArrancar\(h, chat\.answers\)/);
@@ -255,7 +270,7 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.equal(arranca(research, turno(sinCiudad), sinCiudad), false, 'arrancó sin ciudad, sin que la persona lo decidiera');
   const sinDatos = { ...sinCiudad, location: 'sin datos reales' };
   assert.equal(arranca(research, turno(sinDatos), sinDatos), true, 'la salida explícita no arranca');
-  const conLima = { ...sinCiudad, location: 'Lima, Perú' };
+  const conLima = { ...sinCiudad, location: 'Miraflores, Lima, Perú' };
   assert.equal(arranca(research, turno(conLima), conLima), true);
   assert.match(instruccionesDeEntrevista(research, conRegion, ''), /0\. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se termina/);
   assert.match(ciudad.guia!, /anotá exactamente «sin datos reales»/);

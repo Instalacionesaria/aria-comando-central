@@ -820,6 +820,7 @@ function Mirada({ mirada, onDecidir }) {
     no_quiso: 'El Research sigue sin datos reales, como pediste.',
     sin_saldo: `No se pudo buscar en Google Maps${mirada.detalle ? `: ${mirada.detalle}` : ''}. El Research sigue con lo que el modelo sabe del mercado.`,
     sin_ubicacion: 'Sin una ubicación en los criterios no hay dónde buscar negocios reales. El Research sigue igual.',
+    ubicacion_incompleta: `«${mirada.ubicacion || 'la ubicación'}» necesita tres partes: zona o distrito, ciudad y país, por ejemplo «Cayma, Arequipa, Perú». Es lo que exige el buscador de negocios. El Research sigue igual; para mirar el mercado real, completá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
     ubicacion_amplia: `«${mirada.ubicacion || 'la ubicación'}» es una región, y Google Maps necesita una ciudad, por ejemplo «Lima, Perú». El Research sigue igual; para mirar el mercado real, cambiá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
     sin_preparar: 'No se pudo preparar la búsqueda. El Research sigue con lo que el modelo sabe.',
     sin_resumen: 'Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en Tools → Mis Leads.',

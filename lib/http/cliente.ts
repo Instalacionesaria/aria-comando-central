@@ -170,7 +170,12 @@ export async function pedir<T>(
 
   if (!respuesta.ok) {
     const codigo = (cuerpoLeido as { codigo?: unknown } | null)?.codigo;
-    const detalle = (cuerpoLeido as { detalle?: unknown } | null)?.detalle;
+    /* `detalle` es el nombre de la casa; `detail` es el de FastAPI, que es lo que manda el backend
+       del scraper. Sin leer los dos, «La localización debe tener al menos 3 partes…» llegaba a la
+       pantalla como «El motor respondió 400.» (Allpa, 2026-09-13), y la persona no tenía cómo saber
+       qué corregir. */
+    const crudo = cuerpoLeido as { detalle?: unknown; detail?: unknown } | null;
+    const detalle = typeof crudo?.detalle === 'string' ? crudo.detalle : crudo?.detail;
     return {
       tipo: 'rechazado',
       estado: respuesta.status,

@@ -58,6 +58,7 @@ import {
   SIN_DATOS_REALES,
   TOPE_DE_PAGINAS,
   esUbicacionAmplia,
+  esUbicacionBuscable,
   resumirAnuncios,
   resumirLeads,
   type MercadoReal,
@@ -708,7 +709,7 @@ export async function conversarConElAgente(
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
   | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
-  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
+  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'ubicacion_incompleta' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
 
 /**
  * La CATEGORÍA del primer segmento, como se busca en Google Maps y en la biblioteca de anuncios.
@@ -754,6 +755,10 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
   // Una región no es un lugar para Maps (`LOCATION NOT FOUND`). Se dice ANTES de gastar. Ver `mercado.ts`.
   if (esUbicacionAmplia(ubicacion)) {
     return ok({ preparado: false, motivo: 'ubicacion_amplia', ubicacion } satisfies Preparacion);
+  }
+  // Y sin las tres partes el backend contesta 400 («al menos 3 partes»). Se dice antes de pedirle nada.
+  if (!esUbicacionBuscable(ubicacion)) {
+    return ok({ preparado: false, motivo: 'ubicacion_incompleta', ubicacion } satisfies Preparacion);
   }
   const paso1 = (estado.datos.researchSalidas[0] ?? '').trim();
   if (paso1 === '') return ok({ preparado: false, motivo: 'sin_paso_1' } satisfies Preparacion);
