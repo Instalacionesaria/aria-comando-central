@@ -500,6 +500,13 @@ export interface TablaMensajes {
    * `null` = la fila es anterior a la migración `044`, o la escribió el webhook (su aviso no trae
    * este campo) y la ingesta todavía no pasó por esa conversación. **El nulo es «no se sabe», nunca
    * «no fue el agente»**: una tasa que los cuente como propios miente por omisión.
+   *
+   * Y el relleno tiene un piso que conviene no descubrir tarde: **la ingesta no relee, avanza desde
+   * una marca de agua**. Una conversación se vuelve a mirar sólo cuando tiene actividad NUEVA — ahí
+   * sí vuelve su página entera y las filas viejas de esa conversación se completan de una. O sea que
+   * una conversación que se apagó para siempre **no se completa nunca**, y el ritmo del relleno es el
+   * del tráfico, no el del cron. Es el mismo piso que `citas.reservada_el` tiene por su ventana
+   * móvil.
    */
   fuente: string | null;
   direccion: 'entrante' | 'saliente';
