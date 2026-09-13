@@ -407,9 +407,21 @@ export function mensajeDeAperturaConPropuesta(
      anterior no es una herramienta, es el formulario de onboarding que la persona llenó al
      inscribirse. La frase vieja era falsa justo en la primera pestaña del método. */
   const cabeza = `Hola. Vamos con «${h.titulo}». Con lo que ya sé de tu negocio, esto es lo que tengo:\n\n${lineas.join('\n')}`;
+  /* ── LO QUE FALTA NO ES UN REQUISITO, SALVO DONDE LO ES ─────────────────────
+     El pie viejo decía «Me falta: … Contame eso» para todo, y se leía como una traba. No lo era:
+     el servidor solo exige los campos de las herramientas con `exigeSusCampos` (el Research, cuyos
+     criterios buscan en la web), y en las demás `arranca` genera con lo que haya y el entregable
+     marca lo vacío como pendiente. Kevin, registrado como «Allpa» (2026-09-13), con la ficha
+     pidiéndole dos datos que el formulario de Walter no pregunta: *«¿no podría trabajar con lo que
+     tengamos nomás? si había 5 que sean 5»*. Se podía; ahora el mensaje lo dice. El Research
+     conserva la frase de requisito porque ahí sí lo es. */
+  const faltantes = `Me falta: ${faltan.join(' · ')}.`;
   const pie =
     faltan.length > 0
-      ? `\n\nMe falta: ${faltan.join(' · ')}. Contame eso, y decime si lo de arriba va bien o cambio algo.`
+      ? h.exigeSusCampos
+        ? `\n\n${faltantes} Contame eso, y decime si lo de arriba va bien o cambio algo.`
+        : `\n\n${faltantes} Si los tenés, contámelos. Si no, decime «seguí» y genero con lo que hay; ` +
+          'esos quedan como pendientes en el documento.'
       : `\n\n¿Va bien así? Si confirmás, genero tu ${h.etiquetaSalida}. Si querés cambiar algo, decime qué.`;
   return cabeza + pie;
 }

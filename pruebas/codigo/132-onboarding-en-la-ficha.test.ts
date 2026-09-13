@@ -28,6 +28,7 @@ import { CARACTERES_DE_ONBOARDING, contextoDeOnboarding, leerOnboarding, paresDe
 import { LLAVES, estadoVacio } from '../../lib/fundaciones/estado.ts';
 import { armarPrompt, datosDe } from '../../lib/fundaciones/prompts.ts';
 import { contextoHeredado } from '../../lib/fundaciones/relleno.ts';
+import { mensajeDeAperturaConPropuesta } from '../../lib/fundaciones/conversacion.ts';
 import { FUNDACIONES } from '../../lib/fundaciones/herramientas.ts';
 
 const codigo = (ruta: string): string => readFileSync(join(RAIZ, ruta), 'utf8');
@@ -236,6 +237,29 @@ test('las respuestas del FINAL del formulario llegan al agente: el recorte por f
   const contexto = contextoHeredado(ficha, estado);
   assert.match(contexto, /Pierden citas porque nadie responde a tiempo/, 'la última respuesta del formulario no llegó al agente');
   assert.equal(contexto, completo, 'el contexto de la ficha tiene que ser el onboarding entero, no un recorte');
+});
+
+test('lo que falta en la apertura se puede saltear, salvo en la herramienta que exige sus campos', () => {
+  /* Kevin, con Allpa (2026-09-13): «¿no podría trabajar con lo que tengamos nomás? si había 5 que
+     sean 5». El servidor ya generaba con 5 —la ficha no exige sus campos— pero el pie decía
+     «Contame eso» como si fuera requisito. Ahora dice cómo seguir sin ellos. */
+  const ficha = FUNDACIONES[0];
+  const guardadas = { biz: 'Allpa', niche: 'inmobiliarias', service: 'agentes IA', price: '$1,000', before: 'orgánico' };
+  const apertura = mensajeDeAperturaConPropuesta(ficha, guardadas, {});
+  assert.match(apertura, /Me falta: ¿Cuál es el mayor problema de tu cliente\? · ¿Qué resultado obtienen contigo\?\./);
+  assert.match(apertura, /decime «seguí» y genero con lo que hay/);
+  assert.doesNotMatch(apertura, /Contame eso/);
+
+  // Sin faltantes, el pie pide la confirmación de siempre.
+  const completa = mensajeDeAperturaConPropuesta(ficha, { ...guardadas, pain: 'no responden', result: 'más citas' }, {});
+  assert.match(completa, /¿Va bien así\?/);
+
+  // El Research exige sus criterios (buscan en la web): ahí lo que falta SÍ es requisito.
+  const research = FUNDACIONES.find((h) => h.exigeSusCampos);
+  assert.ok(research, 'ninguna herramienta exige sus campos; el Research dejó de hacerlo');
+  const exigente = mensajeDeAperturaConPropuesta(research, {}, {});
+  assert.match(exigente, /Contame eso/);
+  assert.doesNotMatch(exigente, /decime «seguí»/);
 });
 
 test('el almacén lee la columna `intake` con el lector tolerante', () => {
