@@ -23,6 +23,7 @@ import {
   TOPE_DE_PAGINAS,
   esUbicacionAmplia,
   esUbicacionBuscable,
+  paisDeUbicacion,
   contextoDeMercado,
   leerMercado,
   localidadDe,
@@ -276,6 +277,23 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.match(ciudad.guia!, /anotá exactamente «sin datos reales»/);
   const operacionesB = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   assert.match(operacionesB, /if \(SIN_DATOS_REALES\.test\(ubicacion\)\)[\s\S]*?motivo: 'no_quiso'/);
+});
+
+test('el Espía mira el país de la ubicación, no el mundo', () => {
+  /* Allpa (2026-09-13): la mirada buscó «inmobiliarias» en Arequipa, Perú y el Espía en ALL: los
+     anuncios eran de Miami y Orlando, y las 100 páginas de anunciantes de cualquier lado. */
+  assert.equal(paisDeUbicacion('Cayma, Arequipa, Perú'), 'PE');
+  assert.equal(paisDeUbicacion('Cayma, Arequipa, Peru'), 'PE');
+  assert.equal(paisDeUbicacion('Polanco, Ciudad de México, México'), 'MX');
+  assert.equal(paisDeUbicacion('Condado, San Juan, Puerto Rico'), 'US');
+  assert.equal(paisDeUbicacion('Piantini, Santo Domingo, Rep. Dominicana'), 'DO');
+  assert.equal(paisDeUbicacion('Brickell, Miami, Estados Unidos'), 'US');
+  assert.equal(paisDeUbicacion('Centro, Ciudad Gótica, Narnia'), 'ALL');
+  const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
+  assert.match(operaciones, /pais: paisDeUbicacion\(ubicacion\)/);
+  const panel = sinComentarios(codigo('components/fundaciones/PanelResearch.jsx'));
+  assert.match(panel, /iniciarScraping\('ad-spy', \{ query: rubro, country: pais \|\| 'ALL'/);
+  assert.doesNotMatch(panel, /country: 'ALL', count/);
 });
 
 test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cuenta desde la BASE', () => {

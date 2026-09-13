@@ -124,6 +124,53 @@ export function esUbicacionBuscable(ubicacion: string): boolean {
 }
 
 /**
+ * El país de una ubicación, como código para la biblioteca de anuncios de Meta. `ALL` si no se
+ * reconoce.
+ *
+ * La primera mirada de Allpa (2026-09-13) buscó «inmobiliarias» en Arequipa, Perú… y el Espía en
+ * TODOS los países: los anuncios eran de Miami y Orlando, y las 100 páginas —los 100 leads— de
+ * anunciantes de cualquier lado. El país es la última parte de la ubicación, y es lo que la persona
+ * eligió al decir dónde empezar. Los nombres son los de `PAISES` en `lib/tools/scrapers.ts`, con
+ * las formas sin acento y las siglas que la gente escribe.
+ */
+export function paisDeUbicacion(ubicacion: string): string {
+  const partes = partesDeUbicacion(ubicacion);
+  const ultima = (partes[partes.length - 1] ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\./g, '')
+    .trim();
+  return PAIS_POR_NOMBRE[ultima] ?? 'ALL';
+}
+
+const PAIS_POR_NOMBRE: Readonly<Record<string, string>> = {
+  peru: 'PE',
+  mexico: 'MX',
+  colombia: 'CO',
+  argentina: 'AR',
+  chile: 'CL',
+  ecuador: 'EC',
+  bolivia: 'BO',
+  venezuela: 'VE',
+  uruguay: 'UY',
+  paraguay: 'PY',
+  'costa rica': 'CR',
+  panama: 'PA',
+  guatemala: 'GT',
+  'rep dominicana': 'DO',
+  'republica dominicana': 'DO',
+  espana: 'ES',
+  'estados unidos': 'US',
+  usa: 'US',
+  eeuu: 'US',
+  'ee uu': 'US',
+  brasil: 'BR',
+  brazil: 'BR',
+  'puerto rico': 'US',
+};
+
+/**
  * El tope de páginas de Facebook por mirada. Es lo que SÍ gasta: cada página es un lead. Con Maps
  * suman 200, y ésa es la regla de Jorge: *«desgastar como mucho 200 leads en Research»*, para que de
  * los 500 de regalo le queden al menos 300 al cliente. Vale solo acá: en Tools el usuario decide.

@@ -59,6 +59,7 @@ import {
   TOPE_DE_PAGINAS,
   esUbicacionAmplia,
   esUbicacionBuscable,
+  paisDeUbicacion,
   resumirAnuncios,
   resumirLeads,
   type MercadoReal,
@@ -708,7 +709,7 @@ export async function conversarConElAgente(
 
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
-  | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
+  | { preparado: true; rubro: string; ubicacion: string; pais: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
   | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'ubicacion_incompleta' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
 
 /**
@@ -770,6 +771,8 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
     preparado: true,
     rubro,
     ubicacion,
+    // El país de la ubicación, para que el Espía mire los anuncios de ESE mercado y no del mundo.
+    pais: paisDeUbicacion(ubicacion),
     topeDeNegocios: TOPE_DE_NEGOCIOS,
     topeDePaginas: TOPE_DE_PAGINAS,
     anuncios: ANUNCIOS_DE_LA_MIRADA,

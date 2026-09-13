@@ -253,7 +253,7 @@ export default function PanelResearch({
       });
       return;
     }
-    const { rubro, topeDeNegocios, topeDePaginas, anuncios } = prep.datos;
+    const { rubro, pais, topeDeNegocios, topeDePaginas, anuncios } = prep.datos;
 
     // 2 · La confirmación, una sola vez.
     setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios, topePaginas: topeDePaginas });
@@ -269,7 +269,8 @@ export default function PanelResearch({
     setMirada({ fase: 'buscando', rubro, ubicacion, maps: { estado: 'arrancando' }, espia: { estado: 'arrancando' }, paginas: esperando });
     const [maps, espia] = await Promise.all([
       iniciarScraping('maps', { businessType: rubro, location: ubicacion, maxLeads: topeDeNegocios, getEmails: true }),
-      iniciarScraping('ad-spy', { query: rubro, country: 'ALL', count: anuncios }),
+      // El país de la ubicación, no ALL: los anunciantes —y sus páginas, que son leads— tienen que ser del mercado de la persona.
+      iniciarScraping('ad-spy', { query: rubro, country: pais || 'ALL', count: anuncios }),
     ]);
     if (maps.tipo !== 'trabajo' && espia.tipo !== 'trabajo') {
       // Sin saldo, o sin permiso de Tools: el Research sigue con lo que el modelo sabe.
