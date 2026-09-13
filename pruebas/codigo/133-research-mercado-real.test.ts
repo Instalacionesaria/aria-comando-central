@@ -163,6 +163,11 @@ test('la mirada se lee tolerante y se conserva al guardar los pasos', () => {
   const llamadas = operaciones.match(/guardarResearch\([\s\S]*?\);/g) ?? [];
   assert.ok(llamadas.length >= 2);
   for (const l of llamadas) assert.match(l, /researchMercado/, `una llamada a guardarResearch no pasa la mirada: ${l}`);
+  /* Salvo al generar el paso 1: ahí la mirada anterior queda inválida —su rubro salía del paso 1
+     viejo— y se borra, en el servidor y en pantalla. Allpa (2026-09-13): «0 negocios · Latinoamérica»
+     dibujado debajo de un Research que buscaba en Arequipa. */
+  assert.match(operaciones, /const mercado = paso === 0 \? null : estado\.datos\.researchMercado;/);
+  assert.match(sinComentarios(codigo('components/fundaciones/PanelResearch.jsx')), /if \(paso === 0\) setMirada\(null\);/);
 });
 
 test('una región no es un lugar: la mirada se omite ANTES de gastar y dice qué poner', () => {

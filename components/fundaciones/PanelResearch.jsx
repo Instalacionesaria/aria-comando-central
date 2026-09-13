@@ -352,6 +352,9 @@ export default function PanelResearch({
   /** Los cinco, de a uno. Corta en el primero que falle: el siguiente lo necesitaba. */
   const correrTodo = async (v = valores) => {
     for (let paso = 0; paso < PASOS_RESEARCH; paso += 1) {
+      // Un paso 1 nuevo deja atrás la mirada anterior: el servidor la borra al guardar, y acá se deja
+      // de dibujar desde ya, para que no quede un «0 negocios» viejo debajo de un paso que corre.
+      if (paso === 0) setMirada(null);
       const bien = await correrPaso(paso, v);
       if (!bien) return;
       // Entre el paso 1 y el 2: mirar el mercado real, si hay dónde. Los pasos 2 al 5 lo leen.

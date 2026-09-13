@@ -350,7 +350,12 @@ export async function generarElDocumento(
 
     const proximas = [...previas];
     proximas[paso] = salida.datos.texto;
-    const guardado = await guardarResearch(acceso.orgId, inputs, proximas, estado.datos.researchMercado);
+    /* Un paso 1 nuevo INVALIDA la mirada guardada: su rubro salía del paso 1 anterior, y la mirada
+       nueva corre después de éste. Si se conservara, los pasos 2 al 5 leerían como «datos
+       observados» los ceros de una corrida vieja —Allpa (2026-09-13): «0 negocios en Google Maps ·
+       Latinoamérica» dibujado debajo de un Research que estaba buscando en Arequipa. */
+    const mercado = paso === 0 ? null : estado.datos.researchMercado;
+    const guardado = await guardarResearch(acceso.orgId, inputs, proximas, mercado);
     if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
     return ok({
