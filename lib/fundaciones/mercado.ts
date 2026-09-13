@@ -45,6 +45,14 @@ export interface MiradaAAnuncios {
   muestras: readonly string[];
 }
 
+/**
+ * Lo que el scraper de páginas de Facebook devolvió, contado. **La misma forma que Maps**, y no por
+ * pereza: los dos guardan en `aria_cc_scraper_leads` con las mismas columnas y se cuentan con la
+ * misma función. `ciudades` acá suele venir vacío —una página rara vez trae dirección— y la
+ * calificación, cuando hay, es la de la página en Facebook.
+ */
+export type MiradaAPaginas = MiradaAMaps;
+
 export interface MercadoReal {
   /** Qué se buscó: el rubro (el primer segmento del paso 1) y la ubicación (el sexto criterio). */
   rubro: string;
@@ -53,13 +61,31 @@ export interface MercadoReal {
   miradoEl: string;
   maps: MiradaAMaps | null;
   anuncios: MiradaAAnuncios | null;
+  /**
+   * Las páginas de Facebook de los anunciantes que el Espía encontró, con sus contactos. Kevin
+   * (2026-09-13): *«agregale el scraping de páginas web, también como máximo 100»*. Depende del
+   * Espía: sin anuncios no hay páginas, y por eso corre DESPUÉS de él, no en paralelo.
+   */
+  paginas: MiradaAPaginas | null;
 }
 
 /** El tope de negocios por mirada. Kevin: «unos 100 leads de Google Maps como máximo». */
 export const TOPE_DE_NEGOCIOS = 100;
 
-/** Cuántos anuncios pide el Espía en la mirada. Igual que la pantalla Tools: una corrida del actor. */
-export const ANUNCIOS_DE_LA_MIRADA = 60;
+/**
+ * Cuántos anuncios pide el Espía en la mirada. Eran 60, como en Tools. Son 300 porque de acá salen
+ * las páginas de Facebook: medido en SOFIA sobre corridas reales (2026-09-13), de cada diez anuncios
+ * salen unas tres páginas distintas, así que con 60 se juntaban unas 20 y con 300 se llega a las
+ * 100 del tope. El Espía no descuenta saldo al cliente —solo Apify a la casa—, y Kevin lo aceptó:
+ * *«no hay problema si el espía trae 300 anuncios»*.
+ */
+export const ANUNCIOS_DE_LA_MIRADA = 300;
+/**
+ * El tope de páginas de Facebook por mirada. Es lo que SÍ gasta: cada página es un lead. Con Maps
+ * suman 200, y ésa es la regla de Jorge: *«desgastar como mucho 200 leads en Research»*, para que de
+ * los 500 de regalo le queden al menos 300 al cliente. Vale solo acá: en Tools el usuario decide.
+ */
+export const TOPE_DE_PAGINAS = 100;
 
 /** Cuántos caracteres de cada anuncio entran al resumen. */
 const LARGO_DE_MUESTRA = 160;
@@ -187,23 +213,9 @@ export function leerMercado(crudo: unknown): MercadoReal | null {
   const ubicacion = texto(o['ubicacion']);
   if (!rubro || !ubicacion) return null;
 
-  const m = objeto(o['maps']);
   const a = objeto(o['anuncios']);
-  const maps: MiradaAMaps | null = texto(m['trabajo'])
-    ? {
-        trabajo: texto(m['trabajo']) as string,
-        total: entero(m['total']),
-        conWeb: entero(m['conWeb']),
-        conEmail: entero(m['conEmail']),
-        conTelefono: entero(m['conTelefono']),
-        ciudades: listaDeTextos(m['ciudades'], 5),
-        categorias: listaDeTextos(m['categorias'], 5),
-        calificacionPromedio:
-          typeof m['calificacionPromedio'] === 'number' && Number.isFinite(m['calificacionPromedio'])
-            ? m['calificacionPromedio']
-            : null,
-      }
-    : null;
+  const maps = miradaALeads(objeto(o['maps']));
+  const paginas = miradaALeads(objeto(o['paginas']));
   const anuncios: MiradaAAnuncios | null = texto(a['trabajo'])
     ? {
         trabajo: texto(a['trabajo']) as string,
@@ -213,8 +225,26 @@ export function leerMercado(crudo: unknown): MercadoReal | null {
       }
     : null;
 
-  if (!maps && !anuncios) return null;
-  return { rubro, ubicacion, miradoEl: texto(o['miradoEl']) ?? '', maps, anuncios };
+  if (!maps && !anuncios && !paginas) return null;
+  return { rubro, ubicacion, miradoEl: texto(o['miradoEl']) ?? '', maps, anuncios, paginas };
+}
+
+/** Una mirada contada sobre leads (Maps o páginas de Facebook), leída tolerante. */
+function miradaALeads(m: Record<string, unknown>): MiradaAMaps | null {
+  if (!texto(m['trabajo'])) return null;
+  return {
+    trabajo: texto(m['trabajo']) as string,
+    total: entero(m['total']),
+    conWeb: entero(m['conWeb']),
+    conEmail: entero(m['conEmail']),
+    conTelefono: entero(m['conTelefono']),
+    ciudades: listaDeTextos(m['ciudades'], 5),
+    categorias: listaDeTextos(m['categorias'], 5),
+    calificacionPromedio:
+      typeof m['calificacionPromedio'] === 'number' && Number.isFinite(m['calificacionPromedio'])
+        ? m['calificacionPromedio']
+        : null,
+  };
 }
 
 /**
@@ -249,6 +279,16 @@ export function contextoDeMercado(m: MercadoReal | null): string | null {
       lineas.push('Qué prometen (muestras):');
       for (const s of a.muestras) lineas.push(`  · ${s}`);
     }
+  }
+  if (m.paginas) {
+    const p = m.paginas;
+    lineas.push(
+      `Páginas de Facebook de esos anunciantes (con sus contactos): ${p.total} · ${p.conTelefono} con teléfono · ` +
+        `${p.conEmail} con correo · ${p.conWeb} con sitio web` +
+        (p.calificacionPromedio !== null ? ` · calificación promedio en Facebook ${p.calificacionPromedio}` : ''),
+    );
+    if (p.categorias.length > 0) lineas.push(`Cómo se describen: ${p.categorias.join(', ')}`);
+    lineas.push('Las páginas completas están en Tools → Mis Leads.');
   }
   return lineas.join('\n');
 }

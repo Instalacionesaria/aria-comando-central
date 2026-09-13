@@ -44,7 +44,7 @@
 import { useMemo, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { consultarTrabajo, iniciarScraping } from '@/lib/tools/scrapers';
+import { anunciantesDe, consultarTrabajo, iniciarScraping } from '@/lib/tools/scrapers';
 import {
   aValoresDeFormulario,
   camposDe,
@@ -53,7 +53,7 @@ import {
 } from '@/lib/fundaciones/campos';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
-import { TOPE_DE_NEGOCIOS as TOPE_MAPS } from '@/lib/fundaciones/mercado';
+import { TOPE_DE_NEGOCIOS as TOPE_MAPS, TOPE_DE_PAGINAS as TOPE_PAGINAS } from '@/lib/fundaciones/mercado';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
 
 import BarraDePasos from './BarraDePasos';
@@ -249,18 +249,20 @@ export default function PanelResearch({
       setMirada({ fase: 'omitida', motivo: prep.tipo === 'datos' ? 'sin_ubicacion' : 'sin_preparar' });
       return;
     }
-    const { rubro, topeDeNegocios, anuncios } = prep.datos;
+    const { rubro, topeDeNegocios, topeDePaginas, anuncios } = prep.datos;
 
     // 2 · La confirmación, una sola vez.
-    setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios });
+    setMirada({ fase: 'confirmar', rubro, ubicacion, tope: topeDeNegocios, topePaginas: topeDePaginas });
     const si = await esperarDecision();
     if (!si) {
       setMirada({ fase: 'omitida', motivo: 'no_quiso', rubro, ubicacion });
       return;
     }
 
-    // 3 · Los dos scrapers, en paralelo. Maps descuenta saldo; el Espía no.
-    setMirada({ fase: 'buscando', rubro, ubicacion, maps: { estado: 'arrancando' }, espia: { estado: 'arrancando' } });
+    // 3 · Maps y el Espía, en paralelo. Maps descuenta saldo; el Espía no. Las páginas de Facebook
+    //     vienen DESPUÉS del Espía —sus anunciantes son las páginas— y sí descuentan.
+    const esperando = { estado: 'esperando' };
+    setMirada({ fase: 'buscando', rubro, ubicacion, maps: { estado: 'arrancando' }, espia: { estado: 'arrancando' }, paginas: esperando });
     const [maps, espia] = await Promise.all([
       iniciarScraping('maps', { businessType: rubro, location: ubicacion, maxLeads: topeDeNegocios, getEmails: true }),
       iniciarScraping('ad-spy', { query: rubro, country: 'ALL', count: anuncios }),
@@ -271,10 +273,12 @@ export default function PanelResearch({
       return;
     }
     const pinta = (r) => (r.tipo === 'trabajo' ? { id: r.id, estado: 'corriendo' } : { estado: 'fallo', mensaje: r.mensaje });
-    setMirada({ fase: 'buscando', rubro, ubicacion, maps: pinta(maps), espia: pinta(espia) });
+    setMirada({ fase: 'buscando', rubro, ubicacion, maps: pinta(maps), espia: pinta(espia), paginas: esperando });
 
-    // 4 · Esperar a los dos. Cada uno actualiza su renglón al terminar.
+    // 4 · Esperar a los tres. Cada uno actualiza su renglón al terminar.
     const esperas = [];
+    const pintarPaginas = (p) => setMirada((m) => (m && m.fase === 'buscando' ? { ...m, paginas: { ...m.paginas, ...p } } : m));
+    let paginas = { tipo: 'fallo', mensaje: 'sin anunciantes' };
     if (maps.tipo === 'trabajo') {
       esperas.push(
         esperarTrabajo(maps.id).then((st) =>
@@ -284,9 +288,40 @@ export default function PanelResearch({
     }
     if (espia.tipo === 'trabajo') {
       esperas.push(
-        esperarTrabajo(espia.id).then((st) =>
-          setMirada((m) => (m && m.fase === 'buscando' ? { ...m, espia: { ...m.espia, estado: st === 'COMPLETED' ? 'listo' : 'fallo' } } : m)),
-        ),
+        esperarTrabajo(espia.id).then(async (st) => {
+          setMirada((m) => (m && m.fase === 'buscando' ? { ...m, espia: { ...m.espia, estado: st === 'COMPLETED' ? 'listo' : 'fallo' } } : m));
+          if (st !== 'COMPLETED') {
+            pintarPaginas({ estado: 'fallo', mensaje: 'el Espía no terminó' });
+            return;
+          }
+
+          /* 4b · Las páginas de Facebook, ENCADENADAS al Espía. El scraper de páginas no busca por
+             rubro: recibe URLs, y las URLs son las de los anunciantes que el Espía acaba de traer
+             —el mismo camino que Prospección en Tools, sin que nadie elija a mano—. Se toman las
+             que tienen página, hasta el tope: ESTO es lo que gasta saldo, y por eso el tope es
+             de producto (Jorge: como mucho 200 leads en Research, 100 de Maps y 100 de acá). En
+             Tools el usuario decide cuántas; acá no se le pregunta porque ya dijo sí a los 200. */
+          const t = await consultarTrabajo(espia.id);
+          const conPagina = anunciantesDe((t && t.results && t.results.data) || [])
+            .filter((a) => a.page_profile_uri)
+            .slice(0, topeDePaginas);
+          if (conPagina.length === 0) {
+            pintarPaginas({ estado: 'fallo', mensaje: 'el Espía no trajo anunciantes con página' });
+            return;
+          }
+          pintarPaginas({ estado: 'arrancando', cuantas: conPagina.length });
+          paginas = await iniciarScraping('facebook-pages', {
+            pages: conPagina.map((a) => ({ page_name: a.page_name, page_profile_uri: a.page_profile_uri, page_id: a.page_id })),
+          });
+          if (paginas.tipo !== 'trabajo') {
+            // Sin saldo para las páginas: Maps ya corrió, y el Research sigue con eso.
+            pintarPaginas({ estado: 'fallo', mensaje: paginas.mensaje });
+            return;
+          }
+          pintarPaginas({ id: paginas.id, estado: 'corriendo' });
+          const stp = await esperarTrabajo(paginas.id);
+          pintarPaginas({ estado: stp === 'COMPLETED' ? 'listo' : 'fallo' });
+        }),
       );
     }
     await Promise.all(esperas);
@@ -299,6 +334,7 @@ export default function PanelResearch({
         ubicacion,
         trabajoMaps: maps.tipo === 'trabajo' ? maps.id : null,
         trabajoEspia: espia.tipo === 'trabajo' ? espia.id : null,
+        trabajoPaginas: paginas.tipo === 'trabajo' ? paginas.id : null,
       },
     });
     if (r.tipo !== 'datos') {
@@ -676,15 +712,17 @@ function Mirada({ mirada, onDecidir }) {
           <div>
             <b>¿Buscamos negocios reales de «{mirada.rubro}» en {mirada.ubicacion}?</b>
             <small>
-              Google Maps trae hasta {mirada.tope} negocios con web y correo cuando los tienen, y el Espía de Anuncios mira
-              qué publicidad corre ese segmento. Los pasos 2 al 5 se construyen sobre eso.{' '}
-              <b>Descuenta hasta {mirada.tope} leads de tu saldo.</b> El Espía no descuenta.
+              Google Maps trae hasta {mirada.tope} negocios con web y correo cuando los tienen. El Espía de Anuncios mira
+              qué publicidad corre el segmento y, de los anunciantes que encuentre, sacamos los contactos de hasta{' '}
+              {mirada.topePaginas} páginas de Facebook. Los pasos 2 al 5 se construyen sobre eso.{' '}
+              <b>Descuenta hasta {mirada.tope + mirada.topePaginas} leads de tu saldo: {mirada.tope} de Maps y {mirada.topePaginas} de Facebook.</b>{' '}
+              El Espía no descuenta.
             </small>
           </div>
         </div>
         <div className="fd-mirada-acciones">
           <button type="button" className="fd-btn" onClick={() => onDecidir(true)}>
-            Sí, buscar {mirada.tope} negocios
+            Sí, buscar hasta {mirada.tope + mirada.topePaginas} negocios
           </button>
           <button type="button" className="fd-btn sec" onClick={() => onDecidir(false)}>
             Seguir sin datos reales
@@ -696,13 +734,21 @@ function Mirada({ mirada, onDecidir }) {
 
   if (mirada.fase === 'buscando') {
     const renglon = (nombre, que, f) => (
-      <div className={`fd-mirada-fuente ${f.estado === 'listo' ? 'ok' : f.estado === 'fallo' ? 'mal' : 'corriendo'}`}>
+      <div className={`fd-mirada-fuente ${f.estado === 'listo' ? 'ok' : f.estado === 'fallo' ? 'mal' : f.estado === 'esperando' ? 'espera' : 'corriendo'}`}>
         <span className="fd-mirada-pt" />
         <span>
           {nombre} · {que}
         </span>
         <span className="fd-mirada-e">
-          {f.estado === 'listo' ? 'listo' : f.estado === 'fallo' ? (f.mensaje || 'no se pudo') : f.estado === 'arrancando' ? 'arrancando…' : 'corriendo…'}
+          {f.estado === 'listo'
+            ? 'listo'
+            : f.estado === 'fallo'
+              ? (f.mensaje || 'no se pudo')
+              : f.estado === 'esperando'
+                ? 'espera al Espía…'
+                : f.estado === 'arrancando'
+                  ? `${f.cuantas ? `${f.cuantas} páginas, ` : ''}arrancando…`
+                  : 'corriendo…'}
         </span>
       </div>
     );
@@ -711,7 +757,8 @@ function Mirada({ mirada, onDecidir }) {
         {titulo}
         {renglon('Google Maps', `hasta ${TOPE_MAPS} negocios`, mirada.maps)}
         {renglon('Espía de Anuncios', 'qué publicidad corre el segmento', mirada.espia)}
-        <small className="fd-mirada-nota">Tarda unos minutos. El paso 2 arranca cuando terminen los dos.</small>
+        {renglon('Páginas de Facebook', `contactos de hasta ${TOPE_PAGINAS} anunciantes`, mirada.paginas || { estado: 'esperando' })}
+        <small className="fd-mirada-nota">Tarda unos minutos. El paso 2 arranca cuando terminen los tres.</small>
       </div>
     );
   }
@@ -720,17 +767,30 @@ function Mirada({ mirada, onDecidir }) {
     const m = mirada.mercado;
     const x = m.maps;
     const a = m.anuncios;
+    const p = m.paginas;
+    const enMisLeads =
+      x && p
+        ? `Los ${x.total} negocios y las ${p.total} páginas están en Tools → Mis Leads`
+        : x
+          ? `Los ${x.total} negocios están en Tools → Mis Leads`
+          : p
+            ? `Las ${p.total} páginas están en Tools → Mis Leads`
+            : null;
     return (
       <div className="fd-mirada lista">
         <div className="fd-mirada-titulo">
           <span>Lo que vimos en el mercado real · {m.rubro} · {m.ubicacion}</span>
-          {x ? <span className="fd-mirada-link">Los {x.total} negocios están en Tools → Mis Leads</span> : null}
+          {enMisLeads ? <span className="fd-mirada-link">{enMisLeads}</span> : null}
         </div>
         <div className="fd-cifras">
           {x ? <div className="fd-cifra"><b>{x.total}</b><span>negocios en Google Maps</span></div> : null}
           {x ? <div className="fd-cifra"><b>{x.conWeb}</b><span>con sitio web</span></div> : null}
           {x ? <div className="fd-cifra"><b>{x.conEmail}</b><span>con correo visible</span></div> : null}
           {a ? <div className="fd-cifra"><b>{a.total}</b><span>anuncios activos del segmento</span></div> : null}
+          {p ? <div className="fd-cifra"><b>{p.total}</b><span>páginas de Facebook con contacto</span></div> : null}
+          {p ? <div className="fd-cifra"><b>{p.conTelefono}</b><span>con teléfono</span></div> : null}
+          {p ? <div className="fd-cifra"><b>{p.conEmail}</b><span>con correo</span></div> : null}
+          {p && p.calificacionPromedio !== null ? <div className="fd-cifra"><b>{p.calificacionPromedio}</b><span>calificación en Facebook</span></div> : null}
         </div>
         {x && (x.ciudades.length > 0 || x.calificacionPromedio !== null) ? (
           <p>

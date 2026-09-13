@@ -2015,6 +2015,7 @@
 .fd-mirada-fuente.ok .fd-mirada-pt { background: var(--ok); }
 .fd-mirada-fuente.corriendo .fd-mirada-pt { background: var(--accent); outline: 4px solid var(--accent-dim); }
 .fd-mirada-fuente.mal .fd-mirada-pt { background: var(--crit); }
+.fd-mirada-fuente.espera .fd-mirada-pt { background: transparent; border: 1px dashed var(--txt-faint); }
 .fd-mirada-e { margin-left: auto; font-size: 11px; color: var(--txt-faint); text-align: right; }
 .fd-mirada-fuente.ok .fd-mirada-e { color: var(--ok); }
 .fd-mirada-fuente.corriendo .fd-mirada-e { color: var(--accent); }

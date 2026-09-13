@@ -55,6 +55,7 @@ import { datos } from '../datos/contexto.ts';
 import {
   ANUNCIOS_DE_LA_MIRADA,
   TOPE_DE_NEGOCIOS,
+  TOPE_DE_PAGINAS,
   resumirAnuncios,
   resumirLeads,
   type MercadoReal,
@@ -688,7 +689,7 @@ export async function conversarConElAgente(
 
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
-  | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; anuncios: number }
+  | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
   | { preparado: false; motivo: 'sin_ubicacion' | 'sin_paso_1' };
 
 /** El nombre corto del primer segmento, como rubro buscable en Google Maps. */
@@ -728,6 +729,7 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
     rubro,
     ubicacion,
     topeDeNegocios: TOPE_DE_NEGOCIOS,
+    topeDePaginas: TOPE_DE_PAGINAS,
     anuncios: ANUNCIOS_DE_LA_MIRADA,
   } satisfies Preparacion);
 }
@@ -738,7 +740,7 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
  * trabajo ajeno devuelve cero filas, no las de otro.
  */
 export async function resumirMercado(peticion: Request, alumno: Alumno): Promise<Response> {
-  let cuerpo: { rubro?: unknown; ubicacion?: unknown; trabajoMaps?: unknown; trabajoEspia?: unknown };
+  let cuerpo: { rubro?: unknown; ubicacion?: unknown; trabajoMaps?: unknown; trabajoEspia?: unknown; trabajoPaginas?: unknown };
   try {
     cuerpo = (await peticion.json()) as typeof cuerpo;
   } catch {
@@ -748,8 +750,12 @@ export async function resumirMercado(peticion: Request, alumno: Alumno): Promise
   const ubicacion = typeof cuerpo.ubicacion === 'string' ? cuerpo.ubicacion.trim() : '';
   const trabajoMaps = typeof cuerpo.trabajoMaps === 'string' && cuerpo.trabajoMaps !== '' ? cuerpo.trabajoMaps : null;
   const trabajoEspia = typeof cuerpo.trabajoEspia === 'string' && cuerpo.trabajoEspia !== '' ? cuerpo.trabajoEspia : null;
+  const trabajoPaginas =
+    typeof cuerpo.trabajoPaginas === 'string' && cuerpo.trabajoPaginas !== '' ? cuerpo.trabajoPaginas : null;
   if (rubro === '' || ubicacion === '') return rechazo('peticion_invalida', 'Falta el rubro o la ubicación');
-  if (!trabajoMaps && !trabajoEspia) return rechazo('peticion_invalida', 'Falta el trabajo de Maps o del Espía');
+  if (!trabajoMaps && !trabajoEspia && !trabajoPaginas) {
+    return rechazo('peticion_invalida', 'Falta el trabajo de Maps, del Espía o de las páginas');
+  }
 
   const estado = await leerEstado(alumno.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
@@ -776,7 +782,20 @@ export async function resumirMercado(peticion: Request, alumno: Alumno): Promise
     anuncios = fila ? resumirAnuncios(trabajoEspia, fila.results_data) : null;
   }
 
-  const mercado: MercadoReal = { rubro, ubicacion, miradoEl: new Date().toISOString(), maps, anuncios };
+  /* Las páginas de Facebook se cuentan igual que Maps: mismas columnas, misma tabla, mismo
+     aislamiento por organización. Un identificador ajeno devuelve cero filas. */
+  const paginas = trabajoPaginas
+    ? resumirLeads(
+        trabajoPaginas,
+        await db
+          .selectFrom('public.aria_cc_scraper_leads')
+          .select(['name', 'email', 'phone', 'website', 'location', 'category', 'raw_data'])
+          .where('trabajo_id', '=', trabajoPaginas)
+          .execute(),
+      )
+    : null;
+
+  const mercado: MercadoReal = { rubro, ubicacion, miradoEl: new Date().toISOString(), maps, anuncios, paginas };
   const guardado = await guardarMercado(alumno.orgId, estado.datos, mercado);
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
   return ok(mercado);

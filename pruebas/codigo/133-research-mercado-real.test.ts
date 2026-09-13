@@ -20,6 +20,7 @@ import { ARCHIVOS_AUTORIZADOS } from '../apoyo/autorizados.ts';
 import {
   ANUNCIOS_DE_LA_MIRADA,
   TOPE_DE_NEGOCIOS,
+  TOPE_DE_PAGINAS,
   contextoDeMercado,
   leerMercado,
   localidadDe,
@@ -50,6 +51,13 @@ const ANUNCIOS = {
   ],
 };
 
+/* Páginas de Facebook: lo que el backend guarda en la misma tabla que Maps, con `source: facebook`.
+   Una página rara vez trae dirección, así que `location` va vacío. */
+const PAGINAS = [
+  { name: 'Estética Bella', email: 'info@bella.pe', phone: '+51 9', website: 'https://bella.pe', location: null, category: 'Clínica estética', raw_data: { rating: 4.8 } },
+  { name: 'Derma Lima', email: null, phone: '+51 8', website: null, location: null, category: 'Clínica estética', raw_data: { rating: 4.4 } },
+];
+
 function conMercado(): ReturnType<typeof estadoVacio> {
   const estado = estadoVacio();
   estado.researchMercado = {
@@ -58,6 +66,7 @@ function conMercado(): ReturnType<typeof estadoVacio> {
     miradoEl: '2026-09-10T18:00:00Z',
     maps: resumirLeads('t-maps', LEADS),
     anuncios: resumirAnuncios('t-espia', ANUNCIOS),
+    paginas: resumirLeads('t-paginas', PAGINAS),
   };
   return estado;
 }
@@ -112,6 +121,8 @@ test('el contexto dice que son datos OBSERVADOS, y llega a los pasos 2 al 5 y al
   assert.match(texto, /Sin sitio web propio: 1 de 3 \(33%\)/);
   assert.match(texto, /Mis Leads/);
   assert.match(texto, /Anuncios activos del segmento .*: 4, de 3 anunciantes/);
+  // Y las páginas de Facebook, contadas igual que Maps y con su propia línea.
+  assert.match(texto, /Páginas de Facebook de esos anunciantes .*: 2 · 2 con teléfono · 1 con correo · 1 con sitio web · calificación promedio en Facebook 4\.6/);
 
   const inputs = { niche: 'salud', buyers: '50,000+', ltv: '$3,000+', contract: '', experience: 'x', location: 'Puerto Rico' };
   const previas = ['P1', 'P2', 'P3', 'P4'];
@@ -159,11 +170,18 @@ test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cue
   assert.match(operaciones, /motivo: 'sin_paso_1'/);
   assert.match(operaciones, /rubroDelSegmento\(acceso\.claveIa, paso1/);
   assert.equal(TOPE_DE_NEGOCIOS, 100, 'Kevin: «unos 100 leads como máximo»');
-  assert.ok(ANUNCIOS_DE_LA_MIRADA > 0);
+  /* Jorge, vía Kevin (2026-09-13): Research gasta como mucho 200 leads —100 de Maps y 100 de
+     páginas de Facebook— para que de los 500 de regalo queden al menos 300. Y el Espía pide 300
+     anuncios porque de cada diez salen unas tres páginas: con 60 no se llegaba a 100. */
+  assert.equal(TOPE_DE_PAGINAS, 100, 'Jorge: como mucho 100 leads de páginas de Facebook en Research');
+  assert.equal(TOPE_DE_NEGOCIOS + TOPE_DE_PAGINAS, 200, 'Jorge: Research gasta como mucho 200 leads');
+  assert.equal(ANUNCIOS_DE_LA_MIRADA, 300, 'con menos anuncios no se juntan 100 anunciantes con página');
+  assert.match(operaciones, /topeDePaginas: TOPE_DE_PAGINAS/);
 
   // Resumir: los números salen de las tablas por identificador, dentro del contexto de la organización.
   assert.match(operaciones, /selectFrom\('public\.aria_cc_scraper_leads'\)[\s\S]*?where\('trabajo_id', '=', trabajoMaps\)/);
   assert.match(operaciones, /selectFrom\('public\.aria_cc_scraper_trabajos'\)[\s\S]*?select\(\['id', 'results_data'\]\)/);
+  assert.match(operaciones, /selectFrom\('public\.aria_cc_scraper_leads'\)[\s\S]*?where\('trabajo_id', '=', trabajoPaginas\)/);
   assert.ok(!/cuerpo\.(total|conWeb|muestras|leads)/.test(operaciones), 'el resumen viene del navegador');
 
   const preparar = sinComentarios(codigo('app/api/fundaciones/mercado/preparar/route.ts'));
@@ -187,17 +205,26 @@ test('el panel: después del paso 1, confirma una vez, arranca los dos scrapers 
   assert.match(limpio, /if \(!rutaMercado \|\| !rutaMercadoPreparar \|\| ubicacion === ''\) return;/);
   // La confirmación es un `await`: la cadena espera al botón.
   assert.match(limpio, /const si = await esperarDecision\(\);/);
-  assert.match(panel, /Sí, buscar \{mirada\.tope\} negocios/);
+  assert.match(panel, /Sí, buscar hasta \{mirada\.tope \+ mirada\.topePaginas\} negocios/);
+  assert.match(panel, /Descuenta hasta \{mirada\.tope \+ mirada\.topePaginas\} leads de tu saldo/);
   assert.match(panel, /Seguir sin datos reales/);
   // Los dos scrapers con las funciones de Tools, Maps con el tope y el Espía sin saldo.
   assert.match(limpio, /iniciarScraping\('maps', \{ businessType: rubro, location: ubicacion, maxLeads: topeDeNegocios/);
   assert.match(limpio, /iniciarScraping\('ad-spy', \{ query: rubro/);
+  /* Las páginas de Facebook, DESPUÉS del Espía y con el tope: el scraper de páginas recibe URLs,
+     y las URLs son las de los anunciantes que el Espía trajo. Es lo que gasta, y por eso se recorta
+     al tope antes de arrancar. En Tools no hay tope: ahí el usuario decide. */
+  assert.match(limpio, /anunciantesDe\([\s\S]*?\.filter\(\(a\) => a\.page_profile_uri\)[\s\S]*?\.slice\(0, topeDePaginas\)/);
+  assert.match(limpio, /iniciarScraping\('facebook-pages', \{[\s\S]*?pages: conPagina\.map/);
+  assert.match(limpio, /trabajoPaginas: paginas\.tipo === 'trabajo' \? paginas\.id : null/);
+  assert.match(panel, /Páginas de Facebook/);
+  assert.ok(!/TOPE_DE_PAGINAS|topeDePaginas/.test(codigo('components/tools/Scraper.jsx')), 'el tope de Research se metió en Tools');
   // Si ninguno arrancó (sin saldo, sin permiso), la cadena SIGUE: `omitida`, no `return` de la cadena.
   assert.match(limpio, /motivo: 'sin_saldo'/);
   assert.match(panel, /El Research sigue con lo que el modelo sabe/);
   // La mirada se dibuja pegada al paso 2 (índice 1), con su propio componente.
   assert.match(limpio, /paso === 1 && mirada \? <Mirada/);
-  assert.match(panel, /Los \{x\.total\} negocios están en Tools → Mis Leads/);
+  assert.match(panel, /Los \$\{x\.total\} negocios y las \$\{p\.total\} páginas están en Tools → Mis Leads/);
   // Y solo ICP & Oferta pasa las rutas.
   assert.match(codigo('components/fundaciones/Fundaciones.jsx'), /rutaMercadoPreparar: '\/api\/fundaciones\/mercado\/preparar'/);
   assert.ok(!/rutaMercado/.test(codigo('components/views/ToolsView.jsx')));
