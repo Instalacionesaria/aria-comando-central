@@ -40,6 +40,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createHash } from 'node:crypto';
+import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { AGENTES, type Agente } from './veredicto.ts';
 
@@ -149,6 +150,17 @@ export type QuePasoAlGuardar = 'guardado' | 'borrado' | 'no_habia_nada';
  * habría una ventana en la que los dos ven «no hay fila» y los dos insertan.
  *
  * @param quien Quién lo editó, para el rastro. `null` cuando no lo escribió una persona.
+ *
+ * ── ESTE UPSERT Y ESTE DELETE ARCHIVAN LA VERSIÓN QUE SALE ─────────────────
+ *
+ * Acá no hay ninguna línea que escriba `versiones_del_prompt`, y **no es un olvido**: lo hace un
+ * disparador sobre la tabla (migración `046`). Es el precio declarado de esa decisión —un escritor
+ * que no aparece en ningún `grep` de este archivo— y compra dos cosas que acá no se pueden tener:
+ * que cualquier camino de escritura futuro archive aunque nadie se acuerde, y que no haga falta leer
+ * la fila antes de pisarla, que es lo que reabriría la carrera que el `on conflict` ya cerró.
+ *
+ * La ATOMICIDAD del par la garantiza el llamador: el disparador corre dentro de la transacción que
+ * abrió `conOrganizacion(`.
  */
 export async function guardarPromptDelAgente(
   agente: Agente,
@@ -158,10 +170,25 @@ export async function guardarPromptDelAgente(
   const limpio = texto.trim();
 
   if (limpio === '') {
+    /* QUIÉN BORRÓ. Es el único dato que el disparador de la `046` no puede sacar de la fila: un
+       `delete` no lleva autor. Hoy este parámetro `quien` **no se usa en esta rama**, así que «quién
+       le vació el prompt al agente el martes» es irrecuperable por completo.
+
+       Viaja por una variable de TRANSACCIÓN, el mismo mecanismo y el mismo alcance que `app.org_id`:
+       muere con la transacción que abrió `conOrganizacion(`, así que no puede filtrarse a la petición
+       siguiente por una conexión reutilizada.
+
+       Y se LIMPIA después, que es la mitad que no es obvia: `set_config(..., true)` dura hasta el
+       final de la TRANSACCIÓN, no de la sentencia. Sin la limpieza, un segundo borrado en la misma
+       transacción que no la ponga no leería nulo: leería el valor anterior y le atribuiría el vaciado
+       a la persona EQUIVOCADA. Un nombre falso es peor que un nulo — es la misma regla que la `044`
+       escribió para `fuente`. Con la limpieza, olvidarse degrada a nulo. */
+    await sql`select set_config('app.quien_toca_el_prompt', ${quien ?? ''}, true)`.execute(datos());
     const r = await datos()
       .deleteFrom('prompts_del_agente')
       .where('agente', '=', agente)
       .executeTakeFirst();
+    await sql`select set_config('app.quien_toca_el_prompt', '', true)`.execute(datos());
     return Number(r.numDeletedRows ?? 0) > 0 ? 'borrado' : 'no_habia_nada';
   }
 
@@ -177,13 +204,44 @@ export async function guardarPromptDelAgente(
        escribirla a mano**: un `default` solo se aplica al insertar, así que sin esto la fecha se
        quedaría en la del primer guardado y la pantalla mostraría un prompt editado hoy como si fuera
        de hace meses. */
+    /* ── Y DESDE LA `046`, DOS COSAS MÁS ───────────────────────────────────
+     *
+     * 1 · Se escribe con **`now()` de la base** y no con el reloj de Node. `now()` es la hora de
+     *     INICIO de la transacción, y el disparador estampa `reemplazada_el` con el mismo `now()` en
+     *     la misma transacción: así el instante en que una versión deja de regir y el instante en que
+     *     empieza la siguiente son EL MISMO, y la línea de tiempo queda contigua por construcción.
+     *     Con dos relojes —Vercel y Supabase— cada costura tendría un desfase de signo desconocido: o
+     *     dos versiones afirmando estar vigentes a la vez, o un hueco en el que no corría ninguna.
+     *
+     * 2 · El **`where`**: si el texto que llega es el mismo que ya está, no se toca la fila. Sin esto
+     *     un reguardado idéntico mueve `actualizado_el`, y entonces la versión que se archive después
+     *     nace afirmando que empezó a regir el día del reguardado en vez del día real — la misma
+     *     mentira que la `046` viene a impedir, fabricada por el propio arreglo.
+     *
+     *     Y es alcanzable con una tecla, no en teoría: el freno de hoy es el botón deshabilitado del
+     *     navegador (`components/auditoria/PanelDeAuditoria.jsx`: `texto !== (p.texto ?? '')`), que
+     *     compara SIN recortar mientras acá se recorta — un salto de línea al final lo habilita y
+     *     manda el mismo texto.
+     *
+     *     Se compara TEXTO contra texto y no hash contra hash: el hash es un sha256 recortado a 16
+     *     caracteres que este mismo archivo declara que no es un identificador, y la comparación
+     *     exacta está disponible gratis acá. Y sólo contra la fila que se reemplaza, jamás contra el
+     *     resto del historial: deduplicar contra una versión anterior dejaría la línea de tiempo
+     *     afirmando que el prompt fue B desde el martes, que es una respuesta falsa a la única
+     *     pregunta que esa tabla contesta.
+     *
+     *     Lo que cuesta, dicho: «volvió a guardar sin cambiar nada» deja de tener rastro. Se acepta,
+     *     porque eso no es una versión. */
     .onConflict((oc) =>
-      oc.columns(['org_id', 'agente']).doUpdateSet({
-        texto: limpio,
-        prompt_hash: hashDelPrompt(limpio),
-        actualizado_por: quien,
-        actualizado_el: new Date(),
-      } as never),
+      oc
+        .columns(['org_id', 'agente'])
+        .doUpdateSet({
+          texto: limpio,
+          prompt_hash: hashDelPrompt(limpio),
+          actualizado_por: quien,
+          actualizado_el: sql`now()`,
+        } as never)
+        .where(sql`prompts_del_agente.texto`, 'is distinct from', sql`excluded.texto`),
     )
     .execute();
 

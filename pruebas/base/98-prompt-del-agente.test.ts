@@ -52,7 +52,21 @@ after(async () => {
 
 /** Deja las dos empresas sin ningún prompt, para que cada prueba empiece del mismo estado. */
 async function sinPrompts(): Promise<void> {
+  /* El historial PRIMERO. Si se borrara después, el `delete` de los prompts dispararía el archivador
+     de la `046` y cada prueba empezaría con las versiones que dejó la anterior. */
+  await esc.admin.query('delete from negocio.versiones_del_prompt');
   await esc.admin.query('delete from negocio.prompts_del_agente');
+  await esc.admin.query('delete from negocio.versiones_del_prompt');
+}
+
+/** Lo que quedó archivado de un agente, de lo más viejo a lo más nuevo. */
+async function elHistorial(agente = 'chat_pre_agenda'): Promise<Record<string, unknown>[]> {
+  const r = await esc.admin.query(
+    `select texto, prompt_hash, vigente_desde, reemplazada_el, puesta_por, sacada_por, que_siguio
+       from negocio.versiones_del_prompt where agente = $1 order by reemplazada_el`,
+    [agente],
+  );
+  return r.rows as Record<string, unknown>[];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -324,4 +338,182 @@ test('sin ningún prompt, la lista sigue nombrando a los dos agentes', async () 
   const todos = await conOrganizacion(esc.org, () => leerLosPrompts());
   assert.deepEqual(Object.keys(todos).sort(), [...AGENTES].sort());
   for (const agente of AGENTES) assert.equal(todos[agente], null);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5 · EL HISTORIAL: LO QUE DECÍA EL PROMPT ANTES (migración 046)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('pisar un prompt ARCHIVA el texto anterior, con su tramo y sus dos actores', async () => {
+  /* El defecto que esto cierra: el auditor sella `prompt_hash` en cada hallazgo y la pantalla avisa
+     «el prompt cambió desde que se diagnosticó esto» — mandando a mirar un texto que ya no existía en
+     ninguna parte. El hash son 16 hex de sha256 y no se invierte: recuperable, cero. */
+  await sinPrompts();
+  const vieja = 'VERSIÓN VIEJA: hablá del pimentón antes del minuto tres.';
+  const nueva = 'VERSIÓN NUEVA: no hables del pimentón nunca.';
+
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_pre_agenda', vieja, esc.quien));
+  const antes = await conOrganizacion(esc.org, () => leerPromptDelAgente('chat_pre_agenda'));
+  assert.equal(await elHistorial().then((h) => h.length), 0, 'el primer guardado no archiva nada');
+
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_pre_agenda', nueva, esc.quien));
+
+  const h = await elHistorial();
+  assert.equal(h.length, 1, 'pisar el prompt no archivó la versión que salía');
+  assert.equal(h[0]?.texto, vieja, 'se archivó un texto que no es el que se pisó');
+  assert.equal(h[0]?.que_siguio, 'otra_version');
+  assert.equal(h[0]?.puesta_por, esc.quien, 'se perdió quién había dejado esa versión');
+  assert.equal(h[0]?.sacada_por, esc.quien, 'se perdió quién la reemplazó');
+
+  /* ── LA COSTURA, QUE ES LA MITAD DEL DISEÑO ──────────────────────────────
+   *
+   * `vigente_desde` de la versión archivada tiene que ser EXACTAMENTE el `actualizado_el` que tenía
+   * la fila viva. Si no lo fuera, la línea de tiempo tendría un hueco o un solapamiento en cada
+   * costura, y «¿qué prompt corría el martes a las 15?» devolvería dos filas o ninguna. */
+  assert.equal(
+    (h[0]?.vigente_desde as Date)?.getTime(),
+    antes?.actualizadoEl?.getTime(),
+    'el tramo archivado no empieza donde la versión realmente empezó a regir',
+  );
+
+  // Y el vigente sigue siendo el nuevo: archivar no es mover.
+  const ahora = await conOrganizacion(esc.org, () => leerPromptDelAgente('chat_pre_agenda'));
+  assert.equal(ahora?.texto, nueva);
+});
+
+test('LA PRUEBA QUE NINGÚN HISTORIAL EN TYPESCRIPT PODRÍA PASAR: un `update` crudo también archiva', async () => {
+  /* Es el argumento entero del disparador, vuelto comprobación. Este `update` NO pasa por
+     `guardarPromptDelAgente`: es una sentencia a mano, como la que alguien correría un domingo o como
+     la que escribiría un segundo camino de escritura dentro de seis meses.
+     Un historial escrito en el módulo de TypeScript se quedaría MUDO acá, y nada fallaría. */
+  await sinPrompts();
+  await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', 'La que estaba antes del domingo.', esc.quien),
+  );
+
+  await esc.admin.query(
+    `update negocio.prompts_del_agente set texto = $1 where agente = 'chat_pre_agenda'`,
+    ['La que alguien puso a mano, sin pasar por la aplicación.'],
+  );
+
+  const h = await elHistorial();
+  assert.equal(h.length, 1, 'una escritura que no pasa por la aplicación no dejó rastro');
+  assert.equal(h[0]?.texto, 'La que estaba antes del domingo.');
+});
+
+test('vaciar el prompt archiva la versión Y dice que no siguió ninguna', async () => {
+  /* Distinguir «se editó» de «se apagó el prompt de referencia» es lo que hace legible la línea de
+     tiempo: la segunda explica por qué los análisis de esa semana salieron con `prompt_hash` nulo. */
+  await sinPrompts();
+  await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', 'La última antes del vacío.', esc.quien),
+  );
+
+  const que = await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', '   ', esc.quien),
+  );
+  assert.equal(que, 'borrado');
+
+  const h = await elHistorial();
+  assert.equal(h.length, 1, 'borrar el prompt no archivó nada: el texto se fue con la fila');
+  assert.equal(h[0]?.texto, 'La última antes del vacío.');
+  assert.equal(h[0]?.que_siguio, 'nada', 'un borrado se ve igual que una edición');
+  assert.equal(
+    h[0]?.sacada_por,
+    esc.quien,
+    'se perdió quién vació el prompt: la variable de transacción no llegó al disparador',
+  );
+});
+
+test('reguardar el MISMO texto no archiva nada y NO mueve la fecha', async () => {
+  /* ── EL DEFECTO QUE ESTE `where` IMPIDE, Y SE ALCANZA CON UNA TECLA ───────
+   *
+   * Sin él, un reguardado idéntico mueve `actualizado_el`; y entonces, cuando esa versión se archive
+   * de verdad más adelante, va a nacer afirmando que empezó a regir el día del reguardado en vez del
+   * día real. Es exactamente la mentira que el historial viene a impedir, fabricada por el propio
+   * arreglo.
+   *
+   * Y no es teórico: el botón de guardar del editor compara `texto !== (p.texto ?? '')` SIN recortar,
+   * mientras el servidor recorta — así que un salto de línea al final lo habilita y manda el mismo
+   * texto. Por eso el fixture reguarda con espacios alrededor: es el caso real, no uno inventado. */
+  await sinPrompts();
+  const texto = 'La única versión que va a existir.';
+
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_pre_agenda', texto, esc.quien));
+  const primero = await conOrganizacion(esc.org, () => leerPromptDelAgente('chat_pre_agenda'));
+
+  // El mismo texto, con un salto de línea al final: lo que el editor deja mandar.
+  await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', `${texto}\n`, esc.quien),
+  );
+
+  assert.equal(await elHistorial().then((h) => h.length), 0, 'un reguardado idéntico inventó una versión');
+  const despues = await conOrganizacion(esc.org, () => leerPromptDelAgente('chat_pre_agenda'));
+  assert.equal(
+    despues?.actualizadoEl?.getTime(),
+    primero?.actualizadoEl?.getTime(),
+    'la fecha se movió sin que el texto cambiara: la versión que se archive después va a mentir',
+  );
+});
+
+test('con la columna del hash TORCIDA, el archivo guarda el hash del texto igual', async () => {
+  /* ── ESTA PRUEBA EXISTE PORQUE LA DE ABAJO NO ALCANZABA ───────────────────
+   *
+   * Medido con el arnés de mutación: cambiar `negocio.hash_del_prompt(old.texto)` por
+   * `old.prompt_hash` en el archivador dejaba la prueba siguiente EN VERDE. Y con razón — en el
+   * camino feliz la columna ya contiene el hash del texto, así que copiar y calcular dan lo mismo y
+   * la prueba no podía distinguirlos. Medía el valor correcto sin medir la propiedad.
+   *
+   * La propiedad que de verdad se quiere es la que el encabezado de `prompts.ts` viene defendiendo
+   * desde el principio: **el hash es función del texto y no se le cree a la columna**. Se ejercita
+   * torciendo la columna a mano —cualquier escritura futura que se olvide de actualizarla hace
+   * exactamente esto— y comprobando que lo archivado sigue reproduciendo el texto.
+   *
+   * Lo que está en juego si se copiara: el lector recalcula el hash al resolver y descarta la fila
+   * que no lo reproduce, así que una versión que SÍ está guardada se volvería irrecuperable. La
+   * degradación de calcularlo es la segura; la de copiarlo, no. */
+  await sinPrompts();
+  const vieja = 'El texto verdadero, con un hash de columna que va a estar mal.';
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_pre_agenda', vieja, esc.quien));
+
+  /* Se tuerce SOLO el hash. No dispara el archivador —su `when` mira el texto— así que esto deja la
+     fila viva en el estado exacto que el encabezado de `prompts.ts` describe como posible. */
+  await esc.admin.query(
+    `update negocio.prompts_del_agente set prompt_hash = $1 where agente = 'chat_pre_agenda'`,
+    ['0000000000000000'],
+  );
+
+  await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', 'La que la reemplaza.', esc.quien),
+  );
+
+  const h = await elHistorial();
+  assert.equal(h.length, 1);
+  assert.equal(
+    h[0]?.prompt_hash,
+    hashDelPrompt(vieja),
+    'el archivador COPIÓ la columna torcida en vez de calcular el hash del texto: esa versión ya no ' +
+      'se puede encontrar por hash, y el lector la va a descartar como si no estuviera guardada',
+  );
+  assert.notEqual(h[0]?.prompt_hash, '0000000000000000', 'se archivó el hash falso tal cual');
+});
+
+test('el hash archivado es función del TEXTO archivado, y resuelve el de un hallazgo', async () => {
+  /* Para qué existe todo esto: dado el `prompt_hash` que un hallazgo viejo tiene sellado, poder
+     recuperar el texto que corría. El hash lo calcula la BASE del texto de la fila archivada, no se
+     copia de la columna vieja — copiarla propagaría un hash que ya podía estar torcido, y el lector,
+     que verifica, convertiría una versión guardada en un «no se encontró». */
+  await sinPrompts();
+  const vieja = 'El texto por el que un hallazgo va a preguntar.';
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_pre_agenda', vieja, esc.quien));
+  await conOrganizacion(esc.org, () =>
+    guardarPromptDelAgente('chat_pre_agenda', 'Otra cosa completamente distinta.', esc.quien),
+  );
+
+  const h = await elHistorial();
+  assert.equal(
+    h[0]?.prompt_hash,
+    hashDelPrompt(vieja),
+    'el hash archivado no reproduce el del texto archivado: un hallazgo viejo no lo va a encontrar',
+  );
 });

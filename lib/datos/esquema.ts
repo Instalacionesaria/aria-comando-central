@@ -770,6 +770,35 @@ export interface TablaNotas {
  * Y no existe el estado «fila con texto vacío»: un `check` de la base lo hace inescribible, porque
  * vaciar el texto SIGNIFICA borrar el prompt. Ver la migración 028.
  */
+/**
+ * Las versiones SUPERADAS del prompt de un agente. **La vigente NO está acá**: vive en
+ * `prompts_del_agente` hasta que alguien la pise, y por eso una tabla vacía significa «todavía nadie
+ * pisó nada», nunca «nunca hubo prompt».
+ *
+ * La escribe un DISPARADOR sobre `prompts_del_agente` (migración `046`), no el código: así archiva
+ * cualquier camino de escritura, y no hace falta leer la fila antes de pisarla —lo que reabriría la
+ * carrera que el `on conflict` cerró—.
+ *
+ * `puesta_por` y `sacada_por` NO llevan clave foránea, a diferencia de la tabla viva: un historial
+ * cuya fila se vuelve inescribible porque se dio de baja a una persona deja de ser un historial.
+ * Quien los lea tiene que tolerar que no resuelvan.
+ */
+export interface TablaVersionesDelPrompt {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  agente: string;
+  texto: string;
+  /** Índice de búsqueda, no una afirmación: el lector lo recalcula del texto y verifica. */
+  prompt_hash: string;
+  /** Desde cuándo regía este texto: el `actualizado_el` que tenía la fila que se fue. */
+  vigente_desde: Date;
+  reemplazada_el: Generated<Date>;
+  puesta_por: string | null;
+  sacada_por: string | null;
+  /** `otra_version` = la reemplazó otra; `nada` = el prompt quedó vacío. */
+  que_siguio: 'otra_version' | 'nada';
+}
+
 export interface TablaPromptsDelAgente {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1079,6 +1108,7 @@ export interface BaseDeDatos {
   hallazgos: TablaHallazgos;
   analisis_del_agente: TablaAnalisisDelAgente;
   prompts_del_agente: TablaPromptsDelAgente;
+  versiones_del_prompt: TablaVersionesDelPrompt;
   enlaces_rapidos: TablaEnlacesRapidos;
   carpetas_del_crm: TablaCarpetasDelCrm;
   campos_del_crm: TablaCamposDelCrm;
