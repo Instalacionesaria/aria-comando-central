@@ -83,6 +83,11 @@ export interface FilaDeMensaje {
   canal: string | null;
   /** El canal de verdad: el `messageType` crudo. Es lo que decide si la fila entra al chat. */
   tipo_ghl: string | null;
+  /**
+   * El `source` crudo: de dónde salió. Lo llena la ingesta; el webhook no lo trae y manda `null`.
+   * Es lo único que separa al agente de un flujo del CRM — ver el esquema y la migración `044`.
+   */
+  fuente?: string | null;
   direccion: 'entrante' | 'saliente';
   cuerpo: string | null;
   autor: 'contacto' | 'agente' | 'persona';
@@ -283,8 +288,25 @@ export async function escribirMensajes(
               estado_entrega_familia: sql`excluded.estado_entrega_familia`,
               estado_entrega_el: sql`excluded.estado_entrega_el`,
               estado_entrega_revisado_el: sql`excluded.estado_entrega_revisado_el`,
+              /* `fuente` SE RELLENA Y NUNCA SE PISA, y las dos mitades importan.
+               *
+               * Se rellena porque es la única forma de que las 5.606 filas anteriores a la `044`
+               * dejen de estar en nulo: una migración no las puede tocar —el migrador ve cero filas
+               * bajo RLS forzada, regla de la `040`— así que se completan cuando la ingesta vuelve a
+               * pasar por su conversación, sin una sola llamada extra.
+               *
+               * Y no se pisa porque **un mensaje sale de un lugar una sola vez**: un valor distinto
+               * más adelante no es un dato mejor, es una señal de que algo se rompió, y un nulo que
+               * pisara borraría la atribución de una fila que ya estaba resuelta. */
+              fuente: sql`coalesce(mensajes.fuente, excluded.fuente)`,
             } as never)
-            .where(sql<boolean>`mensajes.estado_entrega is distinct from excluded.estado_entrega`),
+            /* El `where` también gana una mitad: sin ella, una fila cuyo estado de entrega no cambió
+               no se actualiza, y entonces el relleno de arriba no ocurriría nunca para las filas
+               viejas — que son justamente todas las que lo necesitan. */
+            .where(
+              sql<boolean>`mensajes.estado_entrega is distinct from excluded.estado_entrega
+                        or (mensajes.fuente is null and excluded.fuente is not null)`,
+            ),
         )
         .returning(['id', 'ghl_mensaje_id', 'enviado_el'])
         .execute();

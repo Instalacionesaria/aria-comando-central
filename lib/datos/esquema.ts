@@ -490,6 +490,18 @@ export interface TablaMensajes {
    * `where`.
    */
   tipo_ghl: string | null;
+  /**
+   * El `source` crudo de GoHighLevel: de dónde salió el mensaje. Medidos: `workflow`, `app`, `api`.
+   *
+   * Es lo único que separa al agente de IA de una automatización del CRM — `autor` no alcanza,
+   * porque colapsa `app` contra todo lo demás. Medido: el **71,5 %** de los salientes sellados con
+   * el identificador del agente son `workflow`.
+   *
+   * `null` = la fila es anterior a la migración `044`, o la escribió el webhook (su aviso no trae
+   * este campo) y la ingesta todavía no pasó por esa conversación. **El nulo es «no se sabe», nunca
+   * «no fue el agente»**: una tasa que los cuente como propios miente por omisión.
+   */
+  fuente: string | null;
   direccion: 'entrante' | 'saliente';
   cuerpo: string | null;
   /** Tres estados y no dos: el bot y una persona ausente no son lo mismo. */

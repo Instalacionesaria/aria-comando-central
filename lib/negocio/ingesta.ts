@@ -342,6 +342,10 @@ async function guardarMensajes(
       direccion: entrante ? 'entrante' : 'saliente',
       cuerpo: m.cuerpo,
       autor: autorDe(entrante, m.fuente),
+      /* El mismo valor del que sale `autor`, guardado crudo — y no es redundante: `autorDe` lo
+         colapsa a dos estados (`app` contra todo lo demás) y ahí se pierde la diferencia entre el
+         agente y un flujo del CRM, que es el 71,5 % de lo sellado con su identificador. Ver la `044`. */
+      fuente: m.fuente,
       autor_ghl_usuario_id: m.usuarioId,
       enviado_el: enviadoEl,
       estado_entrega: estado,

@@ -188,12 +188,24 @@ export interface MensajeDeGhl {
   /** Quién lo mandó del lado del CRM. Medido: viene `''` y no nulo cuando no hay nadie. */
   usuarioId: string | null;
   /**
-   * De dónde salió: `workflow`, `campaign`, `bulk_actions`, `api` o `app`.
+   * De dónde salió. **Medidos**: `workflow`, `app`, `api`, y ausente en las actividades.
    *
    * Es el ÚNICO campo que distingue un mensaje que escribió una persona de uno que disparó una
    * automatización, y `userId` no sirve para eso: medido, un mensaje con `source: "workflow"`
    * **también trae `userId`** —el dueño del flujo—. Deducir «lo escribió alguien» de que haya
    * usuario le atribuiría a una persona todos los mensajes automáticos.
+   *
+   * ── CUÁNTO IMPORTA, MEDIDO EL 2026-09-11 ─────────────────────────────────
+   *
+   * `scripts/medir-mensaje.mjs`, censo completo sobre las 518 conversaciones de nuestros contactos,
+   * emparejando cada fila nuestra con su mensaje del CRM. De las **2.182 selladas con el
+   * identificador del agente**: `workflow` 1.560 (71,5 %), `app` 417 (19,1 %), `api` 205 (9,4 %).
+   *
+   * O sea que **el identificador no discrimina**: filtrar por él se lleva 1.560 mensajes que disparó
+   * un flujo del CRM. Es la razón por la que la `044` guarda este campo en `negocio.mensajes`.
+   *
+   * `campaign` y `bulk_actions` están arriba en la documentación del proveedor y **no aparecieron ni
+   * una vez** en ese censo. Quedan nombrados porque el papel los declara, no porque se hayan visto.
    */
   fuente: string | null;
 }
