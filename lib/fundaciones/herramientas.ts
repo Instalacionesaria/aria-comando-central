@@ -25,7 +25,7 @@
 // haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { esUbicacionAmplia } from './mercado.ts';
+import { SIN_DATOS_REALES, esUbicacionAmplia } from './mercado.ts';
 
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
 
@@ -244,7 +244,10 @@ const RESEARCH: Herramienta = {
           marcador: 'Ej: Lima, Perú · San Juan, Puerto Rico · Ciudad de México',
           opcional: true,
           pedirAntesDeGenerar: true,
-          valeComoRespuesta: (v) => !esUbicacionAmplia(v),
+          /* «sin datos reales» es la salida explícita: la persona decide seguir sin buscar negocios, y
+             lo dice. Vale como respuesta para que el arranque no quede trabado, y `prepararMercado` la
+             lee como «no quiso». */
+          valeComoRespuesta: (v) => SIN_DATOS_REALES.test(v) || !esUbicacionAmplia(v),
           guia:
             'Tiene que ser un lugar concreto donde buscar negocios: una ciudad o región DENTRO de un país, ' +
             'con el país (ej: «Lima, Perú», «Guadalajara, México»). NUNCA una región de varios países ni ' +
@@ -256,7 +259,10 @@ const RESEARCH: Herramienta = {
             'qué ciudad. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
             'extracción de negocios reales arranca en un solo lugar, hasta 100 negocios, que quedan en ' +
             'Tools → Mis Leads; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ' +
-            'termine el Research.',
+            'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anotá ' +
+            'exactamente «sin datos reales» y seguí. Hasta que esta respuesta no sea una ciudad concreta ' +
+            'o «sin datos reales», NO des por completas las respuestas ni pongas `listo`: preguntala, ' +
+            'aunque la persona te pida generar.',
         },
       ],
     },

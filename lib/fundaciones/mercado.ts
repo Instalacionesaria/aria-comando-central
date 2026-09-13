@@ -81,6 +81,13 @@ export const TOPE_DE_NEGOCIOS = 100;
  */
 export const ANUNCIOS_DE_LA_MIRADA = 300;
 /**
+ * La respuesta explícita de «no quiero buscar negocios reales». La persona la elige en el chat y el
+ * agente la anota tal cual; `prepararMercado` la lee como «no quiso» y la mirada se omite sin gasto.
+ * Existe para que la ciudad pueda ser exigible ANTES de arrancar sin trabar a quien no la quiere.
+ */
+export const SIN_DATOS_REALES = /^sin datos reales$/i;
+
+/**
  * Si una ubicación es una REGIÓN y no un lugar buscable.
  *
  * Medido con Allpa (2026-09-13): el agente propuso «Latinoamérica (México, Colombia, Perú, Ecuador,

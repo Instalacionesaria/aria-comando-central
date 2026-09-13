@@ -340,6 +340,9 @@ export function instruccionesDeEntrevista(
     '· NO inventes valores. Un dato que no dijo va vacío, aunque puedas deducirlo de lo que contó: ' +
     'un dato deducido se ve idéntico a uno dicho, y el entregable se construye sobre él.\n\n' +
     'CÓMO TERMINAR (y esto no se saltea):\n' +
+    '0. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se ' +
+    'termina, aunque te pidan generar: hacela como dice su CÓMO TRATARLA y esperá la respuesta. El ' +
+    'servidor no genera sin eso.\n' +
     '1. Cuando hayas preguntado TODAS, mostrale las respuestas en una lista corta y preguntale si ' +
     'genera. En ese turno `listo` va en false.\n' +
     '2. Recién cuando confirme, `listo` va en true y tu mensaje es una línea avisando que arranca. ' +
@@ -498,6 +501,12 @@ export function arranca(
 ): boolean {
   if (!turno.listo) return false;
   if (faltanObligatorias(h, turno.respuestas)) return false;
+  /* Y tampoco con una pregunta `pedirAntesDeGenerar` vacía o inválida. Allpa, tercera vez
+     (2026-09-13): «ejecuta de nuevo el research por favor» → el modelo puso `listo` con la región
+     como ciudad, el Research corrió y la mirada se omitió. El pedido de Kevin era que eso se
+     resolviera EN EL CHAT, antes; el modelo solo no alcanza —obedece a quien le pide generar—, así
+     que lo exige el servidor. La salida es explícita: «sin datos reales» (ver `mercado.ts`). */
+  if (faltanAntesDeArrancar(h, turno.respuestas)) return false;
   return !cambiaron(h, turno.respuestas, previas);
 }
 

@@ -55,6 +55,7 @@ import { datos } from '../datos/contexto.ts';
 import {
   ANUNCIOS_DE_LA_MIRADA,
   TOPE_DE_NEGOCIOS,
+  SIN_DATOS_REALES,
   TOPE_DE_PAGINAS,
   esUbicacionAmplia,
   resumirAnuncios,
@@ -698,7 +699,7 @@ export async function conversarConElAgente(
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
   | { preparado: true; rubro: string; ubicacion: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
-  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'sin_paso_1'; ubicacion?: string };
+  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
 
 /**
  * La CATEGORÍA del primer segmento, como se busca en Google Maps y en la biblioteca de anuncios.
@@ -736,6 +737,10 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
   const ubicacion = (estado.datos.researchInputs['location'] ?? '').trim();
   if (ubicacion === '' || ubicacion === SIN_ESPECIFICAR) {
     return ok({ preparado: false, motivo: 'sin_ubicacion' } satisfies Preparacion);
+  }
+  // La persona eligió seguir sin buscar negocios reales, y lo dijo en el chat.
+  if (SIN_DATOS_REALES.test(ubicacion)) {
+    return ok({ preparado: false, motivo: 'no_quiso', ubicacion } satisfies Preparacion);
   }
   // Una región no es un lugar para Maps (`LOCATION NOT FOUND`). Se dice ANTES de gastar. Ver `mercado.ts`.
   if (esUbicacionAmplia(ubicacion)) {

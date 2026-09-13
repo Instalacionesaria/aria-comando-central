@@ -32,7 +32,7 @@ import {
 import { estadoVacio } from '../../lib/fundaciones/estado.ts';
 import { armarPromptResearch, datosDe } from '../../lib/fundaciones/prompts.ts';
 import { contextoHeredado, instruccionesDeRelleno } from '../../lib/fundaciones/relleno.ts';
-import { faltanAntesDeArrancar, instruccionesDeEntrevista, mensajeDeAperturaConPropuesta } from '../../lib/fundaciones/conversacion.ts';
+import { arranca, faltanAntesDeArrancar, instruccionesDeEntrevista, mensajeDeAperturaConPropuesta } from '../../lib/fundaciones/conversacion.ts';
 import { FUNDACIONES } from '../../lib/fundaciones/herramientas.ts';
 import { camposDe } from '../../lib/fundaciones/campos.ts';
 
@@ -241,6 +241,21 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   const apertura = mensajeDeAperturaConPropuesta(research, conRegion, {});
   assert.match(apertura, /Me falta: .*¿En qué ciudad buscar negocios reales\?/);
   assert.doesNotMatch(apertura, /· ¿En qué ciudad buscar negocios reales\? \(opcional\) Latinoamérica/);
+
+  /* Tercera vez: «ejecuta de nuevo el research por favor» → el modelo puso `listo` con la región y el
+     Research corrió. Ahora el SERVIDOR no arranca sin ciudad válida, aunque el modelo diga listo; la
+     salida explícita es «sin datos reales», que sí arranca y la mirada lee como «no quiso». */
+  const turno = (respuestas: Record<string, string>) => ({ mensaje: 'Dale, arranco.', respuestas, listo: true });
+  assert.equal(arranca(research, turno(conRegion), conRegion), false, 'arrancó con una región como ciudad');
+  assert.equal(arranca(research, turno(sinCiudad), sinCiudad), false, 'arrancó sin ciudad, sin que la persona lo decidiera');
+  const sinDatos = { ...sinCiudad, location: 'sin datos reales' };
+  assert.equal(arranca(research, turno(sinDatos), sinDatos), true, 'la salida explícita no arranca');
+  const conLima = { ...sinCiudad, location: 'Lima, Perú' };
+  assert.equal(arranca(research, turno(conLima), conLima), true);
+  assert.match(instruccionesDeEntrevista(research, conRegion, ''), /0\. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se termina/);
+  assert.match(ciudad.guia!, /anotá exactamente «sin datos reales»/);
+  const operacionesB = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
+  assert.match(operacionesB, /if \(SIN_DATOS_REALES\.test\(ubicacion\)\)[\s\S]*?motivo: 'no_quiso'/);
 });
 
 test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cuenta desde la BASE', () => {
