@@ -100,6 +100,15 @@ export function presente(valores: Record<string, string>, id: string): boolean {
 }
 
 /**
+ * Si el campo tiene una respuesta QUE SIRVE: presente y, cuando el catálogo sabe juzgarla
+ * (`valeComoRespuesta`), válida. Un valor guardado que no sirve cuenta como vacío. Ver `Campo`.
+ */
+export function respondido(campo: Campo, valores: Record<string, string>): boolean {
+  if (!presente(valores, campo.id)) return false;
+  return campo.valeComoRespuesta ? campo.valeComoRespuesta(valor(valores, campo.id)) : true;
+}
+
+/**
  * Los campos que hay que tener SÍ O SÍ y todavía están vacíos.
  *
  * ═════════════════════════════════════════════════════════════════════════════
@@ -142,7 +151,7 @@ export function obligatoriosQueFaltan(
   return camposDe(h).filter((campo) => {
     if (campo.opcional) return false;
     if (campo.valorPorOmision) return false;
-    return !presente(valores, campo.id);
+    return !respondido(campo, valores);
   });
 }
 
@@ -159,7 +168,7 @@ export function pendientesAntesDeGenerar(
   h: Herramienta,
   valores: Record<string, string>,
 ): readonly Campo[] {
-  return camposDe(h).filter((campo) => campo.pedirAntesDeGenerar && !presente(valores, campo.id));
+  return camposDe(h).filter((campo) => campo.pedirAntesDeGenerar && !respondido(campo, valores));
 }
 
 /**

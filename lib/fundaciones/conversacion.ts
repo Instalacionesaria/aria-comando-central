@@ -286,7 +286,13 @@ export function instruccionesDeEntrevista(
   const estado = campos
     .map((c) => {
       const v = respuestas[claveCorta(c.id)];
-      return `  ${claveCorta(c.id)}: ${v && v.trim() !== '' ? v : '(todavía no)'}`;
+      if (!v || v.trim() === '') return `  ${claveCorta(c.id)}: (todavía no)`;
+      /* Un valor guardado que NO sirve se marca: sin esto el agente lo daba por respondido y arrancaba
+         con «Latinoamérica (México, Colombia, …)» como ciudad. */
+      if (c.valeComoRespuesta && !c.valeComoRespuesta(v)) {
+        return `  ${claveCorta(c.id)}: ${v} ← NO VALE como respuesta (ver CÓMO TRATARLA). Volvé a preguntarla antes de dar por completas las respuestas.`;
+      }
+      return `  ${claveCorta(c.id)}: ${v}`;
     })
     .join('\n');
 
@@ -403,8 +409,12 @@ export function mensajeDeAperturaConPropuesta(
   const faltan: string[] = [];
   for (const c of camposDe(h)) {
     const k = claveCorta(c.id);
-    const g = (guardadas[k] ?? '').trim();
-    const p = (propuestas[k] ?? '').trim();
+    const sirve = (v: string) => v !== '' && (!c.valeComoRespuesta || c.valeComoRespuesta(v));
+    const g0 = (guardadas[k] ?? '').trim();
+    const p0 = (propuestas[k] ?? '').trim();
+    // Un valor que no sirve —una región como ciudad— se trata como si no estuviera.
+    const g = sirve(g0) ? g0 : '';
+    const p = sirve(p0) ? p0 : '';
     if (g !== '') lineas.push(`· ${c.etiqueta} ${g}`);
     else if (p !== '') lineas.push(`· ${c.etiqueta} ${p} (lo deduje de lo anterior)`);
     /* Las `pedirAntesDeGenerar` entran en «Me falta» aunque sean opcionales: es la única forma de

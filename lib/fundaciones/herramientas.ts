@@ -25,6 +25,8 @@
 // haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { esUbicacionAmplia } from './mercado.ts';
+
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
 
 export interface OpcionCampo {
@@ -70,6 +72,14 @@ export interface Campo {
    * región propuesta— y la mirada al mercado se omitía sin que nadie hubiera podido decir «Lima».
    */
   pedirAntesDeGenerar?: boolean;
+  /**
+   * Si un valor sirve como respuesta. Un valor guardado que no sirve se trata como VACÍO en todos
+   * lados: el agente lo vuelve a preguntar, la apertura lo pone en «Me falta» y el arranque
+   * automático no lo cuenta. Entró con Allpa (2026-09-13): la ubicación «Latinoamérica (México,
+   * Colombia, …)» había quedado guardada de una conversación anterior, y la regla de «preguntar
+   * antes de arrancar» solo miraba las vacías: pasó como respuesta y el Research arrancó igual.
+   */
+  valeComoRespuesta?: (valor: string) => boolean;
 }
 
 export interface FilaDeCampos {
@@ -234,6 +244,7 @@ const RESEARCH: Herramienta = {
           marcador: 'Ej: Lima, Perú · San Juan, Puerto Rico · Ciudad de México',
           opcional: true,
           pedirAntesDeGenerar: true,
+          valeComoRespuesta: (v) => !esUbicacionAmplia(v),
           guia:
             'Tiene que ser un lugar concreto donde buscar negocios: una ciudad o región DENTRO de un país, ' +
             'con el país (ej: «Lima, Perú», «Guadalajara, México»). NUNCA una región de varios países ni ' +

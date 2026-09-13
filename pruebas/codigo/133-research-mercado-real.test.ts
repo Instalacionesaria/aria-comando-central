@@ -231,6 +231,16 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.match(operaciones, /!faltanObligatorias\(h, chat\.answers\) &&\s*!faltanAntesDeArrancar\(h, chat\.answers\)/);
   // Pero sigue siendo opcional para GENERAR: si la persona dice «seguí sin ciudad», se genera.
   assert.equal(ciudad.opcional, true);
+
+  /* Y una región GUARDADA cuenta como vacía. Allpa, segunda vez: la ubicación «Latinoamérica (…)»
+     venía de la conversación anterior, la regla solo miraba las vacías, y el Research arrancó sin
+     preguntar nada. Ahora el agente la ve marcada, la apertura la pide, y el arranque no la cuenta. */
+  const conRegion = { ...sinCiudad, location: 'Latinoamérica (México, Colombia, Perú, Ecuador, Argentina)' };
+  assert.equal(faltanAntesDeArrancar(research, conRegion), true);
+  assert.match(instruccionesDeEntrevista(research, conRegion, ''), /Latinoamérica \(México[^\n]*← NO VALE como respuesta/);
+  const apertura = mensajeDeAperturaConPropuesta(research, conRegion, {});
+  assert.match(apertura, /Me falta: .*¿En qué ciudad buscar negocios reales\?/);
+  assert.doesNotMatch(apertura, /· ¿En qué ciudad buscar negocios reales\? \(opcional\) Latinoamérica/);
 });
 
 test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cuenta desde la BASE', () => {
