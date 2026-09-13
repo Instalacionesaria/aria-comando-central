@@ -65,6 +65,12 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
   usuarios_org_id_fkey: 'todavía tiene personas dadas de alta',
   contactos_org_id_fkey: 'tiene contactos cargados',
+  /* La historia de zona de los contactos. En la práctica NUNCA bloquea sola: su otra clave —la que
+     apunta al contacto— cascadea, así que estas filas se van con el contacto, y `contactos` frena el
+     borrado antes. Esta traducción es el tirante, y está porque la prueba de esta misma lista lo
+     exige para TODA clave que pueda bloquear: sin ella el rechazo diría «tiene historial» sin decir
+     cuál, que es justo el mensaje genérico que esta lista existe para evitar. */
+  cambios_de_territorio_org_id_fkey: 'tiene historial de zonas de sus contactos',
   citas_org_id_fkey: 'tiene citas registradas',
   llamadas_org_id_fkey: 'tiene llamadas registradas',
   mensajes_org_id_fkey: 'tiene conversaciones registradas',

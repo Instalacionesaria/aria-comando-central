@@ -1063,3 +1063,157 @@ test('DEFECTO DOCUMENTADO · «UTC elegida» y «nadie la eligió» se guardan i
   );
   assert.match(omision?.omision ?? '', /UTC/);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL HISTORIAL DE ZONA (migración 047) — el único dato que no se puede volver a pedir
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** La historia de zona de un contacto, de lo más viejo a lo más nuevo. */
+async function laHistoria(org: string, ghlId: string): Promise<Record<string, unknown>[]> {
+  return conOrganizacion(org, async () => {
+    const c = await datos()
+      .selectFrom('contactos')
+      .select('id')
+      .where('ghl_contact_id', '=', ghlId)
+      .executeTakeFirstOrThrow();
+    return datos()
+      .selectFrom('cambios_de_territorio')
+      .select(['territorio_anterior', 'territorio_nuevo', 'que_paso', 'detectado_el'])
+      .where('contacto_id', '=', c.id)
+      .orderBy('detectado_el')
+      .execute();
+  }) as Promise<Record<string, unknown>[]>;
+}
+
+test('el alta del contacto queda archivada, y es lo que fija su piso', async () => {
+  /* Sin la fila de alta, «no hay filas» sería ambiguo entre «nació sin zona» y «es anterior a la
+     047» — y una migración no puede sembrarla, porque el migrador ve cero filas bajo RLS forzada.
+     Con ella, la ausencia de fila `alta` significa exactamente una cosa. */
+  const ghlId = idDeGhl();
+  preparar(porEtiqueta({ zona_setter: [{ id: ghlId, contactName: 'Alta del setter', tags: ['zona_setter'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.equal(h.length, 1, 'el alta del contacto no quedó archivada');
+  assert.equal(h[0]?.que_paso, 'alta');
+  assert.equal(h[0]?.territorio_anterior, null, 'un alta no tiene zona anterior: no había contacto');
+  assert.equal(h[0]?.territorio_nuevo, 'setter');
+});
+
+test('EL HECHO SIN OTRO TESTIGO: congelarse queda archivado, y dice de qué zona salió', async () => {
+  /* ── POR QUÉ ÉSTA ES LA PRUEBA QUE MÁS IMPORTA ────────────────────────────
+   *
+   * `congelarLosQueYaNoEstan` pone el territorio en nulo y **no toca las etiquetas**, así que no hay
+   * cita que lo feche ni etiqueta que lo nombre. Sin esta tabla, de un contacto sin zona no se puede
+   * distinguir un ex-closer —un lead que ya estaba en la agenda— de un ex-setter, y son dos hechos
+   * muy distintos para quien ve bajar su cartera.
+   *
+   * Y el derivado que parecía taparlo se destruye al mirarlo: `sincronizado_el` se pisa en cada
+   * pasada, y abrir la ficha lo pisa también. */
+  const ghlId = idDeGhl();
+  preparar(porEtiqueta({ zona_closer: [{ id: ghlId, contactName: 'El que se congela', tags: ['zona_closer'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  // La pasada siguiente: el contacto ya no aparece en ninguna de las dos búsquedas, pero SÍ hay otros
+  // —el congelado no corre si la traída vino vacía, y eso es a propósito—.
+  const otro = idDeGhl();
+  preparar(porEtiqueta({ zona_setter: [{ id: otro, contactName: 'Otro cualquiera', tags: ['zona_setter'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.equal(h.length, 2, 'el congelamiento no quedó archivado');
+  assert.equal(h[1]?.que_paso, 'congelado');
+  assert.equal(
+    h[1]?.territorio_anterior,
+    'closer',
+    'se perdió DE QUÉ ZONA salió: un ex-closer y un ex-setter congelados quedan indistinguibles',
+  );
+  assert.equal(h[1]?.territorio_nuevo, null);
+});
+
+test('el cruce de setter a closer queda como `traspaso`, con las dos zonas', async () => {
+  const ghlId = idDeGhl();
+  preparar(porEtiqueta({ zona_setter: [{ id: ghlId, contactName: 'El que cruza', tags: ['zona_setter'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  preparar(porEtiqueta({ zona_closer: [{ id: ghlId, contactName: 'El que cruza', tags: ['zona_closer'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.equal(h.length, 2);
+  assert.equal(h[1]?.que_paso, 'traspaso');
+  assert.equal(h[1]?.territorio_anterior, 'setter');
+  assert.equal(h[1]?.territorio_nuevo, 'closer');
+});
+
+test('una pasada que NO mueve la zona no escribe nada: 584 contactos cada 10 minutos', async () => {
+  /* El `when` del disparador, y es lo que impide que esto sea un problema peor que el que resuelve.
+     El `do update` de la sincronización no tiene guarda —`sincronizado_el` cambia siempre— así que
+     las 584 filas se actualizan en CADA pasada: ~84.000 por día. Sin el `when`, otras tantas filas de
+     historial diciendo que nadie se movió. */
+  const ghlId = idDeGhl();
+  const mismo = porEtiqueta({ zona_setter: [{ id: ghlId, contactName: 'El que no se mueve', tags: ['zona_setter'] } as never] });
+
+  preparar(mismo);
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+  preparar(mismo);
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+  preparar(mismo);
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.equal(
+    h.length,
+    1,
+    'tres pasadas sin cambio escribieron más de la fila de alta: falta el `when` del disparador',
+  );
+});
+
+test('el DESORDEN de las etiquetas no fabrica un cambio de zona', async () => {
+  /* Medido el 2026-09-13 contra producción: de 576 contactos con más de una etiqueta, sólo 129 tienen
+     el arreglo ordenado — el 22 %, o sea azar. **El CRM devuelve las etiquetas en orden arbitrario.**
+     Por eso el `when` mira la columna derivada y escalar y NO el arreglo: mirándolo, cada
+     reordenamiento fabricaría una transición que nunca ocurrió, sobre 584 contactos cada diez
+     minutos. */
+  const ghlId = idDeGhl();
+  preparar(porEtiqueta({
+    zona_setter: [{ id: ghlId, contactName: 'El desordenado', tags: ['zona_setter', 'cliente', 'vip'] } as never],
+  }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  // Las MISMAS etiquetas, en otro orden. Es lo que el proveedor hace solo.
+  preparar(porEtiqueta({
+    zona_setter: [{ id: ghlId, contactName: 'El desordenado', tags: ['vip', 'zona_setter', 'cliente'] } as never],
+  }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.equal(
+    h.length,
+    1,
+    'reordenar las etiquetas fabricó un cambio de zona: el `when` está mirando el arreglo en vez de ' +
+      'la columna derivada',
+  );
+});
+
+test('volver de un congelamiento se distingue de un alta: es `descongelado`', async () => {
+  /* Las dos tienen `territorio_anterior` nulo, así que sin `que_paso` serían la misma fila — y son
+     hechos opuestos: uno es un contacto nuevo, el otro es uno que volvió. */
+  const ghlId = idDeGhl();
+  preparar(porEtiqueta({ zona_setter: [{ id: ghlId, contactName: 'El que vuelve', tags: ['zona_setter'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const otro = idDeGhl();
+  preparar(porEtiqueta({ zona_closer: [{ id: otro, contactName: 'Relleno', tags: ['zona_closer'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  preparar(porEtiqueta({ zona_setter: [{ id: ghlId, contactName: 'El que vuelve', tags: ['zona_setter'] } as never] }));
+  await conOrganizacion(esc.org, () => sincronizarContactos(ACCESO));
+
+  const h = await laHistoria(esc.org, ghlId);
+  assert.deepEqual(
+    h.map((f) => f.que_paso),
+    ['alta', 'congelado', 'descongelado'],
+    'la vuelta de un congelamiento no se distingue de un alta',
+  );
+});

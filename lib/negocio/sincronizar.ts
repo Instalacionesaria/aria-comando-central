@@ -278,6 +278,11 @@ export async function sincronizarContactos(acceso: {
  * transacción. Este archivo no lo nombra ni una vez, que es la propiedad que se busca.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
+/* El congelamiento queda ARCHIVADO, y no hay una línea acá que lo haga: lo hace el disparador de la
+   migración `047` sobre `negocio.contactos`. Es el hecho con menos sustitutos de todo el módulo —acá
+   se pone el territorio en nulo y **no se tocan las etiquetas**, así que sin esa tabla no queda rastro
+   de cuándo ocurrió ni de qué zona salió el contacto—. Y el derivado que parecía taparlo no sirve:
+   `guardar()` pisa `sincronizado_el` en cada pasada, y abrir la ficha lo pisa también. */
 export async function congelarLosQueYaNoEstan(
   vistos: ReadonlySet<string>,
   truncado: boolean,

@@ -799,6 +799,33 @@ export interface TablaVersionesDelPrompt {
   que_siguio: 'otra_version' | 'nada';
 }
 
+/**
+ * Cuándo un contacto cambió de zona, y de cuál a cuál. **La escriben dos disparadores sobre
+ * `negocio.contactos` (migración `047`), nunca el código.**
+ *
+ * Es el único dato de este proyecto que NO se puede volver a pedir: GoHighLevel tampoco guarda
+ * historia de etiquetas. Todo lo demás que falta —las citas fuera de la ventana, el alta del
+ * contacto, los campos del CRM— sigue allá y se trae cualquier día.
+ *
+ * **Sin fila `alta` para un contacto significa que ese contacto es anterior a la `047`**, nunca que
+ * nació sin zona: una migración no puede sembrar filas de inquilino (regla de la `040`).
+ *
+ * El hecho con menos sustitutos es `congelado`: `congelarLosQueYaNoEstan` pone el territorio en nulo
+ * y no toca las etiquetas, así que sin esta tabla no queda ni rastro de cuándo ni de qué zona salió.
+ */
+export interface TablaCambiosDeTerritorio {
+  id: Generated<string>;
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  /** Nulo = no había contacto (en un `alta`) o estaba congelado. Lo desambigua `que_paso`. */
+  territorio_anterior: 'closer' | 'setter' | null;
+  /** Nulo = se congeló. */
+  territorio_nuevo: 'closer' | 'setter' | null;
+  que_paso: 'alta' | 'traspaso' | 'congelado' | 'descongelado';
+  /** El arranque de la pasada que lo detectó, no el segundo exacto del cambio. */
+  detectado_el: Generated<Date>;
+}
+
 export interface TablaPromptsDelAgente {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1107,6 +1134,7 @@ export interface BaseDeDatos {
   notas: TablaNotas;
   hallazgos: TablaHallazgos;
   analisis_del_agente: TablaAnalisisDelAgente;
+  cambios_de_territorio: TablaCambiosDeTerritorio;
   prompts_del_agente: TablaPromptsDelAgente;
   versiones_del_prompt: TablaVersionesDelPrompt;
   enlaces_rapidos: TablaEnlacesRapidos;
