@@ -452,6 +452,19 @@ export interface TablaCitas {
    */
   reservada_el: Date | null;
   /**
+   * El estado que la cita tenía antes del último cambio, y cuándo cambió.
+   *
+   * Es lo que separa dos hechos que sin esto se ven iguales: una cita cancelada **el día que se
+   * reservó** —ruido de agenda— y una cancelada **una hora antes de empezar**, que es un plantón
+   * anunciado. Con sólo `estado_ghl`, las dos son `cancelled` y cualquier tasa las suma.
+   *
+   * Nulas en las citas anteriores a la migración `045` y en las que no cambiaron de estado desde
+   * entonces. **El nulo es «no se sabe cuándo», nunca «no cambió»**: una cita que ya estaba
+   * cancelada y que nadie tocó más no se llena nunca.
+   */
+  estado_anterior_ghl: string | null;
+  estado_cambiado_el: Date | null;
+  /**
    * La hora que la cita tenía antes del último movimiento que vimos. Nuestra, no del CRM: la
    * escribe el `do update` leyendo la fila vieja en la misma sentencia que la pisa.
    *

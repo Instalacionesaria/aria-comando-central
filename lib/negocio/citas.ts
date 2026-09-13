@@ -366,6 +366,30 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
                  then citas.inicio_el
                  else citas.inicio_anterior_el end`,
 
+          /* ── Y EL ESTADO, QUE ES EL MISMO PATRÓN EN LA COLUMNA DE AL LADO ────
+           *
+           * `estado_ghl` se sigue pisando arriba, que está bien: es el estado VIGENTE. Lo que
+           * faltaba es el rastro, y sin él la tabla sabe que una cita está cancelada y no sabe
+           * cuándo se canceló — o sea que una cancelada el día que se reservó y una cancelada una
+           * hora antes de empezar son el mismo dato. La segunda es un plantón anunciado y es lo
+           * que el agente de Appointment Flow existe para evitar.
+           *
+           * La guarda `when` es la misma lección de `inicio_anterior_el` y evita el mismo
+           * artefacto: sin ella, cada pasada horaria del barrido marcaría TODAS las citas como
+           * recién cambiadas, y la cifra sería el reloj del cron y no un hecho del negocio.
+           *
+           * `is distinct from` y no `<>`, y acá SÍ se puede ejercitar: `estado_ghl` es nulable
+           * —es «el CRM no lo dijo»— así que con `<>` la transición de nulo a `cancelled` daría
+           * nulo, caería al `else`, y no se registraría nunca. */
+          estado_anterior_ghl: sql`
+            case when citas.estado_ghl is distinct from excluded.estado_ghl
+                 then citas.estado_ghl
+                 else citas.estado_anterior_ghl end`,
+          estado_cambiado_el: sql`
+            case when citas.estado_ghl is distinct from excluded.estado_ghl
+                 then now()
+                 else citas.estado_cambiado_el end`,
+
           sincronizado_el: valores.sincronizado_el,
         } as never),
       )

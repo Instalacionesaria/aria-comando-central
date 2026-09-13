@@ -1001,7 +1001,15 @@ async function comoQuedo(eventoId: string): Promise<Record<string, unknown> | un
   return conOrganizacion(alfa, async () =>
     datos()
       .selectFrom('citas')
-      .select(['inicio_el', 'reagendada_el', 'crm_asignado_a', 'inicio_anterior_el', 'reservada_el'])
+      .select([
+        'inicio_el',
+        'reagendada_el',
+        'crm_asignado_a',
+        'inicio_anterior_el',
+        'reservada_el',
+        'estado_anterior_ghl',
+        'estado_cambiado_el',
+      ])
       .where('ghl_evento_id', '=', eventoId)
       .executeTakeFirst(),
   ) as Promise<Record<string, unknown> | undefined>;
@@ -1192,4 +1200,85 @@ test('un barrido sin la fecha de reserva NO borra la que ya teníamos', async ()
     reservadaEl.toISOString(),
     'un barrido sin el campo borró la fecha de reserva: falta el `coalesce` del `do update`',
   );
+});
+
+test('cancelar una cita deja CUÁNDO se canceló y qué era antes', async () => {
+  /* El defecto que cierra: con sólo `estado_ghl`, una cita cancelada el día que se reservó y una
+     cancelada una hora antes de empezar son el mismo dato. La segunda es un plantón anunciado — lo
+     que el agente de Appointment Flow existe para evitar — y hoy no se puede distinguir.
+     Medido en producción el 2026-09-13: 160 de 316 citas canceladas, y ninguna se puede fechar. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-estado', marca, cuando)] }));
+  assert.equal(
+    (await comoQuedo('ev-estado'))?.estado_cambiado_el,
+    null,
+    'la primera vez que se ve una cita no es un cambio de estado',
+  );
+
+  await liberarPulso();
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-estado', marca, cuando, { estado: 'cancelled' })],
+  }));
+
+  const f = await comoQuedo('ev-estado');
+  assert.equal(f?.estado_anterior_ghl, 'confirmed', 'no quedó el estado que tenía antes');
+  assert.ok(f?.estado_cambiado_el, 'no quedó CUÁNDO cambió: la cancelación no se puede fechar');
+});
+
+test('un barrido que NO cambia el estado no inventa un cambio', async () => {
+  /* La guarda `when`, y es la misma lección que ya pagó `inicio_anterior_el`: el barrido corre una
+     vez por hora sobre las mismas citas. Sin ella, cada pasada marcaría TODAS como recién
+     cambiadas y la cifra sería el reloj del cron, no un hecho del negocio. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-quieto', marca, cuando, { estado: 'cancelled' })],
+  }));
+  await liberarPulso();
+  // Exactamente la misma cita, otra vez. Es lo que hace el cron cada hora.
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-quieto', marca, cuando, { estado: 'cancelled' })],
+  }));
+
+  assert.equal(
+    (await comoQuedo('ev-quieto'))?.estado_cambiado_el,
+    null,
+    'el barrido marcó como cambiada una cita cuyo estado no cambió: falta la guarda `is distinct from`',
+  );
+});
+
+test('la transición desde SIN ESTADO también se registra', async () => {
+  /* El caso que `<>` perdería y `is distinct from` atrapa. `estado_ghl` es nulable —es «el CRM no lo
+     dijo»— así que con `<>` la comparación daría nulo, el `case` caería al `else`, y una cita que
+     pasa de sin estado a cancelada no dejaría rastro. A diferencia de `inicio_anterior_el`, donde la
+     columna es `not null` y esto no se podía ejercitar, acá sí. */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-nulo', marca, cuando, { estado: null })],
+  }));
+  await liberarPulso();
+  await barrerCitas(alfa, ACCESO, lectores(cal, {
+    a: [delCrm('ev-nulo', marca, cuando, { estado: 'cancelled' })],
+  }));
+
+  const f = await comoQuedo('ev-nulo');
+  assert.ok(
+    f?.estado_cambiado_el,
+    'la transición de «sin estado» a cancelada no se registró: el `case` usa `<>` en vez de `is distinct from`',
+  );
+  assert.equal(f?.estado_anterior_ghl, null, 'el estado anterior era nulo y así tiene que quedar');
 });
