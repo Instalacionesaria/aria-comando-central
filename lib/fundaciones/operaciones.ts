@@ -354,8 +354,12 @@ export async function generarElDocumento(
        nueva corre después de éste. Si se conservara, los pasos 2 al 5 leerían como «datos
        observados» los ceros de una corrida vieja —Allpa (2026-09-13): «0 negocios en Google Maps ·
        Latinoamérica» dibujado debajo de un Research que estaba buscando en Arequipa. */
-    const mercado = paso === 0 ? null : estado.datos.researchMercado;
-    const guardado = await guardarResearch(acceso.orgId, inputs, proximas, mercado);
+    const guardado = await guardarResearch(
+      acceso.orgId,
+      inputs,
+      proximas,
+      paso === 0 ? null : estado.datos.researchMercado,
+    );
     if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
     return ok({
