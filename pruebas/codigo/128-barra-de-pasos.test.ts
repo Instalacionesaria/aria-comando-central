@@ -236,7 +236,9 @@ test('«Continuar al paso N» ARMA el paso: reabre, propone y genera si alcanza,
   assert.match(research, /generarAlAbrir=\{!!rellenarAlLlegar && !!soloChat && hechos === 0\}/);
 
   const operaciones = codigo('lib/fundaciones/operaciones.ts');
-  assert.match(operaciones, /const arrancaSolo = recienAbierta && generar && !faltanObligatorias\(h, chat\.answers\);/);
+  /* Y no arranca solo con una pregunta `pedirAntesDeGenerar` vacía (la ciudad del Research): se queda en
+     el saludo que pregunta. Ver la 133. */
+  assert.match(operaciones, /const arrancaSolo =\s*recienAbierta &&\s*generar &&\s*!faltanObligatorias\(h, chat\.answers\) &&\s*!faltanAntesDeArrancar\(h, chat\.answers\);/);
   assert.match(operaciones, /listo: arrancaSolo/);
   // Sin `generar`, la apertura sigue proponiendo y esperando: entrar por la pestaña no gasta una generación.
   assert.ok(!/listo: true/.test(operaciones), 'la apertura genera aunque nadie haya venido por el método');

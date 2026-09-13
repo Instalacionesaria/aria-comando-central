@@ -67,6 +67,7 @@ import {
   arranca,
   chatVacio,
   conversar,
+  faltanAntesDeArrancar,
   faltanObligatorias,
   mensajeDeApertura,
   mensajeDeAperturaConEntregable,
@@ -614,7 +615,13 @@ export async function conversarConElAgente(
        no propone ni pregunta, avisa qué usa— y `listo` sale en true para que la pantalla genere. Si
        falta algo, se queda el saludo que propone y pregunta: generar con un obligatorio vacío es el
        research genérico que `exigeSusCampos` existe para impedir. */
-    const arrancaSolo = recienAbierta && generar && !faltanObligatorias(h, chat.answers);
+    /* Y tampoco arranca solo con una pregunta `pedirAntesDeGenerar` vacía —la ciudad del Research—:
+       se queda en el saludo que propone y pregunta, y la persona decide si sigue sin ella. */
+    const arrancaSolo =
+      recienAbierta &&
+      generar &&
+      !faltanObligatorias(h, chat.answers) &&
+      !faltanAntesDeArrancar(h, chat.answers);
     if (arrancaSolo) {
       chat = { ...chat, messages: [{ role: 'assistant', content: mensajeDeArranque(h, chat.answers) }] };
     }

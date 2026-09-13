@@ -55,6 +55,21 @@ export interface Campo {
    * la única forma de que no se contradigan es que no se puedan poner una sin la otra.
    */
   opcional?: boolean;
+  /**
+   * Cómo tratar esta pregunta: qué vale como respuesta, cómo proponerla desde el contexto y cómo
+   * preguntarla. La leen el agente (al preguntar) y el relleno (al proponer), y por eso vive en el
+   * catálogo y no en el prompt de uno de los dos: si viviera en uno solo, el otro contradiría a la
+   * persona. Entró con la ubicación del Research —Kevin (2026-09-13): «eso de la región debería
+   * aparecer previamente, en el chat, y recomendarle comenzar por su país».
+   */
+  guia?: string;
+  /**
+   * Opcional para el entregable, pero el agente la pregunta ANTES de arrancar solo. Es distinto de
+   * `opcional`: una pregunta opcional se deja pasar; ésta se deja pasar solo si la persona lo
+   * decide. Sin la bandera, «Continuar al paso N» arrancaba con la ubicación vacía —o con una
+   * región propuesta— y la mirada al mercado se omitía sin que nadie hubiera podido decir «Lima».
+   */
+  pedirAntesDeGenerar?: boolean;
 }
 
 export interface FilaDeCampos {
@@ -218,6 +233,19 @@ const RESEARCH: Herramienta = {
           tipo: 'texto',
           marcador: 'Ej: Lima, Perú · San Juan, Puerto Rico · Ciudad de México',
           opcional: true,
+          pedirAntesDeGenerar: true,
+          guia:
+            'Tiene que ser un lugar concreto donde buscar negocios: una ciudad o región DENTRO de un país, ' +
+            'con el país (ej: «Lima, Perú», «Guadalajara, México»). NUNCA una región de varios países ni ' +
+            '«Latinoamérica»: eso no se puede buscar y no vale como respuesta. Para PROPONERLA desde el ' +
+            'contexto: solo si el onboarding dice una ciudad o un país concreto; si dice una región o ' +
+            '«en general», va vacía. Para PREGUNTARLA: recomendale empezar por SU país —si el onboarding, ' +
+            'el sitio web o el prefijo del teléfono lo dicen, nombralo— y pedile la ciudad o región donde ' +
+            'vive o vende. Si no está claro, preguntale con qué país quiere empezar a extraer leads y en ' +
+            'qué ciudad. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
+            'extracción de negocios reales arranca en un solo lugar, hasta 100 negocios, que quedan en ' +
+            'Tools → Mis Leads; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ' +
+            'termine el Research.',
         },
       ],
     },

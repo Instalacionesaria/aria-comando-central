@@ -47,7 +47,7 @@
 
 import { pedirExterno } from '../http/cliente.ts';
 import { VERSION_DEL_AGENTE } from './version-del-agente.ts';
-import { camposDe, claveCorta, obligatoriosQueFaltan } from './campos.ts';
+import { camposDe, claveCorta, obligatoriosQueFaltan, pendientesAntesDeGenerar } from './campos.ts';
 import { MODELO } from './generacion.ts';
 import type { Campo, Herramienta } from './herramientas.ts';
 import type { ChatDeHerramienta, MensajeDeChat } from './estado.ts';
@@ -236,7 +236,12 @@ function lineaDePregunta(campo: Campo, n: number): string {
     partes.push(`   Ejemplo de respuesta: ${campo.marcador}`);
   }
 
-  if (campo.opcional) {
+  if (campo.opcional && campo.pedirAntesDeGenerar) {
+    partes.push(
+      '   OPCIONAL, PERO SE PREGUNTA: hacé la pregunta como dice CÓMO TRATARLA antes de dar por ' +
+        'completas las respuestas. Si la persona prefiere seguir sin ella, se sigue.',
+    );
+  } else if (campo.opcional) {
     partes.push('   OPCIONAL: preguntala una vez; si no la sabe o no le interesa, seguí de largo.');
   } else if (campo.valorPorOmision) {
     partes.push(
@@ -245,6 +250,8 @@ function lineaDePregunta(campo: Campo, n: number): string {
   } else {
     partes.push('   Si no la sabe, se deja vacía: el entregable la marca como pendiente.');
   }
+  // La guía va al final: la prueba 125 lee las tres primeras líneas del bloque para lo opcional.
+  if (campo.guia) partes.push(`   CÓMO TRATARLA: ${campo.guia}`);
   return partes.join('\n');
 }
 
@@ -400,7 +407,9 @@ export function mensajeDeAperturaConPropuesta(
     const p = (propuestas[k] ?? '').trim();
     if (g !== '') lineas.push(`· ${c.etiqueta} ${g}`);
     else if (p !== '') lineas.push(`· ${c.etiqueta} ${p} (lo deduje de lo anterior)`);
-    else if (!c.opcional) faltan.push(c.etiqueta);
+    /* Las `pedirAntesDeGenerar` entran en «Me falta» aunque sean opcionales: es la única forma de
+       que la apertura las pregunte en vez de arrancar sin ellas. Ver `campos.ts`. */
+    else if (!c.opcional || c.pedirAntesDeGenerar) faltan.push(c.etiqueta);
   }
 
   /* «Con lo que ya sé de tu negocio» y no «con lo que ya construiste antes»: para «Tu ficha» lo
@@ -499,6 +508,11 @@ function cambiaron(
 /** ¿Falta alguna respuesta sin la que el entregable no se sostiene? */
 export function faltanObligatorias(h: Herramienta, respuestas: Record<string, string>): boolean {
   return obligatoriosQueFaltan(h, porIdDeCampo(h, respuestas)).length > 0;
+}
+
+/** Si queda vacía alguna pregunta que se hace ANTES de arrancar solo (`pedirAntesDeGenerar`). */
+export function faltanAntesDeArrancar(h: Herramienta, respuestas: Record<string, string>): boolean {
+  return pendientesAntesDeGenerar(h, porIdDeCampo(h, respuestas)).length > 0;
 }
 
 /**

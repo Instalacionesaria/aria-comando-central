@@ -31,7 +31,8 @@ import {
 } from '../../lib/fundaciones/mercado.ts';
 import { estadoVacio } from '../../lib/fundaciones/estado.ts';
 import { armarPromptResearch, datosDe } from '../../lib/fundaciones/prompts.ts';
-import { contextoHeredado } from '../../lib/fundaciones/relleno.ts';
+import { contextoHeredado, instruccionesDeRelleno } from '../../lib/fundaciones/relleno.ts';
+import { faltanAntesDeArrancar, instruccionesDeEntrevista, mensajeDeAperturaConPropuesta } from '../../lib/fundaciones/conversacion.ts';
 import { FUNDACIONES } from '../../lib/fundaciones/herramientas.ts';
 import { camposDe } from '../../lib/fundaciones/campos.ts';
 
@@ -199,6 +200,37 @@ test('una región no es un lugar: la mirada se omite ANTES de gastar y dice qué
   const vacio = resumirAnuncios('t', { data: [{ title: '', page_name: '', page_id: null, body_text: '', ad_library_url: 'https://…' }] });
   assert.equal(vacio.total, 0);
   assert.equal(vacio.anunciantes, 0);
+});
+
+test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de la persona y dice dónde quedan los leads', () => {
+  /* Kevin (2026-09-13): «eso de la región debería aparecer previamente, en el chat, y recomendarle
+     comenzar haciendo scrapeo desde su país… si no lo tenemos claro, que nos diga por cuál país le
+     gustaría empezar… y luego le indicas dónde podrá encontrar los leads (Mis Leads)». */
+  const research = FUNDACIONES.find((h) => h.id === 1)!;
+  const ciudad = camposDe(research).find((c) => c.id === 'mr-location')!;
+  assert.equal(ciudad.pedirAntesDeGenerar, true);
+  assert.ok(ciudad.guia);
+  assert.match(ciudad.guia, /NUNCA una región de varios países ni «Latinoamérica»/);
+  assert.match(ciudad.guia, /empezar por SU país/);
+  assert.match(ciudad.guia, /con qué país quiere empezar a extraer leads/);
+  assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Tools → Mis Leads/);
+  assert.match(ciudad.guia, /en esta misma pestaña cuando termine el Research/);
+
+  // La guía llega al agente Y al relleno: los dos la leen del catálogo.
+  const entrevista = instruccionesDeEntrevista(research, {}, '');
+  assert.match(entrevista, /CÓMO TRATARLA: Tiene que ser un lugar concreto/);
+  assert.match(entrevista, /OPCIONAL, PERO SE PREGUNTA/);
+  assert.match(instruccionesDeRelleno(research, 'contexto'), /Cómo tratarla: Tiene que ser un lugar concreto/);
+
+  // Sin ciudad, «Continuar al paso 2» NO arranca solo: la apertura la pide. Con ciudad, sí.
+  const sinCiudad = { niche: 'inmobiliarias', ltv: '$3,000+', experience: 'x' };
+  assert.equal(faltanAntesDeArrancar(research, sinCiudad), true);
+  assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Lima, Perú' }), false);
+  assert.match(mensajeDeAperturaConPropuesta(research, sinCiudad, {}), /Me falta: .*¿En qué ciudad buscar negocios reales\? \(opcional\)/);
+  const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
+  assert.match(operaciones, /!faltanObligatorias\(h, chat\.answers\) &&\s*!faltanAntesDeArrancar\(h, chat\.answers\)/);
+  // Pero sigue siendo opcional para GENERAR: si la persona dice «seguí sin ciudad», se genera.
+  assert.equal(ciudad.opcional, true);
 });
 
 test('las dos puntas del servidor: preparar pide el rubro al modelo; resumir cuenta desde la BASE', () => {

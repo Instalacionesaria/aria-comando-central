@@ -147,6 +147,22 @@ export function obligatoriosQueFaltan(
 }
 
 /**
+ * Las preguntas que el agente tiene que hacer ANTES de arrancar solo, y están vacías.
+ *
+ * Son las marcadas `pedirAntesDeGenerar`: opcionales para el entregable —`obligatoriosQueFaltan`
+ * no las cuenta y un «sí» de la persona genera sin ellas— pero no para el arranque automático de
+ * «Continuar al paso N». Kevin (2026-09-13), con la mirada al mercado omitida por una región:
+ * *«eso debería aparecer previamente, en el chat»*. Con esto el chat se detiene, pregunta, y la
+ * persona decide; sin esto arrancaba y la pregunta nunca existía.
+ */
+export function pendientesAntesDeGenerar(
+  h: Herramienta,
+  valores: Record<string, string>,
+): readonly Campo[] {
+  return camposDe(h).filter((campo) => campo.pedirAntesDeGenerar && !presente(valores, campo.id));
+}
+
+/**
  * Los valores con el `valorPorOmision` puesto donde el campo quedó vacío.
  *
  * El formulario hace esto al abrirse —por eso «Compradores potenciales mínimos» ya dice `50,000+`

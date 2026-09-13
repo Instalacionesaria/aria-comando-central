@@ -144,10 +144,11 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
   const preguntas = camposDe(h)
     .map((c, i) => {
       const linea = `${i + 1}. [${claveCorta(c.id)}] ${c.etiqueta}`;
+      const guia = c.guia ? `\n   Cómo tratarla: ${c.guia}` : '';
       if (c.tipo === 'lista' && c.opciones && c.opciones.length > 0) {
-        return `${linea}\n   Elegir uno de: ${c.opciones.map((o) => `"${o.valor}"`).join(', ')}`;
+        return `${linea}\n   Elegir uno de: ${c.opciones.map((o) => `"${o.valor}"`).join(', ')}${guia}`;
       }
-      return c.marcador ? `${linea}\n   Ejemplo del formato esperado: ${c.marcador}` : linea;
+      return (c.marcador ? `${linea}\n   Ejemplo del formato esperado: ${c.marcador}` : linea) + guia;
     })
     .join('\n');
 
