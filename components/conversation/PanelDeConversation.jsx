@@ -155,7 +155,11 @@ export default function PanelDeConversation() {
       </div>
 
       {FLUJOS[sub] ? (
-        <Flujo flujo={FLUJOS[sub]} noAudita={pantalla?.noAudita ?? null} />
+        <Flujo
+          flujo={FLUJOS[sub]}
+          noAudita={pantalla?.noAudita ?? null}
+          cancelacion={sub === 'appflow' ? (pantalla?.cancelacion ?? null) : null}
+        />
       ) : (
         <Cuerpo
           cargando={cargando}
@@ -170,6 +174,39 @@ export default function PanelDeConversation() {
         />
       )}
     </>
+  );
+}
+
+/**
+ * La tasa de cancelación, con lo que quedó afuera.
+ *
+ * ── LA REGLA DE SILENCIO, QUE ES LO QUE HACE QUE EL AVISO SIGNIFIQUE ALGO ──
+ *
+ * `c.aviso` es `null` cuando no hay nada que advertir, y entonces **acá no se dibuja nada**. Es la
+ * misma forma que ya usa la frescura del barrido, y la eligió una medición: una fracción de
+ * cobertura puesta siempre —«184 de 316»— sería una advertencia permanente encima de una cifra
+ * correcta, y un aviso que aparece siempre se aprende a ignorar.
+ *
+ * Y `tasa` nula **no se dibuja como 0 %**: un cero con cero citas afirma «no se cancela ninguna»,
+ * que es una afirmación sobre el negocio hecha sin datos. Se dibuja el guion que esta aplicación ya
+ * usa para «no se sabe», y el motivo va en el aviso.
+ */
+function Cancelacion({ c }) {
+  return (
+    <div className="cs-cifra">
+      <p className="cs-cifra-cab">
+        <b>Cancelación</b> <span>últimos {c.dias} días</span>
+      </p>
+      <p className="cs-cifra-valor">
+        {c.tasa === null ? '—' : `${c.tasa} %`}
+        {c.tasa === null ? null : (
+          <small>
+            {c.canceladas} de {c.citas} citas
+          </small>
+        )}
+      </p>
+      {c.aviso ? <p className="cs-cifra-nota">{c.aviso}</p> : null}
+    </div>
   );
 }
 
@@ -191,7 +228,7 @@ export default function PanelDeConversation() {
  * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
  * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo, noAudita }) {
+function Flujo({ flujo, noAudita, cancelacion }) {
   return (
     <>
       <p className="aud-alcance">
@@ -212,11 +249,20 @@ function Flujo({ flujo, noAudita }) {
         </div>
       ) : null}
 
+      {/* ── LA PRIMERA CIFRA MEDIDA, Y LO QUE LA ACOMPAÑA ──────────────────
+          Va ARRIBA del «qué falta» a propósito: lo que sí se sabe primero, y después el hueco. Al
+          revés, la pestaña se lee como vacía y nadie llega al número. */}
+      {cancelacion ? <Cancelacion c={cancelacion} /> : null}
+
+      {/* El aviso general dejó de ser incondicional. Appointment Flow YA calcula algo, así que decir
+          ahí «sus indicadores todavía no se pueden calcular» sería falso — y falso de la manera que
+          más cuesta, porque desmiente a la cifra que está tres centímetros más arriba. */}
       <div className="fd-aviso">
         <i>◍</i>
         <span>
-          Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy.
-          Abajo está qué falta para cada uno.
+          {cancelacion
+            ? 'Sus demás indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'
+            : 'Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'}
         </span>
       </div>
 

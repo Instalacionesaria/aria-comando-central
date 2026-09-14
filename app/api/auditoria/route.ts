@@ -34,6 +34,7 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
+import { tasaDeCancelacion } from '../../../lib/negocio/cancelacion.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -68,9 +69,13 @@ export async function GET(peticion: Request): Promise<Response> {
   const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva));
   const noAudita = acceso.tipo === 'listo' ? null : (COMO_LO_VE_LA_PANTALLA[acceso.que] ?? null);
 
-  const [pantalla, prompts] = await conOrganizacion(contexto.orgEfectiva, async () => [
+  /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
+     lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
+     tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
+  const [pantalla, prompts, cancelacion] = await conOrganizacion(contexto.orgEfectiva, async () => [
     await laPantallaDelTecnico(noAudita),
     await leerLosPrompts(),
+    await tasaDeCancelacion(),
   ]);
 
   return ok({
@@ -85,5 +90,10 @@ export async function GET(peticion: Request): Promise<Response> {
       texto: prompts[agente]?.texto ?? null,
       actualizadoEl: prompts[agente]?.actualizadoEl ?? null,
     })),
+    /* La primera cifra REAL de Appointment Flow. Viaja siempre, incluso cuando la empresa no audita:
+       la cancelación se lee de las citas y no del auditor, así que existe aunque el freno esté
+       puesto — y es justamente en esas empresas donde una pestaña con algo medido dice más que una
+       pestaña vacía. */
+    cancelacion,
   });
 }

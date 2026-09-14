@@ -332,9 +332,12 @@ test('las pestañas de flujo NO prometen hallazgos cuando la empresa no audita',
   const jsx = leer(CONVERSATION);
 
   // 1 · El componente recibe el freno. Sin esto no puede decidir nada.
+  /* La lista de parámetros NO se fija entera a propósito: la primera versión de esta prueba exigía
+     `{ flujo, noAudita }` exacto y se rompió sola al agregar un tercero, sin que nada estuviera mal.
+     Lo que hay que afirmar es que el freno LLEGA, no cuántos vecinos tiene. */
   assert.match(
     jsx,
-    /function Flujo\(\{\s*flujo,\s*noAudita\s*\}\)/,
+    /function Flujo\(\{[^}]*noAudita[^}]*\}\)/,
     'el flujo no recibe el freno: no puede saber si la empresa audita',
   );
   assert.match(
@@ -377,4 +380,42 @@ test('el motivo del freno sale de UN solo sitio, y las dos pantallas lo importan
       `${nombre} no importa el mapa de motivos: si lo copió, las dos pantallas van a divergir`,
     );
   }
+});
+
+test('la cifra medida va ARRIBA de lo que falta, y sólo en Appointment Flow', () => {
+  /* Dos cosas que se rompen distinto.
+   *
+   * 1 · EL ORDEN. Lo que sí se sabe va primero. Al revés, la pestaña se lee como vacía y nadie llega
+   *     al número: el «qué falta» son tres párrafos.
+   * 2 · EL ALCANCE. La cancelación es de citas, o sea de Appointment Flow. Dibujarla también en Lead
+   *     Flow pondría una cifra correcta bajo un título que no la explica, que es peor que no
+   *     mostrarla — nadie sabría de qué población habla. */
+  const jsx = leer(CONVERSATION);
+
+  assert.match(
+    jsx,
+    /cancelacion=\{sub === 'appflow'/,
+    'la cifra no está acotada a Appointment Flow: la cancelación es de citas',
+  );
+
+  const cifra = jsx.indexOf('<Cancelacion c={cancelacion}');
+  const falta = jsx.indexOf('flujo.falta.map');
+  assert.ok(cifra > 0 && falta > 0, 'falta la cifra o la lista');
+  assert.ok(cifra < falta, 'la lista de lo que falta quedó ANTES de la cifra medida');
+});
+
+test('con la cifra presente, el aviso deja de decir que NO se puede calcular nada', () => {
+  /* El defecto más fino de este cambio: la pestaña pasa a mostrar un número Y a decir tres
+     centímetros más abajo que «sus indicadores todavía no se pueden calcular». Las dos cosas en la
+     misma pantalla se desmienten, y la que pierde credibilidad es la cifra. */
+  const jsx = leer(CONVERSATION);
+  const i = jsx.indexOf('todavía no se pueden calcular');
+  assert.ok(i > 0, 'se fue el aviso de lo que falta');
+  const alrededor = jsx.slice(Math.max(0, i - 300), i);
+  assert.match(
+    alrededor,
+    /cancelacion\s*\?/,
+    'el aviso sigue afirmando que no se puede calcular nada, con una cifra calculada arriba',
+  );
+  assert.match(jsx, /Sus demás indicadores/, 'falta la variante que reconoce la cifra que ya hay');
 });

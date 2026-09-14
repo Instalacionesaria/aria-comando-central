@@ -129,6 +129,68 @@
  * Lo que queda propio de esta pantalla es la lista de «qué falta para medir esto», que es lo que
  * reemplazó a los números inventados. */
 
+/* ── LA CIFRA MEDIDA ────────────────────────────────────────────────────────
+ *
+ * Va ARRIBA de la lista de faltas y se distingue de ella a propósito: lo que sí se sabe no puede
+ * leerse con el mismo peso que lo que falta. Toma el borde y el radio de `.cs-falta li` —es la misma
+ * familia de caja— y se separa por el TAMAÑO del número, que es lo único que sube de escala en toda
+ * la pestaña.
+ *
+ * No lleva color de estado. Una cancelación alta no es «malo» aquí: es el dato del negocio, y
+ * pintarlo de rojo sería que la pantalla opine antes que la persona. El color semántico está
+ * reservado para lo que exige una acción, que en esta pantalla es el freno. */
+#v-conversation .cs-cifra {
+  padding: 15px 17px;
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  background: rgb(var(--c-nube) / .03);
+  margin-bottom: 14px;
+}
+#v-conversation .cs-cifra-cab {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+#v-conversation .cs-cifra-cab b {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+#v-conversation .cs-cifra-cab span {
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+#v-conversation .cs-cifra-valor {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: var(--txt);
+  /* Los dígitos alineados: la cifra cambia al recargar y sin esto «salta» de ancho. */
+  font-variant-numeric: tabular-nums;
+}
+#v-conversation .cs-cifra-valor small {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--txt-dim);
+  letter-spacing: 0;
+}
+/* La nota de lo que quedó afuera. Sólo existe cuando hay algo que decir —ver la regla de silencio en
+   el componente— así que puede permitirse ocupar su propia línea sin volverse ruido de fondo. */
+#v-conversation .cs-cifra-nota {
+  margin: 9px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--txt-dim);
+}
+
 /* Cada falta: qué no se puede medir, en negrita, y por qué debajo. Las dos cosas en la misma fila
    y no un `<summary>` plegable — se leen una vez, y esconderlas detrás de un clic convierte la
    explicación en algo que nadie abre. */
