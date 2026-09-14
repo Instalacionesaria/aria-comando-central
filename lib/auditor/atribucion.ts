@@ -72,6 +72,16 @@ export interface LineaAAtribuir {
   direccion: 'entrante' | 'saliente';
   autor: 'contacto' | 'agente' | 'persona';
   autor_ghl_usuario_id?: string | null;
+  /**
+   * De dónde salió el mensaje según el CRM: `'workflow'`, `'app'`, `'api'`, … Opcional, igual que
+   * el identificador, porque esta función **no conoce el esquema**.
+   *
+   * **Nulo o ausente significa «no se sabe», nunca «no fue el agente»** (`esquema.ts`). La columna
+   * se rellena al ritmo del tráfico y no del cron —la ingesta avanza desde una marca de agua y no
+   * relee— así que hoy la mayoría de las líneas llegan sin ella y tienen que seguir atribuyéndose
+   * como antes. Ver la rama 3.
+   */
+  fuente?: string | null;
 }
 
 /**
@@ -102,14 +112,49 @@ export function atribuir(linea: LineaAAtribuir, idDelAgente: string | null): Aut
      le pone el nombre de nadie a nada, y el inverso sí. */
   if (linea.autor === 'persona') return 'ASESOR HUMANO';
 
-  /* 3 · El agente, y es la ÚNICA rama imputable. Exige las dos cosas: que la empresa haya configurado
+  /* 3 · Un flujo del CRM, aunque lleve el identificador del agente. **Va ANTES de la rama del
+     agente, y ése es todo el punto.**
+
+     ── EL IDENTIFICADOR NO DISCRIMINA, Y ESTÁ MEDIDO ──────────────────────
+
+     La migración `044` censó las 518 conversaciones enteras —censo, no muestra— y de los 2.182
+     mensajes sellados con el identificador del agente:
+
+         workflow   1.560   71,5 %   ← flujos de la cuenta, con este usuario como DUEÑO
+         app          417   19,1 %
+         api          205    9,4 %
+
+     Y su veredicto textual: *«El identificador no discrimina. Filtrar por él se lleva 1.560 mensajes
+     que disparó un flujo del CRM, y cualquier cifra "por agente" construida sobre ese filtro mezcla
+     al agente con las automatizaciones de la casa — dando un número plausible.»*
+
+     La `026` había elegido ese identificador por FRECUENCIA, suponiendo que los salientes sin sellar
+     eran los automáticos; la medición mostró que las automatizaciones están de los dos lados. Esta
+     rama es esa corrección: siete de cada diez líneas que el auditor le imputaba al agente las
+     escribió un flujo.
+
+     ── Y VA DESPUÉS DE «PERSONA», NO ANTES ────────────────────────────────
+
+     La asimetría de la rama 2 sigue mandando: si una línea fuera `autor = 'persona'` con
+     `fuente = 'workflow'`, gana persona. Adelantar esta rama le pondría a un asesor humano la
+     etiqueta de automatización, y el error de dar por automático algo humano borra a alguien de la
+     conversación — que es el lado caro del mismo error.
+
+     ── EL NULO NO DEGRADA NADA ────────────────────────────────────────────
+
+     Sólo `'workflow'` baja de categoría. Un nulo es «el CRM no lo dijo», y tratarlo como flujo
+     dejaría al agente sin una sola línea imputable mientras la columna termina de llenarse: medido,
+     lleva 180 de 5.829 mensajes (3,1 %) y crece con el tráfico, no con el cron. */
+  if (linea.fuente === 'workflow') return 'AUTOMATIZACIÓN';
+
+  /* 4 · El agente, y es la ÚNICA rama imputable. Exige las dos cosas: que la empresa haya configurado
      quién es su agente, y que el identificador coincida.
 
      `idDelAgente` nulo cae abajo a propósito. La alternativa —tratar «no configurado» como «es el
      agente»— convertiría cada saliente automático en un hallazgo imputable, que es el defecto entero. */
   if (idDelAgente !== null && linea.autor_ghl_usuario_id === idDelAgente) return 'AGENTE IA';
 
-  /* 4 · Sin identificador y sin ser persona: un flujo del CRM. Medido en producción el 2026-08-31:
+  /* 5 · Sin identificador y sin ser persona: un flujo del CRM. Medido en producción el 2026-08-31:
      919 de 2.737 salientes no traen identificador, y son los flujos automáticos. Se etiqueta como lo
      que es, para que el modelo pueda leer la plantilla que provocó el enojo sin imputársela al
      agente. */
@@ -117,7 +162,7 @@ export function atribuir(linea: LineaAAtribuir, idDelAgente: string | null): Aut
     return 'AUTOMATIZACIÓN';
   }
 
-  /* 5 · Trae un identificador que no es el del agente. Puede ser un asesor que escribió desde el CRM
+  /* 6 · Trae un identificador que no es el del agente. Puede ser un asesor que escribió desde el CRM
      —y no desde acá, así que la ingesta no lo marcó como persona— o una integración que no conocemos.
      **No se adivina cuál.** La etiqueta dice que no se sabe, que es más útil que elegir mal: con
      «asesor humano» el auditor daría por traspasada una conversación que nadie tomó. */

@@ -69,6 +69,7 @@ function hechos(cambios: Partial<HechosDeLaConversacion> = {}): HechosDeLaConver
     respondieronAlContacto: true,
     sinTexto: 0,
     umbralDeSilencioMin: UMBRAL_DE_SILENCIO_MIN,
+    noEntregados: 0,
     ...cambios,
   };
 }
@@ -415,4 +416,55 @@ test('el mensaje termina pidiendo la herramienta', () => {
      modelo lee más cerca de decidir. */
   const texto = textoDeLaConversacion({ hechos: hechos(), transcript: 'x' });
   assert.match(texto, /Registrá el veredicto con la herramienta\.$/);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL DESENLACE Y EL RECHAZO DEL CANAL, LOS DOS EN PROSA Y LOS DOS TRI-ESTADO
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('el desenlace tiene TRES estados en el prompt, y ninguno se colapsa', () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * Es la misma regla que los otros tri-estados de este bloque: *un `null` renderizado como «0» o
+   * como «no» es una afirmación distinta de la que el dato hace*.
+   *
+   *   · sin medir  → no se dice nada. Es el caso de `buscarMejora`, que analiza para reescribir un
+   *     prompt y no para juzgar un desenlace.
+   *   · medido y vacío → se dice con una frase. Omitirlo sería indistinguible del anterior, y el
+   *     modelo no tendría cómo saber si «no hay resultado» o «no me lo mandaron» — y sobre esa duda
+   *     puede concluir cualquier cosa del silencio.
+   *   · con valor → se dice cuál, y que lo registró una PERSONA.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const sinMedir = textoDeLaConversacion({ hechos: hechos(), transcript: 'T' });
+  assert.doesNotMatch(sinMedir, /Desenlace/, 'se habló del desenlace sin haberlo medido');
+
+  const vacio = textoDeLaConversacion({ hechos: hechos({ desenlace: null }), transcript: 'T' });
+  assert.match(vacio, /NADIE registró todavía un resultado/, 'el desenlace vacío no se dijo');
+  /* Y se aclara qué NO significa: sin esa frase, «no hay resultado» se lee como que la conversación
+     fracasó, y el auditor le imputa al agente el silencio de un cierre que nadie cargó. */
+  assert.match(vacio, /no significa que la conversación haya fracasado/);
+
+  const conValor = textoDeLaConversacion({
+    hechos: hechos({ desenlace: { salida: 'venta', haceDias: 3 } }),
+    transcript: 'T',
+  });
+  assert.match(conValor, /«venta»/, 'la salida registrada no llegó al prompt');
+  assert.match(conValor, /hace 3 día\(s\)/, 'no se dijo cuándo');
+  /* «Lo registró una persona» no es un adorno: si el modelo lo tomara por una medición del canal,
+     trataría un `no_show` como un hecho verificado en vez de como lo que alguien reportó. */
+  assert.match(conValor, /registrado por una PERSONA/);
+});
+
+test('el rechazo del canal se dice SÓLO cuando hay alguno, y explica qué significa', () => {
+  /* La regla del silencio, adentro del prompt: un «Mensajes no entregados: 0» en cada análisis es
+     una línea que se paga en cada llamada y que el modelo aprende a saltear — y cuando aparezca un 1
+     va a saltearlo igual. */
+  const sin = textoDeLaConversacion({ hechos: hechos({ noEntregados: 0 }), transcript: 'T' });
+  assert.doesNotMatch(sin, /RECHAZÓ/, 'se habla del rechazo del canal sin que haya ninguno');
+
+  const con = textoDeLaConversacion({ hechos: hechos({ noEntregados: 2 }), transcript: 'T' });
+  assert.match(con, /EL CANAL RECHAZÓ 2 mensaje/, 'el conteo de rechazados no llegó al prompt');
+  /* Lo que el modelo tiene que hacer con el dato, no sólo el dato: sin esta frase puede leer la
+     marca y seguir contando esas líneas como algo que el contacto recibió. */
+  assert.match(con, /NO le llegaron al contacto/);
+  assert.match(con, /ni como una respuesta que recibió/);
 });

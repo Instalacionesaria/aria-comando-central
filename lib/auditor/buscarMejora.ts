@@ -91,11 +91,33 @@ function comoLeerElTranscript(): string {
   );
 }
 
-/** Los mensajes del contacto, con lo que la atribución necesita. Ver `analisis.ts`. */
+/**
+ * Los mensajes del contacto, con lo que la atribución necesita. Ver `analisis.ts`.
+ *
+ * ── LAS COLUMNAS SON LAS MISMAS QUE ALLÁ, Y TIENE QUE SEGUIR SIENDO ASÍ ─────
+ *
+ * `atribuir()` decide con lo que le llega. Si este `select` pidiera menos columnas que el de
+ * `analisis.ts`, la MISMA conversación se atribuiría distinto en los dos caminos: el carril rojo
+ * vería una línea como AUTOMATIZACIÓN —porque su `fuente` es `workflow`— y el buscador de mejoras
+ * la vería como AGENTE IA, porque no pidió esa columna.
+ *
+ * Y el síntoma sería el peor de leer: la mejora del día propondría reescribir el prompt del agente
+ * apoyándose en líneas que el auditor ya había decidido que no eran suyas. Los dos módulos se verían
+ * correctos por separado. Lo comprueba `118-lectores-del-auditor`.
+ */
 async function mensajesDelContacto(contactoId: string): Promise<MensajeParaAuditar[]> {
   const crudos = await datos()
     .selectFrom('mensajes')
-    .select(['direccion', 'autor', 'autor_ghl_usuario_id', 'cuerpo', 'enviado_el'])
+    .select([
+      'direccion',
+      'autor',
+      'autor_ghl_usuario_id',
+      'cuerpo',
+      'enviado_el',
+      'fuente',
+      'estado_entrega_familia',
+      'fallo_del_canal',
+    ])
     .where('contacto_id', '=', contactoId)
     .orderBy('enviado_el', 'desc')
     .orderBy('id', 'desc')

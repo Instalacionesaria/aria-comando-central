@@ -101,6 +101,7 @@ function unosHechos(cambios: Partial<HechosDeLaConversacion> = {}): HechosDeLaCo
     respondieronAlContacto: true,
     sinTexto: 0,
     umbralDeSilencioMin: 60,
+    noEntregados: 0,
     ...cambios,
   };
 }

@@ -37,6 +37,31 @@ import { atribuir, type AutorDeLaLinea, type LineaAAtribuir } from './atribucion
 export interface MensajeParaAuditar extends LineaAAtribuir {
   cuerpo: string | null;
   enviado_el: Date;
+  /**
+   * Si el canal lo entregó. `'en_curso' | 'entregado' | 'fallido' | 'desconocido'`, ya normalizado
+   * por `familiaDeEntrega`.
+   *
+   * **Ausente o `'en_curso'` NO es un fallo**: 12 de 65 mensajes medidos llegan sin ningún estado,
+   * y `familiaDeEntrega(null)` devuelve `'en_curso'` justamente por eso. *«Un mensaje sin estado no
+   * es un mensaje fallido: es uno del que el canal no dijo nada.»*
+   */
+  estado_entrega_familia?: string | null;
+  /** Lo que dijo el canal al rechazar. Es lo único que explica por qué no llegó. */
+  fallo_del_canal?: string | null;
+}
+
+/**
+ * ¿El canal RECHAZÓ este mensaje?
+ *
+ * Una sola definición para las tres cosas que dependen de ella —el rótulo de la línea, el conteo de
+ * los hechos y la condición (b) del abandono— porque con dos, el día que discrepen el transcript
+ * diría una cosa y los hechos otra sobre la misma línea, y el modelo tiene instrucciones de no
+ * contradecir los hechos.
+ *
+ * Sólo `'fallido'`. Ver `MensajeParaAuditar.estado_entrega_familia`.
+ */
+export function noLlego(m: MensajeParaAuditar): boolean {
+  return m.estado_entrega_familia === 'fallido';
 }
 
 /**
@@ -171,7 +196,18 @@ export function armarTranscript(
   const lineas = cola.map((m) => {
     const quien = atribuir(m, idDelAgente);
     const texto = m.cuerpo === null || m.cuerpo.trim() === '' ? SIN_TEXTO : m.cuerpo.trim();
-    return `[${selloDeTiempo(m.enviado_el, zona)}] ${quien}: ${texto}`;
+    /* ── LO QUE EL CANAL RECHAZÓ NO SE PUEDE LEER COMO ENTREGADO ───────────
+     *
+     * Hasta acá una línea que el canal rechazó entraba al transcript **idéntica** a una entregada, y
+     * el modelo juzgaba `abandono_de_conversacion` o `insiste_sin_entender` como si el contacto la
+     * hubiera recibido. El caso más claro está en el catálogo de `lib/ghl/entrega.ts`: `opt_out` es
+     * *«el contacto se dio de baja, así que el mensaje no le llegó»* — y el agente quedaba reportado
+     * por insistirle a alguien que no estaba recibiendo nada.
+     *
+     * La marca va al final y no reemplaza el texto: el modelo tiene que poder leer QUÉ se intentó
+     * decir. Y sólo cuando la familia es `fallido`, nunca por un estado ausente. */
+    const marca = noLlego(m) ? ` [NO ENTREGADO: ${(m.fallo_del_canal ?? '').trim() || 'el canal lo rechazó'}]` : '';
+    return `[${selloDeTiempo(m.enviado_el, zona)}] ${quien}: ${texto}${marca}`;
   });
 
   /* El aviso va PRIMERO y no al final, porque es lo que el modelo tiene que saber antes de leer la
@@ -229,8 +265,35 @@ export interface HechosDeLaConversacion {
   respondieronAlContacto: boolean | null;
   /** Cuántos mensajes llegaron **sin texto** (audio o imagen). */
   sinTexto: number;
+  /**
+   * Cuántos mensajes **el canal rechazó**. Se cuenta sobre la conversación completa, igual que todo
+   * lo demás de este tipo, y no sobre las 40 líneas del transcript.
+   *
+   * Viaja como hecho y no sólo como marca en la línea porque el recorte puede dejar afuera
+   * justamente los rechazados: el modelo vería una conversación sin marcas y concluiría que todo
+   * llegó.
+   */
+  noEntregados: number;
   /** El umbral que define «dejó de responder». Viaja para que el modelo no lo invente. */
   umbralDeSilencioMin: number;
+  /**
+   * Cómo terminó este contacto, según lo que una PERSONA registró en Avanzar.
+   *
+   * ── TRES ESTADOS, Y NO DOS ──────────────────────────────────────────────
+   *
+   * `undefined` = quien llamó a `medirHechos` no midió esto. Es el caso de `buscarMejora`, que
+   *   analiza la conversación para reescribir un prompt y no para juzgar un desenlace.
+   * `null` = se midió y no hay ningún resultado registrado.
+   * Con valor = la salida, y hace cuántos días.
+   *
+   * Colapsar los dos primeros en `null` haría que el prompt no pudiera distinguir «no hay
+   * resultado» de «no me lo mandaron», y esa diferencia decide si el modelo puede sacar una
+   * conclusión del silencio o no.
+   *
+   * **No se calcula acá**: `medirHechos` es isomorfa y no toca la base. Lo trae quien llama, que es
+   * el que ya está dentro de la transacción.
+   */
+  desenlace?: { salida: string; haceDias: number | null } | null;
 }
 
 /** Todas las etiquetas en cero, para que el conteo tenga las cinco claves siempre presentes. */
@@ -260,9 +323,14 @@ export function medirHechos(
   mensajes: readonly MensajeParaAuditar[],
   idDelAgente: string | null,
   ahora: Date,
+  /* El desenlace se PASA y no se consulta: esta función no toca la base, y esa propiedad es lo que
+     permite probarla entera sin una. Omitirlo es un tercer estado, no un valor por omisión —ver
+     `HechosDeLaConversacion.desenlace`— así que el parámetro no lleva `= null`. */
+  desenlace?: { salida: string; haceDias: number | null } | null,
 ): HechosDeLaConversacion {
   const porAutor = enCero();
   let sinTexto = 0;
+  let noEntregados = 0;
   let ultimo: { quien: AutorDeLaLinea; el: Date } | null = null;
   let ultimoDelAgente: Date | null = null;
   let ultimoDelContacto: Date | null = null;
@@ -271,6 +339,7 @@ export function medirHechos(
     const quien = atribuir(m, idDelAgente);
     porAutor[quien]++;
     if (m.cuerpo === null || m.cuerpo.trim() === '') sinTexto++;
+    if (noLlego(m)) noEntregados++;
 
     if (ultimo === null || m.enviado_el.getTime() >= ultimo.el.getTime()) {
       ultimo = { quien, el: m.enviado_el };
@@ -312,13 +381,23 @@ export function medirHechos(
    *
    * Lo que SÍ dependa del orden sería un defecto, y eso sí está fijado: los dos «últimos» salen del
    * INSTANTE y no de la posición en el arreglo, y una prueba pasa la lista desordenada. */
+  /* ── Y UN MENSAJE QUE EL CANAL RECHAZÓ NO ES UNA RESPUESTA ────────────────
+   *
+   * Éste era un defecto de verdad, no una mejora: se contaba CUALQUIER mensaje posterior, así que
+   * una conversación cuyo único intento de respuesta rebotó declaraba `respondieronAlContacto =
+   * true`. Sobre esa base el criterio de abandono se descarta, y el contacto quedó sin respuesta
+   * mientras el auditor certifica que alguien contestó.
+   *
+   * Es justo el caso que más importa detectar: nadie se entera de que el canal rechaza, porque del
+   * lado de adentro el mensaje figura como enviado. */
   const respondieronAlContacto =
     ultimoDelContacto === null
       ? null
       : mensajes.some(
           (m) =>
             m.enviado_el.getTime() > (ultimoDelContacto as Date).getTime() &&
-            atribuir(m, idDelAgente) !== 'CONTACTO',
+            atribuir(m, idDelAgente) !== 'CONTACTO' &&
+            !noLlego(m),
         );
 
   return {
@@ -328,7 +407,12 @@ export function medirHechos(
     minutosDesdeElAgente: minutosDesde(ultimoDelAgente),
     respondieronAlContacto,
     sinTexto,
+    noEntregados,
     umbralDeSilencioMin: UMBRAL_DE_SILENCIO_MIN,
+    /* El esparcido condicional y no `desenlace,` a secas: con la asignación directa, `undefined`
+       quedaría como una clave PRESENTE con valor indefinido, y `h.desenlace === undefined` seguiría
+       siendo verdadero pero un `in` diría otra cosa. Acá la clave existe sólo cuando se midió. */
+    ...(desenlace === undefined ? {} : { desenlace }),
   };
 }
 

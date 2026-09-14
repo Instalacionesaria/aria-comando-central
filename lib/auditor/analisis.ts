@@ -219,7 +219,20 @@ export interface OpcionesDeAuditoria {
 async function mensajesDelContacto(contactoId: string): Promise<MensajeParaAuditar[]> {
   const crudos = await datos()
     .selectFrom('mensajes')
-    .select(['direccion', 'autor', 'autor_ghl_usuario_id', 'cuerpo', 'enviado_el'])
+    /* `fuente` decide si una línea con el identificador del agente la escribió el agente o un
+       flujo del CRM: medido, 1.560 de 2.182 son `workflow`. Y las dos de entrega deciden si una
+       línea llegó — sin ellas, una que el canal rechazó entra al transcript idéntica a una
+       entregada, y el criterio de abandono se juzga como si el contacto la hubiera leído. */
+    .select([
+      'direccion',
+      'autor',
+      'autor_ghl_usuario_id',
+      'cuerpo',
+      'enviado_el',
+      'fuente',
+      'estado_entrega_familia',
+      'fallo_del_canal',
+    ])
     .where('contacto_id', '=', contactoId)
     .orderBy('enviado_el', 'desc')
     // El desempate estable. Dos mensajes del mismo instante saldrían en orden distinto en cada
@@ -228,6 +241,49 @@ async function mensajesDelContacto(contactoId: string): Promise<MensajeParaAudit
     .limit(TOPE_DE_MENSAJES_A_LEER)
     .execute();
   return crudos.reverse();
+}
+
+/**
+ * Cómo terminó este contacto, según el último resultado que una PERSONA registró.
+ *
+ * ── POR QUÉ EL ÚLTIMO Y NO TODOS ────────────────────────────────────────────
+ *
+ * Un contacto puede tener varios intentos —un seguimiento, después una venta— y lo que el auditor
+ * necesita saber es en qué estado está HOY la relación, no su historia. Mandarlos todos sumaría
+ * texto al prompt en cada análisis, y el costo de una conversación ya crece con el cuadrado de su
+ * longitud.
+ *
+ * ── Y POR QUÉ SE DEVUELVE `null` EN VEZ DE OMITIRLO ─────────────────────────
+ *
+ * «No hay ningún resultado» es un hecho y hay que poder decirlo: es lo normal en zona setter, y un
+ * silencio en el prompt haría que el modelo no supiera si el dato falta o no existe. La rúbrica lo
+ * escribe en prosa. Ver `textoDelDesenlace`.
+ *
+ * `haceDias` y no la fecha: una fecha obliga al modelo a restarla contra un «hoy» que no tiene, y
+ * los modelos calculan mal el tiempo — es la misma razón por la que los minutos de silencio viajan
+ * medidos y no como sellos.
+ */
+async function desenlaceDelContacto(
+  contactoId: string,
+  ahora: Date,
+): Promise<{ salida: string; haceDias: number | null } | null> {
+  const r = await datos()
+    .selectFrom('resultados')
+    .select(['salida', 'creado_el'])
+    .where('contacto_id', '=', contactoId)
+    .orderBy('creado_el', 'desc')
+    /* El desempate estable, igual que en los mensajes: dos resultados del mismo instante saldrían
+       en orden distinto en cada corrida, y el prompt diría un desenlace distinto cada vez sobre la
+       misma conversación. */
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (r === undefined) return null;
+  const dias =
+    r.creado_el === null
+      ? null
+      : Math.max(0, Math.floor((ahora.getTime() - r.creado_el.getTime()) / 86_400_000));
+  return { salida: r.salida, haceDias: dias };
 }
 
 /**
@@ -356,7 +412,11 @@ async function trabajar(
      * llamadas, que es justo lo que el encabezado de `pulso.ts` prohíbe. */
     const preparado = await conOrganizacion(e.orgId, async () => {
       const mensajes = await mensajesDelContacto(candidato.contactoId);
-      const hechos = medirHechos(mensajes, idDelAgente, ahora);
+      /* Va en la MISMA transacción que los mensajes y con el MISMO `ahora`: con dos relojes, «el
+         agente no escribió hace 90 minutos» y «se registró la venta hace 0 días» podrían describir
+         instantes distintos, y el modelo tiene instrucciones de no contradecir los hechos. */
+      const desenlace = await desenlaceDelContacto(candidato.contactoId, ahora);
+      const hechos = medirHechos(mensajes, idDelAgente, ahora, desenlace);
 
       // ── 3c · EL PORTÓN 5. Corta ANTES del modelo: acá no se gastó nada. ──
       const porque = porQueNoSeAudita(hechos);

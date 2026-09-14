@@ -453,3 +453,96 @@ test('cada motivo de no-auditable tiene su texto, y ninguno culpa al agente', as
   // Y el primero dice explícitamente que la ausencia del agente no es su falla.
   assert.match(MOTIVOS_DE_NO_AUDITABLE['sin_lineas_del_agente'], /no es una falla del agente/i);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LO QUE EL CANAL RECHAZÓ NO SE PUEDE LEER COMO ENTREGADO
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('una línea que el canal RECHAZÓ va marcada, y con lo que dijo el canal', () => {
+  /* Hasta acá entraba al transcript idéntica a una entregada. El caso más claro del catálogo de
+     `lib/ghl/entrega.ts` es `opt_out`: *«el contacto se dio de baja, así que el mensaje no le
+     llegó»* — y el agente quedaba reportado por insistirle a alguien que no recibía nada. */
+  const t = armarTranscript(
+    [
+      de('hola', 10, 0),
+      msj({
+        cuerpo: 'te respondo',
+        enviado_el: el3(10, 5),
+        estado_entrega_familia: 'fallido',
+        fallo_del_canal: 'opt_out',
+      }),
+    ],
+    'UTC',
+    AGENTE,
+  );
+  assert.match(t.texto, /NO ENTREGADO: opt_out/, 'la línea rechazada se ve igual que una entregada');
+  /* Y el texto sigue estando: el modelo tiene que poder leer QUÉ se intentó decir para juzgar el
+     intento, aunque no haya llegado. */
+  assert.match(t.texto, /te respondo/, 'se borró el texto del mensaje rechazado');
+});
+
+test('un mensaje SIN estado de entrega no se marca: nulo no es fallido', () => {
+  /* Medido en `lib/ghl/entrega.ts`: de 65 mensajes de cuatro conversaciones, **12 llegan sin ningún
+     estado** — así que el nulo es el caso normal y no una excepción. Marcarlos pondría «NO
+     ENTREGADO» en una de cada cinco líneas del transcript, y el modelo aprendería a ignorar la marca
+     justo antes de encontrarse con una de verdad. */
+  for (const familia of [null, undefined, 'en_curso', 'entregado', 'desconocido']) {
+    const t = armarTranscript(
+      [msj({ cuerpo: 'x', estado_entrega_familia: familia })],
+      'UTC',
+      AGENTE,
+    );
+    assert.doesNotMatch(t.texto, /NO ENTREGADO/, `familia=${String(familia)} se marcó como fallida`);
+  }
+});
+
+test('EL DEFECTO: un mensaje que rebotó NO cuenta como haberle respondido al contacto', () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * La condición (b) del abandono contaba CUALQUIER mensaje posterior al último del contacto. Así
+   * que una conversación cuyo único intento de respuesta rebotó declaraba «SÍ le respondieron», el
+   * criterio de abandono se descartaba, y el contacto quedaba sin respuesta mientras el auditor
+   * certifica que alguien contestó.
+   *
+   * Es justo el caso que más importa detectar, porque nadie se entera solo: del lado de adentro el
+   * mensaje figura como enviado.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const h = medirHechos(
+    [
+      de('¿hay alguien?', 9, 0),
+      msj({
+        cuerpo: 'sí, acá estoy',
+        enviado_el: el3(9, 30),
+        estado_entrega_familia: 'fallido',
+        fallo_del_canal: 'undelivered',
+      }),
+    ],
+    AGENTE,
+    el3(12, 0),
+  );
+  assert.equal(
+    h.respondieronAlContacto,
+    false,
+    'un mensaje que el canal rechazó se contó como una respuesta que el contacto recibió',
+  );
+  assert.equal(h.noEntregados, 1, 'el conteo de rechazados no llegó a los hechos');
+});
+
+test('los rechazados se cuentan sobre la conversación COMPLETA, no sobre las 40 líneas', () => {
+  /* La misma regla que todo lo demás de `medirHechos`. Importa especialmente acá: el recorte se
+     queda con la cola, así que un rechazo viejo desaparecería del transcript y el modelo vería una
+     conversación sin marcas y concluiría que todo llegó. */
+  const viejos = Array.from({ length: TOPE_DE_LINEAS + 5 }, (_, i) =>
+    msj({ cuerpo: `m${i}`, enviado_el: el3(8, i) }),
+  );
+  viejos[0] = msj({
+    cuerpo: 'el que rebotó',
+    enviado_el: el3(8, 0),
+    estado_entrega_familia: 'fallido',
+    fallo_del_canal: 'failed',
+  });
+
+  const h = medirHechos(viejos, AGENTE, el3(12, 0));
+  const t = armarTranscript(viejos, 'UTC', AGENTE);
+  assert.equal(h.noEntregados, 1, 'el rechazado quedó afuera por el recorte del transcript');
+  assert.doesNotMatch(t.texto, /NO ENTREGADO/, 'la prueba no está ejercitando el recorte');
+});

@@ -554,6 +554,16 @@ function textoDeLosHechos(h: HechosDeLaConversacion): string {
         ? 'SÍ hubo al menos una línea después del último mensaje del contacto.'
         : 'NO hubo ninguna línea después del último mensaje del contacto.';
 
+  /* El rechazo del canal también va en prosa y sólo cuando hay alguno. Un «Mensajes no entregados:
+     0» en cada análisis es una línea que se paga en cada llamada y que el modelo aprende a saltear
+     — y cuando aparezca un 1 va a saltearlo igual. Es la misma regla del silencio que la pantalla. */
+  const noEntregados =
+    h.noEntregados === 0
+      ? ''
+      : `\nEL CANAL RECHAZÓ ${h.noEntregados} mensaje(s) de esta conversación: NO le llegaron al ` +
+        'contacto, aunque estén en el transcript. Van marcados con [NO ENTREGADO: …]. No los ' +
+        'cuentes como algo que el contacto leyó, ni como una respuesta que recibió.';
+
   return (
     'HECHOS MEDIDOS DE ESTA CONVERSACIÓN. Están contados sobre la conversación COMPLETA y son ' +
     'exactos: no los recalcules leyendo el transcript, que puede venir recortado.\n\n' +
@@ -562,8 +572,45 @@ function textoDeLosHechos(h: HechosDeLaConversacion): string {
     `${desdeElAgente}\n` +
     `Última línea de: ${h.ultimoEsDe ?? 'nadie'}.\n` +
     `${respondieron}\n` +
-    `Mensajes sin texto (audio o imagen): ${h.sinTexto}.\n` +
-    `Umbral de silencio para «dejó de responder»: ${h.umbralDeSilencioMin} minutos.`
+    `Mensajes sin texto (audio o imagen): ${h.sinTexto}.` +
+    `${noEntregados}\n` +
+    `Umbral de silencio para «dejó de responder»: ${h.umbralDeSilencioMin} minutos.` +
+    `${textoDelDesenlace(h)}`
+  );
+}
+
+/**
+ * Cómo terminó, si alguien lo registró. **En prosa y sólo cuando el dato viajó.**
+ *
+ * Hasta acá el auditor juzgaba la conversación sin saber si esa persona compró, no apareció o se
+ * descalificó — y varios criterios cambian de lectura con eso: insistir con quien ya compró no es lo
+ * mismo que insistir con quien dijo que no, y un `no_show` explica un silencio que de otro modo se
+ * lee como abandono del agente.
+ *
+ * ── LOS TRES ESTADOS, Y NINGUNO SE COLAPSA ─────────────────────────────────
+ *
+ * `undefined` = quien llama no midió esto (una prueba vieja, otro camino). No se dice nada.
+ * `null` = se midió y NO hay resultado registrado. **Se dice con una frase**, porque omitir la línea
+ *   sería indistinguible del caso anterior, y el modelo no tendría cómo saber si «no hay resultado»
+ *   o «no me lo mandaron».
+ * Con valor = se dice cuál, y se aclara que lo registró una persona: no es una deducción del
+ *   sistema, y el modelo no debe tratarlo como una medición del canal.
+ *
+ * Es el mismo criterio de los tres tri-estados de arriba: *un `null` renderizado como «0» o como
+ * «no» es una afirmación distinta de la que el dato hace*.
+ */
+function textoDelDesenlace(h: HechosDeLaConversacion): string {
+  if (h.desenlace === undefined) return '';
+  if (h.desenlace === null) {
+    return (
+      '\nDesenlace: NADIE registró todavía un resultado para este contacto. Eso no significa que ' +
+      'la conversación haya fracasado: significa que nadie la cerró en el sistema.'
+    );
+  }
+  const cuando = h.desenlace.haceDias === null ? '' : `, hace ${h.desenlace.haceDias} día(s)`;
+  return (
+    `\nDesenlace, registrado por una PERSONA${cuando}: «${h.desenlace.salida}». Es lo que esa ` +
+    'persona reportó al cerrar el intento, no una medición del sistema.'
   );
 }
 
