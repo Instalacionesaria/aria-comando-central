@@ -45,6 +45,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // hace falta guardar `source`. Necesita la lista de organizaciones y sus credenciales —identidad—
   // y después trabaja de una en una. Sólo `GET`, y no imprime ningún mensaje de nadie.
   'scripts/medir-mensaje.mjs',
+  // El tercero de la familia, con el mismo argumento: mide si el CRM manda la atribución del
+  // anuncio —`attributionSource`, las UTM, el `fbclid`— que el documento de arquitectura pide y que
+  // el tipo del contacto no declara. Decide si hace falta conectar el API de Meta o si el dato ya
+  // viene en la misma respuesta que ya pedimos. Sólo `GET`, y de esos campos imprime la FORMA y
+  // nunca el valor: un `referrer` puede llevar el identificador de una persona adentro.
+  'scripts/medir-contacto.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.
