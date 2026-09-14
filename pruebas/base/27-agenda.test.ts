@@ -1206,7 +1206,10 @@ test('cancelar una cita deja CUÁNDO se canceló y qué era antes', async () => 
   /* El defecto que cierra: con sólo `estado_ghl`, una cita cancelada el día que se reservó y una
      cancelada una hora antes de empezar son el mismo dato. La segunda es un plantón anunciado — lo
      que el agente de Appointment Flow existe para evitar — y hoy no se puede distinguir.
-     Medido en producción el 2026-09-13: 160 de 316 citas canceladas, y ninguna se puede fechar. */
+     Medido en producción el 2026-09-13: 160 de 316 citas canceladas, y ninguna se puede fechar.
+     (Ese 50,6 % está sesgado a la baja y la `045` lo corrige: sobre las citas que el barrido todavía
+     alcanza la tasa es 60,3 %, y las 101 congeladas la arrastran. No cambia lo que esta prueba mide
+     —que la cancelación se pueda FECHAR— pero el número no se cita sin su corrección.) */
   await limpiar();
   const marca = `u${randomUUID().slice(0, 6)}`;
   await contacto(marca);

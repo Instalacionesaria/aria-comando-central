@@ -16,6 +16,26 @@
 -- Medido el 2026-09-13 en producción: **160 de 316 citas canceladas**, el 50,6 %. Es el único
 -- indicador de Appointment Flow con volumen real, y hoy no se puede fechar ninguna de las 160.
 --
+-- ── CORRECCIÓN DEL DÍA SIGUIENTE: ESE 50,6 % ESTÁ SESGADO A LA BAJA ─────────
+--
+-- El 2026-09-14 se midió partiendo la población y el número se parte con ella:
+--
+--     con calendario (el barrido todavía las alcanza)   199 citas   120 canceladas   60,3 %
+--     congeladas (anteriores a la 038)                  101 citas    31 canceladas   30,7 %
+--
+-- Las 101 congeladas tienen `ghl_calendario_id` nulo, dejaron de sincronizarse el 2026-09-06 y el
+-- CRM ya no devuelve sus eventos —comprobado: catorce de ellas caen dentro de la ventana actual del
+-- barrido y aun así no se refrescan—. O sea que su estado quedó CONGELADO en el que tenían ese día,
+-- y arrastran la tasa hacia abajo sin que nada lo diga.
+--
+-- **La consecuencia para cualquier cifra:** la tasa de cancelación tiene que contarse sobre las
+-- citas que el barrido alcanza, y las congeladas tienen que declararse aparte. Mezclarlas da un
+-- número más bajo, estable y falso — que es exactamente la clase de cifra que esta migración
+-- existe para poder auditar.
+--
+-- Y sirve de aviso general sobre el sesgo: **una ventana más vieja no es una muestra más grande**,
+-- porque cuanto más atrás se mira, mayor es la proporción de citas que el sistema dejó de mirar.
+--
 -- ── LA GUARDA, QUE ES LO MISMO QUE APRENDIÓ LA 042 ──────────────────────────
 --
 -- El barrido corre una vez por hora sobre las mismas citas. Sin el `case when ... is distinct
