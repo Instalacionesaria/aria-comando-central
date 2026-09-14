@@ -447,3 +447,24 @@ test('cada cifra dice SOBRE QUÉ se calculó, y el no-show no se dibuja como tas
     'no se dice quién reporta el no-show, y el CRM no lo sabe',
   );
 });
+
+test('la cifra de Lead Flow DICE que no sabe a quién se le contestó', () => {
+  /* Es la advertencia que la vuelve honesta. La tasa mide si el CONTACTO contestó, y el sistema
+     todavía no distingue un mensaje del agente de uno de un flujo del CRM —medido: el 71,5 % de lo
+     sellado con el identificador del agente es `workflow`—. Sin esta línea, alguien la lee como el
+     rendimiento del agente y decide con ella.
+     Y va acotada a Lead Flow, como la de citas a Appointment Flow: son de poblaciones distintas. */
+  const jsx = leer(CONVERSATION);
+
+  assert.match(
+    jsx,
+    /respuesta=\{sub === 'leadflow'/,
+    'la cifra de respuesta no está acotada a Lead Flow',
+  );
+  assert.match(jsx, /no a qui[ée]n<\/b>/i, 'la cifra no advierte que no sabe quién escribió');
+  assert.match(
+    jsx,
+    /flujo del CRM/,
+    'no se nombra el motivo: sin él la advertencia se lee como una fórmula',
+  );
+});

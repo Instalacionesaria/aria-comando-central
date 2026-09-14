@@ -159,6 +159,7 @@ export default function PanelDeConversation() {
           flujo={FLUJOS[sub]}
           noAudita={pantalla?.noAudita ?? null}
           cancelacion={sub === 'appflow' ? (pantalla?.cancelacion ?? null) : null}
+          respuesta={sub === 'leadflow' ? (pantalla?.respuesta ?? null) : null}
         />
       ) : (
         <Cuerpo
@@ -210,6 +211,35 @@ function enTiempo(horas) {
   if (horas === null) return null;
   if (horas < 48) return `${Math.round(horas)} h`;
   return `${(horas / 24).toFixed(1)} días`;
+}
+
+function Respuesta({ r }) {
+  return (
+    <div className="cs-cifra">
+      <p className="cs-cifra-titulo">
+        Contactos nuevos del setter <span>últimos {r.dias} días</span>
+      </p>
+
+      <div className="cs-cifra-fila">
+        <Cifra
+          titulo="Respondieron"
+          valor={r.tasa === null ? null : `${r.tasa} %`}
+          detalle={`${r.respondieron} de ${r.escritos}`}
+        />
+        <Cifra titulo="Entraron" valor={String(r.cohorte)} detalle="contactos" />
+      </div>
+
+      {/* ── LO QUE ESTA CIFRA NO ES, Y HAY QUE DECIRLO ──────────────────────
+          Mide si el CONTACTO contestó, no si contestó AL AGENTE: el sistema todavía no distingue
+          un mensaje del agente de uno de un flujo del CRM. Sin esta línea, alguien la lee como el
+          rendimiento del agente y decide con ella. */}
+      <p className="cs-cifra-nota">
+        Mide si el contacto contestó, <b>no a quién</b>: todavía no se distingue un mensaje del
+        agente de uno de un flujo del CRM. Esa cifra más fina está en la lista de abajo.
+      </p>
+      {r.aviso ? <p className="cs-cifra-nota">{r.aviso}</p> : null}
+    </div>
+  );
 }
 
 function Cancelacion({ c }) {
@@ -274,7 +304,7 @@ function Cancelacion({ c }) {
  * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
  * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo, noAudita, cancelacion }) {
+function Flujo({ flujo, noAudita, cancelacion, respuesta }) {
   return (
     <>
       <p className="aud-alcance">
@@ -299,6 +329,7 @@ function Flujo({ flujo, noAudita, cancelacion }) {
           Va ARRIBA del «qué falta» a propósito: lo que sí se sabe primero, y después el hueco. Al
           revés, la pestaña se lee como vacía y nadie llega al número. */}
       {cancelacion ? <Cancelacion c={cancelacion} /> : null}
+      {respuesta ? <Respuesta r={respuesta} /> : null}
 
       {/* El aviso general dejó de ser incondicional. Appointment Flow YA calcula algo, así que decir
           ahí «sus indicadores todavía no se pueden calcular» sería falso — y falso de la manera que
@@ -306,7 +337,7 @@ function Flujo({ flujo, noAudita, cancelacion }) {
       <div className="fd-aviso">
         <i>◍</i>
         <span>
-          {cancelacion
+          {cancelacion || respuesta
             ? 'Sus demás indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'
             : 'Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'}
         </span>

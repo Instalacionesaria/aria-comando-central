@@ -35,6 +35,7 @@ import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
+import { respuestaDelLead } from '../../../lib/negocio/respuestaDelLead.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -72,11 +73,15 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
      tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
-  const [pantalla, prompts, cancelacion] = await conOrganizacion(contexto.orgEfectiva, async () => [
-    await laPantallaDelTecnico(noAudita),
-    await leerLosPrompts(),
-    await tasaDeCancelacion(),
-  ]);
+  const [pantalla, prompts, cancelacion, respuesta] = await conOrganizacion(
+    contexto.orgEfectiva,
+    async () => [
+      await laPantallaDelTecnico(noAudita),
+      await leerLosPrompts(),
+      await tasaDeCancelacion(),
+      await respuestaDelLead(),
+    ],
+  );
 
   return ok({
     ...pantalla,
@@ -95,5 +100,8 @@ export async function GET(peticion: Request): Promise<Response> {
        puesto — y es justamente en esas empresas donde una pestaña con algo medido dice más que una
        pestaña vacía. */
     cancelacion,
+    /* La primera cifra de Lead Flow, y la que parecía bloqueada: no necesita la atribución del
+       agente, porque pregunta si el CONTACTO contestó. Ver `respuestaDelLead`. */
+    respuesta,
   });
 }
