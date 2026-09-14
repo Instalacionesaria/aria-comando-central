@@ -210,7 +210,19 @@ export const CANALES_DEL_CHAT: readonly string[] = ['TYPE_WHATSAPP', 'TYPE_CUSTO
  * muestran— porque de ellas no hay nada que averiguar y son casi todas WhatsApp. Las dos preguntas
  * son distintas y por eso las respuestas no coinciden.
  */
-/* ── LO QUE SE DESCARTA ACÁ, MEDIDO EL 2026-09-14, Y POR QUÉ SIGUE DESCARTÁNDOSE ─
+/* ── DECIDIDO EL 2026-09-14: EL CORREO Y INSTAGRAM SE SIGUEN DESCARTANDO ───
+ *
+ * No es un pendiente ni una omisión: se puso sobre la mesa con los números de abajo y la respuesta
+ * fue dejarlo así. El alcance de esta aplicación es **chat de texto por WhatsApp y SMS**, y los
+ * agentes de voz quedan fuera por ahora — también decidido el mismo día.
+ *
+ * Quien quiera reabrirlo tiene que contestar lo que hace que sea una decisión de producto y no un
+ * filtro: **de cada fila de `negocio.mensajes` cuelga el disparador que mueve
+ * `contactos.ultimo_entrante_el`**, y de esa columna cuelgan el Buzón, la ventana de 24 horas y la
+ * reapertura de una tarea. Un correo entrante pondría al contacto en el Buzón debiendo respuesta por
+ * un canal que esta aplicación no puede contestar.
+ *
+ * ── LO QUE SE DESCARTA ACÁ, MEDIDO EL 2026-09-14 ──────────────────────────
  *
  * Esta función tira **el 10 % del tráfico de nuestros propios contactos**: sobre el censo completo
  * de las 518 conversaciones, 375 correos, 236 de Instagram y **128 registros de llamada**
