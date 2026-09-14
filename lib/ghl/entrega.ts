@@ -210,6 +210,45 @@ export const CANALES_DEL_CHAT: readonly string[] = ['TYPE_WHATSAPP', 'TYPE_CUSTO
  * muestran— porque de ellas no hay nada que averiguar y son casi todas WhatsApp. Las dos preguntas
  * son distintas y por eso las respuestas no coinciden.
  */
+/* ── LO QUE SE DESCARTA ACÁ, MEDIDO EL 2026-09-14, Y POR QUÉ SIGUE DESCARTÁNDOSE ─
+ *
+ * Esta función tira **el 10 % del tráfico de nuestros propios contactos**: sobre el censo completo
+ * de las 518 conversaciones, 375 correos, 236 de Instagram y **128 registros de llamada**
+ * (`TYPE_CUSTOM_CALL`). Eso hace pensar en «habría que guardarlos», y para las llamadas la idea
+ * tiene un destino escrito: `negocio.llamadas` existe desde la `011` y **no tiene un solo escritor**.
+ *
+ * Se midió qué trae un registro de llamada antes de escribir nada, y la respuesta es que NO ALCANZA.
+ * De las 128, el 100 % trae exactamente esta forma:
+ *
+ *     direction = outbound          status = completed        type = 34
+ *     source = api                  attachments = [ una cadena ]
+ *     meta.marketplace = { appId, appName }
+ *
+ * Contra lo que `negocio.llamadas` necesita:
+ *
+ *   · `externa_id`, `contacto_id`, `inicio_el`  →  SÍ (`id`, `contactId`, `dateAdded`).
+ *   · `contestada`          →  **NO.** `status` vale `completed` en las 128. Es el estado de la
+ *                              llamada a la API, no si una persona atendió. Y es justo la columna
+ *                              que el esquema declara que la pantalla cuenta: *«CONTESTADAS, no
+ *                              hechas»*. Escribir filas con su valor por omisión haría que 128
+ *                              llamadas reales se leyeran como «nadie atendió».
+ *   · `duracion_segundos`   →  **NO.** No hay duración en ningún nivel, ni en `meta`.
+ *   · `resumen`             →  **NO.** No hay transcripción.
+ *
+ * O sea que guardarlas hoy produciría filas que dicen «hubo una llamada» y nada más, con tres de
+ * seis columnas inventadas. El proyecto ya tiene el nombre de ese defecto: un número plausible que
+ * contesta otra pregunta.
+ *
+ * **Lo único aprovechable, y es real:** `attachments[0]` es una cadena en 128 de 128 — la grabación
+ * existe. Convertirla en `resumen` es una transcripción, o sea un subsistema, no una columna. Queda
+ * anotado acá para que la próxima persona no tenga que volver a medirlo, y para que nadie liste
+ * «guardar las llamadas» como si fuera barato.
+ *
+ * Y hay un motivo aparte, independiente de todo lo anterior, por el que estas filas no pueden entrar
+ * a `negocio.mensajes` aunque algún día traigan todo: **de cada fila de esa tabla cuelga el
+ * disparador que mueve `contactos.ultimo_entrante_el`**, y de esa columna cuelgan el Buzón, la
+ * ventana de 24 horas y la reapertura de una tarea. Es lo que el encabezado de
+ * `pruebas/base/137-canal-del-chat` ya dejó escrito. */
 export function esDeUnCanalDelChat(messageType: string | null | undefined): boolean {
   const t = String(messageType ?? '').trim();
   if (t === '') return false;

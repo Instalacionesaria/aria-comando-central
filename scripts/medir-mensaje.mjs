@@ -14,6 +14,17 @@
 //
 //   node --env-file=.env.supabase scripts/medir-mensaje.mjs
 //
+// ── Y UNA SEGUNDA PREGUNTA, DEL MISMO VIAJE ─────────────────────────────────
+//
+// **¿Qué trae un registro de llamada?** Medido antes: `TYPE_CUSTOM_CALL` llega en 128 de los
+// mensajes de nuestros contactos y la ingesta lo descarta al escribir, porque no es un canal del
+// chat. Es la única señal del agente de VOZ que hoy toca este sistema, y `negocio.llamadas` —que
+// existe desde la 011 con `contestada`, `inicio_el`, `duracion_segundos` y `resumen`— no tiene un
+// solo escritor.
+//
+// Antes de escribirla hay que saber si esos campos se pueden llenar. Como con `dateAdded` y con
+// `source`: lo que decide no es que el registro EXISTA, sino que traiga con qué.
+//
 // ── LO QUE DECIDE, Y NO ES LO QUE PARECE ────────────────────────────────────
 //
 // La frontera `app` contra no-`app` **ya está guardada**: es exactamente la columna `autor`, porque
@@ -195,6 +206,10 @@ async function main() {
     const fuentesCrudas = new Map();
     const tiposCrudos = new Map();
     const fallosPorTipo = new Map();
+    /** Las claves de los registros de llamada, y de cuántos vienen. */
+    const clavesDeLlamada = new Map();
+    const valoresDeLlamada = new Map();
+    let llamadas = 0;
     const usuarios = new Map();
     /** El `source` del CRM para NUESTRAS filas, agrupado por de quién es el identificador guardado. */
     const porDuenio = new Map([
@@ -233,6 +248,33 @@ async function main() {
         const uid = typeof o.userId === 'string' && o.userId !== '' ? o.userId : null;
         if (uid) sumar(usuarios, uid);
 
+        /* El registro de llamada, aparte. Se cuentan sus claves presentes —no ausentes— y se miran
+           los valores SÓLO de los campos que no pueden ser de nadie: números, booleanos y los tres
+           campos de clasificación. Un registro de llamada puede traer una URL de grabación, y eso no
+           se imprime ni reducido. */
+        if (o.messageType === 'TYPE_CUSTOM_CALL') {
+          llamadas++;
+          for (const [k, v] of Object.entries(o)) {
+            if (v === null || v === undefined || v === '') continue;
+            sumar(clavesDeLlamada, k);
+            if (typeof v === 'number' || typeof v === 'boolean') sumar(valoresDeLlamada, `${k} = ${v}`);
+            else if (k === 'status' || k === 'direction' || k === 'source') sumar(valoresDeLlamada, `${k} = ${v}`);
+            else if (typeof v === 'object') {
+              sumar(valoresDeLlamada, `${k} = {${Object.keys(v).sort().join(',')}}`);
+              /* Un nivel MÁS adentro, que es donde estos proveedores esconden la duración. Sólo
+                 nombres de campo y valores numéricos o booleanos: una URL de grabación no se
+                 imprime ni reducida. */
+              for (const [k2, v2] of Object.entries(v)) {
+                if (v2 === null || v2 === undefined || v2 === '') continue;
+                const tipo = Array.isArray(v2) ? 'array' : typeof v2;
+                if (tipo === 'object') sumar(valoresDeLlamada, `  ${k}.${k2} = {${Object.keys(v2).sort().join(',')}}`);
+                else if (tipo === 'number' || tipo === 'boolean') sumar(valoresDeLlamada, `  ${k}.${k2} = ${v2}`);
+                else sumar(valoresDeLlamada, `  ${k}.${k2} : ${tipo}`);
+              }
+            }
+          }
+        }
+
         /* El emparejamiento, que es el punto entero: el `source` que manda el CRM, puesto contra la
            fila que NOSOTROS guardamos con ese mismo identificador. */
         const fila = porId.get(String(o.id ?? ''));
@@ -260,6 +302,19 @@ async function main() {
     imprimirCenso('`source`, censo crudo de todo lo que devolvió el CRM:', fuentesCrudas, totalDe(fuentesCrudas));
     imprimirCenso('`messageType` (para ver si llegan registros de llamada):', tiposCrudos, totalDe(tiposCrudos));
     if (fallosPorTipo.size > 0) imprimirCenso('conversaciones que fallaron:', fallosPorTipo, aPedir.length);
+
+    // ── LA SEGUNDA PREGUNTA: ¿SE PUEDE LLENAR `negocio.llamadas`? ──────────
+    console.log(`\n  ┌─ REGISTROS DE LLAMADA (\`TYPE_CUSTOM_CALL\`): ${llamadas} ─────────────`);
+    if (llamadas === 0) {
+      console.log('  │  ninguno en esta muestra — la pregunta queda SIN CONTESTAR.');
+    } else {
+      imprimirCenso('claves presentes (sobre los registros de llamada):', clavesDeLlamada, llamadas, '  │    ');
+      imprimirCenso('valores, sólo los que no pueden ser de nadie:', valoresDeLlamada, llamadas, '  │    ');
+      console.log('  │');
+      console.log('  │  `negocio.llamadas` necesita: externa_id, contacto_id, contestada, inicio_el,');
+      console.log('  │  duracion_segundos, resumen. Lo que no aparezca arriba, no se puede llenar.');
+    }
+    console.log('  └──────────────────────────────────────────────────────────────────');
 
     console.log(`\n  usuarios distintos que sellan mensajes: ${usuarios.size}`);
     let i = 0;
