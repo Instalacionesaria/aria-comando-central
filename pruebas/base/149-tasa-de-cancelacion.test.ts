@@ -28,6 +28,7 @@ import { cerrarTodo, conectar, filas } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import {
+  CAMPO_DE_CONFIRMACION,
   DIAS_DE_LA_TASA,
   PISO_DE_ASISTENCIA,
   tasaDeCancelacion,
@@ -396,4 +397,154 @@ test('una cita CONGELADA no entra, aunque alguien haya respondido', async () => 
   const r = await leer();
   assert.equal(r.conAsistencia, PISO_DE_ASISTENCIA, 'entraron citas congeladas al denominador');
   assert.equal(r.tasaDeAsistencia, 100);
+});
+
+// ─── La confirmación del agendamiento ───────────────────────────────────────
+
+/** El campo en el catálogo, con el nombre EXACTO que la cifra busca. */
+async function elCampo(campoId = 'cf-confirma'): Promise<string> {
+  /* La carpeta va SIN `grupo`, que es el estado real de este campo en produccion: su carpeta esta
+     deliberadamente fuera de `CARPETAS_DEL_PERFIL`, y por eso `camposQueSeMuestran` no lo devuelve.
+     Es lo que hace que esta prueba ejercite el motivo por el que `campoPorNombre` existe. */
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('carpetas_del_crm')
+      .values({ carpeta_id: 'fo-x', nombre: 'Carpeta que no se muestra', grupo: null } as never)
+      .onConflict((oc) => oc.doNothing())
+      .execute(),
+  );
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('campos_del_crm')
+      .values({
+        campo_id: campoId,
+        nombre: CAMPO_DE_CONFIRMACION,
+        carpeta_id: 'fo-x',
+        tipo: 'RADIO',
+        posicion: 1,
+      } as never)
+      .onConflict((oc) => oc.doNothing())
+      .execute(),
+  );
+  return campoId;
+}
+
+/** Un contacto con su respuesta al campo, y una cita en la ventana. */
+async function contactoQueRespondio(campoId: string, valor: string | null): Promise<void> {
+  const id = await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({
+        ghl_contact_id: `${MARCA}-${randomUUID().slice(0, 8)}`,
+        nombre: 'Contacto con cita',
+        territorio: 'closer',
+        campos_del_crm: valor === null ? '{}' : JSON.stringify({ [campoId]: valor }),
+      } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+  const inicio = new Date(Date.now() - 86_400_000);
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('citas')
+      .values({
+        ghl_evento_id: `${MARCA}-${randomUUID().slice(0, 8)}`,
+        contacto_id: id,
+        inicio_el: inicio,
+        estado_ghl: 'confirmed',
+        ghl_calendario_id: 'cal1',
+      } as never)
+      .execute(),
+  );
+}
+
+async function limpiarConfirmacion(): Promise<void> {
+  await conOrganizacion(alfa, async () => {
+    await datos().deleteFrom('citas').execute();
+    await datos().deleteFrom('contactos').where('nombre', '=', 'Contacto con cita').execute();
+    await datos().deleteFrom('campos_del_crm').where('nombre', '=', CAMPO_DE_CONFIRMACION).execute();
+    await datos().deleteFrom('carpetas_del_crm').where('carpeta_id', '=', 'fo-x').execute();
+  });
+}
+
+test('la confirmación sale de un campo que la PANTALLA no muestra, y la cifra igual lo lee', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * `Confirmación Agendamiento` estaba guardado en `contactos.campos_del_crm` —178 de 584 contactos
+   * lo traen— y era ILEGIBLE desde el código de negocio: el único camino al catálogo filtraba por
+   * `grupo is not null`, o sea por la decisión de qué se dibuja en la ficha del closer.
+   *
+   * Esta prueba crea el campo SIN carpeta con grupo, que es exactamente el mundo de producción: si
+   * alguien «simplificara» `campoPorNombre` reusando `camposQueSeMuestran`, la cifra desaparecería
+   * y ninguna otra prueba lo notaría.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  await limpiarConfirmacion();
+  const campo = await elCampo();
+  for (let i = 0; i < 8; i++) await contactoQueRespondio(campo, 'Si');
+  for (let i = 0; i < 4; i++) await contactoQueRespondio(campo, 'No');
+
+  const r = await leer();
+  assert.equal(r.conConfirmacion, 12, 'la cifra no pudo leer el campo: ¿volvió a pasar por el filtro de carpetas?');
+  assert.equal(r.confirmaron, 8);
+  assert.equal(r.tasaDeConfirmacion, 66.7);
+  assert.equal(r.avisoDeConfirmacion, null, 'el aviso siguió encendido con la cifra publicada');
+  await limpiarConfirmacion();
+});
+
+test('quien NO respondió el campo no entra al denominador', async () => {
+  /* El mismo defecto que hundiría la asistencia: contar como «no confirmó» a quien nadie preguntó.
+     Acá es peor todavía, porque el campo lo llena un flujo del CRM que puede no haber corrido — y la
+     cifra diría que la gente no confirma cuando lo que pasa es que no se les pidió. */
+  await limpiarConfirmacion();
+  const campo = await elCampo();
+  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await contactoQueRespondio(campo, 'Si');
+  for (let i = 0; i < 20; i++) await contactoQueRespondio(campo, null);
+
+  const r = await leer();
+  assert.equal(r.conConfirmacion, PISO_DE_ASISTENCIA, 'los que no respondieron entraron al denominador');
+  assert.equal(r.tasaDeConfirmacion, 100, 'la cifra se hundió con gente a la que nadie preguntó');
+  await limpiarConfirmacion();
+});
+
+test('sin el campo en el catálogo la cifra dice que MIREN EL CRM, no que nadie confirma', async () => {
+  /* Los dos ceros otra vez, y acá mandan a lugares distintos: «nadie respondió» se arregla esperando
+     o revisando el flujo, y «el campo no existe» se arregla mirando el CRM. Un hueco mudo los
+     confunde, y quien lo lea va a esperar un dato que no va a llegar nunca. */
+  await limpiarConfirmacion();
+  for (let i = 0; i < 5; i++) await contactoQueRespondio('cf-que-no-esta', 'Si');
+
+  const r = await leer();
+  assert.equal(r.tasaDeConfirmacion, null);
+  assert.match(String(r.avisoDeConfirmacion), /no tiene un campo/, 'no se dijo que el campo falta');
+  assert.match(String(r.avisoDeConfirmacion), /no es que nadie confirme/);
+  await limpiarConfirmacion();
+});
+
+test('un contacto con DOS citas en la ventana cuenta una vez, no dos', async () => {
+  /* Con un `join` en vez de `exists`, su única respuesta pesaría el doble que la de quien tuvo una
+     sola cita — y la cifra se inclinaría hacia los contactos que más reagendan, que es justamente el
+     grupo cuya confirmación uno querría mirar aparte. */
+  await limpiarConfirmacion();
+  const campo = await elCampo();
+  await contactoQueRespondio(campo, 'Si');
+
+  const unContacto = await conOrganizacion(alfa, () =>
+    datos().selectFrom('contactos').select('id').where('nombre', '=', 'Contacto con cita').executeTakeFirstOrThrow(),
+  );
+  await conOrganizacion(alfa, () =>
+    datos()
+      .insertInto('citas')
+      .values({
+        ghl_evento_id: `${MARCA}-segunda`,
+        contacto_id: unContacto.id,
+        inicio_el: new Date(Date.now() - 2 * 86_400_000),
+        estado_ghl: 'confirmed',
+        ghl_calendario_id: 'cal1',
+      } as never)
+      .execute(),
+  );
+
+  const r = await leer();
+  assert.equal(r.conConfirmacion, 1, 'el contacto con dos citas se contó dos veces');
+  await limpiarConfirmacion();
 });

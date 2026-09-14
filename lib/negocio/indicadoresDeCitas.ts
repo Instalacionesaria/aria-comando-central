@@ -39,6 +39,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { campoPorNombre } from './camposDelCrm.ts';
 import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 
 /**
@@ -114,6 +115,119 @@ export interface Cancelacion {
    * aviso que siempre aparece es un aviso que nadie mira, incluido el de las citas congeladas.
    */
   avisoDeAsistencia: string | null;
+  /**
+   * Cuántos de los contactos con cita en la ventana **confirmaron** el agendamiento, según el campo
+   * del CRM `Confirmación Agendamiento`.
+   *
+   * ── ES DEL CONTACTO Y NO DE LA CITA, Y ESO ACOTA LO QUE DICE ─────────────
+   *
+   * GoHighLevel lo guarda en el contacto, así que un contacto con dos citas tiene **un** valor: el
+   * de la última vez que alguien tocó ese campo. Por eso el denominador son CONTACTOS con cita en la
+   * ventana y no citas — contar citas repetiría el mismo valor dos veces y lo haría pesar doble.
+   *
+   * `null` en la tasa = el campo no existe en este CRM, o nadie lo respondió. Los dos casos los
+   * distingue `avisoDeConfirmacion`.
+   */
+  conConfirmacion: number;
+  confirmaron: number;
+  tasaDeConfirmacion: number | null;
+  avisoDeConfirmacion: string | null;
+}
+
+/**
+ * El nombre EXACTO del campo del CRM que dice si el contacto confirmó.
+ *
+ * Va acá y no adentro de la consulta porque es un dato de configuración del cliente disfrazado de
+ * constante: el día que haya una segunda empresa con otro nombre, esto se muda a una columna de
+ * `organizaciones_credenciales` y este comentario dice por qué.
+ *
+ * Medido el 2026-09-14 contra la subcuenta real: 178 de 584 contactos lo traen, con exactamente dos
+ * valores —`Si` (125) y `No` (53)—. Es un vocabulario del CRM y no nuestro, así que la comparación
+ * es contra el texto tal cual viene.
+ */
+export const CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento';
+
+/** El valor que significa «confirmó». El resto —`No`, o cualquier otro— no confirma. */
+const CONFIRMO = 'Si';
+
+/**
+ * Cuántos confirmaron, entre los contactos con cita alcanzable en la ventana.
+ *
+ * ── POR QUÉ ES UNA CONSULTA APARTE Y NO ENTRA A LA PASADA GRANDE ───────────
+ *
+ * Porque el denominador es otro: las cuatro cifras de arriba cuentan CITAS y ésta cuenta CONTACTOS
+ * con cita —el campo vive en el contacto, no en la cita—. Meterla en el mismo `select` obligaría a
+ * un `distinct` dentro de un `filter`, y el resultado se leería como si hablara de las mismas filas
+ * que sus vecinas cuando no lo hace.
+ *
+ * Corre en la misma transacción igual, por lo mismo que el no-show.
+ */
+async function confirmacionEnLaVentana(
+  dias: number,
+): Promise<{ conConfirmacion: number; confirmaron: number; conCita: number; hayCampo: boolean }> {
+  const campoId = await campoPorNombre(CAMPO_DE_CONFIRMACION);
+  /* Sin el campo en el catálogo no hay cifra, y **no es lo mismo que cero**: puede ser que esta
+     empresa no use ese campo, o que alguien lo haya renombrado en el CRM. Se devuelve el hecho y lo
+     dice el aviso; calcular sobre `null` daría 0 de 0 y la pantalla mostraría un hueco mudo. */
+  if (campoId === null) {
+    return { conConfirmacion: 0, confirmaron: 0, conCita: 0, hayCampo: false };
+  }
+
+  const f = await datos()
+    .selectFrom('contactos as ct')
+    .select([
+      sql<number>`count(*)`.as('con_cita'),
+      sql<number>`count(*) filter (where ct.campos_del_crm ? ${campoId})`.as('con_confirmacion'),
+      sql<number>`count(*) filter (where ct.campos_del_crm ->> ${campoId} = ${CONFIRMO})`.as('confirmaron'),
+    ])
+    /* `exists` y no un `join`: con el `join`, un contacto con tres citas en la ventana contaría tres
+       veces, y su única respuesta pesaría el triple que la de quien tuvo una sola. */
+    .where(
+      sql<boolean>`exists (
+        select 1 from negocio.citas ci
+        where ci.org_id = ct.org_id
+          and ci.contacto_id = ct.id
+          and ci.ghl_calendario_id is not null
+          and ci.inicio_el >= now() - make_interval(days => ${dias})
+          and ci.inicio_el < now()
+      )`,
+    )
+    .executeTakeFirst();
+
+  return {
+    conConfirmacion: Number(f?.con_confirmacion ?? 0),
+    confirmaron: Number(f?.confirmaron ?? 0),
+    conCita: Number(f?.con_cita ?? 0),
+    hayCampo: true,
+  };
+}
+
+/**
+ * Qué decir de la confirmación, y cuándo callarse. Los mismos tres estados que sus dos hermanas.
+ *
+ * El primero es el que la distingue de las otras: **el campo puede no existir**. Ése no es un
+ * problema de volumen que se arregle esperando, así que el texto manda a mirar el CRM y no a
+ * registrar más.
+ */
+function avisoDeLaConfirmacion(
+  hayCampo: boolean,
+  conCita: number,
+  conConfirmacion: number,
+): string | null {
+  if (!hayCampo) {
+    return `El CRM de esta empresa no tiene un campo «${CAMPO_DE_CONFIRMACION}», o cambió de ` +
+      'nombre. Sin él no hay confirmación que contar: no es que nadie confirme.';
+  }
+  if (conCita === 0) return null; // Ya lo dijo `avisoDe`.
+  if (conConfirmacion === 0) {
+    return `Ninguno de los ${conCita} contactos con cita en este período tiene respondido el campo ` +
+      `«${CAMPO_DE_CONFIRMACION}» en el CRM.`;
+  }
+  if (conConfirmacion < PISO_DE_ASISTENCIA) {
+    return `Sólo ${conConfirmacion} de ${conCita} contactos con cita tienen ese campo respondido en ` +
+      `el CRM. Con menos de ${PISO_DE_ASISTENCIA} no se muestra una tasa.`;
+  }
+  return null;
 }
 
 /**
@@ -207,6 +321,8 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     .where(sql<boolean>`creado_el >= now() - make_interval(days => ${dias})`)
     .executeTakeFirst();
 
+  const conf = await confirmacionEnLaVentana(dias);
+
   return {
     citas,
     canceladas,
@@ -234,6 +350,15 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
         ? null
         : Math.round((sePresentaron / conAsistencia) * 1000) / 10,
     avisoDeAsistencia: avisoDeLaAsistencia(citas, conAsistencia, dias),
+    conConfirmacion: conf.conConfirmacion,
+    confirmaron: conf.confirmaron,
+    /* Mismo piso que la asistencia, y por el mismo motivo: no es el volumen de citas lo que decide,
+       es el de RESPUESTAS. Con 139 citas y 3 campos respondidos la muestra son 3. */
+    tasaDeConfirmacion:
+      conf.conConfirmacion < PISO_DE_ASISTENCIA
+        ? null
+        : Math.round((conf.confirmaron / conf.conConfirmacion) * 1000) / 10,
+    avisoDeConfirmacion: avisoDeLaConfirmacion(conf.hayCampo, conf.conCita, conf.conConfirmacion),
   };
 }
 

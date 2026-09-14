@@ -283,6 +283,15 @@ function Cancelacion({ c }) {
           valor={c.tasaDeAsistencia === null ? null : `${c.tasaDeAsistencia} %`}
           detalle={`${c.sePresentaron} de ${c.conAsistencia} respondidas`}
         />
+        <Cifra
+          titulo="Confirmaron"
+          /* Ésta SÍ sale del CRM, al revés que las dos de al lado: es un campo que el contacto o un
+             flujo responde. Su denominador son CONTACTOS con cita —el campo vive en el contacto— y
+             por eso el detalle dice «contactos» y no «citas»: son cosas distintas y la tarjeta está
+             al lado de tres que cuentan citas. */
+          valor={c.tasaDeConfirmacion === null ? null : `${c.tasaDeConfirmacion} %`}
+          detalle={`${c.confirmaron} de ${c.conConfirmacion} contactos`}
+        />
       </div>
 
       <p className="cs-cifra-nota">
@@ -293,6 +302,7 @@ function Cancelacion({ c }) {
           se empezó a registrar hoy— y compartir el renglón apagaría por costumbre el de las citas
           congeladas, que sí es excepcional. */}
       {c.avisoDeAsistencia ? <p className="cs-cifra-nota">{c.avisoDeAsistencia}</p> : null}
+      {c.avisoDeConfirmacion ? <p className="cs-cifra-nota">{c.avisoDeConfirmacion}</p> : null}
       {c.aviso ? <p className="cs-cifra-nota">{c.aviso}</p> : null}
     </div>
   );

@@ -267,6 +267,57 @@ export async function camposQueSeMuestran(): Promise<CampoMostrable[]> {
   }));
 }
 
+/**
+ * El identificador de un campo del CRM **por su nombre**, sin pasar por el filtro de carpetas.
+ *
+ * ══════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ NO SIRVE `camposQueSeMuestran` PARA ESTO, Y POR QUÉ ESTO NO ES UN ATAJO
+ *
+ * Aquélla filtra por `cp.grupo is not null`, o sea por la decisión de **qué se dibuja en la ficha**.
+ * Ese filtro es correcto para la pantalla y equivocado para el negocio: un campo puede ser un dato
+ * que hace falta para una cifra y a la vez algo que no tiene por qué ocupar lugar en el Perfil del
+ * closer.
+ *
+ * El caso medido que obligó a escribir esto: **`Confirmación Agendamiento`** está guardado en
+ * `contactos.campos_del_crm` —178 de 584 contactos lo traen, con un vocabulario binario de `Si` y
+ * `No`— y era **ilegible desde el código de negocio**, porque su carpeta está deliberadamente fuera
+ * de `CARPETAS_DEL_PERFIL`. El dato estaba y no había forma de preguntarle.
+ *
+ * ── LA PANTALLA NO SE TOCA, Y ÉSE ES EL PUNTO ──────────────────────────────
+ *
+ * Esto **no** agrega la carpeta al Perfil. Son dos preguntas distintas —«qué mira una persona» y
+ * «qué necesita una cifra»— y mezclarlas haría que agregar un indicador cambiara lo que el closer ve
+ * en pantalla, sin que nadie lo pidiera.
+ *
+ * ── POR NOMBRE, Y EL PRECIO DICHO ──────────────────────────────────────────
+ *
+ * Los valores se guardan por identificador justamente para que renombrar un campo en el CRM no
+ * congele nada (migración `039`). Acá el nombre es lo único que hay: una cifra no puede llevar
+ * escrito un identificador opaco de GoHighLevel, que no se puede leer ni verificar.
+ *
+ * El precio es real y hay que decirlo: **si alguien renombra ese campo en el CRM, esto devuelve
+ * `null`**. Por eso `null` es un valor de retorno legítimo y no una excepción, y por eso quien lo
+ * usa tiene que poder decir «no sé» en vez de «cero» — que es lo que hace la cifra que lo consume.
+ *
+ * Comparación exacta y no `ilike`: dos campos que difieran sólo en mayúsculas son dos campos, y
+ * elegir el equivocado daría una cifra plausible sobre la pregunta equivocada.
+ *
+ * Se corre dentro de `conOrganizacion(`.
+ */
+export async function campoPorNombre(nombre: string): Promise<string | null> {
+  const f = await datos()
+    .selectFrom('campos_del_crm')
+    .select('campo_id')
+    .where('nombre', '=', nombre)
+    /* El desempate estable. Dos campos con el mismo nombre en carpetas distintas son posibles —el
+       CRM no lo impide— y sin orden la cifra tomaría uno u otro según cómo devolviera el motor,
+       cambiando de denominador entre corridas sin que nada falle. */
+    .orderBy('campo_id')
+    .limit(1)
+    .executeTakeFirst();
+  return f?.campo_id ?? null;
+}
+
 /** Cuántas definiciones tiene el catálogo. `0` = nunca se leyó. */
 export async function hayCatalogo(): Promise<boolean> {
   const r = await datos()
