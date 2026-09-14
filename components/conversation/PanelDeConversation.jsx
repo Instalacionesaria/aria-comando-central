@@ -54,7 +54,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { Cuerpo } from '../auditoria/PanelDeAuditoria.jsx';
-import { agruparPorPatron, leerLaPantalla } from '@/lib/auditor/vista';
+import { POR_QUE_NO_AUDITA, agruparPorPatron, leerLaPantalla } from '@/lib/auditor/vista';
 
 /**
  * Las cuatro pestañas.
@@ -155,7 +155,7 @@ export default function PanelDeConversation() {
       </div>
 
       {FLUJOS[sub] ? (
-        <Flujo flujo={FLUJOS[sub]} />
+        <Flujo flujo={FLUJOS[sub]} noAudita={pantalla?.noAudita ?? null} />
       ) : (
         <Cuerpo
           cargando={cargando}
@@ -179,14 +179,38 @@ export default function PanelDeConversation() {
  * Cada falta dice **qué** no se puede medir y **por qué**, no «próximamente». La diferencia importa:
  * con el porqué, quien lee sabe si es cuestión de esperar o de pedir algo — y dos de las tres
  * necesitan una decisión fuera de esta aplicación.
+ *
+ * ── EL FRENO LLEGA HASTA ACÁ, Y ANTES NO LLEGABA ───────────────────────────
+ *
+ * Esta pantalla afirmaba, sin condición, que *«sus hallazgos ya se ven en la pestaña Auditoría»*. Es
+ * falso para casi toda la flota: **medido el 2026-09-14, de las 12 empresas activas sólo 4 tienen la
+ * llave de IA y sólo 1 tiene el identificador del agente en el CRM.** En las demás la pestaña de
+ * Auditoría está vacía, y esta línea mandaba a mirarla como si ahí hubiera algo.
+ *
+ * Es el mismo defecto que la aplicación ya persigue en las cifras —prometer un dato que no está— y
+ * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
+ * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo }) {
+function Flujo({ flujo, noAudita }) {
   return (
     <>
       <p className="aud-alcance">
-        <b>{flujo.titulo}.</b> {flujo.mision} Lo supervisa el agente <b>{flujo.agente}</b>, y sus
-        hallazgos ya se ven en la pestaña <b>Auditoría</b>.
+        <b>{flujo.titulo}.</b> {flujo.mision} Lo supervisa el agente <b>{flujo.agente}</b>
+        {noAudita ? '.' : (
+          <>
+            , y sus hallazgos ya se ven en la pestaña <b>Auditoría</b>.
+          </>
+        )}
       </p>
+
+      {/* El freno de la empresa, con las palabras que ya usa la pestaña de Auditoría: si las dos
+          pantallas lo dijeran distinto, se leerían como dos problemas. */}
+      {noAudita ? (
+        <div className="aud-aviso">
+          <strong>Esta empresa todavía no audita.</strong>{' '}
+          {POR_QUE_NO_AUDITA[noAudita] ?? 'Falta configurar el auditor.'}
+        </div>
+      ) : null}
 
       <div className="fd-aviso">
         <i>◍</i>

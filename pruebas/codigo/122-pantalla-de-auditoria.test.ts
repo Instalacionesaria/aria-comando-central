@@ -311,3 +311,70 @@ test('los niveles concuerdan en número: «2 verdes», no «2 verde»', () => {
   const jsx = leer(PANEL);
   assert.match(jsx, /n === 1 \? nivel : `\$\{nivel\}s`/, 'los chips del semáforo no pluralizan');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL FRENO LLEGA A LAS TRES PESTAÑAS, NO SOLO A AUDITORÍA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('las pestañas de flujo NO prometen hallazgos cuando la empresa no audita', () => {
+  /* ── EL DEFECTO, Y ERA FALSO PARA CASI TODA LA FLOTA ──────────────────────
+   *
+   * `Flujo` afirmaba sin condición que «sus hallazgos ya se ven en la pestaña Auditoría». Medido el
+   * 2026-09-14 contra producción: de las **12 empresas activas, sólo 4 tienen llave de IA y sólo 1
+   * tiene el identificador del agente en el CRM**. En las demás esa pestaña está vacía, y la línea
+   * mandaba a mirarla como si hubiera algo.
+   *
+   * Es el mismo defecto que esta aplicación persigue en las cifras —prometer un dato que no está— y
+   * el freno que lo dice bien ya existía en `pantalla.noAudita`; sólo lo leía Auditoría.
+   *
+   * Se lee el FUENTE y no el resultado porque el freno depende de datos de la empresa, y una prueba
+   * que montara la pantalla con una empresa sin freno pasaría sin tocar esto. */
+  const jsx = leer(CONVERSATION);
+
+  // 1 · El componente recibe el freno. Sin esto no puede decidir nada.
+  assert.match(
+    jsx,
+    /function Flujo\(\{\s*flujo,\s*noAudita\s*\}\)/,
+    'el flujo no recibe el freno: no puede saber si la empresa audita',
+  );
+  assert.match(
+    jsx,
+    /<Flujo[^>]*noAudita=\{pantalla\?\.noAudita/,
+    'el freno no se le pasa al flujo desde la pantalla',
+  );
+
+  // 2 · La promesa es CONDICIONAL. Es la mitad que de verdad arregla el defecto.
+  const i = jsx.indexOf('pestaña <b>Auditoría</b>');
+  assert.ok(i > 0, 'se fue la línea que manda a Auditoría');
+  const alrededor = jsx.slice(Math.max(0, i - 400), i);
+  assert.match(
+    alrededor,
+    /noAudita\s*\?/,
+    'la promesa «sus hallazgos ya se ven en Auditoría» sigue siendo incondicional, y es falsa en 11 ' +
+      'de las 12 empresas activas',
+  );
+
+  // 3 · Y cuando frena, lo dice con el MISMO texto que la otra pestaña: dos redacciones del mismo
+  //     hecho se leen como dos problemas distintos.
+  assert.match(jsx, /POR_QUE_NO_AUDITA\[noAudita\]/, 'el flujo no reusa el motivo ya escrito');
+  assert.match(jsx, /Esta empresa todavía no audita/, 'el flujo no dice el freno con el texto de la casa');
+});
+
+test('el motivo del freno sale de UN solo sitio, y las dos pantallas lo importan', () => {
+  /* La comprobación de entrada muerta de la de arriba: si alguien copiara el texto del motivo en vez
+     de importarlo, la prueba anterior seguiría pasando y las dos pantallas podrían divergir en el
+     siguiente cambio. */
+  const conv = leer(CONVERSATION);
+  const aud = leer(PANEL);
+  const pantallas: [string, string][] = [
+    ['Conversation', conv],
+    ['Auditoría', aud],
+  ];
+  for (const [nombre, jsx] of pantallas) {
+    assert.match(
+      jsx,
+      /import \{[^}]*POR_QUE_NO_AUDITA/s,
+      `${nombre} no importa el mapa de motivos: si lo copió, las dos pantallas van a divergir`,
+    );
+  }
+});
