@@ -611,12 +611,35 @@ async function selloMasViejo(orgId: string, tareas: readonly Tarea[]): Promise<n
   return conOrganizacion(orgId, async () => {
     const filas = await datos()
       .selectFrom('tareas_programadas')
-      .select(['tarea', 'ultima_corrida_el'])
+      .select(['tarea', 'ultima_corrida_el', 'ultimo_estado'])
       .where('tarea', 'in', delTrabajo)
       .execute();
 
     // Falta alguna → nunca se barrió esa tarea acá, y eso va primero.
     if (filas.length < delTrabajo.length) return null;
+
+    /* ── `sin_tiempo` CUENTA COMO NO SERVIDA, Y SIN ESTO EL ORDEN SE DA VUELTA ─
+     *
+     * El comentario del ordenador promete que *«una corrida perdida es un problema que se arregla
+     * solo»*: quien se quedó sin tiempo va primero la próxima vez. **Con sólo la fecha, ese orden
+     * hace exactamente lo contrario.**
+     *
+     * La empresa que se queda sin presupuesto se sella al FINAL de la corrida, así que termina con
+     * el sello MÁS NUEVO de todas — y el más nuevo va último. O sea que vuelve al fondo de la cola,
+     * y otra vez, y otra vez: **se muere de hambre para siempre**, que es palabra por palabra el
+     * defecto que ese comentario dice estar evitando.
+     *
+     * El arreglo no es dejar de sellar. El encabezado de `sellar` dice que escribir SIEMPRE es
+     * deliberado —es lo que distingue «el cron pasó y esta empresa no tiene token» de «el cron no
+     * pasó nunca»— y la `014` define la columna como «cuándo PASÓ el cron por acá», que con
+     * `sin_tiempo` es verdad: pasó y no le alcanzó. Lo que faltaba era leer el estado, que esa misma
+     * migración dice que existe justo para esto: *«las dos cosas se distinguen con `ultimo_estado`,
+     * y hacen falta las dos»*.
+     *
+     * Se devuelve `null` —el mismo valor que «nunca se barrió»— porque el efecto que se quiere es el
+     * mismo: ir primero. */
+    if (filas.some((f) => f.ultimo_estado === 'sin_tiempo')) return null;
+
     return Math.min(...filas.map((f) => f.ultima_corrida_el.getTime()));
   });
 }

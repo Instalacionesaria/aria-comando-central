@@ -240,3 +240,38 @@ test('el CHAT lleva la frescura HAYA o no mensajes', async () => {
   );
   assert.ok(conUno.frescura.aviso);
 });
+
+test('UNA TAREA QUE FALLA SIEMPRE deja de pasar por «al día»', async () => {
+  /* ── EL AGUJERO QUE ESTO CIERRA, Y ES EL PEOR MODO DE FALLA DEL ARCHIVO ───
+   *
+   * `sellar` escribe `ultima_corrida_el` **también cuando el estado es `fallo`** —y está bien, la
+   * `014` define la columna como «cuándo pasó el cron», no «cuándo hizo trabajo»—. Pero
+   * `frescuraDe` pedía `ultimo_estado` en su `select` **y ninguna rama lo miraba**. Así que una
+   * tarea que revienta en TODAS sus corridas tiene el sello perfectamente fresco, cae en `al_dia`, y
+   * la pantalla no dice absolutamente nada.
+   *
+   * Pasó de verdad: el 2026-09-11 el barrido de citas falló con `column "reservada_el" does not
+   * exist` y estuvo una hora sellado como `fallo`. La Agenda dibujó silencio, porque una hora es
+   * menos que el umbral. El fallo sobrevivió sólo en una nota escrita a mano. */
+  await limpiar();
+  await sello('mensajes', 0, 'fallo');
+  const f = await leer('mensajes');
+  assert.equal(f.estado, 'fallando', 'un fallo con sello fresco sigue leyéndose como «al día»');
+  assert.ok(f.aviso, 'falló y no avisó nada');
+  assert.match(f.aviso, /FALL/i);
+});
+
+test('los otros estados que NO corrieron siguen callados: el aviso no puede aparecer siempre', async () => {
+  /* La mitad que impide que el arreglo de arriba sea peor que el defecto. `saltada`, `frenada` y
+     `sin_tiempo` son normales y ya tienen su motivo legible en otra parte; avisarlos acá sería el
+     aviso que aparece siempre, que es la regla que `umbralDe` ya tenía escrita.
+     Medido en producción el 2026-09-14: de 13 empresas con sello, 12 están `saltada` por falta de
+     token. Si esta rama avisara, la pantalla gritaría en todas. */
+  for (const estado of ['saltada', 'frenada', 'sin_tiempo']) {
+    await limpiar();
+    await sello('mensajes', 0, estado);
+    const f = await leer('mensajes');
+    assert.equal(f.estado, 'al_dia', `«${estado}» con sello fresco tendría que estar al día`);
+    assert.equal(f.aviso, null, `«${estado}» avisó, y es un estado normal`);
+  }
+});

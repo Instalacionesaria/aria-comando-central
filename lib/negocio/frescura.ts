@@ -48,8 +48,8 @@ import { HORARIOS, type Tarea } from './barrido.ts';
 
 /** Qué tan fresco está el barrido de una tarea. `null` en `estado` = al día. */
 export interface Frescura {
-  /** `nunca` | `atrasada` | `al_dia`. Los dos primeros se dicen; el tercero se calla. */
-  estado: 'nunca' | 'atrasada' | 'al_dia';
+  /** `nunca` | `atrasada` | `fallando` | `al_dia`. Los tres primeros se dicen; el último se calla. */
+  estado: 'nunca' | 'atrasada' | 'fallando' | 'al_dia';
   /** Hace cuántos minutos corrió. `null` cuando nunca corrió. */
   minutos: number | null;
   /** A partir de cuántos minutos se considera atrasada. Viaja para que la pantalla no lo invente. */
@@ -129,6 +129,35 @@ export async function frescuraDe(tarea: Tarea): Promise<Frescura> {
   }
 
   const minutos = Number(fila.minutos);
+
+  /* ── EL ESTADO SE PEDÍA Y NO SE MIRABA, Y ESO TAPA UNA TAREA QUE FALLA SIEMPRE ─
+   *
+   * `ultimo_estado` estaba en el `select` de arriba desde el primer día y ninguna rama lo leía. El
+   * agujero que dejaba es preciso: **`sellar` escribe `ultima_corrida_el` también cuando el estado
+   * es `fallo`**, así que una tarea que revienta en TODAS sus corridas tiene el sello perfectamente
+   * fresco, cae en la rama `al_dia`, y la pantalla no dice nada.
+   *
+   * No es hipotético: el 2026-09-11 el barrido de citas falló con `column "reservada_el" does not
+   * exist` y estuvo una hora con `ultimo_estado = 'fallo'` en la base. La Agenda dibujó silencio,
+   * porque una hora es menos que el umbral de esa tarea. El fallo sobrevivió sólo en una nota.
+   *
+   * Va ANTES del umbral a propósito: un fallo reciente importa aunque el sello esté fresco — de
+   * hecho, sobre todo entonces, porque es cuando nada más lo va a decir.
+   *
+   * Y sólo `fallo`. Los otros tres estados que no son `corrio` —`saltada`, `frenada`, `sin_tiempo`—
+   * son normales y ya tienen su propio motivo legible; avisarlos acá sería el aviso que aparece
+   * siempre y que por eso se ignora, que es la regla que `umbralDe` ya escribió. */
+  if (fila.ultimo_estado === 'fallo') {
+    return {
+      estado: 'fallando',
+      minutos,
+      umbralMinutos: umbral,
+      aviso:
+        `El último barrido automático de ${NOMBRE[tarea]} FALLÓ, hace ${enPalabras(minutos)}. El ` +
+        'sello está fresco porque el cron sí pasó, pero no trajo nada: puede haber cosas sin traer.',
+    };
+  }
+
   if (minutos <= umbral) {
     return { estado: 'al_dia', minutos, umbralMinutos: umbral, aviso: null };
   }

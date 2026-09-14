@@ -363,6 +363,54 @@ test('la empresa SIN sello va antes que la que ya tiene uno', async () => {
   assert.equal(r.renglones[0]?.slug, 'alfa', 'la que nunca se barrió tiene que ir primera');
 });
 
+test('EL HAMBRE PERPETUA: la que se quedó SIN TIEMPO va primera la vez siguiente', async () => {
+  /* ── EL DEFECTO, Y EL COMENTARIO DEL ORDENADOR LO DESCRIBÍA SIN VERLO ─────
+   *
+   * Ese comentario promete que «una corrida perdida es un problema que se arregla solo»: quien se
+   * quedó sin tiempo va primero la próxima vez. Con el orden mirando SÓLO la fecha, hacía justo lo
+   * contrario.
+   *
+   * La empresa que se queda sin presupuesto **se sella al final de la corrida**, así que termina con
+   * el sello MÁS NUEVO de todas — y el más nuevo va último. O sea que vuelve al fondo de la cola, y
+   * otra vez, y otra vez: se muere de hambre para siempre, que es palabra por palabra lo que ese
+   * comentario decía estar evitando.
+   *
+   * Esta prueba lo fuerza: primero se agota el presupuesto para que las dos queden `sin_tiempo`, y
+   * después se corre normal comprobando que la que quedó sin trabajo encabeza. */
+  await limpiar();
+
+  // Corrida 1: `beta` sola y con tiempo. Queda con un sello normal.
+  await barrerTodo('0 12 * * *', [
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+  ]);
+
+  // Corrida 2: `alfa` sola y SIN tiempo. Queda sellada `sin_tiempo`, y con la fecha más nueva.
+  let n = 0;
+  await barrerTodo(
+    '0 12 * * *',
+    [{ org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR }],
+    () => (++n === 1 ? 0 : 600_000),
+  );
+  const sellada = (await sellos()).filter((x) => x.slug === 'alfa');
+  assert.ok(
+    sellada.length > 0 && sellada.every((x) => x.estado === 'sin_tiempo'),
+    'el arnés no dejó a `alfa` en `sin_tiempo`: la prueba no mide lo que cree',
+  );
+
+  // Corrida 3, con tiempo y las dos: `alfa` no trabajó nunca, así que le toca.
+  const r = await barrerTodo('0 12 * * *', [
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+  ]);
+
+  assert.equal(
+    r.renglones[0]?.slug,
+    'alfa',
+    'la que se quedó sin tiempo volvió al fondo de la cola: su propio sello la mandó última, y así ' +
+      'se muere de hambre para siempre',
+  );
+});
+
 test('con el presupuesto agotado, las que faltan salen como `sin_tiempo` y NO se intentan', async () => {
   // Con el reloj inyectado: sin la costura, comprobar esto exigiría una prueba de tres minutos.
   await limpiar();
