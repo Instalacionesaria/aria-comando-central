@@ -87,7 +87,18 @@ const FLUJOS = {
     mision: 'Convertir citas agendadas en asistencias efectivas.',
     agente: 'AppFlow',
     falta: [
-      ['La asistencia', 'El CRM tiene los campos «asistió» y «no apareció» y están casi vacíos: 3 citas de 1052. La única señal de no-show con volumen la registra el closer al cerrar el intento, y eso es un dato reportado por una persona, no por el calendario.'],
+      /* ── «LA ASISTENCIA» SALIÓ DE ESTA LISTA, Y NO ES UN RECORTE ──────────
+       *
+       * Estaba acá declarada como imposible mientras la tarjeta de arriba **ya dibuja la cifra**:
+       * la migración `049` le dio a la cita su columna `asistio` y Avanzar la pregunta al cerrar
+       * el intento. Una pantalla que muestra un número tres centímetros arriba de un cartel que
+       * dice que ese número no se puede saber no es una imprecisión: enseña a no leer los
+       * carteles, y con eso se pierden los tres que sí son ciertos.
+       *
+       * Lo que sigue faltando es OTRA cosa, más chica y más concreta, así que se dice aparte: el
+       * dato lo reporta una persona y todavía no hay volumen. Eso ya lo dice `avisoDeAsistencia`
+       * al lado de la cifra, con el conteo real, así que acá no se repite. */
+      ['La asistencia según el CALENDARIO', 'El CRM tiene sus campos «asistió» y «no apareció» y están vacíos: 3 citas de 1052 en un año. La cifra que sí se muestra la reporta el closer al cerrar el intento, o sea una persona — así que mide lo que alguien registró, no lo que el calendario observó, y un intento que nadie cierra no aparece en ninguna de las dos.'],
       ['El video precall', 'Llega como campo suelto del CRM, sin fecha ni porcentaje visto, así que no se puede decir quién lo vio ni cuánto.'],
       ['El historial de reagendamientos', 'Desde ahora se guarda el ÚLTIMO movimiento —la hora anterior y cuándo lo movieron—, pero no la cadena completa: el barrido mira una vez por hora, así que dos movimientos seguidos se ven como uno. Y cancelar para volver a reservar produce otra cita en el CRM, no un reagendamiento.'],
     ],
@@ -213,21 +224,76 @@ function enTiempo(horas) {
   return `${(horas / 24).toFixed(1)} días`;
 }
 
-function Respuesta({ r }) {
+/**
+ * Un tiempo en minutos, dicho en la unidad que no miente.
+ *
+ * Medido: la mediana hasta la primera respuesta es de 6 minutos y el percentil 90 de 6,2 HORAS. Si
+ * los dos se dibujaran en minutos, «371 min» obliga a quien mira a dividir de cabeza; si los dos se
+ * dibujaran en horas, «0,1 h» borra la cifra que importa. Cada uno en su unidad, y por eso esto
+ * decide por valor y no por campo.
+ */
+function enMinutos(m) {
+  if (m === null || m === undefined) return null;
+  if (m < 90) return `${Math.round(m * 10) / 10} min`;
+  if (m < 60 * 48) return `${Math.round((m / 60) * 10) / 10} h`;
+  return `${Math.round((m / 1440) * 10) / 10} d`;
+}
+
+function Lead({ r }) {
   return (
     <div className="cs-cifra">
       <p className="cs-cifra-titulo">
-        Contactos nuevos del setter <span>últimos {r.dias} días</span>
+        Leads que entraron al CRM <span>últimos {r.dias} días</span>
       </p>
 
       <div className="cs-cifra-fila">
+        {/* El KPI principal del flujo (§9.3), y va primero: es lo que la pestaña existe para
+            mostrar. Estuvo bloqueado hasta que `alta_en_el_crm` dio una cohorte que no dependiera
+            del territorio — el territorio es consecuencia de agendar, no una cohorte. */}
+        <Cifra
+          titulo="Agendaron"
+          valor={r.bookingRate === null ? null : `${r.bookingRate} %`}
+          detalle={`${r.agendaron} de ${r.cohorte}`}
+        />
         <Cifra
           titulo="Respondieron"
           valor={r.tasa === null ? null : `${r.tasa} %`}
-          detalle={`${r.respondieron} de ${r.escritos}`}
+          /* Su denominador NO es el de la izquierda: son los que recibieron un mensaje. Por eso el
+             detalle lo dice con palabras en vez de repetir la cohorte. */
+          detalle={`${r.respondieron} de ${r.escritos} escritos`}
         />
-        <Cifra titulo="Entraron" valor={String(r.cohorte)} detalle="contactos" />
+        <Cifra
+          titulo="Tardamos en escribir"
+          valor={enMinutos(r.hastaElPrimerIntento?.p50)}
+          detalle={
+            r.hastaElPrimerIntento
+              ? `9 de cada 10, antes de ${enMinutos(r.hastaElPrimerIntento.p90)}`
+              : 'sin datos'
+          }
+        />
+        <Cifra
+          titulo="Tardan en contestar"
+          valor={enMinutos(r.hastaLaPrimeraRespuesta?.p50)}
+          /* El p90 va en el detalle y no escondido: medido, es 61 veces la mediana. Una tarjeta que
+             dijera sólo «6 min» describiría un negocio distinto del real. */
+          detalle={
+            r.hastaLaPrimeraRespuesta
+              ? `9 de cada 10, antes de ${enMinutos(r.hastaLaPrimeraRespuesta.p90)}`
+              : 'sin datos'
+          }
+        />
       </div>
+
+      {/* Los dos conteos van abajo y como texto, no como tarjetas: son números chicos sobre una
+          cohorte grande, y una tarjeta grande les daría un peso que no tienen. */}
+      <p className="cs-cifra-nota">
+        {r.sinNingunMensaje > 0 ? (
+          <>
+            <b>{r.sinNingunMensaje}</b> no recibieron ningún mensaje nuestro y{' '}
+          </>
+        ) : null}
+        <b>{r.escritosSinContestar}</b> recibieron y todavía no contestaron.
+      </p>
 
       {/* ── LO QUE ESTA CIFRA NO ES, Y HAY QUE DECIRLO ──────────────────────
           Mide si el CONTACTO contestó, no si contestó AL AGENTE: el sistema todavía no distingue
@@ -237,6 +303,14 @@ function Respuesta({ r }) {
         Mide si el contacto contestó, <b>no a quién</b>: todavía no se distingue un mensaje del
         agente de uno de un flujo del CRM. Esa cifra más fina está en la lista de abajo.
       </p>
+      {/* Y la cota que la migración `048` dejó escrita: estas columnas no tienen relleno hacia
+          atrás, así que la cohorte empieza el día que el barrido las pobló. Una pantalla que dice
+          «últimos 14 días» sobre datos que empiezan hace tres semanas miente por omisión. */}
+      <p className="cs-cifra-nota">
+        La cohorte se arma por la fecha de entrada <b>al CRM</b>, no por cuándo la vio este sistema.
+        Antes se armaba con lo segundo, que en la carga inicial es la misma fecha para todos.
+      </p>
+      {r.avisoDeLatencias ? <p className="cs-cifra-nota">{r.avisoDeLatencias}</p> : null}
       {r.aviso ? <p className="cs-cifra-nota">{r.aviso}</p> : null}
     </div>
   );
@@ -351,7 +425,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta }) {
           Va ARRIBA del «qué falta» a propósito: lo que sí se sabe primero, y después el hueco. Al
           revés, la pestaña se lee como vacía y nadie llega al número. */}
       {cancelacion ? <Cancelacion c={cancelacion} /> : null}
-      {respuesta ? <Respuesta r={respuesta} /> : null}
+      {respuesta ? <Lead r={respuesta} /> : null}
 
       {/* El aviso general dejó de ser incondicional. Appointment Flow YA calcula algo, así que decir
           ahí «sus indicadores todavía no se pueden calcular» sería falso — y falso de la manera que

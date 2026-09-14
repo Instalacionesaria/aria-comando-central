@@ -35,7 +35,7 @@ import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
-import { respuestaDelLead } from '../../../lib/negocio/respuestaDelLead.ts';
+import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -79,7 +79,7 @@ export async function GET(peticion: Request): Promise<Response> {
       await laPantallaDelTecnico(noAudita),
       await leerLosPrompts(),
       await tasaDeCancelacion(),
-      await respuestaDelLead(),
+      await indicadoresDelLead(),
     ],
   );
 
@@ -101,7 +101,7 @@ export async function GET(peticion: Request): Promise<Response> {
        pestaña vacía. */
     cancelacion,
     /* La primera cifra de Lead Flow, y la que parecía bloqueada: no necesita la atribución del
-       agente, porque pregunta si el CONTACTO contestó. Ver `respuestaDelLead`. */
+       agente, porque pregunta si el CONTACTO contestó. Ver `indicadoresDelLead`. */
     respuesta,
   });
 }
