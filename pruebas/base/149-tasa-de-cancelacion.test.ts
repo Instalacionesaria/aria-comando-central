@@ -30,7 +30,7 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import {
   CAMPO_DE_CONFIRMACION,
   DIAS_DE_LA_TASA,
-  PISO_DE_ASISTENCIA,
+  PISO_DE_UNA_TASA,
   tasaDeCancelacion,
 } from '../../lib/negocio/indicadoresDeCitas.ts';
 
@@ -329,13 +329,13 @@ test('EL DEFECTO QUE HUNDIRÍA LA CIFRA: las citas sin responder NO son plantone
    * que sí vino. Es el mismo cero indistinguible que este archivo persigue en la cancelación.
    * ═══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
-  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
+  for (let i = 0; i < PISO_DE_UNA_TASA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
   // Y veinte que nadie cerró. Si contaran, la tasa caería de 100 a 33,3.
   for (let i = 0; i < 20; i++) await cita(1, 'confirmed');
 
   const r = await leer();
-  assert.equal(r.conAsistencia, PISO_DE_ASISTENCIA, 'el denominador dejó de ser «las respondidas»');
-  assert.equal(r.sePresentaron, PISO_DE_ASISTENCIA);
+  assert.equal(r.conAsistencia, PISO_DE_UNA_TASA, 'el denominador dejó de ser «las respondidas»');
+  assert.equal(r.sePresentaron, PISO_DE_UNA_TASA);
   assert.equal(
     r.tasaDeAsistencia,
     100,
@@ -391,11 +391,11 @@ test('una cita CONGELADA no entra, aunque alguien haya respondido', async () => 
      que el CRM ya no devuelve mezclaría una foto vieja con el dato de hoy. Y peor: `citasParaCerrar`
      no las ofrece, así que esa respuesta sólo puede existir por un camino que ya no debería haber. */
   await limpiar();
-  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
+  for (let i = 0; i < PISO_DE_UNA_TASA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
   for (let i = 0; i < 5; i++) await cita(2, 'confirmed', null, { asistio: false });
 
   const r = await leer();
-  assert.equal(r.conAsistencia, PISO_DE_ASISTENCIA, 'entraron citas congeladas al denominador');
+  assert.equal(r.conAsistencia, PISO_DE_UNA_TASA, 'entraron citas congeladas al denominador');
   assert.equal(r.tasaDeAsistencia, 100);
 });
 
@@ -497,11 +497,11 @@ test('quien NO respondió el campo no entra al denominador', async () => {
      cifra diría que la gente no confirma cuando lo que pasa es que no se les pidió. */
   await limpiarConfirmacion();
   const campo = await elCampo();
-  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await contactoQueRespondio(campo, 'Si');
+  for (let i = 0; i < PISO_DE_UNA_TASA; i++) await contactoQueRespondio(campo, 'Si');
   for (let i = 0; i < 20; i++) await contactoQueRespondio(campo, null);
 
   const r = await leer();
-  assert.equal(r.conConfirmacion, PISO_DE_ASISTENCIA, 'los que no respondieron entraron al denominador');
+  assert.equal(r.conConfirmacion, PISO_DE_UNA_TASA, 'los que no respondieron entraron al denominador');
   assert.equal(r.tasaDeConfirmacion, 100, 'la cifra se hundió con gente a la que nadie preguntó');
   await limpiarConfirmacion();
 });

@@ -97,7 +97,7 @@ export interface Cancelacion {
    * lo que impide el peor defecto posible acá — contar como plantón toda cita que nadie cerró
    * todavía, y anunciar que no viene nadie.
    *
-   * `tasaDeAsistencia` es `null` hasta que haya suficientes respuestas. Ver `PISO_DE_ASISTENCIA`:
+   * `tasaDeAsistencia` es `null` hasta que haya suficientes respuestas. Ver `PISO_DE_UNA_TASA`:
    * es la misma disciplina por la que el no-show de arriba se declara como conteo.
    *
    * Arranca en cero y no tiene historia: la `049` es de hoy y una migración no puede rellenar. El
@@ -223,15 +223,19 @@ function avisoDeLaConfirmacion(
     return `Ninguno de los ${conCita} contactos con cita en este período tiene respondido el campo ` +
       `«${CAMPO_DE_CONFIRMACION}» en el CRM.`;
   }
-  if (conConfirmacion < PISO_DE_ASISTENCIA) {
+  if (conConfirmacion < PISO_DE_UNA_TASA) {
     return `Sólo ${conConfirmacion} de ${conCita} contactos con cita tienen ese campo respondido en ` +
-      `el CRM. Con menos de ${PISO_DE_ASISTENCIA} no se muestra una tasa.`;
+      `el CRM. Con menos de ${PISO_DE_UNA_TASA} no se muestra una tasa.`;
   }
   return null;
 }
 
 /**
- * Cuántas respuestas hacen falta antes de mostrar una tasa de asistencia.
+ * Cuántos eventos hacen falta antes de mostrar CUALQUIER tasa de este sistema.
+ *
+ * Se llamaba `PISO_DE_ASISTENCIA` y lo usaban cuatro cifras: nombrar una constante compartida por
+ * la primera que la necesitó invita a que la quinta se escriba su propio piso «porque aquélla es de
+ * la asistencia», y dos pisos distintos para la misma regla divergen sin que nada falle.
  *
  * **Diez, y el número sale de un defecto ya pagado, no del gusto.** La tasa de no-show que hay más
  * arriba se declara como CONTEO justamente porque medía 2 eventos en catorce días: *«una tasa sobre
@@ -242,7 +246,7 @@ function avisoDeLaConfirmacion(
  * 3, y quien contestó esas tres no es una muestra al azar de las 151 — el closer que cierra sus
  * intentos no es el mismo que no los cierra.
  */
-export const PISO_DE_ASISTENCIA = 10;
+export const PISO_DE_UNA_TASA = 10;
 
 /**
  * Cuántos días mira la cifra.
@@ -346,7 +350,7 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
        todavía» y afirmar un porcentaje que el próximo registro mueve diez puntos. La pantalla
        dibuja el conteo mientras tanto. */
     tasaDeAsistencia:
-      conAsistencia < PISO_DE_ASISTENCIA
+      conAsistencia < PISO_DE_UNA_TASA
         ? null
         : Math.round((sePresentaron / conAsistencia) * 1000) / 10,
     avisoDeAsistencia: avisoDeLaAsistencia(citas, conAsistencia, dias),
@@ -355,7 +359,7 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     /* Mismo piso que la asistencia, y por el mismo motivo: no es el volumen de citas lo que decide,
        es el de RESPUESTAS. Con 139 citas y 3 campos respondidos la muestra son 3. */
     tasaDeConfirmacion:
-      conf.conConfirmacion < PISO_DE_ASISTENCIA
+      conf.conConfirmacion < PISO_DE_UNA_TASA
         ? null
         : Math.round((conf.confirmaron / conf.conConfirmacion) * 1000) / 10,
     avisoDeConfirmacion: avisoDeLaConfirmacion(conf.hayCampo, conf.conCita, conf.conConfirmacion),
@@ -380,9 +384,9 @@ function avisoDeLaAsistencia(citas: number, conAsistencia: number, dias: number)
       `los últimos ${dias} días. Se pregunta al cerrar el intento en Avanzar, y antes de eso no ` +
       'existía: el CRM tiene ese campo en 3 de 1052 citas.';
   }
-  if (conAsistencia < PISO_DE_ASISTENCIA) {
+  if (conAsistencia < PISO_DE_UNA_TASA) {
     return `Sólo ${conAsistencia} de ${citas} citas tienen la asistencia registrada. Con menos de ` +
-      `${PISO_DE_ASISTENCIA} no se muestra una tasa: cada registro nuevo la movería más de diez ` +
+      `${PISO_DE_UNA_TASA} no se muestra una tasa: cada registro nuevo la movería más de diez ` +
       'puntos, y quien contestó no es una muestra al azar de las demás.';
   }
   return null;

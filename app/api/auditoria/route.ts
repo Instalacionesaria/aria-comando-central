@@ -36,6 +36,7 @@ import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
+import { atribucionDelLead } from '../../../lib/negocio/atribucionDelLead.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -73,13 +74,14 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
      tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
-  const [pantalla, prompts, cancelacion, respuesta] = await conOrganizacion(
+  const [pantalla, prompts, cancelacion, respuesta, atribucion] = await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
       await laPantallaDelTecnico(noAudita),
       await leerLosPrompts(),
       await tasaDeCancelacion(),
       await indicadoresDelLead(),
+      await atribucionDelLead(),
     ],
   );
 
@@ -103,5 +105,8 @@ export async function GET(peticion: Request): Promise<Response> {
     /* La primera cifra de Lead Flow, y la que parecía bloqueada: no necesita la atribución del
        agente, porque pregunta si el CONTACTO contestó. Ver `indicadoresDelLead`. */
     respuesta,
+    /* De dónde vinieron los que agendaron. Estaba guardado desde la `048` y no lo leía nadie: es la
+       atribución que se llegó a proponer conseguir conectando el API de Meta. */
+    atribucion,
   });
 }

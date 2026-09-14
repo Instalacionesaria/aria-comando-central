@@ -409,14 +409,26 @@ test('con la cifra presente, el aviso deja de decir que NO se puede calcular nad
      centímetros más abajo que «sus indicadores todavía no se pueden calcular». Las dos cosas en la
      misma pantalla se desmienten, y la que pierde credibilidad es la cifra. */
   const jsx = leer(CONVERSATION);
-  const i = jsx.indexOf('todavía no se pueden calcular');
-  assert.ok(i > 0, 'se fue el aviso de lo que falta');
-  const alrededor = jsx.slice(Math.max(0, i - 300), i);
-  assert.match(
-    alrededor,
-    /cancelacion\s*\?/,
-    'el aviso sigue afirmando que no se puede calcular nada, con una cifra calculada arriba',
-  );
+  /* El literal ENTRECOMILLADO y no la frase suelta: el archivo explica este mismo aviso en un
+     comentario de arriba, y un `indexOf` de la frase encuentra la explicación antes que el texto
+     que se dibuja. La prueba entonces compara la guarda contra la posición de un comentario, que
+     es una posición sin significado. */
+  const i = jsx.search(/'Sus (demás )?indicadores todavía no se pueden calcular/);
+  assert.ok(i > 0, 'se fue el aviso de lo que falta, o dejó de ser un literal');
+
+  /* ── SE MIRA LA GUARDA, NO UNA VENTANA DE CARACTERES ──────────────────────
+   *
+   * Esto buscaba `cancelacion ?` en los 300 caracteres anteriores al aviso, y se rompió al agregar
+   * la tercera cifra: el JSX que hay en el medio creció y empujó la guarda fuera de la ventana. La
+   * prueba fallaba sobre un archivo correcto, que es la clase de falso positivo que enseña a apagar
+   * una prueba.
+   *
+   * La propiedad real no es la distancia: es que el aviso **esté adentro de un condicional que
+   * nombre las cifras**, y que ese condicional aparezca antes. Así agregar una cuarta cifra obliga
+   * a sumarla a la guarda —que es lo correcto— en vez de a mover un número acá. */
+  const guarda = jsx.search(/\{cancelacion\s*\|\|/);
+  assert.ok(guarda > 0, 'el aviso dejó de estar guardado por las cifras que ya se calculan');
+  assert.ok(guarda < i, 'la guarda quedó DESPUÉS del aviso que tiene que condicionar');
   assert.match(jsx, /Sus demás indicadores/, 'falta la variante que reconoce la cifra que ya hay');
 });
 

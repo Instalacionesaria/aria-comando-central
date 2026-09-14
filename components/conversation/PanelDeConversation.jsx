@@ -171,6 +171,7 @@ export default function PanelDeConversation() {
           noAudita={pantalla?.noAudita ?? null}
           cancelacion={sub === 'appflow' ? (pantalla?.cancelacion ?? null) : null}
           respuesta={sub === 'leadflow' ? (pantalla?.respuesta ?? null) : null}
+          atribucion={sub === 'leadflow' ? (pantalla?.atribucion ?? null) : null}
         />
       ) : (
         <Cuerpo
@@ -316,6 +317,69 @@ function Lead({ r }) {
   );
 }
 
+/**
+ * De dónde vinieron los leads. **Una tabla y no cuatro tarjetas**, y la diferencia importa.
+ *
+ * Las tarjetas de arriba son cifras de la cohorte entera. Esto es la misma cohorte partida, y cada
+ * fila tiene su propio denominador — dibujarlas como tarjetas sueltas invitaría a compararlas con
+ * las de arriba, que hablan de otra población.
+ */
+function Atribucion({ a }) {
+  const hay = a.porFuente.length > 0 || a.porCampana.length > 0;
+  if (!hay && a.fueraDeHorario === null) return null;
+
+  return (
+    <div className="cs-cifra">
+      <p className="cs-cifra-titulo">
+        De dónde vinieron <span>últimos {a.dias} días</span>
+      </p>
+
+      <Corte titulo="Por fuente" filas={a.porFuente} />
+      <Corte titulo="Por campaña" filas={a.porCampana} />
+
+      {/* ── LA ADVERTENCIA DEL HORARIO, QUE NO ES UNA TASA ──────────────────
+          Es lo único que la zona horaria del lead habilita, y no existía: la única zona que este
+          sistema conocía era la de la EMPRESA, así que un «primer contacto a las 9» podía estar
+          saliendo a las 3 de la madrugada del lead. Va con su denominador al lado porque la mitad
+          de los contactos no trae zona. */}
+      {a.fueraDeHorario ? (
+        <p className="cs-cifra-nota">
+          <b>{a.fueraDeHorario.contactos}</b> de {a.fueraDeHorario.sobre} primeros mensajes salieron
+          antes de las 8 o después de las 21 <b>en la hora del contacto</b>. Sólo se puede medir en
+          los que traen zona horaria; el resto no entra ni como dentro ni como fuera.
+        </p>
+      ) : null}
+
+      {a.aviso ? <p className="cs-cifra-nota">{a.aviso}</p> : null}
+    </div>
+  );
+}
+
+/** Un corte, con sus filas. Vacío no dibuja nada: un título sin tabla se lee como un error. */
+function Corte({ titulo, filas }) {
+  if (filas.length === 0) return null;
+  return (
+    <>
+      <p className="cs-cifra-nota">
+        <b>{titulo}</b>
+      </p>
+      <div className="cs-tabla">
+        {filas.map((f) => (
+          <div key={f.etiqueta} className="cs-tabla-fila">
+            <span className={f.esElResto ? 'cs-tabla-resto' : ''}>{f.etiqueta}</span>
+            {/* Sin tasa se dibuja una raya y NO un «0 %»: la fila junta categorías distintas y un
+                porcentaje sobre ellas no describe a ninguna. El conteo sí va. */}
+            <b>{f.tasa === null ? '—' : `${f.tasa} %`}</b>
+            <span>
+              {f.agendaron} de {f.cohorte}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Cancelacion({ c }) {
   return (
     <div className="cs-cifra">
@@ -400,7 +464,7 @@ function Cancelacion({ c }) {
  * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
  * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo, noAudita, cancelacion, respuesta }) {
+function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion }) {
   return (
     <>
       <p className="aud-alcance">
@@ -426,6 +490,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta }) {
           revés, la pestaña se lee como vacía y nadie llega al número. */}
       {cancelacion ? <Cancelacion c={cancelacion} /> : null}
       {respuesta ? <Lead r={respuesta} /> : null}
+      {atribucion ? <Atribucion a={atribucion} /> : null}
 
       {/* El aviso general dejó de ser incondicional. Appointment Flow YA calcula algo, así que decir
           ahí «sus indicadores todavía no se pueden calcular» sería falso — y falso de la manera que
@@ -433,7 +498,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta }) {
       <div className="fd-aviso">
         <i>◍</i>
         <span>
-          {cancelacion || respuesta
+          {cancelacion || respuesta || atribucion
             ? 'Sus demás indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'
             : 'Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'}
         </span>

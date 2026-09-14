@@ -219,6 +219,42 @@
   color: var(--txt-dim);
 }
 
+/* ── LA TABLA DEL CORTE DE ATRIBUCIÓN ────────────────────────────────────────
+   Tres columnas de ancho FIJO para las dos de la derecha, y la etiqueta se queda con lo que sobra:
+   con `1fr 1fr 1fr` la fuente más larga empuja los porcentajes a posiciones distintas en cada fila
+   y la columna deja de poder leerse de un vistazo — que es lo único que una tabla compra sobre una
+   lista de frases. */
+#v-conversation .cs-tabla {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 4px 0 2px;
+}
+#v-conversation .cs-tabla-fila {
+  display: grid;
+  grid-template-columns: 1fr 62px 84px;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--txt);
+}
+/* Los dígitos alineados y a la derecha: son para comparar entre filas, no para leer en prosa. */
+#v-conversation .cs-tabla-fila b,
+#v-conversation .cs-tabla-fila > span:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#v-conversation .cs-tabla-fila > span:last-child {
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+/* La fila que junta a las chicas se atenúa: sigue estando —su conteo hace que las filas sumen la
+   cohorte— pero no compite visualmente con las que sí tienen una tasa que se puede comparar. */
+#v-conversation .cs-tabla-resto {
+  color: var(--txt-dim);
+  font-style: italic;
+}
+
 /* Cada falta: qué no se puede medir, en negrita, y por qué debajo. Las dos cosas en la misma fila
    y no un `<summary>` plegable — se leen una vez, y esconderlas detrás de un clic convierte la
    explicación en algo que nadie abre. */
