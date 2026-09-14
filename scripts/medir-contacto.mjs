@@ -21,9 +21,20 @@
 // para ordenar. Es la fecha real de entrada del lead, y hoy toda cohorte se arma con `creado_el`
 // —cuándo lo vio NUESTRO barrido—, que en la carga inicial es la misma para todos.
 //
+// ── Y LA PREGUNTA QUE DECIDE SI ES SEGURO ESCRIBIRLOS ───────────────────────
+//
+// `guardar()` no corre sólo en el barrido: corre también **al abrir la ficha**, con lo que devuelva
+// `GET /contacts/{id}`. Así que si un campo viniera en la búsqueda y NO en el `GET`, escribirlo sin
+// condición haría que abrir una ficha **borrara la atribución** — justo cuando alguien la mira, y
+// sin un solo error. Es el mismo defecto que el comentario de `sincronizar.ts` ya describe para
+// `campos_del_crm`, y por eso la `039` midió las dos llamadas antes de guardar nada.
+//
+// Esto compara las dos respuestas para el MISMO contacto. La comparación no reemplaza al patrón de
+// «clave ausente ⟹ no se escribe»: dice si la ficha refresca la atribución o sólo el cron la puebla.
+//
 // ── LO QUE NO HACE ──────────────────────────────────────────────────────────
 //
-// **Sólo `GET`**, por `pedirExterno`. No imprime datos de nadie: del contacto salen los NOMBRES de
+// **Sólo lee**, por `pedirExterno`. No imprime datos de nadie: del contacto salen los NOMBRES de
 // las claves y, de los campos de atribución, sólo si están presentes y su forma — nunca el valor,
 // que puede ser una URL con el identificador de una persona adentro.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -38,6 +49,27 @@ const CUANTOS = 100;
 
 /** Los nombres que el documento necesita. Se busca por forma, no por corazonada. */
 const DE_ATRIBUCION = /attribution|utm|fbclid|gclid|referrer|campaign|adset|ad_?id|creative|session/i;
+
+/**
+ * Las cinco claves que se van a declarar y guardar. La comparación search vs GET es sobre ÉSTAS y
+ * no sobre todas: lo que importa no es que las dos respuestas sean idénticas —no lo son, el `GET`
+ * trae más— sino que ninguna de las cinco desaparezca al abrir la ficha.
+ */
+const LAS_QUE_VAMOS_A_GUARDAR = [
+  'dateAdded',
+  'attributionSource',
+  'lastAttributionSource',
+  'timezone',
+  'country',
+];
+
+/** Presente = tiene valor. Un objeto vacío no es presencia: no hay nada que guardar. */
+function presente(v) {
+  if (v === null || v === undefined || v === '') return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === 'object') return Object.keys(v).length > 0;
+  return true;
+}
 
 function cabeceras(token) {
   return { Authorization: `Bearer ${token}`, Version: VERSION, Accept: 'application/json' };
@@ -122,7 +154,57 @@ async function main() {
     console.log('  └──────────────────────────────────────────────────────────────────');
 
     console.log(`\n  \`dateAdded\` (la fecha real de entrada del lead): ${conDateAdded} de ${lista.length}`);
+
+    /* La cobertura de las cinco, junta. `timezone` y `country` no los pesca el regex de atribución
+       —no tienen por qué— y sin esto aparecen en la lista de claves sin decir en cuántos vienen. */
+    console.log('\n  cobertura de las cinco que se van a guardar:');
+    for (const k of LAS_QUE_VAMOS_A_GUARDAR) {
+      console.log(`    ${k.padEnd(34)} ${String(claves.get(k) ?? 0).padStart(4)} de ${lista.length}`);
+    }
+
+    await compararConElGet(acceso, lista);
   }
+}
+
+/**
+ * ¿El `GET /contacts/{id}` trae las mismas cinco claves que la búsqueda?
+ *
+ * Se mide sobre el primer contacto que las traiga en la búsqueda: preguntarle al que no las tiene
+ * no distingue «el GET no las manda» de «este contacto no las tiene», que es la confusión que
+ * volvería inútil la medición.
+ */
+async function compararConElGet(acceso, lista) {
+  const conAlguna = lista.find((c) => LAS_QUE_VAMOS_A_GUARDAR.some((k) => presente(c?.[k])));
+  if (conAlguna === undefined) {
+    console.log('\n  Ningún contacto de la búsqueda trae ninguna de las cinco: nada que comparar.');
+    return;
+  }
+
+  const r = await pedirExterno(`${BASE}/contacts/${conAlguna.id}`, { cabeceras: cabeceras(acceso.token) });
+  if (r.tipo !== 'datos') {
+    console.log(`\n  el GET del contacto no respondió: ${r.tipo} ${r.estado ?? r.causa ?? ''}`);
+    return;
+  }
+  const delGet = r.datos?.contact ?? r.datos ?? {};
+
+  console.log('\n  ┌─ ¿ABRIR LA FICHA BORRARÍA LO QUE GUARDÓ EL BARRIDO? ──────────────');
+  console.log('  │  clave                      search   GET');
+  let ausenteEnElGet = 0;
+  for (const k of LAS_QUE_VAMOS_A_GUARDAR) {
+    const enBusqueda = presente(conAlguna[k]);
+    const enElGet = presente(delGet[k]);
+    if (enBusqueda && !enElGet) ausenteEnElGet++;
+    console.log(`  │  ${k.padEnd(26)} ${enBusqueda ? 'sí' : 'no'}       ${enElGet ? 'sí' : 'no'}`);
+  }
+  console.log('  │');
+  console.log(
+    ausenteEnElGet === 0
+      ? '  │  Las que trae la búsqueda las trae también el GET: la ficha las refresca.'
+      : `  │  ${ausenteEnElGet} de las cinco vienen en la búsqueda y NO en el GET. El patrón de\n` +
+          '  │  «clave ausente ⟹ no se escribe» deja de ser prolijidad y pasa a ser lo único\n' +
+          '  │  que impide que abrir una ficha borre lo que el cron guardó.',
+  );
+  console.log('  └──────────────────────────────────────────────────────────────────');
 }
 
 try {

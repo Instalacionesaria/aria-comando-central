@@ -366,6 +366,49 @@ export interface TablaContactos {
    * `{}` = no trae ninguno. Distinguirlo de «nunca se sincronizó» es trabajo de `sincronizado_el`.
    */
   campos_del_crm: ColumnType<Record<string, string>, string | undefined, string | undefined>;
+  /**
+   * **Cuándo entró el lead al CRM** — el `dateAdded` de GoHighLevel, que viene en 100 de 100.
+   *
+   * No es `creado_el`, y la diferencia es el motivo de que existan las dos: `creado_el` es cuándo
+   * lo vio NUESTRO barrido, y en la carga inicial es la misma marca para todos. Una cohorte armada
+   * con `creado_el` dice «los leads de esta semana» y significa «los que sincronizamos esta
+   * semana».
+   *
+   * **Nula = todavía no se sincronizó**, no «entró hace mucho». No hay relleno hacia atrás: una
+   * migración no puede sembrar por organización (regla de la `040`), así que los 584 contactos la
+   * pueblan en la pasada siguiente del cron. Ninguna cohorte que la use tiene historia anterior al
+   * despliegue de la `048`, y eso hay que decirlo en pantalla.
+   */
+  alta_en_el_crm: Date | null;
+  /**
+   * La atribución del PRIMER toque, cruda: `{utmSource, sessionSource, fbclid, …}`.
+   *
+   * Cruda y sin lista blanca porque las claves las decide GoHighLevel — ya manda cuatro que su
+   * documentación no menciona. El motivo largo está en `atribucionDelContacto`.
+   *
+   * **No se renderiza cruda**: `referrer` y `url` son direcciones completas y pueden llevar el
+   * identificador de una persona adentro.
+   *
+   * `{}` = no trae ninguna. Distinguirlo de «nunca se sincronizó» es trabajo de `sincronizado_el`,
+   * igual que en `campos_del_crm`.
+   */
+  atribucion_primera: ColumnType<Record<string, string>, string | undefined, string | undefined>;
+  /**
+   * La atribución del ÚLTIMO toque. Columna aparte y no una fusión con la anterior: medido, el
+   * `utmSource` del primer toque viene en 20 contactos y el del último en 9. Juntarlas perdería la
+   * única pregunta que distinguen — por dónde llegó contra por dónde volvió.
+   */
+  atribucion_ultima: ColumnType<Record<string, string>, string | undefined, string | undefined>;
+  /**
+   * La zona horaria del CONTACTO. Viene en **13 de 100**, así que nula es el caso normal.
+   *
+   * No confundir con la de la empresa (`identidad.organizaciones.zona_horaria`), que es la única
+   * que este sistema usa hoy: por eso un «primer contacto a las 9» puede estar saliendo a las 3 de
+   * la madrugada del lead sin que nada lo advierta.
+   */
+  zona_horaria_del_lead: string | null;
+  /** El país del contacto. 100 de 100 — es lo que queda cuando `zona_horaria_del_lead` falta. */
+  pais: string | null;
   creado_el: Generated<Date>;
 }
 

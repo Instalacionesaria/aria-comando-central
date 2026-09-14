@@ -60,7 +60,9 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { Territorio } from '../datos/esquema.ts';
+import { aInstante } from '../ghl/conversaciones.ts';
 import {
+  atribucionDelContacto,
   camposDelContacto,
   contactoPorId,
   etiquetasDeLaSubcuenta,
@@ -389,6 +391,35 @@ async function guardar(
     ...(c.customFields === undefined
       ? {}
       : { campos_del_crm: JSON.stringify(camposDelContacto(c)) }),
+    /* ── DE DÓNDE VINO EL LEAD Y CUÁNDO ENTRÓ ─────────────────────────────
+     *
+     * Las cinco llegan en esta misma respuesta y hasta la migración `048` se descartaban al
+     * parsear, porque `ContactoDeGhl` no las declaraba. Cero llamadas nuevas, igual que
+     * `crm_asignado_a` y `campos_del_crm`.
+     *
+     * **Las cinco con el patrón de la clave ausente**, no con el de `source`. Son dos patrones
+     * distintos que se parecen: el de `source` (`...(c.source ? …)`) existe para cederle la
+     * decisión al `default` de la columna; éste existe porque **ausente y vacío no son lo mismo**.
+     * Ausente ⟹ se deja lo que había. Vacío ⟹ se escribe vacío, que es el CRM diciendo que no
+     * tiene.
+     *
+     * Medido el 2026-09-14 sobre el mismo contacto en las dos llamadas: las cuatro que trae
+     * `POST /contacts/search` las trae también `GET /contacts/{id}`, así que hoy abrir la ficha
+     * las refresca. Eso es una propiedad del proveedor, no nuestra — el patrón es lo que decide
+     * qué pasa el día que deje de ser cierta.
+     *
+     * `zona_horaria_del_lead` viene en 13 de 100 y por eso casi siempre entra como `null`: con el
+     * patrón de `source` la columna se quedaría para siempre con el primer valor que apareciera,
+     * incluso después de que el contacto cambiara de zona. */
+    ...(c.dateAdded === undefined ? {} : { alta_en_el_crm: aInstante(c.dateAdded) }),
+    ...(c.attributionSource === undefined
+      ? {}
+      : { atribucion_primera: JSON.stringify(atribucionDelContacto(c.attributionSource)) }),
+    ...(c.lastAttributionSource === undefined
+      ? {}
+      : { atribucion_ultima: JSON.stringify(atribucionDelContacto(c.lastAttributionSource)) }),
+    ...(c.timezone === undefined ? {} : { zona_horaria_del_lead: c.timezone || null }),
+    ...(c.country === undefined ? {} : { pais: c.country || null }),
     sincronizado_el: sql<Date>`now()`,
   };
 
@@ -412,6 +443,18 @@ async function guardar(
            SOLO si la respuesta los traía: el `...` de arriba deja la clave afuera cuando no
            vinieron, y entonces acá tampoco entra y la fila conserva los suyos. */
         ...('campos_del_crm' in valores ? { campos_del_crm: valores.campos_del_crm } : {}),
+        /* Las cinco de la `048` son hechos de GoHighLevel, así que se pisan — «lo que decide
+           GoHighLevel se pisa; lo que decidimos acá, no». Y con la misma salvedad que los campos:
+           sólo si la respuesta las traía. */
+        ...('alta_en_el_crm' in valores ? { alta_en_el_crm: valores.alta_en_el_crm } : {}),
+        ...('atribucion_primera' in valores
+          ? { atribucion_primera: valores.atribucion_primera }
+          : {}),
+        ...('atribucion_ultima' in valores ? { atribucion_ultima: valores.atribucion_ultima } : {}),
+        ...('zona_horaria_del_lead' in valores
+          ? { zona_horaria_del_lead: valores.zona_horaria_del_lead }
+          : {}),
+        ...('pais' in valores ? { pais: valores.pais } : {}),
         sincronizado_el: valores.sincronizado_el,
       } as never),
     )

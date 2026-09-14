@@ -76,7 +76,52 @@ export interface ContactoDeGhl {
   tags?: string[];
   /** Texto libre que pone quien creó el contacto: `"Website"`, `"public api"`, `"xyz form"`. */
   source?: string;
+  /**
+   * **Cuándo entró el lead al CRM.** Medido el 2026-09-14: 100 de 100.
+   *
+   * Estuvo declarado desde el principio y se usaba **sólo para ordenar** la búsqueda. Toda cohorte
+   * de este sistema se arma con `creado_el`, que es cuándo lo vio nuestro barrido — y en la carga
+   * inicial es la misma marca para todos, así que «los leads de esta semana» son los que
+   * sincronizamos esta semana, no los que entraron.
+   *
+   * Llega en UTC con `Z` (`"2026-05-14T02:18:36.000Z"`), a diferencia del `startTime` de una cita
+   * que llega con desfase. Lo parsea `aInstante` de `lib/ghl/conversaciones.ts`, que aguanta las dos
+   * formas y además la época en número.
+   */
   dateAdded?: string;
+  /**
+   * **La atribución del PRIMER toque.** Medido el 2026-09-14: el objeto viene en 100 de 100, y
+   * adentro `sessionSource` en 98, `utmSource` en 20, `fbclid`/`fbc`/`fbp` en 3.
+   *
+   * ── VENÍA HACE RATO Y SE TIRABA AL PARSEAR ──────────────────────────────
+   *
+   * El documento pide campaña, ad set, anuncio, creativo y UTM de primer y último toque, y la
+   * respuesta que parecía obvia era conectar el API de Meta. No hace falta: llega en la MISMA
+   * respuesta que ya se pide, y como esta interfaz no lo declaraba, se descartaba al parsear.
+   *
+   * `unknown` y no una forma declarada: las claves las decide GoHighLevel y ya trae `gaClientId`,
+   * `fbc`, `fbp`, `mediumId` además de las documentadas. Lo normaliza `atribucionDelContacto`.
+   */
+  attributionSource?: unknown;
+  /**
+   * **La atribución del ÚLTIMO toque.** 100 de 100, con `sessionSource` en 91, `campaignId` en 7 y
+   * `adId` en 5.
+   *
+   * Es una clave distinta de la anterior y no un refinamiento: `attributionSource.utmSource` viene
+   * en 20 contactos y `lastAttributionSource.utmSource` en 9. Guardar una sola perdería justo la
+   * pregunta que se quiere contestar — por dónde llegó contra por dónde volvió.
+   */
+  lastAttributionSource?: unknown;
+  /**
+   * La zona horaria del CONTACTO. Medido: **13 de 100**, y aun así vale traerla.
+   *
+   * Hoy la única zona horaria del sistema es la de la empresa, así que un «primer contacto a las 9»
+   * puede estar saliendo a las 3 de la madrugada del lead y nada permite darse cuenta. Con 13 de
+   * 100 no se construye una métrica: se construye una advertencia cuando se sabe.
+   */
+  timezone?: string;
+  /** El país del contacto. 100 de 100 — es el que hace útil a `timezone` cuando falta. */
+  country?: string;
   /**
    * A QUÉ USUARIO DEL CRM está asignado este contacto. **Es la señal que reparte los leads.**
    *
@@ -146,6 +191,35 @@ export function camposDelContacto(c: ContactoDeGhl): Record<string, string> {
     }
     if (texto.trim() === '') continue;
     mapa[campo.id] = texto;
+  }
+  return mapa;
+}
+
+/**
+ * Un objeto de atribución de GoHighLevel, normalizado a `{clave: texto}`.
+ *
+ * ── QUÉ SE DESCARTA, Y POR QUÉ NO SE FILTRA POR LISTA DE CLAVES ─────────────
+ *
+ * No hay lista blanca. GoHighLevel decide las claves y en la medición del 2026-09-14 ya mandaba
+ * cuatro que su propia documentación no menciona (`gaClientId`, `fbc`, `fbp`, `mediumId`): una
+ * lista blanca las tiraría en silencio, y la única señal sería que una cifra futura saliera vacía.
+ * Se guarda lo que manda y se decide al leer, que es la misma razón por la que `etiquetas` y
+ * `campos_del_crm` se guardan crudos.
+ *
+ * Lo que sí se descarta es lo que no tiene representación honesta: un objeto anidado se saltea en
+ * vez de convertirse en `"[object Object]"`, igual que en `camposDelContacto`.
+ *
+ * Una clave sin valor se OMITE, no se guarda como `""`. Así lo que queda guardado ya es lo que se
+ * puede usar, y nadie tiene que volver a filtrar lo mismo más tarde.
+ */
+export function atribucionDelContacto(v: unknown): Record<string, string> {
+  const mapa: Record<string, string> = {};
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return mapa;
+  for (const [clave, valor] of Object.entries(v as Record<string, unknown>)) {
+    if (valor === null || valor === undefined || typeof valor === 'object') continue;
+    const texto = String(valor);
+    if (texto.trim() === '') continue;
+    mapa[clave] = texto;
   }
   return mapa;
 }

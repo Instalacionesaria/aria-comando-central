@@ -393,6 +393,143 @@ test('sincronizar guarda los campos personalizados, y refrescar la ficha NO los 
   );
 });
 
+test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la borra', async () => {
+  /* Mismo defecto que la prueba de arriba y misma forma, sobre las cinco claves de la `048`. Va
+   * aparte y no dentro de aquélla porque son dos patrones independientes en el escritor: el día
+   * que alguien «simplifique» uno de los dos `...(x === undefined ? {} : …)`, tiene que caerse la
+   * prueba de ESA columna y no una genérica que no dice cuál.
+   *
+   * Medido el 2026-09-14: las cuatro claves que trae la búsqueda las trae también el GET, así que
+   * hoy el defecto no ocurre. Esto lo pone a prueba en el mundo donde sí ocurriría. */
+  const id = idDeGhl();
+  const contacto: ContactoDeGhl = {
+    id,
+    contactName: 'Sincro Con Atribución',
+    tags: ['zona_closer'],
+    dateAdded: '2026-05-14T02:18:36.000Z',
+    attributionSource: { utmSource: 'facebook', sessionSource: 'Paid Social', adId: '120210' },
+    lastAttributionSource: { utmSource: 'google', campaignId: 'c-9' },
+    timezone: 'America/Bogota',
+    country: 'CO',
+  };
+  preparar(porEtiqueta({ zona_closer: [contacto] }));
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+
+  const guardado = async () =>
+    conOrganizacion(esc.org, async () =>
+      datos()
+        .selectFrom('contactos')
+        .select([
+          'alta_en_el_crm',
+          'atribucion_primera',
+          'atribucion_ultima',
+          'zona_horaria_del_lead',
+          'pais',
+          'creado_el',
+        ])
+        .where('ghl_contact_id', '=', id)
+        .executeTakeFirst(),
+    );
+
+  const antes = await guardado();
+  assert.deepEqual(
+    antes?.atribucion_primera,
+    { utmSource: 'facebook', sessionSource: 'Paid Social', adId: '120210' },
+    'la sincronización tiró la atribución del primer toque que venía en la misma respuesta',
+  );
+  assert.deepEqual(
+    antes?.atribucion_ultima,
+    { utmSource: 'google', campaignId: 'c-9' },
+    'el último toque no se guardó, o se guardó el primero en su lugar',
+  );
+  assert.equal(antes?.zona_horaria_del_lead, 'America/Bogota');
+  assert.equal(antes?.pais, 'CO');
+
+  /* ── Y `alta_en_el_crm` NO ES `creado_el` ────────────────────────────────
+   *
+   * La fecha del doble es de mayo y la fila se acaba de escribir, así que si alguien mapeara
+   * `dateAdded` a `creado_el` —o leyera `creado_el` creyendo que es la entrada del lead— las dos
+   * marcas coincidirían y toda cohorte diría «los leads de esta semana» significando «los que
+   * sincronizamos esta semana». Con la carga inicial encima, sería la MISMA marca para los 584. */
+  assert.equal(antes?.alta_en_el_crm?.toISOString(), '2026-05-14T02:18:36.000Z');
+  assert.notEqual(
+    antes?.alta_en_el_crm?.getTime(),
+    antes?.creado_el?.getTime(),
+    'alta_en_el_crm quedó igual a creado_el: la fecha de entrada del lead se perdió',
+  );
+
+  // El GET devuelve el contacto SIN ninguna de las cinco: el mundo donde el defecto ocurre.
+  preparar((p) => {
+    if (p.url.startsWith(`${GHL}/contacts/`) && p.metodo === 'GET') {
+      return {
+        estado: 200,
+        cuerpo: { contact: { id, contactName: 'Sincro Con Atribución', tags: ['zona_closer'] } },
+      };
+    }
+    return { estado: 200, cuerpo: {} };
+  });
+  const refresco = await conOrganizacion(esc.org, async () => refrescarUnContacto(ACCESO, id));
+  assert.equal(refresco.tipo, 'listo');
+
+  const despues = await guardado();
+  assert.deepEqual(
+    despues?.atribucion_primera,
+    antes?.atribucion_primera,
+    'abrir la ficha borró la atribución que había traído la sincronización',
+  );
+  assert.deepEqual(despues?.atribucion_ultima, antes?.atribucion_ultima);
+  assert.equal(despues?.alta_en_el_crm?.getTime(), antes?.alta_en_el_crm?.getTime());
+  assert.equal(despues?.zona_horaria_del_lead, 'America/Bogota');
+  assert.equal(despues?.pais, 'CO');
+});
+
+test('una atribución VACÍA se guarda vacía: no es lo mismo que no venir', async () => {
+  /* La otra mitad del patrón, y la que se rompe sola si alguien escribe `...(c.attributionSource ?
+   * … : {})` —el patrón de `source`— creyendo que son el mismo.
+   *
+   * Con el patrón de `source`, un objeto vacío sería falso, la clave no entraría al `set`, y la
+   * fila conservaría para siempre la atribución vieja. El CRM estaría diciendo «este lead ya no
+   * tiene atribución» y la base seguiría contestando con la del mes pasado. */
+  const id = idDeGhl();
+  preparar(
+    porEtiqueta({
+      zona_closer: [
+        {
+          id,
+          contactName: 'Sincro Con Atribución',
+          tags: ['zona_closer'],
+          attributionSource: { utmSource: 'facebook' },
+        },
+      ],
+    }),
+  );
+  assert.equal((await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO))).tipo, 'listo');
+
+  preparar(
+    porEtiqueta({
+      zona_closer: [
+        { id, contactName: 'Sincro Con Atribución', tags: ['zona_closer'], attributionSource: {} },
+      ],
+    }),
+  );
+  assert.equal((await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO))).tipo, 'listo');
+
+  const fila = await conOrganizacion(esc.org, async () =>
+    datos()
+      .selectFrom('contactos')
+      .select('atribucion_primera')
+      .where('ghl_contact_id', '=', id)
+      .executeTakeFirst(),
+  );
+  assert.deepEqual(
+    fila?.atribucion_primera,
+    {},
+    'el CRM dejó de mandar atribución y la base siguió contestando con la vieja',
+  );
+});
+
 test('refrescar recalcula el territorio y NO pisa `etapa` ni `score`', async () => {
   // Datos NUESTROS, no de GoHighLevel: el proveedor no expone etapa ni score y nada allá los
   // calcula. Si entraran al `do update`, cada apertura de ficha borraría el trabajo hecho acá.
