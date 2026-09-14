@@ -483,6 +483,8 @@ export default function Ficha({ contactoId, alCerrar }) {
   const [contacto, setContacto] = useState(null);
   /** Los dos de la cita, que vienen con el contacto. `null` = no tiene cita aprovechable. */
   const [enlacesDeCita, setEnlacesDeCita] = useState(null);
+  /** Las citas que ya ocurrieron, para preguntar en Avanzar si se presentó. `[]` = ninguna. */
+  const [citasPorCerrar, setCitasPorCerrar] = useState([]);
   const [refresco, setRefresco] = useState(null);
   /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
   const [situacion, setSituacion] = useState('cargando');
@@ -579,6 +581,7 @@ export default function Ficha({ contactoId, alCerrar }) {
     }
     setContacto(r.datos.contacto);
     setEnlacesDeCita(r.datos.enlacesDeCita ?? null);
+    setCitasPorCerrar(r.datos.citasPorCerrar ?? []);
     setRefresco(r.datos.refresco);
     setSituacion('listo');
   }, [contactoId]);
@@ -1189,6 +1192,10 @@ export default function Ficha({ contactoId, alCerrar }) {
           /* Del SERVIDOR, no de en qué pestaña se abrió la ficha: es lo que decide qué catálogo de
              salidas se dibuja, y dejarlo al navegador sería dejarle elegir el negocio. */
           territorio={contacto?.territorio ?? null}
+          /* Del servidor, igual que el territorio: qué citas ya ocurrieron lo decide la base con su
+             propio reloj, y calcularlo acá con el del navegador haría que una cita de hace diez
+             minutos apareciera o no según la máquina de quien mira. */
+          citas={citasPorCerrar}
           alCerrar={() => setAvanzando(false)}
           alRegistrar={(lo) => {
             setLoRegistrado(lo);

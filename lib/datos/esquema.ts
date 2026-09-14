@@ -508,6 +508,21 @@ export interface TablaCitas {
   estado_anterior_ghl: string | null;
   estado_cambiado_el: Date | null;
   /**
+   * Si el contacto se presentó. **Lo registra una persona en Avanzar, no el CRM.**
+   *
+   * El campo de asistencia del CRM está poblado en 3 de 1052 citas y sus campos personalizados de
+   * asistencia en 0 de 316: un año con el campo vacío no es un problema de sincronización.
+   *
+   * **Nulo = nadie lo dijo todavía**, que es el caso normal — ninguna cita anterior a la `049` lo
+   * va a tener nunca. `false` es «no se presentó», y son cosas distintas: una tasa que cuente los
+   * nulos como plantones diría que nadie viene.
+   *
+   * Es NUESTRA columna y el barrido no la puede pisar: queda fuera del `do update` de
+   * `lib/negocio/citas.ts`, igual que `sello_setter_id` en `sincronizar.ts`. Si entrara, la primera
+   * pasada horaria borraría lo que el closer registró — y no fallaría nada.
+   */
+  asistio: boolean | null;
+  /**
    * La hora que la cita tenía antes del último movimiento que vimos. Nuestra, no del CRM: la
    * escribe el `do update` leyendo la fila vieja en la misma sentencia que la pisa.
    *
@@ -775,6 +790,20 @@ export interface TablaResultados {
    * hace que el segundo intento choque en vez de duplicar la comisión.
    */
   clave_de_intento: string | null;
+  /**
+   * A qué cita corresponde este resultado. **Es lo que le da denominador al show rate.**
+   *
+   * Sin esta columna «cuántos se presentaron» no se puede calcular: un resultado es un intento del
+   * closer, que no es el conjunto de las citas — y por eso `indicadoresDeCitas` declara los no-show
+   * como un CONTEO y dice explícitamente que su denominador no sería el correcto.
+   *
+   * `null` es frecuente y no es un error: un resultado del setter es pre-agenda por definición, y
+   * uno del closer sobre un contacto sin cita tampoco tiene a qué apuntar.
+   *
+   * **No protege contra el doble registro.** Eso sigue siendo `(org_id, clave_de_intento)` de la
+   * `037`. Confundirlos dejaría un hueco: dos resultados de la misma cita son legítimos.
+   */
+  cita_id: string | null;
   creado_el: Generated<Date>;
 }
 

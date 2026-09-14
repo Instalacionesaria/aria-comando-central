@@ -122,6 +122,7 @@ const base = () => ({
      es `seguimiento`, y las pruebas que la usan lo pasan explícito. */
   modo: null,
   claveDeIntento: randomUUID(),
+  cita: null,
 });
 
 /** El par de un resultado del closer, que es el rol de todas las pruebas de este archivo. */
@@ -148,6 +149,7 @@ test('la MISMA clave dos veces escribe UN resultado, y la segunda lo dice', asyn
     registrarResultado(id, {
       ...base(),
       claveDeIntento: clave,
+      cita: null,
       que: del('venta'),
       monto: '1500.00',
       formaPago: 'Contado',
@@ -162,6 +164,7 @@ test('la MISMA clave dos veces escribe UN resultado, y la segunda lo dice', asyn
     registrarResultado(id, {
       ...base(),
       claveDeIntento: clave,
+      cita: null,
       que: del('venta'),
       monto: '1500.00',
       formaPago: 'Contado',
@@ -663,4 +666,129 @@ test('el escritor NO crea tarea con el modo automatico, aunque le llegue una fec
     registrarResultado(id, { ...base(), que: del('seguimiento'), modo: 'manual', volverEl: dia, quien }),
   );
   assert.equal(manual.tarea, true, 'con el modo manual tampoco escribe: el guardia agarra de más');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * LA ASISTENCIA (migración `049`)
+ *
+ * El CRM nunca la tuvo —3 de 1052 citas— así que la registra quien estuvo en la llamada. Lo que
+ * estas pruebas cuidan es que ese registro sobreviva: es un dato que ningún barrido puede
+ * reconstruir, y su forma de fallar es silenciosa en las dos direcciones.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Una cita del contacto, por el camino real. Devuelve su identificador. */
+async function citaDe(org: string, contactoId: string, cuando: Date): Promise<string> {
+  return conOrganizacion(org, async () => {
+    const c = await datos()
+      .insertInto('citas')
+      .values({
+        ghl_evento_id: `ev-${randomUUID()}`,
+        contacto_id: contactoId,
+        inicio_el: cuando,
+        fin_el: new Date(cuando.getTime() + 30 * 60_000),
+        estado_ghl: 'booked',
+        ghl_calendario_id: 'cal-1',
+      } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return c.id;
+  });
+}
+
+const laCita = async (org: string, citaId: string) =>
+  conOrganizacion(org, () =>
+    datos().selectFrom('citas').select('asistio').where('id', '=', citaId).executeTakeFirst(),
+  );
+
+test('registrar con una cita guarda la asistencia EN LA CITA y el vínculo en el resultado', async () => {
+  const contacto = await contactoEn(alfa);
+  const cita = await citaDe(alfa, contacto, new Date(Date.now() - 2 * 3600_000));
+
+  const r = await conOrganizacion(alfa, () =>
+    registrarResultado(contacto, {
+      ...base(),
+      que: del('venta'),
+      monto: '500.00',
+      formaPago: 'Contado',
+      quien,
+      cita: { id: cita, asistio: true },
+    }),
+  );
+
+  assert.equal((await laCita(alfa, cita))?.asistio, true, 'la asistencia no llegó a la cita');
+
+  const fila = await conOrganizacion(alfa, () =>
+    datos().selectFrom('resultados').select('cita_id').where('id', '=', r.resultadoId).executeTakeFirst(),
+  );
+  assert.equal(
+    fila?.cita_id,
+    cita,
+    'el resultado no quedó atado a su cita: sin ese vínculo el show rate no tiene denominador',
+  );
+});
+
+test('`cita: null` no toca ninguna cita: un resultado del setter es pre-agenda', async () => {
+  /* La otra mitad, y la que se rompe sola si alguien «simplifica» el `if` del escritor. Sin él,
+     `lo.cita?.id` sería `undefined` y el `update` correría sin `where` útil — o peor, con uno que
+     alcanza a toda cita del contacto. */
+  const contacto = await contactoEn(alfa);
+  const cita = await citaDe(alfa, contacto, new Date(Date.now() - 2 * 3600_000));
+
+  await conOrganizacion(alfa, () =>
+    registrarResultado(contacto, { ...base(), que: del('seguimiento'), modo: 'manual', volverEl: '2027-01-15', quien }),
+  );
+
+  assert.equal(
+    (await laCita(alfa, cita))?.asistio,
+    null,
+    'registrar sin cita marcó una cita igual: nulo es «nadie lo dijo» y dejó de serlo',
+  );
+});
+
+test('la asistencia NO se escribe en una cita de otro contacto, aunque la pidan', async () => {
+  /* El identificador viene del cuerpo de la petición. La política de fila no lo desmiente: las dos
+     citas son del mismo inquilino. Sin el `where` por contacto, esto marcaría la agenda de otro
+     closer con un `update` exitoso. */
+  const mio = await contactoEn(alfa);
+  const ajeno = await contactoEn(alfa);
+  const suCita = await citaDe(alfa, ajeno, new Date(Date.now() - 2 * 3600_000));
+
+  await conOrganizacion(alfa, () =>
+    registrarResultado(mio, { ...base(), que: del('venta'), monto: '100.00', formaPago: 'Contado', quien, cita: { id: suCita, asistio: true } }),
+  );
+
+  assert.equal(
+    (await laCita(alfa, suCita))?.asistio,
+    null,
+    'se marcó la cita de OTRO contacto: el `where` por contacto_id no está haciendo su trabajo',
+  );
+});
+
+test('el reintento no vuelve a escribir la asistencia: sale antes, como las otras cuatro', async () => {
+  /* `yaEstaba` corta ANTES de las cuatro escrituras, y la asistencia es la quinta. Si quedara
+     afuera de ese corte, un reintento tras un corte de red pisaría una respuesta que alguien
+     corrigió entre medio — y el registro corregido desaparecería sin dejar rastro. */
+  const contacto = await contactoEn(alfa);
+  const cita = await citaDe(alfa, contacto, new Date(Date.now() - 2 * 3600_000));
+  const clave = randomUUID();
+
+  await conOrganizacion(alfa, () =>
+    registrarResultado(contacto, { ...base(), claveDeIntento: clave, que: del('no_show'), quien, cita: { id: cita, asistio: false } }),
+  );
+
+  // Alguien corrige a mano: sí había venido.
+  await conOrganizacion(alfa, () =>
+    datos().updateTable('citas').set({ asistio: true } as never).where('id', '=', cita).execute(),
+  );
+
+  // Y ahora llega el reintento con la MISMA clave.
+  const otra = await conOrganizacion(alfa, () =>
+    registrarResultado(contacto, { ...base(), claveDeIntento: clave, que: del('no_show'), quien, cita: { id: cita, asistio: false } }),
+  );
+  assert.equal(otra.yaEstaba, true, 'el reintento no chocó: la prueba no está midiendo lo que dice');
+  assert.equal(
+    (await laCita(alfa, cita))?.asistio,
+    true,
+    'el reintento pisó la corrección: la asistencia quedó fuera del corte de `yaEstaba`',
+  );
 });

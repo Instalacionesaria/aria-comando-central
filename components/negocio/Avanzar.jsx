@@ -41,6 +41,7 @@ import { pedir } from '../../lib/http/cliente.ts';
 const ESPERA_DE_AVANZAR_MS = 30_000;
 import { salidasDe, modosDe } from '../../lib/negocio/salidas.ts';
 import Ventana from '../Ventana.jsx';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 
 /** El día de hoy en `YYYY-MM-DD`, para el mínimo del campo de fecha. */
 function hoy() {
@@ -61,7 +62,10 @@ function hoy() {
  * servidor lo rechaza con ese motivo. Es lo mismo que decir el `07` § 4: no se muestra un control
  * que no puede cumplir.
  */
-export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRegistrar }) {
+export default function Avanzar({ contactoId, nombre, territorio, citas = [], alCerrar, alRegistrar }) {
+  /* La zona de la EMPRESA, igual que el resto de la ficha. Con la del navegador, un closer que
+     viaja vería la cita de las 9 rotulada a las 11 y elegiría la equivocada de una lista de dos. */
+  const zona = useSesion()?.organizacion.zonaHoraria ?? 'UTC';
   /** La salida elegida. `null` = paso 1. */
   const [elegida, setElegida] = useState(null);
   const [detalle, setDetalle] = useState('');
@@ -70,6 +74,17 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
   const [volverEl, setVolverEl] = useState('');
   /** El modo, para las salidas que los tienen. `''` = todavía no eligió, y el botón lo exige. */
   const [modo, setModo] = useState('');
+  /* ── LA CITA Y LA ASISTENCIA ───────────────────────────────────────────────
+   *
+   * `citaId` arranca en la más reciente cuando hay exactamente una: con una sola candidata no hay
+   * nada que elegir, y obligar a elegirla es un clic que sólo puede salir bien. Con varias arranca
+   * vacío, porque ahí sí hay una decisión y adivinarla la escondería.
+   *
+   * `asistio` arranca en `null` —«todavía no contestó»— y NO en `true`. Preseleccionar el sí
+   * convertiría la pregunta en un trámite y la tasa en «cuántos apretaron Registrar»: lo que se
+   * quiere medir es lo que alguien afirmó, no lo que dejó como venía. */
+  const [citaId, setCitaId] = useState(() => (citas.length === 1 ? citas[0].id : ''));
+  const [asistio, setAsistio] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
   /* ────────────────────────── UNA CLAVE POR APERTURA DE ESTE PANEL ──────────────────────────
@@ -102,6 +117,29 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
   );
   const elModo = useMemo(() => modos.find((m) => m.modo === modo) ?? null, [modos, modo]);
 
+  /* ── `no_show` CONTESTA LA PREGUNTA SOLA ───────────────────────────────────
+   *
+   * «No apareció a la cita» y «no se presentó» son la misma afirmación. Preguntarla dos veces
+   * invita a que discrepen —y el día que discrepen, la tabla tiene un plantón registrado como
+   * asistencia— así que acá la pregunta no se dibuja y la respuesta sale de la salida elegida.
+   *
+   * Es la mitad visible de lo que la `049` hizo en el catálogo: sacó `'No-show'` de las opciones de
+   * `nurture`, que era la otra forma de decir lo mismo. */
+  const laSalidaYaLoDice = elegida === 'no_show';
+  const respuesta = laSalidaYaLoDice ? false : asistio;
+  /* ── SON DOS PREGUNTAS Y SÓLO UNA LA CONTESTA `no_show` ────────────────────
+   *
+   * «De cuál cita hablamos» sigue haciendo falta con `no_show` —si el contacto tiene dos, hay que
+   * decir a cuál faltó— y «si vino» no. Colapsarlas en una sola bandera escondía el selector justo
+   * en el caso que más importa registrar: el plantón de alguien con varias citas.
+   *
+   * Sin citas no se dibuja nada: un control que no puede cumplir es peor que su ausencia
+   * (`07` § 4). */
+  const seEligeLaCita = citas.length > 0;
+  const sePreguntaSiVino = seEligeLaCita && !laSalidaYaLoDice;
+  /** La elegida, o la única. `null` = todavía no hay a cuál colgar la respuesta. */
+  const laCita = useMemo(() => citas.find((c) => c.id === citaId) ?? null, [citas, citaId]);
+
   /* ── LA FECHA APARECE SEGÚN EL MODO, Y ES LA MITAD VISIBLE DE LA REGLA ─────
    *
    * Con `manual` hace falta —es el día en que el contacto aparece en Mi Día— y con `automatico`
@@ -123,7 +161,11 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
     // Un modo sin elegir no tiene valor por omisión posible: los dos hacen cosas disjuntas.
     (modos.length === 0 || elModo !== null) &&
     // Y `manual` sin fecha no tiene día que poner en Mi Día.
-    (!pideFecha || modos.length === 0 || volverEl !== '');
+    (!pideFecha || modos.length === 0 || volverEl !== '') &&
+    /* La mitad no se acepta: una cita elegida sin respuesta se guardaría como «nadie sabe», que es
+       exactamente el estado del que esta pantalla existe para salir. El servidor rechaza lo mismo,
+       porque cualquiera puede llamar al endpoint; esto es para no descubrirlo con un rechazo. */
+    (!sePreguntaSiVino || citaId === '' || asistio !== null);
 
   const registrar = useCallback(async () => {
     if (!def) return;
@@ -144,6 +186,11 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
            rechaza —y tiene razón—, y eso pasaría si alguien elige un día, cambia a automático y
            registra: el campo está oculto pero su estado sigue teniendo el valor viejo. */
         ...(pideFecha && volverEl !== '' ? { volverEl } : {}),
+        /* Las dos juntas o ninguna. Con `no_show` la cita se manda igual —hay a cuál colgar el
+           plantón— pero la respuesta no la eligió nadie: la dice la salida. */
+        ...(laCita !== null && respuesta !== null
+          ? { citaId: laCita.id, asistio: respuesta }
+          : {}),
       },
     });
     setEnviando(false);
@@ -205,7 +252,7 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
       modo,
     });
     alCerrar?.();
-  }, [def, contactoId, detalle, monto, nota, volverEl, alRegistrar, alCerrar]);
+  }, [def, contactoId, detalle, monto, nota, volverEl, laCita, respuesta, alRegistrar, alCerrar]);
 
   // ─── Paso 1 · las seis tarjetas ───────────────────────────────────────────
 
@@ -265,6 +312,87 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
       >
         ← Elegir otro resultado
       </button>
+
+      {/* ── LA ASISTENCIA, ARRIBA DE TODO ────────────────────────────────────
+          Va primero y no al final porque es lo único de este paso que **no se puede reconstruir
+          después**: el monto está en el CRM, la nota se puede volver a escribir, y si alguien se
+          presentó o no sólo lo sabe quien estuvo en la llamada. Al final del formulario, es lo
+          primero que se saltea. */}
+      {seEligeLaCita ? (
+        <div className="fd-campo">
+          <label htmlFor="av-cita">
+            {laSalidaYaLoDice ? '¿A qué cita no se presentó?' : '¿Se presentó a la cita?'}
+          </label>
+          {citas.length > 1 ? (
+            <select
+              id="av-cita"
+              value={citaId}
+              onChange={(e) => {
+                setCitaId(e.target.value);
+                setAsistio(null);
+              }}
+              style={{ marginBottom: 8 }}
+            >
+              {/* Vacío es legítimo: este resultado puede no ser de ninguna de sus citas. */}
+              <option value="">No es sobre ninguna de estas citas</option>
+              {citas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {cuandoFue(c.inicioEl, zona)}
+                  {c.titulo ? ` · ${c.titulo}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            /* Con una sola no hay nada que elegir, pero SÍ hay que decir de cuál se habla: sin
+               esta línea, «¿se presentó?» no dice a qué, y la respuesta se da a ciegas. */
+            <div className="aj-ayuda" style={{ marginBottom: 8 }}>
+              La del {cuandoFue(citas[0].inicioEl, zona)}
+              {citas[0].titulo ? ` · ${citas[0].titulo}` : ''}.
+            </div>
+          )}
+
+          {sePreguntaSiVino && citaId !== '' ? (
+            <div className="res-si-no">
+              {[
+                { valor: true, texto: 'Sí, se presentó' },
+                { valor: false, texto: 'No apareció' },
+              ].map((o) => (
+                <button
+                  key={String(o.valor)}
+                  type="button"
+                  className={`fd-btn ${asistio === o.valor ? '' : 'sec'}`}
+                  aria-pressed={asistio === o.valor}
+                  onClick={() => setAsistio(o.valor)}
+                >
+                  {o.texto}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {/* Con `no_show` la respuesta no se pide: la salida ya la dio. Se dice, para que nadie
+              busque el control que falta y crea que la pantalla está rota. */}
+          {laSalidaYaLoDice ? (
+            <div className="aj-ayuda">
+              Queda registrada como no presentada. Elegiste «No-show», así que no hace falta
+              decirlo dos veces.
+            </div>
+          ) : laCita !== null && laCita.asistio !== null ? (
+            /* Lo que ya se había respondido. Sin esto, reabrir Avanzar sobre una cita ya cerrada
+               pregunta en blanco, y la segunda respuesta —dada sin acordarse de la primera— pisa a
+               la primera sin que nada lo advierta. */
+            <div className="aj-ayuda">
+              Ya estaba registrada como <b>{laCita.asistio ? 'presentada' : 'no presentada'}</b>.
+              Responder de nuevo la pisa.
+            </div>
+          ) : (
+            <div className="aj-ayuda">
+              Es lo único de esta pantalla que no está en el CRM: su campo de asistencia está vacío
+              en 1049 de 1052 citas.
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {def.pideMonto ? (
         <div className="fd-campo">
@@ -379,4 +507,27 @@ export default function Avanzar({ contactoId, nombre, territorio, alCerrar, alRe
       </div>
     </Ventana>
   );
+}
+
+/**
+ * Cuándo fue la cita, en la zona de la empresa. **Sólo para elegir entre varias.**
+ *
+ * `2-digit` es una preferencia y no una promesa —`Intl` puede devolver un dígito—, y acá no
+ * importa: esto rotula opciones de una lista, no arma una columna alineada. Lo que sí importa es
+ * que las dos opciones se distingan, y para eso alcanza el día y la hora.
+ *
+ * Una fecha ilegible devuelve un texto que lo dice, en vez de `Invalid Date`: el `select` lo
+ * mostraría igual, y quien elija no tendría forma de saber cuál eligió.
+ */
+function cuandoFue(inicioEl, zona) {
+  const d = new Date(inicioEl);
+  if (Number.isNaN(d.getTime())) return 'fecha desconocida';
+  return new Intl.DateTimeFormat('es', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zona,
+  }).format(d);
 }

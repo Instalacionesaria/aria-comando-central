@@ -100,6 +100,13 @@ const MOTIVOS = {
   nota_larga: `La nota no puede pasar de ${TOPE_NOTA} caracteres.`,
   fecha_invalida: 'La fecha para volver no se pudo leer.',
   fecha_pasada: 'La fecha para volver ya pasó.',
+  /* Los dos de la asistencia. Separados por lo mismo que los dos de la salida: «esa cita no es de
+     este contacto» y «dijiste de cuál pero no si vino» mandan a mirar cosas distintas. */
+  cita_ajena:
+    'Esa cita no es de este contacto. No se registró nada: recargá la ficha y volvé a elegir.',
+  asistencia_invalida:
+    'Si se elige una cita hay que decir si la persona se presentó: sí o no. Sin eso, la cita ' +
+    'quedaría contada como que nadie sabe, que es lo que ya pasaba antes.',
 } as const;
 
 export async function POST(
@@ -161,6 +168,25 @@ export async function POST(
   const claveDeIntento = cuerpo?.claveDeIntento;
   if (typeof claveDeIntento !== 'string' || !UUID.test(claveDeIntento)) {
     return rechazo('peticion_invalida', MOTIVOS.falta_clave);
+  }
+
+  /* ── LA CITA Y SI LA PERSONA SE PRESENTÓ ────────────────────────────────────
+   *
+   * Las dos juntas o ninguna, y el tipo de `LoQueSeRegistra.cita` lo dice igual: elegir la cita ES
+   * decir de cuál se habla, y una asistencia sin cita es una afirmación sin sujeto.
+   *
+   * `undefined` es el caso normal: los resultados del setter son pre-agenda por definición y los
+   * del closer sobre un contacto sin cita tampoco tienen a qué apuntar. Lo que NO se acepta es la
+   * mitad: una cita sin respuesta se rechaza en vez de guardarse como «nadie sabe», que es
+   * exactamente el estado que esto viene a salir. */
+  const citaId = cuerpo?.citaId;
+  let cita: { id: string; asistio: boolean } | null = null;
+  if (citaId !== undefined && citaId !== null) {
+    if (typeof citaId !== 'string' || !UUID.test(citaId)) return rechazo('no_encontrado');
+    if (typeof cuerpo?.asistio !== 'boolean') {
+      return rechazo('peticion_invalida', MOTIVOS.asistencia_invalida);
+    }
+    cita = { id: citaId, asistio: cuerpo.asistio };
   }
 
   // ── LA NOTA ───────────────────────────────────────────────────────────────
@@ -256,6 +282,25 @@ export async function POST(
     const lo = loQueDependeDelRol(par, cuerpo, volverEl);
     if ('motivo' in lo) return { tipo: 'rechazo' as const, motivo: lo.motivo };
 
+    /* ══ QUE LA CITA SEA DE ESTE CONTACTO, Y ACÁ ADENTRO ═════════════════════
+     *
+     * El identificador viene del cuerpo de la petición, así que puede nombrar CUALQUIER cita del
+     * inquilino. La política de fila no lo desmiente: las dos citas son de la misma organización y
+     * ninguna regla de la base dice que un resultado y su cita compartan contacto.
+     *
+     * Sin esta comprobación, marcar una cita ajena como asistida sería un `update` exitoso sobre la
+     * agenda de otro closer. `registrarResultado` repite el `where` por `contacto_id` —el cinturón
+     * además del tirante—, pero acá se puede decir POR QUÉ falló, y allá sólo no escribir. */
+    if (cita !== null) {
+      const suya = await datos()
+        .selectFrom('citas')
+        .select('id')
+        .where('id', '=', cita.id)
+        .where('contacto_id', '=', id)
+        .executeTakeFirst();
+      if (!suya) return { tipo: 'rechazo' as const, motivo: MOTIVOS.cita_ajena };
+    }
+
     const r = await registrarResultado(id, {
       // Anidado y no esparcido: ver el comentario de `LoQueSeRegistra`.
       que: par,
@@ -267,6 +312,7 @@ export async function POST(
       modo: lo.modo,
       quien: contexto.usuarioId,
       claveDeIntento,
+      cita,
     });
     return {
       tipo: 'listo' as const,

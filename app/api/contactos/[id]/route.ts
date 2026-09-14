@@ -41,6 +41,7 @@ import {
   TEXTO_DE_FALTA_GHL,
 } from '../../../../lib/credenciales/resolver.ts';
 import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
+import { citasParaCerrar } from '../../../../lib/negocio/citasParaCerrar.ts';
 import { enlacesDeLaCita } from '../../../../lib/negocio/enlacesDeLaCita.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
 
@@ -141,7 +142,14 @@ export async function GET(
    * pasar por `resolverAccesoAGhl`, que descifraría el token del CRM para no mirarlo.
    */
   const dominio = await conIdentidad((db) => dominioDeReservasDe(db, orgId));
-  const enlacesDeCita = await conOrganizacion(orgId, () => enlacesDeLaCita(id, dominio));
+  /* Las dos lecturas de `citas` van en la MISMA transacción. Separadas, el barrido —que corre cada
+     hora— podría escribir en el medio y la ficha mostraría el enlace de una cita y la lista de
+     asistencia de otro momento: dos cosas de la misma tabla contradiciéndose en la misma pantalla,
+     sin que nada falle. */
+  const [enlacesDeCita, citasPorCerrar] = await conOrganizacion(orgId, async () => [
+    await enlacesDeLaCita(id, dominio),
+    await citasParaCerrar(id),
+  ]);
 
   /* ── ACÁ SE ARMABA `enlaceAgendar`, Y SE FUE CON SU BOTÓN ────────────────
    *
@@ -158,6 +166,9 @@ export async function GET(
     /* `null` cuando no tiene ninguna cita aprovechable. La interfaz no dibuja nada, que es
        distinto de dibujar una opción vacía. */
     enlacesDeCita,
+    /* Las citas que ya ocurrieron y sobre las que Avanzar puede preguntar si se presentó. Vacío es
+       normal: un contacto de zona setter no tiene ninguna. Ver `lib/negocio/citasParaCerrar.ts`. */
+    citasPorCerrar,
     refresco: { actualizado: porque === null, porque },
   });
 }

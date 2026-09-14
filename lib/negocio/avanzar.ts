@@ -60,6 +60,19 @@ export interface LoQueSeRegistra extends LoComunDeUnResultado {
    * estaba en vez de escribir otro. Ver la migración `037`.
    */
   claveDeIntento: string;
+  /**
+   * La cita a la que se refiere este resultado, y si el contacto se presentó a ella.
+   *
+   * ── POR QUÉ LAS DOS COSAS JUNTAS Y NO DOS CAMPOS SUELTOS ──────────────────
+   *
+   * Son un solo acto: elegir la cita ES decir de cuál se está hablando. Sueltos, `asistio: true`
+   * sin `citaId` es una afirmación sin sujeto —¿se presentó a cuál?— y el tipo la dejaría pasar.
+   *
+   * `null` es el caso normal y frecuente, no el raro: un resultado del **setter** es pre-agenda por
+   * definición, y uno del closer sobre un contacto sin cita en la ventana tampoco tiene a qué
+   * apuntar. Ver la migración `049`.
+   */
+  cita: { id: string; asistio: boolean } | null;
 }
 
 interface LoComunDeUnResultado {
@@ -174,6 +187,10 @@ export async function registrarResultado(
       // persona la va a buscar. Borrar una de `notas` no debe cambiar lo que se registró.
       nota: lo.nota,
       registrado_por: lo.quien,
+      /* A qué cita corresponde. Sin esto, «cuántos se presentaron» no tiene denominador: un
+         resultado es un intento del closer, que no es el conjunto de las citas. Es literalmente el
+         motivo por el que `indicadoresDeCitas` declara los no-show como un CONTEO y no una tasa. */
+      cita_id: lo.cita?.id ?? null,
     } as never)
     .onConflict((oc) => oc.columns(['org_id', 'clave_de_intento']).doNothing())
     .returning('id')
@@ -213,6 +230,26 @@ export async function registrarResultado(
     .set({ etapa } as never)
     .where('id', '=', contactoId)
     .execute();
+
+  /* ── LA ASISTENCIA, EN LA CITA Y DENTRO DE ESTA MISMA TRANSACCIÓN ──────────
+   *
+   * Va acá y no en una llamada aparte por lo mismo que las otras cuatro escrituras: el resultado y
+   * «se presentó» describen un solo hecho, y una asistencia registrada sobre un resultado que se
+   * revirtió sería una cita marcada por una llamada que nunca se cerró.
+   *
+   * El `where` por `contacto_id` no es defensa en profundidad: es la validación. Sin él, una cita
+   * de OTRO contacto —o de otro closer— quedaría marcada con lo que alguien mandó en el cuerpo de
+   * la petición, y la política de fila no lo desmentiría porque las dos citas son del mismo
+   * inquilino. La ruta ya verifica que la cita sea de este contacto; esto es lo que hace que
+   * siga siendo verdad si mañana aparece otro llamador. */
+  if (lo.cita !== null) {
+    await datos()
+      .updateTable('citas')
+      .set({ asistio: lo.cita.asistio } as never)
+      .where('id', '=', lo.cita.id)
+      .where('contacto_id', '=', contactoId)
+      .execute();
+  }
 
   /* ── EL SELLO DE ATRIBUCIÓN, EN LA MISMA TRANSACCIÓN ──────────────────────
    *

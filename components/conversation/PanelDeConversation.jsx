@@ -275,12 +275,24 @@ function Cancelacion({ c }) {
           valor={String(c.noShowReportado)}
           detalle="reportados"
         />
+        <Cifra
+          titulo="Se presentaron"
+          /* `null` hasta que haya suficientes respuestas, y entonces se dibuja el hueco con el
+             aviso al lado — nunca un 0 %, que afirmaría que no viene nadie. El denominador NO son
+             las citas: son las que alguien cerró. */
+          valor={c.tasaDeAsistencia === null ? null : `${c.tasaDeAsistencia} %`}
+          detalle={`${c.sePresentaron} de ${c.conAsistencia} respondidas`}
+        />
       </div>
 
       <p className="cs-cifra-nota">
-        El no-show lo <b>reporta el closer</b> al cerrar el intento, no el calendario: los campos de
-        asistencia del CRM están vacíos en las 316 citas.
+        El no-show y la asistencia los <b>reporta el closer</b> al cerrar el intento, no el
+        calendario: los campos de asistencia del CRM están vacíos en las 316 citas.
       </p>
+      {/* Su aviso va aparte del de abajo: éste va a estar encendido durante semanas —la asistencia
+          se empezó a registrar hoy— y compartir el renglón apagaría por costumbre el de las citas
+          congeladas, que sí es excepcional. */}
+      {c.avisoDeAsistencia ? <p className="cs-cifra-nota">{c.avisoDeAsistencia}</p> : null}
       {c.aviso ? <p className="cs-cifra-nota">{c.aviso}</p> : null}
     </div>
   );

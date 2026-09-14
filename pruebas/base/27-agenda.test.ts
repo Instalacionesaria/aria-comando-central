@@ -1061,6 +1061,73 @@ test('lo que el CRM dice de la cita se GUARDA, en vez de morir en el upsert', as
   );
 });
 
+test('el barrido NO pisa `asistio`: es lo único de la cita que no viene del CRM', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * EL DEFECTO MÁS CARO DE LA `049`, Y NO FALLA EN NINGUNA PARTE
+   *
+   * `asistio` la escribe una persona en Avanzar, porque el campo de asistencia de GoHighLevel está
+   * poblado en 3 de 1052 citas. El barrido no tiene de dónde sacarla — así que si la columna
+   * entrara al `do update`, cada pasada horaria la pondría en nulo sobre TODAS las citas.
+   *
+   * El síntoma sería exactamente el peor: el closer registra, la cifra sube, y una hora después
+   * vuelve a cero. El `UPDATE` no falla, nada se pone rojo, y lo que se pierde es el único dato de
+   * esta tabla que ningún barrido puede reconstruir.
+   *
+   * Por eso la columna está FUERA del `set`, dicho con un comentario en `citas.ts` y comprobado
+   * acá: el comentario explica, esto lo hace cumplir.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  const marca = `u${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const cuando = new Date(Date.now() - 3_600_000);
+  const cal = [calendario('a')];
+
+  // 1 · El barrido crea la cita.
+  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-asistio', marca, cuando)] }));
+
+  // 2 · Alguien responde en Avanzar.
+  await conOrganizacion(alfa, () =>
+    datos()
+      .updateTable('citas')
+      .set({ asistio: true } as never)
+      .where('ghl_evento_id', '=', 'ev-asistio')
+      .execute(),
+  );
+
+  /* 3 · Y el barrido vuelve a pasar, que es lo que hace cada hora. Hace falta `liberarPulso()`:
+         el candado impide dos pasadas seguidas, y sin él la segunda no corre y la prueba pasa
+         sin haber ejercitado nada — que es cómo se descubrió.
+
+         La cita viene con OTRA hora para que el `do update` tenga algo real que escribir: con la
+         fila idéntica, un `set` que incluyera `asistio` podría pasar igual por casualidad. */
+  await liberarPulso();
+  await barrerCitas(
+    alfa,
+    ACCESO,
+    lectores(cal, { a: [delCrm('ev-asistio', marca, new Date(cuando.getTime() + 900_000))] }),
+  );
+
+  const f = await conOrganizacion(alfa, () =>
+    datos()
+      .selectFrom('citas')
+      .select(['asistio', 'inicio_el'])
+      .where('ghl_evento_id', '=', 'ev-asistio')
+      .executeTakeFirst(),
+  );
+  assert.ok(f, 'la cita desapareció');
+  assert.equal(
+    f.inicio_el.getTime(),
+    cuando.getTime() + 900_000,
+    'el barrido no actualizó la cita: la prueba no está midiendo una pasada real',
+  );
+  assert.equal(
+    f.asistio,
+    true,
+    'el barrido borró la asistencia que registró una persona. Es el dato que ningún barrido ' +
+      'puede reconstruir, y su pérdida no falla en ninguna parte',
+  );
+});
+
 test('un barrido sin la marca de reagendamiento NO borra la que ya teníamos', async () => {
   /* ── EL DEFECTO MÁS CARO DE ESTE CAMBIO, Y ES SILENCIOSO Y MASIVO ──────────
    *

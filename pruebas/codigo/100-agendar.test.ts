@@ -219,10 +219,18 @@ test('el menú del chat ofrece los dos, y solo cuando el servidor mandó su URL'
      antes de todo este trabajo. */
   const ruta = leer('app/api/contactos/[id]/route.ts');
   assert.match(ruta, /enlacesDeCita,/, 'el endpoint del contacto no manda los enlaces de la cita');
+  /* La llamada tiene que estar DENTRO de `conOrganizacion`: afuera no hay organización en el
+     contexto y la política de fila no deja ver ninguna cita, así que el menú saldría siempre vacío.
+     El patrón cruza las dos cosas en vez de buscarlas sueltas, que pasaría igual con la llamada
+     fuera del bloque.
+
+     La forma exacta cambió cuando `citasParaCerrar` entró a la misma transacción —las dos lecturas
+     de `citas` tienen que ver el mismo estado de la tabla—, así que esto ya no puede fijar una
+     línea literal: fija la relación, que es lo que importaba. */
   assert.match(
     ruta,
-    /await conOrganizacion\(orgId, \(\) => enlacesDeLaCita\(id, dominio\)\)/,
-    'el endpoint dejó de pedirlos',
+    /conOrganizacion\(orgId,[\s\S]{0,400}?enlacesDeLaCita\(id, dominio\)/,
+    'el endpoint dejó de pedirlos, o los pide fuera de `conOrganizacion`',
   );
 
   const ficha = leer('components/negocio/Ficha.jsx');

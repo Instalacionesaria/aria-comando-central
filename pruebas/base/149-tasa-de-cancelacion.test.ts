@@ -27,7 +27,11 @@ import type { Client } from 'pg';
 import { cerrarTodo, conectar, filas } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { DIAS_DE_LA_TASA, tasaDeCancelacion } from '../../lib/negocio/indicadoresDeCitas.ts';
+import {
+  DIAS_DE_LA_TASA,
+  PISO_DE_ASISTENCIA,
+  tasaDeCancelacion,
+} from '../../lib/negocio/indicadoresDeCitas.ts';
 
 let admin: Client;
 let alfa: string;
@@ -78,7 +82,7 @@ async function cita(
   haceDias: number,
   estado: string | null,
   calendario: string | null = 'cal1',
-  extra: { reservadaHorasAntes?: number; reagendada?: boolean } = {},
+  extra: { reservadaHorasAntes?: number; reagendada?: boolean; asistio?: boolean } = {},
 ): Promise<void> {
   const inicio = new Date(Date.now() - haceDias * 86_400_000);
   await conOrganizacion(alfa, async () => {
@@ -95,6 +99,9 @@ async function cita(
             ? null
             : new Date(inicio.getTime() - extra.reservadaHorasAntes * 3_600_000),
         reagendada_el: extra.reagendada ? new Date(inicio.getTime() - 3_600_000) : null,
+        /* `undefined` deja la columna en nulo, que es «nadie lo dijo» — el estado de toda cita
+           anterior a la `049` y de toda cita cuyo intento no se cerró. */
+        asistio: extra.asistio ?? null,
       } as never)
       .execute();
   });
@@ -307,4 +314,86 @@ test('el no-show viaja como CONTEO: con dos eventos una tasa no es una tasa', as
     !Object.keys(t).some((k) => /noShow.*[Tt]asa|tasa.*[Nn]oShow/.test(k)),
     'apareció una TASA de no-show: con dos eventos eso no es una tasa',
   );
+});
+
+// ─── La asistencia (migración `049`) ────────────────────────────────────────
+
+test('EL DEFECTO QUE HUNDIRÍA LA CIFRA: las citas sin responder NO son plantones', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * El nulo de `asistio` es «nadie lo dijo todavía», y ése es el caso NORMAL: ninguna cita anterior
+   * a la `049` lo va a tener nunca, y las nuevas sólo cuando alguien cierre el intento.
+   *
+   * Si el denominador fueran todas las citas alcanzables en vez de las respondidas, la tasa diría
+   * que no se presenta casi nadie — una cifra plausible, alarmante y falsa, calculada sobre gente
+   * que sí vino. Es el mismo cero indistinguible que este archivo persigue en la cancelación.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
+  // Y veinte que nadie cerró. Si contaran, la tasa caería de 100 a 33,3.
+  for (let i = 0; i < 20; i++) await cita(1, 'confirmed');
+
+  const r = await leer();
+  assert.equal(r.conAsistencia, PISO_DE_ASISTENCIA, 'el denominador dejó de ser «las respondidas»');
+  assert.equal(r.sePresentaron, PISO_DE_ASISTENCIA);
+  assert.equal(
+    r.tasaDeAsistencia,
+    100,
+    'las citas que nadie cerró entraron al denominador y hundieron la cifra',
+  );
+});
+
+test('por debajo del piso NO hay tasa, y el aviso dice por qué', async () => {
+  /* Una tasa sobre pocos eventos no es una tasa: se mueve más de diez puntos con el próximo
+     registro. Es exactamente el motivo por el que el no-show de más arriba se declara como CONTEO,
+     y acá se resuelve callando en vez de publicando. */
+  await limpiar();
+  await cita(1, 'confirmed', 'cal1', { asistio: true });
+  await cita(2, 'confirmed', 'cal1', { asistio: false });
+  for (let i = 0; i < 8; i++) await cita(3, 'confirmed');
+
+  const r = await leer();
+  assert.equal(r.conAsistencia, 2);
+  assert.equal(r.sePresentaron, 1);
+  assert.equal(r.tasaDeAsistencia, null, 'publicó un 50 % construido sobre dos registros');
+  assert.match(String(r.avisoDeAsistencia), /2 de 10/, 'el aviso no dice sobre cuántas habla');
+});
+
+test('sin ninguna respuesta el aviso lo dice, en vez de dejar un hueco que se lee como cero', async () => {
+  await limpiar();
+  for (let i = 0; i < 4; i++) await cita(1, 'confirmed');
+
+  const r = await leer();
+  assert.equal(r.conAsistencia, 0);
+  assert.equal(r.tasaDeAsistencia, null);
+  assert.match(
+    String(r.avisoDeAsistencia),
+    /Nadie registró/,
+    'una tarjeta vacía sin aviso se lee como «no se presentó nadie»',
+  );
+});
+
+test('con suficientes respuestas la tasa aparece Y el aviso se calla', async () => {
+  /* La regla del silencio: un aviso que siempre está encendido es un aviso que nadie mira, y
+     arrastraría con él al de las citas congeladas, que está al lado. */
+  await limpiar();
+  for (let i = 0; i < 8; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
+  for (let i = 0; i < 4; i++) await cita(2, 'confirmed', 'cal1', { asistio: false });
+
+  const r = await leer();
+  assert.equal(r.conAsistencia, 12);
+  assert.equal(r.tasaDeAsistencia, 66.7, 'la tasa no redondea a un decimal como sus vecinas');
+  assert.equal(r.avisoDeAsistencia, null, 'el aviso siguió encendido con la cifra ya publicada');
+});
+
+test('una cita CONGELADA no entra, aunque alguien haya respondido', async () => {
+  /* El mismo filtro que las otras cuatro cifras: sin él, una respuesta registrada sobre una cita
+     que el CRM ya no devuelve mezclaría una foto vieja con el dato de hoy. Y peor: `citasParaCerrar`
+     no las ofrece, así que esa respuesta sólo puede existir por un camino que ya no debería haber. */
+  await limpiar();
+  for (let i = 0; i < PISO_DE_ASISTENCIA; i++) await cita(1, 'confirmed', 'cal1', { asistio: true });
+  for (let i = 0; i < 5; i++) await cita(2, 'confirmed', null, { asistio: false });
+
+  const r = await leer();
+  assert.equal(r.conAsistencia, PISO_DE_ASISTENCIA, 'entraron citas congeladas al denominador');
+  assert.equal(r.tasaDeAsistencia, 100);
 });

@@ -182,7 +182,20 @@ export const SALIDAS_DEL_CLOSER = [
     clase: 'next',
     icono: '◍',
     etiquetaDelCampo: 'De dónde viene',
-    opciones: ['No-show', 'Pidió tiempo', 'Se enfrió'],
+    /* ── «No-show» SALIÓ DE ACÁ, Y NO ES UN RECORTE ──────────────────────────
+     *
+     * Estaba entre estas opciones y hacía que un plantón real se pudiera registrar como `nurture`.
+     * Con eso, cualquier inferencia «salida de closer distinta de `no_show` ⟹ apareció» contaba ese
+     * caso como asistencia — un show rate inflado sin que nada fallara.
+     *
+     * Desde la `049` la asistencia tiene su propia pregunta en Avanzar y su propia columna en la
+     * cita, así que dejarla acá sería tener dos formas de decir lo mismo: el día que discrepen gana
+     * la que nadie mira. Un plantón que además hay que nutrir se registra con `no_show`, que es lo
+     * que además deja el bot vivo para el flujo de recuperación (`lib/ghl/contrato.ts`).
+     *
+     * Las filas ya registradas conservan su texto: `detalle` es texto libre en la base, y
+     * reescribir el pasado para que coincida con el catálogo de hoy sería inventar. */
+    opciones: ['Pidió tiempo', 'Se enfrió'],
     pideMonto: false,
   },
 ] as const satisfies readonly DefinicionDeSalida[];

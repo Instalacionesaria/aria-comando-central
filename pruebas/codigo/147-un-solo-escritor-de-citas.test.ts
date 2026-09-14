@@ -35,8 +35,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { archivosFuente } from '../apoyo/fuente.ts';
 
-/** Dónde vive el único escritor legítimo. */
+/** Dónde vive el único escritor de lo que la tabla trae del CRM. */
 const EL_ESCRITOR = 'lib/negocio/citas.ts';
+
+/**
+ * La ÚNICA columna de `negocio.citas` que no viene de GoHighLevel, y su único escritor.
+ *
+ * ── POR QUÉ ESTA EXCEPCIÓN NO AFLOJA LA REGLA ───────────────────────────────
+ *
+ * Todo el encabezado de este archivo habla de las columnas que el barrido deriva leyendo la fila
+ * vieja en la misma sentencia que la pisa. `asistio` no es una de ésas y no puede serlo: **el CRM no
+ * la tiene** —su campo de asistencia está poblado en 3 de 1052 citas, y por eso existe la `049`—,
+ * así que `guardar()` no tiene de dónde sacarla y el barrido la deja deliberadamente fuera de su
+ * `do update`.
+ *
+ * O sea que no hay dos escritores de una misma columna, que es lo que la prueba protege: hay dos
+ * columnas con un escritor cada una. Lo que esta prueba tiene que impedir es que ese segundo
+ * escritor, que ahora existe, empiece a tocar cualquier OTRA columna — y eso es lo que afirma.
+ */
+const NUESTRA = 'asistio';
+const SU_ESCRITOR = 'lib/negocio/avanzar.ts';
 
 test('`negocio.citas` se escribe desde UN solo archivo', () => {
   /* Se cuentan las tres formas de escribir, no sólo el `insert`: un `update` suelto sobre `citas`
@@ -50,11 +68,46 @@ test('`negocio.citas` se escribe desde UN solo archivo', () => {
   }
 
   assert.deepEqual(
-    escriben,
+    escriben.filter((r) => r !== SU_ESCRITOR),
     [EL_ESCRITOR],
-    'apareció un segundo escritor de `negocio.citas`. Las tres columnas de la `042` sólo son ' +
+    'apareció un tercer escritor de `negocio.citas`. Las tres columnas de la `042` sólo son ' +
       'correctas si las escribe el `do update` de `guardar()`, que lee la fila vieja en la misma ' +
       'sentencia que la pisa — ver el encabezado de este archivo',
+  );
+});
+
+test('el escritor de la asistencia NO puede tocar ninguna otra columna de la cita', () => {
+  /* Ésta es la mitad que la prueba de arriba dejó de cubrir al admitir el segundo archivo, y es la
+     que de verdad muerde: el día que alguien agregue `inicio_el` o `estado_ghl` a ese `set` —para
+     «aprovechar que ya estamos escribiendo la fila»— la cita se pisaría sin pasar por las cinco
+     reglas del `do update`, y el barrido lo revertiría una hora después sin que nada falle. */
+  const fuente = archivosFuente(['lib', 'app']).find((a) => a.ruta === SU_ESCRITOR);
+  assert.ok(fuente, `${SU_ESCRITOR} no existe: si se renombró, hay que renombrarlo acá también`);
+
+  /* Sólo `updateTable`: un `insert` o un `delete` sobre citas desde este archivo ya lo caza la
+     prueba de arriba, que lo esperaría en la lista de escritores y no lo encontraría. */
+  assert.ok(
+    !/insertInto\('citas'\)|deleteFrom\('citas'\)/.test(fuente.limpio),
+    'el escritor de la asistencia empezó a crear o borrar citas, y eso es del barrido',
+  );
+
+  /* Las claves del `set` de cada `updateTable('citas')`. El corte en `}` es seguro porque el objeto
+     que se pasa no tiene objetos anidados; si algún día los tuviera, lo que fallaría es esta
+     prueba y no el código — que es el lado correcto para fallar. */
+  const claves: string[] = [];
+  const bloques = fuente.limpio.matchAll(/updateTable\('citas'\)[\s\S]*?\.set\(\{([^}]*)\}/g);
+  for (const b of bloques) {
+    for (const m of (b[1] ?? '').matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*:/g)) {
+      if (m[1] !== undefined) claves.push(m[1]);
+    }
+  }
+
+  assert.ok(claves.length > 0, 'no se encontró ningún `set` sobre citas: la prueba dejó de mirar');
+  assert.deepEqual(
+    [...new Set(claves)],
+    [NUESTRA],
+    `${SU_ESCRITOR} escribe una columna de la cita que no es «${NUESTRA}». Todo lo demás de esa ` +
+      'tabla viene del CRM y sólo es correcto si lo escribe el `do update` del barrido',
   );
 });
 

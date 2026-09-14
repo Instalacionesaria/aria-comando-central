@@ -414,6 +414,18 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
                  then now()
                  else citas.estado_cambiado_el end`,
 
+          /* ── Y `asistio` NO ESTÁ ACÁ, QUE ES EL PUNTO ───────────────────────
+           *
+           * Es la única columna de esta tabla que **no viene del CRM**: la escribe una persona al
+           * cerrar el intento en Avanzar, porque el campo de asistencia de GoHighLevel está
+           * poblado en 3 de 1052 citas. Es la misma regla que protege a `sello_setter_id` en
+           * `sincronizar.ts`: *lo que decide GoHighLevel se pisa; lo que decidimos acá, no.*
+           *
+           * Si entrara al `set`, la primera pasada horaria del barrido la pondría en nulo sobre
+           * TODAS las citas y **nada fallaría**: el closer registraría, la cifra subiría, y una
+           * hora después volvería a cero sin un solo error en ninguna parte. Por eso está dicho
+           * acá y no sólo por omisión. */
+
           sincronizado_el: valores.sincronizado_el,
         } as never),
       )

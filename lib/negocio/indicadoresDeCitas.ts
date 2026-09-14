@@ -89,7 +89,46 @@ export interface Cancelacion {
    * El CRM no sirve para esto: sus campos de asistencia están en 0 de 316.
    */
   noShowReportado: number;
+  /**
+   * Cuántas citas de la ventana tienen la asistencia RESPONDIDA, y de ésas cuántas se presentaron.
+   *
+   * El denominador no son las citas: son las citas sobre las que alguien contestó. La diferencia es
+   * lo que impide el peor defecto posible acá — contar como plantón toda cita que nadie cerró
+   * todavía, y anunciar que no viene nadie.
+   *
+   * `tasaDeAsistencia` es `null` hasta que haya suficientes respuestas. Ver `PISO_DE_ASISTENCIA`:
+   * es la misma disciplina por la que el no-show de arriba se declara como conteo.
+   *
+   * Arranca en cero y no tiene historia: la `049` es de hoy y una migración no puede rellenar. El
+   * aviso lo dice.
+   */
+  conAsistencia: number;
+  sePresentaron: number;
+  tasaDeAsistencia: number | null;
+  /**
+   * Por qué la tasa de asistencia no está, o qué le falta. **Campo propio y no parte de `aviso`.**
+   *
+   * Mezclarlos rompería la regla del silencio justo donde más cuesta: `aviso` calla en el caso
+   * normal, y eso es lo que hace que cuando aparece alguien lo lea. La asistencia va a estar por
+   * debajo del piso durante semanas, así que un aviso compartido estaría SIEMPRE encendido — y un
+   * aviso que siempre aparece es un aviso que nadie mira, incluido el de las citas congeladas.
+   */
+  avisoDeAsistencia: string | null;
 }
+
+/**
+ * Cuántas respuestas hacen falta antes de mostrar una tasa de asistencia.
+ *
+ * **Diez, y el número sale de un defecto ya pagado, no del gusto.** La tasa de no-show que hay más
+ * arriba se declara como CONTEO justamente porque medía 2 eventos en catorce días: *«una tasa sobre
+ * dos eventos no es una tasa — es un número que se mueve cincuenta puntos con el próximo
+ * registro»*. Con diez, un registro mueve diez puntos, que sigue siendo mucho y ya no es absurdo.
+ *
+ * Y el piso es del DENOMINADOR, no del total de citas: con 151 citas y 3 respuestas la muestra son
+ * 3, y quien contestó esas tres no es una muestra al azar de las 151 — el closer que cierra sus
+ * intentos no es el mismo que no los cierra.
+ */
+export const PISO_DE_ASISTENCIA = 10;
 
 /**
  * Cuántos días mira la cifra.
@@ -128,6 +167,21 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
       sql<number | null>`percentile_cont(0.5) within group (
         order by extract(epoch from (inicio_el - reservada_el)) / 3600
       ) filter (where ghl_calendario_id is not null and reservada_el is not null)`.as('horas'),
+      /* ── LA ASISTENCIA, Y EL FILTRO QUE ES TODO EL INDICADOR ───────────────
+       *
+       * `asistio is not null` en el DENOMINADOR. Sin ese filtro la cuenta sería sobre todas las
+       * citas alcanzables, y como el nulo es el caso normal —nadie cerró el intento todavía, y
+       * ninguna cita anterior a la `049` lo va a tener nunca— la tasa diría que no se presenta casi
+       * nadie. Sería una cifra plausible, alarmante y falsa.
+       *
+       * Y `is true` en el numerador y no `= true`: son equivalentes hoy porque el filtro ya excluyó
+       * los nulos, y `is true` lo sigue siendo el día que alguien toque ese filtro. */
+      sql<number>`count(*) filter (
+        where ghl_calendario_id is not null and asistio is not null
+      )`.as('con_asistencia'),
+      sql<number>`count(*) filter (
+        where ghl_calendario_id is not null and asistio is true
+      )`.as('se_presentaron'),
     ])
     /* La ventana la calcula la BASE y no la aplicación: es la única forma de que el «ahora» sea el
        mismo reloj que escribió las filas. Es el mismo recurso que usa `frescuraDe`. */
@@ -141,6 +195,8 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
   const reagendadas = Number(fila?.reagendadas ?? 0);
   const conFechaDeReserva = Number(fila?.con_reserva ?? 0);
   const horas = fila?.horas ?? null;
+  const conAsistencia = Number(fila?.con_asistencia ?? 0);
+  const sePresentaron = Number(fila?.se_presentaron ?? 0);
 
   /* El no-show sale de OTRA tabla y por eso es una consulta aparte: lo reporta el closer al cerrar
      un intento, no el calendario. Va dentro de la misma transacción igual. */
@@ -168,7 +224,43 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     horasHastaLaCita: horas === null ? null : Math.round(Number(horas) * 10) / 10,
     conFechaDeReserva,
     noShowReportado: Number(ns?.n ?? 0),
+    conAsistencia,
+    sePresentaron,
+    /* Por debajo del piso NO hay tasa, y eso no es prudencia: es la diferencia entre decir «no sé
+       todavía» y afirmar un porcentaje que el próximo registro mueve diez puntos. La pantalla
+       dibuja el conteo mientras tanto. */
+    tasaDeAsistencia:
+      conAsistencia < PISO_DE_ASISTENCIA
+        ? null
+        : Math.round((sePresentaron / conAsistencia) * 1000) / 10,
+    avisoDeAsistencia: avisoDeLaAsistencia(citas, conAsistencia, dias),
   };
+}
+
+/**
+ * Qué decir de la asistencia, y cuándo callarse. Mismos tres estados que `avisoDe`, otra pregunta.
+ *
+ * El primero es el que más importa y es el que va a estar encendido al principio: **nadie contestó
+ * todavía**. Sin esa frase, una tarjeta vacía se lee como «no se presentó nadie», que es el mismo
+ * cero indistinguible que este archivo persigue en la tasa de cancelación.
+ *
+ * Y dice de cuántas citas se está hablando, porque «0 respuestas» sobre 0 citas y sobre 151 citas
+ * mandan a hacer cosas distintas: una es esperar y la otra es preguntarle al closer por qué no
+ * cierra sus intentos.
+ */
+function avisoDeLaAsistencia(citas: number, conAsistencia: number, dias: number): string | null {
+  if (citas === 0) return null; // Ya lo dijo `avisoDe`. Repetirlo con otras palabras es ruido.
+  if (conAsistencia === 0) {
+    return `Nadie registró todavía si el contacto se presentó, en ninguna de las ${citas} citas de ` +
+      `los últimos ${dias} días. Se pregunta al cerrar el intento en Avanzar, y antes de eso no ` +
+      'existía: el CRM tiene ese campo en 3 de 1052 citas.';
+  }
+  if (conAsistencia < PISO_DE_ASISTENCIA) {
+    return `Sólo ${conAsistencia} de ${citas} citas tienen la asistencia registrada. Con menos de ` +
+      `${PISO_DE_ASISTENCIA} no se muestra una tasa: cada registro nuevo la movería más de diez ` +
+      'puntos, y quien contestó no es una muestra al azar de las demás.';
+  }
+  return null;
 }
 
 /**

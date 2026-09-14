@@ -475,6 +475,17 @@
   outline-offset: 2px;
 }
 
+/* Los dos botones de la asistencia. Dos y no un `select` porque la respuesta es binaria y tiene que
+   verse cuál está elegida SIN abrir nada: un desplegable cerrado en «Sin especificar» se parece
+   demasiado a uno cerrado en «Sí», y la diferencia entre esas dos es la cifra entera.
+   `1fr 1fr` para que ninguno parezca el principal: preseleccionar el sí —aunque sea sólo con el
+   ancho— convertiría la pregunta en un trámite. */
+.res-si-no {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 /* ── 7 · UNA CONVERSACIÓN QUE LLEGA SOLA HAY QUE ANUNCIARLA ──────────────────
    El chat se refresca cada N segundos con su propio reloj. Para quien usa lector de pantalla, los
    mensajes nuevos aparecían sin que nada lo dijera. `aria-live` lo pone el JSX; acá sólo se deja
