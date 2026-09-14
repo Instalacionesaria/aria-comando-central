@@ -23,6 +23,11 @@
 // sistema, mayor es la proporción de citas que el sistema dejó de mirar. Así que se cuenta sobre lo
 // que el barrido alcanza, y lo congelado se declara aparte — nunca se suma en silencio.
 //
+// Y desde el 2026-09-14 esa exclusión tiene además un motivo de producto, no sólo técnico:
+// **decidido que sólo cuentan las citas agendadas desde que Comando Central existe** (la primera
+// guardada es del 2026-08-26). Las anteriores no importan, así que excluirlas no es una pérdida que
+// haya que compensar algún día — es el alcance.
+//
 // ── Y POR QUÉ LA VENTANA VA POR `inicio_el` Y NO POR `reservada_el` ─────────
 //
 // `reservada_el` es la fecha nueva y tentadora —contestaría «de las que se agendaron esta semana,

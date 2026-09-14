@@ -30,6 +30,30 @@
 //
 // Traer todo costaría lo mismo en llamadas y llenaría la tabla con 977 citas que ninguna pantalla
 // mira. El día que haga falta un histórico, es una ventana distinta y un barrido aparte.
+//
+// ── ESE DÍA LLEGÓ, SE MIRÓ, Y LA RESPUESTA FUE QUE NO ──────────────────────
+//
+// Conversation Intelligence empezó a mostrar cifras el 2026-09-14 y con eso apareció la pregunta de
+// si traer la historia. **Decidido el mismo día: no.** Sólo cuentan las citas agendadas desde que
+// Comando Central existe —la primera guardada es del **2026-08-26**— y las anteriores no importan.
+//
+// No es sólo una decisión de producto: hay un argumento técnico que apunta al mismo lado, y conviene
+// que quede escrito porque la idea de «traer la historia» vuelve sola.
+//
+// **Un relleno de una sola vez crea filas CONGELADAS POR CONSTRUCCIÓN.** Se traen, nunca se vuelven
+// a mirar, y su estado queda detenido en el día de la importación. Ya hay 101 así en esta tabla
+// —anteriores a la 038, sin sincronizar desde el 2026-09-06— y **sesgaron una cifra real**: la tasa
+// de cancelación daba 50,6 % mezclándolas y 60,3 % sobre las que el barrido alcanza. Un relleno
+// histórico sumaría ~977 más de la misma clase, o sea que empeoraría el problema que viene a
+// resolver.
+//
+// Y hay un tercer motivo, concreto y de este archivo: el `on conflict` de abajo estampa
+// `estado_cambiado_el = now()` cuando el estado difiere. Un relleno que actualizara citas viejas
+// cuyo estado cambió hace semanas les pondría fecha de HOY — el artefacto que la 045 dice estar
+// evitando.
+//
+// Si alguien reabre esto, que sea sabiendo las tres cosas: la decisión del dueño, las filas
+// congeladas, y el sello falso.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
