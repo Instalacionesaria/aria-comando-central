@@ -34,7 +34,7 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
-import { tasaDeCancelacion } from '../../../lib/negocio/cancelacion.ts';
+import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo

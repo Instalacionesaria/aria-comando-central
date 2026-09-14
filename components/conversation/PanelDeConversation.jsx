@@ -191,19 +191,65 @@ export default function PanelDeConversation() {
  * que es una afirmación sobre el negocio hecha sin datos. Se dibuja el guion que esta aplicación ya
  * usa para «no se sabe», y el motivo va en el aviso.
  */
+function Cifra({ titulo, valor, detalle }) {
+  return (
+    <div className="cs-cifra-uno">
+      <p className="cs-cifra-cab">
+        <b>{titulo}</b>
+      </p>
+      <p className="cs-cifra-valor">
+        {valor === null ? '—' : valor}
+        {detalle && valor !== null ? <small>{detalle}</small> : null}
+      </p>
+    </div>
+  );
+}
+
+/** Horas a algo que se lee: «2,1 días» dice más que «49,2 h» cuando pasa de un día. */
+function enTiempo(horas) {
+  if (horas === null) return null;
+  if (horas < 48) return `${Math.round(horas)} h`;
+  return `${(horas / 24).toFixed(1)} días`;
+}
+
 function Cancelacion({ c }) {
   return (
     <div className="cs-cifra">
-      <p className="cs-cifra-cab">
-        <b>Cancelación</b> <span>últimos {c.dias} días</span>
+      <p className="cs-cifra-titulo">
+        Qué pasó con las citas <span>últimos {c.dias} días</span>
       </p>
-      <p className="cs-cifra-valor">
-        {c.tasa === null ? '—' : `${c.tasa} %`}
-        {c.tasa === null ? null : (
-          <small>
-            {c.canceladas} de {c.citas} citas
-          </small>
-        )}
+
+      <div className="cs-cifra-fila">
+        <Cifra
+          titulo="Cancelación"
+          valor={c.tasa === null ? null : `${c.tasa} %`}
+          detalle={`${c.canceladas} de ${c.citas}`}
+        />
+        <Cifra
+          titulo="Reagendadas"
+          valor={c.tasaDeReagendamiento === null ? null : `${c.tasaDeReagendamiento} %`}
+          detalle={`${c.reagendadas} de ${c.citas}`}
+        />
+        <Cifra
+          titulo="Se reserva con"
+          valor={enTiempo(c.horasHastaLaCita)}
+          /* Su propio denominador, y no el de las otras dos: las citas anteriores a que se guardara
+             la fecha de reserva no entran acá pero sí en las tasas. Decirlo evita que alguien lea
+             las tres como si hablaran de las mismas filas. */
+          detalle={`sobre ${c.conFechaDeReserva} de ${c.citas}`}
+        />
+        <Cifra
+          titulo="No-show"
+          /* Un CONTEO y no una tasa, a propósito: son dos eventos en catorce días, y una tasa sobre
+             dos eventos se mueve cincuenta puntos con el próximo registro. */
+          valor={String(c.noShowReportado)}
+          detalle="reportados"
+        />
+      </div>
+
+      <p className="cs-cifra-nota">
+        El no-show lo <b>reporta el closer</b> al cerrar el intento, no el calendario: los campos de
+        asistencia del CRM están vacíos en las 316 citas.
       </p>
       {c.aviso ? <p className="cs-cifra-nota">{c.aviso}</p> : null}
     </div>

@@ -419,3 +419,31 @@ test('con la cifra presente, el aviso deja de decir que NO se puede calcular nad
   );
   assert.match(jsx, /Sus demás indicadores/, 'falta la variante que reconoce la cifra que ya hay');
 });
+
+test('cada cifra dice SOBRE QUÉ se calculó, y el no-show no se dibuja como tasa', () => {
+  /* Dos defectos que se ven igual de bien en pantalla y significan cosas falsas.
+   *
+   * 1 · Las cuatro cifras NO comparten población: «se reserva con» sale de las citas que tienen
+   *     fecha de reserva, que son menos. Sin decirlo, alguien lee las cuatro como si hablaran de las
+   *     mismas filas y saca conclusiones cruzadas que no se sostienen.
+   * 2 · El no-show son DOS eventos en catorce días. Dibujarlo con un `%` al lado de tres
+   *     porcentajes reales lo vuelve indistinguible de ellos, y una tasa sobre dos eventos se mueve
+   *     cincuenta puntos con el próximo registro. */
+  const jsx = leer(CONVERSATION);
+
+  assert.match(
+    jsx,
+    /detalle=\{`sobre \$\{c\.conFechaDeReserva\} de \$\{c\.citas\}`\}/,
+    'la mediana no dice sobre cuántas citas se calculó: se lee con el denominador de las otras',
+  );
+  assert.match(jsx, /detalle="reportados"/, 'el no-show no dice que es un conteo reportado');
+  assert.ok(
+    !/noShowReportado\}\s*%/.test(jsx) && !/\$\{c\.noShowReportado\} %/.test(jsx),
+    'el no-show se dibuja como porcentaje: con dos eventos eso no es una tasa',
+  );
+  assert.match(
+    jsx,
+    /reporta el closer/,
+    'no se dice quién reporta el no-show, y el CRM no lo sabe',
+  );
+});

@@ -1,4 +1,4 @@
-// LA TASA DE CANCELACIÓN, y sobre qué citas se cuenta. El primer número real de Appointment Flow.
+// LOS INDICADORES DE APPOINTMENT FLOW: qué pasó con las citas. Una sola pasada, tres cifras.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA CIFRA QUE ESTE ARCHIVO EXISTE PARA NO DAR
@@ -59,6 +59,36 @@ export interface Cancelacion {
   /** El texto ya armado, o `null` si no hay nada que advertir. */
   aviso: string | null;
   dias: number;
+  /**
+   * Cuántas de las citas alcanzables se REAGENDARON, y su tasa.
+   *
+   * Es el indicador que la 042 habilitó: hasta entonces reagendar pisaba la hora sin dejar rastro.
+   * Medido en la ventana el 2026-09-14: **11 de 151, el 7,3 %**.
+   */
+  reagendadas: number;
+  tasaDeReagendamiento: number | null;
+  /**
+   * La MEDIANA de horas entre que la cita se reservó y que ocurre. Mediana y no promedio: una sola
+   * cita reservada con dos meses de anticipación corre el promedio y no dice nada del resto.
+   *
+   * `null` cuando ninguna cita de la ventana tiene fecha de reserva — las anteriores a la `043` no
+   * la tienen. Medido: dentro de la ventana la cobertura es de **150 de 151**, así que el nulo es un
+   * caso de borde y no el estado normal.
+   */
+  horasHastaLaCita: number | null;
+  /** Sobre cuántas citas se calculó lo de arriba. Viaja para que la pantalla no lo suponga. */
+  conFechaDeReserva: number;
+  /**
+   * No-shows que **reportó una persona** al cerrar el intento, en la ventana.
+   *
+   * Es un CONTEO y no una tasa, y eso es deliberado: medido el 2026-09-14 hay **2 en catorce días**
+   * sobre 6 resultados. Una tasa sobre dos eventos no es una tasa — es un número que se mueve
+   * cincuenta puntos con el próximo registro. Y su denominador tampoco sería el de las citas: un
+   * resultado es un intento del closer, que no es lo mismo.
+   *
+   * El CRM no sirve para esto: sus campos de asistencia están en 0 de 316.
+   */
+  noShowReportado: number;
 }
 
 /**
@@ -84,6 +114,20 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
           and lower(coalesce(estado_ghl, '')) = any(${sql.val(ESTADOS_CANCELADOS)})
       )`.as('canceladas'),
       sql<number>`count(*) filter (where ghl_calendario_id is null)`.as('congeladas'),
+      /* Los otros dos, en la MISMA pasada. Tres consultas separadas podrían ver estados distintos de
+         la tabla —el barrido escribe cada hora— y entonces las cifras de una misma tarjeta no
+         cuadrarían entre sí, sin que nada falle. */
+      sql<number>`count(*) filter (
+        where ghl_calendario_id is not null and reagendada_el is not null
+      )`.as('reagendadas'),
+      sql<number>`count(reservada_el) filter (where ghl_calendario_id is not null)`.as('con_reserva'),
+      /* La MEDIANA, calculada por la base. `percentile_cont` interpola entre los dos centrales, que
+         para horas es lo que se quiere. Las citas sin fecha de reserva no entran: `percentile_cont`
+         ignora los nulos, así que el resultado es de las que sí la tienen — y por eso viaja
+         `con_reserva`, para que la pantalla pueda decir sobre cuántas habla. */
+      sql<number | null>`percentile_cont(0.5) within group (
+        order by extract(epoch from (inicio_el - reservada_el)) / 3600
+      ) filter (where ghl_calendario_id is not null and reservada_el is not null)`.as('horas'),
     ])
     /* La ventana la calcula la BASE y no la aplicación: es la única forma de que el «ahora» sea el
        mismo reloj que escribió las filas. Es el mismo recurso que usa `frescuraDe`. */
@@ -94,6 +138,18 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
   const citas = Number(fila?.citas ?? 0);
   const canceladas = Number(fila?.canceladas ?? 0);
   const congeladas = Number(fila?.congeladas ?? 0);
+  const reagendadas = Number(fila?.reagendadas ?? 0);
+  const conFechaDeReserva = Number(fila?.con_reserva ?? 0);
+  const horas = fila?.horas ?? null;
+
+  /* El no-show sale de OTRA tabla y por eso es una consulta aparte: lo reporta el closer al cerrar
+     un intento, no el calendario. Va dentro de la misma transacción igual. */
+  const ns = await datos()
+    .selectFrom('resultados')
+    .select(sql<number>`count(*)`.as('n'))
+    .where('salida', '=', 'no_show')
+    .where(sql<boolean>`creado_el >= now() - make_interval(days => ${dias})`)
+    .executeTakeFirst();
 
   return {
     citas,
@@ -105,6 +161,13 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     tasa: citas === 0 ? null : Math.round((canceladas / citas) * 1000) / 10,
     aviso: avisoDe(citas, congeladas, dias),
     dias,
+    reagendadas,
+    tasaDeReagendamiento: citas === 0 ? null : Math.round((reagendadas / citas) * 1000) / 10,
+    /* Sin ninguna cita con fecha de reserva no hay mediana, y se dice con `null`. Un cero acá
+       significaría «se reservan y ocurren en el mismo instante», que es una afirmación. */
+    horasHastaLaCita: horas === null ? null : Math.round(Number(horas) * 10) / 10,
+    conFechaDeReserva,
+    noShowReportado: Number(ns?.n ?? 0),
   };
 }
 

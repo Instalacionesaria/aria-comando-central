@@ -146,27 +146,55 @@
   background: rgb(var(--c-nube) / .03);
   margin-bottom: 14px;
 }
+/* El rótulo de la caja entera, con su ventana. Va una sola vez y no en cada cifra: las cuatro
+   hablan del mismo período, y repetirlo cuatro veces lo convierte en ruido. */
+#v-conversation .cs-cifra-titulo {
+  margin: 0 0 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--txt);
+}
+#v-conversation .cs-cifra-titulo span {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--txt-dim);
+  margin-left: 7px;
+}
+
+/* Las cuatro en una fila que envuelve. `auto-fit` con un mínimo y no cuatro columnas fijas: en
+   angosto se apilan de a dos sin que ninguna quede sola en su renglón. */
+#v-conversation .cs-cifra-fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 14px 18px;
+}
+#v-conversation .cs-cifra-uno {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 #v-conversation .cs-cifra-cab {
-  margin: 0 0 6px;
+  margin: 0;
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
 #v-conversation .cs-cifra-cab b {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--txt);
-}
-#v-conversation .cs-cifra-cab span {
   font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .02em;
   color: var(--txt-dim);
 }
 #v-conversation .cs-cifra-valor {
   margin: 0;
+  /* En columna y no en fila: con cuatro cifras juntas, el detalle al lado del número las empuja a
+     anchos distintos y la fila deja de leerse como un conjunto. */
   display: flex;
+  flex-direction: column;
   align-items: baseline;
-  gap: 9px;
-  font-size: 26px;
+  gap: 1px;
+  font-size: 22px;
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -.02em;
