@@ -38,6 +38,7 @@ import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
 import { atribucionDelLead } from '../../../lib/negocio/atribucionDelLead.ts';
 import { consumoDelPrecall } from '../../../lib/negocio/consumoDelPrecall.ts';
+import { sentimientoPorFlujo } from '../../../lib/auditor/sentimiento.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -75,7 +76,8 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
      tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
-  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall] = await conOrganizacion(
+  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento] =
+    await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
       await laPantallaDelTecnico(noAudita),
@@ -84,6 +86,10 @@ export async function GET(peticion: Request): Promise<Response> {
       await indicadoresDelLead(),
       await atribucionDelLead(),
       await consumoDelPrecall(),
+      /* Uno por agente y no uno solo: son dos conversaciones distintas, y mezclarlas daría un
+         promedio que no describe a ninguna. Medido, hoy pre-agenda no tiene ni un veredicto.
+         La lista sale del catálogo: nombrar un agente acá está prohibido y el motivo es caro. */
+      await sentimientoPorFlujo(),
     ],
   );
 
@@ -113,5 +119,8 @@ export async function GET(peticion: Request): Promise<Response> {
     /* El consumo del precall (§10.6). La pantalla lo declaraba imposible: los dos campos NUMERICAL
        de porcentaje están vacíos, pero el porcentaje viene adentro del vocabulario de un RADIO. */
     precall,
+    /* El sentimiento se escribía en cada análisis desde que el auditor existe y no lo leía nadie.
+       Va por flujo porque el §9.7 y el §10.7 lo piden como cifra del departamento. */
+    sentimiento,
   });
 }

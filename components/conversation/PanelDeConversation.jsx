@@ -180,6 +180,7 @@ export default function PanelDeConversation() {
           noAudita={pantalla?.noAudita ?? null}
           cancelacion={sub === 'appflow' ? (pantalla?.cancelacion ?? null) : null}
           precall={sub === 'appflow' ? (pantalla?.precall ?? null) : null}
+          sentimiento={pantalla?.sentimiento?.[sub] ?? null}
           respuesta={sub === 'leadflow' ? (pantalla?.respuesta ?? null) : null}
           atribucion={sub === 'leadflow' ? (pantalla?.atribucion ?? null) : null}
         />
@@ -436,6 +437,47 @@ function Precall({ p }) {
   );
 }
 
+/**
+ * Cómo estaba el contacto en las conversaciones que el auditor juzgó.
+ *
+ * ── SE ROTULA COMO CONVERSACIONES, NUNCA COMO PERSONAS ─────────────────────
+ *
+ * La fila de la base es por `(contacto, agente, analizado_el)` y el transcript puede llegar
+ * recortado a las últimas 40 líneas: el modelo etiqueta UN TRAMO, no una historia. Dibujarlo como
+ * una insignia junto al nombre de alguien convertiría un pedazo de chat en un atributo permanente
+ * de una persona — y medido, hay contactos con dos análisis cuyo sentimiento difiere.
+ */
+function Sentimiento({ s }) {
+  if (s.juzgadas === 0 && s.aviso === null) return null;
+  return (
+    <div className="cs-cifra">
+      <p className="cs-cifra-titulo">
+        Cómo estaban los contactos <span>últimos {s.dias} días</span>
+      </p>
+
+      <div className="cs-cifra-fila">
+        {/* Se publica EL MOLESTO y no los tres: es el único accionable — un contacto molesto es una
+            conversación que alguien tiene que mirar, y un positivo no pide nada. Con tres barras, la
+            que decide qué hacer se pierde entre dos que no. */}
+        <Cifra
+          titulo="Quedaron molestos"
+          valor={s.molestos === null ? null : `${s.molestos} %`}
+          detalle={`${s.porValor.molesto} de ${s.juzgadas} juzgadas`}
+        />
+        <Cifra titulo="Neutrales" valor={String(s.porValor.neutral)} detalle="conversaciones" />
+        <Cifra titulo="Positivas" valor={String(s.porValor.positivo)} detalle="conversaciones" />
+      </div>
+
+      <p className="cs-cifra-nota">
+        Es el sentimiento de <b>la conversación juzgada</b>, no del contacto: el auditor etiqueta un
+        tramo del chat en un momento, y el mismo contacto puede volver a ser juzgado con otro
+        resultado.
+      </p>
+      {s.aviso ? <p className="cs-cifra-nota">{s.aviso}</p> : null}
+    </div>
+  );
+}
+
 function Cancelacion({ c }) {
   return (
     <div className="cs-cifra">
@@ -534,7 +576,7 @@ function Cancelacion({ c }) {
  * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
  * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion, precall }) {
+function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion, precall, sentimiento }) {
   return (
     <>
       <p className="aud-alcance">
@@ -560,6 +602,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion, precall })
           revés, la pestaña se lee como vacía y nadie llega al número. */}
       {cancelacion ? <Cancelacion c={cancelacion} /> : null}
       {precall ? <Precall p={precall} /> : null}
+      {sentimiento ? <Sentimiento s={sentimiento} /> : null}
       {respuesta ? <Lead r={respuesta} /> : null}
       {atribucion ? <Atribucion a={atribucion} /> : null}
 
@@ -569,7 +612,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion, precall })
       <div className="fd-aviso">
         <i>◍</i>
         <span>
-          {cancelacion || respuesta || atribucion || precall
+          {cancelacion || respuesta || atribucion || precall || sentimiento
             ? 'Sus demás indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'
             : 'Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'}
         </span>
