@@ -28,7 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../lib/autorizacion/portero.ts';
-import { ok } from '../../../lib/autorizacion/respuesta.ts';
+import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
@@ -39,6 +39,7 @@ import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
 import { atribucionDelLead } from '../../../lib/negocio/atribucionDelLead.ts';
 import { consumoDelPrecall } from '../../../lib/negocio/consumoDelPrecall.ts';
 import { sentimientoPorFlujo } from '../../../lib/auditor/sentimiento.ts';
+import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -70,6 +71,14 @@ export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['auditor.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
+  /* ── EL PERÍODO SE VALIDA CONTRA LA LISTA, Y LO QUE NO ESTÁ SE RECHAZA ─────
+   *
+   * No se corrige al valor por omisión. Pedir un período que no existe y recibir treinta días sin
+   * enterarse es exactamente el defecto que `periodo.ts` cierra: la cifra sale bien calculada sobre
+   * una ventana que nadie pidió, y no hay forma de notarlo mirando la pantalla. */
+  const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
+  if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
+
   const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva));
   const noAudita = acceso.tipo === 'listo' ? null : (COMO_LO_VE_LA_PANTALLA[acceso.que] ?? null);
 
@@ -82,19 +91,27 @@ export async function GET(peticion: Request): Promise<Response> {
     async () => [
       await laPantallaDelTecnico(noAudita),
       await leerLosPrompts(),
-      await tasaDeCancelacion(),
-      await indicadoresDelLead(),
-      await atribucionDelLead(),
-      await consumoDelPrecall(),
+      /* Las cinco reciben LA MISMA ventana, y no es una comodidad: la pantalla las dibuja juntas y
+         con ventanas distintas dos cifras de la misma tarjeta hablarían de dos períodos sin decirlo.
+         Es el mismo motivo por el que van en una sola transacción. */
+      await tasaDeCancelacion(periodo.dias),
+      await indicadoresDelLead(periodo.dias),
+      await atribucionDelLead(periodo.dias),
+      await consumoDelPrecall(periodo.dias),
       /* Uno por agente y no uno solo: son dos conversaciones distintas, y mezclarlas daría un
          promedio que no describe a ninguna. Medido, hoy pre-agenda no tiene ni un veredicto.
          La lista sale del catálogo: nombrar un agente acá está prohibido y el motivo es caro. */
-      await sentimientoPorFlujo(),
+      await sentimientoPorFlujo(periodo.dias),
     ],
   );
 
   return ok({
     ...pantalla,
+    /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
+       SERVIDOR CONTESTÓ, no con lo que pidió. Si un día las dos dejan de coincidir —una petición que
+       se cruza con otra, una respuesta guardada— el botón encendido sigue describiendo las cifras que
+       están abajo, que es lo único que importa. */
+    periodo: periodo.clave,
     /* Los prompts viajan con la pantalla y no en una ruta aparte: el cuadro de edición se dibuja en la
        misma pestaña, y una segunda petición para llenarlo dejaría el cuadro vacío unos segundos — que
        se lee como «esta empresa no tiene prompt», justo lo contrario de lo que pasa.

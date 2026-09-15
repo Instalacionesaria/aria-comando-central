@@ -129,130 +129,427 @@
  * Lo que queda propio de esta pantalla es la lista de «qué falta para medir esto», que es lo que
  * reemplazó a los números inventados. */
 
-/* ── LA CIFRA MEDIDA ────────────────────────────────────────────────────────
+/* ── CONVERSATION VOLVIÓ A SER UN TABLERO ───────────────────────────────────
  *
- * Va ARRIBA de la lista de faltas y se distingue de ella a propósito: lo que sí se sabe no puede
- * leerse con el mismo peso que lo que falta. Toma el borde y el radio de `.cs-falta li` —es la misma
- * familia de caja— y se separa por el TAMAÑO del número, que es lo único que sube de escala en toda
- * la pestaña.
+ * Acá había `.cs-cifra*` y `.cs-tabla*`: una pila vertical de tarjetas con un párrafo debajo de
+ * cada número. Medido sobre la respuesta real antes de tocarlo: **40 pedazos de cifra —318
+ * caracteres— contra 32 párrafos, 5.596 caracteres**, y siete de los nueve avisos encendidos a la
+ * vez. Las cifras eran correctas y la forma las tapaba.
  *
- * No lleva color de estado. Una cancelación alta no es «malo» aquí: es el dato del negocio, y
- * pintarlo de rojo sería que la pantalla opine antes que la persona. El color semántico está
- * reservado para lo que exige una acción, que en esta pantalla es el freno. */
-#v-conversation .cs-cifra {
-  padding: 15px 17px;
+ * Lo que las reemplaza NO es vocabulario nuevo. Cuando esta pantalla era una maqueta con datos
+ * inventados, su forma SÍ era la de un tablero, y ese CSS **sobrevivió entero** en
+ * `app/aios.css:1876-2160` como reglas globales sin alcance de vista: `.csf` la tarjeta de flujo,
+ * `.csr` el eslabón de cuatro columnas con barra, `.csf-key` la cifra clave, `.org-split` el
+ * desglose en tono menor, `.pn` el panel de cifras. Lo que se borró en `f0f09b7` fue el módulo de
+ * datos inventados, no la ropa.
+ *
+ * Así que esta sección hace DOS cosas y ninguna es inventar un componente:
+ *
+ *   1 · Sube ese vocabulario a la escala de hoy —tarjeta translúcida de 26 px, cifras de peso 300,
+ *       rótulos en versalitas— porque el maquetado usaba 14 px de radio y peso 600, que al lado de
+ *       Closer y Setter se lee como de otro sistema.
+ *   2 · Agrega lo que el tablero nuevo necesita y la maqueta no tenía: el segmentado de período, la
+ *       nota escondida detrás de un ícono, y los dos cortes de ancho.
+ *
+ * Y una advertencia para quien toque esto: `.csf`, `.csr` y `.pn` son GLOBALES. Todo lo de acá
+ * cuelga de `#v-conversation` a propósito — sin ese prefijo, una regla de esta sección viajaría a
+ * Conversion, que usa `.cs-panels` y `.pn` para otra cosa. */
+
+/* ── 1 · LA BARRA: PESTAÑAS A LA IZQUIERDA, PERÍODO A LA DERECHA ───────────
+ *
+ * En una sola fila y no en dos: son los dos controles de la pantalla y separarlos en renglones
+ * distintos hace que el de abajo se lea como parte del contenido en vez de como un control. */
+#v-conversation .cs-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* Los cuatro botones no se parten nunca: «7 días» cortado en dos renglones dentro de una cápsula
+   de 24 px de alto rompe la fila entera. */
+#v-conversation .cs-periodos button { white-space: nowrap; }
+
+/* ── 2 · LA TARJETA DE FLUJO ────────────────────────────────────────────────
+ *
+ * Las cuatro declaraciones que esta hoja ya repite para Acquisition, Creative y Conversion. El
+ * degradado del maquetado se pisa a propósito: existía para separar la tarjeta de un lienzo plano,
+ * y acá esa separación la da el desenfoque. */
+#v-conversation :is(.csf, .pn) {
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
   border: 1px solid var(--line);
-  border-radius: var(--radio);
-  background: rgb(var(--c-nube) / .03);
-  margin-bottom: 14px;
-}
-/* El rótulo de la caja entera, con su ventana. Va una sola vez y no en cada cifra: las cuatro
-   hablan del mismo período, y repetirlo cuatro veces lo convierte en ruido. */
-#v-conversation .cs-cifra-titulo {
-  margin: 0 0 13px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--txt);
-}
-#v-conversation .cs-cifra-titulo span {
-  font-weight: 400;
-  font-size: 11px;
-  color: var(--txt-dim);
-  margin-left: 7px;
 }
 
-/* Las cuatro en una fila que envuelve. `auto-fit` con un mínimo y no cuatro columnas fijas: en
-   angosto se apilan de a dos sin que ninguna quede sola en su renglón. */
-#v-conversation .cs-cifra-fila {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-  gap: 14px 18px;
-}
-#v-conversation .cs-cifra-uno {
+/* La cabecera es flex ACÁ y no en `aios.css`: el maquetado se lo daba con una clase de utilidad
+   que se fue con el módulo, y `.csf-key{margin-left:auto}` sin un padre flex deja la cifra clave
+   pegada al título. Es el tipo de rotura que no falla: se ve, pero mal. */
+#v-conversation .csf-h {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: flex-start;
+  padding: 16px 18px;
+}
+#v-conversation .csf-hl { min-width: 0; }
+#v-conversation :is(.csf-t, .csf-m) { margin: 0; }
+#v-conversation .csf-t {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+/* El subtítulo dice sobre qué se miden las barras y desde cuándo hay datos. Puede envolver: con
+   `nowrap` heredado del maquetado, «desde el 24 de agosto» desaparecía en el recorte. */
+#v-conversation .csf-m {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  white-space: normal;
+  overflow: visible;
 }
 
-#v-conversation .cs-cifra-cab {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-#v-conversation .cs-cifra-cab b {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: .02em;
-  color: var(--txt-dim);
-}
-#v-conversation .cs-cifra-valor {
-  margin: 0;
-  /* En columna y no en fila: con cuatro cifras juntas, el detalle al lado del número las empuja a
-     anchos distintos y la fila deja de leerse como un conjunto. */
-  display: flex;
-  flex-direction: column;
-  align-items: baseline;
-  gap: 1px;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.1;
+/* LA CIFRA CLAVE. Peso 300 y no 600: es la firma del sistema —`#v-sales .stat .s-v` ya la usa— y
+   era el desvío más visible del maquetado. A 26 px el peso ligero se lee mejor, no peor. */
+#v-conversation .csf-key b {
+  font-size: 26px;
+  font-weight: 300;
   letter-spacing: -.02em;
-  color: var(--txt);
-  /* Los dígitos alineados: la cifra cambia al recargar y sin esto «salta» de ancho. */
-  font-variant-numeric: tabular-nums;
 }
-#v-conversation .cs-cifra-valor small {
+#v-conversation .csf-key span {
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  color: var(--txt-faint);
+}
+/* El hueco declarado: la cifra que el documento pide y que no se puede medir. Se atenúa para que
+   el guion no compita con un número real, y NO se pinta de rojo — que no haya dato todavía no es
+   una alarma del negocio, y el color semántico está reservado para lo que exige una acción. */
+#v-conversation .csf-key.falta b { color: var(--txt-faint); }
+
+/* ── 3 · EL ESLABÓN ─────────────────────────────────────────────────────────
+ *
+ * La rejilla `1fr 44px 1fr 74px` del maquetado se ajusta en las tres columnas de texto: los valores
+ * de acá son reales y «1.847» no entra en 44 px, y el pie dice cosas como «46,4 % de los que
+ * contestaron» en vez de un porcentaje pelado.
+ *
+ * ── EL NOMBRE Y EL PIE VAN ACOTADOS EN PÍXELES, Y ESO SE MIDIÓ EN PANTALLA ─
+ *
+ * La primera versión les puso `fr` a las cuatro columnas. Medido en el navegador a 1280 px: la
+ * columna del nombre quedaba en **397 px**, así que «Entraron al CRM» arrancaba en x=22 y su «231»
+ * caía en x=431 — cuatrocientos píxeles de nada entre un rótulo y el número que le pertenece. Los
+ * dos quedaban legibles y dejaban de leerse como una sola cosa.
+ *
+ * Con tope, el par nombre+valor se mantiene junto y la barra se queda con todo lo que sobra, que es
+ * la columna a la que el ancho extra sí le sirve: una barra más larga se compara mejor. */
+#v-conversation .csr,
+#v-conversation .org-r {
+  grid-template-columns: minmax(0, 190px) 60px minmax(90px, 1fr) minmax(0, 215px);
+}
+#v-conversation .csr-n {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+#v-conversation .csr-v {
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -.01em;
+}
+#v-conversation .csr-p,
+#v-conversation .org-p {
+  font-size: 10.5px;
+  letter-spacing: .02em;
+  /* Sin `nowrap`: el pie puede ser una frase corta y cortarla es peor que bajarla de renglón. */
+  white-space: normal;
+  line-height: 1.4;
+}
+/* Los carriles de las barras, un punto más visibles que en el maquetado: sobre la tarjeta
+   translúcida el `.05` original desaparecía y una barra corta parecía ausencia de barra. */
+#v-conversation :is(.csr-b, .org-b) {
+  background: rgb(var(--c-nube) / .08);
+  /* `.csr-b` y `.org-b` pasaron de `div` a `span` en el marcado —van dentro de una fila de rejilla
+     y un `span` no arrastra semántica de bloque— así que hay que devolverles la caja. */
+  display: block;
+  width: 100%;
+}
+#v-conversation .csr-b i { background: rgb(var(--c-acento) / .55); }
+
+/* ── 4 · LA BIFURCACIÓN ─────────────────────────────────────────────────────
+ *
+ * `.org-split` existía en el maquetado para el desglose secundario y nunca se usó. Acá lleva el
+ * hallazgo que decidió todo el rediseño: los que agendaron DESPUÉS de contestar y los que se
+ * agendaron solos. Va en tono menor a propósito —no es un eslabón más de la cadena— y sus dos
+ * barras, juntas, llenan la fila: eso es lo que hace comprobable que sumen el total. */
+#v-conversation .org-split {
+  margin: 0;
+  padding: 14px 18px 16px;
+  border-top: 1px solid var(--line);
+  background: rgb(var(--c-nube) / .022);
+}
+#v-conversation .org-h {
+  margin: 0 0 4px;
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  color: var(--txt-faint);
+}
+#v-conversation .org-h b { color: var(--txt-dim); font-weight: 600; }
+#v-conversation .org-v { font-weight: 500; }
+
+/* ── 5 · EL PIE DE LA TARJETA ───────────────────────────────────────────────
+ *
+ * UNA nota por tarjeta, donde antes había ocho párrafos. La que queda es la que explica por qué la
+ * figura tiene la forma que tiene, no un matiz de una cifra: eso vive en `.cs-nota`. */
+#v-conversation .csf-foot {
+  margin: 0;
+  padding: 13px 18px;
+  line-height: 1.6;
+}
+
+/* ── 6 · EL PANEL DE CIFRAS DE APOYO ────────────────────────────────────────
+ *
+ * `.pn-b` es la rejilla, `.pn-c` cada celda. Las columnas se apilan en `@media` al final. */
+#v-conversation .pn-h {
+  padding: 14px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+#v-conversation .pn-h em { letter-spacing: 0; text-transform: none; font-size: 11px; }
+#v-conversation .pn-c { padding: 16px 18px 18px; }
+#v-conversation .pn-k {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--txt-dim);
+}
+#v-conversation .pn-r { margin: 10px 0 0; }
+/* Mismo peso 300 que la cifra clave, un escalón más chico. El `!important` no hace falta: esta
+   hoja está en la capa `components`, que le gana a `aios.css` por capa. */
+#v-conversation .pn-v {
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: -.02em;
+}
+#v-conversation .pn-rt {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--txt-faint);
+}
+
+/* ── 7 · LA NOTA ESCONDIDA ──────────────────────────────────────────────────
+ *
+ * El porqué de una cifra, detrás de un ícono. El motivo está en el componente `Nota`: con cada
+ * número trayendo su párrafo debajo, ninguno se lee.
+ *
+ * El botón mide 15 px y el área tocable la da el `padding` — abajo de 24 px no se acierta con el
+ * pulgar, y esto se mira desde el teléfono. */
+#v-conversation .cs-nota {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+#v-conversation .cs-nota-b {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--txt-faint);
+  font: inherit;
+  font-size: 9.5px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  /* El área tocable real, sin agrandar el círculo: 24 px es el mínimo con el que un pulgar
+     acierta, y un círculo de 24 px al lado de un rótulo de 10,5 px sería más grande que el rótulo. */
+  outline-offset: 2px;
+}
+#v-conversation .cs-nota-b::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+}
+#v-conversation .cs-nota-b:hover,
+#v-conversation .cs-nota-b.on {
+  border-color: rgb(var(--c-acento) / .5);
+  color: var(--accent);
+}
+/* El panel, encima de todo y anclado al ícono. `max-width` en `ch` y no en píxeles: lo que hace
+   legible un párrafo es la cantidad de caracteres por línea, no su ancho. */
+#v-conversation .cs-nota-p {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 7px);
+  left: -8px;
+  width: max-content;
+  max-width: 44ch;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio);
+  background: var(--bg-float);
   font-size: 11.5px;
   font-weight: 400;
-  color: var(--txt-dim);
+  font-style: normal;
   letter-spacing: 0;
+  line-height: 1.6;
+  text-transform: none;
+  color: var(--txt-dim);
+  white-space: normal;
 }
-/* La nota de lo que quedó afuera. Sólo existe cuando hay algo que decir —ver la regla de silencio en
-   el componente— así que puede permitirse ocupar su propia línea sin volverse ruido de fondo. */
-#v-conversation .cs-cifra-nota {
-  margin: 9px 0 0;
-  padding-top: 9px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
+
+/* ── 8 · LO QUE NO SE ESCONDE ───────────────────────────────────────────────
+ *
+ * Un aviso GRAVE dice que un dato no existe todavía, y eso no es un matiz de la cifra: es la
+ * cifra. Detrás de un ícono, un dato inexistente se convierte en un dato con asterisco — el cero
+ * indistinguible del vacío que esta aplicación persigue en todas partes.
+ *
+ * Lleva la marca de atención a la izquierda como una franja, no un fondo de color: el fondo lo
+ * convertiría en una alarma, y casi siempre lo que dice es «esto se empezó a registrar hoy». */
+#v-conversation .cs-grave {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-left: 2px solid rgb(var(--c-warn) / .55);
+  border-radius: var(--radio);
+  background: rgb(var(--c-nube) / .03);
+  font-size: 11.5px;
   line-height: 1.6;
   color: var(--txt-dim);
 }
-
-/* ── LA TABLA DEL CORTE DE ATRIBUCIÓN ────────────────────────────────────────
-   Tres columnas de ancho FIJO para las dos de la derecha, y la etiqueta se queda con lo que sobra:
-   con `1fr 1fr 1fr` la fuente más larga empuja los porcentajes a posiciones distintas en cada fila
-   y la columna deja de poder leerse de un vistazo — que es lo único que una tabla compra sobre una
-   lista de frases. */
-#v-conversation .cs-tabla {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 4px 0 2px;
-}
-#v-conversation .cs-tabla-fila {
+#v-conversation .cs-grave::before {
+  content: '!';
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
   display: grid;
-  grid-template-columns: 1fr 62px 84px;
-  align-items: baseline;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--txt);
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(var(--c-warn) / .16);
+  color: var(--warn);
+  font-size: 10px;
+  font-weight: 700;
 }
-/* Los dígitos alineados y a la derecha: son para comparar entre filas, no para leer en prosa. */
-#v-conversation .cs-tabla-fila b,
-#v-conversation .cs-tabla-fila > span:last-child {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+
+/* Mientras se mide. Sólo aparece cuando NO hay cifras dibujadas —ver `cargar`— así que puede ser
+   una línea sola sin que la pantalla salte. */
+#v-conversation .cs-cargando {
+  margin: 0;
+  padding: 26px 0;
+  text-align: center;
+  font-size: 11.5px;
+  letter-spacing: .04em;
+  color: var(--txt-faint);
 }
-#v-conversation .cs-tabla-fila > span:last-child {
+
+/* ── 9 · LO QUE FALTA, PLEGADO ──────────────────────────────────────────────
+ *
+ * Tres párrafos largos abiertos debajo del tablero vuelven a ser el problema que esto cerró. El
+ * resumen dice cuántos son, así que plegarlo no esconde que existen: esconde el texto. */
+#v-conversation .cs-falta-caja {
+  border: 1px solid var(--line);
+  border-radius: var(--radio-tarjeta);
+  background: rgb(var(--c-panel) / .5);
+  backdrop-filter: blur(4px);
+}
+#v-conversation .cs-falta-caja > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 18px;
   font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  cursor: pointer;
+}
+#v-conversation .cs-falta-caja > summary span {
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: rgb(var(--c-nube) / .08);
+  font-size: 10px;
+  letter-spacing: 0;
   color: var(--txt-dim);
 }
-/* La fila que junta a las chicas se atenúa: sigue estando —su conteo hace que las filas sumen la
-   cohorte— pero no compite visualmente con las que sí tienen una tasa que se puede comparar. */
-#v-conversation .cs-tabla-resto {
-  color: var(--txt-dim);
-  font-style: italic;
+#v-conversation .cs-falta-caja[open] > summary { border-bottom: 1px solid var(--line); }
+#v-conversation .cs-falta-caja > .cs-falta { padding: 14px 18px 16px; }
+
+/* ── 10 · LOS DOS CORTES DE ANCHO ───────────────────────────────────────────
+ *
+ * Esta hoja no tenía **ni un `@media`** en sus 378 líneas, y las cinco pantallas que viste son las
+ * que más rejillas fijas usan. Los dos cortes son los que ya usa el resto del sistema.
+ *
+ * A 900 px el panel de cuatro cifras pasa a dos: cuatro columnas en un tablet dan celdas de 90 px,
+ * donde «9 de 10 antes de 6,2 h» se parte en cuatro renglones. */
+@media (max-width: 900px) {
+  #v-conversation :is(.pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr 1fr; }
+  /* El borde izquierdo separa columnas; al envolver hay que devolverlo como borde superior o las
+     filas de abajo quedan pegadas a las de arriba sin línea. */
+  #v-conversation :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(odd) { border-left: 0; }
+  #v-conversation :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  /* La tercera de TRES ocupa el renglón entero. Visto en el navegador a 880 px: sola en su columna
+     dejaba media fila vacía, y la línea que la separa terminaba en el medio — se lee como una celda
+     que falta, no como la última de tres. */
+  #v-conversation .pn-b.q3 .pn-c:nth-child(3):last-child { grid-column: 1 / -1; }
+}
+
+/* A 640 px la fila de cuatro columnas del eslabón no entra: el nombre queda en dos caracteres por
+ * renglón. Se reordena a dos filas —nombre y valor arriba, barra y pie abajo— en vez de apilarse en
+ * cuatro, que dejaría cada eslabón de 90 px de alto y la cadena sin forma de cadena. */
+@media (max-width: 640px) {
+  #v-conversation .csr,
+  #v-conversation .org-r {
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+  }
+  #v-conversation :is(.csr-b, .org-b) { grid-column: 1; }
+  #v-conversation :is(.csr-p, .org-p) { grid-column: 2; text-align: right; }
+  /* Las tres variantes NOMBRADAS, y no `.pn-b` a secas: el corte de 900 px de arriba usa
+     `:is(.pn-b.q3, .pn-b.q4)`, que pesa más. Con `.pn-b` solo, la regla de dos columnas gana acá
+     aunque esté escrita antes —la especificidad manda sobre el orden— y a 400 px la fila de cuatro
+     cifras se queda en dos columnas de 170 px. Visto en el navegador, no deducido. */
+  #v-conversation :is(.pn-b, .pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr; }
+  #v-conversation :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c { border-left: 0; }
+  #v-conversation :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c:not(:first-child) {
+    border-top: 1px solid var(--line);
+  }
+  #v-conversation .csf-h { flex-direction: column; gap: 12px; }
+  #v-conversation .csf-key { margin-left: 0; text-align: left; }
+  /* El panel de la nota, anclado al borde de la pantalla y no al ícono: pegado al ícono, uno que
+     esté a la derecha abre 44 caracteres fuera de la vista y no hay forma de leerlos. `top: auto`
+     es obligatorio — el `calc(100% + 7px)` de la regla base, con `fixed`, se mide contra el ALTO
+     DE LA VENTANA y manda el panel abajo de la pantalla. */
+  #v-conversation .cs-nota-p {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+  }
 }
 
 /* Cada falta: qué no se puede medir, en negrita, y por qué debajo. Las dos cosas en la misma fila

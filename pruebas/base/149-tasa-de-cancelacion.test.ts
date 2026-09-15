@@ -33,6 +33,7 @@ import {
   PISO_DE_UNA_TASA,
   tasaDeCancelacion,
 } from '../../lib/negocio/indicadoresDeCitas.ts';
+import { DIAS_DE_TODO } from '../../lib/negocio/periodo.ts';
 
 let admin: Client;
 let alfa: string;
@@ -680,4 +681,43 @@ test('las OTRAS cifras de la tarjeta también excluyen el descarte', async () =>
     'la mediana de anticipación se calculó incluyendo citas de contactos descartados',
   );
   await limpiarDescartados();
+});
+
+// ─── Desde cuándo hay datos ─────────────────────────────────────────────────
+
+test('`desde` es la cita más vieja que la ventana alcanzó, NO el borde de la ventana', async () => {
+  /* ── LO QUE IMPIDE QUE «COMPLETO» SE LEA COMO HISTORIA ────────────────────
+   *
+   * «Completo» son diez años de ventana y los datos de esta empresa empiezan hace tres semanas. Con
+   * `desde` calculado como `now() - dias`, la pantalla diría «desde 2016» sobre veintiún días de
+   * negocio, y cualquier lectura de tendencia sobre eso sería falsa.
+   *
+   * Y no es la fila más vieja de la tabla: es la más vieja de las que ESTA cifra cuenta. Una
+   * congelada más antigua no corre la fecha, porque tampoco entra en el numerador ni en el
+   * denominador — decir «hay datos desde» una cita que no se cuenta sería la misma mentira al
+   * revés. */
+  await limpiar();
+  await cita(40, 'cancelled', null);   // congelada y más vieja: no cuenta, y no corre la fecha
+  await cita(12, 'confirmed');
+  await cita(2, 'cancelled');
+
+  const t = await leer(DIAS_DE_TODO);
+  assert.equal(t.citas, 2, 'la congelada entró al conteo');
+  assert.ok(t.desde, 'no viaja desde cuándo hay citas: «completo» se lee como toda la historia');
+
+  const haceDias = (Date.now() - new Date(t.desde).getTime()) / 86_400_000;
+  assert.ok(
+    haceDias > 11.5 && haceDias < 12.5,
+    `desde quedó a ${haceDias.toFixed(1)} días: tiene que ser la cita de hace 12, ni la ventana ` +
+      'entera (3650) ni la congelada de hace 40',
+  );
+});
+
+test('sin citas en la ventana no se inventa una fecha de comienzo', async () => {
+  /* El mismo criterio que la tasa: sin filas no hay dato. Una fecha puesta igual se dibujaría como
+     «hay citas desde hoy» sobre una pantalla vacía. */
+  await limpiar();
+  const t = await leer();
+  assert.equal(t.citas, 0);
+  assert.equal(t.desde, null, 'sin citas se está devolviendo una fecha de comienzo inventada');
 });

@@ -43,6 +43,7 @@ import { cerrarTodo, conectar, filas } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { DIAS_DE_LA_TASA } from '../../lib/negocio/indicadoresDeCitas.ts';
+import { DIAS_DE_TODO } from '../../lib/negocio/periodo.ts';
 import { indicadoresDelLead } from '../../lib/negocio/indicadoresDelLead.ts';
 
 let admin: Client;
@@ -480,4 +481,104 @@ test('«sin ningún mensaje» es un CONTEO, y no excluye a quien ya agendó', as
   /* Pero NO entra al denominador de la tasa de respuesta: no pudo contestar lo que nadie preguntó. */
   assert.equal(r.escritos, 1);
   assert.equal(r.tasa, 100);
+});
+
+// ─── La bifurcación: CÓMO llegaron a agendar ────────────────────────────────
+
+test('la bifurcación separa a quien contestó de quien se agendó solo, y los dos SUMAN', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     LA CIFRA QUE IMPIDE UN EMBUDO QUE MIENTE
+
+     Medido en producción: entraron 231, se le escribió a 225, contestaron 138, agendaron 121.
+     Puestos en fila parecen un embudo. No lo son: de esos 121, sólo 64 habían contestado. Los otros
+     57 agendaron sin una sola respuesta nuestra — el enlace del calendario no obliga a conversar.
+
+     Una barra que vaya de 138 a 121 afirma que convirtieron 121 de esos 138: el 87,7 % en vez del
+     46,4 %, casi el doble. Y es una mentira que no falla, porque los cuatro números son correctos y
+     lo único falso es la flecha entre los dos últimos.
+
+     El fixture pone los CUATRO casos posibles, que es lo que hace que la prueba distinga de verdad:
+     contestó y agendó · contestó y no agendó · no contestó y agendó · no contestó y no agendó.
+     Sin el tercero, `agendaronTrasResponder` podría estar devolviendo `agendaron` entero.
+     ══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  await contacto({ salientes: 1, entrantes: 1, cita: 'viva' });   // contestó y agendó
+  await contacto({ salientes: 1, entrantes: 1 });                 // contestó y NO agendó
+  await contacto({ salientes: 1, entrantes: 0, cita: 'viva' });   // NO contestó y agendó
+  await contacto({ salientes: 0, cita: 'viva' });                 // ni le escribimos, y agendó
+  await contacto({ salientes: 1, entrantes: 0 });                 // ni contestó ni agendó
+
+  const r = await leer();
+  assert.equal(r.cohorte, 5);
+  assert.equal(r.agendaron, 3);
+  assert.equal(r.respondieron, 2);
+  assert.equal(r.agendaronTrasResponder, 1, 'se están contando como «tras responder» citas de quien nunca contestó');
+  /* Los dos que agendaron sin contestar son de origen distinto —a uno le escribimos y no contestó,
+     al otro nunca le escribimos— y van juntos a propósito: para esta pregunta significan lo mismo,
+     y partirlos daría dos cifras que se mueven con tres contactos. */
+  assert.equal(r.agendaronSinResponder, 2);
+
+  /* LA PROPIEDAD, y no los números de arriba: los dos sumandos dan el total del § 9.3. Es lo único
+     que hace comprobable que la bifurcación no invente ni pierda a nadie, y lo que se rompe si
+     alguien calcula uno de los dos con otro filtro. */
+  assert.equal(
+    r.agendaronTrasResponder + r.agendaronSinResponder,
+    r.agendaron,
+    'la bifurcación no suma el total que la pantalla dibuja arriba: uno de los dos lados está mal',
+  );
+});
+
+test('la bifurcación NO se confunde con la tasa de respuesta', async () => {
+  /* El defecto plausible: calcular «agendaron tras responder» como `respondieron` a secas, o como
+     `agendaron` a secas. Con un fixture donde los tres números coinciden, las dos versiones pasan.
+     Acá los tres son distintos a propósito. */
+  await limpiar();
+  for (let i = 0; i < 4; i++) await contacto({ salientes: 1, entrantes: 1 });          // 4 contestaron
+  for (let i = 0; i < 2; i++) await contacto({ salientes: 1, entrantes: 1, cita: 'viva' }); // 2 ambas
+  for (let i = 0; i < 3; i++) await contacto({ salientes: 1, cita: 'viva' });          // 3 sólo cita
+
+  const r = await leer();
+  assert.equal(r.respondieron, 6);
+  assert.equal(r.agendaron, 5);
+  assert.equal(r.agendaronTrasResponder, 2, 'la bifurcación está devolviendo otra de las dos cifras');
+  assert.equal(r.agendaronSinResponder, 3);
+});
+
+// ─── Desde cuándo hay datos ─────────────────────────────────────────────────
+
+test('`desde` es la fila más vieja que hay, NO el borde de la ventana', async () => {
+  /* ── LO QUE IMPIDE QUE «COMPLETO» SE LEA COMO HISTORIA ────────────────────
+   *
+   * «Completo» son diez años de ventana y los datos empiezan hace tres semanas. Si `desde` fuera
+   * `now() - dias`, la pantalla diría «desde 2016» sobre veintiún días de negocio, y cualquier
+   * lectura de tendencia sobre eso sería falsa.
+   *
+   * La prueba pide una ventana ENORME sobre contactos de días conocidos: `desde` tiene que quedarse
+   * en el más viejo de los que hay, que está a diez días, y no irse al borde de la ventana. */
+  await limpiar();
+  await contacto({ altaHaceDias: 10 });
+  await contacto({ altaHaceDias: 3 });
+  await contacto({ altaHaceDias: 1 });
+
+  const r = await conOrganizacion(alfa, () => indicadoresDelLead(DIAS_DE_TODO));
+  assert.equal(r.cohorte, 3);
+  assert.ok(r.desde, 'no viaja desde cuándo hay datos: «completo» se lee como toda la historia');
+
+  const haceDias = (Date.now() - new Date(r.desde).getTime()) / 86_400_000;
+  /* Contra 10 días y no contra el borde: con una holgura de medio día, que absorbe el instante
+     entre que el fixture escribe y la consulta lee. Lo que se afirma es que NO son 3650. */
+  assert.ok(
+    haceDias > 9.5 && haceDias < 10.5,
+    `desde quedó a ${haceDias.toFixed(1)} días: si es la ventana entera, la pantalla va a mentir`,
+  );
+});
+
+test('sin cohorte no se inventa una fecha de comienzo', async () => {
+  /* El mismo criterio que todas las cifras de este archivo: sin filas no hay dato, y una fecha
+     puesta igual —la de hoy, o el borde de la ventana— se dibujaría como «hay datos desde hoy»
+     sobre una pantalla vacía. */
+  await limpiar();
+  const r = await leer();
+  assert.equal(r.cohorte, 0);
+  assert.equal(r.desde, null, 'sin contactos se está devolviendo una fecha de comienzo inventada');
 });

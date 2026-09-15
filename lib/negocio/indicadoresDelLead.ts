@@ -68,6 +68,14 @@ export interface Latencia {
 
 export interface IndicadoresDelLead {
   dias: number;
+  /**
+   * El contacto más viejo que la ventana llegó a alcanzar. **No es `now() - dias`.**
+   *
+   * Con «completo» la ventana son diez años y el primer contacto es de hace tres semanas. Sin esta
+   * fecha, la pantalla diría «completo» sobre tres semanas y quien mira creería estar viendo un año.
+   * Es lo único que distingue *«pedí todo»* de *«todo es esto»*. `null` con cohorte vacía.
+   */
+  desde: Date | null;
   /** Contactos que ENTRARON AL CRM en la ventana. El denominador de todo lo demás. */
   cohorte: number;
 
@@ -76,6 +84,35 @@ export interface IndicadoresDelLead {
   agendaron: number;
   /** De 0 a 100. `null` con cohorte vacía: un 0 % sería una afirmación sobre el negocio. */
   bookingRate: number | null;
+
+  // ── CÓMO llegaron a agendar, que NO es un escalón más del embudo ──────────
+  /**
+   * De los que agendaron, cuántos venían de haber contestado al menos una vez.
+   *
+   * ── ESTA CIFRA EXISTE PARA IMPEDIR UN EMBUDO QUE MIENTE ───────────────────
+   *
+   * Medido hoy: entraron 231, se le escribió a 225, contestaron 138, agendaron 121. Puesto en fila
+   * parece un embudo, y **no lo es**: de esos 121 sólo 64 habían contestado. Los otros 57 agendaron
+   * sin una sola respuesta nuestra — el enlace del calendario no obliga a conversar.
+   *
+   * Una barra que vaya de 138 a 121 afirma que 121 de esos 138 convirtieron. Son 64, o sea el 46,4 %
+   * y no el 87,7 %: casi el doble. Y es una mentira que no falla —los cuatro números son correctos,
+   * sólo la flecha entre los dos últimos es falsa—, así que nadie la va a descubrir mirando.
+   *
+   * Por eso la cadena se corta en «respondieron» y acá empieza una BIFURCACIÓN. Los dos sumandos
+   * dan `agendaron` exactamente, y eso es lo que hay que poder comprobar.
+   */
+  agendaronTrasResponder: number;
+  /**
+   * El complemento exacto: `agendaron - agendaronTrasResponder`. Viaja calculado y no restado en la
+   * pantalla para que la suma sea una propiedad del módulo y no una costumbre de quien la dibuja.
+   *
+   * Incluye dos casos que **no** conviene separar acá: a quien se le escribió y nunca contestó, y a
+   * quien nunca se le escribió. Los dos significan lo mismo para esta pregunta —agendó sin que la
+   * conversación pasara por una respuesta suya— y partirlos en dos daría dos cifras chicas que se
+   * mueven con tres contactos.
+   */
+  agendaronSinResponder: number;
 
   // ── La conversación ───────────────────────────────────────────────────────
   /** A cuántos se les escribió al menos una vez. */
@@ -151,8 +188,17 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
       sql<number>`count(*) filter (where ${tieneSaliente})`.as('escritos'),
       sql<number>`count(*) filter (where ${tieneSaliente} and ${tieneEntrante})`.as('respondieron'),
       sql<number>`count(*) filter (where ${tieneCita})`.as('agendaron'),
+      /* La bifurcación, en la MISMA pasada que su total. Restarla después en la pantalla dejaría que
+         los dos sumandos vinieran de dos consultas y pudieran no sumar `agendaron`. Ver el comentario
+         de `agendaronTrasResponder`: la suma es lo único que hace honesta a la figura. */
+      sql<number>`count(*) filter (
+        where ${tieneCita} and ${tieneSaliente} and ${tieneEntrante}
+      )`.as('agendaron_tras_responder'),
       sql<number>`count(*) filter (where not ${tieneSaliente})`.as('sin_mensaje'),
       sql<number>`count(*) filter (where ${tieneSaliente} and not ${tieneEntrante})`.as('sin_contestar'),
+      /* El contacto más viejo que la ventana alcanzó. Ver `desde`: es lo que impide que «completo»
+         se lea como historia cuando son tres semanas. */
+      sql<Date | null>`min(alta_en_el_crm)`.as('desde'),
     ])
     .where(enLaVentana)
     .executeTakeFirst();
@@ -163,14 +209,18 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
   const escritos = Number(fila?.escritos ?? 0);
   const respondieron = Number(fila?.respondieron ?? 0);
   const agendaron = Number(fila?.agendaron ?? 0);
+  const agendaronTrasResponder = Number(fila?.agendaron_tras_responder ?? 0);
   const sinNingunMensaje = Number(fila?.sin_mensaje ?? 0);
   const escritosSinContestar = Number(fila?.sin_contestar ?? 0);
 
   return {
     dias,
+    desde: fila?.desde ?? null,
     cohorte,
     agendaron,
     bookingRate: cohorte === 0 ? null : Math.round((agendaron / cohorte) * 1000) / 10,
+    agendaronTrasResponder,
+    agendaronSinResponder: agendaron - agendaronTrasResponder,
     escritos,
     respondieron,
     tasa: escritos === 0 ? null : Math.round((respondieron / escritos) * 1000) / 10,

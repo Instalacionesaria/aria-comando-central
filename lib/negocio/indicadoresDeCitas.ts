@@ -62,6 +62,17 @@ export interface Cancelacion {
   aviso: string | null;
   dias: number;
   /**
+   * La cita más vieja que la ventana llegó a alcanzar. **No es `now() - dias`, y ahí está el punto.**
+   *
+   * Con «completo» la ventana son diez años y la primera cita es de hace tres semanas. Publicar sólo
+   * `dias` haría que la pantalla dijera «completo» sobre tres semanas de historia y que quien mira
+   * creyera estar viendo un año. `desde` es lo único que distingue *«pedí todo»* de *«todo es esto»*.
+   *
+   * `null` cuando la ventana no alcanzó ninguna cita: no hay fecha que declarar, y una fecha
+   * inventada acá sería peor que el hueco.
+   */
+  desde: Date | null;
+  /**
    * Cuántas de las citas alcanzables se REAGENDARON, y su tasa.
    *
    * Es el indicador que la 042 habilitó: hasta entonces reagendar pisaba la hora sin dejar rastro.
@@ -344,6 +355,10 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
       sql<number>`count(*) filter (
         where ${alcanzable} and not ${descartado} and asistio is true
       )`.as('se_presentaron'),
+      /* La cita más vieja que la ventana alcanzó, en la MISMA pasada. En una consulta aparte podría
+         salir de un estado distinto de la tabla —el barrido escribe cada hora— y la pantalla diría
+         «desde el 24 de agosto» sobre un conteo que ya no incluye esa cita. */
+      sql<Date | null>`min(inicio_el) filter (where ${alcanzable} and not ${descartado})`.as('desde'),
     ])
     /* La ventana la calcula la BASE y no la aplicación: es la única forma de que el «ahora» sea el
        mismo reloj que escribió las filas. Es el mismo recurso que usa `frescuraDe`. */
@@ -383,6 +398,7 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     tasa: citas === 0 ? null : Math.round((canceladas / citas) * 1000) / 10,
     aviso: avisoDe(citas, congeladas, dias),
     dias,
+    desde: fila?.desde ?? null,
     reagendadas,
     tasaDeReagendamiento: citas === 0 ? null : Math.round((reagendadas / citas) * 1000) / 10,
     /* Sin ninguna cita con fecha de reserva no hay mediana, y se dice con `null`. Un cero acá

@@ -15,13 +15,20 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedir } from '../http/cliente.ts';
+import type { ClaveDePeriodo } from '../negocio/periodo.ts';
 import type { CasoDelPatron, LaPantalla } from './pantalla.ts';
 import { AGENTES, type Agente } from './veredicto.ts';
 
 const RUTA = '/api/auditoria';
 
+/** Lo que la pantalla recibe: los datos del auditor, los prompts, y sobre qué ventana se midieron. */
+export type PantallaConPeriodo = LaPantalla & {
+  prompts: PromptEnLaPantalla[];
+  periodo: ClaveDePeriodo;
+};
+
 export type ResultadoDeLaPantalla =
-  | { tipo: 'datos'; pantalla: LaPantalla & { prompts: PromptEnLaPantalla[] } }
+  | { tipo: 'datos'; pantalla: PantallaConPeriodo }
   | { tipo: 'fallo'; mensaje: string };
 
 export interface PromptEnLaPantalla {
@@ -31,8 +38,11 @@ export interface PromptEnLaPantalla {
   actualizadoEl: string | null;
 }
 
-export async function leerLaPantalla(): Promise<ResultadoDeLaPantalla> {
-  const r = await pedir<LaPantalla & { prompts: PromptEnLaPantalla[] }>(RUTA);
+export async function leerLaPantalla(periodo: ClaveDePeriodo): Promise<ResultadoDeLaPantalla> {
+  /* El período es OBLIGATORIO acá aunque el servidor tenga uno por omisión, y es a propósito: con un
+     argumento opcional, una llamada que se olvide de pasarlo compila, pide treinta días y enciende el
+     botón que diga el estado local. Los dos se ven bien y no coinciden. */
+  const r = await pedir<PantallaConPeriodo>(`${RUTA}?periodo=${encodeURIComponent(periodo)}`);
   if (r.tipo === 'datos') return { tipo: 'datos', pantalla: r.datos };
   /* Los dos fallos se distinguen, igual que en el panel de monitoreo: «el servidor dijo que no» y «no
      se pudo llegar al servidor» mandan a mirar dos cosas distintas. */

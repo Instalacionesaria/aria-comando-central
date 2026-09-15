@@ -398,38 +398,44 @@ test('la cifra medida va ARRIBA de lo que falta, y sólo en Appointment Flow', (
     'la cifra no está acotada a Appointment Flow: la cancelación es de citas',
   );
 
-  const cifra = jsx.indexOf('<Cancelacion c={cancelacion}');
+  const cifra = jsx.indexOf('<Citas c={cancelacion}');
   const falta = jsx.indexOf('flujo.falta.map');
   assert.ok(cifra > 0 && falta > 0, 'falta la cifra o la lista');
   assert.ok(cifra < falta, 'la lista de lo que falta quedó ANTES de la cifra medida');
 });
 
-test('con la cifra presente, el aviso deja de decir que NO se puede calcular nada', () => {
-  /* El defecto más fino de este cambio: la pestaña pasa a mostrar un número Y a decir tres
+test('la pantalla NO afirma en ningún caso que no se puede calcular nada', () => {
+  /* El defecto que esta prueba persigue no cambió: la pestaña muestra un número Y dice tres
      centímetros más abajo que «sus indicadores todavía no se pueden calcular». Las dos cosas en la
-     misma pantalla se desmienten, y la que pierde credibilidad es la cifra. */
+     misma pantalla se desmienten, y la que pierde credibilidad es la cifra.
+   *
+   * ── LO QUE CAMBIÓ ES QUE LA AFIRMACIÓN YA NO EXISTE ──────────────────────
+   *
+   * Antes había un aviso general con dos redacciones —una para cuando ya hay cifras y otra para
+   * cuando no— y la prueba comprobaba que la guarda eligiera bien. Esa guarda era el punto débil:
+   * se mantiene a mano, y una quinta cifra que alguien olvide sumarle devuelve el defecto entero.
+   *
+   * El rediseño lo resolvió sacando la afirmación: lo que falta es una lista PLEGADA cuyo resumen
+   * dice cuántos renglones tiene. Un contador no puede mentir sobre lo que ya se calcula, porque no
+   * habla de eso. Así que la propiedad que se comprueba es más fuerte y no tiene mantenimiento: la
+   * frase no está, y el resumen sale de la longitud de la lista y no de un número escrito. */
   const jsx = leer(CONVERSATION);
-  /* El literal ENTRECOMILLADO y no la frase suelta: el archivo explica este mismo aviso en un
-     comentario de arriba, y un `indexOf` de la frase encuentra la explicación antes que el texto
-     que se dibuja. La prueba entonces compara la guarda contra la posición de un comentario, que
-     es una posición sin significado. */
-  const i = jsx.search(/'Sus (demás )?indicadores todavía no se pueden calcular/);
-  assert.ok(i > 0, 'se fue el aviso de lo que falta, o dejó de ser un literal');
 
-  /* ── SE MIRA LA GUARDA, NO UNA VENTANA DE CARACTERES ──────────────────────
-   *
-   * Esto buscaba `cancelacion ?` en los 300 caracteres anteriores al aviso, y se rompió al agregar
-   * la tercera cifra: el JSX que hay en el medio creció y empujó la guarda fuera de la ventana. La
-   * prueba fallaba sobre un archivo correcto, que es la clase de falso positivo que enseña a apagar
-   * una prueba.
-   *
-   * La propiedad real no es la distancia: es que el aviso **esté adentro de un condicional que
-   * nombre las cifras**, y que ese condicional aparezca antes. Así agregar una cuarta cifra obliga
-   * a sumarla a la guarda —que es lo correcto— en vez de a mover un número acá. */
-  const guarda = jsx.search(/\{cancelacion\s*\|\|/);
-  assert.ok(guarda > 0, 'el aviso dejó de estar guardado por las cifras que ya se calculan');
-  assert.ok(guarda < i, 'la guarda quedó DESPUÉS del aviso que tiene que condicionar');
-  assert.match(jsx, /Sus demás indicadores/, 'falta la variante que reconoce la cifra que ya hay');
+  /* La guarda dentro de una cadena, no en un comentario: este archivo explica el defecto arriba, y
+     un `indexOf` de la frase suelta encontraría la explicación en vez del texto que se dibuja. */
+  assert.ok(
+    !/['"`][^'"`]*indicadores todavía no se pueden calcular/.test(jsx),
+    'volvió el aviso que afirma que no se puede calcular nada mientras la pantalla muestra cifras',
+  );
+
+  /* Y lo que falta sigue estando dicho, plegado, con su contador REAL. `flujo.falta.length` y no un
+     número: escrito a mano, agregar un cuarto renglón deja el resumen diciendo tres. */
+  assert.match(jsx, /<details className="cs-falta-caja">/, 'lo que falta dejó de estar en pantalla');
+  assert.match(
+    jsx,
+    /<summary>[\s\S]{0,200}\{flujo\.falta\.length\}/,
+    'el contador de lo que falta no sale de la lista: escrito a mano se queda viejo',
+  );
 });
 
 test('cada cifra dice SOBRE QUÉ se calculó, y el no-show no se dibuja como tasa', () => {
@@ -445,10 +451,14 @@ test('cada cifra dice SOBRE QUÉ se calculó, y el no-show no se dibuja como tas
 
   assert.match(
     jsx,
-    /detalle=\{`sobre \$\{c\.conFechaDeReserva\} de \$\{c\.citas\}`\}/,
+    /detalle=\{`sobre \$\{cancelacion\.conFechaDeReserva\} de \$\{cancelacion\.citas\}`\}/,
     'la mediana no dice sobre cuántas citas se calculó: se lee con el denominador de las otras',
   );
-  assert.match(jsx, /detalle="reportados"/, 'el no-show no dice que es un conteo reportado');
+  assert.match(
+    jsx,
+    /detalle="reportados por el closer"/,
+    'el no-show no dice que es un conteo reportado',
+  );
   assert.ok(
     !/noShowReportado\}\s*%/.test(jsx) && !/\$\{c\.noShowReportado\} %/.test(jsx),
     'el no-show se dibuja como porcentaje: con dos eventos eso no es una tasa',
@@ -473,7 +483,10 @@ test('la cifra de Lead Flow DICE que no sabe a quién se le contestó', () => {
     /respuesta=\{sub === 'leadflow'/,
     'la cifra de respuesta no está acotada a Lead Flow',
   );
-  assert.match(jsx, /no a qui[ée]n<\/b>/i, 'la cifra no advierte que no sabe quién escribió');
+  /* Sin `</b>`: la advertencia dejó de ser un párrafo debajo de la cifra y pasó a la nota que se
+     abre desde el ícono, o sea una cadena. Lo que se comprueba sigue siendo la advertencia, no su
+     envoltorio — ver `Nota` en el componente, y el motivo medido en su cabecera. */
+  assert.match(jsx, /\bNO a qui[ée]n\b/i, 'la cifra no advierte que no sabe quién escribió');
   assert.match(
     jsx,
     /flujo del CRM/,
