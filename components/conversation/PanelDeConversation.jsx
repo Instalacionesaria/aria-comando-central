@@ -99,7 +99,16 @@ const FLUJOS = {
        * dato lo reporta una persona y todavía no hay volumen. Eso ya lo dice `avisoDeAsistencia`
        * al lado de la cifra, con el conteo real, así que acá no se repite. */
       ['La asistencia según el CALENDARIO', 'El CRM tiene sus campos «asistió» y «no apareció» y están vacíos: 3 citas de 1052 en un año. La cifra que sí se muestra la reporta el closer al cerrar el intento, o sea una persona — así que mide lo que alguien registró, no lo que el calendario observó, y un intento que nadie cierra no aparece en ninguna de las dos.'],
-      ['El video precall', 'Llega como campo suelto del CRM, sin fecha ni porcentaje visto, así que no se puede decir quién lo vio ni cuánto.'],
+      /* ── ESTE RENGLÓN DECÍA QUE EL PORCENTAJE NO VENÍA, Y VENÍA ───────────
+       *
+       * Decía «sin fecha ni porcentaje visto». La fecha es cierto. El porcentaje era falso, y la
+       * creencia salió de mirar los dos campos equivocados: `Video Watch Percentage` y `Porcentaje
+       * de Video Visto` están en 0 de 584 contactos —con razón— mientras `Video Pre-Call` está en
+       * 213 y trae el porcentaje adentro de sus opciones.
+       *
+       * Lo que sigue faltando es la FECHA, y no es un detalle: sin ella el valor que el CRM escribe
+       * al agendar no se distingue de uno medido después de la llamada. */
+      ['CUÁNDO vio el precall', 'El campo dice cuánto del video se reprodujo, pero no cuándo. Sin la fecha no se puede saber si lo vio antes de la llamada —que es lo que el flujo persigue— o si el valor es el que el CRM escribió al agendar y nadie tocó después.'],
       ['El historial de reagendamientos', 'Desde ahora se guarda el ÚLTIMO movimiento —la hora anterior y cuándo lo movieron—, pero no la cadena completa: el barrido mira una vez por hora, así que dos movimientos seguidos se ven como uno. Y cancelar para volver a reservar produce otra cita en el CRM, no un reagendamiento.'],
     ],
   },
@@ -170,6 +179,7 @@ export default function PanelDeConversation() {
           flujo={FLUJOS[sub]}
           noAudita={pantalla?.noAudita ?? null}
           cancelacion={sub === 'appflow' ? (pantalla?.cancelacion ?? null) : null}
+          precall={sub === 'appflow' ? (pantalla?.precall ?? null) : null}
           respuesta={sub === 'leadflow' ? (pantalla?.respuesta ?? null) : null}
           atribucion={sub === 'leadflow' ? (pantalla?.atribucion ?? null) : null}
         />
@@ -380,6 +390,52 @@ function Corte({ titulo, filas }) {
   );
 }
 
+/**
+ * El consumo del video precall (§10.6).
+ *
+ * ── EL RÓTULO ES LO MÁS IMPORTANTE DE ESTE COMPONENTE ──────────────────────
+ *
+ * Dice **«el CRM registró reproducción»** y no «vio el video», y la diferencia no es de estilo.
+ * Medido: el valor lo escribe el CRM AL AGENDAR —las 13 citas futuras ya lo tienen puesto, 11 de
+ * ellas en «sin reproducción»— y 9 de los 20 contactos que sí clicaron el link lo tienen todavía en
+ * su valor inicial. Con el rótulo equivocado, dos tercios de los leads quedan acusados de ignorar un
+ * video cuando parte de eso es un medidor que no reportó.
+ */
+function Precall({ p }) {
+  if (p.sobre === 0 && p.aviso === null) return null;
+  return (
+    <div className="cs-cifra">
+      <p className="cs-cifra-titulo">
+        El video previo a la llamada <span>últimos {p.dias} días</span>
+      </p>
+
+      <div className="cs-cifra-fila">
+        <Cifra
+          titulo="Registró reproducción"
+          valor={p.tasa === null ? null : `${p.tasa} %`}
+          detalle={`${p.registraron} de ${p.conCampo - p.sinRama} clasificados`}
+        />
+        {/* El desglose fino sólo aparece cuando SUS DOS ramas pasan el piso. Hoy no: son 6 y 3, y
+            publicarlos invita a comparar dos números que se mueven treinta puntos por contacto. */}
+        {p.detalleSePublica ? (
+          <>
+            <Cifra titulo="Vio parte" valor={String(p.parcial)} detalle="contactos" />
+            <Cifra titulo="Lo completó" valor={String(p.completo)} detalle="contactos" />
+          </>
+        ) : null}
+        <Cifra titulo="Llegaron a la llamada" valor={String(p.sobre)} detalle="contactos" />
+      </div>
+
+      <p className="cs-cifra-nota">
+        Se cuenta sobre quienes <b>llegaron a su llamada</b>: las citas futuras y las canceladas no
+        entran. El CRM escribe este campo al agendar, así que una cita que todavía no ocurrió ya
+        figura como «sin reproducción» sin que eso signifique nada.
+      </p>
+      {p.aviso ? <p className="cs-cifra-nota">{p.aviso}</p> : null}
+    </div>
+  );
+}
+
 function Cancelacion({ c }) {
   return (
     <div className="cs-cifra">
@@ -478,7 +534,7 @@ function Cancelacion({ c }) {
  * el freno que lo dice bien ya existía: vive en `pantalla.noAudita` y sólo lo leía la pestaña de
  * Auditoría. Acá se reusa, con el mismo texto, para que las tres pestañas digan lo mismo.
  */
-function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion }) {
+function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion, precall }) {
   return (
     <>
       <p className="aud-alcance">
@@ -503,6 +559,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion }) {
           Va ARRIBA del «qué falta» a propósito: lo que sí se sabe primero, y después el hueco. Al
           revés, la pestaña se lee como vacía y nadie llega al número. */}
       {cancelacion ? <Cancelacion c={cancelacion} /> : null}
+      {precall ? <Precall p={precall} /> : null}
       {respuesta ? <Lead r={respuesta} /> : null}
       {atribucion ? <Atribucion a={atribucion} /> : null}
 
@@ -512,7 +569,7 @@ function Flujo({ flujo, noAudita, cancelacion, respuesta, atribucion }) {
       <div className="fd-aviso">
         <i>◍</i>
         <span>
-          {cancelacion || respuesta || atribucion
+          {cancelacion || respuesta || atribucion || precall
             ? 'Sus demás indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'
             : 'Sus indicadores todavía no se pueden calcular con los datos que este sistema recibe hoy. Abajo está qué falta para cada uno.'}
         </span>

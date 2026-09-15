@@ -37,6 +37,7 @@ import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
 import { atribucionDelLead } from '../../../lib/negocio/atribucionDelLead.ts';
+import { consumoDelPrecall } from '../../../lib/negocio/consumoDelPrecall.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
 /* La pantalla es `conversation` y no `auditoria`, y la carpeta de esta ruta sigue diciendo
@@ -74,7 +75,7 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
      tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
-  const [pantalla, prompts, cancelacion, respuesta, atribucion] = await conOrganizacion(
+  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall] = await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
       await laPantallaDelTecnico(noAudita),
@@ -82,6 +83,7 @@ export async function GET(peticion: Request): Promise<Response> {
       await tasaDeCancelacion(),
       await indicadoresDelLead(),
       await atribucionDelLead(),
+      await consumoDelPrecall(),
     ],
   );
 
@@ -108,5 +110,8 @@ export async function GET(peticion: Request): Promise<Response> {
     /* De dónde vinieron los que agendaron. Estaba guardado desde la `048` y no lo leía nadie: es la
        atribución que se llegó a proponer conseguir conectando el API de Meta. */
     atribucion,
+    /* El consumo del precall (§10.6). La pantalla lo declaraba imposible: los dos campos NUMERICAL
+       de porcentaje están vacíos, pero el porcentaje viene adentro del vocabulario de un RADIO. */
+    precall,
   });
 }
