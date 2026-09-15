@@ -1,0 +1,17 @@
+# Lo que graphify SI tiene que ver, y el .gitignore le esconde.
+#
+# El `.gitignore` de este repo excluye `credenciales*` por prefijo y sin barra —para que un
+# volcado de secretos dejado en la raiz no se publique en un repo PUBLICO— y eso agarra tambien
+# la CARPETA `lib/credenciales/`. Las negaciones `!*.ts` no la rescatan: ni git ni graphify entran
+# en un directorio ya excluido, asi que ninguna regla de adentro se llega a evaluar. El equipo ya
+# habia chocado con esto y rescato `app/api/admin/credenciales/`; a `lib/credenciales/` no.
+#
+# Para git no cambia nada: esos tres archivos ya estan versionados. Lo que cambia es que el grafo
+# de conocimiento no los veia, y son el resolvedor de credenciales y el cifrado: justo la parte
+# donde una pregunta sobre seguridad se responde mal si el grafo esta ciego.
+#
+# Se arregla ACA y no en el `.gitignore` a proposito: ese archivo existe para impedir una fuga en
+# un repositorio publico, y aflojarlo para mejorar una herramienta de lectura es el intercambio
+# equivocado. Este archivo solo lo lee graphify.
+!lib/credenciales/
+!scripts/credenciales.mjs
