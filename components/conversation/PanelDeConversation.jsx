@@ -432,6 +432,20 @@ function Cancelacion({ c }) {
         />
       </div>
 
+      {/* ── POR QUÉ ESTA CIFRA ES MÁS BAJA QUE LA QUE ALGUIEN RECUERDA ──────
+          Medido: casi la mitad de las citas del período son de contactos que la empresa MISMA
+          descartó, y cancelan al 94 % porque su propio flujo las cancela. Sumadas daban 62,7 %
+          donde el negocio tiene 33,3 %. Esta línea existe para que el cambio no se lea como que
+          algo mejoró solo — y para que nadie vaya a buscar las citas que «faltan». */}
+      {c.descartados.citas > 0 ? (
+        <p className="cs-cifra-nota">
+          No se cuentan <b>{c.descartados.citas}</b> cita(s) de contactos que ya habían sido
+          rechazados{c.descartados.tasa === null ? '' : `, que cancelan el ${c.descartados.tasa} %`}
+          . Ésas las cancela el flujo de descarte de la empresa, no el lead: sumarlas le atribuiría
+          al negocio el trabajo de su propio filtro.
+        </p>
+      ) : null}
+
       <p className="cs-cifra-nota">
         El no-show y la asistencia los <b>reporta el closer</b> al cerrar el intento, no el
         calendario: los campos de asistencia del CRM están vacíos en las 316 citas.

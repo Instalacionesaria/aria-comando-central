@@ -548,3 +548,136 @@ test('un contacto con DOS citas en la ventana cuenta una vez, no dos', async () 
   assert.equal(r.conConfirmacion, 1, 'el contacto con dos citas se contó dos veces');
   await limpiarConfirmacion();
 });
+
+// ─── El descarte propio, apartado de la pérdida real ────────────────────────
+
+/** Un contacto con etiquetas de descarte, y una cita suya en la ventana. */
+async function citaDeDescartado(estado: string, etiqueta = 'icp_rechazado'): Promise<void> {
+  await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({
+        ghl_contact_id: `${MARCA}-desc-${randomUUID().slice(0, 8)}`,
+        nombre: 'Contacto descartado',
+        territorio: 'closer',
+        /* En MAYÚSCULA a propósito: GoHighLevel no garantiza la caja de las etiquetas y se guardan
+           crudas, así que una comparación sin `lower()` dejaría pasar a este contacto como si
+           nadie lo hubiera descartado. */
+        etiquetas: [etiqueta.toUpperCase()],
+      } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    await datos()
+      .insertInto('citas')
+      .values({
+        ghl_evento_id: `${MARCA}-${randomUUID().slice(0, 8)}`,
+        contacto_id: c.id,
+        inicio_el: new Date(Date.now() - 86_400_000),
+        estado_ghl: estado,
+        ghl_calendario_id: 'cal1',
+      } as never)
+      .execute();
+  });
+}
+
+async function limpiarDescartados(): Promise<void> {
+  await conOrganizacion(alfa, async () => {
+    await datos().deleteFrom('citas').execute();
+    await datos().deleteFrom('contactos').where('nombre', '=', 'Contacto descartado').execute();
+  });
+}
+
+test('EL DEFECTO PUBLICADO: la tasa sumaba el descarte propio con la pérdida real', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * Medido en producción el 2026-09-14, sobre las 150 citas alcanzables de la ventana:
+   *
+   *     de contactos descartados      72 citas   cancelan el 94,4 %
+   *     del resto                     78 citas   cancelan el 33,3 %
+   *     las dos juntas               150 citas             62,7 %   ← lo que se publicaba
+   *
+   * Casi la mitad de las citas eran de contactos que la empresa MISMA había rechazado, y cancelan
+   * al 94 % porque su flujo de descarte las cancela. No es conducta de ningún lead: es la
+   * automatización de la casa. Sumarlas le atribuía al negocio la mitad del trabajo de su filtro.
+   *
+   * Esta prueba reproduce la mezcla en chico: sin el corte daría 60 %, con el corte da 20 %.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  await limpiarDescartados();
+  // El negocio: 10 citas, 2 canceladas → 20 %.
+  for (let i = 0; i < 2; i++) await cita(1, 'cancelled');
+  for (let i = 0; i < 8; i++) await cita(1, 'confirmed');
+  // El descarte: 10 citas, todas canceladas → 100 %.
+  for (let i = 0; i < 10; i++) await citaDeDescartado('cancelled');
+
+  const r = await leer();
+  assert.equal(r.citas, 10, 'las citas de contactos descartados volvieron al denominador');
+  assert.equal(r.tasa, 20, 'la tasa volvió a mezclar el descarte propio con la pérdida real');
+  assert.equal(r.descartados.citas, 10, 'las descartadas desaparecieron en vez de apartarse');
+  assert.equal(r.descartados.canceladas, 10);
+  assert.equal(r.descartados.tasa, 100);
+  await limpiarDescartados();
+});
+
+test('las dos poblaciones SUMAN el total: nada se esconde', async () => {
+  /* Apartar no es tirar. Si las descartadas desaparecieran, la pantalla mostraría menos citas de
+     las que hay y nadie tendría cómo notarlo — que es peor que el defecto original, porque al menos
+     aquél daba un número grande. */
+  await limpiar();
+  await limpiarDescartados();
+  for (let i = 0; i < 4; i++) await cita(1, 'confirmed');
+  for (let i = 0; i < 3; i++) await citaDeDescartado('cancelled');
+
+  const r = await leer();
+  assert.equal(r.citas + r.descartados.citas, 7, 'las dos poblaciones no suman las citas que hay');
+  await limpiarDescartados();
+});
+
+test('la etiqueta se compara en MINÚSCULA: el CRM no garantiza la caja', async () => {
+  /* El fixture escribe la etiqueta en mayúscula. Sin `lower()`, este contacto pasaría por bueno y
+     sus cancelaciones volverían a contaminar la cifra — que es el defecto original, otra vez, y
+     sólo para los contactos cuya etiqueta vino con otra caja. */
+  await limpiar();
+  await limpiarDescartados();
+  for (let i = 0; i < 5; i++) await cita(1, 'confirmed');
+  await citaDeDescartado('cancelled', 'RechaZado');
+
+  const r = await leer();
+  assert.equal(r.citas, 5, 'una etiqueta en otra caja no se reconoció como descarte');
+  assert.equal(r.tasa, 0);
+  assert.equal(r.descartados.citas, 1);
+  await limpiarDescartados();
+});
+
+test('con pocas citas descartadas su tasa CALLA, igual que todas las demás', async () => {
+  /* El mismo piso que el resto del archivo. Un «100 %» sobre dos citas al lado de la cifra buena
+     invitaría a compararlas, y esta población no está para eso: está para que se sepa que existe. */
+  await limpiar();
+  await limpiarDescartados();
+  for (let i = 0; i < 5; i++) await cita(1, 'confirmed');
+  for (let i = 0; i < 2; i++) await citaDeDescartado('cancelled');
+
+  const r = await leer();
+  assert.equal(r.descartados.citas, 2, 'el conteo tiene que estar igual: es lo que dice que existen');
+  assert.equal(r.descartados.tasa, null, 'se publicó una tasa sobre dos citas');
+  await limpiarDescartados();
+});
+
+test('las OTRAS cifras de la tarjeta también excluyen el descarte', async () => {
+  /* Si la cancelación cortara y las demás no, las cinco cifras de la misma tarjeta hablarían de
+     poblaciones distintas — y las cuatro se verían bien por separado. Es el mismo argumento por el
+     que las cinco comparten la única pasada. */
+  await limpiar();
+  await limpiarDescartados();
+  for (let i = 0; i < 4; i++) await cita(1, 'confirmed', 'cal1', { reservadaHorasAntes: 10 });
+  for (let i = 0; i < 6; i++) await citaDeDescartado('confirmed');
+
+  const r = await leer();
+  assert.equal(r.citas, 4);
+  assert.equal(
+    r.conFechaDeReserva,
+    4,
+    'la mediana de anticipación se calculó incluyendo citas de contactos descartados',
+  );
+  await limpiarDescartados();
+});

@@ -41,6 +41,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
 import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
+import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
 
 /**
  * La tasa de cancelación de una ventana, con lo que quedó afuera.
@@ -132,6 +133,28 @@ export interface Cancelacion {
   confirmaron: number;
   tasaDeConfirmacion: number | null;
   avisoDeConfirmacion: string | null;
+  /**
+   * Las citas de contactos que **la empresa misma descartó**, apartadas del resto.
+   *
+   * ══════════════════════════════════════════════════════════════════════════
+   * ESTO CAMBIA LO QUE SIGNIFICA `tasa`, Y HAY QUE LEERLO ANTES DE USARLA
+   *
+   * `citas`, `canceladas` y `tasa` ya **no** cuentan a los contactos descartados. Antes sí, y el
+   * número que salía era la mezcla de dos hechos opuestos. Medido el 2026-09-14:
+   *
+   *     descartados      72 citas   94,4 % cancelan   ← la automatización de la casa
+   *     el resto         78 citas   33,3 % cancelan   ← el negocio
+   *     las dos juntas  150 citas   62,7 %            ← lo que se publicaba
+   *
+   * Casi la mitad de las citas de la ventana son de contactos ya rechazados, y cancelan al 94 %
+   * porque el flujo de descarte las cancela. Publicar 62,7 % como «tasa de cancelación» le atribuía
+   * al negocio la mitad del trabajo de su propio filtro.
+   *
+   * **No se esconden**: van acá, con su conteo y su tasa. Lo que no se hace es sumarlas en
+   * silencio, que es la misma disciplina que este archivo ya aplica con las citas congeladas.
+   * ══════════════════════════════════════════════════════════════════════════
+   */
+  descartados: { citas: number; canceladas: number; tasa: number | null };
 }
 
 /**
@@ -259,32 +282,53 @@ export const PISO_DE_UNA_TASA = 10;
 export const DIAS_DE_LA_TASA = 14;
 
 export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancelacion> {
+  /* Los tres fragmentos van en constantes y no repetidos ocho veces: repetidos, el día que alguien
+     agregue una cifra la escribe con un filtro apenas distinto, las dos conviven, y la tarjeta
+     muestra números que no cuadran entre sí mientras cada uno se ve bien por separado. */
+  const alcanzable = sql`ghl_calendario_id is not null`;
+  const cancelada = sql`lower(coalesce(estado_ghl, '')) = any(${sql.val(ESTADOS_CANCELADOS)})`;
+  /* ── EL DESCARTE PROPIO, LEÍDO DE LAS ETIQUETAS DEL CONTACTO ─────────────
+   *
+   * `exists` sobre `unnest` y no un `&&` de arreglos: las etiquetas se guardan crudas y
+   * GoHighLevel no garantiza la caja, así que hay que comparar en minúscula — y `&&` no deja.
+   * El motivo completo, con el censo de etiquetas, está en `ETIQUETAS_DE_DESCARTE`. */
+  const descartado = sql`exists (
+    select 1 from negocio.contactos ct, unnest(ct.etiquetas) e
+     where ct.org_id = citas.org_id and ct.id = citas.contacto_id
+       and lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+
   const fila = await datos()
     .selectFrom('citas')
     .select([
       /* Alcanzables: las que el barrido todavía puede refrescar. Las de `ghl_calendario_id` nulo son
          anteriores a la `038` y el CRM ya no devuelve sus eventos, así que su estado no va a cambiar
          nunca más — contarlas es contar una foto vieja como si fuera de hoy. */
-      sql<number>`count(*) filter (where ghl_calendario_id is not null)`.as('citas'),
+      sql<number>`count(*) filter (where ${alcanzable} and not ${descartado})`.as('citas'),
       sql<number>`count(*) filter (
-        where ghl_calendario_id is not null
-          and lower(coalesce(estado_ghl, '')) = any(${sql.val(ESTADOS_CANCELADOS)})
+        where ${alcanzable} and not ${descartado} and ${cancelada}
       )`.as('canceladas'),
+      /* Los descartados, en la MISMA pasada y como su propio par de números. Dos consultas podrían
+         ver estados distintos de la tabla —el barrido escribe cada hora— y entonces las dos
+         poblaciones de la misma tarjeta no sumarían el total, sin que nada falle. */
+      sql<number>`count(*) filter (where ${alcanzable} and ${descartado})`.as('desc_citas'),
+      sql<number>`count(*) filter (
+        where ${alcanzable} and ${descartado} and ${cancelada}
+      )`.as('desc_canceladas'),
       sql<number>`count(*) filter (where ghl_calendario_id is null)`.as('congeladas'),
       /* Los otros dos, en la MISMA pasada. Tres consultas separadas podrían ver estados distintos de
          la tabla —el barrido escribe cada hora— y entonces las cifras de una misma tarjeta no
          cuadrarían entre sí, sin que nada falle. */
       sql<number>`count(*) filter (
-        where ghl_calendario_id is not null and reagendada_el is not null
+        where ${alcanzable} and not ${descartado} and reagendada_el is not null
       )`.as('reagendadas'),
-      sql<number>`count(reservada_el) filter (where ghl_calendario_id is not null)`.as('con_reserva'),
+      sql<number>`count(reservada_el) filter (where ${alcanzable} and not ${descartado})`.as('con_reserva'),
       /* La MEDIANA, calculada por la base. `percentile_cont` interpola entre los dos centrales, que
          para horas es lo que se quiere. Las citas sin fecha de reserva no entran: `percentile_cont`
          ignora los nulos, así que el resultado es de las que sí la tienen — y por eso viaja
          `con_reserva`, para que la pantalla pueda decir sobre cuántas habla. */
       sql<number | null>`percentile_cont(0.5) within group (
         order by extract(epoch from (inicio_el - reservada_el)) / 3600
-      ) filter (where ghl_calendario_id is not null and reservada_el is not null)`.as('horas'),
+      ) filter (where ${alcanzable} and not ${descartado} and reservada_el is not null)`.as('horas'),
       /* ── LA ASISTENCIA, Y EL FILTRO QUE ES TODO EL INDICADOR ───────────────
        *
        * `asistio is not null` en el DENOMINADOR. Sin ese filtro la cuenta sería sobre todas las
@@ -295,10 +339,10 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
        * Y `is true` en el numerador y no `= true`: son equivalentes hoy porque el filtro ya excluyó
        * los nulos, y `is true` lo sigue siendo el día que alguien toque ese filtro. */
       sql<number>`count(*) filter (
-        where ghl_calendario_id is not null and asistio is not null
+        where ${alcanzable} and not ${descartado} and asistio is not null
       )`.as('con_asistencia'),
       sql<number>`count(*) filter (
-        where ghl_calendario_id is not null and asistio is true
+        where ${alcanzable} and not ${descartado} and asistio is true
       )`.as('se_presentaron'),
     ])
     /* La ventana la calcula la BASE y no la aplicación: es la única forma de que el «ahora» sea el
@@ -315,6 +359,8 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
   const horas = fila?.horas ?? null;
   const conAsistencia = Number(fila?.con_asistencia ?? 0);
   const sePresentaron = Number(fila?.se_presentaron ?? 0);
+  const descCitas = Number(fila?.desc_citas ?? 0);
+  const descCanceladas = Number(fila?.desc_canceladas ?? 0);
 
   /* El no-show sale de OTRA tabla y por eso es una consulta aparte: lo reporta el closer al cerrar
      un intento, no el calendario. Va dentro de la misma transacción igual. */
@@ -363,6 +409,16 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
         ? null
         : Math.round((conf.confirmaron / conf.conConfirmacion) * 1000) / 10,
     avisoDeConfirmacion: avisoDeLaConfirmacion(conf.hayCampo, conf.conCita, conf.conConfirmacion),
+    descartados: {
+      citas: descCitas,
+      canceladas: descCanceladas,
+      /* Con el mismo piso que todo lo demás: si un día hay dos citas descartadas, un «100 %» al
+         lado de la cifra buena invitaría a compararlas, y esta población no está para eso. */
+      tasa:
+        descCitas < PISO_DE_UNA_TASA
+          ? null
+          : Math.round((descCanceladas / descCitas) * 1000) / 10,
+    },
   };
 }
 

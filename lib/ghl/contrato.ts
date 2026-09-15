@@ -190,6 +190,53 @@ export const ESTANCADO = 'estancado';
  */
 export const DERIVADO_LT = 'derivado_lt';
 
+/**
+ * Las etiquetas con las que **la empresa descarta a un contacto**. Solo se leen.
+ *
+ * ══════════════════════════════════════════════════════════════════════════════
+ * POR QUÉ ESTA LISTA EXISTE: LA TASA DE CANCELACIÓN SUMABA DOS COSAS DISTINTAS
+ *
+ * Una cita que se cancela porque el lead se arrepintió y una que se cancela porque **nosotros
+ * decidimos que no calificaba** son hechos opuestos: la primera es una pérdida y la segunda es el
+ * proceso funcionando. Sumadas dan un número que no describe a ninguna de las dos.
+ *
+ * Medido el 2026-09-14 sobre las 150 citas alcanzables de la ventana:
+ *
+ *     de contactos descartados      72 citas   cancelan el 94,4 %   ← el flujo de descarte corriendo
+ *     del resto                     78 citas   cancelan el 33,3 %   ← el negocio
+ *     las dos juntas               150 citas             62,7 %     ← lo que se publicaba
+ *
+ * El 94,4 % no es conducta de nadie: es la automatización de la casa cancelando lo que ya había
+ * rechazado. Y como son casi la mitad de las citas, la cifra plana quedaba a mitad de camino entre
+ * dos verdades, más cerca de la que no sirve para decidir.
+ *
+ * ── LA LISTA ES DE ESTA CUENTA, Y ESO ESTÁ DICHO A PROPÓSITO ────────────────
+ *
+ * Censo completo de las etiquetas de descarte de la subcuenta real, el 2026-09-14:
+ *
+ *     icp_rechazado 64 · rechazado 55 · rechazado_positivo 6 · no calificado 5
+ *     rechazado_negativo 1 · descalificado 1
+ *
+ * **La conclusión no depende de dónde se trace la línea**, y eso se midió antes de elegir: con las
+ * dos grandes solamente la cifra del resto da 33,3 %, y con las seis da 33,3 % también. Las cuatro
+ * chicas sólo mueven 3 citas. Se toman las seis porque es más completo y no cuesta nada.
+ *
+ * El día que haya una segunda empresa con otro vocabulario esto se muda a una columna de
+ * `identidad.organizaciones_credenciales`, como `crm_agente_usuario_id`. Hoy sería una tabla de
+ * configuración para una sola fila, y este comentario es el que dice cuándo dejó de serlo.
+ *
+ * Se comparan en MINÚSCULA porque así se guardan (`lib/negocio/sincronizar.ts` las escribe crudas y
+ * GoHighLevel no garantiza la caja).
+ */
+export const ETIQUETAS_DE_DESCARTE: readonly string[] = [
+  'icp_rechazado',
+  'rechazado',
+  'rechazado_positivo',
+  'rechazado_negativo',
+  'no calificado',
+  'descalificado',
+];
+
 // ═════════════════════════════════════════════════════════════════════════════
 // A.7 · LAS CARPETAS DE CAMPOS PERSONALIZADOS QUE SE MUESTRAN EN EL PERFIL
 //
