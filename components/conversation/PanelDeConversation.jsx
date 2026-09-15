@@ -54,6 +54,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { Cuerpo } from '../auditoria/PanelDeAuditoria.jsx';
+/* `CADENCIA` se importa desde `reloj` y no desde `cadencia`, que es donde vive: es lo que ya hacen
+   `CloserView` y `SetterView`, y tener dos caminos al mismo número invita a que alguien crea que son
+   dos números. `reloj` lo reexporta justamente para eso. */
+import { CADENCIA, usarReloj } from '@/lib/reloj';
+import { estaALaVista } from '@/lib/vista';
 import { POR_QUE_NO_AUDITA, agruparPorPatron, leerLaPantalla } from '@/lib/auditor/vista';
 
 /**
@@ -98,7 +103,16 @@ const FLUJOS = {
        * Lo que sigue faltando es OTRA cosa, más chica y más concreta, así que se dice aparte: el
        * dato lo reporta una persona y todavía no hay volumen. Eso ya lo dice `avisoDeAsistencia`
        * al lado de la cifra, con el conteo real, así que acá no se repite. */
-      ['La asistencia según el CALENDARIO', 'El CRM tiene sus campos «asistió» y «no apareció» y están vacíos: 3 citas de 1052 en un año. La cifra que sí se muestra la reporta el closer al cerrar el intento, o sea una persona — así que mide lo que alguien registró, no lo que el calendario observó, y un intento que nadie cierra no aparece en ninguna de las dos.'],
+      /* ── LA CIFRA VA FECHADA, Y ÉSE ES EL ARREGLO ───────────────────────
+       *
+       * Decía «3 citas de 1052» en presente, como si fuera el estado de hoy. `negocio.citas` crece
+       * todos los días, así que ese denominador envejece solo — y es el ARGUMENTO por el que se
+       * ignora el campo del CRM, o sea justo el número que no puede quedar viejo.
+       *
+       * Fechada se lee como lo que es: una medición, que sigue siendo cierta el día que se hizo.
+       * Es la diferencia entre un comentario del código —donde este proyecto fecha todo— y una
+       * cadena que alguien lee en pantalla creyendo que describe el ahora. */
+      ['La asistencia según el CALENDARIO', 'Los campos «asistió» y «no apareció» del CRM están prácticamente vacíos: medido en septiembre de 2026, 3 citas de 1052 en todo un año. La cifra que sí se muestra la reporta el closer al cerrar el intento, o sea una persona — así que mide lo que alguien registró, no lo que el calendario observó, y un intento que nadie cierra no aparece en ninguna de las dos.'],
       /* ── ESTE RENGLÓN DECÍA QUE EL PORCENTAJE NO VENÍA, Y VENÍA ───────────
        *
        * Decía «sin fecha ni porcentaje visto». La fecha es cierto. El porcentaje era falso, y la
@@ -123,21 +137,50 @@ export default function PanelDeConversation() {
      —el orden es por cantidad de casos— y con un índice quedaría abierto otro patrón. */
   const [abierto, setAbierto] = useState(null);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
+  /**
+   * Trae la pantalla. `esRecarga` cambia qué pasa mientras tanto y qué pasa si falla.
+   *
+   * ── TENIENDO DATOS, LA PANTALLA NO SE VACÍA NUNCA ───────────────────────
+   *
+   * Es la regla que `lib/usarLectura.ts` ya tiene escrita con su factura pagada: *«poner "cargando"
+   * en una recarga reemplazaba el cuerpo entero y se llevaba puesta la ficha abierta»*. Acá el
+   * equivalente es el patrón abierto —que `abierto` guarda justo para sobrevivir a una recarga— y
+   * las siete cifras, que parpadearían cada minuto.
+   *
+   * Y si la recarga FALLA, lo que había se queda: el aviso va al lado. Anular `pantalla` en un tic
+   * fallido borraría cifras correctas por un corte de red de un segundo — y quien esté mirando
+   * pierde el número que estaba leyendo, sin haber hecho nada.
+   */
+  const cargar = useCallback(async (esRecarga = false) => {
+    if (!esRecarga) setCargando(true);
     const r = await leerLaPantalla();
-    if (r.tipo === 'datos') setPantalla(r.pantalla);
-    else {
+    if (r.tipo === 'datos') {
+      setPantalla(r.pantalla);
+      setError('');
+    } else {
       setError(r.mensaje);
-      setPantalla(null);
+      /* Sólo la PRIMERA carga deja la pantalla en nulo: ahí no hay nada que conservar, y el cuerpo
+         tiene que poder dibujar el error con su botón. */
+      if (!esRecarga) setPantalla(null);
     }
-    setCargando(false);
+    if (!esRecarga) setCargando(false);
   }, []);
 
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  /* ── EL RELOJ, COLGADO DE QUE LA PANTALLA ESTÉ A LA VISTA ────────────────
+   *
+   * `estaALaVista` es la única forma en que React se entera de que esta sección se abrió: el cambio
+   * de vista lo hace `lib/aios/shell.js` moviendo clases en el DOM, sin desmontar nada.
+   *
+   * Con `null` como clave el reloj no se registra, así que con Conversation cerrada esto no cuesta
+   * una sola petición — que es la lección que `CADENCIA.puntitoDeTools` documenta habiendo pagado
+   * 180 peticiones por hora desperdiciadas. */
+  const aLaVista = estaALaVista('conversation');
+  const recargar = useCallback(() => cargar(true), [cargar]);
+  usarReloj(aLaVista ? 'conversation:tic' : null, recargar, CADENCIA.inteligencia);
 
   /* Los patrones agrupados UNA vez, acá, y repartidos por agente más abajo. Agruparlos dentro de
      cada bloque recorrería la lista dos veces y —peor— dejaría dos llamadas que alguien puede
@@ -546,7 +589,8 @@ function Cancelacion({ c }) {
 
       <p className="cs-cifra-nota">
         El no-show y la asistencia los <b>reporta el closer</b> al cerrar el intento, no el
-        calendario: los campos de asistencia del CRM están vacíos en las 316 citas.
+        calendario: los campos de asistencia del CRM estaban vacíos en las 316 citas que había al
+        medirlo, en septiembre de 2026.
       </p>
       {/* Su aviso va aparte del de abajo: éste va a estar encendido durante semanas —la asistencia
           se empezó a registrar hoy— y compartir el renglón apagaría por costumbre el de las citas

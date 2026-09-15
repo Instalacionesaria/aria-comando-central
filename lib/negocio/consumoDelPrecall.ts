@@ -53,6 +53,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 
@@ -170,7 +171,20 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
      * canceló no tenía motivo para ver el precall, y su cobertura del campo es la mitad).
      *
      * `exists` y no un `join`: un contacto con dos citas tiene UN valor del campo, así que con el
-     * `join` su respuesta pesaría el doble. */
+     * `join` su respuesta pesaría el doble.
+     *
+     * ── EL MISMO PREDICADO DE «CANCELADA» QUE LAS OTRAS CIFRAS ──────────────
+     *
+     * Acá decía `not like 'cancel%'` mientras `indicadoresDeCitas` usa la lista cerrada
+     * `ESTADOS_CANCELADOS`. Hoy coinciden porque el CRM sólo manda `cancelled`, `confirmed` y
+     * `noshow` — pero el vocabulario SE MUEVE: `noshow` apareció por primera vez el 2026-09-08.
+     *
+     * Un `cancelled_by_owner` futuro sería «no cancelada» para la tasa de cancelación y
+     * «cancelada» para esta cifra: la misma cita contada de dos maneras en la misma pantalla, y
+     * las dos viéndose bien por separado.
+     *
+     * (Y el comentario vive ACÁ y no adentro de la plantilla: sus comillas invertidas cerrarían
+     * el `sql` a la mitad, que es exactamente lo que pasó al escribirlo.) */
     .where(
       sql<boolean>`exists (
         select 1 from negocio.citas ci
@@ -178,7 +192,7 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
            and ci.ghl_calendario_id is not null
            and ci.inicio_el < now()
            and ci.inicio_el >= now() - make_interval(days => ${dias})
-           and lower(coalesce(ci.estado_ghl, '')) not like 'cancel%')`,
+           and lower(coalesce(ci.estado_ghl, '')) <> all(${sql.val(ESTADOS_CANCELADOS)}))`,
     )
     .groupBy(sql`1`)
     .execute();

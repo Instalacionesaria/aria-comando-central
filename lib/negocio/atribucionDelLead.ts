@@ -108,7 +108,23 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
   const filas = await datos()
     .selectFrom('contactos')
     .select([
-      sql<string | null>`atribucion_primera ->> ${clave}`.as('etiqueta'),
+      /* ── EN MINÚSCULA PARA AGRUPAR, Y NO ES PROLIJIDAD ──────────────────
+       *
+       * Medido el 2026-09-15: en la ventana hay **7 valores distintos de campaña tal cual vienen y
+       * 6 normalizados**. La misma campaña está escrita de dos formas —una con 32 contactos y otra
+       * con 8— y el corte la partía en dos filas.
+       *
+       * El costo es concreto y ya estaba ocurriendo: los 8 quedaban debajo del piso y se iban a
+       * «Otras» sin tasa, aunque su campaña real tiene 40 contactos. Y proyectado a siete días, la
+       * mitad grande también toca el piso y **la campaña desaparece entera de la tabla** teniendo
+       * catorce contactos.
+       *
+       * Es el mismo criterio que el descarte, que sí normaliza: GoHighLevel no garantiza la caja de
+       * nada que escriba una persona. */
+      sql<string | null>`lower(atribucion_primera ->> ${clave})`.as('etiqueta'),
+      /* Y para MOSTRAR se toma una de las variantes tal cual vino: una etiqueta en minúsculas
+         forzadas se lee como un error de la pantalla, no como el nombre que alguien le puso. */
+      sql<string | null>`min(atribucion_primera ->> ${clave})`.as('como_se_escribe'),
       sql<number>`count(*)`.as('cohorte'),
       /* El mismo `exists` y el mismo filtro de cita alcanzable que el booking rate. Tiene que ser
          el mismo o las filas de este corte no sumarían la cifra grande de al lado, y nadie tendría
@@ -145,7 +161,7 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
       continue;
     }
     grandes.push({
-      etiqueta: f.etiqueta,
+      etiqueta: f.como_se_escribe ?? f.etiqueta,
       cohorte,
       agendaron,
       tasa: Math.round((agendaron / cohorte) * 1000) / 10,

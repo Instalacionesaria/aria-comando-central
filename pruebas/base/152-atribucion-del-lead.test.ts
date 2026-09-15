@@ -253,3 +253,41 @@ test('sin ninguna zona horaria el horario es NULO, no «cero fuera de hora»', a
     'sin datos de zona se devolvió un cero, que se lee como «nunca pasa»',
   );
 });
+
+test('LA MISMA CAMPAÑA EN OTRA CAJA es UNA fila, no dos', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * Estaba ocurriendo en producción. Medido el 2026-09-15: en la ventana hay **7 valores distintos
+   * de campaña tal cual vienen y 6 normalizados** — la misma campaña escrita de dos formas, una con
+   * 32 contactos y otra con 8.
+   *
+   * El costo no era cosmético: los 8 quedaban debajo del piso y se iban a «Otras» sin tasa, aunque
+   * su campaña real tiene 40 contactos. Y proyectado a siete días la mitad grande también toca el
+   * piso, con lo que la campaña DESAPARECE entera de la tabla teniendo catorce contactos.
+   *
+   * GoHighLevel no garantiza la caja de nada que escriba una persona — es la misma lección que el
+   * descarte ya tenía aprendida.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  for (let i = 0; i < 6; i++) await lead({ campana: 'Lanzamiento Setiembre', agendo: i < 3 });
+  for (let i = 0; i < 6; i++) await lead({ campana: 'LANZAMIENTO SETIEMBRE', agendo: i < 3 });
+
+  const r = await leer();
+  assert.equal(r.porCampana.length, 1, 'la misma campaña quedó partida en dos filas por la caja');
+  const f = r.porCampana[0];
+  assert.equal(f?.cohorte, 12, 'las dos mitades no se juntaron');
+  assert.equal(f?.tasa, 50, 'juntas pasan el piso; partidas las dos se iban a «Otras» sin tasa');
+});
+
+test('la etiqueta se MUESTRA como la escribieron, no en minúsculas forzadas', async () => {
+  /* Agrupar en minúscula es correcto; dibujarla así no. «lanzamiento setiembre» en la pantalla se
+     lee como un error de la aplicación, no como el nombre que alguien le puso a su campaña. */
+  await limpiar();
+  for (let i = 0; i < PISO_DE_UNA_TASA; i++) await lead({ campana: 'Lanzamiento Setiembre' });
+
+  const r = await leer();
+  assert.equal(
+    r.porCampana[0]?.etiqueta,
+    'Lanzamiento Setiembre',
+    'la etiqueta se dibujó normalizada en vez de como vino del CRM',
+  );
+});

@@ -63,6 +63,32 @@ export const CADENCIA = {
    */
   puntitoDeTools: 20_000,
   /**
+   * La pantalla de Conversation: las cifras de los dos flujos y el supervisor.
+   *
+   * ── ERA LA ÚNICA PANTALLA OPERATIVA SIN RELOJ, Y NO ERA DELIBERADO ────────
+   *
+   * Pedía sus datos UNA vez por carga de página y no volvía a preguntar nunca. Peor que «una vez al
+   * montar»: `CommandCenter` monta todas las vistas a la vez y cambiar de pantalla es puro CSS, así
+   * que tampoco había un remontaje que rescatara la petición. Una pestaña abierta a la mañana
+   * mostraba las cifras de la mañana toda la tarde, con el cron escribiendo cada diez minutos.
+   *
+   * No había ni un comentario que justificara la ausencia — en un repositorio donde cada decisión
+   * lleva veinte líneas, ese silencio es la prueba de que fue un olvido y no una decisión.
+   *
+   * ── SESENTA SEGUNDOS, Y NO DIEZ ──────────────────────────────────────────
+   *
+   * `operacion` va a 10 s porque ahí hay colas de trabajo que cambian con cada mensaje que entra, y
+   * alguien está esperando ver aparecer una tarjeta. Esto es otra cosa: **son agregados sobre
+   * ventanas de catorce días**. Una cifra que resume dos semanas no se mueve en diez segundos, y
+   * pedirla seis veces por minuto sería pagar seis consultas pesadas —siete cifras, varias con
+   * percentiles y subconsultas— para redibujar el mismo número.
+   *
+   * Sesenta segundos es lo que hace falta para que quien deja la pantalla abierta mientras trabaja
+   * no tome una decisión con un número de hace horas. Y como cuelga de `estaALaVista`, con la
+   * pestaña en otra sección no cuesta nada.
+   */
+  inteligencia: 60_000,
+  /**
    * Cuánto vale una lectura ya traída, para `lib/lecturas.ts`.
    *
    * ── NO ES UN RELOJ, PERO VIVE ACÁ Y NO ES POR ORDEN ──────────────────────
