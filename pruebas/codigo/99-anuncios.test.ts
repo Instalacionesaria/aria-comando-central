@@ -24,6 +24,7 @@ import {
   DIAS_QUE_SE_RELEEN,
   DIAS_DE_RELLENO,
   MAXIMO_DE_DIAS_POR_PASADA,
+  PRESUPUESTO_MS,
   recolectarAnuncios,
 } from '../../lib/negocio/recolectarAnuncios.ts';
 import type { MetricaDeAnuncio } from '../../lib/ghl/anuncios.ts';
@@ -214,4 +215,101 @@ test('el resumen cuenta ANUNCIOS DISTINTOS, no filas', async () => {
 
   assert.equal(r.resultado.anuncios, 1, 'el mismo anuncio cinco días es UN anuncio');
   assert.equal(r.resultado.metricas, DIAS_QUE_SE_RELEEN + 1 + 1, 'y son cinco filas de métrica');
+});
+
+// ─── 3 · El presupuesto de tiempo y el reintento ───────────────────────────
+//
+// Los dos salieron del relleno inicial contra producción, y ninguno estaba en el diseño.
+
+test('la pasada CORTA cuando se le acaba el tiempo, y lo DICE', async () => {
+  /* Medido el 2026-09-16: 390 llamadas en 1.775 segundos, o sea 4,55 s por llamada. La pasada diaria
+   * son 52 llamadas y 237 segundos, contra un `maxDuration` de 300 para la función ENTERA del cron.
+   * Sin este corte, una empresa que entra con 100 segundos gastados sale a los 337 — con la función
+   * cortada a la mitad, y la plataforma no reintenta.
+   *
+   * El reloj sube 5 segundos por llamada, que es el ritmo medido redondeado hacia arriba. */
+  let t = 0;
+  let pedidas = 0;
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    reloj: () => t,
+    pedir: async () => {
+      pedidas += 1;
+      t += 5_000;
+      return { tipo: 'datos', datos: [] };
+    },
+    campanas: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'],
+    ultimoDia: null, // 30 días × 13 campañas = 390 llamadas = 1.950 s, muy por encima del tope
+  });
+
+  assert.equal(r.resultado.atrasado, true, 'se pasó del presupuesto y no lo dijo');
+  assert.ok(pedidas < 390, `pidió las ${pedidas} llamadas enteras: el guardia no cortó`);
+  // Y cortó donde tenía que cortar: el tope son 120 s a 5 s la llamada, o sea 24 llamadas, y el
+  // corte es entre DÍAS — así que se completan los días enteros que entren.
+  assert.equal(pedidas % 13, 0, 'cortó a mitad de un día: ese día queda incompleto y nadie vuelve por él');
+  assert.ok(pedidas * 5_000 <= PRESUPUESTO_MS + 13 * 5_000, 'se pasó más de un día entero del tope');
+});
+
+test('una pasada que ENTRA en el presupuesto no se declara atrasada', async () => {
+  // La comprobación que hace útil a la anterior: un `atrasado: true` fijo la dejaría en verde, y
+  // entonces la pantalla avisaría de un atraso todos los días — que es un aviso que nadie lee.
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    reloj: () => 0,
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+    campanas: ['1'],
+    ultimoDia: '2026-09-15',
+  });
+
+  assert.equal(r.resultado.atrasado, false);
+  assert.deepEqual(r.resultado.huecos, []);
+});
+
+test('un par (campaña, día) que falla se REINTENTA una vez, y sólo una', async () => {
+  /* El caso que lo motivó es real: en el relleno inicial la campaña `120249590301010467` falló UN
+   * día de treinta y quedó con 290 filas de 300. Ese día no vuelve solo — `diasQueFaltan` arranca del
+   * último día guardado, y ese día ya quedó atrás.
+   *
+   * Acá el proveedor falla la primera vez que le preguntan por el 09-14 y funciona la segunda. */
+  const vistas = new Map<string, number>();
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    reloj: () => 0,
+    pedir: async (_a, campana, dia) => {
+      const clave = `${campana}|${dia}`;
+      const veces = (vistas.get(clave) ?? 0) + 1;
+      vistas.set(clave, veces);
+      return dia === '2026-09-14' && veces === 1
+        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
+        : { tipo: 'datos', datos: [] };
+    },
+    campanas: ['120249590301010467'],
+    ultimoDia: '2026-09-16',
+  });
+
+  assert.equal(vistas.get('120249590301010467|2026-09-14'), 2, 'el día que falló no se reintentó');
+  assert.equal(vistas.get('120249590301010467|2026-09-15'), 1, 'se reintentó un día que NO había fallado');
+  assert.deepEqual(r.resultado.huecos, [], 'el reintento anduvo: no tendría que quedar hueco');
+});
+
+test('lo que falla DOS veces queda anotado como hueco, no se reintenta para siempre', async () => {
+  // Es la otra mitad: un identificador podrido —el `888888` que hay en producción— falla siempre, y
+  // reintentarlo en bucle gastaría el presupuesto entero en una campaña que no existe.
+  let llamadas = 0;
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    reloj: () => 0,
+    pedir: async (_a, campana) => {
+      llamadas += 1;
+      return campana === '888888'
+        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
+        : { tipo: 'datos', datos: [] };
+    },
+    campanas: ['888888', '120249633901590467'],
+    ultimoDia: '2026-09-15',
+  });
+
+  const dias = DIAS_QUE_SE_RELEEN + 2;
+  assert.equal(r.resultado.huecos.length, dias, 'cada día de la podrida tiene que quedar como hueco');
+  assert.equal(llamadas, dias * 2 + dias, `${dias} días × 2 campañas, más ${dias} reintentos de la podrida`);
 });

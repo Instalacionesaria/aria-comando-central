@@ -53,6 +53,23 @@ export const DIAS_DE_RELLENO = 30;
  */
 export const MAXIMO_DE_DIAS_POR_PASADA = 30;
 
+/**
+ * El presupuesto de tiempo de UNA pasada, en milisegundos. **Sale de una medición, no de un criterio.**
+ *
+ * El relleno inicial contra la subcuenta real, el 2026-09-16: **390 llamadas en 1.775 segundos**, o
+ * sea **4,55 s por llamada**. El Ad Manager de GoHighLevel es mucho más lento que el resto de su API.
+ *
+ * A ese ritmo la pasada diaria —13 campañas por 4 días— son 52 llamadas y **237 segundos**, contra
+ * un `maxDuration` de 300 para la función entera del cron. Y el guardia de `barrido.ts` no alcanza:
+ * `PRESUPUESTO_MS` se comprueba **antes de empezar cada empresa**, no entre tareas, así que una
+ * empresa que entra con 100 segundos gastados sale de esta tarea a los 337 — con la función cortada
+ * a la mitad y sin reintento, porque la plataforma no reintenta.
+ *
+ * Con este tope la pasada hace lo que entra, lo dice en `atrasado`, y la siguiente sigue desde donde
+ * quedó. Es la misma reconciliación de siempre, y es lo que hace que cortar no cueste nada.
+ */
+export const PRESUPUESTO_MS = 120_000;
+
 /** Qué pasó con una campaña en esta pasada. Los fallos se informan uno por uno, nunca en silencio. */
 export interface ResumenDeAnuncios {
   /** Cuántos días se pidieron, y cuáles fueron el primero y el último. */
@@ -74,6 +91,20 @@ export interface ResumenDeAnuncios {
    * siempre, y el síntoma sería «Acquisition no tiene datos» sin nada que mirar.
    */
   fallidas: { campana: string; porque: string }[];
+  /**
+   * `true` = se agotó `PRESUPUESTO_MS` y quedaron días sin pedir. **Una cola incompleta tiene que
+   * decirlo**, que es la misma regla que `Cierre.atrasado` aplica en la ingesta y en las citas.
+   */
+  atrasado: boolean;
+  /**
+   * Los pares (campaña, día) que fallaron DOS veces: en la vuelta normal y en el reintento.
+   *
+   * Existe porque el relleno inicial dejó uno, y porque **un hueco a mitad de ventana no se rellena
+   * nunca**: `diasQueFaltan` camina hacia adelante desde el último día guardado, así que un día que
+   * falló cuando los de alrededor salieron bien queda afuera para siempre. El reintento cierra el
+   * caso transitorio —que fue el que ocurrió— y esta lista deja anotado el que no.
+   */
+  huecos: { campana: string; dia: string }[];
   llamadas: number;
 }
 
@@ -258,6 +289,12 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
 export interface PiezasDelColector {
   /** El reloj. Fijarlo es lo que hace que la suite dé lo mismo en las tres zonas horarias. */
   ahora?: number;
+  /**
+   * El cronómetro del presupuesto, aparte de `ahora`. Son dos cosas distintas: `ahora` decide QUÉ
+   * DÍAS se piden y esto decide CUÁNDO SE CORTA. Una prueba del corte tiene que poder avanzar el
+   * segundo sin mover el primero, o la ventana cambiaría a mitad de la pasada.
+   */
+  reloj?: () => number;
   pedir?: typeof metricasPorAnuncio;
   /** Qué campañas pedir. Sin esto, salen de nuestra atribución. */
   campanas?: readonly string[];
@@ -292,6 +329,7 @@ export async function recolectarAnuncios(
 ): Promise<{ corrio: true; resultado: ResumenDeAnuncios; llamadas: number }> {
   const ahora = piezas.ahora ?? Date.now();
   const pedir = piezas.pedir ?? metricasPorAnuncio;
+  const reloj = piezas.reloj ?? Date.now;
   // El envoltorio de organización va ADENTRO del escritor y no en el bucle, y no es acomodo: el
   // escritor es la frontera con la base, así que es él quien tiene que decir en qué contexto
   // escribe. Con el envoltorio afuera, reemplazarlo en una prueba seguía abriendo una conexión —o
@@ -320,33 +358,74 @@ export async function recolectarAnuncios(
     metricas: 0,
     anuncios: 0,
     fallidas: [],
+    atrasado: false,
+    huecos: [],
     llamadas: 0,
   };
 
   if (campanas.length === 0 || dias.length === 0) return { corrio: true, resultado: resumen, llamadas: 0 };
 
+  const arranque = reloj();
   const vistos = new Set<string>();
   // Se cuenta por CAMPAÑA y no por llamada: una campaña que falla el mismo día en los cinco días es
   // un solo identificador podrido, y listarlo cinco veces escondería que es uno.
   const conFallo = new Map<string, string>();
+  // Y aparte los pares (campaña, día), que son lo que hay que reintentar. Es otra pregunta.
+  const paraReintentar: { campana: string; dia: string }[] = [];
   let algunaAnduvo = false;
 
-  for (const dia of dias) {
-    for (const campana of campanas) {
-      const r = await pedir(acceso, campana, dia);
-      resumen.llamadas += 1;
+  /** Pide un par y guarda lo que venga. Devuelve `false` si falló. */
+  async function pedirYGuardar(campana: string, dia: string): Promise<boolean> {
+    const r = await pedir(acceso, campana, dia);
+    resumen.llamadas += 1;
 
-      if (r.tipo !== 'datos') {
-        conFallo.set(campana, r.fallo.tipo);
-        continue;
-      }
-      algunaAnduvo = true;
-      if (r.datos.length === 0) continue;
-
-      await escribir(r.datos, dia);
-      resumen.metricas += r.datos.length;
-      for (const m of r.datos) vistos.add(m.anuncioId);
+    if (r.tipo !== 'datos') {
+      conFallo.set(campana, r.fallo.tipo);
+      return false;
     }
+    algunaAnduvo = true;
+    if (r.datos.length === 0) return true;
+
+    await escribir(r.datos, dia);
+    resumen.metricas += r.datos.length;
+    for (const m of r.datos) vistos.add(m.anuncioId);
+    return true;
+  }
+
+  for (const dia of dias) {
+    /* El guardia va entre DÍAS y no entre campañas, y la diferencia importa: cortar a mitad de un
+       día dejaría ese día con la mitad de las campañas, y el día siguiente lo daría por hecho —
+       porque `diasQueFaltan` mira el último día guardado, no si está completo. Cortando entre días,
+       lo que queda sin pedir es un sufijo limpio que la pasada siguiente vuelve a tomar. */
+    if (reloj() - arranque > PRESUPUESTO_MS) {
+      resumen.atrasado = true;
+      break;
+    }
+    for (const campana of campanas) {
+      if (!(await pedirYGuardar(campana, dia))) paraReintentar.push({ campana, dia });
+    }
+  }
+
+  /* ── EL REINTENTO, Y POR QUÉ NO ESTÁ EN `leer()` ──────────────────────────
+   *
+   * El cliente reintenta el 429 con retroceso, porque un 429 dice «volvé a intentar». Un 500 no dice
+   * eso, así que reintentarlo dentro de la misma llamada sería insistirle a un servidor que ya
+   * contestó. Acá es distinto: pasaron minutos, el proveedor puede haberse recuperado, y **el costo
+   * de no reintentar es permanente**.
+   *
+   * Medido en el relleno inicial: la campaña `120249590301010467` falló UN día de treinta y quedó con
+   * 290 filas de 300. Ese día no vuelve solo, porque la pasada siguiente arranca del último día
+   * guardado y ese día ya está «pasado».
+   *
+   * Sólo una vuelta más, y sólo sobre lo que falló. Si vuelve a fallar, queda anotado en `huecos` en
+   * vez de reintentarse para siempre. */
+  for (const { campana, dia } of paraReintentar) {
+    if (reloj() - arranque > PRESUPUESTO_MS) {
+      resumen.atrasado = true;
+      resumen.huecos.push({ campana, dia });
+      continue;
+    }
+    if (!(await pedirYGuardar(campana, dia))) resumen.huecos.push({ campana, dia });
   }
 
   if (!algunaAnduvo) {

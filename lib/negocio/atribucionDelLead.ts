@@ -72,6 +72,24 @@ export interface AtribucionDelLead {
 const DESDE = 8;
 const HASTA = 21;
 
+/* ── POR QUÉ ACÁ NO HAY UN CORTE POR ANUNCIO ────────────────────────────────
+ *
+ * `cortePor` es genérico sobre la clave del objeto de atribución, así que agregar
+ * `cortePor('adId', dias)` son dos líneas — y estaba planificado. No se hizo, por dos motivos.
+ *
+ * **Uno es de arquitectura.** El § 18.15 reparte Acquisition en tres vistas y **el detalle por
+ * entidad es sólo del media buyer**; los otros dos roles ven agregados. Lead Flow contesta «de dónde
+ * vinieron los leads que agendaron» —fuente y campaña—, y el anuncio es el nivel donde se deciden
+ * creativos, que es otra pantalla y otro lector.
+ *
+ * **El otro es más concreto: ya existe, y duplicarlo los haría discrepar.**
+ * `lib/negocio/costoDelAnuncio.ts` entrega leads y agendamientos por anuncio, con el nombre que sale
+ * de `negocio.anuncios` y con el gasto al lado. Usa EL MISMO `exists` con `ghl_calendario_id` que
+ * este archivo, que es lo que hace que las dos pantallas sumen igual. Un segundo corte, escrito
+ * aparte, es la forma en que dos pantallas terminan dando dos números para la misma pregunta.
+ *
+ * Y un corte por `adId` acá tendría además un problema propio: la etiqueta sería un identificador de
+ * dieciocho dígitos. Nombrarlo exige unir con `negocio.anuncios`, o sea exige ser `costoDelAnuncio`. */
 export async function atribucionDelLead(dias = DIAS_DE_LA_TASA): Promise<AtribucionDelLead> {
   const [porFuente, porCampana, horario] = await Promise.all([
     cortePor('sessionSource', dias),
