@@ -210,6 +210,14 @@
   overflow: visible;
 }
 
+/* El matiz que corrige a la fecha de arriba. Va en el tono de la advertencia y no en el del
+   subtítulo: si se viera igual que el renglón que corrige, se leería como parte de él. No lleva
+   fondo — es una salvedad sobre una cifra, no una alarma sobre el negocio. */
+#v-conversation .csf-m.cs-cola {
+  margin-top: 4px;
+  color: var(--warn);
+}
+
 /* LA CIFRA CLAVE. Peso 300 y no 600: es la firma del sistema —`#v-sales .stat .s-v` ya la usa— y
    era el desvío más visible del maquetado. A 26 px el peso ligero se lee mejor, no peor. */
 #v-conversation .csf-key b {

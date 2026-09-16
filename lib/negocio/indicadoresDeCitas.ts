@@ -42,6 +42,7 @@ import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
 import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
+import { avisoDeLaCola } from './periodo.ts';
 
 /**
  * La tasa de cancelación de una ventana, con lo que quedó afuera.
@@ -70,8 +71,24 @@ export interface Cancelacion {
    *
    * `null` cuando la ventana no alcanzó ninguna cita: no hay fecha que declarar, y una fecha
    * inventada acá sería peor que el hueco.
+   *
+   * **No viaja sola.** Ver `avisoDeLaVentana`.
    */
   desde: Date | null;
+  /** La fecha en la que la ventana llegó a la MITAD de sus citas. Mediana, no promedio. */
+  mitad: Date | null;
+  /**
+   * Qué decir cuando `desde` describe a una cita suelta y no a la ventana. **Hoy es `null` en los
+   * cuatro períodos, y eso es lo correcto**, no un olvido: medido el 2026-09-16, la proporción de
+   * las citas va de 0,81 a 0,46 y ninguna se acerca al umbral, porque su historia empieza el
+   * 2026-08-24 y no tiene cola.
+   *
+   * Está igual porque el defecto que cierra ya ocurrió en la otra mitad de esta pantalla —Lead Flow
+   * publicaba «desde el 8 de agosto de 2025» sobre un conjunto de agosto de 2026— y la única
+   * diferencia entre las dos poblaciones es que a las citas todavía no les llegó una fila vieja. Es
+   * la misma disciplina que la guarda `>= 0` de las latencias, que tampoco se enciende hoy.
+   */
+  avisoDeLaVentana: string | null;
   /**
    * Cuántas de las citas alcanzables se REAGENDARON, y su tasa.
    *
@@ -359,6 +376,15 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
          salir de un estado distinto de la tabla —el barrido escribe cada hora— y la pantalla diría
          «desde el 24 de agosto» sobre un conteo que ya no incluye esa cita. */
       sql<Date | null>`min(inicio_el) filter (where ${alcanzable} and not ${descartado})`.as('desde'),
+      /* La mediana y la proporción contra `desde`, en la misma pasada y con el reloj de la base.
+         Ver `avisoDeLaCola`: es lo que impide que una cita vieja suelta describa a la ventana. */
+      sql<Date | null>`percentile_disc(0.5) within group (order by inicio_el)
+        filter (where ${alcanzable} and not ${descartado})`.as('mitad'),
+      sql<number | null>`
+        extract(epoch from (now() - percentile_disc(0.5) within group (order by inicio_el)
+          filter (where ${alcanzable} and not ${descartado})))
+        / nullif(extract(epoch from (now() - min(inicio_el)
+          filter (where ${alcanzable} and not ${descartado}))), 0)`.as('proporcion'),
     ])
     /* La ventana la calcula la BASE y no la aplicación: es la única forma de que el «ahora» sea el
        mismo reloj que escribió las filas. Es el mismo recurso que usa `frescuraDe`. */
@@ -399,6 +425,14 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
     aviso: avisoDe(citas, congeladas, dias),
     dias,
     desde: fila?.desde ?? null,
+    mitad: fila?.mitad ?? null,
+    avisoDeLaVentana: avisoDeLaCola(
+      fila?.proporcion === null || fila?.proporcion === undefined
+        ? null
+        : Number(fila.proporcion),
+      fila?.mitad ?? null,
+      'la mitad de las citas ocurrió',
+    ),
     reagendadas,
     tasaDeReagendamiento: citas === 0 ? null : Math.round((reagendadas / citas) * 1000) / 10,
     /* Sin ninguna cita con fecha de reserva no hay mediana, y se dice con `null`. Un cero acá

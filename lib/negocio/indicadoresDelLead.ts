@@ -46,6 +46,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
+import { avisoDeLaCola } from './periodo.ts';
 
 /**
  * Una latencia, en minutos. **Dos percentiles y no un promedio.**
@@ -71,11 +72,37 @@ export interface IndicadoresDelLead {
   /**
    * El contacto más viejo que la ventana llegó a alcanzar. **No es `now() - dias`.**
    *
-   * Con «completo» la ventana son diez años y el primer contacto es de hace tres semanas. Sin esta
-   * fecha, la pantalla diría «completo» sobre tres semanas y quien mira creería estar viendo un año.
-   * Es lo único que distingue *«pedí todo»* de *«todo es esto»*. `null` con cohorte vacía.
+   * Con «completo» la ventana son diez años y el grueso de los contactos es de las últimas semanas.
+   * Sin esta fecha, la pantalla diría «completo» sobre seis semanas y quien mira creería estar
+   * viendo un año. Es lo único que distingue *«pedí todo»* de *«todo es esto»*. `null` con cohorte
+   * vacía.
+   *
+   * **No viaja sola, y ese arreglo salió de medirla.** Ver `avisoDeLaVentana`.
    */
   desde: Date | null;
+  /**
+   * La fecha en la que la cohorte llegó a la MITAD. **Mediana y no promedio**, por el mismo motivo
+   * que las latencias de más abajo: una sola fila vieja corre el promedio y no puede correr la
+   * mediana.
+   *
+   * `null` con cohorte vacía.
+   */
+  mitad: Date | null;
+  /**
+   * Qué hay que decir cuando `desde` describe a un caso suelto y no a los datos. `null` es el caso
+   * normal — ver `avisoDeLaCola`, que es donde vive el umbral con su medición.
+   *
+   * ── ESTE CAMPO EXISTE PORQUE `desde` SOLO SE EQUIVOCABA ───────────────────
+   *
+   * Medido el 2026-09-16 en producción: en «Completo», `desde` vale **2025-08-08** y es cierto, pero
+   * **95 % de los 559 contactos entraron en las últimas seis semanas**; la historia larga son 28
+   * contactos repartidos en doce meses. La pantalla decía «desde el 8 de agosto de 2025» sobre un
+   * conjunto que es de agosto de 2026, o sea justo la lectura que `desde` vino a impedir.
+   *
+   * Y no se apagó `desde`: la fila vieja existe y el rango es ése. Lo que faltaba era la segunda
+   * cifra que lo pone en escala.
+   */
+  avisoDeLaVentana: string | null;
   /** Contactos que ENTRARON AL CRM en la ventana. El denominador de todo lo demás. */
   cohorte: number;
 
@@ -84,6 +111,18 @@ export interface IndicadoresDelLead {
   agendaron: number;
   /** De 0 a 100. `null` con cohorte vacía: un 0 % sería una afirmación sobre el negocio. */
   bookingRate: number | null;
+  /**
+   * De los que agendaron, cuántos lo hicieron con una cita que el barrido **ya no refresca**.
+   *
+   * Cuentan como agendamiento —agendar es el evento; ver el comentario de `tieneCita`— y aun así
+   * viajan aparte, porque son exactamente los que la tasa de cancelación de al lado NO cuenta. Sin
+   * esta cifra, las dos tarjetas de la misma pantalla hablan de dos poblaciones y nada lo dice.
+   *
+   * Medido el 2026-09-16: **0 a catorce días y 22 a treinta**, que es la ventana por omisión.
+   */
+  agendaronSoloCongeladas: number;
+  /** Qué decir de esos contactos, o `null` cuando no hay ninguno. */
+  avisoDelBooking: string | null;
 
   // ── CÓMO llegaron a agendar, que NO es un escalón más del embudo ──────────
   /**
@@ -166,17 +205,41 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
     select 1 from negocio.mensajes m
      where m.org_id = contactos.org_id and m.contacto_id = contactos.id
        and m.direccion = 'entrante')`;
-  /* ── LA CITA TIENE QUE SER ALCANZABLE, Y NO TIENE QUE HABER OCURRIDO ───────
+  /* ── AGENDAR ES EL EVENTO, Y NINGUNA DE LAS DOS EXCLUSIONES LO DESHACE ─────
    *
-   * `ghl_calendario_id is not null` es el mismo filtro que todas las cifras de citas: las anteriores
-   * a la `038` ya no las refresca el barrido.
+   * Este predicado no lleva `inicio_el < now()` ni `ghl_calendario_id is not null`, y el mismo
+   * argumento cubre a los dos: **una cita que todavía no ocurrió, y una cuyo estado dejamos de
+   * refrescar, son las dos citas que el lead agendó.** La cancelación sí necesita las dos cosas
+   * —que haya pasado y que el estado esté fresco— porque pregunta otra cosa: si se cayó.
    *
-   * Lo que este filtro **no** lleva, y es deliberado, es `inicio_el < now()`. Copiar eso de
-   * `tasaDeCancelacion` borraría a los 12 contactos que ya agendaron para los próximos días y
-   * bajaría el booking rate de 52,5 % a 48,7 %. **Agendar es el evento**: que la cita todavía no
-   * haya ocurrido no lo deshace. La cancelación sí necesita que la cita haya pasado, porque
-   * pregunta otra cosa. */
+   * ── EL FILTRO DE CALENDARIO ESTUVO ACÁ Y HUNDÍA LA CIFRA SIN AVISAR ───────
+   *
+   * Estaba copiado de `tasaDeCancelacion` por consistencia, no por la pregunta. Con la ventana de
+   * catorce días no descartaba a nadie, así que nadie lo notó — y el día que la pantalla pasó a
+   * treinta días por omisión empezó a descartar contactos que SÍ habían agendado. Medido el
+   * 2026-09-16:
+   *
+   *     ventana    cohorte   con el filtro   sin el filtro   sólo congeladas
+   *     7 días         52      26  50,0 %      26  50,0 %          0
+   *     14 días       186     104  55,9 %     104  55,9 %          0     ← por eso no se veía
+   *     30 días       391     175  44,8 %     197  50,4 %         22     ← la de por omisión
+   *     completo      560     191  34,1 %     270  48,2 %         79
+   *
+   * Cinco puntos y medio en la ventana que sale sola al abrir, catorce en «Completo», y la curva
+   * descendente se parecía a un hecho del negocio. Los 22 no son filas dudosas: se midieron y las 22
+   * traen hora y estado reales, del 18 al 22 de agosto de 2026, o sea de antes de que la `038`
+   * empezara a guardar el calendario.
+   *
+   * Lo que sí hay que decir es que su estado quedó detenido, y para eso viaja
+   * `agendaronSoloCongeladas`: la cifra de al lado —la cancelación— no los cuenta, y dos cifras de la
+   * misma pantalla sobre poblaciones distintas es exactamente lo que este proyecto declara. */
   const tieneCita = sql`exists (
+    select 1 from negocio.citas ci
+     where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id)`;
+  /* El predicado VIEJO, que ahora sólo sirve para contar la diferencia. Se conserva escrito acá y
+     no se deduce restando: restando, el día que alguien cambie uno de los dos la resta sigue dando
+     un número y deja de significar lo que dice. */
+  const tieneCitaAlcanzable = sql`exists (
     select 1 from negocio.citas ci
      where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
        and ci.ghl_calendario_id is not null)`;
@@ -188,6 +251,11 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
       sql<number>`count(*) filter (where ${tieneSaliente})`.as('escritos'),
       sql<number>`count(*) filter (where ${tieneSaliente} and ${tieneEntrante})`.as('respondieron'),
       sql<number>`count(*) filter (where ${tieneCita})`.as('agendaron'),
+      /* Los que agendaron y cuya ÚNICA cita el barrido ya no refresca. Es la diferencia entre el
+         numerador de esta cifra y el de la cancelación de al lado, y viaja para que se pueda ver. */
+      sql<number>`count(*) filter (
+        where ${tieneCita} and not ${tieneCitaAlcanzable}
+      )`.as('solo_congeladas'),
       /* La bifurcación, en la MISMA pasada que su total. Restarla después en la pantalla dejaría que
          los dos sumandos vinieran de dos consultas y pudieran no sumar `agendaron`. Ver el comentario
          de `agendaronTrasResponder`: la suma es lo único que hace honesta a la figura. */
@@ -196,9 +264,17 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
       )`.as('agendaron_tras_responder'),
       sql<number>`count(*) filter (where not ${tieneSaliente})`.as('sin_mensaje'),
       sql<number>`count(*) filter (where ${tieneSaliente} and not ${tieneEntrante})`.as('sin_contestar'),
-      /* El contacto más viejo que la ventana alcanzó. Ver `desde`: es lo que impide que «completo»
-         se lea como historia cuando son tres semanas. */
+      /* El contacto más viejo que la ventana alcanzó, LA MEDIANA, y la proporción entre las dos.
+         Las tres en la misma pasada y calculadas por la BASE: la proporción compara contra `now()`,
+         y el «ahora» tiene que ser el mismo reloj que escribió las filas. Ver `avisoDeLaCola`. */
       sql<Date | null>`min(alta_en_el_crm)`.as('desde'),
+      /* `percentile_disc` y no `percentile_cont`: devuelve una fecha que EXISTE en los datos en vez
+         de interpolar entre dos. Para «cuándo llegó la cohorte a la mitad», una fecha real dice más
+         que un instante promediado que no le corresponde a ningún contacto. */
+      sql<Date | null>`percentile_disc(0.5) within group (order by alta_en_el_crm)`.as('mitad'),
+      sql<number | null>`
+        extract(epoch from (now() - percentile_disc(0.5) within group (order by alta_en_el_crm)))
+        / nullif(extract(epoch from (now() - min(alta_en_el_crm))), 0)`.as('proporcion'),
     ])
     .where(enLaVentana)
     .executeTakeFirst();
@@ -210,15 +286,33 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
   const respondieron = Number(fila?.respondieron ?? 0);
   const agendaron = Number(fila?.agendaron ?? 0);
   const agendaronTrasResponder = Number(fila?.agendaron_tras_responder ?? 0);
+  const agendaronSoloCongeladas = Number(fila?.solo_congeladas ?? 0);
   const sinNingunMensaje = Number(fila?.sin_mensaje ?? 0);
   const escritosSinContestar = Number(fila?.sin_contestar ?? 0);
+
+  const mitad = fila?.mitad ?? null;
 
   return {
     dias,
     desde: fila?.desde ?? null,
+    mitad,
+    avisoDeLaVentana: avisoDeLaCola(
+      fila?.proporcion === null || fila?.proporcion === undefined
+        ? null
+        : Number(fila.proporcion),
+      mitad,
+      'la mitad de los contactos entró',
+    ),
     cohorte,
     agendaron,
     bookingRate: cohorte === 0 ? null : Math.round((agendaron / cohorte) * 1000) / 10,
+    agendaronSoloCongeladas,
+    avisoDelBooking:
+      agendaronSoloCongeladas === 0
+        ? null
+        : `${agendaronSoloCongeladas} de los ${agendaron} agendaron con una cita que el barrido ya ` +
+          'no refresca: cuentan acá —agendar es el evento— y NO entran en la tasa de cancelación, ' +
+          'que necesita un estado fresco para poder preguntar si se cayó.',
     agendaronTrasResponder,
     agendaronSinResponder: agendaron - agendaronTrasResponder,
     escritos,

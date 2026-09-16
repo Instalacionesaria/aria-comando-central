@@ -1,5 +1,7 @@
 # La superficie de integración con GoHighLevel: qué nos da hoy, qué le tiramos, y qué no nos puede dar
-> Corte: **2026-09-15**. Cada afirmación lleva su archivo:línea o la consulta que la produjo.
+> Corte: **2026-09-15**, salvo el bloque de asistencia, medido el **2026-09-16 a las 14:06 UTC**
+> porque el proveedor empezó a mandar un dato que este informe daba por ausente.
+> Cada afirmación lleva su archivo:línea o la consulta que la produjo.
 > Lo que no se pudo verificar está dicho como pendiente, no omitido.
 > Para ubicar cualquier cosa nombrada acá, ver `08-COMO-USAR-EL-GRAFO.md`.
 
@@ -361,11 +363,79 @@ Cada aviso procesado hace un `GET /contacts/{id}` para releer etiquetas y recalc
 
 El documento pide esta distinción explícitamente, y es la parte que decide dónde invertir.
 
+### Los plantones del calendario pasaron de 3 a 15, y por primera vez se ve el cambio
+
+El 2026-09-15, entre las **18:04:07 y las 20:03:54 UTC**, doce citas pasaron de `confirmed` a
+`noshow`. Es el **único** cambio de estado que `negocio.citas.estado_cambiado_el` registró desde que
+la columna existe: antes de esa tarde estaba nula en las 317 filas.
+
+**Lo que NO empezó ese día es el `noshow`, y la distinción importa.** Las otras tres citas en
+`noshow` —las que este informe ya publicaba— siguen sin registro de cambio, o sea que llegaron ya
+marcadas: son del **2026-09-08 y el 09**, una semana antes. El calendario venía marcando plantones;
+lo que cambió el 15 es el volumen y que ahora se ve la TRANSICIÓN.
+
+```sql
+select case when estado_cambiado_el is null then 'llegó ya marcada' else 'cambió con registro' end origen,
+       count(*), min(inicio_el)::date, max(inicio_el)::date
+from negocio.citas where lower(coalesce(estado_ghl,'')) = 'noshow' group by 1;
+-- 2026-09-16 14:06 UTC: llegó ya marcada 3 (2026-09-08 · 09-09) · cambió con registro 12 (09-05 · 09-14)
+```
+
+```sql
+select lower(coalesce(estado_anterior_ghl,'(nulo)'))||' -> '||lower(coalesce(estado_ghl,'(nulo)')) cambio,
+       count(*), min(estado_cambiado_el) primero, max(estado_cambiado_el) ultimo
+from negocio.citas where estado_cambiado_el is not null group by 1 order by 2 desc;
+-- 2026-09-16 14:06 UTC: confirmed -> noshow · 12 · 2026-09-15 18:04:07 · 2026-09-15 20:03:54
+
+select lower(coalesce(estado_ghl,'(nulo)')), count(*) from negocio.citas group by 1;
+-- 2026-09-16 14:06 UTC: cancelled 160 · confirmed 146 · noshow 15   (este informe publicaba 3)
+```
+
+**Tres cosas, y ninguna de más:**
+
+**1 · La señal del calendario dejó de ser anecdótica.** Con tres casos no había nada que hacer; con
+quince, la vía del CRM empieza a competir con la única que había —lo que reporta una persona al
+cerrar el intento en Avanzar—, que es de otra población y no se puede sumar con ésta.
+
+**2 · Dos columnas que este informe y `09-DEUDA-ABIERTA.md` listan como escritas y sin nadie que las
+lea acaban de recibir su primer dato.** Estaban ahí desde la `042` esperando exactamente esto:
+
+```sql
+select count(*) filter (where inicio_anterior_el is not null) inicio_anterior,
+       count(*) filter (where estado_anterior_ghl is not null) estado_anterior,
+       count(*) filter (where estado_cambiado_el is not null) estado_cambiado
+from negocio.citas;
+-- 2026-09-16 14:06 UTC: 1 · 12 · 12
+```
+
+La tercera, `inicio_anterior_el`, tiene **una** fila: una cita a la que le movieron la hora. Sigue
+sin volumen para nada, pero ya no es cero — que es la diferencia entre «no se escribe» y «se escribe
+poco», y este proyecto la paga cada vez que la confunde.
+
+**3 · El *show rate* del §10.7 SIGUE sin poder calcularse, y conviene decir por qué** para que la
+novedad no se lea como más de lo que es. `noshow` es el complemento, no la cifra: `asistio` está en
+**0 de 321** y `estado_ghl = 'showed'` en **0**, así que no hay numerador. Quince casos tampoco pasan
+el piso de diez sobre un denominador que nadie definió todavía — ¿las citas del período, las
+confirmadas, las que ya ocurrieron? Esa decisión no se tomó.
+
+Lo que corresponde es **volver a medirlo dentro de una semana** antes de construir nada encima: doce
+transiciones en dos horas y ninguna después pueden ser el comienzo de un flujo permanente o una
+limpieza que alguien corrió una vez a mano.
+
+```sql
+-- volver a correr el 2026-09-23 y comparar contra los 15 de arriba
+select count(*) filter (where lower(coalesce(estado_ghl,'')) = 'noshow') noshow,
+       count(*) filter (where lower(coalesce(estado_ghl,'')) = 'showed') showed,
+       count(*) filter (where asistio is not null) con_asistio,
+       max(estado_cambiado_el) ultimo_cambio
+from negocio.citas;
+```
+
 ### A · El proveedor NO lo tiene (o lo tiene vacío)
 
 | Lo que el documento pide | Evidencia |
 |---|---|
-| **Asistencia a la cita** (§5.3 «Asistencia», §10.7 *show rate*) | Los campos existen y están vacíos: `showed`/`noshow` poblados en **3 de 1052 citas** (`calendarios.ts:186`). En nuestra tabla: `asistio` nulo en **317 de 317**, `estado_ghl='noshow'` en 3. Por eso `asistio` la escribe una persona en Avanzar y está fuera del `on conflict` del barrido (`citas.ts:417-427`). |
+| **Asistencia a la cita** (§5.3 «Asistencia», §10.7 *show rate*) | **Está cambiando, y hay que mirarlo** — ver el bloque de abajo. Hasta el 2026-09-15 los campos existían vacíos: `showed`/`noshow` poblados en **3 de 1052 citas** (`calendarios.ts:186`). Desde entonces GoHighLevel empezó a mandar `noshow`. Lo que sigue igual es `showed`, en **0**, y `asistio`, nulo en **321 de 321** — por eso la escribe una persona en Avanzar y está fuera del `on conflict` del barrido (`citas.ts:417-427`). |
 | **Duración y «contestada» de las llamadas** | Las 128 registros de llamada traen `status = completed` en el 100 % — es el estado de la llamada a la API, no si alguien atendió — y **no hay duración en ningún nivel, ni en `meta`** (`entrega.ts:243-248`). `negocio.llamadas` sigue con **0 filas** y sin escritor. |
 | **Transcripción / resumen de llamada** | No existe. Lo único aprovechable es `attachments[0]`, la grabación, en 128 de 128. Convertirla en resumen es un subsistema, no una columna. |
 | **Última actividad entrante/saliente por contacto** | GoHighLevel no documenta una fecha por dirección; lo más cercano, `lastActivity`, no distingue dirección (`sincronizar.ts:17-22`). Lo calcula un disparador nuestro sobre `negocio.mensajes`: `ultimo_entrante_el` poblado en 299 de 584, `ultimo_saliente_el` en 476. |

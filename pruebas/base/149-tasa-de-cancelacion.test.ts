@@ -721,3 +721,51 @@ test('sin citas en la ventana no se inventa una fecha de comienzo', async () => 
   assert.equal(t.citas, 0);
   assert.equal(t.desde, null, 'sin citas se está devolviendo una fecha de comienzo inventada');
 });
+
+// ─── El guardián de la cola, que hoy tiene que estar CALLADO ────────────────
+
+test('con la historia pareja de hoy, el matiz de la ventana no se enciende', async () => {
+  /* ── UNA PRUEBA DE QUE ALGO **NO** APARECE, Y POR QUÉ VALE ────────────────
+   *
+   * El matiz existe porque del otro lado de esta pantalla ya falló: Lead Flow publicaba «desde el 8
+   * de agosto de 2025» sobre una cohorte donde 95 % entró en las últimas seis semanas. Acá el mismo
+   * guardián está puesto y medido en producción el 2026-09-16 no se enciende en ninguno de los
+   * cuatro períodos —la proporción va de 0,81 a 0,46 y el umbral es 0,25— porque la historia de
+   * citas empieza el 2026-08-24 y no tiene cola.
+   *
+   * Sin esta prueba, el día que alguien cambie el umbral y encienda el aviso en las citas, nada
+   * falla: aparece una advertencia permanente sobre una cifra correcta, y una advertencia que
+   * aparece siempre apaga por costumbre a las que sí son excepcionales. */
+  await limpiar();
+  for (const d of [2, 4, 6, 8, 10, 12]) await cita(d, 'confirmed');
+
+  const t = await leer(DIAS_DE_TODO);
+  assert.equal(t.citas, 6);
+  assert.ok(t.desde && t.mitad, 'faltan las dos fechas de la ventana');
+  assert.equal(
+    t.avisoDeLaVentana,
+    null,
+    'se encendió el matiz sobre una ventana pareja: una salvedad permanente deja de leerse',
+  );
+});
+
+test('con una cita vieja suelta, el matiz SÍ aparece y la mediana no se corre', async () => {
+  /* La otra mitad: el guardián tiene que poder encenderse, o es decoración. Una cita de hace 400
+     días contra seis recientes es la misma forma que hoy tiene Lead Flow. */
+  await limpiar();
+  await cita(400, 'confirmed');
+  for (const d of [2, 3, 4, 5, 6, 7] ) await cita(d, 'confirmed');
+
+  const t = await leer(DIAS_DE_TODO);
+  assert.equal(t.citas, 7);
+  assert.ok(t.desde && t.mitad, 'faltan las dos fechas de la ventana');
+
+  const diasDelMasViejo = (Date.now() - new Date(t.desde).getTime()) / 86_400_000;
+  assert.ok(diasDelMasViejo > 399, 'se perdió la cita más vieja: el rango dejó de ser el real');
+
+  const diasDeLaMitad = (Date.now() - new Date(t.mitad).getTime()) / 86_400_000;
+  assert.ok(diasDeLaMitad < 10, `la mediana quedó a ${diasDeLaMitad.toFixed(1)} días: una sola fila la corrió`);
+
+  assert.ok(t.avisoDeLaVentana, 'con 1 de 7 citas a 400 días, `desde` describe a un caso suelto y no se dijo');
+  assert.match(t.avisoDeLaVentana, /la mitad de las citas ocurrió/);
+});

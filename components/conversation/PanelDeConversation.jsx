@@ -488,6 +488,12 @@ function Recorrido({ r }) {
             Cada barra es sobre los {r.cohorte} que entraron
             {desde ? ` · desde el ${desde}` : ''}
           </p>
+          {/* ── EL MATIZ DE LA FECHA NO SE ESCONDE DETRÁS DE UN ÍCONO ────────
+              Es la única nota de esta pantalla que corrige al renglón que tiene encima: dice que la
+              fecha de ahí arriba describe a un contacto suelto y no a la cohorte. Puesta en un
+              ícono, la fecha engañosa se queda sola en pantalla, que es el defecto entero. Aparece
+              sólo cuando hace falta — hoy, únicamente en «Completo». */}
+          {r.avisoDeLaVentana ? <p className="csf-m cs-cola">{r.avisoDeLaVentana}</p> : null}
         </div>
         {/* EL número de la pestaña (§9.3). Va arriba a la derecha y es lo único de 26 px que hay:
             una pantalla donde todo es grande no tiene titular. */}
@@ -495,6 +501,10 @@ function Recorrido({ r }) {
           <b>{r.bookingRate === null ? '—' : `${r.bookingRate} %`}</b>
           <span>
             agendaron · {r.agendaron} de {r.cohorte}
+            {/* Éste SÍ va al ícono: no corrige a la cifra —la cifra está bien— sino que dice que su
+                numerador y el de la cancelación de abajo no son la misma población. Es un matiz
+                sobre un denominador, que es exactamente para lo que existe `Nota`. */}
+            <Nota texto={r.avisoDelBooking} />
           </span>
         </div>
       </div>
@@ -593,6 +603,10 @@ function Citas({ c }) {
             Cada barra es sobre las {c.citas} del período
             {desde ? ` · desde el ${desde}` : ''}
           </p>
+          {/* Hoy nunca se enciende —la historia de citas no tiene cola— y se dibuja igual, por lo
+              mismo que existe del otro lado: el día que le llegue una cita vieja suelta, la fecha de
+              arriba deja de describir a la ventana sin que nada falle. */}
+          {c.avisoDeLaVentana ? <p className="csf-m cs-cola">{c.avisoDeLaVentana}</p> : null}
         </div>
         <div className="csf-key falta">
           <b>{c.tasaDeAsistencia === null ? '—' : `${c.tasaDeAsistencia} %`}</b>

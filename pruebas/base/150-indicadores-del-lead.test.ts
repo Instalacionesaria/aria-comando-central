@@ -245,21 +245,91 @@ test('un contacto sin NINGÚN territorio sigue contando: entró al CRM igual', a
   assert.equal(r.tasa, 50);
 });
 
-test('una cita CONGELADA no cuenta como agendamiento', async () => {
-  /* El mismo filtro que todas las cifras de citas: `ghl_calendario_id is null` son las anteriores a
-     la `038`, que el CRM ya no devuelve. Contarlas mezclaría una foto vieja con el dato de hoy.
+test('una cita CONGELADA SÍ cuenta como agendamiento, y se declara aparte', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     ESTA PRUEBA AFIRMABA LO CONTRARIO, Y CORREGIRLA NO ES AFLOJARLA
 
-     Va acá y no en el archivo de citas porque el booking rate se calcula sobre `contactos`, así que
-     el filtro está escrito una segunda vez — y una regla escrita dos veces es una que un día
-     difiere. */
+     Decía que una cita congelada no cuenta, con este motivo: «el mismo filtro que todas las cifras
+     de citas… contarlas mezclaría una foto vieja con el dato de hoy». El motivo es correcto para la
+     CANCELACIÓN y no para ésta, y el propio módulo ya tenía escrito el argumento que lo distingue,
+     aplicado a la otra exclusión: **«agendar es el evento»**. Que la cita no haya ocurrido todavía no
+     deshace el agendamiento, y que hayamos dejado de refrescar su estado, tampoco.
+
+     Lo que el filtro hacía, medido el 2026-09-16: a catorce días no descartaba a nadie —por eso
+     pasó inadvertido— y a treinta, que es la ventana con la que la pantalla abre desde el rediseño,
+     descartaba 22 contactos que sí habían agendado y hundía el KPI del § 9.3 de 50,4 % a 44,8 %.
+     Las 22 citas se miraron una por una: todas traen hora y estado reales.
+
+     Lo que la prueba sigue cuidando —y es lo que de verdad importaba— es que la diferencia con la
+     tasa de cancelación NO quede callada: la cancelación no cuenta a esos contactos, y dos cifras de
+     la misma pantalla sobre poblaciones distintas tienen que decirlo.
+     ══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
   await contacto({ cita: 'viva' });
   await contacto({ cita: 'congelada' });
 
   const r = await leer();
   assert.equal(r.cohorte, 2);
-  assert.equal(r.agendaron, 1, 'una cita que el barrido ya no alcanza contó como agendamiento');
-  assert.equal(r.bookingRate, 50);
+  assert.equal(r.agendaron, 2, 'una cita congelada dejó de contar como agendamiento: agendar es el evento');
+  assert.equal(r.bookingRate, 100);
+  assert.equal(r.agendaronSoloCongeladas, 1, 'no se declaró cuántos descansan en una cita detenida');
+  assert.ok(r.avisoDelBooking, 'la diferencia con la tasa de cancelación quedó callada');
+  assert.match(r.avisoDelBooking, /no refresca/);
+});
+
+test('sin citas congeladas, el aviso del booking CALLA', async () => {
+  /* La regla de silencio, y lo que hace que el aviso signifique algo: con todas las citas vivas no
+     hay diferencia con la cancelación, y un matiz puesto igual se aprende a ignorar. Medido, es el
+     caso de las ventanas de 7 y 14 días. */
+  await limpiar();
+  await contacto({ cita: 'viva' });
+  await contacto({ cita: 'viva' });
+  await contacto({});
+
+  const r = await leer();
+  assert.equal(r.agendaron, 2);
+  assert.equal(r.agendaronSoloCongeladas, 0);
+  assert.equal(r.avisoDelBooking, null, 'avisó sin tener ningún contacto con cita detenida');
+});
+
+test('un contacto con UNA cita viva y otra congelada no se declara como congelado', async () => {
+  /* El caso de borde que separa «su única cita está detenida» de «tiene una detenida entre varias».
+     Con el segundo contado como congelado, el aviso exageraría la diferencia con la cancelación —que
+     a ese contacto SÍ lo cuenta, por su cita viva—. */
+  await limpiar();
+  await conOrganizacion(alfa, async () => {
+    const c = await datos()
+      .insertInto('contactos')
+      .values({ ghl_contact_id: `${MARCA}-mixto`, nombre: 'Con las dos', territorio: 'setter' } as never)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await datos()
+      .updateTable('contactos')
+      .set({ alta_en_el_crm: new Date(Date.now() - 86_400_000), creado_el: new Date() } as never)
+      .where('id', '=', c.id)
+      .execute();
+    for (const cal of ['cal1', null]) {
+      await datos()
+        .insertInto('citas')
+        .values({
+          ghl_evento_id: `${MARCA}-${randomUUID().slice(0, 10)}`,
+          contacto_id: c.id,
+          inicio_el: new Date(Date.now() - 3_600_000),
+          estado_ghl: 'confirmed',
+          ghl_calendario_id: cal,
+        } as never)
+        .execute();
+    }
+  });
+
+  const r = await leer();
+  assert.equal(r.agendaron, 1);
+  assert.equal(
+    r.agendaronSoloCongeladas,
+    0,
+    'se declaró como detenido a un contacto que también tiene una cita viva',
+  );
+  assert.equal(r.avisoDelBooking, null);
 });
 
 test('UNA CITA FUTURA SÍ CUENTA: agendar es el evento, no la llamada', async () => {
@@ -581,4 +651,69 @@ test('sin cohorte no se inventa una fecha de comienzo', async () => {
   const r = await leer();
   assert.equal(r.cohorte, 0);
   assert.equal(r.desde, null, 'sin contactos se está devolviendo una fecha de comienzo inventada');
+});
+
+// ─── Cuando `desde` describe a un caso suelto ───────────────────────────────
+
+test('con una cola larga, `desde` no viaja solo: la mediana lo pone en escala', async () => {
+  /* ══════════════════════════════════════════════════════════════════════════
+     EL DEFECTO QUE ESTA PRUEBA CIERRA, Y LO INTRODUJO `desde`
+
+     `desde` se agregó para que «Completo» no se leyera como historia. Medido en producción el
+     2026-09-16, hacía exactamente lo contrario: publicaba el 8 de agosto de 2025 —cierto, hay un
+     contacto de esa fecha— sobre una cohorte donde 95 % entró en las últimas seis semanas.
+
+     El fixture reproduce esa forma: UN contacto viejo y nueve recientes. Sin el arreglo, la pantalla
+     dice «desde hace 400 días» de un conjunto que es de esta semana, y los diez números de al lado
+     son correctos, así que nadie lo descubre mirando.
+     ══════════════════════════════════════════════════════════════════════════ */
+  await limpiar();
+  await contacto({ altaHaceDias: 400 });
+  for (let i = 0; i < 9; i++) await contacto({ altaHaceDias: 2 });
+
+  const r = await conOrganizacion(alfa, () => indicadoresDelLead(DIAS_DE_TODO));
+  assert.equal(r.cohorte, 10);
+  assert.ok(r.desde && r.mitad, 'faltan las dos fechas de la ventana');
+
+  /* `desde` NO cambia: la fila vieja existe y el rango es ése. Apagarlo sería la otra mitad de la
+     mentira — decir que la historia empieza después de donde empieza. */
+  const diasDelMasViejo = (Date.now() - new Date(r.desde).getTime()) / 86_400_000;
+  assert.ok(diasDelMasViejo > 399, 'se perdió la fila más vieja: el rango dejó de ser el real');
+
+  /* La mediana sí describe a la cohorte: con 1 viejo y 9 recientes cae entre los recientes. */
+  const diasDeLaMitad = (Date.now() - new Date(r.mitad).getTime()) / 86_400_000;
+  assert.ok(
+    diasDeLaMitad < 10,
+    `la mediana quedó a ${diasDeLaMitad.toFixed(1)} días: una sola fila vieja la corrió, que es lo ` +
+      'que una mediana no puede dejar pasar',
+  );
+
+  assert.ok(r.avisoDeLaVentana, 'con 1 de 10 contactos a 400 días, `desde` describe a un caso suelto y no se dijo');
+  assert.match(r.avisoDeLaVentana, /la mitad de los contactos entró/);
+});
+
+test('sin cola, el matiz de la ventana CALLA', async () => {
+  /* La otra mitad, y la que hace que el aviso signifique algo: con una cohorte pareja la fecha de
+     comienzo sí describe a los datos, y una salvedad puesta igual se aprende a ignorar — con ella,
+     la que importa tampoco se lee. Es la misma regla de silencio que el resto del archivo. */
+  await limpiar();
+  for (const d of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) await contacto({ altaHaceDias: d });
+
+  const r = await conOrganizacion(alfa, () => indicadoresDelLead(DIAS_DE_TODO));
+  assert.equal(r.cohorte, 10);
+  assert.ok(r.desde && r.mitad, 'faltan las dos fechas');
+  assert.equal(
+    r.avisoDeLaVentana,
+    null,
+    'avisó sobre una cohorte pareja: un matiz que aparece siempre deja de leerse',
+  );
+});
+
+test('sin cohorte no hay mediana ni matiz, igual que no hay `desde`', async () => {
+  await limpiar();
+  const r = await leer();
+  assert.equal(r.cohorte, 0);
+  assert.equal(r.desde, null);
+  assert.equal(r.mitad, null, 'sin contactos se está inventando una mediana');
+  assert.equal(r.avisoDeLaVentana, null);
 });

@@ -109,6 +109,73 @@ export const PERIODOS: readonly Periodo[] = [
 export const PERIODO_POR_OMISION: ClaveDePeriodo = '30d';
 
 /**
+ * Cuándo la fecha de comienzo de una ventana **deja de describir a sus datos**.
+ *
+ * ── EL DEFECTO QUE ESTA CONSTANTE CIERRA, Y LO INTRODUJO `desde` ────────────
+ *
+ * `desde` se agregó para que «Completo» no se leyera como historia: publica la fila más vieja que la
+ * ventana alcanzó. Medido el 2026-09-16, en Lead Flow eso es el **8 de agosto de 2025** — cierto, y
+ * sin embargo **95 % de los 559 contactos son de las últimas seis semanas**: la historia larga son
+ * 28 contactos repartidos en doce meses, a razón de uno a seis por mes.
+ *
+ * O sea que el campo que existe para impedir una lectura falsa producía exactamente esa lectura. Es
+ * el mismo defecto que la guarda `>= 0` de las latencias ya anticipaba en `indicadoresDelLead`
+ * —*«una sola fila arrastra el promedio, y el número que sale sigue pareciendo razonable»*— sólo que
+ * aplicado a una fecha en vez de a un promedio.
+ *
+ * ── POR QUÉ UNA PROPORCIÓN Y NO UN NÚMERO DE DÍAS ──────────────────────────
+ *
+ * La pregunta no es «¿cuántos días abarca?» sino «¿la fecha de comienzo describe a los datos o a un
+ * caso suelto?». Eso se contesta comparando dónde cae **la mitad** de las filas dentro del tramo que
+ * la fecha promete:
+ *
+ *     proporción = (ahora − mitad) / (ahora − más viejo)
+ *
+ * Cerca de 1 la mitad está pegada al comienzo —la ventana es joven y pareja—; cerca de 0 el comienzo
+ * es una cola y el grueso está al final. Medido sobre producción el 2026-09-16:
+ *
+ *     contactos   7 días 0,801 · 14 días 0,701 · 30 días 0,470 · completo **0,049**
+ *     citas       7 días 0,809 · 14 días 0,565 · 30 días 0,463 · completo 0,463
+ *
+ * Un cuarto separa los dos grupos con un margen de diez veces (0,047 contra 0,47), y deja el aviso
+ * **apagado en las citas hoy** — que es lo correcto: su historia no tiene cola. El guardián está ahí
+ * igual, para el día que la tenga.
+ *
+ * La mediana y no el promedio, por lo mismo que las latencias: una sola fila vieja corre el promedio
+ * y no puede correr la mediana.
+ */
+export const COLA_DESPROPORCIONADA = 0.25;
+
+/**
+ * La frase que acompaña a `desde` cuando `desde` solo mentiría, o `null` cuando no hace falta.
+ *
+ * `null` es el caso normal y es lo que hace que la frase signifique algo: un matiz que aparece en
+ * los cuatro períodos se aprende a ignorar, y entonces el que importa tampoco se lee.
+ *
+ * La proporción la calcula la BASE y llega ya hecha, igual que la ventana: es la única forma de que
+ * el «ahora» sea el mismo reloj que escribió las filas.
+ */
+export function avisoDeLaCola(
+  proporcion: number | null,
+  mitad: Date | null,
+  /** El sujeto con su verbo: «la mitad de los contactos entró», «la mitad de las citas ocurrió». */
+  mitadDe: string,
+): string | null {
+  if (proporcion === null || mitad === null) return null;
+  if (proporcion >= COLA_DESPROPORCIONADA) return null;
+  /* En UTC y no en la zona de quien mira: esta frase la arma el SERVIDOR y viaja ya escrita, así que
+     una zona local la haría depender de dónde corre el proceso. La fecha que la pantalla dibuja por
+     su cuenta —`fechaCorta`— sí va en la zona del navegador, porque ahí sí hay alguien mirando. */
+  const fecha = new Intl.DateTimeFormat('es', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(mitad);
+  return `Esa fecha es de un caso suelto: ${mitadDe} después del ${fecha}.`;
+}
+
+/**
  * Traduce lo que llegó por la URL. **`null` significa rechazar, no corregir.**
  *
  * Devolver el valor por omisión ante una clave desconocida sería el defecto que este archivo entero
