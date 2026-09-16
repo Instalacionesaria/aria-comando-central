@@ -1,5 +1,22 @@
 # Acquisition — mapa de los requisitos
 
+> **`lib/aios/acquisition.js` YA NO EXISTE.** Se borró el 2026-09-16 junto con
+> `acquisition-plan.js`, y con ellos los 58 literales inventados que esta carpeta documenta. Las
+> citas `acquisition.js:N` de abajo **siguen siendo correctas como referencia histórica** —el
+> archivo y sus líneas están en el historial de git— y ésa es toda su función acá: este documento
+> nunca describió lo que hay, describió lo que la maqueta dibujaba para sacar de ahí los requisitos.
+>
+> **Y `components/views/AcquisitionView.jsx` se reescribió el mismo día**: pasó de 148 líneas a 60,
+> así que sus citas son de DOS clases y la segunda es la peligrosa. Las que apuntan más allá de la
+> línea 60 fallan al resolverse, y se ven. Las **once** que apuntan a las líneas 27-63 —el segmentado
+> de período y el selector de rango— **siguen resolviendo y muestran otra cosa**, que es peor: una
+> línea corrida no falla. Las once describen controles que ya no existen; el porqué de cada uno está
+> en la cabecera del archivo nuevo.
+>
+> Lo que sí hay hoy es `components/acquisition/PanelDeAcquisition.jsx` con dos cifras medidas: el
+> costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
+> (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
+
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.

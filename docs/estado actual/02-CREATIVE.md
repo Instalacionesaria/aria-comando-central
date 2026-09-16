@@ -130,14 +130,26 @@ Todo lo que sigue está medido contra producción el 2026-09-15, con `node --env
 
     utmContent (nombre del creativo)   220 de 233   94,4 %
     utmMedium  (nombre del adset)      222 de 233   95,3 %
-    mediumId   (id del adset)          233 de 233  100,0 %
+    mediumId   (NO es el adset — ver abajo) 233 de 233  100,0 %
     campaign   (nombre de campaña)     217 de 233   93,1 %
     campaignId                         217 de 233   93,1 %
     adId       (el meta_ad_id del §18.5) 176 de 233  75,5 %
     fbclid                              42 de 233   18,0 %
     atribucion_primera vacía              0 de 233    0,0 %
 
-Nueve creativos distintos, siete `adId` distintos, seis cadenas de campaña. En la base entera: 503 de 584 con `utmContent` (86,1 %), 213 con `adId` (36,5 %), 30 creativos distintos y 15 anuncios distintos desde el 2025-08.
+Nueve creativos distintos, siete `adId` distintos, seis cadenas de campaña.
+
+> **CORRECCIÓN del 2026-09-16 · `mediumId` no es el identificador del ad set.** Esta tabla lo
+> rotulaba así y es falso: medido, `mediumId` es el id del FORMULARIO, del calendario o del lead
+> form — `vsl_lead_scoring_survey` (240 contactos), `1565833687804655` (114) y
+> `pZqT3g9LSvGmLxcGSCMs` (57). Ninguno de los tres tiene forma de identificador de ad set.
+>
+> El identificador del ad set sí llega, y es **`utmTerm`**: 9 valores distintos, los 9 numéricos de
+> 18 dígitos, y 9 de 9 cruzan contra los conjuntos que devuelve el Ad Manager de GoHighLevel.
+> `db/migraciones/050` lo guarda con ese nombre en `negocio.anuncios.meta_conjunto_id`.
+>
+> El error no era inocuo: un corte por creativo agrupado por `mediumId` habría juntado todo lo que
+> entra por el mismo formulario y lo habría llamado «el mismo ad set». En la base entera: 503 de 584 con `utmContent` (86,1 %), 213 con `adId` (36,5 %), 30 creativos distintos y 15 anuncios distintos desde el 2025-08.
 
 **2 · El ICP por contacto, que es la mejor métrica que este departamento puede dar hoy.** El campo del CRM **«Puntaje | ICP»** (resuelto por nombre con `campoPorNombre`, `lib/negocio/camposDelCrm.ts`) está en **229 de 233 (98,3 %)** de la ventana. La columna `negocio.contactos.score` está en **0 de 233** — los dos ceros: la columna existe vacía, el dato vive en el CRM. Promedio por creativo, sobre la ventana:
 

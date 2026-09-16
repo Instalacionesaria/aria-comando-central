@@ -446,7 +446,7 @@ from negocio.citas;
 | **Gasto, impresiones, alcance, CPM, CTR** | Cero campos personalizados con esos nombres entre los 170 (consulta `ilike '%spend%' or '%cost%' or '%gasto%' or '%cpm%' or '%ctr%' or '%impres%'` → sólo devuelve preguntas de formulario sobre presupuesto del lead). No hay ninguna otra vía. |
 | **El activo creativo** (§5.1 *Creative Profile*) | Cero campos con `%creativ%`. La atribución llega con `adId` pero sin imagen, video ni copy. |
 | **`visitor_id` / `session_id`** (§16.2, pruebas 2 y 3) | No hay campo. Lo más cercano es `gaClientId` (37 contactos) y `fbp`/`fbc` (63) dentro de la atribución. Es un identificador de sesión ajeno, no nuestro. |
-| **El ad set como identificador** | La atribución trae `adId` y `campaignId`, **no `adSetId`**. El ad set llega sólo como **nombre**, en `utmMedium` y en el campo `Last UTM Medium (Adset)` — 13 valores distintos, de 6 a 44 caracteres. |
+| ~~**El ad set como identificador**~~ **CORREGIDO el 2026-09-16: sí llega.** Esta fila decía que el ad set venía «sólo como nombre», y era falso. Llega como `utmTerm`: 9 valores distintos en la ventana, los 9 numéricos de 18 dígitos, ninguno igual al `campaignId`, y **9 de 9 cruzan contra los conjuntos de anuncios que devuelve el Ad Manager de GoHighLevel**. Lo confirma `db/migraciones/050`, que guarda esa llave con su nombre verdadero en `negocio.anuncios.meta_conjunto_id`. El error importa porque esta fila era **una de las tres razones escritas para conectar Meta**, y las tres se cayeron. |
 
 ### B · Sí lo tiene y no se lo pedimos
 
