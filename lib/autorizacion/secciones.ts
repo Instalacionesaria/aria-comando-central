@@ -242,7 +242,9 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'acquisition',
     nombre: 'Acquisition',
     capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
+    /* La bandera se fue con `app/api/acquisition/route.ts`, que es su primera operación de
+       servidor. El cable trampa funcionó como está escrito arriba: `ADR-0304` verifica las dos
+       direcciones, así que la ruta nueva y esta línea tuvieron que moverse juntas. */
     menu: { grupo: 'Inteligencia', icono: '#i-acq' },
   },
   {

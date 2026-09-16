@@ -1,148 +1,59 @@
-/* Portado de aios-command-center_1.html — vista, líneas 2680-2744. */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * ERA UNA MAQUETA CON 58 LITERALES INVENTADOS, Y AHORA MIDE
+ *
+ * Lo que había acá venía portado de `aios-command-center_1.html` (líneas 2680-2744): el encabezado,
+ * un segmentado de período, un selector de rango, cuatro contenedores vacíos que llenaba
+ * `lib/aios/acquisition.js` desde el navegador, y **dos señales escritas a mano** —«Cae la afinidad
+ * ICP en Prospecting B», «Fuga entre formulario y landing VSL»— con sus cifras inventadas dentro
+ * del texto.
+ *
+ * Se van las cuatro cosas. El motivo no es de estilo: mientras existieran, alguien podía leer
+ * «54 % de afinidad» como una medición, y la carpeta `docs/acquisition/` ya dejó escrito que ese
+ * módulo era *«lo que tiene que haber en el futuro»*, no lo que hay.
+ *
+ * ── LO QUE SE CONSERVA DEL PROTOTIPO, Y POR QUÉ ────────────────────────────
+ *
+ * El encabezado invertido de la estética de operación —rótulo en versalitas arriba, titular
+ * debajo—, que es el de las cinco pantallas de Inteligencia y no una decisión de esta.
+ *
+ * Lo que NO se conserva, y está anotado para que no vuelva por inercia:
+ *
+ *   · **El botón «Plan de acción».** El § 18.19 punto 9 deja los umbrales como pendiente explícito,
+ *     y los del prototipo estaban elegidos a ojo. Un botón que abre recomendaciones con umbrales
+ *     inventados es peor que no tenerlo.
+ *   · **El selector de rango personalizado.** El período cerrado de `lib/negocio/periodo.ts` es el
+ *     vocabulario de todo el sistema; un rango libre acá daría ventanas que ninguna otra pantalla
+ *     puede reproducir.
+ *   · **El segmentado «Paso a paso / Acumulada».** Es de los tres embudos, que no existen todavía.
+ *   · **Las dos señales.** El § 18.13 pide una alerta de catorce campos, con `baseline`,
+ *     `confidence` y `possible_causes` en plural. Dos párrafos escritos a mano no son eso.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import PanelDeAcquisition from '../acquisition/PanelDeAcquisition.jsx';
+
 export default function AcquisitionView({ activa }) {
   return (
-    <>
     <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-acquisition">
       <div className="view-scroll cre-scroll">
         {/* La estética de operación INVIERTE el encabezado: el `h2` pasa a rótulo de 9,5 px en
-            mayúsculas y la bajada a titular de 24 px. `.stack` y `.ch-title` son las que lo
-            apilan, y `.cl-page` da el `gap: 18px` del cuerpo — sin ella, el `gap: 24px` del
-            scroller se aplica entre TODOS los bloques. */}
+            mayúsculas y la bajada a titular de 24 px. `.stack` y `.ch-title` son las que lo apilan,
+            y `.cl-page` da el `gap: 18px` del cuerpo — sin ella, el `gap: 24px` del scroller se
+            aplica entre TODOS los bloques. */}
         <div className="cre-head">
           <div className="ch-l stack">
             <div className="ch-title">
-              <h2>
-                Acquisition
-              </h2>
-              <span className="cre-desc">De dónde vienen los leads, y cuáles sirven</span>
-            </div>
-          </div>
-          <div className="ch-r">
-            <button className="reco-btn" id="acqPlanBtn">
-              <span className="rb-ic">
-                ◈
-              </span>
-              Plan de acción
-            </button>
-            <div className="ch-period">
-              <div className="db-seg" id="acqPeriodSeg">
-                <button data-p="p1">
-                  Hoy
-                </button>
-                <button data-p="p7" className="on">
-                  7 días
-                </button>
-                <button data-p="p30">
-                  30 días
-                </button>
-              </div>
-              <button className="pill" data-datepick="acq" id="acqPill">
-                <span className="pv">
-                  Personalizado
-                </span>
-                <span className="pc">
-                  ⌄
-                </span>
-              </button>
+              <h2>Acquisition</h2>
+              {/* La bajada cambió con la pantalla. Decía «De dónde vienen los leads, y cuáles
+                  sirven» — y «cuáles sirven» es exactamente la conclusión que el § 18.1 le prohíbe
+                  a este departamento: requiere cruzar ICP, agendamientos, ventas y revenue. */}
+              <span className="cre-desc">Qué costó cada anuncio, y cuánto vale esa cifra</span>
             </div>
           </div>
         </div>
         <div className="cl-page">
-          <div className="filterbar">
-            <span className="tb-lab">
-              Tasa
-            </span>
-            <div className="db-seg" id="acqRateSeg">
-              <button data-r="step" className="on">
-                Paso a paso
-              </button>
-              <button data-r="cum">
-                Acumulada
-              </button>
-            </div>
-          </div>
-          <div className="acq-range off" id="acqRange">
-            <span className="acq-rl">
-              Periodo
-            </span>
-            <input type="date" id="acqA1" defaultValue="2026-07-01" />
-            <span className="acq-arrow">
-              →
-            </span>
-            <input type="date" id="acqA2" defaultValue="2026-07-21" />
-            <span className="acq-rl" style={{ marginLeft: '8px' }}>
-              Comparar vs
-            </span>
-            <span className="acq-seg" id="acqCmpSeg">
-              <span data-c="prev" className="on">
-                Periodo anterior
-              </span>
-              <span data-c="custom">
-                Otro periodo
-              </span>
-            </span>
-            <span className="acq-bwrap off" id="acqBWrap">
-              <input type="date" id="acqB1" defaultValue="2026-06-01" />
-              <span className="acq-arrow">
-                →
-              </span>
-              <input type="date" id="acqB2" defaultValue="2026-06-21" />
-            </span>
-            <span className="acq-rn" id="acqRangeNote" />
-          </div>
-          <section className="acq-kpis" id="acqKpis" />
-          <p className="acq-note">
-            Los totales llegan hasta{' '}
-            <b>
-              calificados
-            </b>
-            , que es donde termina la responsabilidad de pauta. Son volumen y dinero, no tasas: sumar contactos de funnels distintos mide escala, no conversión.
-          </p>
-          <div className="acq-fgrid" id="acqFunnels" />
-          <div id="acqTables" />
-          <div className="card">
-            <div className="card-head">
-              Señales detectadas{' '}
-              <span className="hint">
-                sin recomendación automática
-              </span>
-            </div>
-            <div className="sig">
-              <span className="si" style={{ background: 'rgb(var(--c-warn) / .14)', color: 'var(--warn)' }}>
-                ↓
-              </span>
-              <div>
-                <div className="st-t">
-                  Cae la afinidad ICP en Prospecting B
-                </div>
-                <div className="st-d">
-                  Sus calificados promedian 54% de afinidad frente al 72% del retargeting, con costo por calificado más alto.
-                </div>
-              </div>
-              <span className="ev">
-                Ver evidencia
-              </span>
-            </div>
-            <div className="sig">
-              <span className="si" style={{ background: 'rgb(var(--c-warn) / .14)', color: 'var(--warn)' }}>
-                ↻
-              </span>
-              <div>
-                <div className="st-t">
-                  Fuga entre formulario y landing VSL en Booking directo
-                </div>
-                <div className="st-d">
-                  Una parte de quienes completan el formulario no llega a ver la VSL. Es el salto más caro de los tres funnels.
-                </div>
-              </div>
-              <span className="ev">
-                Ver evidencia
-              </span>
-            </div>
-          </div>
+          <PanelDeAcquisition />
         </div>
       </div>
     </section>
-    </>
   );
 }
