@@ -898,6 +898,54 @@ export interface TablaCambiosDeTerritorio {
   detectado_el: Generated<Date>;
 }
 
+/**
+ * Qué anuncio de Meta es cada identificador, para poder nombrarlo en pantalla. Migración 050.
+ *
+ * Se llena desde `/ad-publishing/facebook/reporting/list` de GoHighLevel y **no desde Meta**: la
+ * subcuenta está vinculada al Business Manager y el token que ya tenemos alcanza el gasto.
+ *
+ * Los tres identificadores son `string` y no `number` aunque hoy sean dígitos: son opacos, y así es
+ * como el otro lado del cruce ya los guarda dentro de `contactos.atribucion_primera`.
+ */
+export interface TablaAnuncios {
+  org_id: ColumnaInquilino;
+  meta_anuncio_id: string;
+  /** El conjunto de anuncios. Es el mismo valor que `atribucion_primera->>'utmTerm'`: 9 de 9 cruzan. */
+  meta_conjunto_id: string | null;
+  meta_campana_id: string | null;
+  nombre: string;
+  /** `OUTCOME_LEADS`, `OUTCOME_ENGAGEMENT`, … Sin unión cerrada: el catálogo es de Meta, no nuestro. */
+  objetivo: string | null;
+  sincronizado_el: Generated<Date>;
+}
+
+/**
+ * Cuánto costó cada anuncio cada día. Migración 050.
+ *
+ * **Las siete métricas son nulables a propósito.** Medido el 2026-09-16: cuando un anuncio no
+ * entregó ese día, el proveedor OMITE las siete claves enteras en vez de mandarlas en cero. Un `0`
+ * en su lugar destruiría la diferencia entre «no entregó» y «entregó y costó cero», que es la regla
+ * de los dos ceros del `11` § 9 aplicada a un dato que el proveedor YA distingue.
+ *
+ * Los `numeric` llegan como `string` desde `pg` y así se declaran: convertir a `number` en la capa
+ * de tipos escondería que la conversión ocurre, y el gasto suma cientos de filas por ventana.
+ */
+export interface TablaMetricasDeAnuncio {
+  org_id: ColumnaInquilino;
+  meta_anuncio_id: string;
+  /** Día calendario de la zona de la cuenta publicitaria. No es un instante y no se guarda como tal. */
+  fecha: Date;
+  gasto: string | null;
+  impresiones: string | null;
+  clics: string | null;
+  alcance: string | null;
+  ctr: string | null;
+  cpc: string | null;
+  frecuencia: string | null;
+  /** Meta corrige hacia atrás: dos lecturas de la misma ventana pueden diferir sin que nada falle. */
+  sincronizado_el: Generated<Date>;
+}
+
 export interface TablaPromptsDelAgente {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1220,6 +1268,8 @@ export interface BaseDeDatos {
   enlaces_rapidos: TablaEnlacesRapidos;
   carpetas_del_crm: TablaCarpetasDelCrm;
   campos_del_crm: TablaCamposDelCrm;
+  anuncios: TablaAnuncios;
+  metricas_de_anuncio: TablaMetricasDeAnuncio;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

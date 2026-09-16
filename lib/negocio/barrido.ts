@@ -37,6 +37,7 @@ import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
+import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 
@@ -51,7 +52,7 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
  * centavo y una inferencia cuesta centavos. Van en la misma columna porque la pregunta es la misma
  * —«cuánto costó esta corrida»— y conviene saberlo antes de sumar las cinco.
  */
-export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' | 'mejora';
+export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' | 'mejora' | 'anuncios';
 
 /**
  * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -70,7 +71,7 @@ export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' |
  * `mensajes` —o los mensajes de un contacto nuevo quedan bajo la marca de agua para siempre— y
  * `auditoria` después de `mensajes`, o el antirrebote cuenta los mensajes de la corrida anterior.
  */
-export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas', 'mejora'] as const satisfies
+export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas', 'mejora', 'anuncios'] as const satisfies
   readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
@@ -206,8 +207,20 @@ export const HORARIOS = {
 
      El umbral respeta la regla `>= 2 × cadencia + 60`: 2 × 1440 + 60 = 2940, y va 3000 para dejar
      margen a la imprecisión del disparo. */
+  /* ── Y `anuncios` VA ACÁ, NO EN EL DE DIEZ MINUTOS ──────────────────
+
+     El dato es DIARIO: el proveedor devuelve una fila por anuncio y por día, y pedirlo cada diez
+     minutos daría ciento cuarenta y cuatro lecturas del mismo día para escribir el mismo número.
+
+     Corre después de `mejora` y eso no es orden, es indiferencia: es la primera tarea del sistema
+     que no comparte ni una fila con las otras seis. No lee contactos para escribirlos, no avanza
+     ninguna marca de agua y nadie espera su resultado.
+
+     El costo, contado: trece campañas —las que aparecen en nuestra atribución, no las sesenta y una
+     de la cuenta— por cuatro días (hoy más los tres que se releen por las correcciones de Meta) son
+     **52 llamadas por día y por empresa**. El relleno inicial son 13 x 30 = 390, una sola vez. */
   '17 6 * * *': {
-    tareas: ['mejora'],
+    tareas: ['mejora', 'anuncios'],
     cadenciaMinutos: 1440,
     umbralMinutos: 3000,
   },
@@ -427,7 +440,9 @@ export async function barrerTodo(
                 ? await auditar(org, auditor, acceso, arranque, ahora)
                 : tarea === 'mejora'
                   ? await mejorar(org, auditor)
-                  : await barrerCitas(org.id, conToken(acceso));
+                  : tarea === 'anuncios'
+                    ? await recolectarAnuncios(org.id, conToken(acceso))
+                    : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el

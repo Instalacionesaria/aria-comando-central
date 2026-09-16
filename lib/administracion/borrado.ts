@@ -93,6 +93,19 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      que alguien pueda hacer. */
   campos_del_crm_org_id_fkey: 'tiene el catálogo de campos de su CRM cargado',
   carpetas_del_crm_org_id_fkey: 'tiene las carpetas de campos de su CRM cargadas',
+  /* El costo de los anuncios, en sus dos tablas. Se nombran las dos por separado por el mismo motivo
+     que las dos de arriba: la que llega es la restricción que efectivamente bloqueó, y decir
+     «métricas» cuando lo que quedó fue la dimensión mandaría a vaciar la tabla equivocada.
+
+     En la práctica la que bloquea primero es la dimensión —`metricas_de_anuncio` cascadea hacia ella
+     y por eso se va sola cuando el anuncio se borra—, pero la otra clave de cada tabla apunta a la
+     ORGANIZACIÓN y ésa no cascadea. Así que las dos pueden llegar acá.
+
+     Las dos las escribe el colector solo, una vez por día, así que la acción es la misma y es fácil:
+     se borran y se vuelven a leer de GoHighLevel. Eso es lo que esta lista exige de cada frase — que
+     detrás haya algo que alguien pueda hacer. */
+  anuncios_org_id_fkey: 'tiene anuncios de Meta cargados',
+  metricas_de_anuncio_org_id_fkey: 'tiene el costo diario de sus anuncios cargado',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

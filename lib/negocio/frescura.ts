@@ -89,6 +89,9 @@ const NOMBRE: Record<Tarea, string> = {
   // Y la quinta dejó este objeto en rojo otra vez, que es la prueba de que el `Record` total sirve.
   auditoria: 'la auditoría de los agentes de IA',
   mejora: 'la revisión en frío del carril amarillo',
+  // Y la séptima otra vez. Tres veces seguidas: el `Record` total es lo que hace que agregar una
+  // tarea sea imposible de olvidar acá.
+  anuncios: 'la lectura del costo de los anuncios',
 };
 
 /**

@@ -212,13 +212,24 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          ninguna de las dos le habla a GoHighLevel. Esta empresa tiene un identificador inexistente,
          así que las del CRM fallan contra la base; las del auditor ni llegan a intentarlo porque no
          tienen llave de IA — otra falta, con su propio texto. */
+      /* Y `anuncios` sale CORRIÓ, que es el tercer desenlace de esta lista y hay que explicarlo
+         porque parece el error de los otros dos.
+
+         Esta empresa tiene un identificador que no existe. Con RLS forzada, preguntar por sus
+         contactos no lanza: devuelve CERO FILAS. Así que el colector encuentra cero campañas en la
+         atribución, no tiene nada que pedirle al proveedor, y termina sin llamar a nadie — que es
+         exactamente lo que hace con una empresa nueva y de verdad.
+
+         No es una tarea que se anunció y no tocó nada: es una tarea que tocó la base, no encontró
+         trabajo, y lo dijo. La diferencia se ve en el resumen, que lleva `campanas: 0`. */
+      ['anuncios', 'corrio'],
       ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],
       ['mejora', 'saltada'],
       ['mensajes', 'fallo'],
     ],
-    'una de las cinco tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
+    'una de las tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );
 
   /* El SELLO de «rota» no se comprueba, y conviene decir por qué: su identificador no existe en
@@ -285,12 +296,17 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
   ]);
   const s = await sellos();
-  // Las CINCO tareas por empresa. `contactos` entre ellas porque una empresa sin token tampoco puede
-  // releer sus etiquetas; y `auditoria` porque **su falta es otra** —no tiene llave de IA— y el sello
-  // tiene que decir esa y no la del CRM: son dos proveedores y dos acciones distintas para arreglarlo.
+  /* TODAS las tareas de la empresa, `sonda` afuera. `contactos` entre ellas porque una empresa sin
+     token tampoco puede releer sus etiquetas; `auditoria` porque **su falta es otra** —no tiene
+     llave de IA— y el sello tiene que decir esa y no la del CRM: son dos proveedores y dos acciones
+     distintas para arreglarlo; y `anuncios` porque el Ad Manager va por el mismo token del CRM.
+
+     La lista se deriva de `TAREAS` y no se escribe a mano: ver `SELLOS_POR_EMPRESA`. */
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
-    ['auditoria:saltada', 'citas:saltada', 'contactos:saltada', 'mejora:saltada', 'mensajes:saltada'],
+    TAREAS.filter((t) => t !== 'sonda')
+      .map((t) => `${t}:saltada`)
+      .sort(),
   );
   /* ── Y CADA SELLO LLEVA SU PROPIO MOTIVO, QUE ES LO QUE SE GANÓ ACÁ ──────
    *
@@ -303,7 +319,20 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   assert.equal(porTarea.get('citas'), 'sin_token');
   assert.match(String(porTarea.get('auditoria')), /llave de IA/);
   assert.match(String(porTarea.get('mejora')), /llave de IA/);
+  // `anuncios` sí necesita el token del CRM —le habla al Ad Manager de GoHighLevel—, así que su
+  // falta es la misma que la de las tres de arriba y no la del auditor.
+  assert.equal(porTarea.get('anuncios'), 'sin_token');
 });
+
+/* ── EL CONTEO SE DERIVA, NO SE ESCRIBE ────────────────────────────────────
+ *
+ * Decía «cinco» en cuatro aserciones y la séptima tarea las puso todas en rojo a la vez. Es la misma
+ * lección que `lib/datos/esquema.ts` ya dejó escrita para su lista de tablas —*«un conteo escrito a
+ * mano envejece con cada tabla nueva»*— y se aplica igual: **quitándolo**, no actualizándolo.
+ *
+ * `sonda` se resta porque no es de ninguna empresa y no deja sello, que es una decisión escrita en
+ * el pie de `barrerTodo`. */
+const SELLOS_POR_EMPRESA = TAREAS.filter((t) => t !== 'sonda').length;
 
 test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadores que crezcan', async () => {
   // La plataforma admite corridas duplicadas y no reintenta. Un `+1` en cualquier columna contaría de
@@ -316,10 +345,12 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
   await barrerTodo('0 12 * * *', empresas);
   const segunda = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  /* CINCO por empresa —`contactos`, `mensajes`, `auditoria`, `citas` y `mejora`— y no seis: `sonda`
-     no es de ninguna empresa y no deja sello, que es una decisión escrita en el pie de `barrerTodo`. */
-  assert.equal(primera[0]?.n, '5', 'cinco tareas por empresa; `sonda` no deja sello');
-  assert.equal(segunda[0]?.n, '5', 'la segunda corrida agregó filas: el upsert no está haciendo su trabajo');
+  assert.equal(primera[0]?.n, String(SELLOS_POR_EMPRESA), 'una tarea por empresa; `sonda` no deja sello');
+  assert.equal(
+    segunda[0]?.n,
+    String(SELLOS_POR_EMPRESA),
+    'la segunda corrida agregó filas: el upsert no está haciendo su trabajo',
+  );
 });
 
 test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otra', async () => {
@@ -337,11 +368,15 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   const deBeta = await conOrganizacion(beta, () =>
     datos().selectFrom('tareas_programadas').select(['tarea']).execute(),
   );
-  assert.equal(deAlfa.length, 5, 'alfa tiene que ver sus cinco sellos');
-  assert.equal(deBeta.length, 5);
-  // Y el total desde el propietario es DIEZ: cada una vio la mitad, no todo.
+  assert.equal(deAlfa.length, SELLOS_POR_EMPRESA, 'alfa no ve todos sus sellos');
+  assert.equal(deBeta.length, SELLOS_POR_EMPRESA);
+  // Y el total desde el propietario es el DOBLE: cada una vio la mitad, no todo.
   const todos = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  assert.equal(todos[0]?.n, '10', 'cada empresa tiene que ver solo sus cinco sellos');
+  assert.equal(
+    todos[0]?.n,
+    String(SELLOS_POR_EMPRESA * 2),
+    'cada empresa tiene que ver solo sus propios sellos',
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
