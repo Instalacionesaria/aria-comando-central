@@ -85,6 +85,21 @@ es el requisito.**
 | [08-DE-DONDE-VIENE-CADA-DATO.md](08-DE-DONDE-VIENE-CADA-DATO.md) | `A8-` | De dónde viene cada dato |
 | [09-LO-QUE-NO-ES-UN-REQUISITO.md](09-LO-QUE-NO-ES-UN-REQUISITO.md) | `A9-` | Lo que NO es un requisito |
 
+**Y la otra mitad, que no sale del prototipo sino del DOCUMENTO FUNCIONAL § 18.** Los cuatro de abajo
+se escribieron después, con el documento a la vista, y piden bastante más que lo que la maqueta
+dibuja: los seis componentes internos, veinticinco KPI contra los tres del prototipo, y un esquema de
+alerta de catorce campos.
+
+| Archivo | Prefijo | Título |
+|---|---|---|
+| [10-LO-QUE-PIDE-EL-DOCUMENTO.md](10-LO-QUE-PIDE-EL-DOCUMENTO.md) | `A10-` | Misión, alcance, datos de Meta y los 25 KPI del § 18.7 |
+| [11-LOS-SEIS-COMPONENTES.md](11-LOS-SEIS-COMPONENTES.md) | `A11-` | La estructura interna, las alertas y el monitor de atribución |
+| [12-QUIEN-DECIDE-QUE.md](12-QUIEN-DECIDE-QUE.md) | `A12-` | Responsabilidades, validación ejecutiva y las tres vistas por rol |
+| [13-EL-CONTRASTE.md](13-EL-CONTRASTE.md) | — | **El prototipo contra el documento: qué falta, qué sobra y qué se contradice** |
+
+Si se va a leer uno solo, que sea el `13`: es el que dice qué se puede construir hoy y qué está
+bloqueado, y no agrega requisitos — compara los que ya están.
+
 Si un nombre de archivo de la tabla no está en la carpeta, manda la carpeta.
 
 Cada requisito se cita por su número completo —`A2-07`, `A4-12`— desde cualquier documento.
