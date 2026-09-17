@@ -29,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { guardarPromptDelAgente } from '../../../../lib/auditor/prompts.ts';
@@ -90,7 +91,7 @@ export async function PUT(peticion: Request): Promise<Response> {
   if (texto.length > TOPE_DEL_PROMPT) return rechazo('peticion_invalida', MOTIVOS.texto_largo);
 
   const que = await conOrganizacion(contexto.orgEfectiva, () =>
-    guardarPromptDelAgente(agente as Agente, texto, contexto.usuarioId),
+    guardarPromptDelAgente(agente as Agente, texto, autorDelCambio(contexto)),
   );
 
   return ok({ que });

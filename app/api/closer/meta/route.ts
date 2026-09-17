@@ -20,6 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import { comisionDelMes, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
@@ -114,14 +115,14 @@ export async function PATCH(peticion: Request): Promise<Response> {
           tipo: TIPO_CLOSER,
           meta_mensual: meta,
           actualizado_el: new Date(),
-          actualizado_por: contexto.usuarioId,
+          actualizado_por: autorDelCambio(contexto),
         } as never)
         .onConflict((oc) =>
           // **Solo `meta_mensual`.** `porcentaje` no aparece: no se puede pisar desde acá.
           oc.columns(['org_id', 'usuario_id', 'tipo']).doUpdateSet({
             meta_mensual: meta,
             actualizado_el: new Date(),
-            actualizado_por: contexto.usuarioId,
+            actualizado_por: autorDelCambio(contexto),
           } as never),
         )
         .execute();

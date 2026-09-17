@@ -182,7 +182,15 @@ export async function resolverLaIntervencion(
     orgId: string;
     contactoId: string;
     ghlContactId: string;
-    quien: string;
+    /**
+     * Quién la resolvió. **`null` cuando lo hizo un rol de plataforma sobre otra organización**: la
+     * foránea compuesta de `hallazgos` y de `analisis_del_agente` exige un usuario de ESA
+     * organización. Ver `autorDelCambio` en `lib/autorizacion/sesion.ts`.
+     *
+     * `resuelto_el` se escribe igual, así que «está resuelta» nunca depende de este campo — lo que
+     * se pierde con el nulo es el nombre, y ése queda en `identidad.auditoria_accesos`.
+     */
+    quien: string | null;
     acceso: { token: string };
   },
   quitar: QuitarEtiquetas = quitarEtiquetas,

@@ -29,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import {
@@ -140,7 +141,7 @@ export async function POST(peticion: Request): Promise<Response> {
   const porque = await conOrganizacion(contexto.orgEfectiva, async () => {
     const porque = await crearEnlace(
       { territorio, nombre, monto, descripcion, url },
-      contexto.usuarioId,
+      autorDelCambio(contexto),
     );
     // Si no se guardó, no se audita: el registro se lee para reconstruir cambios, y una fila que
     // describe algo que no pasó es ruido que hace desconfiar del resto.

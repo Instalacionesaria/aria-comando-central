@@ -30,6 +30,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -191,7 +192,7 @@ export async function PUT(peticion: Request): Promise<Response> {
         tipo: tramo,
         porcentaje,
         actualizado_el: new Date(),
-        actualizado_por: contexto.usuarioId,
+        actualizado_por: autorDelCambio(contexto),
       } as never)
       .onConflict((oc) =>
         // **Solo `porcentaje`.** `meta_mensual` no aparece, así que un guardado acá no puede
@@ -199,7 +200,7 @@ export async function PUT(peticion: Request): Promise<Response> {
         oc.columns(['org_id', 'usuario_id', 'tipo']).doUpdateSet({
           porcentaje,
           actualizado_el: new Date(),
-          actualizado_por: contexto.usuarioId,
+          actualizado_por: autorDelCambio(contexto),
         } as never),
       )
       .execute();

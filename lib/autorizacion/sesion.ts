@@ -337,6 +337,54 @@ export async function resolverSesion(token: string | undefined): Promise<Context
   });
 }
 
+/**
+ * Quién se puede guardar como AUTOR DE UN CAMBIO en una fila de `orgEfectiva`, o `null`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ESTO NO ES UNA PRECAUCIÓN: CIERRA UN 500 QUE OCURRIÓ EN PRODUCCIÓN
+ *
+ * Dieciséis tablas atan su columna de «quién lo tocó» con una foránea COMPUESTA:
+ *
+ *     foreign key (org_id, actualizado_por) references identidad.usuarios (org_id, id)
+ *
+ * O sea que quien firma el cambio tiene que ser un usuario **de esa misma organización**. Es la
+ * regla de aislamiento de siempre —una fila no puede apuntar a una persona de otro inquilino— y
+ * está bien que exista.
+ *
+ * Pero un rol de plataforma trabajando sobre una subcuenta tiene `orgEfectiva` de la subcuenta y
+ * `usuarioId` de la principal, así que ese par **no existe**: PostgreSQL rechaza con `23503`, nadie
+ * lo atrapa, y sale un 500 sin diagnóstico.
+ *
+ * Medido el 2026-09-17 sobre la subcuenta `innat8`: cargar la clave de IA desde una cuenta de la
+ * propia subcuenta funciona; desde un superadministrador de la principal da 500. Los cuatro
+ * usuarios de la organización principal rompen igual. Nunca se había visto porque las credenciales
+ * de cada subcuenta las había cargado siempre alguien de adentro.
+ *
+ * ── POR QUÉ `null` Y NO OTRA COSA ──────────────────────────────────────────
+ *
+ * Las alternativas son dos y las dos son peores. Aflojar la foránea a `usuarios(id)` rompe el
+ * aislamiento que `ADR-0206` declara innegociable. Y rechazar la operación con un mensaje claro
+ * sería honesto pero dejaría a un superadministrador sin poder hacer su trabajo.
+ *
+ * **Y no se pierde el rastro**, que es lo que hace aceptable el nulo: `identidad.auditoria_accesos`
+ * registra al actor de verdad en cada una de estas operaciones, y esa tabla **no tiene ninguna
+ * clave foránea** —comprobado— así que bajo delegación anota bien. La columna de la fila es una
+ * comodidad para la pantalla; la auditoría es el registro.
+ *
+ * ── DÓNDE **NO** SE USA ESTO, Y ES DELIBERADO ──────────────────────────────
+ *
+ * Sólo vale para «quién tocó esta configuración» (`actualizado_por`, `resuelto_por`). **No** para
+ * la autoría de contenido —`notas.autor_id`, `mensajes.autor_usuario_id`, `resultados.registrado_por`,
+ * `tareas.creada_por`—, donde un nulo no es un dato faltante sino una nota sin autor o una venta
+ * que no registró nadie. Esas siguen fallando bajo delegación, y está bien que se note: si un rol
+ * de plataforma tiene que poder registrar ventas dentro de un inquilino es una decisión de
+ * producto, no un defecto que se tape con un nulo.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export function autorDelCambio(contexto: Contexto): string | null {
+  return contexto.mirandoOtraOrganizacion ? null : contexto.usuarioId;
+}
+
 /** Cuánto dura la ventana deslizante, y a partir de cuándo vale moverla. */
 const VENTANA_DIAS = 7;
 const RENOVAR_SI_QUEDA_MENOS_DE_DIAS = 1;

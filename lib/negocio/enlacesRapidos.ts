@@ -147,7 +147,13 @@ export type PorqueNoSeGuardo = 'tope' | 'url_repetida';
  */
 export async function crearEnlace(
   enlace: EnlaceNuevo,
-  actor: string,
+  /**
+   * Quién lo cargó. **`null` cuando lo hizo un rol de plataforma sobre otra organización**, porque
+   * la foránea compuesta de `enlaces_rapidos` exige que el autor sea un usuario de ESA organización
+   * y el de la principal no lo es. Ver `autorDelCambio` en `lib/autorizacion/sesion.ts`: sin esto,
+   * cargar un link desde un superadministrador daba un 500 sin diagnóstico.
+   */
+  actor: string | null,
 ): Promise<PorqueNoSeGuardo | null> {
   const yaHay = (
     await datos().selectFrom('enlaces_rapidos').select(['territorio', 'url', 'orden']).execute()

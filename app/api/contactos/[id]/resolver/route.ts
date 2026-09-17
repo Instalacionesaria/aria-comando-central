@@ -32,6 +32,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../../lib/autorizacion/sesion.ts';
 import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
@@ -80,7 +81,7 @@ export async function POST(
     orgId: contexto.orgEfectiva,
     contactoId: id,
     ghlContactId: contacto.ghl_contact_id,
-    quien: contexto.usuarioId,
+    quien: autorDelCambio(contexto),
     acceso,
   });
 

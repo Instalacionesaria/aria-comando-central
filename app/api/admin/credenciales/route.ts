@@ -55,6 +55,7 @@
 
 import { createHash, randomBytes } from 'node:crypto';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { cifrar } from '../../../../lib/credenciales/cifrado.ts';
@@ -220,13 +221,13 @@ export async function PUT(peticion: Request): Promise<Response> {
       .insertInto('organizaciones_credenciales')
       .values({
         org_id: contexto.orgEfectiva,
-        actualizado_por: contexto.usuarioId,
+        actualizado_por: autorDelCambio(contexto),
         actualizado_el: new Date(),
         ...cambios,
       } as never)
       .onConflict((oc) =>
         oc.column('org_id').doUpdateSet({
-          actualizado_por: contexto.usuarioId,
+          actualizado_por: autorDelCambio(contexto),
           actualizado_el: new Date(),
           ...cambios,
         } as never),
