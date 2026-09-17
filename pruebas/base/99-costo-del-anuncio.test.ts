@@ -256,6 +256,51 @@ test('un anuncio que trajo leads y NO tiene gasto guardado aparece igual', async
   assert.equal(fila.leads, 1);
 });
 
+test('un anuncio que gastó y NO trajo a nadie no hereda los leads de otro', async () => {
+  /* ══ EL CRUCE NO PUEDE INVENTAR FILAS ═══════════════════════════════════════
+   *
+   * `costoDelAnuncio` arma cada fila buscando el anuncio en un mapa de leads por `adId`. Si esa
+   * búsqueda fallara hacia el lado equivocado —una clave mal armada, un `find` por índice, un
+   * `?? filas[0]`— un anuncio que no trajo a nadie mostraría los leads del que sí.
+   *
+   * **Y no se vería.** La tabla queda igual de plausible: un anuncio con gasto y con leads es lo
+   * normal. Lo único que delata el defecto es que los mismos leads aparezcan dos veces, que es
+   * exactamente lo que esta prueba afirma que no pasa.
+   *
+   * Medido contra producción, el caso es mayoritario: de 79 anuncios con gasto, **67 no tienen ni
+   * un contacto atribuido**. Así que esta fila no es un borde, es la mitad de la tabla. */
+  const conLeads = `${MARCA}06`;
+  const mudo = `${MARCA}07`;
+
+  await unAnuncio(conLeads, 'El que sí trajo gente');
+  await unAnuncio(mudo, 'El que gastó y no trajo a nadie');
+  await unDia(conLeads, 1, { gasto: 40, impresiones: 4000, clics: 80 });
+  await unDia(mudo, 1, { gasto: 60, impresiones: 6000, clics: 30 });
+  for (let i = 0; i < 4; i += 1) await unLead(conLeads, true);
+
+  const filas = (await leer()).filas;
+  const a = filas.find((f) => f.anuncioId === conLeads);
+  const b = filas.find((f) => f.anuncioId === mudo);
+  assert.ok(a && b, 'faltó alguno de los dos anuncios');
+
+  // El que sí trajo, con lo suyo.
+  assert.equal(a.leads, 4);
+  assert.equal(a.agendaron, 4);
+
+  // Y el mudo: gastó, y eso se publica; no trajo a nadie, y eso NO se disfraza.
+  assert.equal(b.gasto, 60, 'el gasto del anuncio sin leads tiene que publicarse igual');
+  assert.equal(b.leads, 0, 'heredó los leads de otro anuncio');
+  assert.equal(b.agendaron, 0, 'heredó los agendamientos de otro anuncio');
+  // `null` y no `Infinity` ni `60`: sin denominador no hay costo por lead que decir.
+  assert.equal(b.cpl, null, 'publicó un CPL dividiendo por cero leads');
+  assert.equal(b.tasaDeAgenda, null, 'publicó una tasa sobre cero leads');
+
+  // La comprobación que ata las dos mitades: los 4 leads aparecen UNA vez en toda la tabla, no dos.
+  const total = filas.filter((f) => f.anuncioId === conLeads || f.anuncioId === mudo)
+    .reduce((s2, f) => s2 + f.leads, 0);
+  assert.equal(total, 4, 'los mismos leads se contaron en dos anuncios');
+});
+
 test('la cobertura viaja con sus DOS términos, y cuenta a los que no traen anuncio', async () => {
   // Una proporción sola se lee como precisión. El par dice de cuántos habla — y es la única forma de
   // cumplir el § 18.5, que pide publicar la cobertura al lado de la conclusión y no en una nota.
