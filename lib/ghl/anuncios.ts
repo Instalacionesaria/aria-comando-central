@@ -15,7 +15,8 @@
 //     GET /ad-publishing/facebook/integration      200 · status connected · act_1349863156073553
 //     GET /ad-publishing/facebook/ad-accounts      200 · 92 cuentas
 //     GET /ad-publishing/facebook/reporting        200 · serie DIARIA con gasto real
-//     GET /ad-publishing/facebook/entity           200 · 61 campañas, 200 ad sets, 100 anuncios
+//     GET /ad-publishing/facebook/entity           200 · 61 campañas, 200 ad sets, 402 anuncios
+//         (100 en la PRIMERA página; las 402 salen de seguir el cursor — ver `estructuraDeAnuncios`)
 //     GET /ad-publishing/facebook/reporting/list   200 · métricas POR ANUNCIO, con el adId de Meta
 //
 // La conclusión vieja no salió de una medición: salió de buscar columnas de gasto en nuestra base y
@@ -338,7 +339,7 @@ export async function metricasPorAnuncio(
   campanaId: string,
   /** Un día, en `YYYY-MM-DD`. */
   dia: string,
-): Promise<ResultadoDeGhl<MetricaDeAnuncio[]>> {
+): Promise<ResultadoDeGhl<MetricaDeAnuncio[]> & { ilegibles?: number }> {
   const r = await leer<unknown>(
     `${BASE}/ad-publishing/facebook/reporting/list?locationId=${encodeURIComponent(acceso.locationId)}` +
       `&listType=ads&type=${ORIGEN}&campaignId=${encodeURIComponent(campanaId)}` +
@@ -348,12 +349,25 @@ export async function metricasPorAnuncio(
   if (r.tipo !== 'datos') return r;
 
   const lista = Array.isArray(r.datos) ? r.datos : [];
-  return {
-    tipo: 'datos',
-    datos: lista.flatMap((x) => {
+
+  /* ── LAS FILAS QUE NO SE PUEDEN LEER SE CUENTAN, NO SE TIRAN EN SILENCIO ──
+   *
+   * Una fila sin `adId` no se puede guardar: es la llave de las dos tablas. Pero descartarla sin
+   * decir nada convierte el peor fallo posible de este cliente —que el proveedor renombre la
+   * clave— en una pasada que reporta ÉXITO con cero métricas escritas.
+   *
+   * No es hipotético en esta API: ya cambió dos formas bajo nuestros pies. `/reporting/list`
+   * devuelve un arreglo pelado donde `/entity` devuelve `{ data, next }`, y el cursor se llama
+   * `next` y no `after` — las dos cosas costaron una sonda cada una. Si mañana `adId` pasa a
+   * `ad_id`, esto lo dice; sin el contador, la pantalla se queda vacía y el sello dice `corrio`. */
+  let ilegibles = 0;
+  const datos = lista.flatMap((x) => {
       const o = (x ?? {}) as Record<string, unknown>;
       const anuncioId = texto(o.adId);
-      if (anuncioId === null) return [];
+      if (anuncioId === null) {
+        ilegibles += 1;
+        return [];
+      }
       return [
         {
           anuncioId,
@@ -372,8 +386,9 @@ export async function metricasPorAnuncio(
           resultadosDeMeta: numero(o.results),
         },
       ];
-    }),
-  };
+  });
+
+  return { tipo: 'datos', datos, ilegibles };
 }
 
 /** Una fila del reporte agregado de la CUENTA, un día. */

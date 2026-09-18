@@ -32,7 +32,10 @@ import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerAcquisition } from '@/lib/negocio/vistaDeAcquisition';
 
-/** Cuántos anuncios se dibujan. Los demás se juntan en una fila con su conteo. Ver `Tabla`. */
+/**
+ * Cuántos anuncios se dibujan de entrada. Los demás quedan detrás del botón «Ver los N que faltan»,
+ * que dice cuántos son — no hay ninguna fila que los resuma, y el total de arriba ya cuenta a todos.
+ */
 const ANUNCIOS_A_LA_VISTA = 12;
 
 export default function PanelDeAcquisition() {
@@ -231,7 +234,7 @@ function Atribucion({ a }) {
         <div className="csf-hl">
           <p className="csf-t">Cuánto vale lo que dice esta pantalla</p>
           <p className="csf-m">
-            Cada barra es sobre su propia población, y las cuatro son distintas
+            Cada barra es sobre su propia población, y no se comparan entre sí
           </p>
         </div>
       </div>

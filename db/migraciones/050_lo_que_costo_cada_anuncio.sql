@@ -32,8 +32,11 @@
 -- Y los dos `campaignId` que no cruzan **no son campañas**: `{{campaign.id}}`, una plantilla de
 -- GoHighLevel que nunca se expandió (3 contactos), y `888888`, un valor de prueba (1 contacto).
 -- Pedirle métricas a `888888` devuelve **HTTP 500**, no un 404 — así que el colector tiene que
--- tolerar el fallo de UNA campaña sin abortar la pasada, y por eso el filtro de la Etapa C es por
--- lista de campañas conocidas y no por «lo que haya en la atribución».
+-- tolerar el fallo de UNA campaña sin abortar la pasada.
+--
+-- Y no alcanza con filtrar por forma: el colector descarta `{{campaign.id}}` con un `~ '^[0-9]+$'`,
+-- pero `888888` ES numérico. Un filtro por forma no puede distinguir un identificador falso de uno
+-- verdadero, así que lo que lo resuelve es la tolerancia al fallo, no el filtro.
 --
 -- Verificación al nivel de las MÉTRICAS, que es más fuerte que la de los identificadores: pedidas
 -- las 13 campañas para el 2026-09-10, los **15 de 15** anuncios nuestros aparecen en el reporte, y
@@ -101,10 +104,14 @@ create table if not exists negocio.anuncios (
   -- El nombre que se dibuja. Es lo único que esta tabla existe para dar.
   nombre text not null,
 
-  -- `OUTCOME_LEADS`, `OUTCOME_ENGAGEMENT`, … **Sin `check` de vocabulario**, por la misma razón que
-  -- la `047` no se lo pone a `que_paso`: sería una copia del catálogo de otro sistema y, el día que
-  -- Meta agregue un objetivo, abortaría la transacción del cron en vez de ensuciar una fila. Un
-  -- catálogo ajeno no puede ser lo que frena la ingesta.
+  -- `OUTCOME_LEADS`, `OUTCOME_ENGAGEMENT`, … **Sin `check` de vocabulario**, y el contraste con la
+  -- `047` es justo el argumento: ahí `que_paso` SÍ lleva `check`, porque su vocabulario es NUESTRO
+  -- —lo escribe el disparador de esta misma base— y una palabra fuera de la lista sería un defecto
+  -- nuestro que conviene frenar.
+  --
+  -- Acá el catálogo es de Meta. El día que agreguen un objetivo, un `check` abortaría la
+  -- transacción del cron entera en vez de ensuciar una fila. Un catálogo ajeno no puede ser lo
+  -- que frena la ingesta.
   objetivo text,
 
   -- Cuándo lo vimos por última vez. La dimensión se reescribe entera en cada pasada, así que este
@@ -242,8 +249,9 @@ comment on column negocio.metricas_de_anuncio.sincronizado_el is
 -- ── EL ÍNDICE QUE SÍ TIENE CONSULTA ────────────────────────────────────────
 --
 -- La pregunta de la pantalla es siempre «el gasto de esta organización en esta ventana», y recién
--- después se agrupa por anuncio. La clave primaria arranca por `meta_anuncio_id`, así que no sirve
--- para recortar por ventana: haría un recorrido completo antes de filtrar por fecha.
+-- después se agrupa por anuncio. La clave primaria es `(org_id, meta_anuncio_id, fecha)`, o sea que
+-- tras `org_id` viene el ANUNCIO y no la fecha: para recortar por ventana habría que recorrer todos
+-- los anuncios de la organización antes de filtrar.
 --
 -- Este índice pone la fecha segunda, que es el orden en que la consulta pregunta. Un segundo índice
 -- por campaña esperaría una consulta que todavía no existe.

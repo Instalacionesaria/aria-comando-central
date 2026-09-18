@@ -27,6 +27,40 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
+import { COBERTURA_SUFICIENTE } from './calidadDeLaAtribucion.ts';
+
+/*
+ * ═════════════════════════════════════════════════════════════════════════════
+ * VENTANAS · ACÁ UN «DÍA» ES UN DÍA DE CALENDARIO, Y EN EL RESTO DEL SISTEMA SON 24 HORAS
+ *
+ * `lib/negocio/periodo.ts` define sus ventanas como múltiplos de 24 horas —su propio matiz lo dice:
+ * *«Hoy: las últimas 24 horas, no el día del calendario»*— y el resto de los módulos recortan con
+ * `now() - make_interval(days => N)`.
+ *
+ * **Este módulo no puede.** El gasto vive en `metricas_de_anuncio.fecha`, que es un `date`: el
+ * proveedor entrega días de calendario de la zona de la cuenta publicitaria y no instantes (ver la
+ * migración `050`). No hay forma de recortar un `date` por una ventana móvil de horas.
+ *
+ * Y mezclar las dos formas es peor que elegir una. Medido el 2026-09-18 con `dias = 30`:
+ *
+ *     gasto  `fecha >= current_date - 30`        →  31 fechas (del 19 de agosto al 18 de septiembre)
+ *     leads  `alta_en_el_crm >= now() - 30 d`    →  30×24 h (desde el 19 a las 15:57)
+ *
+ * O sea que el CPL dividía **treinta y un días de gasto entre treinta de leads**, y el mismo dato
+ * daba un número distinto según la hora a la que se mirara la pantalla. Nada fallaba.
+ *
+ * Así que las tres consultas de este archivo usan LA MISMA ventana, anclada al día:
+ *
+ *     los últimos `dias` días de calendario, terminando hoy
+ *
+ * El gasto con `fecha > current_date - dias` —con `>` estricto, o serían `dias + 1` fechas— y los
+ * leads desde la medianoche del primero de esos días. Con `dias = 1` los dos dan el día de hoy.
+ *
+ * La consecuencia que hay que respetar: **el botón «Hoy» de esta pantalla significa el día de
+ * calendario, no las últimas 24 horas.** Es distinto de Conversation, y es la única lectura posible
+ * cuando el numerador sólo existe por días.
+ * ═════════════════════════════════════════════════════════════════════════════
+ */
 
 /** Mil impresiones. El CPM se llama así por esto y el número no puede vivir suelto en la fórmula. */
 const MIL_IMPRESIONES = 1000;
@@ -178,7 +212,7 @@ export async function costoDelAnuncio(dias = DIAS_DE_LA_TASA): Promise<CostoDeLo
   const conGasto = filas.filter((f) => f.gasto !== null);
   const gastoTotal = conGasto.length === 0 ? null : redondear(conGasto.reduce((s, f) => s + (f.gasto ?? 0), 0), 2);
 
-  const { primero, ultimo } = await ventanaGuardada();
+  const { primero, ultimo } = await ventanaGuardada(dias);
 
   return {
     dias,
@@ -218,7 +252,10 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
       sql<string | null>`sum(m.clics)`.as('clics'),
       sql<number>`count(*) filter (where m.gasto is not null)`.as('diasConEntrega'),
     ])
-    .where(sql<boolean>`m.fecha >= (current_date - make_interval(days => ${dias}))`)
+    /* `>` y no `>=`: con `>=` la ventana abarca `dias + 1` fechas. Medido el 2026-09-18 con
+       `dias = 30`: `current_date - 30` es la medianoche del 19 de agosto, y `fecha >= esa` incluye
+       el 19 entero, o sea **31 fechas**. Ver `VENTANAS` arriba. */
+    .where(sql<boolean>`m.fecha > (current_date - make_interval(days => ${dias}))`)
     .groupBy(['m.meta_anuncio_id', 'a.nombre', 'a.meta_campana_id'])
     .execute();
 
@@ -268,7 +305,8 @@ async function leadsPorAnuncio(
            and ci.ghl_calendario_id is not null))`.as('agendaron'),
     ])
     .where(sql<boolean>`contactos.atribucion_primera ? 'adId'`)
-    .where(sql<boolean>`contactos.alta_en_el_crm >= now() - make_interval(days => ${dias})`)
+    // La MISMA ventana que el gasto, anclada al día. Ver `VENTANAS` arriba.
+    .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     .groupBy([sql`1`, 'a.nombre'])
     .execute();
 
@@ -288,7 +326,8 @@ async function coberturaDeAdId(dias: number): Promise<{ con: number; sobre: numb
       sql<number>`count(*)`.as('sobre'),
       sql<number>`count(*) filter (where atribucion_primera ? 'adId')`.as('con'),
     ])
-    .where(sql<boolean>`alta_en_el_crm >= now() - make_interval(days => ${dias})`)
+    // La MISMA ventana que el gasto, anclada al día. Ver `VENTANAS` arriba.
+    .where(sql<boolean>`alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     .executeTakeFirst();
 
   return { con: Number(f?.con ?? 0), sobre: Number(f?.sobre ?? 0) };
@@ -301,10 +340,19 @@ async function coberturaDeAdId(dias: number): Promise<{ con: number; sobre: numb
  * que tiene 5 no muestra «poco gasto», muestra **el gasto de cinco días con la etiqueta de treinta**;
  * y una tabla que llega hasta el día 13 de 30 pone arriba a los anuncios que gastaron temprano.
  */
-async function ventanaGuardada(): Promise<{ primero: string | null; ultimo: string | null }> {
+async function ventanaGuardada(dias: number): Promise<{ primero: string | null; ultimo: string | null }> {
+  /* ── RECORTA POR LA VENTANA PEDIDA, Y ESO FALTABA ───────────────────────
+   *
+   * No llevaba `where`, así que `desde` y `hasta` describían **la tabla entera** mientras las
+   * cifras de al lado describían el período elegido. Con treinta días guardados y el botón de
+   * «7 días» encendido, el encabezado decía *«Del 18 ago al 18 sep»* sobre un gasto de una semana:
+   * el lector divide de cabeza por el período equivocado y no hay nada que lo desmienta.
+   *
+   * Es exactamente la lectura que estas dos fechas existen para impedir, con el signo cambiado. */
   const f = await datos()
     .selectFrom('metricas_de_anuncio')
     .select((eb) => [eb.fn.min('fecha').as('primero'), eb.fn.max('fecha').as('ultimo')])
+    .where(sql<boolean>`fecha > (current_date - make_interval(days => ${dias}))`)
     .executeTakeFirst();
 
   return { primero: comoDia(f?.primero), ultimo: comoDia(f?.ultimo) };
@@ -348,7 +396,19 @@ function avisoDe(
      El umbral es dos días y no cero: el colector pide hoy y los tres anteriores en la pasada
      diaria, así que un día de retraso es el funcionamiento normal y avisarlo sería avisar siempre. */
   if (ultimo !== null) {
-    const faltan = Math.round((Date.now() - Date.parse(`${ultimo}T00:00:00Z`)) / 86_400_000);
+    /* ── SE CUENTAN DÍAS DE CALENDARIO, NO MILISEGUNDOS ────────────────────
+     *
+     * Antes era `Math.round((Date.now() - medianoche(ultimo)) / 86.400.000)`, y eso mezcla un
+     * instante con una fecha: el mismo dato daba 2 por la mañana y 3 por la tarde, así que el aviso
+     * aparecía o no según la hora a la que alguien mirara la pantalla. Un aviso que depende del
+     * reloj y no del dato es peor que ninguno.
+     *
+     * Las dos puntas son días de calendario (`ultimo` sale de un `date`), así que la resta se hace
+     * entre medianoches y da un entero exacto. */
+    const hoy = new Date().toISOString().slice(0, 10);
+    const faltan = Math.round(
+      (Date.parse(`${hoy}T00:00:00Z`) - Date.parse(`${ultimo}T00:00:00Z`)) / 86_400_000,
+    );
     if (faltan > 2) {
       return (
         `El costo llega hasta el ${ultimo} y la ventana pide ${dias} días, así que a los últimos ` +
@@ -358,8 +418,21 @@ function avisoDe(
     }
   }
 
-  // 2 · La cobertura, porque invalida la columna de leads entera y no se ve.
-  if (cobertura.sobre > 0 && cobertura.con < cobertura.sobre) {
+  /* 2 · La cobertura, porque invalida la columna de leads entera y no se ve.
+
+     ── CON UMBRAL, Y SIN ÉL DEJABA MUERTO AL TERCER AVISO ────────────────
+
+     La condición era `con < sobre` a secas: UN contacto sin `adId` sobre quinientos ya publicaba
+     «1 de 500 no traen anuncio». Y como la cobertura perfecta no existe —ningún lead que entra por
+     formulario trae anuncio, y eso es estructural— el aviso se encendía SIEMPRE y el tercero, el
+     de los anuncios que gastaron sin traer a nadie, era inalcanzable.
+
+     `COBERTURA_SUFICIENTE` es el mismo umbral que usa el monitor de atribución para lo mismo, así
+     que las dos pantallas declaran «incompleta» con el mismo criterio en vez de con dos. */
+  if (
+    cobertura.sobre >= PISO_DE_UNA_TASA &&
+    cobertura.con / cobertura.sobre < COBERTURA_SUFICIENTE
+  ) {
     const sin = cobertura.sobre - cobertura.con;
     return (
       `${sin} de ${cobertura.sobre} contactos de esta ventana no traen anuncio, así que las columnas ` +

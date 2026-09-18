@@ -38,6 +38,8 @@ let esc: Escenario;
 const MARCA = '99999900';
 const ACCESO = { token: 'no-se-usa', locationId: 'no-se-usa' };
 const AHORA = Date.parse('2026-09-16T11:30:00Z');
+/** El día más nuevo de la ventana con ese reloj: el primero que pide el colector. */
+const HOY_DE_LA_PRUEBA = '2026-09-16';
 
 async function limpiar(): Promise<void> {
   // Primero el hecho y después la dimensión: la foránea es `on delete cascade`, pero borrar en este
@@ -94,15 +96,22 @@ function conEntrega(anuncioId: string): MetricaDeAnuncio {
 /** El único día en que el proveedor falso devuelve algo. Ver `unaPasada`. */
 const DIA = '2026-09-14';
 
+/** Todos los días de la ventana dados por guardados: así la pasada pide sólo el tramo fijo. */
+function guardadosHasta(dia: string): Set<string> {
+  const g = new Set<string>();
+  const tope = Date.parse(`${dia}T00:00:00Z`);
+  for (let i = 0; i < 40; i += 1) g.add(new Date(tope - i * 86_400_000).toISOString().slice(0, 10));
+  return g;
+}
+
 /**
  * Corre una pasada que escribe **UNA sola vez**.
  *
- * ── POR QUÉ UN SOLO DÍA, Y NO ES DETALLE DE ARMADO ────────────────────────
+ * ── POR QUÉ UN SOLO DÍA, Y NO ES DETALLE DE ARMADO ──────────────────────
  *
- * La ventana normal son cuatro días (hoy más `DIAS_QUE_SE_RELEEN`), así que un proveedor falso que
- * devuelva la misma fila todos los días la escribe cuatro veces: **una inserción y tres
- * correcciones**. Y entonces un defecto que viva SÓLO en el camino de inserción queda tapado por la
- * corrección que viene detrás.
+ * La ventana pide varios días, así que un proveedor falso que devuelva la misma fila en todos la
+ * escribe varias veces: **una inserción y el resto correcciones**. Y entonces un defecto que viva
+ * SÓLO en el camino de inserción queda tapado por la corrección que viene detrás.
  *
  * No es hipotético: se midió por mutación. Poner `meta_conjunto_id: null` en el `insert` dejaba esta
  * suite entera en verde, porque el `on conflict` del día siguiente reponía el valor correcto.
@@ -111,7 +120,7 @@ async function unaPasada(metricas: readonly MetricaDeAnuncio[]) {
   return recolectarAnuncios(esc.org, ACCESO, {
     ahora: AHORA,
     campanas: ['120249633901590467'],
-    ultimoDia: '2026-09-16',
+    guardados: guardadosHasta('2026-09-16'),
     pedir: async (_acceso, _campana, dia) => ({
       tipo: 'datos',
       datos: dia === DIA ? [...metricas] : [],
@@ -218,6 +227,48 @@ test('el anuncio queda NOMBRADO en la dimensión, que es para lo único que exis
   // columna escrita, el cruce con la atribución del lead no se puede hacer por conjunto.
   assert.equal(r.rows[0]?.meta_conjunto_id, '120249633901560467');
   assert.equal(r.rows[0]?.objetivo, 'OUTCOME_LEADS');
+});
+
+test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', async () => {
+  /* ══ EL DEFECTO QUE ESTO CIERRA VACIÓ EL 97 % DE UNA COLUMNA EN PRODUCCIÓN ══
+   *
+   * Medido el 2026-09-18: **77 de 79 anuncios tenían `meta_conjunto_id` en NULL**, justo la columna
+   * que la migración `050` presenta como la llave del cruce por conjunto.
+   *
+   * La causa es la misma asimetría que gobierna las métricas: cuando el anuncio no entregó ese día,
+   * el proveedor **omite `adsetId`** —pero sí manda `campaignId` y `objective`—. Como el colector
+   * pide varios días y reescribe en cada uno, bastaba UN día sin entrega posterior al bueno para
+   * borrar el conjunto. Eso explica que `meta_campana_id` estuviera completo y el conjunto vacío:
+   * los dos salen de la misma fila y sólo uno se omite.
+   *
+   * Acá se siembra exactamente esa secuencia: primero el día bueno, después uno sin conjunto. */
+  const id = `${MARCA}06`;
+
+  await recolectarAnuncios(esc.org, ACCESO, {
+    ahora: AHORA,
+    campanas: ['120249633901590467'],
+    guardados: guardadosHasta('2026-09-16'),
+    pedir: async (_a, _c, dia) => ({
+      tipo: 'datos',
+      /* El día más nuevo SÍ trae el conjunto y los siguientes NO, y ese orden es la prueba: el
+         colector pide del más nuevo al más viejo, así que el bueno INSERTA y los de atrás pasan
+         por el `on conflict`. Sembrado al revés, la última escritura repone el valor sola y la
+         mutación sobrevive — medido. */
+      datos: [dia === HOY_DE_LA_PRUEBA ? conEntrega(id) : { ...conEntrega(id), adSetId: null, objetivo: null }],
+    }),
+  });
+
+  const r = await esc.admin.query<{ meta_conjunto_id: string | null; objetivo: string | null }>(
+    'select meta_conjunto_id, objetivo from negocio.anuncios where meta_anuncio_id = $1',
+    [id],
+  );
+  assert.equal(r.rows.length, 1, 'el anuncio no quedó en la dimensión');
+  assert.equal(
+    r.rows[0]?.meta_conjunto_id,
+    '120249633901560467',
+    'un día sin entrega borró el conjunto que ya se sabía',
+  );
+  assert.equal(r.rows[0]?.objetivo, 'OUTCOME_LEADS', 'un día sin entrega borró el objetivo');
 });
 
 // ─── EL AISLAMIENTO, QUE ES LO QUE `aplicar_aislamiento` PROMETE ────────────
