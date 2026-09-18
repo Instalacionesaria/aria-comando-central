@@ -472,6 +472,69 @@ test('un par (campaña, día) que falla se REINTENTA una vez, y sólo una', asyn
   assert.deepEqual(r.resultado.huecos, [], 'el reintento anduvo: no tendría que quedar hueco');
 });
 
+test('una campaña que se RECUPERA en el reintento deja de figurar como fallida', async () => {
+  /* `fallidas` sale del mapa que se llena en la primera vuelta, así que una campaña que falló una
+   * vez y se recuperó seguía acusada. El caso es el que motivó el reintento: en el relleno inicial
+   * `120249590301010467` falló UN día de treinta por un 500 pasajero. */
+  let primera = true;
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    vinculo: VINCULO_OK,
+    reloj: () => 0,
+    pedir: async () => {
+      if (primera) {
+        primera = false;
+        return { tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } };
+      }
+      return { tipo: 'datos' as const, datos: [] };
+    },
+    campanas: ['120249590301010467'],
+    guardados: guardadosHasta(HOY),
+  });
+
+  assert.deepEqual(r.resultado.huecos, [], 'el reintento anduvo: no tendría que quedar hueco');
+  assert.deepEqual(
+    r.resultado.fallidas,
+    [],
+    'la campaña se recuperó y el resumen la sigue acusando de podrida',
+  );
+});
+
+test('una campaña que se recupera en UN día y sigue rota en otro NO se limpia', async () => {
+  let vistas15 = false;
+  // La comprobación que hace útil a la anterior: limpiar sin mirar los huecos declararía sana a una
+  // campaña que sigue sin datos en otro día de la misma ventana.
+  const r = await recolectarAnuncios(ORG, ACCESO, {
+    ahora: AHORA,
+    vinculo: VINCULO_OK,
+    reloj: () => 0,
+    /* Dos días fallan en la primera vuelta: el 15 se recupera en el reintento y el 14 no. El ORDEN
+       importa y por eso está así: el reintento que ANDA llega ANTES que el que falla, que es el caso
+       en que una comprobación hecha dentro del bucle —mirando sólo los huecos acumulados hasta ese
+       momento— declara sana a una campaña que se va a romper dos líneas después. Medido por
+       mutación. */
+    pedir: async (_a, _c, dia) => {
+      const falla = { tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } };
+      if (dia === '2026-09-14') return falla;
+      if (dia === '2026-09-15') {
+        const primeraDelQuince = !vistas15;
+        vistas15 = true;
+        return primeraDelQuince ? falla : { tipo: 'datos' as const, datos: [] };
+      }
+      return { tipo: 'datos' as const, datos: [] };
+    },
+    campanas: ['120249590301010467'],
+    guardados: guardadosHasta(HOY),
+  });
+
+  assert.equal(r.resultado.huecos.length, 1, 'el día que falla siempre tiene que quedar como hueco');
+  assert.equal(
+    r.resultado.fallidas.length,
+    1,
+    'se declaró sana una campaña que sigue sin datos en un día de la ventana',
+  );
+});
+
 test('lo que falla DOS veces queda anotado como hueco, no se reintenta para siempre', async () => {
   // Es la otra mitad: un identificador podrido —el `888888` que hay en producción— falla siempre, y
   // reintentarlo en bucle gastaría el presupuesto entero en una campaña que no existe.

@@ -610,16 +610,16 @@
 /* El rótulo de grupo: es el `.md-h` de estas pantallas —«Los dos flujos», «Requiere acción
  * ahora»— y toma su misma voz: 12 px, mayúsculas, `.025em`. El punto de color y el contador de
  * la derecha se quedan: dicen cuántos y de qué gravedad, que es información. */
-:is(#v-acquisition, #v-creative, #v-conversion, :is(#v-conversation, #v-acquisition), #v-sales) .ghead {
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead {
   padding: 0 2px 2px;
 }
-:is(#v-acquisition, #v-creative, #v-conversion, :is(#v-conversation, #v-acquisition), #v-sales) .ghead .gt {
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead .gt {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .025em;
   text-transform: uppercase;
 }
-:is(#v-acquisition, #v-creative, #v-conversion, :is(#v-conversation, #v-acquisition), #v-sales) .ghead .gsub {
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) .ghead .gsub {
   font-size: 11.5px;
   color: var(--txt-dim);
 }
@@ -635,7 +635,7 @@
 
 /* Las rejillas de tarjetas y los paneles de cifras: sólo la separación, para que respiren como
    las de operación. La forma de cada tarjeta la da `.card`, que ya está refinada. */
-:is(#v-acquisition, #v-creative, #v-conversion, :is(#v-conversation, #v-acquisition), #v-sales) :is(.grid-4, .cs-panels, .cg, .acq-kpis, .acq-fgrid, .cre-stats) {
+:is(#v-acquisition, #v-creative, #v-conversion, #v-conversation, #v-sales) :is(.grid-4, .cs-panels, .cg, .acq-kpis, .acq-fgrid, .cre-stats) {
   gap: 12px;
 }
 
@@ -649,14 +649,6 @@
    en `aios.css:1738` que la tarjeta translúcida pisa — y está bien que la pise: el degradado
    existía para separarla del lienzo plano del maquetado, y acá esa separación la da el
    desenfoque. */
-#v-acquisition :is(.acq-kpis > *, .acq-fgrid > .card) {
-  border-radius: var(--radio-tarjeta);
-  background: rgb(var(--c-panel) / .5);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--line);
-}
-#v-acquisition .acq-range { border-radius: var(--radio); }
-#v-acquisition .acq-sub { font-size: 11.5px; color: var(--txt-dim); }
 
 /* Creative: la tira de cifras y las tarjetas de contenido. */
 #v-creative :is(.cre-stats > *, .cg > .cc) {
@@ -691,6 +683,24 @@
   color: var(--txt-faint);
 }
 #v-sales .mini-bar { border-radius: 9999px; }
+
+/* ── LO QUE SE FUE CON LA MAQUETA, Y LO QUE QUEDA A PROPÓSITO ───────────────
+ *
+ * `acq-kpis`, `acq-fgrid`, `acq-range`, `acq-sub` y las demás `acq-*` del prototipo vestían lo que
+ * se borró con `lib/aios/acquisition.js`: los contenedores que llenaba el módulo imperativo, el
+ * selector de rango personalizado y el comparador de períodos. Comprobado antes de tocar nada:
+ * **cero referencias vivas** en todo el repositorio.
+ *
+ * Se fueron las TRES reglas cuyo selector nombra únicamente clases muertas. `.acq-kpis` y
+ * `.acq-fgrid` siguen nombradas una vez más arriba, dentro de un `:is()` compartido con `.grid-4`,
+ * `.cs-panels`, `.cg` y `.cre-stats`, que sí están vivas en Creative y Conversion. **Quitarles un
+ * trozo a ese selector es más riesgoso que dejar el peso**: una lista de clases dentro de un `:is()`
+ * es fácil de recortar de más, y el modo de fallo es una pantalla ajena que pierde su rejilla sin
+ * que ninguna prueba lo note.
+ *
+ * Y no vuelven por inercia: el período de esta pantalla es el cerrado de `lib/negocio/periodo.ts` y
+ * la comparación contra otro período no existe — el porqué está en la cabecera de
+ * `components/views/AcquisitionView.jsx`. */
 
 /* ── ACQUISITION: LA TABLA POR ANUNCIO ──────────────────────────────────────
  *
@@ -811,3 +821,20 @@
   #v-acquisition .acq-fila > :nth-child(7) { display: none; }
   #v-acquisition .acq-de { display: none; }
 }
+
+/* ── LA MARCA DEL PUNTO INVERTIDO DEL MONITOR ───────────────────────────────
+ *
+ * Cuatro de los cinco puntos del § 18.14 son COBERTURAS: la barra llena es buena noticia. El de las
+ * UTM incompletas cuenta lo que está ROTO, así que su barra llena es lo peor.
+ *
+ * Con el mismo lenguaje visual, una barra al 100 % significa lo contrario según la fila y no hay
+ * forma de saber cuál se está mirando. El rótulo lo dice con palabras y el tono de aviso lo dice
+ * antes de leerlo. */
+#v-acquisition .acq-peor {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+#v-acquisition .acq-inverso .csr-b i { background: rgb(var(--c-warn) / .55); }

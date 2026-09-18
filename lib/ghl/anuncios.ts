@@ -157,7 +157,15 @@ export interface IntegracionDeAnuncios {
   /** La cuenta publicitaria de Meta, con el prefijo `act_`. `null` = no hay ninguna vinculada. */
   cuentaId: string | null;
   /** Cuántas páginas de Facebook trae la vinculación. Sirve para decir qué se conectó. */
-  paginas: number;
+  /**
+   * Cuántas páginas de Facebook trae la integración. **`null` = el proveedor no mandó el campo**,
+   * que no es lo mismo que «tiene cero».
+   *
+   * Era `number` con un `: 0` de respaldo, y eso colapsa los dos ceros justo en el dato que sirve
+   * para diagnosticar un vínculo a medias: una integración conectada sin ninguna página es un
+   * problema concreto, y una respuesta que no trae el campo es que no sabemos.
+   */
+  paginas: number | null;
 }
 
 /**
@@ -182,7 +190,7 @@ export async function integracionDeAnuncios(acceso: {
     datos: {
       estado: texto(o.status),
       cuentaId: texto(o.fbAdAccountId),
-      paginas: Array.isArray(o.pages) ? o.pages.length : 0,
+      paginas: Array.isArray(o.pages) ? o.pages.length : null,
     },
   };
 }
@@ -240,7 +248,7 @@ const PAGINAS_MAXIMAS = 20;
 export async function estructuraDeAnuncios(
   acceso: { token: string; locationId: string },
   nivel: NivelDeAnuncio,
-): Promise<ResultadoDeGhl<EntidadDeAnuncio[]>> {
+): Promise<ResultadoDeGhl<EntidadDeAnuncio[]> & { corto?: boolean }> {
   /* La clave del identificador cambia con el nivel, y eso NO es un capricho del proveedor: es la
      forma de Meta. Se normaliza acá para que quien consuma no tenga que saberlo. */
   const claveDelId: Record<NivelDeAnuncio, string> = {
@@ -255,7 +263,13 @@ export async function estructuraDeAnuncios(
   const vistos = new Set<string>();
   let cursor: string | null = null;
 
-  for (let pagina = 0; pagina < PAGINAS_MAXIMAS; pagina++) {
+  /* `corto` queda en verdadero si se agotaron las páginas sin que el proveedor dijera que no hay
+     más. Sin esto, veinte páginas es un tope que RECORTA en silencio — y `cliente.ts` ya dejó
+     escrito, para el barrido de contactos, que un tope alcanzado tiene que decirse: una lista corta
+     que se ve completa es peor que una que falla. */
+  let corto = false;
+  let pagina = 0;
+  for (; pagina < PAGINAS_MAXIMAS; pagina++) {
     const url =
       `${BASE}/ad-publishing/facebook/entity?locationId=${encodeURIComponent(acceso.locationId)}` +
       `&type=${ORIGEN}&entityType=${nivel}` +
@@ -289,7 +303,12 @@ export async function estructuraDeAnuncios(
     if (cursor === null || nuevas === 0) break;
   }
 
-  return { tipo: 'datos', datos: salida };
+  /* Se agotó el tope y el proveedor seguía ofreciendo página: la lista está RECORTADA. Medido el
+     2026-09-16, el nivel AD trae 402 anuncios en cinco páginas, así que veinte es holgado — pero el
+     día que deje de serlo, una lista corta que se ve completa es peor que una que falla. */
+  corto = pagina >= PAGINAS_MAXIMAS && cursor !== null;
+
+  return { tipo: 'datos', datos: salida, corto };
 }
 
 // ─── Las métricas ───────────────────────────────────────────────────────────

@@ -600,6 +600,22 @@ export async function recolectarAnuncios(
   }
 
   resumen.anuncios = vistos.size;
-  resumen.fallidas = [...conFallo].map(([campana, porque]) => ({ campana, porque }));
+  /* ── UNA CAMPAÑA QUE SE RECUPERÓ NO SIGUE ACUSADA ──────────────────────────
+   *
+   * `conFallo` se llena en la primera vuelta, así que una campaña que falló una vez y anduvo en el
+   * reintento seguía apareciendo como podrida. Es exactamente el caso que motivó el reintento: en
+   * el relleno inicial `120249590301010467` falló UN día de treinta por un 500 pasajero.
+   *
+   * Se decide DESPUÉS del bucle y no adentro, y eso no es estilo: adentro, la comprobación sólo ve
+   * los huecos acumulados hasta ese momento, así que el veredicto dependía del orden en que
+   * llegaran los reintentos. Medido por mutación: con el fallo permanente DESPUÉS del transitorio,
+   * la campaña rota salía declarada sana.
+   *
+   * Queda acusada la que dejó algún hueco — o sea la que sigue sin datos en algún día de la
+   * ventana. */
+  const conHueco = new Set(resumen.huecos.map((h) => h.campana));
+  resumen.fallidas = [...conFallo]
+    .filter(([campana]) => conHueco.has(campana))
+    .map(([campana, porque]) => ({ campana, porque }));
   return { corrio: true, resultado: resumen, llamadas: resumen.llamadas };
 }

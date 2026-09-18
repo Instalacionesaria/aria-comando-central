@@ -21,7 +21,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { HORARIOS, TAREAS, tareasDelHorario, type Tarea } from '../../lib/negocio/barrido.ts';
+import {
+  HORARIOS,
+  TAREAS,
+  motivoDeLoIncompleto,
+  tareasDelHorario,
+  type Tarea,
+} from '../../lib/negocio/barrido.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (ruta: string) => readFileSync(new URL(ruta, RAIZ), 'utf8');
@@ -267,4 +273,39 @@ test('el camino del cron empieza con `/api/`, que es lo único que el proxy no r
   for (const c of configuracion().crons ?? []) {
     assert.match(c.path, /^\/api\//, `el camino «${c.path}» no está bajo /api/`);
   }
+});
+
+// ─── EL SELLO DICE QUÉ LE FALTÓ A UNA PASADA QUE IGUAL CORRIÓ ───────────────
+
+test('una pasada truncada NO se sella igual que una completa', () => {
+  /* ══ EL SELLO ES EL ÚNICO REGISTRO QUE SOBREVIVE A LA CORRIDA ══════════════
+   *
+   * `atrasado` y `huecos` viajaban en el resumen y **no llegaban a ninguna parte**: el sello decía
+   * `corrio` con el motivo en nulo, así que una pasada que se quedó sin presupuesto se veía igual
+   * que una completa desde la pantalla de monitoreo.
+   *
+   * No puede sellarse como `fallo` —corrió, y marcarla así haría que el cron la reintentara— pero
+   * tampoco como una completa. El motivo es el campo libre que tiene, y es donde va. */
+  assert.match(
+    String(motivoDeLoIncompleto({ atrasado: true, huecos: [], ilegibles: 0 })),
+    /presupuesto/,
+    'una ventana truncada no dejó rastro en el sello',
+  );
+  assert.match(
+    String(motivoDeLoIncompleto({ atrasado: false, huecos: [{ campana: '888888', dia: '2026-09-18' }] })),
+    /1 par/,
+    'los huecos no llegan al sello',
+  );
+  // Un solo ilegible ya es la firma de que el proveedor cambió una clave: no lleva umbral.
+  assert.match(String(motivoDeLoIncompleto({ ilegibles: 1 })), /no se pudieron leer/);
+});
+
+test('sin nada que decir, el motivo es NULO y la pantalla no dibuja nada', () => {
+  /* La regla del silencio aplicada al registro de operación. Un motivo que aparece siempre es uno
+     que nadie lee, y con él se pierde el que importa. */
+  assert.equal(motivoDeLoIncompleto({ atrasado: false, huecos: [], ilegibles: 0 }), null);
+  // Y las otras cinco tareas devuelven resúmenes sin estos campos: ninguna cambia de comportamiento.
+  assert.equal(motivoDeLoIncompleto({ traidos: {}, guardados: {} }), null);
+  assert.equal(motivoDeLoIncompleto(null), null);
+  assert.equal(motivoDeLoIncompleto('un texto'), null);
 });

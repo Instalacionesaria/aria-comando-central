@@ -458,7 +458,17 @@ export async function barrerTodo(
           llamadas: r.llamadas,
           resumen: r.resultado,
         });
-        await sellar(org.id, tarea, 'corrio', null, r.llamadas);
+        /* ── UNA PASADA TRUNCADA NO SE SELLA COMO UNA COMPLETA ────────────────
+         *
+         * `sellar` es el único registro que sobrevive a la corrida, y el motivo es el único campo
+         * libre que tiene. Una tarea que se quedó sin presupuesto **corrió** —no es un fallo, y
+         * marcarla como tal haría que el cron la reintentara— pero dejó trabajo sin hacer, y eso
+         * tiene que poder leerse desde la pantalla de monitoreo sin abrir un registro.
+         *
+         * Hoy sólo `anuncios` informa esto. `motivoDeLoIncompleto` devuelve nulo para las demás, así
+         * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
+         * lugar donde decirlo ya existe. */
+        await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
       } catch (e) {
         // El mensaje de la excepción va al REGISTRO y no al cuerpo (`ADR-0704`): puede llevar
         // nombres de tabla o fragmentos de consulta.
@@ -611,6 +621,33 @@ async function releerContactos(
   // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
   if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
   return { corrio: true, resultado: r.resumen, llamadas: r.resumen.llamadas };
+}
+
+/**
+ * Qué le faltó a una pasada que igual corrió, o `null` si no le faltó nada.
+ *
+ * **La regla del silencio aplicada al registro de operación**: sin nada que decir, el motivo queda
+ * nulo y la pantalla de monitoreo no dibuja nada. Un motivo que aparece siempre es uno que nadie
+ * lee, y con él se pierde el que importa.
+ *
+ * Lee el resumen sin conocer su tipo a propósito: el barrido despacha seis tareas con seis formas de
+ * resultado distintas, y hacerle sitio a cada una acá sería acoplar el orquestador a todas.
+ */
+export function motivoDeLoIncompleto(resultado: unknown): string | null {
+  if (typeof resultado !== 'object' || resultado === null) return null;
+  const r = resultado as { atrasado?: unknown; huecos?: unknown; ilegibles?: unknown };
+  const partes: string[] = [];
+
+  if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
+  if (Array.isArray(r.huecos) && r.huecos.length > 0) {
+    partes.push(`${r.huecos.length} par(es) (campaña, día) sin datos`);
+  }
+  // Un solo ilegible ya es la firma de que el proveedor cambió una clave. No lleva umbral.
+  if (typeof r.ilegibles === 'number' && r.ilegibles > 0) {
+    partes.push(`${r.ilegibles} fila(s) que el proveedor mandó y no se pudieron leer`);
+  }
+
+  return partes.length === 0 ? null : partes.join('; ');
 }
 
 /**

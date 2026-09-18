@@ -1,3 +1,5 @@
+'use client';
+
 /* El tablero de Acquisition: lo que costó cada anuncio, y cuánto vale esa cifra.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -24,6 +26,16 @@
  * El § 18.5 sólo deja publicar una conclusión por anuncio **con su cobertura al lado**. Por eso la
  * cobertura no es una nota al pie ni un bloque al final: va arriba de la tabla, antes de que nadie
  * lea una sola fila. El § 18.14 lo dice como requisito y acá es una decisión de maquetado.
+ *
+ * ── Y `'use client'` NO ES DECORACIÓN ──────────────────────────────────────
+ *
+ * Este panel usa `useState`, `useEffect` y `useCallback`. Andaba sin la directiva porque hereda el
+ * límite de cliente de quien lo importa —`CommandCenter.jsx`—, y era el único panel con estado del
+ * repositorio sin declararlo: `PanelDeConversation` la tiene en su primera línea.
+ *
+ * Depender de la herencia es frágil de una forma concreta: el día que alguien renderice esta vista
+ * desde un componente de servidor, el error no dice «falta 'use client'», dice que los hooks no se
+ * pueden usar acá — tres archivos más arriba.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -80,7 +92,11 @@ export default function PanelDeAcquisition() {
     <>
       {/* La barra, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar. */}
       <div className="cs-barra">
-        <Periodos valor={periodo} alElegir={setPeriodo} />
+        {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió. Con el estado
+            local, una respuesta que se cruza con otra deja el botón describiendo cifras que no son
+            las de abajo — y las dos se ven bien. Mientras no hay datos manda el local, que es lo
+            único que hay. */}
+        <Periodos valor={pantalla?.periodo ?? periodo} alElegir={setPeriodo} />
       </div>
 
       {error ? <p className="cs-grave">{error}</p> : null}
@@ -88,7 +104,14 @@ export default function PanelDeAcquisition() {
       {cargando && pantalla === null ? (
         <p className="cs-vacio">Leyendo el costo de los anuncios…</p>
       ) : pantalla === null ? null : (
-        <Cuerpo p={pantalla} />
+        /* ── LA CLAVE REINICIA EL CUERPO AL CAMBIAR DE PERÍODO ────────────
+           Sin ella, el «ver todos» de la tabla sobrevive al cambio: se despliegan las ochenta filas
+           de treinta días, se toca «Hoy», y quedan ochenta filas desplegadas de otra ventana — con
+           el botón que decía cuántas faltaban ya consumido, así que nada lo desmiente.
+
+           Es estado de presentación que describe UNA ventana, y al cambiar de ventana deja de
+           describir lo que hay. */
+        <Cuerpo key={pantalla.periodo} p={pantalla} />
       )}
     </>
   );
@@ -164,12 +187,19 @@ function pct(v) {
   return v === null || v === undefined ? null : `${v}%`;
 }
 
-/** `2026-09-16` a algo que se lee. Sin año: las ventanas de esta pantalla no lo cruzan. */
+/**
+ * `2026-09-16` a algo que se lee.
+ *
+ * El año se dibuja **sólo cuando no es el corriente**. Decía «sin año: las ventanas de esta pantalla
+ * no lo cruzan» y eso es falso para «Completo», que son 3.650 días: «Del 3 ene al 16 sep» sobre diez
+ * años de datos es una frase que se lee bien y dice otra cosa.
+ */
 function fechaCorta(iso) {
   if (!iso) return null;
-  const [, m, d] = iso.split('-');
+  const [a, m, d] = iso.split('-');
   const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}`;
+  const esteAno = String(new Date().getFullYear());
+  return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}${a === esteAno ? '' : ` ${a}`}`;
 }
 
 function Cuerpo({ p }) {
@@ -189,6 +219,7 @@ function Cuerpo({ p }) {
 function Gasto({ c }) {
   const desde = fechaCorta(c.desde);
   const hasta = fechaCorta(c.hasta);
+  const conGasto = c.filas.filter((f) => f.gasto !== null).length;
 
   return (
     <div className="csf">
@@ -206,9 +237,20 @@ function Gasto({ c }) {
               : 'Todavía no hay ningún día guardado'}
           </p>
         </div>
+        {/* ── EL DENOMINADOR ES EL DE LA CIFRA, NO EL DE LA TABLA ──────────
+            Decía `c.filas.length`, que incluye a propósito los anuncios SIN gasto —los que trajeron
+            leads y no tienen métricas, y los que no entregaron ningún día—. Pero `gastoTotal` se
+            suma sólo sobre los que SÍ gastaron, así que numerador y denominador describían dos
+            poblaciones distintas pegados en la misma frase.
+
+            Medido el 2026-09-18: 79 anuncios en la tabla y 12 con gasto. «$3.511 en 79 anuncios»
+            invita a dividir y da un promedio por anuncio que no es de nadie. */}
         <p className="csf-key">
           <b>{plata(c.gastoTotal) ?? '—'}</b>
-          <span>en {c.filas.length} anuncios</span>
+          <span>
+            en {conGasto} {conGasto === 1 ? 'anuncio' : 'anuncios'}
+            {conGasto < c.filas.length ? ` de ${c.filas.length}` : ''}
+          </span>
         </p>
       </div>
       <Nota texto={c.aviso} grave />
@@ -240,9 +282,17 @@ function Atribucion({ a }) {
       </div>
 
       {a.puntos.map((punto) => (
-        <div className="csr" key={punto.clave}>
+        /* ── EL PUNTO INVERTIDO SE MARCA, O LA BARRA MIENTE ────────────────
+           En cuatro de los cinco, la barra llena es buena noticia: son coberturas. En
+           `utm_incompletas` la barra llena es lo PEOR — cuenta lo que está roto. Dibujados con el
+           mismo lenguaje, una barra al 100 % significa lo contrario según la fila, y no hay forma
+           de saber cuál se está mirando.
+
+           El argumento completo está en `calidadDeLaAtribucion.ts`, en `alReves()`. */
+        <div className={punto.clave === 'utm_incompletas' ? 'csr acq-inverso' : 'csr'} key={punto.clave}>
           <span className="csr-n">
             {punto.titulo}
+            {punto.clave === 'utm_incompletas' ? <em className="acq-peor"> · menos es mejor</em> : null}
             <Nota texto={punto.consecuencia} />
           </span>
           {/* El guion cuando la proporción viaja nula, que es «no se puede decir» y no «cero». */}
@@ -292,15 +342,10 @@ function Tabla({ c }) {
   const visibles = todos ? c.filas : c.filas.slice(0, ANUNCIOS_A_LA_VISTA);
   const ocultos = c.filas.length - visibles.length;
 
-  if (c.filas.length === 0) {
-    return (
-      <div className="csf">
-        <p className="cs-grave">
-          Todavía no hay costo de anuncios guardado. La primera lectura corre con el barrido diario.
-        </p>
-      </div>
-    );
-  }
+  /* Sin filas no se dibuja NADA acá, y el literal no se repite: el servidor ya manda ese mismo
+     texto en `costo.aviso` y el encabezado lo publica. Escribirlo también acá lo mostraba dos
+     veces, y dejaba la frase copiada en dos sitios que se corrigen por separado. */
+  if (c.filas.length === 0) return null;
 
   return (
     <div className="csf">

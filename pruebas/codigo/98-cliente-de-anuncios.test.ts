@@ -152,6 +152,46 @@ test('una página que no agrega nada CORTA, aunque el cursor siga viniendo', asy
   assert.equal(pedidas.length, 2, 'siguió pidiendo páginas que no agregaban nada');
 });
 
+test('si se agota el tope de páginas y el proveedor sigue ofreciendo, lo DICE', async () => {
+  /* Veinte páginas es holgado —el nivel AD trae 402 anuncios en cinco— pero un tope que recorta en
+     silencio deja una lista corta que se ve completa, que es peor que una que falla. */
+  for (let i = 0; i < 20; i += 1) {
+    respuestas.push({ estado: 200, cuerpo: { data: [{ adId: `a${i}`, name: `uno ${i}` }], next: `c${i}` } });
+  }
+
+  const r = await estructuraDeAnuncios(ACCESO, 'AD');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.equal(r.datos.length, 20);
+  assert.equal(r.corto, true, 'se agotó el tope con cursor pendiente y no lo dijo');
+});
+
+test('una lista que termina sola NO se declara recortada', async () => {
+  // La otra mitad: un `corto: true` fijo haría que el aviso apareciera siempre, o sea nunca.
+  respuestas.push({ estado: 200, cuerpo: { data: [{ adId: 'a1', name: 'uno' }], next: null } });
+
+  const r = await estructuraDeAnuncios(ACCESO, 'AD');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+  assert.equal(r.corto, false, 'una lista completa se declaró recortada');
+});
+
+test('`paginas` distingue «no mandó el campo» de «tiene cero»', async () => {
+  /* Los dos ceros, en el dato que sirve para diagnosticar un vínculo a medias: una integración
+     conectada SIN ninguna página es un problema concreto; una respuesta que no trae el campo es que
+     no sabemos. Un `: 0` de respaldo los hacía idénticos. */
+  respuestas.push({ estado: 200, cuerpo: { status: 'connected', fbAdAccountId: 'act_1', pages: [] } });
+  const cero = await integracionDeAnuncios(ACCESO);
+  assert.equal(cero.tipo, 'datos');
+  if (cero.tipo === 'datos') assert.equal(cero.datos.paginas, 0, 'cero páginas ES cero, y se mide');
+
+  respuestas.push({ estado: 200, cuerpo: { status: 'connected', fbAdAccountId: 'act_1' } });
+  const sin = await integracionDeAnuncios(ACCESO);
+  assert.equal(sin.tipo, 'datos');
+  if (sin.tipo === 'datos') assert.equal(sin.datos.paginas, null, 'sin campo se guardó como cero');
+});
+
 // ─── EL 429, QUE ES EL RIESGO DEL COLECTOR ──────────────────────────────────
 
 test('un 429 se REINTENTA, y un 500 no', async () => {
