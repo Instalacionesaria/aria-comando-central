@@ -152,20 +152,27 @@ const PASOS = [
    * `contacts` no recibe la estética. Se mueve ahí en vez de borrarse. */
   ['calendario · 7 días',  async p => { await p.click('.dp-side button[data-q="2"]');
                                         await p.click('.dp-f .go'); },           '#v-contacts .lp-wrap'],
-  /* Éste SÍ se queda mirando Creative, y a propósito: `#drawer` vive en `components/Overlays.jsx`
-   * —hermano de las vistas, no hijo—, así que la estética no lo alcanza y su contenido se puede
-   * seguir comparando contra el maquetado. Es la única rendija que queda para comprobar que
-   * `creative.js` sigue dando los mismos datos que el `<script>` original. Ahora hay que navegar
-   * a la vista antes de clicar, porque el recorrido ya no empieza ahí. */
-  ['drawer de contenido',  async p => { await p.click('.nav-item[data-view="creative"]');
-                                        await p.click('#v-creative .cc[data-cre]'); }, '#drawer.on'],
-  ['plan de Creative',     async p => { await p.click('#dwClose');
-                                        await p.click('#recoBtn'); },            '#recoModal.on'],
-  ['plan de Acquisition',  async p => { await p.click('#recoClose');
-                                        await p.click('.nav-item[data-view="acquisition"]');
-                                        await p.click('#acqPlanBtn'); },         '#recoModal.on'],
-  ['ficha de lead',        async p => { await p.click('#recoClose');
-                                        await p.click('.nav-item[data-view="contacts"]');
+  /* ── SALIERON TRES PASOS, Y UNO YA ESTABA ROTO ──────────────────────────
+   *
+   * Los tres miraban botones que ya no existen, y conviene decir cuál se fue con qué:
+   *
+   *   · **«drawer de contenido»** clicaba `#v-creative .cc[data-cre]`. Ese selector lo emitía
+   *     `lib/aios/creative.js`, que se borró con la reescritura de Creative. Su comentario decía
+   *     que era *«la única rendija que queda para comprobar que `creative.js` sigue dando los
+   *     mismos datos que el `<script>` original»* — cuando el módulo se va, la rendija no se rompe:
+   *     deja de tener algo que comparar.
+   *   · **«plan de Creative»** clicaba `#recoBtn`, que se fue con la vista nueva: de las doce
+   *     frases que abría, diez no tienen fuente.
+   *   · **«plan de Acquisition»** clicaba `#acqPlanBtn`, **y ese paso estaba roto desde la
+   *     reescritura de Acquisition**. Nadie lo notó porque `npm run paridad` no corre dentro de
+   *     `scripts/pruebas.mjs`: es un comando aparte. Queda dicho porque es el modo de fallo de este
+   *     archivo entero — un paso que apunta a un botón que ya no está no falla hasta que alguien
+   *     corre el comando a mano.
+   *
+   * Y por eso «ficha de lead» pierde su `#recoClose` inicial: la cadena es secuencial —cada paso
+   * cierra lo que abrió el anterior— así que al irse los tres de arriba ya no hay modal que cerrar,
+   * y el clic caería sobre un botón invisible. */
+  ['ficha de lead',        async p => { await p.click('.nav-item[data-view="contacts"]');
                                         await p.click('#v-contacts .lc'); },     '#drawer.on'],
   ['grupo de contactos',   async p => { await p.click('#dwClose');
                                         await p.click('#v-contacts [data-leads]'); }, '.lg.on'],

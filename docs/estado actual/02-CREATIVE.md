@@ -3,7 +3,36 @@
 > Lo que no se pudo verificar está dicho como pendiente, no omitido.
 > Para ubicar cualquier cosa nombrada acá, ver `08-COMO-USAR-EL-GRAFO.md`.
 
-**Prototipo completo — pantalla entera con datos inventados.**
+> **CORRECCIÓN del 2026-09-19 — esta pantalla se construyó, y dos de las afirmaciones de abajo eran falsas.**
+>
+> `lib/aios/creative.js` **ya no existe**: se borró junto con sus 201 literales, y lo reemplazan
+> `app/api/creative/route.ts` y `components/creative/PanelDeCreative.jsx`, que publican el ICP y la
+> agenda por pieza, el hook rate y las tasas de enlace, y la caída del CTR.
+>
+> **Dos correcciones de fondo, medidas:**
+>
+> 1. El § 5 dice *«De Meta, y es la mitad entera del § 18.12: ninguna de las nueve existe»* y que
+>    *«buscando `facebook`/`graph.facebook`/`meta_ads` en el código no aparece ningún cliente del API
+>    de Meta»*. Lo segundo era cierto y lo primero no se sigue de ello: **GoHighLevel expone el Ad
+>    Manager de Meta**, y su endpoint por anuncio devuelve un desglose de acciones que da el hook
+>    rate, el link CTR, la landing page view rate y el click-to-landing. **Cuatro de los nueve
+>    indicadores del § 18.12 se construyen hoy.** El error fue el que este mismo informe ya había
+>    nombrado en otro contexto: un `grep` sobre nuestro código prueba qué pedimos, nunca qué manda el
+>    proveedor.
+>
+> 2. El § 3.7 y la regla 10 dan por construible la **fatiga por frecuencia**. No lo es, y no por el
+>    proveedor: la frecuencia no se puede agregar a lo largo de días ni de anuncios. Lo que sí se
+>    construye es la caída del CTR, que es la otra mitad del indicador.
+>
+> Lo que este informe midió y **sigue en pie**: las diez reglas del § 6 —la unidad es el creativo, el
+> mismo creativo en varios anuncios, TOFU contra BOFU, la normalización, los dos caminos, el campo
+> «Anuncio» peor que el jsonb, el piso y la ventana, «sin creativo» como grupo, `alta_en_el_crm`, y
+> lo que Creative no calcula— son todas correctas y están convertidas en requisitos numerados en
+> `docs/creative/`. Y los cuatro huecos que declara —cuartiles, tiempo medio visto, placement y el
+> activo creativo— están confirmados uno por uno, con el código de error de cada intento, en
+> `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`.
+
+**Prototipo completo — pantalla entera con datos inventados.** *(Era cierto hasta el 2026-09-19; ver la corrección de arriba.)*
 
 La pantalla está completa y no tiene ni un dato real: las 450 líneas de `lib/aios/creative.js` dibujan ocho piezas inventadas con nombre, guion y curva de retención fabricada — y mientras tanto la base ya guarda, con nombre de creativo, 233 contactos de los últimos 14 días que permitirían un ranking real por calidad de lead (ICP 27,5 vs 74,1 según el creativo) sin conectar nada nuevo.
 

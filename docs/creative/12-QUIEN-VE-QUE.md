@@ -1,5 +1,20 @@
 # Quién ve qué: la vista del responsable creativo
 
+> **`lib/aios/creative.js` YA NO EXISTE.** Se borró el 2026-09-19, y con él los 201 literales
+> inventados que esta carpeta documenta. Las citas `creative.js:N` de abajo **siguen siendo
+> correctas como referencia histórica** —el archivo y sus líneas están en el historial de git— y ésa
+> es toda su función: este documento nunca describió lo que hay, describió lo que la maqueta dibujaba
+> para sacar de ahí los requisitos.
+>
+> **Y `components/views/CreativeView.jsx` se reescribió el mismo día**: pasó de 99 líneas a 70, así
+> que sus citas son de DOS clases y la segunda es la peligrosa. Las que apuntan más allá de la línea
+> 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
+> cosa**, que es peor: una línea corrida no falla.
+>
+> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+
 > Fuente: `CC_Arquitectura_Funcional.md` § 18.15 (`:1499-1531`) y § 18.10 (`:1369-1383`).
 > Más la declaración real de la sección en `lib/autorizacion/secciones.ts:250-256`.
 

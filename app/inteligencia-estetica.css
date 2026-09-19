@@ -838,3 +838,109 @@
   color: var(--txt-faint);
 }
 #v-acquisition .acq-inverso .csr-b i { background: rgb(var(--c-warn) / .55); }
+
+/* ═════ CREATIVE · las tres tablas y sus coberturas ═══════════════════════════
+ *
+ * Mismo esqueleto que `.acq-tabla` y a propósito: son la misma clase de pantalla —un departamento
+ * que publica cifras con su ventana y sus avisos— y dos dialectos obligarían a quien mira las dos a
+ * aprender dos veces lo mismo.
+ *
+ * Lo que cambia es la cantidad de columnas, y por eso no se comparte el selector: las tres tablas de
+ * Creative tienen anchos distintos entre sí, y `.acq-fila` fija seis columnas numéricas. Reusar la
+ * clase obligaría a pisar `grid-template-columns` tres veces, que es más frágil que declararlas. */
+#v-creative .crv-tabla {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+#v-creative .crv-fila {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--txt);
+}
+/* El nombre de la pieza es la única columna elástica: las demás son cifras de ancho conocido, y
+   dejarlas crecer separaría el rótulo de su número. */
+#v-creative .crv-gente .crv-fila { grid-template-columns: minmax(0, 1fr) repeat(4, minmax(62px, 96px)); }
+#v-creative .crv-subasta .crv-fila { grid-template-columns: minmax(0, 1fr) repeat(5, minmax(58px, 84px)); }
+#v-creative .crv-fatiga .crv-fila { grid-template-columns: minmax(0, 1fr) repeat(4, minmax(64px, 104px)); }
+
+/* Las cifras a la derecha: una columna de números alineada por su última cifra se compara de un
+   vistazo, y centrada no. */
+#v-creative .crv-fila > span:not(.crv-n) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#v-creative .crv-cab {
+  border-top: 0;
+  padding-bottom: 7px;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+#v-creative .crv-n {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  /* Se corta con puntos suspensivos y NO se parte en dos renglones: los nombres reales miden hasta
+     38 caracteres («Servicio HT - transición a AI Native A») y partidos duplicarían el alto. El
+     nombre entero queda en el `title`. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* El denominador de una tasa, pegado a ella y en tono menor. Sin él, «100 %» sobre un contacto se
+   lee igual que sobre cien — y en las tasas del desglose dice sobre cuántos días se midió. */
+#v-creative .crv-de {
+  font-style: normal;
+  color: var(--txt-faint);
+  font-size: 10.5px;
+}
+#v-creative .crv-mas {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  background: none;
+  color: var(--txt-dim);
+  font-size: 11px;
+  cursor: pointer;
+}
+#v-creative .crv-mas:hover { color: var(--txt); border-color: var(--line-strong); }
+
+/* El rótulo de etapa que encabeza cada grupo. Existe porque la regla 3 no dice «distinguir TOFU de
+   BOFU»: dice NO COMPARARLOS, y en una sola lista ordenada quedan uno al lado del otro. */
+#v-creative .crv-grupo + .crv-grupo { margin-top: 18px; }
+#v-creative .crv-etapa {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+
+/* La pieza cuyo CTR cayó sobre el umbral. En tono de aviso y no de error: el umbral es provisional
+   —el documento funcional lo declara pendiente— así que esto señala, no sentencia. */
+#v-creative .crv-cansada .crv-n { color: rgb(var(--c-warn)); }
+#v-creative .crv-cansada > span:last-child { color: rgb(var(--c-warn)); }
+
+@media (max-width: 900px) {
+  /* Se van las dos columnas más derivadas: el ICP y el conteo de anuncios se leen en el cajón, y el
+     link CTR y la landing salen de la misma familia que el hook. Lo que NO se va es el denominador
+     de cada tasa. */
+  #v-creative .crv-gente .crv-fila { grid-template-columns: minmax(0, 1fr) repeat(2, minmax(62px, 96px)); }
+  #v-creative .crv-gente .crv-fila > :nth-child(4),
+  #v-creative .crv-gente .crv-fila > :nth-child(5) { display: none; }
+  #v-creative .crv-subasta .crv-fila { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(58px, 84px)); }
+  #v-creative .crv-subasta .crv-fila > :nth-child(5),
+  #v-creative .crv-subasta .crv-fila > :nth-child(6) { display: none; }
+}

@@ -1,5 +1,20 @@
 # Creative — mapa de los requisitos
 
+> **`lib/aios/creative.js` YA NO EXISTE.** Se borró el 2026-09-19, y con él los 201 literales
+> inventados que esta carpeta documenta. Las citas `creative.js:N` de abajo **siguen siendo
+> correctas como referencia histórica** —el archivo y sus líneas están en el historial de git— y ésa
+> es toda su función: este documento nunca describió lo que hay, describió lo que la maqueta dibujaba
+> para sacar de ahí los requisitos.
+>
+> **Y `components/views/CreativeView.jsx` se reescribió el mismo día**: pasó de 99 líneas a 70, así
+> que sus citas son de DOS clases y la segunda es la peligrosa. Las que apuntan más allá de la línea
+> 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
+> cosa**, que es peor: una línea corrida no falla.
+>
+> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+
 > Requisitos derivados del prototipo de Creative, de la especificación funcional § 18, y —lo que
 > Acquisition no tuvo— de una **medición propia contra la API de GoHighLevel** hecha el 2026-09-18.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como
@@ -7,11 +22,20 @@
 > El estado de cada dato sale de `docs/estado actual/02-CREATIVE.md`, medido el 2026-09-15, más las
 > mediciones nuevas de `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`.
 >
-> **`lib/aios/creative.js` todavía existe al escribirse esta carpeta.** Son 450 líneas con 201
-> literales numéricos inventados y 30 frases de guion, y arranca desde `bootAios()` en cada carga de
-> página. Las citas `creative.js:N` describen **lo que la maqueta dibuja**, no lo que el sistema
-> calcula. El día que el archivo se borre, esas citas pasan a ser referencia histórica y hay que
-> anotarlo acá arriba, como hizo `docs/acquisition/00-MAPA.md`.
+> **`lib/aios/creative.js` YA NO EXISTE.** Se borró el 2026-09-19, y con él los 201 literales
+> inventados que esta carpeta documenta. Las citas `creative.js:N` de abajo **siguen siendo
+> correctas como referencia histórica** —el archivo y sus líneas están en el historial de git— y ésa
+> es toda su función: este documento nunca describió lo que hay, describió lo que la maqueta dibujaba
+> para sacar de ahí los requisitos.
+>
+> **Y `components/views/CreativeView.jsx` se reescribió el mismo día**: pasó de 99 líneas a 70, así
+> que sus citas son de DOS clases y la segunda es la peligrosa. Las que apuntan más allá de la línea
+> 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
+> cosa**, que es peor: una línea corrida no falla.
+>
+> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
 
 ## Qué es esta carpeta
 
@@ -19,9 +43,14 @@ La pestaña Creative existe, se dibuja entera y no tiene una sola cifra real: **
 `lib/aios/creative.js` y 99 de `components/views/CreativeView.jsx`— que fabrican ocho piezas
 inventadas y las dibujan con seis cifras de cabecera, cinco criterios de orden, una biblioteca
 partida en «Funciona / No funciona», un cajón con curva de retención y guion, y un modal de doce
-recomendaciones. No hay ninguna ruta de servidor detrás: `ls app/api/` devuelve dieciocho carpetas y
-ninguna es `creative`, y la sección se declara con `sinOperacionesTodavia: true`
+recomendaciones. No había ninguna ruta de servidor detrás: `ls app/api/` devolvía dieciocho carpetas
+y ninguna era `creative`, y la sección se declaraba con `sinOperacionesTodavia: true`
 (`lib/autorizacion/secciones.ts:250-256`).
+
+> **Las dos cosas dejaron de ser ciertas el 2026-09-19**: `app/api/creative/route.ts` existe y la
+> bandera se bajó. Se dejan en pasado y no se borran porque son de dónde salieron los requisitos de
+> abajo: la maqueta era la especificación, y si se borra el estado que la describía, los requisitos
+> quedan sin procedencia.
 
 **Y sin embargo, esa maqueta es la especificación.** Alguien decidió que la pantalla ordenara piezas
 por un criterio elegible, las partiera en las que funcionan y las que no, y abriera cada una para

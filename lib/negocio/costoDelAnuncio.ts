@@ -65,6 +65,22 @@ import { COBERTURA_SUFICIENTE } from './calidadDeLaAtribucion.ts';
 /** Mil impresiones. El CPM se llama así por esto y el número no puede vivir suelto en la fórmula. */
 const MIL_IMPRESIONES = 1000;
 
+/**
+ * La ventana de `metricas_de_anuncio`, anclada al día. **Un solo lugar, y por eso es exportada.**
+ *
+ * El `>` estricto no es un detalle: con `>=` la ventana abarca `dias + 1` fechas. Medido el
+ * 2026-09-18 con `dias = 30`, `current_date - 30` es la medianoche del 19 de agosto y `fecha >= esa`
+ * incluye el 19 entero, o sea **31 fechas**.
+ *
+ * Se exporta porque `rendimientoDelCreativo` lee la MISMA tabla al grano de la pieza, y dos módulos
+ * con dos escrituras de la misma ventana divergen en el borde sin que nada falle: una pantalla
+ * diría 31 días de gasto y la otra 30, con la misma etiqueta arriba. Es el defecto que este propio
+ * archivo ya pagó entre su gasto y sus leads, y que el bloque `VENTANAS` documenta.
+ */
+export function ventanaDeMetricas(alias: string, dias: number) {
+  return sql<boolean>`${sql.raw(alias)}.fecha > (current_date - make_interval(days => ${dias}))`;
+}
+
 /** Una fila: un anuncio en toda la ventana. */
 export interface FilaDeCosto {
   anuncioId: string;
@@ -252,10 +268,8 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
       sql<string | null>`sum(m.clics)`.as('clics'),
       sql<number>`count(*) filter (where m.gasto is not null)`.as('diasConEntrega'),
     ])
-    /* `>` y no `>=`: con `>=` la ventana abarca `dias + 1` fechas. Medido el 2026-09-18 con
-       `dias = 30`: `current_date - 30` es la medianoche del 19 de agosto, y `fecha >= esa` incluye
-       el 19 entero, o sea **31 fechas**. Ver `VENTANAS` arriba. */
-    .where(sql<boolean>`m.fecha > (current_date - make_interval(days => ${dias}))`)
+    // La ventana, en el único lugar donde está escrita. Ver `ventanaDeMetricas`.
+    .where(ventanaDeMetricas('m', dias))
     .groupBy(['m.meta_anuncio_id', 'a.nombre', 'a.meta_campana_id'])
     .execute();
 
