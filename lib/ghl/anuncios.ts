@@ -407,8 +407,22 @@ export interface MetricaDeAnuncio {
   cpc: number | null;
   alcance: number | null;
   frecuencia: number | null;
-  /** Lo que META cuenta como lead. Ver el aviso de arriba. */
-  leadsDeMeta: number | null;
+  /**
+   * `leads`, el campo de primer nivel. **Es el conteo del CRM, no el de Meta** — y el nombre viejo
+   * de este campo (`leadsDeMeta`) afirmaba justo lo contrario.
+   *
+   * Medido dos veces, con dos métodos y a ocho meses de distancia: la `050:208-223` comparó 16
+   * filas contra `negocio.contactos` y coincidieron 16; el 2026-09-19 se repitió sobre 15 filas
+   * anuncio-día y coincidieron 14 —la que no, dice 14 contra nuestros 13—. La población de META es
+   * otra, y viaja en `results.lead` dentro de `acciones`: en esas mismas 15 filas coincide con la
+   * nuestra **una sola vez**, y esa una es un empate casual de dos contra dos.
+   *
+   * Se lee y **no se guarda**: es nuestro propio conteo que da un rodeo por el proveedor, y la
+   * base ya lo tiene de primera mano. Queda leído para que el nombre y esta nota sigan acá la
+   * próxima vez que alguien mire la respuesta cruda y lo confunda con el de Meta, que es
+   * exactamente lo que pasó.
+   */
+  leadsDelCrm: number | null;
   /**
    * El desglose de `results` por tipo de acción, ya normalizado a números.
    *
@@ -484,7 +498,7 @@ export async function metricasPorAnuncio(
           cpc: numero(o.cpc),
           alcance: numero(o.reach),
           frecuencia: numero(o.frequency),
-          leadsDeMeta: numero(o.leads),
+          leadsDelCrm: numero(o.leads),
           acciones: d.acciones,
         },
       ];

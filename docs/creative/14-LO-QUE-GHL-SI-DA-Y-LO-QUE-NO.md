@@ -268,16 +268,95 @@ nadie escribió.
 **Mientras no se confirme, se rotula «reproducciones que Meta contó».** El daño concreto de
 equivocarse es que alguien reescriba un gancho por un número que en realidad cuenta ThruPlays.
 
-### C14-P02 · Si `results.lead` es la población de Meta o la nuestra
+## C14-15 · `results.lead` SÍ es la población de Meta — y el KPI sigue sin poder construirse
 
-La `050:208-223` declaró muerto un KPI del § 18.7 —«diferencia entre leads reportados por Meta y leads
+> Esto era la pregunta abierta `C14-P02`. **Contestada el 2026-09-19**, y la respuesta tiene dos
+> mitades que apuntan a lados distintos: la primera revive el KPI y la segunda lo vuelve a enterrar,
+> por un motivo que nadie había mirado.
+
+### La primera mitad: son dos poblaciones, y está probado en la misma respuesta
+
+La `050:208-223` declaró muerto el KPI del § 18.7 —«diferencia entre leads reportados por Meta y leads
 identificados en la base»— tras medir que el campo `leads` de primer nivel es **nuestro propio
-conteo**: 16 de 16 coincidencias exactas contra `negocio.contactos`.
+conteo**: 16 de 16 coincidencias contra `negocio.contactos`.
 
-Pero `results.lead` es otro campo. En la fila medida arriba, `leads` vale `"0"` y `results.lead` vale
-`"1"`. **Si `results.lead` resulta ser el conteo de Meta, ese KPI revive** y son 16 de 25, no 15. Se
-contesta comparando las dos columnas sobre las filas que ya se van a guardar; no se puede contestar
-antes de guardarlas.
+Se repitió la medición pidiendo los **dos campos de la misma respuesta**, sobre 15 filas anuncio-día
+con lead, y contra nuestros contactos del mismo anuncio y el mismo día:
+
+| el campo | coincide con NUESTRO conteo |
+|---|---|
+| `leads` (primer nivel) | **14 de 15** — la que no, dice 14 contra nuestros 13 |
+| `results.lead` | **1 de 15** — y esa una es un empate casual de 2 contra 2 |
+
+Muestra literal del contraste, tres filas del mismo día:
+
+```
+anuncio    día          leads   res.lead   nuestros
+…80467     2026-09-02      33         66         33
+…50467     2026-09-03       0          1          0
+…70467     2026-09-01       1          7          1
+```
+
+**`results.lead` es de Meta.** Queda corregido `lib/ghl/anuncios.ts`, donde el campo se llamaba
+`leadsDeMeta` y era el del CRM: hoy es `leadsDelCrm`, con las dos mediciones al lado.
+
+### La segunda mitad: `lead` cuenta el mismo hecho dos veces, y por eso la resta no significa nada
+
+El `66` contra `33` de arriba no es casualidad. Sobre **las 64 filas** guardadas que traen la clave,
+las dos igualdades se cumplen **en todas**:
+
+```
+lead = onsiteWebLead                  + onsiteConversion.leadGrouped
+lead = offsiteConversion.fbPixelLead  + offsiteSearchAddMetaLeads
+```
+
+O sea que las ocho claves con pinta de lead del censo son **dos hechos con cuatro nombres cada uno**,
+y `lead` los suma:
+
+| el hecho | sus cuatro nombres | total en la ventana |
+|---|---|---|
+| uno | `onsiteWebLead` · `offsiteConversion.fbPixelLead` · `offsiteLeadAdd_20SCalls` | **287** |
+| otro | `onsiteConversion.leadGrouped` · `offsiteSearchAddMetaLeads` · `offsiteCompleteRegistrationAddMetaLeads` · `offsiteContentViewAddMetaLeads` | **215** |
+| `lead` | la suma de los dos | **502** |
+
+Y los dos ocurren en los **mismos anuncios**: de los 15 con lead, **10 reportan los dos** (220 y 213),
+4 sólo el primero y 1 sólo el segundo. Fila por fila no son espejo —30 filas traen los dos con
+valores distintos— así que tampoco es un alias trivial.
+
+**La cifra que decide:** nuestros contactos de esos 10 anuncios son **197**. Contra 220 es el 90 %;
+contra la suma de 433, el 45 %. Nuestro conteo está pegado a **uno** de los dos hechos, no al total.
+
+### Por qué eso mata el KPI y no sólo lo ensucia
+
+El KPI resta dos poblaciones para publicar la diferencia como **leads que Meta contó y nosotros no
+tenemos**. Con `lead` como minuendo, esa diferencia mezcla dos cosas que piden acciones opuestas:
+
+1. leads que de verdad no llegaron al CRM — **hay que ir a buscarlos**;
+2. el segundo mecanismo de conteo de Meta, que puede ser el mismo hecho por otra vía — **no hay nada
+   que buscar**.
+
+Y no se pueden separar desde acá: qué son exactamente los dos hechos, Meta no lo documenta en ningún
+sitio alcanzable desde GoHighLevel, y los nombres no alcanzan para deducirlo (`onsiteWebLead` lleva
+«onsite» y «web» a la vez). Elegir uno de los dos sería inventar; sumarlos es **lo único que está
+medido como incorrecto**.
+
+Además, la brecha que quedara se confundiría con atribución perdida, que acá es grande y está medida:
+los 4 anuncios «sólo el primer hecho» tienen 67 leads de Meta y **cero** contactos por `adId` — pero
+**39 y 204 contactos por nombre**. El cero no era un hueco: era el `adId` que no llega.
+
+**Estado: el KPI del § 18.14 punto 4 no se construye.** No por falta de dato, como creía la `050`,
+sino porque el dato que hay no significa lo que el KPI necesita que signifique. Se puede reabrir el
+día que alguien mida contra Meta directo qué son los dos hechos — que es la misma puerta que el resto
+de esta página.
+
+### C14-P05 · Cuál de los dos hechos es el que llega al CRM
+
+197 contactos contra 220 y 213 no distingue: los dos candidatos están igual de cerca. Y de los 215 del
+segundo hecho, sólo **8 contactos** traen el campo `Pre-Score | Meta Lead Ads`
+(`bprIvngW1kWTLkN06Lqx`), que es la única marca de formulario nativo que hay en la base. O el
+formulario nativo casi no llega, o llega sin marcarse. Se contesta comparando la hora de alta de los
+contactos contra los dos conteos por anuncio-día, o mirando la configuración de la integración en
+GoHighLevel. **No hace falta para construir Creative**; hace falta para reabrir el KPI.
 
 ### C14-P03 · Si la cobertura de `videoView` está repartida al azar entre piezas
 

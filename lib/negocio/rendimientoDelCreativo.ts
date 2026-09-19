@@ -74,6 +74,30 @@ export const ACCIONES_QUE_LEEMOS = {
   postEngagement: { titulo: 'Interacciones con la publicación', coberturaMedida: 0.9 },
 } as const;
 
+/*
+ * `lead` NO ESTÁ ACÁ, Y ES DELIBERADO: ES UN AGREGADO DERIVADO QUE CUENTA DOS VECES
+ *
+ * Viene en el 48 % de las filas y es el candidato obvio para una «tasa de leads» por pieza. Medido
+ * el 2026-09-19 sobre las 64 filas que lo traen, **en las 64**:
+ *
+ *     lead = onsiteWebLead + onsiteConversion.leadGrouped
+ *     lead = offsiteConversion.fbPixelLead + offsiteSearchAddMetaLeads
+ *
+ * Las dos igualdades a la vez, exactas, en todas. O sea que las ocho claves con pinta de lead son
+ * **dos hechos con cuatro nombres cada uno** —287 y 215 en la ventana— y `lead` (502) los suma. Y
+ * los dos hechos ocurren en los MISMOS anuncios: 10 de los 15 reportan los dos, con 220 y 213.
+ *
+ * Nuestros contactos de esos 10 anuncios son 197: el 90 % de **una** de las dos cifras y el 45 % de
+ * la suma. Dividir `lead` por impresiones publicaría una tasa de conversión del doble de la real,
+ * y —como el defecto de grano de `costoDelAnuncio.ts:157-164`— no fallaría: daría un número más
+ * grande y perfectamente creíble.
+ *
+ * Qué son los dos hechos exactamente, Meta no lo documenta en ningún lado que se pueda leer desde
+ * GoHighLevel. Mientras no se sepa, no hay forma honesta de elegir uno, y sumarlos es lo único que
+ * está medido como incorrecto. El conteo de leads de esta pantalla sale de `calidadDelCreativo`,
+ * que cuenta contactos de nuestra base y sabe cuáles son.
+ */
+
 /**
  * Una tasa construida sobre el desglose, con la cobertura de su propio numerador.
  *

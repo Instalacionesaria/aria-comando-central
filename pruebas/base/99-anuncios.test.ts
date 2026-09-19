@@ -74,7 +74,7 @@ function sinEntrega(anuncioId: string): MetricaDeAnuncio {
     cpc: null,
     alcance: null,
     frecuencia: null,
-    leadsDeMeta: 0,
+    leadsDelCrm: 0,
     /* Sin entrega el proveedor tampoco manda `results`, y eso es `null` y no `{}`. */
     acciones: null,
   };

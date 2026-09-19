@@ -187,7 +187,7 @@ function metrica(anuncioId: string): MetricaDeAnuncio {
     cpc: 4.16,
     alcance: 90,
     frecuencia: 1.11,
-    leadsDeMeta: 1,
+    leadsDelCrm: 1,
     acciones: { videoView: 40, linkClick: 2 },
   };
 }
