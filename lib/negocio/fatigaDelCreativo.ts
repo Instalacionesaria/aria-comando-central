@@ -38,6 +38,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
 import { ventanaDeMetricas } from './costoDelAnuncio.ts';
+import { llaveDelCreativo } from './creativo.ts';
 import { PISO_DE_IMPRESIONES } from './rendimientoDelCreativo.ts';
 
 /**
@@ -126,14 +127,14 @@ export async function fatigaDelCreativo(dias = DIAS_DE_LA_TASA): Promise<FatigaD
   const filas = await datos()
     .selectFrom(sql`(
       with porDia as (
-        select lower(btrim(a.nombre)) as creativo, m.fecha as fecha,
+        select ${llaveDelCreativo('a.nombre')} as creativo, m.fecha as fecha,
                sum(m.impresiones) as impresiones, sum(m.clics) as clics
           from negocio.metricas_de_anuncio m
           join negocio.anuncios a
             on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
          where ${ventanaDeMetricas('m', dias)}
            and m.impresiones > 0
-           and coalesce(a.nombre, '') <> ''
+           and ${llaveDelCreativo('a.nombre')} <> ''
          group by 1, 2
       ), mitades as (
         select creativo, fecha, impresiones, clics,

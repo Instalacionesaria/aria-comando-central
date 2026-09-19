@@ -40,6 +40,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
 import { costoDelAnuncio, ventanaDeMetricas } from './costoDelAnuncio.ts';
+import { llaveDelCreativo } from './creativo.ts';
 
 /**
  * Cuántas impresiones hacen falta antes de publicar una tasa cuyo denominador son impresiones.
@@ -143,11 +144,6 @@ export interface RendimientoDeLosCreativos {
 
 type Clave = keyof typeof ACCIONES_QUE_LEEMOS;
 
-/** La llave de agrupación del departamento. La MISMA que `calidadDelCreativo`. */
-function llaveDelCreativo(columna: string) {
-  return sql<string>`lower(btrim(${sql.raw(columna)}))`;
-}
-
 function redondear(v: number, decimales: number): number {
   const f = 10 ** decimales;
   return Math.round(v * f) / f;
@@ -175,10 +171,12 @@ export async function rendimientoDelCreativo(
   const porPieza = new Map<string, FilaDeRendimiento>();
 
   for (const f of costo.filas) {
-    const clave = (f.nombre ?? '').trim().toLowerCase();
-    /* Un anuncio sin nombre no puede agruparse por nombre. No se descarta en silencio: cae en su
-       propia fila, rotulada, porque su gasto es real y tiene que seguir sumando el total. */
-    const creativo = clave === '' ? '(anuncio sin nombre)' : clave;
+    /* La llave viene YA NORMALIZADA por la base. Calcularla acá con `.trim().toLowerCase()` era una
+       segunda definición de «la misma pieza», y las dos no son equivalentes: ver `creativo.ts`.
+
+       Un anuncio sin nombre no se descarta en silencio: cae en su propia fila, rotulada, porque su
+       gasto es real y tiene que seguir sumando el total de la pantalla. */
+    const creativo = f.creativo === '' ? '(anuncio sin nombre)' : f.creativo;
 
     const acc = porPieza.get(creativo) ?? nuevaFila(creativo);
     acc.anuncios += 1;
@@ -296,7 +294,12 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
         where m.acciones ? 'landingPageView' and m.acciones ? 'linkClick')`.as('x_dias'),
     ])
     .where(ventanaDeMetricas('m', dias))
-    .where(sql<boolean>`coalesce(a.nombre, '') <> ''`)
+    /* El filtro va sobre la LLAVE y no sobre el nombre crudo: `coalesce(a.nombre,'') <> ''` deja
+       pasar un nombre de sólo espacios, que normaliza a cadena vacía. Esa fila quedaría agrupada
+       bajo la llave `''`, que del otro lado se rotula «(anuncio sin nombre)» — o sea que su
+       desglose quedaría huérfano y la pieza saldría con gasto y sin ninguna tasa. Es la misma
+       familia de defecto que la normalización doble que `creativo.ts` cierra. */
+    .where(sql<boolean>`${llaveDelCreativo('a.nombre')} <> ''`)
     .groupBy(llave)
     .execute();
 

@@ -267,12 +267,10 @@ function PorEtapa({ c }) {
         />
       ))}
 
-      {c.congeladas > 0 ? (
-        <p className="cs-fuera">
-          No se cuentan {miles(c.congeladas)} cita(s) de este período: quedaron congeladas y el CRM
-          ya no devuelve sus eventos.
-        </p>
-      ) : null}
+      {/* Las congeladas NO se repiten acá. El servidor ya manda esa misma frase en `calidad.aviso`
+          y el bloque de cobertura la publica: escribirla también en este sitio la mostraba dos veces
+          y dejaba el literal copiado en dos lugares que se corrigen por separado. Es la misma
+          decisión que `PanelDeAcquisition` tomó con el vacío de su tabla. */}
     </div>
   );
 }
@@ -374,12 +372,22 @@ function Subasta({ r }) {
           <div className="crv-fila" role="row" key={f.creativo}>
             <span className="crv-n" role="cell" title={f.creativo}>
               {f.creativo}
+              {/* Lo que no cabe en una columna va acá, y la interacción es el caso: tiene la mejor
+                  cobertura de las cuatro tasas (90 %) y es la menos accionable de las cuatro, así
+                  que gastar una columna en ella empujaría fuera al link CTR en el ancho de un
+                  teléfono. Lo que NO se hace es calcularla y no mostrarla en ninguna parte: un campo
+                  que viaja en la respuesta y nadie dibuja se pudre sin que nada falle. */}
               <Nota
-                texto={
+                texto={[
                   f.diasConEntrega === 0
                     ? 'No entregó ni un día de esta ventana. No es que gastara cero: no se mostró.'
-                    : `Corre en ${f.anuncios} anuncio(s) y entregó ${f.diasConEntrega} día(s) de la ventana.`
-                }
+                    : `Corre en ${f.anuncios} anuncio(s) y entregó ${f.diasConEntrega} día(s) de la ventana.`,
+                  f.interaccion.tasa !== null
+                    ? `Interacción con la publicación: ${f.interaccion.tasa}% de las impresiones, sobre ${f.interaccion.diasConLaClave} de ${f.interaccion.diasConEntrega} día(s).`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               />
             </span>
             <span role="cell">{plata(f.gasto) ?? '—'}</span>

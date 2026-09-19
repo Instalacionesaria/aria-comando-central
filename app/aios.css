@@ -641,12 +641,7 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .pm-list button:hover{background:rgb(var(--c-nube) / .07); color:var(--txt);}
 .pm-list button.on{color:var(--txt); font-weight:600;}
 .pm-list button.on::after{content:'✓'; margin-left:auto; color:var(--accent); font-size:12px;}
-.pm-sep{height:1px; background:var(--line); margin:6px 4px;}
-.pm-custom{padding:2px 6px 6px;}
-.pm-lab{font-size:11px; color:var(--txt-faint); margin-bottom:7px;}
-.pm-custom .db-custom{display:flex; align-items:center; gap:6px; margin:0;}
-.pm-custom .db-custom input[type=date]{flex:1; min-width:0; font-size:11.5px; padding:6px 8px;}
-.pm-custom .db-apply{width:100%; margin-top:8px; padding:8px; border-radius:8px;}
+
 
 /* ---- fila de filtros: dos controles alineados a la misma altura ---- */
 .filterbar{align-items:center; min-height:38px;}
@@ -654,30 +649,11 @@ svg.graph { width: 100%; height: 100%; display: block; }
 
 
 /* ---- "Qué es": mismas cajas 3x2 que las métricas ---- */
-.qe .dw-sec-t{margin-bottom:8px;}
+
 .qe-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:4px;}
-.qb{background:var(--bg-sunk); border:1px solid var(--line); border-radius:8px;
-  padding:0 10px; min-width:0; height:32px; display:flex; align-items:center; gap:8px;}
-.qb i{font-style:normal; font-size:10.5px; font-weight:500; color:var(--txt-faint); flex-shrink:0;}
-.qb b{font-size:12px; font-weight:500; color:var(--txt); margin-left:auto; text-align:right;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.qb.wide{grid-column:1/-1;}
-.qb.wide b{font-weight:500;}
 
 
 /* ---- detalle: métricas como tira, no como seis tarjetas ---- */
-.dw-strip{display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin-top:9px;
-  background:var(--bg-sunk); border:1px solid var(--line); border-radius:11px; overflow:hidden;}
-.ds{padding:10px 13px; border-left:1px solid var(--line); border-top:1px solid var(--line); min-width:0;}
-.ds:nth-child(-n+3){border-top:0;}
-.ds:nth-child(3n+1){border-left:0;}
-.ds .k{font-size:10px; color:var(--txt-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.ds .v{font-size:17px; font-weight:600; margin-top:3px; line-height:1; font-variant-numeric:tabular-nums;}
-.ds.hi{background:linear-gradient(180deg,rgb(var(--c-acento) / .08),transparent);}
-.ds.hi .v{color:var(--accent);}
-.dw-facts{display:flex; flex-wrap:wrap; gap:16px; margin-top:10px; padding:0 2px;
-  font-size:11.5px; color:var(--txt-dim);}
-.dw-facts b{color:var(--txt-faint); font-weight:500; margin-right:5px;}
 
 
 /* ---- "Qué es": chips en línea, no seis cajas ---- */
@@ -693,7 +669,6 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .filterbar .tb-lab{font-size:12px; font-weight:600; color:var(--txt-dim); flex-shrink:0; width:auto;}
 .fb-div{width:1px; height:22px; background:var(--line-strong); margin:0 5px; opacity:.7;}
 .filterbar .db-info{margin-left:auto; font-size:11.5px; color:var(--txt-faint);}
-.filterbar .db-custom{margin-left:0;}
 
 
 /* ---- detalle: más denso, sin espacio muerto ---- */
@@ -748,16 +723,11 @@ svg.graph { width: 100%; height: 100%; display: block; }
 /* ---- fila de orden: delgada, pegada al contenido ---- */
 
 
-.db-custom{margin-left:auto;}
-
-
 /* ---- barra de control única ---- */
 
-.tb-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:54px;}
-.tb-row + .tb-row{border-top:1px solid var(--line);}
+
 .tb-lab{font-size:12px; font-weight:600; color:var(--txt-dim); width:96px; flex-shrink:0;}
 .db-info{margin-left:auto; font-size:11.5px; color:var(--txt-faint);}
-.tb-note b{color:var(--accent); font-weight:600;}
 
 
 /* ---- resumen: una sola tira, no seis tarjetas sueltas ---- */
@@ -779,16 +749,13 @@ svg.graph { width: 100%; height: 100%; display: block; }
 
 /* barra de periodo */
 
-.db-label{font-size:11px; font-weight:600; color:var(--txt-faint);}
+
 .db-seg{display:inline-flex; gap:3px; background:rgb(var(--c-nube) / 0.06); border-radius:10px; padding:3px;}
 .db-seg button{font:inherit; font-size:12.5px; color:var(--txt-dim); cursor:pointer; background:none; border:none; padding:7px 13px; border-radius:8px; transition:background .15s ease,color .15s ease;}
 .db-seg button:hover{color:var(--txt);}
 .db-seg button.on{background:var(--bg-raise); color:var(--txt); font-weight:600; box-shadow:var(--hair);}
-.db-custom{display:none; align-items:center; gap:8px;}
-.db-custom.show{display:inline-flex;}
-.db-custom input[type=date]{font:inherit; font-size:12px; color:var(--txt); background:var(--bg-sunk); border:1px solid var(--line-strong); border-radius:8px; padding:6px 9px; color-scheme:dark;}
-.db-arrow{color:var(--txt-faint);}
-.db-apply{font:inherit; font-size:12px; font-weight:600; cursor:pointer; color:var(--sobre-acento); background:var(--accent); border:none; padding:7px 13px; border-radius:8px;}
+
+
 .db-info{margin-left:auto; font-size:11.5px; color:var(--txt-faint);}
 .db-info b{color:var(--txt-dim); font-weight:600;}
 
@@ -841,9 +808,8 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .dw-head{padding:16px 20px 14px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:12px;}
 .dw-head h3{font-size:17px; font-weight:600; letter-spacing:-0.02em;}
 .dw-head .m{font-size:12px; color:var(--txt-dim); margin-top:3px;}
-.dw-verdict{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; margin-top:8px;}
-.dw-verdict.good{background:rgb(var(--c-ok) / .14); color:var(--ok);}
-.dw-verdict.bad{background:rgb(var(--c-crit) / .14); color:var(--crit);}
+
+
 .dw-x{margin-left:auto; width:28px; height:28px; border-radius:50%; flex-shrink:0; background:rgb(var(--c-nube) / .08);
   display:grid; place-items:center; cursor:pointer; color:var(--txt-dim); font-size:14px; border:none;}
 .dw-x:hover{background:rgb(var(--c-nube) / .16); color:var(--txt);}
@@ -879,13 +845,12 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .dw-empty{padding:22px; text-align:center; border:1px dashed var(--line-strong); border-radius:11px; color:var(--txt-faint); font-size:12px; background:var(--bg-sunk);}
 
 /* transcript / guión */
-.tr-list{display:flex; flex-direction:column; gap:3px;}
-.tr-line{display:grid; grid-template-columns:42px 1fr auto; gap:10px; align-items:baseline; padding:7px 10px; border-radius:8px; background:var(--bg-sunk); border:1px solid var(--line);}
+
+
 .tr-t{font-family:var(--font-mono); font-size:10.5px; color:var(--txt-faint); font-variant-numeric:tabular-nums;}
 .tr-x{font-size:12px; color:var(--txt-dim); line-height:1.45;}
 .tr-flag{font-size:9px; font-weight:700; color:var(--crit); background:rgb(var(--c-crit) / .14); padding:2px 6px; border-radius:5px; white-space:nowrap;}
-.tr-line.drop{border-color:rgb(var(--c-crit) / .32); background:linear-gradient(90deg,rgb(var(--c-crit) / .07),var(--bg-sunk));}
-.tr-line.drop .tr-x{color:var(--txt);}
+
 
 /* botón recomendaciones */
 .reco-btn{font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; color:var(--txt);
@@ -897,7 +862,7 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .reco-btn:hover{background:linear-gradient(180deg, rgb(var(--c-acento) / .2), rgb(var(--c-acento) / .09));
   border-color:rgb(var(--c-acento) / .45); transform:translateY(-1px);}
 .rb-ic{color:var(--accent); font-size:12px; line-height:1;}
-.head-actions{margin-left:auto; display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:flex-end;}
+
 
 /* modal recomendaciones */
 .reco-modal{position:fixed; z-index:41; top:50%; left:50%; transform:translate(-50%,-48%) scale(.985);

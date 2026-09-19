@@ -43,6 +43,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
+import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 
 /**
@@ -59,9 +60,7 @@ import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
  */
 export const CAMPO_DE_ICP = 'Puntaje | ICP';
 
-/** Las tres etapas del embudo, tal como aparecen en el nombre de campaña. */
-export const ETAPAS = ['TOFU', 'MOFU', 'BOFU'] as const;
-export type Etapa = (typeof ETAPAS)[number];
+export { ETAPAS, type Etapa };
 
 export interface FilaDeCreativo {
   /** El nombre de la pieza, normalizado. `null` = el contacto no trae creativo. */
@@ -120,34 +119,6 @@ export interface CalidadDeLosCreativos {
   aviso: string | null;
 }
 
-/** La llave de agrupación del departamento, en UN solo lugar. */
-function llaveDelCreativo(columna: string) {
-  /* `lower(btrim(...))` y no `lower(trim(...))` por costumbre del motor: son lo mismo, y `btrim` es
-     lo que el resto del repositorio escribe.
-     *
-     * Vive acá y no repetida en cada consulta porque es el predicado de agrupación de toda la
-     * pantalla: dos consultas con dos normalizaciones distintas darían dos definiciones de «la misma
-     * pieza», que es la regla 12 de las transversales con otro traje. Medido, sin esto
-     * `Evoluciona native` y `evoluciona native` salen como dos piezas. */
-  return sql<string | null>`nullif(lower(btrim(${sql.raw(columna)})), '')`;
-}
-
-/**
- * La etapa, leída del NOMBRE de campaña.
- *
- * Se parte por `|` y se busca el segmento que, en mayúsculas y sin espacios, sea una de las tres.
- * Leer el nombre entero no sirve y está medido: `NUEVA ERA | BOFU | AGENDAS | LATAM+USA` y
- * `… | LATAM USA` son la misma campaña y parten 45 contactos en 43 + 2. Normalizar mayúsculas
- * tampoco alcanza —el `+` no es una mayúscula—, así que se mira sólo el segmento que importa.
- *
- * Lo que no trae ninguno de los tres devuelve `null`, y eso es un grupo, no un descarte.
- */
-const ETAPA_DEL_NOMBRE = sql<Etapa | null>`(
-  select btrim(e)
-    from unnest(string_to_array(upper(coalesce(contactos.atribucion_primera ->> 'campaign', '')), '|')) e
-   where btrim(e) in ('TOFU', 'MOFU', 'BOFU')
-   limit 1)`;
-
 /**
  * El ICP y las agendas por pieza, en la ventana.
  *
@@ -194,13 +165,27 @@ export async function calidadDelCreativo(
  * compila es la que además tiene el grano bien.)
  */
 async function anunciosPorNombre(): Promise<Map<string, number>> {
+  /* ── SIN VENTANA, Y HAY QUE DECIR QUÉ CUENTA ENTONCES ──────────────────────
+   *
+   * `negocio.anuncios` es la dimensión: no tiene fecha de la que recortar, sólo `sincronizado_el`,
+   * que dice cuándo se confirmó por última vez. Así que esto cuenta **los anuncios que el colector
+   * vio alguna vez con ese nombre**, no los que entregaron en la ventana elegida.
+   *
+   * Es lo que corresponde para lo que la cifra existe: detectar que dos piezas distintas comparten
+   * nombre, y ver que una pieza salte de dos anuncios a siete. Las dos preguntas son sobre la pieza
+   * y no sobre el período.
+   *
+   * Lo que NO se puede leer de acá es «en cuántos anuncios corrió esta pieza en los últimos siete
+   * días» — para eso habría que unir con `metricas_de_anuncio`, que es otra pregunta y otro grano. */
   const filas = await datos()
     .selectFrom('anuncios')
     .select([
-      sql<string>`lower(btrim(nombre))`.as('n'),
+      llaveDelCreativo('nombre').as('n'),
       sql<number>`count(*)`.as('c'),
     ])
-    .where(sql<boolean>`coalesce(nombre, '') <> ''`)
+    /* Sobre la llave y no sobre el nombre crudo: un nombre de sólo espacios normaliza a vacío
+       y contaría como una pieza más. */
+    .where(sql<boolean>`${llaveDelCreativo('nombre')} <> ''`)
     .groupBy(sql`1`)
     .execute();
 
@@ -208,7 +193,7 @@ async function anunciosPorNombre(): Promise<Map<string, number>> {
 }
 
 async function porCreativo(dias: number, campoDeIcp: string | null): Promise<FilaDeCreativo[]> {
-  const llave = llaveDelCreativo("contactos.atribucion_primera ->> 'utmContent'");
+  const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
   const anuncios = await anunciosPorNombre();
 
   /* El puntaje sólo se castea cuando parece un número. Un valor de texto en ese campo haría que
@@ -225,7 +210,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
     .selectFrom('contactos')
     .select([
       llave.as('creativo'),
-      ETAPA_DEL_NOMBRE.as('etapa'),
+      etapaDelNombre("contactos.atribucion_primera ->> 'campaign'").as('etapa'),
       sql<number>`count(*)`.as('contactos'),
       sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
       sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
@@ -244,7 +229,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     /* Se agrupa por la EXPRESIÓN y no por un alias: PostgreSQL no admite alias en `group by` con
        subconsultas correlacionadas de por medio. */
-    .groupBy([llave, ETAPA_DEL_NOMBRE])
+    .groupBy([llave, etapaDelNombre("contactos.atribucion_primera ->> 'campaign'")])
     .execute();
 
   return filas
@@ -311,7 +296,7 @@ async function congeladasDeLaVentana(dias: number): Promise<number> {
  * sola, así que publica el par y deja la lectura a quien mira.
  */
 async function coberturaDelPuente(dias: number): Promise<{ con: number; sobre: number }> {
-  const llave = llaveDelCreativo("contactos.atribucion_primera ->> 'utmContent'");
+  const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
 
   const f = await datos()
     .selectFrom('contactos')
@@ -319,7 +304,7 @@ async function coberturaDelPuente(dias: number): Promise<{ con: number; sobre: n
       sql<number>`count(*) filter (where ${llave} is not null)`.as('sobre'),
       sql<number>`count(*) filter (where exists (
         select 1 from negocio.anuncios a
-         where a.org_id = contactos.org_id and lower(btrim(a.nombre)) = ${llave}))`.as('con'),
+         where a.org_id = contactos.org_id and ${llaveDelCreativo('a.nombre')} = ${llave}))`.as('con'),
     ])
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     .executeTakeFirst();

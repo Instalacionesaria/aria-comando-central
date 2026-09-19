@@ -28,6 +28,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { COBERTURA_SUFICIENTE } from './calidadDeLaAtribucion.ts';
+import { llaveDelCreativo } from './creativo.ts';
 
 /*
  * ═════════════════════════════════════════════════════════════════════════════
@@ -84,6 +85,17 @@ export function ventanaDeMetricas(alias: string, dias: number) {
 /** Una fila: un anuncio en toda la ventana. */
 export interface FilaDeCosto {
   anuncioId: string;
+  /**
+   * El nombre de la pieza, **normalizado por la base**. Es la llave de agrupación de Creative.
+   *
+   * Viaja desde acá y no se recalcula del otro lado. `rendimientoDelCreativo` agrupa estas filas por
+   * pieza, y normalizar el `nombre` en JavaScript sería una SEGUNDA definición de «la misma pieza»:
+   * `btrim` recorta sólo espacios y `String.trim()` recorta todo el espacio en blanco de Unicode, así
+   * que un nombre con una tabulación agruparía distinto de cada lado. La pieza saldría con su gasto
+   * y un guion en todas las tasas del desglose — idéntica a una que no es video, y sin forma de
+   * distinguirlas mirando. El argumento completo está en `creativo.ts`.
+   */
+  creativo: string;
   /** El nombre que le puso quien lo armó. Sin la dimensión, un anuncio es dieciocho dígitos. */
   nombre: string;
   campanaId: string | null;
@@ -208,6 +220,10 @@ export async function costoDelAnuncio(dias = DIAS_DE_LA_TASA): Promise<CostoDeLo
     filas.push({
       anuncioId: l.anuncioId,
       nombre: l.nombre ?? l.anuncioId,
+      /* Un anuncio que trajo leads y no está en la dimensión no tiene nombre, así que tampoco tiene
+         llave de pieza. Cadena vacía y no el identificador: del otro lado eso cae en «(anuncio sin
+         nombre)», que es un grupo rotulado — poner el `adId` lo haría parecer una pieza más. */
+      creativo: l.creativo,
       campanaId: null,
       gasto: null,
       impresiones: null,
@@ -259,6 +275,8 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
     .select([
       'm.meta_anuncio_id as anuncioId',
       'a.nombre as nombre',
+      // La llave de Creative, calculada por la base. Ver `creativo.ts`.
+      llaveDelCreativo('a.nombre').as('creativo'),
       'a.meta_campana_id as campanaId',
       /* `sum` ignora los nulos, que es exactamente lo que hace falta: un día sin entrega no suma
          cero, no participa. Y devuelve NULL cuando TODOS los días son nulos, que es la distinción
@@ -270,7 +288,11 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
     ])
     // La ventana, en el único lugar donde está escrita. Ver `ventanaDeMetricas`.
     .where(ventanaDeMetricas('m', dias))
+    /* `lower(btrim(a.nombre))` es funcionalmente dependiente de `a.nombre`, que ya está agrupado
+       — pero PostgreSQL sólo reconoce esa dependencia a través de una clave primaria, no de una
+       columna cualquiera, así que hay que nombrarla. */
     .groupBy(['m.meta_anuncio_id', 'a.nombre', 'a.meta_campana_id'])
+    .groupBy(llaveDelCreativo('a.nombre'))
     .execute();
 
   return filas.map((f) => {
@@ -280,6 +302,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
     return {
       anuncioId: f.anuncioId,
       nombre: f.nombre,
+      creativo: f.creativo,
       campanaId: f.campanaId,
       gasto: gasto === null ? null : redondear(gasto, 2),
       impresiones,
@@ -298,7 +321,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
 /** Los contactos NUESTROS atribuidos a cada anuncio, y cuántos agendaron. */
 async function leadsPorAnuncio(
   dias: number,
-): Promise<{ anuncioId: string; nombre: string | null; leads: number; agendaron: number }[]> {
+): Promise<{ anuncioId: string; nombre: string | null; creativo: string; leads: number; agendaron: number }[]> {
   const filas = await datos()
     .selectFrom('contactos')
     .leftJoin('anuncios as a', (j) =>
@@ -309,6 +332,8 @@ async function leadsPorAnuncio(
     .select([
       sql<string>`contactos.atribucion_primera ->> 'adId'`.as('anuncioId'),
       'a.nombre as nombre',
+      // La misma llave, por el mismo motivo: estas filas también terminan agrupadas por pieza.
+      llaveDelCreativo('a.nombre').as('creativo'),
       sql<number>`count(*)`.as('leads'),
       /* El mismo `exists` y el mismo filtro de cita alcanzable que `atribucionDelLead` y que el
          booking rate. Tiene que ser el mismo o las filas de este corte no sumarían la cifra grande
@@ -321,12 +346,13 @@ async function leadsPorAnuncio(
     .where(sql<boolean>`contactos.atribucion_primera ? 'adId'`)
     // La MISMA ventana que el gasto, anclada al día. Ver `VENTANAS` arriba.
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
-    .groupBy([sql`1`, 'a.nombre'])
+    .groupBy([sql`1`, 'a.nombre', llaveDelCreativo('a.nombre')])
     .execute();
 
   return filas.map((f) => ({
     anuncioId: f.anuncioId,
     nombre: f.nombre,
+    creativo: f.creativo ?? '',
     leads: Number(f.leads ?? 0),
     agendaron: Number(f.agendaron ?? 0),
   }));

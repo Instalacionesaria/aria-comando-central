@@ -162,6 +162,35 @@ test('varios anuncios de la misma pieza son UNA fila, y las derivadas se recalcu
   assert.equal(f?.hookRate.tasa, 19.09, 'el hook rate se promedió en vez de sumarse');
 });
 
+test('un nombre con TABULACIÓN agrupa igual de los dos lados', async () => {
+  /* El defecto que esto cierra no llegó a ocurrir, y por eso se pudo arreglar sin datos que
+     corregir. La llave de la pieza se calculaba en DOS lugares con DOS funciones: el gasto venía de
+     `costoDelAnuncio` y se agrupaba en JavaScript con `.trim().toLowerCase()`, y el desglose se
+     agrupaba en la base con `lower(btrim(...))`.
+     *
+     * No son equivalentes: `btrim` de PostgreSQL recorta **sólo espacios** y `String.trim()` recorta
+     * todo el espacio en blanco de Unicode. Un nombre con una tabulación al final —cosa que un
+     * copiar y pegar hace solo— daba dos llaves distintas, el desglose no encontraba su fila, y la
+     * pieza salía con su gasto y un guion en el hook rate, el link CTR y la landing.
+     *
+     * **Se vería exactamente igual que una pieza que no es video.** Ésa es toda la gravedad: no hay
+     * forma de distinguirlas mirando la pantalla. */
+  await limpiar();
+  await unAnuncio(`${MARCA}15`, 'pieza con tabulacion	');
+  await unDia(`${MARCA}15`, 1, { gasto: 20, impresiones: 4000, clics: 80 }, { videoView: 800 });
+
+  const r = await leer();
+  const f = r.filas.find((x) => x.creativo.startsWith('pieza con tabulacion'));
+
+  assert.ok(f, 'la pieza desapareció de la tabla');
+  assert.equal(f?.gasto, 20, 'el gasto tenía que llegar igual');
+  assert.equal(
+    f?.hookRate.tasa,
+    20,
+    'el gasto llegó y el desglose no: las dos mitades se agruparon con llaves distintas',
+  );
+});
+
 test('una pieza que no entregó ningún día publica NULO, no cero', async () => {
   // La suma conserva el nulo: `null + null` es `null`. Un `?? 0` diría «gastó cero», que es otra cosa.
   await limpiar();
