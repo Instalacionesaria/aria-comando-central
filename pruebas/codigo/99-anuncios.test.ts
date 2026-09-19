@@ -188,7 +188,7 @@ function metrica(anuncioId: string): MetricaDeAnuncio {
     alcance: 90,
     frecuencia: 1.11,
     leadsDeMeta: 1,
-    resultadosDeMeta: 1,
+    acciones: { videoView: 40, linkClick: 2 },
   };
 }
 

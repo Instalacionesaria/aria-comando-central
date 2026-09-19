@@ -75,7 +75,8 @@ function sinEntrega(anuncioId: string): MetricaDeAnuncio {
     alcance: null,
     frecuencia: null,
     leadsDeMeta: 0,
-    resultadosDeMeta: 0,
+    /* Sin entrega el proveedor tampoco manda `results`, y eso es `null` y no `{}`. */
+    acciones: null,
   };
 }
 
@@ -138,8 +139,9 @@ async function metricasDe(anuncioId: string) {
     ctr: string | null;
     cpc: string | null;
     frecuencia: string | null;
+    acciones: Record<string, number> | null;
   }>(
-    `select fecha, gasto, impresiones, clics, alcance, ctr, cpc, frecuencia
+    `select fecha, gasto, impresiones, clics, alcance, ctr, cpc, frecuencia, acciones
        from negocio.metricas_de_anuncio where meta_anuncio_id = $1 order by fecha`,
     [anuncioId],
   );
@@ -210,6 +212,65 @@ test('una segunda lectura del mismo día REESCRIBE la fila, no la duplica ni la 
   assert.equal(antes.length, 1, 'una pasada tiene que escribir exactamente una fila');
   assert.equal(despues.length, antes.length, 'la segunda lectura duplicó filas');
   assert.equal(Number(despues[0]?.gasto), 69.59, 'la corrección de Meta no se escribió');
+});
+
+test('el desglose de acciones se guarda, y un tipo ausente no aparece como cero', async () => {
+  /* La columna que la `053` agregó. Lo que se comprueba no es que el JSON viaje —eso lo hace el
+     controlador— sino que la AUSENCIA sobreviva al viaje: una pieza estática no tiene `videoView`
+     nunca, y si la base devolviera un cero ahí, su hook rate entraría en el promedio arrastrándolo. */
+  const id = `${MARCA}07`;
+  await unaPasada([{ ...conEntrega(id), acciones: { videoView: 328, linkClick: 18 } }]);
+
+  const filas = await metricasDe(id);
+  assert.deepEqual(filas[0]?.acciones, { videoView: 328, linkClick: 18 });
+  assert.equal('landingPageView' in (filas[0]?.acciones ?? {}), false, 'la base inventó un tipo en cero');
+});
+
+test('sin desglose la columna queda en NULO, que no es un objeto vacío', async () => {
+  /* Los dos ceros llegando hasta la base. El proveedor omite `results` cuando el anuncio no
+     entregó, y eso es «no se leyó». Un `default '{}'` en la columna —que es lo que la `048` sí pudo
+     hacer para `atribucion_primera`— haría que las ~2.500 filas anteriores a esta migración
+     afirmaran «el proveedor mandó el desglose y estaba vacío», que es una mentira sobre 2.500
+     filas. El motivo largo está en la § 2 de la `053`. */
+  const id = `${MARCA}08`;
+  await unaPasada([sinEntrega(id)]);
+
+  const filas = await metricasDe(id);
+  assert.equal(filas[0]?.acciones, null, 'la ausencia de desglose se guardó como objeto vacío');
+});
+
+test('el desglose se REESCRIBE plano: no conserva un tipo que dejó de venir', async () => {
+  /* Acá el hecho hace lo CONTRARIO que la dimensión de al lado, y es a propósito. `meta_conjunto_id`
+     se protege con `coalesce` porque describe qué ES un anuncio y acumula lo que se va sabiendo.
+     `acciones` describe UN DÍA tal como el proveedor lo cuenta hoy.
+     *
+     * Con `coalesce`, una relectura en la que Meta ya no reporta `videoView` dejaría el valor viejo
+     * junto a las impresiones nuevas, y el hook rate saldría con el numerador de una lectura y el
+     * denominador de otra. Meta corrige hacia atrás, así que la relectura no es hipotética: es lo
+     * que el colector hace los tres primeros días de cada ventana. */
+  const id = `${MARCA}09`;
+
+  await unaPasada([{ ...conEntrega(id), acciones: { videoView: 328, linkClick: 18 } }]);
+  await unaPasada([{ ...conEntrega(id), acciones: { linkClick: 20 } }]);
+
+  const filas = await metricasDe(id);
+  assert.equal(filas.length, 1, 'la segunda lectura duplicó filas');
+  assert.deepEqual(
+    filas[0]?.acciones,
+    { linkClick: 20 },
+    'el tipo que dejó de venir sobrevivió a la reescritura',
+  );
+});
+
+test('una relectura SIN desglose borra el que había, y no lo conserva', async () => {
+  // La otra mitad de la anterior: el paso de objeto a nulo también tiene que viajar.
+  const id = `${MARCA}10`;
+
+  await unaPasada([{ ...conEntrega(id), acciones: { videoView: 328 } }]);
+  await unaPasada([{ ...conEntrega(id), acciones: null }]);
+
+  const filas = await metricasDe(id);
+  assert.equal(filas[0]?.acciones, null, 'el desglose viejo sobrevivió a una lectura que no lo trajo');
 });
 
 test('el anuncio queda NOMBRADO en la dimensión, que es para lo único que existe', async () => {

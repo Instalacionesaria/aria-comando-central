@@ -300,10 +300,27 @@ test('una pasada truncada NO se sella igual que una completa', () => {
   assert.match(String(motivoDeLoIncompleto({ ilegibles: 1 })), /no se pudieron leer/);
 });
 
+test('un valor ilegible del desglose se informa APARTE de una fila ilegible', () => {
+  /* Los dos dicen cosas distintas y por eso son dos ramas y no un contador sumado:
+     `ilegibles` = se escribieron MENOS filas, porque el proveedor renombró `adId`.
+     `accionesIlegibles` = se escribieron todas, con un tipo de acción de menos.
+     Sumarlos haría que el primero —el grave— se pierda adentro del segundo. */
+  const soloDesglose = String(motivoDeLoIncompleto({ accionesIlegibles: 3 }));
+  assert.match(soloDesglose, /desglose/, 'el desglose ilegible no llega al sello');
+  assert.doesNotMatch(soloDesglose, /fila\(s\)/, 'se informó como si fueran filas perdidas');
+
+  const losDos = String(motivoDeLoIncompleto({ ilegibles: 1, accionesIlegibles: 3 }));
+  assert.match(losDos, /1 fila/, 'la fila ilegible desapareció cuando también había valores');
+  assert.match(losDos, /3 valor/, 'el valor ilegible desapareció cuando también había filas');
+});
+
 test('sin nada que decir, el motivo es NULO y la pantalla no dibuja nada', () => {
   /* La regla del silencio aplicada al registro de operación. Un motivo que aparece siempre es uno
      que nadie lee, y con él se pierde el que importa. */
-  assert.equal(motivoDeLoIncompleto({ atrasado: false, huecos: [], ilegibles: 0 }), null);
+  assert.equal(
+    motivoDeLoIncompleto({ atrasado: false, huecos: [], ilegibles: 0, accionesIlegibles: 0 }),
+    null,
+  );
   // Y las otras cinco tareas devuelven resúmenes sin estos campos: ninguna cambia de comportamiento.
   assert.equal(motivoDeLoIncompleto({ traidos: {}, guardados: {} }), null);
   assert.equal(motivoDeLoIncompleto(null), null);

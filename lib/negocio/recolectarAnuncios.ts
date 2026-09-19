@@ -152,6 +152,16 @@ export interface ResumenDeAnuncios {
    * que esto no es una precaución abstracta.
    */
   ilegibles: number;
+  /**
+   * Valores del desglose de acciones que llegaron y **no se pudieron leer como número**.
+   *
+   * Cuenta aparte de `ilegibles` y no es un lujo: los dos dicen cosas distintas. `ilegibles` dice
+   * que cambió la forma de la FILA —el proveedor renombró `adId`— y la pasada escribe menos filas
+   * de las que debería. Éste dice que cambió la forma del DESGLOSE, y la pasada escribe todas las
+   * filas con un tipo de acción de menos. Sumarlos haría que el primero, que es el grave, se
+   * pierda adentro del segundo.
+   */
+  accionesIlegibles: number;
   llamadas: number;
 }
 
@@ -357,6 +367,21 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
     // cuando el anuncio no entregó ese día. Un `?? 0` acá destruiría la diferencia entre «no
     // entregó» y «entregó y costó cero» justo en la capa que puede conservarla, y el síntoma sería
     // un CPM que divide por impresiones que nunca existieron.
+    /* ── Y EL DESGLOSE SE FOTOGRAFÍA, NO SE CONSERVA ────────────────────────
+     *
+     * `acciones` se reescribe PLANO, sin el `coalesce` con el que la dimensión protege
+     * `meta_conjunto_id`. Contradice a la tabla de al lado y tiene que ser así: la dimensión
+     * describe QUÉ ES un anuncio y acumula lo que se va sabiendo; el hecho describe UN DÍA tal
+     * como el proveedor lo cuenta hoy.
+     *
+     * Con `coalesce`, una relectura en la que Meta ya no reporta `videoView` dejaría el valor
+     * viejo junto a las impresiones nuevas — y el hook rate saldría con el numerador de una
+     * lectura y el denominador de otra. Meta corrige hacia atrás, así que no es hipotético.
+     *
+     * `null` y no `'{}'`: el proveedor omite `results` cuando el anuncio no entregó, y eso es «no
+     * se leyó», no «mandó un desglose vacío». Ver la § 2 de la `053`. */
+    const acciones = m.acciones === null ? null : JSON.stringify(m.acciones);
+
     const valores = {
       meta_anuncio_id: m.anuncioId,
       fecha: dia,
@@ -367,6 +392,7 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
       ctr: m.ctr,
       cpc: m.cpc,
       frecuencia: m.frecuencia,
+      acciones,
       sincronizado_el: new Date(),
     };
 
@@ -383,6 +409,7 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
           ctr: m.ctr,
           cpc: m.cpc,
           frecuencia: m.frecuencia,
+          acciones,
           sincronizado_el: new Date(),
         } as never),
       )
@@ -503,6 +530,7 @@ export async function recolectarAnuncios(
     huecos: [],
     vinculo: null,
     ilegibles: 0,
+    accionesIlegibles: 0,
     llamadas: 0,
   };
 
@@ -536,6 +564,7 @@ export async function recolectarAnuncios(
     }
     algunaAnduvo = true;
     resumen.ilegibles += r.ilegibles ?? 0;
+    resumen.accionesIlegibles += r.accionesIlegibles ?? 0;
     if (r.datos.length === 0) return true;
 
     await escribir(r.datos, dia);

@@ -942,6 +942,23 @@ export interface TablaMetricasDeAnuncio {
   ctr: string | null;
   cpc: string | null;
   frecuencia: string | null;
+  /**
+   * **El desglose de acciones de Meta, por tipo.** Migración `053`.
+   *
+   * Se LEE como el objeto ya armado —el controlador devuelve `jsonb` parseado— y se ESCRIBE como
+   * texto, igual que `campos_del_crm` y `atribucion_primera`.
+   *
+   * Tres estados y los tres significan cosas distintas: `null` = no se leyó; `{}` = el proveedor
+   * mandó el desglose vacío; y una clave AUSENTE dentro del objeto = ese tipo no ocurrió ese día,
+   * que **no es cero** y no entra en ningún denominador. Acá no vale el truco de `campos_del_crm`
+   * —distinguir por `sincronizado_el`— porque las filas viejas no se releen nunca: el motivo largo
+   * está en la § 2 de la `053`.
+   *
+   * `number` y no `string` a diferencia de los `numeric` de arriba: esto no es un `numeric` de
+   * PostgreSQL, es un objeto JSON cuyos valores el colector ya normalizó a números para que un
+   * `->>'x'::numeric` en la consulta no pueda lanzar `22P02`.
+   */
+  acciones: ColumnType<Record<string, number> | null, string | null | undefined, string | null | undefined>;
   /** Meta corrige hacia atrás: dos lecturas de la misma ventana pueden diferir sin que nada falle. */
   sincronizado_el: Generated<Date>;
 }

@@ -192,6 +192,134 @@ test('`paginas` distingue «no mandó el campo» de «tiene cero»', async () =>
   if (sin.tipo === 'datos') assert.equal(sin.datos.paginas, null, 'sin campo se guardó como cero');
 });
 
+// ─── EL DESGLOSE DE ACCIONES, QUE ESTE ARCHIVO DECLARÓ IMPOSIBLE Y LLEGA ────
+
+test('el desglose de `results` llega como un mapa de números, uno por tipo', async () => {
+  /* El defecto que esto cierra estuvo vivo desde el primer día: `resultadosDeMeta: numero(o.results)`
+     sobre un OBJETO, y `numero()` devuelve null para todo lo que no sea número o cadena. El campo
+     valía null en todas las llamadas y el desglose entero se tiraba. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: [
+      {
+        adId: 'a1',
+        name: 'uno',
+        impressions: '1510',
+        results: { videoView: '328', linkClick: '18', landingPageView: '16' },
+      },
+    ],
+  });
+
+  const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.deepEqual(r.datos[0]?.acciones, { videoView: 328, linkClick: 18, landingPageView: 16 });
+  assert.equal(r.accionesIlegibles, 0);
+});
+
+test('el proveedor manda números Y cadenas en el mismo campo, y se leen los dos', async () => {
+  /* Medido el 2026-09-18: a nivel de cuenta `"videoView":19688` y a nivel de anuncio
+     `"videoView":"328"`. La misma API, el mismo nombre de clave, dos tipos. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: [{ adId: 'a1', name: 'uno', results: { videoView: 328, linkClick: '18' } }],
+  });
+
+  const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+  assert.deepEqual(r.datos[0]?.acciones, { videoView: 328, linkClick: 18 });
+});
+
+test('sin `results` el desglose es NULL, y con `results` vacío es un objeto vacío', async () => {
+  /* Los dos ceros, en la frontera donde nacen. «El proveedor no mandó el campo» —lo que pasa cuando
+     el anuncio no entregó— y «lo mandó vacío» son hechos distintos: el primero manda a esperar y el
+     segundo dice que ese día no hubo ninguna acción. Un `?? {}` los haría idénticos. */
+  respuestas.push({ estado: 200, cuerpo: [{ adId: 'a1', name: 'uno' }] });
+  const sin = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(sin.tipo, 'datos');
+  if (sin.tipo === 'datos') {
+    assert.equal(sin.datos[0]?.acciones, null, 'sin `results` se guardó como objeto vacío');
+  }
+
+  respuestas.push({ estado: 200, cuerpo: [{ adId: 'a1', name: 'uno', results: {} }] });
+  const vacio = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(vacio.tipo, 'datos');
+  if (vacio.tipo === 'datos') {
+    assert.deepEqual(vacio.datos[0]?.acciones, {}, 'un desglose vacío se guardó como ausencia');
+  }
+});
+
+test('una clave AUSENTE dentro del desglose no se rellena con cero', async () => {
+  /* El tercer cero, y es el que decide una decisión de negocio: una pieza estática no tiene
+     `videoView` NUNCA. Rellenar con cero la haría aparecer como un video que nadie vio, y su hook
+     rate entraría en el promedio arrastrándolo hacia abajo. */
+  respuestas.push({ estado: 200, cuerpo: [{ adId: 'a1', name: 'uno', results: { linkClick: '5' } }] });
+
+  const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.equal('videoView' in (r.datos[0]?.acciones ?? {}), false, 'se inventó un videoView en cero');
+  assert.deepEqual(r.datos[0]?.acciones, { linkClick: 5 });
+});
+
+test('un valor del desglose que no es número se CUENTA, no se guarda', async () => {
+  /* Dos motivos, y el segundo es el caro. Uno: si el proveedor cambia la forma de los valores, un
+     descarte silencioso deja la pantalla vacía con el sello en verde. Dos: el destino es una columna
+     `jsonb` y la pantalla hace `(acciones->>'x')::numeric`, que sobre texto lanza `22P02` y **se
+     lleva puesta la consulta entera, no una fila**. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: [
+      { adId: 'a1', name: 'uno', results: { videoView: '328', linkClick: 'muchos', lead: null } },
+    ],
+  });
+
+  const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.deepEqual(r.datos[0]?.acciones, { videoView: 328 }, 'se guardó un valor ilegible');
+  assert.equal(r.accionesIlegibles, 2, 'los valores ilegibles no se contaron');
+});
+
+test('los dos contadores de ilegibles son distintos y no se suman entre sí', async () => {
+  /* `ilegibles` dice que se escribieron MENOS filas; `accionesIlegibles`, que se escribieron todas
+     con un dato de menos. Sumarlos haría que el primero —el grave— se pierda adentro del segundo. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: [
+      { name: 'sin adId' },
+      { adId: 'a1', name: 'uno', results: { videoView: 'x' } },
+    ],
+  });
+
+  const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.equal(r.ilegibles, 1, 'la fila sin adId no se contó como fila ilegible');
+  assert.equal(r.accionesIlegibles, 1, 'el valor ilegible no se contó por separado');
+  assert.equal(r.datos.length, 1);
+});
+
+test('un `results` que no es objeto no rompe la lectura de la fila', async () => {
+  /* La API nativa de Meta devuelve las acciones como ARREGLO de `{action_type, value}`. Acá llega
+     como objeto, medido — pero es una sola cuenta, y el día que llegue de la otra forma la fila
+     tiene que seguir escribiéndose con su gasto y sus impresiones. */
+  for (const raro of [[], 'texto', 42] as unknown[]) {
+    respuestas.push({ estado: 200, cuerpo: [{ adId: 'a1', name: 'uno', spend: '10', results: raro }] });
+    const r = await metricasPorAnuncio(ACCESO, 'c1', '2026-09-10');
+    assert.equal(r.tipo, 'datos');
+    if (r.tipo !== 'datos') return;
+    assert.equal(r.datos.length, 1, `la fila se perdió con results=${JSON.stringify(raro)}`);
+    assert.equal(r.datos[0]?.gasto, 10);
+    assert.equal(r.datos[0]?.acciones, null);
+  }
+});
+
 // ─── EL 429, QUE ES EL RIESGO DEL COLECTOR ──────────────────────────────────
 
 test('un 429 se REINTENTA, y un 500 no', async () => {

@@ -635,7 +635,12 @@ async function releerContactos(
  */
 export function motivoDeLoIncompleto(resultado: unknown): string | null {
   if (typeof resultado !== 'object' || resultado === null) return null;
-  const r = resultado as { atrasado?: unknown; huecos?: unknown; ilegibles?: unknown };
+  const r = resultado as {
+    atrasado?: unknown;
+    huecos?: unknown;
+    ilegibles?: unknown;
+    accionesIlegibles?: unknown;
+  };
   const partes: string[] = [];
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
@@ -645,6 +650,12 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   // Un solo ilegible ya es la firma de que el proveedor cambió una clave. No lleva umbral.
   if (typeof r.ilegibles === 'number' && r.ilegibles > 0) {
     partes.push(`${r.ilegibles} fila(s) que el proveedor mandó y no se pudieron leer`);
+  }
+  /* Rama aparte de la de arriba, y no un contador sumado: una fila ilegible significa que se
+     escribieron MENOS filas, y un valor ilegible que se escribieron todas con un dato de menos.
+     Colapsarlos haría que el primero, que es el grave, se pierda adentro del segundo. */
+  if (typeof r.accionesIlegibles === 'number' && r.accionesIlegibles > 0) {
+    partes.push(`${r.accionesIlegibles} valor(es) del desglose de acciones que no se pudieron leer`);
   }
 
   return partes.length === 0 ? null : partes.join('; ');

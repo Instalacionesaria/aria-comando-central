@@ -38,12 +38,43 @@
 //       se IGNORA en `/reporting/list`: con rango de tres días devuelve una fila agregada por
 //       anuncio. Medido: 2026-09-10→12 da `spend 24,3`; 2026-09-11→11 da `spend 6,23`.
 //
-// ── LO QUE ESTA VÍA NO PUEDE DAR, PARA NO VOLVER A BUSCARLO ──────────────────
+// ── EL DESGLOSE DE ACCIONES, QUE ESTE ARCHIVO DECLARÓ IMPOSIBLE Y LLEGA ──────
 //
-// Ninguna métrica de video: reproducciones, cuartiles 25/50/75/100, tiempo medio visto, retención de
-// tres y de seis segundos. Tampoco `link clicks`, `link CTR` ni `landing page views`, ni el activo
-// creativo. Son las seis del § 18.7 «video y creativo» más dos de «interacción», y el día que hagan
-// falta la única fuente es Meta directo.
+// Hasta el 2026-09-18 acá decía: *«Ninguna métrica de video… Tampoco `link clicks`, `link CTR` ni
+// `landing page views`, ni el activo creativo.»* **De esas ocho cosas, cuatro llegan.**
+//
+// Y el error es el mismo que este archivo ya se había señalado a sí mismo doce líneas más arriba,
+// un nivel más adentro: la conclusión salió de mirar las columnas de primer nivel de la respuesta y
+// extenderla sin comprobar a un campo ANIDADO. `results` no es un número: es el desglose de acciones
+// de Meta, por anuncio y por día.
+//
+//   "results": {"videoView":"328","linkClick":"18","landingPageView":"16","postEngagement":"354",
+//               "postReaction":"4","lead":"1", …}   ← ~45 tipos observados
+//
+// Cobertura medida sobre 96 llamadas (8 días × 12 campañas) y 31 filas anuncio-día con entrega:
+// `videoView` 90 %, `postEngagement` 90 %, `linkClick` 74 %, `landingPageView` 65 %, `lead` 48 %.
+// Con eso salen el hook rate, el link CTR, la landing page view rate y el click-to-landing — o sea
+// dos de las seis de «video y creativo» del § 18.7 y las TRES de «interacción» que faltaban.
+//
+// **Y no cuesta ninguna llamada nueva**: ya venía en la misma respuesta, y `numero(o.results)` lo
+// convertía en `null` porque `numero()` devuelve `null` para todo lo que no sea número o cadena.
+//
+// ── LO QUE ESTA VÍA SIGUE SIN PODER DAR, MEDIDO UNO POR UNO ──────────────────
+//
+// Cuartiles 25/50/75/100, tiempo medio visto, retención de seis segundos y thruplay: **`fields` es
+// un enum cerrado de once valores** (`impressions, clicks, spend, cpc, cpm, reach, frequency, ctr,
+// conversions, results, cost_per_result`) y todo lo demás da 422 «each value in fields must be a
+// valid enum value» — incluido un campo inventado, que es el control negativo. GoHighLevel no pasa
+// campos a Meta, así que no hay nombre que encontrar.
+//
+// Placement y desgloses demográficos: `groupBy` sólo acepta `day|week|month`; el resto da 422.
+//
+// El activo creativo —imagen, video, copy, título, miniatura, `meta_creative_id`—:
+// `/entity?entityType=AD` devuelve **sólo** `{name, adId, adAccountId, locationId}`, y `/creatives`,
+// `/videos` y `/posts` dan 404. Para ésos la única fuente sigue siendo Meta directo.
+//
+// El detalle de cada medición, con su código de error, está en
+// `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedirExterno } from '../http/cliente.ts';
@@ -147,6 +178,47 @@ function numero(v: unknown): number | null {
 
 function texto(v: unknown): string | null {
   return typeof v === 'string' && v !== '' ? v : null;
+}
+
+/**
+ * `results` a un objeto de números, contando lo que no se pudo leer.
+ *
+ * ── LA NORMALIZACIÓN VA ACÁ Y NO EN LA CONSULTA, Y ÉSE ES TODO SU MOTIVO ────
+ *
+ * El destino de esto es una columna `jsonb`, y del otro lado la pantalla hace
+ * `(acciones->>'videoView')::numeric`. Ese casteo sobre un valor de texto lanza `22P02` y **se
+ * lleva puesta la consulta entera, no una fila**: la pantalla de una empresa se queda en blanco por
+ * un valor raro de un tipo de acción que quizá ni se publica. Garantizando números al escribir, la
+ * lectura no puede fallar por datos.
+ *
+ * Es el mismo argumento con el que la `050` eligió `text` y no `bigint` para los identificadores,
+ * al revés: ahí se relajó el tipo para que la ingesta no se frenara; acá se aprieta para que la
+ * lectura no se rompa. La diferencia es de qué lado está el que no puede fallar.
+ *
+ * ── Y UN VALOR ILEGIBLE SE CUENTA, NO SE TIRA ───────────────────────────────
+ *
+ * Mismo motivo que `ilegibles` en `metricasPorAnuncio`: si el proveedor cambia la forma de los
+ * valores, un descarte silencioso deja la pantalla vacía con el sello en verde. Son dos contadores
+ * distintos a propósito —uno dice que cambió la forma de la FILA, el otro que cambió la del
+ * DESGLOSE— y colapsarlos inutilizaría al más grave.
+ *
+ * El proveedor manda los dos tipos en el mismo campo, medido el 2026-09-18: a nivel de cuenta
+ * `"videoView":19688` y a nivel de anuncio `"videoView":"328"`. `numero()` aguanta las dos.
+ */
+function desglose(v: unknown): { acciones: Record<string, number> | null; ilegibles: number } {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return { acciones: null, ilegibles: 0 };
+
+  const salida: Record<string, number> = {};
+  let ilegibles = 0;
+  for (const [tipo, bruto] of Object.entries(v as Record<string, unknown>)) {
+    const n = numero(bruto);
+    if (n === null) {
+      ilegibles += 1;
+      continue;
+    }
+    salida[tipo] = n;
+  }
+  return { acciones: salida, ilegibles };
 }
 
 // ─── La integración: existe o no existe ─────────────────────────────────────
@@ -337,7 +409,15 @@ export interface MetricaDeAnuncio {
   frecuencia: number | null;
   /** Lo que META cuenta como lead. Ver el aviso de arriba. */
   leadsDeMeta: number | null;
-  resultadosDeMeta: number | null;
+  /**
+   * El desglose de `results` por tipo de acción, ya normalizado a números.
+   *
+   * **`null` NO es `{}`**: `null` es «el proveedor no mandó el campo» y `{}` es «lo mandó vacío».
+   * Una clave ausente DENTRO del objeto es «ese tipo no ocurrió», que tampoco es cero — una pieza
+   * estática no tiene `videoView` nunca, y eso no es una laguna de cobertura. Los tres estados
+   * mandan a hacer cosas distintas y por eso no colapsan.
+   */
+  acciones: Record<string, number> | null;
 }
 
 /**
@@ -358,7 +438,7 @@ export async function metricasPorAnuncio(
   campanaId: string,
   /** Un día, en `YYYY-MM-DD`. */
   dia: string,
-): Promise<ResultadoDeGhl<MetricaDeAnuncio[]> & { ilegibles?: number }> {
+): Promise<ResultadoDeGhl<MetricaDeAnuncio[]> & { ilegibles?: number; accionesIlegibles?: number }> {
   const r = await leer<unknown>(
     `${BASE}/ad-publishing/facebook/reporting/list?locationId=${encodeURIComponent(acceso.locationId)}` +
       `&listType=ads&type=${ORIGEN}&campaignId=${encodeURIComponent(campanaId)}` +
@@ -380,6 +460,7 @@ export async function metricasPorAnuncio(
    * `next` y no `after` — las dos cosas costaron una sonda cada una. Si mañana `adId` pasa a
    * `ad_id`, esto lo dice; sin el contador, la pantalla se queda vacía y el sello dice `corrio`. */
   let ilegibles = 0;
+  let accionesIlegibles = 0;
   const datos = lista.flatMap((x) => {
       const o = (x ?? {}) as Record<string, unknown>;
       const anuncioId = texto(o.adId);
@@ -387,6 +468,8 @@ export async function metricasPorAnuncio(
         ilegibles += 1;
         return [];
       }
+      const d = desglose(o.results);
+      accionesIlegibles += d.ilegibles;
       return [
         {
           anuncioId,
@@ -402,12 +485,12 @@ export async function metricasPorAnuncio(
           alcance: numero(o.reach),
           frecuencia: numero(o.frequency),
           leadsDeMeta: numero(o.leads),
-          resultadosDeMeta: numero(o.results),
+          acciones: d.acciones,
         },
       ];
   });
 
-  return { tipo: 'datos', datos, ilegibles };
+  return { tipo: 'datos', datos, ilegibles, accionesIlegibles };
 }
 
 /** Una fila del reporte agregado de la CUENTA, un día. */
