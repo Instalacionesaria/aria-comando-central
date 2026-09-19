@@ -171,7 +171,48 @@ function Cuerpo({ p }) {
       <PorEtapa c={p.calidad} />
       <Subasta r={p.rendimiento} />
       <Fatiga f={p.fatiga} />
+      {/* Y lo último: qué NO muestra esta pantalla, y por qué. Ver `Huecos`. */}
+      <Huecos lista={p.rendimiento.fueraDeAlcance} />
     </>
+  );
+}
+
+/**
+ * Lo que esta pantalla NO puede mostrar, dicho en la pantalla.
+ *
+ * ── VA ACÁ Y NO EN UN DOCUMENTO, POR DOS MOTIVOS ────────────────────────────
+ *
+ * El primero es el del patrón: `calidadDeLaAtribucion.ts:69` dice que los huecos *«viajan para que
+ * nadie los rehaga»*, y medir éstos costó un día de sondas contra la API del proveedor.
+ *
+ * El segundo es de esta pantalla en particular. **La maqueta que había acá dibujaba estas cuatro
+ * cosas con números inventados**: una curva de retención, un desglose por placement, la miniatura
+ * de cada pieza. Quien conocía esa pantalla va a buscarlas, y si no están ni se dice por qué, la
+ * lectura razonable es que algo se rompió. La diferencia entre un hueco declarado y una regresión
+ * es exactamente este párrafo.
+ *
+ * Si la lista llega vacía —el día que alguien conecte Meta directo— **no se dibuja nada**: es la
+ * regla del silencio, y un bloque que dice «no falta nada» es ruido permanente.
+ */
+function Huecos({ lista }) {
+  if (!lista?.length) return null;
+  return (
+    <div className="csf">
+      <div className="csf-h">
+        <div className="csf-hl">
+          <p className="csf-t">Lo que esta pantalla no puede medir</p>
+          <p className="csf-m">
+            Medido contra la API de GoHighLevel el 18 de septiembre de 2026. No son cosas pendientes
+            de programar: son datos que esta vía no entrega.
+          </p>
+        </div>
+      </div>
+      {lista.map((f) => (
+        <p className="cs-fuera" key={f.punto}>
+          <b>{f.punto}</b>: {f.porque}.
+        </p>
+      ))}
+    </div>
   );
 }
 

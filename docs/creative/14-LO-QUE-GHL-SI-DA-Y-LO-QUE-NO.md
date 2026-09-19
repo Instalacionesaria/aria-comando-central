@@ -349,6 +349,36 @@ sino porque el dato que hay no significa lo que el KPI necesita que signifique. 
 día que alguien mida contra Meta directo qué son los dos hechos — que es la misma puerta que el resto
 de esta página.
 
+### C14-15b · `promotedObject` separa los dos mecanismos, y tira abajo el `pixelId` del plan
+
+> Medido el 2026-09-19 sobre 14 anuncios de 8 días, con la misma sonda del final de esta página.
+
+El plan de construcción decía: *«Se agrega `pixelId` desde `promotedObject`, que ya llega y la `050`
+declaró sin columna.»* **Medido, `pixelId` no sirve para nada**: es `1249900173340188` en todos los
+anuncios que lo traen. Una columna con un solo valor no distingue nada, y el argumento de la `052`
+—peso en cada escritura a cambio de nada— aplica igual a una columna que a un índice.
+
+Lo que sí discrimina es **el resto del objeto**, y discrimina justo los dos hechos del § C14-15:
+
+| el anuncio reporta | su `promotedObject` trae |
+|---|---|
+| **sólo `onsiteWebLead`** (el primer hecho) | `customEventType: "SCHEDULE"`, `pixelId`, **sin `pageId`** |
+| **sólo `onsiteConversion.leadGrouped`** (el segundo) | `pageId`, `customEventStr: "Agendado"`, `leadAdsFormEventSourceType: "onsite_crm_single_event"`, **`adsSignalSourceType: "capi_crm"`** |
+
+`capi_crm` es la pista: **la API de Conversiones alimentada desde el CRM**. La lectura más simple es
+que el segundo hecho son nuestros propios leads **volviendo desde GoHighLevel a Meta**, y que Meta
+los cuenta como conversión propia. Si eso es así, `lead = onsiteWebLead + leadGrouped` suma el lead
+del sitio con el mismo lead round-tripeado, y el 502 contra nuestros 265 deja de ser un misterio.
+
+**No está probado**, y falta lo que lo probaría: los 10 anuncios que reportan los dos hechos no se
+parten limpio —hay anuncios de los dos con cada forma—, así que la separación es sugerente y no
+decisiva sobre 14 anuncios.
+
+**Y no se guarda ninguna columna todavía.** No hay un solo módulo que fuera a leerla: Creative cuenta
+leads desde `calidadDelCreativo`, que cuenta contactos nuestros. La medición se repite con la sonda
+de abajo en un minuto el día que haya quien la consuma, y eso es más barato que una migración, un
+cambio en el colector y sus pruebas para una columna que nadie abre.
+
 ### C14-P05 · Cuál de los dos hechos es el que llega al CRM
 
 197 contactos contra 220 y 213 no distingue: los dos candidatos están igual de cerca. Y de los 215 del

@@ -104,6 +104,51 @@ export const ACCIONES_QUE_LEEMOS = {
  * Los cuatro campos viajan siempre. `tasa` sin `diasConLaClave` se lee como si hablara de toda la
  * ventana, y no habla: habla de los días en que el proveedor reportó esa acción.
  */
+/**
+ * Lo que el § 18.12 y el § 18.7 piden y **esta vía no puede dar**, con el motivo medido.
+ *
+ * ── POR QUÉ VIAJA A LA PANTALLA EN VEZ DE QUEDARSE EN UN DOC ────────────────
+ *
+ * Es el patrón `fueraDeAlcance` de `calidadDeLaAtribucion.ts:69`, y existe por lo mismo: *«viajan
+ * para que nadie los rehaga»*. Un hueco que sólo vive en `docs/` es un hueco que el próximo vuelve
+ * a medir desde cero — y acá medirlo cuesta un día de sondas contra la API del proveedor.
+ *
+ * Pero hay un segundo motivo, y es el que decidió el usuario el 2026-09-18 al elegir «sólo GHL, y
+ * el hueco se declara»: **la pantalla del prototipo dibujaba estas cinco cosas con números
+ * inventados.** Alguien que conozca la pantalla vieja va a buscar la curva de retención, y si no la
+ * encuentra ni encuentra por qué, la conclusión razonable es que se rompió. Decir «no se puede, y
+ * éste es el motivo» es lo único que distingue un hueco declarado de una regresión.
+ *
+ * Las cuatro mediciones son del 2026-09-18 contra la subcuenta real, y están en
+ * `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` con la sonda para repetirlas.
+ */
+export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
+  {
+    punto: 'La curva de retención y los cuartiles de video',
+    porque:
+      'el parámetro `fields` de GoHighLevel es un enum cerrado de once valores, y ' +
+      '`video_p25_watched_actions`, `thruplay` y el resto dan 422 «each value in fields must be a ' +
+      'valid enum value» — incluido un campo inventado, que es el control negativo. Hace falta Meta directo',
+  },
+  {
+    punto: 'El placement y los desgloses por edad, género o dispositivo',
+    porque: '`groupBy` sólo acepta `day`, `week` y `month`; cualquier otro desglose da 422. Hace falta Meta directo',
+  },
+  {
+    punto: 'El activo creativo: la imagen, el video, el copy y la miniatura',
+    porque:
+      '`/entity?entityType=AD` devuelve sólo `{name, adId, adAccountId, locationId}`, y `/creatives`, ' +
+      '`/videos` y `/posts` dan 404. No hay ruta que los sirva. Hace falta Meta directo',
+  },
+  {
+    punto: 'El formato y la duración de cada pieza',
+    porque:
+      'no vienen en ninguna respuesta. Se podrían inferir del NOMBRE —`broll`, `horizontal`, ' +
+      '`entrevista`, `native`, `VSL`—, y eso es una decisión sin tomar: inferir un formato de una ' +
+      'convención de nombres acierta hasta el día que alguien nombra distinto, y nada avisa',
+  },
+];
+
 export interface TasaDeAccion {
   /** La suma del tipo de acción sobre los días que TRAÍAN la clave. `null` = ningún día la trajo. */
   cantidad: number | null;
@@ -163,6 +208,8 @@ export interface RendimientoDeLosCreativos {
   desdeElDesglose: string | null;
   filas: FilaDeRendimiento[];
   gastoTotal: number | null;
+  /** Lo que esta vía no puede dar, con el motivo. Se DIBUJA; ver `FUERA_DE_ALCANCE`. */
+  fueraDeAlcance: { punto: string; porque: string }[];
   aviso: string | null;
 }
 
@@ -231,6 +278,7 @@ export async function rendimientoDelCreativo(
     desdeElDesglose,
     filas,
     gastoTotal: costo.gastoTotal,
+    fueraDeAlcance: FUERA_DE_ALCANCE,
     aviso: avisoDe(filas, desdeElDesglose, costo.desde),
   };
 }

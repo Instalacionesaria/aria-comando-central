@@ -293,3 +293,38 @@ test('cuando las dos ventanas coinciden, el aviso NO habla de ellas', async () =
   assert.doesNotMatch(String(r.aviso ?? ''), /habla[n]? de menos días/, 'avisó de dos ventanas iguales');
   assert.match(String(r.aviso), /tres segundos/, 'se perdió la nota de definición del hook rate');
 });
+
+test('los huecos viajan con su motivo, para que la pantalla los pueda dibujar', async () => {
+  /* ── POR QUÉ ESTO ES UNA PRUEBA Y NO UNA CONSTANTE QUE NADIE MIRA ──────────
+   *
+   * La decisión del usuario del 2026-09-18 fue «sólo GHL, **y el hueco se declara**». La maqueta
+   * que había en esta pantalla dibujaba la curva de retención, el placement y la miniatura de cada
+   * pieza con números inventados; quien conocía esa pantalla los va a buscar.
+   *
+   * Un hueco que se omite no se distingue de una regresión: en los dos casos la pantalla no lo
+   * muestra y nada lo dice. Esta prueba muere si la lista se vacía, si algún motivo queda en blanco
+   * —un «no se puede» sin el porqué manda a alguien a intentarlo igual— y si el punto más caro de
+   * medir, el enum cerrado de `fields`, desaparece de la lista. */
+  await limpiar();
+  await unAnuncio(`${MARCA}14`, 'pieza cualquiera');
+  await unDia(`${MARCA}14`, 1, { gasto: 10, impresiones: 3000 }, { videoView: 600 });
+
+  const r = await leer();
+
+  assert.ok(r.fueraDeAlcance.length >= 4, `llegaron ${r.fueraDeAlcance.length} huecos, se esperaban 4`);
+
+  for (const f of r.fueraDeAlcance) {
+    assert.ok(f.punto?.trim(), 'un hueco sin nombre');
+    assert.ok(
+      f.porque?.trim().length > 40,
+      `«${f.punto}» no dice por qué no se puede: un hueco sin motivo manda a alguien a rehacer la medición`,
+    );
+  }
+
+  /* El enum cerrado de `fields` es el que cuesta un día de sondas volver a medir, y es el que tumba
+     la mitad del § 18.12. Si se cae de la lista, la pantalla deja de explicar su hueco más grande. */
+  assert.ok(
+    r.fueraDeAlcance.some((f) => /cuartiles|retención/i.test(f.punto) && /422|enum/i.test(f.porque)),
+    'se perdió el hueco de los cuartiles de video, que es el más caro de volver a medir',
+  );
+});
