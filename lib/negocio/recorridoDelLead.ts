@@ -220,6 +220,22 @@ export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<Recorrid
  * El orden es el mismo criterio que `costoDelAnuncio`: primero lo que invalida la lectura entera,
  * después lo que la matiza.
  */
+/**
+ * Una lista en castellano: «A», «A y B», «A, B y C».
+ *
+ * Era un `join(' y ')`, que con dos elementos se lee bien y con tres da «A y B y C». **No se veía
+ * porque en producción eran dos**: las familias circulares medidas el 2026-09-20 sobre treinta días
+ * son «Meta, navegador interno» y «Precall». Apareció al mirar la pantalla con una tercera.
+ *
+ * A mano y no con `Intl.ListFormat`: esa API depende de que el runtime traiga los datos de idioma
+ * completos, y un `small-icu` devolvería la lista en inglés —«A, B and C»— sin fallar. Es el mismo
+ * tipo de silencio que el resto de este archivo existe para evitar.
+ */
+function enumerar(partes: string[]): string {
+  if (partes.length <= 1) return partes[0] ?? '';
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
 function avisoDe(filas: FilaDeRecorrido[], cohorte: number, corte: CorteDeEpoca): string | null {
   const partes: string[] = [];
 
@@ -251,7 +267,7 @@ function avisoDe(filas: FilaDeRecorrido[], cohorte: number, corte: CorteDeEpoca)
   );
   if (circulares.length > 0) {
     partes.push(
-      `En ${circulares.map((f) => `«${f.titulo}»`).join(' y ')} la dirección se registró al ` +
+      `En ${enumerar(circulares.map((f) => `«${f.titulo}»`))} la dirección se registró al ` +
         'reservar, así que el conteo de agendados de esa fila no dice que ese camino convierta ' +
         'mejor: dice que quien llegó ahí ya había agendado.',
     );

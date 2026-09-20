@@ -911,6 +911,25 @@
   text-transform: uppercase;
   color: var(--txt-faint);
 }
+/* El rótulo de la PRIMERA columna va a la izquierda, encima de sus datos.
+ *
+ * La regla de arriba alinea a la derecha todo lo que no sea `.crv-n`, y en la fila de encabezado
+ * ninguna celda lleva esa clase —son `columnheader`, no nombres—, así que «CAMINO» y «PIEZA`
+ * flotaban contra el borde derecho de una columna `1fr` mientras sus datos empezaban a la
+ * izquierda. Visto en el navegador el 2026-09-20, con la tabla del reparto: el rótulo quedaba a
+ * unos cuatrocientos píxeles de la primera fila que nombra.
+ *
+ * Se arregla acá y no agregando `.crv-n` al marcado: así vale para las dos pantallas que usan esta
+ * tabla, y la fila de encabezado no hereda el recorte con puntos suspensivos de `.crv-n`, que es
+ * para nombres largos de pieza y no para una palabra en versalitas.
+ *
+ * Las DOS clases en el selector y el `span` explícito no son adorno: `.crv-fila > span:not(.crv-n)`
+ * pesa (1,2,1), así que un `.crv-cab > :first-child` —que pesa (1,2,0)— pierde y la celda seguía a
+ * la derecha. Medido en el navegador: la declaración se escribía y el `text-align` computado seguía
+ * dando `right`. Con `.crv-fila.crv-cab > span` pesa (1,3,1) y gana. */
+:is(#v-creative, #v-conversion) .crv-fila.crv-cab > span:first-child {
+  text-align: left;
+}
 :is(#v-creative, #v-conversion) .crv-n {
   display: flex;
   align-items: center;

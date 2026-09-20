@@ -303,6 +303,42 @@ test('ningún aviso lleva Markdown: la pantalla lo dibuja crudo', async () => {
   assert.doesNotMatch(String(r.aviso), /\*\*|__|\[.+\]\(/, 'el aviso lleva Markdown crudo');
 });
 
+test('con TRES familias circulares el aviso las enumera en castellano, no las encadena con «y»', async () => {
+  /* ── ESTE DEFECTO SÓLO SE VE CON TRES, Y EN PRODUCCIÓN HAY DOS ─────────────
+   *
+   * El aviso listaba las familias circulares con `join(' y ')`. Con dos elementos se lee perfecto
+   * —«A y B»— y las familias circulares medidas el 2026-09-20 sobre treinta días son exactamente
+   * dos: «Meta, navegador interno» y «Precall». Con tres da **«A y B y C»**.
+   *
+   * O sea que la ventana que el botón abre por omisión nunca lo muestra, y la corrección de rumbo
+   * de un solo cliente —una familia más que cruce el 90 %— lo saca a la pantalla. Apareció al mirar
+   * el panel en el navegador con datos sembrados, no en ninguna prueba.
+   *
+   * Las DOS mitades van juntas: sin la primera aserción, un `join(', ')` pelado —«A, B, C»— pasaría
+   * la segunda y seguiría sin ser castellano. */
+  await limpiar();
+  const CIRCULARES = [
+    'https://calls.ariaia.com/r',
+    'https://precall.ariaia.com/b',
+    'https://www.fbsbx.com/x',
+  ];
+  for (const url of CIRCULARES) {
+    for (let i = 0; i < PISO_DE_UNA_TASA + 1; i += 1) {
+      await unContacto({ ultima: { url, medium: 'calendar' }, cita: true });
+    }
+  }
+
+  const r = await leer();
+
+  assert.match(String(r.aviso), /» y «/, 'la última no se une con «y»: la lista no cierra en castellano');
+  assert.doesNotMatch(String(r.aviso), /» y «[^»]+» y «/, 'encadenó tres con «y»: «A y B y C» no es castellano');
+  /* Y las tres están nombradas: una lista bien puntuada que perdió un elemento es peor que una mal
+     puntuada que los trae todos. */
+  for (const t of ['Widget de reserva', 'Precall', 'Meta, navegador interno']) {
+    assert.ok(String(r.aviso).includes(`«${t}»`), `el aviso no nombra «${t}»`);
+  }
+});
+
 test('los rótulos viajan en la respuesta, no se importan', async () => {
   /* La pantalla es `'use client'` y este módulo abre la base: importar sus constantes desde el
      navegador arrastra `pg` al paquete y el build falla con «Can't resolve 'dns'». Esa mitad la
