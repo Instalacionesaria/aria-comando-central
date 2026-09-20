@@ -88,7 +88,17 @@ export interface FatigaDeUnCreativo {
    * Es `null` cuando la serie es corta o cuando alguna mitad no llega al piso de impresiones.
    */
   fatigado: boolean | null;
-  /** Por qué no se pudo decir. `null` cuando sí se pudo. */
+  /**
+   * Por qué no se pudo decir, **en clave**. `null` cuando sí se pudo.
+   *
+   * La clave y no sólo la frase, porque el aviso agrupa las piezas sin veredicto por motivo. Si
+   * agrupara leyendo `porque` con una expresión regular, «por qué no hay veredicto» estaría escrito
+   * dos veces —la frase y el patrón que la reconoce— y cambiar una redacción rompería el agrupado
+   * en silencio: las piezas caerían cada una en su propio grupo y el aviso enumeraría veintiún
+   * motivos distintos en vez de tres.
+   */
+  motivo: 'pocos-dias' | 'piso-de-impresiones' | 'sin-clics' | null;
+  /** La misma cosa en prosa, para dibujar. Sale del `motivo`, no al revés. */
   porque: string | null;
 }
 
@@ -193,6 +203,7 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
       ctrTardio: null,
       caida: null,
       fatigado: null,
+      motivo: 'pocos-dias',
       porque: `sólo ${dias} día(s) con entrega; hacen falta ${DIAS_MINIMOS_DE_SERIE}`,
     };
   }
@@ -206,6 +217,7 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
       ctrTardio: null,
       caida: null,
       fatigado: null,
+      motivo: 'piso-de-impresiones',
       porque: `alguna mitad de la serie no llega a ${PISO_DE_IMPRESIONES} impresiones`,
     };
   }
@@ -222,6 +234,7 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
     ctrTardio,
     caida,
     fatigado: caida === null ? null : caida >= CAIDA_QUE_PREOCUPA,
+    motivo: caida === null ? 'sin-clics' : null,
     porque: caida === null ? 'la primera mitad no tuvo ningún clic' : null,
   };
 }
@@ -230,10 +243,44 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
 function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
   const partes: string[] = [];
 
+  /* ── ESTE AVISO DECÍA DOS COSAS Y LAS DOS ERAN FALSAS ──────────────────────
+   *
+   * Decía: *«N de M pieza(s) no tienen serie suficiente para un veredicto: **se muestra su conteo
+   * de días** y no su tendencia»*.
+   *
+   *   · **«se muestra su conteo de días»** — no se muestra. `PanelDeCreative.jsx` dibuja sólo las
+   *     filas con `fatigado !== null`; las otras no aparecen en ninguna parte de la pantalla. El
+   *     aviso prometía un listado que no existe, y medido el 2026-09-19 eran 21 de 26 piezas las
+   *     que el lector iba a buscar y no iba a encontrar.
+   *   · **«no tienen serie suficiente»** — `conSerie` cuenta las que tienen VEREDICTO, y para no
+   *     tenerlo hay TRES motivos distintos, cada uno con su `porque` en la fila: pocos días, una
+   *     mitad por debajo del piso de impresiones, o la primera mitad sin ningún clic. El aviso se
+   *     los atribuía todos al primero, o sea que acusaba de serie corta a piezas con serie larga.
+   *
+   * Ahora dice cuántas son, que NO se listan, y agrupa por `motivo`, que es una clave y no una
+   * frase. El `porque` de cada fila sigue viajando: el día que la pantalla dibuje esas filas, ya lo
+   * tiene. */
   if (filas.length > 0 && conSerie < filas.length) {
+    const EN_PROSA = {
+      'pocos-dias': 'les faltan días de serie',
+      'piso-de-impresiones': 'alguna mitad de su serie no llega al piso de impresiones',
+      'sin-clics': 'su primera mitad no tuvo ningún clic',
+    } as const;
+
+    const motivos = new Map<string, number>();
+    for (const f of filas) {
+      if (f.fatigado !== null) continue;
+      const clave = f.motivo === null ? 'sin motivo declarado' : EN_PROSA[f.motivo];
+      motivos.set(clave, (motivos.get(clave) ?? 0) + 1);
+    }
+    const detalle = [...motivos.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([m, n]) => `${n} ${m}`)
+      .join('; ');
+
     partes.push(
-      `${filas.length - conSerie} de ${filas.length} pieza(s) no tienen serie suficiente para un ` +
-        'veredicto: se muestra su conteo de días y no su tendencia.',
+      `${filas.length - conSerie} de ${filas.length} pieza(s) no tienen veredicto y no se listan ` +
+        `acá: ${detalle}.`,
     );
   }
 
@@ -242,7 +289,11 @@ function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
   if (filas.some((f) => f.fatigado !== null)) {
     partes.push(
       `El umbral de fatiga —una caída del ${Math.round(CAIDA_QUE_PREOCUPA * 100)} % del CTR entre ` +
-        'las dos mitades de la serie— es **provisional**: el documento funcional lo declara ' +
+        /* Sin asteriscos: la pantalla dibuja este texto tal cual, dentro de un `<p>` y de un
+           `title=`. Un `**provisional**` no se pone en negrita en ninguno de los dos — se lee con
+           los asteriscos puestos, y el aviso que existe para dar confianza en la cifra termina
+           pareciendo un error de la aplicación. */
+        'las dos mitades de la serie— es provisional: el documento funcional lo declara ' +
         'pendiente y no está calibrado contra nada.',
     );
     /* Y la mitad que falta. Sin esto, «fatiga» se lee como el indicador completo del § 18.12 y no

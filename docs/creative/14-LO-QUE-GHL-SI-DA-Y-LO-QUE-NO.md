@@ -102,21 +102,31 @@ A nivel de **cuenta** (`/reporting`) los valores son **números**; a nivel de **
 es escribir cero cuando un valor no se deja leer: tiene que contarlo, por el mismo motivo por el que
 `metricasPorAnuncio` cuenta `ilegibles`.
 
-### C14-03 · Hoy se tira, y es un defecto de una línea
+### C14-03 · Se tiraba, y era un defecto de una línea — **cerrado el 2026-09-19**
 
-`lib/ghl/anuncios.ts:405`:
+> Esta sección estaba escrita en presente y citaba una línea que **ya no existe**. Queda el
+> diagnóstico porque explica por qué el desglose no estaba, pero con su fecha de cierre: un
+> documento que declara en presente un defecto arreglado manda a alguien a buscarlo, y buscarlo
+> cuesta más que leer esta línea.
+
+Lo que había en `lib/ghl/anuncios.ts` hasta el 2026-09-18:
 
 ```ts
 resultadosDeMeta: numero(o.results),
 ```
 
-`results` es un **objeto**. `numero()` (`:141`) devuelve `null` para todo lo que no sea número o
-cadena. Así que `resultadosDeMeta` es **`null` siempre, para todos los anuncios, en todas las
-llamadas** — y aunque no lo fuera, `negocio.metricas_de_anuncio` no tiene columna donde guardarlo.
+`results` es un **objeto**. `numero()` devuelve `null` para todo lo que no sea número o cadena. Así
+que `resultadosDeMeta` era **`null` siempre, para todos los anuncios, en todas las llamadas** — y
+aunque no lo fuera, `negocio.metricas_de_anuncio` no tenía columna donde guardarlo.
 
-**Y el costo de arreglarlo es cero llamadas.** El colector de Acquisition ya pide este endpoint una
-vez por campaña y por día, en la tarea `anuncios` del cron de las `17 6 * * *`
-(`lib/negocio/barrido.ts:222`). No hace falta pedir nada nuevo: hace falta guardar lo que ya llega.
+**Y el costo de arreglarlo fue cero llamadas.** El colector de Acquisition ya pedía este endpoint
+una vez por campaña y por día, en la tarea `anuncios` del cron de las `17 6 * * *`
+(`lib/negocio/barrido.ts:222`). No hizo falta pedir nada nuevo: hizo falta guardar lo que ya llegaba.
+
+**Hoy** el campo se llama `acciones`, es un `Record<string, number> | null` leído con un
+desenvolvedor que cuenta lo ilegible en vez de escribir cero, y su columna la creó la migración
+`053`. Y el nombre `resultadosDeMeta` desapareció del repositorio — como desapareció `leadsDeMeta`,
+que traía el conteo del CRM (§ C14-15).
 
 ---
 
@@ -310,10 +320,12 @@ lead = onsiteWebLead                  + onsiteConversion.leadGrouped
 lead = offsiteConversion.fbPixelLead  + offsiteSearchAddMetaLeads
 ```
 
-O sea que las ocho claves con pinta de lead del censo son **dos hechos con cuatro nombres cada uno**,
-y `lead` los suma:
+O sea que las ocho claves con pinta de lead del censo son **dos hechos —uno con tres nombres y otro
+con cuatro— más el agregado que los suma**. Tres más cuatro más uno dan ocho, y la cuenta importa:
+si las dos familias tuvieran el mismo número de alias sería más fácil creer que son la misma cosa
+escrita dos veces, y no lo son.
 
-| el hecho | sus cuatro nombres | total en la ventana |
+| el hecho | sus nombres | total en la ventana |
 |---|---|---|
 | uno | `onsiteWebLead` · `offsiteConversion.fbPixelLead` · `offsiteLeadAdd_20SCalls` | **287** |
 | otro | `onsiteConversion.leadGrouped` · `offsiteSearchAddMetaLeads` · `offsiteCompleteRegistrationAddMetaLeads` · `offsiteContentViewAddMetaLeads` | **215** |

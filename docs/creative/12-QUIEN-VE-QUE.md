@@ -132,10 +132,12 @@ tiene un «antes» que fechar. Ver `C11-P01`.
 - **`capacidadRequerida: 'tablero.ver'`** es la correcta y no hay que inventar otra: siete pantallas la
   comparten, y lo que separa a las personas es el **alcance**, no la capacidad. Acquisition lo dejó
   escrito en `app/api/acquisition/route.ts:38-41`.
-- **`sinOperacionesTodavia: true` es un cable trampa del `ADR-0304`, y funciona en las dos
-  direcciones**: con la bandera puesta, crear una ruta que declare `PANTALLA = 'creative'` pone la
-  suite en rojo; sin la bandera y sin ruta, también. **La bandera y la ruta se mueven juntas, en el
-  mismo cambio.**
+- **`sinOperacionesTodavia: true` YA NO ESTÁ**, y el bloque de arriba es de antes de construir la
+  pantalla. Era un cable trampa del `ADR-0304` que funciona en las dos direcciones: con la bandera
+  puesta, crear una ruta que declare `PANTALLA = 'creative'` pone la suite en rojo; sin la bandera y
+  sin ruta, también. **La bandera y la ruta se movieron juntas, en el mismo cambio**, que es
+  exactamente lo que el cable trampa existe para forzar. Hoy `lib/autorizacion/secciones.ts` no la
+  declara y `app/api/creative/route.ts` existe.
 - **`galon: true`** le pone a Creative el mismo galón `›` que a ICP & Oferta, que sí es real.
   `docs/estado actual/02-CREATIVE.md:34` lo dice sin rodeos: **nada en la interfaz le avisa a quien
   mira que lo que ve es inventado.** Es el argumento más corto para no dejar el prototipo puesto.

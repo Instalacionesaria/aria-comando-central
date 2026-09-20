@@ -437,3 +437,39 @@ test('una proporción bajo el piso viaja NULA, con sus conteos intactos', async 
     }
   }
 });
+
+test('`desde` y `hasta` respetan la MISMA ventana que las cifras, no la tabla entera', async () => {
+  /* ── ESTE DEFECTO YA SE PAGÓ UNA VEZ, Y NO TENÍA PRUEBA ────────────────────
+   *
+   * El comentario de `extremosDeLaVentana` cuenta que esa consulta no llevaba `where`, así que
+   * `desde` y `hasta` describían la tabla entera mientras las cifras de al lado describían el
+   * período elegido: con treinta días guardados y «7 días» encendido, el encabezado decía «Del 18
+   * ago al 18 sep» sobre un gasto de una semana. El lector divide de cabeza por el período
+   * equivocado y nada lo desmiente.
+   *
+   * Se arregló, **y nadie escribió la prueba**: verificado el 2026-09-20 cambiando la ventana de
+   * esa consulta a 999 días — la suite entera seguía en verde. Y desde hoy la consulta usa
+   * `ventanaDeMetricas`, o sea que esta prueba también es la que defiende que las dos mitades de la
+   * pantalla —las fechas del encabezado y los números— sigan leyendo el mismo predicado.
+   *
+   * El escenario es el mínimo que lo distingue: un día DENTRO de la ventana y otro claramente
+   * fuera. Sin el de afuera, cualquier ventana pasa. */
+  await limpiar();
+  await unAnuncio(`${MARCA}90`, 'pieza de dos epocas');
+  await unDia(`${MARCA}90`, 3, { gasto: 10, impresiones: 2000, clics: 40 });
+  await unDia(`${MARCA}90`, 200, { gasto: 99, impresiones: 9000, clics: 90 });
+
+  const r = await leer(7);
+
+  const hoy = new Date();
+  const haceCiento = new Date(hoy.getTime() - 100 * 86400000).toISOString().slice(0, 10);
+
+  assert.ok(r.desde, 'no llegó la fecha de inicio');
+  assert.ok(
+    String(r.desde) > haceCiento,
+    `\`desde\` dice ${r.desde}: está mirando la tabla entera y no la ventana de 7 días`,
+  );
+  /* Y el gasto tampoco lo incluye: si una de las dos mitades cambiara de ventana, esta aserción y
+     la de arriba se contradirían — que es exactamente el síntoma que se quiere poder ver. */
+  assert.equal(r.gastoTotal, 10, 'el gasto de fuera de la ventana se coló en el total');
+});

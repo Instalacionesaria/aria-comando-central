@@ -3,9 +3,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL DEFECTO CENTRAL DE ESTE MÓDULO DA UNA CIFRA BAJA, PLAUSIBLE Y FALSA
 //
-// El desglose de acciones **no viene en todas las filas**. Medido sobre 24 días de producción:
-// `videoView` en 224 de 266 filas anuncio-día con entrega, `linkClick` en 171, `landingPageView` en
-// 150.
+// El desglose de acciones **no viene en todas las filas**. Remedido el 2026-09-19 sobre los 28 días
+// con desglose y sus **240 filas anuncio-día con entrega**: `videoView` en 224 (93 %), `linkClick`
+// en 171 (71 %), `landingPageView` en 150 (63 %). El denominador son las filas que tienen desglose
+// Y entrega: decir «de 266» metía las de los tres días anteriores a la `053`, que no tienen la
+// columna — o sea cometer al medir el mismo error de denominador que este archivo defiende.
 //
 // Si el numerador se suma sobre los días que traen la clave y el denominador sobre todos, la tasa
 // sale sistemáticamente baja. No lanza, no avisa, y **un hook rate del 12 % es tan creíble como uno
@@ -103,8 +105,8 @@ test('el denominador de una tasa excluye los días que NO traen su clave', async
   assert.equal(f?.impresiones, 3000, 'el total de impresiones de la pieza son las tres mil');
   assert.equal(f?.hookRate.tasa, 20, 'el hook rate se calculó sobre impresiones de días sin la clave');
   assert.equal(f?.hookRate.cantidad, 400);
-  assert.equal(f?.hookRate.diasConLaClave, 2, 'la cobertura del numerador no viaja');
-  assert.equal(f?.hookRate.diasConEntrega, 3);
+  assert.equal(f?.hookRate.anuncioDiasConLaClave, 2, 'la cobertura del numerador no viaja');
+  assert.equal(f?.hookRate.anuncioDiasConEntrega, 3);
 });
 
 test('sin ningún día con la clave, la tasa es NULA y no cero', async () => {
@@ -118,7 +120,7 @@ test('sin ningún día con la clave, la tasa es NULA y no cero', async () => {
 
   assert.equal(f?.hookRate.tasa, null, 'una pieza sin video publicó hook rate cero');
   assert.equal(f?.hookRate.cantidad, null, 'se inventó un conteo de reproducciones');
-  assert.equal(f?.hookRate.diasConLaClave, 0);
+  assert.equal(f?.hookRate.anuncioDiasConLaClave, 0);
   assert.equal(f?.linkCtr.tasa, 2, 'la clave que SÍ vino tenía que publicarse');
 });
 
@@ -234,7 +236,7 @@ test('el click-to-landing sólo cuenta los días que traen las DOS claves', asyn
   const f = await fila('pieza del cruce');
 
   assert.equal(f?.clickToLanding.tasa, 50, 'se mezclaron días con una sola de las dos claves');
-  assert.equal(f?.clickToLanding.diasConLaClave, 1);
+  assert.equal(f?.clickToLanding.anuncioDiasConLaClave, 1);
   assert.equal(f?.linkCtr.cantidad, 150, 'el link CTR sí cuenta los dos días');
 });
 
@@ -253,10 +255,21 @@ test('el click-to-landing puede pasar de 100 % y NO se topa', async () => {
 
 // ─── LAS DOS VENTANAS ───────────────────────────────────────────────────────
 
-test('el desglose tiene su PROPIA fecha de inicio, y el aviso la dice', async () => {
-  /* La columna `acciones` nació con la `053`, así que hay gasto de días que no tienen desglose. Una
-     pantalla que diga «30 días» mientras el hook rate habla de dos afirma algo falso sobre el
-     alcance de la cifra. */
+test('el desglose tiene su PROPIA fecha de inicio, y viaja como campo para que la pantalla la diga UNA vez', async () => {
+  /* ── ESTA PRUEBA CAMBIÓ DE CONTRATO, Y CONVIENE DECIR POR QUÉ ──────────────
+   *
+   * La columna `acciones` nació con la `053`, así que hay gasto de días que no tienen desglose. Una
+   * pantalla que diga «30 días» mientras el hook rate habla de dos afirma algo falso.
+   *
+   * Antes esto exigía que **el aviso** trajera la fecha. Y la pantalla ya la trae: el bloque de
+   * cobertura de `PanelDeCreative.jsx` arma la frase de las tres ventanas con `fechaCorta`. O sea
+   * que el mismo hecho se dibujaba dos veces en la misma pantalla, una en `21 ago` y otra en
+   * `2026-08-21` — dos formas del mismo dato se leen como dos datos. La prueba vieja **exigía el
+   * defecto**, que es el modo de fallo más caro de una prueba.
+   *
+   * El contrato correcto es el de abajo: el CAMPO viaja —que es lo que la pantalla lee— y el aviso
+   * NO lo repite. Y se comprueban las dos mitades: sin la segunda, volver a meter la frase en el
+   * aviso dejaría esto en verde. */
   await limpiar();
   await unAnuncio(`${MARCA}11`, 'pieza con dos ventanas');
   await unDia(`${MARCA}11`, 20, { gasto: 10, impresiones: 3000 }, null);
@@ -265,19 +278,29 @@ test('el desglose tiene su PROPIA fecha de inicio, y el aviso la dice', async ()
   const r = await leer();
 
   assert.notEqual(r.desde, r.desdeElDesglose, 'las dos ventanas salieron iguales');
-  assert.match(String(r.aviso), /desglose/, 'el aviso no dice que las dos ventanas son distintas');
-  assert.match(String(r.aviso), new RegExp(String(r.desdeElDesglose)), 'el aviso no trae la fecha');
+  assert.ok(r.desdeElDesglose, 'el campo con el que la pantalla arma la frase no llegó');
+  assert.doesNotMatch(
+    String(r.aviso ?? ''),
+    new RegExp(String(r.desdeElDesglose)),
+    'el aviso volvió a traer la fecha: la pantalla la dibujaría dos veces, en dos formatos',
+  );
 });
 
-test('sin ningún desglose guardado, el aviso lo dice y no calla', async () => {
+test('sin ningún desglose guardado, el campo dice null y la pantalla tiene con qué contarlo', async () => {
+  /* Mismo cambio de contrato que la prueba de arriba: el caso «no hay ningún día» lo dibuja el
+     bloque de cobertura del panel, que tiene su propia rama para el nulo. Lo que se exige acá es
+     que el campo sea `null` y no `0` ni una cadena vacía —los dos ceros— porque de esa distinción
+     depende cuál de las dos frases dibuja la pantalla. */
   await limpiar();
   await unAnuncio(`${MARCA}12`, 'pieza sin desglose');
   await unDia(`${MARCA}12`, 1, { gasto: 10, impresiones: 3000 }, null);
 
   const r = await leer();
 
-  assert.equal(r.desdeElDesglose, null);
-  assert.match(String(r.aviso), /no hay ningún día con el desglose/i);
+  assert.equal(r.desdeElDesglose, null, 'sin ningún día con desglose el campo tiene que ser nulo');
+  /* Y el gasto SÍ está: «no hay desglose» no es «no hay nada», y si las dos salieran nulas la
+     pantalla no podría decir que una ventana es más corta que la otra. */
+  assert.ok(r.desde, 'el gasto de ese día tendría que estar igual');
 });
 
 test('cuando las dos ventanas coinciden, el aviso NO habla de ellas', async () => {
@@ -327,4 +350,135 @@ test('los huecos viajan con su motivo, para que la pantalla los pueda dibujar', 
     r.fueraDeAlcance.some((f) => /cuartiles|retención/i.test(f.punto) && /422|enum/i.test(f.porque)),
     'se perdió el hueco de los cuartiles de video, que es el más caro de volver a medir',
   );
+});
+
+test('los días de la pieza son DÍAS, no anuncio-día: dos anuncios el mismo día son un día', async () => {
+  /* ── EL DEFECTO SUMABA A LO LARGO DE LOS ANUNCIOS Y DABA UN NÚMERO MÁS GRANDE ──
+   *
+   * Medido en producción el 2026-09-19: **11 de 26 piezas** daban un conteo inflado, hasta en 7
+   * días. No pasaba de los 30 de la ventana por casualidad del borde. Acá el escenario es exacto:
+   * dos anuncios de la MISMA pieza entregando el MISMO día son un día de calendario y dos
+   * anuncio-día. Un `sum` en vez de un `count(distinct fecha)` devuelve 2 y nadie puede notarlo
+   * mirando la pantalla. */
+  await limpiar();
+  await unAnuncio(`${MARCA}15`, 'pieza de dos anuncios');
+  await unAnuncio(`${MARCA}16`, 'pieza de dos anuncios');
+  await unDia(`${MARCA}15`, 1, { gasto: 10, impresiones: 2000 }, { videoView: 400 });
+  await unDia(`${MARCA}16`, 1, { gasto: 12, impresiones: 3000 }, { videoView: 600 });
+
+  const f = (await leer()).filas.find((x) => x.creativo === 'pieza de dos anuncios');
+
+  assert.equal(f?.anuncios, 2, 'la pieza tiene que correr en dos anuncios');
+  assert.equal(f?.diasConEntrega, 1, 'dos anuncios el mismo día son UN día de calendario');
+  /* Y la cobertura sigue siendo anuncio-día, que es su grano correcto: el denominador de la tasa
+     son las impresiones sumadas sobre los dos. Si los dos campos dieran lo mismo, uno de los dos
+     estaría midiendo lo que no es. */
+  assert.equal(f?.hookRate.anuncioDiasConEntrega, 2, 'la cobertura es anuncio-día');
+});
+
+test('los días de la pieza cuentan IMPRESIONES y no gasto: un día que costó y no se mostró no entregó', async () => {
+  /* Medido: 35 de 275 filas anuncio-día de producción tienen gasto y no tienen impresiones. El
+     predicado viejo venía de `costoDelAnuncio`, que cuenta `gasto is not null`, y la propia frase
+     de la pantalla decía lo contrario: «no es que gastara cero: no se mostró». */
+  await limpiar();
+  await unAnuncio(`${MARCA}17`, 'pieza que costo sin mostrarse');
+  await unDia(`${MARCA}17`, 1, { gasto: 9, impresiones: null }, null);
+  await unDia(`${MARCA}17`, 2, { gasto: 11, impresiones: 4000 }, { videoView: 800 });
+
+  const f = (await leer()).filas.find((x) => x.creativo === 'pieza que costo sin mostrarse');
+
+  assert.equal(f?.diasConEntrega, 1, 'el día con gasto y sin impresiones NO entregó');
+});
+
+test('el click-to-landing no publica una tasa por debajo del piso, y con el piso justo sí', async () => {
+  /* Medido el 2026-09-19: de las 24 piezas con cruce, **8 tienen menos de diez clics al enlace y la
+     más chica tiene UNO**. Sin piso, la pantalla publicaba «100 %» sobre un clic al lado de un 64 %
+     construido sobre mil, y las dos celdas se ven igual. El comentario del módulo ya afirmaba que
+     el piso existía. Las dos mitades van juntas: sin la de abajo, subir el piso a mil dejaría la
+     prueba en verde. */
+  await limpiar();
+  await unAnuncio(`${MARCA}18`, 'pieza de nueve clics');
+  await unDia(`${MARCA}18`, 1, { gasto: 10, impresiones: 3000 }, { linkClick: 9, landingPageView: 9 });
+  await unAnuncio(`${MARCA}19`, 'pieza de diez clics');
+  await unDia(`${MARCA}19`, 1, { gasto: 10, impresiones: 3000 }, { linkClick: 10, landingPageView: 5 });
+
+  const r = await leer();
+  const nueve = r.filas.find((x) => x.creativo === 'pieza de nueve clics');
+  const diez = r.filas.find((x) => x.creativo === 'pieza de diez clics');
+
+  assert.equal(nueve?.clickToLanding.tasa, null, 'nueve clics no alcanzan para una tasa');
+  /* Y la CANTIDAD sí viaja: «no alcanza para una tasa» no es «no hay dato». Son los dos ceros. */
+  assert.equal(nueve?.clickToLanding.cantidad, 9);
+  assert.equal(diez?.clickToLanding.tasa, 50, 'con el piso justo la tasa se publica');
+});
+
+test('el CTR de la pieza obedece el piso de impresiones, y los conteos siguen viajando', async () => {
+  /* Medido el 2026-09-19 sobre los 30 días: **12 de 26 piezas** quedan por debajo del piso, y la de
+     mayor CTR entre ellas da 5,816 % sobre 122 impresiones — o sea que se dibujaba arriba de todo
+     como la mejor pieza del departamento. `PISO_DE_IMPRESIONES` se declara en el mismo archivo como
+     obligatorio para «una tasa cuyo denominador son impresiones», y el CTR era el único que no lo
+     respetaba. */
+  await limpiar();
+  await unAnuncio(`${MARCA}20`, 'pieza de pocas impresiones');
+  await unDia(`${MARCA}20`, 1, { gasto: 3, impresiones: PISO_DE_IMPRESIONES - 1, clics: 58 }, null);
+  await unAnuncio(`${MARCA}21`, 'pieza con el piso justo');
+  await unDia(`${MARCA}21`, 1, { gasto: 3, impresiones: PISO_DE_IMPRESIONES, clics: 20 }, null);
+
+  const r = await leer();
+  const poca = r.filas.find((x) => x.creativo === 'pieza de pocas impresiones');
+  const justa = r.filas.find((x) => x.creativo === 'pieza con el piso justo');
+
+  assert.equal(poca?.ctr, null, 'una impresión menos que el piso no publica CTR');
+  /* Y los dos conteos siguen: «no alcanza para una tasa» no es «no hay dato». Quien mire la fila
+     tiene que poder ver sobre qué base se decidió callar. */
+  assert.equal(poca?.impresiones, PISO_DE_IMPRESIONES - 1);
+  assert.equal(poca?.clics, 58);
+  assert.equal(justa?.ctr, 2, 'con el piso justo el CTR se publica');
+});
+
+test('ningún aviso lleva Markdown: la pantalla los dibuja crudos', async () => {
+  /* ── UN ASTERISCO NO SE VE COMO ÉNFASIS, SE VE COMO UN ERROR ───────────────
+   *
+   * Los avisos viajan como cadena y la pantalla los mete en un `<p>` y en un `title=`. Ninguno de
+   * los dos interpreta Markdown, así que un `**provisional**` se lee con los asteriscos puestos —y
+   * la frase que existe para dar confianza en la cifra termina pareciendo una falla de la
+   * aplicación. Pasó en el aviso de fatiga.
+   *
+   * Se comprueba acá y sobre los tres módulos porque el error es de escritura, no de un módulo: el
+   * próximo que redacte un aviso va a querer poner en negrita la palabra importante. */
+  await limpiar();
+  await unAnuncio(`${MARCA}22`, 'pieza cualquiera para el aviso');
+  await unDia(`${MARCA}22`, 1, { gasto: 10, impresiones: 3000 }, { videoView: 600 });
+
+  const r = await leer();
+
+  for (const [donde, texto] of [['rendimiento', r.aviso]] as const) {
+    if (texto === null) continue;
+    assert.doesNotMatch(texto, /\*\*|__|\[.+\]\(/, `el aviso de ${donde} lleva Markdown crudo`);
+  }
+});
+
+test('los títulos de las columnas viajan en la respuesta, no se importan', async () => {
+  /* ── POR QUÉ ES UNA PRUEBA Y NO «ya lo vería el build» ─────────────────────
+   *
+   * La pantalla es `'use client'` y este módulo abre la base. Importar `ACCIONES_QUE_LEEMOS` desde
+   * el navegador arrastra `pg` —y con él `fs`, `dns` y `net`— al paquete: el build falla con
+   * «Can't resolve 'dns'». O sea que esa mitad ya la vigila el build, y ruidosamente.
+   *
+   * Lo que el build NO vigila es lo contrario: que alguien borre `titulos` de la respuesta y
+   * reescriba los tres rótulos a mano en el JSX. Eso compila, se ve idéntico, y deja la definición
+   * de `videoView` escrita en dos lugares — justo la que el proveedor no documenta y por la que
+   * alguien podría reescribir un gancho creyendo que cuenta tres segundos. */
+  await limpiar();
+  await unAnuncio(`${MARCA}23`, 'pieza para los titulos');
+  await unDia(`${MARCA}23`, 1, { gasto: 10, impresiones: 3000 }, { videoView: 600 });
+
+  const r = await leer();
+
+  for (const k of ['videoView', 'linkClick', 'landingPageView', 'postEngagement'] as const) {
+    assert.ok(r.titulos[k]?.trim(), `falta el título de ${k}`);
+  }
+  /* Y el de `videoView` NO puede afirmar una definición que la fuente no da: nada de «tres
+     segundos» ni «ThruPlay» en el rótulo. Eso se dice en el aviso, con su matiz. */
+  assert.doesNotMatch(r.titulos.videoView, /thruplay|tres segundos|3 ?s/i);
 });

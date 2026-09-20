@@ -29,7 +29,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACCIONES_QUE_LEEMOS } from '../../lib/negocio/rendimientoDelCreativo.ts';
 
-/** Los ocho nombres medidos: dos hechos con cuatro alias cada uno, más el agregado que los suma. */
+/**
+ * Las ocho claves medidas: un hecho con TRES alias, otro con CUATRO, y el agregado que los suma.
+ *
+ * La cuenta tiene que cerrar y antes no cerraba: decía «cuatro alias cada uno», que con el agregado
+ * dan nueve. Son tres (287 cada uno) más cuatro (215 cada uno) más `lead` (502).
+ */
 const LOS_QUE_CUENTAN_DOBLE = [
   'lead',
   'onsiteWebLead',

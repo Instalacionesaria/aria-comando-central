@@ -392,7 +392,16 @@ async function ventanaGuardada(dias: number): Promise<{ primero: string | null; 
   const f = await datos()
     .selectFrom('metricas_de_anuncio')
     .select((eb) => [eb.fn.min('fecha').as('primero'), eb.fn.max('fecha').as('ultimo')])
-    .where(sql<boolean>`fecha > (current_date - make_interval(days => ${dias}))`)
+    /* `ventanaDeMetricas` y NO el predicado escrito a mano, que es lo que había: el mismo
+       `fecha > (current_date - make_interval(days => N))`, copiado, **en el mismo archivo que
+       exporta la función** y a cien líneas de un comentario que dice «la ventana, en el único
+       lugar donde está escrita».
+
+       Y es el peor lugar posible para una segunda copia: estas dos fechas son las que la pantalla
+       imprime como el período de las cifras. Si las dos definiciones se separaran alguna vez, el
+       encabezado describiría una ventana y los números otra — que es, con el signo cambiado,
+       exactamente el defecto que el comentario de arriba cuenta que ya se pagó una vez. */
+    .where(ventanaDeMetricas('metricas_de_anuncio', dias))
     .executeTakeFirst();
 
   return { primero: comoDia(f?.primero), ultimo: comoDia(f?.ultimo) };

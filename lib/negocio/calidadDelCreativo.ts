@@ -106,7 +106,8 @@ export interface CalidadDeLosCreativos {
    */
   congeladas: number;
   /** La cobertura del cruce nombre↔anuncio, con sus dos términos. Se dibuja ARRIBA de todo ranking. */
-  puente: { con: number; sobre: number };
+  /** El cruce nombre↔anuncio. `sobre` son TODOS los contactos de la ventana. Ver `coberturaDelPuente`. */
+  puente: { con: number; sobre: number; sinNombre: number };
   /**
    * El identificador del campo de ICP, o `null` si no está en el catálogo del CRM.
    *
@@ -214,11 +215,11 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
       sql<number>`count(*)`.as('contactos'),
       sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
       sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
-      /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:302-305` y que
+      /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:341-344` y que
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
          *
-         * Y `exists` y no un `join` con `count(*)`: verificado en `02-CREATIVE.md:258`, un contacto
+         * Y `exists` y no un `join` con `count(*)`: verificado en `02-CREATIVE.md:287`, un contacto
          * con dos citas inflaba «agendamiento - yaping» de 109 a 112. */
       sql<number>`count(*) filter (where exists (
         select 1 from negocio.citas ci
@@ -288,20 +289,42 @@ async function congeladasDeLaVentana(dias: number): Promise<number> {
 }
 
 /**
- * Cuántos contactos con creativo cruzan contra un anuncio real de Meta.
+ * Cuántos contactos de la ventana cruzan contra un anuncio real de Meta.
  *
- * Los dos términos, siempre: una proporción sola se lee como precisión y el par dice de cuántos
- * habla. Medido el 2026-09-18 sobre la base entera: 477 de 505 (94,5 %). Los que no cruzan no son
- * un defecto —`link_in_bio`, `{{ad.name}}` sin expandir, pruebas— pero la pantalla no puede saberlo
- * sola, así que publica el par y deja la lectura a quien mira.
+ * ── EL DENOMINADOR SON TODOS, Y ANTES ERAN SÓLO LOS QUE TRAÍAN NOMBRE ──────
+ *
+ * Esta función devolvía `sobre = los contactos con `utmContent`` y la pantalla lo rotulaba
+ * «**Contactos** que se pudieron asociar a una pieza». Las dos cosas no son la misma, y la
+ * diferencia no es chica: medido el 2026-09-19 sobre 30 días, **307 de 321 da 95,6 % y 307 de 347
+ * da 88,5 %** — siete puntos de más en la cifra que la pantalla usa para decir cuánto vale todo lo
+ * demás que dibuja.
+ *
+ * Y la nota de la pantalla empeoraba el enredo: explicaba que los que no cruzan *«son tráfico que
+ * no viene de un anuncio de Meta, como el enlace del perfil»* — describiendo justamente a los que
+ * el denominador ya había dejado afuera.
+ *
+ * Ahora el denominador son TODOS los contactos de la ventana, que es lo que el rótulo promete, y
+ * las dos pérdidas viajan separadas porque mandan a hacer cosas distintas:
+ *
+ *   · **`sinNombre`** — el contacto no trae ni un nombre de pieza. Medido: 26 de 347. Eso es
+ *     tráfico que no vino de un anuncio, y no hay nada que arreglar.
+ *   · **el resto de la diferencia** — trae un nombre que no existe en `negocio.anuncios`. Medido:
+ *     14 de 347. Ahí sí puede haber algo: un renombre en Meta, un `{{ad.name}}` sin expandir, una
+ *     prueba. Sumarlas en un solo «no cruzó» esconde la única de las dos que se puede investigar.
+ *
+ * Los términos viajan y no sólo la proporción: una proporción sola se lee como precisión y el par
+ * dice de cuántos habla.
  */
-async function coberturaDelPuente(dias: number): Promise<{ con: number; sobre: number }> {
+async function coberturaDelPuente(
+  dias: number,
+): Promise<{ con: number; sobre: number; sinNombre: number }> {
   const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
 
   const f = await datos()
     .selectFrom('contactos')
     .select([
-      sql<number>`count(*) filter (where ${llave} is not null)`.as('sobre'),
+      sql<number>`count(*)`.as('sobre'),
+      sql<number>`count(*) filter (where ${llave} is null)`.as('sinNombre'),
       sql<number>`count(*) filter (where exists (
         select 1 from negocio.anuncios a
          where a.org_id = contactos.org_id and ${llaveDelCreativo('a.nombre')} = ${llave}))`.as('con'),
@@ -309,7 +332,11 @@ async function coberturaDelPuente(dias: number): Promise<{ con: number; sobre: n
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     .executeTakeFirst();
 
-  return { con: Number(f?.con ?? 0), sobre: Number(f?.sobre ?? 0) };
+  return {
+    con: Number(f?.con ?? 0),
+    sobre: Number(f?.sobre ?? 0),
+    sinNombre: Number(f?.sinNombre ?? 0),
+  };
 }
 
 /**
@@ -323,7 +350,8 @@ function avisoDe(r: {
   filas: FilaDeCreativo[];
   congeladas: number;
   campoDeIcp: string | null;
-  puente: { con: number; sobre: number };
+  /** El cruce nombre↔anuncio. `sobre` son TODOS los contactos de la ventana. Ver `coberturaDelPuente`. */
+  puente: { con: number; sobre: number; sinNombre: number };
 }): string | null {
   const partes: string[] = [];
 

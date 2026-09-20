@@ -18,9 +18,14 @@
 // Las tres cifras de esta pantalla hablan de **poblaciones distintas del mismo nombre de pieza**, y
 // cada una tiene su propia cobertura:
 //
-//   · `calidad`      · los contactos, cruzados por nombre al 94,5 %
-//   · `rendimiento`  · las filas anuncio-día, con el desglose en el 56-90 % según la clave
-//   · `fatiga`       · las piezas con ocho días de serie, que son 5 de 26
+//   · `calidad`      · los contactos, cruzados por nombre contra `negocio.anuncios`
+//   · `rendimiento`  · las filas anuncio-día, según qué clave del desglose traiga cada una
+//   · `fatiga`       · las piezas con ocho días de serie, sobre las que entregaron
+//
+// **Las tres cifras NO se escriben acá.** Decían «94,5 %», «56-90 %» y «5 de 26», y al 2026-09-19
+// las tres estaban vencidas: la primera de un denominador que ya no se usa, la tercera daba 11 y no
+// 5. Un comentario con una cifra medida envejece con cada día que entra el colector, y nada avisa.
+// Las tres las calcula y las publica cada módulo, y la pantalla las dibuja arriba de todo.
 //
 // Dibujar una antes que las otras muestra, durante esos segundos, un ranking sin la cobertura que lo
 // califica — que es exactamente lo que el § 18.5 prohíbe. Y las tres reciben LA MISMA ventana: con

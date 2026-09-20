@@ -76,7 +76,7 @@
 --
 -- El argumento a favor de la tabla hija era que sólo la existencia de una fila distingue «Meta no
 -- reportó ese tipo» de «reportó cero». Es falso: `acciones ? 'videoView'` hace lo mismo, y ese
--- operador ya está en producción en cinco lugares (`costoDelAnuncio.ts:307` y `:327`,
+-- operador ya está en producción en cinco lugares (`costoDelAnuncio.ts:346` y `:367`,
 -- `calidadDeLaAtribucion.ts:96`, `:114` y `:126`).
 --
 -- Y desaparece la parte más frágil de aquel diseño: con filas hijas había que borrar el sobrante

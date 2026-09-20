@@ -37,7 +37,7 @@ tiene `rolbypassrls`, así que los conteos son totales reales y no recortados po
 | `C8-07` | Gasto, impresiones, clics, CTR, CPC por anuncio y día | `negocio.metricas_de_anuncio` | **2.528 filas, 2026-08-18 → 2026-09-18**, 79 anuncios, **263 filas con gasto > 0**, 12 campañas, $3.511,28 |
 | `C8-08` | El puntaje de ICP | `contactos.campos_del_crm->>'9HXxl5DW6aayQgKUPiOS'` | **344 de 344 contactos de 30 días** — es el campo más poblado de la cohorte |
 | `C8-09` | Las citas, para la tasa de agenda | `negocio.citas`, por `contacto_id` | medido por pieza: de 31 % a 77 % |
-| `C8-10` | El `pixelId` de la campaña | llega en `promotedObject` y **no se guarda** | presente en las filas con entrega |
+| `C8-10` | El `pixelId` de la campaña | llega en `promotedObject` y **no se guarda, y está bien que no** | es `1249900173340188` en **todos** los anuncios: una columna con un solo valor no distingue nada. Lo que sí discrimina es el resto de `promotedObject`, medido en `14-…:C14-15b` |
 
 ### Cómo se midió cada cobertura
 
@@ -87,9 +87,17 @@ diez campos con nombre parecido.
 
 `lib/ghl/anuncios.ts:405` hace `resultadosDeMeta: numero(o.results)`. `results` es un **objeto** y
 `numero()` (`:141`) devuelve `null` para todo lo que no sea número o cadena, así que el campo es
-**`null` siempre**. Y `negocio.metricas_de_anuncio` no tiene columna donde guardarlo: sus columnas son
-`org_id, meta_anuncio_id, fecha, gasto, impresiones, clics, alcance, ctr, cpc, frecuencia,
-sincronizado_el`.
+**`null` siempre** — hasta el 2026-09-18, cuando el campo pasó a llamarse `acciones` y a leerse con
+un desenvolvedor que cuenta lo ilegible en vez de escribir cero.
+
+Y `negocio.metricas_de_anuncio` no tenía columna donde guardarlo. **Hoy sí**, y esta lista estaba
+sin actualizar a doce líneas de la sección que describe cómo se creó (`C8-18`, acá abajo):
+
+> `org_id, meta_anuncio_id, fecha, gasto, impresiones, clics, alcance, ctr, cpc, frecuencia,
+> **`acciones`**, sincronizado_el`
+
+La columna `acciones` la creó la migración `053`, y es de la que salen el hook rate y las tres tasas
+de enlace — o sea la mitad de las cifras que este departamento publica.
 
 ### C8-17 · Y no cuesta ninguna llamada nueva
 

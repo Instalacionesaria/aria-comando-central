@@ -15,10 +15,16 @@
 //
 // ── EL ERROR MÁS FÁCIL DE COMETER ACÁ, Y NO FALLA ──────────────────────────
 //
-// El desglose NO viene en todas las filas. Medido sobre 24 días de producción: `videoView` en 224 de
-// 266 filas anuncio-día con entrega, `linkClick` en 171, `landingPageView` en 150.
+// El desglose NO viene en todas las filas. Remedido el 2026-09-19 sobre los 28 días con desglose y
+// sus **240 filas anuncio-día con entrega**: `videoView` en 224 (93 %), `linkClick` en 171 (71 %),
+// `landingPageView` en 150 (63 %).
 //
-// Sumar el numerador sobre el 56 % de los días y el denominador sobre el 100 % da una tasa
+// El denominador son las filas que tienen desglose Y entrega, no todas las que entregaron: las de
+// los tres días anteriores a la migración `053` no tienen la columna, y contarlas como «el
+// proveedor no reportó» sería el mismo error de denominador que este bloque describe, cometido al
+// medirlo. Antes decía «224 de 266», que es eso.
+//
+// Sumar el numerador sobre el 63 % de los días y el denominador sobre el 100 % da una tasa
 // **sistemáticamente baja, plausible y falsa**. Es el mismo error que `indicadoresDeCitas` evita
 // poniendo `asistio is not null` en el DENOMINADOR, y la razón por la que cada tasa de acá viaja con
 // su par `diasConLaClave / diasConEntrega`.
@@ -38,7 +44,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
+import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { costoDelAnuncio, ventanaDeMetricas } from './costoDelAnuncio.ts';
 import { llaveDelCreativo } from './creativo.ts';
 
@@ -54,7 +60,7 @@ import { llaveDelCreativo } from './creativo.ts';
  * sale de medir el ruido de estas cifras. El § 18.19 del documento funcional declara pendiente
  * *«definir umbrales iniciales»*, y éste es uno de ellos.
  *
- * Medido el 2026-09-19 sobre 24 días de producción: con mil, catorce piezas publican hook rate; el
+ * Medido el 2026-09-19 sobre los 28 días con desglose: con mil, catorce piezas publican hook rate; el
  * resto conserva su conteo y pierde la tasa.
  */
 export const PISO_DE_IMPRESIONES = 1000;
@@ -68,10 +74,27 @@ export const PISO_DE_IMPRESIONES = 1000;
  * publique: si una clave baja del uno por ciento, se escribió mal o el proveedor la renombró.
  */
 export const ACCIONES_QUE_LEEMOS = {
-  videoView: { titulo: 'Reproducciones que Meta contó', coberturaMedida: 0.84 },
-  linkClick: { titulo: 'Clics al enlace', coberturaMedida: 0.64 },
-  landingPageView: { titulo: 'Vistas de la landing', coberturaMedida: 0.56 },
-  postEngagement: { titulo: 'Interacciones con la publicación', coberturaMedida: 0.9 },
+  /* ── SE FUE `coberturaMedida`, Y NO POR ESTAR VENCIDA ──────────────────────
+     *
+     * Cada clave traía un `coberturaMedida` —0,84 · 0,64 · 0,56 · 0,90— que **ningún archivo leía
+     * nunca**: medido el 2026-09-19 con una búsqueda en todo el repositorio, las cuatro se
+     * escribían y no se consultaban. Y estaban mal: salían de dividir por 266 filas anuncio-día,
+     * que incluye las de los tres días anteriores a la migración `053` —los que no tienen la
+     * columna—, o sea contando «nunca le preguntamos» como «el proveedor no reportó». Sobre el
+     * denominador honesto (240 filas con desglose Y entrega) dan 0,933 · 0,713 · 0,625 · 0,938.
+     *
+     * Pero el motivo de borrarlas no es que estuvieran vencidas: es que **no puede haber dos
+     * coberturas de lo mismo**. La viva viaja por pieza en cada `TasaDeAccion`
+     * (`anuncioDiasConLaClave / anuncioDiasConEntrega`) y se dibuja al lado de cada tasa. Un
+     * promedio global escrito a mano al lado de una cobertura calculada es un segundo número para
+     * la misma pregunta, que diverge en silencio — que es exactamente lo que pasó.
+     *
+     * `titulo` SÍ se queda, porque ahora se dibuja: es la definición de la columna, en su título
+     * emergente. Antes tampoco lo leía nadie. */
+  videoView: { titulo: 'Reproducciones que Meta contó' },
+  linkClick: { titulo: 'Clics al enlace' },
+  landingPageView: { titulo: 'Vistas de la landing' },
+  postEngagement: { titulo: 'Interacciones con la publicación' },
 } as const;
 
 /*
@@ -84,7 +107,8 @@ export const ACCIONES_QUE_LEEMOS = {
  *     lead = offsiteConversion.fbPixelLead + offsiteSearchAddMetaLeads
  *
  * Las dos igualdades a la vez, exactas, en todas. O sea que las ocho claves con pinta de lead son
- * **dos hechos con cuatro nombres cada uno** —287 y 215 en la ventana— y `lead` (502) los suma. Y
+ * **dos hechos: uno con TRES nombres y otro con CUATRO** —287 y 215 en la ventana— más `lead`
+ * (502), que los suma. Tres más cuatro más el agregado dan las ocho claves del censo. Y
  * los dos hechos ocurren en los MISMOS anuncios: 10 de los 15 reportan los dos, con 220 y 213.
  *
  * Nuestros contactos de esos 10 anuncios son 197: el 90 % de **una** de las dos cifras y el 45 % de
@@ -98,12 +122,6 @@ export const ACCIONES_QUE_LEEMOS = {
  * que cuenta contactos de nuestra base y sabe cuáles son.
  */
 
-/**
- * Una tasa construida sobre el desglose, con la cobertura de su propio numerador.
- *
- * Los cuatro campos viajan siempre. `tasa` sin `diasConLaClave` se lee como si hablara de toda la
- * ventana, y no habla: habla de los días en que el proveedor reportó esa acción.
- */
 /**
  * Lo que el § 18.12 y el § 18.7 piden y **esta vía no puede dar**, con el motivo medido.
  *
@@ -149,15 +167,28 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   },
 ];
 
+/**
+ * Una tasa construida sobre el desglose, con la cobertura de su propio numerador.
+ *
+ * Los cuatro campos viajan siempre. `tasa` sin `anuncioDiasConLaClave` se lee como si hablara de
+ * toda la ventana, y no habla: habla de los anuncio-día en que el proveedor reportó esa acción.
+ */
 export interface TasaDeAccion {
   /** La suma del tipo de acción sobre los días que TRAÍAN la clave. `null` = ningún día la trajo. */
   cantidad: number | null;
   /** La tasa, en porcentaje. `null` sin denominador suficiente. **Nunca cero por ausencia.** */
   tasa: number | null;
-  /** Días anuncio-día de esta pieza en los que el proveedor reportó esta acción. */
-  diasConLaClave: number;
-  /** Días anuncio-día de esta pieza con impresiones. El denominador de la cobertura. */
-  diasConEntrega: number;
+  /**
+   * Anuncio-día de esta pieza en los que el proveedor reportó esta acción.
+   *
+   * **El grano va en el nombre y no sólo en el comentario**, y eso cuesta un renombre: se llamaban
+   * `diasConLaClave` y `diasConEntrega`, y había un TERCER campo llamado igual que el segundo —el de
+   * la pieza— construido sobre otro predicado. Los dos se dibujaban en la misma frase de la
+   * pantalla, los dos con la palabra «día». Ver `FilaDeRendimiento.diasConEntrega`.
+   */
+  anuncioDiasConLaClave: number;
+  /** Anuncio-día de esta pieza con impresiones. El denominador de la cobertura, mismo grano. */
+  anuncioDiasConEntrega: number;
 }
 
 export interface FilaDeRendimiento {
@@ -179,6 +210,32 @@ export interface FilaDeRendimiento {
   cpm: number | null;
   cpc: number | null;
   ctr: number | null;
+  /**
+   * En cuántos **días de calendario** entregó la pieza, dentro de la ventana.
+   *
+   * ── ESTO ERA DOS DEFECTOS A LA VEZ, Y LOS DOS DABAN UN NÚMERO MÁS GRANDE ──
+   *
+   * Se construía sumando el `diasConEntrega` de cada anuncio que devuelve `costoDelAnuncio`, y eso
+   * fallaba dos veces:
+   *
+   *   · **Otro predicado.** El de `costoDelAnuncio.ts:287` cuenta `gasto is not null`; el
+   *     denominador de todas las tasas de acá cuenta `impresiones is not null`. Medido el
+   *     2026-09-19 sobre los 30 días: **35 de 275 filas tienen gasto y no tienen impresiones**, o
+   *     sea que los dos números diferían en el 12,7 % de las filas. Y la pantalla los dibujaba en
+   *     la MISMA frase, los dos con la palabra «día». El texto de al lado delataba cuál era el
+   *     correcto: *«no es que gastara cero: no se mostró»* habla de impresiones.
+   *   · **Otro grano.** Sumar a lo largo de los anuncios de la pieza cuenta dos veces el día en que
+   *     dos de sus anuncios entregaron. Medido: **11 de 26 piezas** daban un número inflado, hasta
+   *     en 7 días. Hoy no supera los 30 de la ventana por casualidad del borde —el máximo da
+   *     exactamente 30—, y el día que dos anuncios se solapen dirá «entregó 34 días» en una ventana
+   *     de 30: el defecto de grano de `costoDelAnuncio.ts:157-164` otra vez, que no falla y
+   *     devuelve un número más grande y creíble.
+   *
+   * Ahora sale de `count(distinct fecha)` en la MISMA consulta que el denominador de las tasas, así
+   * que los dos hablan del mismo hecho. El par de la cobertura sigue siendo anuncio-día, que es su
+   * grano correcto —el denominador de la tasa son impresiones sumadas sobre anuncio-día— y por eso
+   * ahora lo dice su nombre.
+   */
   diasConEntrega: number;
 
   /* ── Y lo que sale del desglose ─────────────────────────────────────────── */
@@ -210,10 +267,23 @@ export interface RendimientoDeLosCreativos {
   gastoTotal: number | null;
   /** Lo que esta vía no puede dar, con el motivo. Se DIBUJA; ver `FUERA_DE_ALCANCE`. */
   fueraDeAlcance: { punto: string; porque: string }[];
+  /**
+   * Cómo se llama cada acción del desglose, para el título emergente de su columna.
+   *
+   * Viaja UNA vez por respuesta y no una por fila: es una propiedad del dato, no de la pieza. Y
+   * viaja en vez de importarse porque la pantalla es `'use client'` y este módulo abre la base —
+   * importarlo desde el navegador arrastra `pg` al paquete.
+   */
+  titulos: Record<Clave, string>;
   aviso: string | null;
 }
 
 type Clave = keyof typeof ACCIONES_QUE_LEEMOS;
+
+/** Los títulos, aplanados una sola vez. La pantalla los recibe; no importa el módulo. */
+const TITULOS = Object.fromEntries(
+  Object.entries(ACCIONES_QUE_LEEMOS).map(([k, v]) => [k, v.titulo]),
+) as Record<Clave, string>;
 
 function redondear(v: number, decimales: number): number {
   const f = 10 ** decimales;
@@ -254,7 +324,8 @@ export async function rendimientoDelCreativo(
     acc.gasto = suma(acc.gasto, f.gasto);
     acc.impresiones = suma(acc.impresiones, f.impresiones);
     acc.clics = suma(acc.clics, f.clics);
-    acc.diasConEntrega += f.diasConEntrega;
+    /* `f.diasConEntrega` NO se acumula acá: es el predicado del gasto y el grano del anuncio. Los
+       días de la pieza los pone `volcarElDesglose` desde la consulta del desglose. Ver el campo. */
     porPieza.set(creativo, acc);
   }
 
@@ -263,7 +334,24 @@ export async function rendimientoDelCreativo(
     fila.gasto = gasto === null ? null : redondear(gasto, 2);
     fila.cpm = gasto !== null && impresiones ? redondear((gasto / impresiones) * MIL_IMPRESIONES, 2) : null;
     fila.cpc = gasto !== null && clics ? redondear(gasto / clics, 4) : null;
-    fila.ctr = impresiones && clics !== null ? redondear((clics / impresiones) * 100, 3) : null;
+    /* ── EL CTR TAMBIÉN ES UNA TASA SOBRE IMPRESIONES, Y SE LE HABÍA OLVIDADO EL PISO ──
+       *
+       * `PISO_DE_IMPRESIONES` se declara treinta líneas más arriba como *«cuántas impresiones hacen
+       * falta antes de publicar una tasa cuyo denominador son impresiones»*, y las cuatro tasas del
+       * desglose lo respetan. El CTR tiene ese mismo denominador y no lo respetaba.
+       *
+       * Medido el 2026-09-19 sobre los 30 días: **12 de 26 piezas** quedan por debajo, la más chica
+       * con 122 impresiones — y **la de mayor CTR entre ellas da 5,816 %**, o sea que se dibujaba
+       * arriba de todo como la mejor pieza del departamento con el equivalente a un puñado de
+       * impresiones. Es el defecto contra el que la constante existe, en el único lugar donde no se
+       * la había aplicado.
+       *
+       * Las impresiones y los clics **siguen viajando**: «no alcanza para una tasa» no es «no hay
+       * dato», y quien mire la fila ve sobre qué base se decidió callar. */
+    fila.ctr =
+      impresiones !== null && impresiones >= PISO_DE_IMPRESIONES && clics !== null
+        ? redondear((clics / impresiones) * 100, 3)
+        : null;
 
     const d = desglose.get(fila.creativo);
     if (d) volcarElDesglose(fila, d);
@@ -279,12 +367,18 @@ export async function rendimientoDelCreativo(
     filas,
     gastoTotal: costo.gastoTotal,
     fueraDeAlcance: FUERA_DE_ALCANCE,
+    titulos: TITULOS,
     aviso: avisoDe(filas, desdeElDesglose, costo.desde),
   };
 }
 
 function nuevaFila(creativo: string): FilaDeRendimiento {
-  const vacia = (): TasaDeAccion => ({ cantidad: null, tasa: null, diasConLaClave: 0, diasConEntrega: 0 });
+  const vacia = (): TasaDeAccion => ({
+    cantidad: null,
+    tasa: null,
+    anuncioDiasConLaClave: 0,
+    anuncioDiasConEntrega: 0,
+  });
   return {
     creativo,
     anuncios: 0,
@@ -317,7 +411,10 @@ function suma(a: number | null, b: number | null): number | null {
 }
 
 interface DesgloseDeUnaPieza {
-  diasConEntrega: number;
+  /** Anuncio-día con impresiones: el denominador de la cobertura de cada tasa. */
+  anuncioDias: number;
+  /** Días de CALENDARIO con impresiones: lo que la pantalla llama «entregó N días». */
+  dias: number;
   porClave: Map<Clave, { cantidad: number; impresiones: number; dias: number }>;
   /** El par de `clickToLanding`: los días que traen las DOS claves. */
   cruce: { landingPageView: number; linkClick: number; dias: number };
@@ -354,7 +451,11 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
       /* El denominador de la COBERTURA: días con impresiones, no con gasto. Son distintos —un día
          puede entregar con gasto nulo— y el que corresponde acá es el de las impresiones, porque es
          el denominador de todas estas tasas. */
-      sql<number>`count(*) filter (where m.impresiones is not null)`.as('diasConEntrega'),
+      sql<number>`count(*) filter (where m.impresiones is not null)`.as('anuncioDias'),
+      /* Y los días de CALENDARIO, que no son los mismos: una pieza corre en hasta seis anuncios, y
+         el día en que dos de ellos entregan es UN día y DOS anuncio-día. El `distinct` es la única
+         diferencia entre las dos líneas, y es la que separa «entregó 34 días» de una ventana de 30. */
+      sql<number>`count(distinct m.fecha) filter (where m.impresiones is not null)`.as('dias'),
       ...columnas,
       /* El cruce de `clickToLanding` necesita los días que traen las DOS claves: dividir la suma de
          una por la suma de la otra sobre días distintos da una proporción entre dos poblaciones. */
@@ -388,7 +489,8 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
       });
     }
     salida.set(f.creativo, {
-      diasConEntrega: Number(f.diasConEntrega ?? 0),
+      anuncioDias: Number(f.anuncioDias ?? 0),
+      dias: Number(f.dias ?? 0),
       porClave,
       cruce: {
         landingPageView: Number(f.x_lpv ?? 0),
@@ -401,20 +503,25 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
 }
 
 function volcarElDesglose(fila: FilaDeRendimiento, d: DesgloseDeUnaPieza): void {
+  // Los días de la pieza salen de ACÁ, no de sumar los de sus anuncios. Ver el campo.
+  fila.diasConEntrega = d.dias;
+
   const sobreImpresiones = (k: Clave): TasaDeAccion => {
     const v = d.porClave.get(k);
     /* Sin ningún día con la clave, la tasa es NULA y no cero. La diferencia es la que separa «esta
        pieza no es un video» de «nadie la reprodujo», y publicarlas igual arrastra el promedio de
        las piezas de video hacia abajo con las estáticas. */
-    if (!v) return { cantidad: null, tasa: null, diasConLaClave: 0, diasConEntrega: d.diasConEntrega };
+    if (!v) {
+      return { cantidad: null, tasa: null, anuncioDiasConLaClave: 0, anuncioDiasConEntrega: d.anuncioDias };
+    }
     return {
       cantidad: v.cantidad,
       tasa:
         v.impresiones >= PISO_DE_IMPRESIONES
           ? redondear((v.cantidad / v.impresiones) * 100, 2)
           : null,
-      diasConLaClave: v.dias,
-      diasConEntrega: d.diasConEntrega,
+      anuncioDiasConLaClave: v.dias,
+      anuncioDiasConEntrega: d.anuncioDias,
     };
   };
 
@@ -426,17 +533,24 @@ function volcarElDesglose(fila: FilaDeRendimiento, d: DesgloseDeUnaPieza): void 
   /* El click-to-landing tiene otro denominador —clics al enlace, que son eventos contables— así que
      su piso es el de los eventos y no el de las impresiones.
      *
+     * **Y ese piso no estaba puesto**: el comentario lo afirmaba y el código sólo exigía `> 0`.
+     * Medido el 2026-09-19: de las 24 piezas con cruce, **8 tienen menos de diez clics al enlace y
+     * la más chica tiene UNO** — o sea que la pantalla habría publicado un 100 % sobre un solo clic
+     * al lado de un 64 % construido sobre mil. Es el defecto que `PISO_DE_UNA_TASA` existe para
+     * evitar, y se usa ESE y no uno nuevo: dos pisos distintos para la misma regla divergen sin que
+     * nada falle, que es lo que su propio comentario dejó escrito.
+     *
      * Y PUEDE PASAR DE 100 %: Meta puede contar una vista de landing de un clic de otro día. Si
      * pasa, se dice; no se topa. Toparlo esconde el desajuste de atribución, que es justamente lo
      * que esta cifra sirve para ver. */
   fila.clickToLanding = {
     cantidad: d.cruce.dias === 0 ? null : d.cruce.landingPageView,
     tasa:
-      d.cruce.linkClick > 0 && d.cruce.dias > 0
+      d.cruce.linkClick >= PISO_DE_UNA_TASA && d.cruce.dias > 0
         ? redondear((d.cruce.landingPageView / d.cruce.linkClick) * 100, 1)
         : null,
-    diasConLaClave: d.cruce.dias,
-    diasConEntrega: d.diasConEntrega,
+    anuncioDiasConLaClave: d.cruce.dias,
+    anuncioDiasConEntrega: d.anuncioDias,
   };
 }
 
@@ -465,19 +579,19 @@ function avisoDe(
 ): string | null {
   const partes: string[] = [];
 
-  if (desdeElDesglose === null) {
-    partes.push(
-      'Todavía no hay ningún día con el desglose de acciones guardado, así que el hook rate y las ' +
-        'tasas de enlace no se pueden calcular.',
-    );
-  } else if (desdeElGasto !== null && desdeElDesglose > desdeElGasto) {
-    /* Las DOS ventanas, dichas. Sin esto la pantalla afirma que el hook rate habla de treinta días
-       cuando habla de los que alcanzó el relleno. */
-    partes.push(
-      `El gasto va desde el ${desdeElGasto} y el desglose de acciones sólo desde el ` +
-        `${desdeElDesglose}: las tasas de video y de enlace hablan de menos días que el dinero.`,
-    );
-  }
+  /* ── LAS DOS VENTANAS SE DICEN UNA SOLA VEZ, Y NO ES ACÁ ────────────────────
+   *
+   * Acá había dos ramas que armaban la frase de las dos ventanas. **Y la pantalla ya la dice**, en
+   * el bloque de cobertura (`PanelDeCreative.jsx`, «Las DOS ventanas, dichas»), con las tres
+   * fechas en formato corto y con su propia rama para el caso sin desglose.
+   *
+   * O sea que el mismo hecho se dibujaba dos veces en la misma pantalla: una en `21 ago` y otra en
+   * `2026-08-21`. Dos formas del mismo dato se leen como dos datos, y quien las compare va a buscar
+   * cuál de las dos ventanas es la buena. Es el mismo defecto que ya se corrigió con la frase de
+   * las citas congeladas, que también se dibujaba en dos lugares.
+   *
+   * Lo que se conserva es el CAMPO `desdeElDesglose`, que es lo que la pantalla lee para armar la
+   * frase. El aviso es para lo que nada más dice — y de eso queda la definición de `videoView`. */
 
   /* La definición de `videoView`, que el proveedor no documenta. Se dice una vez y siempre, no por
      fila: es una propiedad de la fuente, no de ninguna pieza. Sin esto, alguien reescribe un gancho

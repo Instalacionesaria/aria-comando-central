@@ -68,9 +68,27 @@ export const ETAPAS = ['TOFU', 'MOFU', 'BOFU'] as const;
 export type Etapa = (typeof ETAPAS)[number];
 
 export function etapaDelNombre(columna: string) {
+  /* ── LA LISTA SALE DE `ETAPAS`, Y TIENE QUE IR POR `sql.raw` ───────────────
+   *
+   * Acá había un `in ('TOFU', 'MOFU', 'BOFU')` escrito a mano: el mismo vocabulario dos veces, en
+   * el archivo que existe para ser el único lugar donde está. Agregar una cuarta etapa a la
+   * constante no habría hecho nada —el SQL seguiría reconociendo tres— y el síntoma sería que esa
+   * etapa cae en «sin etapa», que es un grupo legítimo y ya existe: nada se vería raro.
+   *
+   * **Pero no puede ir como parámetro**, y eso costó un intento. Un `= any(${'${[...ETAPAS]}'})` se
+   * compila a `= any($n)`, y esta expresión se usa en el `select` Y en el `group by` de
+   * `calidadDelCreativo`: con parámetros, los dos sitios reciben números distintos (`$3` y `$7`),
+   * PostgreSQL deja de reconocerlos como la misma expresión y la consulta muere con
+   * `42803 · subquery uses ungrouped column`. El mismo error que ese módulo ya pagó una vez.
+   *
+   * `sql.raw` mantiene la identidad TEXTUAL, que es lo que el `group by` compara. Y es seguro
+   * porque `ETAPAS` es una constante de este archivo —tres palabras en mayúsculas, sin entrada de
+   * nadie—: si algún día saliera de un dato del usuario, esto sería una inyección y habría que
+   * resolver el `group by` de otra forma. */
+  const lista = sql.raw(ETAPAS.map((e) => `'${e}'`).join(', '));
   return sql<Etapa | null>`(
     select btrim(e)
       from unnest(string_to_array(upper(coalesce(${sql.raw(columna)}, '')), '|')) e
-     where btrim(e) in ('TOFU', 'MOFU', 'BOFU')
+     where btrim(e) in (${lista})
      limit 1)`;
 }

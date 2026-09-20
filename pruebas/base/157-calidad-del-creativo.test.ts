@@ -347,9 +347,21 @@ test('si el campo de ICP no está en el catálogo, la columna se APAGA y lo dice
 
 // ─── EL PUENTE ──────────────────────────────────────────────────────────────
 
-test('la cobertura del puente viaja con sus DOS términos', async () => {
-  /* Una proporción sola se lee como precisión. El par dice de cuántos habla, y es lo que permite
-     distinguir «94 % de 505» de «94 % de 17». */
+test('el puente separa las TRES poblaciones, y el denominador son todos los contactos', async () => {
+  /* ── EL DENOMINADOR ERA MÁS CHICO QUE EL RÓTULO ────────────────────────────
+   *
+   * `sobre` contaba sólo los contactos que traen `utmContent`, y la pantalla lo rotulaba
+   * «**Contactos** que se pudieron asociar a una pieza». Medido el 2026-09-19 sobre 30 días de
+   * producción: **307 de 321 da 95,6 % y 307 de 347 da 88,5 %** — siete puntos de más en la cifra
+   * que la pantalla usa para decir cuánto vale todo lo demás que dibuja.
+   *
+   * Peor: la nota explicaba que los que no cruzan *«son tráfico que no viene de un anuncio de
+   * Meta»*, describiendo a los que el denominador ya había dejado afuera.
+   *
+   * El escenario de acá tiene las tres poblaciones y las tres se afirman por separado, porque
+   * mandan a hacer cosas distintas: los que cruzan, el que no trae nombre (no hay nada que
+   * arreglar) y los que traen un nombre que no existe (puede ser un renombre en Meta). Sumar las
+   * dos últimas esconde la única investigable. */
   await limpiar();
   await unAnuncio(`${MARCA}03`, 'una pieza real');
   for (let i = 0; i < 3; i += 1) await unLead({ creativo: 'una pieza real', campana: TOFU });
@@ -358,6 +370,10 @@ test('la cobertura del puente viaja con sus DOS términos', async () => {
 
   const r = await leer();
 
-  assert.equal(r.puente.sobre, 5, 'el denominador del puente no son los contactos CON creativo');
+  assert.equal(r.puente.sobre, 6, 'el denominador tiene que ser TODOS los contactos de la ventana');
   assert.equal(r.puente.con, 3, 'el numerador no son los que cruzan contra un anuncio real');
+  assert.equal(r.puente.sinNombre, 1, 'el contacto sin `utmContent` no se contó aparte');
+  /* Y la resta tiene que cerrar: los dos `link_in_bio` son la tercera población, y si alguna de las
+     tres se moviera sin las otras esto lo diría. */
+  assert.equal(r.puente.sobre - r.puente.con - r.puente.sinNombre, 2);
 });

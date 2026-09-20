@@ -26,9 +26,14 @@
  * ── Y LA COBERTURA VA ARRIBA DE TODO ──────────────────────────────────────
  *
  * El § 18.5 sólo deja publicar una conclusión por pieza **con su cobertura al lado**. Acá hay tres
- * coberturas distintas y ninguna es nota al pie: el puente nombre↔anuncio (94,5 % medido), los días
- * con cada clave del desglose (56-90 % según cuál) y las piezas con serie suficiente para un
- * veredicto de fatiga (5 de 26).
+ * coberturas distintas y ninguna es nota al pie: el puente nombre↔anuncio, los días con cada clave
+ * del desglose y las piezas con serie suficiente para un veredicto de fatiga.
+ *
+ * **Las cifras no se escriben acá, y eso es deliberado.** Este bloque decía «94,5 %», «56-90 %» y
+ * «5 de 26», y las tres estaban vencidas al mismo tiempo: la primera era de la ventana «completo»
+ * y no de la que abre la pantalla —y además de un denominador que desde el 2026-09-19 ya no es el
+ * que se usa—, y la tercera daba 11 y no 5. Un comentario con una cifra medida envejece cada vez
+ * que entra un dato, y no hay nada que lo avise. Las tres las publica la pantalla, calculadas.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -241,7 +246,15 @@ function Cobertura({ p }) {
       <div className="csr">
         <span className="csr-n">
           Contactos que se pudieron asociar a una pieza
-          <Nota texto="El cruce es por el NOMBRE del creativo, que es lo que el CRM guarda. Los que no cruzan no son un defecto: son tráfico que no viene de un anuncio de Meta, como el enlace del perfil." />
+          <Nota
+            texto={
+              `El cruce es por el NOMBRE del creativo, que es lo que el CRM guarda. De los ` +
+              `${puente.sobre - puente.con} que no cruzan, ${puente.sinNombre} no traen ningún ` +
+              `nombre de pieza —tráfico que no vino de un anuncio, como el enlace del perfil— y ` +
+              `${puente.sobre - puente.con - puente.sinNombre} traen uno que no existe en la tabla ` +
+              `de anuncios: ahí sí puede haber un renombre en Meta o una etiqueta sin expandir.`
+            }
+          />
         </span>
         <span className="csr-v">{tasa(prop) ?? '—'}</span>
         <span className="csr-b">
@@ -404,27 +417,56 @@ function Subasta({ r }) {
           <span role="columnheader">Pieza</span>
           <span role="columnheader">Gasto</span>
           <span role="columnheader">CTR</span>
-          <span role="columnheader">Hook</span>
-          <span role="columnheader">Link CTR</span>
-          <span role="columnheader">Landing</span>
+          {/* Los tres rótulos cortos con su DEFINICIÓN detrás, que VIAJA en la respuesta y no es
+              una copia escrita acá: la definición es del dato, no de la columna. «Hook» no dice
+              nada solo, y el de `videoView` importa más que los otros dos porque el proveedor no
+              documenta si cuenta tres segundos o un ThruPlay.
+
+              No se importa `ACCIONES_QUE_LEEMOS` directamente: este archivo es `'use client'` y ese
+              módulo abre la base, así que importarlo arrastra `pg` —y con él `fs`, `dns` y `net`—
+              al paquete del navegador. El build falla con «Can't resolve 'dns'», que es la forma
+              ruidosa de un error que conviene que sea ruidosa. */}
+          <span role="columnheader" title={r.titulos.videoView}>
+            Hook
+          </span>
+          <span role="columnheader" title={r.titulos.linkClick}>
+            Link CTR
+          </span>
+          <span role="columnheader" title={r.titulos.landingPageView}>
+            Landing
+          </span>
         </div>
 
         {visibles.map((f) => (
           <div className="crv-fila" role="row" key={f.creativo}>
             <span className="crv-n" role="cell" title={f.creativo}>
               {f.creativo}
-              {/* Lo que no cabe en una columna va acá, y la interacción es el caso: tiene la mejor
-                  cobertura de las cuatro tasas (90 %) y es la menos accionable de las cuatro, así
-                  que gastar una columna en ella empujaría fuera al link CTR en el ancho de un
-                  teléfono. Lo que NO se hace es calcularla y no mostrarla en ninguna parte: un campo
-                  que viaja en la respuesta y nadie dibuja se pudre sin que nada falle. */}
+              {/* Lo que no cabe en una columna va acá. Son DOS: la interacción —la mejor cobertura
+                  de las cuatro tasas (90 %) y la menos accionable— y el click-to-landing, que
+                  gastarles una columna a cada una empujaría fuera al link CTR en el ancho de un
+                  teléfono.
+
+                  La última frase de este comentario decía: *«Lo que NO se hace es calcularla y no
+                  mostrarla en ninguna parte: un campo que viaja en la respuesta y nadie dibuja se
+                  pudre sin que nada falle»*. **Y eso era exactamente lo que pasaba con el
+                  click-to-landing**: tres agregados SQL propios, su prueba, su viaje hasta acá, y
+                  cero píxeles. El comentario describía el defecto del archivo que lo contenía. */}
               <Nota
                 texto={[
                   f.diasConEntrega === 0
                     ? 'No entregó ni un día de esta ventana. No es que gastara cero: no se mostró.'
                     : `Corre en ${f.anuncios} anuncio(s) y entregó ${f.diasConEntrega} día(s) de la ventana.`,
                   f.interaccion.tasa !== null
-                    ? `Interacción con la publicación: ${f.interaccion.tasa}% de las impresiones, sobre ${f.interaccion.diasConLaClave} de ${f.interaccion.diasConEntrega} día(s).`
+                    ? `Interacción con la publicación: ${f.interaccion.tasa}% de las impresiones, sobre ${f.interaccion.anuncioDiasConLaClave} de ${f.interaccion.anuncioDiasConEntrega} anuncio-día.`
+                    : null,
+                  /* El click-to-landing SE DIBUJA acá, que es lo que el comentario de arriba decía
+                     y el archivo no hacía: se calculaba con tres agregados propios, se probaba,
+                     viajaba en la respuesta y no aparecía en ninguna parte. */
+                  f.clickToLanding.tasa !== null
+                    ? `Del clic al enlace a la landing cargada: ${f.clickToLanding.tasa}%.` +
+                      (f.clickToLanding.tasa > 100
+                        ? ' Pasa de 100 % porque Meta puede contar la carga de un clic de otro día, y no se topa: el desajuste es el dato.'
+                        : '')
                     : null,
                 ]
                   .filter(Boolean)
@@ -457,8 +499,27 @@ function Subasta({ r }) {
  * El denominador de estas tasas son los días que TRAEN la clave, no todos los de la ventana. Sin
  * decir cuántos son, una tasa calculada sobre tres días de veinte se lee igual que una de veinte.
  */
+/**
+ * Una celda de tasa. **Hay TRES estados y los tres se ven distinto**, que es toda la función.
+ *
+ * ── EL TERCERO ERA UN GUION PELADO, Y ERA EL MÁS CALLADO DE LOS TRES ───────
+ *
+ *   1 · **El proveedor no reportó la acción ni un día.** No es cero: una pieza que no es video
+ *       nunca tiene reproducciones. Guion con su nota.
+ *   2 · **Hay tasa.** El número, con la fracción de cobertura al lado.
+ *   3 · **Hay dato pero no alcanza el piso.** Salía como un guion pelado, sin nota — o sea que la
+ *       pieza con 900 impresiones y la pieza que no es video se veían EXACTAMENTE igual, y la del
+ *       medio era la que más tenía para decir. Ahora dice cuánto le falta.
+ *
+ * El tercero pesa más desde el 2026-09-19, cuando el CTR y el click-to-landing ganaron el piso que
+ * les faltaba: son más celdas las que caen ahí.
+ */
 function CeldaDeAccion({ t }) {
-  if (t.diasConLaClave === 0) {
+  /* `anuncioDiasConLaClave` y no `diasConLaClave`, que es como se llamaba hasta el 2026-09-19.
+     Este archivo es `.jsx` y **`tsc --noEmit` no lo mira**: con el nombre viejo esto quedaba en
+     `undefined === 0`, la rama no entraba nunca, y la pieza que no es video pasaba a dibujarse
+     como una pieza sin tasa. No falla, no avisa, y sólo se ve mirando la pantalla. */
+  if (t.anuncioDiasConLaClave === 0) {
     return (
       <span role="cell">
         —
@@ -469,8 +530,24 @@ function CeldaDeAccion({ t }) {
   return (
     <span role="cell">
       {pct(t.tasa) ?? '—'}
-      {t.diasConLaClave < t.diasConEntrega ? (
-        <em className="crv-de"> {t.diasConLaClave}/{t.diasConEntrega}d</em>
+      {t.tasa === null ? (
+        <Nota
+          texto={
+            `El proveedor sí reportó esta acción —${t.cantidad ?? 0} en ` +
+            `${t.anuncioDiasConLaClave} anuncio-día— pero la base no alcanza el piso para publicar ` +
+            `una tasa. No es cero ni es «no hay dato»: es una muestra demasiado chica para que el ` +
+            `porcentaje signifique algo.`
+          }
+        />
+      ) : null}
+      {/* La fracción es anuncio-día sobre anuncio-día: mismo grano arriba y abajo, que es lo que la
+          hace legible. Llevaba una «d» de «días» y no eran días — una pieza que corre en tres
+          anuncios tiene tres anuncio-día por cada día de calendario. */}
+      {t.anuncioDiasConLaClave < t.anuncioDiasConEntrega ? (
+        <em className="crv-de" title="anuncio-día con el dato, sobre anuncio-día con entrega">
+          {' '}
+          {t.anuncioDiasConLaClave}/{t.anuncioDiasConEntrega}
+        </em>
       ) : null}
     </span>
   );

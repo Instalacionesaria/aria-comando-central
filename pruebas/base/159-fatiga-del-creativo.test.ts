@@ -227,7 +227,39 @@ test('sin ningún veredicto, el aviso NO habla del umbral', async () => {
   const r = await leer();
 
   assert.doesNotMatch(String(r.aviso ?? ''), /provisional/i, 'declaró un umbral que no está usando');
-  assert.match(String(r.aviso), /serie suficiente/, 'no dice cuántas piezas quedaron sin veredicto');
+  assert.match(String(r.aviso), /1 de 1 pieza/, 'no dice cuántas piezas quedaron sin veredicto');
+  /* ── Y DICE QUE NO SE LISTAN, PORQUE NO SE LISTAN ──────────────────────────
+   *
+   * El aviso decía *«se muestra su conteo de días y no su tendencia»*. `PanelDeCreative` dibuja
+   * sólo las filas con `fatigado !== null`, así que esas piezas no aparecen en ninguna parte:
+   * medido el 2026-09-19, eran 21 de 26 que el lector iba a buscar y no iba a encontrar. */
+  assert.match(String(r.aviso), /no se listan/, 'promete un listado que la pantalla no dibuja');
+  /* Y el MOTIVO es el que corresponde al escenario —tres días contra los ocho que hacen falta—, no
+     un «serie insuficiente» genérico: de los tres motivos posibles el aviso agrupaba los tres bajo
+     el primero, o sea acusaba de serie corta a piezas con serie larga. */
+  assert.match(String(r.aviso), /días de serie/, 'no dice POR QUÉ no hay veredicto');
   assert.equal(r.conSerie.con, 0);
   assert.equal(r.conSerie.sobre, 1);
+  assert.equal(r.filas[0]?.motivo, 'pocos-dias', 'el motivo en clave no viaja');
+});
+
+test('el aviso del umbral provisional no lleva Markdown: la pantalla lo dibuja crudo', async () => {
+  /* ── UN ASTERISCO NO SE VE COMO ÉNFASIS, SE VE COMO UN ERROR ───────────────
+   *
+   * El aviso viaja como cadena y la pantalla lo mete en un `<p className="cs-fuera">`. Un `<p>` no
+   * interpreta Markdown, así que el `**provisional**` que había acá se leía con los asteriscos
+   * puestos — y la frase que existe para decir que el umbral NO está calibrado, que es la que
+   * separa esta pantalla del prototipo que se le criticó, terminaba pareciendo una falla de la
+   * aplicación.
+   *
+   * Las dos mitades van juntas: sin la primera aserción, borrar la palabra «provisional» entera
+   * dejaría esto en verde, y el aviso más importante del módulo se iría sin que nada falle. */
+  await limpiar();
+  await unAnuncio(`${MARCA}90`, 'pieza con serie larga');
+  await unaSerie(`${MARCA}90`, 12, 3, 1);
+
+  const f = await leer();
+
+  assert.match(String(f.aviso), /provisional/i, 'se perdió el aviso de que el umbral no está calibrado');
+  assert.doesNotMatch(String(f.aviso), /\*\*|__|\[.+\]\(/, 'el aviso lleva Markdown y la pantalla lo dibuja crudo');
 });
