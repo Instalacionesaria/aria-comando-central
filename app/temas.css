@@ -742,18 +742,21 @@
   background: rgb(255 255 255 / 0.4);
 }
 
-/* El piso del contenedor de la media, Y ES UNA RED, NO EL MECANISMO — conviene decirlo con
-   precisión porque es fácil leerlo al revés.
+/* El piso del contenedor de la media. **Hoy no lo lleva ningún elemento, y hay que decirlo así.**
 
-   Las dos pantallas que dibujan estos contenedores les ponen el degradado de la pieza en un `style`
-   EN LÍNEA (`lib/aios/creative.js:178` y `lib/aios/conversion.js:433`), y un estilo en línea le gana
-   a cualquier capa. Así que hoy esta declaración no se aplica en ninguna de las dos: el substrato
-   real es ese degradado, que por ser literal es igual en los dos temas.
+   Esta nota decía que las dos pantallas que dibujan estos contenedores les ponen el degradado de la
+   pieza en un `style` EN LÍNEA —`lib/aios/creative.js:178` y `lib/aios/conversion.js:433`— y que por
+   eso la declaración quedaba tapada. **Los dos archivos ya no existen**: se fueron con sus maquetas
+   el 2026-09-19 y el 2026-09-20, así que la nota mandaba a leer dos rutas inexistentes.
 
-   Queda igual, y con esta nota, para el caso en que un contenedor se dibuje SIN degradado — ahí
-   volvería a ser transparente, y un contenedor de media transparente muestra el panel: blanco en
-   tema claro, que es de dónde vino todo esto. Lo que garantiza el contraste de los controles no es
-   este piso: son sus velos. */
+   Medido el 2026-09-20 sobre todo el árbol servido, leyendo el contenido de cada `className=` y
+   `class=`: **`dw-video` y `cc-media` no las emite nadie**. O sea que la regla no está tapada por un
+   estilo en línea: no tiene a quién aplicarse.
+
+   Se conserva, y no por inercia. Es una RED: el día que vuelva a dibujarse un contenedor de media
+   —el cajón de una pieza, una miniatura— sin degradado propio, sin esta línea sería transparente, y
+   un contenedor de media transparente deja ver el panel: blanco en tema claro, que es de dónde vino
+   todo esto. Lo que garantiza el contraste de los controles no es este piso: son sus velos. */
 :root[data-tema] .dw-video,
 :root[data-tema] .cc-media {
   background-color: var(--fondo-medio);

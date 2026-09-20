@@ -4,9 +4,14 @@
 // EL DEFECTO QUE ESTO IMPIDE NO SE VE, NO LANZA Y SÓLO SE ARREGLA RECARGANDO
 //
 // `#drawer` y `#recoModal` viven en `components/Overlays.jsx`, hermanos de las vistas y no hijos de
-// ninguna. Cinco módulos los ABREN —`creative.js`, `conversion.js`, `leads-portal.js`,
+// ninguna. Los abrían cinco módulos —`creative.js`, `conversion.js`, `leads-portal.js`,
 // `executive-panel.js` y `period-controls.js`— y hasta el 2026-09-19 los CERRABA uno solo:
 // `creative.js` registraba los cinco oyentes al final de su propio módulo.
+//
+// Los dos primeros ya no existen: se fueron con sus pantallas, el 2026-09-19 y el 2026-09-20. **Y el
+// cierre no se movió con ninguno de los dos**, que es exactamente lo que estas pruebas compran. Por
+// eso ninguna nombra un módulo: barren `lib/aios/` entero, y siguen midiendo algo después de que su
+// caso original desapareció.
 //
 // O sea que borrar la maqueta de Creative —que es exactamente lo que el plan de Creative dice que
 // hay que hacer— dejaba a las OTRAS CUATRO pantallas con un modal que se abre sobre toda la
@@ -115,15 +120,46 @@ test('el que ABRE un overlay compartido lo cierra con el del armazón, no con un
           'Los cierres se importan de `lib/aios/shell.js`: `cerrarElCajon` y `cerrarElModal`.',
       );
     }
+
+    /* ── Y LA MISMA FORMA DE FALLO EN SU VERSIÓN CALLADA ───────────────────
+     *
+     * Esta mitad estaba clavada a `conversion.js`: comprobaba que ESE archivo importara
+     * `cerrarElModal`. Al borrarse el módulo, la comprobación se quedó sin sujeto —y una prueba
+     * que lee un archivo que no existe no falla por lo que medía, falla por `ENOENT`—. Así que se
+     * generalizó a la regla que el caso particular ilustraba, y al generalizarla apareció un
+     * segundo caso que estaba vivo.
+     *
+     * `executive-panel.js` hacía:
+     *
+     *     el.onclick = ()=>{ document.getElementById('dwClose').click(); ... };
+     *
+     * Sintetizar un clic sobre el botón de cierre depende de dos cosas de OTRO módulo: que el nodo
+     * exista con ese id, y que `shell.js` ya le haya registrado su oyente. Si cualquiera de las
+     * dos falla, `.click()` **no lanza nada**: no pasa nada y el cajón se queda abierto mientras
+     * la vista salta por detrás. Es `closeReco()` en su forma silenciosa —allá el nombre no
+     * existía y lanzaba `ReferenceError`; acá el nombre existe y no hace nada—.
+     *
+     * Medido el 2026-09-20 sobre los ocho módulos de `lib/aios/`: era el único que quedaba. */
+    for (const id of CIERRES) {
+      assert.doesNotMatch(
+        sinComentarios,
+        new RegExp(String.raw`getElementById\('${id}'\)\??\.click\(`),
+        `\`${nombre}\` cierra un overlay sintetizando un clic sobre \`#${id}\`. Eso depende del ` +
+          'nodo y del oyente de OTRO módulo, y cuando falla no lanza nada: el overlay se queda ' +
+          'abierto en silencio. Los cierres se importan de `lib/aios/shell.js`: `cerrarElCajon` y ' +
+          '`cerrarElModal`.',
+      );
+    }
   }
 
-  /* Y la otra mitad: el que abre `#recoModal` tiene que poder cerrarlo. Sin esto, borrar la llamada
-     entera —en vez de arreglarla— dejaría la prueba de arriba en verde y el modal igual de pegado. */
-  const conversion = leer('lib/aios/conversion.js');
-  assert.match(
-    conversion,
-    /import \{[^}]*cerrarElModal[^}]*\} from '\.\/shell'/,
-    '`conversion.js` abre `#recoModal` y ya no importa `cerrarElModal` del armazón: sus filas del ' +
-      'plan de acción vuelven a dejar el modal abierto encima del cajón que intentan abrir.',
+  /* Y el candado de la generalización: si algún día nadie importa ninguno de los dos cierres, estos
+     dos barridos quedan vacíos y en verde sobre nada. Alguien tiene que seguir llamándolos. */
+  const importadores = modulos.filter((n) =>
+    /import \{[^}]*cerrarEl(Cajon|Modal)[^}]*\} from '\.\/shell'/.test(leer(`lib/aios/${n}`)),
+  );
+  assert.ok(
+    importadores.length >= 1,
+    'ningún módulo importa los cierres del armazón. O todos dejaron de cerrar overlays —y entonces ' +
+      'estas comprobaciones ya no miden nada— o alguien volvió a cerrarlos por su cuenta.',
   );
 });

@@ -111,11 +111,23 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 //   1. `sales` NO tiene módulo en `lib/aios/index.js`: es marcado estático con sus rótulos y sus
 //      cifras escritos a mano en el JSX. Esta comparación era lo ÚNICO que leía ese archivo.
 //      Desde hoy, borrarle una tarjeta o cambiarle un número no lo nota nadie.
-//   2. Las otras cuatro las pintan `acquisition.js`, `creative.js`, `conversion.js` y
+//   2. Las otras cuatro las pintaban `acquisition.js`, `creative.js`, `conversion.js` y
 //      `conversation.js` con los datos de ejemplo del maquetado. El eje de `texto` era lo único
 //      que comprobaba que ese port imperativo siguiera dando los mismos números que el `<script>`
-//      original. Queda una rendija: los pasos que miran `#drawer` y `#recoModal` siguen, porque
-//      esos nodos viven en `Overlays.jsx` —fuera de toda vista— y no los toca la estética.
+//      original.
+//
+//      **Y ese párrafo caducó del todo el 2026-09-20.** Los cuatro módulos ya no existen: las
+//      cuatro pantallas piden sus datos al servidor y los dibujan en React. No hay port imperativo
+//      que comparar, así que no se perdió cobertura de nada vivo — se perdió la de algo que ya no
+//      está. Lo que sí quedó en su lugar son pruebas de base contra la base de verdad, verificadas
+//      por mutación, que es más de lo que este eje daba.
+//
+//      La rendija que este comentario prometía era de DOS nodos y **medido el 2026-09-20 es de
+//      uno**: «ficha de lead» clica `#v-contacts .lc` y espera `#drawer.on`, así que ese sigue. De
+//      `#recoModal` **no queda ningún paso**: el que lo abría era «plan de Creative» con `#recoBtn`
+//      y se fue con la vista nueva, como cuenta el comentario de `PASOS` treinta líneas más abajo.
+//      Los dos nodos viven en `Overlays.jsx` —fuera de toda vista— y la estética no los toca; lo
+//      que falta no es alcance, es un paso que los abra.
 //   3. El eje de GEOMETRÍA no se puede reemplazar. Una prueba que lee el fuente no ve una caja.
 //      Se pierde y no vuelve.
 //

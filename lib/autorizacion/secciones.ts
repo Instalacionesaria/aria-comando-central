@@ -265,7 +265,12 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'conversion',
     nombre: 'Conversion',
     capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
+    /* La bandera se fue con `app/api/conversion/route.ts`, su primera operación de servidor. Tercer
+       departamento que la baja, y el cable trampa de `ADR-0304` volvió a hacer su trabajo: la ruta
+       nueva y esta línea tuvieron que moverse juntas.
+       *
+       El galón se QUEDA, por el precedente de Creative: el adorno es del prototipo y lo que estaba
+       mal no era él, sino que detrás no hubiera nada. */
     menu: { grupo: 'Inteligencia', icono: '#i-conv', galon: true },
   },
   {

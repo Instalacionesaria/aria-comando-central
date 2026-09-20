@@ -127,9 +127,12 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {
     punto: 'Las sesiones, los visitantes y los eventos de página',
     porque:
-      'no existe ninguna tabla que los guarde, y `visitor_id` y `session_id` no aparecen en una sola ' +
-      'línea del repositorio. Un visitante que no se convierte en contacto no deja rastro en ningún ' +
-      'lado, así que la unidad de este departamento es el contacto y no la visita',
+      /* Sin acentos graves tampoco. La pantalla dibuja este texto crudo dentro de un `<p>`, así que
+         un «`visitor_id`» se lee con las comillas invertidas puestas. Verificado en el navegador el
+         2026-09-20: salían literales. Es el mismo motivo por el que no lleva asteriscos. */
+      'no existe ninguna tabla que los guarde, y los identificadores de visitante y de sesión no ' +
+      'aparecen en una sola línea del repositorio. Un visitante que no se convierte en contacto no ' +
+      'deja rastro en ningún lado, así que la unidad de este departamento es el contacto y no la visita',
   },
   {
     punto: 'El mapa de calor, el scroll y los clics muertos',
@@ -141,7 +144,7 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
     punto: 'La tasa de conversión de la landing',
     porque:
       'su denominador tendría que ser gente registrada AL LLEGAR, y la dirección se registra al ' +
-      'convertir: medido, 124 de 590 contactos traen `medium = calendar`. Una tasa sobre esa ' +
+      'convertir: medido, 124 de 590 contactos la traen con origen «calendar». Una tasa sobre esa ' +
       'población divide «agendó» por un denominador definido en parte por haber agendado',
   },
   {

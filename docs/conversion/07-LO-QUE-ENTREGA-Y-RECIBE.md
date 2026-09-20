@@ -5,6 +5,23 @@
 > del que sale. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15, más las mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
+> **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
+> 530 literales inventados y 47 frases de guion que esta carpeta documenta. Las citas
+> `conversion.js:N` de abajo **siguen siendo correctas como referencia histórica** —el archivo y sus
+> líneas están en el historial de git— y ésa es toda su función: este documento nunca describió lo
+> que hay, describió lo que la maqueta dibujaba, para sacar de ahí los requisitos.
+>
+> **Y `components/views/ConversionView.jsx` se reescribió el mismo día**: pasó de 115 líneas a 79, así
+> que sus citas son de DOS clases y la segunda es la peligrosa. Las que apuntan más allá de la línea
+> 79 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
+> cosa**, que es peor: una línea corrida no falla.
+>
+> Lo que hay hoy es `components/conversion/PanelDeConversion.jsx` con dos bloques medidos: el reparto
+> de la cohorte por camino de entrada (`lib/negocio/recorridoDelLead.ts`) y el abandono del
+> formulario de la landing (`embudoDelFormulario.ts`), más los cinco huecos declarados. La
+> clasificación vive en `lib/negocio/recorrido.ts` y la ruta en `app/api/conversion/route.ts`.
+
+
 ---
 
 ## 1 · Lo que Acquisition le debe

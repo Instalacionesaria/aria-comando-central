@@ -391,10 +391,22 @@ test('los dos módulos que pintaban datos inventados NO existen', async () => {
   // Y que el arranque no los nombre. Un import de un archivo que no existe rompe la
   // construcción, así que esto atrapa el caso en que alguien los recree.
   const arranque = leer('lib/aios/index.js');
-  const sinComentar = arranque
-    .split('\n')
-    .filter((l) => !l.trimStart().startsWith('*') && !l.trimStart().startsWith('/*') && !l.trimStart().startsWith('//'))
-    .join('\n');
+  /* Los comentarios se quitan por DELIMITADOR y no por prefijo de línea, que es como estaba hasta
+     el 2026-09-20.
+     *
+     El filtro de antes descartaba la línea si EMPEZABA con `*`, `/*` o `//`. En este archivo los
+     comentarios en bloque se escriben con las líneas siguientes sangradas y sin asterisco, así que
+     todas ellas contaban como código. El defecto es un FALSO POSITIVO —prosa acusada de ser
+     código—, no un falso negativo, y por eso estuvo dormido: sólo dispara cuando alguien escribe
+     uno de los nombres prohibidos en una línea de comentario que no empieza con asterisco.
+     *
+     Se destapó al agregar un párrafo arriba del que ya nombraba `initCloser`: la misma frase, en la
+     misma prosa, pasó de invisible a roja porque se corrió una línea hacia abajo. La otra forma del
+     mismo falso positivo es un `const x = 1; // initCloser` al final de una línea de código.
+     *
+     Verificado por mutación que el barrido nuevo **sigue viendo el defecto de verdad**: poner
+     `initCloser` dentro de `MODULOS` pone la prueba en rojo. */
+  const sinComentar = arranque.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
   assert.doesNotMatch(sinComentar, /initCloser\b/, 'el arranque volvió a cargar `initCloser`');
   assert.doesNotMatch(sinComentar, /initCloserContact\b/, 'el arranque volvió a cargar `initCloserContact`');
 });
