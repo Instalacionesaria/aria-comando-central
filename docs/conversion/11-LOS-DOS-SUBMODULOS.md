@@ -32,7 +32,7 @@ landing.
 | qué | cobertura | id |
 |---|---|---|
 | Por dónde entró cada contacto, por familia de host | 475 de 590 (80,5 %) | `CV2-01` |
-| La tasa de agenda de cada familia | por familia, con piso | `CV2-02` |
+| Cuántos agendaron en cada familia, y cuánto de la fila es circular | conteo, **nunca tasa** | `CV2-02` |
 | Los tres estados del formulario | 247 de 590, **cortados el 2026-08-31** | `CV2-04` |
 | La tasa de finalización del formulario | **64,8 % medido** | `CV2-05` |
 | Las vistas de landing que reporta Meta | 150 de 240 filas anuncio-día | `CV8-09` |

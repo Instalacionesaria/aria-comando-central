@@ -199,8 +199,10 @@ Las otras seis están citadas en el archivo donde muerden.
 - **El embudo del formulario, con sus tres estados** — `Agendado` 121, `Form incompleto sin agendar`
   87, `Form completo sin agendar` 39. Es lo único que contesta la única frase que el documento le
   atribuye a Conversion. **Con su corte de época al lado**, porque murió el 2026-08-31.
-- **La tasa de agenda por recorrido** — con el mismo `exists` sobre `ghl_calendario_id` que ya usan
-  otros cuatro módulos, para que las pantallas sumen igual.
+- **Cuántos agendaron en cada recorrido** — con el mismo `exists` sobre `ghl_calendario_id` que ya
+  usan otros cuatro módulos, para que las pantallas sumen igual. **Un conteo y no una tasa**: al
+  medirla, la tasa por familia salió circular —dos familias dan 100 % porque su dirección se
+  escribió al reservar— y se retiró. Ver `CV2-02`.
 
 **Lo que NO se puede, y se dibuja como hueco declarado:**
 

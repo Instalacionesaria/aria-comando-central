@@ -108,7 +108,7 @@ cada consulta. **Se calcula**, y estas son las cuatro cifras que lo deciden:
 |---|---|
 | Tamaño de la tabla | **590 filas, 3.784 kB** |
 | Índices que ya tiene | `contactos_pkey`, `_ghl_por_org`, `_por_territorio`, `_buzon`, `_por_asignado`, **`_por_alta`** |
-| Costo de la consulta de clasificación con su tasa de agenda, ventana de 30 días | **58 ms**, con `Index Scan using contactos_por_alta` sobre 335 filas |
+| Costo de la consulta de clasificación con su conteo de agendados, ventana de 30 días | **58 ms**, con `Index Scan using contactos_por_alta` sobre 335 filas |
 | Columnas que harían falta | **ninguna**: `atribucion_ultima` está poblada y tipada |
 
 La ventana de cohorte ya está indexada por `contactos_por_alta`, que es el único índice que esta

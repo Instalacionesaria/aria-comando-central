@@ -130,9 +130,11 @@ alcanzable**. Los 72 de diferencia son congeladas, y el repositorio ya las conoc
 `07-REGLAS-TRANSVERSALES.md:153` — *«estado ⟹ sólo `ghl_calendario_id is not null`; existencia ⟹
 todas»*.
 
-**Requisito**: la tasa de agenda usa el predicado de **estado** —`ghl_calendario_id is not null`— y
-el conteo de congeladas viaja al lado, como `congeladas` en
-`lib/negocio/calidadDelCreativo.ts:107`. Sin eso, esta pantalla diría 121 donde otras dos dicen 47.
+**Requisito**: el agendamiento usa el predicado de **estado** —`ghl_calendario_id is not null`— y la
+diferencia viaja al lado. Construido el 2026-09-20, viaja como
+`embudoDelFormulario.agendadoSegunLasCitas` —`{segunElCampo, conCitaAlcanzable}`, o sea 121 y 47— y
+**no** como un conteo de congeladas: las dos cifras que se contradicen son las dos que hay que ver
+juntas, y de ellas se deduce el 72. Sin eso, esta pantalla diría 121 donde otras dos dicen 47.
 
 ---
 

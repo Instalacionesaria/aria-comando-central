@@ -164,7 +164,7 @@ publicándolos — igual que `lib/negocio/consumoDelPrecall.ts` hace con `-20%` 
 Los 72 de diferencia entre 119 y 47 son **citas congeladas**: el CRM ya no devuelve sus eventos, y el
 repositorio ya conoce ese caso (regla 4 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:153`).
 
-**Consecuencia de diseño:** la tasa de agenda de Conversion sale del mismo `exists` con
+**Consecuencia de diseño:** el agendamiento de Conversion sale del mismo `exists` con
 `ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:341-344`, `calidadDelCreativo.ts:223-226`,
 `atribucionDelLead.ts:150-153` e `indicadoresDelLead.ts:243`. Si saliera del campo, esta pantalla
 diría 121 donde las otras dicen 47, y **nadie tendría cómo saber cuál de las dos está mal**.

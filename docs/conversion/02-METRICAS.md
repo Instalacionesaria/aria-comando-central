@@ -63,16 +63,44 @@ URL — ésos son su propia fila, no un descarte.
 (80,5 %). Es la cifra que contesta la pregunta más grande que la pantalla puede hacerse hoy, y
 ninguna otra pantalla la publica.
 
-### CV2-02 · Tasa de agenda por recorrido
+### CV2-02 · Agendamientos por recorrido, y cuánto de cada fila es circular
 
-**Qué es** · De los que entraron por cada camino, cuántos llegaron a tener una cita alcanzable.
-**Fórmula** · Contactos de la familia con al menos una cita alcanzable / contactos de la familia.
-**Unidad** · Proporción.
+> **Esta ficha se reescribió el 2026-09-20, al construirla.** Pedía una **tasa** de agenda por
+> familia. Al medirla resultó **circular**, y una proporción circular no se arregla con un piso más
+> alto: se retira. Lo que queda es el conteo, más la medida de cuánto de la fila es circular.
+
+**Qué es** · De los que entraron por cada camino, cuántos llegaron a tener una cita alcanzable —
+**un conteo, no una tasa**— y cuántos de esos tienen la dirección registrada *al reservar*.
+**Fórmula** · `count(*) filter (where exists (cita con ghl_calendario_id))` por familia, más
+`count(*) filter (where medium in ('calendar','form'))` como `capturadaAlReservar`.
+**Unidad** · Dos conteos. La proporción de la fila sobre la cohorte sí se publica (`porcion`), que
+es una pregunta distinta: **cuánta gente va por cada camino**.
 **Población** · Contactos con `alta_en_el_crm` en la ventana, por familia.
-**Piso** · `PISO_DE_UNA_TASA`, **sobre el denominador de cada familia**, no sobre la cohorte total.
-**Rastro** · `conversion.js:197-199` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:142`.
-**Estado** · **Construible hoy**, con el `exists` de `costoDelAnuncio.ts:341-344`. Cuidado con el
-piso: en septiembre la familia `landing` son 31 contactos y cualquier segundo corte cae debajo.
+**Rastro** · `conversion.js:197-199` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:142`;
+`lib/negocio/recorridoDelLead.ts`.
+
+**Por qué no es una tasa.** Medido el 2026-09-20 sobre la ventana de 30 días (335 contactos):
+
+| familia | contactos | agendaron | capturada al reservar | la «tasa» diría |
+|---|---|---|---|---|
+| `landing` | 85 | 40 | 36 | 47 % |
+| `sin-pagina` | 72 | 1 | 0 | 1 % |
+| `meta-navegador` | 23 | **23** | **23** | **100 %** |
+| `widget` | 128 | 74 | 45 | 58 % |
+| `precall` | 19 | **19** | **19** | **100 %** |
+| `otra` | 8 | 8 | 0 | 100 % |
+
+Las dos familias al 100 % no convierten mejor: **su dirección se escribió en el momento de
+reservar**, así que estar en esa fila y haber agendado son el mismo hecho. El caso que lo cierra es
+que **un mismo host aparece con `medium = External Form` al 13 % y con `medium = calendar` al
+74 %** — la misma página, dos tasas, y la diferencia es cuándo se registró la dirección.
+
+Es el mismo defecto que `CV1-05` describe para la tasa de conversión de la landing, una capa más
+abajo: un denominador definido en parte por el numerador.
+
+**Estado** · **El conteo, construible hoy**, con el `exists` de `costoDelAnuncio.ts:341-344`. **La
+tasa, retirada por circular.** Volvería a ser publicable el día que exista una tabla de sesiones —
+el mismo hueco que `CV11-03` declara.
 
 ### CV2-03 · La cobertura del recorrido
 
@@ -241,7 +269,7 @@ sea de `lib/negocio/indicadoresDeCitas.ts`, que ya publica la confirmación con
 | id | métrica | ¿construible hoy? |
 |---|---|---|
 | `CV2-01` | Contactos por familia de recorrido | **sí** — 475 de 590 |
-| `CV2-02` | Tasa de agenda por recorrido | **sí**, con piso por familia |
+| `CV2-02` | Agendamientos por recorrido | **el conteo sí; la tasa NO** — circular, medido |
 | `CV2-03` | Cobertura del recorrido | **sí** — obligatoria al lado de las dos de arriba |
 | `CV2-04` | Los tres estados del formulario | **sí sobre el histórico**; cero en septiembre |
 | `CV2-05` | Tasa de finalización del formulario | **sí** — 64,8 % medido |

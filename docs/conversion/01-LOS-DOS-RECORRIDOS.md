@@ -76,9 +76,10 @@ El prototipo comete exactamente ese error en su forma más pura: sus cinco pasos
 (`components/views/ConversionView.jsx:90-92`). Eso es válido cuando hay un solo camino. Hoy no lo
 hay.
 
-**El requisito**: una fila por familia de recorrido, cada una con su cohorte y su tasa, dibujadas
-una debajo de otra. Y la cifra más valiosa que esta pantalla puede publicar hoy es **el reparto
-mismo**: cuánta gente entra por cada camino.
+**El requisito**: una fila por familia de recorrido, cada una con su cohorte y **su conteo de
+agendados**, dibujadas una debajo de otra. No una tasa por familia: al construirla el 2026-09-20 salió
+circular, y `CV2-02` lo mide. Y la cifra más valiosa que esta pantalla puede publicar hoy es **el
+reparto mismo**: cuánta gente entra por cada camino.
 
 Es la regla 11 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:451` aplicada acá: *«una cadena que
 no es monótona no es un embudo»*.
@@ -205,7 +206,7 @@ Las tres ramas, en orden:
    `sessionSource`. Hoy son 88 de Meta y 1 de Instagram orgánico.
 3. **No trae ninguno de los dos** ⟹ **sin rastro**. 27 contactos, **ninguno de septiembre**.
 
-### CV1-12 · El reparto real de septiembre, con las seis familias
+### CV1-12 · El reparto real de septiembre, con las siete familias
 
 | familia | septiembre | total |
 |---|---|---|
@@ -219,6 +220,11 @@ Las tres ramas, en orden:
 
 **Los dos recorridos de Meta juntos son 83 de 241: más que la landing.** Y el reparto suma la cohorte
 exacta, que es lo que permite publicarlo sin una fila de «resto» que se coma la diferencia.
+
+Son **siete** y no seis: `sin rastro` da cero en septiembre y sigue siendo una familia —en el total
+son 27—. Una familia que vale cero en una ventana no desaparece del vocabulario, porque entonces
+«cero» y «no existe» se leerían igual. En el código son las siete de
+`lib/negocio/recorrido.ts`, en ese orden.
 
 ---
 
