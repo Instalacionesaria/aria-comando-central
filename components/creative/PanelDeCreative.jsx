@@ -27,7 +27,8 @@
  *
  * El § 18.5 sólo deja publicar una conclusión por pieza **con su cobertura al lado**. Acá hay tres
  * coberturas distintas y ninguna es nota al pie: el puente nombre↔anuncio, los días con cada clave
- * del desglose y las piezas con serie suficiente para un veredicto de fatiga.
+ * del desglose y las piezas con VEREDICTO de fatiga —que no son las que tienen serie suficiente:
+ * medido el 2026-09-20, de las 21 sin veredicto hay 6 que tienen los ocho días y les falta volumen—.
  *
  * **Las cifras no se escriben acá, y eso es deliberado.** Este bloque decía «94,5 %», «56-90 %» y
  * «5 de 26», y las tres estaban vencidas al mismo tiempo: la primera era de la ventana «completo»
@@ -569,7 +570,7 @@ function Fatiga({ f }) {
           </p>
         </div>
         <div className="csf-key">
-          {f.conSerie.con}/{f.conSerie.sobre}
+          {f.conVeredicto.con}/{f.conVeredicto.sobre}
         </div>
       </div>
 

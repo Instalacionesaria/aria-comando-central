@@ -20,7 +20,9 @@
 //
 //   · `calidad`      · los contactos, cruzados por nombre contra `negocio.anuncios`
 //   · `rendimiento`  · las filas anuncio-día, según qué clave del desglose traiga cada una
-//   · `fatiga`       · las piezas con ocho días de serie, sobre las que entregaron
+//   · `fatiga`       · las piezas con VEREDICTO, sobre las que entregaron. No es lo mismo que «con
+//                      ocho días de serie»: hay tres motivos para no tener veredicto y sólo uno es
+//                      la serie corta. Medido, 6 de las que no lo tienen sí tienen los ocho días
 //
 // **Las tres cifras NO se escriben acá.** Decían «94,5 %», «56-90 %» y «5 de 26», y al 2026-09-19
 // las tres estaban vencidas: la primera de un denominador que ya no se usa, la tercera daba 11 y no

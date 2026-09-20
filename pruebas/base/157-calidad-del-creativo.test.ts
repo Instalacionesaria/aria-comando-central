@@ -377,3 +377,32 @@ test('el puente separa las TRES poblaciones, y el denominador son todos los cont
      tres se moviera sin las otras esto lo diría. */
   assert.equal(r.puente.sobre - r.puente.con - r.puente.sinNombre, 2);
 });
+
+test('el ICP es el PROMEDIO, y se comprueba con valores distintos entre sí', async () => {
+  /* ── UNA PRUEBA CON DIEZ VALORES IGUALES NO PRUEBA QUE SEA UN PROMEDIO ─────
+   *
+   * La que había sembraba diez leads con `icp: '50'` — y con diez cincuentas el promedio, el
+   * máximo, el mínimo, el primero y el último valen todos 50. Verificado el 2026-09-20: cambiar
+   * `avg(...)` por `max(...)` en la consulta dejaba la suite entera en verde.
+   *
+   * Acá los nueve dieces y el cien hacen que las cinco respuestas sean números distintos:
+   *
+   *     avg = 19 · max = 100 · min = 10 · sum = 190 · count = 10
+   *
+   * Y 19 no es ninguno de los valores sembrados, así que tampoco lo produce un `first` ni un
+   * `last` ni la mediana. El daño de equivocarse es directo: el ICP por pieza es la cifra que esta
+   * pantalla existe para publicar, y con `max` una pieza con un solo lead excelente se dibujaría
+   * arriba de una que trae gente buena de forma consistente. */
+  await limpiar();
+  await sembrarElCampoDeIcp();
+  await unAnuncio(`${MARCA}40`, 'pieza de icp disparejo');
+  for (let i = 0; i < 9; i += 1) {
+    await unLead({ creativo: 'pieza de icp disparejo', campana: TOFU, icp: '10' });
+  }
+  await unLead({ creativo: 'pieza de icp disparejo', campana: TOFU, icp: '100' });
+
+  const f = (await leer()).filas.find((x) => x.creativo === 'pieza de icp disparejo');
+
+  assert.equal(f?.conPuntaje, 10, 'el piso necesita diez respuestas: sin eso el ICP sale nulo');
+  assert.equal(f?.icpPromedio, 19, `salió ${f?.icpPromedio}: 100 es el máximo, 10 el mínimo, 19 el promedio`);
+});

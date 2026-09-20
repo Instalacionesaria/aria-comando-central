@@ -105,8 +105,16 @@ export interface FatigaDeUnCreativo {
 export interface FatigaDeLosCreativos {
   dias: number;
   filas: FatigaDeUnCreativo[];
-  /** Cuántas piezas tienen serie suficiente, sobre cuántas entregaron. Los dos términos, siempre. */
-  conSerie: { con: number; sobre: number };
+  /**
+   * Cuántas piezas tienen **veredicto**, sobre cuántas entregaron. Los dos términos, siempre.
+   *
+   * Se llamaba `conSerie` y eso era falso por seis piezas: contar «las que tienen serie suficiente»
+   * y contar «las que tienen veredicto» no es lo mismo, porque para no tener veredicto hay TRES
+   * motivos y sólo uno es la serie corta. Medido contra producción el 2026-09-20 en la ventana de
+   * 30 días: **5 con veredicto de 26**, y de las 21 que no lo tienen, 15 son por días y **6 tienen
+   * los ocho días y les falta volumen**. Esas seis eran las que el nombre acusaba de serie corta.
+   */
+  conVeredicto: { con: number; sobre: number };
   aviso: string | null;
 }
 
@@ -169,13 +177,13 @@ export async function fatigaDelCreativo(dias = DIAS_DE_LA_TASA): Promise<FatigaD
     .map((f) => leerUnaFila(f))
     .sort((a, b) => (b.caida ?? -Infinity) - (a.caida ?? -Infinity));
 
-  const conSerie = salida.filter((f) => f.fatigado !== null).length;
+  const conVeredicto = salida.filter((f) => f.fatigado !== null).length;
 
   return {
     dias,
     filas: salida,
-    conSerie: { con: conSerie, sobre: salida.length },
-    aviso: avisoDe(salida, conSerie),
+    conVeredicto: { con: conVeredicto, sobre: salida.length },
+    aviso: avisoDe(salida, conVeredicto),
   };
 }
 
@@ -240,7 +248,7 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
 }
 
 /** **`null` ⟹ la pantalla no dibuja nada.** */
-function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
+function avisoDe(filas: FatigaDeUnCreativo[], conVeredicto: number): string | null {
   const partes: string[] = [];
 
   /* ── ESTE AVISO DECÍA DOS COSAS Y LAS DOS ERAN FALSAS ──────────────────────
@@ -252,7 +260,7 @@ function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
    *     filas con `fatigado !== null`; las otras no aparecen en ninguna parte de la pantalla. El
    *     aviso prometía un listado que no existe, y medido el 2026-09-19 eran 21 de 26 piezas las
    *     que el lector iba a buscar y no iba a encontrar.
-   *   · **«no tienen serie suficiente»** — `conSerie` cuenta las que tienen VEREDICTO, y para no
+   *   · **«no tienen serie suficiente»** — el conteo es de las que tienen VEREDICTO, y para no
    *     tenerlo hay TRES motivos distintos, cada uno con su `porque` en la fila: pocos días, una
    *     mitad por debajo del piso de impresiones, o la primera mitad sin ningún clic. El aviso se
    *     los atribuía todos al primero, o sea que acusaba de serie corta a piezas con serie larga.
@@ -260,7 +268,7 @@ function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
    * Ahora dice cuántas son, que NO se listan, y agrupa por `motivo`, que es una clave y no una
    * frase. El `porque` de cada fila sigue viajando: el día que la pantalla dibuje esas filas, ya lo
    * tiene. */
-  if (filas.length > 0 && conSerie < filas.length) {
+  if (filas.length > 0 && conVeredicto < filas.length) {
     const EN_PROSA = {
       'pocos-dias': 'les faltan días de serie',
       'piso-de-impresiones': 'alguna mitad de su serie no llega al piso de impresiones',
@@ -279,7 +287,7 @@ function avisoDe(filas: FatigaDeUnCreativo[], conSerie: number): string | null {
       .join('; ');
 
     partes.push(
-      `${filas.length - conSerie} de ${filas.length} pieza(s) no tienen veredicto y no se listan ` +
+      `${filas.length - conVeredicto} de ${filas.length} pieza(s) no tienen veredicto y no se listan ` +
         `acá: ${detalle}.`,
     );
   }

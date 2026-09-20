@@ -238,8 +238,8 @@ test('sin ningún veredicto, el aviso NO habla del umbral', async () => {
      un «serie insuficiente» genérico: de los tres motivos posibles el aviso agrupaba los tres bajo
      el primero, o sea acusaba de serie corta a piezas con serie larga. */
   assert.match(String(r.aviso), /días de serie/, 'no dice POR QUÉ no hay veredicto');
-  assert.equal(r.conSerie.con, 0);
-  assert.equal(r.conSerie.sobre, 1);
+  assert.equal(r.conVeredicto.con, 0);
+  assert.equal(r.conVeredicto.sobre, 1);
   assert.equal(r.filas[0]?.motivo, 'pocos-dias', 'el motivo en clave no viaja');
 });
 
@@ -262,4 +262,91 @@ test('el aviso del umbral provisional no lleva Markdown: la pantalla lo dibuja c
 
   assert.match(String(f.aviso), /provisional/i, 'se perdió el aviso de que el umbral no está calibrado');
   assert.doesNotMatch(String(f.aviso), /\*\*|__|\[.+\]\(/, 'el aviso lleva Markdown y la pantalla lo dibuja crudo');
+});
+
+test('la primera mitad sin ningún clic NO se publica como «no está fatigada»', async () => {
+  /* ── ES LA DIFERENCIA ENTRE «NO SÉ» Y «ESTÁ BIEN» ──────────────────────────
+   *
+   * La caída es relativa: `(ctrTemprano - ctrTardio) / ctrTemprano`. Con cero clics en la primera
+   * mitad el divisor es cero, así que `caida` es `null` y el veredicto tiene que ser `null` — «no
+   * se puede decir».
+   *
+   * Un `false` ahí afirma que la pieza **no está fatigada**, que es lo contrario de lo que se sabe,
+   * y la pantalla la dibujaría como una fila sana entre las sanas. Verificado el 2026-09-20:
+   * cambiar ese `null` por `false` dejaba la suite entera en verde.
+   *
+   * Y es un escenario real, no de laboratorio: una pieza que arranca sin traer un solo clic y
+   * después empieza a traerlos es exactamente el caso de una pieza nueva que tardó en calibrar. */
+  await limpiar();
+  await unAnuncio(`${MARCA}20`, 'pieza que arranco sin clics');
+  await unaSerie(`${MARCA}20`, 10, 0, 3);
+
+  const f = await leer();
+  const x = f.filas.find((r) => r.creativo === 'pieza que arranco sin clics');
+
+  assert.equal(x?.fatigado, null, 'publicó un veredicto sobre una caída que no se puede calcular');
+  assert.equal(x?.motivo, 'sin-clics');
+  assert.match(String(x?.porque), /clic/, 'no dice por qué no hay veredicto');
+  /* Y el CTR tardío SÍ se conoce: no es que falten datos, es que la comparación no se puede hacer.
+     Si los dos salieran nulos, este caso no se distinguiría de una serie vacía. */
+  assert.equal(x?.ctrTemprano, 0, 'el CTR de la primera mitad es CERO conocido, no desconocido');
+});
+
+test('el piso de días se aplica en el borde: con el mínimo justo SÍ hay veredicto', async () => {
+  /* La mitad que faltaba. La prueba de arriba de este archivo siembra `DIAS_MINIMOS_DE_SERIE - 1`
+     y comprueba que no hay veredicto — pero sola no distingue `<` de `<=`: con `<=`, la serie de
+     siete sigue sin veredicto y la prueba sigue en verde. Verificado el 2026-09-20: cambiar `<` por
+     `<=` no mataba nada.
+     *
+     * Las dos piezas van en la MISMA lectura, porque lo que importa es que el borde las separe: una
+     * a cada lado del mismo umbral, y el umbral sale de la constante y no de un ocho escrito acá. */
+  await limpiar();
+  await unAnuncio(`${MARCA}21`, 'pieza con el minimo justo');
+  await unaSerie(`${MARCA}21`, DIAS_MINIMOS_DE_SERIE, 5, 1);
+  await unAnuncio(`${MARCA}22`, 'pieza con uno menos');
+  await unaSerie(`${MARCA}22`, DIAS_MINIMOS_DE_SERIE - 1, 5, 1);
+
+  const f = await leer();
+  const justa = f.filas.find((r) => r.creativo === 'pieza con el minimo justo');
+  const corta = f.filas.find((r) => r.creativo === 'pieza con uno menos');
+
+  assert.equal(justa?.dias, DIAS_MINIMOS_DE_SERIE);
+  assert.equal(justa?.fatigado, true, 'con el mínimo justo tiene que haber veredicto');
+  assert.equal(justa?.motivo, null, 'una pieza con veredicto no lleva motivo de ausencia');
+
+  assert.equal(corta?.dias, DIAS_MINIMOS_DE_SERIE - 1);
+  assert.equal(corta?.fatigado, null, 'con uno menos NO puede haber veredicto');
+  assert.equal(corta?.motivo, 'pocos-dias');
+});
+
+test('`conVeredicto` cuenta VEREDICTOS y no series: una pieza con días y sin volumen no suma', async () => {
+  /* ── EL NOMBRE ACUSABA A SEIS PIEZAS DE ALGO QUE NO PASABA ─────────────────
+   *
+   * El campo se llamaba `conSerie` y el encabezado de la ruta lo describía como «las piezas con
+   * ocho días de serie». Medido contra producción el 2026-09-20 en la ventana de 30 días: **5 con
+   * veredicto de 26**, y de las 21 que no lo tienen, **6 tienen los ocho días y les falta
+   * volumen**. Ésas eran las acusadas de serie corta.
+   *
+   * El escenario de acá las separa: las dos piezas tienen la MISMA cantidad de días, y sólo una
+   * llega al piso de impresiones. Si el conteo volviera a ser «con serie suficiente», las dos
+   * sumarían y esta prueba muere. */
+  await limpiar();
+  await unAnuncio(`${MARCA}23`, 'pieza con dias y con volumen');
+  await unaSerie(`${MARCA}23`, DIAS_MINIMOS_DE_SERIE, 5, 1, PISO_DE_IMPRESIONES);
+  await unAnuncio(`${MARCA}24`, 'pieza con dias y sin volumen');
+  await unaSerie(`${MARCA}24`, DIAS_MINIMOS_DE_SERIE, 5, 1, 100);
+
+  const f = await leer();
+  const gorda = f.filas.find((r) => r.creativo === 'pieza con dias y con volumen');
+  const flaca = f.filas.find((r) => r.creativo === 'pieza con dias y sin volumen');
+
+  assert.equal(gorda?.dias, flaca?.dias, 'las dos tienen que tener los mismos días');
+  assert.equal(gorda?.fatigado, true);
+  assert.equal(flaca?.fatigado, null, 'sin volumen no se puede comparar las dos mitades');
+  assert.equal(flaca?.motivo, 'piso-de-impresiones', 'la acusa de serie corta y tiene la serie entera');
+
+  assert.equal(f.conVeredicto.con, 1, 'contó la pieza sin volumen como si tuviera veredicto');
+  assert.equal(f.conVeredicto.sobre, 2);
+  /* Y el aviso nombra el motivo real, no «serie insuficiente». */
+  assert.match(String(f.aviso), /piso de impresiones/, 'el aviso culpa al motivo equivocado');
 });
