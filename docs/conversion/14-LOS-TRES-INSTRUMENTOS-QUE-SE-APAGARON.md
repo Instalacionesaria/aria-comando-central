@@ -59,7 +59,7 @@ decisión de ruta.** Por qué se tomó, la base no lo dice — queda como `CV14-
 | `precall.ariaia.com` | 20 | 19 | post-agendamiento → **es de Appointment Flow**, no de acá |
 | `grow.ariaia.com` | 4 | 1 | otra landing con VSL |
 | `trabaja-con-nosotros.ariaia.com` | 4 | 3 | reclutamiento — **no es del embudo comercial** |
-| *(sin url)* | 115 | 60 | — |
+| *(sin url)* | 115 | 60 | **no es «desconocido»** — 89 son formulario nativo de Meta y 26 no traen nada, todos de agosto. Ver `CV1-10` |
 
 Es la regla 5 de `docs/estado actual/03-CONVERSION.md:238` medida de nuevo veinte días después y
 sobre otra columna: **sigue valiendo, y los repartos cambiaron**. Una métrica de «visitas a la
@@ -244,13 +244,14 @@ etapas medibles: si distingue «abrió el calendario» de «eligió horario» de
 tiene, el recorrido directo es un solo punto y Conversion no puede decir dónde se pierde la gente en
 él — que es literalmente su bajada de pantalla. Requiere una sonda propia contra GoHighLevel.
 
-### CV14-P03 · Los 115 sin URL — la pregunta vive en `CV1-P01`
+### CV14-P03 · Los 115 sin URL — **contestada el 2026-09-20 en `CV1-10`**
 
-115 de 590 contactos no traen `url` en `atribucion_ultima`, y 60 son de septiembre. La pregunta de
-si son una cuarta familia de recorrido o un agujero en el denominador **nació en `CV1-P01`** y se
-contesta ahí. Se deja este número para que quien llegue por acá la encuentre, y **no se duplica el
-enunciado**: dos identificadores para la misma pregunta son dos preguntas que divergen el día que
-alguien conteste una.
+115 de 590 contactos no traen `url` en `atribucion_ultima`. **Son una familia con nombre**: 89 traen
+atribución completa y 88 de ésos vienen de Meta sin pisar página —formulario nativo—, y los 26
+restantes no traen nada y **son todos anteriores a septiembre**. La medición entera está en `CV1-10`.
+
+Este número apunta allá y **no duplica el enunciado**: dos identificadores para la misma pregunta son
+dos preguntas que divergen el día que alguien conteste una.
 
 ---
 

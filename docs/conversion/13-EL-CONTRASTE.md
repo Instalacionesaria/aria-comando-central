@@ -123,8 +123,9 @@ fuente de agendamiento habría creado la tercera cifra de agendamiento del produ
 
 | id | pregunta |
 |---|---|
-| `CV1-P01` | ¿Los 115 sin URL son una cuarta familia o un agujero en el denominador? *(`CV14-P03` remite acá)* |
+| ~~`CV1-P01`~~ | ~~¿Los 115 sin URL son una cuarta familia o un agujero?~~ **Contestada el 2026-09-20 en `CV1-10`: son una familia, y en septiembre no queda ningún contacto sin recorrido.** *(`CV14-P03` remite acá)* |
 | `CV1-P02` | ¿Quién es el dueño de `form completion rate`, Conversion o Lead Flow? |
+| `CV1-P03` | ¿Los dos recorridos de Meta —sin página y navegador de Facebook— son uno o dos? |
 | `CV2-P01` | ¿Con qué se calibran las bandas de «lo esperado»? |
 | `CV2-P02` | ¿El dispositivo es un corte de primera clase, con 14 de escritorio? |
 | `CV3-P01` | ¿El recorrido directo tiene etapas medibles? |
@@ -142,6 +143,6 @@ fuente de agendamiento habría creado la tercera cifra de agendamiento del produ
 | `CV14-P01` | ¿El cambio de ruta del 2026-08-31 fue deliberado? |
 | `CV14-P02` | ¿El widget de reserva deja rastro de algo más que la llegada? |
 
-**Dieciocho preguntas abiertas.** Acquisition tuvo menos y Creative también, y el motivo está en
+**Dieciocho: una quedó contestada el 2026-09-20 y una nació ese mismo día, midiendo antes de construir.** Acquisition tuvo menos y Creative también, y el motivo está en
 `CV10-11`: este departamento no tiene especificación. Tres de ellas —`CV14-P01`, `CV12-P01` y
 `CV3-P01`— **no se pueden contestar desde la base**: se contestan preguntando.

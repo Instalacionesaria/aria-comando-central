@@ -170,12 +170,68 @@ dos videos. Hoy no se puede: ver `CV11-04`.
 
 ## Preguntas abiertas
 
-### CV1-P01 · ¿Los 115 sin URL son una cuarta familia o un agujero?
+## 5 · Los que no traen URL
 
-115 de 590 contactos no traen `url` en `atribucion_ultima`, y 60 son de septiembre. Si entraron por
-un camino que no registra URL, son una **cuarta familia de recorrido** y hay que dibujarlos. Si es
-pérdida de captura, son un **agujero en el denominador** de las otras tres y hay que decirlo al lado
-de cada cifra. La diferencia cambia qué significa toda la pantalla, y la base no la desempata.
+### CV1-10 · Son una familia con nombre, no un agujero — **medido el 2026-09-20**
+
+> Esto era la pregunta abierta `CV1-P01`. **Contestada en la etapa A del plan**, midiendo antes de
+> construir, que es para lo que esa etapa existe.
+
+115 de 590 contactos no traen `url` en `atribucion_ultima`. La pregunta era si entraron por un camino
+que no registra URL —y entonces son una familia— o si es pérdida de captura —y entonces son un
+agujero en el denominador de las otras—. **Son lo primero, y se parte en dos:**
+
+| | contactos | septiembre | qué traen |
+|---|---|---|---|
+| **sin URL, con atribución** | **89** | **60** | `adId` en 87, `campaign` en 87, `utmContent` en 87; **88 de 89 con `medium: facebook` y `sessionSource: Paid Social`** |
+| sin URL y sin nada | 26 | **0** | `atribucion_ultima = {}`, todos de agosto y antes |
+
+Los 89 son **formulario nativo de Meta**: el lead se completa dentro de Facebook y nunca pisa una
+página, así que no hay URL que registrar. No es una pérdida: es el recorrido.
+
+Y los 26 sin nada **son todos anteriores a septiembre**. En la ventana viva, **cero contactos quedan
+sin recorrido nombrable**.
+
+### CV1-11 · La regla tiene tres ramas, y `Paid Social` sola no alcanza
+
+El error fácil sería clasificar por `sessionSource`. Medido: **`Paid Social` son 193 contactos y
+105 de ellos SÍ traen URL** — o sea que más de la mitad hizo clic y llegó a una página. Lo que
+identifica al formulario nativo es **la ausencia de la URL**; el `sessionSource` sólo le pone nombre.
+
+Las tres ramas, en orden:
+
+1. **Trae `url`** ⟹ la familia sale del **host** (`CV14-03`).
+2. **No trae `url` pero sí `sessionSource`** ⟹ llegó sin pisar página; la familia se nombra con el
+   `sessionSource`. Hoy son 88 de Meta y 1 de Instagram orgánico.
+3. **No trae ninguno de los dos** ⟹ **sin rastro**. 27 contactos, **ninguno de septiembre**.
+
+### CV1-12 · El reparto real de septiembre, con las seis familias
+
+| familia | septiembre | total |
+|---|---|---|
+| widget de reserva | **105 (44 %)** | 189 |
+| **formulario nativo de Meta, sin página** | **60 (25 %)** | 88 |
+| landing con VSL | 31 (13 %) | 234 |
+| **formulario nativo de Meta, navegador de Facebook** (`fbsbx.com`) | 23 (10 %) | 23 |
+| precall — **es de Appointment Flow** | 19 | 20 |
+| otra página | 3 | 9 |
+| sin rastro | **0** | 27 |
+
+**Los dos recorridos de Meta juntos son 83 de 241: más que la landing.** Y el reparto suma la cohorte
+exacta, que es lo que permite publicarlo sin una fila de «resto» que se coma la diferencia.
+
+---
+
+## Preguntas abiertas
+
+### CV1-P01 · ¿Los 115 sin URL son una cuarta familia o un agujero? — **contestada el 2026-09-20**
+
+**Son una familia, y se parte en dos.** La respuesta entera está en `CV1-10`, con su medición, y en
+septiembre no queda ningún contacto sin recorrido nombrable.
+
+Se conserva el número en vez de borrarlo: quien llegue buscando la pregunta encuentra dónde se
+contestó, y **renumerar una pregunta rompe toda cita que la nombre** — que es el mismo defecto que
+las citas corridas, en la otra dirección.
 
 ### CV1-P02 · ¿Quién es el dueño de `form completion rate`?
 
@@ -184,3 +240,11 @@ de Lead Flow**, no de Conversion. Las dos lecturas son defendibles —Lead Flow 
 la landing, Conversion mide qué pasa dentro de ella— y el documento no desempata. Mientras tanto se
 construye en Conversion y **se declara el solapamiento**; si Conversation lo publica algún día, uno
 de los dos consume al otro y no lo recalcula, que es el `§ 2.4`.
+
+### CV1-P03 · ¿Los dos recorridos de Meta son uno o dos?
+
+`fbsbx.com` significa que la persona **abrió una página** dentro del navegador de Facebook y no
+sabemos cuál; «sin página» significa que no abrió ninguna. Son dos hechos distintos y hoy están
+separados. Si resultan ser el mismo formulario visto de dos maneras, son **una familia de 83** y no
+dos de 60 y 23 — y eso cambia cuál es el recorrido mayoritario de septiembre. **Se contesta
+preguntando por la configuración de la campaña**, no desde la base.

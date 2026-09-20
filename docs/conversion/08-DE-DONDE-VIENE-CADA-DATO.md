@@ -97,7 +97,48 @@ tres anteriores y se dice distinto (`CV5-05`).
 
 ---
 
-## 4 · Cómo se midió cada cobertura
+## 4 · La etapa A: por qué NO hace falta ninguna migración
+
+### CV8-18 · Medido el 2026-09-20, antes de escribir una línea del back
+
+El plan dejaba abierto si el host clasificado se materializa en una columna generada o se calcula en
+cada consulta. **Se calcula**, y estas son las cuatro cifras que lo deciden:
+
+| qué se midió | resultado |
+|---|---|
+| Tamaño de la tabla | **590 filas, 3.784 kB** |
+| Índices que ya tiene | `contactos_pkey`, `_ghl_por_org`, `_por_territorio`, `_buzon`, `_por_asignado`, **`_por_alta`** |
+| Costo de la consulta de clasificación con su tasa de agenda, ventana de 30 días | **58 ms**, con `Index Scan using contactos_por_alta` sobre 335 filas |
+| Columnas que harían falta | **ninguna**: `atribucion_ultima` está poblada y tipada |
+
+La ventana de cohorte ya está indexada por `contactos_por_alta`, que es el único índice que esta
+consulta necesita. Una columna generada para el host añadiría peso en cada escritura a cambio de
+ahorrar milisegundos sobre 590 filas — que es exactamente el argumento que
+`db/migraciones/052_el_indice_que_la_048_dejo_debiendo.sql` dejó escrito para los índices sin
+consumidor.
+
+**Se revisa si el volumen crece.** El umbral no está calibrado y se declara: con 590 filas cualquier
+plan sirve, y el día que sean cien mil habrá que volver a medir.
+
+### CV8-19 · Y el dato no tiene zona gris, que es lo que habría obligado a normalizar
+
+La trampa que habría forzado una columna: que la clave `url` existiera con un valor vacío, y
+entonces «no hay dato» y «hay una URL vacía» colapsaran. **Medido: no ocurre.**
+
+| forma | contactos |
+|---|---|
+| trae la clave `url` | 475 |
+| la clave está **vacía** | **0** |
+| la clave es `null` de JSON | **0** |
+| el valor no empieza por `http` | **0** |
+| `atribucion_ultima` es `{}` entero | 26 |
+
+La distinción «trae la clave / no la trae» es limpia, así que el módulo puede apoyarse en ella sin
+normalizar nada antes. Es la regla de los dos ceros comprobada **en el origen** y no asumida.
+
+---
+
+## 5 · Cómo se midió cada cobertura
 
 Todas las mediciones de esta carpeta se hicieron con:
 
@@ -113,7 +154,7 @@ Las consultas de cada cifra están al pie de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-AP
 
 ---
 
-## 5 · Lo que esta medición corrige de lo ya publicado
+## 6 · Lo que esta medición corrige de lo ya publicado
 
 ### CV8-16 · `03-CONVERSION.md:148-150` midió la URL sobre la columna de menos cobertura
 
