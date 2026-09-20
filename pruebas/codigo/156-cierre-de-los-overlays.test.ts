@@ -74,3 +74,56 @@ test('ningún módulo de PANTALLA registra el cierre de un overlay compartido', 
     }
   }
 });
+
+test('el que ABRE un overlay compartido lo cierra con el del armazón, no con un nombre propio', () => {
+  /* ── LA TERCERA FORMA DE ROMPER ESTO, Y ES LA QUE ESTABA ROTA ──────────────
+   *
+   * Las dos pruebas de arriba cubren que el armazón registre los cierres y que ningún módulo de
+   * pantalla se los apropie. Falta la tercera: que un módulo LLAME a un cierre que no existe.
+   *
+   * `lib/aios/conversion.js:618` hacía:
+   *
+   *     el.onclick = ()=>{ closeReco(); openStep(el.dataset.goto); };
+   *
+   * y `closeReco` **no estaba definida en ningún archivo de la aplicación** — sólo era una función
+   * global del prototipo HTML, que no se carga. Los módulos de `lib/aios/` son `.js`, así que
+   * `tsc --noEmit` no los mira, y ninguno tenía imports: nada lo detectaba.
+   *
+   * El síntoma no era una excepción visible sino una ausencia: clicar una de las tres filas del
+   * plan de acción lanzaba `ReferenceError`, **el `openStep()` de al lado nunca se ejecutaba**, y
+   * el modal se quedaba encima con su velo. Es el mismo modo de fallo que las otras dos pruebas
+   * impiden, en la tercera dirección: allá faltaba el cierre, acá la llamada apuntaba a un nombre
+   * fantasma.
+   *
+   * Medido el 2026-09-20 sobre los nueve módulos de `lib/aios/`: era el único caso. */
+  const dir = new URL('lib/aios/', RAIZ);
+  const modulos = readdirSync(dir).filter((n) => n.endsWith('.js'));
+
+  /** Los nombres que el prototipo HTML usaba y que la aplicación NO define. */
+  const DEL_PROTOTIPO = ['closeReco', 'closeDrawer', 'openReco', 'openDrawer'] as const;
+
+  for (const nombre of modulos) {
+    const fuente = leer(`lib/aios/${nombre}`);
+    const sinComentarios = fuente.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+
+    for (const fantasma of DEL_PROTOTIPO) {
+      assert.doesNotMatch(
+        sinComentarios,
+        new RegExp(String.raw`(?<![\w.$])` + fantasma + String.raw`\s*\(`),
+        `\`${nombre}\` llama a \`${fantasma}()\`, que es del prototipo HTML y no existe en la ` +
+          'aplicación. Lanza `ReferenceError` y lo que venga después en ese manejador no corre. ' +
+          'Los cierres se importan de `lib/aios/shell.js`: `cerrarElCajon` y `cerrarElModal`.',
+      );
+    }
+  }
+
+  /* Y la otra mitad: el que abre `#recoModal` tiene que poder cerrarlo. Sin esto, borrar la llamada
+     entera —en vez de arreglarla— dejaría la prueba de arriba en verde y el modal igual de pegado. */
+  const conversion = leer('lib/aios/conversion.js');
+  assert.match(
+    conversion,
+    /import \{[^}]*cerrarElModal[^}]*\} from '\.\/shell'/,
+    '`conversion.js` abre `#recoModal` y ya no importa `cerrarElModal` del armazón: sus filas del ' +
+      'plan de acción vuelven a dejar el modal abierto encima del cajón que intentan abrir.',
+  );
+});

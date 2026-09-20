@@ -15,14 +15,14 @@
 
 | conjunto | cantidad | línea |
 |---|---|---|
-| `FRICTIONS` — títulos | 11 | `:43-77` |
-| `FRICTIONS` — descripciones | 11 | `:43-77` |
-| `WINS` — títulos | 4 | `:86-95` |
-| `WINS` — descripciones | 4 | `:86-95` |
-| `ACTIONS` — recomendaciones | 6 | `:98-105` |
-| `Lectura:` — diagnósticos | 6 | `:411`, `:457`, `:476`, `:500`, `:517`, `:546` |
-| `El patrón detrás` | 2 | `:608-609` |
-| `MINOR` — inertes | 3 | `:80-84` |
+| `FRICTIONS` — títulos | 11 | `:45-79` |
+| `FRICTIONS` — descripciones | 11 | `:45-79` |
+| `WINS` — títulos | 4 | `:88-97` |
+| `WINS` — descripciones | 4 | `:88-97` |
+| `ACTIONS` — recomendaciones | 6 | `:100-107` |
+| `Lectura:` — diagnósticos | 6 | `:413`, `:459`, `:478`, `:502`, `:519`, `:548` |
+| `El patrón detrás` | 2 | `:610-611` |
+| `MINOR` — inertes | 3 | `:82-86` |
 | **total** | **47** | |
 
 **Estado** · **Ninguna sale de un cálculo.** Y las descripciones traen además trece cifras
@@ -37,7 +37,7 @@ Es el mismo censo que Creative hizo con sus 201 literales y sus 30 frases, sólo
 
 ### CV6-02 · Ordenar las fugas por cuánta gente cuestan
 
-**Rastro** · `conversion.js:305` define `SEV = {critica:0, alta:1, media:2}` y `:312` ordena por
+**Rastro** · `conversion.js:307` define `SEV = {critica:0, alta:1, media:2}` y `:314` ordena por
 severidad y luego por `loss` descendente.
 **Estado** · **Requisito, y es la decisión correcta.** Ordenar por severidad declarada sola dejaría
 arriba lo que alguien rotuló como grave; ordenar por personas perdidas deja arriba lo que cuesta
@@ -46,14 +46,14 @@ local.
 
 ### CV6-03 · Sólo las tres primeras entran al plan
 
-**Rastro** · `rank.slice(0,3)` (`conversion.js:580`, `:597`), bajo el rótulo `Qué hacer primero`.
+**Rastro** · `rank.slice(0,3)` (`conversion.js:582`, `:599`), bajo el rótulo `Qué hacer primero`.
 **Estado** · **Requisito.** Un plan de doce acciones no es un plan. Tres es una decisión de producto
 defendible y se conserva; lo que hay que declarar es el criterio de corte, que hoy está implícito en
 un `slice`.
 
 ### CV6-04 · El bloque «No tocar»
 
-**Rastro** · `conversion.js:612-615`, las cuatro `WINS` completas.
+**Rastro** · `conversion.js:614-617`, las cuatro `WINS` completas.
 **Estado** · **Requisito, y poco común.** Una pantalla que sólo enumera problemas empuja a cambiar lo
 que funciona. Decir explícitamente qué no tocar es la otra mitad de una recomendación, y el
 `§ 18.11:1401-1417` del documento trae el caso exacto: *«El CTR del anuncio B cayó 22 %… El anuncio B
@@ -61,8 +61,8 @@ sigue liderando en revenue… Mantenerlo activo.»*
 
 ### CV6-05 · Cada fricción declara a quién le toca
 
-**Rastro** · El campo `to` de `FRICTIONS`, pintado como `«lo resuelve {área}»` en la alarma (`:326`),
-en las observaciones (`:383`) y en el plan (`:601`).
+**Rastro** · El campo `to` de `FRICTIONS`, pintado como `«lo resuelve {área}»` en la alarma (`:328`),
+en las observaciones (`:385`) y en el plan (`:603`).
 **Estado** · **Requisito, y es el `§ 7.2:393-405`**: cada tarea tiene responsable. Los destinatarios
 que la maqueta usa —`Creative`, `Sales`, `Conversation`, `Acquisition`— son **departamentos reales**
 del `§ 4`, así que el vocabulario es correcto.
@@ -76,12 +76,12 @@ del `§ 4`, así que el vocabulario es correcto.
 
 ### CV6-06 · Se asume que cada arreglo recupera el 45 %
 
-**Rastro** · `const recover = x => Math.round(x.loss*0.45);` (`conversion.js:579`).
+**Rastro** · `const recover = x => Math.round(x.loss*0.45);` (`conversion.js:581`).
 **Estado** · **Sin justificación, sin comentario y sin fuente.** Ese 45 % alimenta la cabecera del
-modal —`Si haces las tres · +N citas recuperables`— y el salto de conversión —`X% a Y%` (`:587-593`)—,
+modal —`Si haces las tres · +N citas recuperables`— y el salto de conversión —`X% a Y%` (`:589-595`)—,
 o sea **las dos cifras más prominentes del plan de acción salen de un número inventado**.
 
-Y el cálculo de `convNew` mete las citas «recuperadas» en el numerador de `agenda/sesiones` (`:582`),
+Y el cálculo de `convNew` mete las citas «recuperadas» en el numerador de `agenda/sesiones` (`:584`),
 que afirma que una fuga arreglada se convierte en cita con probabilidad uno.
 
 **Lo que sobrevive**: estimar el impacto de una acción antes de hacerla es el `§ 14:1003-1018`
@@ -91,7 +91,7 @@ recuperación.**
 
 ### CV6-07 · «El patrón detrás» trae dos cifras que no recalculan
 
-**Rastro** · `conversion.js:608-609`. La segunda dice: *«La conversión en escritorio es **42%** y en
+**Rastro** · `conversion.js:610-611`. La segunda dice: *«La conversión en escritorio es **42%** y en
 móvil **19%**.»*
 **Estado** · Los dos números son literales. Coinciden por casualidad con lo que daría `CV.desktop` y
 `CV.mobile`, pero **no se calculan**: si alguien cambiara `CV`, la frase seguiría diciendo 42 y 19.
@@ -107,9 +107,9 @@ departamento. Pero una afirmación así **necesita su evidencia al lado**, y hoy
 
 ### CV6-08 · Hay un nombre de persona en pantalla, culpado de tres fallas que no existen
 
-**Rastro** · `Kevin · técnico` aparece en `conversion.js:46`, `:67` y `:73`, como responsable de tres
+**Rastro** · `Kevin · técnico` aparece en `conversion.js:48`, `:69` y `:75`, como responsable de tres
 fricciones. Se renderiza literalmente: `«lo resuelve Kevin · técnico»` en el bloque de alarma
-(`:326`), en las observaciones (`:383`) y en el plan de acción (`:601`).
+(`:328`), en las observaciones (`:385`) y en el plan de acción (`:603`).
 
 **Estado** · Las tres fricciones son inventadas —*«El formulario devuelve error en Safari móvil»*,
 *«La página tarda 4.1s en cargar en móvil»*, *«12% reintenta el envío»*— así que la pantalla **le
@@ -121,8 +121,8 @@ la IA— y estuvieron en producción mostrándolos»*. **Es el mismo defecto, to
 
 ### CV6-09 · Las siete puertas al panel de las catorce personas inventadas
 
-**Rastro** · Las siete cifras de la tira de KPI llevan `data-leads` (`conversion.js:171`, valores en
-`:181`, `:184`, `:194`, `:197`, `:206`, `:208`, `:210`). Un oyente global las captura
+**Rastro** · Las siete cifras de la tira de KPI llevan `data-leads` (`conversion.js:173`, valores en
+`:183`, `:186`, `:196`, `:199`, `:208`, `:210`, `:212`). Un oyente global las captura
 (`lib/aios/leads-group.js:79-85`) y abre un panel con `POOL` (`:14-29`): **catorce nombres completos
 de personas y empresas**, con puntaje ICP, campaña, estado comercial y **montos en dólares**
 —`$4,500`, `$9,600`, `$6,000`—.
@@ -133,13 +133,17 @@ dieciocho puertas. **Conversion todavía tiene siete.**
 
 ### CV6-10 · Las constantes que no se leen nunca
 
-`MINOR` (`:80-84`) — tres hallazgos con el comentario *«por debajo del umbral de impacto: no se
-muestran, se cuentan»* (`:79`): **ni se muestran ni se cuentan**.
-`SEVLBL` (`:300`) y `TINT` (`:299`) — nunca referenciadas.
-`SCROLL` (`:129-132`) — duplica `ZONES`, no se usa.
-`STEPS[].n` y `STEPS[].src` (`:34-40`), `FRICTIONS[].ic` / `.color` / `.state`, `WINS[].ic` /
-`.color` — campos muertos. La alarma escribe `⛔` a mano (`:324`) y las observaciones colorean por
-severidad vía CSS.
+Todas en `lib/aios/conversion.js`, y **con el archivo escrito en cada una**: una cita corta hereda
+su archivo de la anterior, y acá la anterior es de otro módulo.
+
+| constante | dónde | qué pasa |
+|---|---|---|
+| `MINOR` | `conversion.js:82-86` | tres hallazgos con el comentario *«por debajo del umbral de impacto: no se muestran, se cuentan»* (`conversion.js:81`): **ni se muestran ni se cuentan** |
+| `SEVLBL` | `conversion.js:302` | nunca referenciada |
+| `TINT` | `conversion.js:301` | nunca referenciada |
+| `SCROLL` | `conversion.js:131-134` | duplica `ZONES`, no se usa |
+| `STEPS[].n` y `STEPS[].src` | `conversion.js:36-42` | la plantilla no los lee y el CSS esconde el nodo |
+| `FRICTIONS[].ic` / `.color` / `.state`, `WINS[].ic` / `.color` | `conversion.js:45-79` y `:88-97` | campos muertos: la alarma escribe `⛔` a mano (`conversion.js:326`) y las observaciones colorean por severidad vía CSS |
 
 ---
 

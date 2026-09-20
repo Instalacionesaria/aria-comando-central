@@ -27,9 +27,9 @@ const CV = {
 };
 ```
 
-`lib/aios/conversion.js:8-12`. Todo número de la pantalla es `CV[dispositivo][paso] ×
-FACTOR[periodo]` (`:13`) redondeado, o un literal suelto. El propio archivo lo admite en la línea de
-al lado: *«datos por dispositivo y periodo — reemplazar por la consulta real»* (`:7`).
+`lib/aios/conversion.js:10-14`. Todo número de la pantalla es `CV[dispositivo][paso] ×
+FACTOR[periodo]` (`:15`) redondeado, o un literal suelto. El propio archivo lo admite en la línea de
+al lado: *«datos por dispositivo y periodo — reemplazar por la consulta real»* (`:9`).
 
 No hay ninguna ruta de servidor detrás: `ls app/api/` devuelve **diecinueve carpetas y ninguna es
 `conversion`**, y la sección se declara con `sinOperacionesTodavia: true`
@@ -147,13 +147,24 @@ por anuncio y por día, en `negocio.metricas_de_anuncio.acciones`.
 Si un nombre de archivo de estas tablas no está en la carpeta, **manda la carpeta**. Cada requisito se
 cita por su número completo —`CV2-07`, `CV8-12`— desde cualquier documento.
 
+### La convención de las citas cortas, y dónde muerde
+
+Una cita corta —`` `:398` ``— hereda el archivo de la mención anterior. Es cómoda y **falla en
+silencio**: el 2026-09-20, al agregarle a `conversion.js` las dos líneas del `import` de la etapa 0,
+**133 citas de esta carpeta quedaron corridas**, y doce de ellas no se pudieron corregir
+automáticamente porque su antecedente era otro archivo. Se corrigieron a mano y **se escribieron
+explícitas**.
+
+La regla que queda: **una cita corta sólo se usa cuando la mención con archivo está en el mismo
+párrafo.** En una tabla, en una lista o después de nombrar otro archivo, va el nombre completo.
+
 ---
 
 ## Por qué el prefijo es `CV` y no `C`
 
 `C` es de Creative (`C1-01`, `C2-07`). `CV` es además el prefijo que el propio prototipo usa en todo:
-la constante `CV` (`conversion.js:8`), los contenedores `#cvStats`, `#cvInfo`, `#cvWorst`,
-`#cvJourney`, `#cvAlarm`, la variable `cvPeriod` (`:139`) y las funciones `cvRenderStats`,
+la constante `CV` (`conversion.js:10`), los contenedores `#cvStats`, `#cvInfo`, `#cvWorst`,
+`#cvJourney`, `#cvAlarm`, la variable `cvPeriod` (`:141`) y las funciones `cvRenderStats`,
 `cvRenderJourney`, `cvRenderAll`.
 
 ---

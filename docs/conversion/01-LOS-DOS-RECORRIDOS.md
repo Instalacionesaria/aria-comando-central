@@ -12,8 +12,8 @@
 
 ### CV1-01 · La unidad es el CONTACTO, no la sesión — y no por elección
 
-**Rastro** · El prototipo cuenta sesiones: `CV.all.sesiones = 866` (`lib/aios/conversion.js:8`), y
-`#cvInfo` publica *«N sesiones · periodo»* (`:215`). El `§ 5.1:210-212` del documento funcional
+**Rastro** · El prototipo cuenta sesiones: `CV.all.sesiones = 866` (`lib/aios/conversion.js:10`), y
+`#cvInfo` publica *«N sesiones · periodo»* (`:217`). El `§ 5.1:210-212` del documento funcional
 nombra tres entidades —`Landing Session`, `VSL Session`, `Form Submission`— y el `§ 5.2:228-235` pone
 `visitor_id` y `session_id` en el centro de la traza.
 
@@ -54,7 +54,7 @@ tiene lectores.
 
 **Rastro** · `CC_Arquitectura_Funcional.md:28-39` define el recorrido:
 `Anuncio → Landing → VSL → Formulario → Lead calificado → Agendamiento → …`. El prototipo lo dibuja
-como cinco pasos encadenados (`conversion.js:34-40`).
+como cinco pasos encadenados (`conversion.js:36-42`).
 
 **Estado** · **Medido el 2026-09-20, dejó de ser el camino mayoritario el 2026-08-31:**
 
@@ -71,8 +71,8 @@ Sumar `landing + widget` afirmaría que son **etapas de un mismo camino**, y son
 alternativos**: quien agenda directo en `calls.ariaia.com` no pasó por la landing ni la iba a pasar.
 
 El prototipo comete exactamente ese error en su forma más pura: sus cinco pasos son una cadena
-—`.jarrow` dibuja una flecha entre cada par (`conversion.js:262`)— y cada paso publica su porcentaje
-**sobre el total de visitas** (`:266`), con el subtítulo *«porcentajes sobre el total de visitas»*
+—`.jarrow` dibuja una flecha entre cada par (`conversion.js:264`)— y cada paso publica su porcentaje
+**sobre el total de visitas** (`:268`), con el subtítulo *«porcentajes sobre el total de visitas»*
 (`components/views/ConversionView.jsx:90-92`). Eso es válido cuando hay un solo camino. Hoy no lo
 hay.
 
@@ -155,7 +155,7 @@ de JavaScript.
 ### CV1-09 · El precall NO es de este departamento
 
 **Rastro** · Regla 7, `docs/estado actual/03-CONVERSION.md:246`. El prototipo lo dibuja en el
-paso «Gracias» como «video de bienvenida» (`conversion.js:543-546`).
+paso «Gracias» como «video de bienvenida» (`conversion.js:545-548`).
 
 **Estado** · El consumo del video precall es el `§ 10.6` del documento —**Appointment Flow**— y ya
 está construido en `lib/negocio/consumoDelPrecall.ts`, con su población, su piso y sus avisos. Si

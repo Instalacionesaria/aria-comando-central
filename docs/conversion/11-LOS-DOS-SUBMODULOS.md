@@ -95,8 +95,8 @@ regresión es ese párrafo.**
 
 Publicar *«0 % de visionado promedio del VSL»* sería técnicamente cierto y completamente engañoso.
 Peor: el prototipo cruza el VSL con la asistencia en dos sitios —*«Vieron menos del 40% del VSL · 31
-contactos»* (`conversion.js:496-498`) y *«Vieron más del 60% del VSL · Califican 4 de cada 5»*
-(`:522`)—, o sea que un cero universal convertiría a todos los contactos en «riesgo de no-show».
+contactos»* (`conversion.js:498-500`) y *«Vieron más del 60% del VSL · Califican 4 de cada 5»*
+(`:524`)—, o sea que un cero universal convertiría a todos los contactos en «riesgo de no-show».
 
 Y el `§ 10.7:761` del documento pide *«Show rate según consumo del VSL»* como KPI de Appointment
 Flow: **ese KPI también está bloqueado por este medidor**, en otra pantalla.

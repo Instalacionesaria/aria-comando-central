@@ -17,11 +17,11 @@
 | ámbito | literales |
 |---|---|
 | **total fuera de comentarios** | **538** |
-| en el bloque de constantes de datos (`:8-137`) | 192 |
-| en el SVG de la curva de retención (`:436-451`) | 89 |
-| en la rampa de color del mapa de calor (`:338-341`) | 12 |
+| en el bloque de constantes de datos (`:10-139`) | 192 |
+| en el SVG de la curva de retención (`:438-453`) | 89 |
+| en la rampa de color del mapa de calor (`:340-343`) | 12 |
 
-El motor entero son **dieciocho**: `CV` (`:8-12`), multiplicado por `FACTOR[periodo]` (`:13`). Todo
+El motor entero son **dieciocho**: `CV` (`:10-14`), multiplicado por `FACTOR[periodo]` (`:15`). Todo
 lo demás es constante fija que no reacciona al período ni al dispositivo.
 
 ### CV9-02 · Cuarenta y siete frases de guion
@@ -35,18 +35,18 @@ presentadas como hechos.
 de «fuente viva».
 **Estado** · **No hay integración, ni credencial, ni variable de entorno, ni tabla.** Sólo cadenas de
 texto en el JSX y en `conversion.js`, donde además se declaran como origen de cada cajón —`Clarity ·
-N sesiones` (`:398`), `VTurb · N reproducciones` (`:420`)—.
+N sesiones` (`:400`), `VTurb · N reproducciones` (`:422`)—.
 
 Esto **no es andamiaje**: el andamiaje existe para que la maqueta tenga un número que dibujar. Esto
 es una **afirmación falsa sobre el sistema**, y del tipo más caro: alguien que mire la pantalla
 concluye que la telemetría está conectada y que los números salen de ahí.
 
 Y hay una quinta fuente que ni siquiera figura en los chips: el cajón de `Citas calificadas` declara
-`CRM` (`conversion.js:506`).
+`CRM` (`conversion.js:508`).
 
 ### CV9-04 · Un nombre de persona, culpado de tres fallas inventadas
 
-Ver `CV6-08`. `Kevin · técnico` en `conversion.js:46`, `:67`, `:73`, renderizado en tres sitios de la
+Ver `CV6-08`. `Kevin · técnico` en `conversion.js:48`, `:69`, `:75`, renderizado en tres sitios de la
 pantalla.
 
 ### CV9-05 · Siete puertas a catorce personas inventadas con montos en dólares
@@ -58,17 +58,17 @@ Ver `CV6-09`. Las siete cifras de la tira de KPI llevan `data-leads` y abren el 
 
 | defecto | dónde | qué pasa |
 |---|---|---|
-| «Calificadas» tiene dos fuentes | `:163-164` contra `:9-11` | con `hist`, el panel dice 482 y el cajón 479 |
-| «Las 84 restantes» | `:500` | la propia pantalla calcula 283 y 286 en otros dos sitios |
-| El período inicial | `:139` contra `ConversionView.jsx:45` | la pastilla dice «7 días» y los números son del histórico |
-| `FIELDS` no escala | `:134-137` contra `:465` | la cabecera dice 1.047 y la tabla arranca en 308 |
-| `Tiempo medio` | `:234` | siempre dice `▲ mejor` sin comparar nada |
-| El `0.94` | `:165` | sin justificación ni comentario |
-| El rango personalizado | `:640-644` | fuerza el período a `'mes'` sea cual sea el rango: 3 días y 90 días dan los mismos números |
+| «Calificadas» tiene dos fuentes | `conversion.js:165-166` contra `:11-13` | con `hist`, el panel dice 482 y el cajón 479 |
+| «Las 84 restantes» | `conversion.js:502` | la propia pantalla calcula 283 y 286 en otros dos sitios |
+| El período inicial | `conversion.js:141` contra `components/views/ConversionView.jsx:45` | la pastilla dice «7 días» y los números son del histórico |
+| `FIELDS` no escala | `conversion.js:136-139` contra `:467` | la cabecera dice 1.047 y la tabla arranca en 308 |
+| `Tiempo medio` | `conversion.js:236` | siempre dice `▲ mejor` sin comparar nada |
+| El `0.94` | `conversion.js:167` | sin justificación ni comentario |
+| El rango personalizado | `conversion.js:642-646` | fuerza el período a `'mes'` sea cual sea el rango: 3 días y 90 días dan los mismos números |
 
 ### CV9-07 · Las constantes y los campos muertos
 
-`MINOR` (`:80-84`), `SEVLBL` (`:300`), `TINT` (`:299`), `SCROLL` (`:129-132`); los campos
+`MINOR` (`conversion.js:82-86`), `SEVLBL` (`:302`), `TINT` (`:301`), `SCROLL` (`:131-134`); los campos
 `STEPS[].n` y `STEPS[].src`, `FRICTIONS[].ic` / `.color` / `.state`, `WINS[].ic` / `.color`; la rama
 `stepDetail('calificados')` entera (`:504-528`, inalcanzable); la guarda `.fr-send` (`:570`) sobre
 una clase que este módulo nunca emite; y el período `'tri'` de `FACTOR` y `PREV`, que ningún botón
@@ -90,10 +90,16 @@ puede seleccionar.
 `ConversionView.jsx` queda como **cáscara que documenta qué se tiró**, con la forma de
 `components/views/CreativeView.jsx`.
 
-### CV9-09 · El defecto que bloquea el borrado
+### CV9-09 · El defecto que bloqueaba el borrado — **cerrado el 2026-09-20**
 
-Ver `CV4-10`: `closeReco()` no existe. Hay que resolverlo **antes**, no con el borrado, porque hoy ya
-está roto y el borrado sólo lo haría desaparecer sin que nadie se entere de que estuvo ahí.
+Ver `CV4-10`: `closeReco()` no existía. Se resolvió **antes** del borrado y no con él, porque estaba
+roto en producción y borrarlo lo habría hecho desaparecer sin que nadie se enterara de que estuvo
+ahí.
+
+**Y el borrado ya no deja overlays huérfanos**, comprobado el 2026-09-20 por los dos lados:
+`conversion.js` abre `#drawer` (`:578-580`) y `#recoModal` (`:640-642`), y los dos los cierra
+`lib/aios/shell.js:192-200`. El `#lgPanel` que abren las siete puertas del KPI lo cierra su propio
+módulo (`lib/aios/leads-group.js:74`), que **no se borra** porque lo usan otras pantallas.
 
 ### CV9-10 · El CSS se mide emisor por emisor antes de tocarlo
 
@@ -139,6 +145,6 @@ personas y no en puntos porcentuales es la mejor de la maqueta (`CV3-06`).
 
 ### CV9-14 · La meta de cada cajón
 
-`CRM · 479 de 765 citas · histórico` (`conversion.js:506`) es la única línea de toda la pantalla que
+`CRM · 479 de 765 citas · histórico` (`conversion.js:508`) es la única línea de toda la pantalla que
 declara fuente, numerador, denominador y ventana a la vez. Es exactamente lo que el `§ 18.5:1247`
 exige, y se conserva como forma obligatoria de cada bloque.

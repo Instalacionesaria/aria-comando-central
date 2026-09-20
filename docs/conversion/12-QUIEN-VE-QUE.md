@@ -30,7 +30,7 @@ prototipo le asigna tres de sus once fricciones — con nombre propio, ver `CV6-
 
 ### CV12-02 · Los destinatarios que la maqueta usa son departamentos, no roles
 
-**Rastro** · El campo `to` de `FRICTIONS` (`lib/aios/conversion.js:43-77`) reparte las once
+**Rastro** · El campo `to` de `FRICTIONS` (`lib/aios/conversion.js:45-79`) reparte las once
 fricciones entre `Creative` (4), `Sales` (2), `Conversation` (1), `Acquisition` (1) y
 `Kevin · técnico` (3).
 

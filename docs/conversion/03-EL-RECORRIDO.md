@@ -11,7 +11,7 @@
 
 ### CV3-01 · La cadena que el prototipo dibuja
 
-**Rastro** · `lib/aios/conversion.js:34-40`, con el subtítulo *«porcentajes sobre el total de visitas
+**Rastro** · `lib/aios/conversion.js:36-42`, con el subtítulo *«porcentajes sobre el total de visitas
 · abre un paso para ver su evidencia»* (`components/views/ConversionView.jsx:90-92`).
 
 | # | rótulo | subtítulo | fuente que el prototipo declara |
@@ -30,15 +30,15 @@
 | VSL | **no** — 79 escrituras, 79 ceros (`CV14-07`) |
 | Formulario | **sí sobre el histórico**, cero desde el 2026-08-31 (`CV2-04`) |
 | Agenda | **sí, y es el único completo** — `negocio.citas`, 19 columnas, fuente propia y viva |
-| Gracias | **no** — sus seis cifras son literales (`conversion.js:535-540`) |
+| Gracias | **no** — sus seis cifras son literales (`conversion.js:537-542`) |
 
 **Uno de cinco tiene fuente completa.** Y los campos `n:'01'…'05'` y `src:'Clarity'/'VTurb'/'Calendario'`
 de `STEPS` **no se leen nunca**: la plantilla no los usa y el CSS esconde el nodo (`app/aios.css:926`).
 
 ### CV3-02 · La cadena sólo es un embudo si hay un solo camino
 
-**Rastro** · Cada paso publica `pct(vals[i], vals[0])` (`conversion.js:266`) y `.jarrow` dibuja una
-flecha entre cada par (`:262`).
+**Rastro** · Cada paso publica `pct(vals[i], vals[0])` (`conversion.js:268`) y `.jarrow` dibuja una
+flecha entre cada par (`:264`).
 
 **Estado** · Es correcto **cuando todos pasan por el mismo sitio**. Hoy el 44 % agenda directo sin
 pisar la landing (`CV1-03`), así que la flecha entre `Landing` y `Agenda` afirma un paso que la
@@ -53,21 +53,21 @@ cambia es que hay **dos recorridos** y cada uno tiene las suyas.
 
 ### CV3-03 · La forma es un requisito; el umbral, no
 
-**Rastro** · `BANDS` (`conversion.js:21-25`), 24 literales, con la metodología declarada en el
-comentario de `:18-20`.
+**Rastro** · `BANDS` (`conversion.js:23-27`), 24 literales, con la metodología declarada en el
+comentario de `:20-22`.
 **Estado** · Ver `CV2-08`: la metodología está escrita y **no se ejecuta**. La barra visual añade
-además un margen inventado de **±8 puntos** (`conversion.js:271`) y recorta la marca entre 2 % y 98 %
-(`:272`).
+además un margen inventado de **±8 puntos** (`conversion.js:273`) y recorta la marca entre 2 % y 98 %
+(`:274`).
 
 **Lo que sobrevive**: comparar cada cifra contra una referencia en vez de dejarla suelta es una buena
-decisión de producto, y `title="esperado LO–HI%"` (`:274`) la hace auditable de un vistazo. Lo que
+decisión de producto, y `title="esperado LO–HI%"` (`:276`) la hace auditable de un vistazo. Lo que
 hay que resolver es contra qué, y está en `CV2-P01`.
 
 ### CV3-04 · La clasificación en tres estados, y el cuarto que gana siempre
 
-**Rastro** · `bandState` (`conversion.js:27-32`) devuelve `bajo` · `sobre` · `ok`, con los textos
+**Rastro** · `bandState` (`conversion.js:29-34`) devuelve `bajo` · `sobre` · `ok`, con los textos
 `«bajo lo esperado · N pts»`, `«sobre lo esperado · +N pts»` y `«en rango»`. `crit` gana sobre la
-banda (`:252`, `:257`), y hay un quinto estado `na` que el CSS pinta apagado
+banda (`:254`, `:259`), y hay un quinto estado `na` que el CSS pinta apagado
 (`app/aios.css:1139`).
 
 **Estado** · **Los cinco estados son el requisito, y `na` es el importante.** Es «no se puede decir»,
@@ -77,7 +77,7 @@ completa. Es el mismo `fatigado: boolean | null` de `lib/negocio/fatigaDelCreati
 
 ### CV3-05 · El contador de pasos fuera de rango
 
-**Rastro** · `#cvWorst` (`conversion.js:291-294`): `«N paso(s) bajo lo esperado»` en `--warn`, o
+**Rastro** · `#cvWorst` (`conversion.js:293-296`): `«N paso(s) bajo lo esperado»` en `--warn`, o
 `«todos los pasos en rango»` en `--ok`.
 **Estado** · **Requisito, con una corrección**: sólo cuenta los pasos 2-5 (`STEPS.slice(1)`), lo cual
 es correcto —el primero no tiene con qué compararse—, pero **no distingue «en rango» de «no se puede
@@ -90,14 +90,14 @@ midió ninguno. Es la regla del silencio al revés: afirmar salud por ausencia d
 
 ### CV3-06 · El `−N` en personas es la mejor idea del prototipo
 
-**Rastro** · `conversion.js:286`, la esquina inferior derecha de cada tarjeta.
+**Rastro** · `conversion.js:288`, la esquina inferior derecha de cada tarjeta.
 **Estado** · Ver `CV2-13`. Un porcentaje dice **dónde** está el problema; una resta en personas dice
 **cuánto cuesta**, y es lo que permite ordenar las fugas por impacto en vez de por severidad
 declarada. Se conserva entero.
 
 ### CV3-07 · La sub-línea que dice cuántos son, y no sólo qué porcentaje
 
-**Rastro** · `.j-sub` (`conversion.js:280`): `«<b>N</b> le dan play»`, más el sufijo `«N pts bajo lo
+**Rastro** · `.j-sub` (`conversion.js:282`): `«<b>N</b> le dan play»`, más el sufijo `«N pts bajo lo
 esperado»` **sólo cuando cae por debajo**.
 **Estado** · **Requisito, y es la regla del silencio bien aplicada**: el sufijo aparece sólo cuando
 hay algo que decir. Y publicar el conteo al lado del porcentaje es el par `{con, sobre}` que este
@@ -110,7 +110,7 @@ cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:315-316`)—.
 
 ### CV3-08 · Ocho de las diez son literales que no reaccionan a nada
 
-**Rastro** · `keyMetrics()` (`conversion.js:220-238`).
+**Rastro** · `keyMetrics()` (`conversion.js:222-240`).
 
 | paso | métrica 1 | métrica 2 |
 |---|---|---|
@@ -122,7 +122,7 @@ cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:315-316`)—.
 
 **Estado** · Sólo `Lo completan` y `Calificadas` se recalculan; **las otras ocho no cambian al mover
 el período ni el dispositivo**. Y `Tiempo medio` siempre dice `▲ mejor` sin comparar nada
-(`conversion.js:234`).
+(`conversion.js:236`).
 
 **Lo que sobrevive**: la decisión de que cada paso lleve **dos** cifras de contexto además de su tasa.
 Es la misma forma que Creative resolvió metiendo la interacción y el click-to-landing en la nota de

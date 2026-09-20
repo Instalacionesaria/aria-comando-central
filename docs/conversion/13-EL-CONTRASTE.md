@@ -27,8 +27,8 @@ pedido — y ése es el caso de `CV14-01`.
 
 ### CV13-01 · La finalización del formulario
 
-El prototipo la dibuja (`Empiezan el form`, `conversion.js:192-194`), el documento la nombra en la
-única frase que le atribuye a Conversion (`:1425`), y está medida: **64,8 %, con 35,2 % de
+El prototipo la dibuja (`Empiezan el form`, `conversion.js:194-196`), el documento la nombra en la
+única frase que le atribuye a Conversion (`:1427`), y está medida: **64,8 %, con 35,2 % de
 abandono**. Es la métrica más firme de la carpeta.
 
 ### CV13-02 · El agendamiento como último paso

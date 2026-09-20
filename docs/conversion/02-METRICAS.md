@@ -57,7 +57,7 @@ formulario nativo de Meta, o ningún rastro.
 **Unidad** · Conteo, y su proporción sobre la cohorte.
 **Población** · Contactos con `alta_en_el_crm` en la ventana. **Todos**, incluidos los que no traen
 URL — ésos son su propia fila, no un descarte.
-**Rastro** · `conversion.js:8-12` (el prototipo cuenta sesiones por dispositivo); regla 5 de
+**Rastro** · `conversion.js:10-14` (el prototipo cuenta sesiones por dispositivo); regla 5 de
 `03-CONVERSION.md:238`; medición `CV14-03`.
 **Estado** · **Construible hoy.** `atribucion_ultima->>'url'` está en **475 de 590** contactos
 (80,5 %). Es la cifra que contesta la pregunta más grande que la pantalla puede hacerse hoy, y
@@ -70,7 +70,7 @@ ninguna otra pantalla la publica.
 **Unidad** · Proporción.
 **Población** · Contactos con `alta_en_el_crm` en la ventana, por familia.
 **Piso** · `PISO_DE_UNA_TASA`, **sobre el denominador de cada familia**, no sobre la cohorte total.
-**Rastro** · `conversion.js:195-197` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:142`.
+**Rastro** · `conversion.js:197-199` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:142`.
 **Estado** · **Construible hoy**, con el `exists` de `costoDelAnuncio.ts:341-344`. Cuidado con el
 piso: en septiembre la familia `landing` son 31 contactos y cualquier segundo corte cae debajo.
 
@@ -96,7 +96,7 @@ agendar y cuántos agendaron.
 **Unidad** · Conteo y proporción.
 **Población** · Contactos que traen el campo. **No la cohorte entera**: quien no llegó al formulario
 no tiene el campo, y meterlo en el denominador mezclaría dos preguntas.
-**Rastro** · `conversion.js:192-194` (`Empiezan el form`); `03-CONVERSION.md:144-146`; medición
+**Rastro** · `conversion.js:194-196` (`Empiezan el form`); `03-CONVERSION.md:144-146`; medición
 `CV14-08`.
 **Estado** · **Construible, y la población murió el 2026-08-31.** Medido: `Agendado` 121, `Form
 incompleto sin agendar` 87, `Form completo sin agendar` 39. **Cero contactos de septiembre lo
@@ -142,8 +142,8 @@ Publicar «0 % de visionado promedio» sería técnicamente cierto y completamen
 ### CV2-08 · Las bandas de «lo esperado» declaran una metodología que no existe
 
 **Qué es** · La zona verde contra la que el prototipo compara cada paso.
-**Fórmula del prototipo** · Ninguna: son **24 literales** en `BANDS` (`conversion.js:21-25`).
-**Rastro** · El comentario de `conversion.js:18-20` declara la metodología: *«Se calcula con la
+**Fórmula del prototipo** · Ninguna: son **24 literales** en `BANDS` (`conversion.js:23-27`).
+**Rastro** · El comentario de `conversion.js:20-22` declara la metodología: *«Se calcula con la
 mediana de los últimos 90 días: p25 a p75 del propio histórico. Se guarda por dispositivo porque el
 comportamiento es muy distinto.»*
 **Estado** · **No hay ningún cálculo.** La frase describe un procedimiento que el archivo no ejecuta.
@@ -156,22 +156,22 @@ calibrarlo y declarar que no lo está, como hizo Creative con `PISO_DE_IMPRESION
 
 **Qué es** · Cuántas de las citas agendadas valen la pena.
 **Fórmula del prototipo** · **Dos, incompatibles.** El panel de cabecera usa
-`Math.round(d.agenda * 0.63)` con `const califica = 0.63` (`conversion.js:163-164`); el recorrido y
-el cajón usan `CV.calificados` (`:9-11`, leído en `:227` y `:486`).
+`Math.round(d.agenda * 0.63)` con `const califica = 0.63` (`conversion.js:165-166`); el recorrido y
+el cajón usan `CV.calificados` (`:11-13`, leído en `:229` y `:488`).
 **Estado** · **Con `hist` la pantalla se contradice a sí misma**: el panel dice **482** calificadas y
 el cajón dice **479**; «No calificadas» dice 283 arriba y 286 abajo. Y la Lectura del cajón de Agenda
-afirma *«Las 84 restantes»* (`conversion.js:500`), que es un tercer número literal.
+afirma *«Las 84 restantes»* (`conversion.js:502`), que es un tercer número literal.
 
 **El requisito que sobrevive** es que el ICP del lead califique la cita — y eso **ya existe**:
 `lib/negocio/calidadDelCreativo.ts:61` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
 días. **Conversion lo consume, no lo recalcula** (`§ 2.4` del documento funcional).
 
-Y el `0.94` del comparativo (`conversion.js:165`) no tiene justificación ni comentario en ninguna
+Y el `0.94` del comparativo (`conversion.js:167`) no tiene justificación ni comentario en ninguna
 parte.
 
 ### CV2-10 · Las cifras sin unidad ni denominador
 
-**Qué es** · `Rage clicks 84`, `Dead clicks 37`, `Rebote bajo 3s 48` (`conversion.js:405-407`).
+**Qué es** · `Rage clicks 84`, `Dead clicks 37`, `Rebote bajo 3s 48` (`conversion.js:407-409`).
 **Estado** · Se pintan como enteros pelados: no dicen si son sesiones, eventos o personas, ni sobre
 cuántas. Un entero sin denominador no se puede comparar entre períodos ni entre dispositivos, que es
 para lo único que serviría. **Y ninguna de las tres tiene fuente**: Clarity no está integrado
@@ -180,7 +180,7 @@ para lo único que serviría. **Y ninguna de las tres tiene fuente**: Clarity no
 ### CV2-11 · El abandono campo por campo no escala con el período
 
 **Qué es** · La tabla `Nombre 308 · WhatsApp 296 · Facturación mensual 285 (−83) · Tipo de agencia
-202 · Objetivo a 90 días 184` (`conversion.js:134-137`, dibujada en `:472`).
+202 · Objetivo a 90 días 184` (`conversion.js:136-139`, dibujada en `:474`).
 **Estado** · **Los cinco números son fijos** y no se multiplican por `FACTOR`, mientras la cabecera
 del mismo cajón dice `Lo iniciaron` con `d.form` escalado. Con `hist` la cabecera dice **1.047** y la
 tabla arranca en **308**: el embudo de campos contradice su propio encabezado en la misma pantalla.
@@ -197,7 +197,7 @@ formulario, el abandono por campo no existe.
 
 **Qué es** · Las tres tasas de la tira de cabecera.
 **Fórmula del prototipo** · `pct(d.vsl, d.sesiones)`, `pct(d.form, d.sesiones)`,
-`pct(d.agenda, d.sesiones)` (`conversion.js:182-197`). Las tres sobre el mismo denominador.
+`pct(d.agenda, d.sesiones)` (`conversion.js:184-199`). Las tres sobre el mismo denominador.
 **Población** · Visitas a la landing.
 **Estado** · **El denominador no existe** (`CV1-01`) y, si se aproximara con «contactos con URL de
 landing», sería circular (`CV1-05`). De las tres, sólo «Agendan» tiene fuente propia
@@ -208,7 +208,7 @@ camino**: permite leer la cadena como un embudo. Con dos caminos deja de serlo (
 
 ### CV2-13 · La caída entre pasos, en personas
 
-**Qué es** · El `−N` que cada tarjeta publica abajo a la derecha (`conversion.js:286`).
+**Qué es** · El `−N` que cada tarjeta publica abajo a la derecha (`conversion.js:288`).
 **Fórmula** · `vals[i-1] - vals[i]`.
 **Unidad** · Conteo de personas.
 **Estado** · **Es la mejor idea del prototipo.** Un porcentaje dice dónde está el problema; una resta
@@ -224,11 +224,11 @@ población — nunca entre familias de recorrido distintas, que no son etapas.
 **Estado** · Es el `§ 10.6` —**Appointment Flow**— y ya está construido en
 `lib/negocio/consumoDelPrecall.ts` con su población (`:188-196`), su piso (`:230-233`) y su aviso de
 campo ausente (`:151-159`). El prototipo lo dibuja en el paso «Gracias» como «video de bienvenida»
-(`conversion.js:543-546`). **Conversion no publica su propia versión.** Ver `CV1-09`.
+(`conversion.js:545-548`). **Conversion no publica su propia versión.** Ver `CV1-09`.
 
 ### CV2-15 · `Confirmadas`, `Canceladas` y `Franja preferida`
 
-**Estado** · `conversion.js:487-489`. `Confirmadas` es `agenda × 0.78` con el `0.78` literal;
+**Estado** · `conversion.js:489-491`. `Confirmadas` es `agenda × 0.78` con el `0.78` literal;
 `Canceladas` es `6%` literal; `Franja preferida` es la cadena `9-11h`. Las tres son de **citas**, o
 sea de `lib/negocio/indicadoresDeCitas.ts`, que ya publica la confirmación con
 `CAMPO_DE_CONFIRMACION` (`:199`) y la cancelación partida en dos poblaciones (regla 9 de
@@ -271,7 +271,7 @@ no publicar la banda y publicar la serie. No hay una tercera.
 ### CV2-P02 · ¿El «dispositivo» es un corte de primera clase?
 
 El prototipo lo ofrece como filtro permanente (`ConversionView.jsx:66-79`) y guarda bandas distintas
-por dispositivo (`conversion.js:21-25`). Medido en `03-CONVERSION.md:156`: el dispositivo **se puede
+por dispositivo (`conversion.js:23-27`). Medido en `03-CONVERSION.md:156`: el dispositivo **se puede
 derivar hoy** del `userAgent`, sobre 162 citas → 107 móvil, 14 escritorio, 41 sin dato. Pero el
 cohorte de escritorio son **14**, y la regla 8 del departamento
 (`03-CONVERSION.md:250`) dice que cualquier segundo corte cae bajo el piso inmediatamente: *«O se
