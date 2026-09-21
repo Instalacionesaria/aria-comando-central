@@ -13,7 +13,7 @@
 | Tasa de cierre **24 %** | *«close rate»* (`§ 18.18:1618`), **y es de Business** | **nada.** 0 ventas sobre 7 intentos |
 | Ventas **18** | *«¿El cliente compró?»* (`§ 5.4:271`) | **0** en toda la base |
 | Revenue **$55.200** | *«Monto vendido»* (`§ 5.4:272`), *reportado no verificado* (`:288`) | **0 montos**, y 0 de 5 orgs con pagos |
-| Tabla de 2 closers | *«coaching para un closer»* (`§ 2.3:90`) | **4 asignatarios**, y una diferencia de 26 puntos |
+| Tabla de 2 closers | *«coaching para un closer»* (`§ 2.3:90`) | **3 closers configurados** y un cuarto asignatario sin designar; la diferencia son **5 puntos** en la ventana por omisión |
 | «ICP alto asignado» | — | **la regla no existe** en ninguna parte |
 | 4 motivos de no venta | — | el catálogo tiene **otros 5**, y hay **1 fila** |
 | Botón «Plan de acción» | — | **0 frases detrás** |

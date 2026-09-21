@@ -77,34 +77,58 @@ Y el orden es el de esa función —designación, desempate por id (`:85-86`)—
 
 ---
 
-## S4-05 · El hallazgo: 69,1 % contra 42,6 %
+## S4-05 · El hallazgo, corregido: no son 26 puntos, son 5
 
-Medido sobre las 226 citas alcanzables, agrupadas por asignatario:
+> **Esta sección se reescribió el 2026-09-21, al construir `lib/negocio/cierrePorCloser.ts`.** La
+> versión anterior decía *«69,1 % contra 42,6 %, veintiséis puntos»*. **Esa cifra no se reproduce.**
+> Su sonda contaba las citas de contactos descartados y metía los `noshow` en la lista de cancelados;
+> con el predicado compartido de `lib/negocio/citasAlcanzables.ts` da otra cosa. Se deja escrito el
+> error porque es el que el propio módulo existe para impedir: dos cifras del mismo hecho con
+> filtros apenas distintos, las dos creíbles.
 
-| asignatario | citas | canceladas | confirmadas | no-show | cancelación |
-|---|---|---|---|---|---|
-| A | 123 | 85 | 24 | 14 | **69,1 %** |
-| B | 61 | 26 | 35 | 0 | **42,6 %** |
-| *sin asignar* | 33 | 16 | 17 | 0 | 48,5 % |
-| C | **9** | 5 | 3 | 1 | — **bajo el piso** |
+Medido con `alcanzable and not descartado` y sólo citas **ya ocurridas**, que es la población de
+`tasaDeCancelacion` — la cifra de cabecera de esta misma pantalla.
 
-**Veintiséis puntos de diferencia entre dos personas que superan el piso de 10.** Y es la única cifra
-comparable entre closers que hoy tiene señal, sin una sola venta registrada.
+**Sobre todo el pasado:**
 
-Ésa es, literalmente, la única competencia que el documento le atribuye al departamento:
-*«Sales Intelligence puede recomendar coaching para un closer»* (`§ 2.3:90`).
+| asignatario | citas | personas | canceladas | confirmadas | plantón | cancelación |
+|---|---|---|---|---|---|---|
+| Quiroz | 94 | 82 | 37 | 43 | 14 | **39,4 %** |
+| Veramendi | 20 | 15 | 5 | 15 | 0 | **25,0 %** |
+| *sin asignar* | 15 | 15 | 10 | 5 | 0 | 66,7 % |
+| Gabriel | **7** | 6 | 2 | 4 | 1 | — **bajo el piso** |
+
+**En la ventana por omisión de 14 días, que es la que la pantalla dibuja primero:**
+
+| asignatario | citas | personas | canceladas | confirmadas | plantón | cancelación |
+|---|---|---|---|---|---|---|
+| Quiroz | 32 | 31 | 9 | 10 | 13 | **28,1 %** |
+| Veramendi | **13** | 11 | 3 | 10 | 0 | **23,1 %** |
+| Gabriel | **6** | 6 | 2 | 3 | 1 | — **bajo el piso** |
+| *sin asignar* | 1 | 1 | 0 | 1 | 0 | — |
+
+**La brecha es de 14 puntos sobre todo el pasado y de 5 en la ventana por omisión**, con el segundo
+closer a una cancelación de caer bajo el piso. O sea: el hallazgo que justificaba esta tabla **vive
+en los datos viejos**, y la pantalla que la dibuja no lo muestra por omisión.
+
+Sigue siendo la única cifra comparable entre closers que hoy tiene señal, sin una sola venta
+registrada, y sigue siendo la única competencia que el documento le atribuye al departamento:
+*«Sales Intelligence puede recomendar coaching para un closer»* (`§ 2.3:90`). Pero se publica con su
+tamaño real, no con el que tenía la primera medición.
 
 ### S4-P01 · ¿Esa diferencia es del closer o de sus leads? — **abierta**
 
-**Por qué importa:** los dos closers no reciben el mismo tráfico. A tiene 213 contactos y B tiene 26;
-si A se lleva los leads de una fuente que cancela más, el 69,1 % mide la fuente y no a la persona — y
-la pantalla estaría sugiriendo coaching sobre una diferencia que no le pertenece.
+**Por qué importa:** los dos closers no reciben el mismo tráfico. Medido en la ventana por omisión,
+**Quiroz tiene 32 de las 51 citas de la tabla, el 62,7 %**; si se lleva los leads de una fuente que
+cancela más, el 28,1 % mide la fuente y no a la persona — y la pantalla estaría sugiriendo coaching
+sobre una diferencia que no le pertenece. Con 5 puntos de brecha, basta muy poco sesgo de origen
+para explicarla entera.
 
 **Cómo se contesta:** cruzando el asignatario con `contactos.atribucion_ultima`, que es la llave de
 Conversion (`lib/negocio/recorrido.ts`). Es trabajo aparte y **no se hace en esta etapa**.
 
-**Mientras tanto:** la tabla publica la **concentración** —medido, A se lleva el 85 % de lo asignado—
-al lado, para que la comparación llegue con su advertencia puesta.
+**Mientras tanto:** la tabla publica la **concentración** al lado —`cierrePorCloser.concentracion`,
+que se enciende desde el 60 %— para que la comparación llegue con su advertencia puesta.
 
 ---
 
@@ -117,7 +141,7 @@ Este departamento tiene **dos identificadores de persona** y no son intercambiab
 | **el del CRM** | `contactos.crm_asignado_a`, `citas.crm_asignado_a` | contactos y citas |
 | **el nuestro** | `resultados.registrado_por` → `identidad.usuarios.id` | intentos y dinero |
 
-El puente es `negocio.closer_asignado.crm_usuario_id`. `lib/negocio/inicio.ts:218-220` ya advierte qué
+El puente es `negocio.closer_asignado.crm_usuario_id`. `lib/negocio/inicio.ts:123-125` ya advierte qué
 pasa si se cruzan: *«cruzarlos daría los contactos de quien registró»*.
 
 **Requisito:** un closer designado **sin vínculo** al CRM tiene las cifras del eje CRM en **`null`**,
@@ -153,7 +177,7 @@ Tres prohibiciones, cada una con su defecto:
 Las columnas «Ventas» y «Revenue» del prototipo **no vuelven acá**, ni siquiera cuando haya ventas.
 
 **El defecto que evita:** pondrían en la misma **fila** una columna del mes calendario —que es la
-ventana del cockpit, `inicio.ts:147`— junto a columnas de la ventana rodante que elige el segmentado.
+ventana del cockpit, `dineroDelMes.ts:105`— junto a columnas de la ventana rodante que elige el segmentado.
 Dos ventanas en una pantalla ya cuestan explicación; **dos ventanas en una fila son peores, porque
 una fila se lee como una unidad**.
 

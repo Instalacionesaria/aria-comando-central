@@ -33,7 +33,7 @@ que gobiernan el catálogo.
 1. **Una venta del closer y una del setter NO se suman, nunca.** `venta` va a la etapa `ganado`;
    `venta_chica` **no** (`lib/negocio/etapas.ts:86-94`). Son dos negocios de tamaños distintos: *«una
    venta chica de $497 dibujada en la misma columna que un cierre de $12.000 no es un detalle»*.
-2. **Venta ≠ acuerdo sin pago.** Sólo una es dinero cobrado (`lib/negocio/inicio.ts:36-45`). Filtrar
+2. **Venta ≠ acuerdo sin pago.** Sólo una es dinero cobrado (`lib/negocio/dineroDelMes.ts:79-85`). Filtrar
    «tiene monto» en vez de `salida = 'venta'` mete el acuerdo en el revenue y da un número más grande
    y creíble.
 3. **Es venta REPORTADA, no pago verificado.** El `§ 5.4:288` lo exige por escrito, y el rótulo va
@@ -61,11 +61,11 @@ que gobiernan el catálogo.
 **Unidad** · Dinero.
 **Población** · Los resultados registrados por los closers configurados de la empresa.
 **Rastro** · `SalesView.jsx:87-91` («Revenue reportado», `$55,200`); `§ 5.4:271-274`;
-`lib/negocio/inicio.ts:167-180`.
+`lib/negocio/dineroDelMes.ts:132-152`.
 **Estado** · **Construible, y ya construido: se consume.** Vale `0` medido o `—` según haya o no
 resultados en el mes. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 
-> La ventana es **mes calendario en la zona de la organización** (`inicio.ts:147`), y **no** una de
+> La ventana es **mes calendario en la zona de la organización** (`dineroDelMes.ts:105`), y **no** una de
 > las cuatro rodantes. Eso no se disimula: el bloque lleva el mes en su propio encabezado. Ver
 > `06-PERIODOS-Y-PISOS.md`.
 
@@ -75,7 +75,7 @@ resultados en el mes. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Fórmula** · `count(*) filter (where salida = 'venta')`.
 **Unidad** · Conteo.
 **Población** · La misma que `S2-01`.
-**Rastro** · `SalesView.jsx:77-81` (`18`); `lib/negocio/inicio.ts:181`.
+**Rastro** · `SalesView.jsx:77-81` (`18`); `lib/negocio/dineroDelMes.ts:149`.
 **Estado** · **Se consume.** Medido: **0 en toda la base**.
 
 ### S2-03 · Acuerdos sin pagar
@@ -84,7 +84,7 @@ resultados en el mes. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Fórmula** · `count(*) filter (where salida = 'acuerdo_sin_pago')`.
 **Unidad** · Conteo.
 **Población** · La misma.
-**Rastro** · `lib/negocio/salidas.ts:96`; `lib/negocio/inicio.ts:182`.
+**Rastro** · `lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:150`.
 **Estado** · **Se consume.** Medido: 0. **No suma al cobrado** — regla 2.
 
 ---
@@ -149,7 +149,7 @@ contacto**.
 **Unidad** · Conteo.
 **Población** · Citas de la ventana. **La fila «sin asignar» no se descarta.**
 **Rastro** · `SalesView.jsx:104` («Agendadas»); `§ 2.3:90`.
-**Estado** · **Construible hoy.** Medido: 123 · 61 · 33 (sin asignar) · 9.
+**Estado** · **Construido** en `lib/negocio/cierrePorCloser.ts`. Medido a 14 días: 32 · 13 · 6 · 1 (sin asignar).
 
 > Se cuentan por el asignatario del **contacto**, no por `citas.crm_asignado_a`, aunque esa columna
 > exista. El producto ya lo decidió: *«la cita no tiene dueño propio: es del contacto»*
@@ -163,17 +163,22 @@ contacto**.
 **Unidad** · Porcentaje.
 **Piso** · `PISO_DE_UNA_TASA`, **sobre el denominador de cada fila, no sobre el total**.
 **Rastro** · `SalesView.jsx:113` («Cierre»); `§ 2.3:90`.
-**Estado** · **Construible hoy, y es el hallazgo del departamento.**
+**Estado** · **Construida** en `lib/negocio/cierrePorCloser.ts`, y es el hallazgo del departamento
+— más chico de lo que decía la primera medición.
+
+A 14 días, que es la ventana por omisión de la pantalla:
 
 | asignatario | citas | canceladas | |
 |---|---|---|---|
-| A | 123 | 85 | **69,1 %** |
-| B | 61 | 26 | **42,6 %** |
-| *sin asignar* | 33 | 16 | 48,5 % |
-| C | **9 — bajo el piso** | 5 | — |
+| Quiroz | 32 | 9 | **28,1 %** |
+| Veramendi | 13 | 3 | **23,1 %** |
+| Gabriel | **6 — bajo el piso** | 2 | — |
+| *sin asignar* | 1 | 0 | — |
 
-**26 puntos de diferencia entre dos personas que superan el piso.** Ver `04-LA-TABLA-DE-CLOSERS.md`
-y la pregunta abierta `S4-P01`, que es la que decide si esa diferencia dice algo del closer.
+**5 puntos de diferencia entre las dos filas que superan el piso**, y 14 si se mira todo el pasado.
+La versión anterior de esta ficha decía 69,1 % contra 42,6 %: esa sonda contaba descartados y metía
+los `noshow` entre los cancelados. Ver `04-LA-TABLA-DE-CLOSERS.md § S4-05` y la pregunta abierta
+`S4-P01`, que es la que decide si esa diferencia dice algo del closer.
 
 ### S2-10 · Intentos registrados por closer
 
@@ -181,7 +186,7 @@ y la pregunta abierta `S4-P01`, que es la que decide si esa diferencia dice algo
 **Fórmula** · `count(*)` sobre `resultados` por `registrado_por`.
 **Unidad** · Conteo, con su reparto por salida.
 **Población** · **Otro eje**: lo que la persona registró, no lo que le asignaron. Ver la nota de
-`inicio.ts:218-220` — cruzarlos daría los contactos de quien registró.
+`inicio.ts:123-125` — cruzarlos daría los contactos de quien registró.
 **Estado** · **Construible hoy.** Medido: 7 en total, de 2 personas.
 
 ### S2-11 · Tasa de asistencia por closer
@@ -189,7 +194,9 @@ y la pregunta abierta `S4-P01`, que es la que decide si esa diferencia dice algo
 **Qué es** · De las citas de esa persona con la asistencia respondida, cuántas se presentaron.
 **Fórmula** · `asistio = true` / `asistio is not null`.
 **Población** · Citas **con la asistencia respondida**. Regla 6.
-**Estado** · **NULA, con su motivo.** `citas.asistio` es nulo en las 327. No es cero: es que nadie
+**Estado** · **NULA, con su motivo**, y al lado el conteo de plantones del calendario (`noshow`, 15
+en toda la base), que es otra fuente y no entra en esta tasa.
+`citas.asistio` es nulo en las 327. No es cero: es que nadie
 contestó. Ver `S1-07`.
 
 ### S2-12 · Concentración de la asignación
@@ -249,7 +256,7 @@ tasa de **cancelación** (`S2-04`), que es otra pregunta y hay que rotularla com
 | `S2-06` | Los eslabones de la cadena | **sí**, salvo el último |
 | `S2-07` | Cobertura de la cadena | **sí** — obligatoria al lado |
 | `S2-08` | Citas por closer | **sí** |
-| `S2-09` | Tasa de cancelación por closer | **sí** — 69,1 % contra 42,6 % |
+| `S2-09` | Tasa de cancelación por closer | **sí** — 28,1 % contra 23,1 % a 14 días |
 | `S2-10` | Intentos por closer | **sí** — 7 en total |
 | `S2-11` | Tasa de asistencia por closer | **no** — nula con su motivo |
 | `S2-12` | Concentración de la asignación | **sí** — 85 % |

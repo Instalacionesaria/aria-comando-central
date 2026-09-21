@@ -99,7 +99,7 @@ revenues distintos y **ninguna falla**.
 
 ### Y consumirlo tiene una consecuencia que se acepta por escrito
 
-El cockpit trabaja sobre **mes calendario en la zona de la organización** (`inicio.ts:147`); Sales
+El cockpit trabaja sobre **mes calendario en la zona de la organización** (`dineroDelMes.ts:105`); Sales
 sobre ventanas rodantes. **Las dos nunca coinciden.** Por eso el bloque del dinero lleva el mes en su
 propio encabezado. Ver `06-PERIODOS-Y-PISOS.md`.
 

@@ -32,7 +32,7 @@
 // **1 · La censura.** 369 de 566 contactos nunca tuvieron una cita alcanzable. No son ciclo cero ni
 // ciclo infinito: **no entran en la cifra**, y eso se dice. Un `coalesce(primera_cita, now())` los
 // metería como «todavía esperando» y movería la mediana sin que nada fallara. El precedente es
-// `avisoDeLasLatencias` (`indicadoresDelLead.ts:426-450`).
+// `avisoDeLasLatencias` (`indicadoresDelLead.ts:436-448`).
 //
 // **2 · El techo de la ventana**, que es propio de esta cifra. **Con el botón de «7 días», la
 // mediana no puede pasar de 7**: sólo entran los contactos que agendaron dentro de esos siete días,

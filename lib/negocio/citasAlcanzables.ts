@@ -39,7 +39,7 @@
 
 import { type RawBuilder, sql } from 'kysely';
 
-import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
+import { ESTADO_NO_APARECIO, ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
 
 /**
@@ -82,6 +82,34 @@ export function descartado(alias = 'citas'): RawBuilder<boolean> {
     select 1 from negocio.contactos ct, unnest(ct.etiquetas) e
      where ct.org_id = ${a}.org_id and ct.id = ${a}.contacto_id
        and lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+}
+
+/**
+ * **¿El CALENDARIO dice que esta persona no apareció?**
+ *
+ * ── ES LA ÚNICA SEÑAL DE ASISTENCIA QUE HOY EXISTE, Y CASI SE PIERDE ────────
+ *
+ * `citas.asistio` —la que escribe Avanzar— es **nula en las 327 filas de la base**, y por eso todo
+ * este departamento la declara como un hueco. Pero el censo de `estado_ghl` del 2026-09-21 dice
+ * otra cosa:
+ *
+ *     cancelled  163  ·  confirmed  149  ·  noshow  15
+ *
+ * **Quince citas que el calendario marcó como plantón**, las quince alcanzables. O sea que la
+ * asistencia no está completamente a oscuras: el lado negativo se observa y el positivo no
+ * —`showed` no aparece ni una vez—, que es una asimetría que hay que decir y no promediar.
+ *
+ * `ESTADO_NO_APARECIO` estaba declarada desde la `038` y **nadie la leía**: una constante con el
+ * nombre correcto al lado de una tabla que ya traía el dato.
+ *
+ * ── NO SE SUMA CON `asistio`, NUNCA ─────────────────────────────────────────
+ *
+ * Son dos fuentes de la misma pregunta y sólo una es nuestra. Meterlas en un mismo denominador daría
+ * un show rate con dos definiciones adentro, y `salidas.ts:183-196` ya documenta lo que cuesta
+ * inferir asistencia de donde no corresponde. Cada una viaja con su nombre y su conteo.
+ */
+export function marcadaComoPlanton(alias = 'citas'): RawBuilder<boolean> {
+  return sql<boolean>`lower(coalesce(${sql.raw(alias)}.estado_ghl, '')) = ${sql.val(ESTADO_NO_APARECIO)}`;
 }
 
 /**

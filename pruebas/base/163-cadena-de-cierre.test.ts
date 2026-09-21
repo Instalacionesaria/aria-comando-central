@@ -56,7 +56,16 @@ async function unContacto(o: {
   resultado?: { salida: string; despuesDeLaCita?: boolean };
 }): Promise<void> {
   const ghl = `${CONTACTO}${randomUUID().slice(0, 8)}`;
-  const etiquetas = o.cita?.descartado ? "array['descartado']" : "array[]::text[]";
+  /* ── LA ETIQUETA TIENE QUE SER UNA DE LA LISTA DE VERDAD ──────────────────
+   *
+   * Decía `array['descartado']`, y **`'descartado'` no está en `ETIQUETAS_DE_DESCARTE`**
+   * (`lib/ghl/contrato.ts:231-238`): la lista es `icp_rechazado · rechazado · rechazado_positivo ·
+   * rechazado_negativo · no calificado · descalificado`, censada sobre la subcuenta real. Sembrar
+   * una etiqueta que no está en la lista deja el parámetro sin efecto, así que cualquier prueba que
+   * lo usara habría pasado sin ejercitar el filtro — verde sobre nada.
+   *
+   * Lo encontró `165-cierre-por-closer` al necesitar el mismo caso. */
+  const etiquetas = o.cita?.descartado ? "array['rechazado']" : "array[]::text[]";
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos
        (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, etiquetas)
@@ -221,6 +230,30 @@ test('una cita CONGELADA no entra en ningún eslabón, y se declara aparte', asy
   );
   assert.equal(r.congeladas, 1, 'la congelada no se declaró aparte');
   assert.match(String(r.aviso), /congelad/i, 'el aviso no la menciona');
+});
+
+test('la cita de un contacto DESCARTADO se declara aparte, y no como una pérdida', async () => {
+  /* El parámetro `descartado` del sembrador existía y **ninguna prueba lo usaba**, así que
+     `r.descartadas` no tenía una sola afirmación encima: quitarle el `descartado('ci')` a esa cifra
+     dejaba todo en verde. Es el agujero que abrió el arreglo de la etiqueta de más arriba.
+     *
+     Y el hecho que protege está medido: los descartados cancelan el 94,4 % contra el 33,3 % del
+     resto (`lib/ghl/contrato.ts:200-212`). Eso no es una pérdida del negocio, es la automatización
+     de la casa cancelando lo que ya había rechazado — y por eso va en su propio número. */
+  await limpiar();
+  await unContacto({ cita: { haceHoras: -3, descartado: true, estado: 'cancelled' } });
+  /* La segunda cita, de alguien que NO está descartado, es lo que hace que la afirmación signifique
+     algo: con la del descartado sola, quitarle el filtro a la cifra sigue dando 1 y el mutante
+     sobrevive. La primera versión de esta prueba lo tenía y la mutación lo encontró. */
+  await unContacto({ cita: { haceHoras: -4, estado: 'cancelled' } });
+
+  const r = await leer();
+  assert.equal(r.descartadas, 1, 'la cifra de descartadas no filtra por descartado: cuenta las dos');
+  assert.equal(r.congeladas, 0, 'se contó como congelada, que es otro hecho');
+  /* Y el descartado NO se resta de la cadena: `cerrable` no lo excluye —a propósito, los eslabones
+     cuentan quién llegó a cada etapa— así que los dos contactos están en el segundo eslabón. Fijarlo
+     acá es lo que impide que alguien «arregle» la cadena restándolos y desalinee los dos números. */
+  assert.equal(r.eslabones.find((e) => e.clave === 'con_cita')?.contactos, 2);
 });
 
 // ─── EL CUARTO ESLABÓN ────────────────────────────────────────────────────────

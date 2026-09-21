@@ -38,7 +38,7 @@ oyente**: `slPeriod` no aparece en `lib/` ni una vez. Ver `07-EL-PLAN-DE-ACCION.
 Sales publica cifras de **dos ventanas distintas**, y no es una diferencia de largo. Difieren en tres
 ejes:
 
-| | el cockpit (`inicio.ts:147`) | `PERIODOS` |
+| | el cockpit (`dineroDelMes.ts:105`) | `PERIODOS` |
 |---|---|---|
 | ancla | `date_trunc('month', …)` — fija al día 1 | rodante: `now() - N días` |
 | reloj | zona de la **organización** | el de la base, sin zona (`periodo.ts:72-82`) |
@@ -55,7 +55,7 @@ sólo que producido por la disposición en vez de por el parseo.
    de la pantalla queda visualmente gobernada por un control encendido que dice «7 días», y el rótulo
    del mes compite con él y pierde. Rompe la simetría con las otras cuatro de Inteligencia, y eso se
    declara en el encabezado del panel.
-2. **Su rótulo es el nombre del mes que el servidor ya publica** (`inicio.ts:247-249`): «septiembre de
+2. **Su rótulo es el nombre del mes que el servidor ya publica** (`dineroDelMes.ts:176-178`): «septiembre de
    2026». **Nunca «este mes»**, que no dice en qué zona se cortó ni que la ventana está truncada. Un
    nombre de mes se puede verificar mirándolo.
 3. **El segmentado deja de ser control de pantalla** y pasa a ser encabezado del bloque de la cadena,
@@ -65,13 +65,13 @@ sólo que producido por la disposición en vez de por el parseo.
 
 ## S6-04 · Y por eso sólo tres campos del cockpit viajan
 
-De los siete que `Cockpit` publica (`inicio.ts:32-72`), Sales dibuja **`cobrado`, `ventas` y
+De los siete que `Cockpit` publica (`inicio.ts:40-66` y `dineroDelMes.ts:75-90`), Sales dibuja **`cobrado`, `ventas` y
 `acuerdos`**. Los otros cuatro quedan fuera, cada uno por un defecto distinto:
 
 | campo | por qué no |
 |---|---|
-| `conCitaAgendada` | **no es del mes.** Su propio comentario lo dice (`inicio.ts:50-58`): *«una etiqueta no trae fecha»*. Bajo un encabezado que diga «septiembre de 2026», el rótulo lo convierte en mentira |
-| `tasaDeAsistencia` | está **cableada a `null`** (`inicio.ts:266-272`), y Sales publica su propia asistencia desde `citas.asistio`. Dos respuestas a la misma pregunta, una permanentemente vacía |
+| `conCitaAgendada` | **no es del mes.** Su propio comentario lo dice (`inicio.ts:44-48`): *«una etiqueta no trae fecha»*. Bajo un encabezado que diga «septiembre de 2026», el rótulo lo convierte en mentira |
+| `tasaDeAsistencia` | está **cableada a `null`** (`inicio.ts:165-170`), y Sales publica su propia asistencia desde `citas.asistio`. Dos respuestas a la misma pregunta, una permanentemente vacía |
 | `noShows` | cuenta contactos con etiqueta `noshow`; la cifra de Sales cuenta **citas** con `estado_ghl = 'noshow'`. Dos poblaciones, dos ventanas, el mismo nombre |
 | `tareasPendientes` | no tiene valor honesto acá, y es el **único** campo del cockpit que no es `number \| null` |
 
@@ -86,9 +86,9 @@ De los siete que `Cockpit` publica (`inicio.ts:32-72`), Sales dibuja **`cobrado`
 | cifra | denominador medido | ¿publica tasa? |
 |---|---|---|
 | Tasa de cancelación (empresa) | 223 citas pasadas | **sí** |
-| Cancelación del closer A | 123 citas | **sí** |
-| Cancelación del closer B | 61 citas | **sí** |
-| Cancelación del closer C | **9 citas** | **no** — conteos sí, tasa no |
+| Cancelación de Quiroz | 32 citas | **sí** |
+| Cancelación de Veramendi | **13 citas** | **sí**, y a una cancelación de perderla |
+| Cancelación de Gabriel | **6 citas** | **no** — conteos sí, tasa no |
 | Tasa de cierre | 7 intentos | **no** |
 | Motivos de no venta | 1 resultado | **no** |
 | Ciclo hasta la cita | 197 contactos | **sí** |
@@ -117,7 +117,7 @@ acerca al borde. Con «completo» no se enciende nunca, que es lo correcto.
 
 **389 de 590 contactos nunca tuvieron una cita.** No son ciclo cero ni ciclo infinito: **no entran en
 la cifra, y eso se dice**. El precedente es `avisoDeLasLatencias`
-(`lib/negocio/indicadoresDelLead.ts:426-450`).
+(`lib/negocio/indicadoresDelLead.ts:436-448`).
 
 Un `coalesce(primera_cita, now())` los metería como «todavía esperando» y movería la mediana sin que
 nada falle.

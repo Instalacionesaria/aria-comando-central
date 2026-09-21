@@ -88,11 +88,11 @@ Tiene pruebas de base: `pruebas/base/26-avanzar.test.ts`, `pruebas/base/97-close
 `lib/negocio/inicio.ts :: cockpitDelMes` publica `cobrado`, `ventas` y `acuerdos` en el Inicio del
 Closer, con la disciplina completa:
 
-- `Indicador { valor: number | null; falta?: string }` (`inicio.ts:26-31`), porque *«un `$0` donde
-  nadie cargó montos afirma "no vendiste nada". Es falso»* (`inicio.ts:16-17`);
+- `Indicador { valor: number | null; falta?: string }` (`dineroDelMes.ts:42-47`), porque *«un `$0` donde
+  nadie cargó montos afirma "no vendiste nada". Es falso»* (`inicio.ts:11-12`);
 - **dos motivos de nulo distintos, con textos distintos**: nadie configurado contra nadie registró
-  (`inicio.ts:205-216`);
-- `acuerdo_sin_pago` **no suma** al cobrado (`inicio.ts:36-45`).
+  (`dineroDelMes.ts:164-173`);
+- `acuerdo_sin_pago` **no suma** al cobrado (`dineroDelMes.ts:79-85`).
 
 > **Conclusión de las tres fichas anteriores:** el cuello de botella de Sales **no es técnico**. La
 > tabla, el escritor, el validador, el agregador y la pantalla que lo muestra existen y funcionan. Lo
@@ -236,7 +236,7 @@ El detalle completo está en `14-LOS-CINCO-ESLABONES.md`.
 
 1. **El cero se dibuja distinto del guion, y los dos existen.** Con resultados en el mes y ninguna
    venta, `cobrado` es un **`0` medido**; sin ningún resultado es **`—`** con su motivo
-   (`inicio.ts:192`). Colapsarlos es el defecto que `comision.ts:14-28` ya enumeró.
+   (`dineroDelMes.ts:162`). Colapsarlos es el defecto que `comision.ts:14-28` ya enumeró.
 2. **La asistencia sale de `citas.asistio` y de ningún otro lado.** Nunca de la salida. Ver `S1-08`.
 3. **El dinero no se recalcula.** `lib/negocio/inicio.ts` es el dueño del hecho «venta»; Sales lo
    consume. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.

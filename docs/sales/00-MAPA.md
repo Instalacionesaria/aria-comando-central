@@ -108,8 +108,9 @@ regresión. Ver `10`.
   publica y Sales sería su segundo consumidor.
 - **El ciclo del alta a la primera cita** — `S2-05`. **Mediana 2,9 días** contra media 16,5: la media
   está arrastrada por una cola de 14 contactos que llega a 290 días.
-- **El reparto por closer** — `S4-05`. Y ahí está el hallazgo: **69,1 % de cancelación contra 42,6 %**
-  entre dos personas que superan el piso.
+- **El reparto por closer** — `S4-05`. Es la única comparación entre closers con señal, y su tamaño
+  real es más chico de lo que decía la primera medición: **14 puntos de cancelación sobre todo el
+  pasado y 5 en la ventana de 14 días** que la pantalla dibuja por omisión.
 - **El dinero del mes** — `S2-01`. **Consumido**, no recalculado: `lib/negocio/inicio.ts` es su dueño.
 
 ## 5 · Lo que NO se puede, y se dibuja como hueco declarado
@@ -117,7 +118,7 @@ regresión. Ver `10`.
 | hueco | medición | ficha |
 |---|---|---|
 | **La venta misma** | 7 filas en toda la base, **cero** `venta`, cero montos | `S1-01` |
-| **La asistencia** | `citas.asistio` **nulo en las 327 filas** | `S1-07` |
+| **La asistencia** | `citas.asistio` **nulo en las 327 filas**; lo único que hay son **15 plantones del calendario** | `S1-07` |
 | **El motivo de no venta** | 1 sola fila, y con el valor «Otro» | `S5-04` |
 | **El vínculo resultado ↔ cita** | `cita_id` nulo en las 7 | `S1-06` |
 | **El cobro verificado** | 0 de 5 organizaciones con credencial de pagos | `S1-09` |
@@ -137,7 +138,7 @@ Viven en el archivo donde nacen. El índice:
 | id | pregunta | dónde |
 |---|---|---|
 | `S1-P01` | ¿Por qué 5 de los 7 resultados se guardaron sin enganchar la cita que tenían disponible? | `01` |
-| `S4-P01` | ¿El 69,1 % contra 42,6 % es del closer o de la fuente de sus leads? | `04` |
+| `S4-P01` | ¿Los 5 puntos de cancelación entre los dos closers son del closer o de la fuente de sus leads? | `04` |
 | `S5-P01` | ¿El CRM guarda motivos de pérdida en algún campo que no sea `resultados.detalle`? | `05` |
 | `S8-P01` | ¿Business va a existir como pantalla? El documento le da revenue, CAC, ROAS y la tasa de cierre | `08` |
 | `S12-P01` | ¿Quién es el dueño de Sales? El documento nombra un «Responsable de Ventas» y nunca más | `12` |

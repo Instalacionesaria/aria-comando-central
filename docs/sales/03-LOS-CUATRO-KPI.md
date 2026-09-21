@@ -40,7 +40,15 @@ engaña»*.
 **Qué pregunta** · De la gente que agendó, cuánta se presentó.
 **Rastro** · `SalesView.jsx:57-61`; `§ 5.3:261` («Asistencia» en el perfil del lead); `§ 10.7:751`
 («Show rate», que el documento asigna a **Appointment Flow**, no a Sales).
-**Estado** · **Sin fuente.** `citas.asistio` es **NULL en las 327 filas** de la base. La columna
+**Estado** · **Sin fuente para una tasa.** `citas.asistio` es **NULL en las 327 filas** de la base.
+> **Corregido el 2026-09-21.** `citas.asistio` sigue nulo en las 327, pero decir «no hay ninguna
+> señal de asistencia» era de más. Censo de `estado_ghl`: **cancelled 163 · confirmed 149 ·
+> noshow 15**. El calendario marca el plantón y **nunca** dice que alguien sí apareció —`showed` no
+> aparece una sola vez—, así que la señal existe y es asimétrica: sirve como CONTEO y no da
+> denominador para un show rate. `cierrePorCloser.noShowDelCalendario` lo publica en su propia
+> columna, y no se suma con `asistio`.
+
+La columna
 existe desde la migración `049` (2026-09-14) y la escribe el botón Avanzar
 (`lib/negocio/avanzar.ts:248`); nadie la ha contestado nunca.
 
@@ -66,7 +74,7 @@ Y aunque existiera: 0 sobre 7 intentos no llega al piso de 10.
 **Rastro** · `SalesView.jsx:77-81`; `§ 5.4:271` (*«¿El cliente compró?»*).
 **Estado** · **Cero en toda la base.** Ver `01-LA-VENTA-NO-EXISTE.md`.
 
-**Se consume, no se recalcula.** `lib/negocio/inicio.ts:181` ya publica este conteo para el Inicio del
+**Se consume, no se recalcula.** `lib/negocio/dineroDelMes.ts:149` ya publica este conteo para el Inicio del
 Closer. Sales lo toma de ahí o habrá dos cifras del mismo hecho.
 
 ## S3-05 · «Revenue reportado» — el rótulo es lo único correcto
@@ -108,8 +116,8 @@ venta:
 
 | estado | qué se dibuja | cuándo |
 |---|---|---|
-| no hay ningún closer configurado | **`—`** + «nadie eligió de quién son los números» | `inicio.ts:205-216` |
-| hay closers y ningún resultado en el mes | **`—`** + «nadie registró nada todavía» | `inicio.ts:192` |
+| no hay ningún closer configurado | **`—`** + «nadie eligió de quién son los números» | `dineroDelMes.ts:164-173` |
+| hay closers y ningún resultado en el mes | **`—`** + «nadie registró nada todavía» | `dineroDelMes.ts:162` |
 | hay resultados y ninguna venta | **`0` medido**, atenuado, con su denominador al lado | hoy |
 | hay ventas sin monto cargado | **`—`** con su propio motivo | `comision.ts:14-28` |
 
