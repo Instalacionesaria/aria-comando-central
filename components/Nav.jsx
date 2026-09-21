@@ -154,7 +154,9 @@ export default function Nav() {
 
   return (
     <>
-    <aside className="nav">
+    {/* El `id` es el ancla del `aria-controls` del conmutador de `TopBar.jsx`. Sin él, quien usa
+        un lector de pantalla oye «abrir el menú» y no tiene cómo saber qué abre. */}
+    <aside className="nav" id="navPrincipal">
       {/* El botón de la empresa ES el conmutador. Antes solo mostraba el nombre y no hacía
           nada, y eso creó un encierro: la única forma de cambiar de empresa era la pestaña
           Empresas, que solo se ve desde la principal — así que conmutarse quitaba de la

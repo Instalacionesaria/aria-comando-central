@@ -21,6 +21,31 @@ export default function TopBar({ arranque }) {
   return (
     <>
     <header className="topbar">
+      {/* ── EL CONMUTADOR DEL MENÚ, Y SÓLO EXISTE PARA ANCHOS CHICOS ──────────
+          *
+          * Medido el 2026-09-20 a 375 px: `.app` es una rejilla de `216px 1fr`, la barra lateral no
+          * colapsa, y al cuerpo le quedan **75 px**. No es de una pantalla: comprobado igual en
+          * Acquisition, Creative y Conversion, o sea las doce.
+          *
+          * El botón está SIEMPRE en el marcado y lo esconde la hoja por encima del corte. Dibujarlo
+          * condicionalmente desde React necesitaría saber el ancho en el servidor —no se sabe— y el
+          * primer pintado saldría con el botón de más o de menos.
+          *
+          * Lo cablea `lib/aios/shell.js`, que es quien ya escucha los clics del menú y quien cierra
+          * lo que se abre encima. Un manejador de React acá tendría que coordinarse con él para
+          * cerrar el cajón al navegar, y serían dos dueños de un mismo estado. */}
+      <button
+        type="button"
+        className="nav-abrir"
+        id="navAbrir"
+        aria-label="Abrir el menú"
+        aria-controls="navPrincipal"
+        aria-expanded="false"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
       <div className="tb-brand">
         <span className="bmark">
           A

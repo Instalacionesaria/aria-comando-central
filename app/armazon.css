@@ -308,3 +308,193 @@
     opacity: 1;
   }
 }
+
+/* ── EL MENÚ LATERAL COMO CAJÓN, PARA ANCHOS CHICOS ────────────────────────────
+ *
+ * Medido el 2026-09-20 a 375 px de ancho: `.app` es una rejilla de `216px 1fr` —`aios.css:115` y
+ * `:117`— y la barra lateral **no colapsa**, así que al cuerpo le quedan **75 px**. La columna del
+ * nombre de cualquier tabla se aplasta a cero y la página desborda en horizontal. No es de una
+ * pantalla: comprobado igual en Acquisition, Creative y Conversion, o sea las doce.
+ *
+ * Va acá y no en `aios.css` por la regla de siempre: esa hoja es el port literal del maquetado, y
+ * el maquetado nunca contempló un teléfono. Ésta es la capa `components`, que le gana.
+ *
+ * ── DÓNDE SE PUSO EL CORTE, Y POR QUÉ AHÍ ──────────────────────────────────
+ *
+ * En 760 px, y sale de una cuenta comprobada en el navegador: el eslabón `.csr` —la fila de
+ * cobertura que usan Acquisition, Creative y Conversion— pide `190 + 60 + 90` de columnas más sus
+ * separaciones, o sea unos 380 px de cuerpo para no aplastarse. Con la barra en 216 px eso se
+ * consigue a partir de 596 px de ventana; 760 deja margen para el relleno de la vista y cae por
+ * encima de la tableta en vertical (768), que **se midió y entra bien** con la barra puesta.
+ *
+ * Por encima del corte no cambia NADA: el conmutador está escondido y la clase no se pone nunca. */
+
+/* El conmutador no existe en escritorio. Se esconde con `display` y no con `visibility` para que no
+   ocupe lugar en el `flex` de la barra superior. */
+.nav-abrir {
+  display: none;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  margin-left: 10px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgb(var(--c-nube) / .05);
+  color: var(--txt-dim);
+  cursor: pointer;
+  place-items: center;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.nav-abrir:hover {
+  background: rgb(var(--c-nube) / .11);
+  color: var(--txt);
+  border-color: var(--line-strong);
+}
+.nav-abrir svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* ── EL PANEL DERECHO, QUE ES EL MISMO DEFECTO UN ESCALÓN MÁS ARRIBA ───────────
+ *
+ * Apareció al comprobar que el corte de 760 no tocara el escritorio: a 762 px la rejilla es
+ * `216px 234px 312px` y **al cuerpo le quedan 234**. Es exactamente la misma cuenta que la de abajo
+ * con otro sumando — sólo que en las once pantallas con `.solo` el panel ya estaba oculto, así que
+ * esto pasa únicamente en Executive y por eso nadie lo había visto.
+ *
+ * El corte en 1080: la fila `.csr` pide unos 380 px de cuerpo, y `216 + 380 + 312` son 908. Se deja
+ * margen porque el cuerpo de Executive es una rejilla de tarjetas y no una lista de filas.
+ *
+ * Se esconde y no se apila debajo porque lo que hay ahí —«Reunión de hoy» y «Cambios en curso»— lo
+ * pinta `lib/aios/executive.js` con datos de ejemplo del maquetado. Apilar contenido inventado
+ * debajo del cuerpo sería darle más lugar, no menos. El día que ese panel tenga datos medidos, la
+ * decisión se vuelve a tomar y este párrafo dice desde dónde. */
+@media (max-width: 1080px) {
+  .app {
+    grid-template-columns: 216px 1fr;
+    grid-template-areas:
+      "top top"
+      "nav main"
+      "ask ask";
+  }
+  .app .side {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Las DOS reglas de rejilla, y las dos hacen falta: `.app.solo` la pone `shell.js` en las once
+     pantallas que no son Executive, y pesa más que `.app` a secas. Pisar sólo una dejaría la mitad
+     de las pantallas con la barra en la rejilla y la otra mitad sin ella. */
+  .app,
+  .app.solo {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "top"
+      "main"
+      "ask";
+  }
+
+  /* El panel derecho se va. Ya estaba escondido en las once con `.solo`; acá se va también en
+     Executive, que es la única que lo muestra. Sin esto su `grid-area: side` no existe en la
+     plantilla nueva y la rejilla le inventa una fila propia debajo del cuerpo. */
+  .app .side {
+    display: none;
+  }
+
+  /* La barra sale del flujo y se queda esperando a la izquierda. `top` y `bottom` la dejan entre la
+     barra superior y la de preguntas, que siguen ocupando sus filas: un cajón que tape las dos
+     escondería el botón que lo cierra. */
+  .app .nav {
+    position: fixed;
+    top: 50px;
+    bottom: 64px;
+    left: 0;
+    z-index: 45;
+    width: min(272px, 82vw);
+    transform: translateX(-100%);
+    transition: transform .22s cubic-bezier(.32, .72, 0, 1);
+  }
+  .app.menu-abierto .nav {
+    transform: translateX(0);
+  }
+
+  /* El velo es un pseudo-elemento y no un nodo: no hay nada que montar, nada que mantener
+     sincronizado con React, y nada que quede huérfano el día que esto se saque. Quien escucha el
+     clic de afuera es `shell.js`, sobre el documento — un `::after` no puede tener oyente.
+     *
+     `z-index: 44` lo deja DEBAJO de la barra (45) y encima de todo lo demás. Por debajo de `.scrim`
+     (40) no: el cajón de contactos se abre sobre el cuerpo y tiene que seguir tapando a éste. */
+  .app.menu-abierto::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    background: rgb(var(--c-velo) / .6);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  .nav-abrir {
+    display: grid;
+  }
+
+  /* La marca deja de medir lo que medía la barra: ese ancho existía para que el borde derecho de
+     las dos cayera en la misma línea, y abajo del corte ya no hay barra con la que alinearse. */
+  .tb-brand {
+    width: auto;
+    border-right: 0;
+    padding-right: 4px;
+  }
+  /* Y la miga se aprieta: con el conmutador puesto, sus 20 px de relleno empujan el nombre de la
+     pantalla fuera de la pantalla en un teléfono angosto. */
+  .crumb {
+    padding: 0 12px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .crumb b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Y LA BARRA DE PREGUNTAS, QUE SE SALIA DE SU FILA ────────────────────
+   *
+   * Apareció al medir el cajón, no antes: `.ask-trigger` mide `min(560px, 70%)` y a 375 px eso son
+   * 235, así que «Pregúntale a Executive sobre Conversion» se parte en TRES renglones. El botón
+   * queda de 71 px dentro de una fila de 64 —`grid-template-rows` la fija— y el texto se corta por
+   * abajo. Medido en el navegador el 2026-09-20.
+   *
+   * Se ensancha y se recorta en vez de achicar la letra: 13 px ya es el piso legible de esta
+   * interfaz, y lo único que cambia de esa frase es el nombre de la pantalla, que va al final. */
+  .ask .ask-trigger {
+    width: 100%;
+    margin: 0 12px;
+    padding: 10px 14px;
+    gap: 9px;
+  }
+  .ask .at-t {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* El atajo de teclado se va: no hay `Cmd+K` en un teléfono, y ocupa 35 px de los 375. */
+  .ask .at-k {
+    display: none;
+  }
+}
+
+/* Quien pidió menos movimiento recibe el cajón puesto, no deslizándose. */
+@media (prefers-reduced-motion: reduce) {
+  .app .nav {
+    transition: none;
+  }
+}
