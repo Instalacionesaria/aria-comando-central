@@ -124,6 +124,59 @@ test('la barra sale del flujo y el panel derecho se va: las dos mitades del anch
   );
 });
 
+test('las rejillas del corte llevan `minmax(0, …)`, o el contenido ancho las estira', () => {
+  /* ── LA TRAMPA DE CSS QUE COSTÓ DOS MEDICIONES ─────────────────────────────
+   *
+   * `1fr` es `minmax(auto, 1fr)`, y con `auto` de mínimo un hijo ancho **estira la columna** en vez
+   * de encogerse dentro de ella. Medido con `1fr` a secas: en Panel de Monitoreo —una tabla de doce
+   * columnas y 1.209 px— la rejilla del armazón se abría a 417 px sobre una ventana de 375, y la
+   * barra superior, el cuerpo y la barra de preguntas se iban los tres con ella.
+   *
+   * Lo que lo vuelve traicionero es que esa tabla **ya tenía** su `overflow-x: auto`: el defecto no
+   * estaba donde se veía. Y no lo ve ninguna prueba de las otras, porque la aplicación sigue
+   * funcionando — sólo hay que arrastrarla de costado para leerla. */
+  const css = leer('app/armazon.css');
+  for (const ancho of [1080, CORTE_DEL_MENU]) {
+    const bloque = bloqueDeMedios(css, ancho);
+    for (const m of bloque.matchAll(/grid-template-columns:\s*([^;]+);/g)) {
+      const valor = m[1]!.trim();
+      /* Se quitan los `minmax(…)` ANTES de buscar: dentro de uno, el `1fr` es el máximo y está
+         perfecto — el que importa es el mínimo. Buscar `1fr` a secas marcaba `minmax(0, 1fr)` como
+         defecto, que es exactamente la forma correcta. */
+      const pelado = valor.replace(/minmax\([^)]*\)/g, 'X');
+      assert.doesNotMatch(
+        pelado,
+        /(^|\s)1fr/,
+        `la rejilla \`${valor}\` del corte de ${ancho}px usa \`1fr\` pelado. Es \`minmax(auto, 1fr)\`: ` +
+          'un hijo ancho —una tabla, un nombre largo— estira la columna y se lleva la pantalla entera ' +
+          'con ella. Va `minmax(0, 1fr)`',
+      );
+    }
+  }
+});
+
+test('la tira de pestañas se ata al padre Y se desliza: las dos mitades', () => {
+  /* Se midió dos veces porque la primera corrección no alcanzó. `.cl-sub` es hijo de un flex en
+     COLUMNA, así que su ancho lo fija su CONTENIDO y no su padre: medido, 350 px dentro de un padre
+     de 291. Con sólo `overflow-x: auto`, la caja seguía sobresaliendo y lo que se deslizaba era la
+     vista entera — o sea que había que arrastrar la pantalla para llegar a la última pestaña.
+     *
+     Las dos declaraciones van juntas o no sirve ninguna: el ancho la mete en el padre y el
+     desbordamiento le devuelve el gesto. Afecta a Closer, Setter y Conversation. */
+  const bloque = bloqueDeMedios(leer('app/armazon.css'), CORTE_DEL_MENU);
+  const regla = bloque.match(/\.cl-sub\s*\{([^}]*)\}/);
+  assert.ok(regla, '`.cl-sub` perdió su regla en el corte: la tira de pestañas vuelve a arrastrar la vista');
+  /* `(^|[\s;])` y no `width:` a secas: sin el borde, la aserción la satisface el `max-width: 100%`
+     de la línea de al lado, y quitar el `width` real no la mataba. Lo detectó la mutación. */
+  assert.match(
+    regla[1]!,
+    /(^|[\s;])width:\s*100%/,
+    '`.cl-sub` no se ata al ancho del padre: su caja sobresale igual. `max-width` no alcanza — es ' +
+      'hijo de un flex en columna, así que sin `width` su ancho lo fija el contenido',
+  );
+  assert.match(regla[1]!, /overflow-x:\s*auto/, '`.cl-sub` no se desliza: la última pestaña queda sin alcanzar');
+});
+
 test('el cajón se cierra AL NAVEGAR y con `Escape`, y las dos viven donde se navega', () => {
   /* ── LA MITAD QUE SE ROMPE SOLA ────────────────────────────────────────────
    *

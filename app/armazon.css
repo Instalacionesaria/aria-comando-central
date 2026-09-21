@@ -376,7 +376,9 @@
  * decisión se vuelve a tomar y este párrafo dice desde dónde. */
 @media (max-width: 1080px) {
   .app {
-    grid-template-columns: 216px 1fr;
+    /* `minmax(0, 1fr)` por el mismo motivo que el corte de abajo: con `1fr` pelado, una
+       tabla ancha estira la columna en vez de encogerse dentro de ella. */
+    grid-template-columns: 216px minmax(0, 1fr);
     grid-template-areas:
       "top top"
       "nav main"
@@ -393,11 +395,62 @@
      de las pantallas con la barra en la rejilla y la otra mitad sin ella. */
   .app,
   .app.solo {
-    grid-template-columns: 1fr;
+    /* `minmax(0, 1fr)` y NO `1fr`, que es lo mismo que `minmax(auto, 1fr)`: con `auto` de mínimo, un
+       hijo ancho ESTIRA la columna en vez de encogerse dentro de ella.
+       *
+       Medido con `1fr` a secas: en Panel de Monitoreo —una tabla de doce columnas y 1.209 px— la
+       rejilla se abría a 417 px sobre una ventana de 375, y la barra superior, el cuerpo y la barra
+       de preguntas se iban los tres con ella. La tabla ya tenía su `.mon-scroll` con
+       `overflow-x: auto`, así que el defecto no era suya: era que nadie le ponía un techo.
+       *
+       Es la misma trampa de CSS que `.md-counters` más abajo, y las dos se arreglan igual. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "top"
       "main"
       "ask";
+  }
+
+  /* Y la cadena entera hasta el desplazador de cada vista. `min-width: auto` es el valor por omisión
+     de un ítem de rejilla o de flex, y basta con que UNO de los eslabones lo conserve para que el
+     contenido ancho vuelva a empujar hacia afuera: medido, `.view` y `.view-scroll` lo tenían y
+     dejaban pasar 35 px en Setter. */
+  .app > *,
+  .main > .view,
+  .view > .view-scroll,
+  .cre-head,
+  .ch-l,
+  .ch-title {
+    min-width: 0;
+  }
+
+  /* ── LA TIRA DE PESTAÑAS SE DESLIZA, NO ARRASTRA LA PÁGINA ───────────────
+   *
+   * `.cl-sub` —«Inicio · Mi Día · Pipeline · Agenda» en Closer y Setter, «Lead Flow · Appointment
+   * Flow · Prompts» en Conversation— mide 350 px de contenido. Es hijo de un flex en COLUMNA, así
+   * que su ancho lo fija su contenido y no su padre: medido, 350 px dentro de un padre de 291.
+   *
+   * Por eso `overflow-x` solo no alcanzaba y hubo que medirlo dos veces: la caja misma sobresalía,
+   * y lo que desbordaba era la vista entera. Con el ancho atado al padre, el deslizamiento pasa a
+   * ser de la tira —que es donde se espera, y se hace con el pulgar— en vez de la pantalla entera. */
+  .cl-sub {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    /* Sin barra a la vista: son cuatro pestañas, no una tabla, y la barra sobre 32 px de alto tapa
+       la mitad del texto. El gesto queda; el adorno no. */
+    scrollbar-width: none;
+  }
+  .cl-sub::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Los tres contadores de Closer y Setter se apilan. `repeat(3, 1fr)` con el mínimo `auto` daba
+     `164 + 158 + 130` = 451 px dentro de un padre de 291, y cada tarjeta lleva un ícono de 30 px
+     más un rótulo: a 90 px —lo que daría un `minmax(0, 1fr)`— no entra ninguna de las tres. */
+  .md-counters {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* El panel derecho se va. Ya estaba escondido en las once con `.solo`; acá se va también en
