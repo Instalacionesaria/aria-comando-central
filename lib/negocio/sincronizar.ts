@@ -71,6 +71,7 @@ import {
   type ContactoDeGhl,
   type FalloDeGhl,
 } from '../ghl/cliente.ts';
+import { CAMPO_DEL_PUNTAJE } from '../ghl/contrato.ts';
 import { refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
 
 /**
@@ -391,6 +392,33 @@ async function guardar(
     ...(c.customFields === undefined
       ? {}
       : { campos_del_crm: JSON.stringify(camposDelContacto(c)) }),
+    /* ── Y EL PUNTAJE, QUE SALE DE ESOS MISMOS CAMPOS ─────────────────────
+     *
+     * `contactos.score` estuvo vacía desde que existe —0 de 590— y el encabezado de `esquema.ts`
+     * decía que era porque *«nada calcula el score»*. **Medido el 2026-09-21, eso era falso**: el
+     * CRM lo calcula, se llama «Puntaje | ICP» y está en 471 de los 590 con rango 0–100.
+     *
+     * Cero llamadas nuevas: se deriva del mismo mapa que la línea de arriba acaba de normalizar.
+     * Cuál campo es el puntaje no se puede deducir —17 campos en el grupo `calificacion`, uno solo
+     * es el puntaje— así que está designado en `CAMPO_DEL_PUNTAJE`, con la medición al lado.
+     *
+     * ── EL MISMO PATRÓN DE LA CLAVE AUSENTE, Y ACÁ TIENE UN FILO MÁS ────
+     *
+     * Sin `customFields` no se escribe: se deja lo que había. Es lo mismo que arriba y por el mismo
+     * motivo —`guardar()` corre también al abrir la ficha— pero el daño sería peor: el jsonb al
+     * menos se nota vacío en la pantalla, y una columna `score` en blanco se lee como «este lead no
+     * está calificado».
+     *
+     * ── Y EL CERO NO SE COLAPSA A NULO ──────────────────────────────────
+     *
+     * `?? null` y no `?? '0'` ni un descarte del cero. Medido: 47 de los 471 valen exactamente `0`,
+     * y son un grupo identificable —todos entre el 21 de agosto y el 3 de septiembre, con 2,7
+     * etiquetas de media contra 4,1 del resto, ninguno reciente—. **No se sabe** si el CRM calculó
+     * cero o si su workflow no corrió: el proveedor no dice la diferencia.
+     *
+     * Así que `0` se guarda como `0` y la ausencia como `null`, que son los dos ceros que este
+     * proyecto separa en todas partes. Colapsarlos acá sería decidir por el CRM. */
+    ...(c.customFields === undefined ? {} : { score: puntajeDelCrm(c) }),
     /* ── DE DÓNDE VINO EL LEAD Y CUÁNDO ENTRÓ ─────────────────────────────
      *
      * Las cinco llegan en esta misma respuesta y hasta la migración `048` se descartaban al
@@ -443,6 +471,14 @@ async function guardar(
            SOLO si la respuesta los traía: el `...` de arriba deja la clave afuera cuando no
            vinieron, y entonces acá tampoco entra y la fila conserva los suyos. */
         ...('campos_del_crm' in valores ? { campos_del_crm: valores.campos_del_crm } : {}),
+        /* Y el puntaje, que sale de esos mismos campos y por eso viaja con ellos.
+           *
+           Tiene que estar ACÁ y no sólo en el `insert`: el puntaje **cambia** —el CRM lo recalcula
+           cuando el lead responde el cuestionario— así que una columna que sólo se escribe al nacer
+           se queda con el primer valor para siempre. Y no falla: muestra un número creíble y viejo,
+           que es peor que no mostrarlo. Es el mismo argumento que `etiquetas` y `territorio`, que se
+           pisan por lo mismo. */
+        ...('score' in valores ? { score: valores.score } : {}),
         /* Las cinco de la `048` son hechos de GoHighLevel, así que se pisan — «lo que decide
            GoHighLevel se pisa; lo que decidimos acá, no». Y con la misma salvedad que los campos:
            sólo si la respuesta las traía. */
@@ -461,6 +497,36 @@ async function guardar(
     .execute();
 
   return true;
+}
+
+/**
+ * El puntaje que el CRM calcula para el lead, listo para la columna. `null` si no hay uno usable.
+ *
+ * ── VALIDA EN VEZ DE CONFIAR, Y ESO NO ES PRECAUCIÓN VACÍA ──────────────────
+ *
+ * La columna es `smallint` con `check between 0 and 100` (migración `055`), así que un valor raro
+ * del proveedor **no se pierde solo: rompe el `insert`**. Y este `insert` no es de un contacto — la
+ * tarea de contactos corre cada diez minutos y con ella caen los mensajes y la auditoría del mismo
+ * horario. Un `140` en un campo del CRM apagaría tres tareas.
+ *
+ * Medido el 2026-09-21 sobre los 471 que lo traen: enteros los 471, ninguno con decimales, ninguno
+ * fuera de 0–100. O sea que hoy esta guarda no descarta nada. Está por lo que el proveedor puede
+ * hacer mañana, que es de lo que ya se aprendió con `value` —declarado `unknown` a propósito porque
+ * «Puntaje | ICP» vuelve como número y un campo de casillas como arreglo—.
+ *
+ * ── Y EL CERO NO SE CONFUNDE CON LA AUSENCIA ────────────────────────────────
+ *
+ * `Number.isInteger` y no un `if (!n)`: un `0` es falsy y se iría como `null`. Medido: **47 de los
+ * 471 valen exactamente 0**, y son un grupo identificable —todos entre el 21 de agosto y el 3 de
+ * septiembre, ninguno reciente—. No se sabe si el CRM calculó cero o si su workflow no corrió: el
+ * proveedor no dice la diferencia, así que el cero se guarda como cero.
+ */
+function puntajeDelCrm(c: ContactoDeGhl): number | null {
+  const crudo = camposDelContacto(c)[CAMPO_DEL_PUNTAJE];
+  if (crudo === undefined) return null;
+  const n = Number(crudo);
+  if (!Number.isInteger(n) || n < 0 || n > 100) return null;
+  return n;
 }
 
 /**

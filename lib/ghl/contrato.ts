@@ -265,6 +265,45 @@ export const ETIQUETAS_DE_DESCARTE: readonly string[] = [
 // `lib/negocio/ficha.ts` describe. Queda afuera, y con ella se pierde «Confirmación Agendamiento».
 // ═════════════════════════════════════════════════════════════════════════════
 
+/**
+ * El campo del CRM que trae el PUNTAJE del lead, y va a `contactos.score`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * HAY QUE DESIGNARLO A MANO PORQUE NO SE PUEDE DEDUCIR
+ *
+ * `contactos.score` estuvo vacía desde que existe, y el encabezado de `esquema.ts` decía que era
+ * porque *«nada calcula el score»*. **Medido el 2026-09-21, eso era falso**: el CRM lo calcula y ya
+ * nos lo manda.
+ *
+ *     «Puntaje | ICP» (NUMERICAL)   471 de 590 contactos (80 %)
+ *     rango 0–100 · mediana 54 · promedio 51,7 · los 471 numéricos, sin basura
+ *     reparto:  1–24: 45   ·   25–49: 112   ·   50–74: 158   ·   75+: 109
+ *
+ * Y llegaba pegado a la misma respuesta que ya trae todo lo demás: está guardado en
+ * `contactos.campos_del_crm` desde la migración `039`. O sea que llenar la columna **no cuesta una
+ * llamada al proveedor** — es derivar un dato que ya está en la misma fila.
+ *
+ * ── POR QUÉ UNA CONSTANTE Y NO UNA BÚSQUEDA POR GRUPO O POR NOMBRE ────────
+ *
+ * Por grupo no se puede: el grupo `calificacion` tiene **17 campos en 3 carpetas** y sólo uno es el
+ * puntaje. Los otros dieciséis son las preguntas del cuestionario —«Ticket promedio mensual por
+ * cliente», «Meta de facturación 6 meses»— y cualquiera de ellos daría un «score» plausible y
+ * falso. Ése es exactamente el hueco que la prueba de la ruta de Sales vigila.
+ *
+ * Por nombre tampoco: hay **nueve** campos con «score» o «puntaje» en el nombre y ocho están
+ * vacíos. El segundo con datos es «Pre-Score | Meta Lead Ads», que vale `Caliente`/`Tibio` en 23
+ * contactos: es categórico, no un puntaje, y meterlo en una columna numérica sería inventar.
+ *
+ * ── ES DE ESTA SUBCUENTA, COMO TODO ESTE ARCHIVO ──────────────────────────
+ *
+ * El identificador es de la subcuenta de GoHighLevel de ARIA. Hoy es la única con contactos —las
+ * otras once organizaciones tienen 0—, así que vive acá con el resto de los literales del
+ * proveedor. El día que haya una segunda subcuenta esto se muda a
+ * `identidad.organizaciones_credenciales`, como `crm_agente_usuario_id`, y **este párrafo es el que
+ * dice cuándo dejó de alcanzar una constante**.
+ */
+export const CAMPO_DEL_PUNTAJE = '9HXxl5DW6aayQgKUPiOS';
+
 /** Una carpeta de campos personalizados, y a qué grupo del Perfil van sus campos. */
 export interface CarpetaDelPerfil {
   /** El `parentId` que traen los campos de esa carpeta. */
@@ -277,7 +316,9 @@ export interface CarpetaDelPerfil {
 }
 
 export const CARPETAS_DEL_PERFIL: readonly CarpetaDelPerfil[] = [
-  // 1 campo: «Puntaje | ICP», el score que calcula el CRM.
+  // 3 campos, y el que importa es «Puntaje | ICP»: el score que calcula el CRM. Ver
+  // `CAMPO_DEL_PUNTAJE` más abajo. Los otros dos son las URLs de la web y de las redes.
+  // Decía «1 campo» y el 2026-09-21 se midieron tres: la carpeta creció en el CRM.
   { id: 'sVdAfUBdIWUzYedio9NZ', nombre: 'Contact', grupo: 'calificacion', confianza: 'confirmado' },
   // 7 campos. El formulario de calificación vigente.
   { id: 'wl94HF4LeeVKSncXJd7n', nombre: '📁 Score | ICP Nuevo', grupo: 'calificacion', confianza: 'confirmado' },

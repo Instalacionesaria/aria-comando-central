@@ -1,0 +1,55 @@
+-- Las dos columnas que nadie escribió nunca, y el score que sí tenía de dónde salir
+--
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- QUÉ SE BORRA, Y CON QUÉ MEDICIÓN
+--
+-- `negocio.contactos.responsable_id` y `responsable_rol` nacieron en la `011` y **nunca se
+-- escribieron**. Medido contra producción el 2026-09-21, sobre los 590 contactos:
+--
+--     responsable_id     0 con valor      responsable_rol    0 con valor
+--
+-- Y no es que falte el consumidor: es que el diseño se reemplazó. La `034` puso `crm_asignado_a`
+-- —hoy en 250 de 590— y dejó escrito por qué: resolver el vínculo al escribir obligaría a
+-- re-sincronizar todos los contactos cada vez que se corrige a qué persona corresponde un usuario
+-- del CRM. Desde entonces `responsable_id` es residuo, y su comentario en `fila.ts:711` explica que
+-- la consulta lo evita a propósito.
+--
+-- `responsable_rol` es peor: **no aparece en una sola línea de código de la aplicación**. Sólo en la
+-- declaración del tipo, en la `011` que la creó, y en una prueba que afirma que admite nulos.
+--
+-- ── SE BORRAN EN VEZ DE DEJARSE, Y ÉSE ES EL ARGUMENTO ─────────────────────
+--
+-- Una columna vacía con clave foránea y `check` puesto no se lee como residuo: se lee como una
+-- función que todavía no se conectó. Ya pasó una vez con `sello_setter_id`, que estuvo dos
+-- migraciones sin escritor —lo dejó anotado la `015`— y con `citas.asistio`, que sigue nula en las
+-- 327. La diferencia es que esas dos SÍ tienen a quién servir; estas dos no, y mientras estén,
+-- alguien va a intentar «completarlas» y va a reintroducir el diseño que la `034` descartó.
+--
+-- Cero filas afectadas, así que el `drop` es instantáneo y no pierde nada.
+--
+-- ── Y LO QUE VA EN LA DIRECCIÓN CONTRARIA: `score` ─────────────────────────
+--
+-- Esta migración NO toca `score`, y conviene decir por qué está nombrada acá. La tercera columna que
+-- también estaba vacía en las 590 **no era residuo**: el encabezado de `esquema.ts` decía que
+-- estaba así porque *«nada calcula el score»*, y eso era falso.
+--
+-- Medido el mismo día: el CRM lo calcula, se llama «Puntaje | ICP» (`NUMERICAL`), y estaba en **471
+-- de los 590 contactos** con rango 0–100, mediana 54 —los 471 numéricos, sin basura—. Llegaba
+-- pegado a la misma respuesta de GoHighLevel que ya trae todo lo demás y estaba guardado en
+-- `campos_del_crm` desde la `039`. Lo único que faltaba era derivarlo a su columna, y eso lo hace
+-- ahora `lib/negocio/sincronizar.ts` sin una sola llamada nueva al proveedor.
+--
+-- Las tres columnas se veían idénticas —vacías al 100 %— y de las tres, dos eran residuo y una era
+-- un dato que ya teníamos. **Medirlas fue lo que las separó.** Es el motivo por el que este archivo
+-- las nombra juntas: quien venga a mirar por qué se borraron dos y no tres, lo encuentra acá.
+--
+-- ── REAPLICABILIDAD ───────────────────────────────────────────────────────
+--
+-- `drop column if exists` alcanza: PostgreSQL se lleva con la columna su clave foránea
+-- (`contactos_org_id_responsable_id_fkey`) y su `check` (`contactos_responsable_rol_check`), así que
+-- no hay que nombrarlos. No se crea ni se toca ninguna política, así que no aplica el
+-- `drop policy if exists` de la regla de reaplicabilidad.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+alter table negocio.contactos drop column if exists responsable_id;
+alter table negocio.contactos drop column if exists responsable_rol;

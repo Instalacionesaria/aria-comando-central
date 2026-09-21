@@ -141,7 +141,8 @@ export async function unContacto(
     nombre?: string;
     etapa?: string | null;
     etiquetas?: string[];
-    score?: string | null;
+    /** El puntaje del CRM, 0 a 100. Era `string` cuando la columna era `char(1)` — ver la `055`. */
+    score?: number | null;
     telefono?: string | null;
     ultimoEntranteEl?: Date | null;
     ultimoEntranteTexto?: string | null;

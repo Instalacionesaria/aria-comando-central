@@ -304,9 +304,24 @@ export type SalidaResultado =
 /**
  * La entidad central.
  *
- * `etapa`, `score`, `responsable_id` y `territorio` admiten nulos porque **GoHighLevel no
- * los da**: no hay campo de etapa que leer —la mueve un workflow disparado por una
- * etiqueta—, nada calcula el score, y las etiquetas dicen territorio, no asignación.
+ * `etapa` y `territorio` admiten nulos porque **GoHighLevel no los da**: no hay campo de etapa
+ * que leer —la mueve un workflow disparado por una etiqueta— y las etiquetas dicen territorio, no
+ * asignación.
+ *
+ * ── ESTE PÁRRAFO DECÍA QUE `score` TAMPOCO, Y ERA FALSO ─────────────────────
+ *
+ * Decía *«nada calcula el score»*, y de ahí salió la decisión de protegerlo del `do update` de la
+ * sincronización como si fuera un dato nuestro. **Medido el 2026-09-21: el CRM lo calcula.** Se
+ * llama «Puntaje | ICP», es `NUMERICAL`, y estaba en **471 de los 590 contactos** con rango 0–100 y
+ * mediana 54 — guardado en `campos_del_crm` desde la `039` y sin que nada lo derivara a su columna.
+ *
+ * Ahora lo deriva `sincronizar.ts`, y se PISA en cada corrida como `crm_asignado_a`: el CRM lo
+ * recalcula cuando el lead responde el cuestionario. La designación de cuál campo es está en
+ * `CAMPO_DEL_PUNTAJE` (`lib/ghl/contrato.ts`), porque de 17 campos del grupo `calificacion` sólo
+ * uno es el puntaje y los otros dieciséis darían un «score» plausible y falso.
+ *
+ * `responsable_id` y `responsable_rol` estaban también en esta lista y **se borraron** en la
+ * migración `054`: cero filas, cero escritores, cero lectores, y `crm_asignado_a` las reemplazó.
  */
 export interface TablaContactos {
   id: Generated<string>;
@@ -319,9 +334,26 @@ export interface TablaContactos {
   territorio: Territorio | null;
   fuente: Generated<string>;
   etapa: string | null;
-  score: string | null;
-  responsable_id: string | null;
-  responsable_rol: Territorio | null;
+  /**
+   * El puntaje que el CRM le calcula al lead, **0 a 100**. Un hecho de GoHighLevel, no nuestro.
+   *
+   * Sale de «Puntaje | ICP» (`CAMPO_DEL_PUNTAJE`), lo deriva `sincronizar.ts` de `campos_del_crm`,
+   * y se PISA en cada corrida: el CRM lo recalcula cuando el lead responde el cuestionario.
+   *
+   * ── ERA `char(1)` CON UN `check` DE LETRAS, Y NO PODÍA GUARDARLO ──────────
+   *
+   * La `011` la declaró `char(1) check (score in ('A','B','C','D'))` —*«la letra de calificación»*—
+   * y el tipo de acá decía `string | null`, que es cierto de `char(1)` también. Así que **el
+   * compilador nunca lo iba a ver**: lo encontró una prueba, con `value too long for type
+   * character(1)`, y a un commit de romper la sincronización en producción.
+   *
+   * La `055` la pasó a `smallint` con `check between 0 and 100`. De las dos cosas que se llamaban
+   * «score», la letra no tenía quién la calculara y el número llega desde hace un año.
+   *
+   * `null` = el CRM no lo trae para ese contacto: 119 de 590, medido el 2026-09-21. **No es un
+   * cero**, y los 47 que valen `0` sí lo son.
+   */
+  score: number | null;
   /**
    * El usuario de GoHighLevel al que el CRM tiene asignado este contacto. **Crudo.**
    *

@@ -39,7 +39,20 @@
  */
 export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   // ── Lo que puede referenciar a una PERSONA ─────────────────────────────────
-  contactos_org_id_responsable_id_fkey: 'tiene contactos a su nombre',
+  /* Acá estaba `contactos_org_id_responsable_id_fkey: 'tiene contactos a su nombre'`, y **se fue con
+     su columna** en la migración `054`. La encontró la comprobación de entradas muertas de la prueba
+     de esta lista, que es para lo que existe.
+     *
+     ── LA CONSECUENCIA QUE NO ES OBVIA, Y NO ES UNA PÉRDIDA ─────────────────
+     *
+     Esa clave foránea era lo único que impedía borrar a una persona «porque tiene contactos». Al
+     irse, esa protección desaparece — pero **nunca protegió nada**: `responsable_id` estuvo nula en
+     las 590 filas desde que existe, así que la restricción no bloqueó un solo borrado.
+     *
+     Y lo que hoy dice de quién es un contacto es `crm_asignado_a`, que **no tiene clave foránea a
+     propósito**: guarda el identificador del usuario del CRM crudo, no el nuestro (`034`). O sea que
+     «tiene contactos asignados en el CRM» nunca fue un motivo para frenar un borrado acá, y seguir
+     traduciendo una restricción inexistente habría hecho creer que sí. */
   contactos_org_id_sello_setter_id_fkey: 'agendó contactos que siguen en el sistema',
   notas_org_id_autor_id_fkey: 'escribió notas en fichas de contactos',
   resultados_org_id_registrado_por_fkey: 'registró resultados de ventas',

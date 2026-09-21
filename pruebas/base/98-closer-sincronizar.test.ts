@@ -76,6 +76,7 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { COOKIE_SESION } from '../../lib/autorizacion/sesion.ts';
 import { TEXTO_DE_FALTA_GHL } from '../../lib/credenciales/resolver.ts';
 import type { ContactoDeGhl } from '../../lib/ghl/cliente.ts';
+import { CAMPO_DEL_PUNTAJE } from '../../lib/ghl/contrato.ts';
 import {
   ETIQUETAS,
   refrescarUnContacto,
@@ -322,6 +323,137 @@ test('sin ninguna etiqueta de territorio el contacto queda CONGELADO, no borrado
   assert.equal(fila.territorio, null);
 });
 
+test('el PUNTAJE del CRM llega a `contactos.score`, y el cero no se vuelve nulo', async () => {
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * LA COLUMNA ESTUVO VACÍA UN AÑO PORQUE UN COMENTARIO DECÍA QUE NO TENÍA FUENTE
+   *
+   * `esquema.ts` afirmaba que `score` admitía nulos porque *«nada calcula el score»*, y de ahí salió
+   * la decisión de protegerla del `do update` como si fuera un dato nuestro. **Medido el 2026-09-21
+   * era falso**: el CRM lo calcula —«Puntaje | ICP», `NUMERICAL`— y estaba en 471 de los 590
+   * contactos con rango 0–100, guardado en `campos_del_crm` desde la `039` y sin que nada lo
+   * derivara.
+   *
+   * Cuál campo es el puntaje NO se puede deducir: el grupo `calificacion` tiene 17 campos y los
+   * otros dieciséis son las preguntas del cuestionario. Está designado en `CAMPO_DEL_PUNTAJE`.
+   *
+   * ── Y LOS DOS CEROS, QUE ES LA MITAD QUE MÁS FÁCIL SE PIERDE ──────────────
+   *
+   * Medido: 47 de los 471 valen exactamente `0`, y no se sabe si el CRM calculó cero o si su
+   * workflow no corrió — el proveedor no dice la diferencia. Así que `'0'` se guarda como `'0'` y la
+   * ausencia como `null`. Un `?? null` sobre un valor caído, o un descarte del cero «porque parece
+   * vacío», colapsa los dos hechos y nadie lo ve: la pantalla dibuja `—` sobre un cero medido.
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  const conPuntaje = idDeGhl();
+  const enCero = idDeGhl();
+  const sinCampo = idDeGhl();
+
+  preparar(
+    porEtiqueta({
+      zona_closer: [
+        {
+          id: conPuntaje,
+          contactName: 'Puntaje Alto',
+          tags: ['zona_closer'],
+          // El proveedor lo manda como NÚMERO, no como texto. Ver `camposDelContacto`.
+          customFields: [{ id: CAMPO_DEL_PUNTAJE, value: 87 }],
+        },
+        {
+          id: enCero,
+          contactName: 'Puntaje Cero',
+          tags: ['zona_closer'],
+          customFields: [{ id: CAMPO_DEL_PUNTAJE, value: 0 }],
+        },
+        {
+          // Trae campos, pero NO el del puntaje: son los 119 de 590 que no lo tienen.
+          id: sinCampo,
+          contactName: 'Sin Puntaje',
+          tags: ['zona_closer'],
+          customFields: [{ id: 'otro-campo', value: 'algo' }],
+        },
+      ],
+    }),
+  );
+
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo');
+
+  const scoreDe = async (ghl: string) =>
+    conOrganizacion(esc.org, async () =>
+      datos()
+        .selectFrom('contactos')
+        .select('score')
+        .where('ghl_contact_id', '=', ghl)
+        .executeTakeFirst(),
+    );
+
+  assert.equal((await scoreDe(conPuntaje))?.score, 87, 'el puntaje del CRM no llegó a la columna');
+  assert.equal(
+    (await scoreDe(enCero))?.score,
+    0,
+    'el cero se perdió: es un cero MEDIDO y `—` afirmaría que el CRM no lo calculó',
+  );
+  assert.equal(
+    (await scoreDe(sinCampo))?.score,
+    null,
+    'sin el campo se guardó algo: la ausencia no es un cero',
+  );
+
+  /* ── Y SE PISA EN CADA CORRIDA, QUE ES LA OTRA MITAD ──────────────────────
+   *
+   * El CRM recalcula el puntaje cuando el lead responde el cuestionario. Una columna que sólo se
+   * escribiera al nacer se quedaría con el primer valor para siempre, mostrando un número creíble y
+   * viejo — que es peor que no mostrarlo. Es el mismo argumento que `etiquetas` y `crm_asignado_a`. */
+  preparar(
+    porEtiqueta({
+      zona_closer: [
+        {
+          id: conPuntaje,
+          contactName: 'Puntaje Alto',
+          tags: ['zona_closer'],
+          customFields: [{ id: CAMPO_DEL_PUNTAJE, value: 12 }],
+        },
+      ],
+    }),
+  );
+  const otra = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(otra.tipo, 'listo');
+  assert.equal(
+    (await scoreDe(conPuntaje))?.score,
+    12,
+    'el puntaje quedó con el primer valor: la columna envejece sin que nada falle',
+  );
+
+  /* ── Y UN VALOR FUERA DE RANGO NO ROMPE LA CORRIDA ───────────────────────
+   *
+   * La columna es `smallint check between 0 and 100`, así que un valor raro del proveedor **rompe
+   * el `insert`** — y este `insert` no es de un contacto: la tarea de contactos corre cada diez
+   * minutos y con ella caen los mensajes y la auditoría del mismo horario. Un `140` apagaría tres
+   * tareas.
+   *
+   * `puntajeDelCrm` lo valida antes y manda `null`. Esta prueba es la que distingue «se descarta el
+   * valor» de «se cae la sincronización»: sin ella, el `check` de la base parece una protección y es
+   * una bomba. */
+  preparar(
+    porEtiqueta({
+      zona_closer: [
+        {
+          id: conPuntaje,
+          contactName: 'Puntaje Alto',
+          tags: ['zona_closer'],
+          customFields: [{ id: CAMPO_DEL_PUNTAJE, value: 140 }],
+        },
+      ],
+    }),
+  );
+  const tercera = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(tercera.tipo, 'listo', 'un puntaje fuera de rango rompió la sincronización entera');
+  assert.equal(
+    (await scoreDe(conPuntaje))?.score,
+    null,
+    'un puntaje fuera de rango se guardó igual, o quedó el viejo: hay que descartarlo',
+  );
+});
+
 test('sincronizar guarda los campos personalizados, y refrescar la ficha NO los borra', async () => {
   /* ═══════════════════════════════════════════════════════════════════════════
    * EL DEFECTO SILENCIOSO QUE ESTA PRUEBA EXISTE PARA IMPEDIR
@@ -530,14 +662,27 @@ test('una atribución VACÍA se guarda vacía: no es lo mismo que no venir', asy
   );
 });
 
-test('refrescar recalcula el territorio y NO pisa `etapa` ni `score`', async () => {
-  // Datos NUESTROS, no de GoHighLevel: el proveedor no expone etapa ni score y nada allá los
-  // calcula. Si entraran al `do update`, cada apertura de ficha borraría el trabajo hecho acá.
+test('refrescar recalcula el territorio y NO pisa `etapa`, pero SÍ el `score`', async () => {
+  /* `etapa` es un dato NUESTRO: el proveedor no la expone —la mueve un workflow suyo— y la escribe
+     Avanzar. Si entrara al `do update`, cada apertura de ficha borraría el trabajo hecho acá.
+     *
+     ── `score` ESTABA DE ESTE LADO Y ESTABA MAL ────────────────────────────
+     *
+     Este comentario decía *«el proveedor no expone etapa ni score y nada allá los calcula»*.
+     Medido el 2026-09-21: **el CRM sí calcula el score** —«Puntaje | ICP», en 471 de los 590— así
+     que es un hecho de GoHighLevel y va del lado de `nombre` y `telefono`: se pisa.
+     *
+     Y tiene que pisarse, no sólo puede: el CRM recalcula el puntaje cuando el lead responde el
+     cuestionario. Una columna que no se pisara se quedaría con el primer valor para siempre,
+     mostrando un número creíble y viejo.
+     *
+     Acá el doble devuelve el contacto SIN `customFields`, que es el caso de la clave ausente: no
+     se pisa nada y el valor sembrado sobrevive. Es la otra mitad, y la de abajo la afirma. */
   const sembrado = await unContacto(esc, {
     nombre: 'Sincro Antes',
     territorio: 'setter',
     etapa: 'agendado',
-    score: 'A',
+    score: 61,
   });
   preparar((p) => {
     if (p.url.startsWith(`${GHL}/contacts/`) && p.metodo === 'GET') {
@@ -566,10 +711,13 @@ test('refrescar recalcula el territorio y NO pisa `etapa` ni `score`', async () 
   // Lo que el CRM manda sí se actualiza.
   assert.equal(fila?.nombre, 'Sincro Después');
   assert.equal(fila?.telefono, '+51999111222');
-  // Lo nuestro NO se toca. Con `etapa` o `score` en el `do update`, esto quedaría en nulo y la fila
-  // volvería al principio del pipeline sin que nada fallara.
+  // La etapa NO se toca. Con `etapa` en el `do update`, esto quedaría en nulo y la fila volvería al
+  // principio del pipeline sin que nada fallara.
   assert.equal(fila?.etapa, 'agendado');
-  assert.equal(fila?.score, 'A');
+  /* Y el puntaje sobrevive porque la respuesta no traía `customFields`: es la disciplina de la
+     clave ausente, no una protección de la columna. El caso donde SÍ se pisa está en la prueba del
+     puntaje, más arriba. */
+  assert.equal(fila?.score, 61);
 });
 
 test('un contacto borrado en el CRM no se borra acá: es un hecho, no un fallo', async () => {

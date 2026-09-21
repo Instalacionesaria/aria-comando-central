@@ -381,8 +381,23 @@ test('`crm_asignado_a` se PISA al sincronizar, y `responsable_id` NO', async () 
   /* ══════════════════════════════════════════════════════════════════════════
      LAS DOS MITADES DE LA MISMA REGLA, Y SE ROMPEN PARA LADOS OPUESTOS
 
-     `lib/negocio/sincronizar.ts` protege del `do update` cinco columnas que son NUESTRAS —el sello
-     del setter, la etapa, el score, el responsable— porque pisarlas borraría trabajo hecho acá.
+     `lib/negocio/sincronizar.ts` protege del `do update` las columnas que son NUESTRAS —el sello del
+     setter y la etapa— porque pisarlas borraría trabajo hecho acá.
+
+     ── `score` CAMBIÓ DE LADO EL 2026-09-21, Y NO ES UN AJUSTE DE LA PRUEBA ──
+
+     Estaba en esta lista, y estaba mal. Se lo creía nuestro porque `esquema.ts` decía que *«nada
+     calcula el score»*, y **medido, eso era falso**: el CRM lo calcula —«Puntaje | ICP»— y estaba en
+     471 de los 590 contactos con rango 0–100, guardado en `campos_del_crm` y sin que nada lo
+     derivara a su columna.
+
+     O sea que es un hecho de GoHighLevel, no nuestro, y va del lado de `crm_asignado_a`: **se pisa**.
+     Y por el mismo motivo que ese, además: el CRM recalcula el puntaje cuando el lead responde el
+     cuestionario, así que una columna que sólo se escribe al nacer se queda con el primer valor para
+     siempre — mostrando un número creíble y viejo.
+
+     `responsable_id` también salió de la lista, pero por lo contrario: la columna se borró
+     (migración `054`). No tenía escritor ni lector y `crm_asignado_a` la reemplazó.
 
      `crm_asignado_a` es lo contrario: es un hecho de GoHighLevel. Si quedara fuera del `set`, el
      primer valor sería el definitivo — el lead se quedaría para siempre con el closer que lo tuvo el
@@ -403,7 +418,11 @@ test('`crm_asignado_a` se PISA al sincronizar, y `responsable_id` NO', async () 
   const bloque = fuente.slice(i, fuente.indexOf('} as never)', i));
 
   assert.match(bloque, /crm_asignado_a:/, 'la sincronización dejó de pisar el asignado del CRM');
-  for (const nuestra of ['responsable_id', 'sello_setter_id', 'etapa', 'score']) {
+  /* El puntaje se pisa, como el asignado: los dos los decide el CRM y los dos cambian. Va afirmado
+     y no sólo ausente de la lista de abajo — sin esto, quitarlo del `set` volvería al defecto de la
+     columna que se escribe una vez y envejece sin que nada falle. */
+  assert.match(bloque, /\bscore:/, 'la sincronización dejó de pisar el puntaje del CRM');
+  for (const nuestra of ['sello_setter_id', 'etapa']) {
     assert.equal(
       new RegExp(`\\b${nuestra}:`).test(bloque),
       false,

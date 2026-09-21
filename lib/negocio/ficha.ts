@@ -490,9 +490,16 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
   poner('Teléfono', c.telefono, 'detalles');
   poner('Correo', c.email, 'detalles');
   poner('Fuente', c.fuente, 'origen');
-  // La calificación es una letra y hoy **nada la calcula**. Va igual cuando existe: el día que se
-  // calcule, aparece sin tocar esto.
-  poner('Calificación', c.score, 'calificacion');
+  /* El puntaje que el CRM calcula: «Puntaje | ICP», 0 a 100, en 471 de 590 contactos.
+     *
+     Decía *«es una letra y hoy nada la calcula»*, y las dos mitades eran falsas — ver `esquema.ts`
+     y la migración `055`.
+     *
+     `String(...)` sobre el número, y el nulo se conserva: `poner` espera texto porque el Perfil
+     dibuja los 172 campos del CRM con el mismo camino. **No `String(c.score ?? '')`**: eso
+     convertiría la ausencia en una cadena vacía, y el Perfil no podría distinguirla de un campo
+     contestado en blanco. */
+  poner('Calificación', c.score === null ? null : String(c.score), 'calificacion');
   // Las etiquetas crudas del CRM. Van en «Origen» porque es de donde salió el contacto, y sirven
   // para la primera pregunta cuando alguien dice «éste no va acá».
   poner('Etiquetas', (c.etiquetas ?? []).join(', '), 'origen');

@@ -318,8 +318,14 @@ test('las columnas que la fuente no tiene admiten nulos, y las que exige no', as
   // cero medido y un cero no medido no son el mismo hecho — y una columna obligatoria con
   // valor de relleno convierte el segundo en el primero.
   //
-  // Si alguien "completa" el esquema poniendo `not null` en `score` o en `responsable_id`,
-  // esto falla y le cuenta que la fuente no los tiene.
+  // Si alguien "completa" el esquema poniendo `not null` en `score` o en `etapa`, esto falla y le
+  // cuenta que la fuente no los tiene.
+  //
+  // `responsable_id` y `responsable_rol` estaban en esta lista y se BORRARON (migración `054`):
+  // cero filas en las 590, cero escritores, cero lectores, y `crm_asignado_a` las reemplazó. Se
+  // afirma su ausencia más abajo, porque un `mapa.get` de una columna que no existe devuelve
+  // `undefined` y `undefined !== false` — o sea que dejarlas en el bucle habría seguido pasando por
+  // el motivo equivocado, y borrar la columna de verdad no se habría distinguido de tipearla mal.
   const cols = await filas<{ columna: string; obligatoria: boolean }>(
     admin,
     `select a.attname as columna, a.attnotnull as obligatoria
@@ -329,8 +335,12 @@ test('las columnas que la fuente no tiene admiten nulos, y las que exige no', as
   );
   const mapa = new Map(cols.map((c) => [c.columna, c.obligatoria]));
 
-  for (const c of ['score', 'responsable_id', 'responsable_rol', 'etapa', 'territorio']) {
+  for (const c of ['score', 'etapa', 'territorio']) {
     assert.equal(mapa.get(c), false, `\`${c}\` es obligatoria, y la fuente no la tiene`);
+  }
+  // Y las dos que se fueron: si vuelven, que sea una decisión y no un `alter table` de paso.
+  for (const c of ['responsable_id', 'responsable_rol']) {
+    assert.equal(mapa.has(c), false, `\`${c}\` volvió a existir: la \`054\` la borró a propósito`);
   }
   // Y las que sí: sin éstas la fila no se puede dibujar.
   for (const c of ['org_id', 'ghl_contact_id', 'nombre', 'fuente', 'etiquetas']) {

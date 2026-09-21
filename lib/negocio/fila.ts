@@ -176,8 +176,17 @@ export interface Fila {
   telefono: string | null;
   /** Para el grupo «Detalles» del Perfil. La lista no lo dibuja. */
   email: string | null;
-  /** La letra de calificación. `null` → la fila dibuja `—`. Nada la calcula todavía. */
-  score: string | null;
+  /**
+   * El puntaje que el CRM calcula para el lead, 0 a 100. `null` → la fila dibuja `—`.
+   *
+   * Decía *«la letra de calificación, nada la calcula todavía»* y las dos mitades eran falsas: el
+   * CRM lo calcula —«Puntaje | ICP», en 471 de 590— y no es una letra. Ver `esquema.ts` y la
+   * migración `055`.
+   *
+   * **`Fila.jsx` lo dibuja con `?? '—'` y no con `||`**, que es lo que hace que un puntaje de 0 se
+   * vea como `0` y no como «sin dato». Son dos hechos distintos y hay 47 contactos en el primero.
+   */
+  score: number | null;
   /**
    * El chip de fuente. **Nunca nulo**: el § 7.1 exige *"ninguna fila sin fuente: si no se
    * sabe, va un valor de reserva visible"*. La reserva la pone la base
@@ -358,7 +367,7 @@ function aFila(f: {
   nombre: string;
   telefono: string | null;
   email: string | null;
-  score: string | null;
+  score: number | null;
   fuente: string;
   etapa: string | null;
   ultimo_entrante_el: Date | null;
