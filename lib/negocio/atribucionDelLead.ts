@@ -40,6 +40,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 /** Una fila del corte: cuántos entraron por ahí y cuántos agendaron. */
 export interface FilaDeAtribucion {
@@ -147,10 +148,7 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
       /* El mismo `exists` y el mismo filtro de cita alcanzable que el booking rate. Tiene que ser
          el mismo o las filas de este corte no sumarían la cifra grande de al lado, y nadie tendría
          cómo darse cuenta de cuál de las dos está mal. */
-      sql<number>`count(*) filter (where exists (
-        select 1 from negocio.citas ci
-         where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-           and ci.ghl_calendario_id is not null))`.as('agendaron'),
+      sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
     ])
     .where(sql<boolean>`alta_en_el_crm >= now() - make_interval(days => ${dias})`)
     /* ── `group by 1` Y NO LA EXPRESIÓN REPETIDA ──────────────────────────

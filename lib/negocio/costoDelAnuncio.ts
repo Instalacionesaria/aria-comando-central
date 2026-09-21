@@ -29,6 +29,7 @@ import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { COBERTURA_SUFICIENTE } from './calidadDeLaAtribucion.ts';
 import { llaveDelCreativo } from './creativo.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 /*
  * ═════════════════════════════════════════════════════════════════════════════
@@ -338,10 +339,7 @@ async function leadsPorAnuncio(
       /* El mismo `exists` y el mismo filtro de cita alcanzable que `atribucionDelLead` y que el
          booking rate. Tiene que ser el mismo o las filas de este corte no sumarían la cifra grande
          de al lado, y nadie tendría cómo darse cuenta de cuál de las dos está mal. */
-      sql<number>`count(*) filter (where exists (
-        select 1 from negocio.citas ci
-         where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-           and ci.ghl_calendario_id is not null))`.as('agendaron'),
+      sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
     ])
     .where(sql<boolean>`contactos.atribucion_primera ? 'adId'`)
     // La MISMA ventana que el gasto, anclada al día. Ver `VENTANAS` arriba.

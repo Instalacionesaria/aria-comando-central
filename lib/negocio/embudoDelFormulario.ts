@@ -51,6 +51,7 @@ import {
   corteDeEpoca,
   ventanaDeLaCohorte,
 } from './recorrido.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 export interface FilaDelFormulario {
   estado: EstadoDelFormulario;
@@ -203,9 +204,7 @@ export async function embudoDelFormulario(dias = DIAS_DE_LA_TASA): Promise<Embud
       /* La contradicción, medida en la misma consulta para que no haya que cruzar dos pantallas. */
       sql<number>`count(*) filter (
         where ${valor} = 'Agendado'
-          and exists (select 1 from negocio.citas ci
-                       where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-                         and ci.ghl_calendario_id is not null))`.as('agendadoDeVerdad'),
+          and ${tieneCitaAlcanzable('contactos')})`.as('agendadoDeVerdad'),
       /* Los extremos de la cohorte QUE TRAE EL CAMPO, que es de lo que habla este bloque. */
       sql<string | null>`min(alta_en_el_crm) filter (where ${valor} is not null)::date::text`.as('primero'),
       sql<string | null>`max(alta_en_el_crm) filter (where ${valor} is not null)::date::text`.as('ultimo'),

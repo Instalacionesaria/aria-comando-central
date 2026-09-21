@@ -40,8 +40,17 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
-import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
-import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
+/* `ESTADOS_CANCELADOS` y `ETIQUETAS_DE_DESCARTE` se dejaron de importar acá: los dos vocabularios
+   los usa ahora `citasAlcanzables.ts`, que es quien arma los predicados. Dejar las importaciones
+   «por si acaso» las vuelve invisibles: nadie que lea este archivo sabría que no se usan.
+   *
+   Se renombran al importar porque en el cuerpo de `tasaDeCancelacion` los tres nombres cortos ya
+   están tomados por sus instancias, y `const alcanzable = alcanzable()` no compila. */
+import {
+  alcanzable as esAlcanzable,
+  cancelada as esCancelada,
+  descartado as esDescartado,
+} from './citasAlcanzables.ts';
 import { avisoDeLaCola } from './periodo.ts';
 
 /**
@@ -310,20 +319,16 @@ export const PISO_DE_UNA_TASA = 10;
 export const DIAS_DE_LA_TASA = 14;
 
 export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancelacion> {
-  /* Los tres fragmentos van en constantes y no repetidos ocho veces: repetidos, el día que alguien
-     agregue una cifra la escribe con un filtro apenas distinto, las dos conviven, y la tarjeta
-     muestra números que no cuadran entre sí mientras cada uno se ve bien por separado. */
-  const alcanzable = sql`ghl_calendario_id is not null`;
-  const cancelada = sql`lower(coalesce(estado_ghl, '')) = any(${sql.val(ESTADOS_CANCELADOS)})`;
-  /* ── EL DESCARTE PROPIO, LEÍDO DE LAS ETIQUETAS DEL CONTACTO ─────────────
-   *
-   * `exists` sobre `unnest` y no un `&&` de arreglos: las etiquetas se guardan crudas y
-   * GoHighLevel no garantiza la caja, así que hay que comparar en minúscula — y `&&` no deja.
-   * El motivo completo, con el censo de etiquetas, está en `ETIQUETAS_DE_DESCARTE`. */
-  const descartado = sql`exists (
-    select 1 from negocio.contactos ct, unnest(ct.etiquetas) e
-     where ct.org_id = citas.org_id and ct.id = citas.contacto_id
-       and lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+  /* Los tres salían de constantes locales de esta función, con este mismo motivo escrito: repetidos,
+     el día que alguien agregue una cifra la escribe con un filtro apenas distinto, las dos conviven,
+     y la tarjeta muestra números que no cuadran entre sí mientras cada uno se ve bien por separado.
+     *
+     El 2026-09-21 se midió que eso YA había pasado —`ghl_calendario_id is not null` en nueve
+     módulos— así que se mudaron a `citasAlcanzables.ts`, que es de dónde los toma todo el mundo
+     ahora. Acá se instancian con el alias de esta consulta, que es `citas` a secas. */
+  const alcanzable = esAlcanzable();
+  const cancelada = esCancelada();
+  const descartado = esDescartado();
 
   const fila = await datos()
     .selectFrom('citas')

@@ -61,6 +61,7 @@ import {
   familiaDelRecorrido,
   ventanaDeLaCohorte,
 } from './recorrido.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 export interface FilaDeRecorrido {
   familia: Familia;
@@ -147,10 +148,7 @@ export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<Recorrid
            * Y `exists` y no un `join` con `count(*)`: un contacto con dos citas pesaría doble.
            Verificado en `docs/estado actual/02-CREATIVE.md:287`, donde ese defecto infló una pieza
            de 109 a 112. */
-        sql<number>`count(*) filter (where exists (
-          select 1 from negocio.citas ci
-           where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-             and ci.ghl_calendario_id is not null))`.as('agendaron'),
+        sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
         // Los que traen dirección: el numerador de la cobertura.
         sql<number>`count(*) filter (where contactos.atribucion_ultima ? 'url')`.as('conUrl'),
         /* Los que la traen capturada AL RESERVAR. `calendar` es el widget y `form` es el precall,

@@ -45,6 +45,7 @@ import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 /**
  * El nombre del campo del CRM que trae el puntaje de encaje.
@@ -221,10 +222,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
          *
          * Y `exists` y no un `join` con `count(*)`: verificado en `02-CREATIVE.md:287`, un contacto
          * con dos citas inflaba «agendamiento - yaping» de 109 a 112. */
-      sql<number>`count(*) filter (where exists (
-        select 1 from negocio.citas ci
-         where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-           and ci.ghl_calendario_id is not null))`.as('agendaron'),
+      sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
     ])
     // La misma ventana anclada al día que usa el gasto. Ver `costoDelAnuncio`.
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)

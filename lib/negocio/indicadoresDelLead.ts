@@ -47,6 +47,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
 import { avisoDeLaCola } from './periodo.ts';
+import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 /**
  * Una latencia, en minutos. **Dos percentiles y no un promedio.**
@@ -239,10 +240,7 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
   /* El predicado VIEJO, que ahora sólo sirve para contar la diferencia. Se conserva escrito acá y
      no se deduce restando: restando, el día que alguien cambie uno de los dos la resta sigue dando
      un número y deja de significar lo que dice. */
-  const tieneCitaAlcanzable = sql`exists (
-    select 1 from negocio.citas ci
-     where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id
-       and ci.ghl_calendario_id is not null)`;
+  const agendo = tieneCitaAlcanzable('contactos');
 
   const fila = await datos()
     .selectFrom('contactos')
@@ -254,7 +252,7 @@ export async function indicadoresDelLead(dias = DIAS_DE_LA_TASA): Promise<Indica
       /* Los que agendaron y cuya ÚNICA cita el barrido ya no refresca. Es la diferencia entre el
          numerador de esta cifra y el de la cancelación de al lado, y viaja para que se pueda ver. */
       sql<number>`count(*) filter (
-        where ${tieneCita} and not ${tieneCitaAlcanzable}
+        where ${tieneCita} and not ${agendo}
       )`.as('solo_congeladas'),
       /* La bifurcación, en la MISMA pasada que su total. Restarla después en la pantalla dejaría que
          los dos sumandos vinieran de dos consultas y pudieran no sumar `agendaron`. Ver el comentario
