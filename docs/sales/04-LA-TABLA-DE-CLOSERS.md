@@ -1,9 +1,12 @@
 # La tabla de closers, y la persona real que está adentro
 
+> **Las citas a `SalesView.jsx` apuntan al encabezado que documenta lo borrado, no al marcado.** La maqueta se fue el 2026-09-21 con `components/sales/PanelDeSales.jsx`; su encabezado enumera cada pieza eliminada con la medición que la desmiente.
+
 > Requisitos derivados del prototipo de Sales y de una medición propia contra producción del
 > **2026-09-20**. Cada requisito lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:95-171` dibuja una tarjeta «Closers» con seis columnas y **dos filas**.
+`components/views/SalesView.jsx:19-24` deja anotada la tarjeta «Closers» que la maqueta dibujaba, con
+seis columnas y **dos filas**.
 
 | | Closer | Agendadas | Asistieron | Ventas | Cierre | Revenue |
 |---|---|---|---|---|---|---|

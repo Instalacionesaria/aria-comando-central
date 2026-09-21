@@ -1,5 +1,7 @@
 # El prototipo contra el documento contra lo medible hoy
 
+> **Las citas a `SalesView.jsx` apuntan al encabezado que documenta lo borrado, no al marcado.** La maqueta se fue el 2026-09-21 con `components/sales/PanelDeSales.jsx`; su encabezado enumera cada pieza eliminada con la medición que la desmiente.
+
 > Las tres columnas, cifra por cifra. Prototipo: `components/views/SalesView.jsx`, 231 líneas.
 > Documento: `CC_Arquitectura_Funcional.md`, 1.650 líneas. Medición: producción, **2026-09-20**.
 
@@ -32,7 +34,7 @@ ni en el documento**. Salió de medir.
 
 Tres cosas, y son pocas pero reales:
 
-1. **El rótulo «Revenue reportado»** (`SalesView.jsx:87`). La palabra *reportado* es exactamente lo que
+1. **El rótulo «Revenue reportado»** (`SalesView.jsx:14-18`). La palabra *reportado* es exactamente lo que
    el `§ 5.4:288` exige y lo que la medición confirma. Se conserva, y se le agrega el resto de la
    frase pegada a la cifra.
 2. **La forma de la tabla por closer.** Seis columnas por persona es la forma correcta de la única

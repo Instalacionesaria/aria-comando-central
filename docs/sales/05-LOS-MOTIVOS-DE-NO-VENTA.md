@@ -1,9 +1,12 @@
 # Los motivos de no venta: la taxonomía existe, pero es otra
 
+> **Las citas a `SalesView.jsx` apuntan al encabezado que documenta lo borrado, no al marcado.** La maqueta se fue el 2026-09-21 con `components/sales/PanelDeSales.jsx`; su encabezado enumera cada pieza eliminada con la medición que la desmiente.
+
 > Requisitos derivados del prototipo de Sales y de una medición propia contra producción del
 > **2026-09-20**. Cada requisito lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:172-225` dibuja el tercer bloque: cuatro barras con un conteo y un
+`components/views/SalesView.jsx:25-30` deja anotado el tercer bloque que la maqueta dibujaba: cuatro
+barras con un conteo y un
 ancho, bajo el rótulo «Motivos de no venta» y la pista «56 llamadas sin cierre» (`:176`).
 
 | motivo | conteo | ancho | línea |
@@ -71,7 +74,7 @@ son: una de ellas no está perdida.**
 **Unidad** · Conteo y proporción.
 **Población** · Sólo los resultados con esa salida.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `SalesView.jsx:172-225`; `lib/negocio/salidas.ts:165`.
+**Rastro** · `SalesView.jsx:25-30`; `lib/negocio/salidas.ts:165`.
 **Estado** · **La forma es construible; el contenido no llega ni de cerca.**
 
 ```

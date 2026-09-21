@@ -36,7 +36,8 @@ import { join } from 'node:path';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, pedirComo, type Escenario } from '../apoyo/closer.ts';
-import { GET as sales, PANTALLA, VENTANAS } from '../../app/api/sales/route.ts';
+import { GET as sales, PANTALLA } from '../../app/api/sales/route.ts';
+import { VENTANAS, type VentanaDeSales } from '../../lib/negocio/ventanasDeSales.ts';
 import { PERIODOS } from '../../lib/negocio/periodo.ts';
 import { SECCIONES } from '../../lib/autorizacion/secciones.ts';
 
@@ -245,7 +246,7 @@ test('las tres ventanas viajan con su texto: el panel no puede importarlas', asy
      ahí es donde las dos se vuelven «últimos 30 días» y la tabla deja de cuadrar contra la cadena. */
   const ventanas = bloque(await pedir('30d'), 'ventanas');
   assert.deepEqual(Object.keys(ventanas).sort(), ['citas', 'cohorte', 'mes']);
-  for (const [clave, v] of Object.entries(ventanas as Record<string, { titulo: string; que: string }>)) {
+  for (const [clave, v] of Object.entries(ventanas as Record<string, VentanaDeSales>)) {
     assert.ok(v.titulo.length > 0, `la ventana "${clave}" no tiene título`);
     assert.ok(v.que.length > 30, `la ventana "${clave}" no explica qué población mide`);
   }

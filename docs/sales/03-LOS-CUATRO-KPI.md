@@ -1,9 +1,12 @@
 # Los cuatro KPI de arriba, y cuál tiene fuente
 
+> **Las citas a `SalesView.jsx` apuntan al encabezado que documenta lo borrado, no al marcado.** La maqueta se fue el 2026-09-21 con `components/sales/PanelDeSales.jsx`; su encabezado enumera cada pieza eliminada con la medición que la desmiente.
+
 > Requisitos derivados del prototipo de Sales y de una medición propia contra producción del
 > **2026-09-20**. Cada requisito lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:53-94` dibuja una rejilla de cuatro tarjetas. **Las cuatro cifras son
+`components/views/SalesView.jsx:14-18` deja anotada la rejilla de cuatro tarjetas que la maqueta
+dibujaba. **Las cuatro cifras son
 literales escritos a mano en el JSX**, sin `fetch`, sin estado y sin interpolación.
 
 | rótulo | cifra | línea | fuente hoy |
@@ -79,7 +82,7 @@ Closer. Sales lo toma de ahí o habrá dos cifras del mismo hecho.
 
 ## S3-05 · «Revenue reportado» — el rótulo es lo único correcto
 
-**Rastro** · `SalesView.jsx:87-91`; `§ 5.4:272` (*«Monto vendido»*), `§ 5.4:288`.
+**Rastro** · `SalesView.jsx:14-18`; `§ 5.4:272` (*«Monto vendido»*), `§ 5.4:288`.
 **Estado** · **Cero montos en las 7 filas.**
 
 **Pero el rótulo del prototipo acierta en algo que hay que conservar: dice «reportado».** El

@@ -62,30 +62,11 @@ import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { cadenaDeCierre } from '../../../lib/negocio/cadenaDeCierre.ts';
 import { cicloHastaLaCita } from '../../../lib/negocio/cicloHastaLaCita.ts';
 import { cierrePorCloser } from '../../../lib/negocio/cierrePorCloser.ts';
+import { VENTANAS } from '../../../lib/negocio/ventanasDeSales.ts';
+import { HUECOS, MEDIDO_EL } from '../../../lib/negocio/huecosDeSales.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'sales';
-
-/**
- * Qué mide cada ventana de esta pantalla. **Viaja**: el panel no puede importar nada de acá.
- *
- * Los textos dicen la POBLACIÓN y no los días. Los días ya los lleva cada bloque en su propio campo,
- * y repetirlos acá sería un segundo lugar donde pueden dejar de coincidir.
- */
-export const VENTANAS = {
-  mes: {
-    titulo: 'Este mes',
-    que: 'El mes del calendario en la zona horaria de la empresa. El selector de período no lo cambia: es la misma ventana con la que se calcula la comisión, y moverla haría que Sales y la pantalla del Closer publiquen dos ingresos distintos.',
-  },
-  cohorte: {
-    titulo: 'Quiénes entraron',
-    que: 'Las personas dadas de alta en el CRM dentro del período, y hasta dónde llegaron. Una persona que entró antes no cuenta, aunque su cita haya sido ayer.',
-  },
-  citas: {
-    titulo: 'Qué reuniones hubo',
-    que: 'Las citas que ocurrieron dentro del período, sin importar cuándo entró la persona. Una cita futura no entra: su cancelación todavía no es un hecho.',
-  },
-} as const;
 
 export async function GET(peticion: Request): Promise<Response> {
   /* `tablero.ver`, que es la que la sección ya declaraba. No se inventa una `sales.ver`: siete
@@ -138,6 +119,10 @@ export async function GET(peticion: Request): Promise<Response> {
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,
     ventanas: VENTANAS,
+    /* Lo que la pantalla NO puede decir, con su medición y su fecha. Viaja para que nadie lo
+       rehaga, y porque la maqueta que esta pantalla reemplaza dibujaba justo estas cosas con
+       números inventados: quien conozca esa pantalla las va a buscar. */
+    huecos: { medidoEl: MEDIDO_EL, lista: HUECOS },
     dinero,
     cancelacion,
     cadena,
