@@ -690,6 +690,46 @@ export const MUTACIONES_CON_CAPACIDAD_DE_LECTURA: readonly string[] = [
 ];
 
 /**
+ * Los `GET` cuya capacidad NO es la que declara su sección en `SECCIONES`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * EL HUECO QUE ESTA LISTA HACE VISIBLE
+ *
+ * `ADR-0304` comparaba los conjuntos de capacidades de las operaciones de una pantalla **entre
+ * sí**, y nunca contra `capacidadRequerida` de su sección. Con una sola ruta por pantalla el
+ * conjunto es trivialmente consistente, así que nada impedía que una ruta pidiera una capacidad
+ * que el menú no exige.
+ *
+ * La consecuencia es exactamente el `07` § 4: **la entrada aparece en el menú y cada petición
+ * devuelve 403**. Quien mira ve una pantalla que existe y no carga, sin ningún error que explique
+ * por qué — el defecto que `ADR-0305` nombra.
+ *
+ * Se encontró el 2026-09-21 mutando la capacidad de `app/api/sales/route.ts`: cambiar
+ * `tablero.ver` por `closer.ver` dejaba la suite entera en verde.
+ *
+ * ── LA ÚNICA EXCEPCIÓN DE HOY, Y ESTÁ MEDIDA ──────────────────────────────
+ *
+ * `app/api/auditoria/route.ts` declara `PANTALLA = 'conversation'` y su `GET` pide `auditor.ver`,
+ * mientras la sección `conversation` declara `tablero.ver`.
+ *
+ * **Hoy no muerde**, y eso se midió contra producción el 2026-09-21: los tres roles que existen
+ * —`administrador` (8 personas), `superadministrador` (2) y `usuario` (4)— llevan las dos
+ * capacidades, así que nadie ve la entrada sin poder cargarla.
+ *
+ * Muerde el día que exista un rol de solo lectura de tableros, que es justamente el rol que
+ * cualquiera crearía primero. Resolverlo es una decisión de producto —o la sección pasa a pedir
+ * `auditor.ver`, o la ruta pasa a pedir `tablero.ver`— y no se toma acá: se deja escrita para que
+ * quien la tome tenga la medición al lado.
+ *
+ * Lo que sí queda es la trampa armada para la SEGUNDA: una ruta nueva con este desajuste pone la
+ * prueba en rojo.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export const GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION: readonly string[] = [
+  'app/api/auditoria/route.ts',
+];
+
+/**
  * Las rutas que usan `sesionOpcional(` en vez del portero.
  *
  * NO son públicas y no son una excepción cómoda: tienen su propio contrato, definido en el

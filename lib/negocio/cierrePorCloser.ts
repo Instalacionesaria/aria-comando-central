@@ -78,7 +78,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { closersDeLaEmpresa } from './alcanceDelCloser.ts';
+import { type CloserConfigurado, closersDeLaEmpresa } from './alcanceDelCloser.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { alcanzable, cancelada, descartado, marcadaComoPlanton } from './citasAlcanzables.ts';
 
@@ -214,8 +214,16 @@ export interface CierreDeLosClosers {
  * Lo que hizo cada closer configurado, en la ventana.
  *
  * Se corre dentro de `conOrganizacion(`.
+ *
+ * @param closers La lista ya leída, cuando quien llama también la necesita. **No es una
+ *   optimización**: la ruta de Sales arma con ella el sujeto del dinero del mes, y con dos lecturas
+ *   la tabla y el bloque de dinero podrían discrepar sobre quiénes son los closers. Sin argumento se
+ *   lee acá, que es lo que hacen las pruebas.
  */
-export async function cierrePorCloser(dias = DIAS_DE_LA_TASA): Promise<CierreDeLosClosers> {
+export async function cierrePorCloser(
+  dias = DIAS_DE_LA_TASA,
+  closers?: readonly CloserConfigurado[],
+): Promise<CierreDeLosClosers> {
   /* ── LAS FILAS SALEN DEL CATÁLOGO, NO DE UN `group by` ─────────────────────
    *
    * Un `group by` sólo devuelve a quien tiene filas, así que **el closer sin actividad desaparece de
@@ -225,7 +233,7 @@ export async function cierrePorCloser(dias = DIAS_DE_LA_TASA): Promise<CierreDeL
    * Y el orden es el de esa función —designación, desempate por id—, que ya es estable a propósito.
    * Medido: los tres closers se designaron el mismo día, así que el desempate decide, y deja **al de
    * 94 citas último**. Correcto: la tabla no ordena por tamaño ni por tasa. */
-  const closers = await closersDeLaEmpresa();
+  const catalogo = closers ?? (await closersDeLaEmpresa());
 
   /* ── LA VENTANA ES LA DE `tasaDeCancelacion`, Y ESO SE MIDIÓ ───────────────
    *
@@ -299,7 +307,7 @@ export async function cierrePorCloser(dias = DIAS_DE_LA_TASA): Promise<CierreDeL
   const porCrm = new Map(ejeCrm.filter((f) => f.quien !== null).map((f) => [f.quien!, f] as const));
   const conCloser = new Set<string>();
 
-  const filas: CierreDeUnCloser[] = closers.map((c) => {
+  const filas: CierreDeUnCloser[] = catalogo.map((c) => {
     const e = c.crmUsuarioId === null ? undefined : porCrm.get(c.crmUsuarioId);
     if (c.crmUsuarioId !== null) conCloser.add(c.crmUsuarioId);
 

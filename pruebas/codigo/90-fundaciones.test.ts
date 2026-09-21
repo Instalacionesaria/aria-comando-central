@@ -1067,15 +1067,21 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   // departamento de Inteligencia que deja de ser maqueta.
   //
   // Y la DÉCIMA es **`conversion`**: `app/api/conversion/route.ts` publica por dónde entra la gente
-  // y cuántos abandonan el formulario de la landing. Quinta vez que el cable dispara, tercera
-  // seguida de Inteligencia, y las tres que quedan **no son maquetas a medio construir**: son las
-  // que todavía no se empezaron.
+  // y cuántos abandonan el formulario de la landing. Quinta vez que el cable dispara y tercera
+  // seguida de Inteligencia.
   //
-  // El número literal es el cable trampa: **el día que una de estas tres reciba su primera
+  // La UNDÉCIMA es **`sales`**: `app/api/sales/route.ts` publica la cadena comercial, el ciclo hasta
+  // la cita y la tabla por closer. Sexta vez que el cable dispara, cuarta seguida de Inteligencia, y
+  // con ésta **el departamento entero deja de ser maqueta**: las cinco pantallas de Inteligencia
+  // tienen ruta.
+  //
+  // Las DOS que quedan no son maquetas a medio construir: son las que todavía no se empezaron.
+  //
+  // El número literal es el cable trampa: **el día que una de estas dos reciba su primera
   // operación de servidor, esta línea falla** y alguien tiene que bajarle la bandera
   // `sinOperacionesTodavia` en `SECCIONES` en vez de dejar una pantalla que decide por
   // capacidad figurando como si no decidiera nada. Derivarlo lo apagaría.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 3);
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 2);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {

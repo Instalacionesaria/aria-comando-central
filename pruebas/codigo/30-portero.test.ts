@@ -31,6 +31,7 @@ import { join, relative, sep } from 'node:path';
 import { archivosFuente, archivosQueContienen, RAIZ } from '../apoyo/fuente.ts';
 import {
   ARCHIVOS_AUTORIZADOS,
+  GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION,
   MUTACIONES_CON_CAPACIDAD_DE_LECTURA,
   RUTAS_CON_SECRETO_PROPIO,
   RUTAS_CON_SESION_OPCIONAL,
@@ -274,6 +275,51 @@ test('ADR-0303 · toda sección declara una capacidad del catálogo', () => {
       `la sección ${s.clave} pide ${s.capacidadRequerida}, que no está en el catálogo`,
     );
   }
+});
+
+test('ADR-0304 · el GET de una pantalla pide la MISMA capacidad que declara su sección', () => {
+  /* ── LO QUE LA FILA DE ABAJO NO ALCANZABA A VER ───────────────────────────
+   *
+   * La otra mitad de `ADR-0304` compara los conjuntos de las operaciones de una pantalla **entre
+   * sí**. Con una sola ruta por pantalla eso es trivialmente consistente, así que una ruta podía
+   * pedir una capacidad que el menú no exige y nada fallaba.
+   *
+   * El defecto que produce es el `07` § 4: **la entrada aparece en el menú y cada petición devuelve
+   * 403**. Se ve como una pantalla que existe y no carga, sin ningún error que lo explique.
+   *
+   * Se encontró mutando `app/api/sales/route.ts` de `tablero.ver` a `closer.ver`: la suite entera
+   * quedaba verde. Las excepciones —hoy una, medida— están en `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION`.
+   *
+   * Sólo los `GET`, por el mismo motivo que la fila de abajo: una mutación pide `.editar` a
+   * propósito, y exigirle la capacidad de la pantalla sería la escalada silenciosa que ese
+   * comentario describe. */
+  const porSeccion = new Map(SECCIONES.map((s) => [s.clave, s.capacidadRequerida]));
+  const desajustes: string[] = [];
+
+  for (const ruta of manejadoresDeRuta()) {
+    const limpio = fuenteDe(ruta);
+    const pantalla = /export\s+const\s+PANTALLA\s*=\s*['"`]([^'"`]+)['"`]/.exec(limpio)?.[1];
+    if (pantalla === undefined) continue;
+    const declarada = porSeccion.get(pantalla);
+    if (declarada === undefined) continue;
+
+    for (const { metodo, cuerpo } of metodosDe(limpio)) {
+      if (metodo !== 'GET') continue;
+      const m = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([\s\S]*?)\)\s*;/.exec(cuerpo);
+      if (!m) continue;
+      const arg = (m[1] ?? '').replace(/,\s*(PANTALLA|SIN_SECCION)\s*,?\s*$/, '').trim();
+      if (arg === 'NINGUNA') continue;
+      const pedidas = [...arg.matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
+      if (pedidas.length === 1 && pedidas[0] === declarada) continue;
+      if (GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION.includes(ruta)) continue;
+      desajustes.push(
+        `${ruta} (pantalla "${pantalla}") pide [${pedidas.join(', ')}] y su sección declara ` +
+          `"${declarada}": la entrada del menú aparecería y la petición daría 403`,
+      );
+    }
+  }
+
+  assert.deepEqual(desajustes, []);
 });
 
 test('ADR-0303 · las pantallas del prototipo siguen sin operaciones', () => {
@@ -624,6 +670,44 @@ test('ninguna ruta de las listas blancas está muerta', () => {
   // Y al revés: una entrada de `AUN_NO_EXISTEN` que YA existe tiene que salir de la lista.
   const yaExisten = AUN_NO_EXISTEN.filter((r) => existentes.has(r));
   assert.deepEqual(yaExisten, [], 'estas rutas ya existen: sacalas de AUN_NO_EXISTEN');
+});
+
+test('ninguna excepción de capacidad está muerta: la lista eximiría a una ruta que ya cuadra', () => {
+  /* Es la otra mitad de `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION`. Sin esto, agregar una ruta a esa
+     lista es gratis: no rompe nada y **la exime para siempre**, incluso después de que alguien
+     arregle el desajuste. Una excepción que ya no describe nada es una puerta abierta con un cartel
+     que dice «esto está justificado».
+     *
+     Lo encontró la mutación: agregar `app/api/sales/route.ts` a la lista dejaba la suite entera en
+     verde, porque esa ruta sí cuadra y la excepción simplemente no se consultaba. */
+  const porSeccion = new Map(SECCIONES.map((s) => [s.clave, s.capacidadRequerida]));
+  const sobrantes: string[] = [];
+
+  for (const ruta of GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION) {
+    assert.ok(
+      manejadoresDeRuta().includes(ruta),
+      `${ruta} está en GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION y no existe`,
+    );
+    const limpio = fuenteDe(ruta);
+    const pantalla = /export\s+const\s+PANTALLA\s*=\s*['"`]([^'"`]+)['"`]/.exec(limpio)?.[1];
+    const declarada = pantalla === undefined ? undefined : porSeccion.get(pantalla);
+    const desajusta = metodosDe(limpio).some(({ metodo, cuerpo }) => {
+      if (metodo !== 'GET') return false;
+      const m = /\bexigir\s*\(\s*[A-Za-z]+\s*,\s*([\s\S]*?)\)\s*;/.exec(cuerpo);
+      if (!m) return false;
+      const arg = (m[1] ?? '').replace(/,\s*(PANTALLA|SIN_SECCION)\s*,?\s*$/, '').trim();
+      if (arg === 'NINGUNA') return false;
+      const pedidas = [...arg.matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
+      return !(pedidas.length === 1 && pedidas[0] === declarada);
+    });
+    if (!desajusta) sobrantes.push(ruta);
+  }
+
+  assert.deepEqual(
+    sobrantes,
+    [],
+    'estas rutas ya piden la capacidad de su sección: sacalas de la lista de excepciones',
+  );
 });
 
 test('ninguna entrada de `SIN_PANTALLA` está muerta, y ninguna contradice un `PANTALLA`', () => {
