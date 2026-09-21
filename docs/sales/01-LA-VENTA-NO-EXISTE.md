@@ -156,6 +156,32 @@ arreglarlo desbloquea una cifra. Si es lo segundo, es adopción, y ninguna panta
 **Cómo se contesta:** mirando el panel de Avanzar con uno de esos contactos, o preguntándole a quien
 registró.
 
+### S1-P02 · ¿Por qué `asistio` está vacío si el calendario ya sabe? — **abierta**
+
+**Apareció al construir la pantalla**, el 2026-09-21, haciendo el censo de `estado_ghl` que nadie
+había hecho:
+
+```
+cancelled  163   ·   confirmed  149   ·   noshow  15
+```
+
+**Quince citas que el calendario marcó como plantón**, las quince alcanzables, y `citas.asistio`
+nulo en las 327. O sea que el proveedor sí informa el lado negativo de la asistencia —`showed` no
+aparece ni una vez— y nuestra columna no lo recoge. `ESTADO_NO_APARECIO` está declarada en
+`lib/ghl/calendarios.ts:196` desde la migración `038` y **nadie la leía**.
+
+**Por qué importa:** cambia de tamaño el hueco de asistencia. No es «no hay ningún dato» —que es lo
+que esta carpeta afirmaba— sino «hay el lado negativo y no el positivo», que es una asimetría con la
+que se puede hacer algo: sirve como conteo y no da denominador para un show rate.
+
+**Lo que ya se hizo mientras tanto:** `marcadaComoPlanton()` en `lib/negocio/citasAlcanzables.ts` y
+la columna «Plantón» de la tabla por closer, **que no se suma con `asistio`**. Son dos fuentes de la
+misma pregunta y sólo una es nuestra.
+
+**Lo que queda abierto:** si el barrido debería escribir `asistio = false` cuando el calendario dice
+`noshow`. Es una decisión de producto y no se toma acá: escribirlo mezclaría lo que dijo el
+proveedor con lo que respondió el closer en Avanzar, y hoy esas dos cosas se distinguen.
+
 ---
 
 ## 4 · Lo que tampoco existe, y con la búsqueda que lo comprueba

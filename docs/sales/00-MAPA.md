@@ -11,8 +11,23 @@
 
 ## El estado, en una línea
 
-**Sales es la última de las cinco pantallas de Inteligencia que sigue siendo una maqueta, y la única
-de las tres reescrituras donde lo que falta no es la pantalla: es que alguien registre.**
+**Construida el 2026-09-21. Con ésta, las cinco pantallas de Inteligencia dejan de ser maquetas — y
+Sales es la única de las cuatro reescrituras donde lo que falta no era la pantalla: es que alguien
+registre.**
+
+| qué | dónde |
+|---|---|
+| La ruta | `app/api/sales/route.ts` |
+| La cadena, el ciclo y la tabla por closer | `lib/negocio/cadenaDeCierre.ts`, `cicloHastaLaCita.ts`, `cierrePorCloser.ts` |
+| Los predicados compartidos de cita | `lib/negocio/citasAlcanzables.ts` |
+| El dinero del mes, consumido | `lib/negocio/dineroDelMes.ts` |
+| Las tres ventanas y los huecos declarados | `lib/negocio/ventanasDeSales.ts`, `huecosDeSales.ts` |
+| El lector del navegador y el panel | `lib/negocio/vistaDeSales.ts`, `components/sales/PanelDeSales.jsx` |
+
+**Y dos cifras de esta carpeta se corrigieron al construirla**, las dos por el mismo motivo —sondas
+escritas con un filtro apenas distinto del que el código acabó usando—: la brecha de cancelación
+entre closers (`04 § S4-05`) y la afirmación de que no había ninguna señal de asistencia (`03`).
+Están reescritas con el error anterior citado, porque esconderlo sería repetirlo.
 
 ---
 
@@ -23,7 +38,7 @@ Esta carpeta se armó de dos sitios y de ningún otro.
 | fuente | qué aportó | dónde está documentado |
 |---|---|---|
 | **El documento funcional** — `CC_Arquitectura_Funcional.md`, 1.650 líneas | 7 líneas que nombran a Sales, 2 entidades, la traza del § 5.2, y el § 5.4 con los únicos campos concretos | `11-LO-QUE-PIDE-EL-DOCUMENTO.md` |
-| **La pantalla hardcodeada** — `components/views/SalesView.jsx`, 231 líneas | 3 bloques visuales, 23 valores inventados, 28 frases escritas a mano, 3 controles muertos | `03`, `04`, `05`, `07`, `10` |
+| **La pantalla hardcodeada** — `components/views/SalesView.jsx`, 231 líneas, **borrada el 2026-09-21** | 3 bloques visuales, 23 valores inventados, 28 frases escritas a mano, 3 controles muertos | `03`, `04`, `05`, `07`, `10` |
 
 Y una tercera cosa que no es fuente de requisitos sino **el árbitro entre las dos**: la medición
 contra producción. Cuando el prototipo y el documento se contradicen —y se contradicen— gana lo que
@@ -70,11 +85,18 @@ archivo aparte. Una pregunta lejos de su contexto se contesta mal.
 
 ### La convención de las citas, y por qué importa acá más que en las otras dos
 
-`components/views/SalesView.jsx` **va a pasar de 231 líneas a unas 75** cuando se reescriba. Sus
-citas serán entonces de dos clases, y la segunda es la peligrosa:
+`components/views/SalesView.jsx` **pasó de 231 líneas a 83** el 2026-09-21. Sus citas quedaron de
+dos clases, y la segunda es la peligrosa:
 
-- las que apuntan más allá de la línea 75 **fallan al resolverse, y se ven**;
-- las que apuntan más acá **siguen resolviendo y muestran otra cosa**, que es peor.
+- las que apuntaban más allá de la línea 83 **fallaron al resolverse, y se vieron**: trece, y las
+  encontró `pruebas/codigo/101-las-citas-de-los-documentos.test.ts` en su primera ocasión real;
+- las que apuntan más acá **siguen resolviendo y muestran otra cosa**, que es peor, y **eso ninguna
+  prueba lo ve**.
+
+Por eso las trece se reapuntaron al ENCABEZADO del archivo nuevo, que enumera cada pieza borrada con
+la medición que la desmiente, en vez de a un número de línea del marcado que ya no existe. Y cada
+documento afectado lleva una nota que lo dice, porque «`SalesView.jsx:14-18` dibuja cuatro tarjetas»
+era cierto ayer y hoy sería falso.
 
 Cuando eso pase, esta carpeta lleva la nota de cabecera que ya llevan `docs/creative/` y
 `docs/conversion/`. Hoy todavía no: **al 2026-09-20 el archivo sigue entero y sus citas son exactas.**
@@ -138,6 +160,7 @@ Viven en el archivo donde nacen. El índice:
 | id | pregunta | dónde |
 |---|---|---|
 | `S1-P01` | ¿Por qué 5 de los 7 resultados se guardaron sin enganchar la cita que tenían disponible? | `01` |
+| `S1-P02` | ¿Por qué `citas.asistio` está vacío en las 327 si el calendario marca 15 plantones? **Apareció al construir la pantalla** | `01` |
 | `S4-P01` | ¿Los 5 puntos de cancelación entre los dos closers son del closer o de la fuente de sus leads? | `04` |
 | `S5-P01` | ¿El CRM guarda motivos de pérdida en algún campo que no sea `resultados.detalle`? | `05` |
 | `S8-P01` | ¿Business va a existir como pantalla? El documento le da revenue, CAC, ROAS y la tasa de cierre | `08` |

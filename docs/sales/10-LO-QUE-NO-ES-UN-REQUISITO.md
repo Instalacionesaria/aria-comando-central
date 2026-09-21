@@ -87,9 +87,17 @@ Detallados en `07-EL-PLAN-DE-ACCION.md`. En resumen:
 
 ---
 
-## S10-05 · La lista de borrado
+## S10-05 · La lista de borrado — **hecha el 2026-09-21**
 
-En el commit de la pantalla nueva:
+Los cinco puntos se ejecutaron: los cuatro primeros en el commit de la pantalla
+(`components/sales/PanelDeSales.jsx`) y el quinto en el de la ruta, que tenía que ir junto con
+`app/api/sales/route.ts` porque `30-portero` verifica esa bandera **en las dos direcciones**.
+
+Y apareció un sexto que la lista no tenía: **cuatro reglas de CSS bajo `#v-sales` se quedaron sin
+emisor** —`.stat`, `.s-v`, `.s-l` y `.mini-bar`, que vestían la rejilla de tarjetas y las barras de
+motivos—. Medido emisor por emisor: ningún componente del repositorio las escribe ya. Borradas.
+
+Lo que sigue como estaba:
 
 1. **Los 23 valores inventados** y las 8 frases de contenido.
 2. **«Jorge Veramendi».** Los nombres salen de `closersDeLaEmpresa()` o no salen.
@@ -124,6 +132,24 @@ lo que estaba mal no era él, sino que detrás no hubiera nada.
 
 **Cuatro de ellas tienen regla `#v-sales` propia** en `app/inteligencia-estetica.css:683-690`. Si la
 reescritura deja de emitirlas, esas reglas quedan sin emisor.
+
+### Lo que la reescritura midió de verdad, el 2026-09-21
+
+Pasó lo previsto y algo que no estaba previsto.
+
+**Lo previsto:** `.stat`, `.s-v`, `.s-l` y `.mini-bar` se quedaron sin emisor y se borraron.
+`grid-4` y `col-head` también dejaron de emitirse, pero sus reglas viven en `app/aios.css` —que no se
+toca— o en un `:is()` compartido con otras vistas, así que no quedaron colgando.
+
+**Lo NO previsto, y es más grande:** el panel nuevo dibuja el vocabulario de tablero de las otras
+cuatro pantallas, y **toda esa hoja cuelga de `:is(#v-conversation, #v-acquisition, #v-creative,
+#v-conversion)` — sin `#v-sales`**. Medido: **65 reglas del tablero y 106 de las tablas** no la
+alcanzaban. Quinta vez que ese defecto aparece en este archivo, y la primera que se atrapa antes de
+llegar a la pantalla.
+
+Se amplió el alcance en vez de copiar las reglas bajo `#v-sales`, y hay una prueba nueva que lo
+vigila para la próxima: `pruebas/codigo/147-lo-que-el-panel-dibuja.test.ts` exige que toda clase que
+un panel de Inteligencia dibuja tenga al menos una regla que alcance a SU vista.
 
 **Y dos avisos concretos:**
 

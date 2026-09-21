@@ -64,8 +64,10 @@ que gobiernan el catálogo.
 **Población** · Los resultados registrados por los closers configurados de la empresa.
 **Rastro** · `SalesView.jsx:14-18` («Revenue reportado», `$55,200`); `§ 5.4:271-274`;
 `lib/negocio/dineroDelMes.ts:132-152`.
-**Estado** · **Construible, y ya construido: se consume.** Vale `0` medido o `—` según haya o no
-resultados en el mes. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
+**Estado** · **Se consume** de `lib/negocio/dineroDelMes.ts`, que se extrajo de `inicio.ts` para
+que la regla exista una sola vez. Vale `0` medido o `—` según haya o no resultados en el mes, y con
+cero closers configurados dice otra cosa que con closers y sin resultados: son dos textos porque
+mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 
 > La ventana es **mes calendario en la zona de la organización** (`dineroDelMes.ts:105`), y **no** una de
 > las cuatro rodantes. Eso no se disimula: el bloque lleva el mes en su propio encabezado. Ver
@@ -101,7 +103,7 @@ resultados en el mes. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Población** · Citas alcanzables (`ghl_calendario_id is not null`) de contactos no descartados.
 **Piso** · `PISO_DE_UNA_TASA`, sobre el denominador.
 **Rastro** · `lib/negocio/indicadoresDeCitas.ts:312`; `SalesView.jsx:57-61` la roza con «Asistencias».
-**Estado** · **Construible hoy y ya construida.** Medido: **59,2 %** (132 de 223). Es la cifra de
+**Estado** · **Construida** en `lib/negocio/indicadoresDeCitas.ts`; Sales es su segundo consumidor y no la recalcula. Medido: **59,2 %** (132 de 223). Es la cifra de
 cabecera del departamento. **No se recalcula**: Sales sería su segundo consumidor.
 
 ### S2-05 · Ciclo del alta a la primera cita
@@ -114,7 +116,7 @@ infinito: **no entran, y se dicen**.
 **Piso** · `PISO_DE_UNA_TASA` sobre la población medida.
 **Rastro** · `§ 1:22` («Cierre de venta» como último paso); `lib/negocio/indicadoresDelLead.ts:52-68`
 (el precedente de publicar p50 y p90 juntos).
-**Estado** · **Construible hoy.** Medido: **mediana 2,9 días**, media 16,5, máximo 290.
+**Estado** · **Construida** en `lib/negocio/cicloHastaLaCita.ts`. Medido: **mediana 2,9 días**, p90 10,6, y el promedio 16,5 — más alto que el p90, así que **no viaja en el tipo**.
 
 > **La media no se publica ni viaja en la respuesta.** Está arrastrada por una cola de 14 contactos.
 > Y la cifra lleva su **techo de ventana**: a 7 días la mediana no puede pasar de 7.
@@ -126,7 +128,7 @@ infinito: **no entran, y se dicen**.
 **Unidad** · Conteo, con su porción de la cohorte y su porción del eslabón anterior.
 **Población** · La cohorte de la ventana.
 **Rastro** · `§ 5.2:227-236`; reemplaza los cuatro KPI de `SalesView.jsx:14-18`.
-**Estado** · **Construible salvo el último.** Medido: 590 → 201 → 91 → 5 → **0**. Ver
+**Estado** · **Construida** en `lib/negocio/cadenaDeCierre.ts`, salvo el último eslabón. Medido: 590 → 201 → 91 → 5 → **0**. Ver
 `14-LOS-CINCO-ESLABONES.md`.
 
 ### S2-07 · Cobertura de la cadena
@@ -189,7 +191,7 @@ los `noshow` entre los cancelados. Ver `04-LA-TABLA-DE-CLOSERS.md § S4-05` y la
 **Unidad** · Conteo, con su reparto por salida.
 **Población** · **Otro eje**: lo que la persona registró, no lo que le asignaron. Ver la nota de
 `inicio.ts:123-125` — cruzarlos daría los contactos de quien registró.
-**Estado** · **Construible hoy.** Medido: 7 en total, de 2 personas.
+**Estado** · **Construida** en `lib/negocio/cierrePorCloser.ts`, columna «Registró». Medido: 7 en total, de 2 personas, y **sólo 2 en la ventana de 14 días**.
 
 ### S2-11 · Tasa de asistencia por closer
 
@@ -205,7 +207,7 @@ contestó. Ver `S1-07`.
 
 **Qué es** · Qué porción de los contactos asignados se lleva la persona más grande.
 **Unidad** · Proporción.
-**Estado** · **Construible hoy**, y obligatoria al lado de la tabla: medido, **213 de 250 (85 %)**.
+**Estado** · **Construida** como `cierrePorCloser.concentracion`, y obligatoria al lado de la tabla. Se mide sobre las CITAS de las filas y no sobre los contactos, que es la unidad de las tasas que califica: medido a 14 días, **32 de 51 (62,7 %)**.
 Sin ella, comparar dos filas de esa tabla es comparar una carrera con una caminata.
 
 ---
@@ -220,7 +222,7 @@ Sin ella, comparar dos filas de esa tabla es comparar una carrera con una camina
 **Población** · **Sólo `no_interesa`.** No se mezcla con `nurture`, que es otra salida.
 **Piso** · `PISO_DE_UNA_TASA`.
 **Rastro** · `SalesView.jsx:25-30`; el catálogo real en `lib/negocio/salidas.ts:165`.
-**Estado** · **Construible en su forma, no en su contenido.** Hay **1 sola fila**, con el valor
+**Estado** · **No se construyó**, y es el único requisito de esta carpeta que quedó afuera a propósito: está declarado como hueco en `lib/negocio/huecosDeSales.ts` en vez de dibujado. Hay **1 sola fila**, con el valor
 «Otro». Y **la taxonomía real no es la dibujada**: ver `05-LOS-MOTIVOS-DE-NO-VENTA.md`.
 
 ---

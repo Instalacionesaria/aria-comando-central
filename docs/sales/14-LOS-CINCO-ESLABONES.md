@@ -37,7 +37,7 @@ nombre.** Este archivo mide lo que sí existe, eslabón por eslabón.
 como el número del eslabón.
 **Población** · La cohorte de la ventana.
 **Rastro** · `§ 5.2:227-236`; `SalesView.jsx:14-18` anota los cuatro KPI que esta cadena reemplazó.
-**Estado** · **Construible hoy, salvo el último eslabón.**
+**Estado** · **Construida** en `lib/negocio/cadenaDeCierre.ts`, salvo el último eslabón.
 
 ### Por qué la unidad es el contacto en los cuatro
 
@@ -135,7 +135,7 @@ Ver `01-LA-VENTA-NO-EXISTE.md`.
 **Unidad** · Días.
 **Población** · Los 197 contactos con alta y con primera cita medibles.
 **Piso** · `PISO_DE_UNA_TASA = 10` sobre la población medida.
-**Estado** · **Construible hoy**, y con una advertencia.
+**Estado** · **Construida**, y con una advertencia.
 
 | estadístico | días |
 |---|---|
