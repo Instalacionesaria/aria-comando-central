@@ -707,7 +707,7 @@ export const MUTACIONES_CON_CAPACIDAD_DE_LECTURA: readonly string[] = [
  * Se encontró el 2026-09-21 mutando la capacidad de `app/api/sales/route.ts`: cambiar
  * `tablero.ver` por `closer.ver` dejaba la suite entera en verde.
  *
- * ── LA ÚNICA EXCEPCIÓN DE HOY, Y ESTÁ MEDIDA ──────────────────────────────
+ * ── LA ÚNICA EXCEPCIÓN QUE HUBO, Y SE RESOLVIÓ ────────────────────────────
  *
  * `app/api/auditoria/route.ts` declara `PANTALLA = 'conversation'` y su `GET` pide `auditor.ver`,
  * mientras la sección `conversation` declara `tablero.ver`.
@@ -716,17 +716,28 @@ export const MUTACIONES_CON_CAPACIDAD_DE_LECTURA: readonly string[] = [
  * —`administrador` (8 personas), `superadministrador` (2) y `usuario` (4)— llevan las dos
  * capacidades, así que nadie ve la entrada sin poder cargarla.
  *
- * Muerde el día que exista un rol de solo lectura de tableros, que es justamente el rol que
- * cualquiera crearía primero. Resolverlo es una decisión de producto —o la sección pasa a pedir
- * `auditor.ver`, o la ruta pasa a pedir `tablero.ver`— y no se toma acá: se deja escrita para que
- * quien la tome tenga la medición al lado.
+ * Mordía el día que existiera un rol de solo lectura de tableros, que es justamente el rol que
+ * cualquiera crea primero. **Y ya mordía en un lugar**: la pestaña de permisos de Usuarios le
+ * ofrecía la casilla de Conversation a un rol con sólo `tablero.ver`, o sea un control que se ve y
+ * no puede cumplir, marcado por quien administra sin que nada avisara.
+ *
+ * **Resuelto el 2026-09-21 alineando la SECCIÓN a la ruta**: `conversation` pasó a pedir
+ * `auditor.ver`. Se eligió esa dirección y no la contraria porque Conversation no es un tablero —es
+ * el supervisor de los agentes— y hacer que la ruta pidiera `tablero.ver` habría ampliado el acceso
+ * a lo más sensible de las dos. El argumento entero está en `lib/autorizacion/secciones.ts`, en el
+ * comentario de esa sección.
  *
  * Lo que sí queda es la trampa armada para la SEGUNDA: una ruta nueva con este desajuste pone la
  * prueba en rojo.
  * ═══════════════════════════════════════════════════════════════════════════
  */
 export const GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION: readonly string[] = [
-  'app/api/auditoria/route.ts',
+  /* VACÍA, y eso es lo correcto: no hay ninguna excepción viva.
+     *
+     La única que hubo fue `app/api/auditoria/route.ts`, y se resolvió el 2026-09-21 alineando la
+     sección `conversation` a lo que su ruta ya pedía (`auditor.ver`). La lista se deja declarada
+     porque el cable de arriba la consulta y porque su encabezado guarda el argumento: una excepción
+     acá es una decisión que se escribe, no un silencio. */
 ];
 
 /**

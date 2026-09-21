@@ -100,6 +100,41 @@ test('`alcanceOfrecible` es TOTAL: ninguna sección alcanzable se cae', () => {
   assert.equal(new Set(ofrecidas).size, ofrecidas.length, 'una sección aparece en dos grupos');
 });
 
+test('la pestaña de permisos no ofrece una casilla que daría 403', () => {
+  /* Una casilla se ofrece SÓLO a quien puede ver esa pestaña. Con conjuntos de UNA capacidad, que
+   * son los que un rol nuevo tiende a tener: con el conjunto completo la propiedad es invisible.
+   *
+   * ── LO QUE ESTA PRUEBA NO PROTEGE, Y HAY QUE DECIRLO ────────────────────
+   *
+   * Nació para fijar la consecuencia del desajuste de Conversation —hasta el 2026-09-21 su sección
+   * declaraba `tablero.ver` y su ruta pedía `auditor.ver`, así que a un rol de solo tableros se le
+   * ofrecía una casilla que daba 403— y **no sirve para eso**. La mutación lo mostró: volver la
+   * sección a `tablero.ver` la deja en verde, porque compara la capacidad de la sección contra el
+   * conjunto y no contra lo que pide la ruta. Esa causa la vigila `ADR-0304` en
+   * `30-portero.test.ts`, que sí muere.
+   *
+   * Lo que sí protege es la otra mitad, y ahí no hay nadie más: que `alcanceOfrecible` filtre por la
+   * capacidad de CADA sección y no por algo más flojo. La mutación que la mata es «con una
+   * capacidad del grupo, ofrecé todo el grupo», que es la forma natural de escribirlo mal — y con
+   * ella aparece la casilla de `icp` para quien sólo tiene `tablero.ver`.
+   *
+   * Se deja con esta aclaración en vez de borrarse porque cubre algo real; lo que no se deja es el
+   * comentario anterior, que le atribuía una cobertura que no tiene. */
+  for (const cap of new Set(SECCIONES.map((s) => s.capacidadRequerida))) {
+    const permisos = new Set([cap]);
+    for (const g of alcanceOfrecible(permisos)) {
+      for (const sec of g.secciones) {
+        assert.equal(
+          sec.capacidadRequerida,
+          cap,
+          `con sólo «${cap}» se ofrece la casilla de «${sec.clave}», que pide ` +
+            `«${sec.capacidadRequerida}»: se marcaría y daría 403`,
+        );
+      }
+    }
+  }
+});
+
 test('`alcanceOfrecible` no devuelve grupos vacíos', () => {
   // La misma regla que el menú: un título con nada adentro le dice a alguien que ahí hay algo que no
   // puede ver, cuando lo que corresponde es que no sepa que existe.

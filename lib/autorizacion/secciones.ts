@@ -293,7 +293,26 @@ export const SECCIONES: readonly Seccion[] = [
     // el alcance por separado, así que la pestaña no abre nada a quien no tenga la capacidad.
     clave: 'conversation',
     nombre: 'Conversation',
-    capacidadRequerida: 'tablero.ver',
+    /* ── NO ES `tablero.ver`, Y ESO SE DECIDIÓ EL 2026-09-21 ──────────────────
+     *
+     * Decía `tablero.ver`, como las otras cuatro de Inteligencia, y su ruta —`app/api/auditoria/
+     * route.ts`— pide `auditor.ver`. Con eso el menú abría la puerta a quien los datos le negaban:
+     * **la entrada aparecía y cada petición devolvía 403**, que es el `07` § 4 y se ve como una
+     * pantalla que existe y no carga.
+     *
+     * Nadie estaba en esa situación —los tres roles de producción llevan las dos capacidades, medido
+     * el 2026-09-21— pero la pestaña de permisos de Usuarios sí ofrecía la casilla a un rol con sólo
+     * `tablero.ver`: un control que se ve y no puede cumplir, marcado por quien administra sin que
+     * nada avisara.
+     *
+     * Se alineó la SECCIÓN a la ruta y no al revés, y el motivo es la dirección: Conversation no es
+     * un tablero, es el supervisor de los agentes. Leer lo que un agente le dijo a un cliente es
+     * otra cosa que leer cifras agregadas, y el catálogo separa `auditor.ver` de `tablero.ver` a
+     * propósito. Igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos.
+     *
+     * Lo vigila `ADR-0304` en `pruebas/codigo/30-portero.test.ts`, que ahora cruza la capacidad de
+     * cada `GET` contra la que declara su sección. */
+    capacidadRequerida: 'auditor.ver',
     menu: { grupo: 'Inteligencia', icono: '#i-chat' },
   },
   {
