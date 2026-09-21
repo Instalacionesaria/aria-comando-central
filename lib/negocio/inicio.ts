@@ -21,29 +21,23 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import {
+  type DineroDelMes,
+  type Indicador,
+  type SujetoDelCockpit,
+  dineroDelMes,
+} from './dineroDelMes.ts';
 
-/** Un indicador del cockpit. `valor: null` = **no hay de dónde medirlo**. */
-export interface Indicador {
-  valor: number | null;
-  /** Qué falta para que este número exista. Solo cuando `valor` es nulo. */
-  falta?: string;
-}
-
-export interface Cockpit {
-  /** El mes al que corresponden los números, en la zona de la organización. */
-  mes: string;
-  /**
-   * Lo COBRADO del mes. Cobrado real, no prometido — son dos cosas distintas y solo una va acá.
+/* Los dos se re-exportan porque NACIERON acá: `Indicador` lo importa `inicioDelSetter.ts:40` y
+   `SujetoDelCockpit` hoy no lo importa nadie, pero es el tipo del argumento de esta función y quien
+   la lea lo va a buscar acá. Lo que se mudó a `dineroDelMes.ts` es la DEFINICIÓN, para que la
+   dependencia apunte hacia abajo; el nombre sigue estando donde estaba.
    *
-   * Sale de los resultados con salida `venta` y monto cargado. Un acuerdo sin pago NO suma:
-   * tiene su propio indicador, porque *"hay plata comprometida, más que pendiente, menos que
-   * cobrado"*.
-   */
-  cobrado: Indicador;
-  /** Cuántas ventas se registraron. */
-  ventas: Indicador;
-  /** Acuerdos sin pagar: comprometido y no cobrado. */
-  acuerdos: Indicador;
+   Un `export type { … }` y no una copia: son el MISMO tipo, no uno igual. Copiarlos daría dos
+   definiciones que compilan mientras coincidan y dejan de coincidir sin que nada falle. */
+export type { Indicador, SujetoDelCockpit };
+
+export interface Cockpit extends DineroDelMes {
   /**
    * Contactos con cita agendada.
    *
@@ -98,109 +92,20 @@ export interface Cockpit {
  * @param zonaHoraria La de la ORGANIZACIÓN. El mes de un closer en Lima no empieza cuando
  *   empieza el del servidor, y una métrica mensual calculada en otra zona corre el corte de
  *   día en los dos extremos del mes.
- * @param closerId El usuario designado closer, o `null` si nadie lo está.
+ * @param tareasPendientes Viene contado de Mi Día. No se recalcula acá: dos conteos del mismo hecho
+ *   pueden discrepar, y `app/api/closer/mi-dia/route.ts:20` ya lo dice.
+ * @param sujeto De quién son los números. Antes era `closerId: string | null`, y este `@param`
+ *   seguía nombrándolo — quedó mal el día que el nulo se volvió ambiguo y la unión lo reemplazó.
  */
-/**
- * DE QUIÉN son los números del cockpit. Tres formas, y las tres se ven distinto en pantalla.
- *
- * ── ERA `closerId: string | null` Y ESE NULO SE VOLVIÓ AMBIGUO ──────────────
- *
- * Con un solo closer, `null` significaba una cosa sola: nadie designado, y la pantalla decía
- * *«todavía no hay un closer asignado»*. Con varios closers y el selector «ver como», `null`
- * pasaría a significar también «toda la empresa» — y esos dos estados llevan a pantallas
- * opuestas: uno es un aviso para configurar, el otro es el total real de tres personas.
- *
- * Un `string | null` los escribe igual y obliga a quien lea a acordarse de cuál era. La unión los
- * separa en el tipo, que es donde este proyecto separa los estados que no se pueden confundir.
- */
-export type SujetoDelCockpit =
-  /** No hay ningún closer configurado. Los números salen `—` con el aviso, nunca `0`. */
-  | { tipo: 'nadie' }
-  /**
-   * Todos los closers juntos: lo que ve quien administra y no es closer.
-   *
-   * Lleva los identificadores porque el total es **la suma de los closers**, no la de la empresa
-   * entera: un resultado registrado por alguien que no es closer no es venta de nadie del equipo
-   * de cierre, y sumarlo inflaría el número sin que nada fallara.
-   */
-  | { tipo: 'empresa'; usuarioIds: readonly string[] }
-  /** Un closer concreto. `crmUsuarioId` nulo = designado sin vincular: sus contactos son todos. */
-  | { tipo: 'persona'; usuarioId: string; crmUsuarioId: string | null };
-
 export async function cockpitDelMes(
   zonaHoraria: string,
   tareasPendientes: number,
   sujeto: SujetoDelCockpit,
 ): Promise<Cockpit> {
-  const desdeElPrimero = sql<Date>`date_trunc('month', timezone(${zonaHoraria}, now())) at time zone ${zonaHoraria}`;
-
-  // Los resultados del mes, agregados de una vez. `filter` en vez de tres consultas: el `01`
-  // § "cómo se arma" pide una pasada, y tres viajes para tres números del mismo origen es
-  // trabajo que no hace falta.
-  /* ── EL `where` QUE HACE HONESTO EL NÚMERO GRANDE ──────────────────────────
-   *
-   * `registrado_por = closerId`, y es de la clase que este repositorio llama «el único lugar donde
-   * olvidarse un `where` devuelve filas ajenas sin ningún error»: la política de RLS aísla por
-   * ORGANIZACIÓN, no por persona. Sin esta línea el cobrado vuelve a ser de todos y sale más alto,
-   * que es la forma en que este defecto se ve: un número plausible y equivocado.
-   *
-   * Sin ningún closer configurado no se consulta nada. Correr la consulta sin el filtro para «tener
-   * algo que mostrar» es exactamente el error: mostraría el cobrado de la empresa como si fuera de
-   * un closer que nadie eligió.
-   *
-   * Con varios closers el filtro es `in` en vez de `=`, y la lista son los closers CONFIGURADOS. Un
-   * `in` sobre una lista vacía es SQL inválido, así que `{tipo:'empresa'}` sin identificadores no
-   * puede llegar acá: la construye `app/api/closer/mi-dia/route.ts` a partir de la lista, y sin
-   * closers el sujeto es `nadie`. */
-  const deQuien: readonly string[] =
-    sujeto.tipo === 'nadie'
-      ? []
-      : sujeto.tipo === 'empresa'
-        ? sujeto.usuarioIds
-        : [sujeto.usuarioId];
-
-  const r = deQuien.length === 0
-    ? undefined
-    : await datos()
-    .selectFrom('resultados')
-    .where('creado_el', '>=', desdeElPrimero)
-    .where('registrado_por', 'in', deQuien)
-    .select(({ fn, eb }) => [
-      fn
-        .sum<string | null>(
-          eb
-            .case()
-            .when('salida', '=', 'venta')
-            .then(eb.ref('monto'))
-            .else(null)
-            .end(),
-        )
-        .as('cobrado'),
-      fn.countAll<string>().filterWhere('salida', '=', 'venta').as('ventas'),
-      fn.countAll<string>().filterWhere('salida', '=', 'acuerdo_sin_pago').as('acuerdos'),
-      fn.countAll<string>().as('total'),
-    ])
-    .executeTakeFirst();
-
-  /**
-   * ¿Hubo ALGÚN resultado este mes?
-   *
-   * Es la pregunta que decide entre `—` y `0`, y es toda la diferencia entre las dos reglas del
-   * encabezado. Sin ningún resultado registrado, «cobrado» no es cero: es que nadie registró
-   * nada todavía. Con resultados y sin ventas, cero es un hecho.
-   */
-  const huboResultados = Number(r?.total ?? 0) > 0;
-
-  const SIN_AVANZAR =
-    'Todavía no se registró ningún resultado este mes. Los números salen de Avanzar.';
-
-  /* Y el OTRO motivo de que no haya número, que no es el mismo y no se dice igual: no hay a quién
-     medir. Separarlos es lo único que permite que la pantalla diga qué hacer — cargar un resultado,
-     o elegir al closer. Un solo texto para los dos casos mandaría a la mitad de la gente a hacer lo
-     que no corresponde. */
-  const SIN_CLOSER = 'Todavía no hay ningún closer configurado, así que no hay de quién mostrar ' +
-    'números. Se configuran más abajo, en esta misma pantalla.';
-  const porQueFalta = sujeto.tipo === 'nadie' ? SIN_CLOSER : SIN_AVANZAR;
+  /* Las tres cifras de dinero salen de `dineroDelMes`, que es donde viven desde el 2026-09-20.
+     No es una reorganizacion: Sales necesita las mismas tres, y dos consultas al mismo hecho
+     divergen sin que nada falle. El encabezado de ese archivo tiene el motivo entero. */
+  const dinero = await dineroDelMes(zonaHoraria, sujeto);
 
   // Los conteos por etiqueta. Éstos SÍ tienen dato hoy, y son la mitad útil del cockpit
   // mientras Avanzar no exista.
@@ -244,16 +149,10 @@ export async function cockpitDelMes(
   const hayContactos = Number(porEtiqueta?.total ?? 0) > 0;
 
   return {
-    mes: new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric', timeZone: zonaHoraria }).format(
-      new Date(),
-    ),
-    cobrado: huboResultados
-      ? { valor: Number(r?.cobrado ?? 0) }
-      : { valor: null, falta: porQueFalta },
-    ventas: huboResultados ? { valor: Number(r?.ventas ?? 0) } : { valor: null, falta: porQueFalta },
-    acuerdos: huboResultados
-      ? { valor: Number(r?.acuerdos ?? 0) }
-      : { valor: null, falta: porQueFalta },
+    /* El esparcido trae `mes`, `cobrado`, `ventas` y `acuerdos` tal como los calcula
+       `dineroDelMes`. Se esparce y no se copia campo por campo: una copia compila igual el día que
+       ese módulo agregue un campo, y el campo nuevo no llegaría acá sin que nada fallara. */
+    ...dinero,
     /* ── ESTOS TRES TEXTOS NOMBRABAN EL CRM DEL PROVEEDOR ─────────────────────
        Decían «traídos de GoHighLevel» y «hace falta leer el calendario de GoHighLevel». Los lee un
        cliente en la primera pantalla del Closer, y no le dicen nada que pueda hacer: el nombre de la
