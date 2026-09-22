@@ -216,10 +216,12 @@ test('una herramienta sin entregable SIEMPRE abre proponiendo, y reabrir conserv
   // Y se ve que está trabajando: la apertura lee, no «escribe».
   assert.match(chat, /Leyendo lo que ya construiste en las herramientas anteriores para proponerte las respuestas/);
 
+  /* `&& abrirDeCero` es de la 163: sin entregable se reabre, PERO no si la persona ya escribió —eso
+     borraba lo conversado en cada F5—. La condición de entregable sigue siendo la de acá. */
   const generica = codigo('components/fundaciones/PanelHerramienta.jsx');
-  assert.match(generica, /reiniciarAlAbrir=\{!!soloChat && versionesGuardadas\.length === 0\}/);
+  assert.match(generica, /reiniciarAlAbrir=\{!!soloChat && versionesGuardadas\.length === 0 && abrirDeCero\}/);
   const research = codigo('components/fundaciones/PanelResearch.jsx');
-  assert.match(research, /reiniciarAlAbrir=\{!!soloChat && hechos === 0\}/);
+  assert.match(research, /reiniciarAlAbrir=\{!!soloChat && hechos === 0 && abrirDeCero\}/);
 });
 
 test('«Continuar al paso N» ARMA el paso: reabre, propone y genera si alcanza, sin esperar un «sí»', () => {

@@ -52,6 +52,7 @@ import {
   conValoresPorOmision,
   obligatoriosQueFaltan,
 } from '@/lib/fundaciones/campos';
+import { hayTurnosDeLaPersona } from '@/lib/fundaciones/estado';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { TOPE_DE_NEGOCIOS as TOPE_MAPS, TOPE_DE_PAGINAS as TOPE_PAGINAS } from '@/lib/fundaciones/mercado';
@@ -129,6 +130,12 @@ export default function PanelResearch({
   const [errorAlGuardar, setErrorAlGuardar] = useState(null);
 
   const hechos = salidas.filter((s) => !!s).length;
+
+  /* La misma regla que `PanelHerramienta`, y por el mismo motivo: reabrir es borrar los turnos, así
+     que solo se reabre cuando nadie habló todavía —lo guardado es el saludo del servidor— o cuando
+     se llegó por «Continuar al paso N», que pide armar el paso. Refrescar con F5 deja de perder lo
+     conversado. Ver `hayTurnosDeLaPersona`. */
+  const abrirDeCero = !hayTurnosDeLaPersona(estado.chats[herramienta.id]) || !!rellenarAlLlegar;
 
   /* Lo que el Research hereda —la ficha del negocio—, con la misma fila de chips que las genéricas
      (`PanelHerramienta`). Este panel no la tenía porque el Research no heredaba de nada; desde el
@@ -480,7 +487,7 @@ export default function PanelResearch({
           onRespuestas={anotarLoDelAgente}
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
-          reiniciarAlAbrir={!!soloChat && hechos === 0}
+          reiniciarAlAbrir={!!soloChat && hechos === 0 && abrirDeCero}
           generarAlAbrir={!!rellenarAlLlegar && !!soloChat && hechos === 0}
         />
       ) : (

@@ -165,6 +165,38 @@ export function ultimaVersion(estado: EstadoDeFundaciones, id: number): string |
 }
 
 /**
+ * ¿La persona ya habló en esta conversación?
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * LA PREGUNTA QUE SEPARA «REFRESCAR» DE «EMPEZAR DE NUEVO»
+ *
+ * Los dos paneles reabrían el chat en CADA montaje mientras la herramienta no tuviera entregable
+ * —`reiniciarAlAbrir`—, y reabrir es `chatVacio()`: `messages: []`. O sea que refrescar la pestaña
+ * con F5, volver de Research, o entrar al día siguiente **borraban lo conversado**, y la persona
+ * encontraba un saludo en blanco. Kevin, 2026-09-22, con el reporte de las empresas: *«cuando ellos
+ * actualizan la pestaña se pierde la conversación»*.
+ *
+ * El reinicio no estaba de más: existe para que el saludo proponga sobre lo que las herramientas
+ * anteriores tienen HOY, y para que «Continuar al paso N» arme el paso sin esperar un «sí». Pero
+ * las dos cosas solo valen mientras nadie escribió nada. **Un turno de la persona es trabajo, y el
+ * trabajo gana sobre un saludo más fresco.**
+ *
+ * Por eso la pregunta es por `role === 'user'` y no por `messages.length`: una conversación de un
+ * solo mensaje es el saludo que armó el servidor —no lo escribió nadie— y refrescarlo no le cuesta
+ * nada a nadie. Medido el 2026-09-22 en producción: de las cinco organizaciones con chats
+ * guardados, ARIA tenía nueve conversaciones de UN mensaje cada una. Eso es exactamente la huella
+ * de esto: lo único que sobrevivía era el último saludo.
+ *
+ * Vive en `estado.ts` y no en cada panel porque la usan los dos —`PanelHerramienta` y
+ * `PanelResearch`— y dos copias de esta regla divergirían en la primera corrección, con el síntoma
+ * «en Research se conserva y en Tu ficha no».
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export function hayTurnosDeLaPersona(chat: ChatDeHerramienta | undefined): boolean {
+  return (chat?.messages ?? []).some((m) => m.role === 'user');
+}
+
+/**
  * ¿Este paso del método está completo?
  *
  * Puerto de `isStepDone` del hub, con sus tres casos especiales intactos:

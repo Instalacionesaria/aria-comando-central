@@ -43,6 +43,7 @@ import {
   claveCorta,
   conValoresPorOmision,
 } from '@/lib/fundaciones/campos';
+import { hayTurnosDeLaPersona } from '@/lib/fundaciones/estado';
 import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -185,6 +186,23 @@ export default function PanelHerramienta({
   /* Cambiar esta clave remonta el chat: con la ficha sin entregable, al montarse reabre proponiendo
      (`reiniciarAlAbrir`), que es exactamente lo que hace falta después de traer el formulario. */
   const [reinicios, setReinicios] = useState(0);
+
+  /* ── CUÁNDO EL CHAT PUEDE ABRIR DE CERO, Y CUÁNDO LO CONVERSADO MANDA ───────
+   *
+   * Reabrir es `chatVacio()`, o sea borrar los turnos. Se hace en tres casos y los tres son
+   * gestos, no rutina:
+   *
+   *   · **nadie habló todavía** — lo guardado es el saludo que armó el servidor, y refrescarlo
+   *     con las propuestas de hoy no le cuesta a nadie (ver `hayTurnosDeLaPersona`);
+   *   · **se llegó por «Continuar al paso N»** — ese botón pide armar el paso, no retomarlo;
+   *   · **se apretó «Traer del onboarding»** — `reinicios` sube y la franja promete, con esas
+   *     palabras, que «el agente vuelve a abrir con tus datos».
+   *
+   * Fuera de eso —refrescar con F5, volver de otra pestaña, entrar mañana— la conversación se
+   * muestra tal como quedó y NO se llama al servidor. «Empezar de nuevo» sigue estando para
+   * cuando de verdad quieran arrancar limpio. */
+  const abrirDeCero =
+    !hayTurnosDeLaPersona(estado.chats[herramienta.id]) || !!rellenarAlLlegar || reinicios > 0;
 
   const traerOnboarding = async () => {
     setTraido(null);
@@ -504,12 +522,14 @@ export default function PanelHerramienta({
           onRespuestas={anotarLoDelAgente}
           onArrancar={generarDesdeElAgente}
           rutaConversar={rutaConversar}
-          /* Sin entregable todavía, la conversación arranca de nuevo CADA vez que se entra —por la
-             pestaña o por «Continuar»—, con las propuestas hechas sobre lo que existe hoy y
-             conservando lo ya contestado. La regla anterior solo reabría llegando por el método, y
-             entrando por la pestaña se veía una conversación vieja y muerta: Kevin, con razón,
-             «¿dónde veo que se está procesando el paso 3?». Con entregable, se respeta la que había. */
-          reiniciarAlAbrir={!!soloChat && versionesGuardadas.length === 0}
+          /* Sin entregable todavía, la conversación arranca de nuevo cuando `abrirDeCero` lo
+             habilita, con las propuestas hechas sobre lo que existe hoy y conservando lo ya
+             contestado. La regla anterior solo reabría llegando por el método, y entrando por la
+             pestaña se veía una conversación vieja y muerta: Kevin, con razón, «¿dónde veo que se
+             está procesando el paso 3?». Después reabría SIEMPRE, y eso borraba lo conversado en
+             cada F5 — ver `abrirDeCero`, que es donde vive la regla de hoy. Con entregable, se
+             respeta la que había. */
+          reiniciarAlAbrir={!!soloChat && versionesGuardadas.length === 0 && abrirDeCero}
           generarAlAbrir={!!rellenarAlLlegar && !!soloChat && versionesGuardadas.length === 0}
         />
       ) : (
