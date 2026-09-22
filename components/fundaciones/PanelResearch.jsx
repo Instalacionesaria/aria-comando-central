@@ -185,6 +185,25 @@ export default function PanelResearch({
       const mal =
         r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado, r.detalle) : SIN_RESPUESTA;
       setError((previo) => ({ ...previo, [paso]: mal }));
+      /* ── ABRIR EL PASO QUE FALLÓ, O EL ERROR NO SE VE ─────────────────────
+       *
+       * El aviso de `error[paso]` se dibuja **dentro del acordeón**, y el acordeón arranca cerrado
+       * cuando todavía no salió ningún paso (`abierto` nace en `null`). Así que en la PRIMERA
+       * corrida —la única que importa, porque es cuando alguien estrena la herramienta— el fallo
+       * escribía el mensaje en el estado y no lo dibujaba en ninguna parte.
+       *
+       * Lo que la persona veía era: el botón gira, vuelve a su texto, el paso sigue diciendo
+       * «pendiente» y no hay ningún error. Indistinguible de «no pasó nada». Y si llegó por el
+       * chat, encima el agente ya había dicho «arranco ahora».
+       *
+       * Medido el 2026-09-22 sobre una organización real: criterios guardados, cinco herramientas
+       * generadas bien en los días anteriores, `outputs` vacío y el chat repitiendo «sí, ya arrancó»
+       * tres veces. No se puede saber desde la base si el paso 1 falló o si nunca se llamó — y no se
+       * puede justamente porque el error no dejaba rastro en ninguno de los dos lados.
+       *
+       * El éxito ya abría el paso (más abajo). Que el fallo no lo hiciera es lo que hacía que el
+       * único camino sin señal fuera el que la necesita. */
+      setAbierto(paso);
       setCorriendo(null);
       return false;
     }
