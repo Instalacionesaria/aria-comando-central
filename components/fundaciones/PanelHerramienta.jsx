@@ -69,6 +69,8 @@ export default function PanelHerramienta({
      `Fundaciones.jsx`: es un pedido de una sola vez, y acá se consume al montarse. */
   rellenarAlLlegar,
   onRellenadoAlLlegar,
+  /* Sube los turnos al estado de la pantalla. Ver `anotarConversacion` en `Fundaciones`. */
+  onConversacion,
   onEstadoCambiado,
   /* Las dos rutas de SU pantalla. Llegan por props y no están escritas acá porque el mismo
      panel sirve a ICP & Oferta y a Tools, que tienen capacidades distintas: una ruta escrita
@@ -520,6 +522,7 @@ export default function PanelHerramienta({
           puedeEditar={puedeEditar}
           corriendo={generando}
           onRespuestas={anotarLoDelAgente}
+          onMensajes={onConversacion ? (m) => onConversacion(herramienta.id, m) : undefined}
           onArrancar={generarDesdeElAgente}
           rutaConversar={rutaConversar}
           /* Sin entregable todavía, la conversación arranca de nuevo cuando `abrirDeCero` lo

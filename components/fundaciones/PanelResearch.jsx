@@ -41,7 +41,7 @@
    bien. Así, el botón "ejecutar todo" recorre los cinco de a uno y cada uno que sale
    queda guardado. */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { anunciantesDe, consultarTrabajo, iniciarScraping } from '@/lib/tools/scrapers';
@@ -82,6 +82,9 @@ export default function PanelResearch({
   soloChat,
   /* Se llegó por «Continuar al paso 2». Ver `PanelHerramienta`. */
   rellenarAlLlegar,
+  onRellenadoAlLlegar,
+  /* Sube los turnos al estado de la pantalla. Ver `anotarConversacion` en `Fundaciones`. */
+  onConversacion,
   onIr,
   /* Construir en cadena los pasos que siguen. `null` mientras una cadena corre. Ver `Fundaciones`. */
   onConstruirElMetodo,
@@ -136,6 +139,26 @@ export default function PanelResearch({
      se llegó por «Continuar al paso N», que pide armar el paso. Refrescar con F5 deja de perder lo
      conversado. Ver `hayTurnosDeLaPersona`. */
   const abrirDeCero = !hayTurnosDeLaPersona(estado.chats[herramienta.id]) || !!rellenarAlLlegar;
+
+  /* ── Y EL PEDIDO DE LLEGADA SE CONSUME, COMO EN `PanelHerramienta` ──────────
+   *
+   * `rellenarAlLlegar` es un pedido de UNA vez —«vengo de Continuar al paso N, armá el paso»— y
+   * este panel no lo consumía: solo `PanelHerramienta` recibía `onRellenadoAlLlegar`. Así quedaba
+   * puesto para toda la sesión, porque la barra de pestañas cambia de herramienta con un `setActiva`
+   * que no lo limpia. Efecto: llegabas por el método, conversabas, te ibas a otra pestaña, volvías
+   * — y como los paneles se remontan por su `key`, el pedido seguía ahí y la conversación se
+   * reabría. O sea, se borraba lo hablado, por una puerta distinta de la que cerró la 163.
+   *
+   * El `ref` es por el doble montaje del modo estricto de React en desarrollo. El efecto corre
+   * DESPUÉS del de `ChatDeHerramienta` —los hijos primero—, así que la apertura ya usó el valor. */
+  const yaConsumioLaLlegada = useRef(false);
+  useEffect(() => {
+    if (!rellenarAlLlegar || yaConsumioLaLlegada.current) return;
+    yaConsumioLaLlegada.current = true;
+    if (onRellenadoAlLlegar) onRellenadoAlLlegar();
+    // Una sola vez, al montar: es un pedido de llegada, no una propiedad que se siga.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Lo que el Research hereda —la ficha del negocio—, con la misma fila de chips que las genéricas
      (`PanelHerramienta`). Este panel no la tenía porque el Research no heredaba de nada; desde el
@@ -485,6 +508,7 @@ export default function PanelResearch({
           puedeEditar={puedeEditar}
           corriendo={corriendo !== null}
           onRespuestas={anotarLoDelAgente}
+          onMensajes={onConversacion ? (m) => onConversacion(herramienta.id, m) : undefined}
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
           reiniciarAlAbrir={!!soloChat && hechos === 0 && abrirDeCero}

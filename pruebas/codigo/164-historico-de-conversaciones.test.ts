@@ -177,7 +177,39 @@ test('guardar archiva la conversación que QUEDA y también la que SE VA', () =>
     /\{ herramienta: id, chat: estado\.chats\[id\] \}/,
     'ya no se archiva la conversación que se va: un reinicio vuelve a borrarla de verdad',
   );
-  assert.match(almacen, /\{ herramienta: id, chat: sellado \}/);
+  assert.match(almacen, /\{ herramienta: id, chat: sellado, usuarioId \}/);
+  /* Y el autor va SOLO en la que queda. La que se va se escribió en turnos anteriores, quizá por
+     otra persona de la empresa: firmarla con quien está hablando ahora sería inventar un autor. */
+  assert.doesNotMatch(
+    almacen,
+    /\{ herramienta: id, chat: estado\.chats\[id\], usuarioId \}/,
+    'se le pone el autor de esta sesión a la conversación anterior',
+  );
+});
+
+test('el archivado corre en su PROPIA transacción, nunca colgado de una abierta', () => {
+  /* ═══ ESTO ES LO QUE IMPIDE QUE EL HISTÓRICO BORRE UN TURNO ═══════════════════
+     En PostgreSQL una sentencia que falla ABORTA LA TRANSACCIÓN ENTERA. Si el archivado se colgara
+     de una transacción abierta por la ruta, un `insert` fallido se llevaría puesto el guardado del
+     turno que ocurrió unas líneas antes en esa misma transacción — y el `catch` de `archivar` no
+     salva de eso: atrapa el error de JavaScript, no desaborta nada.
+     Hoy las dos rutas de conversar no abren contexto (`almacen.ts` lo documenta: una transacción
+     abierta mientras el modelo piensa retiene una conexión por nada), así que el guardado ya
+     confirmó. Pero está a un `conOrganizacion(` de distancia: `app/api/tools/estado` envuelve así
+     sus manejadores. Esto lo cierra por construcción. */
+  const historico = codigo('lib/fundaciones/historico.ts');
+  assert.match(historico, /async function enSuPropiaTransaccion/);
+  assert.match(
+    historico,
+    /return conOrganizacion\(orgId, \(\) => trabajo\(datos\(\)\)\);/,
+    'el archivado dejó de abrir su propia transacción',
+  );
+  assert.doesNotMatch(
+    historico,
+    /hayOrganizacion\(\)/,
+    'el archivado volvió a reusar la transacción abierta: un insert fallido puede revertir el turno ' +
+      'de la persona, que es exactamente lo que no puede pasar',
+  );
 });
 
 test('el histórico va DESPUÉS de guardar y no puede tumbar un turno', () => {
@@ -227,4 +259,35 @@ test('la tabla está declarada en el esquema, con la forma que escribe el archiv
   for (const columna of ['conversacion_id', 'orden', 'herramienta', 'rol', 'contenido', 'agent_version', 'usuario_id']) {
     assert.match(esquema, new RegExp(`${columna}:`), `la tabla del esquema no declara \`${columna}\``);
   }
+});
+
+test('un saludo suelto NO se archiva: el histórico no se llena de conversaciones vacías', () => {
+  /* Mientras nadie habló, cada visita a la pestaña reabre el chat —es lo que hace que el saludo
+     proponga sobre lo que existe hoy— y cada reapertura estrena un `conversation_id`. Sin filtro,
+     cada visita dejaría archivada una «conversación» de un mensaje, el del agente: la pantalla que
+     viene mostraría las de verdad enterradas bajo una pila de saludos, y la tabla crecería al ritmo
+     de las visitas. Es la misma huella que tenía el defecto original («nueve conversaciones de UN
+     mensaje»), ahora vuelta permanente.
+
+     Y no se pierde el saludo: cuando la persona escribe, se empuja la conversación completa. */
+  const historico = codigo('lib/fundaciones/historico.ts');
+  assert.match(
+    historico,
+    /\.filter\(\(c\) => hayTurnosDeLaPersona\(c\.chat\)\)/,
+    'se archiva una conversación en la que nadie habló',
+  );
+  /* La MISMA función que decide si el chat se reabre: lo que la pantalla llama una conversación y
+     lo que el histórico guarda como una conversación tienen que ser la misma cosa. */
+  assert.match(historico, /import \{ hayTurnosDeLaPersona, type ChatDeHerramienta \} from '\.\/estado\.ts';/);
+});
+
+test('armar las filas también está dentro del `try`', () => {
+  /* El módulo promete que un fallo del histórico no le cuesta el turno a nadie, y armar las filas
+     lee un documento que pudo escribir otra versión o una mano en el Table Editor. Con el armado
+     afuera, un `TypeError` escapaba de `archivar`, escapaba de `guardarChat`, y convertía un turno
+     YA GUARDADO en un 500 en la pantalla. */
+  const historico = codigo('lib/fundaciones/historico.ts');
+  const abre = historico.indexOf('  try {');
+  const arma = historico.indexOf('const filas = conversaciones');
+  assert.ok(abre > 0 && arma > abre, 'el armado de las filas quedó fuera del `try`');
 });

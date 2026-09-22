@@ -365,14 +365,12 @@ export async function guardarChat(
          distinta —otro `conversation_id`— y cuyos mensajes están a punto de desaparecer del
          documento vivo. Sin esta segunda, «Empezar de nuevo» seguiría borrando de verdad. */
   if (guardado.tipo !== 'datos') return guardado;
-  await archivar(
-    orgId,
-    [
-      { herramienta: id, chat: estado.chats[id] },
-      { herramienta: id, chat: sellado },
-    ],
-    usuarioId,
-  );
+  await archivar(orgId, [
+    /* La que SE VA no lleva autor: sus mensajes son de turnos anteriores, quizá de otra persona de
+       la empresa, y lo ya archivado conserva el suyo por el `on conflict do nothing`. */
+    { herramienta: id, chat: estado.chats[id] },
+    { herramienta: id, chat: sellado, usuarioId },
+  ]);
   return guardado;
 }
 

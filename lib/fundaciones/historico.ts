@@ -39,8 +39,8 @@
 import { createHash } from 'node:crypto';
 
 import type { Trx } from '../datos/capa.ts';
-import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
-import type { ChatDeHerramienta } from './estado.ts';
+import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { hayTurnosDeLaPersona, type ChatDeHerramienta } from './estado.ts';
 
 const TABLA = 'public.aria_cc_fundaciones_mensajes' as const;
 
@@ -49,9 +49,12 @@ const TABLA = 'public.aria_cc_fundaciones_mensajes' as const;
  *
  * Una conversación no llega ni cerca —la más larga medida el 2026-09-22 son 17 mensajes, la de
  * Allpa en el Research— y el tope existe para que un documento absurdo (o adulterado a mano en el
- * Table Editor) no arme una sentencia de miles de parámetros. Se archiva la COLA, que es lo último
- * dicho: si alguna vez hubiera que recortar, perder el principio de una charla larguísima es menos
- * malo que perder lo que se acaba de decir.
+ * Table Editor) no arme una sentencia de miles de parámetros.
+ *
+ * Recorta UNA empujada, no el histórico: se archiva la COLA, y el principio de una conversación
+ * larguísima ya entró en las empujadas anteriores, cuando era corta. Lo único que se perdería es el
+ * principio de una charla que pasó de cero a más de quinientos mensajes sin un solo guardado por el
+ * medio, que no es un caso que exista — cada turno guarda.
  */
 export const TOPE_DE_MENSAJES_POR_ARCHIVO = 500;
 
@@ -137,15 +140,33 @@ export function filasDe(
   return filas.slice(-TOPE_DE_MENSAJES_POR_ARCHIVO);
 }
 
-/** Corre el trabajo con la organización abierta, reusando la que ya esté abierta si la hay. */
-async function enOrganizacion<T>(orgId: string, trabajo: (db: Trx) => Promise<T>): Promise<T> {
-  if (hayOrganizacion()) {
-    const abierta = organizacionActual();
-    if (abierta !== orgId) {
-      throw new Error(`el contexto abierto es de la organización ${abierta}, no de ${orgId}`);
-    }
-    return trabajo(datos());
-  }
+/**
+ * Corre el archivado en su PROPIA transacción, siempre. **Nunca se cuelga de la que haya abierta.**
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ESTO ES LO ÚNICO QUE IMPIDE QUE EL HISTÓRICO BORRE UN TURNO
+ *
+ * `almacen.ts` hace lo contrario —si hay una transacción abierta, la reusa— y para él está bien:
+ * todo lo que escribe es el mismo trabajo y tiene que ir junto o no ir.
+ *
+ * Acá reusarla sería un defecto con nombre: **en PostgreSQL, una sentencia que falla ABORTA LA
+ * TRANSACCIÓN ENTERA**. Desde el error, todo lo demás responde «current transaction is aborted» y
+ * al cerrar se revierte. O sea que un `insert` fallido del histórico —la tabla todavía sin crear,
+ * un `check` que no pasa, la base con hipo— **se llevaría puesto el turno que la persona acaba de
+ * escribir**, que ya se había guardado unas líneas antes en esa misma transacción. El `catch` de
+ * `archivar` no salva de eso: atrapa el error de JavaScript, no desaborta nada.
+ *
+ * Hoy no ocurre: las dos rutas de conversar no abren contexto, así que `escribir` ya confirmó su
+ * transacción antes de que esto arranque. Pero es a un `conOrganizacion(` de distancia —
+ * `app/api/tools/estado/route.ts` envuelve así sus dos manejadores, y su propio comentario dice
+ * *«el almacén reutiliza esa transacción»*—, y el día que alguien envuelva ésta, el síntoma sería
+ * «a veces se pierde lo último que escribí» sin un solo error en pantalla.
+ *
+ * El costo es una conexión más del agrupador mientras dura el `insert`, y se paga con gusto: el
+ * histórico es lo secundario, el turno de la persona es lo que no se puede perder.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+async function enSuPropiaTransaccion<T>(orgId: string, trabajo: (db: Trx) => Promise<T>): Promise<T> {
   return conOrganizacion(orgId, () => trabajo(datos()));
 }
 
@@ -153,34 +174,62 @@ async function enOrganizacion<T>(orgId: string, trabajo: (db: Trx) => Promise<T>
  * Archiva una conversación. **Nunca lanza.**
  *
  * Se le pasan las conversaciones que hay que conservar —la que se va y la que queda— y las empuja
- * enteras; el `on conflict do nothing` se encarga de que lo repetido no entre. Devuelve cuántas
- * filas se intentaron archivar, que es lo que la prueba puede mirar sin base.
+ * enteras; el `on conflict do nothing` se encarga de que lo repetido no entre.
+ *
+ * **TODO su trabajo va dentro del `try`, incluido el armado de las filas.** No es ceremonia: el
+ * módulo promete que un fallo del histórico no le cuesta el turno a nadie, y armar las filas lee un
+ * documento que pudo escribir otra versión o una mano en el Table Editor. Un `TypeError` ahí
+ * escaparía de `guardarChat` y convertiría un turno YA GUARDADO en un error 500 en la pantalla.
  */
 export async function archivar(
   orgId: string,
-  conversaciones: readonly { herramienta: number; chat: ChatDeHerramienta | undefined }[],
-  usuarioId?: string | null,
+  conversaciones: readonly {
+    herramienta: number;
+    chat: ChatDeHerramienta | undefined;
+    /**
+     * Quién está escribiendo AHORA, si esta conversación es la que recibe el turno.
+     *
+     * Va por conversación y no suelto para toda la llamada porque las dos que se archivan juntas no
+     * son iguales: la que QUEDA la está escribiendo la sesión de este momento, y la que SE VA se
+     * escribió en turnos anteriores, quizá por otra persona de la misma empresa. Firmar sus
+     * mensajes con quien pasó por acá hoy sería inventar un autor.
+     */
+    usuarioId?: string | null;
+  }[],
 ): Promise<void> {
-  const filas = conversaciones.flatMap((c) =>
-    filasDe(c.chat, { orgId, herramienta: c.herramienta, usuarioId }),
-  );
-  if (filas.length === 0) return;
-
-  /* Se quitan las repetidas ANTES de mandarlas: dos conversaciones de la misma llamada pueden
-     compartir mensajes —la que se archiva al reabrir y la que queda—, y Postgres rechaza un
-     `insert` que traiga dos veces la misma clave primaria en el MISMO comando, con `on conflict` y
-     todo («ON CONFLICT DO UPDATE command cannot affect row a second time» es su primo). Con
-     `do nothing` no falla, pero tampoco hay por qué mandarlas. */
-  const vistas = new Set<string>();
-  const unicas = filas.filter((f) => {
-    const llave = `${f.conversacion_id}:${f.orden}`;
-    if (vistas.has(llave)) return false;
-    vistas.add(llave);
-    return true;
-  });
-
   try {
-    await enOrganizacion(orgId, async (db) => {
+    /* ── UN SALUDO SUELTO NO ES UNA CONVERSACIÓN, Y ARCHIVARLO ARRUINA EL HISTÓRICO ──
+     *
+     * Mientras nadie habló, cada visita a la herramienta reabre el chat (es lo que hace que el
+     * saludo proponga sobre lo que existe hoy), y cada reapertura estrena un `conversation_id`. Sin
+     * este filtro, **cada vez que alguien pasa por la pestaña queda archivada una «conversación»
+     * de un solo mensaje, el del agente**. La pantalla que viene —«las conversaciones de esta
+     * empresa, la más reciente primero»— mostraría las de verdad enterradas debajo de una pila de
+     * saludos, y la tabla crecería al ritmo de las visitas.
+     *
+     * Y no se pierde nada: cuando la persona escriba, se empuja la conversación COMPLETA, con su
+     * saludo incluido. Es la misma pregunta que decide si el chat se reabre (`hayTurnosDeLaPersona`)
+     * y eso es a propósito: lo que la pantalla considera una conversación y lo que el histórico
+     * guarda como una conversación tienen que ser la misma cosa. */
+    const filas = conversaciones
+      .filter((c) => hayTurnosDeLaPersona(c.chat))
+      .flatMap((c) => filasDe(c.chat, { orgId, herramienta: c.herramienta, usuarioId: c.usuarioId }));
+    if (filas.length === 0) return;
+
+    /* Se quitan las repetidas ANTES de mandarlas: dos conversaciones de la misma llamada pueden
+       compartir mensajes —la que se archiva al reabrir y la que queda—, y Postgres rechaza un
+       `insert` que traiga dos veces la misma clave primaria en el MISMO comando, con `on conflict` y
+       todo («ON CONFLICT DO UPDATE command cannot affect row a second time» es su primo). Con
+       `do nothing` no falla, pero tampoco hay por qué mandarlas. */
+    const vistas = new Set<string>();
+    const unicas = filas.filter((f) => {
+      const llave = `${f.conversacion_id}:${f.orden}`;
+      if (vistas.has(llave)) return false;
+      vistas.add(llave);
+      return true;
+    });
+
+    await enSuPropiaTransaccion(orgId, async (db) => {
       await db
         .insertInto(TABLA)
         .values(unicas)

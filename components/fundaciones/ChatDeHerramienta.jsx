@@ -44,6 +44,9 @@ export default function ChatDeHerramienta({
   puedeEditar,
   corriendo,
   onRespuestas,
+  /* Los turnos, para que el estado de la pantalla no se quede con la foto de cuando se cargó.
+     Opcional: un chat sin quien lo escuche sigue funcionando igual. */
+  onMensajes,
   onArrancar,
   rutaConversar,
   /* Al montar, en vez de retomar la conversación guardada, empezar una nueva. Lo pide el panel
@@ -68,15 +71,20 @@ export default function ChatDeHerramienta({
 
   const campos = camposDe(herramienta);
   const hilo = useRef(null);
-  /* React monta dos veces en desarrollo, y abrir la conversación ESCRIBE. La escritura es
-     idempotente —el mismo saludo sobre la misma llave— así que el guard no evita un daño, evita una
-     segunda llamada que confunde a quien mire los registros buscando otra cosa. */
+  /* React monta dos veces en desarrollo, y abrir la conversación ESCRIBE. Desde el histórico esa
+     escritura ya NO es idempotente —cada apertura estrena un `conversation_id`—, así que el guard
+     dejó de ser una cortesía para los registros: sin él, una llegada deja dos conversaciones. */
   const yaSeAbrio = useRef(false);
 
   const aplicar = (datos) => {
     setMensajes(datos.mensajes);
     setRespuestas(datos.respuestas);
     onRespuestas(datos.respuestas);
+    /* Y los turnos suben hasta `Fundaciones`, que es quien guarda la foto del estado que el próximo
+       montaje va a leer. Sin esto, cambiar de pestaña y volver remontaba este chat con la
+       conversación de cuando se cargó la pantalla —o sea, el saludo— y la reabría creyendo que
+       nadie había hablado. Ver `anotarConversacion`. */
+    if (onMensajes) onMensajes(datos.mensajes);
     if (datos.listo) onArrancar(datos.respuestas);
   };
 

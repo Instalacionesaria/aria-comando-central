@@ -196,6 +196,39 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
    */
   const recargar = useCallback(() => cargar(), [cargar]);
 
+  /**
+   * Anotar acá los turnos que el chat acaba de intercambiar. **Sin volver a pedir el estado.**
+   *
+   * ═══════════════════════════════════════════════════════════════════════════
+   * SIN ESTO, CAMBIAR DE PESTAÑA SEGUÍA BORRANDO LA CONVERSACIÓN
+   *
+   * `estado` se lee al montar y después de generar o guardar; conversar no lo tocaba. Y los paneles
+   * llevan `key={herramienta.id}`, así que tocar otra pestaña y volver los REMONTA — con el estado
+   * de cuando se cargó la pantalla, que todavía tiene el saludo solo.
+   *
+   * De ahí salían dos defectos del mismo origen, y el segundo es el que reportaron las empresas:
+   *
+   *   1. el chat se repintaba con la conversación vieja, porque `inicial` venía de esa foto;
+   *   2. y `abrirDeCero` la miraba para decidir, veía que «nadie habló», y REABRÍA — o sea,
+   *      borraba de verdad lo conversado. La 163 arregló el F5 y dejaba viva esta puerta.
+   *
+   * La alternativa era volver a pedir el estado entero en cada turno. Cuesta una petición por
+   * mensaje para traer siete documentos de los que solo cambió uno, y encima deja una ventana en la
+   * que la foto está vieja. El servidor ya devuelve los turnos en la respuesta del propio turno: se
+   * anotan y listo.
+   *
+   * Se conserva TODO lo demás del chat —respuestas, sello de versión, identificador de la
+   * conversación— porque esta foto es la que va a leer el próximo montaje.
+   * ═══════════════════════════════════════════════════════════════════════════
+   */
+  const anotarConversacion = useCallback((id, mensajes) => {
+    setEstado((previo) => {
+      if (!previo) return previo;
+      const anterior = previo.chats?.[id] ?? { messages: [], answers: {} };
+      return { ...previo, chats: { ...previo.chats, [id]: { ...anterior, messages: mensajes } } };
+    });
+  }, []);
+
   /* ── CONSTRUIR EL MÉTODO EN CADENA ────────────────────────────────────────
    *
    * Pedido de Kevin: «un botón en el Research que me permita ejecutar el 3, 4, 5, 6 y 7 en
@@ -470,6 +503,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           pantalla={pantalla}
           soloChat={soloChat}
           rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
+          onRellenadoAlLlegar={() => setRellenarAlLlegar(null)}
+          onConversacion={anotarConversacion}
           onIr={irA}
           onConstruirElMetodo={cadena ? null : construirElMetodo}
           eslabonesDelMetodo={eslabonesDelMetodo()}
@@ -493,6 +528,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           onIr={irA}
           rellenarAlLlegar={rellenarAlLlegar === herramienta.id}
           onRellenadoAlLlegar={() => setRellenarAlLlegar(null)}
+          onConversacion={anotarConversacion}
           onEstadoCambiado={recargar}
           rutaEstado={rutaEstado}
           rutaGenerar={rutaGenerar}

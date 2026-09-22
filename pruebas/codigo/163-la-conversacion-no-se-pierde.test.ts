@@ -151,3 +151,58 @@ test('sin reapertura, el chat se pinta con lo guardado y NO llama al servidor', 
   const operaciones = codigo('lib/fundaciones/operaciones.ts');
   assert.match(operaciones, /await abrir\(h, estado\.datos, acceso\.claveIa, chat\.answers\)/);
 });
+
+test('cambiar de pestaña tampoco la pierde: los turnos suben al estado de la pantalla', () => {
+  /* ═══ LA SEGUNDA PUERTA, Y LA ENCONTRÓ UNA REVISIÓN ADVERSARIAL ══════════════
+     Arreglar el F5 no alcanzaba. `estado` se lee al montar y después de generar o guardar;
+     conversar no lo tocaba. Y los paneles llevan `key={herramienta.id}`, así que ir a otra pestaña
+     y volver los REMONTA con la foto de cuando se cargó la pantalla — donde todavía está el saludo
+     solo. `abrirDeCero` miraba esa foto, concluía que nadie había hablado, y reabría: o sea,
+     borraba lo conversado por una puerta distinta de la que se cerró primero.
+
+     La respuesta del turno ya trae los mensajes, así que se anotan en el estado en vez de volver a
+     pedirlo entero: una petición por mensaje para traer siete documentos de los que cambió uno. */
+  const chat = codigo('components/fundaciones/ChatDeHerramienta.jsx');
+  assert.match(chat, /if \(onMensajes\) onMensajes\(datos\.mensajes\);/, 'el chat no avisa los turnos hacia arriba');
+
+  const fundaciones = codigo('components/fundaciones/Fundaciones.jsx');
+  assert.match(fundaciones, /const anotarConversacion = useCallback\(\(id, mensajes\) => \{/);
+  assert.match(
+    fundaciones,
+    /chats: \{ \.\.\.previo\.chats, \[id\]: \{ \.\.\.anterior, messages: mensajes \} \}/,
+    'al anotar los turnos se pierde el resto del chat (respuestas, sello, identificador)',
+  );
+
+  /* Y le llega a los DOS paneles: si solo lo recibiera uno, en esa herramienta se conservaría y en
+     la otra no — que es justo la forma de defecto que se reporta como «a veces se pierde». */
+  const veces = fundaciones.match(/onConversacion=\{anotarConversacion\}/g) ?? [];
+  assert.equal(veces.length, 2, 'uno de los dos paneles no sube los turnos al estado');
+  for (const panel of ['components/fundaciones/PanelHerramienta.jsx', 'components/fundaciones/PanelResearch.jsx']) {
+    assert.match(
+      codigo(panel),
+      /onMensajes=\{onConversacion \? \(m\) => onConversacion\(herramienta\.id, m\) : undefined\}/,
+      `${panel} no le pasa los turnos al estado de la pantalla`,
+    );
+  }
+});
+
+test('el pedido de «Continuar al paso N» se consume en los DOS paneles', () => {
+  /* `rellenarAlLlegar` fuerza la reapertura a propósito: ese botón pide armar el paso. Pero es un
+     pedido de UNA vez, y `PanelResearch` no lo consumía —solo `PanelHerramienta` recibía
+     `onRellenadoAlLlegar`—, así que quedaba puesto toda la sesión: la barra de pestañas cambia de
+     herramienta con un `setActiva` que no lo limpia. Resultado: llegabas por el método,
+     conversabas, cambiabas de pestaña, volvías, y el Research reabría borrando lo hablado. */
+  const fundaciones = codigo('components/fundaciones/Fundaciones.jsx');
+  const veces = fundaciones.match(/onRellenadoAlLlegar=\{\(\) => setRellenarAlLlegar\(null\)\}/g) ?? [];
+  assert.equal(veces.length, 2, 'un panel recibe el pedido de llegada y no tiene cómo consumirlo');
+
+  assert.match(
+    codigo('components/fundaciones/PanelHerramienta.jsx'),
+    /if \(onRellenadoAlLlegar\) onRellenadoAlLlegar\(\);/,
+  );
+  assert.match(
+    codigo('components/fundaciones/PanelResearch.jsx'),
+    /yaConsumioLaLlegada\.current = true;\s*\n\s*if \(onRellenadoAlLlegar\) onRellenadoAlLlegar\(\);/,
+    'el Research no consume el pedido de llegada: queda puesto para toda la sesión',
+  );
+});
