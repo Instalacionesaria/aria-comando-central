@@ -107,6 +107,18 @@ export interface ChatDeHerramienta {
    * UNA vez, conservando lo contestado. Ausente = anterior a que esto existiera.
    */
   agent_version?: number;
+  /**
+   * CUÁL conversación es esta, para el histórico. Lo pone `chatVacio()` al nacer.
+   *
+   * Es lo único que distingue «la conversación de ayer» de «la de hoy» en la misma herramienta: el
+   * casillero de `tool_chats` se reemplaza entero al reabrir, así que sin un identificador que
+   * viaje DENTRO del documento, el archivo no tendría cómo separar dos charlas distintas ni cómo
+   * reconocer la misma charla dos turnos después. Ver `lib/fundaciones/historico.ts`.
+   *
+   * Ausente = conversación anterior a la migración `019`. No es un fallo: el archivador le deriva
+   * uno estable a partir de la organización y la herramienta, igual que hizo la migración.
+   */
+  conversation_id?: string;
 }
 
 /** El estado completo, tal como lo devuelve `GET /api/fundaciones/estado`. */

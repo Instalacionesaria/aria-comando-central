@@ -45,6 +45,8 @@
 // otra con herramienta forzada y sin búsqueda— coincidan para siempre.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { randomUUID } from 'node:crypto';
+
 import { pedirExterno } from '../http/cliente.ts';
 import { VERSION_DEL_AGENTE } from './version-del-agente.ts';
 import { camposDe, claveCorta, obligatoriosQueFaltan, pendientesAntesDeGenerar } from './campos.ts';
@@ -663,7 +665,16 @@ function leerTurno(h: Herramienta, entrada: Record<string, unknown>): Turno | nu
 
 /** La conversación vacía, con las respuestas que ya estuvieran guardadas. */
 export function chatVacio(respuestas: Record<string, string>): ChatDeHerramienta {
-  return { messages: [], answers: { ...respuestas }, agent_version: VERSION_DEL_AGENTE };
+  /* `conversation_id` nace ACÁ, que es el único lugar donde empieza una conversación. Es lo que
+     hace que la anterior quede en el histórico como una charla aparte en vez de mezclarse con
+     esta: el casillero de `tool_chats` se reemplaza entero, así que sin un identificador nuevo las
+     dos serían «la conversación de esta herramienta». Ver `lib/fundaciones/historico.ts`. */
+  return {
+    messages: [],
+    answers: { ...respuestas },
+    agent_version: VERSION_DEL_AGENTE,
+    conversation_id: randomUUID(),
+  };
 }
 
 /**

@@ -43,6 +43,7 @@
 
 import type { Trx } from '../datos/capa.ts';
 import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
+import { archivar, idDeConversacion } from './historico.ts';
 import { leerMercado, type MercadoReal } from './mercado.ts';
 import { leerOnboarding } from './onboarding.ts';
 import {
@@ -170,10 +171,17 @@ function chat(x: unknown): ChatDeHerramienta | null {
   }
   const respuestas = textos(o['answers']);
   if (mensajes.length === 0 && Object.keys(respuestas).length === 0) return null;
-  const version = typeof o['agent_version'] === 'number' ? o['agent_version'] : undefined;
-  return version === undefined
-    ? { messages: mensajes, answers: respuestas }
-    : { messages: mensajes, answers: respuestas, agent_version: version };
+  const leido: ChatDeHerramienta = { messages: mensajes, answers: respuestas };
+  if (typeof o['agent_version'] === 'number') leido.agent_version = o['agent_version'];
+  /* ── EL IDENTIFICADOR DE LA CONVERSACIÓN SE CONSERVA AL LEER ────────────────
+     Este lector reconstruye el documento campo por campo, así que lo que no nombre se PIERDE en el
+     próximo guardado — y perder `conversation_id` no se vería como un error: la conversación
+     seguiría andando y el histórico la archivaría bajo un identificador nuevo en cada turno, o sea
+     la misma charla repetida una vez por turno. Ver `historico.ts`. */
+  if (typeof o['conversation_id'] === 'string' && o['conversation_id'].trim() !== '') {
+    leido.conversation_id = o['conversation_id'];
+  }
+  return leido;
 }
 
 function versiones(x: unknown): Version[] | null {
@@ -330,9 +338,42 @@ export async function guardarChat(
   estado: EstadoDeFundaciones,
   id: number,
   chatDeHerramienta: ChatDeHerramienta,
+  /** Quién está escribiendo, para firmar sus mensajes en el histórico. Ver `historico.ts`. */
+  usuarioId?: string | null,
 ): Promise<ResultadoDeAlmacen<null>> {
-  const proximo: Record<number, ChatDeHerramienta> = { ...estado.chats, [id]: chatDeHerramienta };
-  return escribir(orgId, LLAVES.chats, proximo);
+  /* ── EL IDENTIFICADOR SE ESTAMPA ACÁ, Y ES LO QUE HACE QUE NO SE DUPLIQUE ───
+     Una conversación nueva nace con el suyo (`chatVacio`), pero las que ya existían —las de los
+     clientes, desde antes de la migración `019`— no lo tienen. Si se archivaran sin él, cada turno
+     derivaría el mismo identificador (bien) pero el documento nunca lo aprendería, y bastaría un
+     cambio en la derivación para partir la conversación en dos. Estampándolo una vez, el documento
+     pasa a ser la fuente y ya nadie tiene que derivar nada. */
+  const sellado: ChatDeHerramienta = {
+    ...chatDeHerramienta,
+    conversation_id: idDeConversacion(chatDeHerramienta, orgId, id),
+  };
+  const proximo: Record<number, ChatDeHerramienta> = { ...estado.chats, [id]: sellado };
+  const guardado = await escribir(orgId, LLAVES.chats, proximo);
+
+  /* ── Y RECIÉN AHORA EL HISTÓRICO, QUE NO PUEDE COSTAR UN TURNO ──────────────
+     Después de guardar y sin `await` sobre su resultado en el camino de error: `archivar` no lanza
+     nunca (ver su encabezado). Si el guardado falló, no se archiva: no hay nada confirmado que
+     archivar, y la persona va a reintentar.
+
+     Se archivan DOS conversaciones y por eso esto no es una llamada suelta:
+       · la que está QUEDANDO, con el turno nuevo;
+       · y la que había ANTES (`estado.chats[id]`), que en una reapertura es una conversación
+         distinta —otro `conversation_id`— y cuyos mensajes están a punto de desaparecer del
+         documento vivo. Sin esta segunda, «Empezar de nuevo» seguiría borrando de verdad. */
+  if (guardado.tipo !== 'datos') return guardado;
+  await archivar(
+    orgId,
+    [
+      { herramienta: id, chat: estado.chats[id] },
+      { herramienta: id, chat: sellado },
+    ],
+    usuarioId,
+  );
+  return guardado;
 }
 
 /** La fecha con el formato que escribía el hub, para que el historial copiado se lea igual. */

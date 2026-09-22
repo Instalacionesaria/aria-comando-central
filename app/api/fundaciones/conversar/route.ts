@@ -46,5 +46,8 @@ export async function POST(peticion: Request): Promise<Response> {
   );
   if (acceso.tipo === 'falta') return rechazo(acceso.que);
 
-  return conversarConElAgente(peticion, acceso, FUNDACIONES);
+  /* El usuario REAL de la sesión, para que el histórico pueda firmar sus mensajes. Va el de la
+     persona aunque esté mirando otra organización: la columna no tiene foránea compuesta
+     justamente para poder guardar eso (migración 019). Ver `Acceso.usuarioId`. */
+  return conversarConElAgente(peticion, { ...acceso, usuarioId: contexto.usuarioId }, FUNDACIONES);
 }

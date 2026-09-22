@@ -1274,6 +1274,35 @@ export interface TablaFoundations {
   actualizado_el: Generated<Date>;
 }
 
+/**
+ * El histórico de conversaciones con el agente de Fundaciones. **Una fila por MENSAJE.**
+ *
+ * Vive en `public.aria_cc_fundaciones_mensajes` (migración 019 de `/migraciones`) y está calificada
+ * con su esquema por lo mismo que `TablaFoundations` y las del scraper: el `public` de ese proyecto
+ * de Supabase es compartido con ARIA-brain y el prefijo dice de quién es cada tabla. Mismo régimen:
+ * RLS forzada y política por `app.org_id`.
+ *
+ * Es la contracara de `tool_chats`, que es la conversación VIVA y se reescribe entera en cada
+ * turno. Acá **solo se agrega**: es lo que hace que reabrir el chat deje de significar «borrar».
+ * Quien escribe es `lib/fundaciones/historico.ts`, y nadie más.
+ */
+export interface TablaFundacionesMensajes {
+  org_id: string;
+  /** Cuál conversación. Viaja dentro del documento vivo, en `conversation_id`. */
+  conversacion_id: string;
+  /** La posición en el arreglo `messages`, desde 0. Con las dos de arriba, la clave primaria. */
+  orden: number;
+  /** El id del hub: 0 «Tu ficha», 1 Research, 3 ICP… los mismos que ya son claves de `tool_chats`. */
+  herramienta: number;
+  rol: 'assistant' | 'user';
+  contenido: string;
+  /** Con qué versión del agente se habló. Nulo en lo anterior al sello. */
+  agent_version: number | null;
+  /** Quién lo escribió, solo en los mensajes de la persona. Sin foránea; el porqué está en la 019. */
+  usuario_id: string | null;
+  creado_el: Generated<Date>;
+}
+
 /** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1327,4 +1356,5 @@ export interface BaseDeDatos {
   'public.aria_cc_scraper_trabajos': TablaScraperTrabajos;
   'public.aria_cc_scraper_monedero': TablaScraperMonedero;
   'public.aria_cc_foundations': TablaFoundations;
+  'public.aria_cc_fundaciones_mensajes': TablaFundacionesMensajes;
 }

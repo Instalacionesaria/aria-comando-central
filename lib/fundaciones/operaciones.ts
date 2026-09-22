@@ -105,6 +105,17 @@ export interface Alumno {
 /** La organización MÁS su llave de IA. Solo generar y conversar la necesitan. */
 export interface Acceso extends Alumno {
   claveIa: string;
+  /**
+   * Quién está usando el chat, para firmar SUS mensajes en el histórico (`historico.ts`).
+   *
+   * Opcional porque `resolverAccesoAFundaciones` no lo conoce —resuelve credenciales de la
+   * organización, no la sesión—: lo agregan las dos rutas de conversar, que sí tienen el contexto.
+   * Sin él, el histórico guarda el mensaje igual y sin autor, que es un dato menos y no un fallo.
+   *
+   * Bajo delegación va el usuario REAL (Jorge mirando la organización de un cliente), no un nulo:
+   * la columna no tiene foránea compuesta justamente para poder guardar eso. Ver la migración 019.
+   */
+  usuarioId?: string | null;
 }
 
 /** Las herramientas que la pantalla admite. Ver el encabezado: es un filtro, no una lista. */
@@ -639,7 +650,7 @@ export async function conversarConElAgente(
     }
     // Abrir o reiniciar, sin turno. Se escribe solo si algo cambió.
     if (recienAbierta) {
-      const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, chat);
+      const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, chat, acceso.usuarioId);
       if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
     }
     return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: arrancaSolo });
@@ -674,7 +685,7 @@ export async function conversarConElAgente(
     messages: [...conElTurno, { role: 'assistant', content: salida.datos.mensaje }],
     answers: salida.datos.respuestas,
   };
-  const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, proximo);
+  const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, proximo, acceso.usuarioId);
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
   /* `listo` es lo que el SERVIDOR concluye, no lo que el modelo afirmó. Ver `arranca`: comprueba que
