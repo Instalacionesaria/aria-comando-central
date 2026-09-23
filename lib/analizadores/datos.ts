@@ -838,6 +838,54 @@ export async function pendientesParaAnalizar(
 }
 
 /**
+ * Lo que el barrido de las 5 de la mañana reintenta: las FAILED que no agotaron sus reintentos
+ * automáticos y las ANALYZING colgadas —una función que murió a mitad del análisis las deja ahí, y la
+ * tarea de cada hora solo toma PENDING—. Las más viejas primero.
+ *
+ * Devuelve el estado en que se vieron: la toma lo exige (`tomarParaAnalizar`), así que una que la
+ * pantalla ya reintentó mientras tanto se saltea y no se paga dos veces.
+ */
+export async function paraReintentar(
+  orgId: string,
+  tipos: readonly ('HT' | 'OB')[],
+  tope: number,
+  limite: number,
+): Promise<{ id: string; estado: 'FAILED' | 'ANALYZING' }[]> {
+  if (tipos.length === 0) return [];
+  const filas = await enOrganizacion(orgId, (db) =>
+    db
+      .selectFrom('analizador_llamadas')
+      .select(['id', 'estado'])
+      .where('tipo', 'in', [...tipos])
+      .where('reintentos_automaticos', '<', tope)
+      .where((eb) =>
+        eb.or([
+          eb('estado', '=', 'FAILED'),
+          eb.and([
+            eb('estado', '=', 'ANALYZING'),
+            eb('tomada_el', '<', sql<Date>`now() - make_interval(mins => ${MINUTOS_PARA_DARLA_POR_COLGADA})`),
+          ]),
+        ]),
+      )
+      .orderBy('actualizado_el', 'asc')
+      .limit(limite)
+      .execute(),
+  );
+  return filas.map((f) => ({ id: f.id, estado: f.estado as 'FAILED' | 'ANALYZING' }));
+}
+
+/** Cuenta un reintento automático que SÍ llegó al modelo y volvió a fallar. */
+export async function contarReintento(orgId: string, llamadaId: string): Promise<void> {
+  await enOrganizacion(orgId, (db) =>
+    db
+      .updateTable('analizador_llamadas')
+      .set({ reintentos_automaticos: sql`reintentos_automaticos + 1` } as never)
+      .where('id', '=', llamadaId)
+      .execute(),
+  );
+}
+
+/**
  * Cuánto se espera, desde el análisis, antes de que la TAREA genere una ficha. La pantalla la pide
  * apenas termina el análisis, y la ficha tarda minutos: sin esta espera, la tarea de las :41 la
  * encontraba sin fila y generaba otra en paralelo —dos inferencias, y la segunda pisaba a la primera—.

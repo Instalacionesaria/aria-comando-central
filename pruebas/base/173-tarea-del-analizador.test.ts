@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
-import { correrAnalizadores } from '../../lib/analizadores/tarea.ts';
+import { TOPE_DE_REINTENTOS, correrAnalizadores, reintentarAnalizadores } from '../../lib/analizadores/tarea.ts';
 import { relojDe } from '../../lib/analizadores/pipeline.ts';
 import {
   FIN_PARA_LOS_ANALIZADORES_MS,
@@ -46,7 +46,7 @@ async function limpiar(): Promise<void> {
   for (const t of TABLAS_DEL_ANALIZADOR) {
     await esc.admin.query(`delete from negocio.${t} where org_id = any($1)`, [[esc.org, esc.otraOrg]]);
   }
-  await esc.admin.query(`delete from negocio.tareas_programadas where tarea = 'analizadores'`);
+  await esc.admin.query(`delete from negocio.tareas_programadas where tarea in ('analizadores', 'reintentos')`);
 }
 
 before(async () => {
@@ -242,3 +242,98 @@ test('el fin de los Analizadores es la función entera menos el margen, no el pr
   const suyos = Object.entries(HORARIOS).filter(([, h]) => (h.tareas as readonly string[]).includes('analizadores'));
   assert.deepEqual(suyos.map(([, h]) => h.tareas), [['analizadores']]);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL REINTENTO DE LAS 5 DE LA MAÑANA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function unaFallida(): Promise<string> {
+  const id = await unaManualConTexto();
+  await esc.admin.query(`update negocio.analizador_llamadas set estado = 'FAILED', error = 'JSON roto' where id = $1`, [id]);
+  return id;
+}
+
+async function filaDe(id: string): Promise<{ estado: string; reintentos: number }> {
+  const r = await esc.admin.query('select estado, reintentos_automaticos as reintentos from negocio.analizador_llamadas where id = $1', [id]);
+  return r.rows[0];
+}
+
+test('el reintento recupera una FAILED y no toca las PENDING: esas son de la tarea de cada hora', async () => {
+  const fallida = await unaFallida();
+  const pendiente = await unaManualConTexto();
+  red.analisis.push(() => delModelo('{"score": 7, "outcome": "NO_CERRADA"}'));
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.deepEqual({ reint: r.reintentadas, rec: r.recuperadas }, { reint: 1, rec: 1 });
+  assert.equal((await filaDe(fallida)).estado, 'DONE');
+  assert.equal((await filaDe(pendiente)).estado, 'PENDING');
+  assert.equal(red.llamadasAlAnalisis, 1);
+});
+
+test('el reintento tiene tope: una que falla siempre no se paga todos los días', async () => {
+  const id = await unaFallida();
+  for (let i = 1; i <= TOPE_DE_REINTENTOS; i++) {
+    red.analisis.push(() => delModelo('esto no es JSON'));
+    const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+    assert.equal(r.siguenFallando, 1);
+    assert.deepEqual(await filaDe(id), { estado: 'FAILED', reintentos: i });
+  }
+  const antes = red.llamadasAlAnalisis;
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.reintentadas, 0);
+  assert.equal(red.llamadasAlAnalisis, antes, 'pasado el tope, se volvió a pagar');
+});
+
+test('el reintento retoma una ANALYZING colgada, y no una reciente', async () => {
+  const colgada = await unaManualConTexto();
+  const reciente = await unaManualConTexto();
+  await esc.admin.query(`update negocio.analizador_llamadas set estado = 'ANALYZING', tomada_el = now() - interval '16 minutes' where id = $1`, [colgada]);
+  await esc.admin.query(`update negocio.analizador_llamadas set estado = 'ANALYZING', tomada_el = now() where id = $1`, [reciente]);
+  red.analisis.push(() => delModelo('{"score": 5, "outcome": "NO_CERRADA"}'));
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.recuperadas, 1);
+  /* La toma ya frenaría a la reciente, pero la consulta ni siquiera la propone: si no, el barrido la
+     contaría como «salteada» por otra corrida cuando es un análisis que sigue en curso. */
+  assert.equal(r.salteadas, 0);
+  assert.equal((await filaDe(colgada)).estado, 'DONE');
+  assert.equal((await filaDe(reciente)).estado, 'ANALYZING', 'se retomó una que seguía analizándose');
+});
+
+test('dos barridos seguidos no pagan dos veces la misma llamada', async () => {
+  await unaFallida();
+  red.analisis.push(() => delModelo('{"score": 7, "outcome": "NO_CERRADA"}'));
+  await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.reintentadas, 0);
+  assert.equal(red.llamadasAlAnalisis, 1);
+});
+
+test('una llave rechazada corta el reintento, deja la llamada como estaba y no gasta un intento', async () => {
+  const id = await unaFallida();
+  await unaFallida();
+  red.analisis.push(() => json({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }, 401));
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.llaveRechazada, 'ia');
+  assert.equal(red.llamadasAlAnalisis, 1, 'siguió reintentando con la llave rechazada');
+  assert.deepEqual(await filaDe(id), { estado: 'FAILED', reintentos: 0 });
+  assert.match(String(motivoDeLoIncompleto(r)), /llave de IA/);
+});
+
+test('el reintento corre a las 5:07 de Lima, solo en su horario, y el barrido lo sella', async () => {
+  /* Vercel dispara en UTC y Lima está en UTC−5 todo el año: las 10:07 UTC son las 5:07 de Lima. */
+  const suyos = Object.entries(HORARIOS).filter(([, h]) => (h.tareas as readonly string[]).includes('reintentos'));
+  assert.deepEqual(suyos.map(([horario, h]) => [horario, h.tareas]), [['7 10 * * *', ['reintentos']]]);
+
+  await unaFallida();
+  red.analisis.push(() => delModelo('{"score": 7, "outcome": "NO_CERRADA"}'));
+  const empresa: EmpresaParaBarrer = {
+    org: { id: esc.org, slug: 'alfa', nombre: 'Alfa', activa: true, esPrincipal: false, zonaHoraria: 'UTC' } as EmpresaParaBarrer['org'],
+    acceso: { tipo: 'falta', que: 'sin_token' },
+    auditor: { tipo: 'falta', que: 'sin_llave_de_ia' },
+    analizador: ACCESO,
+  };
+  const r = await barrerTodo('7 10 * * *', [empresa]);
+  assert.deepEqual(r.tareas, ['reintentos']);
+  const s = await esc.admin.query(`select ultimo_estado as estado from negocio.tareas_programadas where org_id = $1 and tarea = 'reintentos'`, [esc.org]);
+  assert.deepEqual(s.rows, [{ estado: 'corrio' }]);
+});
+

@@ -33,7 +33,7 @@ import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
 import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor } from '../credenciales/resolver.ts';
 import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
-import { correrAnalizadores, llamadasDeLaTarea } from '../analizadores/tarea.ts';
+import { correrAnalizadores, llamadasDeLaTarea, reintentarAnalizadores } from '../analizadores/tarea.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
@@ -61,7 +61,8 @@ export type Tarea =
   | 'auditoria'
   | 'mejora'
   | 'anuncios'
-  | 'analizadores';
+  | 'analizadores'
+  | 'reintentos';
 
 /**
  * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -88,8 +89,9 @@ export const TAREAS = [
   'citas',
   'mejora',
   'anuncios',
-  // Última, y no importa: no comparte una sola fila con las otras. Ver su horario.
+  // Últimas, y no importa: no comparten una sola fila con las otras. Ver sus horarios.
   'analizadores',
+  'reintentos',
 ] as const satisfies readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
@@ -260,6 +262,19 @@ export const HORARIOS = {
     tareas: ['analizadores'],
     cadenciaMinutos: 60,
     umbralMinutos: 180,
+  },
+
+  /* ── EL REINTENTO DE LOS ANALIZADORES, UNA VEZ POR DÍA ─────────────────
+
+     Pedido el 2026-09-23: a las 5 de la mañana de Lima, reintentar las llamadas cuyo análisis falló.
+     Vercel dispara en UTC, y Lima está en UTC−5 todo el año (sin horario de verano): las 10 UTC son
+     las 5 de Lima. El minuto 7 y no el 0 porque el 0 lo toma el horario de cada diez minutos, y dos
+     corridas en el mismo minuto se frenan por el candado. Sola en su horario, por lo mismo que los
+     Analizadores: un análisis necesita minutos seguidos. Umbral: 2 × 1440 + 60 = 2940. */
+  '7 10 * * *': {
+    tareas: ['reintentos'],
+    cadenciaMinutos: 1440,
+    umbralMinutos: 2940,
   },
 
   /* ── EL HORARIO DIARIO SE FUE, Y LA REGLA ES BIDIRECCIONAL ─────────────
@@ -463,7 +478,7 @@ export async function barrerTodo(
        * esta distinción, una empresa sin token del CRM —el caso NORMAL de una empresa recién creada—
        * saldría como `saltada` en una tarea que no necesita ese token, y el motivo diría
        * `sin_token_de_crm` sobre algo que no lo usa. */
-      if (tarea !== 'auditoria' && tarea !== 'mejora' && tarea !== 'analizadores' && acceso.tipo !== 'listo') {
+      if (tarea !== 'auditoria' && tarea !== 'mejora' && tarea !== 'analizadores' && tarea !== 'reintentos' && acceso.tipo !== 'listo') {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', acceso.que, 0);
         continue;
@@ -477,8 +492,8 @@ export async function barrerTodo(
       }
       /* Los Analizadores tampoco le hablan al CRM: piden la llave de tl;dv y la de IA. Sin tl;dv es
          lo normal —casi ninguna empresa lo usa— y se sella como saltada con su texto, igual que el
-         auditor sin llave. */
-      if (tarea === 'analizadores' && analizador.tipo !== 'listo') {
+         auditor sin llave. El reintento pide lo mismo: solo corre donde corren los Analizadores. */
+      if ((tarea === 'analizadores' || tarea === 'reintentos') && analizador.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_ANALIZADOR[analizador.que];
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', que, 0);
@@ -504,7 +519,9 @@ export async function barrerTodo(
                     ? await recolectarAnuncios(org.id, conToken(acceso))
                     : tarea === 'analizadores'
                       ? await analizar(org, analizador, arranque, ahora)
-                      : await barrerCitas(org.id, conToken(acceso));
+                      : tarea === 'reintentos'
+                        ? await reintentar(org, analizador, arranque, ahora)
+                        : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -641,6 +658,18 @@ async function analizar(
   if (analizador.tipo !== 'listo') throw new Error('analizar: la empresa no tiene acceso resuelto');
   const r = await correrAnalizadores(org.id, analizador, { ahora, fin: arranque + FIN_PARA_LOS_ANALIZADORES_MS });
   return { corrio: true, resultado: r, llamadas: llamadasDeLaTarea(r) };
+}
+
+/** El reintento de las 5, con el mismo fin de reloj que los Analizadores: corre solo en su horario. */
+async function reintentar(
+  org: OrganizacionListada,
+  analizador: AccesoAlAnalizador,
+  arranque: number,
+  ahora: () => number,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  if (analizador.tipo !== 'listo') throw new Error('reintentar: la empresa no tiene acceso resuelto');
+  const r = await reintentarAnalizadores(org.id, analizador, { ahora, fin: arranque + FIN_PARA_LOS_ANALIZADORES_MS });
+  return { corrio: true, resultado: r, llamadas: r.reintentadas };
 }
 
 /**

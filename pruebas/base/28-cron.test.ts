@@ -233,6 +233,8 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
       ['contactos', 'fallo'],
       ['mejora', 'saltada'],
       ['mensajes', 'fallo'],
+      /* `reintentos` sale SALTADA por lo mismo que `analizadores`: pide las mismas dos llaves. */
+      ['reintentos', 'saltada'],
     ],
     'una de las tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );

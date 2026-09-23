@@ -1039,6 +1039,8 @@ export interface TablaAnalizadorLlamadas {
   error: string | null;
   /** Cuándo pasó a ANALYZING. Pasados 15 minutos, la pantalla ofrece reintentar. */
   tomada_el: Date | null;
+  /** Cuántas veces la reintentó el barrido de las 5 de la mañana. Tope en `lib/analizadores/tarea.ts`. */
+  reintentos_automaticos: Generated<number>;
   fecha_de_la_reunion: Date | null;
   duracion_seg: number | null;
   organizador_nombre: string | null;

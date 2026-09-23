@@ -261,7 +261,8 @@ confianza alta en las dos lecturas salvo `98333d60`, media en las dos.
   con el motivo del modelo. Las 12 ventas quedan así en la pestaña OB.
 - **El clasificador queda como está.** A futuro la clasificación va a salir del NOMBRE de la reunión
   —hay formatos de título que ya son de uno u otro tipo, y algunos ya están mapeados—, y con eso el
-  resto del clasificador deja de hacer falta. Se actualiza cuando esté el mapa completo.
+  resto del clasificador deja de hacer falta. Se actualiza cuando esté el mapa completo; el diseño
+  está en `docs/futuro/clasificacion-por-nombre-de-reunion.md`.
 
 Con eso OB-2 y OB-3 siguen con la rúbrica tal cual, que es lo que el plan fijaba por defecto.
 
@@ -307,8 +308,34 @@ trabajo que se había aceptado no está ocurriendo, y que la comparación de HT-
 analizada por los dos— no va a tener datos mientras Brain siga parado. `comparar-con-brain.sql` da hoy
 cero reuniones en común.
 
-La única forma de comparar sin Brain es reanalizar acá algunas reuniones del historial copiado y
-ponerlas al lado del análisis original, que sigue guardado en las tablas de Brain. Cuesta un análisis
-por reunión y reemplaza, en la pantalla, el análisis copiado por el nuevo (v8.1). Es una decisión de
-quien opera la herramienta, no se hizo.
+La única forma de comparar sin Brain era reanalizar acá algunas reuniones del historial. **Decidido
+el 2026-09-23: no se hace, y Brain no se toca.** La observación sigue solo con
+`medir-analizadores.sql`; `comparar-con-brain.sql` queda por si Brain vuelve a correr.
+
+### Otras decisiones del 2026-09-23
+
+- **La tarifa de Sonnet 5 queda sin confirmar**: el costo sigue sin mostrarse y los tokens se guardan
+  igual (decisión 8). Si algún día se confirma, se carga en `CONFIRMED_RATES` y el costo aparece.
+- **El reintento manual queda como está, y se agrega uno automático** (ver abajo).
+
+## El reintento de las 5 de la mañana
+
+Pedido el 2026-09-23: un barrido diario que reintente lo que falló, sin duplicar. Es la tarea
+`reintentos` (`reintentarAnalizadores` en `lib/analizadores/tarea.ts`), sola en su horario:
+`7 10 * * *` en UTC, que son las **5:07 de Lima** (Lima no cambia de hora; el minuto 0 lo ocupa la
+tarea de cada diez minutos). Migración `062`.
+
+- **Qué reintenta:** los análisis FAILED y las llamadas colgadas en ANALYZING hace más de 15 minutos
+  —una función que murió a mitad del análisis las deja ahí, y la tarea de cada hora solo toma
+  PENDING—. No descubre, no toca las PENDING y no genera fichas: una ficha FAILED se rehace con el
+  botón.
+- **No duplica:** cada llamada se toma con el estado en que se vio, así que una que la pantalla
+  reintentó mientras tanto, o que ya terminó, se saltea sin pagarse.
+- **Tiene tope:** tres reintentos automáticos por llamada (`TOPE_DE_REINTENTOS`, columna
+  `reintentos_automaticos`). Una que falla siempre igual se pagaría todos los días; pasado el tope
+  queda FAILED para el botón. Un reintento solo cuenta si llegó al modelo: una llave rechazada o el
+  servicio saturado cortan el barrido y no gastan intentos.
+- **Dónde corre:** donde corren los Analizadores, con las dos llaves cargadas.
+
+La primera que va a tomar es la OB FAILED del historial copiado, que era un onboarding real.
 

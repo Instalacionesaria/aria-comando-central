@@ -22,7 +22,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { AccesoAlAnalizador } from '../credenciales/resolver.ts';
-import { llamadasSinFicha, pendientesParaAnalizar } from './datos.ts';
+import { contarReintento, llamadasSinFicha, paraReintentar, pendientesParaAnalizar } from './datos.ts';
 import {
   TIPOS_QUE_SE_ANALIZAN,
   analizarLlamada,
@@ -159,3 +159,79 @@ export function llamadasDeLaTarea(r: ResultadoDeLaTarea): number {
       : 1;
   return descubrimiento + r.analizadas + r.vetadas + r.fallidas + r.fichas + r.fichasFallidas;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL REINTENTO DE LAS 5 DE LA MAÑANA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Cuántas veces reintenta el barrido una misma llamada. Una que falla siempre igual se pagaría todos
+ * los días; pasadas tres, queda FAILED para quien lea el error y apriete el botón.
+ */
+export const TOPE_DE_REINTENTOS = 3;
+
+export interface ResultadoDelReintento {
+  /** Las que se mandaron al modelo otra vez. */
+  reintentadas: number;
+  /** Las que esta vez terminaron DONE o «no es» su tipo. */
+  recuperadas: number;
+  /** Las que volvieron a fallar; cada una sumó un reintento. */
+  siguenFallando: number;
+  /** Las que otra corrida o la pantalla tomó antes: no se pagaron dos veces. */
+  salteadas: number;
+  llaveRechazada: 'ia' | null;
+  saturado: boolean;
+  /** Las que quedaron sin reintentar porque no alcanzó el tiempo. Las toma el barrido de mañana. */
+  sinTiempo: number;
+}
+
+/**
+ * Pedido el 2026-09-23: un barrido diario que reintente lo que falló, sin duplicar. Solo reintenta:
+ * no descubre ni genera fichas —eso lo hace la tarea de cada hora— y no toca las PENDING.
+ *
+ * **No duplica** por la misma vía que todo lo demás: cada llamada se toma con el estado en que se vio
+ * (`esperado`), así que una que la pantalla reintentó mientras tanto, o que ya terminó, se saltea.
+ */
+export async function reintentarAnalizadores(
+  orgId: string,
+  acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
+  reloj: Reloj,
+): Promise<ResultadoDelReintento> {
+  const out: ResultadoDelReintento = {
+    reintentadas: 0,
+    recuperadas: 0,
+    siguenFallando: 0,
+    salteadas: 0,
+    llaveRechazada: null,
+    saturado: false,
+    sinTiempo: 0,
+  };
+  const candidatas = await paraReintentar(orgId, TIPOS_QUE_SE_ANALIZAN, TOPE_DE_REINTENTOS, PENDIENTES_POR_CORRIDA);
+  for (const [i, c] of candidatas.entries()) {
+    const r = await analizarLlamada(orgId, c.id, acceso.claveIa, reloj, c.estado);
+    if (r.tipo === 'rechazo') {
+      if (r.que === 'sin_tiempo') {
+        out.sinTiempo = candidatas.length - i;
+        break;
+      }
+      // La llave o el servicio: el análisis no ocurrió, la llamada volvió a su estado y no suma intento.
+      if (r.que === 'llave_de_ia_rechazada') {
+        out.llaveRechazada = 'ia';
+        break;
+      }
+      if (r.que === 'modelo_saturado') {
+        out.saturado = true;
+        break;
+      }
+      out.salteadas++;
+      continue;
+    }
+    out.reintentadas++;
+    if (r.estado === 'FAILED') {
+      out.siguenFallando++;
+      await contarReintento(orgId, c.id);
+    } else out.recuperadas++;
+  }
+  return out;
+}
+
