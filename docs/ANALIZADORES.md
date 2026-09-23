@@ -112,13 +112,13 @@ quedar. En una línea cada una:
 | HT-5 | descubrir, analizar y la ficha, con un modelo falso | hecha · `pruebas/base/172` |
 | HT-6 | la tarea programada (`058`), cada hora y sola en su horario | hecha · `pruebas/base/173` · en producción |
 | HT-7 | la sección, las capacidades (`059` y el catálogo) y la API | hecha · `pruebas/base/174` · en producción |
-| HT-8 | la pantalla básica | hecha · `pruebas/codigo/172` · falta el humo con login |
-| HT-9 | la copia del historial y el encendido | copia hecha y verificada el 2026-09-23 · falta la llave de tl;dv |
-| HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | |
+| HT-8 | la pantalla básica | hecha · `pruebas/codigo/172` · humo con login hecho el 2026-09-23 |
+| HT-9 | la copia del historial y el encendido | hecha el 2026-09-23: copia verificada, llave de tl;dv cargada, la tarea corre · falta el hito de 24 h |
+| HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | en curso · ver § «La observación» |
 | OB-1 | la calibración: qué son en realidad las 44 reuniones que el clasificador llamó OB | hecha el 2026-09-23 · ver § «OB-1» |
 | OB-2 | habilitar el análisis OB, con la rúbrica tal cual | hecha el 2026-09-23 · `pruebas/base/172`, `173` y `174` |
-| OB-3 | la pantalla de detalle OB y los rótulos «No es HT» / «No es OB» | hecha el 2026-09-23 · `pruebas/codigo/172` y `147` · falta el humo con login |
-| OB-4 | observación, y la comparación con Brain | |
+| OB-3 | la pantalla de detalle OB y los rótulos «No es HT» / «No es OB» | hecha el 2026-09-23 · `pruebas/codigo/172` y `147` · humo con login hecho |
+| OB-4 | observación, y la comparación con Brain | en curso · ver § «La observación» |
 
 ### Lo que la construcción encontró
 
@@ -207,8 +207,9 @@ Lo que la copia trajo y conviene saber antes de mirar la pantalla:
   omisión de `normalizeHt`, no una nota. Viene así de Brain. Se arregla reanalizándola con el botón.
 - **Tres HT no traen ninguna fase** (esa y otras dos). La pantalla lo dice con una nota.
 
-Falta: **una persona que pegue la llave de tl;dv** en Ajustes › Credenciales de ARIA. Desde ahí la
-tarea de las `:41` descubre y analiza sola. Y el humo de la pantalla con login.
+La llave de tl;dv de ARIA se pegó ese mismo día, y la corrida de las 18:41 UTC fue la primera real:
+descubrió dos reuniones y analizó la HT sin duplicar nada. El humo de la pantalla con login también
+se hizo. Queda el hito de 24 h, que se mide con `scripts/medir-analizadores.sql` (§ «La observación»).
 
 ## OB-1 · La calibración, 2026-09-23
 
@@ -263,3 +264,51 @@ confianza alta en las dos lecturas salvo `98333d60`, media en las dos.
   resto del clasificador deja de hacer falta. Se actualiza cuando esté el mapa completo.
 
 Con eso OB-2 y OB-3 siguen con la rúbrica tal cual, que es lo que el plan fijaba por defecto.
+
+## La observación (HT-10 y OB-4)
+
+Dos consultas de solo lectura, versionadas para que cada lectura se haga igual y dos días distintos se
+puedan comparar. Ninguna imprime datos de una persona: `pruebas/codigo/174` lo exige, junto con que no
+escriban ni lean una llave.
+
+```bash
+node --env-file=.env.supabase scripts/supabase.mjs leer --archivo scripts/medir-analizadores.sql
+node --env-file=.env.supabase scripts/supabase.mjs leer --archivo scripts/comparar-con-brain.sql
+```
+
+- **`medir-analizadores.sql`**, por empresa y tipo, solo sobre lo que Comando Central hizo por su
+  cuenta (la copia queda afuera por fecha): descubiertas, estados, qué parte «no es» su tipo,
+  pendientes y la más vieja, la duración real de cada análisis (`analizado_el - tomada_el`: p50, p90 y
+  máximo), los tokens, las fichas, y los que tienen que dar cero —duplicadas, colgadas, análisis sin
+  sus cuatro contadores, HT analizadas sin ficha pasada una hora—. Y el sello de la tarea.
+- **`comparar-con-brain.sql`**: las reuniones que analizaron los dos, con tipo y puntaje de cada lado,
+  y el hito de HT-9 de que ninguna reunión que Brain vio después de la copia falte acá. Solo sirve
+  mientras existan las tablas de Brain.
+
+### Primera lectura, 2026-09-23 21:07 UTC
+
+| | HT | OB | OTRO |
+|---|---|---|---|
+| descubiertas por Comando Central | 1 (no es HT) | 1 (analizada) | 1 |
+| duración del análisis | 3 s (un veto) | 34 s | — |
+| tokens de salida | 109 | 2 999 | — |
+| duplicadas, colgadas, sin contadores | 0 | 0 | 0 |
+
+El sello de las 20:42 dice `corrio`, sin motivo. La OB es la primera que analizó Comando Central.
+
+Dos lecturas no alcanzan para tocar las esperas: el análisis arranca solo con 150 s por delante y
+espera hasta 270 s, contra 3 y 34 s medidos. Se ajustan con las semanas de datos que pide el plan.
+
+### Brain no está corriendo, y eso deja sin objeto la comparación
+
+**Brain no registra nada desde el 2026-09-19 10:00**: ni llamadas nuevas ni cambios en las que tiene.
+Las reuniones que Comando Central descubrió el 21 y el 23 no están en Brain. O sea que el doble
+trabajo que se había aceptado no está ocurriendo, y que la comparación de HT-10 y OB-4 —misma reunión
+analizada por los dos— no va a tener datos mientras Brain siga parado. `comparar-con-brain.sql` da hoy
+cero reuniones en común.
+
+La única forma de comparar sin Brain es reanalizar acá algunas reuniones del historial copiado y
+ponerlas al lado del análisis original, que sigue guardado en las tablas de Brain. Cuesta un análisis
+por reunión y reemplaza, en la pantalla, el análisis copiado por el nuevo (v8.1). Es una decisión de
+quien opera la herramienta, no se hizo.
+
