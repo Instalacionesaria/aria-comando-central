@@ -131,14 +131,16 @@ async function getTldv<T>(path: string, apiKey: string, waitMs: number, notReady
 }
 
 /**
- * El tamaño de una página del listado de tl;dv. **Lo dice su documentación y no está verificado**
- * contra la API real: el origen no pagina y descarta cualquier metadato de paginación.
+ * El tamaño de una página del listado de tl;dv. Lo dice su documentación, y la primera corrida real
+ * (2026-09-23) devolvió una página llena, así que la cuenta de ARIA ya tiene más. El origen no
+ * pagina y descarta cualquier metadato de paginación.
  */
 export const TLDV_PAGE_SIZE = 50;
 
-// Lista las reuniones recientes de la cuenta (más nuevas primero). **Una sola página**, como el
-// origen. Si vuelve llena, puede haber reuniones que no se ven: la tarea lo deja dicho en su sello
-// (`motivoDeLoIncompleto`, con `TLDV_PAGE_SIZE`).
+// Lista las reuniones recientes de la cuenta (más nuevas primero: la primera corrida real trajo la
+// reunión de esa misma tarde en una página llena). **Una sola página**, como el origen. Si vuelve
+// llena y ninguna de sus reuniones sale de la ventana, puede haber reuniones que no se ven: el
+// descubrimiento lo calcula (`paginaSinBorde`) y la tarea lo deja dicho en su sello.
 export async function listRecentMeetings(apiKey: string, waitMs: number = TLDV_WAIT_MS): Promise<NormalizedMeeting[]> {
   const body = await getTldv<{ results?: TldvMeetingData[] }>('/meetings', apiKey, waitMs, false);
   return (Array.isArray(body.results) ? body.results : []).map((m) => toNormalizedMeeting(m, String(m.id)));

@@ -23,7 +23,6 @@
 
 import type { AccesoAlAnalizador } from '../credenciales/resolver.ts';
 import { llamadasSinFicha, pendientesParaAnalizar } from './datos.ts';
-import { TLDV_PAGE_SIZE } from './nucleo/tldv.ts';
 import {
   TIPOS_QUE_SE_ANALIZAN,
   analizarLlamada,
@@ -46,7 +45,10 @@ export interface ResultadoDeLaTarea {
   llaveRechazada: 'tldv' | 'ia' | null;
   /** Anthropic contestó 429 o 529: se cortó el drenado y lo que quedaba sigue PENDING. */
   saturado: boolean;
-  /** El listado de tl;dv volvió con una página llena: puede haber reuniones que no se ven. */
+  /**
+   * El listado de tl;dv volvió lleno y sin salir de la ventana: puede haber reuniones que no se ven.
+   * Una página llena que cruza el borde de la ventana no cuenta (`paginaSinBorde`).
+   */
   paginaLlena: boolean;
   analizadas: number;
   vetadas: number;
@@ -75,7 +77,7 @@ export async function correrAnalizadores(
       descubrimiento.tipo === 'fallo' ? { tipo: 'fallo', causa: 'tl;dv no respondió al listar las reuniones' } : descubrimiento,
     llaveRechazada: null,
     saturado: false,
-    paginaLlena: descubrimiento.tipo === 'hecho' && descubrimiento.listadas >= TLDV_PAGE_SIZE,
+    paginaLlena: descubrimiento.tipo === 'hecho' && descubrimiento.paginaSinBorde,
     analizadas: 0,
     vetadas: 0,
     fallidas: 0,

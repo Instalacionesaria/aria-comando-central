@@ -155,17 +155,28 @@ test('tl;dv caído al listar deja el sello con el motivo, y la causa cruda NO sa
   assert.match(String(motivoDeLoIncompleto(r)), /tl;dv no respondió al listar las reuniones/);
 });
 
-test('una página llena de tl;dv se dice: puede haber reuniones que no se ven', async () => {
-  /* tl;dv devuelve 50 por página y no se pide la segunda. Viejas, para que ninguna se clasifique:
-     lo que se mide es el tamaño de la página, no lo que se hizo con ella. */
-  const vieja = new Date(Date.now() - 49 * 3_600_000).toISOString();
-  for (let i = 0; i < 49; i++) unaReunion(`m-${i}`, 'HT', { happenedAt: vieja });
-  const casi = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
-  assert.equal(casi.paginaLlena, false);
-  unaReunion('m-49', 'HT', { happenedAt: vieja });
+test('una página llena que NO sale de la ventana se dice: puede haber reuniones que no se ven', async () => {
+  /* tl;dv devuelve 50 por página y no se pide la segunda. Recientes y sin transcripción: ninguna se
+     clasifica, y lo que se mide es la página, no lo que se hizo con ella. */
+  const reciente = new Date(Date.now() - 3_600_000).toISOString();
+  for (let i = 0; i < 50; i++) unaReunion(`m-${i}`, 'HT', { happenedAt: reciente, transcripcion: undefined });
   const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
   assert.equal(r.paginaLlena, true);
   assert.match(String(motivoDeLoIncompleto(r)), /página llena/);
+});
+
+test('una página llena que cruza el borde de la ventana NO avisa: no falta nada', async () => {
+  /* Es lo que pasó en la primera corrida real: 50 listadas, casi todas anteriores a la ventana. Con
+     solo contar, el sello avisaba en cada corrida de una cuenta con más de 50 reuniones. La mutación
+     que vuelve a contar pone esta prueba en rojo. */
+  const reciente = new Date(Date.now() - 3_600_000).toISOString();
+  const vieja = new Date(Date.now() - 49 * 3_600_000).toISOString();
+  for (let i = 0; i < 49; i++) unaReunion(`m-${i}`, 'HT', { happenedAt: reciente, transcripcion: undefined });
+  unaReunion('m-vieja', 'HT', { happenedAt: vieja, transcripcion: undefined });
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.descubrimiento.tipo === 'hecho' && r.descubrimiento.listadas, 50);
+  assert.equal(r.paginaLlena, false);
+  assert.doesNotMatch(String(motivoDeLoIncompleto(r)), /página llena/);
 });
 
 test('con la llave de tl;dv rechazada, lo ya guardado se drena igual', async () => {

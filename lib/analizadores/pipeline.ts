@@ -36,7 +36,7 @@ import {
 } from './nucleo/anthropic.ts';
 import { classifyCallType, runAnalysis, runInsight } from './nucleo/engine.ts';
 import { insightsFor } from './nucleo/insight-registry.ts';
-import { TLDV_WAIT_MS, TldvError, fetchTranscript, listRecentMeetings } from './nucleo/tldv.ts';
+import { TLDV_PAGE_SIZE, TLDV_WAIT_MS, TldvError, fetchTranscript, listRecentMeetings } from './nucleo/tldv.ts';
 import { parseTranscriptInput } from './nucleo/transcript.ts';
 import type { NormalizedTranscript } from './nucleo/types.ts';
 import {
@@ -128,8 +128,13 @@ function errorParaGuardar(e: unknown): string {
 export type ResultadoDelDescubrimiento =
   | {
       tipo: 'hecho';
-      /** Cuántas reuniones devolvió tl;dv. Si es una página llena, puede haber más que no se ven. */
+      /** Cuántas reuniones devolvió tl;dv. */
       listadas: number;
+      /**
+       * La página vino llena y NINGUNA de sus reuniones es anterior a la ventana: puede haber reuniones
+       * de la ventana más atrás, en la página que no se pide. Ver el cálculo.
+       */
+      paginaSinBorde: boolean;
       /** HT u OB guardadas en PENDING. */
       descubiertas: number;
       /** OTRO guardadas en NOT_MATCH, con su motivo. */
@@ -187,6 +192,20 @@ export async function descubrir(
   const out = {
     tipo: 'hecho' as const,
     listadas: reuniones.length,
+    /* ── UNA PÁGINA LLENA NO ALCANZA PARA AVISAR ────────────────────────────
+     *
+     * La primera versión avisaba con solo contar: `listadas >= TLDV_PAGE_SIZE`. La primera corrida
+     * real (2026-09-23 18:41) lo desmintió: la página vino llena, traía la reunión de esa misma
+     * tarde, y 48 de sus 50 eran anteriores a la ventana —ya conocidas o de más de 48 h—. O sea que
+     * la página cruzaba el borde de la ventana y no faltaba nada, pero el sello avisaba igual, y en
+     * una cuenta con más de 50 reuniones iba a avisar en TODAS las corridas. Un sello que avisa
+     * siempre deja de leerse.
+     *
+     * Solo puede faltar algo si la página, además de llena, no llega a salir de la ventana. Una
+     * reunión sin fecha cuenta como adentro: no prueba que se haya cruzado el borde. */
+    paginaSinBorde:
+      reuniones.length >= TLDV_PAGE_SIZE &&
+      !reuniones.some((m) => m.happenedAt && new Date(m.happenedAt).getTime() < corte),
     descubiertas: 0,
     internas: 0,
     pendientesDeTranscripcion: 0,

@@ -164,8 +164,9 @@ mutación (23 mutaciones, las 23 mueren).
   `MINUTOS_ANTES_DE_LA_FICHA_DE_LA_TAREA` (10) desde el análisis, y una ficha FAILED ya no se
   reintenta sola: se rehace con el botón. Por lo mismo, una llave rota ya no guarda una FAILED.
 - **El sello quedaba limpio sin haber traído nada**: con tl;dv caído al listar, con reuniones sin
-  clasificar, con el servicio saturado y con una página llena de tl;dv (50, `TLDV_PAGE_SIZE`: lo dice
-  su documentación, no está verificado). La causa cruda de un proveedor va al registro, no a la
+  clasificar, con el servicio saturado y con una página llena de tl;dv (50, `TLDV_PAGE_SIZE`) que no
+  sale de la ventana. Contar no alcanzaba: la primera corrida real trajo una página llena que cruzaba
+  el borde, y el sello avisaba en falso. La causa cruda de un proveedor va al registro, no a la
   respuesta del cron (ADR-0704).
 - **Una transcripción guardada sin segmentos se mandaba vacía** al modelo. Se vuelve a partir, como
   hacía el origen.
