@@ -497,13 +497,13 @@ export type AccesoAlAnalizador =
 
 export const TEXTO_DE_FALTA_ANALIZADOR: Readonly<Record<FaltaParaDescubrir, string>> = {
   sin_llave_de_tldv:
-    'Esta empresa no tiene su llave de tl;dv cargada. Se carga en Integraciones; sin ella no se ' +
+    'Esta empresa no tiene su llave de tl;dv cargada. Se carga en Ajustes › Credenciales; sin ella no se ' +
     'descubren reuniones, pero una transcripción pegada a mano se analiza igual.',
   llave_de_tldv_ilegible:
     'La llave de tl;dv está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
   sin_llave_de_ia:
-    'Esta empresa no tiene su llave de IA cargada. Se carga en Integraciones, y sin ella no se puede ' +
-    'clasificar ni analizar.',
+    'Esta empresa no tiene su llave de IA cargada. Se carga en Ajustes › Credenciales, y sin ella no se ' +
+    'puede clasificar ni analizar.',
   llave_de_ia_ilegible:
     'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
 };

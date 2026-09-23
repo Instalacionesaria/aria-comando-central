@@ -60,9 +60,10 @@ muestra «Apertura» cinco veces.
 
 Se corrige en `lib/analizadores/nucleo/ht.ts` y se sube la versión a `rubric.es.md@v8.1`. La
 pantalla rotula cada fase **por su campo** cuando las fases vienen distintas (v8.1), **por su
-posición** solo cuando son cinco y todas iguales (el historial v8), y «Fase N» cuando no hay forma de
-saberlo. Rotular siempre por posición no es seguro: el esquema no obliga a devolverlas en orden —la
-rúbrica las enumera y nada más— y en producción 3 de 37 HT no tienen exactamente cinco.
+posición** solo cuando son cinco y todas iguales (el historial v8), «Fase N» cuando no hay forma de
+saberlo, y una nota cuando el análisis no trae ninguna. Rotular siempre por posición no es seguro: el
+esquema no obliga a devolverlas en orden —la rúbrica las enumera y nada más—. Medido después de la
+copia: 34 de las 37 HT dicen `apertura_rapport` en las cinco, y 3 no traen ninguna fase.
 
 ## La tarifa
 
@@ -109,10 +110,10 @@ quedar. En una línea cada una:
 | HT-3 | las seis tablas (`056`) y la capa de datos | hecha · `pruebas/base/170` · en producción |
 | HT-4 | la llave de tl;dv en Ajustes (`057`) | hecha · `pruebas/base/171` · en producción |
 | HT-5 | descubrir, analizar y la ficha, con un modelo falso | hecha · `pruebas/base/172` |
-| HT-6 | la tarea programada (`058`), cada hora y sola en su horario | hecha · `pruebas/base/173` |
-| HT-7 | la sección, las capacidades (`059` y el catálogo) y la API | hecha · `pruebas/base/174` |
+| HT-6 | la tarea programada (`058`), cada hora y sola en su horario | hecha · `pruebas/base/173` · en producción |
+| HT-7 | la sección, las capacidades (`059` y el catálogo) y la API | hecha · `pruebas/base/174` · en producción |
 | HT-8 | la pantalla básica | hecha · `pruebas/codigo/172` · falta el humo con login |
-| HT-9 | la copia del historial y el encendido | |
+| HT-9 | la copia del historial y el encendido | copia hecha y verificada el 2026-09-23 · falta la llave de tl;dv |
 | HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | |
 | OB-1…4 | calibración, habilitar el análisis, la pantalla OB, observación | |
 
@@ -167,18 +168,40 @@ mutación (23 mutaciones, las 23 mueren).
   respuesta del cron (ADR-0704).
 - **Una transcripción guardada sin segmentos se mandaba vacía** al modelo. Se vuelve a partir, como
   hacía el origen.
-- **Rotular las fases siempre por posición era falso para el v8.1**: el esquema no obliga al orden,
-  y 3 de las 37 HT de producción no tienen cinco. Ver `lib/analizadores/fases.ts`.
+- **Rotular las fases siempre por posición era falso para el v8.1**: el esquema no obliga al orden.
+  Ver `lib/analizadores/fases.ts`.
 - **La pantalla**: el estado de las llaves se relee cada vez que la pestaña vuelve a la vista, el
   error de una acción ya no lo borra la recarga que la sigue, y una respuesta vieja no pisa a una
   nueva. Y decía que las llaves se cargaban en «Integraciones», una pantalla que no existe.
 
-### Lo que falta en producción para encender HT
+### El encendido en producción (HT-9), 2026-09-23
 
-1. `058`, `059` y `060` con `db.mjs migrar`, y el catálogo con los tres pasos de
-   `docs/DESPLIEGUE.md` § 4b.
-2. El push.
-3. HT-9: la copia del historial (`scripts/copias/historial-analizador.sql`, en una transacción, con
-   la `060` que le da a `postgres` el `insert` que le faltaba —el `select` ya lo tenía— y la `061`
-   que se lo quita) y **una persona que pegue la llave de tl;dv** en Ajustes › Credenciales de
-   ARIA, en la misma sesión que la copia.
+Hecho, en este orden:
+
+1. `058`, `059` y `060` con `db.mjs migrar`, **antes** del push (`7506742`).
+2. El catálogo con los tres pasos de `docs/DESPLIEGUE.md` § 4b. Antes, en lectura, un simulacro del
+   `delete` del reparto: no iba a quitar ninguna asignación. Después: 30 → 32 capacidades, 70 → 76
+   asignaciones, los mismos 3 roles y 0 personas sin rol, igual que la base local. Los tres roles
+   tienen `analizadores.ver` y `.editar`.
+3. La copia (`scripts/copias/historial-analizador.sql`): 107 llamadas, 42 prospectos, 107
+   transcripciones, 44 análisis, 37 fichas y 13 lápidas, las mismas cifras que el origen, que no se
+   tocó. La verificaron cuatro agentes independientes, en solo lectura: 0 diferencias columna por
+   columna en las seis tablas, la misma huella md5 por tabla entre el origen transformado y el
+   destino, ninguna fila de otra cuenta de Brain —la OB manual de `553acc01` no está— y lo que la
+   aplicación lee coincide con el perfil del origen (HT: 37 analizadas, 26 descartadas; OB: 7
+   analizadas, 1 pendiente —la FAILED—, 55 descartadas).
+4. La `061`, que le quita a `postgres` el `insert` que le dio la `060`. Medido después: `insert` en
+   `false` en las seis tablas; el `select` le queda por `pg_read_all_data`.
+
+Lo que la copia trajo y conviene saber antes de mirar la pantalla:
+
+- **La última reunión que Brain registró es del 2026-09-19.** La tarea de Comando Central mira las
+  últimas 48 horas, así que una reunión entre el 19 y el 21 que Brain no haya visto no entra sola:
+  se pega a mano.
+- **Una HT tiene un análisis vacío** (`ef9c447f-8993-4d9f-87ca-5b831a0d5aec`): 102 tokens de salida
+  contra un mínimo de 2918 en las otras 36, sin resumen ni fases. Su «1/10 ROJO» es el valor por
+  omisión de `normalizeHt`, no una nota. Viene así de Brain. Se arregla reanalizándola con el botón.
+- **Tres HT no traen ninguna fase** (esa y otras dos). La pantalla lo dice con una nota.
+
+Falta: **una persona que pegue la llave de tl;dv** en Ajustes › Credenciales de ARIA. Desde ahí la
+tarea de las `:41` descubre y analiza sola. Y el humo de la pantalla con login.

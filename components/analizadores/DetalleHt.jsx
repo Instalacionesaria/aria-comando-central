@@ -10,10 +10,10 @@
    mostraría «Apertura» cinco veces.
 
    Pero rotular SIEMPRE por posición tampoco es cierto: el esquema no obliga a devolver las fases en
-   orden —la rúbrica las enumera del 1 al 5, y nada más—, y en producción 3 de 37 HT no tienen
-   exactamente cinco. Así que `rotulosDeLasFases`: por el campo cuando las fases vienen distintas
-   (v8.1), por posición cuando son cinco y todas iguales (el defecto v8), y «Fase N» cuando no hay
-   forma honesta de saber cuál es cuál. Vive en `lib/analizadores/fases.ts`, donde se prueba.
+   orden —la rúbrica las enumera del 1 al 5, y nada más—. Así que `rotulosDeLasFases`: por el campo
+   cuando las fases vienen distintas (v8.1), por posición cuando son cinco y todas iguales (el defecto
+   v8), «Fase N» cuando no hay forma honesta de saber cuál es cuál, y una nota cuando no hay ninguna
+   —3 de las 37 HT copiadas—. Vive en `lib/analizadores/fases.ts`, donde se prueba.
 
    ── LOS DATOS DUROS SALEN DE LA LLAMADA, NUNCA DEL MODELO ─────────────────
 

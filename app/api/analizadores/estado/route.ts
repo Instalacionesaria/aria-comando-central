@@ -7,7 +7,7 @@
 //
 // Porque las llaves viven en identidad y las llamadas en negocio. Juntarlas en un solo GET cruzaría
 // los dos dominios en un archivo (ADR-0209). Y el estado no devuelve NINGUNA llave: solo si está
-// cargada, con los mismos cuatro estados que Integraciones.
+// cargada, con los mismos cuatro estados que Ajustes › Credenciales.
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
@@ -23,7 +23,7 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const c = await conIdentidad((db) => resolverCredenciales(db, contexto.orgEfectiva));
   return ok({
-    // El estado de cada llave, SIN la vista previa: esta pantalla no es la de Integraciones.
+    // El estado de cada llave, SIN la vista previa: esta pantalla no es la de Ajustes › Credenciales.
     llaveDeIa: { cargada: c.ia.cargado, estado: c.ia.estado },
     llaveDeTldv: { cargada: c.tldv.cargado, estado: c.tldv.estado },
     tiposQueSeAnalizan: TIPOS_QUE_SE_ANALIZAN,

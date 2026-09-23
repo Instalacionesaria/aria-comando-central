@@ -8,7 +8,7 @@
 -- de otra cuenta) NO se copia.
 --
 -- Qué NO copia, a propósito: ni `aria_brain_analyzer_tldv` ni `aria_brain_client_keys`. Son llaves,
--- y en Comando Central la de tl;dv la pega una persona en Integraciones y la de IA es la de la
+-- y en Comando Central la de tl;dv la pega una persona en Ajustes › Credenciales y la de IA es la de la
 -- empresa. Una prueba (`pruebas/codigo/173`) mira que este archivo no las nombre.
 --
 -- ── CÓMO SE CORRE, Y POR QUÉ ASÍ ──────────────────────────────────────────────

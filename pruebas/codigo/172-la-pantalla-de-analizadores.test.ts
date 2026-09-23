@@ -85,10 +85,20 @@ test('las fases: cinco iguales son el defecto v8, y se rotulan por posición dic
 });
 
 test('las fases: repetidas y no cinco no tienen nombre honesto, y lo dicen', () => {
-  /* Así están 3 de las 37 HT de producción. Rotularlas por posición inventaría qué fase es cada una. */
+  /* Ninguna HT copiada está así, pero nada lo impide: rotularlas por posición inventaría qué fase es
+     cada una. */
   const r = rotulosDeLasFases([{ phase: 'apertura_rapport' }, { phase: 'apertura_rapport' }, { phase: 'apertura_rapport' }]);
   assert.deepEqual(r.rotulos, ['Fase 1', 'Fase 2', 'Fase 3']);
   assert.ok(r.nota);
+});
+
+test('las fases: un análisis sin ninguna lo dice, en vez de dejar el título solo', () => {
+  /* Así están 3 de las 37 HT copiadas de Brain (medido el 2026-09-23). Un arreglo vacío no tiene
+     repetidos, así que caía en la rama de «distintas» con `nota: null`, y la pantalla mostraba «Las
+     fases» sin nada debajo: se leía como un error de carga. */
+  const r = rotulosDeLasFases([]);
+  assert.deepEqual(r.rotulos, []);
+  assert.ok(r.nota, 'un análisis sin fases no dice nada');
 });
 
 test('el detalle rotula las fases con `rotulosDeLasFases`, y no lee el campo por su cuenta', () => {

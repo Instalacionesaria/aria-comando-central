@@ -8,12 +8,16 @@
 // por el campo ahí mostraría «Apertura» cinco veces.
 //
 // Y rotular SIEMPRE por posición tampoco es cierto: el esquema no obliga a devolver las fases en orden
-// —la rúbrica las enumera del 1 al 5, y nada más— y, medido el 2026-09-23, 3 de las 37 HT de
-// producción no tienen exactamente cinco. Así que:
+// —la rúbrica las enumera del 1 al 5, y nada más—. Así que:
 //
+//   · ninguna fase → una nota que lo dice, y nada más;
 //   · fases distintas (v8.1 en adelante) → por el campo, que ya viene bien;
 //   · cinco y todas iguales (el defecto v8) → por posición, con una nota que lo dice;
 //   · cualquier otra cosa → «Fase N», porque no hay forma honesta de saber cuál es cuál.
+//
+// Lo que hay, medido el 2026-09-23 sobre las 37 HT copiadas: 34 dicen `apertura_rapport` en las cinco
+// (el caso v8) y **3 no traen ninguna fase**. Esas tres entraban en la rama de «distintas» —un arreglo
+// vacío no tiene repetidos— y la pantalla mostraba el título «Las fases» sin nada debajo.
 //
 // Vive acá y no en el componente para poder probarla: Node no importa JSX.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -35,6 +39,7 @@ const NOMBRE_DE_LA_FASE: Readonly<Record<string, string>> = {
 };
 
 export function rotulosDeLasFases(fases: readonly { phase?: unknown }[]): { rotulos: string[]; nota: string | null } {
+  if (fases.length === 0) return { rotulos: [], nota: 'Este análisis no trae la evaluación por fases.' };
   const campos = fases.map((f) => String(f.phase ?? ''));
   if (new Set(campos).size === campos.length) {
     return { rotulos: campos.map((c, i) => NOMBRE_DE_LA_FASE[c] ?? `Fase ${i + 1}`), nota: null };

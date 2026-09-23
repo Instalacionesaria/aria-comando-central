@@ -33,8 +33,8 @@ export async function POST(peticion: Request): Promise<Response> {
   const r = await descubrir(contexto.orgEfectiva, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj });
   if (r.tipo === 'falta') {
     return r.que === 'llave_de_tldv_rechazada'
-      ? rechazo('llave_de_tldv_rechazada', 'tl;dv rechazó la llave. Generá una nueva y cargala en Integraciones.')
-      : rechazo('llave_de_ia_rechazada', 'Anthropic rechazó la llave de IA. Revisala en Integraciones.');
+      ? rechazo('llave_de_tldv_rechazada', 'tl;dv rechazó la llave. Generá una nueva y cargala en Ajustes › Credenciales.')
+      : rechazo('llave_de_ia_rechazada', 'Anthropic rechazó la llave de IA, o la cuenta no tiene saldo. Revisala en Ajustes › Credenciales.');
   }
   if (r.tipo === 'fallo') {
     // La causa va al REGISTRO y no al cuerpo (`ADR-0704`): puede traer la respuesta cruda del proveedor.
