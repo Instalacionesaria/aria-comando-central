@@ -30,6 +30,7 @@ import {
 import { maxDuration } from '../../app/api/cron/route.ts';
 import {
   TABLAS_DEL_ANALIZADOR,
+  analisisOb,
   delModelo,
   instalarRedFalsa,
   json,
@@ -94,6 +95,32 @@ test('con tiempo, una reunión nueva termina la corrida DONE, y su ficha NO se p
   );
   assert.deepEqual(await estados(), ['DONE']);
   assert.equal(red.llamadasAlAnalisis, 1, 'se pidió una ficha en la misma corrida del análisis');
+});
+
+test('la tarea drena también las OB, en orden de llegada, y a una OB no le pide ficha', async () => {
+  /* Con la constante de vuelta en ['HT'] la OB queda PENDING y `analizadas` da 1, no 2. */
+  unaReunion('m-ob', 'OB');
+  unaReunion('m-ht', 'HT');
+  red.analisis.push(analisisOb());
+  red.analisis.push(() => delModelo('{"score": 7, "outcome": "NO_CERRADA"}'));
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.analizadas, 2);
+  assert.deepEqual(await estados(), ['DONE', 'DONE']);
+  /* El orden: la OB llegó primero, así que se llevó la primera respuesta encolada (la de OB) y la HT la
+     segunda. Invertido, la OB quedaría sin su preparación y la HT sin su puntaje. */
+  const cols = await esc.admin.query(
+    'select tipo, preparacion, puntaje from negocio.analizador_analisis where org_id = $1 order by tipo',
+    [esc.org],
+  );
+  assert.deepEqual(cols.rows, [
+    { tipo: 'HT', preparacion: null, puntaje: 7 },
+    { tipo: 'OB', preparacion: 'LISTO', puntaje: null },
+  ]);
+
+  await esc.admin.query(`update negocio.analizador_analisis set analizado_el = now() - interval '11 minutes' where org_id = $1`, [esc.org]);
+  red.analisis.push(() => delModelo('{"summary": "vende pan"}'));
+  const siguiente = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(siguiente.fichas, 1, 'la ficha tenía que ser solo la de la HT');
 });
 
 test('la corrida siguiente completa la ficha de un análisis que ya tiene unos minutos', async () => {

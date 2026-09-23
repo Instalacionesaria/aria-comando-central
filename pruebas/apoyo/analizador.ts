@@ -32,7 +32,11 @@ export const red = {
   reuniones: [] as Reunion[],
   /** Qué contesta el clasificador para cada título. Sin entrada, basura (no se puede clasificar). */
   clasificacion: {} as Record<string, string>,
-  /** Qué contesta el análisis (Sonnet), en orden. Sin nada encolado, un análisis HT neutro. */
+  /**
+   * Qué contesta el análisis (Sonnet), en orden. Sin nada encolado, un análisis HT neutro — que para
+   * una OB también pasa: `normalizeOb` acepta cualquier cosa. Por eso una prueba de OB encola
+   * `analisisOb()`, con valores que no son los de omisión.
+   */
   analisis: [] as (() => Response)[],
   estadoDeTldv: 200,
   estadoDeAnthropic: 200,
@@ -50,6 +54,14 @@ export const red = {
     this.cuerposDelAnalisis = [];
   },
 };
+
+/**
+ * Un análisis OB con valores que NO son los que `normalizeOb` pone por omisión (PARCIAL, resumen vacío):
+ * si la prueba se olvidara de encolarlo, la OB igual quedaría DONE con esos valores, y un chequeo contra
+ * ellos pasaría sin haber mirado nada.
+ */
+export const analisisOb = (extra: Record<string, unknown> = {}) => () =>
+  delModelo(JSON.stringify({ readiness: 'listo', summary: 'arranca con el nicho definido', ...extra }));
 
 /** Siembra una reunión en tl;dv y, si se da, lo que el clasificador va a decir de ella. */
 export function unaReunion(id: string, tipo: string | null, extra: Partial<Reunion> = {}): Reunion {

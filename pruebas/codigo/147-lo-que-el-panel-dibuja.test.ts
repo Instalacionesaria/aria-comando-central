@@ -42,6 +42,7 @@ const PANELES: Readonly<Record<string, string>> = {
      de fallar es el mismo —una clase sin regla que la alcance no se dibuja—. */
   'components/analizadores/PanelDeAnalizadores.jsx': 'v-analizadores',
   'components/analizadores/DetalleHt.jsx': 'v-analizadores',
+  'components/analizadores/DetalleOb.jsx': 'v-analizadores',
 };
 
 const sinComentarios = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, '');

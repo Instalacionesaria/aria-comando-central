@@ -57,8 +57,8 @@ export async function POST(peticion: Request): Promise<Response> {
   const transcripcion = typeof cuerpo?.transcripcion === 'string' ? cuerpo.transcripcion : '';
 
   if (tipo === null) return rechazo('peticion_invalida', 'El tipo tiene que ser HT u OB.');
-  /* Antes de pedir la llave y antes de guardar nada: una OB pegada en la fase HT no se guarda a medias
-     para quedar esperando. Se rechaza entera y el texto dice por qué. */
+  /* Antes de pedir la llave y antes de guardar nada: un tipo con el análisis apagado no se guarda a
+     medias para quedar esperando. Se rechaza entera y el texto dice por qué. Fue OB durante la fase HT. */
   if (!TIPOS_QUE_SE_ANALIZAN.includes(tipo)) return respuestaDelRechazo('analizador_no_disponible');
   if (!nombre) return rechazo('peticion_invalida', 'Falta el nombre del contacto.');
   if (nombre.length > TOPES_DE_LA_MANUAL.nombre) {

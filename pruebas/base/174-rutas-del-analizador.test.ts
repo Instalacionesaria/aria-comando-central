@@ -7,7 +7,7 @@
 //
 //   · una llamada de otra empresa es «no encontrada», en leer, analizar, reencaminar y borrar;
 //   · sin llave de IA se rechaza ANTES de guardar nada y antes de llamar al modelo;
-//   · una OB pegada en la fase HT se rechaza entera, sin dejar una fila esperando;
+//   · una OB pegada a mano se analiza, sale en su pestaña y no tiene ficha;
 //   · una DONE no se reencamina, lo diga o no la pantalla;
 //   · el detalle nunca trae la transcripción;
 //   · ninguna respuesta devuelve una llave.
@@ -28,7 +28,7 @@ import { POST as ficha } from '../../app/api/analizadores/llamadas/[id]/ficha/ro
 import { POST as manual } from '../../app/api/analizadores/manual/route.ts';
 import { POST as sincronizar } from '../../app/api/analizadores/sincronizar/route.ts';
 import { GET as estado } from '../../app/api/analizadores/estado/route.ts';
-import { TABLAS_DEL_ANALIZADOR, delModelo, instalarRedFalsa, quitarRedFalsa, red } from '../apoyo/analizador.ts';
+import { TABLAS_DEL_ANALIZADOR, analisisOb, delModelo, instalarRedFalsa, quitarRedFalsa, red } from '../apoyo/analizador.ts';
 
 let esc: Escenario;
 let tokenDeBeta: string;
@@ -144,16 +144,34 @@ test('sin llave de IA se rechaza ANTES de guardar y antes de llamar al modelo', 
   assert.equal(red.llamadasAlAnalisis + red.llamadasAlClasificador, 0);
 });
 
-test('una OB pegada en la fase HT se rechaza entera, sin dejar una fila esperando', async () => {
-  const r = await manual(
-    pedirComo('/api/analizadores/manual', esc.token, {
-      metodo: 'POST',
-      cuerpo: { tipo: 'OB', nombre: 'Ana', email: 'ana@prospecto.test', transcripcion: 'Coach: bienvenida' },
-    }),
+test('una OB pegada a mano se analiza, sale en su pestaña, y su detalle no trae ficha', async () => {
+  red.analisis.push(analisisOb());
+  const r = await leerRespuesta<{ id: string; estado: string }>(
+    await manual(
+      pedirComo('/api/analizadores/manual', esc.token, {
+        metodo: 'POST',
+        cuerpo: { tipo: 'OB', nombre: 'Ana', email: 'ana@cliente.test', transcripcion: 'Coach: bienvenida\nAna: gracias' },
+      }),
+    ),
   );
-  const c = await leerRespuesta<{ codigo: string }>(r);
-  assert.equal(c.cuerpo.codigo, 'analizador_no_disponible');
-  assert.equal(await cuantasLlamadas(), 0);
+  assert.deepEqual({ estado: r.estado, llamada: r.cuerpo.estado }, { estado: 200, llamada: 'DONE' });
+
+  const l = await leerRespuesta<{ llamadas: { id: string; preparacion: string; puntaje: number | null }[] }>(
+    await lista(pedirComo('/api/analizadores/llamadas?tipo=OB&filtro=analizadas', esc.token)),
+  );
+  assert.deepEqual(l.cuerpo.llamadas.map((x) => ({ id: x.id, preparacion: x.preparacion, puntaje: x.puntaje })), [
+    { id: r.cuerpo.id, preparacion: 'LISTO', puntaje: null },
+  ]);
+
+  const d = await leerRespuesta<{ analisis: { tipo: string }; ficha: unknown }>(
+    await detalle(pedirComo(`/api/analizadores/llamadas/${r.cuerpo.id}`, esc.token), params(r.cuerpo.id)),
+  );
+  assert.deepEqual({ tipo: d.cuerpo.analisis.tipo, ficha: d.cuerpo.ficha }, { tipo: 'OB', ficha: null });
+
+  const f = await leerRespuesta<{ codigo: string }>(
+    await ficha(pedirComo(`/api/analizadores/llamadas/${r.cuerpo.id}/ficha`, esc.token, { metodo: 'POST' }), params(r.cuerpo.id)),
+  );
+  assert.equal(f.cuerpo.codigo, 'ficha_solo_ht');
 });
 
 test('la manual valida sus tres campos, y una transcripción larga se rechaza en vez de cortarse', async () => {
@@ -240,7 +258,7 @@ test('el estado dice qué llaves hay, y ninguna respuesta devuelve una llave', a
   const c = (await r.json()) as { llaveDeIa: { cargada: boolean }; llaveDeTldv: { cargada: boolean }; tiposQueSeAnalizan: string[] };
   assert.deepEqual(
     { ia: c.llaveDeIa.cargada, tldv: c.llaveDeTldv.cargada, tipos: c.tiposQueSeAnalizan },
-    { ia: true, tldv: true, tipos: ['HT'] },
+    { ia: true, tldv: true, tipos: ['HT', 'OB'] },
   );
 });
 

@@ -105,9 +105,9 @@ test('OB · listColumns deriva readiness y summary', () => {
 });
 
 test('registro · OB y HT están registrados, y OTRO no', () => {
-  /* OB se registra aunque la fase OB llegue después: si faltara, el clasificador no la conocería,
-     cada onboarding saldría OTRO y el descarte por identificador externo la sellaría para siempre.
-     Lo que se analiza lo decide otra constante, no este registro. */
+  /* OB se registró desde el primer día, aunque su análisis llegó en OB-2: si faltara, el clasificador
+     no la conocería, cada onboarding saldría OTRO y el descarte por identificador externo la sellaría
+     para siempre. Lo que se analiza lo decide otra constante, no este registro. */
   assert.equal(getAnalyzer('OB')?.tipo, 'OB');
   assert.equal(getAnalyzer('HT')?.tipo, 'HT');
   assert.equal(getAnalyzer('OTRO'), null);

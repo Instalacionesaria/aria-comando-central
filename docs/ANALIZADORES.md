@@ -35,12 +35,12 @@ internas: **HT** y **OB**. Se construye HT completo primero y OB después.
 
 ### Las que se tomaron por defecto
 
-- **OB se registra en el clasificador desde el día 1, y no se analiza hasta la fase OB.** Si en la
-  fase HT solo existiera HT, cada respuesta «OB» del clasificador se guardaría como OTRO —el motor
-  devuelve OTRO para todo tipo no registrado (`engine.ts:173-174`)— y el descarte por
-  identificador externo la sellaría para siempre: cuando OB llegara, esas reuniones ya no
-  entrarían. Registrada, espera en PENDING. Una sola constante, `TIPOS_QUE_SE_ANALIZAN`, decide qué
-  se analiza.
+- **OB se registró en el clasificador desde el día 1, y se analiza desde OB-2 (2026-09-23).** Si
+  en la fase HT solo hubiera existido HT, cada respuesta «OB» del clasificador se habría guardado
+  como OTRO —el motor devuelve OTRO para todo tipo no registrado (`engine.ts:173-174`)— y el
+  descarte por identificador externo la habría sellado para siempre. Durante la fase HT las OB
+  esperaban en PENDING. Una sola constante, `TIPOS_QUE_SE_ANALIZAN`, decide qué se analiza, y sigue
+  siendo el interruptor: sacar un tipo de ahí lo deja clasificándose y esperando, sin gastar.
 - **Los identificadores del núcleo portado siguen en inglés** (`lib/analizadores/nucleo/`). Son el
   contrato con el modelo —los nombres de campo del esquema van en el prompt— y con el JSON ya
   guardado en las 107 llamadas. Traducirlos cambiaría los prompts y dejaría el historial ilegible.
@@ -116,7 +116,9 @@ quedar. En una línea cada una:
 | HT-9 | la copia del historial y el encendido | copia hecha y verificada el 2026-09-23 · falta la llave de tl;dv |
 | HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | |
 | OB-1 | la calibración: qué son en realidad las 44 reuniones que el clasificador llamó OB | hecha el 2026-09-23 · ver § «OB-1» |
-| OB-2…4 | habilitar el análisis, la pantalla OB, observación | esperan las decisiones de OB-1 |
+| OB-2 | habilitar el análisis OB, con la rúbrica tal cual | hecha el 2026-09-23 · `pruebas/base/172`, `173` y `174` |
+| OB-3 | la pantalla de detalle OB y los rótulos «No es HT» / «No es OB» | hecha el 2026-09-23 · `pruebas/codigo/172` y `147` · falta el humo con login |
+| OB-4 | observación, y la comparación con Brain | |
 
 ### Lo que la construcción encontró
 
@@ -247,19 +249,17 @@ falta la tercera lectura prevista para desempatar. Sin datos personales en la sa
    después. Y muchas de estas reuniones no traen invitados, así que la pista del dominio de correo no
    existía. Medirlo exige reclasificar con un prefijo más largo, que es gastar.
 
-Las 12 ventas, por si se decide moverlas a HT (botón «Mover a HT»: quedan PENDING y la tarea las
-analiza, doce análisis y doce fichas): `065f808f`, `07f447f0`, `17a2f46a`, `317c9807`, `659cba0d`,
+Las 12 ventas, para ubicarlas en la pestaña OB (moverlas a HT se decidió que no; ver abajo): `065f808f`, `07f447f0`, `17a2f46a`, `317c9807`, `659cba0d`,
 `67ba2bc1`, `6c2d921e`, `98333d60`, `a76e7557`, `b184565b`, `b8e9aea8`, `ed092d82`. Todas con
 confianza alta en las dos lecturas salvo `98333d60`, media en las dos.
 
-**Lo que queda por decidir antes de OB-2**, y es de quien opera la herramienta:
+**Decidido el 2026-09-23**, por quien opera la herramienta:
 
-- si las 12 ventas se mueven a HT;
-- si se ajusta la definición de OB (`isDescription` sin «acompañamiento», y `isNotExamples` con las
-  sesiones de entrega o implementación y con el onboarding del propio equipo). Es un cambio de
-  rúbrica: sube la versión;
-- si se ajusta el clasificador (OB solo el arranque, las sesiones con clientes activos en OTRO, y
-  quizá un prefijo más largo). Su prompt está fijado carácter por carácter por una prueba
-  (`pruebas/codigo/171`), así que cambiarlo es deliberado y se versiona. Y afecta a HT HOY: el
-  clasificador ya corre en producción, y una venta que mande a OB queda esperando en la pestaña OB.
+- **Nada se mueve y la rúbrica no se toca**, ni la de OB ni la de HT. Una reunión que no es lo que su
+  analizador espera no desaparece: queda en Descartadas de su pestaña como «No es HT» o «No es OB»,
+  con el motivo del modelo. Las 12 ventas quedan así en la pestaña OB.
+- **El clasificador queda como está.** A futuro la clasificación va a salir del NOMBRE de la reunión
+  —hay formatos de título que ya son de uno u otro tipo, y algunos ya están mapeados—, y con eso el
+  resto del clasificador deja de hacer falta. Se actualiza cuando esté el mapa completo.
 
+Con eso OB-2 y OB-3 siguen con la rúbrica tal cual, que es lo que el plan fijaba por defecto.

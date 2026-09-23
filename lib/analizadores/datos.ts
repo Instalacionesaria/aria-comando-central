@@ -498,7 +498,7 @@ export async function reencaminar(
       .set({
         tipo: nuevoTipo,
         estado: aOtro ? 'NOT_MATCH' : 'PENDING',
-        motivo: aOtro ? 'Movida a «no corresponde» a mano.' : null,
+        motivo: aOtro ? 'Movida a «no es HT ni OB» a mano.' : null,
         error: null,
         prospecto_id: prospectoId,
         actualizado_el: sql`now()`,

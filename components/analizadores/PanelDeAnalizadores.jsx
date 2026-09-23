@@ -38,7 +38,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { pedir } from '../../lib/http/cliente.ts';
 import { estaALaVista } from '@/lib/vista';
+import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
+import DetalleOb from './DetalleOb.jsx';
 
 const PESTANAS = [
   { clave: 'HT', nombre: 'HT · Venta', icono: '#i-closer' },
@@ -57,13 +59,6 @@ const ESPERA_LARGA = 300_000;
 /** Pasados estos minutos en ANALYZING, la llamada se colgó y se puede reintentar. La base usa el mismo. */
 const MINUTOS_PARA_DARLA_POR_COLGADA = 15;
 
-const TEXTO_DEL_ESTADO = {
-  PENDING: 'Pendiente',
-  ANALYZING: 'Analizando',
-  DONE: 'Analizada',
-  NOT_MATCH: 'No corresponde',
-  FAILED: 'Falló',
-};
 const CHIP_DEL_ESTADO = { PENDING: 'warn', ANALYZING: 'warn', DONE: 'ok', NOT_MATCH: 'warn', FAILED: 'crit' };
 
 /* Los rechazos que la pantalla sabe nombrar. El `detalle` del servidor, si viene, gana: es más
@@ -151,13 +146,13 @@ export default function PanelDeAnalizadores() {
 
   const seAnaliza = (tipo) => (estado?.tiposQueSeAnalizan ?? []).includes(tipo);
   /* Por qué un botón de analizar está deshabilitado. Sin el estado cargado no se sabe qué se
-     analiza, y decir «se analiza en la fase OB» sobre una HT sería falso. */
+     analiza, y decir que un tipo está apagado sin saberlo sería falso. */
   const porQueNoSeAnaliza = (tipo) =>
     estado === null
       ? 'No se pudo saber todavía qué se analiza: recargá el estado.'
       : seAnaliza(tipo)
         ? undefined
-        : 'Se analiza en la fase OB.';
+        : 'El análisis de este tipo está apagado por ahora.';
 
   /** Analiza una llamada y, si es una HT que quedó DONE, pide su ficha enseguida. */
   const analizarUna = useCallback(async (id, tipo, esperado) => {
@@ -181,7 +176,7 @@ export default function PanelDeAnalizadores() {
     setTrabajando('');
     if (!r.ok) setAviso(r.mensaje);
     else if (r.estado === 'FAILED') setAviso(`El análisis falló: ${r.error}`);
-    else if (r.estado === 'NOT_MATCH') setAviso(`El análisis dice que no corresponde: ${r.motivo}`);
+    else if (r.estado === 'NOT_MATCH') setAviso(`El análisis dice que ${fraseDelVeto(l.tipo)}: ${r.motivo}`);
     else setAviso('');
     recargar();
   };
@@ -205,6 +200,7 @@ export default function PanelDeAnalizadores() {
        una decisión de alguien que lee el error, no algo que se repite solo. Cada resultado se cuenta
        por lo que fue —un FAILED no es una analizada— y los rechazos que valen para todas cortan. */
     const cuenta = { DONE: 0, NOT_MATCH: 0, FAILED: 0, salteadas: 0 };
+    const vetadasPorTipo = {};
     let corte = '';
     for (const tipo of estado?.tiposQueSeAnalizan ?? []) {
       if (corte) break;
@@ -217,7 +213,10 @@ export default function PanelDeAnalizadores() {
       for (const [i, l] of pendientes.entries()) {
         setTrabajando(`Analizando ${i + 1} de ${pendientes.length} (${tipo})…`);
         const a = await analizarUna(l.id, l.tipo, 'PENDING');
-        if (a.ok) cuenta[a.estado] = (cuenta[a.estado] ?? 0) + 1;
+        if (a.ok) {
+          cuenta[a.estado] = (cuenta[a.estado] ?? 0) + 1;
+          if (a.estado === 'NOT_MATCH') vetadasPorTipo[tipo] = (vetadasPorTipo[tipo] ?? 0) + 1;
+        }
         else if (CORTAN_EL_DRENADO.includes(a.codigo)) {
           corte = a.mensaje;
           break;
@@ -226,7 +225,7 @@ export default function PanelDeAnalizadores() {
     }
     setTrabajando('');
     const resultado = [`analizadas ${cuenta.DONE}`];
-    if (cuenta.NOT_MATCH > 0) resultado.push(`no corresponden ${cuenta.NOT_MATCH}`);
+    for (const [tipo, n] of Object.entries(vetadasPorTipo)) resultado.push(`no son ${tipo} ${n}`);
     if (cuenta.FAILED > 0) resultado.push(`fallaron ${cuenta.FAILED} (están en Pendientes)`);
     if (cuenta.salteadas > 0) resultado.push(`${cuenta.salteadas} ya las había tomado otra corrida`);
     setAviso(`tl;dv: ${partes.join(' · ')}. Ahora: ${resultado.join(' · ')}.${corte ? ` Se cortó: ${corte}` : ''}`);
@@ -248,9 +247,12 @@ export default function PanelDeAnalizadores() {
   };
 
   if (detalle !== null) {
+    /* `detalle` guarda el tipo además del id: una OB no tiene vista Prospecto ni ficha, y abrirla con el
+       detalle de HT mostraría una evaluación de closer vacía. */
+    const Detalle = detalle.tipo === 'OB' ? DetalleOb : DetalleHt;
     return (
-      <DetalleHt
-        id={detalle}
+      <Detalle
+        id={detalle.id}
         alVolver={() => {
           setDetalle(null);
           recargar();
@@ -311,8 +313,8 @@ export default function PanelDeAnalizadores() {
 
       {!seAnaliza(pestana) && estado ? (
         <div className="az-aviso">
-          Las reuniones de onboarding se clasifican y se guardan desde ya, y se analizan cuando llegue la
-          fase OB. Mientras tanto, si una venta quedó acá por error, se puede mover a HT.
+          El análisis de esta pestaña está apagado por ahora: las reuniones se clasifican y se guardan, y
+          esperan en Pendientes.
         </div>
       ) : null}
 
@@ -323,10 +325,10 @@ export default function PanelDeAnalizadores() {
           trabajando={trabajando !== ''}
           alTerminar={(id, tipo, estadoFinal, mensaje) => {
             /* El formulario se cierra, así que el resultado lo dice el PANEL: con el mensaje adentro del
-               formulario, un «no corresponde» o un «falló» se desmontaba antes de verse. */
+               formulario, un «no es HT» o un «falló» se desmontaba antes de verse. */
             setFormulario(false);
             setAviso(mensaje);
-            if (estadoFinal === 'DONE' && tipo === 'HT') setDetalle(id);
+            if (estadoFinal === 'DONE') setDetalle({ id, tipo });
             recargar();
           }}
           setTrabajando={setTrabajando}
@@ -371,11 +373,14 @@ export default function PanelDeAnalizadores() {
                 {fecha(l.fechaDeLaReunion ?? l.creadoEl)}
                 {l.prospectoNombre ? ` · ${l.prospectoNombre}` : ''}
                 {l.proveedor === 'MANUAL' ? ' · pegada a mano' : ''}
-                {l.tipo === 'OTRO' ? ' · no es HT ni OB' : ''}
               </div>
               {/* El motivo de un descarte y el error de un fallo, cada uno con su nombre. La
                   transcripción NO se muestra nunca: una OTRO suele ser una reunión interna. */}
-              {l.motivo ? <div className="az-fila-m">Por qué no corresponde: {l.motivo}</div> : null}
+              {l.motivo ? (
+                <div className="az-fila-m">
+                  Por qué {fraseDelVeto(l.tipo)}: {l.motivo}
+                </div>
+              ) : null}
               {l.estado === 'FAILED' && l.error ? <div className="az-error">{l.error}</div> : null}
               {l.estado === 'DONE' && l.tipo === 'OB' && l.resumen ? <div className="az-fila-m">{l.resumen}</div> : null}
             </div>
@@ -383,14 +388,11 @@ export default function PanelDeAnalizadores() {
               {l.estado === 'DONE' && l.puntaje !== null ? (
                 <span className={`az-puntaje az-${(l.colorDelPuntaje ?? '').toLowerCase()}`}>{l.puntaje}</span>
               ) : null}
-              <span className={`chip ${CHIP_DEL_ESTADO[l.estado]}`}>{TEXTO_DEL_ESTADO[l.estado]}</span>
-              {l.estado === 'DONE' && l.tipo === 'HT' ? (
-                <button type="button" className="az-boton" onClick={() => setDetalle(l.id)}>
+              <span className={`chip ${CHIP_DEL_ESTADO[l.estado]}`}>{rotuloDelEstado(l.estado, l.tipo)}</span>
+              {l.estado === 'DONE' && l.tipo !== 'OTRO' ? (
+                <button type="button" className="az-boton" onClick={() => setDetalle({ id: l.id, tipo: l.tipo })}>
                   Ver
                 </button>
-              ) : null}
-              {l.estado === 'DONE' && l.tipo === 'OB' ? (
-                <span className="az-fila-m">El detalle de OB llega en la fase OB</span>
               ) : null}
               {l.tipo !== 'OTRO' && (l.estado === 'PENDING' || l.estado === 'FAILED' || colgada(l)) ? (
                 <button
@@ -406,7 +408,7 @@ export default function PanelDeAnalizadores() {
               {l.estado !== 'DONE' && l.estado !== 'ANALYZING'
                 ? otros(l.tipo).map((t) => (
                     <button key={t} type="button" className="az-boton" onClick={() => alMover(l, t)}>
-                      {t === 'OTRO' ? 'No corresponde' : `Mover a ${t}`}
+                      {t === 'OTRO' ? 'No es HT ni OB' : `Mover a ${t}`}
                     </button>
                   ))
                 : null}
@@ -465,7 +467,7 @@ function Manual({ pestana, seAnaliza, trabajando, alTerminar, setTrabajando }) {
     setTrabajando('');
     const mensaje =
       r.datos.estado === 'NOT_MATCH'
-        ? `El análisis dice que no corresponde: ${r.datos.motivo}`
+        ? `El análisis dice que ${fraseDelVeto(tipo)}: ${r.datos.motivo}`
         : r.datos.estado === 'FAILED'
           ? `El análisis falló: ${r.datos.error}`
           : '';

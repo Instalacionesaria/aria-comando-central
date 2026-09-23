@@ -9,7 +9,7 @@
 // Lo que se defiende es dónde se paga y dónde no:
 //
 //   · las tres salidas de cada reunión (HT/OB, OTRO, sin clasificar) y qué escribe cada una;
-//   · que una OB se CLASIFIQUE como OB pero no se ANALICE en la fase HT;
+//   · que una OB se clasifique como OB y se analice con su rúbrica, y que sin serlo diga «no es OB»;
 //   · que una llave rechazada corte y lo diga, en vez de repetirse en silencio;
 //   · que la guardia de reloj no arranque una inferencia que no cabe;
 //   · que la ficha nunca tumbe la llamada.
@@ -36,6 +36,7 @@ import {
   SEGMENTOS,
   TABLAS_DEL_ANALIZADOR as TABLAS,
   delModelo,
+  analisisOb,
   instalarRedFalsa,
   json,
   quitarRedFalsa,
@@ -104,19 +105,46 @@ test('descubrir: HT y OB quedan PENDING; OTRO queda NOT_MATCH con su motivo; nad
   assert.equal(t.rows[0].n, 3);
 });
 
-test('una respuesta «OB» del clasificador es OB, no OTRO — aunque OB no se analice todavía', async () => {
-  /* La trampa de la fase HT: si OB no estuviera registrado, esta reunión saldría OTRO y el descarte
-     la sellaría para siempre. Cuando la fase OB llegue, no volvería a entrar. */
-  assert.deepEqual([...TIPOS_QUE_SE_ANALIZAN], ['HT']);
+test('una respuesta «OB» del clasificador es OB, no OTRO, y se analiza con la rúbrica de OB', async () => {
+  /* La trampa de la fase HT sigue valiendo: si OB no estuviera registrado, esta reunión saldría OTRO
+     y el descarte la sellaría para siempre. Desde OB-2 además se analiza, con su propio PRIMER PASO, y
+     llena las dos columnas de la lista de OB. */
+  assert.deepEqual([...TIPOS_QUE_SE_ANALIZAN], ['HT', 'OB']);
   unaReunion('m-ob', 'OB');
   await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
   const [ob] = await llamadas();
   assert.deepEqual({ tipo: ob?.tipo, estado: ob?.estado }, { tipo: 'OB', estado: 'PENDING' });
 
+  red.analisis.push(analisisOb());
+  const id = await idDe('m-ob');
+  assert.deepEqual(await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'hecho', estado: 'DONE', motivo: null, error: null });
+  const sistema = (red.cuerposDelAnalisis[0]?.['system'] as { text: string }[])[0]!.text;
+  assert.ok(sistema.includes('# PRIMER PASO — ¿ES una llamada de ONBOARDING'), 'la OB se analizó con otra rúbrica');
+  const a = await esc.admin.query(
+    'select tipo, puntaje, preparacion, resumen, version_de_rubrica from negocio.analizador_analisis where llamada_id = $1',
+    [id],
+  );
+  assert.deepEqual(a.rows[0], {
+    tipo: 'OB',
+    puntaje: null,
+    preparacion: 'LISTO',
+    resumen: 'arranca con el nicho definido',
+    version_de_rubrica: 'rubric.es.md@OB',
+  });
+});
+
+test('una OB que no es un onboarding queda «no es OB» con su motivo: no desaparece', async () => {
+  unaReunion('m-ob', 'OB');
+  await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
+  red.analisis.push(() => delModelo('{"match": false, "reason": "es una venta a un prospecto que no compró"}'));
   const r = await analizarLlamada(esc.org, await idDe('m-ob'), 'ia-falsa', conTiempo());
-  assert.deepEqual(r, { tipo: 'rechazo', que: 'analizador_no_disponible' });
-  assert.equal(red.llamadasAlAnalisis, 0);
-  assert.equal((await llamadas())[0]?.estado, 'PENDING', 'la OB espera, no queda tomada');
+  assert.deepEqual(r, { tipo: 'hecho', estado: 'NOT_MATCH', motivo: 'es una venta a un prospecto que no compró', error: null });
+  assert.deepEqual((await llamadas())[0], {
+    reunion_externa_id: 'm-ob',
+    tipo: 'OB',
+    estado: 'NOT_MATCH',
+    motivo: 'es una venta a un prospecto que no compró',
+  });
 });
 
 test('si el clasificador falla, no se escribe NADA: se retoma en la próxima corrida', async () => {
@@ -380,6 +408,17 @@ test('una llave rechazada en la ficha NO deja una ficha FAILED: no hubo ficha qu
   assert.equal(f.rowCount, 0);
 });
 
+test('una OB ya analizada tampoco tiene ficha: la ficha es del prospecto de una venta', async () => {
+  unaReunion('m-ob', 'OB');
+  await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
+  const id = await idDe('m-ob');
+  red.analisis.push(analisisOb());
+  await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo());
+  const antes = red.llamadasAlAnalisis;
+  assert.deepEqual(await generarFicha(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'rechazo', que: 'ficha_solo_ht' });
+  assert.equal(red.llamadasAlAnalisis, antes, 'se pagó una ficha para una OB');
+});
+
 test('la ficha es solo de HT, y solo de una HT ya analizada', async () => {
   unaReunion('m-ob', 'OB');
   await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
@@ -393,7 +432,7 @@ test('la ficha es solo de HT, y solo de una HT ya analizada', async () => {
 // 4 · LA MANUAL
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('una manual sin [mm:ss] queda marcada: sus tiempos son números de línea', async () => {
+test('una manual sin [mm:ss] queda marcada: sus tiempos son números de turno', async () => {
   const sin = await crearManual(esc.org, { tipo: 'HT', nombre: 'Ana', email: 'ana@ejemplo.test', transcripcion: 'Closer: hola\nAna: hola' });
   const con = await crearManual(esc.org, { tipo: 'HT', nombre: 'Ana', email: 'ana@ejemplo.test', transcripcion: '[00:05] Closer: hola\n[00:09] Ana: hola' });
   const r = await esc.admin.query(

@@ -20,8 +20,8 @@
 //   · **Una llave que deja de servir no marca FAILED**: devuelve la llamada a su estado y corta. Con
 //     la llave rota, el drenado dejaba FAILED a cada pendiente que tocaba.
 //   · **`TIPOS_QUE_SE_ANALIZAN`.** El clasificador conoce HT y OB desde el primer día —si no, cada
-//     onboarding saldría OTRO y el descarte lo sellaría para siempre—, pero en la fase HT solo HT se
-//     analiza. Las OB esperan en PENDING hasta la fase OB.
+//     onboarding saldría OTRO y el descarte lo sellaría para siempre—. Durante la fase HT solo HT se
+//     analizaba y las OB esperaban en PENDING; desde OB-2 se analizan las dos.
 //   · **La ficha no va en la misma petición que el análisis.** El origen la generaba a continuación:
 //     dos inferencias de minutos en una sola función de 300 s. Acá el análisis termina y devuelve; la
 //     ficha la pide la pantalla enseguida, en otra petición, y la tarea completa las que falten.
@@ -55,12 +55,13 @@ import {
 } from './datos.ts';
 
 /**
- * Qué tipos se ANALIZAN. **La única constante que separa la fase HT de la fase OB.**
+ * Qué tipos se ANALIZAN. Separó la fase HT de la fase OB, y desde OB-2 (2026-09-23) son los dos.
  *
  * No es lo mismo que qué tipos se CLASIFICAN: eso lo decide el registro del núcleo, y ahí OB está
- * desde el primer día. Esta lista decide solo qué se le manda a Sonnet.
+ * desde el primer día. Esta lista decide solo qué se le manda a Sonnet, y sigue siendo el
+ * interruptor: sacar un tipo de acá lo deja clasificándose y esperando en PENDING, sin gastar.
  */
-export const TIPOS_QUE_SE_ANALIZAN: readonly ('HT' | 'OB')[] = ['HT'];
+export const TIPOS_QUE_SE_ANALIZAN: readonly ('HT' | 'OB')[] = ['HT', 'OB'];
 
 /** Tope de reuniones nuevas que se examinan por corrida: el del origen. */
 export const TOPE_DEL_DESCUBRIMIENTO = 40;
@@ -473,8 +474,9 @@ export const TOPE_DE_LA_TRANSCRIPCION = 200_000;
  * ¿La transcripción pegada trae marcas de tiempo?
  *
  * Hace falta saberlo porque el parser del núcleo, a una línea sin `[mm:ss]`, le pone como segundo de
- * inicio **su número de línea**. La evidencia citada mostraría entonces «00:00:14» para la línea 14,
- * y se leería como un tiempo real de la grabación. Con este dato, la pantalla lo avisa.
+ * inicio **su posición entre los renglones no vacíos, desde 0**. La evidencia citada mostraría
+ * entonces «00:00:14» para el turno 15, y se leería como un tiempo real de la grabación. Con este
+ * dato, la pantalla lo avisa y muestra «turno N».
  *
  * El patrón es el mismo de `parseTranscriptInput` (`nucleo/transcript.ts`): si ahí cambia, acá tiene
  * que cambiar igual.

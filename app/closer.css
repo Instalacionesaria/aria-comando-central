@@ -2048,3 +2048,7 @@
 #v-analizadores .az-tiempo { font-size: 11px; color: var(--txt-faint); font-variant-numeric: tabular-nums; }
 #v-analizadores .az-par { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 4px 12px; font-size: 12px; }
 #v-analizadores .az-no-consta { color: var(--txt-faint); }
+/* El detalle OB: listas de textos cortos y momentos clave con su cita. */
+#v-analizadores .az-renglones { margin: 0; padding-left: 16px; font-size: 12px; color: var(--txt); }
+#v-analizadores .az-renglones li { margin: 2px 0; }
+#v-analizadores .az-momento { margin: 6px 0; font-size: 12.5px; color: var(--txt); }

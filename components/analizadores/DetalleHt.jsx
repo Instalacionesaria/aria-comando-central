@@ -162,7 +162,7 @@ export default function DetalleHt({ id, alVolver }) {
         {llamada.conMarcasDeTiempo === false ? (
           <p className="az-aviso">
             La transcripción se pegó sin marcas de tiempo: donde el análisis cita un momento, lo que se
-            muestra es el número de línea, no un tiempo de la grabación.
+            muestra es el número de turno, no un tiempo de la grabación.
           </p>
         ) : null}
       </div>

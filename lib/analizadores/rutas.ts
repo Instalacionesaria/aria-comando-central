@@ -1,7 +1,7 @@
 // Lo que comparten las rutas de los Analizadores: leer los parámetros y traducir los rechazos.
 //
 // Son siete rutas sobre la misma pantalla, y cada una tiene que decir lo mismo de la misma forma:
-// que una llamada de otra empresa «no existe», que una OB «todavía no se analiza», que otra corrida
+// que una llamada de otra empresa «no existe», que un tipo apagado «no se analiza», que otra corrida
 // «la está analizando». Si cada ruta lo tradujera por su cuenta, la primera que se desvíe hace que
 // la pantalla muestre dos textos distintos para el mismo hecho según el botón que se apretó.
 
@@ -42,9 +42,9 @@ export function respuestaDelRechazo(que: RechazoDelAnalisis | RechazoDeLaFicha):
     case 'no_encontrada':
       return rechazo('no_encontrado');
     case 'tipo_otro':
-      return rechazo('tipo_otro', 'Esta reunión se descartó como «no corresponde». Movela a HT u OB para analizarla.');
+      return rechazo('tipo_otro', 'Esta reunión se descartó como «no es HT ni OB». Movela a HT u OB para analizarla.');
     case 'analizador_no_disponible':
-      return rechazo('analizador_no_disponible', 'El análisis de onboardings llega en la fase OB. La llamada queda guardada.');
+      return rechazo('analizador_no_disponible', 'El análisis de este tipo de llamada está apagado por ahora.');
     case 'sin_transcripcion':
       return rechazo('sin_transcripcion', 'Esta llamada no tiene transcripción guardada.');
     case 'llamada_en_curso':

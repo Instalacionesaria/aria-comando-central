@@ -214,8 +214,8 @@ export const RECHAZOS = {
   llave_de_tldv_ilegible: 409,
   llave_de_tldv_rechazada: 409,
   llave_de_ia_rechazada: 409,
-  // OB se clasifica desde el día 1 y no se analiza hasta su fase. Código propio y no
-  // `peticion_invalida`: la petición está bien, lo que falta es la etapa.
+  // Un tipo que se clasifica pero cuyo análisis está apagado (`TIPOS_QUE_SE_ANALIZAN`): fue OB durante
+  // la fase HT. Código propio y no `peticion_invalida`: la petición está bien, lo que falta es la etapa.
   analizador_no_disponible: 409,
   // Una reunión que el clasificador descartó. Se analiza después de reencaminarla, y el texto lo dice.
   tipo_otro: 409,
