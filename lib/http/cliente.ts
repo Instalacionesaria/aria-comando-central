@@ -94,7 +94,7 @@ export type Respuesta<T> =
 const ESPERA_MS = 15_000;
 
 /**
- * Cuánto espera quien llama a una ruta que declara `maxDuration = 300`.
+ * Cuánto espera quien llama a una ruta larga. **Acompaña al `maxDuration` MÁS ALTO que haya.**
  *
  * Es el MISMO defecto del párrafo de arriba, cobrado por segunda vez y en otra pantalla. Llegó como
  * queja al apretar **«Crear mi perfil de cliente»** en `ICP & Oferta`: cartel rojo de red caída
@@ -111,8 +111,12 @@ const ESPERA_MS = 15_000;
  * El número acompaña al `maxDuration` de esas rutas: si allá sube, acá sube. Lo comprueba
  * `pruebas/codigo/90-fundaciones.test.ts` comparando los dos números, no la presencia del
  * argumento.
+ *
+ * Subió a 600 el 2026-09-23, con las dos rutas que generan. No es «por las dudas»: el paso 1 del
+ * Research se pasó de los 240 segundos dos veces contra una organización real, y el tope viejo lo
+ * mataba con la función todavía viva. Ver `ESPERA_DE_GENERACION_MS`.
  */
-export const ESPERA_DE_RUTA_LARGA_MS = 300_000;
+export const ESPERA_DE_RUTA_LARGA_MS = 600_000;
 
 /**
  * Pide algo al API. **La única función del proyecto que hace una petición HTTP.**
@@ -240,20 +244,27 @@ export const ESPERA_EXTERNA_MS = 240_000;
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL NÚMERO SALE DEL `maxDuration` DE LA RUTA, Y ANTES NO SE MIRABAN ENTRE SÍ
  *
- * Las rutas que generan declaran `maxDuration = 300` —cinco minutos de función— y el tope de acá
+ * Las rutas que generan declaraban `maxDuration = 300` —cinco minutos de función— y el tope de acá
  * era 240. O sea que **cortábamos la llamada con sesenta segundos de presupuesto sin usar**, y la
  * persona veía «el modelo no respondió» sobre una generación que el servidor todavía tenía tiempo
  * de terminar.
+ *
+ * Alinear los dos números arreglaba el desperdicio pero dejaba el techo en cinco minutos, que para
+ * ese paso es apenas más de lo que tardó al fallar. Así que el 2026-09-23 subieron los dos: la
+ * función a 600 y el corte a 580. El plan (Pro con Fluid Compute, comprobado contra la API de
+ * Vercel) admite hasta 800, y con Fluid se factura CPU ACTIVA además del tiempo de reloj: una
+ * espera contra Anthropic tiene la función ociosa, así que el techo más alto se paga solo cuando
+ * de verdad se usa. La cuenta tiene además un presupuesto de 200 dólares que CORTA al llegar.
  *
  * Medido el 2026-09-23: a Jorge le falló dos veces el paso 1 del Research contra la organización de
  * CONEKTIA. El registro del servidor, ya con la causa que faltaba, lo dijo sin ambigüedad:
  * *«no hubo respuesta del modelo · The operation was aborted due to timeout»*. Ese paso busca en la
  * web y escribe hasta 16.000 tokens; cuatro minutos le quedan cortos.
  *
- * ── POR QUÉ 280 Y NO 300 ────────────────────────────────────────────────────
+ * ── POR QUÉ 580 Y NO 600 ────────────────────────────────────────────────────
  *
  * Porque después de que el modelo contesta **todavía hay trabajo**: `generarElDocumento` guarda la
- * versión ANTES de responder. Si el corte fuera a los 300, la función se quedaría sin tiempo
+ * versión ANTES de responder. Si el corte fuera a los 600, la función se quedaría sin tiempo
  * mientras escribe, y ahí no hay mensaje de error que valga — la plataforma corta la respuesta y el
  * documento recién generado se pierde después de haberse pagado. Veinte segundos de margen es lo
  * que separa «no llegó a tiempo y te lo digo» de «no llegó a tiempo y encima perdí lo que salió».
@@ -263,7 +274,7 @@ export const ESPERA_EXTERNA_MS = 240_000;
  * quien ejecuta**, o el que corta es el de más adentro y nadie se entera de por qué.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
-export const ESPERA_DE_GENERACION_MS = 280_000;
+export const ESPERA_DE_GENERACION_MS = 580_000;
 
 /**
  * Cuánto del motivo de un servicio externo viaja hasta la pantalla.

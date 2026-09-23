@@ -19,7 +19,12 @@ import { generarElDocumento } from '../../../../lib/fundaciones/operaciones.ts';
 export const PANTALLA = 'icp';
 
 /** Una generación de 16.000 tokens tarda minutos. Ver la nota en `estado/route.ts`. */
-export const maxDuration = 300;
+/* Diez minutos, y no los cinco de por omisión. El paso 1 del Research —busca en la web y escribe
+ * hasta 16.000 tokens— se pasó de los cuatro minutos dos veces contra una organización real el
+ * 2026-09-23. El plan (Pro con Fluid Compute) admite hasta 800; el corte del cliente va 20 segundos
+ * por debajo para que quede tiempo de GUARDAR la versión antes de responder. Ver
+ * `ESPERA_DE_GENERACION_MS`. */
+export const maxDuration = 600;
 
 export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['fundaciones.editar'], PANTALLA);
