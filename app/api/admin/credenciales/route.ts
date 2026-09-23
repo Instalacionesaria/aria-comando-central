@@ -89,6 +89,8 @@ const CAMPOS = [
   { entrada: 'crmRefresco', columna: 'crm_refresh_cifrado', secreto: true },
   { entrada: 'iaClave', columna: 'ia_clave_cifrada', secreto: true },
   { entrada: 'pagosClave', columna: 'pagos_clave_cifrada', secreto: true },
+  // La llave de tl;dv de los Analizadores (`057`). Secreto, como la de IA: se cifra y nunca sale.
+  { entrada: 'tldvClave', columna: 'tldv_clave_cifrada', secreto: true },
   { entrada: 'crmCuentaId', columna: 'crm_cuenta_id', secreto: false },
   // El calendario de agendamiento. `secreto: false`: es el identificador de un calendario ajeno, va y
   // viene completo. Y NO es un filtro del barrido — ver la migración 016.

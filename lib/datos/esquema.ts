@@ -161,6 +161,8 @@ export interface TablaOrganizacionesCredenciales {
   crm_token_cifrado: string | null;
   pagos_clave_cifrada: string | null;
   ia_clave_cifrada: string | null;
+  /** La llave de tl;dv de los Analizadores. Migración `057`. */
+  tldv_clave_cifrada: string | null;
   crm_cuenta_id: string | null;
   /**
    * El calendario donde se agendan las llamadas. **No es un filtro del barrido.**
@@ -995,6 +997,123 @@ export interface TablaMetricasDeAnuncio {
   sincronizado_el: Generated<Date>;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS ANALIZADORES HT Y OB · migración `056`
+//
+// Los `jsonb` se LEEN como el valor ya armado y se ESCRIBEN como texto, igual que `campos_del_crm`.
+// Los `numeric` llegan como `string` desde `pg`, igual que el gasto de los anuncios.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Un `jsonb` que se lee armado y se escribe como texto. */
+type Json<T> = ColumnType<T, string, string>;
+type JsonNulable<T> = ColumnType<T | null, string | null | undefined, string | null | undefined>;
+
+export type TipoDeLlamadaAnalizada = 'HT' | 'OB' | 'OTRO';
+export type EstadoDeLlamadaAnalizada = 'PENDING' | 'ANALYZING' | 'DONE' | 'NOT_MATCH' | 'FAILED';
+export type ProveedorDeReuniones = 'MANUAL' | 'TLDV';
+
+export interface TablaAnalizadorProspectos {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  nombre: string | null;
+  /** En minúsculas y sin espacios: lo garantiza un CHECK. Nulo = la llamada no trajo correo. */
+  email: string | null;
+  empresa: string | null;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+export interface TablaAnalizadorLlamadas {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  prospecto_id: string | null;
+  tipo: TipoDeLlamadaAnalizada;
+  proveedor: ProveedorDeReuniones;
+  reunion_externa_id: string | null;
+  titulo: string | null;
+  prospecto_nombre: string | null;
+  prospecto_email: string | null;
+  estado: Generated<EstadoDeLlamadaAnalizada>;
+  /** Por qué NO corresponde (OTRO o veto). Un descarte limpio: los fallos van en `error`. */
+  motivo: string | null;
+  error: string | null;
+  /** Cuándo pasó a ANALYZING. Pasados 15 minutos, la pantalla ofrece reintentar. */
+  tomada_el: Date | null;
+  fecha_de_la_reunion: Date | null;
+  duracion_seg: number | null;
+  organizador_nombre: string | null;
+  organizador_email: string | null;
+  url_de_la_grabacion: string | null;
+  invitados: JsonNulable<{ name?: string; email?: string }[]>;
+  meta_del_proveedor: JsonNulable<Record<string, unknown>>;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+export interface TablaAnalizadorTranscripciones {
+  org_id: ColumnaInquilino;
+  llamada_id: string;
+  texto: string;
+  segmentos: Json<{ startSec: number; endSec: number; speaker: string; text: string }[]>;
+  idioma: string | null;
+  /** False = el texto pegado no traía `[mm:ss]` y los tiempos de la evidencia no son reales. */
+  con_marcas_de_tiempo: boolean;
+  creado_el: Generated<Date>;
+}
+
+export interface TablaAnalizadorAnalisis {
+  org_id: ColumnaInquilino;
+  llamada_id: string;
+  tipo: 'HT' | 'OB';
+  /** False = el modelo la vetó (`match:false`). El veto también se guarda porque también se pagó. */
+  coincide: boolean;
+  analisis: JsonNulable<unknown>;
+  modelo: string;
+  /** Nulos en el historial copiado de ARIA Brain para los de caché: allá no se guardaban. */
+  tokens_entrada: number | null;
+  tokens_salida: number | null;
+  tokens_escritura_cache: number | null;
+  tokens_lectura_cache: number | null;
+  /** Nulo mientras la tarifa no esté confirmada. Nunca 0 por omisión. */
+  costo_usd: string | null;
+  version_de_rubrica: string;
+  puntaje: number | null;
+  resultado: string | null;
+  color_del_puntaje: string | null;
+  preparacion: string | null;
+  resumen: string | null;
+  analizado_el: Generated<Date>;
+}
+
+export interface TablaAnalizadorFichas {
+  org_id: ColumnaInquilino;
+  llamada_id: string;
+  tipo_derivado: 'PROSPECT_CARD';
+  estado: 'OK' | 'FAILED';
+  ficha: JsonNulable<unknown>;
+  error: string | null;
+  modelo: string | null;
+  tokens_entrada: number | null;
+  tokens_salida: number | null;
+  tokens_escritura_cache: number | null;
+  tokens_lectura_cache: number | null;
+  costo_usd: string | null;
+  version_de_rubrica: string | null;
+  intencion: string | null;
+  decisor: string | null;
+  riesgos: number | null;
+  titular: string | null;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+export interface TablaAnalizadorLapidas {
+  org_id: ColumnaInquilino;
+  proveedor: ProveedorDeReuniones;
+  reunion_externa_id: string;
+  borrada_el: Generated<Date>;
+}
+
 export interface TablaPromptsDelAgente {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1372,6 +1491,12 @@ export interface BaseDeDatos {
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
+  analizador_prospectos: TablaAnalizadorProspectos;
+  analizador_llamadas: TablaAnalizadorLlamadas;
+  analizador_transcripciones: TablaAnalizadorTranscripciones;
+  analizador_analisis: TablaAnalizadorAnalisis;
+  analizador_fichas: TablaAnalizadorFichas;
+  analizador_lapidas: TablaAnalizadorLapidas;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

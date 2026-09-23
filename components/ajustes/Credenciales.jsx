@@ -104,6 +104,17 @@ const CAMPOS = [
     secreto: false,
   },
   {
+    entrada: 'tldvClave',
+    estado: 'tldv',
+    titulo: 'Clave de API de tl;dv',
+    /* Se dice qué hace Y qué pasa sin ella: sin la segunda mitad parece obligatoria para usar los
+       Analizadores, y no lo es — una transcripción pegada a mano se analiza igual. */
+    ayuda:
+      'La de la cuenta de tl;dv de tu empresa. Con ella los Analizadores encuentran solos las ' +
+      'reuniones grabadas; sin ella, se puede pegar una transcripción a mano igual.',
+    secreto: true,
+  },
+  {
     entrada: 'pagosClave',
     estado: 'pagos',
     titulo: 'Clave de la pasarela de pagos',

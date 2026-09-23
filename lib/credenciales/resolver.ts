@@ -132,6 +132,11 @@ export interface Credenciales {
   ia: CredencialVisible;
   /** La clave de la pasarela de pagos. */
   pagos: CredencialVisible;
+  /**
+   * La llave de tl;dv de los Analizadores (`057`). Como la de IA: su estado y una vista previa,
+   * nunca el valor.
+   */
+  tldv: CredencialVisible;
   /** La subcuenta de GoHighLevel. NO es secreto: va completo. */
   crmCuentaId: string | null;
   /**
@@ -197,6 +202,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'crm_estado',
       'ia_clave_cifrada',
       'pagos_clave_cifrada',
+      'tldv_clave_cifrada',
       'crm_cuenta_id',
       'crm_calendario_id',
       'crm_dominio_reservas',
@@ -219,6 +225,8 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   // decirle "falta conectar" manda a reconectar algo que ya está conectado.
   const ia = verCredencial(fila?.ia_clave_cifrada ?? null, 'activa');
   const pagos = verCredencial(fila?.pagos_clave_cifrada ?? null, 'activa');
+  // La de tl;dv es de la misma clase: sin columna de estado propio, se deriva de la presencia.
+  const tldv = verCredencial(fila?.tldv_clave_cifrada ?? null, 'activa');
 
   // ADR-0809 · Se EMITE `credencial_ilegible`, en la función única que descifra.
   //
@@ -233,7 +241,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   // maestra cambió— y el mismo síntoma para quien la sufre: la pantalla dice que no puede
   // generar y nadie sabe por qué. Emitir solo por una de las tres dejaría dos tercios de la
   // señal sin cablear, que es el cero indistinguible que `ADR-0809` existe para impedir.
-  if (crm.estado === ILEGIBLE || ia.estado === ILEGIBLE || pagos.estado === ILEGIBLE) {
+  if (crm.estado === ILEGIBLE || ia.estado === ILEGIBLE || pagos.estado === ILEGIBLE || tldv.estado === ILEGIBLE) {
     await auditar(db, { accion: 'credencial_ilegible', orgId: org.id });
   }
 
@@ -243,6 +251,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     crm,
     ia,
     pagos,
+    tldv,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
     crmCalendarioId: fila?.crm_calendario_id ?? null,
     crmDominioReservas: fila?.crm_dominio_reservas ?? null,
@@ -468,6 +477,76 @@ export async function resolverAccesoAlAuditor(db: Trx, orgId: string): Promise<A
   }
 
   return { tipo: 'listo', claveIa, idDelAgente };
+}
+
+/**
+ * Lo que le falta a una empresa para que los Analizadores DESCUBRAN reuniones en tl;dv.
+ *
+ * Analizar una transcripción pegada a mano no pasa por acá: eso pide solo la llave de IA, y para eso
+ * está `resolverLlaveDeIa`. Esto es para el cron y el botón Sincronizar, que necesitan las dos.
+ */
+export type FaltaParaDescubrir =
+  | 'sin_llave_de_tldv'
+  | 'llave_de_tldv_ilegible'
+  | 'sin_llave_de_ia'
+  | 'llave_de_ia_ilegible';
+
+export type AccesoAlAnalizador =
+  | { tipo: 'listo'; claveIa: string; claveTldv: string }
+  | { tipo: 'falta'; que: FaltaParaDescubrir };
+
+export const TEXTO_DE_FALTA_ANALIZADOR: Readonly<Record<FaltaParaDescubrir, string>> = {
+  sin_llave_de_tldv:
+    'Esta empresa no tiene su llave de tl;dv cargada. Se carga en Integraciones; sin ella no se ' +
+    'descubren reuniones, pero una transcripción pegada a mano se analiza igual.',
+  llave_de_tldv_ilegible:
+    'La llave de tl;dv está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
+  sin_llave_de_ia:
+    'Esta empresa no tiene su llave de IA cargada. Se carga en Integraciones, y sin ella no se puede ' +
+    'clasificar ni analizar.',
+  llave_de_ia_ilegible:
+    'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
+};
+
+/**
+ * Las dos llaves del descubrimiento, o **qué falta**.
+ *
+ * ── tl;dv PRIMERO, Y NO ES UN DETALLE ────────────────────────────────────────
+ *
+ * Sin llave de tl;dv una empresa simplemente no usa el descubrimiento —es el caso de casi todas—, y
+ * el cron la saltea sin decir nada. Con la llave de tl;dv y sin la de IA, en cambio, alguien quiso
+ * usarlo y no puede: ése sí es un aviso. Con el orden al revés, las empresas que nunca cargaron tl;dv
+ * saldrían todas reportadas como «sin llave de IA», y el aviso que importa se perdería entre ellas.
+ *
+ * Y las dos presencias se miran ANTES de descifrar ninguna: descifrar una llave que no se va a usar
+ * es trabajo criptográfico por cada empresa en cada corrida.
+ */
+export async function resolverAccesoAlAnalizador(db: Trx, orgId: string): Promise<AccesoAlAnalizador> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['tldv_clave_cifrada', 'ia_clave_cifrada'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.tldv_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_tldv' };
+  if (!fila.ia_clave_cifrada) return { tipo: 'falta', que: 'sin_llave_de_ia' };
+
+  let claveTldv: string;
+  try {
+    claveTldv = descifrar(fila.tldv_clave_cifrada);
+  } catch {
+    // `ADR-0809` · el mismo punto de emisión y la misma transacción que los demás resolvedores.
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'llave_de_tldv_ilegible' };
+  }
+  let claveIa: string;
+  try {
+    claveIa = descifrar(fila.ia_clave_cifrada);
+  } catch {
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
+  }
+  return { tipo: 'listo', claveIa, claveTldv };
 }
 
 /** El texto que se le muestra a quien no puede generar. Uno por faltante. */

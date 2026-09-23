@@ -119,6 +119,19 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      detrás haya algo que alguien pueda hacer. */
   anuncios_org_id_fkey: 'tiene anuncios de Meta cargados',
   metricas_de_anuncio_org_id_fkey: 'tiene el costo diario de sus anuncios cargado',
+  /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
+     arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
+
+     En la práctica la que frena primero es `analizador_llamadas`: transcripciones, análisis y fichas
+     cascadean desde la llamada, así que se van con ella. Pero las seis apuntan también a la
+     ORGANIZACIÓN, y ésa no cascadea — así que las seis pueden llegar acá. A diferencia del CRM, esto
+     NO se vuelve a leer solo: los análisis se pagaron, y borrarlos es perderlos. */
+  analizador_llamadas_org_id_fkey: 'tiene llamadas en los Analizadores',
+  analizador_transcripciones_org_id_fkey: 'tiene transcripciones de llamadas analizadas',
+  analizador_analisis_org_id_fkey: 'tiene análisis de llamadas HT u OB',
+  analizador_fichas_org_id_fkey: 'tiene fichas de prospectos de los Analizadores',
+  analizador_prospectos_org_id_fkey: 'tiene prospectos de los Analizadores',
+  analizador_lapidas_org_id_fkey: 'tiene el registro de las reuniones de tl;dv que se borraron',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

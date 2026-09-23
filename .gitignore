@@ -62,6 +62,15 @@ secretos*
 # Se re-incluye la carpeta por nombre completo. No debilita nada: nombra UNA ruta de
 # código que existe, y un volcado de secretos no se llama `app/api/admin/`.
 !app/api/admin/credenciales/
+#
+# Y la SEGUNDA carpeta de código con ese nombre, que faltaba: `lib/credenciales/`
+# —el cifrado y el resolvedor de las llaves—. Sus tres archivos estaban rastreados desde
+# antes de la regla, así que nadie lo notó hasta que hubo que cambiar uno: el 2026-09-22
+# `git add lib/credenciales/resolver.ts` respondió *"paths are ignored"*, y la única salida
+# era `git add -f` sobre un repositorio público — que es exactamente el gesto que esta
+# sección existe para que nadie tenga que hacer. Mismo criterio que la de arriba: una ruta
+# de código que existe, con nombre completo.
+!lib/credenciales/
 
 graphify-out/
 
