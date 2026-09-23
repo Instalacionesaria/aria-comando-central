@@ -899,6 +899,51 @@ test('el motivo queda en el REGISTRO del servidor y tambien en la pantalla', asy
   assert.match(sinMotivo[0] ?? '', /sin motivo/, 'sin motivo, el registro deja un hueco en vez de decirlo');
 });
 
+test('cuando el modelo NO contesta, la causa de red también llega al registro y a la pantalla', async () => {
+  /* ══ LA MITAD QUE EL ARREGLO ANTERIOR NO CUBRIÓ ═══════════════════════════════
+   * La prueba de arriba custodia el caso en que Anthropic CONTESTA que no. El caso en que **no
+   * contesta** se quedó sin registro y con un detalle fijo, y se pagó el 2026-09-23: a Jorge le
+   * falló el paso 1 del Research contra CONEKTIA, la pantalla dijo «(sin respuesta)» y en Vercel
+   * quedó un 502 con el arreglo de `logs` vacío. `pedirExterno` sabía la causa —tiempo agotado,
+   * conexión cortada, cuerpo que no es JSON— y las tres capas la traían hasta el último `return`,
+   * donde se descartaba.
+   * Las tres causas mandan a investigar cosas distintas; con un texto único se investigan igual. */
+  const errores: string[] = [];
+  const original = console.error;
+  console.error = (...partes: unknown[]) => void errores.push(partes.map(String).join(' '));
+
+  let r: Response;
+  try {
+    r = rechazoDeModelo({ tipo: 'sin_respuesta', causa: 'The operation was aborted due to timeout' });
+  } finally {
+    console.error = original;
+  }
+
+  assert.equal(errores.length, 1, 'un modelo que no contesta no deja ni una línea en el registro');
+  assert.match(errores[0] ?? '', /aborted due to timeout/, 'el registro no dice POR QUÉ no hubo respuesta');
+
+  const cuerpo = (await r.json()) as { codigo?: string; detalle?: string };
+  assert.equal(r.status, 502);
+  assert.equal(cuerpo.codigo, 'modelo_no_disponible');
+  assert.match(
+    cuerpo.detalle ?? '',
+    /sin respuesta: The operation was aborted due to timeout/,
+    'en pantalla queda «(sin respuesta)» a secas, que es lo que hubo que ir a adivinar a los registros',
+  );
+
+  // Y sin causa sigue diciendo lo de siempre, en vez de dejar un «sin respuesta: » colgando.
+  const sinCausa: string[] = [];
+  console.error = (...partes: unknown[]) => void sinCausa.push(partes.map(String).join(' '));
+  let r2: Response;
+  try {
+    r2 = rechazoDeModelo({ tipo: 'sin_respuesta' });
+  } finally {
+    console.error = original;
+  }
+  assert.match(sinCausa[0] ?? '', /sin causa/);
+  assert.equal(((await r2.json()) as { detalle?: string }).detalle, 'sin respuesta');
+});
+
 test('el frontmatter YAML NO llega al prompt, con cualquier final de línea', () => {
   /* ══ UN DEFECTO QUE EXISTÍA EN LOCAL Y NO EN PRODUCCIÓN ══════════════════
    *

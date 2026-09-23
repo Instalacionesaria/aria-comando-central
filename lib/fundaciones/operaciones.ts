@@ -156,7 +156,7 @@ function rechazoDeAlmacen(fallo: { tipo: string }): Response {
 export function rechazoDeModelo(
   fallo:
     | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
-    | { tipo: 'sin_respuesta' }
+    | { tipo: 'sin_respuesta'; causa?: string }
     | { tipo: 'sin_texto' },
 ): Response {
   if (fallo.tipo === 'rechazado') {
@@ -179,8 +179,30 @@ export function rechazoDeModelo(
       fallo.motivo === null ? fallo.codigo : `${fallo.codigo}: ${fallo.motivo}`,
     );
   }
-  if (fallo.tipo === 'sin_texto') return rechazo('modelo_no_disponible', 'respuesta sin texto');
-  return rechazo('modelo_no_disponible', 'sin respuesta');
+  /* ── Y LAS OTRAS DOS TAMBIÉN DEJAN RASTRO. ESTO FALTABA, Y COSTÓ UNA TARDE ──
+   *
+   * El párrafo de arriba se escribió para la rama `rechazado` y las otras dos se quedaron como
+   * estaban: sin registro y con un detalle fijo. O sea que el arreglo cubrió el caso en el que
+   * Anthropic CONTESTA que no, y dejó a ciegas el caso en el que **no contesta**.
+   *
+   * Se pagó el 2026-09-23. A Jorge le falló el paso 1 del Research contra la organización de
+   * CONEKTIA y la pantalla dijo *«(sin respuesta)»*. En los registros de Vercel: un 502 en
+   * `/api/fundaciones/generar` con el arreglo de `logs` VACÍO. `pedirExterno` sí sabía qué había
+   * pasado —`causa` trae el mensaje del error de red: tiempo agotado, conexión cortada, cabecera
+   * inválida, cuerpo que no es JSON— y `generacion.ts` lo propagaba entero hasta acá, donde se
+   * descartaba en el `return`. Tres capas conservándolo para tirarlo en la última.
+   *
+   * Un fallo que ocurrió una vez en dos horas es casi siempre pasajero, y aun así hay que poder
+   * distinguirlo: «se agotó el tiempo» manda a mirar cuánto tarda esa generación, «cabecera
+   * inválida» manda a mirar la llave, y «no es JSON» manda a mirar qué devolvió el proveedor. Con
+   * «sin respuesta» a secas, las tres se investigan igual — o sea, no se investiga ninguna. */
+  if (fallo.tipo === 'sin_texto') {
+    console.error('fundaciones: el modelo contestó 200 sin una sola línea de texto');
+    return rechazo('modelo_no_disponible', 'respuesta sin texto');
+  }
+  const causa = fallo.causa === undefined || fallo.causa === '' ? null : fallo.causa;
+  console.error(`fundaciones: no hubo respuesta del modelo · ${causa === null ? 'sin causa' : causa}`);
+  return rechazo('modelo_no_disponible', causa === null ? 'sin respuesta' : `sin respuesta: ${causa}`);
 }
 
 /**

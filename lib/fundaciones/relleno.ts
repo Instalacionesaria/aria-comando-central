@@ -199,7 +199,9 @@ export type PropuestaDeRespuestas =
   /** No hay nada generado de donde sacar los datos. No es un error: es el primer paso del método. */
   | { tipo: 'sin_contexto' }
   | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
-  | { tipo: 'sin_respuesta' }
+  /* `causa` es el mensaje del error de red, y viaja: sin él, «no contestó» y «se agotó el tiempo»
+     se investigan igual. Ver `rechazoDeModelo` en `operaciones.ts`. */
+  | { tipo: 'sin_respuesta'; causa: string }
   | { tipo: 'truncado' }
   | { tipo: 'sin_estructura' };
 
@@ -250,7 +252,7 @@ export async function proponerRespuestas(opciones: {
     console.error(`relleno: el modelo rechazó · ${r.estado} ${r.codigo} · ${r.detalle ?? 'sin motivo'}`);
     return { tipo: 'rechazado', estado: r.estado, codigo: r.codigo, motivo: r.detalle ?? null };
   }
-  if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta' };
+  if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta', causa: r.causa };
   if (r.datos.stop_reason === 'max_tokens') return { tipo: 'truncado' };
 
   const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
@@ -320,5 +322,11 @@ export async function rellenarLosCampos(
   }
   if (propuesta.tipo === 'truncado') return rechazo('modelo_no_disponible', 'respuesta truncada');
   if (propuesta.tipo === 'sin_estructura') return rechazo('modelo_no_disponible', 'respuesta sin estructura');
-  return rechazo('modelo_no_disponible', 'sin respuesta');
+  /* Con su causa y con su línea en el registro, igual que la generación: acá también «no contestó»
+     tapaba un tiempo agotado, una conexión cortada y un cuerpo ilegible bajo el mismo texto. */
+  console.error(`relleno: no hubo respuesta del modelo · ${propuesta.causa === '' ? 'sin causa' : propuesta.causa}`);
+  return rechazo(
+    'modelo_no_disponible',
+    propuesta.causa === '' ? 'sin respuesta' : `sin respuesta: ${propuesta.causa}`,
+  );
 }
