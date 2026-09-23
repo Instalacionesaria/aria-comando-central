@@ -42,6 +42,7 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { pedirExterno } from '../../../../lib/http/cliente.ts';
+import { anotarFin, anotarInicio, yaTermino } from '../../../../lib/tools/medicion.ts';
 
 export const PANTALLA = 'tools';
 
@@ -199,7 +200,21 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const r = await alBackend(consulta, {});
   if (r instanceof Response) return r;
-  return ok(r.datos as Record<string, unknown>);
+
+  /* ── LA MEDICIÓN, Y VA DESPUÉS DE TENER LA RESPUESTA ──────────────────────
+   *
+   * El sondeo pasa por acá cada cinco segundos, así que este es el único lugar del sistema que ve
+   * el momento en que un trabajo termina: la tabla del backend no lo registra —su `actualizado_el`
+   * es la hora de inserción— y sin eso no se puede responder cuánto tarda un scrapeo, que es lo que
+   * decide si los diez minutos que la pantalla espera alcanzan.
+   *
+   * `anotarFin` no lanza nunca y solo escribe la PRIMERA vez que ve el final, así que sondear de
+   * más no estira la duración ni puede tumbar el sondeo. Ver `lib/tools/medicion.ts`. */
+  const leido = r.datos as Record<string, unknown>;
+  if (yaTermino(leido['status'])) {
+    await anotarFin(contexto.orgEfectiva, trabajo, String(leido['status']));
+  }
+  return ok(leido);
 }
 
 /**
@@ -235,5 +250,14 @@ export async function POST(peticion: Request): Promise<Response> {
     cuerpo: arranque.cuerpo,
   });
   if (r instanceof Response) return r;
-  return ok(r.datos as Record<string, unknown>);
+
+  /* El arranque del reloj. Se anota con el identificador que acaba de devolver el backend y NO
+     antes: sin identificador no hay a qué fila atarle el final. Tampoco cambia lo que se responde
+     —el trabajo ya está corriendo del otro lado— y su error se traga hacia el registro. */
+  const iniciado = r.datos as Record<string, unknown>;
+  const id = iniciado['jobId'] ?? iniciado['job_id'];
+  if (id !== undefined && id !== null) {
+    await anotarInicio(contexto.orgEfectiva, String(id), String(cuerpo.fuente ?? '') || null);
+  }
+  return ok(iniciado);
 }

@@ -1250,6 +1250,30 @@ export interface TablaScraperMonedero {
 }
 
 /**
+ * Cuánto tardó cada scrapeo. **Una fila por trabajo, y la escribimos NOSOTROS.**
+ *
+ * Vive en `public.aria_cc_scraper_mediciones` (migración 020 de `/migraciones`). Existe aparte de
+ * `TablaScraperTrabajos` porque esa la escribe el backend de scraping —que no es nuestro y lo
+ * comparten dos plataformas— y **nadie actualiza su `actualizado_el` al terminar**: guarda cuándo
+ * se insertó la fila, no cuándo terminó el trabajo. Sin esto no se puede responder «¿cuánto tarda
+ * un scrapeo?», que es lo que decide si los diez minutos que la pantalla espera alcanzan.
+ *
+ * La llena `lib/tools/medicion.ts` desde el proxy, y nadie más.
+ */
+export interface TablaScraperMediciones {
+  org_id: string;
+  /** El identificador que devolvió el backend. `text` porque su formato es suyo, no nuestro. */
+  trabajo_id: string;
+  fuente: string | null;
+  iniciado_el: Generated<Date>;
+  /** Nulo mientras corre — y nulo para siempre si nadie volvió a sondearlo. Eso también es un dato. */
+  terminado_el: Date | null;
+  estado: string | null;
+  /** La resta, redondeada. Sondeada cada cinco segundos, así que puede quedar hasta 5 s por encima. */
+  segundos: number | null;
+}
+
+/**
  * El estado de Fundaciones —ICP & Oferta y Tools— de una organización. **Una fila por organización.**
  *
  * Vive en `public.aria_cc_foundations` (migración 004 de `/migraciones`, en la raíz del proyecto) y
@@ -1355,6 +1379,7 @@ export interface BaseDeDatos {
   'public.aria_cc_scraper_leads': TablaScraperLeads;
   'public.aria_cc_scraper_trabajos': TablaScraperTrabajos;
   'public.aria_cc_scraper_monedero': TablaScraperMonedero;
+  'public.aria_cc_scraper_mediciones': TablaScraperMediciones;
   'public.aria_cc_foundations': TablaFoundations;
   'public.aria_cc_fundaciones_mensajes': TablaFundacionesMensajes;
 }
