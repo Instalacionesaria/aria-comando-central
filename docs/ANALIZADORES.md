@@ -115,7 +115,8 @@ quedar. En una línea cada una:
 | HT-8 | la pantalla básica | hecha · `pruebas/codigo/172` · falta el humo con login |
 | HT-9 | la copia del historial y el encendido | copia hecha y verificada el 2026-09-23 · falta la llave de tl;dv |
 | HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | |
-| OB-1…4 | calibración, habilitar el análisis, la pantalla OB, observación | |
+| OB-1 | la calibración: qué son en realidad las 44 reuniones que el clasificador llamó OB | hecha el 2026-09-23 · ver § «OB-1» |
+| OB-2…4 | habilitar el análisis, la pantalla OB, observación | esperan las decisiones de OB-1 |
 
 ### Lo que la construcción encontró
 
@@ -205,3 +206,59 @@ Lo que la copia trajo y conviene saber antes de mirar la pantalla:
 
 Falta: **una persona que pegue la llave de tl;dv** en Ajustes › Credenciales de ARIA. Desde ahí la
 tarea de las `:41` descubre y analiza sola. Y el humo de la pantalla con login.
+
+## OB-1 · La calibración, 2026-09-23
+
+**La pregunta:** de las 44 reuniones que el clasificador llamó OB en el historial copiado, el análisis
+vetó 36 (82 %). ¿Es el PRIMER PASO de OB demasiado estricto —rechaza onboardings reales— o el
+clasificador le manda cosas que no lo son? La respuesta decide qué se toca antes de OB-2.
+
+**Cómo se midió:** las 44 transcripciones se leyeron enteras, dos veces, por lectores independientes
+con lotes armados distinto (20 en total), cada una juzgada contra `isDescription` e `isNotExamples`
+de `lib/analizadores/nucleo/ob.ts` y `ht.ts` —no contra el título ni contra el motivo del modelo—.
+Las dos pasadas coincidieron en el tipo real y en el veredicto en **44 de 44**, así que no hizo
+falta la tercera lectura prevista para desempatar. Sin datos personales en la salida.
+
+| Lo que el clasificador llamó OB | Cuántas | Qué son en realidad |
+|---|---|---|
+| vetadas (NOT_MATCH) | 36 | **12 ventas HT** (5 primeras llamadas, 7 seguimientos o negociaciones) · 20 sesiones de entrega, implementación o soporte con clientes que ya estaban dentro · 1 socio o proveedor · 2 otras · 1 transcripción vacía (un saludo de 25 caracteres en una llamada de 13 minutos) |
+| aceptadas (DONE) | 7 | 4 onboardings reales · 2 sesiones de entrega de mitad de programa · 1 onboarding en el que el equipo de ARIA es el CLIENTE de un proveedor externo |
+| fallida (FAILED) | 1 | un onboarding real: pasó el PRIMER PASO y falló el JSON de la salida |
+
+**Lo que dice:**
+
+1. **El PRIMER PASO de OB no es demasiado estricto.** Los 36 vetos son correctos —ningún onboarding
+   real quedó fuera— y el motivo que dio el modelo describe bien la reunión en los 36. Si algo, es
+   **laxo**: aceptó 3 de 7 que no son un arranque. La palabra «acompañamiento» de su `isDescription`
+   deja pasar una mentoría de mitad de programa, y `isNotExamples` no excluye el caso en que quien
+   compró es el propio equipo.
+2. **El problema está en el clasificador.** De las 44 que llamó OB, solo 5 son onboardings. Y **12 son
+   ventas que el analizador HT nunca vio**: ni Brain ni Comando Central las analizaron como HT. Lo
+   que se ve en el código (`buildClassifierSystem`, `lib/analizadores/nucleo/engine.ts`):
+   - la categoría OB del clasificador ES el `isDescription` de `ob.ts`, con «arranque/acompañamiento»;
+   - la «DISTINCIÓN CLAVE» pone la frontera en la COMPRA, así que cualquier reunión con alguien que
+     ya compró cae en OB;
+   - la lista de OTRO nombra «soporte» y «coaching genérico», pero no las sesiones de entrega o de
+     implementación con un cliente activo, que son 20 de las 36 vetadas.
+3. **Una hipótesis, repetida por los lectores y NO medida:** el clasificador solo ve los primeros 6000
+   caracteres (`CLASSIFY_PREFIX_CHARS`). En una venta, ese tramo es diagnóstico —el negocio, el nicho,
+   las metas—, que se parece a lo que `ob.ts` describe como onboarding; el precio y el cierre llegan
+   después. Y muchas de estas reuniones no traen invitados, así que la pista del dominio de correo no
+   existía. Medirlo exige reclasificar con un prefijo más largo, que es gastar.
+
+Las 12 ventas, por si se decide moverlas a HT (botón «Mover a HT»: quedan PENDING y la tarea las
+analiza, doce análisis y doce fichas): `065f808f`, `07f447f0`, `17a2f46a`, `317c9807`, `659cba0d`,
+`67ba2bc1`, `6c2d921e`, `98333d60`, `a76e7557`, `b184565b`, `b8e9aea8`, `ed092d82`. Todas con
+confianza alta en las dos lecturas salvo `98333d60`, media en las dos.
+
+**Lo que queda por decidir antes de OB-2**, y es de quien opera la herramienta:
+
+- si las 12 ventas se mueven a HT;
+- si se ajusta la definición de OB (`isDescription` sin «acompañamiento», y `isNotExamples` con las
+  sesiones de entrega o implementación y con el onboarding del propio equipo). Es un cambio de
+  rúbrica: sube la versión;
+- si se ajusta el clasificador (OB solo el arranque, las sesiones con clientes activos en OTRO, y
+  quizá un prefijo más largo). Su prompt está fijado carácter por carácter por una prueba
+  (`pruebas/codigo/171`), así que cambiarlo es deliberado y se versiona. Y afecta a HT HOY: el
+  clasificador ya corre en producción, y una venta que mande a OB queda esperando en la pestaña OB.
+
