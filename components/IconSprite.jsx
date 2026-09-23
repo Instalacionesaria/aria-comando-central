@@ -184,6 +184,18 @@ export default function IconSprite() {
             strokeLinejoin="round"
            />
         </symbol>
+        {/* Analizadores · barras de una onda de voz: cada llamada grabada, medida. `currentColor`
+            como los demás. Distinto de `#i-monitoreo` —un pulso sobre una línea— a propósito: son
+            dos entradas del mismo grupo del menú, y con iconos parecidos se eligen mal. */}
+        <symbol id="i-analizadores" viewBox="0 0 16 16">
+          <path
+            d="M2.5 7v2M5 5v6M7.5 3v10M10 5.5v5M12.5 6.5v3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+           />
+        </symbol>
         <symbol id="i-closer" viewBox="0 0 16 16">
           <path
             d="M3 9.4V8a5 5 0 0 1 10 0v1.4"

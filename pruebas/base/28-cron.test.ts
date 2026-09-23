@@ -28,7 +28,7 @@ import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { TAREAS, barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
-import type { AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
+import type { AccesoAlAnalizador, AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
 
 /**
  * El acceso al auditor de estas empresas: **ninguna lo tiene**, y es el caso real.
@@ -39,6 +39,8 @@ import type { AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
  * cuatro de las cinco.
  */
 const SIN_AUDITOR: AccesoAlAuditor = { tipo: 'falta', que: 'sin_llave_de_ia' };
+/* Sin llave de tl;dv: el caso normal de casi toda empresa, y el que saltea la tarea sin gastar. */
+const SIN_ANALIZADOR: AccesoAlAnalizador = { tipo: 'falta', que: 'sin_llave_de_tldv' };
 import { GET as cron } from '../../app/api/cron/route.ts';
 import type { OrganizacionListada } from '../../lib/administracion/organizaciones.ts';
 
@@ -171,9 +173,9 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
   // la ingesta va a lanzar al intentar abrir su contexto.
   const inexistente = randomUUID();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(inexistente, 'rota'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(inexistente, 'rota'), acceso: CON_TOKEN, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
 
   const r = await barrerTodo('0 12 * * *', empresas);
@@ -212,6 +214,9 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          ninguna de las dos le habla a GoHighLevel. Esta empresa tiene un identificador inexistente,
          así que las del CRM fallan contra la base; las del auditor ni llegan a intentarlo porque no
          tienen llave de IA — otra falta, con su propio texto. */
+      /* `analizadores` sale SALTADA por lo mismo que el auditor: no le habla al CRM y le falta su
+         llave —la de tl;dv—, así que ni llega a tocar la base de la empresa rota. */
+      ['analizadores', 'saltada'],
       /* Y `anuncios` sale CORRIÓ, que es el tercer desenlace de esta lista y hay que explicarlo
          porque parece el error de los otros dos.
 
@@ -244,8 +249,8 @@ test('`corrieron` cuenta las que DE VERDAD corrieron, no las recorridas', async 
   // recorridas diría «3 corrieron» sobre una corrida que no hizo absolutamente nada.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
   const r = await barrerTodo('0 12 * * *', empresas);
   assert.equal(r.corrieron, 0, 'ninguna tenía credencial: nada corrió');
@@ -262,8 +267,8 @@ test('los cinco motivos de credencial NO se colapsan', async () => {
   // las empresas a la vez— se lee como cinco clientes desconectando su CRM.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
   const r = await barrerTodo('0 12 * * *', empresas);
   const motivos = new Map(r.renglones.filter((x) => x.tarea === 'citas').map((x) => [x.slug, x.porque]));
@@ -279,7 +284,7 @@ test('los cinco motivos de credencial NO se colapsan', async () => {
 test('una empresa sin credencial cuesta CERO llamadas', async () => {
   await limpiar();
   const r = await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
   for (const x of r.renglones) assert.equal(x.llamadas, 0, `${x.tarea} gastó llamadas sin credencial`);
 });
@@ -293,7 +298,7 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   // «el cron nunca pasó por acá» se ven exactamente igual: no hay fila.
   await limpiar();
   await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
   const s = await sellos();
   /* TODAS las tareas de la empresa, `sonda` afuera. `contactos` entre ellas porque una empresa sin
@@ -322,6 +327,8 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   // `anuncios` sí necesita el token del CRM —le habla al Ad Manager de GoHighLevel—, así que su
   // falta es la misma que la de las tres de arriba y no la del auditor.
   assert.equal(porTarea.get('anuncios'), 'sin_token');
+  // Y los Analizadores dicen lo suyo: la llave que les falta es la de tl;dv, no el token del CRM.
+  assert.match(String(porTarea.get('analizadores')), /tl;dv/);
 });
 
 /* ── EL CONTEO SE DERIVA, NO SE ESCRIBE ────────────────────────────────────
@@ -339,7 +346,7 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   // más con una entrega doble y de menos con una perdida, y nadie podría saber cuál pasó.
   await limpiar();
   const empresas: EmpresaParaBarrer[] = [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
   await barrerTodo('0 12 * * *', empresas);
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
@@ -358,8 +365,8 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   // vería —y podría pisar— los sellos de las demás.
   await limpiar();
   await barrerTodo('0 12 * * *', [
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
 
   const deAlfa = await conOrganizacion(alfa, () =>
@@ -388,11 +395,11 @@ test('la empresa SIN sello va antes que la que ya tiene uno', async () => {
   // haría que la última empresa de la lista fuera siempre la que se queda sin tiempo, para siempre.
   await limpiar();
   // `beta` ya fue barrida; `alfa` nunca.
-  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR }]);
+  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR }]);
 
   const r = await barrerTodo('0 12 * * *', [
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
   // El primer renglón tiene que ser de `alfa`, que nunca se barrió, aunque venga segunda en la lista.
   assert.equal(r.renglones[0]?.slug, 'alfa', 'la que nunca se barrió tiene que ir primera');
@@ -416,14 +423,14 @@ test('EL HAMBRE PERPETUA: la que se quedó SIN TIEMPO va primera la vez siguient
 
   // Corrida 1: `beta` sola y con tiempo. Queda con un sello normal.
   await barrerTodo('0 12 * * *', [
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
 
   // Corrida 2: `alfa` sola y SIN tiempo. Queda sellada `sin_tiempo`, y con la fecha más nueva.
   let n = 0;
   await barrerTodo(
     '0 12 * * *',
-    [{ org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR }],
+    [{ org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR }],
     () => (++n === 1 ? 0 : 600_000),
   );
   const sellada = (await sellos()).filter((x) => x.slug === 'alfa');
@@ -434,8 +441,8 @@ test('EL HAMBRE PERPETUA: la que se quedó SIN TIEMPO va primera la vez siguient
 
   // Corrida 3, con tiempo y las dos: `alfa` no trabajó nunca, así que le toca.
   const r = await barrerTodo('0 12 * * *', [
-    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
-    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+    { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+    { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ]);
 
   assert.equal(
@@ -459,8 +466,8 @@ test('con el presupuesto agotado, las que faltan salen como `sin_tiempo` y NO se
   const r = await barrerTodo(
     '0 12 * * *',
     [
-      { org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
-      { org: org(beta, 'beta'), acceso: CON_TOKEN, auditor: SIN_AUDITOR },
+      { org: org(alfa, 'alfa'), acceso: CON_TOKEN, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
+      { org: org(beta, 'beta'), acceso: CON_TOKEN, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     ],
     reloj,
   );

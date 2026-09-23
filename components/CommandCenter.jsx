@@ -22,6 +22,7 @@ import IcpView from './views/IcpView';
 import ContactsView from './views/ContactsView';
 import SetterView from './views/SetterView';
 import CloserView from './views/CloserView';
+import AnalizadoresView from './views/AnalizadoresView';
 import ToolsView from './views/ToolsView';
 import MonitoreoView from './views/MonitoreoView';
 import AjustesView from './views/AjustesView';
@@ -43,6 +44,7 @@ const VISTAS = {
   sales: SalesView,
   setter: SetterView,
   closer: CloserView,
+  analizadores: AnalizadoresView,
   tools: ToolsView,
   monitoreo: MonitoreoView,
   credenciales: AjustesView,

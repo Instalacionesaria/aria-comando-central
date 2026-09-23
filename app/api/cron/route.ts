@@ -64,7 +64,11 @@
 import { timingSafeEqual } from 'node:crypto';
 import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { listarOrganizaciones } from '../../../lib/administracion/organizaciones.ts';
-import { resolverAccesoAGhl, resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
+import {
+  resolverAccesoAGhl,
+  resolverAccesoAlAnalizador,
+  resolverAccesoAlAuditor,
+} from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { barrerTodo, type EmpresaParaBarrer } from '../../../lib/negocio/barrido.ts';
 
@@ -151,6 +155,8 @@ export async function GET(peticion: Request): Promise<Response> {
            leerlos en dos instantes, y el registro de `credencial_ilegible` de los dos tiene que caer
            en la misma transacción que su lectura — `ADR-0809`. */
         auditor: await resolverAccesoAlAuditor(db, org.id),
+        // El tercero, por el mismo motivo y en la misma transacción: las llaves de los Analizadores.
+        analizador: await resolverAccesoAlAnalizador(db, org.id),
       })),
     );
   });

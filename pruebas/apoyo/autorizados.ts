@@ -225,6 +225,16 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo
   // pone la propia función con `contexto.orgEfectiva`.
   'app/api/tools/leads/enviar/route.ts',
+  // Los Analizadores. Las cinco leen `organizaciones_credenciales` —la llave de IA, y la de tl;dv las
+  // que descubren— con los resolvedores de siempre y `contexto.orgEfectiva`. Siguen el patrón del
+  // Espía: la ruta resuelve la llave y NO abre `conOrganizacion(`; el trabajo de negocio lo hace
+  // `lib/analizadores/`, con transacciones cortas que no quedan abiertas mientras piensa el modelo.
+  // `estado/` solo lee si las llaves están cargadas, nunca su valor.
+  'app/api/analizadores/estado/route.ts',
+  'app/api/analizadores/llamadas/[id]/analizar/route.ts',
+  'app/api/analizadores/llamadas/[id]/ficha/route.ts',
+  'app/api/analizadores/manual/route.ts',
+  'app/api/analizadores/sincronizar/route.ts',
   //
   // ── EL PROXY DEL SCRAPER SALIÓ DE ESTA LISTA, Y VALE DECIR POR QUÉ ──────────
   //

@@ -204,7 +204,17 @@ insert into identidad.permisos (clave, descripcion) values
   -- Las tiene solo el superadministrador. El administrador no, por la regla del reparto de
   -- abajo, que le niega `usuarios.%` y `organizaciones.%` completos.
   ('usuarios.borrar',       'Eliminar una persona de la base, cuando no tiene ningún historial asociado'),
-  ('organizaciones.borrar', 'Eliminar una empresa de la base, cuando no tiene ningún dato asociado')
+  ('organizaciones.borrar', 'Eliminar una empresa de la base, cuando no tiene ningún dato asociado'),
+
+  -- ── Los Analizadores HT y OB ─────────────────────────────────────────────
+  --
+  -- DOS, con el mismo criterio que `credenciales.ver`/`.editar`: mirar un informe no cuesta nada, y
+  -- analizar gasta la llave de IA de la empresa. Las reciben los TRES roles por el reparto derivado
+  -- de abajo —ninguna cae en las exclusiones por prefijo—, y es lo que se decidió el 2026-09-22:
+  -- quien tiene la pestaña, analiza. Lo que la acota por persona es la casilla de la pestaña en
+  -- Usuarios, no la capacidad.
+  ('analizadores.ver',    'Ver la pestaña Analizadores: las llamadas HT y OB, sus informes y sus fichas'),
+  ('analizadores.editar', 'Analizar llamadas, sincronizar con tl;dv, reencaminar y borrar (consume tokens de la organización)')
 
 on conflict (clave) do nothing;
 

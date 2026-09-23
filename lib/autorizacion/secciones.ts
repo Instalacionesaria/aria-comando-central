@@ -348,6 +348,23 @@ export const SECCIONES: readonly Seccion[] = [
     capacidadRequerida: 'closer.ver',
     menu: { grupo: 'Operación', icono: '#i-closer' },
   },
+  /* ── ANALIZADORES, JUSTO DEBAJO DE CLOSER ──────────────────────────────────
+   *
+   * Las llamadas de tl;dv analizadas, en dos pestañas internas: HT (la venta, que evalúa al closer) y
+   * OB (el onboarding). Va debajo de Closer porque es el mismo trabajo mirado después: Closer es el
+   * día del vendedor, esto es cómo le fue en cada llamada.
+   *
+   * UNA sección y no dos, aunque adentro haya dos pestañas: en la pantalla de permisos de Usuarios es
+   * una sola casilla, como Conversation con Auditoría y Prompts. Decidido el 2026-09-22.
+   *
+   * Y su propia capacidad, no `closer.ver`: con esa, cualquier closer leería las transcripciones de
+   * todo el equipo. */
+  {
+    clave: 'analizadores',
+    nombre: 'Analizadores',
+    capacidadRequerida: 'analizadores.ver',
+    menu: { grupo: 'Operación', icono: '#i-analizadores' },
+  },
   /* ── LA SECCIÓN `auditoria` SE RETIRÓ, Y NO SE PERDIÓ NADA ────────────────
    *
    * «Auditoría de agentes» estaba acá, entre `closer` y `tools`, y ahora son **dos pestañas de

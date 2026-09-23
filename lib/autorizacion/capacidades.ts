@@ -158,6 +158,16 @@ export const CAPACIDADES = [
   // módulo es `auditor.*`, en singular.
   'auditor.ver',
   'auditor.editar',
+  // ── Los Analizadores HT y OB ──────────────────────────────────────────
+  //
+  // DOS, con el criterio del `03` § 2: existe un puesto plausible que necesite leer los informes y no
+  // pueda gastar la llave de IA de la empresa. `.ver` abre la pestaña y lee; `.editar` analiza,
+  // sincroniza, reencamina y borra —todo lo que cuesta plata o no se deshace—.
+  //
+  // Y NO se reusa `closer.ver`: tres pruebas exigen que `closer.ver` vea solo la pestaña Closer, y con
+  // ella cualquier closer leería las transcripciones de todo el equipo.
+  'analizadores.ver',
+  'analizadores.editar',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

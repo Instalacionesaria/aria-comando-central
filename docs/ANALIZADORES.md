@@ -106,9 +106,9 @@ quedar. En una línea cada una:
 | HT-3 | las seis tablas (`056`) y la capa de datos | hecha · `pruebas/base/170` · en producción |
 | HT-4 | la llave de tl;dv en Ajustes (`057`) | hecha · `pruebas/base/171` · en producción |
 | HT-5 | descubrir, analizar y la ficha, con un modelo falso | hecha · `pruebas/base/172` |
-| HT-6 | la tarea programada | |
-| HT-7 | la sección, las capacidades y la API | |
-| HT-8 | la pantalla básica | |
+| HT-6 | la tarea programada (`058`), cada hora y sola en su horario | hecha · `pruebas/base/173` |
+| HT-7 | la sección, las capacidades (`059` y el catálogo) y la API | hecha · `pruebas/base/174` |
+| HT-8 | la pantalla básica | hecha · `pruebas/codigo/172` · falta el humo con login |
 | HT-9 | la copia del historial y el encendido | |
 | HT-10 | observación, y la comparación con Brain en las reuniones que analizaron los dos | |
 | OB-1…4 | calibración, habilitar el análisis, la pantalla OB, observación | |
@@ -125,3 +125,20 @@ quedar. En una línea cada una:
   ofrecido. La de la reunión se llama `durationSec` en todo el núcleo.
 - **`SENTINELAS` pasó de `Set` a arreglo** por ADR-0703: la prueba de publicación mira la forma, y
   un `Set` en el nivel superior de un módulo del servidor se puede llenar desde cualquier petición.
+- **La tarea no usa el presupuesto compartido del cron** (`PRESUPUESTO_MS`, 180 s) sino la función
+  entera menos el margen (`FIN_PARA_LOS_ANALIZADORES_MS`, 285 s). Con 180 s menos lo gastado en
+  descubrir, nunca quedaría una ventana de 150 s para un análisis: la guardia lo rechazaría en todas
+  las corridas y las pendientes no se drenarían jamás, sin que nada fallara.
+- **Las reglas de la pantalla van en `app/closer.css`**, no en `operacion-estetica.css`: esa hoja es
+  la de lo compartido y su prueba exige que cada selector alcance a todas las pantallas de operación.
+- **La pestaña interna del detalle se llama `vendedor` en el código**, aunque diga «Closer»:
+  `30-portero` prohíbe `=== 'closer'` por la forma, porque así es como se cuela una comparación con
+  un nombre de rol.
+
+### Lo que falta en producción para encender HT
+
+1. `058` y `059` con `db.mjs migrar`, y el catálogo con los tres pasos de `docs/DESPLIEGUE.md` § 4b.
+2. El push.
+3. HT-9: la copia del historial (una migración que le da a `postgres` `select, insert` sobre las seis
+   tablas, el script de copia en una transacción, y otra que lo revoca) y **una persona que pegue la
+   llave de tl;dv** en Integraciones de ARIA, en la misma sesión que la copia.

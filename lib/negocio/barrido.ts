@@ -31,8 +31,9 @@
 
 import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
-import type { AccesoAGhl, AccesoAlAuditor } from '../credenciales/resolver.ts';
-import { TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
+import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor } from '../credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
+import { correrAnalizadores, llamadasDeLaTarea } from '../analizadores/tarea.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
@@ -52,7 +53,15 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
  * centavo y una inferencia cuesta centavos. Van en la misma columna porque la pregunta es la misma
  * —«cuánto costó esta corrida»— y conviene saberlo antes de sumar las cinco.
  */
-export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' | 'mejora' | 'anuncios';
+export type Tarea =
+  | 'sonda'
+  | 'contactos'
+  | 'mensajes'
+  | 'citas'
+  | 'auditoria'
+  | 'mejora'
+  | 'anuncios'
+  | 'analizadores';
 
 /**
  * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -71,8 +80,17 @@ export type Tarea = 'sonda' | 'contactos' | 'mensajes' | 'citas' | 'auditoria' |
  * `mensajes` —o los mensajes de un contacto nuevo quedan bajo la marca de agua para siempre— y
  * `auditoria` después de `mensajes`, o el antirrebote cuenta los mensajes de la corrida anterior.
  */
-export const TAREAS = ['sonda', 'contactos', 'mensajes', 'auditoria', 'citas', 'mejora', 'anuncios'] as const satisfies
-  readonly Tarea[];
+export const TAREAS = [
+  'sonda',
+  'contactos',
+  'mensajes',
+  'auditoria',
+  'citas',
+  'mejora',
+  'anuncios',
+  // Última, y no importa: no comparte una sola fila con las otras. Ver su horario.
+  'analizadores',
+] as const satisfies readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -225,6 +243,25 @@ export const HORARIOS = {
     umbralMinutos: 3000,
   },
 
+  /* ── LOS ANALIZADORES, CADA HORA Y SOLOS ─────────────────────────────
+
+     En ARIA Brain corrían tres veces por día con 800 s de función. Acá la función tiene 300, y en
+     una corrida entran un descubrimiento y uno o dos análisis: el volumen medido es de unas dos HT
+     por día, así que veinticuatro corridas cortas alcanzan de sobra.
+
+     SOLOS en su horario, y es lo que importa: un análisis necesita minutos seguidos, y compartiendo
+     la corrida con las tareas del CRM nunca le quedaría una ventana entera — la guardia de reloj lo
+     rechazaría cada vez y las pendientes no se drenarían nunca, sin que nada fallara.
+
+     El minuto 41 porque no lo usa nadie: el 3, el 17 y los múltiplos de diez ya están tomados, y dos
+     corridas en el mismo minuto se frenan entre sí por el candado. El umbral respeta la regla:
+     2 × 60 + 60 = 180. */
+  '41 * * * *': {
+    tareas: ['analizadores'],
+    cadenciaMinutos: 60,
+    umbralMinutos: 180,
+  },
+
   /* ── EL HORARIO DIARIO SE FUE, Y LA REGLA ES BIDIRECCIONAL ─────────────
      Primero lo dejé acá «por si alguien vuelve a Hobby», con el argumento de que la prueba solo exige
      que cada horario de `vercel.json` tenga entrada en este mapa. **Eso es falso**, y la prueba lo
@@ -254,6 +291,18 @@ export const HORARIOS = {
  * de `ingerirMensajes` y `barrerCitas` hasta `pedirExterno`.
  */
 const PRESUPUESTO_MS = 180_000;
+
+/**
+ * Hasta cuándo pueden correr los Analizadores, desde que arranca el barrido.
+ *
+ * **No es `PRESUPUESTO_MS`**, y esa es la decisión: el presupuesto reparte el tiempo entre empresas y
+ * tareas del CRM, que hacen llamadas de segundos. Un análisis necesita un tramo entero de minutos, y
+ * con 180 s menos lo que ya se gastó no le quedaría nunca: la guardia lo rechazaría en todas las
+ * corridas. Como los Analizadores corren solos en su horario, pueden usar la función entera: los
+ * 300 s de `maxDuration` en `app/api/cron/route.ts`, menos 15 s para sellar y contestar. Una prueba
+ * ata los dos números.
+ */
+export const FIN_PARA_LOS_ANALIZADORES_MS = 285_000;
 
 /**
  * El acceso al CRM ya estrechado. **El bucle lo garantizó; el tipo no lo sabe.**
@@ -311,6 +360,8 @@ export interface EmpresaParaBarrer {
   acceso: AccesoAGhl;
   /** La llave de IA y el identificador del agente. `falta` es el caso normal de casi toda empresa. */
   auditor: AccesoAlAuditor;
+  /** Las llaves de tl;dv y de IA de los Analizadores. Sin tl;dv es el caso normal: no descubre. */
+  analizador: AccesoAlAnalizador;
 }
 
 /**
@@ -386,7 +437,7 @@ export async function barrerTodo(
     return a.sello - b.sello;
   });
 
-  for (const { org, acceso, auditor } of conSello) {
+  for (const { org, acceso, auditor, analizador } of conSello) {
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
@@ -412,7 +463,7 @@ export async function barrerTodo(
        * esta distinción, una empresa sin token del CRM —el caso NORMAL de una empresa recién creada—
        * saldría como `saltada` en una tarea que no necesita ese token, y el motivo diría
        * `sin_token_de_crm` sobre algo que no lo usa. */
-      if (tarea !== 'auditoria' && tarea !== 'mejora' && acceso.tipo !== 'listo') {
+      if (tarea !== 'auditoria' && tarea !== 'mejora' && tarea !== 'analizadores' && acceso.tipo !== 'listo') {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', acceso.que, 0);
         continue;
@@ -420,6 +471,15 @@ export async function barrerTodo(
       // Y su propia falta, con su propio texto: cuatro motivos que llevan a cuatro acciones distintas.
       if ((tarea === 'auditoria' || tarea === 'mejora') && auditor.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_AUDITOR[auditor.que];
+        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellar(org.id, tarea, 'saltada', que, 0);
+        continue;
+      }
+      /* Los Analizadores tampoco le hablan al CRM: piden la llave de tl;dv y la de IA. Sin tl;dv es
+         lo normal —casi ninguna empresa lo usa— y se sella como saltada con su texto, igual que el
+         auditor sin llave. */
+      if (tarea === 'analizadores' && analizador.tipo !== 'listo') {
+        const que = TEXTO_DE_FALTA_ANALIZADOR[analizador.que];
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', que, 0);
         continue;
@@ -442,7 +502,9 @@ export async function barrerTodo(
                   ? await mejorar(org, auditor)
                   : tarea === 'anuncios'
                     ? await recolectarAnuncios(org.id, conToken(acceso))
-                    : await barrerCitas(org.id, conToken(acceso));
+                    : tarea === 'analizadores'
+                      ? await analizar(org, analizador, arranque, ahora)
+                      : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -465,7 +527,7 @@ export async function barrerTodo(
          * marcarla como tal haría que el cron la reintentara— pero dejó trabajo sin hacer, y eso
          * tiene que poder leerse desde la pantalla de monitoreo sin abrir un registro.
          *
-         * Hoy sólo `anuncios` informa esto. `motivoDeLoIncompleto` devuelve nulo para las demás, así
+         * Hoy lo informan `anuncios` y `analizadores`. `motivoDeLoIncompleto` devuelve nulo para las demás, así
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
         await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
@@ -560,6 +622,26 @@ async function auditar(
 }
 
 /**
+ * Los Analizadores de esa empresa, con la forma que espera el bucle de arriba.
+ *
+ * Reciben su propio fin de corrida (`FIN_PARA_LOS_ANALIZADORES_MS`) y no el presupuesto compartido:
+ * un análisis necesita minutos seguidos. Y no pasan por `conElPulso`: dos corridas simultáneas no
+ * pagan dos veces, porque el candado de cada llamada es un `update` condicional en la base —la que
+ * pierde lo ve y sigue con otra—.
+ */
+async function analizar(
+  org: OrganizacionListada,
+  analizador: AccesoAlAnalizador,
+  arranque: number,
+  ahora: () => number,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  // El bucle ya garantizó que está `listo`. Ver el mismo criterio en `auditar(`.
+  if (analizador.tipo !== 'listo') throw new Error('analizar: la empresa no tiene acceso resuelto');
+  const r = await correrAnalizadores(org.id, analizador, { ahora, fin: arranque + FIN_PARA_LOS_ANALIZADORES_MS });
+  return { corrio: true, resultado: r, llamadas: llamadasDeLaTarea(r) };
+}
+
+/**
  * El carril amarillo, con la forma que espera el bucle de arriba.
  *
  * ── NO RECIBE PRESUPUESTO DE TIEMPO, Y ESO NO ES UN OLVIDO ────────────────
@@ -640,8 +722,18 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     huecos?: unknown;
     ilegibles?: unknown;
     accionesIlegibles?: unknown;
+    llaveRechazada?: unknown;
+    sinTiempo?: unknown;
   };
   const partes: string[] = [];
+
+  /* Los Analizadores. La llave rechazada va PRIMERO porque es lo único de esta lista que alguien
+     tiene que ir a arreglar: con ella rechazada no entra ninguna reunión nueva, y la tarea «corrió». */
+  if (r.llaveRechazada === 'tldv') partes.push('tl;dv rechazó la llave: hay que volver a cargarla');
+  if (r.llaveRechazada === 'ia') partes.push('Anthropic rechazó la llave de IA: no se analizó nada');
+  if (typeof r.sinTiempo === 'number' && r.sinTiempo > 0) {
+    partes.push(`${r.sinTiempo} llamada(s) quedaron para la próxima corrida por tiempo`);
+  }
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
   if (Array.isArray(r.huecos) && r.huecos.length > 0) {

@@ -201,6 +201,35 @@ export const RECHAZOS = {
   // el momento el que no sirve, y el compositor tiene que poder distinguir «arreglá el texto» de
   // «esperá a que te escriba».
   ventana_cerrada: 409,
+
+  // ── Los Analizadores HT y OB ─────────────────────────────────────────
+  //
+  // Todos 409 salvo uno, y por el motivo de siempre: quien los recibe TIENE el permiso. Lo que falta
+  // es una llave, un estado de la llamada o una etapa que todavía no llegó, y un 403 lo mandaría a
+  // pedirle un permiso a alguien que no se lo puede dar.
+  //
+  // Las llaves, separadas en tres cada una porque llevan a tres acciones: cargarla, revisar la clave
+  // maestra del servidor, o generar una nueva porque el proveedor dejó de aceptarla.
+  sin_llave_de_tldv: 409,
+  llave_de_tldv_ilegible: 409,
+  llave_de_tldv_rechazada: 409,
+  llave_de_ia_rechazada: 409,
+  // OB se clasifica desde el día 1 y no se analiza hasta su fase. Código propio y no
+  // `peticion_invalida`: la petición está bien, lo que falta es la etapa.
+  analizador_no_disponible: 409,
+  // Una reunión que el clasificador descartó. Se analiza después de reencaminarla, y el texto lo dice.
+  tipo_otro: 409,
+  sin_transcripcion: 409,
+  // Otra corrida —el cron o una segunda pestaña— la está analizando. Esperar, no reintentar.
+  llamada_en_curso: 409,
+  // Una DONE no se reencamina: quedaría PENDING con el informe del otro tipo adentro.
+  llamada_ya_analizada: 409,
+  // La ficha se genera sobre una HT ya analizada, y solo sobre HT.
+  llamada_sin_analizar: 409,
+  ficha_solo_ht: 409,
+  // La función no tiene tiempo para un análisis entero. 503 y no 409: no es la llamada, es el
+  // momento, y se arregla reintentando. Con la función recién arrancada no debería pasar nunca.
+  sin_tiempo_para_analizar: 503,
 } as const;
 
 /**
