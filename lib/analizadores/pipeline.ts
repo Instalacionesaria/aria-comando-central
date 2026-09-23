@@ -10,9 +10,15 @@
 //   · **Una llave rechazada corta el descubrimiento y lo dice.** El origen tragaba cualquier fallo
 //     de tl;dv con un `catch {}` y lo contaba como «transcripción no lista»: con la llave revocada,
 //     cada corrida terminaba bien, con cero reuniones, para siempre.
-//   · **La guardia de reloj.** El origen corría hasta 40 reuniones más un análisis de 270 s dentro de
-//     una función de 300 s, sin mirar el reloj. Una llamada al modelo que empieza sin tiempo para
-//     terminar se paga y no se guarda, y la llamada queda en ANALYZING. Acá no arranca.
+//   · **La guardia de reloj.** El cron del origen tenía 800 s y un presupuesto, pero no comprobaba
+//     que un análisis entero —hasta 270 s de espera— cupiera en lo que quedaba; y su ruta de análisis
+//     manual hacía dos inferencias seguidas dentro de 300 s. Una llamada al modelo que empieza sin
+//     tiempo para terminar se paga y no se guarda, y la llamada queda en ANALYZING. Acá no arranca.
+//   · **La toma exige el estado que vio quien llama** (`tomarParaAnalizar`): los drenados recorren
+//     una foto de las pendientes, y sin esto una llamada que otra corrida ya dejó DONE se volvía a
+//     analizar y a pagar.
+//   · **Una llave que deja de servir no marca FAILED**: devuelve la llamada a su estado y corta. Con
+//     la llave rota, el drenado dejaba FAILED a cada pendiente que tocaba.
 //   · **`TIPOS_QUE_SE_ANALIZAN`.** El clasificador conoce HT y OB desde el primer día —si no, cada
 //     onboarding saldría OTRO y el descarte lo sellaría para siempre—, pero en la fase HT solo HT se
 //     analiza. Las OB esperan en PENDING hasta la fase OB.
@@ -25,6 +31,8 @@ import {
   ANALYSIS_WAIT_MS,
   AnalyzerCallError,
   CLASSIFY_WAIT_MS,
+  isOverloaded,
+  isUnusableKey,
 } from './nucleo/anthropic.ts';
 import { classifyCallType, runAnalysis, runInsight } from './nucleo/engine.ts';
 import { insightsFor } from './nucleo/insight-registry.ts';
@@ -41,6 +49,8 @@ import {
   terminarConFallo,
   terminarConVeto,
   tomarParaAnalizar,
+  devolverAlEstado,
+  type EstadoTomable,
   type LlamadaParaAnalizar,
 } from './datos.ts';
 
@@ -92,6 +102,24 @@ export function esperaDisponible(reloj: Reloj): number | null {
 }
 
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/**
+ * El error que se GUARDA en la llamada y se devuelve por la API.
+ *
+ * Un error de la base trae su SQLSTATE en `code` y un mensaje que nombra tablas y restricciones
+ * —«insert or update on table "analizador_analisis" violates foreign key constraint…»—, y ADR-0704
+ * prohíbe que eso salga en una respuesta. Va entero al registro del servidor y a la llamada, una frase
+ * que dice qué pasó sin la estructura. Los errores del modelo y de tl;dv son nuestros y ya vienen
+ * escritos para leerse.
+ */
+function errorParaGuardar(e: unknown): string {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) {
+    console.error('analizadores: la base rechazó una escritura del análisis', e);
+    return 'No se pudo guardar el resultado del análisis. La llamada quedó como estaba antes de analizarla.';
+  }
+  return mensajeDe(e);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1 · DESCUBRIR
@@ -261,7 +289,13 @@ export type RechazoDelAnalisis =
   | 'analizador_no_disponible'
   | 'sin_transcripcion'
   | 'llamada_en_curso'
-  | 'sin_tiempo';
+  /** Ya no está en el estado que vio quien pidió analizarla: otra corrida la terminó o la movió. */
+  | 'llamada_cambio'
+  | 'sin_tiempo'
+  /** La llave de IA dejó de servir (401, 403 o sin saldo). La llamada volvió a su estado. */
+  | 'llave_de_ia_rechazada'
+  /** El servicio está saturado (429, 529). La llamada volvió a su estado: se reintenta después. */
+  | 'modelo_saturado';
 
 export type ResultadoDelAnalisis =
   | { tipo: 'hecho'; estado: 'DONE' | 'NOT_MATCH' | 'FAILED'; motivo: string | null; error: string | null }
@@ -281,17 +315,22 @@ export async function analizarLlamada(
   llamadaId: string,
   claveIa: string,
   reloj: Reloj,
+  /** El estado en que la vio quien pide analizarla. Ver `tomarParaAnalizar`. */
+  esperado: EstadoTomable = 'PENDING',
 ): Promise<ResultadoDelAnalisis> {
   const llamada = await leerParaAnalizar(orgId, llamadaId);
   if (!llamada) return { tipo: 'rechazo', que: 'no_encontrada' };
   if (llamada.tipo === 'OTRO') return { tipo: 'rechazo', que: 'tipo_otro' };
   if (!TIPOS_QUE_SE_ANALIZAN.includes(llamada.tipo)) return { tipo: 'rechazo', que: 'analizador_no_disponible' };
+  if (llamada.estado !== esperado) {
+    return { tipo: 'rechazo', que: llamada.estado === 'ANALYZING' ? 'llamada_en_curso' : 'llamada_cambio' };
+  }
   if (!llamada.transcripcion) return { tipo: 'rechazo', que: 'sin_transcripcion' };
   const espera = esperaDisponible(reloj);
   if (espera === null) return { tipo: 'rechazo', que: 'sin_tiempo' };
-  if (!(await tomarParaAnalizar(orgId, llamadaId))) return { tipo: 'rechazo', que: 'llamada_en_curso' };
-
   const tipo = llamada.tipo;
+  if (!(await tomarParaAnalizar(orgId, llamadaId, esperado, tipo))) return { tipo: 'rechazo', que: 'llamada_en_curso' };
+
   try {
     const r = await runAnalysis(tipo, llamada.transcripcion, claveIa, espera);
     const comun = { tipo, modelo: r.model, uso: r.usage, costoUsd: r.costUsd, versionDeRubrica: r.rubricVersion };
@@ -302,8 +341,20 @@ export async function analizarLlamada(
     await terminarConAnalisis(orgId, llamadaId, { ...comun, analisis: r.analysis, columnas: r.cols });
     return { tipo: 'hecho', estado: 'DONE', motivo: null, error: null };
   } catch (e) {
-    const error = mensajeDe(e);
-    await terminarConFallo(orgId, llamadaId, error);
+    /* La llave que ya no sirve y el servicio saturado NO son fallos de la llamada: el análisis no
+       llegó a ocurrir, y el próximo intento con la llave arreglada o en un rato la analiza. Vuelve
+       a su estado, con su error de antes si lo tenía. */
+    if (isUnusableKey(e) || isOverloaded(e)) {
+      await devolverAlEstado(orgId, llamadaId, esperado);
+      return { tipo: 'rechazo', que: isUnusableKey(e) ? 'llave_de_ia_rechazada' : 'modelo_saturado' };
+    }
+    const error = errorParaGuardar(e);
+    try {
+      await terminarConFallo(orgId, llamadaId, error);
+    } catch (e2) {
+      // Si ni el fallo se puede guardar —la llamada se borró mientras se analizaba—, queda en el registro.
+      console.error('analizadores: no se pudo marcar el fallo de la llamada', llamadaId, e2);
+    }
     return { tipo: 'hecho', estado: 'FAILED', motivo: null, error };
   }
 }
@@ -325,7 +376,17 @@ function cabeceraDeContexto(l: LlamadaParaAnalizar): string {
 
 export type ResultadoDeLaFicha =
   | { tipo: 'hecho'; estado: 'OK' | 'FAILED'; error: string | null }
-  | { tipo: 'rechazo'; que: 'no_encontrada' | 'ficha_solo_ht' | 'sin_analisis' | 'sin_transcripcion' | 'sin_tiempo' };
+  | {
+      tipo: 'rechazo';
+      que:
+        | 'no_encontrada'
+        | 'ficha_solo_ht'
+        | 'sin_analisis'
+        | 'sin_transcripcion'
+        | 'sin_tiempo'
+        | 'llave_de_ia_rechazada'
+        | 'modelo_saturado';
+    };
 
 /**
  * Genera la ficha de una HT ya analizada. **No lanza**: un fallo queda en la fila de la ficha como
@@ -367,7 +428,11 @@ export async function generarFicha(
     });
     return { tipo: 'hecho', estado: 'OK', error: null };
   } catch (e) {
-    const error = mensajeDe(e);
+    /* Con la llave rota o el servicio saturado la ficha no llegó a intentarse: no se guarda una
+       FAILED, que no se reintenta sola y quedaría así para siempre por un problema de la llave. */
+    if (isUnusableKey(e)) return { tipo: 'rechazo', que: 'llave_de_ia_rechazada' };
+    if (isOverloaded(e)) return { tipo: 'rechazo', que: 'modelo_saturado' };
+    const error = errorParaGuardar(e);
     try {
       await guardarFicha(orgId, llamadaId, { estado: 'FAILED', error });
     } catch {

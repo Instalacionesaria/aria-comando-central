@@ -625,9 +625,11 @@ async function auditar(
  * Los Analizadores de esa empresa, con la forma que espera el bucle de arriba.
  *
  * Reciben su propio fin de corrida (`FIN_PARA_LOS_ANALIZADORES_MS`) y no el presupuesto compartido:
- * un análisis necesita minutos seguidos. Y no pasan por `conElPulso`: dos corridas simultáneas no
- * pagan dos veces, porque el candado de cada llamada es un `update` condicional en la base —la que
- * pierde lo ve y sigue con otra—.
+ * un análisis necesita minutos seguidos. Y no pasan por `conElPulso`: lo que evita pagar dos veces
+ * está en la base. La toma de cada llamada es un `update` condicional que exige el estado en que la
+ * vio quien la pide, así que la corrida que llega tarde —la llamada ya está ANALYZING, o ya DONE— la
+ * saltea. Y la tarea no genera la ficha de un análisis de los últimos minutos, que es el que la
+ * pantalla ya está pidiendo (`MINUTOS_ANTES_DE_LA_FICHA_DE_LA_TAREA`).
  */
 async function analizar(
   org: OrganizacionListada,
@@ -724,13 +726,30 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     accionesIlegibles?: unknown;
     llaveRechazada?: unknown;
     sinTiempo?: unknown;
+    saturado?: unknown;
+    paginaLlena?: unknown;
+    descubrimiento?: unknown;
   };
   const partes: string[] = [];
 
   /* Los Analizadores. La llave rechazada va PRIMERO porque es lo único de esta lista que alguien
      tiene que ir a arreglar: con ella rechazada no entra ninguna reunión nueva, y la tarea «corrió». */
   if (r.llaveRechazada === 'tldv') partes.push('tl;dv rechazó la llave: hay que volver a cargarla');
-  if (r.llaveRechazada === 'ia') partes.push('Anthropic rechazó la llave de IA: no se analizó nada');
+  if (r.llaveRechazada === 'ia') {
+    partes.push('Anthropic rechazó la llave de IA o la cuenta no tiene saldo: no se analizó nada');
+  }
+  const d = r.descubrimiento as { tipo?: unknown; sinClasificar?: unknown } | undefined;
+  /* Un descubrimiento que falló por algo que no es la llave —tl;dv caído, un 500— no trae ninguna
+     reunión nueva, y la tarea igual «corrió»: sin esta línea el sello quedaba limpio. La causa va al
+     registro, no acá (ADR-0704). */
+  if (d?.tipo === 'fallo') partes.push('tl;dv no respondió al listar las reuniones: no entró ninguna nueva');
+  if (typeof d?.sinClasificar === 'number' && d.sinClasificar > 0) {
+    partes.push(`${d.sinClasificar} reunión(es) sin clasificar: se reintentan en la próxima corrida`);
+  }
+  if (r.saturado === true) partes.push('Anthropic estaba saturado: lo que faltaba quedó para la próxima corrida');
+  if (r.paginaLlena === true) {
+    partes.push('tl;dv devolvió una página llena: puede haber reuniones de las últimas 48 h que no se ven');
+  }
   if (typeof r.sinTiempo === 'number' && r.sinTiempo > 0) {
     partes.push(`${r.sinTiempo} llamada(s) quedaron para la próxima corrida por tiempo`);
   }

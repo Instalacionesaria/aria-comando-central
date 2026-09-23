@@ -37,6 +37,7 @@ import type {
   TipoDeLlamadaAnalizada,
 } from '../datos/esquema.ts';
 import type { NormalizedSegment, NormalizedTranscript } from './nucleo/types.ts';
+import { parseTranscriptInput } from './nucleo/transcript.ts';
 import type { TokenUsage } from './nucleo/pricing.ts';
 
 /** Corre `trabajo` en la transacción de la organización, abriéndola si hace falta. */
@@ -195,24 +196,42 @@ export async function prospectoDeLaLlamada(
  * escritura, el cron y el botón podían tomar la misma llamada y pagar dos análisis. Acá la base
  * decide, y solo uno de los dos ve la fila devuelta.
  *
- * Se puede tomar una PENDING, una FAILED (reintentar), una DONE (reanalizar) y una ANALYZING que
- * lleve más de 15 minutos ahí (se colgó). Una OTRO no se analiza nunca: primero se reencamina.
+ * ── LA TOMA EXIGE EL ESTADO QUE VIO QUIEN LLAMA, Y EL TIPO QUE LEYÓ ────────
+ *
+ * Los dos drenados —el de la tarea y el de la pantalla— trabajan sobre una FOTO de las pendientes y
+ * la recorren durante minutos. Cuando la toma aceptaba cualquier estado tomable, una llamada que
+ * otra corrida ya había dejado DONE se volvía a tomar al llegar su turno, y se pagaban otro análisis
+ * y otra ficha que pisaban los primeros. Ahora quien llama dice qué estado espera, y si la llamada ya
+ * no está ahí, no se toma: el drenado sigue con la siguiente.
+ *
+ * El tipo va por lo mismo: leerla y tomarla son dos transacciones, y una HT reencaminada a OB en el
+ * medio se analizaría como HT y quedaría una OB en DONE con un informe de venta adentro.
+ *
+ * Se puede esperar PENDING, FAILED (reintentar), DONE (reanalizar, un pedido explícito) o una
+ * ANALYZING que lleve más de 15 minutos ahí (se colgó). Una OTRO no se analiza nunca.
+ *
+ * Y NO borra el error al tomar: si la llave falla a mitad de camino, la llamada vuelve a su estado
+ * anterior con el error que tenía. Lo borran las tres salidas que terminan.
  */
-export async function tomarParaAnalizar(orgId: string, llamadaId: string): Promise<boolean> {
+export type EstadoTomable = 'PENDING' | 'FAILED' | 'DONE' | 'ANALYZING';
+
+export async function tomarParaAnalizar(
+  orgId: string,
+  llamadaId: string,
+  esperado: EstadoTomable,
+  tipo: 'HT' | 'OB',
+): Promise<boolean> {
   return enOrganizacion(orgId, async (db) => {
     const fila = await db
       .updateTable('analizador_llamadas')
-      .set({ estado: 'ANALYZING', tomada_el: sql`now()`, error: null, actualizado_el: sql`now()` } as never)
+      .set({ estado: 'ANALYZING', tomada_el: sql`now()`, actualizado_el: sql`now()` } as never)
       .where('id', '=', llamadaId)
-      .where('tipo', '<>', 'OTRO')
+      .where('tipo', '=', tipo)
+      .where('estado', '=', esperado)
       .where((eb) =>
-        eb.or([
-          eb('estado', 'in', ['PENDING', 'FAILED', 'DONE']),
-          eb.and([
-            eb('estado', '=', 'ANALYZING'),
-            eb('tomada_el', '<', sql<Date>`now() - make_interval(mins => ${MINUTOS_PARA_DARLA_POR_COLGADA})`),
-          ]),
-        ]),
+        esperado === 'ANALYZING'
+          ? eb('tomada_el', '<', sql<Date>`now() - make_interval(mins => ${MINUTOS_PARA_DARLA_POR_COLGADA})`)
+          : eb.val(true),
       )
       .returning('id')
       .executeTakeFirst();
@@ -324,12 +343,19 @@ export async function terminarConFallo(orgId: string, llamadaId: string, error: 
   );
 }
 
-/** Vuelve a PENDING una llamada que se tomó y no se llegó a analizar (la guardia de reloj). */
-export async function devolverAPendiente(orgId: string, llamadaId: string): Promise<void> {
+/**
+ * Devuelve una llamada tomada al estado que tenía, sin tocar su análisis ni su error.
+ *
+ * Es para cuando el análisis NO llegó a ocurrir por algo que no es de la llamada: la llave de IA
+ * dejó de servir, o el servicio está saturado. Marcarla FAILED haría que el drenado dejara FAILED a
+ * cada pendiente que toca con la llave rota —medido en la revisión: todas, para siempre, porque los
+ * drenados solo toman PENDING—. Una colgada (ANALYZING vieja) vuelve a PENDING.
+ */
+export async function devolverAlEstado(orgId: string, llamadaId: string, anterior: EstadoTomable): Promise<void> {
   await enOrganizacion(orgId, (db) =>
     db
       .updateTable('analizador_llamadas')
-      .set({ estado: 'PENDING', tomada_el: null, actualizado_el: sql`now()` } as never)
+      .set({ estado: anterior === 'ANALYZING' ? 'PENDING' : anterior, tomada_el: null, actualizado_el: sql`now()` } as never)
       .where('id', '=', llamadaId)
       .where('estado', '=', 'ANALYZING')
       .execute(),
@@ -431,7 +457,20 @@ export type ResultadoDeReencaminar = 'hecho' | 'no_encontrada' | 'ya_analizada' 
  *
  * En el origen lo impedía solo la pantalla. Una HT en DONE movida a OB quedaba PENDING con su
  * análisis de HT adentro, y el detalle OB lo habría dibujado como si fuera un onboarding. Acá la
- * condición va en el mismo `update`, así que ni una petición armada a mano lo consigue.
+ * condición va en el mismo `update`.
+ *
+ * ── Y LO QUE SE MUEVE SE LLEVA SU INFORME VIEJO, EN LA MISMA TRANSACCIÓN ────
+ *
+ * Una DONE no se mueve, pero una FAILED sí, y una FAILED puede tener adentro el informe de un
+ * análisis anterior: una HT que se reanalizó y el reanálisis falló conserva el primero. Movida a OB,
+ * quedaba una OB PENDING con un informe y una ficha de venta. Así que al cambiar de tipo se borran
+ * el análisis y la ficha: son del tipo que la llamada dejó de ser, y el nuevo análisis los va a
+ * reemplazar.
+ *
+ * ── Y UNA OTRO QUE PASA A HT U OB RECUPERA SU PROSPECTO ─────────────────────
+ *
+ * El descubrimiento crea las OTRO sin prospecto. Movida a HT, se analizaba igual, pero su detalle no
+ * decía «reunión N de M» y las demás llamadas de esa persona no la contaban.
  */
 export async function reencaminar(
   orgId: string,
@@ -441,7 +480,7 @@ export async function reencaminar(
   return enOrganizacion(orgId, async (db) => {
     const actual = await db
       .selectFrom('analizador_llamadas')
-      .select(['tipo', 'estado'])
+      .select(['tipo', 'estado', 'prospecto_id', 'prospecto_nombre', 'prospecto_email'])
       .where('id', '=', llamadaId)
       .executeTakeFirst();
     if (!actual) return 'no_encontrada';
@@ -450,6 +489,10 @@ export async function reencaminar(
     if (actual.estado === 'ANALYZING') return 'en_curso';
 
     const aOtro = nuevoTipo === 'OTRO';
+    const prospectoId =
+      !aOtro && actual.prospecto_id === null && (actual.prospecto_email || actual.prospecto_nombre)
+        ? await prospectoDeLaLlamada(orgId, actual.prospecto_nombre, actual.prospecto_email)
+        : actual.prospecto_id;
     const fila = await db
       .updateTable('analizador_llamadas')
       .set({
@@ -457,13 +500,17 @@ export async function reencaminar(
         estado: aOtro ? 'NOT_MATCH' : 'PENDING',
         motivo: aOtro ? 'Movida a «no corresponde» a mano.' : null,
         error: null,
+        prospecto_id: prospectoId,
         actualizado_el: sql`now()`,
       } as never)
       .where('id', '=', llamadaId)
       .where('estado', 'not in', ['DONE', 'ANALYZING'])
       .returning('id')
       .executeTakeFirst();
-    return fila ? 'hecho' : 'en_curso';
+    if (!fila) return 'en_curso';
+    await db.deleteFrom('analizador_analisis').where('llamada_id', '=', llamadaId).execute();
+    await db.deleteFrom('analizador_fichas').where('llamada_id', '=', llamadaId).execute();
+    return 'hecho';
   });
 }
 
@@ -744,19 +791,30 @@ export async function leerParaAnalizar(orgId: string, llamadaId: string): Promis
     fechaDeLaReunion: fila.fecha_de_la_reunion === null ? null : fila.fecha_de_la_reunion.toISOString(),
     organizadorNombre: fila.organizador_nombre,
     organizadorEmail: fila.organizador_email,
-    /* El identificador y el idioma como los armaba el origen al leer de la base (`pipeline.ts`,
-       `loadTranscriptForCall`): van en la cabecera del mensaje al modelo, así que son parte del
-       prompt. `idioma` queda guardado, pero el origen mandaba siempre 'es'. */
-    transcripcion:
-      fila.texto === null || fila.segmentos === null
-        ? null
-        : {
-            externalMeetingId: fila.reunion_externa_id || `call-${fila.id}`,
-            language: 'es',
-            segments: fila.segmentos as NormalizedSegment[],
-            fullText: fila.texto,
-          },
+    transcripcion: transcripcionGuardada(fila),
   };
+}
+
+/**
+ * La transcripción como la armaba el origen al leer de la base (`loadTranscriptForCall`).
+ *
+ * El identificador y el idioma van en la cabecera del mensaje al modelo, así que son parte del
+ * prompt: `idioma` queda guardado, pero el origen mandaba siempre 'es'. Y sin segmentos se vuelve a
+ * partir el texto, como hacía el origen: mandar un `TRANSCRIPT:` vacío con el texto guardado al lado
+ * produce un análisis de nada, pagado.
+ */
+function transcripcionGuardada(fila: {
+  id: string;
+  reunion_externa_id: string | null;
+  texto: string | null;
+  segmentos: unknown;
+}): NormalizedTranscript | null {
+  if (fila.texto === null) return null;
+  const externalMeetingId = fila.reunion_externa_id || `call-${fila.id}`;
+  const segmentos = Array.isArray(fila.segmentos) ? (fila.segmentos as NormalizedSegment[]) : [];
+  return segmentos.length > 0
+    ? { externalMeetingId, language: 'es', segments: segmentos, fullText: fila.texto }
+    : parseTranscriptInput(fila.texto, externalMeetingId);
 }
 
 /** Las PENDING de estos tipos, en orden de llegada. */
@@ -780,8 +838,18 @@ export async function pendientesParaAnalizar(
 }
 
 /**
- * Las HT analizadas que no tienen ficha. `NOT EXISTS` y no «traer varias y filtrar en memoria»: una
- * ficha vieja que caía fuera de la ventana del origen no se generaba nunca.
+ * Cuánto se espera, desde el análisis, antes de que la TAREA genere una ficha. La pantalla la pide
+ * apenas termina el análisis, y la ficha tarda minutos: sin esta espera, la tarea de las :41 la
+ * encontraba sin fila y generaba otra en paralelo —dos inferencias, y la segunda pisaba a la primera—.
+ */
+export const MINUTOS_ANTES_DE_LA_FICHA_DE_LA_TAREA = 10;
+
+/**
+ * Las HT analizadas que NUNCA tuvieron ficha. `NOT EXISTS` y no «traer varias y filtrar en memoria»:
+ * una ficha vieja que caía fuera de la ventana del origen no se generaba nunca.
+ *
+ * Una ficha FAILED tiene fila, así que NO sale acá: se rehace con el botón, que es una decisión de
+ * alguien que leyó el error. Reintentarla sola cada hora repetiría el mismo fallo pagando cada vez.
  */
 export async function llamadasSinFicha(orgId: string, limite: number): Promise<string[]> {
   const filas = await enOrganizacion(orgId, (db) =>
@@ -792,6 +860,7 @@ export async function llamadasSinFicha(orgId: string, limite: number): Promise<s
       .where('l.tipo', '=', 'HT')
       .where('l.estado', '=', 'DONE')
       .where('a.coincide', '=', true)
+      .where('a.analizado_el', '<', sql<Date>`now() - make_interval(mins => ${MINUTOS_ANTES_DE_LA_FICHA_DE_LA_TAREA})`)
       .where(({ not, exists, selectFrom }) =>
         not(
           exists(

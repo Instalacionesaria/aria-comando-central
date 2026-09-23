@@ -6,9 +6,10 @@
 // Que la tarea haga las tres cosas en su orden —descubrir, drenar, completar fichas— dentro del
 // tiempo que tiene, y que el barrido la despache de verdad y deje su sello:
 //
-//   · con tiempo, una reunión nueva termina la corrida DONE y con ficha;
+//   · con tiempo, una reunión nueva termina la corrida DONE; su ficha, en la corrida siguiente;
 //   · sin tiempo para un análisis, lo descubierto queda PENDING y el sello lo dice;
 //   · con la llave de IA rechazada no se intenta ningún análisis, y el sello lo dice;
+//   · lo que deja la corrida incompleta sin ser un error —tl;dv caído, una página llena— también;
 //   · el sello `analizadores` existe en la base (sin la `058`, `sellar` falla contra el CHECK).
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -31,6 +32,7 @@ import {
   TABLAS_DEL_ANALIZADOR,
   delModelo,
   instalarRedFalsa,
+  json,
   quitarRedFalsa,
   red,
   unaReunion,
@@ -80,16 +82,27 @@ async function estados(): Promise<string[]> {
   return r.rows.map((f) => f.estado);
 }
 
-test('con tiempo, una reunión nueva termina la corrida DONE y con su ficha', async () => {
+test('con tiempo, una reunión nueva termina la corrida DONE, y su ficha NO se pide en la misma', async () => {
+  /* La ficha de un análisis recién hecho la está pidiendo la pantalla, si fue ella; la tarea que la
+     generara en paralelo pagaría dos. Espera unos minutos: la toma la corrida siguiente. */
   unaReunion('m-1', 'HT');
   red.analisis.push(() => delModelo('{"score": 7, "outcome": "NO_CERRADA"}'));
-  red.analisis.push(() => delModelo('{"summary": "vende pan"}'));
   const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
   assert.deepEqual(
     { d: r.descubrimiento.tipo === 'hecho' && r.descubrimiento.descubiertas, a: r.analizadas, f: r.fichas, t: r.sinTiempo },
-    { d: 1, a: 1, f: 1, t: 0 },
+    { d: 1, a: 1, f: 0, t: 0 },
   );
   assert.deepEqual(await estados(), ['DONE']);
+  assert.equal(red.llamadasAlAnalisis, 1, 'se pidió una ficha en la misma corrida del análisis');
+});
+
+test('la corrida siguiente completa la ficha de un análisis que ya tiene unos minutos', async () => {
+  unaReunion('m-1', 'HT');
+  await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  await esc.admin.query(`update negocio.analizador_analisis set analizado_el = now() - interval '11 minutes' where org_id = $1`, [esc.org]);
+  red.analisis.push(() => delModelo('{"summary": "vende pan"}'));
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.fichas, 1);
   const f = await esc.admin.query('select estado from negocio.analizador_fichas where org_id = $1', [esc.org]);
   assert.deepEqual(f.rows, [{ estado: 'OK' }]);
 });
@@ -119,6 +132,40 @@ test('con la llave de IA rechazada no se intenta ningún análisis', async () =>
   assert.equal(red.llamadasAlAnalisis, 0);
   assert.deepEqual(await estados(), ['PENDING']);
   assert.match(String(motivoDeLoIncompleto(r)), /llave de IA/);
+});
+
+test('una llave de IA que se rechaza A MITAD del drenado corta ahí, y la llamada queda PENDING', async () => {
+  /* Sin reuniones nuevas el clasificador no se llama, así que el primer 401 llega en el análisis.
+     Antes quedaba FAILED y el drenado seguía con la siguiente, que también quedaba FAILED. */
+  await unaManualConTexto();
+  await unaManualConTexto();
+  red.analisis.push(() => json({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }, 401));
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.llaveRechazada, 'ia');
+  assert.equal(red.llamadasAlAnalisis, 1, 'siguió drenando con la llave rechazada');
+  assert.deepEqual(await estados(), ['PENDING', 'PENDING']);
+});
+
+test('tl;dv caído al listar deja el sello con el motivo, y la causa cruda NO sale en el resultado', async () => {
+  /* Sin esto la tarea «corría» limpia sin haber traído ninguna reunión. Y la causa —el texto de un
+     proveedor— viaja en el cuerpo de la respuesta del cron: va al registro, no ahí (ADR-0704). */
+  red.estadoDeTldv = 500;
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.deepEqual(r.descubrimiento, { tipo: 'fallo', causa: 'tl;dv no respondió al listar las reuniones' });
+  assert.match(String(motivoDeLoIncompleto(r)), /tl;dv no respondió al listar las reuniones/);
+});
+
+test('una página llena de tl;dv se dice: puede haber reuniones que no se ven', async () => {
+  /* tl;dv devuelve 50 por página y no se pide la segunda. Viejas, para que ninguna se clasifique:
+     lo que se mide es el tamaño de la página, no lo que se hizo con ella. */
+  const vieja = new Date(Date.now() - 49 * 3_600_000).toISOString();
+  for (let i = 0; i < 49; i++) unaReunion(`m-${i}`, 'HT', { happenedAt: vieja });
+  const casi = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(casi.paginaLlena, false);
+  unaReunion('m-49', 'HT', { happenedAt: vieja });
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.paginaLlena, true);
+  assert.match(String(motivoDeLoIncompleto(r)), /página llena/);
 });
 
 test('con la llave de tl;dv rechazada, lo ya guardado se drena igual', async () => {

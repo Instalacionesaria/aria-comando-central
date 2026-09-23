@@ -3,12 +3,17 @@
 /* El detalle de una llamada HT: cómo trabajó el closer, y quién es el prospecto.
    ==========================================================================
 
-   ── LAS FASES SE ROTULAN POR POSICIÓN, NO POR SU CAMPO ────────────────────
+   ── LAS FASES: POR SU CAMPO CUANDO SE PUEDE, POR POSICIÓN SOLO EN EL HISTORIAL v8 ──
 
    Los análisis v8 del historial copiado de ARIA Brain dicen `apertura_rapport` en las cinco fases:
-   el origen comparaba en mayúsculas contra una lista en minúsculas. El esquema fija el ORDEN, así que
-   rotular por posición es lo único que se lee bien en los dos casos, v8 y v8.1. Rotular por el campo
+   el origen comparaba en mayúsculas contra una lista en minúsculas. Rotular por el campo ahí
    mostraría «Apertura» cinco veces.
+
+   Pero rotular SIEMPRE por posición tampoco es cierto: el esquema no obliga a devolver las fases en
+   orden —la rúbrica las enumera del 1 al 5, y nada más—, y en producción 3 de 37 HT no tienen
+   exactamente cinco. Así que `rotulosDeLasFases`: por el campo cuando las fases vienen distintas
+   (v8.1), por posición cuando son cinco y todas iguales (el defecto v8), y «Fase N» cuando no hay
+   forma honesta de saber cuál es cuál. Vive en `lib/analizadores/fases.ts`, donde se prueba.
 
    ── LOS DATOS DUROS SALEN DE LA LLAMADA, NUNCA DEL MODELO ─────────────────
 
@@ -26,8 +31,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { formatSeconds } from '@/lib/analizadores/nucleo/time';
 import { deriveScoreColor } from '@/lib/analizadores/nucleo/score';
+import { rotulosDeLasFases } from '@/lib/analizadores/fases';
 
-const FASES = ['Apertura y conexión', 'Descubrimiento', 'Presentación de la oferta', 'Manejo de objeciones', 'Cierre'];
 const RESULTADO = { CERRADA: 'Cerrada', NO_CERRADA: 'No cerrada', INDETERMINADO: 'Indeterminado' };
 const ESPERA_LARGA = 300_000;
 
@@ -37,9 +42,14 @@ const fecha = (iso) =>
 function Tiempo({ evidencia, conMarcas }) {
   if (!evidencia || typeof evidencia.startSec !== 'number') return null;
   return (
-    <span className="az-tiempo" title={conMarcas === false ? 'La transcripción no traía marcas de tiempo: esto es un número de línea.' : undefined}>
+    <span
+      className="az-tiempo"
+      title={conMarcas === false ? 'La transcripción no traía marcas de tiempo: esto es el número de turno, contando solo los renglones con texto.' : undefined}
+    >
       {' '}
-      {conMarcas === false ? `línea ${evidencia.startSec}` : formatSeconds(evidencia.startSec)}
+      {/* `turno` y no `línea`: el parser numera los renglones NO vacíos y empieza en 0, así que «línea 7»
+          no era la séptima línea del texto pegado. */}
+      {conMarcas === false ? `turno ${evidencia.startSec + 1}` : formatSeconds(evidencia.startSec)}
     </span>
   );
 }
@@ -52,6 +62,9 @@ function Lista({ items, render }) {
 export default function DetalleHt({ id, alVolver }) {
   const [detalle, setDetalle] = useState(null);
   const [error, setError] = useState('');
+  /* El error de una ACCIÓN —generar o rehacer la ficha— va aparte del de la carga: la recarga que
+     sigue a la acción limpiaba `error` en el mismo ciclo, y el rechazo desaparecía sin verse. */
+  const [errorDeAccion, setErrorDeAccion] = useState('');
   // `vendedor` y no `closer`: `30-portero` prohíbe comparar contra un nombre de rol, y lo mira por la forma.
   const [vista, setVista] = useState('vendedor');
   const [trabajando, setTrabajando] = useState('');
@@ -71,10 +84,13 @@ export default function DetalleHt({ id, alVolver }) {
   }, [cargar]);
 
   const generarFicha = async () => {
+    setErrorDeAccion('');
     setTrabajando('Armando la ficha del prospecto… puede tardar un par de minutos.');
     const r = await pedir(`/api/analizadores/llamadas/${id}/ficha`, { metodo: 'POST', espera: ESPERA_LARGA });
     setTrabajando('');
-    if (r.tipo !== 'datos') setError(r.tipo === 'sin_respuesta' ? 'No se pudo contactar al servidor.' : (r.detalle ?? `El servidor respondió ${r.estado}.`));
+    if (r.tipo !== 'datos') {
+      setErrorDeAccion(r.tipo === 'sin_respuesta' ? 'No se pudo contactar al servidor.' : (r.detalle ?? `El servidor respondió ${r.estado}.`));
+    }
     await cargar();
   };
 
@@ -153,6 +169,7 @@ export default function DetalleHt({ id, alVolver }) {
 
       {trabajando ? <div className="az-aviso">{trabajando}</div> : null}
       {error ? <div className="az-error">{error}</div> : null}
+      {errorDeAccion ? <div className="az-error">{errorDeAccion}</div> : null}
 
       {vista === 'vendedor' ? (
         a ? <VistaCloser a={a} conMarcas={llamada.conMarcasDeTiempo} /> : <div className="az-aviso">Esta llamada no tiene análisis.</div>
@@ -165,6 +182,7 @@ export default function DetalleHt({ id, alVolver }) {
 
 function VistaCloser({ a, conMarcas }) {
   const color = deriveScoreColor(a.score).toLowerCase();
+  const fases = rotulosDeLasFases(a.seller?.phaseScores ?? []);
   return (
     <>
       <div className="az-bloque">
@@ -183,11 +201,12 @@ function VistaCloser({ a, conMarcas }) {
       </div>
 
       <div className="az-bloque">
-        <h3>Las cinco fases</h3>
+        <h3>Las fases</h3>
+        {fases.nota ? <p className="az-no-consta">{fases.nota}</p> : null}
         {(a.seller?.phaseScores ?? []).map((f, i) => (
           <details key={i}>
             <summary>
-              {FASES[i] ?? `Fase ${i + 1}`} · {f.score}/10
+              {fases.rotulos[i]} · {f.score}/10
             </summary>
             {f.rationale ? <p>{f.rationale}</p> : null}
             {f.toReachTen ? (

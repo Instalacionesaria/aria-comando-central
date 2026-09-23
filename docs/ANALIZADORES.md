@@ -58,9 +58,11 @@ valor por omisión.
 Medido en producción: **las 170 fases de las 34 HT analizadas dicen `apertura_rapport`**. El informe
 muestra «Apertura» cinco veces.
 
-Se corrige en `lib/analizadores/nucleo/ht.ts`, se sube la versión a `rubric.es.md@v8.1`, y la
-pantalla **rotula las fases por su posición** —el esquema fija el orden—, que es lo único que se
-lee bien también en las filas v8 copiadas.
+Se corrige en `lib/analizadores/nucleo/ht.ts` y se sube la versión a `rubric.es.md@v8.1`. La
+pantalla rotula cada fase **por su campo** cuando las fases vienen distintas (v8.1), **por su
+posición** solo cuando son cinco y todas iguales (el historial v8), y «Fase N» cuando no hay forma de
+saberlo. Rotular siempre por posición no es seguro: el esquema no obliga a devolverlas en orden —la
+rúbrica las enumera y nada más— y en producción 3 de 37 HT no tienen exactamente cinco.
 
 ## La tarifa
 
@@ -68,7 +70,8 @@ La única fuente de precio de Sonnet 5 es un comentario del código de Brain: *�
 31/08/2026; luego sube a $3/$15»*, y su tabla sigue en $2/$10. No está verificado contra la
 facturación.
 
-Por eso `TARIFA_CONFIRMADA` es `null` y el costo es **nulo, no cero**: un `0` diría «este análisis no
+Por eso `CONFIRMED_RATES` (`lib/analizadores/nucleo/pricing.ts`) está vacía y el costo es **nulo, no
+cero**: un `0` diría «este análisis no
 costó nada». Se guardan los cuatro contadores —entrada, salida, **escritura y lectura de caché**—, y
 Brain ignora los dos últimos aunque el sistema del análisis se marca para cachear: con los tokens
 guardados, el costo se puede calcular hacia atrás el día que la tarifa se confirme.
@@ -135,10 +138,47 @@ quedar. En una línea cada una:
   `30-portero` prohíbe `=== 'closer'` por la forma, porque así es como se cuela una comparación con
   un nombre de rol.
 
+### Lo que encontró la revisión, antes del primer push
+
+Una revisión adversarial de las etapas 0 a 8 encontró defectos que las pruebas no veían porque no
+fallan: se ven en la factura o en un sello limpio. Cada uno quedó con su prueba, vista roja con su
+mutación (23 mutaciones, las 23 mueren).
+
+- **Un análisis se podía pagar dos veces.** Los drenados recorren una foto de las pendientes durante
+  minutos, y la toma aceptaba DONE: una llamada que otra corrida terminó en el medio se volvía a
+  analizar. Ahora la toma exige el estado y el tipo en que se vio la llamada (`tomarParaAnalizar`),
+  y reanalizar una DONE se pide diciéndolo (`{ esperado: 'DONE' }` en la ruta).
+- **Una llave rota dejaba FAILED a todo lo que tocaba.** El 401 caía en el mismo `catch` que un JSON
+  roto, y el drenado seguía con la siguiente. Ahora una llave rechazada, una cuenta sin saldo (un 400
+  que solo se distingue por la frase) o el servicio saturado (429, 529) devuelven la llamada a su
+  estado —con su error de antes—, cortan el drenado y lo dicen en el sello. El clasificador también
+  relanza la cuenta sin saldo, en vez de dejar cada reunión «sin clasificar» para siempre.
+- **La llave podía quedar escrita en un error.** `fetch` pone el valor de una cabecera inválida
+  entero en su mensaje, y ese mensaje se guardaba en la llamada. Se saca en los dos transportes.
+- **Reencaminar dejaba el informe viejo adentro.** Una HT reanalizada que fallaba quedaba FAILED con
+  su primer informe, y como una FAILED se mueve, llegaba a OB con un informe de venta. Ahora se
+  borran el análisis y la ficha, y una OTRO que pasa a HT u OB recupera su prospecto por el correo.
+- **La tarea y la pantalla generaban la misma ficha en paralelo.** La tarea espera ahora
+  `MINUTOS_ANTES_DE_LA_FICHA_DE_LA_TAREA` (10) desde el análisis, y una ficha FAILED ya no se
+  reintenta sola: se rehace con el botón. Por lo mismo, una llave rota ya no guarda una FAILED.
+- **El sello quedaba limpio sin haber traído nada**: con tl;dv caído al listar, con reuniones sin
+  clasificar, con el servicio saturado y con una página llena de tl;dv (50, `TLDV_PAGE_SIZE`: lo dice
+  su documentación, no está verificado). La causa cruda de un proveedor va al registro, no a la
+  respuesta del cron (ADR-0704).
+- **Una transcripción guardada sin segmentos se mandaba vacía** al modelo. Se vuelve a partir, como
+  hacía el origen.
+- **Rotular las fases siempre por posición era falso para el v8.1**: el esquema no obliga al orden,
+  y 3 de las 37 HT de producción no tienen cinco. Ver `lib/analizadores/fases.ts`.
+- **La pantalla**: el estado de las llaves se relee cada vez que la pestaña vuelve a la vista, el
+  error de una acción ya no lo borra la recarga que la sigue, y una respuesta vieja no pisa a una
+  nueva. Y decía que las llaves se cargaban en «Integraciones», una pantalla que no existe.
+
 ### Lo que falta en producción para encender HT
 
-1. `058` y `059` con `db.mjs migrar`, y el catálogo con los tres pasos de `docs/DESPLIEGUE.md` § 4b.
+1. `058`, `059` y `060` con `db.mjs migrar`, y el catálogo con los tres pasos de
+   `docs/DESPLIEGUE.md` § 4b.
 2. El push.
-3. HT-9: la copia del historial (una migración que le da a `postgres` `select, insert` sobre las seis
-   tablas, el script de copia en una transacción, y otra que lo revoca) y **una persona que pegue la
-   llave de tl;dv** en Integraciones de ARIA, en la misma sesión que la copia.
+3. HT-9: la copia del historial (`scripts/copias/historial-analizador.sql`, en una transacción, con
+   la `060` que le da a `postgres` el `insert` que le faltaba —el `select` ya lo tenía— y la `061`
+   que se lo quita) y **una persona que pegue la llave de tl;dv** en Ajustes › Credenciales de
+   ARIA, en la misma sesión que la copia.

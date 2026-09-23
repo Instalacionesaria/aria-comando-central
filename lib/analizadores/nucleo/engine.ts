@@ -13,7 +13,7 @@
 // Motor de análisis y clasificación. Conserva la DOBLE COMPUERTA de los
 // originales: clasificador Haiku barato (para el sync) + gate "match:false" del
 // prompt de análisis (segunda compuerta, con toda la transcripción).
-import { AnalyzerCallError, callAnalyzer, callClassifier, extractJson } from './anthropic.ts';
+import { callAnalyzer, callClassifier, extractJson, isUnusableKey } from './anthropic.ts';
 import { buildAnalyzerSystem, buildInsightSystem } from './defs.ts';
 import { computeCostUsd, type TokenUsage } from './pricing.ts';
 import { formatTranscript } from './transcript.ts';
@@ -194,9 +194,10 @@ export async function classifyCallType(
      *
      * El origen devolvía null ante cualquier fallo, y null significa «dejala para la próxima
      * corrida». Con la llave revocada eso se repetía reunión por reunión, corrida tras corrida, y
-     * el descubrimiento terminaba «bien» con cero reuniones nuevas: nadie se enteraba. Un 401 o un
-     * 403 se relanza para que quien descubre corte y lo diga; el resto sigue siendo null. */
-    if (e instanceof AnalyzerCallError && (e.status === 401 || e.status === 403)) throw e;
+     * el descubrimiento terminaba «bien» con cero reuniones nuevas: nadie se enteraba. Una llave que
+     * ya no sirve —401, 403, o la cuenta sin saldo— se relanza para que quien descubre corte y lo
+     * diga; el resto sigue siendo null. */
+    if (isUnusableKey(e)) throw e;
     return null;
   }
 }

@@ -12,13 +12,15 @@
 //   · **Que la pantalla espere lo que las rutas tardan.** Las que analizan declaran 300 s; con la
 //     espera por omisión del cliente, la pantalla diría «no respondió» con el análisis todavía en
 //     curso —y pagado—.
-//   · **Que las fases se rotulen por posición.** El historial v8 dice `apertura_rapport` en las cinco.
+//   · **Que las fases se rotulen bien en los dos historiales.** El v8 dice `apertura_rapport` en las
+//     cinco; el v8.1 trae cada una con su nombre, y no necesariamente en orden ni de a cinco.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { archivosFuente } from '../apoyo/fuente.ts';
 import { SECCIONES } from '../../lib/autorizacion/secciones.ts';
+import { FASES, rotulosDeLasFases } from '../../lib/analizadores/fases.ts';
 
 const fuente = (ruta: string) => {
   const a = archivosFuente(['app', 'components']).find((x) => x.ruta === ruta);
@@ -69,10 +71,30 @@ test('la pantalla espera al menos lo que declaran las rutas que analizan', () =>
   }
 });
 
-test('las fases se rotulan por POSICIÓN y nunca por su campo', () => {
+test('las fases: por su campo cuando vienen distintas, aunque lleguen desordenadas', () => {
+  /* Rotular SIEMPRE por posición era falso para el v8.1: el esquema no obliga al orden, y una fase
+     que llega tercera se llamaba «Presentación» fuera cual fuera. */
+  const r = rotulosDeLasFases([{ phase: 'cierre' }, { phase: 'apertura_rapport' }, { phase: 'descubrimiento' }]);
+  assert.deepEqual(r, { rotulos: ['Cierre', 'Apertura y conexión', 'Descubrimiento'], nota: null });
+});
+
+test('las fases: cinco iguales son el defecto v8, y se rotulan por posición diciéndolo', () => {
+  const r = rotulosDeLasFases(Array.from({ length: 5 }, () => ({ phase: 'apertura_rapport' })));
+  assert.deepEqual(r.rotulos, [...FASES]);
+  assert.match(String(r.nota), /v8/);
+});
+
+test('las fases: repetidas y no cinco no tienen nombre honesto, y lo dicen', () => {
+  /* Así están 3 de las 37 HT de producción. Rotularlas por posición inventaría qué fase es cada una. */
+  const r = rotulosDeLasFases([{ phase: 'apertura_rapport' }, { phase: 'apertura_rapport' }, { phase: 'apertura_rapport' }]);
+  assert.deepEqual(r.rotulos, ['Fase 1', 'Fase 2', 'Fase 3']);
+  assert.ok(r.nota);
+});
+
+test('el detalle rotula las fases con `rotulosDeLasFases`, y no lee el campo por su cuenta', () => {
   const t = fuente('components/analizadores/DetalleHt.jsx');
-  assert.ok(/FASES\[i\]/.test(t), 'el detalle no rotula las fases por posición');
-  assert.ok(!/\.phase\b/.test(t), 'el detalle lee el campo `phase`: el historial v8 dice «apertura» en las cinco');
+  assert.match(t, /import \{ rotulosDeLasFases \} from '@\/lib\/analizadores\/fases'/);
+  assert.ok(!/\.phase\b/.test(t), 'el detalle lee el campo `phase` sin pasar por la regla del historial v8');
 });
 
 test('ninguna pantalla de los Analizadores dibuja una transcripción', () => {

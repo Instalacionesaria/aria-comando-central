@@ -35,6 +35,8 @@ import {
   prospectoDeLaLlamada,
   reencaminar,
   reunionesConocidas,
+  devolverAlEstado,
+  leerParaAnalizar,
   terminarConAnalisis,
   terminarConVeto,
   tomarParaAnalizar,
@@ -107,7 +109,7 @@ const MODELO = { tipo: 'HT' as const, modelo: 'claude-sonnet-5', uso: USO, costo
 
 async function unaAnalizada(org: string, extra: Partial<LlamadaNueva> = {}): Promise<string> {
   const id = await unaLlamada(org, extra);
-  assert.ok(await tomarParaAnalizar(org, id));
+  assert.ok(await tomarParaAnalizar(org, id, 'PENDING', 'HT'));
   await terminarConAnalisis(org, id, { ...MODELO, analisis: { score: 7 }, columnas: { score: 7, outcome: 'NO_CERRADA', scoreColor: 'VERDE' } });
   return id;
 }
@@ -146,7 +148,7 @@ test('lo que escribe una empresa no lo ve la otra, en NINGUNA de las seis tablas
 
   // Y el detalle pedido desde la otra empresa es «no existe», no un 403 ni sus datos.
   assert.equal(await leerDetalle(esc.otraOrg, id), null);
-  assert.equal(await tomarParaAnalizar(esc.otraOrg, id), false);
+  assert.equal(await tomarParaAnalizar(esc.otraOrg, id, 'PENDING', 'HT'), false);
   assert.equal(await borrarLlamada(esc.otraOrg, id), false);
   assert.ok(await leerDetalle(esc.org, id), 'la llamada tenía que seguir existiendo para A');
 });
@@ -198,23 +200,47 @@ test('el candado: de dos tomas simultáneas, gana UNA', async () => {
   /* Cada toma abre su propia transacción, en su propia conexión: es la carrera real. La mutación que
      lee el estado y después escribe deja ganar a las dos, y se pagan dos análisis. */
   const id = await unaLlamada(esc.org);
-  const tomas = await Promise.all([tomarParaAnalizar(esc.org, id), tomarParaAnalizar(esc.org, id)]);
+  const tomas = await Promise.all([tomarParaAnalizar(esc.org, id, 'PENDING', 'HT'), tomarParaAnalizar(esc.org, id, 'PENDING', 'HT')]);
   assert.deepEqual(tomas.sort(), [false, true]);
   assert.equal(await estadoDe(id), 'ANALYZING');
 });
 
-test('qué se puede tomar: PENDING, FAILED, DONE y una ANALYZING colgada; nunca una OTRO', async () => {
-  const colgada = await unaLlamada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, colgada));
-  assert.equal(await tomarParaAnalizar(esc.org, colgada), false, 'una ANALYZING reciente no se retoma');
-  await esc.admin.query(`update negocio.analizador_llamadas set tomada_el = now() - interval '16 minutes' where id = $1`, [colgada]);
-  assert.ok(await tomarParaAnalizar(esc.org, colgada), 'pasados 15 minutos se retoma');
-
+test('la toma exige el estado que vio quien llama: una DONE no se toma por llegar tarde', async () => {
+  /* El defecto que encontró la revisión: los drenados recorren una FOTO de las pendientes durante
+     minutos. Si mientras tanto otra corrida dejó una DONE, al llegar su turno se volvía a tomar —la
+     toma aceptaba DONE— y se pagaban otro análisis y otra ficha. La mutación que vuelve a aceptar
+     cualquier estado tomable pone esta prueba en rojo en la segunda aserción. */
   const hecha = await unaAnalizada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, hecha), 'una DONE se puede reanalizar');
+  assert.equal(await tomarParaAnalizar(esc.org, hecha, 'PENDING', 'HT'), false, 'una DONE se tomó con una lista vieja');
+  assert.equal(await estadoDe(hecha), 'DONE');
+  assert.ok(await tomarParaAnalizar(esc.org, hecha, 'DONE', 'HT'), 'reanalizar una DONE tiene que poder pedirse');
+});
 
-  const otro = await unaLlamada(esc.org, { tipo: 'OTRO', estado: 'NOT_MATCH', motivo: 'interna' });
-  assert.equal(await tomarParaAnalizar(esc.org, otro), false);
+test('la toma exige el TIPO que se leyó: una HT movida a OB en el medio no se analiza como HT', async () => {
+  const id = await unaLlamada(esc.org);
+  await esc.admin.query(`update negocio.analizador_llamadas set tipo = 'OB' where id = $1`, [id]);
+  assert.equal(await tomarParaAnalizar(esc.org, id, 'PENDING', 'HT'), false);
+  assert.equal(await estadoDe(id), 'PENDING');
+});
+
+test('una ANALYZING se retoma solo si está colgada', async () => {
+  const colgada = await unaLlamada(esc.org);
+  assert.ok(await tomarParaAnalizar(esc.org, colgada, 'PENDING', 'HT'));
+  assert.equal(await tomarParaAnalizar(esc.org, colgada, 'ANALYZING', 'HT'), false, 'una ANALYZING reciente no se retoma');
+  await esc.admin.query(`update negocio.analizador_llamadas set tomada_el = now() - interval '16 minutes' where id = $1`, [colgada]);
+  assert.ok(await tomarParaAnalizar(esc.org, colgada, 'ANALYZING', 'HT'), 'pasados 15 minutos se retoma');
+});
+
+test('devolver al estado anterior conserva el error y el análisis de antes', async () => {
+  /* Para cuando el análisis NO llegó a ocurrir —la llave dejó de servir, el servicio saturado—: la
+     llamada vuelve tal como estaba. Con `error: null` al tomar, una FAILED reintentada con la llave
+     rota perdía su error de antes. */
+  const id = await unaLlamada(esc.org, { estado: 'FAILED' });
+  await esc.admin.query(`update negocio.analizador_llamadas set error = 'el error de antes' where id = $1`, [id]);
+  assert.ok(await tomarParaAnalizar(esc.org, id, 'FAILED', 'HT'));
+  await devolverAlEstado(esc.org, id, 'FAILED');
+  const r = await esc.admin.query('select estado, error, tomada_el from negocio.analizador_llamadas where id = $1', [id]);
+  assert.deepEqual(r.rows[0], { estado: 'FAILED', error: 'el error de antes', tomada_el: null });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -225,7 +251,7 @@ test('si guardar el análisis falla, la llamada NO queda DONE', async () => {
   /* Un puntaje fuera del CHECK hace fallar la escritura del análisis. Con las dos escrituras en
      pedidos separados —el origen— el DONE podía quedar sin informe; en la misma transacción, no. */
   const id = await unaLlamada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, id));
+  assert.ok(await tomarParaAnalizar(esc.org, id, 'PENDING', 'HT'));
   await assert.rejects(
     terminarConAnalisis(esc.org, id, { ...MODELO, analisis: {}, columnas: { score: 11 } }),
   );
@@ -236,7 +262,7 @@ test('si guardar el análisis falla, la llamada NO queda DONE', async () => {
 
 test('el veto deja NOT_MATCH, su motivo y lo que costó', async () => {
   const id = await unaLlamada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, id));
+  assert.ok(await tomarParaAnalizar(esc.org, id, 'PENDING', 'HT'));
   await terminarConVeto(esc.org, id, { ...MODELO, motivo: 'es una sesión de coaching' });
   const r = await esc.admin.query(
     `select l.estado, l.motivo, l.error, a.coincide, a.analisis, a.tokens_lectura_cache
@@ -251,7 +277,7 @@ test('el veto deja NOT_MATCH, su motivo y lo que costó', async () => {
 
 test('analizar dos veces deja UNA fila con lo nuevo, y la ficha igual', async () => {
   const id = await unaAnalizada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, id));
+  assert.ok(await tomarParaAnalizar(esc.org, id, 'DONE', 'HT'));
   await terminarConAnalisis(esc.org, id, { ...MODELO, analisis: { score: 3 }, columnas: { score: 3 } });
   const a = await esc.admin.query('select puntaje from negocio.analizador_analisis where llamada_id = $1', [id]);
   assert.deepEqual(a.rows, [{ puntaje: 3 }]);
@@ -322,6 +348,10 @@ test('las fichas faltantes se encuentran aunque haya muchas hechas antes', async
     await guardarFicha(esc.org, hecha, { estado: 'FAILED', error: 'x' });
   }
   const falta = await unaAnalizada(esc.org);
+  /* Recién analizada NO sale: la pantalla ya está pidiendo esa ficha, y la tarea que la generara en
+     paralelo pagaría dos. La mutación que quita la espera la devuelve acá. */
+  assert.ok(!(await llamadasSinFicha(esc.org, 50)).includes(falta), 'la tarea tomó una ficha que la pantalla está generando');
+  await esc.admin.query(`update negocio.analizador_analisis set analizado_el = now() - interval '11 minutes' where org_id = $1`, [esc.org]);
   const ids = await llamadasSinFicha(esc.org, 50);
   assert.ok(ids.includes(falta));
   const conFicha = await esc.admin.query('select llamada_id from negocio.analizador_fichas where org_id = $1', [esc.org]);
@@ -380,9 +410,42 @@ test('reencaminar: a HT/OB queda PENDING, a OTRO NOT_MATCH, y una DONE no se mue
   assert.equal(await estadoDe(hecha), 'DONE');
 
   const enCurso = await unaLlamada(esc.org);
-  assert.ok(await tomarParaAnalizar(esc.org, enCurso));
+  assert.ok(await tomarParaAnalizar(esc.org, enCurso, 'PENDING', 'HT'));
   assert.equal(await reencaminar(esc.org, enCurso, 'OB'), 'en_curso');
   assert.equal(await reencaminar(esc.otraOrg, otro, 'OB'), 'no_encontrada');
+});
+
+test('reencaminar se lleva el informe viejo: una FAILED con análisis de HT no llega a OB con él', async () => {
+  /* La secuencia que encontró la revisión: una HT en DONE se reanaliza, el reanálisis falla y queda
+     FAILED con el primer informe adentro; como una FAILED sí se mueve, llegaba a OB con un informe y
+     una ficha de venta. */
+  const id = await unaAnalizada(esc.org);
+  await guardarFicha(esc.org, id, { ...MODELO, estado: 'OK', ficha: { summary: 'x' }, columnas: {} });
+  await esc.admin.query(`update negocio.analizador_llamadas set estado = 'FAILED', error = 'falló el reanálisis' where id = $1`, [id]);
+  assert.equal(await reencaminar(esc.org, id, 'OB'), 'hecho');
+  const a = await esc.admin.query('select 1 from negocio.analizador_analisis where llamada_id = $1', [id]);
+  const f = await esc.admin.query('select 1 from negocio.analizador_fichas where llamada_id = $1', [id]);
+  assert.equal(a.rowCount, 0, 'la OB quedó con el análisis de HT');
+  assert.equal(f.rowCount, 0, 'la OB quedó con la ficha de HT');
+});
+
+test('una OTRO que pasa a HT recupera su prospecto por el correo', async () => {
+  const p = await prospectoDeLaLlamada(esc.org, 'Rubén', 'ruben@recupera.test');
+  const otro = await unaLlamada(esc.org, {
+    tipo: 'OTRO', estado: 'NOT_MATCH', motivo: 'interna', prospectoId: null, prospectoEmail: 'ruben@recupera.test',
+  });
+  assert.equal(await reencaminar(esc.org, otro, 'HT'), 'hecho');
+  const r = await esc.admin.query('select prospecto_id from negocio.analizador_llamadas where id = $1', [otro]);
+  assert.equal(r.rows[0].prospecto_id, p);
+});
+
+test('una transcripción guardada sin segmentos se vuelve a partir, como en el origen', async () => {
+  /* Mandar un `TRANSCRIPT:` vacío con el texto guardado al lado produce un análisis de nada, pagado. */
+  const id = await unaLlamada(esc.org);
+  await esc.admin.query(`update negocio.analizador_transcripciones set segmentos = '[]', texto = '[Ana]: hola' where llamada_id = $1`, [id]);
+  const l = await leerParaAnalizar(esc.org, id);
+  assert.equal(l?.transcripcion?.segments.length, 1);
+  assert.equal(l?.transcripcion?.segments[0]?.text, 'hola');
 });
 
 test('el historial del prospecto ordena sus reuniones de la más vieja a la más nueva', async () => {

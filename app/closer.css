@@ -2041,7 +2041,9 @@
 }
 #v-analizadores .az-detalle { display: flex; flex-direction: column; gap: 12px; }
 #v-analizadores .az-bloque h3 { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; color: var(--txt); }
-#v-analizadores .az-bloque p { margin: 4px 0; font-size: 12.5px; color: var(--txt); }
+/* `:where` baja la especificidad a la del `#id` solo: sin él, esta regla (1,1,1) le ganaba a
+   `.az-error` y `.az-no-consta` (1,1,0), y «La ficha falló» se pintaba como texto normal. */
+#v-analizadores :where(.az-bloque p) { margin: 4px 0; font-size: 12.5px; color: var(--txt); }
 #v-analizadores .az-cita { border-left: 2px solid var(--line-strong); padding-left: 8px; color: var(--txt-dim); font-style: italic; font-size: 12px; }
 #v-analizadores .az-tiempo { font-size: 11px; color: var(--txt-faint); font-variant-numeric: tabular-nums; }
 #v-analizadores .az-par { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 4px 12px; font-size: 12px; }

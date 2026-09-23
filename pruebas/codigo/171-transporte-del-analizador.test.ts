@@ -29,6 +29,8 @@ import {
   callAnalyzer,
   callClassifier,
   extractJson,
+  isOverloaded,
+  isUnusableKey,
 } from '../../lib/analizadores/nucleo/anthropic.ts';
 import { TldvError, fetchTranscript, listRecentMeetings } from '../../lib/analizadores/nucleo/tldv.ts';
 import { buildClassifierSystem, classifyCallType, runAnalysis } from '../../lib/analizadores/nucleo/engine.ts';
@@ -201,6 +203,35 @@ test('un rechazo del servicio trae su ESTADO y su motivo', async () => {
   assert.ok(e.message.includes('invalid x-api-key'));
 });
 
+test('qué rechazo deja la llave inservible y cuál es solo esperar', () => {
+  /* La diferencia decide si una llamada queda FAILED o vuelve a su estado, y si el drenado corta. Un
+     400 cualquiera —un campo de más— es un fallo de ESA petición; un 400 de saldo es de la cuenta. */
+  const rechazo = (status: number, texto = 'x') => new AnalyzerCallError('rechazado', `Anthropic ${status}: ${texto}`, status);
+  assert.ok(isUnusableKey(rechazo(401)));
+  assert.ok(isUnusableKey(rechazo(403)));
+  assert.ok(isUnusableKey(rechazo(400, 'Your credit balance is too low to access the Anthropic API.')));
+  assert.ok(!isUnusableKey(rechazo(400, 'max_tokens: 64000 > 32000')));
+  assert.ok(!isUnusableKey(rechazo(529)));
+  assert.ok(!isUnusableKey(new AnalyzerCallError('sin_respuesta', 'fetch failed')));
+  assert.ok(isOverloaded(rechazo(429)) && isOverloaded(rechazo(529)));
+  assert.ok(!isOverloaded(rechazo(500)));
+});
+
+test('la llave NO queda en el texto del error, aunque `fetch` la ponga entera', async () => {
+  /* `fetch` rechaza una cabecera con un salto de línea y pone su valor en el mensaje. Ese mensaje se
+     guardaba en la llamada y salía por la API y por la respuesta del cron. */
+  const LLAVE = 'sk-ant-api03-una-llave-que-no-puede-salir';
+  const tira = () => {
+    throw new TypeError(`Headers.append: "${LLAVE}" is an invalid header value.`);
+  };
+  const a = await interceptando(tira, () => callAnalyzer('s', 'u', LLAVE));
+  assert.ok(a.salida instanceof AnalyzerCallError);
+  assert.ok(!a.salida.message.includes(LLAVE), `el error de Anthropic trae la llave: ${a.salida.message}`);
+  const t = await interceptando(tira, () => listRecentMeetings(LLAVE));
+  assert.ok(t.salida instanceof TldvError);
+  assert.ok(!t.salida.message.includes(LLAVE), `el error de tl;dv trae la llave: ${t.salida.message}`);
+});
+
 test('sin respuesta es su propia rama, sin estado', async () => {
   const e = await fallaCon(() => {
     throw new TypeError('fetch failed');
@@ -258,6 +289,14 @@ test('el clasificador RELANZA una llave rechazada, y devuelve null para lo demá
     () => classifyCallType('texto', { apiKey: 'sk' }),
   );
   assert.ok(conLlaveMala.salida instanceof AnalyzerCallError && conLlaveMala.salida.status === 401);
+
+  /* La cuenta sin saldo, igual: con `null`, cada reunión quedaba «sin clasificar» y se reintentaba en
+     cada corrida, sin que nada dijera que había que cargar saldo. */
+  const sinSaldo = await interceptando(
+    () => json({ type: 'error', error: { type: 'invalid_request_error', message: 'Your credit balance is too low' } }, 400),
+    () => classifyCallType('texto', { apiKey: 'sk' }),
+  );
+  assert.ok(sinSaldo.salida instanceof AnalyzerCallError && sinSaldo.salida.status === 400);
 
   const conFalloDelServicio = await interceptando(
     () => json({ type: 'error', error: { type: 'overloaded_error', message: 'x' } }, 529),

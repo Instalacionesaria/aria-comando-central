@@ -114,7 +114,10 @@ async function getTldv<T>(path: string, apiKey: string, waitMs: number, notReady
     cabeceras: { 'x-api-key': apiKey },
     espera: waitMs,
   });
-  if (r.tipo === 'sin_respuesta') throw new TldvError('sin_respuesta', `tl;dv no respondió: ${r.causa}`);
+  /* La llave se saca del texto: `fetch` la pone entera en su mensaje cuando no es un valor de cabecera
+     válido, y ese texto llega hasta la respuesta del cron. */
+  const sinLlave = (t: string) => (apiKey.length >= 8 ? t.split(apiKey).join('[llave]') : t);
+  if (r.tipo === 'sin_respuesta') throw new TldvError('sin_respuesta', sinLlave(`tl;dv no respondió: ${r.causa}`));
   if (r.tipo === 'rechazado') {
     if (r.estado === 401 || r.estado === 403) {
       throw new TldvError('llave', `tl;dv rechazó la llave (${r.estado}).`, r.estado);
@@ -122,13 +125,20 @@ async function getTldv<T>(path: string, apiKey: string, waitMs: number, notReady
     if (notReadyOn404 && r.estado === 404) {
       throw new TldvError('no_lista', 'tl;dv todavía no tiene la transcripción de esta reunión.', 404);
     }
-    throw new TldvError('rechazado', `tl;dv ${r.estado}: ${r.detalle ?? r.codigo}`, r.estado);
+    throw new TldvError('rechazado', sinLlave(`tl;dv ${r.estado}: ${r.detalle ?? r.codigo}`), r.estado);
   }
   return r.datos;
 }
 
+/**
+ * El tamaño de una página del listado de tl;dv. **Lo dice su documentación y no está verificado**
+ * contra la API real: el origen no pagina y descarta cualquier metadato de paginación.
+ */
+export const TLDV_PAGE_SIZE = 50;
+
 // Lista las reuniones recientes de la cuenta (más nuevas primero). **Una sola página**, como el
-// origen: quien llama avisa si vuelve llena, porque entonces puede haber reuniones que no se ven.
+// origen. Si vuelve llena, puede haber reuniones que no se ven: la tarea lo deja dicho en su sello
+// (`motivoDeLoIncompleto`, con `TLDV_PAGE_SIZE`).
 export async function listRecentMeetings(apiKey: string, waitMs: number = TLDV_WAIT_MS): Promise<NormalizedMeeting[]> {
   const body = await getTldv<{ results?: TldvMeetingData[] }>('/meetings', apiKey, waitMs, false);
   return (Array.isArray(body.results) ? body.results : []).map((m) => toNormalizedMeeting(m, String(m.id)));

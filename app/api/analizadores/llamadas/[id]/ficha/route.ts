@@ -7,8 +7,9 @@
 //
 // En el origen la ficha se generaba a continuación del análisis, en la misma función: dos
 // inferencias de minutos dentro de 300 s. Acá el análisis termina y contesta, y la pantalla pide la
-// ficha enseguida con esta ruta. Si esta falla, la llamada sigue DONE con su análisis intacto; la
-// tarea programada completa las que falten.
+// ficha enseguida con esta ruta. Si esta falla, la llamada sigue DONE con su análisis intacto y la
+// ficha queda FAILED, que se rehace con este mismo botón. La tarea programada solo genera las que
+// NUNCA se generaron: reintentar sola una FAILED repetiría el mismo fallo, pagando cada hora.
 //
 // Mismo patrón que `analizar/`: `conIdentidad(` solo para la llave, el trabajo en `lib/`.
 

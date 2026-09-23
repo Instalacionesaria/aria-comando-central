@@ -15,9 +15,12 @@
    ── SINCRONIZAR DESCUBRE; ANALIZAR ES DE A UNA ────────────────────────────
 
    Sincronizar trae las reuniones nuevas y las clasifica, y nada más. Después la pantalla analiza las
-   pendientes UNA POR PETICIÓN, en orden: cada análisis tiene así su propia función de 300 s. Si dos
-   pestañas lo hacen a la vez, el candado de la base deja ganar a una por llamada, y la otra recibe
-   `llamada_en_curso` y sigue con la siguiente.
+   pendientes UNA POR PETICIÓN, en orden: cada análisis tiene así su propia función de 300 s.
+
+   Y cada pedido lleva el estado en que la pantalla VIO la llamada (`esperado`). La lista es una foto
+   y el drenado tarda minutos: si mientras tanto la tarea de cada hora u otra pestaña terminó una,
+   el servidor la rechaza con `llamada_cambio` y el drenado sigue con la siguiente, en vez de pagarla
+   otra vez. La revisión del 2026-09-23 encontró que sin esto se pagaban dos análisis y dos fichas.
 
    ── VACÍO Y ERROR NO SON LO MISMO ─────────────────────────────────────────
 
@@ -31,7 +34,7 @@
    con la tarea de cada hora, así que un reloj de segundos pediría la misma lista cientos de veces
    para no traer nada. */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { pedir } from '../../lib/http/cliente.ts';
 import { estaALaVista } from '@/lib/vista';
@@ -68,13 +71,16 @@ const CHIP_DEL_ESTADO = { PENDING: 'warn', ANALYZING: 'warn', DONE: 'ok', NOT_MA
 const MENSAJES = {
   sin_permiso: 'Tu usuario puede ver los Analizadores pero no analizar ni cambiar nada.',
   sin_llave_de_ia:
-    'Falta la llave de IA de la empresa. Se carga en Integraciones; si no la ves, pedíselo a un administrador.',
+    'Falta la llave de IA de la empresa. Se carga en Ajustes › Credenciales; si no la ves, pedíselo a un administrador.',
   llave_de_ia_ilegible: 'La llave de IA está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
   sin_llave_de_tldv:
-    'Falta la llave de tl;dv. Se carga en Integraciones; sin ella igual podés pegar una transcripción a mano.',
+    'Falta la llave de tl;dv. Se carga en Ajustes › Credenciales; sin ella igual podés pegar una transcripción a mano.',
   llave_de_tldv_ilegible: 'La llave de tl;dv está cargada pero el servidor no puede leerla. Hay que volver a cargarla.',
   base_no_disponible: 'No se pudo leer la base. No es que no haya llamadas: no se pudo preguntar.',
 };
+
+/** Los rechazos que cortan un drenado: seguir solo repetiría el mismo rechazo en cada llamada. */
+const CORTAN_EL_DRENADO = ['llave_de_ia_rechazada', 'servicio_externo_saturado', 'sin_llave_de_ia', 'llave_de_ia_ilegible'];
 
 function textoDelRechazo(r) {
   if (r.tipo === 'sin_respuesta') return 'No se pudo contactar al servidor.';
@@ -95,15 +101,25 @@ export default function PanelDeAnalizadores() {
   const [lista, setLista] = useState(null);
   const [error, setError] = useState('');
   const [estado, setEstado] = useState(null);
+  const [errorDeEstado, setErrorDeEstado] = useState('');
   const [detalle, setDetalle] = useState(null);
   const [formulario, setFormulario] = useState(false);
   const [trabajando, setTrabajando] = useState('');
   const [aviso, setAviso] = useState('');
+  /* Cada acción larga termina pidiendo una recarga con este contador, y no llamando al `cargarLista`
+     que existía cuando se hizo clic: ese tenía fijos la pestaña y el filtro de ese momento, y si en los
+     minutos del análisis alguien cambió de pestaña, la lista vieja aparecía bajo la pestaña nueva. */
+  const [recarga, setRecarga] = useState(0);
+  const recargar = () => setRecarga((n) => n + 1);
+  /* Y cada pedido lleva su número: una respuesta que llega después de otra más nueva se descarta. */
+  const ultimoPedido = useRef(0);
 
   const aLaVista = estaALaVista('analizadores');
 
   const cargarLista = useCallback(async () => {
+    const mio = ++ultimoPedido.current;
     const r = await pedir(`/api/analizadores/llamadas?tipo=${pestana}&filtro=${filtro}`);
+    if (mio !== ultimoPedido.current) return;
     if (r.tipo === 'datos') {
       setLista(r.datos);
       setError('');
@@ -115,34 +131,59 @@ export default function PanelDeAnalizadores() {
   useEffect(() => {
     if (!aLaVista) return;
     cargarLista();
-  }, [aLaVista, cargarLista]);
+  }, [aLaVista, cargarLista, recarga]);
 
+  /* El estado de las llaves, CADA VEZ que la pestaña se abre y no una sola: la vista queda montada
+     siempre, así que quien cargaba la llave de tl;dv en Ajustes › Credenciales y volvía seguía viendo
+     Sincronizar deshabilitado hasta recargar la página. */
+  const cargarEstado = useCallback(async () => {
+    const r = await pedir('/api/analizadores/estado');
+    if (r.tipo === 'datos') {
+      setEstado(r.datos);
+      setErrorDeEstado('');
+    } else {
+      setErrorDeEstado(textoDelRechazo(r));
+    }
+  }, []);
   useEffect(() => {
-    if (!aLaVista || estado !== null) return;
-    (async () => {
-      const r = await pedir('/api/analizadores/estado');
-      if (r.tipo === 'datos') setEstado(r.datos);
-    })();
-  }, [aLaVista, estado]);
+    if (aLaVista) cargarEstado();
+  }, [aLaVista, cargarEstado]);
 
   const seAnaliza = (tipo) => (estado?.tiposQueSeAnalizan ?? []).includes(tipo);
+  /* Por qué un botón de analizar está deshabilitado. Sin el estado cargado no se sabe qué se
+     analiza, y decir «se analiza en la fase OB» sobre una HT sería falso. */
+  const porQueNoSeAnaliza = (tipo) =>
+    estado === null
+      ? 'No se pudo saber todavía qué se analiza: recargá el estado.'
+      : seAnaliza(tipo)
+        ? undefined
+        : 'Se analiza en la fase OB.';
 
   /** Analiza una llamada y, si es una HT que quedó DONE, pide su ficha enseguida. */
-  const analizarUna = useCallback(async (id, tipo) => {
-    const r = await pedir(`/api/analizadores/llamadas/${id}/analizar`, { metodo: 'POST', espera: ESPERA_LARGA });
-    if (r.tipo !== 'datos') return { ok: false, mensaje: textoDelRechazo(r) };
+  const analizarUna = useCallback(async (id, tipo, esperado) => {
+    const r = await pedir(`/api/analizadores/llamadas/${id}/analizar`, {
+      metodo: 'POST',
+      cuerpo: { esperado },
+      espera: ESPERA_LARGA,
+    });
+    if (r.tipo !== 'datos') {
+      return { ok: false, codigo: r.tipo === 'rechazado' ? r.codigo : null, mensaje: textoDelRechazo(r) };
+    }
     if (r.datos.estado === 'DONE' && tipo === 'HT') {
       await pedir(`/api/analizadores/llamadas/${id}/ficha`, { metodo: 'POST', espera: ESPERA_LARGA });
     }
-    return { ok: true, estado: r.datos.estado, error: r.datos.error };
+    return { ok: true, estado: r.datos.estado, error: r.datos.error, motivo: r.datos.motivo };
   }, []);
 
   const alAnalizar = async (l) => {
     setTrabajando(`Analizando «${l.titulo ?? 'la llamada'}»…`);
-    const r = await analizarUna(l.id, l.tipo);
+    const r = await analizarUna(l.id, l.tipo, l.estado);
     setTrabajando('');
-    setAviso(r.ok ? (r.estado === 'FAILED' ? `El análisis falló: ${r.error}` : '') : r.mensaje);
-    await cargarLista();
+    if (!r.ok) setAviso(r.mensaje);
+    else if (r.estado === 'FAILED') setAviso(`El análisis falló: ${r.error}`);
+    else if (r.estado === 'NOT_MATCH') setAviso(`El análisis dice que no corresponde: ${r.motivo}`);
+    else setAviso('');
+    recargar();
   };
 
   const alSincronizar = async () => {
@@ -161,27 +202,41 @@ export default function PanelDeAnalizadores() {
     if (d.sinExaminar > 0) partes.push(`${d.sinExaminar} para la próxima corrida`);
 
     /* El drenado: las PENDING de los tipos que se analizan, de a una. Las FAILED no: reintentarlas es
-       una decisión de alguien que lee el error, no algo que se repite solo. */
-    let analizadas = 0;
+       una decisión de alguien que lee el error, no algo que se repite solo. Cada resultado se cuenta
+       por lo que fue —un FAILED no es una analizada— y los rechazos que valen para todas cortan. */
+    const cuenta = { DONE: 0, NOT_MATCH: 0, FAILED: 0, salteadas: 0 };
+    let corte = '';
     for (const tipo of estado?.tiposQueSeAnalizan ?? []) {
+      if (corte) break;
       const p = await pedir(`/api/analizadores/llamadas?tipo=${tipo}&filtro=pendientes`);
-      if (p.tipo !== 'datos') break;
+      if (p.tipo !== 'datos') {
+        corte = `no se pudo leer la lista de pendientes: ${textoDelRechazo(p)}`;
+        break;
+      }
       const pendientes = p.datos.llamadas.filter((l) => l.estado === 'PENDING').reverse();
       for (const [i, l] of pendientes.entries()) {
         setTrabajando(`Analizando ${i + 1} de ${pendientes.length} (${tipo})…`);
-        const a = await analizarUna(l.id, l.tipo);
-        if (a.ok) analizadas++;
+        const a = await analizarUna(l.id, l.tipo, 'PENDING');
+        if (a.ok) cuenta[a.estado] = (cuenta[a.estado] ?? 0) + 1;
+        else if (CORTAN_EL_DRENADO.includes(a.codigo)) {
+          corte = a.mensaje;
+          break;
+        } else cuenta.salteadas++;
       }
     }
     setTrabajando('');
-    setAviso(`tl;dv: ${partes.join(' · ')}. Analizadas ahora: ${analizadas}.`);
-    await cargarLista();
+    const resultado = [`analizadas ${cuenta.DONE}`];
+    if (cuenta.NOT_MATCH > 0) resultado.push(`no corresponden ${cuenta.NOT_MATCH}`);
+    if (cuenta.FAILED > 0) resultado.push(`fallaron ${cuenta.FAILED} (están en Pendientes)`);
+    if (cuenta.salteadas > 0) resultado.push(`${cuenta.salteadas} ya las había tomado otra corrida`);
+    setAviso(`tl;dv: ${partes.join(' · ')}. Ahora: ${resultado.join(' · ')}.${corte ? ` Se cortó: ${corte}` : ''}`);
+    recargar();
   };
 
   const alMover = async (l, tipo) => {
     const r = await pedir(`/api/analizadores/llamadas/${l.id}`, { metodo: 'PATCH', cuerpo: { tipo } });
     setAviso(r.tipo === 'datos' ? '' : textoDelRechazo(r));
-    await cargarLista();
+    recargar();
   };
 
   const alBorrar = async (l) => {
@@ -189,7 +244,7 @@ export default function PanelDeAnalizadores() {
     if (!window.confirm('¿Borrar esta llamada? No vuelve a entrar desde tl;dv.')) return;
     const r = await pedir(`/api/analizadores/llamadas/${l.id}`, { metodo: 'DELETE' });
     setAviso(r.tipo === 'datos' ? '' : textoDelRechazo(r));
-    await cargarLista();
+    recargar();
   };
 
   if (detalle !== null) {
@@ -198,7 +253,7 @@ export default function PanelDeAnalizadores() {
         id={detalle}
         alVolver={() => {
           setDetalle(null);
-          cargarLista();
+          recargar();
         }}
       />
     );
@@ -245,6 +300,15 @@ export default function PanelDeAnalizadores() {
         </div>
       </div>
 
+      {errorDeEstado ? (
+        <div className="az-error">
+          No se pudo leer qué llaves tiene la empresa: {errorDeEstado}{' '}
+          <button type="button" className="az-boton" onClick={cargarEstado}>
+            Reintentar
+          </button>
+        </div>
+      ) : null}
+
       {!seAnaliza(pestana) && estado ? (
         <div className="az-aviso">
           Las reuniones de onboarding se clasifican y se guardan desde ya, y se analizan cuando llegue la
@@ -256,10 +320,14 @@ export default function PanelDeAnalizadores() {
         <Manual
           pestana={pestana}
           seAnaliza={seAnaliza}
-          alTerminar={async (id, tipo, estadoFinal) => {
+          trabajando={trabajando !== ''}
+          alTerminar={(id, tipo, estadoFinal, mensaje) => {
+            /* El formulario se cierra, así que el resultado lo dice el PANEL: con el mensaje adentro del
+               formulario, un «no corresponde» o un «falló» se desmontaba antes de verse. */
             setFormulario(false);
-            if (estadoFinal === 'DONE') setDetalle(tipo === 'HT' ? id : null);
-            await cargarLista();
+            setAviso(mensaje);
+            if (estadoFinal === 'DONE' && tipo === 'HT') setDetalle(id);
+            recargar();
           }}
           setTrabajando={setTrabajando}
         />
@@ -329,7 +397,7 @@ export default function PanelDeAnalizadores() {
                   type="button"
                   className="az-boton"
                   disabled={trabajando !== '' || !seAnaliza(l.tipo)}
-                  title={seAnaliza(l.tipo) ? undefined : 'Se analiza en la fase OB.'}
+                  title={porQueNoSeAnaliza(l.tipo)}
                   onClick={() => alAnalizar(l)}
                 >
                   {l.estado === 'PENDING' ? 'Analizar' : 'Reintentar'}
@@ -356,15 +424,28 @@ export default function PanelDeAnalizadores() {
 }
 
 /** El formulario de la transcripción pegada a mano. Los tres campos son obligatorios. */
-function Manual({ pestana, seAnaliza, alTerminar, setTrabajando }) {
+function Manual({ pestana, seAnaliza, trabajando, alTerminar, setTrabajando }) {
   const [tipo, setTipo] = useState(pestana);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [transcripcion, setTranscripcion] = useState('');
   const [error, setError] = useState('');
+  /* Una guarda que no espera al re-render: dos clics seguidos —o un Enter y un clic— entraban los dos
+     antes de que el botón se apagara, y se creaban y pagaban dos análisis de la misma transcripción. */
+  const enviando = useRef(false);
 
   const enviar = async (e) => {
     e.preventDefault();
+    if (enviando.current) return;
+    enviando.current = true;
+    try {
+      await enviarUnaVez();
+    } finally {
+      enviando.current = false;
+    }
+  };
+
+  const enviarUnaVez = async () => {
     setError('');
     setTrabajando('Analizando la transcripción… puede tardar un par de minutos.');
     const r = await pedir('/api/analizadores/manual', {
@@ -382,9 +463,13 @@ function Manual({ pestana, seAnaliza, alTerminar, setTrabajando }) {
       await pedir(`/api/analizadores/llamadas/${r.datos.id}/ficha`, { metodo: 'POST', espera: ESPERA_LARGA });
     }
     setTrabajando('');
-    if (r.datos.estado === 'NOT_MATCH') setError(`El análisis dice que no corresponde: ${r.datos.motivo}`);
-    if (r.datos.estado === 'FAILED') setError(`El análisis falló: ${r.datos.error}`);
-    await alTerminar(r.datos.id, tipo, r.datos.estado);
+    const mensaje =
+      r.datos.estado === 'NOT_MATCH'
+        ? `El análisis dice que no corresponde: ${r.datos.motivo}`
+        : r.datos.estado === 'FAILED'
+          ? `El análisis falló: ${r.datos.error}`
+          : '';
+    alTerminar(r.datos.id, tipo, r.datos.estado, mensaje);
   };
 
   return (
@@ -415,7 +500,7 @@ function Manual({ pestana, seAnaliza, alTerminar, setTrabajando }) {
       />
       {error ? <div className="az-error">{error}</div> : null}
       <div className="az-acciones">
-        <button type="submit" className="az-boton az-primario" disabled={!seAnaliza(tipo)}>
+        <button type="submit" className="az-boton az-primario" disabled={trabajando || !seAnaliza(tipo)}>
           Analizar
         </button>
       </div>

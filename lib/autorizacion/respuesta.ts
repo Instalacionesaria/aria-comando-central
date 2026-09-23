@@ -222,6 +222,9 @@ export const RECHAZOS = {
   sin_transcripcion: 409,
   // Otra corrida —el cron o una segunda pestaña— la está analizando. Esperar, no reintentar.
   llamada_en_curso: 409,
+  // Ya no está en el estado en que la pantalla la vio: otra corrida la terminó o la movió. Recargar.
+  // Separado de `llamada_en_curso` porque la acción es otra: acá esperar no sirve, hay que mirar.
+  llamada_cambio: 409,
   // Una DONE no se reencamina: quedaría PENDING con el informe del otro tipo adentro.
   llamada_ya_analizada: 409,
   // La ficha se genera sobre una HT ya analizada, y solo sobre HT.

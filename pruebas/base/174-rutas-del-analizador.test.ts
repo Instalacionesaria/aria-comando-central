@@ -184,6 +184,26 @@ test('una DONE no se reencamina, aunque la petición se arme a mano', async () =
   assert.deepEqual({ estado: c.estado, codigo: c.cuerpo.codigo }, { estado: 409, codigo: 'llamada_ya_analizada' });
 });
 
+test('analizar exige el estado en que se vio la llamada: sin cuerpo, una DONE NO se reanaliza', async () => {
+  /* El drenado de la pantalla pide sin cuerpo —PENDING— lo que vio pendiente al empezar. Si otra
+     corrida la terminó mientras tanto, se paga otro análisis por nada. Reanalizar se pide diciéndolo. */
+  const { cuerpo } = await unaManual();
+  const pedirAnalisis = (c?: unknown) =>
+    analizar(pedirComo(`/api/analizadores/llamadas/${cuerpo.id}/analizar`, esc.token, { metodo: 'POST', cuerpo: c }), params(cuerpo.id));
+
+  const sinCuerpo = await leerRespuesta<{ codigo: string }>(await pedirAnalisis());
+  assert.deepEqual({ estado: sinCuerpo.estado, codigo: sinCuerpo.cuerpo.codigo }, { estado: 409, codigo: 'llamada_cambio' });
+  assert.equal(red.llamadasAlAnalisis, 1, 'la DONE se volvió a pagar');
+
+  const malo = await leerRespuesta<{ codigo: string }>(await pedirAnalisis({ esperado: 'CUALQUIERA' }));
+  assert.deepEqual({ estado: malo.estado, codigo: malo.cuerpo.codigo }, { estado: 400, codigo: 'peticion_invalida' });
+
+  red.analisis.push(() => delModelo('{"score": 9, "outcome": "CERRADA"}'));
+  const otraVez = await leerRespuesta<{ estado: string }>(await pedirAnalisis({ esperado: 'DONE' }));
+  assert.deepEqual({ estado: otraVez.estado, llamada: otraVez.cuerpo.estado }, { estado: 200, llamada: 'DONE' });
+  assert.equal(red.llamadasAlAnalisis, 2);
+});
+
 test('el detalle NO trae la transcripción', async () => {
   const { cuerpo } = await unaManual();
   const r = await detalle(pedirComo(`/api/analizadores/llamadas/${cuerpo.id}`, esc.token), params(cuerpo.id));

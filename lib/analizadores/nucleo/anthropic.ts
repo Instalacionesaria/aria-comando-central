@@ -86,6 +86,30 @@ export class AnalyzerCallError extends Error {
   }
 }
 
+/**
+ * ¿La llave ya no sirve para NADA de lo que venga después? 401 y 403 son la llave; un 400 con «credit
+ * balance» es la cuenta sin saldo. En los tres casos, seguir intentando con la próxima llamada solo
+ * produce el mismo rechazo —y, en un drenado, deja FAILED a cada pendiente que toca—.
+ */
+export function isUnusableKey(e: unknown): boolean {
+  if (!(e instanceof AnalyzerCallError) || e.kind !== 'rechazado') return false;
+  return e.status === 401 || e.status === 403 || (e.status === 400 && /credit balance/i.test(e.message));
+}
+
+/** ¿El servicio está saturado? 429 y 529: se arregla esperando, no reintentando en bucle. */
+export function isOverloaded(e: unknown): boolean {
+  return e instanceof AnalyzerCallError && e.kind === 'rechazado' && (e.status === 429 || e.status === 529);
+}
+
+/**
+ * Saca la llave de un texto de error. `fetch` pone el valor de una cabecera inválida adentro de su
+ * mensaje —«"<la llave entera>" is an invalid header value»—, y ese mensaje termina guardado en la
+ * llamada y devuelto por la API. Una llave cargada con un salto de línea en el medio basta.
+ */
+export function redactKey(texto: string, apiKey: string): string {
+  return apiKey.length >= 8 ? texto.split(apiKey).join('[llave]') : texto;
+}
+
 interface AnthropicBlock {
   type?: string;
   text?: string;
@@ -134,10 +158,10 @@ async function postAnthropic(body: Record<string, unknown>, apiKey: string, wait
     espera: waitMs,
   });
   if (r.tipo === 'rechazado') {
-    throw new AnalyzerCallError('rechazado', `Anthropic ${r.estado}: ${r.detalle ?? r.codigo}`, r.estado);
+    throw new AnalyzerCallError('rechazado', redactKey(`Anthropic ${r.estado}: ${r.detalle ?? r.codigo}`, apiKey), r.estado);
   }
   if (r.tipo === 'sin_respuesta') {
-    throw new AnalyzerCallError('sin_respuesta', `Anthropic no respondió: ${r.causa}`);
+    throw new AnalyzerCallError('sin_respuesta', redactKey(`Anthropic no respondió: ${r.causa}`, apiKey));
   }
   return r.datos;
 }

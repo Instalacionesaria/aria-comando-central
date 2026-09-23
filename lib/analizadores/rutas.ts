@@ -49,6 +49,12 @@ export function respuestaDelRechazo(que: RechazoDelAnalisis | RechazoDeLaFicha):
       return rechazo('sin_transcripcion', 'Esta llamada no tiene transcripción guardada.');
     case 'llamada_en_curso':
       return rechazo('llamada_en_curso', 'Esta llamada se está analizando ahora. Esperá a que termine.');
+    case 'llamada_cambio':
+      return rechazo('llamada_cambio', 'La llamada cambió mientras tanto —otra corrida la analizó o la movió—. Recargá la lista.');
+    case 'llave_de_ia_rechazada':
+      return rechazo('llave_de_ia_rechazada', 'Anthropic rechazó la llave de IA o la cuenta no tiene saldo. La llamada quedó como estaba.');
+    case 'modelo_saturado':
+      return rechazo('servicio_externo_saturado', 'Anthropic está saturado. La llamada quedó como estaba: probá en unos minutos.');
     case 'sin_tiempo':
       return rechazo('sin_tiempo_para_analizar', 'No quedaba tiempo para un análisis entero. Probá de nuevo.');
     case 'ficha_solo_ht':
@@ -56,6 +62,12 @@ export function respuestaDelRechazo(que: RechazoDelAnalisis | RechazoDeLaFicha):
     case 'sin_analisis':
       return rechazo('llamada_sin_analizar', 'La ficha se genera sobre una llamada ya analizada.');
   }
+}
+
+/** El estado en que la pantalla vio la llamada, para que la toma lo exija. Sin valor, PENDING. */
+export function esperadoDe(valor: unknown): 'PENDING' | 'FAILED' | 'DONE' | 'ANALYZING' | null {
+  if (valor === undefined || valor === null) return 'PENDING';
+  return valor === 'PENDING' || valor === 'FAILED' || valor === 'DONE' || valor === 'ANALYZING' ? valor : null;
 }
 
 /** El largo máximo de cada campo de una transcripción pegada a mano. */

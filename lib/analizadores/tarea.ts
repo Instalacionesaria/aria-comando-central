@@ -23,6 +23,7 @@
 
 import type { AccesoAlAnalizador } from '../credenciales/resolver.ts';
 import { llamadasSinFicha, pendientesParaAnalizar } from './datos.ts';
+import { TLDV_PAGE_SIZE } from './nucleo/tldv.ts';
 import {
   TIPOS_QUE_SE_ANALIZAN,
   analizarLlamada,
@@ -43,6 +44,10 @@ export interface ResultadoDeLaTarea {
    * llave rechazada no entra nada nuevo, y el sello lo tiene que decir aunque la tarea «corrió».
    */
   llaveRechazada: 'tldv' | 'ia' | null;
+  /** Anthropic contestó 429 o 529: se cortó el drenado y lo que quedaba sigue PENDING. */
+  saturado: boolean;
+  /** El listado de tl;dv volvió con una página llena: puede haber reuniones que no se ven. */
+  paginaLlena: boolean;
   analizadas: number;
   vetadas: number;
   fallidas: number;
@@ -61,9 +66,16 @@ export async function correrAnalizadores(
   acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
   reloj: Reloj,
 ): Promise<ResultadoDeLaTarea> {
+  const descubrimiento = await descubrir(orgId, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj });
   const out: ResultadoDeLaTarea = {
-    descubrimiento: await descubrir(orgId, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj }),
+    /* Un fallo del descubrimiento va entero al REGISTRO y al resultado sin su causa: el resultado viaja
+       en el cuerpo de la respuesta del cron, y la causa cruda de un proveedor no sale en una respuesta
+       (ADR-0704). El sello lo dice igual, con `motivoDeLoIncompleto`. */
+    descubrimiento:
+      descubrimiento.tipo === 'fallo' ? { tipo: 'fallo', causa: 'tl;dv no respondió al listar las reuniones' } : descubrimiento,
     llaveRechazada: null,
+    saturado: false,
+    paginaLlena: descubrimiento.tipo === 'hecho' && descubrimiento.listadas >= TLDV_PAGE_SIZE,
     analizadas: 0,
     vetadas: 0,
     fallidas: 0,
@@ -71,34 +83,57 @@ export async function correrAnalizadores(
     fichasFallidas: 0,
     sinTiempo: 0,
   };
-  if (out.descubrimiento.tipo === 'falta') {
-    out.llaveRechazada = out.descubrimiento.que === 'llave_de_tldv_rechazada' ? 'tldv' : 'ia';
-    /* Con la llave de IA rechazada no se analiza nada: cada intento fallaría con un 401 y dejaría la
-       llamada FAILED. Con la de tl;dv rechazada sí se puede drenar lo que ya estaba guardado. */
+  if (descubrimiento.tipo === 'fallo') console.error('analizadores: el descubrimiento falló', orgId, descubrimiento.causa);
+  if (descubrimiento.tipo === 'falta') {
+    out.llaveRechazada = descubrimiento.que === 'llave_de_tldv_rechazada' ? 'tldv' : 'ia';
+    /* Con la llave de IA rechazada no se analiza nada: cada intento volvería a rechazarse. Con la de
+       tl;dv rechazada sí se puede drenar lo que ya estaba guardado. */
     if (out.llaveRechazada === 'ia') return out;
   }
 
+  /* Solo PENDING, y la toma lo exige (`esperado` por omisión): la lista es una foto, y si mientras
+     tanto la pantalla o otra corrida terminó una, al llegar su turno se saltea en vez de pagarla dos
+     veces. */
   const pendientes = await pendientesParaAnalizar(orgId, TIPOS_QUE_SE_ANALIZAN, PENDIENTES_POR_CORRIDA);
   for (const [i, id] of pendientes.entries()) {
-    const r = await analizarLlamada(orgId, id, acceso.claveIa, reloj);
+    const r = await analizarLlamada(orgId, id, acceso.claveIa, reloj, 'PENDING');
     if (r.tipo === 'rechazo') {
       if (r.que === 'sin_tiempo') {
         out.sinTiempo = pendientes.length - i;
         break;
       }
-      continue; // otra corrida la tomó, o cambió de tipo mientras tanto: no es de esta vuelta
+      /* La llave dejó de servir a mitad del drenado: la llamada ya volvió a PENDING, y seguir solo
+         repetiría el rechazo en cada una. Tampoco se arman fichas. */
+      if (r.que === 'llave_de_ia_rechazada') {
+        out.llaveRechazada = 'ia';
+        return out;
+      }
+      if (r.que === 'modelo_saturado') {
+        out.saturado = true;
+        return out;
+      }
+      continue; // otra corrida la tomó, la terminó o la movió mientras tanto: no es de esta vuelta
     }
     if (r.estado === 'DONE') out.analizadas++;
     else if (r.estado === 'NOT_MATCH') out.vetadas++;
     else out.fallidas++;
   }
 
-  /* Las fichas, con lo que sobre. Incluye las de las HT que se acaban de analizar: `llamadasSinFicha`
-     las encuentra solas, así que no hace falta un camino aparte para ellas. */
+  /* Las fichas que NUNCA se generaron, con lo que sobre. Las de las HT recién analizadas no entran
+     todavía: la pantalla ya las está pidiendo, y `llamadasSinFicha` espera unos minutos para no
+     generarlas dos veces en paralelo. Las toma la corrida siguiente si nadie lo hizo. */
   for (const id of await llamadasSinFicha(orgId, PENDIENTES_POR_CORRIDA)) {
     const r = await generarFicha(orgId, id, acceso.claveIa, reloj);
     if (r.tipo === 'rechazo') {
       if (r.que === 'sin_tiempo') break;
+      if (r.que === 'llave_de_ia_rechazada') {
+        out.llaveRechazada = 'ia';
+        break;
+      }
+      if (r.que === 'modelo_saturado') {
+        out.saturado = true;
+        break;
+      }
       continue;
     }
     if (r.estado === 'OK') out.fichas++;
@@ -107,7 +142,11 @@ export async function correrAnalizadores(
   return out;
 }
 
-/** Cuántas veces se le habló a un proveedor en la corrida. Aproximado por arriba, y dicho así. */
+/**
+ * Cuántas veces se le habló a un proveedor en la corrida. **Aproximado**, a partir de lo que dejó
+ * rastro en el resultado: una corrida cortada por una llave rechazada, o una reunión que se clasificó
+ * y perdió la carrera con el botón, cuentan de menos.
+ */
 export function llamadasDeLaTarea(r: ResultadoDeLaTarea): number {
   const d = r.descubrimiento;
   const descubrimiento =

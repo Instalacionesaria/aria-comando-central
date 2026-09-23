@@ -37,6 +37,7 @@ import {
   TABLAS_DEL_ANALIZADOR as TABLAS,
   delModelo,
   instalarRedFalsa,
+  json,
   quitarRedFalsa,
   red,
   unaReunion,
@@ -225,6 +226,54 @@ test('analizar: un fallo del modelo deja FAILED con el error, recortado', async 
   assert.ok(l.rows[0].largo > 0 && l.rows[0].largo <= 500);
 });
 
+/** Lo que Anthropic contesta cuando dice que no, con la forma de su cuerpo de error. */
+const rechazoDeAnthropic = (status: number, message: string) => () =>
+  json({ type: 'error', error: { type: 'x', message } }, status);
+
+async function filaDe(id: string): Promise<{ estado: string; error: string | null; tomada_el: Date | null }> {
+  const r = await esc.admin.query('select estado, error, tomada_el from negocio.analizador_llamadas where id = $1', [id]);
+  return r.rows[0];
+}
+
+test('una llave rechazada A MITAD del análisis devuelve la llamada a PENDING: no es un fallo de ella', async () => {
+  /* El defecto que encontró la revisión: el 401 caía en el mismo `catch` que un JSON roto y dejaba la
+     llamada FAILED. El drenado seguía con la siguiente —y con la otra, y con la otra—, cada una
+     FAILED por una llave que no es culpa de ninguna, y la corrida terminaba como si nada. */
+  const id = await unaHtPendiente();
+  red.analisis.push(rechazoDeAnthropic(401, 'invalid x-api-key'));
+  assert.deepEqual(await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'rechazo', que: 'llave_de_ia_rechazada' });
+  assert.deepEqual(await filaDe(id), { estado: 'PENDING', error: null, tomada_el: null });
+});
+
+test('una cuenta sin saldo es una llave que no sirve, y una FAILED reintentada conserva su error de antes', async () => {
+  /* El saldo llega como un 400 cualquiera; lo único que lo distingue es la frase. Y la FAILED que se
+     reintenta con la cuenta sin saldo no pierde el error que tenía: el análisis no ocurrió. */
+  const id = await unaHtPendiente();
+  await esc.admin.query(`update negocio.analizador_llamadas set estado = 'FAILED', error = 'el error de antes' where id = $1`, [id]);
+  red.analisis.push(rechazoDeAnthropic(400, 'Your credit balance is too low to access the Anthropic API.'));
+  const r = await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo(), 'FAILED');
+  assert.deepEqual(r, { tipo: 'rechazo', que: 'llave_de_ia_rechazada' });
+  assert.deepEqual(await filaDe(id), { estado: 'FAILED', error: 'el error de antes', tomada_el: null });
+});
+
+test('el servicio saturado tampoco es un fallo de la llamada: vuelve a PENDING y se dice', async () => {
+  const id = await unaHtPendiente();
+  red.analisis.push(rechazoDeAnthropic(529, 'Overloaded'));
+  assert.deepEqual(await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'rechazo', que: 'modelo_saturado' });
+  assert.equal((await filaDe(id)).estado, 'PENDING');
+});
+
+test('una llamada que cambió de estado desde que se la vio no se analiza: una DONE no se paga dos veces', async () => {
+  /* El drenado de la pantalla recorre una lista que leyó al empezar. Si otra corrida la analizó
+     mientras tanto, pedirla como PENDING NO la reanaliza. */
+  const id = await unaHtPendiente();
+  await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo());
+  const antes = red.llamadasAlAnalisis;
+  assert.deepEqual(await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'rechazo', que: 'llamada_cambio' });
+  assert.equal(red.llamadasAlAnalisis, antes, 'se pagó un segundo análisis');
+  assert.equal((await filaDe(id)).estado, 'DONE');
+});
+
 test('analizar sin tiempo NO llama al modelo y deja la llamada como estaba', async () => {
   /* Un análisis que arranca sin tiempo para terminar se paga y no se guarda, y la llamada queda en
      ANALYZING. La guardia lo rechaza antes del candado. */
@@ -319,6 +368,16 @@ test('una ficha que falla queda FAILED, y la llamada sigue DONE con su análisis
     [id],
   );
   assert.deepEqual(l.rows[0], { estado: 'DONE', puntaje: 6 });
+});
+
+test('una llave rechazada en la ficha NO deja una ficha FAILED: no hubo ficha que fallara', async () => {
+  /* Una FAILED guardada ya no la reintenta la tarea —solo genera las que nunca se generaron—, así que
+     guardar una por la llave rota dejaba a esa llamada sin ficha para siempre. */
+  const id = await unaHtAnalizada();
+  red.analisis.push(rechazoDeAnthropic(401, 'invalid x-api-key'));
+  assert.deepEqual(await generarFicha(esc.org, id, 'ia-falsa', conTiempo()), { tipo: 'rechazo', que: 'llave_de_ia_rechazada' });
+  const f = await esc.admin.query('select 1 from negocio.analizador_fichas where llamada_id = $1', [id]);
+  assert.equal(f.rowCount, 0);
 });
 
 test('la ficha es solo de HT, y solo de una HT ya analizada', async () => {

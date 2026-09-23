@@ -3,6 +3,13 @@
 //
 // Analizar UNA llamada guardada: la primera vez, reintentar una FAILED o reanalizar una DONE.
 //
+// ── EL CUERPO DICE EN QUÉ ESTADO LA VIO LA PANTALLA ──────────────────────────
+//
+// `{ esperado: 'PENDING' | 'FAILED' | 'DONE' | 'ANALYZING' }`, y sin cuerpo es PENDING. La toma lo
+// exige: si mientras tanto otra corrida la terminó o la movió, se rechaza con `llamada_cambio` en vez
+// de pagarla otra vez. Reanalizar una DONE es así un pedido explícito, no algo que pasa por llegar
+// tarde con una lista vieja.
+//
 // ── POR QUÉ ESTA RUTA NO NOMBRA `conOrganizacion(` ────────────────────────────
 //
 // Es el patrón del Espía de Anuncios (`app/api/tools/espia/route.ts`): la ruta hace `conIdentidad(`
@@ -16,7 +23,7 @@ import { ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { resolverLlaveDeIa } from '../../../../../../lib/credenciales/resolver.ts';
 import { analizarLlamada, relojDe } from '../../../../../../lib/analizadores/pipeline.ts';
-import { TIEMPO_DE_LA_RUTA_MS, UUID, respuestaDelRechazo } from '../../../../../../lib/analizadores/rutas.ts';
+import { TIEMPO_DE_LA_RUTA_MS, UUID, esperadoDe, respuestaDelRechazo } from '../../../../../../lib/analizadores/rutas.ts';
 
 export const PANTALLA = 'analizadores';
 
@@ -37,11 +44,24 @@ export async function POST(
   const { id } = await ctx.params;
   if (!UUID.test(id)) return rechazo('no_encontrado');
 
+  // Sin cuerpo es PENDING. Un cuerpo que no es JSON o un estado que no se toma se rechazan.
+  let cuerpo: { esperado?: unknown } = {};
+  const texto = await peticion.text();
+  if (texto.trim()) {
+    try {
+      cuerpo = JSON.parse(texto) as { esperado?: unknown };
+    } catch {
+      return rechazo('peticion_invalida', 'El cuerpo no es JSON.');
+    }
+  }
+  const esperado = esperadoDe(cuerpo?.esperado);
+  if (esperado === null) return rechazo('peticion_invalida', 'El estado esperado tiene que ser PENDING, FAILED, DONE o ANALYZING.');
+
   // La llave ANTES de nada: sin ella no se toca la llamada, y el rechazo dice qué cargar.
   const llave = await conIdentidad((db) => resolverLlaveDeIa(db, contexto.orgEfectiva));
   if (llave.tipo === 'falta') return rechazo(llave.que);
 
-  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj);
+  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj, esperado);
   if (r.tipo === 'rechazo') return respuestaDelRechazo(r.que);
   /* Un FAILED no es un rechazo de la petición: el análisis se intentó, se pagó o no, y el error
      quedó guardado en la llamada. Se devuelve con su estado para que la pantalla lo muestre. */
