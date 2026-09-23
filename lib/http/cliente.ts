@@ -231,8 +231,39 @@ export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
 // llegar como el mismo `null`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Cuánto se espera a un servicio externo. Una generación larga tarda minutos, no segundos. */
-const ESPERA_EXTERNA_MS = 240_000;
+/** Cuánto se espera a un servicio externo, cuando quien llama no dice otra cosa. */
+export const ESPERA_EXTERNA_MS = 240_000;
+
+/**
+ * Cuánto espera una GENERACIÓN, que es la llamada más larga que hace el proyecto.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * EL NÚMERO SALE DEL `maxDuration` DE LA RUTA, Y ANTES NO SE MIRABAN ENTRE SÍ
+ *
+ * Las rutas que generan declaran `maxDuration = 300` —cinco minutos de función— y el tope de acá
+ * era 240. O sea que **cortábamos la llamada con sesenta segundos de presupuesto sin usar**, y la
+ * persona veía «el modelo no respondió» sobre una generación que el servidor todavía tenía tiempo
+ * de terminar.
+ *
+ * Medido el 2026-09-23: a Jorge le falló dos veces el paso 1 del Research contra la organización de
+ * CONEKTIA. El registro del servidor, ya con la causa que faltaba, lo dijo sin ambigüedad:
+ * *«no hubo respuesta del modelo · The operation was aborted due to timeout»*. Ese paso busca en la
+ * web y escribe hasta 16.000 tokens; cuatro minutos le quedan cortos.
+ *
+ * ── POR QUÉ 280 Y NO 300 ────────────────────────────────────────────────────
+ *
+ * Porque después de que el modelo contesta **todavía hay trabajo**: `generarElDocumento` guarda la
+ * versión ANTES de responder. Si el corte fuera a los 300, la función se quedaría sin tiempo
+ * mientras escribe, y ahí no hay mensaje de error que valga — la plataforma corta la respuesta y el
+ * documento recién generado se pierde después de haberse pagado. Veinte segundos de margen es lo
+ * que separa «no llegó a tiempo y te lo digo» de «no llegó a tiempo y encima perdí lo que salió».
+ *
+ * Si esto sube, sube primero el `maxDuration` de las rutas que generan. La regla es la misma que
+ * gobierna `ESPERA_DE_RUTA_LARGA_MS` del otro lado: **quien espera tiene que esperar menos que
+ * quien ejecuta**, o el que corta es el de más adentro y nadie se entera de por qué.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export const ESPERA_DE_GENERACION_MS = 280_000;
 
 /**
  * Cuánto del motivo de un servicio externo viaja hasta la pantalla.
@@ -286,20 +317,49 @@ function motivoDelServicio(cuerpo: unknown): string | null {
  */
 export async function pedirExterno<T>(
   url: string,
-  opciones: { metodo?: string; cabeceras?: Record<string, string>; cuerpo?: unknown } = {},
+  opciones: {
+    metodo?: string;
+    cabeceras?: Record<string, string>;
+    cuerpo?: unknown;
+    /** El tope, para quien sepa que su llamada tarda más. Ver `ESPERA_DE_GENERACION_MS`. */
+    espera?: number;
+  } = {},
 ): Promise<Respuesta<T>> {
-  const { metodo = 'GET', cabeceras = {}, cuerpo } = opciones;
+  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS } = opciones;
 
+  const desde = Date.now();
   let respuesta: Response;
   try {
     respuesta = await fetch(url, {
       method: metodo,
       headers: cuerpo === undefined ? cabeceras : { 'content-type': 'application/json', ...cabeceras },
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(ESPERA_EXTERNA_MS),
+      signal: AbortSignal.timeout(espera),
     });
   } catch (e) {
-    return { tipo: 'sin_respuesta', causa: e instanceof Error ? e.message : 'desconocida' };
+    /* ── EL TIEMPO AGOTADO SE NOMBRA, Y EN CASTELLANO ───────────────────────
+     *
+     * Acá salía el `message` crudo del error, que para este caso es «The operation was aborted due
+     * to timeout»: una frase en inglés, de Node, que no dice cuánto se esperó ni que el tope es
+     * NUESTRO. Quien la lee en pantalla entiende «el proveedor no contestó» y se queda esperando a
+     * que se arregle solo, cuando lo que hay que mover es este número.
+     *
+     * Se distingue por `name === 'TimeoutError'`, que es lo que pone `AbortSignal.timeout`, y no
+     * buscando la palabra en el texto: el texto es de la plataforma y puede cambiar sin avisar.
+     *
+     * Y va CUÁNTO tardó además de cuál era el tope. Con los dos números se ve de un vistazo si
+     * faltó poco —subir el tope alcanza— o si la llamada se colgó desde el principio. */
+    const ms = Date.now() - desde;
+    if (e instanceof Error && e.name === 'TimeoutError') {
+      return {
+        tipo: 'sin_respuesta',
+        causa: `se agotó el tiempo de espera a los ${Math.round(ms / 1000)} s (el tope es ${Math.round(espera / 1000)} s)`,
+      };
+    }
+    return {
+      tipo: 'sin_respuesta',
+      causa: `${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
+    };
   }
 
   let cuerpoLeido: unknown;

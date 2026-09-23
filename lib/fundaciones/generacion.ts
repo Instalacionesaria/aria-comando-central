@@ -21,7 +21,7 @@
 // la diferencia se leería como un error del port.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { pedirExterno } from '../http/cliente.ts';
+import { ESPERA_DE_GENERACION_MS, pedirExterno } from '../http/cliente.ts';
 
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
@@ -134,6 +134,10 @@ export async function generar(opciones: {
     metodo: 'POST',
     cabeceras: { 'x-api-key': opciones.claveIa, 'anthropic-version': VERSION_API },
     cuerpo,
+    /* Una generación es la llamada más larga del proyecto —el paso 1 del Research busca en la web y
+       escribe hasta 16.000 tokens— y el tope por omisión le quedaba corto con la función todavía
+       viva. Ver `ESPERA_DE_GENERACION_MS`. */
+    espera: ESPERA_DE_GENERACION_MS,
   });
 
   if (r.tipo === 'rechazado') {

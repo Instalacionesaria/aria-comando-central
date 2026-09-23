@@ -944,6 +944,63 @@ test('cuando el modelo NO contesta, la causa de red también llega al registro y
   assert.equal(((await r2.json()) as { detalle?: string }).detalle, 'sin respuesta');
 });
 
+test('quien espera espera MENOS que quien ejecuta: el tope de la generación cabe en su `maxDuration`', async () => {
+  /* ══ EL DEFECTO QUE ESTE NÚMERO CIERRA, MEDIDO DOS VECES ═════════════════════
+   * Las rutas que generan declaran `maxDuration = 300` y el tope del cliente externo era 240: se
+   * cortaba la llamada con SESENTA SEGUNDOS de presupuesto sin usar, y la persona leía «el modelo no
+   * respondió» sobre algo que el servidor todavía tenía tiempo de terminar.
+   *
+   * Le pasó a Jorge dos veces el 2026-09-23 con el paso 1 del Research de CONEKTIA —busca en la web
+   * y escribe hasta 16.000 tokens—, y el registro del servidor lo dijo: «The operation was aborted
+   * due to timeout».
+   *
+   * El margen hacia abajo también importa: después de que el modelo contesta hay que GUARDAR la
+   * versión antes de responder. Sin margen, la función se queda sin tiempo mientras escribe y el
+   * documento recién pagado se pierde sin que nadie pueda decir por qué. */
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { RAIZ } = await import('../apoyo/fuente.ts');
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+  const cliente = leer('lib/http/cliente.ts');
+  const tope = /export const ESPERA_DE_GENERACION_MS = ([\d_]+);/.exec(cliente);
+  assert.ok(tope, 'se fue el tope propio de la generación');
+  const esperaMs = Number((tope[1] ?? '').replace(/_/g, ''));
+
+  for (const ruta of ['app/api/fundaciones/generar/route.ts', 'app/api/tools/generar/route.ts']) {
+    const m = /export const maxDuration = (\d+);/.exec(leer(ruta));
+    assert.ok(m, `${ruta} dejó de declarar su \`maxDuration\``);
+    const presupuestoMs = Number(m[1]) * 1000;
+    assert.ok(
+      esperaMs < presupuestoMs,
+      `el tope de espera (${esperaMs / 1000} s) no cabe en el \`maxDuration\` de ${ruta} ` +
+        `(${presupuestoMs / 1000} s): corta la plataforma, y ahí no hay mensaje de error que valga`,
+    );
+    assert.ok(
+      presupuestoMs - esperaMs >= 15_000,
+      `quedan menos de 15 s entre el tope de espera y el \`maxDuration\` de ${ruta}: no alcanza ` +
+        'para guardar la versión y responder, y el documento generado se pierde',
+    );
+  }
+
+  // Y la generación pide ESE tope, no el de por omisión: si no lo pasa, el número de arriba no hace nada.
+  assert.match(leer('lib/fundaciones/generacion.ts'), /espera: ESPERA_DE_GENERACION_MS,/);
+});
+
+test('un tiempo agotado se nombra como tal, y con los dos números', async () => {
+  /* Antes salía el `message` crudo de Node —«The operation was aborted due to timeout»—: una frase
+     en inglés que no dice cuánto se esperó ni que el tope es NUESTRO. Quien la leía entendía «el
+     proveedor no contestó» y esperaba a que se arreglara solo. Se distingue por el `name` del error
+     y no buscando la palabra en el texto, que es de la plataforma y puede cambiar sin avisar. */
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { RAIZ } = await import('../apoyo/fuente.ts');
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+  const cliente = leer('lib/http/cliente.ts');
+  assert.match(cliente, /e\.name === 'TimeoutError'/);
+  assert.match(cliente, /se agotó el tiempo de espera a los \$\{Math\.round\(ms \/ 1000\)\} s/);
+  assert.match(cliente, /el tope es \$\{Math\.round\(espera \/ 1000\)\} s/);
+});
+
 test('el frontmatter YAML NO llega al prompt, con cualquier final de línea', () => {
   /* ══ UN DEFECTO QUE EXISTÍA EN LOCAL Y NO EN PRODUCCIÓN ══════════════════
    *
