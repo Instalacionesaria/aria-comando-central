@@ -204,7 +204,9 @@ Lo que la copia trajo y conviene saber antes de mirar la pantalla:
   se pega a mano.
 - **Una HT tiene un análisis vacío** (`ef9c447f-8993-4d9f-87ca-5b831a0d5aec`): 102 tokens de salida
   contra un mínimo de 2918 en las otras 36, sin resumen ni fases. Su «1/10 ROJO» es el valor por
-  omisión de `normalizeHt`, no una nota. Viene así de Brain. Se arregla reanalizándola con el botón.
+  omisión de `normalizeHt`, no una nota. Viene así de Brain. La pantalla no tiene cómo reanalizar
+  una llamada ya analizada —solo la API lo acepta, con `{ esperado: 'DONE' }`—, y el 2026-09-25 se
+  decidió dejarla así.
 - **Tres HT no traen ninguna fase** (esa y otras dos). La pantalla lo dice con una nota.
 
 La llave de tl;dv de ARIA se pegó ese mismo día, y la corrida de las 18:41 UTC fue la primera real:
