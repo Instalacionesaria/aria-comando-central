@@ -6,9 +6,28 @@
 /* aios va en su propia capa: sin ella, su reset `* { padding:0 }` iría
    sin capa y ganaría a TODA utilidad de Tailwind (las capas pierden
    frente al CSS sin capa). Con la capa, `tw:p-4` puede sobrescribirlo. */
-@layer theme, base, aios, components, utilities;
+/* ── Las dos capas de la marca v2, y por qué están donde están ──────────────
+   `marca` va ANTES de `aios`: `public/brand/tokens.css` declara en `:root` seis nombres que esta
+   aplicación ya usa con otro valor —`--bg`, `--line`, `--line-strong`, `--accent`, `--font-sans`
+   y `--font-mono`—. En la capa más baja, `aios.css` y `temas.css` le ganan SIEMPRE, así que la
+   aplicación no cambia un pixel y lo único que aporta son los ~20 tokens que no chocan con nada
+   (`--ink`, `--surface-raised`, `--radius-*`, `--space-*`, `--glow-orb`…).
+
+   `marca-scope` va DESPUÉS de `components` por el motivo contrario: `[data-marca="v2"]` tiene
+   especificidad 0,1,0 y `:root[data-tema='oscuro']` tiene 0,2,0, así que por especificidad perdería
+   dentro de /brand. Las capas le ganan a la especificidad: en una capa posterior, el scope manda
+   donde se lo pone y en ningún otro lado. */
+@layer theme, marca, base, aios, components, marca-scope, utilities;
 @import "tailwindcss/theme.css" layer(theme) prefix(tw);
 @import "tailwindcss/utilities.css" layer(utilities) prefix(tw);
+
+/* Los tokens del brandbook, sin scope. Aportan solo lo que no choca — ver la nota de capas. */
+@import "../public/brand/tokens.css" layer(marca);
+
+/* Los mismos tokens con scope `[data-marca="v2"]`, generados desde `brand/tokens.json` por
+   `scripts/marca.mjs`. Es lo que hace que /brand muestre los valores REALES de la marca sin que
+   la aplicación se entere. */
+@import "./brand/tokens-scope.css" layer(marca-scope);
 
 /* Hoja original íntegra — única fuente de verdad de los tokens. */
 @import "./aios.css" layer(aios);
