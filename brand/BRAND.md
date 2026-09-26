@@ -67,3 +67,19 @@ Este archivo resume solo lo que afecta al código. Si algo contradice al brandbo
 ## Voz en la interfaz
 
 Frases cortas, con dato y honestas. Si no hay dato suficiente, se dice. Ejemplos: «Tengo un dato.» · «Esto necesita una decisión tuya.» · «Perdí la conexión con GoHighLevel. No voy a inventar números mientras tanto.» Las cifras llevan su muestra en mono («muestra: 84 llamadas»). Sin emojis.
+
+## Al escribir código
+
+**Nunca escribas un hex en un componente.** Siempre la variable. Los tokens salen de `brand/tokens.json` y
+llegan al CSS por dos caminos, y ninguno se edita a mano: `public/brand/tokens.css` (exportado del
+brandbook) y `app/brand/tokens-scope.css` (generado por `node scripts/marca.mjs`). Si hace falta un valor
+nuevo, cambia el brandbook y se vuelve a exportar.
+
+Estas reglas estaban en `CLAUDE.md`, que dejó de versionarse en `main` (`c0eeb71`): viven acá porque
+este archivo sí se versiona.
+
+## Estado de la migración
+
+La aplicación **todavía no está migrada**: los tokens de marca viven en la capa `marca`, que pierde contra
+`aios.css` y `temas.css` a propósito, así que ninguna pantalla cambió. Los valores reales sólo se aplican
+bajo `[data-marca="v2"]`, y hoy eso es únicamente `/brand`.
