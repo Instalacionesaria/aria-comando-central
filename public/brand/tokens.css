@@ -1,0 +1,82 @@
+/* ARIA · Brandbook v2.0 — tokens generados desde tokens.json. No editar a mano: cambia el brandbook y vuelve a exportar. */
+
+/* Tema oscuro (principal) */
+:root, [data-theme="dark"] {
+  --bg: #04060A;
+  --bg-alt: #070A10;
+  --surface-raised: #0A0F18;
+  --surface-active: #0D1420;
+  --line: #151B26;
+  --line-strong: #242C3A;
+  --ring: #161D29;
+  --ink: #F2F5F9;
+  --ink-2: #AAB3C1;
+  --ink-3: #7F8A9B;
+  --ink-4: #4F5968;
+  --accent: #8FE3FF;
+  --accent-2: #B9A6FF;
+  --orb-light: #FFFFFF;
+  --orb-blue: #4A78FF;
+  --orb-violet: #4B3FD9;
+  --orb-edge: #07061A;
+  --signal: #E0C073;
+  --signal-line: #3A3320;
+  --alert: #FF8C7A;
+  --lesson-paper: #FFFFFF;
+  --lesson-ink: #16181D;
+  --lesson-soft: #F4F5F7;
+  --lesson-rule: #E3E5E8;
+  --lesson-mute: #6E7378;
+  --on-ink: #04060A;
+}
+
+/* Tema claro (documentos, PDFs) */
+[data-theme="light"] {
+  --bg: #FFFFFF;
+  --bg-alt: #F6F7F9;
+  --surface-raised: #F1F3F6;
+  --surface-active: #E9EDF2;
+  --line: #E3E7ED;
+  --line-strong: #CDD3DC;
+  --ring: #DDE2E9;
+  --ink: #04060A;
+  --ink-2: #3D4654;
+  --ink-3: #5B6576;
+  --ink-4: #7F8A9B;
+  --accent: #0B6F93;
+  --accent-2: #5B45C9;
+  --orb-light: #FFFFFF;
+  --orb-blue: #4A78FF;
+  --orb-violet: #4B3FD9;
+  --orb-edge: #07061A;
+  --signal: #8A6A12;
+  --signal-line: #E8DDBF;
+  --alert: #C8102E;
+  --lesson-paper: #FFFFFF;
+  --lesson-ink: #16181D;
+  --lesson-soft: #F4F5F7;
+  --lesson-rule: #E3E5E8;
+  --lesson-mute: #6E7378;
+  --on-ink: #FFFFFF;
+}
+
+/* Escalas */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-11: 44px;
+  --space-24: 96px;
+  --space-45: 180px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --glow-orb: 0 40px 120px -40px rgba(74,120,255,0.45);
+  --font-sans: "Geist", "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-lesson: Inter, Arial, Helvetica, sans-serif;
+}

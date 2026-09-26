@@ -1,0 +1,145 @@
+/* La página de verificación de la marca. Sólo variables: ni un hex acá dentro.
+ *
+ * Todo cuelga de `[data-marca="v2"]`, que es lo que hace que los tokens del brandbook ganen
+ * dentro de esta página y en ningún otro lado. Ver la nota de capas en `app/globals.css`.
+ */
+
+[data-marca='v2'] {
+  /* Las familias del brandbook, servidas por el paquete `geist` desde el layout. `tokens.css`
+     nombra "Geist" por familia; estas variables la traen de verdad. */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  min-height: 100dvh;
+  padding: var(--space-8) var(--space-6) var(--space-24);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 300;
+}
+
+[data-marca='v2'] .m-ancho { max-width: 1040px; margin: 0 auto; }
+
+[data-marca='v2'] .m-titulo {
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  margin: 0 0 var(--space-8);
+}
+[data-marca='v2'] .m-titulo .l1 { display: block; font-weight: 200; }
+[data-marca='v2'] .m-titulo .l2 { display: block; font-weight: 500; }
+
+[data-marca='v2'] .m-seccion { margin-top: var(--space-24); }
+[data-marca='v2'] .m-etiqueta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  margin: 0 0 var(--space-4);
+}
+[data-marca='v2'] .m-nota { color: var(--ink-2); font-size: 14px; margin: 0 0 var(--space-6); max-width: 62ch; }
+
+/* Color ------------------------------------------------------------------- */
+[data-marca='v2'] .m-paleta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-3);
+}
+[data-marca='v2'] .m-ficha {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-alt);
+  overflow: hidden;
+}
+[data-marca='v2'] .m-muestra { height: 62px; border-bottom: 1px solid var(--line); }
+[data-marca='v2'] .m-ficha-cuerpo { padding: var(--space-3); }
+[data-marca='v2'] .m-ficha-nombre { font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+[data-marca='v2'] .m-ficha-valor { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+[data-marca='v2'] .m-ficha-uso { font-size: 11px; color: var(--ink-3); margin-top: var(--space-2); line-height: 1.45; }
+
+/* Tipografía --------------------------------------------------------------- */
+[data-marca='v2'] .m-tipo { border-top: 1px solid var(--line); padding: var(--space-4) 0; }
+[data-marca='v2'] .m-tipo-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Componentes -------------------------------------------------------------- */
+[data-marca='v2'] .m-fila { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+
+[data-marca='v2'] .m-btn {
+  height: 50px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+[data-marca='v2'] .m-btn-2 {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+}
+[data-marca='v2'] .m-chip {
+  height: 30px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+}
+[data-marca='v2'] .m-tarjeta {
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  max-width: 420px;
+}
+[data-marca='v2'] .m-tarjeta h3 { margin: 0 0 var(--space-2); font-size: 17px; font-weight: 500; }
+[data-marca='v2'] .m-tarjeta p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
+[data-marca='v2'] .m-muestra-dato { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); margin-top: var(--space-3); }
+
+/* Foco visible: anillo de 2px, como manda el brandbook. */
+[data-marca='v2'] :is(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Mascota ------------------------------------------------------------------ */
+[data-marca='v2'] .m-orb-grande {
+  display: grid;
+  place-items: center;
+  padding: var(--space-24) 0;
+  box-shadow: var(--glow-orb);
+  border-radius: var(--radius-lg);
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+}
+[data-marca='v2'] .m-estados {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+[data-marca='v2'] .m-estado {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-alt);
+  padding: var(--space-4);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+[data-marca='v2'] .m-estado span { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
