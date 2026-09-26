@@ -38,6 +38,19 @@ export const CLAVE_TEMA = 'aios:tema';
 /** El que la aplicación tuvo siempre. Ver el comentario del `default` en la migración 019. */
 export const TEMA_POR_OMISION: Tema = 'oscuro';
 
+/**
+ * El mismo tema, con los nombres que usa el brandbook.
+ *
+ * El sistema de marca v2 (`brand/BRAND.md`) declara sus tokens bajo `[data-theme="dark"|"light"]`,
+ * que son los nombres del brandbook y no los de esta aplicación. En vez de clavar `data-theme="dark"`
+ * en el `<html>` —que agregaría un SEGUNDO sistema de temas que el primero desconoce, y le rompería
+ * el tema claro a quien lo eligió— se escriben los dos atributos en sincronía desde acá, que sigue
+ * siendo el único lugar que los toca.
+ */
+export function temaCss(tema: Tema): 'dark' | 'light' {
+  return tema === 'claro' ? 'light' : 'dark';
+}
+
 /** Un valor cualquiera reducido a uno de los dos. Nunca devuelve otra cosa. */
 export function temaValido(valor: unknown): Tema {
   return valor === 'claro' ? 'claro' : TEMA_POR_OMISION;
@@ -51,6 +64,8 @@ export function temaValido(valor: unknown): Tema {
  */
 export function aplicar(tema: Tema): void {
   document.documentElement.dataset.tema = tema;
+  /* El nombre del brandbook, en sincronía. Ver `temaCss`. */
+  document.documentElement.dataset.theme = temaCss(tema);
   /* Y se le dice al navegador de qué color es el lienzo, para que los controles nativos —barras de
      desplazamiento, campos, el fondo del sobredesplazamiento— acompañen. Sin esto, en tema claro la
      barra de desplazamiento sigue siendo oscura y se ve como un resto del tema anterior. */
@@ -78,5 +93,6 @@ export function recordar(tema: Tema): void {
 export const GUION_DE_ARRANQUE = `(function(){try{
 var t=window.localStorage.getItem('${CLAVE_TEMA}')==='claro'?'claro':'${TEMA_POR_OMISION}';
 document.documentElement.dataset.tema=t;
+document.documentElement.dataset.theme=t==='claro'?'light':'dark';
 document.documentElement.style.colorScheme=t==='claro'?'light':'dark';
-}catch(e){document.documentElement.dataset.tema='${TEMA_POR_OMISION}';}})()`;
+}catch(e){document.documentElement.dataset.tema='${TEMA_POR_OMISION}';document.documentElement.dataset.theme='dark';}})()`;
