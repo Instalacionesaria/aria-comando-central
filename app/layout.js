@@ -1,6 +1,11 @@
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
+/* Las del brandbook v2. Conviven con Inter/Plex a propósito: la aplicación NO se migró todavía
+   —eso es pantalla por pantalla, y su inventario está en `brand/MIGRACION.md`—, así que Geist
+   por ahora sólo alimenta `--font-sans`/`--font-mono` dentro de `[data-marca="v2"]`. */
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
-import { GUION_DE_ARRANQUE, TEMA_POR_OMISION } from './tema.ts';
+import { GUION_DE_ARRANQUE, TEMA_POR_OMISION, temaCss } from './tema.ts';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,7 +39,10 @@ export default function RootLayout({ children }) {
     <html
       lang="es"
       data-tema={TEMA_POR_OMISION}
-      className={`${inter.variable} ${plexMono.variable}`}
+      /* El mismo tema con el nombre del brandbook. El guion de arranque lo corrige junto con
+         `data-tema`, así que nunca quedan en desacuerdo. Ver `temaCss` en `app/tema.ts`. */
+      data-theme={temaCss(TEMA_POR_OMISION)}
+      className={`${inter.variable} ${plexMono.variable} ${GeistSans.variable} ${GeistMono.variable}`}
       /* ── POR QUÉ SE CALLA EL AVISO DE HIDRATACIÓN, Y SÓLO ACÁ ──────────────
          El guión de arranque toca este mismo elemento antes de que React hidrate: le corrige
          `data-tema` y le escribe `style.color-scheme`. React compara lo que sirvió el servidor con
@@ -62,7 +70,13 @@ export default function RootLayout({ children }) {
             contenido es una constante de este repositorio: no hay ni un dato de nadie adentro. */}
         <script dangerouslySetInnerHTML={{ __html: GUION_DE_ARRANQUE }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* `<aria-mascot>` del brandbook: se registra UNA sola vez en toda la aplicación. El guion
+            se auto-protege con `customElements.get('aria-mascot')`, que es lo que evita que el
+            doble montaje de React en desarrollo intente definir el elemento dos veces y lance. */}
+        <script defer src="/brand/mascota/aria-mascot.js" />
+      </body>
     </html>
   );
 }
