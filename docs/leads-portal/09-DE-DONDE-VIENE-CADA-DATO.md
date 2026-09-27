@@ -126,26 +126,26 @@ los literales son andamiaje y su censo está en `10-LO-QUE-NO-ES-UN-REQUISITO.md
 
 ### LP09-04 · La tarjeta de la rejilla
 
-La tarjeta de cada lead está en `lib/aios/leads-portal.js:176-194`. Lo que el plan manda en cada
+La tarjeta de cada lead está en `aios-command-center_1.html:4757-4775`. Lo que el plan manda en cada
 fila de la lista, y de dónde sale:
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Nombre | `lib/aios/leads-portal.js:180` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:348-351`) | 593 de 593, por construcción |
-| Campaña | `lib/aios/leads-portal.js:181`, primera mitad | `atribucion_primera->>'campaign'` | **271** de 593 |
-| Creativo | `lib/aios/leads-portal.js:181`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:21-24`) | **505** de 593 |
-| Puntaje | `lib/aios/leads-portal.js:183-186` | `contactos.score`, entero de 0 a 100 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) | **471** con valor; 47 de ellos en 0 |
-| Tramo | `lib/aios/leads-portal.js:185` | derivado del puntaje con los cortes 75 y 50, **nunca guardado** | ver `LP09-06` |
+| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:348-351`) | 593 de 593, por construcción |
+| Campaña | `aios-command-center_1.html:4762`, primera mitad | `atribucion_primera->>'campaign'` | **271** de 593 |
+| Creativo | `aios-command-center_1.html:4762`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:21-24`) | **505** de 593 |
+| Puntaje | `aios-command-center_1.html:4764-4767` | `contactos.score`, entero de 0 a 100 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) | **471** con valor; 47 de ellos en 0 |
+| Tramo | `aios-command-center_1.html:4766` | derivado del puntaje con los cortes 75 y 50, **nunca guardado** | ver `LP09-06` |
 | Territorio | no se dibuja | `contactos.territorio` (`db/migraciones/011_negocio_closer_setter.sql:88`) | 287 · 281 · 25 sin territorio |
 | Descartado | no se dibuja | etiquetas contra `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`), en minúscula | **121** |
-| Agendó | `lib/aios/leads-portal.js:171` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:128-134`) | **sin medir con este predicado**: `LP09-07` |
-| Asistió | `lib/aios/leads-portal.js:171` | `citas.asistio` | `true` en 0 · `false` en 0 |
+| Agendó | `aios-command-center_1.html:4752` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:128-134`) | **sin medir con este predicado**: `LP09-07` |
+| Asistió | `aios-command-center_1.html:4752` | `citas.asistio` | `true` en 0 · `false` en 0 |
 | Plantón | no se dibuja | `marcadaComoPlanton` (`lib/negocio/citasAlcanzables.ts:111-113`) | 15 personas |
-| Vendió | `lib/aios/leads-portal.js:171`, `:190-191` | un resultado con `salida = 'venta'` | **0** |
-| Monto | `lib/aios/leads-portal.js:189-190` («facturado») | suma de `resultados.monto` de esas ventas (`db/migraciones/011_negocio_closer_setter.sql:394-395`) | **0** montos en toda la base |
-| Alta | en la ficha, «hace 2 h» (`lib/aios/leads-portal.js:209-210`) | `contactos.alta_en_el_crm` (`db/migraciones/048_de_donde_vino_el_lead.sql:68-72`) | 569 de 593 |
+| Vendió | `aios-command-center_1.html:4752`, `:4771-4772` | un resultado con `salida = 'venta'` | **0** |
+| Monto | `aios-command-center_1.html:4770-4771` («facturado») | suma de `resultados.monto` de esas ventas (`db/migraciones/011_negocio_closer_setter.sql:394-395`) | **0** montos en toda la base |
+| Alta | en la ficha, «hace 2 h» (`aios-command-center_1.html:4790-4791`) | `contactos.alta_en_el_crm` (`db/migraciones/048_de_donde_vino_el_lead.sql:68-72`) | 569 de 593 |
 
-Las cinco tarjetas de arriba (`lib/aios/leads-portal.js:123-150`) **no tienen origen propio**:
+Las cinco tarjetas de arriba (`aios-command-center_1.html:4704-4731`) **no tienen origen propio**:
 cuentan filas de esta lista por tramo. Lo que dibujen tiene que salir de sumar estas columnas, o la
 tarjeta y la rejilla pueden contradecirse sin que nada falle.
 
@@ -154,42 +154,42 @@ CRM. La lista blanca y su motivo están en `12-QUIEN-VE-QUE.md`.
 
 ### LP09-05 · La ficha, sección por sección
 
-La ficha de la maqueta está en `lib/aios/leads-portal.js:223-282`. Se recorre en su orden.
+La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recorre en su orden.
 
 **Acciones y contacto**
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Llamar | `lib/aios/leads-portal.js:226`, sin manejador | `contactos.telefono` (`db/migraciones/011_negocio_closer_setter.sql:70`) como `tel:` | **558** de 593, medido en LP-3 (`LP09-P05`) |
-| Email | `lib/aios/leads-portal.js:227`, sin manejador | `contactos.email` (`db/migraciones/011_negocio_closer_setter.sql:71`) como `mailto:` | **590** de 593, medido en LP-3 (`LP09-P05`) |
-| ↗ GHL | `lib/aios/leads-portal.js:228`, `:284-285` | — | se borra: sin enlace a GoHighLevel (`12-QUIEN-VE-QUE.md`) |
-| Teléfono, Email | `lib/aios/leads-portal.js:281` | las mismas dos columnas | sólo en la ficha |
-| Closer asignado | `lib/aios/leads-portal.js:281` | `crm_asignado_a` cruzado con `negocio.closer_asignado` y el nombre de `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:77-95`) | `LP09-10` |
+| Llamar | `aios-command-center_1.html:4807`, sin manejador | `contactos.telefono` (`db/migraciones/011_negocio_closer_setter.sql:70`) como `tel:` | **558** de 593, medido en LP-3 (`LP09-P05`) |
+| Email | `aios-command-center_1.html:4808`, sin manejador | `contactos.email` (`db/migraciones/011_negocio_closer_setter.sql:71`) como `mailto:` | **590** de 593, medido en LP-3 (`LP09-P05`) |
+| ↗ GHL | `aios-command-center_1.html:4809`, `:4865-4866` | — | se borra: sin enlace a GoHighLevel (`12-QUIEN-VE-QUE.md`) |
+| Teléfono, Email | `aios-command-center_1.html:4862` | las mismas dos columnas | sólo en la ficha |
+| Closer asignado | `aios-command-center_1.html:4862` | `crm_asignado_a` cruzado con `negocio.closer_asignado` y el nombre de `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:77-95`) | `LP09-10` |
 | País | no está | `contactos.pais` (`db/migraciones/048_de_donde_vino_el_lead.sql:128-129`) | **569** |
 | Sincronizado | no está | `contactos.sincronizado_el` | la última, 2026-09-27 00:00 UTC |
 
-**Recorrido** (`lib/aios/leads-portal.js:232-240`)
+**Recorrido** (`aios-command-center_1.html:4813-4821`)
 
 | paso | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Entró | `lib/aios/leads-portal.js:234` | alta, campaña y creativo | 569 con alta |
-| «Vio el VSL» | `lib/aios/leads-portal.js:235` | **se reemplaza** por «Llegó por»: `familiaDelRecorrido` (`lib/negocio/recorrido.ts:139-167`) | sin medir en LP-0 (`LP09-P03`) |
-| El VSL | `lib/aios/leads-portal.js:235`, `:249-257` | no hay dato: hueco declarado (`LP09-12`) | — |
-| Agendó · closer | `lib/aios/leads-portal.js:236` | `tieneCitaAlcanzable` y el closer asignado | `LP09-07`, `LP09-10` |
-| Asistió | `lib/aios/leads-portal.js:237` | `citas.asistio`; el plantón, aparte | 0 · 0 |
-| Compró | `lib/aios/leads-portal.js:238` | venta y monto | 0 |
+| Entró | `aios-command-center_1.html:4815` | alta, campaña y creativo | 569 con alta |
+| «Vio el VSL» | `aios-command-center_1.html:4816` | **se reemplaza** por «Llegó por»: `familiaDelRecorrido` (`lib/negocio/recorrido.ts:139-167`) | sin medir en LP-0 (`LP09-P03`) |
+| El VSL | `aios-command-center_1.html:4816`, `:4830-4838` | no hay dato: hueco declarado (`LP09-12`) | — |
+| Agendó · closer | `aios-command-center_1.html:4817` | `tieneCitaAlcanzable` y el closer asignado | `LP09-07`, `LP09-10` |
+| Asistió | `aios-command-center_1.html:4818` | `citas.asistio`; el plantón, aparte | 0 · 0 |
+| Compró | `aios-command-center_1.html:4819` | venta y monto | 0 |
 
 **Formulario y calificación**
 
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Las nueve preguntas | `lib/aios/leads-portal.js:242-247`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:459-538`) | `LP09-09` |
-| «8/8 campos» y «Formulario completado» | `lib/aios/leads-portal.js:242`, `:277` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:208-215`) | `LP09-09` |
-| ICP Score | `lib/aios/leads-portal.js:276` | `contactos.score` | 471 |
-| Fit score, Intent score | `lib/aios/leads-portal.js:276` | **no existen** | hueco |
-| Video precall | `lib/aios/leads-portal.js:251` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`) | `LP09-09` |
+| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:459-538`) | `LP09-09` |
+| «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:208-215`) | `LP09-09` |
+| ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
+| Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
+| Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`) | `LP09-09` |
 
-**Interacciones** (`lib/aios/leads-portal.js:259-263`, y el relleno de `:99-101`)
+**Interacciones** (`aios-command-center_1.html:4840-4844`, y el relleno de `:4680-4682`)
 
 | dato | de dónde sale | cobertura |
 |---|---|---|
@@ -197,7 +197,7 @@ La ficha de la maqueta está en `lib/aios/leads-portal.js:223-282`. Se recorre e
 | desde cuándo se leyó la historia | `mensajes_desde_el` (`db/migraciones/013_ingesta_de_mensajes.sql:134`) | `LP09-11` |
 | las citas y los resultados | `negocio.citas`, `negocio.resultados` | `LP09-07` |
 
-**Parámetros de publicidad** (`lib/aios/leads-portal.js:265-273`)
+**Parámetros de publicidad** (`aios-command-center_1.html:4846-4854`)
 
 | rótulo | de dónde sale | cobertura | viaja |
 |---|---|---|---|
@@ -591,12 +591,12 @@ conversación entera ya tiene su pantalla, y la pide otra capacidad.
 
 | lo que la maqueta dibuja | por qué no hay | se declara como |
 |---|---|---|
-| El VSL: visto, CTA y el registro de VTurb (`lib/aios/leads-portal.js:249-257`) | sus 79 escrituras fueron todas 0, y no escribe desde el 2026-08-30 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`, `:127-138`) | hueco |
-| Fit score e Intent score (`lib/aios/leads-portal.js:276`) | el CRM no los calcula, ni nosotros | hueco |
-| Ubicación y posición (`lib/aios/leads-portal.js:267`) | Meta no está conectado (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) | hueco |
-| Costo del lead (`lib/aios/leads-portal.js:268`) | el gasto es por anuncio y por día, no por persona | hueco |
-| Dispositivo y ciudad (`lib/aios/leads-portal.js:269`) | sólo saldrían de `userAgent` y de la IP, que no viajan | hueco |
-| El estado «Calificado» o «Perdido» (`lib/aios/leads-portal.js:104-105`) | no hay columna; lo que existe es agendó, asistió, vendió y descartado | se deriva, con otros rótulos |
+| El VSL: visto, CTA y el registro de VTurb (`aios-command-center_1.html:4830-4838`) | sus 79 escrituras fueron todas 0, y no escribe desde el 2026-08-30 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`, `:127-138`) | hueco |
+| Fit score e Intent score (`aios-command-center_1.html:4857`) | el CRM no los calcula, ni nosotros | hueco |
+| Ubicación y posición (`aios-command-center_1.html:4848`) | Meta no está conectado (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) | hueco |
+| Costo del lead (`aios-command-center_1.html:4849`) | el gasto es por anuncio y por día, no por persona | hueco |
+| Dispositivo y ciudad (`aios-command-center_1.html:4850`) | sólo saldrían de `userAgent` y de la IP, que no viajan | hueco |
+| El estado «Calificado» o «Perdido» (`aios-command-center_1.html:4685-4686`) | no hay columna; lo que existe es agendó, asistió, vendió y descartado | se deriva, con otros rótulos |
 
 **Requisito:** cada hueco viaja declarado, con la fecha en que se midió, en el mismo lugar donde la
 maqueta dibujaba el dato. Un hueco dicho es una decisión; uno callado es una regresión.
@@ -697,7 +697,7 @@ select lower(substring(atribucion_ultima->>'url' from '://([^/?#:]+)')) host, co
 
 ### LP09-P04 · ¿`adSource` entra en la lista blanca? — el resto es `LP05-P02`
 
-El objetivo del anuncio (la fila «Objetivo» de la maqueta, `lib/aios/leads-portal.js:268`), `medium`
+El objetivo del anuncio (la fila «Objetivo» de la maqueta, `aios-command-center_1.html:4849`), `medium`
 y `campaignId` ya son una pregunta abierta: `LP05-P02`, en `05-LA-FICHA-DEL-LEAD.md`, que también
 dice que se contesta una sola vez. Esta pregunta no la repite; agrega sólo la clave que aquélla no
 nombra.

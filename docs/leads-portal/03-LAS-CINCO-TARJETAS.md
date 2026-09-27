@@ -12,9 +12,9 @@
 > resolverse: siguen dentro de rango y muestran otra cosa, así que la prueba 101 no las atrapa y LP-7
 > las reapunta a mano.
 
-`lib/aios/leads-portal.js:123-163` arma la fila de tarjetas de arriba de la pestaña. Son cinco: una
+`aios-command-center_1.html:4704-4744` arma la fila de tarjetas de arriba de la pestaña. Son cinco: una
 por tramo de ICP y una de «Todos». Las dibuja con los 15 contactos inventados de
-`lib/aios/leads-portal.js:9-83`, sin pedir nada al servidor.
+`aios-command-center_1.html:4590-4664`, sin pedir nada al servidor.
 
 | tarjeta | rótulo en la maqueta | cifra grande | línea de abajo | pie |
 |---|---|---|---|---|
@@ -24,9 +24,9 @@ por tramo de ICP y una de «Todos». Las dibuja con los 15 contactos inventados 
 | `bajo` | «**No calificado**» | conteo | igual | igual |
 | `all` | «Todos» | total | «N ventas · N agendados» | «Cierre N% · Revenue $…» |
 
-Rastro de la tabla: los rótulos y el orden en `lib/aios/leads-portal.js:143-144`, la plantilla de
-cada tarjeta en `lib/aios/leads-portal.js:131-139` y la de «Todos» en
-`lib/aios/leads-portal.js:144-150`.
+Rastro de la tabla: los rótulos y el orden en `aios-command-center_1.html:4724-4725`, la plantilla de
+cada tarjeta en `aios-command-center_1.html:4712-4720` y la de «Todos» en
+`aios-command-center_1.html:4725-4731`.
 
 ---
 
@@ -36,28 +36,28 @@ Ninguna de estas piezas es un requisito. Se listan porque cada una esconde una a
 la pantalla nueva no puede heredar sin querer.
 
 1. **El período no filtra nada.** Las tarjetas cuentan `const all = LEADS`
-   (`lib/aios/leads-portal.js:124`), y los botones de período sólo cambian de color
-   (`lib/aios/leads-portal.js:313-317`).
+   (`aios-command-center_1.html:4705`), y los botones de período sólo cambian de color
+   (`aios-command-center_1.html:4894-4898`).
 2. **El tramo está guardado al lado del puntaje, no derivado de él.** Un contacto inventado tiene 79
-   y tramo medio (`lib/aios/leads-portal.js:43`) y otro tiene 79 y tramo alto
-   (`lib/aios/leads-portal.js:63`). Acquisition ya lo encontró y sacó el requisito: el tramo se
+   y tramo medio (`aios-command-center_1.html:4624`) y otro tiene 79 y tramo alto
+   (`aios-command-center_1.html:4644`). Acquisition ya lo encontró y sacó el requisito: el tramo se
    deriva del puntaje, no se guarda (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:489-518`).
 3. **La tasa da 0 cuando no hay denominador, y no tiene piso.**
-   `rate = (a,b) => b ? Math.round(a/b*100) : 0` (`lib/aios/leads-portal.js:126`). Un «0 %» sobre
+   `rate = (a,b) => b ? Math.round(a/b*100) : 0` (`aios-command-center_1.html:4707`). Un «0 %» sobre
    cero contactos afirma algo que nadie midió.
 4. **La tarjeta «Sin calificar» afirma que nadie agendó.** Escribe «sin agendar» como texto fijo, sin
-   contar (`lib/aios/leads-portal.js:134`).
+   contar (`aios-command-center_1.html:4715`).
 5. **Y le inventa la causa**: «Aún sin formulario · califican al agendar»
-   (`lib/aios/leads-portal.js:137`). Ver `LP03-05` para lo que dice el dato.
+   (`aios-command-center_1.html:4718`). Ver `LP03-05` para lo que dice el dato.
 6. **El mismo cero se dibuja de dos maneras.** En un tramo, un revenue en cero sale «—»
-   (`lib/aios/leads-portal.js:138`); en «Todos» sale «$0» (`lib/aios/leads-portal.js:149`).
-7. **La cifra grande abre una lista inventada.** Lleva `data-leads` (`lib/aios/leads-portal.js:133`),
+   (`aios-command-center_1.html:4719`); en «Todos» sale «$0» (`aios-command-center_1.html:4730`).
+7. **La cifra grande abre una lista inventada.** Lleva `data-leads` (`aios-command-center_1.html:4714`),
    y ese atributo lo escucha el panel de grupo (`lib/aios/leads-group.js:78-85`), que arma la lista
    repitiendo catorce nombres de muestra (`lib/aios/leads-group.js:14-37`). Es el defecto que
    Acquisition describe en A7-28: la cifra y su lista no comparten origen
    (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:443-454`).
 8. **Tocar una tarjeta mezcla la búsqueda con el tramo.** `if(lpQuery === (k==='all'?'':k))`
-   (`lib/aios/leads-portal.js:155`) compara el texto del buscador con la clave del tramo.
+   (`aios-command-center_1.html:4736`) compara el texto del buscador con la clave del tramo.
 
 ---
 
@@ -65,7 +65,7 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-01 · Las cinco tarjetas cuentan la cohorte del período, no la base entera
 
-- **Rastro:** `lib/aios/leads-portal.js:124` (cuenta todo), `lib/aios/leads-portal.js:313-317` (el
+- **Rastro:** `aios-command-center_1.html:4705` (cuenta todo), `aios-command-center_1.html:4894-4898` (el
   período no hace nada).
 - **Qué pide:** la cohorte son los contactos dados de alta en el CRM dentro de la ventana elegida
   (`alta_en_el_crm`, no `creado_el`). La ventana es la de Sales: `cadenaDeCierre.ts` recorta con
@@ -90,7 +90,7 @@ la pantalla nueva no puede heredar sin querer.
 ### LP03-03 · Las cuatro tarjetas de tramo suman la de «Todos», siempre
 
 - **Rastro:** la maqueta no lo garantiza: cada tarjeta filtra `seg` por su cuenta
-  (`lib/aios/leads-portal.js:125`) y el tramo viene escrito a mano en cada contacto.
+  (`aios-command-center_1.html:4706`) y el tramo viene escrito a mano en cada contacto.
 - **Qué pide:** el tramo de cada persona se calcula **una vez, en la consulta**, a partir del
   puntaje (LP-1 y LP-2). Las tarjetas cuentan esas filas y no vuelven a clasificar. Así la suma
   sale por construcción, no por coincidencia.
@@ -104,7 +104,7 @@ la pantalla nueva no puede heredar sin querer.
 ### LP03-04 · Cuatro tramos, con los cortes de la maqueta
 
 - **Rastro:** el corte 75/50 de `lib/aios/leads-group.js:10` y los cinco botones de
-  `components/views/ContactsView.jsx:58-74`. Decisión del usuario del 2026-09-26.
+  `aios-command-center_1.html:3050-3056`. Decisión del usuario del 2026-09-26.
 - **Qué pide:** **ICP alto** ≥ 75 · **ICP medio** 50–74 · **ICP bajo** 1–49 · **Sin calificar** =
   sin puntaje **o** puntaje 0. Los umbrales viven en un solo lugar, `lib/negocio/tramosDelIcp.ts`
   (LP-1), y de ahí los toman la consulta, las tarjetas, el filtro y la ficha.
@@ -120,7 +120,7 @@ la pantalla nueva no puede heredar sin querer.
 ### LP03-05 · Los ceros van a «Sin calificar», y la tarjeta dice por qué hay gente ahí
 
 - **Rastro:** el pie inventado «Aún sin formulario · califican al agendar»
-  (`lib/aios/leads-portal.js:137`).
+  (`aios-command-center_1.html:4718`).
 - **Qué dice el dato:** hay dos poblaciones distintas en esa tarjeta, y la maqueta no nombra
   ninguna de las dos.
   - **122 sin puntaje**: el CRM no mandó el campo.
@@ -142,7 +142,7 @@ la pantalla nueva no puede heredar sin querer.
 ### LP03-06 · Los rótulos son «ICP alto», «ICP medio», «ICP bajo», «Sin calificar» y «Todos»
 
 - **Rastro:** la maqueta dice «Calificado alto», «Calificado medio» y «No calificado»
-  (`lib/aios/leads-portal.js:143`).
+  (`aios-command-center_1.html:4724`).
 - **Por qué no se conservan:**
   - **«no calificado» es una etiqueta de descarte del CRM** (`lib/ghl/contrato.ts:236`). Rotular así
     al tramo bajo diría que 158 personas fueron descartadas.
@@ -152,11 +152,11 @@ la pantalla nueva no puede heredar sin querer.
     (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:489-518`). Sumarle una sexta no ayuda.
 - **Qué pide:** los rótulos salen de `TRAMOS` (LP-1) y son los mismos en la tarjeta, en el filtro de
   tramo, en el chip de cada tarjeta de la rejilla y en el contador. La maqueta usa una tercera
-  forma, «ALTO / MEDIO / BAJO» (`lib/aios/leads-portal.js:106`), que también se va.
+  forma, «ALTO / MEDIO / BAJO» (`aios-command-center_1.html:4687`), que también se va.
 
 ### LP03-07 · El orden de las tarjetas es fijo
 
-- **Rastro:** Sin calificar, alto, medio, bajo y «Todos» al final (`lib/aios/leads-portal.js:143-144`).
+- **Rastro:** Sin calificar, alto, medio, bajo y «Todos» al final (`aios-command-center_1.html:4724-4725`).
 - **Qué pide:** se conserva ese orden, que vive en `TRAMOS`. **Nunca se ordena por volumen**, por el
   mismo motivo que Conversion da para sus familias: ordenar por volumen haría que la pantalla
   cambiara de forma cada semana (`lib/negocio/recorrido.ts:51-53`).
@@ -167,14 +167,14 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-08 · La cifra grande es el número de personas del tramo
 
-- **Rastro:** `n = g.length` (`lib/aios/leads-portal.js:128`).
+- **Rastro:** `n = g.length` (`aios-command-center_1.html:4709`).
 - **Qué pide:** la unidad es la **persona**. Alguien con tres citas cuenta una vez. Es la idea de
   `01-LA-UNIDAD-ES-LA-PERSONA.md`.
 
 ### LP03-09 · La porción es del total de la cohorte, y con cohorte vacía no hay porción
 
 - **Rastro:** «N% del total» y el ancho de la barra salen de `rate(n, all.length)`
-  (`lib/aios/leads-portal.js:134-135`).
+  (`aios-command-center_1.html:4715-4716`).
 - **Qué pide:** porción = contactos del tramo / contactos de la cohorte. El texto se redondea; la
   barra usa la proporción exacta. **Con la cohorte en 0 la porción es nula y se dibuja «—»**, no
   «0 %».
@@ -183,8 +183,8 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-10 · «Agendados» es `tieneCitaAlcanzable`, también en «Sin calificar»
 
-- **Rastro:** `agend` en `lib/aios/leads-portal.js:129`, y el «sin agendar» fijo de la tarjeta
-  `nc` en `lib/aios/leads-portal.js:134`.
+- **Rastro:** `agend` en `aios-command-center_1.html:4710`, y el «sin agendar» fijo de la tarjeta
+  `nc` en `aios-command-center_1.html:4715`.
 - **Qué pide:** la misma definición que el resto del sistema, sin copiarla. El predicado es
   `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-134`): una cita cancelada cuenta, una
   congelada no. La unidad es la persona, con `exists` y no con `join`
@@ -203,8 +203,8 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-11 · «Vendidos» cuenta personas con una venta registrada, y un acuerdo sin pago no es venta
 
-- **Rastro:** `vend` (`lib/aios/leads-portal.js:129`) y «N ventas» de «Todos»
-  (`lib/aios/leads-portal.js:147`).
+- **Rastro:** `vend` (`aios-command-center_1.html:4710`) y «N ventas» de «Todos»
+  (`aios-command-center_1.html:4728`).
 - **Qué pide:** vendió = tiene al menos un resultado con salida `venta` (`lib/negocio/salidas.ts:84`).
   `acuerdo_sin_pago` no cuenta (`lib/negocio/salidas.ts:96`), por la regla que ya separa el cobrado del
   comprometido (`lib/negocio/dineroDelMes.ts:79-85`). `venta_chica`, la del setter
@@ -223,8 +223,8 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-12 · «Cierre» es vendidos sobre contactos del tramo, con piso 10 y con motivo cuando no hay cifra
 
-- **Rastro:** `rate(vend, n)` (`lib/aios/leads-portal.js:138`), sobre una función que da 0 sin
-  denominador (`lib/aios/leads-portal.js:126`).
+- **Rastro:** `rate(vend, n)` (`aios-command-center_1.html:4719`), sobre una función que da 0 sin
+  denominador (`aios-command-center_1.html:4707`).
 - **Fórmula:** vendidos / contactos del tramo. Es la misma que la maqueta, y hay que leerla bien: de
   cada cien personas del tramo, cuántas compraron.
 - **Piso:** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`), **sobre el
@@ -243,8 +243,8 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-13 · «Monto reportado» en lugar de «Revenue», y un nulo no es $0
 
-- **Rastro:** «Revenue» en `lib/aios/leads-portal.js:138` (con «—» para el cero) y en
-  `lib/aios/leads-portal.js:149` (con «$0» para el cero).
+- **Rastro:** «Revenue» en `aios-command-center_1.html:4719` (con «—» para el cero) y en
+  `aios-command-center_1.html:4730` (con «$0» para el cero).
 - **Por qué cambia el rótulo:** el documento funcional pide, en el perfil del lead, el *«Monto
   reportado por el closer»* (`§ 5.3:263`). Sales ya escribe al pie de su cadena que una venta es la
   que el closer reportó, *«no un pago verificado»* (`lib/negocio/cadenaDeCierre.ts:353-358`).
@@ -259,12 +259,12 @@ la pantalla nueva no puede heredar sin querer.
   Un `?? 0` en cualquier punto de la cadena convierte los dos primeros en un cero falso. El
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
-  (`lib/aios/leads-portal.js:6`). La tabla de resultados guarda el monto y ninguna moneda
+  (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
   (`lib/datos/esquema.ts:806-818`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 
-- **Rastro:** `lib/aios/leads-portal.js:133`; el escuchador global en `lib/aios/leads-group.js:78-85`.
+- **Rastro:** `aios-command-center_1.html:4714`; el escuchador global en `lib/aios/leads-group.js:78-85`.
 - **Qué pide:** ninguna cifra del panel nuevo lleva `data-leads`. Si lo llevara, abriría el panel de
   grupo, que hoy fabrica la lista con un conteo (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:443-454`).
   En esta pestaña no hace falta ese panel: **la lista de cada cifra ya está en la misma pantalla**, y
@@ -274,9 +274,9 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-15 · Tocar una tarjeta filtra la rejilla por su tramo, y tocarla otra vez o tocar «Todos» lo quita
 
-- **Rastro:** el manejador de `lib/aios/leads-portal.js:151-162`, con el defecto de
-  `lib/aios/leads-portal.js:155`. La sincronización con los botones de tramo va en los dos
-  sentidos: `lib/aios/leads-portal.js:158-159` y `lib/aios/leads-portal.js:304-305`.
+- **Rastro:** el manejador de `aios-command-center_1.html:4732-4743`, con el defecto de
+  `aios-command-center_1.html:4736`. La sincronización con los botones de tramo va en los dos
+  sentidos: `aios-command-center_1.html:4739-4740` y `aios-command-center_1.html:4885-4886`.
 - **Qué pide:** **un solo estado de tramo**, el mismo que el filtro de tramo de
   `04-LA-REJILLA-Y-LOS-FILTROS.md`. La tarjeta encendida se ve encendida, y el botón correspondiente
   también. Cada tarjeta es un control de verdad: se alcanza con el teclado y dice si está apretada.

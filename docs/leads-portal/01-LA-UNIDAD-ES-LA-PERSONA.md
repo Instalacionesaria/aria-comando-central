@@ -22,8 +22,8 @@ cada persona se dicen **tres cosas y no dos**: sí, no, o no se sabe.
 ### LP01-01 · Una fila por contacto, y cada cifra es una cuenta de filas
 
 **Rastro** · La maqueta ya lo hacía bien: dibuja una tarjeta por contacto
-(`lib/aios/leads-portal.js:176-177`), y cada tarjeta de arriba cuenta contactos, no citas
-(`n = g.length`, `lib/aios/leads-portal.js:128`).
+(`aios-command-center_1.html:4757-4758`), y cada tarjeta de arriba cuenta contactos, no citas
+(`n = g.length`, `aios-command-center_1.html:4709`).
 
 **Qué pide** · La fila es una fila de `negocio.contactos`. No es la cita ni el resultado: tres citas
 son una persona que agendó, y dos ventas son una persona que compró (`LP02-06`). Por eso el
@@ -124,7 +124,7 @@ no es un hecho del mundo: es un corte nuestro sobre un número que calcula el CR
 `LP14-05`). Por eso vive en un solo módulo, sin imports, del que lo toman la consulta, las tarjetas,
 el filtro y la ficha (`LP14-06`). Y por eso **se deriva al consultar** y no se guarda: la maqueta lo
 guarda al lado del puntaje, y dos filas con el mismo 79 caen en tramos distintos
-(`lib/aios/leads-portal.js:43` y `:63`).
+(`aios-command-center_1.html:4624` y `:4644`).
 
 Además es el de hoy: el puntaje se pisa en cada corrida, así que «30 días · ICP alto» son los que
 entraron en los últimos 30 días y **hoy** tienen 75 o más (`LP06-14`).
@@ -136,16 +136,16 @@ entraron en los últimos 30 días y **hoy** tienen 75 o más (`LP06-14`).
 ### LP01-06 · La maqueta sólo sabe decir sí o no, y donde no sabe escribe «no» o 0
 
 **Rastro** · El modelo de datos de la maqueta tiene dos valores. Cada persona trae `booked`,
-`showed` y `sold` como 1 o 0 (`lib/aios/leads-portal.js:11`, `:68`), y todo lo que se dibuja sale de
+`showed` y `sold` como 1 o 0 (`aios-command-center_1.html:4592`, `:4649`), y todo lo que se dibuja sale de
 ahí:
 
 - el progreso «Agendó › Asistió › Vendió» tiene dos estados por paso, encendido o apagado
-  (`lib/aios/leads-portal.js:170-174`);
+  (`aios-command-center_1.html:4751-4755`);
 - la ficha escribe «no agendó», «no asistió» y «sin cierre» a quien no tenga la marca
-  (`lib/aios/leads-portal.js:236-238`), aunque su cita esté todavía por delante;
-- la tasa da 0 cuando no hay denominador (`lib/aios/leads-portal.js:126`);
+  (`aios-command-center_1.html:4817-4819`), aunque su cita esté todavía por delante;
+- la tasa da 0 cuando no hay denominador (`aios-command-center_1.html:4707`);
 - a las tres personas sin puntaje les pone 0 en el VSL, en el precall, en fit y en intent
-  (`lib/aios/leads-portal.js:69-70`, `:73-74` y `:77-78`).
+  (`aios-command-center_1.html:4650-4651`, `:4654-4655` y `:4658-4659`).
 
 Con quince personas inventadas eso no le hace daño a nadie. Con las reales, medido el 2026-09-27,
 **145** personas tienen una cita pasada, no cancelada y sin la asistencia registrada (es un techo:
@@ -278,7 +278,7 @@ El recorrido de la ficha —Entró, Llegó por, Agendó, Asistió, Compró, y el
 de recorrido de Conversion (`lib/negocio/recorrido.ts:139`).
 
 La bajada de la maqueta lo resume en una frase, «Cada contacto, de dónde vino y hasta dónde llegó»
-(`components/views/ContactsView.jsx:14`). Medido el 2026-09-27, la segunda mitad se detiene, para
+(`aios-command-center_1.html:3031`). Medido el 2026-09-27, la segunda mitad se detiene, para
 casi todos, en «agendó»: cero asistencias registradas y cero ventas (`LP10-05`). La pestaña lo dice
 así, en vez de dibujar «no asistió» y «no compró».
 

@@ -1,101 +1,45 @@
-/* Portado de aios-command-center_1.html — vista, líneas 3024-3072. */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * ERA UNA MAQUETA CON QUINCE PERSONAS INVENTADAS, Y UNA DE ELLAS VENDÍA CON UN CLOSER REAL
+ *
+ * Lo que había acá venía portado de `aios-command-center_1.html` (la vista, líneas 3024-3072) y lo
+ * llenaba `lib/aios/leads-portal.js` (líneas 4584-4904 del original): quince personas con teléfono,
+ * correo, puntaje, recorrido y ventas escritos a mano, dibujadas con `innerHTML`, sin un solo
+ * `fetch`. Dos de sus ventas se las atribuía al nombre de un closer real, y la base no tiene
+ * ninguna venta registrada (medido el 2026-09-27).
+ *
+ * ── LO QUE SE FUE, Y POR QUÉ CADA COSA ────────────────────────────────────
+ *
+ *   · **`lib/aios/leads-portal.js`, entero.** Calculaba los tramos, las tasas y el cierre en el
+ *     navegador sobre datos inventados, y publicaba `window.AIOSLeadCard`, que abría la ficha por
+ *     NOMBRE y, si no lo encontraba, copiaba la del primer contacto con otro nombre. La ficha nueva
+ *     se abre por id y un id que no existe da 404.
+ *   · **El botón «Plan de acción» (`lpPlanBtn`).** Cuatro frases escritas a mano —«el ICP alto es
+ *     el 22 % del volumen pero produce el 61 % de las ventas»— y ninguna sostenible: con cero
+ *     ventas, la segunda mitad no se puede calcular, y la primera, medida, da 18 %.
+ *   · **La píldora «Personalizado» (`data-datepick`).** Abría el calendario para no filtrar nada.
+ *     Un rango libre daría ventanas que ninguna otra pantalla puede reproducir.
+ *   · **El segmentado de tres botones.** El tercero mandaba `data-p="mes"`, que no es ninguna de las
+ *     cuatro claves de `lib/negocio/periodo.ts`, y se abría en «7 días», que hoy son tres personas.
+ *   · **`data-leads` en las tarjetas.** Abría el cajón «Grupo de contactos» con otra lista inventada.
+ *     La lista de cada cifra ya está en esta misma pantalla: tocar la tarjeta la filtra.
+ *
+ * ── LO QUE SE CONSERVA ────────────────────────────────────────────────────
+ *
+ * La forma: el encabezado, las cinco tarjetas, la barra con el buscador y los dos segmentados, la
+ * rejilla y la ficha en un cajón. Las clases son las de la maqueta. Lo que la pantalla no puede
+ * medir se dibuja en la pantalla, con su fecha: ver `components/leads-portal/`.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import PanelDeLeadsPortal from '../leads-portal/PanelDeLeadsPortal.jsx';
+
 export default function ContactsView({ activa }) {
   return (
-    <>
     <section className={activa ? 'view on' : 'view'} id="v-contacts">
       <div className="view-scroll cre-scroll">
         <div className="lp-wrap">
-          <div className="cre-head">
-            <div className="ch-l">
-              <h2>
-                Leads Portal
-              </h2>
-              <span className="cre-desc">
-                Cada contacto, de dónde vino y hasta dónde llegó
-              </span>
-            </div>
-            <div className="ch-r">
-              <button className="reco-btn" id="lpPlanBtn">
-                <span className="rb-ic">
-                  ◈
-                </span>
-                Plan de acción
-              </button>
-              <div className="ch-period">
-                <div className="db-seg" id="lpPeriod">
-                  <button data-p="hoy">
-                    Hoy
-                  </button>
-                  <button data-p="7d" className="on">
-                    7 días
-                  </button>
-                  <button data-p="mes">
-                    30 días
-                  </button>
-                </div>
-                <button className="pill" data-datepick="lp" id="lpPill">
-                  <span className="pv">
-                    Personalizado
-                  </span>
-                  <span className="pc">
-                    ⌄
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <section className="icp-cards" id="lpIcp" />
-          <div className="lp-bar">
-            <div className="lp-search">
-              <span className="si">
-                ⌕
-              </span>
-              <input type="text" id="lpSearch" placeholder="Buscar por nombre, campaña o creative…" />
-            </div>
-            <span className="tb-lab">
-              ICP
-            </span>
-            <div className="db-seg" id="lpIcpSeg">
-              <button data-i="all" className="on">
-                Todos
-              </button>
-              <button data-i="nc">
-                Sin calificar
-              </button>
-              <button data-i="alto">
-                Alto
-              </button>
-              <button data-i="medio">
-                Medio
-              </button>
-              <button data-i="bajo">
-                Bajo
-              </button>
-            </div>
-            <span className="fb-div" />
-            <span className="tb-lab">
-              Etapa
-            </span>
-            <div className="db-seg" id="lpStage">
-              <button data-s="all" className="on">
-                Todas
-              </button>
-              <button data-s="booked">
-                Agendados
-              </button>
-              <button data-s="showed">
-                Asistieron
-              </button>
-              <button data-s="sold">
-                Vendidos
-              </button>
-            </div>
-            <span className="lp-count" id="lpCount" />
-          </div>
-          <section className="lp-grid" id="lpGrid" />
+          <PanelDeLeadsPortal />
         </div>
       </div>
     </section>
-    </>
   );
 }

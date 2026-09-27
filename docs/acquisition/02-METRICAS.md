@@ -789,8 +789,8 @@ ocurrencia.
 
 | Dimensión | Dónde está insinuada | Estado |
 |---|---|---|
-| **Anuncio** (`meta_ad_id`) | El cajón de contactos escribe el origen como «Campaña · Creative» (`leads-group.js:15-28`); la ficha por contacto de Leads Portal lista «Creative» (`leads-portal.js:265-272`) | `adId` en **176 de 233 (75,5 %)**; 7 anuncios distintos. Es la clave que el §18.5 manda usar |
-| **Ad set / Conjunto** | «Conjunto» en la ficha por contacto (`leads-portal.js:265-272`) | **Sólo por nombre.** El id existe en 39 de 233 y es **un solo ad set**; el nombre en 222 de 233, y viene en la clave `utmMedium`, que dice «medio» y contiene «Advantage+ ON / America Hispano / 25-65» (regla 2 del §6) |
+| **Anuncio** (`meta_ad_id`) | El cajón de contactos escribe el origen como «Campaña · Creative» (`leads-group.js:15-28`); la ficha por contacto de Leads Portal lista «Creative» (`aios-command-center_1.html:4846-4853`) | `adId` en **176 de 233 (75,5 %)**; 7 anuncios distintos. Es la clave que el §18.5 manda usar |
+| **Ad set / Conjunto** | «Conjunto» en la ficha por contacto (`aios-command-center_1.html:4846-4853`) | **Sólo por nombre.** El id existe en 39 de 233 y es **un solo ad set**; el nombre en 222 de 233, y viene en la clave `utmMedium`, que dice «medio» y contiene «Advantage+ ON / America Hispano / 25-65» (regla 2 del §6) |
 | **Creativo** | «Creative» en la ficha y en el origen del cajón | No existe `meta_creative_id` en ninguna tabla |
 | **Público / audiencia** | El nombre inventado «Público frío» (`acquisition.js:31`) y «Objetivo» en la ficha | No existe. §18.4 lo pide |
 | **Plataforma** | `'Activa · Meta'` bajo cada fila de campaña (`acquisition.js:229`) | No existe como columna |

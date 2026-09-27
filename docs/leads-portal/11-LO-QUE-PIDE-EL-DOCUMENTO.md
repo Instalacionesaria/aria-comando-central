@@ -15,7 +15,7 @@
 ### LP11-01 · Tiene una entidad y un perfil, no una pantalla
 
 La palabra «portal» aparece **cero veces** en las 1.650 líneas. «Leads Portal» es un nombre del
-prototipo (`components/views/ContactsView.jsx:11`), no del documento.
+prototipo (`aios-command-center_1.html:3030`), no del documento.
 
 Lo que el documento sí tiene son dos cosas, y las dos son de la **capa de datos compartida** (§ 5), no
 de un departamento:
@@ -26,7 +26,7 @@ de un departamento:
 **Requisito que sale de ahí:** la pestaña es **la ventana de una persona a la capa compartida**, no
 un departamento de Inteligencia con su propia lectura. No interpreta ni recomienda —no tiene a quién
 recomendarle, el documento no le da voz—; muestra el perfil y dice qué partes de él no existen. Por
-eso el botón «Plan de acción» (`components/views/ContactsView.jsx:18-23`) no tiene detrás ningún
+eso el botón «Plan de acción» (`aios-command-center_1.html:3034`) no tiene detrás ningún
 requisito del documento: ver `07-EL-PLAN-DE-ACCION.md`.
 
 ---
@@ -81,7 +81,7 @@ cumple.
 
 `lead_id` es `contactos.id`, y es **la llave de la ficha**: la ruta de detalle la recibe por id, y un
 id que no es de la empresa responde 404. La maqueta abría la ficha **por nombre**
-(`lib/aios/leads-portal.js:292-297`), y con 593 personas reales un nombre no es una llave. Ver
+(`aios-command-center_1.html:4873-4878`), y con 593 personas reales un nombre no es una llave. Ver
 `12-QUIEN-VE-QUE.md`.
 
 `ghl_contact_id` existe en las 593 filas y **no se dibuja**. Su único uso en pantalla sería armar el
@@ -178,7 +178,7 @@ futuro** y se documenta en `docs/futuro/icp-interno-calculado.md`.
 El segmento **no es un dato que venga**: es un corte que alguien decide. La decisión del 2026-09-26
 es la de la maqueta —ICP alto ≥ 75, ICP medio 50-74, ICP bajo 1-49, «Sin calificar» sin puntaje o en
 0—, con los rótulos «ICP alto / medio / bajo» y no «Calificado alto / Calificado medio / No
-calificado» (`lib/aios/leads-portal.js:143`), porque «no calificado» es una etiqueta de descarte del
+calificado» (`aios-command-center_1.html:4724`), porque «no calificado» es una etiqueta de descarte del
 CRM (`lib/ghl/contrato.ts:236`). Acquisition ya había dejado anotado que el corte 75/50 no tiene
 justificación escrita (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:475-487`) y que los datos sugerían
 otros dos candidatos (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:520-559`): **la decisión de adoptarlo
@@ -193,7 +193,7 @@ llega porque GoHighLevel no la expone (`lib/negocio/sincronizar.ts:27`).
 **Requisito:** el estado se **deriva** de los hechos que sí existen —entró, agendó, asistió, vendió,
 descartado— y se dibuja como recorrido, no como una etiqueta única. Los rótulos de la maqueta
 —«Vendido», «Asistió», «Agendado», «Calificado», «Perdido», «Sin calificar»
-(`lib/aios/leads-portal.js:104-105`)— no tienen fuente: «Calificado» choca con el tramo y con el
+(`aios-command-center_1.html:4685-4686`)— no tienen fuente: «Calificado» choca con el tramo y con el
 pipeline del setter (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:489-507`), y «Perdido» no lo registra
 nadie. Y el «Agendado» del formulario **no** es el agendamiento
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:158-170`).
@@ -227,7 +227,7 @@ documento ya previó que podía no haberlo.
   se nota (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`, `:127-138`). La condición del documento
   no se cumple, así que el renglón **no se dibuja**: va como hueco declarado. La maqueta dibujaba
   porcentaje, llegada al CTA y un registro de VTurb segundo a segundo
-  (`lib/aios/leads-portal.js:249-257`): las tres cosas son andamiaje.
+  (`aios-command-center_1.html:4830-4838`): las tres cosas son andamiaje.
 - **El precall: hay algo, y no es un porcentaje máximo.** «Video Pre-Call» es un campo de opciones
   con tramos —«1–25%», «76–100%»…— en 222 contactos. Pero **180 de esos 222** son «Sin abrir (0%)» o
   «Nada», que son el estado inicial que el CRM escribe al agendar, no una medición de que la persona
@@ -304,7 +304,7 @@ documento —tienen un valor— pero son un lote cerrado de agosto sin ninguno e
 días, y la decisión es contarlos con los que no tienen puntaje, **diciéndolo** (`09 § LP09-06`).
 
 Y una cosa que la maqueta afirmaba sin fuente: *«Aún sin formulario · califican al agendar»*
-(`lib/aios/leads-portal.js:137`). Para 47 de los 169 no describe lo que hay —tienen un puntaje, que
+(`aios-command-center_1.html:4718`). Para 47 de los 169 no describe lo que hay —tienen un puntaje, que
 vale 0—, y para ninguno hay un dato que diga que calificarán al agendar. Es andamiaje.
 
 ### LP11-15 · El § 10.5: el segmento lo consume otro módulo (`§ 10.5:718-720`)
@@ -337,12 +337,12 @@ tasa. Cuando haya respuestas, la tasa es de Appointment Flow y la pestaña la co
 
 | en la maqueta | dónde | qué pasa |
 |---|---|---|
-| Fit score e Intent score | `lib/aios/leads-portal.js:276` | no están en el documento ni en la base: se van |
-| Costo del lead | `lib/aios/leads-portal.js:268` | no está en el `§ 5.3`; no existe por persona: hueco |
-| Dispositivo y ciudad | `lib/aios/leads-portal.js:269` | no están en el `§ 5.3`; sólo saldrían de la IP y el navegador, que no viajan |
-| Ubicación y posición | `lib/aios/leads-portal.js:267` | no están en el `§ 5.3`; Meta no está conectado |
-| El salto «↗ GHL» | `lib/aios/leads-portal.js:228` | no está en el documento; se va por decisión |
-| El monto como protagonista de la tarjeta, «facturado» | `lib/aios/leads-portal.js:188-192` | el documento pide el monto **reportado**, en el perfil; hoy 0 |
+| Fit score e Intent score | `aios-command-center_1.html:4857` | no están en el documento ni en la base: se van |
+| Costo del lead | `aios-command-center_1.html:4849` | no está en el `§ 5.3`; no existe por persona: hueco |
+| Dispositivo y ciudad | `aios-command-center_1.html:4850` | no están en el `§ 5.3`; sólo saldrían de la IP y el navegador, que no viajan |
+| Ubicación y posición | `aios-command-center_1.html:4848` | no están en el `§ 5.3`; Meta no está conectado |
+| El salto «↗ GHL» | `aios-command-center_1.html:4809` | no está en el documento; se va por decisión |
+| El monto como protagonista de la tarjeta, «facturado» | `aios-command-center_1.html:4769-4773` | el documento pide el monto **reportado**, en el perfil; hoy 0 |
 
 Ninguno de los seis es un requisito del documento. Los que la medición no puede sostener se declaran
 como hueco —porque alguien que conoce la maqueta los va a buscar—; los que se van por decisión se

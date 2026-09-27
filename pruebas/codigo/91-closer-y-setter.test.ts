@@ -186,10 +186,12 @@ test('el mapa `GROUP` del armazón usa las mismas claves y los mismos grupos', (
 test('las vistas de la comparación con el prototipo son claves reales', () => {
   // La primera copia. `leads` habría fallado acá: no es una sección.
   const paridad = leer('scripts/paridad.mjs');
-  const bloque = paridad.slice(paridad.indexOf('const VISTAS = ['), paridad.indexOf('];', paridad.indexOf('const VISTAS = [')));
+  const inicio = paridad.indexOf('const VISTAS = [');
+  /* La guarda mira que la DECLARACIÓN esté, no que la lista tenga algo: desde el 2026-09-26 está
+     vacía a propósito —la última vista, `contacts`, se reactificó— y «vacía» no es «no se leyó». */
+  assert.ok(inicio >= 0, 'no se pudo leer `VISTAS` de paridad.mjs');
+  const bloque = paridad.slice(inicio, paridad.indexOf('];', inicio));
   const vistas = [...bloque.matchAll(/'([a-z]+)'/g)].map((m) => m[1]!);
-
-  assert.ok(vistas.length > 0, 'no se pudo leer `VISTAS` de paridad.mjs');
   for (const v of vistas) {
     assert.ok(
       CON_MENU.includes(v),
@@ -434,6 +436,27 @@ test('las dos vistas no traen NINGUNO de los nombres inventados que tenían', ()
     'David Silva',
     'Jorge Veramendi',
     'Andrea Salas',
+    /* Los de la maqueta de Leads Portal y de su cajón «Grupo de contactos», el 2026-09-26: quince
+       en el portal y dos más sólo en el cajón, diecisiete distintas, y Andrea Salas ya estaba. El
+       cajón sigue siendo maqueta de Executive —su texto se compara con el prototipo—, y por eso
+       `lib/aios/` queda fuera del alcance de abajo: lo que se vigila es que no vuelvan a la pestaña
+       que ya se conectó. */
+    'María López',
+    'Pablo Herrera',
+    'Carlos Méndez',
+    'Daniela Soto',
+    'Lucía Fernández',
+    'TechNova',
+    'Grupo Meridian',
+    'Estudio Vera',
+    'Rodrigo Vega',
+    'Diego Paredes',
+    'Sergio Málaga',
+    'Verónica Iparraguirre',
+    'Cobra Studio',
+    'Karla Núñez',
+    'Iván Torres',
+    'Marcos Ruiz',
   ];
 
   // ── EL ALCANCE, Y LA DEUDA QUE DEJA A LA VISTA ────────────────────────────
@@ -453,7 +476,11 @@ test('las dos vistas no traen NINGUNO de los nombres inventados que tenían', ()
   const AMBITO = (r: string) =>
     r === 'components/views/CloserView.jsx' ||
     r === 'components/views/SetterView.jsx' ||
-    r.startsWith('components/negocio/');
+    r.startsWith('components/negocio/') ||
+    /* Leads Portal, desde que se conectó. Sin ampliar el alcance, los nombres de su maqueta se
+       vigilarían sólo donde nunca estuvieron. */
+    r === 'components/views/ContactsView.jsx' ||
+    r.startsWith('components/leads-portal/');
 
   const sospechosos = [];
   for (const a of archivosFuente(['components'])) {
@@ -486,7 +513,9 @@ test('las dos vistas no traen montos ni porcentajes inventados', () => {
   const ENFOQUE = (r: string) =>
     r === 'components/views/CloserView.jsx' ||
     r === 'components/views/SetterView.jsx' ||
-    r.startsWith('components/negocio/');
+    r.startsWith('components/negocio/') ||
+    r === 'components/views/ContactsView.jsx' ||
+    r.startsWith('components/leads-portal/');
 
   const hallados = [];
   for (const a of archivosFuente(['components'])) {

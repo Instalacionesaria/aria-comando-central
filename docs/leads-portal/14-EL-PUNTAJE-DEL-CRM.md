@@ -145,7 +145,7 @@ puntaje».
   ella.
 - **El corte del cajón (`SEG`) mandaba el cero y el nulo al tramo bajo.** Con `SEG`, `0 >= 50` es
   falso y `null >= 50` también, así que los dos caen en `'bajo'`. La maqueta de Leads Portal, en
-  cambio, ya apartaba el nulo en `nc`, «Sin calificar» (`lib/aios/leads-portal.js:67-78`, `:143`),
+  cambio, ya apartaba el nulo en `nc`, «Sin calificar» (`aios-command-center_1.html:4648-4659`, `:4724`),
   que es lo que Acquisition señala en su P-6 (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:596`). La
   decisión conserva eso y le agrega el 0: el nulo y el 0 van a «Sin calificar» (LP14-09).
 - **Los bordes que prueba LP-1:** 0, 1, 49, 50, 74, 75 y 100. Un valor fuera de 0-100 no puede llegar:
@@ -160,20 +160,20 @@ puntaje».
   el tramo en SQL **con las mismas constantes** `UMBRAL_ALTO` y `UMBRAL_MEDIO`, y el resumen cuenta las
   filas por tramo sin reclasificarlas.
 - **El tramo no se guarda en ninguna columna.** La maqueta lo guarda al lado del puntaje y por eso dos
-  filas con el mismo 79 caen en tramos distintos (`lib/aios/leads-portal.js:43` y `:63`), el defecto
+  filas con el mismo 79 caen en tramos distintos (`aios-command-center_1.html:4624` y `:4644`), el defecto
   de `docs/acquisition/04-CALIDAD-DEL-LEAD.md:514-518`.
 - **Por qué importa que sea uno solo.** Appointment Flow también consume el segmento
   (`§ 10.5:719-720`) y el documento pide un show rate por ICP (`§ 10.7:757`). El día que otra pantalla
   lo necesite, importa la misma función; y el día que exista un ICP propio
   (`docs/futuro/icp-interno-calculado.md`), cambia la fuente del número y no el corte.
 - **La clave del cuarto tramo cambia de nombre.** La maqueta lo llama `nc`
-  (`components/views/ContactsView.jsx:62`, `lib/aios/leads-portal.js:143`) y así lo pintan sus estilos
+  (`aios-command-center_1.html:3052`, `aios-command-center_1.html:4724`) y así lo pintan sus estilos
   (`app/aios.css:2374-2377`). La clave nueva es `sin_calificar`, y nada fuera de la maqueta usa `nc`.
 
 ### LP14-07 · Los rótulos: «ICP alto · ICP medio · ICP bajo · Sin calificar»
 
 La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«No calificado»**
-(`lib/aios/leads-portal.js:143`). Se cambian, por dos motivos medidos:
+(`aios-command-center_1.html:4724`). Se cambian, por dos motivos medidos:
 
 1. **«no calificado» es una etiqueta de descarte del CRM.** Está en `ETIQUETAS_DE_DESCARTE`
    (`lib/ghl/contrato.ts:236`): es la casa diciendo que ese contacto se rechazó. Rotular así a todo el
@@ -183,7 +183,7 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
    si todos cayeran en este tramo quedarían al menos 37 de los 158 sin ninguna.
 2. **«Calificado» ya significa cinco cosas distintas en este producto**, una de ellas al revés de las
    otras (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:489-507`). La misma maqueta usa además
-   «Calificado» como estado de la persona (`lib/aios/leads-portal.js:104-105`), que coincide con la
+   «Calificado» como estado de la persona (`aios-command-center_1.html:4685-4686`), que coincide con la
    etapa del setter «Calificado sin agendar» (`lib/negocio/etapasDelSetter.ts:48`), la quinta
    acepción de esa lista: un motivo más para no usar la palabra en los tramos.
 
@@ -195,12 +195,12 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
 |---|---|---|
 | **60** | el techo del rechazo: el 2026-09-16 la casa no rechazaba por ICP a nadie de 60 o más (0 de 67), y el máximo rechazado era 59 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:525-541` |
 | **75** | donde saltaba el agendamiento: 75,7 % en el tramo alto contra ~51-53 % en medio y bajo | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555` |
-| **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `lib/aios/period-controls.js:53` |
+| **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `aios-command-center_1.html:5722` |
 | ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:218` |
 
 El de 80 no es un requisito: es una de las frases del Plan de acción, cuyo censo está en
 `07-EL-PLAN-DE-ACCION.md`. La frase de al lado —«el ICP alto es el 22 % del volumen pero produce el
-61 % de las ventas» (`lib/aios/period-controls.js:48`)— tampoco: con cero ventas no se puede calcular.
+61 % de las ventas» (`aios-command-center_1.html:5717`)— tampoco: con cero ventas no se puede calcular.
 Lo que sí se puede medir es la primera mitad, y no da 22: **18,2 %** en el universo y **17,8 %** a 30
 días.
 
@@ -322,7 +322,7 @@ pasaba de **41,5 a 53,0** al sacarlos y cambiaba de lugar en la tabla
 ### LP14-13 · No es un ICP nuestro, ni fit, ni intent
 
 - La ficha de la maqueta dibuja un «Fit score» y un «Intent score» al lado del ICP
-  (`lib/aios/leads-portal.js:276`). **No existen en la base**: son un hueco declarado, que describe
+  (`aios-command-center_1.html:4857`). **No existen en la base**: son un hueco declarado, que describe
   `05-LA-FICHA-DEL-LEAD.md`.
 - El documento funcional imagina un **«ICP calculado con ese formulario»** —el de la landing— y dice
   que Lead Flow no puede consumirlo antes de que exista (`§ 9.6:583-586`). El puntaje de hoy no es

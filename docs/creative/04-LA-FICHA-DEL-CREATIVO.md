@@ -159,7 +159,7 @@ cuenta aparte y no se fuerza a ninguna rama**.
 **Rastro** · `lib/aios/creative.js:442-445` registra **los únicos** escuchadores de cierre:
 `recoClose`, `recoScrim`, `scrim`, `dwClose`, más el `Escape`.
 Y los **abren** sin registrar nada: `lib/aios/conversion.js:563` y `:620`,
-`lib/aios/executive-panel.js:67` y `:88`, `lib/aios/leads-portal.js:286`,
+`lib/aios/executive-panel.js:67` y `:88`, `aios-command-center_1.html:4867`,
 `lib/aios/period-controls.js:58`. Peor: `executive-panel.js:64` hace literalmente
 `document.getElementById('dwClose').click()`.
 **Estado** · **No es un requisito de Creative: es una deuda de armazón que el borrado de Creative

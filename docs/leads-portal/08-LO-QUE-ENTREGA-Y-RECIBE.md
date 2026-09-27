@@ -166,7 +166,7 @@ que se publica como `window.AIOSLeads` (`lib/aios/leads-group.js:5`) y escucha *
 `data-leads` y ninguno más:
 
 - `lib/aios/executive.js:49`, la columna de cifras del embudo del negocio —sin `data-seg`—;
-- `lib/aios/leads-portal.js:133`, el número de cada una de las cuatro tarjetas de tramo.
+- `aios-command-center_1.html:4714`, el número de cada una de las cuatro tarjetas de tramo.
 
 Los cinco sitios de Acquisition que `A7-25` contó se fueron con su módulo el 2026-09-16
 (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:3-4`), y ninguno de los paneles nuevos de
@@ -180,7 +180,7 @@ Inteligencia emite el atributo. **Después de LP-6 queda uno solo: Executive** (
   una contra `'nc'` con una función que sólo devuelve `alto`, `medio` o `bajo` (`:10`, `:32`); como
   nadie coincide, cae a la lista entera (`:33`) y toma las tres primeras;
 - **una misma persona inventada cambia de tramo entre los dos archivos**: con puntaje 79 es «medio»
-  en el portal (`lib/aios/leads-portal.js:43`) y «alto» en el cajón (`lib/aios/leads-group.js:20`,
+  en el portal (`aios-command-center_1.html:4624`) y «alto» en el cajón (`lib/aios/leads-group.js:20`,
   por el corte de `:10`);
 - cada fila tiene un salto a la **raíz** de GoHighLevel, no al contacto (`:8`, `:51`, `:54-56`);
 - y el panel se abre sin cambiar nunca su `aria-hidden="true"` (`components/Overlays.jsx:7`,
@@ -189,69 +189,75 @@ Inteligencia emite el atributo. **Después de LP-6 queda uno solo: Executive** (
 
 **Requisito** · El panel nuevo **no emite `data-leads`** y no abre este cajón (plan de LP-6). El
 cajón pasa a ser **maqueta de Executive**, con su texto intacto, porque la compuerta de paridad
-compara su `innerText` contra el prototipo (`scripts/paridad.mjs:294-297`).
+compara su `innerText` contra el prototipo (`scripts/paridad.mjs:275-278`).
 
 ### LP08-11 · `window.AIOSLeadCard`: Executive la usa sin nombrarla
 
-**Rastro** · Definida sólo en `lib/aios/leads-portal.js:292-297`. Llamada sólo desde
-`lib/aios/leads-group.js:58`, con guarda.
+**Rastro** · Estaba definida sólo en la maqueta, `aios-command-center_1.html:4873-4878` en el
+original, y la llamaba sólo el clic de una fila del cajón, con guarda. **Las dos cosas se fueron en
+LP-6**: el módulo con la maqueta, y el clic, que dejó en su lugar un comentario
+(`lib/aios/leads-group.js:57-59`).
 
-**La cadena, entera:** una cifra del embudo de Executive (`lib/aios/executive.js:49`) → el escuchador
-del cajón (`lib/aios/leads-group.js:79-85`) → el clic en una fila (`:57-59`) →
-`window.AIOSLeadCard(nombre)` → `openLead` (`lib/aios/leads-portal.js:205-289`), que escribe la ficha
-en el `#drawer` compartido (`:207-211`, `:286-288`). **Executive no la nombra en ninguna parte, y la
+**La cadena, entera, como era:** una cifra del embudo de Executive (`lib/aios/executive.js:49`) → el
+escuchador del cajón (`lib/aios/leads-group.js:79-85`) → el clic en una fila →
+`window.AIOSLeadCard(nombre)` → `openLead` (`aios-command-center_1.html:4786-4870`), que escribe la ficha
+en el `#drawer` compartido (`:4788-4792`, `:4867-4869`). **Executive no la nombra en ninguna parte, y la
 usa en cada clic.**
 
 **Y tiene dos defectos que el portal nuevo no puede heredar:**
 
-1. **Identifica a la persona por su nombre visible** (`lib/aios/leads-portal.js:293`). Dos personas
+1. **Identifica a la persona por su nombre visible** (`aios-command-center_1.html:4874`). Dos personas
    con el mismo nombre son la misma; una persona renombrada en el CRM deja de existir.
 2. **Si el nombre no está, inventa una ficha.** Toma la primera persona de la lista y le pega el
-   nombre pedido (`lib/aios/leads-portal.js:295-296`). Las dos personas que sólo están en el cajón
+   nombre pedido (`aios-command-center_1.html:4876-4877`). Las dos personas que sólo están en el cajón
    (`lib/aios/leads-group.js:26`, `:28`) abren la ficha completa **de otra**: su teléfono, su
    correo, su venta de $4.500 y el nombre del closer real que la maqueta le atribuye
-   (`lib/aios/leads-portal.js:10-26`).
+   (`aios-command-center_1.html:4591-4607`).
 
 **Requisito** · La ficha nueva se abre **por id, y un id que no existe o que es de otra empresa da
-404** (`LP05-01`, `LP04-09`). No hay puerta global por nombre: `window.AIOSLeadCard` se va con
-`leads-portal.js` y no se reemplaza.
+404** (`LP05-01`, `LP04-09`). No hay puerta global por nombre: `window.AIOSLeadCard` se fue con
+`leads-portal.js` en LP-6 y no se reemplazó, y `pruebas/codigo/178-la-maqueta-del-leads-portal-se-fue.test.ts`
+se pone roja si alguien la vuelve a definir o a llamar.
 
-### LP08-12 · Cómo se retira la maqueta sin romper Executive
+### LP08-12 · Cómo se retiró la maqueta sin romper Executive
 
-En orden de dependencia. Cada punto dice qué se rompería si se hiciera mal.
+En orden de dependencia, y **hecho en LP-6** punto por punto. Cada punto dice qué se habría roto si
+se hacía mal.
 
 1. **`#drawer` se queda.** Executive lo abre desde los temas de su resumen y de sus cambios y desde
    «Reuniones anteriores» (`lib/aios/executive-panel.js:80-81`, `:101-102`), y lo cierra el
    armazón. La ficha nueva usa un cajón **con id propio** (`LP05-02`): si reusara `#drawer`, abrir
    una ficha pisaría lo que Executive hubiera escrito ahí, y al revés.
-2. **`window.AIOSLeadCard` se va, y su único llamador se limpia.** La guarda de
-   `lib/aios/leads-group.js:58` evita el error, pero la fila quedaría **clicable y muda**: el
-   `cursor:pointer` de `.lg-r` vive en `app/aios.css:2345-2346`, que no se toca. El plan saca el clic;
-   el cursor se anula **fuera** de `app/aios.css`, con el precedente del commit `bd26085`, que anuló
-   el cursor de los iconos de la ficha en `app/closer.css` «porque `aios.css` tiene que seguir
-   comparable contra el HTML del prototipo».
-3. **El pie del cajón deja de preseleccionar el tramo.** Busca `#lpIcpSeg`
-   (`lib/aios/leads-group.js:65-68`), que el panel nuevo no tiene; la guarda lo apaga, y el plan lo
-   borra para que no se lea como rama viva. **La navegación a la pestaña se queda** (`:61-64`), y con
-   ella una contradicción medida: ver `LP08-P01`.
-4. **`initLeadsPortal` sale del arranque** (`lib/aios/index.js:8`, `:29`) y **el comentario de arriba
-   deja de nombrar a `window.AIOSLeadCard`** (`lib/aios/index.js:1-4`): hoy afirma que el orden de
-   los módulos importa porque unos registran globales que otros usan, y ése era el caso que lo
-   justificaba.
-5. **El bloque del Plan de acción se va** (`lib/aios/period-controls.js:41-61`), y con él el único
-   que abre `#recoModal` (`LP07-08`).
-6. **La compuerta de paridad se reordena, no se retira.** `VISTAS` queda vacía
-   (`scripts/paridad.mjs:149`); salen los dos pasos del calendario (`:156`, `:165-166`) y el de la
-   ficha (`:187-188`); **«grupo de contactos» se muda a Executive**, a `#exFunnel [data-leads]`, en vez
-   de `#v-contacts [data-leads]` (`:189-190`). Y como cada paso cierra lo que abrió el anterior
-   (`:184-186`), el paso mudado ya no empieza cerrando `#dwClose`. La compuerta **no** queda retirada:
-   el guardián sólo se dispara con `VISTAS` y `PASOS` vacías a la vez (`:320-324`), y quedan «Ask
-   Executive» (`:206-207`), «funnel ejecutivo» (`:229-231`) y el mudado. El comentario de `:134-148`,
-   que anuncia el retiro para el día en que `contacts` se reactifique, se corrige.
-7. **`pruebas/codigo/90-fundaciones.test.ts:1274-1323`** exige hoy exactamente `['contacts']`
-   (`:1308-1314`). Pasa a exigir la lista vacía y que ningún paso nombre `#v-contacts`, con su motivo.
+2. **`window.AIOSLeadCard` se fue, y su único llamador se limpió.** La guarda evitaba el error,
+   pero la fila habría quedado **clicable y muda**: el `cursor:pointer` de `.lg-r` vive en
+   `app/aios.css:2345-2346`, que no se toca. El clic salió (`lib/aios/leads-group.js:57-59` es ahora
+   el comentario que lo explica) y el cursor se anuló **fuera** de `app/aios.css`, en
+   `app/leads-portal.css:107`, con el precedente del commit `bd26085`, que anuló el cursor de los
+   iconos de la ficha en `app/closer.css` «porque `aios.css` tiene que seguir comparable contra el
+   HTML del prototipo».
+3. **El pie del cajón dejó de preseleccionar el tramo.** Buscaba `#lpIcpSeg`, que el panel nuevo no
+   tiene; la guarda lo apagaba, y se borró para que no se leyera como rama viva
+   (`lib/aios/leads-group.js:65-68` es el comentario que quedó). **La navegación a la pestaña se
+   quedó** (`:61-64`), y con ella una contradicción medida: ver `LP08-P01`.
+4. **`initLeadsPortal` salió del arranque**, con su `import` y su entrada de `MODULOS`, y **el
+   comentario de arriba dejó de nombrar a `window.AIOSLeadCard`** (`lib/aios/index.js:1-4`): afirma
+   que el orden de los módulos importa porque unos registran globales que otros usan, y ése era el
+   caso que lo justificaba. El motivo de la salida quedó escrito en `lib/aios/index.js:14-16`.
+5. **El bloque del Plan de acción se fue** (el original, `aios-command-center_1.html:5710-5730`), y
+   con él el único que abría `#recoModal` (`LP07-08`).
+6. **La compuerta de paridad se reordenó, no se retiró.** `VISTAS` quedó vacía
+   (`scripts/paridad.mjs:153`, con su motivo en `:134-152`); salieron los dos pasos del calendario y
+   el de la ficha, y **«grupo de contactos» se mudó a Executive**, a `#exFunnel [data-leads]`, al final
+   de la cadena (`:212`), con la explicación de los tres en `:157-170`. Como cada paso cierra lo que
+   abrió el anterior, el paso mudado ya no empieza cerrando `#dwClose`: viene detrás de «funnel
+   ejecutivo». La compuerta **no** quedó retirada: el guardián sólo se dispara con `VISTAS` y `PASOS`
+   vacías a la vez (`:301-305`), y quedan «Ask Executive» (`:186-187`), «funnel ejecutivo»
+   (`:209-211`) y el mudado.
+7. **`pruebas/codigo/90-fundaciones.test.ts:1274-1339`** exigía exactamente `['contacts']`. Ahora exige
+   la lista vacía (`:1321-1326`), que ningún paso nombre `#v-contacts` (`:1333`) y que el cajón se abra
+   desde el embudo de Executive (`:1334-1338`), con su motivo.
 8. **El calendario se queda sin quién lo abra.** La píldora de esta pestaña
-   (`components/views/ContactsView.jsx:36`) es la única visible: la de Executive está `hidden`
+   (`aios-command-center_1.html:3037`) es la única visible: la de Executive está `hidden`
    (`components/views/ExecutiveView.jsx:62`). Deuda anotada (`LP06-02`, `LP10-13`).
 
 Lo que **no** se toca, porque es de Executive: `lib/aios/leads-group.js` salvo los dos manejadores,
@@ -357,7 +363,7 @@ Las tres salidas, y ninguna es buena:
 2. **se le saca el manejador**: el pie queda como un botón que no hace nada, que es el defecto que
    esta carpeta le reprocha a la maqueta;
 3. **se cambia el texto**: la compuerta de paridad compara el texto del cajón
-   (`scripts/paridad.mjs:296`) y el paso mudado daría rojo permanente.
+   (`scripts/paridad.mjs:277`) y el paso mudado daría rojo permanente.
 
 La contradicción no es nueva —`A7-28` la anunció: una cifra y su lista no comparten origen—, pero
 hasta hoy las dos mitades eran inventadas. Desde LP-5 una es real.

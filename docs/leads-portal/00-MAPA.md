@@ -6,27 +6,28 @@
 > sólo con consultas agregadas y sin un solo dato personal. Cada requisito lleva el `archivo:línea`
 > del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito.
 >
-> **Las citas a la maqueta son exactas al 2026-09-26.** En LP-6 se rompen de dos maneras distintas,
-> y LP-7 las reapunta: ver § 2.
+> **La maqueta se borró en LP-6, y sus citas apuntan al prototipo.** `aios-command-center_1.html`,
+> en la raíz, es el original del que la maqueta era un port literal: ver § 2.
 
 ---
 
 ## El estado, en una línea
 
-**Sin construir. Al 2026-09-26 la pestaña es una maqueta que dibuja quince personas inventadas sin
-pedirle nada al servidor; todo lo que tiene que mostrar ya se guarda, y lo que más le falta no es un
-dato que haya que traer: es que nadie registra una asistencia ni una venta.**
+**Construida el 2026-09-26, en seis etapas (LP-1 a LP-6).** Hasta ese día la pestaña era una maqueta
+que dibujaba quince personas inventadas sin pedirle nada al servidor; ahora muestra la cohorte real,
+con los tramos decididos y cada «no se sabe» dicho como tal. Lo que más le falta no es un dato que
+haya que traer: **es que nadie registra una asistencia ni una venta.**
 
-| qué hay hoy | dónde |
+| qué había, y se borró en LP-6 | dónde está ahora |
 |---|---|
-| La vista: el encabezado, la barra de controles y los contenedores vacíos | `components/views/ContactsView.jsx`, 101 líneas |
-| Las tarjetas, la rejilla y la ficha, con quince personas inventadas | `lib/aios/leads-portal.js`, 324 líneas |
-| El cajón «Grupo de contactos», con catorce personas inventadas, doce de ellas repetidas del portal (`LP10-02`) | `lib/aios/leads-group.js`, 89 líneas; su marcado en `components/Overlays.jsx:5-26` |
-| El «Plan de acción»: cuatro frases escritas a mano | `lib/aios/period-controls.js:41-61` |
-| El cajón donde se dibuja la ficha, que también usa Executive | `components/Overlays.jsx:120-136` |
-| La sección, todavía con la bandera `sinOperacionesTodavia` | `lib/autorizacion/secciones.ts:219-227` |
+| La vista: el encabezado, la barra de controles y los contenedores vacíos | en el prototipo, `aios-command-center_1.html:3024-3072`; la vista nueva es una envoltura con su cabecera (`components/views/ContactsView.jsx`) |
+| Las tarjetas, la rejilla y la ficha, con quince personas inventadas | `lib/aios/leads-portal.js`, borrado; el original, `aios-command-center_1.html:4584-4904` |
+| El cajón «Grupo de contactos», con catorce personas inventadas, doce de ellas repetidas del portal (`LP10-02`) | se queda como maqueta de Executive, sin sus dos manejadores (`lib/aios/leads-group.js`); su marcado en `components/Overlays.jsx:5-26` |
+| El «Plan de acción»: cuatro frases escritas a mano | borrado; el original, `aios-command-center_1.html:5710-5730` |
+| El cajón donde se dibujaba la ficha, que también usa Executive | se queda para Executive (`components/Overlays.jsx:120-136`); la ficha nueva tiene el suyo |
+| La sección, con la bandera `sinOperacionesTodavia` | bajada en LP-4 (`lib/autorizacion/secciones.ts:225`) |
 
-| qué va a haber, según el plan (LP-1 a LP-6) | dónde |
+| qué hay desde LP-1 a LP-6 | dónde |
 |---|---|
 | Los tramos, en un módulo sin imports | `lib/negocio/tramosDelIcp.ts` |
 | La cohorte por persona, en una sola sentencia | `lib/negocio/leadsDelPortal.ts` y `ventasDelContacto.ts` |
@@ -35,7 +36,7 @@ dato que haya que traer: es que nadie registra una asistencia ni una venta.**
 | El lector, los filtros, el panel y la ficha | `lib/negocio/vistaDeLeadsPortal.ts`, `filtrosDelPortal.ts` y `components/leads-portal/` |
 
 El plan aprobado está en `C:\Users\USUARIO\.claude\plans\purring-enchanting-dream.md`. **Ninguna
-etapa necesita migración**: las tablas que la pestaña lee ya existen (`LP09-01`). La tabla de qué se
+etapa necesitó migración**: las tablas que la pestaña lee ya existen (`LP09-01`). La tabla de qué se
 construye en cada etapa, y con qué prueba, está en `LP13-04`.
 
 ---
@@ -146,23 +147,27 @@ archivo.
 - **Una cita a la maqueta dice qué pieza de la pantalla es, no que su valor sea un requisito.** Su
   valor es andamiaje (§ 3).
 
-### Por qué las citas a la maqueta van a romperse, y de qué dos maneras
+### Cómo quedaron las citas a la maqueta después de LP-6
 
-LP-6 borra `lib/aios/leads-portal.js`, saca el bloque `lib/aios/period-controls.js:41-61`, reescribe
-`components/views/ContactsView.jsx` y le quita dos manejadores a `lib/aios/leads-group.js`. Es la
-misma operación que ya rompió citas en Sales (`docs/sales/00-MAPA.md:88-99`), y deja dos clases:
+LP-6 borró `lib/aios/leads-portal.js`, sacó el bloque del Plan de acción de
+`lib/aios/period-controls.js`, reescribió `components/views/ContactsView.jsx` y le quitó dos
+manejadores a `lib/aios/leads-group.js`. Es la misma operación que ya rompió citas en Sales
+(`docs/sales/00-MAPA.md:88-99`), y esta vez se reapuntaron **en el mismo commit**, porque la prueba
+101 audita esta carpeta y habría quedado en rojo:
 
-- **las que fallan al resolverse, y se ven**: todas las de `lib/aios/leads-portal.js`, y las de
-  `period-controls.js` y `leads-group.js` que queden más allá del nuevo final;
-- **las que siguen resolviendo y muestran otra cosa**, que ninguna prueba ve: las de
-  `ContactsView.jsx`, que se reescribe con una cabecera larga; las de `leads-group.js` posteriores a
-  la línea 56; y las de `lib/aios/index.js`, `scripts/paridad.mjs` y
-  `pruebas/codigo/90-fundaciones.test.ts`, que LP-6 también toca.
+- **las de la maqueta borrada o reescrita apuntan al prototipo**, `aios-command-center_1.html`. El
+  módulo era un port literal de sus líneas 4584-4904 y el Plan de acción de 5710-5730, así que cada
+  línea se reapuntó alineando los dos textos; la vista, que en JSX tenía un elemento por línea, se
+  mapeó a mano contra 3024-3072. La prueba no audita el `.html`, así que estas citas se sostienen
+  por el mapeo y no por la prueba;
+- **las de los archivos que LP-6 tocó y siguen existiendo** —`lib/aios/leads-group.js`,
+  `lib/aios/index.js`, `scripts/paridad.mjs`, `pruebas/codigo/90-fundaciones.test.ts` y
+  `pruebas/codigo/91-closer-y-setter.test.ts`— se corrieron a su línea nueva con el mapa del diff; en
+  `leads-group.js` los dos manejadores se reemplazaron por la misma cantidad de líneas de comentario,
+  para no correr nada.
 
-LP-7 las reapunta al prototipo o a la cabecera de la vista nueva, que va a enumerar lo borrado con la
-medición que lo desmiente, con la forma de `components/views/SalesView.jsx`. Hasta entonces, cada
-cita a la maqueta muestra lo que dice. Casi todos los archivos lo avisan en su cabecera; `09`, `11` y
-`12` citan la maqueta sin ese aviso, y para ellos vale este párrafo.
+Lo que describía esas piezas en presente —«la maqueta dibuja…»— se lee como lo que la pantalla
+dibujaba hasta LP-6: es el rastro del requisito, no el estado de la pantalla.
 
 ---
 

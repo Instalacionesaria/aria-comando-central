@@ -1271,7 +1271,7 @@ test('las dos capacidades están en el archivo que las carga, y no en la migraci
 
 // ─── La compuerta de paridad ───────────────────────────────────────────────
 
-test('nueve vistas salieron de la comparación con el prototipo, y queda `contacts`', async () => {
+test('las diez vistas salieron de la comparación con el prototipo, y quedan sólo pasos de Executive', async () => {
   // La vista ya no coincide con el prototipo A PROPÓSITO. Dejarla en la lista daría un rojo
   // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
   //
@@ -1280,7 +1280,7 @@ test('nueve vistas salieron de la comparación con el prototipo, y queda `contac
   // venir a escribir el motivo — que es lo único que hace que una compuerta que se encoge no se
   // encoja sola.
   //
-  // Van CINCO salidas y nueve vistas, cada una con su motivo escrito en `scripts/paridad.mjs`:
+  // Van SEIS salidas y diez vistas, cada una con su motivo escrito en `scripts/paridad.mjs`:
   //
   //   · `icp` en la Etapa 9, `setter` y `closer` en la 11 — las tres porque sus DATOS dejaron de
   //     ser los del maquetado;
@@ -1289,30 +1289,28 @@ test('nueve vistas salieron de la comparación con el prototipo, y queda `contac
   //     forma y las cajas del SVG a propósito. Su red de reemplazo es
   //     `pruebas/codigo/120-mapa-ejecutivo.test.ts`;
   //   · **las cinco de Inteligencia**, por la estética de operación. Es la salida más grande y la
-  //     que deja la lista en una sola vista, así que es la que más merece el trinquete.
+  //     que dejó la lista en una sola vista, así que es la que más merece el trinquete;
+  //   · y **`contacts`**, el 2026-09-26, porque Leads Portal dejó de ser la maqueta: dibuja leads
+  //     reales, y su forma diverge del prototipo a propósito.
   //
-  // Y acá va la parte incómoda, que es la que esta prueba existe para obligar a escribir: con
-  // `contacts` sola, esta compuerta ya casi no compara nada. Se acepta porque **hace tiempo que no
+  // Y acá va la parte incómoda, que es la que esta prueba existe para obligar a escribir: sin
+  // ninguna vista, esta compuerta sólo compara los tres pasos de Executive. Se acepta porque **hace tiempo que no
   // corría**: no está en `verificar.yml`, necesita los navegadores de Playwright instalados a mano
   // y una sesión. Lo que la reemplaza corre en `npm test`, que sí está en CI. Pero que quede
-  // dicho: sacar la novena vista no fue gratis, fue el reconocimiento de una compuerta dormida.
+  // dicho: sacar la novena y la décima vista no fue gratis, fue el reconocimiento de una compuerta
+  // dormida.
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { RAIZ } = await import('../apoyo/fuente.ts');
   const paridad = readFileSync(join(RAIZ, 'scripts/paridad.mjs'), 'utf8');
   const lista = /const VISTAS = \[([\s\S]*?)\];/.exec(paridad);
-  assert.ok(lista && lista[1], 'no se pudo leer la lista de vistas de paridad.mjs');
-  const vistas = [...lista[1].matchAll(/'([\w-]+)'/g)].map((m) => m[1]);
-  // Con UNA sola entrada, «longitud 1» ya no distingue nada: cualquier vista daría verde. Por eso
-  // se afirma cuál es, y no cuántas hay.
-  assert.deepEqual(
-    vistas,
-    ['contacts'],
-    `la lista de paridad es ${JSON.stringify(vistas)} y tendría que ser sólo \`contacts\`: si ` +
-      'sacaste una vista más, vení a escribir por qué; si volviste a meter una, va a dar rojo ' +
-      'permanente',
-  );
-  for (const fuera of ['icp', 'setter', 'closer', 'executive',
+  /* `lista` y no `lista[1]`: con la lista vacía, la captura es una cadena vacía —falsa— y la guarda
+     confundía «no hay vistas» con «no se encontró la declaración». */
+  assert.ok(lista, 'no se pudo leer la lista de vistas de paridad.mjs');
+  const vistas = [...(lista[1] ?? '').matchAll(/'([\w-]+)'/g)].map((m) => m[1]);
+  /* Antes de la igualdad: el mensaje nombra la vista que volvió, y además `deepEqual` estrecha el tipo
+     de `vistas` a una lista vacía, con la que `includes` ya no compila. */
+  for (const fuera of ['icp', 'setter', 'closer', 'executive', 'contacts',
                        'acquisition', 'creative', 'conversion', 'conversation', 'sales']) {
     assert.ok(
       !vistas.includes(fuera),
@@ -1320,6 +1318,24 @@ test('nueve vistas salieron de la comparación con el prototipo, y queda `contac
         'permanente',
     );
   }
+  assert.deepEqual(
+    vistas,
+    [],
+    `la lista de paridad es ${JSON.stringify(vistas)} y tendría que estar vacía: si volviste a ` +
+      'meter una vista, diverge del prototipo a propósito y va a dar rojo permanente',
+  );
+  /* Y ningún paso puede seguir mirando Leads Portal: su marcado ya no es el del prototipo, así que
+     un clic en `#v-contacts` caería sobre un elemento que no existe —el modo de fallar de este
+     archivo entero, que no se nota hasta que alguien corre la compuerta a mano—. */
+  const pasos = /const PASOS = \[([\s\S]*?)\n\];/.exec(paridad);
+  assert.ok(pasos && pasos[1], 'no se pudo leer la lista de pasos de paridad.mjs');
+  const sinComentarios = pasos[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(sinComentarios, /#v-contacts/, 'un paso de la compuerta sigue mirando Leads Portal');
+  assert.match(
+    sinComentarios,
+    /'grupo de contactos',\s+p => p\.click\('#exFunnel \[data-leads\]'\)/,
+    'el cajón «grupo de contactos» dejó de abrirse desde el embudo de Executive',
+  );
 });
 
 // ─── La espera del navegador contra lo que la ruta puede tardar ─────────────

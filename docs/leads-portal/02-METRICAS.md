@@ -44,7 +44,7 @@
    ninguna otra. La ventana y sus bordes están en `06-PERIODOS-Y-PISOS.md`.
 3. **El tramo se deriva del puntaje en el momento de consultar, y no se guarda.** La maqueta lo
    guarda al lado del puntaje y por eso se contradice: dos filas con el mismo 79 caen en tramos
-   distintos (`lib/aios/leads-portal.js:43` y `:63`), el defecto que ya señaló
+   distintos (`aios-command-center_1.html:4624` y `:4644`), el defecto que ya señaló
    `docs/acquisition/04-CALIDAD-DEL-LEAD.md:514-518`. Los cortes están en `14-EL-PUNTAJE-DEL-CRM.md`.
 4. **Los cuatro tramos suman la cohorte exacta, y «Todos» no se calcula por separado.** Es la regla
    de apartar sin esconder (`07-REGLAS-TRANSVERSALES.md:106`): si la suma no da, se ve.
@@ -52,7 +52,7 @@
    con su motivo en `:300-307`. Se aplica a lo que va abajo de la raya de cada tasa, no al total.
 6. **Los dos ceros no colapsan** (`07-REGLAS-TRANSVERSALES.md:110-112`). `null` es «no hay de qué
    decirlo» y `0` es un hecho medido. La maqueta los colapsa en una línea: su `rate` devuelve `0`
-   cuando el denominador es cero (`lib/aios/leads-portal.js:126`).
+   cuando el denominador es cero (`aios-command-center_1.html:4707`).
 7. **Vender es tener un resultado con salida `venta`.** No lo es un acuerdo sin pago
    (`lib/negocio/dineroDelMes.ts:79-84`) ni una venta chica del setter
    (`lib/negocio/etapas.ts:86-94`). Y es venta **reportada por el closer**, no pago verificado
@@ -84,7 +84,7 @@ la suma de los cuatro tramos.
 territorio** —closer, setter o congelado— y descartados incluidos. La cohorte se arma con un hecho
 de entrada y no con el territorio, que es consecuencia de agendar
 (`07-REGLAS-TRANSVERSALES.md:216-222`).
-**Rastro** · `lib/aios/leads-portal.js:128` (`n = g.length`, por tramo) y `:146` (`all.length`, la
+**Rastro** · `aios-command-center_1.html:4709` (`n = g.length`, por tramo) y `:4727` (`all.length`, la
 tarjeta «Todos»); el mismo predicado que `lib/negocio/cadenaDeCierre.ts:169`.
 **Estado** · **Construible hoy, sin migración.** Medido el 2026-09-27:
 
@@ -108,7 +108,7 @@ aviso dice que no entró nadie, no que falte el dato —la frase ya existe en
 **Unidad** · Proporción de 0 a 1 en la respuesta; la pantalla la redondea a porcentaje entero y la
 usa también para el ancho de la barra.
 **Población** · La cohorte de la ventana.
-**Rastro** · `lib/aios/leads-portal.js:134-135` (`rate(n, all.length)% del total`, y la barra con el
+**Rastro** · `aios-command-center_1.html:4715-4716` (`rate(n, all.length)% del total`, y la barra con el
 mismo número).
 **Estado** · **Construible hoy.** A 30 días: 17,8 % · 29,0 % · 40,9 % · 12,2 %. Viaja `null`
 —no `0`— con la cohorte vacía, como `porcionDeLaCohorte` de Sales
@@ -128,8 +128,8 @@ devuelve.
 **Fórmula** · `count(*) filter (where tieneCitaAlcanzable('contactos'))`.
 **Unidad** · Conteo de personas.
 **Población** · Los contactos del tramo en la cohorte.
-**Rastro** · `lib/aios/leads-portal.js:129` y `:134` («N agendados»); el filtro «Agendados» de
-`components/views/ContactsView.jsx:83-85`; el predicado en `lib/negocio/citasAlcanzables.ts:128-134`.
+**Rastro** · `aios-command-center_1.html:4710` y `:4715` («N agendados»); el filtro «Agendados» de
+`aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:128-134`.
 **Estado** · **Construible hoy**, y es el mismo predicado que usan Sales
 (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`) y
 Conversion. Tres consecuencias de la definición, las tres a propósito:
@@ -140,7 +140,7 @@ Conversion. Tres consecuencias de la definición, las tres a propósito:
   La persona cuya única cita está congelada viaja marcada aparte, con `cita: 'solo_congeladas'`, y el
   resumen publica cuántas son (ver abajo).
 - **La tarjeta «Sin calificar» cuenta sus agendados como las demás.** La maqueta escribe «sin
-  agendar» en esa tarjeta sin mirar nada (`lib/aios/leads-portal.js:134`). No tener puntaje no dice
+  agendar» en esa tarjeta sin mirar nada (`aios-command-center_1.html:4715`). No tener puntaje no dice
   nada sobre haber agendado.
 
 **Lo que la medición de LP-0 dice y lo que no.** Tiene, el 2026-09-27, **292 personas con alguna cita** (cualquier
@@ -176,8 +176,8 @@ La cifra de esta pestaña se verifica en LP-4 contra la cadena, en la misma vent
 
 **Unidad** · Conteo de personas.
 **Población** · Los contactos del tramo.
-**Rastro** · El filtro «Asistieron» de `components/views/ContactsView.jsx:86-88` y su condición en
-`lib/aios/leads-portal.js:112`; `§ 5.3:261` («Asistencia»).
+**Rastro** · El filtro «Asistieron» de `aios-command-center_1.html:3062` y su condición en
+`aios-command-center_1.html:4693`; `§ 5.3:261` («Asistencia»).
 **Estado** · **La forma sí; el contenido hoy vale cero.** Medido el 2026-09-27, en toda la base:
 `asistio` es `true` en 0 personas y `false` en 0. Y **145 personas** tienen una cita ya pasada, no
 cancelada y sin registro, medido sin el filtro de alcanzable y con `'cancelled'` como única grafía
@@ -235,8 +235,8 @@ lo sacó a `lib/negocio/ventasDelContacto.ts:44-46`; la cadena lo importa, sin c
 calcula.
 **Unidad** · Conteo de personas: dos ventas de la misma persona cuentan una.
 **Población** · Los contactos del tramo.
-**Rastro** · `lib/aios/leads-portal.js:129` (`vend`); el filtro «Vendidos» de
-`components/views/ContactsView.jsx:89-91`; `§ 5.3:262` («Resultado de venta»).
+**Rastro** · `aios-command-center_1.html:4710` (`vend`); el filtro «Vendidos» de
+`aios-command-center_1.html:3063`; `§ 5.3:262` («Resultado de venta»).
 **Estado** · **La forma sí; hoy vale 0.** Medido el 2026-09-27: 0 personas con venta. Los resultados que existen
 son seguimiento 4, no_show 2 y no_interesa 1, los mismos siete que `lib/negocio/huecosDeSales.ts:9-11`
 contó el 2026-09-21.
@@ -262,7 +262,7 @@ contó el 2026-09-21.
 **Población** · **Los contactos del tramo**: ni los agendados ni las citas. Es una conversión de
 lead a venta, y el rótulo lo dice.
 **Piso** · `PISO_DE_UNA_TASA` sobre los contactos del tramo.
-**Rastro** · `lib/aios/leads-portal.js:138` (`rate(vend, n)`) y `:149` (la tarjeta «Todos»);
+**Rastro** · `aios-command-center_1.html:4719` (`rate(vend, n)`) y `:4730` (la tarjeta «Todos»);
 `lib/negocio/huecosDeSales.ts:57-62`.
 **Estado** · **`null` hoy, con motivo.** El valor sale del primer caso que se cumpla, en el mismo
 orden que `LP03-12`:
@@ -294,17 +294,17 @@ tramo.
 **Unidad** · Dinero, tal como el closer lo cargó.
 **Población** · Los resultados `venta` de los contactos del tramo. **`acuerdo_sin_pago` no entra**
 (`lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:79-84`).
-**Rastro** · `lib/aios/leads-portal.js:130` y `:138` (por tramo), `:149` (Todos) y `:189-191` (cada
+**Rastro** · `aios-command-center_1.html:4711` y `:4719` (por tramo), `:4730` (Todos) y `:4770-4772` (cada
 tarjeta de la rejilla); `§ 5.3:263` («Monto reportado por el closer»).
 **Estado** · **`null` hoy, con el mismo motivo que LP02-07.** Medido el 2026-09-27: 0 montos
 cargados en toda la base. Tres requisitos:
 
-- **El rótulo es «monto reportado»**, nunca «Revenue» (`lib/aios/leads-portal.js:138`) ni
-  «facturado» (`:190`). Este sistema no tiene integración de cobros y la cifra es lo que el closer
+- **El rótulo es «monto reportado»**, nunca «Revenue» (`aios-command-center_1.html:4719`) ni
+  «facturado» (`:4771`). Este sistema no tiene integración de cobros y la cifra es lo que el closer
   dijo (`lib/negocio/cadenaDeCierre.ts:353-358`).
 - **Un `$0` no reemplaza a un `null`.** La maqueta dibuja el mismo hecho de dos maneras en la misma
-  pantalla: la tarjeta de un tramo sin ventas dice «—» (`lib/aios/leads-portal.js:138`) y la tarjeta
-  «Todos» dice `money(revT)`, o sea «$0» (`:149`).
+  pantalla: la tarjeta de un tramo sin ventas dice «—» (`aios-command-center_1.html:4719`) y la tarjeta
+  «Todos» dice `money(revT)`, o sea «$0» (`:4730`).
 - **Una venta sin monto no se suma como cero.** Si hay ventas y ninguna trae monto, el valor es
   `null` con `ventas_sin_monto`, como en `LP03-13`; si sólo algunas lo traen, se suman ésas y el aviso
   dice cuántas faltan. Es la misma regla de no colapsar estados que `lib/negocio/comision.ts:14-27`
@@ -332,8 +332,8 @@ en 0; y si apareció un 0 reciente que obligue a revisar la regla.
 
 **Unidad** · Conteos.
 **Población** · Las dos primeras, la cohorte; la tercera, la empresa entera.
-**Rastro** · `lib/aios/leads-portal.js:67-78` (los «nc» de la maqueta son los de `icp:null`) y
-`:136-137` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:412-420` (el
+**Rastro** · `aios-command-center_1.html:4648-4659` (los «nc» de la maqueta son los de `icp:null`) y
+`:4717-4718` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:412-420` (el
 cero no se colapsa a nulo); `docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597` (la pregunta P-6,
 que esta pestaña contesta).
 **Estado** · **Construible hoy.** Medido el 2026-09-27 sobre los 593: **169 sin calificar = 122
@@ -377,18 +377,18 @@ entra en ninguna».
 
 ### LP02-11 · «Revenue» por tramo y «facturado» por persona
 
-**Rastro** · `lib/aios/leads-portal.js:138`, `:149`, `:189-191`.
+**Rastro** · `aios-command-center_1.html:4719`, `:4730`, `:4770-4772`.
 **Estado** · **No, con ese nombre.** Lo reemplaza LP02-08, con su rótulo y sus nulos.
 
 ### LP02-12 · «Aún sin formulario · califican al agendar»
 
-**Rastro** · `lib/aios/leads-portal.js:136-137`.
+**Rastro** · `aios-command-center_1.html:4717-4718`.
 **Estado** · **No.** Lo reemplaza LP02-09: la tarjeta «Sin calificar» lleva las mismas cifras que las
 otras tres, más su partición en `sinPuntaje` y `enCero`.
 
 ### LP02-13 · Los porcentajes sin denominador
 
-**Rastro** · `lib/aios/leads-portal.js:126` —`rate = (a,b) => b ? Math.round(a/b*100) : 0`—, que
+**Rastro** · `aios-command-center_1.html:4707` —`rate = (a,b) => b ? Math.round(a/b*100) : 0`—, que
 alimenta la porción, el cierre y el ancho de las barras.
 **Estado** · **No.** Cada una de esas cifras tiene su `null` con motivo en LP02-02 y LP02-07.
 

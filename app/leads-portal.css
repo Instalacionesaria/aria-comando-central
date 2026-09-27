@@ -56,7 +56,9 @@
   color: var(--txt-faint); background: rgb(var(--c-nube) / .04); }
 #v-contacts .lp-marca-descarte,
 .lp-ficha .lp-marca-descarte { color: var(--warn); border-color: rgb(var(--c-warn) / .3); }
-.lp-ficha .lp-marca { margin-left: 8px; }
+/* En el encabezado de la ficha va al final de la línea de datos: `inline-block` para que, si no entra,
+   baje entera en vez de partirse entre dos líneas. */
+.lp-ficha .lp-marca { display: inline-block; margin: 4px 0 0 8px; }
 
 #v-contacts .lp-avisos { display: flex; flex-direction: column; gap: 6px; }
 #v-contacts .lp-aviso { font-size: 12px; line-height: 1.5; color: var(--txt-dim); background: var(--bg-sunk);
@@ -86,6 +88,10 @@
    desplazamiento horizontal. */
 @media (max-width: 720px) {
   #v-contacts .icp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* A media tarjeta, «Cierre —» y «Monto reportado —» no entran en una línea: sin esto cada rótulo se
+     separaba de su guion. Cada par se queda junto y, si no entran los dos, el segundo baja entero. */
+  #v-contacts .icpc .im { flex-wrap: wrap; gap: 4px 10px; }
+  #v-contacts .icpc .im > span { white-space: nowrap; }
   #v-contacts .lp-grid { grid-template-columns: minmax(0, 1fr); }
   #v-contacts .lp-bar { align-items: flex-start; }
   #v-contacts .lp-search { flex-basis: 100%; max-width: none; min-width: 0; }
@@ -93,3 +99,9 @@
   #v-contacts .lp-count { margin-left: 0; flex-basis: 100%; }
   #v-contacts .cre-head .ch-r { margin-left: 0; }
 }
+
+/* La fila del cajón «Grupo de contactos» —maqueta de Executive— ya no abre ninguna ficha: el clic se
+   fue con `window.AIOSLeadCard`. Su `cursor: pointer` vive en `aios.css`, que no se toca porque tiene
+   que seguir comparable con el prototipo; se anula acá, con el precedente del commit `bd26085`, que
+   hizo lo mismo en `closer.css`. */
+.lg .lg-r { cursor: default; }

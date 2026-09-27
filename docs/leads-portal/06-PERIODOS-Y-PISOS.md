@@ -30,15 +30,15 @@
 
 ### LP06-02 · El segmentado de la maqueta: una clave que no existe, otro botón encendido y un calendario que no filtra
 
-`components/views/ContactsView.jsx:25-43` dibuja tres botones y una píldora. Los cuatro controles
+`aios-command-center_1.html:3036-3037` dibuja tres botones y una píldora. Los cuatro controles
 están mal de una manera distinta:
 
 | control | qué hace hoy | rastro |
 |---|---|---|
-| «7 días» | es el que abre encendido, y no es el valor por omisión del sistema | `components/views/ContactsView.jsx:29` |
-| «30 días» | manda **`data-p="mes"`**, que no está en `PERIODOS`: `periodoDe('mes')` lo rechazaría | `components/views/ContactsView.jsx:32-34` |
-| los tres botones | su oyente sólo mueve la clase `on`; ninguna cifra cambia | `lib/aios/leads-portal.js:313-317` |
-| «Personalizado» | abre el calendario, escribe la fecha en la píldora, **apaga los tres botones**, y no filtra nada | `components/views/ContactsView.jsx:36-43`; `lib/aios/datepicker.js:116-117` |
+| «7 días» | es el que abre encendido, y no es el valor por omisión del sistema | `aios-command-center_1.html:3036` |
+| «30 días» | manda **`data-p="mes"`**, que no está en `PERIODOS`: `periodoDe('mes')` lo rechazaría | `aios-command-center_1.html:3036` |
+| los tres botones | su oyente sólo mueve la clase `on`; ninguna cifra cambia | `aios-command-center_1.html:4894-4898` |
+| «Personalizado» | abre el calendario, escribe la fecha en la píldora, **apaga los tres botones**, y no filtra nada | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:116-117` |
 
 El último es el peor de los cuatro: la pantalla pasa a afirmar un rango elegido mientras sigue
 mostrando lo mismo. El calendario busca quién atiende la clave `lp` (`lib/aios/datepicker.js:129`) y
@@ -54,7 +54,7 @@ agregar una ventana toca a las cinco pantallas que la comparten
 
 Con esta píldora se va la única visible que abre el calendario de `lib/aios/datepicker.js` —la de
 Executive está `hidden` (`components/views/ExecutiveView.jsx:62`)—, y con el botón del Plan de acción
-se va el único que abre `#recoModal` (`lib/aios/period-controls.js:59-60`). Los dos quedan sin quién
+se va el único que abre `#recoModal` (`aios-command-center_1.html:5728-5729`). Los dos quedan sin quién
 los abra: el plan lo anota como deuda y no se borran en esta etapa.
 
 ### LP06-03 · El botón encendido es el que contestó el servidor
@@ -106,7 +106,7 @@ Medido el 2026-09-27:
 
 El motivo del valor por omisión ya está escrito: treinta es el único de los cuatro que da
 denominador a las tasas con piso (`lib/negocio/periodo.ts:101-104`). En esta pestaña se ve más que en
-ninguna: **la maqueta abría en «7 días»** (`components/views/ContactsView.jsx:29`), que hoy dibujaría
+ninguna: **la maqueta abría en «7 días»** (`aios-command-center_1.html:3036`), que hoy dibujaría
 tres personas repartidas en cuatro tarjetas.
 
 Lo que se paga es sabido y también está escrito: más allá de catorce días crece la proporción de

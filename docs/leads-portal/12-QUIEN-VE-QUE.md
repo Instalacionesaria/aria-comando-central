@@ -64,7 +64,7 @@ la capacidad.
 Eso corrige algo que otra carpeta dejó escrito y hay que decirlo: el `S12-04` de Sales afirma que
 *«hoy `tablero.ver` no la tiene un closer»* (`docs/sales/12-QUIEN-VE-QUE.md:90-93`). Con el reparto de
 tres roles, eso sólo es cierto para el conjunto de capacidades histórico que
-`pruebas/codigo/91-closer-y-setter.test.ts:244-253` todavía escribe a mano. La prueba sigue pasando,
+`pruebas/codigo/91-closer-y-setter.test.ts:246-255` todavía escribe a mano. La prueba sigue pasando,
 y lo que protege es un rol que ya no se asigna.
 
 Dos consecuencias más, que no son de esta pestaña sino de la plataforma, y se anotan para que nadie
@@ -178,8 +178,8 @@ no está medido (`LP12-P01`).
 `ghl_contact_id` y `ultimo_entrante_texto`.
 
 La maqueta ya partía así: la tarjeta de la rejilla dibuja nombre, origen, puntaje, monto y
-progreso (`lib/aios/leads-portal.js:176-194`), y el teléfono y el correo aparecen sólo en la ficha
-(`lib/aios/leads-portal.js:280-282`). La decisión conserva el reparto; lo que agrega es que sea un
+progreso (`aios-command-center_1.html:4757-4775`), y el teléfono y el correo aparecen sólo en la ficha
+(`aios-command-center_1.html:4861-4863`). La decisión conserva el reparto; lo que agrega es que sea un
 contrato comprobado y no una costumbre del marcado.
 
 **Requisito:** la prueba de la cohorte afirma que las claves de cada fila son **exactamente** la lista
@@ -221,9 +221,10 @@ la creó dejó escrita la regla que esta ficha cumple: *«ninguna pantalla los r
 ### LP12-07 · La ficha se abre por id, nunca por nombre
 
 La maqueta abre la ficha **por nombre**: `window.AIOSLeadCard` busca el nombre en minúscula
-(`lib/aios/leads-portal.js:292-294`), y si no lo encuentra **dibuja la ficha del primer lead con el
-nombre pedido** (`lib/aios/leads-portal.js:295-296`). El cajón de grupo la llama con el texto de la
-fila (`lib/aios/leads-group.js:57-59`).
+(`aios-command-center_1.html:4873-4875`), y si no lo encuentra **dibuja la ficha del primer lead con el
+nombre pedido** (`aios-command-center_1.html:4876-4877`). El cajón de grupo la llamaba con el texto de la
+fila, hasta que LP-6 sacó ese clic junto con la maqueta (`lib/aios/leads-group.js:57-59` es el
+comentario que quedó).
 
 Con personas inventadas es un atajo. Con 593 reales son dos defectos de privacidad: dos personas con
 el mismo nombre abren la misma ficha, y un nombre que no está muestra **el teléfono de una persona
@@ -238,7 +239,7 @@ los datos de una persona cuando otra pantalla lo abre.
 ### LP12-08 · Sin enlace a GoHighLevel; llamar y escribir
 
 La maqueta salta al CRM desde dos lugares: el botón «↗ GHL» de la ficha
-(`lib/aios/leads-portal.js:228`, con su `window.open` en `lib/aios/leads-portal.js:284-285`) y la
+(`aios-command-center_1.html:4809`, con su `window.open` en `aios-command-center_1.html:4865-4866`) y la
 flecha de cada fila del cajón de grupo (`lib/aios/leads-group.js:51`, `lib/aios/leads-group.js:54-56`).
 Los dos abren la portada del CRM, no el contacto (`lib/aios/leads-group.js:8`).
 
@@ -304,9 +305,9 @@ no se mueve: no se crea ningún rol.
   adorno es del prototipo, y lo que estaba mal no era él sino que detrás no hubiera nada
   (`lib/autorizacion/secciones.ts:258-261`).
 - **No se pierde cobertura en `91-closer-y-setter`.** Su recorrido de los tableros itera
-  `SIN_OPERACIONES_TODAVIA` (`pruebas/codigo/91-closer-y-setter.test.ts:270-273`), así que cuando
+  `SIN_OPERACIONES_TODAVIA` (`pruebas/codigo/91-closer-y-setter.test.ts:272-275`), así que cuando
   `contacts` salga de la lista deja de nombrarla. Pero la aserción de arriba compara el menú entero
-  del closer contra `['closer']` (`pruebas/codigo/91-closer-y-setter.test.ts:265-266`), y ésa sigue
+  del closer contra `['closer']` (`pruebas/codigo/91-closer-y-setter.test.ts:267-268`), y ésa sigue
   cubriéndolo — con el conjunto histórico de `LP12-02`.
 
 ---

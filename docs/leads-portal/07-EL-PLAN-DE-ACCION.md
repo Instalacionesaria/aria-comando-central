@@ -6,15 +6,15 @@
 > pudo rastrear está dicho como pregunta abierta, no como requisito.
 >
 > **Las citas a la maqueta son exactas al 2026-09-26.** LP-6 borra el bloque
-> `lib/aios/period-controls.js:41-61`: esas citas fallan al resolverse y las ve
+> `aios-command-center_1.html:5710-5730`: esas citas fallan al resolverse y las ve
 > `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`. Las de
 > `components/views/ContactsView.jsx` son peores: el archivo se reescribe con una cabecera larga, así
 > que **siguen resolviendo y muestran otra cosa**. LP-7 reapunta las dos clases al prototipo,
 > `aios-command-center_1.html:5710-5730` y `:3034`, que no cambia.
 
-`components/views/ContactsView.jsx:18-23` dibuja un botón `◈ Plan de acción` con `id="lpPlanBtn"`.
+`aios-command-center_1.html:3034` dibuja un botón `◈ Plan de acción` con `id="lpPlanBtn"`.
 A diferencia del de Sales, que no tenía ni un oyente (`docs/sales/07-EL-PLAN-DE-ACCION.md:15-18`),
-**éste está cableado**: `lib/aios/period-controls.js:42-43` lo busca y le cuelga un clic que escribe
+**éste está cableado**: `aios-command-center_1.html:5711-5712` lo busca y le cuelga un clic que escribe
 cuatro frases en el modal compartido `#recoModal` y lo abre.
 
 Y es **el último plan de acción cableado de la aplicación**. Acquisition, Creative, Conversion y
@@ -29,19 +29,19 @@ ninguno.
 
 ### LP07-01 · Cuatro frases escritas a mano, en un bloque de veintiún líneas que no lee ningún dato
 
-**Rastro** · `lib/aios/period-controls.js:41-61`, portado literal de
+**Rastro** · `aios-command-center_1.html:5710-5730`, portado literal de
 `aios-command-center_1.html:5710-5730`.
 
 El manejador no recibe nada: no lee `LEADS`, ni el período, ni el tramo elegido. Escribe un
-subtítulo fijo, `'Leads Portal · calidad de la base'` (`lib/aios/period-controls.js:44`), una cadena
-de HTML fija en `#recoBody` (`:45-58`), y enciende el velo y el modal (`:59-60`).
+subtítulo fijo, `'Leads Portal · calidad de la base'` (`aios-command-center_1.html:5713`), una cadena
+de HTML fija en `#recoBody` (`:5714-5727`), y enciende el velo y el modal (`:5728-5729`).
 
 | # | grupo | frase | línea |
 |---|---|---|---|
-| 1 | «Lo que dice la data» | «El **ICP alto** es el 22% del volumen pero produce el 61% de las ventas.» | `lib/aios/period-controls.js:48` |
-| 2 | «Lo que dice la data» | «Los contactos que vieron más del 60% del VSL califican **4 de cada 5** veces.» | `lib/aios/period-controls.js:49` |
-| 3 | «Haz más de esto» | «Prioriza el contacto inmediato con ICP sobre 80: son los que cierran.» | `lib/aios/period-controls.js:53` |
-| 4 | «Para otras áreas» | «Qué campañas traen ICP alto se decide en **Acquisition**.» | `lib/aios/period-controls.js:57` |
+| 1 | «Lo que dice la data» | «El **ICP alto** es el 22% del volumen pero produce el 61% de las ventas.» | `aios-command-center_1.html:5717` |
+| 2 | «Lo que dice la data» | «Los contactos que vieron más del 60% del VSL califican **4 de cada 5** veces.» | `aios-command-center_1.html:5718` |
+| 3 | «Haz más de esto» | «Prioriza el contacto inmediato con ICP sobre 80: son los que cierran.» | `aios-command-center_1.html:5722` |
+| 4 | «Para otras áreas» | «Qué campañas traen ICP alto se decide en **Acquisition**.» | `aios-command-center_1.html:5726` |
 
 **Estado** · **Ninguna de las cuatro sale de un cálculo, y ninguna se puede sostener hoy.** Las
 fichas de abajo dicen por qué, una por una.
@@ -93,8 +93,8 @@ como hueco con su fecha (`lib/negocio/huecosDeSales.ts:49-56`).
 **Y contradice a su propia maqueta dos veces, y a la de Executive una:**
 
 - las tarjetas de la maqueta dibujan el tramo alto como **5 de 15, un 33 %**
-  (`lib/aios/leads-portal.js:128-134`), con cinco `seg:'alto'` en `:10`, `:27`, `:31`, `:47` y `:63`;
-- las tres ventas inventadas son las tres de tramo alto (`:11`, `:28`, `:64`): **100 %**, no 61;
+  (`aios-command-center_1.html:4709-4715`), con cinco `seg:'alto'` en `:4591`, `:4608`, `:4612`, `:4628` y `:4644`;
+- las tres ventas inventadas son las tres de tramo alto (`:4592`, `:4609`, `:4645`): **100 %**, no 61;
 - la ficha de Leads Portal en Executive dice «312 contactos · 78 de ICP alto», que es **25 %**
   (`lib/aios/executive.js:199`), y en la línea siguiente **repite la frase del 22 y el 61**
   (`:200`). Ver `LP08-13`: esa ficha no se dibuja en ninguna parte.
@@ -142,7 +142,7 @@ en el commit `0add4cc`.
   lo registra entre los cortes que circulan y lo descarta como requisito.
 - **«Son los que cierran» necesita ventas**, y hay cero.
 - **Su propia maqueta la desmiente**: una de las tres ventas inventadas es de un puntaje 79
-  (`lib/aios/leads-portal.js:63-64`), debajo de 80.
+  (`aios-command-center_1.html:4644-4645`), debajo de 80.
 - **La mitad accionable —a quién llamar primero— no la decide esta pestaña.** Es una regla de orden
   de trabajo, y la maqueta de Sales inventó otra del mismo tipo, «ICP alto asignado», que tampoco
   existe (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:48`). Dos maquetas, dos reglas de prioridad
@@ -195,12 +195,12 @@ números inventados.
 
 ### LP07-07 · Se borra el botón, el bloque que lo cablea y la mitad derecha del encabezado
 
-**Rastro** · El botón en `components/views/ContactsView.jsx:18-23`, dentro de `.ch-r`
-(`:17-45`); el bloque en `lib/aios/period-controls.js:41-61`.
+**Rastro** · El botón en `aios-command-center_1.html:3034`, dentro de `.ch-r`
+(`:3033-3039`); el bloque en `aios-command-center_1.html:5710-5730`.
 
 **Requisito** · En LP-6 se van los dos, **en el mismo commit**: borrar sólo el bloque deja un botón
 sin oyente —el defecto que Sales tuvo (`docs/sales/07-EL-PLAN-DE-ACCION.md:11-18`)—, y borrar sólo el
-botón deja un oyente con una guarda `if(lpPlan)` (`lib/aios/period-controls.js:43`) que lo apaga para
+botón deja un oyente con una guarda `if(lpPlan)` (`aios-command-center_1.html:5712`) que lo apaga para
 siempre y se lee como rama defensiva, que es lo que el propio archivo ya denunció dos veces
 (`lib/aios/period-controls.js:15-27`, `:33-39`).
 
@@ -212,7 +212,7 @@ el período vive dentro del panel.
 
 ### LP07-08 · Con el botón se va el único que abre `#recoModal`
 
-**Rastro** · `lib/aios/period-controls.js:59-60` es **el único sitio de toda la aplicación** que
+**Rastro** · `aios-command-center_1.html:5728-5729` es **el único sitio de toda la aplicación** que
 enciende `#recoModal`. Medido el 2026-09-26 sobre `components/` y `lib/`: fuera de ese bloque, el
 modal sólo aparece en su declaración (`components/Overlays.jsx:98-119`) y en los cierres del armazón
 (`lib/aios/shell.js:200-202`, `:273-274`).
@@ -274,20 +274,20 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 
 | documento | cita | lo que quiso nombrar | dónde está hoy |
 |---|---|---|---|
-| `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:32` | línea 56 | la frase 4 | `lib/aios/period-controls.js:57` |
-| `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:500` | línea 56 | la frase 4 | `lib/aios/period-controls.js:57` |
-| `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:538` | líneas 58-59 | el encendido del modal | `lib/aios/period-controls.js:59-60` |
-| `docs/acquisition/02-METRICAS.md:871` | línea 56 | la frase 4 | `lib/aios/period-controls.js:57` |
-| `docs/estado actual/01-ACQUISITION.md:73`, `:151` y `:326` | línea 56, las tres | la frase 4 | `lib/aios/period-controls.js:57` |
-| `docs/creative/04-LA-FICHA-DEL-CREATIVO.md:163` | línea 58 | el encendido del modal | `lib/aios/period-controls.js:59-60` |
-| `docs/creative/09-LO-QUE-NO-ES-UN-REQUISITO.md:187` | línea 58 | el encendido del modal | `lib/aios/period-controls.js:59-60` |
+| `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:32` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
+| `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:500` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
+| `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:538` | líneas 58-59 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
+| `docs/acquisition/02-METRICAS.md:871` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
+| `docs/estado actual/01-ACQUISITION.md:73`, `:151` y `:326` | línea 56, las tres | la frase 4 | `aios-command-center_1.html:5726` |
+| `docs/creative/04-LA-FICHA-DEL-CREATIVO.md:163` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
+| `docs/creative/09-LO-QUE-NO-ES-UN-REQUISITO.md:187` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 
 **Dos que nacieron desplazadas.** No son deriva: cuando se escribieron ya apuntaban a otra línea.
 
 | documento | cita | lo que quiso nombrar | al escribirse | dónde está hoy |
 |---|---|---|---|---|
-| `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39`, y en ninguna versión del archivo fue la búsqueda | `lib/aios/period-controls.js:42` |
-| `docs/estado actual/05-SALES.md:39` | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `lib/aios/period-controls.js:42` |
+| `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39`, y en ninguna versión del archivo fue la búsqueda | `aios-command-center_1.html:5711` |
+| `docs/estado actual/05-SALES.md:39` | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
 
 Ninguno de esos archivos se toca desde acá; queda anotado para que LP-7, que reapunta las citas de
 esta carpeta, sepa que las de al lado también apuntan mal. La de `docs/sales/` es la única dentro de

@@ -131,10 +131,12 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 //   3. El eje de GEOMETRÍA no se puede reemplazar. Una prueba que lee el fuente no ve una caja.
 //      Se pierde y no vuelve.
 //
-// ── QUEDA UNA, Y ESO PONE A TIRO EL PLAN DE LA ETAPA 0 ─────────────────────
+// ── Y SALIÓ LA ÚLTIMA: `contacts`, EL 2026-09-26 ────────────────────────────
 //
-// `contacts` sigue porque NO recibe la estética: es del grupo AIOS, no de Inteligencia, y su
-// Leads Portal sigue siendo el port literal que pinta `leads-portal.js`.
+// Leads Portal dejó de ser el port literal que pintaba `leads-portal.js`: el módulo se borró y la
+// pestaña dibuja leads reales desde `/api/leads-portal`. Su forma y su texto divergen del prototipo
+// a propósito —quince personas inventadas contra la cohorte de verdad—, así que compararla sería un
+// rojo permanente.
 //
 // Y hay que decir lo que ya era cierto antes de este cambio, para que nadie lea esta lista de UNA
 // como la pérdida: **esta compuerta hace tiempo que no corre.** No está en
@@ -143,51 +145,29 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // sesión. Sacar cinco vistas de una compuerta dormida no es perder cobertura: es registrar una
 // pérdida que ya había ocurrido.
 //
-// El día que `contacts` también se reactifique, `VISTAS` queda vacía, y para ese día ya hay
-// decisión escrita en `docs/ETAPA-0.md` § «Decisiones registradas ahora»: la compuerta no se
-// retira a mano — imprime «retirada» y sale 0. Está implementado abajo.
-const VISTAS = ['contacts'];
+// Con eso `VISTAS` queda vacía, **y la compuerta NO se retira**: el guardián de abajo sólo imprime
+// «retirada» cuando `VISTAS` y `PASOS` están vacías a la vez, y quedan tres pasos de Executive —«Ask
+// Executive», «funnel ejecutivo» y el cajón «grupo de contactos», que se mudó ahí—. La decisión de
+// `docs/ETAPA-0.md` § «Decisiones registradas ahora» sigue en pie; lo que cambió es que la pantalla
+// que quedaba ya no era la última cosa que comparar.
+const VISTAS = [];
 
 /* Cada paso deja la página lista para el siguiente, así que el orden importa. */
 const PASOS = [
-  /* El testigo `.dp` es un nodo de `<body>` que crea `datepicker.js`, así que la estética no lo
-   * toca; pero el disparador estaba en `#v-creative`. Se mueve a `contacts` por el mismo motivo
-   * que el de abajo: el clic tiene que caer en una vista que no cambió de forma. */
-  ['calendario',           p => p.click('#v-contacts [data-datepick]'),          '.dp.on'],
-  /* EL TESTIGO DE ESTE PASO SE MUDÓ A `contacts`, y es el único al que la estética obligó.
-   * Miraba `#v-creative .cre-stats`, o sea el interior de una vista que acaba de cambiar de
-   * forma y de tipografía a propósito: su `innerText` y sus cajas divergen del maquetado desde
-   * hoy, así que el paso sería rojo permanente.
+  /* ── SALIERON TRES PASOS CON LEADS PORTAL, EL 2026-09-26, Y UNO SE MUDÓ ────
    *
-   * Lo que afirma —«elegir un rango rápido RECALCULA lo que se muestra»— sigue siendo verdad y
-   * sigue siendo comprobable: es el mismo `datepicker.js` y el mismo `period-controls.js`, y
-   * `contacts` no recibe la estética. Se mueve ahí en vez de borrarse. */
-  ['calendario · 7 días',  async p => { await p.click('.dp-side button[data-q="2"]');
-                                        await p.click('.dp-f .go'); },           '#v-contacts .lp-wrap'],
-  /* ── SALIERON TRES PASOS, Y UNO YA ESTABA ROTO ──────────────────────────
+   *   · **«calendario» y «calendario · 7 días»** clicaban la píldora «Personalizado» de
+   *     `#v-contacts`, que se fue con la maqueta: abría el calendario para no filtrar nada. La
+   *     píldora de Executive está `hidden`, así que `datepicker.js` se queda sin quién lo abra, y eso
+   *     es deuda anotada (docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md, LP08-12).
+   *   · **«ficha de lead»** clicaba una tarjeta `.lc` y esperaba `#drawer.on`. La ficha nueva se abre
+   *     en un cajón propio y con datos de la base, que la local no tiene: sería rojo en cualquier
+   *     máquina recién reconstruida. La cubren `pruebas/base/176` y `177`.
+   *   · **«grupo de contactos»** se MUDÓ a Executive, al final: el panel nuevo no emite `data-leads`,
+   *     y la única cifra que todavía abre el cajón es la del embudo ejecutivo.
    *
-   * Los tres miraban botones que ya no existen, y conviene decir cuál se fue con qué:
-   *
-   *   · **«drawer de contenido»** clicaba `#v-creative .cc[data-cre]`. Ese selector lo emitía
-   *     `lib/aios/creative.js`, que se borró con la reescritura de Creative. Su comentario decía
-   *     que era *«la única rendija que queda para comprobar que `creative.js` sigue dando los
-   *     mismos datos que el `<script>` original»* — cuando el módulo se va, la rendija no se rompe:
-   *     deja de tener algo que comparar.
-   *   · **«plan de Creative»** clicaba `#recoBtn`, que se fue con la vista nueva: de las doce
-   *     frases que abría, diez no tienen fuente.
-   *   · **«plan de Acquisition»** clicaba `#acqPlanBtn`, **y ese paso estaba roto desde la
-   *     reescritura de Acquisition**. Nadie lo notó porque `npm run paridad` no corre dentro de
-   *     `scripts/pruebas.mjs`: es un comando aparte. Queda dicho porque es el modo de fallo de este
-   *     archivo entero — un paso que apunta a un botón que ya no está no falla hasta que alguien
-   *     corre el comando a mano.
-   *
-   * Y por eso «ficha de lead» pierde su `#recoClose` inicial: la cadena es secuencial —cada paso
-   * cierra lo que abrió el anterior— así que al irse los tres de arriba ya no hay modal que cerrar,
-   * y el clic caería sobre un botón invisible. */
-  ['ficha de lead',        async p => { await p.click('.nav-item[data-view="contacts"]');
-                                        await p.click('#v-contacts .lc'); },     '#drawer.on'],
-  ['grupo de contactos',   async p => { await p.click('#dwClose');
-                                        await p.click('#v-contacts [data-leads]'); }, '.lg.on'],
+   * Y como la cadena es secuencial, el paso mudado ya no empieza cerrando `#dwClose`: viene detrás
+   * de «funnel ejecutivo», que lo deja con el embudo a la vista. */
   /* LOS TRES PASOS DEL CLOSER SALIERON, y conviene decir por qué en vez de dejarlos rotos.
    *
    * Apuntaban a `#clDia`, `#clNav` y `#cwTabs`: ids del módulo imperativo que se borró en la Etapa
@@ -229,6 +209,7 @@ const PASOS = [
   ['funnel ejecutivo',     async p => { await p.keyboard.press('Escape');
                                         await p.click('.nav-item[data-view="executive"]');
                                         await p.click('#exMode button[data-m="funnel"]'); }, '#exFunnel'],
+  ['grupo de contactos',   p => p.click('#exFunnel [data-leads]'),                '.lg.on'],
 ];
 
 /* tag + id + clases de cada descendiente, en orden de documento */

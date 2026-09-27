@@ -496,7 +496,7 @@ sí.
 |---|---|---|
 | **Acquisition** | una fracción de los **agendados**, por campaña | `acquisition.js:94` |
 | **Acquisition, al abrir el cajón** | los de **ICP ≥ 75** | `acquisition.js:150, :178, :232` + `leads-group.js:10` |
-| **Leads Portal** | los tramos de ICP **son** la calificación: alto = «Calificado alto», medio = «Calificado medio», **bajo = «No calificado»**, sin puntaje = «Sin calificar» | `leads-portal.js:143` |
+| **Leads Portal** | los tramos de ICP **son** la calificación: alto = «Calificado alto», medio = «Calificado medio», **bajo = «No calificado»**, sin puntaje = «Sin calificar» | `aios-command-center_1.html:4724` |
 | **Conversion** | `0,63` de las **citas**, constante única para todas | `conversion.js:163-166` |
 | **Pipeline del setter (código real, no prototipo)** | **«Calificado sin agendar»**: califica y **todavía no agendó** | `lib/negocio/etapasDelSetter.ts:48` |
 
@@ -512,8 +512,8 @@ Dos detalles más, medidos, que muestran lo desordenado que está el vocabulario
   `bajo`** (`conversion.js:208-210`). El tramo **medio no aparece en ninguno de los dos cajones**:
   los dos conteos suman todas las citas, pero las dos listas que abren no cubren a nadie del medio.
 - **El propio dato de la maqueta de Leads Portal se contradice:** `TechNova` tiene `icp:79` y
-  `seg:'medio'` (`leads-portal.js:43`), mientras `Diego Paredes` tiene `icp:79` y `seg:'alto'`
-  (`:63`). Dos contactos con el mismo puntaje en tramos distintos, porque el tramo está **guardado**
+  `seg:'medio'` (`aios-command-center_1.html:4624`), mientras `Diego Paredes` tiene `icp:79` y `seg:'alto'`
+  (`:4644`). Dos contactos con el mismo puntaje en tramos distintos, porque el tramo está **guardado**
   al lado del puntaje en vez de derivarse de él. El requisito que eso revela: **el tramo se deriva
   del puntaje en el momento de dibujar, y no se guarda.**
 
@@ -593,7 +593,7 @@ omisión es adoptar un umbral de otra pantalla sin decidirlo.
 
 **P-6 · Qué se hace con los 20 ceros.** Son «sin puntuar» y no «afinidad cero» (§4.4), y hoy caerían
 en el tramo bajo, hundiendo la afinidad de los primeros dos días de cualquier ventana que los toque.
-¿Van a un cuarto estado «sin calificar» —como el que Leads Portal ya dibuja (`leads-portal.js:143`)—
+¿Van a un cuarto estado «sin calificar» —como el que Leads Portal ya dibuja (`aios-command-center_1.html:4724`)—
 o se excluyen del denominador?
 
 **P-7 · Qué se dibuja cuando no hay calificados.** Hoy la afinidad escribe «0 %» donde el resto de la

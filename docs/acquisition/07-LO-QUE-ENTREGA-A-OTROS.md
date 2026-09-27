@@ -471,12 +471,12 @@ contrario**, sin que ninguno de los dos se equivoque.
   también (`utmContent`, 220 de 233); **el creativo no existe** —`meta_creative_id` no está en
   ninguna tabla (§5 punto 1)— así que la segunda mitad del «origen» hay que llenarla con el anuncio o
   dejarla fuera. La forma completa de la ficha publicitaria por persona está en
-  `lib/aios/leads-portal.js:265-272`: once campos de publicidad y cuatro UTM.
+  `aios-command-center_1.html:4846-4853`: once campos de publicidad y cuatro UTM.
 
 ### A7-31 · El pie del cajón navega a Leads Portal y preselecciona el tramo de ICP con el que se abrió
 
 - **Rastro:** `lib/aios/leads-group.js:60-69`; los botones destino en
-  `components/views/ContactsView.jsx:58-74` (`data-i` con `all|nc|alto|medio|bajo`).
+  `aios-command-center_1.html:3050-3056` (`data-i` con `all|nc|alto|medio|bajo`).
 - El pie dice **«Ver los N en Leads Portal →»** y al pulsarlo cierra el cajón, hace clic en la fila
   del menú de contactos y después en el botón del tramo. El requisito: el drill-down **no termina en
   el cajón**, continúa en la pantalla que sabe de contactos, conservando el filtro. Nótese que

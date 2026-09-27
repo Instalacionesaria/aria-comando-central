@@ -232,7 +232,7 @@ contactos, y el día que haya otra se muda a la configuración de la empresa
 
 La condición para que el punto sea único es que no quede otro: hoy el corte también está escrito en
 `lib/aios/leads-group.js:10`, y la maqueta del portal rotula sus tarjetas por su cuenta
-(`lib/aios/leads-portal.js:143`). LP-6 los saca del camino del portal.
+(`aios-command-center_1.html:4724`). LP-6 los saca del camino del portal.
 
 ### LPF-06 · La ficha muestra los dos números mientras convivan
 

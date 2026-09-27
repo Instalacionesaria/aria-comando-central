@@ -10,21 +10,21 @@
 > se borra, y en LP-7 estas citas se reapuntan. Las citas `§ N:línea` son al documento funcional, que
 > no vive en el repositorio.
 
-La maqueta abre la ficha con `openLead` (`lib/aios/leads-portal.js:205-289`). La dibuja dentro del
+La maqueta abre la ficha con `openLead` (`aios-command-center_1.html:4786-4870`). La dibuja dentro del
 cajón compartido `#drawer` y la arma entera con plantillas de texto. Tiene un encabezado, una fila de
 acciones y siete secciones:
 
 | # | sección de la maqueta | líneas | qué pasa con ella |
 |---|---|---|---|
-| — | encabezado: iniciales, nombre, «ICP · tramo · cuándo · estado» | `lib/aios/leads-portal.js:206-211` | **dato real**, con otro estado (`LP05-05`) |
-| — | acciones: Llamar · Email · GHL | `lib/aios/leads-portal.js:225-229` | `tel:` y `mailto:`; **sin GoHighLevel** (`LP05-06`) |
-| 1 | Recorrido | `lib/aios/leads-portal.js:232-240` | **dato real** en cinco pasos y **el VSL como hueco** (`LP05-07`) |
-| 2 | Formulario de la landing | `lib/aios/leads-portal.js:242-247` | **dato real**: el grupo `calificacion` y el estado del formulario (`LP05-08`, `LP05-09`) |
-| 3 | Comportamiento en el VSL | `lib/aios/leads-portal.js:249-257` | **hueco declarado**, salvo el precall, que **sí es dato real** (`LP05-10`, `LP05-11`) |
-| 4 | Interacciones | `lib/aios/leads-portal.js:259-263` | **dato real**, sin el texto de los mensajes (`LP05-12`) |
-| 5 | Parámetros de publicidad | `lib/aios/leads-portal.js:265-273` | **lista blanca** de claves y sólo el host (`LP05-13`); lo demás, **hueco** (`LP05-14`) |
-| 6 | Calificación | `lib/aios/leads-portal.js:275-278` | **dato real** el puntaje; **fit e intent, hueco** (`LP05-15`) |
-| 7 | Contacto | `lib/aios/leads-portal.js:280-282` | **dato real**; el closer por su nombre y nunca por su id (`LP05-16`) |
+| — | encabezado: iniciales, nombre, «ICP · tramo · cuándo · estado» | `aios-command-center_1.html:4787-4792` | **dato real**, con otro estado (`LP05-05`) |
+| — | acciones: Llamar · Email · GHL | `aios-command-center_1.html:4806-4810` | `tel:` y `mailto:`; **sin GoHighLevel** (`LP05-06`) |
+| 1 | Recorrido | `aios-command-center_1.html:4813-4821` | **dato real** en cinco pasos y **el VSL como hueco** (`LP05-07`) |
+| 2 | Formulario de la landing | `aios-command-center_1.html:4823-4828` | **dato real**: el grupo `calificacion` y el estado del formulario (`LP05-08`, `LP05-09`) |
+| 3 | Comportamiento en el VSL | `aios-command-center_1.html:4830-4838` | **hueco declarado**, salvo el precall, que **sí es dato real** (`LP05-10`, `LP05-11`) |
+| 4 | Interacciones | `aios-command-center_1.html:4840-4844` | **dato real**, sin el texto de los mensajes (`LP05-12`) |
+| 5 | Parámetros de publicidad | `aios-command-center_1.html:4846-4854` | **lista blanca** de claves y sólo el host (`LP05-13`); lo demás, **hueco** (`LP05-14`) |
+| 6 | Calificación | `aios-command-center_1.html:4856-4859` | **dato real** el puntaje; **fit e intent, hueco** (`LP05-15`) |
+| 7 | Contacto | `aios-command-center_1.html:4861-4863` | **dato real**; el closer por su nombre y nunca por su id (`LP05-16`) |
 
 ---
 
@@ -33,9 +33,9 @@ acciones y siete secciones:
 ### LP05-01 · La ficha se abre por id y nunca por nombre, y no inventa a nadie
 
 - **Rastro:** la rejilla abre `openLead(LEADS[+el.dataset.lead])`, o sea por posición
-  (`lib/aios/leads-portal.js:199-201`). Además hay una puerta global, `window.AIOSLeadCard(name)`,
-  que busca **por nombre** (`lib/aios/leads-portal.js:291-297`). Si no lo encuentra, **copia la
-  ficha del primer contacto y le cambia el nombre** (`lib/aios/leads-portal.js:295-296`). Con datos
+  (`aios-command-center_1.html:4780-4782`). Además hay una puerta global, `window.AIOSLeadCard(name)`,
+  que busca **por nombre** (`aios-command-center_1.html:4872-4878`). Si no lo encuentra, **copia la
+  ficha del primer contacto y le cambia el nombre** (`aios-command-center_1.html:4876-4877`). Con datos
   reales, eso mostraría el teléfono, las respuestas y el recorrido de una persona bajo el nombre de
   otra.
 - **Qué pide:** la ficha se pide con el UUID del contacto (`GET /api/leads-portal/[id]`, LP-4). Un id
@@ -45,7 +45,7 @@ acciones y siete secciones:
 
 ### LP05-02 · Un cajón propio, no `#drawer`
 
-- **Rastro:** la maqueta enciende `#scrim` y `#drawer` (`lib/aios/leads-portal.js:286-288`), que están
+- **Rastro:** la maqueta enciende `#scrim` y `#drawer` (`aios-command-center_1.html:4867-4869`), que están
   en `components/Overlays.jsx:120-136`. **Executive usa el mismo cajón** (`lib/aios/executive-panel.js:81`
   y `lib/aios/executive-panel.js:102`).
 - **Qué pide:** un cajón con id propio, con su velo. Al abrirse, el foco entra en el cajón; Escape lo
@@ -65,7 +65,7 @@ acciones y siete secciones:
 ### LP05-04 · Nada de la ficha llega al navegador por `innerHTML`
 
 - **Rastro:** toda la ficha es una plantilla de texto asignada a `innerHTML`
-  (`lib/aios/leads-portal.js:207-208` y `lib/aios/leads-portal.js:223-282`).
+  (`aios-command-center_1.html:4788-4789` y `aios-command-center_1.html:4804-4863`).
 - **Qué pide:** la ficha se dibuja con React, que escapa lo que muestra. El nombre, las respuestas del
   cuestionario, los nombres de campaña y de anuncio los escribió gente de afuera en un formulario o
   en Meta. Ningún valor del CRM se vuelve enlace: una dirección guardada en un campo se muestra como
@@ -77,11 +77,11 @@ acciones y siete secciones:
 
 ### LP05-05 · Nombre, puntaje con su tramo, país, alta y sincronización
 
-- **Rastro:** `lib/aios/leads-portal.js:206-211`. Tres defectos:
-  - la meta escribe `ICP ${l.icp}`, que para un contacto sin puntaje (`lib/aios/leads-portal.js:67`)
+- **Rastro:** `aios-command-center_1.html:4787-4792`. Tres defectos:
+  - la meta escribe `ICP ${l.icp}`, que para un contacto sin puntaje (`aios-command-center_1.html:4648`)
     sale «ICP null»;
   - el «cuándo» es un texto relativo inventado;
-  - el estado sale de `STLBL` (`lib/aios/leads-portal.js:104-105`), que tiene «Calificado» y «Perdido».
+  - el estado sale de `STLBL` (`aios-command-center_1.html:4685-4686`), que tiene «Calificado» y «Perdido».
     El primero choca con la decisión de rótulos (`LP03-06`) y el segundo no tiene ninguna fuente.
 - **Qué pide:**
   - **nombre**;
@@ -101,9 +101,9 @@ acciones y siete secciones:
 
 ### LP05-06 · Llamar con `tel:` y escribir con `mailto:`, atenuados si falta el dato, y sin GoHighLevel
 
-- **Rastro:** tres botones (`lib/aios/leads-portal.js:225-229`). «Llamar» y «Email» **no tienen
+- **Rastro:** tres botones (`aios-command-center_1.html:4806-4810`). «Llamar» y «Email» **no tienen
   manejador**. «GHL» abre la portada genérica de GoHighLevel, no el contacto
-  (`lib/aios/leads-portal.js:284-285`).
+  (`aios-command-center_1.html:4865-4866`).
 - **Qué pide:**
   - **Llamar** es un enlace `tel:` con el teléfono guardado, y **Escribir** un enlace `mailto:` con el
     correo. Los dos pasan el trabajo al dispositivo: la pestaña no manda nada;
@@ -117,13 +117,13 @@ acciones y siete secciones:
 
 ### LP05-07 · Cinco pasos reales y un hueco: Entró, Llegó por, Agendó, Asistió, Compró, y el VSL declarado
 
-- **Rastro:** la maqueta tiene cinco líneas (`lib/aios/leads-portal.js:232-240`):
-  - «Entró al sistema» (`lib/aios/leads-portal.js:234`);
-  - «Vio el VSL» con un porcentaje inventado (`lib/aios/leads-portal.js:235`);
-  - «Agendó la cita» con el closer (`lib/aios/leads-portal.js:236`);
+- **Rastro:** la maqueta tiene cinco líneas (`aios-command-center_1.html:4813-4821`):
+  - «Entró al sistema» (`aios-command-center_1.html:4815`);
+  - «Vio el VSL» con un porcentaje inventado (`aios-command-center_1.html:4816`);
+  - «Agendó la cita» con el closer (`aios-command-center_1.html:4817`);
   - «Asistió», que escribe «no asistió» a cualquiera que no tenga la marca, **incluso con la cita
-    todavía por delante** (`lib/aios/leads-portal.js:237`);
-  - «Compró» (`lib/aios/leads-portal.js:238`).
+    todavía por delante** (`aios-command-center_1.html:4818`);
+  - «Compró» (`aios-command-center_1.html:4819`).
 - **Qué pide, paso por paso:**
   1. **Entró:** la fecha de alta y «campaña · creativo» del **primer toque**
      (`atribucion_primera`).
@@ -154,9 +154,9 @@ acciones y siete secciones:
 
 ### LP05-08 · «Formulario de la landing» se reemplaza por el grupo `calificacion`, sin denominador inventado
 
-- **Rastro:** nueve preguntas inventadas y «8/8 campos» (`lib/aios/leads-portal.js:242-247`). Para
+- **Rastro:** nueve preguntas inventadas y «8/8 campos» (`aios-command-center_1.html:4823-4828`). Para
   catorce de los quince contactos, las respuestas **se deducen del tramo**
-  (`lib/aios/leads-portal.js:87-90`): la facturación depende de `seg`. El cuestionario dice lo que el
+  (`aios-command-center_1.html:4668-4671`): la facturación depende de `seg`. El cuestionario dice lo que el
   tramo ya decía, y parece confirmarlo.
 - **Qué pide:**
   - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:459`), agrupado por
@@ -181,7 +181,7 @@ acciones y siete secciones:
 
 ### LP05-09 · El estado del «Form Landing VSL» va al lado, con su corte del 31 de agosto
 
-- **Rastro:** la maqueta dice «Formulario completado» con un «8/8» (`lib/aios/leads-portal.js:277`).
+- **Rastro:** la maqueta dice «Formulario completado» con un «8/8» (`aios-command-center_1.html:4858`).
 - **Dónde está el dato:** en el campo `Form Landing VSL` (`lib/negocio/recorrido.ts:208`), con un
   vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:211-215`). **No está en el grupo
   `calificacion`:** vive en la carpeta vieja «Score | ICP», que quedó fuera del perfil a propósito
@@ -209,12 +209,12 @@ acciones y siete secciones:
 
 ### LP05-10 · «Comportamiento en el VSL» es un hueco declarado, con su fecha
 
-- **Rastro:** `lib/aios/leads-portal.js:249-257` dibuja tres cosas:
+- **Rastro:** `aios-command-center_1.html:4830-4838` dibuja tres cosas:
   - el porcentaje visto;
   - «Llegó al CTA», que sale de una regla inventada: más de 60 % visto
-    (`lib/aios/leads-portal.js:250`);
+    (`aios-command-center_1.html:4831`);
   - una línea de tiempo con minuto y segundo. Para catorce de los quince contactos esa línea **se
-    fabrica con aritmética sobre el puntaje** (`lib/aios/leads-portal.js:96-98`).
+    fabrica con aritmética sobre el puntaje** (`aios-command-center_1.html:4677-4679`).
 - **Qué dice el dato:** los dos campos de VTurb valen 0 en todos los contactos que los tienen, y no
   reportan desde el **2026-08-30** (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`).
   Está documentado en `docs/estado actual/06-INTEGRACIONES-GHL.md`, § «Y el hallazgo que contradice
@@ -229,7 +229,7 @@ acciones y siete secciones:
 ### LP05-11 · El video precall sí tiene dato, y se muestra como el texto del CRM
 
 - **Rastro:** la maqueta lo pone como porcentaje dentro del bloque del VSL
-  (`lib/aios/leads-portal.js:251`) y otra vez en interacciones (`lib/aios/leads-portal.js:100`).
+  (`aios-command-center_1.html:4832`) y otra vez en interacciones (`aios-command-center_1.html:4681`).
 - **Dónde está el dato:** en `Video Pre-Call` (`lib/negocio/consumoDelPrecall.ts:64`), dentro de la
   carpeta «Interacciones», que es del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`).
 - **Medido:** **222** contactos con valor y **371** vacíos. Por valor: Sin abrir (0%) 130 · Nada 50 ·
@@ -251,10 +251,10 @@ acciones y siete secciones:
 
 ### LP05-12 · Conteo y fechas de mensajes, sin su texto; y la lista de citas y la de resultados
 
-- **Rastro:** cinco líneas escritas a mano para el primer contacto (`lib/aios/leads-portal.js:22-26`)
-  y cuatro de relleno para el resto (`lib/aios/leads-portal.js:99-101`). Llevan un «sentimiento
-  positivo» que no sale de ningún lado (`lib/aios/leads-portal.js:23`), un canal con nombre de
-  persona, y **el nombre de un closer real** en «Llamada con…» (`lib/aios/leads-portal.js:26`).
+- **Rastro:** cinco líneas escritas a mano para el primer contacto (`aios-command-center_1.html:4603-4607`)
+  y cuatro de relleno para el resto (`aios-command-center_1.html:4680-4682`). Llevan un «sentimiento
+  positivo» que no sale de ningún lado (`aios-command-center_1.html:4604`), un canal con nombre de
+  persona, y **el nombre de un closer real** en «Llamada con…» (`aios-command-center_1.html:4607`).
 - **Qué pide:**
   - **mensajes:** la fecha del último entrante y la del último saliente
     (`lib/datos/esquema.ts:380-382`). El conteo, sólo cuando la historia se leyó (`mensajes_desde_el`).
@@ -275,8 +275,8 @@ acciones y siete secciones:
 
 ### LP05-13 · Una lista blanca de claves del primer toque, con rótulos; de las direcciones, sólo el host
 
-- **Rastro:** once campos y cuatro UTM (`lib/aios/leads-portal.js:265-273`). Para catorce contactos,
-  el relleno los fabrica (`lib/aios/leads-portal.js:91-95`).
+- **Rastro:** once campos y cuatro UTM (`aios-command-center_1.html:4846-4854`). Para catorce contactos,
+  el relleno los fabrica (`aios-command-center_1.html:4672-4676`).
 - **Qué pide:** `atribucion_primera` se guarda cruda *«y sin lista blanca»*
   (`lib/datos/esquema.ts:417-429`). Por eso la lista blanca va en la lectura, en
   `atribucionVisible.ts` (LP-3). Medido sobre los 593:
@@ -315,15 +315,15 @@ acciones y siete secciones:
 
 ### LP05-14 · Lo que la maqueta dibuja y no existe se declara como hueco, no se deja en blanco
 
-- **Rastro:** los campos de `lib/aios/leads-portal.js:266-270`, que para catorce contactos inventa el
-  relleno (`lib/aios/leads-portal.js:91-95`).
+- **Rastro:** los campos de `aios-command-center_1.html:4847-4851`, que para catorce contactos inventa el
+  relleno (`aios-command-center_1.html:4672-4676`).
 - **Qué pide, campo por campo:**
 
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:967-975`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`lib/aios/leads-portal.js:93`) | — |
-  | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`lib/aios/leads-portal.js:92`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:967-975`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
   | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:951-952`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
@@ -346,8 +346,8 @@ acciones y siete secciones:
 ### LP05-15 · El puntaje con su tramo y quién lo calcula; fit e intent son huecos
 
 - **Rastro:** «ICP Score», «Fit score», «Intent score» y «Formulario completado»
-  (`lib/aios/leads-portal.js:275-278`). Fit e intent son números inventados para cada contacto; a los
-  que no tienen puntaje la maqueta les pone 0 (`lib/aios/leads-portal.js:70`).
+  (`aios-command-center_1.html:4856-4859`). Fit e intent son números inventados para cada contacto; a los
+  que no tienen puntaje la maqueta les pone 0 (`aios-command-center_1.html:4651`).
 - **Qué pide:**
   - **el puntaje**, que es «Puntaje | ICP» del CRM (`lib/ghl/contrato.ts:268-305`), con su tramo;
   - **quién lo calcula:** el rótulo dice que lo calcula el CRM, no Comando Central. El ICP calculado
@@ -365,10 +365,10 @@ acciones y siete secciones:
 
 ### LP05-16 · Teléfono y correo sólo acá; el closer asignado por su nombre, nunca por su id
 
-- **Rastro:** «Teléfono», «Email» y «Closer asignado» (`lib/aios/leads-portal.js:280-282`). El closer
+- **Rastro:** «Teléfono», «Email» y «Closer asignado» (`aios-command-center_1.html:4861-4863`). El closer
   de la maqueta es, en varios contactos, **el nombre de un closer real**
-  (`lib/aios/leads-portal.js:12`, `lib/aios/leads-portal.js:29`, `lib/aios/leads-portal.js:45` y
-  `lib/aios/leads-portal.js:49`). Es andamiaje y se borra con ella (`10-LO-QUE-NO-ES-UN-REQUISITO.md`).
+  (`aios-command-center_1.html:4593`, `aios-command-center_1.html:4610`, `aios-command-center_1.html:4626` y
+  `aios-command-center_1.html:4630`). Es andamiaje y se borra con ella (`10-LO-QUE-NO-ES-UN-REQUISITO.md`).
 - **Qué pide:**
   - **teléfono y correo, sólo en la ficha.** Es la decisión del 2026-09-26, y la ruta del detalle es
     la única que los trae (LP-4). La respuesta sale con `no-store`, como toda respuesta con datos de
