@@ -128,9 +128,15 @@ capa tiene prioridad sobre cualquier `@layer`.
 
 ## Datos
 
-Todos los números son de ejemplo y viven dentro de los módulos de
-`lib/aios/`, tal como en el prototipo. Al conectar datos reales conviene
-sacarlos a `lib/data/` primero y dejar los módulos leyendo de ahí.
+Todas las secciones salvo **Executive** tienen operaciones de servidor y
+piden sus datos con `pedir()`, sin números escritos: la última en sumarse
+fue **Leads Portal**, el 2026-09-26, que dibuja la cohorte real de leads
+(`docs/leads-portal/`). Lo vigila el conteo literal de
+`SIN_OPERACIONES_TODAVIA` en `pruebas/codigo/90-fundaciones.test.ts`, que
+vale 1. Executive —incluido el cajón «Grupo de contactos»— sigue en los
+módulos de `lib/aios/`, con los números de ejemplo del prototipo. Una
+pantalla que se conecta borra su módulo de `lib/aios/`; no lo mueve a
+otro lado.
 
 ## Comprobar que no se rompió nada
 
@@ -141,15 +147,18 @@ npm run paridad
 
 `scripts/paridad.mjs` abre el prototipo original y la app en paralelo y
 compara, vista por vista, la forma del DOM, el texto y la geometría de
-cada elemento; después recorre catorce interacciones (calendario, drawers,
-modales, ficha de lead, pestañas del closer, Ask Executive, organigrama).
-Sale con código 1 si algo difiere.
+cada elemento, y después recorre sus interacciones. Sale con código 1 si
+algo difiere.
 
-Compara **nueve** vistas, no diez: `icp` salió en la Etapa 9. Una vista
-reactificada deja de coincidir con el prototipo a propósito, y dejarla en
-la lista daría un rojo permanente — que no se arregla, se ignora, y con él
-se ignoran las demás. La regla al reactificar una vista: sale de `VISTAS`,
-y el motivo se escribe en el `docs/ETAPA-N` de su etapa.
+**Ya no compara ninguna vista**: las diez se reactificaron, la última
+—`contacts`, Leads Portal— el 2026-09-26. Quedan tres pasos de Executive
+(«Ask Executive», el embudo ejecutivo y el cajón «Grupo de contactos»), y
+por eso la compuerta no está retirada: el guardián sólo imprime
+«retirada» cuando no queda ni vista ni paso. Una vista reactificada deja
+de coincidir con el prototipo a propósito, y dejarla en la lista daría un
+rojo permanente — que no se arregla, se ignora, y con él se ignoran las
+demás. La regla al reactificar una vista: sale de `VISTAS`, y el motivo se
+escribe en `scripts/paridad.mjs` y en la carpeta de su pantalla.
 
 Es la red de seguridad para reactificar: reescribes un módulo de
 `lib/aios/` como componente React y vuelves a pasarlo.

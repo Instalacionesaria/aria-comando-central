@@ -320,7 +320,7 @@ export const SECCIONES: readonly Seccion[] = [
     nombre: 'Sales',
     capacidadRequerida: 'tablero.ver',
     /* La bandera se bajó el 2026-09-21, con `app/api/sales/route.ts`. Cuarta pantalla que sale de la
-       lista, y la última de Inteligencia: las dos que quedan no están empezadas. */
+       lista, y la última de Inteligencia. De las dos que quedaban, `contacts` salió el 2026-09-26. */
     menu: { grupo: 'Inteligencia', icono: '#i-sales', galon: true },
   },
 

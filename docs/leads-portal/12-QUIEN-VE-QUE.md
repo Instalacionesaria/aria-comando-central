@@ -266,8 +266,8 @@ sobrevive al cierre de sesión en una computadora compartida es la fuga más bar
 ### LP12-10 · `sinOperacionesTodavia` bajó en LP-4, en el mismo commit que la primera ruta
 
 `contacts` era una de las dos secciones que conservaban la bandera, junto con `executive`
-(`lib/autorizacion/secciones.ts:216`). El comentario de Sales ya lo anticipaba: *«las dos que quedan
-no están empezadas»* (`lib/autorizacion/secciones.ts:322-323`). En LP-4 la línea de la bandera pasó
+(`lib/autorizacion/secciones.ts:216`). El comentario de Sales lo anticipaba cuando decía *«las dos que
+quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:322-323`). En LP-4 la línea de la bandera pasó
 a ser su comentario (`lib/autorizacion/secciones.ts:225`), y queda sólo `executive`.
 
 No es documentación: es un cable trampa que dispara en tres lugares.

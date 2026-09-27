@@ -21,6 +21,12 @@ Ninguna de estas reglas se inventó para este informe. Todas estaban escritas �
 
 **El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts` define tres grupos: AIOS (Executive, Leads Portal, ICP & Oferta), Inteligencia (Acquisition, Creative, Conversion, Conversation, Sales) y Operación (Setter, Closer, Tools, Monitoreo). Estas reglas nacieron casi todas en Operación —que es real y se usa a diario— y se están aplicando ahora a Inteligencia a medida que cada pantalla deja de ser prototipo. **Conversation es la única de las cinco que ya está construida de verdad** (commits `91e4e07`..`13ce499`), y por eso es donde más reglas están ejercidas — y donde nacieron las tres últimas de esta lista.
 
+**Actualización del 2026-09-26, sin tocar el informe.** Las cinco de Inteligencia tienen ruta desde el
+2026-09-21 —la última fue Sales (`lib/autorizacion/secciones.ts:322-323`)—, y en AIOS **Leads Portal
+dejó de ser prototipo el 2026-09-26**: dibuja la cohorte real de leads, con estas reglas aplicadas
+—la cadena fechada, apartar sin esconder, los dos ceros, el piso del denominador— y su carpeta en
+`docs/leads-portal/`. Executive es la única pantalla que sigue sin operaciones de servidor.
+
 ---
 
 ## 1 · La regla del silencio: `aviso: string | null`, y qué significa el null
