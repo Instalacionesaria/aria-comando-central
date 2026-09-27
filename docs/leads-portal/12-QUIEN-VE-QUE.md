@@ -151,6 +151,9 @@ no está medido (`LP12-P01`).
 - **La tabla de `LP12-03` se le muestra al usuario antes de LP-4**, y se vuelve a medir con la misma
   consulta el día del despliegue. Si alguien concedió `contacts` en el medio, el número cambia, y eso
   tiene que verse antes de que esa persona vea 593 nombres, no después.
+- **Se volvió a medir el día de LP-4**, el 2026-09-27 a las 02:26 UTC, con la misma consulta, y se le
+  mostró al usuario antes del commit de la ruta: **4 usuarios activos, 3 ven la pestaña, y los 4 ya
+  leían contactos** por `closer.ver`, `setter.ver` o `contactos.ver`. Nada cambió desde LP-0.
 
 ---
 
@@ -259,11 +262,12 @@ sobrevive al cierre de sesión en una computadora compartida es la fuga más bar
 
 ## 4 · La bandera, y los dos ADR
 
-### LP12-10 · `sinOperacionesTodavia` baja en LP-4, en el mismo commit que la primera ruta
+### LP12-10 · `sinOperacionesTodavia` bajó en LP-4, en el mismo commit que la primera ruta
 
-`contacts` es una de las dos secciones que conservan la bandera (`lib/autorizacion/secciones.ts:225`),
-junto con `executive` (`lib/autorizacion/secciones.ts:216`). El comentario de Sales ya lo anticipaba:
-*«las dos que quedan no están empezadas»* (`lib/autorizacion/secciones.ts:322-323`).
+`contacts` era una de las dos secciones que conservaban la bandera, junto con `executive`
+(`lib/autorizacion/secciones.ts:216`). El comentario de Sales ya lo anticipaba: *«las dos que quedan
+no están empezadas»* (`lib/autorizacion/secciones.ts:322-323`). En LP-4 la línea de la bandera pasó
+a ser su comentario (`lib/autorizacion/secciones.ts:225`), y queda sólo `executive`.
 
 No es documentación: es un cable trampa que dispara en tres lugares.
 
@@ -271,11 +275,11 @@ No es documentación: es un cable trampa que dispara en tres lugares.
 |---|---|---|---|
 | `pruebas/codigo/30-portero.test.ts:325-348` | ninguna ruta declara la `PANTALLA` de una sección con bandera | **rojo** | verde |
 | `pruebas/codigo/30-portero.test.ts:441-458` | la bandera no miente, en las dos direcciones | **rojo** | **rojo** |
-| `pruebas/codigo/90-fundaciones.test.ts:1182-1186` | `SIN_OPERACIONES_TODAVIA.length` vale 2, literal | **rojo** si se baja la bandera sin tocar el 2 | — |
+| `pruebas/codigo/90-fundaciones.test.ts:1187-1191` | `SIN_OPERACIONES_TODAVIA.length` vale 1, literal desde LP-4 | **rojo** si se baja la bandera sin tocar el número | — |
 
-**Requisito:** la ruta `app/api/leads-portal/route.ts`, la bandera bajada con su comentario —como el
-de Sales—, y el 2 que pasa a 1 **van en el mismo commit**. Es la séptima vez que el cable dispara,
-según la cuenta que lleva `pruebas/codigo/90-fundaciones.test.ts:1175-1178`.
+**Requisito, cumplido en LP-4:** la ruta `app/api/leads-portal/route.ts`, la bandera bajada con su
+comentario —como el de Sales—, y el 2 que pasó a 1 **fueron en el mismo commit**. Es la séptima vez que el cable dispara,
+según la cuenta que lleva `pruebas/codigo/90-fundaciones.test.ts:1176-1179`.
 
 ### LP12-11 · El `ADR-0304` obliga a que la lista y la ficha pidan lo mismo
 

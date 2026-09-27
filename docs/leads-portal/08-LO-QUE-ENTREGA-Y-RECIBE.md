@@ -248,8 +248,8 @@ En orden de dependencia. Cada punto dice qué se rompería si se hiciera mal.
    el guardián sólo se dispara con `VISTAS` y `PASOS` vacías a la vez (`:320-324`), y quedan «Ask
    Executive» (`:206-207`), «funnel ejecutivo» (`:229-231`) y el mudado. El comentario de `:134-148`,
    que anuncia el retiro para el día en que `contacts` se reactifique, se corrige.
-7. **`pruebas/codigo/90-fundaciones.test.ts:1269-1318`** exige hoy exactamente `['contacts']`
-   (`:1303-1309`). Pasa a exigir la lista vacía y que ningún paso nombre `#v-contacts`, con su motivo.
+7. **`pruebas/codigo/90-fundaciones.test.ts:1274-1323`** exige hoy exactamente `['contacts']`
+   (`:1308-1314`). Pasa a exigir la lista vacía y que ningún paso nombre `#v-contacts`, con su motivo.
 8. **El calendario se queda sin quién lo abra.** La píldora de esta pestaña
    (`components/views/ContactsView.jsx:36`) es la única visible: la de Executive está `hidden`
    (`components/views/ExecutiveView.jsx:62`). Deuda anotada (`LP06-02`, `LP10-13`).

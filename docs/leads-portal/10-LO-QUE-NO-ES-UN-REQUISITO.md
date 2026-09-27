@@ -259,9 +259,9 @@ Creative es que el adorno no era lo que estaba mal (`docs/sales/10-LO-QUE-NO-ES-
 | `pruebas/codigo/91-closer-y-setter.test.ts` | se agregan a `INVENTADOS` (`:420-437`) los catorce nombres del portal que faltan y los dos que sólo están en el cajón; **y se amplían `AMBITO` (`:453-456`) y `ENFOQUE` (`:486-489`) a `components/leads-portal/` y a `components/views/ContactsView.jsx`** | sin ampliar el alcance, los nombres nuevos se vigilan **sólo donde nunca estuvieron**: hoy las dos listas miran Closer, Setter y `components/negocio/`. Lo mismo vale para el barrido de montos (`:476`) |
 | `pruebas/codigo/178-la-maqueta-del-leads-portal-se-fue.test.ts` | nueva | que el archivo ya no exista, que no quede `initLeadsPortal`, que la vista no tenga `lpPlanBtn`, `data-datepick` ni `data-leads`, que el panel nuevo no tenga montos literales, y que la ruta de detalle no importe la sincronización |
 
-**Y lo que no es de LP-6 pero tiene que ir antes, en el commit de la ruta (LP-4):** la bandera
-`sinOperacionesTodavia` de `lib/autorizacion/secciones.ts:225` baja, y el conteo literal de
-`pruebas/codigo/90-fundaciones.test.ts:1186` pasa de 2 a 1. `30-portero` la verifica en las dos
+**Y lo que no es de LP-6 y fue antes, en el commit de la ruta (LP-4):** la bandera
+`sinOperacionesTodavia` de `lib/autorizacion/secciones.ts:225` bajó, y el conteo literal de
+`pruebas/codigo/90-fundaciones.test.ts:1191` pasó de 2 a 1. `30-portero` la verifica en las dos
 direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92-94`).
 
 ### LP10-11 · Lo que LP-6 NO borra, y por qué

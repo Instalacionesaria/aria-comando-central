@@ -31,6 +31,7 @@
 import { type RawBuilder, sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
+import type { CadenaDeCierre } from './cadenaDeCierre.ts';
 import {
   citaCerrable,
   contactoDescartado,
@@ -586,4 +587,37 @@ function avisoDe(r: LeadsDelPortal, tope: number): string | null {
   }
 
   return partes.length === 0 ? null : partes.join(' ');
+}
+
+/** Lo que la cadena de Sales dice de la misma ventana, al lado de lo que dice esta pestaña. */
+export interface CoherenciaConSales {
+  cohorte: number;
+  agendados: number;
+  coincide: boolean;
+}
+
+/**
+ * **Compara la cohorte y «agendó» con la cadena de Sales**, y si no coinciden lo agrega al aviso.
+ *
+ * Las dos pestañas usan la misma expresión de cohorte y el mismo predicado de «agendó», así que en
+ * la misma ventana tienen que dar lo mismo. Si no lo dan, ninguna de las dos falla por separado: el
+ * defecto sólo se ve poniéndolas una al lado de la otra. Por eso no se elige una de las dos cifras —no
+ * hay forma de saber desde acá cuál tiene razón—: se publican las dos y el aviso lo dice.
+ *
+ * Es una función aparte, y pura, para poder probarla con cifras que NO coinciden: con el código
+ * correcto nunca divergen, así que ninguna prueba de la ruta vería si la alarma se apagó.
+ */
+export function coherenciaConSales(
+  portal: Pick<LeadsDelPortal, 'cohorte' | 'todos' | 'aviso'>,
+  cadena: Pick<CadenaDeCierre, 'cohorte' | 'eslabones'>,
+): { coherencia: CoherenciaConSales; aviso: string | null } {
+  const agendados = cadena.eslabones.find((e) => e.clave === 'con_cita')?.contactos ?? 0;
+  const coincide = cadena.cohorte === portal.cohorte.total && agendados === portal.todos.agendados;
+  const coherencia = { cohorte: cadena.cohorte, agendados, coincide };
+  if (coincide) return { coherencia, aviso: portal.aviso };
+  const alarma =
+    `Esta pestaña y Sales no cuentan lo mismo en esta ventana: ${portal.cohorte.total} contra ` +
+    `${cadena.cohorte} contactos, y ${portal.todos.agendados} contra ${agendados} que agendaron. Es ` +
+    'un defecto: las dos usan la misma cohorte y el mismo «agendó».';
+  return { coherencia, aviso: portal.aviso === null ? alarma : `${alarma} ${portal.aviso}` };
 }

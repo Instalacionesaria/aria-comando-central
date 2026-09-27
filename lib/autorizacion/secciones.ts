@@ -222,7 +222,7 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'contacts',
     nombre: 'Leads Portal',
     capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
+    // Bandera bajada el 2026-09-26 con `app/api/leads-portal/route.ts`. Sólo queda `executive`.
     menu: { grupo: 'AIOS', icono: '#i-leads', galon: true },
   },
   {
