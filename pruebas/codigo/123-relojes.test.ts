@@ -196,6 +196,7 @@ test('TODA pantalla que muestra datos que cambian solos tiene reloj, y cuelga de
     { archivo: 'components/views/CloserView.jsx', clave: 'closer' },
     { archivo: 'components/views/SetterView.jsx', clave: 'setter' },
     { archivo: 'components/conversation/PanelDeConversation.jsx', clave: 'conversation' },
+    { archivo: 'components/leads-portal/PanelDeLeadsPortal.jsx', clave: 'contacts' },
   ];
 
   for (const { archivo, clave } of CON_RELOJ) {

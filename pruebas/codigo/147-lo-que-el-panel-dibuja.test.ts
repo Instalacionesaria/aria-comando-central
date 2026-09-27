@@ -43,6 +43,11 @@ const PANELES: Readonly<Record<string, string>> = {
   'components/analizadores/PanelDeAnalizadores.jsx': 'v-analizadores',
   'components/analizadores/DetalleHt.jsx': 'v-analizadores',
   'components/analizadores/DetalleOb.jsx': 'v-analizadores',
+  /* Leads Portal. La ficha se monta en `document.body` con un portal, así que sus clases tienen que
+     tener reglas globales o colgadas de `.lp-ficha`: una regla con `#v-contacts` no la alcanzaría en
+     el navegador, aunque esta prueba —que mira texto— la diera por buena. */
+  'components/leads-portal/PanelDeLeadsPortal.jsx': 'v-contacts',
+  'components/leads-portal/FichaDelLead.jsx': 'v-contacts',
 };
 
 const sinComentarios = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, '');

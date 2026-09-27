@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LEADS PORTAL CON LEADS REALES (LP-5)
+
+   El panel reutiliza las clases de la maqueta —`icpc`, `lc`, `lc-prog`, `kv`, `ld-*`—, que son
+   globales y viven en `aios.css`, así que la pantalla se ve como se veía. Hoja aparte y en la capa
+   `components`, que le gana a la de `aios.css`: aquélla tiene que seguir siendo comparable contra
+   el HTML del prototipo, el mismo motivo que dio origen a `closer.css`. Lo de abajo es sólo lo
+   nuevo: las tarjetas pasaron a ser BOTONES de verdad (se alcanzan con el teclado), el paso tiene
+   tres estados y no dos, y aparecen las marcas, los avisos, los huecos y «Mostrar más».
+
+   Acotado a `#v-contacts`, salvo la ficha, que se monta en `document.body` y por eso cuelga de
+   `.lp-ficha`.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Los botones heredan la tipografía y el color de la tarjeta, no los del navegador. Dentro de un
+   `button` sólo puede haber contenido de frase, así que las piezas son `span`: los que la maqueta
+   tenía como `div` necesitan volver a ser bloques. */
+#v-contacts button.icpc,
+#v-contacts button.lc { font: inherit; color: inherit; text-align: left; width: 100%; }
+#v-contacts .icpc .iv,
+#v-contacts .icpc .is,
+#v-contacts .icpc .ib,
+#v-contacts .lp-parte,
+#v-contacts .lc-id,
+#v-contacts .lc-name,
+#v-contacts .lc-src,
+#v-contacts .lp-alta,
+#v-contacts .lc-money,
+#v-contacts .lc-mv,
+#v-contacts .lc-ml { display: block; }
+#v-contacts button.icpc:focus-visible,
+#v-contacts button.lc:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 2px; }
+
+/* El color de cada tramo: los de la maqueta, por clave y no por posición. */
+#v-contacts .idot[data-tramo="alto"],
+#v-contacts .ib i[data-tramo="alto"] { background: var(--ok); }
+#v-contacts .idot[data-tramo="medio"],
+#v-contacts .ib i[data-tramo="medio"] { background: var(--warn); }
+#v-contacts .idot[data-tramo="bajo"],
+#v-contacts .ib i[data-tramo="bajo"] { background: var(--txt-faint); }
+#v-contacts .idot[data-tramo="sin_calificar"],
+#v-contacts .ib i[data-tramo="sin_calificar"] { background: rgb(var(--c-nube) / .25); }
+#v-contacts .idot[data-tramo="todos"],
+#v-contacts .ib i[data-tramo="todos"] { background: var(--accent); }
+
+#v-contacts .lp-parte { font-size: 10.5px; color: var(--txt-faint); margin-top: 4px; }
+#v-contacts .lp-alta { font-size: 10.5px; color: var(--txt-faint); margin-top: 3px; }
+
+/* El paso de tres estados: encendido, «no se sabe» y apagado. «No aplica» queda sin clase. */
+#v-contacts .lc-prog i.duda { color: var(--warn); }
+#v-contacts .lc-prog i.no { color: var(--txt-dim); text-decoration: line-through; }
+
+#v-contacts .lp-marcas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+#v-contacts .lp-marca,
+.lp-ficha .lp-marca { font-size: 10px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line);
+  color: var(--txt-faint); background: rgb(var(--c-nube) / .04); }
+#v-contacts .lp-marca-descarte,
+.lp-ficha .lp-marca-descarte { color: var(--warn); border-color: rgb(var(--c-warn) / .3); }
+.lp-ficha .lp-marca { margin-left: 8px; }
+
+#v-contacts .lp-avisos { display: flex; flex-direction: column; gap: 6px; }
+#v-contacts .lp-aviso { font-size: 12px; line-height: 1.5; color: var(--txt-dim); background: var(--bg-sunk);
+  border: 1px solid var(--line); border-left: 3px solid rgb(var(--c-warn) / .5); border-radius: 9px; padding: 9px 12px; }
+#v-contacts .lp-error { font-size: 12.5px; color: var(--warn); }
+#v-contacts .lp-vacio { font-size: 12.5px; color: var(--txt-faint); padding: 14px 2px; }
+#v-contacts .lp-vacio-rejilla { grid-column: 1 / -1; line-height: 1.55; max-width: 72ch; }
+
+#v-contacts .lp-mas { align-self: center; font: inherit; font-size: 12.5px; color: var(--txt-dim); cursor: pointer;
+  background: var(--bg-sunk); border: 1px solid var(--line-strong); border-radius: 10px; padding: 9px 18px; }
+#v-contacts .lp-mas:hover { background: var(--bg-float); color: var(--txt); }
+
+#v-contacts .lp-huecos { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+#v-contacts .lp-huecos-t { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--txt-faint); }
+#v-contacts .lp-hueco,
+.lp-ficha .lp-hueco { font-size: 11.5px; line-height: 1.5; color: var(--txt-faint); margin-top: 8px; }
+#v-contacts .lp-hueco b,
+.lp-ficha .lp-hueco b { color: var(--txt-dim); font-weight: 600; }
+.lp-ficha .lp-medido { white-space: nowrap; }
+
+/* La ficha: los enlaces de llamar y escribir se ven como los botones de la maqueta. */
+.lp-ficha a.ld-btn { text-decoration: none; }
+.lp-ficha .ld-btn.lp-apagado { opacity: .45; cursor: not-allowed; }
+.lp-ficha .ld-dot.lp-duda { background: var(--warn); }
+
+/* A 375 px: las cinco tarjetas en dos columnas, la rejilla en una, y la barra en varias líneas sin
+   desplazamiento horizontal. */
+@media (max-width: 720px) {
+  #v-contacts .icp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #v-contacts .lp-grid { grid-template-columns: minmax(0, 1fr); }
+  #v-contacts .lp-bar { align-items: flex-start; }
+  #v-contacts .lp-search { flex-basis: 100%; max-width: none; min-width: 0; }
+  #v-contacts .lp-bar .db-seg { flex-wrap: wrap; }
+  #v-contacts .lp-count { margin-left: 0; flex-basis: 100%; }
+  #v-contacts .cre-head .ch-r { margin-left: 0; }
+}

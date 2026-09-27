@@ -49,9 +49,14 @@ import {
 } from './tramosDelIcp.ts';
 import { montoReportado, tieneVenta } from './ventasDelContacto.ts';
 
-/** El closer asignado, por su nombre. **El id crudo del CRM no viaja nunca.** */
+/**
+ * El closer asignado, por su nombre. **El id crudo del CRM no viaja nunca.**
+ *
+ * `asignado` y no `closer`: el estado no es un rol, y `ADR-0302` prohíbe comparar contra el nombre
+ * de uno —la pantalla haría `estado === 'closer'`, que se lee igual que una decisión de permisos—.
+ */
 export type CloserDeLaFicha =
-  | { estado: 'closer'; nombre: string }
+  | { estado: 'asignado'; nombre: string }
   /** Asignado en el CRM a alguien que no es un closer configurado acá. */
   | { estado: 'no_configurado' }
   | { estado: 'sin_asignar' };
@@ -314,7 +319,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       asignado === null
         ? { estado: 'sin_asignar' }
         : closer
-          ? { estado: 'closer', nombre: closer.nombre }
+          ? { estado: 'asignado', nombre: closer.nombre }
           : { estado: 'no_configurado' },
     huecos: { medidoEl: MEDIDO_EL, lista: HUECOS },
   };

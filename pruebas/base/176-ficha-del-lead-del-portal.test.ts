@@ -322,7 +322,7 @@ test('el closer asignado se dice por su nombre, y el id del CRM no viaja nunca',
   );
 
   const suyo = (await ficha(await unContacto({ asignadoA: 'crm-ficha-portal-1' })))!;
-  assert.deepEqual(suyo.closer, { estado: 'closer', nombre: 'Closer de Prueba' });
+  assert.deepEqual(suyo.closer, { estado: 'asignado', nombre: 'Closer de Prueba' });
 
   const ajeno = (await ficha(await unContacto({ asignadoA: 'crm-de-otro-usuario' })))!;
   assert.deepEqual(ajeno.closer, { estado: 'no_configurado' });
