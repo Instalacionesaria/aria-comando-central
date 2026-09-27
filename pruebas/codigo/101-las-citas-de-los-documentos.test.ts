@@ -34,7 +34,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(import.meta.dirname, '..', '..');
-const AUDITADAS = ['docs/sales'];
+/* `docs/leads-portal` entró el día que nació (2026-09-26): una carpeta nueva no trae deuda, así que
+   auditarla desde el primer commit es gratis y evita que junte la que juntó Sales. */
+const AUDITADAS = ['docs/sales', 'docs/leads-portal'];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
 
