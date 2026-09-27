@@ -79,9 +79,9 @@ export function cancelada(alias = 'citas'): RawBuilder<boolean> {
 export function descartado(alias = 'citas'): RawBuilder<boolean> {
   const a = sql.raw(alias);
   return sql<boolean>`exists (
-    select 1 from negocio.contactos ct, unnest(ct.etiquetas) e
+    select 1 from negocio.contactos ct
      where ct.org_id = ${a}.org_id and ct.id = ${a}.contacto_id
-       and lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+       and ${contactoDescartado('ct')})`;
 }
 
 /**
@@ -131,4 +131,35 @@ export function tieneCitaAlcanzable(alias = 'contactos'): RawBuilder<boolean> {
     select 1 from negocio.citas ci
      where ci.org_id = ${a}.org_id and ci.contacto_id = ${a}.id
        and ${alcanzable('ci')})`;
+}
+
+/**
+ * **¿Esta PERSONA está descartada por nosotros?** La misma pregunta que `descartado`, sobre una fila
+ * de `contactos` en vez de una de `citas`.
+ *
+ * Existe por la misma razón que `tieneCitaAlcanzable` al lado de `alcanzable`: Leads Portal marca a
+ * cada persona de la cohorte, y copiar el `unnest` con la lista sería la décima copia de la que este
+ * archivo habla. `descartado` lo usa por dentro, así que las dos no pueden divergir.
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ */
+export function contactoDescartado(alias = 'contactos'): RawBuilder<boolean> {
+  return sql<boolean>`exists (
+    select 1 from unnest(${sql.raw(alias)}.etiquetas) e
+     where lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+}
+
+/**
+ * **¿Esta cita ya debería haber ocurrido?** Alcanzable, no cancelada, y su horario ya empezó.
+ *
+ * Son las tres condiciones con que Avanzar ofrece cerrar una cita (`citasParaCerrar.ts`), y las que
+ * usan el tercer eslabón de la cadena de Sales y el `sin_registrar` de Leads Portal. Tienen que ser
+ * las mismas en los tres: si una pantalla acusara de no registrar sobre otra población que la que
+ * Avanzar ofrece, estaría acusando a gente a la que nunca se le pidió.
+ *
+ * Entre paréntesis porque son tres condiciones: sin ellos, un `not ${citaCerrable(…)}` negaría sólo
+ * la primera y dejaría las otras dos afirmadas, sin ningún error.
+ */
+export function citaCerrable(alias = 'citas'): RawBuilder<boolean> {
+  return sql<boolean>`(${alcanzable(alias)} and not ${cancelada(alias)} and ${sql.raw(alias)}.inicio_el < now())`;
 }

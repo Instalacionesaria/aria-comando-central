@@ -56,17 +56,17 @@
 7. **Vender es tener un resultado con salida `venta`.** No lo es un acuerdo sin pago
    (`lib/negocio/dineroDelMes.ts:79-84`) ni una venta chica del setter
    (`lib/negocio/etapas.ts:86-94`). Y es venta **reportada por el closer**, no pago verificado
-   (`lib/negocio/cadenaDeCierre.ts:352-357`).
+   (`lib/negocio/cadenaDeCierre.ts:353-358`).
 8. **La asistencia no se deduce ni se mezcla.** La que registra Avanzar (`citas.asistio`) y el
    plantón que marca el calendario viajan cada una con su nombre y nunca en el mismo denominador
    (`lib/negocio/citasAlcanzables.ts:105-109`).
 9. **Un contacto descartado no sale de la cohorte: se marca.** La cadena de Sales cuenta a todos en
-   su cohorte y en «llegaron a agendar» (`lib/negocio/cadenaDeCierre.ts:199-203`), y la ruta de esta
+   su cohorte y en «llegaron a agendar» (`lib/negocio/cadenaDeCierre.ts:200-204`), y la ruta de esta
    pestaña tiene que coincidir con ella (regla 10). Descartar es un atributo de la fila, no un filtro
    de la tarjeta.
 10. **El total y los agendados coinciden con la cadena de Sales en la misma ventana.** Es la prueba
-    de coherencia del plan para LP-4: mismo predicado de cohorte (`lib/negocio/cadenaDeCierre.ts:168`)
-    y mismo predicado de agendado (`:203`). Si una de las dos pantallas cambia su definición, la
+    de coherencia del plan para LP-4: mismo predicado de cohorte (`lib/negocio/cadenaDeCierre.ts:169`)
+    y mismo predicado de agendado (`:204`). Si una de las dos pantallas cambia su definición, la
     prueba se pone roja en vez de dejar dos cifras que no cuadran.
 
 ---
@@ -85,7 +85,7 @@ territorio** —closer, setter o congelado— y descartados incluidos. La cohort
 de entrada y no con el territorio, que es consecuencia de agendar
 (`07-REGLAS-TRANSVERSALES.md:216-222`).
 **Rastro** · `lib/aios/leads-portal.js:128` (`n = g.length`, por tramo) y `:146` (`all.length`, la
-tarjeta «Todos»); el mismo predicado que `lib/negocio/cadenaDeCierre.ts:168`.
+tarjeta «Todos»); el mismo predicado que `lib/negocio/cadenaDeCierre.ts:169`.
 **Estado** · **Construible hoy, sin migración.** Medido el 2026-09-27:
 
 | ventana | contactos |
@@ -99,7 +99,7 @@ A 30 días, por tramo: **ICP alto 51 · ICP medio 83 · ICP bajo 117 · Sin cali
 286. Solo `aria` tiene contactos: 593 en total, de los que 569 tienen alta (LP02-10).
 **Piso** · No lleva: un conteo se publica siempre. Con la cohorte en cero, la cifra es `0` y el
 aviso dice que no entró nadie, no que falte el dato —la frase ya existe en
-`lib/negocio/cadenaDeCierre.ts:308-313`—.
+`lib/negocio/cadenaDeCierre.ts:309-314`—.
 
 ### LP02-02 · Porción del total, por tramo
 
@@ -112,7 +112,7 @@ usa también para el ancho de la barra.
 mismo número).
 **Estado** · **Construible hoy.** A 30 días: 17,8 % · 29,0 % · 40,9 % · 12,2 %. Viaja `null`
 —no `0`— con la cohorte vacía, como `porcionDeLaCohorte` de Sales
-(`lib/negocio/cadenaDeCierre.ts:272-274`). Las cuatro porciones suman 1 antes de redondear; después
+(`lib/negocio/cadenaDeCierre.ts:273-275`). Las cuatro porciones suman 1 antes de redondear; después
 de redondear pueden sumar 99 o 101, y eso no se corrige a mano.
 **Piso** · **Sin decidir.** La cadena de Sales no le pone piso a su porción; con la cohorte de 7
 días (3 contactos) eso publica tercios. Ver `LP06-P01`.
@@ -131,7 +131,7 @@ devuelve.
 **Rastro** · `lib/aios/leads-portal.js:129` y `:134` («N agendados»); el filtro «Agendados» de
 `components/views/ContactsView.jsx:83-85`; el predicado en `lib/negocio/citasAlcanzables.ts:128-134`.
 **Estado** · **Construible hoy**, y es el mismo predicado que usan Sales
-(`lib/negocio/cadenaDeCierre.ts:203`), Creative (`lib/negocio/calidadDelCreativo.ts:225`) y
+(`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`) y
 Conversion. Tres consecuencias de la definición, las tres a propósito:
 
 - **Una cita cancelada cuenta.** El predicado pregunta por la existencia de una cita alcanzable, no
@@ -183,7 +183,8 @@ La cifra de esta pestaña se verifica en LP-4 contra la cadena, en la misma vent
 cancelada y sin registro, medido sin el filtro de alcanzable y con `'cancelled'` como única grafía
 de cancelada (`lib/ghl/calendarios.ts:192` tiene tres). Por eso es un **techo** de `sin_registrar`
 y no la cifra: con la tabla de arriba, quien sólo tiene citas pasadas congeladas, o canceladas con
-otra de esas grafías, queda en `null`, y la cifra real es ≤ 145.
+otra de esas grafías, queda en `null`, y la cifra real es ≤ 145. **Con el predicado exacto, medido
+en LP-2 el mismo día: 77** en «Completo» y **47** a 30 días (`scripts/medir-leads-portal.sql`).
 
 > **`09-DE-DONDE-VIENE-CADA-DATO.md` lo cuenta de otra manera, y hay que decirlo.** `LP09-07` llama
 > «sin cita» al cuarto estado y cuenta a las 145 enteras como las que la pantalla dibuja en «sin
@@ -194,12 +195,12 @@ otra de esas grafías, queda en `null`, y la cifra real es ≤ 145.
 
 Por eso un «0 asistieron» **no es «no se presentó nadie»**: es que nadie lo registró. Cuando haya
 personas en `sin_registrar`, el aviso lo dice con su número, igual que la cadena de Sales avisa de las
-citas que ocurrieron sin que nadie registrara qué pasó (`lib/negocio/cadenaDeCierre.ts:320-326`).
+citas que ocurrieron sin que nadie registrara qué pasó (`lib/negocio/cadenaDeCierre.ts:321-327`).
 
 Dos decisiones de la tabla, con su motivo:
 
-- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/cadenaDeCierre.ts:174`,
-  que son las de la cita que Avanzar ofrece cerrar (`:41-44`). Si esta pestaña acusara de no
+- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/citasAlcanzables.ts:163-165`,
+  que son las de la cita que Avanzar ofrece cerrar (`lib/negocio/cadenaDeCierre.ts:41-44`). Si esta pestaña acusara de no
   registrar sobre otra población, estaría acusando a gente a la que nunca se le pidió.
 - **`asistio` y `no_asistio` leen cualquier cita de la persona**, congelada o no. La columna es
   nuestra —la escribe Avanzar (`lib/negocio/citasAlcanzables.ts:92`)—, no del CRM, así que congelarse
@@ -229,9 +230,9 @@ conteo de LP02-04. Viaja por persona (`plantón`, en la fila), no como una tarje
 
 **Qué es** · Cuántas personas del tramo compraron.
 **Fórmula** · `count(*) filter (where tieneVenta)`, donde `tieneVenta` es que exista un resultado de
-esa persona con `salida = 'venta'`, de cualquier fecha y con o sin cita. Hoy está escrito dentro de
-`lib/negocio/cadenaDeCierre.ts:191-194`; LP-2 lo saca a `lib/negocio/ventasDelContacto.ts` y la
-cadena pasa a importarlo, sin cambiar lo que calcula.
+esa persona con `salida = 'venta'`, de cualquier fecha y con o sin cita. Estaba escrito dentro de la cadena de Sales hasta LP-2, que
+lo sacó a `lib/negocio/ventasDelContacto.ts:44-46`; la cadena lo importa, sin cambiar lo que
+calcula.
 **Unidad** · Conteo de personas: dos ventas de la misma persona cuentan una.
 **Población** · Los contactos del tramo.
 **Rastro** · `lib/aios/leads-portal.js:129` (`vend`); el filtro «Vendidos» de
@@ -241,7 +242,7 @@ son seguimiento 4, no_show 2 y no_interesa 1, los mismos siete que `lib/negocio/
 contó el 2026-09-21.
 
 > **No es el último eslabón de la cadena de Sales.** La cadena cuenta la venta sólo si la persona
-> tiene una cita cerrable y un intento registrado después (`lib/negocio/cadenaDeCierre.ts:205-207`),
+> tiene una cita cerrable y un intento registrado después (`lib/negocio/cadenaDeCierre.ts:206-208`),
 > porque su trabajo es que el embudo sea monótono. Esta pestaña cuenta la venta de la persona sin
 > esas condiciones. Hoy las dos valen 0; el día que alguien registre una venta sin cita, esta cifra
 > va a ser mayor que la de Sales **y las dos van a estar bien**. Por eso la prueba de coherencia
@@ -300,7 +301,7 @@ cargados en toda la base. Tres requisitos:
 
 - **El rótulo es «monto reportado»**, nunca «Revenue» (`lib/aios/leads-portal.js:138`) ni
   «facturado» (`:190`). Este sistema no tiene integración de cobros y la cifra es lo que el closer
-  dijo (`lib/negocio/cadenaDeCierre.ts:352-357`).
+  dijo (`lib/negocio/cadenaDeCierre.ts:353-358`).
 - **Un `$0` no reemplaza a un `null`.** La maqueta dibuja el mismo hecho de dos maneras en la misma
   pantalla: la tarjeta de un tramo sin ventas dice «—» (`lib/aios/leads-portal.js:138`) y la tarjeta
   «Todos» dice `money(revT)`, o sea «$0» (`:149`).
@@ -346,7 +347,7 @@ directamente; la cuenta sale de las dos cifras de arriba.
 **Por qué `cerosRecientes` se mide sin la ventana.** Es un guardián, no una cifra del período: si se
 midiera dentro de la cohorte, el aviso aparecería con «30 días» y desaparecería con «7 días» para el
 mismo 0. Es el mismo motivo por el que la cadena de Sales mide su cobertura sin la ventana
-(`lib/negocio/cadenaDeCierre.ts:240-241`). Qué dice el aviso cuando se enciende está en
+(`lib/negocio/cadenaDeCierre.ts:241-242`). Qué dice el aviso cuando se enciende está en
 `14-EL-PUNTAJE-DEL-CRM.md`.
 
 **La explicación de la maqueta no es un requisito.** «Aún sin formulario · califican al agendar»
@@ -362,7 +363,7 @@ lo va a tener al agendar.
 ventana. Viaja como `cohorte.sinAlta`.
 **Unidad** · Conteo, siempre con su total al lado.
 **Población** · La empresa entera.
-**Rastro** · `lib/negocio/cadenaDeCierre.ts:123-136` (el campo) y `:342-350` (el aviso).
+**Rastro** · `lib/negocio/cadenaDeCierre.ts:124-137` (el campo) y `:343-351` (el aviso).
 **Estado** · **Construible hoy.** Medido el 2026-09-27: **24 de 593 (4,0 %)**, y los 24 son
 congelados. Ninguna
 ventana los recupera, ni «Completo»: por eso «Completo» cuenta 569 = 593 − 24. Cuando es mayor que
@@ -416,8 +417,8 @@ tienen su argumento escrito y las dos están bien. Mientras convivan, la diferen
 Medido el 2026-09-27: de las 292 personas con alguna cita, **146 sólo tienen canceladas** (con
 `estado_ghl = 'cancelled'` exacto y sobre todas las citas, congeladas incluidas, así que es una
 aproximación). Con la definición de LP02-03, cuentan como agendados. Son la mitad de las personas
-con alguna cita en toda la base; qué parte de la columna de agendados representan no se midió, y la
-tarjeta no lo dice. ¿Se marca como `cita` aparte, igual que `solo_congeladas`? Es la misma pregunta
+con alguna cita en toda la base. Qué parte de los agendados representan no se midió —LP-2 midió los
+agendados, 200 en «Completo», pero no los partió por cancelación— y la tarjeta no lo dice. ¿Se marca como `cita` aparte, igual que `solo_congeladas`? Es la misma pregunta
 que `LP04-P03` hace desde la rejilla, y se contesta una sola vez.
 
 ---

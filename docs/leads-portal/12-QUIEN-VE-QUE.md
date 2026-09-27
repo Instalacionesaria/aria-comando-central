@@ -163,7 +163,7 @@ no está medido (`LP12-P01`).
 | `id` | `contactos.id` | para abrir la ficha (`LP12-07`) |
 | `nombre` | el nombre | es lo único que permite reconocer a la persona |
 | `altaEl` | el alta en el CRM | la cohorte y el orden |
-| `campaña`, `creativo` | `campaign` y `utmContent` | la línea «campaña · creativo» de la tarjeta |
+| `campana`, `creativo` | `campaign` y `utmContent` | la línea «campaña · creativo» de la tarjeta |
 | `puntaje`, `tramo` | el puntaje y su tramo | la tarjeta y el filtro |
 | `territorio` | closer, setter o congelado | para decir «congelado» |
 | `descartado` | sí o no | un booleano, no las etiquetas |

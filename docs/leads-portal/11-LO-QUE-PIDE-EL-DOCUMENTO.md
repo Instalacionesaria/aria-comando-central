@@ -202,8 +202,8 @@ nadie. Y el «Agendado» del formulario **no** es el agendamiento
 
 Los cuatro campos existen y los cuatro están conectados. Tres **no tienen datos**:
 
-- **Cita** — 292 personas con alguna. Cuántas con una cita alcanzable, que es el «agendó» de todas
-  las pantallas, **no se midió en LP-0** (`09 § LP09-P01`).
+- **Cita** — 292 personas con alguna. Con una cita alcanzable, que es el «agendó» de todas las
+  pantallas, **200** de los 569 con alta: no se midió en LP-0 y se midió en LP-2 (`09 § LP09-P01`).
 - **Asistencia** — `citas.asistio` vale `true` en 0 personas y `false` en 0. Lo único que hay es el
   plantón del calendario, en 15, y viaja aparte.
 - **Resultado de venta** — 7 resultados en toda la base, ninguno `venta`.

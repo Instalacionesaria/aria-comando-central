@@ -64,9 +64,9 @@ congelados **ya no se refrescan**: la ficha muestra cuándo se sincronizó cada 
 
 ### LP08-03 · De Sales: la cohorte y «agendó» dan los mismos números que la cadena
 
-**Rastro** · `lib/negocio/cadenaDeCierre.ts:168` arma la ventana con
+**Rastro** · `lib/negocio/cadenaDeCierre.ts:169` arma la ventana con
 `alta_en_el_crm >= now() - make_interval(days => N)`, rodante y no anclada al día, con el motivo
-escrito en `:46-55`; y cuenta «con cita» con `tieneCitaAlcanzable` (`:203`).
+escrito en `:46-55`; y cuenta «con cita» con `tieneCitaAlcanzable` (`:204`).
 
 **Requisito** · La cohorte de esta pestaña es **la misma expresión** y «agendó» es **el mismo
 predicado**. La ruta llama a `cadenaDeCierre` dentro del mismo `conOrganizacion` y la prueba de LP-4

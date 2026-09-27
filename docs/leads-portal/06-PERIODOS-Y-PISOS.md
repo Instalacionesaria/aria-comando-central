@@ -84,7 +84,7 @@ Tres decisiones dentro de esa línea, cada una con su defecto conocido:
    territorios.
 3. **Móvil, no anclada al día.** Es la regla general del sistema y la que usa la cadena de Sales,
    con el motivo escrito: no toca ninguna columna `date` (`lib/negocio/cadenaDeCierre.ts:46-55`,
-   `:168`). Esta pestaña tampoco: contactos, citas y resultados son `timestamptz`.
+   `:169`). Esta pestaña tampoco: contactos, citas y resultados son `timestamptz`.
 
 > **Y por eso sus «30 días» no son los de Creative.** Creative ancla la ventana al día
 > (`lib/negocio/calidadDelCreativo.ts:228`, `current_date - make_interval(days => dias - 1)`) porque
@@ -124,7 +124,7 @@ La respuesta trae en `cohorte`:
 | `sinAlta` | los contactos que no entran en ninguna ventana | 24 |
 
 - `desde` y `hasta` son `min` y `max` sobre las filas alcanzadas, como en la cadena de Sales
-  (`lib/negocio/cadenaDeCierre.ts:232-235`): con los bordes de la ventana, la pantalla diría «últimos
+  (`lib/negocio/cadenaDeCierre.ts:233-236`): con los bordes de la ventana, la pantalla diría «últimos
   30 días» sobre una base que arranca hace tres.
 - `ultimaAlta` es el que contesta, con la cohorte vacía, **cuándo entró el último**. Sin él, «Hoy: 0»
   no dice si es una mañana tranquila o dos semanas sin tráfico (`LP06-08`).
@@ -137,7 +137,7 @@ La respuesta trae en `cohorte`:
 ### LP06-07 · Los que no tienen alta no entran en ninguna ventana, y se dice
 
 Medido el 2026-09-27: **24 de 593 contactos no tienen `alta_en_el_crm`, y los 24 son congelados.** No entran en
-ninguna cohorte de ninguna pantalla, ni con «Completo» (`lib/negocio/cadenaDeCierre.ts:128-134`).
+ninguna cohorte de ninguna pantalla, ni con «Completo» (`lib/negocio/cadenaDeCierre.ts:129-135`).
 
 **Requisito** · `sinAlta` se mide sobre la empresa entera y sin ventana, viaja siempre, y cuando es
 mayor que cero el aviso lo dice. La ficha métrica es `LP02-10` en `02-METRICAS.md`.
@@ -171,7 +171,7 @@ las 00:00 UTC, diez minutos antes de medir. El barrido pasa; no entra gente.
 
 La frescura ya distingue sus estados y los dice en un campo hermano, no dentro del dato
 (`lib/negocio/frescura.ts:26-42`, `:50-58`). La frase de la cohorte vacía ya existe en
-`lib/negocio/cadenaDeCierre.ts:308-313`. Es el requisito que Conversion escribió para su pantalla
+`lib/negocio/cadenaDeCierre.ts:309-314`. Es el requisito que Conversion escribió para su pantalla
 (`docs/conversion/05-PERIODOS-Y-PISOS.md:99-106`), llevado a ésta.
 
 ### LP06-09 · Y la ventana por omisión se va a vaciar sola
@@ -245,8 +245,9 @@ efecto por persona el 2026-09-16: 0 personas con sólo citas congeladas a 7 y 14
 
 Como «agendó» no cuenta la cita congelada (`LP02-03`), **cambiar de ventana cambia cuántos de los que
 agendaron quedan fuera de la cifra**. Por eso `solo_congeladas` viaja en el resumen y en cada fila, y
-el aviso lo dice cuando es mayor que cero. La medición de LP-0 no lo tiene; se mide antes de LP-2
-con la consulta de `LP09-P01` y se verifica en LP-4 contra la cadena de Sales.
+el aviso lo dice cuando es mayor que cero. Medido en LP-2 el 2026-09-27 (`LP09-P01`): **0** a 30
+días y **79** en «Completo», que es justamente lo que esta regla anticipa. Se verifica en LP-4 contra
+la cadena de Sales.
 
 ---
 
@@ -264,7 +265,7 @@ Es la regla de Sales (`docs/sales/06-PERIODOS-Y-PISOS.md:127-135`) aplicada acá
 2. **La cadena de Sales se consulta con el mismo `dias`, en el mismo `conOrganizacion`.** Es lo que
    permite la prueba de coherencia de LP-4: el total y los agendados tienen que coincidir.
 3. **Ningún módulo se queda con su valor por omisión.** `cadenaDeCierre` tiene 14 días por omisión
-   (`lib/negocio/cadenaDeCierre.ts:165`, `DIAS_DE_LA_TASA`); si la ruta se olvidara de pasarle el
+   (`lib/negocio/cadenaDeCierre.ts:166`, `DIAS_DE_LA_TASA`); si la ruta se olvidara de pasarle el
    período, la pantalla dibujaría dos ventanas con un solo botón encendido.
 
 ### LP06-14 · El tramo es el de hoy, no el del día del alta
@@ -282,7 +283,7 @@ Se declara en la pantalla y está desarrollado en `14-EL-PUNTAJE-DEL-CRM.md`.
 ### LP06-P01 · ¿La porción del total lleva piso?
 
 La cadena de Sales no se lo pone: su `porcionDeLaCohorte` es `null` sólo con la cohorte vacía
-(`lib/negocio/cadenaDeCierre.ts:272-274`). Seguir ese precedente es coherente con Sales, y con la
+(`lib/negocio/cadenaDeCierre.ts:273-275`). Seguir ese precedente es coherente con Sales, y con la
 cohorte de 7 días de hoy —3 personas— publica tercios que se mueven 33 puntos con la próxima alta. La
 alternativa es tratar la porción como una tasa más: `null` bajo 10 contactos en la cohorte, con los
 conteos a la vista. Las dos son defendibles; el plan no decide.

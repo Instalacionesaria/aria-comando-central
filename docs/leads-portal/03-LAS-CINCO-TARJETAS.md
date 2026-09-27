@@ -69,7 +69,7 @@ la pantalla nueva no puede heredar sin querer.
   período no hace nada).
 - **Qué pide:** la cohorte son los contactos dados de alta en el CRM dentro de la ventana elegida
   (`alta_en_el_crm`, no `creado_el`). La ventana es la de Sales: `cadenaDeCierre.ts` recorta con
-  `alta_en_el_crm >= now() - make_interval(days => N)` (`lib/negocio/cadenaDeCierre.ts:168`). Tiene
+  `alta_en_el_crm >= now() - make_interval(days => N)` (`lib/negocio/cadenaDeCierre.ts:169`). Tiene
   que ser la misma para que el total de «Todos» coincida con la cohorte de Sales. La definición de
   las ventanas vive en `06-PERIODOS-Y-PISOS.md`.
 - **Medido:** hoy (24 h) **0** · 7 días **3** · 30 días **286** · completo **569**.
@@ -81,7 +81,7 @@ la pantalla nueva no puede heredar sin querer.
 
 - **Rastro:** el patrón ya existe en Sales. El aviso de `cadenaDeCierre.ts` dice *«contacto(s) de la
   empresa no tienen fecha de alta en el CRM … ampliar la ventana no los trae»*
-  (`lib/negocio/cadenaDeCierre.ts:342-350`).
+  (`lib/negocio/cadenaDeCierre.ts:343-351`).
 - **Medido:** **24** de 593 contactos no tienen `alta_en_el_crm`, y **los 24 están congelados**. Por
   eso «completo» da 569 y no 593.
 - **Qué pide:** la nota de cobertura del bloque dice cuántos quedan afuera y por qué. «Completo» no
@@ -189,12 +189,14 @@ la pantalla nueva no puede heredar sin querer.
   `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-134`): una cita cancelada cuenta, una
   congelada no. La unidad es la persona, con `exists` y no con `join`
   (`lib/negocio/citasAlcanzables.ts:122-124`). Es el mismo predicado del eslabón `con_cita` de Sales
-  (`lib/negocio/cadenaDeCierre.ts:203`). Por eso los agendados de «Todos» tienen que coincidir con
+  (`lib/negocio/cadenaDeCierre.ts:204`). Por eso los agendados de «Todos» tienen que coincidir con
   los de Sales en la misma ventana, y la prueba de la ruta lo vigila (LP-4).
 - **Lo que LP-0 no midió, y hay que decirlo:** la medición contó **292** personas con alguna cita y
   **278** con alguna cita de un contacto no congelado. Las dos cifras son sobre todo el universo y
   **ninguna usa el predicado del código**: la medición distinguió por territorio y no por
-  `ghl_calendario_id`. Los agendados por tramo se miden al construir (LP-2) y se cotejan con Sales.
+  `ghl_calendario_id`. **Con el predicado del código, medido en LP-2 el 2026-09-27 a 30 días:** alto
+  40 de 51 · medio 39 de 82 · bajo 48 de 117 · sin calificar 15 de 33, que son 142 de 283
+  (`scripts/medir-leads-portal.sql`). En LP-4 se cotejan con Sales.
 - **Nota:** **146** personas tienen **sólo** citas canceladas (medido sobre todas sus citas,
   alcanzables o no). Con la definición del sistema esas personas cuentan como agendadas. La tarjeta
   no las separa; ver `LP04-P03`.
@@ -214,7 +216,7 @@ la pantalla nueva no puede heredar sin querer.
   último eslabón de Sales.
 - **La diferencia con Sales, dicha antes de que alguien la encuentre:** en Sales, `con_venta` exige
   además una cita cerrable y un intento registrado después de ella
-  (`lib/negocio/cadenaDeCierre.ts:206-207`). Acá cuenta cualquier venta, que es la definición de
+  (`lib/negocio/cadenaDeCierre.ts:207-208`). Acá cuenta cualquier venta, que es la definición de
   LP-2. Con cero ventas las dos cifras coinciden. El día que alguien registre una venta sin cita
   cerrable, el portal va a mostrar **más** vendidos que Sales, y va a estar bien. Por eso la prueba
   de coherencia compara el total y los agendados, **no** los vendidos. El matiz lo dice.
@@ -245,7 +247,7 @@ la pantalla nueva no puede heredar sin querer.
   `lib/aios/leads-portal.js:149` (con «$0» para el cero).
 - **Por qué cambia el rótulo:** el documento funcional pide, en el perfil del lead, el *«Monto
   reportado por el closer»* (`§ 5.3:263`). Sales ya escribe al pie de su cadena que una venta es la
-  que el closer reportó, *«no un pago verificado»* (`lib/negocio/cadenaDeCierre.ts:352-357`).
+  que el closer reportó, *«no un pago verificado»* (`lib/negocio/cadenaDeCierre.ts:353-358`).
   «Revenue» promete dinero cobrado, y este sistema no tiene ninguna integración de cobros.
 - **Fórmula:** suma de `monto` de los resultados `venta` de las personas del tramo. El acuerdo sin
   pago no entra.

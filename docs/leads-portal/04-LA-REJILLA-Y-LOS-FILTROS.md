@@ -140,7 +140,7 @@ puede heredar.
 - **Rastro:** `lib/aios/leads-portal.js:188-192`.
 - **Qué pide:**
   - **con venta y monto**: el monto y la palabra «reportado». No «facturado»: el sistema no tiene
-    ninguna integración de cobros (`lib/negocio/cadenaDeCierre.ts:352-357`);
+    ninguna integración de cobros (`lib/negocio/cadenaDeCierre.ts:353-358`);
   - **con venta sin monto**: «venta sin monto»;
   - **sin venta**: el estado de la cita, que es un hecho: «agendó», «sólo citas congeladas» o «sin
     cita». «En proceso» afirma que algo sigue en curso, y puede ser una cita cancelada hace un mes.
@@ -151,7 +151,8 @@ puede heredar.
 
 - **Rastro:** `lib/aios/leads-portal.js:170-174`: cada paso está encendido o apagado.
 - **Por qué dos no alcanzan:** **145** personas tienen una cita pasada, no cancelada y sin la
-  asistencia registrada (un techo: se midió sin el filtro de alcanzable, ver `LP02-04`). `asistio`
+  asistencia registrada (un techo: se midió sin el filtro de alcanzable, ver `LP02-04`; con el
+  predicado exacto son **77**). `asistio`
   es verdadero en **0** y falso en **0**. Con dos estados, esas personas se leerían como «no asistió»
   cuando lo cierto es que nadie lo cargó.
 - **Qué pide:**

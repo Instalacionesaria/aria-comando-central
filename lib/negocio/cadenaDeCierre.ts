@@ -59,7 +59,8 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
-import { alcanzable, cancelada, descartado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { alcanzable, citaCerrable, descartado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { tieneVenta } from './ventasDelContacto.ts';
 
 /** Las claves de los cinco eslabones, en el orden en que se dibujan. */
 export const ESLABONES = ['cohorte', 'con_cita', 'cerrable', 'con_intento', 'con_venta'] as const;
@@ -170,8 +171,10 @@ export async function cadenaDeCierre(dias = DIAS_DE_LA_TASA): Promise<CadenaDeCi
   /* ── LOS TRES PREDICADOS DE «LA CITA YA OCURRIÓ Y NADIE LA CANCELÓ» ────────
    *
    * Son las mismas tres condiciones que `citasParaCerrar.ts` usa para OFRECER la cita, y tienen que
-   * serlo. Los dos primeros salen de `citasAlcanzables.ts`, que es donde viven desde la etapa 3. */
-  const cerrable = sql<boolean>`${alcanzable('ci')} and not ${cancelada('ci')} and ci.inicio_el < now()`;
+   * serlo. Viven juntas en `citasAlcanzables.ts` desde que Leads Portal las necesitó para su
+   * `sin_registrar`: con una copia acá y otra allá, las dos pantallas podían acusar sobre dos
+   * poblaciones distintas. */
+  const cerrable = citaCerrable('ci');
 
   const deLaPersona = sql<boolean>`ci.org_id = contactos.org_id and ci.contacto_id = contactos.id`;
 
@@ -187,11 +190,9 @@ export async function cadenaDeCierre(dias = DIAS_DE_LA_TASA): Promise<CadenaDeCi
                     where r.org_id = contactos.org_id and r.contacto_id = contactos.id
                       and r.creado_el >= ci.inicio_el))`;
 
-  /** Y de esos resultados, alguno es una venta. Nunca `acuerdo_sin_pago`: ver `ROTULOS.con_venta`. */
-  const tieneVenta = sql<boolean>`exists (
-    select 1 from negocio.resultados r
-     where r.org_id = contactos.org_id and r.contacto_id = contactos.id
-       and r.salida = 'venta')`;
+  /* Y de esos resultados, alguno es una venta: `tieneVenta` de `ventasDelContacto.ts`, el mismo
+     predicado que cuenta los vendidos de Leads Portal. Nunca `acuerdo_sin_pago`: ver
+     `ROTULOS.con_venta`. */
 
   const f = await datos()
     .selectFrom('contactos')
@@ -204,7 +205,7 @@ export async function cadenaDeCierre(dias = DIAS_DE_LA_TASA): Promise<CadenaDeCi
       sql<number>`count(*) filter (where ${tieneCitaCerrable})`.as('cerrable'),
       sql<number>`count(*) filter (where ${tieneCitaCerrable} and ${tieneIntento})`.as('con_intento'),
       sql<number>`count(*) filter (
-        where ${tieneCitaCerrable} and ${tieneIntento} and ${tieneVenta})`.as('con_venta'),
+        where ${tieneCitaCerrable} and ${tieneIntento} and ${tieneVenta('contactos')})`.as('con_venta'),
       /* Los que rompen la monotonía: registraron algo y no tienen ninguna cita cerrable. */
       sql<number>`count(*) filter (
         where not ${tieneCitaCerrable}

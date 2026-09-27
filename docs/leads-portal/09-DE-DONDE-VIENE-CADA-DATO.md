@@ -344,7 +344,8 @@ que la pestaña va a usar.** La medición llamó «alcanzable» a la cita de un 
 y el código llama alcanzable a otra cosa: `ghl_calendario_id is not null`
 (`lib/negocio/citasAlcanzables.ts:54-56`), la cita que el barrido todavía puede refrescar. Son dos
 preguntas distintas, así que **el 278 no es el «agendó» de la pestaña** y no se publica como tal.
-Tampoco lo es el 292, que cuenta las citas congeladas. La consulta que falta está en `LP09-P01`.
+Tampoco lo es el 292, que cuenta las citas congeladas. La cifra con el predicado exacto se midió en
+LP-2, y está en `LP09-P01`.
 
 Dos diferencias más de la sonda contra el código, que no cambian la conclusión pero hay que
 anotarlas: la sonda da por cancelada sólo `'cancelled'`, y el código usa la lista
@@ -357,7 +358,8 @@ anotarlas: la sonda da por cancelada sólo `'cancelled'`, y el código usa la li
   congeladas no, y viaja marcada aparte (`cita: 'solo_congeladas'`).
 - **La asistencia son cuatro estados** —asistió, no asistió, sin registrar, sin cita— y hoy, medido,
   todo lo que tiene cita cae en «sin registrar». Las 145 personas con una cita pasada sin registro
-  son las que la pantalla tiene que dibujar como «sin registrar» y no como «no asistió».
+  son el techo; con el predicado exacto, medido en LP-2, son **77** en «Completo», y ésas son las
+  que la pantalla dibuja como «sin registrar» y no como «no asistió» (`LP02-04`).
 - **El plantón del calendario viaja aparte y no se suma a la asistencia.** Son dos fuentes de la
   misma pregunta y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:105-110`).
 - **Vendió y monto valen cero medido**, y el cierre por tramo es nulo con su motivo, no «0 %»: es la
@@ -617,9 +619,22 @@ prueba de la ruta.
 
 ## Preguntas abiertas
 
-### LP09-P01 · ¿Cuántas personas tienen una cita alcanzable? — **sin medir**
+### LP09-P01 · ¿Cuántas personas tienen una cita alcanzable? — **medida en LP-2**
 
-Es la cifra de «agendó», y la medición de LP-0 no la tiene (`LP09-07`). Hay que medirla **antes de
+**Medido el 2026-09-27 a las 02:06 UTC** con `scripts/medir-leads-portal.sql`, que escribe los predicados del código
+—`tieneCitaAlcanzable`, `citaCerrable`, las tres grafías de cancelada— y no los de la sonda de LP-0:
+
+| ventana | contactos | agendaron | sólo congeladas | sin registrar | plantón |
+|---|---|---|---|---|---|
+| `7d` | 3 | 3 | 0 | 1 | 0 |
+| `30d` | 283 | **142** | 0 | 47 | 13 |
+| `completo` | 569 | **200** | **79** | 77 | 15 |
+
+`hoy` no tuvo a nadie. Los 30 días dan 283 y no los 286 de LP-0: la ventana es móvil y entre las
+dos mediciones pasaron dos horas, así que su borde de atrás corrió; no se midió alta por alta. A 30
+días, por tramo: alto 40 de 51 · medio 39 de 82 · bajo 48 de 117 · sin calificar 15 de 33.
+
+Es la cifra de «agendó», y la medición de LP-0 no la tenía (`LP09-07`). Hacía falta **antes de
 LP-4**: es la cifra contra la que se contrastan los agendados de la API en la verificación contra
 producción (paso 3 de «Verificación de punta a punta» del plan), y la que la prueba de coherencia
 con `cadenaDeCierre` —`pruebas/base/177-la-ruta-del-leads-portal.test.ts`, en LP-4— tiene que

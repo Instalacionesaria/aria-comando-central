@@ -140,7 +140,7 @@ acciones y siete secciones:
      `LP02-04`. Así una cita todavía por delante no sale «sin registrar». El plantón del calendario
      va como marca aparte y no se suma (`lib/negocio/citasAlcanzables.ts:105-109`). **Medido:** 0
      personas con asistencia registrada y 145 con cita pasada, no cancelada y sin registro. El 145
-     es un techo: se midió sin el filtro de alcanzable (`LP02-04`).
+     es un techo: se midió sin el filtro de alcanzable (`LP02-04`). Con el predicado exacto, **77**.
   5. **Compró:** si hay una venta registrada, con su monto reportado. Un acuerdo sin pago se muestra
      como tal, «acordó comprar, todavía no pagó» (`lib/negocio/salidas.ts:96-98`), y no como compra.
      En los demás casos, «sin venta registrada». **Medido: 0 ventas.**

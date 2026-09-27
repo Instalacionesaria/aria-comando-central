@@ -239,7 +239,7 @@ usuario; todos cambian algo que una etapa tiene que hacer.
 | el plan dice | lo que hay | ficha |
 |---|---|---|
 | «~508 literales» | no se reproduce con ningún método; con uno escrito y repetible son **570 valores** en `lib/aios/leads-portal.js`, 466 de ellos de dato; con los 70 de `POOL` del cajón, **536** valores de dato inventados | `LP10-01` |
-| «292 contactos tienen cita» | es cierto, y **no es «agendó»**: cuenta citas congeladas. La cifra con el predicado del sistema no se midió, y hay que medirla antes de LP-4 | `LP09-07`, `LP09-P01` |
+| «292 contactos tienen cita» | es cierto, y **no es «agendó»**: cuenta citas congeladas. Con el predicado del sistema, medido en LP-2 el 2026-09-27: **200** de los 569 con alta, y **79** con sólo citas congeladas | `LP09-07`, `LP09-P01` |
 | la ficha de LP-3 no nombra el video precall | es un dato real que la maqueta ya dibujaba: entra como el texto del CRM | `LP05-11`, `LP11-P02` |
 | la prueba de LP-3: «un campo sin grupo no aparece» | tiene que dejar pasar a «Form Landing VSL», que no tiene grupo y viaja por nombre, y a ningún otro | `LP09-09` |
 | LP-3 «exporta el helper de host» de `recorrido.ts` | hoy está atado a `atribucion_ultima ->> 'url'`: hay que parametrizar la columna y la clave, o el sistema tendría dos ideas de qué es un host | `LP05-13`, `LP08-06` |
@@ -283,7 +283,7 @@ respuesta**; ese orden es una propuesta de este mapa, no del plan.
 | | `LP05-P03` | ¿La ficha muestra las etiquetas crudas del CRM? |
 | | `LP11-P01` | ¿El último toque va como renglón propio? |
 | | `LP11-P02` | ¿Se confirma el precall en la ficha? |
-| **LP-4** | `LP09-P01` | ¿Cuántas personas tienen una cita alcanzable? Se mide |
+| **LP-4** | `LP09-P01` | ¿Cuántas personas tienen una cita alcanzable? **Medida en LP-2**: 200 en «Completo», 142 a 30 días |
 | | `LP12-P01` | ¿Alguno de los tres que ven la pestaña es un closer vinculado? Se mide y se le muestra al usuario |
 | | `LP12-P02` | ¿Se vigila que ningún rol tenga `tablero.ver` sin `contactos.ver`? |
 | **LP-5** | `LP13-P01` | ¿LP-5 y LP-6 van en el mismo commit? |

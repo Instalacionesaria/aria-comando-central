@@ -92,11 +92,11 @@ persona.
 
 | predicado | qué pregunta | definición | dónde vive | quién más la usa |
 |---|---|---|---|---|
-| **entró** | ¿su alta cae en la ventana? | `alta_en_el_crm >= now() - make_interval(days => N)` | la ventana de `lib/negocio/cadenaDeCierre.ts:168` | Sales |
-| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:128-134` | Sales (`lib/negocio/cadenaDeCierre.ts:203`), Creative (`lib/negocio/calidadDelCreativo.ts:225`), Acquisition y Conversion |
+| **entró** | ¿su alta cae en la ventana? | `alta_en_el_crm >= now() - make_interval(days => N)` | la ventana de `lib/negocio/cadenaDeCierre.ts:169` | Sales |
+| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:128-134` | Sales (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`), Acquisition y Conversion |
 | **asistió** | ¿alguien registró que se presentó? | `citas.asistio`, que carga una persona en Avanzar | `db/migraciones/049_si_se_presento_a_la_cita.sql:43-47` | Sales, que la declara nula con su motivo (`docs/sales/02-METRICAS.md:196-204`) |
-| **vendió** | ¿tiene un resultado con salida `venta`? | `salida = 'venta'`; nunca `acuerdo_sin_pago` | `lib/negocio/cadenaDeCierre.ts:190-194`; la salida, en `lib/negocio/salidas.ts:84` | Sales |
-| **descartado** | ¿la casa lo rechazó en el CRM? | alguna etiqueta de `ETIQUETAS_DE_DESCARTE`, comparada en minúscula | `lib/ghl/contrato.ts:228-238` | Sales, por cita (`lib/negocio/cadenaDeCierre.ts:231`) |
+| **vendió** | ¿tiene un resultado con salida `venta`? | `salida = 'venta'`; nunca `acuerdo_sin_pago` | `lib/negocio/ventasDelContacto.ts:44-46`; la salida, en `lib/negocio/salidas.ts:84` | Sales |
+| **descartado** | ¿la casa lo rechazó en el CRM? | alguna etiqueta de `ETIQUETAS_DE_DESCARTE`, comparada en minúscula | `lib/ghl/contrato.ts:228-238` | Sales, por cita (`lib/negocio/cadenaDeCierre.ts:232`) |
 
 **Qué pide** ·
 
@@ -108,9 +108,9 @@ persona.
 - **El total y los agendados coinciden con la cadena de Sales en la misma ventana**, y la prueba de
   la ruta lo vigila (`LP06-13`, `LP08-03`). Los vendidos no tienen por qué: esta pestaña cuenta a
   cualquier persona con una venta, y la cadena sólo cuenta a quien, además de una venta, tiene una
-  cita cerrable y un intento registrado después de ella (`lib/negocio/cadenaDeCierre.ts:206-207`).
+  cita cerrable y un intento registrado después de ella (`lib/negocio/cadenaDeCierre.ts:207-208`).
   La venta misma no tiene que venir después de la cita: `tieneVenta` no mira fechas
-  (`lib/negocio/cadenaDeCierre.ts:191-194`). El día que difieran, las dos van a estar bien
+  (`lib/negocio/ventasDelContacto.ts:44-46`). El día que difieran, las dos van a estar bien
   (`LP02-06`).
 - **Hay una pantalla que cuenta «agendó» distinto, y está bien escrita.** Lead Flow cuenta cualquier
   cita, congeladas incluidas, porque agendar es el evento y congelarse no lo deshace
@@ -149,7 +149,7 @@ ahí:
 
 Con quince personas inventadas eso no le hace daño a nadie. Con las reales, medido el 2026-09-27,
 **145** personas tienen una cita pasada, no cancelada y sin la asistencia registrada (es un techo:
-ver `LP02-04`). Con dos valores, esas personas se leerían «no asistió», y lo cierto es que nadie lo
+ver `LP02-04`; con el predicado exacto, **77** de los 569 con alta). Con dos valores, esas personas se leerían «no asistió», y lo cierto es que nadie lo
 cargó.
 
 **El sistema ya tiene las palabras, en dos lugares.** La columna de asistencia se creó con la regla
@@ -163,7 +163,7 @@ como 0 y no como nulo porque **no se sabe** si el CRM calculó cero o si su proc
 | predicado | sí | no | no se sabe | medido el 2026-09-27 |
 |---|---|---|---|---|
 | **entró** en la ventana | su alta cae adentro | su alta cae afuera | **no tiene alta**: ninguna ventana lo alcanza, ni «Completo» (`LP02-10`) | 569 con alta; **24** sin alta, los 24 congelados |
-| **agendó** | tiene una cita alcanzable | no tiene ninguna cita | **tuvo cita y sólo le quedan congeladas**: agendó, y el CRM ya no devuelve en qué quedó (`cita: 'solo_congeladas'`, `LP02-03`) | **301** sin ninguna cita (593 − 292); las otras 292 se reparten entre «sí» y «no se sabe», y ese reparto **no se midió** (`LP09-P01`) |
+| **agendó** | tiene una cita alcanzable | no tiene ninguna cita | **tuvo cita y sólo le quedan congeladas**: agendó, y el CRM ya no devuelve en qué quedó (`cita: 'solo_congeladas'`, `LP02-03`) | de los 569 con alta, medido en LP-2: **200** sí · **290** no · **79** no se sabe (`LP09-P01`) |
 | **asistió** | alguna cita con `asistio = true` | ninguna en `true` y alguna en `false` | **una cita cerrable sin respuesta** (`sin_registrar`, `LP02-04`) | sí **0** · no **0** · no se sabe, como mucho **145** |
 | **vendió** | un resultado `venta` | — (ver `LP01-09`) | **sin venta registrada** | sí **0**; las 593, no se sabe |
 | **descartado** | alguna etiqueta de descarte | ninguna | — (ver `LP01-11`) | **121** · 472 |
@@ -193,7 +193,7 @@ con las que Avanzar decide qué cita ofrece cerrar (`docs/sales/01-LA-VENTA-NO-E
 **Qué pide** · «No aplica» se dibuja **vacío**: ni «sin registrar» ni «no» (`LP05-07`, paso 4).
 Confundirlo con «no se sabe» acusaría de no registrar a quien nunca tuvo nada que registrar, y por
 eso `sin_registrar` exige las mismas tres condiciones que la cita cerrable de la cadena de Sales
-(`lib/negocio/cadenaDeCierre.ts:174`).
+(`lib/negocio/citasAlcanzables.ts:163-165`).
 
 ### LP01-09 · Vendió tiene «sí» y «no se sabe»; su «no» está vacío a propósito
 
@@ -242,7 +242,7 @@ vacío. Medido el 2026-09-27: **121** personas con alguna de las seis etiquetas.
 
 - **no saca a nadie de la cohorte**: se marca en la fila y la persona cuenta en su tramo, como la
   cadena de Sales cuenta a todos en su cohorte y en «llegaron a agendar»
-  (`lib/negocio/cadenaDeCierre.ts:199-203`, `LP04-05`);
+  (`lib/negocio/cadenaDeCierre.ts:200-204`, `LP04-05`);
 - **no mueve el tramo, y el tramo no lo absorbe**: son dos hechos distintos. Medido con
   `icp_rechazado`: ICP alto 0 · medio 22 · bajo 45 · sin calificar 1 (`LP14-11`);
 - **de los 25 congelados es una foto**: sus etiquetas ya no se refrescan, y la ficha muestra cuándo se
