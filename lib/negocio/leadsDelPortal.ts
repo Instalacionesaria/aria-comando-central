@@ -221,6 +221,47 @@ interface FilaDeLaSentencia {
   hay_ventas: boolean;
 }
 
+/** Existe una cita de la persona `alias` y, si se pide, que cumpla `y`. */
+function unaCitaDe(alias: string, y: RawBuilder<boolean> | null = null): RawBuilder<boolean> {
+  const a = sql.raw(alias);
+  const deLaPersona = sql<boolean>`ci.org_id = ${a}.org_id and ci.contacto_id = ${a}.id`;
+  return y === null
+    ? sql<boolean>`exists (select 1 from negocio.citas ci where ${deLaPersona})`
+    : sql<boolean>`exists (select 1 from negocio.citas ci where ${deLaPersona} and ${y})`;
+}
+
+/**
+ * **Si la persona agendó**, con los tres valores de `EstadoDeCita`.
+ *
+ * Exportada porque la ficha dice lo mismo que la fila: si el estado de la cita se calculara dos
+ * veces, la tarjeta podría decir «agendó» y la ficha «sólo congeladas» de la misma persona.
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ */
+export function estadoDeCita(alias: string): RawBuilder<EstadoDeCita> {
+  return sql<EstadoDeCita>`(case when ${tieneCitaAlcanzable(alias)} then 'agendo'
+                  when ${unaCitaDe(alias)} then 'solo_congeladas'
+                  else 'sin_cita' end)`;
+}
+
+/**
+ * **Lo que se registró de su asistencia**, o `null` si no había nada que registrar.
+ *
+ * `asistio` lo escribe Avanzar, no el CRM: congelarse no lo vuelve viejo, así que se lee de
+ * cualquier cita. `sin_registrar`, en cambio, exige una cita cerrable, que es la única sobre la que
+ * alguien pudo haber registrado algo. Exportada por lo mismo que `estadoDeCita`.
+ */
+export function asistenciaDe(alias: string): RawBuilder<Asistencia | null> {
+  return sql<Asistencia | null>`(case when ${unaCitaDe(alias, sql<boolean>`ci.asistio is true`)} then 'asistio'
+                  when ${unaCitaDe(alias, sql<boolean>`ci.asistio is false`)} then 'no_asistio'
+                  when ${unaCitaDe(alias, citaCerrable('ci'))} then 'sin_registrar' end)`;
+}
+
+/** **El calendario marcó alguna de sus citas como plantón.** Nunca se suma con `asistenciaDe`. */
+export function plantonDe(alias: string): RawBuilder<boolean> {
+  return unaCitaDe(alias, marcadaComoPlanton('ci'));
+}
+
 /**
  * La cohorte de la ventana, con sus tarjetas y su lista.
  *
@@ -231,13 +272,6 @@ export async function leadsDelPortal(
   dias = DIAS_DE_LA_TASA,
   tope = TOPE_DE_LA_COHORTE,
 ): Promise<LeadsDelPortal> {
-  const deLaPersona = sql<boolean>`ci.org_id = c.org_id and ci.contacto_id = c.id`;
-  /** Existe una cita de la persona y, si se pide, que cumpla `y`. */
-  const unaCita = (y: RawBuilder<boolean> | null = null): RawBuilder<boolean> =>
-    y === null
-      ? sql<boolean>`exists (select 1 from negocio.citas ci where ${deLaPersona})`
-      : sql<boolean>`exists (select 1 from negocio.citas ci where ${deLaPersona} and ${y})`;
-
   const { rows } = await sql<FilaDeLaSentencia>`
     with filas as (
       select c.id,
@@ -255,16 +289,9 @@ export async function leadsDelPortal(
                   else 'bajo' end as tramo,
              coalesce(c.territorio, 'congelado') as territorio,
              ${contactoDescartado('c')} as descartado,
-             case when ${tieneCitaAlcanzable('c')} then 'agendo'
-                  when ${unaCita()} then 'solo_congeladas'
-                  else 'sin_cita' end as cita,
-             /* \`asistio\` lo escribe Avanzar, no el CRM: congelarse no lo vuelve viejo, así que se
-                lee de cualquier cita. \`sin_registrar\`, en cambio, exige una cita cerrable, que es la
-                única sobre la que alguien pudo haber registrado algo. */
-             case when ${unaCita(sql<boolean>`ci.asistio is true`)} then 'asistio'
-                  when ${unaCita(sql<boolean>`ci.asistio is false`)} then 'no_asistio'
-                  when ${unaCita(citaCerrable('ci'))} then 'sin_registrar' end as asistencia,
-             ${unaCita(marcadaComoPlanton('ci'))} as planton,
+             ${estadoDeCita('c')} as cita,
+             ${asistenciaDe('c')} as asistencia,
+             ${plantonDe('c')} as planton,
              ${tieneVenta('c')} as vendio,
              ${montoReportado('c')} as monto,
              ${ventasSinMonto('c')} as ventas_sin_monto

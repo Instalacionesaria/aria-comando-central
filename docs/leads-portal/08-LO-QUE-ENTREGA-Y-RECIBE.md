@@ -107,11 +107,11 @@ de la ficha; el campo y los estados del «Form Landing VSL» (`:208-217`) y su �
 **Requisito** · Se consumen, no se reescriben. La ficha dice por dónde llegó la persona con la misma
 clasificación que Conversion usa para contar a todos (`LP05-07`, `LP05-09`).
 
-**Un detalle que LP-3 tiene que resolver al exportar el helper de host:** el que existe,
-`hostDeLaUltima` (`lib/negocio/recorrido.ts:125-127`), está atado a
-`atribucion_ultima ->> 'url'`. La ficha necesita el host de la `url` y del `referrer` **del primer
-toque** (`LP05-13`). Exportarlo obliga a parametrizar la columna y la clave sin cambiar lo que
-Conversion ya calcula con él.
+**Un detalle que LP-3 resolvió al exportar el helper de host:** `hostDeLaUltima`
+(`lib/negocio/recorrido.ts:125-127`) estaba atado a `atribucion_ultima ->> 'url'`, y la ficha
+necesita el host de la `url` y del `referrer` **del primer toque** (`LP05-13`). Ahora la expresión
+vive en `hostDe` (`lib/negocio/recorrido.ts:306-315`), con la columna y la clave como parámetros, y
+`hostDeLaUltima` la llama: lo que Conversion calcula no cambió.
 
 ### LP08-07 · De Acquisition: la atribución, por lista blanca
 

@@ -291,3 +291,14 @@ function avisoDe(
 
   return partes.length === 0 ? null : partes.join(' ');
 }
+
+/**
+ * La rama de UN valor del campo, o `null` si el valor no tiene rama.
+ *
+ * Para la ficha de Leads Portal, que muestra el valor tal como lo escribe el CRM y necesita saber si
+ * «Nada» o «Sin abrir (0%)» son el valor inicial —el CRM no registró reproducción— sin copiar la
+ * tabla `RAMA`. Lo que no está en la tabla sigue sin forzarse: `null`, no una rama adivinada.
+ */
+export function ramaDelPrecall(valor: string): 'sin_reproduccion' | 'parcial' | 'completo' | null {
+  return RAMA[valor] ?? null;
+}

@@ -48,8 +48,8 @@ documento da un techo, no un piso.
 | `:250` | Campaña, ad set, anuncio y creativo de origen | `campaign` · `utmMedium` y `utmTerm` · `adId` · `utmContent` | 271 · 507 y 273 · 213 · 505 | **a medias** (`LP11-05`) |
 | `:251` | First-touch attribution | `contactos.atribucion_primera` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-101`) | por clave, en `09 § LP09-08` | **sí**, por lista blanca |
 | `:252` | Last-touch attribution | `contactos.atribucion_ultima` (`db/migraciones/048_de_donde_vino_el_lead.sql:103-104`) | sin medir en LP-0 | **sólo como «Llegó por»** (`LP11-05`, `LP11-P01`) |
-| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:325-326`) | respuestas: **sin medir**, ni por carpeta ni sin el puntaje (`09 § LP09-P02`) | **el campo sí; la cobertura, sin medir** (`LP11-06`) |
-| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:323-324`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **sin medir**, porque el 475 incluye al puntaje (`09 § LP09-P02`) | **el campo sí, con corte; la cobertura de las respuestas, sin medir** (`LP11-06`) |
+| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:325-326`) | respuestas: **123**, medido en LP-3 (`09 § LP09-P02`) | **el campo sí, y 123 personas con respuestas** (`LP11-06`) |
+| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:323-324`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **219**, medido en LP-3 sin el puntaje (`09 § LP09-P02`) | **el campo sí, con corte; 219 personas con respuestas** (`LP11-06`) |
 | `:255` | ICP score | `contactos.score` | 471, y 47 de ellos en 0 | **sí** |
 | `:256` | Segmento de ICP | el tramo, derivado del puntaje con 75 y 50 | 108 · 158 · 158 · 169 sin calificar | **sí**, por decisión (`LP11-07`) |
 | `:257` | Estado del funnel | no hay columna: se deriva | — | **derivado** (`LP11-08`) |
@@ -165,8 +165,8 @@ como un formulario completo. Y el estado lleva su corte: el campo **no se escrib
 2026-08-31** (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:114`), así que «vacío» en un
 contacto de septiembre no es «no llenó el formulario».
 
-Cuántos contestaron las preguntas propiamente dichas **no está medido**: el 475 de LP-0 cuenta al
-puntaje como una respuesta (`09 § LP09-P02`).
+Cuántos contestaron las preguntas propiamente dichas se midió en LP-3: **336**, porque el 475 de
+LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 
 ### LP11-07 · ICP score y segmento (`§ 5.3:255-256`)
 
@@ -354,8 +354,8 @@ anotan en `10-LO-QUE-NO-ES-UN-REQUISITO.md`.
 
 ### LP11-P01 · ¿La ficha muestra el último toque como renglón propio?
 
-El `§ 5.3:252` lo pide, la columna existe (`atribucion_ultima`) y su cobertura **no se midió en
-LP-0** (`09 § LP09-P05`). Hoy la pestaña sólo saca de ahí la familia de «Llegó por». Mostrar también
+El `§ 5.3:252` lo pide, la columna existe (`atribucion_ultima`) y su cobertura, medida en LP-3,
+es de **566** de 593 (`09 § LP09-P05`). Hoy la pestaña sólo saca de ahí la familia de «Llegó por». Mostrar también
 sus UTM es la misma lista blanca aplicada a otra columna. En contra: dos bloques de UTM casi iguales
 en la misma ficha se leen mal, y Conversion ya advirtió que confundirlos hace que un departamento
 mida cero y lo reporte como ausencia (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:86-88`).

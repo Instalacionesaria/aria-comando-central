@@ -116,14 +116,14 @@ const HOSTS: Record<string, Familia> = {
 };
 
 /**
- * El host de la última dirección, en minúsculas y sin puerto. `null` si no hay dirección.
+ * El host de la última dirección, con `hostDe`: la única definición de host del sistema.
  *
- * `substring` con la expresión `://([^/?#:]+)` y no `split`: hay URLs con la cadena de consulta
- * pegada al host sin barra, y cortar por `/` las dejaría enteras. El `#` y el `:` están en la clase
- * negada porque un ancla o un puerto irían al host y lo harían único por contacto.
+ * Vivía acá entera; se mudó al final del archivo cuando Leads Portal necesitó el host de la `url` y
+ * del `referrer` del PRIMER toque. El SQL que produce es el mismo texto, carácter por carácter, y eso
+ * importa: `familiaDelRecorrido` va en el `select` y en el `group by`, que se reconocen por el texto.
  */
 function hostDeLaUltima(alias: string) {
-  return sql<string | null>`lower(substring(${sql.raw(alias)}.atribucion_ultima ->> 'url' from '://([^/?#:]+)'))`;
+  return hostDe(alias, 'atribucion_ultima', 'url');
 }
 
 /**
@@ -281,4 +281,35 @@ export async function corteDeEpoca(dias: number): Promise<CorteDeEpoca> {
     .executeTakeFirstOrThrow();
 
   return { fecha, laVentanaLoCruza: f.cruza };
+}
+
+/** Las columnas de atribución y las claves de dirección que `hostDe` sabe leer. Listas cerradas. */
+const COLUMNAS_DE_ATRIBUCION = ['atribucion_primera', 'atribucion_ultima'] as const;
+const CLAVES_DE_DIRECCION = ['url', 'referrer'] as const;
+
+/**
+ * El host de una dirección de la atribución, en minúsculas y sin puerto. `null` si no hay dirección.
+ *
+ * **La única definición de host del sistema.** Conversion la usa sobre la `url` del último toque para
+ * clasificar el recorrido, y la ficha de Leads Portal sobre la `url` y el `referrer` del primero para
+ * mostrar sólo el sitio: la dirección entera puede llevar un token de la persona.
+ *
+ * `substring` con la expresión `://([^/?#:]+)` y no `split`: hay URLs con la cadena de consulta
+ * pegada al host sin barra, y cortar por `/` las dejaría enteras. El `#` y el `:` están en la clase
+ * negada porque un ancla o un puerto irían al host y lo harían único por contacto.
+ *
+ * La columna y la clave van por `sql.raw`, como los literales de `familiaDelRecorrido`: con
+ * parámetros, el `select` y el `group by` de Conversion recibirían `$n` distintos y PostgreSQL dejaría
+ * de reconocerlos como la misma expresión. Es seguro porque las dos salen de listas cerradas de este
+ * archivo, y lo que no esté en ellas lanza antes de llegar al SQL.
+ */
+export function hostDe(
+  alias: string,
+  columna: (typeof COLUMNAS_DE_ATRIBUCION)[number],
+  clave: (typeof CLAVES_DE_DIRECCION)[number],
+) {
+  if (!COLUMNAS_DE_ATRIBUCION.includes(columna) || !CLAVES_DE_DIRECCION.includes(clave)) {
+    throw new Error(`hostDe: «${columna} ->> ${clave}» no es una dirección de la atribución.`);
+  }
+  return sql<string | null>`lower(substring(${sql.raw(alias)}.${sql.raw(columna)} ->> ${sql.raw(`'${clave}'`)} from '://([^/?#:]+)'))`;
 }

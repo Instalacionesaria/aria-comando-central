@@ -277,7 +277,7 @@ respuesta**; ese orden es una propuesta de este mapa, no del plan.
 | | `LP06-P01` | ¿La porción del total lleva piso? |
 | | `LP03-P02` | ¿«Sin ventas registradas» se evalúa en la empresa o en la ventana? Hoy dan lo mismo |
 | | `LP02-P01` = `LP14-P04` | ¿Se publica la tasa de agenda por tramo? Es lo único que hoy diría si el corte separa algo |
-| **LP-3** | `LP09-P02`, `LP09-P03`, `LP09-P05` | Tres mediciones que faltan: el cuestionario sin el puntaje, el reparto de «Llegó por», y el teléfono, el correo, la zona horaria y el último toque |
+| **LP-3** | `LP09-P02`, `LP09-P03`, `LP09-P05` | **Medidas en LP-3** el 2026-09-27: 336 contestaron el cuestionario, «Llegó por» repartido en las siete familias, y teléfono 558 · correo 590 · zona horaria 313 · último toque 566 |
 | | `LP05-P01` | ¿Entran los otros tres campos del grupo `interacciones`? |
 | | `LP05-P02` = `LP09-P04` | ¿Entran `medium`, `campaignId`, `adSource` y el objetivo del anuncio a la lista blanca? |
 | | `LP05-P03` | ¿La ficha muestra las etiquetas crudas del CRM? |

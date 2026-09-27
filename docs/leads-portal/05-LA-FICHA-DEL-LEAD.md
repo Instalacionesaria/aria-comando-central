@@ -165,8 +165,9 @@ acciones y siete secciones:
     (Meta)». Así entran las dos cosas que el § 5.3 pide por separado: las respuestas de Meta Lead Ads
     y las de la landing (`§ 5.3:253-254`);
   - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:481-487`);
-  - **sin «N de M».** Son dos formularios con preguntas distintas y nadie contesta los dos: un «5 de
-    17» diría que faltan doce respuestas que la persona nunca tuvo delante;
+  - **sin «N de M».** Son dos formularios con preguntas distintas y casi nadie contesta los dos —6
+    personas, medido en LP-3—: un «5 de 17» diría que faltan doce respuestas que la persona nunca tuvo
+    delante;
   - **el puntaje aparece una sola vez**, en la sección de calificación. Hoy saldría dos veces: como
     «Calificación» (`lib/negocio/ficha.ts:502`) y como el propio campo del CRM, que vive en una de las
     carpetas del grupo (`lib/ghl/contrato.ts:319-322`);
@@ -175,8 +176,8 @@ acciones y siete secciones:
   - los valores se muestran como texto (`LP05-04`).
 - **Medido, con una advertencia:** **475** contactos tienen algún valor en el grupo `calificacion`.
   **Esa cifra es un techo, no la cobertura del cuestionario:** el grupo incluye el campo del puntaje,
-  que por sí solo está en 471. Cuántos contestaron alguna pregunta de verdad se mide al construir
-  LP-3.
+  que por sí solo está en 471. **Medido en LP-3 (2026-09-27): 336 contestaron alguna pregunta**, 219
+  el formulario de la landing y 123 el de Meta (`LP09-P02`).
 
 ### LP05-09 · El estado del «Form Landing VSL» va al lado, con su corte del 31 de agosto
 
@@ -306,11 +307,11 @@ acciones y siete secciones:
   `gaClientId` (41), ni una clave desconocida. Es la prueba de LP-3, que usa un JWT de ejemplo.
 - **Tampoco viajan hoy, porque la lista es blanca y no negra:** `medium` (552), `mediumId` (548),
   `campaignId` (358) y `adSource` (214). Ver `LP05-P02`.
-- **El host se saca con una sola definición.** Hoy existe `hostDeLaUltima`
-  (`lib/negocio/recorrido.ts:118-127`), pero es privada y está atada a
-  `atribucion_ultima ->> 'url'` (`lib/negocio/recorrido.ts:126`). Para servir a `url` y a `referrer`
-  del primer toque, hay que exportarla recibiendo la columna y la clave, con la misma expresión. Si
-  no, el sistema tendría dos ideas de qué es un host.
+- **El host se saca con una sola definición.** Es `hostDe` (`lib/negocio/recorrido.ts:306-315`),
+  que LP-3 exportó recibiendo la columna y la clave. `hostDeLaUltima`, que era privada y estaba atada
+  a `atribucion_ultima ->> 'url'`, pasó a llamarla (`lib/negocio/recorrido.ts:125-127`) y produce el
+  mismo SQL, carácter por carácter. Si la ficha sacara el host por su cuenta, el sistema tendría dos
+  ideas de qué es un host.
 
 ### LP05-14 · Lo que la maqueta dibuja y no existe se declara como hueco, no se deja en blanco
 

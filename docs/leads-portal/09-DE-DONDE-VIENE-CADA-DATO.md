@@ -160,8 +160,8 @@ La ficha de la maqueta está en `lib/aios/leads-portal.js:223-282`. Se recorre e
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Llamar | `lib/aios/leads-portal.js:226`, sin manejador | `contactos.telefono` (`db/migraciones/011_negocio_closer_setter.sql:70`) como `tel:` | **no se midió en LP-0**; el plan anota 558 del 2026-09-26, sin consulta versionada (`LP09-P05`) |
-| Email | `lib/aios/leads-portal.js:227`, sin manejador | `contactos.email` (`db/migraciones/011_negocio_closer_setter.sql:71`) como `mailto:` | **no se midió en LP-0**; el plan anota 590 del 2026-09-26, sin consulta versionada (`LP09-P05`) |
+| Llamar | `lib/aios/leads-portal.js:226`, sin manejador | `contactos.telefono` (`db/migraciones/011_negocio_closer_setter.sql:70`) como `tel:` | **558** de 593, medido en LP-3 (`LP09-P05`) |
+| Email | `lib/aios/leads-portal.js:227`, sin manejador | `contactos.email` (`db/migraciones/011_negocio_closer_setter.sql:71`) como `mailto:` | **590** de 593, medido en LP-3 (`LP09-P05`) |
 | ↗ GHL | `lib/aios/leads-portal.js:228`, `:284-285` | — | se borra: sin enlace a GoHighLevel (`12-QUIEN-VE-QUE.md`) |
 | Teléfono, Email | `lib/aios/leads-portal.js:281` | las mismas dos columnas | sólo en la ficha |
 | Closer asignado | `lib/aios/leads-portal.js:281` | `crm_asignado_a` cruzado con `negocio.closer_asignado` y el nombre de `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:77-95`) | `LP09-10` |
@@ -212,7 +212,7 @@ La ficha de la maqueta está en `lib/aios/leads-portal.js:223-282`. Se recorre e
 | Punto de captura (`:270`) | el host de `url` y de `referrer` | 331 · 66 | sólo el host |
 | utm_source (`:271`) | `utmSource` | 510 | sí |
 | utm_medium (`:271`) | `utmMedium` | 507 | sí |
-| utm_campaign (`:272`) | **la clave `utmCampaign` no está en el primer toque de ningún contacto**: el nombre de la campaña vive en `campaign`. El último toque no se midió en LP-0 (`LP09-P05`) | 0 en el primer toque | — |
+| utm_campaign (`:272`) | **la clave `utmCampaign` no está en el primer toque de ningún contacto**: el nombre de la campaña vive en `campaign`. En el último toque tampoco aparece: medido en LP-3 (`LP09-P05`) | 0 en el primer toque | — |
 | utm_content (`:272`) | `utmContent` | 505 | sí |
 
 ---
@@ -470,7 +470,7 @@ Form (Meta)», el mismo cuestionario para quien entra por el formulario de Meta.
 **Contactos con alguna respuesta del grupo `calificacion`: 475.** Pero esa cifra **cuenta al propio
 puntaje como una respuesta**, porque «Puntaje | ICP» vive en la carpeta «Contact», que es del mismo
 grupo (`lib/ghl/contrato.ts:319-322`). Con 471 puntajes, el 475 dice casi nada sobre el cuestionario.
-La cobertura de las preguntas propiamente dichas **no está medida**: `LP09-P02`.
+La cobertura de las preguntas propiamente dichas se midió en LP-3: **336**, en `LP09-P02`.
 
 ```sql
 select count(*) from c where exists (
@@ -653,7 +653,13 @@ select count(*) filter (where exists (select 1 from negocio.citas x
   from c;
 ```
 
-### LP09-P02 · ¿Cuántos contestaron el cuestionario, sin contar el puntaje? — **sin medir**
+### LP09-P02 · ¿Cuántos contestaron el cuestionario, sin contar el puntaje? — **medida en LP-3**
+
+**Medido el 2026-09-27 a las 02:19 UTC: 336 de 593 contestaron alguna pregunta.** Por carpeta,
+«📁 Score | ICP Nuevo» (la landing) 219 y «📁 Score | ICP Lead Form (Meta)» 123; como suman 342, **6
+personas contestaron los dos**. Dejar afuera la carpeta «Contact» o sólo el campo del puntaje da lo
+mismo, 336: los otros dos campos de «Contact» no agregan a nadie. La consulta fue ésta, partida por
+carpeta.
 
 El 475 incluye al puntaje (`LP09-09`). La cobertura real del cuestionario se mide dejando afuera la
 carpeta «Contact»:
@@ -669,7 +675,13 @@ select count(*) from c where exists (
 
 Y la misma consulta por carpeta dice cuántos contestaron el de la landing y cuántos el de Meta.
 
-### LP09-P03 · ¿Cómo se reparte «Llegó por»? — **sin medir, y sobre otra columna**
+### LP09-P03 · ¿Cómo se reparte «Llegó por»? — **medida en LP-3, sobre el último toque**
+
+**Medido el 2026-09-27 a las 02:20 UTC, con los hosts de `familiaDelRecorrido`:** landing 234 ·
+widget 190 · sin página 90 · sin rastro 27 · Meta, navegador interno 23 · precall 20 · otra 9. En el
+último toque no aparece ninguno de los dos hosts de abajo; las 9 de «otra» son una página de empleo
+del dominio propio (4) y dos previsualizaciones de `vibepreview.com` (5), las mismas que el
+comentario de `HOSTS` ya menciona (`lib/negocio/recorrido.ts:104-105`).
 
 `familiaDelRecorrido` lee el host de **`atribucion_ultima`** (`lib/negocio/recorrido.ts:125-127`),
 y la medición de hosts de arriba es sobre **`atribucion_primera`**. Son el último toque y el primero,
@@ -694,7 +706,11 @@ nombra.
 anuncio, no de la persona. No está en la lista blanca del plan. Lo más sensato es contestarla junto
 con `LP05-P02`, con la misma regla para las cuatro claves. **Decide el usuario.**
 
-### LP09-P05 · ¿Cuántos contactos tienen teléfono, correo, zona horaria y último toque? — **sin medir en LP-0**
+### LP09-P05 · ¿Cuántos contactos tienen teléfono, correo, zona horaria y último toque? — **medida en LP-3**
+
+**Medido el 2026-09-27 a las 02:20 UTC, sobre los 593:** teléfono **558** · correo **590** · zona
+horaria **313** · último toque **566**. Las dos primeras confirman las del plan, ahora con consulta. En
+el último toque, `utmCampaign` tampoco aparece, igual que en el primero.
 
 La medición de LP-0 no los contó, y los botones «Llamar» y «Email» de la ficha dependen de los dos
 primeros. **Teléfono y correo sí tienen una cifra anterior:** el plan aprobado anota 590 con correo
