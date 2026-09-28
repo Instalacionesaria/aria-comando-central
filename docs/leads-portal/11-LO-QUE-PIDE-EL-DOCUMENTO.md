@@ -173,7 +173,7 @@ LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 El puntaje lo calcula el CRM —«Puntaje | ICP», 0 a 100— y llega a `contactos.score` por la
 sincronización (`lib/negocio/sincronizar.ts:421`). El documento no dice quién lo calcula: dice que
 existe. Que el sistema lo calcule por su cuenta, con las respuestas del formulario, **queda a
-futuro** y se documenta en `docs/futuro/icp-interno-calculado.md`.
+futuro** y se documenta en `docs/OTROS/futuro/icp-interno-calculado.md`.
 
 El segmento **no es un dato que venga**: es un corte que alguien decide. La decisión del 2026-09-26
 es la de la maqueta —ICP alto ≥ 75, ICP medio 50-74, ICP bajo 1-49, «Sin calificar» sin puntaje o en

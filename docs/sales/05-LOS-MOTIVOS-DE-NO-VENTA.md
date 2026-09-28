@@ -103,7 +103,7 @@ Dos consecuencias, y las dos son requisitos:
    `lib/negocio/consumoDelPrecall.ts:74-85` usa con `-20%` y `Clic a link`. Un agrupador que asuma el
    catálogo **pierde en silencio** todo lo que el CRM o el producto agreguen después.
 
-Y es la regla 12 del departamento (`docs/estado actual/05-SALES.md:195`).
+Y es la regla 12 del departamento (`docs/OTROS/estado actual/05-SALES.md:195`).
 
 ---
 
@@ -117,7 +117,7 @@ registran en `resultados.detalle`; hay una sola respuesta en toda la base, del 2
 
 ### S5-P01 · ¿El CRM guarda motivos de pérdida en otro lado? — **abierta**
 
-`docs/estado actual/05-SALES.md:193` afirma que las opciones del catálogo viven en `resultados.detalle`
+`docs/OTROS/estado actual/05-SALES.md:193` afirma que las opciones del catálogo viven en `resultados.detalle`
 **y no en el CRM**. No comprobé si GoHighLevel tiene un campo de «motivo de pérdida» o una etapa de
 pipeline que lo exprese, ni si alguna etiqueta lo codifica.
 

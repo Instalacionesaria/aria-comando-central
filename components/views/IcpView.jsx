@@ -10,7 +10,7 @@
    `VISTAS` de `scripts/paridad.mjs`. Es la primera que sale. La compuerta de paridad
    sigue comparando las otras nueve, y ahí está su valor: el día que se reactifique
    otra, la comparación tiene que seguir siendo confiable para las que no cambiaron.
-   El razonamiento completo está en `docs/capa-base/ETAPA-9.md`.
+   El razonamiento completo está en `docs/OTROS/capa-base/ETAPA-9.md`.
 
    El envoltorio —`.view` > `.view-scroll cre-scroll` > `.cre-head`— sí se conserva,
    porque es el que hace que la vista se comporte como las otras nueve: el mismo

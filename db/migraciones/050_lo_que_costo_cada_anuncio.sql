@@ -44,7 +44,7 @@
 --
 -- ── `utmTerm` ES EL IDENTIFICADOR DEL CONJUNTO, Y HAY UN DOCUMENTO QUE DICE LO CONTRARIO ──
 --
--- `docs/estado actual/06-INTEGRACIONES-GHL.md` afirma que el conjunto de anuncios llega sólo como
+-- `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md` afirma que el conjunto de anuncios llega sólo como
 -- nombre, y sobre eso construye una de las tres razones para conectar Meta. Los 9 valores distintos
 -- de `utmTerm` cruzan 9 de 9 contra los conjuntos de GoHighLevel. El documento hay que corregirlo.
 -- ═════════════════════════════════════════════════════════════════════════════

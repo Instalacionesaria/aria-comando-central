@@ -145,11 +145,11 @@ select current_setting('app.org_id', true);  -- tiene que devolver null o vacío
 
 ## Paridad de versión mayor — y las once vías sin medir
 
-`docker-compose.yml` fija `postgres:18-alpine`. `docs/capa-base/ETAPA-0.md` ya declaraba la paridad de versión
+`docker-compose.yml` fija `postgres:18-alpine`. `docs/OTROS/capa-base/ETAPA-0.md` ya declaraba la paridad de versión
 mayor como requisito *"contra el proveedor administrado, que todavía no existe"*. Ahora existe, y
 Supabase corre 15 o 17.
 
-No es una preferencia de prolijidad. `docs/capa-base/ETAPA-2.md` afirma que *"PostgreSQL 18 exige privilegio
+No es una preferencia de prolijidad. `docs/OTROS/capa-base/ETAPA-2.md` afirma que *"PostgreSQL 18 exige privilegio
 sobre todas las columnas para cualquier referencia de fila completa, así que el permiso por columna
 es hermético"*. **Toda la defensa por columna sobre `identidad.usuarios.password_hash` se validó
 contra un comportamiento de PG18.** De las doce vías indirectas documentadas, **una sola está en la

@@ -613,7 +613,7 @@ Devuelve el documento en Markdown: un título con #, secciones con ##, subseccio
  * Lanza `MetodologiaIlegible` si el archivo no está: **no hay prompt suplente**. El hub sí tiene
  * uno —una copia embebida de cada metodología— y acá se decidió no portarlo, porque dos copias del
  * mismo prompt divergen en la primera corrección y el síntoma es un documento generado con la
- * metodología vieja, sin ningún error. Ver `docs/capa-base/ETAPA-9.md`.
+ * metodología vieja, sin ningún error. Ver `docs/OTROS/capa-base/ETAPA-9.md`.
  */
 /**
  * Los datos que interpola la plantilla de una herramienta.

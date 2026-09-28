@@ -14,7 +14,7 @@
 // tres departamentos agregó una copia.
 //
 // La regla 9 del departamento de Sales lo dice con su commit: *«el filtro "alcanzables y no
-// descartadas" es del sistema, no de una pantalla»* (`docs/estado actual/05-SALES.md:193-195`).
+// descartadas" es del sistema, no de una pantalla»* (`docs/OTROS/estado actual/05-SALES.md:193-195`).
 //
 // ── SON DOS PREGUNTAS DISTINTAS, Y CONFUNDIRLAS ES EL DEFECTO FINO ──────────
 //
@@ -120,7 +120,7 @@ export function marcadaComoPlanton(alias = 'citas'): RawBuilder<boolean> {
  * que más fácil se confunde con `alcanzable`.
  *
  * `exists` y no un `join` con `count`: un contacto con dos citas pesaría doble. Ese defecto ya se
- * midió una vez y está anotado en `docs/estado actual/02-CREATIVE.md:287`, donde infló una pieza de
+ * midió una vez y está anotado en `docs/OTROS/estado actual/02-CREATIVE.md:287`, donde infló una pieza de
  * 109 a 112.
  *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.

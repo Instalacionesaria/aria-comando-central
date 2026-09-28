@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `scripts/medir-analizadores.sql` y `scripts/comparar-con-brain.sql` se corren a mano contra
-// producción, y su salida termina en una consola, en un mensaje o en `docs/analizadores/ANALIZADORES.md`, que es
+// producción, y su salida termina en una consola, en un mensaje o en `docs/OTROS/analizadores/ANALIZADORES.md`, que es
 // un repositorio PÚBLICO. Tres cosas que no fallan en ninguna corrida y hay que impedir de antemano:
 //
 //   · **que escriban.** `supabase.mjs leer` manda `read_only: true` y una escritura se rechaza; pero

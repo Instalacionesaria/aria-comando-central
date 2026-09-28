@@ -33,7 +33,7 @@ $31.000 + $24.200 = $55.200       revenue = suma de las dos filas
 
 **La maqueta es aritméticamente consistente de punta a punta.** Quien la audite sumando va a
 encontrar que cierra, y va a concluir que los números son reales. Es exactamente el riesgo que
-`docs/estado actual/05-SALES.md:201` nombra: *«la pantalla es internamente consistente, y por eso
+`docs/OTROS/estado actual/05-SALES.md:201` nombra: *«la pantalla es internamente consistente, y por eso
 engaña»*.
 
 ---

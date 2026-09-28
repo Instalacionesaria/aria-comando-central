@@ -2,7 +2,7 @@
 
 > Requisitos derivados del prototipo de Conversion, de la especificación funcional, y de una
 > **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el `archivo:línea`
-> del que sale. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
+> del que sale. El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15, más las mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -59,7 +59,7 @@ flecha entre cada par (`:264`).
 
 **Estado** · Es correcto **cuando todos pasan por el mismo sitio**. Hoy el 44 % agenda directo sin
 pisar la landing (`CV1-03`), así que la flecha entre `Landing` y `Agenda` afirma un paso que la
-mayoría no da. Ver `CV1-04` y la regla 11 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:451`.
+mayoría no da. Ver `CV1-04` y la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:451`.
 
 **Lo que sobrevive del requisito**: la idea de mostrar el recorrido como etapas con su caída. Lo que
 cambia es que hay **dos recorridos** y cada uno tiene las suyas.

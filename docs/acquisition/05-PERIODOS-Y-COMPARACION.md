@@ -19,7 +19,7 @@
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 
 El control de período es la pieza donde una pantalla de métricas miente más barato. No hace falta
 equivocarse en una fórmula: alcanza con cambiar la ventana. Las cifras siguen siendo correctas una
@@ -27,7 +27,7 @@ por una, la pantalla no falla, y lo que cambió no es el negocio sino cuánto de
 guardado. Este proyecto ya pagó esa cuenta dos veces —la tasa de cancelación que «subía hacia el
 presente» y el booking rate que «se degradaba» al mirar más atrás— y las dos veces el culpable fue
 el mismo: **la cobertura del dato no es constante en el tiempo, y el control no lo decía**
-(`docs/estado actual/07-REGLAS-TRANSVERSALES.md:583-587`).
+(`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:583-587`).
 
 El prototipo de Acquisition trae la maquinaria de período casi entera y bien pensada: dos ventanas
 por consulta, una regla de comparación central, un umbral de planicie, un eje para las métricas
@@ -529,7 +529,7 @@ en una celda de tabla.**
 
 ### A5-23 · Cada período declara la cobertura del dato en ESE período
 
-**Rastro del requisito:** no está en el prototipo. Sale de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:583-587`
+**Rastro del requisito:** no está en el prototipo. Sale de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:583-587`
 («D · Concluir una tendencia de un sesgo») y de `lib/negocio/periodo.ts:147` y `:158`
 (`COLA_DESPROPORCIONADA` y `avisoDeLaCola`).
 

@@ -674,7 +674,7 @@ test('07 § 1 · ninguna función tiene dos firmas', async () => {
   //
   // Lo cual NO significa que el hallazgo no valga. Una RPC sobrecargada expuesta por
   // PostgREST tiene el modo de falla exacto que este comentario describe, así que la
-  // consulta contra `public` queda escrita en `docs/produccion/COMPATIBILIDAD.md` para correrla a
+  // consulta contra `public` queda escrita en `docs/OTROS/produccion/COMPATIBILIDAD.md` para correrla a
   // mano contra la base real y anotar lo que devuelva. Es un hallazgo sobre esa base,
   // no una prueba de este repositorio.
   const dobles = await filas<{ esquema: string; nombre: string; firmas: string }>(

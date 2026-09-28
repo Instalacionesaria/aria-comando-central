@@ -20,7 +20,7 @@
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 > **Este documento es el inverso de los otros ocho: enumera lo que el prototipo dibuja y el
 > sistema real NO tiene que construir.** Cada entrada dice qué hacía el andamio en la maqueta,
 > por qué no se implementa, y —cuando lo hay— qué requisito revela al quitarlo.
@@ -582,7 +582,7 @@ pantalla de departamento. `lib/aios/conversation.js` eran 559 líneas de las cua
 literales inventados, y entre ellos **el agente se llamaba «Sofía», un diálogo saludaba a «Rodrigo»,
 y «landing BCL» —iniciales de un cliente real— aparecía en tres sitios**. El módulo entero se borró;
 el porqué está documentado en `components/views/ConversationView.jsx:12-33` y en
-`docs/estado actual/04-CONVERSATION.md:128`, que además deja constancia de la verificación posterior:
+`docs/OTROS/estado actual/04-CONVERSATION.md:128`, que además deja constancia de la verificación posterior:
 «**Ningún nombre de persona ni de marca real quedó en el código de esta pantalla**», comprobado con
 grep, y «las marcas que sí se ven en pantalla —los dos nombres de campaña de la tabla de
 atribución— **vienen de la base**, no del código».

@@ -4,7 +4,7 @@
 > Acquisition no tuvo— de una **medición propia contra la API de GoHighLevel** hecha el 2026-09-18.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como
 > pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/02-CREATIVE.md`, medido el 2026-09-15, más las
+> El estado de cada dato sale de `docs/OTROS/estado actual/02-CREATIVE.md`, medido el 2026-09-15, más las
 > mediciones nuevas de `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`.
 >
 > **`lib/aios/creative.js` YA NO EXISTE.** Se borró el 2026-09-19, y con él los 201 literales
@@ -149,5 +149,5 @@ Tres fuentes, y el orden de precedencia importa porque **las tres se contradicen
    ésas no están en el documento: qué se ordena, cómo se parte la biblioteca, qué se abre al clicar.
 
 Y una cuarta, que no es fuente pero es ley: **las diez reglas propias de
-`docs/estado actual/02-CREATIVE.md` § 6**. Salieron de medir producción y cada una nombra un defecto
+`docs/OTROS/estado actual/02-CREATIVE.md` § 6**. Salieron de medir producción y cada una nombra un defecto
 concreto. Están convertidas en requisitos numerados a lo largo de `01`, `05` y `08`.

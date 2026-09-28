@@ -94,7 +94,7 @@ contactos** — el 65 % del volumen —, y la pantalla las rotula «bajo el prom
 
 Un creativo de BOFU le habla a gente que ya conoce la oferta; uno de TOFU, a desconocidos. **Que el
 primero agende más no es una virtud de la pieza: es la etapa.** Por eso la regla 3 de
-`docs/estado actual/02-CREATIVE.md` prohíbe compararlos, y por eso el corte tiene que ser **dentro de
+`docs/OTROS/estado actual/02-CREATIVE.md` prohíbe compararlos, y por eso el corte tiene que ser **dentro de
 la etapa** (`C3-06`).
 
 ### C3-06 · El corte se hace DENTRO de cada etapa, y nunca entre etapas

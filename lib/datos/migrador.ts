@@ -1,5 +1,5 @@
 // ADR-0002 — Las migraciones son versionadas y se aplican igual en todos lados.
-// INNEGOCIABLE. Ver docs/especificacion/TRAZABILIDAD.md.
+// INNEGOCIABLE. Ver docs/OTROS/especificacion/TRAZABILIDAD.md.
 //
 // El corredor de migraciones: ordena, registra y CONDICIONA el SQL.
 //

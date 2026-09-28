@@ -17,7 +17,7 @@
 
 > Requisitos derivados de `lib/aios/creative.js:91-102` y `components/views/CreativeView.jsx:30-49`,
 > contra el vocabulario real de `lib/negocio/periodo.ts`.
-> Las mediciones de sesgo de ventana son de `docs/estado actual/02-CREATIVE.md:225-228`, del 2026-09-16.
+> Las mediciones de sesgo de ventana son de `docs/OTROS/estado actual/02-CREATIVE.md:225-228`, del 2026-09-16.
 
 ---
 
@@ -90,7 +90,7 @@ eventos contables. Con 100 impresiones, una reproducción mueve un punto entero.
 
 **Qué es** · Los contactos no envejecen. Una pieza que trajo 40 contactos hace tres semanas trajo 40
 contactos, y ampliar la ventana sólo agrega denominador.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 7.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 7.
 **Estado** · Medido allí: en 14 días **4 piezas** superan el piso; en 30 días, **18 piezas distintas y
 6 sobre el piso**. Para las cifras del lado del lead, la ventana ancha es mejor.
 
@@ -98,7 +98,7 @@ contactos, y ampliar la ventana sólo agrega denominador.
 
 **Qué es** · Una cita agendada dentro de la ventana puede no haber ocurrido todavía. No es que haya
 salido mal: **no pasó**.
-**Rastro** · `docs/estado actual/02-CREATIVE.md:225`, medido el 2026-09-16 sobre `negocio.citas`:
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:225`, medido el 2026-09-16 sobre `negocio.citas`:
 
 | ventana | citas alcanzables | congeladas | proporción |
 |---|---:|---:|---:|
@@ -136,7 +136,7 @@ es la regla 9 de `02-CREATIVE.md` aplicada a una columna en vez de a una cohorte
 
 ### C5-11 · Las cifras del lead se miden sobre `alta_en_el_crm`
 
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 9; el índice que lo sirve es
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 9; el índice que lo sirve es
 `contactos_por_alta`, de `db/migraciones/052`.
 **Estado** · Construible. Y hay que decirlo, porque la alternativa razonable —la fecha de la cita— daría
 otra cohorte y otras cifras.

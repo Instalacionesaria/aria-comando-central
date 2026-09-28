@@ -4,7 +4,7 @@
 > Creative— de una **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el
 > `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como
 > requisito.
-> El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el 2026-09-15, más las
+> El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el 2026-09-15, más las
 > mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -156,7 +156,7 @@ es requisito —nadie decidió integrarlos—: es una **afirmación falsa en pan
 | `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md` | **La medición del 2026-09-20 contra producción.** Es a la vez fuente y corrección |
 
 **Si se va a leer uno solo, que sea el `14`.** No porque sea el más importante para el producto, sino
-porque es el que cambia lo que ya estaba escrito: `docs/estado actual/03-CONVERSION.md:32` afirma que
+porque es el que cambia lo que ya estaba escrito: `docs/OTROS/estado actual/03-CONVERSION.md:32` afirma que
 de las cinco cosas que Acquisition le debe a Conversion según el `§ 18.16`, *«ninguna llega hoy»*, y
 nombra «Landing page views» entre las inexistentes. **Eso dejó de ser cierto el 2026-09-19**: llega,
 por anuncio y por día, en `negocio.metricas_de_anuncio.acciones`.
@@ -189,7 +189,7 @@ la constante `CV` (`conversion.js:10`), los contenedores `#cvStats`, `#cvInfo`, 
 ## La cuarta fuente-ley
 
 Además del prototipo, del documento funcional y de la medición propia, esta carpeta obedece a
-**`docs/estado actual/03-CONVERSION.md:213-256`**, que tiene **nueve reglas propias del
+**`docs/OTROS/estado actual/03-CONVERSION.md:213-256`**, que tiene **nueve reglas propias del
 departamento** medidas el 2026-09-15. Las tres que gobiernan todo lo demás:
 
 1. **Los ceros son tres, no dos.** No hay campo · el campo dice cero · el medidor no reportó.

@@ -165,7 +165,7 @@ puntaje».
 - **Por qué importa que sea uno solo.** Appointment Flow también consume el segmento
   (`§ 10.5:719-720`) y el documento pide un show rate por ICP (`§ 10.7:757`). El día que otra pantalla
   lo necesite, importa la misma función; y el día que exista un ICP propio
-  (`docs/futuro/icp-interno-calculado.md`), cambia la fuente del número y no el corte.
+  (`docs/OTROS/futuro/icp-interno-calculado.md`), cambia la fuente del número y no el corte.
 - **La clave del cuarto tramo cambia de nombre.** La maqueta lo llama `nc`
   (`aios-command-center_1.html:3052`, `aios-command-center_1.html:4724`) y así lo pintan sus estilos
   (`app/aios.css:2374-2377`). La clave nueva es `sin_calificar`, y nada fuera de la maqueta usa `nc`.
@@ -328,7 +328,7 @@ pasaba de **41,5 a 53,0** al sacarlos y cambiaba de lugar en la tabla
   que Lead Flow no puede consumirlo antes de que exista (`§ 9.6:583-586`). El puntaje de hoy no es
   ése: lo calcula el CRM con reglas que no están en este repositorio.
 - **Un ICP calculado por Comando Central es futuro, y sólo se documenta:**
-  `docs/futuro/icp-interno-calculado.md` explica qué se quiere, cómo podría quedar y cómo validarlo
+  `docs/OTROS/futuro/icp-interno-calculado.md` explica qué se quiere, cómo podría quedar y cómo validarlo
   contra los 471 puntajes del CRM. Lo que esta carpeta le deja preparado es LP14-06: el tramo se
   alimenta desde un único punto, así que cambiar la fuente del número no toca la pantalla.
 

@@ -11,7 +11,7 @@
 // también, y ninguna es de credenciales.
 //
 // Así que `GET`/`PUT /api/admin/credenciales` sigue la forma de las rutas de administración que ya
-// existen, y queda declarado en `docs/capa-base/ETAPA-6.md`. Lo que **sí** es del documento es todo lo demás:
+// existen, y queda declarado en `docs/OTROS/capa-base/ETAPA-6.md`. Lo que **sí** es del documento es todo lo demás:
 // el enmascarado, los cuatro estados con su texto, y que el valor no sale nunca.
 //
 // ── EL ENMASCARADO SE CALCULA EN EL SERVIDOR ─────────────────────────────────

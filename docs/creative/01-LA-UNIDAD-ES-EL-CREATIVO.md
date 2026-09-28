@@ -16,7 +16,7 @@
 > (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
 
 > Requisitos derivados del prototipo (`lib/aios/creative.js`) y de las diez reglas propias de
-> `docs/estado actual/02-CREATIVE.md` § 6, con las mediciones nuevas del 2026-09-18 contra producción.
+> `docs/OTROS/estado actual/02-CREATIVE.md` § 6, con las mediciones nuevas del 2026-09-18 contra producción.
 > Las de cobertura del lado del contacto son del 2026-09-15 salvo donde se remidió.
 >
 > Éste es el documento que decide si los demás sirven. Si la clave de agrupación está mal, todas las
@@ -34,7 +34,7 @@ distintas y las contesta la misma tabla con dos agrupaciones distintas.
 **Unidad** · Conteo de piezas.
 **Población** · Los anuncios de `negocio.anuncios` de la organización.
 **Rastro** · `lib/aios/creative.js:6-23` — el prototipo ya lo asume: sus ocho filas son piezas
-(`Owner Hook`, `Founder Story`, `Social Proof`…) y no anuncios. `docs/estado actual/02-CREATIVE.md`
+(`Owner Hook`, `Founder Story`, `Social Proof`…) y no anuncios. `docs/OTROS/estado actual/02-CREATIVE.md`
 regla 1 y 2.
 **Estado** · **Medido y confirmado el 2026-09-18.** `negocio.anuncios` tiene **79 anuncios que son 32
 piezas distintas** por nombre. **21 de las 32 corren en más de un `meta_anuncio_id`**, hasta **6**.
@@ -49,7 +49,7 @@ piezas distintas** por nombre. **21 de las 32 corren en más de un `meta_anuncio
 **Qué es** · Un creativo se lanza en varios ad sets, y cada combinación es un `adId` distinto con sus
 propias métricas diarias.
 **Población** · Las 21 piezas con más de un anuncio.
-**Rastro** · `docs/estado actual/02-CREATIVE.md:211`; medición propia del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:211`; medición propia del 2026-09-18.
 **Estado** · Medido. Ejemplos reales: `Estancada` en 5 anuncios, `manifiesto horz` en 5,
 `Evoluciona native` en 5, `agendamiento - yaping - 23/07` en 6.
 
@@ -59,7 +59,7 @@ propias métricas diarias.
 conteo, y no se filtran.
 **Fórmula** · `utmContent` nulo o vacío ⟹ fila «sin creativo».
 **Población** · La cohorte entera: la suma de todas las filas tiene que dar el total de contactos.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 8.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 8.
 **Estado** · Medido. De 589 contactos, **84 no traen `utmContent`** y, de los que sí, hay un grupo que
 no corresponde a ningún anuncio de Meta (`C1-06`). Descartarlos haría que la tabla no sumara la
 cohorte y que nadie lo notara.
@@ -78,7 +78,7 @@ con la gente que llegó por ella (`negocio.contactos`).
 `lower(trim(anuncios.nombre))`.
 **Unidad** · Proporción de contactos que cruzan.
 **Población** · Los 505 contactos que traen `utmContent`.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 1.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 1.
 **Estado** · **Medido el 2026-09-18: 21 de 31 nombres cruzan, y son 477 de 505 contactos (94,5 %).**
 
 ### C1-05 · El puente por `adId`, que es exacto y ve un tercio
@@ -157,12 +157,12 @@ gente mezclados, sin decir qué proporción de la gente pudo asociarse, se lee c
 `utmContent`) son la misma pieza y sin normalizar salen como dos.
 **Estado** · Construible. **El predicado tiene que vivir en una sola función** — repetirlo en cada
 consulta es cómo dos cifras de la misma pantalla terminan con dos definiciones de «la misma pieza»,
-que es la regla 12 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md`.
+que es la regla 12 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md`.
 
 ### C1-09 · El nombre de campaña se normaliza a MAYÚSCULAS antes de agrupar
 
 **Qué es** · La etapa del embudo se lee del nombre de campaña, y ese nombre llega con variantes.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 4.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 4.
 **Estado** · **El defecto sigue vivo, remedido el 2026-09-18.** En la ventana de 30 días:
 
 ```
@@ -188,7 +188,7 @@ etapa** y no el nombre entero: ver `C1-10`.
 que, en mayúsculas, coincide con uno de los tres literales. Lo que no coincide **no se fuerza a
 ninguna rama**: cae en «sin etapa» y se cuenta aparte.
 **Población** · Los contactos con `campaign` no vacío — 93 % de la cohorte.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 3.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 3.
 **Estado** · **Construible hoy, medido.** En la ventana de 30 días: TOFU 197 contactos en 3 variantes
 de campaña, BOFU 45 en 2, MOFU 1. Y fuera del vocabulario: `{{CAMPAIGN.NAME}}` (2, la plantilla sin
 expandir), `IG-DM` (2), `JORGEVERAMENDI` (1).
@@ -201,7 +201,7 @@ etapa» y el usuario tiene que poder entender por qué.
 
 **Qué es** · Una prohibición, no una métrica. Las piezas de etapas distintas no entran en la misma
 lista ordenada ni en el mismo promedio.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 3.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 3.
 **Estado** · **Y está medido lo que cuesta romperla.** En la ventana de 30 días:
 
 | pieza | etapa | contactos | tasa de agenda |
@@ -221,7 +221,7 @@ recomendaría pausar lo que alimenta el embudo. Ver `03-LA-BIBLIOTECA.md`.
 
 **Qué es** · Algunos contactos entraron por un formulario de Meta (Lead Ads) y otros por la landing.
 Los de Lead Ads **nunca vieron la landing ni el VSL**.
-**Rastro** · `docs/estado actual/02-CREATIVE.md` regla 5; medido allí: «Meta Lead ID» en 89 de 233
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 5; medido allí: «Meta Lead ID» en 89 de 233
 (38,2 %), «Last Landing URL» en 99 de 233 (42,5 %); `agendamiento - yaping` tenía 43 de formulario y
 21 con landing sobre 109.
 **Estado** · Construible. **Existe para que nadie divida una métrica de landing por el total de la

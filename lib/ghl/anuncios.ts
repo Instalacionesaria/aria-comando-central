@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // NO HACE FALTA CONECTAR META, Y ESO CONTRADICE LO QUE ESTE REPOSITORIO CONCLUYÓ
 //
-// `docs/estado actual/01-ACQUISITION.md` cerraba así: *«conectar Meta es trabajo de integración —app
+// `docs/OTROS/estado actual/01-ACQUISITION.md` cerraba así: *«conectar Meta es trabajo de integración —app
 // de Meta, token de larga duración, revisión de app, un recolector diario— y no de diseño de
 // datos»*, y `docs/acquisition/13-EL-CONTRASTE.md` ponía la credencial ausente como el único freno
 // de veintiún KPI.

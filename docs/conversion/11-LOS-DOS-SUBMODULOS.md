@@ -1,7 +1,7 @@
 # Landing Intelligence y VSL Intelligence
 
 > Fuente: `CC_Arquitectura_Funcional.md § 4:171-173`, más la medición propia contra producción del
-> 2026-09-20. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
+> 2026-09-20. El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -86,11 +86,11 @@ landing.
 **No es un hueco de datos: es un campo que afirma «vio cero».** Setenta y nueve veces, sin una sola
 excepción. Un campo vacío se nota; un cero se publica.
 
-Es la regla 1 del departamento en su forma más pura (`docs/estado actual/03-CONVERSION.md:215`):
+Es la regla 1 del departamento en su forma más pura (`docs/OTROS/estado actual/03-CONVERSION.md:215`):
 *«mientras el censo de un campo numérico tenga un solo valor distinto, ese campo no es una medición:
 es un indicador de que algo se instaló y no funcionó»*, y se reporta **como alarma, no como cifra**.
 
-El diagnóstico está en `docs/estado actual/06-INTEGRACIONES-GHL.md:313`: el tracking individual del
+El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:313`: el tracking individual del
 VSL *«está cableado y no reporta nada»*, y es problema del medidor —vTurb o su integración—, **no de
 GoHighLevel**.
 

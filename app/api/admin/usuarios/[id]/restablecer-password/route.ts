@@ -7,7 +7,7 @@
 //     POST /admin/usuarios/{id}/restablecer-password     requiere: usuarios.editar
 //
 // Es la única aparición de un camino de administración en los catorce documentos (`05` § 5). Los
-// otros cuatro se inventaron siguiendo su forma, y eso está declarado en `docs/capa-base/ETAPA-5.md`.
+// otros cuatro se inventaron siguiendo su forma, y eso está declarado en `docs/OTROS/capa-base/ETAPA-5.md`.
 //
 // Nótese que **comparte capacidad con editar** —`usuarios.editar`, no una propia— y eso es del
 // documento, no una simplificación. Inventar `usuarios.restablecer` rompería la prueba que cruza

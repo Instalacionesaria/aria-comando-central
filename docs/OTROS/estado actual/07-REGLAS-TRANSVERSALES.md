@@ -349,7 +349,7 @@ Y su corolario en la `045`: «El nulo es *no se sabe cuándo*, nunca *no cambió
 
 Es una regla de **orden, no de memoria** — y esa distinción es el aprendizaje, porque la versión anterior («escribir el pendiente al pie del commit») falló dos veces.
 
-**El contexto que la hace necesaria.** `docs/produccion/DESPLIEGUE.md:395` y `README.md:7`: **Vercel despliega por push, no por chequeo.** Un commit con las pruebas en rojo se publica igual. La protección de rama en `main` con `verificar` requerido **sigue pendiente** (`docs/capa-base/ETAPA-8.md:170`).
+**El contexto que la hace necesaria.** `docs/OTROS/produccion/DESPLIEGUE.md:395` y `README.md:7`: **Vercel despliega por push, no por chequeo.** Un commit con las pruebas en rojo se publica igual. La protección de rama en `main` con `verificar` requerido **sigue pendiente** (`docs/OTROS/capa-base/ETAPA-8.md:170`).
 
 **Las tres veces que se rompió** (documentadas en `git log` y en la memoria del proyecto):
 
@@ -631,7 +631,7 @@ Dicho como pendiente, que es la regla.
 
 **No verificado — el corte de vocabulario del 2026-09-08.** El commit `03fd9a6` afirma que `Sin abrir (0%)` deja de escribirse de golpe ese día y `Nada` ocupa su lugar. No lo comprobé: requiere cruzar el valor del campo contra `alta_en_el_crm` por día, y no lo corrí. Lo que **sí** verifiqué es que los dos valores existen y que los dos campos NUMERICAL están en cero.
 
-**No verificado — la protección de rama.** `docs/capa-base/ETAPA-8.md:170` y `DESPLIEGUE.md:396` la declaran pendiente. No tengo forma de comprobar el estado actual en GitHub desde una consulta a la base. **Si sigue pendiente, la regla de §8 es lo único que separa un commit rojo de producción.**
+**No verificado — la protección de rama.** `docs/OTROS/capa-base/ETAPA-8.md:170` y `DESPLIEGUE.md:396` la declaran pendiente. No tengo forma de comprobar el estado actual en GitHub desde una consulta a la base. **Si sigue pendiente, la regla de §8 es lo único que separa un commit rojo de producción.**
 
 **Encontrado de paso — una cadena visible que incumple la regla 18.** `lib/negocio/indicadoresDeCitas.ts:491` arma un aviso que se dibuja en pantalla (`PanelDeConversation.jsx:672`) y termina con *«el CRM tiene ese campo en 3 de 1052 citas»*, en presente y sin fecha. Es la misma cifra que el commit `a0e1eb5` fechó explícitamente en la cadena vecina del panel («medido en septiembre de 2026, 3 citas de 1052 en todo un año»). No es un defecto de cálculo; es la regla nueva que todavía no alcanzó a este renglón.
 

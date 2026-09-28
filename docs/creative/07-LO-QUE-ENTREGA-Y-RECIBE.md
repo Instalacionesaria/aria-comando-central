@@ -1,7 +1,7 @@
 # El deslinde: qué calcula Creative y qué consume
 
 > Requisitos derivados del § 18.16 y del § 18.3 del documento funcional, de la regla 10 de
-> `docs/estado actual/02-CREATIVE.md`, y de la medición del 2026-09-18 que obligó a replantear el
+> `docs/OTROS/estado actual/02-CREATIVE.md`, y de la medición del 2026-09-18 que obligó a replantear el
 > criterio de corte.
 >
 > Este documento existe porque **el documento funcional se contradice sobre si Creative es un
@@ -40,7 +40,7 @@ que retiene y el copy que no convierte, del segundo.
 
 ### C7-02 · El corte por FUENTE del dato ya no se sostiene, y hay que decirlo
 
-**Qué es** · `docs/estado actual/02-CREATIVE.md` § 7 riesgo 7 propuso el criterio: *«Acquisition
+**Qué es** · `docs/OTROS/estado actual/02-CREATIVE.md` § 7 riesgo 7 propuso el criterio: *«Acquisition
 publica lo que dice Meta, Creative publica lo que dice el lead que llegó por cada pieza y lo que dice
 la pieza misma.»*
 **Estado** · **Ese criterio era correcto en su intención y se escribió cuando el lado de Meta no
@@ -68,7 +68,7 @@ que no sirve para decidir nada. Con el corte por grano se contesta **«sí, si l
 función»**, y no existe la posibilidad de que divergan.
 
 La regla que gobierna esto no es la del § 18.16: es la **regla 12** de
-`docs/estado actual/07-REGLAS-TRANSVERSALES.md` — *«Un solo predicado por concepto.»*
+`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md` — *«Un solo predicado por concepto.»*
 
 ### C7-04 · El precedente ya está tomado en esta dirección
 
@@ -132,7 +132,7 @@ distintos para la misma ventana** sin que ninguna falle. Es el defecto del `not 
 |---|---|---|
 | Gasto, CPM, CPC, CTR, frecuencia **por anuncio** | **Acquisition** | § 18.16. Creative los consume al grano de la pieza |
 | El monitor de atribución del § 18.14 | **Acquisition** | ya está construido en `lib/negocio/calidadDeLaAtribucion.ts` |
-| La retención del VSL de la landing | **Conversion** | `docs/estado actual/03-CONVERSION.md:248`: *«Creative mide retención del ANUNCIO, Conversion mide la del VSL. Son dos videos.»* Y el medidor está roto: cinco campos en 0 de 233 |
+| La retención del VSL de la landing | **Conversion** | `docs/OTROS/estado actual/03-CONVERSION.md:248`: *«Creative mide retención del ANUNCIO, Conversion mide la del VSL. Son dos videos.»* Y el medidor está roto: cinco campos en 0 de 233 |
 | El video precall | **Conversation** | es el § 10.6: el video que se manda **después** de agendar |
 | La calificación del lead como etiqueta binaria | **Business**, cuando la exponga | § 18.7: «cost per qualified lead, **cuando Business Intelligence exponga la calificación**» |
 | Revenue, CAC, ROAS, ventas | **Business** | § 18.6. `negocio.resultados` tiene 7 filas y cero ventas |

@@ -180,7 +180,7 @@ export function datos(): Trx {
     // La respuesta del propio documento a un canal caído no es un respaldo al registro: es *"el
     // resumen que se manda siempre (§ 2): también prueba que el canal vive"*. Ese resumen es de
     // tipo Producción y `EJECUCION` § 5 lo deja fuera de alcance, así que queda como pendiente
-    // nombrado en `docs/capa-base/ETAPA-8.md`.
+    // nombrado en `docs/OTROS/capa-base/ETAPA-8.md`.
     //
     // ── Y EL AVISO NO PASA POR LA CAPA QUE ESTÁ FALLANDO ─────────────────────
     //

@@ -104,7 +104,7 @@ con cada consulta al pie de su cifra en `09-DE-DONDE-VIENE-CADA-DATO.md`.
 | `13-EL-CONTRASTE.md` | la maqueta contra el documento contra lo medible: qué se construye en LP-1 a LP-6 y qué se dibuja como hueco |
 | **`14-EL-PUNTAJE-DEL-CRM.md`** | qué es «Puntaje \| ICP», los cortes 75 y 50, los 47 ceros y el cruce con el rechazo |
 
-Fuera de la carpeta, pedido con el mismo plan: `docs/futuro/icp-interno-calculado.md`, un ICP
+Fuera de la carpeta, pedido con el mismo plan: `docs/OTROS/futuro/icp-interno-calculado.md`, un ICP
 calculado por Comando Central que **sólo se documenta**.
 
 ---
@@ -212,7 +212,7 @@ medición**, que es lo que convierte un hueco en un hueco declarado y no en una 
 | Teléfono y correo | sólo en la ficha, nunca en la lista | `LP04-06`, `LP05-16`, `LP12-05` |
 | GoHighLevel | sin enlace, como en el Closer (commit `bd26085`); llamar con `tel:` y escribir con `mailto:` | `LP05-06`, `LP12-08` |
 | La caída de altas desde el 14 de septiembre | es real: se pausaron las campañas | `LP06-08`, `LP08-02` |
-| ICP interno | a futuro, calculado por Comando Central; sólo se documenta | `LP14-13` y `docs/futuro/icp-interno-calculado.md` |
+| ICP interno | a futuro, calculado por Comando Central; sólo se documenta | `LP14-13` y `docs/OTROS/futuro/icp-interno-calculado.md` |
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Requisitos derivados del prototipo de Conversion, de la especificación funcional, y de una
 > **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el `archivo:línea`
-> del que sale. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
+> del que sale. El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15, más las mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -75,7 +75,7 @@ la misma pantalla.** Y `hist` no tiene botón, así que no hay forma de volver a
 
 **Ésta es la tabla que gobierna el departamento entero.** No hay una sola ventana que tenga volumen
 **y** no cruce el corte. Las dos fallan de maneras opuestas, exactamente como
-`docs/estado actual/03-CONVERSION.md:221-225` lo anticipó cinco días antes — y peor, porque desde
+`docs/OTROS/estado actual/03-CONVERSION.md:221-225` lo anticipó cinco días antes — y peor, porque desde
 entonces la pauta se apagó (`CV14-10`) y «7 días» pasó de poco volumen a **cuatro contactos**.
 
 ### CV5-04 · El botón por omisión es el que viola la regla 2
@@ -131,7 +131,7 @@ cohorte cae por debajo inmediatamente… O se publica sin desglose, o no se publ
 
 ### CV5-07 · Apartar no es esconder
 
-**Rastro** · Regla 2 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:106`.
+**Rastro** · Regla 2 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:106`.
 **Estado** · Las familias que no llegan al piso **siguen contando en la cohorte** y aparecen con su
 conteo; lo que no se publica es su **tasa**. Las filas tienen que sumar la cohorte exacta, o la
 cobertura de arriba deja de cuadrar con la tabla de abajo.

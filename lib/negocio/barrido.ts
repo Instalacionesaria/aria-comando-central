@@ -167,7 +167,7 @@ export const HORARIOS = {
 
      Y no reemplaza al webhook: el aviso del CRM baja esto a segundos de latencia y a ~cero llamadas.
      Lo que este cambio hace es cerrar el agujero de las 24 horas **hoy**, sin esperar una ruta pública.
-     Ver `docs/capa-base/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
+     Ver `docs/OTROS/capa-base/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
 
   /* ── CADA DIEZ MINUTOS, Y `auditoria` VA TERCERA ─────────────────────────
 

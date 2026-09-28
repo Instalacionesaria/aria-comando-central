@@ -52,7 +52,7 @@
 --
 -- El costo, dicho de frente: agregar una capacidad deja de ser "escribir una migración" y
 -- pasa a ser "escribir acá y correr el arranque". Es un paso más en el despliegue, y está
--- documentado en `docs/produccion/DESPLIEGUE.md`.
+-- documentado en `docs/OTROS/produccion/DESPLIEGUE.md`.
 --
 -- ── Y ES IDEMPOTENTE, QUE NO ES OPCIONAL ────────────────────────────────────
 --

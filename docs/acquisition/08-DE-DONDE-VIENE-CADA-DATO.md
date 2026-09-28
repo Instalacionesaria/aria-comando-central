@@ -19,7 +19,7 @@
 
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale, o dice que no lo tiene.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 > **Las coberturas de este documento se volvieron a medir contra producción el 2026-09-16 a las
 > 15:46 UTC**, una por una, y donde la medición nueva contradice al informe manda la nueva. Las
 > diferencias están listadas en el § 6.

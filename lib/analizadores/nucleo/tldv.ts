@@ -1,6 +1,6 @@
 // ── NÚCLEO PORTADO DE ARIA BRAIN · los identificadores siguen en inglés a propósito ──
 // Son el contrato con el resto del núcleo (`NormalizedMeeting`, `NormalizedTranscript`). Ver
-// docs/analizadores/ANALIZADORES.md.
+// docs/OTROS/analizadores/ANALIZADORES.md.
 //
 // Origen: aria-ia-brain lib/analyzer/tldv.ts. `toNormalizedMeeting` y `emailDomain` quedan como
 // estaban —ahí vive la heurística que decide quién es el prospecto, y cambiarla cambia a quién se le

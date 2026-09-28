@@ -13,7 +13,7 @@
 // La maqueta guardaba el tramo AL LADO del puntaje, a mano, y dos filas con el mismo 79 caían en
 // tramos distintos. Acá el tramo no se guarda: se deriva, siempre con esta función o con estas dos
 // constantes —la consulta de la cohorte las pasa como parámetros de SQL—. El día que exista un ICP
-// propio (`docs/futuro/icp-interno-calculado.md`) cambia de dónde sale el número, no el corte.
+// propio (`docs/OTROS/futuro/icp-interno-calculado.md`) cambia de dónde sale el número, no el corte.
 //
 // ── EL CERO NO ES «PUNTUÓ CERO» ─────────────────────────────────────────────
 //

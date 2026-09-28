@@ -810,7 +810,7 @@ function textoBase(codigo: string, estado: number): string | null {
     // `ADR-0601` falla si un nombre de variable de entorno aparece en el paquete del
     // navegador. Tenía razón — un mensaje de error no es lugar para el vocabulario de
     // configuración del servidor, y quien tenga que arreglarlo lo encuentra en
-    // `docs/produccion/DESPLIEGUE.md` y en el registro del servidor.
+    // `docs/OTROS/produccion/DESPLIEGUE.md` y en el registro del servidor.
     case 'origen_no_permitido':
       return (
         'El servidor rechazó el origen de esta petición. Es un problema de configuración del ' +

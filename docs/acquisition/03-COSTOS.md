@@ -19,7 +19,7 @@
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 
 La pantalla dibuja **diez cifras de dinero** y las diez descienden de un solo número: `inv`, la inversión de una campaña en la ventana, escrita una única vez en `lib/aios/acquisition.js:88`. Cuatro de esas diez son sumas y **seis son cocientes**: el costo de cada etapa, el costo por calificado del embudo, el de la campaña y el global. No hay una segunda fuente de dinero en el módulo, y no hay ninguna en la base: una búsqueda de columnas por `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` sobre los esquemas `negocio`, `public` e `identidad` devuelve tres coincidencias y ninguna es gasto de Meta poblado (`01-ACQUISITION.md:93`).
 

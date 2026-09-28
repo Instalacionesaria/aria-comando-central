@@ -187,7 +187,7 @@ encabezado de la que agregue la columna.
 
 ### C8-32 · El campo de ICP se llamaba distinto en la medición anterior
 
-`docs/estado actual/02-CREATIVE.md` lo midió como «Puntaje | ICP» el 2026-09-15 y sigue siendo ése
+`docs/OTROS/estado actual/02-CREATIVE.md` lo midió como «Puntaje | ICP» el 2026-09-15 y sigue siendo ése
 (`9HXxl5DW6aayQgKUPiOS`). Pero el catálogo del CRM tiene **diez** campos con nombre parecido, y uno de
 ellos es `Pre-Score | ICP`. Al resolver por nombre hay que fijar el literal exacto y **decirlo cuando
 no se encuentra**, en vez de publicar ceros.

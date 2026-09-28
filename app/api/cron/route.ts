@@ -58,7 +58,7 @@
 // del despliegue redirige al muro de SSO. Comprobado con `curl`: `/api/salud` responde 200 en
 // `aria-comando-central.vercel.app` y 302 en `aria-comando-central-<hash>.vercel.app`. El cron pega
 // en la URL de producción, así que anda — pero **el día que alguien pase la protección a «All
-// Deployments», el cron deja de correr en silencio**. Está anotado en `docs/produccion/DESPLIEGUE.md`.
+// Deployments», el cron deja de correr en silencio**. Está anotado en `docs/OTROS/produccion/DESPLIEGUE.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { timingSafeEqual } from 'node:crypto';
@@ -104,7 +104,7 @@ export async function GET(peticion: Request): Promise<Response> {
     // programada se lee como «el cron anda y no había nada que hacer».
     console.error(
       'cron: el secreto de las tareas programadas no está configurado, así que la ruta responde ' +
-        '403 y EL BARRIDO NO CORRIÓ. Ver docs/produccion/DESPLIEGUE.md.',
+        '403 y EL BARRIDO NO CORRIÓ. Ver docs/OTROS/produccion/DESPLIEGUE.md.',
     );
     return rechazo('sin_permiso');
   }

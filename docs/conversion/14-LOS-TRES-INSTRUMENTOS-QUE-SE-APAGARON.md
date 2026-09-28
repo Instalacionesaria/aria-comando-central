@@ -61,7 +61,7 @@ decisión de ruta.** Por qué se tomó, la base no lo dice — queda como `CV14-
 | `trabaja-con-nosotros.ariaia.com` | 4 | 3 | reclutamiento — **no es del embudo comercial** |
 | *(sin url)* | 115 | 60 | **no es «desconocido»** — 89 son formulario nativo de Meta y 26 no traen nada, todos de agosto. Ver `CV1-10` |
 
-Es la regla 5 de `docs/estado actual/03-CONVERSION.md:238` medida de nuevo veinte días después y
+Es la regla 5 de `docs/OTROS/estado actual/03-CONVERSION.md:238` medida de nuevo veinte días después y
 sobre otra columna: **sigue valiendo, y los repartos cambiaron**. Una métrica de «visitas a la
 landing» que sume los siete cuenta cinco cosas distintas.
 
@@ -130,7 +130,7 @@ Setenta y nueve escrituras. Setenta y nueve ceros. **Ninguna excepción.** Esto 
 vacío, porque un campo vacío se nota y un cero se publica. Publicar *«0 % de visionado promedio del
 VSL»* sería técnicamente cierto y completamente engañoso.
 
-El diagnóstico está en `docs/estado actual/06-INTEGRACIONES-GHL.md:313`: el tracking individual del
+El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:313`: el tracking individual del
 VSL *«está cableado y no reporta nada»*, y es problema del medidor —vTurb o su integración—, no de
 GoHighLevel.
 
@@ -162,7 +162,7 @@ publicándolos — igual que `lib/negocio/consumoDelPrecall.ts` hace con `-20%` 
 | `Agendado` en **121** contactos | **119** tienen alguna cita · **47** tienen una cita **alcanzable** · **2** no tienen ninguna |
 
 Los 72 de diferencia entre 119 y 47 son **citas congeladas**: el CRM ya no devuelve sus eventos, y el
-repositorio ya conoce ese caso (regla 4 de `docs/estado actual/07-REGLAS-TRANSVERSALES.md:153`).
+repositorio ya conoce ese caso (regla 4 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:153`).
 
 **Consecuencia de diseño:** el agendamiento de Conversion sale del mismo `exists` con
 `ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:341-344`, `calidadDelCreativo.ts:223-226`,
@@ -204,7 +204,7 @@ porque dejó de haber quien pasara por el formulario. Si la landing vuelve, el c
 El `§ 18.16:1546-1552` enumera lo que Acquisition le debe a Conversion: campaña y anuncio de origen,
 calidad del tráfico, CTR, **landing page views**, y diferencias por audiencia y placement.
 
-`docs/estado actual/03-CONVERSION.md:32` (corte del 2026-09-15) afirma que *«ninguna llega hoy»* y
+`docs/OTROS/estado actual/03-CONVERSION.md:32` (corte del 2026-09-15) afirma que *«ninguna llega hoy»* y
 nombra «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19**:
 `landingPageView` llega en el desglose de acciones de Meta, se guarda en
 `negocio.metricas_de_anuncio.acciones` (creada por `db/migraciones/053_el_desglose_que_ya_llegaba.sql`)

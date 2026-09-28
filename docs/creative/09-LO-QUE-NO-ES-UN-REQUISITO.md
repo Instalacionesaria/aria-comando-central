@@ -152,7 +152,7 @@ fuente. Ver `C6-08`.
 se caen en **Conversion**, `.cls` en el calendario, `.legend` en **Executive**. Nada falla: se ve
 distinto y nada lo dice.
 
-> `docs/estado actual/02-CREATIVE.md` nombró sólo `.read` como la excepción. Son siete.
+> `docs/OTROS/estado actual/02-CREATIVE.md` nombró sólo `.read` como la excepción. Son siete.
 
 ### C9-09 · Las que sí están muertas
 
@@ -247,13 +247,13 @@ Contadas el 2026-09-18, sin contar esta carpeta:
 
 | archivo | citas |
 |---|---:|
-| `docs/estado actual/02-CREATIVE.md` | **15** |
+| `docs/OTROS/estado actual/02-CREATIVE.md` | **15** |
 | `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md` | 2 |
 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md` | 1 |
 | `docs/acquisition/05-PERIODOS-Y-COMPARACION.md` | 1 |
 | `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md` | 1 |
 
-`docs/produccion/DESPLIEGUE.md` nombra el archivo **sin número de línea**, así que no entra en la cuenta: le
+`docs/OTROS/produccion/DESPLIEGUE.md` nombra el archivo **sin número de línea**, así que no entra en la cuenta: le
 alcanza con saber que el módulo ya no está.
 
 **Estado** · Es el defecto exacto que el commit `c8494e6` ya pagó: *«borrar el prototipo dejó 374

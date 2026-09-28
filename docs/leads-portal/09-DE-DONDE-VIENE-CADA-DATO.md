@@ -535,7 +535,7 @@ Conversation: «el CRM no registró reproducción».
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
-  grupo (`docs/estado actual/06-INTEGRACIONES-GHL.md:458`; no está en
+  grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:458`; no está en
   `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:318-330`), y se lee **por nombre**, con
   `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:208`, `:235`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no

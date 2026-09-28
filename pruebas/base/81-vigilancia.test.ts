@@ -12,7 +12,7 @@
 // con el rol real de la aplicación, y que devuelven las columnas que la señal necesita.
 //
 // **NO verifica:** que alguien las corra con su cadencia, ni que alguien las lea. Esas dos son
-// decisiones de operación y están en `docs/capa-base/ETAPA-8.md` como pendientes con nombre.
+// decisiones de operación y están en `docs/OTROS/capa-base/ETAPA-8.md` como pendientes con nombre.
 //
 // Por qué vale escribirla igual: una consulta que nunca se ejecutó es una consulta que puede tener
 // una errata. El día que alguien la programe, va a descubrir el error a las tres de la mañana —o

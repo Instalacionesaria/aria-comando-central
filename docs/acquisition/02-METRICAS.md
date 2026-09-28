@@ -20,7 +20,7 @@
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 
 **Tres niveles de agregación, dos ventanas por consulta.** Este documento
 dice qué número tiene que poder dar Acquisition, con qué fórmula, en qué unidad y **sobre qué

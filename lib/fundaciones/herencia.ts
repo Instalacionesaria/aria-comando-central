@@ -24,7 +24,7 @@
 //
 // El hub permite EDITAR una fuente heredada solo para una herramienta (los `chipOverrides`, que
 // viven en memoria y se pierden al recargar). Acá las fuentes son de solo lectura: se muestran, se
-// puede ir a su herramienta y cambiarla ahí. Está anotado en `docs/capa-base/ETAPA-9.md` como pendiente, no
+// puede ir a su herramienta y cambiarla ahí. Está anotado en `docs/OTROS/capa-base/ETAPA-9.md` como pendiente, no
 // como olvido.
 // ═══════════════════════════════════════════════════════════════════════════════
 

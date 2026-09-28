@@ -35,7 +35,7 @@
 // El problema no es la lista de hosts: es que `atribucion_ultima` es el ÚLTIMO toque, y para 124 de
 // 590 contactos ese último toque **es la reserva**. Cualquier tasa sobre esa población divide
 // «agendó» por un denominador definido en parte por haber agendado. Es la regla 3 del departamento
-// —`docs/estado actual/03-CONVERSION.md:230`— y no se puede esquivar con una lista mejor.
+// —`docs/OTROS/estado actual/03-CONVERSION.md:230`— y no se puede esquivar con una lista mejor.
 //
 // **Así que se publican CONTEOS y no tasas**, y cada familia dice cuántos de los suyos traen la
 // dirección capturada al reservar: con ese número al lado, quien mire sabe cuánto de esa fila es
@@ -146,7 +146,7 @@ export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<Recorrid
            cómo darse cuenta de cuál de las dos está mal.
            *
            * Y `exists` y no un `join` con `count(*)`: un contacto con dos citas pesaría doble.
-           Verificado en `docs/estado actual/02-CREATIVE.md:287`, donde ese defecto infló una pieza
+           Verificado en `docs/OTROS/estado actual/02-CREATIVE.md:287`, donde ese defecto infló una pieza
            de 109 a 112. */
         sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
         // Los que traen dirección: el numerador de la cobertura.

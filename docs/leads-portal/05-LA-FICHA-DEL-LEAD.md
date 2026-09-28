@@ -217,7 +217,7 @@ acciones y siete secciones:
     fabrica con aritmética sobre el puntaje** (`aios-command-center_1.html:4677-4679`).
 - **Qué dice el dato:** los dos campos de VTurb valen 0 en todos los contactos que los tienen, y no
   reportan desde el **2026-08-30** (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`).
-  Está documentado en `docs/estado actual/06-INTEGRACIONES-GHL.md`, § «Y el hallazgo que contradice
+  Está documentado en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md`, § «Y el hallazgo que contradice
   lo que se creía». No existe ningún historial de eventos de reproducción, y el § 5.3 pide
   justamente eso: *«Debe conservarse su historial»* (`§ 5.3:265`). Tampoco existe un dato de «llegó
   al CTA».
@@ -351,7 +351,7 @@ acciones y siete secciones:
 - **Qué pide:**
   - **el puntaje**, que es «Puntaje | ICP» del CRM (`lib/ghl/contrato.ts:268-305`), con su tramo;
   - **quién lo calcula:** el rótulo dice que lo calcula el CRM, no Comando Central. El ICP calculado
-    por Comando Central es futuro (`docs/futuro/icp-interno-calculado.md`);
+    por Comando Central es futuro (`docs/OTROS/futuro/icp-interno-calculado.md`);
   - **el 0**, con su motivo: *«No se sabe si el CRM calculó cero o si su workflow no corrió»*
     (`lib/negocio/sincronizar.ts:412-420`);
   - **la etiqueta de descarte**, si la tiene. Medido con `icp_rechazado`: bajo 45 · medio 22 · sin

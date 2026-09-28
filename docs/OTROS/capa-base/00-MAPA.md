@@ -6,7 +6,7 @@ contra la especificación del repositorio hermano. Estaban sueltas en la raíz d
 acá el 2026-09-28 con el mismo nombre. Lo único que cambió adentro son las rutas a otros documentos
 que también se movieron, dentro de la misma línea: ninguna cita por número de línea se corrió.
 
-**Son históricas.** Lo vigente está en el código y en `docs/estado actual/`. No se reescriben: el
+**Son históricas.** Lo vigente está en el código y en `docs/OTROS/estado actual/`. No se reescriben: el
 código las cita como el lugar donde está escrito el porqué de una decisión —la firma de `exigir(`,
 la deuda de `SECCIONES`, los pendientes de operación— y algunas citas van por número de línea.
 
@@ -27,4 +27,4 @@ la deuda de `SECCIONES`, los pendientes de operación— y algunas citas van por
 **Lo que no tiene acta.** El código nombra las etapas 11 a 14, y ninguna tiene documento acá: su
 porqué quedó en los comentarios del código y en los mensajes de commit. Las etapas de los
 departamentos no son éstas —«la etapa 2 de Sales», LP-1 a LP-7, HT-0 a OB-4— y viven en la carpeta de
-su pantalla: `docs/sales/`, `docs/leads-portal/`, `docs/analizadores/`.
+su pantalla: `docs/sales/`, `docs/leads-portal/`, `docs/OTROS/analizadores/`.

@@ -4,7 +4,7 @@
 > Conversion— de una **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva
 > el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no
 > como requisito.
-> El estado de cada dato sale de `docs/estado actual/05-SALES.md`, medido el 2026-09-16, más las
+> El estado de cada dato sale de `docs/OTROS/estado actual/05-SALES.md`, medido el 2026-09-16, más las
 > mediciones nuevas de `01-LA-VENTA-NO-EXISTE.md` y `14-LOS-CINCO-ESLABONES.md`.
 
 ---

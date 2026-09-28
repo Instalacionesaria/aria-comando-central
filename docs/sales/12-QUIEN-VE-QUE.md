@@ -102,7 +102,7 @@ equivocado.
 `secciones.ts:304` — `galon: true`. Lo dibuja `components/Nav.jsx:196` y lo llevan cinco secciones:
 `contacts`, `icp`, `creative`, `conversion` y `sales`.
 
-`docs/estado actual/02-CREATIVE.md:34` lo señalaba como el detalle que hacía que la pantalla pareciera
+`docs/OTROS/estado actual/02-CREATIVE.md:34` lo señalaba como el detalle que hacía que la pantalla pareciera
 tan real como ICP & Oferta sin serlo. **El precedente de Creative ya resolvió esa duda: se queda.** El
 adorno es del prototipo —cinco de las diez lo llevan— y lo que estaba mal no era el galón, sino que
 detrás no hubiera nada.

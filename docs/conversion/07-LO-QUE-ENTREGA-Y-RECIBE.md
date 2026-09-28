@@ -2,7 +2,7 @@
 
 > Requisitos derivados del prototipo de Conversion, de la especificación funcional, y de una
 > **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el `archivo:línea`
-> del que sale. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
+> del que sale. El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15, más las mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -40,7 +40,7 @@
 
 ### CV7-02 · `landingPageView` llega, y corrige lo publicado
 
-**Estado** · `docs/estado actual/03-CONVERSION.md:32` afirma que de las cinco *«ninguna llega hoy»* y
+**Estado** · `docs/OTROS/estado actual/03-CONVERSION.md:32` afirma que de las cinco *«ninguna llega hoy»* y
 nombra «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19**: el desglose
 de acciones de Meta trae `landingPageView` por anuncio y por día, se guarda en
 `negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se publica en
@@ -101,7 +101,7 @@ proyecto ya pagó dos veces.
 ### CV7-06 · El trigger link es de Lead Flow y su rastro vive en la columna de Conversion
 
 **Rastro** · `§ 9.5:529-549` define los seis estados del trigger link. Medido en
-`docs/estado actual/09-DEUDA-ABIERTA.md:177`: `Trigger Link` vale **29 de 584** en
+`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:177`: `Trigger Link` vale **29 de 584** en
 `atribucion_ultima` y **0 de 584** en `atribucion_primera`.
 
 **Estado** · El trigger link es el instrumento de **Lead Flow** —él lo envía— pero su huella queda en

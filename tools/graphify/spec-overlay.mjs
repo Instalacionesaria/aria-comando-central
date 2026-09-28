@@ -10,13 +10,13 @@
 // Cero LLM. Cero alucinación. Reproducible.
 //
 //   node tools/graphify/spec-overlay.mjs              # imprime el resumen
-//   node tools/graphify/spec-overlay.mjs --trazabilidad  # escribe docs/especificacion/TRAZABILIDAD.md
+//   node tools/graphify/spec-overlay.mjs --trazabilidad  # escribe docs/OTROS/especificacion/TRAZABILIDAD.md
 //   node tools/graphify/spec-overlay.mjs --aplicar     # + fusiona el overlay en el grafo
 //
 // El esquema de identificadores es `ADR-SSRR` (SS = etapa, RR = fila) y NO es
 // negociable en su forma: el paso AST de graphify solo reconoce `ADR[- ]?\d{1,5}` o
 // `RFC[- ]?\d{1,5}` dentro de una LÍNEA DE COMENTARIO. `REGLA-E2-07` es invisible.
-// Ver docs/especificacion/TRAZABILIDAD.md y el § 4 del plan.
+// Ver docs/OTROS/especificacion/TRAZABILIDAD.md y el § 4 del plan.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -165,7 +165,7 @@ function escribirTrazabilidad(reglas) {
     l.push('');
   }
 
-  const destino = join(RAIZ, 'docs', 'especificacion', 'TRAZABILIDAD.md');
+  const destino = join(RAIZ, 'docs', 'OTROS', 'especificacion', 'TRAZABILIDAD.md');
   writeFileSync(destino, l.join('\n'), 'utf8');
   return destino;
 }

@@ -111,7 +111,7 @@ medida.
 1. **El VSL por persona no reporta.** El campo existe —`VSL % máximo visto`— y su último dato es del
    **2026-08-30** (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:18`); y además estaba
    roto desde antes (`:22-23`): el único valor que llegó a guardar es `0` (el detalle está en
-   `docs/estado actual/06-INTEGRACIONES-GHL.md`, § «Y el hallazgo que contradice lo que se creía»).
+   `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md`, § «Y el hallazgo que contradice lo que se creía»).
    La ficha del lead lo declara como hueco (`LP05-10`).
 2. **«Califican» no está definido.** Hay cinco definiciones de «calificado» en el producto y ninguna
    coincide con otra (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:495-501`). Esta pestaña, por decisión
@@ -278,7 +278,7 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 | `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:500` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
 | `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:538` | líneas 58-59 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 | `docs/acquisition/02-METRICAS.md:871` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
-| `docs/estado actual/01-ACQUISITION.md:73`, `:151` y `:326` | línea 56, las tres | la frase 4 | `aios-command-center_1.html:5726` |
+| `docs/OTROS/estado actual/01-ACQUISITION.md:73`, `:151` y `:326` | línea 56, las tres | la frase 4 | `aios-command-center_1.html:5726` |
 | `docs/creative/04-LA-FICHA-DEL-CREATIVO.md:163` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 | `docs/creative/09-LO-QUE-NO-ES-UN-REQUISITO.md:187` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 
@@ -287,7 +287,7 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 | documento | cita | lo que quiso nombrar | al escribirse | dónde está hoy |
 |---|---|---|---|---|
 | `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39`, y en ninguna versión del archivo fue la búsqueda | `aios-command-center_1.html:5711` |
-| `docs/estado actual/05-SALES.md:39` | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
+| `docs/OTROS/estado actual/05-SALES.md:39` | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
 
 Ninguno de esos archivos se toca desde acá; queda anotado para que LP-7, que reapunta las citas de
 esta carpeta, sepa que las de al lado también apuntan mal. La de `docs/sales/` es la única dentro de

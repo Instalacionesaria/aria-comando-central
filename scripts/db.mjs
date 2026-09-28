@@ -219,7 +219,7 @@ async function catalogo() {
  * ── POR QUÉ ES UNA FASE SUELTA Y NO SOLO EL FINAL DE `catalogo` ──────────────
  *
  * Porque contra Supabase `catalogo` **no se puede correr**: exige `DATABASE_URL_ADMIN`, y la
- * contraseña de `postgres` no vive en ninguna máquina de acá a propósito (`docs/produccion/DESPLIEGUE.md`
+ * contraseña de `postgres` no vive en ninguna máquina de acá a propósito (`docs/OTROS/produccion/DESPLIEGUE.md`
  * § 2). Allá el catálogo se manda por la Management API:
  *
  *     node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql

@@ -20,7 +20,7 @@
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
 > Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
 > como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
 > Las cifras marcadas **(medido el 2026-09-16)** son de este documento, tomadas contra producción
 > con `node --env-file=.env.supabase scripts/supabase.mjs leer`, sobre los **184 contactos con
 > `alta_en_el_crm` en los últimos 14 días**.

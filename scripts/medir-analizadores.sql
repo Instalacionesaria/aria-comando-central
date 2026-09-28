@@ -5,7 +5,7 @@
 --   node --env-file=.env.supabase scripts/supabase.mjs leer --archivo scripts/medir-analizadores.sql
 --
 -- Es la medición del hito de 24 h de HT-9 y de la observación de HT-10 y OB-4
--- (docs/analizadores/ANALIZADORES.md): la misma consulta cada vez, para que dos lecturas en días distintos se
+-- (docs/OTROS/analizadores/ANALIZADORES.md): la misma consulta cada vez, para que dos lecturas en días distintos se
 -- puedan comparar. Una fila por empresa y tipo.
 --
 -- ── SOLO LO QUE COMANDO CENTRAL HIZO POR SU CUENTA ───────────────────────────

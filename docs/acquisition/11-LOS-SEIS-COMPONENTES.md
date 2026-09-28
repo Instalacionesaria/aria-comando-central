@@ -45,7 +45,7 @@ escribe métricas que **no se recalculan**. Una fila de `2026-09-01` con su gast
 El día que Meta corrija un dato hacia atrás —lo hace, sobre todo con atribución y conversiones— hay
 que decidir si se pisa la fila o se guarda la corrección. Sin esa decisión, dos lecturas de la misma
 ventana en días distintos dan cifras distintas y nadie sabe por qué. Es el mismo problema que
-`docs/estado actual/09-DEUDA-ABIERTA.md` documenta para las etiquetas de descarte.
+`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md` documenta para las etiquetas de descarte.
 
 ---
 
@@ -79,7 +79,7 @@ CTR es un hallazgo de acá; qué tiene el hook que retiene y el copy que no conv
 el colector, y `formato`, `duración` y `placement` ni siquiera están entre las columnas de la tabla
 de destino. Lo único que existe hoy del creativo es su **nombre**, en
 `atribucion_primera->>'utmContent'` (503 de 585 contactos, 30 valores distintos) — y eso permite una
-cosa que este componente NO hace y que `docs/estado actual/02-CREATIVE.md` ya midió: ordenar
+cosa que este componente NO hace y que `docs/OTROS/estado actual/02-CREATIVE.md` ya midió: ordenar
 creativos por la **calidad del lead** que traen, que es una pregunta de negocio y no de subasta.
 
 ---
@@ -94,7 +94,7 @@ métricas produce ni qué es una «audiencia» a efectos del modelo — si es el
 guardado de Meta, o una segmentación propia. **Queda como pregunta abierta.**
 
 Lo que sí se puede afirmar: el dato de entrada es el ad set, porque es el nivel donde Meta define la
-segmentación. Y ese nivel hoy está casi vacío en la base — `docs/estado actual/01-ACQUISITION.md`
+segmentación. Y ese nivel hoy está casi vacío en la base — `docs/OTROS/estado actual/01-ACQUISITION.md`
 mide el identificador de ad set en 39 de 233 contactos de su ventana, con **un solo** valor distinto.
 O sea que aunque se conectara Meta mañana, el cruce contra nuestros contactos por ad set no tendría
 con qué hacerse.

@@ -1,7 +1,7 @@
 # Clasificar las reuniones por su nombre
 
 > **Estado:** pendiente. Se construye cuando esté el mapa completo de nombres de reunión → tipo.
-> Pedido el 2026-09-23, después de la calibración OB-1 (`docs/analizadores/ANALIZADORES.md` § «OB-1»).
+> Pedido el 2026-09-23, después de la calibración OB-1 (`docs/OTROS/analizadores/ANALIZADORES.md` § «OB-1»).
 
 ## Qué se quiere
 
@@ -20,7 +20,7 @@ Dos lecturas independientes de las 44 reuniones que el clasificador llamó OB co
 - 20 eran sesiones de entrega, implementación o soporte con clientes que ya estaban dentro.
 
 El PRIMER PASO de cada rúbrica vetó bien todo eso —ninguna quedó mal analizada—, pero las 12 ventas
-se perdieron para HT. Las causas que se ven en el código están en `docs/analizadores/ANALIZADORES.md`; la que importa
+se perdieron para HT. Las causas que se ven en el código están en `docs/OTROS/analizadores/ANALIZADORES.md`; la que importa
 acá es que **el clasificador se equivoca justo donde el título ya sabía la respuesta**:
 
 - varias ventas tenían «Discovery Call» en el título, que el prompt del clasificador llama señal

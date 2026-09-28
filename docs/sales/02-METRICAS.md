@@ -29,7 +29,7 @@ Y **`Piso`** cuando corresponde: cuántas observaciones hacen falta antes de pub
 
 ## 1 · Las nueve reglas que valen para todas las métricas de este departamento
 
-Las doce del departamento están medidas en `docs/estado actual/05-SALES.md:159-197`. Éstas son las
+Las doce del departamento están medidas en `docs/OTROS/estado actual/05-SALES.md:159-197`. Éstas son las
 que gobiernan el catálogo.
 
 1. **Una venta del closer y una del setter NO se suman, nunca.** `venta` va a la etapa `ganado`;

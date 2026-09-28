@@ -12,4 +12,4 @@ la matriz de reglas y el léxico. Estaban sueltos en la raíz de `docs/` y se ju
 
 **El grafo del código tiene una guía más nueva.** `GRAFO.md` es del 2026-08-21 y sus tamaños del grafo
 de código quedaron viejos. La guía vigente para consultar el grafo del código es
-`docs/estado actual/08-COMO-USAR-EL-GRAFO.md`, del 2026-09-15.
+`docs/OTROS/estado actual/08-COMO-USAR-EL-GRAFO.md`, del 2026-09-15.

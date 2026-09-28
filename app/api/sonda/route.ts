@@ -57,7 +57,7 @@ export async function POST(peticion: Request): Promise<Response> {
     // como "la sonda anda y no encuentra nada".
     console.error(
       'sonda: el secreto de la sonda no está configurado, así que la ruta responde 403 y LA ' +
-        'SONDA NO CORRIÓ. La señal 6 está apagada. Ver docs/produccion/DESPLIEGUE.md.',
+        'SONDA NO CORRIÓ. La señal 6 está apagada. Ver docs/OTROS/produccion/DESPLIEGUE.md.',
     );
     return rechazo('sin_permiso');
   }

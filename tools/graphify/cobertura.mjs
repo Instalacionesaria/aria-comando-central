@@ -114,7 +114,7 @@ for (const etapa of etapas) {
 // convirtió en fila, y una etapa puede descubrir una regla que la especificación no vio
 // —la Etapa 2 descubrió dos, midiendo—. El riesgo no es que existan: es que sean
 // INVISIBLES. Sin esta lista, una regla local vive en un comentario, nadie la cuenta, y
-// la primera lectura de `docs/especificacion/TRAZABILIDAD.md` dice que la etapa está completa.
+// la primera lectura de `docs/OTROS/especificacion/TRAZABILIDAD.md` dice que la etapa está completa.
 //
 // El identificador trae su etapa adentro (`ADR-SSRR`), así que se pueden acotar al mismo
 // alcance que se pidió.

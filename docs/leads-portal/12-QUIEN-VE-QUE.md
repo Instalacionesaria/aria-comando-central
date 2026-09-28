@@ -209,7 +209,7 @@ fechas de los mensajes, las citas, los resultados y el closer asignado. Lo que *
 
 **La excepción de los campos sin grupo.** El estado del formulario que la ficha sí lleva es «Form
 Landing VSL», y vive en la carpeta «📁 Score | ICP», que no tiene grupo
-(`docs/estado actual/06-INTEGRACIONES-GHL.md:458`). Viaja porque se lee **por nombre**, con
+(`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:458`). Viaja porque se lee **por nombre**, con
 `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:208`), no porque su carpeta pase. Es el único
 campo sin grupo que viaja; el detalle, en `LP09-09`.
 

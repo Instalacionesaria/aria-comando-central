@@ -5,9 +5,9 @@
 -- ARIA Brain guarda esto en `public.aria_brain_analyzer_*`, sin `org_id`, identificado por el
 -- `cliente_id` de un alumno del hub. Comando Central NO las usa: tiene las suyas, por organización,
 -- con el mismo régimen que toda tabla de negocio. Es el corte que Fundaciones ya hizo el 2026-09-07
--- (`docs/capa-base/ETAPA-9.md:340-377`) y las razones son las mismas —el cliente de Comando Central no tiene
+-- (`docs/OTROS/capa-base/ETAPA-9.md:340-377`) y las razones son las mismas —el cliente de Comando Central no tiene
 -- cuenta en el hub, y esas tablas no existen en la base local, así que nada de lo que dependa de
--- ellas se puede probar—. El detalle está en `docs/analizadores/ANALIZADORES.md`.
+-- ellas se puede probar—. El detalle está en `docs/OTROS/analizadores/ANALIZADORES.md`.
 --
 -- La séptima tabla del origen, la configuración de tl;dv por cuenta, no tiene equivalente acá: su
 -- llave es una credencial de la empresa y va con las demás (`identidad.organizaciones_credenciales`,

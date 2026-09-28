@@ -44,7 +44,7 @@
 // Quien conozca una contraseña temporal puede entrar y activar el segundo factor con su propio
 // dispositivo antes que el dueño. Lo que lo limita hoy es que el cambio de contraseña cierra
 // TODAS las demás sesiones, así que el dueño lo expulsa al elegir su contraseña — pero el
-// factor inscripto queda. Está anotado en `docs/produccion/DESPLIEGUE.md`.
+// factor inscripto queda. Está anotado en `docs/OTROS/produccion/DESPLIEGUE.md`.
 //
 // ── UNA CONTRADICCIÓN DEL `02` § 5 CONSIGO MISMO, RESUELTA ───────────────────
 //

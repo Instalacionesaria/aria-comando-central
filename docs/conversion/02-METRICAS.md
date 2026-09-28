@@ -3,7 +3,7 @@
 > Requisitos derivados del prototipo de Conversion, de la especificación funcional, y de una
 > **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el `archivo:línea`
 > del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el 2026-09-15, más las
+> El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el 2026-09-15, más las
 > mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
@@ -48,7 +48,7 @@ nada falle.
 
 1. **Los ceros son tres.** No hay campo · el campo dice cero · el medidor no reportó. Un campo cuyo
    censo tiene un solo valor distinto **no es una medición: es una alarma**
-   (`docs/estado actual/03-CONVERSION.md:215`).
+   (`docs/OTROS/estado actual/03-CONVERSION.md:215`).
 2. **Ninguna serie cruza el 2026-08-31 sin decirlo** (`03-CONVERSION.md:219`). Ver `CV1-06`.
 3. **Los hosts no se suman** (`03-CONVERSION.md:238`). Siete hosts, cinco cosas distintas.
 4. **La fuente es el último toque**, no el primero (`03-CONVERSION.md:242`). Ver `CV1-02`.

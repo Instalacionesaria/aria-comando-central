@@ -2,7 +2,7 @@
 
 > Requisitos derivados del prototipo de Conversion, de la especificación funcional, y de una
 > **medición propia contra producción** hecha el 2026-09-20. Cada requisito lleva el `archivo:línea`
-> del que sale. El estado de cada dato sale de `docs/estado actual/03-CONVERSION.md`, medido el
+> del que sale. El estado de cada dato sale de `docs/OTROS/estado actual/03-CONVERSION.md`, medido el
 > 2026-09-15, más las mediciones nuevas de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
