@@ -36,7 +36,7 @@ export function fraseDelVeto(tipo: string): string {
  *
  * Ninguno dice «no se habló»: el esquema OB no tiene un valor DESCONOCIDO y `normalizeOb` pone uno por
  * omisión (PARCIAL, MEDIO, NINGUNA, NO…). Así que un «No» en Slack puede ser «no se tocó el tema».
- * Arreglarlo es cambiar la rúbrica, y se decidió que no (docs/ANALIZADORES.md § «OB-1»).
+ * Arreglarlo es cambiar la rúbrica, y se decidió que no (docs/analizadores/ANALIZADORES.md § «OB-1»).
  */
 export const ROTULOS_OB: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   readiness: { LISTO: 'Listo', PARCIAL: 'Parcial', BLOQUEADO: 'Bloqueado' },

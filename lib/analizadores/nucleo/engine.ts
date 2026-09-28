@@ -1,5 +1,5 @@
 // ── NÚCLEO PORTADO DE ARIA BRAIN · los identificadores siguen en inglés a propósito ──
-// Son el contrato con el modelo y con el resto del núcleo. Ver docs/ANALIZADORES.md.
+// Son el contrato con el modelo y con el resto del núcleo. Ver docs/analizadores/ANALIZADORES.md.
 //
 // Origen: aria-ia-brain lib/analyzer/engine.ts. Los dos prompts que arma este archivo —el del
 // clasificador y el ensamblado del análisis— quedan **byte a byte**. Ediciones:

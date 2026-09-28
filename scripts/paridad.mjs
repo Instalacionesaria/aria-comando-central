@@ -30,7 +30,7 @@ const ORIGINAL = 'aios-command-center_1.html';
 // No se debilita la guarda para que esta comparación ande: la guarda es lo que impide que un
 // visitante vea la aplicación. Lo que hay que hacer es entrar primero — con el usuario del
 // sembrado, que solo existe en local — y recién después comparar. Está anotado como pendiente
-// en `docs/DESPLIEGUE.md`.
+// en `docs/produccion/DESPLIEGUE.md`.
 const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 
 // UNA. Fueron diez; salieron `icp` (Etapa 9), `setter` y `closer` (11), `executive` (el mapa de
@@ -53,7 +53,7 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // se conserva: las otras nueve siguen comparándose, así que el día que se reactifique una segunda,
 // la comparación sigue siendo confiable para las que no cambiaron.
 //
-// La regla al agregar una vista reactificada: sale de acá, y su motivo se escribe en `docs/ETAPA-N`.
+// La regla al agregar una vista reactificada: sale de acá, y su motivo se escribe en `docs/capa-base/ETAPA-N`.
 // `setter` y `closer` SALIERON en la Etapa 11, por el mismo motivo que `icp` en la 9: dejaron
 // de coincidir con el prototipo A PROPÓSITO. Sus datos ya no son los del maquetado —vienen de
 // `negocio.*`— y sus dos menús ya no se muestran a todo el mundo. Compararlas daría un rojo
@@ -148,7 +148,7 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // Con eso `VISTAS` queda vacía, **y la compuerta NO se retira**: el guardián de abajo sólo imprime
 // «retirada» cuando `VISTAS` y `PASOS` están vacías a la vez, y quedan tres pasos de Executive —«Ask
 // Executive», «funnel ejecutivo» y el cajón «grupo de contactos», que se mudó ahí—. La decisión de
-// `docs/ETAPA-0.md` § «Decisiones registradas ahora» sigue en pie; lo que cambió es que la pantalla
+// `docs/capa-base/ETAPA-0.md` § «Decisiones registradas ahora» sigue en pie; lo que cambió es que la pantalla
 // que quedaba ya no era la última cosa que comparar.
 const VISTAS = [];
 
@@ -287,7 +287,7 @@ async function recorrer(browser, url) {
 
 /* ── EL RETIRO, DECIDIDO EN LA ETAPA 0 Y ESCRITO ACÁ ────────────────────────
  *
- * `docs/ETAPA-0.md` § «Decisiones registradas ahora, implementadas después», punto 1: esta
+ * `docs/capa-base/ETAPA-0.md` § «Decisiones registradas ahora, implementadas después», punto 1: esta
  * compuerta **no se retira a mano**. Se le van sacando vistas a medida que cada una se
  * reactifica, y el día que no quede ninguna **imprime «retirada» y sale 0**.
  *

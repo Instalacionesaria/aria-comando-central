@@ -471,7 +471,7 @@ test('las dos vistas no traen NINGUNO de los nombres inventados que tenían', ()
   // de dónde traer datos las deja en siete carteles. Cuáles se conectan y en qué orden es una
   // decisión de producto, y no la toma una prueba.
   //
-  // Queda anotado en `docs/ETAPA-11.md` con su nombre. Lo que esta prueba garantiza es que las
+  // Queda anotado en `docs/capa-base/ETAPA-11.md` con su nombre. Lo que esta prueba garantiza es que las
   // dos pestañas que SÍ se conectaron no vuelvan atrás.
   const AMBITO = (r: string) =>
     r === 'components/views/CloserView.jsx' ||

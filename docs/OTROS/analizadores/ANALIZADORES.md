@@ -23,7 +23,7 @@ internas: **HT** y **OB**. Se construye HT completo primero y OB después.
 
 | # | Decisión | Por qué |
 |---|---|---|
-| 1 | **Tablas propias** `negocio.analizador_*`, por `org_id` | Es el corte que Fundaciones ya hizo el 2026-09-07 (`docs/ETAPA-9.md:340-377`): el cliente de Comando Central no tiene cuenta en ARIA Brain, y las tablas de Brain no existen en la base local, así que nada de lo que dependa de ellas se puede probar. |
+| 1 | **Tablas propias** `negocio.analizador_*`, por `org_id` | Es el corte que Fundaciones ya hizo el 2026-09-07 (`docs/capa-base/ETAPA-9.md:340-377`): el cliente de Comando Central no tiene cuenta en ARIA Brain, y las tablas de Brain no existen en la base local, así que nada de lo que dependa de ellas se puede probar. |
 | 2 | **El historial se copia una vez** a la organización `aria` | 107 de las 108 llamadas son de una sola cuenta tl;dv, y todos sus organizadores son @ariaia.com: es el historial comercial de la propia ARIA. La llamada restante (1 OB manual de otra cuenta) no se copia. |
 | 3 | **ARIA Brain sigue corriendo** y el doble trabajo está aceptado | Comando Central no apaga ni escribe nada de Brain; eso se hace a mano cuando se decida. Después de la copia **Comando Central no lee nada de Brain**, así que apagarlo no pide ningún cambio acá. |
 | 4 | **Todas las empresas**, cada una con sus llaves | Dentro de una empresa, quien tenga la pestaña ve todas sus llamadas. |
@@ -183,7 +183,7 @@ mutación (23 mutaciones, las 23 mueren).
 Hecho, en este orden:
 
 1. `058`, `059` y `060` con `db.mjs migrar`, **antes** del push (`7506742`).
-2. El catálogo con los tres pasos de `docs/DESPLIEGUE.md` § 4b. Antes, en lectura, un simulacro del
+2. El catálogo con los tres pasos de `docs/produccion/DESPLIEGUE.md` § 4b. Antes, en lectura, un simulacro del
    `delete` del reparto: no iba a quitar ninguna asignación. Después: 30 → 32 capacidades, 70 → 76
    asignaciones, los mismos 3 roles y 0 personas sin rol, igual que la base local. Los tres roles
    tienen `analizadores.ver` y `.editar`.

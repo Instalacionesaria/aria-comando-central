@@ -119,7 +119,7 @@ test('ADR-0604 · no hay caché de credenciales entre peticiones', () => {
   // cómo el token de una organización termina usándose para otra."*
   //
   // No hay prueba prescripta para esto en ningún documento: es decisión propia, registrada en
-  // `docs/ETAPA-6.md`. Y es barata, porque la forma es reconocible — un `Map` o un objeto en el
+  // `docs/capa-base/ETAPA-6.md`. Y es barata, porque la forma es reconocible — un `Map` o un objeto en el
   // nivel superior del módulo.
   const modulos = archivosFuente(['lib', 'app']).filter((a) => a.ruta.includes('credencial'));
   for (const m of modulos) {

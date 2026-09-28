@@ -9,7 +9,7 @@
 //
 // Dos cosas en un archivo porque una no existe sin la otra: el secreto del segundo factor es
 // `text not null` y hay que cifrarlo. Las dos filas del cifrado son las únicas que se
-// adelantaron de la Etapa 6, con la decisión registrada en `docs/ETAPA-4.md`.
+// adelantaron de la Etapa 6, con la decisión registrada en `docs/capa-base/ETAPA-4.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';

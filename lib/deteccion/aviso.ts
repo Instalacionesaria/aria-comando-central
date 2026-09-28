@@ -34,7 +34,7 @@
 // *"Una persona nombrada y un suplente. 'Al equipo' es a nadie a las tres de la mañana."*
 //
 // Eso NO se puede resolver en código: son dos nombres y dos formas de alcanzarlos. Queda como
-// pendiente explícito en `docs/ETAPA-8.md`, y `AVISO_DESTINO` viaja en el cuerpo para que el destino
+// pendiente explícito en `docs/capa-base/ETAPA-8.md`, y `AVISO_DESTINO` viaja en el cuerpo para que el destino
 // esté en el aviso y no solo en la configuración del canal.
 //
 // ── 3 · DEDUPLICACIÓN ────────────────────────────────────────────────────────

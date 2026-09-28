@@ -24,7 +24,7 @@
 // El sembrado ya se defendía así desde la Etapa 0 (`exigirBaseLocal()`), y era la
 // única barrera efectiva del proyecto. Esto la generaliza en vez de copiarla: una
 // cuarta copia de la misma lista de anfitriones es cómo una de las cuatro se queda
-// vieja — es la deuda que `SECCIONES` ya tiene nombrada en `docs/ETAPA-3.md`.
+// vieja — es la deuda que `SECCIONES` ya tiene nombrada en `docs/capa-base/ETAPA-3.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**

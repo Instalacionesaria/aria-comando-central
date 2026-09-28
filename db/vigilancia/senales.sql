@@ -17,7 +17,7 @@
 -- forma de la respuesta es la que la señal necesita**.
 --
 -- Lo que falta para que cada una sea la fila de `PRUEBAS`: la CADENCIA (una tarea programada)
--- y la PERSONA que la lee. Las dos son decisiones de operación y están en `docs/ETAPA-8.md`.
+-- y la PERSONA que la lee. Las dos son decisiones de operación y están en `docs/capa-base/ETAPA-8.md`.
 --
 -- ── Y LA PRECONDICIÓN QUE YA ESTÁ CUBIERTA ─────────────────────────────────
 --

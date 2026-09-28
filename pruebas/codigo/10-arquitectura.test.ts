@@ -287,7 +287,7 @@ test('los nombres del léxico existen, y los sinónimos prohibidos no', () => {
 
   // `activarContexto` NO existe: EJECUCION § 6 lo nombra, pero § 3 cerró la primitiva que
   // ENVUELVE Y CIERRA, y `activarContexto` es por construcción la que entra sin cerrar.
-  // Decisión confirmada y documentada en docs/LEXICO.md.
+  // Decisión confirmada y documentada en docs/especificacion/LEXICO.md.
   const prohibidos: Array<[string, RegExp]> = [
     ['activarContexto', /\bactivarContexto\s*\(/],
     ['dbSinScope', /\bdbSinScope\s*\(/],

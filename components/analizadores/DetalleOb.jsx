@@ -33,7 +33,7 @@
 
    La transcripción completa, porque la API del detalle no la devuelve para ningún tipo. Y el bloque
    «Uso del modelo», igual que en el detalle HT: el costo espera la tarifa confirmada (decisión 8 de
-   docs/ANALIZADORES.md) y los tokens quedan guardados en la base. */
+   docs/analizadores/ANALIZADORES.md) y los tokens quedan guardados en la base. */
 
 import { useCallback, useEffect, useState } from 'react';
 

@@ -1,6 +1,6 @@
 // ── NÚCLEO PORTADO DE ARIA BRAIN · los identificadores siguen en inglés a propósito ──
 // Son el contrato con el modelo (los nombres de campo del esquema van en el prompt) y con el JSON
-// guardado en el historial copiado: traducirlos cambiaría los prompts. Ver docs/ANALIZADORES.md.
+// guardado en el historial copiado: traducirlos cambiaría los prompts. Ver docs/analizadores/ANALIZADORES.md.
 // Origen: aria-ia-brain lib/analyzer/ht.ts. Ediciones: `.ts` en los imports y la comparación de la fase
 // (`asPhase`, más abajo), que corrige un defecto del origen y sube `rubricVersion` a v8.1.
 //

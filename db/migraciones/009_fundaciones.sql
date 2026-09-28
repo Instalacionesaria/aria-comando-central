@@ -8,7 +8,7 @@
 -- herramientas no traen ni una tabla de negocio, porque su estado NO vive en esta base.
 -- Vive en el almacén de ARIA-brain, compartido con el hub mientras el hub siga en pie
 -- (la decisión, con lo que cuesta, está escrita en `lib/fundaciones/almacen.ts` y en
--- `docs/ETAPA-9.md`).
+-- `docs/capa-base/ETAPA-9.md`).
 --
 -- Así que acá hay exactamente dos cosas: las dos capacidades nuevas, y la columna que
 -- dice a qué alumno del hub corresponde cada organización.

@@ -13,7 +13,7 @@ services:
     #
     # Estaba en 18 mientras el proveedor no existía. Bajarlo no es cosmético: hay
     # una defensa entera que se validó contra un comportamiento de 18. El
-    # `docs/ETAPA-2.md` afirma que *"PostgreSQL 18 exige privilegio sobre todas las
+    # `docs/capa-base/ETAPA-2.md` afirma que *"PostgreSQL 18 exige privilegio sobre todas las
     # columnas para cualquier referencia de fila completa, así que el permiso por
     # columna es hermético"*, y de eso depende que el inquilino no alcance
     # `identidad.usuarios.password_hash`. Con el contenedor en 18 y producción en

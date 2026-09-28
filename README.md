@@ -77,7 +77,7 @@ app/fundaciones.css       lo que el prototipo nunca tuvo: formularios
 ```
 
 Tres cosas que hay que saber antes de tocarla, cada una con su motivo
-completo en `docs/ETAPA-9.md`:
+completo en `docs/capa-base/ETAPA-9.md`:
 
 1. **Su estado vive en el almacén de ARIA-brain**, compartido con el hub
    mientras el hub siga en pie. No está en esta base y el aislamiento de

@@ -6,7 +6,7 @@
 // Este estado vive en `public.aria_cc_foundations`, una fila por organización y una COLUMNA por
 // llave. Nació como una copia de `aria_brain_client_state`, la tabla de ARIA-brain, cuando la Etapa 9
 // compartía el almacén con el hub; el 2026-09-07 el almacén pasó a la base propia y el trabajo ya
-// hecho se copió tal cual (`migraciones/011_foundations_sin_hub.sql`). Ver `docs/ETAPA-9.md`.
+// hecho se copió tal cual (`migraciones/011_foundations_sin_hub.sql`). Ver `docs/capa-base/ETAPA-9.md`.
 //
 // Consecuencia directa: los nombres de las llaves —que son los de las columnas— y de los campos de
 // cada documento JSON son los que ya escribió el hub, en inglés, y **no se traducen**. `date` no puede pasar a ser `fecha`:
@@ -64,7 +64,7 @@ export const LLAVES = {
  * **Este port la LEE y no la escribe**, y es una carencia, no una decisión de diseño: una versión
  * generada acá queda sin procedencia, así que el hub no le puede detectar el contexto viejo. Lo que
  * NO pasa es que la pierda para las versiones que ya la tienen — el campo es opcional y las
- * anteriores quedan intactas. Está en `docs/ETAPA-9.md` como pendiente.
+ * anteriores quedan intactas. Está en `docs/capa-base/ETAPA-9.md` como pendiente.
  */
 export interface Version {
   date: string;

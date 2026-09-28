@@ -253,7 +253,7 @@ Contadas el 2026-09-18, sin contar esta carpeta:
 | `docs/acquisition/05-PERIODOS-Y-COMPARACION.md` | 1 |
 | `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md` | 1 |
 
-`docs/DESPLIEGUE.md` nombra el archivo **sin número de línea**, así que no entra en la cuenta: le
+`docs/produccion/DESPLIEGUE.md` nombra el archivo **sin número de línea**, así que no entra en la cuenta: le
 alcanza con saber que el módulo ya no está.
 
 **Estado** · Es el defecto exacto que el commit `c8494e6` ya pagó: *«borrar el prototipo dejó 374

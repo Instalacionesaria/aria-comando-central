@@ -106,7 +106,7 @@ if (ctx instanceof Response) return ctx;
 
 Olvidarse de esa línea no abre la operación: `ctx.permisos` sobre un `Contexto | Response` es
 **error de compilación**. Es más fuerte que la versión del documento —ahí olvidarse rompe en
-tiempo de ejecución, acá no compila—. Detalle en `docs/LEXICO.md`.
+tiempo de ejecución, acá no compila—. Detalle en `docs/especificacion/LEXICO.md`.
 
 ### 2 · Las rutas llevan el prefijo `/api`
 

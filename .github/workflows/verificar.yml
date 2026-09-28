@@ -13,7 +13,7 @@
 # Y pesa más de lo normal en este repo porque Vercel está conectado: Vercel
 # despliega POR PUSH, NO POR CHEQUEO. Sin esas dos piezas, un commit con las
 # pruebas en rojo se publica en producción igual. Mientras falten, esta fila está
-# implementada pero INERTE, y está dicho así en docs/ETAPA-0.md en vez de tildada.
+# implementada pero INERTE, y está dicho así en docs/capa-base/ETAPA-0.md en vez de tildada.
 
 name: verificar
 

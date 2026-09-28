@@ -1,6 +1,6 @@
 // ── NÚCLEO PORTADO DE ARIA BRAIN · los identificadores siguen en inglés a propósito ──
 // Son el contrato con el modelo (los nombres de campo del esquema van en el prompt) y con el JSON
-// guardado en el historial copiado: traducirlos cambiaría los prompts. Ver docs/ANALIZADORES.md.
+// guardado en el historial copiado: traducirlos cambiaría los prompts. Ver docs/analizadores/ANALIZADORES.md.
 // Origen: aria-ia-brain lib/analyzer/prospect-card.ts. Ediciones, ninguna cambia el comportamiento:
 //   · `.ts` en los imports y un valor por omisión en el `split` de `pick` (`noUncheckedIndexedAccess`);
 //   · `SENTINELAS` pasó de `new Set(...)` a un arreglo de solo lectura. ADR-0703 prohíbe estructuras

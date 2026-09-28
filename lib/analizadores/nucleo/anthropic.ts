@@ -1,5 +1,5 @@
 // ── NÚCLEO PORTADO DE ARIA BRAIN · los identificadores siguen en inglés a propósito ──
-// Son el contrato con el motor portado (`engine.ts` los importa por nombre). Ver docs/ANALIZADORES.md.
+// Son el contrato con el motor portado (`engine.ts` los importa por nombre). Ver docs/analizadores/ANALIZADORES.md.
 //
 // Origen: aria-ia-brain lib/analyzer/anthropic.ts. **REESCRITO**, no copiado: del origen quedan el
 // cuerpo de las dos peticiones —idéntico, porque es el que produjo el historial— y `extractJson`, con

@@ -331,7 +331,7 @@ directamente porque todavía no hay sesión de donde sacarla.
 
 1. **Proveedor de PostgreSQL administrado** — ahora sí bloqueante. El `08` § 13 lo pone
    *"antes del primer endpoint que lea datos de un inquilino"*, y ése llega en la Etapa 3.
-   Requisitos duros en `docs/ETAPA-0.md`. Debería pasar por la habilidad
+   Requisitos duros en `docs/capa-base/ETAPA-0.md`. Debería pasar por la habilidad
    `vercel:marketplace`.
 2. **El agrupador en modo transacción, con un punto de acceso por rol.** Nunca modo sesión
    ni sentencia. La defensa que ya está puesta es la **lectura de vuelta** de `set_config`

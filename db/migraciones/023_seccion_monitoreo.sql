@@ -23,7 +23,7 @@
 -- No carga la capacidad `monitoreo.ver` en `identidad.permisos` ni la reparte a los roles: eso
 -- vive en `db/arranque/001_catalogo.sql`, y **no se puede hacer desde una migración** por la
 -- misma RLS forzada de arriba — el `insert` afectaría cero filas informando éxito. Se corre por
--- la Management API, como está documentado en `docs/DESPLIEGUE.md`:
+-- la Management API, como está documentado en `docs/produccion/DESPLIEGUE.md`:
 --
 --   node --env-file=.env.supabase scripts/supabase.mjs correr --archivo db/arranque/001_catalogo.sql
 --

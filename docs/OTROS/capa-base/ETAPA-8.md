@@ -174,6 +174,6 @@ decisiones de operación.
 7. **`ADR-0807`**: el simulacro de restauración, con **los roles primero** (no viajan en el volcado
    de la base) y las pruebas de aislamiento corriendo contra la copia.
 8. **La deuda de `SECCIONES`**: unificar las cuatro copias de las claves de pantalla, con el riesgo
-   de `npm run paridad` nombrado en `docs/ETAPA-3.md`.
+   de `npm run paridad` nombrado en `docs/capa-base/ETAPA-3.md`.
 9. **Los mapas de origen de `.next/server`**, que viajan en el artefacto desplegado y reconstruyen
    el código fuente verbatim.

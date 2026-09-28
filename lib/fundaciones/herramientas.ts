@@ -19,7 +19,7 @@
 //   Perfil(0) → Research(1) → ICP(3) → Categoría(2) → Oferta(4) → Pricing(10) → Mapa(26)
 //                                                        → VSL(5) → Landing(6)
 //
-// VSL(5) y Landing(6) entraron después: `docs/ETAPA-9.md` las dejó fuera de la primera entrega y
+// VSL(5) y Landing(6) entraron después: `docs/capa-base/ETAPA-9.md` las dejó fuera de la primera entrega y
 // esta las agrega, con lo que las nueve del hub quedan completas. Van AL FINAL porque son las dos
 // últimas del método —la Landing hereda del VSL, que hereda de las cuatro anteriores—, no por
 // haber llegado tarde.

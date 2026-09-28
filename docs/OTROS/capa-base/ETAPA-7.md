@@ -83,7 +83,7 @@ agrupador, la exención pasaría a eximir a un archivo que ya no la necesita.
 
 Las tres filas de la cadena de dependencias —versiones exactas, archivo de bloqueo versionado,
 guiones de instalación desactivados— se adelantaron a la **Etapa 0**, y el motivo está en
-`docs/ETAPA-0.md`, decisión 9: dejarlas en la 7b significaba que el servidor de construcción corría
+`docs/capa-base/ETAPA-0.md`, decisión 9: dejarlas en la 7b significaba que el servidor de construcción corría
 dependencias sin fijar y con guiones habilitados **durante todo el proyecto**, mientras sostiene
 `CLAVE_MAESTRA`. El `10` § 5 lo dice sin vueltas: *"no hace falta que la dependencia esté en la ruta
 del login. Basta con que esté en el proyecto."*
