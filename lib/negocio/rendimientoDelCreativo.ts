@@ -247,6 +247,24 @@ export interface FilaDeRendimiento {
   /** `landingPageView` / `linkClick`. Cuánto se pierde entre el clic y la carga. */
   clickToLanding: TasaDeAccion;
   interaccion: TasaDeAccion;
+  /**
+   * Los anuncios de la pieza en la ventana, uno por uno, del que más impresiones tuvo al que menos
+   * (desempate: el id). Es lo que lista el cajón de la pieza (docs/creative/15, C15-02), y de donde
+   * sale el anuncio cuya miniatura representa a la pieza (C15-01).
+   *
+   * Se arma con las MISMAS filas de `costoDelAnuncio` que se suman arriba, en el mismo bucle: una
+   * segunda consulta para listarlos podría devolver otros anuncios que los que suman la fila. Y lleva
+   * claves contadas, no la fila del costo entera: el nombre original del anuncio no viaja.
+   */
+  anunciosDeLaPieza: AnuncioDeLaPieza[];
+}
+
+/** Un anuncio de una pieza, en la ventana. */
+export interface AnuncioDeLaPieza {
+  anuncioId: string;
+  campanaId: string | null;
+  impresiones: number | null;
+  gasto: number | null;
 }
 
 export interface RendimientoDeLosCreativos {
@@ -324,6 +342,12 @@ export async function rendimientoDelCreativo(
     acc.gasto = suma(acc.gasto, f.gasto);
     acc.impresiones = suma(acc.impresiones, f.impresiones);
     acc.clics = suma(acc.clics, f.clics);
+    acc.anunciosDeLaPieza.push({
+      anuncioId: f.anuncioId,
+      campanaId: f.campanaId,
+      impresiones: f.impresiones,
+      gasto: f.gasto === null ? null : redondear(f.gasto, 2),
+    });
     /* `f.diasConEntrega` NO se acumula acá: es el predicado del gasto y el grano del anuncio. Los
        días de la pieza los pone `volcarElDesglose` desde la consulta del desglose. Ver el campo. */
     porPieza.set(creativo, acc);
@@ -355,6 +379,10 @@ export async function rendimientoDelCreativo(
 
     const d = desglose.get(fila.creativo);
     if (d) volcarElDesglose(fila, d);
+
+    fila.anunciosDeLaPieza.sort(
+      (a, b) => (b.impresiones ?? -1) - (a.impresiones ?? -1) || (a.anuncioId < b.anuncioId ? -1 : 1),
+    );
   }
 
   const filas = [...porPieza.values()].sort((a, b) => (b.gasto ?? 0) - (a.gasto ?? 0));
@@ -394,6 +422,7 @@ function nuevaFila(creativo: string): FilaDeRendimiento {
     landingPageViewRate: vacia(),
     clickToLanding: vacia(),
     interaccion: vacia(),
+    anunciosDeLaPieza: [],
   };
 }
 

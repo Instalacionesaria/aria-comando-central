@@ -41,6 +41,7 @@ import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { calidadDelCreativo } from '../../../lib/negocio/calidadDelCreativo.ts';
 import { rendimientoDelCreativo } from '../../../lib/negocio/rendimientoDelCreativo.ts';
 import { fatigaDelCreativo } from '../../../lib/negocio/fatigaDelCreativo.ts';
+import { enlacesDeLasPiezas } from '../../../lib/negocio/enlaceDeLaPieza.ts';
 
 export const PANTALLA = 'creative';
 
@@ -57,11 +58,16 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const [calidad, rendimiento, fatiga] = await conOrganizacion(contexto.orgEfectiva, async () => [
-    await calidadDelCreativo(periodo.dias),
-    await rendimientoDelCreativo(periodo.dias),
-    await fatigaDelCreativo(periodo.dias),
-  ]);
+  const [calidad, rendimiento, fatiga, enlaces] = await conOrganizacion(contexto.orgEfectiva, async () =>
+    [
+      await calidadDelCreativo(periodo.dias),
+      await rendimientoDelCreativo(periodo.dias),
+      await fatigaDelCreativo(periodo.dias),
+      /* Los links manuales de las piezas (docs/creative/15, C15-06): el respaldo del video, que el
+         cajón de la pieza ofrece como «Ver en Facebook / Instagram». No dependen de la ventana. */
+      await enlacesDeLasPiezas(),
+    ] as const,
+  );
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
@@ -70,5 +76,6 @@ export async function GET(peticion: Request): Promise<Response> {
     calidad,
     rendimiento,
     fatiga,
+    enlaces,
   });
 }

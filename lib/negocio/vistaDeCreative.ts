@@ -18,6 +18,7 @@ import type { ClaveDePeriodo } from './periodo.ts';
 import type { CalidadDeLosCreativos } from './calidadDelCreativo.ts';
 import type { RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
 import type { FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
+import type { EnlaceDePieza } from './enlaceDeLaPieza.ts';
 
 const RUTA = '/api/creative';
 
@@ -29,6 +30,8 @@ export interface PantallaDeCreative {
   rendimiento: RendimientoDeLosCreativos;
   /** La caída del CTR contra el tiempo. */
   fatiga: FatigaDeLosCreativos;
+  /** El link manual de cada pieza que lo tiene: el respaldo del video (docs/creative/15, C15-06). */
+  enlaces: EnlaceDePieza[];
 }
 
 export type ResultadoDeCreative =
@@ -47,4 +50,30 @@ export async function leerCreative(periodo: ClaveDePeriodo): Promise<ResultadoDe
     return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo leer el rendimiento de los creativos.' };
   }
   return { tipo: 'fallo', mensaje: 'No se pudo conectar para leer el rendimiento de los creativos.' };
+}
+
+/** El resultado de cargar o sacar un link: la lista que quedó, o el motivo del servidor. */
+export type ResultadoDelEnlace = { tipo: 'datos'; enlaces: EnlaceDePieza[] } | { tipo: 'fallo'; mensaje: string };
+
+async function escribirEnlace(
+  metodo: 'PUT' | 'DELETE',
+  camino: string,
+  cuerpo?: unknown,
+): Promise<ResultadoDelEnlace> {
+  const r = await pedir<{ enlaces: EnlaceDePieza[] }>(camino, { metodo, cuerpo });
+  if (r.tipo === 'datos') return { tipo: 'datos', enlaces: r.datos.enlaces };
+  /* El motivo del servidor se muestra tal cual: dice qué hosts se aceptan, que es lo que necesita
+     quien está pegando el link. */
+  if (r.tipo === 'rechazado') return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo guardar el link.' };
+  return { tipo: 'fallo', mensaje: 'No se pudo conectar para guardar el link.' };
+}
+
+/** Carga o reemplaza el link manual de una pieza. */
+export function guardarEnlaceDeLaPieza(pieza: string, url: string): Promise<ResultadoDelEnlace> {
+  return escribirEnlace('PUT', '/api/creative/enlace', { pieza, url });
+}
+
+/** Saca el link manual de una pieza. */
+export function borrarEnlaceDeLaPieza(pieza: string): Promise<ResultadoDelEnlace> {
+  return escribirEnlace('DELETE', `/api/creative/enlace?pieza=${encodeURIComponent(pieza)}`);
 }

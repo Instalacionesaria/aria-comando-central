@@ -48,6 +48,8 @@ const PANELES: Readonly<Record<string, string>> = {
      el navegador, aunque esta prueba —que mira texto— la diera por buena. */
   'components/leads-portal/PanelDeLeadsPortal.jsx': 'v-contacts',
   'components/leads-portal/FichaDelLead.jsx': 'v-contacts',
+  /* El cajón de la pieza de Creative, también en un portal: sus reglas cuelgan de `.cr-ficha`. */
+  'components/creative/FichaDelCreativo.jsx': 'v-creative',
 };
 
 const sinComentarios = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, '');

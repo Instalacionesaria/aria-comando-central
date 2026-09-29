@@ -42,6 +42,8 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerCreative } from '@/lib/negocio/vistaDeCreative';
+import { useSesion } from '../../app/sesion-contexto.tsx';
+import FichaDelCreativo from './FichaDelCreativo';
 
 /** Cuántas piezas se dibujan de entrada en cada tabla. Las demás, detrás de un botón que las cuenta. */
 const PIEZAS_A_LA_VISTA = 10;
@@ -170,12 +172,35 @@ function fechaCorta(iso) {
 }
 
 function Cuerpo({ p }) {
+  /* El cajón de la pieza (docs/creative/15, C15-02). Se abre desde la subasta y desde la tabla de
+     gente, y se apoya en la fila del RENDIMIENTO: es la que lleva los anuncios de la pieza. Una pieza
+     de la tabla de gente sin fila de rendimiento —un nombre que no es de ningún anuncio— no se abre:
+     no hay nada que listar. */
+  const [abierta, setAbierta] = useState(null);
+  const [enlaces, setEnlaces] = useState(p.enlaces ?? []);
+  useEffect(() => setEnlaces(p.enlaces ?? []), [p.enlaces]);
+  const sesion = useSesion();
+  const puedeEditar = Boolean(sesion?.puedeConfigurarComisiones && !sesion?.mirandoOtraOrganizacion);
+
+  const porPieza = new Map(p.rendimiento.filas.map((f) => [f.creativo, f]));
+  const alAbrir = (pieza) => (porPieza.has(pieza) ? setAbierta(pieza) : null);
+  const fila = abierta === null ? null : porPieza.get(abierta) ?? null;
+
   return (
     <>
       {/* La cobertura ANTES de cualquier ranking. Ver el encabezado. */}
       <Cobertura p={p} />
-      <PorEtapa c={p.calidad} />
-      <Subasta r={p.rendimiento} />
+      <PorEtapa c={p.calidad} alAbrir={alAbrir} conFicha={porPieza} />
+      <Subasta r={p.rendimiento} alAbrir={alAbrir} />
+      {fila ? (
+        <FichaDelCreativo
+          fila={fila}
+          enlace={enlaces.find((e) => e.pieza === fila.creativo) ?? null}
+          puedeEditar={puedeEditar}
+          alCambiarEnlaces={setEnlaces}
+          alCerrar={() => setAbierta(null)}
+        />
+      ) : null}
       <Fatiga f={p.fatiga} />
       {/* Y lo último: qué NO muestra esta pantalla, y por qué. Ver `Huecos`. */}
       <Huecos lista={p.rendimiento.fueraDeAlcance} />
@@ -291,7 +316,7 @@ function Cobertura({ p }) {
  * Una tabla por etapa y no una columna: la regla 3 no dice «distinguir TOFU de BOFU», dice **no
  * compararlos**. En una sola lista ordenada quedan uno al lado del otro y se comparan solos.
  */
-function PorEtapa({ c }) {
+function PorEtapa({ c, alAbrir, conFicha }) {
   if (c.filas.length === 0) return null;
 
   const etapas = [...new Set(c.filas.map((f) => f.etapa))].sort((a, b) => {
@@ -319,6 +344,8 @@ function PorEtapa({ c }) {
           etapa={etapa}
           filas={c.filas.filter((f) => f.etapa === etapa)}
           conIcp={c.campoDeIcp !== null}
+          alAbrir={alAbrir}
+          conFicha={conFicha}
         />
       ))}
 
@@ -330,7 +357,7 @@ function PorEtapa({ c }) {
   );
 }
 
-function TablaDeGente({ etapa, filas, conIcp }) {
+function TablaDeGente({ etapa, filas, conIcp, alAbrir, conFicha }) {
   const [todas, setTodas] = useState(false);
   const visibles = todas ? filas : filas.slice(0, PIEZAS_A_LA_VISTA);
   const ocultas = filas.length - visibles.length;
@@ -356,7 +383,13 @@ function TablaDeGente({ etapa, filas, conIcp }) {
         {visibles.map((f) => (
           <div className="crv-fila" role="row" key={`${f.creativo ?? 'sin'}-${f.etapa ?? 'na'}`}>
             <span className="crv-n" role="cell" title={f.creativo ?? undefined}>
-              {f.creativo ?? 'Sin creativo'}
+              {f.creativo !== null && conFicha.has(f.creativo) ? (
+                <button type="button" className="crv-abrir" onClick={() => alAbrir(f.creativo)}>
+                  {f.creativo}
+                </button>
+              ) : (
+                (f.creativo ?? 'Sin creativo')
+              )}
               {f.creativo === null ? (
                 <Nota texto="Contactos que llegaron sin nombre de pieza. Se cuentan aparte para que la tabla sume la cohorte entera." />
               ) : null}
@@ -393,7 +426,7 @@ function TablaDeGente({ etapa, filas, conIcp }) {
  *
  * Por pieza y no por (pieza, etapa): el anuncio no sabe en qué etapa cae el lead que trajo.
  */
-function Subasta({ r }) {
+function Subasta({ r, alAbrir }) {
   const [todas, setTodas] = useState(false);
   if (r.filas.length === 0) return null;
 
@@ -441,7 +474,9 @@ function Subasta({ r }) {
         {visibles.map((f) => (
           <div className="crv-fila" role="row" key={f.creativo}>
             <span className="crv-n" role="cell" title={f.creativo}>
-              {f.creativo}
+              <button type="button" className="crv-abrir" onClick={() => alAbrir(f.creativo)}>
+                {f.creativo}
+              </button>
               {/* Lo que no cabe en una columna va acá. Son DOS: la interacción —la mejor cobertura
                   de las cuatro tasas (90 %) y la menos accionable— y el click-to-landing, que
                   gastarles una columna a cada una empujaría fuera al link CTR en el ancho de un

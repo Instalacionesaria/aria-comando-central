@@ -1,0 +1,41 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CREATIVE: EL CAJÓN DE LA PIEZA (docs/creative/15, C15-02)
+
+   Hoja aparte y en la capa `components`, como `leads-portal.css`: el cajón usa las clases globales
+   del prototipo —`drawer`, `dw-*`, `kv`, `ld-btn`, que viven en `aios.css`— y acá va sólo lo nuevo.
+
+   Dos raíces, y no por gusto. El nombre de la pieza que abre el cajón vive en la tabla, dentro de
+   `#v-creative`. El cajón se monta en `document.body` con un portal, así que una regla colgada de
+   `#v-creative` NO lo alcanzaría: sus reglas cuelgan de `.cr-ficha`.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* El nombre de la pieza es un botón de verdad —se alcanza con el teclado— que se lee como el texto
+   que era. Sin esto hereda la tipografía y el fondo del navegador. */
+#v-creative .crv-abrir {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0;
+  text-align: left; cursor: pointer; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px;
+}
+#v-creative .crv-abrir:hover { text-decoration-color: currentColor; }
+#v-creative .crv-abrir:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 2px; border-radius: 4px; }
+
+.cr-ficha .cr-titulo { overflow-wrap: anywhere; }
+.cr-ficha .cr-dato { font-size: 11.5px; color: var(--txt-dim); }
+.cr-ficha .cr-hueco { font-size: 11.5px; line-height: 1.5; color: var(--txt-faint); margin-top: 8px; }
+.cr-ficha .cr-enlace { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.cr-ficha .cr-enlace a.ld-btn { text-decoration: none; }
+.cr-ficha .cr-anuncio { display: flex; justify-content: space-between; gap: 12px; }
+.cr-ficha .cr-form { margin-top: 12px; display: grid; gap: 6px; }
+.cr-ficha .cr-fila-form { display: flex; flex-wrap: wrap; gap: 8px; }
+.cr-ficha .cr-input {
+  flex: 1 1 220px; min-width: 0; font: inherit; font-size: 12.5px; color: var(--txt);
+  background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
+}
+.cr-ficha .cr-input:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 1px; }
+.cr-ficha .cr-error { font-size: 11.5px; color: var(--warn); }
+
+/* En el teléfono cada anuncio va en dos renglones: el id y las cifras no entran lado a lado. */
+@media (max-width: 480px) {
+  .cr-ficha .cr-anuncio { flex-direction: column; gap: 2px; }
+}

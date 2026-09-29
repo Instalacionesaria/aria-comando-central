@@ -482,3 +482,31 @@ test('los títulos de las columnas viajan en la respuesta, no se importan', asyn
      segundos» ni «ThruPlay» en el rótulo. Eso se dice en el aviso, con su matiz. */
   assert.doesNotMatch(r.titulos.videoView, /thruplay|tres segundos|3 ?s/i);
 });
+
+test('la fila de la pieza lista sus anuncios, del de más impresiones al de menos, con claves contadas', async () => {
+  /* Es lo que dibuja el cajón de la pieza (docs/creative/15, C15-02) y de donde sale la miniatura que
+     la representa (C15-01). Dos anuncios con el MISMO nombre: la pieza es una, los anuncios dos.
+     Mutaciones: no hacer el `push` deja la lista vacía; hacer spread de la fila de costo mete
+     `nombre`, `creativo` y las tasas del anuncio en la respuesta; sin el orden, el primero es el que
+     la base devuelve primero. */
+  await limpiar();
+  await unAnuncio(`${MARCA}31`, 'pieza de dos anuncios');
+  await unAnuncio(`${MARCA}32`, 'Pieza De Dos Anuncios ');
+  /* El de MÁS gasto tiene MENOS impresiones, a propósito: `costoDelAnuncio` ordena por gasto, y con
+     datos donde los dos órdenes coinciden, una lista sin ordenar pasaría igual. Medido: con los datos
+     de la primera versión de esta prueba, quitar el orden no la ponía en rojo. */
+  await unDia(`${MARCA}31`, 1, { gasto: 20.333, impresiones: 400 }, null);
+  await unDia(`${MARCA}32`, 1, { gasto: 9, impresiones: 2500 }, null);
+  await unDia(`${MARCA}32`, 2, { gasto: 1, impresiones: 500 }, null);
+
+  const f = await fila('pieza de dos anuncios');
+  assert.ok(f, 'la pieza no aparece');
+  assert.equal(f.anuncios, 2);
+  assert.deepEqual(f.anunciosDeLaPieza, [
+    { anuncioId: `${MARCA}32`, campanaId: '8800', impresiones: 3000, gasto: 10 },
+    { anuncioId: `${MARCA}31`, campanaId: '8800', impresiones: 400, gasto: 20.33 },
+  ]);
+  for (const a of f.anunciosDeLaPieza) {
+    assert.deepEqual(Object.keys(a).sort(), ['anuncioId', 'campanaId', 'gasto', 'impresiones']);
+  }
+});
