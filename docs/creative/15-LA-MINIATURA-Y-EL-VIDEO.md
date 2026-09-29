@@ -56,7 +56,8 @@ pieza, «la primera» es la que la base devuelve primero, y eso cambia sin que n
 6 anuncios, cada uno con su miniatura, sus impresiones y su gasto en la ventana, y su botón de video.
 **Rastro** · Molde: `components/leads-portal/FichaDelLead.jsx` (portal propio, foco, Escape; **no**
 el `#drawer` compartido, que usa Executive).
-**Estado** · Planificado (CR-2). No depende de Meta: se construye antes.
+**Estado** · **Construido el 2026-09-29** (CR-2): `components/creative/FichaDelCreativo.jsx`, que se
+abre con el nombre de la pieza en la subasta y en la tabla de gente.
 
 ### C15-03 · El click tiene tres salidas, y cada una dice por qué
 
@@ -94,11 +95,14 @@ reel. Se muestra como enlace; **nunca** se reproduce ni se embebe.
 **Quién lo carga** · Quien tenga `credenciales.editar`, la misma capacidad que carga los links de
 pago (ver `12-QUIEN-VE-QUE.md`, `C12-07`). Queda auditado.
 **Qué se acepta** · Sólo `https`, sin usuario ni contraseña en la URL, sin puerto, y sólo estos hosts:
-`facebook.com`, `www.facebook.com`, `m.facebook.com`, `fb.watch`, `instagram.com`,
-`www.instagram.com`. La comparación es exacta o por sufijo **con el punto adelante**:
-`evilfacebook.com` no pasa. Molde: `urlDePagoValida` (`lib/negocio/enlacesRapidos.ts:79-87`), más la
+`facebook.com`, `www.facebook.com`, `m.facebook.com`, `web.facebook.com`, `business.facebook.com`,
+`fb.watch`, `fb.me` —el acortador de Meta, que es el formato del link «Compartir vista previa» del
+Administrador de anuncios—, `instagram.com` y `www.instagram.com` (`lib/negocio/urlExterna.ts:43`).
+La comparación es **exacta**: `evilfacebook.com` no pasa. Molde: `urlDePagoValida` (`lib/negocio/enlacesRapidos.ts:79-87`), más la
 lista de hosts.
-**Estado** · Planificado (CR-1). No depende de Meta.
+**Estado** · **Construido el 2026-09-29** (CR-1): tabla `negocio.enlaces_de_pieza` (migración 063),
+validador `enlaceDePublicacion` (`lib/negocio/urlExterna.ts:82`) y ruta `PUT`/`DELETE
+/api/creative/enlace`.
 
 ### C15-07 · Lo que viaja al navegador es una lista blanca
 
@@ -153,17 +157,17 @@ decía sobre «columnas que se agregan».
 Cada etapa es un commit, con sus pruebas vistas en rojo con su mutación. Las migraciones van a
 producción antes del push.
 
-| etapa | qué | depende de |
-|---|---|---|
-| CR-1 | El link manual por pieza: tabla `negocio.enlaces_de_pieza`, validador de URL, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | nada |
-| CR-2 | El cajón de la pieza con sus anuncios | nada |
-| CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador` (`lib/credenciales/resolver.ts:524`) | nada |
-| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** |
-| CR-5 | La tabla `negocio.activos_de_anuncio` y la tarea `activos` del cron | CR-4 |
-| CR-6 | El cliente de Meta y el escritor único `lib/negocio/recolectarActivos.ts` | CR-4 |
-| CR-7 | La miniatura en la tabla y en el cajón (molde: `components/tools/anuncios.jsx:67-112`, `<img>` crudo con `onError`) | CR-6 |
-| CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 |
-| CR-9 | Los huecos dinámicos y los documentos al día | todo |
+| etapa | qué | depende de | estado |
+|---|---|---|---|
+| CR-1 | El link manual por pieza: tabla `negocio.enlaces_de_pieza`, validador de URL, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | nada | hecho, 2026-09-29 |
+| CR-2 | El cajón de la pieza con sus anuncios | nada | hecho, 2026-09-29 |
+| CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador`; quedó en `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:607`), migración 064 | nada | hecho, 2026-09-29 |
+| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | pendiente |
+| CR-5 | La tabla `negocio.activos_de_anuncio` y la tarea `activos` del cron | CR-4 | pendiente |
+| CR-6 | El cliente de Meta y el escritor único `lib/negocio/recolectarActivos.ts` | CR-4 | pendiente |
+| CR-7 | La miniatura en la tabla y en el cajón (molde: `components/tools/anuncios.jsx:67-112`, `<img>` crudo con `onError`) | CR-6 | pendiente |
+| CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | pendiente |
+| CR-9 | Los huecos dinámicos y los documentos al día | todo | pendiente |
 
 ---
 

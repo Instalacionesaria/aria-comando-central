@@ -91,6 +91,10 @@ const CAMPOS = [
   { entrada: 'pagosClave', columna: 'pagos_clave_cifrada', secreto: true },
   // La llave de tl;dv de los Analizadores (`057`). Secreto, como la de IA: se cifra y nunca sale.
   { entrada: 'tldvClave', columna: 'tldv_clave_cifrada', secreto: true },
+  // El token de Meta de Creative (`064`): un usuario del sistema, sólo lectura. Secreto.
+  { entrada: 'metaToken', columna: 'meta_token_cifrado', secreto: true },
+  // La cuenta publicitaria (`act_…`). NO es secreto: quien la carga tiene que poder verla.
+  { entrada: 'metaCuentaId', columna: 'meta_cuenta_id', secreto: false },
   { entrada: 'crmCuentaId', columna: 'crm_cuenta_id', secreto: false },
   // El calendario de agendamiento. `secreto: false`: es el identificador de un calendario ajeno, va y
   // viene completo. Y NO es un filtro del barrido — ver la migración 016.

@@ -137,6 +137,13 @@ export interface Credenciales {
    * nunca el valor.
    */
   tldv: CredencialVisible;
+  /**
+   * El token de Meta de Creative (`064`): el de un usuario del sistema del Business Manager, sólo
+   * lectura. Como la de IA: su estado y una vista previa, nunca el valor.
+   */
+  meta: CredencialVisible;
+  /** La cuenta publicitaria de Meta (`act_…`). NO es secreto: va completa, como `crmCuentaId`. */
+  metaCuentaId: string | null;
   /** La subcuenta de GoHighLevel. NO es secreto: va completo. */
   crmCuentaId: string | null;
   /**
@@ -203,6 +210,8 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
       'ia_clave_cifrada',
       'pagos_clave_cifrada',
       'tldv_clave_cifrada',
+      'meta_token_cifrado',
+      'meta_cuenta_id',
       'crm_cuenta_id',
       'crm_calendario_id',
       'crm_dominio_reservas',
@@ -227,6 +236,8 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   const pagos = verCredencial(fila?.pagos_clave_cifrada ?? null, 'activa');
   // La de tl;dv es de la misma clase: sin columna de estado propio, se deriva de la presencia.
   const tldv = verCredencial(fila?.tldv_clave_cifrada ?? null, 'activa');
+  // Y la de Meta (`064`), también sin columna de estado: se deriva de la presencia.
+  const meta = verCredencial(fila?.meta_token_cifrado ?? null, 'activa');
 
   // ADR-0809 · Se EMITE `credencial_ilegible`, en la función única que descifra.
   //
@@ -241,7 +252,7 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   // maestra cambió— y el mismo síntoma para quien la sufre: la pantalla dice que no puede
   // generar y nadie sabe por qué. Emitir solo por una de las tres dejaría dos tercios de la
   // señal sin cablear, que es el cero indistinguible que `ADR-0809` existe para impedir.
-  if (crm.estado === ILEGIBLE || ia.estado === ILEGIBLE || pagos.estado === ILEGIBLE || tldv.estado === ILEGIBLE) {
+  if (crm.estado === ILEGIBLE || ia.estado === ILEGIBLE || pagos.estado === ILEGIBLE || tldv.estado === ILEGIBLE || meta.estado === ILEGIBLE) {
     await auditar(db, { accion: 'credencial_ilegible', orgId: org.id });
   }
 
@@ -252,6 +263,8 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
     ia,
     pagos,
     tldv,
+    meta,
+    metaCuentaId: fila?.meta_cuenta_id ?? null,
     crmCuentaId: fila?.crm_cuenta_id ?? null,
     crmCalendarioId: fila?.crm_calendario_id ?? null,
     crmDominioReservas: fila?.crm_dominio_reservas ?? null,
@@ -547,6 +560,70 @@ export async function resolverAccesoAlAnalizador(db: Trx, orgId: string): Promis
     return { tipo: 'falta', que: 'llave_de_ia_ilegible' };
   }
   return { tipo: 'listo', claveIa, claveTldv };
+}
+
+/**
+ * Lo que le falta a una empresa para que Creative lea la miniatura y el video de sus anuncios en Meta
+ * (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md). Sin nada de esto la pantalla funciona igual: dice
+ * el hueco y ofrece el link manual de cada pieza.
+ */
+export type FaltaParaMeta = 'sin_token_de_meta' | 'token_de_meta_ilegible' | 'sin_cuenta_de_meta';
+
+export type AccesoAMeta =
+  | { tipo: 'listo'; token: string; cuentaId: string }
+  | { tipo: 'falta'; que: FaltaParaMeta };
+
+export const TEXTO_DE_FALTA_META: Readonly<Record<FaltaParaMeta, string>> = {
+  sin_token_de_meta:
+    'Esta empresa no tiene su token de Meta cargado. Se carga en Ajustes › Credenciales; sin él no se ' +
+    'muestran las miniaturas ni los videos de los anuncios.',
+  token_de_meta_ilegible:
+    'El token de Meta está cargado pero el servidor no puede leerlo. Hay que volver a cargarlo.',
+  sin_cuenta_de_meta:
+    'Falta la cuenta publicitaria de Meta (el act_… del Administrador de anuncios). Se carga en Ajustes › ' +
+    'Credenciales, al lado del token: sin ella no se puede comprobar que cada anuncio es de esta empresa.',
+};
+
+/**
+ * La cuenta publicitaria en la forma que usa Meta, `act_<dígitos>`, o `null` si no tiene esa forma.
+ *
+ * Se acepta con o sin el prefijo —el Administrador de anuncios muestra los dígitos solos en unas
+ * pantallas y con `act_` en otras— y se normaliza acá, en un lugar, para que la comparación contra
+ * lo que devuelve Meta no dependa de cómo la tipeó cada persona.
+ */
+export function cuentaDeMeta(texto: string | null | undefined): string | null {
+  const limpio = (texto ?? '').trim().replace(/^act_/i, '');
+  return /^\d{5,25}$/.test(limpio) ? `act_${limpio}` : null;
+}
+
+/**
+ * El token de Meta descifrado y la cuenta, o **qué falta**.
+ *
+ * El token PRIMERO: sin token la empresa simplemente no conectó Meta —hoy, todas— y la pantalla lo
+ * dice como hueco, no como error. Con token y sin cuenta, alguien quiso conectar y le falta un paso:
+ * ése es el aviso que importa, y con el orden al revés se perdería entre las que nunca conectaron.
+ * La presencia se mira antes de descifrar, como en `resolverAccesoAlAnalizador`.
+ */
+export async function resolverAccesoAMeta(db: Trx, orgId: string): Promise<AccesoAMeta> {
+  const fila = await db
+    .selectFrom('organizaciones_credenciales')
+    .select(['meta_token_cifrado', 'meta_cuenta_id'])
+    .where('org_id', '=', orgId)
+    .executeTakeFirst();
+
+  if (!fila || !fila.meta_token_cifrado) return { tipo: 'falta', que: 'sin_token_de_meta' };
+  const cuentaId = cuentaDeMeta(fila.meta_cuenta_id);
+  if (cuentaId === null) return { tipo: 'falta', que: 'sin_cuenta_de_meta' };
+
+  let token: string;
+  try {
+    token = descifrar(fila.meta_token_cifrado);
+  } catch {
+    // `ADR-0809` · el mismo punto de emisión y la misma transacción que los demás resolvedores.
+    await auditar(db, { accion: 'credencial_ilegible', orgId });
+    return { tipo: 'falta', que: 'token_de_meta_ilegible' };
+  }
+  return { tipo: 'listo', token, cuentaId };
 }
 
 /** El texto que se le muestra a quien no puede generar. Uno por faltante. */

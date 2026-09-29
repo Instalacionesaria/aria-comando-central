@@ -163,6 +163,10 @@ export interface TablaOrganizacionesCredenciales {
   ia_clave_cifrada: string | null;
   /** La llave de tl;dv de los Analizadores. Migración `057`. */
   tldv_clave_cifrada: string | null;
+  /** El token de Meta del usuario del sistema, sólo lectura (`064`). Secreto. */
+  meta_token_cifrado: string | null;
+  /** La cuenta publicitaria de Meta (`act_…`, `064`). NO es secreto: va completa. */
+  meta_cuenta_id: string | null;
   crm_cuenta_id: string | null;
   /**
    * El calendario donde se agendan las llamadas. **No es un filtro del barrido.**

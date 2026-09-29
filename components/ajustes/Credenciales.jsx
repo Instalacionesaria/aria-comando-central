@@ -115,6 +115,27 @@ const CAMPOS = [
     secreto: true,
   },
   {
+    entrada: 'metaToken',
+    estado: 'meta',
+    titulo: 'Token de Meta',
+    /* Qué es, quién lo genera y qué pasa sin él. Es de un USUARIO DEL SISTEMA del Business Manager, no
+       el de una persona: el de una persona vence cuando esa persona cambia su contraseña o se va. */
+    ayuda:
+      'El de un usuario del sistema del Business Manager de tu empresa, sólo con ads_read, ' +
+      'pages_read_engagement y pages_show_list: lee, no crea ni gasta. Con él Creative muestra la ' +
+      'miniatura y el video de cada anuncio; sin él, la pantalla funciona igual y lo dice.',
+    secreto: true,
+  },
+  {
+    entrada: 'metaCuentaId',
+    valor: 'metaCuentaId',
+    titulo: 'Cuenta publicitaria de Meta',
+    ayuda:
+      'El act_… de la cuenta, el mismo que se ve en el Administrador de anuncios (con o sin el act_). ' +
+      'Sirve para descartar un anuncio que el token vea de otra cuenta. No es un secreto.',
+    secreto: false,
+  },
+  {
     entrada: 'pagosClave',
     estado: 'pagos',
     titulo: 'Clave de la pasarela de pagos',
