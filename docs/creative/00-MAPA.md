@@ -107,7 +107,13 @@ prohibición al lado. Es la diferencia entre postergar un requisito y borrarlo.
 | Archivo | Título |
 |---|---|
 | `13-EL-CONTRASTE.md` | El prototipo contra el documento contra lo medible hoy |
-| `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` | **La medición del 2026-09-18 contra la API real.** Es a la vez fuente y corrección |
+| `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` | **La medición del 2026-09-18 contra la API real.** Es a la vez fuente y corrección. Su § 6 es la re-medición del 2026-09-29 |
+
+### La mejora del 2026-09-29
+
+| Archivo | Prefijo | Título |
+|---|---|---|
+| `15-LA-MINIATURA-Y-EL-VIDEO.md` | `C15-` | La miniatura y el video de cada anuncio: la decisión de la fuente (Meta directo), los requisitos, las etapas y la guía para generar el token |
 
 **Si se va a leer uno solo, que sea el `14`.** No porque sea el más importante para el producto, sino
 porque es el que cambia lo que ya estaba escrito: `lib/ghl/anuncios.ts:41-46` y
@@ -128,7 +134,7 @@ se cita por su número completo —`C2-07`, `C8-12`— desde cualquier documento
 | **Ya está, y está medido** | La lista de piezas y su gasto (32 creativos en 79 anuncios), el ICP promedio por pieza (de 29,2 a 69,2, factor 2,4), la tasa de agenda por pieza (de 31 % a 77 %), y la etapa del embudo leída del nombre de campaña |
 | **Llega y se está tirando** | El desglose de acciones de Meta por anuncio y por día: `videoView` (90 % de cobertura), `linkClick` (74 %), `landingPageView` (65 %), `postEngagement` (90 %). Habilita hook rate, link CTR, landing page view rate y click-to-landing. Ver `14` |
 | **Se puede calcular pero la base es corta** | La fatiga por caída de CTR: 28 creativos con entrega, 16 con siete días o más, sólo 5 con catorce. La serie empieza el 2026-08-18 porque el colector arrancó ese día |
-| **No tiene fuente por esta vía** | Los cuartiles de video, el tiempo medio visto, la retención de seis segundos, el placement y el activo creativo (imagen, video, copy, miniatura). Los cuatro están medidos como imposibles en `14`, con el código de error de cada intento |
+| **No tiene fuente por esta vía** | Los cuartiles de video, el tiempo medio visto, la retención de seis segundos, el placement y el activo creativo (imagen, video, copy, miniatura). Los cuatro están medidos como imposibles en `14`, con el código de error de cada intento. **La miniatura y el video se van a traer de Meta directo** (`15`, decidido el 2026-09-29) |
 | **No es de este departamento** | La retención del VSL (Conversion, y además el medidor está roto), el video precall (Conversation), el revenue y el CAC (Business) |
 
 De las **seis** métricas de «Video y creativo» del § 18.7, dos se pueden dar hoy y cuatro no tienen

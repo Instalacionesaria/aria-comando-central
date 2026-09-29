@@ -39,7 +39,16 @@ const RAIZ = join(import.meta.dirname, '..', '..');
    `docs/OTROS/estado actual` entró el 2026-09-28, el día que se reescribió entera: es la carpeta que
    más cita al código —cada afirmación de la foto lleva su `archivo:línea`— y la que más rápido se
    pudre, porque describe el código de un día y el código sigue. Reescrita, tampoco trae deuda. */
-const AUDITADAS = ['docs/sales', 'docs/leads-portal', 'docs/OTROS/estado actual'];
+/* Y un ARCHIVO suelto, `docs/creative/15-…`, que entró el día que nació (2026-09-29). La carpeta
+   `docs/creative/` entera no puede entrar todavía: sus documentos citan `lib/aios/creative.js`, que se
+   borró el 2026-09-19, como referencia histórica, y esas citas darían «el archivo no está». El 15 no
+   arrastra ninguna, así que se audita solo. */
+const AUDITADAS = [
+  'docs/sales',
+  'docs/leads-portal',
+  'docs/OTROS/estado actual',
+  'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
+];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
 
@@ -108,7 +117,7 @@ interface Citada {
 
 const CITAS: Citada[] = [];
 for (const dir of AUDITADAS) {
-  for (const doc of archivosDe(dir, (n) => n.endsWith('.md'))) {
+  for (const doc of dir.endsWith('.md') ? [dir] : archivosDe(dir, (n) => n.endsWith('.md'))) {
     for (const [i, l] of readFileSync(join(RAIZ, doc), 'utf8').split('\n').entries()) {
       for (const m of l.matchAll(CITA)) {
         CITAS.push({

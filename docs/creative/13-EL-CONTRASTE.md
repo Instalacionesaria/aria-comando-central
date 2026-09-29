@@ -158,8 +158,8 @@ Y del lado de Meta, ya guardado: **79 anuncios, 32 piezas, 2.528 filas diarias d
 
 ## 5 · Lo que bloquea al resto, en una línea
 
-**Para el video completo, el placement y el activo creativo: conectar Meta directo** — una app, un
-token de larga duración y una revisión de la plataforma. Es lo único que cierra los cuatro huecos que
+**Para el video completo, el placement y el activo creativo: conectar Meta directo** — una app y un
+token propio; sin revisión, porque lee la cuenta propia (decidido el 2026-09-29, `C15`). Cierra los huecos que
 `14` midió como imposibles, y con ellos la curva de retención, el guion y la mitad interpretativa del
 § 18.12.
 
@@ -187,3 +187,10 @@ sola.
 | `C14-P01` | Qué cuenta exactamente `videoView` | GoHighLevel no lo documenta. Mientras tanto se rotula «reproducciones que Meta contó» |
 | `C14-P03` | Si `results` puede llegar como arreglo en otras cuentas | el lector tiene que tolerar las dos formas o contar como ilegible lo que no reconozca |
 | `C4-09` / `C8-28` | Si el ángulo y el formato se derivan del nombre de la pieza | es una **decisión de producto**, no una lectura. No se infiere sin decidirlo |
+| `C15-P01` | Qué permiso entrega el `source` del video de un anuncio | con el token real, en CR-4 de `15` |
+| `C15-P02` | Cuánto dura una URL del CDN de Meta | midiendo la firma `oe=` en CR-4 |
+| `C15-P03` | Si el post de un anuncio se ve sin tener rol en la cuenta | a mano, en una ventana privada |
+| `C15-P05` | Si la empresa va a lanzar campañas desde el Ad Manager de GoHighLevel | hoy no (`C14-18`); si empieza, esos anuncios traen su creativo (`C14-20`) |
+| `C15-P06` | Qué pasa con el link manual si la pieza se renombra | decisión de producto |
+| `C15-P07` | Si el link manual acepta otros hosts | decisión de producto; hoy sólo Facebook e Instagram |
+| `C15-P08` | Qué video mostrar en un anuncio dinámico con varios | CR-4 mide cuántos hay |

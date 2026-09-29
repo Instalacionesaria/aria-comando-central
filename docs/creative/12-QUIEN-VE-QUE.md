@@ -149,3 +149,13 @@ vistas con contenidos distintos, no con filtros distintos. No está decidido si 
 tres pantallas, con una pantalla que cambie según el rol, o dejando que cada rol mire la pantalla del
 departamento que le toca. **Creative no lo decide solo**: la vista de gerencia es de Executive y la
 del media buyer es de Acquisition.
+
+## C12-07 · Quién carga el link manual de una pieza
+
+**Qué es** · El respaldo de `C15-06`: el link al post o al reel de una pieza cuyo video Meta no
+entregue. Es la primera **escritura** de esta pantalla, y la capa de autorización no deja que una
+escritura se conforme con una capacidad de lectura (`ADR-0304`).
+**Estado** · Decidido el 2026-09-29: lo carga quien tenga `credenciales.editar`, la misma capacidad
+que carga los links de pago y que el rol `usuario` no tiene. Se descartaron una capacidad nueva
+—`creative.editar` le llegaría sola a `usuario` por derivación— y un script, que sólo podría usar
+alguien con acceso a la base. Cada carga y cada borrado quedan en la auditoría, con su autor.

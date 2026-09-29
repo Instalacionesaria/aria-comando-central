@@ -262,7 +262,7 @@ No son requisitos de esta carpeta; se anotan porque están llegando gratis y alg
 | Landing page view rate | imposible | **`landingPageView` / impresiones**, 65 % |
 | Click-to-landing rate | imposible | **`landingPageView` / `linkClick`** |
 | Placement (§ 18.12) | no evaluado | imposible, confirmado (`C14-06`) |
-| Activo creativo (§ 5.1) | imposible | imposible, confirmado (`C14-07`, `C14-08`) |
+| Activo creativo (§ 5.1) | imposible | imposible, confirmado (`C14-07`, `C14-08`); **re-medido el 2026-09-29** con la ruta que faltaba, y sigue imposible por esta vía (`C14-16` a `C14-22`) |
 
 ---
 
@@ -432,3 +432,82 @@ Las llamadas van con `Authorization: Bearer <token>`, `Version: 2021-07-28`, `Ac
 **Todas las mediciones de este documento son `GET`.** No se probó ni una escritura: una escritura toca
 pauta activa y dinero real, y la decisión del 2026-09-18 es que Creative sea de sólo lectura — propone,
 y la persona ejecuta en Meta.
+
+---
+
+## 6 · La re-medición del 2026-09-29: la miniatura y el video
+
+El usuario pidió la miniatura y el video de cada anuncio, y que se agotara GoHighLevel antes de
+conectar Meta. La medición del 2026-09-18 había dejado sin probar tres cosas: una ruta que la
+**especificación pública** de GoHighLevel documenta (`apps/ad-manager.json` del repositorio
+`GoHighLevel/highlevel-api-docs`), el origen `type=AD_MANAGER` de `/entity`, y el detalle por
+anuncio. Las tres se probaron con `scripts/medir-activos-en-ghl.mjs`, que **sólo hace `GET`** e
+imprime estados, uniones de claves y hosts, nunca valores. Resultado: ninguna lectura con el token del
+CRM entrega el creativo.
+
+### C14-16 · `GET /campaign/{campaignId}` existe en la especificación y responde 422
+
+La especificación la describe como «Get campaign with linked entities», con `fields` (ejemplo
+`adsets,ads`) y `source` (ejemplo `facebook`). Sobre tres campañas reales, **las nueve variantes dan
+422 «Unprocessable Entity»**, sin detalle: sin `fields`, con `adsets,ads`, con `source=facebook`,
+`INTEGRATION` y `AD_MANAGER`, con `ads{creative}`, con la expansión de campos de Meta, y con un campo
+inventado. Que el control negativo dé lo mismo que las demás dice que el rechazo no es por el `fields`.
+La lectura más probable es que la ruta sólo sirve campañas creadas **desde** GoHighLevel, y esta
+empresa no tiene ninguna (`C14-18`); no está verificado.
+
+### C14-17 · `GET /reporting/campaign/{campaignId}` también da 422
+
+Con `startDate` y `endDate`, como pide la especificación: 422 en dos campañas.
+
+### C14-18 · No hay campañas creadas desde el Ad Manager de GoHighLevel
+
+`/entity?type=AD_MANAGER&entityType=CAMPAIGN` → **0 entidades**, contra 61 de `type=INTEGRATION`. Es
+lo que ya decía `lib/ghl/anuncios.ts` para el 2026-09-16, y sigue igual. `entityType=AD` con
+`AD_MANAGER` devuelve 100 entidades con las mismas cuatro claves que con `INTEGRATION`: a ese nivel el
+`type` no parece filtrar (no se compararon los ids). `fetchAll=true` y `campaignId` no agregan
+ninguna clave.
+
+### C14-19 · El detalle por anuncio no existe
+
+`/entity/{adId}` → 404; `/ad/{adId}` → 404; `/ads-v2/{adId}` → 404; `/ads/{adId}/preview` y
+`/ad/{adId}/preview` → 404. `GET /ads/{adId}` da **422** y no 404: la ruta existe —la especificación
+la usa para pausar, reanudar, duplicar y borrar— pero no documenta una lectura. `entityType=CREATIVE`
+y `entityType=POST` dan 422.
+
+### C14-20 · Lo que GoHighLevel sí guarda, pero sólo de los anuncios que crea él
+
+El esquema de escritura `PUT /ads-v2` (`UpsertAdDTO`) dice qué guarda GoHighLevel de un anuncio creado
+en su Ad Manager: `primaryText`, `headline`, `description`, `imageUrl`, `mediaType` y `media[]`, cada
+elemento con `src` (el archivo), `thumbnailUrl` y `type`. **Es exactamente el creativo que falta** —
+pero lo tiene porque se lo subió quien creó el anuncio, y esta empresa crea sus anuncios en el Business
+Manager. Para los 79 anuncios de hoy, GoHighLevel nunca tuvo el creativo: sólo lee sus métricas. Si la
+empresa empezara a lanzar desde GoHighLevel, habría que volver a medir `C14-16` sobre esas campañas.
+
+### C14-21 · `/integration` devuelve el token de la Página de Facebook, y no se usa
+
+La respuesta de `GET /integration` trae, dentro de `pages[]`, una clave `accessToken`: **el token de
+acceso de la Página de Facebook conectada**, emitido por Meta para la aplicación de GoHighLevel. La
+sonda lo detecta por el nombre de la clave y no lo imprime; el cliente de la aplicación sólo cuenta las
+páginas y no guarda ese campo (`lib/ghl/anuncios.ts:263-265`).
+
+**Decisión del 2026-09-29: no se usa.** Es una credencial de otra aplicación: usarla desde la nuestra
+es actuar en nombre de GoHighLevel sin serlo, lo que puede ir contra los términos de Meta y de
+GoHighLevel, y además GoHighLevel puede rotarla sin aviso. **Y es un hallazgo de seguridad**: quien
+tenga el token del CRM de una empresa puede obtener el token de su Página de Facebook. Es una razón
+más para que el token del CRM se trate como lo que es.
+
+Lo demás que llega de Meta por esta vía es de la Página, no de los anuncios: `/pages` y
+`/page/{pageId}/instagram` traen el nombre y la foto (una URL firmada de `fbcdn.net`), `/me` el nombre
+y la foto de la persona que conectó Facebook —un dato personal, que no se guarda ni se muestra— y
+`/ad-accounts/{id}` el nombre, la moneda y el negocio de la cuenta.
+
+### C14-22 · La vista previa del Ad Manager la dibuja la pantalla, con el borrador
+
+En el editor de campañas del Ad Manager de GoHighLevel se ve una vista previa del anuncio al costado.
+Mirada el 2026-09-29 sobre una campaña nueva: con el texto, el título y la descripción vacíos, la
+vista previa muestra barras grises y un ícono de imagen genérico, y sólo el nombre y la foto de la
+Página son reales. **Es una plantilla que se completa con lo que se va escribiendo**, no una lectura
+de Meta ni de un link. No hay nada que traer de ahí para los anuncios del Business Manager.
+
+**Consecuencia:** la fuente de la miniatura y el video es Meta directo, con un token propio del
+Business Manager. Está en `15-LA-MINIATURA-Y-EL-VIDEO.md`.

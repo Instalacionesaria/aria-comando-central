@@ -30,8 +30,8 @@
 **Qué es** · Al clicar una tarjeta se despliega un panel con todo lo que se sabe de la pieza.
 **Rastro** · `lib/aios/creative.js:279-325` (`openCre`); el contenedor vive en
 `components/Overlays.jsx:120-136`, compartido con otras pantallas.
-**Estado** · **Requisito.** Es lo que separa «ordenar una lista» de «entender una pieza», y es donde
-tiene que caber la cobertura de cada cifra sin ensuciar la tarjeta.
+**Estado** · **Requisito, planificado el 2026-09-29** (`C15-02`): el cajón lista los anuncios de la
+pieza, con su miniatura y su video. Es donde cabe la cobertura de cada cifra sin ensuciar la tabla.
 
 ### C4-02 · El cajón abre con un veredicto en una línea
 
@@ -126,8 +126,8 @@ unirlas con una línea vuelve a afirmar lo que pasa en el medio, que es de nuevo
 
 **Rastro** · `lib/aios/creative.js:62-68` (`TRANSCRIPT`): 30 frases en primera persona con su marca de
 tiempo, escritas a mano, para cinco de las ocho piezas.
-**Estado** · **No existe.** Ninguna de las tablas de `negocio` guarda guion, copy, archivo de video ni
-miniatura, y la API de GoHighLevel no los da (`C14-07`, `C14-08`).
+**Estado** · **No existe.** Ninguna tabla de `negocio` guarda guion ni copy, y GoHighLevel no los da
+(`C14-07`, `C14-08`). El video y la miniatura sí van a tener fuente, con Meta directo (`C15`).
 **El vacío que dibuja el prototipo cuando falta** ya está bien resuelto y se conserva: «Formato
 **Estático** — sin guión (no es video).»
 

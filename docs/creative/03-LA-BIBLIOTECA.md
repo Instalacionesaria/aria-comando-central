@@ -132,10 +132,10 @@ el promedio de su etapa»— y no dar la orden. Es la misma corrección que hizo
 
 | parte | estado |
 |---|---|
-| Miniatura con degradado | **andamiaje**: son 16 colores hex escritos a mano (`:8-22`), aplicados **en línea** (`:178`), lo que además le gana al tema (`app/temas.css:749`). La miniatura real no existe (`C14-07`) |
-| `▶` / `◧` según sea video | **no hay fuente**: el formato no llega (`C14-07`). Se puede **inferir** que es video si la pieza tiene `videoView`, y eso es honesto porque es lo que se está midiendo |
+| Miniatura con degradado | **andamiaje**: son 16 colores hex escritos a mano (`:8-22`), aplicados **en línea** (`:178`), lo que además le gana al tema (`app/temas.css:749`). La miniatura real no existe por GoHighLevel (`C14-07`, re-medido en `C14-16` a `C14-22`); **planificada con Meta directo** (`C15-01`) |
+| `▶` / `◧` según sea video | **no hay fuente**: el formato no llega (`C14-07`). Se puede **inferir** que es video si la pieza tiene `videoView`; con Meta directo el tipo llega en `object_type` y el `video_id` (`C15-03`) |
 | Insignia «Activo / Pausado» | **no hay fuente**: `/entity?entityType=AD` no devuelve estado, y `negocio.anuncios` no tiene la columna a propósito (`050:60-63`). Lo que sí se puede decir es **«entregó N de M días de la ventana»**, que es un hecho medido |
-| Duración `m:ss` | no hay fuente (`C14-07`) |
+| Duración `m:ss` | no hay fuente (`C14-07`); Meta directo la da con el video (`length`), a medir en CR-4 de `C15` |
 | Nombre `id — nombre` | el `id` de dos dígitos es inventado; **el nombre es real** |
 | Etiquetas de formato y ángulo | no hay fuente. Están **codificadas en el nombre** — ver `13-EL-CONTRASTE.md` |
 | Rejilla de seis cifras | requisito; las seis cambian según `C2-08` |

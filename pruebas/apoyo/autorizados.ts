@@ -51,6 +51,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // viene en la misma respuesta que ya pedimos. Sólo `GET`, y de esos campos imprime la FORMA y
   // nunca el valor: un `referrer` puede llevar el identificador de una persona adentro.
   'scripts/medir-contacto.mjs',
+  // El cuarto, con el mismo argumento (2026-09-29): mide si alguna lectura del Ad Manager de
+  // GoHighLevel trae la miniatura, el video o el link al post de cada anuncio, antes de conectar
+  // Meta directo (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`). Lista de organizaciones y sus
+  // credenciales, y después una por una. Sólo `GET`; imprime claves y hosts, nunca valores, y una
+  // clave con forma de secreto —`/integration` trae el token de la Página— se nombra y no se sigue.
+  'scripts/medir-activos-en-ghl.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.
