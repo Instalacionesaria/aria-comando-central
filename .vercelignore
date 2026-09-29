@@ -1,0 +1,24 @@
+# Lo que NO sube a Vercel. Está en el repositorio, pero la aplicación desplegada no lo usa.
+#
+# Por qué acá y no en `.gitignore`: la CI de GitHub (`.github/workflows/verificar.yml`) corre la
+# suite, y la suite necesita `pruebas/` y lee `docs/` (la prueba 101 audita las citas de los
+# documentos). Sacarlos del repositorio rompería la verificación; sacarlos del despliegue, no.
+#
+# Medido el 2026-09-29 antes de escribir esto: en tiempo de ejecución la aplicación lee un solo
+# árbol de archivos, `lib/fundaciones/skills/` (`lib/fundaciones/plantillas.ts`, incluido a mano en
+# `next.config.mjs`), y ningún archivo de `app/`, `lib/`, `components/` ni `proxy.ts` importa desde
+# `docs/` ni desde `pruebas/`. `next build` tampoco los necesita.
+
+# Documentación y requisitos.
+/docs/
+
+# Las pruebas: las corre la CI, no el servidor.
+/pruebas/
+
+# El grafo de conocimiento (ya lo ignora git; se repite por si alguien lo versiona).
+/graphify-out/
+
+# Instrucciones para agentes de código y su configuración local.
+/CLAUDE.md
+/AGENTS.md
+/.claude/
