@@ -1143,6 +1143,21 @@ export interface TablaPromptsDelAgente {
  *
  * Acá el monto solo se DIBUJA: nadie suma, ordena ni compara con él.
  */
+/**
+ * El link manual de una pieza de Creative (migración 063): el respaldo del video cuando Meta no lo
+ * entrega (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, C15-06). Es un ENLACE: nunca se embebe.
+ *
+ * `pieza` llega normalizada —`lower(btrim(nombre))`, la misma expresión que `llaveDelCreativo`— y la
+ * base lo hace cumplir con un `check`. El único escritor es `lib/negocio/enlaceDeLaPieza.ts`.
+ */
+export interface TablaEnlacesDePieza {
+  org_id: ColumnaInquilino;
+  pieza: string;
+  url: string;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
 export interface TablaEnlacesRapidos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1493,6 +1508,7 @@ export interface BaseDeDatos {
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
+  enlaces_de_pieza: TablaEnlacesDePieza;
   analizador_prospectos: TablaAnalizadorProspectos;
   analizador_llamadas: TablaAnalizadorLlamadas;
   analizador_transcripciones: TablaAnalizadorTranscripciones;

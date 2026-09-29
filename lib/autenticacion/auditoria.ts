@@ -121,6 +121,10 @@ export type Accion =
      reportar que antes de esa fecha nadie tocó nada. */
   | 'enlace_rapido_creado'
   | 'enlace_rapido_borrado'
+  /* El link manual de una pieza de Creative (docs/creative/15, C15-06). Se audita por lo mismo que un
+     link de pago: un «Ver en Facebook» que lleva a otro lado se ve igual que el bueno. */
+  | 'enlace_de_pieza_cargado'
+  | 'enlace_de_pieza_borrado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -197,6 +201,12 @@ export interface Detalle {
    * pueda contestar **cuál** link cambió, y no solo que alguien tocó la lista.
    */
   enlace?: string;
+  /**
+   * La pieza de Creative del link, en `enlace_de_pieza_cargado` y `enlace_de_pieza_borrado`: el
+   * nombre del anuncio normalizado, que no es un dato de nadie. Sin ella, `enlace` diría qué link
+   * y no de qué pieza.
+   */
+  pieza?: string;
 }
 
 /**
@@ -242,6 +252,9 @@ export async function auditarAdministracion(
          `credenciales_cargadas`: lo que se tocó es su configuración, no una persona. */
       | 'enlace_rapido_creado'
       | 'enlace_rapido_borrado'
+      // El link manual de una pieza. Mismo objetivo que los links rápidos: la empresa.
+      | 'enlace_de_pieza_cargado'
+      | 'enlace_de_pieza_borrado'
     >;
     actor: string;
     objetivo: string;
