@@ -15,9 +15,9 @@
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
 > (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
 
-> Requisitos derivados del prototipo (`lib/aios/creative.js`) y de las diez reglas propias de
-> `docs/OTROS/estado actual/02-CREATIVE.md` § 6, con las mediciones nuevas del 2026-09-18 contra producción.
-> Las de cobertura del lado del contacto son del 2026-09-15 salvo donde se remidió.
+> Requisitos derivados del prototipo (`lib/aios/creative.js`) y de las diez reglas propias (once desde el corte
+> del 2026-09-28) de `docs/OTROS/estado actual/02-CREATIVE.md` § 6, con las mediciones nuevas del 2026-09-18
+> contra producción. Las de cobertura del lado del contacto son del 2026-09-15 salvo donde se remidió.
 >
 > Éste es el documento que decide si los demás sirven. Si la clave de agrupación está mal, todas las
 > cifras de `02-METRICAS.md` están mal y ninguna falla.
@@ -49,7 +49,7 @@ piezas distintas** por nombre. **21 de las 32 corren en más de un `meta_anuncio
 **Qué es** · Un creativo se lanza en varios ad sets, y cada combinación es un `adId` distinto con sus
 propias métricas diarias.
 **Población** · Las 21 piezas con más de un anuncio.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:211`; medición propia del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:274-275`; medición propia del 2026-09-18.
 **Estado** · Medido. Ejemplos reales: `Estancada` en 5 anuncios, `manifiesto horz` en 5,
 `Evoluciona native` en 5, `agendamiento - yaping - 23/07` en 6.
 
@@ -221,9 +221,9 @@ recomendaría pausar lo que alimenta el embudo. Ver `03-LA-BIBLIOTECA.md`.
 
 **Qué es** · Algunos contactos entraron por un formulario de Meta (Lead Ads) y otros por la landing.
 Los de Lead Ads **nunca vieron la landing ni el VSL**.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 5; medido allí: «Meta Lead ID» en 89 de 233
-(38,2 %), «Last Landing URL» en 99 de 233 (42,5 %); `agendamiento - yaping` tenía 43 de formulario y
-21 con landing sobre 109.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 5; medido allí el 2026-09-15: «Meta Lead
+ID» en 89 de 233 (38,2 %), «Last Landing URL» en 99 de 233 (42,5 %); `agendamiento - yaping` tenía
+43 de formulario y 21 con landing sobre 109. El 2026-09-28: 110 y 119 de 276, y 46 y 22 de 112.
 **Estado** · Construible. **Existe para que nadie divida una métrica de landing por el total de la
 pieza**: el denominador de cualquier cifra de landing son los contactos que pasaron por ella, no
 todos.

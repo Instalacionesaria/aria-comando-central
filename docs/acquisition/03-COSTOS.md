@@ -16,14 +16,14 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
+> estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):
+> «foto del 2026-09-15, línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28.
 
-La pantalla dibuja **diez cifras de dinero** y las diez descienden de un solo número: `inv`, la inversión de una campaña en la ventana, escrita una única vez en `lib/aios/acquisition.js:88`. Cuatro de esas diez son sumas y **seis son cocientes**: el costo de cada etapa, el costo por calificado del embudo, el de la campaña y el global. No hay una segunda fuente de dinero en el módulo, y no hay ninguna en la base: una búsqueda de columnas por `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` sobre los esquemas `negocio`, `public` e `identidad` devuelve tres coincidencias y ninguna es gasto de Meta poblado (`01-ACQUISITION.md:93`).
+La pantalla dibuja **diez cifras de dinero** y las diez descienden de un solo número: `inv`, la inversión de una campaña en la ventana, escrita una única vez en `lib/aios/acquisition.js:88`. Cuatro de esas diez son sumas y **seis son cocientes**: el costo de cada etapa, el costo por calificado del embudo, el de la campaña y el global. No hay una segunda fuente de dinero en el módulo, y el 2026-09-15 no había ninguna en la base: una búsqueda de columnas por `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` sobre los esquemas `negocio`, `public` e `identidad` devolvía tres coincidencias y ninguna era gasto de Meta poblado (foto del 2026-09-15, línea 93). Desde el 2026-09-16 la hay: el gasto por anuncio y por día llega del Ad Manager de GoHighLevel (`01-ACQUISITION.md:27-31`, `01-ACQUISITION.md:230-232`).
 
-Este documento dice qué tiene que calcular ese modelo, con qué fórmula, sobre qué denominador y qué escribe cuando el denominador no existe. La mitad de los requisitos son de forma y sobreviven al andamiaje. La otra mitad depende de un dato que **nunca estuvo conectado en ninguna de las dos plataformas** (`01-ACQUISITION.md:256`), y ese es el contenido del §4.
+Este documento dice qué tiene que calcular ese modelo, con qué fórmula, sobre qué denominador y qué escribe cuando el denominador no existe. La mitad de los requisitos son de forma y sobreviven al andamiaje. La otra mitad dependía de un dato que el 2026-09-15 **nunca había estado conectado en ninguna de las dos plataformas** (foto del 2026-09-15, línea 256) y que llegó el 2026-09-16 sin conectar Meta (`01-ACQUISITION.md:27-31`); ése es el contenido del §4.
 
 ---
 
@@ -35,7 +35,7 @@ Este documento dice qué tiene que calcular ese modelo, con qué fórmula, sobre
 
 El requisito es la forma del dato: **la inversión es un atributo de la campaña en la ventana**, no del embudo ni del período. El embudo y el total la reciben sumando y no la calculan.
 
-**Estado:** no existe. `invD` no tiene fuente. Es el «no» más importante del informe de estado (`01-ACQUISITION.md:93`) y el riesgo número uno de esta pantalla (`:306`).
+**Estado:** el 2026-09-15 no existía: `invD` no tenía fuente, y era el «no» más importante de la foto del 2026-09-15 (línea 93) y el riesgo número uno de esta pantalla (línea 306). Desde el 2026-09-16 existe el gasto por anuncio y por día (`01-ACQUISITION.md:230-232`, `01-ACQUISITION.md:238-245`); `invD` como literal sigue sin fuente, y no la necesita.
 
 **Andamiaje que hay que borrar:** el producto `invD × days`. Multiplicar un gasto diario constante por el número de días es exactamente lo que un sistema real no puede hacer, y revela por contraste el A3-16: la inversión de una ventana es una **suma de días**, no una extrapolación.
 
@@ -74,14 +74,14 @@ Es lo que hace legible el aviso que la vista escribe bajo los KPIs (`components/
 
 | # | Embudo | Etapa | Etiqueta en pantalla | Nombre del costo | ¿Existe el denominador hoy? |
 |---|---|---|---|---|---|
-| 1 | Lead form ads | `contactos` | Leads | **CPL** | el conteo sí (233 en 14 días con `alta_en_el_crm`, `01-ACQUISITION.md:162`); el corte por embudo no |
-| 2 | Lead form ads | `clics` | Clics a landing VSL | **C/clic** | **no** — ninguna tabla de tráfico en `negocio.*` (`:260`) |
-| 3 | Lead form ads | `agendados` | Agendados | **C/agendado** | sí — 163 citas alcanzables, 82 con `adId` (`:213`) |
+| 1 | Lead form ads | `contactos` | Leads | **CPL** | el conteo sí (233 en 14 días con `alta_en_el_crm` el 2026-09-15, foto del 2026-09-15, línea 162; 276 en 30 días el 2026-09-28, `01-ACQUISITION.md:273-275`); el corte por embudo no |
+| 2 | Lead form ads | `clics` | Clics a landing VSL | **C/clic** | **no** para la landing — ninguna tabla de tráfico en `negocio.*` (foto del 2026-09-15, línea 260; igual el 2026-09-28, `01-ACQUISITION.md:310-313`); el CPC de Meta por anuncio se calcula y no se dibuja (`01-ACQUISITION.md:160-161`) |
+| 3 | Lead form ads | `agendados` | Agendados | **C/agendado** | sí — 163 citas alcanzables, 82 con `adId`, el 2026-09-15 (foto del 2026-09-15, línea 213); 210 y 82 a 30 días el 2026-09-28 (`01-ACQUISITION.md:273-275`) |
 | 4 | Profile funnel | `contactos` | DMs | **C/DM** | **no** — «DM» no es una categoría de la base |
 | 5 | Profile funnel | `clics` | Clics a landing VSL | C/clic | **no** |
 | 6 | Profile funnel | `agendados` | Agendados | C/agendado | sí, con la misma atribución parcial |
 | 7 | Booking directo | `contactos` | Contactos | **C/contacto** | el conteo sí; el corte no |
-| 8 | Booking directo | `forms` | Completaron form | **C/form** | **no** — sin tabla de eventos de formulario (`:260-262`) |
+| 8 | Booking directo | `forms` | Completaron form | **C/form** | **no** — sin tabla de eventos de formulario (foto del 2026-09-15, líneas 260-262; igual el 2026-09-28, `01-ACQUISITION.md:310-313`) |
 | 9 | Booking directo | `clics` | Clics a landing VSL | C/clic | **no** |
 | 10 | Booking directo | `agendados` | Agendas | **C/agenda** | sí, con la misma atribución parcial |
 
@@ -124,9 +124,9 @@ El requisito no es forzar la monotonía: es que **la pantalla siga siendo legibl
 
 ### A3-09 · El CPL de la pantalla se calcula con nuestro denominador; el CPL de Meta es otra cifra y sirve de control
 
-`:190` divide por `t.contactos`, que es nuestro conteo de contactos. Meta entrega su propio `cpl`, calculado sobre **su** conteo de leads — la tabla de referencia `public.closer_meta_metricas` tiene las dos columnas, `leads` y `cpl` (`01-ACQUISITION.md:252`).
+`:190` divide por `t.contactos`, que es nuestro conteo de contactos. Meta entrega su propio `cpl`, calculado sobre **su** conteo de leads — la tabla de referencia `public.closer_meta_metricas` tiene las dos columnas, `leads` y `cpl` (foto del 2026-09-15, línea 252). Por la vía que se construyó, el `leads` del proveedor resultó ser nuestro propio conteo, y `results.lead` mezcla dos mecanismos que no se pueden separar (`01-ACQUISITION.md:327-330`).
 
-Son dos números distintos con el mismo nombre, y el §18.7 pide explícitamente la diferencia entre ambos («diferencia entre leads reportados por Meta y leads identificados en la base»). El requisito: **el CPL que la pantalla publica es el nuestro, y el de Meta se guarda como contraste, nunca como reemplazo.** Y el aviso del §7 del informe de estado aplica entero: un cero en esa diferencia no significa «coinciden», significa que sólo se contó un lado.
+Son dos números distintos con el mismo nombre, y el §18.7 pide explícitamente la diferencia entre ambos («diferencia entre leads reportados por Meta y leads identificados en la base»). El requisito: **el CPL que la pantalla publica es el nuestro, y el de Meta se guarda como contraste, nunca como reemplazo.** Y el aviso del § 7 de la foto del 2026-09-15 (línea 318) aplica entero: un cero en esa diferencia no significa «coinciden», significa que sólo se contó un lado.
 
 ---
 
@@ -171,7 +171,7 @@ El requisito de forma: **el costo no se presenta solo.** Un «$115» sin el «21
 
 Lo confirma el modal: la única recomendación accionable con umbral de toda la pantalla es «Sube el presupuesto de retargeting mientras el costo por calificado se mantenga bajo $110» (`lib/aios/acquisition-plan.js:21`), y el freno del otro grupo enuncia la regla de negocio completa: «Deja de escalar Prospecting B **por costo por contacto**: su costo por calificado es el más alto» (`:16`). **La decisión de escala se toma por costo por calificado, no por costo por contacto.**
 
-**Estado:** el §18.7 pide `cost per qualified lead` como KPI, así que la métrica está especificada. Pero el §18.10 prohíbe que Acquisition recomiende en solitario duplicar presupuesto, reducir inversión o escalar por CPL, y esas dos líneas del plan son literalmente lo prohibido, **en dos grupos distintos** (`01-ACQUISITION.md:129`). Al reconstruirlo, las dos cambian de lugar, no de redacción.
+**Estado:** el §18.7 pide `cost per qualified lead` como KPI, así que la métrica está especificada. Pero el §18.10 prohíbe que Acquisition recomiende en solitario duplicar presupuesto, reducir inversión o escalar por CPL, y esas dos líneas del plan eran literalmente lo prohibido, **en dos grupos distintos** (foto del 2026-09-15, línea 129). El modal se borró el 2026-09-16 (`01-ACQUISITION.md:190`); si se reconstruye, las dos cambian de lugar, no de redacción.
 
 ### A3-14 · Ninguna cifra de dinero abre la lista de contactos
 
@@ -183,15 +183,15 @@ El requisito, y está bien resuelto: **el dinero no se explica con una lista de 
 
 ## 4 · La dependencia dura: el gasto
 
-### A3-15 · Ninguna cifra de los §2 y §3 se puede calcular hoy
+### A3-15 · Ninguna cifra de los §2 y §3 se podía calcular el 2026-09-15
 
-Medido contra la base, no contra el código. Una búsqueda de columnas en `information_schema.columns` sobre `negocio`, `public` e `identidad` con el patrón `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl|adset|ad_id|campaign|anuncio|creativ|meta_` devuelve **trece filas y ninguna es un dato de Meta poblado** (`01-ACQUISITION.md:244`). Acotada al patrón de dinero puro, son tres coincidencias: `negocio.comisiones.meta_mensual` (una meta de ventas, no Meta), `public.aria_brain_clientes.ht_budget` (de otra plataforma) y las columnas de `public.closer_meta_metricas`, **que tiene 0 filas** (`:93`).
+Medido el 2026-09-15 contra la base, no contra el código. Una búsqueda de columnas en `information_schema.columns` sobre `negocio`, `public` e `identidad` con el patrón `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl|adset|ad_id|campaign|anuncio|creativ|meta_` devolvía **trece filas y ninguna era un dato de Meta poblado** (foto del 2026-09-15, línea 244). Acotada al patrón de dinero puro, eran tres coincidencias: `negocio.comisiones.meta_mensual` (una meta de ventas, no Meta), `public.aria_brain_clientes.ht_budget` (de otra plataforma) y las columnas de `public.closer_meta_metricas`, **que tenía 0 filas** (línea 93). El 2026-09-28 esa tabla sigue vacía, y el gasto está en `negocio.metricas_de_anuncio`: 3.318 filas de 79 anuncios (`01-ACQUISITION.md:230-236`).
 
-El cero es un cero real y no un cero de RLS: la lectura va como `postgres` con `rolbypassrls` (`:254`).
+El cero era un cero real y no un cero de RLS: la lectura va como `postgres` con `rolbypassrls` (foto del 2026-09-15, línea 254; `01-ACQUISITION.md:226-228`).
 
-**Lo que esto significa para este documento:** de los cocientes y sumas que los §2 y §3 especifican, **ninguno es calculable**. No es que estén incompletos: no tienen numerador.
+**Lo que esto significaba para este documento el 2026-09-16:** de los cocientes y sumas que los §2 y §3 especifican, **ninguno era calculable**: no tenían numerador. Hoy lo tienen por anuncio y por día; lo que sigue sin existir es el embudo y la marca de calificado (`01-ACQUISITION.md:346-347`).
 
-Y el riesgo asociado está escrito y es el primero del informe (`:306`): reconstruir la pantalla leyendo contactos reales y dejar el costo saliendo de `CAMPS[i].invD` produce **conteos verdaderos con costos inventados**, que es peor que la pantalla de hoy — porque hoy nadie puede confundirse, y entonces sí.
+Y el riesgo asociado estaba escrito y era el primero de la foto del 2026-09-15 (línea 306): reconstruir la pantalla leyendo contactos reales y dejar el costo saliendo de `CAMPS[i].invD` produce **conteos verdaderos con costos inventados**, que era peor que la pantalla de entonces, porque con aquélla nadie podía confundirse y con ésta sí. No ocurrió: la pantalla se rehízo el 2026-09-16 con el gasto real (`01-ACQUISITION.md:24-33`).
 
 ### A3-16 · El gasto se guarda por objeto y por día
 
@@ -201,7 +201,7 @@ El requisito: el gasto se guarda con grano **objeto × día** —campaña, ad se
 
 ### A3-17 · El recolector reescribe días ya guardados
 
-**Los insights de Meta se corrigen hacia atrás durante días** (`01-ACQUISITION.md:274`). Un recolector que sólo inserte «lo de ayer» guarda cifras que Meta después cambia, y la pantalla publica un costo por calificado de la semana pasada que ya no es el que Meta reporta.
+**Los insights de Meta se corrigen hacia atrás durante días** (foto del 2026-09-15, línea 274; el 2026-09-28 el colector relee hoy y dos días atrás, y cuánto tarda esta cuenta en estabilizar sus cifras sigue sin medir: `01-ACQUISITION.md:322-325`). Un recolector que sólo inserte «lo de ayer» guarda cifras que Meta después cambia, y la pantalla publica un costo por calificado de la semana pasada que ya no es el que Meta reporta.
 
 El requisito: la ingesta de gasto es **idempotente sobre una ventana de relectura**, no un `insert` incremental. Es la contracara del A3-16: guardar por día no sirve de nada si los días no se pueden rehacer.
 
@@ -213,7 +213,7 @@ Peor: el sistema ya formatea dinero de dos maneras. `acquisition.js:42` usa `es-
 
 El requisito: **el dinero se formatea con la moneda del dato, declarada junto al dato.** El `$` literal no es una declaración de moneda.
 
-Nota de esquema: en la tabla de referencia `public.closer_meta_metricas`, **ninguna columna es la moneda** (`01-ACQUISITION.md:252`).
+Nota de esquema: en la tabla de referencia `public.closer_meta_metricas`, **ninguna columna es la moneda** (foto del 2026-09-15, línea 252).
 
 ### A3-19 · El numerador y el denominador se atribuyen a la misma entidad — y la cobertura cae a lo largo de la cadena
 
@@ -226,7 +226,7 @@ El gasto de Meta viene completo en los tres niveles. Los denominadores no:
 | Contactos de la ventana (233) | 176 con `adId` — **75,5 %** | 217 con `campaignId` — **93,1 %** |
 | Citas alcanzables (163) | 82 con `adId` — **50,3 %** | 133 con `campaignId` — **81,6 %** |
 
-(`01-ACQUISITION.md:174-175` y `:213`.)
+(Medido el 2026-09-15: foto del 2026-09-15, líneas 174-175 y 213. El 2026-09-28, a 30 días, son 199 de 276 contactos con `adId`, 250 con campaña y 82 de 210 citas con anuncio: `01-ACQUISITION.md:273-275`.)
 
 Dividir un gasto completo por un denominador incompleto **sobrestima el costo por el inverso de la cobertura**. A nivel anuncio, el CPL sale un **32,5 %** más caro de lo que es, y el C/agendado un **98,8 %** más caro — casi el doble. A nivel campaña, **7,4 %** y **22,6 %**.
 
@@ -236,30 +236,30 @@ El requisito: **el costo se publica al grano en el que la atribución cierra**, 
 
 ### A3-20 · La fila sin anuncio tiene gasto desconocido, no gasto cero
 
-De los 233 contactos de la ventana, **57 no traen `adId`** y agendan 47 veces (`01-ACQUISITION.md:292`). No son contactos gratis: en su mayoría son los 41 de la campaña BOFU de retargeting, que sí tiene gasto — sólo que el widget de calendario no pasa el identificador del anuncio, así que el gasto vive a nivel campaña y la fila se dibuja a nivel anuncio.
+De los 233 contactos de la ventana del 2026-09-15, **57 no traían `adId`** y agendaban 47 veces (foto del 2026-09-15, línea 292). No eran contactos gratis: en su mayoría eran los 41 de la campaña BOFU de retargeting, que sí tiene gasto — sólo que el widget de calendario no pasa el identificador del anuncio, así que el gasto vive a nivel campaña y la fila se dibuja a nivel anuncio.
 
 Si esa fila se arma con el gasto del anuncio, su gasto es 0 y **sus cuatro costos salen `$0`** — un cero técnicamente correcto (no hay gasto de anuncio que cargarle) que en pantalla se lee como el mejor rendimiento de la tabla.
 
-El requisito: **el costo de una fila sin atribución es desconocido, y desconocido se escribe con guion, no con `$0`.** Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:110`) aplicada al dinero, y encaja con el criterio que el departamento ya tiene escrito para esa fila: el conteo va, la tasa no (`lib/negocio/atribucionDelLead.ts:179-183`).
+El requisito: **el costo de una fila sin atribución es desconocido, y desconocido se escribe con guion, no con `$0`.** Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:211-215`) aplicada al dinero, y encaja con el criterio que el departamento ya tiene escrito para esa fila: el conteo va, la tasa no (`lib/negocio/atribucionDelLead.ts:179-183`).
 
 ### A3-21 · El denominador de «Clics a landing VSL» no lo trae Meta
 
-Es la etapa que aparece en los tres embudos (`:7, :11, :15`) y la que menos existe: no hay tabla de tráfico, sesiones ni eventos de landing en `negocio.*` —21 tablas revisadas una por una— y **un clic no queda registrado en ninguna parte de esta base** (`01-ACQUISITION.md:260-262`).
+Es la etapa que aparece en los tres embudos (`:7, :11, :15`) y la que menos existe: no hay tabla de tráfico, sesiones ni eventos de landing en `negocio.*` —21 tablas revisadas una por una el 2026-09-15, 29 el 2026-09-28 (`01-ACQUISITION.md:310-313`)— y el 2026-09-15 **un clic no quedaba registrado en ninguna parte de esta base** (foto del 2026-09-15, líneas 260-262); hoy llegan los clics de Meta por anuncio y por día, no los de la landing (`01-ACQUISITION.md:230-234`).
 
-Conectar Meta no lo resuelve. La tabla de referencia trae `clics`, que es *todos* los clics del anuncio, no `link_clicks` ni `landing_page_views`, que en Meta son tres números distintos — y ninguno de los dos últimos está entre sus columnas (`:252`). Además, dos de los tres embudos no tienen clic de Meta que contar: el de perfil entra por DM y el de agendamiento por el widget de calendario.
+Conectar Meta no lo resuelve. La tabla de referencia trae `clics`, que es *todos* los clics del anuncio, no `link_clicks` ni `landing_page_views`, que en Meta son tres números distintos — y ninguno de los dos últimos está entre sus columnas (foto del 2026-09-15, línea 252). La vía que se construyó sí los trae, dentro de `acciones`: `linkClick` en 171 filas y `landingPageView` en 151 (`01-ACQUISITION.md:230-234`), y los publica Creative (`01-ACQUISITION.md:161-163`). Además, dos de los tres embudos no tienen clic de Meta que contar: el de perfil entra por DM y el de agendamiento por el widget de calendario.
 
 El requisito: **el denominador de `C/clic` es instrumentación de la landing** (Meta Pixel + Conversions API, GA4 o un endpoint propio), y es un sistema aparte del gasto. Tres de los diez costos de la tabla del A3-04 dependen de él.
 
 ### Qué cuesta traer el gasto
 
-La noticia buena del informe de estado es que esto es **trabajo de integración y no de diseño de datos** (`01-ACQUISITION.md:256`). El esquema ya está pensado: `public.closer_meta_metricas` tiene exactamente la forma que el §18.4 pide —`nivel`, `objeto_id`, `nombre`, `padre_id`, `fecha`, `gasto`, `impresiones`, `clics`, `alcance`, `ctr`, `cpc`, `cpm`, `leads`, `cpl`, `video_reproducciones`, `video_25/50/75/100`, `sincronizado_el`— con jerarquía campaña→ad set→anuncio y grano diario.
+La noticia buena de la foto del 2026-09-15 era que esto es **trabajo de integración y no de diseño de datos** (línea 256), y el corte del 2026-09-28 la declara falsa: el gasto llegó el 2026-09-16 por el Ad Manager de GoHighLevel, con el token del CRM y sin conectar Meta (`01-ACQUISITION.md:27-31`). El esquema ya está pensado: `public.closer_meta_metricas` tiene exactamente la forma que el §18.4 pide —`nivel`, `objeto_id`, `nombre`, `padre_id`, `fecha`, `gasto`, `impresiones`, `clics`, `alcance`, `ctr`, `cpc`, `cpm`, `leads`, `cpl`, `video_reproducciones`, `video_25/50/75/100`, `sincronizado_el`— con jerarquía campaña→ad set→anuncio y grano diario.
 
 Con dos precisiones que cambian el trabajo:
 
-1. **Esa tabla es de la plataforma anterior.** Vive en `public.closer_*`; lo nuestro es el esquema `negocio.*`. Un `grep` de `closer_meta_metricas`, `meta_ad_account_id` y `meta_token_cifrado` sobre todos los `.ts`, `.tsx`, `.js`, `.mjs` y `.sql` del repositorio da **cero coincidencias** (`:254`) — verificado de nuevo hoy, sigue en cero. No es una tabla que se llene: es un diseño de referencia que se copia al esquema propio.
+1. **Esa tabla es de la plataforma anterior.** Vive en `public.closer_*`; lo nuestro es el esquema `negocio.*`. Un `grep` de `closer_meta_metricas`, `meta_ad_account_id` y `meta_token_cifrado` sobre todos los `.ts`, `.tsx`, `.js`, `.mjs` y `.sql` del repositorio daba **cero coincidencias** (foto del 2026-09-15, línea 254) — verificado de nuevo el 2026-09-16; el 2026-09-28 la única aparición es un comentario (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:6-8`). No es una tabla que se llene: es un diseño de referencia que se copia al esquema propio.
 2. **A ese diseño le faltan tres cosas para esta pantalla**: la moneda (A3-18), `link_clicks`/`landing_page_views` (A3-21) y la frecuencia.
 
-Las piezas del trabajo, entonces: una app de Meta con permiso de lectura de anuncios aprobada por App Review; un token de larga duración por organización, cifrado —los dos huecos ya existen en `public.closer_org_config`, que tiene 3 filas y **0 no nulos** en `meta_ad_account_id` y `meta_token_cifrado` (`:252`)—; una tabla en `negocio.*` con el grano del A3-16 más las tres columnas que faltan; un recolector diario idempotente con ventana de relectura (A3-17); y las dos decisiones que no son técnicas: la moneda y el grano de atribución del A3-19.
+Las piezas del trabajo eran, entonces: una app de Meta con permiso de lectura de anuncios aprobada por App Review; un token de larga duración por organización, cifrado —los dos huecos ya existen en `public.closer_org_config`, que tenía 3 filas y **0 no nulos** en `meta_ad_account_id` y `meta_token_cifrado` (foto del 2026-09-15, línea 252)—; una tabla en `negocio.*` con el grano del A3-16 más las tres columnas que faltan; un recolector diario idempotente con ventana de relectura (A3-17); y las dos decisiones que no son técnicas: la moneda y el grano de atribución del A3-19. Lo que se hizo el 2026-09-16 fue otra cosa: las migraciones 050 y 051 y el colector diario `lib/negocio/recolectarAnuncios.ts` (`01-ACQUISITION.md:27-31`).
 
 ---
 
@@ -283,7 +283,7 @@ El módulo tiene una regla de tres ramas, y se puede enunciar exactamente: **el 
 
 **Cinco de los nueve son dinero** (`:181, :190, :201, :225, :236`) y cuatro son tasas. No hay un solo `NaN` ni `Infinity` posible en estos nueve puntos.
 
-Es la regla de los dos ceros dicha en código (`07-REGLAS-TRANSVERSALES.md:110`): **una cifra que no se puede calcular no se dibuja como cero**, porque `$0 por agendado` y «no hubo agendados» mandan a hacer cosas opuestas.
+Es la regla de los dos ceros dicha en código (`07-REGLAS-TRANSVERSALES.md:211-215`): **una cifra que no se puede calcular no se dibuja como cero**, porque `$0 por agendado` y «no hubo agendados» mandan a hacer cosas opuestas.
 
 ### A3-23 · Todo cociente que se dibuja como ancho de barra lleva cero
 
@@ -307,7 +307,7 @@ El primero es el grave: `cf(0)` devuelve `'$0'`, así que el KPI de Calificados 
 
 **El requisito:** el guardado va donde se escribe la cifra, y lo que el modelo devuelve cuando no puede dividir es **la ausencia** —nulo, no cero— para que el render decida cómo se dibuja. Los nueve sitios del A3-22 lo hacen bien porque calculan y escriben en el mismo lugar; los tres del A3-24 no.
 
-**Por qué nadie lo vio:** con los siete literales de `CAMPS` el caso es inalcanzable. Barridos todos los días de 1 a 3 y los 25 valores posibles de `seedMod`, el mínimo de calificados globales que el prototipo puede producir es **2**, nunca 0. El andamiaje esconde el defecto que el dato real va a encontrar el primer día — y va a encontrarlo pronto: cuatro de los siete anuncios de la ventana medida tienen 1 o 2 contactos (`01-ACQUISITION.md:288, :312`).
+**Por qué nadie lo vio:** con los siete literales de `CAMPS` el caso es inalcanzable. Barridos todos los días de 1 a 3 y los 25 valores posibles de `seedMod`, el mínimo de calificados globales que el prototipo puede producir es **2**, nunca 0. El andamiaje esconde el defecto que el dato real va a encontrar el primer día — y va a encontrarlo pronto: cuatro de los siete anuncios de la ventana medida el 2026-09-15 tenían 1 o 2 contactos (foto del 2026-09-15, líneas 288 y 312).
 
 ### A3-25 · El guion dice que no se puede calcular; el dinero gastado se dice en la misma fila
 
@@ -341,11 +341,11 @@ Los dos últimos son el mismo defecto que el A3-24 y el A3-11: **con denominador
 
 **¿A qué grano se publica el costo?** El A3-19 mide que la atribución cierra al 93,1 % por campaña y al 75,5 % por anuncio sobre contactos, y al 81,6 % y 50,3 % sobre citas. La tabla del prototipo tiene una fila por campaña. Falta decidir si la fila es campaña, ad set o anuncio — y de eso depende si el C/agendado sale 22,6 % o 98,8 % más caro de lo que es.
 
-**¿Qué es un «calificado»?** Es el denominador de la cifra con la que se decide escalar y no está definido en la base. `o.calificados` sale de `agendados × calif` con un literal por campaña (`:94`); lo que hay es un puntaje continuo, «Puntaje | ICP», poblado en 229 de 233 contactos (`01-ACQUISITION.md:111`), y ninguna marca de calificación.
+**¿Qué es un «calificado»?** Es el denominador de la cifra con la que se decide escalar y no está definido en la base. `o.calificados` sale de `agendados × calif` con un literal por campaña (`:94`); lo que hay es un puntaje continuo, «Puntaje | ICP», poblado en 229 de 233 contactos el 2026-09-15 (foto del 2026-09-15, línea 111), y ninguna marca de calificación.
 
 **¿El costo por etapa comparte numerador, o cada paso lleva el suyo?** Hoy los cuatro costos de un embudo son la misma inversión con cuatro denominadores (A3-06), que responde «cuánto costó cada uno de los que llegaron hasta acá». La otra lectura —cuánto cuesta el paso— es otra métrica y no está en el prototipo.
 
-**¿Se publica un piso de volumen para las cifras de dinero?** El sistema tiene `PISO_DE_UNA_TASA = 10` y lo aplica a las tasas (`lib/negocio/indicadoresDeCitas.ts:300`); de los 7 anuncios de la ventana medida, sólo 3 lo alcanzan (`01-ACQUISITION.md:288`). El §6 muestra qué pasa con costos calculados sobre 1 o 2 calificados. Falta decidir si el piso apaga el costo, lo apaga y deja la inversión, o lo publica con la advertencia.
+**¿Se publica un piso de volumen para las cifras de dinero?** El sistema tiene `PISO_DE_UNA_TASA = 10` y lo aplica a las tasas (`lib/negocio/indicadoresDeCitas.ts:300`); de los 7 anuncios de la ventana medida el 2026-09-15, sólo 3 lo alcanzaban (foto del 2026-09-15, línea 288); el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145`). El §6 muestra qué pasa con costos calculados sobre 1 o 2 calificados. Falta decidir si el piso apaga el costo, lo apaga y deja la inversión, o lo publica con la advertencia.
 
 **¿Lleva delta la Inversión?** `:146` lo declara, pero `inv` se calcula sin el modificador del período (`:88`), así que con dos ventanas de la misma duración el actual y el anterior son idénticos y `delta` cae siempre en el «=» plano de `:130`. **El único caso en que ese KPI puede mostrar una flecha es cuando las dos ventanas duran distinto** —sólo alcanzable en modo `custom` + «Otro periodo»— y entonces la flecha es exactamente la razón entre las duraciones, que es el artefacto que la advertencia de `:77` existe para señalar. Comparar el gasto contra el período anterior exige medirlo por día (A3-16); si no, el KPI se muestra sin delta como las tres cifras del encabezado del embudo.
 

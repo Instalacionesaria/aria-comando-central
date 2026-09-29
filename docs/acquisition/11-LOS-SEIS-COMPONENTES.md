@@ -45,7 +45,7 @@ escribe métricas que **no se recalculan**. Una fila de `2026-09-01` con su gast
 El día que Meta corrija un dato hacia atrás —lo hace, sobre todo con atribución y conversiones— hay
 que decidir si se pisa la fila o se guarda la corrección. Sin esa decisión, dos lecturas de la misma
 ventana en días distintos dan cifras distintas y nadie sabe por qué. Es el mismo problema que
-`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md` documenta para las etiquetas de descarte.
+`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:332-343` documenta para las etiquetas de descarte.
 
 ---
 
@@ -75,12 +75,12 @@ Y le pone un límite explícito:
 en la subasta; Creative Intelligence interpreta **por qué**. Un creativo con buena retención y bajo
 CTR es un hallazgo de acá; qué tiene el hook que retiene y el copy que no convierte es de allá.
 
-**Estado hoy.** De los nueve aspectos, ninguno se puede medir: los cinco que salen de Meta necesitan
-el colector, y `formato`, `duración` y `placement` ni siquiera están entre las columnas de la tabla
-de destino. Lo único que existe hoy del creativo es su **nombre**, en
-`atribucion_primera->>'utmContent'` (503 de 585 contactos, 30 valores distintos) — y eso permite una
-cosa que este componente NO hace y que `docs/OTROS/estado actual/02-CREATIVE.md` ya midió: ordenar
-creativos por la **calidad del lead** que traen, que es una pregunta de negocio y no de subasta.
+**Estado.** Cuando se escribió (2026-09-16), de los nueve aspectos ninguno se podía medir: los cinco que salen de Meta necesitaban
+el colector, y `formato`, `duración` y `placement` ni siquiera están entre las columnas de la tabla de destino. Del creativo existía
+sólo su **nombre**, en `atribucion_primera->>'utmContent'` (503 de 585 contactos, 30 valores distintos) — y eso permite una cosa que
+este componente NO hace y que Creative ya midió y hoy publica: ordenar creativos por la **calidad del lead** que traen, que es una
+pregunta de negocio y no de subasta (`docs/OTROS/estado actual/02-CREATIVE.md:158-161`). El colector corre desde el 2026-09-16, y
+Creative publica además hook rate, link CTR y la caída del CTR (`docs/OTROS/estado actual/01-ACQUISITION.md:161-163`).
 
 ---
 
@@ -94,10 +94,10 @@ métricas produce ni qué es una «audiencia» a efectos del modelo — si es el
 guardado de Meta, o una segmentación propia. **Queda como pregunta abierta.**
 
 Lo que sí se puede afirmar: el dato de entrada es el ad set, porque es el nivel donde Meta define la
-segmentación. Y ese nivel hoy está casi vacío en la base — `docs/OTROS/estado actual/01-ACQUISITION.md`
-mide el identificador de ad set en 39 de 233 contactos de su ventana, con **un solo** valor distinto.
-O sea que aunque se conectara Meta mañana, el cruce contra nuestros contactos por ad set no tendría
-con qué hacerse.
+segmentación. Y ese nivel sigue escaso en la base — `docs/OTROS/estado actual/01-ACQUISITION.md:281-284` mide el identificador de
+ad set (`utmTerm`) en 51 de 276 contactos de la ventana de 30 días, con 3 valores, el 2026-09-28 (el 2026-09-15 eran 39 de 233 con
+**un solo** valor). O sea que el cruce directo por el ad set que trae el contacto alcanza a menos de uno de cada cinco; el otro
+camino es por el anuncio, cuya dimensión ya guarda el ad set en 59 de 79 (`docs/OTROS/estado actual/01-ACQUISITION.md:247-251`).
 
 ---
 

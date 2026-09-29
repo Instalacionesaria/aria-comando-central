@@ -48,8 +48,8 @@ Es el mismo defecto de la clave `mes` que Sales documentó en su propio segmenta
 (`docs/sales/06-PERIODOS-Y-PISOS.md:25-32`).
 
 **Requisito** · Los cuatro botones de `PERIODOS` y nada más. **«Personalizado» se va**: un rango
-libre no es ninguna de las cuatro ventanas, y la lista es cerrada (`07-REGLAS-TRANSVERSALES.md:251-253`);
-agregar una ventana toca a las cinco pantallas que la comparten
+libre no es ninguna de las cuatro ventanas, y la lista es cerrada (`07-REGLAS-TRANSVERSALES.md:413-419`);
+agregar una ventana toca a las seis pantallas que hoy la comparten, ésta incluida
 (`docs/conversion/05-PERIODOS-Y-PISOS.md:166-167`).
 
 Con esta píldora se va la única visible que abre el calendario de `lib/aios/datepicker.js` —la de
@@ -60,7 +60,7 @@ los abra: el plan lo anota como deuda y no se borran en esta etapa.
 ### LP06-03 · El botón encendido es el que contestó el servidor
 
 `components/creative/PanelDeCreative.jsx:89-90` resuelve el mismo problema con
-`valor={pantalla?.periodo ?? periodo}`, y la regla está escrita en `07-REGLAS-TRANSVERSALES.md:293`.
+`valor={pantalla?.periodo ?? periodo}`, y la regla está escrita en `07-REGLAS-TRANSVERSALES.md:437-438`.
 La respuesta de esta pestaña trae el `periodo` que atendió, y el botón encendido sale de ahí, no del
 estado local. **Defecto que evita:** una petición rechazada, o una lenta que llega después de otra,
 deja el botón diciendo una ventana y las cifras de otra.
@@ -77,10 +77,10 @@ Tres decisiones dentro de esa línea, cada una con su defecto conocido:
 
 1. **`alta_en_el_crm` y no `creado_el`.** `creado_el` es cuándo nuestro barrido vio al contacto, y
    239 contactos comparten la marca de la carga inicial: en cuanto una ventana la tocaba, la cohorte
-   saltaba de golpe sin que entrara nadie (`07-REGLAS-TRANSVERSALES.md:234-239`). El plan exige una
+   saltaba de golpe sin que entrara nadie (`07-REGLAS-TRANSVERSALES.md:350-354`). El plan exige una
    prueba con su mutación para esto en LP-2.
 2. **No el territorio.** El territorio es consecuencia de agendar: filtrar por él da una tasa que es
-   una tautología (`07-REGLAS-TRANSVERSALES.md:216-222`). Por eso la cohorte incluye a los tres
+   una tautología (`07-REGLAS-TRANSVERSALES.md:332-338`). Por eso la cohorte incluye a los tres
    territorios.
 3. **Móvil, no anclada al día.** Es la regla general del sistema y la que usa la cadena de Sales,
    con el motivo escrito: no toca ninguna columna `date` (`lib/negocio/cadenaDeCierre.ts:46-55`,
@@ -230,7 +230,7 @@ sobre un tramo de tres personas.
 La tarjeta bajo el piso **no se borra ni se vacía**: dibuja sus conteos y deja la tasa en raya, con el
 motivo. Borrar la tarjeta de un tramo es afirmar que ese tramo no existe
 (`docs/sales/06-PERIODOS-Y-PISOS.md:96-97`), y apartar no es esconder
-(`07-REGLAS-TRANSVERSALES.md:106`).
+(`07-REGLAS-TRANSVERSALES.md:205-207`).
 
 ---
 

@@ -17,10 +17,10 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
+> estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):
+> «foto del 2026-09-15, línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28.
 > **Este documento es el inverso de los otros ocho: enumera lo que el prototipo dibuja y el
 > sistema real NO tiene que construir.** Cada entrada dice qué hacía el andamio en la maqueta,
 > por qué no se implementa, y —cuando lo hay— qué requisito revela al quitarlo.
@@ -165,8 +165,8 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   **0,8960** para una tasa de paso y **0,8064** para la calificación. **`cap` nunca recorta nada.**
   No es una tapa: es una tapa que no llega a tocar el borde.
 - **Por qué no se implementa:** nadie pidió topar tasas al 94 %, y **taparlas es exactamente lo
-  contrario de lo que hay que hacer**. Está medido en `01-ACQUISITION.md` §3.6 y en la regla 7 del
-  §6: el segmento «(sin adId)» de la ventana agenda **47 de 57 = 82,5 %**, la tasa más alta de toda
+  contrario de lo que hay que hacer**. Se midió el 2026-09-15 (foto del 2026-09-15, § 3.6 y regla 7 del
+  § 6): el segmento «(sin adId)» de la ventana agendaba **47 de 57 = 82,5 %**, la tasa más alta de toda
   la tabla, muy por encima del 44 % del anuncio de mayor volumen. Esa cifra alta es la señal más
   importante de la pantalla —dice que el widget de calendario no pasa el `adId`, no que la pauta
   convierta peor— y un tope la habría aplanado hacia el resto en vez de dejarla asomar.
@@ -186,13 +186,13 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   **exactamente 1**. **El piso tampoco se dispara nunca.**
 - **Por qué no se implementa:** porque su versión portada sí se dispararía, y taparía un dato. **Un
   cero real es información** —una campaña apagada, un anuncio sin entrega, un embudo sin tráfico— y
-  la pantalla tiene que poder mostrarlo. Medido: cuatro de los siete anuncios de la ventana tienen 1
-  o 2 contactos (`01-ACQUISITION.md` §6, regla 5), y con el piso de 10 sólo tres pueden publicar
-  tasa.
+  la pantalla tiene que poder mostrarlo. Medido el 2026-09-15: cuatro de los siete anuncios de
+  la ventana tenían 1 o 2 contactos (foto del 2026-09-15, § 6, regla 5), y con el piso de 10
+  sólo tres podían publicar tasa; el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145`).
 - **Lo que revela —y es lo que hay que diseñar antes de portar—:** el piso de 1 garantiza que
   `base` nunca sea 0, y por eso **la pantalla nunca se probó con un embudo vacío**. Con `base = 0`
   el comportamiento del código ya es el correcto —todas las barras de proporción quedan en 0 %
-  (`:165`, `:189`) y todas las tasas caen al guion `'—'` (`:171`)— pero **no hay estado vacío
+  (`acquisition.js:165`, `:189`) y todas las tasas caen al guion `'—'` (`:171`)— pero **no hay estado vacío
   diseñado** para una tarjeta de embudo, una tabla o el bloque de calificados. Ese estado vacío es
   trabajo nuevo, y hoy no existe porque el andamio impedía llegar a él.
 
@@ -207,15 +207,15 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   calificación (`calif`) y tres proporciones de ICP.
 - **Qué hacía:** el inventario completo de campañas activas de Meta con su economía.
 - **Por qué no se implementa:** los 58 números no salen de ningún lado. Y el inventario real no se
-  les parece: en la ventana hay **4 `campaignId` distintos y 7 `adId` distintos**, no siete
-  campañas parejas de tres embudos (`01-ACQUISITION.md` §4).
+  les parece: en la ventana del 2026-09-15 había **4 `campaignId` distintos y 7 `adId`
+  distintos**, no siete campañas parejas de tres embudos (foto del 2026-09-15, § 4).
 - **Lo que revela —la forma, que sí queda—:** la campaña es la **fila del sistema**, pertenece a un
   recorrido de entrada y lleva su economía y su calidad de lead encima. Y un requisito por
   contraste: **la clave de la campaña es un identificador, nunca el nombre.** `CAMPS` identifica por
-  `n`, un texto, y la regla 1 del §6 de `01-ACQUISITION.md` está medida en contra: «El app» tiene
-  DOS `adId` distintos (44 contactos y 2) y «economia us latino» otros dos (17 y 2). Agrupar por
-  nombre fusiona anuncios de campañas distintas y **borra el arranque de la campaña nueva del 12 de
-  septiembre**, que es justo lo que un media buyer necesita ver.
+  `n`, un texto, y la regla 1 del § 6 de la foto del 2026-09-15 está medida en contra: «El app» tenía DOS `adId`
+  distintos (44 contactos y 2) y «economia us latino» otros dos (17 y 2); el 2026-09-28 son 79 anuncios con 32
+  nombres (`01-ACQUISITION.md:355-357`). Agrupar por nombre fusiona anuncios de campañas distintas y **borra el
+  arranque de la campaña nueva del 12 de septiembre**, que es justo lo que un media buyer necesita ver.
 
 ### A9-08 · `invD × w.days`: la inversión extrapolada, y la flecha muerta del primer KPI
 
@@ -228,8 +228,8 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   sistema real no puede hacer.** El gasto de una ventana es una **suma de días reales**, y por eso
   el §18.4 exige guardar las métricas por fecha. `public.closer_meta_metricas` ya tiene esa forma
   exacta (`nivel`, `objeto_id`, `padre_id`, `fecha`, `gasto`, `impresiones`, `clics`, `cpl`…) y
-  **0 filas**; un grep de esa tabla sobre el código del repositorio da cero coincidencias
-  (`01-ACQUISITION.md` §5.2).
+  **0 filas**, y un grep de esa tabla sobre el código del repositorio daba cero coincidencias (foto del 2026-09-15,
+  § 5.2); el 2026-09-28 sigue vacía (`01-ACQUISITION.md:235-236`) y el gasto está en `negocio.metricas_de_anuncio`.
 - **Y hay un defecto que el andamio produce y que hay que nombrar antes de portar.** Como `inv` se
   calcula **sin** `w.mod`, con cualquier período fijo las dos ventanas duran lo mismo, la inversión
   actual y la anterior son idénticas y el KPI de Inversión nunca dibuja una variación: **la única
@@ -237,7 +237,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   de que «nunca se ve un delta distinto de `=`» es falsa en un caso, y es el caso peligroso: con rango
   personalizado y comparación «Otro periodo» de distinta duración, la flecha aparece y **mide
   únicamente el cociente de días**. Medido: 21 días contra 30 da `▼ 30 %` **en rojo**, porque
-  `:146` pasa `invert:false` y bajar el gasto se pinta como malo. Con 30 contra 21 se pinta `▲ 43 %`
+  `acquisition.js:146` pasa `invert:false` y bajar el gasto se pinta como malo. Con 30 contra 21 se pinta `▲ 43 %`
   **en verde**: gastar más sale como buena noticia, que es exactamente lo que el §18.10 prohíbe
   sugerir en solitario.
 - **Lo que revela:** un único valor de inversión por campaña y ventana, del que cuelgan todos los
@@ -251,10 +251,10 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
 - **Qué hacía:** el volumen de entrada de cada campaña, como promedio diario.
 - **Por qué no se implementa:** un `entD` decimal sólo tiene sentido como promedio inventado. **Un
   sistema real cuenta contactos enteros por día**, y la ventana se arma sumándolos.
-- **Lo que revela:** la forma sí queda, y ya es reproducible. La cohorte se arma con
-  `alta_en_el_crm` y no con `creado_el` —233 contra 256 en la ventana de 14 días, 23 de diferencia
-  que son latencia de ingesta (migración 048 §1, regla 6 del §6)— y el reparto por anuncio está
-  medido: 109 / 57 sin `adId` / 44 / 17 / 2 / 2 / 1 / 1.
+- **Lo que revela:** la forma sí queda, y ya es reproducible. La cohorte se arma con `alta_en_el_crm` y no
+  con `creado_el` —233 contra 256 en la ventana de 14 días del 2026-09-15, 23 de diferencia que son latencia
+  de ingesta (migración 048 §1; regla 6 del § 6 de la foto del 2026-09-15, hoy `01-ACQUISITION.md:376-378`)—
+  y el reparto por anuncio se midió entonces: 109 / 57 sin `adId` / 44 / 17 / 2 / 2 / 1 / 1.
 
 ### A9-10 · La dirección del cálculo: la tasa es el dato y el volumen se deriva
 
@@ -283,8 +283,8 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   el invariante de `:96-97` está bien resuelto —el tramo bajo es el **residuo**, no un tercer
   redondeo, y por eso los tres tramos suman exactamente los calificados y la barra llena el 100 %
   del ancho sin hueco. Lo que **no** sobrevive es que los tramos vengan dados: el dato de origen
-  viene **continuo** —«Puntaje | ICP», poblado en 229 de 233 contactos de la ventana, promedio por
-  anuncio de 27,5 a 73,9 (`01-ACQUISITION.md` §3.5)—, así que dónde se corta es una definición de
+  viene **continuo** —«Puntaje | ICP», poblado en 229 de 233 contactos de la ventana el 2026-09-15, promedio
+  por anuncio de 27,5 a 73,9 (foto del 2026-09-15, § 3.5)—, así que dónde se corta es una definición de
   negocio pendiente. Y hay una pista que la pantalla ya contiene y se contradice sola: las tres
   cifras de calificados llevan `data-seg="alto"` (`:150`, `:178`, `:232`), y el cajón corta el tramo
   alto en **75** (`lib/aios/leads-group.js:10`). O «calificado» significa «ICP ≥ 75» —y entonces la
@@ -399,8 +399,8 @@ antes de portar, no después.
   exactamente el caso donde la flecha era imprescindible. **El guardado va contra el denominador,
   no contra el numerador.**
 - **Estado, y por qué esto va a doler al principio:** el caso `prev = 0` va a ocurrir todo el
-  tiempo. Medido, el rango por omisión de la vista (2026-07-01 → 2026-07-21) trae **3 contactos** y
-  el de comparación (2026-06-01 → 2026-06-21) trae **0** (`01-ACQUISITION.md` §3.9).
+  tiempo. Medido el 2026-09-15, el rango por omisión de la vista (2026-07-01 → 2026-07-21) traía
+  **3 contactos** y el de comparación (2026-06-01 → 2026-06-21) **0** (foto del 2026-09-15, § 3.9).
 
 ### A9-19 · Los ocho `invert:false`
 
@@ -488,9 +488,9 @@ antes de portar, no después.
   más que las dos alertas juntas: **«sin recomendación automática»** — el bloque describe lo que
   detectó y no dice qué hacer; lo accionable vive detrás de un clic deliberado. El botón sin cablear
   es un requisito enunciado y no implementado: **toda señal tiene que poder mostrar en qué se
-  basa.** Estado: no hay dónde guardarla. `negocio.hallazgos` es la tabla de Conversation —sus 20
-  filas tienen `contacto_id` poblada— y no existe el par `entity_type`/`entity_id` que el §18.13
-  pide para apuntar a una campaña, un ad set o un anuncio (`01-ACQUISITION.md` §3.7 y §5.4).
+  basa.** Estado: no hay dónde guardarla. `negocio.hallazgos` es la tabla de Conversation —el 2026-09-15 sus 20
+  filas tenían `contacto_id` poblada (foto del 2026-09-15, § 3.7)— y no existe el par `entity_type`/`entity_id`
+  que el §18.13 pide para apuntar a una campaña, un ad set o un anuncio (`01-ACQUISITION.md:315-317`).
 
 ### A9-24 · Las nueve frases del «Plan de acción» y sus dos umbrales
 
@@ -508,7 +508,7 @@ antes de portar, no después.
 - **Y dos de las nueve son literalmente lo que el §18.10 prohíbe decidir en solitario** —«Deja de
   escalar Prospecting B» (`:16`) y «Sube el presupuesto de retargeting…» (`:21`)— **y están en
   grupos distintos**. Si se reconstruye, esas dos tienen que cambiar de lugar, no de redacción
-  (`01-ACQUISITION.md` §6, regla 10).
+  (foto del 2026-09-15, § 6, regla 10).
 - **Lo que revela:** la forma de los **cuatro grupos con semántica propia** —lectura, freno, empuje,
   derivación a otra área—, cada recomendación con su entidad, su métrica y, cuando es accionable, su
   umbral y su condición. Y lo único del modal que sobrevive entero es el cuarto grupo (`:26-27`):
@@ -522,15 +522,15 @@ antes de portar, no después.
   2026-07-21, comparación 2026-06-01 → 2026-06-21.
 - **Qué hacía:** un rango de trabajo plausible.
 - **Por qué no se implementan:** **caen en el desierto anterior al despliegue.** Medido con la
-  columna que esta pantalla tiene que usar, el rango por omisión devuelve **3 contactos** y el de
-  comparación **0** (`01-ACQUISITION.md` §3.9). Una pantalla real abriría prácticamente en cero y
+  columna que esta pantalla tiene que usar, el 2026-09-15 el rango por omisión devolvía **3 contactos** y
+  el de comparación **0** (foto del 2026-09-15, § 3.9). Una pantalla real abriría prácticamente en cero y
   contra un cero, y se leería como rota. Es el andamio con la ventana de riesgo más corta: es lo
   primero que rompe el día que la pantalla lea datos.
-- **Lo que revela:** el rango por omisión es una **decisión**, y tiene que derivarse de la fecha de
-  corte de los datos. Y con ella viene la obligación que el prototipo no tiene y la base sí impone
-  (regla 6 del §6): ninguna cohorte armada con `alta_en_el_crm` tiene historia antes del despliegue,
-  y **toda pantalla que la use tiene que decir desde cuándo mide**. La nota del rango (`:91`, escrita
-  en `acquisition.js:260`) es el lugar donde va.
+- **Lo que revela:** el rango por omisión es una **decisión**, y tiene que derivarse de la fecha
+  de corte de los datos. Y con ella viene la obligación que el prototipo no tiene y la base sí
+  impone (regla 6 del § 6 de la foto del 2026-09-15): ninguna cohorte armada con `alta_en_el_crm`
+  tiene historia antes del despliegue, y **toda pantalla que la use tiene que decir desde cuándo
+  mide**. La nota del rango (`:91`, escrita en `acquisition.js:260`) es el lugar donde va.
 
 ### A9-26 · El `POOL` de catorce contactos del cajón
 
@@ -571,27 +571,27 @@ DM»**, **«Público frío · Agendamiento»** y **«Remarketing web · Agendami
 
 **Primero, lo que está bien y conviene decir porque era la sospecha razonable:** el prototipo **no
 expone nombres reales**. Un `grep -niE "yaping|nueva era|ariaia|zyra|evoluciona|tofu|bofu|latam"`
-sobre `acquisition.js`, `acquisition-plan.js` y `AcquisitionView.jsx` da **cero coincidencias**
-(`01-ACQUISITION.md` §2). Los siete nombres son inventos genéricos. El riesgo está al revés, y llega
+sobre `acquisition.js`, `acquisition-plan.js` y `AcquisitionView.jsx` dio **cero coincidencias**
+(foto del 2026-09-15, § 2). Los siete nombres son inventos genéricos. El riesgo está al revés, y llega
 el día que se conecte el dato: las campañas de verdad se llaman «NUEVA ERA | TOFU | LEADS |
 LATAM+USA | 01-09-26» y los anuncios «agendamiento - yaping», «El app», «economia us latino»,
 «Evoluciona native».
 
-**Segundo, el precedente.** Este proyecto ya pagó una vez por un nombre propio escrito a mano en una
-pantalla de departamento. `lib/aios/conversation.js` eran 559 líneas de las cuales unas 180 eran
-literales inventados, y entre ellos **el agente se llamaba «Sofía», un diálogo saludaba a «Rodrigo»,
-y «landing BCL» —iniciales de un cliente real— aparecía en tres sitios**. El módulo entero se borró;
-el porqué está documentado en `components/views/ConversationView.jsx:12-33` y en
-`docs/OTROS/estado actual/04-CONVERSATION.md:128`, que además deja constancia de la verificación posterior:
-«**Ningún nombre de persona ni de marca real quedó en el código de esta pantalla**», comprobado con
-grep, y «las marcas que sí se ven en pantalla —los dos nombres de campaña de la tabla de
-atribución— **vienen de la base**, no del código».
+**Segundo, el precedente.** Este proyecto ya pagó una vez por un nombre propio escrito a mano en
+una pantalla de departamento. `lib/aios/conversation.js` eran 559 líneas de las cuales unas 180
+eran literales inventados, y entre ellos **un nombre de agente inventado, un nombre de pila en un
+saludo y las iniciales de un cliente real, repetidas en tres sitios**. El módulo
+entero se borró; el porqué está documentado en `components/views/ConversationView.jsx:12-33` y
+en `docs/OTROS/estado actual/04-CONVERSATION.md:320-331`, que además deja constancia de la
+verificación posterior: «**Ningún nombre de persona ni de marca real quedó en el código de esta
+pantalla**», comprobado con grep el 2026-09-28, y «las marcas que sí se ven en pantalla —los
+nombres de campaña de la tabla de atribución— **vienen de la base**, no del código».
 
 Ésa es la regla, y sale de ese precedente: **un nombre propio que se ve en pantalla viene de la
 base. Si está en el código, es un defecto.** El mismo archivo registra la regla hermana, con su
 precio: está prohibido nombrar un agente a mano en una ruta, porque en la plataforma anterior la
 base aceptaba cuatro agentes y el código validaba contra una lista de dos, y los patrones «no se
-podían cerrar ni medir su reincidencia» (`04-CONVERSATION.md:401`). Y una tercera, que también
+podían cerrar ni medir su reincidencia» (`04-CONVERSATION.md:580-585`). Y una tercera, que también
 aplica acá: `pruebas/codigo/91-closer-y-setter.test.ts` prohíbe nombrar al proveedor en texto que se
 pinta **«porque lo van a ver clientes»**.
 
@@ -611,19 +611,19 @@ módulo**. Medido con grep sobre `lib/`, `components/` y `app/`, «Prospecting B
 | `lib/aios/leads-portal.js:27, :31, :43, :59` | cuatro fichas de contacto |
 
 Son **17 apariciones en 8 archivos**, contadas con `grep -ro "Prospecting B"` sobre `lib/`,
-`components/` y `app/`. **Borrar `CAMPS` deja dieciséis vivas en otros siete archivos** — y cuatro
-de ellas están en la pantalla del jefe, que es donde una cifra inventada se
-lee como la verdadera. Es exactamente el riesgo que `01-ACQUISITION.md` cierra en su §7: «arreglar
-la pantalla de Acquisition y dejar esas cuatro como están produce un sistema que se contradice
-consigo mismo en la cara del usuario».
+`components/` y `app/`. **Borrar `CAMPS` deja dieciséis vivas en otros siete archivos** — y
+cuatro de ellas están en la pantalla del jefe, que es donde una cifra inventada se lee como
+la verdadera. Es exactamente el riesgo con que la foto del 2026-09-15 cerraba su § 7 (línea
+326): «arreglar la pantalla de Acquisition y dejar esas cuatro como están produce un
+sistema que se contradice consigo mismo en la cara del usuario».
 
 **Lo que revela:** los nombres inventados no son decoración del prototipo, son **la forma en que el
 prototipo se propagó**. La limpieza no es del archivo, es del grafo de archivos que lo citan. Y el
-requisito que queda en pie es el de A9-07 y la regla 1 del §6 de `01-ACQUISITION.md`: la fila se
-identifica por `adId`/`campaignId` y se **muestra** con el nombre que vino de la base, normalizando
-la caja para agrupar y mostrando una variante tal cual vino (`lib/negocio/atribucionDelLead.ts:124-127`),
-descartando las etiquetas `{{campaign.name}}` sin renderizar que dos contactos de la ventana traen
-de verdad (regla 4).
+requisito que queda en pie es el de A9-07 y la regla 1 del § 6 de `01-ACQUISITION.md`
+(`01-ACQUISITION.md:355-357`): la fila se identifica por `adId`/`campaignId` y se **muestra** con el
+nombre que vino de la base, normalizando la caja para agrupar y mostrando una variante tal cual vino
+(`lib/negocio/atribucionDelLead.ts:124-127`), descartando las etiquetas `{{campaign.name}}` sin
+renderizar que dos contactos de la ventana traían de verdad (regla 4 de la foto del 2026-09-15).
 
 ---
 

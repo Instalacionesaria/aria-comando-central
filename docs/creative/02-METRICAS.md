@@ -211,7 +211,7 @@ traen el campo poblado.
 **Población** · Contactos con `alta_en_el_crm` en la ventana y la pieza en `utmContent`, **con el campo
 poblado**. El conteo de los que lo traen viaja siempre al lado.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:161`; medición propia del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-161`; medición propia del 2026-09-18.
 **Estado** · **Construible hoy, medido.** Ventana de 30 días:
 
 | pieza | contactos | con puntaje | ICP |
@@ -243,10 +243,10 @@ el equivocado es un defecto silencioso: la columna se llena con números plausib
 **Unidad** · Proporción.
 **Población** · Contactos con `alta_en_el_crm` en la ventana.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:163-171`; medición del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-152`; medición del 2026-09-18.
 **Estado** · **Construible hoy.** Medido: de 31 % a 77 % según la pieza, con cinco piezas sobre el
 piso en 30 días. **Se cuenta con `count(distinct contacto_id)`** — verificado en
-`02-CREATIVE.md:258`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
+`02-CREATIVE.md:445-448`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
 Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:302-305`, o
 las dos pantallas no sumarían igual.
 
@@ -256,10 +256,10 @@ las dos pantallas no sumarían igual.
 producido resultado.
 **Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 7; el patrón está en
 `lib/negocio/indicadoresDeCitas.ts:345`.
-**Estado** · Medido allí: en 14 días, 11 congeladas de 147 alcanzables (7,0 %); en 30 días, 77 de 206
-(**27,2 %**); en «Completo», 101 de 206 (32,9 %) — *«Completo no agrega ni una cita alcanzable sobre
-30 días: agrega 24 congeladas.»* **Sin este conteo, una ventana de 30 días publica una tasa de agenda
-que ignora que un cuarto de las citas todavía no pasó.**
+**Estado** · Medido allí el 2026-09-15: en 14 días, 11 congeladas de 147 alcanzables (7,0 %); en 30
+días, 77 de 206 (**27,2 %**); en «Completo», 101 de 206 (32,9 %) — *«Completo no agrega ni una cita
+alcanzable sobre 30 días: agrega 24 congeladas»*, decía esa foto. Re-medido allí el 2026-09-28, en 30
+días: 14 congeladas y 194 alcanzables (6,7 %). **Sin este conteo, la tasa ignora las citas que no pasaron.**
 
 ### C2-20 · Contactos por pieza
 
@@ -344,8 +344,8 @@ calibrado**; o no publicar el veredicto y publicar la serie. No hay una tercera.
 
 ## 7 · Lo que NO es una métrica de Creative, aunque aparezca en su pantalla
 
-1. **La retención del VSL.** Es de Conversion — `docs/OTROS/estado actual/03-CONVERSION.md:248` lo deslinda:
-   *«Creative mide retención del ANUNCIO, Conversion mide la del VSL de la landing. Son dos videos.»*
+1. **La retención del VSL.** Es de Conversion — `docs/OTROS/estado actual/03-CONVERSION.md:425-427` lo deslinda:
+   *«Creative mide retención del ANUNCIO […]; Conversion mide la del VSL de la landing. Son dos videos»*.
    Y además **el medidor está roto**: los cinco campos están en 0 de 233, y los 79 valores históricos
    valen todos exactamente `0`. Una pantalla que los promedie publica «retención del VSL: 0 %» y va a
    parecer un problema de creativo cuando es un pixel.

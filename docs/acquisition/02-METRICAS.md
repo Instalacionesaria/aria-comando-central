@@ -17,10 +17,10 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
+> estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):
+> «foto del 2026-09-15, línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28.
 
 **Tres niveles de agregación, dos ventanas por consulta.** Este documento
 dice qué número tiene que poder dar Acquisition, con qué fórmula, en qué unidad y **sobre qué
@@ -41,11 +41,11 @@ posibles de esta pantalla son un denominador tomado de la población equivocada.
 | **Unidad** | Contactos, dinero, proporción, días o conteo de entidades. |
 | **Población** | El conjunto sobre el que se mide, y su filtro. |
 | **Rastro** | El `archivo:línea` del que sale: del prototipo, o del resto del sistema cuando el prototipo no lo tiene. |
-| **Estado** | Ya está / está incompleto / no existe y de dónde tiene que venir, según `01-ACQUISITION.md`. |
+| **Estado** | Ya está / está incompleto / no existe y de dónde tiene que venir, según la foto del 2026-09-15 de `01-ACQUISITION.md`. |
 
-**La ventana de referencia de todo este documento** son los **233 contactos con `alta_en_el_crm`
-entre 2026-09-01 y 2026-09-13** (`01-ACQUISITION.md` §4). Cuando una cifra sale de sumar la tabla de
-reparto por anuncio de ese informe y no de una medición propia, está dicho.
+**La ventana de referencia de todo este documento** son los **233 contactos con `alta_en_el_crm` entre 2026-09-01 y 2026-09-13**
+(foto del 2026-09-15, § 4; el 2026-09-28 esa cohorte tiene 237, por latencia de ingesta: `01-ACQUISITION.md:277-279`). Cuando
+una cifra sale de sumar la tabla de reparto por anuncio de esa foto y no de una medición propia, está dicho.
 
 ---
 
@@ -62,8 +62,8 @@ no mostrar la comparación.
 duración fija (`:64-67`) y rango libre (`:68-82`). Los tres devuelven la misma forma, así que
 `build()` no sabe de dónde vino la ventana.
 **Estado** · La mitad es reproducible hoy: la cohorte se arma con `alta_en_el_crm` entre dos fechas.
-La otra mitad no tiene contra qué compararse — **531 de 559 contactos (95,0 %) caen en los últimos
-45 días** (`01-ACQUISITION.md` §3.3).
+La otra mitad no tiene contra qué compararse — el 2026-09-15 **531 de 559
+contactos (95,0 %) caían en los últimos 45 días** (foto del 2026-09-15, § 3.3).
 
 ### A2-02 · La ventana incluye el día inicial y el día final
 
@@ -84,9 +84,9 @@ ventana de comparación (`shift(a1, da)`, `:72`) o las dos quedan desfasadas un 
 **Población** · La misma cohorte, corrida hacia atrás.
 **Rastro** · `lib/aios/acquisition.js:53-57` (`shift`) y `:71-73`. El modo lo elige el usuario
 (`components/views/AcquisitionView.jsx:76-83`): «Periodo anterior» o «Otro periodo».
-**Estado** · Calculable, sin nada contra qué calcularlo todavía. Medido: el rango por defecto de la
-vista (2026-07-01 → 2026-07-21) trae **3 contactos** y el de comparación (2026-06-01 → 2026-06-21)
-trae **0** (`01-ACQUISITION.md` §3.9).
+**Estado** · Calculable, sin nada contra qué calcularlo todavía. Medido el 2026-09-15: el rango por defecto
+de la vista (2026-07-01 → 2026-07-21) traía **3 contactos** y el de comparación (2026-06-01 → 2026-06-21)
+**0** (foto del 2026-09-15, § 3.9); desde el 2026-09-16 la vista abre en 30 días (`01-ACQUISITION.md:191`).
 
 ### A2-04 · El periodo es un atajo de duración conocida o un rango libre, por el mismo eje
 
@@ -128,7 +128,7 @@ lo bloquea** —comparar un mes contra el mismo mes del año pasado es legítimo
 misma línea. En modo «Periodo anterior» el aviso no puede dispararse, porque `db = da` (`:72`).
 A esta nota se le suma una obligación que el prototipo no tiene y la base sí impone: ninguna cohorte
 armada con `alta_en_el_crm` tiene historia antes del despliegue, y **toda pantalla que la use tiene
-que decir desde cuándo mide** (regla 6 del §6 de `01-ACQUISITION.md`).
+que decir desde cuándo mide** (regla 6 del § 6 de la foto del 2026-09-15, línea 290).
 
 ### A2-07 · El modelo tiene tres niveles y se calcula una sola vez por ventana
 
@@ -169,12 +169,12 @@ sistema usa otros dos formatos para lo mismo — `en-US` para dinero y `es-PE` p
 c/u» del bloque de calificados), `:190` (costo por etapa), `:201` (costo por calificado del embudo),
 `:221` (tasa en la tabla), `:225` (costo por etapa en la tabla), `:235` (% calif.), `:236`
 (costo/calif.).
-**Estado** · Es la regla de los dos ceros dicha en código, y este departamento tiene **tres** ceros
-incompatibles que se verían iguales: Meta nunca conectado (`closer_meta_metricas` con 0 filas), un
-campo del CRM que nadie llenó («Porcentaje de Video Visto», 0 de 233) y una métrica sin denominador
-(ventas por anuncio, con `negocio.resultados` sin ninguna venta) — regla 11 del §6.
+**Estado** · Es la regla de los dos ceros dicha en código, y el 2026-09-15 este departamento tenía **tres** ceros incompatibles que se
+verían iguales: Meta nunca conectado (`closer_meta_metricas` con 0 filas), un campo del CRM que nadie llenó («Porcentaje de Video Visto», 0
+de 233) y una métrica sin denominador (ventas por anuncio, con `negocio.resultados` sin ninguna venta) — regla 11 del § 6 de esa foto. El
+2026-09-28 el tercero sigue (`01-ACQUISITION.md:319-320`), y el gasto que falta llega como nulo, no como cero (`01-ACQUISITION.md:359-364`).
 **Huecos del prototipo:** se escapan **`g.cq`** (A2-15), que con cero calificados devuelve `0` y se
-formatea como `$0` en vez de `—`, y la afinidad ICP (`:98`, `:111`), que devuelve `0` sin
+formatea como `$0` en vez de `—`, y la afinidad ICP (`acquisition.js:98`, `:111`), que devuelve `0` sin
 denominador y se publica sin guarda en `:181` y `:237`.
 
 ---
@@ -206,19 +206,19 @@ sumar contactos de funnels distintos mide escala, no conversión.» Por eso `g` 
 KPI, es el único que no se abre en una lista de contactos (A2-45).
 **Subtítulo** · «periodo seleccionado».
 **Rastro** · `lib/aios/acquisition.js:146`; el cálculo por campaña en `:88`; la suma en `:117`.
-**Estado** · **No existe, y es el «no» más importante del informe.** Una búsqueda de columnas en
+**Estado** · **El 2026-09-15 no existía, y era el «no» más importante de la foto.** Una búsqueda de columnas en
 `information_schema.columns` sobre `negocio`, `public` e `identidad` con el patrón
-`spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` devuelve **tres
-coincidencias y ninguna es gasto de Meta poblado** (`01-ACQUISITION.md` §3.2). Tiene que venir del
-API de Marketing de Meta, por anuncio/ad set/campaña y **por día** (§18.4). La tabla
-`public.closer_meta_metricas` ya tiene la forma exacta (`nivel`, `objeto_id`, `padre_id`, `fecha`,
-`gasto`, `impresiones`, `clics`, `cpl`…) y **0 filas**, y ninguna línea de este repositorio la toca:
-conectar Meta es integración, no diseño de datos (§5.2).
+`spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` devolvía **tres coincidencias y
+ninguna era gasto de Meta poblado** (foto del 2026-09-15, § 3.2); `public.closer_meta_metricas` tenía la forma
+exacta y **0 filas**, y la foto concluía que conectar Meta era integración, no diseño de datos (§ 5.2). **Desde
+el 2026-09-16 existe, y el corte del 2026-09-28 llama falsa esa conclusión:** el gasto llega del Ad Manager de
+GoHighLevel, sin conectar Meta, por anuncio y **por día** (§18.4), a `negocio.metricas_de_anuncio`: 3.511,28
+del 2026-08-18 al 2026-09-13, el último día con gasto (`01-ACQUISITION.md:27-31`, `01-ACQUISITION.md:238-245`).
 **El prototipo lo hace al revés** · `inv = round(invD × días)` extrapola desde un gasto diario
 constante. Es justo lo que un sistema real no puede hacer, y revela por contraste el requisito:
 **la inversión de una ventana es una suma de días, no una extrapolación**.
 **Defecto medido, y no es el que parece** · Como `inv` se calcula sin el modificador del periodo
-(`:88`) mientras las entradas sí lo llevan (`:91`), con dos ventanas de igual duración la inversión
+(`acquisition.js:88`) mientras las entradas sí lo llevan (`:91`), con dos ventanas de igual duración la inversión
 actual y la anterior son idénticas y el delta cae siempre en el `=` plano. Pero **no está muerto del
 todo**: en modo «Otro periodo» con duraciones distintas sí dibuja una flecha, y esa flecha mide la
 diferencia de días, no la de gasto. Es el peor de los dos casos.
@@ -229,9 +229,9 @@ diferencia de días, no la de gasto. Es el peor de los dos casos.
 **Fórmula** · `contactos = Σ contactos(embudo)` sobre los tres embudos, donde cada embudo aporta el
 volumen de **su primera etapa**.
 **Unidad** · Contactos (entero).
-**Población** · Los contactos cuya `alta_en_el_crm` cae dentro de la ventana. **No `creado_el`**: son
-233 contra 256 en la ventana de 14 días, y los 23 de diferencia son latencia de ingesta (migración
-048 §1, regla 6 del §6).
+**Población** · Los contactos cuya `alta_en_el_crm` cae dentro de la ventana. **No `creado_el`**: el
+2026-09-15 eran 233 contra 256 en la ventana de 14 días, y los 23 de diferencia son latencia de ingesta
+(migración 048 §1; regla 6 del § 6 de la foto del 2026-09-15, hoy `01-ACQUISITION.md:376-378`).
 **Subtítulo** · «entradas de los 3 funnels» — dice explícitamente que son entradas de caminos
 distintos.
 **Rastro** · `lib/aios/acquisition.js:147`; la entrada de cada embudo en `:90-91`; la suma en `:117`.
@@ -253,13 +253,13 @@ la ventana.
 **Subtítulo** · «los 3 funnels».
 **Rastro** · `lib/aios/acquisition.js:148`; la etapa declarada en `:7`, `:11`, `:15`; las etiquetas en
 `:8`, `:12`, `:16`; la suma defensiva `(t.clics || 0)` en `:118`.
-**Estado** · **Es la métrica que menos existe de todas.** No hay ninguna tabla de tráfico, sesiones ni
-eventos de landing en `negocio.*` —21 tablas revisadas una por una— y **un clic no queda registrado
-en ninguna parte de esta base** (`01-ACQUISITION.md` §5.3). El rastro de landing que hay son «Last
-Landing URL» (99 de 233) y `atribucion_primera->>'url'` (55 de 233), que dicen dónde cayó quien **ya**
-se convirtió en contacto, nunca cuántos la vieron. Tiene que venir de analítica de la landing (Meta
-Pixel + Conversions API, GA4 o un endpoint propio), y los `link clicks` de Meta no son lo mismo: uno es lo que Meta dice que salió y el otro lo
-que llegó. Es **A2-P05**.
+**Estado** · **Era la métrica que menos existía de todas el 2026-09-15.** Ninguna tabla de tráfico, sesiones ni eventos de
+landing en `negocio.*` —21 tablas revisadas una por una— y **un clic no quedaba registrado en ninguna parte de esta base** (foto
+del 2026-09-15, § 5.3); el 2026-09-28 sigue sin haber tabla propia en las 29, y llegan los `linkClick` y `landingPageView` que
+cuenta Meta por anuncio y por día (`01-ACQUISITION.md:230-234`, `01-ACQUISITION.md:310-313`). El rastro de landing de la foto
+eran «Last Landing URL» (99 de 233) y `atribucion_primera->>'url'` (55 de 233), que dicen dónde cayó quien **ya** se convirtió en
+contacto, nunca cuántos la vieron. Tiene que venir de analítica de la landing (Meta Pixel + Conversions API, GA4 o un endpoint
+propio), y los `link clicks` de Meta no son lo mismo: uno es lo que Meta dice que salió y el otro lo que llegó. Es **A2-P05**.
 
 ### A2-14 · Agendados
 
@@ -270,10 +270,10 @@ que llegó. Es **A2-P05**.
 `ghl_calendario_id is not null`, el mismo que ya usa `lib/negocio/atribucionDelLead.ts:132-135`.
 **Subtítulo** · «volumen total» — la advertencia de que no es una tasa.
 **Rastro** · `lib/aios/acquisition.js:149`; la suma en `:117`.
-**Estado** · **Ya está en la base, y hay que elegir cuál de dos cifras es.** El informe publica dos
-que responden preguntas distintas: **163 citas alcanzables con `inicio_el` en los últimos 14 días,
-sobre 149 contactos** (§4), y el reparto por anuncio de la cohorte, que sumado da **123 de los 233
-contactos que agendaron** (48+47+20+6+1+1+0+0, §4). Para la cadena de este departamento manda la
+**Estado** · **Ya está en la base, y hay que elegir cuál de dos cifras es.** La foto del 2026-09-15
+publicaba dos que responden preguntas distintas: **163 citas alcanzables con `inicio_el` en los últimos 14
+días, sobre 149 contactos** (su § 4), y el reparto por anuncio de la cohorte, que sumado da **123 de los 233
+contactos que agendaron** (48+47+20+6+1+1+0+0, también § 4). Para la cadena de este departamento manda la
 segunda: la cohorte es el denominador y el numerador tiene que ser gente **de esa cohorte**, o el
 embudo deja de cerrar. 123 de 233 es **52,8 %** de paso de contactos a agendados.
 
@@ -391,10 +391,10 @@ leads · 3 campañas»), en el resumen de la tabla plegada y en la fila de total
 **Unidad** · Conteo de entidades.
 **Población** · Las campañas del embudo activas en la ventana.
 **Rastro** · `lib/aios/acquisition.js:196`, `:229`, `:244`.
-**Estado** · **Depende de qué es una fila**, y eso no está decidido: en la ventana hay **4
-`campaignId` distintos, 1 solo id de ad set y 7 `adId` distintos** (`01-ACQUISITION.md` §4). Según se
-elija, la tabla tiene 4, 1 o 7 filas — y con el piso de 10 contactos (A2-52) sólo **3 de los 7
-anuncios** llegan a mostrar tasa. Es **A2-P07**.
+**Estado** · **Dependía de qué es una fila**: el 2026-09-15 la ventana tenía **4 `campaignId` distintos, 1 solo id de ad
+set y 7 `adId` distintos** (foto del 2026-09-15, § 4), o sea 4, 1 o 7 filas, y con el piso de 10 contactos (A2-52) sólo
+**3 de los 7 anuncios** mostraban tasa. La pantalla del 2026-09-16 eligió el anuncio: 79 filas a 30 días, 4 con tasa, de
+una dimensión con 12 campañas y 11 ad sets (`01-ACQUISITION.md:145`, `01-ACQUISITION.md:247-249`). Es **A2-P07**.
 
 ---
 
@@ -525,13 +525,13 @@ Todos los costos son derivados de ella.
 **Rastro** · `lib/aios/acquisition.js:88` (se calcula una sola vez por campaña) y de ahí salen el
 costo por etapa (`:190`, `:225`), el costo por calificado de la campaña (`:236`), el del embudo
 (`:201`), el KPI de inversión y el costo por calificado global (`:120`).
-**Estado** · No existe (A2-11). El grano exigido —campaña × día— es el mismo del §18.4 («las métricas
-deben guardarse por fecha para permitir comparaciones históricas») y es lo que permite que cualquier
-ventana se arme sumando en vez de extrapolando.
-**Riesgo de portabilidad, escrito en el informe** · Si alguien reconstruye la pantalla leyendo
-contactos reales y deja el costo saliendo del literal del prototipo, el resultado es **conteos
-verdaderos con costos inventados — peor que la pantalla de hoy, porque hoy nadie puede confundirse**
-(`01-ACQUISITION.md` §7).
+**Estado** · El 2026-09-15 no existía (A2-11); desde el 2026-09-16 se guarda con grano anuncio × día
+(`01-ACQUISITION.md:230-232`). El grano exigido —campaña × día— es el mismo del §18.4 («las métricas deben guardarse por fecha
+para permitir comparaciones históricas») y es lo que permite que cualquier ventana se arme sumando en vez de extrapolando.
+**Riesgo de portabilidad, escrito en la foto del 2026-09-15** · Si alguien reconstruye la pantalla leyendo
+contactos reales y deja el costo saliendo del literal del prototipo, el resultado es **conteos verdaderos con
+costos inventados — peor que la pantalla de entonces, porque con aquélla nadie podía confundirse** (foto del
+2026-09-15, § 7). No ocurrió: la pantalla se rehízo el 2026-09-16 con el gasto real (`01-ACQUISITION.md:24-33`).
 
 ### A2-33 · El costo de una etapa es la inversión ENTERA dividida por el volumen de esa etapa
 
@@ -619,11 +619,11 @@ tabla.
 **Unidad** · Proporción, entera.
 **Población** · Los calificados de esa campaña o embudo. Sin calificados el valor es `0`, no `NaN`.
 **Rastro** · `lib/aios/acquisition.js:98` (campaña) y `:111` (embudo); mostrado en `:181` y `:237`.
-**Estado** · **Reemplazable hoy y con mejor dato.** El puntaje viene continuo y promediarlo directo no
-necesita inventar cortes ni pesos. Promedio real por nombre de anuncio, medido: «Evoluciona native»
-**73,9** (31 contactos), «agendamiento - yaping - 23/07» 68,6 (8), «link_in_bio» 57,0 (3), «El app»
-45,8 (46), «agendamiento - yaping» 42,1 (109) y «economia us latino» **27,5** (19)
-(`01-ACQUISITION.md` §3.5).
+**Estado** · **Reemplazable y con mejor dato.** El puntaje viene continuo y promediarlo directo no
+necesita inventar cortes ni pesos. Promedio real por nombre de anuncio, medido el 2026-09-15:
+«Evoluciona native» **73,9** (31 contactos), «agendamiento - yaping - 23/07» 68,6 (8), «link_in_bio»
+57,0 (3), «El app» 45,8 (46), «agendamiento - yaping» 42,1 (109) y «economia us latino» **27,5**
+(19) (foto del 2026-09-15, § 3.5). Hoy lo publica Creative, por pieza (`01-ACQUISITION.md:187`).
 **Andamiaje con un defecto que nadie pidió** · Los pesos 100/60/25 imponen un **piso de 25 %**: una
 campaña con todos sus calificados en el tramo bajo da 25 %, nunca 0 %, así que la columna va de 25 a
 100 y no de 0 a 100. Si la afinidad se publica como ponderado de tramos o como promedio del puntaje
@@ -714,7 +714,7 @@ hace falta la flecha (**A2-P11**). La forma correcta ya está implementada en el
 Executive se guarda **sólo contra el denominador** (`if(... || !before) return ''`,
 `lib/aios/executive.js:58`). Segunda: los otros siete puntos de llamada (`:146-150`, `:179`,
 `:188`) dejan el espacio **vacío**, que se lee como «no hay cambio» cuando significa «no hay con qué
-comparar» — la misma confusión entre los dos ceros que la regla 11 del §6 obliga a distinguir.
+comparar» — la misma confusión entre los dos ceros que la regla 11 del § 6 de la foto del 2026-09-15 obligaba a distinguir.
 
 ---
 
@@ -772,14 +772,14 @@ distintas y el filtro está mal. El prototipo no lo decide: entra en **A2-P01** 
 **Qué es** · El prototipo identifica la campaña por el texto de su nombre, y eso no se puede portar.
 **Rastro** · `lib/aios/acquisition.js:21-33` (el campo `n` es la clave de hecho: `:228` lo muestra,
 `:223` y `:231` lo mandan al cajón de contactos).
-**Estado** · **Medido en contra.** «El app» tiene **dos `adId` distintos** (`…550467` con 44 contactos
-y `…700467` con 2) y «economia us latino» otros dos (`…570467` con 17 y `…690467` con 2): son los
-mismos creativos relanzados en la campaña nueva del 12 de septiembre. Agrupar por nombre **fusiona
-anuncios de campañas distintas y borra el arranque de la campaña nueva**, que es precisamente lo que
-un media buyer necesita ver (regla 1 del §6). Dos reglas más van con ésta: **normalizar la caja antes
-de agrupar y mostrar una variante tal cual vino** (regla 3, ya aplicada en
-`lib/negocio/atribucionDelLead.ts:124-127`), y **descartar las etiquetas sin renderizar**: dos
-contactos de la ventana traen literalmente `{{campaign.id}}` (regla 4).
+**Estado** · **Medido en contra, el 2026-09-15.** «El app» tenía **dos `adId` distintos** (`…550467` con 44 contactos
+y `…700467` con 2) y «economia us latino» otros dos (`…570467` con 17 y `…690467` con 2): los mismos creativos
+relanzados en la campaña nueva del 12 de septiembre. Agrupar por nombre **fusiona anuncios de campañas distintas y
+borra el arranque de la campaña nueva**, que es precisamente lo que un media buyer necesita ver (regla 1 del § 6 de la
+foto del 2026-09-15; el 2026-09-28 son 79 anuncios con 32 nombres y la tabla agrupa por `meta_anuncio_id`:
+`01-ACQUISITION.md:355-357`). Dos reglas más de esa foto van con ésta: **normalizar la caja antes de agrupar y mostrar
+una variante tal cual vino** (regla 3, ya aplicada en `lib/negocio/atribucionDelLead.ts:124-127`), y **descartar las
+etiquetas sin renderizar**: dos contactos de la ventana traían literalmente `{{campaign.id}}` (regla 4).
 
 ### A2-50 · Las dimensiones que el prototipo insinúa y no implementa
 
@@ -790,14 +790,14 @@ ocurrencia.
 | Dimensión | Dónde está insinuada | Estado |
 |---|---|---|
 | **Anuncio** (`meta_ad_id`) | El cajón de contactos escribe el origen como «Campaña · Creative» (`leads-group.js:15-28`); la ficha por contacto de Leads Portal lista «Creative» (`aios-command-center_1.html:4846-4853`) | `adId` en **176 de 233 (75,5 %)**; 7 anuncios distintos. Es la clave que el §18.5 manda usar |
-| **Ad set / Conjunto** | «Conjunto» en la ficha por contacto (`aios-command-center_1.html:4846-4853`) | **Sólo por nombre.** El id existe en 39 de 233 y es **un solo ad set**; el nombre en 222 de 233, y viene en la clave `utmMedium`, que dice «medio» y contiene «Advantage+ ON / America Hispano / 25-65» (regla 2 del §6) |
+| **Ad set / Conjunto** | «Conjunto» en la ficha por contacto (`aios-command-center_1.html:4846-4853`) | **Sólo por nombre, según la foto del 2026-09-15** (regla 2 de su § 6): el id estaba en 39 de 233 y era **un solo ad set**; el nombre en 222 de 233, en la clave `utmMedium`, que dice «medio» y contiene «Advantage+ ON / America Hispano / 25-65». **Ya no**: el id llega como `utmTerm` en 274 de 594 contactos con 10 valores, y la dimensión guarda el ad set de 59 de 79 anuncios (`01-ACQUISITION.md:247-251`, `01-ACQUISITION.md:281-284`) |
 | **Creativo** | «Creative» en la ficha y en el origen del cajón | No existe `meta_creative_id` en ninguna tabla |
 | **Público / audiencia** | El nombre inventado «Público frío» (`acquisition.js:31`) y «Objetivo» en la ficha | No existe. §18.4 lo pide |
 | **Plataforma** | `'Activa · Meta'` bajo cada fila de campaña (`acquisition.js:229`) | No existe como columna |
 | **Estado de entrega** | La otra mitad de ese mismo literal | **No existe, y su ausencia es un detector perdido**: una campaña pausada se dibuja hoy exactamente igual que una activa, con sus cifras congeladas y sin marca. Es el detector «anuncios sin entrega» del §18.13 |
 | **Ubicación y posición** | «Ubicación», «Posición» en la ficha por contacto | No existen |
 | **Dispositivo** | «Dispositivo» en la ficha; el hallazgo que Conversion le manda trae `dev:'Todos'` (`conversion.js:64`) | No existe en Acquisition |
-| **Landing / punto de captura** | «Punto de captura» en la ficha; la etapa «Clics a landing VSL» | 11 landings distintas medibles desde «Last Landing URL» (99 de 233). **Ojo: no se renderizan crudas** — seis valores son JWT con `contact_id` adentro (§7) |
+| **Landing / punto de captura** | «Punto de captura» en la ficha; la etapa «Clics a landing VSL» | 11 landings distintas medibles desde «Last Landing URL» (99 de 233). **Ojo: no se renderizan crudas** — seis valores son JWT con `contact_id` adentro (`01-ACQUISITION.md:458-460`) |
 
 ### A2-51 · La fila «sin anuncio» se cuenta pero no compite
 
@@ -820,9 +820,9 @@ de calendario no pasa el `adId`. Dónde se dibuja esa fila es **A2-P12**.
 **Qué es** · El piso del sistema para mostrar una proporción.
 **Rastro** · `PISO_DE_UNA_TASA = 10` y `DIAS_DE_LA_TASA = 14` en
 `lib/negocio/indicadoresDeCitas.ts:300` y `:310`.
-**Estado** · **El efecto sobre esta pantalla es severo y hay que aceptarlo**: de los 7 anuncios de la
-ventana **sólo 3 llegan al piso** (109, 44 y 17 contactos); los otros cuatro tienen 1 o 2. La tabla
-real es de tres filas y una fila «Otras», no de siete (regla 5 del §6). El prototipo no tiene piso
+**Estado** · **El efecto sobre esta pantalla es severo y hay que aceptarlo**: el 2026-09-15, de los 7 anuncios de la
+ventana **sólo 3 llegaban al piso** (109, 44 y 17 contactos) y los otros cuatro tenían 1 o 2 (regla 5 del § 6 de esa
+foto); el 2026-09-28, a 30 días, 4 de 79 filas tienen tasa (`01-ACQUISITION.md:145`). El prototipo no tiene piso
 —dibuja tasa para las siete campañas siempre— así que esto es un requisito que entra al portar, no
 uno que se conserve. Si el piso apaga la tasa o apaga la fila es **A2-P13**.
 

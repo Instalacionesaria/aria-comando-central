@@ -35,8 +35,11 @@ import { join } from 'node:path';
 
 const RAIZ = join(import.meta.dirname, '..', '..');
 /* `docs/leads-portal` entró el día que nació (2026-09-26): una carpeta nueva no trae deuda, así que
-   auditarla desde el primer commit es gratis y evita que junte la que juntó Sales. */
-const AUDITADAS = ['docs/sales', 'docs/leads-portal'];
+   auditarla desde el primer commit es gratis y evita que junte la que juntó Sales.
+   `docs/OTROS/estado actual` entró el 2026-09-28, el día que se reescribió entera: es la carpeta que
+   más cita al código —cada afirmación de la foto lleva su `archivo:línea`— y la que más rápido se
+   pudre, porque describe el código de un día y el código sigue. Reescrita, tampoco trae deuda. */
+const AUDITADAS = ['docs/sales', 'docs/leads-portal', 'docs/OTROS/estado actual'];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
 
@@ -45,8 +48,20 @@ const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db']
  *
  * Los acentos graves no son decoración: sin ellos el patrón toma un `algo.ts:` suelto de una frase
  * corriente y la prueba empieza a opinar sobre la prosa.
+ *
+ * ── LAS DOS RUTAS QUE EL PATRÓN NO VEÍA ─────────────────────────────────────
+ *
+ * Hasta el 2026-09-28 el patrón no admitía corchetes ni espacios, y dos familias de citas pasaban
+ * **sin que nadie las mirara y sin ningún aviso**: las rutas dinámicas de Next
+ * (`app/api/leads-portal/[id]/route.ts:12`) y las que entran a `docs/OTROS/estado actual/`, que es la
+ * única carpeta del repositorio con un espacio en el nombre. No eran casos raros: la reescritura de
+ * esa carpeta encontró citas de las dos formas en las tres carpetas auditadas.
+ *
+ * El espacio se admite **sólo** entre `estado` y `actual/`. Abrirlo a cualquier espacio haría que un
+ * fragmento de SQL o de prosa entre acentos graves que termine en `.md:3` pasara por una cita.
  */
-const CITA = /`([A-Za-z0-9_./-]+\.(?:ts|tsx|js|jsx|mjs|css|sql|md)):(\d+)(?:-(\d+))?`/g;
+const CITA =
+  /`((?:[A-Za-z0-9_./[\]-]|(?<=estado) (?=actual\/))+\.(?:ts|tsx|js|jsx|mjs|css|sql|md)):(\d+)(?:-(\d+))?`/g;
 
 function archivosDe(dir: string, filtro?: (n: string) => boolean): string[] {
   const salida: string[] = [];
@@ -118,6 +133,20 @@ test('la prueba encuentra citas: sin esto, un patrón roto la deja verde sobre n
   assert.ok(
     CITAS.length >= 100,
     `sólo se encontraron ${CITAS.length} citas en ${AUDITADAS.join(', ')}: el patrón dejó de casar`,
+  );
+});
+
+test('el patrón ve las rutas con corchetes y las que pasan por «estado actual»', () => {
+  /* Las dos familias que el patrón viejo salteaba en silencio (ver `CITA`). Si el patrón vuelve a
+     perder una, las otras pruebas siguen verdes —auditan menos citas, no citas malas— y esto es lo
+     único que se entera. */
+  assert.ok(
+    CITAS.some((c) => c.ruta.includes('[')),
+    'ninguna cita con corchetes: el patrón dejó de ver las rutas dinámicas de Next',
+  );
+  assert.ok(
+    CITAS.some((c) => c.ruta.includes('estado actual/')),
+    'ninguna cita a «docs/OTROS/estado actual/»: el patrón dejó de admitir el espacio de esa carpeta',
   );
 });
 

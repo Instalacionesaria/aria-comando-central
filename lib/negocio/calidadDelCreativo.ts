@@ -220,7 +220,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
          *
-         * Y `exists` y no un `join` con `count(*)`: verificado en `02-CREATIVE.md:287`, un contacto
+         * Y `exists` y no un `join` con `count(*)`: verificado en `02-CREATIVE.md:445-448`, un contacto
          * con dos citas inflaba «agendamiento - yaping» de 109 a 112. */
       sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
     ])

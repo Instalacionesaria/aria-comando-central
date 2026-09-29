@@ -69,8 +69,8 @@ Y el embudo ejecutivo de `lib/aios/executive.js:27-28` declara dos de sus pasos 
 view:'sales'`, o sea que **la maqueta de Sales es alcanzable por drill-through desde Executive**, no
 sólo desde el menú. Quien llegue por ese camino ve 11 ventas; quien llegue por el menú ve 18.
 
-`docs/OTROS/estado actual/05-SALES.md:84` lo midió para el mismo período de 7 días: 74/18/$55.200 contra
-36/11/$27.940. **El doble.** Y *«nadie lo nota porque ninguna se calcula»*.
+`docs/OTROS/estado actual/05-SALES.md:217-222` lo midió para el mismo período de 7 días: 74/18/$55.200 contra
+36/11/$27.940. **El doble.** Y *«nadie lo notaba porque ninguna se calculaba»*.
 
 ### S13-P01 · ¿Fue un descuido o dos épocas? — **abierta**
 

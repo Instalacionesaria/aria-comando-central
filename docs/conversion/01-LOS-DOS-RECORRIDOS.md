@@ -46,15 +46,15 @@ consecuencia está en `CV1-05`.
 
 ### CV1-02 · La llave es el ÚLTIMO toque, no el primero
 
-**Rastro** · Regla 6 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:242`: *«Acquisition
+**Rastro** · Regla 6 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:415-416`: *«Acquisition
 mira el primer toque —de qué anuncio vino—; Conversion mira el último —por dónde volvió a entrar—.
 Confundirlos hace que el departamento mida cero y lo reporte como ausencia.»*
 
 **Estado** · **Medido, y la diferencia es grande.** `contactos.atribucion_ultima->>'url'` está en
 **475 de 590** contactos; `atribucion_primera->>'url'` en **329**. Y el caso que lo prueba:
-`Trigger Link` vale **29 de 584** en la última y **0 de 584** en la primera
-(`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:177`). Un módulo que buscara trigger links en la primera
-mediría cero para siempre y lo reportaría como «no se usan».
+`Trigger Link` vale **31 de 594** en la última y **0 de 594** en la primera el 2026-09-28 (el
+2026-09-15, 29 y 0 de 584: `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:187-188`). Un módulo que
+buscara trigger links en la primera mediría cero para siempre y lo reportaría como «no se usan».
 
 Las dos columnas las creó `db/migraciones/048_de_donde_vino_el_lead.sql:100-104,125-129`, con el
 argumento escrito en `048:85-89`: son dos columnas y no una porque primer y último toque son
@@ -98,13 +98,13 @@ agendados**, dibujadas una debajo de otra. No una tasa por familia: al construir
 circular, y `CV2-02` lo mide. Y la cifra más valiosa que esta pantalla puede publicar hoy es **el
 reparto mismo**: cuánta gente entra por cada camino.
 
-Es la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:451` aplicada acá: *«una cadena que
+Es la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:625` aplicada acá: *«una cadena que
 no es monótona no es un embudo»*.
 
 ### CV1-05 · «Visitó la landing» y «la URL quedó registrada» no son lo mismo
 
-**Rastro** · Regla 3 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:230`. Medido allí:
-de los 48 contactos de la ventana con rastro de `accelerator.ariaia.com`, **44 tienen
+**Rastro** · Regla 3 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:387-390`. Medido
+allí el 2026-09-14: de los 48 contactos de la ventana con rastro de `accelerator.ariaia.com`, **44 tienen
 `medium = calendar`** — o sea que su URL se escribió **en el momento de reservar**, no al navegar.
 
 **Estado** · El cruce sale **circular**: «tener la URL» es consecuencia de haber convertido, así que
@@ -123,10 +123,10 @@ a sí misma.
 
 ### CV1-06 · Ninguna serie puede cruzar el 2026-08-31 en silencio
 
-**Rastro** · Regla 2 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:219`: *«Es la regla
-más importante y la que más fácil se viola. Cualquier serie temporal que cruce esa fecha va a
-mostrar un derrumbe fantasma de todos los indicadores de landing y de VSL, y no será una caída de
-conversión: será un cambio de ruta de adquisición.»*
+**Rastro** · Regla 2 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:368-371`: *«Cualquier
+serie que cruce esa fecha muestra un derrumbe fantasma de los indicadores de landing y de VSL, y no
+es una caída de conversión: es un cambio de ruta de adquisición.»* La foto del 2026-09-15 la llamaba
+«la regla más importante y la que más fácil se viola».
 
 **Estado** · **Y el botón por omisión es el que la viola.** `PERIODO_POR_OMISION = '30d'`
 (`lib/negocio/periodo.ts:109`) abre una ventana que hoy empieza el 2026-08-21 y cruza el corte. Las
@@ -172,7 +172,7 @@ de JavaScript.
 
 ### CV1-09 · El precall NO es de este departamento
 
-**Rastro** · Regla 7, `docs/OTROS/estado actual/03-CONVERSION.md:246`. El prototipo lo dibuja en el
+**Rastro** · Regla 7, `docs/OTROS/estado actual/03-CONVERSION.md:420-424`. El prototipo lo dibuja en el
 paso «Gracias» como «video de bienvenida» (`conversion.js:545-548`).
 
 **Estado** · El consumo del video precall es el `§ 10.6` del documento —**Appointment Flow**— y ya

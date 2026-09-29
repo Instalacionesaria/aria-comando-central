@@ -33,7 +33,7 @@
 // que el de arriba y la pantalla dibujaría un embudo que se ensancha.
 //
 // Cada eslabón se cuenta sobre contactos que cumplen TODOS los anteriores, y los que no encajan
-// viajan en `intentosSinCita`. Es la regla 11 de `07-REGLAS-TRANSVERSALES.md:451` —*«una cadena que
+// viajan en `intentosSinCita`. Es la regla 11 de `07-REGLAS-TRANSVERSALES.md:625` —*«una cadena que
 // no es monótona no es un embudo»*— satisfecha por construcción y no por suerte.
 //
 // ── EL TERCER ESLABÓN ES, EXACTAMENTE, LO QUE AVANZAR OFRECE CERRAR ─────────

@@ -255,10 +255,10 @@ export const SECCIONES: readonly Seccion[] = [
        departamento que la baja, y el cable trampa de `ADR-0304` volvió a hacer su trabajo: la ruta
        nueva y esta línea tuvieron que moverse juntas.
        *
-       El galón se QUEDA. `docs/OTROS/estado actual/02-CREATIVE.md:34` lo señalaba como el detalle que
-       hacía que la pantalla pareciera tan real como ICP & Oferta sin serlo — pero el galón es del
-       prototipo (cinco de las diez lo llevan) y Acquisition nació sin él por lo mismo. Lo que estaba
-       mal no era el adorno: era que detrás no hubiera nada. */
+       El galón se QUEDA. `docs/OTROS/estado actual/02-CREATIVE.md:225-226` recoge que la foto anterior
+       lo señalaba como el detalle que hacía que la pantalla pareciera tan real como ICP & Oferta sin
+       serlo — pero el galón es del prototipo (cinco de las diez lo llevan) y Acquisition nació sin él
+       por lo mismo. Lo que estaba mal no era el adorno: era que detrás no hubiera nada. */
     menu: { grupo: 'Inteligencia', icono: '#i-creative', galon: true },
   },
   {

@@ -40,11 +40,11 @@
 
 ### CV7-02 · `landingPageView` llega, y corrige lo publicado
 
-**Estado** · `docs/OTROS/estado actual/03-CONVERSION.md:32` afirma que de las cinco *«ninguna llega hoy»* y
-nombra «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19**: el desglose
-de acciones de Meta trae `landingPageView` por anuncio y por día, se guarda en
-`negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se publica en
-`lib/negocio/rendimientoDelCreativo.ts:96` como «Vistas de la landing».
+**Estado** · La foto del 2026-09-15 afirmaba que de las cinco *«ninguna llega hoy»* y nombraba
+«Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19** (lo registra
+`docs/OTROS/estado actual/03-CONVERSION.md:79-93`): el desglose de acciones de Meta trae `landingPageView`
+por anuncio y por día, se guarda en `negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se
+publica en `lib/negocio/rendimientoDelCreativo.ts:96` como «Vistas de la landing».
 
 **Con dos límites que hay que decir al usarlo:**
 
@@ -63,8 +63,8 @@ el `§ 2.4:94-99`.
 
 ### CV7-03 · Dos videos distintos, y el deslinde importa
 
-**Rastro** · Regla 7 del departamento, `03-CONVERSION.md:246`: *«Creative mide retención del
-ANUNCIO, Conversion la del VSL. Son dos videos.»*
+**Rastro** · Regla 7 del departamento, `03-CONVERSION.md:425-427`: *«Creative mide retención del
+ANUNCIO (las reproducciones de Meta); Conversion mide la del VSL de la landing. Son dos videos»*.
 
 **Estado** · Creative mide `videoView` de Meta —las reproducciones del anuncio— y lo publica como
 hook rate con su cobertura (`rendimientoDelCreativo.ts:86`). Conversion mediría la retención del
@@ -101,8 +101,8 @@ proyecto ya pagó dos veces.
 ### CV7-06 · El trigger link es de Lead Flow y su rastro vive en la columna de Conversion
 
 **Rastro** · `§ 9.5:529-549` define los seis estados del trigger link. Medido en
-`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:177`: `Trigger Link` vale **29 de 584** en
-`atribucion_ultima` y **0 de 584** en `atribucion_primera`.
+`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:187-188`: `Trigger Link` vale **31 de 594** en
+`atribucion_ultima` y **0 de 594** en `atribucion_primera` el 2026-09-28 (29 y 0 de 584 el 2026-09-15).
 
 **Estado** · El trigger link es el instrumento de **Lead Flow** —él lo envía— pero su huella queda en
 la columna que **Conversion** lee. O sea que Conversion puede decirle a Conversation cuántos de sus
@@ -157,11 +157,11 @@ distintas (`CV14-01`). El cruce se hace por nombre de creativo o no se hace.
 
 ## Correcciones al inventario
 
-### CV7-11 · `03-CONVERSION.md:32` quedó viejo en un punto
+### CV7-11 · El corte del 2026-09-15 de `03-CONVERSION.md` quedó viejo en un punto
 
-Afirma que de las cinco cosas del `§ 18.16` *«ninguna llega hoy»*. **Una llega desde el 2026-09-19**
-(`CV7-02`). El resto del diagnóstico de ese archivo sigue en pie, y sus nueve reglas son la ley de
-esta carpeta.
+Afirmaba que de las cinco cosas del `§ 18.16` *«ninguna llega hoy»*. **Una llega desde el 2026-09-19**
+(`CV7-02`), y el corte del 2026-09-28 ya lo corrige (`03-CONVERSION.md:79-90`). Sus nueve reglas
+conservan el número (`03-CONVERSION.md:352-443`) y son la ley de esta carpeta.
 
 ---
 

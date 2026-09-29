@@ -25,7 +25,7 @@ pone una persona identificable al lado de cifras. Creative tenía 18 puertas a u
 personas inventadas y Conversion 7; **Sales no tiene ninguna puerta**, pero tiene esto, que es peor
 en una dimensión concreta.
 
-`docs/OTROS/estado actual/05-SALES.md:204` lo nombra sin rodeos: *«Poner una persona real al lado de un
+`docs/OTROS/estado actual/05-SALES.md:511-514` lo nombra sin rodeos: *«Poner una persona real al lado de un
 número inventado […] el daño no es un número mal calculado: es una evaluación de desempeño»*. Y esa
 persona **tiene acceso a la pantalla**.
 
@@ -42,7 +42,7 @@ La segunda fila dice **«Asesor comercial»**, que no es un nombre sino un cargo
 —«ICP alto asignado» y «ICP medio y bajo»— afirman **una regla de asignación por tramo de ICP**.
 
 **Esa regla no existe en ninguna parte.** No hay tabla, ni columna, ni constante que la exprese; lo
-comprueba `docs/OTROS/estado actual/05-SALES.md:151`. El ICP vive en `campos_del_crm` y la asignación en
+comprueba `docs/OTROS/estado actual/05-SALES.md:379-385`. El ICP vive en `campos_del_crm` y la asignación en
 `contactos.crm_asignado_a`, y **nada las relaciona**.
 
 Es andamiaje en su forma, no sólo en sus valores: la tabla no tiene dos filas por diseño, tiene dos

@@ -38,7 +38,7 @@
 | `CV8-07` | La cohorte | `contactos.alta_en_el_crm` | 590 de 590 |
 | `CV8-08` | El creativo de origen | `atribucion_primera->>'utmContent'` | 93 de 104 en la landing propia |
 | `CV8-09` | Las vistas de landing de Meta | `metricas_de_anuncio.acciones->>'landingPageView'` | 150 de 240 filas anuncio-día (63 %) |
-| `CV8-10` | El dispositivo | `atribucion_*->>'userAgent'` | 121 de 162 citas (`03-CONVERSION.md:156`) |
+| `CV8-10` | El dispositivo | `atribucion_*->>'userAgent'` | 121 de 162 citas, del 2026-09-14 (`03-CONVERSION.md:345-347`) |
 
 ### CV8-11 · Lo que existe y está en cero
 
@@ -76,7 +76,7 @@
 para que el denominador no cambie entre corridas (`:313-315`); y **`null` es un retorno legítimo**:
 quien lo use *«tiene que poder decir "no sé" en vez de "cero"»* (`:298-300`).
 
-Es la regla 9 del departamento (`03-CONVERSION.md:254`). Los tres campos que el código ya nombra
+Es la regla 9 del departamento (`03-CONVERSION.md:437-443`). Los tres campos que el código ya nombra
 así:
 
 ```
@@ -90,8 +90,8 @@ la columna se apaga y **lo dice**, como hace `calidadDelCreativo.ts:358-363`.
 
 ### CV8-14 · Ciento cuarenta y nueve campos están fuera de pantalla, y 81 tienen datos
 
-**Rastro** · `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:14`.
-**Estado** · De los 170 campos del catálogo, 149 no se ven porque su carpeta no tiene `grupo`
+**Rastro** · `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:43-46` (el 2026-09-28, 174 fuera y 93 con datos).
+**Estado** · Medido el 2026-09-15: de los 170 campos del catálogo, 149 no se ven porque su carpeta no tiene `grupo`
 —`camposQueSeMuestran()` filtra por `cp.grupo is not null` (`camposDelCrm.ts:256`)— y 81 de ésos sí
 tienen valores: **4.939 valores guardados que ninguna pantalla lee**. Ahí adentro está la carpeta
 entera de atribución y la de VSL.
@@ -102,7 +102,7 @@ entera de atribución y la de VSL.
 
 ### CV8-15 · Un campo con un solo valor distinto no es una medición
 
-**Rastro** · Regla 1, `03-CONVERSION.md:215`.
+**Rastro** · Regla 1, `03-CONVERSION.md:358-366`.
 **Estado** · `VSL % máximo visto` es el caso de libro: **79 escrituras, 79 ceros, ninguna excepción**.
 Un campo vacío se nota; un cero se publica. La distinción de los tres estados —no hay campo · el
 campo dice cero · el medidor no reportó— **no se puede resolver desde la base**, y por eso el
@@ -173,18 +173,18 @@ Las consultas de cada cifra están al pie de `14-LOS-TRES-INSTRUMENTOS-QUE-SE-AP
 
 ## 6 · Lo que esta medición corrige de lo ya publicado
 
-### CV8-16 · `03-CONVERSION.md:148-150` midió la URL sobre la columna de menos cobertura
+### CV8-16 · La foto del 2026-09-16 de `03-CONVERSION.md` midió la URL sobre la columna de menos cobertura
 
-Ese archivo mide `Last Landing URL` en 99 de 233 y `atribucion_ultima->>'url'` en 173 de 233 — o sea
-que ya notó que la segunda es mejor. **Remedido el 2026-09-20 sobre toda la base**: 180 contra
-**475**. La diferencia se agrandó porque el campo del CRM dejó de escribirse y la columna de
-atribución no.
+Aquella versión (`bddb516`, línea 148) mide `Last Landing URL` en 99 de 233 y
+`atribucion_ultima->>'url'` en 173 de 233 — o sea que ya notó que la segunda es mejor. **Remedido el
+2026-09-20 sobre toda la base**: 180 contra **475**. La diferencia se agrandó porque el campo del CRM
+dejó de escribirse y la columna de atribución no.
 
 ### CV8-17 · El censo de hosts cambió de reparto, y las dos mediciones son ciertas
 
-Ver `CV14-13`. `03-CONVERSION.md:238` midió sobre la ventana de 14 días, que cae **entera después
-del corte**; esta carpeta mide sobre toda la base. Los repartos son distintos porque las ventanas
-son distintas, y eso es exactamente por qué la regla 2 existe.
+Ver `CV14-13`. La regla 5 de `03-CONVERSION.md` del 2026-09-16 (`bddb516`, línea 240) midió sobre la
+ventana de 14 días, que cae **entera después del corte**; esta carpeta mide sobre toda la base. Los
+repartos son distintos porque las ventanas son distintas, y eso es exactamente por qué la regla 2 existe.
 
 ---
 

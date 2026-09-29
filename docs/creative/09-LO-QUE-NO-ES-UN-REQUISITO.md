@@ -152,7 +152,7 @@ fuente. Ver `C6-08`.
 se caen en **Conversion**, `.cls` en el calendario, `.legend` en **Executive**. Nada falla: se ve
 distinto y nada lo dice.
 
-> `docs/OTROS/estado actual/02-CREATIVE.md` nombró sólo `.read` como la excepción. Son siete.
+> La foto del 2026-09-15 de `docs/OTROS/estado actual/02-CREATIVE.md` nombró sólo `.read` como la excepción. Son siete.
 
 ### C9-09 · Las que sí están muertas
 

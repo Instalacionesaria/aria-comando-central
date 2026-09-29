@@ -47,10 +47,10 @@
    distintos (`aios-command-center_1.html:4624` y `:4644`), el defecto que ya señaló
    `docs/acquisition/04-CALIDAD-DEL-LEAD.md:514-518`. Los cortes están en `14-EL-PUNTAJE-DEL-CRM.md`.
 4. **Los cuatro tramos suman la cohorte exacta, y «Todos» no se calcula por separado.** Es la regla
-   de apartar sin esconder (`07-REGLAS-TRANSVERSALES.md:106`): si la suma no da, se ve.
+   de apartar sin esconder (`07-REGLAS-TRANSVERSALES.md:205-207`): si la suma no da, se ve.
 5. **El piso es del DENOMINADOR.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`),
    con su motivo en `:300-307`. Se aplica a lo que va abajo de la raya de cada tasa, no al total.
-6. **Los dos ceros no colapsan** (`07-REGLAS-TRANSVERSALES.md:110-112`). `null` es «no hay de qué
+6. **Los dos ceros no colapsan** (`07-REGLAS-TRANSVERSALES.md:213-215`). `null` es «no hay de qué
    decirlo» y `0` es un hecho medido. La maqueta los colapsa en una línea: su `rate` devuelve `0`
    cuando el denominador es cero (`aios-command-center_1.html:4707`).
 7. **Vender es tener un resultado con salida `venta`.** No lo es un acuerdo sin pago
@@ -83,7 +83,7 @@ la suma de los cuatro tramos.
 **Población** · Los contactos de la empresa con alta dentro de la ventana, **de cualquier
 territorio** —closer, setter o congelado— y descartados incluidos. La cohorte se arma con un hecho
 de entrada y no con el territorio, que es consecuencia de agendar
-(`07-REGLAS-TRANSVERSALES.md:216-222`).
+(`07-REGLAS-TRANSVERSALES.md:332-338`).
 **Rastro** · `aios-command-center_1.html:4709` (`n = g.length`, por tramo) y `:4727` (`all.length`, la
 tarjeta «Todos»); el mismo predicado que `lib/negocio/cadenaDeCierre.ts:169`.
 **Estado** · **Construible hoy, sin migración.** Medido el 2026-09-27:

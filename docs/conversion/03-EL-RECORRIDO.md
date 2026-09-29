@@ -59,7 +59,7 @@ flecha entre cada par (`:264`).
 
 **Estado** · Es correcto **cuando todos pasan por el mismo sitio**. Hoy el 44 % agenda directo sin
 pisar la landing (`CV1-03`), así que la flecha entre `Landing` y `Agenda` afirma un paso que la
-mayoría no da. Ver `CV1-04` y la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:451`.
+mayoría no da. Ver `CV1-04` y la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:625`.
 
 **Lo que sobrevive del requisito**: la idea de mostrar el recorrido como etapas con su caída. Lo que
 cambia es que hay **dos recorridos** y cada uno tiene las suyas.

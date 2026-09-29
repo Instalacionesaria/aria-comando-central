@@ -3,10 +3,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // NO HACE FALTA CONECTAR META, Y ESO CONTRADICE LO QUE ESTE REPOSITORIO CONCLUYÓ
 //
-// `docs/OTROS/estado actual/01-ACQUISITION.md` cerraba así: *«conectar Meta es trabajo de integración —app
-// de Meta, token de larga duración, revisión de app, un recolector diario— y no de diseño de
-// datos»*, y `docs/acquisition/13-EL-CONTRASTE.md` ponía la credencial ausente como el único freno
-// de veintiún KPI.
+// `docs/OTROS/estado actual/01-ACQUISITION.md` cerraba así su corte del 2026-09-15 (el del 2026-09-28
+// lo cita en sus líneas 27-30 y lo da por falso): *«conectar Meta es trabajo de integración (app de
+// Meta, token de larga duración, revisión de app, un recolector diario) y no de diseño de datos»*, y
+// `docs/acquisition/13-EL-CONTRASTE.md` ponía la credencial ausente como el único freno de veintiún KPI.
 //
 // **Es falso, y se comprobó llamando.** GoHighLevel expone una API de Ad Manager bajo el scope
 // `adPublishing`, y el Private Integration Token que ya usa el barrido la alcanza. Medido contra la

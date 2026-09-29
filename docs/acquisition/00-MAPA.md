@@ -17,10 +17,10 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
+> estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):
+> «foto del 2026-09-15, línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28.
 
 ## Qué es esta carpeta
 
@@ -64,9 +64,9 @@ un requisito real**, y a veces lo señala estando equivocado. Dos ejemplos del p
 tasa de calificación (`:92`, `:94`). Nadie pidió topar tasas al 94 %.
 Lo que **sí** revela es que quien hizo la maqueta sabía que una tasa de paso no puede dar 100 %.
 Pero la conclusión correcta es la opuesta a lo que hizo: una tasa real **sí** puede dar cerca de
-100 %, y el trabajo es explicar por qué, no taparla. Está medido: los 57 contactos de la ventana
-**sin `adId` agendan 47 veces, el 82,5 %**, la tasa más alta de toda la tabla y muy por encima del
-44 % del anuncio de mayor volumen (`01-ACQUISITION.md` §6, regla 7). Esa cifra alta es la señal más
+100 %, y el trabajo es explicar por qué, no taparla. Está medido: el 2026-09-15 los 57 contactos de la ventana
+**sin `adId` agendaban 47 veces, el 82,5 %**, la tasa más alta de toda la tabla y muy por encima del 44 % del
+anuncio de mayor volumen (foto del 2026-09-15, § 6, regla 7, línea 292). Esa cifra alta es la señal más
 importante de la pantalla —y no dice que el mejor anuncio sea ninguno, dice que el widget de
 calendario no pasa el `adId`—.
 

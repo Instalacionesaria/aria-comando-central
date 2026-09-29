@@ -16,8 +16,8 @@
 > (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
 
 > Requisitos derivados de `lib/aios/creative.js:91-102` y `components/views/CreativeView.jsx:30-49`,
-> contra el vocabulario real de `lib/negocio/periodo.ts`.
-> Las mediciones de sesgo de ventana son de `docs/OTROS/estado actual/02-CREATIVE.md:225-228`, del 2026-09-16.
+> contra el vocabulario real de `lib/negocio/periodo.ts`. Las mediciones de sesgo de ventana son de
+> `docs/OTROS/estado actual/02-CREATIVE.md:414-423`, del 2026-09-15 y 16 (re-medidas allí el 2026-09-28).
 
 ---
 
@@ -91,14 +91,14 @@ eventos contables. Con 100 impresiones, una reproducción mueve un punto entero.
 **Qué es** · Los contactos no envejecen. Una pieza que trajo 40 contactos hace tres semanas trajo 40
 contactos, y ampliar la ventana sólo agrega denominador.
 **Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 7.
-**Estado** · Medido allí: en 14 días **4 piezas** superan el piso; en 30 días, **18 piezas distintas y
-6 sobre el piso**. Para las cifras del lado del lead, la ventana ancha es mejor.
+**Estado** · Medido allí el 2026-09-16: en 14 días **4 piezas** superan el piso; en 30 días, **18 piezas
+distintas y 6 sobre el piso**; el 2026-09-28, ninguna y 4. Para las cifras del lado del lead, la ventana ancha es mejor.
 
 ### C5-08 · Pero el sesgo de la ventana es de las CITAS, no de los contactos
 
 **Qué es** · Una cita agendada dentro de la ventana puede no haber ocurrido todavía. No es que haya
 salido mal: **no pasó**.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:225`, medido el 2026-09-16 sobre `negocio.citas`:
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:414-418`, medido el 2026-09-15 sobre `negocio.citas`:
 
 | ventana | citas alcanzables | congeladas | proporción |
 |---|---:|---:|---:|

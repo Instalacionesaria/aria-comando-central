@@ -42,11 +42,11 @@
 -- las 13 campañas para el 2026-09-10, los **15 de 15** anuncios nuestros aparecen en el reporte, y
 -- la suma del gasto de nuestras campañas (163,85) no se pasa del gasto de la cuenta (262,07).
 --
--- ── `utmTerm` ES EL IDENTIFICADOR DEL CONJUNTO, Y HAY UN DOCUMENTO QUE DICE LO CONTRARIO ──
+-- ── `utmTerm` ES EL IDENTIFICADOR DEL CONJUNTO, Y HABÍA UN DOCUMENTO QUE DECÍA LO CONTRARIO ──
 --
--- `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md` afirma que el conjunto de anuncios llega sólo como
--- nombre, y sobre eso construye una de las tres razones para conectar Meta. Los 9 valores distintos
--- de `utmTerm` cruzan 9 de 9 contra los conjuntos de GoHighLevel. El documento hay que corregirlo.
+-- `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md` afirmaba, en su corte del 2026-09-15, que el
+-- conjunto llegaba sólo como nombre, y sobre eso armaba una de las tres razones para conectar Meta.
+-- Los 9 valores distintos de `utmTerm` cruzan 9 de 9 contra los conjuntos de GHL. Ya está corregido (§ 8 A).
 -- ═════════════════════════════════════════════════════════════════════════════
 --
 -- ── LO QUE NO VIENE POR ESTA VÍA, DICHO ACÁ PARA QUE NADIE LO BUSQUE DOS VECES ──

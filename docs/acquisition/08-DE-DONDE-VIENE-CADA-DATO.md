@@ -17,12 +17,12 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale, o dice que no lo tiene.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
-> **Las coberturas de este documento se volvieron a medir contra producción el 2026-09-16 a las
-> 15:46 UTC**, una por una, y donde la medición nueva contradice al informe manda la nueva. Las
-> diferencias están listadas en el § 6.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito
+> lleva el `archivo:línea` del que sale, o dice que no lo tiene. El estado de cada dato sale de la foto
+> del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`): «foto del 2026-09-15,
+> línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28. **Las coberturas
+> de este documento se volvieron a medir contra producción el 2026-09-16 a las 15:46 UTC**, una por una, y
+> donde la medición nueva contradice a esa foto manda la nueva. Las diferencias están listadas en el § 6.
 
 **De los 40 datos de este inventario, 12 sólo los puede dar el API de Marketing de Meta — una
 integración que nunca se conectó, ni en esta plataforma ni en la anterior.** No se rompió: no se
@@ -52,8 +52,8 @@ leer "…"`, que va por la Management API. El rol que contesta es `supabase_read
 devuelve `current_user`—, así que son lecturas y no pueden escribir nada.
 
 **La ventana es de 14 días y la cohorte se arma con `alta_en_el_crm`**, que es cuándo entró el lead
-al CRM, no con `creado_el`, que es cuándo lo vio nuestro barrido. Es la regla 6 del §6 de
-`01-ACQUISITION.md` y la que respeta `lib/negocio/atribucionDelLead.ts:137`. Medido el 2026-09-16:
+al CRM, no con `creado_el`, que es cuándo lo vio nuestro barrido. Es la regla 6 del § 6 de `01-ACQUISITION.md`
+(`01-ACQUISITION.md:376-378`) y la que respeta `lib/negocio/atribucionDelLead.ts:137`. Medido el 2026-09-16:
 **184 contactos con `alta_en_el_crm` y 206 con `creado_el`** — 22 de diferencia que son latencia de
 ingesta.
 
@@ -237,7 +237,7 @@ y cero en la ventana no es «tenemos el dato», es «lo tuvimos».
 | **A8-16 · `Meta Lead ID`** — la llave para el §18.14 · sin rastro en el prototipo | `campos_del_crm` → «Meta Lead ID» | **Ya está.** 87 de 184 en la ventana, 116 históricos | Es el único puente para comparar los leads que Meta reporta contra los que llegaron. Sin el lado de Meta no sirve de nada (A8-30) |
 | **A8-17 · Dispositivo y ciudad** — «Dispositivo» y «Ciudad» de la ficha · `aios-command-center_1.html:4846-4853` | `atribucion_primera->>'userAgent'` y `->>'ip'` | **Incompleto y guardado en crudo.** 45 de 184 | Derivarlos, no mostrarlos: una IP en pantalla es un dato personal que nadie pidió publicar |
 | **A8-18 · La landing de entrada** — «Punto de captura» de la ficha · `aios-command-center_1.html:4846-4853` | `atribucion_primera->>'url'` y «Last Landing URL» | **Incompleto.** 45 y 88 de 184 | Mostrar sólo el host. Seis de los valores son JWT con `contact_id` adentro y otros traen el `fbclid` entero |
-| **A8-19 · Oportunidades y pipelines** — candidato a «calificado» · sin rastro en el prototipo | GoHighLevel, `/opportunities` | **No se lo pedimos.** Ninguna de las 14 operaciones toca ese endpoint (`06-INTEGRACIONES-GHL.md:455`) | Comprobar si el token tiene ese alcance. Es la única fuente de «calificado» que no habría que inventar |
+| **A8-19 · Oportunidades y pipelines** — candidato a «calificado» · sin rastro en el prototipo | GoHighLevel, `/opportunities` | **No se lo pedimos.** Ninguna de las 14 operaciones del 2026-09-15 toca ese endpoint, ni de las 18 del 2026-09-28 (`06-INTEGRACIONES-GHL.md:736`) | Comprobar si el token tiene ese alcance. Es la única fuente de «calificado» que no habría que inventar |
 
 ### Cómo se midió
 
@@ -272,8 +272,8 @@ group by 1 order by 2 desc;
 --             Form completo sin agendar   39 (2026-08-03 → 2026-08-28)
 ```
 
-El inventario `01-ACQUISITION.md` cuenta «Form Landing VSL» entre los siete campos con cero en la
-ventana, y es cierto: cero en la ventana. Lo que no dice
+La foto del 2026-09-15 de `01-ACQUISITION.md` contaba «Form Landing VSL» entre los
+siete campos con cero en la ventana, y era cierto: cero en la ventana. Lo que no decía
 es que **fuera de la ventana hay 247 valores, y que son exactamente la cadena `forms` → `agendados`
 que el tercer embudo dibuja** — 87 que empezaron el formulario y no lo terminaron, 39 que lo
 terminaron y no agendaron, 121 que agendaron. La etapa que el prototipo inventa con `r:{forms:.36}`
@@ -287,8 +287,8 @@ ninguna pantalla lo lee.
 
 ## 4 · Grupo C · Lo que sólo puede dar Meta
 
-Doce datos. GoHighLevel no tiene el gasto ni la entrega —cero campos personalizados con esos
-nombres entre los 170 (`06-INTEGRACIONES-GHL.md:446`)— y la landing tampoco.
+Doce datos. El 2026-09-16 se escribió que GoHighLevel no tenía el gasto ni la entrega, y la landing tampoco; el corte del 2026-09-28 lo corrige para el
+gasto: el Ad Manager de GoHighLevel da gasto, impresiones, alcance, CPM y CTR (`06-INTEGRACIONES-GHL.md:725`), no la entrega (`01-ACQUISITION.md:303-304`).
 
 | El dato · su rastro | Quién lo tiene | Estado hoy | Qué haría falta |
 |---|---|---|---|

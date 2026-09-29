@@ -17,13 +17,13 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
-> Las cifras marcadas **(medido el 2026-09-16)** son de este documento, tomadas contra producción
-> con `node --env-file=.env.supabase scripts/supabase.mjs leer`, sobre los **184 contactos con
-> `alta_en_el_crm` en los últimos 14 días**.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito.
+> El estado de cada dato sale de la foto del 2026-09-15
+> (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`): «foto del 2026-09-15, línea N» o «§ N» es de
+> esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28. Las cifras marcadas **(medido el 2026-09-16)**
+> son de este documento, tomadas contra producción con `node --env-file=.env.supabase scripts/supabase.mjs leer`,
+> sobre los **184 contactos con `alta_en_el_crm` en los últimos 14 días**.
 
 **Esto es lo que separa a Acquisition de un panel de anuncios.** Un panel de anuncios sabe cuánto
 costó cada lead; esta pantalla pretende saber cuáles de esos leads sirven. Todo lo que dibuja de
@@ -107,8 +107,8 @@ calificados— y **la tasa es el cociente**. El día que se porte, esta línea s
 - **Rastro:** `lib/aios/acquisition.js:235` (tabla) · `:180` (tarjeta del embudo)
 - **Fórmula:** `% calif. = calificados / agendados`
 - **Estado:** calculable el día que exista la marca de calificación; **el denominador ya existe**.
-  El informe midió 163 citas alcanzables en su ventana (`01-ACQUISITION.md` §4). Lo que falta es el
-  numerador.
+  La foto del 2026-09-15 midió 163 citas alcanzables en su ventana (su § 4), y el corte del
+  2026-09-28, 210 a 30 días (`01-ACQUISITION.md:273-275`). Lo que falta es el numerador.
 
 La misma proporción aparece dos veces con dos redacciones: en la tabla como columna `% calif.` y en
 la tarjeta como **«{X}% de {etiqueta de la etapa}»**, que nombra su base en la misma frase. Esa
@@ -122,8 +122,8 @@ declarada se lee contra la base equivocada.
 - **Rastro:** `lib/aios/acquisition.js:120` (global) · `:201` (embudo) · `:181` (línea del bloque) ·
   `:236` (campaña)
 - **Fórmula:** `costo por calificado = inversión de la ventana / calificados de la ventana`
-- **Estado:** **incalculable hoy.** No hay una sola columna de gasto poblada en esta base
-  (`01-ACQUISITION.md` §3.2).
+- **Estado:** **incalculable hoy.** El 2026-09-15 no había una sola columna de gasto poblada (foto del 2026-09-15, § 3.2); desde el
+  2026-09-16 el gasto existe (`01-ACQUISITION.md:238-245`), y lo que falta es la marca de calificado (`01-ACQUISITION.md:346-347`).
 
 Cuatro lugares, un solo criterio. El global **no es el promedio de los tres embudos**: es el
 cociente de los dos totales (`g.cq = g.calificados ? g.inv / g.calificados : 0`), que es lo único
@@ -142,7 +142,7 @@ está escrito en ninguna parte.
   defecto — ver A4-14.**
 
 Cinco cocientes de calidad llevan la misma guarda `v ? … : '—'`. Es la regla de los dos ceros dicha
-en código (`01-ACQUISITION.md` §6, regla 11): **una cifra que no se puede calcular no se dibuja como
+en código (regla 11 del § 6 de la foto del 2026-09-15): **una cifra que no se puede calcular no se dibuja como
 cero**, porque un cero de costo por calificado se lee como «salió gratis» cuando significa «no hubo
 calificados».
 
@@ -345,15 +345,15 @@ Medido el 2026-09-16 sobre los 184 contactos de la ventana de 14 días:
 | Promedio | 48,6 — **54,7** excluyendo los 20 ceros, que no son afinidad cero (§4.4) |
 
 Con esto, la afinidad ICP **se puede publicar hoy sin inventar nada**: promediar un puntaje continuo
-no necesita cortes ni pesos. Es el mismo criterio que ya dejó escrito `01-ACQUISITION.md` §3.5.
+no necesita cortes ni pesos. Es el mismo criterio que ya dejó escrito la foto del 2026-09-15 en su § 3.5.
 
-**Por qué son 184 y no los 233 del informe, y por qué importa acá.** La ventana rueda: la del informe
+**Por qué son 184 y no los 233 de la foto, y por qué importa acá.** La ventana rueda: la de la foto
 fue 2026-09-01 → 2026-09-13 y ésta es 2026-09-02 → 2026-09-16. Pero además **no entró ni un contacto
 al CRM desde el 2026-09-13 05:13 UTC**, mientras el barrido siguió corriendo —`max(sincronizado_el)`
 es 2026-09-16 15:40 UTC—. O sea que la ventana avanzó sobre una cola vacía de tres días. Para una
 pantalla que promedia calidad sobre una ventana móvil, eso no baja la afinidad, pero sí **diluye
-cualquier tasa cuyo denominador sea la ventana**, y la pantalla tiene que poder decir hasta qué
-fecha hay datos y no sólo desde cuándo mide (`01-ACQUISITION.md` §6, regla 6).
+cualquier tasa cuyo denominador sea la ventana**, y la pantalla tiene que poder decir hasta qué fecha hay datos y no sólo
+desde cuándo mide (regla 6 del § 6 de la foto del 2026-09-15); el 2026-09-28 sigue sin decirlo (`01-ACQUISITION.md:411-416`).
 
 **Y hay una trampa de nombres que conviene decir antes de que confunda a alguien:** en este
 repositorio «ICP» significa dos cosas distintas. La pantalla `icp` de Fundaciones es **ICP & Oferta**
@@ -390,7 +390,7 @@ Buscados por nombre en `negocio.campos_del_crm` (`icp`, `puntaje`, `score`) y me
 | Lead Score | `SINGLE_OPTIONS` | 0 |
 | perfil_icp | `SINGLE_OPTIONS` | 0 |
 
-Son ceros medidos, del segundo tipo de la regla 11 (`01-ACQUISITION.md` §6): **el campo existe en el
+Son ceros medidos, del segundo tipo de la regla 11 (§ 6 de la foto del 2026-09-15): **el campo existe en el
 catálogo y nadie lo llenó en la ventana**, que no es lo mismo que no existir. Importa para esta
 pantalla porque `Puntaje Final` y `puntaje_encaje_icp` son, por el nombre, candidatos a ser la
 afinidad que la
@@ -439,8 +439,8 @@ solo anuncio**: sin ellos, «agendamiento - yaping» pasa de 41,5 a **53,0** y s
 «El app» (45,7). Es la primera consecuencia práctica de no decidir qué significa un cero: **cambia el
 orden de la tabla.**
 
-**La regla 7 del `01-ACQUISITION.md` §6 vale también para la calidad, y hay que decirlo acá porque la
-regla está escrita para las tasas de agendamiento.** La fila sin anuncio no sólo agenda más: tiene
+**La regla 7 del § 6 de la foto del 2026-09-15 vale también para la calidad, y hay que decirlo acá porque esa foto la escribió para
+las tasas de agendamiento** (hoy es también la regla 7: `01-ACQUISITION.md:380-383`). La fila sin anuncio no sólo agenda más: tiene
 **el mejor ICP de la tabla, treinta puntos por encima del anuncio de mayor volumen** (71,6 contra
 41,5), y se lleva **23 de los 37 contactos de tramo alto de toda la ventana**. Dibujada como una fila
 más de la columna «Afinidad ICP», esa fila dice que el mejor anuncio es ninguno.

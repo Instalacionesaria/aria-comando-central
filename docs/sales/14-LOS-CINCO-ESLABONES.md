@@ -51,7 +51,7 @@ que `recorridoDelLead.ts` aplica en Conversion.
 cita. Si el eslabón «con intento» se contara suelto, podría salir **mayor** que el de arriba y la
 pantalla dibujaría un embudo que se ensancha. Los que no encajan viajan aparte, en `intentosSinCita`.
 
-Es la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:451`: *«una cadena que no es monótona
+Es la regla 11 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:625`: *«una cadena que no es monótona
 no es un embudo»*. Acá sí lo es — **por construcción, no por suerte**.
 
 ---

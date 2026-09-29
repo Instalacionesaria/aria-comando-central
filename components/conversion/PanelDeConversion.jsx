@@ -21,7 +21,7 @@
  * Landing y widget **no son dos pasos de un camino: son dos caminos**. Sumarlos, o dibujar uno
  * debajo del otro con una flecha, afirmaría que quien está en el segundo pasó por el primero. Por
  * eso el bloque de arriba es un REPARTO —siete filas que suman la cohorte, cada una con su
- * población— y no una cadena. Es la regla 11 de `07-REGLAS-TRANSVERSALES.md:451`: *«una cadena que
+ * población— y no una cadena. Es la regla 11 de `07-REGLAS-TRANSVERSALES.md:625`: *«una cadena que
  * no es monótona no es un embudo»*.
  *
  * ── Y POR QUÉ LAS FILAS LLEVAN UN CONTEO Y NO UNA TASA ────────────────────

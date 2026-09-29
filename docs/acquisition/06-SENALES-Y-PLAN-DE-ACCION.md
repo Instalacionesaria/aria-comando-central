@@ -17,10 +17,10 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
-> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita.
-> Cada requisito lleva el `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho
-> como pregunta abierta, no como requisito.
-> El estado de cada dato sale de `docs/OTROS/estado actual/01-ACQUISITION.md`, medido el 2026-09-15.
+> Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
+> `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
+> estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):
+> «foto del 2026-09-15, línea N» o «§ N» es de esa versión, y `01-ACQUISITION.md:N`, del corte del 2026-09-28.
 
 **Esta es la parte del prototipo donde alguien ya decidió qué hacer con los números.** Son dos
 señales de una frase y nueve recomendaciones en cuatro grupos: **cinco cifras entre las once
@@ -81,9 +81,9 @@ señal no sale.
   tratamiento para su caso equivalente: *«El conteo sí va, para que las filas sumen la cohorte»*, y
   `tasa: null`. Una señal que no llega al piso es un renglón «N señales por debajo del umbral», no
   un silencio.
-- **Estado, medido:** con el piso de 10 sobre la ventana de 14 días, de los 7 anuncios de la ventana
-  **sólo 3 llegan** (109, 44 y 17 contactos); los otros cuatro tienen 1 o 2
-  (`01-ACQUISITION.md` §6 regla 5). Una señal por anuncio puede hablar de tres anuncios, no de siete.
+- **Estado, medido:** el 2026-09-15, con el piso de 10 sobre la ventana de 14 días, de los 7 anuncios de la ventana **sólo 3
+  llegaban** (109, 44 y 17 contactos) y los otros cuatro tenían 1 o 2 (regla 5 del § 6 de la foto del 2026-09-15); el 2026-09-28,
+  a 30 días, 4 de 79 (`01-ACQUISITION.md:145`). Una señal por anuncio puede hablar de unos pocos anuncios, no de todos.
 
 ### A6-03 · La señal dice sobre qué ventana se calculó, y desde cuándo hay datos
 
@@ -95,10 +95,10 @@ señal no sale.
   el período que esté elegido. Reproduciendo `build()`, el costo por calificado de «Retargeting 90d»
   es **$147 en `p7`** y **$105 en `p30`**. La misma frase, con el mismo umbral, dice «sube el
   presupuesto» o «no lo subas» según un botón que el modal no lee.
-- **Estado:** la obligación es más fuerte de lo que el prototipo supone. La regla 6 del §6 de
-  `01-ACQUISITION.md`: ninguna cohorte armada con `alta_en_el_crm` tiene historia antes del
-  despliegue, y toda pantalla que la use tiene que decir desde cuándo mide. Medido el 2026-09-15,
-  **531 de 559 contactos (95,0 %) caen en los últimos 45 días**.
+- **Estado:** la obligación es más fuerte de lo que el prototipo supone. La regla 6 del § 6
+  de la foto del 2026-09-15 (línea 290): ninguna cohorte armada con `alta_en_el_crm` tiene
+  historia antes del despliegue, y toda pantalla que la use tiene que decir desde cuándo
+  mide. Medido el 2026-09-15, **531 de 559 contactos (95,0 %) caían en los últimos 45 días**.
 
 ### A6-04 · La fila «sin anuncio» se cuenta en las señales y no compite en ellas
 
@@ -107,9 +107,9 @@ Ninguna señal compara una campaña o un anuncio contra el segmento sin atribuci
 - **Rastro:** por ausencia en el modelo. `acquisition.js:20-35` — las siete campañas de `CAMPS`
   cubren el 100 % de los contactos del prototipo, así que la fila «sin anuncio» no existe y ninguna
   señal puede tropezarse con ella.
-- **El defecto concreto, medido:** los **57 contactos sin `adId` agendan 47 veces, 82,5 %**, la tasa
-  más alta de toda la tabla, contra el 44 % del anuncio de mayor volumen (`01-ACQUISITION.md` §6
-  regla 7). Una señal que compare tasas de agendamiento entre entidades declara ganador a «ninguno».
+- **El defecto concreto, medido:** el 2026-09-15 los **57 contactos sin `adId` agendaban 47 veces, 82,5 %**, la
+  tasa más alta de toda la tabla, contra el 44 % del anuncio de mayor volumen (regla 7 del § 6 de la foto del
+  2026-09-15, línea 292). Una señal que compare tasas de agendamiento entre entidades declara ganador a «ninguno».
   Lo que hay detrás es el hecho técnico de que el widget de calendario no pasa el `adId`.
 - **Estado:** el criterio ya está escrito en `lib/negocio/atribucionDelLead.ts:179-183`. Se hereda
   tal cual: el conteo va, la tasa no.
@@ -119,12 +119,12 @@ Ninguna señal compara una campaña o un anuncio contra el segmento sin atribuci
 - **Rastro:** `AcquisitionView.jsx:116` («Prospecting B») y `:132` («Booking directo») — las dos
   señales nombran su entidad con un literal de texto, que es lo mismo que hace `CAMPS` al
   identificar la campaña por `n` (`acquisition.js:21-33`).
-- **El defecto concreto, medido, y afecta a esta señal en particular:** «El app» tiene **dos `adId`
-  distintos** (`120249633901550467` con 44 contactos y `120249792217700467` con 2) y «economia us
-  latino» otros dos (17 y 2) — `01-ACQUISITION.md` §6 regla 1. Y la medición de afinidad ICP del
-  §3.5 del mismo informe está agrupada **por nombre**: publica «El app» 45,8 sobre **46** contactos,
-  que son exactamente 44 + 2, y «economia us latino» 27,5 sobre **19**, que son 17 + 2. **La fusión
-  ya ocurrió en la única medición de ICP que existe**, y es justo la métrica de la señal 1.
+- **El defecto concreto, medido, y afecta a esta señal en particular:** el 2026-09-15 «El app» tenía **dos `adId`
+  distintos** (`120249633901550467` con 44 contactos y `120249792217700467` con 2) y «economia us latino» otros dos (17 y 2)
+  — regla 1 del § 6 de la foto del 2026-09-15; el 2026-09-28 son 79 anuncios con 32 nombres (`01-ACQUISITION.md:355-357`). Y
+  la medición de afinidad ICP del § 3.5 de esa foto está agrupada **por nombre**: publica «El app» 45,8 sobre **46**
+  contactos, que son exactamente 44 + 2, y «economia us latino» 27,5 sobre **19**, que son 17 + 2. **La fusión ya ocurrió en
+  la única medición de ICP que existía entonces**, y es justo la métrica de la señal 1.
 - **Consecuencia para la señal:** una señal de «cae la afinidad» sobre un nombre fusionado no puede
   distinguir una caída del anuncio viejo del arranque del anuncio nuevo de la campaña del 12 de
   septiembre — que es precisamente lo que un media buyer necesita ver.
@@ -157,8 +157,8 @@ esqueleto de la señal y hay que conservarlo: sin la tercera parte, un 54 % no d
 - **Estado:** la métrica es la única de la señal que se puede calcular hoy, y con mejor dato que el
   inventado. «Puntaje | ICP» está poblado en **229 de 233** contactos de la ventana; agrupado por
   nombre de anuncio va de 27,5 («economia us latino», 19 contactos) a 73,9 («Evoluciona native», 31)
-  — `01-ACQUISITION.md` §3.5. Lo que no existe es el segundo término del «con costo por calificado
-  más alto»: no hay una sola columna de gasto poblada en esta base (§5.1).
+  — foto del 2026-09-15, § 3.5. Lo que no existía entonces era el segundo término del «con costo por calificado más alto»: ninguna columna de
+  gasto poblada (§ 5.1 de esa foto). Hoy el gasto está (`01-ACQUISITION.md:238-245`) y falta la marca de calificado (`01-ACQUISITION.md:346-347`).
 
 ### A6-07 · La comparación de esta señal es entre entidades, no entre períodos — y el verbo tiene que decirlo
 
@@ -199,8 +199,8 @@ cuánto, ni más alto que qué.
   la que se compara, da **$147**; y la más barata de las siete es «Remarketing web» con **$66,5**.
   Prospecting B es la más cara del embudo Lead form ads y la más cara de las siete **empatada** con
   «Remarketing interacción», también $168. «Más alto» sin cifra tapa el empate.
-- **Estado:** **incalculable hoy.** El numerador es gasto y no existe (§3.2 y §5.1 de
-  `01-ACQUISITION.md`). Toda señal que use costo por calificado espera a que Meta esté conectado.
+- **Estado:** **incalculable hoy.** El 2026-09-15 el numerador, el gasto, no existía (§ 3.2 y § 5.1 de la foto del 2026-09-15); desde el 2026-09-16
+  existe sin conectar Meta (`01-ACQUISITION.md:27-31`), y lo que falta es el denominador, la marca de calificado (`01-ACQUISITION.md:346-347`).
 
 ### 2.2 · Los umbrales de la señal 1
 
@@ -237,11 +237,11 @@ etiqueta —«formulario» es `labels.forms` = «Completaron form» y «landing 
 - **Requisito de modelo que esto impone:** la entidad de esta señal es un **par ordenado de etapas
   dentro de un embudo**, no una campaña. El §18.13 pide `entity_type` / `entity_id` y este caso
   necesita dos identificadores, no uno.
-- **Estado:** de las dos etapas que la señal compara, **ninguna existe.** No hay tabla de eventos de
-  formulario en `negocio.*` —21 tablas revisadas una por una— y un clic no queda registrado en
-  ninguna parte de esta base (`01-ACQUISITION.md` §5.3). El único rastro es «Last Landing URL» (99 de
-  233), que dice dónde cayó quien **ya** se convirtió en contacto, nunca cuántos la vieron. Es la
-  señal más lejos de poder emitirse de las dos.
+- **Estado:** de las dos etapas que la señal compara, el 2026-09-15 **ninguna existía.** No había tabla de eventos de formulario en
+  `negocio.*` —21 tablas revisadas una por una— y un clic no quedaba registrado en ninguna parte de esta base (foto del 2026-09-15,
+  § 5.3); el único rastro era «Last Landing URL» (99 de 233), que dice dónde cayó quien **ya** se convirtió en contacto, nunca
+  cuántos la vieron. El 2026-09-28 sigue sin haber tabla de formularios, y de la landing llega sólo la vista que cuenta Meta, por
+  anuncio y por día (`01-ACQUISITION.md:230-234`, `01-ACQUISITION.md:310-313`). Es la señal más lejos de poder emitirse de las dos.
 
 ### A6-10 · «El salto más caro» nombra dos cantidades distintas y hay que elegir una antes de publicarlo
 
@@ -318,10 +318,10 @@ pantalla la implementa como dos lugares distintos.
   **exactamente dos líneas, las dos de esta pantalla**. Es un bloque de estilo escrito para un solo
   departamento; no hay un componente de señal compartido del que colgarse.
 - **Estado:** no hay dónde guardar una señal de Acquisition. `negocio.hallazgos` es la tabla de
-  alertas del sistema y es de Conversation: sus 20 filas tienen `contacto_id` poblada y sus columnas
-  son `analisis_id`, `agente`, `patron`, `criterio`, `fragmento_prompt`. Una señal de Acquisition es
-  sobre una campaña, un ad set o un anuncio, y **no existe el par `entity_type` / `entity_id`** que
-  el §18.13 pide (`01-ACQUISITION.md` §5.4).
+  alertas del sistema y es de Conversation: el 2026-09-15 sus 20 filas tenían `contacto_id` poblada (el
+  2026-09-28 son 24, y sigue siendo de Conversation) y sus columnas son `analisis_id`, `agente`, `patron`,
+  `criterio`, `fragmento_prompt`. Una señal de Acquisition es sobre una campaña, un ad set o un anuncio, y
+  **no existe el par `entity_type` / `entity_id`** que el §18.13 pide (`01-ACQUISITION.md:315-317`).
 
 ### A6-13 · La severidad es un juego cerrado, y hoy no se ejerce
 
@@ -510,8 +510,8 @@ Los ítems 4 («deja de escalar») y 6 («sube el presupuesto») son literalment
 prohíbe emitir en solitario: duplicar o reducir presupuesto, apagar anuncios, mover presupuesto,
 declarar ganador, escalar únicamente por CPL.
 
-- **Rastro:** `acquisition-plan.js:16` y `:21`, contra la regla 10 del §6 de
-  `01-ACQUISITION.md`.
+- **Rastro:** `acquisition-plan.js:16` y `:21`, contra la
+  regla 10 del § 6 de la foto del 2026-09-15 (línea 298).
 - **El problema no es el texto, es el lugar:** hoy están repartidas en dos grupos distintos —una en
   «Ajusta o pausa esto» y otra en «Haz más de esto»— como si fueran acciones del mismo rango que las
   demás. Hacen falta cinco grupos, no cuatro: el quinto es «Requiere validación ejecutiva», y las dos

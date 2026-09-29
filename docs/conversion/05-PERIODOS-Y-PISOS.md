@@ -74,13 +74,13 @@ la misma pantalla.** Y `hist` no tiene botón, así que no hay forma de volver a
 | `completo` | 2016-09-23 | **sí** | 566 | 247 | 475 |
 
 **Ésta es la tabla que gobierna el departamento entero.** No hay una sola ventana que tenga volumen
-**y** no cruce el corte. Las dos fallan de maneras opuestas, exactamente como
-`docs/OTROS/estado actual/03-CONVERSION.md:221-225` lo anticipó cinco días antes — y peor, porque desde
+**y** no cruce el corte. Las dos fallan de maneras opuestas, como anticipó la foto del 2026-09-15
+(sus cifras siguen en `docs/OTROS/estado actual/03-CONVERSION.md:382-385`) — y peor, porque desde
 entonces la pauta se apagó (`CV14-10`) y «7 días» pasó de poco volumen a **cuatro contactos**.
 
 ### CV5-04 · El botón por omisión es el que viola la regla 2
 
-**Rastro** · Regla 2, `03-CONVERSION.md:219`.
+**Rastro** · Regla 2, `03-CONVERSION.md:368-373`.
 **Estado** · `30d` abre en el 2026-08-22, o sea **nueve días antes del corte**, y parte la cohorte en
 dos regímenes de adquisición: 335 contactos de los cuales 63 traen el campo del formulario y 272 no
 podían traerlo. Una tasa sobre ese denominador divide un numerador que casi sólo pueden aportar los
@@ -125,13 +125,13 @@ del denominador**, no del total.
 | formulario nativo de Meta | 23 | sí |
 | precall / reclutamiento | 19 / 3 | **no la de reclutamiento** |
 
-**Las familias principales pasan; cualquier segundo corte no.** Es la regla 8 del departamento
-(`03-CONVERSION.md:250`): el cohorte de escritorio son 14 citas y *«cualquier desglose de ese
-cohorte cae por debajo inmediatamente… O se publica sin desglose, o no se publica.»*
+**Las familias principales pasan; cualquier segundo corte no.** Es la regla 8 del departamento en su
+versión del 2026-09-16 (`bddb516`, líneas 250-252): el cohorte de escritorio son 14 citas y *«cualquier
+desglose de ese cohorte cae por debajo inmediatamente… O se publica sin desglose, o no se publica.»*
 
 ### CV5-07 · Apartar no es esconder
 
-**Rastro** · Regla 2 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:106`.
+**Rastro** · Regla 2 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:205-207`.
 **Estado** · Las familias que no llegan al piso **siguen contando en la cohorte** y aparecen con su
 conteo; lo que no se publica es su **tasa**. Las filas tienen que sumar la cohorte exacta, o la
 cobertura de arriba deja de cuadrar con la tabla de abajo.
@@ -144,8 +144,8 @@ cobertura de arriba deja de cuadrar con la tabla de abajo.
 
 **Estado** · Ver `CV14-09`: de 121 `Agendado`, **119 tienen alguna cita y sólo 47 la tienen
 alcanzable**. Los 72 de diferencia son congeladas, y el repositorio ya las conoce: regla 4 de
-`07-REGLAS-TRANSVERSALES.md:153` — *«estado ⟹ sólo `ghl_calendario_id is not null`; existencia ⟹
-todas»*.
+`07-REGLAS-TRANSVERSALES.md:269-273` — el estado se cuenta sólo con `ghl_calendario_id is not null`;
+la existencia, sobre todas.
 
 **Requisito**: el agendamiento usa el predicado de **estado** —`ghl_calendario_id is not null`— y la
 diferencia viaja al lado. Construido el 2026-09-20, viaja como
@@ -163,5 +163,5 @@ Ninguna de las cuatro sirve hoy: dos sin volumen, dos que cruzan el corte. Una v
 corte» —del 2026-09-01 a hoy— tendría 241 contactos y una sola ruta. Pero sería **una ventana que se
 define por un accidente del negocio**, y el día que la ruta cambie otra vez habría que redefinirla.
 La alternativa es dejar las cuatro y que el `corteDeEpoca` haga el trabajo. **No está decidido**, y
-la lista de ventanas es cerrada por la regla 6 de `07-REGLAS-TRANSVERSALES.md:251`: agregar una toca
-a las cinco pantallas que la comparten.
+la lista de ventanas es cerrada por la regla 6 de `07-REGLAS-TRANSVERSALES.md:379`: agregar una toca
+a las seis pantallas que hoy la comparten (`07-REGLAS-TRANSVERSALES.md:415-419`).

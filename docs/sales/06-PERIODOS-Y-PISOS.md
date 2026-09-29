@@ -126,7 +126,7 @@ nada falle.
 
 ## S6-08 · Los tres módulos reciben LA MISMA ventana
 
-Es la regla 4 del departamento (`docs/OTROS/estado actual/05-SALES.md:170-173`), con un matiz que esa regla
+Es la regla 4 del departamento (`docs/OTROS/estado actual/05-SALES.md:426-445`), con un matiz que esa regla
 ya corrige: **catorce días ya no es la ventana del sistema**. `DIAS_DE_LA_TASA = 14`
 (`indicadoresDeCitas.ts:310`) es hoy sólo el argumento por omisión de `tasaDeCancelacion` para quien
 no pide ventana. Sales sí pide.

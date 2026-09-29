@@ -148,6 +148,6 @@ Tres fuentes, y el orden de precedencia importa porque **las tres se contradicen
 3. **El prototipo** es la fuente de las decisiones de producto que nadie escribió en ninguna parte, y
    ésas no están en el documento: qué se ordena, cómo se parte la biblioteca, qué se abre al clicar.
 
-Y una cuarta, que no es fuente pero es ley: **las diez reglas propias de
-`docs/OTROS/estado actual/02-CREATIVE.md` § 6**. Salieron de medir producción y cada una nombra un defecto
+Y una cuarta, que no es fuente pero es ley: **las diez reglas propias de `docs/OTROS/estado actual/02-CREATIVE.md`
+§ 6** (once desde el corte del 2026-09-28). Salieron de medir producción y cada una nombra un defecto
 concreto. Están convertidas en requisitos numerados a lo largo de `01`, `05` y `08`.
