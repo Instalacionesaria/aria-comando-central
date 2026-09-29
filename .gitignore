@@ -80,3 +80,11 @@ graphify-out/
 # integración: `tsc --noEmit` corre DESPUÉS de `next build`, no antes.
 next-env.d.ts
 *.tsbuildinfo
+
+# Herramientas locales de desarrollo: ni la aplicación, ni la CI ni las pruebas las usan (medido el
+# 2026-09-29). Siguen en disco en cada máquina; sólo dejan de versionarse. `AGENTS.md` además lo
+# reescribe `next dev`, y versionado aparecía como cambio sin commitear cada vez.
+/.claude/
+/CLAUDE.md
+/AGENTS.md
+/tools/graphify/
