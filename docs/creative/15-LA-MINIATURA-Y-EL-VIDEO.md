@@ -6,6 +6,10 @@
 > Prefijo `C15-`. Mismo formato que el resto de la carpeta: Qué es / Rastro / Estado / Fórmula.
 > La medición que decidió la fuente está en `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` § 6 (`C14-16` a
 > `C14-22`).
+>
+> **Postergado el 2026-09-30.** CR-0 a CR-3 están construidos y en producción; **CR-4 a CR-9 esperan
+> el token de Meta**, y el usuario los dejó para más adelante. Qué falta, por qué y cómo se hace: `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
+> Los «Planificado» de abajo son de CR-4 en adelante y siguen valiendo como diseño.
 
 ---
 
@@ -155,19 +159,19 @@ decía sobre «columnas que se agregan».
 ## 3 · Cómo se construye
 
 Cada etapa es un commit, con sus pruebas vistas en rojo con su mutación. Las migraciones van a
-producción antes del push.
+producción antes del push. Las etapas postergadas están detalladas, paso por paso, en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
 
 | etapa | qué | depende de | estado |
 |---|---|---|---|
 | CR-1 | El link manual por pieza: tabla `negocio.enlaces_de_pieza`, validador de URL, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | nada | hecho, 2026-09-29 |
 | CR-2 | El cajón de la pieza con sus anuncios | nada | hecho, 2026-09-29 |
 | CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador`; quedó en `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:607`), migración 064 | nada | hecho, 2026-09-29 |
-| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | pendiente |
-| CR-5 | La tabla `negocio.activos_de_anuncio` y la tarea `activos` del cron | CR-4 | pendiente |
-| CR-6 | El cliente de Meta y el escritor único `lib/negocio/recolectarActivos.ts` | CR-4 | pendiente |
-| CR-7 | La miniatura en la tabla y en el cajón (molde: `components/tools/anuncios.jsx:67-112`, `<img>` crudo con `onError`) | CR-6 | pendiente |
-| CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | pendiente |
-| CR-9 | Los huecos dinámicos y los documentos al día | todo | pendiente |
+| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | postergado el 2026-09-30 |
+| CR-5 | La tabla `negocio.activos_de_anuncio` y la tarea `activos` del cron | CR-4 | postergado el 2026-09-30 |
+| CR-6 | El cliente de Meta y el escritor único `lib/negocio/recolectarActivos.ts` | CR-4 | postergado el 2026-09-30 |
+| CR-7 | La miniatura en la tabla y en el cajón (molde: `components/tools/anuncios.jsx:67-112`, `<img>` crudo con `onError`) | CR-6 | postergado el 2026-09-30 |
+| CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | postergado el 2026-09-30 |
+| CR-9 | Los huecos dinámicos y los documentos al día | todo | postergado el 2026-09-30 |
 
 ---
 

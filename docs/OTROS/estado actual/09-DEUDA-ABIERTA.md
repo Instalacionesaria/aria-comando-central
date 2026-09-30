@@ -894,3 +894,20 @@ puede registrar ventas dentro de un inquilino. Si no puede, el botón tiene que 
 delegación y decir por qué; si puede, hay que decidir quién firma la fila. Lo de arriba está leído
 en el código y en el commit, no reproducido: no se probó con una sesión de plataforma sobre una
 empresa cliente. [16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) § 5 lo nombra de pasada.
+
+## 21 · Creative: la miniatura y el video, a medio construir y postergados
+
+Agregado el 2026-09-30, después del corte. El 2026-09-29 se decidió traer la miniatura y el video de
+cada anuncio desde Meta directo, porque GoHighLevel no los entrega
+(`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` § 6). Se construyó la mitad que no depende de
+Meta —el link manual por pieza, el cajón de la pieza y la credencial de Meta en Ajustes, con las
+migraciones 063 y 064 ya en producción— y **falta la otra mitad, CR-4 a CR-9**: medir con el token,
+la tabla de activos y su tarea del cron, el cliente de Meta, la miniatura, el reproductor y los huecos
+dinámicos.
+
+Falta porque **no hay token**: lo genera otra persona del equipo con la guía del § 4 de
+`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, y dos decisiones de diseño —si se reproduce en la app
+y cada cuánto se refresca la miniatura— sólo se pueden medir con él. El usuario lo postergó el
+2026-09-30 por otras prioridades. Mientras tanto la pantalla lo dice: el cajón explica que la
+miniatura y el video todavía no se pueden mostrar (`components/creative/FichaDelCreativo.jsx:87-91`).
+El plan, etapa por etapa, está en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.

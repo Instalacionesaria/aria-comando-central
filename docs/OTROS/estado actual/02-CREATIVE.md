@@ -524,3 +524,13 @@ comprobaron los commits de construcción; (b) por qué se apagó la pauta: la ba
 una decisión y no con una falla, y no lo prueba; (c) qué cuenta `videoView`; (d) la zona horaria de
 la sesión de la aplicación, que decide dónde empieza «Hoy»; (e) si `public.closer_meta_metricas` se
 llenó alguna vez en la plataforma anterior —lo único medido es que tiene 0 filas—.
+
+---
+
+> **Después del corte, 2026-09-29 y 30.** Entraron el link manual por pieza (`1159c43`, tabla
+> `negocio.enlaces_de_pieza`), el cajón de la pieza con sus anuncios (`8fd0afd`,
+> `components/creative/FichaDelCreativo.jsx`) y la credencial de Meta en Ajustes (`ecfbc26`,
+> `lib/credenciales/resolver.ts:607`), con los requisitos en `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`.
+> Lo del § 5 sigue siendo cierto: todavía no hay cliente de la API de Meta. La miniatura y el video
+> quedaron **postergados** hasta que haya token; el plan está en
+> `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.

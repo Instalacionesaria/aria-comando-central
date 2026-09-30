@@ -43,11 +43,17 @@ const RAIZ = join(import.meta.dirname, '..', '..');
    `docs/creative/` entera no puede entrar todavía: sus documentos citan `lib/aios/creative.js`, que se
    borró el 2026-09-19, como referencia histórica, y esas citas darían «el archivo no está». El 15 no
    arrastra ninguna, así que se audita solo. */
+/* Y otro, `docs/OTROS/futuro/miniatura-y-video-de-meta.md` (2026-09-30): el plan de lo que falta
+   de ese mismo 15, escrito para retomarlo mucho después. Es el documento que más tiempo va a pasar
+   sin que nadie lo lea, y cada cita suya es un lugar del código que la etapa pendiente va a tocar:
+   si una se corre, quien lo retome tiene que enterarse por la suite y no por abrir la línea
+   equivocada. El resto de `futuro/` no entra: no se revisó. */
 const AUDITADAS = [
   'docs/sales',
   'docs/leads-portal',
   'docs/OTROS/estado actual',
   'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
+  'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
