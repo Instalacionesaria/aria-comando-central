@@ -7,7 +7,7 @@
 //
 // La fila ⛔ dice *"ningún archivo de esas rutas pasa el cuerpo a la función de registro"*.
 // Acá esa propiedad no depende de que nadie se olvide: **`auditar()` no tiene un parámetro
-// donde quepa un cuerpo.** `detalle` es un tipo cerrado con tres campos nombrados, así que
+// donde quepa un cuerpo.** `detalle` es un tipo cerrado de campos nombrados, así que
 // pasarle el cuerpo de la petición **no compila**.
 //
 // Por qué importa tanto:
@@ -125,6 +125,12 @@ export type Accion =
      link de pago: un «Ver en Facebook» que lleva a otro lado se ve igual que el bueno. */
   | 'enlace_de_pieza_cargado'
   | 'enlace_de_pieza_borrado'
+  /* El funnel de una campaña en Acquisition (docs/acquisition/14, A14-03). Se audita porque mover una
+     campaña de funnel cambia las tres tarjetas y el costo por calificado de cada una, y la pantalla
+     se ve igual de bien con la campaña en el funnel equivocado. Son DOS, por el mismo criterio que
+     los links: asignar y quitar son hechos distintos. */
+  | 'funnel_de_campana_asignado'
+  | 'funnel_de_campana_quitado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -146,7 +152,8 @@ export type Accion =
   | 'credencial_ilegible';
 
 /**
- * Lo único que puede ir en `detalle`. Tres campos, todos opcionales, **todos nombrados**.
+ * Lo único que puede ir en `detalle`. Campos todos opcionales y **todos nombrados**: la lista de abajo
+ * dice cuáles, y no se cuentan acá porque el número ya quedó viejo una vez (decía «tres» con once).
  *
  * No hay `[clave: string]: unknown`, y no es una omisión: ese índice abierto es exactamente
  * por donde entraría el cuerpo de la petición. Un campo nuevo acá es un cambio que alguien
@@ -207,6 +214,13 @@ export interface Detalle {
    * y no de qué pieza.
    */
   pieza?: string;
+  /**
+   * La campaña de Meta, en `funnel_de_campana_asignado` y `funnel_de_campana_quitado`: su
+   * identificador, que no es un dato de nadie. Sin él, `funnel` diría qué funnel y no de qué campaña.
+   */
+  campana?: string;
+  /** El funnel que se asignó, o el que se quitó (`leadform`, `profile` o `booking`). */
+  funnel?: string;
 }
 
 /**
@@ -255,6 +269,9 @@ export async function auditarAdministracion(
       // El link manual de una pieza. Mismo objetivo que los links rápidos: la empresa.
       | 'enlace_de_pieza_cargado'
       | 'enlace_de_pieza_borrado'
+      // El funnel de una campaña. Mismo objetivo que los links: la empresa.
+      | 'funnel_de_campana_asignado'
+      | 'funnel_de_campana_quitado'
     >;
     actor: string;
     objetivo: string;

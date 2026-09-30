@@ -54,7 +54,7 @@
 ### CV8-12 · Lo que no existe
 
 - **Ninguna tabla de sesiones web, de eventos de página o de reproducción de video.** El registro
-  completo está en `lib/datos/esquema.ts:1263-1315`: 22 tablas de `negocio` y ninguna es de sesión.
+  completo está en `lib/datos/esquema.ts:1279-1331`: 22 tablas de `negocio` y ninguna es de sesión.
 - **`visitor_id` y `session_id`**: búsqueda literal sobre `db/migraciones`, `lib`, `app` y
   `components` — **cero coincidencias**.
 - **Las tres entidades del `§ 5.1:210-212`**: `Landing Session`, `VSL Session`, `Form Submission`.

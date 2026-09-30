@@ -108,15 +108,18 @@ export async function guardarEnlace(
 /**
  * Saca el link de una pieza.
  *
+ * Una sola sentencia con `returning`, y no un `select` seguido de un `delete`: con dos, dos borrados
+ * simultáneos auditaban los dos, y un borrado junto a un reemplazo auditaba el link de antes del
+ * reemplazo. Es el mismo defecto que la revisión de AQ-2 encontró en `quitarFunnel`, que copió este
+ * molde.
+ *
  * @returns el link que se sacó —para que la auditoría diga CUÁL—, o `null` si no había ninguno.
  */
 export async function borrarEnlace(pieza: string): Promise<string | null> {
-  const antes = await datos()
-    .selectFrom('enlaces_de_pieza')
-    .select('url')
+  const borrada = await datos()
+    .deleteFrom('enlaces_de_pieza')
     .where('pieza', '=', pieza)
+    .returning('url')
     .executeTakeFirst();
-  if (antes === undefined) return null;
-  await datos().deleteFrom('enlaces_de_pieza').where('pieza', '=', pieza).execute();
-  return antes.url;
+  return borrada?.url ?? null;
 }

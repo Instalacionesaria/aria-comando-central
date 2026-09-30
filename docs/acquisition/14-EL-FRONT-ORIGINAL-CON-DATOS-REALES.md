@@ -40,7 +40,7 @@ Decidido por el usuario el 2026-09-30:
 | Calificados | agendados sin etiqueta de descarte | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:146-150`) |
 | ICP % y barra alto/medio/bajo | puntaje de los calificados | `contactos.score`, con los cortes de `lib/negocio/tramosDelIcp.ts` |
 | Deltas | la misma cifra en la ventana anterior del mismo largo | el mismo cálculo, corrido una ventana antes |
-| Nombre de la campaña | nombre en Meta | **no está en la base**: se trae de GoHighLevel (`lib/ghl/anuncios.ts:327`) |
+| Nombre de la campaña | nombre en Meta | `negocio.campanas` (`065`), que el colector llena desde GoHighLevel (`lib/ghl/anuncios.ts:327`) |
 | Nota bajo las cifras | cuántos leads traen campaña | el punto `sin_campana` de `lib/negocio/calidadDeLaAtribucion.ts` |
 
 ---
@@ -93,14 +93,14 @@ con `credenciales.editar` y auditoría, igual que el link manual de Creative
 (`app/api/creative/enlace/route.ts`).
 
 **Por qué a mano** · Ninguna fuente automática separa los tres:
-- el objetivo de Meta no llega;
+- el objetivo de Meta llega pero no alcanza: 11 de las 12 campañas son `OUTCOME_LEADS` y 1 `OUTCOME_ENGAGEMENT` (producción, 2026-09-30), así que Lead form ads y Booking directo salen iguales;
 - `mediumId` parte una misma campaña en dos (P-04 de `01`);
 - el nombre de la campaña no sigue ninguna convención.
 
 Las campañas son pocas —12 en `negocio.anuncios` el 2026-09-28—, y quien las lanza sabe a qué funnel
 van.
 
-**Estado** · Planificado (AQ-2).
+**Estado** · **Construido el 2026-09-30** (AQ-2): `db/migraciones/066_el_funnel_de_la_campana.sql`, `lib/negocio/funnelDeLaCampana.ts` y `PUT`/`DELETE /api/acquisition/funnel` (`app/api/acquisition/funnel/route.ts`). Todavía no hay dónde elegirlo en pantalla: eso es AQ-4.
 
 ### A14-04 · La entrada de cada funnel son los contactos de sus campañas
 
@@ -268,10 +268,10 @@ del § 18.13 y la separación entre detectar y recomendar que `06` ya desarmó.
 |---|---|---|
 | AQ-0 | Este documento y las respuestas en los otros | hecho, 2026-09-30 |
 | AQ-1 | Los nombres de las campañas: migración `065_las_campanas.sql` y el colector | hecho, 2026-09-30 |
-| AQ-2 | El funnel de cada campaña: migración `066_el_funnel_de_la_campana.sql`, escritor y ruta | pendiente |
+| AQ-2 | El funnel de cada campaña: migración `066_el_funnel_de_la_campana.sql`, escritor y ruta | hecho, 2026-09-30 |
 | AQ-3 | El cálculo, `lib/negocio/embudosDeAcquisition.ts`, y la ruta `/api/acquisition` | pendiente |
 | AQ-4 | El front sobre el marcado del prototipo, y `app/acquisition.css` | pendiente |
-| AQ-5 | La comparación lado a lado contra el prototipo, y a producción | pendiente |
+| AQ-5 | La comparación lado a lado contra el prototipo, y a producción. Antes del humo, `negocio.campanas` tiene que tener filas: la llena la primera pasada del colector (06:17 UTC), y hasta entonces toda asignación da 404 | pendiente |
 
 ## 6 · Preguntas abiertas
 

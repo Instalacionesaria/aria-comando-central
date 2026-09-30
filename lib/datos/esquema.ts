@@ -975,6 +975,22 @@ export interface TablaCampanas {
 }
 
 /**
+ * A qué funnel del front de Acquisition pertenece cada campaña. Migración 066.
+ *
+ * Lo asigna una persona con `credenciales.editar`; el único escritor es
+ * `lib/negocio/funnelDeLaCampana.ts` (docs/acquisition/14, A14-03).
+ */
+export interface TablaFunnelsDeCampana {
+  org_id: ColumnaInquilino;
+  meta_campana_id: string;
+  /** `leadform` · `profile` · `booking`. `string` y no la unión: la valida `funnelValido` al leer. */
+  funnel: string;
+  actualizado_el: Generated<Date>;
+  /** `null` cuando lo asignó un rol de plataforma mirando otra organización. */
+  actualizado_por: string | null;
+}
+
+/**
  * Cuánto costó cada anuncio cada día. Migración 050.
  *
  * **Las siete métricas son nulables a propósito.** Medido el 2026-09-16: cuando un anuncio no
@@ -1529,6 +1545,7 @@ export interface BaseDeDatos {
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
+  funnels_de_campana: TablaFunnelsDeCampana;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;
   analizador_prospectos: TablaAnalizadorProspectos;

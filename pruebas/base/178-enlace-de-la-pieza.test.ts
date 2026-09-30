@@ -11,12 +11,14 @@
 //   · una pieza que no es de la empresa da 404 — mutación: saltear `existeLaPieza`;
 //   · la base rechaza una pieza sin normalizar y un link sin `https://` — mutación: quitar el `check`;
 //   · un link guardado que hoy no pasa la validación no viaja — mutación: no filtrar en la lectura.
+//   · dos borrados a la vez auditan uno solo — mutación: volver al `select` seguido de `delete` que
+//     tenía `borrarEnlace` hasta la revisión de AQ-2 (2026-09-30).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cerrarTodo } from '../apoyo/conexiones.ts';
+import { cerrarTodo, conectar } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { leerRespuesta, montar, pedirComo, sesionDe, type Escenario } from '../apoyo/closer.ts';
@@ -53,6 +55,26 @@ after(async () => {
   await cerrarTodo();
   await cerrarClientes();
 });
+
+/**
+ * Espera hasta que `cuantas` transacciones estén bloqueadas esperando una fila de `tabla`.
+ *
+ * Es lo que vuelve determinista la prueba del doble clic: sin esto, las dos peticiones «simultáneas»
+ * se serializan solas —la segunda lee cuando la primera ya confirmó— y la carrera nunca ocurre.
+ * Medido por mutación: con dos `Promise.all` sueltos, volver al `select` seguido de `delete`
+ * sobrevivía.
+ */
+async function esperarBloqueadas(cuantas: number, tabla: string): Promise<void> {
+  for (let i = 0; i < 200; i += 1) {
+    const r = await esc.admin.query<{ n: number }>(
+      `select count(*)::int as n from pg_stat_activity where wait_event_type = 'Lock' and query ilike $1`,
+      [`%${tabla}%`],
+    );
+    if ((r.rows[0]?.n ?? 0) >= cuantas) return;
+    await new Promise((listo) => setTimeout(listo, 25));
+  }
+  assert.fail(`no llegaron ${cuantas} transacciones a esperar el candado de ${tabla}`);
+}
 
 /** Carga el link como la persona del token. */
 function cargar(token: string, cuerpo: unknown): Promise<Response> {
@@ -190,4 +212,31 @@ test('los links de otra empresa no se ven, y uno guardado que hoy no valida no v
   // La otra mitad: la otra empresa ve el suyo. Sin esto, una lectura vacía pasaría la de arriba.
   const suyos = await conOrganizacion(esc.otraOrg, enlacesDeLasPiezas);
   assert.deepEqual(suyos.map((e) => e.url), ['https://www.facebook.com/de-la-otra']);
+});
+
+test('dos borrados a la vez auditan UN solo borrado', async () => {
+  /* El mismo doble clic que la revisión de AQ-2 encontró en `quitarFunnel`, que copió este molde: con
+     un `select` seguido de un `delete`, los dos borrados auditaban. Con `delete … returning`, el
+     segundo no encuentra nada y responde 404. */
+  await esc.admin.query('delete from negocio.enlaces_de_pieza');
+  await cargar(esc.token, { pieza: PIEZA, url: URL_BUENA });
+  const borrados = async () => (await auditoria()).filter((f) => f.accion === 'enlace_de_pieza_borrado').length;
+  const antes = await borrados();
+
+  const sacar = () =>
+    sacarEnlace(pedirComo(`/api/creative/enlace?pieza=${encodeURIComponent(PIEZA)}`, esc.token, { metodo: 'DELETE' }));
+  // Un candado aparte toma la fila, y se suelta cuando los dos borrados ya lo están esperando.
+  const candado = await conectar('admin');
+  await candado.query('begin');
+  await candado.query('select 1 from negocio.enlaces_de_pieza where pieza = $1 for update', [PIEZA]);
+  let borradosEnCurso: Promise<Response[]>;
+  try {
+    borradosEnCurso = Promise.all([sacar(), sacar()]);
+    await esperarBloqueadas(2, 'enlaces_de_pieza');
+  } finally {
+    await candado.query('commit');
+  }
+  const estados = (await borradosEnCurso).map((r) => r.status).sort();
+  assert.deepEqual(estados, [200, 404], 'los dos borrados simultáneos dijeron haber borrado');
+  assert.equal((await borrados()) - antes, 1, 'un solo borrado dejó más de una fila de «borrado»');
 });

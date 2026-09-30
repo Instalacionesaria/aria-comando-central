@@ -75,6 +75,7 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   prompts_del_agente_org_id_actualizado_por_fkey: 'editó el prompt de un agente de IA',
   enlaces_rapidos_org_id_actualizado_por_fkey: 'cargó links rápidos de la empresa',
   enlaces_de_pieza_org_id_actualizado_por_fkey: 'cargó links de piezas de Creative',
+  funnels_de_campana_org_id_actualizado_por_fkey: 'asignó campañas a funnels en Acquisition',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
   usuarios_org_id_fkey: 'todavía tiene personas dadas de alta',
@@ -120,9 +121,17 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      detrás haya algo que alguien pueda hacer. */
   anuncios_org_id_fkey: 'tiene anuncios de Meta cargados',
   metricas_de_anuncio_org_id_fkey: 'tiene el costo diario de sus anuncios cargado',
-  /* Y los nombres de sus campañas (`065`), que escribe el mismo colector en la misma pasada: la
-     acción es la misma, se borran y se vuelven a leer de GoHighLevel. */
+  /* Y los nombres de sus campañas (`065`), que escribe el mismo colector en la misma pasada. Los
+     nombres se vuelven a leer de GoHighLevel, pero **borrarlos no es gratis**: el funnel asignado a
+     mano a cada campaña (`066`) cascadea desde acá, y ése no se vuelve a leer de ningún lado. */
   campanas_org_id_fkey: 'tiene las campañas de Meta cargadas',
+  /* El funnel de cada campaña (`066`). A diferencia de las de arriba, esto lo decide una persona:
+     borrarlo pierde una decisión, no un dato que se vuelve a leer.
+
+     En la práctica esta frase casi no aparece sola: toda fila de funnel exige su campaña, así que al
+     borrar una empresa suele frenar antes `campanas_org_id_fkey`. Está igual, porque la restricción
+     existe y la lista tiene que traducirlas todas. */
+  funnels_de_campana_org_id_fkey: 'tiene campañas asignadas a funnels en Acquisition',
   enlaces_de_pieza_org_id_fkey: 'tiene links cargados en las piezas de Creative',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
