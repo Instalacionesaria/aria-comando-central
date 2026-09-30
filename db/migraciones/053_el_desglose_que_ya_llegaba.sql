@@ -94,7 +94,7 @@ alter table negocio.metricas_de_anuncio
 -- atribución y uno que nunca se sincronizó se distinguen por `sincronizado_el`».
 --
 -- **Acá ese discriminador no sirve**, y es medible por qué: `diasQuePedir`
--- (`lib/negocio/recolectarAnuncios.ts:220`) sólo vuelve a pedir hoy, los dos días anteriores, y los
+-- (`lib/negocio/recolectarAnuncios.ts:237`) sólo vuelve a pedir hoy, los dos días anteriores, y los
 -- días que no tienen NINGUNA fila. Las ~2.500 filas ya guardadas tienen fila, así que no se releen
 -- nunca y su `sincronizado_el` va a seguir diciendo lo mismo que hoy. Con `default '{}'`, esas
 -- 2.500 filas afirmarían «el proveedor mandó el desglose y estaba vacío» — una mentira sobre 2.500

@@ -46,7 +46,7 @@
 >   adentro (`lib/analizadores/pipeline.ts:207-209`, anunciado en
 >   `lib/analizadores/nucleo/tldv.ts:140-143`). La tarea lo pasa como `paginaLlena`
 >   (`lib/analizadores/tarea.ts:80`) y solo entonces el sello lo escribe
->   (`lib/negocio/barrido.ts:779-781`). Las dos caras están probadas
+>   (`lib/negocio/barrido.ts:780-782`). Las dos caras están probadas
 >   (`pruebas/base/173-tarea-del-analizador.test.ts:185-207`); que la del caso real se viera roja
 >   con la mutación que vuelve a contar lo dice el commit, **no re-corrido para esta foto**. El
 >   documento de requisitos lo cuenta en `docs/OTROS/analizadores/ANALIZADORES.md:168-171`. Releído
@@ -290,7 +290,7 @@ en `aria` el último sello es `corrio`, 2026-09-28 17:42 UTC, **4 llamadas a pro
 una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:152-161`—.
 En las otras 10 empresas con sello, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada
 hora no está verificado**: el sello es un `on conflict do update` que guarda solo la última corrida
-(`lib/negocio/barrido.ts:860-886`); la continuidad se infiere de las 8 reuniones de arriba.
+(`lib/negocio/barrido.ts:875-901`); la continuidad se infiere de las 8 reuniones de arriba.
 
 **El reintento de las 5**, `'7 10 * * *'` (`lib/negocio/barrido.ts:274-278`): último sello en `aria`,
 `corrio` 2026-09-28 10:07 UTC con 0 llamadas; en las otras 10, `saltada`. **Trabajó dos veces**, y se
@@ -352,7 +352,7 @@ solo el texto (`lib/analizadores/nucleo/engine.ts:186`). Y el historial no se pu
 entero: a los 44 análisis copiados les faltan los dos contadores de caché (§ 4).
 
 **2 · La historia de las corridas.** `negocio.tareas_programadas` guarda la última de cada (empresa,
-tarea) (`lib/negocio/barrido.ts:860-886`), así que no hay forma de contar cuántas corridas hubo, ni
+tarea) (`lib/negocio/barrido.ts:875-901`), así que no hay forma de contar cuántas corridas hubo, ni
 cuántas fallaron, ni cuántas quedaron cortas. Hoy se reconstruye a mano con `creado_el` y `tomada_el`.
 
 **3 · El mapa de nombres de reunión → tipo.** Lo tiene el equipo y es la condición para construir la
@@ -365,7 +365,7 @@ vetadas, es decir que nada se movió.
 (`db/migraciones/056_tablas_del_analizador.sql:34-44`): lo único que une una llamada analizada con un
 contacto es el correo, y casa en 28 de 44 prospectos. Ninguna tabla ni función lo resuelve: fuera de
 `lib/analizadores/`, las tablas `analizador_*` solo se nombran en el esquema (`lib/datos/esquema.ts`)
-y en el borrado de una empresa (`lib/administracion/borrado.ts:129-134`).
+y en el borrado de una empresa (`lib/administracion/borrado.ts:132-137`).
 
 **5 · La comparación con Brain.** `scripts/comparar-con-brain.sql` da cero reuniones en común porque
 Brain no corre desde el 2026-09-19 (`scripts/comparar-con-brain.sql:16-18`). Decidido el 2026-09-23:
@@ -439,7 +439,7 @@ del CRM, `negocio.llamadas`, sigue con 0 filas mientras las llamadas juzgadas vi
 informes HT dice `CERRADA`**. No está verificado si es el negocio o la rúbrica.
 
 **El sello se escribe y no lo lee nadie.** `motivoDeLoIncompleto` arma frases como «tl;dv rechazó la
-llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:764-784`), y el bucle dice que eso «tiene
+llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:765-785`), y el bucle dice que eso «tiene
 que poder leerse desde la pantalla de monitoreo sin abrir un registro»
 (`lib/negocio/barrido.ts:540-550`). Pero **ningún archivo de `lib/`, `app/` o `components/` lee
 `ultimo_motivo`** fuera del que lo escribe, y la pestaña no muestra frescura (sección 2). Con la llave de
@@ -448,7 +448,7 @@ tl;dv revocada, la pestaña no avisaría nada hasta que alguien apriete Sincroni
 que solo se ve con la consulta de `docs/OTROS/produccion/DESPLIEGUE.md:346` o con
 `scripts/medir-analizadores.sql:87-89`.
 Tampoco la FAILED de hoy aparece en el sello: una fallida no es un motivo
-(`lib/negocio/barrido.ts:782-784` cuenta las que quedaron sin tiempo, no las que fallaron).
+(`lib/negocio/barrido.ts:783-785` cuenta las que quedaron sin tiempo, no las que fallaron).
 
 **La caché se paga y no se usa.** El sistema del análisis va marcado para cachear
 (`lib/analizadores/nucleo/anthropic.ts:176`), y cada análisis escribe su caché (9 774 tokens en HT,

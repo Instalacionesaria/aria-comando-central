@@ -163,7 +163,7 @@ el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:206-216`) y cifras vacías.
 **6** · **3** desde la del 31 de agosto. En `negocio.metricas_de_anuncio` **no hay un solo día con
 gasto ni con impresiones después del 13**: 13 filas en 0,00, todas del 14 al 17, y 1 172 **nulas**
 —303 del 14 al 17 y las 869 que hay desde el 18—, y nulo es «el anuncio no entregó ese día», no un
-cero (`lib/negocio/recolectarAnuncios.ts:365-367`). Medido el 2026-09-28 a las 23:56 UTC, con el
+cero (`lib/negocio/recolectarAnuncios.ts:382-384`). Medido el 2026-09-28 a las 23:56 UTC, con el
 colector sincronizando hasta las 06:20 UTC de ese día. El barrido está vivo —el último contacto lo
 creó hoy a las 13:50 UTC—, así que el hueco es de leads y no de ingesta. **Por qué se pausó la pauta
 no está verificado**: no hay en la base nada que lo diga.

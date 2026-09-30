@@ -30,6 +30,7 @@ import {
   metricasPorAnuncio,
   serieDeLaCuenta,
 } from '../../lib/ghl/anuncios.ts';
+import { recolectarAnuncios } from '../../lib/negocio/recolectarAnuncios.ts';
 
 const ACCESO = { token: 'un-token', locationId: 'una-ubicacion' };
 
@@ -136,6 +137,7 @@ test('la estructura sigue el cursor `next` hasta agotarlo', async () => {
   assert.equal(r.datos.length, 2, 'no siguió el cursor');
   assert.equal(pedidas.length, 2);
   assert.match(pedidas[1] ?? '', /[?&]next=cursor-1/, 'el cursor viaja como `next`, no como `after`');
+  assert.equal(r.paginas, 2, 'se pidieron dos páginas y se contaron distinto');
 });
 
 test('una página que no agrega nada CORTA, aunque el cursor siga viniendo', async () => {
@@ -165,6 +167,7 @@ test('si se agota el tope de páginas y el proveedor sigue ofreciendo, lo DICE',
 
   assert.equal(r.datos.length, 20);
   assert.equal(r.corto, true, 'se agotó el tope con cursor pendiente y no lo dijo');
+  assert.equal(r.paginas, 20, 'agotado el tope, se pidieron exactamente veinte páginas');
 });
 
 test('una lista que termina sola NO se declara recortada', async () => {
@@ -175,6 +178,73 @@ test('una lista que termina sola NO se declara recortada', async () => {
   assert.equal(r.tipo, 'datos');
   if (r.tipo !== 'datos') return;
   assert.equal(r.corto, false, 'una lista completa se declaró recortada');
+});
+
+test('en el nivel CAMPAIGN el id sale de `campaignId` y el estado de `status`; sin `name`, el nombre es NULO', async () => {
+  /* Es lo que la `065` guarda para las tablas de Acquisition. Hasta el 2026-09-30 una entidad sin
+     `name` llegaba como «(sin nombre)», y guardado eso es un nombre falso que la pantalla dibuja
+     como verdadero. Y una sin `campaignId` no entra: no se puede cruzar con nada. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: {
+      data: [
+        { campaignId: 'c1', name: 'bofu - agendamiento', status: 'ACTIVE', adAccountId: 'act_1' },
+        { campaignId: 'c2', status: 'PAUSED' },
+        { name: 'una campaña sin identificador', status: 'ACTIVE' },
+      ],
+      next: null,
+    },
+  });
+
+  const r = await estructuraDeAnuncios(ACCESO, 'CAMPAIGN');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+
+  assert.match(pedidas[0] ?? '', /[?&]entityType=CAMPAIGN(&|$)/);
+  assert.deepEqual(r.datos, [
+    { id: 'c1', nombre: 'bofu - agendamiento', estado: 'ACTIVE', cuentaId: 'act_1' },
+    { id: 'c2', nombre: null, estado: 'PAUSED', cuentaId: null },
+  ]);
+  assert.equal(r.paginas, 1);
+});
+
+test('un fallo a mitad de la paginación dice cuántas páginas costó', async () => {
+  /* La primera página llega y la segunda da 500: se hicieron dos llamadas, y quien las cuenta tiene
+     que contar dos. Lo leído se descarta —una lista a medias se ve completa— y el fallo vuelve. */
+  respuestas.push({ estado: 200, cuerpo: { data: [{ campaignId: 'c1', name: 'uno' }], next: 'c-1' } });
+  respuestas.push({ estado: 500, cuerpo: { message: 'error' } });
+
+  const r = await estructuraDeAnuncios(ACCESO, 'CAMPAIGN');
+  assert.equal(r.tipo, 'fallo');
+  assert.equal(r.paginas, 2, 'las páginas pedidas antes del fallo no se contaron');
+});
+
+test('el colector pide los nombres en el nivel CAMPAIGN, no en otro', async () => {
+  /* El cableado por omisión del colector, sin reemplazar el lector: con `ADSET` o `AD`, la tabla de
+     campañas se llenaría de ids de conjuntos o de anuncios, el cruce por `meta_campana_id` no
+     encontraría ninguno y la pantalla dibujaría ids sin nombre — sin un solo error. El proveedor
+     es el `fetch` interceptado de arriba, y todo lo demás se inyecta. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: { data: [{ campaignId: '120249633901590467', name: 'bofu - agendamiento', status: 'ACTIVE' }], next: null },
+  });
+  let escritas: readonly { id: string }[] = [];
+  const r = await recolectarAnuncios('00000000-0000-4000-8000-000000000000', ACCESO, {
+    ahora: Date.parse('2026-09-16T11:30:00Z'),
+    reloj: () => 0,
+    vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'connected', cuentaId: null, paginas: 1 } }),
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+    escribirCampanas: async (lista) => {
+      escritas = lista;
+    },
+    campanas: ['120249633901590467'],
+    guardados: new Set(['2026-09-16', '2026-09-15', '2026-09-14']),
+  });
+
+  assert.equal(pedidas.length, 1, 'el colector pidió al proveedor algo más que la lista de campañas');
+  assert.match(pedidas[0] ?? '', /[?&]entityType=CAMPAIGN(&|$)/, 'los nombres se pidieron en otro nivel');
+  assert.deepEqual(escritas.map((c) => c.id), ['120249633901590467']);
+  assert.deepEqual(r.resultado.nombres, { tipo: 'leidas', campanas: 1, corto: false });
 });
 
 test('`paginas` distingue «no mandó el campo» de «tiene cero»', async () => {

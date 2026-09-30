@@ -129,7 +129,7 @@ horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/ba
   (`lib/negocio/barrido.ts:295-306`). Los Analizadores, que corren solos, tienen hasta 285 s
   (`lib/negocio/barrido.ts:320`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:860-894`). Los estados son `corrio`, `saltada`, `frenada`,
+  un `+1` (`lib/negocio/barrido.ts:875-909`). Los estados son `corrio`, `saltada`, `frenada`,
   `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:97-98`,
   `lib/negocio/frescura.ts:154-155`).
 
@@ -149,7 +149,7 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
 | `auditoria` | `lib/auditor/analisis.ts:316` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 10 |
 | `mejora` | `lib/auditor/buscarMejora.ts:135` | una mejora de prompt por día y por empresa | 1 inferencia |
-| `anuncios` | `lib/negocio/recolectarAnuncios.ts:490` | el costo diario por anuncio, vía GoHighLevel | 40 |
+| `anuncios` | `lib/negocio/recolectarAnuncios.ts:531` | el costo diario por anuncio, vía GoHighLevel | 40 |
 | `analizadores` | `lib/analizadores/tarea.ts:66` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
 | `reintentos` | `lib/analizadores/tarea.ts:195` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:171`) | 0 |
 
@@ -158,10 +158,10 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
   si el contacto se sincronizara después, sus mensajes quedarían debajo de la marca para siempre
   (`lib/negocio/barrido.ts:146-150`; prueba en `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va
   después de `mensajes` para no juzgar un transcript incompleto (`lib/negocio/barrido.ts:176-181`).
-- **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:53`), porque
+- **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:59`), porque
   Meta corrige hacia atrás y la fila se reescribe en vez de ignorarse
   (`lib/negocio/recolectarAnuncios.ts:11-19`); el relleno inicial es de 30 días
-  (`lib/negocio/recolectarAnuncios.ts:61`). Su detalle y lo que falta de Meta están en
+  (`lib/negocio/recolectarAnuncios.ts:67`). Su detalle y lo que falta de Meta están en
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9 y en [01-ACQUISITION.md](01-ACQUISITION.md).
 - **Los Analizadores corren solos y cada hora** porque un análisis necesita minutos seguidos y en una
   corrida de 300 s entran un descubrimiento y uno o dos análisis (`lib/analizadores/tarea.ts:1-21`).
@@ -258,7 +258,7 @@ un umbral de 120 minutos (`lib/negocio/frescura.ts:203-209`, `:231`, `:258`).
 
 **Quién no:** ninguna pantalla lee el sello de `anuncios`, `auditoria`, `mejora`, `analizadores` ni
 `reintentos`. `tareas_programadas` aparece sólo en `lib/negocio/barrido.ts`,
-`lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:1478`) y un comentario de
+`lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:1495`) y un comentario de
 `app/api/cron/route.ts:173` (búsqueda en `lib/`, `app/` y `components/`). O sea que si el
 colector de anuncios dejara de correr, Acquisition, Creative, Conversion y Sales no lo dirían con un
 aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo de esta carpeta.
@@ -291,7 +291,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1506-1511`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1523-1528`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
@@ -519,7 +519,7 @@ minutos del medio.
 - **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
   código, y es la que convierte el rojo en un freno (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:811`, `:459`, `:467`), así que su resultado vive sólo en la
+  propósito (`lib/negocio/barrido.ts:826`, `:459`, `:467`), así que su resultado vive sólo en la
   respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
   `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
@@ -559,7 +559,7 @@ minutos del medio.
    reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
    `lib/negocio/recolectarAnuncios.ts:11-19`).
 2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:850-894`).
+   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:865-909`).
 3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
    (`lib/negocio/barrido.ts:383-388`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
@@ -622,7 +622,7 @@ minutos del medio.
    - `lib/negocio/barrido.ts:68` y `:78` hablan de «las cinco» tareas; `TAREAS` tiene nueve
      (`lib/negocio/barrido.ts:84-95`).
    - `lib/negocio/barrido.ts:239-241` cuenta los anuncios como «cuatro días (hoy más los tres que se
-     releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:53`) y el
+     releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:59`) y el
      sello de hoy dice 40.
    - `lib/negocio/barrido.ts:370` y `app/api/cron/route.ts:152-154` dicen que «solo una empresa de
      cinco tiene llave de IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas

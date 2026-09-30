@@ -275,7 +275,14 @@ export type NivelDeAnuncio = 'CAMPAIGN' | 'ADSET' | 'AD';
 export interface EntidadDeAnuncio {
   /** El identificador NATIVO de Meta. Es la llave con la que se cruza contra `atribucion_primera`. */
   id: string;
-  nombre: string;
+  /**
+   * `null` cuando el proveedor no mandó `name`. **No se inventa uno.** Hasta el 2026-09-30 acá
+   * llegaba «(sin nombre)», y no hacía daño porque nadie guardaba estas entidades. Ese día el colector
+   * empezó a guardar los nombres de las campañas en `negocio.campanas` (`065`), y el mismo cambio sacó
+   * el relleno: guardado, habría sido un nombre falso en una tabla de Acquisition. Quien dibuja
+   * decide qué mostrar.
+   */
+  nombre: string | null;
   /**
    * El estado de entrega (§ 18.7, «Delivery status»). Sólo las campañas lo traen como `status`; los
    * ad sets traen `effectiveStatus` y los anuncios no traen ninguno — medido el 2026-09-16.
@@ -320,7 +327,7 @@ const PAGINAS_MAXIMAS = 20;
 export async function estructuraDeAnuncios(
   acceso: { token: string; locationId: string },
   nivel: NivelDeAnuncio,
-): Promise<ResultadoDeGhl<EntidadDeAnuncio[]> & { corto?: boolean }> {
+): Promise<ResultadoDeGhl<EntidadDeAnuncio[]> & { corto?: boolean; paginas?: number }> {
   /* La clave del identificador cambia con el nivel, y eso NO es un capricho del proveedor: es la
      forma de Meta. Se normaliza acá para que quien consuma no tenga que saberlo. */
   const claveDelId: Record<NivelDeAnuncio, string> = {
@@ -348,7 +355,10 @@ export async function estructuraDeAnuncios(
       (cursor === null ? '' : `&next=${encodeURIComponent(cursor)}`);
 
     const r = await leer<Record<string, unknown>>(url, acceso.token);
-    if (r.tipo !== 'datos') return r;
+    /* El fallo también dice cuántas páginas costó: si falla la tercera, se pidieron tres. Lo leído
+       antes del fallo se descarta, y es a propósito: una lista a medias se ve completa, y la pasada
+       siguiente la vuelve a pedir entera. */
+    if (r.tipo !== 'datos') return { ...r, paginas: pagina + 1 };
 
     const lista = Array.isArray(r.datos?.data) ? r.datos.data : [];
     let nuevas = 0;
@@ -362,7 +372,7 @@ export async function estructuraDeAnuncios(
       nuevas++;
       salida.push({
         id,
-        nombre: texto(o.name) ?? '(sin nombre)',
+        nombre: texto(o.name),
         estado: texto(o.status) ?? texto(o.effectiveStatus),
         cuentaId: texto(o.adAccountId),
       });
@@ -380,7 +390,13 @@ export async function estructuraDeAnuncios(
      día que deje de serlo, una lista corta que se ve completa es peor que una que falla. */
   corto = pagina >= PAGINAS_MAXIMAS && cursor !== null;
 
-  return { tipo: 'datos', datos: salida, corto };
+  /* Cuántas páginas se pidieron, para que quien cuenta llamadas cuente éstas y no «una». Si el bucle
+     cortó en la vuelta `pagina`, se pidieron `pagina + 1`; si agotó el tope, `pagina` ya vale el
+     tope. Los reintentos de un 429 dentro de `leer` no suman: el colector cuenta una llamada por
+     cada `pedir`, reintente o no adentro. */
+  const paginas = Math.min(pagina + 1, PAGINAS_MAXIMAS);
+
+  return { tipo: 'datos', datos: salida, corto, paginas };
 }
 
 // ─── Las métricas ───────────────────────────────────────────────────────────

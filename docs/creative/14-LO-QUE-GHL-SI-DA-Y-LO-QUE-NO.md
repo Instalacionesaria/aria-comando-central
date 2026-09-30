@@ -186,7 +186,7 @@ hay campo que pedir.
 § 18.12 no tiene fuente por esta vía. Tampoco edad, género, dispositivo, plataforma ni país.
 
 Y ojo con el otro sentido: `groupBy` **existe en `/reporting` y se ignora en `/reporting/list`**. Ya
-estaba medido y está escrito en `lib/ghl/anuncios.ts:346-354`: con un rango de tres días devuelve una
+estaba medido y está escrito en `lib/ghl/anuncios.ts:37-39`: con un rango de tres días devuelve una
 fila agregada por anuncio, no tres. El grano diario por anuncio se consigue pidiendo un día por
 llamada, que es lo que el colector hace.
 

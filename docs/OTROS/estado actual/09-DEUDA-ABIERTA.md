@@ -487,12 +487,12 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   ventana por omisión de 30 días va a quedar debajo del piso de 10
   ([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)).
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
-  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:541-546`, el
-  campo en `lib/negocio/recolectarAnuncios.ts:143`), pero `motivoDeLoIncompleto`
+  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:588-593`, el
+  campo en `lib/negocio/recolectarAnuncios.ts:149`), pero `motivoDeLoIncompleto`
   (`lib/negocio/barrido.ts:749`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
-  (`lib/negocio/recolectarAnuncios.ts:244-269`): hoy son 13 `campaignId` numéricos distintos en el
+  (`lib/negocio/recolectarAnuncios.ts:261-286`): hoy son 13 `campaignId` numéricos distintos en el
   primer toque (22:32 UTC); las 61 de la cuenta son las del comentario, contadas el 2026-09-16. Una
   campaña nueva cuyos leads no traigan el toque sería invisible, y eso no se puede ver desde la base.
 - **Hay una venta en el CRM que Sales no ve.** La etiqueta `venta_ganada` está en **1 contacto** y
@@ -566,7 +566,7 @@ Un comentario falso es un defecto de primera clase: quien lo lee para decidir, d
 sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 
 - `lib/negocio/barrido.ts:239-241` cuenta **52 llamadas por día** «por cuatro días»; se releen dos
-  (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:53`), o sea 39, y
+  (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:59`), o sea 39, y
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) midió 40.
 - `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone la tarea `anuncios` en «el cron de
   las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:220`).
@@ -579,10 +579,10 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   dos de las etiquetas en otra carpeta (no re-medido).
 - `lib/ghl/cliente.ts:1` dice «Solo lectura de contactos»; el archivo pone y quita etiquetas
   (`lib/ghl/cliente.ts:590`, `lib/ghl/cliente.ts:636`).
-- `lib/negocio/recolectarAnuncios.ts:420-434` es una copia huérfana del bloque de
-  `lib/negocio/recolectarAnuncios.ts:475-489`, pegada antes de otra cosa.
+- **Cerrado el 2026-09-30 (AQ-1 de Acquisition).** La copia huérfana del bloque de
+  `lib/negocio/recolectarAnuncios.ts:516-530` se borró: en su lugar quedó el escritor de campañas.
 - `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412`) usa `toISOString()` sobre un `date`, que es
-  exactamente lo que `lib/negocio/recolectarAnuncios.ts:278-282` documenta como defecto al este de
+  exactamente lo que `lib/negocio/recolectarAnuncios.ts:295-299` documenta como defecto al este de
   UTC. En producción (UTC) no se nota; leído, no ejecutado.
 - `lib/negocio/costoDelAnuncio.ts:492` numera «2 ·» el tercer aviso (el de
   `lib/negocio/costoDelAnuncio.ts:468` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el

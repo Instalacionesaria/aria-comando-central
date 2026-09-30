@@ -85,7 +85,7 @@ diez campos con nombre parecido.
 
 ### Cómo se midió la ausencia de uso
 
-`lib/ghl/anuncios.ts:405` hace `resultadosDeMeta: numero(o.results)`. `results` es un **objeto** y
+`lib/ghl/anuncios.ts:421` hace `resultadosDeMeta: numero(o.results)`. `results` es un **objeto** y
 `numero()` (`:141`) devuelve `null` para todo lo que no sea número o cadena, así que el campo es
 **`null` siempre** — hasta el 2026-09-18, cuando el campo pasó a llamarse `acciones` y a leerse con
 un desenvolvedor que cuenta lo ilegible en vez de escribir cero.

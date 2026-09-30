@@ -193,12 +193,12 @@ se acepte en la principal y se rechace en un cliente (`pruebas/base/31-alcance.t
 
 Todo medido el **2026-09-28** entre las 22:05 y las 22:12 UTC; entre paréntesis, la cifra anterior
 con su fecha. Viven en tres tablas de `public` que **escribe el backend de scraping, no este
-proyecto**, por PostgREST (`lib/datos/esquema.ts:1261-1263`), y las tres tienen RLS activada y
+proyecto**, por PostgREST (`lib/datos/esquema.ts:1278-1280`), y las tres tienen RLS activada y
 forzada con una política cada una (consulta a `pg_class` y `pg_policies`, hoy). La cuarta, la de
 mediciones, sería nuestra y no existe (§ 6).
 
 **Los trabajos** (`public.aria_cc_scraper_trabajos`), lo que el panel cuenta como «un scrapeo»
-(`lib/datos/esquema.ts:1289-1290`):
+(`lib/datos/esquema.ts:1306-1307`):
 
 | qué | 2026-09-28 |
 |---|---|
@@ -246,7 +246,7 @@ lo descontado coincide con lo guardado. Es coherente con que ni Ads ni el Espía
 backend que lo decide no es de este repositorio.
 
 **Los monederos** (`public.aria_cc_scraper_monedero`): **3** (2 el 2026-09-21), uno sin límite, el
-de la principal (`lib/datos/esquema.ts:1363`). Nadie tiene leads comprados:
+de la principal (`lib/datos/esquema.ts:1380`). Nadie tiene leads comprados:
 `leads_adicionales_pagados` vale 0 en los tres.
 
 **Cuánto tarda un scrapeo, aproximado.** La medición que lo iba a decir no existe (§ 6), pero hay un
@@ -279,9 +279,9 @@ guarda aparte) y, sólo en el historial, 101 a 105. Coincide con las «0 version
 
 | hueco | dónde se nota | de dónde tendría que venir | hoy |
 |---|---|---|---|
-| **La duración de cada scrapeo** | ningún lado la dibuja; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1373-1382`) | **la tabla no existe** en producción, y la migración «020 de `/migraciones`» que la crearía no está en el repositorio (§ 6) |
+| **La duración de cada scrapeo** | ningún lado la dibuja; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1390-1399`) | **la tabla no existe** en producción, y la migración «020 de `/migraciones`» que la crearía no está en el repositorio (§ 6) |
 | **El ingreso y el margen por empresa** | Monitoreo, dos columnas y una tarjeta | el precio mensual, a mano en Ajustes → Empresas (`db/migraciones/024_ingreso_por_empresa.sql:11-12`, `lib/monitoreo/fuentes.ts:91-97`) | 0 de 13 empresas lo tienen |
-| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1332-1337`) | 14 de 16 medidas; los 2 huecos son de Maps |
+| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1349-1354`) | 14 de 16 medidas; los 2 huecos son de Maps |
 | El tope pedido de un trabajo | un trabajo retomado sin él no dice cuánto se pidió (`app/api/tools/trabajos/route.ts:74-77`) | la columna `max_leads`, que el backend no escribe (`app/api/tools/trabajos/route.ts:72-78`) | se lee de `results_data`, donde lo tiene 1 de los 16 trabajos |
 | Cuántos lotes se subieron al CRM | ningún lado | un registro que la ruta de envío no deja | ver [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) |
 | El costo de IA por empresa | no hay columna, a propósito (`app/api/monitoreo/route.ts:23-25`) | los tokens de las generaciones, que ninguna tabla guarda por empresa | sin cambio |
@@ -322,9 +322,9 @@ es la protección, y un filtro visible taparía cuál es (`app/api/tools/saldo/r
 `lib/monitoreo/consumo.ts:107-110`, `app/api/tools/leads/route.ts:22-25`).
 
 **6 · Este proyecto no escribe en las tablas del backend.** Declara sólo las columnas que lee, porque
-una columna declarada de más es una que Kysely deja escribir (`lib/datos/esquema.ts:1295-1298`). La
+una columna declarada de más es una que Kysely deja escribir (`lib/datos/esquema.ts:1312-1315`). La
 única tabla nuestra es la de mediciones, y la llena sólo `lib/tools/medicion.ts`
-(`lib/datos/esquema.ts:1374-1382`).
+(`lib/datos/esquema.ts:1391-1399`).
 
 **7 · Medir no puede romper un scrapeo.** Las dos funciones corren después de tener la respuesta del
 backend, no lanzan nunca y van en su propia transacción (`lib/tools/medicion.ts:26-30`); el fin se
@@ -368,12 +368,12 @@ el token nunca pasa por el navegador (`app/api/tools/leads/enviar/route.ts:7-19`
 
 **La medición de duración no mide, y nada lo dice en voz alta.** `public.aria_cc_scraper_mediciones`
 no existe en producción (`to_regclass`, hoy). Los comentarios la atribuyen a «la migración 020 de
-`/migraciones`» (`lib/datos/esquema.ts:1376`, `lib/tools/medicion.ts:19`), y esa carpeta **no está
+`/migraciones`» (`lib/datos/esquema.ts:1393`, `lib/tools/medicion.ts:19`), y esa carpeta **no está
 en el repositorio ni lo estuvo nunca** (`git log --all` sobre `migraciones/` sin resultados); el
 commit `9697c9f` tocó cuatro archivos y ninguno es una migración. Y la `020` que este repositorio
 sí tiene es otra cosa: `db/migraciones/020_closer_asignado.sql`. Tampoco existe en el repositorio
 `migraciones/006_aria_cc_scraper.sql`, que citan nueve comentarios en ocho archivos
-(`lib/datos/esquema.ts:1271`, `app/api/tools/scrape/route.ts:19`,
+(`lib/datos/esquema.ts:1288`, `app/api/tools/scrape/route.ts:19`,
 `components/tools/MisLeads.jsx:12-14`, entre otros): el censo de Supabase del 2026-09-21 ya lo
 había dicho, que las crea «la serie de otro servicio». Ese censo es un documento local, excluido
 del repositorio en `.git/info/exclude`, así que no se cita por línea. El código hace lo que
@@ -400,7 +400,7 @@ pasan a «comprados» (`lib/tools/saldo.ts:53-55`): la franja diría 447 disponi
 de regalo y ninguna compra. Calculado a mano desde el código y la fila, no visto en pantalla. La
 prueba cubre el monedero sin `leads_regalados` sólo con cero usados
 (`pruebas/codigo/139-saldo-de-leads.test.ts:48-49`). Y la fila contradice a
-`lib/datos/esquema.ts:1366-1369` («lo escribe el backend al abrir el monedero»): el monedero se
+`lib/datos/esquema.ts:1383-1386` («lo escribe el backend al abrir el monedero»): el monedero se
 abre con el primer scraping (`app/api/tools/saldo/route.ts:8-10`), y el de la empresa B tiene
 `creado_el` el 2026-09-23 a las 16:05 UTC, menos de un segundo antes de su primer trabajo; la
 columna ya existía —el de la empresa A, abierto el 2026-09-13, tiene 500— y su valor por omisión
@@ -423,7 +423,7 @@ en [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md): `lib/tools/scrapers.ts:16-19` sigue
 organización sin vínculo con el hub no puede scrapear; y, sin señalar hasta hoy, `:7-9` del mismo
 archivo, que el monedero vive en `usuarios_scraper`, de la base ajena donde estaba antes de la
 006 (`app/api/tools/scrape/route.ts:19-21`); hoy es `public.aria_cc_scraper_monedero`
-(`lib/datos/esquema.ts:1356`, `:1508`). Y
+(`lib/datos/esquema.ts:1373`, `:1508`). Y
 `components/monitoreo/PanelDeMonitoreo.jsx:11-12` dice que `app/monitoreo.css` son
 ochenta líneas: hoy son 201.
 

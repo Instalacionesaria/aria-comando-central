@@ -22,7 +22,13 @@
 
 import { sql } from 'kysely';
 import { datos, conOrganizacion } from '../datos/contexto.ts';
-import { integracionDeAnuncios, metricasPorAnuncio, type MetricaDeAnuncio } from '../ghl/anuncios.ts';
+import {
+  estructuraDeAnuncios,
+  integracionDeAnuncios,
+  metricasPorAnuncio,
+  type EntidadDeAnuncio,
+  type MetricaDeAnuncio,
+} from '../ghl/anuncios.ts';
 
 /**
  * Cuántos días hacia atrás se vuelven a pedir en cada pasada.
@@ -162,6 +168,17 @@ export interface ResumenDeAnuncios {
    * pierda adentro del segundo.
    */
   accionesIlegibles: number;
+  /**
+   * Los nombres de las campañas (`065`), leídos al final de la pasada.
+   *
+   *   · `leidas`: cuántas campañas listó la cuenta, y si la lista vino recortada por el tope de
+   *     páginas de `estructuraDeAnuncios`.
+   *   · `fallo`: el proveedor no las devolvió. **No tumba la pasada**: las métricas ya están
+   *     escritas, y en la tabla quedan los nombres de la última lectura buena, si la hubo.
+   *   · `null`: no se pidieron, porque no había ninguna campaña que pedir y la pasada salió antes
+   *     de llamar a nadie. Una pasada atrasada SÍ los pide: ver el comentario del paso.
+   */
+  nombres: { tipo: 'leidas'; campanas: number; corto: boolean } | { tipo: 'fallo'; porque: string } | null;
   llamadas: number;
 }
 
@@ -418,20 +435,36 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
 }
 
 /**
- * Una pasada completa para una organización.
+ * Guarda el nombre y el estado de cada campaña de la cuenta (`065`). **El único escritor de
+ * `negocio.campanas`.**
  *
- * ── NO PASA POR `conElPulso`, POR EL MISMO MOTIVO QUE `contactos` ──────────
- *
- * El candado existe para el reloj del navegador, que dispara cada diez segundos. Esta tarea la
- * dispara sólo el cron, una vez por día. Meterla en el candado le pondría un antirrebote a algo que
- * no tiene tráfico que acotar.
- *
- * ── UN FALLO DE CAMPAÑA SE CUENTA; UNO DE TODAS, SE LANZA ─────────────────
- *
- * La diferencia importa. Una campaña que devuelve 500 es un identificador podrido y la pasada tiene
- * que seguir. Que fallen TODAS es un token rechazado o el proveedor caído, y eso sí es un fallo de
- * la tarea: devolverlo como éxito dejaría el sello en verde sobre una pasada que no escribió nada.
+ * El nombre se protege con `coalesce` y el estado no, y la asimetría es la misma que separa a
+ * `anuncios` de `metricas_de_anuncio`: el nombre dice QUÉ ES la campaña y acumula lo que se sabe
+ * —una lectura que no trae `name` no borra el que ya teníamos—; el estado dice CÓMO ESTÁ HOY, y
+ * conservar uno viejo al lado de un `sincronizado_el` nuevo afirmaría algo que nadie confirmó.
  */
+async function guardarCampanas(lista: readonly EntidadDeAnuncio[]): Promise<void> {
+  for (const c of lista) {
+    await datos()
+      .insertInto('campanas')
+      .values({
+        meta_campana_id: c.id,
+        nombre: c.nombre,
+        estado: c.estado,
+        sincronizado_el: new Date(),
+      } as never)
+      .onConflict((oc) =>
+        // Las DOS columnas de la clave primaria, como en `anuncios`: con una sola, `42P10`.
+        oc.columns(['org_id', 'meta_campana_id']).doUpdateSet({
+          nombre: sql`coalesce(excluded.nombre, campanas.nombre)`,
+          estado: c.estado,
+          sincronizado_el: new Date(),
+        } as never),
+      )
+      .execute();
+  }
+}
+
 /**
  * Las piezas que la prueba reemplaza. Mismo idioma que `barrerCitas`, que inyecta sus `lectores`.
  *
@@ -470,6 +503,14 @@ export interface PiezasDelColector {
    * de la migración 050 dentro de `conOrganizacion`.
    */
   escribir?: (metricas: readonly MetricaDeAnuncio[], dia: string) => Promise<void>;
+  /**
+   * Las campañas de la cuenta, con su nombre. Sin esto, `estructuraDeAnuncios` en el nivel
+   * `CAMPAIGN` contra el proveedor real. Inyectable por lo mismo que `vinculo`: una prueba de la
+   * ventana de días no tiene por qué salir a la red.
+   */
+  listarCampanas?: (acceso: { token: string; locationId: string }) => ReturnType<typeof estructuraDeAnuncios>;
+  /** Dónde se escriben, con su propio contexto de organización. Sin esto, `negocio.campanas`. */
+  escribirCampanas?: (lista: readonly EntidadDeAnuncio[]) => Promise<void>;
 }
 
 /**
@@ -503,6 +544,11 @@ export async function recolectarAnuncios(
   const escribir =
     piezas.escribir ??
     ((m: readonly MetricaDeAnuncio[], d: string) => conOrganizacion(orgId, () => guardar(m, d)));
+  const listarCampanas =
+    piezas.listarCampanas ?? ((a: { token: string; locationId: string }) => estructuraDeAnuncios(a, 'CAMPAIGN'));
+  const escribirCampanas =
+    piezas.escribirCampanas ??
+    ((lista: readonly EntidadDeAnuncio[]) => conOrganizacion(orgId, () => guardarCampanas(lista)));
 
   // Las dos lecturas van en UNA sola entrada a la organización, no en dos: `conOrganizacion` abre
   // contexto y el contexto cuesta, y las dos preguntas se contestan con la misma conexión.
@@ -531,6 +577,7 @@ export async function recolectarAnuncios(
     vinculo: null,
     ilegibles: 0,
     accionesIlegibles: 0,
+    nombres: null,
     llamadas: 0,
   };
 
@@ -626,6 +673,41 @@ export async function recolectarAnuncios(
     // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle del barrido pone el
     // texto genérico. Ver `releerContactos`, que hace exactamente lo mismo.
     throw new Error(`el CRM rechazó las ${campanas.length} campañas`);
+  }
+
+  /* ── LOS NOMBRES DE LAS CAMPAÑAS, AL FINAL DE LA PASADA ────────────────────
+   *
+   * Al final porque ahí no le quitan presupuesto al bucle de días: `arranque` se toma antes del
+   * vínculo, y todo lo que corre delante del bucle se come margen de los días.
+   *
+   * **Sin guardia de tiempo, y sin depender de `atrasado`.** Las dos cosas son a propósito:
+   *
+   *   · En régimen la pasada ya termina pasados los 120 s de `PRESUPUESTO_MS` —el guardia se
+   *     comprueba antes de cada día, así que el último arranca con el presupuesto casi agotado—, y
+   *     un guardia acá saltaría los nombres siempre.
+   *   · Depender de `atrasado` no ahorraba tiempo y dejaba un agujero. Una pasada atrasada corta en
+   *     el primer control pasado el presupuesto, así que termina a lo sumo un día después de los
+   *     120 s, igual que una completa. Y `atrasado` puede quedar encendido semanas: una empresa nueva
+   *     empieza con 27 días sin pedir y el tramo fijo solo ya pasa los 120 s, así que su tabla de
+   *     campañas quedaba vacía todo ese tiempo sin que el sello lo dijera. Lo encontró la revisión de
+   *     AQ-1, y por eso la condición se sacó.
+   *
+   * Lo que el presupuesto protege es el `maxDuration` de la función entera, y esta lectura no lo
+   * amenaza: la cuenta tenía 61 campañas el 2026-09-16 y la página del proveedor es de 100.
+   *
+   * Un fallo del proveedor se anota y no tumba nada: las métricas de hoy no dependen de los nombres,
+   * y en la tabla quedan los de la última lectura buena, si la hubo. Un fallo AL ESCRIBIR, en cambio,
+   * no se atrapa: es un defecto nuestro, y tiene que sonar como cualquier otro error de la base. */
+  const n = await listarCampanas(acceso);
+  /* Las páginas pedidas, también cuando falló a mitad: `estructuraDeAnuncios` las devuelve en las
+     dos ramas. Si falta el dato, una, que es el mínimo que costó preguntar. */
+  resumen.llamadas += n.paginas ?? 1;
+  if (n.tipo === 'datos') {
+    if (n.datos.length > 0) await escribirCampanas(n.datos);
+    resumen.nombres = { tipo: 'leidas', campanas: n.datos.length, corto: n.corto === true };
+  } else {
+    // El tipo del fallo, no su texto: el detalle va al registro (`ADR-0704`).
+    resumen.nombres = { tipo: 'fallo', porque: n.fallo.tipo };
   }
 
   resumen.anuncios = vistos.size;

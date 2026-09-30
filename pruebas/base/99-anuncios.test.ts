@@ -46,6 +46,7 @@ async function limpiar(): Promise<void> {
   // orden deja la prueba correcta aunque alguien cambie la cascada.
   await esc.admin.query('delete from negocio.metricas_de_anuncio where meta_anuncio_id like $1', [`${MARCA}%`]);
   await esc.admin.query('delete from negocio.anuncios where meta_anuncio_id like $1', [`${MARCA}%`]);
+  await esc.admin.query('delete from negocio.campanas where meta_campana_id like $1', [`${MARCA}%`]);
 }
 
 before(async () => {
@@ -94,6 +95,16 @@ function conEntrega(anuncioId: string): MetricaDeAnuncio {
   };
 }
 
+/**
+ * El vínculo y los nombres de las campañas, falsos. **Sin esto la pasada salía a la red**: el
+ * vínculo se preguntaba a GoHighLevel de verdad con `no-se-usa` como token, y desde la `065`
+ * también los nombres. Una prueba de la base no tiene por qué depender de que haya conexión.
+ */
+const SIN_RED = {
+  vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'connected', cuentaId: null, paginas: 1 } }),
+  listarCampanas: async () => ({ tipo: 'datos' as const, datos: [], corto: false, paginas: 1 }),
+};
+
 /** El único día en que el proveedor falso devuelve algo. Ver `unaPasada`. */
 const DIA = '2026-09-14';
 
@@ -119,6 +130,7 @@ function guardadosHasta(dia: string): Set<string> {
  */
 async function unaPasada(metricas: readonly MetricaDeAnuncio[]) {
   return recolectarAnuncios(esc.org, ACCESO, {
+    ...SIN_RED,
     ahora: AHORA,
     campanas: ['120249633901590467'],
     guardados: guardadosHasta('2026-09-16'),
@@ -306,6 +318,7 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
   const id = `${MARCA}06`;
 
   await recolectarAnuncios(esc.org, ACCESO, {
+    ...SIN_RED,
     ahora: AHORA,
     campanas: ['120249633901590467'],
     guardados: guardadosHasta('2026-09-16'),
@@ -332,6 +345,100 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
   assert.equal(r.rows[0]?.objetivo, 'OUTCOME_LEADS', 'un día sin entrega borró el objetivo');
 });
 
+// ─── LOS NOMBRES DE LAS CAMPAÑAS (`065`) ─────────────────────────────────────
+//
+// El escritor real, `guardarCampanas`, corre dentro de `conOrganizacion`; por eso esto va acá y no
+// en la suite de código, por el mismo motivo que la regla de los dos ceros.
+
+/** Una pasada que no escribe métricas y lee estas campañas. */
+async function pasadaConCampanas(lista: readonly { id: string; nombre: string | null; estado: string | null }[]) {
+  return recolectarAnuncios(esc.org, ACCESO, {
+    ...SIN_RED,
+    ahora: AHORA,
+    campanas: ['120249633901590467'],
+    guardados: guardadosHasta('2026-09-16'),
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+    listarCampanas: async () => ({
+      tipo: 'datos',
+      datos: lista.map((c) => ({ ...c, cuentaId: null })),
+      corto: false,
+      paginas: 1,
+    }),
+  });
+}
+
+async function campanaGuardada(id: string) {
+  const r = await esc.admin.query<{ nombre: string | null; estado: string | null }>(
+    'select nombre, estado from negocio.campanas where meta_campana_id = $1',
+    [id],
+  );
+  return r.rows;
+}
+
+test('la campaña queda NOMBRADA, y una segunda lectura reescribe el nombre, el estado y el sello', async () => {
+  const id = `${MARCA}c1`;
+  await pasadaConCampanas([{ id, nombre: 'bofu - agendamiento', estado: 'ACTIVE' }]);
+  assert.deepEqual(await campanaGuardada(id), [{ nombre: 'bofu - agendamiento', estado: 'ACTIVE' }]);
+
+  /* El sello dice cuándo se la vio por última vez: una campaña que deja de aparecer no se borra, y
+     este sello es lo único que la distingue de una vista hoy. Se lo envejece a mano para ver que la
+     segunda lectura lo renueva. */
+  await esc.admin.query(
+    "update negocio.campanas set sincronizado_el = '2000-01-01' where meta_campana_id = $1",
+    [id],
+  );
+
+  // Renombrada y pausada en Meta: la segunda lectura tiene que decir lo de hoy, no conservar lo de ayer.
+  await pasadaConCampanas([{ id, nombre: 'bofu - agendamiento v2', estado: 'PAUSED' }]);
+  assert.deepEqual(
+    await campanaGuardada(id),
+    [{ nombre: 'bofu - agendamiento v2', estado: 'PAUSED' }],
+    'la segunda lectura no reescribió la campaña, o la duplicó',
+  );
+  const sello = await esc.admin.query<{ renovado: boolean }>(
+    "select sincronizado_el > '2000-01-01' as renovado from negocio.campanas where meta_campana_id = $1",
+    [id],
+  );
+  assert.equal(sello.rows[0]?.renovado, true, 'la segunda lectura no renovó el sello');
+});
+
+test('una lista con VARIAS campañas las guarda todas', async () => {
+  // La cuenta lista 61: un escritor que guardara sólo la primera dejaría 60 sin nombre.
+  const ids = [`${MARCA}m1`, `${MARCA}m2`, `${MARCA}m3`];
+  await pasadaConCampanas(ids.map((id, i) => ({ id, nombre: `campaña ${i + 1}`, estado: 'ACTIVE' })));
+
+  const r = await esc.admin.query<{ meta_campana_id: string; nombre: string | null }>(
+    'select meta_campana_id, nombre from negocio.campanas where meta_campana_id = any($1) order by meta_campana_id',
+    [ids],
+  );
+  assert.deepEqual(
+    r.rows,
+    ids.map((id, i) => ({ meta_campana_id: id, nombre: `campaña ${i + 1}` })),
+    'no quedaron guardadas todas las campañas de la lista',
+  );
+});
+
+test('una lectura SIN nombre no borra el que ya se sabía, y el estado se reescribe plano', async () => {
+  /* La asimetría de la `065`: el nombre dice QUÉ ES la campaña y acumula; el estado dice CÓMO ESTÁ
+     HOY, y uno viejo al lado de un sello nuevo afirmaría algo que nadie confirmó. Las dos mitades
+     se comprueban en la misma prueba para que ninguna de las dos mutaciones sobreviva. */
+  const id = `${MARCA}c2`;
+  await pasadaConCampanas([{ id, nombre: 'tofu - reels', estado: 'ACTIVE' }]);
+  await pasadaConCampanas([{ id, nombre: null, estado: null }]);
+
+  assert.deepEqual(
+    await campanaGuardada(id),
+    [{ nombre: 'tofu - reels', estado: null }],
+    'el nombre se borró con una lectura que no lo trajo, o el estado viejo sobrevivió',
+  );
+});
+
+test('una campaña que nunca tuvo nombre se guarda con el nombre NULO, no con uno inventado', async () => {
+  const id = `${MARCA}c3`;
+  await pasadaConCampanas([{ id, nombre: null, estado: 'ACTIVE' }]);
+  assert.deepEqual(await campanaGuardada(id), [{ nombre: null, estado: 'ACTIVE' }]);
+});
+
 // ─── EL AISLAMIENTO, QUE ES LO QUE `aplicar_aislamiento` PROMETE ────────────
 
 test('las dos tablas nuevas respetan la organización activa', async () => {
@@ -353,4 +460,22 @@ test('las dos tablas nuevas respetan la organización activa', async () => {
 
   assert.equal(propias.length, 1, 'la organización dueña no ve su propio anuncio');
   assert.equal(ajenas.length, 0, 'la OTRA organización vio un anuncio que no es suyo');
+});
+
+test('las campañas también respetan la organización activa', async () => {
+  // La tercera tabla del colector (`065`), con la misma comprobación que las dos de arriba.
+  const id = `${MARCA}c4`;
+  await pasadaConCampanas([{ id, nombre: 'mofu - casos', estado: 'ACTIVE' }]);
+
+  const { conOrganizacion, datos } = await import('../../lib/datos/contexto.ts');
+
+  const propias = await conOrganizacion(esc.org, async () =>
+    datos().selectFrom('campanas').select('meta_campana_id').where('meta_campana_id', '=', id).execute(),
+  );
+  const ajenas = await conOrganizacion(esc.otraOrg, async () =>
+    datos().selectFrom('campanas').select('meta_campana_id').where('meta_campana_id', '=', id).execute(),
+  );
+
+  assert.equal(propias.length, 1, 'la organización dueña no ve su propia campaña');
+  assert.equal(ajenas.length, 0, 'la OTRA organización vio una campaña que no es suya');
 });

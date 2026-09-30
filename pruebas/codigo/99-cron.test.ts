@@ -314,6 +314,25 @@ test('un valor ilegible del desglose se informa APARTE de una fila ilegible', ()
   assert.match(losDos, /3 valor/, 'el valor ilegible desapareció cuando también había filas');
 });
 
+test('los nombres de campaña que fallaron o vinieron recortados se DICEN en el sello', () => {
+  /* Un fallo de los nombres no tumba la pasada (`recolectarAnuncios`), así que el sello decía
+     `corrio` sin más sobre una tabla de nombres que no se renovó. Y una lista recortada por el tope
+     de páginas es una lista corta que se ve completa. */
+  assert.match(
+    String(motivoDeLoIncompleto({ nombres: { tipo: 'fallo', porque: 'rechazado' } })),
+    /nombres de las campañas/,
+    'un fallo de los nombres no llegó al sello',
+  );
+  assert.match(
+    String(motivoDeLoIncompleto({ nombres: { tipo: 'leidas', campanas: 61, corto: true } })),
+    /recortada/,
+    'una lista de campañas recortada no llegó al sello',
+  );
+  // Y la otra mitad: leídos enteros, o no pedidos, no hay nada que decir.
+  assert.equal(motivoDeLoIncompleto({ nombres: { tipo: 'leidas', campanas: 61, corto: false } }), null);
+  assert.equal(motivoDeLoIncompleto({ nombres: null }), null);
+});
+
 test('sin nada que decir, el motivo es NULO y la pantalla no dibuja nada', () => {
   /* La regla del silencio aplicada al registro de operación. Un motivo que aparece siempre es uno
      que nadie lee, y con él se pierde el que importa. */

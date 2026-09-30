@@ -120,6 +120,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      detrás haya algo que alguien pueda hacer. */
   anuncios_org_id_fkey: 'tiene anuncios de Meta cargados',
   metricas_de_anuncio_org_id_fkey: 'tiene el costo diario de sus anuncios cargado',
+  /* Y los nombres de sus campañas (`065`), que escribe el mismo colector en la misma pasada: la
+     acción es la misma, se borran y se vuelven a leer de GoHighLevel. */
+  campanas_org_id_fkey: 'tiene las campañas de Meta cargadas',
   enlaces_de_pieza_org_id_fkey: 'tiene links cargados en las piezas de Creative',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.

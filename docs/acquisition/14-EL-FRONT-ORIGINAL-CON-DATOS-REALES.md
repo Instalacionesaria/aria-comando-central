@@ -40,7 +40,7 @@ Decidido por el usuario el 2026-09-30:
 | Calificados | agendados sin etiqueta de descarte | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:146-150`) |
 | ICP % y barra alto/medio/bajo | puntaje de los calificados | `contactos.score`, con los cortes de `lib/negocio/tramosDelIcp.ts` |
 | Deltas | la misma cifra en la ventana anterior del mismo largo | el mismo cálculo, corrido una ventana antes |
-| Nombre de la campaña | nombre en Meta | **no está en la base**: se trae de GoHighLevel (`lib/ghl/anuncios.ts:320`) |
+| Nombre de la campaña | nombre en Meta | **no está en la base**: se trae de GoHighLevel (`lib/ghl/anuncios.ts:327`) |
 | Nota bajo las cifras | cuántos leads traen campaña | el punto `sin_campana` de `lib/negocio/calidadDeLaAtribucion.ts` |
 
 ---
@@ -218,10 +218,14 @@ eso.
 
 **Qué es** · La fila de la tabla muestra el nombre de la campaña y su estado.
 
-**Fórmula** · Se guardan en `negocio.campanas`, que llena el colector de anuncios con `estructuraDeAnuncios`
-en el nivel `CAMPAIGN` (`lib/ghl/anuncios.ts:320`). Una campaña sin nombre se muestra con su id.
+**Fórmula** · Se guardan en `negocio.campanas` (migración `065`), que llena el colector de anuncios con
+`estructuraDeAnuncios` en el nivel `CAMPAIGN`, al final de cada pasada con campañas que pedir. Una campaña sin nombre se guarda
+con el nombre nulo —no con uno inventado— y se muestra con su id. El nombre se conserva si una lectura
+no lo trae; el estado es la foto de la última lectura.
 
-**Estado** · Planificado (AQ-1).
+**Estado** · **Construido el 2026-09-30** (AQ-1): `db/migraciones/065_las_campanas.sql` y
+`lib/negocio/recolectarAnuncios.ts`. Un fallo del proveedor no tumba la pasada y queda en el sello del
+cron.
 
 ### A14-14 · «Sin funnel» es un grupo más, al final
 
@@ -263,7 +267,7 @@ del § 18.13 y la separación entre detectar y recomendar que `06` ya desarmó.
 | etapa | qué | estado |
 |---|---|---|
 | AQ-0 | Este documento y las respuestas en los otros | hecho, 2026-09-30 |
-| AQ-1 | Los nombres de las campañas: migración `065_las_campanas.sql` y el colector | pendiente |
+| AQ-1 | Los nombres de las campañas: migración `065_las_campanas.sql` y el colector | hecho, 2026-09-30 |
 | AQ-2 | El funnel de cada campaña: migración `066_el_funnel_de_la_campana.sql`, escritor y ruta | pendiente |
 | AQ-3 | El cálculo, `lib/negocio/embudosDeAcquisition.ts`, y la ruta `/api/acquisition` | pendiente |
 | AQ-4 | El front sobre el marcado del prototipo, y `app/acquisition.css` | pendiente |

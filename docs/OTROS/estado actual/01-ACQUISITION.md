@@ -74,7 +74,7 @@ foto anterior, `Downloads\AIOS\AIOS_Arquitectura_Funcional_v0.2.md`, ya no exist
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`).
   Contra el código de hoy: el 1 (confirmar campos) está medido uno por uno en
   `lib/ghl/anuncios.ts:62-74`; el 2 (frecuencia) es una pasada diaria a las 06:17 UTC con relectura
-  de dos días (`lib/negocio/barrido.ts:242-246`, `lib/negocio/recolectarAnuncios.ts:53`); el 3
+  de dos días (`lib/negocio/barrido.ts:242-246`, `lib/negocio/recolectarAnuncios.ts:59`); el 3
   (guardar por día) es `negocio.metricas_de_anuncio`, con llave `(org_id, meta_anuncio_id, fecha)`
   (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`); el 5 (UTM) lo mide el monitor, con
   el defecto del § 7, riesgo 3; el 6 y el 7 están medidos en la pantalla, salvo las ventas, que no
@@ -247,16 +247,16 @@ el 18, las 869 filas son nulas**. Último día con gasto mayor que cero: 2026-09
 **La dimensión.** `negocio.anuncios`: 79 anuncios, **32 nombres distintos** (21 nombres repetidos,
 hasta seis anuncios con el mismo), 12 campañas. `meta_conjunto_id` está en **59 de 79**, con 11
 valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde entonces el
-`coalesce` de `lib/negocio/recolectarAnuncios.ts:351` conserva lo que llega. **Ninguna línea del
+`coalesce` de `lib/negocio/recolectarAnuncios.ts:368` conserva lo que llega. **Ninguna línea del
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:788`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:789`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
 motivo no nombra la campaña. Pide 13 campañas, las que aparecen en nuestra atribución
-(`recolectarAnuncios.ts:244-269`); 1 contacto lleva `888888`.
+(`recolectarAnuncios.ts:261-286`); 1 contacto lleva `888888`.
 
 **Los contactos.** 594 en total (584 el 2026-09-15). Con `adId`, **213**; con `campaignId`, **358**;
 15 anuncios distintos: **las tres cifras son las mismas que midió `3d96e8c` el 2026-09-16**. Por
@@ -320,9 +320,9 @@ CTR sí existe, y la publica Creative: § 2): 0 columnas `entity_type`/`entity_i
 como «— · 0 de 0» y no como 0 %, que es lo correcto.
 
 **6 · La frecuencia de sincronización de Meta.** Resuelta en forma —una pasada diaria que relee hoy
-y dos días atrás y rellena los huecos del resto (`recolectarAnuncios.ts:175-242`)— y **no medida en
+y dos días atrás y rellena los huecos del resto (`recolectarAnuncios.ts:192-259`)— y **no medida en
 fondo**: cuánto tarda esta cuenta en estabilizar sus cifras está declarado sin medir
-(`recolectarAnuncios.ts:27-34`), con `sincronizado_el` guardado para poder medirlo.
+(`recolectarAnuncios.ts:33-40`), con `sincronizado_el` guardado para poder medirlo.
 
 **7 · La diferencia entre leads de Meta y de la base (§ 18.14).** Fuera de alcance y dibujada así
 (`calidadDeLaAtribucion.ts:200-206`): el `leads` del proveedor es nuestro conteo, 16 de 16 el
@@ -338,7 +338,7 @@ pasada: detectar un cambio exige una tabla de cambios que no existe
 campaña** en esta pantalla, aunque `meta_conjunto_id` y `meta_campana_id` están en la dimensión.
 
 **10 · Las campañas que nuestra atribución no nombra.** El colector pide sólo las campañas que
-aparecen en `atribucion_primera` (`recolectarAnuncios.ts:247-248`: la cuenta tenía 61 y nosotros 13).
+aparecen en `atribucion_primera` (`recolectarAnuncios.ts:264-265`: la cuenta tenía 61 y nosotros 13).
 Una campaña nueva cuyos leads entren por formulario o calendario —que no traen campaña, § 4— nunca
 se pediría, y su gasto no existiría para esta pantalla. Si hay una campaña así desde el 13 de
 septiembre, **no verificado**: desde la base no se puede ver.
@@ -402,7 +402,7 @@ cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnunc
 acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.jsx:326-339`).
 
 **14 · El colector reconcilia y no olvida.** Pide lo que falta, no lo que sigue a una marca de agua
-(`recolectarAnuncios.ts:175-242`), y conserva el conjunto que ya sabía (`:351`).
+(`recolectarAnuncios.ts:192-259`), y conserva el conjunto que ya sabía (`:351`).
 
 ---
 
@@ -475,7 +475,7 @@ líneas 277-280, que son la cohorte vieja: el párrafo del ad set es el que sigu
 
 **11 · Comentarios del código que ya no dicen la verdad.** `lib/negocio/barrido.ts:239-241` sigue
 contando «cuatro días… 52 llamadas» cuando la relectura bajó a dos días y 39 llamadas
-(`lib/negocio/recolectarAnuncios.ts:53`, `:78-79`);
+(`lib/negocio/recolectarAnuncios.ts:59`, `:78-79`);
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone el cron a las 17:06 UTC y es a las
 06:17 (`lib/negocio/barrido.ts:220`). `lib/negocio/costoDelAnuncio.ts:443-444` justifica el umbral de
 dos días con que «el colector pide hoy y los tres anteriores», y pide hoy y los dos anteriores.
@@ -489,7 +489,7 @@ por la ventana de la cohorte, que está en `costoDelAnuncio.ts:346`; y
 `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287, que está en `costoDelAnuncio.ts:288`.
 
 Y `comoDia` (`costoDelAnuncio.ts:409-412`) formatea con `toISOString()` un `date` que el
-controlador entrega a medianoche local —el defecto exacto que `recolectarAnuncios.ts:278-282`
+controlador entrega a medianoche local —el defecto exacto que `recolectarAnuncios.ts:295-299`
 documenta—: al este de Greenwich `desde` y `hasta` saldrían un día antes. En producción, que corre en
 UTC, no se nota; **leído del código, no ejecutado**.
 

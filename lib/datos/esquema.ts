@@ -958,6 +958,23 @@ export interface TablaAnuncios {
 }
 
 /**
+ * Qué campaña de Meta es cada identificador: su nombre y su estado. Migración 065.
+ *
+ * Se llena desde `/entity?entityType=CAMPAIGN` de GoHighLevel, una vez por pasada del colector de
+ * anuncios. Existe porque el front de Acquisition agrupa por campaña y `anuncios` sólo guarda el
+ * identificador (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, A14-13).
+ */
+export interface TablaCampanas {
+  org_id: ColumnaInquilino;
+  meta_campana_id: string;
+  /** `null` cuando el proveedor no mandó nombre: no se inventa uno. */
+  nombre: string | null;
+  /** `ACTIVE`, `PAUSED`, … La foto de la última lectura, reescrita plana. */
+  estado: string | null;
+  sincronizado_el: Generated<Date>;
+}
+
+/**
  * Cuánto costó cada anuncio cada día. Migración 050.
  *
  * **Las siete métricas son nulables a propósito.** Medido el 2026-09-16: cuando un anuncio no
@@ -1511,6 +1528,7 @@ export interface BaseDeDatos {
   carpetas_del_crm: TablaCarpetasDelCrm;
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
+  campanas: TablaCampanas;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;
   analizador_prospectos: TablaAnalizadorProspectos;

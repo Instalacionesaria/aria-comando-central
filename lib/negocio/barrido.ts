@@ -758,6 +758,7 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     saturado?: unknown;
     paginaLlena?: unknown;
     descubrimiento?: unknown;
+    nombres?: unknown;
   };
   const partes: string[] = [];
 
@@ -796,6 +797,20 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
      Colapsarlos haría que el primero, que es el grave, se pierda adentro del segundo. */
   if (typeof r.accionesIlegibles === 'number' && r.accionesIlegibles > 0) {
     partes.push(`${r.accionesIlegibles} valor(es) del desglose de acciones que no se pudieron leer`);
+  }
+  /* Los nombres de las campañas (`065`). Un fallo no tumba la pasada —las métricas ya se
+     escribieron—, pero sin esta línea el sello quedaba limpio sobre una tabla de nombres que no se
+     renovó. Y una lista recortada por el tope de páginas se dice, por la misma regla de siempre:
+     una lista corta que se ve completa es peor que una que falla.
+
+     El texto no promete que queden los de antes: la primera lectura de una empresa también puede
+     fallar, y entonces la tabla está vacía. */
+  const n = r.nombres as { tipo?: unknown; corto?: unknown } | null | undefined;
+  if (n?.tipo === 'fallo') {
+    partes.push('GoHighLevel no devolvió los nombres de las campañas: no se renovaron en esta pasada');
+  }
+  if (n?.tipo === 'leidas' && n.corto === true) {
+    partes.push('la lista de campañas vino recortada: puede faltar algún nombre');
   }
 
   return partes.length === 0 ? null : partes.join('; ');
