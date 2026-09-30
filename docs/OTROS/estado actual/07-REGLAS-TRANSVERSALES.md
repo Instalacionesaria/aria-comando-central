@@ -319,7 +319,7 @@ descansan en una congelada (`:124-126`), porque la cancelación de al lado no lo
 **Y eso dejó dos definiciones de «agendó» en el producto.** El booking rate de Lead Flow cuenta
 cualquier cita; la atribución de la misma pantalla y Acquisition, Creative, Conversion, Sales y Leads
 Portal usan `tieneCitaAlcanzable`, que excluye a quien sólo tiene congeladas
-(`lib/negocio/citasAlcanzables.ts:115-134`). A 7, 14 y 30 días coinciden porque no queda nadie así;
+(`lib/negocio/citasAlcanzables.ts:115-145`). A 7, 14 y 30 días coinciden porque no queda nadie así;
 en «Completo» Lead Flow dice **279** agendados y las filas de la atribución suman **200** (medido el
 2026-09-28; el hallazgo es de [04-CONVERSATION.md](04-CONVERSATION.md) § 7). Y el comentario que
 debería impedirlo afirma lo contrario: «el mismo filtro de cita alcanzable que el booking rate»
@@ -414,7 +414,7 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:48`, `app/api/auditoria/route.ts:79`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:49`, `app/api/auditoria/route.ts:79`,
 `app/api/creative/route.ts:57`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 

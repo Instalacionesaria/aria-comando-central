@@ -186,7 +186,7 @@ la pantalla nueva no puede heredar sin querer.
 - **Rastro:** `agend` en `aios-command-center_1.html:4710`, y el «sin agendar» fijo de la tarjeta
   `nc` en `aios-command-center_1.html:4715`.
 - **Qué pide:** la misma definición que el resto del sistema, sin copiarla. El predicado es
-  `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-134`): una cita cancelada cuenta, una
+  `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-145`): una cita cancelada cuenta, una
   congelada no. La unidad es la persona, con `exists` y no con `join`
   (`lib/negocio/citasAlcanzables.ts:122-124`). Es el mismo predicado del eslabón `con_cita` de Sales
   (`lib/negocio/cadenaDeCierre.ts:204`). Por eso los agendados de «Todos» tienen que coincidir con

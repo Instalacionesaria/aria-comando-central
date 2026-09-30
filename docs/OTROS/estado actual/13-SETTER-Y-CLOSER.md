@@ -433,8 +433,8 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
    (`lib/negocio/periodo.ts:109`), y en esa ventana, sobre su población (sin descartados), a las
    18 h UTC había **69 citas no canceladas y sólo 13 dentro de los 14 días**. La cadena de Sales
    cuenta sus cerrables **sin ventana**
-   (`lib/negocio/citasAlcanzables.ts:163-165`), así que afirmar que acusa sobre la misma población que
-   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:155-158`)
+   (`lib/negocio/citasAlcanzables.ts:174-176`), así que afirmar que acusa sobre la misma población que
+   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:166-169`)
    es cierto para el resultado y falso para la asistencia.
 3. **Con dos citas o más, la respuesta por omisión es «ninguna».** Ver § 4.3.
 4. **El closer nunca ve su show rate.** Aunque registre, su Inicio dice «—» (§ 3.1).

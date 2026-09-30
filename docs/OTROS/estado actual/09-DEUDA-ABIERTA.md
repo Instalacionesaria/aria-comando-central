@@ -487,12 +487,12 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   ventana por omisión de 30 días va a quedar debajo del piso de 10
   ([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)).
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
-  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:588-593`, el
+  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627`, el
   campo en `lib/negocio/recolectarAnuncios.ts:149`), pero `motivoDeLoIncompleto`
   (`lib/negocio/barrido.ts:749`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
-  (`lib/negocio/recolectarAnuncios.ts:261-286`): hoy son 13 `campaignId` numéricos distintos en el
+  (`lib/negocio/recolectarAnuncios.ts:261-320`): hoy son 13 `campaignId` numéricos distintos en el
   primer toque (22:32 UTC); las 61 de la cuenta son las del comentario, contadas el 2026-09-16. Una
   campaña nueva cuyos leads no traigan el toque sería invisible, y eso no se puede ver desde la base.
 - **Hay una venta en el CRM que Sales no ve.** La etiqueta `venta_ganada` está en **1 contacto** y
@@ -580,9 +580,9 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 - `lib/ghl/cliente.ts:1` dice «Solo lectura de contactos»; el archivo pone y quita etiquetas
   (`lib/ghl/cliente.ts:590`, `lib/ghl/cliente.ts:636`).
 - **Cerrado el 2026-09-30 (AQ-1 de Acquisition).** La copia huérfana del bloque de
-  `lib/negocio/recolectarAnuncios.ts:516-530` se borró: en su lugar quedó el escritor de campañas.
+  `lib/negocio/recolectarAnuncios.ts:550-564` se borró: en su lugar quedó el escritor de campañas.
 - `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412`) usa `toISOString()` sobre un `date`, que es
-  exactamente lo que `lib/negocio/recolectarAnuncios.ts:295-299` documenta como defecto al este de
+  exactamente lo que `lib/negocio/recolectarAnuncios.ts:329-333` documenta como defecto al este de
   UTC. En producción (UTC) no se nota; leído, no ejecutado.
 - `lib/negocio/costoDelAnuncio.ts:492` numera «2 ·» el tercer aviso (el de
   `lib/negocio/costoDelAnuncio.ts:468` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el

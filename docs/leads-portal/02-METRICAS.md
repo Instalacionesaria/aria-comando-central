@@ -37,7 +37,7 @@
 
 1. **La unidad es la persona, nunca la cita.** Tres citas son una persona que agendó. El predicado
    de «agendó» es un `exists` sobre el contacto justamente por eso
-   (`lib/negocio/citasAlcanzables.ts:115-127`), y la diferencia no es teórica: 226 citas alcanzables
+   (`lib/negocio/citasAlcanzables.ts:115-134`), y la diferencia no es teórica: 226 citas alcanzables
    eran 201 contactos el 2026-09-20 (`lib/negocio/citasAlcanzables.ts:28-30`).
 2. **Una sola cohorte para las cinco tarjetas y para la rejilla**: los contactos con
    `alta_en_el_crm` dentro de la ventana. Cada cifra por tramo es un subconjunto de esa cohorte y de
@@ -129,7 +129,7 @@ devuelve.
 **Unidad** · Conteo de personas.
 **Población** · Los contactos del tramo en la cohorte.
 **Rastro** · `aios-command-center_1.html:4710` y `:4715` («N agendados»); el filtro «Agendados» de
-`aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:128-134`.
+`aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:135-145`.
 **Estado** · **Construible hoy**, y es el mismo predicado que usan Sales
 (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`) y
 Conversion. Tres consecuencias de la definición, las tres a propósito:
@@ -199,7 +199,7 @@ citas que ocurrieron sin que nadie registrara qué pasó (`lib/negocio/cadenaDeC
 
 Dos decisiones de la tabla, con su motivo:
 
-- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/citasAlcanzables.ts:163-165`,
+- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/citasAlcanzables.ts:174-176`,
   que son las de la cita que Avanzar ofrece cerrar (`lib/negocio/cadenaDeCierre.ts:41-44`). Si esta pestaña acusara de no
   registrar sobre otra población, estaría acusando a gente a la que nunca se le pidió.
 - **`asistio` y `no_asistio` leen cualquier cita de la persona**, congelada o no. La columna es

@@ -93,7 +93,7 @@ persona.
 | predicado | qué pregunta | definición | dónde vive | quién más la usa |
 |---|---|---|---|---|
 | **entró** | ¿su alta cae en la ventana? | `alta_en_el_crm >= now() - make_interval(days => N)` | la ventana de `lib/negocio/cadenaDeCierre.ts:169` | Sales |
-| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:128-134` | Sales (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`), Acquisition y Conversion |
+| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:135-145` | Sales (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:225`), Acquisition y Conversion |
 | **asistió** | ¿alguien registró que se presentó? | `citas.asistio`, que carga una persona en Avanzar | `db/migraciones/049_si_se_presento_a_la_cita.sql:43-47` | Sales, que la declara nula con su motivo (`docs/sales/02-METRICAS.md:196-204`) |
 | **vendió** | ¿tiene un resultado con salida `venta`? | `salida = 'venta'`; nunca `acuerdo_sin_pago` | `lib/negocio/ventasDelContacto.ts:44-46`; la salida, en `lib/negocio/salidas.ts:84` | Sales |
 | **descartado** | ¿la casa lo rechazó en el CRM? | alguna etiqueta de `ETIQUETAS_DE_DESCARTE`, comparada en minúscula | `lib/ghl/contrato.ts:228-238` | Sales, por cita (`lib/negocio/cadenaDeCierre.ts:232`) |
@@ -193,7 +193,7 @@ con las que Avanzar decide qué cita ofrece cerrar (`docs/sales/01-LA-VENTA-NO-E
 **Qué pide** · «No aplica» se dibuja **vacío**: ni «sin registrar» ni «no» (`LP05-07`, paso 4).
 Confundirlo con «no se sabe» acusaría de no registrar a quien nunca tuvo nada que registrar, y por
 eso `sin_registrar` exige las mismas tres condiciones que la cita cerrable de la cadena de Sales
-(`lib/negocio/citasAlcanzables.ts:163-165`).
+(`lib/negocio/citasAlcanzables.ts:174-176`).
 
 ### LP01-09 · Vendió tiene «sí» y «no se sabe»; su «no» está vacío a propósito
 

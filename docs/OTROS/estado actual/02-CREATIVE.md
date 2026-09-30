@@ -293,7 +293,7 @@ exactamente 0. Desde la `055` (2026-09-21) el mismo puntaje se copia a `contacto
 270 de 276. Creative lee el campo del CRM por su nombre exacto (`lib/negocio/calidadDelCreativo.ts:62`);
 Leads Portal lee la columna. El 2026-09-15 la columna estaba en 0 de 233.
 
-**4 · Las agendas por pieza.** Cruce por `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:128-134`),
+**4 · Las agendas por pieza.** Cruce por `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`),
 en la tabla del § 2. Las citas de los 276 contactos son 156, y **una** está congelada.
 
 **5 · El Espía de Anuncios**, en Tools (`components/tools/EspiaDeAnuncios.jsx`,
@@ -447,7 +447,7 @@ cruzar contactos con `negocio.citas` con un `left join` y contar con `count(*)` 
 «agendamiento - yaping» de 109 a 112 y «Evoluciona native» de 31 a 36, porque hay contactos con más
 de una cita.
 Hoy se cuenta con un `exists` compartido, `tieneCitaAlcanzable`, y no con un `join`
-(`lib/negocio/calidadDelCreativo.ts:225`, `lib/negocio/citasAlcanzables.ts:116-134`).
+(`lib/negocio/calidadDelCreativo.ts:225`, `lib/negocio/citasAlcanzables.ts:116-145`).
 
 ---
 
@@ -465,7 +465,7 @@ no es «no hay dato» (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON
 
 **2 · El mismo ICP se lee distinto en dos pantallas construidas.** Creative promedia los ceros como
 ceros (`lib/negocio/calidadDelCreativo.ts:209`, `lib/negocio/calidadDelCreativo.ts:218`); Leads
-Portal cuenta el 0 como «sin calificar» desde el 2026-09-26 (`lib/negocio/tramosDelIcp.ts:84-85`,
+Portal cuenta el 0 como «sin calificar» desde el 2026-09-26 (`lib/negocio/tramosDelIcp.ts:85-86`,
 `lib/negocio/leadsDelPortal.ts:287`). Medido: 22 ceros en la cohorte de 30 días, **18 de ellos en
 «agendamiento - yaping»**, que da ICP 42,7 con ceros y 50,8 sin ellos — y con eso el orden de TOFU
 entre esa pieza y «el app» (45,4) se da vuelta según la lectura del cero que se use. Además leen dos copias

@@ -117,7 +117,7 @@ un contacto lleva en el CRM la etiqueta `venta_ganada` y no tiene resultado en l
 ([05-SALES.md](05-SALES.md) § 5, [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 4).
 
 **5 · «Agendó» todavía tiene dos definiciones.** Desde el 2026-09-21 hay un predicado compartido,
-`tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-134`, `1164984`), que excluye a quien
+`tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-145`, `1164984`), que excluye a quien
 sólo tiene citas congeladas y que usan Acquisition, Creative, Conversion, Sales, Leads Portal y la
 atribución de Lead Flow. El booking rate de Lead Flow, en la misma pantalla, cuenta cualquier cita:
 a 7, 14 y 30 días coinciden porque no queda nadie así, y en «Completo» dice 279 agendados mientras

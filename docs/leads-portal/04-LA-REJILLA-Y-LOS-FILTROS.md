@@ -157,7 +157,7 @@ puede heredar.
   cuando lo cierto es que nadie lo cargó.
 - **Qué pide:**
   - **Agendó:** sí, «sólo citas congeladas» o no. El sí es `tieneCitaAlcanzable`
-    (`lib/negocio/citasAlcanzables.ts:128`); el segundo es `cita = 'solo_congeladas'` de `LP02-03`,
+    (`lib/negocio/citasAlcanzables.ts:135`); el segundo es `cita = 'solo_congeladas'` de `LP02-03`,
     el mismo estado que el bloque de dinero ya distingue (`LP04-07`). Una persona cuya única cita
     está congelada tuvo cita, pero no cuenta en «Agendados» (`LP04-13`) porque esa cita dejó de
     refrescarse. El paso lo dice, en vez de apagarse como si nunca hubiera tenido cita.

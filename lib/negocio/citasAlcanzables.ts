@@ -124,13 +124,24 @@ export function marcadaComoPlanton(alias = 'citas'): RawBuilder<boolean> {
  * 109 a 112.
  *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ * @param reservadaHaceDias Si se pide, «agendó» A ESA EDAD: sólo cuentan las citas reservadas antes de
+ *   `now() - reservadaHaceDias días`. Lo usa la ventana anterior de Acquisition para que sus contactos,
+ *   que llevan más tiempo en la base, no tengan más tiempo para agendar (`embudosDeAcquisition.ts`).
+ *   Una cita sin `reservada_el` —las sincronizadas antes de la `043`— se mide por su inicio, que es
+ *   siempre posterior a la reserva: una cota prudente, que puede dejar afuera una cita reservada a
+ *   tiempo y nunca meter una reservada tarde. Va acá, y no copiada allá, por lo mismo que las ocho
+ *   copias de arriba: un segundo «agendó» diverge sin que nada falle.
  */
-export function tieneCitaAlcanzable(alias = 'contactos'): RawBuilder<boolean> {
+export function tieneCitaAlcanzable(alias = 'contactos', reservadaHaceDias: number | null = null): RawBuilder<boolean> {
   const a = sql.raw(alias);
+  const aTiempo =
+    reservadaHaceDias === null
+      ? sql``
+      : sql` and coalesce(ci.reservada_el, ci.inicio_el) < now() - make_interval(days => ${reservadaHaceDias})`;
   return sql<boolean>`exists (
     select 1 from negocio.citas ci
      where ci.org_id = ${a}.org_id and ci.contacto_id = ${a}.id
-       and ${alcanzable('ci')})`;
+       and ${alcanzable('ci')}${aTiempo})`;
 }
 
 /**

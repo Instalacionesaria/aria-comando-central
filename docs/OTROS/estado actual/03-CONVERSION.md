@@ -452,7 +452,7 @@ Hoy, en 30 días, «Meta, navegador interno» son 23 de 23 y «Precall» 19 de 1
 **11. El agendamiento sale del calendario, no del campo del formulario.** El campo dice `Agendado` 121
 veces y sólo 47 de esos contactos tienen una cita alcanzable (re-medido hoy). Si saliera del campo,
 esta pantalla diría una tercera cifra de agendamiento (`lib/negocio/embudoDelFormulario.ts:23-31`); sale
-del predicado compartido `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:128-134`).
+del predicado compartido `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`).
 
 **12. «No hubo gente» no es «no hay dato».** Con la pauta en cero, una ventana vacía es falta de
 tráfico, y el aviso lo dice con esas palabras (`lib/negocio/recorridoDelLead.ts:240-250`); un bloque del

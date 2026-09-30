@@ -149,7 +149,7 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
 | `auditoria` | `lib/auditor/analisis.ts:316` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 10 |
 | `mejora` | `lib/auditor/buscarMejora.ts:135` | una mejora de prompt por día y por empresa | 1 inferencia |
-| `anuncios` | `lib/negocio/recolectarAnuncios.ts:531` | el costo diario por anuncio, vía GoHighLevel | 40 |
+| `anuncios` | `lib/negocio/recolectarAnuncios.ts:565` | el costo diario por anuncio, vía GoHighLevel | 40 |
 | `analizadores` | `lib/analizadores/tarea.ts:66` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
 | `reintentos` | `lib/analizadores/tarea.ts:195` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:171`) | 0 |
 

@@ -479,3 +479,59 @@ test('las campañas también respetan la organización activa', async () => {
   assert.equal(propias.length, 1, 'la organización dueña no ve su propia campaña');
   assert.equal(ajenas.length, 0, 'la OTRA organización vio una campaña que no es suya');
 });
+
+test('el colector pide también las campañas asignadas a un funnel, aunque no traigan contactos', async () => {
+  /* Una campaña que se lanza, se asigna a un funnel y gasta sin un solo lead tendría gasto cero en su
+     tarjeta de Acquisition si el colector sólo pidiera las campañas de la atribución. */
+  const asignada = `${MARCA}a1`.replace(/\D/g, '9');
+  await esc.admin.query(
+    `insert into negocio.campanas (org_id, meta_campana_id, nombre) values ($1, $2, 'asignada sin leads') on conflict do nothing`,
+    [esc.org, asignada],
+  );
+  await esc.admin.query(
+    `insert into negocio.funnels_de_campana (org_id, meta_campana_id, funnel) values ($1, $2, 'booking') on conflict do nothing`,
+    [esc.org, asignada],
+  );
+  try {
+    const pedidas = new Set<string>();
+    await recolectarAnuncios(esc.org, ACCESO, {
+      ...SIN_RED,
+      ahora: AHORA,
+      guardados: guardadosHasta('2026-09-16'),
+      pedir: async (_a, campana) => {
+        pedidas.add(campana);
+        return { tipo: 'datos', datos: [] };
+      },
+    });
+    assert.ok(pedidas.has(asignada), 'el colector no pidió la campaña asignada sin contactos');
+  } finally {
+    await esc.admin.query('delete from negocio.funnels_de_campana where meta_campana_id = $1', [asignada]);
+    await esc.admin.query('delete from negocio.campanas where meta_campana_id = $1', [asignada]);
+  }
+});
+
+test('el colector sigue pidiendo una campaña con anuncios guardados aunque ya no tenga funnel ni contactos', async () => {
+  /* Que pedir sea monótono: una campaña asignada que vuelve a «Sin funnel» sigue gastando en Meta, y
+     sin esto su gasto quedaría congelado en la fecha de la quita. */
+  const campana = '99999977';
+  const anuncio = `${MARCA}77`;
+  await esc.admin.query(
+    `insert into negocio.anuncios (org_id, meta_anuncio_id, meta_campana_id, nombre) values ($1, $2, $3, 'ya guardado')`,
+    [esc.org, anuncio, campana],
+  );
+  try {
+    const pedidas = new Set<string>();
+    await recolectarAnuncios(esc.org, ACCESO, {
+      ...SIN_RED,
+      ahora: AHORA,
+      guardados: guardadosHasta('2026-09-16'),
+      pedir: async (_a, c) => {
+        pedidas.add(c);
+        return { tipo: 'datos', datos: [] };
+      },
+    });
+    assert.ok(pedidas.has(campana), 'el colector dejó de pedir una campaña que ya tiene anuncios guardados');
+  } finally {
+    await esc.admin.query('delete from negocio.anuncios where meta_anuncio_id = $1', [anuncio]);
+  }
+});

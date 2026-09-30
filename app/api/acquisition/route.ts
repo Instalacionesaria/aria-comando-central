@@ -31,6 +31,7 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { costoDelAnuncio } from '../../../lib/negocio/costoDelAnuncio.ts';
 import { calidadDeLaAtribucion } from '../../../lib/negocio/calidadDeLaAtribucion.ts';
+import { embudosDeAcquisition } from '../../../lib/negocio/embudosDeAcquisition.ts';
 
 export const PANTALLA = 'acquisition';
 
@@ -48,10 +49,16 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const [costo, calidad] = await conOrganizacion(contexto.orgEfectiva, async () => [
+  /* Los funnels del front del prototipo (docs/acquisition/14) van en la MISMA respuesta que el costo y
+     el monitor, por el mismo motivo de arriba: la pantalla no se dibuja a pedazos. No es una sola foto
+     de las filas —la transacción es READ COMMITTED y cada sentencia ve la suya—, pero sí un solo
+     `current_date` para todas las ventanas. `costo` y `calidad` se quedan mientras la pantalla de hoy
+     los dibuje: la tabla por anuncio sale en AQ-4 (A14-15), y qué pasa con el monitor se decide ahí. */
+  const [costo, calidad, embudos] = await conOrganizacion(contexto.orgEfectiva, async () => [
     await costoDelAnuncio(periodo.dias),
     await calidadDeLaAtribucion(periodo.dias),
-  ]);
+    await embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria),
+  ] as const);
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
@@ -60,5 +67,9 @@ export async function GET(peticion: Request): Promise<Response> {
     periodo: periodo.clave,
     costo,
     calidad,
+    embudos,
+    /* Si esta sesión puede asignar funnels: la misma capacidad que pide `PUT /api/acquisition/funnel`.
+       La decide el servidor para que la pantalla no ofrezca un selector que después responde 403. */
+    puedeAsignar: contexto.permisos.has('credenciales.editar'),
   });
 }

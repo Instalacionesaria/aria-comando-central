@@ -81,7 +81,7 @@ adoptó por decisión del 2026-09-18.
 
 - **`capacidadRequerida: 'tablero.ver'`** es la correcta y no hay que inventar otra: siete pantallas
   la comparten, y lo que separa a las personas es el **alcance**, no la capacidad
-  (`app/api/acquisition/route.ts:38-41`).
+  (`app/api/acquisition/route.ts:39-42`).
 - **`sinOperacionesTodavia: true` es un cable trampa del `ADR-0304` y funciona en las dos
   direcciones**: con la bandera puesta, crear una ruta que declare `PANTALLA = 'conversion'` pone la
   suite en rojo; sin la bandera y sin ruta, también. **La bandera y la ruta se mueven juntas, en el

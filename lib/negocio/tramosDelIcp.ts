@@ -77,9 +77,10 @@ export const ROTULO_DE_TODOS = 'Todos';
  * `check between 0 and 100`, así que no llega nada fuera de rango; `undefined` se trata como el nulo
  * porque es lo que produce una fila a la que le falta la clave.
  *
- * **La consulta de la cohorte repite este `case` en SQL**, con `UMBRAL_ALTO` y `UMBRAL_MEDIO` como
- * parámetros. Si se cambia la forma del corte acá —no los números, la forma— hay que cambiarla allá,
- * y la prueba de la base compara las dos.
+ * **Dos consultas repiten este `case` en SQL**, con `UMBRAL_ALTO` y `UMBRAL_MEDIO` como parámetros: la
+ * cohorte de Leads Portal (`leadsDelPortal.ts`) y los funnels de Acquisition (`embudosDeAcquisition.ts`).
+ * Si se cambia la forma del corte acá —no los números, la forma— hay que cambiarla en las dos, y cada
+ * una tiene su prueba de base que compara contra esta función.
  */
 export function tramoDelPuntaje(score: number | null | undefined): ClaveDeTramo {
   if (score === null || score === undefined || score === 0) return 'sin_calificar';

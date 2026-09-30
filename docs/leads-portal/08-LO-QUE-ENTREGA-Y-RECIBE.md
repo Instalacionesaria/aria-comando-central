@@ -79,7 +79,7 @@ poniéndolas una al lado de la otra.
 | qué | de dónde | por qué no se recalcula |
 |---|---|---|
 | cita alcanzable, cancelada, plantón | `lib/negocio/citasAlcanzables.ts:54`, `:64`, `:111` | los importan ya Sales, Conversion, Creative y Acquisition |
-| «agendó» por persona | `lib/negocio/citasAlcanzables.ts:128` | estaba copiado ocho veces (`:118-120`); ya no |
+| «agendó» por persona | `lib/negocio/citasAlcanzables.ts:135` | estaba copiado ocho veces (`:118-120`); ya no |
 | el descarte por etiqueta | `lib/ghl/contrato.ts:231-238`, en minúscula | la lista existe una vez; medido: 121 personas descartadas por etiqueta |
 | el piso de una tasa | `lib/negocio/indicadoresDeCitas.ts:309` | es el mismo 10 que importan Acquisition, Creative, Conversion y Sales |
 | las ventanas y la de omisión | `lib/negocio/periodo.ts:83-96`, `:109` | `periodoDe` (`:188`) rechaza lo que no está en la lista, como el `mes` del tercer botón de la maqueta (`LP06-02`) |

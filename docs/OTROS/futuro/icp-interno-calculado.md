@@ -297,7 +297,7 @@ Cómo se lee:
 
 La otra vara es la única consecuencia que hoy se registra: **si el lead agendó**, con la misma
 definición que el resto de las pestañas —`tieneCitaAlcanzable`
-(`lib/negocio/citasAlcanzables.ts:128`), donde una cancelada cuenta y una congelada no—. Tasa de
+(`lib/negocio/citasAlcanzables.ts:135`), donde una cancelada cuenta y una congelada no—. Tasa de
 agendamiento por tramo, con las dos fuentes, sobre la misma población, y con el piso
 `PISO_DE_UNA_TASA = 10` en cada celda (`lib/negocio/indicadoresDeCitas.ts:309`).
 

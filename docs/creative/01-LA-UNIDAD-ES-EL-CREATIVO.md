@@ -236,7 +236,7 @@ todos.
 
 **Qué es** · `negocio.anuncios.nombre` es **estado actual** de Meta; `utmContent` es una **foto** del
 momento de captura del lead. No se mueven juntos.
-**Rastro** · `lib/negocio/recolectarAnuncios.ts:361-363`, literal: *«El nombre NO se protege con
+**Rastro** · `lib/negocio/recolectarAnuncios.ts:405-407`, literal: *«El nombre NO se protege con
 `coalesce`: es `not null` en la tabla, así que nunca puede llegar nulo, y si el anuncio se renombra en
 Meta queremos el nombre nuevo.»*
 **Estado** · La decisión es correcta para **nombrar un anuncio** y se vuelve un corte de histórico al

@@ -259,12 +259,14 @@ export function diasQuePedir(guardados: ReadonlySet<string>, ahora: number): str
 }
 
 /**
- * Las campañas que hay que pedir: **las que aparecen en nuestra atribución, y sólo ésas.**
+ * Las campañas que hay que pedir: **las que aparecen en nuestra atribución, más las que alguien
+ * asignó a un funnel de Acquisition** (`066`) **y las que ya tienen anuncios guardados** (ver abajo).
+ * No las 61 de la cuenta.
  *
  * La cuenta tiene 61 campañas y nosotros recibimos contactos de 13. Pedir las 61 costaría cuatro
  * veces más llamadas para guardar el costo de anuncios que ningún contacto nuestro menciona, y ese
  * costo no se puede cruzar con nada: el § 18.5 sólo deja publicar por anuncio lo que tiene su
- * cobertura al lado.
+ * cobertura al lado. Una campaña asignada a mano es la excepción: alguien dijo que importa.
  *
  * El filtro `~ '^[0-9]+$'` saca `{{campaign.id}}`, una plantilla de GoHighLevel que nunca se
  * expandió. **No saca `888888`**, que es numérico y no existe — para eso está la tolerancia al
@@ -279,8 +281,40 @@ async function campanasNuestras(): Promise<string[]> {
     .where((eb) => eb.ref('atribucion_primera', '->>').key('campaignId'), 'is not', null)
     .execute();
 
-  return filas
-    .map((f) => f.campana as string | null)
+  /* ── Y LAS QUE ALGUIEN ASIGNÓ A UN FUNNEL (`066`), AUNQUE NO TRAJERAN A NADIE ────
+     Sin esto, una campaña que se lanza, se asigna a Booking directo y gasta cinco días sin un solo
+     lead tendría gasto cero en su tarjeta de Acquisition: la tarjeta diría «sin gasto» sobre una
+     campaña que gastó. Lo encontró la revisión de AQ-3. El costo de pedirla es el mismo que el de
+     cualquier otra: una llamada por día pedido, tres por pasada. Y la lista no puede crecer sin techo,
+     porque el guardia de `PRESUPUESTO_MS` se comprueba antes de cada DÍA: el tercero del tramo fijo
+     arranca después del vínculo y de los dos primeros, o sea a (1 + 2 × 13) × 3,6 s = 97 s de los 120,
+     con las 13 campañas de hoy y los 3,6 s por llamada medidos en régimen (144 s por 40 llamadas).
+     Cada campaña de más le suma 7,2 s: caben tres, y con la cuarta el tercer día ya no entra y la
+     pasada queda `atrasado`. Al oeste de UTC−6 esa tercera lectura es la única que cierra un día
+     (docs/acquisition/14, A14-10).
+     **Casi no rellena hacia atrás**: entra lo que la pasada pide igual —hoy y los dos días que se
+     releen—, y el gasto de antes de eso no. Una flecha de un funnel que acaba de recibir una campaña
+     compara, entonces, una ventana con su gasto contra otra sin él (docs/acquisition/14, A14-11).
+
+     ── Y LAS QUE YA TIENEN ANUNCIOS GUARDADOS ───────────────────────────────
+     Para que pedir sea monótono: una campaña asignada que después vuelve a «Sin funnel» seguiría
+     gastando en Meta, y sin esto el colector dejaría de pedirla y su gasto quedaría congelado en la
+     fecha de la quita (lo encontró la tercera revisión de AQ-3). */
+  const asignadas = await datos().selectFrom('funnels_de_campana').select('meta_campana_id').execute();
+  const conAnuncios = await datos()
+    .selectFrom('anuncios')
+    .select('meta_campana_id')
+    .distinct()
+    .where('meta_campana_id', 'is not', null)
+    .execute();
+
+  return [
+    ...new Set([
+      ...filas.map((f) => f.campana as string | null),
+      ...asignadas.map((a) => a.meta_campana_id),
+      ...conAnuncios.map((a) => a.meta_campana_id),
+    ]),
+  ]
     .filter((c): c is string => c !== null && /^[0-9]+$/.test(c))
     .sort();
 }

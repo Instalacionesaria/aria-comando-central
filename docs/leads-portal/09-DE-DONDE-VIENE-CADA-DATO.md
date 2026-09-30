@@ -138,7 +138,7 @@ fila de la lista, y de dónde sale:
 | Tramo | `aios-command-center_1.html:4766` | derivado del puntaje con los cortes 75 y 50, **nunca guardado** | ver `LP09-06` |
 | Territorio | no se dibuja | `contactos.territorio` (`db/migraciones/011_negocio_closer_setter.sql:88`) | 287 · 281 · 25 sin territorio |
 | Descartado | no se dibuja | etiquetas contra `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`), en minúscula | **121** |
-| Agendó | `aios-command-center_1.html:4752` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:128-134`) | **sin medir con este predicado**: `LP09-07` |
+| Agendó | `aios-command-center_1.html:4752` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **sin medir con este predicado**: `LP09-07` |
 | Asistió | `aios-command-center_1.html:4752` | `citas.asistio` | `true` en 0 · `false` en 0 |
 | Plantón | no se dibuja | `marcadaComoPlanton` (`lib/negocio/citasAlcanzables.ts:111-113`) | 15 personas |
 | Vendió | `aios-command-center_1.html:4752`, `:4771-4772` | un resultado con `salida = 'venta'` | **0** |

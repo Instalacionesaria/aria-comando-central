@@ -54,7 +54,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 > - **`1164984`** (2026-09-21, de la etapa 3 de Sales) — los predicados de cita se mudaron a
 >   `lib/negocio/citasAlcanzables.ts` —`alcanzable`, `cancelada`, `descartado` y
 >   `tieneCitaAlcanzable`, de `lib/negocio/citasAlcanzables.ts:54` a
->   `lib/negocio/citasAlcanzables.ts:128`—, y `tasaDeCancelacion` los instancia
+>   `lib/negocio/citasAlcanzables.ts:135`—, y `tasaDeCancelacion` los instancia
 >   (`lib/negocio/indicadoresDeCitas.ts:329-331`). Sales consume esa misma función
 >   (`app/api/sales/route.ts:109`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
@@ -163,7 +163,7 @@ el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:206-216`) y cifras vacías.
 **6** · **3** desde la del 31 de agosto. En `negocio.metricas_de_anuncio` **no hay un solo día con
 gasto ni con impresiones después del 13**: 13 filas en 0,00, todas del 14 al 17, y 1 172 **nulas**
 —303 del 14 al 17 y las 869 que hay desde el 18—, y nulo es «el anuncio no entregó ese día», no un
-cero (`lib/negocio/recolectarAnuncios.ts:382-384`). Medido el 2026-09-28 a las 23:56 UTC, con el
+cero (`lib/negocio/recolectarAnuncios.ts:416-418`). Medido el 2026-09-28 a las 23:56 UTC, con el
 colector sincronizando hasta las 06:20 UTC de ese día. El barrido está vivo —el último contacto lo
 creó hoy a las 13:50 UTC—, así que el hueco es de leads y no de ingesta. **Por qué se pausó la pauta
 no está verificado**: no hay en la base nada que lo diga.
@@ -421,7 +421,7 @@ dos atribuciones están casi completas y la pantalla sólo lee la primera.
 ellos en `"0"`. Lo nuevo: el §10.5 pide «segmento ICP» y la decisión que la foto anterior dejaba
 pendiente **ya se tomó, en Leads Portal**: tramos 75 y 50 (`lib/negocio/tramosDelIcp.ts:38` y
 `lib/negocio/tramosDelIcp.ts:41`), con el 0 contado como «sin calificar»
-(`lib/negocio/tramosDelIcp.ts:84-89`). Conversation no los usa; el día que publique un booking rate
+(`lib/negocio/tramosDelIcp.ts:85-90`). Conversation no los usa; el día que publique un booking rate
 por tramo tiene que importar ese archivo y no repetir los números
 (`docs/leads-portal/11-LO-QUE-PIDE-EL-DOCUMENTO.md:316-320`). `perfil_icp`, `Pre-Score | ICP` y
 `Lead Score` siguen en 0 de 277.
