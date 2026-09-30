@@ -96,7 +96,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
 
 ### CR-5 · La tabla y la tarea del cron
 
-- **Migración `065_el_activo_del_anuncio.sql`**: `negocio.activos_de_anuncio (org_id,
+- **Migración `NNN_el_activo_del_anuncio.sql`, con el próximo número libre** (la 065 y la 066 son de Acquisition): `negocio.activos_de_anuncio (org_id,
   meta_anuncio_id, fuente, meta_creativo_id, meta_video_id, tipo_de_objeto, publicacion_url,
   instagram_url, miniatura_url, miniatura_caduca_el, motivo, leido_el)`.
   - `fuente` con `check (fuente in ('ghl', 'meta'))`: `ghl` queda para el día en que se lancen

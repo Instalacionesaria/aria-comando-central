@@ -168,3 +168,18 @@ componentes ni veintidós de los veinticinco KPI. La tabla de destino ya existe 
 (`public.closer_meta_metricas`, 0 filas, sin un solo lector ni escritor en todo el repositorio).
 
 No es un problema de diseño ni de esfuerzo: es una credencial que nadie cargó.
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+| pieza del prototipo | con el front del 2026-09-30 (`14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) |
+|---|---|
+| Los tres embudos | vuelven, con la campaña asignada a mano (A14-03) |
+| Paso a paso / Acumulada | vuelve (A14-09) |
+| Calificados y costo por calificado | vuelven: agendó y no está descartado (A14-07) |
+| Afinidad ICP | promedio del puntaje y barra 75/50, sin los ceros (A14-08) |
+| Deltas | vuelven, sólo si los datos cubren la ventana anterior (A14-11) |
+| Personalizado | no vuelve: los cuatro períodos del sistema (A14-10) |
+| Plan de acción y Señales | no vuelven todavía: etapa de agentes de IA (A14-16) |
+| «Ver evidencia» | queda como requisito para esa etapa |

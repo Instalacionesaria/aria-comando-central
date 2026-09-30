@@ -610,3 +610,13 @@ señal 2 la reporta como propia (A6-21).
 
 **Qué se dibuja cuando una señal no llega al piso.** El conteo va (A6-02), pero la pantalla no tiene
 renglón donde ponerlo: la tarjeta «Señales detectadas» sólo sabe dibujar señales.
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+**El Plan de acción y las Señales no vuelven con el front del prototipo.** El usuario decidió que los
+van a producir agentes de IA, en una etapa posterior. Mientras tanto no se dibujan: ni el botón ni la
+tarjeta (A14-16 de `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Qué falta y cómo volverían:
+`docs/OTROS/futuro/plan-y-senales-de-acquisition.md`. Los requisitos de este archivo siguen valiendo
+para cuando vuelvan.

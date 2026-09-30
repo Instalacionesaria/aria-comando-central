@@ -624,3 +624,16 @@ Executive publica «ICP alto» como una **proporción** que sube y baja (`execut
 Portal como un **conteo** (`:199`). Cinco pantallas, cinco formas de publicar lo mismo. Mientras no
 haya una sola definición, cualquier cruce entre departamentos compara números que no son
 comparables.
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+**P-1 y P-2 · Qué es un calificado, y sobre qué se mide.** **Agendó y no está descartado**:
+`tieneCitaAlcanzable` y no `contactoDescartado`, las dos de `lib/negocio/citasAlcanzables.ts`. Se mide
+sobre los agendados, como en el prototipo (A14-07 de `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). El «calificado» del pipeline del setter
+sigue siendo otra cosa y no se cruza.
+
+**P-4, P-5 y P-6 · Afinidad, cortes y ceros.** El «ICP %» es el promedio del puntaje de los
+calificados; la barra usa los cortes 75 y 50 de `lib/negocio/tramosDelIcp.ts`; un 0 es «sin calificar»
+y no entra en ninguno de los dos (A14-08). Los pesos 100/60/25 no vuelven.

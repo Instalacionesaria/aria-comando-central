@@ -738,3 +738,16 @@ Ninguno de estos es una opinión: los siete se comprueban abriendo el archivo.
 | 5 | Los dos textos «sin comparación» se sobrescriben en la misma pasada y nunca se ven | `acquisition.js:270`, `:282` contra `:260` | A5-21, A5-22 |
 | 6 | `delta` mata la flecha cuando el valor actual es cero | `acquisition.js:126` | A5-16 |
 | 7 | El KPI de Inversión sube en verde y, además, sólo puede moverse cuando las ventanas duran distinto | `acquisition.js:146` + `:88` | A5-19, P-07 |
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+**P-01 · La lista de períodos.** La del sistema: Hoy · 7 días · 30 días · Completo, con 30 días por
+omisión. Sin rango libre (A14-10 de `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+
+**P-04 · Sin período anterior.** La ventana anterior sólo se compara si los datos la cubren entera; si
+no, «sin comparación» (A14-11).
+
+**P-06 y P-07 · `invert` y la Inversión.** En los costos bajar es bueno y el color va invertido; la
+Inversión lleva flecha sin color (A14-11).

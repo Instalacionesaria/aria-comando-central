@@ -540,3 +540,15 @@ al piso de 10 contactos, y un embudo entero puede quedar en cero en una ventana 
   asignó el dueño. Y el dato que lo vuelve estructural: **los leads de Lead Ads casi nunca ven
   la landing** —4 de los 49 que traen URL, el 2026-09-28— (`02-CREATIVE.md:394-402`), así que
   la etapa casi no tiene población en el embudo `leadform`, y no por falta de instrumentación.
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+**P-04 · Qué define un recorrido.** **Un mapeo declarado a mano**, campaña por campaña, guardado en
+`negocio.funnels_de_campana` (A14-03 de `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). La campaña que nadie asignó va a «Sin funnel». La
+entrada de cada funnel son los contactos de sus campañas, rotulados como en el prototipo: Leads, DMs,
+Contactos (A14-04).
+
+**P-01 y P-02, a medias.** «Clics a landing VSL» se dibuja con los clics al enlace que cuenta Meta, sin
+tasa, porque no son personas (A14-05). «Completaron form» queda como hueco, con su fecha (A14-06).

@@ -117,7 +117,7 @@ alerta de catorce campos.
 Si se va a leer uno solo, que sea el `13`: es el que dice qué se puede construir hoy y qué está
 bloqueado, y no agrega requisitos — compara los que ya están.
 
-Si un nombre de archivo de la tabla no está en la carpeta, manda la carpeta.
+Si un nombre de archivo de la tabla no está en la carpeta, manda la carpeta. **Y el `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (`A14-`, 2026-09-30) dice cómo se vuelve al front del prototipo con los datos reales.**
 
 Cada requisito se cita por su número completo —`A2-07`, `A4-12`— desde cualquier documento.
 
@@ -200,3 +200,12 @@ los otros documentos:
 
 Y una cosa que esta carpeta **no** hizo: nadie abrió la pantalla con sesión iniciada. Todo lo que
 afirma sobre lo que se dibuja sale de leer el código.
+
+---
+
+## Contestado el 2026-09-30, al volver al front del prototipo
+
+El 2026-09-30 el usuario decidió volver al front del prototipo, con la estética al 100 % y los datos que
+el backend junta hoy. Los requisitos están en `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (prefijo `A14-`). Contesta preguntas de `01`, `04` y
+`05`, cada una al final de su archivo, y deja el Plan de acción y las Señales para una etapa con
+agentes de IA (`docs/OTROS/futuro/plan-y-senales-de-acquisition.md`).

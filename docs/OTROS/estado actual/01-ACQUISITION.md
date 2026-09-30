@@ -497,3 +497,10 @@ UTC, no se nota; **leído del código, no ejecutado**.
 pendiente porque necesitaba contraseña. `00e251d` y `1020412` (2026-09-20) sí abrieron la pantalla en
 el navegador, pero para medir el ancho del armazón (de 375 a 1400 px), no para mirar sus cifras.
 Este corte tampoco la hizo.
+
+---
+
+> **Después del corte, 2026-09-30.** El usuario decidió volver al front del prototipo, con
+> la estética al 100 % y los datos reales: `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`.
+> Cuando se construya, la tabla por anuncio y la tarjeta del monitor salen de la pantalla, y entran
+> los tres funnels con la campaña asignada a mano. Lo de arriba describe la pantalla del 2026-09-28.

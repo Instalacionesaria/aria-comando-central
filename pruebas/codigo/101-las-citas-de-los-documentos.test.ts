@@ -48,12 +48,18 @@ const RAIZ = join(import.meta.dirname, '..', '..');
    sin que nadie lo lea, y cada cita suya es un lugar del código que la etapa pendiente va a tocar:
    si una se corre, quien lo retome tiene que enterarse por la suite y no por abrir la línea
    equivocada. El resto de `futuro/` no entra: no se revisó. */
+/* Y los dos del 2026-09-30 que devuelven Acquisition al front del prototipo: el `14` de la carpeta,
+   que nace ese día y fija qué dato va en cada lugar de la maqueta, y el plan de lo que se dejó para
+   los agentes de IA. El resto de `docs/acquisition/` no entra: cita `lib/aios/acquisition.js`, que
+   se borró el 2026-09-16, como referencia histórica, igual que Creative. */
 const AUDITADAS = [
   'docs/sales',
   'docs/leads-portal',
   'docs/OTROS/estado actual',
   'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
   'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
+  'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md',
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
