@@ -283,7 +283,7 @@ test('todo color de texto pasa 4,5:1 sobre la superficie más clara, sobre su ti
   assert.deepEqual(ilegibles, [], 'estos textos no llegan a 4,5:1 sobre `surface-active`');
 
   // El texto sobre el tinte de su propio color, que es como se escriben las píldoras: el tinte aclara.
-  for (const [texto, tinte] of [['--accent', '--accent-dim'], ['--exec', '--exec-dim']]) {
+  for (const [texto, tinte] of [['--accent', '--accent-dim'], ['--exec', '--exec-dim']] as const) {
     const { canal, alfa } = rgbDe(valor(OSCURO, tinte));
     const c = contraste(deHex(valor(OSCURO, texto)), sobre(canal, alfa, fondo));
     assert.ok(c >= 4.5, `${texto} sobre ${tinte} da ${c.toFixed(2)}:1`);
