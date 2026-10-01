@@ -59,7 +59,7 @@ const AUDITADAS = [
   'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
   'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md',
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', // ver «LA NUEVA ESTRUCTURA», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
@@ -211,3 +211,10 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
     'esta cita casa con más de un archivo: escribila con más ruta, como `lib/negocio/archivo.ts:12`',
   );
 });
+
+/* ── LA NUEVA ESTRUCTURA (2026-10-01) ─────────────────────────────────────────
+   `docs/OTROS/nueva-estructura/` entró el día que nació, con los dos planes de `futuro/` que salieron
+   de ella: los permisos por herramienta y el cerebro. Dice qué se va a hacer, etapa por etapa, y cada
+   etapa va a mover el código que cita, así que es la carpeta que más rápido se pudriría sin auditar.
+   Las tres entradas van en la misma línea que la última de la lista, y esta nota al final del
+   archivo, para no correr las líneas de esta prueba que otros documentos citan. */

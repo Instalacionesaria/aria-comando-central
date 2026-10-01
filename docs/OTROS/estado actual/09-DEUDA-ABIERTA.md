@@ -912,3 +912,37 @@ y cada cuánto se refresca la miniatura— sólo se pueden medir con él. El usu
 2026-09-30 por otras prioridades. Mientras tanto la pantalla lo dice: el cajón explica que la
 miniatura y el video todavía no se pueden mostrar (`components/creative/FichaDelCreativo.jsx:87-91`).
 El plan, etapa por etapa, está en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
+
+---
+
+Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
+(`docs/OTROS/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Tres defectos que ya existían:
+
+- **El botón «Eliminar» de Ajustes › Usuarios no aparece para nadie**, tampoco para el
+  superadministrador. La ruta de sesión manda `puedeBorrarPersonas`, pero `app/guardia.tsx` no lo copia al
+  contexto, y `components/ajustes/Usuarios.jsx` lo lee de ahí. La prueba que lo vigila mira las dos
+  puntas y no el paso del medio. Se corrige en la etapa E2 de la nueva estructura.
+- **El panel lateral de la maqueta del Executive se ve en la primera carga** a quien arranca en otra
+  pantalla (un closer, por ejemplo), hasta su primer clic: la clase que lo esconde sólo se pone al
+  navegar. Se va con la columna lateral, en la etapa E7.
+- **El menú no se puede usar con el teclado**: sus filas son `div` sin foco. Pasan a ser botones en la
+  etapa E9.
+
+Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` (`60f5d81`), que no es de
+esa planificación ni lo corrige ninguna de sus etapas:
+
+- **Las tres claves foráneas de la `067` (`incidentes_org_id_fkey`, `incidentes_usuario_id_fkey`,
+  `incidentes_revisado_por_fkey`) no tienen traducción en `QUE_LO_IMPIDE`**
+  (`lib/administracion/borrado.ts`). Si un borrado se bloquea por un incidente, el rechazo dice «tiene
+  historial» sin decir cuál. La prueba `pruebas/base/23-editar-y-borrar.test.ts` lo detecta desde
+  `46c5556`, el commit que trajo la `067`.
+- **El CI de `main` está en rojo desde `43ce5ac`**, y no sólo por eso. Cada corrida falló por pruebas que
+  dependen de la hora a la que corren:
+  - en `43ce5ac`, la del mes pasado de `pruebas/base/98-setter-inicio.test.ts`, que arma «el mes pasado»
+    con el reloj de Node y falla en UTC el día 1 antes de las 05:00;
+  - en `b7203b2` y `c936b24`, cuatro de la agenda y del día del closer;
+  - en `46c5556` y `60f5d81`, además de la `23`, «una cita vencida sigue en la lista, marcada y ABAJO»
+    (`pruebas/base/92-mi-dia.test.ts`).
+
+  La suite local del 2026-10-01, corrida en las tres zonas sobre `60f5d81`, pasó todas esas, salvo la
+  `23`. Traducir las tres claves no deja el CI en verde por sí solo.

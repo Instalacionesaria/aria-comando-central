@@ -266,3 +266,13 @@ tablero de cifras reales se ve exactamente igual que uno que las calcula mal.
 otros archivos se escribían en paralelo. Donde un archivo dice que una prueba cubre algo, es leído,
 no ejecutado, y las 2.273 pruebas son las del último mensaje de commit
 ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5).
+
+---
+
+> **Después del corte, 2026-10-01.** Se decidió reorganizar la app entera: el Inicio al centro y cinco
+> departamentos por función —Research, Systems, Marketing, Sales y Client Success—, bajo la marca v2, sin
+> cambiar roles, pestañas ni claves de sección. Todo lo que se va a hacer, y cada cambio, está en
+> [`docs/OTROS/nueva-estructura/`](../nueva-estructura/00-MAPA.md), antes de tocar el código. Lo de esta
+> carpeta describe la app de antes de ese cambio; cada etapa que la cambie lo anota en el documento que
+> corresponda. Desde el corte también entró el grupo «Administración» del menú, con el Panel de Monitoreo
+> y el de Incidentes (`60f5d81`).
