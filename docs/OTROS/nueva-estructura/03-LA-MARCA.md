@@ -31,7 +31,11 @@ El brandbook dice que el tema claro es para documentos y PDFs, no para la app (`
   forma de volver. Por eso el tema se **fija** en `oscuro` en el único lugar que lo escribe
   (`app/tema.ts`), y ya no se lee de ningún lado.
 - La columna `identidad.usuarios.tema` y la ruta `/api/auth/tema` **quedan dormidas**, sin llamador. Retirar
-  la columna exige una migración y no hace falta para esta fase.
+  la columna exige una migración y no hace falta para esta fase. La ruta de sesión sigue mandando el tema,
+  y la guarda lo deja afuera con su motivo (`pruebas/codigo/185-la-sesion-llega-entera.test.ts`).
+- Con el botón se van el guion de arranque que leía la copia del navegador, el `suppressHydrationWarning`
+  que su escritura obligaba en el `<html>` y la transición de color del cambio de tema. El `<html>` sale del
+  servidor con el tema fijo (E3, hecho el 2026-10-01).
 - El bloque de tokens del tema claro **queda**, con los valores claros del brandbook, porque las pruebas
   de temas leen los dos bloques y porque los documentos imprimibles pueden usarlo.
 

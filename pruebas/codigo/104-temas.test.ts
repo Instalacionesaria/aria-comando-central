@@ -19,6 +19,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { archivosQueContienen, sinComentarios } from '../apoyo/fuente.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
@@ -148,22 +149,20 @@ test('el token que da vuelta el tema es DISTINTO en los dos', () => {
 });
 
 test('el atributo del `<html>` lo escribe UN solo lugar', () => {
-  // El guion de arranque y el botón escriben el mismo atributo, y con dos formas de nombrarlo una
-  // puede quedar vieja: el guion pondría `data-tema` y el botón `data-theme`, y el tema se aplicaría
-  // sólo hasta el primer clic. Los dos salen de `app/tema.ts`.
-  const tema = leer('app/tema.ts');
-  /* Cuántas veces se escribe DENTRO de `app/tema.ts` no importa —hay una en `aplicar` y dos en el
-     guion de arranque, una de ellas en su `catch`— y fijar el número era una aserción sin
-     contenido: cambiaba con cualquier reescritura del guion. Lo que importa es que exista ahí y en
-     ningún otro lado. */
-  assert.ok(/dataset\.tema\s*=/.test(tema), '`app/tema.ts` dejó de escribir el atributo');
-  for (const archivo of ['components/BotonDeTema.jsx', 'components/Nav.jsx', 'app/layout.js']) {
-    const f = leer(archivo);
-    assert.ok(
-      !/dataset\.tema\s*=|setAttribute\(\s*['"]data-tema/.test(f),
-      `${archivo} escribe el atributo del tema por su cuenta: tiene que llamar a \`aplicar()\``,
-    );
-  }
+  // Con dos lugares que escriben el mismo atributo, uno puede quedar viejo: eran el guion de arranque
+  // y el botón. Desde que la aplicación es sólo oscura (`NE-23`) el lugar es uno y no está en el
+  // navegador: el `<html>` que sirve `app/layout.js`, con `TEMA` de `app/tema.ts`.
+  const layout = sinComentarios(leer('app/layout.js'));
+  assert.match(layout, /data-tema=\{TEMA\}/, '`app/layout.js` dejó de servir el tema de `app/tema.ts`');
+  assert.match(layout, /data-theme=\{temaCss\(TEMA\)\}/, 'el nombre del brandbook dejó de salir del mismo `TEMA`');
+  /* Y en el navegador no lo escribe nadie: ni el atributo de la aplicación, ni el del brandbook, ni
+     el lienzo de los controles nativos. Se barre todo lo que llega al navegador y no una lista: la
+     lista de antes nombraba tres archivos, y un cuarto que escribiera el tema pasaba sin mirar. */
+  const escriben = archivosQueContienen(
+    /dataset\.(tema|theme)\s*=|setAttribute\(\s*['"]data-(tema|theme)['"]|colorScheme\s*=/,
+    ['app', 'components', 'lib', 'public'],
+  );
+  assert.deepEqual(escriben, [], 'escriben el tema del `<html>` desde el navegador: la aplicación es sólo oscura');
 });
 
 test('la ruta del tema acepta los MISMOS dos valores que el `check` de la base', () => {

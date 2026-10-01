@@ -424,63 +424,8 @@
   color: #ffffff;
 }
 
-/* La transición del cambio de tema. Corta y sólo en color: animar `all` hace que cada apertura de
-   panel arrastre su posición. */
-:root[data-tema] body,
-:root[data-tema] .app,
-:root[data-tema] .topbar,
-:root[data-tema] .nav,
-:root[data-tema] .view {
-  transition: background-color .18s ease, color .18s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root[data-tema] body,
-  :root[data-tema] .app,
-  :root[data-tema] .topbar,
-  :root[data-tema] .nav,
-  :root[data-tema] .view {
-    transition: none;
-  }
-}
-
-/* ── EL BOTÓN, AL LADO DE LA PERSONA ─────────────────────────────────────────
-   Vive en el pie del menú lateral, pegado al nombre, que es donde está el resto de lo que es «tuyo»
-   y no «de la empresa»: tus datos, cerrar sesión. */
-.tema-btn {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--txt-dim);
-  background: rgb(var(--c-nube) / 0.06);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  transition: color .14s ease, background .14s ease, border-color .14s ease;
-}
-
-.tema-btn:hover {
-  color: var(--txt);
-  background: rgb(var(--c-nube) / 0.12);
-  border-color: var(--line-strong);
-}
-
-.tema-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.tema-btn:disabled {
-  opacity: .5;
-  cursor: default;
-}
-
-/* El pie del menú pasa a tener dos controles, así que se vuelve una fila. */
+/* El pie del menú es una fila, y su primer control —el menú de la persona— ocupa el ancho que
+   sobra. Tuvo al lado el botón de tema hasta que la aplicación quedó sólo oscura (`NE-23`). */
 .nav-foot {
   display: flex;
   align-items: center;

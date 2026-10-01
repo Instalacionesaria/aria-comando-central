@@ -7,6 +7,11 @@ la lista de trabajo de la Fase 2, que es de a una pantalla por vez.
 Medido con un barrido sobre `app/`, `components/` y `lib/` (se excluyen `pruebas/`, `docs/`, `db/`
 y el propio `app/brand/`, que ya es el sistema nuevo).
 
+La medición es de la base del PR #2, 28 commits antes de entrar a `main` el 2026-10-01. Desde entonces los
+conteos se movieron unas unidades —las hojas que `main` sumó, y las reglas del botón de tema que salieron
+con la aplicación sólo oscura—, y la etapa 5 de la nueva estructura los vuelve a medir
+(`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`).
+
 ## El tamaño del problema
 
 | Qué | Cuántos |

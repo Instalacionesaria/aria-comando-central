@@ -97,8 +97,8 @@ export async function GET(peticion: Request): Promise<Response> {
     // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
     // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
     usuarioNombre: contexto.usuarioNombre,
-    /* El tema, en la MISMA respuesta que el menú. Ver `Contexto.tema`: en una petición aparte
-       habría un instante con el tema anterior y los datos nuevos. */
+    /* El tema, DORMIDO: sale en la respuesta y la pantalla no lo lee, porque es sólo oscura (`NE-23`,
+       ver `app/tema.ts`). La columna sigue viva y la guarda lo deja afuera con su motivo. */
     tema: contexto.tema,
     /**
      * ¿Puede moverse entre empresas?

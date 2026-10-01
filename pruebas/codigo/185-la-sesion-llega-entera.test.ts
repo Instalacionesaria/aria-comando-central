@@ -31,6 +31,9 @@ const FUERA: Readonly<Record<string, string>> = {
   permisos:
     'la pantalla decide por los permisos YA resueltos (`puede…`, `secciones`, `menu`); ' +
     '`Fundaciones.jsx` los pide por su cuenta a la misma ruta',
+  tema:
+    'la aplicación es sólo oscura (`NE-23`): la preferencia queda dormida en la base y la pantalla ' +
+    'no la lee, porque leerla es lo que dejaría a quien eligió «claro» en claro para siempre',
 };
 
 /**

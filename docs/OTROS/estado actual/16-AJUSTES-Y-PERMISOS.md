@@ -75,7 +75,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 
 **La entrada.** La sección `credenciales`, rotulada «Ajustes», es la única del grupo `Pie`
 (`lib/autorizacion/secciones.ts:192-209`); el pie junta sus secciones y dibuja sólo la primera
-(`components/Nav.jsx:129`, `:221`), así que una segunda ahí no se vería. La vista es
+(`components/Nav.jsx:127`, `:204`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
 (`components/CommandCenter.jsx:50`).
 

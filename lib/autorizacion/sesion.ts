@@ -67,12 +67,12 @@ export interface Contexto {
    */
   usuarioNombre: string;
   /**
-   * El tema que eligió esta persona: `'oscuro'` o `'claro'`.
+   * El tema que eligió esta persona: `'oscuro'` o `'claro'`. **Dormido** desde la nueva estructura
    *
-   * Viaja con la sesión y no en una petición aparte por el mismo motivo que el menú: llega en la
-   * MISMA respuesta que ya se pide para saber si hay sesión, así que no cuesta un viaje más y no
-   * puede quedar viejo respecto del resto. Con dos peticiones habría un instante con el tema de la
-   * anterior y los datos de la nueva.
+   * (`NE-23`): la aplicación es sólo oscura, la ruta de sesión lo sigue mandando y la pantalla no lo
+   * lee (ver `app/tema.ts`). Viajaba con la sesión, y no en una petición aparte, por el mismo motivo
+   * que el menú: la misma respuesta que ya se pide no costaba un viaje más ni podía quedar vieja
+   * respecto del resto.
    */
   tema: Tema;
   estado: EstadoSesion;

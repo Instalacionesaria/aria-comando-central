@@ -1,98 +1,44 @@
-/* Aplicar el tema, y evitar el destello.
+/* El tema de la aplicación: uno solo, el oscuro.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * EL PROBLEMA QUE ESTE ARCHIVO RESUELVE, Y NO ES «GUARDAR UNA PREFERENCIA»
+ * HUBO DOS, Y POR QUÉ QUEDA UNO
  *
- * La preferencia vive en la base (`identidad.usuarios.tema`, migración 019) porque tiene que
- * sobrevivir a cerrar sesión y a cambiar de máquina. Pero la base está a una petición de distancia,
- * y `app/guardia.tsx` recién la pregunta cuando el navegador ya pintó algo.
+ * Desde la migración 019 cada persona elegía oscuro o claro con un botón en el pie del menú, y la
+ * preferencia se guardaba en la base (`identidad.usuarios.tema`). El brandbook v2 dice que el claro
+ * es para documentos y PDFs, no para la aplicación, y la nueva estructura lo adoptó el 2026-10-01
+ * (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`, `NE-23`).
  *
- * O sea: quien elige tema claro vería, en CADA carga, un cuadro oscuro durante unas décimas y
- * después el claro. Y quien elige oscuro lo vería al revés si el valor por omisión fuera claro. Ese
- * parpadeo es el defecto clásico de los temas y no se arregla del lado del servidor mientras la
- * sesión se resuelva con un `fetch`.
+ * ── LA TRAMPA QUE ESTO EVITA ────────────────────────────────────────────────
  *
- * ── LA CACHÉ NO ES LA VERDAD, Y ESA DISTINCIÓN ES TODO ─────────────────────
+ * El tema se escribía desde dos lecturas: un guion de arranque leía la copia guardada en el
+ * navegador (`localStorage`, para que el primer cuadro no destellara) y la barra lateral aplicaba
+ * la de la base apenas llegaba la sesión. Si sólo se hubiera sacado el botón, quien había elegido
+ * «claro» se habría quedado en claro para siempre y sin forma de volver: las dos lecturas seguían
+ * ahí, repitiéndole su última elección.
  *
- * `localStorage` guarda una COPIA de lo último que se supo, y sirve para una sola cosa: pintar el
- * primer cuadro. En cuanto llega la respuesta de la sesión, manda la base — aunque contradiga a la
- * copia. Es lo que hace que cambiar el tema en otra máquina se vea acá al entrar, en vez de quedar
- * pegado a lo que este navegador recuerda.
+ * Por eso el tema ya no se LEE de ningún lado. Lo sirve el servidor en el `<html>`, fijo, desde
+ * `TEMA`, y nadie en el navegador lo toca después. La copia vieja que quede en algún navegador
+ * (`aios:tema`) no la lee nadie, y es inofensiva.
  *
- * Y por eso `aplicar` es idempotente y se puede llamar dos veces sin que se note: la primera desde
- * el script de arranque con la copia, la segunda desde la guarda con la verdad.
+ * ── LO QUE QUEDA DORMIDO ────────────────────────────────────────────────────
  *
- * ── TODO ACCESO A `localStorage` VA EN `try` ────────────────────────────────
- *
- * No es prolijidad defensiva: en una ventana privada de Safari, y en cualquier navegador con los
- * datos de sitio bloqueados, **leer lanza**. Sin el `try`, ese lanzamiento ocurre en el script de
- * arranque —antes de React— y la aplicación no se dibuja. Cambiar un tema no puede ser capaz de
- * dejar a alguien afuera.
+ * La columna de la base y la ruta `PUT /api/auth/tema`, sin llamador: retirar la columna exige una
+ * migración y esta fase no tiene ninguna. El bloque `:root[data-tema='claro']` de `app/temas.css`
+ * también queda, para los documentos imprimibles, y las pruebas de temas lo siguen vigilando.
  */
 
 export type Tema = 'oscuro' | 'claro';
 
-/** La clave de la copia local. Lleva prefijo para no chocar con nada más del origen. */
-export const CLAVE_TEMA = 'aios:tema';
-
-/** El que la aplicación tuvo siempre. Ver el comentario del `default` en la migración 019. */
-export const TEMA_POR_OMISION: Tema = 'oscuro';
+/** El tema de la aplicación. No hay otro que se pueda alcanzar desde la pantalla. */
+export const TEMA: Tema = 'oscuro';
 
 /**
  * El mismo tema, con los nombres que usa el brandbook.
  *
  * El sistema de marca v2 (`brand/BRAND.md`) declara sus tokens bajo `[data-theme="dark"|"light"]`,
- * que son los nombres del brandbook y no los de esta aplicación. En vez de clavar `data-theme="dark"`
- * en el `<html>` —que agregaría un SEGUNDO sistema de temas que el primero desconoce, y le rompería
- * el tema claro a quien lo eligió— se escriben los dos atributos en sincronía desde acá, que sigue
- * siendo el único lugar que los toca.
+ * que son los nombres del brandbook y no los de esta aplicación. Los dos atributos se derivan del
+ * mismo `TEMA`, así que no pueden quedar en desacuerdo.
  */
 export function temaCss(tema: Tema): 'dark' | 'light' {
   return tema === 'claro' ? 'light' : 'dark';
 }
-
-/** Un valor cualquiera reducido a uno de los dos. Nunca devuelve otra cosa. */
-export function temaValido(valor: unknown): Tema {
-  return valor === 'claro' ? 'claro' : TEMA_POR_OMISION;
-}
-
-/**
- * Pone el tema en el `<html>`.
- *
- * Es el ÚNICO lugar que toca el atributo. Con dos —el script de arranque y el botón, por ejemplo—
- * habría dos formas de escribir el mismo nombre y una podría quedar vieja.
- */
-export function aplicar(tema: Tema): void {
-  document.documentElement.dataset.tema = tema;
-  /* El nombre del brandbook, en sincronía. Ver `temaCss`. */
-  document.documentElement.dataset.theme = temaCss(tema);
-  /* Y se le dice al navegador de qué color es el lienzo, para que los controles nativos —barras de
-     desplazamiento, campos, el fondo del sobredesplazamiento— acompañen. Sin esto, en tema claro la
-     barra de desplazamiento sigue siendo oscura y se ve como un resto del tema anterior. */
-  document.documentElement.style.colorScheme = tema === 'claro' ? 'light' : 'dark';
-}
-
-/** Guarda la copia local. Silencioso si el navegador no deja escribir. */
-export function recordar(tema: Tema): void {
-  try {
-    window.localStorage.setItem(CLAVE_TEMA, tema);
-  } catch {
-    /* Sin copia local el tema sigue funcionando: sólo vuelve el destello del primer cuadro. */
-  }
-}
-
-/**
- * El script que corre ANTES de que React pinte nada.
- *
- * Va como cadena y se inyecta con `dangerouslySetInnerHTML` en el `<head>` porque ése es el único
- * momento en el que se puede ganar el primer cuadro: cualquier código de React ya llega tarde.
- *
- * Se escribe con `var` y sin funciones flecha a propósito — es un script suelto, sin transpilar, y
- * tiene que correr en cuanto el analizador lo encuentre.
- */
-export const GUION_DE_ARRANQUE = `(function(){try{
-var t=window.localStorage.getItem('${CLAVE_TEMA}')==='claro'?'claro':'${TEMA_POR_OMISION}';
-document.documentElement.dataset.tema=t;
-document.documentElement.dataset.theme=t==='claro'?'light':'dark';
-document.documentElement.style.colorScheme=t==='claro'?'light':'dark';
-}catch(e){document.documentElement.dataset.tema='${TEMA_POR_OMISION}';document.documentElement.dataset.theme='dark';}})()`;

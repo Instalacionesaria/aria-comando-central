@@ -169,7 +169,7 @@ las emite; mueren con él, así que se borran **en el mismo cambio** y no antes.
 
 ### C9-10 · Los ocho degradados van en línea y le ganan al tema
 
-`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:722` y `:749` ya lo
+`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:667` y `:694` ya lo
 anotan: **un estilo en línea le gana al tema**, así que las miniaturas inventadas no responden al
 cambio de tema. Andamiaje, y su ausencia no deja hueco: la miniatura real no existe (`C14-07`).
 
