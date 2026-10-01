@@ -405,7 +405,7 @@ se puede asignar (la foránea de la `066`).
 | AQ-2 | El funnel de cada campaña: migración `066_el_funnel_de_la_campana.sql`, escritor y ruta | hecho, 2026-09-30 |
 | AQ-3 | El cálculo, `lib/negocio/embudosDeAcquisition.ts`, y la ruta `/api/acquisition` | hecho, 2026-09-30 |
 | AQ-4 | El front sobre el marcado del prototipo, y `app/acquisition.css` | hecho, 2026-09-30 |
-| AQ-5 | La comparación lado a lado contra el prototipo, y a producción. Antes del humo, `negocio.campanas` tiene que tener filas: la llena la primera pasada del colector (06:17 UTC), y hasta entonces toda asignación da 404 | pendiente |
+| AQ-5 | La comparación lado a lado contra el prototipo, y a producción. Antes del humo, `negocio.campanas` tiene que tener filas: la llena la primera pasada del colector (06:17 UTC), y hasta entonces toda asignación da 404 | **a producción el 2026-10-01** (UTC), con la `065` y la `066` aplicadas antes del push. **La comparación en el navegador quedó para el humo con login**, decidido por el usuario: nadie miró la pantalla con datos antes de subirla, y lo que salga de ahí es un cambio aparte |
 
 ## 6 · Preguntas abiertas
 
