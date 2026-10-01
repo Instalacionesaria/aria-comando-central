@@ -365,7 +365,7 @@ vetadas, es decir que nada se movió.
 (`db/migraciones/056_tablas_del_analizador.sql:34-44`): lo único que une una llamada analizada con un
 contacto es el correo, y casa en 28 de 44 prospectos. Ninguna tabla ni función lo resuelve: fuera de
 `lib/analizadores/`, las tablas `analizador_*` solo se nombran en el esquema (`lib/datos/esquema.ts`)
-y en el borrado de una empresa (`lib/administracion/borrado.ts:143-148`).
+y en el borrado de una empresa (`lib/administracion/borrado.ts:147-152`).
 
 **5 · La comparación con Brain.** `scripts/comparar-con-brain.sql` da cero reuniones en común porque
 Brain no corre desde el 2026-09-19 (`scripts/comparar-con-brain.sql:16-18`). Decidido el 2026-09-23:

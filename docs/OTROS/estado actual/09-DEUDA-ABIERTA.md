@@ -932,10 +932,11 @@ Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` 
 esa planificación ni lo corrige ninguna de sus etapas:
 
 - **Las tres claves foráneas de la `067` (`incidentes_org_id_fkey`, `incidentes_usuario_id_fkey`,
-  `incidentes_revisado_por_fkey`) no tienen traducción en `QUE_LO_IMPIDE`**
-  (`lib/administracion/borrado.ts`). Si un borrado se bloquea por un incidente, el rechazo dice «tiene
-  historial» sin decir cuál. La prueba `pruebas/base/23-editar-y-borrar.test.ts` lo detecta desde
-  `46c5556`, el commit que trajo la `067`.
+  `incidentes_revisado_por_fkey`) no tenían traducción en `QUE_LO_IMPIDE`**
+  (`lib/administracion/borrado.ts`): si un borrado se bloqueaba por un incidente, el rechazo decía
+  «tiene historial» sin decir cuál. La prueba `pruebas/base/23-editar-y-borrar.test.ts` lo detectaba
+  desde `46c5556`, el commit que trajo la `067`. **Cerrado el mismo 2026-10-01**: las tres tienen su
+  frase.
 - **El CI de `main` está en rojo desde `43ce5ac`**, y no sólo por eso. Cada corrida falló por pruebas que
   dependen de la hora a la que corren:
   - en `43ce5ac`, la del mes pasado de `pruebas/base/98-setter-inicio.test.ts`, que arma «el mes pasado»
@@ -945,4 +946,4 @@ esa planificación ni lo corrige ninguna de sus etapas:
     (`pruebas/base/92-mi-dia.test.ts`).
 
   La suite local del 2026-10-01, corrida en las tres zonas sobre `60f5d81`, pasó todas esas, salvo la
-  `23`. Traducir las tres claves no deja el CI en verde por sí solo.
+  `23`. Traducir las tres claves no deja el CI en verde por sí solo: las de la hora siguen abiertas.

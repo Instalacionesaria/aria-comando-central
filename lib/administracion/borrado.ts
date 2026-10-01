@@ -76,6 +76,10 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   enlaces_rapidos_org_id_actualizado_por_fkey: 'cargó links rápidos de la empresa',
   enlaces_de_pieza_org_id_actualizado_por_fkey: 'cargó links de piezas de Creative',
   funnels_de_campana_org_id_actualizado_por_fkey: 'asignó campañas a funnels en Acquisition',
+  /* Los incidentes de la IA (`067`): quien vio el fallo y quien lo dio por revisado. Ninguna de las dos
+     claves cascadea, así que las dos pueden frenar el borrado de una persona. */
+  incidentes_usuario_id_fkey: 'vio fallos de la IA que quedaron registrados como incidentes',
+  incidentes_revisado_por_fkey: 'revisó incidentes en el Panel de Incidentes',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
   usuarios_org_id_fkey: 'todavía tiene personas dadas de alta',
@@ -146,6 +150,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   analizador_fichas_org_id_fkey: 'tiene fichas de prospectos de los Analizadores',
   analizador_prospectos_org_id_fkey: 'tiene prospectos de los Analizadores',
   analizador_lapidas_org_id_fkey: 'tiene el registro de las reuniones de tl;dv que se borraron',
+  /* Los incidentes de la IA de la empresa (`067`). Lo que hay detrás es el registro de cada fallo, que
+     no se vuelve a generar: borrarlo es perder la historia de lo que le falló a esa cuenta. */
+  incidentes_org_id_fkey: 'tiene incidentes de la IA registrados',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 
