@@ -9,16 +9,14 @@
 // servidor: la pestaña se dibujaba sola.
 //
 // Acá el cliente pide y dibuja. Cada cifra ya llega con su piso aplicado y su nulo donde no se puede
-// decir. `costoDelAnuncio` y `calidadDeLaAtribucion` traen además su aviso escrito; desde AQ-3,
-// `embudosDeAcquisition` trae las tasas, los costos, las variaciones y los motivos como claves, y el
-// texto lo pone el front con su lista cerrada de frases (docs/acquisition/14, A14-02). Los tres tienen
-// pruebas verificadas por mutación contra la base de verdad.
+// decir: `embudosDeAcquisition` trae las tasas, los costos, las variaciones y los motivos como claves,
+// y el texto lo pone el front con su lista cerrada de frases (docs/acquisition/14, A14-02). Tiene
+// pruebas verificadas por mutación contra la base de verdad. Desde AQ-4 la respuesta ya no trae el
+// costo por anuncio ni el monitor de atribución: eran la pantalla anterior (A14-15).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedir } from '../http/cliente.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
-import type { CostoDeLosAnuncios } from './costoDelAnuncio.ts';
-import type { CalidadDeLaAtribucion } from './calidadDeLaAtribucion.ts';
 import type { EmbudosDeAcquisition } from './embudosDeAcquisition.ts';
 import type { Funnel, FunnelDeCampana } from './funnelDeLaCampana.ts';
 
@@ -26,8 +24,6 @@ const RUTA = '/api/acquisition';
 
 export interface PantallaDeAcquisition {
   periodo: ClaveDePeriodo;
-  costo: CostoDeLosAnuncios;
-  calidad: CalidadDeLaAtribucion;
   /** Los tres funnels, ya calculados: tasas, costos y variaciones (`embudosDeAcquisition.ts`). */
   embudos: EmbudosDeAcquisition;
   /** Si esta sesión puede asignar el funnel de una campaña (`credenciales.editar`). */

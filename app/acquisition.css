@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACQUISITION, OTRA VEZ CON EL FRONT DEL PROTOTIPO (AQ-4)
+
+   El panel dibuja el marcado de `aios-command-center_1.html` —`cre-head`, `acq-kpis`, `acq-note`,
+   `acq-fgrid`, las tablas plegables— y lo visten las reglas del prototipo, que siguen en
+   `app/aios.css:1585-1725` y no se tocan: esa hoja tiene que seguir siendo comparable contra el HTML
+   (docs/acquisition/14, A14-01). La sección no lleva `estetica-op`, que es la capa que había
+   cambiado el look. Es el método de Leads Portal (`app/leads-portal.css`).
+
+   Lo de abajo es sólo lo que el prototipo no tenía: el selector de funnel de cada campaña, la
+   línea de un fallo, la de la primera carga y el teléfono. Acotado a
+   `#v-acquisition` y en la capa `components`. Sin colores literales (`104-temas`) ni sombras
+   (`107-sin-sombras`).
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* El selector de funnel, en el pie de la campaña: chico y en la escala del texto de al lado, para
+   que la fila no cambie de alto. Va en su propio renglón porque el estado de la campaña ya ocupa
+   el suyo.
+
+   Hereda `.row-i select` de `app/ajustes.css` —`appearance: none` y la flecha dibujada con
+   `background-image`—, y por eso acá se pisa sólo `background-color` y no `background`: el atajo
+   se llevaba la flecha, y el selector quedaba como una caja lisa (lo encontró la revisión de AQ-4).
+   El ancho, en cambio, sí se pisa: el de Ajustes ocupa la celda entera. */
+#v-acquisition .acq-funnel {
+  display: block;
+  margin-top: 5px;
+  width: auto;
+  max-width: 100%;
+  font-size: 10.5px;
+  color: var(--txt-dim);
+  background-color: var(--bg-sunk);
+  border-radius: 6px;
+  padding: 2px 22px 2px 6px;
+}
+#v-acquisition .acq-funnel:disabled { opacity: .55; cursor: progress; }
+#v-acquisition .acq-funnel:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 1px; }
+
+/* «No se pudo leer» y «No se pudo guardar»: una línea, en el color de lo grave. El motivo del
+   servidor va en el `title`. */
+#v-acquisition .acq-falla {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--crit);
+}
+#v-acquisition .rs .acq-falla { display: block; margin-top: 4px; font-size: 10.5px; }
+
+/* La primera carga, mientras no hay nada que dibujar. */
+#v-acquisition .acq-cargando {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--txt-faint);
+}
+
+/* El envoltorio de cada tabla. En un escritorio no hace nada; en un teléfono desliza a lo ancho
+   (abajo). */
+#v-acquisition .acq-desliza { min-width: 0; }
+
+/* La fila de una tabla plegable se abre también con el teclado: el foco tiene que verse. */
+#v-acquisition .card-head[data-acq-toggle]:focus-visible {
+  outline: 2px solid rgb(var(--c-acento) / .55);
+  outline-offset: -2px;
+}
+
+/* ── EL TELÉFONO, A 375 px ───────────────────────────────────────────────────
+ *
+ * El prototipo tenía dos cortes: 1380 px —las tarjetas de funnel en una columna y las cifras en
+ * tres— y 1120 px —el segmentado de período baja debajo del título—. Debajo del corte del menú
+ * (760 px, `app/armazon.css`) eso no alcanza:
+ *
+ *   · las cinco cifras van de a dos;
+ *   · el segmentado ocupa el ancho y, si no entra, parte sus botones en dos renglones;
+ *   · las tablas deslizan a lo ancho. Son hasta diez columnas y apretarlas en 375 px dejaría cifras
+ *     de tres caracteres partidas en dos renglones; deslizando, cada columna conserva el ancho que
+ *     tiene en el escritorio. */
+@media (max-width: 760px) {
+  #v-acquisition .acq-kpis { grid-template-columns: repeat(2, 1fr); }
+  #v-acquisition .cre-head .ch-r { width: 100%; }
+  #v-acquisition .db-seg { flex-wrap: wrap; }
+  #v-acquisition .acq-desliza { overflow-x: auto; }
+  #v-acquisition .acq-desliza > .col-head,
+  #v-acquisition .acq-desliza > .rows { min-width: 760px; }
+}

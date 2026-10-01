@@ -293,7 +293,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
   Sus reglas viven casi todas en `app/aios.css:1205-1315`. Fuera de ese bloque: `.lc`, `.lc-score`,
   `.sc-v` y `.sc-l` también en `app/aios.css:2373-2377` («leads sin calificar»); `.tb-lab` y
   `.fb-div` en `app/aios.css:648`, `:669-670` y `:729`; las cuatro del encabezado en
-  `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:84-105`,
+  `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:91-112`,
   acotadas a las pantallas de Inteligencia, que ya no las emiten;
 - **vivas fuera**: de la familia `.ld-*`, sólo `.ld-time`, `.ld-dot`, `.ld-t`, `.ld-m` y `.ld-when`,
   que emite también la ficha de las pestañas de operación (`components/negocio/Ficha.jsx:409-420`);

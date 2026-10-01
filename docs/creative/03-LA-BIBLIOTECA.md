@@ -162,6 +162,6 @@ se está ordenando**, no sólo cuántas hay. Ordenar 32 piezas por una cifra que
 
 ### C3-11 · La barra de período se dibuja siempre, incluso sin datos
 
-**Rastro** · `components/acquisition/PanelDeAcquisition.jsx:93`: *«si apareciera con los datos, la
+**Rastro** · `components/acquisition/PanelDeAcquisition.jsx` (en `4365cc9`, línea 93): *«si apareciera con los datos, la
 pantalla salta al cargar»*.
 **Estado** · Se reusa el patrón.

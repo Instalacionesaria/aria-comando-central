@@ -102,7 +102,7 @@ puede seleccionar.
 - Los chips **`Clarity`** y **`VTurb`** de `components/views/ConversionView.jsx:22-31`.
 - Las **siete puertas** `data-leads` de la tira de KPI.
 - El botón **`◈ Plan de acción`** (`ConversionView.jsx:34-39`) y la pastilla **`Personalizado`**
-  (`:52-59`), por los mismos motivos que `components/views/AcquisitionView.jsx:21-26`.
+  (`:52-59`), por los mismos motivos que `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
 
 `ConversionView.jsx` queda como **cáscara que documenta qué se tiró**, con la forma de
 `components/views/CreativeView.jsx`.

@@ -45,6 +45,8 @@ const HOJAS = [
   // Leads Portal, el día que nace.
   'app/leads-portal.css',
   'app/creative.css',
+  // Acquisition con el front del prototipo, el día que nace (AQ-4).
+  'app/acquisition.css',
 ];
 
 /** El cuerpo de una hoja sin comentarios y sin su bloque `:root`, que es donde SÍ van los valores. */

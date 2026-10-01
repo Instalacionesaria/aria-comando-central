@@ -1,9 +1,16 @@
-/* La estética de operación aplicada a los cinco TABLEROS DE INTELIGENCIA.
+/* La estética de operación aplicada a los TABLEROS DE INTELIGENCIA.
    ==========================================================================
-   Acquisition, Creative, Conversion, Conversation y Sales. Mismo alcance que
+   Creative, Conversion, Conversation y Sales. Mismo alcance que
    `operacion-estetica.css` —`:is(#v-closer, .estetica-op)`, acotado acá a cada `#v-*`— y misma
    división de trabajo: allá vive el sistema visual, acá la traducción de las piezas que sólo
-   estas cinco dibujan.
+   estas dibujan.
+
+   **Acquisition salió de esta hoja el 2026-09-30 (AQ-4).** Volvió al front del prototipo con la
+   estética del prototipo al 100 % —sin `estetica-op`, como Leads Portal—, así que ninguna regla de
+   acá la alcanza: `#v-acquisition` se sacó de cada `:is()` y su tabla por anuncio se fue con la
+   pantalla anterior. Lo nuevo de esa pantalla vive en `app/acquisition.css`
+   (docs/acquisition/14, A14-01). Donde el texto de abajo dice «las cinco», es la historia de cuando
+   eran cinco.
 
    ── POR QUÉ ES UNA HOJA APARTE Y NO UNA SECCIÓN MÁS ────────────────────────
 
@@ -81,7 +88,7 @@
  * maquetado, al lado de un titular que ahora mide 24 px. */
 
 /* La fila, alineada con el título ya invertido. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .ch-r {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .ch-r {
   gap: 8px;
   align-items: center;
 }
@@ -89,7 +96,7 @@
 /* «Plan de acción» es la acción principal de estas pantallas: toma la forma del botón de la
    aplicación —cápsula, acento sólido— igual que `.fd-btn` en las de operación. No se le pone la
    clase en el JSX porque el marcado es el port del maquetado y `paridad` lo compara. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .reco-btn {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .reco-btn {
   height: 30px;
   padding: 0 14px;
   border-radius: 9999px;
@@ -100,21 +107,21 @@
   background: var(--accent-hondo);
   color: var(--sobre-acento);
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .reco-btn .rb-ic {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .reco-btn .rb-ic {
   opacity: .75;
 }
 
 /* El segmentado de periodo es una cápsula de pestañas más chica: el MISMO objeto conceptual que
    `.cl-sub`, con el mismo relleno de 4 px y la misma activa en acento sólido. Que dos controles
    que hacen lo mismo se vean igual es la mitad del trabajo de esta hoja. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg {
   gap: 2px;
   padding: 3px;
   border-radius: 9999px;
   background: rgb(var(--c-nube) / .05);
   border: 1px solid var(--line);
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg button {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg button {
   height: 24px;
   padding: 0 11px;
   border: 0;
@@ -124,7 +131,7 @@
   color: var(--txt-dim);
   background: transparent;
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg button.on {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .db-seg button.on {
   background: var(--accent-hondo);
   color: var(--sobre-acento);
   font-weight: 600;
@@ -132,7 +139,7 @@
 
 /* La píldora del calendario y la de «ordenar por»: mismo alto que el segmentado, para que la
    fila no tenga tres alturas distintas. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill {
   height: 30px;
   padding: 0 12px;
   border-radius: 9999px;
@@ -141,10 +148,10 @@
   border: 1px solid var(--line-strong);
   color: var(--txt-dim);
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill .pk {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill .pk {
   color: var(--txt-faint);
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill .pv {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .pill .pv {
   color: var(--txt);
   font-weight: 500;
 }
@@ -182,24 +189,21 @@
  *       nota escondida detrás de un ícono, y los dos cortes de ancho.
  *
  * Y una advertencia para quien toque esto: `.csf`, `.csr` y `.pn` son GLOBALES. Todo lo de acá
- * cuelga de `:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales)` a propósito — sin ese prefijo, una regla de esta
+ * cuelga de `:is(#v-conversation, #v-creative, #v-conversion, #v-sales)` a propósito — sin ese prefijo, una regla de esta
  * sección viajaría a Conversion, que usa `.cs-panels` y `.pn` para otra cosa.
  *
- * ── Y POR QUÉ ACQUISITION ENTRÓ AL MISMO ALCANCE EN VEZ DE COPIARSE ───────
+ * ── ACQUISITION ESTUVO EN ESTE ALCANCE, Y YA NO ────────────────────────────
  *
- * Porque es el MISMO tablero: la tarjeta de flujo, el eslabón con barra, el panel de cifras, el
- * segmentado de período y la nota escondida detrás de un ícono. Duplicar las setenta y ocho reglas
- * bajo `#v-acquisition` habría dado dos copias que divergen a la primera corrección —y la que quede
- * vieja no falla, se ve distinta—.
- *
- * Lo que NO entra en este alcance es lo que Acquisition ya tenía para su maqueta (`.acq-kpis`,
- * `.acq-fgrid`, `.acq-range`), que vive más arriba en este mismo archivo y no se toca. */
+ * Entró el 2026-09-16, cuando su pantalla era este mismo tablero —la tarjeta de flujo, el eslabón
+ * con barra y la nota escondida—, para no duplicar setenta y ocho reglas bajo `#v-acquisition`. Salió
+ * el 2026-09-30 (AQ-4): volvió al marcado del prototipo, que se viste con `app/aios.css`, y ya no
+ * dibuja ninguna de estas clases. */
 
 /* ── 1 · LA BARRA: PESTAÑAS A LA IZQUIERDA, PERÍODO A LA DERECHA ───────────
  *
  * En una sola fila y no en dos: son los dos controles de la pantalla y separarlos en renglones
  * distintos hace que el de abajo se lea como parte del contenido en vez de como un control. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-barra {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-barra {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -208,14 +212,14 @@
 }
 /* Los cuatro botones no se parten nunca: «7 días» cortado en dos renglones dentro de una cápsula
    de 24 px de alto rompe la fila entera. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-periodos button { white-space: nowrap; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-periodos button { white-space: nowrap; }
 
 /* ── 2 · LA TARJETA DE FLUJO ────────────────────────────────────────────────
  *
- * Las cuatro declaraciones que esta hoja ya repite para Acquisition, Creative y Conversion. El
+ * Las cuatro declaraciones que esta hoja ya repite para Creative y Conversion. El
  * degradado del maquetado se pisa a propósito: existía para separar la tarjeta de un lienzo plano,
  * y acá esa separación la da el desenfoque. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.csf, .pn) {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.csf, .pn) {
   border-radius: var(--radio-tarjeta);
   background: rgb(var(--c-panel) / .5);
   backdrop-filter: blur(4px);
@@ -225,14 +229,14 @@
 /* La cabecera es flex ACÁ y no en `aios.css`: el maquetado se lo daba con una clase de utilidad
    que se fue con el módulo, y `.csf-key{margin-left:auto}` sin un padre flex deja la cifra clave
    pegada al título. Es el tipo de rotura que no falla: se ve, pero mal. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-h {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-h {
   display: flex;
   align-items: flex-start;
   padding: 16px 18px;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-hl { min-width: 0; }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.csf-t, .csf-m) { margin: 0; }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-t {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-hl { min-width: 0; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.csf-t, .csf-m) { margin: 0; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-t {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .15em;
@@ -241,7 +245,7 @@
 }
 /* El subtítulo dice sobre qué se miden las barras y desde cuándo hay datos. Puede envolver: con
    `nowrap` heredado del maquetado, «desde el 24 de agosto» desaparecía en el recorte. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-m {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-m {
   margin-top: 6px;
   font-size: 11.5px;
   line-height: 1.5;
@@ -253,19 +257,19 @@
 /* El matiz que corrige a la fecha de arriba. Va en el tono de la advertencia y no en el del
    subtítulo: si se viera igual que el renglón que corrige, se leería como parte de él. No lleva
    fondo — es una salvedad sobre una cifra, no una alarma sobre el negocio. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-m.cs-cola {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-m.cs-cola {
   margin-top: 4px;
   color: var(--warn);
 }
 
 /* LA CIFRA CLAVE. Peso 300 y no 600: es la firma del sistema —los titulares de la estética— y
    era el desvío más visible del maquetado. A 26 px el peso ligero se lee mejor, no peor. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-key b {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-key b {
   font-size: 26px;
   font-weight: 300;
   letter-spacing: -.02em;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-key span {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-key span {
   font-size: 10.5px;
   letter-spacing: .04em;
   color: var(--txt-faint);
@@ -273,7 +277,7 @@
 /* El hueco declarado: la cifra que el documento pide y que no se puede medir. Se atenúa para que
    el guion no compita con un número real, y NO se pinta de rojo — que no haya dato todavía no es
    una alarma del negocio, y el color semántico está reservado para lo que exige una acción. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-key.falta b { color: var(--txt-faint); }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-key.falta b { color: var(--txt-faint); }
 
 /* ── 3 · EL ESLABÓN ─────────────────────────────────────────────────────────
  *
@@ -290,23 +294,23 @@
  *
  * Con tope, el par nombre+valor se mantiene junto y la barra se queda con todo lo que sobra, que es
  * la columna a la que el ancho extra sí le sirve: una barra más larga se compara mejor. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr,
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-r {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr,
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-r {
   grid-template-columns: minmax(0, 190px) 60px minmax(90px, 1fr) minmax(0, 215px);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr-n {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr-n {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr-v {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr-v {
   font-size: 17px;
   font-weight: 400;
   letter-spacing: -.01em;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr-p,
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-p {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr-p,
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-p {
   font-size: 10.5px;
   letter-spacing: .02em;
   /* Sin `nowrap`: el pie puede ser una frase corta y cortarla es peor que bajarla de renglón. */
@@ -315,14 +319,14 @@
 }
 /* Los carriles de las barras, un punto más visibles que en el maquetado: sobre la tarjeta
    translúcida el `.05` original desaparecía y una barra corta parecía ausencia de barra. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.csr-b, .org-b) {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.csr-b, .org-b) {
   background: rgb(var(--c-nube) / .08);
   /* `.csr-b` y `.org-b` pasaron de `div` a `span` en el marcado —van dentro de una fila de rejilla
      y un `span` no arrastra semántica de bloque— así que hay que devolverles la caja. */
   display: block;
   width: 100%;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr-b i { background: rgb(var(--c-acento) / .55); }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr-b i { background: rgb(var(--c-acento) / .55); }
 
 /* ── 4 · LA BIFURCACIÓN ─────────────────────────────────────────────────────
  *
@@ -330,26 +334,26 @@
  * hallazgo que decidió todo el rediseño: los que agendaron DESPUÉS de contestar y los que se
  * agendaron solos. Va en tono menor a propósito —no es un eslabón más de la cadena— y sus dos
  * barras, juntas, llenan la fila: eso es lo que hace comprobable que sumen el total. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-split {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-split {
   margin: 0;
   padding: 14px 18px 16px;
   border-top: 1px solid var(--line);
   background: rgb(var(--c-nube) / .022);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-h {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-h {
   margin: 0 0 4px;
   font-size: 10.5px;
   letter-spacing: .04em;
   color: var(--txt-faint);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-h b { color: var(--txt-dim); font-weight: 600; }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-v { font-weight: 500; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-h b { color: var(--txt-dim); font-weight: 600; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-v { font-weight: 500; }
 
 /* ── 5 · EL PIE DE LA TARJETA ───────────────────────────────────────────────
  *
  * UNA nota por tarjeta, donde antes había ocho párrafos. La que queda es la que explica por qué la
  * figura tiene la forma que tiene, no un matiz de una cifra: eso vive en `.cs-nota`. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-foot {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-foot {
   margin: 0;
   padding: 13px 18px;
   line-height: 1.6;
@@ -358,7 +362,7 @@
 /* ── 6 · EL PANEL DE CIFRAS DE APOYO ────────────────────────────────────────
  *
  * `.pn-b` es la rejilla, `.pn-c` cada celda. Las columnas se apilan en `@media` al final. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-h {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-h {
   padding: 14px 18px;
   font-size: 11px;
   font-weight: 600;
@@ -366,9 +370,9 @@
   text-transform: uppercase;
   color: var(--txt-faint);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-h em { letter-spacing: 0; text-transform: none; font-size: 11px; }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-c { padding: 16px 18px 18px; }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-k {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-h em { letter-spacing: 0; text-transform: none; font-size: 11px; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-c { padding: 16px 18px 18px; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-k {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -378,15 +382,15 @@
   letter-spacing: .04em;
   color: var(--txt-dim);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-r { margin: 10px 0 0; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-r { margin: 10px 0 0; }
 /* Mismo peso 300 que la cifra clave, un escalón más chico. El `!important` no hace falta: esta
    hoja está en la capa `components`, que le gana a `aios.css` por capa. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-v {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-v {
   font-size: 24px;
   font-weight: 300;
   letter-spacing: -.02em;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-rt {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-rt {
   margin: 6px 0 0;
   font-size: 11px;
   font-weight: 400;
@@ -401,12 +405,12 @@
  *
  * El botón mide 15 px y el área tocable la da el `padding` — abajo de 24 px no se acierta con el
  * pulgar, y esto se mira desde el teléfono. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-b {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-b {
   position: relative;
   display: grid;
   place-items: center;
@@ -428,20 +432,20 @@
      acierta, y un círculo de 24 px al lado de un rótulo de 10,5 px sería más grande que el rótulo. */
   outline-offset: 2px;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-b::after {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-b::after {
   content: '';
   position: absolute;
   inset: -5px;
   border-radius: 9999px;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-b:hover,
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-b.on {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-b:hover,
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-b.on {
   border-color: rgb(var(--c-acento) / .5);
   color: var(--accent);
 }
 /* El panel, encima de todo y anclado al ícono. `max-width` en `ch` y no en píxeles: lo que hace
    legible un párrafo es la cantidad de caracteres por línea, no su ancho. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-p {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-p {
   position: absolute;
   z-index: 40;
   top: calc(100% + 7px);
@@ -470,7 +474,7 @@
  *
  * Lleva la marca de atención a la izquierda como una franja, no un fondo de color: el fondo lo
  * convertiría en una alarma, y casi siempre lo que dice es «esto se empezó a registrar hoy». */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-grave {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-grave {
   display: flex;
   gap: 10px;
   margin: 0;
@@ -483,7 +487,7 @@
   line-height: 1.6;
   color: var(--txt-dim);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-grave::before {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-grave::before {
   content: '!';
   flex: 0 0 auto;
   width: 15px;
@@ -500,7 +504,7 @@
 
 /* Mientras se mide. Sólo aparece cuando NO hay cifras dibujadas —ver `cargar`— así que puede ser
    una línea sola sin que la pantalla salte. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-cargando {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-cargando {
   margin: 0;
   padding: 26px 0;
   text-align: center;
@@ -513,13 +517,13 @@
  *
  * Tres párrafos largos abiertos debajo del tablero vuelven a ser el problema que esto cerró. El
  * resumen dice cuántos son, así que plegarlo no esconde que existen: esconde el texto. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta-caja {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta-caja {
   border: 1px solid var(--line);
   border-radius: var(--radio-tarjeta);
   background: rgb(var(--c-panel) / .5);
   backdrop-filter: blur(4px);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > summary {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > summary {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -531,7 +535,7 @@
   color: var(--txt-faint);
   cursor: pointer;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > summary span {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > summary span {
   padding: 1px 7px;
   border-radius: 9999px;
   background: rgb(var(--c-nube) / .08);
@@ -539,8 +543,8 @@
   letter-spacing: 0;
   color: var(--txt-dim);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta-caja[open] > summary { border-bottom: 1px solid var(--line); }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > .cs-falta { padding: 14px 18px 16px; }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta-caja[open] > summary { border-bottom: 1px solid var(--line); }
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta-caja > .cs-falta { padding: 14px 18px 16px; }
 
 /* ── 10 · LOS DOS CORTES DE ANCHO ───────────────────────────────────────────
  *
@@ -550,46 +554,46 @@
  * A 900 px el panel de cuatro cifras pasa a dos: cuatro columnas en un tablet dan celdas de 90 px,
  * donde «9 de 10 antes de 6,2 h» se parte en cuatro renglones. */
 @media (max-width: 900px) {
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr 1fr; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr 1fr; }
   /* El borde izquierdo separa columnas; al envolver hay que devolverlo como borde superior o las
      filas de abajo quedan pegadas a las de arriba sin línea. */
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(odd) { border-left: 0; }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(n + 3) {
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(odd) { border-left: 0; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b.q3, .pn-b.q4) .pn-c:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
   /* La tercera de TRES ocupa el renglón entero. Visto en el navegador a 880 px: sola en su columna
      dejaba media fila vacía, y la línea que la separa terminaba en el medio — se lee como una celda
      que falta, no como la última de tres. */
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .pn-b.q3 .pn-c:nth-child(3):last-child { grid-column: 1 / -1; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .pn-b.q3 .pn-c:nth-child(3):last-child { grid-column: 1 / -1; }
 }
 
 /* A 640 px la fila de cuatro columnas del eslabón no entra: el nombre queda en dos caracteres por
  * renglón. Se reordena a dos filas —nombre y valor arriba, barra y pie abajo— en vez de apilarse en
  * cuatro, que dejaría cada eslabón de 90 px de alto y la cadena sin forma de cadena. */
 @media (max-width: 640px) {
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csr,
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .org-r {
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csr,
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .org-r {
     grid-template-columns: 1fr auto;
     gap: 4px 12px;
   }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.csr-b, .org-b) { grid-column: 1; }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.csr-p, .org-p) { grid-column: 2; text-align: right; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.csr-b, .org-b) { grid-column: 1; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.csr-p, .org-p) { grid-column: 2; text-align: right; }
   /* Las tres variantes NOMBRADAS, y no `.pn-b` a secas: el corte de 900 px de arriba usa
      `:is(.pn-b.q3, .pn-b.q4)`, que pesa más. Con `.pn-b` solo, la regla de dos columnas gana acá
      aunque esté escrita antes —la especificidad manda sobre el orden— y a 400 px la fila de cuatro
      cifras se queda en dos columnas de 170 px. Visto en el navegador, no deducido. */
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr; }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c { border-left: 0; }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c:not(:first-child) {
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) { grid-template-columns: 1fr; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c { border-left: 0; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) :is(.pn-b, .pn-b.q3, .pn-b.q4) .pn-c:not(:first-child) {
     border-top: 1px solid var(--line);
   }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-h { flex-direction: column; gap: 12px; }
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .csf-key { margin-left: 0; text-align: left; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-h { flex-direction: column; gap: 12px; }
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .csf-key { margin-left: 0; text-align: left; }
   /* El panel de la nota, anclado al borde de la pantalla y no al ícono: pegado al ícono, uno que
      esté a la derecha abre 44 caracteres fuera de la vista y no hay forma de leerlos. `top: auto`
      es obligatorio — el `calc(100% + 7px)` de la regla base, con `fixed`, se mide contra el ALTO
      DE LA VENTANA y manda el panel abajo de la pantalla. */
-  :is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-nota-p {
+  :is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-nota-p {
     position: fixed;
     top: auto;
     bottom: 16px;
@@ -603,7 +607,7 @@
 /* Cada falta: qué no se puede medir, en negrita, y por qué debajo. Las dos cosas en la misma fila
    y no un `<summary>` plegable — se leen una vez, y esconderlas detrás de un clic convierte la
    explicación en algo que nadie abre. */
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -611,7 +615,7 @@
   flex-direction: column;
   gap: 10px;
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta li {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta li {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -620,12 +624,12 @@
   border-radius: var(--radio);
   background: rgb(var(--c-nube) / .03);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta b {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta b {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--txt);
 }
-:is(#v-conversation, #v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-falta span {
+:is(#v-conversation, #v-creative, #v-conversion, #v-sales) .cs-falta span {
   font-size: 11.5px;
   line-height: 1.6;
   color: var(--txt-dim);
@@ -634,7 +638,7 @@
 /* ── 2 · LAS CAJAS COMPARTIDAS ──────────────────────────────────────────────
  *
  * `.card` ya la refina `operacion-estetica.css` —tarjeta translúcida de 26 px— y llega sola a
- * Acquisition, Conversation y Sales. Lo que falta es el resto del vocabulario de cajas del
+ * Conversation y Sales. Lo que falta es el resto del vocabulario de cajas del
  * maquetado, que esas tres comparten con Creative y Conversion. */
 
 /* ── LO QUE SE FUE DE ACÁ EL 2026-09-20, Y CÓMO SE COMPROBÓ ────────────────
@@ -661,7 +665,7 @@
 
 /* La rejilla de tarjetas: sólo la separación, para que respiren como las de operación. La forma de
    cada tarjeta la da `.card`, que ya está refinada. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .grid-4 {
+:is(#v-creative, #v-conversion, #v-sales, #v-conversation, #v-sales) .grid-4 {
   gap: 12px;
 }
 
@@ -671,10 +675,8 @@
  * superficie—, nunca qué color lleva cada cosa: el semáforo de cada tablero significa algo y sus
  * pruebas lo leen. */
 
-/* Acquisition: los KPI y las tarjetas de funnel. La de funnel traía un `linear-gradient` propio
-   en `aios.css:1738` que la tarjeta translúcida pisa — y está bien que la pise: el degradado
-   existía para separarla del lienzo plano del maquetado, y acá esa separación la da el
-   desenfoque. */
+/* Acquisition: nada. Sus KPI y sus tarjetas de funnel llevan otra vez el degradado del prototipo
+   (`aios.css:1588`), porque la pantalla no lleva `estetica-op` y nada lo pisa (AQ-4). */
 
 /* Creative y Conversion ya no tienen tarjeta propia. Tenían cinco reglas entre las dos —la tira de
    cifras y las fichas de contenido de Creative, los paneles y los pasos del recorrido de
@@ -702,116 +704,30 @@
    Las declaraciones globales de esas cuatro clases siguen en `app/aios.css`, que es el port literal
    y no se toca: si alguna vista vuelve a emitirlas, se ven como en el maquetado. */
 
-/* ── LO QUE SE FUE CON LA MAQUETA, Y LO QUE QUEDA A PROPÓSITO ───────────────
+/* ── LAS `acq-*` VOLVIERON A VIVIR ──────────────────────────────────────────
  *
- * `acq-kpis`, `acq-fgrid`, `acq-range`, `acq-sub` y las demás `acq-*` del prototipo vestían lo que
- * se borró con `lib/aios/acquisition.js`: los contenedores que llenaba el módulo imperativo, el
- * selector de rango personalizado y el comparador de períodos. Comprobado antes de tocar nada:
- * **cero referencias vivas** en todo el repositorio.
+ * Acá decía que `acq-kpis`, `acq-fgrid`, `acq-sub` y las demás `acq-*` del prototipo no tenían
+ * emisor, y fue cierto del 2026-09-16 al 2026-09-30. Desde AQ-4 las dibuja
+ * `components/acquisition/PanelDeAcquisition.jsx` y las viste `app/aios.css`, que no se toca.
  *
- * Se fueron las TRES reglas cuyo selector nombra únicamente clases muertas. `.acq-kpis` y
- * `.acq-fgrid` siguen nombradas una vez más arriba, dentro de un `:is()` compartido con `.grid-4`,
- * `.cs-panels`, `.cg` y `.cre-stats`, que sí están vivas en Creative y Conversion. **Quitarles un
- * trozo a ese selector es más riesgoso que dejar el peso**: una lista de clases dentro de un `:is()`
- * es fácil de recortar de más, y el modo de fallo es una pantalla ajena que pierde su rejilla sin
- * que ninguna prueba lo note.
- *
- * Y no vuelven por inercia: el período de esta pantalla es el cerrado de `lib/negocio/periodo.ts` y
- * la comparación contra otro período no existe — el porqué está en la cabecera de
- * `components/views/AcquisitionView.jsx`. */
-
-/* ── ACQUISITION: LA TABLA POR ANUNCIO ──────────────────────────────────────
- *
- * Todo lo demás de esta pantalla viste con el vocabulario de Conversation, que ya entró al alcance
- * compartido más arriba. Lo único propio es la tabla: Conversation no tiene ninguna, porque sus
- * cortes son eslabones con barra y no filas de siete columnas.
- *
- * ── POR QUÉ UNA REJILLA Y NO UN `<table>` ─────────────────────────────────
- *
- * Porque a 640 px una tabla real no se puede reflujar: sus celdas quedan atadas a la fila, y el
- * único remedio es el desplazamiento horizontal — que en un tablero esconde justamente la columna
- * de la derecha, donde está la tasa. Con `grid` las columnas se pueden redefinir por ancho, y los
- * papeles de accesibilidad (`role="table"`, `role="row"`, `role="cell"`) conservan la semántica que
- * un lector de pantalla necesita.
- *
- * El nombre del anuncio es la única columna elástica: los demás son cifras de ancho conocido, y
- * dejarlas crecer separaría el rótulo de su número — que es el defecto que el rediseño de
- * Conversation midió en 400 px y capó a 190. */
-#v-acquisition .acq-tabla {
-  display: flex;
-  flex-direction: column;
-  margin-top: 4px;
-}
-#v-acquisition .acq-fila {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(6, minmax(58px, 82px));
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--txt);
-}
-/* Las cifras a la derecha y el nombre a la izquierda: una columna de números alineada por su
-   última cifra se compara de un vistazo, y centrada no. */
-#v-acquisition .acq-fila > span:not(.acq-n) {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-#v-acquisition .acq-cab {
-  border-top: 0;
-  padding-bottom: 7px;
-  font-size: 10px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--txt-faint);
-}
-#v-acquisition .acq-n {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  /* El nombre se corta con puntos suspensivos y NO se parte en dos renglones: los nombres reales
-     miden hasta 38 caracteres («Servicio HT - transición a AI Native A») y partidos duplicarían el
-     alto de cada fila. El nombre entero queda en el `title` del navegador. */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* El denominador de la tasa, en tono menor y pegado a ella. Sin el denominador, «100 %» sobre un
-   lead se lee igual que sobre cien. */
-#v-acquisition .acq-de {
-  font-style: normal;
-  color: var(--txt-faint);
-  font-size: 10.5px;
-}
-#v-acquisition .acq-mas {
-  align-self: flex-start;
-  margin-top: 10px;
-  padding: 5px 11px;
-  border: 1px solid var(--line);
-  border-radius: 9999px;
-  background: none;
-  color: var(--txt-dim);
-  font-size: 11px;
-  cursor: pointer;
-}
-#v-acquisition .acq-mas:hover { color: var(--txt); border-color: var(--line-strong); }
+ * Y con la pantalla anterior se fueron sus reglas de acá: la tabla por anuncio (`.acq-tabla`,
+ * `.acq-fila`, `.acq-cab`, `.acq-n`, `.acq-de`, `.acq-mas`) con sus dos cortes de ancho, y las marcas
+ * del monitor de atribución (`.acq-peor`, `.acq-inverso`). Ninguna clase de ésas la emite ya nadie. */
 
 /* Los dos puntos del § 18.14 que esta vía no puede medir. En tono menor porque no son cifras: son
    la razón de que falten dos cifras. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-fuera {
+:is(#v-creative, #v-conversion, #v-sales) .cs-fuera {
   margin: 0;
   font-size: 11px;
   line-height: 1.6;
   color: var(--txt-faint);
 }
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-fuera b { color: var(--txt-dim); font-weight: 600; }
+:is(#v-creative, #v-conversion, #v-sales) .cs-fuera b { color: var(--txt-dim); font-weight: 600; }
 
 /* ── Y EL SANGRADO CUANDO CUELGA DIRECTO DE LA TARJETA ─────────────────────
  *
- * En Acquisition esta clase va SIEMPRE dentro de `.org-split`, que tiene `padding: 14px 18px 16px`.
- * En Creative y en Conversion cuelga directo de `.csf`, y `.csf` tiene `padding: 0` —el sangrado lo
+ * En la pantalla anterior de Acquisition esta clase iba dentro de `.org-split`, que tiene
+ * `padding: 14px 18px 16px`. En Creative y en Conversion cuelga directo de `.csf`, y `.csf` tiene `padding: 0` —el sangrado lo
  * pone cada hijo—, así que el párrafo arrancaba pegado al borde de la tarjeta mientras el título de
  * arriba estaba entrado 18 px. Visto en el navegador el 2026-09-20: la primera letra queda contra
  * el borde y se lee como texto cortado.
@@ -830,62 +746,20 @@
 
 /* Mientras llega la primera lectura. El texto dice QUÉ se está leyendo y no «cargando»: en una
    pantalla que puede estar vacía por falta de datos, «cargando» y «no hay nada» se confunden. */
-:is(#v-acquisition, #v-creative, #v-conversion, #v-sales) .cs-vacio {
+:is(#v-creative, #v-conversion, #v-sales) .cs-vacio {
   margin: 0;
   padding: 20px 0;
   font-size: 12px;
   color: var(--txt-faint);
 }
 
-/* ── LOS DOS CORTES DE ANCHO ────────────────────────────────────────────────
- *
- * A 900 px la tabla pierde CPM y CTR, que son las dos cifras de entrega — las que menos se miran
- * cuando el ancho obliga a elegir. A 640 quedan cuatro columnas: anuncio, gasto, leads y CPL.
- *
- * Se esconden con `display: none` y no encogiendo la columna: una columna de 20 px muestra «$1…» y
- * eso es peor que no mostrarla, porque parece una cifra. */
-@media (max-width: 900px) {
-  #v-acquisition .acq-fila {
-    grid-template-columns: minmax(0, 1fr) repeat(4, minmax(56px, 78px));
-  }
-  #v-acquisition .acq-fila > :nth-child(3),
-  #v-acquisition .acq-fila > :nth-child(4) { display: none; }
-}
-@media (max-width: 640px) {
-  #v-acquisition .acq-fila {
-    grid-template-columns: minmax(0, 1fr) repeat(3, minmax(52px, 1fr));
-    font-size: 11.5px;
-  }
-  #v-acquisition .acq-fila > :nth-child(7) { display: none; }
-  #v-acquisition .acq-de { display: none; }
-}
-
-/* ── LA MARCA DEL PUNTO INVERTIDO DEL MONITOR ───────────────────────────────
- *
- * Cuatro de los cinco puntos del § 18.14 son COBERTURAS: la barra llena es buena noticia. El de las
- * UTM incompletas cuenta lo que está ROTO, así que su barra llena es lo peor.
- *
- * Con el mismo lenguaje visual, una barra al 100 % significa lo contrario según la fila y no hay
- * forma de saber cuál se está mirando. El rótulo lo dice con palabras y el tono de aviso lo dice
- * antes de leerlo. */
-#v-acquisition .acq-peor {
-  font-style: normal;
-  font-size: 10px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--txt-faint);
-}
-#v-acquisition .acq-inverso .csr-b i { background: rgb(var(--c-warn) / .55); }
-
 /* ═════ CREATIVE · las tres tablas y sus coberturas ═══════════════════════════
  *
- * Mismo esqueleto que `.acq-tabla` y a propósito: son la misma clase de pantalla —un departamento
- * que publica cifras con su ventana y sus avisos— y dos dialectos obligarían a quien mira las dos a
- * aprender dos veces lo mismo.
+ * Nació con el esqueleto de la tabla por anuncio de Acquisition (`.acq-tabla`, que se fue el
+ * 2026-09-30 con esa pantalla): un departamento que publica cifras con su ventana y sus avisos.
  *
- * Lo que cambia es la cantidad de columnas, y por eso no se comparte el selector: las tres tablas de
- * Creative tienen anchos distintos entre sí, y `.acq-fila` fija seis columnas numéricas. Reusar la
- * clase obligaría a pisar `grid-template-columns` tres veces, que es más frágil que declararlas. */
+ * Las tres tablas de Creative tienen anchos distintos entre sí, y por eso cada una declara su
+ * `grid-template-columns` en vez de pisar uno común. */
 :is(#v-creative, #v-conversion, #v-sales) .crv-tabla {
   display: flex;
   flex-direction: column;

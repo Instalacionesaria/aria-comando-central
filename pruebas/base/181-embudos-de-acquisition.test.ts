@@ -507,7 +507,9 @@ test('la ruta respeta el período, trae los funnels y dice si la sesión puede a
     await leerAcquisition(pedirComo('/api/acquisition?periodo=7d', esc.token)),
   );
   assert.equal(semana.estado, 200);
-  assert.deepEqual(Object.keys(semana.cuerpo).sort(), ['calidad', 'costo', 'embudos', 'periodo', 'puedeAsignar']);
+  /* Sin `costo` ni `calidad` desde AQ-4: la tabla por anuncio y el monitor eran la pantalla anterior, y
+     calcularlos para nadie costaba dos lecturas por carga (A14-15). */
+  assert.deepEqual(Object.keys(semana.cuerpo).sort(), ['embudos', 'periodo', 'puedeAsignar']);
   /* `alfa` es compartida: la ventana exacta depende de si su «ayer» ya se releyó. Lo que se exige es
      que la ruta dé lo MISMO que el cálculo con el período pedido. */
   const zonaDeAlfa = (await esc.admin.query<{ z: string }>('select zona_horaria as z from identidad.organizaciones where id = $1', [esc.org])).rows[0]!.z;

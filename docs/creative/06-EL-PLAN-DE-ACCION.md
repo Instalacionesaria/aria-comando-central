@@ -100,7 +100,7 @@ cuatro campos que `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` midió como inexistentes.
 ### C6-08 · El botón «Plan de acción» se borra, y el bloque se conserva como forma
 
 **Qué es** · `components/views/CreativeView.jsx:24-29` dibuja `«◈ Plan de acción»`.
-**Estado** · **Se borra**, por el mismo motivo escrito en `components/views/AcquisitionView.jsx:21-26`:
+**Estado** · **Se borra**, por el mismo motivo escrito en `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26):
 *«Un botón que abre recomendaciones con umbrales inventados es peor que no tenerlo.»* Con una sola
 frase sostenible de doce, lo que abriría es un modal casi vacío que promete un plan.
 

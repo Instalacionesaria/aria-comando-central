@@ -53,7 +53,7 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
 
 **Y el marcado tampoco está al día.** Los cuatro paneles nuevos emiten `db-seg cs-periodos` con
 `role="group"` y `aria-label` (`PanelDeConversion.jsx:106`, `PanelDeCreative.jsx:111`,
-`PanelDeAcquisition.jsx:126`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
+`PanelDeAcquisition.jsx:202`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
 
 ---
 
@@ -106,7 +106,7 @@ Con dos observaciones que valen para las tres pantallas:
    aplica entre todos los bloques.
 2. **La mitad derecha (`.ch-r`) se va entera.** Creative y Conversion ya la borraron; hoy **Sales es
    la única de las cinco que la conserva**, lo cual deja desactualizado el comentario de
-   `app/inteligencia-estetica.css:24-28`, que afirma que las cinco la comparten.
+   `app/inteligencia-estetica.css:31-35`, que afirma que las cinco la comparten.
 
 ## S7-05 · Y la bajada cambia, como en las otras dos
 

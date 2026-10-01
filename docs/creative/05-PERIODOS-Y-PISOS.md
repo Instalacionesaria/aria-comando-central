@@ -55,7 +55,7 @@ del prototipo, y es la corrección que Acquisition ya hizo.
 
 **Qué es** · `components/views/CreativeView.jsx:42-49` dibuja un botón «Personalizado» con
 `data-datepick="cre"`.
-**Estado** · **Andamiaje.** El mismo motivo que escribió `components/views/AcquisitionView.jsx:21-26`:
+**Estado** · **Andamiaje.** El mismo motivo que escribió `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26):
 el vocabulario cerrado de `periodo.ts` es el del sistema, y un rango libre obliga a que cada cifra con
 piso y cada aviso de cobertura se vuelvan a razonar para una ventana arbitraria.
 

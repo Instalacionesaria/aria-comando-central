@@ -1161,8 +1161,8 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   // `PANTALLA = 'conversation'` y la pantalla dejó de no decidir nada. El cable trampa disparó
   // exactamente para eso y se le hizo caso: la bandera se bajó en `SECCIONES`.
   //
-  // Y la OCTAVA es **`acquisition`**: `app/api/acquisition/route.ts` publica el costo por anuncio y
-  // el monitor de atribución, así que la pantalla dejó de no decidir nada. El cable trampa volvió a
+  // Y la OCTAVA es **`acquisition`**: `app/api/acquisition/route.ts` publicaba el costo por anuncio y
+  // el monitor de atribución —hoy, los tres funnels—, así que la pantalla dejó de no decidir nada. El cable trampa volvió a
   // disparar por tercera vez y se le hizo caso — la bandera se bajó en `SECCIONES`.
   //
   // La NOVENA es **`creative`**: `app/api/creative/route.ts` publica el ICP y la agenda por pieza,

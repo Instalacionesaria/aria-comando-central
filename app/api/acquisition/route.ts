@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Acquisition: lo que costó cada anuncio, y cuánto vale esa cifra.
+// La pantalla de Acquisition: los tres funnels del prototipo, con los datos reales.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA
@@ -16,21 +16,25 @@
 //
 // ── UNA SOLA LECTURA PARA TODA LA PANTALLA ────────────────────────────────
 //
-// Mismo argumento que `app/api/auditoria/route.ts`, y acá pesa más: la tabla de anuncios y el
-// monitor de atribución **no se pueden leer por separado**. El § 18.5 sólo deja publicar una
-// conclusión por anuncio *con su cobertura al lado*, así que una pantalla que dibuje la tabla antes
-// que el monitor muestra durante esos segundos exactamente la afirmación que el documento prohíbe.
+// Mismo argumento que `app/api/auditoria/route.ts`: las cinco cifras, las tarjetas y las tablas son
+// una sola pantalla, y dibujarla a pedazos mostraría durante unos segundos totales que no suman lo que
+// está abajo. Por eso todo sale de `embudosDeAcquisition`, con UNA ventana.
 //
-// Las dos cifras reciben además LA MISMA ventana. Con ventanas distintas, la tabla hablaría de
-// treinta días y la cobertura de catorce, sin decirlo.
+// ── LO QUE ESTA RUTA YA NO PUBLICA (AQ-4, 2026-09-30) ─────────────────────
+//
+// Publicaba además `costo` —la tabla por anuncio de `costoDelAnuncio`— y `calidad` —el monitor de
+// atribución de `calidadDeLaAtribucion`—, que eran la pantalla anterior. La del prototipo no los
+// dibuja (docs/acquisition/14, A14-15), y calcularlos en cada carga para nadie costaba dos lecturas.
+// Con ellos se va el «Hoy» de dos significados de la misma respuesta: el monitor contaba 24 horas
+// móviles por día, y los funnels, días de calendario (A14-10). `costoDelAnuncio` sigue vivo porque
+// lo usa Creative; el monitor queda dormido, con sus pruebas, por decisión del usuario del
+// 2026-09-30 (`docs/OTROS/futuro/monitor-de-atribucion.md`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
-import { costoDelAnuncio } from '../../../lib/negocio/costoDelAnuncio.ts';
-import { calidadDeLaAtribucion } from '../../../lib/negocio/calidadDeLaAtribucion.ts';
 import { embudosDeAcquisition } from '../../../lib/negocio/embudosDeAcquisition.ts';
 
 export const PANTALLA = 'acquisition';
@@ -49,24 +53,17 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  /* Los funnels del front del prototipo (docs/acquisition/14) van en la MISMA respuesta que el costo y
-     el monitor, por el mismo motivo de arriba: la pantalla no se dibuja a pedazos. No es una sola foto
-     de las filas —la transacción es READ COMMITTED y cada sentencia ve la suya—, pero sí un solo
-     `current_date` para todas las ventanas. `costo` y `calidad` se quedan mientras la pantalla de hoy
-     los dibuje: la tabla por anuncio sale en AQ-4 (A14-15), y qué pasa con el monitor se decide ahí. */
-  const [costo, calidad, embudos] = await conOrganizacion(contexto.orgEfectiva, async () => [
-    await costoDelAnuncio(periodo.dias),
-    await calidadDeLaAtribucion(periodo.dias),
-    await embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria),
-  ] as const);
+  /* No es una sola foto de las filas —la transacción es READ COMMITTED y cada sentencia ve la suya—,
+     pero sí un solo `current_date` para todas las ventanas. */
+  const embudos = await conOrganizacion(contexto.orgEfectiva, () =>
+    embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria),
+  );
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ. Si un día las dos dejan de coincidir, el botón encendido sigue describiendo
        las cifras que están abajo. */
     periodo: periodo.clave,
-    costo,
-    calidad,
     embudos,
     /* Si esta sesión puede asignar funnels: la misma capacidad que pide `PUT /api/acquisition/funnel`.
        La decide el servidor para que la pantalla no ofrezca un selector que después responde 403. */

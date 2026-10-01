@@ -1,54 +1,120 @@
 'use client';
 
-/* El tablero de Acquisition: lo que costó cada anuncio, y cuánto vale esa cifra.
+/* El tablero de Acquisition: los tres funnels del prototipo, con los datos reales.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * LO QUE ESTE ARCHIVO REEMPLAZA, Y POR QUÉ NO ES UN REDISEÑO
+ * EL MARCADO ES EL DEL PROTOTIPO, Y LOS NÚMEROS LLEGAN HECHOS
  *
- * Hasta acá la pestaña la dibujaba `lib/aios/acquisition.js`: 302 líneas que calculaban EN EL
- * NAVEGADOR las tasas de paso de tres embudos, el costo por calificado y los umbrales de dos
- * alertas escritas a mano, todo sobre **58 literales inventados**. `bootAios()` lo arrancaba en
- * cada carga de página, así que mientras existiera alguien podía estar leyéndolo como si fuera
- * medición.
+ * `aios-command-center_1.html` dibujaba esta pantalla con plantillas de texto (`renderKpis`,
+ * `renderFunnels`, `renderTables`, líneas 5482-5594) sobre 58 cifras inventadas. Acá se dibuja el
+ * MISMO marcado —`cre-head`, `acq-kpis`, `acq-note`, `acq-fgrid`, las tablas plegables—, con las
+ * mismas clases y en el mismo orden, y las reglas siguen siendo las de `app/aios.css:1585-1725`, que
+ * nadie toca (docs/acquisition/14, A14-01). Lo nuevo —el selector de funnel, los huecos, el teléfono—
+ * vive en `app/acquisition.css`.
  *
- * Lo que hay ahora son dos cifras reales —el costo por anuncio y el monitor de atribución— y nada
- * más. Es mucho menos pantalla, y es la pantalla entera que se puede sostener.
+ * Lo que cambia es de dónde salen los números: el navegador **no calcula nada**. Las tasas, los costos
+ * y las variaciones con su lectura llegan de `embudosDeAcquisition` (A14-17). Lo único que se hace
+ * acá es darles formato y elegir la frase de cada hueco, de la lista cerrada de A14-02.
  *
- * ── EL VOCABULARIO ES EL DE CONVERSATION, A PROPÓSITO ─────────────────────
+ * ── LO QUE EL PROTOTIPO TENÍA Y ESTA PANTALLA NO ──────────────────────────
  *
- * `.csf` la tarjeta de flujo, `.csr` el eslabón con barra, `.pn` el panel de cifras, el segmentado
- * de período y la `Nota` escondida detrás de un ícono. No es reuso por ahorro: **son la misma clase
- * de pantalla** —un departamento que publica cifras con su ventana y sus avisos— y dos dialectos
- * distintos obligarían a quien mira las dos a aprender dos veces lo mismo.
+ *   · **«Plan de acción» y «Señales detectadas»**: para los agentes de IA, en una etapa posterior
+ *     (A14-16).
+ *   · **«Personalizado» y el rango con «Comparar vs»**: el período es el del sistema (A14-10).
+ *   · **«Tasa: Paso a paso / Acumulada»**: con los clics fuera y el formulario sin dato, las dos
+ *     tasas dan el mismo número, y el usuario decidió no dibujar un control que no cambia nada (A14-09).
+ *   · **`data-leads`**: abría un cajón con personas inventadas (A14-15).
  *
- * ── LA REGLA QUE GOBIERNA EL ORDEN DE LOS BLOQUES ─────────────────────────
+ * ── Y LO QUE ESTA PANTALLA TIENE Y EL PROTOTIPO NO ────────────────────────
  *
- * El § 18.5 sólo deja publicar una conclusión por anuncio **con su cobertura al lado**. Por eso la
- * cobertura no es una nota al pie ni un bloque al final: va arriba de la tabla, antes de que nadie
- * lea una sola fila. El § 18.14 lo dice como requisito y acá es una decisión de maquetado.
- *
- * ── Y `'use client'` NO ES DECORACIÓN ──────────────────────────────────────
- *
- * Este panel usa `useState`, `useEffect` y `useCallback`. Andaba sin la directiva porque hereda el
- * límite de cliente de quien lo importa —`CommandCenter.jsx`—, y era el único panel con estado del
- * repositorio sin declararlo: `PanelDeConversation` la tiene en su primera línea.
- *
- * Depender de la herencia es frágil de una forma concreta: el día que alguien renderice esta vista
- * desde un componente de servidor, el error no dice «falta 'use client'», dice que los hooks no se
- * pueden usar acá — tres archivos más arriba.
+ * El selector de funnel en cada campaña, porque el funnel se asigna a mano (A14-03), y la tabla
+ * «Sin funnel», donde empiezan todas (A14-14). El selector se dibuja sólo si el servidor dijo que esta
+ * sesión puede asignar y no se está mirando otra empresa, como el link manual de Creative: ofrecer un
+ * control que va a dar 403 es el `07` § 4.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
-import { leerAcquisition } from '@/lib/negocio/vistaDeAcquisition';
+import { guardarFunnelDeLaCampana, leerAcquisition, sacarFunnelDeLaCampana } from '@/lib/negocio/vistaDeAcquisition';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 
-/**
- * Cuántos anuncios se dibujan de entrada. Los demás quedan detrás del botón «Ver los N que faltan»,
- * que dice cuántos son — no hay ninguna fila que los resuma, y el total de arriba ya cuenta a todos.
- */
-const ANUNCIOS_A_LA_VISTA = 12;
+/* Los tres funnels del prototipo (`FUNNELS`, línea 5344): nombre, rótulo de cada etapa y rótulo de su
+   costo. Son texto de pantalla y no reglas: qué etapas tiene cada uno lo dice el servidor
+   (`ETAPAS` de `embudosDeAcquisition.ts`), y esto sólo las nombra. */
+const FUNNELS = {
+  leadform: {
+    nombre: 'Lead form ads',
+    rotulos: { contactos: 'Leads', clics: 'Clics a landing VSL', agendados: 'Agendados' },
+    costos: { contactos: 'CPL', clics: 'C/clic', agendados: 'C/agendado' },
+  },
+  profile: {
+    nombre: 'Profile funnel',
+    rotulos: { contactos: 'DMs', clics: 'Clics a landing VSL', agendados: 'Agendados' },
+    costos: { contactos: 'C/DM', clics: 'C/clic', agendados: 'C/agendado' },
+  },
+  booking: {
+    nombre: 'Booking directo',
+    rotulos: { contactos: 'Contactos', forms: 'Completaron form', clics: 'Clics a landing VSL', agendados: 'Agendas' },
+    costos: { contactos: 'C/contacto', forms: 'C/form', clics: 'C/clic', agendados: 'C/agenda' },
+  },
+};
+/* «Sin funnel» no está en el prototipo: usa la cadena corta, con los rótulos genéricos. */
+const SIN_FUNNEL = {
+  nombre: 'Sin funnel',
+  rotulos: { contactos: 'Contactos', clics: 'Clics a landing VSL', agendados: 'Agendados' },
+  costos: { contactos: 'C/contacto', clics: 'C/clic', agendados: 'C/agendado' },
+};
+const CLAVES = ['leadform', 'profile', 'booking'];
+
+/* ── LA LISTA CERRADA DE FRASES (A14-02) ───────────────────────────────────
+   Una frase nueva entra primero en el documento. */
+const FRASE = {
+  guion: '—',
+  sinDato: 'Sin dato desde el 31 ago.',
+  deMeta: 'según Meta',
+  sinComparacion: 'sin comparación',
+  sinCampanas: 'Sin campañas asignadas',
+  asigna: 'Asigna cada campaña a su funnel',
+  sinGasto: 'Sin gasto en este período',
+  fallo: 'No se pudo leer. Reintenta.',
+  noGuardo: 'No se pudo guardar. Reintenta.',
+  cargando: 'Cargando…',
+  faltanDias: 'Faltan días de gasto.',
+  sinHistoria: 'Sin historia para comparar.',
+  hoySinCostos: 'Hoy, sin costos.',
+  noFigura: 'No figura en Meta',
+};
+
+/* ── LOS FORMATOS DEL PROTOTIPO (líneas 5380-5382) ─────────────────────────
+   Con una excepción: el costo por clic real anda en centavos, y `Math.round` lo dibujaba «$0», que
+   se lee como «gratis». Debajo de diez dólares se dibujan dos decimales. */
+const nf = (n) => Math.round(n).toLocaleString('es-MX');
+const cf = (n) =>
+  n < 10
+    ? `$${n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : `$${Math.round(n).toLocaleString('es-MX')}`;
+const pf = (n) => `${Math.round(n * 100)}%`;
+/** El guion es «no se sabe» o «bajo el piso», nunca un cero. */
+const o = (v, formato) => (v === null || v === undefined ? FRASE.guion : formato(v));
+
+/** `2026-09-16` → «16 sep». El año sólo si no es el corriente. */
+function fechaCorta(iso) {
+  const [a, m, d] = iso.split('-');
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}${a === String(new Date().getFullYear()) ? '' : ` ${a}`}`;
+}
+
+/** La ventana de verdad, no la pedida: «7 días» termina en el último día cerrado (A14-10). */
+function rangoDe(v) {
+  return v.desde === v.hasta ? fechaCorta(v.desde) : `${fechaCorta(v.desde)} – ${fechaCorta(v.hasta)}`;
+}
+
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+/** Los estados que manda GoHighLevel, en castellano. Uno desconocido se muestra tal cual. */
+const ESTADOS = { ACTIVE: 'Activa', PAUSED: 'Pausada', ARCHIVED: 'Archivada', DELETED: 'Borrada' };
 
 export default function PanelDeAcquisition() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -56,19 +122,28 @@ export default function PanelDeAcquisition() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  /* Cuál es la última lectura pedida. Sin esto, una respuesta que llega tarde pisa a la más nueva:
+     la primera carga de 30 días que contesta después de la de 7 deja el botón en «30 días» y la
+     pantalla en treinta, y volver a tocar «7 días» no pide nada (lo encontró la revisión de AQ-4). */
+  const ultima = useRef(0);
+
   /**
-   * Trae la pantalla. Mismo contrato que `PanelDeConversation`, y por los mismos motivos:
-   * teniendo datos no se vacía nunca, y el cambio de período va como carga PRIMERA porque las
-   * cifras dibujadas son de otra ventana.
+   * Trae la pantalla. Mismo contrato que `PanelDeConversation`: una recarga del reloj que falla
+   * conserva lo que había; el cambio de período va como carga PRIMERA porque las cifras dibujadas
+   * son de otra ventana, y si falla, la pantalla queda vacía con el aviso. Devuelve la promesa: el
+   * selector de funnel la espera para no habilitarse con el valor viejo.
    */
   const cargar = useCallback(
     async (esRecarga = false) => {
+      const esta = ++ultima.current;
       if (!esRecarga) setCargando(true);
       const r = await leerAcquisition(periodo);
+      if (esta !== ultima.current) return;
       if (r.tipo === 'datos') {
         setPantalla(r.pantalla);
         setError('');
       } else {
+        // El motivo del servidor va en el `title`: la pantalla dice sólo la frase corta.
         setError(r.mensaje);
         if (!esRecarga) setPantalla(null);
       }
@@ -81,56 +156,56 @@ export default function PanelDeAcquisition() {
     cargar();
   }, [cargar]);
 
-  /* Con `null` como clave el reloj no se registra, así que con Acquisition cerrada esto no cuesta
-     una sola petición. Y acá pesa más que en Conversation: el dato es DIARIO —el colector corre una
-     vez por día— así que un tic frecuente pediría muchas veces lo mismo. */
+  /* Con `null` como clave el reloj no se registra: con Acquisition cerrada esto no cuesta una sola
+     petición. El dato es diario —el colector corre una vez por día—, y el tic es el de Inteligencia. */
   const aLaVista = estaALaVista('acquisition');
   const recargar = useCallback(() => cargar(true), [cargar]);
   usarReloj(aLaVista ? 'acquisition:tic' : null, recargar, CADENCIA.inteligencia);
 
   return (
     <>
-      {/* La barra, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar. */}
-      <div className="cs-barra">
-        {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió. Con el estado
-            local, una respuesta que se cruza con otra deja el botón describiendo cifras que no son
-            las de abajo — y las dos se ven bien. Mientras no hay datos manda el local, que es lo
-            único que hay. */}
-        <Periodos valor={pantalla?.periodo ?? periodo} alElegir={setPeriodo} />
+      <div className="cre-head">
+        <div className="ch-l">
+          <h2>Acquisition</h2>
+          <span className="cre-desc">Tres funnels con su propia cadena · la calidad se mide con calificados e ICP</span>
+        </div>
+        <div className="ch-r">
+          <div className="ch-period">
+            {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió: con el estado
+                local, una respuesta que se cruza con otra deja el botón describiendo cifras que no
+                son las de abajo. Mientras no hay datos manda el local, que es lo único que hay. */}
+            <Periodos valor={pantalla?.periodo ?? periodo} alElegir={setPeriodo} />
+          </div>
+        </div>
       </div>
 
-      {error ? <p className="cs-grave">{error}</p> : null}
+      {error ? (
+        <p className="acq-falla" title={error}>
+          {FRASE.fallo}
+        </p>
+      ) : null}
 
       {cargando && pantalla === null ? (
-        <p className="cs-vacio">Leyendo el costo de los anuncios…</p>
+        <p className="acq-cargando">{FRASE.cargando}</p>
       ) : pantalla === null ? null : (
-        /* ── LA CLAVE REINICIA EL CUERPO AL CAMBIAR DE PERÍODO ────────────
-           Sin ella, el «ver todos» de la tabla sobrevive al cambio: se despliegan las ochenta filas
-           de treinta días, se toca «Hoy», y quedan ochenta filas desplegadas de otra ventana — con
-           el botón que decía cuántas faltaban ya consumido, así que nada lo desmiente.
-
-           Es estado de presentación que describe UNA ventana, y al cambiar de ventana deja de
-           describir lo que hay. */
-        <Cuerpo key={pantalla.periodo} p={pantalla} />
+        <Cuerpo p={pantalla} alCambiar={recargar} />
       )}
     </>
   );
 }
 
-/* Copia deliberada de `PanelDeConversation`: el segmentado es el mismo control y `PERIODOS` es la
-   misma lista. Compartir el COMPONENTE obligaría a sacarlo a un tercer archivo del que dependan las
-   dos pantallas, y son doce líneas sin ninguna decisión adentro — la decisión está en `periodo.ts`,
-   que sí es único. */
+/* El segmentado del prototipo (`acqPeriodSeg`), con los cuatro períodos del sistema. Sin el `title`
+   de `PERIODOS`: el matiz de «Hoy» —«las últimas 24 horas»— es el de las otras pantallas, y acá «Hoy»
+   es el día de calendario (A14-10). La ventana real se lee debajo de la Inversión. */
 function Periodos({ valor, alElegir }) {
   return (
-    <div className="db-seg cs-periodos" role="group" aria-label="Período de las cifras">
+    <div className="db-seg" role="group" aria-label="Período">
       {PERIODOS.map((p) => (
         <button
           key={p.clave}
           type="button"
           className={valor === p.clave ? 'on' : undefined}
           aria-pressed={valor === p.clave}
-          title={p.matiz ?? undefined}
           onClick={() => alElegir(p.clave)}
         >
           {p.etiqueta}
@@ -140,271 +215,393 @@ function Periodos({ valor, alElegir }) {
   );
 }
 
-/**
- * El porqué de una cifra, escondido detrás de un ícono. `grave` lo deja a la vista.
- *
- * El argumento completo está en `PanelDeConversation`: un párrafo debajo de cada número da 5.596
- * caracteres de prosa contra 318 de cifra, y con siete avisos encendidos a la vez ninguno se lee.
- * Lo que no se esconde es el hueco —«nadie registró esto todavía»—, porque esconderlo convierte un
- * dato inexistente en un dato con asterisco.
- */
-function Nota({ texto, grave = false }) {
-  const [abierta, setAbierta] = useState(false);
-  if (!texto) return null; // La regla del silencio: sin nada que decir, no se dibuja nada.
-  if (grave) return <p className="cs-grave">{texto}</p>;
+function Cuerpo({ p, alCambiar }) {
+  const e = p.embudos;
+  const sesion = useSesion();
+  /* Como el link manual de Creative: sólo quien puede, y nunca mirando otra empresa. El servidor
+     valida igual (`PUT /api/acquisition/funnel`). */
+  const puedeAsignar = Boolean(p.puedeAsignar && !sesion?.mirandoOtraOrganizacion);
 
-  return (
-    <span className="cs-nota">
-      <button
-        type="button"
-        className={abierta ? 'cs-nota-b on' : 'cs-nota-b'}
-        title={texto}
-        aria-expanded={abierta}
-        aria-label="Por qué"
-        onClick={() => setAbierta(!abierta)}
-      >
-        <span aria-hidden="true">i</span>
-      </button>
-      {abierta ? <span className="cs-nota-p">{texto}</span> : null}
-    </span>
-  );
-}
-
-/** Dinero. El guion es «no se sabe», nunca un cero. */
-function plata(v) {
-  if (v === null || v === undefined) return null;
-  return `$${v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-/** Un entero grande, con separador de miles. */
-function miles(v) {
-  if (v === null || v === undefined) return null;
-  return Number(v).toLocaleString('es-PE');
-}
-
-/** Un porcentaje ya calculado del lado del servidor. */
-function pct(v) {
-  return v === null || v === undefined ? null : `${v}%`;
-}
-
-/**
- * `2026-09-16` a algo que se lee.
- *
- * El año se dibuja **sólo cuando no es el corriente**. Decía «sin año: las ventanas de esta pantalla
- * no lo cruzan» y eso es falso para «Completo», que son 3.650 días: «Del 3 ene al 16 sep» sobre diez
- * años de datos es una frase que se lee bien y dice otra cosa.
- */
-function fechaCorta(iso) {
-  if (!iso) return null;
-  const [a, m, d] = iso.split('-');
-  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const esteAno = String(new Date().getFullYear());
-  return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}${a === esteAno ? '' : ` ${a}`}`;
-}
-
-function Cuerpo({ p }) {
   return (
     <>
-      <Gasto c={p.costo} />
-      {/* El monitor va ANTES de la tabla. Ver el encabezado: el § 18.5 no deja publicar una
-          conclusión por anuncio sin su cobertura, y «antes» es la única forma de maquetarlo que no
-          depende de que alguien baje la vista. */}
-      <Atribucion a={p.calidad} />
-      <Tabla c={p.costo} />
+      <Cifras e={e} />
+      <Nota e={e} />
+      <div className="acq-fgrid">
+        {CLAVES.map((k) => (
+          <Tarjeta key={k} cfg={FUNNELS[k]} g={e.funnels[k]} />
+        ))}
+      </div>
+      <Tablas e={e} puedeAsignar={puedeAsignar} alCambiar={alCambiar} />
     </>
   );
 }
 
-/** El encabezado: cuánto se gastó, sobre qué ventana, y qué le falta a esa ventana. */
-function Gasto({ c }) {
-  const desde = fechaCorta(c.desde);
-  const hasta = fechaCorta(c.hasta);
-  const conGasto = c.filas.filter((f) => f.gasto !== null).length;
-
+/** La variación, como el `delta()` del prototipo (línea 5463). El color lo trae el servidor. */
+function Delta({ v }) {
+  if (!v || v.tipo === 'sin_comparacion') return null;
+  if (v.tipo === 'igual') return <span className="dlt flat">=</span>;
+  /* La Inversión lleva flecha sin color: subir no es bueno ni malo (A14-11). */
+  const clase = v.lectura === 'buena' ? 'dlt up' : v.lectura === 'mala' ? 'dlt down' : 'dlt';
   return (
-    <div className="csf">
-      <div className="csf-h">
-        <div className="csf-hl">
-          <p className="csf-t">Lo que costó la pauta</p>
-          {/* ── LA VENTANA REAL, NO LA PEDIDA ──────────────────────────────
-              `desde` y `hasta` son los extremos de lo que hay GUARDADO, que puede ser mucho menos
-              que los días que el botón dice. Es la misma advertencia que Conversation publica con
-              su cola desproporcionada, y acá tiene una versión peor: durante el relleno inicial la
-              tabla arrancaba el día 1 y terminaba el 13, y ordenada por gasto quedaba al revés. */}
-          <p className="csf-m">
-            {desde && hasta
-              ? `Del ${desde} al ${hasta}, que es lo que hay guardado`
-              : 'Todavía no hay ningún día guardado'}
-          </p>
-        </div>
-        {/* ── EL DENOMINADOR ES EL DE LA CIFRA, NO EL DE LA TABLA ──────────
-            Decía `c.filas.length`, que incluye a propósito los anuncios SIN gasto —los que trajeron
-            leads y no tienen métricas, y los que no entregaron ningún día—. Pero `gastoTotal` se
-            suma sólo sobre los que SÍ gastaron, así que numerador y denominador describían dos
-            poblaciones distintas pegados en la misma frase.
+    <span className={clase}>
+      {v.tipo === 'sube' ? '▲' : '▼'} {Math.round(v.porcentaje * 100)}%
+    </span>
+  );
+}
 
-            Medido el 2026-09-18: 79 anuncios en la tabla y 12 con gasto. «$3.511 en 79 anuncios»
-            invita a dividir y da un promedio por anuncio que no es de nadie. */}
-        <p className="csf-key">
-          <b>{plata(c.gastoTotal) ?? '—'}</b>
-          <span>
-            en {conGasto} {conGasto === 1 ? 'anuncio' : 'anuncios'}
-            {conGasto < c.filas.length ? ` de ${c.filas.length}` : ''}
-          </span>
-        </p>
-      </div>
-      <Nota texto={c.aviso} grave />
+/** La barra del ICP: alto, medio y bajo. Los «sin calificar» no entran (A14-08). */
+function BarraIcp({ icp }) {
+  const t = icp.alto + icp.medio + icp.bajo;
+  const ancho = (n) => `${t ? (n / t) * 100 : 0}%`;
+  return (
+    <div className="acq-icp">
+      <i className="a" style={{ width: ancho(icp.alto) }} />
+      <i className="m" style={{ width: ancho(icp.medio) }} />
+      <i className="b" style={{ width: ancho(icp.bajo) }} />
     </div>
   );
 }
 
-/**
- * El Attribution Monitor del § 18.14.
- *
- * ── LAS BARRAS SON TODAS SOBRE SU PROPIO DENOMINADOR, Y POR ESO VIAJA ─────
- *
- * Cada punto tiene el suyo —contactos, citas, ventas, sesiones con UTM— y son cuatro poblaciones
- * distintas. Dibujar las cuatro barras sobre el mismo total diría que se pueden comparar entre sí,
- * y no se puede: el 52 % de contactos y el 29 % de citas hablan de cosas distintas.
- *
- * Por eso el pie de cada eslabón lleva `cuantos de sobre` escrito, y no sólo el porcentaje.
- */
-function Atribucion({ a }) {
+const etapa = (g, clave) => g.etapas.find((x) => x.etapa === clave);
+
+/** Las cinco cifras (`renderKpis`, línea 5482): suman TODAS las campañas, con o sin funnel (A14-14). */
+function Cifras({ e }) {
+  const t = e.total;
+  const contactos = etapa(t, 'contactos');
+  const clics = etapa(t, 'clics');
+  const agendados = etapa(t, 'agendados');
+  const cifras = [
+    // La ventana siempre, también sin gasto: los contactos de abajo siguen siendo de esos días (A14-10).
+    ['Inversión', cf(t.inversion), t.variacionDeInversion, t.inversion > 0 ? rangoDe(e.ventana) : `${FRASE.sinGasto} · ${rangoDe(e.ventana)}`],
+    ['Contactos', o(contactos?.valor, nf), contactos?.variacion, 'todas las campañas'],
+    ['Clics a landing VSL', o(clics?.valor, nf), clics?.variacion, FRASE.deMeta],
+    ['Agendados', o(agendados?.valor, nf), agendados?.variacion, 'volumen total'],
+    ['Calificados', nf(t.calificados.valor), t.calificados.variacion, `${o(t.calificados.costo, cf)} por calificado`],
+  ];
   return (
-    <div className="csf">
-      <div className="csf-h">
-        <div className="csf-hl">
-          <p className="csf-t">Cuánto vale lo que dice esta pantalla</p>
-          <p className="csf-m">
-            Cada barra es sobre su propia población, y no se comparan entre sí
-          </p>
-        </div>
-      </div>
-
-      {a.puntos.map((punto) => (
-        /* ── EL PUNTO INVERTIDO SE MARCA, O LA BARRA MIENTE ────────────────
-           En cuatro de los cinco, la barra llena es buena noticia: son coberturas. En
-           `utm_incompletas` la barra llena es lo PEOR — cuenta lo que está roto. Dibujados con el
-           mismo lenguaje, una barra al 100 % significa lo contrario según la fila, y no hay forma
-           de saber cuál se está mirando.
-
-           El argumento completo está en `calidadDeLaAtribucion.ts`, en `alReves()`. */
-        <div className={punto.clave === 'utm_incompletas' ? 'csr acq-inverso' : 'csr'} key={punto.clave}>
-          <span className="csr-n">
-            {punto.titulo}
-            {punto.clave === 'utm_incompletas' ? <em className="acq-peor"> · menos es mejor</em> : null}
-            <Nota texto={punto.consecuencia} />
-          </span>
-          {/* El guion cuando la proporción viaja nula, que es «no se puede decir» y no «cero». */}
-          <b className="csr-v">{pct(punto.proporcion) ?? '—'}</b>
-          <span className="csr-b">
-            {punto.proporcion === null ? null : <i style={{ width: `${punto.proporcion}%` }} />}
-          </span>
-          <span className="csr-p">
-            {punto.cuantos} de {punto.sobre}
-          </span>
+    <section className="acq-kpis">
+      {cifras.map(([rotulo, valor, variacion, pie]) => (
+        <div className="kpi" key={rotulo}>
+          <div className="k-label">{rotulo}</div>
+          <div className="k-val">
+            <span>{valor}</span>
+          </div>
+          <div className="k-delta">
+            <Delta v={variacion} /> <span style={{ color: 'var(--txt-faint)' }}>{pie}</span>
+          </div>
         </div>
       ))}
+    </section>
+  );
+}
 
-      <Nota texto={a.aviso} grave />
+/**
+ * La nota bajo las cifras (A14-12): cuántos leads traen campaña, y por qué faltan flechas o costos
+ * cuando faltan. Una línea.
+ */
+function Nota({ e }) {
+  const motivos = [];
+  if (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto') motivos.push(FRASE.faltanDias);
+  else if (e.sinComparacion === 'sin_historia') motivos.push(FRASE.sinHistoria);
+  if (e.sinCostos === 'hoy') motivos.push(FRASE.hoySinCostos);
+  return (
+    <p className="acq-note">
+      <b>
+        {nf(e.cobertura.conCampana)} de {nf(e.cobertura.sobre)}
+      </b>{' '}
+      leads traen campaña.
+      {motivos.map((m) => ` ${m}`).join('')}
+    </p>
+  );
+}
 
-      {/* ── LOS DOS QUE NO SE PUEDEN MEDIR, DIBUJADOS ──────────────────────
-          No son un pendiente ni un hueco de implementación: son dos puntos del § 18.14 que esta vía
-          NO puede dar, cada uno con su motivo medido. Se dibujan para que nadie los vuelva a
-          investigar, y en tono menor para que no compitan con los cinco que sí son cifras. */}
-      <div className="org-split">
-        {a.fueraDeAlcance.map((f) => (
-          <p className="cs-fuera" key={f.punto}>
-            <b>{f.punto}</b> no se puede medir: {f.porque}
-          </p>
-        ))}
+/** Una tarjeta de funnel (`renderFunnels`, línea 5500). */
+function Tarjeta({ cfg, g }) {
+  const entrada = g.etapas[0];
+  const base = entrada?.valor ?? 0;
+  const q = g.calificados;
+  return (
+    <div className="card">
+      <div className="acq-fhead">
+        <div className="acq-ftitle">
+          <div className="acq-fname">{cfg.nombre}</div>
+          <div className="acq-fentry">
+            {g.campanas === 0
+              ? FRASE.sinCampanas
+              : `entra en ${cfg.rotulos.contactos.toLowerCase()} · ${plural(g.campanas, 'campaña', 'campañas')}`}
+          </div>
+        </div>
+        <div className="acq-fstats">
+          <div className="acq-fs">
+            <span>Inversión</span>
+            <b>{cf(g.inversion)}</b>
+          </div>
+          <div className="acq-fs key">
+            <span>Calificados</span>
+            <b>{nf(q.valor)}</b>
+          </div>
+          <div className="acq-fs key">
+            <span>Costo / calif.</span>
+            <b>{o(q.costo, cf)}</b>
+          </div>
+        </div>
+      </div>
+      <div className="acq-fbody">
+        {g.etapas.map((s, i) => {
+          const ancho = s.valor === null || !base ? 0 : Math.min(100, (s.valor / base) * 100);
+          return (
+            <div className="acq-stg" key={s.etapa}>
+              <div className="acq-stg-top">
+                <span className="acq-stg-n">{cfg.rotulos[s.etapa]}</span>
+                <span className="acq-stg-v">{o(s.valor, nf)}</span>
+                <span className="acq-stg-d">
+                  <Delta v={s.variacion} />
+                </span>
+              </div>
+              <div className="acq-bar">
+                <i style={{ width: `${ancho}%` }} />
+              </div>
+              <div className="acq-stg-m">
+                {s.etapa === 'forms'
+                  ? FRASE.sinDato
+                  : `${
+                      i === 0
+                        ? 'punto de entrada'
+                        : s.deMeta
+                          ? FRASE.deMeta
+                          : s.tasa === null
+                            ? FRASE.guion
+                            : `${pf(s.tasa)} desde ${cfg.rotulos.contactos.toLowerCase()}`
+                    } · ${cfg.costos[s.etapa]} ${o(s.costo, cf)}`}
+              </div>
+              {s.etapa === 'agendados' ? (
+                <div className="acq-qual">
+                  <div className="acq-qual-top">
+                    <span className="acq-qual-k">Calificados</span>
+                    <span className="acq-qual-v">
+                      {nf(q.valor)}
+                      <span className="acq-stg-d">
+                        <Delta v={q.variacion} />
+                      </span>
+                    </span>
+                  </div>
+                  <div className="acq-qual-m">
+                    {o(q.tasa, pf)} de {cfg.rotulos.agendados.toLowerCase()} · {o(q.costo, cf)} c/u · ICP{' '}
+                    {o(q.icp.promedio, (v) => `${Math.round(v)}%`)}
+                  </div>
+                  <BarraIcp icp={q.icp} />
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /**
- * La tabla por anuncio.
+ * Las tablas por funnel, que se pliegan (`renderTables`, línea 5546), y al final «Sin funnel».
  *
- * ── ORDENADA POR GASTO, Y ESO NO ES EL ORDEN DEL NEGOCIO ─────────────────
- *
- * El § 18.10 pone «escalar únicamente por CPL» entre las acciones que requieren validación
- * ejecutiva, y el § 18.1 dice por qué: *«no decide por sí solo qué anuncio genera más dinero para el
- * negocio, porque esa conclusión requiere cruzar adquisición, ICP, agendamientos, ventas y
- * revenue»*.
- *
- * El orden elegido es el GASTO y no el CPL a propósito: el gasto es un hecho sin interpretación
- * —cuánto salió— y el CPL es la cifra que el documento prohíbe usar sola. Ordenar por CPL habría
- * sido dibujar la recomendación prohibida.
+ * Abren como el prototipo —Lead form ads desplegada, las otras dos plegadas— y «Sin funnel» abierta
+ * mientras tenga campañas, porque ahí está el selector para asignarlas (decidido por el usuario el
+ * 2026-09-30). Lo que alguien plegó o desplegó a mano se respeta en las recargas.
  */
-function Tabla({ c }) {
-  const [todos, setTodos] = useState(false);
-  const visibles = todos ? c.filas : c.filas.slice(0, ANUNCIOS_A_LA_VISTA);
-  const ocultos = c.filas.length - visibles.length;
+function Tablas({ e, puedeAsignar, alCambiar }) {
+  const [abiertas, setAbiertas] = useState({ leadform: true, profile: false, booking: false, sin_funnel: null });
+  const abierta = (k) => (k === 'sin_funnel' && abiertas.sin_funnel === null ? e.sinFunnel.campanas > 0 : abiertas[k]);
+  const alternar = (k) => setAbiertas((a) => ({ ...a, [k]: !abierta(k) }));
 
-  /* Sin filas no se dibuja NADA acá, y el literal no se repite: el servidor ya manda ese mismo
-     texto en `costo.aviso` y el encabezado lo publica. Escribirlo también acá lo mostraba dos
-     veces, y dejaba la frase copiada en dos sitios que se corrigen por separado. */
-  if (c.filas.length === 0) return null;
+  const grupos = [
+    ...CLAVES.map((k) => ({ k, cfg: FUNNELS[k], g: e.funnels[k], campanas: e.campanas.filter((c) => c.funnel === k) })),
+    { k: 'sin_funnel', cfg: SIN_FUNNEL, g: e.sinFunnel, campanas: e.campanas.filter((c) => c.funnel === null) },
+  ];
 
   return (
-    <div className="csf">
-      <div className="csf-h">
-        <div className="csf-hl">
-          <p className="csf-t">Por anuncio</p>
-          <p className="csf-m">
-            Ordenados por gasto, que es un hecho. Ése no es el orden del negocio: para eso hacen
-            falta las ventas, y ésas son de Business.
-          </p>
-        </div>
-      </div>
-
-      <div className="acq-tabla" role="table">
-        <div className="acq-fila acq-cab" role="row">
-          <span role="columnheader">Anuncio</span>
-          <span role="columnheader">Gasto</span>
-          <span role="columnheader">CPM</span>
-          <span role="columnheader">CTR</span>
-          <span role="columnheader">Leads</span>
-          <span role="columnheader">CPL</span>
-          <span role="columnheader">Agenda</span>
-        </div>
-
-        {visibles.map((f) => (
-          <div className="acq-fila" role="row" key={f.anuncioId}>
-            <span className="acq-n" role="cell">
-              {f.nombre}
-              {/* Los días con entrega van en la nota y no en una columna: es el denominador honesto
-                  de cualquier promedio diario, y una columna más volvería ilegible la fila en el
-                  ancho de un teléfono. */}
-              <Nota
-                texto={
-                  f.diasConEntrega === 0
-                    ? 'No entregó ni un día de esta ventana. No es que gastara cero: no se mostró.'
-                    : `Entregó ${f.diasConEntrega} ${f.diasConEntrega === 1 ? 'día' : 'días'} de la ventana.`
-                }
-              />
-            </span>
-            <span role="cell">{plata(f.gasto) ?? '—'}</span>
-            <span role="cell">{plata(f.cpm) ?? '—'}</span>
-            <span role="cell">{pct(f.ctr) ?? '—'}</span>
-            <span role="cell">{miles(f.leads)}</span>
-            <span role="cell">{plata(f.cpl) ?? '—'}</span>
-            {/* La tasa y su denominador juntos. Sin el denominador, «100 %» sobre un lead se lee
-                igual que sobre cien — y el piso ya deja la tasa en nulo justo para eso. */}
-            <span role="cell">
-              {pct(f.tasaDeAgenda) ?? '—'}
-              {f.leads > 0 ? <em className="acq-de"> {f.agendaron}/{f.leads}</em> : null}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {ocultos > 0 ? (
-        <button type="button" className="acq-mas" onClick={() => setTodos(true)}>
-          Ver los {ocultos} anuncios que faltan
-        </button>
-      ) : null}
+    <div>
+      {grupos.map(({ k, cfg, g, campanas }) => (
+        <Tabla
+          key={k}
+          clave={k}
+          cfg={cfg}
+          g={g}
+          campanas={campanas}
+          abierta={abierta(k)}
+          alAlternar={() => alternar(k)}
+          puedeAsignar={puedeAsignar}
+          alCambiar={alCambiar}
+        />
+      ))}
     </div>
+  );
+}
+
+function Tabla({ clave, cfg, g, campanas, abierta, alAlternar, puedeAsignar, alCambiar }) {
+  // Las etapas hasta los agendados, como el prototipo: los calificados van en sus columnas propias.
+  const etapas = g.etapas.map((s) => s.etapa);
+  const grilla = { gridTemplateColumns: `1.7fr .7fr${' .85fr'.repeat(etapas.length)} .8fr .7fr .8fr .9fr` };
+  const sinFunnel = clave === 'sin_funnel';
+
+  return (
+    <div className="card" style={{ marginBottom: 10 }}>
+      <div
+        className="card-head"
+        data-acq-toggle={clave}
+        role="button"
+        tabIndex={0}
+        aria-expanded={abierta}
+        style={{ cursor: 'pointer' }}
+        onClick={alAlternar}
+        onKeyDown={(ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            alAlternar();
+          }
+        }}
+      >
+        <span
+          style={{ color: 'var(--txt-faint)', display: 'inline-block', transform: `rotate(${abierta ? 90 : 0}deg)` }}
+          aria-hidden="true"
+        >
+          ›
+        </span>{' '}
+        {cfg.nombre}{' '}
+        <span className="hint">
+          {sinFunnel && g.campanas > 0 ? `${FRASE.asigna} · ` : ''}
+          {plural(g.campanas, 'campaña', 'campañas')} · hasta calificado · {cf(g.inversion)}
+          <em className="acq-toggle-l">{abierta ? 'ocultar campañas' : 'ver campañas'}</em>
+        </span>
+      </div>
+      {/* El envoltorio desliza la tabla a lo ancho en un teléfono (`app/acquisition.css`): son hasta
+          diez columnas, y apretarlas en 375 px las volvería ilegibles. */}
+      <div className="acq-desliza">
+        {abierta ? (
+          <div className="col-head" style={grilla}>
+            <span>Campaña</span>
+            <span>Inversión</span>
+            {etapas.map((s) => (
+              <span key={s}>{cfg.rotulos[s]}</span>
+            ))}
+            <span>Calificados</span>
+            <span>% calif.</span>
+            <span>Costo/calif.</span>
+            <span>Afinidad ICP</span>
+          </div>
+        ) : null}
+        <div className="rows">
+          {abierta
+            ? campanas.map((c) => (
+                <Fila
+                  key={c.campana}
+                  cfg={cfg}
+                  grilla={grilla}
+                  r={c.cifras}
+                  nombre={c.nombre ?? c.campana}
+                  pie={
+                    <Pie c={c} puedeAsignar={puedeAsignar} alCambiar={alCambiar} />
+                  }
+                />
+              ))
+            : null}
+          <Fila
+            cfg={cfg}
+            grilla={grilla}
+            r={g}
+            total
+            nombre={sinFunnel ? 'Total' : 'Total del funnel'}
+            pie={plural(g.campanas, 'campaña', 'campañas')}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Una fila: una campaña o el total del grupo. */
+function Fila({ cfg, grilla, r, nombre, pie, total = false }) {
+  const q = r.calificados;
+  return (
+    <div className={total ? 'row-i acq-tot' : 'row-i'} style={grilla}>
+      <div>
+        <div className="rn">{nombre}</div>
+        <div className="rs">{pie}</div>
+      </div>
+      <div className="num">{cf(r.inversion)}</div>
+      {r.etapas.map((s, i) => (
+        <div className="num" key={s.etapa}>
+          <span>{o(s.valor, nf)}</span>
+          <div className="acq-sub">
+            {s.etapa === 'forms'
+              ? FRASE.sinDato
+              : `${i === 0 ? 'entrada' : s.deMeta ? FRASE.deMeta : o(s.tasa, pf)} · ${o(s.costo, cf)}`}
+          </div>
+        </div>
+      ))}
+      <div className="num acq-q">
+        <span>{nf(q.valor)}</span>
+        <div className="acq-sub">
+          {q.variacion.tipo === 'sin_comparacion' ? FRASE.sinComparacion : <Delta v={q.variacion} />}
+        </div>
+      </div>
+      <div className="num">{o(q.tasa, pf)}</div>
+      <div className="num">{o(q.costo, cf)}</div>
+      <div className="num">
+        <div className="acq-icp-cell">
+          <span style={{ fontWeight: 600 }}>{o(q.icp.promedio, (v) => `${Math.round(v)}%`)}</span>
+          <BarraIcp icp={q.icp} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * El pie de una campaña: su estado en Meta y, para quien puede, el selector de funnel (A14-03).
+ *
+ * Una campaña que GoHighLevel no listó no se puede asignar —la foránea de la `066`—, así que no lleva
+ * selector: lleva la frase que dice por qué (A14-18).
+ */
+function Pie({ c, puedeAsignar, alCambiar }) {
+  /* Mientras se guarda, el selector muestra lo ELEGIDO: controlado por `c.funnel`, React lo devolvía
+     al valor viejo durante el guardado y la recarga. */
+  const [guardando, setGuardando] = useState(null);
+  const [fallo, setFallo] = useState('');
+
+  const estado = c.conocida ? `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta` : FRASE.noFigura;
+  if (!puedeAsignar || !c.conocida) return estado;
+
+  async function elegir(valor) {
+    setGuardando(valor);
+    setFallo('');
+    const r = valor === '' ? await sacarFunnelDeLaCampana(c.campana) : await guardarFunnelDeLaCampana(c.campana, valor);
+    // Se espera la recarga: habilitarlo antes lo dejaba diciendo el funnel viejo hasta que llegara.
+    if (r.tipo === 'datos') await alCambiar();
+    else setFallo(r.mensaje);
+    setGuardando(null);
+  }
+
+  return (
+    <>
+      {estado}
+      <select
+        className="acq-funnel"
+        value={guardando ?? c.funnel ?? ''}
+        disabled={guardando !== null}
+        aria-label={`Funnel de ${c.nombre ?? c.campana}`}
+        onChange={(ev) => elegir(ev.target.value)}
+      >
+        {CLAVES.map((k) => (
+          <option key={k} value={k}>
+            {FUNNELS[k].nombre}
+          </option>
+        ))}
+        <option value="">{SIN_FUNNEL.nombre}</option>
+      </select>
+      {fallo ? (
+        <span className="acq-falla" title={fallo}>
+          {FRASE.noGuardo}
+        </span>
+      ) : null}
+    </>
   );
 }

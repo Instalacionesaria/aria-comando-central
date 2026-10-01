@@ -34,9 +34,10 @@
 //     misma hora del día siguiente, así que **ayer recién está cerrado después de la pasada de hoy**, y
 //     si se perdió una pasada, anteayer tampoco. Se busca el último día releído después de la medianoche
 //     de la empresa (su `zona_horaria`, la mejor aproximación a la de la cuenta de Meta, que la API no
-//     dice), y la ventana se exige con TODOS sus días cerrados; si el colector dejó de escribir, no se
-//     compara (lo encontraron la segunda, la tercera y la cuarta revisión de AQ-3). Una ventana con un día a medias compararía seis días y medio contra
-//     siete: la flecha bajaría siempre, en rojo, con el negocio igual;
+//     dice), y la ventana se exige con TODOS sus días cerrados; si el colector está atrasado —no
+//     escribe, o escribe sin cerrar días—, no se compara (lo encontraron la segunda a la quinta revisión
+//     de AQ-3). Una ventana con un día a medias compararía seis días y medio contra siete: la flecha
+//     bajaría siempre, en rojo, con el negocio igual;
 //   · **«Hoy» es hoy**, a medias: no compara y no publica costos, porque su gasto es una foto de la
 //     madrugada y sus contactos son del día entero;
 //   · **«Completo» es todo lo guardado**: empieza en el primer dato —gasto o contacto con campaña, el
@@ -213,14 +214,15 @@ export interface CampanaDeAcquisition {
  *   · `sin_historia`: los datos no describen la ventana anterior entera —empiezan después, o le falta
  *     algún día de gasto—;
  *   · `faltan_dias`: a la ventana ACTUAL le falta algún día de gasto cerrado —y su inversión saldría
- *     baja—, o el colector dejó de escribir hace más de 26 horas. En ese caso tampoco hay costos.
+ *     baja—, o el colector está atrasado: no escribe hace más de 26 horas, o su último día cerrado
+ *     quedó más de tres días atrás. En ese caso tampoco hay costos.
  */
 export type SinComparacion = 'periodo' | 'sin_historia' | 'faltan_dias';
 
 /**
  * Por qué no hay costos: `hoy`, porque el gasto de hoy es una foto de la madrugada; `gasto_incompleto`,
  * porque a la ventana le falta algún día de gasto cerrado, porque tiene contactos de antes del primer
- * gasto, o porque el colector dejó de escribir hace más de 26 horas.
+ * gasto, o porque el colector está atrasado (ver `SinComparacion`).
  */
 export type SinCostos = 'hoy' | 'gasto_incompleto';
 

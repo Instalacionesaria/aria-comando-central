@@ -88,7 +88,7 @@ por anuncio; su agregado no existe. Con ellas cae la fatiga por frecuencia (`C2-
 ### C2-06 · El guion es «no se sabe», nunca un cero
 
 **Estado** · El formateador dibuja `—` cuando el valor es `null`. Ya está resuelto en
-`components/acquisition/PanelDeAcquisition.jsx:174-203` y se reusa.
+`components/acquisition/PanelDeAcquisition.jsx` (en `4365cc9`, líneas 174-203) y se reusa.
 
 ### C2-07 · Cada cifra dice sobre qué ventana habla, y hay TRES en esta pantalla
 

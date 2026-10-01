@@ -523,9 +523,9 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   septiembre y **uno con alta en septiembre**; como la cohorte exige alta, en «Completo» la fila
   muestra 3 y no 26.
 - **El botón «Hoy» promete «las últimas 24 horas, no el día del calendario»**
-  (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion y Acquisition
-  (`components/conversion/PanelDeConversion.jsx:113`,
-  `components/acquisition/PanelDeAcquisition.jsx:133`), cuyas cohortes se anclan al día de
+  (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion
+  (`components/conversion/PanelDeConversion.jsx:113`) —Acquisition dejó de dibujarlo en AQ-4, el
+  2026-09-30—, cuyas cohortes se anclan al día de
   calendario (`lib/negocio/recorrido.ts:197-199`; el propio `lib/negocio/costoDelAnuncio.ts:61-63`
   lo admite). Y `lib/negocio/periodo.ts:76-77` sigue diciendo
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
@@ -536,10 +536,11 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   y la atribución ya lo usa (`lib/negocio/atribucionDelLead.ts:97`). Como el `?&` de las cinco no se
   cumple nunca, todo contacto con alguna UTM cuenta como incompleto; según
   [01-ACQUISITION.md](01-ACQUISITION.md), el aviso del monitor manda a arreglar enlaces que sí llevan
-  la campaña (el texto del aviso no se re-leyó acá).
+  la campaña (el texto del aviso no se re-leyó acá). Desde AQ-4 (2026-09-30) el monitor está dormido:
+  no se dibuja ni se calcula (`docs/OTROS/futuro/monitor-de-atribucion.md`).
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
   (`lib/negocio/costoDelAnuncio.ts:288`), y hay **38 filas con gasto 0 y sin impresiones** (22:11
-  UTC); la nota se dibuja en `components/acquisition/PanelDeAcquisition.jsx:380-386`. Creative lo
+  UTC); la nota se dibujaba en la tabla por anuncio de Acquisition, que salió con AQ-4. Creative lo
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
@@ -591,8 +592,8 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 - `lib/negocio/recorrido.ts:193-195` justifica la ventana anclada porque Conversion cruza con el
   gasto y las piezas; la ruta sólo llama a `recorridoDelLead` y a `embudoDelFormulario`
   (`app/api/conversion/route.ts:58-61`).
-- `components/acquisition/PanelDeAcquisition.jsx:246-247` («79 anuncios y 12 con gasto») no dice la
-  ventana; `lib/negocio/tramosDelIcp.ts:20` («47 de los 471») no dice la fecha en esa línea.
+- `lib/negocio/tramosDelIcp.ts:20` («47 de los 471») no dice la fecha en esa línea. (El «79 anuncios y
+  12 con gasto» del panel anterior de Acquisition salió con él en AQ-4.)
 - `lib/negocio/leadsDelPortal.ts:272-275`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es
   ninguna de las cuatro ventanas. La ruta siempre le pasa el período; es un riesgo latente.
 - Los números de la maqueta de Conversion no coinciden entre sí: 530 literales en

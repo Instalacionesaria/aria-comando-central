@@ -49,9 +49,10 @@ Decidido por el usuario el 2026-09-30:
 
 ### A14-01 · La estética es la del prototipo, sin capas encima
 
-**Qué es** · La pestaña se dibuja con las clases del prototipo, y en su orden: `cre-head`,
-`filterbar`, `acq-kpis`, `acq-note`, `acq-fgrid` y las tablas por funnel. Esas reglas siguen vivas y sin
-uso en `app/aios.css:1585-1725`. La sección **no lleva `estetica-op`**: esa capa, que entró en
+**Qué es** · La pestaña se dibuja con las clases del prototipo, y en su orden: `cre-head`, `acq-kpis`,
+`acq-note`, `acq-fgrid` y las tablas por funnel. La `filterbar` del prototipo no se dibuja: su único
+control era el segmentado de tasa, que quedó oculto (A14-09). Esas reglas siguen vivas en
+`app/aios.css:1585-1725`, y son las que la visten. La sección **no lleva `estetica-op`**: esa capa, que entró en
 `833fc51`, es la que cambió el look.
 
 **Fórmula** · Lo nuevo —el selector de funnel, el texto de un hueco, el estado vacío, el teléfono— va en
@@ -62,7 +63,10 @@ línea por línea contra el HTML del prototipo.
 **Rastro** · El prototipo: `aios-command-center_1.html` (marcado en 2679-2744, reglas `acq-*` en
 1671-1813, dibujo en 5482-5594).
 
-**Estado** · Planificado (AQ-4).
+**Estado** · **Construido el 2026-09-30** (AQ-4): `components/views/AcquisitionView.jsx`,
+`components/acquisition/PanelDeAcquisition.jsx` y `app/acquisition.css`. `#v-acquisition` salió también
+de los `:is()` de `app/inteligencia-estetica.css`, que pisaban el segmentado y el encabezado del
+prototipo aun sin `estetica-op`. `pruebas/codigo/182-la-pantalla-de-acquisition.test.ts` lo vigila.
 
 ### A14-02 · Frases cortas
 
@@ -79,8 +83,21 @@ documento y no en la pantalla. Los huecos usan **sólo** estas frases:
 | grupo «Sin funnel» | «Asigna cada campaña a su funnel» |
 | la pauta no gastó en la ventana | «Sin gasto en este período» |
 | la lectura falló | «No se pudo leer. Reintenta.» |
+| la asignación de un funnel falló | «No se pudo guardar. Reintenta.» |
+| la primera carga | «Cargando…» |
+| falta algún día de gasto cerrado, o el colector está atrasado (`faltan_dias`, `gasto_incompleto`) | «Faltan días de gasto.» |
+| la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
+| «Hoy» no publica costos (`sinCostos: hoy`) | «Hoy, sin costos.» |
+| una campaña que GoHighLevel no listó, y que por eso no se puede asignar | «No figura en Meta» |
 
-**Estado** · Planificado (AQ-4). La lista es cerrada: una frase nueva entra acá primero.
+Las seis de abajo entraron al construir (AQ-4): sin ellas, un fallo al asignar, la primera carga, la
+falta de flechas o de costos y la campaña que no se puede asignar se habrían visto como un guion sin
+explicación. El motivo largo de cada una sigue en este documento, no en la pantalla. Lo que el servidor
+dice cuando algo falla va en el `title`.
+
+**Estado** · **Construido el 2026-09-30** (AQ-4): la lista vive en `FRASE`, en
+`components/acquisition/PanelDeAcquisition.jsx`, y `pruebas/codigo/182-la-pantalla-de-acquisition.test.ts`
+exige que las dos coincidan. La lista es cerrada: una frase nueva entra acá primero.
 
 ### A14-03 · El funnel de una campaña se asigna a mano
 
@@ -100,7 +117,9 @@ con `credenciales.editar` y auditoría, igual que el link manual de Creative
 Las campañas son pocas —12 en `negocio.anuncios` el 2026-09-28—, y quien las lanza sabe a qué funnel
 van.
 
-**Estado** · **Construido el 2026-09-30** (AQ-2): `db/migraciones/066_el_funnel_de_la_campana.sql`, `lib/negocio/funnelDeLaCampana.ts` y `PUT`/`DELETE /api/acquisition/funnel` (`app/api/acquisition/funnel/route.ts`). Todavía no hay dónde elegirlo en pantalla: eso es AQ-4.
+**Estado** · **Construido el 2026-09-30** (AQ-2): `db/migraciones/066_el_funnel_de_la_campana.sql`, `lib/negocio/funnelDeLaCampana.ts` y `PUT`/`DELETE /api/acquisition/funnel` (`app/api/acquisition/funnel/route.ts`). **El selector, construido el 2026-09-30** (AQ-4): va en el pie de cada campaña, sólo si el servidor
+dice que la sesión puede asignar (`puedeAsignar`) y no se está mirando otra empresa, como el link manual
+de Creative. Una campaña que GoHighLevel no listó no lleva selector: lleva «No figura en Meta».
 
 ### A14-04 · La entrada de cada funnel son los contactos de sus campañas
 
@@ -114,7 +133,7 @@ cuyo `alta_en_el_crm` cae en la ventana. **Se identifica por id, nunca por nombr
 **Qué no es** · «DMs» no mide mensajes directos: la base no los registra (`03-COSTOS.md:80`). Es la
 gente que trajo una campaña que alguien asignó a Profile funnel.
 
-**Estado** · **Construido el 2026-09-30** (AQ-3): `lib/negocio/embudosDeAcquisition.ts`. El dibujo es AQ-4.
+**Estado** · **Construido el 2026-09-30** (AQ-3): `lib/negocio/embudosDeAcquisition.ts`. Dibujado en AQ-4.
 
 ### A14-05 · «Clics a landing VSL» es una cifra de Meta, y no lleva tasa
 
@@ -190,13 +209,14 @@ costo de una ventana sin inversión**: con la pauta parada llegan contactos de l
 «$0 por contacto» diría que salieron gratis. En «Hoy» no hay costos: el gasto de hoy es una foto de la
 madrugada —se lee a las 06:17 UTC— y los contactos son del día entero. **Y en ningún período hay costos
 si el gasto de la ventana no está entero** —un día sin gasto cerrado, contactos de antes del primer
-gasto, o el colector sin escribir hace más de 26 horas—: el costo por contacto saldría bajo y se leería
-como un dato.
+gasto, o el colector atrasado (A14-10)—: el costo por contacto saldría bajo y se leería como un
+dato.
 Por qué no hay costos viaja en `sinCostos` (`hoy` o `gasto_incompleto`), para que la pantalla lo pueda
 decir.
 
-**Estado** · **El cálculo, construido el 2026-09-30** (AQ-3): llega una tasa por etapa (A14-17). El
-dibujo es AQ-4.
+**Estado** · **El cálculo, construido el 2026-09-30** (AQ-3): llega una tasa por etapa (A14-17).
+Dibujado en AQ-4, sin el segmentado. Un costo por debajo de diez dólares se dibuja con dos decimales: el
+costo por clic real anda en centavos, y el redondeo del prototipo lo dibujaba «$0».
 
 ### A14-10 · Los cuatro períodos del sistema, y qué días abarcan
 
@@ -234,10 +254,11 @@ AQ-3:
 hoy, así que «7 días» puede dar otra cifra en Creative que acá. Es la contrapartida de que acá las
 flechas y los costos no carguen el día a medias.
 
-**Estado** · Contesta P-01 de `05`. **El cálculo, construido el 2026-09-30** (AQ-3). El «Riesgo 2» del
-estado actual —un «Hoy» con dos significados en la misma pantalla— se cierra recién en AQ-4: mientras
-la pantalla de hoy siga dibujando el monitor de `calidadDeLaAtribucion` —24 horas móviles por día— y el
-matiz de «Hoy» de `periodo.ts:84` —«las últimas 24 horas»—, la misma respuesta mezcla las dos lecturas.
+**Estado** · Contesta P-01 de `05`. **El cálculo, construido el 2026-09-30** (AQ-3). **El «Riesgo 2» del
+estado actual —un «Hoy» con dos significados en la misma pantalla— quedó cerrado en AQ-4**: el monitor
+de `calidadDeLaAtribucion` —24 horas móviles por día— salió de la pantalla y de la ruta (A14-15), y el
+segmentado de esta pantalla no lleva el matiz de «Hoy» de `periodo.ts`, que es el de las otras
+pantallas. La ventana real se lee debajo de la Inversión: «23 sep – 29 sep».
 
 ### A14-11 · Los deltas contra la ventana anterior
 
@@ -275,7 +296,8 @@ Y las que los documentos pedían, o que salieron de la revisión de AQ-3:
 
 Cada variación llega con su lectura —buena, mala o neutra— calculada en el servidor (A14-17).
 
-**Estado** · **El cálculo, construido el 2026-09-30** (AQ-3). El dibujo es AQ-4.
+**Estado** · **El cálculo, construido el 2026-09-30** (AQ-3); dibujado en AQ-4. Los calificados de las
+tablas dicen «sin comparación», como el prototipo cuando no había delta.
 
 ### A14-12 · La nota de cobertura, en una línea
 
@@ -287,7 +309,8 @@ arriba de la tabla, y ahí queda.
 (A14-10). El plan decía sacarla del punto `sin_campana` de `lib/negocio/calidadDeLaAtribucion.ts`, y se
 descartó al construir: ese monitor cuenta los contactos en una ventana MÓVIL de 24 horas por día, así que
 la nota y la cifra de Contactos habrían hablado de dos poblaciones distintas con el mismo «7 días» arriba.
-Qué pasa con el monitor en la pantalla nueva se decide en AQ-4.
+El monitor salió de la pantalla en AQ-4 (A14-15). La línea suma por qué faltan flechas o costos
+cuando faltan, con las frases de A14-02.
 
 **Estado** · **Construido el 2026-09-30** (AQ-3).
 
@@ -311,14 +334,19 @@ asignar. Sus cifras no entran en las tres tarjetas, pero **sí en las cinco cifr
 todo lo que la pauta trajo.
 
 **Estado** · **El cálculo, construido el 2026-09-30** (AQ-3): `sinFunnel` y el total de todas las
-campañas. El dibujo es AQ-4.
+campañas. Dibujado en AQ-4: es la última tabla, y abre desplegada mientras tenga campañas —las otras
+abren como en el prototipo, Lead form ads desplegada y las demás plegadas—, decidido por el usuario el
+2026-09-30. Por eso la cifra de Contactos de arriba dice «todas las campañas» y no «los 3 funnels».
 
 ### A14-15 · Lo que sale de la pantalla
 
 - **La tabla por anuncio.** El prototipo muestra campañas; el detalle por pieza está en Creative.
 - **La tarjeta del monitor de atribución.** La nota de cobertura no sale de ella: es una cuenta propia de
-  los funnels, con la misma ventana que el resto (A14-12). Qué pasa con la tarjeta y con el módulo
-  `calidadDeLaAtribucion` se decide en AQ-4.
+  los funnels, con la misma ventana que el resto (A14-12). **Decidido por el usuario el 2026-09-30:** el
+  módulo `calidadDeLaAtribucion` queda **dormido**, con sus pruebas, y sale también de la ruta, que lo
+  calculaba en cada carga para nadie. Cómo volvería: `docs/OTROS/futuro/monitor-de-atribucion.md`.
+  `GET /api/acquisition` responde `{ periodo, embudos, puedeAsignar }`; `costoDelAnuncio` sigue vivo
+  porque lo usa Creative.
 - **El botón «Plan de acción» y la tarjeta «Señales detectadas».** Se dejan para la etapa de los agentes
   de IA (A14-16).
 - **Los `data-leads` del prototipo.** Abrían un cajón con personas inventadas (`lib/aios/leads-group.js`).
@@ -376,7 +404,7 @@ se puede asignar (la foránea de la `066`).
 | AQ-1 | Los nombres de las campañas: migración `065_las_campanas.sql` y el colector | hecho, 2026-09-30 |
 | AQ-2 | El funnel de cada campaña: migración `066_el_funnel_de_la_campana.sql`, escritor y ruta | hecho, 2026-09-30 |
 | AQ-3 | El cálculo, `lib/negocio/embudosDeAcquisition.ts`, y la ruta `/api/acquisition` | hecho, 2026-09-30 |
-| AQ-4 | El front sobre el marcado del prototipo, y `app/acquisition.css` | pendiente |
+| AQ-4 | El front sobre el marcado del prototipo, y `app/acquisition.css` | hecho, 2026-09-30 |
 | AQ-5 | La comparación lado a lado contra el prototipo, y a producción. Antes del humo, `negocio.campanas` tiene que tener filas: la llena la primera pasada del colector (06:17 UTC), y hasta entonces toda asignación da 404 | pendiente |
 
 ## 6 · Preguntas abiertas

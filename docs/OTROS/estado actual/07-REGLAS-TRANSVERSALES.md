@@ -414,7 +414,7 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:49`, `app/api/auditoria/route.ts:79`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:53`, `app/api/auditoria/route.ts:79`,
 `app/api/creative/route.ts:57`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 
@@ -770,7 +770,7 @@ Leads Portal sólo pueden importar dos módulos puros (`pruebas/codigo/177-filtr
 El corolario: lo que el panel `'use client'` necesita explicar y no puede importar, **viaja en la
 respuesta** —las ventanas de Sales con su texto (`c109ebd`), el título de Creative (`7d1bc8b`)—.
 
-**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:577-581`: el corte
+**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:581-585`: el corte
 de 640 px tiene que nombrar `:is(.pn-b, .pn-b.q3, .pn-b.q4)` porque el de 900 px pesa más, y sin eso a
 400 px el panel queda en dos columnas de 170 px. «Visto en el navegador, no deducido.» La hoja hoy la
 comparten las cinco pantallas de Inteligencia.
@@ -1039,8 +1039,8 @@ El rediseño de Conversation dejó cuatro defectos y **tres aparecieron mirando*
 | Qué estaba mal | Dónde quedó escrito | Cómo apareció |
 | --- | --- | --- |
 | El vocabulario de períodos metía el cliente de PostgreSQL en el paquete del navegador | `lib/negocio/periodo.ts:25-34` | Lo rechazó `next build` |
-| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:286-289` | Mirándola |
-| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:577-581` | Mirándola a 400 px |
+| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:290-293` | Mirándola |
+| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:581-585` | Mirándola a 400 px |
 | El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:765-767` | Mirándola |
 
 **Y se repitió en el período, más grande.** A 375 px la barra lateral no colapsaba y al cuerpo le

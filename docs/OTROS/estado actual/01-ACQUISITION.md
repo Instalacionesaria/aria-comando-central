@@ -98,7 +98,7 @@ prohíbe (`:17-22`). Devuelve la clave del período que contestó (`:56-63`).
 **La vista y el cliente.** `components/views/AcquisitionView.jsx` (59 líneas) sólo pone el
 encabezado y monta el panel; la bajada cambió a «Qué costó cada anuncio, y cuánto vale esa cifra»
 (`:49`) porque la vieja —«y cuáles sirven»— era la conclusión que el § 18.1 prohíbe (`:46-48`). Lo
-que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:41-53`
+que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:37-49`
 pide y no calcula nada.
 
 **El panel.** `components/acquisition/PanelDeAcquisition.jsx`, 410 líneas, tres bloques en este
@@ -117,7 +117,7 @@ orden (`Cuerpo`, `:205-216`):
    `:403-407`); la tasa de agenda con su denominador al lado (`:395-398`).
 
 **Ventanas y pisos.** Cuatro botones de `lib/negocio/periodo.ts:83-96`, 30 días por omisión
-(`:109`). El reloj recarga sólo con la pestaña a la vista (`PanelDeAcquisition.jsx:87-89`). El
+(`:109`). El reloj recarga sólo con la pestaña a la vista (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 87-89)). El
 costo usa **días de calendario terminando hoy** (`lib/negocio/costoDelAnuncio.ts:34-65`: el gasto
 por `:82-84`, y los leads y la cobertura con su propia copia, `:346` y `:368`); el monitor usa
 **ventanas móviles de 24 horas** (`lib/negocio/calidadDeLaAtribucion.ts:116`, `:130`, `:142`) —ver
@@ -186,9 +186,9 @@ Todo lo borrado se fue en `be5ba97` (2026-09-16), salvo donde se dice otro commi
 | 3.4 | `seedMod()`, un hash de la fecha | nada, y no hace falta |
 | 3.5 | afinidad ICP en tres tramos | ICP por pieza, en Creative (`lib/negocio/calidadDelCreativo.ts:1`) |
 | 3.6 | el tope `Math.min(.94, v)` | `PISO_DE_UNA_TASA`: nulo bajo 10, sin techo |
-| 3.7 | dos «Señales» en el JSX | nada (`components/views/AcquisitionView.jsx:28-29`; § 5.4) |
-| 3.8 | modal «Plan de acción» | nada (`components/views/AcquisitionView.jsx:21-23`) |
-| 3.9 | rango de julio por defecto | 30 días (`components/views/AcquisitionView.jsx:24-26`) |
+| 3.7 | dos «Señales» en el JSX | nada (`components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 28-29); § 5.4) |
+| 3.8 | modal «Plan de acción» | nada (`components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-23)) |
+| 3.9 | rango de julio por defecto | 30 días (`components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 24-26)) |
 | 3.10 | ficha de Executive, «312 contactos» | **sigue igual** (abajo) |
 | 3.11 | conflicto «a $19» | **sigue**, corrido a otras líneas (abajo) |
 | 3.12 | hallazgo de Conversion, chat, Leads Portal | se fueron dos de los tres (abajo) |
@@ -388,18 +388,18 @@ tiene fila sin anuncio, y el tamaño del hueco viaja aparte, en `cobertura` y en
 **9 · El piso es para proporciones; el CPL se publica con un lead**, porque es un hecho y no una
 tasa, y `leads` viaja al lado (`costoDelAnuncio.ts:139-148`, `:212-213`).
 
-**10 · La cobertura va arriba y en la misma respuesta** (`app/api/acquisition/route.ts:17-22`,
-`PanelDeAcquisition.jsx:209-212`), con sus dos términos (`costoDelAnuncio.ts:177-181`).
+**10 · La cobertura va arriba y en la misma respuesta** (`app/api/acquisition/route.ts` (en `4365cc9`, líneas 17-22),
+`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 209-212)), con sus dos términos (`costoDelAnuncio.ts:177-181`).
 
 **11 · Un aviso por bloque, elegido por lo que más invalida**: la ventana cortada antes que la
 cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnuncio.ts:421-425`,
 `:445-496`).
 
 **12 · El punto invertido se marca**, o una barra llena diría «bien» en cuatro filas y «mal» en una
-(`calidadDeLaAtribucion.ts:184-194`, `PanelDeAcquisition.jsx:285-296`).
+(`calidadDeLaAtribucion.ts:184-194`, `PanelDeAcquisition.jsx` (en `4365cc9`, líneas 285-296)).
 
 **13 · Se ordena por gasto, no por CPL, y no se calcula revenue, CAC ni ROAS.** El CPL solo es la
-acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.jsx:326-339`).
+acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 326-339)).
 
 **14 · El colector reconcilia y no olvida.** Pide lo que falta, no lo que sigue a una marca de agua
 (`recolectarAnuncios.ts:192-259`), y conserva el conjunto que ya sabía (`:351`).
@@ -417,9 +417,9 @@ la pantalla dice «no hay gasto desde el 13».
 
 **2 · «Hoy» son dos ventanas en la misma pantalla.** El botón lleva el matiz «Las últimas 24 horas,
 no el día del calendario» (`lib/negocio/periodo.ts:84`, puesto como `title` en
-`PanelDeAcquisition.jsx:133`); el costo usa el día de calendario (`costoDelAnuncio.ts:61-63`) y el
+`PanelDeAcquisition.jsx` (en `4365cc9`, línea 133)); el costo usa el día de calendario (`costoDelAnuncio.ts:61-63`) y el
 monitor 24 horas móviles (`calidadDeLaAtribucion.ts:116`). La ruta afirma que las dos cifras reciben
-«LA MISMA ventana» (`app/api/acquisition/route.ts:24-25`): reciben los mismos días, no el mismo
+«LA MISMA ventana» (`app/api/acquisition/route.ts` (en `4365cc9`, líneas 24-25)): reciben los mismos días, no el mismo
 ancla. Medido a 30 días el 2026-09-28: **276 contactos en el aviso del costo y 277 en el monitor**,
 en la misma pantalla. Y `periodo.ts:76-77` sigue diciendo que todas las ventanas del sistema son
 móviles.
@@ -433,7 +433,7 @@ grave de hoy manda a revisar enlaces que, según la URL de aterrizaje que midió
 
 **4 · «Entregó N días» cuenta días sin impresiones.** `diasConEntrega` cuenta `gasto is not null`
 (`costoDelAnuncio.ts:288`) y la nota dice «Entregó N días de la ventana»
-(`PanelDeAcquisition.jsx:380-386`). Medido a 30 días: el anuncio de mayor gasto dice 16 y tuvo
+(`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 380-386)). Medido a 30 días: el anuncio de mayor gasto dice 16 y tuvo
 impresiones en 12; 14 de los 79 anuncios dan cifras distintas por las dos vías; dos anuncios
 figuran con gasto cero y «Entregó» uno o dos días sin una sola impresión. Creative lo corrigió de su
 lado contando impresiones (`lib/negocio/rendimientoDelCreativo.ts:216-229`); acá no, y la prueba
@@ -441,7 +441,7 @@ sólo siembra días todo nulos o todo llenos, así que el caso «gasto 0,00 sin 
 cubierto (`pruebas/base/99-costo-del-anuncio.test.ts:207-220`).
 
 **5 · La tabla no distingue anuncios homónimos.** 21 nombres repetidos, hasta seis filas con el
-mismo, y ninguna columna de campaña ni de ad set (`PanelDeAcquisition.jsx:363-371`).
+mismo, y ninguna columna de campaña ni de ad set (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 363-371)).
 
 **6 · La cobertura no es al azar, y el aviso que lo explica tapa a otro.** El `adId` llega por
 Facebook e Instagram y nunca por formulario ni calendario (§ 4; `costoDelAnuncio.ts:14-21`). El
@@ -504,3 +504,10 @@ Este corte tampoco la hizo.
 > la estética al 100 % y los datos reales: `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`.
 > Cuando se construya, la tabla por anuncio y la tarjeta del monitor salen de la pantalla, y entran
 > los tres funnels con la campaña asignada a mano. Lo de arriba describe la pantalla del 2026-09-28.
+>
+> **Construido el mismo 2026-09-30 (AQ-0 a AQ-4).** La pantalla dibuja el marcado del prototipo sin
+> `estetica-op`, con los funnels de `embudosDeAcquisition`. La tabla por anuncio y el monitor salieron
+> de la pantalla y de `GET /api/acquisition`; el monitor queda dormido
+> (`docs/OTROS/futuro/monitor-de-atribucion.md`). Con eso se cierra el **Riesgo 2** de este documento:
+> la respuesta ya no mezcla las 24 horas móviles del monitor con los días de calendario de los
+> funnels.

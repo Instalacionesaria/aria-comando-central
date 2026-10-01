@@ -46,7 +46,7 @@
 Más **30 frases de guion** en primera persona (`:63-67`), **16 colores hex** en ocho degradados, y los
 **siete coeficientes** de la curva de retención (`:212`, `:258`).
 
-Para comparación, `components/acquisition/PanelDeAcquisition.jsx:10` documenta que
+Para comparación, `components/acquisition/PanelDeAcquisition.jsx` (en `4365cc9`, línea 10) documenta que
 `lib/aios/acquisition.js` tenía **302 líneas y 58 literales**. Creative tiene 450 y 201.
 
 ### C9-02 · La mitad de esos números no llega nunca a la pantalla
@@ -123,7 +123,7 @@ apuntando a la lista real.
 ### C9-06 · El botón «Personalizado» y el `#crePill`
 
 `components/views/CreativeView.jsx:42-49`. Andamiaje, por el motivo de
-`components/views/AcquisitionView.jsx:21-26`.
+`components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
 
 ### C9-07 · El botón «Plan de acción»
 
