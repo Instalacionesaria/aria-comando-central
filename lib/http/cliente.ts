@@ -269,6 +269,16 @@ export const ESPERA_EXTERNA_MS = 240_000;
  * documento recién generado se pierde después de haberse pagado. Veinte segundos de margen es lo
  * que separa «no llegó a tiempo y te lo digo» de «no llegó a tiempo y encima perdí lo que salió».
  *
+ * ── Y POR QUÉ LA GENERACIÓN VA EN FLUJO (`stream: true`) ────────────────────
+ *
+ * Subir este número a 580 no alcanzó, y el 2026-10-01 se vio por qué: el registro dijo
+ * *«fundaciones: no hubo respuesta del modelo · fetch failed (tras 301 s)»*. Ese corte no es
+ * nuestro: el `fetch` de Node (undici) trae su propio `headersTimeout` de **300 s**, y una
+ * petición a Anthropic sin flujo no manda ni una cabecera hasta haber escrito el documento entero.
+ * Pasados cinco minutos, undici abandona y este tope nunca llega a mirar. En flujo las cabeceras
+ * llegan al instante y el texto (más los `ping` del servicio) sigue llegando, así que los 300 s de
+ * undici no se cumplen nunca y el único corte que queda es éste. Por eso `lectura: 'texto'`.
+ *
  * Si esto sube, sube primero el `maxDuration` de las rutas que generan. La regla es la misma que
  * gobierna `ESPERA_DE_RUTA_LARGA_MS` del otro lado: **quien espera tiene que esperar menos que
  * quien ejecuta**, o el que corta es el de más adentro y nadie se entera de por qué.
@@ -334,9 +344,15 @@ export async function pedirExterno<T>(
     cuerpo?: unknown;
     /** El tope, para quien sepa que su llamada tarda más. Ver `ESPERA_DE_GENERACION_MS`. */
     espera?: number;
+    /**
+     * `'texto'` devuelve el cuerpo de un 2xx SIN interpretar, para quien pide un flujo de eventos
+     * (`stream: true` de Anthropic). Ver `ESPERA_DE_GENERACION_MS`: es lo que permite esperar más de
+     * 300 s. Un rechazo se sigue leyendo como JSON, porque el servicio lo manda así.
+     */
+    lectura?: 'json' | 'texto';
   } = {},
 ): Promise<Respuesta<T>> {
-  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS } = opciones;
+  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS, lectura = 'json' } = opciones;
 
   const desde = Date.now();
   let respuesta: Response;
@@ -371,6 +387,44 @@ export async function pedirExterno<T>(
       tipo: 'sin_respuesta',
       causa: `${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
     };
+  }
+
+  if (lectura === 'texto' && respuesta.ok) {
+    try {
+      return { tipo: 'datos', datos: (await respuesta.text()) as T };
+    } catch (e) {
+      // El flujo se cortó a mitad: el tope nuestro, la red, o el servicio que cerró la conexión.
+      const ms = Date.now() - desde;
+      if (e instanceof Error && e.name === 'TimeoutError') {
+        return {
+          tipo: 'sin_respuesta',
+          causa: `se agotó el tiempo de espera a los ${Math.round(ms / 1000)} s (el tope es ${Math.round(espera / 1000)} s)`,
+        };
+      }
+      return {
+        tipo: 'sin_respuesta',
+        causa: `la respuesta se cortó a mitad: ${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
+      };
+    }
+  }
+
+  if (lectura === 'texto' && respuesta.ok) {
+    try {
+      return { tipo: 'datos', datos: (await respuesta.text()) as T };
+    } catch (e) {
+      // El flujo se cortó a mitad: el tope nuestro, la red, o el servicio que cerró la conexión.
+      const ms = Date.now() - desde;
+      if (e instanceof Error && e.name === 'TimeoutError') {
+        return {
+          tipo: 'sin_respuesta',
+          causa: `se agotó el tiempo de espera a los ${Math.round(ms / 1000)} s (el tope es ${Math.round(espera / 1000)} s)`,
+        };
+      }
+      return {
+        tipo: 'sin_respuesta',
+        causa: `la respuesta se cortó a mitad: ${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
+      };
+    }
   }
 
   let cuerpoLeido: unknown;

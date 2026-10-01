@@ -692,15 +692,23 @@ async function conFetchInterceptado<T>(
   }
 }
 
-const RESPUESTA_BUENA = () =>
+/** Un flujo de eventos como el que manda Anthropic con `stream: true`. */
+const flujo = (eventos: Record<string, unknown>[]) => () =>
   new Response(
-    JSON.stringify({
-      content: [{ type: 'text', text: 'un documento' }],
-      stop_reason: 'end_turn',
-      usage: { input_tokens: 10, output_tokens: 20 },
-    }),
-    { status: 200, headers: { 'content-type': 'application/json' } },
+    eventos.map((e) => `event: ${String(e['type'])}\ndata: ${JSON.stringify(e)}\n\n`).join(''),
+    { status: 200, headers: { 'content-type': 'text/event-stream' } },
   );
+
+const RESPUESTA_BUENA = flujo([
+  { type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 1 } } },
+  { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+  { type: 'ping' },
+  { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'un ' } },
+  { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'documento' } },
+  { type: 'content_block_stop', index: 0 },
+  { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 20 } },
+  { type: 'message_stop' },
+]);
 
 test('el cuerpo que sale hacia Anthropic tiene los tres campos, y ninguno se lo come `JSON.stringify`', async () => {
   /* Se recorren las herramientas con su prompt REAL y su presupuesto REAL. Si alguna arma un cuerpo
@@ -748,7 +756,7 @@ test('el cuerpo que sale hacia Anthropic tiene los tres campos, y ninguno se lo 
            mismo texto amable en pantalla— y es el error tipico de copiar un cuerpo de otra API. */
     assert.deepEqual(
       Object.keys(p.cuerpo).sort(),
-      ['max_tokens', 'messages', 'model'],
+      ['max_tokens', 'messages', 'model', 'stream'],
       `la herramienta ${id} manda campos que la API no espera`,
     );
 
@@ -779,6 +787,64 @@ test('el prompt del Research SI declara la herramienta de busqueda, y las demas 
     generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
   );
   assert.equal('tools' in (sinBusqueda[0]?.cuerpo ?? {}), false, 'una herramienta sin busqueda la declara igual');
+});
+
+test('la generación va EN FLUJO, y el documento se rearma entero desde los eventos', async () => {
+  /* 2026-10-01: «fetch failed (tras 301 s)». Sin flujo, Anthropic no manda cabeceras hasta terminar
+     y el `fetch` de Node abandona a los 300 s por su cuenta, antes que nuestro tope de 580. */
+  const { salida, peticiones } = await conFetchInterceptado(RESPUESTA_BUENA, () =>
+    generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal(peticiones[0]?.cuerpo['stream'], true, 'la generación dejó de pedir el flujo');
+  assert.equal(salida.tipo, 'datos');
+  if (salida.tipo !== 'datos') return;
+  assert.equal(salida.datos.texto, 'un documento');
+  assert.equal(salida.datos.cortado, false);
+  assert.equal(salida.datos.tokens, 30);
+
+  // Las citas de la búsqueda llegan como `citations_delta`, y se juntan sin repetir la URL.
+  const conCitas = await conFetchInterceptado(
+    flujo([
+      { type: 'message_start', message: { usage: { input_tokens: 1 } } },
+      { type: 'content_block_start', index: 0, content_block: { type: 'server_tool_use', id: 'x', name: 'web_search', input: {} } },
+      { type: 'content_block_stop', index: 0 },
+      { type: 'content_block_start', index: 1, content_block: { type: 'text', text: '', citations: [] } },
+      { type: 'content_block_delta', index: 1, delta: { type: 'citations_delta', citation: { url: 'https://a.cr', title: 'A' } } },
+      { type: 'content_block_delta', index: 1, delta: { type: 'citations_delta', citation: { url: 'https://a.cr', title: 'A' } } },
+      { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'con fuente' } },
+      { type: 'message_delta', delta: { stop_reason: 'max_tokens' }, usage: { output_tokens: 5 } },
+      { type: 'message_stop' },
+    ]),
+    () => generar({ claveIa: 'k', prompt: 'hola', tokens: 100, conBusquedaWeb: true }),
+  );
+  assert.equal(conCitas.salida.tipo, 'datos');
+  if (conCitas.salida.tipo !== 'datos') return;
+  assert.equal(conCitas.salida.datos.texto, 'con fuente');
+  assert.equal(conCitas.salida.datos.cortado, true);
+  assert.deepEqual(conCitas.salida.datos.citas, [{ url: 'https://a.cr', titulo: 'A' }]);
+});
+
+test('un flujo que trae un `error` o que no cierra NO es un documento', async () => {
+  const conError = await conFetchInterceptado(
+    flujo([
+      { type: 'message_start', message: { usage: {} } },
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'a medias' } },
+      { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } },
+    ]),
+    () => generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal(conError.salida.tipo, 'sin_respuesta');
+  assert.match(conError.salida.tipo === 'sin_respuesta' ? conError.salida.causa : '', /overloaded_error · Overloaded/);
+
+  const sinCierre = await conFetchInterceptado(
+    flujo([
+      { type: 'message_start', message: { usage: {} } },
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'algo' } },
+    ]),
+    () => generar({ claveIa: 'k', prompt: 'hola', tokens: 100 }),
+  );
+  assert.equal(sinCierre.salida.tipo, 'sin_respuesta', 'un flujo cortado se guardaría como documento a medias');
 });
 
 // ════════════════════════════════════════════════════════════════════════════

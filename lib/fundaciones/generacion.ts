@@ -110,6 +110,72 @@ interface RespuestaDeAnthropic {
 }
 
 /**
+ * Rearma el mensaje completo a partir del flujo de eventos (SSE) de Anthropic.
+ *
+ * Devuelve la MISMA forma que daba la respuesta sin flujo, así que lo de abajo no cambia. Solo se
+ * juntan los bloques de texto y sus citas: la búsqueda web (`server_tool_use`, sus resultados) no
+ * se lee después, y rearmarla sería código que nadie usa.
+ *
+ * Un flujo que trae un evento `error` (p. ej. `overloaded_error` a mitad) o que termina sin
+ * `message_stop` NO es un documento: es una respuesta que no llegó, y se dice así.
+ */
+export function mensajeDelFlujo(
+  texto: string,
+): { tipo: 'completo'; mensaje: RespuestaDeAnthropic } | { tipo: 'cortado'; causa: string } {
+  const bloques: BloqueDeRespuesta[] = [];
+  const mensaje: RespuestaDeAnthropic = { content: bloques, usage: {} };
+  let terminado = false;
+
+  for (const linea of texto.split(/\r?\n/)) {
+    if (!linea.startsWith('data:')) continue;
+    let ev: Record<string, any>;
+    try {
+      ev = JSON.parse(linea.slice(5)) as Record<string, any>;
+    } catch {
+      continue;
+    }
+    switch (ev['type']) {
+      case 'message_start':
+        Object.assign(mensaje.usage!, ev['message']?.usage ?? {});
+        break;
+      case 'content_block_start': {
+        const b = ev['content_block'] ?? {};
+        bloques[ev['index']] = {
+          type: b.type,
+          text: typeof b.text === 'string' ? b.text : '',
+          citations: Array.isArray(b.citations) ? [...b.citations] : [],
+        };
+        break;
+      }
+      case 'content_block_delta': {
+        const b = bloques[ev['index']];
+        const d = ev['delta'] ?? {};
+        if (!b) break;
+        if (d.type === 'text_delta' && typeof d.text === 'string') b.text = (b.text ?? '') + d.text;
+        if (d.type === 'citations_delta' && d.citation) b.citations!.push(d.citation);
+        break;
+      }
+      case 'message_delta':
+        if (ev['delta']?.stop_reason) mensaje.stop_reason = ev['delta'].stop_reason;
+        Object.assign(mensaje.usage!, ev['usage'] ?? {});
+        break;
+      case 'message_stop':
+        terminado = true;
+        break;
+      case 'error': {
+        const e = ev['error'] ?? {};
+        return { tipo: 'cortado', causa: `el modelo cortó a mitad: ${e.type ?? 'error'}${e.message ? ` · ${e.message}` : ''}` };
+      }
+    }
+  }
+
+  if (!terminado) return { tipo: 'cortado', causa: 'la respuesta llegó incompleta (el flujo terminó sin cerrar)' };
+  // Huecos del arreglo (índices de bloques que no llegaron a abrirse) se descartan.
+  mensaje.content = bloques.filter(Boolean);
+  return { tipo: 'completo', mensaje };
+}
+
+/**
  * Genera un documento.
  *
  * `claveIa` viene resuelta por organización (ver `lib/credenciales/resolver.ts`) y no tiene valor
@@ -127,10 +193,14 @@ export async function generar(opciones: {
     model: MODELO,
     max_tokens: opciones.tokens,
     messages: [{ role: 'user', content: opciones.prompt }],
+    /* En flujo, y no por gusto: sin él Anthropic no manda ni una cabecera hasta terminar, y el
+       `fetch` de Node abandona a los 300 s por su cuenta («fetch failed (tras 301 s)», 2026-10-01).
+       Ver `ESPERA_DE_GENERACION_MS`. */
+    stream: true,
   };
   if (opciones.conBusquedaWeb) cuerpo['tools'] = [BUSQUEDA_WEB];
 
-  const r = await pedirExterno<RespuestaDeAnthropic>(API, {
+  const r = await pedirExterno<string>(API, {
     metodo: 'POST',
     cabeceras: { 'x-api-key': opciones.claveIa, 'anthropic-version': VERSION_API },
     cuerpo,
@@ -138,6 +208,7 @@ export async function generar(opciones: {
        escribe hasta 16.000 tokens— y el tope por omisión le quedaba corto con la función todavía
        viva. Ver `ESPERA_DE_GENERACION_MS`. */
     espera: ESPERA_DE_GENERACION_MS,
+    lectura: 'texto',
   });
 
   if (r.tipo === 'rechazado') {
@@ -150,7 +221,11 @@ export async function generar(opciones: {
   }
   if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta', causa: r.causa };
 
-  const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
+  const flujo = mensajeDelFlujo(r.datos);
+  if (flujo.tipo === 'cortado') return { tipo: 'sin_respuesta', causa: flujo.causa };
+  const mensaje = flujo.mensaje;
+
+  const bloques = Array.isArray(mensaje.content) ? mensaje.content : [];
   const texto = bloques
     .filter((b) => b.type === 'text')
     .map((b) => (b.text ? b.text : ''))
@@ -171,7 +246,7 @@ export async function generar(opciones: {
     }
   }
 
-  const uso = r.datos.usage;
+  const uso = mensaje.usage;
   const entrada = uso && uso.input_tokens ? uso.input_tokens : 0;
   const salida = uso && uso.output_tokens ? uso.output_tokens : 0;
   const tokens = entrada + salida;
@@ -180,7 +255,7 @@ export async function generar(opciones: {
     tipo: 'datos',
     datos: {
       texto,
-      cortado: r.datos.stop_reason === 'max_tokens',
+      cortado: mensaje.stop_reason === 'max_tokens',
       citas,
       milisegundos: Date.now() - desde,
       tokens: tokens > 0 ? tokens : null,
