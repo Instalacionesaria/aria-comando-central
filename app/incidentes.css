@@ -22,7 +22,10 @@
 }
 
 .inc-tecnico {
-  font-family: var(--mono, ui-monospace, monospace);
+  /* `--font-mono`, que es el token. Decía `--mono`, que no existe: el respaldo lo tapaba y se veía la
+     monoespaciada del sistema, no la de la aplicación. La `121` no lo ve porque un `var()` con
+     respaldo es legítimo; lo ve la `187`. */
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--txt-dim);
   word-break: break-word;
@@ -30,7 +33,7 @@
 }
 
 .inc-ref {
-  font-family: var(--mono, ui-monospace, monospace);
+  font-family: var(--font-mono);
   font-weight: 600;
   color: var(--txt);
 }

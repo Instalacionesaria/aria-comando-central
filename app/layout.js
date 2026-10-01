@@ -1,23 +1,24 @@
-import { Inter, IBM_Plex_Mono } from 'next/font/google';
-/* Las del brandbook v2. Conviven con Inter/Plex a propósito: la aplicación NO se migró todavía
-   —eso es pantalla por pantalla, y su inventario está en `brand/MIGRACION.md`—, así que Geist
-   por ahora sólo alimenta `--font-sans`/`--font-mono` dentro de `[data-marca="v2"]`. */
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { TEMA, temaCss } from './tema.ts';
 
-const inter = Inter({
+/* Las letras del brandbook v2, para toda la aplicación (`NE-24`). Reemplazan a Inter e IBM Plex Mono.
+
+   Por el cargador de Next y NO por el paquete `geist` que trajo el PR #2: el paquete declara sus
+   variables por su cuenta, y `pruebas/codigo/121-tokens-de-css.test.ts` sólo puede saber que un
+   `var(--font-…)` existe si lo lee de un `variable:` de este archivo. Los nombres son los mismos que
+   usaba el paquete, así que `/brand` (`app/brand/pagina.css`) no cambió.
+
+   Sin `weight`: las dos son fuentes variables, y un solo archivo trae del 100 al 900. */
+const geist = Geist({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-inter',
+  variable: '--font-geist-sans',
   display: 'swap',
 });
 
-const plexMono = IBM_Plex_Mono({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-mono',
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -45,7 +46,7 @@ export default function RootLayout({ children }) {
       /* Y el lienzo del navegador, para que los controles nativos —barras de desplazamiento,
          campos, el fondo del sobredesplazamiento— acompañen. */
       style={{ colorScheme: temaCss(TEMA) }}
-      className={`${inter.variable} ${plexMono.variable} ${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${geist.variable} ${geistMono.variable}`}
     >
       <body>
         {children}

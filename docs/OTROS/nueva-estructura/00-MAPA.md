@@ -67,3 +67,4 @@ terminar, marca acá abajo su commit.
 | E1 · el PR #2 de la marca | hecho, 2026-10-01 |
 | E2 · la sesión entera | hecho, 2026-10-01 |
 | E3 · sólo oscuro | hecho, 2026-10-01 |
+| E4 · la tipografía | hecho, 2026-10-01 |

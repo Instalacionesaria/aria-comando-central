@@ -42,11 +42,16 @@ El brandbook dice que el tema claro es para documentos y PDFs, no para la app (`
 ## `NE-24` · Geist
 
 - **Geist y Geist Mono** entran por el cargador de fuentes de Next (`next/font/google`), con nombre de
-  variable. El PR las trae por el paquete `geist`, que no declara la variable, y eso haría fallar la prueba
-  que exige que toda variable de CSS esté definida (`pruebas/codigo/121-tokens-de-css.test.ts`).
+  variable. El PR las trae por el paquete `geist`, que declara sus variables por su cuenta, sin un
+  `variable:` en `app/layout.js`, y la prueba que exige que toda variable de CSS esté definida
+  (`pruebas/codigo/121-tokens-de-css.test.ts`) sólo sabe que existen si las lee de ahí. El paquete sale.
 - Salen Inter e IBM Plex Mono.
-- Las doce pantallas «de operación» tienen hoy su propia pila de fuentes del sistema
-  (`app/operacion-estetica.css`). Pasan a la variable de la marca.
+- **Geist va primera** en `--font-ui`. Inter y Plex iban detrás de las letras del sistema, copiado del
+  prototipo, así que en una Mac se veía San Francisco y en Windows Inter.
+- Las doce pantallas «de operación» tenían su propia pila de fuentes del sistema
+  (`app/operacion-estetica.css`). Pasan a la variable de la marca. Y los Incidentes pedían `var(--mono, …)`,
+  un token que no existe: se veía la monoespaciada del respaldo. Pasan a `--font-mono`.
+- Hecho el 2026-10-01 (E4). Lo vigila `pruebas/codigo/187-la-letra-de-la-marca.test.ts`.
 - El cuerpo del texto queda en peso 400 a 13 px: la escala de la marca pone 300 sólo desde 16 px.
 - La firma tipográfica —el titular en dos líneas, peso 200 y después 500— se usa en el armazón (el saludo
   del inicio). En las pantallas, en la fase de detalles.

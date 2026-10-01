@@ -118,12 +118,17 @@
   --font-mono: var(--font-mono);
 }
 
-/* Las familias de next/font se inyectan en la cadena original,
-   detrás de las de sistema, igual que hacía el <link> a Google Fonts. */
+/* Las letras de la aplicación: Geist y Geist Mono, que carga `next/font` en `app/layout.js`.
+
+   PRIMERO Geist, y no detrás de las del sistema como estaban Inter y Plex —que copiaban el orden del
+   <link> del prototipo—. Con `-apple-system` adelante, en una Mac se veía San Francisco y en Windows
+   Inter: la misma pantalla con dos letras según la máquina. Las del sistema quedan sólo de respaldo.
+
+   Sin capa a propósito: le gana a la definición de `aios.css` (capa `aios`), que tiene que seguir
+   siendo comparable contra el HTML del prototipo. */
 :root {
-  --font-ui:   -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-               var(--font-inter), system-ui, sans-serif;
-  --font-mono: 'SF Mono', ui-monospace, var(--font-plex-mono), monospace;
+  --font-ui:   var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 /* La guarda de sesión: se dibuja antes que cualquier hoja del centro de mando, así que

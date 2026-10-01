@@ -32,15 +32,29 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
 
-/** Las hojas de estilo de la aplicación. Se leen TODAS, no una lista escrita a mano. */
+/**
+ * Las hojas de estilo de la aplicación, con su ruta desde la raíz. Se leen TODAS, no una lista
+ * escrita a mano: las de `app/` con sus subcarpetas, y las que `app/globals.css` importa de afuera.
+ *
+ * Hasta la nueva estructura se leían sólo las de `app/` sin subcarpetas, y eso dejaba dos huecos:
+ * `app/entrar/entrar.css` y `app/brand/pagina.css` podían usar un token inexistente sin que nadie
+ * lo viera, y los tokens de la marca (`public/brand/tokens.css`, capa `marca`) no contaban como
+ * definidos — así que la primera hoja que usara `var(--ink)` habría puesto esto en rojo por algo
+ * que está bien.
+ */
 function hojas(): readonly string[] {
-  return readdirSync(join(RAIZ, 'app'))
-    .filter((f) => f.endsWith('.css'))
-    .sort();
+  const deApp = readdirSync(join(RAIZ, 'app'), { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.css'))
+    .map((e) => relative(RAIZ, join(e.parentPath, e.name)).split(sep).join('/'));
+  /* Sólo las importaciones con ruta relativa: las de `tailwindcss/…` son del paquete. */
+  const importadas = [...readFileSync(join(RAIZ, 'app/globals.css'), 'utf8').matchAll(/@import\s+"(\.{1,2}\/[^"]+)"/g)]
+    .map((m) => relative(RAIZ, join(RAIZ, 'app', m[1]!)).split(sep).join('/'));
+  for (const h of importadas) assert.ok(existsSync(join(RAIZ, h)), `\`app/globals.css\` importa ${h}, que no existe`);
+  return [...new Set([...deApp, ...importadas])].sort();
 }
 
 /**
@@ -52,14 +66,14 @@ function hojas(): readonly string[] {
  * lo contrario de lo que este repositorio quiere de un comentario.
  */
 function sinComentarios(archivo: string): string {
-  return readFileSync(join(RAIZ, 'app', archivo), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  return readFileSync(join(RAIZ, archivo), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
 /**
  * Los tokens que `next/font` inyecta en tiempo de ejecución, leídos de `app/layout.js`.
  *
- * `--font-inter` y `--font-plex-mono` no se definen en ninguna hoja y **están bien**: los define el
- * cargador de fuentes con el `variable:` de cada `next/font`, y llegan como una clase en el `<html>`.
+ * `--font-geist-sans` y `--font-geist-mono` no se definen en ninguna hoja y **están bien**: los define
+ * el cargador de fuentes con el `variable:` de cada `next/font`, y llegan como una clase en el `<html>`.
  *
  * Se DERIVAN del layout en vez de escribirse acá. Una lista a mano quedaría corta el día que se
  * agregue una tercera fuente, y el síntoma sería esta prueba en rojo por algo que está bien — que es
@@ -128,7 +142,7 @@ test('el rojo de la auditoría sale del token del rojo, y NO de uno inventado', 
    * Se afirma sobre el archivo de la pantalla y no solo por el barrido de arriba, porque son dos
    * cosas distintas: el barrido dice «este token no existe» y esto dice «este chip usa el token del
    * rojo». Un `color: var(--txt)` en el chip pasaría el barrido perfecto y seguiría en blanco. */
-  const css = sinComentarios('auditoria.css');
+  const css = sinComentarios('app/auditoria.css');
   const i = css.indexOf('.aud-chip-rojo');
   assert.ok(i > 0, 'se fue la regla del chip rojo');
   const regla = css.slice(i, css.indexOf('}', i));

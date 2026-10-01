@@ -40,7 +40,9 @@ Este archivo resume solo lo que afecta al código. Si algo contradice al brandbo
 - `--font-sans`: Geist. `--font-mono`: Geist Mono (etiquetas, cifras, muestras de datos; nunca párrafos).
 - Titulares en dos líneas: la primera en peso 200, la segunda en 500, `letter-spacing: -0.035em`.
 - Cuerpo en peso 300 sobre oscuro.
-- Carga: Next.js → paquete `geist` (`geist/font/sans`, `geist/font/mono`); otros → Google Fonts (Geist 200–600, Geist Mono 400–500).
+- Carga: en esta aplicación, `next/font/google` (`Geist` y `Geist_Mono`, con las variables `--font-geist-sans` y
+  `--font-geist-mono`, en `app/layout.js`), no el paquete `geist`: el porqué está en ese archivo. Otros → Google
+  Fonts (Geist 200–600, Geist Mono 400–500).
 
 ## Componentes base
 
@@ -80,6 +82,8 @@ este archivo sí se versiona.
 
 ## Estado de la migración
 
-La aplicación **todavía no está migrada**: los tokens de marca viven en la capa `marca`, que pierde contra
-`aios.css` y `temas.css` a propósito, así que ninguna pantalla cambió. Los valores reales sólo se aplican
-bajo `[data-marca="v2"]`, y hoy eso es únicamente `/brand`.
+La aplicación **está a medio migrar**, por etapas (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`). Desde
+la etapa 4 toda la aplicación usa Geist y Geist Mono. Los colores, las superficies y los radios siguen siendo
+los del diseño heredado hasta la etapa 5: los tokens de marca viven en la capa `marca`, que pierde contra
+`aios.css` y `temas.css` a propósito, y sus valores reales sólo se aplican bajo `[data-marca="v2"]`, que hoy
+es únicamente `/brand`.

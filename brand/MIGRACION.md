@@ -1,15 +1,16 @@
 # Inventario para migrar a la marca v2
 
-Lo que hay hoy hardcodeado, dónde está y con qué token del brandbook se reemplaza. **Nada de esto
+Lo que hay hoy hardcodeado, dónde está y con qué token del brandbook se reemplaza. **Casi nada de esto
 está migrado todavía**: la Fase 1 instaló el sistema sin tocar una sola pantalla. Este archivo es
-la lista de trabajo de la Fase 2, que es de a una pantalla por vez.
+la lista de trabajo de la Fase 2, que es de a una pantalla por vez. La excepción es la tipografía, que
+ya está hecha (ver «Tipografía»).
 
 Medido con un barrido sobre `app/`, `components/` y `lib/` (se excluyen `pruebas/`, `docs/`, `db/`
 y el propio `app/brand/`, que ya es el sistema nuevo).
 
 La medición es de la base del PR #2, 28 commits antes de entrar a `main` el 2026-10-01. Desde entonces los
-conteos se movieron unas unidades —las hojas que `main` sumó, y las reglas del botón de tema que salieron
-con la aplicación sólo oscura—, y la etapa 5 de la nueva estructura los vuelve a medir
+conteos se movieron unas unidades —las hojas que `main` sumó, las reglas del botón de tema que salieron
+con la aplicación sólo oscura y las pilas de letra que pasaron a Geist—, y la etapa 5 de la nueva estructura los vuelve a medir
 (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`).
 
 ## El tamaño del problema
@@ -108,15 +109,18 @@ sistema, o las etapas pasan a distinguirse por texto y borde en vez de por color
 
 ### Tipografía
 
-| Hoy | Brandbook |
+| Antes | Ahora (brandbook) |
 |---|---|
-| `--font-ui` → Inter (`next/font/google`) | `--font-sans` → **Geist** |
+| `--font-ui` → Inter (`next/font/google`) | `--font-ui` → **Geist** |
 | `--font-mono` → IBM Plex Mono | `--font-mono` → **Geist Mono** |
 
-**Corrección al pedido:** Space Grotesk y JetBrains Mono **no existen en este repositorio** — cero
-ocurrencias. Las familias a reemplazar son Inter e IBM Plex Mono. Ambas ya están cargadas junto a
-Geist en `app/layout.js`; la migración consiste en repuntar `--font-ui` y `--font-mono` y **borrar**
-las dos cargas viejas de `next/font/google`.
+**Hecho el 2026-10-01**, en la etapa 4 de la nueva estructura (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`,
+`NE-24`). `--font-ui` y `--font-mono` apuntan a Geist y Geist Mono, que se cargan con `next/font/google`
+—el paquete `geist` salió, y el porqué está en `app/layout.js`—, y se borraron las cargas de Inter e IBM
+Plex Mono. Las pantallas de operación y los Incidentes, que tenían su propia letra, usan la variable.
+
+**Corrección al pedido:** Space Grotesk y JetBrains Mono **no existían en este repositorio** — cero
+ocurrencias. Las familias reemplazadas fueron Inter e IBM Plex Mono.
 
 Además, el brandbook manda una regla que hoy no se cumple en ningún titular: **dos líneas, la
 primera en peso 200 y la segunda en 500, con `letter-spacing: -0.035em`**. Eso no es un reemplazo de

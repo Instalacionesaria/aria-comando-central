@@ -157,8 +157,9 @@
      contra el cuerpo de 13 px — dejarlo en `rem` haría que el radio fuera el único valor que NO
      sigue la escala. */
   --radio-tarjeta: 26px;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* La letra de la aplicación. Tenía su propia pila del sistema, así que las doce pantallas de
+     operación se veían con otra letra que el resto (`NE-24`). */
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0;
   color: var(--txt);
