@@ -597,7 +597,9 @@
 }
 .fd-doc strong {
   font-weight: 600;
-  color: var(--sobre-lleno);
+  /* El texto fuerte de un documento, sobre el panel: `--txt`. Decía `--sobre-lleno`, que es el texto
+     ENCIMA de un relleno de color y desde la marca v2 es casi negro: acá habría desaparecido. */
+  color: var(--txt);
 }
 .fd-doc em {
   font-style: normal;

@@ -68,3 +68,4 @@ terminar, marca acá abajo su commit.
 | E2 · la sesión entera | hecho, 2026-10-01 |
 | E3 · sólo oscuro | hecho, 2026-10-01 |
 | E4 · la tipografía | hecho, 2026-10-01 |
+| E5 · la paleta y las superficies | hecho, 2026-10-01 |

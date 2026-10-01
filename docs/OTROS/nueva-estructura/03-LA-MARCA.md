@@ -36,8 +36,9 @@ El brandbook dice que el tema claro es para documentos y PDFs, no para la app (`
 - Con el botón se van el guion de arranque que leía la copia del navegador, el `suppressHydrationWarning`
   que su escritura obligaba en el `<html>` y la transición de color del cambio de tema. El `<html>` sale del
   servidor con el tema fijo (E3, hecho el 2026-10-01).
-- El bloque de tokens del tema claro **queda**, con los valores claros del brandbook, porque las pruebas
-  de temas leen los dos bloques y porque los documentos imprimibles pueden usarlo.
+- El bloque de tokens del tema claro **queda, dormido y con su paleta de antes**: las pruebas de temas
+  leen los dos bloques, y ponerle los valores claros del brandbook se hace el día que un documento
+  imprimible lo use (`08-LO-QUE-QUEDA-PARA-DESPUES.md`).
 
 ## `NE-24` · Geist
 
@@ -76,9 +77,28 @@ del tema oscuro (`app/temas.css`), no tocar las pantallas. El mapa, token de hoy
 
 `ink-4` (#4F5968) **no se usa para texto**: no alcanza el contraste. El tono más bajo para texto es `ink-3`.
 
-**Las pantallas de operación dejan de tener paleta propia.** Hoy sus bloques de tokens en `temas.css`
-redefinen fondos, textos, señales y etapas en tonos zinc. Esas redefiniciones se borran, y las doce
+**Las pantallas de operación dejan de tener paleta propia.** Sus bloques de tokens en `temas.css`
+redefinían fondos, textos, señales y etapas en tonos zinc. Esas redefiniciones se borraron, y las doce
 pantallas heredan la marca como las demás.
+
+**Hecho el 2026-10-01 (E5).** Lo que se decidió al aplicarlo, además de la tabla:
+
+- **Las capas que flotan**: `--bg-flota` (la cabecera de los menús) y `--bg-cajon` (la del modal) van en
+  `surface-active` y no con el panel. Sin sombras, lo que separa un menú de la tarjeta de atrás es ser más
+  claro. El velo de los modales (`--c-velo`) es negro.
+- **El borde que separa**: `--line-strong` no es el `#242C3A` de la marca sino el `#3A4456` que la propia
+  marca indica «si el borde debe leerse solo» (`brand/tokens.json`). Con `#242C3A` los bordes de menús,
+  modales y campos quedaban más débiles que antes del recolor. Tres campos que usaban la línea decorativa
+  pasaron a ésta.
+- **Los canales de superficie** (`--c-alto`, `--c-panel`…) se igualaron de a pares para aplanar los
+  degradados de `aios.css` sin tocar esa hoja. `--c-violeta` y `--c-txt`, que sólo declaraba el prototipo,
+  entraron al tema con los valores de la marca.
+- **Los textos atenuados**: `ink-3` es el piso, y tres reglas del prototipo lo atenuaban además con opacidad
+  (los rótulos del menú lateral, el tramo del puntaje del Leads Portal y el «=» de «sin variación»). Una
+  regla en `temas.css` les devuelve la opacidad entera.
+- **Lo que queda del bloque de operación**: 20 tokens que el tema no tiene. Son el héroe del Inicio, los
+  íconos de estado, el botón «Unirse», el chat, que **conserva los colores de WhatsApp** porque la imitación
+  es su función, y la ficha.
 
 ## `NE-26` · Los colores con significado
 
@@ -102,6 +122,12 @@ no distingue colores se quedan.
 Los valores exactos se fijan en la etapa E5, medidos: contraste ≥ 4,5:1 sobre el fondo de las tarjetas para
 todo color que lleve texto, y una prueba que compara la paleta con `brand/tokens.json`.
 
+**Hecho el 2026-10-01 (E5).** El verde es `#94C6A0`, y las doce etapas y la cola de «Completadas hoy» están
+en `app/temas.css` con lo que se midió: la de más croma (`calificado`) tiene 0,087 contra 0,090 del cian, y
+la distancia mínima dentro de cada embudo es ΔE 0,089. **El dinero es `--exec`**, y por eso `--exec` vale
+`ink`. Los avisos de atención de `/entrar`, que lo usaban, pasaron a `--warn`. Los usos de `--exec` que no
+son dinero quedaron en blanco, y están en el inventario de `brand/MIGRACION.md`.
+
 **La etiqueta «VISTA DE EJEMPLO»** queda reservada al dorado, como dice el token. Hay una contradicción en
 el PR (su `BRAND.md` dice «`signal` atención» y su `tokens.json` «solo ese uso»): se resuelve escribiendo en
 `BRAND.md` el uso doble decidido acá —atención y vista de ejemplo, las dos señales que no son error—.
@@ -117,7 +143,11 @@ el PR (su `BRAND.md` dice «`signal` atención» y su `tokens.json` «solo ese u
 - **Sin sombras**: ya no hay. La única que la marca permite, el halo de la mascota, la dibuja la mascota
   en SVG.
 
-**Para la fase de detalles** (el inventario completo va a `brand/MIGRACION.md`):
+**Hecho el 2026-10-01 (E5)**: el fondo liso, los radios por token en las pantallas de operación y los
+degradados que se aplanan igualando tokens. Los que no se pudieron aplanar sin quitarle a un token su
+valor de la marca, y por qué, están en el inventario.
+
+**Para la fase de detalles** (el inventario completo está en `brand/MIGRACION.md`):
 
 - unos cuarenta degradados de tinte y resplandores que no se apagan por tokens;
 - los botones en píldora y las cejas mono de cada pantalla;

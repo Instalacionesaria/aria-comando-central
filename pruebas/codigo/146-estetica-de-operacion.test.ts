@@ -24,8 +24,8 @@
 // comparar.
 //
 // **2 · El bloque de tokens se queda con una sola vista.** Lo cuida `145-fila-limpia`, y es el peor
-// de los tres: la pantalla que queda afuera vuelve a la paleta VIEJA entera —otro lienzo, otro
-// texto, otras señales— y sigue viéndose perfectamente bien, solo que distinta.
+// de los tres: la pantalla que queda afuera pierde lo que sólo ese bloque tiene —el héroe, el chat,
+// los íconos de estado— y sigue viéndose casi bien, solo que distinta.
 //
 // **3 · El nombre vuelve a mentir.** Una hoja llamada «closer» que pinta `#v-setter` es media hora
 // de alguien buscando por qué el Setter cambió al tocar «lo del Closer».

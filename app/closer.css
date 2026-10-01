@@ -1490,7 +1490,8 @@
 }
 
 /* ── Y LA FORMA DEL PUNTO, QUE ES LO QUE EL COLOR NO PUEDE ARREGLAR ─────────
-   Medido con la matriz de Machado (2009) sobre los siete cantos de color, en el tema oscuro:
+   Medido con la matriz de Machado (2009) sobre los siete cantos de color, en el tema oscuro y con
+   la paleta de antes de la marca v2:
 
      · ganado / descalificado   distancia 195 en visión normal → **24 en deuteranopia**
      · no_show / nurture        distancia  62 en visión normal → **32 en protanopia**
@@ -1499,6 +1500,11 @@
    par más caro de confundir que tiene esta pantalla— se vuelven casi el mismo color para cerca del
    8 % de los varones. Ningún ajuste de tono lo arregla: son opuestos en el eje rojo-verde, que es
    justamente el eje que falta.
+
+   Con la paleta apagada de la marca v2 (`temas.css`, 2026-10-01), la misma medida da 78 → 53 para
+   ganado / descalificado y 38 → 44 para no_show / nurture: se confunden menos bajo daltonismo, pero
+   en visión normal ya están mucho más cerca que antes, que es el costo de apagarlas. La forma sigue
+   siendo la señal que no depende del color.
 
    Así que el punto cambia de FORMA, no solo de color, y las formas se eligen por el grupo semántico
    que `lib/negocio/etapas.ts` ya define:
@@ -2037,7 +2043,8 @@
 #v-analizadores .az-form { display: flex; flex-direction: column; gap: 8px; }
 #v-analizadores .az-campo {
   font: inherit; font-size: 12.5px; color: var(--txt); background: var(--bg-panel);
-  border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px;
+  /* El borde que separa, no el decorativo: es el límite del campo. */
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 9px;
 }
 #v-analizadores .az-detalle { display: flex; flex-direction: column; gap: 12px; }
 #v-analizadores .az-bloque h3 { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; color: var(--txt); }

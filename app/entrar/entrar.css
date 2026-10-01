@@ -169,7 +169,9 @@
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--exec, #e8b64c);
+  /* Atención (`--warn`, el dorado de la marca). Decía `--exec`, que desde la marca v2 es el blanco del
+     dinero: el aviso salía igual que el texto común. */
+  color: var(--warn, #e0c073);
 }
 
 .entrar-respaldos {
@@ -193,9 +195,10 @@
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--exec, #e8b64c);
-  background: var(--exec-dim, rgba(232, 182, 76, 0.12));
-  border: 1px solid rgba(232, 182, 76, 0.22);
+  /* Atención, con su tinte y su borde del mismo color: ver `.entrar-aviso`. */
+  color: var(--warn, #e0c073);
+  background: rgb(var(--c-warn, 224 192 115) / 0.12);
+  border: 1px solid rgb(var(--c-warn, 224 192 115) / 0.22);
 }
 
 .entrar-enlace {

@@ -131,7 +131,7 @@ distinto y nada lo dice.
 **Requisito**: ninguna clase se borra sin su medición de emisores.
 
 Ojo con una confusión fácil: los treinta selectores `#v-conversation` de
-`app/operacion-estetica.css:1241-1354` son la pestaña **Conversation**, que es otra vista.
+`app/operacion-estetica.css:1244-1357` son la pestaña **Conversation**, que es otra vista.
 
 ### CV9-11 · `scripts/paridad.mjs` no tiene nada que romper, y ése es el hallazgo
 

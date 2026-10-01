@@ -182,7 +182,7 @@
  *
  * Así que esta sección hace DOS cosas y ninguna es inventar un componente:
  *
- *   1 · Sube ese vocabulario a la escala de hoy —tarjeta translúcida de 26 px, cifras de peso 300,
+ *   1 · Sube ese vocabulario a la escala de hoy —tarjeta translúcida con el radio de tarjeta, cifras de peso 300,
  *       rótulos en versalitas— porque el maquetado usaba 14 px de radio y peso 600, que al lado de
  *       Closer y Setter se lee como de otro sistema.
  *   2 · Agrega lo que el tablero nuevo necesita y la maqueta no tenía: el segmentado de período, la
@@ -637,7 +637,7 @@
 
 /* ── 2 · LAS CAJAS COMPARTIDAS ──────────────────────────────────────────────
  *
- * `.card` ya la refina `operacion-estetica.css` —tarjeta translúcida de 26 px— y llega sola a
+ * `.card` ya la refina `operacion-estetica.css` —tarjeta translúcida con el radio de tarjeta— y llega sola a
  * Conversation y Sales. Lo que falta es el resto del vocabulario de cajas del
  * maquetado, que esas tres comparten con Creative y Conversion. */
 

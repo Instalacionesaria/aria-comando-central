@@ -8,9 +8,9 @@
 //     sí lo tiene, se lee como si esa columna fuera de otra clase. Nada falla.
 // 2 · **Dos etapas con el mismo color.** Copiar el bloque de una y olvidarse de cambiarle el tono
 //     deja dos columnas indistinguibles. Nada falla, y encima parece intencional.
-// 3 · **Que el color sea la ÚNICA señal.** Medido con la matriz de Machado sobre los siete tonos:
-//     el verde de «Ganado» y el coral de «Descalificado» quedan a distancia **24 en deuteranopia**
-//     —contra 195 en visión normal—, o sea casi el mismo color para cerca del 8 % de los varones. Y
+// 3 · **Que el color sea la ÚNICA señal.** Medido con la matriz de Machado sobre los siete tonos de
+//     antes de la marca v2: el verde de «Ganado» y el coral de «Descalificado» quedaban a distancia
+//     **24 en deuteranopia** —contra 195 en visión normal—, casi el mismo color para el 8 % de los varones. Y
 //     son el mejor y el peor desenlace: el par más caro de confundir que tiene esta pantalla.
 //     Ningún ajuste de tono lo arregla, porque son opuestos en el eje que falta. Por eso el punto
 //     cambia de FORMA, y eso también se comprueba acá.

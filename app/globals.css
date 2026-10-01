@@ -8,10 +8,12 @@
    frente al CSS sin capa). Con la capa, `tw:p-4` puede sobrescribirlo. */
 /* ── Las dos capas de la marca v2, y por qué están donde están ──────────────
    `marca` va ANTES de `aios`: `public/brand/tokens.css` declara en `:root` seis nombres que esta
-   aplicación ya usa con otro valor —`--bg`, `--line`, `--line-strong`, `--accent`, `--font-sans`
-   y `--font-mono`—. En la capa más baja, `aios.css` y `temas.css` le ganan SIEMPRE, así que la
-   aplicación no cambia un pixel y lo único que aporta son los ~20 tokens que no chocan con nada
-   (`--ink`, `--surface-raised`, `--radius-*`, `--space-*`, `--glow-orb`…).
+   aplicación también usa —`--bg`, `--line`, `--line-strong`, `--accent`, `--font-sans` y
+   `--font-mono`—. En la capa más baja, `aios.css` y `temas.css` le ganan SIEMPRE, así que los valores
+   de la aplicación son los de `temas.css` (desde la marca v2, `--bg`, `--line` y `--accent` valen lo
+   mismo en las dos capas; `--line-strong` no, ver `temas.css`). Lo que la capa aporta son los tokens
+   que no chocan con nada (`--ink`, `--surface-raised`, `--radius-*`, `--space-*`, `--glow-orb`…), y
+   las pantallas de operación ya leen de ella sus radios.
 
    `marca-scope` va DESPUÉS de `components` por el motivo contrario: `[data-marca="v2"]` tiene
    especificidad 0,1,0 y `:root[data-tema='oscuro']` tiene 0,2,0, así que por especificidad perdería
@@ -57,7 +59,7 @@
    pruebas leen por su forma exacta. Se llamaba `closer-estetica.css` mientras colgaba de una sola
    vista, y este comentario decía que Ajustes y los tableros no se movían — dejó de ser cierto, y
    un comentario viejo acá cuesta media hora de buscar por qué algo se ve distinto. Sus colores
-   están en `temas.css`, con el mismo alcance; el porqué de cada decisión, en su encabezado. */
+   son los del tema; `temas.css` guarda con su alcance los pocos que el tema no tiene. */
 @import "./operacion-estetica.css" layer(components);
 
 /* El Panel de Monitoreo: la tabla de consumo de todas las empresas. Misma capa y mismo motivo
@@ -138,8 +140,8 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: var(--bg, #05080d);
-  color: var(--txt, #dbe7f4);
+  background: var(--bg, #04060a);
+  color: var(--txt, #f2f5f9);
   font-family: var(--font-ui, system-ui, sans-serif);
 }
 
@@ -158,7 +160,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--txt-dim, #7d8ca1);
+  color: var(--txt-dim, #aab3c1);
 }
 
 .guardia-caja > button {
@@ -167,8 +169,8 @@
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: #05080d;
-  background: var(--accent, #35e0d2);
+  color: var(--sobre-acento, #04060a);
+  background: var(--accent, #8fe3ff);
   border: none;
   border-radius: 8px;
   cursor: pointer;

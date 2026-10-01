@@ -24,7 +24,7 @@
  *
  * ── EL TOKEN QUE HACE O DESHACE EL TEMA CLARO ──────────────────────────────
  *
- * `--c-nube`. Sus 101 apariciones son todas lo mismo: **una capa tenue por encima del fondo** —
+ * `--c-nube`. Sus apariciones —101 cuando se convirtieron, 145 hoy— son todas lo mismo: **una capa tenue por encima del fondo** —
  * bordes, hover, fondos de píldora, separadores—. En oscuro es un celeste, porque aclarar sobre
  * negro es lo que separa una superficie de la de atrás. En claro tiene que ser lo contrario: un
  * gris pizarra oscuro, porque sobre blanco lo que separa es oscurecer. Cambiarlo por su opuesto en
@@ -32,130 +32,192 @@
  * hover del tema claro fueran invisibles.
  * ═════════════════════════════════════════════════════════════════════════════ */
 
-/* ── OSCURO ──────────────────────────────────────────────────────────────────
-   Más negro que el del prototipo, que es lo que se pidió. El prototipo tiraba a azul marino
-   (`#05080d`, `#101825`): se ve bien de día y de noche se lee como «gris azulado», no como oscuro.
-   La rampa nueva baja luminancia y desatura, conservando el matiz frío para que el cian del acento
-   siga perteneciendo a la misma familia.
+/* ── OSCURO: LA MARCA V2 ─────────────────────────────────────────────────────
+   Desde la nueva estructura (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`, `NE-25` a `NE-27`) este
+   bloque lleva los valores del Brandbook v2 (`brand/tokens.json`). Los NOMBRES no cambiaron: toda la
+   aplicación ya pintaba con estos tokens, así que el recolor fue cambiar valores acá y no tocar
+   pantallas. `pruebas/codigo/188-la-paleta-de-la-marca.test.ts` compara cada valor con la marca.
 
-   El texto no cambia y el contraste sube solo: `--txt` sobre el fondo nuevo pasa de 16,0:1 a
-   17,4:1, y `--txt-dim` de 5,8:1 a 6,3:1. */
+   El mapa, token de la aplicación → token de la marca:
+
+     · `--bg`, `--bg-sunk`, `--bg-fondo`                  → `bg`              #04060a
+     · `--bg-panel`, `--bg-hondo`                         → `bg-alt`          #070a10
+     · `--bg-raise`                                       → `surface-raised`  #0a0f18
+     · `--bg-float`, `--bg-flota`, `--bg-cajon`           → `surface-active`  #0d1420
+       (`--bg-flota` es la cabecera de los menús y desplegables, y `--bg-cajon` la del modal de
+       recomendaciones: sin sombras, lo único que separa una capa que FLOTA de la tarjeta de atrás es
+       que sea más clara. Con el valor del panel quedaban del mismo color que ella)
+     · `--line`                                           → `line`            #151b26
+     · `--line-strong`                                    → el borde que la marca pide «si el borde debe
+                                                            leerse solo»: #3a4456 (ver abajo)
+     · `--txt`, `--txt-dim`, `--txt-faint`                → `ink`, `ink-2`, `ink-3`
+     · `--accent` y su familia                            → `accent`          #8fe3ff
+     · lo que va encima de un relleno                     → `on-ink`          #04060a
+
+   `ink-4` (#4f5968) NO se usa para texto: da 2,60:1 sobre `surface-active`. El piso para texto es
+   `ink-3`, que da 5,28:1 sobre la superficie más clara de las cuatro. */
 :root[data-tema='oscuro'] {
-  --bg:            #03050a;
-  --bg-sunk:       #05080f;
-  --bg-panel:      #080d15;
-  --bg-raise:      #0c121c;
-  --bg-float:      #111826;
-  --bg-hondo:      #06090f;
-  --bg-fondo:      #030509;
+  --bg:            #04060a;
+  --bg-sunk:       #04060a;
+  --bg-panel:      #070a10;
+  --bg-raise:      #0a0f18;
+  --bg-float:      #0d1420;
+  --bg-hondo:      #070a10;
+  --bg-fondo:      #04060a;
   --bg-cajon:      #0d1420;
-  --bg-flota:      #101825;
+  --bg-flota:      #0d1420;
 
-  --c-velo:      1   2   5;
-  --c-base:      3   5  10;
-  --c-hondo:     6   9  15;
-  --c-hundido:   5   8  15;
-  --c-panel:    12  18  28;
-  --c-alto:     12  18  28;
+  /* Los canales de superficie ya no copian cada uno a su fondo: cada uno vive en uno o dos
+     degradados de `aios.css`, y la forma de aplanarlos sin tocar esa hoja (`NE-27`) es darle el
+     MISMO valor a los dos extremos. `.topbar` y `.nav` van de `--c-alto` a `--c-hundido`, los dos en
+     `bg-alt`; `.side` y `.ask` van de `--c-panel` a `--c-hondo`/`--c-base`, los tres en
+     `surface-raised`, que al 50 % de las tarjetas translúcidas de operación da casi `bg-alt`.
 
-  /* El gris-azul de líneas y superficies tenues: sobre negro, ACLARA.
+     Los degradados de superficie que NO se aplanan, y por qué: los tres cajones (`.drawer`, `.lg`,
+     `.cw`) van de `--bg-raise` a `--bg-hondo`, o sea 1,03:1, por no quitarle a `--bg-raise` su valor
+     de la marca; y los menús y modales van de `surface-active` a `bg-alt`, porque su cabecera tiene
+     que distinguirse de lo que tapan. Están en el inventario de `brand/MIGRACION.md`.
 
-     SUBIÓ, y por una razón concreta: hasta ahora una tarjeta se separaba del fondo por DOS señales
-     —su sombra y su línea— y la sombra acaba de desaparecer. Con `0.09` la línea era un apoyo de la
-     sombra; ahora es lo único que hay, así que tiene que sostener sola el borde de cada tarjeta,
-     cada separador y cada hover. Medido: 0.09 sobre `--bg-panel` da un borde de 1,08:1 contra el
-     relleno —invisible— y 0.15 lo lleva a 1,19:1, que es donde el ojo lo engancha sin que la línea
-     compita con el contenido. */
+     `--c-velo` es el velo de los modales y del menú del teléfono (al 60 %), y es negro: tiene que
+     oscurecer la página que tapa. Era también la viñeta del prototipo, que ya no se genera
+     (ver «EL FONDO ES LISO»). */
+  --c-velo:      0   0   0;
+  --c-base:     10  15  24;
+  --c-hondo:    10  15  24;
+  --c-hundido:   7  10  16;
+  --c-panel:    10  15  24;
+  --c-alto:      7  10  16;
+
+  /* La capa tenue por encima del fondo —bordes, hover, píldoras, separadores— sigue siendo este
+     celeste: la línea de la marca es casi exactamente un tinte de ese matiz (`#151b26` es este canal
+     al 9 % sobre `bg-alt`, a ΔE 0,004), así que sus 145 tintes quedan de la misma familia.
+
+     `--line` pasa al valor opaco de la marca, y es el cambio que más se nota después del color: da
+     1,15:1 contra `bg-alt`, y la de antes, `rgb(170 212 255 / 0.15)`, daba 1,36:1. La marca la quiere
+     así: «decorativa, no separa controles».
+
+     `--line-strong` NO es el `line-strong` de la marca (#242c3a, 1,41:1), sino el valor que la misma
+     marca indica para cuando «el borde debe leerse solo» (`brand/tokens.json`, la nota de
+     `line-strong`): #3a4456, 2,0:1 contra `bg-alt`. Sin sombras ése es siempre el caso —el borde de
+     un menú, de un modal, de un campo, es lo único que lo separa de lo de atrás—, y con #242c3a
+     quedaban por debajo de lo que había antes de la marca (2,2:1). */
   --c-nube:    170 212 255;
-  --line:        rgb(170 212 255 / 0.15);
-  --line-strong: rgb(170 212 255 / 0.28);
+  --line:        #151b26;
+  --line-strong: #3a4456;
 
-  --txt:           #eaf2fb;
-  /* LOS DOS GRISES SUBEN, y no es gusto: barrido sobre los 2.725 elementos de la pantalla, con
-     `--txt-faint` en el `#4a5568` del prototipo había **31 textos por debajo de 4,5:1**, el peor en
-     2,62:1 — y ese token tenía un techo matemático de 2,79:1 contra CUALQUIER fondo de este tema, o
-     sea que no había fondo que lo salvara. Acá los dos pasan, y la jerarquía entre los tres se
-     conserva: 17,4 / 7,4 / 4,7. */
-  --txt-dim:       #a6b8ce;
-  --txt-faint:     #93a4bb;
+  --txt:           #f2f5f9;
+  --txt-dim:       #aab3c1;
+  --txt-faint:     #7f8a9b;
+  /* El canal de `--txt`, para las marcas de meta de las barras (`aios.css`). Lo declaraba sólo el
+     `:root` del prototipo, así que seguía en el blanco azulado de antes. */
+  --c-txt:       242 245 249;
 
-  /* Los canales de señal se repiten acá aunque valgan lo mismo que en `aios.css`, y NO es
-     redundancia: el tema claro los redefine, y con el oscuro heredándolos del `:root` del prototipo
-     los dos bloques dejarían de describir lo mismo. El día que alguien toque el `:root` de
-     `aios.css`, el oscuro lo seguiría y el claro no — o sea, una divergencia que sólo se ve en uno
-     de los dos temas. `pruebas/codigo/104-temas.test.ts` exige que los conjuntos sean iguales. */
-  /* ── LOS SEIS COLORES DE SEÑAL, MÁS POTENTES ───────────────────────────────
-     Se pidió que resalten mejor. Sobre un fondo casi negro «resaltar más» es subir luminancia y
-     saturación, y eso mueve el contraste SIEMPRE para el lado bueno: cada uno de los seis gana
-     contra el fondo, no pierde. Lo que sí hay que vigilar —y se midió— son los compañeros
-     `--sobre-*`: el texto que va ENCIMA de estos colores cuando son relleno. Ahí subir el relleno
-     resta contraste, y por eso `--sobre-ok` y `--sobre-dev` se movieron con ellos.
+  /* ── LOS COLORES CON SIGNIFICADO: LA EXTENSIÓN SOBRIA (`NE-26`) ─────────────
+     La marca tiene un solo acento, pero la aplicación usa colores que significan algo y que no se
+     pueden perder. Quedan así:
+
+       · éxito, ya hecho        `--ok`    un verde apagado, de menos croma que el cian (0,075 contra
+                                          0,090 en OKLCH)
+       · atención               `--warn`  el dorado de la marca, `signal`
+       · dinero                 `--exec`  el blanco de la marca, `ink`. Se llamaba «capa ejecutiva»;
+                                          lo más visible que pinta es dinero —la comisión, los
+                                          montos de los leads, los ingresos—, y también pasan a
+                                          blanco los usos que no lo son: el bloque «Calificados» de
+                                          Acquisition, las líneas y el rótulo de la capa ejecutiva
+                                          del organigrama, dos baldosas del Inicio del closer y del
+                                          setter y el «Histórico completo» del selector de fechas.
+                                          Los avisos de atención de `/entrar` lo usaban por error y
+                                          pasaron a `--warn`
+       · incidencia, error      `--crit`  el coral de la marca, `alert`
+       · detalle                `--dev`   el violeta de la marca, `accent-2`
 
      El hex y el canal cambian juntos, siempre. Son el mismo color escrito de dos formas —una para
-     `color:`, otra para `rgb(… / .16)`— y separarlos deja un número de un tono sobre un tinte de
-     otro, que se ve sucio sin que se entienda por qué. */
-  --c-acento:   63 242 226;
-  --c-crit:    255 106 106;
-  --c-ok:       85 235 140;
-  --c-exec:    255 197  84;
-  --c-warn:    255 149  80;
-  --c-dev:     154 139 255;
-  --c-brillo:  255 255 255;
+     `color:`, otra para `rgb(… / .16)`— y separarlos deja un texto de un tono sobre un tinte de otro.
+     La `188` lo exige par por par. */
+  --c-acento:  143 227 255;
+  --c-crit:    255 140 122;
+  --c-ok:      148 198 160;
+  --c-exec:    242 245 249;
+  --c-warn:    224 192 115;
+  --c-dev:     185 166 255;
+  /* El violeta de la píldora «Espía» de los leads. Lo declaraba sólo el `:root` del prototipo, con
+     el color más saturado de toda la aplicación (croma 0,213); pasa al de la marca, y lo que
+     distingue «Espía» de «Facebook» es la palabra escrita en la píldora. */
+  --c-violeta: 185 166 255;
+  --c-brillo:  242 245 249;
 
-  --accent:        #3ff2e2;
-  --accent-dim:    rgb(63 242 226 / 0.14);
-  --exec:          #ffc554;
-  --exec-dim:      rgb(255 197 84 / 0.14);
-  --warn:          #ff9550;
-  --crit:          #ff6a6a;
-  --ok:            #55eb8c;
-  --dev:           #9a8bff;
+  --accent:        #8fe3ff;
+  --accent-dim:    rgb(143 227 255 / 0.14);
+  --exec:          #f2f5f9;
+  --exec-dim:      rgb(242 245 249 / 0.14);
+  --warn:          #e0c073;
+  --crit:          #ff8c7a;
+  --ok:            #94c6a0;
+  --dev:           #b9a6ff;
 
-  /* Los compañeros de contraste, en su versión para relleno CLARO: el acento y los chips llenos son
-     colores vivos, así que encima va texto oscuro o casi blanco según cuál. */
-  --sobre-acento:  #04121a;
-  --sobre-lleno:   #ffffff;
-  --sobre-ok:      #f2fff7;
-  --sobre-dev:     #c7bcff;
-  --accent-alto:   #78fff0;
-  --accent-hondo:  #23b3a8;
+  /* Lo que va ENCIMA de un relleno de color. Todo relleno de esta paleta es claro, así que encima va
+     `on-ink`, el casi negro de la marca: 14,1:1 sobre el acento, 9,0:1 sobre el coral y 6,5:1 o más
+     sobre las doce etapas y la cola de «Completadas hoy». Antes era blanco, y el conteo lleno de las
+     etapas en las pantallas de operación daba de 1,6 a 3,3:1: no se leía en ninguna. */
+  --sobre-acento:  #04060a;
+  --sobre-lleno:   #04060a;
+  /* `--sobre-dev` es texto violeta sobre un TINTE de `--c-violeta`, no sobre un relleno. */
+  --sobre-dev:     #b9a6ff;
+  /* Los dos extremos del cian de los degradados que lo usaban, y el relleno de los botones primarios
+     de operación: los tres son el acento, así que esos degradados quedan planos (`NE-27`). */
+  --accent-alto:   #8fe3ff;
+  --accent-hondo:  #8fe3ff;
 
   /* ── UN COLOR POR ETAPA DEL PIPELINE ──────────────────────────────────────
      Siete etapas y siete colores, **con nombre propio** en vez de reusar `--ok` o `--warn`
-     directamente. El motivo no es prolijidad: un token se llama por lo que SIGNIFICA, y
-     `--exec` significa «capa ejecutiva» en este sistema. Escribir `color: var(--exec)` en la
-     columna «Cierre en curso» ataría las dos cosas — el día que el ámbar del hero cambie,
-     cambiaría una columna del Pipeline sin que nadie lo pidiera.
+     directamente. El motivo no es prolijidad: un token se llama por lo que SIGNIFICA. Escribir
+     `color: var(--warn)` en la columna «Cierre en curso» ataría las dos cosas — el día que la
+     atención cambie de color, cambiaría una columna del Pipeline sin que nadie lo pidiera.
 
-     La asignación NO es decorativa; sale de lo que cada etapa quiere decir, y eso está
-     escrito en `lib/negocio/etapas.ts`:
+     La asignación NO es decorativa; sale de lo que cada etapa quiere decir, y eso está escrito en
+     `lib/negocio/etapas.ts`:
 
-       · agendado      la ENTRADA, el trabajo por atender          → el cian del sistema
+       · agendado      la ENTRADA, el trabajo por atender          → el matiz del acento
        · seguimiento   en curso, y la señal más pegajosa           → naranja
-       · cierre        hay plata comprometida y no cobrada         → ámbar, el color del dinero
+       · cierre        hay plata comprometida y no cobrada         → ámbar
        · ganado        se cobró. Terminal                          → verde
        · no_show       hecho operativo, el contacto sigue vivo     → violeta: no es un desenlace
        · nurture       frío pero reversible («no es ahora»)        → azul acero, deliberadamente frío
        · descalificado cerrado en negativo, decisión humana        → coral
 
-     Y el color **no es la única señal**: cada sección conserva su nombre escrito y su conteo.
-     Siete tonos no los distingue todo el mundo —la deuteranopia confunde el verde con el
-     naranja— así que el color refuerza, nunca informa solo. Es la misma regla del `11` § 7.1 que
-     ya obliga a que la píldora diga la situación con palabras además del tinte. */
-  --etapa-agendado:      #35e0d2;
-  --c-etapa-agendado:    53 224 210;
-  --etapa-seguimiento:   #f0884c;
-  --c-etapa-seguimiento: 240 136  76;
-  --etapa-cierre:        #e8b64c;
-  --c-etapa-cierre:      232 182  76;
-  --etapa-ganado:        #4ade80;
-  --c-etapa-ganado:       74 222 128;
-  --etapa-no-show:       #a396f8;
-  --c-etapa-no-show:     163 150 248;
-  --etapa-nurture:       #6f9fd8;
-  --c-etapa-nurture:     111 159 216;
-  --etapa-descalificado: #f58080;
-  --c-etapa-descalificado: 245 128 128;
+     ── APAGADAS, Y MEDIDAS (`NE-26`) ───────────────────────────────────────
+     La regla de la marca es que el cian sea el único color que llama la atención, así que **ninguna
+     etapa tiene más croma que él** (0,090 en OKLCH; la de más croma es `calificado`, con 0,087). A
+     cambio, se separan por luminosidad además de por matiz, en dos filas: una clara (L ≈ 0,82 a
+     0,83: seguimiento, calificado, ganado, vendido y nurture) y una media (L ≈ 0,71 a 0,75:
+     agendado, cierre, no-show, descalificado, en calificación y oferta chica), con los dos neutros
+     más abajo. Medido: en cada embudo la distancia mínima entre dos etapas es ΔE 0,089 en OKLab, y
+     todas pasan 4,5:1 sobre `surface-active` y sobre `bg-alt`. Lo que se veía antes en el Pipeline
+     era la paleta zinc de las pantallas de operación, con 0,054 en el closer y 0,046 en el setter.
+
+     `agendado` NO es el acento, y es a propósito. En las pantallas de operación su conteo es un
+     relleno sólido, igual que la sub-pestaña activa: con el mismo cian, una columna se leería como un
+     control seleccionado. Comparte el matiz y es más oscura y más apagada.
+
+     Y el color **no es la única señal**: cada sección conserva su nombre escrito y su conteo, y tres
+     etapas del closer —descalificado, no-show y nurture— tienen además una forma de punto propia
+     (`closer.css`); las demás se separan por el color y el nombre. El color refuerza, nunca informa
+     solo. Es la misma regla del `11` § 7.1 que ya obliga a que la píldora diga la situación
+     con palabras además del tinte. */
+  --etapa-agendado:      #7cb5c5;
+  --c-etapa-agendado:    124 181 197;
+  --etapa-seguimiento:   #f1ba99;
+  --c-etapa-seguimiento: 241 186 153;
+  --etapa-cierre:        #bba465;
+  --c-etapa-cierre:      187 164 101;
+  --etapa-ganado:        #aed1b4;
+  --c-etapa-ganado:      174 209 180;
+  --etapa-no-show:       #b5a4e0;
+  --c-etapa-no-show:     181 164 224;
+  --etapa-nurture:       #aac7ea;
+  --c-etapa-nurture:     170 199 234;
+  --etapa-descalificado: #d79793;
+  --c-etapa-descalificado: 215 151 147;
 
   /* ── LAS CINCO PROPIAS DEL SETTER ────────────────────────────────────────
    *
@@ -166,16 +228,16 @@
    * dentro de cada uno. Aun así los doce valores son distintos: un color repetido en la hoja hace
    * que cambiar uno cambie el otro sin que nadie lo note.
    *
-   * `calificado` es el más saturado a propósito: es la columna caliente del setter —califica y
+   * `calificado` es la de más croma a propósito: es la columna caliente del setter —califica y
    * todavía no agendó— y es donde se gana o se pierde el día. */
-  --etapa-nuevo:         #8b98a8;
-  --c-etapa-nuevo:       139 152 168;
-  --etapa-en-calificacion: #b8d94a;
-  --c-etapa-en-calificacion: 184 217  74;
-  --etapa-calificado:    #e858b0;
-  --c-etapa-calificado:  232  88 176;
-  --etapa-oferta-chica:  #b478f0;
-  --c-etapa-oferta-chica: 180 120 240;
+  --etapa-nuevo:         #8d939c;
+  --c-etapa-nuevo:       141 147 156;
+  --etapa-en-calificacion: #a6af84;
+  --c-etapa-en-calificacion: 166 175 132;
+  --etapa-calificado:    #eeb2db;
+  --c-etapa-calificado:  238 178 219;
+  --etapa-oferta-chica:  #aa96d0;
+  --c-etapa-oferta-chica: 170 150 208;
 
   /* ────────────────────────── EL TONO DE «COMPLETADAS HOY», Y POR QUÉ NO ES VERDE ──────────────────────────
    *
@@ -183,46 +245,37 @@
    * Con el verde de `ganado`, una jornada de cinco pérdidas se vería como cinco victorias — y es
    * el tipo de error que nadie reporta, porque el color dice algo agradable.
    *
-   * Así que es un gris azulado, deliberadamente apagado: dice «hecho, fuera del camino» sin
-   * opinar del resultado. El resultado lo dice la píldora de cada fila, con palabras.
+   * Así que es un gris frío, deliberadamente apagado: dice «hecho, fuera del camino» sin opinar del
+   * resultado. El resultado lo dice la píldora de cada fila, con palabras. Tira a verdoso y no a azul
+   * para separarse de `nuevo`, el otro neutro: no se ven en la misma pantalla —uno es de Mi Día y el
+   * otro del pipeline del setter—, pero con un gris azul (matiz 230 a 250) quedaban a ΔE 0,016, y
+   * así quedan a 0,030. Los doce valores tienen que ser distintos aunque no se vean juntos.
    *
    * No se reusa `--txt-faint`: los cantos y los tintes se escriben contra un `--c-` —el triplete
    * RGB— para poder usarlos con opacidad, y los neutros de texto no tienen ese par. */
-  --cola-hecho:          #8fa3bd;
-  --c-cola-hecho:        143 163 189;
-  --etapa-vendido:       #34d399;
-  --c-etapa-vendido:      52 211 153;
+  --cola-hecho:          #799899;
+  --c-cola-hecho:        121 152 153;
+  --etapa-vendido:       #94d7b4;
+  --c-etapa-vendido:     148 215 180;
 
-  /* El carril del arco del anillo de comisión. Es el mismo caso que `--c-nube`: sobre negro ACLARA
-     y sobre blanco tiene que oscurecer, así que un literal se vuelve invisible en un tema. */
-  --carril-del-arco: rgb(170 212 255 / 0.14);
+  /* El carril del arco del anillo de comisión: la línea fuerte de la marca, opaca. */
+  --carril-del-arco: #242c3a;
   /* ── EL LIENZO DE «EQUIPO DE INTELIGENCIA» ─────────────────────────────────
      Las seis tarjetas del organigrama son SVG, y ahí el color no se hereda del tema como en el
-     resto de la aplicación: el relleno salía de un degradado escrito a mano en el JSX
-     (`#16202f → #0c1220`, dos azules casi negros). En oscuro se veía bien. En claro la tarjeta
-     seguía siendo negra mientras su texto —que sí usa tokens— se volvía casi negro también: seis
-     tarjetas con el nombre del área ILEGIBLE, y nada que falle.
+     resto de la aplicación: el relleno salía de un degradado escrito a mano en el JSX. Estos cuatro
+     tokens existen para que el SVG siga al tema, porque un literal en el JSX no cambia con él.
 
-     Ese es el defecto que estos cuatro tokens cierran. Van acá y no en el JSX porque un literal en
-     el JSX no cambia con el tema, que es exactamente lo que pasó. */
-  --nodo-fondo:  #121c2b;
-  /* El borde SUBIÓ después de medirlo, y es consecuencia directa de quitar la sombra: la
-     tarjeta se despegaba del lienzo con un `drop-shadow` de 4 px, y sin él lo único que la
-     delimita es este trazo. Medido contra el fondo del lienzo: al 0,24 daba 2,25:1 en oscuro y
-     1,56:1 en claro — o sea que en claro el borde prácticamente no existía y las seis tarjetas
-     quedaban como texto flotando. Al 0,45 y 0,65 dan 3,47:1 y 3,25:1, que es el 3:1 que la
-     WCAG 1.4.11 pide para el limite de un control (y estas tarjetas se pueden tocar). */
-  --nodo-borde:  rgb(63 242 226 / 0.45);
-  /* El núcleo (la capa ejecutiva) se distingue por el ÁMBAR de su borde, no por un halo: el halo
-     era un `drop-shadow` de 18 px y las sombras se fueron. */
-  --nodo-nucleo-borde: rgb(255 197 84 / 0.65);
-  /* ── Y EL FÓSFORO ──────────────────────────────────────────────────────────
-     Se pidió que las letras de adentro de las inteligencias resalten «de un color fosforecente».
-     Sin sombras no hay halo que lo haga, así que el brillo tiene que salir del color solo: máxima
-     saturación y máxima separación de luminancia contra el relleno de la tarjeta. En oscuro es un
-     cian neón; en claro, el mismo matiz llevado al fondo del pozo — porque sobre blanco lo que
-     «resalta» es lo más oscuro y saturado, no lo más brillante. */
-  --fosforo: #5cfff0;
+     El relleno es la superficie elevada de la marca. El borde es el acento al 45 %, que da 3,4:1
+     contra el lienzo: el 3:1 que la WCAG 1.4.11 pide para el límite de un control, porque estas
+     tarjetas se pueden tocar y sin sombra el trazo es lo único que las delimita. */
+  --nodo-fondo:  #0a0f18;
+  --nodo-borde:  rgb(143 227 255 / 0.45);
+  /* El núcleo (la capa ejecutiva) se distingue por el color de su borde, no por un halo: el blanco
+     de `--exec` al 50 %, 4,9:1 contra el lienzo. */
+  --nodo-nucleo-borde: rgb(242 245 249 / 0.5);
+  /* El «fósforo» con que se pidió que resaltaran los nombres de las inteligencias es el acento: con
+     un solo acento no hay un segundo cian. */
+  --fosforo: #8fe3ff;
 
   /* ── SIN PROFUNDIDAD, Y ES UNA DECISIÓN, NO UN DESCUIDO ────────────────────
      Se pidió sacar toda la sombra de las dos paletas: colores limpios, sin efectos de profundidad.
@@ -235,11 +288,7 @@
      silencio. Se vería igual, y nadie podría saber, leyendo una de esas reglas, si la sombra se
      quitó a propósito o si alguien renombró el token. Con `none` la respuesta está en un lugar.
 
-     Las 38 restantes escriben la sombra a mano; se apagan al final del archivo.
-
-     Y LO QUE ESTO OBLIGA: sin sombra, lo único que separa una tarjeta del fondo es su LÍNEA y el
-     escalón de fondo. Por eso `--line` y `--line-strong` suben acá abajo — no es decoración, es el
-     reemplazo de la señal que se acaba de quitar. */
+     Las 38 restantes escriben la sombra a mano; se apagan al final del archivo. */
   --sh-1: none;
   --sh-2: none;
   --sh-3: none;
@@ -247,6 +296,11 @@
 }
 
 /* ── CLARO ───────────────────────────────────────────────────────────────────
+   DORMIDO desde `NE-23`: la aplicación es sólo oscura y este bloque no se aplica. Conserva la paleta
+   clara de ANTES de la marca v2 —se le pondrán los valores claros del brandbook el día que un
+   documento imprimible lo use—, y sus comentarios comparan contra el oscuro de antes, no contra el
+   de ahora. Lo que sigue lo explica tal como se pensó.
+
    No es «el oscuro con los fondos invertidos». Cuatro cosas cambian de naturaleza, y saltearse
    cualquiera es lo que produce esos temas claros que parecen rotos:
 
@@ -297,6 +351,7 @@
   --line-strong: rgb(22 32 48 / 0.34);
 
   --txt:           #060b14;
+  --c-txt:         6  11  20;
   /* La rampa se corrió un escalón más oscura después de barrer TODAS las vistas y no sólo la que
      estaba abierta. El patrón era siempre el mismo: `--txt-faint` sobre un TINTE de color. Un tinte
      sobre blanco aclara el sustrato, así que el mismo gris que pasa sobre el panel liso no pasa
@@ -329,6 +384,7 @@
   --c-ok:         12  87  38;
   --dev:           #5a1cb8;
   --c-dev:        90  28 184;
+  --c-violeta:    90  28 184;
 
   /* Ídem en claro, y acá se notaba MÁS: fue lo que motivó el pedido. Una sombra pensada para fondo
      oscuro, puesta sobre blanco, no lee como profundidad — lee como suciedad alrededor de cada
@@ -341,13 +397,12 @@
 
   /* Y los compañeros de contraste SE DAN VUELTA. Es el paso que hace la diferencia entre un tema
      claro y un tema claro con texto invisible: `--accent` acá es un teal oscuro, así que encima va
-     blanco y no el casi-negro del tema oscuro. Y `--sobre-ok` / `--sobre-dev` van sobre un tinte
-     PÁLIDO —el verde y el violeta al 20 % sobre blanco— así que pasan a ser el color saturado. */
+     blanco y no el casi-negro del tema oscuro. Y `--sobre-dev` va sobre un tinte PÁLIDO —el violeta
+     al 20 % sobre blanco— así que pasa a ser el color saturado. */
   --sobre-acento:  #ffffff;
   --sobre-lleno:   #ffffff;
-  /* Estos dos van sobre el tinte PÁLIDO de su propio color, así que cuando el color se oscurece el
-     tinte también, y el texto encima tiene que bajar con él o el par se junta. */
-  --sobre-ok:      #0a4a22;
+  /* Va sobre el tinte PÁLIDO de su propio color, así que cuando el color se oscurece el tinte
+     también, y el texto encima tiene que bajar con él o el par se junta. */
   --sobre-dev:     #4a179c;
   --accent-alto:   #0d857a;
   --accent-hondo:  #075c54;
@@ -401,12 +456,6 @@
    Un puñado de reglas del prototipo asume fondo oscuro de una forma que no pasa por los tokens.
    Se corrigen acá, por tema, y son pocas a propósito: cada una es una excepción y hay que poder
    contarlas. */
-:root[data-tema='claro'] body {
-  /* El lienzo del prototipo es un degradado radial que oscurece los bordes. Sobre claro, oscurecer
-     los bordes deja una viñeta sucia; se apaga. */
-  background: var(--bg);
-}
-
 :root[data-tema='claro'] .bmark {
   /* La marca «A» del logo tiene su color escrito a mano —casi negro sobre el cian del prototipo— y
      sobre el cian oscurecido del tema claro daba 3,79:1. */
@@ -422,6 +471,42 @@
 
 :root[data-tema='claro'] .guardia-caja > button {
   color: #ffffff;
+}
+
+/* ── EL FONDO ES LISO (`NE-27`) ─────────────────────────────────────────────
+   La grilla de 44 px y la viñeta del prototipo son los dos pseudo-elementos fijos del `<body>`
+   (`aios.css`, «textura de fondo»), y la marca es un fondo liso. `content: none` hace que no se
+   generen, en vez de dejar dos cajas vacías del tamaño de la pantalla. Gana por CAPA —`components`
+   va después de `aios`—, así que `aios.css` sigue intacto y comparable contra el prototipo.
+
+   Sin valor en el atributo, como los demás barridos de esta hoja: vale para el tema que haya. */
+:root[data-tema] body::before,
+:root[data-tema] body::after {
+  content: none;
+}
+
+/* ── EL PISO DEL TEXTO NO ADMITE OTRA OPACIDAD ──────────────────────────────
+   `--txt-faint` es `ink-3`, el tono más bajo que la marca acepta para texto: 5,3:1 sobre la superficie
+   más clara. Algunas reglas del prototipo lo atenuaban además con `opacity`, y con el gris de antes
+   les alcanzaba; con éste quedan por debajo de 4,5:1. Se les devuelve la opacidad entera acá, sin
+   tocar `aios.css`: los rótulos de grupo del menú lateral (4,0:1 al 80 %), el rótulo de tramo del
+   puntaje del Leads Portal (4,0:1 al 85 %) y el «=» de «sin variación» (2,7:1 al 60 %). */
+:root[data-tema] .nav-label,
+:root[data-tema] .sc-l,
+:root[data-tema] .dlt.flat {
+  opacity: 1;
+}
+
+/* El rótulo «Objetivo del mes» del cockpit va sobre un resplandor de `--c-exec`, que era ámbar y ahora
+   es el blanco del dinero: en el pico, `ink-3` da 4,0:1. Pasa a `ink-2`. */
+:root[data-tema] .ck-goal .ck-k {
+  color: var(--txt-dim);
+}
+
+/* El buscador del Leads Portal tenía de límite `--line`, que la marca define como decorativa: con el
+   valor nuevo el campo queda casi sin borde (1,18:1 contra la página). Lleva el borde que separa. */
+:root[data-tema] .lp-search {
+  border-color: var(--line-strong);
 }
 
 /* El pie del menú es una fila, y su primer control —el menú de la persona— ocupa el ancho que
@@ -567,7 +652,7 @@
    El botón de reproducir y el reloj de duración se dibujan encima de la MEDIA de una pieza — una
    miniatura, un video. Los tres usaban `rgb(var(--c-brillo) / …)` para su relleno, y `--c-brillo`
    se da vuelta con el tema: blanco en oscuro, gris pizarra en claro. Con el glifo en
-   `--sobre-lleno`, que es blanco en los dos temas, el resultado en tema claro fue:
+   `--sobre-lleno`, que entonces era blanco en los dos temas, el resultado en tema claro fue:
 
      · `.cc-media .play`    1,43:1   (el ▶ blanco sobre un relleno que se volvió claro)
      · `.dw-video .play`    1,49:1
@@ -598,7 +683,7 @@
    el fondo compuesto queda en 71 y de ahí sale el piso garantizado, para cualquier miniatura:
 
      · texto blanco   →  9,2:1
-     · verde `--ok-medio` → 6,0:1
+     · verde `--ok-medio` → 4,8:1
 
    Sobre una imagen oscura los dos suben. Ese es el punto de un velo: que el número no dependa de la
    foto. */
@@ -608,7 +693,7 @@
   /* El verde de «activo», fijo en los dos temas por lo mismo que el blanco: va sobre el velo, no
      sobre una superficie del tema. `--ok` no sirve acá porque en claro es un verde oscuro, y sobre
      el velo negro un verde oscuro desaparece. */
-  --ok-medio:    #55eb8c;
+  --ok-medio:    #94c6a0;
   /* Y EL PISO DEBAJO DE LA MEDIA, que era la pieza que faltaba. `.dw-video` no tiene fondo propio:
      es un contenedor para un video, y hasta que el video esté ahí lo que se ve detrás de sus
      controles es el panel — blanco en el tema claro.
@@ -708,153 +793,59 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════════════════
-   LA ESTÉTICA DE OPERACIÓN — LOS TOKENS, CON ALCANCE `:is(#v-closer, .estetica-op)`
+   LAS PANTALLAS DE OPERACIÓN: LO QUE EL TEMA NO TIENE
+   ═════════════════════════════════════════════════════════════════════════════
+   Estos dos bloques tenían una paleta propia —zinc, con sus fondos, sus textos, sus señales y sus
+   siete etapas— que se aplicaba dentro de las doce pantallas con `estetica-op`. Con la
+   marca v2 (`NE-25`) esa paleta se fue: **las pantallas de operación heredan los mismos tokens que el
+   resto de la aplicación**, y el Closer y el Setter dibujan sus doce etapas desde un solo lugar
+   (antes el Setter mezclaba tres etapas del zinc con cinco del bloque global).
 
-   Se traslada el sistema visual descrito en `docs/migracion/front/01…14` del proyecto hermano. Por
-   eso estos dos bloques NO redefinen `:root`: redefinen los MISMOS tokens que ya usan todas las
-   reglas, pero solo dentro de las dos pantallas de operación. Así el resto de la aplicación no se
-   mueve y ellas cambian de paleta enteras sin reescribir una regla — que es exactamente para lo que
-   este archivo convirtió 402 colores literales en once tokens.
+   Lo que queda son los tokens que SÓLO existen acá, porque sólo los usa `operacion-estetica.css`:
 
-   El alcance era `#v-closer` solo, y decía por qué: se empezó por el Closer para verlo antes de
-   extenderlo. Se extendió al Setter, que es la otra pantalla de operación y dibuja los MISMOS
-   componentes.
+     · `--c-sobre-acento`, el canal del texto sobre el acento: lo leen el contador y el punto de
+       «hecho» de la sub-pestaña activa, y el tema no lo declara;
+     · el bloque de Inicio (`--negro-hero`, `--c-blanco`, `--oro*`), que ahora es una tarjeta más de
+       la marca y su dinero va en el blanco, como todo el dinero (`NE-26`);
+     · `--icono`, el gris de los seis íconos de estado;
+     · el botón «Unirse» (`--ok-lleno`, `--sobre-ok-lleno`);
+     · el chat (`--chat-*`), que **conserva los colores de WhatsApp**: la imitación es la función
+       (ver `operacion-estetica.css`, el bloque del chat), y no es una paleta de la marca;
+     · el panel de la ficha (`--ficha-fondo`).
 
-   Van DESPUÉS de los dos bloques `:root[data-tema]` a propósito: `pruebas/codigo/104-temas` y `106`
-   leen el PRIMER bloque de cada tema —«el conjunto de tokens es idéntico», «las siete etapas no
-   comparten color»—, así que estos no los alcanzan. Se cumple la misma disciplina igual: los dos
-   bloques declaran el mismo conjunto, y cada `--etapa-x` va con su `--c-etapa-x` del mismo tono.
+   `pruebas/codigo/188-la-paleta-de-la-marca.test.ts` exige que el bloque oscuro no vuelva a redefinir
+   ningún token del tema, y `104` que los dos bloques declaren el mismo conjunto.
 
-   ── LO QUE CAMBIA DE NATURALEZA, EN UNA LÍNEA CADA COSA ────────────────────
-   · EL ACENTO NO SE TOCA. Acá vivía un violeta —#7c3aed de relleno, #a78bfa como texto sobre
-     negro— que redefinía las seis declaraciones de la familia del acento. Se fue: el Closer usa
-     el mismo verde que el resto de la aplicación.
+   Van DESPUÉS de los dos bloques `:root[data-tema]` a propósito: `pruebas/codigo/104-temas`, `106` y
+   `107` leen el PRIMER bloque de cada tema con `indexOf`, así que un bloque con el mismo selector
+   antes de ellos los confundiría.
 
-     Se pidió con estas palabras: *«como vemos en la parte superior izquierda del logo de AIOS es
-     de un color verde el mismo que resalta las pestañas del menú de la izquierda, ese mismo
-     verde, que es el color principal que se está usando para la plataforma»*.
-
-     Y conviene decir de qué tamaño era el violeta, porque no se veía: no era el color de las
-     sub-pestañas. Era el de TODOS los botones primarios del Closer, el día elegido del calendario
-     de la Agenda, el botón de enviar del chat, el rótulo, los anillos de foco, el contador de las
-     sub-pestañas, la píldora «agendado» y el avatar del chat. Un `--accent` redefinido lo pinta
-     todo, y por eso el arreglo es BORRAR seis líneas por tema en vez de cambiar una regla: una
-     regla sola habría dejado una pestaña verde encima de botones violetas.
-
-     Lo único que sobrevive de ese bloque es `--c-sobre-acento`, y no por costumbre: lo referencia
-     `#v-closer .cl-sub button.on .cnt` y el acento global no lo declara, así que borrarlo dejaría
-     una `var()` huérfana — que es exactamente lo que cuenta `pruebas/codigo/121-tokens-de-css`.
-   · El oscuro es una escala de elevación (lienzo → tarjeta → interactivo), no una inversión.
-   · El lienzo claro es un hueso (#fcfcfd), no blanco: sobre blanco puro una tarjeta translúcida
-     deja de leerse como tarjeta.
-   · Sin sombras. El `01` § 2 lo prescribe para el oscuro y acá vale para los dos, porque este
-     proyecto ya decidió quitar toda sombra (ver `107-sin-sombras`). La separación la dan la escala
-     y las líneas.
+   El acento no se toca acá, y `145` lo vigila: el bloque redefinía la familia entera con un violeta,
+   y eso pintaba de violeta todos los botones primarios del Closer. Un `--accent` redefinido lo pinta
+   todo.
    ═════════════════════════════════════════════════════════════════════════════ */
 
 :root[data-tema='oscuro'] :is(#v-closer, .estetica-op) {
-  /* Nivel 0 · el lienzo (240 10% 4%). */
-  --bg:            #09090b;
-  --bg-sunk:       #09090b;
-  --bg-hondo:      #09090b;
-  --bg-fondo:      #09090b;
-  /* Nivel 1 · tarjetas, paneles, emergentes. El `--card` del sistema es `240 5% 15%` y se dibuja
-     al 50 % sobre el lienzo; acá el token es ese resultado, ya compuesto. */
-  --bg-panel:      #18181b;
-  --bg-cajon:      #18181b;
-  --bg-float:      #242428;
-  --bg-flota:      #242428;
-  /* Nivel 2 · lo interactivo DENTRO de una tarjeta (240 3.7% 22%). */
-  --bg-raise:      #27272a;
+  /* El canal de `--sobre-acento`, que es `on-ink`. */
+  --c-sobre-acento: 4 6 10;
 
-  --c-velo:        0 0 0;
-  --c-base:        9 9 11;
-  --c-hondo:       9 9 11;
-  --c-hundido:     9 9 11;
-  --c-panel:       36 36 40;
-  --c-alto:        36 36 40;
+  /* ── El bloque de Inicio (`07`) ───────────────────────────────────────────
+     Era negro y dorado, y negro también en el tema claro. Ahora es una tarjeta de la marca: el fondo
+     es `bg-alt`, el vidrio de adentro es el blanco de la marca, y el dinero va en blanco. Los tres
+     `--oro*` iguales aplanan el degradado del titular de la comisión. */
+  --negro-hero:    #070a10;
+  --c-blanco:      242 245 249;
+  --oro:           #f2f5f9;
+  --c-oro:         242 245 249;
+  --oro-claro:     #f2f5f9;
+  --oro-hondo:     #f2f5f9;
 
-  /* La capa tenue por encima del fondo: sobre negro, aclara. */
-  --c-nube:        228 228 236;
-  --line:          rgb(228 228 236 / 0.10);
-  --line-strong:   rgb(228 228 236 / 0.20);
-  --c-brillo:      255 255 255;
-
-  --txt:           #fafafa;
-  --txt-dim:       #b1b1b8;
-  --txt-faint:     #8b8b94;
-
-  /* El acento se HEREDA del bloque global: el mismo verde que el logo y el menú lateral. Ver el
-     encabezado. Solo queda el canal del compañero de contraste, que el global no declara y que
-     `#v-closer .cl-sub button.on .cnt` referencia. Es el `--sobre-acento` oscuro (#04121a). */
-  --c-sobre-acento: 4 18 26;
-
-  /* Las señales, en su tono 400: son texto sobre oscuro. */
-  --c-crit:        251 113 133;
-  --crit:          #fb7185;
-  --c-ok:          52 211 153;
-  --ok:            #34d399;
-  --c-warn:        251 191 36;
-  --warn:          #fbbf24;
-  --c-dev:         196 181 253;
-  --dev:           #c4b5fd;
-  /* `--exec` pasa a ser el dorado: es lo que pinta el anillo de comisión y la tasa del cockpit,
-     que son dinero. */
-  --c-exec:        212 175 55;
-  --exec:          #d4af37;
-  --exec-dim:      rgb(212 175 55 / 0.14);
-
-  --sobre-lleno:   #ffffff;
-  --sobre-ok:      #052e16;
-  --sobre-dev:     #2e1065;
-
-  /* Las siete etapas del closer. Un tono 400 cada una, siete matices distintos (el `03` § 2 da
-     ámbar a seguimiento Y a cierre; acá cierre toma el índigo de su píldora, porque siete columnas
-     con dos iguales son seis). */
-  --etapa-agendado:        #38bdf8;
-  --c-etapa-agendado:      56 189 248;
-  --etapa-seguimiento:     #fbbf24;
-  --c-etapa-seguimiento:   251 191 36;
-  --etapa-cierre:          #818cf8;
-  --c-etapa-cierre:        129 140 248;
-  --etapa-ganado:          #34d399;
-  --c-etapa-ganado:        52 211 153;
-  --etapa-no-show:         #fb923c;
-  --c-etapa-no-show:       251 146 60;
-  --etapa-nurture:         #a78bfa;
-  --c-etapa-nurture:       167 139 250;
-  --etapa-descalificado:   #fb7185;
-  --c-etapa-descalificado: 251 113 133;
-  --cola-hecho:            #a1a1aa;
-  --c-cola-hecho:          161 161 170;
-  --carril-del-arco:       rgb(255 255 255 / 0.06);
-
-  /* ── El bloque negro y dorado de Inicio (`07`) ──────────────────────────── */
-  --negro-hero:    #0a0a0a;
-  --c-blanco:      255 255 255;
-  --oro:           #d4af37;
-  --c-oro:         212 175 55;
-  --oro-claro:     #f5d78d;
-  --oro-hondo:     #c99738;
-  /* Las señales SOBRE NEGRO, iguales en los dos temas: el bloque es negro también en claro, y los
-     tokens del tema claro son oscuros — encima del negro no se leerían. */
-  --en-negro-ok:        #34d399;
-  --c-en-negro-ok:      52 211 153;
-  --en-negro-warn:      #fbbf24;
-  --c-en-negro-warn:    251 191 36;
-  /* El acento sobre negro. Era el violeta claro; ahora es el verde de la plataforma. No sale de
-     `--accent` por el mismo motivo que los dos de arriba: en el tema claro ese token es un teal
-     oscuro, y encima del negro no se leería. */
-  --en-negro-acento:    #3ff2e2;
-  --c-en-negro-acento:  63 242 226;
-
-  /* El gris de los seis iconos de estado (`03` § 5): literal e igual en los dos temas, porque con
-     `--txt-dim` los apagados se veían encendidos en oscuro. */
-  --icono:         #6b6980;
-  --c-icono:       107 105 128;
-  /* El verde de RELLENO del botón «Unirse». `--ok` es el verde de texto. */
-  --ok-lleno:      #22c55e;
-  --sobre-ok-lleno: #ffffff;
+  /* El gris de los seis iconos de estado (`03` § 5), con su opacidad en la regla: `ink-3`. */
+  --icono:         #7f8a9b;
+  /* El relleno del botón «Unirse» es el verde de éxito, y el texto encima va en `on-ink`: blanco
+     sobre este verde daría 1,9:1. */
+  --ok-lleno:      #94c6a0;
+  --sobre-ok-lleno: #04060a;
 
   /* ── El chat imita a WhatsApp, y usa sus colores (`12` § 4) ─────────────── */
   --chat-fondo:       #0b141a;
@@ -865,79 +856,14 @@
   --chat-compositor:  #202c33;
   --chat-campo:       #2a3942;
   --chat-dia:         #111b21;
-  /* El panel de la ficha: nivel 1 en oscuro, un gris claro en claro. */
-  --ficha-fondo:   #18181b;
+  /* El panel de la ficha es el nivel de las tarjetas. */
+  --ficha-fondo:   #070a10;
 }
 
 :root[data-tema='claro'] :is(#v-closer, .estetica-op) {
-  /* El lienzo es un hueso, y las tarjetas blancas encima. */
-  --bg:            #fcfcfd;
-  --bg-sunk:       #f4f4f5;
-  --bg-hondo:      #f4f4f5;
-  --bg-fondo:      #fcfcfd;
-  --bg-panel:      #ffffff;
-  --bg-cajon:      #ffffff;
-  --bg-float:      #ffffff;
-  --bg-flota:      #ffffff;
-  /* `secondary`/`muted`/`accent` comparten valor en claro (240 4.8% 95.9%), y son tres roles. */
-  --bg-raise:      #f4f4f5;
-
-  --c-velo:        0 0 0;
-  --c-base:        252 252 253;
-  --c-hondo:       244 244 245;
-  --c-hundido:     244 244 245;
-  --c-panel:       255 255 255;
-  --c-alto:        255 255 255;
-
-  /* Sobre blanco, separar es OSCURECER. Y sin sombra, la línea sostiene sola cada tarjeta: por
-     eso va al 10 % y no al 40 % de un gris claro, que es lo que el sistema original usa con sombra. */
-  --c-nube:        24 24 27;
-  --line:          rgb(24 24 27 / 0.10);
-  --line-strong:   rgb(24 24 27 / 0.18);
-  --c-brillo:      24 24 27;
-
-  --txt:           #09090b;
-  --txt-dim:       #52525b;
-  --txt-faint:     #71717a;
-
-  /* El acento se HEREDA del bloque global, igual que en el oscuro. Acá el compañero de contraste
-     es blanco, porque el verde claro (#075c54) es oscuro y el texto encima va claro. */
+  /* Acá el compañero de contraste es blanco, porque el acento claro (#075c54) es oscuro y el texto
+     encima va claro. */
   --c-sobre-acento: 255 255 255;
-
-  /* Las señales en su tono 700: texto sobre blanco. */
-  --c-crit:        190 18 60;
-  --crit:          #be123c;
-  --c-ok:          4 120 87;
-  --ok:            #047857;
-  --c-warn:        180 83 9;
-  --warn:          #b45309;
-  --c-dev:         109 40 217;
-  --dev:           #6d28d9;
-  --c-exec:        146 112 12;
-  --exec:          #92700c;
-  --exec-dim:      rgb(146 112 12 / 0.12);
-
-  --sobre-lleno:   #ffffff;
-  --sobre-ok:      #064e3b;
-  --sobre-dev:     #4c1d95;
-
-  --etapa-agendado:        #0369a1;
-  --c-etapa-agendado:      3 105 161;
-  --etapa-seguimiento:     #b45309;
-  --c-etapa-seguimiento:   180 83 9;
-  --etapa-cierre:          #4338ca;
-  --c-etapa-cierre:        67 56 202;
-  --etapa-ganado:          #047857;
-  --c-etapa-ganado:        4 120 87;
-  --etapa-no-show:         #c2410c;
-  --c-etapa-no-show:       194 65 12;
-  --etapa-nurture:         #6d28d9;
-  --c-etapa-nurture:       109 40 217;
-  --etapa-descalificado:   #be123c;
-  --c-etapa-descalificado: 190 18 60;
-  --cola-hecho:            #71717a;
-  --c-cola-hecho:          113 113 122;
-  --carril-del-arco:       rgb(255 255 255 / 0.06);
 
   --negro-hero:    #0a0a0a;
   --c-blanco:      255 255 255;
@@ -945,18 +871,8 @@
   --c-oro:         212 175 55;
   --oro-claro:     #f5d78d;
   --oro-hondo:     #c99738;
-  --en-negro-ok:        #34d399;
-  --c-en-negro-ok:      52 211 153;
-  --en-negro-warn:      #fbbf24;
-  --c-en-negro-warn:    251 191 36;
-  /* El acento sobre negro. Era el violeta claro; ahora es el verde de la plataforma. No sale de
-     `--accent` por el mismo motivo que los dos de arriba: en el tema claro ese token es un teal
-     oscuro, y encima del negro no se leería. */
-  --en-negro-acento:    #3ff2e2;
-  --c-en-negro-acento:  63 242 226;
 
   --icono:         #6b6980;
-  --c-icono:       107 105 128;
   --ok-lleno:      #22c55e;
   --sobre-ok-lleno: #ffffff;
 

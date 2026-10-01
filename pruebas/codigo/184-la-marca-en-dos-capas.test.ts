@@ -1,12 +1,12 @@
-// La marca v2 entra en dos capas, y ninguna pantalla cambia todavía. Tipo: Código.
+// La marca v2 vive en dos capas, y la de la marca nunca le gana a la aplicación. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/03-LA-MARCA.md, NE-22)
 //
-// El PR #2 instala la marca sin cambiar un píxel, y eso depende de dos cosas que no fallan solas:
+// El PR #2 instaló la marca sin cambiar un píxel; que la app siga mandando depende de dos cosas:
 //
 //   · **el orden de las capas**: `public/brand/tokens.css` declara en `:root` seis nombres que la
-//     aplicación ya usa con otro valor (`--bg`, `--line`, `--line-strong`, `--accent`, `--font-sans`
+//     aplicación también usa —desde la marca v2, algunos con el mismo valor— (`--bg`, `--line`, `--line-strong`, `--accent`, `--font-sans`
 //     y `--font-mono`). Va en la capa `marca`, la más baja, para que `aios.css` y `temas.css` le ganen
 //     siempre; y el scope `[data-marca="v2"]` va en `marca-scope`, después de `components`, para que
 //     dentro de /brand gane él. Con el orden cambiado, la aplicación entera se repinta a medias —

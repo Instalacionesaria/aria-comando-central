@@ -57,10 +57,13 @@ function cuerpo(css: string): string {
   return css.slice(finRoot).replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
-/** Los nombres de token que declara un bloque `:root[data-tema='…']`. */
-function tokensDe(css: string, tema: string): Set<string> {
-  const abre = css.indexOf(`:root[data-tema='${tema}']`);
-  assert.ok(abre >= 0, `no está el bloque del tema «${tema}»`);
+/**
+ * Los nombres de token que declara un bloque `:root[data-tema='…']`, o el de ese tema con un
+ * alcance (`alcance` = ` :is(#v-closer, .estetica-op)`).
+ */
+function tokensDe(css: string, tema: string, alcance = ''): Set<string> {
+  const abre = css.indexOf(`:root[data-tema='${tema}']${alcance}`);
+  assert.ok(abre >= 0, `no está el bloque del tema «${tema}»${alcance}`);
   const bloque = css.slice(css.indexOf('{', abre) + 1, css.indexOf('}', abre));
   return new Set([...bloque.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]!));
 }
@@ -130,8 +133,21 @@ test('los dos temas declaran EXACTAMENTE el mismo conjunto de tokens', () => {
   assert.ok(oscuro.size > 25, `sólo ${oscuro.size} tokens por tema: la lista se quedó corta`);
 });
 
+test('los dos bloques de las pantallas de operación declaran EXACTAMENTE el mismo conjunto', () => {
+  // Lo mismo, para los bloques con alcance de `temas.css`. Su encabezado lo prometía y nada lo
+  // miraba: la primera mitad de un recolor que borra un token de un bloque y no del otro pasa en
+  // verde, y deja en el otro un valor que ya no corresponde a nada.
+  const css = leer('app/temas.css');
+  const ALCANCE = ' :is(#v-closer, .estetica-op)';
+  const oscuro = tokensDe(css, 'oscuro', ALCANCE);
+  const claro = tokensDe(css, 'claro', ALCANCE);
+  assert.deepEqual([...oscuro].filter((t) => !claro.has(t)).sort(), [], 'el bloque de operación claro no declara lo mismo');
+  assert.deepEqual([...claro].filter((t) => !oscuro.has(t)).sort(), [], 'el bloque de operación oscuro no declara lo mismo');
+  assert.ok(oscuro.size > 5, `sólo ${oscuro.size} tokens en el bloque de operación: la lectura falló`);
+});
+
 test('el token que da vuelta el tema es DISTINTO en los dos', () => {
-  // `--c-nube` aparece 101 veces como «una capa tenue sobre el fondo»: bordes, hover, píldoras. En
+  // `--c-nube` aparece 145 veces como «una capa tenue sobre el fondo»: bordes, hover, píldoras. En
   // oscuro aclara y en claro tiene que oscurecer. Si alguien los iguala «para simplificar», el tema
   // claro pierde de golpe todos sus bordes y todos sus hover, sin un solo error.
   const css = leer('app/temas.css');

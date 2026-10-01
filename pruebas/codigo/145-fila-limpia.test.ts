@@ -15,7 +15,7 @@
 // hueco del tamaño correcto, y la fila se ve como si ese contacto no tuviera nada medido.
 //
 // **3 · El Closer tenía su propio acento.** Un violeta que redefinía seis tokens dentro de
-// `#v-closer` y pintaba mucho más que las sub-pestañas. Se unificó con el verde de la plataforma.
+// `#v-closer` y pintaba mucho más que las sub-pestañas. Se unificó con el acento de la plataforma.
 // Volver a declarar `--accent` ahí **en un solo tema** es el defecto más caro de los tres: se ve
 // bien en el tema en el que se prueba y mal en el otro, y nadie mira los dos.
 //
@@ -235,8 +235,8 @@ test('las pantallas de operación NO redefinen el acento: usan el de la platafor
    * Y SE COMPRUEBA EN LOS DOS TEMAS, QUE ES DONDE ESTÁ EL DEFECTO CARO
    *
    * Los bloques `#v-closer` de `temas.css` son dos, uno por tema. Devolver el violeta en **uno
-   * solo** compila, no rompe `104-temas` —esa prueba lee el PRIMER bloque de cada tema, no
-   * éstos— y se ve perfecto en el tema en el que uno prueba. El otro queda con dos acentos.
+   * solo** compila —desde la marca v2 lo ven también `104-temas` y `188`, que comparan estos
+   * bloques— y se ve perfecto en el tema en el que uno prueba. El otro queda con dos acentos.
    *
    * Nadie mira los dos temas en cada cambio. Esta prueba sí.
    * ══════════════════════════════════════════════════════════════════════════ */
@@ -275,7 +275,7 @@ test('las pantallas de operación NO redefinen el acento: usan el de la platafor
       assert.ok(
         !new RegExp(`^\\s*${token}\\s*:`, 'm').test(bloque),
         `el tema ${tema} vuelve a declarar \`${token}\` dentro de \`#v-closer\`. El Closer usa el ` +
-          'acento de la plataforma — el mismo verde del logo y del menú lateral',
+          'acento de la plataforma — el mismo cian del logo y del menú lateral',
       );
     }
 
@@ -294,7 +294,7 @@ test('las pantallas de operación NO redefinen el acento: usan el de la platafor
  *
  * Acá había una que barría `operacion-estetica.css` y `temas.css` buscando la palabra «violeta», para
  * que ningún comentario siguiera describiendo como violeta un color que ahora es verde. Se escribió,
- * falló, y lo que encontró la condena: `no_show` **es** violeta —`#a396f8`, la etapa «no se
+ * falló, y lo que encontró la condena: `no_show` **es** violeta —`#b5a4e0`, la etapa «no se
  * presentó»— y dos notas de contraste comparan el verde con el violeta de esa etapa. Las tres son
  * correctas y no tienen nada que ver con el acento del Closer.
  *

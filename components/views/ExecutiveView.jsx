@@ -92,7 +92,7 @@ export default function ExecutiveView({ activa }) {
             <defs>
               {/* EL HALO DEL NÚCLEO, APAGADO. Era un ámbar al 28 % que se desvanecía hacia
                   afuera: profundidad, que es lo que se pidió sacar. La capa ejecutiva se sigue
-                  distinguiendo por el ámbar de su borde y por su rótulo «CAPA EJECUTIVA».
+                  distinguiendo por el color de su borde —el blanco de `--exec`— y por su rótulo.
 
                   Los tres degradados de este `<defs>` se conservan aunque dos queden en nada, y NO
                   es por las dudas: `scripts/paridad.mjs` compara esta vista contra el prototipo con
@@ -128,7 +128,7 @@ export default function ExecutiveView({ activa }) {
                 LAS CINCO CONEXIONES: CADA ÁREA CON EL NÚCLEO
 
                 Son cinco líneas que dicen lo mismo, así que se dibujan iguales: un solo color
-                —el ámbar del núcleo, en `.edge` de `app/aios.css`— y un punto viajando por cada
+                —el del núcleo, el blanco de `--exec`, en `.edge` de `app/aios.css`— y un punto por cada
                 una. Antes había dos colores y CUATRO puntos, y las dos cosas se leían como
                 información: parecía que Acquisition y Conversation estaban conectadas y las
                 otras tres no, y que Creative no mandaba nada.
@@ -205,7 +205,7 @@ export default function ExecutiveView({ activa }) {
                 width="164"
                 height="92"
                 rx="16"
-                /* El ámbar del núcleo, ahora por token: el literal `rgba(232,182,76,0.5)` es el
+                /* El color del núcleo, ahora por token: el literal `rgba(232,182,76,0.5)` era el
                    ámbar del tema OSCURO, y sobre blanco daba un borde lavado. El `drop-shadow` de
                    18 px que venía al lado era el halo, y se fue con el resto. */
                 style={{ stroke: 'var(--nodo-nucleo-borde)' }}

@@ -25,7 +25,7 @@ Este archivo resume solo lo que afecta al código. Si algo contradice al brandbo
 - Líneas: `--line` hairline de 1px · `--line-strong` borde de botón secundario y chips.
 - Texto: `--ink` principal · `--ink-2` secundario · `--ink-3` atenuado (mínimo para texto) · `--ink-4` **solo decorativo**, nunca para texto que haya que leer.
 - Un solo acento: `--accent` (cian). `--accent-2` (violeta) solo como detalle puntual.
-- Estados: `--accent` activo · `--signal` atención · `--alert` incidencia.
+- Estados: `--accent` activo · `--signal` atención y la etiqueta «VISTA DE EJEMPLO» (las dos señales que no son error) · `--alert` incidencia.
 - Proporción: ~90% grises, ~8% `--ink`, ~2% acento.
 - **Nunca escribas un hex en un componente.** Usa siempre la variable.
 
@@ -82,8 +82,16 @@ este archivo sí se versiona.
 
 ## Estado de la migración
 
-La aplicación **está a medio migrar**, por etapas (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`). Desde
-la etapa 4 toda la aplicación usa Geist y Geist Mono. Los colores, las superficies y los radios siguen siendo
-los del diseño heredado hasta la etapa 5: los tokens de marca viven en la capa `marca`, que pierde contra
-`aios.css` y `temas.css` a propósito, y sus valores reales sólo se aplican bajo `[data-marca="v2"]`, que hoy
-es únicamente `/brand`.
+La aplicación **ya usa la marca** en su tipografía, su paleta y sus superficies desde las etapas 4 y 5 de
+la nueva estructura (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`). Lo hizo cambiando valores de los
+tokens de `app/temas.css`, no las pantallas, así que los tokens de esta carpeta siguen en la capa `marca`,
+debajo de los de la aplicación. Lo que queda, pantalla por pantalla, está en `MIGRACION.md`.
+
+La aplicación extiende la marca en tres cosas, y cada una está escrita en `app/temas.css` y vigilada por
+`pruebas/codigo/188-la-paleta-de-la-marca.test.ts`:
+
+- **los colores con significado que la marca no trae**: un verde de éxito apagado y doce colores de etapa
+  del pipeline, todos con menos croma que el cian;
+- **el borde de control**: `--line-strong` es el `#3A4456` que la nota de `line-strong` pide «si el borde
+  debe leerse solo», porque sin sombras siempre es el caso;
+- **el chat de la ficha**, que imita a WhatsApp y usa sus colores.

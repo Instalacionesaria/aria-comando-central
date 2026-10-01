@@ -30,6 +30,7 @@ El inventario técnico queda en `brand/MIGRACION.md` (E5).
 | **Seguimiento de clientes** (Client Success) | No existe; hoy es «Próximamente» | cuando se construya |
 | **Separar el Scraper de la Prospección** | Hoy el buscador queda en los dos lugares (`NE-20`) | fase de detalles |
 | **Retirar el tema de la base** | La columna `usuarios.tema` y su ruta quedan dormidas (`NE-23`) | una migración, cuando no haga falta para nada |
+| **El tema claro con los valores de la marca** | El bloque claro de `app/temas.css` quedó dormido con su paleta de antes (`NE-23`); la marca tiene su tema claro para documentos y PDFs | el día que un documento imprimible lo use |
 | **El Plan de acción y las Señales** | Los van a producir agentes de IA | `docs/OTROS/futuro/plan-y-senales-de-acquisition.md` |
 
 Las propuestas del documento de producto que todavía no están decididas (Selector de nicho, La Auditoría,

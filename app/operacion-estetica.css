@@ -1,5 +1,5 @@
-/* La estética de las TRES pantallas de operación —Closer, Setter y Auditoría de agentes—: la
- * FORMA. Los colores viven en `temas.css`, con el mismo alcance.
+/* La estética de las pantallas de operación: la FORMA. Los colores son los del tema, los mismos que
+ * el resto de la aplicación; `temas.css` sólo guarda, con este alcance, los pocos que el tema no tiene.
  *
  * ═════════════════════════════════════════════════════════════════════════════
  * QUÉ ES ESTO Y POR QUÉ ES UNA HOJA APARTE
@@ -105,10 +105,12 @@
  *       lo que el propio `01` § 2 prescribe para el oscuro. Volver a la sombra es una línea y una
  *       prueba, si al verlo hace falta.
  *   2 · **El titular de dinero no brilla.** El `07` § 4 le pone un `drop-shadow` dorado de 24 px.
- *       Es un efecto de profundidad, y se pidió que no hubiera. Queda el degradado recortado al
- *       texto, que es lo que hace el número.
- *   3 · **Cierre en curso es índigo, no ámbar.** El `03` § 2 le da ámbar a seguimiento y a cierre;
- *       `106` exige siete colores distintos, así que cierre toma el índigo de su propia píldora.
+ *       Es un efecto de profundidad, y se pidió que no hubiera. Quedaba el degradado recortado al
+ *       texto; desde la marca v2 sus tres puntos son el blanco del dinero, así que es plano.
+ *   3 · **Cierre en curso fue índigo, no ámbar**, mientras estas pantallas tuvieron paleta propia:
+ *       el `03` § 2 le da ámbar a seguimiento y a cierre, y `106` exige colores distintos. Desde la
+ *       marca v2 (`NE-25`) las etapas son las del tema, y cierre es el ámbar apagado de la paleta
+ *       común.
  *
  * ── LA FUENTE ─────────────────────────────────────────────────────────────────
  *
@@ -151,12 +153,12 @@
 /* ── 0 · La base ──────────────────────────────────────────────────────────── */
 
 :is(#v-closer, .estetica-op) {
-  --radio:         10px;
-  /* 26 px, que son los 32 del sistema por la escala. Era `2rem` escrito así porque el sistema lo
-     escribe así; acá se pone en píxeles porque un `rem` depende de la raíz y esta hoja se calibra
-     contra el cuerpo de 13 px — dejarlo en `rem` haría que el radio fuera el único valor que NO
-     sigue la escala. */
-  --radio-tarjeta: 26px;
+  --radio:         var(--radius-sm);
+  /* Los radios de la marca (`NE-27`): 12 px los campos y 20 px las tarjetas. Eran 10 y 26 —los 32 del
+     sistema que se trasladó, por la escala de esta hoja—, y salen de `public/brand/tokens.css` para
+     que el día que la marca los cambie, cambien acá sin que nadie lo tenga que recordar. Los demás
+     radios de la hoja están escritos a mano y quedan para la fase de detalles. */
+  --radio-tarjeta: var(--radius-lg);
   /* La letra de la aplicación. Tenía su propia pila del sistema, así que las doce pantallas de
      operación se veían con otra letra que el resto (`NE-24`). */
   font-family: var(--font-ui);
@@ -166,12 +168,12 @@
 }
 
 /* ── EL LIENZO ES PLANO, Y LA VISTA LO PINTA ────────────────────────────────
-   El armazón heredado dibuja detrás de TODO una cuadrícula de 44 px y un viñeteado radial
-   (`body::before` / `body::after` en `aios.css`). En oscuro no se nota; en claro se ve como un
-   halo gris alrededor de cada tarjeta, y el sistema que se traslada pide un lienzo liso — un hueso
-   en claro, el nivel 0 en oscuro (`05` § 3). Como el armazón no se toca todavía, la vista pinta
-   su propio lienzo y se estira sobre el relleno de `.main` (14 / 18 / 8 px) para que no quede una
-   franja del fondo viejo asomando por los bordes. El día que el armazón se migre, esto sobra. */
+   Esto existía para tapar la cuadrícula de 44 px y el viñeteado del armazón (`body::before` /
+   `body::after` en `aios.css`): la vista pintaba su propio lienzo y se estiraba sobre el relleno de
+   `.main` (14 / 18 / 8 px) para que no asomara una franja del fondo viejo. Desde la marca v2 el
+   fondo es liso en toda la aplicación (`temas.css`, «EL FONDO ES LISO») y esto pinta el mismo
+   `--bg` que el `body`, así que ya no tapa nada. Queda hasta la fase de detalles porque quitarlo
+   cambia la geometría de las doce pantallas: son sus márgenes negativos los que la mueven. */
 :is(#v-closer, .estetica-op).view {
   margin: -14px -18px -8px;
   padding: 14px 18px 8px;
@@ -367,7 +369,8 @@
 :is(#v-closer, .estetica-op) .md-sec[data-cola] { border-left: 1px solid var(--line); }
 
 /* El encabezado de sección: `px-6 py-4`, título de 13 px en mayúsculas, y —cuando tiene color—
-   el fondo al 10 %, el título en el tono de la cola y el contador SÓLIDO con texto blanco. */
+   el fondo al 10 %, el título en el tono de la cola y el contador SÓLIDO con el texto casi negro
+   de la marca (`on-ink`). */
 :is(#v-closer, .estetica-op) .md-h {
   padding: 12px 20px;
   gap: 10px;
@@ -646,12 +649,17 @@
 :is(#v-closer, .estetica-op) .pipe-q-n b { color: var(--txt); font-weight: 600; }
 :is(#v-closer, .estetica-op) .pipe-q-n em { font-style: normal; color: var(--warn); }
 
-/* ── 4 · Inicio: el bloque negro y dorado (`07`) ───────────────────────────── */
+/* ── 4 · Inicio: el bloque de la comisión (`07`) ───────────────────────────── */
 
-/* Es el único bloque que no sigue los tokens del tema, en NINGUNO de los dos: es negro en claro
-   también. Para que todo lo que vive adentro —baldosas, anillo, notas— se lea sobre negro sin
-   reescribir sus reglas, el bloque redefine los tokens que esas reglas consumen. Es un tema oscuro
-   de un solo elemento. */
+/* Era el único bloque que no seguía los tokens del tema: negro y dorado, y negro también en claro.
+   Con la marca v2 es una tarjeta más (`--negro-hero` es `bg-alt`) y su dinero va en el blanco de la
+   marca, como todo el dinero (`NE-26`). Lo que conserva es la jerarquía de adentro —baldosas, anillo,
+   notas—, escrita como opacidades del blanco: el bloque redefine los tokens de texto, línea y fondo
+   que esas reglas consumen. Las señales ya no las redefine: son las del tema.
+
+   Los textos al 40 % y al 30 % de algunas reglas de acá abajo no llegan a 4,5:1 (3,5 y 2,5 sobre
+   `bg-alt`), y no los arregla ningún token porque la opacidad está escrita en la regla. Están en el
+   inventario de la fase de detalles (`brand/MIGRACION.md`). */
 :is(#v-closer, .estetica-op) .ck-hero {
   --txt:          rgb(var(--c-blanco) / .92);
   --txt-dim:      rgb(var(--c-blanco) / .60);
@@ -663,19 +671,11 @@
   --bg-panel:     rgb(var(--c-blanco) / .05);
   --bg-raise:     rgb(var(--c-blanco) / .08);
   --bg-float:     rgb(var(--c-blanco) / .08);
-  --ok:           var(--en-negro-ok);
-  --c-ok:         var(--c-en-negro-ok);
-  --warn:         var(--en-negro-warn);
-  --c-warn:       var(--c-en-negro-warn);
-  --accent:       var(--en-negro-acento);
-  --c-acento:     var(--c-en-negro-acento);
-  --exec:         var(--oro);
-  --c-exec:       var(--c-oro);
   --carril-del-arco: rgb(var(--c-blanco) / .06);
 
   position: relative;
   overflow: hidden;
-  border-radius: 26px;
+  border-radius: var(--radio-tarjeta);
   padding: 24px;
   background: var(--negro-hero);
   border: 1px solid rgb(var(--c-blanco) / .05);
@@ -711,9 +711,11 @@
 @media (max-width: 760px) {
   :is(#v-closer, .estetica-op) .ck-hero.ck-hero-dos { grid-template-columns: minmax(0, 1fr); }
 }
-/* El resplandor dorado: un círculo de 800 px al 5 %, difuminado 100 px, latiendo cada 4 s. Se
-   promueve a su propia capa para que el difuminado se rasterice una vez y el pulso corra en el
-   compositor. Y respeta a quien pidió menos movimiento. */
+/* El resplandor: un círculo de 800 px al 5 % del color del dinero —dorado en el documento, el
+   blanco de la marca desde la marca v2—, difuminado 100 px, latiendo cada 4 s. La marca no lleva
+   resplandores: está en el inventario de la fase de detalles (`brand/MIGRACION.md`). Se promueve a
+   su propia capa para que el difuminado se rasterice una vez y el pulso corra en el compositor. Y
+   respeta a quien pidió menos movimiento. */
 :is(#v-closer, .estetica-op) .ck-hero::before {
   content: '';
   position: absolute;
@@ -749,8 +751,9 @@
   text-transform: uppercase;
   margin-bottom: 18px;
 }
-/* El titular de dinero: 90 px livianos y apretados, con el degradado blanco → dorado claro →
-   dorado oscuro recortado al texto. Sin el brillo exterior del documento — ver el encabezado. */
+/* El titular de dinero: 90 px livianos y apretados, con un degradado recortado al texto que,
+   desde la marca v2, tiene sus tres puntos en el blanco del dinero: es plano. Sin el brillo exterior
+   del documento — ver el encabezado. */
 :is(#v-closer, .estetica-op) .ck-big {
   margin-top: 0;
   font-size: clamp(46px, 5.4vw, 70px);
@@ -785,7 +788,7 @@
 :is(#v-closer, .estetica-op) .ck-note .pt {
   width: 6px;
   height: 6px;
-  background: rgb(var(--c-en-negro-ok) / .8);
+  background: rgb(var(--c-ok) / .8);
   animation: ck-pulso 2s ease-in-out infinite;
 }
 /* La rejilla de cuatro cifras: rótulo 10 px al 40 %, valor 24 px liviano, base 10 px al 30 %.
@@ -1252,7 +1255,7 @@
 /* ── LA TARJETA: el bloque de un agente y el cuadro de un prompt ───────────
  *
  * Son las dos tarjetas grandes de esta pantalla, y pasan a la misma forma que `.md-c` y
- * `.aj-tarjeta`: radio de 26 px, translúcida con desenfoque. Sin el `backdrop-filter` la tarjeta
+ * `.aj-tarjeta`: el radio de tarjeta, translúcida con desenfoque. Sin el `backdrop-filter` la tarjeta
  * se ve como un rectángulo semitransparente — van siempre juntos, igual que arriba. */
 #v-conversation .aud-agente,
 #v-conversation .aud-prompt {
@@ -1470,16 +1473,16 @@
  * estaba pintado con el acento desaparece.
  *
  * `fundaciones.css` pone `.fd-sub button.on .fd-n { color: var(--accent) }` — el número del paso
- * en verde para marcar el paso en curso. Medido sobre la cápsula nueva: `rgb(7 92 84)` sobre
- * `rgb(7 92 84)`. Invisible.
+ * en el acento para marcar el paso en curso. Medido en el tema claro, con la paleta de antes de la
+ * marca v2, sobre la cápsula nueva: `rgb(7 92 84)` sobre `rgb(7 92 84)`. Invisible.
  *
  * Se resuelve igual que el contador: `inherit`, o sea el color que la propia pestaña activa ya
  * definió como legible sobre su relleno. No se elige un color nuevo — se hereda el que el sistema
  * ya calculó, así que sigue siendo correcto el día que el acento cambie. */
 :is(#v-closer, .estetica-op) .cl-sub button.on .fd-n { color: inherit; }
 
-/* Y el punto de «hecho», que es el mismo problema en otro tono: `var(--ok)` es
- * `rgb(4 120 87)` y el relleno de la activa es `rgb(7 92 84)`. Dos verdes oscuros, uno encima del
+/* Y el punto de «hecho», que es el mismo problema en otro tono: `var(--ok)` era
+ * `rgb(4 120 87)` y el relleno de la activa, `rgb(7 92 84)`. Dos verdes oscuros, uno encima del
  * otro. Pasa al color legible sobre el acento, con algo de transparencia para que siga leyéndose
  * como una marca y no como un botón.
  *

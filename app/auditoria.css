@@ -252,7 +252,8 @@
   display: block;
   width: 100%;
   margin-top: 6px;
-  border: 1px solid var(--line);
+  /* `--line-strong` y no `--line`: es el límite de un campo, y `--line` es decorativa. */
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: var(--bg-sunk);
   padding: 8px 10px;

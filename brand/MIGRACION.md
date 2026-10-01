@@ -1,9 +1,9 @@
 # Inventario para migrar a la marca v2
 
-Lo que hay hoy hardcodeado, dónde está y con qué token del brandbook se reemplaza. **Casi nada de esto
-está migrado todavía**: la Fase 1 instaló el sistema sin tocar una sola pantalla. Este archivo es
-la lista de trabajo de la Fase 2, que es de a una pantalla por vez. La excepción es la tipografía, que
-ya está hecha (ver «Tipografía»).
+Lo que había hardcodeado, dónde está y con qué token del brandbook se reemplaza. La Fase 1 instaló el
+sistema sin tocar una sola pantalla. **La tipografía, la paleta y las superficies ya son las de la marca**:
+las cambió la nueva estructura, cambiando valores de tokens (ver «Lo que ya se hizo»). Lo que queda es la
+fase de detalles, que es de a una pantalla por vez (ver «Lo que queda para la fase de detalles»).
 
 Medido con un barrido sobre `app/`, `components/` y `lib/` (se excluyen `pruebas/`, `docs/`, `db/`
 y el propio `app/brand/`, que ya es el sistema nuevo).
@@ -13,7 +13,78 @@ conteos se movieron unas unidades —las hojas que `main` sumó, las reglas del 
 con la aplicación sólo oscura y las pilas de letra que pasaron a Geist—, y la etapa 5 de la nueva estructura los vuelve a medir
 (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`).
 
-## El tamaño del problema
+## Lo que ya se hizo (nueva estructura, etapas 4 y 5, 2026-10-01)
+
+- **La tipografía**: Geist y Geist Mono en toda la aplicación (ver «Tipografía»).
+- **La paleta**: el tema oscuro de `app/temas.css` lleva los valores de la marca, token por token, y las
+  pantallas de operación dejaron de tener paleta propia. El mapa aplicado está en el comentario de ese
+  bloque y en `docs/OTROS/nueva-estructura/03-LA-MARCA.md` (`NE-25` y `NE-26`), y lo exige
+  `pruebas/codigo/188-la-paleta-de-la-marca.test.ts`. La tabla de más abajo es la propuesta original;
+  donde se decidió distinto, lo dice su última columna.
+- **Las superficies**: el fondo es liso (la grilla y la viñeta del prototipo no se generan), los radios
+  de las pantallas de operación salen de `--radius-sm` y `--radius-lg`, y los degradados de superficie
+  se aplanaron por token donde se pudo.
+
+## Lo que queda para la fase de detalles
+
+Medido en la revisión de la etapa 5 (2026-10-01). Ninguno se arregla cambiando un token.
+
+**Degradados y resplandores**:
+
+- **27 de tinte o resplandor** que no se apagan sin cambiar un color con significado: 25 en `app/aios.css`
+  (el `.nav-item.on`, las tarjetas de meta y de ingresos del cockpit, `.icpc.on`, `.lg-open`, `.cw-go`…) y
+  2 en `app/fundaciones.css` (la barra de avance y `.fd-btn`). Unos 13 se dibujan.
+- **El halo del Inicio** del closer y del setter (`.ck-hero::before`): un disco al 5 % difuminado 100 px.
+  La marca no lleva resplandores.
+- **Los dos brillos de cabecera** de `--c-brillo` al 2,2 % (`.card-head`, `.acq-fhead`).
+- **Degradados de superficie que quedaron curvos**:
+  - los 28 de `--bg-raise` a `--bg-panel` o `--bg-hondo` (tarjetas, cajones), en 1,03:1, por no quitarle
+    a `--bg-raise` su valor de la marca;
+  - los 8 de los menús y modales, de `surface-active` a `bg-alt`, porque su cabecera tiene que
+    distinguirse de lo que tapan;
+  - los 3 de los botones activos de los segmentados.
+
+  Se aplanan con una regla por superficie.
+
+**Radios**:
+
+- **Los escritos a mano**: 212 en `app/aios.css`, 60 en `app/fundaciones.css`, 44 en
+  `app/operacion-estetica.css`, 26 en `app/closer.css` y unos 30 más repartidos.
+- **Las píldoras** de botones y chips (la marca: «siempre píldora»).
+
+**Textos por debajo de 4,5:1** que ninguna regla de token alcanza, todos anteriores a la etapa 5:
+
+- los del héroe del Inicio al 40 % y al 30 % del blanco: 3,5 y 2,5:1;
+- el texto chico del aviso «formulario traído» (`.fd-onboarding.ok small`): 4,1 a 4,5:1;
+- `.org-h em` en Conversation: 3,3:1;
+- el subtítulo de una fila congelada (`.md-r.md-fuera .md-sub`): 4,1:1;
+- la hora de los mensajes propios del chat (`--chat-meta` sobre `--chat-propia`): 2,6:1. El chat conserva
+  los colores de WhatsApp a propósito, así que el arreglo es un token propio para esa hora.
+
+**Campos**: van sobre `--bg-sunk`, que vale lo mismo que la página, con el borde de control (2,0:1). La
+marca los pone en `surface-raised`, y la WCAG 1.4.11 pide 3:1 para el límite de un control. Necesita una
+regla para los campos, no un token: `--bg-sunk` lo usan unas 60 superficies que no son campos.
+
+**Estados**: hovers que quedaron con un escalón menor que 1,05:1, el más claro `.sc-fila:hover` en el
+Scraper.
+
+**`--exec`, lo que no es dinero**: el bloque «Calificados» de Acquisition, las líneas y el rótulo de la
+capa ejecutiva del organigrama, dos baldosas del Inicio y el «Histórico completo» del selector de fechas
+quedaron en el blanco del dinero. Falta decidir qué color les corresponde.
+
+**Pantallas aparte**:
+
+- `/entrar`: sus literales de la paleta vieja (`app/entrar/entrar.css`).
+- Los colores del PDF exportado (`lib/fundaciones/exportar.ts`).
+- La chispa de «Ingresos» del cockpit, que rellena con el cian viejo (`lib/aios/executive.js`): se va con
+  la maqueta del Executive en la etapa 7.
+
+**El lienzo propio de las pantallas de operación** (`operacion-estetica.css`, «EL LIENZO ES PLANO»): ya no
+tapa nada, y quitarlo cambia su geometría.
+
+**Los titulares en dos líneas** (peso 200 y 500).
+
+## El tamaño del problema (la medición original)
 
 | Qué | Cuántos |
 |---|---|
@@ -74,10 +145,14 @@ real es reemplazar **el token**, y los hex caen solos.
 | Hoy | Valor | Brandbook | Valor |
 |---|---|---|---|
 | `--line` | `rgb(170 212 255 / 0.15)` | `--line` | `#151B26` |
-| `--line-strong` | `rgb(170 212 255 / 0.28)` | `--line-strong` | `#242C3A` |
+| `--line-strong` | `rgb(170 212 255 / 0.28)` | *(nota de `line-strong`)* | `#3A4456` |
 | `--txt` | `#eaf2fb` | `--ink` | `#F2F5F9` |
 | `--txt-dim` | `#a6b8ce` | `--ink-2` | `#AAB3C1` |
 | `--txt-faint` | `#93a4bb` | `--ink-3` | `#7F8A9B` |
+
+**`--line-strong` se decidió distinto (E5):** no es el `#242C3A` de la marca sino el `#3A4456` que la
+nota de `line-strong` en `tokens.json` pide «si el borde debe leerse solo». Sin sombras, el borde de un
+menú, un modal o un campo es siempre lo único que lo separa de lo de atrás.
 
 `--ink-4` (`#4F5968`) no tiene equivalente hoy y **no se usa para texto**: es decorativo. Si al migrar
 aparece texto que quedaría por debajo de `--ink-3`, el problema es la jerarquía, no el color.
@@ -87,25 +162,25 @@ aparece texto que quedaría por debajo de `--ink-3`, el problema es la jerarquí
 | Hoy | Valor | Brandbook | Valor | Qué cambia de verdad |
 |---|---|---|---|---|
 | `--accent` | `#3ff2e2` | `--accent` | `#8FE3FF` | **Cambia el tono.** El acento pasa de verde-cian a cian claro. Es el cambio más visible de toda la migración. |
-| `--etapa-agendado` | `#35e0d2` | `--accent` | `#8FE3FF` | El `#35e0d2` del pedido, 9 ocurrencias. |
+| `--etapa-agendado` | `#35e0d2` | *(extensión)* | `#7CB5C5` | **Decidido distinto (E5):** no es el acento. Su conteo es un relleno sólido, igual que la pestaña activa, y con el mismo cian se leería como un control. Comparte el matiz, más oscuro y apagado. |
 | `--accent-alto` | `#78fff0` | `--accent` | `#8FE3FF` | El brandbook tiene **un solo** acento: las variantes alto/hondo desaparecen. |
 | `--accent-hondo` | `#23b3a8` | `--accent` | `#8FE3FF` | Ídem. |
 | `--dev` | `#9a8bff` | `--accent-2` | `#B9A6FF` | Violeta, «sólo como detalle puntual». |
-| `--exec` | `#ffc554` | `--signal` | `#E0C073` | Atención. |
+| `--exec` | `#ffc554` | `--ink` | `#F2F5F9` | **Decidido distinto (E5):** lo más visible que pinta es dinero, y el dinero va en blanco (`NE-26`). La atención es `--warn`. |
 | `--warn` | `#ff9550` | `--signal` | `#E0C073` | Se funde con el anterior: el brandbook tiene un solo nivel de atención. |
-| *(dorado suelto)* | `#e8b64c` | `--signal` | `#E0C073` | El `#e8b64c` del pedido, 4 ocurrencias. |
+| *(dorado suelto)* | `#e8b64c` | *(extensión)* | `#BBA465` | Era el ámbar de `--etapa-cierre`; quedó en la extensión de las etapas (E5). |
 | `--crit` | `#ff6a6a` | `--alert` | `#FF8C7A` | Incidencia. |
 | `--sobre-acento` | `#04121a` | `--on-ink` | `#04060A` | Texto sobre relleno. |
 
-**`--ok` (`#55eb8c`) no tiene reemplazo, y es la decisión pendiente más importante.** El brandbook no
-tiene un verde de éxito: su regla 3 dice que *el rojo señala y `--accent` es «lo correcto»*. O sea
-que todo lo que hoy es verde de «salió bien» pasaría a cian. Hay que confirmarlo antes de migrar la
-primera pantalla que lo use, porque afecta al Pipeline, a las colas del Closer y a los cinco
-tableros a la vez.
+**`--ok` (`#55eb8c`) no tenía reemplazo en la marca, y era la decisión pendiente más importante.** El
+brandbook no tiene un verde de éxito. Se decidió el 2026-10-01 (`NE-10`, la «extensión sobria»): un verde
+apagado, `#94C6A0`, con menos croma que el cian. La misma decisión vale para los otros colores con
+significado: atención en `signal`, dinero en `ink` e incidencia en `alert`.
 
-Lo mismo con los **14 colores de etapa** (`--c-etapa-nuevo`, `--c-etapa-ganado`, `--c-etapa-no-show`…):
-el brandbook no contempla una paleta categórica. O se declaran como extensión documentada del
-sistema, o las etapas pasan a distinguirse por texto y borde en vez de por color.
+Lo mismo con los **colores de etapa**: el brandbook no contempla una paleta categórica, y **se declararon
+como extensión documentada** (E5). Son doce etapas y la cola de «Completadas hoy», apagadas y medidas: croma
+menor que el cian, 4,5:1 sobre todas las superficies y ΔE ≥ 0,08 dentro de cada embudo. Los valores están
+en `app/temas.css`.
 
 ### Tipografía
 
@@ -140,6 +215,9 @@ sombras de los totales), y es justamente la hoja que no se puede tocar sin sacar
 `paridad`.
 
 ## El orden que propongo
+
+> La nueva estructura recoloreó toda la aplicación de una vez, por tokens (etapa 5). Lo que sigue es el
+> orden para la fase de detalles.
 
 De menor a mayor riesgo, para que los primeros pasos enseñen antes de tocar lo caro:
 

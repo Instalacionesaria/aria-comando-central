@@ -98,9 +98,15 @@ test('ningún `var(--x)` apunta a un token que nadie define', () => {
   for (const archivo of hojas()) {
     const css = sinComentarios(archivo);
 
-    // Lo que la hoja DEFINE. Cualquier selector cuenta, no solo `:root`: los temas redefinen los
-    // mismos tokens bajo `:root[data-tema]`, y un token que solo existe en un tema igual existe.
-    for (const m of css.matchAll(/(--[a-zA-Z0-9-]+)\s*:/g)) definidos.add(m[1]!);
+    /* Lo que la hoja DEFINE. Cualquier selector cuenta, no solo `:root`: los temas redefinen los
+       mismos tokens bajo `:root[data-tema]`.
+
+       Salvo los bloques del tema CLARO. La aplicación es sólo oscura (`pruebas/codigo/186`), así
+       que esos bloques no se aplican nunca, y un token que sólo existe ahí es un token que no existe:
+       borrar del bloque oscuro de operación el fondo del héroe y dejarlo en el claro pasaba esta
+       prueba en verde, con el héroe sin fondo. */
+    const aplicable = css.replace(/:root\[data-tema='claro'\][^{]*\{[^}]*\}/g, ' ');
+    for (const m of aplicable.matchAll(/(--[a-zA-Z0-9-]+)\s*:/g)) definidos.add(m[1]!);
 
     /* Lo que la hoja USA, y **solo sin respaldo**. `var(--x, algo)` es legítimo aunque `--x` no
        exista: para eso está el segundo argumento, y hay un caso real en `app/globals.css`
@@ -134,6 +140,29 @@ test('ningún `var(--x)` apunta a un token que nadie define', () => {
       '(ver `tokensDeFuente`), no agregarse a una lista de excepciones:\n  ' +
       huerfanos.join('\n  '),
   );
+});
+
+test('ningún token se define en función de sí mismo', () => {
+  /* La marca declara `--bg`, `--line`, `--line-strong` y `--accent` con el MISMO nombre que la
+     aplicación, en su capa. Escribir `--bg: var(--bg)` en `temas.css` para «tomarlo de la marca» es
+     un ciclo: la variable queda inválida y todo `background: var(--bg)` sale transparente. El
+     barrido de arriba no lo ve, porque para él `--bg` está definido.
+
+     Los bloques `@theme` de Tailwind no cuentan, y el motivo es el prefijo: `app/globals.css` importa
+     el tema de Tailwind con `prefix(tw)`, así que cada entrada se emite como `--tw-…` —y sólo si una
+     utilidad la usa—. El `--font-mono: var(--font-mono)` de ahí sale como `--tw-font-mono`, que no se
+     cita a sí mismo. Comprobado en `.next/static`: no aparece en ninguna hoja generada. Sin el
+     prefijo esa línea SÍ sería un ciclo, así que la excepción se sostiene sólo mientras esté. */
+  const globals = sinComentarios('app/globals.css');
+  assert.match(globals, /@import\s+"tailwindcss\/theme\.css"[^;]*prefix\(tw\)/, 'el tema de Tailwind perdió el prefijo `tw`: los `@theme` vuelven a contar');
+  const ciclos: string[] = [];
+  for (const archivo of hojas()) {
+    const sinTheme = sinComentarios(archivo).replace(/@theme[^{]*\{[^}]*\}/g, ' ');
+    for (const m of sinTheme.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;}]*)/g)) {
+      if (new RegExp(`var\\(\\s*${m[1]!}\\s*[,)]`).test(m[2]!)) ciclos.push(`${archivo}: ${m[1]}: ${m[2]!.trim()}`);
+    }
+  }
+  assert.deepEqual(ciclos, [], 'estos tokens se definen con su propio nombre: quedan inválidos');
 });
 
 test('el rojo de la auditoría sale del token del rojo, y NO de uno inventado', () => {
