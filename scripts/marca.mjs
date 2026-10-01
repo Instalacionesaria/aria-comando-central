@@ -21,8 +21,13 @@
  * Acá la única fuente sigue siendo `tokens.json`.
  *
  * Correr: `node scripts/marca.mjs`
+ *
+ * Con `--comprobar` no escribe nada: compara lo que generaría con el archivo que está en el
+ * repositorio y sale con 1 si difieren. Es lo que usa la prueba de la marca
+ * (`pruebas/codigo/184-la-marca-en-dos-capas.test.ts`) para que una edición a mano del archivo
+ * generado, o un `tokens.json` exportado sin volver a correr el guion, no pase en silencio.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -71,6 +76,19 @@ const salida = [
   '',
 ].join('\n');
 
-mkdirSync(join(RAIZ, 'app/brand'), { recursive: true });
-writeFileSync(join(RAIZ, 'app/brand/tokens-scope.css'), salida);
-console.log(`app/brand/tokens-scope.css — ${colorOscuro.length} colores por tema, ${escalas.length} escalas`);
+const DESTINO = join(RAIZ, 'app/brand/tokens-scope.css');
+
+if (process.argv.includes('--comprobar')) {
+  /* Los finales de línea no cuentan: en Windows el checkout los pasa a CRLF y el guion escribe LF,
+     así que comparar crudo daría «difiere» con el mismo contenido. */
+  const actual = existsSync(DESTINO) ? readFileSync(DESTINO, 'utf8').replace(/\r\n/g, '\n') : '';
+  if (actual !== salida) {
+    console.error('app/brand/tokens-scope.css no es lo que genera brand/tokens.json: corré `node scripts/marca.mjs`');
+    process.exit(1);
+  }
+  console.log('app/brand/tokens-scope.css al día con brand/tokens.json');
+} else {
+  mkdirSync(join(RAIZ, 'app/brand'), { recursive: true });
+  writeFileSync(DESTINO, salida);
+  console.log(`app/brand/tokens-scope.css — ${colorOscuro.length} colores por tema, ${escalas.length} escalas`);
+}
