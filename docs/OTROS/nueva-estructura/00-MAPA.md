@@ -64,3 +64,5 @@ terminar, marca acá abajo su commit.
 | etapa | estado |
 |---|---|
 | E0 · documentos | hecho, 2026-10-01 |
+| E1 · el PR #2 de la marca | hecho, 2026-10-01 |
+| E2 · la sesión entera | hecho, 2026-10-01 |

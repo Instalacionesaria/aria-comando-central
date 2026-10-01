@@ -48,6 +48,7 @@ interface Sesion {
   usuarioId?: string;
   puedeCambiarDeEmpresa?: boolean;
   puedeConfigurarComisiones?: boolean;
+  puedeBorrarPersonas?: boolean;
   secciones?: DatosDeSesion['secciones'];
   organizacion?: DatosDeSesion['organizacion'];
   mirandoOtraOrganizacion?: boolean;
@@ -102,6 +103,8 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
         puedeCambiarDeEmpresa: r.datos.puedeCambiarDeEmpresa ?? false,
         // Ídem: sin saberlo, no se ofrece el botón de los porcentajes.
         puedeConfigurarComisiones: r.datos.puedeConfigurarComisiones ?? false,
+        // Ídem: sin saberlo, no se ofrece «Eliminar».
+        puedeBorrarPersonas: r.datos.puedeBorrarPersonas ?? false,
         // `[]` y no `undefined`: sin secciones no se dibuja NINGUNA pestaña, que es el lado
         // correcto del que fallar. Ver el `03` § 5, "una operación nueva nace cerrada".
         secciones: r.datos.secciones ?? [],

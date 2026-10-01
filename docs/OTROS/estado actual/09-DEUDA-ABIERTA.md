@@ -921,7 +921,8 @@ Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
 - **El botón «Eliminar» de Ajustes › Usuarios no aparece para nadie**, tampoco para el
   superadministrador. La ruta de sesión manda `puedeBorrarPersonas`, pero `app/guardia.tsx` no lo copia al
   contexto, y `components/ajustes/Usuarios.jsx` lo lee de ahí. La prueba que lo vigila mira las dos
-  puntas y no el paso del medio. Se corrige en la etapa E2 de la nueva estructura.
+  puntas y no el paso del medio. **Cerrado el mismo 2026-10-01** en la etapa E2 de la nueva estructura:
+  la guarda copia toda clave de la sesión, y la prueba `185` lo exige.
 - **El panel lateral de la maqueta del Executive se ve en la primera carga** a quien arranca en otra
   pantalla (un closer, por ejemplo), hasta su primer clic: la clase que lo esconde sólo se pone al
   navegar. Se va con la columna lateral, en la etapa E7.

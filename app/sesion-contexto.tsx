@@ -70,9 +70,15 @@ export interface DatosDeSesion {
   /** ¿Puede configurar los porcentajes de comisión? Lo responde el servidor con la MISMA condición
    *  que comprueba el endpoint, para que el botón no ofrezca algo que va a ser rechazado. */
   puedeConfigurarComisiones: boolean;
+  /** ¿Puede eliminar a una persona? El servidor lo decide con `usuarios.borrar`, la misma capacidad
+   *  que exige el `DELETE`; Ajustes › Usuarios dibuja el botón «Eliminar» sólo con esto. Faltaba en
+   *  el contexto y el botón no aparecía para nadie (lo encontró la planificación de la nueva
+   *  estructura, 2026-10-01). */
+  puedeBorrarPersonas: boolean;
   /**
    * Las secciones que esta persona puede ver, ya filtradas por el SERVIDOR con
-   * `seccionesVisibles()`.
+   * `seccionesConAlcance()`: la capacidad, la regla de la organización principal y las pestañas
+   * concedidas a quien tiene el alcance restringido.
    *
    * Es la misma función que arma el menú, no una segunda copia de la regla: las pestañas de
    * Ajustes se deciden con esto, así que no hay forma de que el menú y las pestañas discrepen.
