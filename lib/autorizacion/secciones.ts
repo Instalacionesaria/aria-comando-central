@@ -158,6 +158,9 @@ export const GRUPOS_DEL_MENU: readonly {
   { clave: 'AIOS', etiqueta: null },
   { clave: 'Inteligencia', etiqueta: 'Inteligencia' },
   { clave: 'Operación', etiqueta: 'Operación' },
+  // Los dos paneles que miran a TODAS las empresas, separados de las pestañas de trabajo de
+  // Operación (pedido de Kevin, 2026-10-01). Solo los ve la organización principal.
+  { clave: 'Administración', etiqueta: 'Administración' },
   { clave: 'Pie', etiqueta: null, pie: true },
 ];
 
@@ -437,7 +440,7 @@ export const SECCIONES: readonly Seccion[] = [
     nombre: 'Panel de Monitoreo',
     capacidadRequerida: 'monitoreo.ver',
     soloDesdeLaPrincipal: true,
-    menu: { grupo: 'Operación', icono: '#i-monitoreo' },
+    menu: { grupo: 'Administración', icono: '#i-monitoreo' },
   },
   {
     // El Panel de Incidentes (2026-10-01): los fallos del modelo de IA de todas las empresas. La
@@ -447,7 +450,7 @@ export const SECCIONES: readonly Seccion[] = [
     nombre: 'Incidentes',
     capacidadRequerida: 'incidentes.ver',
     soloDesdeLaPrincipal: true,
-    menu: { grupo: 'Operación', icono: '#i-incidentes' },
+    menu: { grupo: 'Administración', icono: '#i-incidentes' },
   },
 ];
 
