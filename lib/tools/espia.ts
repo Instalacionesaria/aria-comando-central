@@ -25,6 +25,7 @@
 
 import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import { generar } from '../fundaciones/generacion.ts';
+import { rechazoDelModelo } from '../fundaciones/fallo-del-modelo.ts';
 import { pedirExterno } from '../http/cliente.ts';
 
 /**
@@ -159,24 +160,8 @@ export async function analizarLosAnuncios(
   });
 
   if (salida.tipo !== 'datos') {
-    /* Se registra con el mismo formato que las generaciones de Fundaciones —`ADR-0407` prohíbe
-       registrar cuerpos; un código y un motivo no son un cuerpo— y a la pantalla va el detalle del
-       proveedor, que es lo único accionable: si dice que el saldo es insuficiente, hay que recargar
-       la cuenta de IA. */
-    if (salida.tipo === 'rechazado') {
-      console.error(
-        `espia: el modelo rechazó el análisis · ${salida.estado} ${salida.codigo} · ` +
-          (salida.motivo === null ? 'sin motivo' : salida.motivo),
-      );
-      return rechazo(
-        'modelo_no_disponible',
-        salida.motivo === null ? salida.codigo : `${salida.codigo}: ${salida.motivo}`,
-      );
-    }
-    return rechazo(
-      'modelo_no_disponible',
-      salida.tipo === 'sin_texto' ? 'respuesta sin texto' : 'sin respuesta',
-    );
+    // Nombrado como en Fundaciones: situación, referencia y una línea de registro.
+    return rechazoDelModelo(salida, { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}` });
   }
 
   return ok({

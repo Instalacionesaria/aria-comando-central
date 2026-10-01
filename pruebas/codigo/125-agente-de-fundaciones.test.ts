@@ -503,7 +503,7 @@ test('si el modelo falla no se guarda nada, ni siquiera el turno de la persona',
   assert.ok(i > 0, 'se renombró el manejador de la conversación');
   const cuerpo = fuente.slice(i);
 
-  const fallo = cuerpo.indexOf("if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);");
+  const fallo = cuerpo.indexOf('return rechazoDeConversacion(salida,');
   // Sin el paréntesis de cierre: lo que se afirma es el ORDEN, y la llamada lleva además el autor
   // del turno desde la 163 (`acceso.usuarioId`, para firmar el mensaje en el histórico).
   const guarda = cuerpo.indexOf('guardarChat(acceso.orgId, estado.datos, h.id, proximo');

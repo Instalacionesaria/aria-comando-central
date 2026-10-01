@@ -962,7 +962,8 @@ test('el motivo queda en el REGISTRO del servidor y tambien en la pantalla', asy
   } finally {
     console.error = original;
   }
-  assert.match(sinMotivo[0] ?? '', /sin motivo/, 'sin motivo, el registro deja un hueco en vez de decirlo');
+  /* Sin motivo, el registro termina en el número y el código, no en un «·» colgando. */
+  assert.match(sinMotivo[0] ?? '', /529 overloaded_error$/, 'sin motivo, el registro deja un hueco');
 });
 
 test('cuando el modelo NO contesta, la causa de red también llega al registro y a la pantalla', async () => {
@@ -1006,8 +1007,8 @@ test('cuando el modelo NO contesta, la causa de red también llega al registro y
   } finally {
     console.error = original;
   }
-  assert.match(sinCausa[0] ?? '', /sin causa/);
-  assert.equal(((await r2.json()) as { detalle?: string }).detalle, 'sin respuesta');
+  assert.match(sinCausa[0] ?? '', /· sin respuesta$/);
+  assert.match(((await r2.json()) as { detalle?: string }).detalle ?? '', /^IA-CONEXION · ref [A-Z0-9]{6} · sin respuesta$/);
 });
 
 test('quien espera espera MENOS que quien ejecuta: el tope de la generación cabe en su `maxDuration`', async () => {
@@ -1049,7 +1050,12 @@ test('quien espera espera MENOS que quien ejecuta: el tope de la generación cab
   }
 
   // Y la generación pide ESE tope, no el de por omisión: si no lo pasa, el número de arriba no hace nada.
-  assert.match(leer('lib/fundaciones/generacion.ts'), /espera: ESPERA_DE_GENERACION_MS,/);
+  assert.match(leer('lib/fundaciones/generacion.ts'), /unIntento\(opciones, ESPERA_DE_GENERACION_MS, desde\)/);
+  // Y el reintento usa lo que QUEDA de ese tope, no otro tope entero: si no, se pasa del `maxDuration`.
+  assert.match(
+    leer('lib/fundaciones/generacion.ts'),
+    /unIntento\(opciones, ESPERA_DE_GENERACION_MS - \(Date\.now\(\) - desde\), desde\)/,
+  );
 });
 
 test('un tiempo agotado se nombra como tal, y con los dos números', async () => {

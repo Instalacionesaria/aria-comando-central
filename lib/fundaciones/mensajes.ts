@@ -66,6 +66,44 @@ const TEXTOS: Readonly<Record<string, string>> = {
   no_encontrado: 'Esa herramienta no existe.',
 };
 
+// ── LOS FALLOS DEL MODELO, UNO POR SITUACIÓN ─────────────────────────────────
+//
+// El servidor los clasifica en `lib/fundaciones/fallo-del-modelo.ts` y manda el detalle con la forma
+// `IA-XXX · ref ABC123 · lo técnico`. Cada texto termina diciendo A QUIÉN le toca, que es lo que
+// faltaba: con el párrafo único de antes, la única salida de quien lo leía era escribir «falló otra
+// vez». Tres finales, y solo tres:
+
+const LO_ARREGLA_NADIE = 'Esto no lo tiene que arreglar nadie: probá de nuevo en unos minutos.';
+const LO_ARREGLA_LA_CUENTA = 'Lo arregla quien administra la cuenta de IA de la organización.';
+const LO_ARREGLAMOS = 'Si vuelve a pasar, mandale este código al equipo de ARIA.';
+
+const TEXTOS_DEL_MODELO: Readonly<Record<string, string>> = {
+  'IA-CONEXION': `Se cortó la conexión con el modelo antes de que terminara. No se perdió nada de lo que escribiste. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-TIEMPO': `La generación tardó más de 9 minutos y la cortamos. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-SIN-SALDO': `La cuenta de IA de esta organización se quedó sin saldo; esperar no lo arregla. ${LO_ARREGLA_LA_CUENTA}`,
+  'IA-LLAVE': `Anthropic no acepta la llave de IA de esta organización: hay que cargar una nueva en Integraciones. ${LO_ARREGLA_LA_CUENTA}`,
+  'IA-PERMISO': `La llave de IA no tiene permiso para usar este modelo: hay que revisar a qué workspace de Anthropic pertenece. ${LO_ARREGLA_LA_CUENTA}`,
+  'IA-LIMITE': `Anthropic está limitando cuántas peticiones acepta de esta cuenta. Esperá un minuto y probá de nuevo.`,
+  'IA-SATURADO': `Anthropic está saturado en este momento. No es tu cuenta ni tus datos. ${LO_ARREGLA_NADIE}`,
+  'IA-MODELO': `El modelo que pedimos no está disponible para esta llave. Es un error de configuración nuestro. ${LO_ARREGLAMOS}`,
+  'IA-PETICION': `Anthropic rechazó la petición por cómo la armamos. Es un error nuestro, no tuyo. ${LO_ARREGLAMOS}`,
+  'IA-GRANDE': `Lo que le mandamos al modelo es demasiado largo. Acortá lo que escribiste en este paso y probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-VACIO': `El modelo contestó pero sin ningún texto. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-TRUNCADO': `La respuesta del modelo llegó cortada. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-DECLINO': `El modelo no quiso seguir con esta conversación. Reformulá lo último que escribiste y probá de nuevo.`,
+  'IA-ESTRUCTURA': `El modelo devolvió una respuesta que no pudimos leer. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-OTRO': `El modelo devolvió un error que no conocemos. ${LO_ARREGLAMOS}`,
+};
+
+/** Lee el detalle de un fallo del modelo. `null` si no tiene la forma (un servidor viejo, digamos). */
+export function leerFalloDelModelo(
+  detalle: string,
+): { situacion: string; ref: string; tecnico: string } | null {
+  const m = /^(IA-[A-Z-]+) · ref ([A-Z0-9]+) · ([\s\S]*)$/.exec(detalle);
+  if (!m || !TEXTOS_DEL_MODELO[m[1]!]) return null;
+  return { situacion: m[1]!, ref: m[2]!, tecnico: m[3]! };
+}
+
 /** Cuando no se pudo preguntar: red, tiempo de espera, cuerpo ilegible. */
 export const SIN_RESPUESTA =
   'No se pudo llegar al servidor. Puede ser la conexión. Nada de esto significa que tu trabajo se haya perdido.';
@@ -94,5 +132,12 @@ export function mensajeDeRechazo(codigo: string, estado: number, detalle?: strin
    *
    * Son tres investigaciones distintas y ahora se distinguen. El código y no el mensaje del proveedor,
    * que es texto que no controlamos: el mismo criterio que ya usa el servidor. */
+  if (codigo === 'modelo_no_disponible' && detalle) {
+    const f = leerFalloDelModelo(detalle);
+    if (f) {
+      // En una segunda línea, para que se lea de un vistazo en una captura.
+      return `${TEXTOS_DEL_MODELO[f.situacion]}\nCódigo ${f.situacion} · ref ${f.ref} — ${f.tecnico}`;
+    }
+  }
   return detalle ? `${texto} (${detalle})` : texto;
 }

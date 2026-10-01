@@ -41,6 +41,7 @@
 // se comparte acá es el trabajo; la autorización se queda donde se puede auditar de un vistazo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { type DondeFallo, type FalloDelModelo, rechazoDelModelo } from './fallo-del-modelo.ts';
 import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import {
   fechaDeVersion,
@@ -153,56 +154,10 @@ function rechazoDeAlmacen(fallo: { tipo: string }): Response {
    cosas sobrevivieron a la mutacion mientras la funcion fue privada: no habia por donde ejercitarla
    sin base de datos ni sesion. La alternativa era una prueba de la ruta entera para afirmar dos
    lineas. */
-export function rechazoDeModelo(
-  fallo:
-    | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
-    | { tipo: 'sin_respuesta'; causa?: string }
-    | { tipo: 'sin_texto' },
-): Response {
-  if (fallo.tipo === 'rechazado') {
-    /* ── EL REGISTRO DEL SERVIDOR SE LO LLEVA SIEMPRE, PASE LO QUE PASE ARRIBA ──
-     *
-     * Antes de esto, un rechazo del modelo no dejaba rastro en NINGÚN lado: la pantalla mostraba un
-     * texto amable y los registros de Vercel no tenían una línea. O sea que el diagnóstico no se
-     * perdía en el camino: no existía.
-     *
-     * Va acá y no en `generacion.ts` porque acá se sabe de qué organización y de qué herramienta se
-     * trata, y eso es la mitad de lo que hace útil una línea de registro. `ADR-0407` prohíbe
-     * registrar CUERPOS; un código, un número y el motivo del proveedor no son un cuerpo. */
-    console.error(
-      `fundaciones: el modelo rechazó la generación · ${fallo.estado} ${fallo.codigo} · ` +
-        (fallo.motivo === null ? 'sin motivo' : fallo.motivo),
-    );
-    // Y a la pantalla van los dos: el código dice la familia, el motivo dice el problema.
-    return rechazo(
-      'modelo_no_disponible',
-      fallo.motivo === null ? fallo.codigo : `${fallo.codigo}: ${fallo.motivo}`,
-    );
-  }
-  /* ── Y LAS OTRAS DOS TAMBIÉN DEJAN RASTRO. ESTO FALTABA, Y COSTÓ UNA TARDE ──
-   *
-   * El párrafo de arriba se escribió para la rama `rechazado` y las otras dos se quedaron como
-   * estaban: sin registro y con un detalle fijo. O sea que el arreglo cubrió el caso en el que
-   * Anthropic CONTESTA que no, y dejó a ciegas el caso en el que **no contesta**.
-   *
-   * Se pagó el 2026-09-23. A Jorge le falló el paso 1 del Research contra la organización de
-   * CONEKTIA y la pantalla dijo *«(sin respuesta)»*. En los registros de Vercel: un 502 en
-   * `/api/fundaciones/generar` con el arreglo de `logs` VACÍO. `pedirExterno` sí sabía qué había
-   * pasado —`causa` trae el mensaje del error de red: tiempo agotado, conexión cortada, cabecera
-   * inválida, cuerpo que no es JSON— y `generacion.ts` lo propagaba entero hasta acá, donde se
-   * descartaba en el `return`. Tres capas conservándolo para tirarlo en la última.
-   *
-   * Un fallo que ocurrió una vez en dos horas es casi siempre pasajero, y aun así hay que poder
-   * distinguirlo: «se agotó el tiempo» manda a mirar cuánto tarda esa generación, «cabecera
-   * inválida» manda a mirar la llave, y «no es JSON» manda a mirar qué devolvió el proveedor. Con
-   * «sin respuesta» a secas, las tres se investigan igual — o sea, no se investiga ninguna. */
-  if (fallo.tipo === 'sin_texto') {
-    console.error('fundaciones: el modelo contestó 200 sin una sola línea de texto');
-    return rechazo('modelo_no_disponible', 'respuesta sin texto');
-  }
-  const causa = fallo.causa === undefined || fallo.causa === '' ? null : fallo.causa;
-  console.error(`fundaciones: no hubo respuesta del modelo · ${causa === null ? 'sin causa' : causa}`);
-  return rechazo('modelo_no_disponible', causa === null ? 'sin respuesta' : `sin respuesta: ${causa}`);
+export function rechazoDeModelo(fallo: FalloDelModelo, donde: DondeFallo = { origen: 'fundaciones' }): Response {
+  /* El registro, la clasificación y la referencia viven en `fallo-del-modelo.ts`, que comparten los
+     cuatro caminos que llaman al modelo. Acá solo se dice de dónde viene. */
+  return rechazoDelModelo(fallo, donde);
 }
 
 /**
@@ -381,7 +336,9 @@ export async function generarElDocumento(
       tokens: TOKENS_RESEARCH,
       conBusquedaWeb: true,
     });
-    if (salida.tipo !== 'datos') return rechazoDeModelo(salida);
+    if (salida.tipo !== 'datos') {
+      return rechazoDeModelo(salida, { origen: 'generar', orgId: acceso.orgId, donde: `Research paso ${paso + 1}` });
+    }
 
     const proximas = [...previas];
     proximas[paso] = salida.datos.texto;
@@ -431,7 +388,9 @@ export async function generarElDocumento(
     prompt,
     tokens: tokensDeSalida(id),
   });
-  if (salida.tipo !== 'datos') return rechazoDeModelo(salida);
+  if (salida.tipo !== 'datos') {
+    return rechazoDeModelo(salida, { origen: 'generar', orgId: acceso.orgId, donde: `herramienta ${id}` });
+  }
 
   const guardado = await guardarVersion(acceso.orgId, estado.datos, id, {
     date: fechaDeVersion(),
@@ -474,19 +433,10 @@ export async function generarElDocumento(
 // aviso de siempre: *"no se perdió nada de lo que escribiste"*, que en este camino es literal.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** El rechazo de un fallo de la conversación. Las tres ramas nuevas NO se colapsan con las otras. */
-function rechazoDeConversacion(fallo: FalloDeConversacion): Response {
-  if (fallo.tipo === 'rechazado' || fallo.tipo === 'sin_respuesta') {
-    /* Las dos ramas que comparte con la generación se traducen igual, con el registro del servidor
-       incluido: es el mismo proveedor, el mismo tipo de fallo y la misma acción del otro lado. */
-    return rechazoDeModelo(fallo);
-  }
-  /* Las tres nuestras. Van con detalle propio y no con el código del proveedor —no hay ninguno—, y
-     separadas porque mandan a mirar cosas distintas: el techo de tokens, la conversación que el
-     modelo no quiso seguir, y un esquema que dejó de encajar. */
-  if (fallo.tipo === 'truncado') return rechazo('modelo_no_disponible', 'respuesta truncada');
-  if (fallo.tipo === 'declino') return rechazo('modelo_no_disponible', 'el modelo declinó');
-  return rechazo('modelo_no_disponible', 'respuesta sin estructura');
+/** El rechazo de un fallo de la conversación. Sus tres ramas propias (truncado, declinó, sin
+    estructura) tienen su situación en `fallo-del-modelo.ts`, igual que las del proveedor. */
+function rechazoDeConversacion(fallo: FalloDeConversacion, donde: DondeFallo): Response {
+  return rechazoDeModelo(fallo, donde);
 }
 
 /**
@@ -693,7 +643,9 @@ export async function conversarConElAgente(
        generado debajo del chat. Se manda recortado —es un documento largo— y con su fecha. */
     entregable: entregableDe(h, estado.datos),
   });
-  if (salida.tipo !== 'datos') return rechazoDeConversacion(salida);
+  if (salida.tipo !== 'datos') {
+    return rechazoDeConversacion(salida, { origen: 'conversar', orgId: acceso.orgId, donde: `herramienta ${h.id}` });
+  }
 
   /* `...chat` y no un objeto nuevo: el turno guardado tiene que conservar `agent_version`. Sin el
      sello, la petición siguiente veía una conversación «de una versión anterior», la reabría desde

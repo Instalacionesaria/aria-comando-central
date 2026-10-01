@@ -371,7 +371,7 @@ organizaciones con avatar generado, sólo la principal tiene contactos puntuados
 **1 · El cruce con los datos reales, que es lo que la bajada promete.** Ningún módulo de
 `lib/fundaciones/` consulta una tabla de `negocio`: lo único que lee es su almacén y, para la mirada
 al mercado, las tablas del scraper (`lib/fundaciones/almacen.ts:211-226`,
-`lib/fundaciones/operaciones.ts:841-874`). El avatar describe al cliente ideal; el puntaje del CRM,
+`lib/fundaciones/operaciones.ts:793-826`). El avatar describe al cliente ideal; el puntaje del CRM,
 `negocio.contactos.score` (`lib/datos/esquema.ts:339-343`), califica a cada lead. Son dos «ICP» que
 no se cruzan en ninguna tabla (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:358-361`,
 `docs/OTROS/futuro/icp-interno-calculado.md:35-37`). Y aunque se escribiera el cruce, hoy tendría con

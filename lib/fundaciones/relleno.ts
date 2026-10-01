@@ -42,6 +42,7 @@ import { camposDe, claveCorta } from './campos.ts';
 import { NOMBRE_DE_LA_HERRAMIENTA, esquemaDeCampos } from './conversacion.ts';
 import type { EstadoDeFundaciones } from './estado.ts';
 import type { Herramienta } from './herramientas.ts';
+import { rechazoDelModelo } from './fallo-del-modelo.ts';
 import { pedirExterno } from '../http/cliente.ts';
 import { MODELO } from './generacion.ts';
 import { CARACTERES_DE_ONBOARDING } from './onboarding.ts';
@@ -314,19 +315,7 @@ export async function rellenarLosCampos(
   if (propuesta.tipo === 'sin_contexto') {
     return rechazo('peticion_invalida', 'Todavía no hay nada generado de donde sacar los datos.');
   }
-  if (propuesta.tipo === 'rechazado') {
-    return rechazo(
-      'modelo_no_disponible',
-      propuesta.motivo === null ? propuesta.codigo : `${propuesta.codigo}: ${propuesta.motivo}`,
-    );
-  }
-  if (propuesta.tipo === 'truncado') return rechazo('modelo_no_disponible', 'respuesta truncada');
-  if (propuesta.tipo === 'sin_estructura') return rechazo('modelo_no_disponible', 'respuesta sin estructura');
-  /* Con su causa y con su línea en el registro, igual que la generación: acá también «no contestó»
-     tapaba un tiempo agotado, una conexión cortada y un cuerpo ilegible bajo el mismo texto. */
-  console.error(`relleno: no hubo respuesta del modelo · ${propuesta.causa === '' ? 'sin causa' : propuesta.causa}`);
-  return rechazo(
-    'modelo_no_disponible',
-    propuesta.causa === '' ? 'sin respuesta' : `sin respuesta: ${propuesta.causa}`,
-  );
+  /* El resto son fallos del modelo, y se nombran en `fallo-del-modelo.ts` como los de los otros
+     tres caminos: situación, referencia y una línea de registro. */
+  return rechazoDelModelo(propuesta, { origen: 'rellenar', orgId: acceso.orgId, donde: `herramienta ${h.id}` });
 }

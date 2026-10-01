@@ -22,6 +22,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ESPERA_DE_GENERACION_MS, pedirExterno } from '../http/cliente.ts';
+import { esPasajero } from './fallo-del-modelo.ts';
 
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
@@ -181,13 +182,41 @@ export function mensajeDelFlujo(
  * `claveIa` viene resuelta por organización (ver `lib/credenciales/resolver.ts`) y no tiene valor
  * por omisión: sin llave propia esta función no se llama.
  */
-export async function generar(opciones: {
+export async function generar(opciones: OpcionesDeGeneracion): Promise<ResultadoDeGeneracion> {
+  const desde = Date.now();
+  const primero = await unIntento(opciones, ESPERA_DE_GENERACION_MS, desde);
+  if (primero.tipo === 'datos' || !esPasajero(primero)) return primero;
+
+  /* ── UN SEGUNDO INTENTO, Y SOLO UNO ──────────────────────────────────────
+   *
+   * Anthropic saturado o una conexión cortada se arreglan solos casi siempre, y antes la persona se
+   * enteraba igual y escribía «falló otra vez». Solo si el fallo llegó TEMPRANO: el segundo intento
+   * tiene que caber en lo que queda de `ESPERA_DE_GENERACION_MS`, y uno que falló a los cuatro minutos
+   * no tiene dónde. Si el segundo también falla, se muestra ESE fallo, con su referencia. */
+  const transcurrido = Date.now() - desde;
+  if (transcurrido > VENTANA_DE_REINTENTO_MS) return primero;
+  console.warn(`generacion: reintento tras un fallo pasajero a los ${Math.round(transcurrido / 1000)} s`);
+  await new Promise((listo) => setTimeout(listo, PAUSA_ANTES_DE_REINTENTAR_MS));
+  return unIntento(opciones, ESPERA_DE_GENERACION_MS - (Date.now() - desde), desde);
+}
+
+/** Hasta cuándo un fallo pasajero merece un segundo intento. Ver `generar`. */
+const VENTANA_DE_REINTENTO_MS = 90_000;
+/** Un respiro: reintentar en el mismo milisegundo contra un servicio saturado no ayuda. */
+const PAUSA_ANTES_DE_REINTENTAR_MS = 3_000;
+
+interface OpcionesDeGeneracion {
   claveIa: string;
   prompt: string;
   tokens: number;
   conBusquedaWeb?: boolean;
-}): Promise<ResultadoDeGeneracion> {
-  const desde = Date.now();
+}
+
+async function unIntento(
+  opciones: OpcionesDeGeneracion,
+  espera: number,
+  desde: number,
+): Promise<ResultadoDeGeneracion> {
 
   const cuerpo: Record<string, unknown> = {
     model: MODELO,
@@ -207,7 +236,7 @@ export async function generar(opciones: {
     /* Una generación es la llamada más larga del proyecto —el paso 1 del Research busca en la web y
        escribe hasta 16.000 tokens— y el tope por omisión le quedaba corto con la función todavía
        viva. Ver `ESPERA_DE_GENERACION_MS`. */
-    espera: ESPERA_DE_GENERACION_MS,
+    espera,
     lectura: 'texto',
   });
 

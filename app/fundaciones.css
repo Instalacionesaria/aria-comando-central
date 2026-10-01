@@ -234,6 +234,10 @@
   border-color: rgb(var(--c-crit) / 0.3);
   color: var(--crit);
 }
+/* Un fallo del modelo trae su código en una segunda línea (`mensajeDeRechazo`): se respeta el salto. */
+.fd-aviso.mal > span {
+  white-space: pre-line;
+}
 .fd-aviso b {
   color: inherit;
   font-weight: 600;
