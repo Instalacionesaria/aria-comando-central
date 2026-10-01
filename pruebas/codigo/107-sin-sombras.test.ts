@@ -148,7 +148,7 @@ test('ninguna hoja de la capa `components` estrena una sombra sin nombrarla', ()
   // `operacion-estetica.css` entra a la lista porque el sistema que traslada SÍ usa sombras
   // (`0 8px 30px rgb(0 0 0 / .04)` en cada tarjeta) y la decisión de este proyecto fue no tenerlas:
   // es exactamente la hoja donde alguien va a querer copiar una.
-  const HOJAS = ['app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css', 'app/operacion-estetica.css', 'app/monitoreo.css', 'app/auditoria.css', 'app/inteligencia-estetica.css', 'app/leads-portal.css', 'app/creative.css', 'app/acquisition.css'];
+  const HOJAS = ['app/fundaciones.css', 'app/ajustes.css', 'app/armazon.css', 'app/closer.css', 'app/operacion-estetica.css', 'app/monitoreo.css', 'app/incidentes.css', 'app/auditoria.css', 'app/inteligencia-estetica.css', 'app/leads-portal.css', 'app/creative.css', 'app/acquisition.css'];
 
   /* Y la lista cubre TODAS las hojas propias, para que una nueva no se cuele sin vigilancia. Es
      el mismo agujero que `104-temas` tenía y que su propio comentario describía: una hoja fuera

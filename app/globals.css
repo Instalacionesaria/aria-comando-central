@@ -50,6 +50,7 @@
 @import "./inteligencia-estetica.css" layer(components);
 
 @import "./monitoreo.css" layer(components);
+@import "./incidentes.css" layer(components);
 @import "./auditoria.css" layer(components);
 
 /* Leads Portal con leads reales. Hoja aparte por lo mismo que `closer.css`: agrega lo que la maqueta

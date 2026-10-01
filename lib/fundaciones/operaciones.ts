@@ -154,7 +154,10 @@ function rechazoDeAlmacen(fallo: { tipo: string }): Response {
    cosas sobrevivieron a la mutacion mientras la funcion fue privada: no habia por donde ejercitarla
    sin base de datos ni sesion. La alternativa era una prueba de la ruta entera para afirmar dos
    lineas. */
-export function rechazoDeModelo(fallo: FalloDelModelo, donde: DondeFallo = { origen: 'fundaciones' }): Response {
+export function rechazoDeModelo(
+  fallo: FalloDelModelo,
+  donde: DondeFallo = { origen: 'fundaciones' },
+): Promise<Response> {
   /* El registro, la clasificación y la referencia viven en `fallo-del-modelo.ts`, que comparten los
      cuatro caminos que llaman al modelo. Acá solo se dice de dónde viene. */
   return rechazoDelModelo(fallo, donde);
@@ -335,9 +338,20 @@ export async function generarElDocumento(
       prompt,
       tokens: TOKENS_RESEARCH,
       conBusquedaWeb: true,
+      donde: {
+        origen: 'generar',
+        orgId: acceso.orgId,
+        donde: `Research paso ${paso + 1}`,
+        usuarioId: acceso.usuarioId ?? null,
+      },
     });
     if (salida.tipo !== 'datos') {
-      return rechazoDeModelo(salida, { origen: 'generar', orgId: acceso.orgId, donde: `Research paso ${paso + 1}` });
+      return rechazoDeModelo(salida, {
+        origen: 'generar',
+        orgId: acceso.orgId,
+        donde: `Research paso ${paso + 1}`,
+        usuarioId: acceso.usuarioId ?? null,
+      });
     }
 
     const proximas = [...previas];
@@ -387,9 +401,15 @@ export async function generarElDocumento(
     claveIa: acceso.claveIa,
     prompt,
     tokens: tokensDeSalida(id),
+    donde: { origen: 'generar', orgId: acceso.orgId, donde: `herramienta ${id}`, usuarioId: acceso.usuarioId ?? null },
   });
   if (salida.tipo !== 'datos') {
-    return rechazoDeModelo(salida, { origen: 'generar', orgId: acceso.orgId, donde: `herramienta ${id}` });
+    return rechazoDeModelo(salida, {
+      origen: 'generar',
+      orgId: acceso.orgId,
+      donde: `herramienta ${id}`,
+      usuarioId: acceso.usuarioId ?? null,
+    });
   }
 
   const guardado = await guardarVersion(acceso.orgId, estado.datos, id, {
@@ -435,7 +455,7 @@ export async function generarElDocumento(
 
 /** El rechazo de un fallo de la conversación. Sus tres ramas propias (truncado, declinó, sin
     estructura) tienen su situación en `fallo-del-modelo.ts`, igual que las del proveedor. */
-function rechazoDeConversacion(fallo: FalloDeConversacion, donde: DondeFallo): Response {
+function rechazoDeConversacion(fallo: FalloDeConversacion, donde: DondeFallo): Promise<Response> {
   return rechazoDeModelo(fallo, donde);
 }
 
@@ -644,7 +664,12 @@ export async function conversarConElAgente(
     entregable: entregableDe(h, estado.datos),
   });
   if (salida.tipo !== 'datos') {
-    return rechazoDeConversacion(salida, { origen: 'conversar', orgId: acceso.orgId, donde: `herramienta ${h.id}` });
+    return rechazoDeConversacion(salida, {
+      origen: 'conversar',
+      orgId: acceso.orgId,
+      donde: `herramienta ${h.id}`,
+      usuarioId: acceso.usuarioId ?? null,
+    });
   }
 
   /* `...chat` y no un objeto nuevo: el turno guardado tiene que conservar `agent_version`. Sin el

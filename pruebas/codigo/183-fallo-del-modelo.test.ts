@@ -41,7 +41,7 @@ test('la pantalla dice a quién le toca, y la MISMA referencia queda en el regis
   console.error = (...partes: unknown[]) => void lineas.push(partes.map(String).join(' '));
   let r: Response;
   try {
-    r = rechazoDelModelo(
+    r = await rechazoDelModelo(
       { tipo: 'sin_respuesta', causa: 'fetch failed (tras 301 s)' },
       { origen: 'generar', orgId: 'org-1', donde: 'Research paso 1' },
     );
@@ -135,4 +135,16 @@ test('un fallo que NO es pasajero no se reintenta: reintentar sin saldo solo gas
     const { llamadas } = await conRespuestas([r, flujoBueno]);
     assert.equal(llamadas, 1);
   }
+});
+
+test('el Panel de Incidentes sabe a quién le toca CADA situación que la pantalla conoce', async () => {
+  const { QUIEN_DE_LA_SITUACION } = await import('../../lib/incidentes/panel.ts');
+  const { leerFalloDelModelo } = await import('../../lib/fundaciones/mensajes.ts');
+  for (const s of Object.keys(QUIEN_DE_LA_SITUACION)) {
+    assert.ok(leerFalloDelModelo(`${s} · ref ABC234 · x`), `${s} está en el panel y no tiene texto en pantalla`);
+  }
+  // Y al revés: toda situación que clasifica el servidor tiene su color en el panel.
+  const casos = ['IA-CONEXION', 'IA-TIEMPO', 'IA-SIN-SALDO', 'IA-LLAVE', 'IA-PERMISO', 'IA-LIMITE', 'IA-SATURADO',
+    'IA-MODELO', 'IA-PETICION', 'IA-GRANDE', 'IA-VACIO', 'IA-TRUNCADO', 'IA-DECLINO', 'IA-ESTRUCTURA', 'IA-OTRO'];
+  assert.deepEqual(Object.keys(QUIEN_DE_LA_SITUACION).sort(), [...casos].sort());
 });

@@ -124,6 +124,16 @@ insert into identidad.permisos (clave, descripcion) values
   -- los números de sus competidores.
   ('monitoreo.ver',      'Ver el Panel de Monitoreo: los scrapeos de todas las empresas, por empresa y por scraper'),
 
+  -- ── El Panel de Incidentes (2026-10-01) ────────────────────────────────────
+  --
+  -- Los fallos del modelo de TODAS las empresas. Kevin pidió que lo vean solo los
+  -- superadministradores, así que la familia `incidentes.%` se les niega a mano a `usuario` y a
+  -- `administrador` en el reparto de abajo, y el superadministrador la recibe por «todas». La red
+  -- de `soloDesdeLaPrincipal` y el chequeo de `app/api/incidentes/route.ts` son los mismos que
+  -- los del Panel de Monitoreo.
+  ('incidentes.ver',     'Ver el Panel de Incidentes: los fallos del modelo de IA de todas las empresas'),
+  ('incidentes.revisar', 'Marcar un incidente como revisado en el Panel de Incidentes'),
+
   -- ── Etapa 11 · Closer y Setter ─────────────────────────────────────────────
   --
   -- UNA capacidad de lectura POR PESTAÑA, y acá está la decisión que hubo que tomar.
@@ -384,7 +394,8 @@ begin
                     where clave not like 'organizaciones.%'
                       and clave not like 'usuarios.%'
                       and clave not like 'roles.%'
-                      and clave not like 'credenciales.%')),
+                      and clave not like 'credenciales.%'
+                      and clave not like 'incidentes.%')),
 
       -- El administrador: todo lo de SU empresa, **incluidas las personas de su empresa**.
       --
@@ -462,6 +473,7 @@ begin
       ('administrador', (select array_agg(clave) from identidad.permisos
                           where clave not like 'organizaciones.%'
                             and clave not like 'monitoreo.%'
+                            and clave not like 'incidentes.%'
                             and clave <> 'usuarios.borrar'
                             and clave <> 'roles.administrar'))
 

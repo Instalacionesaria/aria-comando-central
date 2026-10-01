@@ -68,7 +68,9 @@ test('es la ÚNICA sección con `soloDesdeLaPrincipal`, y eso hay que decidirlo 
   // rojo al agregarla es el punto.
   assert.deepEqual(
     SECCIONES.filter((s) => s.soloDesdeLaPrincipal).map((s) => s.clave),
-    ['monitoreo'],
+    // `incidentes` desde el 2026-10-01, con su justificación en `secciones.ts`: mira los fallos de
+    // todas las empresas, igual que este panel mira su consumo.
+    ['monitoreo', 'incidentes'],
   );
 });
 

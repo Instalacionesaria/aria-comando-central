@@ -38,6 +38,7 @@ const HOJAS = [
   // que esta lista existe para impedir.
   'app/operacion-estetica.css',
   'app/monitoreo.css',
+  'app/incidentes.css',
   'app/auditoria.css',
   // Los cinco tableros. Entra el día que se crea, no después: es la regla que el comentario de
   // arriba se pone a sí misma, y una hoja nueva es justo cuando se olvida.

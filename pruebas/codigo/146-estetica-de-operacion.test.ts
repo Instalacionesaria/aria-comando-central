@@ -214,11 +214,12 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      exacto, sumar o sacar una obliga a venir acá y decirlo. */
   /* 12 desde el 2026-09-22: entró Analizadores, que es del grupo Operación y se dibuja con su
      estética como el Closer. 11 desde el 2026-09-30: salió Acquisition, que volvió al front del
-     prototipo con su estética al 100 %, como Leads Portal (docs/acquisition/14, A14-01). */
+     prototipo con su estética al 100 %, como Leads Portal (docs/acquisition/14, A14-01).
+     12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo. */
   assert.equal(
     vistas.length,
-    11,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 11: si entró una pantalla ` +
+    12,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 12: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 

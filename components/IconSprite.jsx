@@ -174,6 +174,17 @@ export default function IconSprite() {
             el color lo pone el menú según si la entrada está activa. Se dibuja distinto de
             `#i-exec` —que es el tablero ejecutivo— a propósito: dos entradas del menú con el
             mismo icono se eligen mal cuando se navega rápido. */}
+        {/* El Panel de Incidentes: un triángulo de aviso. Distinto del pulso de Monitoreo. */}
+        <symbol id="i-incidentes" viewBox="0 0 16 16">
+          <path
+            d="M8 2.2 14.2 13H1.8L8 2.2Z M8 6.4v3.2 M8 11.4v.1"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+           />
+        </symbol>
         <symbol id="i-monitoreo" viewBox="0 0 16 16">
           <path
             d="M1.6 8.4h2.6l1.7-4.6 2.5 8.4 1.7-3.8h4.3"

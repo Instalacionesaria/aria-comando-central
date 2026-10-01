@@ -975,6 +975,26 @@ export interface TablaCampanas {
 }
 
 /**
+ * Cada fallo del modelo de IA de una organización. Migración 067. La escribe
+ * `lib/incidentes/registro.ts` y la lee el Panel de Incidentes.
+ */
+export interface TablaIncidentes {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  creado_el: Generated<Date>;
+  ref: string;
+  /** `IA-CONEXION`, `IA-SIN-SALDO`… Ver `SituacionDelModelo`. */
+  situacion: string;
+  origen: string;
+  donde: string | null;
+  usuario_id: string | null;
+  tecnico: string;
+  salvado: Generated<boolean>;
+  revisado_el: Date | null;
+  revisado_por: string | null;
+}
+
+/**
  * A qué funnel del front de Acquisition pertenece cada campaña. Migración 066.
  *
  * Lo asigna una persona con `credenciales.editar`; el único escritor es
@@ -1545,6 +1565,7 @@ export interface BaseDeDatos {
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
+  incidentes: TablaIncidentes;
   funnels_de_campana: TablaFunnelsDeCampana;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;

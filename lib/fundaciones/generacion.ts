@@ -22,7 +22,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ESPERA_DE_GENERACION_MS, pedirExterno } from '../http/cliente.ts';
-import { esPasajero } from './fallo-del-modelo.ts';
+import { type DondeFallo, clasificarFallo, esPasajero, nuevaReferencia, tecnico } from './fallo-del-modelo.ts';
+import { registrarIncidente } from '../incidentes/registro.ts';
 
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
@@ -197,7 +198,23 @@ export async function generar(opciones: OpcionesDeGeneracion): Promise<Resultado
   if (transcurrido > VENTANA_DE_REINTENTO_MS) return primero;
   console.warn(`generacion: reintento tras un fallo pasajero a los ${Math.round(transcurrido / 1000)} s`);
   await new Promise((listo) => setTimeout(listo, PAUSA_ANTES_DE_REINTENTAR_MS));
-  return unIntento(opciones, ESPERA_DE_GENERACION_MS - (Date.now() - desde), desde);
+  const segundo = await unIntento(opciones, ESPERA_DE_GENERACION_MS - (Date.now() - desde), desde);
+  /* Si el segundo salió bien, la persona no vio nada, pero el Panel de Incidentes sí lo anota
+     —en gris, como «salvado»—: un proveedor que falla seguido se ve aunque nadie se queje. Si
+     salió mal, lo anota quien muestra el error (`rechazoDelModelo`), con su referencia. */
+  if (segundo.tipo === 'datos' && opciones.donde?.orgId) {
+    await registrarIncidente({
+      orgId: opciones.donde.orgId,
+      ref: nuevaReferencia(),
+      situacion: clasificarFallo(primero),
+      origen: opciones.donde.origen,
+      ...(opciones.donde.donde ? { donde: opciones.donde.donde } : {}),
+      usuarioId: opciones.donde.usuarioId ?? null,
+      tecnico: tecnico(primero),
+      salvado: true,
+    });
+  }
+  return segundo;
 }
 
 /** Hasta cuándo un fallo pasajero merece un segundo intento. Ver `generar`. */
@@ -210,6 +227,8 @@ interface OpcionesDeGeneracion {
   prompt: string;
   tokens: number;
   conBusquedaWeb?: boolean;
+  /** De dónde viene, para anotar en el Panel de Incidentes un reintento que salvó el fallo. */
+  donde?: DondeFallo;
 }
 
 async function unIntento(

@@ -409,6 +409,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // la misma función que la tabla, para que la exclusión de las de control sea la MISMA: dos
   // listas que tienen que coincidir son dos listas que se desincronizan.
   'app/api/monitoreo/[orgId]/route.ts',
+  // El Panel de Incidentes. La misma escotilla que el de Monitoreo: identidad para la LISTA de
+  // empresas y para los NOMBRES de quienes vieron cada incidente; los incidentes salen por
+  // `conOrganizacion(`, con la RLS de cada empresa.
+  'app/api/incidentes/route.ts',
 ];
 
 /**
@@ -624,6 +628,10 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // escrituras— no es alcanzable. Y la lectura de identidad va PRIMERO a propósito: si la empresa
   // no existe se responde 404 sin haber abierto ningún contexto de inquilino.
   'app/api/monitoreo/[orgId]/route.ts',
+  // El Panel de Incidentes: identidad para la lista de empresas y los nombres, negocio por un bucle
+  // de `conOrganizacion()`. **Qué queda a medias si la segunda mitad falla: nada, porque NO
+  // ESCRIBE.** Las tres lecturas son independientes y una empresa que no se lee va en `ilegibles`.
+  'app/api/incidentes/route.ts',
 ];
 
 /**

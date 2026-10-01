@@ -317,5 +317,9 @@ export async function rellenarLosCampos(
   }
   /* El resto son fallos del modelo, y se nombran en `fallo-del-modelo.ts` como los de los otros
      tres caminos: situación, referencia y una línea de registro. */
-  return rechazoDelModelo(propuesta, { origen: 'rellenar', orgId: acceso.orgId, donde: `herramienta ${h.id}` });
+  return rechazoDelModelo(propuesta, {
+    origen: 'rellenar',
+    orgId: acceso.orgId,
+    donde: `herramienta ${h.id}`,
+  });
 }

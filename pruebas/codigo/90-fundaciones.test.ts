@@ -920,7 +920,7 @@ test('el motivo queda en el REGISTRO del servidor y tambien en la pantalla', asy
 
   let r: Response;
   try {
-    r = rechazoDeModelo({
+    r = await rechazoDeModelo({
       tipo: 'rechazado',
       estado: 400,
       codigo: 'invalid_request_error',
@@ -958,7 +958,7 @@ test('el motivo queda en el REGISTRO del servidor y tambien en la pantalla', asy
   const sinMotivo: string[] = [];
   console.error = (...partes: unknown[]) => void sinMotivo.push(partes.map(String).join(' '));
   try {
-    rechazoDeModelo({ tipo: 'rechazado', estado: 529, codigo: 'overloaded_error', motivo: null });
+    await rechazoDeModelo({ tipo: 'rechazado', estado: 529, codigo: 'overloaded_error', motivo: null });
   } finally {
     console.error = original;
   }
@@ -981,7 +981,7 @@ test('cuando el modelo NO contesta, la causa de red también llega al registro y
 
   let r: Response;
   try {
-    r = rechazoDeModelo({ tipo: 'sin_respuesta', causa: 'The operation was aborted due to timeout' });
+    r = await rechazoDeModelo({ tipo: 'sin_respuesta', causa: 'The operation was aborted due to timeout' });
   } finally {
     console.error = original;
   }
@@ -1003,7 +1003,7 @@ test('cuando el modelo NO contesta, la causa de red también llega al registro y
   console.error = (...partes: unknown[]) => void sinCausa.push(partes.map(String).join(' '));
   let r2: Response;
   try {
-    r2 = rechazoDeModelo({ tipo: 'sin_respuesta' });
+    r2 = await rechazoDeModelo({ tipo: 'sin_respuesta' });
   } finally {
     console.error = original;
   }

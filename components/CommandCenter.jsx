@@ -25,6 +25,7 @@ import CloserView from './views/CloserView';
 import AnalizadoresView from './views/AnalizadoresView';
 import ToolsView from './views/ToolsView';
 import MonitoreoView from './views/MonitoreoView';
+import IncidentesView from './views/IncidentesView';
 import AjustesView from './views/AjustesView';
 
 /* La vista de cada pantalla, por su clave.
@@ -47,6 +48,7 @@ const VISTAS = {
   analizadores: AnalizadoresView,
   tools: ToolsView,
   monitoreo: MonitoreoView,
+  incidentes: IncidentesView,
   credenciales: AjustesView,
 };
 

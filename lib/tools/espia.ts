@@ -157,6 +157,7 @@ export async function analizarLosAnuncios(
     claveIa: opciones.claveIa,
     prompt: promptDelAnalisis(leidos.anuncios),
     tokens: TOKENS_DEL_ANALISIS,
+    donde: { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}` },
   });
 
   if (salida.tipo !== 'datos') {

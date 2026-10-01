@@ -28,6 +28,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { rechazo } from '../autorizacion/respuesta.ts';
+import { registrarIncidente } from '../incidentes/registro.ts';
 
 /** Las situaciones. Cada una lleva a una acción distinta de una persona distinta. */
 export type SituacionDelModelo =
@@ -63,6 +64,8 @@ export interface DondeFallo {
   orgId?: string;
   /** La herramienta o el paso, en palabras: «Research paso 1». */
   donde?: string;
+  /** Quién lo vio, para el Panel de Incidentes. */
+  usuarioId?: string | null;
 }
 
 /** Decide la situación. Solo mira campos que el proveedor manda de verdad. */
@@ -101,7 +104,7 @@ export function clasificarFallo(fallo: FalloDelModelo): SituacionDelModelo {
 }
 
 /** Lo técnico, tal como lo dijo el proveedor o la red. Es lo que se lee en el registro. */
-function tecnico(fallo: FalloDelModelo): string {
+export function tecnico(fallo: FalloDelModelo): string {
   switch (fallo.tipo) {
     case 'rechazado':
       return fallo.motivo === null ? `${fallo.estado} ${fallo.codigo}` : `${fallo.estado} ${fallo.codigo}: ${fallo.motivo}`;
@@ -134,7 +137,7 @@ export function nuevaReferencia(): string {
  * La línea empieza con `incidente` y lleva la referencia, así que `vercel logs -q <ref>` la encuentra
  * sola. `ADR-0407` prohíbe registrar cuerpos; un código, un número y el motivo del proveedor no lo son.
  */
-export function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeFallo): Response {
+export async function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeFallo): Promise<Response> {
   const situacion = clasificarFallo(fallo);
   const ref = nuevaReferencia();
   const detalle = tecnico(fallo);
@@ -144,6 +147,18 @@ export function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeFallo):
       (dondeFallo.orgId ? ` · org ${dondeFallo.orgId}` : '') +
       ` · ${detalle}`,
   );
+  // Y la fila del Panel de Incidentes, con la MISMA referencia. No lanza nunca.
+  if (dondeFallo.orgId) {
+    await registrarIncidente({
+      orgId: dondeFallo.orgId,
+      ref,
+      situacion,
+      origen: dondeFallo.origen,
+      ...(dondeFallo.donde ? { donde: dondeFallo.donde } : {}),
+      usuarioId: dondeFallo.usuarioId ?? null,
+      tecnico: detalle,
+    });
+  }
   return rechazo('modelo_no_disponible', `${situacion} · ref ${ref} · ${detalle}`);
 }
 

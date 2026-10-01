@@ -109,6 +109,11 @@ export const CAPACIDADES = [
   // al administrador que se dé de alta mañana, sin que nadie lo decida. El motivo largo está en el
   // reparto de `db/arranque/001_catalogo.sql`.
   'monitoreo.ver',
+  // El Panel de Incidentes: solo el superadministrador. `incidentes.%` se les niega a mano a
+  // `usuario` y a `administrador` en `db/arranque/001_catalogo.sql`, y la sección es
+  // `soloDesdeLaPrincipal`, como la de Monitoreo.
+  'incidentes.ver',
+  'incidentes.revisar',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //
   // UNA de lectura por PESTAÑA, y son dos porque de eso depende que un closer no vea la

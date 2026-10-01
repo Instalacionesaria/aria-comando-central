@@ -439,6 +439,16 @@ export const SECCIONES: readonly Seccion[] = [
     soloDesdeLaPrincipal: true,
     menu: { grupo: 'Operación', icono: '#i-monitoreo' },
   },
+  {
+    // El Panel de Incidentes (2026-10-01): los fallos del modelo de IA de todas las empresas. La
+    // misma forma que Monitoreo —no viene del prototipo, va en «Operación», solo desde la
+    // principal— con una capacidad que en el catálogo tiene solo el superadministrador.
+    clave: 'incidentes',
+    nombre: 'Incidentes',
+    capacidadRequerida: 'incidentes.ver',
+    soloDesdeLaPrincipal: true,
+    menu: { grupo: 'Operación', icono: '#i-incidentes' },
+  },
 ];
 
 /**
