@@ -148,13 +148,13 @@ cuatro»: es del 2026-08-29, `f90fd30`, y el Espía entró el 2026-09-02, `e20f7
 que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
 
 **La franja de saldo** dice disponibles, de regalo, usados y comprados
-(`components/tools/SaldoDeLeads.jsx:51-62`), con la aritmética de `lib/tools/saldo.ts:47-64`. No se
-dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:43`) y dice «Todavía no
-usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:34-40`). Se lee **una vez**, al
-montarse (`components/tools/SaldoDeLeads.jsx:22-30`), y la vista se monta al entrar a la
+(`components/tools/SaldoDeLeads.jsx:55-67`), con la aritmética de `lib/tools/saldo.ts:47-64`. No se
+dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:47`) y dice «Todavía no
+usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:38-44`). Se lee **una vez**, al
+montarse (`components/tools/SaldoDeLeads.jsx:26-34`), y la vista se monta al entrar a la
 aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:83-94`).
 **Después del corte**, desde la etapa E11 (2026-10-02), la franja se monta sólo con Tools a la vista y
-en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos.
+en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos. Y desde el mismo día dice el saldo en **créditos**, con la equivalencia a la vista: «1 lead = 1 crédito» (la cuenta no cambió).
 
 ### El Panel de Monitoreo
 
@@ -465,7 +465,7 @@ tablas del backend» es una convención de tipos: en producción `app_inquilino`
 las vistas visibles se montan juntas (`components/CommandCenter.jsx:83-94`) y el panel carga al
 montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
 entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
-lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:6-9`): después de un scraping no se
+lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:10-13`): después de un scraping no se
 refresca mientras se mira —`leerSaldo` lo llaman sólo la franja y el Research—. Hasta la etapa E11 se
 montaba una vez por carga de página; desde entonces se monta en cada visita a Prospección o al Scraper,
 también al pasar de una a otra, así que la deuda se achica a «mientras se mira». No verificado en

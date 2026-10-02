@@ -3,6 +3,10 @@
 /* La franja de saldo de Tools: cuántos leads le quedan a la empresa, cuántos le regalamos, cuántos
    usó y cuántos compró. Aprobada sobre mockup (Kevin, 2026-09-13: «me gusta mucho»).
 
+   Desde el 2026-10-02 el saldo se dice en CRÉDITOS, con la equivalencia a la vista —1 lead = 1 crédito—,
+   a pedido del usuario: el número es lo que la empresa puede gastar, no los leads que ya tiene. La
+   cuenta no cambió (`lib/tools/saldo.ts` sigue contando leads, uno por crédito).
+
    La dibuja `ToolsView` arriba de las dos pestañas que gastan el saldo —Prospección y Scraper, con el
    mismo buscador— y sólo ahí, desde la etapa E11. Una sola lectura al montar, y se vuelve a montar en
    cada visita a esas pestañas; pero después de un scraping no se refresca mientras se mira
@@ -34,7 +38,7 @@ export default function SaldoDeLeads() {
   if (resultado.tipo === 'sin_monedero') {
     return (
       <div className="sl-franja" role="status">
-        <span className="sl-nota">Todavía no usaste leads. Tu saldo aparece acá con el primer scraping.</span>
+        <span className="sl-nota">Todavía no usaste créditos. Tu saldo aparece acá con el primer scraping.</span>
       </div>
     );
   }
@@ -50,7 +54,8 @@ export default function SaldoDeLeads() {
     <div className={`sl-franja ${clase}`} role="status">
       <div className="sl-linea">
         <div className="sl-n">
-          {num(s.disponibles)} <small>leads disponibles</small>
+          {num(s.disponibles)} <small>créditos disponibles</small>
+          <span className="sl-equivale">1 lead = 1 crédito</span>
         </div>
         <div className="sl-barra" aria-hidden="true">
           <i className={s.estado === 'agotado' ? 'cero' : s.estado === 'bajo' ? 'bajo' : ''} style={{ width: `${porcentaje}%` }} />
@@ -61,9 +66,9 @@ export default function SaldoDeLeads() {
           <span className="p"><b>{num(s.comprados)}</b> comprados</span>
         </div>
         {s.estado === 'agotado' ? (
-          <span className="sl-aviso">Se acabaron los leads de regalo. Hablá con tu coach para cargar más.</span>
+          <span className="sl-aviso">Se acabaron los créditos de regalo. Hablá con tu coach para cargar más.</span>
         ) : s.estado === 'bajo' ? (
-          <span className="sl-aviso">Una búsqueda de Google Maps necesita al menos {MINIMO_LEADS_MAPS}.</span>
+          <span className="sl-aviso">Una búsqueda de Google Maps necesita al menos {MINIMO_LEADS_MAPS} créditos.</span>
         ) : (
           <button type="button" className="sl-como" onClick={() => setAbierto((a) => !a)} aria-expanded={abierto}>
             ¿Cómo se descuentan? {abierto ? '▴' : '▾'}
@@ -72,9 +77,9 @@ export default function SaldoDeLeads() {
       </div>
       {abierto ? (
         <p className="sl-explica">
-          Cada negocio de Google Maps, cada página de Facebook y cada contacto de LinkedIn descuenta 1. El Espía de
-          Anuncios no descuenta. En Research, una mirada al mercado descuenta hasta 200. Los leads de regalo se usan
-          antes que los comprados.
+          Cada negocio de Google Maps, cada página de Facebook y cada contacto de LinkedIn es un lead, y descuenta 1
+          crédito. El Espía de Anuncios no descuenta. En Research, una mirada al mercado descuenta hasta 200. Los
+          créditos de regalo se usan antes que los comprados.
         </p>
       ) : null}
     </div>

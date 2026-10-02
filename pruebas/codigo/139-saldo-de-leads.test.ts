@@ -76,12 +76,14 @@ test('la franja vive arriba de las dos pestañas que gastan saldo, y la confirma
   assert.deepEqual(montajes, ['components/views/ToolsView.jsx'], 'la franja del saldo se monta en otro lugar además de `ToolsView`');
 
   const franja = codigo('components/tools/SaldoDeLeads.jsx');
-  assert.match(franja, /leads disponibles/);
+  // En créditos, con la equivalencia a la vista (pedido del 2026-10-02): el número es lo que se puede gastar.
+  assert.match(franja, /\{num\(s\.disponibles\)\} <small>créditos disponibles<\/small>\s*<span className="sl-equivale">1 lead = 1 crédito<\/span>/, 'la franja no dice el saldo en créditos, o no dice cuánto vale un lead');
+  assert.doesNotMatch(sinComentarios(franja), /leads disponibles|leads de regalo|usaste leads/, 'la franja vuelve a contar el saldo en leads');
   assert.match(franja, /de regalo/);
   assert.match(franja, /usados/);
   assert.match(franja, /comprados/);
-  assert.match(franja, /Se acabaron los leads de regalo\. Hablá con tu coach para cargar más\./);
-  assert.match(franja, /Una búsqueda de Google Maps necesita al menos \{MINIMO_LEADS_MAPS\}\./);
+  assert.match(franja, /Se acabaron los créditos de regalo\. Hablá con tu coach para cargar más\./);
+  assert.match(franja, /Una búsqueda de Google Maps necesita al menos \{MINIMO_LEADS_MAPS\} créditos\./);
   assert.match(franja, /¿Cómo se descuentan\?/);
   // La casa no ve franja: su saldo no se mira.
   assert.match(sinComentarios(franja), /if \(s\.estado === 'sin_limite'\) return null;/);
