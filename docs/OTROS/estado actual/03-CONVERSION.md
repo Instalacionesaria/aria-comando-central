@@ -33,7 +33,7 @@ en «Completo»: 247 de 570 contactos, 64,8 % de finalización, todos de antes d
 > - **2026-09-20 · `00e251d`** — tres defectos que sólo se veían con la pantalla abierta: la lista
 >   «A y B y C», un rótulo desalineado y el ancho de teléfono, que era del armazón y se arregló esa
 >   noche para las doce pantallas (`1020412`: a 375 px al cuerpo le quedaban 75; `0810498`: las doce
->   con `doc=375`). El corte está en `app/armazon.css:430-444` y lo fija
+>   con `doc=375`). El corte está en `app/armazon.css:434-448` y lo fija
 >   `pruebas/codigo/162-el-armazon-en-un-telefono.test.ts`; hoy no se miró en el navegador.
 > - **2026-09-21 · `1164984`** — el «agendó» pasa a un predicado compartido, `tieneCitaAlcanzable`,
 >   que Conversion usa en sus dos módulos.

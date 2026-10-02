@@ -13,8 +13,9 @@ dentro», todas las pantallas):
    de reglas sobre datos reales, y eso todavía no existe.
 4. **DEPARTAMENTOS**, rótulo mono en mayúsculas, y debajo los cinco departamentos como acordeones. Cada uno
    se despliega y lista sus entradas. **Sólo queda abierto el que está en uso.**
-5. **CONVERSACIONES**: **no se dibuja** en esta fase. Es el historial de las conversaciones con el cerebro,
-   y el cerebro todavía no existe.
+5. **CONVERSACIONES**: el historial de las conversaciones con el cerebro, que todavía no existe. En la
+   primera edición no se dibujaba; desde la segunda (`NE-50`) es el rótulo con «Próximamente», sin lista
+   y sin acción, para quien ve el Inicio.
 6. **El pie**: avatar con las iniciales, el nombre, el rol en mono —**ADMIN** o **USUARIO**— y **el
    engranaje**, que abre el único menú de la cuenta (`NE-14`).
 
@@ -260,3 +261,20 @@ El contador y el engranaje de `09-LA-SEGUNDA-EDICION.md` (`NE-48` y `NE-49`):
   operación. Ajustes conserva sus pestañas.
 
 Lo vigilan la `193`, la `194` y la `196`.
+
+## Hecho el 2026-10-02 (segunda edición, F3)
+
+Lo «Próximamente» del cerebro de `09-LA-SEGUNDA-EDICION.md` (`NE-50`):
+
+- **CONVERSACIONES**, debajo de los departamentos y antes del pie: el rótulo mono y «Próximamente». Sin
+  lista, sin ejemplos, no es un botón, y sólo la ve quien ve el Inicio, como la Reunión de hoy.
+- **La caja «Pregúntale al cerebro sobre {la entrada}…»** al pie de cada pantalla de un departamento
+  (`components/ConsultaAlCerebro.jsx`): el nombre es el de la entrada que nombra la cabecera —en un
+  grupo, el grupo: «… sobre Radar…»—. El campo y el botón están deshabilitados, dicen al lector por qué
+  y la palabra «Próximamente» va a la vista; no manda nada. Va en una tercera fila de la rejilla, debajo
+  del cuerpo —dentro de `.main` les taparía el pie a las pantallas de operación— y después de `<main>`
+  en el árbol. Ni en el Inicio, que tiene la suya, ni en lo del engranaje, ni en el teléfono.
+- **El comentario del cerebro de la cabecera** sigue sin dibujarse (`NE-17`).
+
+Lo vigila `pruebas/codigo/197-lo-proximamente-del-cerebro.test.ts`, con la `162` (la rejilla) y la `189`
+(la nota del Inicio).

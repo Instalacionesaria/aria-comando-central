@@ -198,7 +198,7 @@ test('la cabecera va en su propia área, antes de `<main>`, y es una región con
   // Y su área existe en las dos rejillas: un `grid-area` sin declarar manda el elemento fuera de la rejilla.
   assert.match(reglas(fuente('app/departamentos.css')).find((r) => r.selector === '.cd')?.cuerpo ?? '', /grid-area:\s*cabecera;/, 'la cabecera no ocupa su área');
   const areas = [...sinComentariosCss(fuente('app/armazon.css')).matchAll(/grid-template-areas:\s*([^;]+);/g)].map((x) => x[1]!.replace(/\s+/g, ' ').trim());
-  assert.ok(areas.includes('"nav cabecera" "nav main"'), 'la rejilla de la computadora no tiene el área de la cabecera');
+  assert.ok(areas.some((a) => a.includes('"nav cabecera" "nav main"')), 'la rejilla de la computadora no tiene el área de la cabecera');
   assert.ok(areas.includes('"top" "cabecera" "main"'), 'la rejilla del teléfono no tiene el área de la cabecera');
   // La hoja entra en la capa `components`, antes de `temas.css`, que va última.
   const globales = fuente('app/globals.css');

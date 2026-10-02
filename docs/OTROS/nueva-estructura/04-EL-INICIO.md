@@ -33,7 +33,10 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    - Los botones de «@ agente» y de área no se dibujan hasta que haya qué elegir.
 4. **No se dibujan** las tres tarjetas de «Reunión de hoy». Tienen que salir de reglas sobre datos reales
    (gasto en cero, citas sin asistencia, llamadas sin usar), y esas reglas no existen. Mostrar las del
-   diseño sería volver a la maqueta.
+   diseño sería volver a la maqueta. Desde la segunda edición (`09-LA-SEGUNDA-EDICION.md`, `NE-50`), una
+   nota debajo de la caja dice qué va a aparecer, con el texto del diseño: «Reunión de hoy ·
+   próximamente. Aquí aparecerán los tres temas del día que detecta el cerebro.» Una nota y no una
+   tarjeta, sin una sola cifra; la `189` la deja pasar a ella sola.
 
 El inicio es el mismo para todos. Quien no tiene la sección `executive` no ve «Nueva conversación» y arranca
 en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:875`).
@@ -49,7 +52,7 @@ La sección se llama **«Inicio»** en la pantalla y en Ajustes › Usuarios. Su
 | `lib/aios/leads-group.js` | El cajón «Grupo de contactos»: sólo lo abría el funnel de la maqueta |
 | `lib/aios/datepicker.js`, `period-controls.js` | Sólo los usaba la píldora de período escondida de la maqueta; ya no los usa ninguna pantalla |
 | `components/SidePanel.jsx` | El panel lateral con la reunión y los cambios de la maqueta |
-| `components/AskBar.jsx` y el panel de Cmd+K | La barra «Pregúntale a Executive sobre …», un chat sin cerebro. Vuelve como «Pregúntale al cerebro» (`NE-09`), con el diseño nuevo, cuando el cerebro responda con datos |
+| `components/AskBar.jsx` y el panel de Cmd+K | La barra «Pregúntale a Executive sobre …», un chat sin cerebro. Volvió en la segunda edición, con el diseño nuevo, como la caja «Pregúntale al cerebro sobre …» al pie de cada departamento, deshabilitada y como «Próximamente» (`NE-50`, `components/ConsultaAlCerebro.jsx`); responde cuando haya cerebro |
 | `components/Overlays.jsx` | Los cajones y el modal que sólo abrían los módulos de arriba |
 
 Con eso, el arranque del navegador (`lib/aios/index.js`) queda con un solo módulo: el armazón
@@ -110,7 +113,9 @@ Lo que se decidió al construirlo, además de lo de arriba:
 - **La sección se llama «Inicio»** en `lib/autorizacion/secciones.ts`, en su misma línea.
 - **La grilla** quedó con dos filas y dos columnas (`app/armazon.css`), y con ella se fue la clase
   `.solo` y el defecto del panel lateral en la primera carga. Desde E10, en la computadora, la barra va de
-  arriba abajo; desde E11, la columna del cuerpo tiene la fila de la cabecera del departamento.
+  arriba abajo; desde E11, la columna del cuerpo tiene la fila de la cabecera del departamento; y desde
+  la segunda edición (F3), una tercera debajo del cuerpo, `consulta`, con la caja «Pregúntale al cerebro
+  sobre …» (`NE-50`).
 - **La compuerta de paridad quedó retirada**: sus tres pasos eran de la maqueta. Con `VISTAS` y `PASOS`
   vacías imprime «retirada» y sale 0, como decidió la Etapa 0.
 

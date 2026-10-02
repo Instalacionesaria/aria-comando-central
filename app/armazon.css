@@ -415,13 +415,17 @@
  * E11 hay dos filas a la derecha de la barra: la cabecera del departamento, `auto` —en el Inicio no se
  * dibuja, y la fila mide 0; lo del engranaje lleva la suya desde la segunda edición—, y el cuerpo. La
  * cabecera va en su propia área y no dentro de `.main`: las pantallas de operación se estiran sobre el
- * relleno de `.main` (`app/operacion-estetica.css`), y adentro les cortaría el pie. */
+ * relleno de `.main` (`app/operacion-estetica.css`), y adentro les cortaría el pie. Desde la segunda
+ * edición hay una tercera fila, `auto`, debajo del cuerpo: la caja «Pregúntale al cerebro sobre …»
+ * (`components/ConsultaAlCerebro.jsx`, `NE-50`), que sólo se dibuja con un departamento abierto; sin
+ * él, mide 0. En el teléfono no está: la rejilla del corte no tiene su área y la caja no se dibuja. */
 .app {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-columns: 260px minmax(0, 1fr);
   grid-template-areas:
     "nav cabecera"
-    "nav main";
+    "nav main"
+    "nav consulta";
 }
 .topbar {
   display: none;
@@ -762,6 +766,18 @@
   font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--txt-faint);
+}
+
+/* CONVERSACIONES (`NE-50`, segunda edición): el rótulo, como el de los departamentos, y debajo
+   «Próximamente», alineado con el rótulo: no hay entradas a cuya altura ponerla. No es un botón: sin mano
+   y sin color al pasar. */
+.nb-conversaciones {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nb-conversaciones .nb-proximamente {
+  padding: 0 12px;
 }
 
 /* Los departamentos: el rótulo, las cabeceras y sus entradas, en una columna con 2 px entre filas. */

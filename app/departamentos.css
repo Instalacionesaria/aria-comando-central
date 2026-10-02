@@ -221,6 +221,82 @@ button.cd-sub:not(.on):hover {
   border-bottom: 0;
 }
 
+/* ── LA CAJA DEL CEREBRO, AL PIE (`NE-50`) ──────────────────────────────────
+
+   La dibuja `components/ConsultaAlCerebro.jsx` en su área de la rejilla, debajo del cuerpo, con los
+   costados del cuerpo, como la cabecera. Es la caja del Inicio en un renglón —la misma línea fuerte, el
+   mismo fondo elevado, el texto de muestra en el piso de la marca y el botón de enviar como secundario,
+   sin opacidad (`app/armazon.css`, `#v-executive .inicio-caja`)—, con la palabra «Próximamente» al lado. */
+.cc-consulta {
+  grid-area: consulta;
+  min-width: 0;
+  padding: 12px max(40px, calc((100% - 1600px) / 2 + 24px)) 20px;
+  background: var(--bg);
+}
+.cc-caja {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+}
+.cc-campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+}
+.cc-campo::placeholder {
+  color: var(--txt-faint);
+  opacity: 1;
+}
+.cc-campo:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+.cc-caja .nb-proximamente {
+  flex: 0 0 auto;
+}
+/* Hasta unos 1000 px, la palabra le quita al campo el lugar del nombre de la entrada: se va, y lo que
+   dice queda en el campo deshabilitado y en la descripción para el lector. */
+@media (max-width: 1000px) {
+  .cc-caja .nb-proximamente {
+    display: none;
+  }
+}
+.cc-enviar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: not-allowed;
+  opacity: 1;
+}
+.cc-enviar svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* En el teléfono, la misma cabecera más compacta: el lienzo no tiene versión de teléfono (`NE-18`). */
 @media (max-width: 760px) {
   .cd {
@@ -254,6 +330,10 @@ button.cd-sub:not(.on):hover {
     scrollbar-width: none;
   }
   .cd-pestanas::-webkit-scrollbar {
+    display: none;
+  }
+  /* La caja del cerebro no va en el teléfono (`NE-18`): la rejilla del corte no tiene su área. */
+  .cc-consulta {
     display: none;
   }
 }

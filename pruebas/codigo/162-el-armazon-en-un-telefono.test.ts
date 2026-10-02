@@ -119,19 +119,22 @@ test('la rejilla del armazón: la barra de 260 px y el cuerpo, y nadie pone `.so
      Desde la etapa E10, en la computadora la barra lateral va de arriba abajo, como en el lienzo:
      `260px` y el cuerpo. Desde la E11, a la derecha de la barra hay dos filas: la cabecera del
      departamento, `auto` —sin departamento no se dibuja y mide 0—, y el cuerpo; la barra ocupa las
-     dos. La barra de arriba sólo existe en el teléfono, donde lleva el conmutador del cajón, y la
-     rejilla del corte le devuelve su fila. */
+     dos. Desde la segunda edición, una tercera, `auto`, debajo del cuerpo: la caja «Pregúntale al
+     cerebro sobre …» (`NE-50`), que también mide 0 sin departamento y no existe en el teléfono. No es
+     la barra de la maqueta que volvió: es otra área, con otro nombre, y la de abajo de este archivo
+     sigue prohibiendo `ask` y `side`. La barra de arriba sólo existe en el teléfono, donde lleva el
+     conmutador del cajón, y la rejilla del corte le devuelve su fila. */
   const css = leer('app/armazon.css');
   const base = sinMedios(css).match(/(?:^|\})\s*\.app\s*\{([^}]*)\}/);
   assert.ok(base, '`app/armazon.css` no tiene una regla `.app` fuera de las consultas de medios');
   const decl = (prop: string) => new RegExp(`${prop}:\\s*([^;]+);`).exec(base[1]!)?.[1]?.replace(/\s+/g, ' ').trim();
   const filas = decl('grid-template-rows');
   assert.ok(filas, 'la rejilla base no redefine las filas: queda la tercera, de 64 px, vacía abajo');
-  assert.equal(filas, 'auto minmax(0, 1fr)', `la rejilla base tiene filas \`${filas}\`: son la cabecera y el cuerpo`);
+  assert.equal(filas, 'auto minmax(0, 1fr) auto', `la rejilla base tiene filas \`${filas}\`: son la cabecera, el cuerpo y la caja del cerebro`);
   const columnas = decl('grid-template-columns');
   assert.ok(columnas, 'la rejilla base no redefine las columnas: queda la tercera, de 312 px, vacía a la derecha');
   assert.match(columnas, /^260px minmax\(0, 1fr\)$/, `la rejilla base tiene columnas \`${columnas}\``);
-  assert.equal(decl('grid-template-areas'), '"nav cabecera" "nav main"', 'las áreas de la rejilla base no son la barra, la cabecera y el cuerpo');
+  assert.equal(decl('grid-template-areas'), '"nav cabecera" "nav main" "nav consulta"', 'las áreas de la rejilla base no son la barra, la cabecera, el cuerpo y la caja del cerebro');
   // La barra de arriba, escondida en la computadora y de vuelta en el corte.
   const topbar = sinMedios(css).match(/(?:^|\})\s*\.topbar\s*\{([^}]*)\}/);
   assert.ok(topbar && /(^|[\s;])display:\s*none\s*;/.test(topbar[1]!), 'la barra de arriba se ve en la computadora: ocupa una fila que la rejilla no tiene');
@@ -146,9 +149,9 @@ test('la rejilla del armazón: la barra de 260 px y el cuerpo, y nadie pone `.so
 
   /* Y ninguna OTRA regla de `.app` en las hojas de la capa `components` —la de `armazon.css` y las que
      entran después, como `temas.css`— devuelve una pista de más: ganaría por orden sobre la base, y
-     mirar sólo la primera regla la dejaba pasar. En la computadora son la cabecera (`auto`) y el
-     cuerpo, y nunca el área de la barra de arriba: una fila fija de más es una franja vacía arriba de
-     todo. Tampoco la forma abreviada, que no se cuenta. Ni una regla que vuelva a mostrar la barra de
+     mirar sólo la primera regla la dejaba pasar. En la computadora son la cabecera (`auto`), el cuerpo
+     y la caja del cerebro (`auto`), y nunca el área de la barra de arriba: una fila fija de más es una
+     franja vacía arriba de todo. Tampoco la forma abreviada, que no se cuenta. Ni una regla que vuelva a mostrar la barra de
      arriba. */
   for (const hoja of hojasDeComponentes()) {
     for (const { selector, cuerpo } of reglas(sinMedios(leer(hoja)))) {
@@ -160,7 +163,7 @@ test('la rejilla del armazón: la barra de 260 px y el cuerpo, y nadie pone `.so
       if (!selectores.some((s) => /\.app$/.test(s))) continue;
       assert.doesNotMatch(cuerpo, /(^|[\s;])grid(-template)?\s*:/, `\`${hoja}\` define la rejilla de \`${selector.trim()}\` con la forma abreviada`);
       const filas = /grid-template-rows:\s*([^;]+);/.exec(cuerpo)?.[1];
-      if (filas) assert.equal(filas.replace(/\s+/g, ' ').trim(), 'auto minmax(0, 1fr)', `\`${hoja}\` le da a \`${selector.trim()}\` las filas \`${filas.trim()}\`: en la computadora son la cabecera y el cuerpo`);
+      if (filas) assert.equal(filas.replace(/\s+/g, ' ').trim(), 'auto minmax(0, 1fr) auto', `\`${hoja}\` le da a \`${selector.trim()}\` las filas \`${filas.trim()}\`: en la computadora son la cabecera, el cuerpo y la caja del cerebro`);
       const columnas = /grid-template-columns:\s*([^;]+);/.exec(cuerpo)?.[1];
       if (columnas) assert.ok(pistas(columnas) <= 2, `\`${hoja}\` le da a \`${selector.trim()}\` las columnas \`${columnas.trim()}\`: vuelve una tercera`);
       const areas = /grid-template-areas:\s*([^;]+);/.exec(cuerpo)?.[1];

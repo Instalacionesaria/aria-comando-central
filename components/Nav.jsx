@@ -27,7 +27,9 @@
  *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
- *   · CONVERSACIONES: es el historial del cerebro, que todavía no existe (`NE-11`.5);
+ *   · la lista de CONVERSACIONES: es el historial del cerebro, que todavía no existe. Desde la segunda
+ *     edición se dibuja el rótulo con «Próximamente», sin lista y sin acción (`NE-50`), y sólo para quien
+ *     ve el Inicio, que es donde se conversa;
  *   · el contador de la Reunión de hoy: sus temas tienen que salir de reglas sobre datos reales
  *     (`NE-05`). La fila dice «Próximamente», no navega, y sólo la ve quien ve el Inicio: un closer ve
  *     Sales › Closer y nada más (`NE-16`);
@@ -239,6 +241,16 @@ export default function Nav() {
                 </div>
               );
             })}
+          </div>
+        ) : null}
+
+        {/* CONVERSACIONES, como «Próximamente» (`NE-50`): el historial de lo que se le pregunta al
+            cerebro, que todavía no existe. Sin lista ni ejemplos, y no es un botón. Sólo para quien ve
+            el Inicio, como la Reunión de hoy. */}
+        {inicio ? (
+          <div className="nb-conversaciones">
+            <span className="nb-rotulo">CONVERSACIONES</span>
+            <span className="nb-proximamente">Próximamente</span>
           </div>
         ) : null}
 

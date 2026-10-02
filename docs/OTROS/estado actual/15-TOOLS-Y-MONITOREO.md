@@ -152,7 +152,7 @@ que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
 dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:47`) y dice «Todavía no
 usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:38-44`). Se lee **una vez**, al
 montarse (`components/tools/SaldoDeLeads.jsx:26-34`), y la vista se monta al entrar a la
-aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:83-94`).
+aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:84-95`).
 **Después del corte**, desde la etapa E11 (2026-10-02), la franja se monta sólo con Tools a la vista y
 en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos. Y desde el mismo día dice el saldo en **créditos**, con la equivalencia a la vista: «1 lead = 1 crédito» (la cuenta no cambió).
 
@@ -462,7 +462,7 @@ tablas del backend» es una convención de tipos: en producción `app_inquilino`
 `UPDATE` y `DELETE` sobre las tres (`has_table_privilege`, medido el 2026-09-28).
 
 **El panel consulta todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas
-las vistas visibles se montan juntas (`components/CommandCenter.jsx:83-94`) y el panel carga al
+las vistas visibles se montan juntas (`components/CommandCenter.jsx:84-95`) y el panel carga al
 montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
 entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
 lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:10-13`): después de un scraping no se

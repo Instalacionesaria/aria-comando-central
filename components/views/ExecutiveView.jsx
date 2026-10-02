@@ -14,7 +14,8 @@
  *
  *   · las tarjetas de «Reunión de hoy»: tienen que salir de reglas sobre datos reales —gasto en cero,
  *     citas sin asistencia, llamadas sin usar— que todavía no existen. Mostrar las del diseño sería
- *     volver a la maqueta;
+ *     volver a la maqueta. Desde la segunda edición, una nota dice qué va a aparecer ahí, con el texto
+ *     del diseño (`NE-50`): una nota, no una tarjeta, y sin una sola cifra;
  *   · «@ agente», el selector de áreas y el «+»: no hay qué elegir ni qué adjuntar hasta que haya
  *     cerebro;
  *   · una respuesta: la caja está deshabilitada, no manda nada y no finge nada.
@@ -70,6 +71,9 @@ export default function ExecutiveView({ activa }) {
 
         <p className="inicio-nota" id="inicioEnCamino">
           El cerebro llega en una próxima etapa: todavía no hay quien te responda acá.
+        </p>
+        <p className="inicio-nota inicio-reunion">
+          <b>Reunión de hoy · próximamente.</b> Aquí aparecerán los tres temas del día que detecta el cerebro.
         </p>
       </div>
     </section>

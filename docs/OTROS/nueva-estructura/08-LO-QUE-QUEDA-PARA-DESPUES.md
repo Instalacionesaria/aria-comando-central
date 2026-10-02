@@ -11,7 +11,8 @@ pantalla al diseño del lienzo:
 - las cejas mono, los titulares de dos pesos y los botones en píldora;
 - los degradados y resplandores que no se apagan por tokens;
 - los radios escritos a mano;
-- la caja «Pregúntale al cerebro sobre…» al pie de cada tablero, cuando haya cerebro;
+- que la caja «Pregúntale al cerebro sobre…» del pie de cada tablero responda, cuando haya cerebro
+  (desde la segunda edición está dibujada, deshabilitada, como «Próximamente»);
 - el patrón conversacional de las herramientas que crean algo: el agente a la izquierda y el entregable
   armándose a la derecha, empezando por ICP & Oferta;
 - alinear con la cabecera del departamento el contenido que no es de operación (Acquisition y Leads
@@ -59,7 +60,7 @@ dentro (`NE-37`). Lo que dibuja dentro de cada pantalla, con cifras de muestra, 
 |---|---|---|
 | **Los permisos por herramienta** | Hoy `tools` y `analizadores` son un permiso cada uno (`NE-07`). Partirlos exige una migración para el `check` de pestañas, un guion que mude las pestañas de las personas con rol `usuario` y cambiar las rutas | `docs/OTROS/futuro/permisos-por-herramienta.md` |
 | **El cerebro** | El chat del inicio no tiene modelo. Hace falta un modelo con herramientas **de sólo lectura** sobre las funciones que ya miden en `lib/negocio/`, con la sesión y la organización de cada persona, que sólo ofrezca lo que sus pestañas permiten. Las conversaciones se guardan en tablas nuevas con seguridad por filas forzada. Queda por decidir quién paga el modelo | `docs/OTROS/futuro/el-cerebro.md` |
-| **La lista de CONVERSACIONES** | Es el historial del cerebro | con el cerebro |
+| **La lista de CONVERSACIONES** | Es el historial del cerebro. Desde la segunda edición está el rótulo, con «Próximamente» | con el cerebro |
 | **La Reunión de hoy** | Sus temas tienen que salir de reglas medibles sobre la data real —gasto en cero, caída de la entrada, citas sin asistencia, una objeción que crece—, calculadas cada mañana | con el cerebro |
 | **El comentario del cerebro en cada departamento** | Lo escribe el cerebro | con el cerebro |
 | **Las herramientas nuevas de Marketing**: Copywriter —Bio de Instagram, Guiones TOFU · MOFU · BOFU y Guiones de venta directa, en un solo agente— y Content Studio —Social Media Posting y el Clon de IA— | No existen; desde la segunda edición son dos «Próximamente» (`NE-13`, `NE-47`), y antes eran cinco | cada una cuando se construya, con el patrón conversacional |
