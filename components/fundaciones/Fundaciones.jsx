@@ -24,10 +24,11 @@
    vive en la interfaz. Pintar siete formularios en blanco en los tres casos sería el
    defecto del `07` § 2 con un disfraz nuevo. */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { FUNDACIONES, activaDeLaPestana } from '@/lib/fundaciones/herramientas';
+import { FUNDACIONES, activaDeLaPestana, pestanaDeLaActiva } from '@/lib/fundaciones/herramientas';
+import { anunciarPestana } from '@/lib/aios/shell';
 import { usarPedidoDeVista } from '@/lib/vista';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
 import { aValoresDeFormulario, conValoresPorOmision, idsDeCampos } from '@/lib/fundaciones/campos';
@@ -154,6 +155,14 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
       setRellenarAlLlegar(null);
     }
   }
+  /* Y anuncia la pestaña que DIBUJA, para que la barra lateral marque la entrada abierta aunque la
+     pestaña cambie por dentro («LA PESTAÑA QUE CADA PANTALLA DIBUJA», en `lib/aios/shell.js`). Antes de
+     pintar: con un efecto común, el primer cuadro después de un cambio marcaría la entrada anterior, y
+     en Tools puede ser la de otro departamento. */
+  const seccion = catalogo.seccion ?? null;
+  useLayoutEffect(() => {
+    if (seccion !== null) anunciarPestana(seccion, pestanaDeLaActiva(catalogo.herramientas, vistas, activa));
+  }, [seccion, catalogo.herramientas, vistas, activa]);
 
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([

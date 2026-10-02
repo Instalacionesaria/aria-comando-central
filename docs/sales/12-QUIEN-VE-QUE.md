@@ -99,13 +99,14 @@ equivocado.
 
 ## S12-05 · El galón, y por qué se queda
 
-`secciones.ts:304` — `galon: true`. Lo dibuja `components/Nav.jsx:190` y lo llevan cinco secciones:
+`secciones.ts:304` — `galon: true`. Lo dibujaba `components/Nav.jsx:190@b532a78` y lo llevan cinco secciones:
 `contacts`, `icp`, `creative`, `conversion` y `sales`.
 
 `docs/OTROS/estado actual/02-CREATIVE.md:225-226` recoge que la foto anterior lo señalaba como el
 detalle que hacía que la pantalla pareciera tan real como ICP & Oferta sin serlo. **El precedente de
 Creative ya resolvió esa duda: se queda.** El adorno es del prototipo —cinco de las diez lo llevan— y lo
-que estaba mal no era el galón, sino que detrás no hubiera nada.
+que estaba mal no era el galón, sino que detrás no hubiera nada. **Después del corte, el 2026-10-02**:
+la barra lateral nueva (etapa E10) no dibuja galones, y `galon` quedó en `secciones.ts` sin quien lo dibuje.
 
 ---
 

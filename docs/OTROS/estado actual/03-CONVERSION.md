@@ -33,7 +33,7 @@ en «Completo»: 247 de 570 contactos, 64,8 % de finalización, todos de antes d
 > - **2026-09-20 · `00e251d`** — tres defectos que sólo se veían con la pantalla abierta: la lista
 >   «A y B y C», un rótulo desalineado y el ancho de teléfono, que era del armazón y se arregló esa
 >   noche para las doce pantallas (`1020412`: a 375 px al cuerpo le quedaban 75; `0810498`: las doce
->   con `doc=375`). El corte está en `app/armazon.css:382-395` y lo fija
+>   con `doc=375`). El corte está en `app/armazon.css:409-423` y lo fija
 >   `pruebas/codigo/162-el-armazon-en-un-telefono.test.ts`; hoy no se miró en el navegador.
 > - **2026-09-21 · `1164984`** — el «agendó» pasa a un predicado compartido, `tieneCitaAlcanzable`,
 >   que Conversion usa en sus dos módulos.
@@ -100,7 +100,7 @@ cruzar con un contacto. Conversion no las usa; las publica Creative.
 `capacidadRequerida: 'tablero.ver'` y **sin** `sinOperacionesTodavia`: la bandera bajó con la ruta,
 porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:268-270`): la
 décima salida de la lista, quinta vez que el cable dispara (`pruebas/codigo/90-fundaciones.test.ts:1172-1174`).
-El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:272-273`).
+El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:272-273`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
 **La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:45-70`) pide `tablero.ver`
 por el portero (`app/api/conversion/route.ts:49`), **rechaza** con 400 un período que no está en la
@@ -122,7 +122,7 @@ la gente, y quién abandona el formulario»* (`components/views/ConversionView.j
    (`lib/negocio/periodo.ts:109`, `components/conversion/PanelDeConversion.jsx:48`) y enciende el
    botón que el servidor contestó, no el que se pidió (`components/conversion/PanelDeConversion.jsx:85`).
    Se recarga cada 60 segundos sólo con la pestaña a la vista
-   (`components/conversion/PanelDeConversion.jsx:76-78`, `lib/cadencia.ts:90`).
+   (`components/conversion/PanelDeConversion.jsx:76-78`, `lib/cadencia.ts:91`).
 2. **«Cuánto vale lo que dice esta pantalla»** (`components/conversion/PanelDeConversion.jsx:179-247`):
    la cobertura del recorrido (contactos con dirección sobre la cohorte), la cobertura del formulario
    (contactos con el campo sobre la cohorte) y el rango real de cada bloque, que casi nunca es la

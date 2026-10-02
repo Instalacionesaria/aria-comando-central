@@ -7,14 +7,15 @@
 
 La clave de una sección (`executive`, `contacts`, `icp`, `acquisition`, `creative`, `conversion`,
 `conversation`, `sales`, `setter`, `closer`, `analizadores`, `tools`, `monitoreo`, `incidentes`,
-`credenciales`, más `usuarios` y `empresas`, que son pestañas de Ajustes) es **cinco cosas a la vez**:
+`credenciales`, más `usuarios` y `empresas`, que son pestañas de Ajustes) es **cuatro cosas a la vez**, y fue
+cinco hasta la etapa E10, cuando se fue `GROUP`:
 
 | es… | dónde |
 |---|---|
 | la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:34` |
 | la pantalla de cada ruta | `export const PANTALLA = '<clave>'` en `app/api/**/route.ts`; el portero (`exigir`) niega con 403 a quien no tiene esa pestaña |
 | un valor permitido en la base | el `check` de `identidad.usuarios_secciones.seccion`, que guarda las pestañas de cada persona |
-| la clave del grupo de las migas | `GROUP` en `lib/aios/shell.js:35` (se va cuando se van las migas, `06-LAS-ETAPAS.md` E10) |
+| la clave del grupo de las migas | `GROUP` en `lib/aios/shell.js:35@b532a78`: **se fue en E10**, con las migas |
 | la clave de las reglas de estilo | cada hoja de CSS cuelga sus reglas de `#v-<clave>` |
 
 **Ninguna clave cambia en esta fase.** Renombrar una exige una migración para el `check`, un guion que mude
@@ -41,8 +42,9 @@ estructura nueva vive en un **archivo nuevo**, `lib/autorizacion/departamentos.t
 `secciones.ts` y no lo modifica. Una sección nueva que alguien agregue a `secciones.ts` sin ubicarla en un
 departamento pone en rojo la prueba cruzada del modelo (`06-LAS-ETAPAS.md` E8).
 
-Única excepción: el cambio del **nombre visible** de `executive` a «Inicio», que se escribe en la misma
-línea y no corre ninguna.
+Lo que sí se puede hacer es cambiar una línea **sin agregar ni quitar ninguna**: el **nombre visible** de
+`executive` a «Inicio» (E7), y los comentarios que una etapa vuelve falsos (E10 reescribió tres, cada uno en
+sus mismas líneas). Ninguno corre una cita.
 
 ## `NE-34` · Sin migraciones
 

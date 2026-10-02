@@ -107,7 +107,7 @@ misma ventana (`app/api/creative/route.ts:60-64`). La sección ya no declara `si
 —«Qué pieza trae mejor gente, y sobre cuántos datos» (`components/views/CreativeView.jsx:60`)— y monta
 el panel. `components/creative/PanelDeCreative.jsx` (611 líneas) pide por `leerCreative`
 (`lib/negocio/vistaDeCreative.ts:38-50`), recarga cada 60 s mientras la pestaña está a la vista
-(`components/creative/PanelDeCreative.jsx:81-83`, `lib/cadencia.ts:90`) y dibuja cinco bloques en este
+(`components/creative/PanelDeCreative.jsx:81-83`, `lib/cadencia.ts:91`) y dibuja cinco bloques en este
 orden (`components/creative/PanelDeCreative.jsx:172-184`):
 
 1. **Cuánto vale lo que dice esta pantalla** (`components/creative/PanelDeCreative.jsx:232-286`): la
@@ -225,7 +225,7 @@ Del CSS se fueron 141 reglas muertas con la construcción y 41 más en la revisi
 **El galón `›` del menú se quedó.** La foto anterior lo señalaba como el detalle que hacía que la
 maqueta pareciera tan real como ICP & Oferta, porque nada en la interfaz avisaba que lo que se veía
 era inventado. Se conservó a propósito: es del prototipo, y lo que estaba mal no era el adorno sino
-que detrás no hubiera nada (`lib/autorizacion/secciones.ts:258-262`).
+que detrás no hubiera nada (`lib/autorizacion/secciones.ts:258-262`). Después del corte: desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
 **Lo que Executive todavía inventa en nombre de Creative** (Executive sigue siendo maqueta):
 

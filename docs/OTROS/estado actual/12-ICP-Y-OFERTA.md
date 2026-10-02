@@ -49,21 +49,22 @@ Es lo único que la pantalla dice de sí misma y no cumple; ver § 5.
 
 **La sección.** `lib/autorizacion/secciones.ts:234-237`: clave `icp`, nombre «ICP & Oferta»,
 `capacidadRequerida: 'fundaciones.ver'`, en el grupo `AIOS` del menú junto a Executive y Leads
-Portal, con el galón `›`. Su comentario (`lib/autorizacion/secciones.ts:229-233`) dice que es «la
+Portal, con el galón `›` (después del corte, desde la etapa E10 del 2026-10-02, la barra lateral la
+abre como Research › ICP & Oferta y no dibuja galones). Su comentario (`lib/autorizacion/secciones.ts:229-233`) dice que es «la
 única de las diez sin la bandera» `sinOperacionesTodavia`, y eso ya no es cierto: desde el
 2026-09-26 la única que la conserva es `executive` (`lib/autorizacion/secciones.ts:216`,
 `lib/autorizacion/secciones.ts:225`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
-`CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:49-77`): siete herramientas, siete rutas y
+`CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:50-78`): siete herramientas, siete rutas y
 `soloChat: true`, o sea sin formulario ni selector de modo; todo se le dice al agente, que abre
-proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.jsx:53-60`). Fue la
+proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.jsx:54-61`). Fue la
 primera vista con estado en React y salió a propósito de `npm run paridad`
 (`docs/OTROS/capa-base/ETAPA-9.md:181-195`).
 
 Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:78-89` dibuja
 todas las secciones visibles de una vez, y `Fundaciones` pide su estado al montarse
-(`components/fundaciones/Fundaciones.jsx:193-195`). Cada entrada a Comando Central de alguien con la
+(`components/fundaciones/Fundaciones.jsx:202-204`). Cada entrada a Comando Central de alguien con la
 pestaña lee la fila de su organización, aunque nunca abra ICP & Oferta.
 
 ### 2.1 · Las siete piezas del método

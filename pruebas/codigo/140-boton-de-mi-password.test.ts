@@ -18,8 +18,8 @@
 // convertiría en una puerta cerrada sobre algo que el servidor sí permite — y se la cerraría justo
 // a quien no tiene permisos para nada, que es quien no puede pedirle el favor a nadie.
 //
-// **2 · Está ARRIBA de «Cerrar sesión».** Donde se pidió, y por la regla que el pie del menú
-// lateral ya aplica: el destructivo va último. Debajo, el orden natural del clic pone el botón que
+// **2 · Está ARRIBA de «Cerrar sesión».** Donde se pidió, y por una regla que se sostiene
+// sola: el destructivo va último. Debajo, el orden natural del clic pone el botón que
 // te saca del sistema antes que el que querés apretar.
 //
 // **3 · La validación está en UN solo lugar.** Ahora hay dos pantallas que eligen una contraseña, y

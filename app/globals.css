@@ -180,8 +180,9 @@
    El prototipo las dibujaba como `div`, que no se enfocan ni se activan con el teclado. Como
    `<button>`, el navegador les pone su fondo, su borde, su letra y el texto centrado; esto se los
    quita. Va en la capa `base` y no en `armazon.css` (capa `components`) a propósito: `base` pierde
-   contra `aios`, así que el hover y la fila marcada de `aios.css` siguen mandando. En `components`,
-   este `background: none` les ganaría por capa y perderían su fondo. */
+   contra `aios` y contra `components`, así que esto sólo quita el estilo del botón y el aspecto lo
+   pone otra hoja —`aios.css` en la etapa E9, `armazon.css` desde la E10—. En `components`, este
+   `background: none` les ganaría por capa a los fondos de `aios.css`. */
 @layer base {
   button.nav-item {
     width: 100%;

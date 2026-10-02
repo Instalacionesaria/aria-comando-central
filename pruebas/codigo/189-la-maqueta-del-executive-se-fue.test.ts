@@ -168,10 +168,15 @@ test('el Inicio no lleva cifras escritas, ni las tarjetas de la reunión, ni los
   for (const gancho of ['exFunnel', 'deptGraph', 'exBrief', 'exChanges', 'exPeriod', 'exPill', 'data-leads', 'data-datepick']) {
     assert.ok(!inicio.includes(gancho), `volvió \`${gancho}\`, un gancho de la maqueta`);
   }
-  // La Reunión de hoy tiene que salir de reglas sobre datos reales, que no existen todavía (`NE-29`.4).
+  /* La Reunión de hoy tiene que salir de reglas sobre datos reales, que no existen todavía (`NE-29`.4).
+     La barra lateral sí la nombra desde la etapa E10, como «Próximamente» y sin contador (`NE-11`):
+     eso lo vigila `193-la-barra-lateral.test.ts`, y por eso de `Nav.jsx` se saca SÓLO ese bloque antes
+     de mirar. «Cambios en curso», la otra tarjeta de la maqueta, no tiene excepción en ningún archivo. */
+  const sinLaFilaDeLaBarra = (a: { ruta: string; contenido: string }) =>
+    a.ruta === 'components/Nav.jsx' ? a.contenido.replace(/<div className="nb-reunion">[\s\S]*?<\/div>/, '') : a.contenido;
   const conReunion = archivosFuente(['app', 'components', 'lib'])
     .filter((a) => /\.(jsx?|tsx?)$/.test(a.ruta))
-    .filter((a) => /Reunión de hoy|Cambios en curso/.test(sinComentarios(a.contenido)))
+    .filter((a) => /Reunión de hoy|Cambios en curso/.test(sinComentarios(sinLaFilaDeLaBarra(a))))
     .map((a) => a.ruta);
   assert.deepEqual(conReunion, [], 'volvieron las tarjetas de la reunión de la maqueta');
 });

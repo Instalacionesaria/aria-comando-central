@@ -82,7 +82,7 @@ equipo registrados en los commits, no de ese documento.
 Una envoltura que monta el componente de Fundaciones con un catálogo propio
 (`components/views/ToolsView.jsx:34-79`) y, arriba de las pestañas, la franja de saldo
 (`components/views/ToolsView.jsx:100-102`). A la izquierda de una raya, el recorrido numerado de
-herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:444-447`):
+herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:453-456`):
 
 | pestaña | qué es | rastro |
 |---|---|---|
@@ -96,6 +96,12 @@ herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:
 > Espía y Mis Leads, con el mismo extractor de Prospección y la tabla de lo que trae
 > (`components/tools/VistaDelScraper.jsx`). Sin `tools.editar` no dibuja el extractor; Prospección sigue
 > igual. Ver `docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-20`.
+>
+> **Y el 2026-10-02** (E10): las seis pestañas se abren desde la barra lateral nueva, repartidas en
+> Research, Marketing y Sales; el Panel de Monitoreo e Incidentes, desde el engranaje del pie. El punto de
+> «hay un scraping corriendo» va en Espía o en Scraper, según dónde se vuelve a ver el trabajo: el Espía
+> retoma las búsquedas de anuncios al abrirse, y el Scraper retoma Maps al abrirse y las demás fuentes al
+> tocar su pestaña. Con Research cerrado, va en su cabecera.
 
 El VSL y la Landing comparten almacén y herencia con ICP & Oferta y están descritos en
 [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía, en

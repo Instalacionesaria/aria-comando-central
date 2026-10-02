@@ -31,38 +31,21 @@
   transform: translateY(0) scale(1);
 }
 
-/* El disparador ES la fila del nombre. `.role-row` ya le da el alto, el relleno y el hover;
-   esto solo lo convierte en un botón de verdad —el prototipo usaba un `div`— sin que se note. */
-.role-row.disparador {
-  width: 100%;
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--txt-dim);
-  background: none;
-  border: 0;
-  text-align: left;
+/* Cerrado, el desplegable además se ESCONDE. El prototipo sólo lo volvía transparente y sin clics:
+   sus botones seguían en el orden del tabulador —tras el engranaje, cinco paradas invisibles— y en el
+   árbol de accesibilidad como un menú abierto. Se esconde al terminar de desvanecerse (el retraso),
+   como el cajón del teléfono, y al abrir se ve al instante. Vale para todo `.menu-wrap`. */
+.menu-wrap .menu-pop {
+  visibility: hidden;
+  transition: opacity .16s ease, transform .18s cubic-bezier(.32, .72, 0, 1), visibility 0s linear .18s;
 }
-.role-row.disparador .n {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.menu-wrap.open .menu-pop {
+  visibility: visible;
+  transition: opacity .16s ease, transform .18s cubic-bezier(.32, .72, 0, 1);
 }
-/* El galón gira al abrir, que es lo que dice que el menú está desplegado sin leer nada. */
-.role-row.disparador .chev {
-  flex: 0 0 auto;
-  font-size: 10px;
-  color: var(--txt-faint);
-  transition: transform 0.18s ease;
-}
-.menu-wrap.arriba.open .role-row.disparador .chev {
-  transform: rotate(180deg);
-}
-.menu-wrap.arriba.open .role-row.disparador {
-  color: var(--txt);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-}
+
+/* El disparador ya no es la fila del nombre: desde la etapa E10 es el engranaje (`.nb-engranaje`,
+   más abajo), y el envoltorio es la fila entera del pie, así que el menú ocupa su ancho. */
 
 /* ── Las sub-pestañas de Ajustes ──────────────────────────────────────────── */
 
@@ -76,26 +59,62 @@
 
 /* ── El conmutador de empresa ─────────────────────────────────────────────── */
 
-/* `.acct` del prototipo es un botón de ancho completo con `margin-bottom`. Envolverlo en el
-   `.menu-wrap` que necesita el desplegable rompía ese margen —el margen queda en el hijo, no
-   en el envoltorio— así que se traslada. */
+/* Desde la etapa E10, una píldora junto al logotipo, como en el lienzo: el nombre de la empresa en
+   mono, con el borde de control. `.acct` del prototipo era una tarjeta de ancho completo con avatar y
+   una línea de rol; se pisa por capa. Mirando otra organización, la píldora va en el tono de
+   atención: es el cartel permanente del `03` § 3. */
+/* El tope de 150 px va en el envoltorio, que encoge con la cabeza; la píldora lo llena y no se sale
+   de él. Con el tope en la píldora, el envoltorio encogía a 146 px y ella asomaba sobre el borde. */
 .acct-wrap {
-  margin-bottom: 14px;
+  min-width: 0;
+  max-width: 150px;
 }
 .acct-wrap .acct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  max-width: 100%;
   margin-bottom: 0;
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--txt-faint);
 }
-/* El desplegable cuelga HACIA ABAJO, que es lo correcto acá: el botón está arriba del menú
-   lateral, y `.menu-pop` ya abre así por omisión. Solo se ajusta el ancho, porque el del
-   prototipo (230px) se sale por la derecha en una barra angosta. */
+.acct-wrap button.acct:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-float);
+}
+/* Sin permiso para cambiar de empresa, la píldora es un `span`: ni mano ni fondo al pasar. */
+.acct-wrap span.acct {
+  cursor: default;
+}
+.acct-wrap .acct-name {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acct-wrap .acct.mirando {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+/* El desplegable cuelga HACIA ABAJO y se ancla a la DERECHA de la píldora: la barra recorta lo que
+   se sale de sus 260 px, y con el borde izquierdo en la píldora se saldría. */
 .acct-wrap .menu-pop {
-  left: 0;
-  right: auto;
-  width: 100%;
-  min-width: 200px;
+  left: auto;
+  right: 0;
+  width: 220px;
+  min-width: 0;
 }
-/* Y el galón gira, igual que en el menú de la cuenta. */
+/* Y el galón gira al abrir. Con su alto de línea, la píldora medía 24 px con él y 21 sin él: el
+   alto de la cabeza cambiaba según el permiso. */
 .acct-wrap .acct-chev {
+  line-height: 1;
   transition: transform 0.18s ease;
 }
 .acct-wrap.open .acct-chev {
@@ -269,14 +288,15 @@
 }
 
 /* ── «Hay un scraping corriendo» ────────────────────────────────────────────
-   Un punto que late en la fila de Tools del menú. Existe porque un scraping tarda minutos y lo
+   Un punto que late en la barra lateral, en Espía de anuncios o en Scraper, o en la cabecera de
+   Research cuando está cerrado. Existe porque un scraping tarda minutos y lo
    normal es irse a Setter o a Closer mientras corre: sin esto, la única forma de saber si
    terminó era volver a la pestaña y esperar.
 
    Va acá y no en `aios.css`: esa hoja es el prototipo íntegro y la regla del proyecto es no
    editarla. Y con animación de opacidad y escala, sin `box-shadow` — este diseño apaga las
    sombras con un barrido universal y una escrita en esta capa se le escaparía. */
-.nav-item .nav-scrapeando {
+.nav .nav-scrapeando {
   width: 7px;
   height: 7px;
   flex: 0 0 auto;
@@ -285,14 +305,16 @@
   background: var(--accent);
   animation: nav-scrapeando-late 1.3s ease-in-out infinite;
 }
-/* Si la fila ya lleva galón, el punto no le roba el `margin-left: auto`. */
-.nav-item .nav-scrapeando + .chev {
-  margin-left: 7px;
+/* En la cabecera de Research, el punto va antes del galón y no le roba el lugar. */
+.nb-cabecera .nav-scrapeando {
+  margin-left: 0;
 }
+/* El piso del latido es 0,6 y no 0,3: el punto lleva información, y en el valle de 0,3 daba 2,1:1
+   sobre el fondo, por debajo de los 3:1 de un gráfico que dice algo. */
 @keyframes nav-scrapeando-late {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.6;
     transform: scale(0.75);
   }
   50% {
@@ -303,7 +325,7 @@
 /* Quien pidió menos movimiento ve el punto fijo, no parpadeando. El dato es el punto; el latido
    es sólo para que se note. */
 @media (prefers-reduced-motion: reduce) {
-  .nav-item .nav-scrapeando {
+  .nav .nav-scrapeando {
     animation: none;
     opacity: 1;
   }
@@ -323,9 +345,10 @@
  *
  * En 760 px, y sale de una cuenta comprobada en el navegador: el eslabón `.csr` —la fila de
  * cobertura que usan Acquisition, Creative y Conversion— pide `190 + 60 + 90` de columnas más sus
- * separaciones, o sea unos 380 px de cuerpo para no aplastarse. Con la barra en 216 px eso se
- * consigue a partir de 596 px de ventana; 760 deja margen para el relleno de la vista y cae por
- * encima de la tableta en vertical (768), que **se midió y entra bien** con la barra puesta.
+ * separaciones, o sea unos 380 px de cuerpo para no aplastarse. Con la barra del prototipo, de 216
+ * px, eso se conseguía a partir de 596 px de ventana, y la tableta en vertical (768) **se midió y
+ * entraba bien** con la barra puesta. Desde la etapa E10 la barra mide 260 px: hacen falta 640, y a
+ * 768 quedan 508 px de cuerpo. El corte sigue en 760, con margen para el relleno de la vista.
  *
  * Por encima del corte no cambia NADA: el conmutador está escondido y la clase no se pone nunca. */
 
@@ -360,7 +383,7 @@
   fill: none;
 }
 
-/* ── LA REJILLA DEL ARMAZÓN: BARRA ARRIBA, MENÚ Y CUERPO ─────────────────────
+/* ── LA REJILLA DEL ARMAZÓN: MENÚ Y CUERPO (Y LA BARRA DE ARRIBA, EN EL TELÉFONO) ─
  *
  * La del prototipo (`aios.css`) tiene tres columnas y tres filas: el menú, el cuerpo y el panel
  * lateral de la maqueta del Executive, y la barra «Pregúntale a Executive sobre …» abajo. Los dos se fueron con
@@ -370,13 +393,17 @@
  * Van las TRES propiedades, y las tres hacen falta: sin las filas queda la tercera de 64 px vacía
  * abajo, y sin las columnas, la de 312 px vacía a la derecha, en todas las pantallas. Gana por CAPA
  * (`components` va después de `aios`), así que `aios.css` sigue intacto. `minmax(0, 1fr)` y no `1fr`:
- * con `1fr` pelado, una tabla ancha estira la columna en vez de encogerse dentro de ella. */
+ * con `1fr` pelado, una tabla ancha estira la columna en vez de encogerse dentro de ella.
+ *
+ * Desde la etapa E10, la barra lateral mide 260 px y va de arriba abajo, como en el lienzo: la barra de
+ * arriba sólo existe en el teléfono (abajo, en el corte), donde lleva el conmutador del cajón. */
 .app {
-  grid-template-rows: 50px 1fr;
-  grid-template-columns: 216px minmax(0, 1fr);
-  grid-template-areas:
-    "top top"
-    "nav main";
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-areas: "nav main";
+}
+.topbar {
+  display: none;
 }
 
 @media (max-width: 760px) {
@@ -392,10 +419,14 @@
        `overflow-x: auto`, así que el defecto no era suya: era que nadie le ponía un techo.
        *
        Es la misma trampa de CSS que `.md-counters` más abajo, y las dos se arreglan igual. */
+    grid-template-rows: 50px minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "top"
       "main";
+  }
+  .topbar {
+    display: flex;
   }
 
   /* Y la cadena entera hasta el desplazador de cada vista. `min-width: auto` es el valor por omisión
@@ -449,7 +480,10 @@
     bottom: 0;
     left: 0;
     z-index: 45;
-    width: min(272px, 82vw);
+    width: min(260px, 82vw);
+    /* La barra va sobre el mismo fondo que la página: con el velo encima, la línea es lo único que la
+       separa, y la de siempre daba 1,17:1. */
+    border-right-color: var(--line-strong);
     transform: translateX(-100%);
     /* Cerrado, además de correrse, se esconde: `visibility: hidden` lo saca del orden del tabulador y
        del árbol de accesibilidad. Sin esto, las filas —botones desde la etapa E9— eran paradas
@@ -460,8 +494,8 @@
   }
   .app.menu-abierto .nav {
     transform: translateX(0);
-    /* Al abrir, visible al instante: `shell.js` enfoca la primera fila apenas se abre, y un elemento
-       todavía oculto no recibe el foco. */
+    /* Al abrir, visible al instante: `shell.js` enfoca un botón de la barra apenas se abre, y un
+       elemento todavía oculto no recibe el foco. */
     visibility: visible;
     transition: transform .22s cubic-bezier(.32, .72, 0, 1);
   }
@@ -471,11 +505,13 @@
      clic de afuera es `shell.js`, sobre el documento — un `::after` no puede tener oyente.
      *
      `z-index: 44` lo deja DEBAJO de la barra (45) y encima de todo lo demás. Por debajo de `.scrim`
-     (40) no: los cajones de React se abren sobre el cuerpo y tienen que seguir tapándolo. */
+     (40) no: los cajones de React se abren sobre el cuerpo y tienen que seguir tapándolo. Y empieza
+     DEBAJO de la barra de arriba, como el cajón: tapada, el botón que lo cierra quedaba oscurecido y
+     desenfocado. */
   .app.menu-abierto::after {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: 50px 0 0 0;
     z-index: 44;
     background: rgb(var(--c-velo) / .6);
     backdrop-filter: blur(3px);
@@ -487,23 +523,17 @@
   }
 
   /* La marca deja de medir lo que medía la barra: ese ancho existía para que el borde derecho de
-     las dos cayera en la misma línea, y abajo del corte ya no hay barra con la que alinearse. */
+     las dos cayera en la misma línea, y abajo del corte ya no hay barra con la que alinearse. La miga
+     de pan se fue en la etapa E10. */
   .tb-brand {
     width: auto;
     border-right: 0;
     padding-right: 4px;
   }
-  /* Y la miga se aprieta: con el conmutador puesto, sus 20 px de relleno empujan el nombre de la
-     pantalla fuera de la pantalla en un teléfono angosto. */
-  .crumb {
-    padding: 0 12px;
-    min-width: 0;
-    overflow: hidden;
-  }
-  .crumb b {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .tb-logo {
+    display: block;
+    height: 15px;
+    width: auto;
   }
 }
 
@@ -604,4 +634,300 @@
   margin: 0;
   font-size: 13px;
   color: var(--txt-faint);
+}
+
+/* ── LA BARRA LATERAL (etapa E10 de la nueva estructura, `NE-11`) ───────────────
+ *
+ * Del lienzo «Departamentos por dentro», con los tokens de la app en lugar de sus hex: `bg` de fondo,
+ * `line` para la línea del borde y del pie, `line-strong` para los bordes de control, `surface-active`
+ * (`--bg-float`) para la entrada marcada, e `ink`, `ink-2` e `ink-3` para el texto. Los radios de 10 y
+ * 8 px del lienzo no son tokens de la marca: van con `--radius-sm`, como hizo la caja del Inicio.
+ *
+ * Pisa a `aios.css` por capa, sin tocarlo: el `.nav` del prototipo era un panel con degradado y
+ * desenfoque, y el lienzo es una columna sobre el fondo, separada por una línea. */
+/* El relleno de los costados es de 6 px más el canal de la barra de desplazamiento a cada lado
+   (`scrollbar-gutter`): con la barra de 8 px de `aios.css` suman los 14 px del lienzo, y cuando la
+   lista no entra la barra aparece en su canal en vez de angostar las filas, que saltaban 8 px al
+   abrir un departamento largo. Donde la barra flota (el teléfono) quedan 6 px parejos. */
+.nav {
+  background: var(--bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 20px 6px;
+  scrollbar-gutter: stable both-edges;
+  gap: 16px;
+}
+/* Ningún bloque encoge: cuando la lista no entra se desplaza la barra entera. Sin esto, «Nueva
+   conversación» cedía su alto y quedaba en 20 px, y el pie salía de la vista antes de que la barra
+   empezara a desplazarse. */
+.nav > * {
+  flex-shrink: 0;
+}
+.nb-ico {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* El logotipo y la empresa, en una fila. */
+.nb-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 8px;
+}
+.nb-logo {
+  display: block;
+  height: 15px;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+/* «Nueva conversación»: una píldora con borde. Encendida cuando el Inicio está a la vista. */
+.nb-nueva {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--txt);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.nb-nueva:hover,
+.nb-nueva.on {
+  background: var(--bg-float);
+}
+
+/* La Reunión de hoy: la fila del lienzo, en su tono, sin contador y sin hover. No navega. La palabra
+   «Próximamente» va debajo del nombre, como en una entrada: al lado, en 231 px, partía «Reunión de
+   hoy» en dos renglones. */
+.nb-reunion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 1px;
+  min-height: 36px;
+  padding: 3px 12px;
+  font-size: 14px;
+  color: var(--txt-dim);
+}
+.nb-reunion .nb-ico {
+  grid-row: 1 / span 2;
+}
+.nb-reunion .n,
+.nb-reunion .nb-proximamente {
+  grid-column: 2;
+}
+
+/* «Próximamente»: en mono, debajo del nombre. */
+.nb-proximamente {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--txt-faint);
+}
+
+/* Los departamentos: el rótulo, las cabeceras y sus entradas, en una columna con 2 px entre filas. */
+.nb-departamentos,
+.nb-departamento,
+.nb-entradas:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nb-rotulo {
+  padding: 0 12px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--txt-faint);
+}
+.nb-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.nb-cabecera:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .06);
+}
+.nb-cabecera.abierta {
+  color: var(--txt);
+}
+.nb-cabecera .n {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb-galon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--txt-faint);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .18s ease;
+}
+.nb-cabecera.abierta .nb-galon {
+  transform: rotate(90deg);
+}
+
+/* La entrada: alineada con el nombre del departamento (12 + 17 + 12 = 41 px), sin ícono. Pisa la
+   `.nav-item` del prototipo —alto, letra, color y la fila marcada con degradado y barra de acento—
+   por la del lienzo: el fondo `surface-active` y el texto en `ink`. */
+.nav .nav-item {
+  height: 32px;
+  padding: 0 12px 0 41px;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  color: var(--txt-faint);
+  font-size: 13px;
+}
+.nav .nav-item .n {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.nav .nav-item:hover {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .06);
+}
+.nav .nav-item.on {
+  background: var(--bg-float);
+  color: var(--txt);
+}
+.nav .nav-item.on .n {
+  font-weight: 400;
+}
+.nav .nav-item.on::before {
+  content: none;
+}
+
+/* Una entrada «Próximamente»: el nombre y, debajo, la palabra. No es un botón: sin hover ni cursor. */
+.nb-proxima {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-height: 36px;
+  padding: 3px 12px 3px 41px;
+  font-size: 13px;
+  color: var(--txt-faint);
+  cursor: default;
+}
+
+/* El pie: la persona y el engranaje, con la línea del lienzo arriba. */
+.nav .nav-foot {
+  margin-top: auto;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.nb-pie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.nb-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-float);
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+.nb-persona {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+.nb-nombre {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--txt-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb-rol {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--txt-faint);
+}
+.nb-engranaje {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.nb-engranaje:hover,
+.menu-wrap.open .nb-engranaje {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .06);
+}
+.nb-engranaje svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Lo que sólo oye un lector de pantalla: fuera de la vista y del flujo, sin ocupar una celda de la
+   rejilla del armazón (es hijo de `.app`). */
+.para-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

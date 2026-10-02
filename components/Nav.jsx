@@ -1,224 +1,240 @@
 'use client';
 
-/* Portado de aios-command-center_1.html — navegación lateral, líneas 2514-2550.
+/* La barra lateral de la estructura nueva (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-11` a
+ * `NE-18`), sobre el lienzo «Departamentos por dentro»: el logotipo y la empresa, «Nueva conversación»,
+ * la Reunión de hoy, los cinco departamentos como acordeones y el pie con el engranaje.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * ESTE ARCHIVO ERA DIEZ ENTRADAS DE JSX LITERAL, Y ESO ERA EL DEFECTO
+ * LEE `navegacion`, Y NADA MÁS
  *
- * `lib/autorizacion/secciones.ts` declaraba qué pantallas correspondían a cada capacidad, y
- * este archivo dibujaba las diez a cualquiera con sesión. Las dos pruebas que miraban esa
- * lista quedaban verdes verificando un arreglo que ningún píxel usaba — la forma exacta del
- * `07` § 0: *"un éxito reportado que no ocurrió"*.
+ * Quién ve qué ya lo decidió el servidor con `menuVisible()`, y `menuPorDepartamentos()` lo repartió
+ * (`lib/autorizacion/departamentos.ts`). Esta barra no vuelve a mirar permisos ni el menú agrupado: si
+ * lo hiciera, habría dos definiciones de quién ve qué, que es el defecto que la Etapa 11 pagó cuando
+ * este archivo eran diez entradas de JSX escritas a mano que cualquiera con sesión veía.
+ * `pruebas/codigo/193-la-barra-lateral.test.ts` lo vigila.
  *
- * La deuda estaba escrita y fechada: *"unificarlos exige reescribir `Nav.jsx` como un `.map()`
- * que produzca un DOM idéntico al del prototipo, o `npm run paridad` empieza a fallar y se
- * termina desactivando. Eso es trabajo de la etapa que le dé interfaz a la primera pantalla
- * administrada, no de ésta."*
+ * ── LA ENTRADA ABIERTA ──────────────────────────────────────────────────────
  *
- * Esa etapa es la 11, porque es la primera en que la pantalla que gana operaciones **no la ve
- * todo el mundo**: un closer no puede ver la pestaña del setter. Con el menú escrito a mano,
- * *"solo ve su pestaña"* habría sido falso — vería las diez entradas y ocho le responderían
- * 403 al abrirlas.
+ * La pantalla a la vista (`usarUbicacion`) y la pestaña que esa pantalla DIBUJA
+ * (`usarPestanaDibujada`): Tools tiene seis entradas en tres departamentos, y cambia de pestaña por
+ * dentro sin pasar por la navegación. Con las dos se marca la entrada (`entradaAbierta`) y se abre su
+ * departamento. Sólo queda abierto el que está en uso, y en el Inicio ninguno, como en el lienzo; un
+ * clic en la cabecera abre otro a mano.
  *
- * ── EL DOM ERA IDÉNTICO, Y ERA UN REQUISITO ──────────────────────────────────
+ * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
- * Con todas las capacidades el `.map()` producía exactamente el mismo árbol que el JSX literal:
- * mismas clases, mismo orden, mismos `data-view`, el galón `›` en las mismas cinco. Era lo que
- * permitía que `npm run paridad` comparara el port con el original; la compuerta se retiró el
- * 2026-10-01 (nueva estructura, E7), y el requisito se fue con ella.
- *
- * ── Y LO QUE DEJÓ DE ESTAR ESCRITO A MANO ──────────────────────────────────
- *
- * El nombre de la organización y el de la persona estaban FIJOS en el JSX —el de la primera
- * organización y el de su fundador, escritos a mano—. El de la organización es justo el dato
- * que el `03` § 3 exige mostrar bien: *"sin eso, alguien puede mirar la pantalla, sacar una
- * conclusión sobre 'los números' y estar viendo los de otro cliente"*. Y estaba fijo, o sea
- * que todos los inquilinos veían el del primero.
- *
- * Las dos cadenas no se repiten acá ni en un comentario, a propósito: la prueba que impide que
- * vuelvan busca el TEXTO en este archivo, y nombrarlas en la explicación la haría fallar. Están
- * en `pruebas/codigo/91-closer-y-setter.test.ts`, que es donde corresponde.
+ *   · CONVERSACIONES: es el historial del cerebro, que todavía no existe (`NE-11`.5);
+ *   · el contador de la Reunión de hoy: sus temas tienen que salir de reglas sobre datos reales
+ *     (`NE-05`). La fila dice «Próximamente», no navega, y sólo la ve quien ve el Inicio: un closer ve
+ *     Sales › Closer y nada más (`NE-16`);
+ *   · el ícono y el galón de cada sección, del menú viejo: la barra nueva dibuja el ícono de cada
+ *     DEPARTAMENTO, del lienzo, en línea y sin el sprite (el sprite no tiene esos dibujos y no se le
+ *     da a un símbolo un segundo significado).
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSesion } from '../app/sesion-contexto.tsx';
 import { irALaVista } from '../lib/aios/shell.js';
-import { usarUbicacion } from '../lib/vista.ts';
+import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
+import { entradaAbierta } from '../lib/autorizacion/departamentos.ts';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
-import { leerTrabajosEnVuelo } from '../lib/tools/scrapers.ts';
+import { leerTrabajosEnVuelo, pestanaQueLoRetoma } from '../lib/tools/scrapers.ts';
 import { CADENCIA, usarReloj } from '../lib/reloj.ts';
 
-/**
- * Cada cuánto se pregunta si hay un scraping corriendo.
- *
- * La cadencia se mudó a `lib/cadencia.ts` con el resto, y no es un traslado cosmético: mientras
- * vivió acá, este reloj tuvo su propio bucle de `setTimeout` y **no respetaba la pestaña oculta**.
- * El motivo largo está allá.
- */
+const SIN_NAVEGACION = { inicio: null, departamentos: [], engranaje: [] };
 
-/** Las iniciales para el avatar. Dos letras, de las dos primeras palabras. */
-function iniciales(nombre) {
-  const partes = String(nombre ?? '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (partes.length === 0) return '··';
-  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
-  return (partes[0][0] + partes[1][0]).toUpperCase();
+/** El ícono de cada departamento, del lienzo: 24 de caja, trazo de 1.6 y extremos redondeados. */
+function IconoDelDepartamento({ clave }) {
+  return (
+    <svg className="nb-ico" viewBox="0 0 24 24" aria-hidden="true">
+      {clave === 'research' ? (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      ) : null}
+      {clave === 'systems' ? <path d="M3 12h4l3-7 4 14 3-7h4" /> : null}
+      {clave === 'marketing' ? <path d="M14 6l4 4-8 8H6v-4z" /> : null}
+      {clave === 'sales' ? <path d="M4 5h16v11H9l-5 4z" /> : null}
+      {clave === 'client-success' ? <path d="M5 12l4 4 10-10" /> : null}
+    </svg>
+  );
+}
+
+/** Cuántos trabajos hay en vuelo, dicho para quien no ve el punto. */
+function textoDelPunto(enVuelo) {
+  const partes = [];
+  if (enVuelo.scraper > 0) {
+    partes.push(enVuelo.scraper === 1 ? 'un scraping corriendo en el Scraper' : `${enVuelo.scraper} scrapings corriendo en el Scraper`);
+  }
+  if (enVuelo.espia > 0) {
+    partes.push(enVuelo.espia === 1 ? 'una búsqueda corriendo en el Espía de anuncios' : `${enVuelo.espia} búsquedas corriendo en el Espía de anuncios`);
+  }
+  const texto = partes.join(' y ');
+  return texto ? texto[0].toUpperCase() + texto.slice(1) : '';
 }
 
 export default function Nav() {
   const sesion = useSesion();
+  // Sin sesión, ninguna entrada: el `03` § 5, «una operación nueva nace cerrada», llevado al menú.
+  const navegacion = sesion?.navegacion ?? SIN_NAVEGACION;
+  const { inicio, departamentos, engranaje } = navegacion;
 
-  /* ── EL PUNTITO DE «HAY UN SCRAPING CORRIENDO» ────────────────────────────
-     Vive acá y no en la pantalla Tools porque el punto es justamente verlo DESDE OTRA PANTALLA:
-     un scraping tarda minutos y lo normal es irse a Setter o a Closer mientras corre. El menú
-     está montado siempre, así que es el único lugar desde donde se ve estando en cualquier
-     parte.
+  /* ── EL PUNTO DE «HAY UN SCRAPING CORRIENDO» ──────────────────────────────
+     Vive en la barra y no en Tools porque el punto es justamente verlo DESDE OTRA PANTALLA: un
+     scraping tarda minutos y lo normal es irse a Setter o a Closer mientras corre. Va en la entrada
+     donde el trabajo se vuelve a ver (`pestanaQueLoRetoma`, con el detalle de quién retoma qué), y en
+     la cabecera de Research cuando está cerrado: si no, desde Sales no se vería.
 
-     Sólo consulta si la persona puede ver Tools. Un closer que nunca va a scrapear no tiene por
-     qué hacer una petición cada veinte segundos por un indicador que no le sirve. */
-  const puedeVerTools = (sesion?.menu ?? [])
-    .flatMap((g) => g.secciones)
-    .some((x) => x.clave === 'tools');
-  const [scrapeando, setScrapeando] = useState(0);
-
-  /* ── ESTE RELOJ ERA EL ÚNICO QUE NO MIRABA SI LA PESTAÑA ESTABA A LA VISTA ──
-   *
-   * Acá había un bucle de `setTimeout` propio que se reprogramaba solo. Hacía bien una cosa —no
-   * apilar peticiones cuando la respuesta tarda— y por hacerla a mano se perdía la otra:
-   * `lib/reloj.ts` **frena todos sus relojes con la pestaña oculta**, y éste no estaba entre
-   * ellos. Resultado medido: 180 peticiones por hora y por persona conectada, corrieran o no
-   * scrapings, mirara o no alguien la aplicación.
-   *
-   * `usarReloj` da las dos cosas y una tercera: al volver de una pestaña oculta dispara enseguida,
-   * así que el punto está al día apenas se vuelve, en vez de hasta veinte segundos después.
-   *
-   * ── LA PRIMERA LECTURA LA HACE ESTE COMPONENTE, NO EL RELOJ ───────────────
-   *
-   * Es la división que `registrarReloj` documenta y que aprendió fallando: el reloj REPITE, y
-   * quien abre pide sus datos. Si la primera lectura dependiera del reloj, montar con la pestaña
-   * oculta dejaría el punto apagado hasta volver — y un punto apagado no se distingue de «no hay
-   * ningún scraping». */
+     Sólo consulta quien ve Tools. El reloj compartido frena con la pestaña oculta y dispara al volver
+     (`lib/reloj.ts`), y la PRIMERA lectura la hace este componente: el reloj repite, quien abre pide. */
+  const puedeVerTools = departamentos.some((d) => d.entradas.some((e) => e.seccion === 'tools'));
+  const [enVuelo, setEnVuelo] = useState({ espia: 0, scraper: 0 });
   const mirar = useCallback(async () => {
-    const enVuelo = await leerTrabajosEnVuelo();
-    setScrapeando(enVuelo.length);
+    const cuenta = { espia: 0, scraper: 0 };
+    for (const t of await leerTrabajosEnVuelo()) cuenta[pestanaQueLoRetoma(t.fuente)] += 1;
+    // El mismo objeto si nada cambió: si no, cada vuelta del reloj redibujaría la barra entera.
+    setEnVuelo((antes) => (antes.espia === cuenta.espia && antes.scraper === cuenta.scraper ? antes : cuenta));
   }, []);
-
   useEffect(() => {
     if (!puedeVerTools) return;
     void mirar();
   }, [puedeVerTools, mirar]);
-
-  /* Con `null` no se registra nada: quien no tiene Tools no paga ni una petición por un punto que
-     su menú ni siquiera dibuja. */
   usarReloj(puedeVerTools ? 'tools:enVuelo' : null, mirar, CADENCIA.puntitoDeTools);
+  const textoEnVuelo = textoDelPunto(enVuelo);
 
-  // Sin datos de sesión no se dibuja NINGUNA entrada. Es el `03` § 5 —*"una operación nueva
-  // nace cerrada"*— llevado al menú: ante la duda, ninguna puerta, no todas.
-  //
-  // En la práctica no pasa: `app/guardia.tsx` no monta el armazón hasta tener la respuesta. El
-  // caso que esto cubre es el montaje de este componente fuera de la guarda.
-  const todos = sesion?.menu ?? [];
-  // El cuerpo del menú y el pie salen de la MISMA lista, separados por la bandera `pie` del
-  // grupo. Si el pie tuviera su propia lista, volveríamos a tener dos que se pueden
-  // desordenar una respecto de la otra — el defecto que esta etapa pagó.
-  const grupos = todos.filter((g) => !g.grupo.pie);
-  const enElPie = todos.filter((g) => g.grupo.pie).flatMap((g) => g.secciones);
+  /* ── DÓNDE ESTÁS ──────────────────────────────────────────────────────────
+     En el primer dibujo, antes de leer el DOM, vale la pantalla de arranque. Al abrir una entrada de
+     Tools desde otra pantalla, el primer dibujo lleva la pestaña que Tools dibujó la vez anterior:
+     Tools anuncia la nueva en su efecto de diseño y la barra se corrige en el mismo tic, antes de
+     pintar. */
+  const vista = usarUbicacion() ?? sesion?.arranque?.seccion.clave ?? null;
+  const pestana = usarPestanaDibujada(vista);
+  const abierta = entradaAbierta(navegacion, vista, pestana);
+  const enUso = abierta?.departamento ?? null;
 
-  // La primera sección visible arranca activa. NO `executive` fijo: para un closer esa pantalla
-  // no existe, y el `on` escrito a mano dejaba el área principal en blanco sin que nada falle.
-  //
-  // LA REGLA YA NO ESTÁ ACÁ, y sacarla no fue prolijidad: estaba escrita en este archivo, otra vez
-  // en `CommandCenter.jsx`, y **faltaba** en la miga de pan — que por eso le decía «Executive» a
-  // alguien que no ve Executive. Ahora la decide el servidor, una vez, y las tres partes leen el
-  // mismo campo. El motivo completo está en `seccionDeArranque`.
-  const primera = sesion?.arranque?.seccion.clave;
-  /* La fila marcada es la de la pantalla ABIERTA, y la pinta React. Hasta la etapa E9 la marcaba
-     `shell.js` tocando el DOM, y eran dos escritores sobre la misma clase. En el primer dibujo, antes
-     de leer el DOM, vale la de arranque. Ajustes no tiene fila: con Ajustes abierto no se marca
-     ninguna. */
-  const abierta = usarUbicacion() ?? primera;
+  /* El departamento desplegado SIGUE al que está en uso cada vez que éste cambia —se ajusta en el
+     dibujo, como el pedido en las pantallas—, y entre un cambio y otro lo mueve la cabecera. */
+  const [desplegado, setDesplegado] = useState(enUso);
+  const [enUsoVisto, setEnUsoVisto] = useState(enUso);
+  if (enUso !== enUsoVisto) {
+    setEnUsoVisto(enUso);
+    setDesplegado(enUso);
+  }
 
   return (
     <>
-    {/* El `id` es el ancla del `aria-controls` del conmutador de `TopBar.jsx`. Sin él, quien usa
-        un lector de pantalla oye «abrir el menú» y no tiene cómo saber qué abre. */}
-    <aside className="nav" id="navPrincipal">
-      {/* El botón de la empresa ES el conmutador. Antes solo mostraba el nombre y no hacía
-          nada, y eso creó un encierro: la única forma de cambiar de empresa era la pestaña
-          Empresas, que solo se ve desde la principal — así que conmutarse quitaba de la
-          pantalla el único control con el que se podía volver. Ver `SelectorDeEmpresa.jsx`. */}
-      <SelectorDeEmpresa sesion={sesion} />
-      {grupos.map(({ grupo, secciones }) => (
-        <div className="nav-group" key={grupo.clave}>
-          {/* El primer grupo no lleva etiqueta en el prototipo, y el `null` lo dice desde
-              `GRUPOS_DEL_MENU` en vez de dejarlo a que alguien se acuerde acá. */}
-          {grupo.etiqueta ? <div className="nav-label">{grupo.etiqueta}</div> : null}
-          {secciones.map((s) => (
-            /* Un botón y no un `div`: se llega con el tabulador y se abre con Enter o Espacio. El
-               aspecto lo devuelve la capa `base` de `app/globals.css`. */
-            <button
-              type="button"
-              className={s.clave === abierta ? 'nav-item on' : 'nav-item'}
-              data-view={s.clave}
-              key={s.clave}
-              aria-current={s.clave === abierta ? 'page' : undefined}
-              onClick={() => irALaVista(s.clave, s.nombre)}
-            >
-              <svg className="ni" viewBox="0 0 16 16" aria-hidden="true">
-                <use href={s.menu.icono} />
-              </svg>
-              <span className="n">
-                {s.nombre}
-              </span>
-              {/* El puntito late sólo en la fila de Tools y sólo si hay algo corriendo. Lleva
-                  `title` y texto para lectores de pantalla porque un punto de color no dice
-                  nada por sí solo — y esto es información, no decoración. */}
-              {s.clave === 'tools' && scrapeando > 0 ? (
-                <span
-                  className="nav-scrapeando"
-                  /* `role="status"` y `aria-label`, no un `<i>` mudo: un punto de color no dice
-                     nada por sí solo, y esto es información —hay plata corriendo— no adorno.
-                     El `title` da lo mismo al pasar el cursor. */
-                  role="status"
-                  title={scrapeando === 1 ? 'Un scraping corriendo' : `${scrapeando} scrapings corriendo`}
-                  aria-label={scrapeando === 1 ? 'Un scraping corriendo' : `${scrapeando} scrapings corriendo`}
-                />
-              ) : null}
-              {s.menu.galon ? <span className="chev" aria-hidden="true">›</span> : null}
-            </button>
-          ))}
+      {/* El `id` es el ancla del `aria-controls` del conmutador de `TopBar.jsx`. */}
+      <nav className="nav" id="navPrincipal" aria-label="Principal">
+        <div className="nb-cabeza">
+          {/* El archivo de la marca, nunca escrito con una fuente (`NE-11`). */}
+          <img className="nb-logo" src="/brand/assets/logos/aria-wordmark-dark.svg" alt="ARIA" />
+          <SelectorDeEmpresa sesion={sesion} />
         </div>
-      ))}
-      <div className="nav-foot">
-        {/* AJUSTES NO TIENE FILA PROPIA: se llega desde el desplegable de la cuenta, que es
-            justo el que está acá. Tenerlo en los dos lugares eran dos controles para lo mismo a
-            unos píxeles de distancia.
 
-            Y sacar la fila obligó a arreglar el enrutado de verdad. El desplegable no enrutaba:
-            simulaba el clic de esta fila, así que sin fila el botón se apretaba y no pasaba
-            nada, en silencio. Ahora las dos cosas llaman a `irALaVista`, que es el único lugar
-            que decide qué significa abrir una pantalla. Ver `lib/aios/shell.js`.
+        {inicio ? (
+          <button
+            type="button"
+            className={vista === inicio.seccion ? 'nb-nueva on' : 'nb-nueva'}
+            aria-current={vista === inicio.seccion ? 'page' : undefined}
+            onClick={() => irALaVista(inicio.seccion)}
+          >
+            <svg className="nb-ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nueva conversación
+          </button>
+        ) : null}
 
-            La fila del nombre ES el disparador, y su menú abre hacia arriba: es lo último de la
-            barra, así que hacia abajo se saldría de la pantalla. El modificador está en
-            `app/armazon.css`.
+        {inicio ? (
+          <div className="nb-reunion">
+            <svg className="nb-ico" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4 12H2M22 12h-2" />
+            </svg>
+            <span className="n">Reunión de hoy</span>
+            <span className="nb-proximamente">Próximamente</span>
+          </div>
+        ) : null}
 
-            La sección se le pasa como DATO. Con la clave escrita a mano acá volvería la lista
-            paralela por la puerta de atrás: un `irALaVista` con una clave literal en este archivo
-            es exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón — el día que la
-            clave cambie, el menú seguiría funcionando y este atajo no. */}
-        <MenuDeUsuario
-          sesion={sesion}
-          seccion={enElPie[0] ?? null}
-          alIrALaSeccion={(clave, nombre) => {
-            irALaVista(clave, nombre);
-          }}
-        />
-      </div>
-    </aside>
+        {departamentos.length > 0 ? (
+          <div className="nb-departamentos">
+            <span className="nb-rotulo">DEPARTAMENTOS</span>
+            {departamentos.map((d) => {
+              const desplegadoEste = desplegado === d.clave;
+              const puntoEnLaCabecera =
+                !desplegadoEste &&
+                d.entradas.some((e) => e.seccion === 'tools' && e.pestana !== null && enVuelo[e.pestana] > 0);
+              return (
+                <div className="nb-departamento" key={d.clave}>
+                  <button
+                    type="button"
+                    className={desplegadoEste ? 'nb-cabecera abierta' : 'nb-cabecera'}
+                    aria-expanded={desplegadoEste}
+                    aria-controls={`nbDepartamento-${d.clave}`}
+                    aria-describedby={puntoEnLaCabecera ? 'navScrapeando' : undefined}
+                    onClick={() => setDesplegado(desplegadoEste ? null : d.clave)}
+                  >
+                    <IconoDelDepartamento clave={d.clave} />
+                    <span className="n">{d.nombre}</span>
+                    {puntoEnLaCabecera ? <span className="nav-scrapeando" aria-hidden="true" /> : null}
+                    <svg className="nb-galon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </button>
+                  {/* Cerrado se esconde con `hidden` y no se deja de dibujar: así el `aria-controls`
+                      siempre apunta a algo, y lo escondido sale del orden del tabulador. */}
+                  <div className="nb-entradas" id={`nbDepartamento-${d.clave}`} hidden={!desplegadoEste}>
+                    {d.entradas.map((e) => {
+                      if (e.proximamente) {
+                        /* «Próximamente» (`NE-13`): no es un botón, no navega y no lleva el atributo
+                           que la navegación busca. Dice la palabra: el tono no alcanza, porque una
+                           entrada en reposo ya es el piso del texto de la marca. */
+                        return (
+                          <div className="nb-proxima" key={e.nombre}>
+                            <span className="n">{e.nombre}</span>
+                            <span className="nb-proximamente">Próximamente</span>
+                          </div>
+                        );
+                      }
+                      const marcada = abierta?.departamento === d.clave && abierta.nombre === e.nombre;
+                      const punto = e.seccion === 'tools' && e.pestana !== null && enVuelo[e.pestana] > 0;
+                      return (
+                        <button
+                          type="button"
+                          className={marcada ? 'nav-item on' : 'nav-item'}
+                          key={e.nombre}
+                          data-view={e.seccion}
+                          aria-current={marcada ? 'page' : undefined}
+                          aria-describedby={punto ? 'navScrapeando' : undefined}
+                          onClick={() => irALaVista(e.seccion, { pestana: e.pestana })}
+                        >
+                          <span className="n">{e.nombre}</span>
+                          {punto ? <span className="nav-scrapeando" aria-hidden="true" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* El pie: la persona, ADMIN o USUARIO, y el engranaje con el único menú de la cuenta
+            (`NE-14`). Vive entero en `MenuDeUsuario.jsx`, con su cierre de sesión. */}
+        <div className="nav-foot">
+          <MenuDeUsuario sesion={sesion} engranaje={engranaje} alIrALaSeccion={irALaVista} />
+        </div>
+      </nav>
+
+      {/* Lo que el punto dice, para un lector de pantalla. Una región viva SIEMPRE montada y FUERA de
+          la barra: en el teléfono el cajón cerrado lleva `visibility: hidden`, que saca todo lo de
+          adentro del árbol de accesibilidad, y una región que aparece de golpe no se anuncia. */}
+      <span className="para-lectores" id="navScrapeando" role="status">
+        {textoEnVuelo}
+      </span>
     </>
   );
 }

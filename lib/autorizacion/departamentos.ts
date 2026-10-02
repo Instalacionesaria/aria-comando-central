@@ -16,8 +16,8 @@
 //
 // Porque una sección ya no vive en un solo lugar: Tools reparte sus pestañas en tres departamentos y
 // Analizadores en dos (`NE-19`). Un campo `departamento` en la sección no lo puede decir; una tabla
-// de entradas sí. Y `secciones.ts` no se toca: cerca de cien citas `archivo:línea` de los documentos
-// dependen de sus líneas.
+// de entradas sí. Y a `secciones.ts` no se le agregan ni se le quitan líneas: cerca de cien citas
+// `archivo:línea` de los documentos dependen de ellas (`NE-33`).
 //
 // ── LO QUE ESTO NO ES ───────────────────────────────────────────────────────
 //
@@ -160,4 +160,27 @@ export function menuPorDepartamentos(
     departamentos,
     engranaje: FUERA.engranaje.map(ref).filter((r) => r !== null),
   };
+}
+
+/**
+ * La entrada abierta, para marcarla en la barra y abrir su departamento (`NE-11`), o `null`.
+ *
+ * `seccion` es la pantalla a la vista y `pestana`, la que esa pantalla dibuja: no la última que se
+ * pidió, porque Tools y Analizadores cambian de pestaña por dentro. Una sección repartida en varios
+ * departamentos EXIGE la pestaña —sin ella no se sabe cuál de sus entradas es— y da `null` en vez
+ * de adivinar. El Inicio y el engranaje no son de ningún departamento: `null`.
+ */
+export function entradaAbierta(
+  navegacion: Navegacion,
+  seccion: string | null,
+  pestana: string | null,
+): { departamento: ClaveDeDepartamento; nombre: string } | null {
+  if (seccion === null) return null;
+  for (const d of navegacion.departamentos) {
+    for (const e of d.entradas) {
+      if ('proximamente' in e || e.seccion !== seccion) continue;
+      if (e.pestana === null || e.pestana === pestana) return { departamento: d.clave, nombre: e.nombre };
+    }
+  }
+  return null;
 }

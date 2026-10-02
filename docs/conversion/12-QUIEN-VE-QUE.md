@@ -86,7 +86,7 @@ adoptó por decisión del 2026-09-18.
   direcciones**: con la bandera puesta, crear una ruta que declare `PANTALLA = 'conversion'` pone la
   suite en rojo; sin la bandera y sin ruta, también. **La bandera y la ruta se mueven juntas, en el
   mismo cambio.** Conversion sería el **tercer departamento** que la baja.
-- **`galon: true` se queda.** El precedente ya resolvió esa duda: *«el galón es del prototipo… Lo que
+- **`galon: true` se queda** (desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja). El precedente ya resolvió esa duda: *«el galón es del prototipo… Lo que
   estaba mal no era el adorno: era que detrás no hubiera nada»* (`secciones.ts:257-261`).
 
 ---

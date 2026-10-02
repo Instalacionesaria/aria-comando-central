@@ -61,7 +61,7 @@
 **Construido y funcionando desde el 2026-09-23, en una sola empresa y con poco volumen.**
 
 Es la única parte del producto que juzga una llamada de venta real: la sección `analizadores`
-(grupo Operación, debajo de Closer) descubre cada hora las reuniones de tl;dv, las clasifica en HT,
+(grupo Operación, debajo de Closer; desde el 2026-10-02, en Sales y en Client Success) descubre cada hora las reuniones de tl;dv, las clasifica en HT,
 OB u OTRO, las analiza con Sonnet y deja una ficha del prospecto en cada HT. Medido el 2026-09-28 a
 las 18:05 UTC, en la organización `aria`: **115 reuniones** —107 copiadas una vez de ARIA Brain y 8
 que Comando Central descubrió por su cuenta en cinco días—, **48 analizadas** (38 HT y 10 OB), 46
@@ -123,24 +123,29 @@ La sección se declara en `lib/autorizacion/secciones.ts:362-367` —clave `anal
 debajo de Closer porque «es el mismo trabajo mirado después», una sola casilla aunque adentro haya
 dos pestañas, y su propia capacidad porque con `closer.ver` «cualquier closer leería las
 transcripciones de todo el equipo». La monta `components/views/AnalizadoresView.jsx:15-33` («Cada
-llamada de tl;dv, juzgada») y el cuerpo es `components/analizadores/PanelDeAnalizadores.jsx` (536, desde la etapa E9; eran 511
+llamada de tl;dv, juzgada») y el cuerpo es `components/analizadores/PanelDeAnalizadores.jsx` (541 desde la etapa E10, 536 en la E9; eran 511
 líneas), con `DetalleHt.jsx` (408) y `DetalleOb.jsx` (333) en la misma carpeta.
+
+**Después del corte, el 2026-10-02** (nueva estructura, etapa E10): la barra lateral ya no tiene grupos. Las
+dos pestañas se abren como Sales › Analizador HT y Client Success › Analizador OB, y la pantalla anuncia la
+que dibuja, para que la barra marque la entrada correcta aunque se cambie con su barra HT/OB
+(`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`). La sección y su permiso no cambiaron.
 
 ── **LA LISTA** ──
 
 Dos pestañas, «HT · Venta» y «OB · Onboarding», y tres filtros, Analizadas · Pendientes ·
-Descartadas (`components/analizadores/PanelDeAnalizadores.jsx:45-54`). Cada filtro es una lista
+Descartadas (`components/analizadores/PanelDeAnalizadores.jsx:46-55`). Cada filtro es una lista
 cerrada de estados (`lib/analizadores/datos.ts:524-528`: DONE; PENDING, ANALYZING y FAILED;
 NOT_MATCH), y **las Descartadas de una pestaña son sus vetadas más todas las OTRO**, porque una OTRO
 no es de ninguna y se reencamina desde cualquiera (`lib/analizadores/datos.ts:553-555`). Dos botones
 arriba: «Sincronizar con tl;dv», deshabilitado sin la llave de tl;dv, y «Analizar transcripción»,
 que abre el formulario de la transcripción pegada a mano
-(`components/analizadores/PanelDeAnalizadores.jsx:307-318`). Cada fila dice título, fecha, motivo
+(`components/analizadores/PanelDeAnalizadores.jsx:312-323`). Cada fila dice título, fecha, motivo
 del descarte o error del fallo, puntaje y estado, y ofrece Ver, Analizar o Reintentar, Mover a la otra
-pestaña o a «No es HT ni OB», y Borrar (`components/analizadores/PanelDeAnalizadores.jsx:385-436`).
+pestaña o a «No es HT ni OB», y Borrar (`components/analizadores/PanelDeAnalizadores.jsx:390-441`).
 Sincronizar descubre y después analiza **de a una petición** solo las PENDING; las FAILED no, porque
 reintentarlas es una decisión de quien leyó el error
-(`components/analizadores/PanelDeAnalizadores.jsx:216-242`).
+(`components/analizadores/PanelDeAnalizadores.jsx:221-247`).
 
 ── **LOS DOS DETALLES** ──
 
@@ -155,7 +160,7 @@ defecto v8 del historial), «Fase N» si no hay forma de saberlo y una nota si n
 
 Su propio encabezado la declara «lo MÍNIMO que hace funcionar el flujo»
 (`components/analizadores/PanelDeAnalizadores.jsx:6-7`). Fuera del número entre paréntesis de cada
-filtro (`components/analizadores/PanelDeAnalizadores.jsx:367`), no hay un solo agregado: ni puntaje
+filtro (`components/analizadores/PanelDeAnalizadores.jsx:372`), no hay un solo agregado: ni puntaje
 medio, ni llamadas por closer, ni tendencia. No hay costo (decisión 8). No hay forma de reanalizar
 una DONE desde la pantalla —solo la API lo acepta, y el 2026-09-25 se decidió dejar así la HT de análisis
 vacío (`docs/OTROS/analizadores/ANALIZADORES.md:205-209`)—. No hay transcripción: ninguna respuesta
@@ -194,7 +199,7 @@ la llave (`lib/autorizacion/secciones.ts:362-367`).
 `components/analizadores/` no devuelve ninguna cifra: solo la escala del puntaje del detalle HT, los
 dos `/10` y el rótulo «Para llegar a 10» (`components/analizadores/DetalleHt.jsx:190`,
 `components/analizadores/DetalleHt.jsx:209` y `components/analizadores/DetalleHt.jsx:214`), y el
-`[00:05]` de ejemplo del formulario manual (`components/analizadores/PanelDeAnalizadores.jsx:523`).
+`[00:05]` de ejemplo del formulario manual (`components/analizadores/PanelDeAnalizadores.jsx:528`).
 Todo lo demás sale de las seis tablas y del estado de las llaves. Lo que está escrito a mano son
 decisiones de operación:
 
@@ -223,7 +228,7 @@ decisiones de operación:
 | Versión de la ficha | `ficha.es@v1` | `lib/analizadores/nucleo/prospect-card.ts:780` |
 
 Uno de esos números está **escrito dos veces**: los 15 minutos de la colgada vuelven a aparecer en
-`components/analizadores/PanelDeAnalizadores.jsx:59-60`, con el comentario «La base usa el mismo».
+`components/analizadores/PanelDeAnalizadores.jsx:60-61`, con el comentario «La base usa el mismo».
 Ninguna prueba los ata (un `grep` de `MINUTOS_PARA_DARLA_POR_COLGADA` en `pruebas/` no devuelve nada),
 a diferencia de los 285 s, que sí están atados a `maxDuration`
 (`pruebas/base/173-tarea-del-analizador.test.ts:240`).
@@ -464,7 +469,7 @@ paga cuatro veces sin una sola fila de tokens.
 de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), y un informe OB empieza por los
 datos del cliente. Medido: la única FAILED de hoy tiene en su error el nombre de una persona y de su
 empresa. Se guarda hasta 500 caracteres (`lib/analizadores/datos.ts:55`), la lista lo devuelve y la
-fila lo dibuja (`components/analizadores/PanelDeAnalizadores.jsx:401`). Para quien la ve es su propia
+fila lo dibuja (`components/analizadores/PanelDeAnalizadores.jsx:406`). Para quien la ve es su propia
 empresa; para quien mida con SQL, **leer `error` es leer datos personales**: esta foto lo leyó una
 vez para saber la causa, y por eso lo sabe, y no lo copia.
 
@@ -483,7 +488,7 @@ OB, y hasta que llegue el mapa de nombres una venta nueva puede seguir el mismo 
 
 **Nueve personas ven una pestaña vacía.** En las otras empresas la sección aparece, dice «No hay
 llamadas en este filtro» y deja Sincronizar deshabilitado con su motivo en el `title`
-(`components/analizadores/PanelDeAnalizadores.jsx:307-315`), que en un teléfono no se ve.
+(`components/analizadores/PanelDeAnalizadores.jsx:312-320`), que en un teléfono no se ve.
 
 **Los documentos de requisitos quedaron atrás de los hechos.**
 `docs/OTROS/analizadores/ANALIZADORES.md:116` dice que falta el hito de 24 h,

@@ -73,7 +73,7 @@ export default function CommandCenter() {
       <IconSprite />
 
       <div className="app">
-        <TopBar arranque={sesion?.arranque ?? null} />
+        <TopBar />
         <Nav />
 
         <main className="main">

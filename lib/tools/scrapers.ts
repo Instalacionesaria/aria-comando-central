@@ -417,3 +417,17 @@ export async function analizarAnuncios(trabajo: string): Promise<ResultadoDelAna
   }
   return { tipo: 'fallo', mensaje: SIN_RESPUESTA };
 }
+
+/**
+ * La pestaña de Tools donde la barra lateral dibuja el punto de «hay un scraping corriendo»
+ * (`components/Nav.jsx`): la puerta desde la que el trabajo se vuelve a ver. La fuente dice qué se
+ * corre, no desde dónde se lanzó —Maps lo lanzan el Scraper, Prospección e ICP; anuncios, el Espía,
+ * el Scraper, Prospección e ICP—, así que se elige una puerta por fuente. Las búsquedas de anuncios
+ * van al Espía, que las retoma al abrirse. El resto va al Scraper, que retoma Maps al abrirse y cada
+ * otra fuente recién al tocar su pestaña, porque monta un solo formulario a la vez
+ * (`components/tools/Scraper.jsx`). Prospección lleva el mismo Scraper adentro, pero el punto no se
+ * repite ahí: una puerta por trabajo.
+ */
+export function pestanaQueLoRetoma(fuente: string): 'espia' | 'scraper' {
+  return fuente === 'ad-spy' ? 'espia' : 'scraper';
+}

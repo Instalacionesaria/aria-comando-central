@@ -140,7 +140,7 @@ export interface Seccion {
  *
  * El primero no tiene etiqueta visible y los otros dos sí — es así en el prototipo, y el
  * `null` lo dice en vez de dejarlo a que alguien se acuerde. La clave `'AIOS'` igual existe
- * porque `lib/aios/shell.js` la usa para la miga de pan.
+ * porque `lib/aios/shell.js` la usó para la miga de pan, hasta la etapa E10 de la nueva estructura.
  */
 export const GRUPOS_DEL_MENU: readonly {
   clave: string;
@@ -434,8 +434,8 @@ export const SECCIONES: readonly Seccion[] = [
     // en `aios-command-center_1.html`, así que compararla daría un rojo permanente — y un rojo
     // permanente no se arregla, se ignora, y con él se ignoran los demás.
     //
-    // Va en «Operación» y no en el pie: el pie solo dibuja `enElPie[0]` (`components/Nav.jsx`),
-    // así que una segunda sección ahí **no se vería y nada fallaría**.
+    // No iba en el pie: el pie dibujaba sólo `enElPie[0]`, y una segunda sección ahí **no se veía y
+    // nada fallaba**. Desde la etapa E10 va en el engranaje de la barra, que muestra todas (`NE-14`).
     clave: 'monitoreo',
     nombre: 'Panel de Monitoreo',
     capacidadRequerida: 'monitoreo.ver',
@@ -808,14 +808,14 @@ export function seccionesConAlcance(
 /**
  * Las secciones del MENÚ visibles, agrupadas y en el orden del prototipo.
  *
- * Existe para que `components/Nav.jsx` no tenga que saber nada de grupos ni de orden: si esa
- * lógica viviera en el componente, volveríamos a tener dos listas que se pueden desordenar
- * una respecto de la otra.
+ * Existe para que nadie del cliente tenga que saber de grupos ni de orden: el servidor lo arma
+ * una vez, y de acá salen el arranque y la navegación por departamentos (desde la etapa E10, la
+ * barra lateral lee esa navegación y no los grupos).
  *
- * Los grupos que quedan sin ninguna sección visible **no se devuelven**. Un `<div
- * class="nav-group">` con su etiqueta y nada adentro deja un título flotando sobre el vacío —
- * que le dice al usuario que ahí hay algo que no puede ver, cuando lo que corresponde es que
- * no sepa que existe.
+ * Los grupos que quedan sin ninguna sección visible **no se devuelven**. Hasta E10, cada uno era
+ * un `<div class="nav-group">` con su etiqueta, y uno vacío dejaba un título flotando sobre el
+ * vacío. Hoy nadie los dibuja, pero la sesión los manda: uno vacío le diría a la persona que ahí
+ * hay algo que no puede ver, cuando lo que corresponde es que no sepa que existe.
  */
 export function menuVisible(
   permisos: ReadonlySet<string>,
@@ -861,11 +861,11 @@ export function menuVisible(
  * sección fuera Ajustes, abrir en Ajustes es lo correcto. Es la regla que `Nav.jsx` ya aplicaba;
  * acá queda escrita una vez.
  *
- * Devuelve el `clave` del GRUPO y no su `etiqueta`, a propósito: es lo que muestra la miga hoy
- * —`irALaVista` hace `GROUP[clave]`— y el primer grupo tiene `etiqueta: null`, así que con la
- * etiqueta la miga de un ejecutivo quedaría vacía. La rareza de que el pie diga «Pie» se hereda de
- * `lib/aios/shell.js`, donde ya está anotada como trabajo aparte; lo que no puede pasar es que este
- * lugar y el clic en el menú muestren cosas distintas para la misma pantalla.
+ * Devuelve el `clave` del GRUPO y no su `etiqueta`: era lo que mostraba la miga de pan, que hacía
+ * `GROUP[clave]` en `lib/aios/shell.js`. La miga y `GROUP` se fueron en la etapa E10 de la nueva
+ * estructura y el grupo quedó sin quien lo dibuje: la barra lateral marca la entrada abierta con
+ * `navegacion` (`lib/autorizacion/departamentos.ts`). Se conserva para no mover este archivo, cuyas
+ * líneas citan los documentos (`NE-33`).
  *
  * @param menu lo que devuelve `menuVisible`, con el alcance ya aplicado.
  * @returns `null` cuando no hay ninguna sección. No se inventa una: quien llama tiene que poder

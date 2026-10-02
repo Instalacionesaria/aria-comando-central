@@ -92,7 +92,7 @@ plausibles—, en el campo `tel` y `mail` de su entrada. Son inventados, y esta 
 un teléfono con forma real en un documento es un teléfono, lo haya inventado quien lo haya inventado.
 
 **Requisito** · Ninguna vuelve a la interfaz. Hoy la vigilancia de nombres inventados
-(`pruebas/codigo/91-closer-y-setter.test.ts:427-465`) ya tenía una de ellas —Andrea Salas, `:438`—, y
+(`pruebas/codigo/91-closer-y-setter.test.ts:425-463`) ya tenía una de ellas —Andrea Salas, `:441`—, y
 LP-6 le agrega las demás (`LP10-10`).
 
 ### LP10-03 · El nombre de un closer real, con dos ventas que no existen
@@ -107,7 +107,7 @@ asistió (`:44`) y otra agendada (`:48`). **Medido el 2026-09-27: cero ventas y 
 base.** La pantalla le adjudica a una persona con nombre $14.100 que no vendió.
 
 Es el mismo nombre que dibujaba la maqueta de Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:32`)
-y el que la vigilancia ya lista (`pruebas/codigo/91-closer-y-setter.test.ts:442`). Esta carpeta no lo
+y el que la vigilancia ya lista (`pruebas/codigo/91-closer-y-setter.test.ts:440`). Esta carpeta no lo
 escribe.
 
 **Y un rótulo que finge un segundo closer:** «Asesor comercial» en otras cuatro
@@ -223,7 +223,7 @@ Borrar la maqueta no borra las preguntas que hacía. Sobreviven, con su ficha en
 - **la clave `contacts`** (`lib/autorizacion/secciones.ts:222`) **y el `id="v-contacts"`**
   (`aios-command-center_1.html:3024`).
 
-**El galón del menú se queda** (`lib/autorizacion/secciones.ts:226`): el precedente de Sales y
+**El galón del menú se queda** (`lib/autorizacion/secciones.ts:226`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja): el precedente de Sales y
 Creative es que el adorno no era lo que estaba mal (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:113-114`).
 
 ---
@@ -258,7 +258,7 @@ Hecho en LP-6, fila por fila:
 | `lib/aios/leads-group.js` | salieron el clic de la fila y la preselección del pie, reemplazados por la misma cantidad de líneas de comentario (`:57-59` y `:65-68`); **el texto no se tocó** | la global que llamaba ya no existe; la paridad compara el texto del cajón (`LP08-12`) |
 | `scripts/paridad.mjs` | `VISTAS` vacía (`:153`, con su motivo en `:134-152`); salieron los pasos del calendario y de la ficha y el del cajón se mudó a Executive (`:157-170` y `:212`) | la vista ya no es el port literal; la compuerta no se retira porque quedan pasos de Executive (`LP08-12`, punto 6) |
 | `pruebas/codigo/90-fundaciones.test.ts` | la prueba de `:1274-1339` exige la lista vacía, que ningún paso nombre `#v-contacts` y que el cajón se abra desde Executive | exigía `['contacts']` exactamente |
-| `pruebas/codigo/91-closer-y-setter.test.ts` | `INVENTADOS` (`:422-460`) suma los catorce nombres del portal que faltaban y los dos que sólo están en el cajón; **`AMBITO` (`:476-483`) y `ENFOQUE` (`:513-518`) se ampliaron a `components/leads-portal/` y a `components/views/ContactsView.jsx`** | sin ampliar el alcance, los nombres nuevos se vigilarían **sólo donde nunca estuvieron**: las dos listas miraban Closer, Setter y `components/negocio/`. Lo mismo vale para el barrido de montos (`:503`) |
+| `pruebas/codigo/91-closer-y-setter.test.ts` | `INVENTADOS` (`:425-463`) suma los catorce nombres del portal que faltaban y los dos que sólo están en el cajón; **`AMBITO` (`:479-486`) y `ENFOQUE` (`:516-521`) se ampliaron a `components/leads-portal/` y a `components/views/ContactsView.jsx`** | sin ampliar el alcance, los nombres nuevos se vigilarían **sólo donde nunca estuvieron**: las dos listas miraban Closer, Setter y `components/negocio/`. Lo mismo vale para el barrido de montos (`:503`) |
 | `pruebas/codigo/178-la-maqueta-del-leads-portal-se-fue.test.ts` | nueva | que el archivo ya no exista, que no quede `initLeadsPortal` ni `window.AIOSLeadCard`, que la vista no tenga `lpPlanBtn`, `data-datepick` ni `data-leads`, que el panel nuevo no tenga montos literales, y que la ruta de detalle no importe la sincronización |
 
 **Y lo que no es de LP-6 y fue antes, en el commit de la ruta (LP-4):** la bandera
@@ -355,6 +355,6 @@ ahora sólo para que un diff contra el prototipo diga qué se desvió.
 **Resuelta el 2026-10-01** (nueva estructura, E7): se borraron con la maqueta del Executive, junto con el cajón y el paso de paridad que las sostenía. El plan las deja porque la compuerta de paridad compara el texto del cajón contra el prototipo, y
 cambiarlo daría rojo permanente en el paso mudado. Es la misma razón por la que `aios.css` no se
 toca, y tiene el mismo costo: **una pantalla que la gente abre sigue mostrando personas y montos
-inventados**. `pruebas/codigo/91-closer-y-setter.test.ts:467-479` dejó escrito que vaciar una
+inventados**. `pruebas/codigo/91-closer-y-setter.test.ts:465-477` dejó escrito que vaciar una
 pantalla sin tener de dónde traer datos es una decisión de producto; ésta lo es, y Executive
 todavía no tiene de dónde traerlos.

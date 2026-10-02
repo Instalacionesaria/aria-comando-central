@@ -16,8 +16,8 @@
 // Cualquiera puede llamar a la API con su sesión y una herramienta de línea de comandos; el
 // menú solo evita que la gente vea puertas que no puede abrir."*
 //
-// Alguien que borre este contexto con las herramientas del navegador ve las diez entradas del
-// menú y ni una fila de datos, porque los datos los sirve el API y ahí decide el portero.
+// Alguien que lo cambie con las herramientas del navegador puede hacer aparecer entradas que no
+// le tocan, y detrás no ve ni una fila de datos: los datos los sirve el API, y ahí decide el portero.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createContext, useContext } from 'react';
@@ -48,9 +48,9 @@ export interface DatosDeSesion {
    * Con qué pantalla se abre, decidido por el servidor con `seccionDeArranque()`.
    *
    * `null` es un estado real y hay que poder distinguirlo: un rol restringido sin ninguna sección
-   * concedida no tiene pantalla que abrir. Los tres consumidores —la fila marcada, la vista
-   * dibujada y la miga de pan— leen ESTE campo en vez de deducirlo cada uno del menú, que es como
-   * la miga terminó diciendo «Executive» a alguien que no ve Executive.
+   * concedida no tiene pantalla que abrir. Lo leen la vista dibujada y, en el primer dibujo, la
+   * barra lateral, en vez de deducirlo cada una del menú: así fue como la miga de pan —que se fue
+   * en la etapa E10— terminó diciendo «Executive» a alguien que no ve Executive.
    */
   arranque: { seccion: SeccionDelMenu; grupo: string } | null;
   /**

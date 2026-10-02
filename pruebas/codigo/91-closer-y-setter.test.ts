@@ -160,27 +160,22 @@ test('los `id="v-…"` de las vistas son exactamente las claves con menú', () =
   assert.deepEqual([...ids].sort(), [...CON_MENU].sort());
 });
 
-test('el mapa `GROUP` del armazón usa las mismas claves y los mismos grupos', () => {
-  // La segunda copia, y la que divergía. `shell.js` la usa para la miga de pan: una clave que
-  // no esté ahí deja la miga en blanco (`GROUP[id] || ''`) — **sin error**, que es la razón de
-  // que nadie lo hubiera notado.
-  const shell = leer('lib/aios/shell.js');
-  const bloque = shell.slice(shell.indexOf('const GROUP = {'), shell.indexOf('};', shell.indexOf('const GROUP = {')));
-  const pares = [...bloque.matchAll(/(\w+)\s*:\s*'([^']+)'/g)].map((m) => [m[1]!, m[2]!] as const);
-
-  assert.deepEqual(
-    pares.map(([k]) => k).sort(),
-    [...CON_MENU].sort(),
-    'las claves de `GROUP` no coinciden con las secciones que tienen menú',
-  );
-
-  // Y el GRUPO de cada una tiene que ser el mismo, no solo la clave. Si `secciones.ts` pone
-  // `closer` en "Operación" y `shell.js` lo pone en "Inteligencia", la entrada aparece en un
-  // grupo y la miga de pan dice el otro. Nada falla; el usuario deja de confiar en la miga.
-  for (const [clave, grupo] of pares) {
-    const s = SECCIONES.find((x) => x.clave === clave);
-    assert.equal(s?.menu?.grupo, grupo, `\`${clave}\` está en un grupo distinto en shell.js`);
-  }
+test('la copia `GROUP` del armazón no vuelve: se fue con la miga de pan', () => {
+  // Era la segunda copia de los grupos, y la que divergía: `shell.js` la usaba para la miga de pan, y
+  // una clave que faltara dejaba la miga en blanco sin error. Esta prueba la cruzaba con
+  // `secciones.ts`. Desde la etapa E10 de la nueva estructura no hay miga —la barra lateral dice
+  // dónde estás— y la copia se fue con ella. Lo que se cuida ahora es que no vuelva.
+  const shell = leer('lib/aios/shell.js').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(shell, /const GROUP\b|crumbNow|\.crumb\b/, '`shell.js` volvió a tener la miga de pan, o su copia de los grupos');
+  assert.doesNotMatch(leer('components/TopBar.jsx').replace(/\{\/\*[\s\S]*?\*\/\}/g, ''), /crumb/, 'la barra de arriba volvió a dibujar la miga');
+  /* Y con cualquier otro nombre: la barra de arriba no recibe nada de qué dibujar, y `irALaVista` no
+     escribe texto en ningún lado. Así volvería la miga sin llamarse `crumb`. */
+  const top = leer('components/TopBar.jsx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(top, /export default function TopBar\(\)/, 'la barra de arriba vuelve a recibir algo que dibujar');
+  assert.doesNotMatch(top, /arranque|sesion/, 'la barra de arriba vuelve a leer dónde estás');
+  assert.match(leer('components/CommandCenter.jsx'), /<TopBar \/>/, 'la barra de arriba vuelve a recibir algo que dibujar');
+  const ir = shell.slice(shell.indexOf('export function irALaVista'));
+  assert.doesNotMatch(ir.slice(0, ir.indexOf('\n}')), /textContent\s*=|innerText\s*=|innerHTML\s*=/, '`irALaVista` vuelve a escribir texto en la pantalla: la miga con otro nombre');
 });
 
 test('las vistas de la comparación con el prototipo son claves reales', () => {
@@ -233,6 +228,9 @@ test('`Nav.jsx` NO tiene ninguna entrada escrita a mano', () => {
      necesita un `data-view`: alcanzaría con un botón que llame `irALaVista('closer', …)`. Se prohíbe
      la clave literal, y `nav-item` sólo puede estar en la fila del `.map(`, en sus dos formas. */
   assert.doesNotMatch(nav, /irALaVista\(\s*['"`]/, 'Nav.jsx abre una pantalla con una clave escrita a mano');
+  // Ni con una constante: lo que abre sale de la navegación del servidor, el Inicio o una entrada.
+  const abre = new Set([...nav.matchAll(/irALaVista\(\s*([^,)]+)/g)].map((m) => m[1]!.trim()));
+  assert.deepEqual([...abre].sort(), ['e.seccion', 'inicio.seccion'], 'Nav.jsx abre una pantalla que no sale de la navegación del servidor');
   assert.equal((nav.match(/nav-item/g) ?? []).length, 2, 'Nav.jsx tiene una fila del menú fuera del `.map(`');
 
   // Los dos nombres que estaban fijos. "ARIA High Ticket" es el caso peor: es el nombre de la
@@ -281,9 +279,9 @@ test('un closer ve SU pestaña y nada más; un setter la suya', () => {
 });
 
 test('un grupo que queda sin secciones visibles NO se dibuja', () => {
-  // Un `<div class="nav-group">` con su etiqueta y nada adentro deja un título flotando sobre
-  // el vacío: le dice al usuario que ahí hay algo que no puede ver, cuando lo que corresponde
-  // es que no sepa que existe.
+  // Hasta la etapa E10, un grupo vacío era un título flotando sobre el vacío; hoy nadie dibuja
+  // grupos, pero la sesión los manda, y uno vacío le diría al usuario que ahí hay algo que no
+  // puede ver, cuando lo que corresponde es que no sepa que existe.
   const soloCloser = menuVisible(new Set(['closer.ver']), SIN_ALCANCE, DESDE_LA_PRINCIPAL);
   assert.equal(soloCloser.length, 1, 'quedaron grupos vacíos en el menú');
   assert.equal(soloCloser[0]!.grupo.clave, 'Operación');
@@ -1049,11 +1047,11 @@ test('Ajustes se abre desde el menú de la cuenta, sin simular el clic de una fi
   assert.ok(shell, 'no se encontró shell.js');
   assert.ok(/export function irALaVista/.test(shell), '`irALaVista` dejó de estar exportada');
   assert.ok(
-    /onClick=\{\(\) => irALaVista\(s\.clave, s\.nombre\)\}/.test(nav),
+    /onClick=\{\(\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\)\}/.test(nav),
     'las filas del menú dejaron de abrir por `irALaVista`: el enrutado volvió a estar duplicado',
   );
   assert.ok(
-    /alIrALaSeccion=\{(irALaVista\}|\(clave, nombre\) => \{\s*irALaVista\(clave, nombre\);)/.test(nav),
+    /alIrALaSeccion=\{(irALaVista\}|\(clave\) => \{\s*irALaVista\(clave\);)/.test(nav),
     'el desplegable de la cuenta dejó de abrir por `irALaVista`',
   );
 });

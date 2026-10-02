@@ -33,7 +33,8 @@ Medido en la revisión de la etapa 5 (2026-10-01). Ninguno se arregla cambiando 
 
 - **27 de tinte o resplandor** que no se apagan sin cambiar un color con significado: 25 en `app/aios.css`
   (el `.nav-item.on`, las tarjetas de meta y de ingresos del cockpit, `.icpc.on`, `.lg-open`, `.cw-go`…) y
-  2 en `app/fundaciones.css` (la barra de avance y `.fd-btn`). Unos 13 se dibujan.
+  2 en `app/fundaciones.css` (la barra de avance y `.fd-btn`). Unos 13 se dibujaban; desde la etapa E10, el
+  `.nav-item.on` ya no, porque la barra nueva marca la entrada con `surface-active`.
 - **El halo del Inicio** del closer y del setter (`.ck-hero::before`): un disco al 5 % difuminado 100 px.
   La marca no lleva resplandores.
 - **Los dos brillos de cabecera** de `--c-brillo` al 2,2 % (`.card-head`, `.acq-fhead`).

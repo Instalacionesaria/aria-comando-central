@@ -470,7 +470,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
 - **El mismo umbral escrito dos veces:** `MINUTOS_PARA_DARLA_POR_COLGADA = 15` en
-  `lib/analizadores/datos.ts:58` y en `components/analizadores/PanelDeAnalizadores.jsx:60`, sin
+  `lib/analizadores/datos.ts:58` y en `components/analizadores/PanelDeAnalizadores.jsx:61`, sin
   prueba que ate los dos.
 - **Nada fuera de la pestaña lee estos datos**: ni Sales, ni la ficha, ni Closer; `negocio.llamadas`
   sigue en cero filas (medido el 2026-09-28 a las 22:32 UTC). El error de una llamada fallida
@@ -621,7 +621,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 señala), `components/views/SalesView.jsx:19-20`.
   También en una migración
   (`db/migraciones/034_varios_closers.sql:38`) y en una prueba
-  (`pruebas/codigo/91-closer-y-setter.test.ts:434`, `pruebas/codigo/91-closer-y-setter.test.ts:442`):
+  (`pruebas/codigo/91-closer-y-setter.test.ts:432`, `pruebas/codigo/91-closer-y-setter.test.ts:440`):
   10 archivos con alguno de los dos apellidos (`grep -rl` sobre las siete carpetas de fuente,
   2026-09-28).
 - **El nombre de pila de una persona del equipo está en 43 archivos** (`grep -rl` sobre `lib/`,
@@ -644,7 +644,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - **Y uno que no está en el repositorio sino en la base:** el error de una llamada fallida guarda los
   primeros 200 caracteres de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), que en
   un informe OB empiezan por los datos del cliente, y la lista lo dibuja
-  (`components/analizadores/PanelDeAnalizadores.jsx:401`). Toda medición SQL que lea `error` lee
+  (`components/analizadores/PanelDeAnalizadores.jsx:406`). Toda medición SQL que lea `error` lee
   datos personales.
 
 ---
@@ -929,6 +929,14 @@ Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
 - **El menú no se puede usar con el teclado**: sus filas son `div` sin foco. Pasan a ser botones en la
   etapa E9. **Cerrado el 2026-10-01** en la etapa E9: las filas son `<button>` y la abierta lleva `aria-current`; en
   el teléfono, el cajón cerrado sale del orden del tabulador, así que las filas no son paradas invisibles.
+- **Los chips «Hereda de» de Tools llevan a Prospección** (encontrado el 2026-10-02 en la revisión de la
+  etapa E10). En Tu video de ventas y en Tu página, cada chip llama a `onIr` con el `id` de la herramienta
+  de ICP que produjo el dato (`components/fundaciones/PanelHerramienta.jsx:403`; las fuentes, en
+  `lib/fundaciones/herencia.ts:178`). Tools no tiene esos `id`, así que el panel cae a su primera
+  herramienta, Prospección en frío, y desde E10 la barra lo marca: se cierra Marketing y se abre Sales.
+  Para quien apretó «Hereda de: Oferta», es un salto que nada explica. El arreglo es que un chip cuya
+  herramienta vive en ICP & Oferta navegue allá, o no sea un botón, sabiendo que quien tiene Tools no
+  siempre ve ICP. Abierto.
 
 Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` (`60f5d81`), que no es de
 esa planificación ni lo corrige ninguna de sus etapas:

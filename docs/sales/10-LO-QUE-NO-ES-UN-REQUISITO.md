@@ -110,7 +110,7 @@ Lo que sigue como estaba:
 `SalesView.jsx` queda como cáscara de unas 75 líneas con el comentario de qué se tiró y por qué —la
 forma de `CreativeView.jsx` (70) y `ConversionView.jsx` (79)—.
 
-**El galón se queda** (`secciones.ts:304`). Es el precedente de Creative: el adorno es del prototipo y
+**El galón se queda** (`secciones.ts:304`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja). Es el precedente de Creative: el adorno es del prototipo y
 lo que estaba mal no era él, sino que detrás no hubiera nada.
 
 ---

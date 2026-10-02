@@ -870,3 +870,18 @@ export function activaDeLaPestana(
   if (herramienta) return herramienta.id;
   return vistas.some((v) => v.clave === pestana) ? pestana : null;
 }
+
+/**
+ * La clave de la pestaña que `Fundaciones.jsx` DIBUJA con `activa`: la inversa de
+ * `activaDeLaPestana`. Es lo que se ve, no lo que se pidió: un `id` que no está en el catálogo —el de
+ * un chip «Hereda de» que apunta a una herramienta de ICP— cae a la primera herramienta, igual que
+ * el panel que se dibuja.
+ */
+export function pestanaDeLaActiva(
+  herramientas: readonly Herramienta[],
+  vistas: readonly { clave: string }[],
+  activa: number | string,
+): string {
+  if (typeof activa === 'string' && vistas.some((v) => v.clave === activa)) return activa;
+  return (herramientas.find((h) => h.id === activa) ?? herramientas[0]!).clave;
+}

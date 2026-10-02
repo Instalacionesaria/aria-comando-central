@@ -69,8 +69,9 @@
 
   /* Los canales de superficie ya no copian cada uno a su fondo: cada uno vive en uno o dos
      degradados de `aios.css`, y la forma de aplanarlos sin tocar esa hoja (`NE-27`) es darle el
-     MISMO valor a los dos extremos. `.topbar` y `.nav` van de `--c-alto` a `--c-hundido`, los dos en
-     `bg-alt`; `--c-panel`, `--c-hondo` y `--c-base` (los de `.side` y `.ask`, que ya no se dibujan)
+     MISMO valor a los dos extremos. `.topbar` va de `--c-alto` a `--c-hundido`, los dos en `bg-alt`
+     (`.nav` también, hasta la etapa E10: ahora es lisa, sobre `--bg`, en `app/armazon.css`);
+     `--c-panel`, `--c-hondo` y `--c-base` (los de `.side` y `.ask`, que ya no se dibujan)
      valen `surface-raised`, que al 50 % de las tarjetas translúcidas de operación da casi `bg-alt`.
 
      Los degradados de superficie que NO se aplanan, y por qué: los cajones —`.drawer`, el de las
@@ -457,12 +458,6 @@
    Un puñado de reglas del prototipo asume fondo oscuro de una forma que no pasa por los tokens.
    Se corrigen acá, por tema, y son pocas a propósito: cada una es una excepción y hay que poder
    contarlas. */
-:root[data-tema='claro'] .bmark {
-  /* La marca «A» del logo tiene su color escrito a mano —casi negro sobre el cian del prototipo— y
-     sobre el cian oscurecido del tema claro daba 3,79:1. */
-  color: #ffffff;
-}
-
 :root[data-tema='claro'] .md-join {
   /* El botón de «unirse a la sala» tiene su color escrito a mano —texto casi negro sobre cian
      claro— y en tema claro ese cian se pierde contra el panel blanco. */
@@ -490,9 +485,8 @@
    `--txt-faint` es `ink-3`, el tono más bajo que la marca acepta para texto: 5,3:1 sobre la superficie
    más clara. Algunas reglas del prototipo lo atenuaban además con `opacity`, y con el gris de antes
    les alcanzaba; con éste quedan por debajo de 4,5:1. Se les devuelve la opacidad entera acá, sin
-   tocar `aios.css`: los rótulos de grupo del menú lateral (4,0:1 al 80 %), el rótulo de tramo del
-   puntaje del Leads Portal (4,0:1 al 85 %) y el «=» de «sin variación» (2,7:1 al 60 %). */
-:root[data-tema] .nav-label,
+   tocar `aios.css`: el rótulo de tramo del puntaje del Leads Portal (4,0:1 al 85 %) y el «=» de
+   «sin variación» (2,7:1 al 60 %). Los rótulos de grupo del menú lateral se fueron con él (etapa E10). */
 :root[data-tema] .sc-l,
 :root[data-tema] .dlt.flat {
   opacity: 1;
@@ -511,11 +505,11 @@
 }
 
 /* El pie del menú es una fila, y su primer control —el menú de la persona— ocupa el ancho que
-   sobra. Tuvo al lado el botón de tema hasta que la aplicación quedó sólo oscura (`NE-23`). */
+   sobra. Tuvo al lado el botón de tema hasta que la aplicación quedó sólo oscura (`NE-23`); desde la
+   etapa E10 su fila la dibuja `.nb-pie`, en `armazon.css`. */
 .nav-foot {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .nav-foot > :first-child {

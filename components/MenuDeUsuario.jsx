@@ -1,6 +1,24 @@
 'use client';
 
-/* El menú de la cuenta. Vive en el PIE del menú lateral, junto al nombre de la persona.
+/* El pie de la barra lateral: la persona, ADMIN o USUARIO, y el engranaje con el único menú de la
+ * cuenta (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14` y `NE-15`).
+ *
+ * ── DESDE LA ETAPA E10 ──────────────────────────────────────────────────────
+ *
+ * El disparador dejó de ser la fila del nombre y pasó a ser el engranaje, como en el lienzo. El
+ * menú tiene lo que no es de ningún departamento —Ajustes, el Panel de Monitoreo e Incidentes, los
+ * que la persona vea (`navegacion.engranaje`)—, un separador, y siempre «Cambiar contraseña» y
+ * «Cerrar sesión». Si no le toca ninguna de las tres primeras, se abre igual con las dos últimas.
+ *
+ * El rótulo dice USUARIO a quien tiene el alcance restringido por pestañas y ADMIN a los demás. Sale
+ * de `restringido`, un booleano del servidor, y NUNCA del nombre del rol: el proyecto prohíbe
+ * decidir nada por el nombre de un rol (`pruebas/codigo/30-portero.test.ts`).
+ *
+ * La ventana de «Cambiar contraseña» se dibuja en el `body` y no dentro de la barra: la barra es un
+ * cajón con `transform` en el teléfono, y un `position: fixed` adentro queda encerrado en ella. Por
+ * eso, antes de abrirla, el cajón se cierra y el foco va al engranaje: con el cajón abierto, el primer
+ * toque en un campo de la ventana caía «afuera» del cajón y lo cerraba detrás, y al cerrar la ventana
+ * el foco volvía a «Cambiar contraseña», dentro de un menú ya escondido.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * SE MUDÓ DE LA BARRA SUPERIOR, Y NO FUE SOLO MOVERLO
@@ -40,7 +58,7 @@
  * sistema ya sabía hacer y no ofrecía.
  *
  * Va ARRIBA de «Cerrar sesión» —donde se pidió— y por una razón que se sostiene: el destructivo va
- * último. Es la misma regla que el pie del menú lateral ya aplica con sus dos botones de icono.
+ * último.
  *
  * ── POR QUÉ ABRE HACIA ARRIBA ───────────────────────────────────────────────
  *
@@ -50,8 +68,10 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { pedir } from '../lib/http/cliente.ts';
 import { usarCierreDeMenu } from '../lib/menu.ts';
+import { cerrarElMenu } from '../lib/aios/shell.js';
 import {
   AVISO_DE_OTRAS_SESIONES,
   MINIMO_PASSWORD,
@@ -59,7 +79,7 @@ import {
 } from '../lib/autenticacion/politica.ts';
 import Ventana from './Ventana.jsx';
 
-/** Las iniciales, igual que en el resto del menú. */
+/** Las iniciales, para el avatar del pie y el de la cabecera del menú. */
 function iniciales(nombre) {
   const partes = String(nombre ?? '')
     .trim()
@@ -70,15 +90,21 @@ function iniciales(nombre) {
   return (partes[0][0] + partes[1][0]).toUpperCase();
 }
 
-export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
+export default function MenuDeUsuario({ sesion, engranaje, alIrALaSeccion }) {
   const [abierto, setAbierto] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   /* La ventana del cambio de contraseña. Es estado propio y no del menú: el menú se cierra al
      abrirla —si no, el desplegable queda flotando encima— y la ventana tiene que sobrevivir a eso. */
   const [cambiando, setCambiando] = useState(false);
   const caja = useRef(null);
+  const engranajeRef = useRef(null);
 
-  const cerrar = useCallback(() => setAbierto(false), []);
+  /* Cerrar devuelve el foco al engranaje si estaba adentro: cerrado, el desplegable se esconde
+     (`app/armazon.css`) y el foco quedaría en un botón que ya no se ve. */
+  const cerrar = useCallback(() => {
+    setAbierto(false);
+    if (caja.current?.querySelector('.menu-pop')?.contains(document.activeElement)) engranajeRef.current?.focus();
+  }, []);
 
   /* Clic afuera y `Escape`. Las dos, porque un desplegable que solo cierra con un clic exacto
      queda abierto tapando el menú — es lo mismo que hacía `shell.js`. El efecto se mudó a
@@ -95,14 +121,28 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
     window.location.replace('/entrar');
   }, []);
 
-  const nombre = sesion?.usuarioNombre ?? '—';
+  /* `||` y no `??`: la guarda manda `''` cuando no sabe el nombre, y un pie vacío no dice nada. */
+  const nombre = sesion?.usuarioNombre || '—';
+  /* ADMIN o USUARIO (`NE-15`), de `restringido` y de nada más. Sin sesión, USUARIO: no promete nada. */
+  const rol = sesion?.restringido === false ? 'ADMIN' : 'USUARIO';
+  const destinos = engranaje ?? [];
 
   return (
-    <div className={`menu-wrap arriba${abierto ? ' open' : ''}`} ref={caja}>
-      {/* El disparador ES la fila del nombre: se ve igual que antes, y ahora abre el menú. */}
+    <div className={`menu-wrap arriba nb-pie${abierto ? ' open' : ''}`} ref={caja}>
+      <span className="nb-avatar" aria-hidden="true">
+        {iniciales(nombre)}
+      </span>
+      <span className="nb-persona">
+        <span className="nb-nombre">{nombre}</span>
+        <span className="nb-rol">{rol}</span>
+      </span>
+      {/* El engranaje: sólo él es interactivo, como en el lienzo. Su nombre no es «Ajustes», porque
+          no lleva a Ajustes: abre el menú. Y su área es de 28 px, aunque el dibujo sea de 17. */}
       <button
         type="button"
-        className="role-row disparador"
+        className="nb-engranaje"
+        ref={engranajeRef}
+        aria-label="Menú de la cuenta"
         aria-haspopup="menu"
         aria-expanded={abierto}
         onClick={(e) => {
@@ -110,12 +150,13 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
           setAbierto((v) => !v);
         }}
       >
-        <i>{iniciales(nombre)}</i>
-        <span className="n">{nombre}</span>
-        <span className="chev">⌃</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" />
+        </svg>
       </button>
 
-      <div className="menu-pop" role="menu">
+      <div className="menu-pop" role="menu" aria-label="Menú de la cuenta">
         <div className="mp-head">
           <span className="uav big">{iniciales(nombre)}</span>
           <span>
@@ -130,24 +171,24 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
           </span>
         </div>
         <div className="mp-sep" />
-        {/* Solo aparece si la persona TIENE la pantalla, y con SU nombre — los dos salen del
-            menú que armó el servidor. Un menú que ofrece algo que después responde 403 es la
-            misma mentira que una entrada de menú sin permiso. */}
-        {seccion ? (
+        {/* Sólo lo que la persona TIENE, y con SU nombre: los dos salen de la navegación que armó el
+            servidor. Un menú que ofrece algo que después responde 403 es la misma mentira que una
+            entrada de menú sin permiso. */}
+        {destinos.map((destino) => (
           <button
             type="button"
             className="mp-item"
             role="menuitem"
+            key={destino.seccion}
             onClick={() => {
-              setAbierto(false);
-              /* El nombre viaja con la clave, como dato, igual que desde las filas del menú
-                 (`Nav.jsx`): nadie lo lee del DOM para la miga de pan. */
-              alIrALaSeccion?.(seccion.clave, seccion.nombre);
+              cerrar();
+              alIrALaSeccion?.(destino.seccion);
             }}
           >
-            {seccion.nombre}
+            {destino.nombre}
           </button>
-        ) : null}
+        ))}
+        {destinos.length > 0 ? <div className="mp-sep" /> : null}
         {/* ARRIBA de «Cerrar sesión»: el destructivo va último. Y no lleva ninguna condición —
             cambiar la propia contraseña no depende de ninguna capacidad ni de ninguna pantalla, así
             que un `if` acá sería una puerta cerrada sobre algo que el servidor sí permite. */}
@@ -157,6 +198,8 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
           role="menuitem"
           onClick={() => {
             setAbierto(false);
+            engranajeRef.current?.focus();
+            cerrarElMenu();
             setCambiando(true);
           }}
         >
@@ -173,7 +216,7 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
         </button>
       </div>
 
-      {cambiando ? <CambiarPassword alCerrar={() => setCambiando(false)} /> : null}
+      {cambiando ? createPortal(<CambiarPassword alCerrar={() => setCambiando(false)} />, document.body) : null}
     </div>
   );
 }

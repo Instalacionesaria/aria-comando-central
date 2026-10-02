@@ -39,7 +39,8 @@ export const CADENCIA = {
    */
   operacion: 10_000,
   /**
-   * El puntito de «hay un scraping corriendo», en la entrada Tools del menú.
+   * El puntito de «hay un scraping corriendo», en la barra lateral: en Espía de anuncios o en
+   * Scraper, y en la cabecera de Research cuando está cerrado.
    *
    * ── ESTABA ESCRITO EN `Nav.jsx`, Y POR ESO SE ESCAPÓ DE LA REGLA ──────────
    *

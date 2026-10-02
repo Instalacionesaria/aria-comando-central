@@ -109,23 +109,31 @@ test('el conmutador y el menú se nombran igual, o el `aria-controls` apunta a l
   );
 });
 
-test('la rejilla del armazón tiene dos filas y dos columnas, y nadie pone `.solo`', () => {
+test('la rejilla del armazón: la barra de 260 px y el cuerpo, y nadie pone `.solo`', () => {
   /* La del prototipo (`aios.css`) tiene tres filas y tres columnas: el panel lateral y la barra «Pregúntale
      a Executive sobre …» de la maqueta del Executive, que se fueron el 2026-10-01 (`NE-30`). La regla base de
      `armazon.css` la pisa por capa, y tiene que pisar las TRES propiedades: sin las filas queda una
      franja vacía de 64 px abajo en todas las pantallas, y sin las columnas, una de 312 px a la derecha.
-     No falla nada: se ve. */
+     No falla nada: se ve.
+
+     Desde la etapa E10, en la computadora la barra lateral va de arriba abajo, como en el lienzo: una
+     fila, `260px` y el cuerpo. La barra de arriba sólo existe en el teléfono, donde lleva el
+     conmutador del cajón, y la rejilla del corte le devuelve su fila. */
   const css = leer('app/armazon.css');
   const base = sinMedios(css).match(/(?:^|\})\s*\.app\s*\{([^}]*)\}/);
   assert.ok(base, '`app/armazon.css` no tiene una regla `.app` fuera de las consultas de medios');
   const decl = (prop: string) => new RegExp(`${prop}:\\s*([^;]+);`).exec(base[1]!)?.[1]?.replace(/\s+/g, ' ').trim();
   const filas = decl('grid-template-rows');
   assert.ok(filas, 'la rejilla base no redefine las filas: queda la tercera, de 64 px, vacía abajo');
-  assert.equal(pistas(filas), 2, `la rejilla base tiene filas \`${filas}\`, y son dos`);
+  assert.equal(filas, 'minmax(0, 1fr)', `la rejilla base tiene filas \`${filas}\`, y es una`);
   const columnas = decl('grid-template-columns');
   assert.ok(columnas, 'la rejilla base no redefine las columnas: queda la tercera, de 312 px, vacía a la derecha');
-  assert.match(columnas, /^216px minmax\(0, 1fr\)$/, `la rejilla base tiene columnas \`${columnas}\``);
-  assert.equal(decl('grid-template-areas'), '"top top" "nav main"', 'las áreas de la rejilla base no son las del armazón sin panel ni barra');
+  assert.match(columnas, /^260px minmax\(0, 1fr\)$/, `la rejilla base tiene columnas \`${columnas}\``);
+  assert.equal(decl('grid-template-areas'), '"nav main"', 'las áreas de la rejilla base no son la barra y el cuerpo');
+  // La barra de arriba, escondida en la computadora y de vuelta en el corte.
+  const topbar = sinMedios(css).match(/(?:^|\})\s*\.topbar\s*\{([^}]*)\}/);
+  assert.ok(topbar && /(^|[\s;])display:\s*none\s*;/.test(topbar[1]!), 'la barra de arriba se ve en la computadora: ocupa una fila que la rejilla no tiene');
+  assert.match(bloqueDeMedios(css, CORTE_DEL_MENU), /\.topbar\s*\{[^}]*display:\s*flex\s*;/, 'en el teléfono no vuelve la barra de arriba: el cajón queda sin conmutador');
 
   // El corte: una columna, sin el área de la barra.
   const angosto = bloqueDeMedios(css, CORTE_DEL_MENU).match(/([^{}]*)\{([^}]*grid-template-areas[^}]*)\}/);
@@ -134,16 +142,25 @@ test('la rejilla del armazón tiene dos filas y dos columnas, y nadie pone `.sol
   assert.equal(/grid-template-areas:\s*([^;]+);/.exec(angosto[2]!)?.[1]?.replace(/\s+/g, ' ').trim(), '"top" "main"');
 
   /* Y ninguna OTRA regla de `.app` en las hojas de la capa `components` —la de `armazon.css` y las que
-     entran después, como `temas.css`— devuelve una tercera pista: ganaría por orden sobre la base, y
-     mirar sólo la primera regla la dejaba pasar. Tampoco la forma abreviada, que no se cuenta. */
+     entran después, como `temas.css`— devuelve una pista de más: ganaría por orden sobre la base, y
+     mirar sólo la primera regla la dejaba pasar. En la computadora es UNA fila y nunca el área de la
+     barra de arriba: una segunda fila es una franja vacía arriba de todo. Tampoco la forma abreviada,
+     que no se cuenta. Ni una regla que vuelva a mostrar la barra de arriba. */
   for (const hoja of hojasDeComponentes()) {
     for (const { selector, cuerpo } of reglas(sinMedios(leer(hoja)))) {
-      if (!selector.split(',').some((s) => /\.app\s*$/.test(s.trim()))) continue;
-      assert.doesNotMatch(cuerpo, /(^|[\s;])grid(-template)?\s*:/, `\`${hoja}\` define la rejilla de \`${selector.trim()}\` con la forma abreviada`);
-      for (const prop of ['grid-template-rows', 'grid-template-columns']) {
-        const valor = new RegExp(`${prop}:\\s*([^;]+);`).exec(cuerpo)?.[1];
-        if (valor) assert.ok(pistas(valor) <= 2, `\`${hoja}\` le da a \`${selector.trim()}\` ${prop} \`${valor.trim()}\`: vuelve una tercera pista`);
+      const selectores = selector.split(',').map((s) => s.trim());
+      if (selectores.some((s) => /\.topbar$/.test(s))) {
+        const display = /(^|[\s;])display:\s*([^;]+);/.exec(cuerpo)?.[2]?.trim();
+        if (display) assert.equal(display, 'none', `\`${hoja}\` muestra la barra de arriba en la computadora (\`${selector.trim()}\`)`);
       }
+      if (!selectores.some((s) => /\.app$/.test(s))) continue;
+      assert.doesNotMatch(cuerpo, /(^|[\s;])grid(-template)?\s*:/, `\`${hoja}\` define la rejilla de \`${selector.trim()}\` con la forma abreviada`);
+      const filas = /grid-template-rows:\s*([^;]+);/.exec(cuerpo)?.[1];
+      if (filas) assert.equal(pistas(filas), 1, `\`${hoja}\` le da a \`${selector.trim()}\` las filas \`${filas.trim()}\`: en la computadora es una`);
+      const columnas = /grid-template-columns:\s*([^;]+);/.exec(cuerpo)?.[1];
+      if (columnas) assert.ok(pistas(columnas) <= 2, `\`${hoja}\` le da a \`${selector.trim()}\` las columnas \`${columnas.trim()}\`: vuelve una tercera`);
+      const areas = /grid-template-areas:\s*([^;]+);/.exec(cuerpo)?.[1];
+      if (areas) assert.doesNotMatch(areas, /\btop\b/, `\`${hoja}\` le da a \`${selector.trim()}\` el área de la barra de arriba en la computadora`);
     }
   }
 
@@ -170,12 +187,23 @@ test('la barra sale del flujo hasta el borde de abajo, y no queda panel ni barra
   assert.match(nav[1]!, /bottom:\s*0\s*;/, 'el cajón del menú no llega al borde de abajo');
   /* Cerrado, el cajón se esconde además de correrse: con `transform` solo, sus filas —botones desde
      la etapa E9— eran paradas del tabulador fuera de la pantalla. Se esconde al TERMINAR de cerrarse,
-     y al abrir se muestra al instante: si no, `shell.js` enfocaría la primera fila todavía oculta. */
+     y al abrir se muestra al instante: si no, `shell.js` enfocaría un botón de la barra todavía oculto. */
   assert.match(nav[1]!, /visibility:\s*hidden\s*;/, 'el cajón cerrado sigue en el orden del tabulador');
   assert.match(nav[1]!, /transition:[^;]*visibility 0s linear \.22s/, 'el cajón se esconde antes de terminar de cerrarse');
   const abierto = angosto.match(/\.app\.menu-abierto \.nav\s*\{([^}]*)\}/);
   assert.ok(abierto && /visibility:\s*visible\s*;/.test(abierto[1]!), 'el cajón abierto no vuelve a ser visible');
   assert.doesNotMatch(abierto[1]!, /visibility\s+[\d.]+s/, 'el cajón abierto se muestra con retraso: el foco caería en un elemento oculto');
+
+  /* El velo empieza donde empieza el cajón, DEBAJO de la barra de arriba: tapada, el botón que cierra
+     el cajón quedaba oscurecido y desenfocado. */
+  const alto = /top:\s*(\d+px)\s*;/.exec(nav[1]!)?.[1];
+  assert.ok(alto, 'el cajón no dice dónde empieza');
+  const velo = angosto.match(/\.app\.menu-abierto::after\s*\{([^}]*)\}/);
+  assert.ok(velo, 'no se encontró el velo del cajón');
+  assert.ok(
+    new RegExp(`inset:\\s*${alto} 0 0 0\\s*;|top:\\s*${alto}\\s*;`).test(velo[1]!),
+    'el velo del cajón tapa la barra de arriba, con el botón que lo cierra',
+  );
 
   // Ninguna regla del panel lateral ni de la barra de preguntas: se fueron con la maqueta.
   assert.doesNotMatch(sinComentarios(css), /\.side\b|\.ask\b|\.ask-trigger|\.at-[tk]\b/, '`app/armazon.css` vuelve a tener reglas del panel lateral o de la barra de preguntas');

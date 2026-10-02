@@ -99,10 +99,10 @@ test('el pedido se guarda antes de avisar a TODOS, con un número que sube siemp
     alCambiarDeVista(() => { vistos.push([primero!, pedidoDeVista()]); }),
   ];
   try {
-    assert.equal(irALaVista('tools', 'Tools', { pestana: 'espia' }), true);
-    assert.equal(irALaVista('tools', 'Tools', { pestana: 'espia' }), true);
-    assert.equal(irALaVista('analizadores', 'Analizadores'), true);
-    assert.equal(irALaVista('tools', 'Tools', { pestana: 'landing' }), true);
+    assert.equal(irALaVista('tools', { pestana: 'espia' }), true);
+    assert.equal(irALaVista('tools', { pestana: 'espia' }), true);
+    assert.equal(irALaVista('analizadores'), true);
+    assert.equal(irALaVista('tools', { pestana: 'landing' }), true);
     for (const [uno, otro] of vistos) assert.deepEqual(uno, otro, 'dos oyentes del mismo aviso ven pedidos distintos');
     const [a, b, c, d] = vistos.map(([p]) => p);
     assert.deepEqual([a!.clave, a!.pestana, b!.clave, b!.pestana], ['tools', 'espia', 'tools', 'espia']);
@@ -111,7 +111,7 @@ test('el pedido se guarda antes de avisar a TODOS, con un número que sube siemp
        repetiría un número que Tools ya atendió, y no se aplicaría. */
     assert.ok(a!.secuencia < b!.secuencia && b!.secuencia < c!.secuencia && c!.secuencia < d!.secuencia, 'el número del pedido no sube siempre');
     // Una pantalla que no existe no deja pedido ni avisa.
-    assert.equal(irALaVista('setter', 'Setter', { pestana: 'x' }), false);
+    assert.equal(irALaVista('setter', { pestana: 'x' }), false);
     assert.equal(vistos.length, 4, 'una pantalla que no existe avisó');
     assert.deepEqual(pedidoDeVista(), d, 'una pantalla que no existe dejó un pedido');
   } finally {
@@ -159,11 +159,13 @@ test('el armazón no ata clics ni marca filas: las filas son botones de React', 
     // Un botón, y el que navega: el `onClick` en otro elemento dejaría a Enter sin efecto.
     assert.match(fila, /^<button\b/, `una fila del menú no es un botón: el teclado no llega (${fila.slice(0, 40)}…)`);
     assert.match(fila, /\stype="button"/, 'la fila no declara `type="button"`');
-    assert.match(fila, /\sonClick=\{\(\) => irALaVista\(s\.clave, s\.nombre\)\}/, 'la fila no abre su pantalla al apretarla');
-    assert.match(fila, /\saria-current=\{s\.clave === abierta \? 'page' : undefined\}/, 'la fila abierta no se anuncia como la actual');
-    assert.match(fila, /className=\{s\.clave === abierta \? 'nav-item on' : 'nav-item'\}/, 'la fila no marca la pantalla abierta');
+    assert.match(fila, /\sonClick=\{\(\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\)\}/, 'la fila no abre su pantalla, con su pestaña, al apretarla');
+    assert.match(fila, /\saria-current=\{marcada \? 'page' : undefined\}/, 'la fila abierta no se anuncia como la actual');
+    assert.match(fila, /className=\{marcada \? 'nav-item on' : 'nav-item'\}/, 'la fila no marca la entrada abierta');
   }
-  assert.match(nav, /const abierta = usarUbicacion\(\) \?\? primera;/, 'la fila marcada no sale de la pantalla abierta');
+  /* Desde la etapa E10 la marcada es la ENTRADA abierta: la pantalla a la vista más la pestaña que
+     dibuja (`193-la-barra-lateral.test.ts`). */
+  assert.match(nav, /const vista = usarUbicacion\(\) \?\? sesion\?\.arranque\?\.seccion\.clave \?\? null;/, 'la entrada marcada no sale de la pantalla abierta');
 
   /* El aspecto: SÓLO en la capa `base`, que pierde contra `aios`. En `components`, el hover y la fila
      marcada de `aios.css` perderían su fondo. */

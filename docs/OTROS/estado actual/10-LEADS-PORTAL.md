@@ -175,7 +175,7 @@ cierre, `PISO_DE_UNA_TASA = 10` sobre los contactos del tramo
 piso (`LP06-P01`, abierta). El guardián de ceros mira 14 días de la empresa, sin la ventana
 (`lib/negocio/leadsDelPortal.ts:62`, `:336-339`). La lista viaja entera hasta 5.000 filas
 (`lib/negocio/leadsDelPortal.ts:54`) y el reloj recarga cada 60 segundos sólo con la pestaña a la
-vista (`components/leads-portal/PanelDeLeadsPortal.jsx:73-77`, `lib/cadencia.ts:90`).
+vista (`components/leads-portal/PanelDeLeadsPortal.jsx:73-77`, `lib/cadencia.ts:91`).
 
 **Las pruebas**, según los mensajes de sus commits y **no re-corridas hoy** (este trabajo no corre la
 suite): la 175 de los tramos, en `pruebas/codigo/` (LP-1, sin cifras en su mensaje);

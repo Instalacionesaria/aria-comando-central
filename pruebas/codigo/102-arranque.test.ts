@@ -87,9 +87,11 @@ test('sin ninguna sección devuelve `null`, y no inventa una pantalla', () => {
 test('el armazón NO escribe ningún nombre de sección a mano', () => {
   // `TopBar`, `AskBar` y `Overlays` los traían del prototipo; los dos últimos se fueron con la maqueta
   // del Executive. Y el Inicio, que los reemplazó, no escribe «Inicio» en su marcado: su titular es el
-  // saludo, y el nombre de la pantalla sale del dato como el de todas.
+  // saludo, y el nombre de la pantalla sale del dato como el de todas. Desde la etapa E10, la barra y su
+  // pie escriben rótulos propios («Nueva conversación», «Cambiar contraseña»), y ninguno puede ser el
+  // nombre de una sección: ése sale de la navegación del servidor.
   const nombres = SECCIONES.map((s) => s.nombre);
-  for (const archivo of ['components/TopBar.jsx', 'components/views/ExecutiveView.jsx']) {
+  for (const archivo of ['components/TopBar.jsx', 'components/views/ExecutiveView.jsx', 'components/Nav.jsx', 'components/MenuDeUsuario.jsx']) {
     const fuente = leer(archivo);
     // Solo el JSX, no los comentarios: éstos CUENTAN la historia y nombran «Executive» a propósito.
     const sinComentarios = fuente
@@ -112,8 +114,8 @@ test('la capa imperativa no vuelve a tener su propia lista de nombres de secció
   // El chat de la maqueta del Executive tenía un `NAMES` con diez de las catorce claves y ya estaba
   // vencido: le faltaba `tools`, y el fallback `|| 'Executive'` hacía que el panel dijera «respondiendo
   // con datos de Executive» estando abierto en Tools. El chat se fue con la maqueta el 2026-10-01; la
-  // regla queda para todo `lib/aios/`. La única lista legítima es `GROUP`, en `shell.js`, que tiene su
-  // propia prueba que la cruza con `secciones.ts` (la `91`), así que se saca antes de mirar.
+  // regla queda para todo `lib/aios/`. La única lista legítima era `GROUP`, que se fue con la miga de
+  // pan en la etapa E10 (la `91` vigila que no vuelva); se sigue sacando antes de mirar, por si acaso.
   const dir = new URL('lib/aios/', RAIZ);
   for (const nombre of readdirSync(dir).filter((n) => n.endsWith('.js'))) {
     const codigo = leer(`lib/aios/${nombre}`)
@@ -128,9 +130,14 @@ test('la capa imperativa no vuelve a tener su propia lista de nombres de secció
       );
     }
   }
-  // Lo que SÍ tiene que hacer: pasarlo desde el dato de la sección, que es lo que la fila dibuja. Hasta
-  // la etapa E9 el armazón lo leía del DOM de la fila; ahora la fila es un botón de React que lo pasa.
-  // Sin comentarios: uno que citara la llamada dejaría esto en verde sin que ninguna fila la hiciera.
+  // Lo que SÍ: el nombre de cada entrada sale del dato, que es lo que la fila dibuja. Hasta la etapa E9
+  // el armazón lo leía del DOM de la fila para la miga; la miga se fue en E10, y la barra dibuja el
+  // nombre que manda la navegación del servidor.
+  // Sin comentarios: uno que citara la línea dejaría esto en verde sin que ninguna fila la dibujara.
   const nav = leer('components/Nav.jsx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(nav, /onClick=\{\(\) => irALaVista\(s\.clave, s\.nombre\)\}/, 'las filas del menú ya no pasan el nombre de la sección');
+  // La de la entrada que NAVEGA, el botón: la de una «Próximamente» también dice `{e.nombre}`.
+  const entrada = nav.indexOf("className={marcada ? 'nav-item on' : 'nav-item'}");
+  assert.ok(entrada > 0, 'no se encontró la entrada que navega');
+  assert.match(nav.slice(entrada, nav.indexOf('</button>', entrada)), /<span className="n">\{e\.nombre\}<\/span>/, 'las entradas de la barra ya no dibujan el nombre que manda el servidor');
+  assert.doesNotMatch(leer('lib/aios/shell.js'), /querySelector\('\.n'\)/, 'el armazón vuelve a leer nombres del DOM');
 });

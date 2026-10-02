@@ -128,7 +128,7 @@ anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversa
 Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
 transacción: `GET /api/auditoria` (`app/api/auditoria/route.ts:88-106`). El reloj recarga cada 60 s
 sólo con la pantalla a la vista (`components/conversation/PanelDeConversation.jsx:208`,
-`lib/cadencia.ts:90`).
+`lib/cadencia.ts:91`).
 
 **Cómo se midió lo de esta sección.** Con SQL de sólo lectura que copia los predicados de cada
 módulo (`scripts/supabase.mjs leer`); ni se ejecutó el módulo ni se abrió la pantalla, porque este
@@ -585,7 +585,7 @@ vigentes y releídas en el código el 2026-09-28:
   (`pruebas/codigo/114-derivacion-del-nivel.test.ts:267-276`).
 - **No se nombra al proveedor en texto que se pinta.** Se cumple —cero apariciones fuera de
   comentarios en los nueve archivos de la pantalla, contadas el 2026-09-28— pero **ninguna prueba lo
-  vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:778` barre sólo cuatro archivos del
+  vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:776` barre sólo cuatro archivos del
   Closer.
 
 ---

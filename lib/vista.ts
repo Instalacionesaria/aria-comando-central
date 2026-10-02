@@ -14,8 +14,14 @@
 // solo el puente a React, separado para que el port del prototipo no tenga que importar React.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState } from 'react';
-import { alCambiarDeVista, pedidoDeVista, vistaActiva } from './aios/shell.js';
+import { useEffect, useLayoutEffect, useReducer, useState } from 'react';
+import {
+  alCambiarDePestana,
+  alCambiarDeVista,
+  pedidoDeVista,
+  pestanaDibujada,
+  vistaActiva,
+} from './aios/shell.js';
 
 /**
  * La clave de la pantalla que se está mostrando, o `null` antes del primer efecto.
@@ -93,4 +99,21 @@ export function usarPedidoDeVista(clave: string | null): PedidoDeVista | null {
   }, [clave]);
 
   return visto;
+}
+
+/**
+ * La pestaña que la pantalla `clave` dibuja ahora (`anunciarPestana`, en `lib/aios/shell.js`), o
+ * `null`. La lee la barra lateral para marcar la entrada abierta de una sección repartida en varios
+ * departamentos: Tools y Analizadores.
+ *
+ * Se suscribe en un efecto de DISEÑO, y no con `useSyncExternalStore`, que se suscribe en un efecto
+ * común, después de pintar. Las pantallas anuncian en su efecto de diseño, así que quien arrancaba en
+ * Tools veía un cuadro con la barra vacía —todo cerrado, nada marcado— y después se abría Sales.
+ * Medido en Chrome. La barra va antes que `<main>` en el árbol, así que su efecto corre antes que el
+ * de las pantallas: ya escucha cuando anuncian, y el aviso la redibuja antes de pintar.
+ */
+export function usarPestanaDibujada(clave: string | null): string | null {
+  const [, redibujar] = useReducer((n: number) => n + 1, 0);
+  useLayoutEffect(() => alCambiarDePestana(redibujar), []);
+  return clave === null ? null : pestanaDibujada(clave);
 }

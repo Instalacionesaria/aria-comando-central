@@ -31,25 +31,14 @@
  * el endpoint que conmuta. No se deduce acá: dos definiciones de la misma regla acaban con un
  * botón que ofrece algo que va a ser rechazado.
  *
- * Sin esa capacidad el botón sigue existiendo —dice en qué empresa estás, que es información
- * útil— pero no se abre. No se oculta: un administrador que no ve el nombre de su empresa en
- * ningún lado tiene menos contexto, no menos confusión.
+ * Sin esa capacidad la píldora sigue existiendo —dice en qué empresa estás, que es información
+ * útil— pero no es un botón y no se abre. No se oculta: un administrador que no ve el nombre de su
+ * empresa en ningún lado tiene menos contexto, no menos confusión.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../lib/http/cliente.ts';
 import { usarCierreDeMenu } from '../lib/menu.ts';
-
-/** Las iniciales para el avatar. */
-function iniciales(nombre) {
-  const partes = String(nombre ?? '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (partes.length === 0) return '··';
-  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
-  return (partes[0][0] + partes[1][0]).toUpperCase();
-}
 
 export default function SelectorDeEmpresa({ sesion }) {
   const [abierto, setAbierto] = useState(false);
@@ -57,6 +46,7 @@ export default function SelectorDeEmpresa({ sesion }) {
   const [causa, setCausa] = useState(null);
   const [yendo, setYendo] = useState(null);
   const caja = useRef(null);
+  const disparador = useRef(null);
 
   const puede = Boolean(sesion?.puedeCambiarDeEmpresa);
 
@@ -77,7 +67,12 @@ export default function SelectorDeEmpresa({ sesion }) {
     setLista(r.datos.organizaciones ?? []);
   }, []);
 
-  const cerrar = useCallback(() => setAbierto(false), []);
+  /* Cerrar devuelve el foco a la píldora si estaba adentro: cerrado, el desplegable se esconde
+     (`app/armazon.css`) y el foco quedaría en un botón que ya no se ve. */
+  const cerrar = useCallback(() => {
+    setAbierto(false);
+    if (caja.current?.querySelector('.menu-pop')?.contains(document.activeElement)) disparador.current?.focus();
+  }, []);
 
   /* Clic afuera y `Escape`. El efecto estaba escrito acá y letra por letra en
      `MenuDeUsuario`; con el menú de links de pago del compositor iban a ser tres copias, así
@@ -98,42 +93,51 @@ export default function SelectorDeEmpresa({ sesion }) {
   }, []);
 
   const nombre = sesion?.organizacion?.nombre ?? '—';
+  const mirando = Boolean(sesion?.mirandoOtraOrganizacion);
+  /* Desde la etapa E10, una píldora junto al logotipo, como en el lienzo: el nombre de la empresa en
+     mono. Mirando otra, va en el tono de atención y el lector de pantalla oye la frase entera: es el
+     cartel permanente del `03` § 3, la diferencia entre mirar los números de un cliente y creer que
+     son los propios. La frase no va a la vista porque en 150 px se comía el nombre: con «Mirando · »
+     delante quedaban seis letras de la empresa. El `title` da el nombre entero cuando no entra. */
+  const titulo = mirando ? `Mirando otra organización: ${nombre}` : nombre;
+  const rotulo = (
+    <span className="acct-name">
+      {mirando ? <span className="para-lectores">Mirando otra organización: </span> : null}
+      {nombre}
+    </span>
+  );
 
   return (
     <div className={`menu-wrap acct-wrap${abierto ? ' open' : ''}`} ref={caja}>
-      <button
-        className="acct"
-        type="button"
-        aria-haspopup={puede ? 'menu' : undefined}
-        aria-expanded={puede ? abierto : undefined}
-        onClick={(e) => {
-          if (!puede) return;
-          e.stopPropagation();
-          setAbierto((v) => !v);
-          if (!lista) void cargar();
-        }}
-        style={puede ? undefined : { cursor: 'default' }}
-      >
-        <span className="acct-av">{iniciales(nombre)}</span>
-        <span className="acct-txt">
-          <span className="acct-name">{nombre}</span>
-          <span className="acct-role">
-            {/* El cartel permanente del `03` § 3. No es decoración: es la diferencia entre
-                mirar los números de un cliente y creer que son los propios. */}
-            {sesion?.mirandoOtraOrganizacion
-              ? 'Mirando otra organización'
-              : puede
-                ? 'Tu organización · cambiar'
-                : 'Tu organización'}
+      {puede ? (
+        <button
+          className={mirando ? 'acct mirando' : 'acct'}
+          title={titulo}
+          type="button"
+          ref={disparador}
+          aria-haspopup="menu"
+          aria-expanded={abierto}
+          onClick={(e) => {
+            e.stopPropagation();
+            setAbierto((v) => !v);
+            if (!lista) void cargar();
+          }}
+        >
+          {rotulo}
+          <span className="acct-chev" aria-hidden="true">
+            ⇅
           </span>
+        </button>
+      ) : (
+        /* Sin la capacidad no es un botón: uno que no hace nada es una parada del tabulador que
+           promete y no cumple. Y sin galón, por lo mismo. */
+        <span className={mirando ? 'acct mirando' : 'acct'} title={titulo}>
+          {rotulo}
         </span>
-        {/* El galón solo si se puede abrir: un indicador de desplegable en algo que no se
-            despliega es un control que promete y no cumple. */}
-        {puede ? <span className="acct-chev">⇅</span> : null}
-      </button>
+      )}
 
       {puede ? (
-        <div className="menu-pop" role="menu">
+        <div className="menu-pop" role="menu" aria-label="Cambiar de empresa">
           <div className="mp-head">
             <span>
               <b>Cambiar de empresa</b>

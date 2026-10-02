@@ -34,10 +34,11 @@
    con la tarea de cada hora, así que un reloj de segundos pediría la misma lista cientos de veces
    para no traer nada. */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { pedir } from '../../lib/http/cliente.ts';
 import { estaALaVista, usarPedidoDeVista } from '@/lib/vista';
+import { anunciarPestana } from '@/lib/aios/shell';
 import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
 import DetalleOb from './DetalleOb.jsx';
@@ -127,6 +128,10 @@ export default function PanelDeAnalizadores() {
     }
     if (pedida && detalle !== null && detalle.tipo !== pedida) setDetalle(null);
   }
+  // Y anuncia la que dibuja, antes de pintar, como `Fundaciones.jsx`: la barra lateral marca con esto.
+  useLayoutEffect(() => {
+    anunciarPestana('analizadores', pestana);
+  }, [pestana]);
 
   const cargarLista = useCallback(async () => {
     const mio = ++ultimoPedido.current;

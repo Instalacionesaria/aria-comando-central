@@ -735,7 +735,7 @@ una recarga fallida va **al lado** del dato, no en su lugar.
 
 **21 · Todo sondeo repetido pasa por `lib/reloj.ts`.** `pruebas/codigo/123-relojes.test.ts`: pestaña
 oculta = cero intervalos. Las cadencias viven en `lib/cadencia.ts`, con `inteligencia` en 60 s
-(`lib/cadencia.ts:90`); el comentario de `lib/cadencia.ts:81-84` sigue hablando de catorce días, y el
+(`lib/cadencia.ts:91`); el comentario de `lib/cadencia.ts:82-85` sigue hablando de catorce días, y el
 argumento no depende del número.
 
 **22 · Ninguna ruta autenticada se cachea.** `ADR-0701`, forzado por `pruebas/codigo/70-publicacion.test.ts`

@@ -81,7 +81,7 @@ comentario de las líneas 322-323 fecha la baja de la bandera el 2026-09-21. La 
 (`components/CommandCenter.jsx:80-92`): el panel pide `/api/sales` una vez al cargar la página
 aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:63-65`); lo que sí está atado a la
 visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:70-72`,
-`lib/cadencia.ts:90`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el
+`lib/cadencia.ts:91`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el
 encabezado (líneas 1-52) enumera lo borrado con la medición que lo desmiente, y la bajada pasó a
 «Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72`).
 

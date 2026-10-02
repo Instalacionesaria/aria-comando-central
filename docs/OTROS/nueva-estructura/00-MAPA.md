@@ -73,3 +73,4 @@ etapa, al terminar, suma acá abajo su fila. Sus commits se leen en `git log --o
 | E7 · el Inicio | hecho, 2026-10-01 |
 | E8 · el modelo | hecho, 2026-10-01 |
 | E9 · la navegación en React | hecho, 2026-10-01 |
+| E10 · la barra lateral | hecho, 2026-10-02 |
