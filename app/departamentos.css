@@ -1,0 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LA CABECERA DE UN DEPARTAMENTO (etapa E11 de la nueva estructura, `NE-17`)
+
+   Del lienzo «Departamentos por dentro», con los tokens de la app en lugar de sus hex: la ceja en mono
+   y `ink-3`, el nombre de la entrada abierta en 30 px y peso 500, y la fila de pestañas con la abierta
+   subrayada en el acento. La dibuja `components/CabeceraDeDepartamento.jsx` en su propia área de la
+   rejilla del armazón (`app/armazon.css`), fuera de `.main`.
+
+   Los 28, 40, 18 y 26 px del lienzo no son tokens de la marca: van escritos, como en la barra lateral.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* El relleno de los costados sigue al cuerpo de las pantallas de operación: 40 px, o lo que el cuerpo
+   se corre cuando se centra en sus 1600 px (`app/operacion-estetica.css`), en una pantalla ancha. Sin
+   eso, a partir de unos 1900 px la cabecera quedaba pegada a la barra y el cuerpo, en el medio.
+   Acquisition y Leads Portal arrancan a 18 px del borde: alinearlos es de la fase de detalles. */
+.cd {
+  grid-area: cabecera;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: 28px max(40px, calc((100% - 1600px) / 2 + 24px)) 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+/* Sin fila de pestañas, la línea no queda pegada al título. */
+.cd.sin-pestanas {
+  padding-bottom: 22px;
+}
+.cd-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.cd-ceja {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--txt-faint);
+}
+.cd-nombre {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+  color: var(--txt);
+}
+
+/* La fila: en la computadora, cuando no entra (Marketing tiene ocho), se parte en dos renglones y
+   ninguna pestaña queda fuera de la vista —con la fila deslizable, a 1280 px la abierta de Marketing
+   quedaba entera afuera, y nada decía que la fila seguía—. En el teléfono se desliza, y la cabecera
+   trae a la vista la abierta y la que recibe el foco (`traerALaVista`). */
+.cd-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 26px;
+  min-width: 0;
+}
+.cd-pestana {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 40px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--txt-faint);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+button.cd-pestana:hover {
+  color: var(--txt);
+}
+.cd-pestana.on {
+  color: var(--txt);
+  border-bottom-color: var(--accent);
+}
+/* El foco, por DENTRO de la pestaña: el de `temas.css` va 2 px por fuera, y una fila que se desliza
+   recorta lo que se sale de ella —quedaban dos rayas verticales, que se leían como separadores—. Le
+   gana por especificidad a la de `temas.css`, que va después en la misma capa. Sin la pseudoclase de la
+   raíz en el selector, ni acá ni en ningún comentario de esta hoja: `pruebas/codigo/104-temas.test.ts`
+   salta todo lo que va antes de la primera vez que la hoja la nombra, y dejaría de ver un color escrito
+   a mano arriba de éste. */
+.cd .cd-pestanas button.cd-pestana:focus-visible {
+  outline-offset: -2px;
+}
+/* Una «Próximamente»: no es un botón, sin mano ni color al pasar. El nombre queda en la misma línea
+   que el de las pestañas de verdad, como en el lienzo, y la palabra cuelga debajo, dentro de los 40 px. */
+.cd-proxima {
+  position: relative;
+  cursor: default;
+}
+.cd-proxima .nb-proximamente {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ── LOS TÍTULOS PROPIOS DE LAS PANTALLAS ───────────────────────────────────
+
+   Con la cabecera a la vista, el `h2` y la bajada que cada pantalla trae por dentro se ocultan: si
+   no, se leería «Tools» debajo de «Espía de anuncios», un lugar que ya no existe. Sólo si HAY cabecera
+   (`.app:has(> .cd)`): en el Inicio y en lo del engranaje, que no son de ningún departamento, el
+   título propio es el único que hay, y vuelve solo.
+
+   Hay dos formas de cabecera, y en las dos se oculta lo que es título y nada más:
+     · la de operación, `.cre-head > .ch-l.stack > .ch-title > h2 + .cre-desc`, con las pestañas
+       propias de Closer y Setter como hermanas de `.ch-title`: se oculta `.ch-title`;
+     · la del prototipo (Acquisition, Leads Portal), `.cre-head > .ch-l > h2 + .cre-desc`, con los
+       períodos en `.ch-r`: se oculta ese `.ch-l`.
+   No `.ch-l` a secas, que en la de operación lleva las pestañas, ni `.cre-desc` suelta, que Auditoría
+   usa dentro de sus secciones. Y no se borran del marcado: la estética de operación los exige
+   (`pruebas/codigo/146-estetica-de-operacion.test.ts`). */
+.app:has(> .cd) .main .cre-head .ch-title,
+.app:has(> .cd) .main .cre-head > .ch-l:not(.stack) {
+  display: none;
+}
+/* La cabecera de la pantalla que queda vacía —sin pestañas ni controles— sale del flujo y de la vista.
+   `display: none` no sirve: `aios.css` le pone `display: grid !important`, y un `!important` de una
+   capa anterior le gana a cualquiera de ésta. Sin esto quedaban 38 px vacíos con su línea, más el
+   espacio del desplazador. */
+.app:has(> .cd) .main .cre-head:not(:has(.cl-sub, .ch-r)) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* Y la que se queda —la cápsula de pestañas propias de Closer y Setter— pierde su línea de abajo: con
+   la de la cabecera arriba quedaban dos, con una franja de 89 px que sólo llevaba la cápsula. El
+   `:is(#v-closer, …)` es para ganarle a la regla de `operacion-estetica.css`, que lleva ese id. */
+.app:has(> .cd) .main :is(#v-closer, .estetica-op) .cre-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* En el teléfono, la misma cabecera más compacta: el lienzo no tiene versión de teléfono (`NE-18`). */
+@media (max-width: 760px) {
+  .cd {
+    gap: 12px;
+    padding: 16px 16px 0;
+  }
+  .cd.sin-pestanas {
+    padding-bottom: 14px;
+  }
+  .cd-nombre {
+    font-size: 22px;
+  }
+  /* Un renglón que se desliza, sin barra a la vista, como la tira de pestañas del teléfono. */
+  .cd-pestanas {
+    flex-wrap: nowrap;
+    column-gap: 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cd-pestanas::-webkit-scrollbar {
+    display: none;
+  }
+}

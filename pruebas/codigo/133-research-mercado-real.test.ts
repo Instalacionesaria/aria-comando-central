@@ -233,7 +233,7 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.match(ciudad.guia, /pedile la ciudad y la zona o distrito/);
   assert.match(ciudad.guia, /empezar por SU país/);
   assert.match(ciudad.guia, /con qué país quiere empezar a extraer leads/);
-  assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Tools → Mis Leads/);
+  assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Research › Mis Leads/);
   assert.match(ciudad.guia, /en esta misma pestaña cuando termine el Research/);
 
   // La guía llega al agente Y al relleno: los dos la leen del catálogo.
@@ -357,7 +357,7 @@ test('el panel: después del paso 1, confirma una vez, arranca los dos scrapers 
   assert.match(panel, /El Research sigue con lo que el modelo sabe/);
   // La mirada se dibuja pegada al paso 2 (índice 1), con su propio componente.
   assert.match(limpio, /paso === 1 && mirada \? <Mirada/);
-  assert.match(panel, /Los \$\{x\.total\} negocios y las \$\{p\.total\} páginas están en Tools → Mis Leads/);
+  assert.match(panel, /Los \$\{x\.total\} negocios y las \$\{p\.total\} páginas están en Research › Mis Leads/);
   // Y solo ICP & Oferta pasa las rutas.
   assert.match(codigo('components/fundaciones/Fundaciones.jsx'), /rutaMercadoPreparar: '\/api\/fundaciones\/mercado\/preparar'/);
   assert.ok(!/rutaMercado/.test(codigo('components/views/ToolsView.jsx')));

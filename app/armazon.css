@@ -396,11 +396,17 @@
  * con `1fr` pelado, una tabla ancha estira la columna en vez de encogerse dentro de ella.
  *
  * Desde la etapa E10, la barra lateral mide 260 px y va de arriba abajo, como en el lienzo: la barra de
- * arriba sólo existe en el teléfono (abajo, en el corte), donde lleva el conmutador del cajón. */
+ * arriba sólo existe en el teléfono (abajo, en el corte), donde lleva el conmutador del cajón. Desde la
+ * E11 hay dos filas a la derecha de la barra: la cabecera del departamento, `auto` —en el Inicio y en lo
+ * del engranaje no se dibuja, y la fila mide 0—, y el cuerpo. La cabecera va en su propia área y no
+ * dentro de `.main`: las pantallas de operación se estiran sobre el relleno de `.main`
+ * (`app/operacion-estetica.css`), y adentro les cortaría el pie. */
 .app {
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: 260px minmax(0, 1fr);
-  grid-template-areas: "nav main";
+  grid-template-areas:
+    "nav cabecera"
+    "nav main";
 }
 .topbar {
   display: none;
@@ -419,10 +425,11 @@
        `overflow-x: auto`, así que el defecto no era suya: era que nadie le ponía un techo.
        *
        Es la misma trampa de CSS que `.md-counters` más abajo, y las dos se arreglan igual. */
-    grid-template-rows: 50px minmax(0, 1fr);
+    grid-template-rows: 50px auto minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "top"
+      "cabecera"
       "main";
   }
   .topbar {

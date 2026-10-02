@@ -40,7 +40,7 @@ septiembre escribe en una tabla que no existe, cuya migración no está en el re
 ## 1 · Qué son, y por qué no están en el prototipo
 
 **Tools** es «las herramientas de la operación, que heredan de tu ICP y tu oferta»
-(`components/views/ToolsView.jsx:93-95`): lo que se hace *después* del método, no una pieza de él
+(`components/views/ToolsView.jsx:99-101`): lo que se hace *después* del método, no una pieza de él
 (`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y
 `tools.editar` (`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito:
 darle Tools a alguien le daría también ICP & Oferta (`lib/autorizacion/secciones.ts:394-397`).
@@ -80,17 +80,17 @@ equipo registrados en los commits, no de ese documento.
 ### Tools
 
 Una envoltura que monta el componente de Fundaciones con un catálogo propio
-(`components/views/ToolsView.jsx:34-79`) y, arriba de las pestañas, la franja de saldo
-(`components/views/ToolsView.jsx:100-102`). A la izquierda de una raya, el recorrido numerado de
-herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:453-456`):
+(`components/views/ToolsView.jsx:40-83`) y, arriba de las pestañas, la franja de saldo
+(`components/views/ToolsView.jsx:100-102@40f699a`). A la izquierda de una raya, el recorrido numerado de
+herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:453-456@40f699a`):
 
 | pestaña | qué es | rastro |
 |---|---|---|
 | 1 · Prospección en Frío | el plan de ataque outbound (id 20 del hub) y el extractor de leads | `lib/fundaciones/herramientas.ts:672-766` |
 | 2 · Tu video de ventas (VSL) | mudada de ICP & Oferta el 2026-08-31 | `lib/fundaciones/herramientas.ts:788-811` |
 | 3 · Tu página | la Landing, mudada el 2026-09-02 | ídem |
-| Espía de Anuncios | vista: busca anuncios y extrae hooks con IA | `components/views/ToolsView.jsx:61-69` |
-| Mis Leads | vista: el historial de lo scrapeado, con envío al CRM | `components/views/ToolsView.jsx:77` |
+| Espía de Anuncios | vista: busca anuncios y extrae hooks con IA | `components/views/ToolsView.jsx:67-74` |
+| Mis Leads | vista: el historial de lo scrapeado, con envío al CRM | `components/views/ToolsView.jsx:81` |
 
 > **Después del corte, el 2026-10-01** (nueva estructura, E9): Tools gana una pestaña **Scraper**, entre el
 > Espía y Mis Leads, con el mismo extractor de Prospección y la tabla de lo que trae
@@ -102,6 +102,11 @@ herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:
 > «hay un scraping corriendo» va en Espía o en Scraper, según dónde se vuelve a ver el trabajo: el Espía
 > retoma las búsquedas de anuncios al abrirse, y el Scraper retoma Maps al abrirse y las demás fuentes al
 > tocar su pestaña. Con Research cerrado, va en su cabecera.
+>
+> **Y el 2026-10-02** (E11): Tools ya no tiene barra propia ni la raya, el medidor y la numeración de la
+> tabla de arriba: las pestañas las dibuja la cabecera de cada departamento. La franja del saldo va
+> arriba de Prospección y del Scraper, y no arriba de todo, y se vuelve a leer en cada visita. Los textos
+> del Research que decían «Tools → Mis Leads» dicen «Research › Mis Leads».
 
 El VSL y la Landing comparten almacén y herencia con ICP & Oferta y están descritos en
 [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía, en
@@ -143,11 +148,13 @@ cuatro»: es del 2026-08-29, `f90fd30`, y el Espía entró el 2026-09-02, `e20f7
 que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
 
 **La franja de saldo** dice disponibles, de regalo, usados y comprados
-(`components/tools/SaldoDeLeads.jsx:50-61`), con la aritmética de `lib/tools/saldo.ts:47-64`. No se
-dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:42`) y dice «Todavía no
-usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:33-39`). Se lee **una vez**, al
-montarse (`components/tools/SaldoDeLeads.jsx:21-29`), y la vista se monta al entrar a la
-aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:78-89`).
+(`components/tools/SaldoDeLeads.jsx:51-62`), con la aritmética de `lib/tools/saldo.ts:47-64`. No se
+dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:43`) y dice «Todavía no
+usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:34-40`). Se lee **una vez**, al
+montarse (`components/tools/SaldoDeLeads.jsx:22-30`), y la vista se monta al entrar a la
+aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:83-94`).
+**Después del corte**, desde la etapa E11 (2026-10-02), la franja se monta sólo con Tools a la vista y
+en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos.
 
 ### El Panel de Monitoreo
 
@@ -455,18 +462,20 @@ tablas del backend» es una convención de tipos: en producción `app_inquilino`
 `UPDATE` y `DELETE` sobre las tres (`has_table_privilege`, medido el 2026-09-28).
 
 **El panel consulta todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas
-las vistas visibles se montan juntas (`components/CommandCenter.jsx:78-89`) y el panel carga al
+las vistas visibles se montan juntas (`components/CommandCenter.jsx:83-94`) y el panel carga al
 montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
 entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
-lee una vez por carga de página: su comentario dice que «la pantalla ya se refresca por su lado»
-después de un scraping (`components/tools/SaldoDeLeads.jsx:6-8`), y no encontré dónde —`leerSaldo`
-lo llaman sólo la franja y el Research—. No verificado en pantalla.
+lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:6-9`): después de un scraping no se
+refresca mientras se mira —`leerSaldo` lo llaman sólo la franja y el Research—. Hasta la etapa E11 se
+montaba una vez por carga de página; desde entonces se monta en cada visita a Prospección o al Scraper,
+también al pasar de una a otra, así que la deuda se achica a «mientras se mira». No verificado en
+pantalla con datos.
 
 **El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin
-`puedeEditar` (`components/views/ToolsView.jsx:77`) y dibuja el envío siempre
+`puedeEditar` (`components/views/ToolsView.jsx:81`) y dibuja el envío siempre
 (`components/tools/MisLeads.jsx:385-394`); la ruta pide `tools.editar`
 (`app/api/tools/leads/enviar/route.ts:79`). Hoy no le pasa a nadie: los 15 activos tienen
-`tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:68`), y desde
+`tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:73`), y desde
 la etapa E9 también el Scraper. Los dos la reciben de `Fundaciones.jsx`, que la da falsa también cuando
 falló la lectura del estado de Tools: en ese caso el aviso dice que es el rol, y no lo es.
 

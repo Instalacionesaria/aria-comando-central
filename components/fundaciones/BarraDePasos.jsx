@@ -18,12 +18,14 @@
    ── EL PASO QUE VIVE EN LA OTRA PANTALLA ──────────────────────────────────
 
    El VSL y la Landing se mudaron a `tools`, así que los pasos 8 y 9 están del otro lado. Cuando el
-   siguiente cae ahí, la barra lo DICE en vez de ofrecer un botón que no puede cumplir: cambiar de
-   pantalla desde acá es trabajo del armazón y todavía no está resuelto. Decir dónde está es más útil
-   que un botón que lleva a la pantalla equivocada, y es honesto sobre lo que falta. */
+   siguiente cae ahí, la barra DICE dónde está —con el lugar de la estructura nueva, que sale de la
+   tabla de departamentos (`lugarDe`)— en vez de ofrecer un botón. Desde la etapa E9 el armazón ya
+   podría abrir la otra pantalla con su pestaña, pero quien ve ICP & Oferta no siempre ve Tools, y un
+   botón que no abre nada es peor que decir dónde está. Que lleve allá queda para la fase de detalles. */
 
 import { pasoAnterior, pasoSiguiente, TRAVESIA, posicionEnLaTravesia } from '@/lib/fundaciones/travesia';
 import { pasoCompleto } from '@/lib/fundaciones/estado';
+import { lugarDe } from '@/lib/autorizacion/departamentos';
 
 export default function BarraDePasos({ herramienta, estado, pantalla, onIr }) {
   const posicion = posicionEnLaTravesia(herramienta.id);
@@ -82,7 +84,7 @@ export default function BarraDePasos({ herramienta, estado, pantalla, onIr }) {
       ) : (
         <span className="fd-paso-nota">
           El paso {siguiente.posicion} es <b>{siguiente.herramienta.titulo}</b>, y vive en{' '}
-          <b>Tools</b>.
+          <b>{lugarDe(siguiente.pantalla, siguiente.herramienta.clave) ?? 'otra pantalla'}</b>.
         </span>
       )}
     </div>

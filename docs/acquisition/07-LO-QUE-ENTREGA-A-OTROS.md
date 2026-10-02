@@ -388,7 +388,7 @@ contrario**, sin que ninguno de los dos se equivoque.
 - **Rastro:** `lib/aios/executive-chat.js:52-57` — `askScope`, `askCtx` y `askCtxP`, que lee el botón
   de período activo con `'#exPeriod button.on, #cvDateSeg button.on, .db-seg button.on'`.
 - `document.querySelector` devuelve el primero del documento que cumpla cualquiera de los tres, y
-  Executive se dibuja antes que Acquisition (`components/CommandCenter.jsx:80`) con su propio `.on`
+  Executive se dibuja antes que Acquisition (`components/CommandCenter.jsx:85`) con su propio `.on`
   escrito en el JSX (`components/views/ExecutiveView.jsx:55@c4cf2a8`): el panel escribe el período de
   Executive, no el de esta pantalla. Cae a `'periodo actual'` cuando no encuentra ninguno. El
   requisito, hoy sin cumplir: cualquier respuesta sobre Acquisition viene con la ventana con que se

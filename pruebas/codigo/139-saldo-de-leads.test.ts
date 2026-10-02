@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { RAIZ, sinComentarios } from '../apoyo/fuente.ts';
+import { RAIZ, archivosFuente, sinComentarios } from '../apoyo/fuente.ts';
 import { desglosarSaldo } from '../../lib/tools/saldo.ts';
 import { MINIMO_LEADS_MAPS } from '../../lib/tools/scrapers.ts';
 
@@ -59,9 +59,21 @@ test('la ruta lee el monedero dentro de la organización, con la capacidad de To
   assert.match(ruta, /desglosarSaldo\(/);
 });
 
-test('la franja vive arriba de las pestañas de Tools, y la confirmación del Research dice cuánto queda', () => {
+test('la franja vive arriba de las dos pestañas que gastan saldo, y la confirmación del Research dice cuánto queda', () => {
+  /* Desde la etapa E11 Tools no tiene barra propia: la franja va arriba de Prospección y del Scraper,
+     que son las que gastan el saldo con el mismo buscador, y no arriba de todo (`NE-20`). Se monta con
+     Tools a la vista y con una `key` por pestaña: Tools no se desmonta nunca, y sin las dos cosas el
+     saldo quedaba el de la primera lectura, también al volver de un scraping. */
   const vista = sinComentarios(codigo('components/views/ToolsView.jsx'));
-  assert.match(vista, /<SaldoDeLeads \/>\s*<Fundaciones catalogo=\{CATALOGO_TOOLS\} \/>/);
+  assert.match(vista, /const GASTAN_SALDO = \['prospeccion', 'scraper'\];/, 'la franja se ve en una pestaña que no gasta saldo, o falta en una que sí');
+  assert.match(vista, /const pestana = usarPestanaDibujada\('tools'\);/, 'la franja no sigue a la pestaña que Tools dibuja');
+  assert.match(vista, /const aLaVista = estaALaVista\('tools'\);/);
+  assert.match(vista, /\{GASTAN_SALDO\.includes\(pestana\) && aLaVista \? <SaldoDeLeads key=\{pestana\} \/> : null\}\s*<Fundaciones catalogo=\{CATALOGO_TOOLS\} \/>/, 'la franja no se vuelve a montar en cada visita: muestra el saldo de la primera lectura');
+  // Y en ningún otro lado: otra copia de la franja dentro de una pestaña la mostraría donde no se gasta.
+  const montajes = archivosFuente(['components'])
+    .filter((a) => /\.(jsx?|tsx?)$/.test(a.ruta))
+    .flatMap((a) => [...sinComentarios(a.contenido).matchAll(/<SaldoDeLeads\b/g)].map(() => a.ruta));
+  assert.deepEqual(montajes, ['components/views/ToolsView.jsx'], 'la franja del saldo se monta en otro lugar además de `ToolsView`');
 
   const franja = codigo('components/tools/SaldoDeLeads.jsx');
   assert.match(franja, /leads disponibles/);

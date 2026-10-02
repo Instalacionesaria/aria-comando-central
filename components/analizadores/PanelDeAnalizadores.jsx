@@ -43,10 +43,9 @@ import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
 import DetalleOb from './DetalleOb.jsx';
 
-const PESTANAS = [
-  { clave: 'HT', nombre: 'HT · Venta', icono: '#i-closer' },
-  { clave: 'OB', nombre: 'OB · Onboarding', icono: '#i-analizadores' },
-];
+/* Las dos pestañas. Las elige la navegación —Sales › Analizador HT, Client Success › Analizador OB—:
+   desde la etapa E11 la pantalla no dibuja barra propia, así que no llevan nombre ni ícono. */
+const PESTANAS = [{ clave: 'HT' }, { clave: 'OB' }];
 
 const FILTROS = [
   { clave: 'analizadas', nombre: 'Analizadas' },
@@ -128,10 +127,13 @@ export default function PanelDeAnalizadores() {
     }
     if (pedida && detalle !== null && detalle.tipo !== pedida) setDetalle(null);
   }
-  // Y anuncia la que dibuja, antes de pintar, como `Fundaciones.jsx`: la barra lateral marca con esto.
+  /* Y anuncia la que DIBUJA, antes de pintar, como `Fundaciones.jsx`: la barra y la cabecera marcan con
+     esto. Con un detalle abierto, la del detalle: un análisis de onboarding pegado desde «Analizador HT»
+     abre un informe OB, y la cabecera diría «Analizador HT» encima de él. */
+  const dibujada = detalle?.tipo === 'HT' || detalle?.tipo === 'OB' ? detalle.tipo : pestana;
   useLayoutEffect(() => {
-    anunciarPestana('analizadores', pestana);
-  }, [pestana]);
+    anunciarPestana('analizadores', dibujada);
+  }, [dibujada]);
 
   const cargarLista = useCallback(async () => {
     const mio = ++ultimoPedido.current;
@@ -288,26 +290,10 @@ export default function PanelDeAnalizadores() {
 
   return (
     <div className="az-detalle">
-      {/* La barra, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar. */}
+      {/* La fila de las acciones, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar.
+          Las pestañas HT/OB que iban a su lado se fueron en la etapa E11: son entradas de dos
+          departamentos, y las dibuja la cabecera del departamento. */}
       <div className="az-barra">
-        <div className="cl-sub">
-          {PESTANAS.map((p) => (
-            <button
-              key={p.clave}
-              type="button"
-              className={pestana === p.clave ? 'on' : undefined}
-              onClick={() => {
-                setPestana(p.clave);
-                setLista(null);
-              }}
-            >
-              <svg viewBox="0 0 16 16">
-                <use href={p.icono} />
-              </svg>
-              {p.nombre}
-            </button>
-          ))}
-        </div>
         <div className="az-acciones">
           <button
             type="button"
@@ -450,9 +436,9 @@ export default function PanelDeAnalizadores() {
 /** El formulario de la transcripción pegada a mano. Los tres campos son obligatorios. */
 function Manual({ pestana, seAnaliza, trabajando, alTerminar, setTrabajando }) {
   const [tipo, setTipo] = useState(pestana);
-  /* Si la pestaña cambia con el formulario abierto —con la barra, o desde otro departamento
-     (`NE-19`)—, el tipo la sigue: «Analizador OB» no puede mostrar «Venta (HT)» marcado y analizar
-     como venta. Lo escrito se queda. */
+  /* Si la pestaña cambia con el formulario abierto —al llegar desde el otro departamento, por la
+     barra lateral (`NE-19`)—, el tipo la sigue: «Analizador OB» no puede mostrar «Venta (HT)» marcado
+     y analizar como venta. Lo escrito se queda. */
   const [pestanaVista, setPestanaVista] = useState(pestana);
   if (pestana !== pestanaVista) {
     setPestanaVista(pestana);

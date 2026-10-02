@@ -67,9 +67,9 @@ export interface PedidoDeVista {
  * prueba (`pruebas/codigo/192-la-navegacion-pide-la-pestana.test.ts`).
  *
  * Un pedido nuevo PARA ESTA PANTALLA —otra `clave` no cuenta— con un número que todavía no guardó:
- * se guarda, aunque la pestaña sea la misma de antes, porque entre los dos pudo haber un clic a mano
- * en la barra propia. Cualquier otra cosa devuelve el MISMO objeto de antes, y React no vuelve a
- * dibujar la pantalla.
+ * se guarda, aunque la pestaña sea la misma de antes, porque entre los dos la pantalla pudo cambiar
+ * de pestaña por dentro (el «Continuar» del VSL a la Landing). Cualquier otra cosa devuelve el MISMO
+ * objeto de antes, y React no vuelve a dibujar la pantalla.
  */
 export function siguientePedido(
   antes: PedidoDeVista | null,
@@ -109,11 +109,26 @@ export function usarPedidoDeVista(clave: string | null): PedidoDeVista | null {
  * Se suscribe en un efecto de DISEÑO, y no con `useSyncExternalStore`, que se suscribe en un efecto
  * común, después de pintar. Las pantallas anuncian en su efecto de diseño, así que quien arrancaba en
  * Tools veía un cuadro con la barra vacía —todo cerrado, nada marcado— y después se abría Sales.
- * Medido en Chrome. La barra va antes que `<main>` en el árbol, así que su efecto corre antes que el
- * de las pantallas: ya escucha cuando anuncian, y el aviso la redibuja antes de pintar.
+ * Medido en Chrome. La barra y la cabecera del departamento van antes que `<main>` en el árbol, así que
+ * su efecto corre antes que el de las pantallas: ya escuchan cuando anuncian, y el aviso las redibuja
+ * antes de pintar.
+ *
+ * Quien está POR ENCIMA de la pantalla —`ToolsView`, que muestra el saldo según la pestaña— no: el
+ * efecto de un padre corre después que el de sus hijos, y el aviso llega antes de que escuche. Por
+ * eso, al suscribirse, vuelve a leer y redibuja si cambió desde el dibujo, que es lo mismo que hace
+ * `useSyncExternalStore` al suscribirse. Y con cada aviso redibuja sólo si cambió la pestaña de ESTA
+ * pantalla: un anuncio de Analizadores no tiene por qué volver a dibujar Tools entera.
  */
 export function usarPestanaDibujada(clave: string | null): string | null {
   const [, redibujar] = useReducer((n: number) => n + 1, 0);
-  useLayoutEffect(() => alCambiarDePestana(redibujar), []);
-  return clave === null ? null : pestanaDibujada(clave);
+  const leida = clave === null ? null : pestanaDibujada(clave);
+  useLayoutEffect(() => {
+    const mirar = () => {
+      if ((clave === null ? null : pestanaDibujada(clave)) !== leida) redibujar();
+    };
+    const baja = alCambiarDePestana(mirar);
+    mirar();
+    return baja;
+  }, [clave, leida]);
+  return leida;
 }

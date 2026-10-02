@@ -8,8 +8,8 @@
 //
 //   · una sección del menú que no está en la tabla: la persona tiene permiso y no la puede abrir. Es
 //     lo que pasaría con una sección nueva que alguien agregue a `secciones.ts` sin ubicarla;
-//   · una pestaña de Tools o de Analizadores sin entrada: cuando sus barras propias se vayan (E11),
-//     queda inalcanzable. Y una entrada que pide una pestaña que no existe abre otra;
+//   · una pestaña de Tools o de Analizadores sin entrada: desde que sus barras propias se fueron
+//     (E11), queda inalcanzable. Y una entrada que pide una pestaña que no existe abre otra;
 //   · una barra que vuelve a decidir quién ve qué, en vez de repartir lo que `menuVisible()` ya dejó
 //     pasar (`NE-16`).
 //
@@ -117,7 +117,7 @@ test('toda pestaña que pide una entrada existe, y toda pestaña tiene su entrad
     assert.ok(e.seccion in reales, `\`${e.seccion}\` no tiene pestañas que la navegación elija, y una entrada le pide \`${e.pestana}\``);
     assert.ok(reales[e.seccion]!.includes(e.pestana), `la entrada «${e.nombre}» pide la pestaña \`${e.pestana}\`, que \`${e.seccion}\` no tiene: abriría otra`);
   }
-  /* Y al revés: cuando las barras propias de Tools y Analizadores se vayan (E11), una pestaña sin
+  /* Y al revés: desde que las barras propias de Tools y Analizadores se fueron (E11), una pestaña sin
      entrada queda inalcanzable sin un solo error. */
   for (const [seccion, pestanas] of Object.entries(reales)) {
     for (const p of pestanas) {

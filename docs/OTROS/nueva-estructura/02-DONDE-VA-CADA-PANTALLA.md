@@ -25,7 +25,7 @@ les toca a todas por igual y no se repite en cada fila.
 ## `NE-19` · Tools y Analizadores, partidos sin partir el permiso
 
 Son **una sección cada uno**, con sus pestañas como estado interno (`components/fundaciones/Fundaciones.jsx`
-y `components/analizadores/PanelDeAnalizadores.jsx:46`). En la estructura nueva sus pestañas viven en
+y `components/analizadores/PanelDeAnalizadores.jsx:48`). En la estructura nueva sus pestañas viven en
 departamentos distintos, así que **la pestaña la elige la navegación**:
 
 - abrir «Research › Espía de anuncios» es abrir la vista `tools` **pidiéndole** la pestaña `espia`;
@@ -46,7 +46,8 @@ Hoy el buscador vive **dentro** de Prospección en frío (`components/tools/Pane
 lo usa para armar el plan. En el diseño, el Scraper es de Research y la Prospección de Sales.
 
 - **Research › Scraper**: pestaña nueva de `tools` con el buscador y, arriba, la franja del saldo de leads
-  (que hoy está en la cabecera de Tools). Nace en E9, antes de que la barra lateral la ofrezca.
+  (que hasta E11 estaba arriba de todas las pestañas de Tools). Nace en E9, antes de que la barra lateral
+  la ofrezca. Desde E11 la franja va arriba del Scraper y de Prospección, las dos que gastan saldo.
 - **Sales › Prospección en frío**: queda **como está**, con el buscador adentro.
 
 El buscador queda en dos lugares hasta la fase de detalles, que decidirá si la Prospección lo pierde y
@@ -67,12 +68,14 @@ lo que el rol puede) siguen iguales.
 
 ## Lo que se mueve de lugar, dicho en la pantalla
 
-Hoy cinco textos nombran lugares que dejan de existir, y se corrigen en la etapa que mueve las pantallas
-(E11):
+Cinco textos nombraban lugares que dejaron de existir, y se corrigieron en la etapa que movió las pantallas
+(E11, el 2026-10-02; las citas son de antes de ese cambio, fijadas a su commit):
 
-- la barra de pasos de ICP dice, del paso que sigue a los siete (el video de ventas o la página), que
-  «vive en Tools» (`components/fundaciones/BarraDePasos.jsx:84-85`): pasa a decir «Marketing»;
-- el paso de mercado de ICP manda a «Tools → Mis Leads» (`components/fundaciones/PanelResearch.jsx:837-841`
-  y `:883`): pasa a «Research › Mis Leads»;
-- lo mismo le dice al agente de ICP la instrucción del paso (`lib/fundaciones/herramientas.ts:264`) y el
-  resumen que recibe el modelo (`lib/fundaciones/mercado.ts:370` y `:388`), así que también lo dice el chat.
+- la barra de pasos de ICP decía, del paso que sigue a los siete (el video de ventas o la página), que
+  «vive en Tools» (`components/fundaciones/BarraDePasos.jsx:84-85@40f699a`): pasó a decir «Marketing ›
+  Tu video de ventas», con el lugar sacado de la tabla de departamentos;
+- el paso de mercado de ICP mandaba a «Tools → Mis Leads» (`components/fundaciones/PanelResearch.jsx:837-841@40f699a`
+  y `components/fundaciones/PanelResearch.jsx:883@40f699a`): pasó a «Research › Mis Leads»;
+- lo mismo le decía al agente de ICP la instrucción del paso (`lib/fundaciones/herramientas.ts:264@40f699a`) y
+  el resumen que recibe el modelo (`lib/fundaciones/mercado.ts:370@40f699a` y
+  `lib/fundaciones/mercado.ts:388@40f699a`), así que también lo decía el chat.

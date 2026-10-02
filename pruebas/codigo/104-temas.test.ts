@@ -49,6 +49,8 @@ const HOJAS = [
   'app/creative.css',
   // Acquisition con el front del prototipo, el día que nace (AQ-4).
   'app/acquisition.css',
+  // La cabecera de los departamentos, el día que nace (nueva estructura, E11).
+  'app/departamentos.css',
 ];
 
 /** El cuerpo de una hoja sin comentarios y sin su bloque `:root`, que es donde SÍ van los valores. */

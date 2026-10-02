@@ -10,10 +10,11 @@
 
    ── POR QUÉ REUSA EL COMPONENTE DE FUNDACIONES ────────────────────────────
 
-   Porque es literalmente lo mismo: subpestañas, un formulario, un botón que gasta tokens,
-   un documento con su historial de versiones y el cartel de las tres ramas de fallo.
-   Copiarlo para cambiarle dos rutas habría duplicado doscientas líneas que divergen en la
-   primera corrección — y con ellas el cartel de error y el indicador de avance.
+   Porque es literalmente lo mismo: un formulario, un botón que gasta tokens, un documento con su
+   historial de versiones, las ramas de carga y el cartel de las tres ramas de fallo. Copiarlo para
+   cambiarle dos rutas habría duplicado doscientas líneas que divergen en la primera corrección. La
+   barra de pestañas y el medidor de avance quedaron sólo para ICP & Oferta desde la etapa E11: las
+   pestañas de Tools son entradas de tres departamentos.
 
    Lo que SÍ cambia viaja en el catálogo, explícito y sin valores por omisión: sus
    herramientas, sus dos rutas y su capacidad de edición. Esa última no es un detalle:
@@ -30,6 +31,11 @@ import MisLeads from '../tools/MisLeads';
 import VistaDelScraper from '../tools/VistaDelScraper';
 import SaldoDeLeads from '../tools/SaldoDeLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
+import { estaALaVista, usarPestanaDibujada } from '@/lib/vista';
+
+/* Las pestañas que gastan saldo de leads: Prospección y el Scraper, con el mismo buscador. El Espía no
+   gasta saldo, y Mis Leads y las dos de Marketing no extraen nada. */
+const GASTAN_SALDO = ['prospeccion', 'scraper'];
 
 const CATALOGO_TOOLS = {
   /* Cuál de las dos pantallas es. Ver el catálogo de ICP & Oferta: lo usa la barra del pie del
@@ -51,8 +57,8 @@ const CATALOGO_TOOLS = {
   /* La sección de la pantalla, para atender la pestaña que pide la navegación (`NE-19`): Tools se
      reparte en tres departamentos y cada entrada abre la suya. ICP & Oferta no lo declara. */
   seccion: 'tools',
-  /* «Mis Leads» es una pestaña más de Tools, al lado de Prospección, y no una sección enterrada
-     debajo del scraper: el historial se consulta en momentos distintos de cuando se scrapea
+  /* «Mis Leads» es una pestaña propia (Research › Mis Leads), y no una sección enterrada debajo
+     del scraper: el historial se consulta en momentos distintos de cuando se scrapea
      —para exportarlo, para ver si un negocio ya salió antes— y no tiene por qué obligar a pasar
      por un panel de extracción para llegar.
 
@@ -61,7 +67,6 @@ const CATALOGO_TOOLS = {
   vistas: [
     {
       clave: 'espia',
-      pestania: 'Espía de Anuncios',
       /* La quinta fuente del motor de scraping, y la única que no gasta saldo de leads. Va como
          vista y no como herramienta por lo mismo que «Mis Leads»: no llena un formulario ni produce
          un entregable que se pueda dar por completo. */
@@ -69,16 +74,17 @@ const CATALOGO_TOOLS = {
     },
     {
       clave: 'scraper',
-      pestania: 'Scraper',
       /* El buscador de Prospección, solo, con la tabla de lo que trae (`NE-20`): en la estructura nueva
          el Scraper es de Research y la Prospección de Sales. Va como vista por lo mismo que el Espía. */
       render: ({ puedeEditar }) => <VistaDelScraper puedeEditar={puedeEditar} />,
     },
-    { clave: 'mis-leads', pestania: 'Mis Leads', render: () => <MisLeads /> },
+    { clave: 'mis-leads', render: () => <MisLeads /> },
   ],
 };
 
 export default function ToolsView({ activa }) {
+  const pestana = usarPestanaDibujada('tools');
+  const aLaVista = estaALaVista('tools');
   return (
     <section className={activa ? 'view on estetica-op' : 'view estetica-op'} id="v-tools">
       <div className="view-scroll cre-scroll">
@@ -97,8 +103,12 @@ export default function ToolsView({ activa }) {
           </div>
         </div>
         <div className="cl-page">
-          {/* El saldo, arriba de las pestañas: lo gastan dos, Prospección y Scraper, con el mismo buscador. */}
-          <SaldoDeLeads />
+          {/* El saldo, arriba de las dos pestañas que lo gastan y sólo ahí (`NE-20`): hasta la etapa E11
+              iba arriba de la barra propia de Tools, que se fue. Se monta con Tools a la vista y una
+              `key` por pestaña, así que vuelve a leer el saldo en cada visita, también al pasar de
+              Prospección al Scraper: Tools no se desmonta nunca, y sin las dos cosas el número quedaba
+              el de la primera lectura. Con Tools oculta no se lee. */}
+          {GASTAN_SALDO.includes(pestana) && aLaVista ? <SaldoDeLeads key={pestana} /> : null}
           <Fundaciones catalogo={CATALOGO_TOOLS} />
         </div>
       </div>

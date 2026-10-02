@@ -8,6 +8,7 @@ import { useSesion } from '../app/sesion-contexto.tsx';
 import IconSprite from './IconSprite';
 import TopBar from './TopBar';
 import Nav from './Nav';
+import CabeceraDeDepartamento from './CabeceraDeDepartamento';
 
 import ExecutiveView from './views/ExecutiveView';
 import AcquisitionView from './views/AcquisitionView';
@@ -75,6 +76,10 @@ export default function CommandCenter() {
       <div className="app">
         <TopBar />
         <Nav />
+        {/* ANTES de `<main>`, por el orden de lectura y del tabulador: el nombre de la pantalla y sus
+            pestañas se leen antes que el contenido, como se ven. Fuera de `.main`, para no cortarles
+            el pie a las pantallas de operación. */}
+        <CabeceraDeDepartamento />
 
         <main className="main">
           {visibles.map((clave, i) => {
@@ -84,10 +89,10 @@ export default function CommandCenter() {
             // existe, y el `on` escrito a mano en `ExecutiveView` dejaba el área principal en
             // blanco sin que nada falle.
             //
-            // Se compara por CLAVE y no por `i === 0`. Con el índice, esto y `Nav.jsx` coincidían
-            // solo mientras las dos listas se recorrieran igual — y son dos listas distintas: acá
+            // Se compara por CLAVE y no por `i === 0`. Con el índice, esto y la barra coincidían
+            // solo mientras las dos listas se recorrieran igual — y eran dos listas distintas: acá
             // se aplanan los grupos y allá no, así que la regla «cuerpo antes que pie» no se podía
-            // ni expresar. Ahora las dos preguntan lo mismo.
+            // ni expresar. Ahora las dos preguntan lo mismo: `arranque`.
             return <Vista key={clave} activa={clave === arranque} />;
           })}
         </main>

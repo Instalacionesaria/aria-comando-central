@@ -1,7 +1,8 @@
 /* La vista `analizadores` — las llamadas de tl;dv, juzgadas.
    ==========================================================================
-   Dos pestañas internas, HT y OB, en una sola barra: la estética de operación dibuja una barra por
-   pantalla, y Conversation ya pagó lo que cuesta encimar dos (`PanelDeConversation.jsx`).
+   Dos pestañas, HT y OB, que desde la etapa E11 de la nueva estructura son entradas de dos
+   departamentos —Sales y Client Success— y las dibuja la cabecera del departamento: la pantalla ya
+   no lleva barra propia (`docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-19`).
 
    El `id="v-analizadores"` no es decorativo: `lib/aios/shell.js` abre una pantalla haciendo
    `document.getElementById('v-' + clave)`, así que un id que no coincida con la clave de la sección

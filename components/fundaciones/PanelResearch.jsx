@@ -834,11 +834,11 @@ function Mirada({ mirada, onDecidir }) {
     const p = m.paginas;
     const enMisLeads =
       x && p
-        ? `Los ${x.total} negocios y las ${p.total} páginas están en Tools → Mis Leads`
+        ? `Los ${x.total} negocios y las ${p.total} páginas están en Research › Mis Leads`
         : x
-          ? `Los ${x.total} negocios están en Tools → Mis Leads`
+          ? `Los ${x.total} negocios están en Research › Mis Leads`
           : p
-            ? `Las ${p.total} páginas están en Tools → Mis Leads`
+            ? `Las ${p.total} páginas están en Research › Mis Leads`
             : null;
     return (
       <div className="fd-mirada lista">
@@ -880,7 +880,7 @@ function Mirada({ mirada, onDecidir }) {
     ubicacion_incompleta: `«${mirada.ubicacion || 'la ubicación'}» necesita tres partes: zona o distrito, ciudad y país, por ejemplo «Cayma, Arequipa, Perú». Es lo que exige el buscador de negocios. El Research sigue igual; para mirar el mercado real, completá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
     ubicacion_amplia: `«${mirada.ubicacion || 'la ubicación'}» es una región, y Google Maps necesita una ciudad, por ejemplo «Lima, Perú». El Research sigue igual; para mirar el mercado real, cambiá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
     sin_preparar: 'No se pudo preparar la búsqueda. El Research sigue con lo que el modelo sabe.',
-    sin_resumen: 'Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en Tools → Mis Leads.',
+    sin_resumen: 'Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en Research › Mis Leads.',
   };
   return (
     <div className="fd-mirada omitida" role="status">

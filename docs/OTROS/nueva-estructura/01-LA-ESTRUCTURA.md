@@ -125,8 +125,8 @@ construirla, además de lo de arriba:
   tokens: van con `--radius-sm`.
 - **La entrada marcada** es la que se ve: la pantalla a la vista y la pestaña que esa pantalla dibuja.
   Tools cambia de pestaña por dentro —su barra propia hasta E11, el «Continuar» del VSL, los chips «Hereda
-  de»— y Analizadores con la suya; por eso las dos anuncian lo que dibujan, sin crear un pedido. Si la
-  barra marcara por el último pedido, mentiría.
+  de»— y Analizadores lo hacía con la suya, hasta E11; por eso las dos anuncian lo que dibujan, sin crear
+  un pedido. Si la barra marcara por el último pedido, mentiría.
 - **El acordeón** sigue al departamento en uso cada vez que éste cambia; en el Inicio y en lo del
   engranaje, ninguno queda abierto, como en el lienzo. Entre un cambio y otro, la cabecera abre otro a mano.
 - **La Reunión de hoy** dice «Próximamente», no navega y no tiene contador, y sólo la ve quien ve el Inicio:
@@ -159,3 +159,52 @@ Un defecto que la barra hizo visible y no es suyo: los chips «Hereda de» de To
 ICP, y el panel cae a Prospección. Está anotado en `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md`.
 
 Lo vigila `pruebas/codigo/193-la-barra-lateral.test.ts`.
+
+## Hecho el 2026-10-02 (E11)
+
+La cabecera está en `components/CabeceraDeDepartamento.jsx` y sus reglas en `app/departamentos.css`. Lo
+que se decidió al construirla:
+
+- **Va en su propia área de la rejilla**, a la derecha de la barra y arriba de `.main` (`app/armazon.css`):
+  dentro de `.main` les cortaría el pie a las pantallas de operación. Va ANTES de `<main>` en el árbol
+  por el orden de lectura y del tabulador: el nombre de la pantalla y sus pestañas se leen antes que el
+  contenido. Es una región con el nombre de la entrada abierta, porque su `h1` quedó fuera de `<main>`.
+- **Lee lo mismo que la barra**: la pantalla a la vista, la pestaña que dibuja y `entradaAbierta`. La ceja
+  viaja en la navegación del servidor. Sin entrada abierta —el Inicio, lo del engranaje— no se dibuja.
+  La pestaña dibujada le llega aunque escuche después de que la pantalla la anunció: el gancho vuelve a
+  leer al suscribirse, y con cada aviso redibuja sólo si cambió la de su pantalla.
+- **La fila de pestañas** son las entradas del departamento que la persona ve; la abierta, subrayada en
+  el acento. Las «Próximamente» llevan la palabra debajo, como en la barra, con el nombre en la misma
+  línea que los demás, y no son botones. Con una sola entrada —un closer que sólo ve Sales › Closer— no
+  hay fila: una sola pestaña no es una pestaña. En la computadora, cuando no entra, se parte en dos
+  renglones: deslizable, a 1280 px la abierta de Marketing quedaba entera fuera de la vista. En el
+  teléfono se desliza, y la cabecera trae a la vista la abierta y la que recibe el foco. El foco se
+  dibuja por dentro de la pestaña: por fuera, la fila lo recortaba.
+- **El relleno de los costados** sigue al cuerpo de las pantallas de operación, que se centra en 1600 px
+  en una pantalla ancha: 40 px, o lo que el cuerpo se corre.
+- **Los títulos propios** de las pantallas se ocultan con una regla que pregunta si hay cabecera, en las
+  dos formas de cabecera que hay: la de operación (se oculta `.ch-title`, y quedan las pestañas propias
+  de Closer y Setter) y la del prototipo (se oculta `.ch-l`, y quedan los períodos de Acquisition y Leads
+  Portal). La cabecera que queda vacía sale del flujo; no se puede esconder con `display: none` porque
+  `aios.css` la fija con `!important`. La que se queda —la cápsula de Closer y Setter— pierde su línea de
+  abajo, para no dibujar dos. El marcado no se borró.
+- **Tools y Analizadores perdieron su barra propia**. En Tools, la barra sólo se dibuja si el catálogo no
+  declara `seccion`, o sea en ICP & Oferta, que conserva sus siete pasos; con ella se fueron el medidor de
+  avance y el punto de Prospección completa. En Analizadores quedan los botones de sincronizar y de
+  analizar, a la derecha, donde estaban. Con un informe abierto, la pantalla anuncia el tipo del informe:
+  uno de onboarding pegado desde «Analizador HT» se muestra bajo Client Success › Analizador OB.
+- **La franja del saldo** va arriba de Prospección y del Scraper, las dos que gastan saldo, y no arriba
+  de todo. Se monta con Tools a la vista y una por pestaña, así que vuelve a leer el saldo en cada visita,
+  también al pasar de una a otra; con Tools oculta no se lee. Antes se leía una sola vez, al cargar la
+  página.
+- **Los textos que mandaban a «Tools → Mis Leads»** dicen «Research › Mis Leads», también los que lee el
+  agente de ICP. La barra de pasos de ICP dice que el VSL vive en «Marketing › Tu video de ventas», y el
+  lugar sale de la tabla de departamentos (`lugarDe`), no escrito a mano.
+- **Lo que no se movió**: el contenido de Acquisition y Leads Portal arranca a 18 px del borde y la
+  cabecera a 40; los títulos de cada panel por dentro («Prospección Inteligente», «Espía de Anuncios») no
+  coinciden con el nombre de la entrada. Los dos son de la fase de detalles
+  (`08-LO-QUE-QUEDA-PARA-DESPUES.md`).
+
+Lo vigila `pruebas/codigo/194-la-cabecera-del-departamento.test.ts`. Lo que no se pudo recorrer sin
+entrar a la aplicación —un chat de ICP empezado y un escaneo en vuelo que sobreviven al cambio de
+departamento— queda para el humo con login del hito 3 (`07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`).

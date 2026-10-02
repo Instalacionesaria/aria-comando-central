@@ -13,7 +13,14 @@ pantalla al diseño del lienzo:
 - los radios escritos a mano;
 - la caja «Pregúntale al cerebro sobre…» al pie de cada tablero, cuando haya cerebro;
 - el patrón conversacional de las herramientas que crean algo: el agente a la izquierda y el entregable
-  armándose a la derecha, empezando por ICP & Oferta.
+  armándose a la derecha, empezando por ICP & Oferta;
+- alinear con la cabecera del departamento el contenido que no es de operación (Acquisition y Leads
+  Portal arrancan a 18 px del borde y la cabecera a 40), y los títulos de cada panel por dentro
+  («Prospección Inteligente», «Espía de Anuncios»), que no coinciden con el nombre de su entrada (E11);
+- devolverle a Tools, en algún lugar, el medidor de avance de sus tres herramientas, que se fue con su
+  barra propia (E11);
+- que la barra de pasos de ICP lleve al VSL en vez de decir dónde vive, cuando se sepa si la persona ve
+  Tools (E11).
 
 El inventario técnico queda en `brand/MIGRACION.md` (E5).
 

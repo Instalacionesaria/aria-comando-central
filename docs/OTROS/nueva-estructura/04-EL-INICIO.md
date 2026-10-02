@@ -107,7 +107,8 @@ Lo que se decidió al construirlo, además de lo de arriba:
   vista. La madrugada dice «Buenos días», al pie de la letra de esta regla.
 - **La sección se llama «Inicio»** en `lib/autorizacion/secciones.ts`, en su misma línea.
 - **La grilla** quedó con dos filas y dos columnas (`app/armazon.css`), y con ella se fue la clase
-  `.solo` y el defecto del panel lateral en la primera carga.
+  `.solo` y el defecto del panel lateral en la primera carga. Desde E10, en la computadora, la barra va de
+  arriba abajo; desde E11, la columna del cuerpo tiene la fila de la cabecera del departamento.
 - **La compuerta de paridad quedó retirada**: sus tres pasos eran de la maqueta. Con `VISTAS` y `PASOS`
   vacías imprime «retirada» y sale 0, como decidió la Etapa 0.
 

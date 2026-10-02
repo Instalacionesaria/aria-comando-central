@@ -367,7 +367,7 @@ export function contextoDeMercado(m: MercadoReal | null): string | null {
       const sinWeb = x.total - x.conWeb;
       lineas.push(`Sin sitio web propio: ${sinWeb} de ${x.total} (${Math.round((sinWeb / x.total) * 100)}%)`);
     }
-    lineas.push('Los negocios completos están en Tools → Mis Leads.');
+    lineas.push('Los negocios completos están en Research › Mis Leads.');
   }
   if (m.anuncios) {
     const a = m.anuncios;
@@ -385,7 +385,7 @@ export function contextoDeMercado(m: MercadoReal | null): string | null {
         (p.calificacionPromedio !== null ? ` · calificación promedio en Facebook ${p.calificacionPromedio}` : ''),
     );
     if (p.categorias.length > 0) lineas.push(`Cómo se describen: ${p.categorias.join(', ')}`);
-    lineas.push('Las páginas completas están en Tools → Mis Leads.');
+    lineas.push('Las páginas completas están en Research › Mis Leads.');
   }
   return lineas.join('\n');
 }

@@ -11,8 +11,8 @@
  *
  *   · el nicho de ICP: la vista recibe lo mismo que el Espía, su vecino en Research (`puedeEditar`),
  *     y nada del estado de Fundaciones;
- *   · la franja del saldo: está arriba de todas las pestañas de Tools (`ToolsView.jsx`), así que en
- *     esta pestaña ya se ve arriba. Se muda acá cuando Tools pierda su barra (E11);
+ *   · la franja del saldo: la dibuja `ToolsView.jsx` arriba de esta pestaña y de Prospección, las dos
+ *     que la gastan, así que acá no se repite;
  *   · un sondeo propio: lo hace el buscador, y `pruebas/codigo/123-relojes.test.ts` no admite otro.
  *
  * Sin `tools.editar` el buscador no se dibuja, como en el Espía, y el aviso va en la misma tarjeta:

@@ -12,7 +12,7 @@ cinco hasta la etapa E10, cuando se fue `GROUP`:
 
 | es… | dónde |
 |---|---|
-| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:34` |
+| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:35` |
 | la pantalla de cada ruta | `export const PANTALLA = '<clave>'` en `app/api/**/route.ts`; el portero (`exigir`) niega con 403 a quien no tiene esa pestaña |
 | un valor permitido en la base | el `check` de `identidad.usuarios_secciones.seccion`, que guarda las pestañas de cada persona |
 | la clave del grupo de las migas | `GROUP` en `lib/aios/shell.js:35@b532a78`: **se fue en E10**, con las migas |

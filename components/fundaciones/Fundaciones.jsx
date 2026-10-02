@@ -142,9 +142,9 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
      cadena del método.
 
      Se atiende UNA vez por número y en el render, no en un efecto: el primer dibujo después de abrir
-     ya es el de la pestaña pedida. Un clic en la barra propia no toca el pedido, así que no lo pisa,
-     y pedir otra vez la misma pestaña es un número nuevo que se vuelve a aplicar. Una pestaña
-     desconocida no cambia nada. */
+     ya es el de la pestaña pedida. Cambiar de pestaña por dentro —el «Continuar» del VSL— no toca el
+     pedido, así que no lo pisa, y pedir otra vez la misma pestaña es un número nuevo que se vuelve a
+     aplicar. Una pestaña desconocida no cambia nada. */
   const pedido = usarPedidoDeVista(catalogo.seccion ?? null);
   const [atendido, setAtendido] = useState(0);
   if (pedido && pedido.secuencia !== atendido) {
@@ -432,6 +432,12 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
         </div>
       ) : null}
 
+      {/* La barra propia, sólo en la pantalla que NO reparte sus pestañas en la navegación: ICP &
+          Oferta, con sus siete pasos. Tools declara `seccion` porque sus pestañas son entradas de tres
+          departamentos, y desde la etapa E11 las elige la cabecera del departamento o la barra lateral
+          (`NE-17`, `NE-19`): con su barra, la pantalla tendría dos filas de pestañas que dicen lo mismo.
+          Con ella se fueron, en Tools, el medidor de avance y el punto de Prospección completa. */}
+      {catalogo.seccion ? null : (
       <div className="cl-sub fd-sub" role="tablist">
         {herramientas.map((h, i) => {
           const completo = pasoCompleto(estadoUsable, h.id);
@@ -450,33 +456,6 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
             </button>
           );
         })}
-        {/* La raya separa dos cosas que NO son lo mismo: a la izquierda el recorrido numerado de
-            herramientas, a la derecha las vistas. Sin ella, «Mis Leads» se leía como la etiqueta
-            de la barra de progreso que viene justo después, y no como algo que se pueda tocar. */}
-        {vistas.length > 0 ? <span className="fd-sep" aria-hidden="true" /> : null}
-
-        {vistas.map((v) => (
-          <button
-            key={v.clave}
-            type="button"
-            role="tab"
-            aria-selected={v.clave === activa}
-            /* `.fd-vista` le da borde y fondo INCLUSO apagada. Las pestañas de herramienta
-               apagadas son sólo texto tenue, y eso funciona cuando hay varias juntas: el grupo
-               se lee como grupo. Una sola vista suelta al lado del medidor no tenía ninguna
-               señal de ser un botón. */
-            className={`fd-vista${v.clave === activa ? ' on' : ''}`}
-            onClick={() => setActiva(v.clave)}
-          >
-            {/* Sin `.fd-n`: la numeración es del recorrido de herramientas, y esto no es un paso
-                del recorrido. Numerarla diría que hay algo que completar. El icono ocupa ese
-                lugar y dice lo contrario: es una lista, no un paso. */}
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M2 4h12M2 8h12M2 12h8" strokeLinecap="round" />
-            </svg>
-            {v.pestania}
-          </button>
-        ))}
         <div className="fd-avance">
           <span className="fd-barra">
             <i style={{ width: `${(hechos / herramientas.length) * 100}%` }} />
@@ -486,6 +465,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           </b>
         </div>
       </div>
+      )}
 
       {problema ? (
         <div className="fd-aviso mal">

@@ -3,9 +3,10 @@
 /* La franja de saldo de Tools: cuántos leads le quedan a la empresa, cuántos le regalamos, cuántos
    usó y cuántos compró. Aprobada sobre mockup (Kevin, 2026-09-13: «me gusta mucho»).
 
-   Vive arriba de las pestañas de Tools y no dentro de una, porque el saldo lo gastan dos de ellas
-   —Prospección y Scraper, con el mismo buscador—. Una sola lectura al montar: después de un scraping
-   no se refresca hasta volver a montarse (deuda en `docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md`). */
+   La dibuja `ToolsView` arriba de las dos pestañas que gastan el saldo —Prospección y Scraper, con el
+   mismo buscador— y sólo ahí, desde la etapa E11. Una sola lectura al montar, y se vuelve a montar en
+   cada visita a esas pestañas; pero después de un scraping no se refresca mientras se mira
+   (deuda en `docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md`). */
 
 import { useEffect, useState } from 'react';
 

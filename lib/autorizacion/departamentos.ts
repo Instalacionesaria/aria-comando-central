@@ -166,7 +166,7 @@ export function menuPorDepartamentos(
  * La entrada abierta, para marcarla en la barra y abrir su departamento (`NE-11`), o `null`.
  *
  * `seccion` es la pantalla a la vista y `pestana`, la que esa pantalla dibuja: no la última que se
- * pidió, porque Tools y Analizadores cambian de pestaña por dentro. Una sección repartida en varios
+ * pidió, porque Tools cambia de pestaña por dentro (el «Continuar» del VSL). Una sección repartida en varios
  * departamentos EXIGE la pestaña —sin ella no se sabe cuál de sus entradas es— y da `null` en vez
  * de adivinar. El Inicio y el engranaje no son de ningún departamento: `null`.
  */
@@ -183,4 +183,18 @@ export function entradaAbierta(
     }
   }
   return null;
+}
+
+/**
+ * Dónde vive una pestaña de una sección repartida, dicho como la barra lateral: «Marketing › Tu video
+ * de ventas». La usa la barra de pasos de ICP & Oferta para nombrar el paso que vive en Tools
+ * (`components/fundaciones/BarraDePasos.jsx`), en vez de escribir el lugar a mano. Es la tabla de
+ * `ENTRADAS`, sin la visibilidad de nadie: dice dónde está, no quién lo ve. `null` si no es de ningún
+ * departamento.
+ */
+export function lugarDe(seccion: string, pestana: string): string | null {
+  const entrada = ENTRADAS.find((e) => !('proximamente' in e) && e.seccion === seccion && e.pestana === pestana);
+  if (!entrada || entrada.nombre === undefined) return null;
+  const departamento = DEPARTAMENTOS.find((d) => d.clave === entrada.departamento);
+  return departamento ? `${departamento.nombre} › ${entrada.nombre}` : null;
 }

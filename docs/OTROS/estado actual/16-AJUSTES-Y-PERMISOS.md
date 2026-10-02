@@ -77,7 +77,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 (`lib/autorizacion/secciones.ts:192-209`); el pie junta sus secciones y dibuja sólo la primera
 (`components/Nav.jsx:128@b532a78`, `:215@b532a78`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
-(`components/CommandCenter.jsx:49`). **Después del corte, el 2026-10-02** (nueva estructura, E10): Ajustes, el
+(`components/CommandCenter.jsx:50`). **Después del corte, el 2026-10-02** (nueva estructura, E10): Ajustes, el
 Panel de Monitoreo e Incidentes van en el engranaje del pie de la barra lateral, que muestra todas las
 que la persona vea (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14`).
 

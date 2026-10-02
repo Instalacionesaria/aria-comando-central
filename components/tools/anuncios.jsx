@@ -5,7 +5,7 @@
    El buscador y la tarjeta de anuncio viven acá porque hay dos lugares que espían la Meta Ad
    Library con el mismo motor:
 
-     · `EspiaDeAnuncios` (Tools → Espía de Anuncios): mirar el nicho y sacar los patrones con IA.
+     · `EspiaDeAnuncios` (Research › Espía de anuncios): mirar el nicho y sacar los patrones con IA.
      · La columna del Espía en la pestaña Facebook de Prospección: descubrir anunciantes para
        después sacarles los contactos.
 

@@ -5,7 +5,7 @@
  * la Reunión de hoy, los cinco departamentos como acordeones y el pie con el engranaje.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * LEE `navegacion`, Y NADA MÁS
+ * LEE DE LA SESIÓN `navegacion` Y `arranque`, Y NADA MÁS
  *
  * Quién ve qué ya lo decidió el servidor con `menuVisible()`, y `menuPorDepartamentos()` lo repartió
  * (`lib/autorizacion/departamentos.ts`). Esta barra no vuelve a mirar permisos ni el menú agrupado: si

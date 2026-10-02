@@ -199,14 +199,19 @@ test('la entrada abierta sale de la pantalla y de la pestaña que DIBUJA', () =>
   assert.match(entradas, /hidden=\{!desplegadoEste\}/, 'un departamento cerrado deja sus entradas a la vista y en el tabulador');
 
   /* La barra escucha la pestaña en un efecto de DISEÑO: con `useSyncExternalStore`, que se suscribe
-     después de pintar, quien arrancaba en Tools veía un cuadro con todo cerrado. Y lee el almacén en
-     el dibujo: escuchar sin leer, o leer sin escuchar, deja la marca vieja cuando Tools cambia de
-     pestaña por dentro. */
+     después de pintar, quien arrancaba en Tools veía un cuadro con todo cerrado. Lee el almacén en el
+     dibujo: escuchar sin leer, o leer sin escuchar, deja la marca vieja cuando Tools cambia de pestaña
+     por dentro. Y al suscribirse vuelve a leer: quien está por encima de la pantalla (`ToolsView`)
+     escucha DESPUÉS de que ella anunció, y sin esa segunda lectura se perdía el aviso. */
   const vista = sinComentarios(fuente('lib/vista.ts'));
   const hook = bloque(vista, vista.indexOf('export function usarPestanaDibujada'));
-  assert.match(hook, /useLayoutEffect\(\(\) => alCambiarDePestana\(redibujar\), \[\]\);/, 'la barra no escucha la pestaña dibujada, o la escucha después de pintar');
   assert.match(hook, /const \[, redibujar\] = useReducer\(/);
-  assert.match(hook, /return clave === null \? null : pestanaDibujada\(clave\);/, 'la barra no lee la pestaña dibujada');
+  assert.match(hook, /const leida = clave === null \? null : pestanaDibujada\(clave\);/, 'la barra no lee la pestaña dibujada');
+  /* Con cada aviso, y una vez al suscribirse, mira si cambió la pestaña de SU pantalla, y sólo
+     entonces redibuja: un anuncio de otra pantalla no la vuelve a dibujar entera. */
+  assert.match(hook, /const mirar = \(\) => \{\s*if \(\(clave === null \? null : pestanaDibujada\(clave\)\) !== leida\) redibujar\(\);\s*\};/, 'el oyente redibuja con cualquier aviso, o no compara contra lo que dibujó');
+  assert.match(hook, /useLayoutEffect\(\(\) => \{\s*const mirar[\s\S]*?const baja = alCambiarDePestana\(mirar\);\s*mirar\(\);\s*return baja;\s*\}, \[clave, leida\]\);/, 'la barra no escucha la pestaña dibujada, la escucha después de pintar, o al suscribirse no vuelve a leer: quien escucha después del aviso se lo pierde');
+  assert.match(hook, /return leida;/);
   assert.doesNotMatch(hook, /useSyncExternalStore|useEffect\(/, 'la barra escucha la pestaña después de pintar');
 });
 
@@ -262,7 +267,8 @@ test('las pantallas anuncian la pestaña que dibujan, sin pedirse nada a sí mis
   );
   assert.ok(fundaciones.indexOf('anunciarPestana(') < fundaciones.indexOf('if (!estado && !problema)'), 'Tools anuncia después de la pantalla de carga');
   const analizadores = sinComentarios(fuente('components/analizadores/PanelDeAnalizadores.jsx'));
-  assert.match(analizadores, /useLayoutEffect\(\(\) => \{\s*anunciarPestana\('analizadores', pestana\);\s*\}, \[pestana\]\);/, 'Analizadores no anuncia la pestaña que dibuja');
+  // Con un detalle abierto, la del detalle: un informe OB abierto desde «Analizador HT» es de Client Success.
+  assert.match(analizadores, /const dibujada = detalle\?\.tipo === 'HT' \|\| detalle\?\.tipo === 'OB' \? detalle\.tipo : pestana;\s*useLayoutEffect\(\(\) => \{\s*anunciarPestana\('analizadores', dibujada\);\s*\}, \[dibujada\]\);/, 'Analizadores no anuncia la pestaña que dibuja, o no la del detalle abierto');
   assert.ok(analizadores.indexOf("anunciarPestana('analizadores'") < analizadores.indexOf('if (detalle !== null)'), 'Analizadores anuncia después del `return` del detalle');
 });
 

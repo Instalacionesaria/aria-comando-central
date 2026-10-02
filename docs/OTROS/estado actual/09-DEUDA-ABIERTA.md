@@ -470,7 +470,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
 - **El mismo umbral escrito dos veces:** `MINUTOS_PARA_DARLA_POR_COLGADA = 15` en
-  `lib/analizadores/datos.ts:58` y en `components/analizadores/PanelDeAnalizadores.jsx:61`, sin
+  `lib/analizadores/datos.ts:58` y en `components/analizadores/PanelDeAnalizadores.jsx:60`, sin
   prueba que ate los dos.
 - **Nada fuera de la pestaña lee estos datos**: ni Sales, ni la ficha, ni Closer; `negocio.llamadas`
   sigue en cero filas (medido el 2026-09-28 a las 22:32 UTC). El error de una llamada fallida
@@ -644,7 +644,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - **Y uno que no está en el repositorio sino en la base:** el error de una llamada fallida guarda los
   primeros 200 caracteres de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), que en
   un informe OB empiezan por los datos del cliente, y la lista lo dibuja
-  (`components/analizadores/PanelDeAnalizadores.jsx:406`). Toda medición SQL que lea `error` lee
+  (`components/analizadores/PanelDeAnalizadores.jsx:392`). Toda medición SQL que lea `error` lee
   datos personales.
 
 ---

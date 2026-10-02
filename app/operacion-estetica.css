@@ -1451,20 +1451,20 @@
   background: rgb(var(--c-crit) / .07);
 }
 
-/* ── LA CÁPSULA DE ICP Y TOOLS NO QUEDA CENTRADA ───────────────────────────
+/* ── LA CÁPSULA DE ICP NO QUEDA CENTRADA ────────────────────────────────────
  *
- * El mismo choque de Auditoría, por el mismo motivo y en dos pantallas más: `align-self: center`
+ * El mismo choque de Auditoría, por el mismo motivo y en una pantalla más: `align-self: center`
  * centra la cápsula dentro de la FILA del encabezado, que es donde vive en Closer, Setter y
  * Ajustes. Acá la emite `Fundaciones.jsx` como hermano de `.cre-head` —el componente dibuja las
  * pestañas y el cuerpo juntos, y separarlos exigiría subir el estado— así que cuelga de
  * `.cl-page`, un flex en columna, y ahí `center` la manda al medio de la pantalla.
  *
- * Van tres pantallas con esta misma línea. Es la señal de que el `align-self: center` de la regla
+ * Iban tres pantallas con esta misma línea —Tools también, hasta que su barra se fue en la etapa E11
+ * de la nueva estructura—. Es la señal de que el `align-self: center` de la regla
  * general está describiendo un caso particular —la cápsula que vive en el encabezado— y no el
  * concepto; pero moverlo ahora obliga a revisar Closer, Setter y Ajustes a la vez, y eso es un
  * cambio aparte. Queda anotado. */
-#v-icp .cl-sub,
-#v-tools .cl-sub { align-self: flex-start; }
+#v-icp .cl-sub { align-self: flex-start; }
 
 /* ── EL NÚMERO DEL PASO NO PUEDE SER ACENTO SOBRE ACENTO ───────────────────
  *
