@@ -49,6 +49,7 @@ import {
   seccionesConAlcance,
 } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
+import { menuPorDepartamentos } from '../../../../lib/autorizacion/departamentos.ts';
 
 /**
  * ¿Quién soy? Responde 200 **siempre**, con o sin sesión.
@@ -94,6 +95,18 @@ export async function GET(peticion: Request): Promise<Response> {
      * — y ya se desincronizaron. Ver `seccionDeArranque`.
      */
     arranque: seccionDeArranque(menu),
+    /**
+     * El mismo menú, repartido en los departamentos de la estructura nueva (`NE-11` a `NE-16`). Sale
+     * del MISMO `menu`, por el motivo de arriba: si la barra lo dedujera de los permisos, serían dos
+     * definiciones de quién ve qué. Ver `lib/autorizacion/departamentos.ts`.
+     */
+    navegacion: menuPorDepartamentos(menu),
+    /**
+     * ¿Tiene el alcance restringido por pestañas? El pie de la barra dice USUARIO o ADMIN con esto
+     * (`NE-15`). Un booleano y NUNCA el nombre del rol: nada se decide por el nombre de un rol
+     * (`pruebas/codigo/30-portero.test.ts`).
+     */
+    restringido: contexto.alcance.restringido,
     // El nombre del usuario, para el pie del menú. Hasta la Etapa 11 decía "Francisco ·
     // Gerencia" escrito a mano en el JSX: el mismo nombre para todos los inquilinos.
     usuarioNombre: contexto.usuarioNombre,

@@ -75,7 +75,7 @@ pasa a salir de una capacidad.
 **Exactamente lo mismo que hoy** (`NE-07`). La lista de lo que cada persona ve sigue saliendo de
 `menuVisible()` (`lib/autorizacion/secciones.ts:820`), que aplica la capacidad, el alcance por pestañas y la
 regla de la organización principal. La estructura nueva **no vuelve a decidir permisos**: reparte lo que
-`menuVisible()` ya dejó pasar.
+`menuVisible()` ya dejó pasar: `lib/autorizacion/departamentos.ts` recibe el menú y nada más.
 
 | si la persona tiene… | ve… |
 |---|---|

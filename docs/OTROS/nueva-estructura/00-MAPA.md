@@ -71,3 +71,4 @@ etapa, al terminar, suma acá abajo su fila. Sus commits se leen en `git log --o
 | E5 · la paleta y las superficies | hecho, 2026-10-01 |
 | E6 · las citas | hecho, 2026-10-01 |
 | E7 · el Inicio | hecho, 2026-10-01 |
+| E8 · el modelo | hecho, 2026-10-01 |

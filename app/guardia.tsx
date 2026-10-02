@@ -43,6 +43,8 @@ interface Sesion {
   // respecto del estado, que es lo que pasaría con dos peticiones.
   menu?: GrupoDelMenu[];
   arranque?: DatosDeSesion['arranque'];
+  navegacion?: DatosDeSesion['navegacion'];
+  restringido?: boolean;
   usuarioNombre?: string;
   usuarioId?: string;
   puedeCambiarDeEmpresa?: boolean;
@@ -93,6 +95,10 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
         // pantalla —el menú sigue andando, un clic abre lo que sea— y es el mismo lado del que
         // fallan las demás de esta lista.
         arranque: r.datos.arranque ?? null,
+        // Sin el campo, ningún departamento: el mismo lado del que falla el menú.
+        navegacion: r.datos.navegacion ?? { inicio: null, departamentos: [], engranaje: [] },
+        // `true` ante la duda: el pie diría USUARIO, que no promete nada.
+        restringido: r.datos.restringido ?? true,
         usuarioNombre: r.datos.usuarioNombre ?? '',
         usuarioId: r.datos.usuarioId ?? '',
         // `false` ante la duda: sin saberlo, NO se ofrece el conmutador.

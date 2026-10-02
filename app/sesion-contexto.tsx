@@ -21,6 +21,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createContext, useContext } from 'react';
+import type { Navegacion } from '../lib/autorizacion/departamentos.ts';
 
 /** Una entrada del menú, tal como la manda el servidor. */
 export interface SeccionDelMenu {
@@ -52,6 +53,14 @@ export interface DatosDeSesion {
    * la miga terminó diciendo «Executive» a alguien que no ve Executive.
    */
   arranque: { seccion: SeccionDelMenu; grupo: string } | null;
+  /**
+   * El menú repartido en departamentos (`NE-11` a `NE-16`), armado por el servidor con
+   * `menuPorDepartamentos()` sobre el MISMO `menu` de arriba: lo que la barra nueva dibuja, sin
+   * volver a decidir quién ve qué. Lo empieza a leer la barra lateral de la etapa E10.
+   */
+  navegacion: Navegacion;
+  /** ¿Alcance restringido por pestañas? El pie de la barra dice USUARIO o ADMIN con esto (`NE-15`). */
+  restringido: boolean;
   usuarioNombre: string;
   /** Quién es. Lo necesita la pantalla de usuarios para no ofrecerse a sí misma un cambio de
    *  rol: `ADR-0502` dice que nadie se degrada a sí mismo, y el servidor responde 409. Ofrecer
