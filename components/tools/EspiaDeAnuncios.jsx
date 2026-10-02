@@ -151,7 +151,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
   return (
     <div className="cl-page">
       <div className="fd-cab">
-        <h3>Espía de Anuncios</h3>
+        <h3>Espía a tus competidores</h3>
         <span className="fd-bajada">
           Espiá la Meta Ad Library de tu competencia por nicho, marca o página. Detectá qué hooks,
           ofertas y ángulos llevan más tiempo corriendo — señal de que convierten — y extraé los

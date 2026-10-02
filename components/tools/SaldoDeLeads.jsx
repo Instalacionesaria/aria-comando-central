@@ -78,7 +78,7 @@ export default function SaldoDeLeads() {
       {abierto ? (
         <p className="sl-explica">
           Cada negocio de Google Maps, cada página de Facebook y cada contacto de LinkedIn es un lead, y descuenta 1
-          crédito. El Espía de Anuncios no descuenta. En Research, una mirada al mercado descuenta hasta 200. Los
+          crédito. Espía a tus competidores no descuenta. En Research, una mirada al mercado descuenta hasta 200. Los
           créditos de regalo se usan antes que los comprados.
         </p>
       ) : null}

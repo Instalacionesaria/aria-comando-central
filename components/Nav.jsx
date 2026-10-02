@@ -69,7 +69,7 @@ function textoDelPunto(enVuelo) {
     partes.push(enVuelo.scraper === 1 ? 'un scraping corriendo en el Scraper' : `${enVuelo.scraper} scrapings corriendo en el Scraper`);
   }
   if (enVuelo.espia > 0) {
-    partes.push(enVuelo.espia === 1 ? 'una búsqueda corriendo en el Espía de anuncios' : `${enVuelo.espia} búsquedas corriendo en el Espía de anuncios`);
+    partes.push(enVuelo.espia === 1 ? 'una búsqueda corriendo en Espía a tus competidores' : `${enVuelo.espia} búsquedas corriendo en Espía a tus competidores`);
   }
   const texto = partes.join(' y ');
   return texto ? texto[0].toUpperCase() + texto.slice(1) : '';

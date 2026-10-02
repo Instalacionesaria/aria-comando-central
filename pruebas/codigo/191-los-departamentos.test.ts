@@ -147,7 +147,7 @@ test('la visibilidad sale sólo del menú', () => {
   });
   // Quien tiene Tools ve sus seis entradas en tres departamentos, y Marketing con sus «Próximamente».
   assert.deepEqual(forma(navegacion(new Set(['tools.ver']))).departamentos, [
-    ['Research', ['Espía de anuncios', 'Scraper', 'Mis Leads']],
+    ['Research', ['Espía a tus competidores', 'Scraper', 'Mis Leads']],
     ['Marketing', [
       'Bio de Instagram (próximamente)', 'Guiones TOFU · MOFU · BOFU (próximamente)',
       'Guiones de venta directa (próximamente)', 'Social Media Posting (próximamente)',
@@ -167,7 +167,7 @@ test('el orden es el de `NE-12`, y cada ceja la del documento', () => {
   assert.deepEqual(forma(navegacion(TODAS)), {
     inicio: 'Inicio',
     departamentos: [
-      ['Research', ['ICP & Oferta', 'Espía de anuncios', 'Scraper', 'Mis Leads']],
+      ['Research', ['ICP & Oferta', 'Espía a tus competidores', 'Scraper', 'Mis Leads']],
       ['Systems', ['Acquisition', 'Conversion', 'Conversation']],
       ['Marketing', [
         'Creative', 'Bio de Instagram (próximamente)', 'Guiones TOFU · MOFU · BOFU (próximamente)',

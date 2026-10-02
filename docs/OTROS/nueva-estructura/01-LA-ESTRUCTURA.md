@@ -22,7 +22,7 @@ dentro», todas las pantallas):
 
 | departamento | ceja de la cabecera | entradas, en orden → sección de hoy [pestaña] |
 |---|---|---|
-| **Research** | `RESEARCH · SE INSTALA EN FOUNDATIONS` | ICP & Oferta → `icp` · Espía de anuncios → `tools` [espia] · **Scraper** → `tools` [scraper, nueva] · Mis Leads → `tools` [mis-leads] |
+| **Research** | `RESEARCH · SE INSTALA EN FOUNDATIONS` | ICP & Oferta → `icp` · Espía a tus competidores → `tools` [espia] (era «Espía de anuncios» hasta el 2026-10-02) · **Scraper** → `tools` [scraper, nueva] · Mis Leads → `tools` [mis-leads] |
 | **Systems** | `SYSTEMS · SE INSTALA EN SYSTEMS` | Acquisition → `acquisition` · Conversion → `conversion` · Conversation → `conversation` |
 | **Marketing** | `MARKETING · SE INSTALA EN GROWTH` | Creative → `creative` · Bio de Instagram · Guiones TOFU · MOFU · BOFU · Guiones de venta directa · Social Media Posting · Clon de IA · Tu página → `tools` [landing] · Tu video de ventas → `tools` [VSL] |
 | **Sales** | `SALES · SE INSTALA EN SALES` | Sales → `sales` · Leads Portal → `contacts` · Setter → `setter` · Closer → `closer` · Analizador HT → `analizadores` [HT] · Prospección en frío → `tools` [prospección] |

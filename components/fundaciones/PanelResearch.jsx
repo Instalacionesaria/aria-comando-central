@@ -773,7 +773,7 @@ function Mirada({ mirada, onDecidir }) {
           <div>
             <b>¿Buscamos negocios reales de «{mirada.rubro}» en {mirada.ubicacion}?</b>
             <small>
-              Google Maps trae hasta {mirada.tope} negocios con web y correo cuando los tienen. El Espía de Anuncios mira
+              Google Maps trae hasta {mirada.tope} negocios con web y correo cuando los tienen. Espía a tus competidores mira
               qué publicidad corre el segmento y, de los anunciantes que encuentre, sacamos los contactos de hasta{' '}
               {mirada.topePaginas} páginas de Facebook. Los pasos 2 al 5 se construyen sobre eso.{' '}
               <b>Descuenta hasta {mirada.tope + mirada.topePaginas} leads de tu saldo: {mirada.tope} de Maps y {mirada.topePaginas} de Facebook.</b>{' '}
@@ -820,7 +820,7 @@ function Mirada({ mirada, onDecidir }) {
       <div className="fd-mirada" role="status" aria-live="polite">
         {titulo}
         {renglon('Google Maps', `hasta ${TOPE_MAPS} negocios`, mirada.maps)}
-        {renglon('Espía de Anuncios', 'qué publicidad corre el segmento', mirada.espia)}
+        {renglon('Espía a tus competidores', 'qué publicidad corre el segmento', mirada.espia)}
         {renglon('Páginas de Facebook', `contactos de hasta ${TOPE_PAGINAS} anunciantes`, mirada.paginas || { estado: 'esperando' })}
         <small className="fd-mirada-nota">Tarda unos minutos. El paso 2 arranca cuando terminen los tres.</small>
       </div>

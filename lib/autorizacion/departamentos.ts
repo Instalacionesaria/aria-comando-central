@@ -68,7 +68,7 @@ export type Entrada =
  */
 export const ENTRADAS: readonly Entrada[] = [
   { departamento: 'research', seccion: 'icp' },
-  { departamento: 'research', seccion: 'tools', pestana: 'espia', nombre: 'Espía de anuncios' },
+  { departamento: 'research', seccion: 'tools', pestana: 'espia', nombre: 'Espía a tus competidores' },
   { departamento: 'research', seccion: 'tools', pestana: 'scraper', nombre: 'Scraper' },
   { departamento: 'research', seccion: 'tools', pestana: 'mis-leads', nombre: 'Mis Leads' },
 

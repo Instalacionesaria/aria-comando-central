@@ -599,7 +599,7 @@ function FormularioFacebook({ onLeads }) {
           />
           <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
           <div className="sc-subpista">
-            El mismo Espía de Anuncios: arma la búsqueda por vos y te deja ver <b>qué</b> anuncia
+            Lo mismo que Espía a tus competidores: arma la búsqueda por vos y te deja ver <b>qué</b> anuncia
             cada uno, y hace cuánto, antes de gastar el paso 2.
           </div>
         </div>

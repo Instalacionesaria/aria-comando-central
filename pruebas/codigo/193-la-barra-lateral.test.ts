@@ -169,7 +169,7 @@ test('la entrada abierta sale de la pantalla y de la pestaña que DIBUJA', () =>
     menuVisible(new Set(SECCIONES.map((s) => s.capacidadRequerida)), { restringido: false }, true),
   );
   const en = (seccion: string | null, pestana: string | null) => entradaAbierta(navegacion, seccion, pestana);
-  assert.deepEqual(en('tools', 'espia'), { departamento: 'research', nombre: 'Espía de anuncios' });
+  assert.deepEqual(en('tools', 'espia'), { departamento: 'research', nombre: 'Espía a tus competidores' });
   assert.deepEqual(en('tools', 'prospeccion'), { departamento: 'sales', nombre: 'Prospección en frío' });
   assert.deepEqual(en('tools', 'landing'), { departamento: 'marketing', nombre: 'Tu página' });
   assert.deepEqual(en('analizadores', 'OB'), { departamento: 'client-success', nombre: 'Analizador OB' });

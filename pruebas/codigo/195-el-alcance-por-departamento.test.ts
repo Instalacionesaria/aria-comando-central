@@ -73,7 +73,7 @@ test('el orden es el de la barra: el Inicio, los departamentos, el engranaje y l
 test('cada casilla dice lo que abre, con el departamento', () => {
   const abre = new Map(alcancePorDepartamento(alcanceOfrecible(TODAS)).flatMap((g) => g.secciones.map((s) => [s.clave, s.abre] as const)));
   assert.deepEqual(abre.get('tools'), [
-    'Research › Espía de anuncios',
+    'Research › Espía a tus competidores',
     'Research › Scraper',
     'Research › Mis Leads',
     'Marketing › Tu página',
