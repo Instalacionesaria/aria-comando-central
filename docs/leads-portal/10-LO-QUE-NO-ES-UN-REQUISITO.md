@@ -57,7 +57,7 @@ Y en los otros tres archivos de la maqueta:
 
 | archivo | valores | de dato |
 |---|---|---|
-| `lib/aios/leads-group.js` | 108 | **70 en `POOL`** (`lib/aios/leads-group.js:14-29`): catorce personas por cinco campos |
+| `lib/aios/leads-group.js` | 108 | **70 en `POOL`** (`lib/aios/leads-group.js:14-29@c4cf2a8`): catorce personas por cinco campos |
 | `aios-command-center_1.html:5710-5730` | 9 | **4 frases** dentro de una plantilla (`LP07-01`) |
 | `components/views/ContactsView.jsx` | — | **ninguno**: sus 22 textos —contando tres glifos y el `placeholder`— son vocabulario de interfaz |
 
@@ -75,7 +75,7 @@ comprobable. Para comparar con las otras pantallas, que contaron tokens numéric
 
 **Rastro** · `LEADS`, una persona por entrada, en `aios-command-center_1.html:4591`, `:4608`, `:4612`, `:4616`,
 `:4620`, `:4624`, `:4628`, `:4632`, `:4636`, `:4640`, `:4644`, `:4648`, `:4652`, `:4656` y `:4660`. `POOL`, en
-`lib/aios/leads-group.js:15-28`.
+`lib/aios/leads-group.js:15-28@c4cf2a8`.
 
 Las quince del portal, todas inventadas: María López, Pablo Herrera, Carlos Méndez, Daniela Soto,
 Lucía Fernández, TechNova, Grupo Meridian, Estudio Vera, Rodrigo Vega, Andrea Salas, Diego Paredes,
@@ -84,7 +84,7 @@ parecen negocios.
 
 **Doce están en los dos archivos.** Tres sólo en el portal —las tres sin puntaje
 (`aios-command-center_1.html:4648`, `:4652`, `:4656`)— y dos sólo en el cajón: Iván Torres y Marcos Ruiz
-(`lib/aios/leads-group.js:26`, `:28`).
+(`lib/aios/leads-group.js:26@c4cf2a8`, `:28`).
 **Diecisiete distintas.**
 
 **Cada una de las quince trae un teléfono y un correo** con forma real —prefijo de país, dominios
@@ -176,7 +176,7 @@ cero ventas, medido el 2026-09-27—.
 |---|---|---|
 | «◈ Plan de acción» | `aios-command-center_1.html:3034`; `aios-command-center_1.html:5711-5730` | abre un modal con cuatro frases sin fuente (`LP07-01`) |
 | el segmentado de período | `aios-command-center_1.html:3036`; `aios-command-center_1.html:4894-4898` | **mueve el resaltado y nada más**: nada de la pantalla depende del período. Su tercer botón manda `data-p="mes"` (`aios-command-center_1.html:3036`), que no está en `PERIODOS` (`lib/negocio/periodo.ts:83-96`) (`LP06-02`) |
-| «Personalizado» | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:124-131` | abre el calendario, **no hay callback registrado** para `lp` —`_cbs` nace vacío y nadie lo escribe (`datepicker.js:133`)— y al aplicar reescribe el rótulo y **apaga el segmentado** (`:109-121`) sin cambiar un dato |
+| «Personalizado» | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:124-131@c4cf2a8` | abre el calendario, **no hay callback registrado** para `lp` —`_cbs` nace vacío y nadie lo escribe (`datepicker.js:133@c4cf2a8`)— y al aplicar reescribe el rótulo y **apaga el segmentado** (`:109-121`) sin cambiar un dato |
 | «✆ Llamar» y «✉ Email» | `aios-command-center_1.html:4807-4808` | **nada**: ningún oyente |
 | «↗ GHL» de la ficha | `aios-command-center_1.html:4809`, `:4865-4866` | abre la **raíz** de GoHighLevel, no el contacto; y la decisión es que no haya enlace (`LP05-06`) |
 | el número de cada tarjeta | `aios-command-center_1.html:4714` | abre el cajón con personas del `POOL`, no con las de la tarjeta; «Sin calificar» abre tres con puntaje 87, 91 y 82 (`LP08-10`) |
@@ -192,8 +192,8 @@ plan sí abre algo.
 | defecto | dónde | qué pasa |
 |---|---|---|
 | mismo puntaje, dos tramos | `aios-command-center_1.html:4624` contra `:4644` | dos personas con 79, una «medio» y otra «alto»: el tramo se **guarda** al lado del puntaje en vez de derivarse (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:514-518`) |
-| misma persona, dos tramos | `aios-command-center_1.html:4624` contra `lib/aios/leads-group.js:20` | la del 79 «medio» es «alto» en el cajón, que sí deriva con `:10` |
-| la porción del tramo alto | `aios-command-center_1.html:5717`, `lib/aios/executive.js:199`, `aios-command-center_1.html:4715` | 22 %, 25 % y 33 % (`LP07-02`) |
+| misma persona, dos tramos | `aios-command-center_1.html:4624` contra `lib/aios/leads-group.js:20@c4cf2a8` | la del 79 «medio» es «alto» en el cajón, que sí deriva con `:10` |
+| la porción del tramo alto | `aios-command-center_1.html:5717`, `lib/aios/executive.js:199@c4cf2a8`, `aios-command-center_1.html:4715` | 22 %, 25 % y 33 % (`LP07-02`) |
 | «ICP null» | `aios-command-center_1.html:4791`, `:4857` | la ficha de las tres sin puntaje escribe la palabra `null`: la plantilla interpola el nulo sin mirarlo |
 | la ficha de otra persona | `aios-command-center_1.html:4876-4877` | un nombre que no está abre la ficha de la primera con el nombre cambiado (`LP08-11`) |
 | cierre sin piso | `aios-command-center_1.html:4707`, `:4719` | «Cierre 60 %» sobre cinco personas; el piso del sistema es 10 (`LP06-10`) |
@@ -210,7 +210,7 @@ Borrar la maqueta no borra las preguntas que hacía. Sobreviven, con su ficha en
 
 - **las cinco tarjetas por tramo**, con su porción y sus agendados (`03-LAS-CINCO-TARJETAS.md`). El
   corte 75/50 lo decidió el usuario el 2026-09-26, y **su única escritura en código es
-  `lib/aios/leads-group.js:10`, que se queda con Executive**: LP-1 lo escribe en su módulo, no lo
+  `lib/aios/leads-group.js:10@c4cf2a8`, que se queda con Executive**: LP-1 lo escribe en su módulo, no lo
   importa de la maqueta (`LP08-14`);
 - **la rejilla con su progreso «Agendó › Asistió › Vendió»** (`aios-command-center_1.html:4751-4755`),
   con la asistencia ahora en cuatro estados (`LP04-08`);
@@ -235,12 +235,12 @@ Creative es que el adorno no era lo que estaba mal (`docs/sales/10-LO-QUE-NO-ES-
 1. **`lib/aios/leads-portal.js` entero**: 324 líneas, 570 valores, quince personas inventadas con
    sus teléfonos y correos, el nombre de un closer real y la puerta global `window.AIOSLeadCard`.
 2. **El bloque del Plan de acción**, `aios-command-center_1.html:5710-5730`. El resto del archivo
-   (`lib/aios/period-controls.js:6-14` y `:29-31`, el abrir y cerrar de `.pill-wrap`) tampoco tiene
+   (`lib/aios/period-controls.js:6-14@c4cf2a8` y `:29-31`, el abrir y cerrar de `.pill-wrap`) tampoco tiene
    emisor: medido el 2026-09-26 sobre `components/`, `lib/`, `app/`, `pruebas/` y `scripts/`, ninguna
    vista emite `.pill-wrap`; fuera del prototipo sólo lo nombran `app/aios.css` y este mismo archivo,
    y la píldora de esta pestaña no está envuelta en él (`docs/sales/07-EL-PLAN-DE-ACCION.md:77-78`).
    LP-6 no lo borra, porque el plan sólo saca el bloque; queda como deuda con nombre en `LP10-13`, y
-   el comentario de `lib/aios/period-controls.js:27`, que lo da por vivo, también está mal.
+   el comentario de `lib/aios/period-controls.js:27@c4cf2a8`, que lo da por vivo, también está mal.
 3. **De `components/views/ContactsView.jsx`, todo menos la sección**: la mitad derecha del
    encabezado (`aios-command-center_1.html:3033-3039`) y el cuerpo vacío que la maqueta llenaba
    (`aios-command-center_1.html:3042-3068`). Queda una envoltura fina con `id="v-contacts"`, con
@@ -270,11 +270,11 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
 
 | qué | dónde | por qué se queda |
 |---|---|---|
-| el cajón «Grupo de contactos» y su módulo | `components/Overlays.jsx:5-26`, `lib/aios/leads-group.js` | lo abre el embudo de Executive (`lib/aios/executive.js:49`) |
-| el cajón `#drawer` | `components/Overlays.jsx:120-136` | lo abre Executive (`lib/aios/executive-panel.js:80-81`, `:101-102`) |
+| el cajón «Grupo de contactos» y su módulo | `components/Overlays.jsx:5-26@c4cf2a8`, `lib/aios/leads-group.js` | lo abre el embudo de Executive (`lib/aios/executive.js:49@c4cf2a8`) |
+| el cajón `#drawer` | `components/Overlays.jsx:120-136@c4cf2a8` | lo abre Executive (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102`) |
 | las reglas `[data-leads]` | `app/aios.css:2366-2370` | Executive sigue emitiendo el atributo |
 | las reglas de la sección «LEADS PORTAL» | `app/aios.css:1205-1315` | `app/aios.css` es el port literal y no se toca (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:161-163`); ver `LP10-12` |
-| el modal `#recoModal` | `components/Overlays.jsx:98-119` | queda inerte; ver `LP07-08` y `LP07-P01` |
+| el modal `#recoModal` | `components/Overlays.jsx:98-119@c4cf2a8` | queda inerte; ver `LP07-08` y `LP07-P01` |
 
 ### LP10-12 · El CSS se mide emisor por emisor, antes y después
 
@@ -318,19 +318,19 @@ LP-6 saca a Leads Portal de la maqueta. **No saca a la maqueta de la aplicación
 nadie lea el commit como si lo hiciera:
 
 1. **Catorce personas inventadas siguen en pantalla, ahora sólo desde Executive**: el `POOL` con tres
-   montos en dólares y un salto a GoHighLevel (`lib/aios/leads-group.js:14-29`, `:51`). Ver `LP10-P02`.
+   montos en dólares y un salto a GoHighLevel (`lib/aios/leads-group.js:14-29@c4cf2a8`, `:51`). Ver `LP10-P02`.
 2. **`#recoModal` queda inerte** (`LP07-08`).
 3. **El calendario se queda sin quién lo abra**: la única píldora visible era la de esta pestaña; la
-   de Executive está `hidden` (`components/views/ExecutiveView.jsx:62`).
+   de Executive está `hidden` (`components/views/ExecutiveView.jsx:62@c4cf2a8`).
 4. **La fila del cajón queda con cursor de mano y sin clic** (`app/aios.css:2345-2346`), hasta que
    se anule fuera de `app/aios.css` (`LP08-12`, punto 2).
 5. **El corte 75/50 existe dos veces** (`LP08-14`).
 6. **`window.AIOSLeads` no tiene ningún consumidor**: se publica con `open` y `close`
-   (`lib/aios/leads-group.js:5`, `:87`) y nadie los llama; todo entra por el escuchador delegado.
+   (`lib/aios/leads-group.js:5@c4cf2a8`, `:87`) y nadie los llama; todo entra por el escuchador delegado.
 7. **Executive sigue hablando de Leads Portal con cifras inventadas**: su ficha de departamento, que
    no se dibuja, y el chat, que cita a esta pestaña como fuente (`LP08-13`).
 8. **Lo que queda de `lib/aios/period-controls.js` no tiene a quién atender**: el abrir y cerrar de
-   `.pill-wrap` (`lib/aios/period-controls.js:6-14`, `:29-31`) busca una clase que ninguna vista
+   `.pill-wrap` (`lib/aios/period-controls.js:6-14@c4cf2a8`, `:29-31`) busca una clase que ninguna vista
    emite, y el comentario de `:27` dice lo contrario (`LP10-09`, punto 2). Después de LP-6, todo lo
    que el archivo hace es esperar una clase que nadie dibuja.
 

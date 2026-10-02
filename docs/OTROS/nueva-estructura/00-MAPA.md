@@ -69,3 +69,4 @@ terminar, marca acá abajo su commit.
 | E3 · sólo oscuro | hecho, 2026-10-01 |
 | E4 · la tipografía | hecho, 2026-10-01 |
 | E5 · la paleta y las superficies | hecho, 2026-10-01 |
+| E6 · las citas | hecho, 2026-10-01 |

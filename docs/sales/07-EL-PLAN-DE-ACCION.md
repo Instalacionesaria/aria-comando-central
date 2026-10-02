@@ -15,7 +15,7 @@ tres están muertos, y cada uno de una forma distinta.**
 **No tiene ningún oyente.** `slPlanBtn` aparece exactamente dos veces en todo el árbol servido:
 `SalesView.jsx:23` y `aios-command-center_1.html:2940`, que es el prototipo de referencia y no se
 sirve. El único «Plan de acción» cableado del sistema es el de Leads Portal
-(`lib/aios/period-controls.js:38` → `lpPlanBtn`).
+(`lib/aios/period-controls.js:38@c4cf2a8` → `lpPlanBtn`).
 
 ### Y acá está la diferencia con las otras dos pantallas
 
@@ -61,11 +61,11 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
 
 `SalesView.jsx:41-48`, `className="pill"`, `data-datepick="sl"`, `id="slPill"`.
 
-**Éste sí hace algo, y es lo peor que podría hacer.** `lib/aios/datepicker.js:125-131` engancha un
+**Éste sí hace algo, y es lo peor que podría hacer.** `lib/aios/datepicker.js:125-131@c4cf2a8` engancha un
 oyente delegado global a `[data-datepick]`, así que **el calendario abre**. Pero
-`window.AIOSDate._cbs['sl']` nunca se registra —`_cbs` sólo se declara vacío (`datepicker.js:133`) y
+`window.AIOSDate._cbs['sl']` nunca se registra —`_cbs` sólo se declara vacío (`datepicker.js:133@c4cf2a8`) y
 no hay una sola escritura en todo el repositorio—, así que al apretar «Aplicar» el callback es
-`undefined` y lo único que ocurre es cosmético (`datepicker.js:110-119`):
+`undefined` y lo único que ocurre es cosmético (`datepicker.js:110-119@c4cf2a8`):
 
 - reescribe el texto de `.pv` con el rango elegido;
 - le pone `.active` a la píldora;
@@ -75,7 +75,7 @@ no hay una sola escritura en todo el repositorio—, así que al apretar «Aplic
 «1 ago – 15 ago» y un segmentado sin ningún botón encendido— **sin haber cambiado un solo dato**.
 
 Y un detalle más: la píldora **no** está envuelta en `.pill-wrap`, así que el abrir/cerrar de
-`lib/aios/period-controls.js:6-13` tampoco la alcanza.
+`lib/aios/period-controls.js:6-13@c4cf2a8` tampoco la alcanza.
 
 ---
 

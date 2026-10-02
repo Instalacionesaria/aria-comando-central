@@ -52,8 +52,8 @@ la pantalla nueva no puede heredar sin querer.
 6. **El mismo cero se dibuja de dos maneras.** En un tramo, un revenue en cero sale «—»
    (`aios-command-center_1.html:4719`); en «Todos» sale «$0» (`aios-command-center_1.html:4730`).
 7. **La cifra grande abre una lista inventada.** Lleva `data-leads` (`aios-command-center_1.html:4714`),
-   y ese atributo lo escucha el panel de grupo (`lib/aios/leads-group.js:78-85`), que arma la lista
-   repitiendo catorce nombres de muestra (`lib/aios/leads-group.js:14-37`). Es el defecto que
+   y ese atributo lo escucha el panel de grupo (`lib/aios/leads-group.js:78-85@c4cf2a8`), que arma la lista
+   repitiendo catorce nombres de muestra (`lib/aios/leads-group.js:14-37@c4cf2a8`). Es el defecto que
    Acquisition describe en A7-28: la cifra y su lista no comparten origen
    (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:443-454`).
 8. **Tocar una tarjeta mezcla la búsqueda con el tramo.** `if(lpQuery === (k==='all'?'':k))`
@@ -103,7 +103,7 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-04 · Cuatro tramos, con los cortes de la maqueta
 
-- **Rastro:** el corte 75/50 de `lib/aios/leads-group.js:10` y los cinco botones de
+- **Rastro:** el corte 75/50 de `lib/aios/leads-group.js:10@c4cf2a8` y los cinco botones de
   `aios-command-center_1.html:3050-3056`. Decisión del usuario del 2026-09-26.
 - **Qué pide:** **ICP alto** ≥ 75 · **ICP medio** 50–74 · **ICP bajo** 1–49 · **Sin calificar** =
   sin puntaje **o** puntaje 0. Los umbrales viven en un solo lugar, `lib/negocio/tramosDelIcp.ts`
@@ -264,7 +264,7 @@ la pantalla nueva no puede heredar sin querer.
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 
-- **Rastro:** `aios-command-center_1.html:4714`; el escuchador global en `lib/aios/leads-group.js:78-85`.
+- **Rastro:** `aios-command-center_1.html:4714`; el escuchador global en `lib/aios/leads-group.js:78-85@c4cf2a8`.
 - **Qué pide:** ninguna cifra del panel nuevo lleva `data-leads`. Si lo llevara, abriría el panel de
   grupo, que hoy fabrica la lista con un conteo (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:443-454`).
   En esta pestaña no hace falta ese panel: **la lista de cada cifra ya está en la misma pantalla**, y

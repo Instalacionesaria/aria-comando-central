@@ -46,8 +46,8 @@ acciones y siete secciones:
 ### LP05-02 · Un cajón propio, no `#drawer`
 
 - **Rastro:** la maqueta enciende `#scrim` y `#drawer` (`aios-command-center_1.html:4867-4869`), que están
-  en `components/Overlays.jsx:120-136`. **Executive usa el mismo cajón** (`lib/aios/executive-panel.js:81`
-  y `lib/aios/executive-panel.js:102`).
+  en `components/Overlays.jsx:120-136@c4cf2a8`. **Executive usa el mismo cajón** (`lib/aios/executive-panel.js:81@c4cf2a8`
+  y `lib/aios/executive-panel.js:102@c4cf2a8`).
 - **Qué pide:** un cajón con id propio, con su velo. Al abrirse, el foco entra en el cajón; Escape lo
   cierra, y al cerrarse el foco vuelve a la tarjeta que lo abrió. Si se compartiera el cajón, dos
   pantallas escribirían en el mismo `#dwBody`.

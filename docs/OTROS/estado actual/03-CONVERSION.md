@@ -229,18 +229,18 @@ conserva `sinOperacionesTodavia: true` (`lib/autorizacion/secciones.ts:212-218`)
 siguen cargándose (`lib/aios/index.js:29-37`). Citan a Conversion como fuente de cifras que Conversion
 ya demostró que no existen:
 
-- `lib/aios/executive.js:15-21` escribe a mano un embudo por período con «visitas a la landing» —29
-  hoy, 194 en siete días, 4.960 en el histórico—, y `lib/aios/executive.js:25-26` le asigna a
+- `lib/aios/executive.js:15-21@c4cf2a8` escribe a mano un embudo por período con «visitas a la landing» —29
+  hoy, 194 en siete días, 4.960 en el histórico—, y `lib/aios/executive.js:25-26@c4cf2a8` le asigna a
   Conversion «Visitas landing» y «Agendamientos». Conversion no publica visitas porque no existen, y
   el agendamiento del producto sale del calendario.
-- `lib/aios/executive.js:186-189` dibuja la ficha de Conversion en estado crítico: *«26% de visita a
+- `lib/aios/executive.js:186-189@c4cf2a8` dibuja la ficha de Conversion en estado crítico: *«26% de visita a
   cita»* y el formulario que falla en Safari móvil con 64 contactos perdidos, que es la misma falla
   inventada que tenía la maqueta de Conversion.
-- `lib/aios/executive-panel.js:11-27` pone a Conversion como evidencia de tres puntos de reunión: la
+- `lib/aios/executive-panel.js:11-27@c4cf2a8` pone a Conversion como evidencia de tres puntos de reunión: la
   retención del VSL cayendo 18 puntos, un tráfico que «convierte tres veces peor» y móvil al 19 %
-  contra escritorio al 42 %. `lib/aios/executive-panel.js:29-39` agrega un formulario que pasó de 11
+  contra escritorio al 42 %. `lib/aios/executive-panel.js:29-39@c4cf2a8` agrega un formulario que pasó de 11
   a 8 campos con la completación de 61 % a 73 %, y un video de bienvenida que ve el 54 %.
-- `lib/aios/executive-chat.js:21` sugiere preguntas a Conversion y `lib/aios/executive-chat.js:30-39`
+- `lib/aios/executive-chat.js:21@c4cf2a8` sugiere preguntas a Conversion y `lib/aios/executive-chat.js:30-39@c4cf2a8`
   contesta con cifras que la citan como fuente: *«solo avanza 29% y se pierden 1,007 personas»*.
 
 Contra lo medido: la retención del VSL son 79 ceros; la finalización del formulario es 64,8 % sobre

@@ -230,24 +230,24 @@ que detrás no hubiera nada (`lib/autorizacion/secciones.ts:258-262`).
 **Lo que Executive todavía inventa en nombre de Creative** (Executive sigue siendo maqueta):
 
 - La tarjeta del mapa: «Piezas, hooks y ángulos», **«8 piezas activas»** y el punto verde
-  (`components/views/ExecutiveView.jsx:292-305`). Medido: 32 piezas en 79 anuncios, y ninguna con una
+  (`components/views/ExecutiveView.jsx:292-305@c4cf2a8`). Medido: 32 piezas en 79 anuncios, y ninguna con una
   impresión desde el 2026-09-14.
 - La ficha de reunión: «8 piezas activas · 3 sobre el promedio de agendas», un «hook nuevo» que subió
   el hook rate 4 puntos y bajó el cierre 7, y una «caída del VSL en 00:27» que Creative «asume»
-  (`lib/aios/executive.js:182-185`); y Conversion que «entrega a Creative el drop del VSL»
-  (`lib/aios/executive.js:189`). No hay cierres registrados ni medidor de VSL que dé un segundo.
+  (`lib/aios/executive.js:182-185@c4cf2a8`); y Conversion que «entrega a Creative el drop del VSL»
+  (`lib/aios/executive.js:189@c4cf2a8`). No hay cierres registrados ni medidor de VSL que dé un segundo.
 - El panel ejecutivo: una alerta crítica «El hook nuevo está costando ventas» con la cadena
-  Creative → Conversion → Sales (`lib/aios/executive-panel.js:12-16`), el cambio «Hook nuevo en
-  Prospecting B» (`lib/aios/executive-panel.js:33-35`) y una reunión donde «se aprobó revertir el
-  hook» (`lib/aios/executive-panel.js:92`).
+  Creative → Conversion → Sales (`lib/aios/executive-panel.js:12-16@c4cf2a8`), el cambio «Hook nuevo en
+  Prospecting B» (`lib/aios/executive-panel.js:33-35@c4cf2a8`) y una reunión donde «se aprobó revertir el
+  hook» (`lib/aios/executive-panel.js:92@c4cf2a8`).
 - **Y adentro de la propia pestaña Creative**: el chat con Executive, abierto desde ella, ofrece
   «¿Qué ángulo replico?», «¿Por qué cayó la retención?» y «¿Qué pieza pauso?»
-  (`lib/aios/executive-chat.js:20`, no comprobado en el navegador). Ángulo y
+  (`lib/aios/executive-chat.js:20@c4cf2a8`, no comprobado en el navegador). Ángulo y
   retención no tienen fuente, y las tres preguntas caen en la respuesta por omisión, que habla de la
-  landing y de 15.000 inventados (`lib/aios/executive-chat.js:31-32`, `lib/aios/executive-chat.js:77-83`).
+  landing y de 15.000 inventados (`lib/aios/executive-chat.js:31-32@c4cf2a8`, `lib/aios/executive-chat.js:77-83@c4cf2a8`).
 - El cajón «Grupo de contactos» conserva las catorce personas inventadas, con orígenes del tipo
-  «Creative 12» y montos de venta (`lib/aios/leads-group.js:13-29`); desde el 2026-09-26 lo abre
-  sólo el embudo de Executive (`lib/aios/executive.js:49`), único emisor de `data-leads` que queda.
+  «Creative 12» y montos de venta (`lib/aios/leads-group.js:13-29@c4cf2a8`); desde el 2026-09-26 lo abre
+  sólo el embudo de Executive (`lib/aios/executive.js:49@c4cf2a8`), único emisor de `data-leads` que queda.
 
 ---
 

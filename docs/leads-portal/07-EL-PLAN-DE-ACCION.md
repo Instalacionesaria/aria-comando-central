@@ -96,7 +96,7 @@ como hueco con su fecha (`lib/negocio/huecosDeSales.ts:49-56`).
   (`aios-command-center_1.html:4709-4715`), con cinco `seg:'alto'` en `:4591`, `:4608`, `:4612`, `:4628` y `:4644`;
 - las tres ventas inventadas son las tres de tramo alto (`:4592`, `:4609`, `:4645`): **100 %**, no 61;
 - la ficha de Leads Portal en Executive dice «312 contactos · 78 de ICP alto», que es **25 %**
-  (`lib/aios/executive.js:199`), y en la línea siguiente **repite la frase del 22 y el 61**
+  (`lib/aios/executive.js:199@c4cf2a8`), y en la línea siguiente **repite la frase del 22 y el 61**
   (`:200`). Ver `LP08-13`: esa ficha no se dibuja en ninguna parte.
 
 Tres cifras distintas para la misma porción —22, 25 y 33— entre las dos maquetas, y ninguna es la
@@ -137,7 +137,7 @@ en el commit `0add4cc`.
 
 **Qué afirma** · Un umbral (80) y una causalidad (los de arriba cierran).
 
-- **80 no es ningún corte del sistema.** Los tramos son 75 y 50 (`lib/aios/leads-group.js:10`, y la
+- **80 no es ningún corte del sistema.** Los tramos son 75 y 50 (`lib/aios/leads-group.js:10@c4cf2a8`, y la
   decisión del 2026-09-26). La frase mete un cuarto umbral que nadie decidió; `14-EL-PUNTAJE-DEL-CRM.md`
   lo registra entre los cortes que circulan y lo descarta como requisito.
 - **«Son los que cierran» necesita ventas**, y hay cero.
@@ -169,7 +169,7 @@ otra y ninguna la contestaba. `A6-21` leyó ese par como un contrato
 (`docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:497-500`); **esta carpeta lo lee distinto**: un
 contrato en el que las dos partes delegan en la otra es una referencia circular. Y una tercera voz
 —la ficha de Executive: «Entrego a Acquisition qué campañas traen el ICP que cierra»
-(`lib/aios/executive.js:201`)— agrega una condición, «que cierra», que necesita ventas. Ver
+(`lib/aios/executive.js:201@c4cf2a8`)— agrega una condición, «que cierra», que necesita ventas. Ver
 `LP08-P03`.
 
 ---
@@ -202,7 +202,7 @@ números inventados.
 sin oyente —el defecto que Sales tuvo (`docs/sales/07-EL-PLAN-DE-ACCION.md:11-18`)—, y borrar sólo el
 botón deja un oyente con una guarda `if(lpPlan)` (`aios-command-center_1.html:5712`) que lo apaga para
 siempre y se lee como rama defensiva, que es lo que el propio archivo ya denunció dos veces
-(`lib/aios/period-controls.js:15-27`, `:33-39`).
+(`lib/aios/period-controls.js:15-27@c4cf2a8`, `:33-39`).
 
 Con él se va la mitad derecha entera del encabezado, igual que en las otras cuatro pantallas: el
 segmentado de período y la píldora «Personalizado» también están muertos (`LP10-06`, `LP06-02`), y
@@ -214,7 +214,7 @@ el período vive dentro del panel.
 
 **Rastro** · `aios-command-center_1.html:5728-5729` es **el único sitio de toda la aplicación** que
 enciende `#recoModal`. Medido el 2026-09-26 sobre `components/` y `lib/`: fuera de ese bloque, el
-modal sólo aparece en su declaración (`components/Overlays.jsx:98-119`) y en los cierres del armazón
+modal sólo aparece en su declaración (`components/Overlays.jsx:98-119@c4cf2a8`) y en los cierres del armazón
 (`lib/aios/shell.js:200-202`, `:273-274`).
 
 **Estado** · Después de LP-6 el modal queda **inerte**: en el árbol, con su título «Recomendaciones y
@@ -222,7 +222,7 @@ conclusiones», y sin nadie que lo abra. Sus dos cierres —el velo y la cruz—
 registrados en el armazón, y no se pueden sacar sin tocar
 `pruebas/codigo/156-cierre-de-los-overlays.test.ts:40`, que los exige.
 
-Hay precedente de qué hacer con un nodo inerte: `components/Overlays.jsx:41-54` cuenta por qué se
+Hay precedente de qué hacer con un nodo inerte: `components/Overlays.jsx:41-54@c4cf2a8` cuenta por qué se
 borró `#resModal` —*«dos modales de resultado en el árbol, uno inerte y otro real»*—. Pero acá no hay
 otro real, y el plan de LP-6 no lo toca. Queda como deuda con nombre. Ver `LP07-P01`.
 
@@ -267,7 +267,7 @@ Ver `LP07-P02`.
 Medido el 2026-09-26 con el historial del archivo. Son dos causas distintas y conviene no mezclarlas.
 
 **Una deriva de una línea.** El archivo tuvo un solo cambio de longitud: en el commit `0c93853`
-(2026-09-19) el comentario de `lib/aios/period-controls.js:15-27` reemplazó doce líneas de código por
+(2026-09-19) el comentario de `lib/aios/period-controls.js:15-27@c4cf2a8` reemplazó doce líneas de código por
 trece y corrió una línea todo lo que viene después. El otro comentario, el de `:33-39`, reemplazó
 siete líneas por siete en `be5ba97` y no corrió nada. Las citas escritas antes del 19 quedaron
 apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que ninguna prueba atrapa:
@@ -286,7 +286,7 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 
 | documento | cita | lo que quiso nombrar | al escribirse | dónde está hoy |
 |---|---|---|---|---|
-| `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39`, y en ninguna versión del archivo fue la búsqueda | `aios-command-center_1.html:5711` |
+| `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39@c4cf2a8`, y en ninguna versión del archivo fue la búsqueda | `aios-command-center_1.html:5711` |
 | `git show 1c55149:"docs/OTROS/estado actual/05-SALES.md"`, línea 39: la foto del 2026-09-15 (el corte del 2026-09-28 lo anota en `docs/OTROS/estado actual/05-SALES.md:201-207`) | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
 
 Ninguno de esos archivos se toca desde acá; queda anotado para que LP-7, que reapunta las citas de
@@ -303,7 +303,7 @@ rango.
 Tres salidas, y ninguna es de esta carpeta:
 
 1. **se deja inerte**, que es lo que hace el plan de LP-6 y lo que esta ficha anota como deuda;
-2. **se borra con sus cierres**, por el precedente de `#resModal` (`components/Overlays.jsx:41-54`),
+2. **se borra con sus cierres**, por el precedente de `#resModal` (`components/Overlays.jsx:41-54@c4cf2a8`),
    cambiando `pruebas/codigo/156-cierre-de-los-overlays.test.ts:40` en el mismo commit;
 3. **se reusa**: si Executive se reconstruye con un plan propio, es el contenedor natural.
 

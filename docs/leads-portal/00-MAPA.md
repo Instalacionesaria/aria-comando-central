@@ -22,9 +22,9 @@ haya que traer: **es que nadie registra una asistencia ni una venta.**
 |---|---|
 | La vista: el encabezado, la barra de controles y los contenedores vacíos | en el prototipo, `aios-command-center_1.html:3024-3072`; la vista nueva es una envoltura con su cabecera (`components/views/ContactsView.jsx`) |
 | Las tarjetas, la rejilla y la ficha, con quince personas inventadas | `lib/aios/leads-portal.js`, borrado; el original, `aios-command-center_1.html:4584-4904` |
-| El cajón «Grupo de contactos», con catorce personas inventadas, doce de ellas repetidas del portal (`LP10-02`) | se queda como maqueta de Executive, sin sus dos manejadores (`lib/aios/leads-group.js`); su marcado en `components/Overlays.jsx:5-26` |
+| El cajón «Grupo de contactos», con catorce personas inventadas, doce de ellas repetidas del portal (`LP10-02`) | se queda como maqueta de Executive, sin sus dos manejadores (`lib/aios/leads-group.js`); su marcado en `components/Overlays.jsx:5-26@c4cf2a8` |
 | El «Plan de acción»: cuatro frases escritas a mano | borrado; el original, `aios-command-center_1.html:5710-5730` |
-| El cajón donde se dibujaba la ficha, que también usa Executive | se queda para Executive (`components/Overlays.jsx:120-136`); la ficha nueva tiene el suyo |
+| El cajón donde se dibujaba la ficha, que también usa Executive | se queda para Executive (`components/Overlays.jsx:120-136@c4cf2a8`); la ficha nueva tiene el suyo |
 | La sección, con la bandera `sinOperacionesTodavia` | bajada en LP-4 (`lib/autorizacion/secciones.ts:225`) |
 
 | qué hay desde LP-1 a LP-6 | dónde |

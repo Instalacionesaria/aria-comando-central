@@ -218,3 +218,15 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
    etapa va a mover el código que cita, así que es la carpeta que más rápido se pudriría sin auditar.
    Las tres entradas van en la misma línea que la última de la lista, y esta nota al final del
    archivo, para no correr las líneas de esta prueba que otros documentos citan. */
+
+/* ── LAS CITAS FIJADAS A UN COMMIT (2026-10-01) ───────────────────────────────
+   La etapa 7 de la nueva estructura borra la maqueta del Executive —`lib/aios/executive.js` y ocho
+   archivos más— y reescribe `components/views/ExecutiveView.jsx` entero. 244 citas de las carpetas
+   auditadas apuntaban ahí. Esas citas no estaban mal: describen el código que había, y la foto de
+   `estado actual` es justamente eso. Lo que no puede es seguir apuntando a la rama viva.
+
+   Se escriben fijadas al último commit donde existen: `` `lib/aios/executive.js:17@c4cf2a8` ``. El
+   patrón `CITA` no las toma —después de los dígitos no viene el acento grave—, así que esta prueba no
+   las audita, y es a propósito: valen para ese commit, que es donde hay que leerlas
+   (`git show c4cf2a8:lib/aios/executive.js`). Lo comprobó la etapa 6 borrando los nueve archivos con
+   las citas fijadas, y la prueba quedó verde; dejando una sola sin fijar, en rojo. */

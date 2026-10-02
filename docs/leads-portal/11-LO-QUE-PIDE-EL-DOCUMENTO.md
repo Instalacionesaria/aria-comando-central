@@ -315,7 +315,7 @@ menos dos consumidores leen.
 
 **Requisito:** el corte vive **en un solo lugar**, sin imports, para el navegador y el servidor
 —`lib/negocio/tramosDelIcp.ts`, en LP-1— y la consulta de la pestaña lo usa en vez de repetir los
-números. Hoy el 75/50 está escrito en `lib/aios/leads-group.js:10`, y el día que Appointment Flow
+números. Hoy el 75/50 está escrito en `lib/aios/leads-group.js:10@c4cf2a8`, y el día que Appointment Flow
 publique un segmento con otro corte, las dos pantallas dirían tramos distintos del mismo lead sin
 que nada falle.
 

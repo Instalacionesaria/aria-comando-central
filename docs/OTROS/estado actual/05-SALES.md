@@ -216,7 +216,7 @@ pantalla. **El nombre no se fue del repositorio**, que es público: sigue escrit
 
 **La contradicción entre las dos maquetas ya no es entre dos maquetas.** Para el mismo período de 7
 días, hasta el 2026-09-21 `SalesView.jsx` decía 74 asistencias / 18 ventas / $55,200 y
-`lib/aios/executive.js:17` dice 36 / 11 / $27,940: casi el doble de asistencias y de revenue, y
+`lib/aios/executive.js:17@c4cf2a8` dice 36 / 11 / $27,940: casi el doble de asistencias y de revenue, y
 nadie lo notaba porque ninguna se calculaba. Hoy Sales calcula —cero ventas registradas en toda la
 base— y Executive sigue con sus 11. La contradicción pasó a ser entre una cifra medida y una
 inventada, que es peor: la inventada es la más grande y la más creíble.
@@ -228,26 +228,26 @@ cuatro desde el 2026-09-15 sólo muestra `0add4cc`, que tocó el panel por Conve
 módulos de `lib/aios/` siguen arrancando (`lib/aios/index.js:32-34`).
 
 1. **El embudo ejecutivo**: `asistidas`, `ventas` y `revenue` en `PREVP` y `F`, cinco períodos cada
-   uno (`lib/aios/executive.js:8-21`), con los dos últimos pasos declarados `own:'Sales'`
-   (`lib/aios/executive.js:27-28`) y «7d» por omisión (`lib/aios/executive.js:30`). Alrededor, cifras
-   que sólo existen si existe la venta: una meta de 30 ventas (`lib/aios/executive.js:64`), «meta 8
+   uno (`lib/aios/executive.js:8-21@c4cf2a8`), con los dos últimos pasos declarados `own:'Sales'`
+   (`lib/aios/executive.js:27-28@c4cf2a8`) y «7d» por omisión (`lib/aios/executive.js:30@c4cf2a8`). Alrededor, cifras
+   que sólo existen si existe la venta: una meta de 30 ventas (`lib/aios/executive.js:64@c4cf2a8`), «meta 8
    semanales» (`:84`), el ticket promedio (`:95`) y el costo por venta (`:124-126`). La meta no
    existe en ninguna parte: `negocio.comisiones.meta_mensual` es nulo en las 3 filas (medido el
    2026-09-28).
 2. **La tarjeta de departamento**: «11 ventas · cierre 31%», el hallazgo «37% de las citas no
    califican y ocupan agenda del closer» y la dependencia con Conversion
-   (`lib/aios/executive.js:194-197`); Conversion le «entrega» ese 37 % a Sales en `:189`. Y la tarjeta
+   (`lib/aios/executive.js:194-197@c4cf2a8`); Conversion le «entrega» ese 37 % a Sales en `:189`. Y la tarjeta
    de Leads Portal dice «el 22% del volumen es ICP alto pero produce el 61% de las ventas» (`:200`),
    la frase que `components/views/ContactsView.jsx:16-18` da por borrada: se borró del botón de Leads
    Portal, no de Executive.
-3. **El nodo del mapa**: `components/views/ExecutiveView.jsx:278-290` rotula a Sales «Closers y
+3. **El nodo del mapa**: `components/views/ExecutiveView.jsx:278-290@c4cf2a8` rotula a Sales «Closers y
    llamadas» y «cierre 31%», con el punto verde de estado sano (`:281`).
 4. **Las tarjetas de reunión y de cambios**: «Sales cierra 7 puntos menos desde el día 8» y «el cierre
-   bajó 7» (`lib/aios/executive-panel.js:12-16` y `:33-35`). Una serie diaria de tasa de cierre exige
+   bajó 7» (`lib/aios/executive-panel.js:12-16@c4cf2a8` y `:33-35`). Una serie diaria de tasa de cierre exige
    ventas fechadas, y hay 0.
-5. **El chat**: las tres preguntas sugeridas para Sales (`lib/aios/executive-chat.js:23`), «¿Llegamos
+5. **El chat**: las tres preguntas sugeridas para Sales (`lib/aios/executive-chat.js:23@c4cf2a8`), «¿Llegamos
    a las 30 ventas?» (`:18`) y dos respuestas escritas que citan a Sales como fuente, una con «Vas 11
-   de 30» (`lib/aios/executive-chat.js:33-36`).
+   de 30» (`lib/aios/executive-chat.js:33-36@c4cf2a8`).
 
 Lo que Sales podría entregarle hoy a Executive en lugar de eso: cero ventas registradas, la
 cancelación con su piso, y la proporción de citas ocurridas sin registro. Nada de eso está cableado.

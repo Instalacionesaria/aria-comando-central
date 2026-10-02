@@ -176,7 +176,7 @@ puede heredar.
   (`aios-command-center_1.html:4758` y `aios-command-center_1.html:4780-4782`).
 - **Qué pide:** un control de verdad, alcanzable con el teclado, que abre la ficha con el UUID de la
   persona (`05-LA-FICHA-DEL-LEAD.md`). **Ningún enlace a GoHighLevel en la tarjeta.** El panel de grupo
-  ponía uno en cada fila (`lib/aios/leads-group.js:51-56`), y la decisión del 2026-09-26 los saca.
+  ponía uno en cada fila (`lib/aios/leads-group.js:51-56@c4cf2a8`), y la decisión del 2026-09-26 los saca.
 
 ---
 
@@ -220,7 +220,7 @@ puede heredar.
 - **Preseleccionar el tramo desde otra pantalla no es parte de esta etapa.** El panel de grupo lo
   hacía apretando el botón por su selector, y Acquisition lo describe como requisito en A7-31
   (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:476-483`). LP-6 sacó ese clic; en su lugar quedó el
-  comentario que dice por qué (`lib/aios/leads-group.js:65-68`). Si vuelve, entra por la puerta que defina `08-LO-QUE-ENTREGA-Y-RECIBE.md`, no por un
+  comentario que dice por qué (`lib/aios/leads-group.js:65-68@c4cf2a8`). Si vuelve, entra por la puerta que defina `08-LO-QUE-ENTREGA-Y-RECIBE.md`, no por un
   selector del DOM.
 
 ---

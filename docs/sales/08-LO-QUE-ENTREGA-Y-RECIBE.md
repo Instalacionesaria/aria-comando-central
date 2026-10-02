@@ -122,7 +122,7 @@ propio encabezado. Ver `06-PERIODOS-Y-PISOS.md`.
 Lo que produce y otro podría consumir el día que exista:
 
 - **la cadena de cierre** — Executive la querría para su embudo, que hoy la finge
-  (`lib/aios/executive.js:27-28` declara dos pasos con `own:'Sales'`);
+  (`lib/aios/executive.js:27-28@c4cf2a8` declara dos pasos con `own:'Sales'`);
 - **la diferencia de cancelación entre closers** — es lo que el `§ 2.3:90` llama coaching;
 - **el ciclo hasta la cita** — Acquisition podría cruzarlo con la fuente del lead.
 

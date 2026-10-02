@@ -38,10 +38,10 @@ están mal de una manera distinta:
 | «7 días» | es el que abre encendido, y no es el valor por omisión del sistema | `aios-command-center_1.html:3036` |
 | «30 días» | manda **`data-p="mes"`**, que no está en `PERIODOS`: `periodoDe('mes')` lo rechazaría | `aios-command-center_1.html:3036` |
 | los tres botones | su oyente sólo mueve la clase `on`; ninguna cifra cambia | `aios-command-center_1.html:4894-4898` |
-| «Personalizado» | abre el calendario, escribe la fecha en la píldora, **apaga los tres botones**, y no filtra nada | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:116-117` |
+| «Personalizado» | abre el calendario, escribe la fecha en la píldora, **apaga los tres botones**, y no filtra nada | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:116-117@c4cf2a8` |
 
 El último es el peor de los cuatro: la pantalla pasa a afirmar un rango elegido mientras sigue
-mostrando lo mismo. El calendario busca quién atiende la clave `lp` (`lib/aios/datepicker.js:129`) y
+mostrando lo mismo. El calendario busca quién atiende la clave `lp` (`lib/aios/datepicker.js:129@c4cf2a8`) y
 la lista de oyentes nace vacía (`:133`); nadie registra uno.
 
 Es el mismo defecto de la clave `mes` que Sales documentó en su propio segmentado
@@ -53,7 +53,7 @@ agregar una ventana toca a las seis pantallas que hoy la comparten, ésta inclui
 (`docs/conversion/05-PERIODOS-Y-PISOS.md:166-167`).
 
 Con esta píldora se va la única visible que abre el calendario de `lib/aios/datepicker.js` —la de
-Executive está `hidden` (`components/views/ExecutiveView.jsx:62`)—, y con el botón del Plan de acción
+Executive está `hidden` (`components/views/ExecutiveView.jsx:62@c4cf2a8`)—, y con el botón del Plan de acción
 se va el único que abre `#recoModal` (`aios-command-center_1.html:5728-5729`). Los dos quedan sin quién
 los abra: el plan lo anota como deuda y no se borran en esta etapa.
 

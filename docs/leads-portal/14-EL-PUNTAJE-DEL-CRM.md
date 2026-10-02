@@ -138,7 +138,7 @@ puntaje».
 
 - **Los cortes 75 y 50 son los de la maqueta**: el único lugar del sistema donde un número se volvía
   tramo es el cajón de contactos, `SEG = v => v >= 75 ? 'alto' : v >= 50 ? 'medio' : 'bajo'`
-  (`lib/aios/leads-group.js:10`). Acquisition señaló que ese corte **no tenía justificación escrita**
+  (`lib/aios/leads-group.js:10@c4cf2a8`). Acquisition señaló que ese corte **no tenía justificación escrita**
   y que adoptarlo por omisión era adoptar el umbral de otra pantalla sin decidirlo
   (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:475-487`, `:589-592`). Para esta pestaña ahora está
   decidido, con fecha. Para Acquisition la pregunta P-5 sigue abierta: esta decisión no la cierra por

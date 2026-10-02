@@ -53,7 +53,7 @@ Las demás pantallas que publican cifras tienen otra unidad, o cuentan personas 
 Acquisition dejó escrito para el cajón de contactos, y que el cajón nunca cumplió: una cifra y su
 lista que no comparten origen se pueden contradecir sin que nada falle
 (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:448-451`). El cajón recibe un conteo y fabrica la
-lista repitiendo catorce personas inventadas (`lib/aios/leads-group.js:31-37`). Esta pestaña, en
+lista repitiendo catorce personas inventadas (`lib/aios/leads-group.js:31-37@c4cf2a8`). Esta pestaña, en
 cambio, tiene la cohorte entera en el navegador (`LP04-01`), así que tocar una tarjeta filtra la
 rejilla de al lado (`LP03-15`) en vez de abrir un cajón (`LP03-14`).
 
@@ -225,7 +225,7 @@ El puntaje no es sí o no: es un número. Su «no se sabe» son dos cosas distin
 
 Leer ese 0 como un puntaje bajo es colapsar el tercer valor en el segundo, y es lo que hacía el
 único corte escrito en el sistema: con `SEG`, el nulo y el 0 caen los dos en `'bajo'`
-(`lib/aios/leads-group.js:10`, `LP14-05`). El documento funcional apunta para el mismo lado: para él
+(`lib/aios/leads-group.js:10@c4cf2a8`, `LP14-05`). El documento funcional apunta para el mismo lado: para él
 el ICP es posterior al formulario, así que un lead sin puntaje no es uno de puntaje bajo, es uno que
 todavía no llegó a ese paso (`LP11-14`).
 

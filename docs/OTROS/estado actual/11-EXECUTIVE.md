@@ -12,7 +12,7 @@
 Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:212-218`)
 y dibuja **179 literales numéricos y catorce contactos inventados** sin haber cambiado una línea de
 datos desde el port del 2026-08-18. A 7 días dice 312 contactos, $8.525 de inversión y 11 ventas
-(`lib/aios/executive.js:17`); la base dice **3 contactos, ningún día con gasto desde el
+(`lib/aios/executive.js:17@c4cf2a8`); la base dice **3 contactos, ningún día con gasto desde el
 2026-09-14 y cero ventas en toda su historia**. Lo nuevo no es la maqueta: es que las seis
 pantallas de las que habla —las cinco de Inteligencia y Leads Portal, a un clic desde su mapa, su
 embudo o su cajón— ya miden, y la contradicen.
@@ -31,11 +31,11 @@ embudo o su cajón— ya miden, y la contradicen.
 >   `pruebas/codigo/90-fundaciones.test.ts:1191`).
 > - **El cierre de los overlays** pasó de `creative.js` al armazón en `332c0e6` (09-19), y
 >   `executive-panel.js` dejó de sintetizar un clic sobre el botón de cierre en `0add4cc`
->   (`lib/aios/executive-panel.js:69-78`).
+>   (`lib/aios/executive-panel.js:69-78@c4cf2a8`).
 > - **El panel derecho se esconde a 1080 px o menos** en toda la aplicación, Executive incluido,
 >   desde `1020412` y `0810498` (09-20; `app/armazon.css:363-389`).
 > - **LP-6 le dejó dos herencias** (`aed4f27`, 09-26): el cajón «Grupo de contactos» pasó a ser
->   maqueta de Executive (`lib/aios/leads-group.js:57-68`), y la compuerta de paridad quedó con
+>   maqueta de Executive (`lib/aios/leads-group.js:57-68@c4cf2a8`), y la compuerta de paridad quedó con
 >   `VISTAS` vacía y tres pasos, los tres de Executive (`scripts/paridad.mjs:148-153`,
 >   `scripts/paridad.mjs:186-212`).
 > - **Este archivo es nuevo.** La foto anterior no tenía informe de Executive: aparecía sólo dentro
@@ -102,33 +102,33 @@ exacta.
 
 **Lo que se dibuja**, de arriba abajo:
 
-- **Dos modos**, «Equipo» por omisión y «Funnel» (`components/views/ExecutiveView.jsx:14-45`). El
-  cambio lo hace `lib/aios/executive.js:151-164`, y al pasar a Funnel **destapa** el selector, la
-  nota de comparación y la píldora «Personalizado» (`lib/aios/executive.js:161-163`).
+- **Dos modos**, «Equipo» por omisión y «Funnel» (`components/views/ExecutiveView.jsx:14-45@c4cf2a8`). El
+  cambio lo hace `lib/aios/executive.js:151-164@c4cf2a8`, y al pasar a Funnel **destapa** el selector, la
+  nota de comparación y la píldora «Personalizado» (`lib/aios/executive.js:161-163@c4cf2a8`).
 - **El mapa del equipo**: el núcleo con «3 temas hoy · 1 conflicto»
-  (`components/views/ExecutiveView.jsx:232`) y cinco áreas con un rótulo y un punto de estado cada
-  una (`components/views/ExecutiveView.jsx:236-305`). Al pasar el cursor, una ficha de tres renglones
-  por área (`lib/aios/executive.js:177-232`); al tocar, navega (`lib/aios/executive.js:235-241`).
+  (`components/views/ExecutiveView.jsx:232@c4cf2a8`) y cinco áreas con un rótulo y un punto de estado cada
+  una (`components/views/ExecutiveView.jsx:236-305@c4cf2a8`). Al pasar el cursor, una ficha de tres renglones
+  por área (`lib/aios/executive.js:177-232@c4cf2a8`); al tocar, navega (`lib/aios/executive.js:235-241@c4cf2a8`).
 - **El funnel del negocio**: un cockpit con el objetivo del mes, los ingresos, una curva y tres
-  mosaicos (`lib/aios/executive.js:66-129`), y una tabla de seis etapas atribuidas a cuatro
-  departamentos (`lib/aios/executive.js:22-29`, `lib/aios/executive.js:131-137`) con volumen,
+  mosaicos (`lib/aios/executive.js:66-129@c4cf2a8`), y una tabla de seis etapas atribuidas a cuatro
+  departamentos (`lib/aios/executive.js:22-29@c4cf2a8`, `lib/aios/executive.js:131-137@c4cf2a8`) con volumen,
   porcentaje del total, avance y costo por unidad, más una fila de «cuello de botella»
-  (`lib/aios/executive.js:142-147`). Cada fila navega (`lib/aios/executive.js:139-141`) y cada
-  cifra abre el cajón de contactos (`lib/aios/executive.js:49`).
+  (`lib/aios/executive.js:142-147@c4cf2a8`). Cada fila navega (`lib/aios/executive.js:139-141@c4cf2a8`) y cada
+  cifra abre el cajón de contactos (`lib/aios/executive.js:49@c4cf2a8`).
 - **El panel derecho**: «Reunión de hoy» con tres temas y «Cambios en curso» con tres cambios
-  (`components/SidePanel.jsx:5-27`, llenado por `lib/aios/executive-panel.js:51-52`), cada uno con
+  (`components/SidePanel.jsx:5-27@c4cf2a8`, llenado por `lib/aios/executive-panel.js:51-52@c4cf2a8`), cada uno con
   un cajón de «qué pasó / qué hay que decidir / dónde está la evidencia»
-  (`lib/aios/executive-panel.js:54-82`), más siete «reuniones anteriores»
-  (`lib/aios/executive-panel.js:86-103`).
+  (`lib/aios/executive-panel.js:54-82@c4cf2a8`), más siete «reuniones anteriores»
+  (`lib/aios/executive-panel.js:86-103@c4cf2a8`).
 - **El chat**, «Pregúntale a Executive sobre …», **en todas las pantallas** y no sólo en ésta
-  (`components/AskBar.jsx:16-29`, `components/CommandCenter.jsx:96-97`), con atajo Ctrl+K
-  (`lib/aios/executive-chat.js:112-115`).
+  (`components/AskBar.jsx:16-29@c4cf2a8`, `components/CommandCenter.jsx:96-97`), con atajo Ctrl+K
+  (`lib/aios/executive-chat.js:112-115@c4cf2a8`).
 
 **Ventanas y pisos.** Tres botones —`hoy`, `7d` encendido, `mes`—
-(`components/views/ExecutiveView.jsx:51-61`, `lib/aios/executive.js:30`). Los datos tienen dos
-períodos más, `tri` y `hist` (`lib/aios/executive.js:12-13`, `lib/aios/executive.js:19-20`), que
+(`components/views/ExecutiveView.jsx:51-61@c4cf2a8`, `lib/aios/executive.js:30@c4cf2a8`). Los datos tienen dos
+períodos más, `tri` y `hist` (`lib/aios/executive.js:12-13@c4cf2a8`, `lib/aios/executive.js:19-20@c4cf2a8`), que
 ningún control alcanza. **No hay piso**: cada porcentaje se calcula sobre el denominador que haya
-(`lib/aios/executive.js:37`), y ninguna cifra dice sobre cuántos se midió.
+(`lib/aios/executive.js:37@c4cf2a8`), y ninguna cifra dice sobre cuántos se midió.
 
 ---
 
@@ -145,22 +145,22 @@ cuenta uno aunque lleve separador de miles o decimales («1,007», «0.61»), y 
 
 | Juego | Dónde | Literales |
 |---|---|---|
-| `F`: 5 períodos × 9 cifras | `lib/aios/executive.js:15-21` | 45 |
-| `PREVP`: la «ventana anterior», 5 × 5 | `lib/aios/executive.js:8-14` | 25 |
-| El objetivo del mes, las cuatro semanas, «meta 8 semanales», «hace 7 periodos» | `lib/aios/executive.js:64-108` | 14 |
-| `DEPT`: seis fichas de departamento | `lib/aios/executive.js:177-202` | 30 |
-| Rótulos del mapa, más cinco puntos de estado | `components/views/ExecutiveView.jsx:232-303` | 7 |
-| `MEET`: tres temas de la reunión | `lib/aios/executive-panel.js:11-27` | 10 |
-| `CHANGES`: tres cambios en curso | `lib/aios/executive-panel.js:29-39` | 10 |
-| Siete reuniones anteriores | `lib/aios/executive-panel.js:90-96` | 11 |
-| «07:00 · 6 áreas» y «3 en seguimiento» | `components/SidePanel.jsx:8-23` | 4 |
-| `SUGG`: preguntas sugeridas para diez pantallas | `lib/aios/executive-chat.js:17-28` | 2 |
-| `ANSWERS`: cuatro respuestas escritas | `lib/aios/executive-chat.js:30-39` | 21 |
+| `F`: 5 períodos × 9 cifras | `lib/aios/executive.js:15-21@c4cf2a8` | 45 |
+| `PREVP`: la «ventana anterior», 5 × 5 | `lib/aios/executive.js:8-14@c4cf2a8` | 25 |
+| El objetivo del mes, las cuatro semanas, «meta 8 semanales», «hace 7 periodos» | `lib/aios/executive.js:64-108@c4cf2a8` | 14 |
+| `DEPT`: seis fichas de departamento | `lib/aios/executive.js:177-202@c4cf2a8` | 30 |
+| Rótulos del mapa, más cinco puntos de estado | `components/views/ExecutiveView.jsx:232-303@c4cf2a8` | 7 |
+| `MEET`: tres temas de la reunión | `lib/aios/executive-panel.js:11-27@c4cf2a8` | 10 |
+| `CHANGES`: tres cambios en curso | `lib/aios/executive-panel.js:29-39@c4cf2a8` | 10 |
+| Siete reuniones anteriores | `lib/aios/executive-panel.js:90-96@c4cf2a8` | 11 |
+| «07:00 · 6 áreas» y «3 en seguimiento» | `components/SidePanel.jsx:8-23@c4cf2a8` | 4 |
+| `SUGG`: preguntas sugeridas para diez pantallas | `lib/aios/executive-chat.js:17-28@c4cf2a8` | 2 |
+| `ANSWERS`: cuatro respuestas escritas | `lib/aios/executive-chat.js:30-39@c4cf2a8` | 21 |
 | **Total** | | **179** |
 
-Aparte, la curva de ingresos es un trazo escrito a mano (`lib/aios/executive.js:103-106`), y el
+Aparte, la curva de ingresos es un trazo escrito a mano (`lib/aios/executive.js:103-106@c4cf2a8`), y el
 cajón de contactos rellena con **catorce contactos inventados**, personas y empresas, tres con
-monto, repetidos hasta cuarenta filas (`lib/aios/leads-group.js:14-37`). Todo lo demás del
+monto, repetidos hasta cuarenta filas (`lib/aios/leads-group.js:14-37@c4cf2a8`). Todo lo demás del
 funnel —tasas, costo por etapa, ROAS, ticket, margen, costo por venta— se deriva de `F` y es tan
 inventado como su fuente.
 
@@ -177,11 +177,11 @@ inventado como su fuente.
 | Ingresos | $27.940 | 0 ventas en toda la base | ídem | $111.760 |
 | Inversión | $8.525 | **ningún día con gasto** | $1.974,93 | $34.100 |
 
-Executive en `lib/aios/executive.js:17-18` (7 días y «mes»). Base medida el 2026-09-28 sobre `aria`,
+Executive en `lib/aios/executive.js:17-18@c4cf2a8` (7 días y «mes»). Base medida el 2026-09-28 sobre `aria`,
 cohorte por `alta_en_el_crm` en ventana móvil; «conversación» es «le escribimos y contestó», el
 predicado de `lib/negocio/indicadoresDelLead.ts:250`; «entró por la landing» es la familia de
 Conversion, por el host del último toque; «agendó» es tener una cita alcanzable. «Hoy» dice 48
-contactos (`lib/aios/executive.js:16`) y en las últimas 24 horas entró **1**.
+contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró **1**.
 
 **Qué ruta ya calcula cada fila, y qué no existe:**
 
@@ -225,13 +225,13 @@ contactos (`lib/aios/executive.js:16`) y en las últimas 24 horas entró **1**.
   `docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:134-136`. Business no tiene pantalla.
 - **El costo por etapa** — Acquisition publica el gasto por lead **de cada anuncio**
   (`lib/negocio/costoDelAnuncio.ts:212`); el de la empresa entera, por etapa, no lo calcula nadie.
-- **La comparación contra la ventana anterior** (`PREVP`, `lib/aios/executive.js:57-63`) —
+- **La comparación contra la ventana anterior** (`PREVP`, `lib/aios/executive.js:57-63@c4cf2a8`) —
   **ninguna ruta la calcula**: un `grep` sobre `lib/negocio/` y `app/api/` no encuentra ninguna
   ventana previa. Lo más cercano, `fatigaDelCreativo`, compara dos mitades de la misma ventana por
   pieza, que es otra pregunta.
 
 **La tabla tampoco es un embudo.** Dibuja seis etapas en fila con el avance de cada una sobre la
-anterior (`lib/aios/executive.js:37`), y medido a 30 días la fila se ensancha: 44 contactos
+anterior (`lib/aios/executive.js:37@c4cf2a8`), y medido a 30 días la fila se ensancha: 44 contactos
 entraron por la landing y 139 agendaron. De los 139, sólo 73 habían contestado alguna vez. Es la
 regla § 11 de [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) («una cadena que no es
 monótona no es un embudo»), que la cadena de Sales satisface por construcción
@@ -240,7 +240,7 @@ monótona no es un embudo»), que la cadena de Sales satisface por construcción
 ### 3.3 · El objetivo del mes
 
 «11 / 30 ventas», ritmo esperado al 61 %, «18 días restantes», «proyección 22» y cuatro semanas,
-tres contra una meta de 8 y la cuarta contra 6 (`lib/aios/executive.js:64-85`). **No hay meta en
+tres contra una meta de 8 y la cuarta contra 6 (`lib/aios/executive.js:64-85@c4cf2a8`). **No hay meta en
 ninguna tabla**: `negocio.comisiones.meta_mensual` es nula en las **3 de 3** filas (medido el
 2026-09-28; igual que el 2026-09-16). Los días restantes son un literal: al 2026-09-28 quedan dos.
 La proyección exige ventas fechadas, y no hay ninguna.
@@ -249,17 +249,17 @@ La proyección exige ventas fechadas, y no hay ninguna.
 
 | Departamento | Lo que Executive afirma | Lo que hay hoy, medido el 2026-09-28 |
 |---|---|---|
-| Acquisition | «2 a revisar», punto ámbar (`components/views/ExecutiveView.jsx:239-247`); «312 contactos · +9 %» y un hallazgo sobre una campaña (`lib/aios/executive.js:178-181`) | 3 contactos a 7 días y ninguna comparación calculada. El ICP por pieza lo publica Creative. La campaña citada no aparece: ningún anuncio se llama así y ningún contacto la trae en su atribución (medido el 2026-09-29, 00:20 UTC); el nombre de campaña no se guarda aparte, así que eso no la descarta del todo |
-| Creative | «8 piezas activas», punto verde (`components/views/ExecutiveView.jsx:295-303`); «hook rate +4, cierre −7» (`lib/aios/executive.js:182-185`) | **14 piezas** con entrega a 30 días y **0** a 7. El hook rate existe en `rendimientoDelCreativo`; el cierre no existe |
-| Conversion | «1 incidencia crítica», punto rojo (`components/views/ExecutiveView.jsx:267-275`); «26 % de visita a cita» y un formulario que falla en Safari (`lib/aios/executive.js:186-189`) | Conversion no publica tasas por camino, no publica dispositivo, y el formulario de la landing **no tiene quien lo llene desde el 2026-08-31** (`lib/negocio/embudoDelFormulario.ts:33-38`) |
-| Conversation | «1 a revisar» (`components/views/ExecutiveView.jsx:253-261`); «58 % de efectividad» y el agente de voz en «14 de 22 llamadas» (`lib/aios/executive.js:190-193`) | «Efectividad» no está definida en ningún otro archivo. Responde el 59,6 % (161 de 270 escritos, 30 días). **El agente de voz no se audita**: el auditor mira dos agentes de texto (`lib/auditor/veredicto.ts:52`), con 70 análisis en toda la base |
-| Sales | «cierre 31 %», **punto verde** (`components/views/ExecutiveView.jsx:281-289`); «11 ventas · cierre 31 %» (`lib/aios/executive.js:194-197`) | 0 ventas; la tasa de cierre no tiene numerador ni piso. La pantalla de Sales lo dice como hueco declarado (`lib/negocio/huecosDeSales.ts:57-62`) |
-| Leads Portal | «312 contactos · 78 de ICP alto», «22 % del volumen, 61 % de las ventas» (`lib/aios/executive.js:198-201`), **en una ficha que ningún nodo dibuja** | Tramo alto: 50 de los 277 de la cohorte a 30 días (18,1 %; 248 con un puntaje mayor que cero), 0 de 3 a 7 días; el 61 % no se puede calcular con cero ventas |
+| Acquisition | «2 a revisar», punto ámbar (`components/views/ExecutiveView.jsx:239-247@c4cf2a8`); «312 contactos · +9 %» y un hallazgo sobre una campaña (`lib/aios/executive.js:178-181@c4cf2a8`) | 3 contactos a 7 días y ninguna comparación calculada. El ICP por pieza lo publica Creative. La campaña citada no aparece: ningún anuncio se llama así y ningún contacto la trae en su atribución (medido el 2026-09-29, 00:20 UTC); el nombre de campaña no se guarda aparte, así que eso no la descarta del todo |
+| Creative | «8 piezas activas», punto verde (`components/views/ExecutiveView.jsx:295-303@c4cf2a8`); «hook rate +4, cierre −7» (`lib/aios/executive.js:182-185@c4cf2a8`) | **14 piezas** con entrega a 30 días y **0** a 7. El hook rate existe en `rendimientoDelCreativo`; el cierre no existe |
+| Conversion | «1 incidencia crítica», punto rojo (`components/views/ExecutiveView.jsx:267-275@c4cf2a8`); «26 % de visita a cita» y un formulario que falla en Safari (`lib/aios/executive.js:186-189@c4cf2a8`) | Conversion no publica tasas por camino, no publica dispositivo, y el formulario de la landing **no tiene quien lo llene desde el 2026-08-31** (`lib/negocio/embudoDelFormulario.ts:33-38`) |
+| Conversation | «1 a revisar» (`components/views/ExecutiveView.jsx:253-261@c4cf2a8`); «58 % de efectividad» y el agente de voz en «14 de 22 llamadas» (`lib/aios/executive.js:190-193@c4cf2a8`) | «Efectividad» no está definida en ningún otro archivo. Responde el 59,6 % (161 de 270 escritos, 30 días). **El agente de voz no se audita**: el auditor mira dos agentes de texto (`lib/auditor/veredicto.ts:52`), con 70 análisis en toda la base |
+| Sales | «cierre 31 %», **punto verde** (`components/views/ExecutiveView.jsx:281-289@c4cf2a8`); «11 ventas · cierre 31 %» (`lib/aios/executive.js:194-197@c4cf2a8`) | 0 ventas; la tasa de cierre no tiene numerador ni piso. La pantalla de Sales lo dice como hueco declarado (`lib/negocio/huecosDeSales.ts:57-62`) |
+| Leads Portal | «312 contactos · 78 de ICP alto», «22 % del volumen, 61 % de las ventas» (`lib/aios/executive.js:198-201@c4cf2a8`), **en una ficha que ningún nodo dibuja** | Tramo alto: 50 de los 277 de la cohorte a 30 días (18,1 %; 248 con un puntaje mayor que cero), 0 de 3 a 7 días; el 61 % no se puede calcular con cero ventas |
 
 Y los dos juegos del panel derecho hablan en nombre de varios a la vez. `MEET` encadena
 Creative → Conversion → Sales en un tema causal —«el hook nuevo está costando ventas»— y opone
-Acquisition a Conversion sobre una campaña (`lib/aios/executive-panel.js:12-21`); `CHANGES` da
-por bueno un formulario de 8 campos y reprueba un hook (`lib/aios/executive-panel.js:30-35`).
+Acquisition a Conversion sobre una campaña (`lib/aios/executive-panel.js:12-21@c4cf2a8`); `CHANGES` da
+por bueno un formulario de 8 campos y reprueba un hook (`lib/aios/executive-panel.js:30-35@c4cf2a8`).
 Ninguna fila del sistema registra un cambio, una hipótesis o una línea base (§ 5).
 
 Los cinco sitios que el 2026-09-15 hablaban de Acquisition con datos inventados —la ficha, el
@@ -267,23 +267,23 @@ panel y el chat de Executive, un hallazgo de Conversion y el plan de Leads Porta
 tres, los de Executive**: los otros dos se fueron en `0add4cc` y `aed4f27`. Y ninguna pantalla de
 departamento habla en nombre de Executive: un `grep` de «Executive» sobre `components/` y
 `lib/negocio/` sólo encuentra comentarios, el montaje de la propia vista y los rótulos de su chat
-(`components/AskBar.jsx:21`, `components/Overlays.jsx:63`).
+(`components/AskBar.jsx:21@c4cf2a8`, `components/Overlays.jsx:63@c4cf2a8`).
 
 ### 3.5 · El chat
 
-Las sugerencias cubren diez pantallas (`lib/aios/executive-chat.js:17-28`) y la respuesta sale de
-cuatro textos fijos elegidos por palabras sueltas (`lib/aios/executive-chat.js:77-83`), después de
-700 ms de «escribiendo» (`lib/aios/executive-chat.js:89-104`). No hay modelo detrás. Dos casos que el
+Las sugerencias cubren diez pantallas (`lib/aios/executive-chat.js:17-28@c4cf2a8`) y la respuesta sale de
+cuatro textos fijos elegidos por palabras sueltas (`lib/aios/executive-chat.js:77-83@c4cf2a8`), después de
+700 ms de «escribiendo» (`lib/aios/executive-chat.js:89-104@c4cf2a8`). No hay modelo detrás. Dos casos que el
 código produce, leídos y no vistos en pantalla:
 
-- **Un closer en su pestaña** toca «¿Cómo voy este mes?» (`lib/aios/executive-chat.js:27`), la
-  palabra «mes» elige la respuesta de la meta (`lib/aios/executive-chat.js:80`) y lee «Vas 11 de 30
-  con 18 días por delante» con Conversion y Sales como fuentes (`lib/aios/executive-chat.js:35-36`).
+- **Un closer en su pestaña** toca «¿Cómo voy este mes?» (`lib/aios/executive-chat.js:27@c4cf2a8`), la
+  palabra «mes» elige la respuesta de la meta (`lib/aios/executive-chat.js:80@c4cf2a8`) y lee «Vas 11 de 30
+  con 18 días por delante» con Conversion y Sales como fuentes (`lib/aios/executive-chat.js:35-36@c4cf2a8`).
 - **Cualquier pregunta sin esas palabras** recibe el párrafo de Conversion con «$15,000» y «78 % en
-  móvil» (`lib/aios/executive-chat.js:31-32`): las tres de Leads Portal, las de Sales, las del setter.
+  móvil» (`lib/aios/executive-chat.js:31-32@c4cf2a8`): las tres de Leads Portal, las de Sales, las del setter.
 
 Lo que existe hoy para contestar las tres de Sales —«¿por qué perdemos las llamadas?», «¿qué
-objeción se repite?», «¿qué closer necesita apoyo?» (`lib/aios/executive-chat.js:23`)— no es de
+objeción se repite?», «¿qué closer necesita apoyo?» (`lib/aios/executive-chat.js:23@c4cf2a8`)— no es de
 Sales sino de Analizadores: medido el 2026-09-28, 38 llamadas de venta analizadas de 47 (reuniones
 del 2026-07-31 al 2026-09-24), con objeciones por llamada y un desenlace según el modelo —**36 no
 cerradas, 2 indeterminadas, 0 cerradas**— que no es una venta reportada
@@ -291,22 +291,22 @@ cerradas, 2 indeterminadas, 0 cerradas**— que no es una venta reportada
 
 ### 3.6 · El cajón «Grupo de contactos»
 
-Cualquier cifra del funnel lo abre con un número (`lib/aios/executive.js:49`) y el cajón fabrica la
-lista (`lib/aios/leads-group.js:31-37`); el pie promete «Ver los N en Leads Portal»
-(`lib/aios/leads-group.js:60`), y a 7 días son 312 contra 3. **El dato para reemplazarlo existe**:
+Cualquier cifra del funnel lo abre con un número (`lib/aios/executive.js:49@c4cf2a8`) y el cajón fabrica la
+lista (`lib/aios/leads-group.js:31-37@c4cf2a8`); el pie promete «Ver los N en Leads Portal»
+(`lib/aios/leads-group.js:60@c4cf2a8`), y a 7 días son 312 contra 3. **El dato para reemplazarlo existe**:
 `leadsDelPortal` ya devuelve la cohorte persona por persona. Falta que el cajón reciba la cohorte y
 no un conteo, que es `A7-28`, abierto (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:302`).
 
 ### 3.7 · Los controles que no hacen nada
 
 - **La píldora «Personalizado»** es el único `data-datepick` de la aplicación
-  (`components/views/ExecutiveView.jsx:62`) y queda visible en modo Funnel
-  (`lib/aios/executive.js:161-163`). Abre el calendario, pero nadie registra su función
-  (`lib/aios/datepicker.js:129`, `lib/aios/datepicker.js:133`): al aplicar apaga los tres botones y
-  cambia el rótulo (`lib/aios/datepicker.js:112-118`) y **las cifras siguen siendo las del botón
+  (`components/views/ExecutiveView.jsx:62@c4cf2a8`) y queda visible en modo Funnel
+  (`lib/aios/executive.js:161-163@c4cf2a8`). Abre el calendario, pero nadie registra su función
+  (`lib/aios/datepicker.js:129@c4cf2a8`, `lib/aios/datepicker.js:133@c4cf2a8`): al aplicar apaga los tres botones y
+  cambia el rótulo (`lib/aios/datepicker.js:112-118@c4cf2a8`) y **las cifras siguen siendo las del botón
   anterior**.
 - **`period-controls.js` quedó entero sin emisor.** Su comentario dice que lo vivo es abrir y cerrar
-  `.pill-wrap` (`lib/aios/period-controls.js:27`), y ningún componente dibuja esa clase.
+  `.pill-wrap` (`lib/aios/period-controls.js:27@c4cf2a8`), y ningún componente dibuja esa clase.
 - **`tri` y `hist`**: dieciocho cifras de `F` y diez de `PREVP` que ningún botón pide.
 
 ---
@@ -446,7 +446,7 @@ las dos formas dividió una vez treinta y un días de gasto entre treinta de lea
 § 5.4 del documento). Y el del closer no se suma con el del setter (`lib/negocio/etapas.ts:86-94`).
 
 **5 · Los dos ceros y el piso.** Con cero ventas, el ticket y el costo por venta dan `NaN` o
-infinito (`lib/aios/executive.js:95`, `lib/aios/executive.js:125`); con una cohorte de 3, cualquier
+infinito (`lib/aios/executive.js:95@c4cf2a8`, `lib/aios/executive.js:125@c4cf2a8`); con una cohorte de 3, cualquier
 avance está bajo el piso de 10. Ver [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 2 y
 § 3.
 
@@ -472,13 +472,13 @@ contradicción era entre dos maquetas; hoy, quien la note va a desconfiar de la 
 **El chat inventa en todas las pantallas y para todos.** Se dibuja para los cuatro usuarios activos,
 tengan Executive o no, y contesta con cifras de ventas a un closer en su propia pestaña (§ 3.5).
 Además rotula el período con el botón escondido de Executive, porque el selector de
-`lib/aios/executive-chat.js:56-57` encuentra primero `#exPeriod`: puede decir «7 días» sobre una
+`lib/aios/executive-chat.js:56-57@c4cf2a8` encuentra primero `#exPeriod`: puede decir «7 días» sobre una
 pantalla abierta en 30. Leído del código, no verificado en pantalla; el mismo defecto está descrito
 en `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:380-385`.
 
 **El panel derecho puede verse sin tener Executive.** La columna existe por omisión
 (`app/aios.css:117-125`) y la esconde `.solo` (`app/aios.css:115-116`), que ponen la navegación
-(`lib/aios/shell.js:134`) y el modo Funnel de la propia Executive (`lib/aios/executive.js:160`), que
+(`lib/aios/shell.js:134`) y el modo Funnel de la propia Executive (`lib/aios/executive.js:160@c4cf2a8`), que
 quien no tiene Executive no dibuja. Nada la pone al cargar, y quien no tiene Executive arranca en
 otra pestaña (`lib/autorizacion/secciones.ts:862-872`): hoy, uno de los cuatro activos vería
 «Reunión de hoy» a más de 1080 px hasta su primer clic en el menú. No verificado en el navegador.

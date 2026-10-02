@@ -196,28 +196,28 @@ Todo lo borrado se fue en `be5ba97` (2026-09-16), salvo donde se dice otro commi
 **Lo que Executive y el chat todavía inventan EN NOMBRE de Acquisition**, contra lo medido el
 2026-09-28:
 
-- **La ficha del departamento** (`lib/aios/executive.js:178-181`): estado `warn`, «312 contactos ·
+- **La ficha del departamento** (`lib/aios/executive.js:178-181@c4cf2a8`): estado `warn`, «312 contactos ·
   +9% vs semana pasada», y un hallazgo sobre una campaña «Prospecting B» que no existe. Medido: 3
   contactos con `alta_en_el_crm` en los últimos 7 días, ninguno con anuncio.
-- **La inversión y todo lo que cuelga de ella** (`lib/aios/executive.js:16-20`, la tarjeta en
+- **La inversión y todo lo que cuelga de ella** (`lib/aios/executive.js:16-20@c4cf2a8`, la tarjeta en
   `:114-116`, el costo por venta en `:124-126`, el margen sobre ads en `:96`): 8.525 a 7 días y
   34.100 al mes. Medido: **sin dato a 7 días, no 0** (del 22 al 28, 553 filas con gasto nulo) y
   1.974,93 a 30. ROAS y costo por venta: cálculos que el § 18.6 le quita, y no hay ventas que dividir.
-- **El paso «Contactos» del embudo ejecutivo** declara dueño a Acquisition (`lib/aios/executive.js:23`),
+- **El paso «Contactos» del embudo ejecutivo** declara dueño a Acquisition (`lib/aios/executive.js:23@c4cf2a8`),
   y Leads Portal «le entrega» qué campañas traen el ICP que cierra (`:201`).
-- **El conflicto «Acquisition y Conversion se contradicen»** (`lib/aios/executive-panel.js:17-21`):
+- **El conflicto «Acquisition y Conversion se contradicen»** (`lib/aios/executive-panel.js:17-21@c4cf2a8`):
   «el contacto más barato del mes, a $19». La foto anterior lo citaba en las líneas 12-15; el bloque
   se corrió. El CPL real más bajo con al menos 10 leads, a 30 días, es 3,25 (13 leads).
-- **Las tres preguntas del chat** (`lib/aios/executive-chat.js:19`): «¿Qué campaña escalo?» es
+- **Las tres preguntas del chat** (`lib/aios/executive-chat.js:19@c4cf2a8`): «¿Qué campaña escalo?» es
   justo lo que el § 18.10 no deja decidir solo.
-- **La tarjeta del mapa ejecutivo** (`components/views/ExecutiveView.jsx:236-248`): «Campañas y
+- **La tarjeta del mapa ejecutivo** (`components/views/ExecutiveView.jsx:236-248@c4cf2a8`): «Campañas y
   tráfico · 2 a revisar», con el punto ámbar. El «2» está escrito en el marcado.
 - **Lo que se fue.** El hallazgo de Conversion con `loss:48` desapareció con `lib/aios/conversion.js`
   (`0add4cc`, 2026-09-20). La frase 4 del Plan de acción de Leads Portal —«qué campañas traen ICP
   alto se decide en Acquisition»—, que la foto anterior citaba en la línea 56 de
   `lib/aios/period-controls.js`, salió con `aed4f27` el 2026-09-26: hoy sólo vive en el prototipo
   `aios-command-center_1.html` (su línea 5726), y la salida está anotada en
-  `lib/aios/period-controls.js:41-45`.
+  `lib/aios/period-controls.js:41-45@c4cf2a8`.
 
 ---
 

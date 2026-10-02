@@ -63,9 +63,9 @@ Hay **dos maquetas** afirmando cosas distintas sobre la misma pantalla:
 | dónde | ventas | tasa de cierre |
 |---|---|---|
 | `components/views/SalesView.jsx:80,70` | **18** | **24 %** |
-| `lib/aios/executive.js:194-197` | **11** | **31 %** |
+| `lib/aios/executive.js:194-197@c4cf2a8` | **11** | **31 %** |
 
-Y el embudo ejecutivo de `lib/aios/executive.js:27-28` declara dos de sus pasos con `own:'Sales',
+Y el embudo ejecutivo de `lib/aios/executive.js:27-28@c4cf2a8` declara dos de sus pasos con `own:'Sales',
 view:'sales'`, o sea que **la maqueta de Sales es alcanzable por drill-through desde Executive**, no
 sólo desde el menú. Quien llegue por ese camino ve 11 ventas; quien llegue por el menú ve 18.
 

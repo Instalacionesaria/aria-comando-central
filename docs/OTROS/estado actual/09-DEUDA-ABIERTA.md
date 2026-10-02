@@ -394,18 +394,18 @@ Executive es la única sección que conserva `sinOperacionesTodavia`
 departamentos que desde el 16 de septiembre publican las suyas, a un clic. El detalle pieza por pieza
 está en [11-EXECUTIVE.md](11-EXECUTIVE.md) § 3; lo verificado acá contra la base, a las 22:13 UTC:
 
-- **7 días: 312 contactos, $8.525 de inversión y 11 ventas** (`lib/aios/executive.js:17`). La base
+- **7 días: 312 contactos, $8.525 de inversión y 11 ventas** (`lib/aios/executive.js:17@c4cf2a8`). La base
   dice **3 contactos, ningún gasto medido y 0 ventas registradas en toda su historia** (hay una
   marcada en el CRM que no entró: § 12). Del 2026-09-22 al 09-28 hay 553 filas de anuncio (79 × 7),
   ninguna con gasto no nulo ni con impresiones: es «sin entrega», no $0.
-- **Sales con punto verde y «11 ventas · cierre 31 %»** (`lib/aios/executive.js:194-197`): con cero
+- **Sales con punto verde y «11 ventas · cierre 31 %»** (`lib/aios/executive.js:194-197@c4cf2a8`): con cero
   ventas, la tasa de cierre no tiene numerador.
 - **Acquisition con «312 contactos · +9 %»** y una caída de ICP en una campaña
-  (`lib/aios/executive.js:178-181`); **Conversion con «26 % de visita a cita» y un formulario que
-  falla en Safari** (`lib/aios/executive.js:186-189`), dos cifras que Conversion declara no medibles.
+  (`lib/aios/executive.js:178-181@c4cf2a8`); **Conversion con «26 % de visita a cita» y un formulario que
+  falla en Safari** (`lib/aios/executive.js:186-189@c4cf2a8`), dos cifras que Conversion declara no medibles.
 - **El panel encadena Creative → Conversion → Sales** en un tema causal inventado
-  (`lib/aios/executive-panel.js:12-13`), y el chat contesta «Vas 11 de 30» con Conversion y
-  Sales como fuentes (`lib/aios/executive-chat.js:35-36`).
+  (`lib/aios/executive-panel.js:12-13@c4cf2a8`), y el chat contesta «Vas 11 de 30» con Conversion y
+  Sales como fuentes (`lib/aios/executive-chat.js:35-36@c4cf2a8`).
 
 La ve sólo quien tenga `tablero.ver` (`lib/autorizacion/secciones.ts:215`), y eso acota a quién le
 miente, no si le miente. Lo que haría falta para bajar la bandera está en
@@ -426,22 +426,22 @@ miente, no si le miente. Lo que haría falta para bajar la bandera está en
   (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350`). `LP04-P01`: si la rejilla se ordena por
   alta o por puntaje; con 8 altas desde el 2026-09-14 (medido 22:11 UTC), el orden por alta muestra
   primero a gente de hace semanas (`docs/leads-portal/04-LA-REJILLA-Y-LOS-FILTROS.md:289-294`).
-- **`#recoModal` quedó en el marcado sin quién lo abra.** Vive en `components/Overlays.jsx:101`; el
+- **`#recoModal` quedó en el marcado sin quién lo abra.** Vive en `components/Overlays.jsx:101@c4cf2a8`; el
   último que lo abría era el Plan de acción de Leads Portal, que salió en LP-6
-  (`lib/aios/period-controls.js:40-45`), y la compuerta de paridad no tiene paso que lo abra
+  (`lib/aios/period-controls.js:40-45@c4cf2a8`), y la compuerta de paridad no tiene paso que lo abra
   (`scripts/paridad.mjs:127`). Un modal que nadie abre es código muerto que se lee como vivo.
 - **`datepicker.js` no quedó «sin quién lo abra»: quedó sin quién lo escuche, y dos documentos lo
   dicen al revés.** `scripts/paridad.mjs:159-162` y el punto 8 de `LP08-12`
   (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:259-261`) afirman que la píldora de Executive
-  está `hidden`. Lo está al cargar (`components/views/ExecutiveView.jsx:62`), pero el modo Funnel la
-  muestra (`lib/aios/executive.js:161-162`) y un clic abre el calendario
-  (`lib/aios/datepicker.js:123-131`). Lo que no hay es quien registre su función: `_cbs` nace vacío
-  (`lib/aios/datepicker.js:133`) y nadie le agrega nada, así que «Aplicar» cambia el rótulo y las
+  está `hidden`. Lo está al cargar (`components/views/ExecutiveView.jsx:62@c4cf2a8`), pero el modo Funnel la
+  muestra (`lib/aios/executive.js:161-162@c4cf2a8`) y un clic abre el calendario
+  (`lib/aios/datepicker.js:123-131@c4cf2a8`). Lo que no hay es quien registre su función: `_cbs` nace vacío
+  (`lib/aios/datepicker.js:133@c4cf2a8`) y nadie le agrega nada, así que «Aplicar» cambia el rótulo y las
   cifras siguen siendo las del botón anterior. La deuda existe; su descripción está mal.
 - **El comentario del armazón sigue con los que abrían los overlays antes de LP-6.** Dice que
   `#drawer` y `#recoModal` los abren `leads-portal.js`, `executive-panel.js` y `period-controls.js`
   (`lib/aios/shell.js:156-158`): el primero se borró y el tercero ya no abre nada. Hoy sólo
-  `lib/aios/executive-panel.js:81` y `lib/aios/executive-panel.js:102` abren `#drawer`.
+  `lib/aios/executive-panel.js:81@c4cf2a8` y `lib/aios/executive-panel.js:102@c4cf2a8` abren `#drawer`.
 
 Los huecos de la pantalla y los documentos de `docs/leads-portal/` que quedaron atrás están en los
 § 13 y § 16.

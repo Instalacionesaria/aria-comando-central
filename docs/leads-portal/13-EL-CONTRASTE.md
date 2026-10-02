@@ -148,7 +148,7 @@ Cinco cosas, y son las que hacen que esta reescritura sea menos un borrado que u
    es que cada paso pasa de dos estados a tres (`LP01-07`).
 2. **«Sin calificar» como tramo propio.** La maqueta ya apartaba el nulo en su propia tarjeta
    (`aios-command-center_1.html:4648-4659`, `:4724`), cuando el único corte escrito del sistema lo mandaba
-   al tramo bajo (`lib/aios/leads-group.js:10`). Acquisition lo señaló en su P-6
+   al tramo bajo (`lib/aios/leads-group.js:10@c4cf2a8`). Acquisition lo señaló en su P-6
    (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597`). Se conserva, y se le agrega el 0 (`LP14-09`).
 3. **El teléfono y el correo sólo en la ficha.** La rejilla no los dibuja
    (`aios-command-center_1.html:4757-4775`) y la ficha sí (`aios-command-center_1.html:4861-4863`). Lo que
@@ -183,10 +183,10 @@ cada pasada (`LP11-11`).
 - **Mismo puntaje, dos tramos:** dos personas con 79, una «medio» y otra «alto»
   (`aios-command-center_1.html:4624` y `:4644`).
 - **Misma persona, dos tramos:** la del 79 «medio» del portal es «alto» en el cajón, que sí deriva
-  el tramo (`lib/aios/leads-group.js:20`).
+  el tramo (`lib/aios/leads-group.js:20@c4cf2a8`).
 - **Tres porciones del tramo alto:** 22 % en el plan de acción (`aios-command-center_1.html:5717`);
-  «312 contactos · 78 de ICP alto», un 25 %, en la ficha de Executive (`lib/aios/executive.js:199`), que en la línea
-  siguiente repite el 22 % (`lib/aios/executive.js:200`); y 33 % en sus propias tarjetas. La medida
+  «312 contactos · 78 de ICP alto», un 25 %, en la ficha de Executive (`lib/aios/executive.js:199@c4cf2a8`), que en la línea
+  siguiente repite el 22 % (`lib/aios/executive.js:200@c4cf2a8`); y 33 % en sus propias tarjetas. La medida
   es **17,8 %** a 30 días (`LP07-02`).
 - **«Sin calificar» abre gente calificada:** en el cajón, esa tarjeta abre tres personas con puntaje
   87, 91 y 82 (`LP08-10`).

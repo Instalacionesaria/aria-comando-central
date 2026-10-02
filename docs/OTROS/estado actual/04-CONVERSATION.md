@@ -342,25 +342,25 @@ pantalla (`app/api/auditoria/route.ts:125` y `app/api/auditoria/route.ts:130`). 
 hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:82`) que no
 habla por este departamento.
 
-**3.1 · La tarjeta de Conversation** (`lib/aios/executive.js:190-193`): «58 % de efectividad en Lead
+**3.1 · La tarjeta de Conversation** (`lib/aios/executive.js:190-193@c4cf2a8`): «58 % de efectividad en Lead
 Flow · +3 pts» y «El agente de voz no reconfirma día y hora en 14 de 22 llamadas». El 58 % se podría
 reemplazar hoy por el booking rate (50,2 %, 139 de 277) o por la respuesta (59,6 %, 161 de 270); el
 «+3 pts» no, porque no hay línea base; y el hallazgo de voz es indefendible en cualquier forma:
 `negocio.llamadas` tiene **0 filas** y ninguna columna de transcripción, medido el 2026-09-28.
 
-**3.2 · El paso «Conversaciones» del embudo** (`lib/aios/executive.js:15-21`, y el paso en
-`lib/aios/executive.js:24`): 41 / 268 / 1072 / 2787 / 6840, y con esa serie se elige el cuello de
-botella que se pinta en rojo (`lib/aios/executive.js:38`). Reemplazable a medias: contactos,
+**3.2 · El paso «Conversaciones» del embudo** (`lib/aios/executive.js:15-21@c4cf2a8`, y el paso en
+`lib/aios/executive.js:24@c4cf2a8`): 41 / 268 / 1072 / 2787 / 6840, y con esa serie se elige el cuello de
+botella que se pinta en rojo (`lib/aios/executive.js:38@c4cf2a8`). Reemplazable a medias: contactos,
 escritos y agendados se miden hoy (277, 270, 139 a 30 días); «Visitas landing» y «Citas asistidas»
 no tienen dato.
 
-**3.3 · Las preguntas sugeridas** (`lib/aios/executive-chat.js:22`) caen las tres en la respuesta
-`default` (`lib/aios/executive-chat.js:30-39`), que habla de la landing y del móvil. Sólo «¿Qué
+**3.3 · Las preguntas sugeridas** (`lib/aios/executive-chat.js:22@c4cf2a8`) caen las tres en la respuesta
+`default` (`lib/aios/executive-chat.js:30-39@c4cf2a8`), que habla de la landing y del móvil. Sólo «¿Qué
 agente necesita ajuste?» tendría respuesta medida: AppFlow, 17 amarillos y 3 rojos sobre 50
 auditables, 23 casos abiertos en 6 patrones.
 
 **3.4 · La tarjeta de cambio «Video de bienvenida en la página de gracias»**, «Solo 54 % le da
-play», con Conversation como fuente (`lib/aios/executive-panel.js:36-38`; la foto anterior la
+play», con Conversation como fuente (`lib/aios/executive-panel.js:36-38@c4cf2a8`; la foto anterior la
 ubicaba cinco líneas más arriba, en la 31-33, antes de `0add4cc`). No reemplazable: el §14 no
 existe en ninguna forma.
 

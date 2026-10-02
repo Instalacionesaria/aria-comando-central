@@ -223,7 +223,7 @@ la creó dejó escrita la regla que esta ficha cumple: *«ninguna pantalla los r
 La maqueta abre la ficha **por nombre**: `window.AIOSLeadCard` busca el nombre en minúscula
 (`aios-command-center_1.html:4873-4875`), y si no lo encuentra **dibuja la ficha del primer lead con el
 nombre pedido** (`aios-command-center_1.html:4876-4877`). El cajón de grupo la llamaba con el texto de la
-fila, hasta que LP-6 sacó ese clic junto con la maqueta (`lib/aios/leads-group.js:57-59` es el
+fila, hasta que LP-6 sacó ese clic junto con la maqueta (`lib/aios/leads-group.js:57-59@c4cf2a8` es el
 comentario que quedó).
 
 Con personas inventadas es un atajo. Con 593 reales son dos defectos de privacidad: dos personas con
@@ -233,15 +233,15 @@ bajo el nombre de otra**.
 **Requisito:** la ficha se pide por `id`. Un id que no es un UUID, o que es de otra empresa, responde
 404, y los dos casos son indistinguibles a propósito, como en la ficha del contacto (líneas 78-89 de
 `app/api/contactos/[id]/route.ts`). Y se dibuja en un cajón con id propio, no en `#drawer`
-(`components/Overlays.jsx:120-136`), que Executive usa: un cajón compartido puede quedar mostrando
+(`components/Overlays.jsx:120-136@c4cf2a8`), que Executive usa: un cajón compartido puede quedar mostrando
 los datos de una persona cuando otra pantalla lo abre.
 
 ### LP12-08 · Sin enlace a GoHighLevel; llamar y escribir
 
 La maqueta salta al CRM desde dos lugares: el botón «↗ GHL» de la ficha
 (`aios-command-center_1.html:4809`, con su `window.open` en `aios-command-center_1.html:4865-4866`) y la
-flecha de cada fila del cajón de grupo (`lib/aios/leads-group.js:51`, `lib/aios/leads-group.js:54-56`).
-Los dos abren la portada del CRM, no el contacto (`lib/aios/leads-group.js:8`).
+flecha de cada fila del cajón de grupo (`lib/aios/leads-group.js:51@c4cf2a8`, `lib/aios/leads-group.js:54-56@c4cf2a8`).
+Los dos abren la portada del CRM, no el contacto (`lib/aios/leads-group.js:8@c4cf2a8`).
 
 **Decisión del 2026-09-26: no hay enlace.** En la ficha del Closer ya se quitó a pedido, en el commit
 `bd26085` del 2026-08-27, y el campo que lo armaba se fue con él (líneas 95-105 de
