@@ -15,7 +15,8 @@
 //
 // Las mutaciones que la ponen en rojo: contar la hora con `getHours()`; quitar `hourCycle: 'h23'`;
 // `< 12` → `<= 12`; `< 19` → `<= 19`; la coma sin mirar si hay nombre; el nombre completo; una zona
-// inválida que cae a la del entorno; y que la pantalla le pase la zona del navegador.
+// inválida que cae a la del entorno; que la pantalla le pase la zona del navegador; y una pregunta que no
+// nombre la empresa de la sesión.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -85,4 +86,14 @@ test('la pantalla le pasa la zona de la organización y el nombre de la sesión'
   );
   assert.match(vista, /<span className="l1">\{linea\}<\/span>/, 'el Inicio dibuja otro saludo que el de la zona de la empresa');
   assert.doesNotMatch(vista, /getHours\(|getUTCHours\(|getTimezoneOffset\(|resolvedOptions\(\)|toLocaleTimeString\(/, 'el Inicio cuenta la hora por su cuenta');
+});
+
+test('la pregunta nombra la empresa de la sesión, y sin nombre dice «tu agencia»', () => {
+  /* El cerebro va a hablar de la empresa en la que está la persona —la que mira, si mira otra—, así
+     que la pregunta la nombra. Escrita a mano, cada inquilino leería el mismo nombre. */
+  const vista = readFileSync(join(RAIZ, 'components/views/ExecutiveView.jsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  assert.match(vista, /const empresa = sesion\?\.organizacion\?\.nombre\?\.trim\(\) \|\| 'tu agencia';/, 'la pregunta no sale del nombre de la empresa de la sesión');
+  assert.match(vista, /<span className="l2">¿Qué quieres saber de \{empresa\}\?<\/span>/, 'la pregunta del Inicio no nombra la empresa');
 });

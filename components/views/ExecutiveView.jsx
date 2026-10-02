@@ -36,6 +36,9 @@ export default function ExecutiveView({ activa }) {
   /* La hora de la EMPRESA, no la del navegador: ver `lib/saludo.ts`. `UTC` si la sesión no trajo la
      organización, que es lo que la guarda pone por omisión. */
   const linea = saludo(sesion?.usuarioNombre, sesion?.organizacion.zonaHoraria ?? 'UTC');
+  /* El nombre de la empresa en la que está la persona —la que mira, si mira otra—: es de la que va a
+     hablar el cerebro. Sin nombre, «tu agencia», que era el texto del diseño. */
+  const empresa = sesion?.organizacion?.nombre?.trim() || 'tu agencia';
 
   return (
     <section className={activa ? 'view on' : 'view'} id="v-executive">
@@ -44,7 +47,7 @@ export default function ExecutiveView({ activa }) {
 
         <h1 className="inicio-saludo">
           <span className="l1">{linea}</span>
-          <span className="l2">¿Qué quieres saber de tu agencia?</span>
+          <span className="l2">¿Qué quieres saber de {empresa}?</span>
         </h1>
 
         <div className="inicio-caja">

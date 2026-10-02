@@ -19,8 +19,10 @@ corte. Lo que se construyó está al final de este documento.
 Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite decir:
 
 1. **La mascota** de 88 px, con la mirada que sigue al cursor.
-2. **El saludo en dos pesos**: «Buenos días, [Nombre].» en peso 200 y «¿Qué quieres saber de tu agencia?»
+2. **El saludo en dos pesos**: «Buenos días, [Nombre].» en peso 200 y «¿Qué quieres saber de [Empresa]?»
    en 500.
+   - La empresa es la de la sesión —la que se mira, si se mira otra—; sin nombre dice «tu agencia», el
+     texto del diseño (pedido del 2026-10-02).
    - Sólo el nombre de pila.
    - Sin nombre, sin coma.
    - La hora se cuenta en la **zona de la empresa**, no en la del navegador: «Buenos días» hasta las 12,
