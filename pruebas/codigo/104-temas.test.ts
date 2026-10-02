@@ -82,8 +82,9 @@ test('la lista de hojas vigiladas cubre TODO `app/*.css`', () => {
      que tienen sentido:
        · `temas.css` es DONDE VAN los valores. Prohibirle colores literales sería prohibirle
          existir;
-       · `globals.css` no declara ni un color: son los `@import`, el orden de capas y el puente de
-         tokens a Tailwind.
+       · `globals.css` son los `@import`, el orden de capas, el puente de tokens a Tailwind, la
+         guarda de sesión —con colores de respaldo, porque se pinta antes que ninguna hoja— y el
+         aspecto base de las filas del menú.
 
      Una hoja nueva en `app/` cae en una de las dos listas o rompe esto. No hay tercera opción, y
      ésa es la idea: la decisión se toma, no se omite. */

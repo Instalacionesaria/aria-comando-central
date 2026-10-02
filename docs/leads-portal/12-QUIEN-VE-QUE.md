@@ -64,7 +64,7 @@ la capacidad.
 Eso corrige algo que otra carpeta dejó escrito y hay que decirlo: el `S12-04` de Sales afirma que
 *«hoy `tablero.ver` no la tiene un closer»* (`docs/sales/12-QUIEN-VE-QUE.md:90-93`). Con el reparto de
 tres roles, eso sólo es cierto para el conjunto de capacidades histórico que
-`pruebas/codigo/91-closer-y-setter.test.ts:246-255` todavía escribe a mano. La prueba sigue pasando,
+`pruebas/codigo/91-closer-y-setter.test.ts:251-260` todavía escribe a mano. La prueba sigue pasando,
 y lo que protege es un rol que ya no se asigna.
 
 Dos consecuencias más, que no son de esta pestaña sino de la plataforma, y se anotan para que nadie
@@ -305,9 +305,9 @@ no se mueve: no se crea ningún rol.
   adorno es del prototipo, y lo que estaba mal no era él sino que detrás no hubiera nada
   (`lib/autorizacion/secciones.ts:258-261`).
 - **No se pierde cobertura en `91-closer-y-setter`.** Su recorrido de los tableros itera
-  `SIN_OPERACIONES_TODAVIA` (`pruebas/codigo/91-closer-y-setter.test.ts:272-275`), así que cuando
+  `SIN_OPERACIONES_TODAVIA` (`pruebas/codigo/91-closer-y-setter.test.ts:277-280`), así que cuando
   `contacts` salga de la lista deja de nombrarla. Pero la aserción de arriba compara el menú entero
-  del closer contra `['closer']` (`pruebas/codigo/91-closer-y-setter.test.ts:267-268`), y ésa sigue
+  del closer contra `['closer']` (`pruebas/codigo/91-closer-y-setter.test.ts:272-273`), y ésa sigue
   cubriéndolo — con el conjunto histórico de `LP12-02`.
 
 ---

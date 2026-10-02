@@ -55,15 +55,15 @@ Portal, con el galón `›`. Su comentario (`lib/autorizacion/secciones.ts:229-2
 `lib/autorizacion/secciones.ts:225`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
-`CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:48-76`): siete herramientas, siete rutas y
+`CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:49-77`): siete herramientas, siete rutas y
 `soloChat: true`, o sea sin formulario ni selector de modo; todo se le dice al agente, que abre
-proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.jsx:52-59`). Fue la
+proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.jsx:53-60`). Fue la
 primera vista con estado en React y salió a propósito de `npm run paridad`
 (`docs/OTROS/capa-base/ETAPA-9.md:181-195`).
 
 Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:78-89` dibuja
 todas las secciones visibles de una vez, y `Fundaciones` pide su estado al montarse
-(`components/fundaciones/Fundaciones.jsx:171-173`). Cada entrada a Comando Central de alguien con la
+(`components/fundaciones/Fundaciones.jsx:193-195`). Cada entrada a Comando Central de alguien con la
 pestaña lee la fila de su organización, aunque nunca abra ICP & Oferta.
 
 ### 2.1 · Las siete piezas del método

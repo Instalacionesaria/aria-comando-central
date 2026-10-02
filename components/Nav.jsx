@@ -22,7 +22,7 @@
  *
  * ── EL DOM ERA IDÉNTICO, Y ERA UN REQUISITO ──────────────────────────────────
  *
- * Con todas las capacidades el `.map()` produce exactamente el mismo árbol que el JSX literal:
+ * Con todas las capacidades el `.map()` producía exactamente el mismo árbol que el JSX literal:
  * mismas clases, mismo orden, mismos `data-view`, el galón `›` en las mismas cinco. Era lo que
  * permitía que `npm run paridad` comparara el port con el original; la compuerta se retiró el
  * 2026-10-01 (nueva estructura, E7), y el requisito se fue con ella.
@@ -43,6 +43,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSesion } from '../app/sesion-contexto.tsx';
 import { irALaVista } from '../lib/aios/shell.js';
+import { usarUbicacion } from '../lib/vista.ts';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 import { leerTrabajosEnVuelo } from '../lib/tools/scrapers.ts';
@@ -134,6 +135,11 @@ export default function Nav() {
   // alguien que no ve Executive. Ahora la decide el servidor, una vez, y las tres partes leen el
   // mismo campo. El motivo completo está en `seccionDeArranque`.
   const primera = sesion?.arranque?.seccion.clave;
+  /* La fila marcada es la de la pantalla ABIERTA, y la pinta React. Hasta la etapa E9 la marcaba
+     `shell.js` tocando el DOM, y eran dos escritores sobre la misma clase. En el primer dibujo, antes
+     de leer el DOM, vale la de arranque. Ajustes no tiene fila: con Ajustes abierto no se marca
+     ninguna. */
+  const abierta = usarUbicacion() ?? primera;
 
   return (
     <>
@@ -151,12 +157,17 @@ export default function Nav() {
               `GRUPOS_DEL_MENU` en vez de dejarlo a que alguien se acuerde acá. */}
           {grupo.etiqueta ? <div className="nav-label">{grupo.etiqueta}</div> : null}
           {secciones.map((s) => (
-            <div
-              className={s.clave === primera ? 'nav-item on' : 'nav-item'}
+            /* Un botón y no un `div`: se llega con el tabulador y se abre con Enter o Espacio. El
+               aspecto lo devuelve la capa `base` de `app/globals.css`. */
+            <button
+              type="button"
+              className={s.clave === abierta ? 'nav-item on' : 'nav-item'}
               data-view={s.clave}
               key={s.clave}
+              aria-current={s.clave === abierta ? 'page' : undefined}
+              onClick={() => irALaVista(s.clave, s.nombre)}
             >
-              <svg className="ni" viewBox="0 0 16 16">
+              <svg className="ni" viewBox="0 0 16 16" aria-hidden="true">
                 <use href={s.menu.icono} />
               </svg>
               <span className="n">
@@ -176,8 +187,8 @@ export default function Nav() {
                   aria-label={scrapeando === 1 ? 'Un scraping corriendo' : `${scrapeando} scrapings corriendo`}
                 />
               ) : null}
-              {s.menu.galon ? <span className="chev">›</span> : null}
-            </div>
+              {s.menu.galon ? <span className="chev" aria-hidden="true">›</span> : null}
+            </button>
           ))}
         </div>
       ))}
@@ -196,8 +207,8 @@ export default function Nav() {
             `app/armazon.css`.
 
             La sección se le pasa como DATO. Con la clave escrita a mano acá volvería la lista
-            paralela por la puerta de atrás: un `data-view` literal en este archivo es
-            exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón — el día que la
+            paralela por la puerta de atrás: un `irALaVista` con una clave literal en este archivo
+            es exactamente lo que la prueba de la Etapa 11 prohíbe, y con razón — el día que la
             clave cambie, el menú seguiría funcionando y este atajo no. */}
         <MenuDeUsuario
           sesion={sesion}

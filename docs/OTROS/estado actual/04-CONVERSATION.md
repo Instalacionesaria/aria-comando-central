@@ -585,7 +585,7 @@ vigentes y releídas en el código el 2026-09-28:
   (`pruebas/codigo/114-derivacion-del-nivel.test.ts:267-276`).
 - **No se nombra al proveedor en texto que se pinta.** Se cumple —cero apariciones fuera de
   comentarios en los nueve archivos de la pantalla, contadas el 2026-09-28— pero **ninguna prueba lo
-  vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:773` barre sólo cuatro archivos del
+  vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:778` barre sólo cuatro archivos del
   Closer.
 
 ---

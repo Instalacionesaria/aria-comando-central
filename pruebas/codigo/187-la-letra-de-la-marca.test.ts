@@ -48,8 +48,20 @@ test('el layout carga Geist y Geist Mono con el cargador de Next, cada una con s
 test('la primera familia es Geist, y las del sistema quedan de respaldo', () => {
   const globals = sinComentariosCss(leer('app/globals.css'));
   // Sin capa: si estas dos líneas quedaran dentro de un `@layer`, la definición de `aios.css` —la
-  // pila del prototipo, en la capa `aios`— podría ganarles según el orden.
-  assert.doesNotMatch(globals, /@layer\s+[\w-]+\s*\{/, '`app/globals.css` abrió un bloque `@layer`: revisá quién gana');
+  // pila del prototipo, en la capa `aios`— podría ganarles según el orden. Otros bloques de capa sí
+  // pueden existir (el de las filas-botón del menú, en `base`, desde la etapa E9 de la nueva
+  // estructura): lo que no puede es que uno de ellos contenga estas definiciones.
+  const bloquesDeCapa = [...globals.matchAll(/@layer\s+[\w-]+\s*\{/g)].map((m) => {
+    let nivel = 0;
+    for (let j = m.index! + m[0].length - 1; j < globals.length; j += 1) {
+      if (globals[j] === '{') nivel += 1;
+      else if (globals[j] === '}' && --nivel === 0) return globals.slice(m.index!, j + 1);
+    }
+    return globals.slice(m.index!);
+  });
+  for (const bloque of bloquesDeCapa) {
+    assert.doesNotMatch(bloque, /--font-(ui|mono):\s*var\(--font-geist/, '`app/globals.css` define la letra dentro de un bloque `@layer`: revisá quién gana');
+  }
   assert.match(globals, /--font-ui:\s*var\(--font-geist-sans\)\s*,/, '`--font-ui` no empieza por Geist');
   assert.match(globals, /--font-mono:\s*var\(--font-geist-mono\)\s*,/, '`--font-mono` no empieza por Geist Mono');
 });

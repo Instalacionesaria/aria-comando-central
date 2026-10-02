@@ -229,6 +229,11 @@ test('`Nav.jsx` NO tiene ninguna entrada escrita a mano', () => {
   // Y tiene que estar mapeando de verdad, no haber quedado vacío.
   assert.match(nav, /data-view=\{/, 'Nav.jsx dejó de poner `data-view` desde una variable');
   assert.match(nav, /\.map\(/, 'Nav.jsx dejó de recorrer las secciones');
+  /* Desde la etapa E9 la fila navega con su propio `onClick`, así que una entrada a mano ya no
+     necesita un `data-view`: alcanzaría con un botón que llame `irALaVista('closer', …)`. Se prohíbe
+     la clave literal, y `nav-item` sólo puede estar en la fila del `.map(`, en sus dos formas. */
+  assert.doesNotMatch(nav, /irALaVista\(\s*['"`]/, 'Nav.jsx abre una pantalla con una clave escrita a mano');
+  assert.equal((nav.match(/nav-item/g) ?? []).length, 2, 'Nav.jsx tiene una fila del menú fuera del `.map(`');
 
   // Los dos nombres que estaban fijos. "ARIA High Ticket" es el caso peor: es el nombre de la
   // organización, justo el dato que el `03` § 3 exige mostrar bien —*"sin eso, alguien puede
@@ -1036,14 +1041,19 @@ test('Ajustes se abre desde el menú de la cuenta, sin simular el clic de una fi
     );
   }
 
-  // 4 · Y las dos vías —las filas y el desplegable— pasan por la MISMA función. Si el enrutado
-  //     vuelve adentro del manejador, hay dos definiciones de «abrir una pantalla» y una se
-  //     queda atrás sin que nada falle.
+  // 4 · Y las dos vías —las filas y el desplegable— pasan por la MISMA función. Desde la etapa E9
+  //     las dos están en `Nav.jsx`: las filas son botones de React y el armazón ya no ata clics. Si
+  //     el enrutado vuelve adentro de un manejador propio, hay dos definiciones de «abrir una
+  //     pantalla» y una se queda atrás sin que nada falle.
   const shell = archivosFuente(['lib']).find((a) => a.ruta === 'lib/aios/shell.js')?.limpio;
   assert.ok(shell, 'no se encontró shell.js');
   assert.ok(/export function irALaVista/.test(shell), '`irALaVista` dejó de estar exportada');
   assert.ok(
-    /function initShell[\s\S]*irALaVista\(/.test(shell),
-    '`initShell` dejó de usar `irALaVista`: el enrutado volvió a estar duplicado',
+    /onClick=\{\(\) => irALaVista\(s\.clave, s\.nombre\)\}/.test(nav),
+    'las filas del menú dejaron de abrir por `irALaVista`: el enrutado volvió a estar duplicado',
+  );
+  assert.ok(
+    /alIrALaSeccion=\{(irALaVista\}|\(clave, nombre\) => \{\s*irALaVista\(clave, nombre\);)/.test(nav),
+    'el desplegable de la cuenta dejó de abrir por `irALaVista`',
   );
 });

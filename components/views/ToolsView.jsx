@@ -27,6 +27,7 @@
 import Fundaciones from '../fundaciones/Fundaciones';
 import EspiaDeAnuncios from '../tools/EspiaDeAnuncios';
 import MisLeads from '../tools/MisLeads';
+import VistaDelScraper from '../tools/VistaDelScraper';
 import SaldoDeLeads from '../tools/SaldoDeLeads';
 import { TOOLS } from '@/lib/fundaciones/herramientas';
 
@@ -47,6 +48,9 @@ const CATALOGO_TOOLS = {
   /* La del relleno del formulario con el contexto heredado. */
   rutaRellenar: '/api/tools/rellenar',
   capacidadEditar: 'tools.editar',
+  /* La sección de la pantalla, para atender la pestaña que pide la navegación (`NE-19`): Tools se
+     reparte en tres departamentos y cada entrada abre la suya. ICP & Oferta no lo declara. */
+  seccion: 'tools',
   /* «Mis Leads» es una pestaña más de Tools, al lado de Prospección, y no una sección enterrada
      debajo del scraper: el historial se consulta en momentos distintos de cuando se scrapea
      —para exportarlo, para ver si un negocio ya salió antes— y no tiene por qué obligar a pasar
@@ -62,6 +66,13 @@ const CATALOGO_TOOLS = {
          vista y no como herramienta por lo mismo que «Mis Leads»: no llena un formulario ni produce
          un entregable que se pueda dar por completo. */
       render: ({ puedeEditar }) => <EspiaDeAnuncios puedeEditar={puedeEditar} />,
+    },
+    {
+      clave: 'scraper',
+      pestania: 'Scraper',
+      /* El buscador de Prospección, solo, con la tabla de lo que trae (`NE-20`): en la estructura nueva
+         el Scraper es de Research y la Prospección de Sales. Va como vista por lo mismo que el Espía. */
+      render: ({ puedeEditar }) => <VistaDelScraper puedeEditar={puedeEditar} />,
     },
     { clave: 'mis-leads', pestania: 'Mis Leads', render: () => <MisLeads /> },
   ],
@@ -86,7 +97,7 @@ export default function ToolsView({ activa }) {
           </div>
         </div>
         <div className="cl-page">
-          {/* El saldo, arriba de las pestañas: se gasta desde tres y se consulta desde la cuarta. */}
+          {/* El saldo, arriba de las pestañas: lo gastan dos, Prospección y Scraper, con el mismo buscador. */}
           <SaldoDeLeads />
           <Fundaciones catalogo={CATALOGO_TOOLS} />
         </div>

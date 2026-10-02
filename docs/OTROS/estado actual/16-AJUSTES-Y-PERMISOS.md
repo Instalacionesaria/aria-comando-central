@@ -75,7 +75,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 
 **La entrada.** La sección `credenciales`, rotulada «Ajustes», es la única del grupo `Pie`
 (`lib/autorizacion/secciones.ts:192-209`); el pie junta sus secciones y dibuja sólo la primera
-(`components/Nav.jsx:127`, `:204`), así que una segunda ahí no se vería. La vista es
+(`components/Nav.jsx:128`, `:215`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
 (`components/CommandCenter.jsx:49`).
 
@@ -438,7 +438,7 @@ se leyó lo que afirman.
 | Listas sin entradas muertas | Rutas públicas, excepciones de capacidad y `SIN_PANTALLA` | `pruebas/codigo/30-portero.test.ts:644`, `:675`, `:713` |
 | El cable trampa literal | `SIN_OPERACIONES_TODAVIA` tiene largo **1**: el día que Executive tenga una ruta, `ADR-0303` falla hasta bajarle la bandera, y bajarla rompe este número | `pruebas/codigo/90-fundaciones.test.ts:1191`, `pruebas/codigo/30-portero.test.ts:325` |
 | Closer y Setter separados | Con `closer.ver` a secas se ve sólo Closer, y al revés | `pruebas/codigo/90-fundaciones.test.ts:1194` |
-| El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:290`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
+| El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:295`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
 | La delegación | Sólo la plataforma otorga roles que administran personas | `pruebas/codigo/144-delegacion-de-roles.test.ts:64` |
 | Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:346`, `:283`, `:94` |
 | El alcance, contra la base | Los dos ceros; el rechazo es del portero, no cosmético; el anti-encierro; el `check` acepta toda clave de `SECCIONES` | `pruebas/base/31-alcance.test.ts:127`, `:229`, `:287`, `:337` |
@@ -453,7 +453,7 @@ viva (`pruebas/apoyo/autorizados.ts:744-750`).
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
 las dos direcciones». Encontré la de código → tabla
 (`pruebas/base/22-los-tres-roles.test.ts:346-353`) y la de sección → archivo que la carga
-(`pruebas/codigo/91-closer-y-setter.test.ts:290`); una que lea `identidad.permisos` y busque filas
+(`pruebas/codigo/91-closer-y-setter.test.ts:295`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre
 `pruebas/`; la que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:345`, cruza la tabla con
 el rol de plataforma, no con el código. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese

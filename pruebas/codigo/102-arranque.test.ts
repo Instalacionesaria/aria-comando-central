@@ -128,6 +128,9 @@ test('la capa imperativa no vuelve a tener su propia lista de nombres de secció
       );
     }
   }
-  // Lo que SÍ tiene que hacer: leerlo del DOM de la fila, que es de donde `irALaVista` lo saca.
-  assert.match(leer('lib/aios/shell.js'), /querySelector\('\.n'\)/, 'el nombre ya no se lee de la fila del menú');
+  // Lo que SÍ tiene que hacer: pasarlo desde el dato de la sección, que es lo que la fila dibuja. Hasta
+  // la etapa E9 el armazón lo leía del DOM de la fila; ahora la fila es un botón de React que lo pasa.
+  // Sin comentarios: uno que citara la llamada dejaría esto en verde sin que ninguna fila la hiciera.
+  const nav = leer('components/Nav.jsx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(nav, /onClick=\{\(\) => irALaVista\(s\.clave, s\.nombre\)\}/, 'las filas del menú ya no pasan el nombre de la sección');
 });

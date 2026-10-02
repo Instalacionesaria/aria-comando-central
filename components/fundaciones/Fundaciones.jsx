@@ -27,7 +27,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
-import { FUNDACIONES } from '@/lib/fundaciones/herramientas';
+import { FUNDACIONES, activaDeLaPestana } from '@/lib/fundaciones/herramientas';
+import { usarPedidoDeVista } from '@/lib/vista';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
 import { aValoresDeFormulario, conValoresPorOmision, idsDeCampos } from '@/lib/fundaciones/campos';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -132,6 +133,27 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
     setActiva(id);
     setRellenarAlLlegar(opciones && opciones.rellenar ? id : null);
   }, []);
+
+  /* ── LA PESTAÑA QUE PIDE LA NAVEGACIÓN (`NE-19`) ─────────────────────────
+     Tools se reparte en tres departamentos, así que la pestaña la elige quien abre la pantalla:
+     «Research › Espía de anuncios» abre `tools` pidiendo `espia`. Sólo lo lee la pantalla cuyo
+     catálogo declara `seccion`; ICP & Oferta no, porque sus siete pasos los eligen su barra y la
+     cadena del método.
+
+     Se atiende UNA vez por número y en el render, no en un efecto: el primer dibujo después de abrir
+     ya es el de la pestaña pedida. Un clic en la barra propia no toca el pedido, así que no lo pisa,
+     y pedir otra vez la misma pestaña es un número nuevo que se vuelve a aplicar. Una pestaña
+     desconocida no cambia nada. */
+  const pedido = usarPedidoDeVista(catalogo.seccion ?? null);
+  const [atendido, setAtendido] = useState(0);
+  if (pedido && pedido.secuencia !== atendido) {
+    setAtendido(pedido.secuencia);
+    const destino = activaDeLaPestana(catalogo.herramientas, vistas, pedido.pestana);
+    if (destino !== null) {
+      setActiva(destino);
+      setRellenarAlLlegar(null);
+    }
+  }
 
   const cargar = useCallback(async () => {
     const [sesion, respuesta] = await Promise.all([

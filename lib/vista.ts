@@ -15,7 +15,26 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState } from 'react';
-import { alCambiarDeVista, vistaActiva } from './aios/shell.js';
+import { alCambiarDeVista, pedidoDeVista, vistaActiva } from './aios/shell.js';
+
+/**
+ * La clave de la pantalla que se está mostrando, o `null` antes del primer efecto.
+ *
+ * La lee la barra para marcar la fila abierta (`components/Nav.jsx`), que hasta la etapa E9 marcaba
+ * `shell.js` tocando el DOM. Guarda un TEXTO y no un objeto: así sólo vuelve a dibujar a quien la usa
+ * cuando la pantalla cambia de verdad.
+ */
+export function usarUbicacion(): string | null {
+  const [abierta, setAbierta] = useState<string | null>(null);
+
+  useEffect(() => {
+    const leer = () => setAbierta(vistaActiva());
+    leer();
+    return alCambiarDeVista(leer);
+  }, []);
+
+  return abierta;
+}
 
 /**
  * ¿Esta pantalla es la que se está mostrando?
@@ -28,13 +47,50 @@ import { alCambiarDeVista, vistaActiva } from './aios/shell.js';
  * @param clave la clave de la pantalla, la misma del `data-view` del menú.
  */
 export function estaALaVista(clave: string): boolean {
-  const [abierta, setAbierta] = useState<string | null>(null);
+  return usarUbicacion() === clave;
+}
+
+/** Lo que una pantalla recibe de `irALaVista`: la pestaña pedida y el número del pedido. */
+export interface PedidoDeVista {
+  pestana: string | null;
+  secuencia: number;
+}
+
+/**
+ * Qué guarda `usarPedidoDeVista` después de un aviso. Separada del hook para poder ejecutarla en una
+ * prueba (`pruebas/codigo/192-la-navegacion-pide-la-pestana.test.ts`).
+ *
+ * Un pedido nuevo PARA ESTA PANTALLA —otra `clave` no cuenta— con un número que todavía no guardó:
+ * se guarda, aunque la pestaña sea la misma de antes, porque entre los dos pudo haber un clic a mano
+ * en la barra propia. Cualquier otra cosa devuelve el MISMO objeto de antes, y React no vuelve a
+ * dibujar la pantalla.
+ */
+export function siguientePedido(
+  antes: PedidoDeVista | null,
+  ultimo: { clave: string; pestana: string | null; secuencia: number } | null,
+  clave: string | null,
+): PedidoDeVista | null {
+  if (clave === null || !ultimo || ultimo.clave !== clave) return antes;
+  if (antes?.secuencia === ultimo.secuencia) return antes;
+  return { pestana: ultimo.pestana, secuencia: ultimo.secuencia };
+}
+
+/**
+ * El último pedido de navegación hecho a ESTA pantalla (`NE-19`), o `null`.
+ *
+ * Los pedidos a otras pantallas no la vuelven a dibujar. Quien lo usa lo atiende una vez por
+ * `secuencia`: ver «EL PEDIDO» en `lib/aios/shell.js`. Con `null` no escucha nada, para que una
+ * pantalla que no reparte pestañas (ICP & Oferta) pueda llamarlo sin condiciones, como pide React.
+ */
+export function usarPedidoDeVista(clave: string | null): PedidoDeVista | null {
+  const [visto, setVisto] = useState<PedidoDeVista | null>(null);
 
   useEffect(() => {
-    const leer = () => setAbierta(vistaActiva());
+    if (clave === null) return;
+    const leer = () => setVisto((antes) => siguientePedido(antes, pedidoDeVista(), clave));
     leer();
     return alCambiarDeVista(leer);
-  }, []);
+  }, [clave]);
 
-  return abierta === clave;
+  return visto;
 }

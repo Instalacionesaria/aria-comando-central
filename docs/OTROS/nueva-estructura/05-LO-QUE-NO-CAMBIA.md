@@ -56,14 +56,20 @@ tiene a medias (un chat de ICP, una pestaña del Closer) sigue ahí al volver, t
 desde otro departamento.
 
 **Con una excepción que ya existe y no cambia**: dentro de Tools, el panel de cada pestaña se vuelve a
-montar al cambiar de pestaña (`components/fundaciones/Fundaciones.jsx`, `key={herramienta.id}`). Como las
+montar al cambiar de pestaña (`components/fundaciones/Fundaciones.jsx`): las herramientas llevan
+`key={herramienta.id}`, y las vistas —Espía, Scraper, Mis Leads— son componentes distintos. Como las
 pestañas de Tools quedan en departamentos distintos, pasar de Research › Scraper a Marketing › Tu página y
 volver desmonta el Scraper:
 
-- **sobrevive** el trabajo del servidor: un escaneo en vuelo sigue, y el Scraper lo retoma al volver;
-- **no sobrevive** lo dibujado: los leads ya traídos y lo escrito en el formulario.
+- **sobrevive** el trabajo del servidor: un escaneo en vuelo sigue, y el Scraper lo retoma al volver. Retoma
+  el de la fuente que tiene a la vista —Google Maps, al abrir— y repone lo escrito en ese formulario; uno de
+  LinkedIn o de Facebook se retoma al tocar esa fuente;
+- **no sobrevive** lo dibujado: los leads ya traídos y, sin un escaneo en vuelo, lo escrito en el formulario.
 
-Lo mismo vale para las dos pestañas de Analizadores.
+Analizadores no: es un solo componente y no se vuelve a montar al cambiar de pestaña. Conserva el filtro, el
+formulario a mano y el detalle abierto de su pestaña, y sólo vuelve a pedir la lista (corregido en E9:
+este documento decía que valía lo mismo que en Tools). El formulario a mano cambia su tipo con la
+pestaña y conserva lo escrito; un detalle abierto de la OTRA pestaña se cierra al pedirla.
 
 ## `NE-36` · Los accesos cruzados que ya existen
 

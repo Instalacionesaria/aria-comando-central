@@ -40,7 +40,7 @@ septiembre escribe en una tabla que no existe, cuya migración no está en el re
 ## 1 · Qué son, y por qué no están en el prototipo
 
 **Tools** es «las herramientas de la operación, que heredan de tu ICP y tu oferta»
-(`components/views/ToolsView.jsx:82-84`): lo que se hace *después* del método, no una pieza de él
+(`components/views/ToolsView.jsx:93-95`): lo que se hace *después* del método, no una pieza de él
 (`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y
 `tools.editar` (`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito:
 darle Tools a alguien le daría también ICP & Oferta (`lib/autorizacion/secciones.ts:394-397`).
@@ -80,17 +80,22 @@ equipo registrados en los commits, no de ese documento.
 ### Tools
 
 Una envoltura que monta el componente de Fundaciones con un catálogo propio
-(`components/views/ToolsView.jsx:33-68`) y, arriba de las pestañas, la franja de saldo
-(`components/views/ToolsView.jsx:89-91`). A la izquierda de una raya, el recorrido numerado de
-herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:422-425`):
+(`components/views/ToolsView.jsx:34-79`) y, arriba de las pestañas, la franja de saldo
+(`components/views/ToolsView.jsx:100-102`). A la izquierda de una raya, el recorrido numerado de
+herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:444-447`):
 
 | pestaña | qué es | rastro |
 |---|---|---|
 | 1 · Prospección en Frío | el plan de ataque outbound (id 20 del hub) y el extractor de leads | `lib/fundaciones/herramientas.ts:672-766` |
 | 2 · Tu video de ventas (VSL) | mudada de ICP & Oferta el 2026-08-31 | `lib/fundaciones/herramientas.ts:788-811` |
 | 3 · Tu página | la Landing, mudada el 2026-09-02 | ídem |
-| Espía de Anuncios | vista: busca anuncios y extrae hooks con IA | `components/views/ToolsView.jsx:57-65` |
-| Mis Leads | vista: el historial de lo scrapeado, con envío al CRM | `components/views/ToolsView.jsx:66` |
+| Espía de Anuncios | vista: busca anuncios y extrae hooks con IA | `components/views/ToolsView.jsx:61-69` |
+| Mis Leads | vista: el historial de lo scrapeado, con envío al CRM | `components/views/ToolsView.jsx:77` |
+
+> **Después del corte, el 2026-10-01** (nueva estructura, E9): Tools gana una pestaña **Scraper**, entre el
+> Espía y Mis Leads, con el mismo extractor de Prospección y la tabla de lo que trae
+> (`components/tools/VistaDelScraper.jsx`). Sin `tools.editar` no dibuja el extractor; Prospección sigue
+> igual. Ver `docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-20`.
 
 El VSL y la Landing comparten almacén y herencia con ICP & Oferta y están descritos en
 [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía, en
@@ -452,10 +457,12 @@ después de un scraping (`components/tools/SaldoDeLeads.jsx:6-8`), y no encontr�
 lo llaman sólo la franja y el Research—. No verificado en pantalla.
 
 **El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin
-`puedeEditar` (`components/views/ToolsView.jsx:66`) y dibuja el envío siempre
+`puedeEditar` (`components/views/ToolsView.jsx:77`) y dibuja el envío siempre
 (`components/tools/MisLeads.jsx:385-394`); la ruta pide `tools.editar`
 (`app/api/tools/leads/enviar/route.ts:79`). Hoy no le pasa a nadie: los 15 activos tienen
-`tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:64`).
+`tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:68`), y desde
+la etapa E9 también el Scraper. Los dos la reciben de `Fundaciones.jsx`, que la da falsa también cuando
+falló la lectura del estado de Tools: en ese caso el aviso dice que es el rol, y no lo es.
 
 **Dos personas de empresas cliente ya tienen `monitoreo.ver`.** Las separan del panel dos cosas: la
 pestaña no concedida y `soloDesdeLaPrincipal`. Las dos están en pie (0 concesiones fuera de la

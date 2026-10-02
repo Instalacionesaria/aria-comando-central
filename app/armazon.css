@@ -451,10 +451,19 @@
     z-index: 45;
     width: min(272px, 82vw);
     transform: translateX(-100%);
-    transition: transform .22s cubic-bezier(.32, .72, 0, 1);
+    /* Cerrado, además de correrse, se esconde: `visibility: hidden` lo saca del orden del tabulador y
+       del árbol de accesibilidad. Sin esto, las filas —botones desde la etapa E9— eran paradas
+       invisibles fuera de la pantalla. Se esconde al TERMINAR de cerrarse (el retraso de .22s), para
+       que no desaparezca a mitad del deslizamiento. */
+    visibility: hidden;
+    transition: transform .22s cubic-bezier(.32, .72, 0, 1), visibility 0s linear .22s;
   }
   .app.menu-abierto .nav {
     transform: translateX(0);
+    /* Al abrir, visible al instante: `shell.js` enfoca la primera fila apenas se abre, y un elemento
+       todavía oculto no recibe el foco. */
+    visibility: visible;
+    transition: transform .22s cubic-bezier(.32, .72, 0, 1);
   }
 
   /* El velo es un pseudo-elemento y no un nodo: no hay nada que montar, nada que mantener

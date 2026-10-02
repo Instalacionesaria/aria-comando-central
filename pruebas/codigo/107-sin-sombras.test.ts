@@ -159,7 +159,8 @@ test('ninguna hoja de la capa `components` estrena una sombra sin nombrarla', ()
          las apaga el barrido universal de `temas.css`, que es de lo que trata la prueba de más
          arriba;
        · `temas.css` es donde vive ese barrido, y donde las tres permitidas están nombradas;
-       · `globals.css` son los `@import` y el orden de capas: no declara una sola propiedad. */
+       · `globals.css` son los `@import`, el orden de capas, el puente de tokens, la guarda de
+         sesión y el aspecto base de las filas del menú: no declara ninguna sombra. */
   const FUERA = ['app/aios.css', 'app/temas.css', 'app/globals.css'];
   const enDisco = readdirSync(new URL('app/', RAIZ))
     .filter((f) => f.endsWith('.css'))

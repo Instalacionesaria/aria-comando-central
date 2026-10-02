@@ -168,6 +168,14 @@ test('la barra sale del flujo hasta el borde de abajo, y no queda panel ni barra
   /* `bottom: 0` y no los 64 px de antes, que eran el hueco de la barra de preguntas: sin ella, el
      cajón terminaría 64 px antes del borde y debajo se vería el velo. */
   assert.match(nav[1]!, /bottom:\s*0\s*;/, 'el cajón del menú no llega al borde de abajo');
+  /* Cerrado, el cajón se esconde además de correrse: con `transform` solo, sus filas —botones desde
+     la etapa E9— eran paradas del tabulador fuera de la pantalla. Se esconde al TERMINAR de cerrarse,
+     y al abrir se muestra al instante: si no, `shell.js` enfocaría la primera fila todavía oculta. */
+  assert.match(nav[1]!, /visibility:\s*hidden\s*;/, 'el cajón cerrado sigue en el orden del tabulador');
+  assert.match(nav[1]!, /transition:[^;]*visibility 0s linear \.22s/, 'el cajón se esconde antes de terminar de cerrarse');
+  const abierto = angosto.match(/\.app\.menu-abierto \.nav\s*\{([^}]*)\}/);
+  assert.ok(abierto && /visibility:\s*visible\s*;/.test(abierto[1]!), 'el cajón abierto no vuelve a ser visible');
+  assert.doesNotMatch(abierto[1]!, /visibility\s+[\d.]+s/, 'el cajón abierto se muestra con retraso: el foco caería en un elemento oculto');
 
   // Ninguna regla del panel lateral ni de la barra de preguntas: se fueron con la maqueta.
   assert.doesNotMatch(sinComentarios(css), /\.side\b|\.ask\b|\.ask-trigger|\.at-[tk]\b/, '`app/armazon.css` vuelve a tener reglas del panel lateral o de la barra de preguntas');

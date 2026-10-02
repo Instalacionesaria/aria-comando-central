@@ -850,3 +850,23 @@ export const PASOS_RESEARCH = 5;
 export function tieneAgente(h: Herramienta): boolean {
   return h.forma === 'generica' || h.forma === 'research';
 }
+
+/**
+ * La pestaña de `Fundaciones.jsx` que corresponde a la que pide la navegación (`NE-19`), o `null`.
+ *
+ * Las entradas de los departamentos nombran las pestañas por su CLAVE
+ * (`lib/autorizacion/departamentos.ts`), y `Fundaciones.jsx` guarda la abierta como el `id` de una
+ * herramienta —un número— o la clave de una vista —un texto—. Devolver la clave de una herramienta
+ * en vez de su `id` no fallaría: la pantalla caería a la primera herramienta sin marcar ninguna
+ * pestaña. Y una clave desconocida da `null`, para que quien pide no abra otra sin decirlo.
+ */
+export function activaDeLaPestana(
+  herramientas: readonly Herramienta[],
+  vistas: readonly { clave: string }[],
+  pestana: string | null,
+): number | string | null {
+  if (pestana === null) return null;
+  const herramienta = herramientas.find((h) => h.clave === pestana);
+  if (herramienta) return herramienta.id;
+  return vistas.some((v) => v.clave === pestana) ? pestana : null;
+}

@@ -31,11 +31,11 @@ departamentos distintos, así que **la pestaña la elige la navegación**:
 - abrir «Research › Espía de anuncios» es abrir la vista `tools` **pidiéndole** la pestaña `espia`;
 - abrir «Client Success › Analizador OB» es abrir `analizadores` pidiéndole la pestaña OB.
 
-La vista sigue siendo **una sola** y sigue montada, pero **el panel de cada pestaña se vuelve a montar** al
-cambiar de pestaña (`components/fundaciones/Fundaciones.jsx`, `key={herramienta.id}`): es así hoy, dentro
-de Tools, y no cambia. Lo que sobrevive es el trabajo del servidor —un escaneo en vuelo sigue, y el
-Scraper lo retoma al volver—; lo dibujado y lo escrito en el formulario, no (`NE-35`). Lo que cambia es
-quién elige la pestaña. Por eso su barra propia se va: sus pestañas pasan a
+La vista sigue siendo **una sola** y sigue montada, pero en Tools **el panel de cada pestaña se vuelve a
+montar** al cambiar de pestaña (`components/fundaciones/Fundaciones.jsx`): es así hoy y no cambia. Lo que
+sobrevive es el trabajo del servidor —un escaneo en vuelo sigue, y el Scraper lo retoma al volver, con lo
+escrito en su formulario—; lo dibujado, no. Analizadores no se vuelve a montar: conserva todo menos la
+lista (`NE-35`). Lo que cambia es quién elige la pestaña. Por eso su barra propia se va: sus pestañas pasan a
 ser la fila de pestañas del departamento.
 
 El permiso no cambia (`NE-07`): quien tiene `tools` ve las seis entradas en sus tres departamentos.

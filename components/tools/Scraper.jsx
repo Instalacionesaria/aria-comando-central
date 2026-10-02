@@ -1,6 +1,6 @@
 'use client';
 
-/* El extractor de leads de Prospección: tres fuentes, cada una con su formulario.
+/* El extractor de leads de Prospección y de la pestaña Scraper: tres fuentes, cada una con su formulario.
    ==========================================================================
    Puerto de `ARIA-brain/app-next/components/ProspeccionScraper.tsx`.
 

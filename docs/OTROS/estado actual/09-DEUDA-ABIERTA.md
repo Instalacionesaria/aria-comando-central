@@ -621,7 +621,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 señala), `components/views/SalesView.jsx:19-20`.
   También en una migración
   (`db/migraciones/034_varios_closers.sql:38`) y en una prueba
-  (`pruebas/codigo/91-closer-y-setter.test.ts:429`, `pruebas/codigo/91-closer-y-setter.test.ts:437`):
+  (`pruebas/codigo/91-closer-y-setter.test.ts:434`, `pruebas/codigo/91-closer-y-setter.test.ts:442`):
   10 archivos con alguno de los dos apellidos (`grep -rl` sobre las siete carpetas de fuente,
   2026-09-28).
 - **El nombre de pila de una persona del equipo está en 43 archivos** (`grep -rl` sobre `lib/`,
@@ -644,7 +644,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - **Y uno que no está en el repositorio sino en la base:** el error de una llamada fallida guarda los
   primeros 200 caracteres de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), que en
   un informe OB empiezan por los datos del cliente, y la lista lo dibuja
-  (`components/analizadores/PanelDeAnalizadores.jsx:384`). Toda medición SQL que lea `error` lee
+  (`components/analizadores/PanelDeAnalizadores.jsx:401`). Toda medición SQL que lea `error` lee
   datos personales.
 
 ---
@@ -927,7 +927,8 @@ Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
   pantalla (un closer, por ejemplo), hasta su primer clic: la clase que lo esconde sólo se pone al
   navegar. **Cerrado el 2026-10-01** en la etapa E7: la columna lateral se fue, y con ella la clase `.solo`.
 - **El menú no se puede usar con el teclado**: sus filas son `div` sin foco. Pasan a ser botones en la
-  etapa E9.
+  etapa E9. **Cerrado el 2026-10-01** en la etapa E9: las filas son `<button>` y la abierta lleva `aria-current`; en
+  el teléfono, el cajón cerrado sale del orden del tabulador, así que las filas no son paradas invisibles.
 
 Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` (`60f5d81`), que no es de
 esa planificación ni lo corrige ninguna de sus etapas:

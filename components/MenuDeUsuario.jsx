@@ -140,8 +140,8 @@ export default function MenuDeUsuario({ sesion, seccion, alIrALaSeccion }) {
             role="menuitem"
             onClick={() => {
               setAbierto(false);
-              /* El nombre viaja con la clave: Ajustes ya no tiene fila en el menu lateral, asi
-                 que no hay DOM del que leerlo para la miga de pan. */
+              /* El nombre viaja con la clave, como dato, igual que desde las filas del menú
+                 (`Nav.jsx`): nadie lo lee del DOM para la miga de pan. */
               alIrALaSeccion?.(seccion.clave, seccion.nombre);
             }}
           >

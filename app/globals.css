@@ -175,3 +175,20 @@
   border-radius: 8px;
   cursor: pointer;
 }
+
+/* ── LAS FILAS DEL MENÚ SON BOTONES (etapa E9 de la nueva estructura) ──────
+   El prototipo las dibujaba como `div`, que no se enfocan ni se activan con el teclado. Como
+   `<button>`, el navegador les pone su fondo, su borde, su letra y el texto centrado; esto se los
+   quita. Va en la capa `base` y no en `armazon.css` (capa `components`) a propósito: `base` pierde
+   contra `aios`, así que el hover y la fila marcada de `aios.css` siguen mandando. En `components`,
+   este `background: none` les ganaría por capa y perderían su fondo. */
+@layer base {
+  button.nav-item {
+    width: 100%;
+    font: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    background: none;
+    border: 0;
+  }
+}

@@ -62,16 +62,14 @@ export type Entrada =
  *
  * Las pestañas se nombran con la clave de donde se definen: la `clave` de cada herramienta de `TOOLS`
  * (`lib/fundaciones/herramientas.ts`), la de las vistas de `components/views/ToolsView.jsx` y la de
- * `components/analizadores/PanelDeAnalizadores.jsx`. La `191` comprueba que cada una exista ahí. Hoy
- * `Fundaciones.jsx` elige sus herramientas por `id` y no por `clave`: la traducción la hace la etapa
- * E9, que es la que le pasa la pestaña.
- *
- * El Scraper (`NE-20`) no está todavía: su pestaña nace en la etapa E9, y una entrada que pide una
- * pestaña inexistente abriría Tools en otra.
+ * `components/analizadores/PanelDeAnalizadores.jsx`. La `191` comprueba que cada una exista ahí.
+ * `Fundaciones.jsx` elige sus herramientas por `id` y no por `clave`: la traducción la hace
+ * `activaDeLaPestana` (`lib/fundaciones/herramientas.ts`).
  */
 export const ENTRADAS: readonly Entrada[] = [
   { departamento: 'research', seccion: 'icp' },
   { departamento: 'research', seccion: 'tools', pestana: 'espia', nombre: 'Espía de anuncios' },
+  { departamento: 'research', seccion: 'tools', pestana: 'scraper', nombre: 'Scraper' },
   { departamento: 'research', seccion: 'tools', pestana: 'mis-leads', nombre: 'Mis Leads' },
 
   { departamento: 'systems', seccion: 'acquisition' },

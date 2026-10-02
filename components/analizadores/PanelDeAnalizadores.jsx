@@ -37,7 +37,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { pedir } from '../../lib/http/cliente.ts';
-import { estaALaVista } from '@/lib/vista';
+import { estaALaVista, usarPedidoDeVista } from '@/lib/vista';
 import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
 import DetalleOb from './DetalleOb.jsx';
@@ -110,6 +110,23 @@ export default function PanelDeAnalizadores() {
   const ultimoPedido = useRef(0);
 
   const aLaVista = estaALaVista('analizadores');
+
+  /* La pestaña que pide la navegación (`NE-19`): «Sales › Analizador HT» y «Client Success ›
+     Analizador OB» abren esta misma pantalla, cada una con la suya. Se atiende una vez por número y en
+     el render, como en `Fundaciones.jsx`: el primer dibujo ya es el de la pestaña pedida y la lista no
+     se pide antes con la anterior. Un detalle abierto de la OTRA pestaña se cierra; si no, «Analizador
+     OB» mostraría una llamada de venta. */
+  const pedidoDeNavegacion = usarPedidoDeVista('analizadores');
+  const [atendido, setAtendido] = useState(0);
+  if (pedidoDeNavegacion && pedidoDeNavegacion.secuencia !== atendido) {
+    setAtendido(pedidoDeNavegacion.secuencia);
+    const pedida = PESTANAS.find((p) => p.clave === pedidoDeNavegacion.pestana)?.clave;
+    if (pedida && pedida !== pestana) {
+      setPestana(pedida);
+      setLista(null);
+    }
+    if (pedida && detalle !== null && detalle.tipo !== pedida) setDetalle(null);
+  }
 
   const cargarLista = useCallback(async () => {
     const mio = ++ultimoPedido.current;
@@ -428,6 +445,14 @@ export default function PanelDeAnalizadores() {
 /** El formulario de la transcripción pegada a mano. Los tres campos son obligatorios. */
 function Manual({ pestana, seAnaliza, trabajando, alTerminar, setTrabajando }) {
   const [tipo, setTipo] = useState(pestana);
+  /* Si la pestaña cambia con el formulario abierto —con la barra, o desde otro departamento
+     (`NE-19`)—, el tipo la sigue: «Analizador OB» no puede mostrar «Venta (HT)» marcado y analizar
+     como venta. Lo escrito se queda. */
+  const [pestanaVista, setPestanaVista] = useState(pestana);
+  if (pestana !== pestanaVista) {
+    setPestanaVista(pestana);
+    setTipo(pestana);
+  }
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [transcripcion, setTranscripcion] = useState('');

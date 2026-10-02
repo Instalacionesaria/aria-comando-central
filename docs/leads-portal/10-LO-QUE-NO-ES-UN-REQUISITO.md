@@ -92,7 +92,7 @@ plausibles—, en el campo `tel` y `mail` de su entrada. Son inventados, y esta 
 un teléfono con forma real en un documento es un teléfono, lo haya inventado quien lo haya inventado.
 
 **Requisito** · Ninguna vuelve a la interfaz. Hoy la vigilancia de nombres inventados
-(`pruebas/codigo/91-closer-y-setter.test.ts:422-460`) ya tenía una de ellas —Andrea Salas, `:438`—, y
+(`pruebas/codigo/91-closer-y-setter.test.ts:427-465`) ya tenía una de ellas —Andrea Salas, `:438`—, y
 LP-6 le agrega las demás (`LP10-10`).
 
 ### LP10-03 · El nombre de un closer real, con dos ventas que no existen
@@ -107,7 +107,7 @@ asistió (`:44`) y otra agendada (`:48`). **Medido el 2026-09-27: cero ventas y 
 base.** La pantalla le adjudica a una persona con nombre $14.100 que no vendió.
 
 Es el mismo nombre que dibujaba la maqueta de Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:32`)
-y el que la vigilancia ya lista (`pruebas/codigo/91-closer-y-setter.test.ts:437`). Esta carpeta no lo
+y el que la vigilancia ya lista (`pruebas/codigo/91-closer-y-setter.test.ts:442`). Esta carpeta no lo
 escribe.
 
 **Y un rótulo que finge un segundo closer:** «Asesor comercial» en otras cuatro
@@ -355,6 +355,6 @@ ahora sólo para que un diff contra el prototipo diga qué se desvió.
 **Resuelta el 2026-10-01** (nueva estructura, E7): se borraron con la maqueta del Executive, junto con el cajón y el paso de paridad que las sostenía. El plan las deja porque la compuerta de paridad compara el texto del cajón contra el prototipo, y
 cambiarlo daría rojo permanente en el paso mudado. Es la misma razón por la que `aios.css` no se
 toca, y tiene el mismo costo: **una pantalla que la gente abre sigue mostrando personas y montos
-inventados**. `pruebas/codigo/91-closer-y-setter.test.ts:462-474` dejó escrito que vaciar una
+inventados**. `pruebas/codigo/91-closer-y-setter.test.ts:467-479` dejó escrito que vaciar una
 pantalla sin tener de dónde traer datos es una decisión de producto; ésta lo es, y Executive
 todavía no tiene de dónde traerlos.

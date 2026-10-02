@@ -31,7 +31,7 @@ export default function TopBar({ arranque }) {
           * condicionalmente desde React necesitaría saber el ancho en el servidor —no se sabe— y el
           * primer pintado saldría con el botón de más o de menos.
           *
-          * Lo cablea `lib/aios/shell.js`, que es quien ya escucha los clics del menú y quien cierra
+          * Lo cablea `lib/aios/shell.js`, que es quien navega (`irALaVista`) y quien cierra
           * lo que se abre encima. Un manejador de React acá tendría que coordinarse con él para
           * cerrar el cajón al navegar, y serían dos dueños de un mismo estado. */}
       <button
