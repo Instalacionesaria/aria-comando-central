@@ -3,14 +3,14 @@
  *   npm run dev            # en otra terminal
  *   npm run paridad
  *
- * Sirve para reactificar vistas sin romper nada: reescribe un módulo de
- * lib/aios/ como componente React y vuelve a pasar esto. Comprueba tres
- * cosas por vista — forma del DOM, texto e geometría — y luego recorre las
- * capas que sólo aparecen al interactuar.
+ * RETIRADA el 2026-10-01 (nueva estructura, E7): no queda ninguna vista ni
+ * paso que comparar, y el guardián del final sale 0. Queda como registro de
+ * por qué salió cada una.
  *
- * Ruido conocido: los `circle.pulse` del mapa ejecutivo se mueven por una
- * animación SVG, así que su posición nunca coincide. Se descuentan más
- * abajo, y de todos modos `executive` ya salió de la comparación.
+ * Servía para reactificar vistas sin romper nada: se reescribía un módulo de
+ * lib/aios/ como componente React y se volvía a pasar esto. Comprobaba tres
+ * cosas por vista — forma del DOM, texto y geometría — y luego recorría las
+ * capas que sólo aparecen al interactuar.
  */
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
@@ -33,8 +33,8 @@ const ORIGINAL = 'aios-command-center_1.html';
 // en `docs/OTROS/produccion/DESPLIEGUE.md`.
 const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 
-// UNA. Fueron diez; salieron `icp` (Etapa 9), `setter` y `closer` (11), `executive` (el mapa de
-// áreas) y las cinco de Inteligencia (la estética de operación). Cada una con su motivo, abajo.
+// NINGUNA. Fueron diez; salieron `icp` (Etapa 9), `setter` y `closer` (11), `executive` (el mapa de
+// áreas), las cinco de Inteligencia (la estética de operación) y `contacts`. Cada una con su motivo, abajo.
 //
 // Este comentario decía «NUEVE, no diez» encima de una lista de SEIS: se quedó viejo dos salidas
 // atrás. Un número escrito a mano al lado de una lista se desincroniza siempre; lo que lo sostiene
@@ -77,11 +77,11 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // siempre, porque las dos mitades las escribimos nosotros el mismo día. El archivo sigue siendo
 // el maquetado tal como llegó, y eso es lo que hace que las tres vistas que quedan sirvan.
 //
-// Lo que reemplaza la red: `pruebas/codigo/120-mapa-ejecutivo.test.ts`, que afirma el cableado
+// Lo que reemplazó la red: `pruebas/codigo/120-mapa-ejecutivo.test.ts`, que afirmaba el cableado
 // del mapa —las cinco líneas, un punto por cada una, y la recta calculada desde las
-// coordenadas reales de las dos tarjetas— y corre en cada `npm test`, no solo cuando alguien
-// levanta el navegador. Los dos pasos de `PASOS` que entran a esta vista se quedan: comparan
-// interacción, no la forma del mapa.
+// coordenadas reales de las dos tarjetas— en cada `npm test`. El mapa y la prueba se fueron el
+// 2026-10-01 con la maqueta del Executive, y los dos pasos de `PASOS` que entraban a esta vista
+// también (ver más abajo).
 //
 // ── Y SALEN LAS CINCO DE INTELIGENCIA, POR LA ESTÉTICA DE OPERACIÓN ────────
 //
@@ -122,12 +122,12 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 //      está. Lo que sí quedó en su lugar son pruebas de base contra la base de verdad, verificadas
 //      por mutación, que es más de lo que este eje daba.
 //
-//      La rendija que este comentario prometía era de DOS nodos y **medido el 2026-09-20 es de
-//      uno**: «ficha de lead» clica `#v-contacts .lc` y espera `#drawer.on`, así que ese sigue. De
-//      `#recoModal` **no queda ningún paso**: el que lo abría era «plan de Creative» con `#recoBtn`
-//      y se fue con la vista nueva, como cuenta el comentario de `PASOS` treinta líneas más abajo.
-//      Los dos nodos viven en `Overlays.jsx` —fuera de toda vista— y la estética no los toca; lo
-//      que falta no es alcance, es un paso que los abra.
+//      La rendija que este comentario prometía era de DOS nodos y **medido el 2026-09-20 era de
+//      uno**: «ficha de lead» clicaba `#v-contacts .lc` y esperaba `#drawer.on` (salió el 2026-09-26).
+//      De `#recoModal` **no quedaba ningún paso**: el que lo abría era «plan de Creative» con
+//      `#recoBtn` y se fue con la vista nueva, como cuenta el comentario de `PASOS` más abajo. Los
+//      dos nodos vivían en `Overlays.jsx` —fuera de toda vista—, que se fue el 2026-10-01 con la
+//      maqueta del Executive.
 //   3. El eje de GEOMETRÍA no se puede reemplazar. Una prueba que lee el fuente no ve una caja.
 //      Se pierde y no vuelve.
 //
@@ -145,11 +145,11 @@ const DESTINO = process.env.PARIDAD_URL || 'http://localhost:3100/';
 // sesión. Sacar cinco vistas de una compuerta dormida no es perder cobertura: es registrar una
 // pérdida que ya había ocurrido.
 //
-// Con eso `VISTAS` queda vacía, **y la compuerta NO se retira**: el guardián de abajo sólo imprime
-// «retirada» cuando `VISTAS` y `PASOS` están vacías a la vez, y quedan tres pasos de Executive —«Ask
-// Executive», «funnel ejecutivo» y el cajón «grupo de contactos», que se mudó ahí—. La decisión de
-// `docs/OTROS/capa-base/ETAPA-0.md` § «Decisiones registradas ahora» sigue en pie; lo que cambió es que la pantalla
-// que quedaba ya no era la última cosa que comparar.
+// Con eso `VISTAS` quedó vacía, y la compuerta no se retiró entonces porque quedaban tres pasos de
+// Executive —«Ask Executive», «funnel ejecutivo» y el cajón «grupo de contactos»—. Se fueron el
+// 2026-10-01 con la maqueta del Executive (ver `PASOS`), y desde ahí la compuerta está RETIRADA: el
+// guardián de abajo imprime «retirada» y sale 0, como decidió `docs/OTROS/capa-base/ETAPA-0.md`
+// § «Decisiones registradas ahora».
 const VISTAS = [];
 
 /* Cada paso deja la página lista para el siguiente, así que el orden importa. */
@@ -158,16 +158,16 @@ const PASOS = [
    *
    *   · **«calendario» y «calendario · 7 días»** clicaban la píldora «Personalizado» de
    *     `#v-contacts`, que se fue con la maqueta: abría el calendario para no filtrar nada. La
-   *     píldora de Executive está `hidden`, así que `datepicker.js` se queda sin quién lo abra, y eso
-   *     es deuda anotada (docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md, LP08-12).
+   *     píldora de Executive estaba `hidden`, así que `datepicker.js` se quedó sin quién lo abriera
+   *     (LP08-12; se fue con la maqueta del Executive el 2026-10-01).
    *   · **«ficha de lead»** clicaba una tarjeta `.lc` y esperaba `#drawer.on`. La ficha nueva se abre
    *     en un cajón propio y con datos de la base, que la local no tiene: sería rojo en cualquier
    *     máquina recién reconstruida. La cubren `pruebas/base/176` y `177`.
-   *   · **«grupo de contactos»** se MUDÓ a Executive, al final: el panel nuevo no emite `data-leads`,
-   *     y la única cifra que todavía abre el cajón es la del embudo ejecutivo.
+   *   · **«grupo de contactos»** se MUDÓ a Executive, al final: el panel nuevo no emitía `data-leads`,
+   *     y la única cifra que todavía abría el cajón era la del embudo ejecutivo.
    *
-   * Y como la cadena es secuencial, el paso mudado ya no empieza cerrando `#dwClose`: viene detrás
-   * de «funnel ejecutivo», que lo deja con el embudo a la vista. */
+   * Y como la cadena era secuencial, el paso mudado ya no empezaba cerrando `#dwClose`: venía detrás
+   * de «funnel ejecutivo», que lo dejaba con el embudo a la vista. Los dos salieron el 2026-10-01. */
   /* LOS TRES PASOS DEL CLOSER SALIERON, y conviene decir por qué en vez de dejarlos rotos.
    *
    * Apuntaban a `#clDia`, `#clNav` y `#cwTabs`: ids del módulo imperativo que se borró en la Etapa
@@ -183,8 +183,8 @@ const PASOS = [
    * Lo que cubre a la ficha en su lugar: `pruebas/codigo/95-ficha.test.ts` y la verificación en el
    * navegador contra los contactos reales. Y `closer` ya estaba fuera de `VISTAS`, así que su forma
    * nunca se comparó con el prototipo. */
-  ['Ask Executive',        async p => { await p.keyboard.press('Escape');
-                                        await p.click('#askTrigger'); },         '.ask-panel.on'],
+  /* «Ask Executive» SALIÓ el 2026-10-01 con la barra «Pregúntale a Executive sobre …» y su panel
+     (`components/AskBar.jsx`, `Overlays.jsx`): eran de la maqueta del Executive (`NE-30`). */
   /* ── DOS PASOS SALEN ACÁ, Y NINGUNO POR LA ESTÉTICA ──────────────────────
    *
    * **EL MENÚ DE USUARIO** era el CUARTO de la tanda de la Etapa 11: a los tres del Closer se les
@@ -198,18 +198,18 @@ const PASOS = [
    * **EL NODO DEL ORGANIGRAMA** sale por el motivo CONTRARIO, y es el más difícil de defender
    * porque estaba en verde: estaba en verde pase lo que pase. `#deptGraph .node-card` toma el
    * primero en orden de documento, que es `<g className="node-card core">` — el núcleo, que NO
-   * lleva `data-node`. El manejador de `lib/aios/executive.js` está enganchado a
+   * lleva `data-node`. El manejador de `lib/aios/executive.js` estaba enganchado a
    * `#deptGraph [data-node]`, así que ese clic no navega a ninguna parte, y el testigo `.view.on`
    * sigue siendo la vista en la que ya estabas. Un paso llamado «el organigrama navega» que pasa
    * igual si la navegación no existe.
    *
    * No se re-apunta a un `[data-node]`: las cinco áreas del mapa SON las cinco vistas que acaban
    * de salir de `VISTAS`, así que el testigo caería en una pantalla rediseñada. Lo que sí afirma
-   * esa navegación, y en `npm test`, es `pruebas/codigo/120-mapa-ejecutivo.test.ts`. */
-  ['funnel ejecutivo',     async p => { await p.keyboard.press('Escape');
-                                        await p.click('.nav-item[data-view="executive"]');
-                                        await p.click('#exMode button[data-m="funnel"]'); }, '#exFunnel'],
-  ['grupo de contactos',   p => p.click('#exFunnel [data-leads]'),                '.lg.on'],
+   * esa navegación la afirmaba `pruebas/codigo/120-mapa-ejecutivo.test.ts`, que se fue con el mapa. */
+  /* «funnel ejecutivo» y «grupo de contactos» SALIERON el 2026-10-01 con la maqueta del Executive
+     (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`): el embudo `#exFunnel` y el cajón `.lg`
+     se borraron con ella. Con `VISTAS` y `PASOS` vacías, el guardián de abajo imprime «retirada» y
+     sale 0: la compuerta se retiró sola, como decidió la Etapa 0. */
 ];
 
 /* tag + id + clases de cada descendiente, en orden de documento */

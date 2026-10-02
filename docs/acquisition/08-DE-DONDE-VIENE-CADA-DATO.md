@@ -16,6 +16,14 @@
 > Lo que sí hay hoy es `components/acquisition/PanelDeAcquisition.jsx` con dos cifras medidas: el
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
+>
+> **Y el 2026-10-01 se borró la maqueta del Executive** (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`):
+> `lib/aios/executive.js`, `executive-panel.js`, `executive-chat.js`, `leads-group.js`, `datepicker.js`
+> y `period-controls.js` ya no existen, y `components/views/ExecutiveView.jsx` se reescribió entero.
+> Sus citas en esta carpeta son referencia histórica, como las de `acquisition.js`: el último commit
+> que tiene esos archivos es `c4cf2a8`, y algunas citas son de antes. Las de `ExecutiveView.jsx`, que
+> sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
+> se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.
 
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito
 > lleva el `archivo:línea` del que sale, o dice que no lo tiene. El estado de cada dato sale de la foto
@@ -387,7 +395,7 @@ lo que sí está medido.
 | **A8-36 · Dónde se guarda una señal detectada** — las dos alertas del JSX · `AcquisitionView.jsx:103-142` | Una tabla que no existe | **No hay dónde.** `negocio.hallazgos` tiene 20 filas, **las 20 con `contacto_id`**, y entre sus columnas están `analisis_id`, `agente`, `patron`, `criterio`, `fragmento_prompt`: es la tabla de Conversation | El par `entity_type`/`entity_id` del §18.13. Una alerta de Acquisition es sobre una campaña, un ad set o un anuncio, no sobre un contacto |
 | **A8-37 · A qué abre «Ver evidencia»** — el único control enunciado y no cableado · `AcquisitionView.jsx:122-124`, `:138-140` | Una decisión de interfaz | **No abre a nada.** Un `grep` de `className="ev"` da esas dos líneas y ningún escuchador | Decidir si abre la tabla filtrada a la entidad, el cajón de contactos, o la ficha de alerta de A8-36 |
 | **A8-38 · El umbral de «$110»** — el único número accionable del plan · `acquisition-plan.js:21` | Una decisión ejecutiva | **Sin origen.** Y en la misma plantilla, la señal dice 54 % de afinidad y el plan dice 43 % sobre la misma campaña | Declarar el umbral como parámetro con dueño. Y cambiar de grupo las dos recomendaciones de presupuesto (`:16` y `:21`): el §18.10 prohíbe emitirlas en solitario |
-| **A8-39 · El estado del departamento y el «2 a revisar»** — lo que Executive publica en nombre de Acquisition · `executive.js:178`, `ExecutiveView.jsx:236-247` | Una regla que no está escrita | **Escrito a mano.** `st:'warn'` y «2 a revisar» no cuentan nada | Definir el umbral que separa `ok` de `warn` de `crit`, y que el conteo salga de A8-36 |
+| **A8-39 · El estado del departamento y el «2 a revisar»** — lo que Executive publica en nombre de Acquisition · `executive.js:178`, `ExecutiveView.jsx:236-247@c4cf2a8` | Una regla que no está escrita | **Escrito a mano.** `st:'warn'` y «2 a revisar» no cuentan nada | Definir el umbral que separa `ok` de `warn` de `crit`, y que el conteo salga de A8-36 |
 | **A8-40 · El resultado comercial por anuncio** — lo que el §18.14 llama «ventas con anuncio identificado» · `executive.js:116`, `:125` | `negocio.resultados`, que existe | **No da cero: no tiene denominador.** 7 filas — 4 `seguimiento`, 2 `no_show`, 1 `no_interesa` — y **ninguna venta** | Volumen de registro. Publicarlo como 0 % afirmaría que ninguna venta tiene anuncio cuando lo que pasa es que no hay ventas |
 
 ### Cómo se midió

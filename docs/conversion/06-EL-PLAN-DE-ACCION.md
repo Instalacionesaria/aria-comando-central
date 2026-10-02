@@ -132,7 +132,7 @@ fricciones. Se renderiza literalmente: `«lo resuelve Kevin · técnico»` en el
 *«La página tarda 4.1s en cargar en móvil»*, *«12% reintenta el envío»*— así que la pantalla **le
 atribuye a una persona con nombre tres problemas que no ocurrieron**.
 
-`lib/aios/index.js:16-22` deja constancia de que `initCloser` y `initCloserContact` se borraron en la
+`lib/aios/index.js:23-25` deja constancia de que `initCloser` y `initCloserContact` se borraron en la
 Etapa 11 por *«pintar datos escritos a mano —nombres de personas, montos, un diagnóstico atribuido a
 la IA— y estuvieron en producción mostrándolos»*. **Es el mismo defecto, todavía en producción.**
 

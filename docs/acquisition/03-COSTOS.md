@@ -354,3 +354,13 @@ Los dos últimos son el mismo defecto que el A3-24 y el A3-11: **con denominador
 **¿Cómo se reparte un gasto de campaña entre dos embudos?** El A3-07 exige que el costo se calcule dentro del alcance que lo dibuja, y el A3-20 muestra el caso donde el gasto vive un nivel más arriba que la fila. Si una campaña alimenta dos embudos, falta decidir de quién es ese gasto y contra qué volumen se divide.
 
 **¿Es `calificados` una etapa?** El A3-10 mide que no lo es en el modelo —no está en `stages`, `labels` ni `costs`— y sí lo es en la pantalla, con su volumen, su tasa, su costo y su barra. Falta decidir si se incorpora a la cadena con los otros diez costos o si queda declarado aparte por alguna razón que el prototipo no escribe.
+
+---
+
+> **Y el 2026-10-01 se borró la maqueta del Executive** (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`):
+> `lib/aios/executive.js`, `executive-panel.js`, `executive-chat.js`, `leads-group.js`, `datepicker.js`
+> y `period-controls.js` ya no existen, y `components/views/ExecutiveView.jsx` se reescribió entero.
+> Sus citas en esta carpeta son referencia histórica, como las de `acquisition.js`: el último commit
+> que tiene esos archivos es `c4cf2a8`, y algunas citas son de antes. Las de `ExecutiveView.jsx`, que
+> sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
+> se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.

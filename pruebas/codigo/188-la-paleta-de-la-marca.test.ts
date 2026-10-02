@@ -224,7 +224,7 @@ test('cada hex va con su canal, y cada tinte escrito a mano con el canal de su c
 
 test('las superficies: los degradados que se aplanan, las capas que flotan y el velo que oscurece', () => {
   // `NE-27` aplana sin tocar `aios.css`. Cada par es el principio y el final de un degradado real:
-  // `.topbar`/`.nav`, `.side`, `.ask` y la segunda capa de `.graph-wrap`.
+  // `.topbar`/`.nav`, y los de `.side`, `.ask` y `.graph-wrap`, que se fueron con la maqueta del Executive.
   const EXTREMOS: [string, string][] = [['--c-alto', '--c-hundido'], ['--c-panel', '--c-hondo'], ['--c-panel', '--c-base'], ['--bg-sunk', '--bg-fondo']];
   const curvos = EXTREMOS.filter(([a, b]) => valor(OSCURO, a) !== valor(OSCURO, b)).map(([a, b]) => `${a} / ${b}`);
   assert.deepEqual(curvos, [], 'un degradado de superficie volvió a tener dos colores');

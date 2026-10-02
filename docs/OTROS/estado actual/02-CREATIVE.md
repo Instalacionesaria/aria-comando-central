@@ -27,7 +27,7 @@ filas diarias sin una sola impresión, entraron 8 contactos en quince días, y l
 > - **Antes, el mismo día:** los requisitos en `docs/creative/` (quince documentos) y la migración
 >   `053`, que guarda el desglose `results` que el cliente convertía en nulo (`7660d2a`); los cierres
 >   de los dos overlays compartidos se mudan al armazón para que borrar la maqueta no dejara modales
->   sin cerrar en otras pantallas (`332c0e6`, `lib/aios/shell.js:162-171`); y la primera cifra,
+>   sin cerrar en otras pantallas (`332c0e6`, `lib/aios/shell.js:162-171@c4cf2a8`); y la primera cifra,
 >   `lib/negocio/calidadDelCreativo.ts` (`8a117cb`).
 > - **Después:** la llave de la pieza en un solo lugar, `lib/negocio/creativo.ts` (`f9998b6`);
 >   `results.lead` resulta ser de Meta y queda fuera de las tasas (`741f27d`); los cuatro huecos se

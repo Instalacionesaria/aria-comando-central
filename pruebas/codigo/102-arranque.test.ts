@@ -21,7 +21,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import {
   SECCIONES,
   clavesDeSeccion,
@@ -41,12 +41,15 @@ const TODAS = new Set(SECCIONES.map((s) => s.capacidadRequerida));
 const DESDE_LA_PRINCIPAL = true;
 
 
-test('sin restricción arranca en Executive, que es lo que el prototipo daba por sentado', () => {
+test('sin restricción arranca en el Inicio (`executive`), que es lo que el prototipo daba por sentado', () => {
   // La comprobación de que esto NO cambió el caso de siempre. El literal viejo acertaba acá, y por
   // eso el defecto duró: hay que ver los dos casos juntos para que el segundo signifique algo.
   const inicio = seccionDeArranque(menuVisible(TODAS, { restringido: false }, DESDE_LA_PRINCIPAL));
   assert.equal(inicio?.seccion.clave, 'executive');
   assert.equal(inicio?.grupo, 'AIOS');
+  /* Y se llama «Inicio» desde la nueva estructura (`NE-29`): la clave no cambió, el nombre sí, y sale
+     de `secciones.ts` como el de todas. */
+  assert.equal(inicio?.seccion.nombre, 'Inicio');
 });
 
 test('EL CASO QUE ROMPIÓ: restringido a Closer, arranca en Closer y NO en Executive', () => {
@@ -82,10 +85,11 @@ test('sin ninguna sección devuelve `null`, y no inventa una pantalla', () => {
 });
 
 test('el armazón NO escribe ningún nombre de sección a mano', () => {
-  // `TopBar` y `AskBar` los traían del prototipo. `Overlays` tenía el tercero, invisible porque
-  // `refreshScope()` lo pisa al abrir el panel — y por eso mismo es el que más fácil vuelve.
+  // `TopBar`, `AskBar` y `Overlays` los traían del prototipo; los dos últimos se fueron con la maqueta
+  // del Executive. Y el Inicio, que los reemplazó, no escribe «Inicio» en su marcado: su titular es el
+  // saludo, y el nombre de la pantalla sale del dato como el de todas.
   const nombres = SECCIONES.map((s) => s.nombre);
-  for (const archivo of ['components/TopBar.jsx', 'components/AskBar.jsx', 'components/Overlays.jsx']) {
+  for (const archivo of ['components/TopBar.jsx', 'components/views/ExecutiveView.jsx']) {
     const fuente = leer(archivo);
     // Solo el JSX, no los comentarios: éstos CUENTAN la historia y nombran «Executive» a propósito.
     const sinComentarios = fuente
@@ -93,28 +97,37 @@ test('el armazón NO escribe ningún nombre de sección a mano', () => {
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
     for (const nombre of nombres) {
+      const n = nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      /* En el texto del marcado aunque lleve algo al lado («Inicio · el cerebro»), en un literal como
+         hijo (`{'Inicio'}`) y en un rótulo (`aria-label="Inicio"`, `title`). */
       assert.ok(
-        !new RegExp(`>\\s*${nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<`).test(sinComentarios),
+        !new RegExp(`>[^<>{}]*\\b${n}\\b[^<>{}]*<|\\{\\s*['"\`]${n}['"\`]\\s*\\}|\\b(aria-label|title)=["'{][^"'}]*\\b${n}\\b`).test(sinComentarios),
         `${archivo} escribe «${nombre}» en el marcado: tiene que venir del dato de arranque`,
       );
     }
   }
 });
 
-test('el chat del armazón no vuelve a tener su propia lista de nombres de sección', () => {
-  // Había un `NAMES` con diez de las catorce claves y ya estaba vencido: le faltaba `tools`, y el
-  // fallback `|| 'Executive'` hacía que el panel dijera «respondiendo con datos de Executive»
-  // estando abierto en Tools. Era la copia sin prueba que la cruzara — `GROUP`, en `shell.js`, sí
-  // tiene una, y por eso a `GROUP` no le faltó `tools`.
-  const fuente = leer('lib/aios/executive-chat.js');
-  const codigo = fuente.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-  for (const clave of clavesDeSeccion()) {
-    assert.doesNotMatch(
-      codigo,
-      new RegExp(`${clave}\\s*:\\s*['"\`]`),
-      `\`executive-chat.js\` volvió a mapear la sección «${clave}» a un nombre propio`,
-    );
+test('la capa imperativa no vuelve a tener su propia lista de nombres de sección', () => {
+  // El chat de la maqueta del Executive tenía un `NAMES` con diez de las catorce claves y ya estaba
+  // vencido: le faltaba `tools`, y el fallback `|| 'Executive'` hacía que el panel dijera «respondiendo
+  // con datos de Executive» estando abierto en Tools. El chat se fue con la maqueta el 2026-10-01; la
+  // regla queda para todo `lib/aios/`. La única lista legítima es `GROUP`, en `shell.js`, que tiene su
+  // propia prueba que la cruza con `secciones.ts` (la `91`), así que se saca antes de mirar.
+  const dir = new URL('lib/aios/', RAIZ);
+  for (const nombre of readdirSync(dir).filter((n) => n.endsWith('.js'))) {
+    const codigo = leer(`lib/aios/${nombre}`)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+      .replace(/const GROUP = \{[\s\S]*?\};/, '');
+    for (const clave of clavesDeSeccion()) {
+      assert.doesNotMatch(
+        codigo,
+        new RegExp(`${clave}\\s*:\\s*['"\`]`),
+        `\`${nombre}\` volvió a mapear la sección «${clave}» a un nombre propio`,
+      );
+    }
   }
   // Lo que SÍ tiene que hacer: leerlo del DOM de la fila, que es de donde `irALaVista` lo saca.
-  assert.match(codigo, /querySelector\('\.n'\)/, 'el nombre ya no se lee de la fila del menú');
+  assert.match(leer('lib/aios/shell.js'), /querySelector\('\.n'\)/, 'el nombre ya no se lee de la fila del menú');
 });

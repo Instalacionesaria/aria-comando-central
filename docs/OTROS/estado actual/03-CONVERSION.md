@@ -33,7 +33,7 @@ en «Completo»: 247 de 570 contactos, 64,8 % de finalización, todos de antes d
 > - **2026-09-20 · `00e251d`** — tres defectos que sólo se veían con la pantalla abierta: la lista
 >   «A y B y C», un rótulo desalineado y el ancho de teléfono, que era del armazón y se arregló esa
 >   noche para las doce pantallas (`1020412`: a 375 px al cuerpo le quedaban 75; `0810498`: las doce
->   con `doc=375`). El corte está en `app/armazon.css:392-407` y lo fija
+>   con `doc=375`). El corte está en `app/armazon.css:382-395` y lo fija
 >   `pruebas/codigo/162-el-armazon-en-un-telefono.test.ts`; hoy no se miró en el navegador.
 > - **2026-09-21 · `1164984`** — el «agendó» pasa a un predicado compartido, `tieneCitaAlcanzable`,
 >   que Conversion usa en sus dos módulos.
@@ -226,7 +226,7 @@ El número depende de qué se cuenta como literal, así que no lo fijo.
 **Lo que Executive todavía inventa en nombre de Conversion** (la pantalla entera está en
 [11-EXECUTIVE.md](11-EXECUTIVE.md)). Executive es la única pantalla que
 conserva `sinOperacionesTodavia: true` (`lib/autorizacion/secciones.ts:212-218`), y sus tres módulos
-siguen cargándose (`lib/aios/index.js:29-37`). Citan a Conversion como fuente de cifras que Conversion
+siguen cargándose (`lib/aios/index.js:29-37@c4cf2a8`; **después del corte, el 2026-10-01**, se borraron con la maqueta, en la etapa E7 de la nueva estructura). Citan a Conversion como fuente de cifras que Conversion
 ya demostró que no existen:
 
 - `lib/aios/executive.js:15-21@c4cf2a8` escribe a mano un embudo por período con «visitas a la landing» —29

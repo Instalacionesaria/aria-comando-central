@@ -25,6 +25,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { archivosFuente } from '../apoyo/fuente.ts';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (r: string) => readFileSync(new URL(r, RAIZ), 'utf8');
@@ -175,14 +176,16 @@ test('el modal de resultado inerte del prototipo ya no se monta', () => {
   // abriera, duplicando el título del modal real de `Avanzar.jsx`. Y `opacity:0` **no** saca un
   // elemento del árbol de accesibilidad: un lector de pantalla anunciaba un diálogo «¿Cómo terminó?»
   // que no existe en la pantalla.
-  // Sin los comentarios: el que explica POR QUÉ se borró nombra los cuatro identificadores, y
-  // buscarlos en crudo hacía que la prueba se pusiera roja por su propia explicación.
-  const overlays = leer('components/Overlays.jsx')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
-  for (const id of ['resModal', 'resOpts', 'resClose', 'resScrim']) {
-    assert.ok(!overlays.includes(id), `\`${id}\` volvió a montarse inerte`);
-  }
+  // `Overlays.jsx` se fue entero con la maqueta del Executive (2026-10-01); lo que se vigila es que
+  // el modal no vuelva a montarse en ningún lado. Sin los comentarios: el que explica POR QUÉ se
+  // borró nombra los cuatro identificadores, y buscarlos en crudo pondría la prueba roja por su
+  // propia explicación.
+  // Sin `limpio`, que corta desde `--`: un id después de una variable CSS en la misma línea no se veía.
+  const sinBloques = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const conModal = archivosFuente(['app', 'components', 'lib'])
+    .filter((x) => /\b(resModal|resOpts|resClose|resScrim)\b/.test(sinBloques(x.contenido)))
+    .map((x) => x.ruta);
+  assert.deepEqual(conModal, [], 'el modal de resultado inerte volvió a montarse');
 });
 
 test('las seis salidas de Avanzar tienen su color, y no seis grises iguales', () => {

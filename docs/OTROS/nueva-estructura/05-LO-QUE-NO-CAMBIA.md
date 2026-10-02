@@ -11,7 +11,7 @@ La clave de una sección (`executive`, `contacts`, `icp`, `acquisition`, `creati
 
 | es… | dónde |
 |---|---|
-| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:37` |
+| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:34` |
 | la pantalla de cada ruta | `export const PANTALLA = '<clave>'` en `app/api/**/route.ts`; el portero (`exigir`) niega con 403 a quien no tiene esa pestaña |
 | un valor permitido en la base | el `check` de `identidad.usuarios_secciones.seccion`, que guarda las pestañas de cada persona |
 | la clave del grupo de las migas | `GROUP` en `lib/aios/shell.js:35` (se va cuando se van las migas, `06-LAS-ETAPAS.md` E10) |

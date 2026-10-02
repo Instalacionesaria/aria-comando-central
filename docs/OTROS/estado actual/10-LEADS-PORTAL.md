@@ -220,13 +220,13 @@ carpeta no copia ninguno de esos datos.
 
 **Lo que Executive todavía dice en nombre de esta pestaña**, y ninguno de sus tres sitios se tocó en
 LP-6 porque son de Executive (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:267-284`; la foto de
-esa pestaña es [11-EXECUTIVE.md](11-EXECUTIVE.md)):
+esa pestaña es [11-EXECUTIVE.md](11-EXECUTIVE.md); **después del corte, el 2026-10-01**, los tres se fueron con la maqueta del Executive, en la etapa E7 de la nueva estructura):
 
 - **La ficha de departamento** «312 contactos · 78 de ICP alto», «El 22% del volumen es ICP alto
   pero produce el 61% de las ventas» y «Entrego a Acquisition qué campañas traen el ICP que cierra»
   (`lib/aios/executive.js:198-201@c4cf2a8`). **No se dibuja**: se lee al pasar sobre un nodo del mapa
   (`lib/aios/executive.js:218@c4cf2a8`) y los cinco nodos son de Inteligencia, ninguno `contacts`
-  (`components/views/ExecutiveView.jsx:236@c4cf2a8`, `:250`, `:264`, `:278`, `:292`). Medido hoy: 108 de
+  (`components/views/ExecutiveView.jsx:236@c4cf2a8`, `:250@c4cf2a8`, `:264@c4cf2a8`, `:278@c4cf2a8`, `:292@c4cf2a8`). Medido hoy: 108 de
   594 son ICP alto en toda la base, y ventas no hay.
 - **El chat ejecutivo** ofrece tres preguntas de esta pestaña (`lib/aios/executive-chat.js:24@c4cf2a8`) y su
   respuesta por omisión, con «$15,000» de revenue potencial, cita a Leads Portal como fuente
@@ -235,11 +235,11 @@ esa pestaña es [11-EXECUTIVE.md](11-EXECUTIVE.md)):
   (`lib/aios/executive.js:49@c4cf2a8`) con **catorce personas inventadas** y tres montos en dólares
   (`lib/aios/leads-group.js:14-29@c4cf2a8`), y su pie promete «Ver los N en Leads Portal →» y navega a esta
   pestaña (`lib/aios/leads-group.js:60-64@c4cf2a8`). Desde «Contactos» a 7 días promete 312
-  (`lib/aios/executive.js:17@c4cf2a8`, `:30`); la pestaña abre en 30 días con 277, y a 7 días tiene 3
-  (medido el 2026-09-28). Es `LP08-P01`, abierta (§ 5).
+  (`lib/aios/executive.js:17@c4cf2a8`, `:30@c4cf2a8`); la pestaña abre en 30 días con 277, y a 7 días tiene 3
+  (medido el 2026-09-28). Es `LP08-P01`, abierta (§ 5); **después del corte, el 2026-10-01**, resuelta con el borrado del cajón.
 - El corte 75/50 **existe dos veces**: en `lib/negocio/tramosDelIcp.ts:38-41` y en el `SEG` del cajón
   (`lib/aios/leads-group.js:10@c4cf2a8`), que no se toca por la compuerta de paridad
-  (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:310-315`).
+  (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:310-315`). **Después del corte, el 2026-10-01**: el cajón se borró con la maqueta del Executive, y su `SEG` con él.
 
 ---
 
@@ -373,7 +373,7 @@ sale el número y no el corte (`lib/negocio/tramosDelIcp.ts:14-16`).
   claves (`lib/negocio/atribucionVisible.ts:46-60`).
 - **`LP08-P01`** — ¿el pie del cajón de Executive sigue llevando a Leads Portal? Promete una cifra
   inventada y el destino muestra otra; las tres salidas tienen costo, y cambiar el texto pone roja
-  la compuerta de paridad (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350-369`).
+  la compuerta de paridad (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350-369`). **Después del corte, el 2026-10-01**: resuelta, porque el cajón se borró con la maqueta del Executive (nueva estructura, E7).
 - **`LP04-P01`** — ¿la rejilla se ordena por alta o por puntaje? Hoy va por alta, la más nueva
   primero, con el id de desempate (`lib/negocio/leadsDelPortal.ts:304-314`); con 8 altas desde el
   14 de septiembre, eso muestra primero a gente de hace semanas

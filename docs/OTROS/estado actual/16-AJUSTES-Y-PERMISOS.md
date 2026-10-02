@@ -77,7 +77,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 (`lib/autorizacion/secciones.ts:192-209`); el pie junta sus secciones y dibuja sólo la primera
 (`components/Nav.jsx:127`, `:204`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
-(`components/CommandCenter.jsx:50`).
+(`components/CommandCenter.jsx:49`).
 
 **Las tres pestañas** (`components/views/AjustesView.jsx:80-83`), cada una visible si la sesión trae
 su sección, que el servidor ya filtró con la misma función que decide el menú

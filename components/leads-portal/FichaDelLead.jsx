@@ -5,8 +5,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * UN CAJÓN PROPIO, NO `#drawer`
  *
- * La maqueta escribía la ficha en `#drawer` con `innerHTML`, y Executive escribe en el mismo
- * `#dwBody`. Compartirlo haría que dos pantallas pisaran el mismo nodo. Éste tiene su `id`, usa las
+ * La maqueta escribía la ficha en `#drawer` con `innerHTML`, y la del Executive escribía en el mismo
+ * `#dwBody`. Compartirlo hacía que dos pantallas pisaran el mismo nodo (las dos maquetas ya se fueron). Éste tiene su `id`, usa las
  * mismas clases —se ve igual— y se monta en `document.body`, porque un `position: fixed` adentro de
  * una vista con desplazamiento puede quedar recortado.
  *

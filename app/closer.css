@@ -4,7 +4,7 @@
  * POR QUÉ ESTA HOJA EXISTE Y NO SE ARREGLA `aios.css`
  *
  * `app/aios.css` es el port literal de `aios-command-center_1.html` y tiene que **seguir siendo
- * comparable contra él**: es lo que hace que `scripts/paridad.mjs` signifique algo y lo que permite
+ * comparable contra él**: es lo que hacía que `scripts/paridad.mjs` significara algo y lo que permite
  * mirar un diff y saber si algo se desvió del diseño original. Arreglar ahí adentro rompe esa
  * propiedad para siempre.
  *

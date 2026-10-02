@@ -416,10 +416,11 @@ Medido con `gh` el 2026-09-28:
 **La paridad.** `scripts/paridad.mjs` comparaba cada vista contra `aios-command-center_1.html` en tres
 ejes —forma del DOM, texto, geometría—. Con Leads Portal salió la última vista y **`VISTAS` quedó
 vacía** (`scripts/paridad.mjs:153`, commit `aed4f27`); quedan tres pasos de Executive, así que la
-compuerta no se retira (`scripts/paridad.mjs:147-150`). El mismo archivo admite que **hace tiempo que no corre**: no está en la CI,
+compuerta no se retira (`scripts/paridad.mjs:147-150@c4cf2a8`). El mismo archivo admite que **hace tiempo que no corre**: no está en la CI,
 necesita los navegadores de Playwright instalados a mano y una sesión
-(`scripts/paridad.mjs:141-146`). El conteo de la lista lo ata `pruebas/codigo/90-fundaciones.test.ts:1306`.
+(`scripts/paridad.mjs:141-146`). El conteo de la lista lo ata `pruebas/codigo/90-fundaciones.test.ts:1394-1399`.
 La geometría no la reemplaza ninguna prueba que lea el fuente (`scripts/paridad.mjs:131`).
+**Después del corte, el 2026-10-01**: la compuerta se retiró en la etapa E7 de la nueva estructura. Los tres pasos de Executive se fueron con la maqueta, y con `VISTAS` y `PASOS` vacías el guardián imprime «retirada» y sale 0 (`scripts/paridad.mjs:301-305`).
 
 **El grafo.** Se rehízo por última vez el 2026-09-29 con un AST completo del código, sobre `1c55149` y
 esta carpeta todavía sin commit: 6.854 nodos, 19.569 aristas y 244 comunidades rotuladas (la mañana
@@ -629,8 +630,8 @@ minutos del medio.
      tienen llave de IA y 1 tiene token (§ 7).
    - `app/api/cron/route.ts:170-172` describe la retención de registros «en el plan Hobby», y el plan
      es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:132`); cuánto duran en Pro, no lo verifiqué.
-   - `scripts/paridad.mjs:36` empieza con «UNA.» encima de `const VISTAS = [];`
-     (`scripts/paridad.mjs:153`).
+   - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
+     (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».
    - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:474-475` presentan esa ruta
      como la sonda de la Etapa 8, o como algo que le sirve; la sonda programada no la usa (§ 2.6).
 9. **Todo el volumen es de una cuenta.** Cualquier cifra de costo, duración o frescura de esta foto

@@ -84,7 +84,7 @@ parecen negocios.
 
 **Doce están en los dos archivos.** Tres sólo en el portal —las tres sin puntaje
 (`aios-command-center_1.html:4648`, `:4652`, `:4656`)— y dos sólo en el cajón: Iván Torres y Marcos Ruiz
-(`lib/aios/leads-group.js:26@c4cf2a8`, `:28`).
+(`lib/aios/leads-group.js:26@c4cf2a8`, `:28@c4cf2a8`).
 **Diecisiete distintas.**
 
 **Cada una de las quince trae un teléfono y un correo** con forma real —prefijo de país, dominios
@@ -176,7 +176,7 @@ cero ventas, medido el 2026-09-27—.
 |---|---|---|
 | «◈ Plan de acción» | `aios-command-center_1.html:3034`; `aios-command-center_1.html:5711-5730` | abre un modal con cuatro frases sin fuente (`LP07-01`) |
 | el segmentado de período | `aios-command-center_1.html:3036`; `aios-command-center_1.html:4894-4898` | **mueve el resaltado y nada más**: nada de la pantalla depende del período. Su tercer botón manda `data-p="mes"` (`aios-command-center_1.html:3036`), que no está en `PERIODOS` (`lib/negocio/periodo.ts:83-96`) (`LP06-02`) |
-| «Personalizado» | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:124-131@c4cf2a8` | abre el calendario, **no hay callback registrado** para `lp` —`_cbs` nace vacío y nadie lo escribe (`datepicker.js:133@c4cf2a8`)— y al aplicar reescribe el rótulo y **apaga el segmentado** (`:109-121`) sin cambiar un dato |
+| «Personalizado» | `aios-command-center_1.html:3037`; `lib/aios/datepicker.js:124-131@c4cf2a8` | abre el calendario, **no hay callback registrado** para `lp` —`_cbs` nace vacío y nadie lo escribe (`datepicker.js:133@c4cf2a8`)— y al aplicar reescribe el rótulo y **apaga el segmentado** (`:109-121@c4cf2a8`) sin cambiar un dato |
 | «✆ Llamar» y «✉ Email» | `aios-command-center_1.html:4807-4808` | **nada**: ningún oyente |
 | «↗ GHL» de la ficha | `aios-command-center_1.html:4809`, `:4865-4866` | abre la **raíz** de GoHighLevel, no el contacto; y la decisión es que no haya enlace (`LP05-06`) |
 | el número de cada tarjeta | `aios-command-center_1.html:4714` | abre el cajón con personas del `POOL`, no con las de la tarjeta; «Sin calificar» abre tres con puntaje 87, 91 y 82 (`LP08-10`) |
@@ -192,7 +192,7 @@ plan sí abre algo.
 | defecto | dónde | qué pasa |
 |---|---|---|
 | mismo puntaje, dos tramos | `aios-command-center_1.html:4624` contra `:4644` | dos personas con 79, una «medio» y otra «alto»: el tramo se **guarda** al lado del puntaje en vez de derivarse (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:514-518`) |
-| misma persona, dos tramos | `aios-command-center_1.html:4624` contra `lib/aios/leads-group.js:20@c4cf2a8` | la del 79 «medio» es «alto» en el cajón, que sí deriva con `:10` |
+| misma persona, dos tramos | `aios-command-center_1.html:4624` contra `lib/aios/leads-group.js:20@c4cf2a8` | la del 79 «medio» es «alto» en el cajón, que sí deriva con `:10@c4cf2a8` |
 | la porción del tramo alto | `aios-command-center_1.html:5717`, `lib/aios/executive.js:199@c4cf2a8`, `aios-command-center_1.html:4715` | 22 %, 25 % y 33 % (`LP07-02`) |
 | «ICP null» | `aios-command-center_1.html:4791`, `:4857` | la ficha de las tres sin puntaje escribe la palabra `null`: la plantilla interpola el nulo sin mirarlo |
 | la ficha de otra persona | `aios-command-center_1.html:4876-4877` | un nombre que no está abre la ficha de la primera con el nombre cambiado (`LP08-11`) |
@@ -235,7 +235,7 @@ Creative es que el adorno no era lo que estaba mal (`docs/sales/10-LO-QUE-NO-ES-
 1. **`lib/aios/leads-portal.js` entero**: 324 líneas, 570 valores, quince personas inventadas con
    sus teléfonos y correos, el nombre de un closer real y la puerta global `window.AIOSLeadCard`.
 2. **El bloque del Plan de acción**, `aios-command-center_1.html:5710-5730`. El resto del archivo
-   (`lib/aios/period-controls.js:6-14@c4cf2a8` y `:29-31`, el abrir y cerrar de `.pill-wrap`) tampoco tiene
+   (`lib/aios/period-controls.js:6-14@c4cf2a8` y `:29-31@c4cf2a8`, el abrir y cerrar de `.pill-wrap`) tampoco tiene
    emisor: medido el 2026-09-26 sobre `components/`, `lib/`, `app/`, `pruebas/` y `scripts/`, ninguna
    vista emite `.pill-wrap`; fuera del prototipo sólo lo nombran `app/aios.css` y este mismo archivo,
    y la píldora de esta pestaña no está envuelta en él (`docs/sales/07-EL-PLAN-DE-ACCION.md:77-78`).
@@ -271,7 +271,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
 | qué | dónde | por qué se queda |
 |---|---|---|
 | el cajón «Grupo de contactos» y su módulo | `components/Overlays.jsx:5-26@c4cf2a8`, `lib/aios/leads-group.js` | lo abre el embudo de Executive (`lib/aios/executive.js:49@c4cf2a8`) |
-| el cajón `#drawer` | `components/Overlays.jsx:120-136@c4cf2a8` | lo abre Executive (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102`) |
+| el cajón `#drawer` | `components/Overlays.jsx:120-136@c4cf2a8` | lo abre Executive (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102@c4cf2a8`) |
 | las reglas `[data-leads]` | `app/aios.css:2366-2370` | Executive sigue emitiendo el atributo |
 | las reglas de la sección «LEADS PORTAL» | `app/aios.css:1205-1315` | `app/aios.css` es el port literal y no se toca (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:161-163`); ver `LP10-12` |
 | el modal `#recoModal` | `components/Overlays.jsx:98-119@c4cf2a8` | queda inerte; ver `LP07-08` y `LP07-P01` |
@@ -318,7 +318,7 @@ LP-6 saca a Leads Portal de la maqueta. **No saca a la maqueta de la aplicación
 nadie lea el commit como si lo hiciera:
 
 1. **Catorce personas inventadas siguen en pantalla, ahora sólo desde Executive**: el `POOL` con tres
-   montos en dólares y un salto a GoHighLevel (`lib/aios/leads-group.js:14-29@c4cf2a8`, `:51`). Ver `LP10-P02`.
+   montos en dólares y un salto a GoHighLevel (`lib/aios/leads-group.js:14-29@c4cf2a8`, `:51@c4cf2a8`). Ver `LP10-P02`.
 2. **`#recoModal` queda inerte** (`LP07-08`).
 3. **El calendario se queda sin quién lo abra**: la única píldora visible era la de esta pestaña; la
    de Executive está `hidden` (`components/views/ExecutiveView.jsx:62@c4cf2a8`).
@@ -326,12 +326,12 @@ nadie lea el commit como si lo hiciera:
    se anule fuera de `app/aios.css` (`LP08-12`, punto 2).
 5. **El corte 75/50 existe dos veces** (`LP08-14`).
 6. **`window.AIOSLeads` no tiene ningún consumidor**: se publica con `open` y `close`
-   (`lib/aios/leads-group.js:5@c4cf2a8`, `:87`) y nadie los llama; todo entra por el escuchador delegado.
+   (`lib/aios/leads-group.js:5@c4cf2a8`, `:87@c4cf2a8`) y nadie los llama; todo entra por el escuchador delegado.
 7. **Executive sigue hablando de Leads Portal con cifras inventadas**: su ficha de departamento, que
    no se dibuja, y el chat, que cita a esta pestaña como fuente (`LP08-13`).
 8. **Lo que queda de `lib/aios/period-controls.js` no tiene a quién atender**: el abrir y cerrar de
-   `.pill-wrap` (`lib/aios/period-controls.js:6-14@c4cf2a8`, `:29-31`) busca una clase que ninguna vista
-   emite, y el comentario de `:27` dice lo contrario (`LP10-09`, punto 2). Después de LP-6, todo lo
+   `.pill-wrap` (`lib/aios/period-controls.js:6-14@c4cf2a8`, `:29-31@c4cf2a8`) busca una clase que ninguna vista
+   emite, y el comentario de `:27@c4cf2a8` dice lo contrario (`LP10-09`, punto 2). Después de LP-6, todo lo
    que el archivo hace es esperar una clase que nadie dibuja.
 
 ---
@@ -346,11 +346,13 @@ El precedente dice lo contrario: `app/aios.css` es el port literal del prototipo
 `app/closer.css` por ese mismo motivo. Con la compuerta de paridad sin vistas, el motivo pierde parte
 de su fuerza —ya no se compara la geometría de `contacts`—, pero sigue comparando los pasos de
 Executive, que usan reglas de la misma hoja. Hay que decidir si la hoja sigue siendo intocable o si
-deja de serlo con esta pestaña.
+deja de serlo con esta pestaña. **Después del corte, el 2026-10-01**: los pasos de Executive se fueron
+con su maqueta y la compuerta quedó retirada (nueva estructura, E7). La hoja se sigue sin tocar, pero
+ahora sólo para que un diff contra el prototipo diga qué se desvió.
 
 ### LP10-P02 · ¿Las catorce personas del cajón se quedan hasta que Executive se reconstruya?
 
-El plan las deja porque la compuerta de paridad compara el texto del cajón contra el prototipo, y
+**Resuelta el 2026-10-01** (nueva estructura, E7): se borraron con la maqueta del Executive, junto con el cajón y el paso de paridad que las sostenía. El plan las deja porque la compuerta de paridad compara el texto del cajón contra el prototipo, y
 cambiarlo daría rojo permanente en el paso mudado. Es la misma razón por la que `aios.css` no se
 toca, y tiene el mismo costo: **una pantalla que la gente abre sigue mostrando personas y montos
 inventados**. `pruebas/codigo/91-closer-y-setter.test.ts:462-474` dejó escrito que vaciar una

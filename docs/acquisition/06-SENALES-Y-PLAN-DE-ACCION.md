@@ -16,6 +16,14 @@
 > Lo que sí hay hoy es `components/acquisition/PanelDeAcquisition.jsx` con dos cifras medidas: el
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
+>
+> **Y el 2026-10-01 se borró la maqueta del Executive** (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`):
+> `lib/aios/executive.js`, `executive-panel.js`, `executive-chat.js`, `leads-group.js`, `datepicker.js`
+> y `period-controls.js` ya no existen, y `components/views/ExecutiveView.jsx` se reescribió entero.
+> Sus citas en esta carpeta son referencia histórica, como las de `acquisition.js`: el último commit
+> que tiene esos archivos es `c4cf2a8`, y algunas citas son de antes. Las de `ExecutiveView.jsx`, que
+> sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
+> se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.
 
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
 > `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
@@ -332,7 +340,7 @@ pantalla la implementa como dos lugares distintos.
 - **Requisito:** Acquisition publica severidad en el mismo vocabulario que Executive lee, porque
   Executive dibuja el estado del departamento con tres valores —`st:'warn'` en
   `lib/aios/executive.js:178`— y un conteo de asuntos abiertos escrito en el SVG del organigrama
-  («2 a revisar», `components/views/ExecutiveView.jsx:236-247`).
+  («2 a revisar», `components/views/ExecutiveView.jsx:236-247@c4cf2a8`).
 - **Pregunta abierta:** qué regla convierte las señales abiertas en ese color y en ese conteo.
   Ningún archivo la escribe.
 
@@ -565,7 +573,7 @@ declarar ganador, escalar únicamente por CPL.
 | qué significa «caro» en un salto | dos lecturas posibles, resultados opuestos (A6-10) |
 | cuánta pérdida hace publicable una señal | Conversion la cuenta en contactos (`conversion.js:62-64`); Acquisition no la cuenta |
 | qué separa `warn` de `crit` | las dos señales son `warn` y no hay una tercera |
-| qué convierte las señales abiertas en el estado del departamento y en «2 a revisar» | `executive.js:178` y `ExecutiveView.jsx:236-247` publican los dos valores sin regla |
+| qué convierte las señales abiertas en el estado del departamento y en «2 a revisar» | `executive.js:178` y `ExecutiveView.jsx:236-247@c4cf2a8` publican los dos valores sin regla |
 | en qué moneda está el $110 | tres formatos distintos en el sistema y ninguno declarado |
 
 ---

@@ -77,8 +77,8 @@ y `:79`. El documento no cambió desde el corte anterior. Lo que cambió es que 
 
 **La sección.** `lib/autorizacion/secciones.ts:319-325`: clave `sales`, capacidad `tablero.ver`, y el
 comentario de las líneas 322-323 fecha la baja de la bandera el 2026-09-21. La vista se registra en
-`components/CommandCenter.jsx:44`, y **todas las vistas visibles se montan a la vez**
-(`components/CommandCenter.jsx:81-92`): el panel pide `/api/sales` una vez al cargar la página
+`components/CommandCenter.jsx:42`, y **todas las vistas visibles se montan a la vez**
+(`components/CommandCenter.jsx:80-92`): el panel pide `/api/sales` una vez al cargar la página
 aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:63-65`); lo que sí está atado a la
 visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:70-72`,
 `lib/cadencia.ts:90`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el
@@ -219,34 +219,34 @@ días, hasta el 2026-09-21 `SalesView.jsx` decía 74 asistencias / 18 ventas / $
 `lib/aios/executive.js:17@c4cf2a8` dice 36 / 11 / $27,940: casi el doble de asistencias y de revenue, y
 nadie lo notaba porque ninguna se calculaba. Hoy Sales calcula —cero ventas registradas en toda la
 base— y Executive sigue con sus 11. La contradicción pasó a ser entre una cifra medida y una
-inventada, que es peor: la inventada es la más grande y la más creíble.
+inventada, que es peor: la inventada es la más grande y la más creíble. (**Después del corte, el 2026-10-01**: la maqueta del Executive se retiró en la etapa E7 de la nueva estructura, y sus 11 con ella.)
 
 ### 3.1 · Lo que Executive todavía inventa en nombre de Sales
 
 Ninguno de estos archivos cambió en lo que toca a Sales desde el corte anterior (`git log` de los
 cuatro desde el 2026-09-15 sólo muestra `0add4cc`, que tocó el panel por Conversion). Los tres
-módulos de `lib/aios/` siguen arrancando (`lib/aios/index.js:32-34`).
+módulos de `lib/aios/` siguen arrancando (`lib/aios/index.js:32-34@c4cf2a8`; **después del corte, el 2026-10-01**, se borraron con la maqueta del Executive, en la etapa E7 de la nueva estructura).
 
 1. **El embudo ejecutivo**: `asistidas`, `ventas` y `revenue` en `PREVP` y `F`, cinco períodos cada
    uno (`lib/aios/executive.js:8-21@c4cf2a8`), con los dos últimos pasos declarados `own:'Sales'`
    (`lib/aios/executive.js:27-28@c4cf2a8`) y «7d» por omisión (`lib/aios/executive.js:30@c4cf2a8`). Alrededor, cifras
    que sólo existen si existe la venta: una meta de 30 ventas (`lib/aios/executive.js:64@c4cf2a8`), «meta 8
-   semanales» (`:84`), el ticket promedio (`:95`) y el costo por venta (`:124-126`). La meta no
+   semanales» (`:84@c4cf2a8`), el ticket promedio (`:95@c4cf2a8`) y el costo por venta (`:124-126@c4cf2a8`). La meta no
    existe en ninguna parte: `negocio.comisiones.meta_mensual` es nulo en las 3 filas (medido el
    2026-09-28).
 2. **La tarjeta de departamento**: «11 ventas · cierre 31%», el hallazgo «37% de las citas no
    califican y ocupan agenda del closer» y la dependencia con Conversion
-   (`lib/aios/executive.js:194-197@c4cf2a8`); Conversion le «entrega» ese 37 % a Sales en `:189`. Y la tarjeta
-   de Leads Portal dice «el 22% del volumen es ICP alto pero produce el 61% de las ventas» (`:200`),
+   (`lib/aios/executive.js:194-197@c4cf2a8`); Conversion le «entrega» ese 37 % a Sales en `:189@c4cf2a8`. Y la tarjeta
+   de Leads Portal dice «el 22% del volumen es ICP alto pero produce el 61% de las ventas» (`:200@c4cf2a8`),
    la frase que `components/views/ContactsView.jsx:16-18` da por borrada: se borró del botón de Leads
    Portal, no de Executive.
 3. **El nodo del mapa**: `components/views/ExecutiveView.jsx:278-290@c4cf2a8` rotula a Sales «Closers y
-   llamadas» y «cierre 31%», con el punto verde de estado sano (`:281`).
+   llamadas» y «cierre 31%», con el punto verde de estado sano (`:281@c4cf2a8`).
 4. **Las tarjetas de reunión y de cambios**: «Sales cierra 7 puntos menos desde el día 8» y «el cierre
-   bajó 7» (`lib/aios/executive-panel.js:12-16@c4cf2a8` y `:33-35`). Una serie diaria de tasa de cierre exige
+   bajó 7» (`lib/aios/executive-panel.js:12-16@c4cf2a8` y `:33-35@c4cf2a8`). Una serie diaria de tasa de cierre exige
    ventas fechadas, y hay 0.
 5. **El chat**: las tres preguntas sugeridas para Sales (`lib/aios/executive-chat.js:23@c4cf2a8`), «¿Llegamos
-   a las 30 ventas?» (`:18`) y dos respuestas escritas que citan a Sales como fuente, una con «Vas 11
+   a las 30 ventas?» (`:18@c4cf2a8`) y dos respuestas escritas que citan a Sales como fuente, una con «Vas 11
    de 30» (`lib/aios/executive-chat.js:33-36@c4cf2a8`).
 
 Lo que Sales podría entregarle hoy a Executive en lugar de eso: cero ventas registradas, la
@@ -506,7 +506,7 @@ La de Sales cerraba perfecto —31+43 = 74 asistencias, 10+8 = 18 ventas, $31,00
 (`components/views/SalesView.jsx:8-10`)—; el 2026-09-16 once usuarios activos tenían acceso a ella.
 Se borró el 2026-09-21.
 **Executive tiene la misma propiedad y sigue en pie** (§ 3.1): sus 11 ventas, 36 asistidas y $27,940
-de 7 días son coherentes entre sí, y ahora conviven con una pantalla que mide cero.
+de 7 días son coherentes entre sí, y ahora conviven con una pantalla que mide cero. **Después del corte, el 2026-10-01**: la maqueta del Executive se retiró en la etapa E7 de la nueva estructura, y este riesgo se fue con ella.
 
 **Poner una persona real al lado de un número inventado.** La maqueta atribuía por nombre diez ventas
 y $31,000 que la base no respaldaba a un closer que podía abrir la pantalla; cualquier coaching,

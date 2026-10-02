@@ -51,16 +51,22 @@ test('la vista no trae el Plan de acción, la píldora del calendario ni `data-l
   ] as const) {
     assert.ok(!vista.includes(pieza), `volvió \`${pieza}\`: ${motivo}`);
   }
-  const controles = sinComentarios(leer('lib/aios/period-controls.js'));
-  assert.doesNotMatch(controles, /lpPlanBtn/, 'volvió el manejador del Plan de acción de Leads Portal');
+  /* Y su manejador, que vivía en `lib/aios/period-controls.js`: ese módulo se fue con la maqueta del
+     Executive (2026-10-01), así que se busca en todo el código y no en un archivo. */
+  const conPlan = archivosFuente(['components', 'lib']).filter((a) => /lpPlanBtn/.test(sinComentarios(a.contenido))).map((a) => a.ruta);
+  assert.deepEqual(conPlan, [], 'volvió el manejador del Plan de acción de Leads Portal');
 });
 
-test('el cajón «Grupo de contactos» ya no abre fichas ni busca el segmentado de la maqueta', () => {
-  const grupo = sinComentarios(leer('lib/aios/leads-group.js'));
-  assert.doesNotMatch(grupo, /#lpIcpSeg/, 'el cajón vuelve a buscar el segmentado de la maqueta');
-  assert.doesNotMatch(grupo, /\.lg-r'\)\.forEach/, 'las filas del cajón volvieron a tener un clic');
-  /* Y el cajón sigue siendo de Executive: su texto se compara con el prototipo, así que no se toca. */
-  assert.match(grupo, /window\.AIOSLeads =/, 'el cajón de Executive dejó de publicarse');
+test('el cajón «Grupo de contactos» se fue con la maqueta del Executive, y no vuelve', () => {
+  /* Hasta el 2026-10-01 se exigía que el cajón no abriera fichas ni buscara el segmentado de la maqueta
+     de Leads Portal, y que siguiera publicándose: era de Executive y su texto se comparaba con el
+     prototipo. Lo abría sólo el embudo de la maqueta del Executive, y se fue con ella (`NE-30`). */
+  assert.equal(existsSync(join(RAIZ, 'lib/aios/leads-group.js')), false, 'volvió `lib/aios/leads-group.js`');
+  const conCajon = archivosFuente(['components', 'lib'])
+    /* Con el `sinComentarios` de este archivo y no con `limpio`, que corta cada línea desde `--`. */
+    .filter((a) => /window\.AIOSLeads\b|id="lgPanel"/.test(sinComentarios(a.contenido)))
+    .map((a) => a.ruta);
+  assert.deepEqual(conCajon, [], 'volvió el cajón «Grupo de contactos»');
 });
 
 test('el panel y la ficha no traen montos ni fechas escritos a mano', () => {
@@ -88,5 +94,5 @@ test('la vista monta el panel y la ficha tiene su propio cajón, no `#drawer`', 
   assert.match(leer(VISTA), /<PanelDeLeadsPortal \/>/, 'la vista no monta el panel');
   const ficha = sinComentarios(leer(FICHA));
   assert.match(ficha, /id="lpFicha"/, 'la ficha perdió su cajón propio');
-  assert.doesNotMatch(ficha, /getElementById\('drawer'\)|id="drawer"|dwBody/, 'la ficha volvió a escribir en el `#drawer` de Executive');
+  assert.doesNotMatch(ficha, /getElementById\('drawer'\)|id="drawer"|dwBody/, 'la ficha volvió a escribir en el `#drawer` de la maqueta');
 });

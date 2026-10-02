@@ -237,7 +237,7 @@ cosas distintas:
   se arregló ese mismo día: `1020412` saca la barra lateral de la rejilla bajo 760 px y el cuerpo
   pasa de 75 px a 375 de 375 en las doce pantallas, mirado a 375, 760, 762, 880 y 1400 px; `0810498`
   recorre las doce a 375 px, encuentra tres que seguían desbordando de costado y las deja en
-  `doc=375`. El arreglo sigue en `app/armazon.css:392-407` (leído el 2026-09-28, no vuelto a mirar en
+  `doc=375`. El arreglo sigue en `app/armazon.css:382-395` (leído el 2026-09-28, no vuelto a mirar en
   un navegador). `0810498` deja dicho lo que no arregla: la tabla de Monitoreo se desliza dentro de
   su propia caja, por decisión, y 7 px de Leads Portal que eran de la maqueta, borrada el 2026-09-26
   (`aed4f27`). Sólo `00e251d` nombra la base; `0add4cc`, `1020412` y `0810498` dicen «con sesión»
@@ -276,3 +276,5 @@ no ejecutado, y las 2.273 pruebas son las del último mensaje de commit
 > carpeta describe la app de antes de ese cambio; cada etapa que la cambie lo anota en el documento que
 > corresponda. Desde el corte también entró el grupo «Administración» del menú, con el Panel de Monitoreo
 > y el de Incidentes (`60f5d81`).
+>
+> **Después del corte, el 2026-10-01**: la maqueta del Executive se retiró (nueva estructura, E7), y su lugar lo tomó el Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Donde esta foto dice que queda una sola maqueta, habla del 2026-09-28.

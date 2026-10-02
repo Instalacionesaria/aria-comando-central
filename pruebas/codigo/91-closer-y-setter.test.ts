@@ -461,10 +461,10 @@ test('las dos vistas no traen NINGUNO de los nombres inventados que tenían', ()
 
   // ── EL ALCANCE, Y LA DEUDA QUE DEJA A LA VISTA ────────────────────────────
   //
-  // Se revisan los archivos de ESTA etapa. Corrida sobre todo el árbol, esta misma prueba
-  // encuentra los mismos nombres en `components/Overlays.jsx`, `components/views/SalesView.jsx`,
-  // `lib/aios/leads-portal.js` y `lib/aios/leads-group.js` — o sea que **las otras siete
-  // pantallas del prototipo siguen mostrando datos inventados**.
+  // Se revisan los archivos de ESTA etapa. Corrida sobre todo el árbol en la Etapa 11, esta prueba
+  // encontraba los mismos nombres en `components/Overlays.jsx`, `components/views/SalesView.jsx`,
+  // `lib/aios/leads-portal.js` y `lib/aios/leads-group.js` — o sea que **las otras siete pantallas
+  // del prototipo seguían mostrando datos inventados**. Hoy ninguno de esos archivos los tiene.
   //
   // No se amplía el alcance acá por una razón, no por comodidad: esas siete están en
   // `SIN_OPERACIONES_TODAVIA`, no tienen ninguna operación de servidor, y vaciarlas sin tener

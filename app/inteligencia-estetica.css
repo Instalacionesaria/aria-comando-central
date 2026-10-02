@@ -38,10 +38,10 @@
        estética. Sin la sección 1, el lado izquierdo del encabezado se invierte a la forma nueva
        y el derecho se queda con la del maquetado: dos gramáticas en la misma línea.
 
-   4 · **Lo que estos módulos escriben en `#drawer` y `#recoModal` queda FUERA de alcance, y no
-       es un olvido.** `components/Overlays.jsx` los monta como hermanos de las vistas, no
-       adentro, así que ningún selector que cuelgue de `#v-*` los alcanza. Vestir el cajón y el
-       modal necesita otro gancho y es un trabajo aparte.
+   4 · **Lo que estos módulos escribían en `#drawer` y `#recoModal` quedó FUERA de alcance, y no
+       fue un olvido.** `components/Overlays.jsx` los montaba como hermanos de las vistas, no
+       adentro, así que ningún selector que colgara de `#v-*` los alcanzaba. Se fueron con la
+       maqueta del Executive el 2026-10-01; los cajones de hoy son de React y traen su propio gancho.
 
    5 · **El alcance de cada regla se comprueba, no se supone.** Medido el 2026-09-20, al construir
        el panel de Conversion: seis clases que `components/creative/PanelDeCreative.jsx` dibuja

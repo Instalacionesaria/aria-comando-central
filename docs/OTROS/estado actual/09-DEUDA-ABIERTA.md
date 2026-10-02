@@ -388,7 +388,7 @@ where o.activa;
 
 ## 9 · Executive: la última maqueta publica en nombre de seis pantallas que ya miden
 
-Executive es la única sección que conserva `sinOperacionesTodavia`
+**Cerrado el 2026-10-01** (nueva estructura, E7): la maqueta se retiró entera —cifras, panel, chat y cajones— y la pantalla `executive` pasó a ser el Inicio, que no dibuja ninguna cifra (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`); conserva la bandera porque sigue sin ruta. Lo que sigue es la deuda como estaba el 2026-09-28. Executive es la única sección que conserva `sinOperacionesTodavia`
 (`lib/autorizacion/secciones.ts:212-218`), y `lib/aios/executive.js` no cambia desde `a7f8f91`
 (2026-08-18). Lo que la volvió deuda no es ella sino lo de alrededor: sus cifras hablan en nombre de
 departamentos que desde el 16 de septiembre publican las suyas, a un clic. El detalle pieza por pieza
@@ -423,25 +423,25 @@ miente, no si le miente. Lo que haría falta para bajar la bandera está en
   objetivo del anuncio entran a la lista blanca de la ficha
   (`docs/leads-portal/05-LA-FICHA-DEL-LEAD.md:400-403`). `LP08-P01`: si el pie del cajón de Executive
   sigue llevando a Leads Portal, cuando promete una cifra inventada y el destino muestra otra
-  (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350`). `LP04-P01`: si la rejilla se ordena por
+  (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350`); ésta, **cerrada el 2026-10-01** (nueva estructura, E7): el cajón se borró con la maqueta del Executive. `LP04-P01`: si la rejilla se ordena por
   alta o por puntaje; con 8 altas desde el 2026-09-14 (medido 22:11 UTC), el orden por alta muestra
   primero a gente de hace semanas (`docs/leads-portal/04-LA-REJILLA-Y-LOS-FILTROS.md:289-294`).
 - **`#recoModal` quedó en el marcado sin quién lo abra.** Vive en `components/Overlays.jsx:101@c4cf2a8`; el
   último que lo abría era el Plan de acción de Leads Portal, que salió en LP-6
   (`lib/aios/period-controls.js:40-45@c4cf2a8`), y la compuerta de paridad no tiene paso que lo abra
-  (`scripts/paridad.mjs:127`). Un modal que nadie abre es código muerto que se lee como vivo.
+  (`scripts/paridad.mjs:127@c4cf2a8`). Un modal que nadie abre es código muerto que se lee como vivo. **Cerrado el 2026-10-01** (nueva estructura, E7): `Overlays.jsx` se fue con la maqueta del Executive.
 - **`datepicker.js` no quedó «sin quién lo abra»: quedó sin quién lo escuche, y dos documentos lo
-  dicen al revés.** `scripts/paridad.mjs:159-162` y el punto 8 de `LP08-12`
+  dicen al revés.** `scripts/paridad.mjs:159-162@c4cf2a8` y el punto 8 de `LP08-12`
   (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:259-261`) afirman que la píldora de Executive
   está `hidden`. Lo está al cargar (`components/views/ExecutiveView.jsx:62@c4cf2a8`), pero el modo Funnel la
   muestra (`lib/aios/executive.js:161-162@c4cf2a8`) y un clic abre el calendario
   (`lib/aios/datepicker.js:123-131@c4cf2a8`). Lo que no hay es quien registre su función: `_cbs` nace vacío
   (`lib/aios/datepicker.js:133@c4cf2a8`) y nadie le agrega nada, así que «Aplicar» cambia el rótulo y las
-  cifras siguen siendo las del botón anterior. La deuda existe; su descripción está mal.
+  cifras siguen siendo las del botón anterior. La deuda existe; su descripción está mal. **Cerrado el 2026-10-01** (E7): el calendario y la píldora se fueron con la maqueta.
 - **El comentario del armazón sigue con los que abrían los overlays antes de LP-6.** Dice que
   `#drawer` y `#recoModal` los abren `leads-portal.js`, `executive-panel.js` y `period-controls.js`
-  (`lib/aios/shell.js:156-158`): el primero se borró y el tercero ya no abre nada. Hoy sólo
-  `lib/aios/executive-panel.js:81@c4cf2a8` y `lib/aios/executive-panel.js:102@c4cf2a8` abren `#drawer`.
+  (`lib/aios/shell.js:156-158@c4cf2a8`): el primero se borró y el tercero ya no abre nada. Hoy sólo
+  `lib/aios/executive-panel.js:81@c4cf2a8` y `lib/aios/executive-panel.js:102@c4cf2a8` abren `#drawer`. **Cerrado el 2026-10-01** (E7): el bloque se fue con los overlays.
 
 Los huecos de la pantalla y los documentos de `docs/leads-portal/` que quedaron atrás están en los
 § 13 y § 16.
@@ -557,7 +557,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   venta, al lado de un «—» con motivo, cuando el encabezado del mismo archivo promete «un guion donde
   no hay de qué hablar, nunca un cero» (`components/leads-portal/PanelDeLeadsPortal.jsx:21`).
 - **Executive entero** (§ 9), y su píldora «Personalizado», que aplica un rango que no cambia nada
-  (§ 10).
+  (§ 10). **Cerrado el 2026-10-01** (nueva estructura, E7): los dos se fueron con la maqueta.
 
 ---
 
@@ -601,7 +601,7 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   `lib/negocio/vistaDeConversion.ts:8` y `docs/conversion/09-LO-QUE-NO-ES-UN-REQUISITO.md:36`; y 648
   líneas en `components/conversion/PanelDeConversion.jsx:8` y `lib/negocio/vistaDeConversion.ts:6`,
   cuando `git show 0add4cc^:lib/aios/conversion.js` tiene 655.
-- `lib/aios/shell.js:156-158` y `scripts/paridad.mjs:159-162`: § 10.
+- `lib/aios/shell.js:156-158@c4cf2a8` y `scripts/paridad.mjs:159-162@c4cf2a8`: § 10.
 
 ---
 
@@ -741,7 +741,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   (`docs/leads-portal/12-QUIEN-VE-QUE.md:341`) y 10 lo midió hoy; `LP12-01` muestra la bandera
   `sinOperacionesTodavia` como actual (`docs/leads-portal/12-QUIEN-VE-QUE.md:17-27`) y salió en LP-4;
   `LP10-13` da por pendiente el cursor de mano (`docs/leads-portal/10-LO-QUE-NO-ES-UN-REQUISITO.md:325`)
-  que `app/leads-portal.css:107` ya anuló; `LP10-03` cita líneas sin archivo que eran del
+  que `app/leads-portal.css:107@c4cf2a8` ya anuló; `LP10-03` cita líneas sin archivo que eran del
   `leads-portal.js` borrado (`docs/leads-portal/10-LO-QUE-NO-ES-UN-REQUISITO.md:104-106`); y el
   punto 8 de `LP08-12`, § 10.
 
@@ -925,7 +925,7 @@ Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
   la guarda copia toda clave de la sesión, y la prueba `185` lo exige.
 - **El panel lateral de la maqueta del Executive se ve en la primera carga** a quien arranca en otra
   pantalla (un closer, por ejemplo), hasta su primer clic: la clase que lo esconde sólo se pone al
-  navegar. Se va con la columna lateral, en la etapa E7.
+  navegar. **Cerrado el 2026-10-01** en la etapa E7: la columna lateral se fue, y con ella la clase `.solo`.
 - **El menú no se puede usar con el teclado**: sus filas son `div` sin foco. Pasan a ser botones en la
   etapa E9.
 

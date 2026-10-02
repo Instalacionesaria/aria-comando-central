@@ -360,55 +360,42 @@
   fill: none;
 }
 
-/* ── EL PANEL DERECHO, QUE ES EL MISMO DEFECTO UN ESCALÓN MÁS ARRIBA ───────────
+/* ── LA REJILLA DEL ARMAZÓN: BARRA ARRIBA, MENÚ Y CUERPO ─────────────────────
  *
- * Apareció al comprobar que el corte de 760 no tocara el escritorio: a 762 px la rejilla es
- * `216px 234px 312px` y **al cuerpo le quedan 234**. Es exactamente la misma cuenta que la de abajo
- * con otro sumando — sólo que en las once pantallas con `.solo` el panel ya estaba oculto, así que
- * esto pasa únicamente en Executive y por eso nadie lo había visto.
+ * La del prototipo (`aios.css`) tiene tres columnas y tres filas: el menú, el cuerpo y el panel
+ * lateral de la maqueta del Executive, y la barra «Pregúntale a Executive sobre …» abajo. Los dos se fueron con
+ * la maqueta el 2026-10-01 (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y con ellos la
+ * clase `.solo` que escondía el panel en las demás pantallas.
  *
- * El corte en 1080: la fila `.csr` pide unos 380 px de cuerpo, y `216 + 380 + 312` son 908. Se deja
- * margen porque el cuerpo de Executive es una rejilla de tarjetas y no una lista de filas.
- *
- * Se esconde y no se apila debajo porque lo que hay ahí —«Reunión de hoy» y «Cambios en curso»— lo
- * pinta `lib/aios/executive.js` con datos de ejemplo del maquetado. Apilar contenido inventado
- * debajo del cuerpo sería darle más lugar, no menos. El día que ese panel tenga datos medidos, la
- * decisión se vuelve a tomar y este párrafo dice desde dónde. */
-@media (max-width: 1080px) {
-  .app {
-    /* `minmax(0, 1fr)` por el mismo motivo que el corte de abajo: con `1fr` pelado, una
-       tabla ancha estira la columna en vez de encogerse dentro de ella. */
-    grid-template-columns: 216px minmax(0, 1fr);
-    grid-template-areas:
-      "top top"
-      "nav main"
-      "ask ask";
-  }
-  .app .side {
-    display: none;
-  }
+ * Van las TRES propiedades, y las tres hacen falta: sin las filas queda la tercera de 64 px vacía
+ * abajo, y sin las columnas, la de 312 px vacía a la derecha, en todas las pantallas. Gana por CAPA
+ * (`components` va después de `aios`), así que `aios.css` sigue intacto. `minmax(0, 1fr)` y no `1fr`:
+ * con `1fr` pelado, una tabla ancha estira la columna en vez de encogerse dentro de ella. */
+.app {
+  grid-template-rows: 50px 1fr;
+  grid-template-columns: 216px minmax(0, 1fr);
+  grid-template-areas:
+    "top top"
+    "nav main";
 }
 
 @media (max-width: 760px) {
-  /* Las DOS reglas de rejilla, y las dos hacen falta: `.app.solo` la pone `shell.js` en las once
-     pantallas que no son Executive, y pesa más que `.app` a secas. Pisar sólo una dejaría la mitad
-     de las pantallas con la barra en la rejilla y la otra mitad sin ella. */
-  .app,
-  .app.solo {
+  /* Una columna. Hasta la nueva estructura había que pisar también `.app.solo`; la clase se fue con
+     el panel lateral de la maqueta. */
+  .app {
     /* `minmax(0, 1fr)` y NO `1fr`, que es lo mismo que `minmax(auto, 1fr)`: con `auto` de mínimo, un
        hijo ancho ESTIRA la columna en vez de encogerse dentro de ella.
        *
        Medido con `1fr` a secas: en Panel de Monitoreo —una tabla de doce columnas y 1.209 px— la
-       rejilla se abría a 417 px sobre una ventana de 375, y la barra superior, el cuerpo y la barra
-       de preguntas se iban los tres con ella. La tabla ya tenía su `.mon-scroll` con
+       rejilla se abría a 417 px sobre una ventana de 375, y la barra superior y el cuerpo se iban
+       con ella. La tabla ya tenía su `.mon-scroll` con
        `overflow-x: auto`, así que el defecto no era suya: era que nadie le ponía un techo.
        *
        Es la misma trampa de CSS que `.md-counters` más abajo, y las dos se arreglan igual. */
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "top"
-      "main"
-      "ask";
+      "main";
   }
 
   /* Y la cadena entera hasta el desplazador de cada vista. `min-width: auto` es el valor por omisión
@@ -453,20 +440,13 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* El panel derecho se va. Ya estaba escondido en las once con `.solo`; acá se va también en
-     Executive, que es la única que lo muestra. Sin esto su `grid-area: side` no existe en la
-     plantilla nueva y la rejilla le inventa una fila propia debajo del cuerpo. */
-  .app .side {
-    display: none;
-  }
-
-  /* La barra sale del flujo y se queda esperando a la izquierda. `top` y `bottom` la dejan entre la
-     barra superior y la de preguntas, que siguen ocupando sus filas: un cajón que tape las dos
-     escondería el botón que lo cierra. */
+  /* La barra sale del flujo y se queda esperando a la izquierda, debajo de la barra superior: un
+     cajón que la tapara escondería el botón que lo cierra. Llega hasta el borde de abajo, que ya no
+     tiene barra de preguntas. */
   .app .nav {
     position: fixed;
     top: 50px;
-    bottom: 64px;
+    bottom: 0;
     left: 0;
     z-index: 45;
     width: min(272px, 82vw);
@@ -482,7 +462,7 @@
      clic de afuera es `shell.js`, sobre el documento — un `::after` no puede tener oyente.
      *
      `z-index: 44` lo deja DEBAJO de la barra (45) y encima de todo lo demás. Por debajo de `.scrim`
-     (40) no: el cajón de contactos se abre sobre el cuerpo y tiene que seguir tapando a éste. */
+     (40) no: los cajones de React se abren sobre el cuerpo y tienen que seguir tapándolo. */
   .app.menu-abierto::after {
     content: '';
     position: fixed;
@@ -516,33 +496,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  /* ── Y LA BARRA DE PREGUNTAS, QUE SE SALIA DE SU FILA ────────────────────
-   *
-   * Apareció al medir el cajón, no antes: `.ask-trigger` mide `min(560px, 70%)` y a 375 px eso son
-   * 235, así que «Pregúntale a Executive sobre Conversion» se parte en TRES renglones. El botón
-   * queda de 71 px dentro de una fila de 64 —`grid-template-rows` la fija— y el texto se corta por
-   * abajo. Medido en el navegador el 2026-09-20.
-   *
-   * Se ensancha y se recorta en vez de achicar la letra: 13 px ya es el piso legible de esta
-   * interfaz, y lo único que cambia de esa frase es el nombre de la pantalla, que va al final. */
-  .ask .ask-trigger {
-    width: 100%;
-    margin: 0 12px;
-    padding: 10px 14px;
-    gap: 9px;
-  }
-  .ask .at-t {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* El atajo de teclado se va: no hay `Cmd+K` en un teléfono, y ocupa 35 px de los 375. */
-  .ask .at-k {
-    display: none;
-  }
 }
 
 /* Quien pidió menos movimiento recibe el cajón puesto, no deslizándose. */
@@ -550,4 +503,96 @@
   .app .nav {
     transition: none;
   }
+}
+
+/* ── EL INICIO (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-29`) ───────
+ *
+ * Del lienzo, pantalla «Inicio · el cerebro»: la mascota, el saludo y la caja, centrados, a 28 px uno
+ * del otro. Todo por token: la caja es `surface-raised` —la marca la reserva para «la caja de
+ * consulta del cerebro»—, con el borde de control y el radio de la marca para esa caja
+ * (`--radius-sm`). El lienzo dibuja 22 px, que no es un token; ante la duda manda el brandbook.
+ *
+ * El saludo es la firma tipográfica de la marca (`brand/BRAND.md`): dos líneas, la primera en peso
+ * 200 y la segunda en 500, a -0.035em. Los 44 px del lienzo bajan en un teléfono, donde la segunda
+ * línea ocuparía tres renglones, y por lo mismo los 120 px de margen a los lados bajan hasta 24. El
+ * halo de la mascota es el del elemento de la marca, no la sombra del lienzo: la marca no lleva
+ * sombras (`NE-28`). */
+#v-executive .inicio {
+  flex: 1;
+  align-items: center;
+  gap: 28px;
+  padding: 40px clamp(24px, 8vw, 120px);
+  text-align: center;
+}
+/* Centrado en vertical con márgenes automáticos y no con `justify-content: center`: cuando el
+   contenido no entra —un teléfono acostado, una ventana baja—, el centrado de flex lo desborda parejo
+   por arriba y por abajo, y lo de arriba queda fuera del alcance del desplazamiento (medido en la
+   revisión de E7: la mascota, inalcanzable a 812 × 375). Los márgenes automáticos valen cero cuando
+   falta espacio, y el Inicio arranca arriba. */
+#v-executive .inicio > :first-child { margin-top: auto; }
+#v-executive .inicio > :last-child { margin-bottom: auto; }
+#v-executive .inicio-saludo {
+  margin: 0;
+  font-size: clamp(30px, 6vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  color: var(--txt);
+}
+#v-executive .inicio-saludo .l1 { display: block; font-weight: 200; }
+#v-executive .inicio-saludo .l2 { display: block; font-weight: 500; }
+#v-executive .inicio-caja {
+  width: min(760px, 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 18px 18px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+  text-align: left;
+}
+#v-executive .inicio-campo {
+  font: inherit;
+  font-size: 17px;
+  color: var(--txt);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  resize: none;
+}
+/* El texto de muestra en `ink-3`, el piso de la marca, y sin opacidad: Firefox se la baja al texto de
+   muestra, y la hoja de Safari en iOS al campo deshabilitado entero (eso no se midió en un teléfono).
+   Con cualquiera de las dos bajaría de 4,5:1. */
+#v-executive .inicio-campo::placeholder { color: var(--txt-faint); opacity: 1; }
+#v-executive .inicio-campo:disabled { cursor: not-allowed; opacity: 1; }
+#v-executive .inicio-fila { display: flex; justify-content: flex-end; }
+/* Enviar, deshabilitado: un secundario —borde y flecha tenue— y no el primario blanco del lienzo, para
+   que no se lea como una acción que se puede tomar. Sin opacidad, por lo mismo que el texto: ni la
+   que usaría un diseño para decir «deshabilitado» ni la que agrega el navegador. */
+#v-executive .inicio-enviar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: not-allowed;
+  opacity: 1;
+}
+#v-executive .inicio-enviar svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#v-executive .inicio-nota {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-faint);
 }

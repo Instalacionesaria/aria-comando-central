@@ -98,7 +98,7 @@ puede seleccionar.
 ### CV9-08 · Lo que se va
 
 - **`lib/aios/conversion.js`** entero — 648 líneas, 538 literales, 47 frases.
-- Su entrada en **`lib/aios/index.js:8`** (el `import`) y **`:26`** (la posición en `MODULOS`).
+- Su entrada en **`lib/aios/index.js:8@0add4cc^`** (el `import`) y **`:26@0add4cc^`** (la posición en `MODULOS`).
 - Los chips **`Clarity`** y **`VTurb`** de `components/views/ConversionView.jsx:22-31`.
 - Las **siete puertas** `data-leads` de la tira de KPI.
 - El botón **`◈ Plan de acción`** (`ConversionView.jsx:34-39`) y la pastilla **`Personalizado`**
@@ -115,8 +115,8 @@ ahí.
 
 **Y el borrado ya no deja overlays huérfanos**, comprobado el 2026-09-20 por los dos lados:
 `conversion.js` abre `#drawer` (`:578-580`) y `#recoModal` (`:640-642`), y los dos los cierra
-`lib/aios/shell.js:192-200`. El `#lgPanel` que abren las siete puertas del KPI lo cierra su propio
-módulo (`lib/aios/leads-group.js:74`), que **no se borra** porque lo usan otras pantallas.
+`lib/aios/shell.js:192-200@0add4cc^`. El `#lgPanel` que abren las siete puertas del KPI lo cierra su propio
+módulo (`lib/aios/leads-group.js:74@0add4cc^`), que **no se borraba** porque lo usaban otras pantallas; se borró el 2026-10-01 con la maqueta del Executive (nueva estructura, E7).
 
 ### CV9-10 · El CSS se mide emisor por emisor antes de tocarlo
 

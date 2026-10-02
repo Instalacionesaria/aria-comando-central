@@ -58,8 +58,8 @@ la empresa**; el comentario del cerebro de la cabecera **no se dibuja** todavía
 
 ## Estado
 
-**Planificado el 2026-10-01.** E0 es esta carpeta; ninguna etapa de código empezó. Cada etapa, al
-terminar, marca acá abajo su commit.
+**Planificado el 2026-10-01.** E0 es esta carpeta. De E1 a E7 están hechas, todas el mismo día, y cada
+etapa, al terminar, suma acá abajo su fila. Sus commits se leen en `git log --oneline`: el mensaje empieza «Nueva estructura E<n>:».
 
 | etapa | estado |
 |---|---|
@@ -70,3 +70,4 @@ terminar, marca acá abajo su commit.
 | E4 · la tipografía | hecho, 2026-10-01 |
 | E5 · la paleta y las superficies | hecho, 2026-10-01 |
 | E6 · las citas | hecho, 2026-10-01 |
+| E7 · el Inicio | hecho, 2026-10-01 |

@@ -136,7 +136,7 @@ que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
 dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:42`) y dice «Todavía no
 usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:33-39`). Se lee **una vez**, al
 montarse (`components/tools/SaldoDeLeads.jsx:21-29`), y la vista se monta al entrar a la
-aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:81-92`).
+aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:78-89`).
 
 ### El Panel de Monitoreo
 
@@ -444,7 +444,7 @@ tablas del backend» es una convención de tipos: en producción `app_inquilino`
 `UPDATE` y `DELETE` sobre las tres (`has_table_privilege`, medido el 2026-09-28).
 
 **El panel consulta todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas
-las vistas visibles se montan juntas (`components/CommandCenter.jsx:81-92`) y el panel carga al
+las vistas visibles se montan juntas (`components/CommandCenter.jsx:78-89`) y el panel carga al
 montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
 entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
 lee una vez por carga de página: su comentario dice que «la pantalla ya se refresca por su lado»

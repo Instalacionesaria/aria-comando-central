@@ -7,6 +7,10 @@
 > fijado en 18:06 del 28, y reprodujeron. Para ubicar cualquier cosa nombrada acá, ver
 > [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
+> **Después del corte, el 2026-10-01**: esta maqueta se retiró en la etapa E7 de la nueva estructura, y su
+> lugar lo tomó el Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Lo que sigue es la foto del
+> 2026-09-28: las citas al código que se borró están fijadas a `@c4cf2a8`, que es donde hay que leerlas.
+
 **Maqueta completa — y desde el 2026-09-26, la única que queda.**
 
 Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:212-218`)
@@ -33,11 +37,11 @@ embudo o su cajón— ya miden, y la contradicen.
 >   `executive-panel.js` dejó de sintetizar un clic sobre el botón de cierre en `0add4cc`
 >   (`lib/aios/executive-panel.js:69-78@c4cf2a8`).
 > - **El panel derecho se esconde a 1080 px o menos** en toda la aplicación, Executive incluido,
->   desde `1020412` y `0810498` (09-20; `app/armazon.css:363-389`).
+>   desde `1020412` y `0810498` (09-20; `app/armazon.css:363-389@c4cf2a8`).
 > - **LP-6 le dejó dos herencias** (`aed4f27`, 09-26): el cajón «Grupo de contactos» pasó a ser
 >   maqueta de Executive (`lib/aios/leads-group.js:57-68@c4cf2a8`), y la compuerta de paridad quedó con
->   `VISTAS` vacía y tres pasos, los tres de Executive (`scripts/paridad.mjs:148-153`,
->   `scripts/paridad.mjs:186-212`).
+>   `VISTAS` vacía y tres pasos, los tres de Executive (`scripts/paridad.mjs:148-153@c4cf2a8`,
+>   `scripts/paridad.mjs:186-212@c4cf2a8`).
 > - **Este archivo es nuevo.** La foto anterior no tenía informe de Executive: aparecía sólo dentro
 >   de los otros, como la pantalla que publica cifras en su nombre.
 
@@ -93,7 +97,7 @@ sección o la tienen concedida; misma consulta que `docs/leads-portal/12-QUIEN-V
 exacta.
 
 **El código.** Todo es la capa imperativa del prototipo, arrancada por `bootAios()`
-(`lib/aios/index.js:29-37`): de sus siete módulos, cinco sirven sólo a Executive
+(`lib/aios/index.js:29-37@c4cf2a8`): de sus siete módulos, cinco sirven sólo a Executive
 —`executive.js` (243 líneas), `executive-panel.js` (105), `executive-chat.js` (121),
 `leads-group.js` (89) y `datepicker.js` (135), que ya sólo abre la píldora de Executive—;
 `period-controls.js` (47) no tiene emisor (§ 3.7) y `shell.js` es el armazón. El marcado está en
@@ -121,7 +125,7 @@ exacta.
   (`lib/aios/executive-panel.js:54-82@c4cf2a8`), más siete «reuniones anteriores»
   (`lib/aios/executive-panel.js:86-103@c4cf2a8`).
 - **El chat**, «Pregúntale a Executive sobre …», **en todas las pantallas** y no sólo en ésta
-  (`components/AskBar.jsx:16-29@c4cf2a8`, `components/CommandCenter.jsx:96-97`), con atajo Ctrl+K
+  (`components/AskBar.jsx:16-29@c4cf2a8`, `components/CommandCenter.jsx:98-99@c4cf2a8`), con atajo Ctrl+K
   (`lib/aios/executive-chat.js:112-115@c4cf2a8`).
 
 **Ventanas y pisos.** Tres botones —`hoy`, `7d` encendido, `mes`—
@@ -412,9 +416,9 @@ El mecanismo es corto y va en un solo commit, como las siete veces anteriores qu
    (`lib/negocio/periodo.ts:188-193`, `app/api/sales/route.ts:82-85`); `tri` no existe, y lo más
    cercano a `hist` es `completo`.
 5. **La paridad.** «funnel ejecutivo» y «grupo de contactos» comparan el texto de `#exFunnel` y del
-   cajón contra el prototipo (`scripts/paridad.mjs:209-212`, `scripts/paridad.mjs:346-356`): con
+   cajón contra el prototipo (`scripts/paridad.mjs:209-212@c4cf2a8`, `scripts/paridad.mjs:346-356`): con
    cifras reales quedan en rojo para siempre. Salen con su motivo, y
-   `pruebas/codigo/90-fundaciones.test.ts:1334-1338` deja de exigir que el cajón se abra desde el
+   `pruebas/codigo/90-fundaciones.test.ts:1406-1410@c4cf2a8` deja de exigir que el cajón se abra desde el
    embudo. Si sale también «Ask Executive», la compuerta imprime «retirada»
    (`scripts/paridad.mjs:301-305`). Lo que no vale es editar el prototipo para que dé verde
    (`scripts/paridad.mjs:75-78`).
@@ -478,7 +482,7 @@ en `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:380-385`.
 
 **El panel derecho puede verse sin tener Executive.** La columna existe por omisión
 (`app/aios.css:117-125`) y la esconde `.solo` (`app/aios.css:115-116`), que ponen la navegación
-(`lib/aios/shell.js:134`) y el modo Funnel de la propia Executive (`lib/aios/executive.js:160@c4cf2a8`), que
+(`lib/aios/shell.js:135@c4cf2a8`) y el modo Funnel de la propia Executive (`lib/aios/executive.js:160@c4cf2a8`), que
 quien no tiene Executive no dibuja. Nada la pone al cargar, y quien no tiene Executive arranca en
 otra pestaña (`lib/autorizacion/secciones.ts:862-872`): hoy, uno de los cuatro activos vería
 «Reunión de hoy» a más de 1080 px hasta su primer clic en el menú. No verificado en el navegador.

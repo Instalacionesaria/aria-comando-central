@@ -20,12 +20,12 @@
  * *"solo ve su pestaña"* habría sido falso — vería las diez entradas y ocho le responderían
  * 403 al abrirlas.
  *
- * ── EL DOM ES IDÉNTICO, Y ES UN REQUISITO ──────────────────────────────────
+ * ── EL DOM ERA IDÉNTICO, Y ERA UN REQUISITO ──────────────────────────────────
  *
  * Con todas las capacidades el `.map()` produce exactamente el mismo árbol que el JSX literal:
- * mismas clases, mismo orden, mismos `data-view`, el galón `›` en las mismas cinco. Es lo que
- * permite que `npm run paridad` siga comparando el port con el original. Si esto divergiera, la
- * única compuerta que valida el port empezaría a dar rojo y terminaría desactivada.
+ * mismas clases, mismo orden, mismos `data-view`, el galón `›` en las mismas cinco. Era lo que
+ * permitía que `npm run paridad` comparara el port con el original; la compuerta se retiró el
+ * 2026-10-01 (nueva estructura, E7), y el requisito se fue con ella.
  *
  * ── Y LO QUE DEJÓ DE ESTAR ESCRITO A MANO ──────────────────────────────────
  *

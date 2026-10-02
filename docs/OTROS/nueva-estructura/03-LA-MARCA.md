@@ -157,7 +157,8 @@ valor de la marca, y por qué, están en el inventario.
 ## `NE-28` · La mascota
 
 - **Una por pantalla**, a 48 px o más; debajo de eso pierde los ojos.
-- **En el inicio**: 88 px, con la mirada que sigue al cursor.
+- **En el inicio**: 88 px de orbe, con la mirada que sigue al cursor (el `size` del elemento es 152: el orbe
+  ocupa el 58 % de su caja, y el resto es el halo).
 - **En la barra lateral va el logotipo**, no la mascota.
 - **El comentario del cerebro de la cabecera** (con la mascota a 32 px) no se dibuja todavía (`NE-17`).
 - **En React entra por un envoltorio del elemento de la marca**, sin colores ni sombras escritos en el

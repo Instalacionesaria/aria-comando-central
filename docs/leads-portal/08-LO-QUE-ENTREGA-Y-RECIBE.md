@@ -14,9 +14,9 @@
 > `pruebas/codigo/90-fundaciones.test.ts`.
 
 **Leads Portal no calcula ningún dato propio.** Todo lo que va a mostrar ya lo guarda el barrido, y
-todo lo que va a contar ya tiene una definición en otra pestaña. Lo que sí tiene es un contrato con
-Executive que nadie escribió: dos globales de `window` y un cajón compartido, por los que hoy una fila
-del embudo de Executive termina abriendo la ficha inventada de esta pestaña.
+todo lo que va a contar ya tiene una definición en otra pestaña. Lo que sí tenía, el 2026-09-26, era un contrato con
+Executive que nadie escribió: dos globales de `window` y un cajón compartido, por los que una fila
+del embudo de Executive terminaba abriendo la ficha inventada de esta pestaña. LP-6 se llevó la ficha y `window.AIOSLeadCard`; el 2026-10-01, la etapa E7 de la nueva estructura borró la maqueta del Executive, y con ella el embudo, el cajón y `window.AIOSLeads`.
 
 ---
 
@@ -175,14 +175,14 @@ Inteligencia emite el atributo. **Después de LP-6 queda uno solo: Executive** (
 **Lo que dibuja, y por qué no es una lista de nadie:**
 
 - **catorce personas inventadas** (`lib/aios/leads-group.js:14-29@c4cf2a8`), repetidas hasta cuarenta filas
-  para llenar cualquier conteo (`:31-37`), con tres montos en dólares (`:15`, `:16`, `:19`);
+  para llenar cualquier conteo (`:31-37@c4cf2a8`), con tres montos en dólares (`:15@c4cf2a8`, `:16@c4cf2a8`, `:19@c4cf2a8`);
 - **«Sin calificar» abre tres personas con puntaje 87, 91 y 82.** El filtro compara el tramo de cada
-  una contra `'nc'` con una función que sólo devuelve `alto`, `medio` o `bajo` (`:10`, `:32`); como
-  nadie coincide, cae a la lista entera (`:33`) y toma las tres primeras;
+  una contra `'nc'` con una función que sólo devuelve `alto`, `medio` o `bajo` (`:10@c4cf2a8`, `:32@c4cf2a8`); como
+  nadie coincide, cae a la lista entera (`:33@c4cf2a8`) y toma las tres primeras;
 - **una misma persona inventada cambia de tramo entre los dos archivos**: con puntaje 79 es «medio»
   en el portal (`aios-command-center_1.html:4624`) y «alto» en el cajón (`lib/aios/leads-group.js:20@c4cf2a8`,
-  por el corte de `:10`);
-- cada fila tiene un salto a la **raíz** de GoHighLevel, no al contacto (`:8`, `:51`, `:54-56`);
+  por el corte de `:10@c4cf2a8`);
+- cada fila tiene un salto a la **raíz** de GoHighLevel, no al contacto (`:8@c4cf2a8`, `:51@c4cf2a8`, `:54-56@c4cf2a8`);
 - y el panel se abre sin cambiar nunca su `aria-hidden="true"` (`components/Overlays.jsx:7@c4cf2a8`,
   `lib/aios/leads-group.js:70@c4cf2a8`), el defecto que `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:507-515`
   ya registró.
@@ -210,7 +210,7 @@ usa en cada clic.**
    con el mismo nombre son la misma; una persona renombrada en el CRM deja de existir.
 2. **Si el nombre no está, inventa una ficha.** Toma la primera persona de la lista y le pega el
    nombre pedido (`aios-command-center_1.html:4876-4877`). Las dos personas que sólo están en el cajón
-   (`lib/aios/leads-group.js:26@c4cf2a8`, `:28`) abren la ficha completa **de otra**: su teléfono, su
+   (`lib/aios/leads-group.js:26@c4cf2a8`, `:28@c4cf2a8`) abren la ficha completa **de otra**: su teléfono, su
    correo, su venta de $4.500 y el nombre del closer real que la maqueta le atribuye
    (`aios-command-center_1.html:4591-4607`).
 
@@ -225,24 +225,24 @@ En orden de dependencia, y **hecho en LP-6** punto por punto. Cada punto dice qu
 se hacía mal.
 
 1. **`#drawer` se queda.** Executive lo abre desde los temas de su resumen y de sus cambios y desde
-   «Reuniones anteriores» (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102`), y lo cierra el
+   «Reuniones anteriores» (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102@c4cf2a8`), y lo cierra el
    armazón. La ficha nueva usa un cajón **con id propio** (`LP05-02`): si reusara `#drawer`, abrir
    una ficha pisaría lo que Executive hubiera escrito ahí, y al revés.
 2. **`window.AIOSLeadCard` se fue, y su único llamador se limpió.** La guarda evitaba el error,
    pero la fila habría quedado **clicable y muda**: el `cursor:pointer` de `.lg-r` vive en
    `app/aios.css:2345-2346`, que no se toca. El clic salió (`lib/aios/leads-group.js:57-59@c4cf2a8` es ahora
    el comentario que lo explica) y el cursor se anuló **fuera** de `app/aios.css`, en
-   `app/leads-portal.css:107`, con el precedente del commit `bd26085`, que anuló el cursor de los
+   `app/leads-portal.css:107@c4cf2a8`, con el precedente del commit `bd26085`, que anuló el cursor de los
    iconos de la ficha en `app/closer.css` «porque `aios.css` tiene que seguir comparable contra el
    HTML del prototipo».
 3. **El pie del cajón dejó de preseleccionar el tramo.** Buscaba `#lpIcpSeg`, que el panel nuevo no
    tiene; la guarda lo apagaba, y se borró para que no se leyera como rama viva
    (`lib/aios/leads-group.js:65-68@c4cf2a8` es el comentario que quedó). **La navegación a la pestaña se
-   quedó** (`:61-64`), y con ella una contradicción medida: ver `LP08-P01`.
+   quedó** (`:61-64@c4cf2a8`), y con ella una contradicción medida: ver `LP08-P01`.
 4. **`initLeadsPortal` salió del arranque**, con su `import` y su entrada de `MODULOS`, y **el
-   comentario de arriba dejó de nombrar a `window.AIOSLeadCard`** (`lib/aios/index.js:1-4`): afirma
+   comentario de arriba dejó de nombrar a `window.AIOSLeadCard`** (`lib/aios/index.js:1-4@c4cf2a8`): afirma
    que el orden de los módulos importa porque unos registran globales que otros usan, y ése era el
-   caso que lo justificaba. El motivo de la salida quedó escrito en `lib/aios/index.js:14-16`.
+   caso que lo justificaba. El motivo de la salida quedó escrito en `lib/aios/index.js:14-16@c4cf2a8`.
 5. **El bloque del Plan de acción se fue** (el original, `aios-command-center_1.html:5710-5730`), y
    con él el único que abría `#recoModal` (`LP07-08`).
 6. **La compuerta de paridad se reordenó, no se retiró.** `VISTAS` quedó vacía
@@ -272,13 +272,13 @@ Quedan declarados para que nadie los lea como una entrega de Leads Portal:
 - **Su ficha de departamento** —«312 contactos · 78 de ICP alto», la frase del 22 y el 61, y
   «Entrego a Acquisition qué campañas traen el ICP que cierra» (`lib/aios/executive.js:198-201@c4cf2a8`)—
   **no se dibuja en ninguna parte.** El mapa tiene cinco nodos con `data-node`
-  (`components/views/ExecutiveView.jsx:236@c4cf2a8`, `:250`, `:264`, `:278`, `:292`) y ninguno es
+  (`components/views/ExecutiveView.jsx:236@c4cf2a8`, `:250@c4cf2a8`, `:264@c4cf2a8`, `:278@c4cf2a8`, `:292@c4cf2a8`) y ninguno es
   `contacts`; la ficha sólo aparece al pasar sobre un nodo (`lib/aios/executive.js:215-219@c4cf2a8`). Es un
   dato escrito para un nodo que no existe.
 - **El chat ejecutivo** ofrece tres preguntas en esta pestaña (`lib/aios/executive-chat.js:24@c4cf2a8`). Las
   tres caen en la respuesta por omisión —ninguna tiene las palabras que `pick` busca
   (`lib/aios/executive-chat.js:77-83@c4cf2a8`)—, que es un párrafo sobre Conversion con «$15,000» y cita a
-  **Leads Portal como fuente** (`:31-32`).
+  **Leads Portal como fuente** (`:31-32@c4cf2a8`).
 - **El embudo del negocio** dibuja seis cifras, una por paso de `STEPS` (`lib/aios/executive.js:22-29@c4cf2a8`),
   todas con `data-leads` (`lib/aios/executive.js:41-54@c4cf2a8`), y cualquiera abre el cajón; la de «Contactos» vale 312 a 7 días y
   1.248 a 30 (`lib/aios/executive.js:17-18@c4cf2a8`).
@@ -349,9 +349,9 @@ número, comparten la función que lo calcula (`app/api/closer/mi-dia/route.ts:1
 
 ### LP08-P01 · ¿El pie del cajón de Executive sigue llevando a Leads Portal?
 
-Después de LP-6, abierto desde la fila «Contactos» a 7 días, el pie dice **«Ver los 312 en Leads
+**Resuelta el 2026-10-01** (nueva estructura, E7): el cajón se borró con la maqueta del Executive, y con él su pie y las seis cifras que lo abrían. Después de LP-6, abierto desde la fila «Contactos» a 7 días, el pie dice **«Ver los 312 en Leads
 Portal →»** (`lib/aios/leads-group.js:60@c4cf2a8`, con el 312 de `lib/aios/executive.js:17@c4cf2a8` y el período
-inicial de `:30`). Desde las otras cinco filas promete **268, 194, 57, 36 u 11** (también
+inicial de `:30@c4cf2a8`). Desde las otras cinco filas promete **268, 194, 57, 36 u 11** (también
 `lib/aios/executive.js:17@c4cf2a8`): conversaciones, visitas, agendamientos, citas asistidas y ventas, que no
 son una cuenta de contactos de esta pestaña. Y las seis navegan al mismo portal
 (`lib/aios/leads-group.js:61-64@c4cf2a8`), que abre en 30 días con **286 personas**, y que a 7 días —el

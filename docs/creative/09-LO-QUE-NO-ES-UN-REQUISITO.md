@@ -169,7 +169,7 @@ las emite; mueren con él, así que se borran **en el mismo cambio** y no antes.
 
 ### C9-10 · Los ocho degradados van en línea y le ganan al tema
 
-`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:752` y `:779` ya lo
+`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:753` y `:780` ya lo
 anotan: **un estilo en línea le gana al tema**, así que las miniaturas inventadas no responden al
 cambio de tema. Andamiaje, y su ausencia no deja hueco: la miniatura real no existe (`C14-07`).
 
@@ -203,12 +203,12 @@ Los cinco se mudan a `lib/aios/shell.js`, que corre primero y es dueño del arma
 | # | qué se borra | dónde | literales |
 |---|---|---|---:|
 | 1 | El módulo entero | `lib/aios/creative.js` | **201** |
-| 2 | Su entrada en `MODULOS` | `lib/aios/index.js:8`, `:27` | — |
+| 2 | Su entrada en `MODULOS` | `lib/aios/index.js:8@3287f74^`, `:27@3287f74^` | — |
 | 3 | Las 18 puertas al panel falso | `creative.js:159`, `:175` | — |
 | 4 | El botón «Plan de acción» | `CreativeView.jsx:24-29` | — |
 | 5 | El botón «Personalizado» | `CreativeView.jsx:42-49` | — |
 | 6 | Las clases muertas de `C9-09` | `app/aios.css:613-1050` | — |
-| 7 | Los pasos de paridad | `scripts/paridad.mjs:160-166` | — |
+| 7 | Los pasos de paridad | `scripts/paridad.mjs:160-166@3287f74^` | — |
 
 **Y lo que NO se borra, aunque viva en las mismas líneas:** el encabezado invertido
 (`.cre-head`, `.cre-desc`, compartido con Acquisition), las siete clases de `C9-08`, el `<section

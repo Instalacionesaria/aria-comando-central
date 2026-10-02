@@ -245,3 +245,30 @@ function aFecha(v: Date | string | null | undefined): Date | null {
   const d = v instanceof Date ? v : new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+/**
+ * `0`–`23`: la hora del día de un instante, en la zona de la empresa. El saludo del Inicio (`NE-29`,
+ * `lib/saludo.ts`) depende de esto y de nada más.
+ *
+ * `hourCycle: 'h23'` y no `hour12: false`, por lo que midió `selloDeTiempo` en
+ * `lib/auditor/transcripcion.ts`: `hour12: false` deja medianoche a la configuración regional, que
+ * puede decir `24`, y a las 00:00 el saludo diría «Buenas noches». Y sin ciclo, `en-US` devuelve la
+ * hora en 12: las 19:00 serían `7`, y el saludo, «Buenos días».
+ *
+ * Una zona inválida cae a UTC —como `selloDeTiempo`, y como la guarda cuando falta la organización—
+ * y NO a la del entorno, que es justamente la hora que esto existe para no usar. Por eso no reusa
+ * `horaEnZona`, que cae a la del entorno.
+ */
+export function horaDelDiaEnZona(instante: Date, zona: string): number {
+  const hora = (z: string): number =>
+    Number(
+      new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: z })
+        .formatToParts(instante)
+        .find((p) => p.type === 'hour')?.value,
+    );
+  try {
+    return hora(zona);
+  } catch {
+    return hora('UTC');
+  }
+}

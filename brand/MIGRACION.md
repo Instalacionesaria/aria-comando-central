@@ -68,21 +68,23 @@ regla para los campos, no un token: `--bg-sunk` lo usan unas 60 superficies que 
 **Estados**: hovers que quedaron con un escalón menor que 1,05:1, el más claro `.sc-fila:hover` en el
 Scraper.
 
-**`--exec`, lo que no es dinero**: el bloque «Calificados» de Acquisition, las líneas y el rótulo de la
-capa ejecutiva del organigrama, dos baldosas del Inicio y el «Histórico completo» del selector de fechas
-quedaron en el blanco del dinero. Falta decidir qué color les corresponde.
+**`--exec`, lo que no es dinero**: el bloque «Calificados» de Acquisition y dos baldosas del Inicio del setter
+quedaron en el blanco del dinero. Falta decidir qué color les corresponde. Las líneas y el rótulo de la capa
+ejecutiva del organigrama y el «Histórico completo» del selector de fechas estaban en esta lista y se fueron con la maqueta del Executive en la etapa 7.
 
 **Pantallas aparte**:
 
 - `/entrar`: sus literales de la paleta vieja (`app/entrar/entrar.css`).
 - Los colores del PDF exportado (`lib/fundaciones/exportar.ts`).
-- La chispa de «Ingresos» del cockpit, que rellena con el cian viejo (`lib/aios/executive.js`): se va con
-  la maqueta del Executive en la etapa 7.
 
 **El lienzo propio de las pantallas de operación** (`operacion-estetica.css`, «EL LIENZO ES PLANO»): ya no
 tapa nada, y quitarlo cambia su geometría.
 
-**Los titulares en dos líneas** (peso 200 y 500).
+**Los titulares en dos líneas** (peso 200 y 500). El Inicio ya la lleva (etapa 7).
+
+La etapa 7 retiró la maqueta del Executive, y con ella varias de las superficies contadas arriba: el
+panel lateral, la barra «Pregúntale a Executive sobre …» (la función que `NE-09` llama «Pregúntale al cerebro»), el organigrama, los cajones y el modal de la maqueta, y la
+chispa de «Ingresos», que rellenaba con el cian viejo. Los conteos de este inventario son de la etapa 5.
 
 ## El tamaño del problema (la medición original)
 
@@ -211,8 +213,8 @@ token: hay que rehacer el markup de cada titular.
 
 Son 177 lugares donde no alcanza con cambiar un valor: hay que **quitar la propiedad y comprobar que
 la jerarquía visual se sostiene sola**. En `app/aios.css` están concentrados (76 degradados y 71
-sombras de los totales), y es justamente la hoja que no se puede tocar sin sacar su vista de
-`paridad`.
+sombras de los totales), y es justamente la hoja que no se toca: es el port literal del prototipo, y
+tocarla es perder el diff contra él.
 
 ## El orden que propongo
 
@@ -221,26 +223,25 @@ sombras de los totales), y es justamente la hoja que no se puede tocar sin sacar
 
 De menor a mayor riesgo, para que los primeros pasos enseñen antes de tocar lo caro:
 
-1. **Login** (`app/entrar/entrar.css`, 43) — pantalla aislada, no está en `paridad`, y es donde el
+1. **Login** (`app/entrar/entrar.css`, 43) — pantalla aislada, no está en el prototipo, y es donde el
    brandbook pide la mascota con `follow`. Es la prueba de fuego más barata.
 2. **Ajustes, Auditoría, Monitoreo, Armazón** (19 en total) — no existen en el prototipo, así que
-   `aios.css` no tiene nada que decir sobre ellas y no hay paridad que romper.
-3. **Los cinco tableros** (`app/inteligencia-estetica.css`, 15) — ya salieron de `paridad` en su
-   etapa.
-4. **ICP & Oferta** (`app/fundaciones.css`, 69) — ya está fuera de `paridad` desde la Etapa 9.
+   `aios.css` no tiene nada que decir sobre ellas.
+3. **Los cinco tableros** (`app/inteligencia-estetica.css`, 15) — ya divergen del prototipo a
+   propósito desde su etapa.
+4. **ICP & Oferta** (`app/fundaciones.css`, 69) — ya diverge del prototipo desde la Etapa 9.
 5. **Closer y Setter** (`closer.css` + buena parte de `operacion-estetica.css`, ~150).
 6. **`app/temas.css`** (236) — el corazón. Cuando llegue acá, casi todo lo anterior ya cambió de
    token y este archivo se reduce en vez de reescribirse.
-7. **`app/aios.css`** (526) — lo último, y vista por vista. Cada vista que se migre **sale de la
-   lista `VISTAS` de `scripts/paridad.mjs`**, con el motivo escrito en el `docs/ETAPA-N` de su etapa.
-   Es la regla que el README ya fija: una vista migrada deja de coincidir con el prototipo a
-   propósito, y dejarla en la lista daría un rojo permanente que se ignora — y con él se ignoran
-   los demás.
+7. **`app/aios.css`** (526) — lo último, y vista por vista. La compuerta de paridad que comparaba
+   cada vista con el prototipo se retiró el 2026-10-01 (nueva estructura, E7), cuando ya no le
+   quedaba ninguna: lo que se pierde al tocar esta hoja es el diff contra el prototipo, y cada
+   vista migrada lo dice con su motivo en el documento de su etapa.
 
 ## Lo que no se puede migrar con tokens
 
 - **`lib/fundaciones/exportar.ts`** (3 hex + 1 familia): genera PDF con `jspdf`, que no lee variables
   CSS. Necesita leer `brand/tokens.json` en tiempo de ejecución, y le corresponde el **tema claro**
   del brandbook (`--lesson-*`), que existe justamente para documentos e impresión.
-- **`lib/aios/executive.js`** y **`lib/aios/leads-portal.js`**: pintan con `innerHTML` desde la capa
-  imperativa. Sus colores se pueden pasar a variables, pero reactificar esas vistas es otra etapa.
+- **`lib/aios/executive.js`** y **`lib/aios/leads-portal.js`** pintaban con `innerHTML` desde la capa
+  imperativa. Ya no hay que migrarlos: `leads-portal.js` se borró el 2026-09-26 con la maqueta de Leads Portal, y `executive.js` el 2026-10-01, con la del Executive (etapa 7).

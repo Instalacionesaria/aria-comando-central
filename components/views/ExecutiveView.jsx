@@ -1,313 +1,74 @@
-/* Portado de aios-command-center_1.html — vista, líneas 2555-2677. */
+'use client';
+
+/* El Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-29`), con lo que la data de hoy
+ * permite decir: la mascota, el saludo y la caja del cerebro, que todavía no responde.
+ *
+ * ── LO QUE HABÍA ACÁ ────────────────────────────────────────────────────────
+ *
+ * La maqueta del Executive: un organigrama, un embudo y una reunión con cifras escritas a mano, y un
+ * chat que elegía entre respuestas fijas por palabras clave. Se fue el 2026-10-01 con sus seis módulos
+ * del navegador, el panel lateral y la barra «Pregúntale a Executive sobre …» (`NE-30`). El inventario de
+ * lo que era está en `docs/OTROS/estado actual/11-EXECUTIVE.md`.
+ *
+ * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
+ *
+ *   · las tarjetas de «Reunión de hoy»: tienen que salir de reglas sobre datos reales —gasto en cero,
+ *     citas sin asistencia, llamadas sin usar— que todavía no existen. Mostrar las del diseño sería
+ *     volver a la maqueta;
+ *   · «@ agente», el selector de áreas y el «+»: no hay qué elegir ni qué adjuntar hasta que haya
+ *     cerebro;
+ *   · una respuesta: la caja está deshabilitada, no manda nada y no finge nada.
+ *
+ * La pantalla conserva su clave `executive` —el `id` de la vista y el `check` de la base no cambian
+ * (`05-LO-QUE-NO-CAMBIA.md`); no tiene rutas propias— y se llama «Inicio» en el menú, desde
+ * `lib/autorizacion/secciones.ts`. Ese nombre no se escribe acá: el titular es el saludo. */
+import { useSesion } from '../../app/sesion-contexto.tsx';
+import { estaALaVista } from '../../lib/vista.ts';
+import { saludo } from '../../lib/saludo.ts';
+import Mascota from '../marca/Mascota.jsx';
+
 export default function ExecutiveView({ activa }) {
+  const sesion = useSesion();
+  /* Si el Inicio está a la vista: la mascota sólo mira el cursor mientras se la ve. Y cada vez que
+     cambia, la vista se vuelve a dibujar y el saludo se recalcula: quien sale del Inicio a las 11:50 y
+     vuelve a las 13:00 lee «Buenas tardes». Quedarse en la pantalla no lo actualiza. */
+  const aLaVista = estaALaVista('executive');
+  /* La hora de la EMPRESA, no la del navegador: ver `lib/saludo.ts`. `UTC` si la sesión no trajo la
+     organización, que es lo que la guarda pone por omisión. */
+  const linea = saludo(sesion?.usuarioNombre, sesion?.organizacion.zonaHoraria ?? 'UTC');
+
   return (
-    <>
     <section className={activa ? 'view on' : 'view'} id="v-executive">
-      <div className="view-scroll ex-scroll">
-        <div className="ex-head">
-          <div className="ex-title-wrap">
-            <div className="ch-title">
-              <h2 id="exTitle">
-                Equipo de inteligencia
-              </h2>
-            </div>
-            <div className="mode-seg" id="exMode">
-              <button data-m="map" className="on">
-                <svg viewBox="0 0 16 16" fill="none">
-                  <circle cx="5.5" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.3" />
-                  <circle cx="11" cy="6.5" r="1.7" stroke="currentColor" strokeWidth="1.3" />
-                  <path
-                    d="M1.6 13c.4-2 1.9-3.2 3.9-3.2s3.5 1.2 3.9 3.2"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                   />
-                  <path
-                    d="M10.6 9.9c1.8 0 3.1 1.1 3.5 3.1"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                   />
-                </svg>
-                Equipo
-              </button>
-              <button data-m="funnel">
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M2 3h12l-4.4 5.2v4.5L6.4 14V8.2L2 3Z"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinejoin="round"
-                   />
-                </svg>
-                Funnel
-              </button>
-            </div>
-          </div>
-          <div className="ex-ctrl">
-            <span className="cmp-note" id="exCmp" hidden>
-              vs los 7 días previos
-            </span>
-            <div className="db-seg" id="exPeriod" hidden>
-              <button data-p="hoy">
-                Hoy
-              </button>
-              <button data-p="7d" className="on">
-                7 días
-              </button>
-              <button data-p="mes">
-                30 días
-              </button>
-            </div>
-            <button className="pill" data-datepick="ex" id="exPill" hidden>
-              <span className="pv">
-                Personalizado
-              </span>
-              <span className="pc">
-                ⌄
-              </span>
+      <div className="view-scroll inicio">
+        <Mascota className="inicio-mascota" diametro={88} sigue viva={aLaVista} />
+
+        <h1 className="inicio-saludo">
+          <span className="l1">{linea}</span>
+          <span className="l2">¿Qué quieres saber de tu agencia?</span>
+        </h1>
+
+        <div className="inicio-caja">
+          <textarea
+            className="inicio-campo"
+            rows={1}
+            disabled
+            placeholder="Pregúntale al cerebro…"
+            aria-label="Pregúntale al cerebro"
+            aria-describedby="inicioEnCamino"
+          />
+          <div className="inicio-fila">
+            <button type="button" className="inicio-enviar" disabled aria-label="Enviar" aria-describedby="inicioEnCamino">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
             </button>
           </div>
         </div>
-        <section className="bizfunnel" id="exFunnel" hidden />
-        <section className="graph-wrap">
-          <div className="graph-head">
-            Pasa el cursor por un área para ver qué trae a la reunión · toca para entrar
-          </div>
-          <div className="graph-legend">
-            <span>
-              <span className="st ok" />
-              {' '}activo
-            </span>
-            <span>
-              <span className="st warn" />
-              {' '}atención
-            </span>
-            <span>
-              <span className="st crit" />
-              {' '}incidencia
-            </span>
-          </div>
-          <svg className="graph" id="deptGraph" viewBox="0 0 960 560" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              {/* EL HALO DEL NÚCLEO, APAGADO. Era un ámbar al 28 % que se desvanecía hacia
-                  afuera: profundidad, que es lo que se pidió sacar. La capa ejecutiva se sigue
-                  distinguiendo por el color de su borde —el blanco de `--exec`— y por su rótulo.
 
-                  Los tres degradados de este `<defs>` se conservan aunque dos queden en nada, y NO
-                  es por las dudas: `scripts/paridad.mjs` compara esta vista contra el prototipo con
-                  una huella de `tag + id + clases` de cada descendiente (su `forma()`), así que
-                  sacar un `<radialGradient id="…">` de acá la deja en rojo para siempre. Y un rojo
-                  permanente no se arregla: se ignora, y con él se ignoran las otras seis vistas que
-                  sí sirven. Los ATRIBUTOS no entran en esa huella, así que cambiar los colores es
-                  gratis y quitar un nodo no lo es. */}
-              <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="100%" stopColor="transparent" />
-              </radialGradient>
-              {/* EL RELLENO DE LAS SEIS TARJETAS, Y ACÁ ESTABA EL DEFECTO DE VERDAD.
-                  Los dos topes eran `#16202f` y `#0c1220` escritos a mano — dos azules casi negros.
-                  Un literal no cambia con el tema, así que en modo claro las tarjetas SEGUÍAN
-                  siendo negras mientras su texto, que sí usa tokens, se volvía casi negro: seis
-                  tarjetas con el nombre del área ilegible, sin que nada falle.
-
-                  Los dos topes apuntan al MISMO token a propósito. Un degradado de dos tonos es un
-                  volumen, y no hay volumen: el token deja la tarjeta plana y del color del tema. */}
-              <linearGradient id="nodeFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--nodo-fondo)" />
-                <stop offset="100%" stopColor="var(--nodo-fondo)" />
-              </linearGradient>
-              {/* `dataGlow` no lo referencia NADIE — se comprobó en todo el repositorio, no hay un
-                  solo `url(#dataGlow)`. Queda por la huella de paridad, en nada. */}
-              <radialGradient id="dataGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="100%" stopColor="transparent" />
-              </radialGradient>
-            </defs>
-            {/* ══════════════════════════════════════════════════════════════════════
-                LAS CINCO CONEXIONES: CADA ÁREA CON EL NÚCLEO
-
-                Son cinco líneas que dicen lo mismo, así que se dibujan iguales: un solo color
-                —el del núcleo, el blanco de `--exec`, en `.edge` de `app/aios.css`— y un punto por cada
-                una. Antes había dos colores y CUATRO puntos, y las dos cosas se leían como
-                información: parecía que Acquisition y Conversation estaban conectadas y las
-                otras tres no, y que Creative no mandaba nada.
-
-                ── LA DE CREATIVE ES RECTA, Y NO ES UNA PREFERENCIA ─────────────────
-
-                Creative está EXACTAMENTE debajo del núcleo: su tarjeta va de x=386 a x=574 y el
-                núcleo de 398 a 562 — las dos centradas en x=480. Con los dos centros alineados,
-                una curva no une nada mejor que una recta: solo dobla sin motivo, y la que había
-                doblaba MAL — arrancaba en (400,512), que está DENTRO de la tarjeta, y terminaba
-                en (470,300), que está dentro del núcleo y desalineado 10 px. En pantalla se veía
-                como una diagonal que salía del texto de la tarjeta.
-
-                La recta va del borde de arriba de Creative (y=440) al borde de abajo del núcleo
-                (y=308): 132 px enteramente visibles, sin un tramo tapado por ninguna tarjeta.
-
-                ── POR QUÉ LAS OTRAS CUATRO SIGUEN CURVAS Y NO SE TOCAN ────────────
-
-                Ninguna de las cuatro está alineada con el núcleo: llegan en diagonal, y ahí la
-                curva sí hace algo — entra al núcleo perpendicular a su borde en vez de cortarle
-                la esquina. Enderezarlas por simetría empeoraría las cuatro para que la quinta no
-                sea distinta.
-
-                Sus tramos finales quedan por dentro del núcleo a propósito: la tarjeta se dibuja
-                DESPUÉS y es opaca, así que tapa el remate y la línea no muere en el aire.
-                ══════════════════════════════════════════════════════════════════════ */}
-            <path id="e1" className="edge" d="M 305 168 C 385 200, 430 228, 452 248" />
-            <path id="e2" className="edge" d="M 268 372 C 350 352, 410 300, 444 276" />
-            <path id="e3" className="edge" d="M 480 440 L 480 308" />
-            <path id="e4" className="edge" d="M 655 168 C 575 200, 530 228, 508 248" />
-            <path id="e5" className="edge" d="M 692 372 C 610 352, 550 300, 516 276" />
-            <circle className="pulse" r="2.4">
-              <animateMotion dur="4.4s" repeatCount="indefinite">
-                <mpath href="#e1" />
-              </animateMotion>
-            </circle>
-            <circle className="pulse" r="2.4">
-              <animateMotion dur="5.4s" begin="1.2s" repeatCount="indefinite">
-                <mpath href="#e4" />
-              </animateMotion>
-            </circle>
-            <circle className="pulse" r="2.4">
-              <animateMotion dur="4.8s" begin="2.2s" repeatCount="indefinite">
-                <mpath href="#e5" />
-              </animateMotion>
-            </circle>
-            <circle className="pulse" r="2.4">
-              <animateMotion dur="6s" begin="0.6s" repeatCount="indefinite">
-                <mpath href="#e2" />
-              </animateMotion>
-            </circle>
-            {/* EL QUINTO PUNTO, QUE FALTABA. `e3` era la única línea sin animación, y eso se leía
-                como que Creative no manda nada — la única de las seis áreas apagada.
-
-                Su duración es la más corta de las cinco y sale de una cuenta, no del gusto: la
-                recta mide 132 px y las otras cuatro 168 y 202, que a 4.4–6 s dan entre 31 y 42
-                px/s. 3.6 s deja este punto en 36.7, o sea a la MISMA velocidad. Copiarle la
-                duración a otra lo dejaría arrastrándose, y el ojo compara velocidades, no tiempos.
-
-                El `begin` de 1.7 s es el hueco que quedaba entre 1.2 y 2.2: con los cinco
-                arrancando juntos, el mapa late en vez de fluir. */}
-            <circle className="pulse" r="2.4">
-              <animateMotion dur="3.6s" begin="1.7s" repeatCount="indefinite">
-                <mpath href="#e3" />
-              </animateMotion>
-            </circle>
-            {/* ====== NÚCLEO ====== */}
-            <circle cx="480" cy="262" r="132" fill="url(#coreGlow)" />
-            <g className="node-card core">
-              <rect
-                className="body"
-                x="398"
-                y="216"
-                width="164"
-                height="92"
-                rx="16"
-                /* El color del núcleo, ahora por token: el literal `rgba(232,182,76,0.5)` era el
-                   ámbar del tema OSCURO, y sobre blanco daba un borde lavado. El `drop-shadow` de
-                   18 px que venía al lado era el halo, y se fue con el resto. */
-                style={{ stroke: 'var(--nodo-nucleo-borde)' }}
-               />
-              <text
-                className="node-sub"
-                x="480"
-                y="240"
-                textAnchor="middle"
-                style={{ fill: 'var(--exec)', letterSpacing: '.04em' }}
-              >
-                CAPA EJECUTIVA
-              </text>
-              <text className="node-name" x="480" y="264" textAnchor="middle" style={{ fontSize: '15px' }}>
-                Executive
-              </text>
-              <text
-                className="node-tag"
-                x="480"
-                y="286"
-                textAnchor="middle"
-                style={{ fill: 'var(--txt-faint)' }}
-              >
-                3 temas hoy · 1 conflicto
-              </text>
-            </g>
-            {/* ====== ÁREAS ====== */}
-            <g className="node-card" data-node="acquisition">
-              <rect className="body" x="122" y="92" width="188" height="80" rx="14" />
-              <use href="#i-acq" x="146" y="110" width="18" height="18" className="node-ico" />
-              <circle cx="292" cy="112" r="3.5" fill="var(--warn)" />
-              <text className="node-name" x="170" y="122">
-                Acquisition
-              </text>
-              <text className="node-sub" x="170" y="140">
-                Campañas y tráfico
-              </text>
-              <text className="node-tag" x="170" y="157" style={{ fill: 'var(--warn)' }}>
-                2 a revisar
-              </text>
-            </g>
-            <g className="node-card" data-node="conversation">
-              <rect className="body" x="650" y="92" width="188" height="80" rx="14" />
-              <use href="#i-chat" x="674" y="110" width="18" height="18" className="node-ico" />
-              <circle cx="820" cy="112" r="3.5" fill="var(--warn)" />
-              <text className="node-name" x="698" y="122">
-                Conversation
-              </text>
-              <text className="node-sub" x="698" y="140">
-                Agentes de WhatsApp y voz
-              </text>
-              <text className="node-tag" x="698" y="157" style={{ fill: 'var(--warn)' }}>
-                1 a revisar
-              </text>
-            </g>
-            <g className="node-card" data-node="conversion">
-              <rect className="body" x="80" y="332" width="188" height="80" rx="14" />
-              <use href="#i-conv" x="104" y="350" width="18" height="18" className="node-ico" />
-              <circle cx="250" cy="352" r="3.5" fill="var(--crit)" />
-              <text className="node-name" x="128" y="362">
-                Conversion
-              </text>
-              <text className="node-sub" x="128" y="380">
-                Landing, VSL y formulario
-              </text>
-              <text className="node-tag" x="128" y="397" style={{ fill: 'var(--crit)' }}>
-                1 incidencia crítica
-              </text>
-            </g>
-            <g className="node-card" data-node="sales">
-              <rect className="body" x="692" y="332" width="188" height="80" rx="14" />
-              <use href="#i-sales" x="716" y="350" width="18" height="18" className="node-ico" />
-              <circle cx="862" cy="352" r="3.5" fill="var(--ok)" />
-              <text className="node-name" x="740" y="362">
-                Sales
-              </text>
-              <text className="node-sub" x="740" y="380">
-                Closers y llamadas
-              </text>
-              <text className="node-tag" x="740" y="397" style={{ fill: 'var(--txt-faint)' }}>
-                cierre 31%
-              </text>
-            </g>
-            <g className="node-card" data-node="creative">
-              <rect className="body" x="386" y="440" width="188" height="80" rx="14" />
-              <use href="#i-creative" x="410" y="458" width="18" height="18" className="node-ico" />
-              <circle cx="556" cy="460" r="3.5" fill="var(--ok)" />
-              <text className="node-name" x="434" y="470">
-                Creative
-              </text>
-              <text className="node-sub" x="434" y="488">
-                Piezas, hooks y ángulos
-              </text>
-              <text className="node-tag" x="434" y="505" style={{ fill: 'var(--txt-faint)' }}>
-                8 piezas activas
-              </text>
-            </g>
-          </svg>
-        </section>
-        {/* TRAZABILIDAD DEL FUNNEL */}
+        <p className="inicio-nota" id="inicioEnCamino">
+          El cerebro llega en una próxima etapa: todavía no hay quien te responda acá.
+        </p>
       </div>
     </section>
-    </>
   );
 }

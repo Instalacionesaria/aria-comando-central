@@ -51,6 +51,38 @@ function bloqueDeMedios(css: string, ancho: number): string {
   assert.fail(`la consulta de medios de ${ancho}px no cierra`);
 }
 
+/** Cuántas pistas tiene un valor de rejilla. Los `minmax(…)` y `repeat(…)` cuentan como una. */
+const pistas = (valor: string): number =>
+  valor.replace(/(minmax|repeat|fit-content)\([^)]*\)/g, 'X').trim().split(/\s+/).length;
+
+/** Las reglas de una hoja ya sin medios: selector y cuerpo. */
+const reglas = (css: string) =>
+  [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ selector: m[1]!, cuerpo: m[2]! }));
+
+/** Las hojas de la capa `components`, como las importa `app/globals.css`: todas ganan sobre `aios.css`. */
+function hojasDeComponentes(): string[] {
+  const globales = leer('app/globals.css');
+  const hojas = [...globales.matchAll(/@import\s+"\.\/([\w./-]+\.css)"\s+layer\(components\)/g)].map((m) => `app/${m[1]}`);
+  assert.ok(hojas.includes('app/armazon.css') && hojas.includes('app/temas.css'), 'no se pudieron leer las hojas de la capa `components`');
+  return hojas;
+}
+
+/** La hoja sin comentarios y sin ninguna consulta de medios: las reglas que valen en todo ancho. */
+function sinMedios(css: string): string {
+  let limpio = sinComentarios(css);
+  for (;;) {
+    const i = limpio.search(/@media[^{]*\{/);
+    if (i === -1) return limpio;
+    let nivel = 0;
+    let j = limpio.indexOf('{', i);
+    for (; j < limpio.length; j += 1) {
+      if (limpio[j] === '{') nivel += 1;
+      else if (limpio[j] === '}' && --nivel === 0) break;
+    }
+    limpio = limpio.slice(0, i) + limpio.slice(j + 1);
+  }
+}
+
 test('el conmutador y el menú se nombran igual, o el `aria-controls` apunta a la nada', () => {
   /* Son DOS archivos: el botón vive en `TopBar.jsx` y el menú en `Nav.jsx`. Un `aria-controls` que
      no resuelve no rompe nada visible —el botón sigue abriendo el cajón— así que quien usa un lector
@@ -77,51 +109,71 @@ test('el conmutador y el menú se nombran igual, o el `aria-controls` apunta a l
   );
 });
 
-test('el corte pisa `.app` Y `.app.solo`, que es el error fácil', () => {
-  /* `shell.js:133` pone `.solo` en las once pantallas que no son Executive, y `.app.solo` pesa más
-     que `.app` a secas. Pisar sólo `.app` deja **Executive arreglada y las otras once rotas**, que
-     es peor que no arreglar nada: quien lo pruebe va a abrir la primera pantalla, verla bien, y dar
-     el trabajo por terminado. */
-  const bloque = bloqueDeMedios(leer('app/armazon.css'), CORTE_DEL_MENU);
+test('la rejilla del armazón tiene dos filas y dos columnas, y nadie pone `.solo`', () => {
+  /* La del prototipo (`aios.css`) tiene tres filas y tres columnas: el panel lateral y la barra «Pregúntale
+     a Executive sobre …» de la maqueta del Executive, que se fueron el 2026-10-01 (`NE-30`). La regla base de
+     `armazon.css` la pisa por capa, y tiene que pisar las TRES propiedades: sin las filas queda una
+     franja vacía de 64 px abajo en todas las pantallas, y sin las columnas, una de 312 px a la derecha.
+     No falla nada: se ve. */
+  const css = leer('app/armazon.css');
+  const base = sinMedios(css).match(/(?:^|\})\s*\.app\s*\{([^}]*)\}/);
+  assert.ok(base, '`app/armazon.css` no tiene una regla `.app` fuera de las consultas de medios');
+  const decl = (prop: string) => new RegExp(`${prop}:\\s*([^;]+);`).exec(base[1]!)?.[1]?.replace(/\s+/g, ' ').trim();
+  const filas = decl('grid-template-rows');
+  assert.ok(filas, 'la rejilla base no redefine las filas: queda la tercera, de 64 px, vacía abajo');
+  assert.equal(pistas(filas), 2, `la rejilla base tiene filas \`${filas}\`, y son dos`);
+  const columnas = decl('grid-template-columns');
+  assert.ok(columnas, 'la rejilla base no redefine las columnas: queda la tercera, de 312 px, vacía a la derecha');
+  assert.match(columnas, /^216px minmax\(0, 1fr\)$/, `la rejilla base tiene columnas \`${columnas}\``);
+  assert.equal(decl('grid-template-areas'), '"top top" "nav main"', 'las áreas de la rejilla base no son las del armazón sin panel ni barra');
 
-  const rejilla = bloque.match(/([^{}]*)\{[^}]*grid-template-columns[^}]*\}/);
-  assert.ok(rejilla, `la consulta de ${CORTE_DEL_MENU}px no redefine ninguna rejilla`);
-  const selector = rejilla[1]!;
-  assert.match(selector, /\.app\b/, 'la rejilla del corte no nombra `.app`');
-  assert.match(
-    selector,
-    /\.app\.solo\b/,
-    'la rejilla del corte no nombra `.app.solo`. `shell.js` le pone esa clase a las once pantallas ' +
-      'que no son Executive y gana por especificidad: sin ella, once de las doce siguen con la ' +
-      'barra ocupando 216 px de un teléfono',
+  // El corte: una columna, sin el área de la barra.
+  const angosto = bloqueDeMedios(css, CORTE_DEL_MENU).match(/([^{}]*)\{([^}]*grid-template-areas[^}]*)\}/);
+  assert.ok(angosto, `la consulta de ${CORTE_DEL_MENU}px no redefine la rejilla`);
+  assert.match(angosto[1]!, /\.app\b/, 'la rejilla del corte no nombra `.app`');
+  assert.equal(/grid-template-areas:\s*([^;]+);/.exec(angosto[2]!)?.[1]?.replace(/\s+/g, ' ').trim(), '"top" "main"');
+
+  /* Y ninguna OTRA regla de `.app` en las hojas de la capa `components` —la de `armazon.css` y las que
+     entran después, como `temas.css`— devuelve una tercera pista: ganaría por orden sobre la base, y
+     mirar sólo la primera regla la dejaba pasar. Tampoco la forma abreviada, que no se cuenta. */
+  for (const hoja of hojasDeComponentes()) {
+    for (const { selector, cuerpo } of reglas(sinMedios(leer(hoja)))) {
+      if (!selector.split(',').some((s) => /\.app\s*$/.test(s.trim()))) continue;
+      assert.doesNotMatch(cuerpo, /(^|[\s;])grid(-template)?\s*:/, `\`${hoja}\` define la rejilla de \`${selector.trim()}\` con la forma abreviada`);
+      for (const prop of ['grid-template-rows', 'grid-template-columns']) {
+        const valor = new RegExp(`${prop}:\\s*([^;]+);`).exec(cuerpo)?.[1];
+        if (valor) assert.ok(pistas(valor) <= 2, `\`${hoja}\` le da a \`${selector.trim()}\` ${prop} \`${valor.trim()}\`: vuelve una tercera pista`);
+      }
+    }
+  }
+
+  /* Y `.solo` no vuelve: la ponía `shell.js` para esconder el panel lateral en las pantallas que no
+     eran Executive, y sin panel es una clase sin propósito que una regla de `aios.css` todavía lee. */
+  assert.doesNotMatch(sinComentarios(css), /\.solo\b/, '`app/armazon.css` vuelve a nombrar `.solo`');
+  assert.doesNotMatch(
+    leer('lib/aios/shell.js').replace(/\/\*[\s\S]*?\*\//g, ' '),
+    /classList\.(toggle|add)\(\s*'solo'/,
+    '`shell.js` vuelve a poner `.solo`',
   );
 });
 
-test('la barra sale del flujo y el panel derecho se va: las dos mitades del ancho', () => {
+test('la barra sale del flujo hasta el borde de abajo, y no queda panel ni barra de preguntas', () => {
   const css = leer('app/armazon.css');
   const angosto = bloqueDeMedios(css, CORTE_DEL_MENU);
 
-  assert.match(
-    angosto,
-    /\.nav\s*\{[^}]*position:\s*fixed/,
+  const nav = angosto.match(/\.nav\s*\{([^}]*)\}/);
+  assert.ok(nav && /position:\s*fixed/.test(nav[1]!),
     'la barra lateral no sale del flujo en el corte: sacarla de la rejilla sin fijarla la deja ' +
-      'apilada arriba del cuerpo, empujando la pantalla entera hacia abajo',
-  );
-  assert.match(
-    angosto,
-    /\.side\s*\{[^}]*display:\s*none/,
-    'el panel derecho sigue en la rejilla angosta. Su `grid-area: side` ya no existe en la ' +
-      'plantilla nueva, así que la rejilla le inventa una fila propia debajo del cuerpo',
-  );
+      'apilada arriba del cuerpo, empujando la pantalla entera hacia abajo');
+  /* `bottom: 0` y no los 64 px de antes, que eran el hueco de la barra de preguntas: sin ella, el
+     cajón terminaría 64 px antes del borde y debajo se vería el velo. */
+  assert.match(nav[1]!, /bottom:\s*0\s*;/, 'el cajón del menú no llega al borde de abajo');
 
-  /* Y el corte ANCHO, que es el mismo defecto un escalón arriba: en Executive —la única sin
-     `.solo`— el panel derecho de 312 px dejaba el cuerpo en 234 px a 762 px de ventana. */
-  assert.match(
-    bloqueDeMedios(css, 1080),
-    /\.side\s*\{[^}]*display:\s*none/,
-    'el corte ancho dejó de esconder el panel derecho: Executive vuelve a quedar con el cuerpo ' +
-      'aplastado entre las dos barras en cualquier portátil chico',
-  );
+  // Ninguna regla del panel lateral ni de la barra de preguntas: se fueron con la maqueta.
+  assert.doesNotMatch(sinComentarios(css), /\.side\b|\.ask\b|\.ask-trigger|\.at-[tk]\b/, '`app/armazon.css` vuelve a tener reglas del panel lateral o de la barra de preguntas');
+  for (const m of sinComentarios(css).matchAll(/grid-template-areas:\s*([^;]+);/g)) {
+    assert.doesNotMatch(m[1]!, /\b(side|ask)\b/, `un área de la rejilla vuelve a nombrar el panel o la barra: ${m[1]}`);
+  }
 });
 
 test('las rejillas del corte llevan `minmax(0, …)`, o el contenido ancho las estira', () => {
@@ -136,8 +188,9 @@ test('las rejillas del corte llevan `minmax(0, …)`, o el contenido ancho las e
    * estaba donde se veía. Y no lo ve ninguna prueba de las otras, porque la aplicación sigue
    * funcionando — sólo hay que arrastrarla de costado para leerla. */
   const css = leer('app/armazon.css');
-  for (const ancho of [1080, CORTE_DEL_MENU]) {
-    const bloque = bloqueDeMedios(css, ancho);
+  /* La rejilla base y la del corte. Había otra, la de 1080 px, que existía sólo para esconder el
+     panel lateral de la maqueta: se fue con él. */
+  for (const [ancho, bloque] of [['todo ancho', sinMedios(css)], [CORTE_DEL_MENU, bloqueDeMedios(css, CORTE_DEL_MENU)]] as const) {
     for (const m of bloque.matchAll(/grid-template-columns:\s*([^;]+);/g)) {
       const valor = m[1]!.trim();
       /* Se quitan los `minmax(…)` ANTES de buscar: dentro de uno, el `1fr` es el máximo y está
@@ -147,7 +200,7 @@ test('las rejillas del corte llevan `minmax(0, …)`, o el contenido ancho las e
       assert.doesNotMatch(
         pelado,
         /(^|\s)1fr/,
-        `la rejilla \`${valor}\` del corte de ${ancho}px usa \`1fr\` pelado. Es \`minmax(auto, 1fr)\`: ` +
+        `la rejilla \`${valor}\` (${ancho}) usa \`1fr\` pelado. Es \`minmax(auto, 1fr)\`: ` +
           'un hijo ancho —una tabla, un nombre largo— estira la columna y se lleva la pantalla entera ' +
           'con ella. Va `minmax(0, 1fr)`',
       );
@@ -198,15 +251,12 @@ test('el cajón se cierra AL NAVEGAR y con `Escape`, y las dos viven donde se na
       'detrás del menú que la tapa',
   );
 
-  /* Y `Escape`, junto a los otros dos overlays. Los tres en el mismo sitio: una tecla que cierra
-     dos de tres se siente peor que una que no cierra ninguno, porque enseña que funciona. */
-  const teclado = limpio.slice(limpio.indexOf("addEventListener('keydown'"));
+  /* Y `Escape`. Compartía oyente con los overlays de la maqueta, que se fueron el 2026-10-01: borrar
+     aquel oyente entero, como sobraba, dejaba el cajón sin tecla en silencio. */
+  const i = limpio.indexOf("addEventListener('keydown'");
+  assert.ok(i >= 0, 'el armazón ya no escucha el teclado: `Escape` no cierra el cajón del menú');
+  const teclado = limpio.slice(i);
   const bloqueTeclado = teclado.slice(0, teclado.indexOf('});'));
-  for (const cierre of ['cerrarElCajon', 'cerrarElModal', 'cerrarElMenu']) {
-    assert.match(
-      bloqueTeclado,
-      new RegExp(String.raw`${cierre}\(\)`),
-      `\`Escape\` dejó de llamar a \`${cierre}()\`: queda una cosa abierta encima que la tecla no cierra`,
-    );
-  }
+  assert.match(bloqueTeclado, /cerrarElMenu\(\)/, '`Escape` dejó de cerrar el cajón del menú');
+  assert.doesNotMatch(bloqueTeclado, /cerrarEl(Cajon|Modal)\(\)/, '`Escape` vuelve a llamar a los cierres de los overlays de la maqueta');
 });

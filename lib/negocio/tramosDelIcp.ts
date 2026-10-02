@@ -5,7 +5,7 @@
 //
 // El número lo calcula el CRM —«Puntaje | ICP», de 0 a 100— y se guarda tal cual en
 // `contactos.score`. Lo que este archivo agrega es lo único que el CRM no dice: **dónde deja de ser
-// alto**. Los cortes 75 y 50 son los de la maqueta (`SEG` en `lib/aios/leads-group.js`), y los
+// alto**. Los cortes 75 y 50 son los de la maqueta (`SEG` en `lib/aios/leads-group.js`, que se fue con ella), y los
 // adoptó el usuario el 2026-09-26 para Leads Portal (`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md`,
 // LP14-05). No son un corte validado: los datos proponen también un 60, donde la casa deja de
 // rechazar por ICP. Por eso están acá con nombre y no escritos como `75` en cada consulta.

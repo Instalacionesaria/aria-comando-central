@@ -42,7 +42,7 @@ están mal de una manera distinta:
 
 El último es el peor de los cuatro: la pantalla pasa a afirmar un rango elegido mientras sigue
 mostrando lo mismo. El calendario busca quién atiende la clave `lp` (`lib/aios/datepicker.js:129@c4cf2a8`) y
-la lista de oyentes nace vacía (`:133`); nadie registra uno.
+la lista de oyentes nace vacía (`:133@c4cf2a8`); nadie registra uno.
 
 Es el mismo defecto de la clave `mes` que Sales documentó en su propio segmentado
 (`docs/sales/06-PERIODOS-Y-PISOS.md:25-32`).

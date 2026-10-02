@@ -44,9 +44,9 @@
      · `--bg-panel`, `--bg-hondo`                         → `bg-alt`          #070a10
      · `--bg-raise`                                       → `surface-raised`  #0a0f18
      · `--bg-float`, `--bg-flota`, `--bg-cajon`           → `surface-active`  #0d1420
-       (`--bg-flota` es la cabecera de los menús y desplegables, y `--bg-cajon` la del modal de
-       recomendaciones: sin sombras, lo único que separa una capa que FLOTA de la tarjeta de atrás es
-       que sea más clara. Con el valor del panel quedaban del mismo color que ella)
+       (`--bg-flota` es la cabecera de los menús y desplegables, y `--bg-cajon` era la del modal de
+       recomendaciones, que se fue con la maqueta: sin sombras, lo único que separa una capa que FLOTA
+       de la tarjeta de atrás es que sea más clara. Con el valor del panel quedaban del mismo color)
      · `--line`                                           → `line`            #151b26
      · `--line-strong`                                    → el borde que la marca pide «si el borde debe
                                                             leerse solo»: #3a4456 (ver abajo)
@@ -70,15 +70,16 @@
   /* Los canales de superficie ya no copian cada uno a su fondo: cada uno vive en uno o dos
      degradados de `aios.css`, y la forma de aplanarlos sin tocar esa hoja (`NE-27`) es darle el
      MISMO valor a los dos extremos. `.topbar` y `.nav` van de `--c-alto` a `--c-hundido`, los dos en
-     `bg-alt`; `.side` y `.ask` van de `--c-panel` a `--c-hondo`/`--c-base`, los tres en
-     `surface-raised`, que al 50 % de las tarjetas translúcidas de operación da casi `bg-alt`.
+     `bg-alt`; `--c-panel`, `--c-hondo` y `--c-base` (los de `.side` y `.ask`, que ya no se dibujan)
+     valen `surface-raised`, que al 50 % de las tarjetas translúcidas de operación da casi `bg-alt`.
 
-     Los degradados de superficie que NO se aplanan, y por qué: los tres cajones (`.drawer`, `.lg`,
-     `.cw`) van de `--bg-raise` a `--bg-hondo`, o sea 1,03:1, por no quitarle a `--bg-raise` su valor
-     de la marca; y los menús y modales van de `surface-active` a `bg-alt`, porque su cabecera tiene
-     que distinguirse de lo que tapan. Están en el inventario de `brand/MIGRACION.md`.
+     Los degradados de superficie que NO se aplanan, y por qué: los cajones —`.drawer`, el de las
+     fichas de Leads Portal y de Creative, y `.cw`, el del contacto— van de `--bg-raise` a `--bg-hondo`,
+     o sea 1,03:1, por no quitarle a `--bg-raise` su valor de la marca; y los menús van de
+     `surface-active` a `bg-alt`, porque su cabecera tiene que distinguirse de lo que tapan. Los modales
+     que también lo hacían se fueron con la maqueta. Están en el inventario de `brand/MIGRACION.md`.
 
-     `--c-velo` es el velo de los modales y del menú del teléfono (al 60 %), y es negro: tiene que
+     `--c-velo` es el velo de los cajones y del menú del teléfono (al 60 %), y es negro: tiene que
      oscurecer la página que tapa. Era también la viñeta del prototipo, que ya no se genera
      (ver «EL FONDO ES LISO»). */
   --c-velo:      0   0   0;
@@ -261,13 +262,13 @@
   /* El carril del arco del anillo de comisión: la línea fuerte de la marca, opaca. */
   --carril-del-arco: #242c3a;
   /* ── EL LIENZO DE «EQUIPO DE INTELIGENCIA» ─────────────────────────────────
-     Las seis tarjetas del organigrama son SVG, y ahí el color no se hereda del tema como en el
-     resto de la aplicación: el relleno salía de un degradado escrito a mano en el JSX. Estos cuatro
-     tokens existen para que el SVG siga al tema, porque un literal en el JSX no cambia con él.
+     Las seis tarjetas del organigrama eran SVG, y ahí el color no se heredaba del tema como en el
+     resto de la aplicación. Estos cuatro tokens existían para que el SVG siguiera al tema. El
+     organigrama se fue el 2026-10-01 con la maqueta del Executive: los tokens y las reglas `.node-card`
+     quedaron sin consumidor hasta que se borren, que es otra tarea (la `107` lo anota).
 
-     El relleno es la superficie elevada de la marca. El borde es el acento al 45 %, que da 3,4:1
-     contra el lienzo: el 3:1 que la WCAG 1.4.11 pide para el límite de un control, porque estas
-     tarjetas se pueden tocar y sin sombra el trazo es lo único que las delimita. */
+     El relleno era la superficie elevada de la marca, y el borde el acento al 45 %, 3,4:1 contra el
+     lienzo: el 3:1 que la WCAG 1.4.11 pide para el límite de un control que se puede tocar. */
   --nodo-fondo:  #0a0f18;
   --nodo-borde:  rgb(143 227 255 / 0.45);
   /* El núcleo (la capa ejecutiva) se distingue por el color de su borde, no por un halo: el blanco
@@ -548,7 +549,7 @@
    `aios.css` en la capa `aios` (ver `app/globals.css`), así que un `*` de especificidad 0-0-0 acá le
    gana a un `.card { box-shadow: … }` de 0-1-0 allá. No hace falta un solo `!important` — y no hace
    falta tocar `aios.css`, que tiene que seguir siendo comparable contra `aios-command-center_1.html`
-   para que `npm run paridad` signifique algo.
+   para que un diff diga qué se desvió del diseño original.
 
    Lo que el universal NO alcanza es su propia capa: `fundaciones.css`, `ajustes.css`, `armazon.css`
    y `closer.css` viven en `components` igual que esto, y ahí sí manda la especificidad. Son tres
@@ -604,13 +605,13 @@
 /* ═════════════════════════════════════════════════════════════════════════════
    LAS LETRAS DE ADENTRO DE LAS INTELIGENCIAS
    ═════════════════════════════════════════════════════════════════════════════
-   Las seis tarjetas de «Equipo de inteligencia». El nombre de cada área pasa al fósforo, y el borde
-   se refuerza — el borde, porque la tarjeta venía con un `drop-shadow` de 4 px que la despegaba del
-   lienzo, y sin él lo único que la delimita es su trazo.
+   Las seis tarjetas de «Equipo de inteligencia», que se fueron el 2026-10-01 con la maqueta del
+   Executive: estas reglas ya no tienen a quién aplicarse. El nombre de cada área pasaba al fósforo, y
+   el borde se reforzaba porque, sin el `drop-shadow` del prototipo, era lo único que la delimitaba.
 
-   El relleno NO se toca acá: sale de `url(#nodeFill)` en `aios.css`, y ese degradado ahora apunta a
-   `--nodo-fondo` desde el propio JSX. Un mecanismo, y en el único lugar donde el SVG lo puede
-   leer. */
+   El relleno salía de `url(#nodeFill)` en `aios.css`, y ese degradado apuntaba a `--nodo-fondo` desde
+   el JSX que se reescribió. Las reglas y sus tokens quedan hasta que se borren en otra tarea
+   (`pruebas/codigo/107-sin-sombras.test.ts`). */
 :root[data-tema] .node-card rect.body {
   stroke: var(--nodo-borde);
   stroke-width: 1.25;

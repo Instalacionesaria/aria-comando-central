@@ -12,8 +12,8 @@
  *
  * ── UN CAJÓN PROPIO, NO `#drawer` ──────────────────────────────────────────
  *
- * Mismo molde que `components/leads-portal/FichaDelLead.jsx`: `#drawer` lo escribe Executive con
- * `innerHTML`, y compartirlo haría que dos pantallas pisaran el mismo nodo. Éste tiene su `id`, usa
+ * Mismo molde que `components/leads-portal/FichaDelLead.jsx`: `#drawer` lo escribía la maqueta del
+ * Executive con `innerHTML`, y compartirlo hacía que dos pantallas pisaran el mismo nodo. Éste tiene su `id`, usa
  * las clases globales del cajón —se ve igual— y se monta en `document.body`.
  *
  * ── EL LINK MANUAL ES UN ENLACE, Y SÓLO LO CARGA QUIEN ADMINISTRA ───────────

@@ -334,7 +334,7 @@ de campaña de la tabla de atribución— **vienen de la base**, no del código.
 
 Ninguno de los cuatro cambió desde el 15 (`git log --since=2026-09-15` sobre los tres archivos sólo
 muestra `0add4cc`, que cambió cómo se cierra el cajón en `lib/aios/executive-panel.js` y no tocó
-ningún dato). Los tres módulos siguen arrancando desde `lib/aios/index.js:29-37`. Es la única
+ningún dato). Los tres módulos siguen arrancando desde `lib/aios/index.js:29-37@c4cf2a8`. Es la única
 pantalla que habla por Conversation: `grep` de «Lead Flow», «agente de voz» y «show rate» en
 `components/`, `app/` y `lib/aios/`, fuera de `components/conversation/` y `components/auditoria/`,
 el 2026-09-28, sólo acierta en `lib/aios/executive.js` y en dos comentarios de la ruta de esta misma

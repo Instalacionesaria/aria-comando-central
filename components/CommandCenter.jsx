@@ -8,9 +8,6 @@ import { useSesion } from '../app/sesion-contexto.tsx';
 import IconSprite from './IconSprite';
 import TopBar from './TopBar';
 import Nav from './Nav';
-import SidePanel from './SidePanel';
-import AskBar from './AskBar';
-import Overlays from './Overlays';
 
 import ExecutiveView from './views/ExecutiveView';
 import AcquisitionView from './views/AcquisitionView';
@@ -55,8 +52,8 @@ const VISTAS = {
 export default function CommandCenter() {
   const sesion = useSesion();
 
-  /* React sólo pinta el esqueleto; el contenido de cada vista lo sigue
-     rellenando la capa imperativa portada del HTML, igual que antes. */
+  /* La capa imperativa que queda es el armazón (`lib/aios/shell.js`): abre las pantallas y maneja el
+     menú del teléfono. Ya no rellena el contenido de ninguna vista: cada una es React. */
   useEffect(() => {
     bootAios();
   }, []);
@@ -65,9 +62,9 @@ export default function CommandCenter() {
   //
   // Antes se dibujaban las diez siempre. Con el menú filtrado eso dejaría nueve `<section
   // class="view">` en el DOM que ninguna entrada del menú puede alcanzar — inalcanzables pero
-  // presentes, que es la clase de cosa que después alguien encuentra y no entiende. No hay dato
-  // de inquilino en ellas (son maquetado del prototipo), así que esto no cierra una fuga: cierra
-  // una confusión.
+  // presentes, que es la clase de cosa que después alguien encuentra y no entiende. No cierra una
+  // fuga —los datos de una vista los sirve el API, donde decide el portero—: cierra una
+  // confusión.
   const visibles = (sesion?.menu ?? []).flatMap((g) => g.secciones.map((s) => s.clave));
   const arranque = sesion?.arranque?.seccion.clave;
 
@@ -94,12 +91,7 @@ export default function CommandCenter() {
             return <Vista key={clave} activa={clave === arranque} />;
           })}
         </main>
-
-        <SidePanel />
-        <AskBar arranque={sesion?.arranque ?? null} />
       </div>
-
-      <Overlays />
     </>
   );
 }

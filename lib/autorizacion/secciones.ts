@@ -214,7 +214,7 @@ export const SECCIONES: readonly Seccion[] = [
   // ── Grupo 1 · AIOS ─────────────────────────────────────────────────────────
   {
     clave: 'executive',
-    nombre: 'Executive',
+    nombre: 'Inicio',
     capacidadRequerida: 'tablero.ver',
     sinOperacionesTodavia: true,
     menu: { grupo: 'AIOS', icono: '#i-exec' },
@@ -852,7 +852,7 @@ export function menuVisible(
  * abierta era Closer, y arriba decía **«AIOS / Executive»**. La miga nombraba una pantalla que esa
  * persona no puede ver Y que no era la que estaba abierta.
  *
- * No es una fuga —`Executive` es el nombre de una pestaña, no el dato de nadie— pero sí es la
+ * No era una fuga —`Executive` era el nombre de una pestaña, no el dato de nadie— pero sí era la
  * interfaz afirmando algo falso en el único lugar cuyo trabajo es decir dónde estás.
  *
  * ── EL CUERPO ANTES QUE EL PIE, Y NO ES UN DETALLE ───────────────────────────

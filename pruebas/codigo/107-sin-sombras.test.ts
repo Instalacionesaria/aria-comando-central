@@ -239,60 +239,14 @@ test('el foco NO se fue con las sombras: pasó a `outline`', () => {
   }
 });
 
-test('las tarjetas de inteligencia se pintan por TOKEN y no por literal', () => {
-  // El defecto concreto que se vio en la pantalla: el relleno de las seis tarjetas del organigrama
-  // salía de un degradado escrito a mano en el JSX (`#16202f → #0c1220`). Un literal no cambia con
-  // el tema, así que en claro la tarjeta seguía siendo negra mientras su texto —que sí usa tokens—
-  // se volvía casi negro: seis nombres de área ilegibles, sin que nada falle.
-  const jsx = leer('components/views/ExecutiveView.jsx');
-  assert.match(
-    jsx,
-    /id="nodeFill"[\s\S]{0,240}?stopColor="var\(--nodo-fondo\)"[\s\S]{0,120}?stopColor="var\(--nodo-fondo\)"/,
-    'el relleno de las tarjetas volvió a un color escrito a mano, o dejó de ser plano',
-  );
-
-  // Los tres degradados siguen ahí aunque dos queden en nada. El motivo CAMBIÓ y conviene decirlo:
-  // era que `scripts/paridad.mjs` comparaba esta vista contra el prototipo con una huella de
-  // `tag + id + clases`, así que sacar un nodo del `<defs>` la dejaba en rojo permanente. Ese
-  // motivo ya no aplica —`executive` salió de la comparación al pulirse el mapa de áreas— y se
-  // conservan igual por uno más chico: `coreGlow` SÍ lo referencia un `fill`, y quitar los dos
-  // muertos es una limpieza que no pertenece a este archivo.
-  for (const id of ['coreGlow', 'nodeFill', 'dataGlow']) {
-    assert.ok(jsx.includes(`id="${id}"`), `se borró \`${id}\` del \`<defs>\``);
-  }
-
-  /* Y acá había un `assert.ok(… || true)`: un recordatorio disfrazado de afirmación, que no podía
-     fallar ni cuando lo que recordaba dejó de ser cierto. Ahora dice algo comprobable, y lo que
-     dice es lo contrario de lo que decía — el motivo está en `scripts/paridad.mjs`. */
-  const paridad = leer('scripts/paridad.mjs');
-  const lista = paridad.slice(paridad.indexOf('const VISTAS = ['), paridad.indexOf('];', paridad.indexOf('const VISTAS = [')));
-  assert.equal(
-    lista.includes("'executive'"),
-    false,
-    '`executive` volvió a `VISTAS` de paridad: el mapa de áreas diverge del prototipo a propósito ' +
-      '(cinco líneas de un color, cinco puntos, la de Creative recta) y la comparación queda en rojo',
-  );
-
-  // Y el fósforo, que es lo que se pidió: que las letras de adentro resalten.
-  const css = leer('app/temas.css');
-  const nombre = css.indexOf(':root[data-tema] .node-name');
-  assert.ok(nombre >= 0, 'el nombre del área dejó de tener regla propia');
-  assert.match(
-    css.slice(nombre, css.indexOf('}', nombre)),
-    /fill:\s*var\(--fosforo\)/,
-    'el nombre del área ya no usa el fósforo',
-  );
-  // En los dos temas, y con valores DISTINTOS: un neón sobre blanco no resalta, se pierde.
-  const valorDe = (tema: string) => {
-    const abre = css.indexOf(`:root[data-tema='${tema}']`);
-    const bloque = css.slice(css.indexOf('{', abre) + 1, css.indexOf('}', abre));
-    return /--fosforo\s*:\s*([^;]+);/.exec(bloque)?.[1]?.trim();
-  };
-  const o = valorDe('oscuro');
-  const c = valorDe('claro');
-  assert.ok(o && c, 'falta `--fosforo` en alguno de los dos temas');
-  assert.notEqual(o, c, '`--fosforo` vale lo mismo en los dos temas: uno de los dos está sin pensar');
-});
+/* ── LAS TARJETAS DEL ORGANIGRAMA SE FUERON CON LA MAQUETA (2026-10-01) ─────
+   Acá había una prueba de que las seis tarjetas del organigrama de Executive se pintaban por token y
+   no por literal (`--nodo-fondo`, `--fosforo`): en tema claro, un degradado escrito a mano dejaba seis
+   nombres de área ilegibles. El organigrama se fue con la maqueta del Executive
+   (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y lo que la prueba afirmaba ya no tiene
+   dónde dibujarse: afirmarlo sería verde sobre nada. Que `executive` no vuelva a `VISTAS` de
+   `scripts/paridad.mjs` lo exige `90-fundaciones`, que además pide la lista vacía. Los tokens de esas
+   tarjetas siguen en `app/temas.css` y los fija la `188`; borrarlos es otra tarea. */
 
 test('los tokens de la MEDIA no tienen versión por tema, y eso es la afirmación', () => {
   // El barrido de contraste que se corrió para comprobar que reforzar la paleta no rompiera nada

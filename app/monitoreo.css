@@ -3,7 +3,7 @@
 
    Va en la capa `components`, como `fundaciones.css`, `ajustes.css` y `closer.css`, y por el
    mismo motivo: `aios.css` tiene que seguir siendo comparable línea a línea contra
-   `aios-command-center_1.html` —es lo que hace que `npm run paridad` signifique algo— así que
+   `aios-command-center_1.html` —es lo que deja ver en un diff qué se desvió del diseño— así que
    nada de acá lo toca.
 
    ── NI UN COLOR ESCRITO A MANO ──────────────────────────────────────────

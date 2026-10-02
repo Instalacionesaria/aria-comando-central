@@ -5,7 +5,7 @@
 
 | riesgo | por qué no avisa | qué lo vigila |
 |---|---|---|
-| **Clics al menú viejo.** Los módulos de la maqueta navegan buscando la fila `.nav-item[data-view=…]` y haciéndole clic. Si la fila no está, el clic no pasa y nada falla | Un `querySelector` que no encuentra nada devuelve `null`, y el código lo salta | Los módulos se retiran en E7, **antes** de tocar el menú (E9 y E10). La prueba nueva de E7 exige que no vuelvan |
+| **Clics al menú viejo.** Los módulos de la maqueta navegan buscando la fila `.nav-item[data-view=…]` y haciéndole clic. Si la fila no está, el clic no pasa y nada falla | Un `querySelector` que no encuentra nada devuelve `null`, y el código lo salta | Los módulos se retiraron en E7, **antes** de tocar el menú (E9 y E10). Lo exige `pruebas/codigo/189-la-maqueta-del-executive-se-fue.test.ts`, que además busca cualquier clic sintetizado sobre una fila del menú |
 | **Filas que nacen después del arranque.** El armazón ata los clics del menú una sola vez, al arrancar. Una fila que React dibuja después —un acordeón que se abre— no tendría clic | La fila se ve y no hace nada | En E9 cada fila navega con su propio `onClick`, y una prueba exige que ya nadie ate clics al arrancar |
 | **Una pestaña sin entrada.** Al quitar las barras propias de Tools y Analizadores, una pestaña que el modelo no nombre queda **inalcanzable** | Sigue en el código, nadie llega a ella | La prueba cruzada de E8: toda pestaña de Tools y de Analizadores tiene su entrada |
 | **Una sección nueva sin ubicar.** Si se agrega una sección a `secciones.ts` y no a un departamento, la sección desaparece del menú | Desaparece; no da error | La prueba cruzada de E8: toda sección del menú queda ubicada una sola vez |
@@ -20,13 +20,13 @@
 | **El otro desarrollo en paralelo.** Otra persona agrega secciones y toca el armazón en `main` | Un rebase que mezcla mal se ve bien hasta que se navega | `git pull --rebase` antes de cada commit, la suite entera después, y la prueba cruzada de E8 |
 | **El 403 de Research › ICP.** Quien tiene ICP sin Tools recibe 403 en el paso de mercado (`/api/tools/saldo` y `/api/tools/scrape`) | Ya pasa hoy; la estructura nueva lo vuelve más visible | Queda documentado (`NE-36`); se resuelve con los permisos por herramienta |
 
-## Tres defectos que ya existen, encontrados al planificar
+## Tres defectos que ya existían, encontrados al planificar
 
 Se anotan en `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md`:
 
 1. **El botón «Eliminar» de Ajustes › Usuarios no aparece para nadie**, tampoco para el superadministrador.
    La ruta de sesión manda `puedeBorrarPersonas`, pero `app/guardia.tsx` no lo copia al contexto. Se
-   corrige en E2.
+   corrige en E2. **Cerrado el 2026-10-01** en E2: la guarda copia toda clave de la sesión, y la `185` lo exige.
 2. **El panel lateral de la maqueta se ve en la primera carga** a quien arranca en otra pantalla, hasta su
-   primer clic. Se va con la columna, en E7.
+   primer clic. Se va con la columna, en E7. **Cerrado el 2026-10-01** en E7: la columna lateral se fue, y con ella la clase `.solo`.
 3. **El menú no se puede usar con el teclado**: sus filas son `div` sin foco. Pasan a ser botones en E9.

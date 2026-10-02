@@ -226,7 +226,7 @@ commit `1c875ac` («Etapas 8 y 9 de Sales: la maqueta se va…») agregó
 **Por qué acá importó, y cómo se resolvió.** Mientras `initLeadsPortal` siguiera en el arranque, buscaba `#lpIcpSeg`,
 `#lpStage`, `#lpPeriod` y `#lpSearch` sin ninguna guarda (`aios-command-center_1.html:4880`, `:4889`,
 `:4894`, `:4899`). Si el panel de LP-5 reemplaza ese marcado, el módulo falla en cada carga; `bootAios`
-atrapa el error y lo escribe en la consola (`lib/aios/index.js:47-53`), así que a la vista no se rompe
+atrapa el error y lo escribe en la consola (`lib/aios/index.js:40-46`), así que a la vista no se rompe
 nada, que es justo el motivo por el que nadie lo habría notado. Y la compuerta de paridad todavía
 comparaba `contacts` contra el prototipo. Por eso LP-5 construyó el panel sin montarlo, y LP-6 lo montó
 en el mismo commit que borró el módulo y vació la lista (`scripts/paridad.mjs:153`).

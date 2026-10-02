@@ -16,6 +16,14 @@
 > Lo que sí hay hoy es `components/acquisition/PanelDeAcquisition.jsx` con dos cifras medidas: el
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
+>
+> **Y el 2026-10-01 se borró la maqueta del Executive** (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`):
+> `lib/aios/executive.js`, `executive-panel.js`, `executive-chat.js`, `leads-group.js`, `datepicker.js`
+> y `period-controls.js` ya no existen, y `components/views/ExecutiveView.jsx` se reescribió entero.
+> Sus citas en esta carpeta son referencia histórica, como las de `acquisition.js`: el último commit
+> que tiene esos archivos es `c4cf2a8`, y algunas citas son de antes. Las de `ExecutiveView.jsx`, que
+> sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
+> se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.
 
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
 > `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
@@ -97,8 +105,8 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
 
 ### A7-05 · El estado del departamento es un color de tres valores, y va acompañado de un conteo de asuntos abiertos
 
-- **Rastro:** `lib/aios/executive.js:178` (`st:'warn'`), `components/views/ExecutiveView.jsx:239`
-  (el círculo del nodo), `:246-247` (el rótulo «2 a revisar»).
+- **Rastro:** `lib/aios/executive.js:178` (`st:'warn'`), `components/views/ExecutiveView.jsx:239@c4cf2a8`
+  (el círculo del nodo), `:246-247@c4cf2a8` (el rótulo «2 a revisar»).
 - Los valores son `ok`/`warn`/`crit` y se dibujan en **dos lugares distintos**: el punto de la ficha
   y el círculo del nodo. El conteo de asuntos abiertos está escrito aparte, dentro del SVG, junto al
   rótulo «Campañas y tráfico». Los dos se ven desde la pantalla del jefe **sin entrar a la
@@ -380,8 +388,8 @@ contrario**, sin que ninguno de los dos se equivoque.
 - **Rastro:** `lib/aios/executive-chat.js:52-57` — `askScope`, `askCtx` y `askCtxP`, que lee el botón
   de período activo con `'#exPeriod button.on, #cvDateSeg button.on, .db-seg button.on'`.
 - `document.querySelector` devuelve el primero del documento que cumpla cualquiera de los tres, y
-  Executive se dibuja antes que Acquisition (`components/CommandCenter.jsx:79`) con su propio `.on`
-  escrito en el JSX (`components/views/ExecutiveView.jsx:55`): el panel escribe el período de
+  Executive se dibuja antes que Acquisition (`components/CommandCenter.jsx:80`) con su propio `.on`
+  escrito en el JSX (`components/views/ExecutiveView.jsx:55@c4cf2a8`): el panel escribe el período de
   Executive, no el de esta pantalla. Cae a `'periodo actual'` cuando no encuentra ninguno. El
   requisito, hoy sin cumplir: cualquier respuesta sobre Acquisition viene con la ventana con que se
   calculó escrita al lado.
@@ -525,7 +533,7 @@ es un atributo de la métrica publicado una sola vez, o si cada pantalla la decl
 qué pasa cuando divergen, como ya divergieron.
 
 **Qué umbral convierte los hallazgos abiertos en el color del departamento y en el «2 a revisar».**
-Executive publica `st` y un conteo (`executive.js:178`, `ExecutiveView.jsx:239`, `:247`) y no dice qué
+Executive publica `st` y un conteo (`executive.js:178`, `ExecutiveView.jsx:239@c4cf2a8`, `:247@c4cf2a8`) y no dice qué
 separa `ok` de `warn` de `crit`. Es un número que se ve desde la pantalla del jefe sin abrir la
 pestaña.
 

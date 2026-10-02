@@ -50,8 +50,8 @@
 
 /* La ficha del contacto y el interior del Closer. Va DESPUÉS de `aios.css` y en la capa
    `components` porque corrige reglas de la hoja portada sin tocarla: `aios.css` tiene que seguir
-   siendo comparable contra `aios-command-center_1.html`, que es lo que hace que `npm run paridad`
-   signifique algo. El motivo largo está en el encabezado del archivo. */
+   siendo comparable contra `aios-command-center_1.html`, para que un diff diga qué se desvió del
+   diseño original. El motivo largo está en el encabezado del archivo. */
 @import "./closer.css" layer(components);
 
 /* La estética de operación, con alcance `:is(#v-closer, .estetica-op)`: la lleva toda vista que

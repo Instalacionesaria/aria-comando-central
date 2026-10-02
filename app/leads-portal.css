@@ -100,8 +100,3 @@
   #v-contacts .cre-head .ch-r { margin-left: 0; }
 }
 
-/* La fila del cajón «Grupo de contactos» —maqueta de Executive— ya no abre ninguna ficha: el clic se
-   fue con `window.AIOSLeadCard`. Su `cursor: pointer` vive en `aios.css`, que no se toca porque tiene
-   que seguir comparable con el prototipo; se anula acá, con el precedente del commit `bd26085`, que
-   hizo lo mismo en `closer.css`. */
-.lg .lg-r { cursor: default; }

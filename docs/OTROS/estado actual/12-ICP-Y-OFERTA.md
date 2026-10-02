@@ -61,7 +61,7 @@ proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.js
 primera vista con estado en React y salió a propósito de `npm run paridad`
 (`docs/OTROS/capa-base/ETAPA-9.md:181-195`).
 
-Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:81-92` dibuja
+Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:78-89` dibuja
 todas las secciones visibles de una vez, y `Fundaciones` pide su estado al montarse
 (`components/fundaciones/Fundaciones.jsx:171-173`). Cada entrada a Comando Central de alguien con la
 pestaña lee la fila de su organización, aunque nunca abra ICP & Oferta.

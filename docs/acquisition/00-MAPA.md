@@ -209,3 +209,13 @@ El 2026-09-30 el usuario decidió volver al front del prototipo, con la estétic
 el backend junta hoy. Los requisitos están en `14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (prefijo `A14-`). Contesta preguntas de `01`, `04` y
 `05`, cada una al final de su archivo, y deja el Plan de acción y las Señales para una etapa con
 agentes de IA (`docs/OTROS/futuro/plan-y-senales-de-acquisition.md`).
+
+---
+
+> **Y el 2026-10-01 se borró la maqueta del Executive** (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`):
+> `lib/aios/executive.js`, `executive-panel.js`, `executive-chat.js`, `leads-group.js`, `datepicker.js`
+> y `period-controls.js` ya no existen, y `components/views/ExecutiveView.jsx` se reescribió entero.
+> Sus citas en esta carpeta son referencia histórica, como las de `acquisition.js`: el último commit
+> que tiene esos archivos es `c4cf2a8`, y algunas citas son de antes. Las de `ExecutiveView.jsx`, que
+> sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
+> se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.

@@ -298,9 +298,9 @@ respuesta**; ese orden es una propuesta de este mapa, no del plan.
 | | `LP04-P02` | ¿Hace falta un filtro para ocultar a los descartados? |
 | | `LP06-P02` | ¿Qué dibuja la pestaña cuando «30 días» se vacíe? Pasa desde mediados de octubre si la pauta no vuelve |
 | | `LP10-P01` | ¿Las reglas del panel nuevo van en `app/aios.css`? |
-| **LP-6** | `LP07-P01` | ¿Qué se hace con `#recoModal` cuando nadie lo abre? |
-| | `LP08-P01` | ¿El pie del cajón de Executive sigue llevando a Leads Portal? |
-| | `LP10-P02` | ¿Las catorce personas del cajón se quedan hasta que Executive se reconstruya? |
+| **LP-6** | `LP07-P01` | ¿Qué se hace con `#recoModal` cuando nadie lo abre? **Resuelta el 2026-10-01** (nueva estructura, E7): se borró con la maqueta del Executive |
+| | `LP08-P01` | ¿El pie del cajón de Executive sigue llevando a Leads Portal? **Resuelta el 2026-10-01** (nueva estructura, E7): se borró con la maqueta del Executive |
+| | `LP10-P02` | ¿Las catorce personas del cajón se quedan hasta que Executive se reconstruya? **Resuelta el 2026-10-01** (nueva estructura, E7): se borraron con la maqueta del Executive |
 | **ninguna etapa** | `LP01-P01` | ¿Algún resultado es un «no» de venta? |
 | | `LP02-P02` | ¿Qué definición de «agendó» es la del producto? |
 | | `LP07-P02` | ¿Leads Portal tiene plan de acción? |

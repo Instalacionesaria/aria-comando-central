@@ -230,9 +230,9 @@ columna por empresa por el mismo motivo que `CAMPO_DEL_PUNTAJE`: hoy hay una sol
 contactos, y el día que haya otra se muda a la configuración de la empresa
 (`lib/ghl/contrato.ts:297-303`).
 
-La condición para que el punto sea único es que no quede otro: hoy el corte también está escrito en
-`lib/aios/leads-group.js:10`, y la maqueta del portal rotula sus tarjetas por su cuenta
-(`aios-command-center_1.html:4724`). LP-6 los saca del camino del portal.
+La condición para que el punto sea único es que no quede otro: el 2026-09-26 el corte también estaba escrito en
+`lib/aios/leads-group.js:10@c4cf2a8`, y la maqueta del portal rotulaba sus tarjetas por su cuenta
+(`aios-command-center_1.html:4724`). LP-6 los sacó del camino del portal, y `leads-group.js` se borró el 2026-10-01 con la maqueta del Executive.
 
 ### LPF-06 · La ficha muestra los dos números mientras convivan
 

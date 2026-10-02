@@ -1343,7 +1343,7 @@ test('las dos capacidades están en el archivo que las carga, y no en la migraci
 
 // ─── La compuerta de paridad ───────────────────────────────────────────────
 
-test('las diez vistas salieron de la comparación con el prototipo, y quedan sólo pasos de Executive', async () => {
+test('las diez vistas y los tres pasos salieron: la compuerta de paridad quedó retirada', async () => {
   // La vista ya no coincide con el prototipo A PROPÓSITO. Dejarla en la lista daría un rojo
   // permanente, y un rojo permanente no se arregla: se ignora, y con él se ignoran los otros.
   //
@@ -1358,19 +1358,20 @@ test('las diez vistas salieron de la comparación con el prototipo, y quedan só
   //     ser los del maquetado;
   //   · `executive`, la primera por un cambio de DISEÑO: el mapa de áreas se pulió (cinco líneas
   //     de un solo color, un punto animado en cada una, la de Creative recta) y eso mueve la
-  //     forma y las cajas del SVG a propósito. Su red de reemplazo es
-  //     `pruebas/codigo/120-mapa-ejecutivo.test.ts`;
+  //     forma y las cajas del SVG a propósito. Su red de reemplazo fue
+  //     `pruebas/codigo/120-mapa-ejecutivo.test.ts`, que se fue con el mapa el 2026-10-01;
   //   · **las cinco de Inteligencia**, por la estética de operación. Es la salida más grande y la
   //     que dejó la lista en una sola vista, así que es la que más merece el trinquete;
   //   · y **`contacts`**, el 2026-09-26, porque Leads Portal dejó de ser la maqueta: dibuja leads
   //     reales, y su forma diverge del prototipo a propósito.
   //
   // Y acá va la parte incómoda, que es la que esta prueba existe para obligar a escribir: sin
-  // ninguna vista, esta compuerta sólo compara los tres pasos de Executive. Se acepta porque **hace tiempo que no
-  // corría**: no está en `verificar.yml`, necesita los navegadores de Playwright instalados a mano
-  // y una sesión. Lo que la reemplaza corre en `npm test`, que sí está en CI. Pero que quede
-  // dicho: sacar la novena y la décima vista no fue gratis, fue el reconocimiento de una compuerta
-  // dormida.
+  // ninguna vista, esta compuerta comparaba sólo los tres pasos de Executive, y el 2026-10-01 se
+  // fueron con la maqueta (`NE-30`). Con `VISTAS` y `PASOS` vacías está RETIRADA: imprime «retirada»
+  // y sale 0, como decidió la Etapa 0. Se aceptó porque **hacía tiempo que no corría**: no está en
+  // `verificar.yml`, necesita Playwright instalado a mano y una sesión. Lo que la reemplaza corre en
+  // `npm test`, que sí está en CI. Pero que quede dicho: no fue gratis, fue el reconocimiento de una
+  // compuerta dormida.
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { RAIZ } = await import('../apoyo/fuente.ts');
@@ -1396,18 +1397,21 @@ test('las diez vistas salieron de la comparación con el prototipo, y quedan só
     `la lista de paridad es ${JSON.stringify(vistas)} y tendría que estar vacía: si volviste a ` +
       'meter una vista, diverge del prototipo a propósito y va a dar rojo permanente',
   );
-  /* Y ningún paso puede seguir mirando Leads Portal: su marcado ya no es el del prototipo, así que
-     un clic en `#v-contacts` caería sobre un elemento que no existe —el modo de fallar de este
-     archivo entero, que no se nota hasta que alguien corre la compuerta a mano—. */
+  /* Y los pasos, vacíos: los tres que quedaban apuntaban a la maqueta del Executive —`#askTrigger`,
+     `#exFunnel`, el cajón `.lg`— y se fueron con ella. Un paso que vuelve a apuntar a algo que no
+     existe es el modo de fallar de este archivo entero: no se nota hasta que alguien corre la
+     compuerta a mano. Y el guardián que la retira tiene que seguir ahí. */
   const pasos = /const PASOS = \[([\s\S]*?)\n\];/.exec(paridad);
-  assert.ok(pasos && pasos[1], 'no se pudo leer la lista de pasos de paridad.mjs');
-  const sinComentarios = pasos[1].replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.doesNotMatch(sinComentarios, /#v-contacts/, 'un paso de la compuerta sigue mirando Leads Portal');
-  assert.match(
-    sinComentarios,
-    /'grupo de contactos',\s+p => p\.click\('#exFunnel \[data-leads\]'\)/,
-    'el cajón «grupo de contactos» dejó de abrirse desde el embudo de Executive',
+  assert.ok(pasos, 'no se pudo leer la lista de pasos de paridad.mjs');
+  assert.equal(
+    (pasos[1] ?? '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').trim(),
+    '',
+    'volvió un paso a la compuerta de paridad',
   );
+  /* Y el guardián SALE: sin el `process.exit(0)`, imprime «retirada» y sigue hasta abrir el navegador. */
+  const guardian = /if \(VISTAS\.length === 0 && PASOS\.length === 0\) \{([\s\S]*?)\n\}/.exec(paridad);
+  assert.ok(guardian, 'se fue el guardián que retira la compuerta');
+  assert.match(guardian[1]!, /process\.exit\(0\)/, 'el guardián de la compuerta retirada ya no sale');
 });
 
 // ─── La espera del navegador contra lo que la ruta puede tardar ─────────────

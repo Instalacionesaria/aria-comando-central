@@ -4,12 +4,12 @@
    de `aios-command-center_1.html`). La Etapa 9 la llenó con las siete primeras
    herramientas de Fundaciones, traídas de ARIA-brain.
 
-   ── CONSECUENCIA QUE HAY QUE SABER ANTES DE MIRAR `npm run paridad` ───────
+   ── LA CONSECUENCIA PARA `npm run paridad` ───────────────────────────────
 
    Esta vista **ya no coincide con el prototipo, a propósito**, así que salió de la lista
-   `VISTAS` de `scripts/paridad.mjs`. Es la primera que sale. La compuerta de paridad
-   sigue comparando las otras nueve, y ahí está su valor: el día que se reactifique
-   otra, la comparación tiene que seguir siendo confiable para las que no cambiaron.
+   `VISTAS` de `scripts/paridad.mjs`. Fue la primera en salir; las otras nueve la siguieron,
+   y el 2026-10-01 la compuerta quedó retirada (nueva estructura, E7). Su valor era que, al
+   reactificar una, la comparación siguiera siendo confiable para las que no cambiaban.
    El razonamiento completo está en `docs/OTROS/capa-base/ETAPA-9.md`.
 
    El envoltorio —`.view` > `.view-scroll cre-scroll` > `.cre-head`— sí se conserva,

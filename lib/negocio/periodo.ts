@@ -72,7 +72,7 @@ export interface Periodo {
  * ── «HOY» SON LAS ÚLTIMAS 24 HORAS, Y ESO SE DICE EN VEZ DE DISIMULARLO ─────
  *
  * El día calendario necesitaría una zona horaria, y elegirla mal es un defecto que este proyecto ya
- * conoce: la suite corre en `America/Lima`, `UTC` y `Asia/Tokyo` justamente porque una cifra que
+ * conoce: la suite se corre a mano en `America/Lima`, `UTC` y `Asia/Tokyo` porque una cifra que
  * cambia según dónde esté el servidor es indistinguible de una cifra correcta. Todas las ventanas de
  * este sistema son móviles (`now() - make_interval`), y ésta sigue la misma regla.
  *

@@ -223,11 +223,15 @@ test('ningún control de la ficha está inerte', () => {
 test('el cascarón inerte del prototipo no volvió', () => {
   // `Overlays.jsx` tenía el panel entero portado y sin JavaScript. Dos elementos `.cw` en el árbol
   // —uno inerte y otro real— con ids duplicados harían que un `getElementById` eligiera el
-  // equivocado, y nadie sabría cuál manda.
-  const overlays = fuente('components/Overlays.jsx');
-  for (const id of ['cwPanel', 'cwBody', 'cwTabs', 'cwScrim', 'cwAdvance']) {
-    assert.doesNotMatch(overlays, new RegExp(`id="${id}"`), `volvió \`#${id}\` a Overlays.jsx`);
-  }
+  // equivocado, y nadie sabría cuál manda. El archivo se fue con la maqueta del Executive
+  // (2026-10-01), y lo que se vigila es que el cascarón no vuelva ni ahí ni en ningún otro lado.
+  const todos = archivosFuente(['app', 'components', 'lib']);
+  assert.equal(todos.find((x) => x.ruta === 'components/Overlays.jsx'), undefined, 'volvió `components/Overlays.jsx`');
+  /* Sin comentarios, pero no con `limpio`: aquél corta cada línea desde `--`, y un id escrito después
+     de una variable CSS en la misma línea (`style={{ … 'var(--x)' }} id="cwPanel"`) desaparecía. */
+  const sinBloques = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const conCascaron = todos.filter((x) => /id="(cwPanel|cwBody|cwTabs|cwScrim|cwAdvance)"/.test(sinBloques(x.contenido))).map((x) => x.ruta);
+  assert.deepEqual(conCascaron, [], 'volvió el cascarón inerte de la ficha del prototipo');
   // Y la ficha real usa las clases del prototipo, que es lo que permite no escribir CSS nuevo.
   const ficha = fuente('components/negocio/Ficha.jsx');
   for (const clase of ['cw on', 'cw-h', 'cw-tabs', 'cw-body', 'cw-meta']) {
