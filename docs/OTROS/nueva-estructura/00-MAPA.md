@@ -58,8 +58,8 @@ la empresa**; el comentario del cerebro de la cabecera **no se dibuja** todavía
 
 ## Estado
 
-**Planificado el 2026-10-01.** E0 es esta carpeta. De E1 a E7 están hechas, todas el mismo día, y cada
-etapa, al terminar, suma acá abajo su fila. Sus commits se leen en `git log --oneline`: el mensaje empieza «Nueva estructura E<n>:».
+**Planificado el 2026-10-01 y terminado el 2026-10-02.** E0 es esta carpeta, y de E1 a E13 están hechas; cada
+etapa, al terminar, sumó acá abajo su fila. Sus commits se leen en `git log --oneline`: el mensaje empieza «Nueva estructura E<n>:».
 
 | etapa | estado |
 |---|---|
@@ -76,3 +76,20 @@ etapa, al terminar, suma acá abajo su fila. Sus commits se leen en `git log --o
 | E10 · la barra lateral | hecho, 2026-10-02 |
 | E11 · la cabecera del departamento | hecho, 2026-10-02 |
 | E12 · Ajustes › Usuarios por departamento | hecho, 2026-10-02 |
+| E13 · el cierre | hecho, 2026-10-02 |
+
+**Lo que queda, y de quién es:**
+
+- **El humo con login del hito 3, del usuario** (nunca se escribe una contraseña): el Inicio, cada
+  departamento y el engranaje a 1440 y a 375 px; un usuario restringido (un closer ve sólo Sales ›
+  Closer; quien tiene Tools ve Research, Marketing y Sales; desde una empresa que no es la principal no
+  aparecen Monitoreo ni Incidentes); y lo que tiene que sobrevivir al cambiar de departamento —un chat
+  de ICP empezado, y Research › Scraper → Marketing › Tu página → Research › Scraper con un escaneo en
+  vuelo y con uno terminado (`NE-35`)—. Lo demás se midió en Chrome sin cabeza, con los componentes
+  reales de la barra y la cabecera y el marcado de las pantallas, y la suite: 2.445 pruebas en
+  198 archivos, en las tres zonas.
+- **Cerrar el PR #2 a mano**, con un comentario: su contenido entró en E1, y es de otro autor.
+- **Lo de la fase de detalles y lo que se construye después**, en `08-LO-QUE-QUEDA-PARA-DESPUES.md`.
+- **Dos defectos que la nueva estructura hizo visibles y no son suyos**, anotados en
+  `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md`: los chips «Hereda de» de Tools que llevan a Prospección,
+  y una prueba de colores (`104`) que no mira lo que va antes del primer `:root` de una hoja.

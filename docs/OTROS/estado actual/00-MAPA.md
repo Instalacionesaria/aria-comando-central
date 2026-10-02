@@ -278,3 +278,12 @@ no ejecutado, y las 2.273 pruebas son las del último mensaje de commit
 > y el de Incidentes (`60f5d81`).
 >
 > **Después del corte, el 2026-10-01**: la maqueta del Executive se retiró (nueva estructura, E7), y su lugar lo tomó el Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Donde esta foto dice que queda una sola maqueta, habla del 2026-09-28.
+>
+> **Y el 2026-10-02, la nueva estructura quedó terminada** (E8 a E13). La barra lateral ya no tiene los
+> grupos del menú de esta foto («Inteligencia», «Operación»…): es la barra de los cinco departamentos, con
+> «Nueva conversación» para el Inicio y el engranaje del pie para Ajustes, el Panel de Monitoreo e
+> Incidentes (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`). Arriba de cada pantalla de un
+> departamento va su cabecera, con la fila de pestañas; Tools y Analizadores ya no tienen barra propia, y
+> sus pestañas son entradas de varios departamentos. Ajustes › Usuarios agrupa las pestañas por
+> departamento. Las secciones, sus claves, los permisos y las rutas no cambiaron: donde esta foto nombra
+> una sección o una capacidad, sigue valiendo; donde describe el menú, habla del 2026-09-28.

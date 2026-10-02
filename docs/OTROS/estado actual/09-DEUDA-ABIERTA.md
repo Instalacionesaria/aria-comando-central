@@ -937,6 +937,12 @@ Agregado el 2026-10-01, después del corte, al planificar la nueva estructura
   Para quien apretó «Hereda de: Oferta», es un salto que nada explica. El arreglo es que un chip cuya
   herramienta vive en ICP & Oferta navegue allá, o no sea un botón, sabiendo que quien tiene Tools no
   siempre ve ICP. Abierto.
+- **La prueba de los colores escritos a mano no mira el principio de una hoja** (encontrado el
+  2026-10-02 al construir la cabecera de la etapa E11). `pruebas/codigo/104-temas.test.ts` salta todo
+  lo que va antes de la primera vez que la hoja nombra la pseudoclase de la raíz —también dentro de un
+  comentario o en un selector de más abajo—, porque supone que ahí empieza el bloque de tokens. Un color
+  escrito a mano arriba de eso pasa en verde. `app/departamentos.css` la esquiva no nombrándola; el
+  arreglo es que la prueba quite sólo los bloques de tokens. Abierto.
 
 Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` (`60f5d81`), que no es de
 esa planificación ni lo corrige ninguna de sus etapas:

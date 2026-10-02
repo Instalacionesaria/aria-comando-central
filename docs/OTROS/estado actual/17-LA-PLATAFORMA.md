@@ -23,7 +23,8 @@
 > - **Trece migraciones, de la `050` a la `062`**, con ocho tablas nuevas. El repositorio tenía 49
 >   el 2026-09-15; hoy tiene 62, y producción tiene las 62 aplicadas. Las trece se aplicaron antes del
 >   push que llevaba su código (§ 4).
-> - **La suite pasó de 1.746 a 2.273 pruebas**, y de 137 a 178 archivos (§ 5).
+> - **La suite pasó de 1.746 a 2.273 pruebas**, y de 137 a 178 archivos (§ 5). Después del corte, al cerrar
+>   la nueva estructura el 2026-10-02, eran 2.445 pruebas en 198 archivos, corridas en las tres zonas.
 > - **La compuerta de paridad se quedó sin vistas**: `contacts`, la última, salió el 2026-09-26
 >   (`aed4f27`).
 > - **Lo que no cambió:** `main` sigue sin protección de rama, y el 2026-09-21 dos corridas rojas de
@@ -350,7 +351,10 @@ aplicación y los nueve commits coinciden. La regla y los tres incidentes que la
 - **2.273 pruebas** según el mensaje de `aed4f27` (2026-09-26), repetido en `e630823` y `1c55149`
   (2026-09-28, sólo documentos). En la foto anterior eran **1.746** (mensaje de `a0e1eb5`, el último
   commit con cifra antes de `93a1341`). **No re-corrida en este corte**: la suite usa una sola base
-  local y otros trabajos corrían en paralelo.
+  local y otros trabajos corrían en paralelo. **Después del corte**, el 2026-10-02, al cerrar la nueva
+  estructura (`docs/OTROS/nueva-estructura/`): **2.445 pruebas en 198 archivos** (111 en
+  `pruebas/codigo/`, 86 en `pruebas/base/` y 1 en `pruebas/construccion/`), corridas sobre la etapa E12
+  en `America/Lima`, `UTC` y `Asia/Tokyo`, las tres en verde.
 - **El corredor** enumera los archivos y aborta si la lista sale vacía, porque `node --test` con un
   patrón sin coincidencias sale 0 (`scripts/pruebas.mjs:1-13`, `:82-89`), y corre **de a un archivo**
   porque las pruebas de base comparten una base y enumeran objetos globales
