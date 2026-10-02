@@ -21,13 +21,18 @@
 // Lo que se EJECUTA: `menuPorDepartamentos` sobre `menuVisible`, `entradaAbierta`, `queAbre` y
 // `lugarDe`, con todas las capacidades y con pedazos.
 //
+// Y desde la etapa F2, el contador (`NE-48`) y el engranaje (`NE-49`): cuántas entradas tiene cada
+// departamento con todo a la vista, como el diseño, y lo que viaja con cada destino del engranaje —su
+// ceja, su subtítulo y si sólo se ve desde la principal, que sale del menú y no de la clave—.
+//
 // Las mutaciones que la ponen en rojo: mover el Scraper detrás de Conversation, o una sub-pestaña de
 // Funnel a Sales; nombrar un grupo como una de sus sub-pestañas; dar nombre propio a una sección entera
 // fuera de un grupo; no plegar los grupos; dejar pasar un grupo sin nada que abrir; abrir la primera
 // sub-pestaña aunque sea «Próximamente»; mostrar las sub-pestañas de un grupo por la sección de la
 // primera; que `entradaAbierta` mire la sección del grupo y no las de sus sub-pestañas, o devuelva la
 // sub-pestaña como entrada; que `queAbre` dé la entrada del grupo o las «Próximamente»; y un `lugarDe`
-// sin el grupo.
+// sin el grupo. De F2: plegar distinto (otro número por departamento), otra ceja del engranaje y
+// `soloDeLaPrincipal` sacado de la clave en vez del menú.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -167,4 +172,21 @@ test('lo que una entrada abre son sus sub-pestañas, y el lugar lleva el grupo',
     assert.equal(lugarDe(e.seccion, e.pestana), `${d.nombre} › ${e.grupo} › ${e.nombre}`);
   }
   assert.equal(lugarDe('analizadores', 'HT'), 'Sales › Llamadas de venta', 'una entrada suelta lleva un grupo que no tiene');
+});
+
+test('el contador del diseño, y lo que el engranaje dice de cada destino', () => {
+  // Las entradas de cada departamento, como las cuenta la barra: un grupo una vez, con las «Próximamente».
+  assert.deepEqual(
+    navegacion().departamentos.map((d) => [d.nombre, d.entradas.length]),
+    [['Research', 2], ['Systems', 3], ['Marketing', 4], ['Sales', 5], ['Client Success', 2]],
+  );
+  /* El engranaje: la ceja de su cabecera, el subtítulo de Ajustes, y si el destino sólo se ve desde la
+     principal, que sale del menú (`soloDesdeLaPrincipal`) y no de la clave. */
+  assert.deepEqual(navegacion().engranaje, [
+    { seccion: 'credenciales', nombre: 'Ajustes', ceja: 'MENÚ DE LA CUENTA', subtitulo: 'Tokens e integraciones', soloDeLaPrincipal: false },
+    { seccion: 'monitoreo', nombre: 'Panel de Monitoreo', ceja: 'MENÚ DE LA CUENTA', subtitulo: null, soloDeLaPrincipal: true },
+    { seccion: 'incidentes', nombre: 'Incidentes', ceja: 'MENÚ DE LA CUENTA', subtitulo: null, soloDeLaPrincipal: true },
+  ]);
+  const sinLaRegla = menuPorDepartamentos([{ secciones: [{ clave: 'monitoreo', nombre: 'Panel de Monitoreo' }] }]);
+  assert.equal(sinLaRegla.engranaje[0]!.soloDeLaPrincipal, false, '«sólo desde la principal» no sale del menú');
 });

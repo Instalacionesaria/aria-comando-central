@@ -125,6 +125,31 @@ export const FUERA = {
   engranaje: ['credenciales', 'monitoreo', 'incidentes'],
 } as const;
 
+/**
+ * Lo que el engranaje dice de sus destinos (`NE-49`).
+ *
+ * · `ceja`: la de la cabecera de sus tres pantallas. Es la frase del menú —el engranaje se llama «Menú
+ *   de la cuenta»— y no la del diseño, «MENÚ DEL ADMIN»: un `usuario` restringido también puede ver el
+ *   Panel de Monitoreo.
+ * · `subtitulos`: lo que va debajo del nombre en el menú. Monitoreo e Incidentes no tienen uno escrito:
+ *   el suyo dice que sólo se ven desde la organización principal, y lo arma el menú, que tiene la sesión
+ *   y sabe si la organización que se está mirando es la principal. Este archivo no mira la organización.
+ */
+export const CUENTA = {
+  ceja: 'MENÚ DE LA CUENTA',
+  subtitulos: { credenciales: 'Tokens e integraciones' } as Readonly<Record<string, string>>,
+} as const;
+
+/** Un destino del engranaje, listo para el menú y para la cabecera de su pantalla. */
+export interface DestinoDelEngranaje {
+  seccion: string;
+  nombre: string;
+  ceja: string;
+  subtitulo: string | null;
+  /** Si la sección sólo se ve desde la organización principal (`soloDesdeLaPrincipal`, del menú). */
+  soloDeLaPrincipal: boolean;
+}
+
 /** Lo que una entrada abre: una sección, con su pestaña si la sección se reparte. */
 export interface Destino {
   seccion: string;
@@ -148,7 +173,7 @@ export interface Navegacion {
   /** «Nueva conversación»: el Inicio, o `null` si la persona no lo ve. */
   inicio: { seccion: string; nombre: string } | null;
   departamentos: (Departamento & { entradas: EntradaVisible[] })[];
-  engranaje: { seccion: string; nombre: string }[];
+  engranaje: DestinoDelEngranaje[];
 }
 
 /**
@@ -163,9 +188,10 @@ export interface Navegacion {
  *   visibilidad no se vuelve a decidir acá.
  */
 export function menuPorDepartamentos(
-  menu: readonly { secciones: readonly { clave: string; nombre: string }[] }[],
+  menu: readonly { secciones: readonly { clave: string; nombre: string; soloDesdeLaPrincipal?: boolean }[] }[],
 ): Navegacion {
   const visibles = new Map(menu.flatMap((g) => g.secciones.map((s) => [s.clave, s.nombre] as const)));
+  const deLaPrincipal = new Set(menu.flatMap((g) => g.secciones.filter((s) => s.soloDesdeLaPrincipal === true).map((s) => s.clave)));
   const ref = (clave: string) => {
     const nombre = visibles.get(clave);
     return nombre === undefined ? null : { seccion: clave, nombre };
@@ -209,7 +235,11 @@ export function menuPorDepartamentos(
   return {
     inicio: ref(FUERA.inicio),
     departamentos,
-    engranaje: FUERA.engranaje.map(ref).filter((r) => r !== null),
+    engranaje: FUERA.engranaje.flatMap((clave): DestinoDelEngranaje[] => {
+      const r = ref(clave);
+      if (r === null) return [];
+      return [{ ...r, ceja: CUENTA.ceja, subtitulo: CUENTA.subtitulos[clave] ?? null, soloDeLaPrincipal: deLaPrincipal.has(clave) }];
+    }),
   };
 }
 

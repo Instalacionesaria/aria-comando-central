@@ -189,6 +189,13 @@ export default function Nav() {
                   >
                     <IconoDelDepartamento clave={d.clave} />
                     <span className="n">{d.nombre}</span>
+                    {/* Cuántas entradas tiene (`NE-48`), como el diseño: las que la persona ve, un grupo
+                        una vez y las «Próximamente» también. Al lector, con su palabra: un número suelto
+                        después del nombre no dice qué cuenta. */}
+                    <span className="nb-cuenta" aria-hidden="true">
+                      {d.entradas.length}
+                    </span>
+                    <span className="para-lectores">{`, ${d.entradas.length} ${d.entradas.length === 1 ? 'entrada' : 'entradas'}`}</span>
                     {puntoEnLaCabecera ? <span className="nav-scrapeando" aria-hidden="true" /> : null}
                     <svg className="nb-galon" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M9 6l6 6-6 6" />

@@ -26,8 +26,15 @@
  * La misma cuenta que la barra lateral (`components/Nav.jsx`): la pantalla a la vista —la de arranque en
  * el primer dibujo—, la pestaña que dibuja y `entradaAbierta`. La ceja viaja en la navegación
  * (`DEPARTAMENTOS`), las pestañas son las entradas que la persona ve, y quién ve qué ya lo decidió el
- * servidor. Sin entrada abierta —el Inicio, lo del engranaje— no dibuja nada, y los títulos propios de
- * las pantallas vuelven solos: la regla que los oculta pregunta si hay cabecera (`app/departamentos.css`).
+ * servidor. En el Inicio no dibuja nada, y su título propio vuelve solo: la regla que oculta los títulos
+ * pregunta si hay cabecera (`app/departamentos.css`).
+ *
+ * ── LO DEL ENGRANAJE (`NE-49`, segunda edición) ─────────────────────────────
+ *
+ * Ajustes, el Panel de Monitoreo e Incidentes no son de ningún departamento —`entradaAbierta` da
+ * `null`—, pero llevan la misma cabecera: la ceja de la cuenta y el nombre del destino, que viajan en
+ * `navegacion.engranaje`, y ninguna fila. De esas pantallas se oculta sólo el `h2`: la bajada de Ajustes
+ * dice de qué empresa es la configuración, y quien administra puede estar mirando otra.
  *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
@@ -67,6 +74,7 @@ export default function CabeceraDeDepartamento() {
   const pestana = usarPestanaDibujada(vista);
   const abierta = entradaAbierta(navegacion, vista, pestana);
   const departamento = abierta ? navegacion.departamentos.find((d) => d.clave === abierta.departamento) : null;
+  const delEngranaje = abierta ? null : (navegacion.engranaje.find((e) => e.seccion === vista) ?? null);
 
   // Cada vez que cambia la entrada abierta, su pestaña a la vista, y su sub-pestaña en la suya.
   const fila = useRef(null);
@@ -78,19 +86,21 @@ export default function CabeceraDeDepartamento() {
     traerALaVista(filaDelGrupo.current, filaDelGrupo.current?.querySelector('.cd-sub.on'));
   }, [nombreAbierto, subAbierta]);
 
-  if (!abierta || !departamento) return null;
+  if (!(abierta && departamento) && !delEngranaje) return null;
 
   const abrir = (e) => irALaVista(e.seccion, { pestana: e.pestana });
-  const conPestanas = departamento.entradas.length > 1;
+  const ceja = departamento?.ceja ?? delEngranaje.ceja;
+  const nombre = departamento ? abierta.nombre : delEngranaje.nombre;
+  const conPestanas = departamento ? departamento.entradas.length > 1 : false;
   // Las sub-pestañas del grupo abierto, o `null` si la entrada abierta no es un grupo.
-  const subs = abierta.sub === null ? null : (departamento.entradas.find((e) => e.nombre === abierta.nombre)?.subs ?? null);
+  const subs = !departamento || abierta.sub === null ? null : (departamento.entradas.find((e) => e.nombre === abierta.nombre)?.subs ?? null);
   return (
-    <section className={conPestanas ? 'cd' : 'cd sin-pestanas'} aria-labelledby="cdNombre">
+    <section className={`cd${conPestanas ? '' : ' sin-pestanas'}${delEngranaje ? ' cd-engranaje' : ''}`} aria-labelledby="cdNombre">
       <div className="cd-arriba">
         <div className="cd-titulo">
-          <span className="cd-ceja">{departamento.ceja}</span>
+          <span className="cd-ceja">{ceja}</span>
           <h1 className="cd-nombre" id="cdNombre">
-            {abierta.nombre}
+            {nombre}
           </h1>
         </div>
         {conPestanas ? (

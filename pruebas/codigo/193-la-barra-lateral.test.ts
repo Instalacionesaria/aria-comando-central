@@ -34,8 +34,10 @@
 // con el cajón puesto; la píldora sin la frase entera, o como botón sin permiso; el foco del cajón en
 // la píldora; el punto adentro del nombre del botón, con texto al lado o fuera de su lugar; su región
 // viva dentro de la barra o montada a medias; y una barra que encoge lo suyo en vez de desplazarse.
-// Desde la segunda edición (`NE-45`): que el punto mire la entrada de un grupo y no lo que abre, o
-// que la entrada con el punto no lleve a la sub-pestaña que retoma el trabajo.
+// Desde la segunda edición (`NE-45`, `NE-48`, `NE-49`): que el punto mire la entrada de un grupo y no
+// lo que abre, o que la entrada con el punto no lleve a la sub-pestaña que retoma el trabajo; un
+// contador sin las «Próximamente» o suelto para el lector; y un subtítulo del menú escrito a mano
+// —«Solo ARIA», el de Ajustes— o que no se dibuje.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -405,4 +407,47 @@ test('la barra no aplasta lo suyo: se desplaza entera', () => {
   // La Reunión, con «Próximamente» debajo: al lado partía el nombre en dos renglones.
   assert.match(regla(hoja, '.nb-reunion .nb-ico'), /grid-row:\s*1 \/ span 2;/, '«Próximamente» va al lado del nombre de la Reunión');
   assert.match(regla(hoja, '.nb-reunion .n, .nb-reunion .nb-proximamente'), /grid-column:\s*2;/, '«Próximamente» va al lado del nombre de la Reunión');
+});
+
+test('cada departamento dice cuántas entradas tiene, y el menú de la cuenta el subtítulo de cada destino', () => {
+  const nav = NAV();
+  /* El contador (`NE-48`) son las entradas que la persona ve: un grupo una vez y las «Próximamente»
+     también, como el diseño. Al lector, con su palabra; el número, mudo. Los números del diseño salen
+     del modelo en la `196`. */
+  const c = nav.indexOf('className={desplegadoEste ?');
+  const cabecera = nav.slice(c, nav.indexOf('</button>', c));
+  assert.match(cabecera, /<span className="nb-cuenta" aria-hidden="true">\s*\{d\.entradas\.length\}\s*<\/span>/, 'el contador no cuenta las entradas que se ven, o el lector lo oye suelto');
+  assert.match(cabecera, /<span className="para-lectores">\{`, \$\{d\.entradas\.length\} \$\{d\.entradas\.length === 1 \? 'entrada' : 'entradas'\}`\}<\/span>/, 'el lector no oye qué cuenta el número');
+  assert.equal((nav.match(/nb-cuenta/g) ?? []).length, 1, 'el contador se dibuja en otro lugar');
+
+  /* El subtítulo de cada destino del engranaje (`NE-49`) sale del destino; el de lo que sólo se ve
+     desde la principal, de esa regla y del nombre de la organización de la sesión. Ninguno se escribe. */
+  const pie = PIE();
+  /* Se EJECUTA, como el rótulo: la expresión del fuente, con sesiones de prueba. El nombre sólo cuando la
+     organización de la sesión es la principal: un rol de plataforma mirando a un cliente ve estos destinos
+     y la sesión trae al cliente —con su nombre, «Solo Cliente X» de un panel que muestra a todas—. */
+  const m = /const organizacion = sesion\?\.organizacion;\s*const subtitulo = ([^;]+);/.exec(pie);
+  assert.ok(m, 'no se encontró el subtítulo del engranaje');
+  const subtitulo = new Function('sesion', 'destino', `const organizacion = sesion?.organizacion; return ${m[1]};`) as (s: unknown, d: unknown) => string | null;
+  const solo = { soloDeLaPrincipal: true, subtitulo: null };
+  assert.equal(subtitulo({ organizacion: { nombre: 'La Principal', esPrincipal: true } }, solo), 'Solo La Principal');
+  assert.equal(subtitulo({ organizacion: { nombre: 'Cliente X', esPrincipal: false }, mirandoOtraOrganizacion: true }, solo), 'Solo la organización principal', 'mirando a un cliente, el menú dice que el panel es sólo de ese cliente');
+  assert.equal(subtitulo({ organizacion: { nombre: '', esPrincipal: true } }, solo), 'Solo la organización principal');
+  assert.equal(subtitulo(null, solo), 'Solo la organización principal');
+  assert.equal(subtitulo({ organizacion: { nombre: 'La Principal', esPrincipal: true } }, { soloDeLaPrincipal: false, subtitulo: 'Del destino' }), 'Del destino', 'el subtítulo no es el del destino');
+  assert.match(pie, /<span className="mp-n">\{destino\.nombre\}<\/span>\s*\{subtitulo \? <span className="mp-sub">\{subtitulo\}<\/span> : null\}/, 'el menú no dibuja el subtítulo después del nombre');
+  // Debajo, en mono y en mayúsculas, como el diseño; y el contador, en mono y atenuado.
+  const hoja = HOJA();
+  assert.match(regla(hoja, '.menu-wrap .mp-item .mp-n'), /display:\s*block;/, 'el subtítulo queda en la línea del nombre');
+  const sub = regla(hoja, '.menu-wrap .mp-item .mp-sub');
+  for (const d of [/display:\s*block;/, /font-family:\s*var\(--font-mono\);/, /text-transform:\s*uppercase;/, /color:\s*var\(--txt-faint\);/]) {
+    assert.match(sub, d, 'el subtítulo del menú no va debajo, en mono, en mayúsculas y atenuado');
+  }
+  const cuenta = regla(hoja, '.nb-cuenta');
+  for (const d of [/flex:\s*0 0 auto;/, /font-family:\s*var\(--font-mono\);/, /color:\s*var\(--txt-faint\);/]) {
+    assert.match(cuenta, d, 'el contador no va en mono y atenuado, o encoge');
+  }
+  // Ni el de Ajustes, ni el nombre de una empresa: el único «Solo» es el de la regla, con la sesión.
+  assert.doesNotMatch(pie, /tokens e integraciones|solo aria|solo la organización de/i, 'el menú escribe un subtítulo a mano');
+  assert.equal((pie.match(/\bSolo\b/gi) ?? []).length, 1, 'el menú escribe otro «Solo» a mano');
 });

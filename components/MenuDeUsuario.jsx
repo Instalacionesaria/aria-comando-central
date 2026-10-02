@@ -174,20 +174,33 @@ export default function MenuDeUsuario({ sesion, engranaje, alIrALaSeccion }) {
         {/* Sólo lo que la persona TIENE, y con SU nombre: los dos salen de la navegación que armó el
             servidor. Un menú que ofrece algo que después responde 403 es la misma mentira que una
             entrada de menú sin permiso. */}
-        {destinos.map((destino) => (
-          <button
-            type="button"
-            className="mp-item"
-            role="menuitem"
-            key={destino.seccion}
-            onClick={() => {
-              cerrar();
-              alIrALaSeccion?.(destino.seccion);
-            }}
-          >
-            {destino.nombre}
-          </button>
-        ))}
+        {destinos.map((destino) => {
+          /* El subtítulo (`NE-49`): el que trae el destino, o «Solo {la principal}» en lo que sólo se ve
+             desde la organización principal. El nombre sale de la sesión y no se escribe, y SÓLO si la
+             organización de la sesión es la principal: un rol de plataforma ve estos destinos aunque
+             esté mirando otra empresa (`esDeLaPrincipal`, `lib/autorizacion/secciones.ts`), y la sesión
+             trae la que está mirando —con su nombre diría «Solo Cliente X» de un panel que muestra a
+             todas—. Sin el nombre, «Solo la organización principal». */
+          const organizacion = sesion?.organizacion;
+          const subtitulo = destino.soloDeLaPrincipal
+            ? `Solo ${organizacion?.esPrincipal && organizacion.nombre ? organizacion.nombre : 'la organización principal'}`
+            : destino.subtitulo;
+          return (
+            <button
+              type="button"
+              className="mp-item"
+              role="menuitem"
+              key={destino.seccion}
+              onClick={() => {
+                cerrar();
+                alIrALaSeccion?.(destino.seccion);
+              }}
+            >
+              <span className="mp-n">{destino.nombre}</span>
+              {subtitulo ? <span className="mp-sub">{subtitulo}</span> : null}
+            </button>
+          );
+        })}
         {destinos.length > 0 ? <div className="mp-sep" /> : null}
         {/* ARRIBA de «Cerrar sesión»: el destructivo va último. Y no lleva ninguna condición —
             cambiar la propia contraseña no depende de ninguna capacidad ni de ninguna pantalla, así

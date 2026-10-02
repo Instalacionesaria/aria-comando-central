@@ -178,7 +178,8 @@ que se decidió al construirla:
   por el orden de lectura y del tabulador: el nombre de la pantalla y sus pestañas se leen antes que el
   contenido. Es una región con el nombre de la entrada abierta, porque su `h1` quedó fuera de `<main>`.
 - **Lee lo mismo que la barra**: la pantalla a la vista, la pestaña que dibuja y `entradaAbierta`. La ceja
-  viaja en la navegación del servidor. Sin entrada abierta —el Inicio, lo del engranaje— no se dibuja.
+  viaja en la navegación del servidor. Sin entrada abierta —el Inicio, lo del engranaje— no se dibuja
+  (lo del engranaje lleva la suya desde la segunda edición, F2).
   La pestaña dibujada le llega aunque escuche después de que la pantalla la anunció: el gancho vuelve a
   leer al suscribirse, y con cada aviso redibuja sólo si cambió la de su pantalla.
 - **La fila de pestañas** son las entradas del departamento que la persona ve; la abierta, subrayada en
@@ -235,3 +236,27 @@ Los grupos de `09-LA-SEGUNDA-EDICION.md` (`NE-45`), en la barra y en la cabecera
 - **La ceja es el nombre del departamento**, y las entradas se llaman como en la tabla de `NE-12`.
 
 Lo vigilan `pruebas/codigo/196-los-grupos.test.ts`, la `193` y la `194`.
+
+## Hecho el 2026-10-02 (segunda edición, F2)
+
+El contador y el engranaje de `09-LA-SEGUNDA-EDICION.md` (`NE-48` y `NE-49`):
+
+- **Cada departamento dice cuántas entradas tiene**, en mono y atenuado, entre el nombre y el galón:
+  las que la persona ve, un grupo una vez y las «Próximamente» también. Con todo a la vista, Research 2,
+  Systems 3, Marketing 4, Sales 5 y Client Success 2, como el diseño. El número es mudo y el lector oye
+  «Research, 2 entradas».
+- **El menú del engranaje** dice, debajo de cada destino, su subtítulo en mono y en mayúsculas:
+  «TOKENS E INTEGRACIONES» en Ajustes, y «SOLO {la organización}» en el Panel de Monitoreo e Incidentes.
+  Que sólo se ven desde la organización principal lo dice el menú (`soloDesdeLaPrincipal`), y el nombre
+  sale de la sesión sólo si la organización que se está mirando es la principal: un rol de plataforma
+  los ve también mirando una empresa cliente, y ahí el menú dice «SOLO LA ORGANIZACIÓN PRINCIPAL» —con
+  el nombre de la sesión diría el del cliente, de un panel que muestra a todas—. Sigue siendo el único
+  menú de la cuenta (`NE-14`).
+- **Las tres pantallas del engranaje llevan la cabecera** con la ceja «MENÚ DE LA CUENTA» —la frase del
+  menú, no la del diseño, «MENÚ DEL ADMIN»: un `usuario` restringido también puede ver el Panel de
+  Monitoreo— y el nombre del destino, sin fila de pestañas. La barra no marca nada, como antes. De sus
+  títulos propios se oculta sólo el `h2`: la bajada se queda, porque la de Ajustes dice de qué empresa es
+  la configuración, y se dibuja como una línea de descripción y no como el título de la estética de
+  operación. Ajustes conserva sus pestañas.
+
+Lo vigilan la `193`, la `194` y la `196`.

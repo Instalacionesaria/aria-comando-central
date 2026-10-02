@@ -171,10 +171,11 @@ button.cd-sub:not(.on):hover {
 
 /* ── LOS TÍTULOS PROPIOS DE LAS PANTALLAS ───────────────────────────────────
 
-   Con la cabecera a la vista, el `h2` y la bajada que cada pantalla trae por dentro se ocultan: si
-   no, se leería «Tools» debajo de «Radar», un lugar que ya no existe. Sólo si HAY cabecera
-   (`.app:has(> .cd)`): en el Inicio y en lo del engranaje, que no son de ningún departamento, el
-   título propio es el único que hay, y vuelve solo.
+   Con la cabecera de un departamento a la vista, el `h2` y la bajada que cada pantalla trae por dentro
+   se ocultan: si no, se leería «Tools» debajo de «Radar», un lugar que ya no existe. Sólo si HAY
+   cabecera (`.app:has(> .cd)`): en el Inicio, que no tiene, el título propio es el único que hay, y
+   vuelve solo. Con la del engranaje (`.cd-engranaje`, desde la segunda edición) se oculta sólo el `h2`:
+   la cabecera ya dice «Ajustes», y la bajada de Ajustes dice de qué empresa es la configuración.
 
    Hay dos formas de cabecera, y en las dos se oculta lo que es título y nada más:
      · la de operación, `.cre-head > .ch-l.stack > .ch-title > h2 + .cre-desc`, con las pestañas
@@ -184,15 +185,27 @@ button.cd-sub:not(.on):hover {
    No `.ch-l` a secas, que en la de operación lleva las pestañas, ni `.cre-desc` suelta, que Auditoría
    usa dentro de sus secciones. Y no se borran del marcado: la estética de operación los exige
    (`pruebas/codigo/146-estetica-de-operacion.test.ts`). */
-.app:has(> .cd) .main .cre-head .ch-title,
-.app:has(> .cd) .main .cre-head > .ch-l:not(.stack) {
+.app:has(> .cd:not(.cd-engranaje)) .main .cre-head .ch-title,
+.app:has(> .cd:not(.cd-engranaje)) .main .cre-head > .ch-l:not(.stack),
+.app:has(> .cd-engranaje) .main .cre-head .ch-title > h2 {
   display: none;
+}
+/* La bajada que queda en lo del engranaje es una línea de descripción, no un título: la estética de
+   operación la dibuja en 24 px y negrita (`app/operacion-estetica.css`, donde el `h2` es el rótulo y la
+   bajada el título), y debajo del «Ajustes» de la cabecera se leían dos títulos. El `:is(#v-closer, …)`
+   es para ganarle a esa regla, que lleva el id. */
+.app:has(> .cd-engranaje) .main :is(#v-closer, .estetica-op) .cre-head .cre-desc {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: var(--txt-dim);
 }
 /* La cabecera de la pantalla que queda vacía —sin pestañas ni controles— sale del flujo y de la vista.
    `display: none` no sirve: `aios.css` le pone `display: grid !important`, y un `!important` de una
    capa anterior le gana a cualquiera de ésta. Sin esto quedaban 38 px vacíos con su línea, más el
-   espacio del desplazador. */
-.app:has(> .cd) .main .cre-head:not(:has(.cl-sub, .ch-r)) {
+   espacio del desplazador. En lo del engranaje no queda vacía: queda la bajada. */
+.app:has(> .cd:not(.cd-engranaje)) .main .cre-head:not(:has(.cl-sub, .ch-r)) {
   position: absolute;
   width: 1px;
   height: 1px;

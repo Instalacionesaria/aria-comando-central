@@ -47,6 +47,21 @@
 /* El disparador ya no es la fila del nombre: desde la etapa E10 es el engranaje (`.nb-engranaje`,
    más abajo), y el envoltorio es la fila entera del pie, así que el menú ocupa su ancho. */
 
+/* Cada destino del engranaje con su subtítulo debajo (`NE-49`), en mono y en mayúsculas, como el
+   diseño de la segunda edición: «TOKENS E INTEGRACIONES», «SOLO …». */
+.menu-wrap .mp-item .mp-n {
+  display: block;
+}
+.menu-wrap .mp-item .mp-sub {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+
 /* ── Las sub-pestañas de Ajustes ──────────────────────────────────────────── */
 
 /* Reusa `.cl-sub`, que es el patrón de sub-pestañas del cockpit del Closer y el mismo que
@@ -397,10 +412,10 @@
  *
  * Desde la etapa E10, la barra lateral mide 260 px y va de arriba abajo, como en el lienzo: la barra de
  * arriba sólo existe en el teléfono (abajo, en el corte), donde lleva el conmutador del cajón. Desde la
- * E11 hay dos filas a la derecha de la barra: la cabecera del departamento, `auto` —en el Inicio y en lo
- * del engranaje no se dibuja, y la fila mide 0—, y el cuerpo. La cabecera va en su propia área y no
- * dentro de `.main`: las pantallas de operación se estiran sobre el relleno de `.main`
- * (`app/operacion-estetica.css`), y adentro les cortaría el pie. */
+ * E11 hay dos filas a la derecha de la barra: la cabecera del departamento, `auto` —en el Inicio no se
+ * dibuja, y la fila mide 0; lo del engranaje lleva la suya desde la segunda edición—, y el cuerpo. La
+ * cabecera va en su propia área y no dentro de `.main`: las pantallas de operación se estiran sobre el
+ * relleno de `.main` (`app/operacion-estetica.css`), y adentro les cortaría el pie. */
 .app {
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: 260px minmax(0, 1fr);
@@ -794,6 +809,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Cuántas entradas tiene el departamento (`NE-48`), en mono y atenuado, como el diseño de la segunda
+   edición: un dato de la fila, no un aviso. */
+.nb-cuenta {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--txt-faint);
 }
 .nb-galon {
   width: 14px;
