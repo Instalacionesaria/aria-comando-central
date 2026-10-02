@@ -33,6 +33,7 @@
 
 import { puedeOtorgar } from '../../../../lib/autorizacion/delegacion.ts';
 import { alcanceOfrecible } from '../../../../lib/autorizacion/secciones.ts';
+import { alcancePorDepartamento } from '../../../../lib/autorizacion/departamentos.ts';
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
@@ -101,7 +102,11 @@ export async function GET(peticion: Request): Promise<Response> {
        * El formulario dibuja casillas y necesita el nombre de cada sección y su grupo. Con una lista
        * de claves los escribiría en el JSX, y serían la quinta copia de los trece nombres — el
        * defecto que `secciones.ts` existe para cerrar. El mismo argumento que el menú, que ya viaja
-       * agrupado por eso. */
+       * agrupado por eso.
+       *
+       * Desde la etapa E12 de la nueva estructura, agrupadas por DEPARTAMENTO y con lo que abre cada
+       * una (`alcancePorDepartamento`, `NE-21`): lo que se ofrece sigue saliendo de
+       * `alcanceOfrecible`, sin una sección de más ni de menos. */
       /* ── Y SI QUIEN PREGUNTA PUEDE OTORGARLO ──────────────────────────────
        *
        * Lo decide el SERVIDOR, con la misma función que usan las dos rutas que otorgan. La
@@ -111,7 +116,7 @@ export async function GET(peticion: Request): Promise<Response> {
        *
        * Es el mismo criterio con el que `soloPrincipal` ya viaja: *«la pantalla tiene que poder
        * decirlo ANTES de intentar»*. */
-      return { ...f, alcance: alcanceOfrecible(capacidades), otorgable: puedeOtorgar(capacidades, contexto.permisos) };
+      return { ...f, alcance: alcancePorDepartamento(alcanceOfrecible(capacidades)), otorgable: puedeOtorgar(capacidades, contexto.permisos) };
     });
   });
 

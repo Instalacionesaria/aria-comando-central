@@ -89,7 +89,7 @@ su sección, que el servidor ya filtró con la misma función que decide el men�
 |---|---|---|---|
 | Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor | `app/api/admin/credenciales/route.ts:123`, `:133`, `:281` |
 | Empresas | `empresas` · `organizaciones.listar` | Alta, edición y baja de organizaciones; un alta no crea personas ni credenciales (`components/ajustes/Empresas.jsx:24-28`) | `app/api/admin/organizaciones/route.ts:80`, `:129`; `app/api/admin/organizaciones/[id]/route.ts:71`, `:197` |
-| Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:44` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
+| Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:45` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
 
 La configuración de comisiones fue una cuarta pestaña y se mudó a Closer → Inicio sin cambiar su
 autorización: sigue declarando `PANTALLA = 'credenciales'`
@@ -200,7 +200,10 @@ comparten `tablero.ver` (`lib/autorizacion/secciones.ts:672-690`).
 - **La pantalla que lo concede** es la de Usuarios, y las casillas salen de `alcanceOfrecible`, que
   deriva de `SECCIONES` y ofrece sólo lo que la capacidad del rol habilita
   (`lib/autorizacion/secciones.ts:638-653`); para una empresa que no es la principal no ofrece
-  Monitoreo (`lib/autorizacion/secciones.ts:426-428`).
+  Monitoreo (`lib/autorizacion/secciones.ts:426-428`). **Después del corte, el 2026-10-02** (nueva
+  estructura, etapa E12): las casillas se agrupan por departamento, cada sección en un solo grupo y con lo
+  que abre (`alcancePorDepartamento`, en `lib/autorizacion/departamentos.ts`), sobre lo mismo que ofrece
+  `alcanceOfrecible` (`docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-21`).
 
 ### 3.4 · El cuarto eje: la organización principal
 

@@ -636,7 +636,7 @@ export function seccionesVisibles(permisos: ReadonlySet<string>): readonly Secci
 /**
  * Las secciones OFRECIBLES como alcance para un conjunto de capacidades, **agrupadas y en orden**.
  *
- * Es lo que el formulario de alta dibuja como casillas. Se agrupa acá y no en el componente por el
+ * De acá salen las casillas del alta, que `alcancePorDepartamento` reagrupa (`NE-21`). Se agrupa acá por el
  * mismo motivo que `menuVisible`, que está escrito en `app/api/auth/sesion/route.ts`: *"si el
  * componente supiera el orden de los grupos, tendríamos otra vez dos listas que se pueden desordenar
  * una respecto de la otra"*.

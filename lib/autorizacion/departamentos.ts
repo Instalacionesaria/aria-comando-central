@@ -198,3 +198,60 @@ export function lugarDe(seccion: string, pestana: string): string | null {
   const departamento = DEPARTAMENTOS.find((d) => d.clave === entrada.departamento);
   return departamento ? `${departamento.nombre} › ${entrada.nombre}` : null;
 }
+
+/**
+ * El alcance que ofrece Ajustes › Usuarios, agrupado por departamento (`NE-21`).
+ *
+ * Recibe lo que ya devuelve `alcanceOfrecible` (`lib/autorizacion/secciones.ts`) —las secciones que el
+ * rol alcanza, en los grupos del menú viejo— y lo reparte: cada sección en UN solo grupo, el
+ * departamento de su primera entrada, con la lista de lo que abre. Así, antes de tildarla, se ve que
+ * una sola casilla («Tools») abre seis entradas en tres departamentos. Repetirla en los tres sería
+ * peor: tres casillas que se tildan y se destildan juntas, sin que se vea por qué —destildarla en un
+ * departamento la saca de los tres—, con su descripción repetida para el lector de pantalla
+ * (`docs/OTROS/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Y cada sección sale con todos sus
+ * campos, `abre` aparte: la pantalla lee `soloDesdeLaPrincipal` para no ofrecer Monitoreo e Incidentes
+ * fuera de la organización principal.
+ *
+ * No decide qué se ofrece: eso ya lo hizo `alcanceOfrecible`, y acá no entra ni sale ninguna sección.
+ * El Inicio va primero y sin título, como en la barra; lo del engranaje, en «Menú de la cuenta», en su
+ * orden; y lo que no es de ninguno de los dos —las pestañas de Ajustes, Usuarios y Empresas— conserva
+ * el grupo con que vino. Sin grupos vacíos, por lo mismo que `menuVisible`.
+ */
+export function alcancePorDepartamento<S extends { clave: string; nombre: string }>(
+  grupos: readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly S[] }[],
+): { grupo: { clave: string; etiqueta: string | null }; secciones: (S & { abre: string[] })[] }[] {
+  const primera = (clave: string) => ENTRADAS.findIndex((e) => !('proximamente' in e) && e.seccion === clave);
+  const abre = (s: S): string[] =>
+    ENTRADAS.flatMap((e) => {
+      if ('proximamente' in e || e.seccion !== s.clave) return [];
+      const d = DEPARTAMENTOS.find((x) => x.clave === e.departamento);
+      return d ? [`${d.nombre} › ${e.nombre ?? s.nombre}`] : [];
+    });
+  const inicio: (S & { abre: string[] })[] = [];
+  const porDepartamento = new Map<ClaveDeDepartamento, (S & { abre: string[] })[]>(DEPARTAMENTOS.map((d) => [d.clave, []]));
+  const engranaje: (S & { abre: string[] })[] = [];
+  const otros: { grupo: { clave: string; etiqueta: string | null }; secciones: (S & { abre: string[] })[] }[] = [];
+
+  for (const g of grupos) {
+    const quedan: (S & { abre: string[] })[] = [];
+    for (const s of g.secciones) {
+      const conLugares = { ...s, abre: abre(s) };
+      const i = primera(s.clave);
+      if (s.clave === FUERA.inicio) inicio.push(conLugares);
+      else if ((FUERA.engranaje as readonly string[]).includes(s.clave)) engranaje.push(conLugares);
+      else if (i >= 0) porDepartamento.get(ENTRADAS[i]!.departamento)!.push(conLugares);
+      else quedan.push(conLugares);
+    }
+    if (quedan.length > 0) otros.push({ grupo: g.grupo, secciones: quedan });
+  }
+  for (const lista of porDepartamento.values()) lista.sort((a, b) => primera(a.clave) - primera(b.clave));
+  const enOrden = (FUERA.engranaje as readonly string[]);
+  engranaje.sort((a, b) => enOrden.indexOf(a.clave) - enOrden.indexOf(b.clave));
+
+  return [
+    { grupo: { clave: 'inicio', etiqueta: null }, secciones: inicio },
+    ...DEPARTAMENTOS.map((d) => ({ grupo: { clave: d.clave, etiqueta: d.nombre }, secciones: porDepartamento.get(d.clave)! })),
+    { grupo: { clave: 'engranaje', etiqueta: 'Menú de la cuenta' }, secciones: engranaje },
+    ...otros,
+  ].filter((g) => g.secciones.length > 0);
+}

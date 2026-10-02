@@ -205,6 +205,10 @@
 .aj-casilla { display:inline-flex; align-items:center; gap:7px; font-size:12.5px;
   color:var(--txt-dim); cursor:pointer; user-select:none; }
 .aj-casilla:hover { color:var(--txt); }
+/* Lo que abre una casilla que abre más de una entrada (`NE-21`, etapa E12): en su propio renglón,
+   debajo del nombre y alineado con él (15 px de la casilla + 7 de separación). */
+.aj-casilla:has(.aj-abre) { flex:0 0 100%; flex-wrap:wrap; }
+.aj-abre { flex:0 0 100%; padding-left:22px; font-size:11px; line-height:1.4; color:var(--txt-faint); }
 /* El tamaño propio de la casilla, contra `.fd-campo input { width:100% }`. */
 .aj-casilla input[type='checkbox'] { width:15px; height:15px; min-width:15px; padding:0; margin:0;
   accent-color:var(--accent); cursor:pointer; }

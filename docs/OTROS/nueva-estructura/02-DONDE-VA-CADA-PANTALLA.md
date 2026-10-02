@@ -66,6 +66,15 @@ Así queda claro, antes de marcarla, que una sola casilla abre seis entradas en 
 reglas que hoy vigila `pruebas/codigo/101-alcance.test.ts` (cada sección una vez, ningún grupo vacío, sólo
 lo que el rol puede) siguen iguales.
 
+**Hecho el 2026-10-02 (E12).** `alcancePorDepartamento` (`lib/autorizacion/departamentos.ts`) reparte lo
+que ya devuelve `alcanceOfrecible`, sin sacar ni agregar ninguna sección, y la ruta de los roles manda ese
+agrupado (`app/api/admin/roles/route.ts`). El orden es el de la barra: el Inicio primero y sin título, los
+departamentos, «Menú de la cuenta» con Ajustes, el Panel de Monitoreo e Incidentes, y al final «Ajustes»
+con Usuarios y Empresas, las dos pestañas de Ajustes que no son de ningún departamento. Client Success no
+aparece: su única sección, Analizadores, va en Sales, donde está su primera entrada. La casilla dice lo
+que abre sólo cuando abre más de una cosa —Tools seis, Analizadores dos—, y el lector de pantalla lo oye
+como descripción. Lo vigila `pruebas/codigo/195-el-alcance-por-departamento.test.ts`.
+
 ## Lo que se mueve de lugar, dicho en la pantalla
 
 Cinco textos nombraban lugares que dejaron de existir, y se corrigieron en la etapa que movió las pantallas

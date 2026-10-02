@@ -72,6 +72,10 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * techo del rol: `usuario` no alcanza Ajustes, así que esa casilla no aparece. Ofrecerla sería un
  * control que se ve y no puede cumplir.
  *
+ * Desde la etapa E12 los grupos son los departamentos (`alcancePorDepartamento`, `NE-21`), y cada
+ * sección trae `abre`, la lista de entradas que abre. Se dice cuando son más de una —«Tools» abre seis
+ * en tres departamentos—: la casilla es una sola, y antes de tildarla tiene que verse todo lo que da.
+ *
  * ── Y EL SEGUNDO TECHO, QUE NO ES DEL ROL SINO DE LA EMPRESA ───────────────
  *
  * `desdeLaPrincipal` dice si la persona a la que se le concede el alcance vive en la organización
@@ -100,10 +104,18 @@ function CasillasDeSecciones({ id, grupos, elegidas, alCambiar, desdeLaPrincipal
                    como «on»: el nombre no se computaba. Con `aria-label` cada casilla dice qué
                    pestaña es. */
                 aria-label={sec.nombre}
+                /* Lo que abre, también para el lector de pantalla: el `aria-label` tapa el resto del
+                   `<label>`, así que va como descripción. */
+                aria-describedby={sec.abre?.length > 1 ? `${id}-${sec.clave}-abre` : undefined}
                 checked={elegidas.has(sec.clave)}
                 onChange={(e) => alCambiar(sec.clave, e.target.checked)}
               />
               <span>{sec.nombre}</span>
+              {sec.abre?.length > 1 ? (
+                <span className="aj-abre" id={`${id}-${sec.clave}-abre`}>
+                  abre {sec.abre.join(' · ')}
+                </span>
+              ) : null}
             </label>
           ))}
         </div>

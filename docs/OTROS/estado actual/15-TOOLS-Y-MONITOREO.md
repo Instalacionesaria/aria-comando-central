@@ -353,7 +353,7 @@ derivación; la pestaña concedida, porque `usuario` restringe por sección; y s
 principal (`lib/autorizacion/secciones.ts:415-424`, `db/arranque/001_catalogo.sql:362-387`). La
 tercera se mide sobre la organización **propia**, no la que se está mirando, para que conmutar no
 apague el panel (`lib/autorizacion/secciones.ts:111-118`, `:755-760`). El formulario de Usuarios no
-ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:129`). `administrador` no
+ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:141`). `administrador` no
 tiene la capacidad, porque ahí no hay segunda mitad (`db/arranque/001_catalogo.sql:442-466`), y el
 catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
 (`db/arranque/001_catalogo.sql:735-754`).

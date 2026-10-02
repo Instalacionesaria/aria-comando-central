@@ -666,7 +666,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   - Que faltan «las pantallas de administración» y que el alta se hace por guion
     (`docs/OTROS/produccion/DESPLIEGUE.md:448-449`). Ajustes existe desde `9fa82c9` y sus pestañas
     de usuarios y de empresas desde `b24d697`, los dos del 2026-08-24, y dan de alta por la API
-    (`components/ajustes/Usuarios.jsx:333-334`, `components/ajustes/Empresas.jsx:145-146`).
+    (`components/ajustes/Usuarios.jsx:345-346`, `components/ajustes/Empresas.jsx:145-146`).
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
     (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:244`), lectores en `lib/auditor/`
