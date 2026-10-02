@@ -110,7 +110,8 @@ Del lienzo, pantallas de Research, Systems, Marketing, Sales y Client Success:
 5. **Debajo, la pantalla de siempre.**
 
 Los títulos que cada pantalla trae por dentro (su `h2` y su bajada) se **ocultan** con una sola regla de
-CSS: si no, se leería «Espía de anuncios» encima de «Tools», que nombra un lugar que ya no existe. Los
+CSS: si no, se leería «Tools» debajo del nombre de la entrada —«Espía de anuncios» en la primera edición,
+«Radar» desde la segunda—, y «Tools» nombra un lugar que ya no existe. Los
 controles de esas cabeceras (períodos, botones) siguen visibles.
 
 Las pantallas que ya tienen pestañas propias **las conservan** cuando viven dentro de una sola entrada:
@@ -147,7 +148,8 @@ construirla, además de lo de arriba:
   anuncios, en el Espía, que las retoma al abrirse; lo demás, en el Scraper, que retoma Maps al abrirse y cada
   otra fuente al tocar su pestaña. Prospección lleva el mismo Scraper adentro, pero el punto no se repite: una
   puerta por trabajo. Con Research cerrado, el punto va en su cabecera. Lo que dice va a una región viva fuera
-  de la barra: dentro del botón entraba a su nombre.
+  de la barra: dentro del botón entraba a su nombre. Desde la segunda edición el Espía y el Scraper son
+  sub-pestañas de Radar, y el punto va en Radar («Hecho … F1», abajo).
 - **El engranaje** se llama «Menú de la cuenta» y no «Ajustes», porque abre el menú. Cerrado, el menú se
   esconde del todo —el prototipo sólo lo volvía transparente, y sus botones seguían en el tabulador—, y
   cerrarlo con el foco adentro lo devuelve al engranaje. «Cambiar contraseña» cierra el cajón del teléfono
@@ -202,14 +204,16 @@ que se decidió al construirla:
   declara `seccion`, o sea en ICP & Oferta, que conserva sus siete pasos; con ella se fueron el medidor de
   avance y el punto de Prospección completa. En Analizadores quedan los botones de sincronizar y de
   analizar, a la derecha, donde estaban. Con un informe abierto, la pantalla anuncia el tipo del informe:
-  uno de onboarding pegado desde «Analizador HT» se muestra bajo Client Success › Analizador OB.
+  uno de onboarding pegado desde «Analizador HT» se muestra bajo Client Success › Analizador OB (desde la
+  segunda edición, «Llamadas de venta» y Client Success › «Llamadas de onboarding»).
 - **La franja del saldo** va arriba de Prospección y del Scraper, las dos que gastan saldo, y no arriba
   de todo. Se monta con Tools a la vista y una por pestaña, así que vuelve a leer el saldo en cada visita,
   también al pasar de una a otra; con Tools oculta no se lee. Antes se leía una sola vez, al cargar la
   página.
 - **Los textos que mandaban a «Tools → Mis Leads»** dicen «Research › Mis Leads», también los que lee el
   agente de ICP. La barra de pasos de ICP dice que el VSL vive en «Marketing › Tu video de ventas», y el
-  lugar sale de la tabla de departamentos (`lugarDe`), no escrito a mano.
+  lugar sale de la tabla de departamentos (`lugarDe`), no escrito a mano. Desde la segunda edición, los
+  dos dicen «Sales › Leads › De Radar» y «Marketing › Funnel › Tu VSL», sin tocar los textos.
 - **Lo que no se movió**: el contenido de Acquisition y Leads Portal arranca a 18 px del borde y la
   cabecera a 40; los títulos de cada panel por dentro («Prospección Inteligente», «Espía de Anuncios») no
   coinciden con el nombre de la entrada. Los dos son de la fase de detalles

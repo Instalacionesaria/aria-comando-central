@@ -64,8 +64,8 @@ Un documento que describe lo que todavía no existe es falso.
   - quien tiene Tools ve Research, Marketing y Sales;
   - desde una empresa que no es la principal no aparecen Monitoreo ni Incidentes.
 - **Qué estado sobrevive**: empezar un chat de ICP, pasar a otro departamento y volver; y el recorrido
-  Research › Scraper → Marketing › Tu página → Research › Scraper, con un escaneo en vuelo y con uno ya
-  terminado (`NE-35`).
+  Research › Radar › Scraper → Marketing › Funnel › Tu landing → Research › Radar › Scraper, con un escaneo
+  en vuelo y con uno ya terminado (`NE-35`; los nombres son los de la segunda edición).
 
 ## La publicación, por hitos
 

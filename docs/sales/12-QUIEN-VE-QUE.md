@@ -64,6 +64,10 @@ comparación no es una tabla.
 }
 ```
 
+> **Después del corte, el 2026-10-02**: el `nombre` de la sección es «Closing», cambiado en su misma línea
+> —el departamento ya se llama Sales— (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-47`).
+> La clave `sales`, la capacidad y el alcance no cambiaron.
+
 **La capacidad es `tablero.ver`**, compartida por siete secciones: `executive`, `contacts`,
 `acquisition`, `creative`, `conversion`, `conversation` y `sales`. El propio comentario de
 `secciones.ts:645-649` la usa como argumento de por qué el alcance por persona **no se puede expresar

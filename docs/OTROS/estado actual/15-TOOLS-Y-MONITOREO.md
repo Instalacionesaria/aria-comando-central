@@ -107,6 +107,15 @@ herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:
 > tabla de arriba: las pestañas las dibuja la cabecera de cada departamento. La franja del saldo va
 > arriba de Prospección y del Scraper, y no arriba de todo, y se vuelve a leer en cada visita. Los textos
 > del Research que decían «Tools → Mis Leads» dicen «Research › Mis Leads».
+>
+> **Y el 2026-10-02** (segunda edición, `docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`): las seis
+> pestañas se ven agrupadas —Research › **Radar** (Espía a tus competidores y Scraper), Marketing ›
+> **Funnel** (Tu landing y Tu VSL) y Sales › **Leads** (De Radar, que es Mis Leads, y Plan de prospección,
+> junto a De GHL, que es el Leads Portal)—, con las sub-pestañas en una segunda fila de la cabecera. El
+> punto «scrapeando» va en Radar, que con un trabajo en vuelo abre la sub-pestaña que lo retoma. Los textos
+> que decían «Research › Mis Leads» sacan el lugar de la tabla de departamentos: «Sales › Leads › De
+> Radar». Las dos notas «Próximamente» del Espía son «Enviar hallazgos a Copywriter» y «Dream 100». La
+> sección, sus pestañas y su permiso no cambiaron.
 
 El VSL y la Landing comparten almacén y herencia con ICP & Oferta y están descritos en
 [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía, en

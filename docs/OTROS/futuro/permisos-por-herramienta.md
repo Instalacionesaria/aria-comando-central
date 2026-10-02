@@ -11,8 +11,12 @@ el permiso es **por sección**, y dos secciones abarcan varias herramientas de d
 
 | sección | qué abre hoy, de un solo golpe |
 |---|---|
-| `tools` | Research › Espía de anuncios, Scraper, Mis Leads · Marketing › Tu página, Tu video de ventas · Sales › Prospección en frío |
-| `analizadores` | Sales › Analizador HT · Client Success › Analizador OB |
+| `tools` | Research › Radar (Espía a tus competidores y Scraper) · Marketing › Funnel (Tu landing y Tu VSL) · Sales › Leads (De Radar y Plan de prospección) |
+| `analizadores` | Sales › Llamadas de venta · Client Success › Llamadas de onboarding |
+
+Con los nombres de la segunda edición de la estructura (2026-10-02); en la primera eran Espía de
+anuncios, Scraper y Mis Leads en Research, Tu página y Tu video de ventas en Marketing, Prospección en frío
+en Sales, y Analizador HT y OB.
 
 Quien sólo prospecta, entonces, también ve la landing; y quien hace onboarding también ve las llamadas de
 venta.

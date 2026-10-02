@@ -127,6 +127,10 @@ tiene un «antes» que fechar. Ver `C11-P01`.
 },
 ```
 
+> **Después del corte, el 2026-10-02**: el `nombre` es «Creative Insights», cambiado en su misma línea
+> (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-47`). La clave, la capacidad y el alcance
+> no cambiaron.
+
 **Estado** ·
 
 - **`capacidadRequerida: 'tablero.ver'`** es la correcta y no hay que inventar otra: siete pantallas la

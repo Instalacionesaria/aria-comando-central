@@ -31,11 +31,11 @@ Tomadas por el usuario después de leer el diseño y el código:
 | `NE-02` | Base de la marca | Se integra primero el PR #2 `feature/brand-v2`, que ya instala los tokens, Geist, la mascota y los logos |
 | `NE-03` | Alcance estético | El armazón (barra lateral, cabecera de departamento, inicio) se dibuja con el diseño nuevo, y **toda la app** pasa a la paleta y la tipografía de la marca **cambiando los valores de los tokens**. El interior de cada pantalla conserva su disposición |
 | `NE-04` | El inicio | Diseño nuevo y honesto: mascota, saludo y la caja de chat, que dice que el cerebro llega en una etapa posterior. Sin tarjetas de «Reunión de hoy». La maqueta del Executive se retira |
-| `NE-05` | Lo que no existe todavía | Se ve como «Próximamente», sin datos y sin abrirse. La lista de CONVERSACIONES y el contador de la Reunión **no se dibujan** |
+| `NE-05` | Lo que no existe todavía | Se ve como «Próximamente», sin datos y sin abrirse. La lista de CONVERSACIONES y el contador de la Reunión **no se dibujan**. *Desde la segunda edición, CONVERSACIONES es un rótulo con «Próximamente», sin lista (`NE-50`)* |
 | `NE-06` | Tema | Sólo oscuro, como pide el brandbook. Sale el botón de tema |
 | `NE-07` | Permisos | Iguales que hoy. `tools` y `analizadores` siguen siendo un permiso cada uno; partirlos por herramienta es una fase posterior |
-| `NE-08` | Scraper | Gana una pestaña propia en Research. Prospección en frío queda en Sales como hoy |
-| `NE-09` | «Pregúntale al cerebro» | La barra de abajo y su panel con Cmd+K se retiran con la maqueta. Vuelven con el cerebro |
+| `NE-08` | Scraper | Gana una pestaña propia en Research. Prospección en frío queda en Sales como hoy. *Desde la segunda edición, el Scraper va en Research › Radar y la Prospección es Sales › Leads › Plan de prospección (`NE-39`, `NE-45`)* |
+| `NE-09` | «Pregúntale al cerebro» | La barra de abajo y su panel con Cmd+K se retiran con la maqueta. Vuelven con el cerebro. *Desde la segunda edición, la caja «Pregúntale al cerebro sobre …» está al pie de cada departamento, deshabilitada; responde cuando haya cerebro (`NE-50`)* |
 | `NE-10` | Colores con significado | Extensión sobria: éxito en un verde apagado, atención en el dorado de la marca, dinero en blanco, incidencias en coral; las 12 etapas del pipeline en tonos apagados que nunca saturan más que el cian |
 
 Y decididas al planificar, corregibles si el usuario dice otra cosa: la sección `executive` se muestra como
@@ -85,8 +85,9 @@ etapa, al terminar, sumó acá abajo su fila. Sus commits se leen en `git log --
   departamento y el engranaje a 1440 y a 375 px; un usuario restringido (un closer ve sólo Sales ›
   Closer; quien tiene Tools ve Research, Marketing y Sales; desde una empresa que no es la principal no
   aparecen Monitoreo ni Incidentes); y lo que tiene que sobrevivir al cambiar de departamento —un chat
-  de ICP empezado, y Research › Scraper → Marketing › Tu página → Research › Scraper con un escaneo en
-  vuelo y con uno terminado (`NE-35`)—. Lo demás se midió en Chrome sin cabeza, con los componentes
+  de ICP empezado, y Research › Radar › Scraper → Marketing › Funnel › Tu landing → Research › Radar ›
+  Scraper con un escaneo en vuelo y con uno terminado (`NE-35`; en la primera edición, Research › Scraper
+  y Marketing › Tu página)—. Lo demás se midió en Chrome sin cabeza, con los componentes
   reales de la barra y la cabecera y el marcado de las pantallas, y la suite: 2.445 pruebas en
   198 archivos, en las tres zonas.
 - **Cerrar el PR #2 a mano**, con un comentario: su contenido entró en E1, y es de otro autor.
@@ -97,6 +98,18 @@ etapa, al terminar, sumó acá abajo su fila. Sus commits se leen en `git log --
 
 ## La segunda edición
 
-**Planificada el 2026-10-02**, sobre esta estructura terminada: un diseño nuevo agrupa entradas, cambia
-nombres y devuelve como «Próximamente» piezas del cerebro. Todo, con sus decisiones y sus etapas, en
-`09-LA-SEGUNDA-EDICION.md`; su estado, al final de ese documento. Sus requisitos van de `NE-37` a `NE-52`.
+**Planificada y hecha el 2026-10-02**, sobre esta estructura terminada: un diseño nuevo agrupa entradas,
+cambia nombres y devuelve como «Próximamente» piezas del cerebro. Todo, con sus decisiones y sus etapas,
+en `09-LA-SEGUNDA-EDICION.md`; su estado, al final de ese documento. Sus requisitos van de `NE-37` a
+`NE-52`. Sus commits empiezan «Segunda edición F<n>:». La suite, al cerrarla: 2.458 pruebas en 200 archivos,
+en las tres zonas.
+
+**Lo que suma al humo con login, del usuario:**
+
+- Sales › Leads con un usuario que ve Tools y no el Leads Portal (Leads abre «De Radar» y no ofrece «De
+  GHL»), y con uno que ve el Leads Portal y no Tools (sólo «De GHL»).
+- Las sub-pestañas de Radar, Funnel y Leads, y que Radar, con un scraping del Scraper en vuelo, abra el
+  Scraper.
+- El menú del engranaje desde la organización principal («SOLO {su nombre}») y, para un rol de
+  plataforma, mirando una empresa cliente («SOLO LA ORGANIZACIÓN PRINCIPAL»).
+- La caja «Pregúntale al cerebro sobre …» al pie de cada departamento, a 1440 y a 768 px.

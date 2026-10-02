@@ -60,8 +60,9 @@ desde otro departamento.
 **Con una excepción que ya existe y no cambia**: dentro de Tools, el panel de cada pestaña se vuelve a
 montar al cambiar de pestaña (`components/fundaciones/Fundaciones.jsx`): las herramientas llevan
 `key={herramienta.id}`, y las vistas —Espía, Scraper, Mis Leads— son componentes distintos. Como las
-pestañas de Tools quedan en departamentos distintos, pasar de Research › Scraper a Marketing › Tu página y
-volver desmonta el Scraper:
+pestañas de Tools quedan en departamentos distintos, pasar de Research › Radar › Scraper a Marketing ›
+Funnel › Tu landing y volver desmonta el Scraper (en la primera edición, Research › Scraper y Marketing ›
+Tu página; y desde la segunda, también pasar al Espía dentro de Radar):
 
 - **sobrevive** el trabajo del servidor: un escaneo en vuelo sigue, y el Scraper lo retoma al volver. Retoma
   el de la fuente que tiene a la vista —Google Maps, al abrir— y repone lo escrito en ese formulario; uno de

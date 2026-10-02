@@ -4,6 +4,10 @@ Cada fila es una pantalla de la barra de hoy (`main` en `60f5d81`). La columna �
 dice lo que cambia **en esta fase**; lo que no dice, no cambia. El recolor de la marca (`03-LA-MARCA.md`)
 les toca a todas por igual y no se repite en cada fila.
 
+> **Las tablas y los ejemplos de este documento son de la primera edición** (2026-10-01): «Research › Espía
+> de anuncios», «Analizador OB», lo que abre «Tools». Lo que la segunda edición cambió de lugar o de
+> nombre está al final, en «La segunda edición».
+
 | hoy en la barra | sección | pasa a | qué le cambia por dentro |
 |---|---|---|---|
 | Executive | `executive` | **el Inicio** («Nueva conversación») | Se reemplaza entera: la maqueta se retira y entra el inicio honesto (`04-EL-INICIO.md`). Se muestra como «Inicio» |

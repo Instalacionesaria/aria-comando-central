@@ -136,6 +136,10 @@ la pantalla sólo cambia de una a otra por la navegación. Los botones de sincro
 siguen donde estaban, a la derecha. Con un informe abierto, la pantalla anuncia el tipo del informe, así
 que uno de onboarding pegado desde «Analizador HT» se muestra bajo Client Success › Analizador OB.
 
+**Y en la segunda edición, el mismo día**: las dos entradas se llaman Sales › **Llamadas de venta** y
+Client Success › **Llamadas de onboarding** (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`,
+`NE-47`). La sección, sus pestañas `HT` y `OB` y su permiso no cambiaron.
+
 ── **LA LISTA** ──
 
 Dos pestañas, «HT · Venta» y «OB · Onboarding», y tres filtros, Analizadas · Pendientes ·

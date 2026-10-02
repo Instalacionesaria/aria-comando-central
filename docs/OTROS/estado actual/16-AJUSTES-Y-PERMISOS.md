@@ -79,7 +79,11 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
 (`components/CommandCenter.jsx:51`). **Después del corte, el 2026-10-02** (nueva estructura, E10): Ajustes, el
 Panel de Monitoreo e Incidentes van en el engranaje del pie de la barra lateral, que muestra todas las
-que la persona vea (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14`).
+que la persona vea (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14`). **Y en la segunda edición,
+el mismo día** (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-49`): las tres pantallas
+llevan la cabecera con la ceja «MENÚ DE LA CUENTA», el menú dice debajo de cada destino «TOKENS E
+INTEGRACIONES» o «SOLO {la organización principal}», y Ajustes › Usuarios dice lo que abre cada casilla con
+el grupo, también la del Leads Portal (Sales › Leads › De GHL).
 
 **Las tres pestañas** (`components/views/AjustesView.jsx:80-83`), cada una visible si la sesión trae
 su sección, que el servidor ya filtró con la misma función que decide el menú
