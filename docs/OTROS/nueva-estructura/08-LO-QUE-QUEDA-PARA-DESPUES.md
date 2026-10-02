@@ -24,6 +24,35 @@ pantalla al diseño del lienzo:
 
 El inventario técnico queda en `brand/MIGRACION.md` (E5).
 
+### Del diseño de la segunda edición
+
+El diseño «Comando Central · Simulación» (`09-LA-SEGUNDA-EDICION.md`) entra en la estructura y no por
+dentro (`NE-37`). Lo que dibuja dentro de cada pantalla, con cifras de muestra, y la app no dice así:
+
+- **Radar › Espía**: la búsqueda como una tarjeta, «Busca en Meta Ad Library», con el nicho y el país en
+  píldoras; y una tarjeta «Saldo del scraper» dentro de Radar.
+- **Acquisition**: cinco cifras arriba —inversión, contactos, clics a landing o VSL, agendados,
+  calificados— y el costo por calificado de cada embudo (lead form ads, profile funnel, booking directo).
+- **Conversion**: cuatro tarjetas —cuánto vale lo que dice la pantalla, por dónde entró la gente, cuántos
+  abandonan el formulario, lo que la pantalla no puede medir—.
+- **Conversation › Lead Flow**: «El recorrido del lead» —entraron al CRM, los escribimos, respondieron,
+  agendaron— y «Cuánto se tarda» entre cada paso.
+- **Creative Insights**: «Rendimiento de cada pieza», una lista por pieza con sus contactos y cuántos
+  agendan, y «Lo que no se puede medir desde la API de GHL».
+- **Funnel › Tu landing**: el patrón conversacional, con el «Prompt para AI Studio» armándose a la derecha.
+- **Closing**: una tarjeta «Closers · Configura hasta 3 closers». Hoy eso está en Closer › Inicio, para
+  quien administra.
+- **Setter › Inicio**: ventas chicas, agendas propias, agendas del agente, asistencia y «Tu comisión».
+- **Closer › Inicio**: ventas, acuerdos sin pagar, con cita agendada y asistencia.
+- **Llamadas de venta y de onboarding**: «Sincronizar con tl;dv» y «Analizar transcripción» como botones
+  píldora, y el vacío «Todavía no hay llamadas de … analizadas».
+- **El Inicio**: la caja dice «Pregúntale al cerebro o pídele algo a un agente…»; no hay agentes todavía.
+- **Las «Próximamente» que se abren**: en el diseño, cada una abre una página con lo que va a ser.
+  Copywriter: «Un solo agente que escribe tu bio de Instagram, tus guiones TOFU · MOFU · BOFU y tus guiones
+  de venta directa a partir de tu ICP y tu oferta». Content Studio: «Videos hechos con tu clon de IA y
+  publicación en redes, en un solo lugar». Seguimiento de clientes: «El avance de cada cliente, alertas de
+  riesgo y oportunidades de renovación y recompra». Acá siguen sin abrirse (`NE-13`).
+
 ## Lo que se construye después
 
 | pieza | por qué no ahora | plan |
@@ -35,6 +64,8 @@ El inventario técnico queda en `brand/MIGRACION.md` (E5).
 | **El comentario del cerebro en cada departamento** | Lo escribe el cerebro | con el cerebro |
 | **Las herramientas nuevas de Marketing**: Bio de Instagram, Guiones TOFU · MOFU · BOFU, Guiones de venta directa, Social Media Posting, Clon de IA | No existen; hoy son «Próximamente» (`NE-13`) | cada una cuando se construya, con el patrón conversacional |
 | **Seguimiento de clientes** (Client Success) | No existe; hoy es «Próximamente» | cuando se construya |
+| **Sales › Leads › Todos** (segunda edición) | Junta los contactos de GHL y los leads del scraper en una sola lista, con su origen y su etapa, las cifras por calidad de ICP y «Subir a HighLevel». Hoy son dos pantallas, cada una con su permiso; la lista junta exige decidir qué ve quien tiene uno solo | cuando se construya; hasta entonces, «Próximamente» (`NE-38`) |
+| **Dream 100 y Enviar hallazgos a Copywriter** (segunda edición) | Seguir cuentas exige guardarlas y volver a buscarlas; mandar los hallazgos exige que exista Copywriter | con Copywriter; hasta entonces, dos notas «Próximamente» del Espía (`NE-41`) |
 | **Separar el Scraper de la Prospección** | Hoy el buscador queda en los dos lugares (`NE-20`) | fase de detalles |
 | **Retirar el tema de la base** | La columna `usuarios.tema` y su ruta quedan dormidas (`NE-23`) | una migración, cuando no haga falta para nada |
 | **El tema claro con los valores de la marca** | El bloque claro de `app/temas.css` quedó dormido con su paleta de antes (`NE-23`); la marca tiene su tema claro para documentos y PDFs | el día que un documento imprimible lo use |

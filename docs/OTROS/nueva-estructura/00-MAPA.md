@@ -55,6 +55,7 @@ la empresa**; el comentario del cerebro de la cabecera **no se dibuja** todavía
 | [06-LAS-ETAPAS.md](06-LAS-ETAPAS.md) | E0 a E13: qué toca cada una, sus pruebas, cómo se verifica y cómo se revierte |
 | [07-LO-QUE-SE-ROMPE-EN-SILENCIO.md](07-LO-QUE-SE-ROMPE-EN-SILENCIO.md) | Cada riesgo, con la prueba que lo vigila |
 | [08-LO-QUE-QUEDA-PARA-DESPUES.md](08-LO-QUE-QUEDA-PARA-DESPUES.md) | La fase de detalles y lo que se construye después |
+| [09-LA-SEGUNDA-EDICION.md](09-LA-SEGUNDA-EDICION.md) | La segunda edición, del 2026-10-02: las entradas agrupadas (Radar, Funnel, Leads), los nombres nuevos, la ceja, el contador, el engranaje y lo «Próximamente» del cerebro, con sus etapas F0 a F4 |
 
 ## Estado
 
@@ -93,3 +94,9 @@ etapa, al terminar, sumó acá abajo su fila. Sus commits se leen en `git log --
 - **Dos defectos que la nueva estructura hizo visibles y no son suyos**, anotados en
   `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md`: los chips «Hereda de» de Tools que llevan a Prospección,
   y una prueba de colores (`104`) que no mira lo que va antes del primer `:root` de una hoja.
+
+## La segunda edición
+
+**Planificada el 2026-10-02**, sobre esta estructura terminada: un diseño nuevo agrupa entradas, cambia
+nombres y devuelve como «Próximamente» piezas del cerebro. Todo, con sus decisiones y sus etapas, en
+`09-LA-SEGUNDA-EDICION.md`; su estado, al final de ese documento. Sus requisitos van de `NE-37` a `NE-52`.
