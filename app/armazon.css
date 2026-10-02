@@ -288,8 +288,8 @@
 }
 
 /* ── «Hay un scraping corriendo» ────────────────────────────────────────────
-   Un punto que late en la barra lateral, en Espía de anuncios o en Scraper, o en la cabecera de
-   Research cuando está cerrado. Existe porque un scraping tarda minutos y lo
+   Un punto que late en la barra lateral, en Radar —el grupo del Espía y del Scraper—, o en la cabecera
+   de Research cuando está cerrado. Existe porque un scraping tarda minutos y lo
    normal es irse a Setter o a Closer mientras corre: sin esto, la única forma de saber si
    terminó era volver a la pestaña y esperar.
 

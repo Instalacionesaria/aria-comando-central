@@ -137,7 +137,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
 
   /* ── LA PESTAÑA QUE PIDE LA NAVEGACIÓN (`NE-19`) ─────────────────────────
      Tools se reparte en tres departamentos, así que la pestaña la elige quien abre la pantalla:
-     «Research › Espía de anuncios» abre `tools` pidiendo `espia`. Sólo lo lee la pantalla cuyo
+     «Research › Radar › Espía a tus competidores» abre `tools` pidiendo `espia`. Sólo lo lee la pantalla cuyo
      catálogo declara `seccion`; ICP & Oferta no, porque sus siete pasos los eligen su barra y la
      cadena del método.
 

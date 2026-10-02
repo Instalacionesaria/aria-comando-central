@@ -20,20 +20,27 @@ dentro», todas las pantallas):
 
 ## `NE-12` · Los departamentos y sus entradas
 
+Desde la segunda edición (`09-LA-SEGUNDA-EDICION.md`, 2026-10-02). Un **grupo** —en negrita— es una
+sola entrada de la barra con sus sub-pestañas (`NE-45`):
+
 | departamento | ceja de la cabecera | entradas, en orden → sección de hoy [pestaña] |
 |---|---|---|
-| **Research** | `RESEARCH · SE INSTALA EN FOUNDATIONS` | ICP & Oferta → `icp` · Espía a tus competidores → `tools` [espia] (era «Espía de anuncios» hasta el 2026-10-02) · **Scraper** → `tools` [scraper, nueva] · Mis Leads → `tools` [mis-leads] |
-| **Systems** | `SYSTEMS · SE INSTALA EN SYSTEMS` | Acquisition → `acquisition` · Conversion → `conversion` · Conversation → `conversation` |
-| **Marketing** | `MARKETING · SE INSTALA EN GROWTH` | Creative → `creative` · Bio de Instagram · Guiones TOFU · MOFU · BOFU · Guiones de venta directa · Social Media Posting · Clon de IA · Tu página → `tools` [landing] · Tu video de ventas → `tools` [VSL] |
-| **Sales** | `SALES · SE INSTALA EN SALES` | Sales → `sales` · Leads Portal → `contacts` · Setter → `setter` · Closer → `closer` · Analizador HT → `analizadores` [HT] · Prospección en frío → `tools` [prospección] |
-| **Client Success** | `CLIENT SUCCESS · SE INSTALA EN SCALE` | Analizador OB → `analizadores` [OB] · Seguimiento de clientes |
+| **Research** | `RESEARCH` | ICP & Oferta → `icp` · **Radar** › Espía a tus competidores → `tools` [espia] · Scraper → `tools` [scraper] |
+| **Systems** | `SYSTEMS` | Acquisition → `acquisition` · Conversion → `conversion` · Conversation → `conversation` |
+| **Marketing** | `MARKETING` | Creative Insights → `creative` · Copywriter · **Funnel** › Tu landing → `tools` [landing] · Tu VSL → `tools` [vsl] · Content Studio |
+| **Sales** | `SALES` | Closing → `sales` · **Leads** › Todos · De GHL → `contacts` · De Radar → `tools` [mis-leads] · Plan de prospección → `tools` [prospeccion] · Setter → `setter` · Closer → `closer` · Llamadas de venta → `analizadores` [HT] |
+| **Client Success** | `CLIENT SUCCESS` | Llamadas de onboarding → `analizadores` [OB] · Seguimiento de clientes |
 
-Las entradas sin sección son **«Próximamente»** (`NE-05`): Bio de Instagram, los dos creadores de guiones,
-Social Media Posting, Clon de IA y Seguimiento de clientes.
+Las entradas sin sección son **«Próximamente»** (`NE-05`): Copywriter (que reúne Bio de Instagram y los
+dos creadores de guiones), Content Studio (Social Media Posting y el Clon de IA), Leads › Todos y
+Seguimiento de clientes.
 
-La ceja dice dónde se instala cada departamento en el programa (Foundations, Systems, Growth, Sales,
-Scale), como en el diseño. Las cinco inteligencias **conservan sus nombres**: Acquisition, Creative,
-Conversion, Conversation y Sales.
+La ceja es el nombre del departamento (`NE-48`). Hasta la segunda edición decía también dónde se
+instalaba en el programa —«RESEARCH · SE INSTALA EN FOUNDATIONS»—, y las entradas eran las de la primera:
+Espía, Scraper y Mis Leads en Research; Creative, las cinco «Próximamente» de Marketing, Tu página y Tu
+video de ventas; Sales, Leads Portal, Analizador HT y Prospección en frío en Sales; Analizador OB en
+Client Success. Dos de las cinco inteligencias cambiaron de nombre con ella: Creative es **Creative
+Insights**, y Sales —la sección, no el departamento— es **Closing** (`NE-47`).
 
 ## `NE-13` · Una entrada «Próximamente»
 
@@ -79,8 +86,9 @@ regla de la organización principal. La estructura nueva **no vuelve a decidir p
 
 | si la persona tiene… | ve… |
 |---|---|
-| `tools` | Research › Espía, Scraper y Mis Leads · Marketing › Tu página y Tu video de ventas · Sales › Prospección en frío |
-| `analizadores` | Sales › Analizador HT · Client Success › Analizador OB |
+| `tools` | Research › Radar (Espía y Scraper) · Marketing › Funnel (Tu landing y Tu VSL) · Sales › Leads (De Radar y Plan de prospección) |
+| `contacts` | Sales › Leads › De GHL: con Tools y sin el Leads Portal, Leads se ve sin esa sub-pestaña (`NE-46`) |
+| `analizadores` | Sales › Llamadas de venta · Client Success › Llamadas de onboarding |
 | sólo `closer` | Sales › Closer, y nada más |
 | `executive` | «Nueva conversación» (y el Inicio) |
 | ninguna sección de un departamento | ese departamento no se dibuja |
@@ -208,3 +216,22 @@ que se decidió al construirla:
 Lo vigila `pruebas/codigo/194-la-cabecera-del-departamento.test.ts`. Lo que no se pudo recorrer sin
 entrar a la aplicación —un chat de ICP empezado y un escaneo en vuelo que sobreviven al cambio de
 departamento— queda para el humo con login del hito 3 (`07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`).
+
+## Hecho el 2026-10-02 (segunda edición, F1)
+
+Los grupos de `09-LA-SEGUNDA-EDICION.md` (`NE-45`), en la barra y en la cabecera:
+
+- **En la barra, un grupo es una entrada**: Radar, Funnel y Leads, marcadas cuando cualquiera de sus
+  sub-pestañas está a la vista. Al tocarla abre la primera sub-pestaña que la persona ve y que abre algo:
+  Leads abre «De GHL», o «De Radar» a quien no ve el Leads Portal. El punto «scrapeando» mira lo que la
+  entrada abre, no la entrada: Radar abre el Espía, y un scraping del Scraper se veía sin punto. Y con
+  un trabajo en vuelo, Radar abre la sub-pestaña que lo retoma: el punto lleva adonde el trabajo se ve.
+- **En la cabecera, las sub-pestañas van en una segunda fila**, debajo de la línea, como píldoras: la
+  abierta, invertida —bajo el puntero conserva su letra, y el foco va por fuera, porque por dentro caía
+  sobre su propio fondo—. La línea pasó de la cabecera entera a su fila de arriba, que va de borde a borde
+  igual que antes. «Todos», la «Próximamente» de Leads, lleva la palabra adentro de la píldora y no es un
+  botón. Las dos filas navegan con la misma función, porque una sub-pestaña de Leads puede ser otra
+  pantalla que la abierta.
+- **La ceja es el nombre del departamento**, y las entradas se llaman como en la tabla de `NE-12`.
+
+Lo vigilan `pruebas/codigo/196-los-grupos.test.ts`, la `193` y la `194`.

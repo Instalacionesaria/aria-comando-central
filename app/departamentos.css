@@ -12,19 +12,29 @@
 /* El relleno de los costados sigue al cuerpo de las pantallas de operación: 40 px, o lo que el cuerpo
    se corre cuando se centra en sus 1600 px (`app/operacion-estetica.css`), en una pantalla ancha. Sin
    eso, a partir de unos 1900 px la cabecera quedaba pegada a la barra y el cuerpo, en el medio.
-   Acquisition y Leads Portal arrancan a 18 px del borde: alinearlos es de la fase de detalles. */
+   Acquisition y Leads Portal arrancan a 18 px del borde: alinearlos es de la fase de detalles.
+
+   Lo llevan las dos filas y no la `.cd`, que va de borde a borde: la línea va debajo de la fila de
+   pestañas, y las sub-pestañas de un grupo, debajo de la línea, como el diseño de la segunda edición
+   las pone al principio del cuerpo. El `100%` se resuelve contra la `.cd` en las dos, que es la misma. */
 .cd {
+  --cd-costado: max(40px, calc((100% - 1600px) / 2 + 24px));
   grid-area: cabecera;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+.cd-arriba {
   display: flex;
   flex-direction: column;
   gap: 18px;
   min-width: 0;
-  padding: 28px max(40px, calc((100% - 1600px) / 2 + 24px)) 0;
+  padding: 28px var(--cd-costado) 0;
   border-bottom: 1px solid var(--line);
-  background: var(--bg);
 }
 /* Sin fila de pestañas, la línea no queda pegada al título. */
-.cd.sin-pestanas {
+.cd.sin-pestanas .cd-arriba {
   padding-bottom: 22px;
 }
 .cd-titulo {
@@ -48,10 +58,10 @@
   color: var(--txt);
 }
 
-/* La fila: en la computadora, cuando no entra (Marketing tiene ocho), se parte en dos renglones y
-   ninguna pestaña queda fuera de la vista —con la fila deslizable, a 1280 px la abierta de Marketing
-   quedaba entera afuera, y nada decía que la fila seguía—. En el teléfono se desliza, y la cabecera
-   trae a la vista la abierta y la que recibe el foco (`traerALaVista`). */
+/* La fila: en la computadora, cuando no entra, se parte en dos renglones y ninguna pestaña queda fuera
+   de la vista —con la fila deslizable, a 1280 px la abierta de Marketing, que en la primera edición
+   tenía ocho entradas, quedaba entera afuera, y nada decía que la fila seguía—. En el teléfono se
+   desliza, y la cabecera trae a la vista la abierta y la que recibe el foco (`traerALaVista`). */
 .cd-pestanas {
   display: flex;
   flex-wrap: wrap;
@@ -104,10 +114,65 @@ button.cd-pestana:hover {
   white-space: nowrap;
 }
 
+/* ── LAS SUB-PESTAÑAS DE UN GRUPO (`NE-45`) ──────────────────────────────────
+
+   Píldoras, como las del diseño de la segunda edición: la línea más fuerte de la marca y el texto
+   atenuado; la abierta, invertida —el texto de la marca de fondo y el fondo de letra—. Se parten en
+   renglones en la computadora, como la fila de arriba, y se deslizan en el teléfono.
+
+   El foco va POR FUERA, y no por dentro como en la fila de arriba: en la abierta, por dentro, el anillo
+   caía sobre su propio fondo invertido y sólo cambiaba el color de un canto. En el teléfono, donde la
+   fila se desliza y recorta, la fila deja abajo y arriba el lugar del anillo. */
+.cd-subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px var(--cd-costado) 0;
+}
+.cd-sub {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+/* Sin la abierta: con su fondo invertido, el color del hover la dejaba con la letra del color del
+   fondo, sin nombre bajo el puntero —y en el teléfono, donde el hover se queda en lo tocado, hasta
+   tocar otra cosa—. */
+button.cd-sub:not(.on):hover {
+  color: var(--txt);
+}
+.cd-sub.on {
+  border-color: var(--txt);
+  background: var(--txt);
+  color: var(--bg);
+}
+.cd .cd-subs button.cd-sub:focus-visible {
+  outline-offset: 2px;
+}
+/* La «Próximamente» del grupo: sin mano, con la línea punteada y la palabra al lado, dentro de la
+   píldora, que no tiene alto para colgarla debajo. */
+.cd-sub-proxima {
+  border-style: dashed;
+  color: var(--txt-faint);
+  cursor: default;
+}
+
 /* ── LOS TÍTULOS PROPIOS DE LAS PANTALLAS ───────────────────────────────────
 
    Con la cabecera a la vista, el `h2` y la bajada que cada pantalla trae por dentro se ocultan: si
-   no, se leería «Tools» debajo de «Espía de anuncios», un lugar que ya no existe. Sólo si HAY cabecera
+   no, se leería «Tools» debajo de «Radar», un lugar que ya no existe. Sólo si HAY cabecera
    (`.app:has(> .cd)`): en el Inicio y en lo del engranaje, que no son de ningún departamento, el
    título propio es el único que hay, y vuelve solo.
 
@@ -146,11 +211,24 @@ button.cd-pestana:hover {
 /* En el teléfono, la misma cabecera más compacta: el lienzo no tiene versión de teléfono (`NE-18`). */
 @media (max-width: 760px) {
   .cd {
-    gap: 12px;
-    padding: 16px 16px 0;
+    --cd-costado: 16px;
   }
-  .cd.sin-pestanas {
+  .cd-arriba {
+    gap: 12px;
+    padding-top: 16px;
+  }
+  .cd.sin-pestanas .cd-arriba {
     padding-bottom: 14px;
+  }
+  .cd-subs {
+    flex-wrap: nowrap;
+    padding-top: 10px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cd-subs::-webkit-scrollbar {
+    display: none;
   }
   .cd-nombre {
     font-size: 22px;

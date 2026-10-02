@@ -419,8 +419,8 @@ export async function analizarAnuncios(trabajo: string): Promise<ResultadoDelAna
 }
 
 /**
- * La pestaña de Tools donde la barra lateral dibuja el punto de «hay un scraping corriendo»
- * (`components/Nav.jsx`): la puerta desde la que el trabajo se vuelve a ver. La fuente dice qué se
+ * La pestaña de Tools que retoma un trabajo en vuelo: adonde lleva la entrada con el punto de «hay un
+ * scraping corriendo» (`components/Nav.jsx`, Radar desde la segunda edición). La fuente dice qué se
  * corre, no desde dónde se lanzó —Maps lo lanzan el Scraper, Prospección e ICP; anuncios, el Espía,
  * el Scraper, Prospección e ICP—, así que se elige una puerta por fuente. Las búsquedas de anuncios
  * van al Espía, que las retoma al abrirse. El resto va al Scraper, que retoma Maps al abrirse y cada

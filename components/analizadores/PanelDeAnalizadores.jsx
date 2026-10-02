@@ -43,7 +43,7 @@ import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
 import DetalleOb from './DetalleOb.jsx';
 
-/* Las dos pestañas. Las elige la navegación —Sales › Analizador HT, Client Success › Analizador OB—:
+/* Las dos pestañas. Las elige la navegación —Sales › Llamadas de venta y Client Success › Llamadas de onboarding—:
    desde la etapa E11 la pantalla no dibuja barra propia, así que no llevan nombre ni ícono. */
 const PESTANAS = [{ clave: 'HT' }, { clave: 'OB' }];
 
@@ -111,11 +111,11 @@ export default function PanelDeAnalizadores() {
 
   const aLaVista = estaALaVista('analizadores');
 
-  /* La pestaña que pide la navegación (`NE-19`): «Sales › Analizador HT» y «Client Success ›
-     Analizador OB» abren esta misma pantalla, cada una con la suya. Se atiende una vez por número y en
+  /* La pestaña que pide la navegación (`NE-19`): «Sales › Llamadas de venta» y «Client Success ›
+     Llamadas de onboarding» abren esta misma pantalla, cada una con la suya. Se atiende una vez por número y en
      el render, como en `Fundaciones.jsx`: el primer dibujo ya es el de la pestaña pedida y la lista no
-     se pide antes con la anterior. Un detalle abierto de la OTRA pestaña se cierra; si no, «Analizador
-     OB» mostraría una llamada de venta. */
+     se pide antes con la anterior. Un detalle abierto de la OTRA pestaña se cierra; si no, «Llamadas de
+     onboarding» mostraría una llamada de venta. */
   const pedidoDeNavegacion = usarPedidoDeVista('analizadores');
   const [atendido, setAtendido] = useState(0);
   if (pedidoDeNavegacion && pedidoDeNavegacion.secuencia !== atendido) {
@@ -128,8 +128,8 @@ export default function PanelDeAnalizadores() {
     if (pedida && detalle !== null && detalle.tipo !== pedida) setDetalle(null);
   }
   /* Y anuncia la que DIBUJA, antes de pintar, como `Fundaciones.jsx`: la barra y la cabecera marcan con
-     esto. Con un detalle abierto, la del detalle: un análisis de onboarding pegado desde «Analizador HT»
-     abre un informe OB, y la cabecera diría «Analizador HT» encima de él. */
+     esto. Con un detalle abierto, la del detalle: un análisis de onboarding pegado desde «Llamadas de venta»
+     abre un informe OB, y la cabecera diría «Llamadas de venta» encima de él. */
   const dibujada = detalle?.tipo === 'HT' || detalle?.tipo === 'OB' ? detalle.tipo : pestana;
   useLayoutEffect(() => {
     anunciarPestana('analizadores', dibujada);
@@ -437,7 +437,7 @@ export default function PanelDeAnalizadores() {
 function Manual({ pestana, seAnaliza, trabajando, alTerminar, setTrabajando }) {
   const [tipo, setTipo] = useState(pestana);
   /* Si la pestaña cambia con el formulario abierto —al llegar desde el otro departamento, por la
-     barra lateral (`NE-19`)—, el tipo la sigue: «Analizador OB» no puede mostrar «Venta (HT)» marcado
+     barra lateral (`NE-19`)—, el tipo la sigue: «Llamadas de onboarding» no puede mostrar «Venta (HT)» marcado
      y analizar como venta. Lo escrito se queda. */
   const [pestanaVista, setPestanaVista] = useState(pestana);
   if (pestana !== pestanaVista) {

@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { lugarDe } from '@/lib/autorizacion/departamentos';
 import {
   COLUMNAS,
   NOMBRE_DE_FUENTE,
@@ -33,6 +34,12 @@ import {
   enviarLeadsAlCrm,
   leerLeads,
 } from '@/lib/tools/leads';
+
+/* De dónde llegan los leads, dicho como la navegación: el Scraper y el Plan de prospección guardan acá
+   los dos (`NE-52`). */
+const DE_DONDE_LLEGAN = `Los que extraigas en ${lugarDe('tools', 'scraper') ?? 'el Scraper'} o en ${
+  lugarDe('tools', 'prospeccion') ?? 'el Plan de prospección'
+} van a quedar acá.`;
 
 /**
  * Las fuentes, como BOTONES y no como desplegable.
@@ -256,7 +263,7 @@ export default function MisLeads() {
             ? `Ningún lead coincide con «${busqueda}».`
             : fuente
               ? 'No hay leads de esa fuente todavía.'
-              : 'Todavía no scrapeaste ningún lead. Los que extraigas en Prospección van a quedar acá.'}
+              : `Todavía no scrapeaste ningún lead. ${DE_DONDE_LLEGAN}`}
         </p>
       ) : null}
 

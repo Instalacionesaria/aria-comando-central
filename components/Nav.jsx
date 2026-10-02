@@ -16,10 +16,14 @@
  * ── LA ENTRADA ABIERTA ──────────────────────────────────────────────────────
  *
  * La pantalla a la vista (`usarUbicacion`) y la pestaña que esa pantalla DIBUJA
- * (`usarPestanaDibujada`): Tools tiene seis entradas en tres departamentos, y cambia de pestaña por
+ * (`usarPestanaDibujada`): Tools tiene seis sub-pestañas en tres departamentos, y cambia de pestaña por
  * dentro sin pasar por la navegación. Con las dos se marca la entrada (`entradaAbierta`) y se abre su
  * departamento. Sólo queda abierto el que está en uso, y en el Inicio ninguno, como en el lienzo; un
  * clic en la cabecera abre otro a mano.
+ *
+ * Un grupo —Radar, Funnel, Leads (`NE-45`)— es UNA entrada: marcada cuando cualquiera de sus
+ * sub-pestañas está a la vista, y al tocarla abre la primera que abre algo. Las sub-pestañas las
+ * dibuja la cabecera del departamento, no la barra.
  *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
@@ -36,7 +40,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSesion } from '../app/sesion-contexto.tsx';
 import { irALaVista } from '../lib/aios/shell.js';
 import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
-import { entradaAbierta } from '../lib/autorizacion/departamentos.ts';
+import { entradaAbierta, queAbre } from '../lib/autorizacion/departamentos.ts';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 import { leerTrabajosEnVuelo, pestanaQueLoRetoma } from '../lib/tools/scrapers.ts';
@@ -84,12 +88,20 @@ export default function Nav() {
   /* ── EL PUNTO DE «HAY UN SCRAPING CORRIENDO» ──────────────────────────────
      Vive en la barra y no en Tools porque el punto es justamente verlo DESDE OTRA PANTALLA: un
      scraping tarda minutos y lo normal es irse a Setter o a Closer mientras corre. Va en la entrada
-     donde el trabajo se vuelve a ver (`pestanaQueLoRetoma`, con el detalle de quién retoma qué), y en
-     la cabecera de Research cuando está cerrado: si no, desde Sales no se vería.
+     que lleva a donde el trabajo se vuelve a ver (`pestanaQueLoRetoma`, con el detalle de quién retoma
+     qué), y en la cabecera de Research cuando está cerrado: si no, desde Sales no se vería.
 
      Sólo consulta quien ve Tools. El reloj compartido frena con la pestaña oculta y dispara al volver
-     (`lib/reloj.ts`), y la PRIMERA lectura la hace este componente: el reloj repite, quien abre pide. */
-  const puedeVerTools = departamentos.some((d) => d.entradas.some((e) => e.seccion === 'tools'));
+     (`lib/reloj.ts`), y la PRIMERA lectura la hace este componente: el reloj repite, quien abre pide.
+
+     Desde la segunda edición el Espía y el Scraper son sub-pestañas de Radar (`NE-45`), y el punto va
+     en Radar si cualquiera de las dos tiene trabajo: se mira lo que la entrada ABRE (`queAbre`), no la
+     entrada, que abre el Espía. Y con un trabajo en vuelo, Radar abre la sub-pestaña que lo retoma
+     (`destino`): si abriera el Espía, quien sigue el punto de un scraping del Scraper caería donde el
+     trabajo no se ve. Para `puedeVerTools` las dos cuentas dan lo mismo hoy —la entrada de un grupo
+     lleva la sección de su primera sub-pestaña, y quien ve Tools ve Radar—; se usa `queAbre` para no
+     depender de ese orden. */
+  const puedeVerTools = departamentos.some((d) => d.entradas.some((e) => queAbre(e).some((x) => x.seccion === 'tools')));
   const [enVuelo, setEnVuelo] = useState({ espia: 0, scraper: 0 });
   const mirar = useCallback(async () => {
     const cuenta = { espia: 0, scraper: 0 };
@@ -103,6 +115,7 @@ export default function Nav() {
   }, [puedeVerTools, mirar]);
   usarReloj(puedeVerTools ? 'tools:enVuelo' : null, mirar, CADENCIA.puntitoDeTools);
   const textoEnVuelo = textoDelPunto(enVuelo);
+  const conTrabajo = (e) => queAbre(e).some((x) => x.seccion === 'tools' && x.pestana !== null && enVuelo[x.pestana] > 0);
 
   /* ── DÓNDE ESTÁS ──────────────────────────────────────────────────────────
      En el primer dibujo, antes de leer el DOM, vale la pantalla de arranque. Al abrir una entrada de
@@ -163,9 +176,7 @@ export default function Nav() {
             <span className="nb-rotulo">DEPARTAMENTOS</span>
             {departamentos.map((d) => {
               const desplegadoEste = desplegado === d.clave;
-              const puntoEnLaCabecera =
-                !desplegadoEste &&
-                d.entradas.some((e) => e.seccion === 'tools' && e.pestana !== null && enVuelo[e.pestana] > 0);
+              const puntoEnLaCabecera = !desplegadoEste && d.entradas.some(conTrabajo);
               return (
                 <div className="nb-departamento" key={d.clave}>
                   <button
@@ -199,7 +210,9 @@ export default function Nav() {
                         );
                       }
                       const marcada = abierta?.departamento === d.clave && abierta.nombre === e.nombre;
-                      const punto = e.seccion === 'tools' && e.pestana !== null && enVuelo[e.pestana] > 0;
+                      const punto = conTrabajo(e);
+                      // Adónde lleva: la sub-pestaña con el trabajo en vuelo, si la hay; si no, la entrada.
+                      const destino = (punto && e.subs?.find(conTrabajo)) || e;
                       return (
                         <button
                           type="button"
@@ -208,7 +221,7 @@ export default function Nav() {
                           data-view={e.seccion}
                           aria-current={marcada ? 'page' : undefined}
                           aria-describedby={punto ? 'navScrapeando' : undefined}
-                          onClick={() => irALaVista(e.seccion, { pestana: e.pestana })}
+                          onClick={() => irALaVista(destino.seccion, { pestana: destino.pestana })}
                         >
                           <span className="n">{e.nombre}</span>
                           {punto ? <span className="nav-scrapeando" aria-hidden="true" /> : null}

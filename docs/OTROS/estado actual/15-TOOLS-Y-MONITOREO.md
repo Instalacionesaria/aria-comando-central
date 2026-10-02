@@ -353,7 +353,7 @@ derivación; la pestaña concedida, porque `usuario` restringe por sección; y s
 principal (`lib/autorizacion/secciones.ts:415-424`, `db/arranque/001_catalogo.sql:362-387`). La
 tercera se mide sobre la organización **propia**, no la que se está mirando, para que conmutar no
 apague el panel (`lib/autorizacion/secciones.ts:111-118`, `:755-760`). El formulario de Usuarios no
-ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:141`). `administrador` no
+ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no
 tiene la capacidad, porque ahí no hay segunda mitad (`db/arranque/001_catalogo.sql:442-466`), y el
 catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
 (`db/arranque/001_catalogo.sql:735-754`).
@@ -407,7 +407,7 @@ sustituto de § 3, dos de los diez trabajos con leads pasaron de los diez minuto
 Pages. En Tools no rompe nada, porque el sondeo no tiene techo; en el Research sí: espera 120
 intentos de cinco segundos (`components/fundaciones/PanelResearch.jsx:281-284`) y después da el
 trabajo por caído mientras el actor sigue corriendo y descontando. El Research pide como mucho 100
-páginas de Facebook (`lib/fundaciones/mercado.ts:174-178`), y el trabajo de Pages de 100 leads tardó
+páginas de Facebook (`lib/fundaciones/mercado.ts:180-184`), y el trabajo de Pages de 100 leads tardó
 184 s; si alguna mirada al mercado pasó de los diez minutos: no verificado.
 
 **La franja le diría «53 comprados» a una empresa que no compró nada.** El monedero de la empresa B
@@ -473,7 +473,7 @@ pantalla con datos.
 
 **El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin
 `puedeEditar` (`components/views/ToolsView.jsx:81`) y dibuja el envío siempre
-(`components/tools/MisLeads.jsx:385-394`); la ruta pide `tools.editar`
+(`components/tools/MisLeads.jsx:392-401`); la ruta pide `tools.editar`
 (`app/api/tools/leads/enviar/route.ts:79`). Hoy no le pasa a nadie: los 15 activos tienen
 `tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:73`), y desde
 la etapa E9 también el Scraper. Los dos la reciben de `Fundaciones.jsx`, que la da falsa también cuando

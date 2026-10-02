@@ -33,7 +33,12 @@
 // acciones de Analizadores a la izquierda; «Tools →», «Tools ›» o «Tools >» en `app/`, `lib/` o
 // `components/`, o «en Tools» en un texto; y una fila que se desliza en la computadora, el foco por
 // fuera, el nombre de una «Próximamente» fuera de la línea, dos líneas en Closer y una cabecera que no
-// sigue al cuerpo en una pantalla ancha.
+// sigue al cuerpo en una pantalla ancha. Desde la segunda edición (`NE-45`, `NE-52`): la fila del grupo
+// sin grupo, dentro de la de arriba, con otra llamada que navega, con su «Próximamente» como botón o
+// con otra marcada; un grupo o una sección escritos a mano; el hover que borra la letra de la píldora
+// abierta, su foco por dentro, la fila del teléfono sin deslizarse o recortando el foco; cualquier regla
+// que esconda la fila del grupo, también en el teléfono; y un texto que escriba a mano dónde están los
+// leads, o que vuelva a decir «Mis Leads» o «Research › Mis Leads».
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -42,6 +47,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
 import { DEPARTAMENTOS, ENTRADAS, lugarDe } from '../../lib/autorizacion/departamentos.ts';
+import { SECCIONES } from '../../lib/autorizacion/secciones.ts';
 
 const fuente = (r: string): string => readFileSync(join(RAIZ, r), 'utf8').replace(/\r\n/g, '\n');
 const sinComentarios = (t: string): string =>
@@ -113,7 +119,13 @@ test('la cabecera lee de la sesión `navegacion` y `arranque`, y no escribe nada
   assert.match(c, /<span className="cd-ceja">\{departamento\.ceja\}<\/span>/, 'la ceja no sale del modelo');
   assert.match(c, /<h1 className="cd-nombre" id="cdNombre">\s*\{abierta\.nombre\}\s*<\/h1>/, 'el título no es la entrada abierta');
   assert.match(c, /departamento\.entradas\.map\(\(e\) =>/, 'las pestañas no son las entradas del departamento');
-  const nombres = [...DEPARTAMENTOS.flatMap((d) => [d.nombre, d.ceja]), ...ENTRADAS.flatMap((e) => (e.nombre ? [e.nombre] : []))];
+  /* También los nombres de los grupos —«Radar» escrito a mano sería una segunda tabla (`NE-45`)— y los
+     de las secciones, que son el nombre de las entradas sin nombre propio: «Closing», «Creative Insights». */
+  const nombres = [
+    ...DEPARTAMENTOS.flatMap((d) => [d.nombre, d.ceja]),
+    ...ENTRADAS.flatMap((e) => [e.nombre, e.grupo].filter((n): n is string => Boolean(n))),
+    ...SECCIONES.map((s) => s.nombre),
+  ];
   for (const n of nombres) {
     for (const forma of [`>${n}<`, `'${n}'`, `"${n}"`, `\`${n}\``]) {
       assert.ok(!c.includes(forma), `la cabecera escribe a mano «${n}»`);
@@ -124,24 +136,42 @@ test('la cabecera lee de la sesión `navegacion` y `arranque`, y no escribe nada
 
 test('las pestañas: la marcada es la que se ve y queda a la vista, navegan con su pestaña, y las «Próximamente» no', () => {
   const c = CABECERA();
-  const m = /if \((e\.proximamente|'proximamente' in e)\)/.exec(c);
-  assert.ok(m, 'no se encontró la rama de las «Próximamente»');
-  const rama = bloque(c, m.index);
-  assert.match(rama, /Próximamente/, 'una «Próximamente» de la fila no lo dice');
-  assert.doesNotMatch(rama, /<button|<a\b|onClick|onFocus|onKey|tabIndex|role=|irALaVista|data-view|href=|aria-current/, 'una «Próximamente» de la fila navega, o se ofrece como algo que navega');
+  // Las dos ramas «Próximamente», la de la fila y la del grupo: ninguna navega.
+  const ramas = [...c.matchAll(/if \((e\.proximamente|s\.proximamente|'proximamente' in [es])\)/g)];
+  assert.equal(ramas.length, 2, 'no se encontraron las dos ramas de las «Próximamente», la de la fila y la del grupo');
+  for (const m of ramas) {
+    const rama = bloque(c, m.index!);
+    assert.match(rama, /Próximamente/, 'una «Próximamente» de la cabecera no lo dice');
+    assert.doesNotMatch(rama, /<button|<a\b|onClick|onFocus|onKey|tabIndex|role=|irALaVista|abrir\(|data-view|href=|aria-current/, 'una «Próximamente» de la cabecera navega, o se ofrece como algo que navega');
+  }
   assert.match(c, /const marcada = abierta\.nombre === e\.nombre;/, 'la pestaña marcada no es la entrada abierta');
   assert.match(c, /className=\{marcada \? 'cd-pestana on' : 'cd-pestana'\}/);
   assert.match(c, /aria-current=\{marcada \? 'page' : undefined\}/, 'la pestaña marcada no se anuncia');
-  assert.match(c, /onClick=\{\(\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\)\}/, 'una pestaña no abre su pestaña: «Tu página» abriría la última de Tools');
+  /* Las dos filas navegan con UNA función, con la sección y la pestaña de lo que tocan: «Tu landing»
+     sin su pestaña abriría la última de Tools, y «De GHL» es otra pantalla que la abierta (`NE-46`). */
+  assert.match(c, /const abrir = \(e\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\);/, 'una pestaña no abre su pestaña: «Tu landing» abriría la última de Tools');
   assert.equal((c.match(/irALaVista\(/g) ?? []).length, 1, 'la cabecera navega desde otro lugar además de sus pestañas');
+  assert.match(c, /onClick=\{\(\) => abrir\(e\)\}/, 'una pestaña de la fila no navega');
+  assert.match(c, /onClick=\{\(\) => abrir\(s\)\}/, 'una sub-pestaña del grupo no navega');
+  assert.equal((c.match(/onClick=/g) ?? []).length, 2, 'la cabecera navega con otro botón');
+
+  // La fila del grupo: sólo con un grupo abierto, sus sub-pestañas, y marcada la que se ve (`NE-45`).
+  assert.match(c, /const subs = abierta\.sub === null \? null : \(departamento\.entradas\.find\(\(e\) => e\.nombre === abierta\.nombre\)\?\.subs \?\? null\);/, 'la fila del grupo no sale de las sub-pestañas de la entrada abierta');
+  assert.match(c, /\{subs \? \(\s*<nav className="cd-subs" ref=\{filaDelGrupo\} aria-label=\{`Pestañas de \$\{abierta\.nombre\}`\}>\s*\{subs\.map\(\(s\) =>/, 'la fila del grupo no es una navegación con nombre, o se dibuja sin grupo');
+  // Y va DEBAJO de la línea: fuera de la fila de arriba, que es la que lleva la línea.
+  assert.match(c, /<\/nav>\s*\) : null\}\s*<\/div>\s*\{subs \? \(/, 'la fila del grupo no va justo después de cerrar la de arriba: dentro, la línea queda debajo de las píldoras');
+  assert.match(c, /const marcada = abierta\.sub === s\.nombre;/, 'la sub-pestaña marcada no es la abierta');
+  assert.match(c, /className=\{marcada \? 'cd-sub on' : 'cd-sub'\}/);
+  assert.equal((c.match(/aria-current=\{marcada \? 'page' : undefined\}/g) ?? []).length, 2, 'la sub-pestaña marcada no se anuncia');
   // Con una sola entrada no hay fila: una sola pestaña no es una pestaña, como en Ajustes.
   assert.match(c, /const conPestanas = departamento\.entradas\.length > 1;/, 'la fila se dibuja con una sola entrada');
   assert.match(c, /\{conPestanas \? \(\s*<nav className="cd-pestanas" ref=\{fila\} aria-label=\{`Pestañas de \$\{departamento\.nombre\}`\}>/, 'la fila de pestañas no es una navegación con nombre');
   /* La abierta, y la que recibe el foco, a la vista dentro de la fila: en el teléfono la fila se
      desliza, y la abierta de Sales quedaba afuera. Los dos ganchos van antes de la guarda. */
-  assert.match(c, /useLayoutEffect\(\(\) => \{\s*traerALaVista\(fila\.current, fila\.current\?\.querySelector\('\.cd-pestana\.on'\)\);\s*\}, \[nombreAbierto\]\);/, 'cambia la entrada abierta y su pestaña puede quedar fuera de la vista');
+  assert.match(c, /useLayoutEffect\(\(\) => \{\s*traerALaVista\(fila\.current, fila\.current\?\.querySelector\('\.cd-pestana\.on'\)\);\s*traerALaVista\(filaDelGrupo\.current, filaDelGrupo\.current\?\.querySelector\('\.cd-sub\.on'\)\);\s*\}, \[nombreAbierto, subAbierta\]\);/, 'cambia la entrada o la sub-pestaña abierta y puede quedar fuera de la vista');
   assert.ok(c.indexOf('useLayoutEffect(') < c.indexOf('if (!abierta || !departamento) return null;'), 'el gancho va después de un `return`: rompe las reglas de los ganchos');
   assert.match(c, /onFocus=\{\(ev\) => traerALaVista\(fila\.current, ev\.currentTarget\)\}/, 'una pestaña con el foco puede quedar a medias fuera de la vista');
+  assert.match(c, /onFocus=\{\(ev\) => traerALaVista\(filaDelGrupo\.current, ev\.currentTarget\)\}/, 'una sub-pestaña con el foco puede quedar a medias fuera de la vista');
   const traer = bloque(c, c.indexOf('function traerALaVista'));
   assert.match(traer, /fila\.scrollLeft [-+]=/, 'traer a la vista mueve otra cosa que la fila');
   assert.doesNotMatch(traer, /scrollIntoView|window\.scroll/, 'traer la pestaña a la vista mueve la página');
@@ -230,9 +260,10 @@ test('Tools y Analizadores no tienen barra propia; ICP & Oferta conserva la suya
 
 test('ningún texto manda a «Tools», un lugar que ya no existe', () => {
   // `lugarDe` dice dónde vive una pestaña, con la tabla de departamentos y no a mano.
-  assert.equal(lugarDe('tools', 'vsl'), 'Marketing › Tu video de ventas');
-  assert.equal(lugarDe('tools', 'mis-leads'), 'Research › Mis Leads');
-  assert.equal(lugarDe('analizadores', 'OB'), 'Client Success › Analizador OB');
+  // Con el grupo en el medio, como la barra (`NE-45`).
+  assert.equal(lugarDe('tools', 'vsl'), 'Marketing › Funnel › Tu VSL');
+  assert.equal(lugarDe('tools', 'mis-leads'), 'Sales › Leads › De Radar');
+  assert.equal(lugarDe('analizadores', 'OB'), 'Client Success › Llamadas de onboarding');
   assert.equal(lugarDe('tools', 'inexistente'), null);
   const barra = sinComentarios(fuente('components/fundaciones/BarraDePasos.jsx'));
   assert.match(barra, /<b>\{lugarDe\(siguiente\.pantalla, siguiente\.herramienta\.clave\) \?\? 'otra pantalla'\}<\/b>/, 'la barra de pasos no dice dónde vive el paso siguiente');
@@ -242,7 +273,9 @@ test('ningún texto manda a «Tools», un lugar que ya no existe', () => {
      comentario que dice «Tools → …» es el que alguien copia al texto siguiente. Y ningún texto —fuera
      de los comentarios— dice «en Tools» o «a Tools»: en un comentario sí, porque es el nombre de la
      sección. */
-  const flecha = /Tools\s*(→|›|->|>|\/)/;
+  /* Tampoco a «Research › Mis Leads», ni en un comentario: Mis Leads se mudó a Sales › Leads › De Radar
+     en la segunda edición (`NE-52`), y el agente de ICP mandaba a la persona a buscar sus leads ahí. */
+  const flecha = /Tools\s*(→|›|->|>|\/)|Research\s*(→|›|>)\s*Mis Leads/;
   const lugar = /\b(?:en|a) Tools\b/;
   const malos: string[] = [];
   const recorrer = (dir: string) => {
@@ -258,6 +291,35 @@ test('ningún texto manda a «Tools», un lugar que ya no existe', () => {
   };
   for (const d of ['app', 'lib', 'components']) recorrer(d);
   assert.deepEqual(malos, [], `estos archivos mandan a «Tools»: ${malos.join(', ')}`);
+
+  /* Y los textos que dicen dónde están los leads del scraper sacan el lugar de la tabla, no lo escriben
+     (`NE-52`): escrito a mano, el día que Mis Leads se mudó quedaron mandando al lugar viejo. Fuera de
+     los comentarios, «Mis Leads» no aparece en ningún texto: es el nombre del componente, no un lugar. */
+  const mercado = sinComentarios(fuente('lib/fundaciones/mercado.ts'));
+  assert.match(mercado, /export const DONDE_ESTAN_LOS_LEADS = lugarDe\('tools', 'mis-leads'\)/);
+  assert.match(mercado, /`Los negocios completos están en \$\{DONDE_ESTAN_LOS_LEADS\}\.`/, 'el resumen del mercado escribe a mano dónde están los negocios');
+  assert.match(mercado, /`Las páginas completas están en \$\{DONDE_ESTAN_LOS_LEADS\}\.`/, 'el resumen del mercado escribe a mano dónde están las páginas');
+  assert.match(sinComentarios(fuente('lib/fundaciones/herramientas.ts')), /`\$\{DONDE_ESTAN_LOS_LEADS\}; y que lo que se vio en el mercado/, 'la guía del agente de ICP escribe a mano dónde quedan los leads');
+  const panel = sinComentarios(fuente('components/fundaciones/PanelResearch.jsx'));
+  assert.equal((panel.match(/están en \$\{DONDE_ESTAN_LOS_LEADS\}/g) ?? []).length, 4, 'el panel de Research escribe a mano dónde están los leads');
+  const scraper = sinComentarios(fuente('components/tools/VistaDelScraper.jsx'));
+  assert.match(scraper, /const LOS_LEADS = lugarDe\('tools', 'mis-leads'\)/);
+  assert.match(scraper, /queda también en\{' '\}\s*\{LOS_LEADS\}\./, 'la bajada del Scraper escribe a mano dónde quedan los leads');
+  const misLeads = sinComentarios(fuente('components/tools/MisLeads.jsx'));
+  assert.match(misLeads, /Los que extraigas en \$\{lugarDe\('tools', 'scraper'\)/, 'el vacío de Mis Leads escribe a mano de dónde llegan los leads');
+  assert.match(misLeads, /lugarDe\('tools', 'prospeccion'\)/, 'el vacío de Mis Leads no nombra el Plan de prospección');
+  assert.match(misLeads, /`Todavía no scrapeaste ningún lead\. \$\{DE_DONDE_LLEGAN\}`/, 'el vacío de Mis Leads no dice de dónde llegan');
+  const sueltos: string[] = [];
+  const buscar = (dir: string) => {
+    for (const n of readdirSync(join(RAIZ, dir))) {
+      const ruta = `${dir}/${n}`;
+      if (statSync(join(RAIZ, ruta)).isDirectory()) {
+        if (n !== 'node_modules') buscar(ruta);
+      } else if (/\.(jsx?|tsx?|mjs)$/.test(n) && /\bMis Leads\b/.test(sinComentarios(fuente(ruta)))) sueltos.push(ruta);
+    }
+  };
+  for (const d of ['app', 'lib', 'components']) buscar(d);
+  assert.deepEqual(sueltos, [], `estos archivos dicen «Mis Leads» en un texto, un lugar que la barra ya no tiene: ${sueltos.join(', ')}`);
 });
 
 test('la fila y la cabecera se ven: nada queda fuera de la vista, ni recortado, ni doble', () => {
@@ -272,6 +334,36 @@ test('la fila y la cabecera se ven: nada queda fuera de la vista, ni recortado, 
   assert.match(regla('.cd-proxima .nb-proximamente'), /position:\s*absolute;/, 'el nombre de una «Próximamente» no queda en la línea de los demás');
   // La cápsula de Closer y Setter sin su línea: con la de la cabecera quedaban dos.
   assert.match(regla('.app:has(> .cd) .main :is(#v-closer, .estetica-op) .cre-head'), /border-bottom:\s*0;/, 'debajo de la cabecera quedan dos líneas en Closer y Setter');
-  // Y los costados siguen al cuerpo centrado de una pantalla ancha.
-  assert.match(regla('.cd'), /padding:\s*28px max\(40px, calc\(\(100% - 1600px\) \/ 2 \+ 24px\)\) 0;/, 'en una pantalla ancha la cabecera no queda alineada con el cuerpo');
+  /* Y los costados siguen al cuerpo centrado de una pantalla ancha, en las dos filas: la `.cd` va de
+     borde a borde para que la línea cruce entera, y el relleno lo llevan la de arriba y la del grupo. */
+  assert.match(regla('.cd'), /--cd-costado:\s*max\(40px, calc\(\(100% - 1600px\) \/ 2 \+ 24px\)\);/, 'en una pantalla ancha la cabecera no queda alineada con el cuerpo');
+  assert.doesNotMatch(regla('.cd'), /padding/, 'la `.cd` tiene relleno: la línea no cruza de borde a borde');
+  assert.match(regla('.cd-arriba'), /padding:\s*28px var\(--cd-costado\) 0;/, 'la fila de arriba no sigue al cuerpo');
+  assert.match(regla('.cd-arriba'), /border-bottom:\s*1px solid var\(--line\);/, 'la línea no va debajo de la fila de pestañas');
+  assert.match(regla('.cd-subs'), /padding:\s*14px var\(--cd-costado\) 0;/, 'la fila del grupo no sigue al cuerpo');
+  // La fila del grupo, como la de arriba: se parte en la computadora.
+  assert.match(regla('.cd-subs'), /flex-wrap:\s*wrap;/, 'la fila del grupo no se parte en la computadora: una sub-pestaña queda fuera de la vista');
+  assert.doesNotMatch(regla('.cd-subs'), /overflow/, 'la fila del grupo se desliza en la computadora');
+  /* El foco de una píldora va por FUERA: por dentro, en la abierta caía sobre su propio fondo invertido
+     y sólo cambiaba el color de un canto. En el teléfono, donde la fila se desliza y recorta, la fila
+     deja abajo el lugar del anillo, y se desliza en vez de salirse del ancho. */
+  assert.match(regla('.cd .cd-subs button.cd-sub:focus-visible'), /outline-offset:\s*2px;/, 'el foco de la sub-pestaña abierta cae sobre su propio fondo');
+  const telefono = /@media \(max-width: 760px\) \{([\s\S]*)\}\s*$/.exec(sinComentariosCss(fuente('app/departamentos.css')))?.[1] ?? '';
+  const subsDelTelefono = reglas(telefono).find((r) => r.selector === '.cd-subs')?.cuerpo ?? '';
+  assert.match(subsDelTelefono, /overflow-x:\s*auto;/, 'la fila del grupo del teléfono se sale del ancho en vez de deslizarse');
+  assert.match(subsDelTelefono, /padding-bottom:\s*4px;/, 'la fila del grupo del teléfono recorta el foco');
+  // Bajo el puntero, la abierta conserva su letra: con el color del hover, quedaba del color de su fondo.
+  assert.ok(regla('button.cd-sub:not(.on):hover'), 'el hover de las píldoras alcanza a la abierta: su nombre desaparece bajo el puntero');
+  assert.ok(!reglas(sinMedios).some((r) => partir(r.selector).some((s) => /cd-sub[^s]*:hover/.test(s) && !s.includes(':not(.on)'))), 'otra regla de hover alcanza a la píldora abierta');
+
+  /* Y ninguna hoja, ni dentro de una consulta de medios, esconde la fila del grupo: es el único camino
+     al Scraper, a Tu VSL, a De Radar y al Plan de prospección. */
+  const escondenElGrupo: string[] = [];
+  for (const hoja of hojas()) {
+    for (const r of reglas(fuente(hoja))) {
+      if (!/display:\s*none|visibility:\s*hidden|clip-path|opacity:\s*0(?![.\d])/.test(r.cuerpo)) continue;
+      for (const s of partir(r.selector)) if (/\.cd-subs?\b/.test(s) && !/::-webkit-scrollbar/.test(s)) escondenElGrupo.push(`${hoja}: ${s}`);
+    }
+  }
+  assert.deepEqual(escondenElGrupo, [], 'una regla esconde la fila de sub-pestañas o una píldora');
 });

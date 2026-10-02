@@ -267,7 +267,7 @@ sobrevive al cierre de sesión en una computadora compartida es la fuga más bar
 
 `contacts` era una de las dos secciones que conservaban la bandera, junto con `executive`
 (`lib/autorizacion/secciones.ts:216`). El comentario de Sales lo anticipaba cuando decía *«las dos que
-quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:322-323`). En LP-4 la línea de la bandera pasó
+quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:325-326`). En LP-4 la línea de la bandera pasó
 a ser su comentario (`lib/autorizacion/secciones.ts:225`), y queda sólo `executive`.
 
 No es documentación: es un cable trampa que dispara en tres lugares.

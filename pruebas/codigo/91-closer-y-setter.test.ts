@@ -228,9 +228,12 @@ test('`Nav.jsx` NO tiene ninguna entrada escrita a mano', () => {
      necesita un `data-view`: alcanzaría con un botón que llame `irALaVista('closer', …)`. Se prohíbe
      la clave literal, y `nav-item` sólo puede estar en la fila del `.map(`, en sus dos formas. */
   assert.doesNotMatch(nav, /irALaVista\(\s*['"`]/, 'Nav.jsx abre una pantalla con una clave escrita a mano');
-  // Ni con una constante: lo que abre sale de la navegación del servidor, el Inicio o una entrada.
+  /* Ni con una constante: lo que abre sale de la navegación del servidor, el Inicio o una entrada —o,
+     en un grupo con un trabajo en vuelo, la sub-pestaña que lo retoma (`destino`, desde la segunda
+     edición), que también es de la navegación: sale de `e.subs` o es la entrada misma. */
   const abre = new Set([...nav.matchAll(/irALaVista\(\s*([^,)]+)/g)].map((m) => m[1]!.trim()));
-  assert.deepEqual([...abre].sort(), ['e.seccion', 'inicio.seccion'], 'Nav.jsx abre una pantalla que no sale de la navegación del servidor');
+  assert.deepEqual([...abre].sort(), ['destino.seccion', 'inicio.seccion'], 'Nav.jsx abre una pantalla que no sale de la navegación del servidor');
+  assert.match(nav, /const destino = \(punto && e\.subs\?\.find\(conTrabajo\)\) \|\| e;/, 'lo que abre la fila no sale de la entrada ni de sus sub-pestañas');
   assert.equal((nav.match(/nav-item/g) ?? []).length, 2, 'Nav.jsx tiene una fila del menú fuera del `.map(`');
 
   // Los dos nombres que estaban fijos. "ARIA High Ticket" es el caso peor: es el nombre de la
@@ -1047,7 +1050,7 @@ test('Ajustes se abre desde el menú de la cuenta, sin simular el clic de una fi
   assert.ok(shell, 'no se encontró shell.js');
   assert.ok(/export function irALaVista/.test(shell), '`irALaVista` dejó de estar exportada');
   assert.ok(
-    /onClick=\{\(\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\)\}/.test(nav),
+    /onClick=\{\(\) => irALaVista\(destino\.seccion, \{ pestana: destino\.pestana \}\)\}/.test(nav),
     'las filas del menú dejaron de abrir por `irALaVista`: el enrutado volvió a estar duplicado',
   );
   assert.ok(

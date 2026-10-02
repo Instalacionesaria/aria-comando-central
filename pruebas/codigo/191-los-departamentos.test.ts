@@ -17,7 +17,8 @@
 // borrar `mis-leads` del modelo o pedir una pestaña que no existe; sacar el filtro que esconde un
 // departamento sin nada que abrir; mostrar una entrada cuya sección no está en el menú; cambiar el
 // orden o una ceja; y que la ruta de sesión arme la navegación con otro menú, o el rótulo con otra
-// cosa que el alcance.
+// cosa que el alcance. Los grupos de la segunda edición (`NE-45`) tienen su prueba, la `196`; acá
+// cuentan como lo que son en la tabla: entradas, cada una con su sección y su pestaña.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -47,24 +48,33 @@ const SIN_RESTRICCION: Alcance = { restringido: false };
 const navegacion = (permisos: ReadonlySet<string>, alcance: Alcance = SIN_RESTRICCION, principal = true) =>
   menuPorDepartamentos(menuVisible(permisos, alcance, principal));
 
-/** Las secciones que una navegación deja abrir, sin repetir. */
+/** Las secciones que una navegación deja abrir, sin repetir: también las de las sub-pestañas de cada
+ *  grupo, que no tienen por qué ser la de la entrada (Leads abre el Leads Portal y Tools). */
 const seccionesDe = (n: Navegacion): string[] => [
   ...new Set([
     ...(n.inicio ? [n.inicio.seccion] : []),
-    ...n.departamentos.flatMap((d) => d.entradas.flatMap((e) => ('seccion' in e ? [e.seccion] : []))),
+    ...n.departamentos.flatMap((d) =>
+      d.entradas.flatMap((e) => {
+        if ('proximamente' in e) return [];
+        return e.subs ? e.subs.flatMap((s) => ('seccion' in s ? [s.seccion] : [])) : [e.seccion];
+      }),
+    ),
     ...n.engranaje.map((e) => e.seccion),
   ]),
 ];
 
-/** Lo que se ve, en el orden en que se ve. */
-const forma = (n: Navegacion) => ({
-  inicio: n.inicio?.nombre ?? null,
-  departamentos: n.departamentos.map((d) => [
-    d.nombre,
-    d.entradas.map((e) => ('proximamente' in e ? `${e.nombre} (próximamente)` : e.nombre)),
-  ]),
-  engranaje: n.engranaje.map((e) => e.nombre),
-});
+/** Lo que se ve, en el orden en que se ve: un grupo, con sus sub-pestañas entre corchetes. */
+const forma = (n: Navegacion) => {
+  const nombre = (e: { nombre: string; proximamente?: true }) => (e.proximamente ? `${e.nombre} (próximamente)` : e.nombre);
+  return {
+    inicio: n.inicio?.nombre ?? null,
+    departamentos: n.departamentos.map((d) => [
+      d.nombre,
+      d.entradas.map((e) => ('subs' in e && e.subs ? `${e.nombre} [${e.subs.map(nombre).join(' · ')}]` : nombre(e))),
+    ]),
+    engranaje: n.engranaje.map((e) => e.nombre),
+  };
+};
 
 /** Las pestañas que cada pantalla con pestañas tiene de verdad, leídas de donde se definen. */
 function pestanasReales(): Record<string, string[]> {
@@ -145,37 +155,30 @@ test('la visibilidad sale sólo del menú', () => {
     departamentos: [['Sales', ['Closer']]],
     engranaje: [],
   });
-  // Quien tiene Tools ve sus seis entradas en tres departamentos, y Marketing con sus «Próximamente».
+  /* Quien tiene Tools ve sus seis sub-pestañas en tres grupos de tres departamentos, y Marketing con
+     sus «Próximamente». Leads, sin el Leads Portal: «De GHL» se ve por su sección y no por la del grupo. */
   assert.deepEqual(forma(navegacion(new Set(['tools.ver']))).departamentos, [
-    ['Research', ['Espía a tus competidores', 'Scraper', 'Mis Leads']],
-    ['Marketing', [
-      'Bio de Instagram (próximamente)', 'Guiones TOFU · MOFU · BOFU (próximamente)',
-      'Guiones de venta directa (próximamente)', 'Social Media Posting (próximamente)',
-      'Clon de IA (próximamente)', 'Tu página', 'Tu video de ventas',
-    ]],
-    ['Sales', ['Prospección en frío']],
+    ['Research', ['Radar [Espía a tus competidores · Scraper]']],
+    ['Marketing', ['Copywriter (próximamente)', 'Funnel [Tu landing · Tu VSL]', 'Content Studio (próximamente)']],
+    ['Sales', ['Leads [Todos (próximamente) · De Radar · Plan de prospección]']],
   ]);
   // Un departamento con sólo «Próximamente» no se dibuja (`NE-13`).
   assert.deepEqual(forma(navegacion(new Set(['analizadores.ver']))).departamentos, [
-    ['Sales', ['Analizador HT']],
-    ['Client Success', ['Analizador OB', 'Seguimiento de clientes (próximamente)']],
+    ['Sales', ['Llamadas de venta']],
+    ['Client Success', ['Llamadas de onboarding', 'Seguimiento de clientes (próximamente)']],
   ]);
   assert.deepEqual(navegacion(new Set()).departamentos, [], 'sin ninguna sección aparece un departamento');
 });
 
-test('el orden es el de `NE-12`, y cada ceja la del documento', () => {
+test('el orden es el de `NE-45`, y cada ceja la del documento', () => {
   assert.deepEqual(forma(navegacion(TODAS)), {
     inicio: 'Inicio',
     departamentos: [
-      ['Research', ['ICP & Oferta', 'Espía a tus competidores', 'Scraper', 'Mis Leads']],
+      ['Research', ['ICP & Oferta', 'Radar [Espía a tus competidores · Scraper]']],
       ['Systems', ['Acquisition', 'Conversion', 'Conversation']],
-      ['Marketing', [
-        'Creative', 'Bio de Instagram (próximamente)', 'Guiones TOFU · MOFU · BOFU (próximamente)',
-        'Guiones de venta directa (próximamente)', 'Social Media Posting (próximamente)',
-        'Clon de IA (próximamente)', 'Tu página', 'Tu video de ventas',
-      ]],
-      ['Sales', ['Sales', 'Leads Portal', 'Setter', 'Closer', 'Analizador HT', 'Prospección en frío']],
-      ['Client Success', ['Analizador OB', 'Seguimiento de clientes (próximamente)']],
+      ['Marketing', ['Creative Insights', 'Copywriter (próximamente)', 'Funnel [Tu landing · Tu VSL]', 'Content Studio (próximamente)']],
+      ['Sales', ['Closing', 'Leads [Todos (próximamente) · De GHL · De Radar · Plan de prospección]', 'Setter', 'Closer', 'Llamadas de venta']],
+      ['Client Success', ['Llamadas de onboarding', 'Seguimiento de clientes (próximamente)']],
     ],
     engranaje: ['Ajustes', 'Panel de Monitoreo', 'Incidentes'],
   });
@@ -185,6 +188,8 @@ test('el orden es el de `NE-12`, y cada ceja la del documento', () => {
   const tabla = [...fuente('docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md').matchAll(/^\| \*\*([^*|]+)\*\* \| `([^`]+)` \|/gm)]
     .map((m) => [m[1]!, m[2]!]);
   assert.deepEqual(DEPARTAMENTOS.map((d) => [d.nombre, d.ceja]), tabla, 'los departamentos o sus cejas no son los de `NE-12`');
+  // La ceja es el departamento, nada más (`NE-48`): la de «· SE INSTALA EN …» se fue con la segunda edición.
+  for (const d of DEPARTAMENTOS) assert.equal(d.ceja, d.nombre.toUpperCase(), `la ceja de ${d.nombre} dice otra cosa que su nombre`);
 });
 
 test('la sesión arma la navegación con el mismo menú, y el rótulo sale del alcance', () => {

@@ -198,7 +198,7 @@ export default function PanelProspeccion({
         </div>
       ) : null}
 
-      {/* El historial NO se pinta acá: vive en su propia pestaña, Research › Mis Leads. Estuvo
+      {/* El historial NO se pinta acá: vive en su propia pestaña, Sales › Leads › De Radar. Estuvo
           un rato embebido debajo de esta tabla y el problema fue de
           descubrimiento — quedaba bajo el pliegue, después de un panel largo, y no se veía. */}
 

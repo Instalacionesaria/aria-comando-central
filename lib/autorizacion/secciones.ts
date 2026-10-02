@@ -252,7 +252,7 @@ export const SECCIONES: readonly Seccion[] = [
   },
   {
     clave: 'creative',
-    nombre: 'Creative',
+    nombre: 'Creative Insights', // «Creative» hasta la segunda edición de la estructura (`NE-47`)
     capacidadRequerida: 'tablero.ver',
     /* La bandera se fue con `app/api/creative/route.ts`, su primera operación de servidor. Segundo
        departamento que la baja, y el cable trampa de `ADR-0304` volvió a hacer su trabajo: la ruta
@@ -320,7 +320,7 @@ export const SECCIONES: readonly Seccion[] = [
   },
   {
     clave: 'sales',
-    nombre: 'Sales',
+    nombre: 'Closing', // «Sales» hasta la segunda edición: el departamento ya se llama así (`NE-47`)
     capacidadRequerida: 'tablero.ver',
     /* La bandera se bajó el 2026-09-21, con `app/api/sales/route.ts`. Cuarta pantalla que sale de la
        lista, y la última de Inteligencia. De las dos que quedaban, `contacts` salió el 2026-09-26. */

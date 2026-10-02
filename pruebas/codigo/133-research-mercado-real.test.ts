@@ -123,7 +123,8 @@ test('el contexto dice que son datos OBSERVADOS, y llega a los pasos 2 al 5 y al
   assert.match(texto, /3 negocios encontrados · 2 con sitio web · 1 con correo/);
   assert.match(texto, /Concentrados en: Bayamón, San Juan/);
   assert.match(texto, /Sin sitio web propio: 1 de 3 \(33%\)/);
-  assert.match(texto, /Mis Leads/);
+  // Dónde están los leads, como lo dice la barra desde la segunda edición: no «Research › Mis Leads».
+  assert.match(texto, /Los negocios completos están en Sales › Leads › De Radar\./);
   assert.match(texto, /Anuncios activos del segmento .*: 4, de 3 anunciantes/);
   // Y las páginas de Facebook, contadas igual que Maps y con su propia línea.
   assert.match(texto, /Páginas de Facebook de esos anunciantes .*: 2 · 2 con teléfono · 1 con correo · 1 con sitio web · calificación promedio en Facebook 4\.6/);
@@ -233,7 +234,7 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.match(ciudad.guia, /pedile la ciudad y la zona o distrito/);
   assert.match(ciudad.guia, /empezar por SU país/);
   assert.match(ciudad.guia, /con qué país quiere empezar a extraer leads/);
-  assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Research › Mis Leads/);
+  assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Sales › Leads › De Radar;/);
   assert.match(ciudad.guia, /en esta misma pestaña cuando termine el Research/);
 
   // La guía llega al agente Y al relleno: los dos la leen del catálogo.
@@ -357,7 +358,9 @@ test('el panel: después del paso 1, confirma una vez, arranca los dos scrapers 
   assert.match(panel, /El Research sigue con lo que el modelo sabe/);
   // La mirada se dibuja pegada al paso 2 (índice 1), con su propio componente.
   assert.match(limpio, /paso === 1 && mirada \? <Mirada/);
-  assert.match(panel, /Los \$\{x\.total\} negocios y las \$\{p\.total\} páginas están en Research › Mis Leads/);
+  // El lugar sale de la tabla de departamentos (`lugarDe`, en `lib/fundaciones/mercado.ts`), no escrito a mano.
+  assert.match(panel, /Los \$\{x\.total\} negocios y las \$\{p\.total\} páginas están en \$\{DONDE_ESTAN_LOS_LEADS\}/);
+  assert.match(codigo('lib/fundaciones/mercado.ts'), /export const DONDE_ESTAN_LOS_LEADS = lugarDe\('tools', 'mis-leads'\)/);
   // Y solo ICP & Oferta pasa las rutas.
   assert.match(codigo('components/fundaciones/Fundaciones.jsx'), /rutaMercadoPreparar: '\/api\/fundaciones\/mercado\/preparar'/);
   assert.ok(!/rutaMercado/.test(codigo('components/views/ToolsView.jsx')));

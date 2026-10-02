@@ -34,6 +34,8 @@
 // con el cajón puesto; la píldora sin la frase entera, o como botón sin permiso; el foco del cajón en
 // la píldora; el punto adentro del nombre del botón, con texto al lado o fuera de su lugar; su región
 // viva dentro de la barra o montada a medias; y una barra que encoge lo suyo en vez de desplazarse.
+// Desde la segunda edición (`NE-45`): que el punto mire la entrada de un grupo y no lo que abre, o
+// que la entrada con el punto no lleve a la sub-pestaña que retoma el trabajo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -41,7 +43,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
-import { entradaAbierta, menuPorDepartamentos } from '../../lib/autorizacion/departamentos.ts';
+import { entradaAbierta, menuPorDepartamentos, queAbre } from '../../lib/autorizacion/departamentos.ts';
 import { SECCIONES, menuVisible } from '../../lib/autorizacion/secciones.ts';
 import { TOOLS, pestanaDeLaActiva } from '../../lib/fundaciones/herramientas.ts';
 import { pestanaQueLoRetoma } from '../../lib/tools/scrapers.ts';
@@ -169,11 +171,12 @@ test('la entrada abierta sale de la pantalla y de la pestaña que DIBUJA', () =>
     menuVisible(new Set(SECCIONES.map((s) => s.capacidadRequerida)), { restringido: false }, true),
   );
   const en = (seccion: string | null, pestana: string | null) => entradaAbierta(navegacion, seccion, pestana);
-  assert.deepEqual(en('tools', 'espia'), { departamento: 'research', nombre: 'Espía a tus competidores' });
-  assert.deepEqual(en('tools', 'prospeccion'), { departamento: 'sales', nombre: 'Prospección en frío' });
-  assert.deepEqual(en('tools', 'landing'), { departamento: 'marketing', nombre: 'Tu página' });
-  assert.deepEqual(en('analizadores', 'OB'), { departamento: 'client-success', nombre: 'Analizador OB' });
-  assert.deepEqual(en('acquisition', null), { departamento: 'systems', nombre: 'Acquisition' });
+  // En un grupo, la entrada de la barra es el grupo, y la sub-pestaña va aparte (`NE-45`).
+  assert.deepEqual(en('tools', 'espia'), { departamento: 'research', nombre: 'Radar', sub: 'Espía a tus competidores' });
+  assert.deepEqual(en('tools', 'prospeccion'), { departamento: 'sales', nombre: 'Leads', sub: 'Plan de prospección' });
+  assert.deepEqual(en('tools', 'landing'), { departamento: 'marketing', nombre: 'Funnel', sub: 'Tu landing' });
+  assert.deepEqual(en('analizadores', 'OB'), { departamento: 'client-success', nombre: 'Llamadas de onboarding', sub: null });
+  assert.deepEqual(en('acquisition', null), { departamento: 'systems', nombre: 'Acquisition', sub: null });
   // Una sección repartida sin pestaña, o con una que no es de nadie, no se adivina; el Inicio y el
   // engranaje no son de ningún departamento.
   assert.equal(en('tools', null), null);
@@ -267,7 +270,7 @@ test('las pantallas anuncian la pestaña que dibujan, sin pedirse nada a sí mis
   );
   assert.ok(fundaciones.indexOf('anunciarPestana(') < fundaciones.indexOf('if (!estado && !problema)'), 'Tools anuncia después de la pantalla de carga');
   const analizadores = sinComentarios(fuente('components/analizadores/PanelDeAnalizadores.jsx'));
-  // Con un detalle abierto, la del detalle: un informe OB abierto desde «Analizador HT» es de Client Success.
+  // Con un detalle abierto, la del detalle: un informe OB abierto desde «Llamadas de venta» es de Client Success.
   assert.match(analizadores, /const dibujada = detalle\?\.tipo === 'HT' \|\| detalle\?\.tipo === 'OB' \? detalle\.tipo : pestana;\s*useLayoutEffect\(\(\) => \{\s*anunciarPestana\('analizadores', dibujada\);\s*\}, \[dibujada\]\);/, 'Analizadores no anuncia la pestaña que dibuja, o no la del detalle abierto');
   assert.ok(analizadores.indexOf("anunciarPestana('analizadores'") < analizadores.indexOf('if (detalle !== null)'), 'Analizadores anuncia después del `return` del detalle');
 });
@@ -343,7 +346,7 @@ test('la píldora dice en qué empresa estás, entera, y sin permiso no es un bo
 test('el punto va donde el trabajo se vuelve a ver, y se anuncia fuera del botón', () => {
   assert.equal(pestanaQueLoRetoma('ad-spy'), 'espia');
   for (const fuenteDeScraping of ['maps', 'linkedin', 'facebook-ads', 'facebook-pages']) {
-    assert.equal(pestanaQueLoRetoma(fuenteDeScraping), 'scraper', `un trabajo de ${fuenteDeScraping} encendería el punto del Espía`);
+    assert.equal(pestanaQueLoRetoma(fuenteDeScraping), 'scraper', `un trabajo de ${fuenteDeScraping} lo retomaría el Espía`);
   }
   const nav = NAV();
   // El punto es visual: dos, uno en la entrada y otro en la cabecera, los dos mudos y sin nada al lado.
@@ -358,13 +361,23 @@ test('el punto va donde el trabajo se vuelve a ver, y se anuncia fuera del botó
     assert.doesNotMatch(tag, /role=|aria-label|aria-live/, 'el punto vuelve a ser una región dentro del botón');
     assert.match(nav.slice(desde + tag.length), /^\s*:\s*null\}/, 'el punto lleva texto al lado, adentro del botón');
   }
-  assert.match(nav, /const punto = e\.seccion === 'tools' && e\.pestana !== null && enVuelo\[e\.pestana\] > 0;/, 'el punto de la entrada no sale de los trabajos en vuelo de su pestaña');
+  /* El punto mira lo que la entrada ABRE: Radar abre el Espía, y con la entrada sola un scraping del
+     Scraper quedaba sin punto. `queAbre` se ejecuta: el grupo da sus dos sub-pestañas. */
+  const radar = menuPorDepartamentos(menuVisible(new Set(['tools.ver']), { restringido: false }, true))
+    .departamentos.find((d) => d.clave === 'research')!.entradas[0]!;
+  assert.deepEqual(queAbre(radar), [{ seccion: 'tools', pestana: 'espia' }, { seccion: 'tools', pestana: 'scraper' }], 'lo que abre un grupo no son sus sub-pestañas');
+  assert.match(nav, /const conTrabajo = \(e\) => queAbre\(e\)\.some\(\(x\) => x\.seccion === 'tools' && x\.pestana !== null && enVuelo\[x\.pestana\] > 0\);/, 'el punto no sale de los trabajos en vuelo de lo que la entrada abre');
+  assert.match(nav, /const punto = conTrabajo\(e\);/, 'el punto de la entrada no sale de lo que la entrada abre');
   // Con su departamento cerrado, el punto va en la cabecera: si no, desde otro departamento no se ve.
-  assert.match(
-    nav,
-    /const puntoEnLaCabecera =\s*!desplegadoEste &&\s*d\.entradas\.some\(\(e\) => e\.seccion === 'tools' && e\.pestana !== null && enVuelo\[e\.pestana\] > 0\);/,
-    'el punto no se ve con su departamento cerrado',
-  );
+  assert.match(nav, /const puntoEnLaCabecera = !desplegadoEste && d\.entradas\.some\(conTrabajo\);/, 'el punto no se ve con su departamento cerrado');
+  /* Y la entrada con el punto lleva adonde el trabajo se vuelve a ver: Radar abre el Espía, y quien
+     sigue el punto de un scraping del Scraper caería donde el trabajo no se ve. */
+  assert.match(nav, /const destino = \(punto && e\.subs\?\.find\(conTrabajo\)\) \|\| e;/, 'la entrada con el punto no lleva a la sub-pestaña que retoma el trabajo');
+  assert.match(nav, /onClick=\{\(\) => irALaVista\(destino\.seccion, \{ pestana: destino\.pestana \}\)\}/, 'la entrada no abre adonde dice `destino`');
+  /* Quién consulta: hoy daría lo mismo mirar la sección de la entrada —la de un grupo es la de su
+     primera sub-pestaña, y quien ve Tools ve Radar—, pero con `queAbre` no depende de ese orden. Esto
+     fija la forma, no un comportamiento distinto. */
+  assert.match(nav, /const puedeVerTools = departamentos\.some\(\(d\) => d\.entradas\.some\(\(e\) => queAbre\(e\)\.some\(\(x\) => x\.seccion === 'tools'\)\)\);/, 'la barra decide quién consulta con la sección de la entrada y no con lo que abre');
   const c = nav.indexOf('className={desplegadoEste ?');
   assert.match(nav.slice(c, nav.indexOf('</button>', c)), /\{puntoEnLaCabecera \? <span className="nav-scrapeando"/, 'el punto de la cabecera no va dentro de la cabecera');
   // El reloj no redibuja la barra si nada cambió.

@@ -21,7 +21,11 @@
  * y entonces el aviso culpa al rol (`docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md`). */
 import { useState } from 'react';
 
+import { lugarDe } from '../../lib/autorizacion/departamentos.ts';
 import Scraper, { TablaDeLeads } from './Scraper';
+
+// Dónde quedan los leads, dicho como la navegación: Mis Leads se mudó a Sales en la segunda edición (`NE-52`).
+const LOS_LEADS = lugarDe('tools', 'mis-leads') ?? 'la lista de leads';
 
 export default function VistaDelScraper({ puedeEditar }) {
   const [leads, setLeads] = useState([]);
@@ -31,8 +35,8 @@ export default function VistaDelScraper({ puedeEditar }) {
       <div className="fd-cab">
         <h3>Scraper</h3>
         <span className="fd-bajada">
-          Extraé leads de Google Maps, Facebook y LinkedIn. Lo que traen las corridas queda también en
-          Mis Leads.
+          Extraé leads de Google Maps, Facebook y LinkedIn. Lo que traen las corridas queda también en{' '}
+          {LOS_LEADS}.
         </span>
       </div>
 

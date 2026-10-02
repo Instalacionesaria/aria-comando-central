@@ -88,3 +88,29 @@ Cinco textos nombraban lugares que dejaron de existir, y se corrigieron en la et
 - lo mismo le decía al agente de ICP la instrucción del paso (`lib/fundaciones/herramientas.ts:264@40f699a`) y
   el resumen que recibe el modelo (`lib/fundaciones/mercado.ts:370@40f699a` y
   `lib/fundaciones/mercado.ts:388@40f699a`), así que también lo decía el chat.
+
+## La segunda edición (2026-10-02)
+
+`09-LA-SEGUNDA-EDICION.md` cambia dónde se ven algunas de estas pantallas, sin tocar ninguna por dentro
+(`NE-37`). Desde su etapa F1:
+
+| pantalla | sección | dónde se ve |
+|---|---|---|
+| Creative | `creative` | Marketing › **Creative Insights**: el nombre de la sección cambió en su línea (`NE-47`) |
+| Sales | `sales` | Sales › **Closing**: ídem |
+| Leads Portal | `contacts` | Sales › **Leads › De GHL**: una sub-pestaña del grupo Leads (`NE-46`) |
+| Tools › Espía y Scraper | `tools` | Research › **Radar** › Espía a tus competidores y Scraper |
+| Tools › Tu página y Tu video de ventas | `tools` | Marketing › **Funnel** › Tu landing y Tu VSL |
+| Tools › Mis Leads y Prospección en frío | `tools` | Sales › **Leads** › De Radar y Plan de prospección |
+| Analizadores › HT y OB | `analizadores` | Sales › **Llamadas de venta** y Client Success › **Llamadas de onboarding** |
+
+Y lo que dicen los textos: los que mandaban a «Research › Mis Leads» —el paso de mercado de ICP y lo que
+lee su agente— y la bajada del Scraper, que decía sólo «Mis Leads», sacan el lugar de la tabla
+(`lugarDe`), y dicen «Sales › Leads › De Radar»; el vacío de Mis Leads nombra el Scraper y el Plan de
+prospección, que guardan ahí los dos.
+
+En Ajustes › Usuarios (`NE-21`), lo que abre cada casilla lleva el grupo —«Tools» abre Research › Radar ›
+Espía a tus competidores, …, Sales › Leads › Plan de prospección—, y la casilla lo dice también cuando
+abre una sola cosa que la barra llama de otra forma: el Leads Portal abre Sales › Leads › De GHL
+(`diceLoQueAbre`). Lo vigila `pruebas/codigo/195-el-alcance-por-departamento.test.ts`; los grupos, en la
+barra y en `lugarDe`, `pruebas/codigo/196-los-grupos.test.ts`.

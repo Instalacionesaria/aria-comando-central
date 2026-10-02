@@ -11,15 +11,17 @@
 //   · perder o agregar una sección al reagrupar, o perderle un campo: el reparto de `alcanceOfrecible`
 //     (que vigila `pruebas/codigo/101-alcance.test.ts`) dejaría de ser lo que se ofrece, y sin
 //     `soloDesdeLaPrincipal` la pantalla ofrecería Monitoreo a una empresa cliente;
-//   · esconder lo que abre una casilla que abre varias cosas, o escribirlo a mano.
+//   · esconder lo que abre una casilla que abre varias cosas, o una sola que la barra llama de otra
+//     forma (el Leads Portal es Sales › Leads › De GHL desde la segunda edición), o escribirlo a mano.
 //
 // Lo que se EJECUTA: `alcancePorDepartamento` sobre `alcanceOfrecible`, con todas las capacidades y con
 // pedazos. La ruta y la pantalla se leen del fuente.
 //
 // Las mutaciones que la ponen en rojo: ubicar una sección en todos los departamentos de sus entradas;
 // perder las que no son de ningún departamento, o un campo de una sección; dejar grupos vacíos; otro orden; un `abre` sin el
-// departamento o sin las entradas con pestaña; que la ruta mande el agrupado viejo; y que la pantalla no
-// diga lo que abre, o lo diga también con una sola entrada.
+// departamento, sin el grupo o sin las entradas con pestaña; que la ruta mande el agrupado viejo; y que la
+// pantalla no diga lo que abre, lo diga con una sola entrada que la barra llama igual, o lo calle con una
+// que la barra llama de otra forma.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -27,7 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
-import { alcancePorDepartamento } from '../../lib/autorizacion/departamentos.ts';
+import { alcancePorDepartamento, diceLoQueAbre } from '../../lib/autorizacion/departamentos.ts';
 import { SECCIONES, alcanceOfrecible } from '../../lib/autorizacion/secciones.ts';
 
 const fuente = (r: string): string => readFileSync(join(RAIZ, r), 'utf8').replace(/\r\n/g, '\n');
@@ -72,26 +74,43 @@ test('el orden es el de la barra: el Inicio, los departamentos, el engranaje y l
 
 test('cada casilla dice lo que abre, con el departamento', () => {
   const abre = new Map(alcancePorDepartamento(alcanceOfrecible(TODAS)).flatMap((g) => g.secciones.map((s) => [s.clave, s.abre] as const)));
+  // Con el grupo en el medio, como lo dice la barra (`NE-45`).
   assert.deepEqual(abre.get('tools'), [
-    'Research › Espía a tus competidores',
-    'Research › Scraper',
-    'Research › Mis Leads',
-    'Marketing › Tu página',
-    'Marketing › Tu video de ventas',
-    'Sales › Prospección en frío',
+    'Research › Radar › Espía a tus competidores',
+    'Research › Radar › Scraper',
+    'Marketing › Funnel › Tu landing',
+    'Marketing › Funnel › Tu VSL',
+    'Sales › Leads › De Radar',
+    'Sales › Leads › Plan de prospección',
   ]);
-  assert.deepEqual(abre.get('analizadores'), ['Sales › Analizador HT', 'Client Success › Analizador OB']);
+  assert.deepEqual(abre.get('analizadores'), ['Sales › Llamadas de venta', 'Client Success › Llamadas de onboarding']);
+  assert.deepEqual(abre.get('contacts'), ['Sales › Leads › De GHL']);
+  assert.deepEqual(abre.get('sales'), ['Sales › Closing']);
   assert.deepEqual(abre.get('acquisition'), ['Systems › Acquisition']);
   assert.deepEqual(abre.get('executive'), []);
   assert.deepEqual(abre.get('usuarios'), []);
+});
+
+test('la casilla dice lo que abre cuando abre más de una, o una que la barra llama de otra forma', () => {
+  const secciones = new Map(alcancePorDepartamento(alcanceOfrecible(TODAS)).flatMap((g) => g.secciones.map((s) => [s.clave, s] as const)));
+  const dice = (clave: string) => diceLoQueAbre(secciones.get(clave)!);
+  assert.equal(dice('tools'), true, '«Tools» abre seis entradas y no lo dice');
+  assert.equal(dice('analizadores'), true);
+  // El Leads Portal es Sales › Leads › De GHL: sin decirlo, la casilla nombra un lugar que la barra no muestra.
+  assert.equal(dice('contacts'), true, 'la casilla del Leads Portal no dice dónde está');
+  // Cuando la barra la llama como a la sección, el nombre ya lo dice.
+  for (const clave of ['sales', 'creative', 'acquisition', 'closer', 'icp']) assert.equal(dice(clave), false, `«${clave}» repite su nombre al lado`);
+  assert.equal(dice('executive'), false, 'el Inicio dice que abre algo');
+  assert.equal(diceLoQueAbre({ nombre: 'Algo' }), false, 'sin `abre`, la casilla promete algo');
 });
 
 test('la ruta manda el agrupado por departamento, y la pantalla dice lo que abre', () => {
   const ruta = sinComentarios(fuente('app/api/admin/roles/route.ts'));
   assert.match(ruta, /alcance: alcancePorDepartamento\(alcanceOfrecible\(capacidades\)\)/, 'la ruta manda el agrupado del menú viejo');
   const pantalla = sinComentarios(fuente('components/ajustes/Usuarios.jsx'));
-  // Sólo cuando abre más de una: con una, el nombre de la casilla ya lo dice.
-  assert.match(pantalla, /\{sec\.abre\?\.length > 1 \? \(\s*<span className="aj-abre" id=\{`\$\{id\}-\$\{sec\.clave\}-abre`\}>\s*abre \{sec\.abre\.join\(' · '\)\}/, 'la casilla no dice lo que abre');
-  assert.match(pantalla, /aria-describedby=\{sec\.abre\?\.length > 1 \? `\$\{id\}-\$\{sec\.clave\}-abre` : undefined\}/, 'el lector de pantalla no oye lo que abre la casilla');
+  // Cuando `diceLoQueAbre`: con una sola que la barra llama igual, el nombre de la casilla ya lo dice.
+  assert.match(pantalla, /\{diceLoQueAbre\(sec\) \? \(\s*<span className="aj-abre" id=\{`\$\{id\}-\$\{sec\.clave\}-abre`\}>\s*abre \{sec\.abre\.join\(' · '\)\}/, 'la casilla no dice lo que abre');
+  assert.match(pantalla, /aria-describedby=\{diceLoQueAbre\(sec\) \? `\$\{id\}-\$\{sec\.clave\}-abre` : undefined\}/, 'el lector de pantalla no oye lo que abre la casilla');
+  assert.equal((pantalla.match(/diceLoQueAbre\(sec\)/g) ?? []).length, 2, 'la pantalla decide en otro lugar si dice lo que abre');
   assert.doesNotMatch(pantalla, /Research ›|Marketing ›|Sales ›/, 'la pantalla escribe a mano dónde vive una pestaña');
 });

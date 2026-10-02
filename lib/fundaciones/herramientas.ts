@@ -25,7 +25,7 @@
 // haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { SIN_DATOS_REALES, esUbicacionBuscable } from './mercado.ts';
+import { DONDE_ESTAN_LOS_LEADS, SIN_DATOS_REALES, esUbicacionBuscable } from './mercado.ts';
 
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
 
@@ -261,7 +261,7 @@ const RESEARCH: Herramienta = {
             'partes juntas. Si no está claro, preguntale con qué país quiere empezar a extraer leads, en ' +
             'qué ciudad y en qué zona. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
             'extracción de negocios reales arranca en un solo lugar, hasta 100 negocios, que quedan en ' +
-            'Research › Mis Leads; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ' +
+            `${DONDE_ESTAN_LOS_LEADS}; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ` +
             'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anotá ' +
             'exactamente «sin datos reales» y seguí. Hasta que esta respuesta no sea una ciudad concreta ' +
             'o «sin datos reales», NO des por completas las respuestas ni pongas `listo`: preguntala, ' +

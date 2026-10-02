@@ -247,10 +247,10 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
         </>
       ) : null}
 
-      {/* El pie explicativo. Es el diseño de Jorge y se conserva: dice para qué sirve la pantalla
-          cuando todavía no hay resultados, que es la primera vez que alguien la abre. Las dos
-          últimas dicen «próximamente» y no se maquillan — prometer una función que no existe es
-          peor que decir que falta. */}
+      {/* El pie explicativo: dice para qué sirve la pantalla cuando todavía no hay resultados, que es
+          la primera vez que alguien la abre. Las dos primeras notas son el diseño de Jorge; las dos
+          últimas, «Próximamente», toman el nombre y el texto del diseño de la segunda edición
+          (`NE-51`) y no se maquillan — prometer una función que no existe es peor que decir que falta. */}
       <div className="es-rasgos">
         <div className="es-rasgo">
           <h4>Ordena por longevidad</h4>
@@ -267,18 +267,12 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
           </p>
         </div>
         <div className="es-rasgo">
-          <h4>Alimenta tus Creadores de Ads</h4>
-          <p>
-            Próximamente: envía los patrones detectados directo a Ads Fríos y Remarketing como
-            contexto heredado.
-          </p>
+          <h4>Enviar hallazgos a Copywriter</h4>
+          <p>Próximamente: los hooks que encontraste pasan directo a tus guiones.</p>
         </div>
         <div className="es-rasgo">
-          <h4>Guarda tu Dream 100</h4>
-          <p>
-            Próximamente: sigue a los competidores clave de tu nicho y revisa qué campañas nuevas
-            lanzan.
-          </p>
+          <h4>Dream 100</h4>
+          <p>Próximamente: guarda las cuentas que quieres seguir de cerca.</p>
         </div>
       </div>
     </div>

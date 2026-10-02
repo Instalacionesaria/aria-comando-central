@@ -1,5 +1,6 @@
 // Los departamentos: la capa de navegación de la estructura nueva (`NE-11` a `NE-16`,
-// `docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`).
+// `docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`), con los grupos de la segunda edición (`NE-45`,
+// `docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTO NO DECIDE: QUIÉN VE QUÉ
@@ -19,6 +20,16 @@
 // de entradas sí. Y a `secciones.ts` no se le agregan ni se le quitan líneas: cerca de cien citas
 // `archivo:línea` de los documentos dependen de ellas (`NE-33`).
 //
+// ── LOS GRUPOS ──────────────────────────────────────────────────────────────
+//
+// Radar, Funnel y Leads son UNA entrada de la barra con varias sub-pestañas (`NE-45`). En la tabla
+// siguen siendo entradas planas, cada una con su sección y su pestaña, y las de un grupo llevan su
+// nombre en `grupo`: así cada sub-pestaña se ve o no por SU sección, como cualquier entrada. Leads lo
+// necesita, porque cruza dos pantallas con permisos distintos —«De GHL» es el Leads Portal y «De Radar»
+// una pestaña de Tools (`NE-46`)—: si se viera por la sección del grupo, ofrecería una puerta que el
+// servidor cierra. `menuPorDepartamentos` pliega cada grupo en una entrada que abre su primera
+// sub-pestaña que abre algo, y la barra la abre con la misma llamada que a las demás.
+//
 // ── LO QUE ESTO NO ES ───────────────────────────────────────────────────────
 //
 // No es autorización, igual que el menú: el `03` § 7, *"el menú solo evita que la gente vea puertas
@@ -30,35 +41,40 @@ export type ClaveDeDepartamento = 'research' | 'systems' | 'marketing' | 'sales'
 export interface Departamento {
   clave: ClaveDeDepartamento;
   nombre: string;
-  /** La ceja de la cabecera (`NE-12`): dónde se instala el departamento en el programa. */
+  /** La ceja de la cabecera: el nombre del departamento en mayúsculas (`NE-48`). Hasta la segunda
+   *  edición decía también dónde se instala en el programa («· SE INSTALA EN FOUNDATIONS»). */
   ceja: string;
 }
 
 /** Los cinco, en el orden de la barra (`NE-11`). */
 export const DEPARTAMENTOS: readonly Departamento[] = [
-  { clave: 'research', nombre: 'Research', ceja: 'RESEARCH · SE INSTALA EN FOUNDATIONS' },
-  { clave: 'systems', nombre: 'Systems', ceja: 'SYSTEMS · SE INSTALA EN SYSTEMS' },
-  { clave: 'marketing', nombre: 'Marketing', ceja: 'MARKETING · SE INSTALA EN GROWTH' },
-  { clave: 'sales', nombre: 'Sales', ceja: 'SALES · SE INSTALA EN SALES' },
-  { clave: 'client-success', nombre: 'Client Success', ceja: 'CLIENT SUCCESS · SE INSTALA EN SCALE' },
+  { clave: 'research', nombre: 'Research', ceja: 'RESEARCH' },
+  { clave: 'systems', nombre: 'Systems', ceja: 'SYSTEMS' },
+  { clave: 'marketing', nombre: 'Marketing', ceja: 'MARKETING' },
+  { clave: 'sales', nombre: 'Sales', ceja: 'SALES' },
+  { clave: 'client-success', nombre: 'Client Success', ceja: 'CLIENT SUCCESS' },
 ];
 
 /**
  * Una entrada de un departamento.
  *
- * · **Sin pestaña**: abre la sección entera, y se llama como la sección (el nombre sale del menú,
- *   que es la única fuente; escribirlo dos veces es cómo «Executive» siguió diciéndose en un lugar).
+ * · **Sin pestaña ni grupo**: abre la sección entera, y se llama como la sección (el nombre sale del
+ *   menú, que es la única fuente; escribirlo dos veces es cómo «Executive» siguió diciéndose en un lugar).
  * · **Con pestaña**: abre la sección pidiéndole esa pestaña (`NE-19`), y lleva nombre propio, porque
  *   «Tools» no dice cuál de seis.
- * · **Próximamente** (`NE-13`): no abre nada, no lleva sección y nunca hace aparecer un departamento.
+ * · **En un grupo** (`grupo`): es una sub-pestaña de esa entrada de la barra (`NE-45`), y lleva nombre
+ *   propio aunque abra una sección entera: «De GHL» no se llama como el Leads Portal.
+ * · **Próximamente** (`NE-13`): no abre nada, no lleva sección y nunca hace aparecer un departamento
+ *   ni un grupo.
  */
 export type Entrada =
-  | { departamento: ClaveDeDepartamento; seccion: string; pestana?: undefined; nombre?: undefined }
-  | { departamento: ClaveDeDepartamento; seccion: string; pestana: string; nombre: string }
-  | { departamento: ClaveDeDepartamento; proximamente: true; nombre: string };
+  | { departamento: ClaveDeDepartamento; seccion: string; pestana?: undefined; nombre?: undefined; grupo?: undefined }
+  | { departamento: ClaveDeDepartamento; seccion: string; pestana?: string; nombre: string; grupo?: string }
+  | { departamento: ClaveDeDepartamento; proximamente: true; nombre: string; grupo?: string };
 
 /**
- * Las entradas, en el orden de la tabla de `NE-12`.
+ * Las entradas, en el orden de la tabla de `NE-45` (`09-LA-SEGUNDA-EDICION.md`). Las de un grupo van
+ * juntas: la barra las dibuja donde está la primera.
  *
  * Las pestañas se nombran con la clave de donde se definen: la `clave` de cada herramienta de `TOOLS`
  * (`lib/fundaciones/herramientas.ts`), la de las vistas de `components/views/ToolsView.jsx` y la de
@@ -68,31 +84,32 @@ export type Entrada =
  */
 export const ENTRADAS: readonly Entrada[] = [
   { departamento: 'research', seccion: 'icp' },
-  { departamento: 'research', seccion: 'tools', pestana: 'espia', nombre: 'Espía a tus competidores' },
-  { departamento: 'research', seccion: 'tools', pestana: 'scraper', nombre: 'Scraper' },
-  { departamento: 'research', seccion: 'tools', pestana: 'mis-leads', nombre: 'Mis Leads' },
+  { departamento: 'research', seccion: 'tools', pestana: 'espia', nombre: 'Espía a tus competidores', grupo: 'Radar' },
+  { departamento: 'research', seccion: 'tools', pestana: 'scraper', nombre: 'Scraper', grupo: 'Radar' },
 
   { departamento: 'systems', seccion: 'acquisition' },
   { departamento: 'systems', seccion: 'conversion' },
   { departamento: 'systems', seccion: 'conversation' },
 
   { departamento: 'marketing', seccion: 'creative' },
-  { departamento: 'marketing', proximamente: true, nombre: 'Bio de Instagram' },
-  { departamento: 'marketing', proximamente: true, nombre: 'Guiones TOFU · MOFU · BOFU' },
-  { departamento: 'marketing', proximamente: true, nombre: 'Guiones de venta directa' },
-  { departamento: 'marketing', proximamente: true, nombre: 'Social Media Posting' },
-  { departamento: 'marketing', proximamente: true, nombre: 'Clon de IA' },
-  { departamento: 'marketing', seccion: 'tools', pestana: 'landing', nombre: 'Tu página' },
-  { departamento: 'marketing', seccion: 'tools', pestana: 'vsl', nombre: 'Tu video de ventas' },
+  // Bio de Instagram y los dos creadores de guiones, en un solo agente (`NE-47`).
+  { departamento: 'marketing', proximamente: true, nombre: 'Copywriter' },
+  { departamento: 'marketing', seccion: 'tools', pestana: 'landing', nombre: 'Tu landing', grupo: 'Funnel' },
+  { departamento: 'marketing', seccion: 'tools', pestana: 'vsl', nombre: 'Tu VSL', grupo: 'Funnel' },
+  // Social Media Posting y el Clon de IA (`NE-47`).
+  { departamento: 'marketing', proximamente: true, nombre: 'Content Studio' },
 
   { departamento: 'sales', seccion: 'sales' },
-  { departamento: 'sales', seccion: 'contacts' },
+  // La lista junta de las dos fuentes no existe todavía (`NE-38`).
+  { departamento: 'sales', proximamente: true, nombre: 'Todos', grupo: 'Leads' },
+  { departamento: 'sales', seccion: 'contacts', nombre: 'De GHL', grupo: 'Leads' },
+  { departamento: 'sales', seccion: 'tools', pestana: 'mis-leads', nombre: 'De Radar', grupo: 'Leads' },
+  { departamento: 'sales', seccion: 'tools', pestana: 'prospeccion', nombre: 'Plan de prospección', grupo: 'Leads' },
   { departamento: 'sales', seccion: 'setter' },
   { departamento: 'sales', seccion: 'closer' },
-  { departamento: 'sales', seccion: 'analizadores', pestana: 'HT', nombre: 'Analizador HT' },
-  { departamento: 'sales', seccion: 'tools', pestana: 'prospeccion', nombre: 'Prospección en frío' },
+  { departamento: 'sales', seccion: 'analizadores', pestana: 'HT', nombre: 'Llamadas de venta' },
 
-  { departamento: 'client-success', seccion: 'analizadores', pestana: 'OB', nombre: 'Analizador OB' },
+  { departamento: 'client-success', seccion: 'analizadores', pestana: 'OB', nombre: 'Llamadas de onboarding' },
   { departamento: 'client-success', proximamente: true, nombre: 'Seguimiento de clientes' },
 ];
 
@@ -108,9 +125,22 @@ export const FUERA = {
   engranaje: ['credenciales', 'monitoreo', 'incidentes'],
 } as const;
 
-/** Una entrada lista para dibujar. */
+/** Lo que una entrada abre: una sección, con su pestaña si la sección se reparte. */
+export interface Destino {
+  seccion: string;
+  pestana: string | null;
+}
+
+/** Una sub-pestaña de un grupo, lista para dibujar. */
+export type SubVisible = (Destino & { nombre: string }) | { nombre: string; proximamente: true };
+
+/**
+ * Una entrada lista para dibujar. La de un grupo lleva sus sub-pestañas en `subs`, y su `seccion` y su
+ * `pestana` son las de la primera que abre algo: es lo que abre al tocarla.
+ */
 export type EntradaVisible =
-  | { nombre: string; seccion: string; pestana: string | null }
+  | (Destino & { nombre: string; subs?: undefined })
+  | (Destino & { nombre: string; subs: SubVisible[] })
   | { nombre: string; proximamente: true };
 
 /** Lo que la barra lateral dibuja (`NE-11`). */
@@ -125,8 +155,9 @@ export interface Navegacion {
  * El menú de `menuVisible()`, repartido en departamentos.
  *
  * Un departamento aparece si tiene al menos una entrada que abre algo; sus «Próximamente» van con
- * él, y nunca solas (`NE-13`). Las entradas conservan el orden de `ENTRADAS`, y los departamentos el
- * de `DEPARTAMENTOS`.
+ * él, y nunca solas (`NE-13`). Lo mismo un grupo: aparece si alguna de sus sub-pestañas abre algo, y
+ * abre la primera de ésas, nunca una «Próximamente» (`NE-45`). Las entradas conservan el orden de
+ * `ENTRADAS`, y los departamentos el de `DEPARTAMENTOS`.
  *
  * @param menu lo que devuelve `menuVisible`, con el alcance ya aplicado. Es la ÚNICA entrada: la
  *   visibilidad no se vuelve a decidir acá.
@@ -139,19 +170,39 @@ export function menuPorDepartamentos(
     const nombre = visibles.get(clave);
     return nombre === undefined ? null : { seccion: clave, nombre };
   };
+  // Una entrada como se dibuja, o `null` si su sección no está en el menú de esta persona.
+  const aDibujar = (e: Entrada): SubVisible | null => {
+    if ('proximamente' in e) return { nombre: e.nombre, proximamente: true };
+    const nombreDeLaSeccion = visibles.get(e.seccion);
+    if (nombreDeLaSeccion === undefined) return null;
+    return { nombre: e.nombre ?? nombreDeLaSeccion, seccion: e.seccion, pestana: e.pestana ?? null };
+  };
 
   const departamentos = DEPARTAMENTOS.map((d) => {
-    const entradas: EntradaVisible[] = [];
+    // Las sueltas, y cada grupo en el lugar de su primera sub-pestaña.
+    const piezas: ({ suelta: SubVisible } | { grupo: string; subs: SubVisible[] })[] = [];
+    const grupos = new Map<string, SubVisible[]>();
     for (const e of ENTRADAS) {
       if (e.departamento !== d.clave) continue;
-      if ('proximamente' in e) {
-        entradas.push({ nombre: e.nombre, proximamente: true });
+      const visible = aDibujar(e);
+      if (visible === null) continue;
+      if (e.grupo === undefined) {
+        piezas.push({ suelta: visible });
         continue;
       }
-      const nombreDeLaSeccion = visibles.get(e.seccion);
-      if (nombreDeLaSeccion === undefined) continue;
-      entradas.push({ nombre: e.nombre ?? nombreDeLaSeccion, seccion: e.seccion, pestana: e.pestana ?? null });
+      let subs = grupos.get(e.grupo);
+      if (!subs) {
+        subs = [];
+        grupos.set(e.grupo, subs);
+        piezas.push({ grupo: e.grupo, subs });
+      }
+      subs.push(visible);
     }
+    const entradas: EntradaVisible[] = piezas.flatMap((p): EntradaVisible[] => {
+      if ('suelta' in p) return [p.suelta];
+      const abre = p.subs.find((s): s is Destino & { nombre: string } => !('proximamente' in s));
+      return abre ? [{ nombre: p.grupo, seccion: abre.seccion, pestana: abre.pestana, subs: p.subs }] : [];
+    });
     return { ...d, entradas };
   }).filter((d) => d.entradas.some((e) => !('proximamente' in e)));
 
@@ -163,7 +214,20 @@ export function menuPorDepartamentos(
 }
 
 /**
- * La entrada abierta, para marcarla en la barra y abrir su departamento (`NE-11`), o `null`.
+ * Lo que una entrada visible abre: ella misma, o las sub-pestañas de su grupo que abren algo. Lo usa
+ * la barra para saber si alguna lleva a Tools, y dónde va el punto de «hay un scraping corriendo»:
+ * con la del grupo sola, el punto del Scraper no se vería, porque Radar abre el Espía.
+ */
+export function queAbre(entrada: EntradaVisible): Destino[] {
+  if ('proximamente' in entrada) return [];
+  if (!entrada.subs) return [{ seccion: entrada.seccion, pestana: entrada.pestana }];
+  return entrada.subs.flatMap((s) => ('proximamente' in s ? [] : [{ seccion: s.seccion, pestana: s.pestana }]));
+}
+
+/**
+ * La entrada abierta, para marcarla en la barra y abrir su departamento (`NE-11`), o `null`. En un
+ * grupo, `nombre` es el del grupo —la entrada de la barra— y `sub`, el de la sub-pestaña abierta; fuera
+ * de un grupo, `sub` es `null`.
  *
  * `seccion` es la pantalla a la vista y `pestana`, la que esa pantalla dibuja: no la última que se
  * pidió, porque Tools cambia de pestaña por dentro (el «Continuar» del VSL). Una sección repartida en varios
@@ -174,29 +238,41 @@ export function entradaAbierta(
   navegacion: Navegacion,
   seccion: string | null,
   pestana: string | null,
-): { departamento: ClaveDeDepartamento; nombre: string } | null {
+): { departamento: ClaveDeDepartamento; nombre: string; sub: string | null } | null {
   if (seccion === null) return null;
+  const esta = (d: Destino) => d.seccion === seccion && (d.pestana === null || d.pestana === pestana);
   for (const d of navegacion.departamentos) {
     for (const e of d.entradas) {
-      if ('proximamente' in e || e.seccion !== seccion) continue;
-      if (e.pestana === null || e.pestana === pestana) return { departamento: d.clave, nombre: e.nombre };
+      if ('proximamente' in e) continue;
+      if (!e.subs) {
+        if (esta(e)) return { departamento: d.clave, nombre: e.nombre, sub: null };
+        continue;
+      }
+      const sub = e.subs.find((s) => !('proximamente' in s) && esta(s));
+      if (sub) return { departamento: d.clave, nombre: e.nombre, sub: sub.nombre };
     }
   }
   return null;
 }
 
+/** «Sales › Leads › De Radar»: el departamento, el grupo si lo hay, y la entrada. */
+const lugar = (e: Entrada, nombreDeLaSeccion: string): string | null => {
+  const departamento = DEPARTAMENTOS.find((d) => d.clave === e.departamento);
+  return departamento ? [departamento.nombre, e.grupo, e.nombre ?? nombreDeLaSeccion].filter(Boolean).join(' › ') : null;
+};
+
 /**
- * Dónde vive una pestaña de una sección repartida, dicho como la barra lateral: «Marketing › Tu video
- * de ventas». La usa la barra de pasos de ICP & Oferta para nombrar el paso que vive en Tools
- * (`components/fundaciones/BarraDePasos.jsx`), en vez de escribir el lugar a mano. Es la tabla de
- * `ENTRADAS`, sin la visibilidad de nadie: dice dónde está, no quién lo ve. `null` si no es de ningún
- * departamento.
+ * Dónde vive una pestaña de una sección repartida, dicho como la navegación —la barra lleva hasta el
+ * grupo, y la cabecera, hasta la sub-pestaña—: «Marketing › Funnel › Tu VSL». La usa la barra de pasos
+ * de ICP & Oferta para nombrar el paso que vive en Tools
+ * (`components/fundaciones/BarraDePasos.jsx`), y lo usan los textos que mandan a los leads del
+ * scraper, en vez de escribir el lugar a mano. Es la tabla de `ENTRADAS`, sin la visibilidad de nadie:
+ * dice dónde está, no quién lo ve. `null` si no es de ningún departamento.
  */
 export function lugarDe(seccion: string, pestana: string): string | null {
   const entrada = ENTRADAS.find((e) => !('proximamente' in e) && e.seccion === seccion && e.pestana === pestana);
   if (!entrada || entrada.nombre === undefined) return null;
-  const departamento = DEPARTAMENTOS.find((d) => d.clave === entrada.departamento);
-  return departamento ? `${departamento.nombre} › ${entrada.nombre}` : null;
+  return lugar(entrada, entrada.nombre);
 }
 
 /**
@@ -224,8 +300,8 @@ export function alcancePorDepartamento<S extends { clave: string; nombre: string
   const abre = (s: S): string[] =>
     ENTRADAS.flatMap((e) => {
       if ('proximamente' in e || e.seccion !== s.clave) return [];
-      const d = DEPARTAMENTOS.find((x) => x.clave === e.departamento);
-      return d ? [`${d.nombre} › ${e.nombre ?? s.nombre}`] : [];
+      const donde = lugar(e, s.nombre);
+      return donde ? [donde] : [];
     });
   const inicio: (S & { abre: string[] })[] = [];
   const porDepartamento = new Map<ClaveDeDepartamento, (S & { abre: string[] })[]>(DEPARTAMENTOS.map((d) => [d.clave, []]));
@@ -254,4 +330,17 @@ export function alcancePorDepartamento<S extends { clave: string; nombre: string
     { grupo: { clave: 'engranaje', etiqueta: 'Menú de la cuenta' }, secciones: engranaje },
     ...otros,
   ].filter((g) => g.secciones.length > 0);
+}
+
+/**
+ * Si la casilla de una sección en Ajustes › Usuarios tiene que decir lo que abre: cuando abre más de
+ * una entrada («Tools» abre seis), o una sola que en la barra se llama de otra forma —el Leads Portal
+ * es Sales › Leads › De GHL, y sin eso la casilla nombraría un lugar que la barra no muestra—. Cuando
+ * la barra la llama como a la sección (Sales › Closing), el nombre de la casilla ya lo dice.
+ */
+export function diceLoQueAbre(seccion: { nombre: string; abre?: readonly string[] }): boolean {
+  const abre = seccion.abre ?? [];
+  if (abre.length > 1) return true;
+  const [unico] = abre;
+  return unico !== undefined && !unico.endsWith(` › ${seccion.nombre}`);
 }

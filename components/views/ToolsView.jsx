@@ -57,7 +57,7 @@ const CATALOGO_TOOLS = {
   /* La sección de la pantalla, para atender la pestaña que pide la navegación (`NE-19`): Tools se
      reparte en tres departamentos y cada entrada abre la suya. ICP & Oferta no lo declara. */
   seccion: 'tools',
-  /* «Mis Leads» es una pestaña propia (Research › Mis Leads), y no una sección enterrada debajo
+  /* «Mis Leads» es una pestaña propia (Sales › Leads › De Radar), y no una sección enterrada debajo
      del scraper: el historial se consulta en momentos distintos de cuando se scrapea
      —para exportarlo, para ver si un negocio ya salió antes— y no tiene por qué obligar a pasar
      por un panel de extracción para llegar.

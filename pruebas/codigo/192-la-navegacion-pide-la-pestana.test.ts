@@ -4,7 +4,7 @@
 // LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md, NE-19 y NE-20)
 //
 // Tools y Analizadores son una sección cada uno, y sus pestañas viven en departamentos distintos:
-// abrir «Research › Espía de anuncios» es abrir `tools` PIDIÉNDOLE `espia`. El pedido lo deja
+// abrir «Research › Radar › Espía a tus competidores» es abrir `tools` PIDIÉNDOLE `espia`. El pedido lo deja
 // `irALaVista` (`lib/aios/shell.js`), la pantalla lo recibe con `usarPedidoDeVista` (`lib/vista.ts`)
 // y lo atiende en su render. Tres formas de romperlo no fallan:
 //
@@ -159,7 +159,9 @@ test('el armazón no ata clics ni marca filas: las filas son botones de React', 
     // Un botón, y el que navega: el `onClick` en otro elemento dejaría a Enter sin efecto.
     assert.match(fila, /^<button\b/, `una fila del menú no es un botón: el teclado no llega (${fila.slice(0, 40)}…)`);
     assert.match(fila, /\stype="button"/, 'la fila no declara `type="button"`');
-    assert.match(fila, /\sonClick=\{\(\) => irALaVista\(e\.seccion, \{ pestana: e\.pestana \}\)\}/, 'la fila no abre su pantalla, con su pestaña, al apretarla');
+    /* Abre lo que dice `destino`: la entrada, o en un grupo con un trabajo en vuelo, la sub-pestaña
+       que lo retoma (`193-la-barra-lateral.test.ts`). */
+    assert.match(fila, /\sonClick=\{\(\) => irALaVista\(destino\.seccion, \{ pestana: destino\.pestana \}\)\}/, 'la fila no abre su pantalla, con su pestaña, al apretarla');
     assert.match(fila, /\saria-current=\{marcada \? 'page' : undefined\}/, 'la fila abierta no se anuncia como la actual');
     assert.match(fila, /className=\{marcada \? 'nav-item on' : 'nav-item'\}/, 'la fila no marca la entrada abierta');
   }
@@ -210,7 +212,7 @@ test('Tools y Analizadores toman la pestaña pedida una vez por número, en el r
   const bloqueAz = /const pedidoDeNavegacion = usarPedidoDeVista\('analizadores'\);\s*const \[atendido, setAtendido\] = useState\(0\);\s*if \(pedidoDeNavegacion && pedidoDeNavegacion\.secuencia !== atendido\) \{\s*setAtendido\(pedidoDeNavegacion\.secuencia\);\s*const pedida = PESTANAS\.find\(\(p\) => p\.clave === pedidoDeNavegacion\.pestana\)\?\.clave;\s*if \(pedida && pedida !== pestana\) \{\s*setPestana\(pedida\);\s*setLista\(null\);\s*\}\s*if \(pedida && detalle !== null && detalle\.tipo !== pedida\) setDetalle\(null\);/.exec(analizadores);
   assert.ok(bloqueAz, 'Analizadores no atiende el pedido una vez por número, no cambia de pestaña y de lista, o deja abierto el detalle de la otra');
   assert.ok(bloqueAz.index < analizadores.indexOf('if (detalle !== null)'), 'Analizadores atiende el pedido después del `return` del detalle');
-  // El formulario a mano sigue a la pestaña: si no, «Analizador OB» analizaría como venta.
+  // El formulario a mano sigue a la pestaña: si no, «Llamadas de onboarding» analizaría como venta.
   assert.match(analizadores, /if \(pestana !== pestanaVista\) \{\s*setPestanaVista\(pestana\);\s*setTipo\(pestana\);/, 'el formulario a mano no sigue a la pestaña');
 });
 

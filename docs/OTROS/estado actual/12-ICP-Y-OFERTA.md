@@ -176,7 +176,7 @@ ningún registro citado en los commits muestra que se haya cortado.
 **El techo de una corrida completa**, sumando las constantes: cinco pasos de hasta 600 s son 50
 minutos, y cada trabajo de scraping se sondea hasta 120 veces cada 5 s, o sea 10 minutos
 (`components/fundaciones/PanelResearch.jsx:281-290`), con las páginas de Facebook corriendo
-**después** del Espía y no en paralelo (`lib/fundaciones/mercado.ts:64-69`). Si la pestaña se cierra,
+**después** del Espía y no en paralelo (`lib/fundaciones/mercado.ts:70-75`). Si la pestaña se cierra,
 la cadena se corta; los pasos ya salidos quedan guardados.
 
 **Lo que muestran los datos después del arreglo**, medido el 2026-09-28 (el commit `9a3bbd0`
@@ -282,8 +282,8 @@ sale del almacén o del modelo. Lo que sí está fijo en el código, y decide qu
 - **La promesa de la bajada**, heredada del prototipo: «cómo evolucionan con los datos reales»
   (`components/views/IcpView.jsx:33-35`). Nada evoluciona con datos reales; ver § 5.
 - **Los topes de gasto de la mirada al mercado**: 100 negocios de Maps
-  (`lib/fundaciones/mercado.ts:72-73`), 100 páginas de Facebook (`lib/fundaciones/mercado.ts:173-178`)
-  y 300 anuncios del Espía, que no descuentan saldo al cliente (`lib/fundaciones/mercado.ts:75-82`).
+  (`lib/fundaciones/mercado.ts:78-79`), 100 páginas de Facebook (`lib/fundaciones/mercado.ts:179-184`)
+  y 300 anuncios del Espía, que no descuentan saldo al cliente (`lib/fundaciones/mercado.ts:81-88`).
 - **Las once metodologías** y sus techos de tokens (§ 2.1), y las diez versiones por herramienta.
 
 ---
@@ -439,12 +439,12 @@ archiva (`lib/fundaciones/estado.ts:207-209`, `lib/fundaciones/historico.ts:214-
 criterio vacío no deja un `[COMPLETAR]` sino un research genérico que se ve bien
 (`lib/fundaciones/herramientas.ts:117-133`). La ciudad es opcional pero se pregunta antes de arrancar,
 tiene que tener zona, ciudad y país, y la salida explícita es «sin datos reales»
-(`lib/fundaciones/herramientas.ts:237-250`, `lib/fundaciones/mercado.ts:88`,
-`lib/fundaciones/mercado.ts:122-124`).
+(`lib/fundaciones/herramientas.ts:237-250`, `lib/fundaciones/mercado.ts:94`,
+`lib/fundaciones/mercado.ts:128-130`).
 
 **9 · La mirada al mercado gasta saldo del monedero y usa las puertas de Tools.** Hasta 200 leads por
 Research, para que de los 500 de regalo le queden al menos 300 a la empresa
-(`lib/fundaciones/mercado.ts:173-178`); pide confirmación antes de gastar, con el saldo a la vista
+(`lib/fundaciones/mercado.ts:179-184`); pide confirmación antes de gastar, con el saldo a la vista
 (`components/fundaciones/PanelResearch.jsx:308-316`), y la arranca el navegador con las funciones de
 Tools (`components/fundaciones/PanelResearch.jsx:258-260`). Por eso pide
 `tools.editar` (`app/api/tools/scrape/route.ts:228`) y, a un rol restringido, también la pestaña
