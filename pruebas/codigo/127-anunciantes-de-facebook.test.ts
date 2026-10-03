@@ -182,9 +182,9 @@ test('los cuatro formularios reponen sus campos al retomar un scraping en vuelo'
 
   // LinkedIn guarda el cargo con prefijo y junta región y país en una cadena.
   assert.match(scraper, /PREFIJO_LINKEDIN/);
-  // Facebook: su búsqueda con el prefijo del Espía, y el país.
+  // Facebook: la búsqueda del Espía que estaba corriendo queda elegida, con su texto sin el prefijo.
   assert.match(scraper, /PREFIJO_DE_BUSQUEDA/);
-  assert.match(scraper, /setPais\(trabajo\.location\)/);
+  assert.match(scraper, /setElegida\(\{\s*id: trabajo\.id,/);
 });
 
 test('el tope pedido sale del JSON del trabajo, no de la columna que nadie escribe', () => {

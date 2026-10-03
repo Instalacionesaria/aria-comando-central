@@ -24,7 +24,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  ANUNCIOS_PARA_PROSPECTAR,
   ETIQUETAS_DE_COLUMNA,
   COLUMNAS_ENLACE,
   MINIMO_LEADS_MAPS,
@@ -33,10 +32,13 @@ import {
   anunciantesDe,
   consultarTrabajo,
   iniciarScraping,
+  leerBusquedasDelEspia,
   leerTrabajosEnVuelo,
 } from '@/lib/tools/scrapers';
+import { irALaVista } from '@/lib/aios/shell.js';
+import { alPedirScraper, hayPedido, tomarPedido } from '@/lib/tools/del-espia-al-scraper';
 
-import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
+import { TarjetaDeAnuncio } from './anuncios';
 
 /**
  * Cuántas tarjetas de anuncio se dibujan bajo la pestaña Facebook.
@@ -153,7 +155,9 @@ function useTrabajo(fuente, textos = {}) {
   }, [sondear]);
 
   const ocupado = fase === 'arrancando' || fase === 'sondeando';
-  return { fase, mensaje, leads, ocupado, arrancar, setFase, setMensaje };
+  /* `seguir` abre un trabajo que ya existe —una búsqueda del Espía terminada vuelve en la primera
+     consulta, sin pagar Apify otra vez—. Lo usa el Scraper de Facebook para elegir una búsqueda. */
+  return { fase, mensaje, leads, ocupado, arrancar, seguir: sondear, setFase, setMensaje };
 }
 
 function Aviso({ fase, mensaje }) {
@@ -377,7 +381,12 @@ function FormularioLinkedIn({ nicho, onLeads }) {
   );
 }
 
-// ── Facebook: descubrir anunciantes por nicho, y sacarles los contactos ─────
+// ── Facebook: elegir una búsqueda del Espía, y sacarles los contactos ────────
+//
+// Desde el 2026-10-03 el paso 1 no busca: ELIGE entre las búsquedas del Espía a tus competidores
+// (Kevin y Jorge: «así ya no se repiten los dos Espías»). Las dos pantallas lanzaban el mismo trabajo
+// `ad-spy`, así que eran la misma búsqueda con dos puertas. Ahora se espía en un solo lugar —con 60
+// anuncios para mirar o 1.000 para sacar contactos— y acá sólo se sacan contactos.
 //
 // Hasta el 2026-10-03 había una «Opción 1 · Pegando la URL» de la Ad Library al lado de esta. Se
 // quitó por pedido de Kevin y Jorge: la persona no tiene que ir a otro lugar a buscar un link. Las
@@ -390,26 +399,79 @@ function FormularioLinkedIn({ nicho, onLeads }) {
 // corridas viejas guardadas con ese nombre.
 
 function FormularioFacebook({ onLeads }) {
-  /* DOS trabajos: descubrir anunciantes por nicho (el mismo actor que el Espía) y sacarles los
-     contactos (`apify/facebook-pages-scraper`). La búsqueda devuelve el copy y los días que lleva
-     corriendo cada anuncio, que es lo que permite elegir a quién procesar en vez de procesarlos a
-     todos a ciegas. */
-  const [consulta, setConsulta] = useState('');
-  const [pais, setPais] = useState('ALL');
+  /* DOS trabajos: abrir una búsqueda del Espía (sus anuncios) y sacarles los contactos a sus
+     anunciantes (`apify/facebook-pages-scraper`). La búsqueda trae el copy y los días que lleva
+     corriendo cada anuncio, que es lo que permite elegir a quién procesar. */
+  const [busquedas, setBusquedas] = useState([]);
+  const [filtro, setFiltro] = useState('');
+  const [elegida, setElegida] = useState(null);
+  /* La lista también en una referencia: el oyente del pedido la necesita y vive fuera del render. */
+  const listaRef = useRef([]);
+  listaRef.current = busquedas;
 
-  /* La búsqueda se guarda con el prefijo `AdSpy: ` y el país en `location`: al volver a la pestaña
-     se reponen los dos. */
+  /* Si había una búsqueda del Espía corriendo, se retoma acá también: es la misma fuente. */
   const porNicho = useTrabajo('ad-spy', {
-    trabajando: 'Buscando anuncios… esto puede tomar unos minutos.',
-    contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
+    trabajando: 'Abriendo la búsqueda… si todavía está corriendo, puede tomar unos minutos.',
+    contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio' : 'anuncios'} en esta búsqueda.`,
     alRetomar: (trabajo) => {
-      const buscado = (trabajo.business_type || '').startsWith(PREFIJO_DE_BUSQUEDA)
-        ? trabajo.business_type.slice(PREFIJO_DE_BUSQUEDA.length)
-        : '';
-      if (buscado) setConsulta(buscado);
-      if (trabajo.location) setPais(trabajo.location);
+      // El backend guarda la búsqueda como `AdSpy: <lo buscado>` y el país en `location`.
+      setElegida({
+        id: trabajo.id,
+        consulta: (trabajo.business_type || '').startsWith(PREFIJO_DE_BUSQUEDA)
+          ? trabajo.business_type.slice(PREFIJO_DE_BUSQUEDA.length)
+          : trabajo.business_type || '',
+        pais: trabajo.location || 'ALL',
+      });
     },
   });
+  const { seguir } = porNicho;
+
+  const elegir = useCallback(
+    (b) => {
+      setElegida(b);
+      seguir(b.id);
+    },
+    [seguir],
+  );
+
+  /* La lista de búsquedas, y el pedido que dejó el Espía con «Sacar contactos de estos
+     anunciantes →». Sólo las terminadas con anuncios se pueden elegir; las demás no tienen a quién
+     sacarle contactos. */
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const lista = await leerBusquedasDelEspia();
+      if (!vivo) return;
+      setBusquedas(lista);
+      const pedido = tomarPedido();
+      const deseada = pedido && (lista ?? []).find((b) => b.id === pedido);
+      if (deseada) elegir(deseada);
+    })();
+    const baja = alPedirScraper(async (id) => {
+      let b = (listaRef.current ?? []).find((x) => x.id === id);
+      if (!b) {
+        // Una búsqueda recién hecha en el Espía todavía no está en la lista que se leyó al montar.
+        const lista = await leerBusquedasDelEspia();
+        if (!vivo) return;
+        setBusquedas(lista);
+        b = (lista ?? []).find((x) => x.id === id);
+      }
+      if (!b) return;
+      tomarPedido();
+      elegir(b);
+    });
+    return () => {
+      vivo = false;
+      baja();
+    };
+  }, [elegir]);
+
+  const visibles = useMemo(() => {
+    const f = filtro.trim().toLowerCase();
+    return (busquedas ?? []).filter(
+      (b) => b.status === 'COMPLETED' && (b.anuncios ?? 0) > 0 && (f === '' || b.consulta.toLowerCase().includes(f)),
+    );
+  }, [busquedas, filtro]);
   const paginas = useTrabajo('facebook-pages');
 
   const anunciantes = useMemo(() => anunciantesDe(porNicho.leads), [porNicho.leads]);
@@ -461,21 +523,6 @@ function FormularioFacebook({ onLeads }) {
   const vigentes = paginas.leads.length > 0 ? paginas.leads : SIN_LEADS;
   useEffect(() => { onLeads(vigentes); }, [vigentes, onLeads]);
 
-  const buscarPorNicho = () => {
-    if (!consulta.trim()) {
-      porNicho.setFase('error');
-      porNicho.setMensaje('Escribí un nicho, marca o página a buscar.');
-      return;
-    }
-    /* El número de anuncios es el del paso 1 de siempre y no el del Espía de Tools. Ver
-       `ANUNCIOS_PARA_PROSPECTAR`: acá se cosechan anunciantes, no se miran patrones. */
-    porNicho.arrancar('ad-spy', {
-      query: consulta.trim(),
-      country: pais || 'ALL',
-      count: ANUNCIOS_PARA_PROSPECTAR,
-    });
-  };
-
   const sacarContactos = () => {
     if (marcados.length === 0) {
       paginas.setFase('error');
@@ -493,21 +540,59 @@ function FormularioFacebook({ onLeads }) {
 
   return (
     <div className="sc-form">
-      <div className="sc-paso-titulo">1 · Descubrir anunciantes</div>
+      <div className="sc-paso-titulo">1 · Elegí una búsqueda del Espía</div>
       <div className="sc-paso">
-        <BuscadorDeAnuncios
-          consulta={consulta}
-          onConsulta={setConsulta}
-          pais={pais}
-          onPais={setPais}
-          onBuscar={buscarPorNicho}
-          ocupado={porNicho.ocupado}
-          etiqueta="Buscar anuncios"
-        />
+        {busquedas === null ? (
+          <div className="sc-puente">No se pudieron leer las búsquedas del Espía. Probá de nuevo en un momento.</div>
+        ) : (busquedas ?? []).some((b) => b.status === 'COMPLETED' && (b.anuncios ?? 0) > 0) ? (
+          <>
+            <input
+              className="es-consulta"
+              type="text"
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value)}
+              placeholder="Filtrar búsquedas…"
+              aria-label="Filtrar las búsquedas del Espía"
+            />
+            <div className="es-historial-lista sc-busquedas">
+              {visibles.map((b) => {
+                const actual = elegida?.id === b.id;
+                return (
+                  <button
+                    type="button"
+                    key={b.id}
+                    className={`es-busqueda${actual ? ' actual' : ''}`}
+                    disabled={actual || porNicho.ocupado || paginas.ocupado}
+                    onClick={() => elegir(b)}
+                    aria-current={actual ? 'true' : undefined}
+                  >
+                    <span className="es-busqueda-punto" aria-hidden="true">{actual ? '●' : '○'}</span>
+                    <b>{b.consulta || 'Sin texto'}</b>
+                    <span className="es-busqueda-dato">
+                      {b.pais === 'ALL' ? 'Todos los países' : b.pais} · {b.anuncios} anuncios ·{' '}
+                      {new Date(b.creadoEl).toLocaleString('es-PE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </button>
+                );
+              })}
+              {visibles.length === 0 ? <div className="sc-puente">Ninguna búsqueda coincide con «{filtro}».</div> : null}
+            </div>
+          </>
+        ) : (
+          <div className="sc-puente">Todavía no hay búsquedas del Espía con anuncios.</div>
+        )}
         <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
         <div className="sc-subpista">
-          Escribí el nicho y el país: armamos la búsqueda en la Ad Library por vos y te mostramos <b>qué</b>{' '}
-          anuncia cada uno, y hace cuánto, antes de gastar el paso 2.
+          ¿No está la que buscás?{' '}
+          <button type="button" className="sc-enlace" onClick={() => irALaVista('tools', { pestana: 'espia' })}>
+            Espiá una nueva en «Espía a tus competidores» →
+          </button>{' '}
+          Para sacar contactos conviene la de 1.000 anuncios: trae más anunciantes.
         </div>
       </div>
 
@@ -515,7 +600,7 @@ function FormularioFacebook({ onLeads }) {
       <div className="sc-paso">
         {anunciantes.length === 0 ? (
           <div className="sc-puente">
-            Primero buscá anunciantes arriba.
+            Primero elegí una búsqueda arriba.
           </div>
         ) : (
           <>
@@ -575,7 +660,7 @@ function FormularioFacebook({ onLeads }) {
         )}
       </div>
 
-      {/* Las tarjetas de los anuncios: son lo que hace que elegir arriba tenga sentido. */}
+      {/* Las tarjetas de los anuncios de la búsqueda elegida: son lo que hace que elegir tenga sentido. */}
       {porNicho.leads.length > 0 ? (
         <div className="es-rejilla sc-anuncios">
           {porNicho.leads.slice(0, TARJETAS_A_LA_VISTA).map((a, i) => (
@@ -594,7 +679,10 @@ const PESTANIAS = [
 ];
 
 export default function Scraper({ nicho, onLeads }) {
-  const [pestania, setPestania] = useState('maps');
+  /* Si el Espía dejó un pedido («Sacar contactos de estos anunciantes →»), se arranca en Facebook. El
+     pedido lo toma el formulario de Facebook, no éste: acá sólo se mira si hay uno. */
+  const [pestania, setPestania] = useState(() => (hayPedido() ? 'facebook' : 'maps'));
+  useEffect(() => alPedirScraper(() => setPestania('facebook')), []);
   return (
     <div className="pr-tarjeta">
       <div className="pr-tarjeta-titulo">🎯 Extraer Leads</div>

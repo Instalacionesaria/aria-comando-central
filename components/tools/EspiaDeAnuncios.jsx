@@ -42,6 +42,8 @@ import {
 } from '@/lib/tools/scrapers';
 
 import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
+import { irALaVista } from '@/lib/aios/shell.js';
+import { mandarAlScraper } from '@/lib/tools/del-espia-al-scraper';
 
 /** Cada cuánto se le pregunta al motor si ya terminó. Cinco segundos, el número del hub. */
 const CADA_MS = 5000;
@@ -57,6 +59,8 @@ const cuando = (iso) =>
 export default function EspiaDeAnuncios({ puedeEditar }) {
   const [consulta, setConsulta] = useState('');
   const [pais, setPais] = useState('ALL');
+  /* 60 para mirar el nicho, 1.000 para sacarles contactos después en el Scraper (Kevin, 2026-10-03). */
+  const [cantidad, setCantidad] = useState(60);
   const [fase, setFase] = useState('quieto');
   const [mensaje, setMensaje] = useState('');
   const [anuncios, setAnuncios] = useState([]);
@@ -185,7 +189,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
     setAnalisis('');
     setErrorDelAnalisis('');
 
-    const r = await espiarAnuncios(texto, pais || 'ALL');
+    const r = await espiarAnuncios(texto, pais || 'ALL', cantidad);
     if (r.tipo !== 'trabajo') {
       setFase('error');
       setMensaje(r.mensaje);
@@ -231,6 +235,8 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
               onBuscar={espiar}
               ocupado={ocupado}
               etiqueta="Espiar"
+              cantidad={cantidad}
+              onCantidad={setCantidad}
             />
           ) : null}
 
@@ -319,6 +325,20 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
                 onClick={analizar}
               >
                 {analizando ? 'Analizando…' : 'Extraer hooks y ángulos con IA'}
+              </button>
+            ) : null}
+            {/* El Scraper de Facebook trabaja sobre las búsquedas del Espía: este botón lo abre con
+                ésta ya elegida, para sacarles los contactos a sus anunciantes. */}
+            {puedeEditar && trabajo && fase === 'listo' ? (
+              <button
+                type="button"
+                className="fd-btn sec"
+                onClick={() => {
+                  mandarAlScraper(trabajo);
+                  irALaVista('tools', { pestana: 'scraper' });
+                }}
+              >
+                Sacar contactos de estos anunciantes →
               </button>
             ) : null}
           </div>

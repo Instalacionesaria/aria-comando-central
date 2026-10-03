@@ -24,7 +24,24 @@ import { PAISES, TIPO_DE_ANUNCIO } from '@/lib/tools/scrapers';
  * porque el mensaje de error va a su propio aviso —y en Prospección ese aviso convive con el de la
  * columna de al lado—.
  */
-export function BuscadorDeAnuncios({ consulta, onConsulta, pais, onPais, onBuscar, ocupado, etiqueta }) {
+/* Cuántos anuncios trae una búsqueda (Kevin, 2026-10-03): 60 para mirar el nicho, 1.000 para sacar
+   contactos después en el Scraper de Facebook, que ahora trabaja sobre las búsquedas del Espía. */
+export const CANTIDADES_DE_ANUNCIOS = [
+  { valor: 60, etiqueta: '60 anuncios · para mirar el nicho' },
+  { valor: 1000, etiqueta: '1.000 anuncios · para sacar contactos' },
+];
+
+export function BuscadorDeAnuncios({
+  consulta,
+  onConsulta,
+  pais,
+  onPais,
+  onBuscar,
+  ocupado,
+  etiqueta,
+  cantidad,
+  onCantidad,
+}) {
   return (
     <div className="es-barra">
       <select className="es-select" value="meta" onChange={() => {}} aria-label="Dónde espiar">
@@ -56,6 +73,20 @@ export function BuscadorDeAnuncios({ consulta, onConsulta, pais, onPais, onBusca
         }}
         placeholder="Buscá por nicho, marca o página… (ej: agencias de marketing IA)"
       />
+      {onCantidad ? (
+        <select
+          className="es-select"
+          value={cantidad}
+          onChange={(e) => onCantidad(Number(e.target.value))}
+          aria-label="Cuántos anuncios traer"
+        >
+          {CANTIDADES_DE_ANUNCIOS.map((c) => (
+            <option key={c.valor} value={c.valor}>
+              {c.etiqueta}
+            </option>
+          ))}
+        </select>
+      ) : null}
       <button type="button" className="fd-btn" disabled={ocupado} onClick={onBuscar}>
         {ocupado ? 'Buscando…' : etiqueta}
       </button>

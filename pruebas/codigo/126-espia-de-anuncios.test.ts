@@ -228,7 +228,7 @@ test('los dos gastos son dos botones, y sin permiso no se dibujan', () => {
   /* Espiar cuesta una corrida de Apify; analizar cuesta tokens. Encadenarlos haría que cada búsqueda
      pagara las dos cosas. Y el `07` § 4: un control que no puede cumplir no se muestra. */
   const panel = codigo('components/tools/EspiaDeAnuncios.jsx');
-  assert.match(panel, /espiarAnuncios\(texto, pais \|\| 'ALL'\)/);
+  assert.match(panel, /espiarAnuncios\(texto, pais \|\| 'ALL', cantidad\)/);
   assert.match(panel, /analizarAnuncios\(trabajo\)/);
   assert.ok(
     (panel.match(/puedeEditar \?/g) || []).length >= 2,
