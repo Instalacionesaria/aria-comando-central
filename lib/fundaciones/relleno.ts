@@ -240,7 +240,7 @@ export async function proponerRespuestas(opciones: {
         {
           name: NOMBRE_DE_LA_HERRAMIENTA,
           description:
-            'Registrá los valores de los campos. Es la única forma de responder: no escribas texto ' +
+            'Registra los valores de los campos. Es la única forma de responder: no escribas texto ' +
             'suelto.',
           input_schema: esquemaDeCampos(h),
         },
@@ -270,6 +270,11 @@ export async function proponerRespuestas(opciones: {
   for (const campo of camposDe(h)) {
     const v = crudos[claveCorta(campo.id)];
     const texto = typeof v === 'string' ? v.trim() : '';
+    // Lo que se confirma en el chat no se propone: se deja vacío para que el agente lo pregunte.
+    if (campo.confirmarEnElChat) {
+      valores[claveCorta(campo.id)] = '';
+      continue;
+    }
     if (campo.tipo === 'lista' && campo.opciones && campo.opciones.length > 0) {
       valores[claveCorta(campo.id)] = campo.opciones.some((o) => o.valor === texto) ? texto : '';
       continue;

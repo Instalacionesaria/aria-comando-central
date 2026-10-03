@@ -244,11 +244,12 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.match(instruccionesDeRelleno(research, 'contexto'), /Cómo tratarla: Tiene que ser un lugar concreto/);
 
   // Sin ciudad, «Continuar al paso 2» NO arranca solo: la apertura la pide. Con ciudad, sí.
-  const sinCiudad = { niche: 'inmobiliarias', ltv: '$3,000+', experience: 'x' };
+  // Con el mercado contestado (obligatorio desde el 2026-10-03): lo que se mide acá es la ciudad.
+  const sinCiudad = { market: 'B2B — vende a empresas o dueños de negocio', niche: 'inmobiliarias', ltv: '$3,000+', experience: 'x' };
   assert.equal(faltanAntesDeArrancar(research, sinCiudad), true);
   assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Miraflores, Lima, Perú' }), false);
   assert.equal(faltanAntesDeArrancar(research, { ...sinCiudad, location: 'Arequipa, Perú' }), true, 'dos partes no alcanzan: el backend las rechaza');
-  assert.match(mensajeDeAperturaConPropuesta(research, sinCiudad, {}), /Me falta: .*¿En qué ciudad buscar negocios reales\? \(opcional\)/);
+  assert.match(mensajeDeAperturaConPropuesta(research, sinCiudad, {}), /Me falta: .*¿En qué ciudad buscar negocios reales\? \(si vendes a personas, solo el país\) \(opcional\)/);
   const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   assert.match(operaciones, /!faltanObligatorias\(h, chat\.answers\) &&\s*!faltanAntesDeArrancar\(h, chat\.answers\)/);
   // Pero sigue siendo opcional para GENERAR: si la persona dice «seguí sin ciudad», se genera.

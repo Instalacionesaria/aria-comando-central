@@ -25,7 +25,7 @@
 // haber llegado tarde.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { DONDE_ESTAN_LOS_LEADS, SIN_DATOS_REALES, esUbicacionBuscable } from './mercado.ts';
+import { DONDE_ESTAN_LOS_LEADS, SIN_DATOS_REALES, esB2C, esPaisReconocido, esUbicacionBuscable } from './mercado.ts';
 
 export type TipoCampo = 'texto' | 'numero' | 'area' | 'lista';
 
@@ -79,7 +79,14 @@ export interface Campo {
    * Colombia, …)» había quedado guardada de una conversación anterior, y la regla de «preguntar
    * antes de arrancar» solo miraba las vacías: pasó como respuesta y el Research arrancó igual.
    */
-  valeComoRespuesta?: (valor: string) => boolean;
+  valeComoRespuesta?: (valor: string, otra: (clave: string) => string) => boolean;
+  /**
+   * El agente puede DEDUCIR la respuesta, pero no anotarla sin que la persona la confirme. Lo que se
+   * deduce al abrir (`proponerRespuestas`) se descarta para estos campos, así que la apertura la deja
+   * en «Me falta» y el arranque automático no la da por contestada. Entró con el mercado del Research
+   * (B2B o B2C): una deducción equivocada ahí cambia los cinco pasos.
+   */
+  confirmarEnElChat?: true;
 }
 
 export interface FilaDeCampos {
@@ -207,23 +214,64 @@ const RESEARCH: Herramienta = {
   titulo: 'Investiga tu mercado',
   bajada: 'Cinco pasos encadenados hasta el segmento ganador: el que tu ICP hereda.',
   detalle:
+    'Sirve si vendes a empresas (B2B) o a personas (B2C): lo primero que pregunta es eso. ' +
     'Paso 1 encuentra 3-4 segmentos que cumplan tus criterios. Paso 2 saca sus dolores y ' +
     'destila el dolor crítico de cada uno. Paso 3 busca quién ya escaló resolviéndolo. Paso 4 ' +
     'propone el modelo de precios. Paso 5 los evalúa contra las cuatro preguntas y elige uno. ' +
     'Cada paso lee la salida del anterior, así que el orden no es decorativo.',
   filas: [
     {
-      columnas: 2,
+      columnas: 1,
       campos: [
-        { id: 'mr-niche', etiqueta: '¿Cuál es tu nicho?', tipo: 'texto', marcador: 'Ej: Salud, Bienes Raíces, Agencias Digitales' },
-        { id: 'mr-buyers', etiqueta: 'Compradores potenciales mínimos', tipo: 'texto', marcador: 'Ej: 50,000+', valorPorOmision: '50,000+' },
+        /* ── B2B O B2C (2026-10-03) ─────────────────────────────────────────────
+           El Research daba por hecho que se vende a empresas: el paso 1 lo decía con todas las
+           letras. Ahora es lo primero que se pregunta, y cambia los segmentos (paso 1), el modelo de
+           precios (paso 4) y la mirada al mercado real (en B2C solo el Espía de anuncios).
+
+           Los VALORES son los que entran al prompt y empiezan con «B2B» o «B2C», que es lo que mira
+           `esB2C` (como en el VSL). `confirmarEnElChat`: el agente la deduce de Tu ficha pero NO la
+           anota sin que la persona lo confirme — una deducción equivocada acá cambia los cinco pasos. */
+        {
+          id: 'mr-market',
+          etiqueta: '¿Le vendes a empresas o a personas?',
+          tipo: 'lista',
+          confirmarEnElChat: true,
+          opciones: [
+            { valor: 'B2B — vende a empresas o dueños de negocio', etiqueta: 'A empresas (B2B)' },
+            { valor: 'B2C — vende a personas (consumidor final)', etiqueta: 'A personas (B2C)' },
+          ],
+          guia:
+            'Dedúcela de lo que dice Tu ficha («A quién le vendes hoy», «Qué vendes») y CONFÍRMALA en ' +
+            'una línea antes de anotarla: «Por lo que me contaste, le vendes a empresas, ¿correcto?». ' +
+            'Si no está claro, pregúntala tal cual. No la anotes sin que la persona diga que sí.',
+        },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 'mr-ltv', etiqueta: 'LTV mínimo de SUS clientes', tipo: 'texto', marcador: 'Ej: $3,000+', valorPorOmision: '$3,000+' },
-        { id: 'mr-contract', etiqueta: 'Contrato inicial mínimo (opcional)', tipo: 'texto', marcador: 'Ej: $1,000+', opcional: true },
+        { id: 'mr-niche', etiqueta: '¿Cuál es tu nicho?', tipo: 'texto', marcador: 'Ej: Salud, Bienes Raíces, Agencias Digitales' },
+        { id: 'mr-buyers', etiqueta: '¿Cuántos compradores posibles debería haber, como mínimo?', tipo: 'texto', marcador: 'Ej: 50,000+', valorPorOmision: '50,000+' },
+      ],
+    },
+    {
+      columnas: 2,
+      campos: [
+        /* Era «LTV mínimo de SUS clientes». La clave sigue siendo `ltv`; lo que cambió es cómo se
+           pregunta, y la guía dice qué significa en cada mercado, igual que el paso 1. */
+        {
+          id: 'mr-ltv',
+          etiqueta: '¿Cuánto debería valer, como mínimo, un cliente a lo largo del tiempo?',
+          tipo: 'texto',
+          marcador: 'Ej: $3,000+ (lo que paga en total mientras sigue siendo cliente)',
+          valorPorOmision: '$3,000+',
+          guia:
+            'Explícala en palabras simples, sin decir «LTV». Si vende a EMPRESAS: es cuánto le paga en ' +
+            'total un cliente a los negocios a los que les va a vender (negocios con clientes valiosos ' +
+            'pueden pagar más). Si vende a PERSONAS: es cuánto le paga a él, en total, una persona ' +
+            'mientras sigue siendo su cliente.',
+        },
+        { id: 'mr-contract', etiqueta: '¿De cuánto debería ser, como mínimo, la primera compra o el primer contrato? (opcional)', tipo: 'texto', marcador: 'Ej: $1,000+', opcional: true },
       ],
     },
     {
@@ -244,7 +292,7 @@ const RESEARCH: Herramienta = {
           /* «Ciudad» y no «dónde»: con «dónde», el agente propuso «Latinoamérica (México, Colombia, …)»
              desde un onboarding que decía «Latinoamérica en general», y Maps no encontró el lugar.
              El scraper necesita un lugar concreto; la etiqueta lo pide y `esUbicacionAmplia` lo revisa. */
-          etiqueta: '¿En qué ciudad buscar negocios reales? (opcional)',
+          etiqueta: '¿En qué ciudad buscar negocios reales? (si vendes a personas, solo el país) (opcional)',
           tipo: 'texto',
           marcador: 'Ej: Cayma, Arequipa, Perú · Miraflores, Lima, Perú (zona, ciudad, país)',
           opcional: true,
@@ -252,7 +300,12 @@ const RESEARCH: Herramienta = {
           /* «sin datos reales» es la salida explícita: la persona decide seguir sin buscar negocios, y
              lo dice. Vale como respuesta para que el arranque no quede trabado, y `prepararMercado` la
              lee como «no quiso». */
-          valeComoRespuesta: (v) => SIN_DATOS_REALES.test(v) || esUbicacionBuscable(v),
+          /* En B2C no se buscan negocios (decisión del 2026-10-03): solo el Espía de anuncios, que
+             necesita el PAÍS. Por eso ahí vale un país solo; en B2B sigue exigiendo las tres partes. */
+          valeComoRespuesta: (v, otra) =>
+            SIN_DATOS_REALES.test(v) ||
+            esUbicacionBuscable(v) ||
+            (esB2C(otra('market')) && esPaisReconocido(v)),
           guia:
             'Tiene que ser un lugar concreto donde buscar negocios, con TRES partes separadas por coma: ' +
             'zona o distrito, ciudad, país (ej: «Cayma, Arequipa, Perú», «Polanco, Ciudad de México, ' +
@@ -270,7 +323,10 @@ const RESEARCH: Herramienta = {
             'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anota ' +
             'exactamente «sin datos reales» y sigue. Hasta que esta respuesta no sea una ciudad concreta ' +
             'o «sin datos reales», NO des por completas las respuestas ni pongas `listo`: pregúntala, ' +
-            'aunque la persona te pida generar.',
+            'aunque la persona te pida generar. SI VENDE A PERSONAS (B2C), todo lo anterior cambia: no se ' +
+            'buscan negocios ni se extraen leads; solo se mira, gratis, qué anuncios corren para ese ' +
+            'público en su país. Pregúntale solo el PAÍS (ej: «Perú») y anótalo así; no le hables de ' +
+            'leads ni de zonas.',
         },
       ],
     },

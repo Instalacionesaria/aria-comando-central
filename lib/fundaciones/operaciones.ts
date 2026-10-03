@@ -58,6 +58,8 @@ import {
   TOPE_DE_NEGOCIOS,
   SIN_DATOS_REALES,
   TOPE_DE_PAGINAS,
+  esB2C,
+  esPaisReconocido,
   esUbicacionAmplia,
   esUbicacionBuscable,
   paisDeUbicacion,
@@ -776,8 +778,18 @@ export async function conversarConElAgente(
 
 /** Lo que devuelve «preparar»: qué se buscaría, o por qué no se puede. */
 export type Preparacion =
-  | { preparado: true; rubro: string; ubicacion: string; pais: string; topeDeNegocios: number; topeDePaginas: number; anuncios: number }
-  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'ubicacion_incompleta' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
+  | {
+      preparado: true;
+      rubro: string;
+      ubicacion: string;
+      pais: string;
+      topeDeNegocios: number;
+      topeDePaginas: number;
+      anuncios: number;
+      /** B2C: solo el Espía de anuncios. Sin Google Maps ni páginas de Facebook, sin gasto de leads. */
+      soloAnuncios: boolean;
+    }
+  | { preparado: false; motivo: 'sin_ubicacion' | 'ubicacion_amplia' | 'ubicacion_incompleta' | 'pais_no_reconocido' | 'no_quiso' | 'sin_paso_1'; ubicacion?: string };
 
 /**
  * La CATEGORÍA del primer segmento, como se busca en Google Maps y en la biblioteca de anuncios.
@@ -788,18 +800,30 @@ export type Preparacion =
  * casi nada. En Tools funciona porque la persona escribe «inmobiliarias». Acá se le pide al modelo
  * lo mismo que escribiría una persona: la categoría, sin los adjetivos que la vuelven un segmento.
  */
-async function rubroDelSegmento(claveIa: string, paso1: string, nichoDeReserva: string): Promise<string> {
+async function rubroDelSegmento(
+  claveIa: string,
+  paso1: string,
+  nichoDeReserva: string,
+  /* En B2C el primer segmento son PERSONAS («mamás primerizas de Lima»): no es una categoría de
+     negocio. Lo que se busca en la biblioteca de anuncios es lo que se le anuncia a ese público. */
+  b2c = false,
+): Promise<string> {
   const salida = await generar({
     claveIa,
     tokens: 100,
-    prompt:
-      'Del siguiente análisis de segmentos de mercado, devolvé SOLO la CATEGORÍA DE NEGOCIO del PRIMER ' +
-      'segmento, tal como alguien la escribiría para buscar en Google Maps o en la biblioteca de anuncios ' +
-      'de Facebook: de 1 a 3 palabras, en español, en plural, sin comillas, sin punto y sin ninguna otra ' +
-      'palabra. SIN los adjetivos que acotan el segmento (nada de «franquiciadas», «premium», «boutique», ' +
-      '«de lujo», «medianas», «con sucursales»): «agencias inmobiliarias franquiciadas» se devuelve como ' +
-      '«inmobiliarias»; «clínicas estéticas premium de Lima» como «clínicas estéticas». Ejemplos de forma: ' +
-      `«clínicas dentales», «agencias de marketing», «talleres mecánicos».\n\n${paso1.slice(0, 6_000)}`,
+    prompt: b2c
+      ? 'Del siguiente análisis de segmentos de PERSONAS, devuelve SOLO el tipo de producto o servicio que ' +
+        'se le anuncia al PRIMER segmento, tal como alguien lo escribiría para buscar en la biblioteca de ' +
+        'anuncios de Facebook: de 1 a 3 palabras, en español, sin comillas, sin punto y sin ninguna otra ' +
+        'palabra. Ejemplos de forma: «cursos de inglés», «coaching de pareja», «planes de nutrición».' +
+        `\n\n${paso1.slice(0, 6_000)}`
+      : 'Del siguiente análisis de segmentos de mercado, devuelve SOLO la CATEGORÍA DE NEGOCIO del PRIMER ' +
+        'segmento, tal como alguien la escribiría para buscar en Google Maps o en la biblioteca de anuncios ' +
+        'de Facebook: de 1 a 3 palabras, en español, en plural, sin comillas, sin punto y sin ninguna otra ' +
+        'palabra. SIN los adjetivos que acotan el segmento (nada de «franquiciadas», «premium», «boutique», ' +
+        '«de lujo», «medianas», «con sucursales»): «agencias inmobiliarias franquiciadas» se devuelve como ' +
+        '«inmobiliarias»; «clínicas estéticas premium de Lima» como «clínicas estéticas». Ejemplos de forma: ' +
+        `«clínicas dentales», «agencias de marketing», «talleres mecánicos».\n\n${paso1.slice(0, 6_000)}`,
   });
   if (salida.tipo !== 'datos') return nichoDeReserva;
   const linea = salida.datos.texto.split('\n').map((l) => l.trim()).find((l) => l !== '') ?? '';
@@ -819,6 +843,31 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
   // La persona eligió seguir sin buscar negocios reales, y lo dijo en el chat.
   if (SIN_DATOS_REALES.test(ubicacion)) {
     return ok({ preparado: false, motivo: 'no_quiso', ubicacion } satisfies Preparacion);
+  }
+
+  /* ── B2C: SOLO EL ESPÍA (2026-10-03) ─────────────────────────────────────────
+     Google Maps busca negocios, y un negocio que vende a personas no tiene a sus compradores en
+     Maps: traería competidores a «Mis Leads», que no son clientes posibles. Así que en B2C no corren
+     Maps ni las páginas de Facebook (las dos que gastan saldo de leads): solo el Espía, gratis, que
+     muestra qué se le anuncia a ese público. Basta el país. */
+  if (esB2C(estado.datos.researchInputs['market'])) {
+    if (!esPaisReconocido(ubicacion) && !esUbicacionBuscable(ubicacion)) {
+      return ok({ preparado: false, motivo: 'pais_no_reconocido', ubicacion } satisfies Preparacion);
+    }
+    const paso1b = (estado.datos.researchSalidas[0] ?? '').trim();
+    if (paso1b === '') return ok({ preparado: false, motivo: 'sin_paso_1' } satisfies Preparacion);
+    const nichoB = (estado.datos.researchInputs['niche'] ?? '').trim();
+    const rubroB = await rubroDelSegmento(acceso.claveIa, paso1b, nichoB !== '' && nichoB !== SIN_ESPECIFICAR ? nichoB : 'productos', true);
+    return ok({
+      preparado: true,
+      rubro: rubroB,
+      ubicacion,
+      pais: paisDeUbicacion(ubicacion),
+      topeDeNegocios: 0,
+      topeDePaginas: 0,
+      anuncios: ANUNCIOS_DE_LA_MIRADA,
+      soloAnuncios: true,
+    } satisfies Preparacion);
   }
   // Una región no es un lugar para Maps (`LOCATION NOT FOUND`). Se dice ANTES de gastar. Ver `mercado.ts`.
   if (esUbicacionAmplia(ubicacion)) {
@@ -843,6 +892,7 @@ export async function prepararMercado(acceso: Acceso): Promise<Response> {
     topeDeNegocios: TOPE_DE_NEGOCIOS,
     topeDePaginas: TOPE_DE_PAGINAS,
     anuncios: ANUNCIOS_DE_LA_MIRADA,
+    soloAnuncios: false,
   } satisfies Preparacion);
 }
 

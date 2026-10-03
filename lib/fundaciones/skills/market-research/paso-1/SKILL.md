@@ -12,6 +12,17 @@ SIN PREÁMBULO CONVERSACIONAL: empieza tu respuesta DIRECTO en el contenido del 
 CONTEXTO DEL NEGOCIO DEL ALUMNO (de su ficha — lee el nicho y los criterios de abajo a la luz de esto: los segmentos tienen que ser alcanzables para ESTE negocio, con ESTE servicio y ESTA experiencia, no para uno genérico):
 {{_profileContext}}
 {{/_profileContext}}
+{{#_isB2C}}
+Estoy buscando el segmento de mercado perfecto para venderle mi solución directamente a PERSONAS (consumidor final, B2C) dentro del nicho: {{niche}}.
+
+Quiero que haya más de {{buyers}} compradores potenciales a los que pueda apuntar.
+Quiero que una persona de ese segmento me pague, en total, más de {{ltv}} mientras sigue siendo mi cliente.
+{{#contract}}Quiero que la primera compra sea mayor a {{contract}}.{{/contract}}
+Quiero que sean fáciles de alcanzar online con anuncios y contenido.
+
+Dame 3-4 segmentos de personas específicos dentro de este nicho que cumplan estos criterios. Para cada segmento explica: quiénes son, qué los mueve a comprar, por qué pueden pagar ese valor, por qué está creciendo, y dónde se los alcanza online (plataformas, comunidades, tipo de contenido). Sé específico y concreto, no genérico.
+{{/_isB2C}}
+{{^_isB2C}}
 Estoy buscando el segmento de mercado perfecto para venderle una solución/sistema de crecimiento dentro del nicho: {{niche}}.
 
 Quiero que le vendan a empresas (B2B) y que tengan más de {{buyers}} compradores potenciales a los que pueda apuntar.
@@ -20,5 +31,6 @@ Quiero que sus clientes tengan un LTV mayor a {{ltv}}.
 Quiero que ellos y sus clientes sean fáciles de encontrar y contactar online mediante outbound.
 
 Dame 3-4 segmentos de mercado específicos dentro de este nicho que cumplan estos criterios. Para cada segmento explica: a quién venden, por qué su LTV es alto, por qué está creciendo, y por qué son fáciles de encontrar/contactar online. Sé específico y concreto, no genérico.
+{{/_isB2C}}
 
 REGLA DE FORMATO (OBLIGATORIA): empieza DIRECTAMENTE con el contenido del entregable — sin preámbulos ni transiciones conversacionales ("Ahora tengo toda la información...", "Aquí va...", "Perfecto...") y sin cierres. Markdown limpio: títulos con # y ##, tablas solo cuando aporten, negritas para conceptos clave.

@@ -18,6 +18,11 @@ Tomando en cuenta los segmentos, dolores críticos y casos de referencia:
 
 {{_prev.2}}
 
+{{#_isB2C}}
+¿Cuál sería el mejor modelo de precios para esta solución en cada segmento, sabiendo que le vendemos a PERSONAS (consumidor final)? Evalúa pago único, programa por etapas y suscripción, y recomienda uno por segmento con su precio, cómo se paga (contado, cuotas) y qué se le ofrece después para que siga comprando. Da el desglose ideal para cada segmento.
+{{/_isB2C}}
+{{^_isB2C}}
 ¿Cuál sería el mejor modelo de precios para esta solución en cada segmento, sabiendo que queremos construir y entregar algo tangible por adelantado (setup/implementación) y retener a estas empresas generando ingresos recurrentes (retainer/mantenimiento)? Da el desglose ideal de precio inicial + recurrente para cada segmento.
+{{/_isB2C}}
 
 REGLA DE FORMATO (OBLIGATORIA): empieza DIRECTAMENTE con el contenido del entregable — sin preámbulos ni transiciones conversacionales ("Ahora tengo toda la información...", "Aquí va...", "Perfecto...") y sin cierres. Markdown limpio: títulos con # y ##, tablas solo cuando aporten, negritas para conceptos clave.

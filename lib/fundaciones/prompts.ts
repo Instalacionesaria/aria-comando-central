@@ -25,7 +25,7 @@ import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
 import { esFichaDeNegocio } from './documento.ts';
 import { fuentes } from './herencia.ts';
-import { contextoDeMercado } from './mercado.ts';
+import { contextoDeMercado, esB2C } from './mercado.ts';
 import { contextoDeOnboarding } from './onboarding.ts';
 import { interpolar, leerPlantilla, type DatosDePlantilla } from './plantillas.ts';
 
@@ -811,6 +811,8 @@ export function armarPromptResearch(
     contract: contrato && contrato !== SIN_ESPECIFICAR ? contrato : '',
     experience: inputs['experience'] ? inputs['experience'] : SIN_ESPECIFICAR,
     _segmentoElegido: segmentoElegido && segmentoElegido.trim() !== '' ? segmentoElegido.trim() : null,
+    // B2B o B2C: cambia los segmentos (paso 1) y el modelo de precios (paso 4). Ver `esB2C`.
+    _isB2C: esB2C(inputs['market']),
     _prev: previas,
   });
 }

@@ -137,8 +137,9 @@ test('los desplegables van como `enum`, con sus valores y con el vacío', () => 
       );
     }
   }
-  // La comprobación de que esto no pasó en vacío: el VSL tiene cuatro desplegables.
-  assert.equal(listas, 4, 'no se midió ningún desplegable: la afirmación de arriba no probó nada');
+  // La comprobación de que esto no pasó en vacío: el VSL tiene cuatro desplegables, y el Research uno
+  // (a empresas o a personas, desde el 2026-10-03).
+  assert.equal(listas, 5, 'no se midió ningún desplegable: la afirmación de arriba no probó nada');
 });
 
 test('las instrucciones llevan la etiqueta de cada campo, y no una redacción propia', () => {
@@ -431,6 +432,7 @@ test('una clave inventada no entra, y una respuesta que no vino queda vacía', a
     'experience',
     'location', // el sexto criterio, el de la mirada al mercado real
     'ltv',
+    'market', // a empresas o a personas (2026-10-03)
     'niche',
   ]);
   assert.equal(salida.datos.respuestas['niche'], 'Agencias de Marketing');

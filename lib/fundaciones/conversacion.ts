@@ -305,7 +305,7 @@ export function instruccionesDeEntrevista(
       if (!v || v.trim() === '') return `  ${claveCorta(c.id)}: (todavía no)`;
       /* Un valor guardado que NO sirve se marca: sin esto el agente lo daba por respondido y arrancaba
          con «Latinoamérica (México, Colombia, …)» como ciudad. */
-      if (c.valeComoRespuesta && !c.valeComoRespuesta(v)) {
+      if (c.valeComoRespuesta && !c.valeComoRespuesta(v, (k) => respuestas[k] ?? '')) {
         return `  ${claveCorta(c.id)}: ${v} ← NO VALE como respuesta (ver CÓMO TRATARLA). Vuelve a preguntarla antes de dar por completas las respuestas.`;
       }
       return `  ${claveCorta(c.id)}: ${v}`;
@@ -436,7 +436,8 @@ export function mensajeDeAperturaConPropuesta(
   const faltan: string[] = [];
   for (const c of camposDe(h)) {
     const k = claveCorta(c.id);
-    const sirve = (v: string) => v !== '' && (!c.valeComoRespuesta || c.valeComoRespuesta(v));
+    const otra = (clave: string) => guardadas[clave] ?? heredados[clave]?.valor ?? propuestas[clave] ?? '';
+    const sirve = (v: string) => v !== '' && (!c.valeComoRespuesta || c.valeComoRespuesta(v, otra));
     const g0 = (guardadas[k] ?? '').trim();
     const p0 = (propuestas[k] ?? '').trim();
     const her = heredados[k];

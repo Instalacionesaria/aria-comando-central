@@ -204,7 +204,8 @@ test('las claves de persistencia son las que ya escribió el hub', () => {
     0: ['biz', 'niche', 'service', 'price', 'result', 'experience'],
     // Las cinco del hub más `location`, que NO es del hub: es el sexto criterio que la mirada al
     // mercado real necesita (2026-09-10). El hub la ve en blanco y no le cambia nada.
-    1: ['niche', 'buyers', 'ltv', 'contract', 'experience', 'location'],
+    // Y `market` (2026-10-03): a empresas o a personas, que cambia los pasos 1 y 4 y la mirada.
+    1: ['market', 'niche', 'buyers', 'ltv', 'contract', 'experience', 'location'],
     3: ['niche', 'income', 'age', 'country', 'occupation', 'pains', 'desires', 'tried'],
     2: ['current', 'alternatives', 'notworking'],
     4: ['name', 'price', 'result', 'format', 'why', 'when', 'includes', 'urgency'],

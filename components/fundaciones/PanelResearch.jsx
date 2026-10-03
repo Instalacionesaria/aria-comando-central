@@ -310,6 +310,36 @@ export default function PanelResearch({
     }
     const { rubro, pais, topeDeNegocios, topeDePaginas, anuncios } = prep.datos;
 
+    /* ── B2C: SOLO EL ESPÍA (2026-10-03) ───────────────────────────────────────
+       Un negocio que vende a personas no tiene a sus compradores en Google Maps: Maps y las páginas
+       de Facebook traerían competidores a «Mis Leads». Queda solo el Espía, que muestra qué se le
+       anuncia a ese público y NO gasta saldo — por eso aquí no hay confirmación de gasto. */
+    if (prep.datos.soloAnuncios) {
+      setMirada({ fase: 'buscando', soloAnuncios: true, rubro, ubicacion, espia: { estado: 'arrancando' } });
+      const espiaB2C = await iniciarScraping('ad-spy', { query: rubro, country: pais || 'ALL', count: anuncios });
+      if (espiaB2C.tipo !== 'trabajo') {
+        setMirada({ fase: 'omitida', motivo: 'sin_espia', detalle: espiaB2C.mensaje, rubro, ubicacion });
+        return;
+      }
+      setMirada({ fase: 'buscando', soloAnuncios: true, rubro, ubicacion, espia: { id: espiaB2C.id, estado: 'corriendo' } });
+      const st = await esperarTrabajo(espiaB2C.id);
+      if (st !== 'COMPLETED') {
+        setMirada({ fase: 'omitida', motivo: 'sin_espia', rubro, ubicacion });
+        return;
+      }
+      const resumen = await pedir(rutaMercado, {
+        metodo: 'POST',
+        cuerpo: { rubro, ubicacion, trabajoMaps: null, trabajoEspia: espiaB2C.id, trabajoPaginas: null },
+      });
+      if (resumen.tipo !== 'datos') {
+        setMirada({ fase: 'omitida', motivo: 'sin_espia', rubro, ubicacion });
+        return;
+      }
+      setMirada({ fase: 'lista', mercado: resumen.datos });
+      onEstadoCambiado();
+      return;
+    }
+
     // 2 · La confirmación, una sola vez. Con el saldo a la vista: la persona decide con el número.
     const saldo = await leerSaldo();
     const disponibles = saldo.tipo === 'datos' && saldo.saldo.estado !== 'sin_limite' ? saldo.saldo.disponibles : null;
@@ -589,6 +619,21 @@ export default function PanelResearch({
                         placeholder={campo.marcador}
                         onChange={(e) => ponerCampo(campo.id, e.target.value)}
                       />
+                    ) : campo.tipo === 'lista' ? (
+                      /* A empresas o a personas: sus valores son los que entran al prompt (ver
+                         `esB2C`), así que se eligen, no se escriben. */
+                      <select
+                        id={campo.id}
+                        value={valores[campo.id] || ''}
+                        onChange={(e) => ponerCampo(campo.id, e.target.value)}
+                      >
+                        <option value="">Elige una opción…</option>
+                        {campo.opciones?.map((o) => (
+                          <option key={o.valor} value={o.valor}>
+                            {o.etiqueta}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         id={campo.id}
@@ -992,10 +1037,17 @@ function Mirada({ mirada, onDecidir }) {
     return (
       <div className="fd-mirada" role="status" aria-live="polite">
         {titulo}
-        {renglon('Google Maps', `hasta ${TOPE_MAPS} negocios`, mirada.maps)}
+        {/* En B2C solo corre el Espía: los otros dos renglones no se dibujan. */}
+        {mirada.soloAnuncios ? null : renglon('Google Maps', `hasta ${TOPE_MAPS} negocios`, mirada.maps)}
         {renglon('Espía a tus competidores', 'qué publicidad corre el segmento', mirada.espia)}
-        {renglon('Páginas de Facebook', `contactos de hasta ${TOPE_PAGINAS} anunciantes`, mirada.paginas || { estado: 'esperando' })}
-        <small className="fd-mirada-nota">Tarda unos minutos. El paso 2 arranca cuando terminen los tres.</small>
+        {mirada.soloAnuncios
+          ? null
+          : renglon('Páginas de Facebook', `contactos de hasta ${TOPE_PAGINAS} anunciantes`, mirada.paginas || { estado: 'esperando' })}
+        <small className="fd-mirada-nota">
+          {mirada.soloAnuncios
+            ? 'Vendes a personas: solo miramos qué anuncios corren para ese público, sin gastar leads. El paso 2 arranca cuando termine.'
+            : 'Tarda unos minutos. El paso 2 arranca cuando terminen los tres.'}
+        </small>
       </div>
     );
   }
@@ -1053,6 +1105,8 @@ function Mirada({ mirada, onDecidir }) {
     ubicacion_incompleta: `«${mirada.ubicacion || 'la ubicación'}» necesita tres partes: zona o distrito, ciudad y país, por ejemplo «Cayma, Arequipa, Perú». Es lo que exige el buscador de negocios. El Research sigue igual; para mirar el mercado real, completa «¿En qué ciudad buscar negocios reales?» y regenera el paso 1.`,
     ubicacion_amplia: `«${mirada.ubicacion || 'la ubicación'}» es una región, y Google Maps necesita una ciudad, por ejemplo «Lima, Perú». El Research sigue igual; para mirar el mercado real, cambia «¿En qué ciudad buscar negocios reales?» y regenera el paso 1.`,
     sin_preparar: 'No se pudo preparar la búsqueda. El Research sigue con lo que el modelo sabe.',
+    pais_no_reconocido: `«${mirada.ubicacion || 'la ubicación'}» no es un país que reconozca la biblioteca de anuncios. El Research sigue igual; para mirar los anuncios de tu mercado, escribe solo el país, por ejemplo «Perú», y regenera el paso 1.`,
+    sin_espia: `No se pudo mirar qué anuncios corren para ese público${mirada.detalle ? `: ${mirada.detalle}` : ''}. El Research sigue con lo que el modelo sabe.`,
     sin_resumen: `Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en ${DONDE_ESTAN_LOS_LEADS}.`,
   };
   return (

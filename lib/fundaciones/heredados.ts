@@ -26,8 +26,8 @@
 import { SIN_ESPECIFICAR, camposDe, claveCorta } from './campos.ts';
 import { leerDocumento, segmentoGanador } from './documento.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
-import { esUbicacionBuscable } from './mercado.ts';
-import type { Herramienta } from './herramientas.ts';
+import { esB2C, esUbicacionBuscable } from './mercado.ts';
+import { herramienta, type Herramienta } from './herramientas.ts';
 
 export interface Heredado {
   valor: string;
@@ -73,6 +73,20 @@ const deseoDelIcp: Regla = (estado) => {
   return valor ? { valor, fuente: 'tu ICP', campoDeLaFicha: null } : null;
 };
 
+/** El mercado del Research (B2B o B2C), traducido a la opción equivalente del VSL de Tools. */
+const mercadoDelResearch: Regla = (estado) => {
+  const mercado = (estado.researchInputs['market'] ?? '').trim();
+  if (mercado === '' || mercado === SIN_ESPECIFICAR) return null;
+  /* Los valores del VSL son otros textos —encienden ramas de su framework por el prefijo (`_isB2C`)—,
+     así que se copia la OPCIÓN del VSL que empieza igual, nunca el texto del Research. */
+  const prefijo = esB2C(mercado) ? 'B2C' : 'B2B';
+  const opcion = herramienta(5)
+    ?.filas.flatMap((f) => f.campos)
+    .find((c) => c.id === 't6-market')
+    ?.opciones?.find((o) => o.valor.startsWith(prefijo));
+  return opcion ? { valor: opcion.valor, fuente: 'tu Research', campoDeLaFicha: null } : null;
+};
+
 /**
  * Qué campo hereda de dónde. Por identificador de campo: el catálogo de `herramientas.ts` sigue
  * siendo la única lista de preguntas, y esto solo dice cuáles de ellas ya tienen respuesta.
@@ -89,6 +103,8 @@ export const HEREDA: Readonly<Record<string, Regla>> = {
   't5-result': deseoDelIcp,
   // Tu precio ← Tu ficha
   't11-pastresults': deLaFicha('result'),
+  // El VSL (Tools) ← Research: a empresas o a personas se pregunta una sola vez.
+  't6-market': mercadoDelResearch,
 };
 
 /** Los datos heredados de una herramienta, con CLAVES CORTAS (como las respuestas del agente). */

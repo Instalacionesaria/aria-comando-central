@@ -105,7 +105,13 @@ export function presente(valores: Record<string, string>, id: string): boolean {
  */
 export function respondido(campo: Campo, valores: Record<string, string>): boolean {
   if (!presente(valores, campo.id)) return false;
-  return campo.valeComoRespuesta ? campo.valeComoRespuesta(valor(valores, campo.id)) : true;
+  if (!campo.valeComoRespuesta) return true;
+  // Las otras respuestas, por clave corta: la ciudad del Research vale distinto según el mercado.
+  const otra = (clave: string): string => {
+    const id = Object.keys(valores).find((x) => claveCorta(x) === clave);
+    return id ? (valores[id] ?? '') : '';
+  };
+  return campo.valeComoRespuesta(valor(valores, campo.id), otra);
 }
 
 /**

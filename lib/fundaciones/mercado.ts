@@ -150,6 +150,20 @@ export function paisDeUbicacion(ubicacion: string): string {
   return PAIS_POR_NOMBRE[ultima] ?? 'ALL';
 }
 
+/**
+ * Si el Research es de un negocio que vende a PERSONAS. El valor del campo `mr-market` empieza con
+ * «B2B» o «B2C» —es lo que entra al prompt—, y se mira el principio como en el VSL (`_isB2C`). Vacío o
+ * desconocido es B2B: es como funcionó el Research hasta el 2026-10-03.
+ */
+export function esB2C(mercado: string | null | undefined): boolean {
+  return (mercado ?? '').trim().toUpperCase().startsWith('B2C');
+}
+
+/** Si una ubicación es un país que la biblioteca de anuncios reconoce («Perú», «México»…). */
+export function esPaisReconocido(ubicacion: string): boolean {
+  return !esUbicacionAmplia(ubicacion) && paisDeUbicacion(ubicacion) !== 'ALL';
+}
+
 const PAIS_POR_NOMBRE: Readonly<Record<string, string>> = {
   peru: 'PE',
   mexico: 'MX',
