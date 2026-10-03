@@ -547,7 +547,7 @@ function FormularioFacebook({ onLeads }) {
         ) : (busquedas ?? []).some((b) => b.status === 'COMPLETED' && (b.anuncios ?? 0) > 0) ? (
           <>
             <input
-              className="es-consulta"
+              className="es-consulta sc-filtro"
               type="text"
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}

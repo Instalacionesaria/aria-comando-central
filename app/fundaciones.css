@@ -1629,6 +1629,14 @@
   color: var(--txt-faint);
 }
 
+/* El filtro del paso 1 reusa el aspecto de `.es-consulta`, pero NO su `flex: 1 1 260px`: ese valor es
+   para la barra del Espía, que es una fila; acá el filtro vive en una columna y el mismo valor lo
+   estiraba a 260 px de alto. */
+.sc-filtro {
+  flex: 0 0 auto;
+  max-width: 360px;
+}
+
 /* El paso 1 del Scraper de Facebook: la misma lista que el historial del Espía, con tope de alto. */
 .sc-busquedas {
   max-height: 260px;
