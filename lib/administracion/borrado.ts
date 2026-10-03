@@ -153,6 +153,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* Los incidentes de la IA de la empresa (`067`). Lo que hay detrás es el registro de cada fallo, que
      no se vuelve a generar: borrarlo es perder la historia de lo que le falló a esa cuenta. */
   incidentes_org_id_fkey: 'tiene incidentes de la IA registrados',
+  /* El análisis con IA de las búsquedas del Espía (`068`). Se pagó con la llave de la empresa y no se
+     vuelve a generar sin volver a pagarlo. La de la persona no está: es `on delete set null`. */
+  analisis_del_espia_org_id_fkey: 'tiene análisis del Espía a tus competidores guardados',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

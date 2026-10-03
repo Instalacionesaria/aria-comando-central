@@ -27,6 +27,8 @@ import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import { generar } from '../fundaciones/generacion.ts';
 import { rechazoDelModelo } from '../fundaciones/fallo-del-modelo.ts';
 import { pedirExterno } from '../http/cliente.ts';
+import { conOrganizacion } from '../datos/contexto.ts';
+import { guardarAnalisis } from './historial-del-espia.ts';
 
 /**
  * Cuántos anuncios entran al prompt, y cuánto de cada uno.
@@ -130,7 +132,7 @@ async function anunciosDelTrabajo(
  */
 export async function analizarLosAnuncios(
   peticion: Request,
-  opciones: { claveIa: string; orgId: string; backend: string },
+  opciones: { claveIa: string; orgId: string; backend: string; usuarioId?: string | null },
 ): Promise<Response> {
   let cuerpo: { trabajo?: unknown };
   try {
@@ -163,6 +165,16 @@ export async function analizarLosAnuncios(
   if (salida.tipo !== 'datos') {
     // Nombrado como en Fundaciones: situación, referencia y una línea de registro.
     return rechazoDelModelo(salida, { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}` });
+  }
+
+  /* Se GUARDA, para que cambiar de pestaña no obligue a volver a pagarlo (Jorge, 2026-10-03). Si
+     guardar falla, el análisis igual se entrega: ya se pagó, y perderlo en pantalla sería peor. */
+  try {
+    await conOrganizacion(opciones.orgId, () =>
+      guardarAnalisis(trabajo, { texto: salida.datos.texto, cortado: salida.datos.cortado }, opciones.usuarioId ?? null),
+    );
+  } catch (e) {
+    console.error(`espia: no se pudo guardar el análisis de ${trabajo} · ${e instanceof Error ? e.message : 'desconocido'}`);
   }
 
   return ok({

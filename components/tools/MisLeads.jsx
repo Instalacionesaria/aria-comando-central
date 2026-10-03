@@ -45,7 +45,7 @@ const DE_DONDE_LLEGAN = `Los que extraigas en ${lugarDe('tools', 'scraper') ?? '
  * Las fuentes, como BOTONES y no como desplegable.
  *
  * Un `select` esconde las opciones hasta que lo abrís: no se ve que hay filtros ni cuáles son.
- * Con cinco opciones fijas, los botones dicen de un vistazo qué se puede filtrar y cuál está
+ * Con cuatro opciones fijas, los botones dicen de un vistazo qué se puede filtrar y cuál está
  * puesto — que es como estaba en el hub, y por eso Kevin lo pidió así.
  */
 const FILTROS = [
@@ -53,7 +53,9 @@ const FILTROS = [
   { valor: 'maps', etiqueta: 'Maps' },
   { valor: 'linkedin', etiqueta: 'LinkedIn' },
   { valor: 'facebook', etiqueta: 'Facebook' },
-  { valor: 'ad-spy', etiqueta: 'Espía' },
+  /* Hubo un «Espía» acá, y salía siempre vacío: el Espía trae ANUNCIOS, no contactos, y nunca guardó
+     una fila en esta tabla. Se quitó el 2026-10-03; las búsquedas del Espía tienen su historial en su
+     propia pantalla. */
 ];
 
 /**

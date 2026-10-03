@@ -57,5 +57,7 @@ export async function POST(peticion: Request): Promise<Response> {
     claveIa: llave.claveIa,
     orgId: contexto.orgEfectiva,
     backend: url,
+    usuarioId: contexto.usuarioId,
   });
 }
+

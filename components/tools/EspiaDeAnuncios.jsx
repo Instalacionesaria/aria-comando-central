@@ -36,6 +36,8 @@ import {
   analizarAnuncios,
   consultarTrabajo,
   espiarAnuncios,
+  leerAnalisisDelEspia,
+  leerBusquedasDelEspia,
   leerTrabajosEnVuelo,
 } from '@/lib/tools/scrapers';
 
@@ -43,6 +45,14 @@ import { BuscadorDeAnuncios, TarjetaDeAnuncio } from './anuncios';
 
 /** Cada cuánto se le pregunta al motor si ya terminó. Cinco segundos, el número del hub. */
 const CADA_MS = 5000;
+
+/** Cuántas búsquedas anteriores se ven sin desplegar la lista. */
+const A_LA_VISTA = 3;
+
+const NOMBRE_DE_PAIS = { ALL: 'Todos los países' };
+
+const cuando = (iso) =>
+  new Date(iso).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 export default function EspiaDeAnuncios({ puedeEditar }) {
   const [consulta, setConsulta] = useState('');
@@ -55,6 +65,24 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
   const [analizando, setAnalizando] = useState(false);
   const [analisis, setAnalisis] = useState('');
   const [errorDelAnalisis, setErrorDelAnalisis] = useState('');
+
+  /* ── EL HISTORIAL ────────────────────────────────────────────────────────
+     Jorge, 2026-10-03: después de espiar cambiaba de pestaña y los resultados desaparecían. Estaban
+     guardados en el trabajo del scraper, pero la pantalla sólo retomaba lo que seguía corriendo. Ahora
+     lista las búsquedas, abre la última al volver, y cada una trae su análisis guardado. `null` es
+     «no se pudo leer», distinto de una lista vacía. */
+  const [busquedas, setBusquedas] = useState([]);
+  const [verTodas, setVerTodas] = useState(false);
+
+  const cargarHistorial = useCallback(async () => {
+    const lista = await leerBusquedasDelEspia();
+    setBusquedas(lista);
+    return lista;
+  }, []);
+  /* El sondeo vive en un `useCallback` sin dependencias; para que al terminar refresque la lista sin
+     volver a crearse, la llama por una referencia. */
+  const alTerminar = useRef(null);
+  alTerminar.current = cargarHistorial;
 
   const temporizador = useRef(null);
   useEffect(() => () => { if (temporizador.current) clearTimeout(temporizador.current); }, []);
@@ -77,6 +105,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
         setMensaje(
           `Listo. ${lista.length} ${lista.length === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
         );
+        alTerminar.current?.();
         return;
       }
       if (d.status === 'FAILED' || d.status === 'CANCELLED') {
@@ -100,7 +129,14 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
       const enVuelo = await leerTrabajosEnVuelo();
       if (!vivo) return;
       const mio = enVuelo.find((t) => t.fuente === 'ad-spy');
-      if (!mio) return;
+      const historial = await alTerminar.current?.();
+      if (!vivo) return;
+      if (!mio) {
+        // Nada corriendo: se abre la última búsqueda que terminó con anuncios, con su análisis.
+        const ultima = (historial ?? []).find((b) => b.status === 'COMPLETED' && (b.anuncios ?? 0) > 0);
+        if (ultima) abrirRef.current?.(ultima);
+        return;
+      }
       // El backend guarda la búsqueda como `AdSpy: <lo que se buscó>`, así que se puede recuperar.
       const buscado = (mio.business_type || '').startsWith(PREFIJO_DE_BUSQUEDA)
         ? mio.business_type.slice(PREFIJO_DE_BUSQUEDA.length)
@@ -113,6 +149,27 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
   }, [sondear]);
 
   const ocupado = fase === 'arrancando' || fase === 'sondeando';
+
+  /* Reabrir una búsqueda: los anuncios por el mismo sondeo (si ya terminó, vuelve en la primera
+     consulta, sin pagar Apify otra vez) y el análisis guardado, si lo hay. */
+  const abrir = useCallback(
+    async (b) => {
+      if (temporizador.current) clearTimeout(temporizador.current);
+      setConsulta(b.consulta);
+      setPais(b.pais || 'ALL');
+      setAnuncios([]);
+      setAnalisis('');
+      setErrorDelAnalisis('');
+      sondear(b.id);
+      if (b.tieneAnalisis) {
+        const guardado = await leerAnalisisDelEspia(b.id);
+        if (guardado) setAnalisis(guardado.texto);
+      }
+    },
+    [sondear],
+  );
+  const abrirRef = useRef(null);
+  abrirRef.current = abrir;
 
   const espiar = async () => {
     const texto = consulta.trim();
@@ -135,6 +192,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
       return;
     }
     sondear(r.id);
+    cargarHistorial();
   };
 
   const analizar = async () => {
@@ -144,8 +202,11 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
     setAnalisis('');
     const r = await analizarAnuncios(trabajo);
     setAnalizando(false);
-    if (r.tipo === 'datos') setAnalisis(r.texto);
-    else setErrorDelAnalisis(r.mensaje);
+    if (r.tipo === 'datos') {
+      setAnalisis(r.texto);
+      // Quedó guardado del lado del servidor: la lista lo marca sin volver a pedirla.
+      setBusquedas((xs) => (xs ? xs.map((b) => (b.id === trabajo ? { ...b, tieneAnalisis: true } : b)) : xs));
+    } else setErrorDelAnalisis(r.mensaje);
   };
 
   return (
@@ -192,6 +253,56 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
           ) : null}
         </div>
       </div>
+
+      {busquedas === null ? (
+        <div className="fd-aviso falta">
+          <i>◍</i>
+          <span>No se pudieron leer tus búsquedas anteriores. No es que no tengas: no se pudo mirar.</span>
+        </div>
+      ) : null}
+
+      {busquedas && busquedas.length > 0 ? (
+        <div className="card es-historial">
+          <div className="card-head">
+            <span>Búsquedas anteriores</span>
+            {busquedas.length > A_LA_VISTA ? (
+              <button type="button" className="fd-btn-menor" onClick={() => setVerTodas((v) => !v)}>
+                {verTodas ? 'Ver menos' : `Ver todas (${busquedas.length})`}
+              </button>
+            ) : null}
+          </div>
+          <div className="es-historial-lista">
+            {(verTodas ? busquedas : busquedas.slice(0, A_LA_VISTA)).map((b) => {
+              const actual = b.id === trabajo;
+              return (
+                <button
+                  type="button"
+                  key={b.id}
+                  className={`es-busqueda${actual ? ' actual' : ''}`}
+                  disabled={actual || ocupado}
+                  onClick={() => abrir(b)}
+                  aria-current={actual ? 'true' : undefined}
+                >
+                  <span className="es-busqueda-punto" aria-hidden="true">{actual ? '●' : '○'}</span>
+                  <b>{b.consulta || 'Sin texto'}</b>
+                  <span className="es-busqueda-dato">
+                    {NOMBRE_DE_PAIS[b.pais] ?? b.pais}
+                    {' · '}
+                    {b.status === 'COMPLETED'
+                      ? `${b.anuncios ?? 0} ${b.anuncios === 1 ? 'anuncio' : 'anuncios'}`
+                      : b.status === 'FAILED' || b.status === 'CANCELLED'
+                        ? 'falló'
+                        : 'en curso'}
+                    {b.tieneAnalisis ? ' · con análisis' : ''}
+                    {' · '}
+                    {cuando(b.creadoEl)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {anuncios.length > 0 ? (
         <>

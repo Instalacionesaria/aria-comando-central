@@ -975,6 +975,19 @@ export interface TablaCampanas {
 }
 
 /**
+ * El último análisis con IA de cada búsqueda del Espía. Migración 068. Los anuncios viven en el
+ * trabajo del scraper; esto guarda sólo lo que genera Comando Central.
+ */
+export interface TablaAnalisisDelEspia {
+  org_id: ColumnaInquilino;
+  trabajo_id: string;
+  texto: string;
+  cortado: Generated<boolean>;
+  creado_el: Generated<Date>;
+  usuario_id: string | null;
+}
+
+/**
  * Cada fallo del modelo de IA de una organización. Migración 067. La escribe
  * `lib/incidentes/registro.ts` y la lee el Panel de Incidentes.
  */
@@ -1566,6 +1579,7 @@ export interface BaseDeDatos {
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
   incidentes: TablaIncidentes;
+  analisis_del_espia: TablaAnalisisDelEspia;
   funnels_de_campana: TablaFunnelsDeCampana;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;

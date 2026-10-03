@@ -397,6 +397,40 @@ export type ResultadoDelAnalisis =
   | { tipo: 'datos'; texto: string; cortado: boolean }
   | { tipo: 'fallo'; mensaje: string };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL HISTORIAL DEL ESPÍA
+//
+// Jorge, 2026-10-03: los resultados desaparecían al cambiar de pestaña. Las búsquedas ya estaban
+// guardadas en el trabajo del scraper; esto las lista, y trae el análisis con IA guardado de cada una.
+// Ver `lib/tools/historial-del-espia.ts`.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface BusquedaDelEspia {
+  id: string;
+  consulta: string;
+  pais: string;
+  status: string;
+  creadoEl: string;
+  anuncios: number | null;
+  tieneAnalisis: boolean;
+}
+
+/** Las búsquedas del Espía de la organización. `null` si no se pudo leer: no es lo mismo que ninguna. */
+export async function leerBusquedasDelEspia(): Promise<BusquedaDelEspia[] | null> {
+  const r = await pedir<{ busquedas: BusquedaDelEspia[] }>('/api/tools/busquedas-del-espia');
+  return r.tipo === 'datos' ? r.datos.busquedas : null;
+}
+
+/** El análisis guardado de una búsqueda, o `null` si nunca se analizó o no se pudo leer. */
+export async function leerAnalisisDelEspia(
+  trabajo: string,
+): Promise<{ texto: string; cortado: boolean; creadoEl: string } | null> {
+  const r = await pedir<{ analisis: { texto: string; cortado: boolean; creadoEl: string } | null }>(
+    `/api/tools/busquedas-del-espia?trabajo=${encodeURIComponent(trabajo)}`,
+  );
+  return r.tipo === 'datos' ? r.datos.analisis : null;
+}
+
 /**
  * Le pide al modelo los patrones de una búsqueda ya hecha.
  *
@@ -431,3 +465,4 @@ export async function analizarAnuncios(trabajo: string): Promise<ResultadoDelAna
 export function pestanaQueLoRetoma(fuente: string): 'espia' | 'scraper' {
   return fuente === 'ad-spy' ? 'espia' : 'scraper';
 }
+
