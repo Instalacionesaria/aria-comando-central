@@ -73,6 +73,15 @@ const deseoDelIcp: Regla = (estado) => {
   return valor ? { valor, fuente: 'tu ICP', campoDeLaFicha: null } : null;
 };
 
+/** El «Avatar» del veredicto del ICP: quién es el cliente ideal, en una frase. */
+const avatarDelIcp: Regla = (estado) => {
+  const doc = ultimaVersion(estado, 3);
+  if (!doc) return null;
+  const item = leerDocumento(doc).veredicto.find((v) => /avatar/i.test(v.titulo));
+  const valor = item?.conclusion.replace(/\*\*/g, '').trim() ?? '';
+  return valor ? { valor, fuente: 'tu ICP', campoDeLaFicha: null } : null;
+};
+
 /** El mercado del Research (B2B o B2C), traducido a la opción equivalente del VSL de Tools. */
 const mercadoDelResearch: Regla = (estado) => {
   const mercado = (estado.researchInputs['market'] ?? '').trim();
@@ -105,6 +114,10 @@ export const HEREDA: Readonly<Record<string, Regla>> = {
   't11-pastresults': deLaFicha('result'),
   // El VSL (Tools) ← Research: a empresas o a personas se pregunta una sola vez.
   't6-market': mercadoDelResearch,
+  // Categoría ← Tu ficha y el ICP: lo que su diagnóstico pregunta y ya se sabe.
+  't2cat-service': deLaFicha('service'),
+  't2cat-results': deLaFicha('result'),
+  't2cat-forwho': avatarDelIcp,
 };
 
 /** Los datos heredados de una herramienta, con CLAVES CORTAS (como las respuestas del agente). */

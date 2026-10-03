@@ -207,7 +207,8 @@ test('las claves de persistencia son las que ya escribió el hub', () => {
     // Y `market` (2026-10-03): a empresas o a personas, que cambia los pasos 1 y 4 y la mirada.
     1: ['market', 'niche', 'buyers', 'ltv', 'contract', 'experience', 'location'],
     3: ['niche', 'income', 'age', 'country', 'occupation', 'pains', 'desires', 'tried'],
-    2: ['current', 'alternatives', 'notworking'],
+    // Las once preguntas de diagnóstico de su metodología (2026-10-03); las tres de antes siguen.
+    2: ['service', 'forwho', 'problem', 'current', 'alternatives', 'whychoose', 'different', 'notworking', 'evidence', 'results', 'goal'],
     4: ['name', 'price', 'result', 'format', 'why', 'when', 'includes', 'urgency'],
     10: ['outcome', 'probability', 'problemcost', 'clientrevenue', 'delivery', 'goal', 'proof', 'pastresults'],
     26: ['caso', 'responsables'],
@@ -536,8 +537,10 @@ test('el contexto heredado LLEGA al prompt: no es decorativo', () => {
 
   const categoria = armarPrompt(2, valoresLlenos(2), e);
   assert.match(categoria, /AVATAR GENERADO/, 'Categoría no heredó el avatar');
-  // Y su adaptador de modo documento, que es lo que la convierte de conversación en entregable.
-  assert.match(categoria, /MODO DOCUMENTO/, 'Categoría perdió su adaptador de modo documento');
+  // Y su adaptador, que es lo que convierte la metodología conversacional en entregable. Desde el
+  // 2026-10-03 ya no dice «modo documento, supón»: el diagnóstico se conversó antes, en el chat.
+  assert.match(categoria, /EL DIAGNÓSTICO YA SE CONVERSÓ/, 'Categoría perdió su adaptador');
+  assert.doesNotMatch(categoria, /MODO DOCUMENTO/);
 
   // ── LA HERENCIA QUE FALTABA (2026-10-02) ───────────────────────────────────
   assert.match(categoria, /SEGMENTO GANADOR DEL MARKET RESEARCH[\s\S]*PASO 5/, 'Categoría no heredó el Research');

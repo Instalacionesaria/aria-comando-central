@@ -277,6 +277,20 @@ test('solo el Research EXIGE sus campos; las otras ocho generan con lo que haya'
 
   for (const h of CON_AGENTE) {
     if (h.exigeSusCampos) continue;
+    /* La que CONVERSA (Categoría, 2026-10-03) no genera hasta que cada pregunta del diagnóstico tenga
+       respuesta o se haya saltado. No contradice la regla de arriba: vive en ICP & Oferta, que es solo
+       chat, así que no hay un formulario más permisivo con el que se contradiga. Saltar todo genera. */
+    if (h.conversa) {
+      const vacias: Record<string, string> = {};
+      const saltadas: Record<string, string> = {};
+      for (const campo of camposDe(h)) {
+        vacias[claveCorta(campo.id)] = '';
+        saltadas[claveCorta(campo.id)] = '(saltada)';
+      }
+      assert.equal(arranca(h, { mensaje: 'genero', respuestas: vacias, listo: true }, vacias), false);
+      assert.equal(arranca(h, { mensaje: 'genero', respuestas: saltadas, listo: true }, saltadas), true);
+      continue;
+    }
     const vacias: Record<string, string> = {};
     for (const campo of camposDe(h)) vacias[claveCorta(campo.id)] = '';
     assert.equal(

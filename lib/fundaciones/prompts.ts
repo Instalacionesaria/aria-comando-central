@@ -25,6 +25,7 @@ import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
 import { esFichaDeNegocio } from './documento.ts';
 import { fuentes } from './herencia.ts';
+import { herramienta } from './herramientas.ts';
 import { contextoDeMercado, esB2C } from './mercado.ts';
 import { contextoDeOnboarding } from './onboarding.ts';
 import { interpolar, leerPlantilla, type DatosDePlantilla } from './plantillas.ts';
@@ -669,38 +670,45 @@ function datosDeCategoria(estado: EstadoDeFundaciones): DatosDePlantilla {
   return { _categoriaContext: partes.length > 0 ? partes.join('\n\n') : null };
 }
 
+/** La respuesta que el agente anota cuando la persona elige no contestar una pregunta del diagnóstico. */
+export const SALTADA = '(saltada)';
+
+/**
+ * Las respuestas del diagnóstico, cada una con SU pregunta (la etiqueta del catálogo, que es lo que se
+ * le preguntó a la persona), y después lo heredado.
+ *
+ * Antes eran tres bloques escritos a mano con rótulos propios; con once preguntas, una lista paralela
+ * de rótulos sería el defecto de siempre. La pregunta del catálogo ES el rótulo.
+ */
 function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoDeFundaciones): string {
-  const partes: string[] = [];
-
-  if (presente(valores, 't2cat-current')) {
-    partes.push('CÓMO SE PRESENTA HOY (su "categoría"/etiqueta actual): ' + valor(valores, 't2cat-current'));
-  }
-  if (presente(valores, 't2cat-alternatives')) {
-    partes.push(
-      'ALTERNATIVAS COMPETITIVAS REALES (contra qué lo comparan sus clientes): ' +
-        valor(valores, 't2cat-alternatives'),
-    );
-  }
-  if (presente(valores, 't2cat-notworking')) {
-    partes.push(
-      'QUÉ NO ESTÁ FUNCIONANDO EN SU COMUNICACIÓN ACTUAL: ' + valor(valores, 't2cat-notworking'),
-    );
-  }
+  const preguntas = (herramienta(2)?.filas ?? []).flatMap((f) => f.campos);
+  const respuestas = preguntas.map((c) => {
+    const v = presente(valores, c.id) ? valor(valores, c.id) : SALTADA;
+    return `- ${c.etiqueta}\n  ${v}`;
+  });
+  const partes: string[] = [`DIAGNÓSTICO CONVERSADO CON EL ALUMNO (pregunta y su respuesta):\n${respuestas.join('\n')}`];
   partes.push(...heredadoDeCategoria(estado));
-
-  return partes.length > 0
-    ? partes.join('\n\n')
-    : '(el usuario no proporcionó datos: genera desde los frameworks, marca todos los supuestos y ' +
-        'prioriza las preguntas abiertas al final)';
+  return partes.join('\n\n');
 }
 
-/** El adaptador de modo documento de Categoría Única. Literal, del hub. */
-const MODO_DOCUMENTO_CATEGORIA = `
+/**
+ * Lo que va entre la metodología y los datos.
+ *
+ * ── YA NO ES «MODO DOCUMENTO» (2026-10-03) ─────────────────────────────────────
+ *
+ * El adaptador del hub decía «no hagas preguntas, ejecuta el diagnóstico internamente y marca todo
+ * supuesto»: la metodología —un consultor que pregunta antes de recomendar— quedaba obligada a
+ * suponer. Ahora el diagnóstico se conversa ANTES, en el chat, con las preguntas de la metodología
+ * (`herramientas.ts`, `conversa`), y esto le dice al modelo que ya ocurrió: escribe el entregable con
+ * esas respuestas, y supone SOLO en las que la persona eligió saltar.
+ */
+const DIAGNOSTICO_CONVERSADO = `
 
-# MODO DOCUMENTO (ANULA LAS INSTRUCCIONES DE CONVERSACIÓN ANTERIORES)
-Estás en modo de generación única, NO en una conversación. No hagas preguntas ni esperes respuestas. Ejecuta el diagnóstico (Etapas 1-4) internamente con los datos provistos abajo y entrega DIRECTAMENTE el ENTREGABLE FINAL de los 5 pasos del Category Architect, completo.
-- Todo supuesto razonable que necesites hacer, márcalo inline como **[SUPUESTO]**.
-- Si falta información clave, NO la inventes: cierra el documento con una sección "## Preguntas abiertas para afinar" (máximo 5 preguntas concretas para trabajar con tu coach en el Kickoff).
+# EL DIAGNÓSTICO YA SE CONVERSÓ (ANULA LAS INSTRUCCIONES DE CONVERSACIÓN ANTERIORES)
+Las Etapas 1 a 4 ya se hicieron con el alumno, pregunta por pregunta: sus respuestas están abajo. No hagas preguntas ni esperes respuestas: entrega DIRECTAMENTE el ENTREGABLE FINAL de los 5 pasos del Category Architect, completo, construido sobre esas respuestas y sobre el contexto heredado.
+- Las respuestas que dicen «${SALTADA}» son preguntas que el alumno eligió NO contestar. SOLO para lo que dependa de ellas puedes hacer un supuesto razonable, y cada uno se marca inline como **[SUPUESTO]**.
+- Fuera de las saltadas, NO uses [SUPUESTO]: lo que el alumno contestó es un dato, úsalo tal cual.
+- Si hubo preguntas saltadas, cierra con una sección "## Preguntas abiertas para afinar" (máximo 5, solo sobre lo saltado). Si no hubo, no la incluyas.
 
 # FORMATO DE SALIDA (OBLIGATORIO)
 Devuelve el documento en Markdown: un título con #, secciones con ##, subsecciones con ### si aplica, negritas para conceptos clave y listas con - donde aplique. No incluyas preámbulo ni cierres conversacionales.
@@ -761,7 +769,7 @@ export function armarPrompt(
   if (plantilla === null) throw new MetodologiaIlegible(metodologia);
 
   if (id === 2) {
-    return plantilla + MODO_DOCUMENTO_CATEGORIA + diagnosticoDeCategoria(valores, estado);
+    return plantilla + DIAGNOSTICO_CONVERSADO + diagnosticoDeCategoria(valores, estado);
   }
 
   return interpolar(plantilla, datosDe(id, valores, estado));

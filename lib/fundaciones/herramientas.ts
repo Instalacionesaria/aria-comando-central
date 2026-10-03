@@ -157,6 +157,12 @@ export interface Herramienta {
    * nivel de pantalla habría arrastrado también a esa.
    */
   soloChat?: true;
+  /**
+   * La herramienta se construye CONVERSANDO: sus preguntas son las de diagnóstico de su metodología, el
+   * agente abre con la primera en vez de listar lo que falta, y no se genera hasta que cada una tenga
+   * respuesta o se haya saltado. Hoy la lleva Categoría (2026-10-03).
+   */
+  conversa?: true;
 }
 
 const PERFIL: Herramienta = {
@@ -403,6 +409,16 @@ const ICP: Herramienta = {
   forma: 'generica',
 };
 
+/**
+ * Cómo se trata cada pregunta del diagnóstico de Categoría. La metodología dice «máximo 2-3 preguntas
+ * por turno»; acá es una, como en todas las herramientas, y saltar es una respuesta explícita.
+ */
+const GUIA_DEL_DIAGNOSTICO =
+  'Es una pregunta del diagnóstico de la metodología: hazla sola y espera la respuesta. Si la ' +
+  'persona prefiere no contestarla, anota exactamente «(saltada)» y sigue con la siguiente: el ' +
+  'documento hará un supuesto marcado SOLO en las saltadas. No la saltes por tu cuenta ni la des por ' +
+  'respondida con lo que deduzcas del contexto.';
+
 const CATEGORIA: Herramienta = {
   id: 2,
   clave: 'categoria',
@@ -410,23 +426,45 @@ const CATEGORIA: Herramienta = {
   titulo: 'Tu categoría única',
   bajada: 'Por qué tú y no otro: tu método con nombre propio, para dejar de competir por precio.',
   detalle:
-    'Hereda tu ficha, el segmento ganador del Research, tu nicho y tu ICP. Las tres preguntas de ' +
-    'diagnóstico afinan el resultado y son ' +
-    'opcionales si ya hay contexto. Entrega el Nuevo Juego con tu constraint real, el Enemigo ' +
-    'nombrado, las Truth Bombs reutilizables, tu Modelo con nombre propio y el shift de ' +
-    'identidad. Los supuestos vienen marcados y cierra con preguntas abiertas.',
+    'Hereda tu ficha, el segmento ganador del Research, tu nicho y tu ICP. Antes de escribir, el ' +
+    'agente te hace las preguntas de diagnóstico de la metodología, de a una (lo que ya sabe de los ' +
+    'pasos anteriores no te lo vuelve a preguntar). Puedes saltar cualquiera: solo ahí el documento ' +
+    'hace un supuesto, y lo marca como [SUPUESTO]. Entrega el Nuevo Juego con tu constraint real, el ' +
+    'Enemigo nombrado, las Truth Bombs reutilizables, tu Modelo con nombre propio y el shift de ' +
+    'identidad.',
+  /* ── CATEGORÍA CONVERSA (2026-10-03) ──────────────────────────────────────────
+     Tenía tres preguntas y generaba en «modo documento»: la metodología —un consultor que diagnostica
+     preguntando— quedaba forzada a suponer, y el documento salía lleno de [SUPUESTO]. Ahora las
+     preguntas son las de diagnóstico de su `SKILL.md`, en su orden, y todas llevan
+     `pedirAntesDeGenerar`: el servidor no genera hasta que cada una tenga respuesta o la persona elija
+     saltarla («(saltada)»). Tres vienen heredadas (`heredados.ts`): qué vende y sus resultados, de Tu
+     ficha; para quién, del ICP. */
+  conversa: true,
   filas: [
+    {
+      columnas: 1,
+      campos: [
+        { id: 't2cat-service', etiqueta: '¿Qué vendes exactamente? (qué incluye y cómo lo entregas)', tipo: 'area', marcador: 'Ej: un sistema de agendamiento con IA, lo instalamos en 2 semanas y lo operamos', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-forwho', etiqueta: '¿Para quién es?', tipo: 'texto', marcador: 'Ej: dueños de inmobiliarias con 5+ agentes', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-problem', etiqueta: '¿Qué problema cree tu cliente que está resolviendo cuando te compra?', tipo: 'area', marcador: 'Ej: cree que le faltan leads, cuando lo que pierde es el seguimiento', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+      ],
+    },
     {
       columnas: 2,
       campos: [
-        { id: 't2cat-current', etiqueta: '¿Cómo te presentas hoy?', tipo: 'texto', marcador: 'Ej: agencia de marketing digital / consultor de IA' },
-        { id: 't2cat-alternatives', etiqueta: '¿Contra qué te comparan tus clientes?', tipo: 'texto', marcador: 'Ej: otras agencias, contratar a alguien, hacerlo ellos mismos' },
+        { id: 't2cat-current', etiqueta: '¿Cómo te presentas hoy?', tipo: 'texto', marcador: 'Ej: agencia de marketing digital / consultor de IA', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-alternatives', etiqueta: '¿Contra qué te comparan tus clientes?', tipo: 'texto', marcador: 'Ej: otras agencias, contratar a alguien, hacerlo ellos mismos', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't2cat-notworking', etiqueta: '¿Qué NO está funcionando en cómo comunicas tu oferta?', tipo: 'area', marcador: 'Ej: me piden precio de una, me comparan por costo, no entienden qué me hace distinto' },
+        { id: 't2cat-whychoose', etiqueta: '¿Por qué te eligen a ti en vez de esas alternativas?', tipo: 'area', marcador: 'Ej: porque respondemos en minutos y nos pagan por cita agendada', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-different', etiqueta: '¿Qué hace tu forma de trabajar genuinamente distinta?', tipo: 'area', marcador: 'Ej: medimos al cliente por citas, no por leads; el sistema es nuestro, no un software suelto', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-notworking', etiqueta: '¿Qué NO está funcionando en cómo comunicas tu oferta?', tipo: 'area', marcador: 'Ej: me piden precio de una, me comparan por costo, no entienden qué me hace distinto', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-evidence', etiqueta: '¿Qué te indica que tu posicionamiento actual no está funcionando?', tipo: 'area', marcador: 'Ej: 7 de cada 10 llamadas terminan en «lo pienso»; me comparan con freelancers', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-results', etiqueta: '¿Qué resultados logran tus mejores clientes?', tipo: 'area', marcador: 'Ej: pasan de 4 a 15 citas al mes en 90 días', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
+        { id: 't2cat-goal', etiqueta: '¿Qué quieres lograr con el reposicionamiento?', tipo: 'area', marcador: 'Ej: dejar de competir por precio y cobrar el doble', pedirAntesDeGenerar: true, guia: GUIA_DEL_DIAGNOSTICO },
       ],
     },
   ],

@@ -261,6 +261,12 @@ function lineaDePregunta(campo: Campo, n: number, heredado?: Heredado): string {
     partes.push(
       `   Si no tiene una preferencia, vale "${campo.valorPorOmision}" y se sigue. No insistas.`,
     );
+  } else if (campo.pedirAntesDeGenerar) {
+    // Las del diagnóstico de Categoría: no se dejan vacías, se contestan o se saltan a pedido.
+    partes.push(
+      '   SE PREGUNTA ANTES DE ESCRIBIR: no des por completas las respuestas hasta que tenga respuesta ' +
+        'o la persona haya elegido saltarla, como dice CÓMO TRATARLA.',
+    );
   } else {
     partes.push('   Si no la sabe, se deja vacía: el entregable la marca como pendiente.');
   }
@@ -499,6 +505,20 @@ export function mensajeDeAperturaConPropuesta(
      tengamos nomás? si había 5 que sean 5»*. Se podía; ahora el mensaje lo dice. El Research
      conserva la frase de requisito porque ahí sí lo es. */
   const faltantes = `Me falta: ${faltan.join(' · ')}.`;
+  /* ── LA HERRAMIENTA QUE CONVERSA NO LISTA, PREGUNTA ────────────────────────────
+     Categoría (`conversa`): sus preguntas son un diagnóstico, y una lista de ocho de golpe es justo
+     el cuestionario que la metodología dice que no hay que hacer. Dice cuántas son, que se pueden
+     saltar, y hace la primera. */
+  if (h.conversa && faltan.length > 0) {
+    return (
+      cabeza +
+      (yaLoSe.length > 0 || lineas.length > 0 ? '\n\n' : ' ') +
+      `Antes de escribir tu ${h.etiquetaSalida} te hago ${faltan.length} ` +
+      `${faltan.length === 1 ? 'pregunta' : 'preguntas'} de diagnóstico, de a una. Si alguna prefieres ` +
+      'no contestarla, dímelo y la salto: solo ahí el documento hará un supuesto, y lo marcará.\n\n' +
+      `Empecemos: ${faltan[0]}`
+    );
+  }
   const pie =
     faltan.length > 0
       ? h.exigeSusCampos
