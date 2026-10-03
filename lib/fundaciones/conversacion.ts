@@ -171,6 +171,15 @@ function esquemaDeCampo(campo: Campo): Record<string, unknown> {
     };
   }
 
+  // La estimación aceptada es la única forma de anotar algo que la persona no dijo. Ver `admiteEstimacion`.
+  if (campo.admiteEstimacion) {
+    return {
+      type: 'string',
+      description:
+        `${comun} EXCEPCIÓN: si la persona ACEPTÓ un rango que le propusiste, va con el formato ` +
+        '«[ESTIMACIÓN] rango — de dónde sale».',
+    };
+  }
   return { type: 'string', description: comun };
 }
 
@@ -257,6 +266,14 @@ function lineaDePregunta(campo: Campo, n: number, heredado?: Heredado): string {
   }
   // La guía va al final: la prueba 125 lee las tres primeras líneas del bloque para lo opcional.
   if (campo.guia) partes.push(`   CÓMO TRATARLA: ${campo.guia}`);
+  if (campo.admiteEstimacion) {
+    partes.push(
+      '   SI NO LO SABE: no la dejes vacía de entrada. Propón un RANGO razonable para su nicho y dile en ' +
+        'una línea de dónde sale (su ICP, su Research, su oferta o lo típico del rubro). Pregúntale si lo ' +
+        'usamos. Solo si dice que sí, anótalo EXACTAMENTE así: «[ESTIMACIÓN] 50–70 % — de dónde sale». ' +
+        'Si no lo acepta, va vacía. Si más tarde te da su dato real, reemplaza la estimación por ese dato.',
+    );
+  }
   /* Lo heredado va último, por la misma prueba, y manda sobre todo lo de arriba: esta pregunta ya
      tiene respuesta en otro paso y no se vuelve a hacer. Ver `heredados.ts`. */
   if (heredado) {
@@ -359,7 +376,12 @@ export function instruccionesDeEntrevista(
     'dijo y sigue. No la interrogues.\n' +
     '· Si te pide cambiar algo que ya contestó, cámbialo en `respuestas` y confírmalo en una línea.\n' +
     '· NO inventes valores. Un dato que no dijo va vacío, aunque puedas deducirlo de lo que contó: ' +
-    'un dato deducido se ve idéntico a uno dicho, y el entregable se construye sobre él.\n\n' +
+    'un dato deducido se ve idéntico a uno dicho, y el entregable se construye sobre él.' +
+    (campos.some((c) => c.admiteEstimacion)
+      ? ' La ÚNICA excepción son las preguntas marcadas «SI NO LO SABE»: ahí propones un rango, y lo ' +
+        'anotas solo con su sí y con la marca [ESTIMACIÓN], que es lo que lo distingue de un dato dicho.'
+      : '') +
+    '\n\n' +
     'CÓMO TERMINAR (y esto no se salta):\n' +
     '0. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se ' +
     'termina, aunque te pidan generar: hazla como dice su CÓMO TRATARLA y espera la respuesta. El ' +

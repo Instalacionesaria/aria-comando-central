@@ -25,6 +25,8 @@ NIVEL DE ENTREGA: {{delivery}}
 OBJETIVO DE COBRO: {{goal}}
 PRUEBA SOCIAL / CONFIANZA EN ESTE SEGMENTO: {{proof}}
 
+DATOS ESTIMADOS: un dato que empieza con [ESTIMACIÓN] es un rango que el alumno NO sabía y ACEPTÓ como estimación razonable para su nicho; después del guion dice de dónde sale. Úsalo para calcular (toma el punto medio del rango, y muéstralo como rango en los escenarios), y en el documento márcalo SIEMPRE como [ESTIMACIÓN: de dónde sale] cada vez que lo uses, para que se vea qué número reemplazar cuando tenga el dato real. Nunca lo marques como [COMPLETAR]: [COMPLETAR] es solo para un dato que falta del todo.
+
 PRINCIPIO RECTOR (Gatari): No empieces por lo que el prospecto puede pagar. Primero resuelve cada obstáculo de su viaje (vía DFY, DWY o DIY), y RECIÉN DESPUÉS le pones precio. Nunca bajes tus precios pensando que vas a vender más — el high-ticket flywheel (mejores resultados → mejores clientes → más ingresos → más inversión en marketing y talento) le gana casi siempre al low-ticket flywheel (peores resultados → clientes rotos → sin dinero para reinvertir).
 PRINCIPIO COMPLEMENTARIO (Nik Setting): "El valor no lo determina el costo, sino el impacto y beneficio que le trae a tu cliente." El precio siempre va a cambiar en el momento en que vendas más ofertas y reúnas más feedback — esta es una primera versión, no un número fijo para siempre.
 

@@ -87,6 +87,15 @@ export interface Campo {
    * (B2B o B2C): una deducción equivocada ahí cambia los cinco pasos.
    */
   confirmarEnElChat?: true;
+  /**
+   * Si la persona no sabe el número, el agente puede proponerle un rango razonable para su nicho,
+   * explicar de dónde sale, y —solo con su sí— anotarlo como `[ESTIMACIÓN] rango — de dónde sale`.
+   * La metodología lo usa y lo marca como [ESTIMACIÓN] en el documento, nunca como [COMPLETAR].
+   * Entró con Tu precio (2026-10-03): valor del resultado, probabilidad, costo del problema y
+   * facturación del cliente son números que casi nadie sabe, y el documento salía lleno de huecos.
+   * Es la ÚNICA excepción a «no inventes valores», y por eso es una bandera y no una regla general.
+   */
+  admiteEstimacion?: true;
 }
 
 export interface FilaDeCampos {
@@ -490,20 +499,22 @@ const PRICING: Herramienta = {
     'La fórmula es explícita: valor esperado = resultado potencial × probabilidad de lograrlo, y ' +
     'el precio es una fracción de eso. Hereda tu ficha, tu ICP, tu categoría y el stack de valor de ' +
     'tu oferta, y entrega también ' +
-    'la garantía condicional con sus indicadores líderes.',
+    'la garantía condicional con sus indicadores líderes. Si no sabes un número, el agente te ' +
+    'propone un rango para tu nicho y te dice de dónde sale; si lo aceptas, el documento lo marca ' +
+    'como [ESTIMACIÓN] y puedes reemplazarlo por tu dato real cuando lo tengas.',
   filas: [
     {
       columnas: 2,
       campos: [
-        { id: 't11-outcome', etiqueta: '¿Cuánto vale al año, en dinero, el resultado que logra tu cliente?', tipo: 'texto', marcador: 'Ej: $120,000 al año en ventas nuevas' },
-        { id: 't11-probability', etiqueta: '¿Qué probabilidad real hay de lograrlo?', tipo: 'texto', marcador: 'Ej: 60%' },
+        { id: 't11-outcome', etiqueta: '¿Cuánto vale al año, en dinero, el resultado que logra tu cliente?', tipo: 'texto', marcador: 'Ej: $120,000 al año en ventas nuevas', admiteEstimacion: true },
+        { id: 't11-probability', etiqueta: '¿Qué probabilidad real hay de lograrlo?', tipo: 'texto', marcador: 'Ej: 60%', admiteEstimacion: true },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 't11-problemcost', etiqueta: '¿Cuánto le cuesta hoy el problema a tu cliente? (directo e indirecto)', tipo: 'texto', marcador: 'Ej: $8,000/mes en oportunidad perdida' },
-        { id: 't11-clientrevenue', etiqueta: '¿Cuánto factura tu cliente al mes hoy?', tipo: 'texto', marcador: 'Ej: $30k-$80k/mes' },
+        { id: 't11-problemcost', etiqueta: '¿Cuánto le cuesta hoy el problema a tu cliente? (directo e indirecto)', tipo: 'texto', marcador: 'Ej: $8,000/mes en oportunidad perdida', admiteEstimacion: true },
+        { id: 't11-clientrevenue', etiqueta: '¿Cuánto factura tu cliente al mes hoy?', tipo: 'texto', marcador: 'Ej: $30k-$80k/mes', admiteEstimacion: true },
       ],
     },
     {
