@@ -167,16 +167,14 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
     'PPC en LATAM» sostiene un país o región y un perfil de ocupación; no sostiene una cifra exacta ' +
     'de facturación que nadie mencionó. No inventes cifras ni nombres propios.\n' +
     /* El formulario de onboarding de Walter habla del NEGOCIO (modelo, facturación, oferta, cómo
-       opera, metas) y nunca pregunta por el cliente final. Con la regla de arriba sola, el modelo
-       dejaba vacíos «el mayor problema de tu cliente» y «qué resultado obtienen contigo» —Kevin, con
-       captura de Innat8: «debería ser suficiente con lo que trajimos de las tablas»—. Y sí alcanza:
-       una oferta que promete responder, dar seguimiento y agendar está diciendo qué problema
-       resuelve y qué resultado entrega. Se propone como deducción y la persona confirma. */
-    '· Si el contexto es un FORMULARIO DE ONBOARDING, deduce el problema del cliente y el resultado ' +
-    'que obtiene A PARTIR DE LO QUE LA OFERTA PROMETE RESOLVER: «un agente que responde, da ' +
-    'seguimiento y agenda» sostiene que el problema es no responder ni dar seguimiento a tiempo y ' +
-    'que el resultado es más citas agendadas sin trabajo manual. Propónlos en esos términos; la ' +
-    'persona los corrige si no son así. Solo déjalos vacíos si la oferta no dice qué hace.\n' +
+       opera, metas), que es justo lo que pregunta la ficha desde el 2026-10-03. La regla anterior
+       mandaba DEDUCIR el problema y el resultado del cliente de lo que la oferta promete; esos dos
+       salieron de la ficha, y «resultados logrados» es un hecho del negocio: deducirlo de una promesa
+       sería inventarlo. */
+    '· Si el contexto es un FORMULARIO DE ONBOARDING, saca de ahí qué vende, a quién le vende hoy, ' +
+    'sus precios y su experiencia, aunque estén dichos con otras palabras. Los RESULTADOS LOGRADOS ' +
+    'solo si el formulario cuenta resultados que ya obtuvo: nunca los deduzcas de lo que la oferta ' +
+    'promete. Si no los cuenta, van vacíos.\n' +
     '· Escribe como escribiría la persona en ese campo: corto, concreto, con el formato del ejemplo. ' +
     'No copies párrafos enteros del contexto ni pegues frases a medias.\n' +
     '· Usa el lenguaje exacto del contexto cuando nombre algo (el segmento, el mecanismo, los ' +

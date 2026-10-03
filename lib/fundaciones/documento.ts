@@ -98,6 +98,20 @@ export function segmentoGanador(paso5: string | null | undefined): SegmentoGanad
   return { segmento, motivo: buscar(/por\s*qu[ée]/i) };
 }
 
+/**
+ * ¿Esta ficha es un Perfil del Negocio (el formato desde el 2026-10-03), o el Perfil de Cliente de
+ * antes?
+ *
+ * Lo distingue el `<veredicto>` con el que abre: el formato anterior no tenía ninguno. Importa
+ * porque la ficha vieja describe AL CLIENTE —dolores, deseos, cómo habla— y los pasos siguientes ya
+ * no deben leer eso de la ficha: lo toman del ICP. Con una ficha vieja, leen solo los datos de
+ * negocio que la persona contestó, y Tu ficha avisa que conviene regenerarla. No se borra nada.
+ */
+export function esFichaDeNegocio(texto: string | null | undefined): boolean {
+  if (!texto) return false;
+  return leerDocumento(texto).veredicto.some((v) => /qu[ée] vende/i.test(v.titulo));
+}
+
 function escapar(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

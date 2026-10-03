@@ -204,14 +204,15 @@ test('las preguntas y respuestas del chat de Walter llegan textuales, sin los bo
   assert.equal(leerOnboarding({ chat_history: chat })?.respuestas.length, 2);
 });
 
-test('el agente deduce el problema y el resultado del cliente desde lo que la oferta promete', () => {
-  /* Kevin, con captura de Innat8 (2026-09-12): el agente dejaba «me falta: ¿cuál es el mayor problema
-     de tu cliente? · ¿qué resultado obtienen contigo?» con la oferta a la vista. El formulario de
-     Walter nunca pregunta por el cliente final, así que esos dos solo salen por deducción — y la
-     instrucción tiene que pedirla con todas las letras, marcada como propuesta. */
+test('del onboarding sale lo del negocio, y los resultados solo si el formulario los cuenta', () => {
+  /* Hasta el 2026-10-03 esta regla mandaba DEDUCIR el problema y el resultado del cliente de lo que
+     la oferta promete (Kevin, con Innat8, 2026-09-12). Esos dos campos salieron de la ficha —eran del
+     cliente— y «resultados logrados» es un hecho del negocio: deducirlo de una promesa sería
+     inventarlo. */
   const relleno = codigo('lib/fundaciones/relleno.ts');
-  assert.match(relleno, /Si el contexto es un FORMULARIO DE ONBOARDING, deduce el problema del cliente y el resultado/);
-  assert.match(relleno, /Solo déjalos vacíos si la oferta no dice qué hace/);
+  assert.match(relleno, /Si el contexto es un FORMULARIO DE ONBOARDING, saca de ahí qué vende, a quién le vende hoy/);
+  assert.match(relleno, /nunca los deduzcas de lo que la oferta/);
+  assert.doesNotMatch(relleno, /deduce el problema del cliente/);
 });
 
 test('las respuestas del FINAL del formulario llegan al agente: el recorte por fuente no aplica al onboarding', () => {
@@ -246,14 +247,14 @@ test('lo que falta en la apertura se puede saltear, salvo en la herramienta que 
      «Contame eso» como si fuera requisito. Ahora dice cómo seguir sin ellos. */
   const ficha = FUNDACIONES[0];
   assert.ok(ficha, 'la primera herramienta del método dejó de ser Tu ficha');
-  const guardadas = { biz: 'Allpa', niche: 'inmobiliarias', service: 'agentes IA', price: '$1,000', before: 'orgánico' };
+  const guardadas = { biz: 'Allpa', niche: 'inmobiliarias', service: 'agentes IA', price: '$1,000' };
   const apertura = mensajeDeAperturaConPropuesta(ficha, guardadas, {});
-  assert.match(apertura, /Me falta: ¿Cuál es el mayor problema de tu cliente\? · ¿Qué resultado obtienen contigo\?\./);
+  assert.match(apertura, /Me falta: ¿Qué resultados has logrado con tus clientes\? \(con cifras si las tienes\) · ¿Cuál es tu experiencia o trasfondo\?\./);
   assert.match(apertura, /dime «sigue» y genero con lo que hay/);
   assert.doesNotMatch(apertura, /Cuéntame eso/);
 
   // Sin faltantes, el pie pide la confirmación de siempre.
-  const completa = mensajeDeAperturaConPropuesta(ficha, { ...guardadas, pain: 'no responden', result: 'más citas' }, {});
+  const completa = mensajeDeAperturaConPropuesta(ficha, { ...guardadas, result: 'más citas', experience: '5 años en ventas' }, {});
   assert.match(completa, /¿Va bien así\?/);
 
   // El Research exige sus criterios (buscan en la web): ahí lo que falta SÍ es requisito.

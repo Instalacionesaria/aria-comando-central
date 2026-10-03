@@ -148,47 +148,52 @@ const PERFIL: Herramienta = {
   clave: 'perfil',
   pestania: 'Tu ficha',
   titulo: 'Tu ficha de negocio',
-  bajada: 'Quién eres y dónde estás hoy. Es la raíz: todo lo demás hereda de acá.',
+  bajada: 'Tu negocio tal como es hoy. Es la raíz: todo lo demás hereda de aquí.',
+  /* ── LA FICHA DESCRIBE EL NEGOCIO, NO AL CLIENTE (2026-10-03) ─────────────────
+     Hasta acá generaba un «Perfil de Cliente» —dolores, deseos, creencias, cómo habla— ANTES de
+     que el Research eligiera el segmento, y el ICP volvía a hacer lo mismo sobre el segmento
+     ganador: dos clientes ideales que podían contradecirse. Ahora el cliente ideal se define solo en
+     el ICP, y esta ficha cuenta qué vende el negocio, a quién, a qué precio, con qué resultados y con
+     qué experiencia. «El mayor problema de tu cliente» y «qué intentaron antes» salieron de acá: son
+     del cliente, y el ICP ya los pregunta. */
   detalle:
-    'Con estos siete datos se arma el perfil de cliente completo — dolores ordenados por ' +
-    'intensidad, creencias que lo frenan, cómo habla, disparadores de compra y las señales de ' +
-    'que alguien NO es tu cliente. Las seis herramientas siguientes leen este documento.',
+    'Con estos seis datos se arma el perfil de tu negocio: qué vendes y cómo lo entregas, a quién ' +
+    'le vendes hoy, tus precios, tus resultados y tu experiencia. El cliente ideal no se define ' +
+    'aquí: lo define el ICP, después del Research. Los pasos siguientes leen este documento.',
   filas: [
     {
       columnas: 2,
       campos: [
         { id: 't1-biz', etiqueta: '¿Cómo se llama tu negocio?', tipo: 'texto', marcador: 'Ej: ARIA IA' },
-        { id: 't1-niche', etiqueta: '¿En qué nicho estás?', tipo: 'texto', marcador: 'Ej: agencias digitales, clínicas dentales' },
+        { id: 't1-service', etiqueta: '¿Qué vendes?', tipo: 'texto', marcador: 'Ej: sistema de adquisición con IA' },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 't1-service', etiqueta: '¿Qué servicio vendes?', tipo: 'texto', marcador: 'Ej: sistema de adquisición con IA' },
+        /* La clave sigue siendo `niche`: es el nicho del negocio, y así la leen los pasos siguientes.
+           La pregunta cambió de «¿En qué nicho estás?» a la forma en que la contesta un negocio. */
+        { id: 't1-niche', etiqueta: '¿A quién le vendes hoy?', tipo: 'texto', marcador: 'Ej: agencias digitales, clínicas dentales' },
         { id: 't1-price', etiqueta: '¿A qué precio lo vendes hoy?', tipo: 'texto', marcador: 'Ej: $3,000 setup + $1,500/mes' },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't1-pain', etiqueta: '¿Cuál es el mayor problema de tu cliente?', tipo: 'area', marcador: 'Ej: consigue leads pero no logra agendar llamadas con decisores' },
+        { id: 't1-result', etiqueta: '¿Qué resultados has logrado con tus clientes? (con cifras si las tienes)', tipo: 'area', marcador: 'Ej: un cliente pasó de 4 a 15 llamadas calificadas al mes en 90 días' },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't1-result', etiqueta: '¿Qué resultado obtienen contigo?', tipo: 'area', marcador: 'Ej: 15 llamadas calificadas al mes en 90 días' },
-      ],
-    },
-    {
-      columnas: 1,
-      campos: [
-        { id: 't1-before', etiqueta: '¿Qué intentaron antes de llegar a ti?', tipo: 'area', marcador: 'Ej: contrataron un setter, probaron ads, compraron un curso' },
+        /* Es parte de describir el negocio. El Research también la pregunta (`mr-experience`) para
+           elegir el segmento; que se pregunte una sola vez es otro cambio, aparte de éste. */
+        { id: 't1-experience', etiqueta: '¿Cuál es tu experiencia o trasfondo?', tipo: 'area', marcador: 'Ej: 8 años en marketing y ventas para agencias; armé el área comercial de dos startups' },
       ],
     },
   ],
-  etiquetaBoton: 'Crear mi perfil de cliente',
-  etiquetaSalida: 'Perfil de Cliente',
+  etiquetaBoton: 'Crear mi perfil de negocio',
+  etiquetaSalida: 'Perfil del Negocio',
   forma: 'generica',
 };
 

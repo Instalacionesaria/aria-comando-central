@@ -29,6 +29,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { SIN_ESPECIFICAR } from './campos.ts';
+import { esFichaDeNegocio } from './documento.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 
 /** Las fuentes que una herramienta puede heredar. Las claves son las del hub. */
@@ -97,7 +98,9 @@ export function fuentes(estado: EstadoDeFundaciones): Record<ClaveDeFuente, Fuen
     perfil: {
       clave: 'perfil',
       etiqueta: 'Tu ficha',
-      resumen: 'Perfil de negocio',
+      // La ficha del formato anterior sigue contando —sus datos de negocio se heredan—, pero el chip
+      // dice que su documento ya no se lee (ver `esFichaDeNegocio`).
+      resumen: docPerfil && !esFichaDeNegocio(docPerfil) ? 'Formato anterior' : 'Perfil del negocio',
       completo: docPerfil ?? '',
       presente: !!docPerfil,
       herramienta: 0,

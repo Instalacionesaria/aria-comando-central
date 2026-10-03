@@ -23,6 +23,7 @@
 import { SIN_ESPECIFICAR, presente, valor } from './campos.ts';
 import { ultimaVersion, type EstadoDeFundaciones } from './estado.ts';
 import { extraerCompromisos, formatearCompromisos } from './compromisos.ts';
+import { esFichaDeNegocio } from './documento.ts';
 import { fuentes } from './herencia.ts';
 import { contextoDeMercado } from './mercado.ts';
 import { contextoDeOnboarding } from './onboarding.ts';
@@ -122,21 +123,51 @@ function contextoDeResearch(estado: EstadoDeFundaciones): string | null {
  */
 function contextoDeFicha(estado: EstadoDeFundaciones, tope = 3000): string | null {
   const p0 = estado.perfil[0];
-  if (!p0) return null;
-  const partes: string[] = [
-    `PERFIL DE CLIENTE (raíz — negocio del alumno): Negocio: ${nd(p0, 'biz')}, ` +
-      `Nicho: ${nd(p0, 'niche')}, Servicio: ${nd(p0, 'service')}, Precio actual: ${nd(p0, 'price')}, ` +
-      `Dolor principal que resuelve: ${nd(p0, 'pain')}, Resultado que entrega: ${nd(p0, 'result')}, ` +
-      `Situación antes: ${nd(p0, 'before')}`,
-  ];
   const doc = ultimaVersion(estado, 0);
-  if (doc) {
+  if (!p0 && !doc) return null;
+  const partes: string[] = [];
+  /* ── SOLO EL NEGOCIO (2026-10-03) ───────────────────────────────────────────
+     Las respuestas de negocio, y nunca `pain` ni `before`: eran del cliente («el mayor problema de tu
+     cliente», «qué intentaron antes») y salieron de la ficha. Las fichas que las contestaron las
+     conservan guardadas; el ICP las recibe aparte (`loQueContoDelCliente`), que es donde sirven. */
+  if (p0) {
     partes.push(
-      'PERFIL COMPLETO NORMALIZADO (usa este contexto de negocio como base del avatar):\n' +
-        doc.slice(0, tope),
+      `PERFIL DEL NEGOCIO (raíz — el negocio del alumno): Negocio: ${nd(p0, 'biz')}, ` +
+        `Qué vende: ${nd(p0, 'service')}, A quién le vende hoy: ${nd(p0, 'niche')}, ` +
+        `Precio actual: ${nd(p0, 'price')}, Resultados logrados: ${nd(p0, 'result')}, ` +
+        `Experiencia: ${nd(p0, 'experience')}`,
     );
   }
-  return partes.join('\n\n');
+  /* El documento entra solo si es un Perfil del Negocio. El formato anterior describía al cliente
+     ideal antes de que existiera el Research, y eso es justo lo que ya no debe heredarse de acá: el
+     cliente lo define el ICP. La ficha vieja no se borra; Tu ficha avisa que conviene regenerarla. */
+  if (doc && esFichaDeNegocio(doc)) {
+    partes.push('PERFIL DEL NEGOCIO COMPLETO (contexto del negocio, no del cliente):\n' + doc.slice(0, tope));
+  }
+  return partes.length > 0 ? partes.join('\n\n') : null;
+}
+
+/**
+ * Lo que la persona contó de SU CLIENTE en una ficha del formato anterior: el mayor problema y qué
+ * intentaron antes. Ya no se pregunta en la ficha, pero lo que se contestó no se tira: el ICP lo
+ * recibe como pista para proponer sus dolores y su «qué han intentado».
+ */
+function loQueContoDelCliente(estado: EstadoDeFundaciones): string | null {
+  const p0 = estado.perfil[0];
+  if (!p0) return null;
+  const lineas = [
+    ['pain', 'Mayor problema de su cliente'],
+    ['before', 'Qué intentaron antes de llegar a él'],
+  ]
+    .map(([clave, etiqueta]) => {
+      const v = p0[clave!];
+      return v && v !== SIN_ESPECIFICAR ? `${etiqueta}: ${v}` : null;
+    })
+    .filter((x): x is string => x !== null);
+  return lineas.length > 0
+    ? 'LO QUE EL ALUMNO YA HABÍA CONTADO DE SU CLIENTE (de una versión anterior de su ficha; úsalo como pista, el segmento del Research manda):\n' +
+        lineas.join('\n')
+    : null;
 }
 
 /** El recorte del perfil para las herramientas que ya cargan varios documentos largos. */
@@ -158,9 +189,8 @@ function datosDeFicha(valores: Record<string, string>, estado: EstadoDeFundacion
     niche: valor(valores, 't1-niche'),
     service: valor(valores, 't1-service'),
     price: valor(valores, 't1-price'),
-    pain: valor(valores, 't1-pain'),
     result: valor(valores, 't1-result'),
-    before: valor(valores, 't1-before'),
+    experience: valor(valores, 't1-experience'),
     _onboardingContext: contextoDeOnboarding(estado.onboarding),
   };
 }
@@ -207,7 +237,7 @@ function datosDeIcp(valores: Record<string, string>, estado: EstadoDeFundaciones
     // alumno no contestó, en vez de aparecer con "(no especificado)" al lado.
     _tried: presente(valores, 't4-tried') ? tried : '',
     _researchContext: contextoDeResearch(estado),
-    _profileContext: contextoDeFicha(estado),
+    _profileContext: [contextoDeFicha(estado), loQueContoDelCliente(estado)].filter(Boolean).join('\n\n') || null,
   };
 }
 
@@ -271,6 +301,16 @@ function datosDePricing(valores: Record<string, string>, estado: EstadoDeFundaci
     partes.push(
       `ICP — Nicho: ${nd(icpInputs, 'niche')}, Dolores: ${nd(icpInputs, 'pains')}, ` +
         `Deseos: ${nd(icpInputs, 'desires')}`,
+    );
+  }
+  /* Lo del CLIENTE sale del ICP generado, no de la ficha (2026-10-03): su situación, sus dolores y lo
+     que desea son de donde salen el costo del problema y el valor del resultado. Recortado, porque
+     el stack de valor de abajo es la fuente principal del cálculo. */
+  const icp = fuentes(estado).icp;
+  if (icp.presente) {
+    partes.push(
+      'AVATAR / ICP YA GENERADO (de aquí salen la situación del cliente, el costo de su problema y ' +
+        'el valor del resultado que desea):\n' + icp.completo.slice(0, 2000),
     );
   }
   if (docOferta) {
@@ -456,9 +496,10 @@ function datosDeLanding(valores: Record<string, string>, estado: EstadoDeFundaci
   const f = fuentes(estado);
   const partes: string[] = [];
 
+  // Solo un Perfil del Negocio: la ficha del formato anterior describía al cliente (ver contextoDeFicha).
   const docPerfil = ultimaVersion(estado, 0);
-  if (docPerfil) {
-    partes.push('PERFIL DE CLIENTE (el negocio del alumno):\n' + docPerfil.slice(0, 1500));
+  if (docPerfil && esFichaDeNegocio(docPerfil)) {
+    partes.push('PERFIL DEL NEGOCIO (el negocio del alumno):\n' + docPerfil.slice(0, 1500));
   }
   if (f.icp.presente) {
     partes.push(
@@ -597,11 +638,13 @@ function heredadoDeCategoria(estado: EstadoDeFundaciones): string[] {
   if (p0) {
     // Los rótulos dicen lo mismo que las preguntas de «Tu ficha» que los produjeron.
     const etiquetas: readonly (readonly [string, string])[] = [
+      // Solo lo del negocio. El problema del cliente sale del ICP, que entra completo más abajo.
       ['biz', 'Negocio'],
-      ['service', 'Servicio principal'],
+      ['service', 'Qué vende'],
+      ['niche', 'A quién le vende hoy'],
       ['price', 'Precio actual'],
-      ['pain', 'Mayor problema de su cliente'],
-      ['result', 'Resultado que obtienen sus clientes'],
+      ['result', 'Resultados logrados'],
+      ['experience', 'Experiencia'],
     ];
     const ficha = etiquetas
       .map(([clave, etiqueta]) => {

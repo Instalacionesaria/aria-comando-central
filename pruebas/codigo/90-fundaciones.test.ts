@@ -198,7 +198,10 @@ test('las claves de persistencia son las que ya escribió el hub', () => {
   // `lib/legacy/fieldIds.ts` de ARIA-brain. Una diferencia acá no rompe nada visible: el port
   // escribe `nicho` donde el hub escribe `niche`, y cada sistema ve el campo del otro en blanco.
   const esperadas: Readonly<Record<number, readonly string[]>> = {
-    0: ['biz', 'niche', 'service', 'price', 'pain', 'result', 'before'],
+    // Desde el 2026-10-03 la ficha describe solo el negocio: salen `pain` y `before` (eran del
+    // cliente; el ICP los pregunta) y entra `experience`. El hub ya no comparte el almacén desde el
+    // 2026-09-07 (prueba 130), así que una clave nueva no deja a nadie viendo un campo en blanco.
+    0: ['biz', 'niche', 'service', 'price', 'result', 'experience'],
     // Las cinco del hub más `location`, que NO es del hub: es el sexto criterio que la mirada al
     // mercado real necesita (2026-09-10). El hub la ve en blanco y no le cambia nada.
     1: ['niche', 'buyers', 'ltv', 'contract', 'experience', 'location'],
@@ -324,7 +327,8 @@ function estadoCompleto(): EstadoDeFundaciones {
     6: { niche: 'agencias digitales' },
   };
   e.historial = {
-    0: [{ date: 'hoy', output: 'PERFIL GENERADO' }],
+    // Una ficha del formato nuevo: abre con el veredicto que la distingue (`esFichaDeNegocio`).
+    0: [{ date: 'hoy', output: '<veredicto>\n<item titulo="Qué vende">sistema</item>\n</veredicto>\n\nPERFIL GENERADO' }],
     3: [{ date: 'hoy', output: 'AVATAR GENERADO' }],
     2: [{ date: 'hoy', output: 'CATEGORÍA GENERADA' }],
     4: [{ date: 'hoy', output: 'OFERTA GENERADA' }],
@@ -485,7 +489,7 @@ test('los cinco pasos del research tampoco dejan huecos, y encadenan de verdad',
   // Con estado, el paso 1 lleva el perfil del negocio; sin estado, la clave va en `null` y el bloque
   // se omite entero — no queda ni el rótulo ni un hueco.
   const conFicha = armarPromptResearch(0, inputs, [], estadoCompleto());
-  assert.match(conFicha, /PERFIL DE CLIENTE \(raíz/, 'el paso 1 no recibió la ficha del negocio');
+  assert.match(conFicha, /PERFIL DEL NEGOCIO \(raíz/, 'el paso 1 no recibió la ficha del negocio');
   assert.match(conFicha, /CONTEXTO DEL NEGOCIO DEL ALUMNO/);
   const sinFicha = armarPromptResearch(0, inputs, []);
   assert.doesNotMatch(sinFicha, /CONTEXTO DEL NEGOCIO DEL ALUMNO/, 'sin ficha el rótulo quedó suelto');

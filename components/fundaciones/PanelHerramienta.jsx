@@ -43,6 +43,7 @@ import {
   claveCorta,
   conValoresPorOmision,
 } from '@/lib/fundaciones/campos';
+import { esFichaDeNegocio } from '@/lib/fundaciones/documento';
 import { hayTurnosDeLaPersona } from '@/lib/fundaciones/estado';
 import { tieneAgente } from '@/lib/fundaciones/herramientas';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
@@ -484,6 +485,24 @@ export default function PanelHerramienta({
               title="Vuelve a copiar a la ficha lo que contestaste en el formulario de onboarding"
             >
               {estado.onboarding ? '↻ Volver a traer' : traido?.tipo === 'nada' ? 'Reintentar' : 'Traer del onboarding'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* LA FICHA DEL FORMATO ANTERIOR. Describía al cliente ideal, y desde el 2026-10-03 los pasos
+          siguientes no leen ese documento: toman de la ficha solo las respuestas de negocio. No se
+          borra nada —la versión vieja sigue en el historial—; el aviso dice qué conviene hacer y el
+          botón lo hace, con las respuestas guardadas. */}
+      {esLaFicha && versionesGuardadas.length > 0 && !esFichaDeNegocio(versionesGuardadas[0].output) && !generando ? (
+        <div className="fd-aviso falta" role="status">
+          <i>◍</i>
+          <span>
+            <b>Tu ficha tiene el formato anterior. Regénerala para que los demás pasos la usen completa.</b>
+          </span>
+          {puedeEditar ? (
+            <button type="button" className="fd-btn" onClick={() => generar(null)}>
+              Regenerar mi ficha
             </button>
           ) : null}
         </div>
