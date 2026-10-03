@@ -995,6 +995,17 @@ export interface TablaIncidentes {
 }
 
 /**
+ * En qué paso quedó «Construir el método» de cada organización. Migración 068. Una fila por
+ * organización; la escribe y la lee `lib/fundaciones/cadena.ts`.
+ */
+export interface TablaCadenaDelMetodo {
+  org_id: ColumnaInquilino;
+  /** El estado de la cadena (`RegistroDeCadena`). Lo valida el servidor antes de escribir. */
+  registro: unknown;
+  actualizado_el: Generated<Date>;
+}
+
+/**
  * A qué funnel del front de Acquisition pertenece cada campaña. Migración 066.
  *
  * Lo asigna una persona con `credenciales.editar`; el único escritor es
@@ -1566,6 +1577,7 @@ export interface BaseDeDatos {
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
   incidentes: TablaIncidentes;
+  cadena_del_metodo: TablaCadenaDelMetodo;
   funnels_de_campana: TablaFunnelsDeCampana;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;

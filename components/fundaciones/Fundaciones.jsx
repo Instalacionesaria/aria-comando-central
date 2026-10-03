@@ -30,6 +30,7 @@ import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { FUNDACIONES, activaDeLaPestana, pestanaDeLaActiva } from '@/lib/fundaciones/herramientas';
 import { anunciarPestana } from '@/lib/aios/shell';
 import { usarPedidoDeVista } from '@/lib/vista';
+import { cadenaAlVolver, leerRegistro } from '@/lib/fundaciones/cadena';
 import { leerDocumento } from '@/lib/fundaciones/documento';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
 import { aValoresDeFormulario, conValoresPorOmision, idsDeCampos } from '@/lib/fundaciones/campos';
@@ -75,6 +76,9 @@ const CATALOGO_ICP = {
      los leads y anuncios y lo guarda). Solo esta pantalla tiene el Research. */
   rutaMercadoPreparar: '/api/fundaciones/mercado/preparar',
   rutaMercado: '/api/fundaciones/mercado',
+  /* En qué paso quedó «Construir el método» (`lib/fundaciones/cadena.ts`). Solo esta pantalla tiene la
+     cadena: sin la ruta, la cadena corre igual pero no sobrevive a salir de la pantalla. */
+  rutaCadena: '/api/fundaciones/cadena',
   capacidadEditar: 'fundaciones.editar',
 };
 
@@ -196,7 +200,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
     if (respuesta.tipo === 'datos') {
       setEstado(respuesta.datos.estado);
       setProblema(null);
-      return;
+      // Se devuelve, además de fijarse: la reconciliación de la cadena lo necesita en la mano.
+      return respuesta.datos.estado;
     }
     setEstado(null);
     setProblema(
@@ -204,11 +209,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
         ? { texto: mensajeDeRechazo(respuesta.codigo, respuesta.estado, respuesta.detalle), codigo: respuesta.codigo }
         : { texto: SIN_RESPUESTA, codigo: 'sin_respuesta' },
     );
+    return null;
   }, [rutaEstado]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
 
   /* Al generar o guardar, el estado se relee entero. Podría actualizarse en el lugar y sería
      más rápido, pero la herencia depende de siete documentos que se cruzan: una actualización
@@ -314,6 +316,39 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
     if (resolver) resolver(seguir);
   };
 
+  /* ── LA CADENA SOBREVIVE A SALIR DE LA PANTALLA (2026-10-03) ─────────────────────
+   *
+   * El bucle de abajo vive en este componente, y salir de ICP & Oferta lo desmonta: la pausa quedaba
+   * esperando una respuesta que ya nadie podía dar, y al volver no había nada que retomar. Ahora:
+   *
+   *   · el bucle GUARDA su estado en cada transición (`lib/fundaciones/cadena.ts`): antes de abrir un
+   *     paso, antes de generarlo, al pausar, al detenerse, y lo borra al terminar;
+   *   · si al volver de una espera ve que la pantalla ya no está (`montado`), guarda dónde quedó y se
+   *     corta ahí, en vez de seguir construyendo pasos que nadie está mirando;
+   *   · al montar, la pantalla lee lo guardado y lo RECONCILIA (`cadenaAlVolver`): una pausa vuelve como
+   *     «Seguir con la cadena» desde el paso siguiente, y un paso que estaba generando se muestra como
+   *     terminado o fallido según lo que de verdad pasó — mientras siga dentro del tope de una
+   *     generación, la franja dice que sigue y vuelve a mirar sola. */
+  const rutaCadena = catalogo.rutaCadena ?? null;
+  const montado = useRef(true);
+  useEffect(() => {
+    montado.current = true;
+    return () => {
+      montado.current = false;
+    };
+  }, []);
+
+  const guardarLaCadena = useCallback(
+    async (registro) => {
+      if (!rutaCadena) return;
+      // Si no se pudo guardar, la cadena sigue igual: lo único que se pierde es poder retomarla al volver.
+      await pedir(rutaCadena, { metodo: 'POST', cuerpo: { registro } });
+    },
+    [rutaCadena],
+  );
+
+  const versionesDe = (id) => (estadoRef.current?.historial?.[id] ?? []).length;
+
   const construirElMetodo = useCallback(async (desde = 0) => {
     const eslabones = eslabonesDelMetodo();
     if (eslabones.length === 0 || cadenaViva.current) return;
@@ -323,35 +358,33 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
 
     /* Detenerse en `h`, recordando desde dónde retomar. `versiones` es cuántas tenía al detenerse:
        si al retomar tiene más, la persona lo terminó a mano y se sigue con el siguiente. */
-    const detener = (indice, h, motivo) => {
-      setCadena({
-        indice,
-        total,
-        actual: h,
-        hechos: [...hechos],
-        detenida: h,
-        motivo,
-        reanudar: motivo === 'cambiar' ? indice + 1 : indice,
-        versiones: (estadoRef.current?.historial?.[h.id] ?? []).length,
-      });
+    const detener = async (indice, h, motivo) => {
+      const reanudar = motivo === 'cambiar' ? indice + 1 : indice;
+      const versiones = versionesDe(h.id);
+      setCadena({ indice, total, actual: h, hechos: [...hechos], detenida: h, motivo, reanudar, versiones });
       cadenaViva.current = false;
+      await guardarLaCadena({ fase: 'detenida', indice, herramienta: h.id, versiones, reanudar, motivo });
     };
 
     for (const [indice, h] of eslabones.entries()) {
       if (indice < desde) continue;
       setCadena({ indice, total, actual: h, hechos: [...hechos], detenida: null });
       setActiva(h.id);
+      /* Si se sale de la pantalla mientras el agente abre este paso, al volver se retoma desde acá. */
+      await guardarLaCadena({ fase: 'detenida', motivo: 'salio', indice, herramienta: h.id, versiones: versionesDe(h.id), reanudar: indice });
 
       const apertura = await pedir(rutaConversar, {
         metodo: 'POST',
         cuerpo: { herramienta: h.id, reiniciar: true, generar: true },
         espera: ESPERA_DE_RUTA_LARGA_MS,
       });
+      // Se salió de la pantalla: lo guardado ya dice que se retoma desde este paso.
+      if (!montado.current) return;
       if (apertura.tipo !== 'datos' || !apertura.datos.listo) {
         /* Se detiene y se queda en esa herramienta: si fue por un obligatorio que faltaba, el agente
            ya la dejó preguntada; si fue por un fallo, el chat muestra el error. Seguir con la
            siguiente sería construirla sobre un hueco. */
-        detener(indice, h, apertura.tipo === 'datos' ? 'pregunta' : 'fallo');
+        await detener(indice, h, apertura.tipo === 'datos' ? 'pregunta' : 'fallo');
         return;
       }
 
@@ -359,16 +392,26 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
          proponer, no los de ningún estado de React. */
       const ids = idsDeCampos(h.id);
       const valores = conValoresPorOmision(h, aValoresDeFormulario(ids, apertura.datos.respuestas));
+      /* «Generando», con cuántas versiones tenía antes: si se cierra el navegador a mitad, al volver se
+         sabe si el documento terminó (hay una versión más) o no. */
+      const versionesAntes = versionesDe(h.id);
+      await guardarLaCadena({ fase: 'generando', indice, herramienta: h.id, versiones: versionesAntes, reanudar: indice });
       const generacion = await pedir(rutaGenerar, {
         metodo: 'POST',
         cuerpo: { herramienta: h.id, valores },
         espera: ESPERA_DE_RUTA_LARGA_MS,
       });
       if (generacion.tipo !== 'datos') {
-        detener(indice, h, 'fallo');
+        await detener(indice, h, 'fallo');
         return;
       }
       hechos.push(h.id);
+      /* Se salió de la pantalla mientras se generaba: el documento quedó guardado. La cadena queda en
+         pausa después de este paso —se retoma desde el siguiente— y no sigue construyendo sola. */
+      if (!montado.current) {
+        await guardarLaCadena({ fase: 'pausa', indice, herramienta: h.id, versiones: versionesAntes + 1, reanudar: indice + 1 });
+        return;
+      }
       /* Se recarga antes del siguiente eslabón para que la pantalla muestre el documento nuevo. El
          servidor no lo necesita —lee el almacén en cada llamada—; es para quien mira. */
       await cargar();
@@ -376,6 +419,8 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
       // La pausa: después del ICP y de la Oferta, si queda algo por construir.
       const siguiente = eslabones[indice + 1];
       if (siguiente && PAUSAR_DESPUES_DE.includes(h.id)) {
+        // Guardada ANTES de esperar: si se sale ahora, al volver está la pausa para retomar.
+        await guardarLaCadena({ fase: 'pausa', indice, herramienta: h.id, versiones: versionesDe(h.id), reanudar: indice + 1 });
         setCadena({
           indice,
           total,
@@ -388,7 +433,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           decisionDeLaPausa.current = resolver;
         });
         if (!seguir) {
-          detener(indice, h, 'cambiar');
+          await detener(indice, h, 'cambiar');
           return;
         }
       }
@@ -396,18 +441,74 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
 
     setCadena(null);
     cadenaViva.current = false;
+    await guardarLaCadena(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eslabonesDelMetodo, rutaConversar, rutaGenerar, cargar]);
+  }, [eslabonesDelMetodo, rutaConversar, rutaGenerar, cargar, guardarLaCadena]);
 
-  /* Retomar una cadena detenida. Si el paso donde se detuvo se generó mientras tanto (la persona lo
-     terminó a mano), se sigue con el siguiente; si no, se vuelve a intentar ese mismo. */
+  /* Retomar una cadena detenida. Si se detuvo EN un paso (`reanudar` es ese mismo) y ese paso se
+     generó mientras tanto —la persona lo terminó a mano—, se sigue con el siguiente; si no, se vuelve
+     a intentar ese mismo. Una pausa o un «cambiar» ya apuntan al siguiente. */
   const reanudarLaCadena = () => {
     if (!cadena || !cadena.detenida) return;
-    const generadoMientras = (estadoRef.current?.historial?.[cadena.detenida.id] ?? []).length > cadena.versiones;
-    const desde = cadena.motivo !== 'cambiar' && generadoMientras ? cadena.reanudar + 1 : cadena.reanudar;
+    const generadoMientras = versionesDe(cadena.detenida.id) > cadena.versiones;
+    const desde = cadena.reanudar === cadena.indice && generadoMientras ? cadena.reanudar + 1 : cadena.reanudar;
     setCadena(null);
     void construirElMetodo(desde);
   };
+
+  /* Cerrar la franja de una cadena detenida: la persona no quiere retomarla. Se borra lo guardado,
+     para que no vuelva a aparecer la próxima vez. */
+  const cerrarLaCadena = () => {
+    setCadena(null);
+    void guardarLaCadena(null);
+  };
+
+  /* ── AL VOLVER: LO GUARDADO, RECONCILIADO CON LO QUE PASÓ ───────────────────────
+     Solo si no hay una cadena corriendo en esta pantalla. Ver el encabezado de `guardarLaCadena`. */
+  const reconciliarLaCadena = useCallback(
+    async (estadoLeido) => {
+      if (!rutaCadena || !estadoLeido || cadenaViva.current) return;
+      const r = await pedir(rutaCadena);
+      if (r.tipo !== 'datos' || cadenaViva.current) return;
+      const eslabones = eslabonesDelMetodo();
+      const vuelta = cadenaAlVolver(leerRegistro(r.datos.registro), r.datos.edadMs ?? 0, estadoLeido);
+      const h = vuelta.tipo === 'nada' ? null : eslabones[vuelta.indice];
+      // Un registro que ya no corresponde al catálogo (otro paso en esa posición) no se puede retomar.
+      if (vuelta.tipo === 'nada' || !h || h.id !== vuelta.herramienta) {
+        setCadena(null);
+        return;
+      }
+      const base = { indice: vuelta.indice, total: eslabones.length, actual: h };
+      if (vuelta.tipo === 'generando') {
+        setCadena({ ...base, hechos: eslabones.slice(0, vuelta.indice).map((x) => x.id), detenida: null, afuera: true });
+        return;
+      }
+      setCadena({
+        ...base,
+        hechos: eslabones.slice(0, vuelta.reanudar).map((x) => x.id),
+        detenida: h,
+        motivo: vuelta.motivo,
+        reanudar: vuelta.reanudar,
+        versiones: vuelta.versiones,
+      });
+    },
+    [rutaCadena, eslabonesDelMetodo],
+  );
+
+  useEffect(() => {
+    void cargar().then((leido) => reconciliarLaCadena(leido));
+  }, [cargar, reconciliarLaCadena]);
+
+  /* Un paso que se estaba generando cuando se salió, y sigue dentro del tope: se vuelve a mirar cada
+     veinte segundos hasta que termine o falle. La franja nunca queda colgada en «generando». */
+  const generandoAfuera = !!(cadena && cadena.afuera);
+  useEffect(() => {
+    if (!generandoAfuera) return undefined;
+    const t = setTimeout(() => {
+      void cargar().then((leido) => reconciliarLaCadena(leido));
+    }, 20_000);
+    return () => clearTimeout(t);
+  }, [generandoAfuera, cadena, cargar, reconciliarLaCadena]);
 
   /* Mientras no llegó nada todavía, no se pinta la estructura a medias: un formulario que
      aparece vacío y medio segundo después se rellena solo hace que alguien empiece a escribir
@@ -486,6 +587,22 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
                   <b>La cadena se detuvo en {cadena.detenida.titulo}:</b> el agente necesita que le contestes
                   algo en el chat. Cuando lo genere, sigue con la cadena.
                 </>
+              ) : cadena.motivo === 'pausa' ? (
+                // Al volver: la cadena había quedado en pausa (o se salió mientras generaba y terminó).
+                <>
+                  <b>La cadena quedó en pausa después de {cadena.detenida.titulo}.</b> Revisa el documento y,
+                  si va bien, sigue con la cadena.
+                </>
+              ) : cadena.motivo === 'terminado' ? (
+                <>
+                  <b>Mientras no estabas, {cadena.detenida.titulo} terminó de generarse.</b> Revísalo y sigue
+                  con la cadena.
+                </>
+              ) : cadena.motivo === 'salio' ? (
+                <>
+                  <b>La cadena quedó en {cadena.detenida.titulo} cuando saliste de la pantalla.</b> Sigue con la
+                  cadena para construirlo.
+                </>
               ) : (
                 <>
                   <b>La cadena se detuvo en {cadena.detenida.titulo}:</b> la generación falló. Mira el aviso
@@ -495,6 +612,12 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
             ) : cadena.pausa ? (
               <>
                 <b>Construyendo el método</b> · en pausa después de {cadena.pausa.herramienta.titulo}
+              </>
+            ) : cadena.afuera ? (
+              // Se salió mientras este paso generaba, y todavía está dentro del tope: sigue de verdad.
+              <>
+                <b>{cadena.actual.titulo} se sigue generando.</b> Empezó antes de que salieras; esta franja se
+                actualiza sola cuando termine.
               </>
             ) : (
               <>
@@ -519,7 +642,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
               <button type="button" className="fd-btn" onClick={reanudarLaCadena}>
                 {cadena.motivo === 'fallo' ? 'Reintentar' : 'Seguir con la cadena'}
               </button>
-              <button type="button" className="fd-btn sec" onClick={() => setCadena(null)}>
+              <button type="button" className="fd-btn sec" onClick={cerrarLaCadena}>
                 Cerrar
               </button>
             </>

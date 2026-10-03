@@ -35,12 +35,13 @@ test('la tarjeta pregunta con esas palabras, con la forma de la confirmación de
 });
 
 test('«Quiero cambiar algo» detiene la cadena ahí, y se puede retomar desde el paso siguiente', () => {
-  assert.match(armazon, /if \(!seguir\) \{\s*detener\(indice, h, 'cambiar'\);\s*return;/);
-  assert.match(armazon, /reanudar: motivo === 'cambiar' \? indice \+ 1 : indice,/);
+  assert.match(armazon, /if \(!seguir\) \{\s*await detener\(indice, h, 'cambiar'\);\s*return;/);
+  assert.match(armazon, /const reanudar = motivo === 'cambiar' \? indice \+ 1 : indice;/);
   assert.match(armazon, /Seguir con la cadena/);
   assert.match(armazon, /onClick=\{reanudarLaCadena\}/);
-  // Detenida por una pregunta del agente: si mientras tanto se generó ese paso, se sigue con el siguiente.
-  assert.match(armazon, /const desde = cadena\.motivo !== 'cambiar' && generadoMientras \? cadena\.reanudar \+ 1 : cadena\.reanudar;/);
+  // Detenida EN un paso (una pregunta del agente, un fallo): si mientras tanto se generó ese paso, se
+  // sigue con el siguiente. Una pausa o un «cambiar» ya apuntan al siguiente (ver la prueba 192).
+  assert.match(armazon, /const desde = cadena\.reanudar === cadena\.indice && generadoMientras \? cadena\.reanudar \+ 1 : cadena\.reanudar;/);
   // Y al retomar no se rehacen los pasos ya construidos.
   assert.match(armazon, /if \(indice < desde\) continue;/);
 });
