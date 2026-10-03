@@ -105,7 +105,7 @@ test('las dos búsquedas piden cantidades distintas, y la de prospección es la 
 
 // ─── La pantalla ───────────────────────────────────────────────────────────
 
-test('el paso 2 es UNO solo para las dos opciones', () => {
+test('el paso 2 es UNO solo', () => {
   const scraper = codigo('components/tools/Scraper.jsx');
   const cuantos = (scraper.match(/useTrabajo\('facebook-pages'/g) || []).length;
   assert.equal(
@@ -114,9 +114,10 @@ test('el paso 2 es UNO solo para las dos opciones', () => {
     'hay más de un paso 2: es la única operación que gasta, y duplicarla es duplicar el defecto ' +
       'que se corrija en uno solo de los dos',
   );
-  // Y las dos formas de descubrir, cada una la suya.
-  assert.match(scraper, /useTrabajo\('facebook-ads'/);
+  // Y se descubre por nicho. La «Opción 1 · Pegando la URL» se quitó el 2026-10-03 (Kevin y Jorge:
+  // la persona no tiene que ir a otro lugar a buscar un link); si vuelve, que sea a propósito.
   assert.match(scraper, /useTrabajo\('ad-spy'/);
+  assert.ok(!/useTrabajo\('facebook-ads'/.test(scraper), 'volvió la opción de pegar la URL de la Ad Library');
 });
 
 test('al paso 2 solo van anunciantes CON página', () => {
@@ -147,14 +148,6 @@ test('el buscador y la tarjeta son los MISMOS que los del Espía de Tools', () =
   }
 });
 
-test('las dos opciones no pueden dispararse a la vez', () => {
-  /* Son dos corridas del mismo actor sobre la misma pestaña, y la segunda pisaría la lista de la
-     primera con la corrida ya pagada. Cada botón se apaga mientras la otra opción trabaja. */
-  const scraper = codigo('components/tools/Scraper.jsx');
-  assert.match(scraper, /disabled=\{porUrl\.ocupado \|\| porNicho\.ocupado\}/);
-  assert.match(scraper, /ocupado=\{porNicho\.ocupado \|\| porUrl\.ocupado\}/);
-});
-
 // ─── Volver a la pestaña no pierde lo que se escribió ───────────────────────
 
 test('los cuatro formularios reponen sus campos al retomar un scraping en vuelo', () => {
@@ -177,9 +170,9 @@ test('los cuatro formularios reponen sus campos al retomar un scraping en vuelo'
   const cuantos = (scraper.match(/alRetomar:/g) || []).length;
   assert.equal(
     cuantos,
-    4,
-    'no son cuatro los formularios que reponen sus campos: Maps, LinkedIn y las dos opciones de ' +
-      'Facebook. El que falte deja «scrapeando» sobre un formulario en blanco',
+    3,
+    'no son tres los formularios que reponen sus campos: Maps, LinkedIn y la búsqueda de Facebook. ' +
+      'El que falte deja «scrapeando» sobre un formulario en blanco',
   );
 
   // Maps guarda lo escrito tal cual, y el tope aparte.
@@ -189,9 +182,9 @@ test('los cuatro formularios reponen sus campos al retomar un scraping en vuelo'
 
   // LinkedIn guarda el cargo con prefijo y junta región y país en una cadena.
   assert.match(scraper, /PREFIJO_LINKEDIN/);
-  // Facebook: la opción 1 su URL, la opción 2 su búsqueda con el prefijo del Espía.
-  assert.match(scraper, /setUrl\(trabajo\.location\)/);
+  // Facebook: su búsqueda con el prefijo del Espía, y el país.
   assert.match(scraper, /PREFIJO_DE_BUSQUEDA/);
+  assert.match(scraper, /setPais\(trabajo\.location\)/);
 });
 
 test('el tope pedido sale del JSON del trabajo, no de la columna que nadie escribe', () => {
@@ -245,5 +238,5 @@ test('ninguna dependencia de efecto es un literal construido en el render', () =
 
   // Y el caso concreto que lo causó, congelado: el vacío sale de una constante del módulo.
   assert.match(fuente, /const SIN_LEADS = \[\];/);
-  assert.match(fuente, /: desde === 'url' \? porUrl\.leads : SIN_LEADS;/);
+  assert.match(fuente, /const vigentes = paginas\.leads\.length > 0 \? paginas\.leads : SIN_LEADS;/);
 });

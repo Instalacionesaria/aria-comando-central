@@ -377,73 +377,28 @@ function FormularioLinkedIn({ nicho, onLeads }) {
   );
 }
 
-// ── Facebook: dos formas de descubrir, y UN paso para sacar los contactos ───
-
-/**
- * Los anunciantes que la opción 1 devuelve, con la misma forma que los de la opción 2.
- *
- * El paso 1 clásico entrega tres campos por ANUNCIO —nombre, URL de página, id— y el Espía entrega
- * anuncios ricos que hay que agrupar. Se normalizan a la misma lista para que abajo haya una sola
- * tabla de selección y un solo botón: dos listas con la misma pinta y distinta forma es de donde
- * salen los «funciona por un camino y por el otro no».
- */
-function anunciantesDeLaUrl(filas) {
-  const porPagina = new Map();
-  for (const [i, f] of filas.entries()) {
-    const uri = (f.page_profile_uri || '').trim();
-    const llave = uri !== '' ? uri : `sin-url:${i}`;
-    const previo = porPagina.get(llave);
-    if (previo) {
-      previo.anuncios += 1;
-      continue;
-    }
-    porPagina.set(llave, {
-      page_name: (f.page_name || '').trim(),
-      page_profile_uri: uri,
-      page_id: (f.page_id || '').trim(),
-      anuncios: 1,
-      /* El paso 1 clásico NO trae la longevidad: su normalizador se queda con tres campos y los
-         días activo no es uno. `-1` y no `0` para que la fila pueda decir «no se sabe» en vez de
-         «cero días», que sería una medición que nadie hizo. */
-      diasMax: -1,
-    });
-  }
-  return [...porPagina.values()];
-}
+// ── Facebook: descubrir anunciantes por nicho, y sacarles los contactos ─────
+//
+// Hasta el 2026-10-03 había una «Opción 1 · Pegando la URL» de la Ad Library al lado de esta. Se
+// quitó por pedido de Kevin y Jorge: la persona no tiene que ir a otro lugar a buscar un link. Las
+// dos usaban el mismo actor, el mismo tope de 1.000 anuncios y el mismo paso 2, así que no se pierde
+// nada de lo que se gasta ni de lo que se encuentra. Lo único que la URL permitía y ésta no son los
+// filtros finos de la Ad Library (sólo activos, frase exacta, una página concreta…), porque el
+// backend arma la búsqueda con filtros fijos (`build_meta_ad_library_url`).
+//
+// La fuente `facebook-ads` sigue existiendo en el servidor, en Monitoreo y en Mis Leads: hay
+// corridas viejas guardadas con ese nombre.
 
 function FormularioFacebook({ onLeads }) {
-  /* TRES trabajos, y no dos como antes.
-     ────────────────────────────────────────────────────────────────────────────
-     Las dos primeras son dos maneras de descubrir anunciantes, y la tercera —la que saca los
-     contactos— es UNA sola para las dos.
-
-     Que el paso 2 no esté duplicado es la decisión de este componente: es el mismo actor
-     (`apify/facebook-pages-scraper`), la misma corrida y el mismo cobro vengan de donde vengan las
-     páginas. Dos botones que hacen exactamente lo mismo se leen como dos cosas distintas, y el día
-     que uno se corrija el otro se queda atrás.
-
-     ── LAS DOS OPCIONES USAN EL MISMO ACTOR DE APIFY, Y ESO NO ES CASUAL ──────
-     `curious_coder/facebook-ads-library-scraper` para las dos. La diferencia es de dónde sale la
-     URL de la Ad Library: en la opción 1 la pega la persona, en la opción 2 la arma el backend a
-     partir del nicho y el país. Por eso la opción 2 puede reemplazar a la 1 sin cambiar lo que se
-     gasta — y encima devuelve el copy y los días que lleva corriendo cada anuncio, que es lo que
-     permite elegir a quién procesar en vez de procesarlos a todos a ciegas. */
-  const [url, setUrl] = useState('');
+  /* DOS trabajos: descubrir anunciantes por nicho (el mismo actor que el Espía) y sacarles los
+     contactos (`apify/facebook-pages-scraper`). La búsqueda devuelve el copy y los días que lleva
+     corriendo cada anuncio, que es lo que permite elegir a quién procesar en vez de procesarlos a
+     todos a ciegas. */
   const [consulta, setConsulta] = useState('');
   const [pais, setPais] = useState('ALL');
-  /* Qué opción produjo la lista que se está mirando. Se fija al arrancar y al retomar; si no hay
-     ninguna de las dos, se deduce de cuál trajo resultados. Va declarado ACÁ, antes de los hooks
-     que lo fijan, porque `alRetomar` lo usa. */
-  const [origen, setOrigen] = useState(null);
 
-  /* La opción 1 guarda la URL que se pegó en `location` —su `business_type` es la constante
-     "Facebook Ads"— y la opción 2 guarda la búsqueda con el prefijo `AdSpy: ` y el país en
-     `location`. Cada una repone lo suyo al volver a la pestaña. */
-  const porUrl = useTrabajo('facebook-ads', {
-    alRetomar: (trabajo) => {
-      if (trabajo.location) setUrl(trabajo.location);
-    },
-  });
+  /* La búsqueda se guarda con el prefijo `AdSpy: ` y el país en `location`: al volver a la pestaña
+     se reponen los dos. */
   const porNicho = useTrabajo('ad-spy', {
     trabajando: 'Buscando anuncios… esto puede tomar unos minutos.',
     contar: (n) => `Listo. ${n} ${n === 1 ? 'anuncio encontrado' : 'anuncios encontrados'}.`,
@@ -453,18 +408,11 @@ function FormularioFacebook({ onLeads }) {
         : '';
       if (buscado) setConsulta(buscado);
       if (trabajo.location) setPais(trabajo.location);
-      setOrigen('nicho');
     },
   });
   const paginas = useTrabajo('facebook-pages');
 
-  const desde = origen ?? (porNicho.leads.length > 0 ? 'nicho' : porUrl.leads.length > 0 ? 'url' : null);
-
-  const anunciantes = useMemo(() => {
-    if (desde === 'nicho') return anunciantesDe(porNicho.leads);
-    if (desde === 'url') return anunciantesDeLaUrl(porUrl.leads);
-    return [];
-  }, [desde, porNicho.leads, porUrl.leads]);
+  const anunciantes = useMemo(() => anunciantesDe(porNicho.leads), [porNicho.leads]);
 
   /* Los que se pueden procesar son los que tienen URL de página: es lo ÚNICO que acepta el actor
      del paso 2. Los otros se muestran apagados en vez de esconderse — «este anunciante no se puede
@@ -497,9 +445,8 @@ function FormularioFacebook({ onLeads }) {
     setElegidos(todosMarcados ? new Set() : new Set(procesables.map((a) => a.page_profile_uri)));
   };
 
-  /* La tabla de abajo muestra los CONTACTOS cuando ya se sacaron. Antes de eso muestra lo que trajo
-     la opción 1, que son filas con datos; la opción 2 no manda nada a la tabla porque sus
-     resultados son anuncios y se ven como tarjetas, no como columnas.
+  /* La tabla de abajo muestra los CONTACTOS cuando ya se sacaron. Antes de eso no muestra nada: los
+     resultados de la búsqueda son anuncios y se ven como tarjetas, no como columnas.
 
      ── EL VACÍO ES UNA CONSTANTE, Y ESTO TIRÓ LA PANTALLA ENTERA ─────────────
 
@@ -511,20 +458,8 @@ function FormularioFacebook({ onLeads }) {
      «This page couldn't load», sin una sola línea en ningún registro.
 
      Con una constante del módulo la identidad no cambia, el efecto corre una vez, y se acabó. */
-  const vigentes = paginas.leads.length > 0
-    ? paginas.leads
-    : desde === 'url' ? porUrl.leads : SIN_LEADS;
+  const vigentes = paginas.leads.length > 0 ? paginas.leads : SIN_LEADS;
   useEffect(() => { onLeads(vigentes); }, [vigentes, onLeads]);
-
-  const buscarPorUrl = () => {
-    if (!url.trim()) {
-      porUrl.setFase('error');
-      porUrl.setMensaje('Ingresá la URL de la biblioteca de anuncios de Facebook.');
-      return;
-    }
-    setOrigen('url');
-    porUrl.arrancar('facebook-ads', { url: url.trim() });
-  };
 
   const buscarPorNicho = () => {
     if (!consulta.trim()) {
@@ -532,7 +467,6 @@ function FormularioFacebook({ onLeads }) {
       porNicho.setMensaje('Escribí un nicho, marca o página a buscar.');
       return;
     }
-    setOrigen('nicho');
     /* El número de anuncios es el del paso 1 de siempre y no el del Espía de Tools. Ver
        `ANUNCIOS_PARA_PROSPECTAR`: acá se cosechan anunciantes, no se miran patrones. */
     porNicho.arrancar('ad-spy', {
@@ -560,48 +494,20 @@ function FormularioFacebook({ onLeads }) {
   return (
     <div className="sc-form">
       <div className="sc-paso-titulo">1 · Descubrir anunciantes</div>
-      <div className="sc-dos">
-        <div className="sc-paso">
-          <div className="sc-opcion">Opción 1 · Pegando la URL</div>
-          <div className="fd-campo">
-            <label htmlFor="sc-fb">URL de la biblioteca de anuncios de Facebook</label>
-            <input
-              id="sc-fb"
-              value={url}
-              placeholder="https://www.facebook.com/ads/library/..."
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-          <Aviso fase={porUrl.fase} mensaje={porUrl.mensaje} />
-          <button
-            type="button"
-            className="sc-btn sec"
-            disabled={porUrl.ocupado || porNicho.ocupado}
-            onClick={buscarPorUrl}
-          >
-            {porUrl.ocupado ? 'Buscando…' : '🔍 Buscar anunciantes'}
-          </button>
-          <div className="sc-subpista">
-            La de siempre. Si ya armaste la búsqueda en la Ad Library, pegá acá su URL.
-          </div>
-        </div>
-
-        <div className="sc-paso">
-          <div className="sc-opcion">Opción 2 · Buscando por nicho</div>
-          <BuscadorDeAnuncios
-            consulta={consulta}
-            onConsulta={setConsulta}
-            pais={pais}
-            onPais={setPais}
-            onBuscar={buscarPorNicho}
-            ocupado={porNicho.ocupado || porUrl.ocupado}
-            etiqueta="Buscar anuncios"
-          />
-          <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
-          <div className="sc-subpista">
-            Lo mismo que Espía a tus competidores: arma la búsqueda por vos y te deja ver <b>qué</b> anuncia
-            cada uno, y hace cuánto, antes de gastar el paso 2.
-          </div>
+      <div className="sc-paso">
+        <BuscadorDeAnuncios
+          consulta={consulta}
+          onConsulta={setConsulta}
+          pais={pais}
+          onPais={setPais}
+          onBuscar={buscarPorNicho}
+          ocupado={porNicho.ocupado}
+          etiqueta="Buscar anuncios"
+        />
+        <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
+        <div className="sc-subpista">
+          Escribí el nicho y el país: armamos la búsqueda en la Ad Library por vos y te mostramos <b>qué</b>{' '}
+          anuncia cada uno, y hace cuánto, antes de gastar el paso 2.
         </div>
       </div>
 
@@ -609,7 +515,7 @@ function FormularioFacebook({ onLeads }) {
       <div className="sc-paso">
         {anunciantes.length === 0 ? (
           <div className="sc-puente">
-            Primero descubrí anunciantes arriba, por cualquiera de las dos opciones.
+            Primero buscá anunciantes arriba.
           </div>
         ) : (
           <>
@@ -669,10 +575,8 @@ function FormularioFacebook({ onLeads }) {
         )}
       </div>
 
-      {/* Las tarjetas, solo cuando la lista vino del Espía: son lo que hace que elegir arriba tenga
-          sentido. La opción 1 no las puede mostrar —su normalizador se queda con tres campos— y
-          dibujar tarjetas vacías sería peor que no dibujarlas. */}
-      {desde === 'nicho' && porNicho.leads.length > 0 ? (
+      {/* Las tarjetas de los anuncios: son lo que hace que elegir arriba tenga sentido. */}
+      {porNicho.leads.length > 0 ? (
         <div className="es-rejilla sc-anuncios">
           {porNicho.leads.slice(0, TARJETAS_A_LA_VISTA).map((a, i) => (
             <TarjetaDeAnuncio key={a.ad_archive_id || i} anuncio={a} />

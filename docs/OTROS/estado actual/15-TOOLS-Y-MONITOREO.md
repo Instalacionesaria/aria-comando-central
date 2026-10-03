@@ -130,7 +130,7 @@ conversacional, porque su formulario dispara un gasto que no se puede volver a g
 (`lib/fundaciones/herramientas.ts:831-837`, `:850-852`).
 
 **El extractor** tiene tres pestañas —Google Maps, Facebook, LinkedIn—
-(`components/tools/Scraper.jsx:687-689`). Valida antes de llamar el mínimo de 72 leads de Maps,
+(`components/tools/Scraper.jsx:591-593`). Valida antes de llamar el mínimo de 72 leads de Maps,
 las tres partes de la localización y el rango de LinkedIn, porque el backend cobra la corrida aunque
 devuelva cero (`components/tools/Scraper.jsx:7-16`, `lib/tools/scrapers.ts:61`). Sondea cada
 cinco segundos **sin techo**: sigue hasta `COMPLETED`, `FAILED` o `CANCELLED`

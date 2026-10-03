@@ -1707,28 +1707,7 @@
   color: var(--txt-dim);
 }
 
-/* ── Facebook: las dos formas de descubrir anunciantes ───────────────────── */
-
-/* Dos columnas donde entra, y una sola donde no. El corte es el mismo de `.fd-rejilla.dos` porque
-   es la misma pregunta: dos formularios al lado del otro dejan de leerse cuando la columna se
-   angosta, y acá cada uno tiene su propio botón que dispara una corrida que se cobra. */
-.sc-dos {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 1180px) {
-  .sc-dos {
-    grid-template-columns: 1fr;
-  }
-}
-.sc-opcion {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
+/* ── Facebook: los anunciantes que se descubrieron ───────────────────────── */
 
 /* La lista de anunciantes: es donde se decide a quién se le gasta el paso 2. */
 .sc-cuenta {
