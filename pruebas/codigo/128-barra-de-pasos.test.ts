@@ -269,7 +269,9 @@ test('«Construir el método completo» encadena los pasos que siguen al Researc
   assert.match(armazon, /cuerpo: \{ herramienta: h\.id, reiniciar: true, generar: true \}/);
   // Se detiene si el agente no pudo arrancar, y se queda en esa herramienta.
   assert.match(armazon, /if \(apertura\.tipo !== 'datos' \|\| !apertura\.datos\.listo\) \{/);
-  assert.match(armazon, /detenida: h \}/);
+  // (Desde el 2026-10-03 con el motivo, para poder retomarla: ver la prueba 191.)
+  assert.match(armazon, /detener\(indice, h, apertura\.tipo === 'datos' \? 'pregunta' : 'fallo'\);/);
+  assert.match(armazon, /detenida: h,/);
   // Los valores van por argumento, desde la respuesta del agente, nunca desde un estado.
   assert.match(armazon, /conValoresPorOmision\(h, aValoresDeFormulario\(ids, apertura\.datos\.respuestas\)\)/);
   // Y la banda de progreso vive en el armazón, arriba de las subpestañas.

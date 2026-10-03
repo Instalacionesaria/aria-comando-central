@@ -30,6 +30,7 @@ import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '@/lib/http/cliente';
 import { FUNDACIONES, activaDeLaPestana, pestanaDeLaActiva } from '@/lib/fundaciones/herramientas';
 import { anunciarPestana } from '@/lib/aios/shell';
 import { usarPedidoDeVista } from '@/lib/vista';
+import { leerDocumento } from '@/lib/fundaciones/documento';
 import { estadoVacio, pasoCompleto } from '@/lib/fundaciones/estado';
 import { aValoresDeFormulario, conValoresPorOmision, idsDeCampos } from '@/lib/fundaciones/campos';
 import { SIN_RESPUESTA, mensajeDeRechazo } from '@/lib/fundaciones/mensajes';
@@ -107,6 +108,12 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
      obligue a tocar todas las que ya existen. */
   const vistas = catalogo.vistas ?? [];
   const [estado, setEstado] = useState(null);
+  /* La última foto del estado, para la cadena: corre en un bucle `async` que dura minutos, y lo que
+     capturó al empezar ya es viejo cuando se detiene o se retoma (¿se generó el paso mientras tanto?). */
+  const estadoRef = useRef(null);
+  useEffect(() => {
+    estadoRef.current = estado;
+  }, [estado]);
   const [permisos, setPermisos] = useState(null);
   /* El nombre de la organización va al encabezado del Word y del PDF. Sale de la MISMA petición de
      sesión que ya se hacía por los permisos: pedirlo aparte sería una segunda llamada por un dato
@@ -287,14 +294,52 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
     return i < 0 ? [] : herramientas.slice(i + 1).filter((h) => h.forma === 'generica');
   }, [herramientas]);
 
-  const construirElMetodo = useCallback(async () => {
+  /* ── LAS PAUSAS DE LA CADENA (2026-10-03) ──────────────────────────────────────
+   *
+   * La cadena construía los cinco pasos sin parar: un ICP mal entendido se arrastraba hasta el Mapa.
+   * Ahora se detiene después de los dos documentos sobre los que se apoya todo lo demás —el ICP y la
+   * Oferta—, muestra su resumen (el veredicto) y pregunta «¿Sigo con esto o quieres cambiar algo?».
+   * La pausa es una promesa que resuelve la tarjeta, igual que la confirmación de la mirada en el
+   * Research: el bucle se queda esperando en un `await`, sin desarmarse en estados.
+   *
+   * «Quiero cambiar algo» detiene la cadena en ese paso, con su chat abierto —el agente ya sabe
+   * regenerar con un cambio—, y la franja deja «Seguir con la cadena», que retoma desde el siguiente.
+   * Una cadena detenida por otro motivo (un dato que faltaba, la conversación de Categoría, un fallo)
+   * también se puede retomar: desde ese mismo paso, o desde el siguiente si mientras tanto se generó. */
+  const PAUSAR_DESPUES_DE = [3, 4];
+  const decisionDeLaPausa = useRef(null);
+  const decidirLaPausa = (seguir) => {
+    const resolver = decisionDeLaPausa.current;
+    decisionDeLaPausa.current = null;
+    if (resolver) resolver(seguir);
+  };
+
+  const construirElMetodo = useCallback(async (desde = 0) => {
     const eslabones = eslabonesDelMetodo();
     if (eslabones.length === 0 || cadenaViva.current) return;
     cadenaViva.current = true;
-    const hechos = [];
+    const hechos = eslabones.slice(0, desde).map((h) => h.id);
+    const total = eslabones.length;
+
+    /* Detenerse en `h`, recordando desde dónde retomar. `versiones` es cuántas tenía al detenerse:
+       si al retomar tiene más, la persona lo terminó a mano y se sigue con el siguiente. */
+    const detener = (indice, h, motivo) => {
+      setCadena({
+        indice,
+        total,
+        actual: h,
+        hechos: [...hechos],
+        detenida: h,
+        motivo,
+        reanudar: motivo === 'cambiar' ? indice + 1 : indice,
+        versiones: (estadoRef.current?.historial?.[h.id] ?? []).length,
+      });
+      cadenaViva.current = false;
+    };
 
     for (const [indice, h] of eslabones.entries()) {
-      setCadena({ indice, total: eslabones.length, actual: h, hechos: [...hechos], detenida: null });
+      if (indice < desde) continue;
+      setCadena({ indice, total, actual: h, hechos: [...hechos], detenida: null });
       setActiva(h.id);
 
       const apertura = await pedir(rutaConversar, {
@@ -306,8 +351,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
         /* Se detiene y se queda en esa herramienta: si fue por un obligatorio que faltaba, el agente
            ya la dejó preguntada; si fue por un fallo, el chat muestra el error. Seguir con la
            siguiente sería construirla sobre un hueco. */
-        setCadena({ indice, total: eslabones.length, actual: h, hechos, detenida: h });
-        cadenaViva.current = false;
+        detener(indice, h, apertura.tipo === 'datos' ? 'pregunta' : 'fallo');
         return;
       }
 
@@ -321,19 +365,49 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
         espera: ESPERA_DE_RUTA_LARGA_MS,
       });
       if (generacion.tipo !== 'datos') {
-        setCadena({ indice, total: eslabones.length, actual: h, hechos, detenida: h });
-        cadenaViva.current = false;
+        detener(indice, h, 'fallo');
         return;
       }
       hechos.push(h.id);
       /* Se recarga antes del siguiente eslabón para que la pantalla muestre el documento nuevo. El
          servidor no lo necesita —lee el almacén en cada llamada—; es para quien mira. */
       await cargar();
+
+      // La pausa: después del ICP y de la Oferta, si queda algo por construir.
+      const siguiente = eslabones[indice + 1];
+      if (siguiente && PAUSAR_DESPUES_DE.includes(h.id)) {
+        setCadena({
+          indice,
+          total,
+          actual: h,
+          hechos: [...hechos],
+          detenida: null,
+          pausa: { herramienta: h, siguiente, resumen: leerDocumento(generacion.datos.texto).veredicto },
+        });
+        const seguir = await new Promise((resolver) => {
+          decisionDeLaPausa.current = resolver;
+        });
+        if (!seguir) {
+          detener(indice, h, 'cambiar');
+          return;
+        }
+      }
     }
 
     setCadena(null);
     cadenaViva.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eslabonesDelMetodo, rutaConversar, rutaGenerar, cargar]);
+
+  /* Retomar una cadena detenida. Si el paso donde se detuvo se generó mientras tanto (la persona lo
+     terminó a mano), se sigue con el siguiente; si no, se vuelve a intentar ese mismo. */
+  const reanudarLaCadena = () => {
+    if (!cadena || !cadena.detenida) return;
+    const generadoMientras = (estadoRef.current?.historial?.[cadena.detenida.id] ?? []).length > cadena.versiones;
+    const desde = cadena.motivo !== 'cambiar' && generadoMientras ? cadena.reanudar + 1 : cadena.reanudar;
+    setCadena(null);
+    void construirElMetodo(desde);
+  };
 
   /* Mientras no llegó nada todavía, no se pinta la estructura a medias: un formulario que
      aparece vacío y medio segundo después se rellena solo hace que alguien empiece a escribir
@@ -402,9 +476,25 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           {cadena.detenida ? null : <span className="fd-punto" />}
           <span className="fd-cadena-texto">
             {cadena.detenida ? (
+              cadena.motivo === 'cambiar' ? (
+                <>
+                  <b>Detuviste la cadena en {cadena.detenida.titulo} para cambiar algo.</b> Dile al agente
+                  qué cambiar y lo regenera; cuando quede como quieres, sigue con la cadena.
+                </>
+              ) : cadena.motivo === 'pregunta' ? (
+                <>
+                  <b>La cadena se detuvo en {cadena.detenida.titulo}:</b> el agente necesita que le contestes
+                  algo en el chat. Cuando lo genere, sigue con la cadena.
+                </>
+              ) : (
+                <>
+                  <b>La cadena se detuvo en {cadena.detenida.titulo}:</b> la generación falló. Mira el aviso
+                  en esa herramienta y vuelve a intentarlo.
+                </>
+              )
+            ) : cadena.pausa ? (
               <>
-                <b>La cadena se detuvo en {cadena.detenida.titulo}.</b> Mira el chat de esa
-                herramienta: o le falta un dato que no pude deducir, o la generación falló.
+                <b>Construyendo el método</b> · en pausa después de {cadena.pausa.herramienta.titulo}
               </>
             ) : (
               <>
@@ -425,10 +515,48 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
             ))}
           </span>
           {cadena.detenida ? (
-            <button type="button" className="fd-btn sec" onClick={() => setCadena(null)}>
-              Entendido
-            </button>
+            <>
+              <button type="button" className="fd-btn" onClick={reanudarLaCadena}>
+                {cadena.motivo === 'fallo' ? 'Reintentar' : 'Seguir con la cadena'}
+              </button>
+              <button type="button" className="fd-btn sec" onClick={() => setCadena(null)}>
+                Cerrar
+              </button>
+            </>
           ) : null}
+        </div>
+      ) : null}
+
+      {/* LA PAUSA DE LA CADENA, con la forma de la confirmación del segmento (`fd-mirada gasto`): el
+          mismo gesto —el método se detiene y pregunta antes de seguir—. El resumen es el veredicto del
+          documento que acaba de salir, que está abajo para leerlo entero. */}
+      {cadena && cadena.pausa ? (
+        <div className="fd-mirada gasto" role="status" aria-live="polite">
+          <div className="fd-mirada-t">
+            <i>◍</i>
+            <div>
+              <b>Tu {cadena.pausa.herramienta.etiquetaSalida} está listo. Lo tienes abajo completo.</b>
+              {cadena.pausa.resumen.length > 0 ? (
+                cadena.pausa.resumen.map((item) => (
+                  <small key={item.titulo}>
+                    <b>{item.titulo}:</b> {item.conclusion.replace(/\*\*/g, '')}
+                  </small>
+                ))
+              ) : (
+                <small>Este documento no trae resumen: léelo abajo antes de seguir.</small>
+              )}
+              <b>¿Sigo con esto o quieres cambiar algo?</b>
+              <small>Si sigo, el siguiente paso es {cadena.pausa.siguiente.titulo}.</small>
+            </div>
+          </div>
+          <div className="fd-mirada-acciones">
+            <button type="button" className="fd-btn" onClick={() => decidirLaPausa(true)}>
+              Sí, sigue con {cadena.pausa.siguiente.pestania}
+            </button>
+            <button type="button" className="fd-btn sec" onClick={() => decidirLaPausa(false)}>
+              Quiero cambiar algo
+            </button>
+          </div>
         </div>
       ) : null}
 
