@@ -6,4 +6,4 @@
 // al paquete del navegador la URL, el esquema y las instrucciones enteras para leer un número.
 //
 // Qué significa cada número está documentado en `conversacion.ts`, junto a su re-export.
-export const VERSION_DEL_AGENTE = 2;
+export const VERSION_DEL_AGENTE = 3;

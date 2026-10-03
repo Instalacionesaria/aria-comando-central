@@ -156,25 +156,33 @@ export function fuentes(estado: EstadoDeFundaciones): Record<ClaveDeFuente, Fuen
 /**
  * Qué fuentes muestra cada herramienta. Puerto de `CHIPS_BY_TOOL`, recortado a las siete.
  *
- * Tu ficha (0) y Research (1) no heredan nada: son la raíz. Tu precio (10) tampoco muestra
- * indicadores en el hub —hereda por dentro, en su constructor de prompt— y acá se conserva igual
- * para no inventar una diferencia de interfaz que no existe allá.
+ * Tu ficha (0) no hereda de ninguna herramienta: es la raíz (su única fuente es el onboarding, que
+ * tiene su propia franja en el panel).
  */
 export const FUENTES_POR_HERRAMIENTA: Readonly<Record<number, readonly ClaveDeFuente[]>> = {
   0: [],
   // El Research hereda la ficha del negocio (Kevin, 2026-09-09): el paso 1 la lee en su prompt y el
   // agente la recibe para proponer los cinco criterios sin volver a preguntar el nicho ni la
   // experiencia. No es crítica: hay alumnos que llegan sin onboarding y el Research igual sirve.
+  //
+  // ── DESDE EL 2026-10-02 ESTA LISTA DICE TODO LO QUE ENTRA, NO UNA SELECCIÓN ───
+  //
+  // Antes mostraba lo que el hub mostraba, y el hub se callaba fuentes: el ICP leía la ficha sin
+  // decirlo, Categoría leía la ficha y Tu precio los datos del ICP. Cada clave de acá corresponde a un
+  // bloque que el constructor de `prompts.ts` de esa herramienta mete en su prompt; la prueba 90
+  // compara las dos cosas.
   1: ['perfil'],
-  3: ['marketResearch'],
-  2: ['niche', 'icp'],
-  4: ['niche', 'icp', 'categoria'],
+  3: ['perfil', 'marketResearch'],
+  2: ['perfil', 'marketResearch', 'niche', 'icp'],
+  4: ['perfil', 'niche', 'icp', 'categoria'],
   // «Tu precio» decía `[]` y era mentira a medias: su prompt (`datosDePricing`) lee el stack de valor
   // de la Oferta y los datos del ICP desde siempre —el hub también lo hacía, sin chips—. Kevin
   // (2026-09-09): «quiero que Tu Precio herede información de Oferta». Declararlo es lo que hace
   // que se VEA: los chips de «Hereda de», y el aviso antes de gastar si la Oferta no existe.
-  10: ['icp', 'oferta'],
-  26: ['icp', 'categoria', 'oferta', 'pricing'],
+  // La ficha y la categoría entraron el 2026-10-02.
+  10: ['perfil', 'icp', 'categoria', 'oferta'],
+  // El nicho del Mapa sale de los datos del ICP (`datosDeMapa`), igual que en Categoría y Oferta.
+  26: ['perfil', 'niche', 'icp', 'categoria', 'oferta', 'pricing'],
   5: ['icp', 'categoria', 'oferta', 'pricing'],
   // La Landing es la que MÁS hereda: las cuatro del VSL más el guion. No es acumulación por
   // acumulación — la página tiene que decir lo mismo que el video, y por eso el guion entra.

@@ -155,14 +155,15 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
 
   return (
     `Estás llenando el formulario de «${h.titulo}» a partir del trabajo que esta persona YA generó ` +
-    'en las herramientas anteriores. No estás escribiendo el entregable: solo completás campos.\n\n' +
+    'en las herramientas anteriores. No estás escribiendo el entregable: solo completas campos.\n\n' +
     `LOS CAMPOS:\n${preguntas}\n\n` +
     'REGLAS:\n' +
-    '· Completá TODOS los campos que el contexto sostenga, no solo los que dice textualmente. El ' +
+    '· Escribe en español neutro con tú, nunca en voseo.\n' +
+    '· Completa TODOS los campos que el contexto sostenga, no solo los que dice textualmente. El ' +
     'research describe a quién se le vende, dónde y en qué situación: de ahí salen el país o región ' +
     '(el mercado donde se buscó), el rango de edad y la ocupación típicos del dueño de ese segmento, ' +
-    'y el rango de ingresos que el propio research menciona. Proponelos.\n' +
-    '· Lo que NO podés sostener con nada del contexto va VACÍO. La diferencia: «dueños de agencias ' +
+    'y el rango de ingresos que el propio research menciona. Propónlos.\n' +
+    '· Lo que NO puedes sostener con nada del contexto va VACÍO. La diferencia: «dueños de agencias ' +
     'PPC en LATAM» sostiene un país o región y un perfil de ocupación; no sostiene una cifra exacta ' +
     'de facturación que nadie mencionó. No inventes cifras ni nombres propios.\n' +
     /* El formulario de onboarding de Walter habla del NEGOCIO (modelo, facturación, oferta, cómo
@@ -171,14 +172,14 @@ export function instruccionesDeRelleno(h: Herramienta, contexto: string): string
        captura de Innat8: «debería ser suficiente con lo que trajimos de las tablas»—. Y sí alcanza:
        una oferta que promete responder, dar seguimiento y agendar está diciendo qué problema
        resuelve y qué resultado entrega. Se propone como deducción y la persona confirma. */
-    '· Si el contexto es un FORMULARIO DE ONBOARDING, deducí el problema del cliente y el resultado ' +
+    '· Si el contexto es un FORMULARIO DE ONBOARDING, deduce el problema del cliente y el resultado ' +
     'que obtiene A PARTIR DE LO QUE LA OFERTA PROMETE RESOLVER: «un agente que responde, da ' +
     'seguimiento y agenda» sostiene que el problema es no responder ni dar seguimiento a tiempo y ' +
-    'que el resultado es más citas agendadas sin trabajo manual. Proponelos en esos términos; la ' +
-    'persona los corrige si no son así. Solo dejalos vacíos si la oferta no dice qué hace.\n' +
-    '· Escribí como escribiría la persona en ese campo: corto, concreto, con el formato del ejemplo. ' +
+    'que el resultado es más citas agendadas sin trabajo manual. Propónlos en esos términos; la ' +
+    'persona los corrige si no son así. Solo déjalos vacíos si la oferta no dice qué hace.\n' +
+    '· Escribe como escribiría la persona en ese campo: corto, concreto, con el formato del ejemplo. ' +
     'No copies párrafos enteros del contexto ni pegues frases a medias.\n' +
-    '· Usá el lenguaje exacto del contexto cuando nombre algo (el segmento, el mecanismo, los ' +
+    '· Usa el lenguaje exacto del contexto cuando nombre algo (el segmento, el mecanismo, los ' +
     'dolores): es el que la investigación eligió, y reescribirlo lo desalinea de todo lo demás.\n\n' +
     `CONTEXTO YA GENERADO:\n${contexto}`
   );

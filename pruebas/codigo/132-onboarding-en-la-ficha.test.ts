@@ -210,8 +210,8 @@ test('el agente deduce el problema y el resultado del cliente desde lo que la of
      Walter nunca pregunta por el cliente final, así que esos dos solo salen por deducción — y la
      instrucción tiene que pedirla con todas las letras, marcada como propuesta. */
   const relleno = codigo('lib/fundaciones/relleno.ts');
-  assert.match(relleno, /Si el contexto es un FORMULARIO DE ONBOARDING, deducí el problema del cliente y el resultado/);
-  assert.match(relleno, /Solo dejalos vacíos si la oferta no dice qué hace/);
+  assert.match(relleno, /Si el contexto es un FORMULARIO DE ONBOARDING, deduce el problema del cliente y el resultado/);
+  assert.match(relleno, /Solo déjalos vacíos si la oferta no dice qué hace/);
 });
 
 test('las respuestas del FINAL del formulario llegan al agente: el recorte por fuente no aplica al onboarding', () => {
@@ -249,8 +249,8 @@ test('lo que falta en la apertura se puede saltear, salvo en la herramienta que 
   const guardadas = { biz: 'Allpa', niche: 'inmobiliarias', service: 'agentes IA', price: '$1,000', before: 'orgánico' };
   const apertura = mensajeDeAperturaConPropuesta(ficha, guardadas, {});
   assert.match(apertura, /Me falta: ¿Cuál es el mayor problema de tu cliente\? · ¿Qué resultado obtienen contigo\?\./);
-  assert.match(apertura, /decime «seguí» y genero con lo que hay/);
-  assert.doesNotMatch(apertura, /Contame eso/);
+  assert.match(apertura, /dime «sigue» y genero con lo que hay/);
+  assert.doesNotMatch(apertura, /Cuéntame eso/);
 
   // Sin faltantes, el pie pide la confirmación de siempre.
   const completa = mensajeDeAperturaConPropuesta(ficha, { ...guardadas, pain: 'no responden', result: 'más citas' }, {});
@@ -260,8 +260,8 @@ test('lo que falta en la apertura se puede saltear, salvo en la herramienta que 
   const research = FUNDACIONES.find((h) => h.exigeSusCampos);
   assert.ok(research, 'ninguna herramienta exige sus campos; el Research dejó de hacerlo');
   const exigente = mensajeDeAperturaConPropuesta(research, {}, {});
-  assert.match(exigente, /Contame eso/);
-  assert.doesNotMatch(exigente, /decime «seguí»/);
+  assert.match(exigente, /Cuéntame eso/);
+  assert.doesNotMatch(exigente, /dime «sigue»/);
 });
 
 test('el almacén lee la columna `intake` con el lector tolerante', () => {

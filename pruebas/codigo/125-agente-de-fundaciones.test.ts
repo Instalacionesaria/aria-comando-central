@@ -523,7 +523,7 @@ test('las dos pantallas arrancan la generación con los valores del turno, no co
      generar con los valores del estado justo después de recibirlos del agente los lee un render antes
      de que existan — y el entregable sale sobre respuestas vacías, viéndose igual de bien. */
   const research = leer('components/fundaciones/PanelResearch.jsx');
-  assert.match(research, /const correrPaso = async \(paso, v = valores\)/);
+  assert.match(research, /const correrPaso = async \(paso, v = valores, segmentoElegido = null\)/);
   assert.match(research, /const correrTodo = async \(v = valores\)/);
   assert.match(research, /await correrTodo\(v\)/);
 

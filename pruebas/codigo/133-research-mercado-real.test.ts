@@ -231,7 +231,7 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   assert.ok(ciudad.guia);
   assert.match(ciudad.guia, /NUNCA una región de varios países ni «Latinoamérica»/);
   assert.match(ciudad.guia, /TRES partes separadas por coma/);
-  assert.match(ciudad.guia, /pedile la ciudad y la zona o distrito/);
+  assert.match(ciudad.guia, /pídele la ciudad y la zona o distrito/);
   assert.match(ciudad.guia, /empezar por SU país/);
   assert.match(ciudad.guia, /con qué país quiere empezar a extraer leads/);
   assert.match(ciudad.guia, /hasta 100 negocios, que quedan en Sales › Leads › De Radar;/);
@@ -275,7 +275,7 @@ test('la ciudad se resuelve EN EL CHAT antes de arrancar: recomienda el país de
   const conLima = { ...sinCiudad, location: 'Miraflores, Lima, Perú' };
   assert.equal(arranca(research, turno(conLima), conLima), true);
   assert.match(instruccionesDeEntrevista(research, conRegion, ''), /0\. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se termina/);
-  assert.match(ciudad.guia!, /anotá exactamente «sin datos reales»/);
+  assert.match(ciudad.guia!, /anota exactamente «sin datos reales»/);
   const operacionesB = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   assert.match(operacionesB, /if \(SIN_DATOS_REALES\.test\(ubicacion\)\)[\s\S]*?motivo: 'no_quiso'/);
 });

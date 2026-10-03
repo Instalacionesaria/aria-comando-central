@@ -181,7 +181,7 @@ export default function Documento({
             <i>◍</i>
             <span>
               <b>El documento quedó cortado.</b> El modelo llegó al techo de tokens antes de
-              terminar. Volvé a generarlo, o pedí un ajuste que lo acorte.
+              terminar. Vuelve a generarlo, o pide un ajuste que lo acorte.
             </span>
           </div>
         ) : null}
@@ -216,7 +216,7 @@ export default function Documento({
           <div className="fd-ajuste">
             <textarea
               value={nota}
-              placeholder="Qué querés que cambie. Ej: hacé la sección de dolores más específica al nicho, y bajá el tono de venta."
+              placeholder="Qué quieres que cambie. Ej: haz la sección de dolores más específica al nicho, y baja el tono de venta."
               onChange={(e) => setNota(e.target.value)}
             />
             <button

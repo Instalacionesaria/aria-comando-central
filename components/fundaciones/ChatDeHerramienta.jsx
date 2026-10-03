@@ -213,7 +213,7 @@ export default function ChatDeHerramienta({
             <div className="fd-campo">
             <textarea
               value={texto}
-              placeholder={corriendo ? 'Generando…' : 'Escribí tu respuesta…'}
+              placeholder={corriendo ? 'Generando…' : 'Escribe tu respuesta…'}
               disabled={bloqueado}
               onChange={(e) => setTexto(e.target.value)}
               onKeyDown={(e) => {

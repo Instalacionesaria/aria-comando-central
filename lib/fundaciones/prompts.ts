@@ -112,8 +112,15 @@ function contextoDeResearch(estado: EstadoDeFundaciones): string | null {
   return ctx;
 }
 
-/** Lo que el ICP hereda de la ficha: la raíz de toda la cadena. */
-function contextoDeFicha(estado: EstadoDeFundaciones): string | null {
+/**
+ * Lo que el ICP hereda de la ficha: la raíz de toda la cadena.
+ *
+ * `tope` es cuánto del perfil normalizado entra. El ICP y el Research se quedan con los 3.000 de
+ * siempre; Oferta, Tu precio y el Mapa —que heredan la ficha desde el 2026-10-02— entran con menos,
+ * porque ya cargan tres o cuatro documentos largos y el perfil ahí es contexto del negocio, no la
+ * fuente principal.
+ */
+function contextoDeFicha(estado: EstadoDeFundaciones, tope = 3000): string | null {
   const p0 = estado.perfil[0];
   if (!p0) return null;
   const partes: string[] = [
@@ -126,11 +133,14 @@ function contextoDeFicha(estado: EstadoDeFundaciones): string | null {
   if (doc) {
     partes.push(
       'PERFIL COMPLETO NORMALIZADO (usa este contexto de negocio como base del avatar):\n' +
-        doc.slice(0, 3000),
+        doc.slice(0, tope),
     );
   }
   return partes.join('\n\n');
 }
+
+/** El recorte del perfil para las herramientas que ya cargan varios documentos largos. */
+const TOPE_DE_FICHA_SECUNDARIA = 1500;
 
 // ── Los datos de cada herramienta ────────────────────────────────────────────
 
@@ -245,6 +255,9 @@ function datosDeOferta(valores: Record<string, string>, estado: EstadoDeFundacio
           'real generado; no inventes un número, genera el stack de valor completo sin anclarlo a ' +
           'un precio específico',
     _icpContext: partes.length > 0 ? partes.join('\n\n') : null,
+    // La ficha del negocio: qué vende, a qué precio y qué resultado logra hoy. Sin ella la Oferta se
+    // diseñaba sin saber del negocio más que lo que el avatar dejara entrever.
+    _profileContext: contextoDeFicha(estado, TOPE_DE_FICHA_SECUNDARIA),
   };
 }
 
@@ -271,6 +284,17 @@ function datosDePricing(valores: Record<string, string>, estado: EstadoDeFundaci
         `Resultado: ${nd(ofertaInputs, 'result')}, Incluye: ${nd(ofertaInputs, 'includes')}`,
     );
   }
+  // La categoría: el mecanismo con nombre propio es lo que justifica cobrar por valor y no por horas,
+  // y el precio tiene que sonar al mismo negocio que el posicionamiento. Va DESPUÉS del stack de
+  // valor, que es la fuente principal del cálculo.
+  const categoria = fuentes(estado).categoria;
+  if (categoria.presente) {
+    partes.push(
+      'CATEGORÍA ÚNICA / POSICIONAMIENTO YA DEFINIDO (usa el mecanismo único y el reframe para ' +
+        'justificar el valor; el precio no se compara contra las alternativas viejas):\n' +
+        categoria.completo.slice(0, 2000),
+    );
+  }
 
   return {
     outcome: valor(valores, 't11-outcome'),
@@ -282,6 +306,7 @@ function datosDePricing(valores: Record<string, string>, estado: EstadoDeFundaci
     proof: valor(valores, 't11-proof'),
     pastresults: valor(valores, 't11-pastresults'),
     _pricingContext: partes.length > 0 ? partes.join('\n\n') : null,
+    _profileContext: contextoDeFicha(estado, TOPE_DE_FICHA_SECUNDARIA),
   };
 }
 
@@ -328,6 +353,7 @@ function datosDeMapa(valores: Record<string, string>, estado: EstadoDeFundacione
     _caso: presente(valores, 't26-caso') ? valor(valores, 't26-caso') : '',
     _responsables: presente(valores, 't26-responsables') ? valor(valores, 't26-responsables') : '',
     _crossContext: partes.length > 0 ? partes.join('\n\n') : null,
+    _profileContext: contextoDeFicha(estado, TOPE_DE_FICHA_SECUNDARIA),
   };
 }
 
@@ -546,8 +572,61 @@ function datosDeProspeccion(
   };
 }
 
-function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoDeFundaciones): string {
+/**
+ * Lo que Categoría HEREDA, sin las tres respuestas del diagnóstico: el segmento ganador del Research,
+ * el nicho, la ficha y el avatar.
+ *
+ * Vive aparte de `diagnosticoDeCategoria` porque lo leen dos: el prompt de generación (que le suma
+ * las respuestas) y el agente y el relleno (`datosDe(2)`), que necesitan solo lo heredado. Hasta el
+ * 2026-10-02 `datosDe(2)` no existía y caía en el constructor del Mapa: el agente de Categoría
+ * proponía sus respuestas leyendo el contexto de OTRA herramienta.
+ */
+function heredadoDeCategoria(estado: EstadoDeFundaciones): string[] {
   const f = fuentes(estado);
+  const partes: string[] = [];
+
+  if (f.marketResearch.presente) {
+    partes.push(
+      'SEGMENTO GANADOR DEL MARKET RESEARCH (el mercado al que apunta; el reposicionamiento tiene que ' +
+        'hablarle a ESTE segmento y usar su dolor crítico):\n' + f.marketResearch.completo.slice(0, 2500),
+    );
+  }
+  if (f.niche.presente) partes.push('NICHO: ' + f.niche.completo);
+
+  const p0 = estado.perfil[0];
+  if (p0) {
+    // Los rótulos dicen lo mismo que las preguntas de «Tu ficha» que los produjeron.
+    const etiquetas: readonly (readonly [string, string])[] = [
+      ['biz', 'Negocio'],
+      ['service', 'Servicio principal'],
+      ['price', 'Precio actual'],
+      ['pain', 'Mayor problema de su cliente'],
+      ['result', 'Resultado que obtienen sus clientes'],
+    ];
+    const ficha = etiquetas
+      .map(([clave, etiqueta]) => {
+        const v = p0[clave];
+        return v && v !== SIN_ESPECIFICAR ? `${etiqueta}: ${v}` : null;
+      })
+      .filter((x): x is string => x !== null)
+      .join('\n');
+    if (ficha) partes.push('PERFIL DEL NEGOCIO (de su ficha):\n' + ficha);
+  }
+
+  if (f.icp.presente) partes.push('ICP / AVATAR (base del diagnóstico):\n' + f.icp.completo);
+  return partes;
+}
+
+/**
+ * Los «datos» de Categoría para el agente y el relleno. Su metodología no tiene variables (ver
+ * `armarPrompt`), así que lo único que hay es el contexto heredado.
+ */
+function datosDeCategoria(estado: EstadoDeFundaciones): DatosDePlantilla {
+  const partes = heredadoDeCategoria(estado);
+  return { _categoriaContext: partes.length > 0 ? partes.join('\n\n') : null };
+}
+
+function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoDeFundaciones): string {
   const partes: string[] = [];
 
   if (presente(valores, 't2cat-current')) {
@@ -564,28 +643,7 @@ function diagnosticoDeCategoria(valores: Record<string, string>, estado: EstadoD
       'QUÉ NO ESTÁ FUNCIONANDO EN SU COMUNICACIÓN ACTUAL: ' + valor(valores, 't2cat-notworking'),
     );
   }
-  if (f.niche.presente) partes.push('NICHO: ' + f.niche.completo);
-
-  const p0 = estado.perfil[0];
-  if (p0) {
-    const etiquetas: readonly (readonly [string, string])[] = [
-      ['biz', 'Negocio'],
-      ['service', 'Servicio principal'],
-      ['price', 'Ticket'],
-      ['pain', 'Dolores del cliente'],
-      ['result', 'Mejor resultado logrado'],
-    ];
-    const ficha = etiquetas
-      .map(([clave, etiqueta]) => {
-        const v = p0[clave];
-        return v && v !== SIN_ESPECIFICAR ? `${etiqueta}: ${v}` : null;
-      })
-      .filter((x): x is string => x !== null)
-      .join('\n');
-    if (ficha) partes.push('PERFIL DEL NEGOCIO (del onboarding):\n' + ficha);
-  }
-
-  if (f.icp.presente) partes.push('ICP / AVATAR (base del diagnóstico):\n' + f.icp.completo);
+  partes.push(...heredadoDeCategoria(estado));
 
   return partes.length > 0
     ? partes.join('\n\n')
@@ -632,6 +690,8 @@ export function datosDe(
       ? datosDeFicha(valores, estado)
       : id === 1
         ? datosDeResearch(valores, estado)
+      : id === 2
+        ? datosDeCategoria(estado)
       : id === 3
         ? datosDeIcp(valores, estado)
         : id === 4
@@ -682,6 +742,12 @@ export function armarPromptResearch(
    * con tres argumentos; sin estado la clave va en `null`, que es «no hay ficha», no una falta.
    */
   estado?: EstadoDeFundaciones,
+  /**
+   * El segmento que la persona ELIGIÓ cuando no quiso el que recomendó el paso 5. Solo lo lee el
+   * paso 5: con él, el paso se rehace dando por ganador ese segmento, y el ICP —que hereda el paso 5—
+   * se construye sobre lo que la persona decidió. Vacío o ausente, el paso 5 elige solo, como siempre.
+   */
+  segmentoElegido?: string,
 ): string {
   const metodologia = METODOLOGIA_RESEARCH[paso];
   if (!metodologia) throw new Error(`El Research no tiene un paso ${paso}`);
@@ -701,6 +767,7 @@ export function armarPromptResearch(
     // contrato", no "pon la línea con un hueco".
     contract: contrato && contrato !== SIN_ESPECIFICAR ? contrato : '',
     experience: inputs['experience'] ? inputs['experience'] : SIN_ESPECIFICAR,
+    _segmentoElegido: segmentoElegido && segmentoElegido.trim() !== '' ? segmentoElegido.trim() : null,
     _prev: previas,
   });
 }

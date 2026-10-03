@@ -253,18 +253,18 @@ const RESEARCH: Herramienta = {
             'zona o distrito, ciudad, país (ej: «Cayma, Arequipa, Perú», «Polanco, Ciudad de México, ' +
             'México»). El buscador de negocios exige las tres; «Arequipa, Perú» a secas no vale. NUNCA una ' +
             'región de varios países ni «Latinoamérica». Para PROPONERLA desde el contexto: solo si el ' +
-            'onboarding dice una ciudad concreta, y completá la zona con el centro de esa ciudad (ej: ' +
+            'onboarding dice una ciudad concreta, y completa la zona con el centro de esa ciudad (ej: ' +
             '«Centro, Arequipa, Perú»); si dice una región o «en general», va vacía. Para PREGUNTARLA: ' +
-            'recomendale empezar por SU país —si el onboarding, el sitio web o el prefijo del teléfono lo ' +
-            'dicen, nombralo— y pedile la ciudad y la zona o distrito donde vive o vende. Si te da solo la ' +
-            'ciudad, pedile la zona o distrito por donde empezar (o proponé el centro) y anotá las tres ' +
-            'partes juntas. Si no está claro, preguntale con qué país quiere empezar a extraer leads, en ' +
-            'qué ciudad y en qué zona. Decile en una línea que el estudio de mercado mira más de un país, pero la ' +
+            'recomiéndale empezar por SU país —si el onboarding, el sitio web o el prefijo del teléfono lo ' +
+            'dicen, nómbralo— y pídele la ciudad y la zona o distrito donde vive o vende. Si te da solo la ' +
+            'ciudad, pídele la zona o distrito por donde empezar (o propón el centro) y anota las tres ' +
+            'partes juntas. Si no está claro, pregúntale con qué país quiere empezar a extraer leads, en ' +
+            'qué ciudad y en qué zona. Dile en una línea que el estudio de mercado mira más de un país, pero la ' +
             'extracción de negocios reales arranca en un solo lugar, hasta 100 negocios, que quedan en ' +
             `${DONDE_ESTAN_LOS_LEADS}; y que lo que se vio en el mercado aparece en esta misma pestaña cuando ` +
-            'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anotá ' +
-            'exactamente «sin datos reales» y seguí. Hasta que esta respuesta no sea una ciudad concreta ' +
-            'o «sin datos reales», NO des por completas las respuestas ni pongas `listo`: preguntala, ' +
+            'termine el Research. Si la persona prefiere seguir SIN buscar negocios reales, anota ' +
+            'exactamente «sin datos reales» y sigue. Hasta que esta respuesta no sea una ciudad concreta ' +
+            'o «sin datos reales», NO des por completas las respuestas ni pongas `listo`: pregúntala, ' +
             'aunque la persona te pida generar.',
         },
       ],
@@ -340,7 +340,8 @@ const CATEGORIA: Herramienta = {
   titulo: 'Tu categoría única',
   bajada: 'Por qué tú y no otro: tu método con nombre propio, para dejar de competir por precio.',
   detalle:
-    'Hereda tu nicho y tu ICP. Las tres preguntas de diagnóstico afinan el resultado y son ' +
+    'Hereda tu ficha, el segmento ganador del Research, tu nicho y tu ICP. Las tres preguntas de ' +
+    'diagnóstico afinan el resultado y son ' +
     'opcionales si ya hay contexto. Entrega el Nuevo Juego con tu constraint real, el Enemigo ' +
     'nombrado, las Truth Bombs reutilizables, tu Modelo con nombre propio y el shift de ' +
     'identidad. Los supuestos vienen marcados y cierra con preguntas abiertas.',
@@ -371,33 +372,33 @@ const OFERTA: Herramienta = {
   titulo: 'Tu oferta irresistible',
   bajada: 'La promesa que se compra sola, construida sobre el avatar y el posicionamiento.',
   detalle:
-    'Hereda el avatar y la categoría única. Si todavía no tienes precio, déjalo vacío: el stack ' +
+    'Hereda tu ficha, el avatar y la categoría única. Si todavía no tienes precio, déjalo vacío: el stack ' +
     'de valor se construye sin anclarlo a un número y el precio sale después en Tu precio.',
   filas: [
     {
       columnas: 2,
       campos: [
         { id: 't5-name', etiqueta: 'Nombre de tu oferta o programa', tipo: 'texto', marcador: 'Ej: Protocolo de Adquisición Predecible' },
-        { id: 't5-price', etiqueta: 'Precio (opcional)', tipo: 'texto', marcador: 'Déjalo vacío si aún no lo definiste', opcional: true },
+        { id: 't5-price', etiqueta: 'Precio tentativo (opcional)', tipo: 'texto', marcador: 'Déjalo vacío si aún no lo definiste', opcional: true },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't5-result', etiqueta: '¿Qué resultado concreto entrega?', tipo: 'area', marcador: 'Ej: 15 llamadas calificadas al mes, sostenidas, sin depender de referidos' },
+        { id: 't5-result', etiqueta: '¿Qué resultado quiere conseguir tu cliente?', tipo: 'area', marcador: 'Ej: 15 llamadas calificadas al mes, sostenidas, sin depender de referidos' },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 't5-format', etiqueta: '¿En qué formato lo entregas?', tipo: 'texto', marcador: 'Ej: done-for-you con 2 sesiones semanales' },
-        { id: 't5-when', etiqueta: '¿En cuánto tiempo?', tipo: 'texto', marcador: 'Ej: 90 días' },
+        { id: 't5-format', etiqueta: '¿Cómo quiere recibirlo tu cliente? (formato y cuánto esfuerzo quiere poner)', tipo: 'texto', marcador: 'Ej: que se lo hagan todo, con 2 sesiones semanales de revisión' },
+        { id: 't5-when', etiqueta: '¿Para cuándo quiere tu cliente ese resultado?', tipo: 'texto', marcador: 'Ej: en los próximos 90 días, antes de la temporada alta' },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't5-why', etiqueta: '¿Por qué funciona tu método?', tipo: 'area', marcador: 'Ej: porque atacamos el cuello de botella real: la calificación, no el volumen' },
+        { id: 't5-why', etiqueta: '¿Por qué quiere tu cliente ese resultado? (la razón de fondo)', tipo: 'area', marcador: 'Ej: quiere dejar de depender de referidos para poder contratar y salir de la operación' },
       ],
     },
     {
@@ -409,7 +410,7 @@ const OFERTA: Herramienta = {
     {
       columnas: 1,
       campos: [
-        { id: 't5-urgency', etiqueta: '¿Qué hace que sea urgente? (opcional)', tipo: 'area', marcador: 'Escasez SOLO real: cupos de delivery, temporada, cambio de precio ya decidido', opcional: true },
+        { id: 't5-urgency', etiqueta: '¿Por qué comprar ahora y no más adelante? (opcional)', tipo: 'area', marcador: 'Escasez SOLO real: cupos de delivery, temporada, cambio de precio ya decidido', opcional: true },
       ],
     },
   ],
@@ -426,40 +427,41 @@ const PRICING: Herramienta = {
   bajada: 'Cuánto cobras y por qué: el precio como fracción del valor esperado, con su garantía.',
   detalle:
     'La fórmula es explícita: valor esperado = resultado potencial × probabilidad de lograrlo, y ' +
-    'el precio es una fracción de eso. Hereda el stack de valor de tu oferta y entrega también ' +
+    'el precio es una fracción de eso. Hereda tu ficha, tu ICP, tu categoría y el stack de valor de ' +
+    'tu oferta, y entrega también ' +
     'la garantía condicional con sus indicadores líderes.',
   filas: [
     {
       columnas: 2,
       campos: [
-        { id: 't11-outcome', etiqueta: '¿Cuánto vale el resultado que entregas?', tipo: 'texto', marcador: 'Ej: $120,000 al año en revenue nuevo' },
+        { id: 't11-outcome', etiqueta: '¿Cuánto vale al año, en dinero, el resultado que logra tu cliente?', tipo: 'texto', marcador: 'Ej: $120,000 al año en ventas nuevas' },
         { id: 't11-probability', etiqueta: '¿Qué probabilidad real hay de lograrlo?', tipo: 'texto', marcador: 'Ej: 60%' },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 't11-problemcost', etiqueta: '¿Cuánto le cuesta NO resolverlo?', tipo: 'texto', marcador: 'Ej: $8,000/mes en oportunidad perdida' },
-        { id: 't11-clientrevenue', etiqueta: '¿Cuánto factura tu cliente hoy?', tipo: 'texto', marcador: 'Ej: $30k-$80k/mes' },
+        { id: 't11-problemcost', etiqueta: '¿Cuánto le cuesta hoy el problema a tu cliente? (directo e indirecto)', tipo: 'texto', marcador: 'Ej: $8,000/mes en oportunidad perdida' },
+        { id: 't11-clientrevenue', etiqueta: '¿Cuánto factura tu cliente al mes hoy?', tipo: 'texto', marcador: 'Ej: $30k-$80k/mes' },
       ],
     },
     {
       columnas: 2,
       campos: [
-        { id: 't11-delivery', etiqueta: '¿Cuánto te cuesta entregarlo?', tipo: 'texto', marcador: 'Ej: $600/mes entre herramientas y equipo' },
-        { id: 't11-goal', etiqueta: '¿Cuál es tu meta de facturación?', tipo: 'texto', marcador: 'Ej: $30k/mes' },
+        { id: 't11-delivery', etiqueta: '¿Quién hace el trabajo: lo entregas tú, lo hacen juntos o lo hace el cliente con tu guía?', tipo: 'texto', marcador: 'Ej: lo hago yo por el cliente (done-for-you)' },
+        { id: 't11-goal', etiqueta: '¿Prefieres cobrar por adelantado o de forma recurrente?', tipo: 'texto', marcador: 'Ej: todo por adelantado · o un setup + mensualidad' },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't11-proof', etiqueta: '¿Qué prueba tienes de que funciona?', tipo: 'area', marcador: 'Ej: 6 clientes, el mejor pasó de 3 a 14 llamadas al mes' },
+        { id: 't11-proof', etiqueta: '¿Qué prueba tienes de que funciona con este tipo de cliente?', tipo: 'area', marcador: 'Ej: 6 clientes, el mejor pasó de 3 a 14 llamadas al mes' },
       ],
     },
     {
       columnas: 1,
       campos: [
-        { id: 't11-pastresults', etiqueta: 'Resultados pasados con cifras (opcional)', tipo: 'area', marcador: 'Solo cifras reales. Lo que falte se marca como pendiente, no se inventa', opcional: true },
+        { id: 't11-pastresults', etiqueta: 'Resultados pasados con cifras, con clientes o tuyos propios si aún no vendes (opcional)', tipo: 'area', marcador: 'Solo cifras reales. Lo que falte se marca como pendiente, no se inventa', opcional: true },
       ],
     },
   ],
@@ -476,7 +478,7 @@ const MAPA: Herramienta = {
   bajada: 'Tu método dibujado: del caos actual del prospecto a la transformación, en nueve secciones.',
   detalle:
     'Es la única herramienta que hornea desde las CUATRO fuentes a la vez: avatar, categoría, ' +
-    'oferta y precio. Si falta alguna, el documento sale con marcadores [COMPLETAR] en vez de ' +
+    'oferta y precio, además de tu ficha. Si falta alguna, el documento sale con marcadores [COMPLETAR] en vez de ' +
     'cifras inventadas — a propósito.',
   filas: [
     {

@@ -52,7 +52,8 @@ import {
   conValoresPorOmision,
   obligatoriosQueFaltan,
 } from '@/lib/fundaciones/campos';
-import { hayTurnosDeLaPersona } from '@/lib/fundaciones/estado';
+import { segmentoGanador } from '@/lib/fundaciones/documento';
+import { hayTurnosDeLaPersona, pasoCompleto } from '@/lib/fundaciones/estado';
 import { faltantes, FUENTES_POR_HERRAMIENTA, fuentes } from '@/lib/fundaciones/herencia';
 import { PASOS_RESEARCH } from '@/lib/fundaciones/herramientas';
 import { DONDE_ESTAN_LOS_LEADS, TOPE_DE_NEGOCIOS as TOPE_MAPS, TOPE_DE_PAGINAS as TOPE_PAGINAS } from '@/lib/fundaciones/mercado';
@@ -201,13 +202,17 @@ export default function PanelResearch({
    * Los valores llegan por argumento y el estado es solo el valor por omisión. Ver el encabezado:
    * el agente los trae en la respuesta del turno, un render antes de que el estado los tenga.
    */
-  const correrPaso = async (paso, v = valores) => {
+  const correrPaso = async (paso, v = valores, segmentoElegido = null) => {
     setCorriendo(paso);
     setError((previo) => ({ ...previo, [paso]: null }));
 
+    const cuerpo = { herramienta: 1, valores: v, paso };
+    // Solo el paso 5, y solo cuando la persona no quiso el segmento que había elegido. Ver
+    // `ConfirmarSegmento`, más abajo.
+    if (segmentoElegido) cuerpo.segmentoElegido = segmentoElegido;
     const r = await pedir(rutaGenerar, {
       metodo: 'POST',
-      cuerpo: { herramienta: 1, valores: v, paso },
+      cuerpo,
       espera: ESPERA_DE_RUTA_LARGA_MS,
     });
 
@@ -402,6 +407,51 @@ export default function PanelResearch({
     onEstadoCambiado();
   };
 
+  /* ── CONFIRMAR EL SEGMENTO ANTES DE CONSTRUIR EL ICP ───────────────────────
+   *
+   * El paso 5 elige el segmento y el ICP se construye encima. Hasta el 2026-10-02 esa elección no se
+   * le mostraba a nadie: «Continuar al paso 3» y «Construir» arrancaban el avatar sobre lo que el
+   * modelo hubiera decidido. Ahora, antes de construir, se muestra el segmento con la razón en una
+   * línea y se pregunta: «¿Construyo tu ICP sobre este segmento o prefieres otro?».
+   *
+   * `confirmacion` es QUÉ se va a hacer con el sí: 'continuar' (abrir el ICP, que se arma solo) o
+   * 'construir' (la cadena de los pasos 3 al 7). Sin pedido explícito, la tarjeta aparece igual
+   * mientras el Research está completo y el ICP todavía no existe: es el momento «al terminar el
+   * Research». Con el ICP ya hecho, aparece solo cuando se pide reconstruir. */
+  const [confirmacion, setConfirmacion] = useState(null);
+  const tarjetaDelSegmento = useRef(null);
+  const icpHecho = pasoCompleto(estado, 3);
+  const ganador = useMemo(() => segmentoGanador(salidas[PASOS_RESEARCH - 1]), [salidas]);
+  const accionPendiente = confirmacion ?? (hechos >= PASOS_RESEARCH && !icpHecho ? 'continuar' : null);
+  const pedirConfirmacion = (accion) => {
+    setConfirmacion(accion);
+    // Al pedirla desde un botón lejano —«Construir» está al pie—, se lleva la vista a la tarjeta.
+    setTimeout(() => tarjetaDelSegmento.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+  };
+  const confirmarSegmento = () => {
+    const accion = accionPendiente;
+    setConfirmacion(null);
+    if (accion === 'construir') {
+      if (onConstruirElMetodo) onConstruirElMetodo();
+    } else {
+      onIr(3, { rellenar: true });
+    }
+  };
+  /* La persona prefiere otro: se rehace el paso 5 dándolo por ganador, y la tarjeta vuelve a
+     preguntar con el segmento nuevo. El ICP hereda el paso 5, así que es ahí donde la elección tiene
+     que quedar escrita — no en un dato aparte que el ICP no lee. */
+  const elegirOtroSegmento = (segmento) => correrPaso(PASOS_RESEARCH - 1, valores, segmento);
+
+  /* «Continuar al paso 3» pasa por la misma confirmación cuando va a ARMAR el ICP (no existe todavía).
+     Con el ICP hecho, el botón solo navega —no regenera nada— y no hay nada que confirmar. */
+  const irDesdeLaBarra = (id, opciones) => {
+    if (id === 3 && opciones?.rellenar && hechos >= PASOS_RESEARCH && !icpHecho && puedeEditar) {
+      pedirConfirmacion('continuar');
+      return;
+    }
+    onIr(id, opciones);
+  };
+
   /** Los cinco, de a uno. Corta en el primero que falle: el siguiente lo necesitaba. */
   const correrTodo = async (v = valores) => {
     for (let paso = 0; paso < PASOS_RESEARCH; paso += 1) {
@@ -413,6 +463,10 @@ export default function PanelResearch({
       // Entre el paso 1 y el 2: mirar el mercado real, si hay dónde. Los pasos 2 al 5 lo leen.
       if (paso === 0) await mirarElMercado(v);
     }
+    /* Al terminar: antes de construir nada encima, se muestra el segmento elegido y se pregunta. Solo si
+       el ICP todavía no existe —con ICP, «Continuar» no lo reconstruye y la pregunta mentiría—; para
+       reconstruirlo está «Construir», que pasa por la misma tarjeta. */
+    if (!icpHecho) pedirConfirmacion('continuar');
   };
 
   /* Lo que el agente devuelve en cada turno, puesto en el formulario. Son claves cortas y el
@@ -643,12 +697,26 @@ export default function PanelResearch({
           chips y el panel entra en una pantalla. Acá cada paso es una tarjeta con su documento
           adentro, así que el pie queda a varios scrolls de distancia y el botón no existe para quien
           no baja hasta el fondo. Pegada a los controles se ve al llegar, que es cuando hace falta. */}
+      {accionPendiente && puedeEditar && onIr && corriendo === null ? (
+        <div ref={tarjetaDelSegmento}>
+          <ConfirmarSegmento
+            ganador={ganador}
+            accion={accionPendiente}
+            eslabones={eslabonesDelMetodo}
+            onConfirmar={confirmarSegmento}
+            onElegirOtro={elegirOtroSegmento}
+            onVerPaso5={() => setAbierto(PASOS_RESEARCH - 1)}
+            onCancelar={confirmacion ? () => setConfirmacion(null) : null}
+          />
+        </div>
+      ) : null}
+
       {onIr ? (
         <BarraDePasos
           herramienta={herramienta}
           estado={estado}
           pantalla={pantalla}
-          onIr={onIr}
+          onIr={irDesdeLaBarra}
         />
       ) : null}
 
@@ -725,7 +793,7 @@ export default function PanelResearch({
         <div className="fd-aviso">
           <i>◍</i>
           <span>
-            Los cinco pasos están. <b>El paso 5 es lo que hereda tu ICP</b>: si volvés a
+            Los cinco pasos están. <b>El paso 5 es lo que hereda tu ICP</b>: si vuelves a
             ejecutar el research, conviene regenerar el ICP después.
           </span>
         </div>
@@ -744,12 +812,115 @@ export default function PanelResearch({
               {eslabonesDelMetodo.length * 2} minutos. Las versiones anteriores se conservan.
             </span>
           </div>
-          <button type="button" className="fd-btn" onClick={onConstruirElMetodo}>
+          {/* No construye directo: primero la confirmación del segmento, que es la base de los cinco. */}
+          <button
+            type="button"
+            className="fd-btn"
+            disabled={corriendo !== null}
+            onClick={() => pedirConfirmacion('construir')}
+          >
             Construir
           </button>
         </div>
       ) : null}
 
+    </div>
+  );
+}
+
+/* ── LA CONFIRMACIÓN DEL SEGMENTO, DIBUJADA ──────────────────────────────────
+   Usa la forma de la confirmación de la mirada (`fd-mirada gasto`): es el mismo gesto —el Research
+   se detiene y pregunta antes de seguir— y no hace falta una pieza visual nueva para decirlo.
+
+   Sin el resumen del paso 5 (`ganador` en null: un research de antes de que el paso 5 lo escribiera)
+   no se adivina el segmento leyendo la prosa: se pide confirmar igual, mandando a leer el paso 5. */
+function ConfirmarSegmento({ ganador, accion, eslabones, onConfirmar, onElegirOtro, onVerPaso5, onCancelar }) {
+  const [eligiendo, setEligiendo] = useState(false);
+  const [otro, setOtro] = useState('');
+  const resto = (eslabones || []).slice(1).map((h) => h.pestania);
+
+  const rehacer = async () => {
+    const limpio = otro.trim();
+    if (limpio === '') return;
+    const bien = await onElegirOtro(limpio);
+    if (bien) {
+      setEligiendo(false);
+      setOtro('');
+    }
+  };
+
+  return (
+    <div className="fd-mirada gasto" role="status" aria-live="polite">
+      <div className="fd-mirada-t">
+        <i>◍</i>
+        <div>
+          {ganador ? (
+            <>
+              <b>Tu Research eligió este segmento: «{ganador.segmento}».</b>
+              {ganador.motivo ? <small>Por qué: {ganador.motivo}</small> : null}
+            </>
+          ) : (
+            <>
+              <b>Tu Research ya eligió un segmento.</b>
+              <small>
+                Este research se generó antes de que el paso 5 resumiera su elección en una línea: ábrelo
+                para leer cuál eligió y por qué.
+              </small>
+            </>
+          )}
+          <b>¿Construyo tu ICP sobre este segmento o prefieres otro?</b>
+          {accion === 'construir' && resto.length > 0 ? (
+            <small>Después sigo con {resto.join(', ')}, en cadena.</small>
+          ) : null}
+        </div>
+      </div>
+
+      {eligiendo ? (
+        <>
+          <div className="fd-campo">
+            <label htmlFor="fd-otro-segmento">¿Qué segmento prefieres?</label>
+            <input
+              id="fd-otro-segmento"
+              type="text"
+              value={otro}
+              maxLength={300}
+              placeholder="Escribe el segmento, por ejemplo uno de los que encontró el paso 1"
+              onChange={(e) => setOtro(e.target.value)}
+            />
+            <small>
+              Rehago el paso 5 dando por ganador el que elijas: vuelve a buscar en la web, así que tarda un
+              par de minutos. Después te lo vuelvo a mostrar antes de construir.
+            </small>
+          </div>
+          <div className="fd-mirada-acciones">
+            <button type="button" className="fd-btn" disabled={otro.trim() === ''} onClick={rehacer}>
+              Rehacer el paso 5 con este segmento
+            </button>
+            <button type="button" className="fd-btn sec" onClick={() => setEligiendo(false)}>
+              Volver
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="fd-mirada-acciones">
+          <button type="button" className="fd-btn" onClick={onConfirmar}>
+            {accion === 'construir' ? 'Sí, construye el método' : 'Sí, construye mi ICP'}
+          </button>
+          <button type="button" className="fd-btn sec" onClick={() => setEligiendo(true)}>
+            Prefiero otro segmento
+          </button>
+          {ganador ? null : (
+            <button type="button" className="fd-btn sec" onClick={onVerPaso5}>
+              Ver el paso 5
+            </button>
+          )}
+          {onCancelar ? (
+            <button type="button" className="fd-btn sec" onClick={onCancelar}>
+              Ahora no
+            </button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -779,7 +950,7 @@ function Mirada({ mirada, onDecidir }) {
               <b>Descuenta hasta {mirada.tope + mirada.topePaginas} leads de tu saldo: {mirada.tope} de Maps y {mirada.topePaginas} de Facebook.</b>{' '}
               El Espía no descuenta.
               {typeof mirada.disponibles === 'number'
-                ? ` Tenés ${mirada.disponibles} disponibles; después de esta mirada te quedarían al menos ${Math.max(0, mirada.disponibles - mirada.tope - mirada.topePaginas)}.`
+                ? ` Tienes ${mirada.disponibles} disponibles; después de esta mirada te quedarían al menos ${Math.max(0, mirada.disponibles - mirada.tope - mirada.topePaginas)}.`
                 : ''}
             </small>
           </div>
@@ -877,8 +1048,8 @@ function Mirada({ mirada, onDecidir }) {
     no_quiso: 'El Research sigue sin datos reales, como pediste.',
     sin_saldo: `No se pudo buscar en Google Maps${mirada.detalle ? `: ${mirada.detalle}` : ''}. El Research sigue con lo que el modelo sabe del mercado.`,
     sin_ubicacion: 'Sin una ubicación en los criterios no hay dónde buscar negocios reales. El Research sigue igual.',
-    ubicacion_incompleta: `«${mirada.ubicacion || 'la ubicación'}» necesita tres partes: zona o distrito, ciudad y país, por ejemplo «Cayma, Arequipa, Perú». Es lo que exige el buscador de negocios. El Research sigue igual; para mirar el mercado real, completá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
-    ubicacion_amplia: `«${mirada.ubicacion || 'la ubicación'}» es una región, y Google Maps necesita una ciudad, por ejemplo «Lima, Perú». El Research sigue igual; para mirar el mercado real, cambiá «¿En qué ciudad buscar negocios reales?» y regenerá el paso 1.`,
+    ubicacion_incompleta: `«${mirada.ubicacion || 'la ubicación'}» necesita tres partes: zona o distrito, ciudad y país, por ejemplo «Cayma, Arequipa, Perú». Es lo que exige el buscador de negocios. El Research sigue igual; para mirar el mercado real, completa «¿En qué ciudad buscar negocios reales?» y regenera el paso 1.`,
+    ubicacion_amplia: `«${mirada.ubicacion || 'la ubicación'}» es una región, y Google Maps necesita una ciudad, por ejemplo «Lima, Perú». El Research sigue igual; para mirar el mercado real, cambia «¿En qué ciudad buscar negocios reales?» y regenera el paso 1.`,
     sin_preparar: 'No se pudo preparar la búsqueda. El Research sigue con lo que el modelo sabe.',
     sin_resumen: `Los scrapers corrieron pero no se pudo guardar el resumen. Los negocios están en ${DONDE_ESTAN_LOS_LEADS}.`,
   };

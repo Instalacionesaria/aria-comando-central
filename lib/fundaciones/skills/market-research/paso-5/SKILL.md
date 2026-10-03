@@ -6,7 +6,7 @@ metadata:
   author: ARIA IA
 ---
 
-SIN PREÁMBULO CONVERSACIONAL: empieza tu respuesta DIRECTO en el contenido del entregable (primer encabezado o punto). No incluyas frases de transición ni preámbulos (p. ej. "Ahora tengo toda la información necesaria para hacer el análisis…", "Perfecto, aquí está…"). Nada de texto antes del contenido.
+SIN PREÁMBULO CONVERSACIONAL: la PRIMERA línea de tu respuesta es el bloque `<veredicto>` que se describe al final, y después vas DIRECTO al contenido del entregable (primer encabezado o punto). No incluyas frases de transición ni preámbulos (p. ej. "Ahora tengo toda la información necesaria para hacer el análisis…", "Perfecto, aquí está…").
 
 {{#_mercadoContext}}
 {{_mercadoContext}}
@@ -38,10 +38,18 @@ Evalúa CADA segmento contra estas 4 preguntas, en este orden:
 
 REGLA DE DECISIÓN CRÍTICA: Es normal que varios segmentos califiquen bien en las primeras 3 preguntas. La PREGUNTA 4 — ¿podemos encontrarlos fácilmente? — es la que se usa para tomar la DECISIÓN FINAL sobre a quién atacar. Queremos ofrecer un ROI extraordinario, que puedan pagarlo, y entregar resultados predecibles — pero por encima de todo, NECESITAMOS poder encontrarlos fácilmente.
 
+{{#_segmentoElegido}}
+DECISIÓN DEL ALUMNO: ya revisó una recomendación anterior y ELIGIÓ enfocarse en este segmento: «{{_segmentoElegido}}». Ese es el segmento ganador de este análisis. Evalúalo igual con las 4 preguntas y di con honestidad sus riesgos frente a los demás, pero NO cambies la elección: la decisión es suya.
+{{/_segmentoElegido}}
 Con base en esto:
 
 PRIMERO: Evalúa cada segmento contra las 4 preguntas (puedes usar una tabla comparativa). ¿Qué segmento me recomendarías? Justifica aplicando la regla de decisión.
 
 SEGUNDO: Dame las razones específicas por las que cada uno de los OTROS segmentos NO obtuvo el primer lugar, comparando cada segmento descartado directamente contra el ganador usando las mismas 4 preguntas.
 
-REGLA DE FORMATO (OBLIGATORIA): empieza DIRECTAMENTE con el contenido del entregable — sin preámbulos ni transiciones conversacionales ("Ahora tengo toda la información...", "Aquí va...", "Perfecto...") y sin cierres. Markdown limpio: títulos con # y ##, tablas solo cuando aporten, negritas para conceptos clave.
+REGLA DE FORMATO (OBLIGATORIA): la primera línea es este bloque de VEREDICTO, con esta sintaxis EXACTA (sin ``` alrededor):
+<veredicto>
+<item titulo="Segmento ganador">el nombre del segmento elegido, tal como lo llamas en el análisis</item>
+<item titulo="Por qué">UNA sola línea con la razón principal de la elección</item>
+</veredicto>
+Después del bloque, el contenido del entregable directo — sin preámbulos ni transiciones conversacionales ("Ahora tengo toda la información...", "Aquí va...", "Perfecto...") y sin cierres. Markdown limpio: títulos con # y ##, tablas solo cuando aporten, negritas para conceptos clave.

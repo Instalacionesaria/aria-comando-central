@@ -533,6 +533,97 @@ test('el contexto heredado LLEGA al prompt: no es decorativo', () => {
   assert.match(categoria, /AVATAR GENERADO/, 'Categoría no heredó el avatar');
   // Y su adaptador de modo documento, que es lo que la convierte de conversación en entregable.
   assert.match(categoria, /MODO DOCUMENTO/, 'Categoría perdió su adaptador de modo documento');
+
+  // ── LA HERENCIA QUE FALTABA (2026-10-02) ───────────────────────────────────
+  assert.match(categoria, /SEGMENTO GANADOR DEL MARKET RESEARCH[\s\S]*PASO 5/, 'Categoría no heredó el Research');
+  assert.match(pricing, /CATEGORÍA GENERADA/, 'Tu precio no heredó la categoría');
+  for (const [nombre, prompt] of [['Oferta', oferta], ['Tu precio', pricing], ['Mapa', mapa]] as const) {
+    assert.match(prompt, /CONTEXTO DEL NEGOCIO DEL ALUMNO[\s\S]*PERFIL GENERADO/, `${nombre} no heredó Tu ficha`);
+  }
+  // Sin ficha, el bloque se omite entero: ni el rótulo ni un hueco.
+  const sinFicha = estadoCompleto();
+  sinFicha.perfil = { ...sinFicha.perfil };
+  delete sinFicha.perfil[0];
+  sinFicha.historial = { ...sinFicha.historial };
+  delete sinFicha.historial[0];
+  assert.doesNotMatch(armarPrompt(4, valoresLlenos(4), sinFicha), /CONTEXTO DEL NEGOCIO DEL ALUMNO/);
+});
+
+test('los chips de «Hereda de» dicen TODO lo que entra al prompt, y nada que no entre', async () => {
+  /* Antes la lista era la del hub, y el hub se callaba fuentes: el ICP leía la ficha sin chip, y Tu
+     precio los datos del ICP. Esta prueba ata las dos cosas en las dos direcciones: cada chip tiene su
+     bloque en el prompt, y cada fuente que aparece en el prompt tiene su chip. Las marcas son los
+     textos del `estadoCompleto`: el documento generado o, cuando el constructor lee los inputs, un
+     input (la ficha de Categoría, los datos del ICP de Tu precio). */
+  const { contextoHeredado } = await import('../../lib/fundaciones/relleno.ts');
+  const MARCAS = {
+    perfil: /PERFIL GENERADO|Negocio: ARIA IA/,
+    // El rótulo y no «PASO 5» a secas: la metodología de Categoría tiene su propio «PASO 5».
+    marketResearch: /SEGMENTO (RECOMENDADO|GANADOR DEL MARKET RESEARCH)[\s\S]*PASO 5/,
+    icp: /AVATAR GENERADO|Nicho: agencias digitales/,
+    niche: /agencias digitales/,
+    categoria: /CATEGORÍA GENERADA/,
+    oferta: /OFERTA GENERADA/,
+    pricing: /PRICING GENERADO/,
+  } as const;
+  const e = estadoCompleto();
+  for (const h of FUNDACIONES) {
+    if (h.id === 0 || h.id === 1) continue; // la raíz, y el Research (sus pasos se arman aparte)
+    const prompt = armarPrompt(h.id, valoresLlenos(h.id), e);
+    const chips = FUENTES_POR_HERRAMIENTA[h.id] ?? [];
+    for (const [clave, marca] of Object.entries(MARCAS)) {
+      const enElPrompt = marca.test(prompt);
+      const enLosChips = chips.includes(clave as never);
+      // El nicho es un pedazo del ICP: puede entrar sin chip propio cuando ya está el del ICP.
+      if (clave === 'niche' && !enLosChips) continue;
+      assert.equal(
+        enElPrompt,
+        enLosChips,
+        enLosChips
+          ? `«${h.pestania}» muestra el chip ${clave} y su prompt no lo lee`
+          : `«${h.pestania}» lee ${clave} y no lo muestra en «Hereda de»`,
+      );
+    }
+    /* Y el agente y el relleno leen lo mismo que el prompt: con `datosDe(2)` ausente, Categoría caía en
+       el constructor del Mapa y proponía sus respuestas con el contexto de OTRA herramienta. */
+    const contexto = contextoHeredado(h, e);
+    for (const clave of chips) {
+      if (clave === 'niche') continue;
+      assert.match(contexto, MARCAS[clave as keyof typeof MARCAS], `el agente de «${h.pestania}» no recibe ${clave}`);
+    }
+  }
+  assert.doesNotMatch(
+    contextoHeredado(herramienta(2)!, e),
+    /OFERTA GENERADA|PRICING GENERADO/,
+    'el agente de Categoría volvió a leer el contexto del Mapa',
+  );
+});
+
+test('las preguntas de Oferta y Tu precio dicen lo mismo que el campo de la metodología', () => {
+  /* La pregunta se leía distinto de lo que la metodología recibía: «¿Por qué funciona tu método?»
+     llegaba al prompt como «POR QUÉ LO QUIERE (razón detrás del deseo)», y «¿Cuánto te cuesta
+     entregarlo?» como «NIVEL DE ENTREGA». El documento salía igual de bien, sobre un dato
+     equivocado. Cada par congela pregunta y rótulo del `SKILL.md` juntos. */
+  const etiqueta = (id: string) => camposDe(herramienta(Number(id.startsWith('t5-') ? 4 : 10))!).find((c) => c.id === id)!.etiqueta;
+  const oferta = leerPlantilla('oferta/irresistible')!;
+  const pricing = leerPlantilla('pricing/protocol')!;
+  const pares: readonly (readonly [string, RegExp, string, RegExp])[] = [
+    ['t5-result', /qué resultado quiere conseguir tu cliente/i, oferta, /QUÉ QUIERE EL CLIENTE \(resultado principal\): \{\{result\}\}/],
+    ['t5-why', /por qué quiere tu cliente ese resultado/i, oferta, /POR QUÉ LO QUIERE \(razón detrás del deseo\): \{\{why\}\}/],
+    ['t5-when', /para cuándo quiere tu cliente/i, oferta, /CUÁNDO LO QUIERE \(urgencia del cliente\): \{\{when\}\}/],
+    ['t5-format', /cómo quiere recibirlo tu cliente/i, oferta, /CÓMO QUIERE RECIBIRLO \(formato\): \{\{format\}\}/],
+    ['t11-delivery', /lo entregas tú, lo hacen juntos o lo hace el cliente/i, pricing, /NIVEL DE ENTREGA: \{\{delivery\}\}/],
+    ['t11-goal', /por adelantado o de forma recurrente/i, pricing, /OBJETIVO DE COBRO: \{\{goal\}\}/],
+    ['t11-outcome', /al año/i, pricing, /RESULTADO POTENCIAL ANUAL PARA EL CLIENTE: \{\{outcome\}\}/],
+    ['t11-clientrevenue', /al mes/i, pricing, /INGRESOS MENSUALES ACTUALES DEL PROSPECTO: \{\{clientrevenue\}\}/],
+  ].map(([id, pregunta, plantilla, rotulo]) => [id as string, pregunta as RegExp, plantilla as string, rotulo as RegExp]);
+  for (const [id, pregunta, plantilla, rotulo] of pares) {
+    assert.match(etiqueta(id), pregunta, `la pregunta de \`${id}\` ya no dice lo que la metodología recibe`);
+    assert.match(plantilla, rotulo, `el rótulo de \`${id}\` cambió en el SKILL.md: revisar que la pregunta siga diciendo lo mismo`);
+  }
+  // Las dos que ya no se preguntan con su sentido viejo.
+  assert.doesNotMatch(etiqueta('t5-why'), /funciona tu método/);
+  assert.doesNotMatch(etiqueta('t11-goal'), /meta de facturación/);
 });
 
 test('el research incompleto NO se hereda: cuatro pasos no son cinco', () => {
@@ -585,7 +676,9 @@ test('las fuentes críticas que faltan se pueden nombrar antes de gastar la gene
   // «Tu precio» hereda de la Oferta (Kevin, 2026-09-09) y la exige: sin stack de valor no hay de
   // dónde sacar el Valor Transformacional. El prompt ya la leía; ahora se declara y se ve.
   assert.deepEqual(faltantes(vacio, 10), ['oferta']);
-  assert.deepEqual(FUENTES_POR_HERRAMIENTA[10], ['icp', 'oferta']);
+  // Y desde el 2026-10-02 también la ficha y la categoría, que su prompt lee (ver la prueba de abajo
+  // que compara los chips con los prompts).
+  assert.deepEqual(FUENTES_POR_HERRAMIENTA[10], ['perfil', 'icp', 'categoria', 'oferta']);
   // Con todo hecho, no falta nada.
   assert.deepEqual(faltantes(estadoCompleto(), 26), []);
   assert.deepEqual(faltantes(estadoCompleto(), 10), []);

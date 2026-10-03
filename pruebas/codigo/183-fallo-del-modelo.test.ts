@@ -60,7 +60,7 @@ test('la pantalla dice a quién le toca, y la MISMA referencia queda en el regis
 
   const texto = mensajeDeRechazo(cuerpo.codigo, r.status, cuerpo.detalle);
   assert.match(texto, /^Se cortó la conexión con el modelo/);
-  assert.match(texto, /mandale este código al equipo de ARIA/);
+  assert.match(texto, /mándale este código al equipo de ARIA/);
   assert.match(texto, new RegExp(`\\nCódigo IA-CONEXION · ref ${ref} — sin respuesta: fetch failed \\(tras 301 s\\)$`));
   // El párrafo genérico de antes ya no aparece.
   assert.doesNotMatch(texto, /Cualquier otra cosa suele ser pasajera/);

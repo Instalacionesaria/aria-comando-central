@@ -242,7 +242,7 @@ export function contextoDeOnboarding(onboarding: Onboarding | null): string | nu
 
   return (
     'LO QUE ESTA PERSONA CONTESTÓ EN SU FORMULARIO DE ONBOARDING (lo escribió ella misma al ' +
-    'inscribirse; es la base de esta ficha y podés citarlo si te pregunta por sus datos):\n' +
+    'inscribirse; es la base de esta ficha y puedes citarlo si te pregunta por sus datos):\n' +
     partes.join('\n')
   ).slice(0, CARACTERES_DE_ONBOARDING);
 }

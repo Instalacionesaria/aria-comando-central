@@ -38,7 +38,7 @@ export default function SelectorDeModo({ modo, onElegir, bloqueado, queHaceElAge
         <b>Opción 2</b> Agente conversacional
       </button>
       <span className="fd-modos-nota">
-        {modo === MODO_FORMULARIO ? 'Llenás los campos y apretás el botón.' : queHaceElAgente}
+        {modo === MODO_FORMULARIO ? 'Llenas los campos y aprietas el botón.' : queHaceElAgente}
       </span>
     </div>
   );

@@ -358,7 +358,7 @@ export function contextoDeMercado(m: MercadoReal | null): string | null {
   if (!m) return null;
   const lineas: string[] = [
     `LO QUE SE VIO EN EL MERCADO REAL (scrapers de Comando Central, sobre «${m.rubro}» en ${m.ubicacion}; ` +
-      'son datos observados, no estimados — usalos y citalos como tales):',
+      'son datos observados, no estimados — úsalos y cítalos como tales):',
   ];
   if (m.maps) {
     const x = m.maps;

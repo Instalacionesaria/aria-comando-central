@@ -17,6 +17,10 @@ CONTEXTO HEREDADO DEL ALUMNO (única fuente de datos numéricos y nombres):
 {{^_crossContext}}
 (sin contexto heredado — genera la anatomía con los frameworks y marca TODO dato con [COMPLETAR: ...])
 {{/_crossContext}}
+{{#_profileContext}}
+CONTEXTO DEL NEGOCIO DEL ALUMNO (de su ficha — su negocio, su servicio y el resultado que ya logra; úsalo para nombrar al alumno y su servicio, nunca para inventar cifras):
+{{_profileContext}}
+{{/_profileContext}}
 {{#_caso}}
 CASO REAL DEL ALUMNO (úsalo para la prueba en S2/S3; si no alcanza, deja [COMPLETAR: prueba]): {{_caso}}
 {{/_caso}}

@@ -21,14 +21,14 @@
 /** Los textos por código de rechazo. */
 const TEXTOS: Readonly<Record<string, string>> = {
   // Del portero.
-  sin_sesion: 'Tu sesión venció. Volvé a entrar y seguimos donde estabas — el trabajo está guardado.',
+  sin_sesion: 'Tu sesión venció. Vuelve a entrar y seguimos donde estabas — el trabajo está guardado.',
   sin_permiso:
-    'Tu rol no incluye Fundaciones. No es que esté vacío: no lo podés ver. Pedile a quien administra la organización la capacidad correspondiente.',
+    'Tu rol no incluye Fundaciones. No es que esté vacío: no lo puedes ver. Pídele a quien administra la organización la capacidad correspondiente.',
   organizacion_inactiva: 'Esta organización está desactivada, así que Fundaciones no opera.',
-  origen_no_permitido: 'La petición no se aceptó por seguridad. Recargá la página e intentá de nuevo.',
+  origen_no_permitido: 'La petición no se aceptó por seguridad. Recarga la página e intenta de nuevo.',
   pendiente_2fo: 'Falta confirmar tu segundo factor antes de seguir.',
-  debe_cambiar_password: 'Tenés que cambiar tu contraseña antes de seguir.',
-  debe_configurar_2fo: 'Tenés que configurar tu segundo factor antes de seguir.',
+  debe_cambiar_password: 'Tienes que cambiar tu contraseña antes de seguir.',
+  debe_configurar_2fo: 'Tienes que configurar tu segundo factor antes de seguir.',
 
   // De la configuración de la organización. Son 409 y no 403 a propósito: quien los recibe TIENE el
   // permiso, y lo que falta es una configuración. Cada uno nombra a quién le toca.
@@ -39,16 +39,16 @@ const TEXTOS: Readonly<Record<string, string>> = {
   // De los dos servicios externos. Están separados a propósito: son dos sistemas distintos y
   // confundirlos hace que se revise el que anda.
   /* El detalle que sigue a este texto viene DEL PROVEEDOR y dice qué estuvo mal. Se nombran las dos
-     causas que no se arreglan probando de nuevo, porque «probá de nuevo en un momento» a secas manda
+     causas que no se arreglan probando de nuevo, porque «prueba de nuevo en un momento» a secas manda
      a esperar a alguien que tiene que ir a hacer algo — y esperar no recarga una cuenta. Mismo
      encuadre que `motor_rechazo`, que ya resolvía esto para el motor de scraping. */
   modelo_no_disponible:
     'El modelo no respondió, y el detalle de abajo viene de él. No se perdió nada de lo que ' +
     'escribiste. Si dice que el saldo es insuficiente, hay que recargar la cuenta de IA; si nombra ' +
     'un límite o un campo de la petición, es nuestro y hay que corregirlo. Cualquier otra cosa suele ' +
-    'ser pasajera: probá de nuevo en un momento.',
+    'ser pasajera: prueba de nuevo en un momento.',
   almacen_no_disponible:
-    'No se pudo leer tu trabajo guardado. Esto NO significa que esté vacío — significa que no se pudo preguntar. Probá de nuevo en un momento.',
+    'No se pudo leer tu trabajo guardado. Esto NO significa que esté vacío — significa que no se pudo preguntar. Prueba de nuevo en un momento.',
 
   // Del motor de scraping. Ver `respuesta.ts`: son tres porque mandan a tres personas distintas.
   motor_no_configurado:
@@ -62,7 +62,7 @@ const TEXTOS: Readonly<Record<string, string>> = {
   metodologia_ilegible:
     'Falta el archivo de metodología de esta herramienta en el servidor. Es un problema del despliegue, no de tus datos.',
   base_no_disponible: 'La base no está respondiendo. No es tu sesión: es el servidor.',
-  peticion_invalida: 'La petición no se entendió. Recargá la página e intentá de nuevo.',
+  peticion_invalida: 'La petición no se entendió. Recarga la página e intenta de nuevo.',
   no_encontrado: 'Esa herramienta no existe.',
 };
 
@@ -73,25 +73,25 @@ const TEXTOS: Readonly<Record<string, string>> = {
 // faltaba: con el párrafo único de antes, la única salida de quien lo leía era escribir «falló otra
 // vez». Tres finales, y solo tres:
 
-const LO_ARREGLA_NADIE = 'Esto no lo tiene que arreglar nadie: probá de nuevo en unos minutos.';
+const LO_ARREGLA_NADIE = 'Esto no lo tiene que arreglar nadie: prueba de nuevo en unos minutos.';
 const LO_ARREGLA_LA_CUENTA = 'Lo arregla quien administra la cuenta de IA de la organización.';
-const LO_ARREGLAMOS = 'Si vuelve a pasar, mandale este código al equipo de ARIA.';
+const LO_ARREGLAMOS = 'Si vuelve a pasar, mándale este código al equipo de ARIA.';
 
 const TEXTOS_DEL_MODELO: Readonly<Record<string, string>> = {
-  'IA-CONEXION': `Se cortó la conexión con el modelo antes de que terminara. No se perdió nada de lo que escribiste. Probá de nuevo. ${LO_ARREGLAMOS}`,
-  'IA-TIEMPO': `La generación tardó más de 9 minutos y la cortamos. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-CONEXION': `Se cortó la conexión con el modelo antes de que terminara. No se perdió nada de lo que escribiste. Prueba de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-TIEMPO': `La generación tardó más de 9 minutos y la cortamos. Prueba de nuevo. ${LO_ARREGLAMOS}`,
   'IA-SIN-SALDO': `La cuenta de IA de esta organización se quedó sin saldo; esperar no lo arregla. ${LO_ARREGLA_LA_CUENTA}`,
   'IA-LLAVE': `Anthropic no acepta la llave de IA de esta organización: hay que cargar una nueva en Integraciones. ${LO_ARREGLA_LA_CUENTA}`,
   'IA-PERMISO': `La llave de IA no tiene permiso para usar este modelo: hay que revisar a qué workspace de Anthropic pertenece. ${LO_ARREGLA_LA_CUENTA}`,
-  'IA-LIMITE': `Anthropic está limitando cuántas peticiones acepta de esta cuenta. Esperá un minuto y probá de nuevo.`,
+  'IA-LIMITE': `Anthropic está limitando cuántas peticiones acepta de esta cuenta. Espera un minuto y prueba de nuevo.`,
   'IA-SATURADO': `Anthropic está saturado en este momento. No es tu cuenta ni tus datos. ${LO_ARREGLA_NADIE}`,
   'IA-MODELO': `El modelo que pedimos no está disponible para esta llave. Es un error de configuración nuestro. ${LO_ARREGLAMOS}`,
   'IA-PETICION': `Anthropic rechazó la petición por cómo la armamos. Es un error nuestro, no tuyo. ${LO_ARREGLAMOS}`,
-  'IA-GRANDE': `Lo que le mandamos al modelo es demasiado largo. Acortá lo que escribiste en este paso y probá de nuevo. ${LO_ARREGLAMOS}`,
-  'IA-VACIO': `El modelo contestó pero sin ningún texto. Probá de nuevo. ${LO_ARREGLAMOS}`,
-  'IA-TRUNCADO': `La respuesta del modelo llegó cortada. Probá de nuevo. ${LO_ARREGLAMOS}`,
-  'IA-DECLINO': `El modelo no quiso seguir con esta conversación. Reformulá lo último que escribiste y probá de nuevo.`,
-  'IA-ESTRUCTURA': `El modelo devolvió una respuesta que no pudimos leer. Probá de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-GRANDE': `Lo que le mandamos al modelo es demasiado largo. Acorta lo que escribiste en este paso y prueba de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-VACIO': `El modelo contestó pero sin ningún texto. Prueba de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-TRUNCADO': `La respuesta del modelo llegó cortada. Prueba de nuevo. ${LO_ARREGLAMOS}`,
+  'IA-DECLINO': `El modelo no quiso seguir con esta conversación. Reformula lo último que escribiste y prueba de nuevo.`,
+  'IA-ESTRUCTURA': `El modelo devolvió una respuesta que no pudimos leer. Prueba de nuevo. ${LO_ARREGLAMOS}`,
   'IA-OTRO': `El modelo devolvió un error que no conocemos. ${LO_ARREGLAMOS}`,
 };
 
@@ -117,7 +117,7 @@ export const SIN_RESPUESTA =
 export function mensajeDeRechazo(codigo: string, estado: number, detalle?: string | null): string {
   const texto = TEXTOS[codigo];
   if (!texto) {
-    return `El servidor rechazó la operación (${estado} · ${codigo}). Pasale este código a quien administra el sistema.`;
+    return `El servidor rechazó la operación (${estado} · ${codigo}). Pásale este código a quien administra el sistema.`;
   }
 
   /* ── EL DETALLE SE MUESTRA, Y ANTES SE PERDÍA ─────────────────────────

@@ -71,6 +71,8 @@ export const NOMBRE_DE_LA_HERRAMIENTA = 'registrar_respuestas';
  *
  *   1 · el cuestionario ciego (implícita: las conversaciones sin versión).
  *   2 · recibe el contexto heredado y su propio entregable; abre proponiendo.
+ *   3 · habla en español neutro con tú, y las preguntas de Oferta y Tu precio cambiaron de sentido
+ *       (2026-10-02): los turnos viejos están en voseo y preguntan otra cosa, y el modelo los imita.
  */
 export { VERSION_DEL_AGENTE };
 
@@ -205,7 +207,7 @@ export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
         type: 'string',
         description:
           'Lo que la persona va a leer. Una sola pregunta, o el resumen final. En español ' +
-          'rioplatense, corto, sin viñetas salvo en el resumen final.',
+          'neutro con tú (nunca voseo), corto, sin viñetas salvo en el resumen final.',
       },
       /* El MISMO bloque que usa el relleno desde el contexto heredado (`lib/fundaciones/relleno.ts`).
          Compartirlo no es ahorro: son dos caminos que llenan los mismos campos del mismo formulario,
@@ -216,7 +218,7 @@ export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
         type: 'boolean',
         description:
           'true SOLO si en el turno anterior ya resumiste las respuestas y la persona acaba de ' +
-          'confirmar. Nunca en el mismo turno en que pedís la confirmación, y nunca en un turno ' +
+          'confirmar. Nunca en el mismo turno en que pides la confirmación, y nunca en un turno ' +
           'en el que además anotaste un dato nuevo.',
       },
     },
@@ -240,11 +242,11 @@ function lineaDePregunta(campo: Campo, n: number): string {
 
   if (campo.opcional && campo.pedirAntesDeGenerar) {
     partes.push(
-      '   OPCIONAL, PERO SE PREGUNTA: hacé la pregunta como dice CÓMO TRATARLA antes de dar por ' +
+      '   OPCIONAL, PERO SE PREGUNTA: haz la pregunta como dice CÓMO TRATARLA antes de dar por ' +
         'completas las respuestas. Si la persona prefiere seguir sin ella, se sigue.',
     );
   } else if (campo.opcional) {
-    partes.push('   OPCIONAL: preguntala una vez; si no la sabe o no le interesa, seguí de largo.');
+    partes.push('   OPCIONAL: pregúntala una vez; si no la sabe o no le interesa, sigue adelante.');
   } else if (campo.valorPorOmision) {
     partes.push(
       `   Si no tiene una preferencia, vale "${campo.valorPorOmision}" y se sigue. No insistas.`,
@@ -292,7 +294,7 @@ export function instruccionesDeEntrevista(
       /* Un valor guardado que NO sirve se marca: sin esto el agente lo daba por respondido y arrancaba
          con «Latinoamérica (México, Colombia, …)» como ciudad. */
       if (c.valeComoRespuesta && !c.valeComoRespuesta(v)) {
-        return `  ${claveCorta(c.id)}: ${v} ← NO VALE como respuesta (ver CÓMO TRATARLA). Volvé a preguntarla antes de dar por completas las respuestas.`;
+        return `  ${claveCorta(c.id)}: ${v} ← NO VALE como respuesta (ver CÓMO TRATARLA). Vuelve a preguntarla antes de dar por completas las respuestas.`;
       }
       return `  ${claveCorta(c.id)}: ${v}`;
     })
@@ -303,54 +305,59 @@ export function instruccionesDeEntrevista(
      los dos entienden lo mismo de lo que están por hacer. */
   const queEs = h.detalle ? `${h.bajada}\n${h.detalle}` : h.bajada;
 
+  /* El tono va escrito en tú DE PUNTA A PUNTA, y no solo pedido en la primera línea: el modelo imita
+     el registro de sus instrucciones, y con las reglas en voseo contestaba «contame» y «decime»
+     aunque se le pidiera tutear. Pedido del 2026-10-02: un solo tono, español neutro con tú. */
   return (
-    `Sos el entrevistador de «${h.titulo}», una herramienta de Fundaciones de ARIA. Hablás en ` +
-    'español rioplatense, tuteando, corto y sin adornos.\n\n' +
+    `Eres el entrevistador de «${h.titulo}», una herramienta de Fundaciones de ARIA. Hablas en ` +
+    'español neutro, tuteando (tú), corto y sin adornos. NUNCA uses voseo: nada de «contame», ' +
+    '«decime», «seguí», «tenés», «podés» ni «querés»; di «cuéntame», «dime», «sigue», «tienes», ' +
+    '«puedes», «quieres».\n\n' +
     `DE QUÉ SE TRATA: ${queEs}\n\n` +
     'TU ÚNICO TRABAJO es llegar a las respuestas de abajo conversando, y registrarlas con la ' +
-    `herramienta. No escribís el entregable: «${h.etiquetaSalida}» lo genera otro proceso después, ` +
-    'con estas respuestas y con la metodología completa. Si te piden el entregable, decí que ' +
-    'primero necesitás las respuestas y seguí preguntando.\n\n' +
+    `herramienta. No escribes el entregable: «${h.etiquetaSalida}» lo genera otro proceso después, ` +
+    'con estas respuestas y con la metodología completa. Si te piden el entregable, di que ' +
+    'primero necesitas las respuestas y sigue preguntando.\n\n' +
     `LAS PREGUNTAS, EN ORDEN:\n${preguntas}\n\n` +
-    `LO QUE YA SABÉS:\n${estado}\n\n` +
+    `LO QUE YA SABES:\n${estado}\n\n` +
     (contexto.trim() !== ''
       ? 'LO QUE YA SE SABE DE SU NEGOCIO — de su formulario de onboarding y de las herramientas que ' +
-        'ya completó (usalo: de acá salen la mayoría de las respuestas, y con esto respondés ' +
+        'ya completó (úsalo: de aquí salen la mayoría de las respuestas, y con esto respondes ' +
         `cualquier pregunta que te haga sobre sus propios datos, su negocio o su mercado):\n${contexto}\n\n`
       : '') +
     (entregable.trim() !== ''
       ? `EL ENTREGABLE DE ESTA HERRAMIENTA («${h.etiquetaSalida}») YA EXISTE. Ésta es su versión más ` +
         'reciente. Si en esta conversación dijiste antes que no existía, eso quedó viejo: ahora existe. ' +
-        'Si te preguntan por él, respondé CON ÉL —resumilo, citá sus partes—, nunca digas que falta ' +
-        'armarlo. Si te piden un cambio, anotalo en `respuestas` y preguntá si regenerás con ese cambio; ' +
+        'Si te preguntan por él, responde CON ÉL —resúmelo, cita sus partes—, nunca digas que falta ' +
+        'armarlo. Si te piden un cambio, anótalo en `respuestas` y pregunta si regeneras con ese cambio; ' +
         `con la confirmación, \`listo\` en true regenera.\n${entregable}\n\n`
       : '') +
     'SI TE PREGUNTA ALGO —«¿cuál es mi ICP?», «¿qué puse en el formulario?», «¿qué dolor tiene mi ' +
-    'cliente?»— RESPONDÉ con lo que el contexto de arriba dice, corto y concreto, citando de dónde ' +
+    'cliente?»— RESPONDE con lo que el contexto de arriba dice, corto y concreto, citando de dónde ' +
     'lo sacaste (su formulario de onboarding, su research, su ficha). No contestes «todavía no tengo datos» si los datos están arriba. Si pregunta por el ' +
-    'entregable completo y todavía no existe, resumile lo que ya tenés para armarlo y preguntale ' +
+    'entregable completo y todavía no existe, resúmele lo que ya tienes para armarlo y pregúntale ' +
     'si genera: el documento completo lo produce otro proceso cuando confirme.\n\n' +
     'CÓMO PREGUNTAR:\n' +
     '· Los «Ejemplo de respuesta» de arriba son FORMATO, no datos. Nunca los anotes como respuesta.\n' +
-    '· Antes de preguntar algo, mirá si el contexto ya lo contesta. Si lo contesta, ANOTALO y ' +
-    'confirmalo en una línea en vez de preguntarlo.\n' +
+    '· Antes de preguntar algo, mira si el contexto ya lo contesta. Si lo contesta, ANÓTALO y ' +
+    'confírmalo en una línea en vez de preguntarlo.\n' +
     '· Una pregunta por turno. La que sigue sin responder, en el orden de arriba.\n' +
-    '· Si en una sola respuesta te contesta varias, tomalas todas y no las vuelvas a preguntar.\n' +
-    '· Si la respuesta es vaga, pedí que la concrete UNA vez; si la segunda sigue vaga, tomá lo que ' +
-    'dijo y seguí. No la interrogues.\n' +
-    '· Si te pide cambiar algo que ya contestó, cambialo en `respuestas` y confirmalo en una línea.\n' +
+    '· Si en una sola respuesta te contesta varias, tómalas todas y no las vuelvas a preguntar.\n' +
+    '· Si la respuesta es vaga, pide que la concrete UNA vez; si la segunda sigue vaga, toma lo que ' +
+    'dijo y sigue. No la interrogues.\n' +
+    '· Si te pide cambiar algo que ya contestó, cámbialo en `respuestas` y confírmalo en una línea.\n' +
     '· NO inventes valores. Un dato que no dijo va vacío, aunque puedas deducirlo de lo que contó: ' +
     'un dato deducido se ve idéntico a uno dicho, y el entregable se construye sobre él.\n\n' +
-    'CÓMO TERMINAR (y esto no se saltea):\n' +
+    'CÓMO TERMINAR (y esto no se salta):\n' +
     '0. Si una pregunta marcada «OPCIONAL, PERO SE PREGUNTA» está vacía o NO VALE, todavía no se ' +
-    'termina, aunque te pidan generar: hacela como dice su CÓMO TRATARLA y esperá la respuesta. El ' +
+    'termina, aunque te pidan generar: hazla como dice su CÓMO TRATARLA y espera la respuesta. El ' +
     'servidor no genera sin eso.\n' +
-    '1. Cuando hayas preguntado TODAS, mostrale las respuestas en una lista corta y preguntale si ' +
+    '1. Cuando hayas preguntado TODAS, muéstrale las respuestas en una lista corta y pregúntale si ' +
     'genera. En ese turno `listo` va en false.\n' +
-    '2. Recién cuando confirme, `listo` va en true y tu mensaje es una línea avisando que arranca. ' +
-    'Si en ese mismo turno además te corrigió un dato, NO pongas `listo`: anotá el cambio, volvé a ' +
-    'mostrar el resumen y esperá el sí.\n' +
-    'Generar le cuesta plata a la organización y varios minutos, así que la confirmación es lo que ' +
+    '2. Solo cuando confirme, `listo` va en true y tu mensaje es una línea avisando que arranca. ' +
+    'Si en ese mismo turno además te corrigió un dato, NO pongas `listo`: anota el cambio, vuelve a ' +
+    'mostrar el resumen y espera el sí.\n' +
+    'Generar le cuesta dinero a la organización y varios minutos, así que la confirmación es lo que ' +
     'separa un entregable útil de uno hecho sobre un dato mal entendido.'
   );
 }
@@ -378,9 +385,9 @@ export function mensajeDeApertura(h: Herramienta, respuestas: Record<string, str
   if (conValor.length > 0) {
     const lista = conValor.map((c) => `· ${c.etiqueta} ${respuestas[claveCorta(c.id)]}`).join('\n');
     return (
-      `Hola. Vamos con «${h.titulo}». Veo que ya tenés esto guardado:\n\n` +
+      `Hola. Vamos con «${h.titulo}». Veo que ya tienes esto guardado:\n\n` +
       `${lista}\n\n` +
-      '¿Seguimos con eso o querés cambiar algo?'
+      '¿Seguimos con eso o quieres cambiar algo?'
     );
   }
 
@@ -443,10 +450,10 @@ export function mensajeDeAperturaConPropuesta(
   const pie =
     faltan.length > 0
       ? h.exigeSusCampos
-        ? `\n\n${faltantes} Contame eso, y decime si lo de arriba va bien o cambio algo.`
-        : `\n\n${faltantes} Si los tenés, contámelos. Si no, decime «seguí» y genero con lo que hay; ` +
+        ? `\n\n${faltantes} Cuéntame eso, y dime si lo de arriba va bien o cambio algo.`
+        : `\n\n${faltantes} Si los tienes, cuéntamelos. Si no, dime «sigue» y genero con lo que hay; ` +
           'esos quedan como pendientes en el documento.'
-      : `\n\n¿Va bien así? Si confirmás, genero tu ${h.etiquetaSalida}. Si querés cambiar algo, decime qué.`;
+      : `\n\n¿Va bien así? Si confirmas, genero tu ${h.etiquetaSalida}. Si quieres cambiar algo, dime qué.`;
   return cabeza + pie;
 }
 
@@ -464,7 +471,7 @@ export function mensajeDeArranque(h: Herramienta, respuestas: Record<string, str
   return (
     `Vamos con «${h.titulo}». Con lo que ya construiste en las herramientas anteriores tengo lo que hace falta, así que lo armo ` +
     `ahora con esto:\n\n${lineas.join('\n')}\n\n` +
-    `Generando tu ${h.etiquetaSalida}. Cuando termine, si algo no va, decímelo y lo regenero con el cambio.`
+    `Generando tu ${h.etiquetaSalida}. Cuando termine, si algo no va, dímelo y lo regenero con el cambio.`
   );
 }
 
@@ -588,7 +595,7 @@ export async function conversar(opciones: {
       {
         name: NOMBRE_DE_LA_HERRAMIENTA,
         description:
-          'Registrá tu mensaje y el estado de las respuestas. Es la única forma de responder: no ' +
+          'Registra tu mensaje y el estado de las respuestas. Es la única forma de responder: no ' +
           'escribas texto suelto.',
         input_schema: esquemaDeRespuestas(opciones.herramienta),
       },
@@ -685,7 +692,7 @@ export function chatVacio(respuestas: Record<string, string>): ChatDeHerramienta
  */
 export function mensajeDeAperturaConEntregable(h: Herramienta, fecha: string): string {
   return (
-    `Tu ${h.etiquetaSalida} ya está generado${fecha ? ` (versión del ${fecha})` : ''} — lo tenés debajo.\n\n` +
-    'Preguntame lo que quieras sobre él, o decime qué cambiarle y lo regenero con el cambio.'
+    `Tu ${h.etiquetaSalida} ya está generado${fecha ? ` (versión del ${fecha})` : ''} — lo tienes debajo.\n\n` +
+    'Pregúntame lo que quieras sobre él, o dime qué cambiarle y lo regenero con el cambio.'
   );
 }

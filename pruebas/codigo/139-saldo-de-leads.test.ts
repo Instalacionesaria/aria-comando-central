@@ -90,5 +90,5 @@ test('la franja vive arriba de las dos pestañas que gastan saldo, y la confirma
 
   const panel = sinComentarios(codigo('components/fundaciones/PanelResearch.jsx'));
   assert.match(panel, /const saldo = await leerSaldo\(\);/);
-  assert.match(panel, /Tenés \$\{mirada\.disponibles\} disponibles; después de esta mirada te quedarían al menos/);
+  assert.match(panel, /Tienes \$\{mirada\.disponibles\} disponibles; después de esta mirada te quedarían al menos/);
 });

@@ -403,7 +403,7 @@ export default function Fundaciones({ catalogo = CATALOGO_ICP }) {
           <span className="fd-cadena-texto">
             {cadena.detenida ? (
               <>
-                <b>La cadena se detuvo en {cadena.detenida.titulo}.</b> Mirá el chat de esa
+                <b>La cadena se detuvo en {cadena.detenida.titulo}.</b> Mira el chat de esa
                 herramienta: o le falta un dato que no pude deducir, o la generación falló.
               </>
             ) : (

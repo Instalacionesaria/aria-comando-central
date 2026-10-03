@@ -348,7 +348,7 @@ test('los criterios del Research entran al relleno, y las reglas dejan deducir l
      ningún `_…Context`, porque los prompts leen las salidas del research, no sus entradas. */
   const relleno = codigo('lib/fundaciones/relleno.ts');
   assert.match(relleno, /CRITERIOS CON LOS QUE SE HIZO EL RESEARCH/);
-  assert.match(relleno, /Completá TODOS los campos que el contexto sostenga/);
+  assert.match(relleno, /Completa TODOS los campos que el contexto sostenga/);
   assert.match(relleno, /No inventes cifras ni nombres propios/);
 
   const { contextoHeredado } = await import('../../lib/fundaciones/relleno.ts');

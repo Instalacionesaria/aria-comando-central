@@ -73,6 +73,31 @@ export function leerDocumento(texto: string): DocumentoLeido {
   return { veredicto: items, cuerpo: texto.replace(BLOQUE, '').replace(/^\s+/, '') };
 }
 
+/** El segmento que eligió el paso 5 del Research, con su razón en una línea. */
+export interface SegmentoGanador {
+  segmento: string;
+  motivo: string;
+}
+
+/**
+ * El segmento ganador, leído del `<veredicto>` con el que abre el paso 5 del Research.
+ *
+ * Es lo que la pantalla le muestra a la persona ANTES de construir el ICP encima, para que lo confirme
+ * o elija otro. `null` cuando el paso 5 no trae el bloque —los generados antes del 2026-10-02, cuya
+ * metodología no lo pedía—: la pantalla pide confirmar igual, mandando a leer el documento, en vez de
+ * adivinar el segmento de la prosa.
+ */
+export function segmentoGanador(paso5: string | null | undefined): SegmentoGanador | null {
+  if (!paso5) return null;
+  const { veredicto } = leerDocumento(paso5);
+  // Sin las negritas de Markdown: se muestra como texto plano, en una línea.
+  const buscar = (patron: RegExp) =>
+    (veredicto.find((v) => patron.test(v.titulo))?.conclusion ?? '').replace(/\*\*/g, '').trim();
+  const segmento = buscar(/segmento/i);
+  if (segmento === '') return null;
+  return { segmento, motivo: buscar(/por\s*qu[ée]/i) };
+}
+
 function escapar(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

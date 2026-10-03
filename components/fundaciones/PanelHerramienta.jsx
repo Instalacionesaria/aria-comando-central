@@ -415,7 +415,7 @@ export default function PanelHerramienta({
         <div className="fd-aviso falta">
           <i>◍</i>
           <span>
-            Podés generar igual, pero el documento va a salir con marcadores{' '}
+            Puedes generar igual, pero el documento va a salir con marcadores{' '}
             <b>[COMPLETAR]</b> donde debería haber datos de{' '}
             <b>{criticasQueFaltan.map((c) => todas[c].etiqueta).join(', ')}</b>. No se inventan
             cifras: es a propósito.
@@ -447,7 +447,7 @@ export default function PanelHerramienta({
             ) : traido?.tipo === 'nada' ? (
               <>
                 <b>Esta empresa no tiene formulario de onboarding guardado</b>
-                <small>No es un error de la ficha: no hay nada que traer. Podés completarla conversando con el agente.</small>
+                <small>No es un error de la ficha: no hay nada que traer. Puedes completarla conversando con el agente.</small>
               </>
             ) : estado.onboarding ? (
               <>
@@ -471,7 +471,7 @@ export default function PanelHerramienta({
             ) : (
               <>
                 <b>Tu formulario de onboarding todavía no está en la ficha</b>
-                <small>Si te inscribiste por el formulario, este botón lo trae. Si no, seguí conversando: la ficha se arma igual.</small>
+                <small>Si te inscribiste por el formulario, este botón lo trae. Si no, sigue conversando: la ficha se arma igual.</small>
               </>
             )}
           </div>
@@ -508,7 +508,7 @@ export default function PanelHerramienta({
         <div className="fd-construyendo" role="status" aria-live="polite">
           <span className="fd-punto" />
           <span>
-            <b>Construyendo tu {herramienta.etiquetaSalida}</b> con lo que ya tenés de las
+            <b>Construyendo tu {herramienta.etiquetaSalida}</b> con lo que ya tienes de las
             herramientas anteriores. Tarda entre uno y tres minutos; no cierres la pestaña.
           </span>
         </div>
@@ -603,7 +603,7 @@ export default function PanelHerramienta({
                     className="fd-btn sec"
                     disabled={rellenando || generando}
                     onClick={rellenar}
-                    title="Lee lo que ya generaste en las herramientas anteriores y completa estos campos. No genera nada: los revisás antes."
+                    title="Lee lo que ya generaste en las herramientas anteriores y completa estos campos. No genera nada: los revisas antes."
                   >
                     {rellenando ? 'Leyendo lo anterior…' : '↩ Rellenar con lo que ya generaste'}
                   </button>
@@ -687,7 +687,7 @@ export default function PanelHerramienta({
             <div className="e-ic">◍</div>
             <div className="e-t">Todavía no generaste este documento</div>
             <div className="e-d">
-              Llená lo que sepas y apretá el botón. Lo que no sepas se puede dejar vacío: sale
+              Llena lo que sepas y aprieta el botón. Lo que no sepas se puede dejar vacío: sale
               marcado como pendiente, no inventado.
             </div>
           </div>

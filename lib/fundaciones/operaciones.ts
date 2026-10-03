@@ -276,6 +276,9 @@ export async function guardarLosInputs(
 // hub tampoco lo pone. Es una decisión pendiente, no una que ya se tomó.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/** Cuánto puede medir el segmento que la persona escribe al no querer el que eligió el paso 5. */
+export const TOPE_DEL_SEGMENTO_ELEGIDO = 300;
+
 export async function generarElDocumento(
   peticion: Request,
   acceso: Acceso,
@@ -287,6 +290,7 @@ export async function generarElDocumento(
     paso?: unknown;
     ajuste?: unknown;
     previa?: unknown;
+    segmentoElegido?: unknown;
   };
   try {
     cuerpo = (await peticion.json()) as typeof cuerpo;
@@ -324,10 +328,23 @@ export async function generarElDocumento(
       return rechazo('peticion_invalida', `El paso ${paso + 1} necesita el anterior`);
     }
 
+    /* El segmento que la persona eligió en vez del que recomendó el paso 5 (la confirmación de
+       `PanelResearch`, antes de construir el ICP). Solo tiene sentido en el paso 5, que es el que
+       elige; en cualquier otro se rechaza en vez de ignorarse, para que un error del navegador no
+       pase por una elección hecha. */
+    let segmentoElegido: string | undefined;
+    if (cuerpo.segmentoElegido !== undefined) {
+      const elegido = typeof cuerpo.segmentoElegido === 'string' ? cuerpo.segmentoElegido.trim() : '';
+      if (paso !== PASOS_RESEARCH - 1 || elegido === '' || elegido.length > TOPE_DEL_SEGMENTO_ELEGIDO) {
+        return rechazo('peticion_invalida', 'El segmento elegido no es válido');
+      }
+      segmentoElegido = elegido;
+    }
+
     let prompt: string;
     try {
       // Con el estado: el paso 1 hereda la ficha del negocio (Kevin, 2026-09-09).
-      prompt = armarPromptResearch(paso, inputs, previas, estado.datos);
+      prompt = armarPromptResearch(paso, inputs, previas, estado.datos, segmentoElegido);
     } catch (e) {
       if (e instanceof MetodologiaIlegible) return rechazo('metodologia_ilegible', e.metodologia);
       throw e;
