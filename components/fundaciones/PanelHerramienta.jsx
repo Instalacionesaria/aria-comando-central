@@ -544,6 +544,8 @@ export default function PanelHerramienta({
           onMensajes={onConversacion ? (m) => onConversacion(herramienta.id, m) : undefined}
           onArrancar={generarDesdeElAgente}
           rutaConversar={rutaConversar}
+          rutaEstado={rutaEstado}
+          onEstadoCambiado={onEstadoCambiado}
           /* Sin entregable todavía, la conversación arranca de nuevo cuando `abrirDeCero` lo
              habilita, con las propuestas hechas sobre lo que existe hoy y conservando lo ya
              contestado. La regla anterior solo reabría llegando por el método, y entrando por la

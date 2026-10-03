@@ -80,6 +80,7 @@ import {
   type FalloDeConversacion,
 } from './conversacion.ts';
 import { contextoHeredado, proponerRespuestas } from './relleno.ts';
+import { heredadosDe } from './heredados.ts';
 import type { ChatDeHerramienta, EstadoDeFundaciones } from './estado.ts';
 import { generar } from './generacion.ts';
 import { PASOS_RESEARCH, tieneAgente, type Herramienta } from './herramientas.ts';
@@ -216,9 +217,9 @@ export async function guardarLosInputs(
   alumno: Alumno,
   admitidas: Admitidas,
 ): Promise<Response> {
-  let cuerpo: { herramienta?: unknown; valores?: unknown };
+  let cuerpo: { herramienta?: unknown; valores?: unknown; fusionar?: unknown };
   try {
-    cuerpo = (await peticion.json()) as { herramienta?: unknown; valores?: unknown };
+    cuerpo = (await peticion.json()) as { herramienta?: unknown; valores?: unknown; fusionar?: unknown };
   } catch {
     return rechazo('peticion_invalida', 'El cuerpo no es JSON');
   }
@@ -234,6 +235,26 @@ export async function guardarLosInputs(
   // los inputs de las otras — y las borraría en silencio.
   const estado = await leerEstado(alumno.orgId);
   if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
+
+  /* ── FUSIONAR: CAMBIAR UNA RESPUESTA SIN TOCAR LAS DEMÁS ─────────────────────
+     Lo usa «Actualizar también en Tu ficha» (ver `heredados.ts`): la persona corrigió en otro paso un
+     dato que vino de la ficha, y pide que la ficha diga lo mismo. Manda SOLO ese campo; reemplazar
+     el documento entero con un campo dejaría las otras respuestas en «(no especificado)». Se fusiona
+     sobre lo guardado, y se aceptan solo los campos que esa herramienta tiene. */
+  if (cuerpo.fusionar === true) {
+    const propios = new Set(idsDeCampos(id));
+    const cambios = Object.entries(valores).filter(([campo, v]) => propios.has(campo) && v.trim() !== '');
+    if (cambios.length === 0) return rechazo('peticion_invalida', 'No hay ningún campo de esta herramienta para actualizar');
+    const actuales = id === 1 ? estado.datos.researchInputs : (estado.datos.perfil[id] ?? {});
+    const fusionados: Record<string, string> = { ...actuales };
+    for (const [campo, v] of cambios) fusionados[claveCorta(campo)] = v.trim();
+    const hecho =
+      id === 1
+        ? await guardarResearch(alumno.orgId, fusionados, estado.datos.researchSalidas, estado.datos.researchMercado)
+        : await guardarInputs(alumno.orgId, estado.datos, id, fusionados);
+    if (hecho.tipo !== 'datos') return rechazoDeAlmacen(hecho);
+    return ok({ guardado: true });
+  }
 
   const guardado =
     id === 1
@@ -531,17 +552,26 @@ async function abrir(
     if (!(guardadas[k] ?? '').trim() && v.trim()) guardadas[k] = v;
   }
 
+  /* Lo que este paso ya sabe por un paso anterior (`heredados.ts`). Entra en las respuestas donde
+     este paso no tiene nada propio: lo contestado AQUÍ manda, porque es la corrección de la persona. */
+  const heredados = heredadosDe(h, estado);
+  const conHeredados: Record<string, string> = { ...guardadas };
+  for (const [k, dato] of Object.entries(heredados)) {
+    if (!(conHeredados[k] ?? '').trim()) conHeredados[k] = dato.valor;
+  }
+
   /* Con el entregable ya generado no se propone nada —no hay nada que armar— y no se gasta la
      inferencia de proponer: el saludo ofrece responder sobre él o cambiarlo. */
   const existente = entregableDe(h, estado);
   if (existente !== '') {
-    const chat = chatVacio(guardadas);
+    const chat = chatVacio(conHeredados);
     const fecha = /^\(versión del (.+?)\)/.exec(existente)?.[1] ?? '';
     chat.messages.push({ role: 'assistant', content: mensajeDeAperturaConEntregable(h, fecha) });
     return chat;
   }
 
-  const faltaAlgo = camposDe(h).some((c) => !(guardadas[claveCorta(c.id)] ?? '').trim());
+  // Con lo heredado, a veces no falta nada y la inferencia de proponer no se paga.
+  const faltaAlgo = camposDe(h).some((c) => !(conHeredados[claveCorta(c.id)] ?? '').trim());
 
   let propuestas: Record<string, string> = {};
   if (faltaAlgo) {
@@ -549,20 +579,22 @@ async function abrir(
     if (p.tipo === 'datos') propuestas = p.valores;
   }
 
-  /* Lo guardado manda sobre lo propuesto: la persona lo escribió o lo confirmó antes. Lo propuesto
-     solo entra donde no había nada. */
-  const respuestas: Record<string, string> = { ...guardadas };
+  /* Lo guardado manda sobre lo heredado, y lo heredado sobre lo propuesto: lo propuesto es una
+     deducción del modelo, y solo entra donde no había nada. */
+  const respuestas: Record<string, string> = { ...conHeredados };
   for (const [k, v] of Object.entries(propuestas)) {
     if (!(respuestas[k] ?? '').trim() && v.trim()) respuestas[k] = v;
   }
 
   const chat = chatVacio(respuestas);
   const hayPropuesta = Object.values(propuestas).some((v) => v.trim() !== '');
+  const hayHeredado = Object.keys(heredados).length > 0;
   chat.messages.push({
     role: 'assistant',
-    content: hayPropuesta
-      ? mensajeDeAperturaConPropuesta(h, guardadas, propuestas)
-      : mensajeDeApertura(h, guardadas),
+    content:
+      hayPropuesta || hayHeredado
+        ? mensajeDeAperturaConPropuesta(h, guardadas, propuestas, heredados)
+        : mensajeDeApertura(h, guardadas),
   });
   return chat;
 }
@@ -662,7 +694,13 @@ export async function conversarConElAgente(
       const guardado = await guardarChat(acceso.orgId, estado.datos, h.id, chat, acceso.usuarioId);
       if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
     }
-    return ok({ mensajes: chat.messages, respuestas: chat.answers, listo: arrancaSolo });
+    return ok({
+      mensajes: chat.messages,
+      respuestas: chat.answers,
+      listo: arrancaSolo,
+      // Para «Actualizar también en Tu ficha»: la pantalla compara lo heredado con lo que quedó anotado.
+      heredados: heredadosDe(h, estado.datos),
+    });
   }
 
   const previas = chat.answers;
@@ -679,6 +717,7 @@ export async function conversarConElAgente(
     /* Y SU PROPIO entregable, si ya existe: sin esto contestaba «eso todavía no existe» con el avatar
        generado debajo del chat. Se manda recortado —es un documento largo— y con su fecha. */
     entregable: entregableDe(h, estado.datos),
+    heredados: heredadosDe(h, estado.datos),
   });
   if (salida.tipo !== 'datos') {
     return rechazoDeConversacion(salida, {
@@ -711,6 +750,7 @@ export async function conversarConElAgente(
     mensajes: proximo.messages,
     respuestas: proximo.answers,
     listo: arranca(h, salida.datos, previas),
+    heredados: heredadosDe(h, estado.datos),
   });
 }
 

@@ -565,6 +565,8 @@ export default function PanelResearch({
           onMensajes={onConversacion ? (m) => onConversacion(herramienta.id, m) : undefined}
           onArrancar={arrancarDesdeElAgente}
           rutaConversar={rutaConversar}
+          rutaEstado={rutaEstado}
+          onEstadoCambiado={onEstadoCambiado}
           reiniciarAlAbrir={!!soloChat && hechos === 0 && abrirDeCero}
           generarAlAbrir={!!rellenarAlLlegar && !!soloChat && hechos === 0}
         />

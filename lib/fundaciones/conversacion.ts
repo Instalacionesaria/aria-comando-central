@@ -52,6 +52,7 @@ import { VERSION_DEL_AGENTE } from './version-del-agente.ts';
 import { camposDe, claveCorta, obligatoriosQueFaltan, pendientesAntesDeGenerar } from './campos.ts';
 import { MODELO } from './generacion.ts';
 import type { Campo, Herramienta } from './herramientas.ts';
+import type { Heredado } from './heredados.ts';
 import type { ChatDeHerramienta, MensajeDeChat } from './estado.ts';
 
 const API = 'https://api.anthropic.com/v1/messages';
@@ -228,7 +229,7 @@ export function esquemaDeRespuestas(h: Herramienta): Record<string, unknown> {
 }
 
 /** La línea de una pregunta, tal como el agente la ve. Sale entera del catálogo. */
-function lineaDePregunta(campo: Campo, n: number): string {
+function lineaDePregunta(campo: Campo, n: number, heredado?: Heredado): string {
   const partes = [`${n}. [${claveCorta(campo.id)}] ${campo.etiqueta}`];
 
   if (campo.tipo === 'lista' && campo.opciones && campo.opciones.length > 0) {
@@ -256,6 +257,15 @@ function lineaDePregunta(campo: Campo, n: number): string {
   }
   // La guía va al final: la prueba 125 lee las tres primeras líneas del bloque para lo opcional.
   if (campo.guia) partes.push(`   CÓMO TRATARLA: ${campo.guia}`);
+  /* Lo heredado va último, por la misma prueba, y manda sobre todo lo de arriba: esta pregunta ya
+     tiene respuesta en otro paso y no se vuelve a hacer. Ver `heredados.ts`. */
+  if (heredado) {
+    partes.push(
+      `   YA LO SÉ (de ${heredado.fuente}): «${heredado.valor}». NO la preguntes ni pidas confirmarla ` +
+        'por separado. Si la persona la corrige, anota el nuevo valor: el cambio vale solo para este ' +
+        `paso${heredado.campoDeLaFicha ? ', y la pantalla le ofrece actualizarlo también en Tu ficha' : ''}.`,
+    );
+  }
   return partes.join('\n');
 }
 
@@ -284,9 +294,11 @@ export function instruccionesDeEntrevista(
    * debajo del chat. Recibía la ficha y el research —lo heredado— pero no lo suyo.
    */
   entregable = '',
+  /** Los datos que ESTE paso hereda de uno anterior, por clave corta. Ver `heredados.ts`. */
+  heredados: Record<string, Heredado> = {},
 ): string {
   const campos = camposDe(h);
-  const preguntas = campos.map((c, i) => lineaDePregunta(c, i + 1)).join('\n');
+  const preguntas = campos.map((c, i) => lineaDePregunta(c, i + 1, heredados[claveCorta(c.id)])).join('\n');
   const estado = campos
     .map((c) => {
       const v = respuestas[claveCorta(c.id)];
@@ -416,18 +428,24 @@ export function mensajeDeAperturaConPropuesta(
   h: Herramienta,
   guardadas: Record<string, string>,
   propuestas: Record<string, string>,
+  /** Lo que este paso hereda de uno anterior. Va en su propio bloque: no se pregunta. */
+  heredados: Record<string, Heredado> = {},
 ): string {
   const lineas: string[] = [];
+  const yaLoSe: string[] = [];
   const faltan: string[] = [];
   for (const c of camposDe(h)) {
     const k = claveCorta(c.id);
     const sirve = (v: string) => v !== '' && (!c.valeComoRespuesta || c.valeComoRespuesta(v));
     const g0 = (guardadas[k] ?? '').trim();
     const p0 = (propuestas[k] ?? '').trim();
+    const her = heredados[k];
     // Un valor que no sirve —una región como ciudad— se trata como si no estuviera.
     const g = sirve(g0) ? g0 : '';
     const p = sirve(p0) ? p0 : '';
+    // Lo contestado en ESTE paso manda; después lo heredado; después lo deducido. Ver `heredados.ts`.
     if (g !== '') lineas.push(`· ${c.etiqueta} ${g}`);
+    else if (her && sirve(her.valor)) yaLoSe.push(`· ${c.etiqueta} ${her.valor} (de ${her.fuente})`);
     else if (p !== '') lineas.push(`· ${c.etiqueta} ${p} (lo deduje de lo anterior)`);
     /* Las `pedirAntesDeGenerar` entran en «Me falta» aunque sean opcionales: es la única forma de
        que la apertura las pregunte en vez de arrancar sin ellas. Ver `campos.ts`. */
@@ -437,7 +455,18 @@ export function mensajeDeAperturaConPropuesta(
   /* «Con lo que ya sé de tu negocio» y no «con lo que ya construiste antes»: para «Tu ficha» lo
      anterior no es una herramienta, es el formulario de onboarding que la persona llenó al
      inscribirse. La frase vieja era falsa justo en la primera pestaña del método. */
-  const cabeza = `Hola. Vamos con «${h.titulo}». Con lo que ya sé de tu negocio, esto es lo que tengo:\n\n${lineas.join('\n')}`;
+  /* «Esto ya lo sé» va aparte y primero: son datos que la persona ya dio o ya generó en otro paso,
+     no algo que se le pregunte de nuevo. Se dice que se pueden corregir, en una línea. */
+  const bloqueYaLoSe =
+    yaLoSe.length > 0
+      ? `Esto ya lo sé de los pasos anteriores, así que no te lo vuelvo a preguntar:\n\n${yaLoSe.join('\n')}\n\n` +
+        'Si algo de esto cambió, dímelo y lo corrijo para este paso.'
+      : '';
+  const bloqueTengo =
+    lineas.length > 0
+      ? `${bloqueYaLoSe ? '\n\n' : ''}Con lo que ya sé de tu negocio, esto es lo que tengo:\n\n${lineas.join('\n')}`
+      : '';
+  const cabeza = `Hola. Vamos con «${h.titulo}». ${bloqueYaLoSe}${bloqueTengo}`.trimEnd();
   /* ── LO QUE FALTA NO ES UN REQUISITO, SALVO DONDE LO ES ─────────────────────
      El pie viejo decía «Me falta: … Contame eso» para todo, y se leía como una traba. No lo era:
      el servidor solo exige los campos de las herramientas con `exigeSusCampos` (el Research, cuyos
@@ -578,6 +607,8 @@ export async function conversar(opciones: {
   contexto?: string;
   /** El entregable ya generado de esta herramienta, si existe. Ver `instruccionesDeEntrevista`. */
   entregable?: string;
+  /** Lo que este paso hereda de uno anterior. Ver `heredados.ts`. */
+  heredados?: Record<string, Heredado>;
 }): Promise<ResultadoDeConversacion> {
   const cola = opciones.mensajes.slice(-TURNOS_QUE_VE_EL_MODELO);
 
@@ -589,6 +620,7 @@ export async function conversar(opciones: {
       opciones.respuestas,
       opciones.contexto ?? '',
       opciones.entregable ?? '',
+      opciones.heredados ?? {},
     ),
     messages: cola.map((m) => ({ role: m.role, content: m.content })),
     tools: [

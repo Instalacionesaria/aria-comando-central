@@ -57,9 +57,20 @@ export default function ChatDeHerramienta({
   /* Se llegó por «Continuar al paso N»: además de reabrir proponiendo, ARRANCAR si alcanza. El
      servidor decide si alcanza; si sí, devuelve `listo` y `aplicar` dispara la generación. */
   generarAlAbrir = false,
+  /* «Actualizar también en Tu ficha»: la ruta que guarda respuestas de la pantalla, y quién relee el
+     estado después. Opcionales: sin ellas el chat funciona igual y no ofrece el botón. */
+  rutaEstado = null,
+  onEstadoCambiado = null,
 }) {
   const [mensajes, setMensajes] = useState(() => [...inicial.messages]);
   const [respuestas, setRespuestas] = useState(() => ({ ...inicial.answers }));
+  /* Lo que este paso heredó de uno anterior, como lo devuelve el servidor en cada turno (ver
+     `lib/fundaciones/heredados.ts`). Llega con la primera respuesta del servidor. */
+  const [heredados, setHeredados] = useState({});
+  /* Los campos que ya se actualizaron en Tu ficha en esta visita, con el valor que se escribió: el
+     aviso deja de ofrecer el botón hasta que la respuesta vuelva a cambiar. */
+  const [actualizados, setActualizados] = useState({});
+  const [actualizando, setActualizando] = useState(null);
   const [texto, setTexto] = useState('');
   const [pendiente, setPendiente] = useState(null);
   const [esperando, setEsperando] = useState(false);
@@ -79,6 +90,7 @@ export default function ChatDeHerramienta({
   const aplicar = (datos) => {
     setMensajes(datos.mensajes);
     setRespuestas(datos.respuestas);
+    if (datos.heredados) setHeredados(datos.heredados);
     onRespuestas(datos.respuestas);
     /* Y los turnos suben hasta `Fundaciones`, que es quien guarda la foto del estado que el próximo
        montaje va a leer. Sin esto, cambiar de pestaña y volver remontaba este chat con la
@@ -148,6 +160,35 @@ export default function ChatDeHerramienta({
     if (!bien) setTexto(limpio);
   };
 
+  /* ── CORRIGIÓ UN DATO QUE VINO DE TU FICHA ───────────────────────────────────
+     La corrección ya vale para este paso (está en las respuestas). Acá se ofrece llevarla también a
+     Tu ficha, y solo se escribe si la persona toca el botón: cambiar un paso desde otro sin que se
+     vea es lo que se decidió no hacer (2026-10-03). Se manda UN campo con `fusionar`, para no tocar
+     las otras respuestas de la ficha. */
+  const corregidosDeLaFicha = Object.entries(heredados).filter(([clave, h]) => {
+    if (!h.campoDeLaFicha) return false;
+    const ahora = (respuestas[clave] ?? '').trim();
+    return ahora !== '' && ahora !== h.valor && actualizados[clave] !== ahora;
+  });
+
+  const actualizarEnLaFicha = async (clave, h) => {
+    const nuevo = (respuestas[clave] ?? '').trim();
+    setActualizando(clave);
+    setError(null);
+    const r = await pedir(rutaEstado, {
+      metodo: 'POST',
+      cuerpo: { herramienta: 0, valores: { [h.campoDeLaFicha]: nuevo }, fusionar: true },
+      espera: ESPERA_DE_RUTA_LARGA_MS,
+    });
+    setActualizando(null);
+    if (r.tipo !== 'datos') {
+      setError(r.tipo === 'rechazado' ? mensajeDeRechazo(r.codigo, r.estado, r.detalle) : SIN_RESPUESTA);
+      return;
+    }
+    setActualizados((previo) => ({ ...previo, [clave]: nuevo }));
+    if (onEstadoCambiado) await onEstadoCambiado();
+  };
+
   const reiniciar = async () => {
     if (bloqueado) return;
     setTexto('');
@@ -197,6 +238,29 @@ export default function ChatDeHerramienta({
             })}
           </div>
         ) : null}
+
+        {puedeEditar && rutaEstado
+          ? corregidosDeLaFicha.map(([clave, h]) => {
+              const campo = campos.find((c) => claveCorta(c.id) === clave);
+              return (
+                <div key={clave} className="fd-aviso" role="status">
+                  <i>◍</i>
+                  <span>
+                    Cambiaste <b>{campo ? campo.etiqueta : clave}</b> para este paso: «{respuestas[clave]}». En Tu
+                    ficha dice «{h.valor}».
+                  </span>
+                  <button
+                    type="button"
+                    className="fd-btn sec"
+                    disabled={actualizando !== null || bloqueado}
+                    onClick={() => actualizarEnLaFicha(clave, h)}
+                  >
+                    {actualizando === clave ? 'Actualizando…' : 'Actualizar también en Tu ficha'}
+                  </button>
+                </div>
+              );
+            })
+          : null}
 
         {error ? (
           <div className="fd-aviso mal">

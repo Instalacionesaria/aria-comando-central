@@ -41,6 +41,7 @@ import { ok, rechazo } from '../autorizacion/respuesta.ts';
 import { camposDe, claveCorta } from './campos.ts';
 import { NOMBRE_DE_LA_HERRAMIENTA, esquemaDeCampos } from './conversacion.ts';
 import type { EstadoDeFundaciones } from './estado.ts';
+import { heredadosDe } from './heredados.ts';
 import type { Herramienta } from './herramientas.ts';
 import { rechazoDelModelo } from './fallo-del-modelo.ts';
 import { pedirExterno } from '../http/cliente.ts';
@@ -310,8 +311,18 @@ export async function rellenarLosCampos(
     estado: (estado as { datos: EstadoDeFundaciones }).datos,
   });
 
-  if (propuesta.tipo === 'datos') return ok({ valores: propuesta.valores });
+  /* Lo heredado (`heredados.ts`) se copia tal cual y manda sobre lo propuesto: es lo mismo que hace
+     la apertura del chat, para que el formulario y el agente nunca llenen distinto el mismo campo. */
+  const heredados = heredadosDe(h, (estado as { datos: EstadoDeFundaciones }).datos);
+  const conHeredados = (valores: Record<string, string>) => {
+    const salida = { ...valores };
+    for (const [k, dato] of Object.entries(heredados)) salida[k] = dato.valor;
+    return salida;
+  };
+
+  if (propuesta.tipo === 'datos') return ok({ valores: conHeredados(propuesta.valores) });
   if (propuesta.tipo === 'sin_contexto') {
+    if (Object.keys(heredados).length > 0) return ok({ valores: conHeredados({}) });
     return rechazo('peticion_invalida', 'Todavía no hay nada generado de donde sacar los datos.');
   }
   /* El resto son fallos del modelo, y se nombran en `fallo-del-modelo.ts` como los de los otros
