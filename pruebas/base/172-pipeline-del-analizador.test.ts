@@ -12,7 +12,9 @@
 //   · que una OB se clasifique como OB y se analice con su rúbrica, y que sin serlo diga «no es OB»;
 //   · que una llave rechazada corte y lo diga, en vez de repetirse en silencio;
 //   · que la guardia de reloj no arranque una inferencia que no cabe;
-//   · que la ficha nunca tumbe la llamada.
+//   · que la ficha nunca tumbe la llamada;
+//   · que cada llamada al modelo deje su uso —también la clasificación que no sirvió— y cada fallo su
+//     incidente: uno por fallo desde la pantalla, uno por situación al descubrir.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before, beforeEach } from 'node:test';
@@ -32,6 +34,7 @@ import {
   type Reloj,
 } from '../../lib/analizadores/pipeline.ts';
 import { borrarLlamada } from '../../lib/analizadores/datos.ts';
+import { agruparIncidentes } from '../../lib/incidentes/agrupados.ts';
 import {
   SEGMENTOS,
   TABLAS_DEL_ANALIZADOR as TABLAS,
@@ -48,6 +51,9 @@ let esc: Escenario;
 
 async function limpiar(): Promise<void> {
   for (const t of TABLAS) await esc.admin.query(`delete from negocio.${t} where org_id = any($1)`, [[esc.org, esc.otraOrg]]);
+  // Sólo lo de los Analizadores: el uso y los incidentes de los demás agentes no son de este archivo.
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = any($1) and agente like 'analizador%'`, [[esc.org, esc.otraOrg]]);
+  await esc.admin.query(`delete from negocio.incidentes where org_id = any($1) and origen = 'analizador'`, [[esc.org, esc.otraOrg]]);
 }
 
 before(async () => {
@@ -451,4 +457,166 @@ test('tieneMarcasDeTiempo reconoce el JSON de tl;dv y el texto con marcas', () =
   assert.equal(tieneMarcasDeTiempo(JSON.stringify({ segments: [{ speaker: 'A', text: 'x' }] })), false);
   assert.equal(tieneMarcasDeTiempo('1:02:03 Ana: hola'), true);
   assert.equal(tieneMarcasDeTiempo('Ana: a las 10:30 nos vemos'), false);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5 · EL USO Y LOS INCIDENTES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface FilaDeUso {
+  agente: string;
+  modelo: string;
+  resultado: string;
+  ref: string | null;
+  /** Los cuatro contadores en una cadena, para comparar de una vez. `null` si no se sabe qué consumió. */
+  tokens: string | null;
+  usuario_id: string | null;
+}
+
+async function usos(): Promise<FilaDeUso[]> {
+  const r = await esc.admin.query(
+    `select agente, modelo, resultado, ref, usuario_id,
+            case when tokens_entrada is null then null
+                 else concat_ws('/', tokens_entrada, tokens_salida, tokens_escritura_cache, tokens_lectura_cache) end as tokens
+       from negocio.uso_de_ia where org_id = $1 and agente like 'analizador%'
+      order by agente, resultado, ref nulls first`,
+    [esc.org],
+  );
+  return r.rows.map((f) => ({
+    agente: f.agente,
+    modelo: f.modelo,
+    resultado: f.resultado,
+    ref: f.ref,
+    tokens: f.tokens,
+    usuario_id: f.usuario_id,
+  }));
+}
+
+async function incidentes(): Promise<{ situacion: string; donde: string | null; usuario_id: string | null; salvado: boolean }[]> {
+  const r = await esc.admin.query(
+    `select situacion, donde, usuario_id, salvado from negocio.incidentes
+      where org_id = $1 and origen = 'analizador' order by situacion, donde`,
+    [esc.org],
+  );
+  return r.rows;
+}
+
+/** Los contadores de `delModelo`: entrada, salida, escritura y lectura de caché. */
+const PAGADO = '1000/200/50/3000';
+
+test('cada llamada al modelo deja su uso: la clasificación —también la que no sirvió—, el análisis y la ficha', async () => {
+  /* El origen descartaba el uso de la clasificación. La que devolvió basura se pagó igual: sus contadores
+     quedan, con la situación en vez de `ok`. */
+  unaReunion('m-ht', 'HT');
+  unaReunion('m-basura', null);
+  await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
+  const id = await idDe('m-ht');
+  await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo());
+  await generarFicha(esc.org, id, 'ia-falsa', conTiempo());
+  assert.deepEqual(await usos(), [
+    { agente: 'analizador_analizar', modelo: 'claude-sonnet-5', resultado: 'ok', ref: id, tokens: PAGADO, usuario_id: null },
+    { agente: 'analizador_clasificar', modelo: 'claude-haiku-4-5', resultado: 'IA-ESTRUCTURA', ref: null, tokens: PAGADO, usuario_id: null },
+    { agente: 'analizador_clasificar', modelo: 'claude-haiku-4-5', resultado: 'ok', ref: null, tokens: PAGADO, usuario_id: null },
+    { agente: 'analizador_ficha', modelo: 'claude-sonnet-5', resultado: 'ok', ref: id, tokens: PAGADO, usuario_id: null },
+  ]);
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'la clasificación de una reunión de tl;dv · una llamada de esta corrida', usuario_id: null, salvado: false },
+  ]);
+});
+
+test('desde la pantalla, un análisis que no sirvió anota su incidente con quien lo vio, y el uso de lo que se pagó', async () => {
+  const id = await unaHtPendiente();
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = $1 and agente like 'analizador%'`, [esc.org]);
+  red.analisis.push(() => delModelo('Rubén contó que factura poco. '.repeat(10)));
+  const r = await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo(), 'PENDING', { usuarioId: esc.quien });
+  assert.equal(r.tipo === 'hecho' && r.estado, 'FAILED');
+  // Lo que dijo el modelo empieza por los datos del cliente: no se guarda (prueba 201).
+  assert.equal((await filaDe(id)).error, 'El modelo no devolvió JSON parseable.');
+  assert.deepEqual(await usos(), [
+    { agente: 'analizador_analizar', modelo: 'claude-sonnet-5', resultado: 'IA-ESTRUCTURA', ref: id, tokens: PAGADO, usuario_id: esc.quien },
+  ]);
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'el análisis de una llamada', usuario_id: esc.quien, salvado: false },
+  ]);
+});
+
+test('una llave rechazada a mitad del análisis deja su uso SIN contadores y su incidente IA-LLAVE', async () => {
+  /* Sin respuesta no se sabe qué consumió: nulo, no cero. Y la llamada volvió a PENDING, pero el fallo
+     existió: es lo que hay que ir a arreglar. */
+  const id = await unaHtPendiente();
+  red.analisis.push(rechazoDeAnthropic(401, 'invalid x-api-key'));
+  await analizarLlamada(esc.org, id, 'ia-falsa', conTiempo(), 'PENDING', { usuarioId: esc.quien });
+  assert.deepEqual(
+    (await usos()).filter((u) => u.agente === 'analizador_analizar'),
+    [{ agente: 'analizador_analizar', modelo: 'claude-sonnet-5', resultado: 'IA-LLAVE', ref: id, tokens: null, usuario_id: esc.quien }],
+  );
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-LLAVE', donde: 'el análisis de una llamada', usuario_id: esc.quien, salvado: false },
+  ]);
+});
+
+test('una ficha que no sirvió deja su uso y su incidente, con la llamada como referencia', async () => {
+  const id = await unaHtAnalizada();
+  red.analisis.push(() => delModelo('{"summary": "cortado a la mit'));
+  await generarFicha(esc.org, id, 'ia-falsa', conTiempo(), { usuarioId: esc.quien });
+  assert.deepEqual(
+    (await usos()).filter((u) => u.agente === 'analizador_ficha'),
+    [{ agente: 'analizador_ficha', modelo: 'claude-sonnet-5', resultado: 'IA-ESTRUCTURA', ref: id, tokens: PAGADO, usuario_id: esc.quien }],
+  );
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'la ficha del prospecto', usuario_id: esc.quien, salvado: false },
+  ]);
+});
+
+test('descubrir agrupa: tres reuniones que no se pudieron clasificar son UN incidente, aunque lo pida la pantalla', async () => {
+  /* Un botón clasifica hasta cuarenta reuniones; con el proveedor caído serían cuarenta filas del mismo
+     hecho. El uso sí va uno por llamada: cada una se pagó. */
+  unaReunion('m-a', null);
+  unaReunion('m-b', null);
+  unaReunion('m-c', null);
+  await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() }, { usuarioId: esc.quien });
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'la clasificación de una reunión de tl;dv · 3 llamadas de esta corrida', usuario_id: esc.quien, salvado: false },
+  ]);
+  assert.deepEqual(
+    (await usos()).map((u) => `${u.agente} ${u.resultado} ${u.tokens}`),
+    Array(3).fill(`analizador_clasificar IA-ESTRUCTURA ${PAGADO}`),
+  );
+});
+
+test('una llave rechazada en el clasificador corta el descubrimiento, y su incidente se anota igual', async () => {
+  /* El descubrimiento vuelve antes de terminar la lista, y la llave relanzada no se lleva el incidente:
+     el primero de cada situación se escribe en el acto. */
+  unaReunion('m-ht', 'HT');
+  unaReunion('m-ob', 'OB');
+  red.estadoDeAnthropic = 401;
+  const r = await descubrir(esc.org, { ...LLAVES, reloj: conTiempo() });
+  assert.deepEqual(r, { tipo: 'falta', que: 'llave_de_ia_rechazada' });
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-LLAVE', donde: 'la clasificación de una reunión de tl;dv · una llamada de esta corrida', usuario_id: null, salvado: false },
+  ]);
+  assert.deepEqual(
+    (await usos()).map((u) => `${u.agente} ${u.resultado} ${u.tokens}`),
+    ['analizador_clasificar IA-LLAVE null'],
+  );
+});
+
+test('el grupo escribe el PRIMER incidente en el acto: una corrida que la plataforma corta no se queda sin ninguno', async () => {
+  /* El auditor espera al modelo hasta 240 s en una función de 300: con el proveedor colgado, la plataforma
+     la corta antes del `finally`. Lo que ya falló tiene que estar en el panel sin esperar a `volcar`. */
+  const grupo = agruparIncidentes('analizador', esc.org);
+  const tiempo = { tipo: 'sin_respuesta' as const, causa: 'se agotó el tiempo de espera a los 60 s (el tope es 60 s)' };
+  await grupo.anotar(tiempo, 'el paso uno');
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-TIEMPO', donde: 'el paso uno · una llamada de esta corrida', usuario_id: null, salvado: false },
+  ]);
+  // El segundo de la misma situación y el mismo paso sólo se cuenta; otro paso es otro incidente.
+  await grupo.anotar(tiempo, 'el paso uno');
+  await grupo.anotar(tiempo, 'el paso dos');
+  assert.equal((await incidentes()).length, 2);
+  await grupo.volcar();
+  assert.deepEqual(await incidentes(), [
+    { situacion: 'IA-TIEMPO', donde: 'el paso dos · una llamada de esta corrida', usuario_id: null, salvado: false },
+    { situacion: 'IA-TIEMPO', donde: 'el paso uno · 2 llamadas de esta corrida', usuario_id: null, salvado: false },
+  ]);
 });

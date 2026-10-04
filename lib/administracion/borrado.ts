@@ -76,10 +76,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   enlaces_rapidos_org_id_actualizado_por_fkey: 'cargó links rápidos de la empresa',
   enlaces_de_pieza_org_id_actualizado_por_fkey: 'cargó links de piezas de Creative',
   funnels_de_campana_org_id_actualizado_por_fkey: 'asignó campañas a funnels en Acquisition',
-  /* Los incidentes de la IA (`067`): quien tuvo el fallo —aunque el reintento lo haya salvado y no lo viera—
-     y quien lo dio por revisado. Ninguna de las dos
-     claves cascadea, así que las dos pueden frenar el borrado de una persona. */
-  incidentes_usuario_id_fkey: 'tuvo fallos de la IA registrados como incidentes',
+  /* Los incidentes de la IA (`067`): quien lo dio por revisado frena el borrado. Quien tuvo el fallo ya
+     no: desde la `070` esa clave es `on delete set null`, y el incidente queda sin quién lo vio. */
   incidentes_revisado_por_fkey: 'revisó incidentes en el Panel de Incidentes',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────

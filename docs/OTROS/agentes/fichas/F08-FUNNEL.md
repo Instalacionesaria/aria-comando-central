@@ -7,7 +7,7 @@
 |---|---|
 | Tipo | CREA |
 | Lugar en el front | Marketing › Funnel › Tu landing y Tu VSL |
-| Estado | **Existe.** Suma el uso (AG2) y recibe el pedido de «@ agente» (AG7). La precall y el VSL de gracias: **sólo diseño** |
+| Estado | **Existe.** Suma el uso (AG2, después de integrar la rama `feature/icp-oferta-v2`) y recibe el pedido de «@ agente» (AG7). La precall y el VSL de gracias: **sólo diseño** |
 | Modelo | `claude-sonnet-5`, sin cambio |
 | Permisos | `tools.ver` para leer; `tools.editar` para conversar y generar |
 | Código | El de `F01`, con las herramientas de `lib/fundaciones/herramientas.ts` que son sólo chat |

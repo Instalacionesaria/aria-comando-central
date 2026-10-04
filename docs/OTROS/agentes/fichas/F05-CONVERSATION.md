@@ -31,9 +31,10 @@ conversaciones, **nunca citas**: las conversaciones son de los leads del cliente
 - Que el auditor actúa sobre el CRM cuando el veredicto es rojo (la nota y la etiqueta que pausa al agente):
   es lo que ya hacía, no una acción nueva de esta fase.
 
-## Lo que se suma antes, en AG2
+## Lo que se sumó antes, en AG2 (hecho el 2026-10-04)
 
-El uso de cada análisis en `uso_de_ia` y sus fallos en Incidentes, agregados por corrida y situación.
+El uso de cada análisis en `uso_de_ia` (`auditor` y `auditor_mejora`) y sus fallos en Incidentes, agregados
+por corrida y situación (`lib/incidentes/agrupados.ts`); el de la mejora del día, uno solo, sin agrupar.
 
 ## El Plan de acción
 

@@ -121,7 +121,7 @@ línea de su archivo, como las demás.
 
 Fundaciones, el Espía, el auditor y los Analizadores **conservan su cuerpo y su modelo** (`D-15`): cada
 módulo arma su propio cuerpo a propósito (`lib/auditor/modelo.ts:18`). Lo único que suman es
-`registrarUso` (AG2) y, si les faltan, sus incidentes (`D-30`). La voz cambia en Fundaciones y el Espía
+`registrarUso` (AG2; Fundaciones, después de integrar la rama) y, si les faltan, sus incidentes (`D-30`). La voz cambia en Fundaciones y el Espía
 (`D-26`; ver la coordinación con la rama `feature/icp-oferta-v2` en `00-MAPA.md`).
 
 ## AG-10 · Respuestas enteras
@@ -159,15 +159,15 @@ suficiente») y «vincular el recurso al DM» (Lienzo, pantalla «Marketing · G
 
 ## AG-14 · Todo fallo de un agente es un incidente
 
-Fundaciones, Tools y el Espía ya registran (`lib/fundaciones/fallo-del-modelo.ts:158`). En AG2 se suman el
-auditor y los Analizadores, **agregados por corrida y por situación**: el auditor corre cada 10 minutos y
-un proveedor caído no puede inundar el panel con una fila por conversación.
+Fundaciones, Tools y el Espía ya registraban (`lib/fundaciones/fallo-del-modelo.ts:158`). En AG2 se sumaron
+el auditor y los Analizadores, **agregados por corrida y por situación** (`lib/incidentes/agrupados.ts`): el
+auditor corre cada 10 minutos y un proveedor caído no puede inundar el panel con una fila por conversación.
 
 ## AG-15 · Sin datos, no se llama al modelo
 
 Si una herramienta del cerebro, un detector o el Brief no tienen con qué trabajar, no se paga una inferencia
 para que el modelo invente algo convincente. Es el criterio de `lib/fundaciones/relleno.ts:227-230` y de
-`lib/tools/espia.ts:150-156`. Lo que se muestra entonces es «no hay dato suficiente», con qué falta y dónde
+`lib/tools/espia.ts:151-157`. Lo que se muestra entonces es «no hay dato suficiente», con qué falta y dónde
 se carga.
 
 ---

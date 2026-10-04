@@ -61,7 +61,7 @@ export async function POST(
   const llave = await conIdentidad((db) => resolverLlaveDeIa(db, contexto.orgEfectiva));
   if (llave.tipo === 'falta') return rechazo(llave.que);
 
-  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj, esperado);
+  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj, esperado, { usuarioId: contexto.usuarioId });
   if (r.tipo === 'rechazo') return respuestaDelRechazo(r.que);
   /* Un FAILED no es un rechazo de la petición: el análisis se intentó, se pagó o no, y el error
      quedó guardado en la llamada. Se devuelve con su estado para que la pantalla lo muestre. */

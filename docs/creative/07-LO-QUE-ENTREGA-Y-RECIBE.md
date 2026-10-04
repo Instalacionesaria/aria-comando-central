@@ -180,7 +180,7 @@ que el dato todavía no sostiene.
 
 `components/tools/EspiaDeAnuncios.jsx` + `lib/tools/espia.ts` consultan la Meta Ad Library y le piden
 a la IA *«hooks/ganchos más usados»*, *«ofertas y ángulos recurrentes»* y *«estructuras de copy»*
-(`lib/tools/espia.ts:79-88`). Es, literalmente, el análisis interpretativo del § 18.12 — **aplicado a
+(`lib/tools/espia.ts:84-92`). Es, literalmente, el análisis interpretativo del § 18.12 — **aplicado a
 los anuncios de otros**, porque de los propios no se guarda la pieza.
 
 Queda como pregunta abierta si ese análisis debería poder correr sobre las piezas propias el día que

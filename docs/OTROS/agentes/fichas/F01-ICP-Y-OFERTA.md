@@ -7,7 +7,7 @@
 |---|---|
 | Tipo | CREA |
 | Lugar en el front | Research › ICP & Oferta, las 7 herramientas del método |
-| Estado | **Existe.** Suma el uso (AG2), recibe el pedido de «@ agente» (AG7) y lo lee el cerebro (AG6). Su voz la cambia la rama `feature/icp-oferta-v2` |
+| Estado | **Existe.** Suma el uso (AG2, después de integrar la rama), recibe el pedido de «@ agente» (AG7) y lo lee el cerebro (AG6). Su voz la cambia la rama `feature/icp-oferta-v2` |
 | Modelo | `claude-sonnet-5`, sin cambio (`D-15`) |
 | Permisos | `fundaciones.ver` para leer, `fundaciones.editar` para conversar y generar |
 | Código | `lib/fundaciones/conversacion.ts` (el entrevistador), `lib/fundaciones/generacion.ts` (la generación), `lib/fundaciones/relleno.ts` |

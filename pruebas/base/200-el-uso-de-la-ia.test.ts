@@ -13,6 +13,7 @@
 //     `los_agrega_quien_llama` deja el uso sin escribir incidentes.
 //   · La forma: estas columnas, ninguna con texto del modelo, y el juego de agentes del código es el de
 //     la base.
+//   · El Espía deja su uso, y cuando falla, con la misma referencia que su incidente.
 //
 // Contra la base local, con las dos empresas del sembrado. La red es falsa: nada gasta.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -26,6 +27,8 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { AGENTES_DE_USO, registrarUso } from '../../lib/agentes/uso.ts';
 import { type Costuras, type PedidoAlModelo, leerJson, llamarAlModelo } from '../../lib/agentes/llamada.ts';
+import { analizarLosAnuncios } from '../../lib/tools/espia.ts';
+import { randomUUID } from 'node:crypto';
 
 /** La marca: va en `modelo`, que es texto libre, y en el `donde` de los incidentes. Se borra sólo lo marcado. */
 const MARCA = 'prueba-200';
@@ -294,4 +297,94 @@ test('la forma: estas columnas y ninguna con texto del modelo, y el juego de age
     ),
     { code: '23514' },
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS AGENTES QUE YA EXISTÍAN: EL ESPÍA
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// El auditor y los Analizadores tienen el suyo en sus archivos (95, 92, 172, 173). El Espía no tenía una
+// prueba que lo corriera: se corre acá, con el motor de scraping y Anthropic falsos.
+
+const MOTOR = 'http://motor.prueba';
+
+/** Un flujo de eventos como el que manda Anthropic con `stream: true`, con los cuatro contadores. */
+const flujoDelEspia = () =>
+  new Response(
+    [
+      { type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 1, cache_creation_input_tokens: 5, cache_read_input_tokens: 7 } } },
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'los hooks' } },
+      { type: 'content_block_stop', index: 0 },
+      { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 20 } },
+      { type: 'message_stop' },
+    ]
+      .map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`)
+      .join(''),
+    { status: 200, headers: { 'content-type': 'text/event-stream' } },
+  );
+
+/** Corre el análisis del Espía con la red falsa: el motor devuelve un anuncio y Anthropic, `anthropic()`. */
+async function correrElEspia(trabajo: string, anthropic: () => Response): Promise<Response> {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (url: RequestInfo | URL) => {
+    const u = String(url);
+    if (u.startsWith(`${MOTOR}/job/`)) {
+      return new Response(JSON.stringify({ results: { data: [{ page_name: 'Competidor', days_active: 30, body_text: 'compra ya' }] } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (u === 'https://api.anthropic.com/v1/messages') return anthropic();
+    throw new Error(`la prueba no esperaba un pedido a ${u}`);
+  }) as typeof globalThis.fetch;
+  try {
+    const peticion = new Request('http://local/espia', { method: 'POST', body: JSON.stringify({ trabajo }) });
+    return (await callado(() => analizarLosAnuncios(peticion, { claveIa: 'ia-falsa', orgId: esc.org, backend: MOTOR, usuarioId: esc.quien })))
+      .salida;
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+async function usoDelEspia(trabajo: string, ref: string): Promise<{ resultado: string; tokens: string | null; usuario_id: string | null }[]> {
+  const r = await esc.admin.query(
+    `select resultado, usuario_id,
+            case when tokens_entrada is null then null
+                 else concat_ws('/', tokens_entrada, tokens_salida, tokens_escritura_cache, tokens_lectura_cache) end as tokens
+       from negocio.uso_de_ia where org_id = $1 and agente = 'espia' and ref = $2`,
+    [esc.org, ref],
+  );
+  // Lo que el Espía guardó de este trabajo, y el uso: no son de otra prueba.
+  await esc.admin.query('delete from negocio.analisis_del_espia where org_id = $1 and trabajo_id = $2', [esc.org, trabajo]);
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = $1 and agente = 'espia' and ref = $2`, [esc.org, ref]);
+  return r.rows;
+}
+
+test('el Espía deja su uso con los cuatro contadores, quién lo pidió y el trabajo como referencia', async () => {
+  const trabajo = randomUUID();
+  const r = await correrElEspia(trabajo, flujoDelEspia);
+  assert.equal(r.status, 200);
+  assert.deepEqual(await usoDelEspia(trabajo, trabajo), [{ resultado: 'ok', tokens: '10/20/5/7', usuario_id: esc.quien }]);
+});
+
+test('el Espía que falla deja su uso sin contadores, con la MISMA referencia que su incidente y que la pantalla', async () => {
+  const trabajo = randomUUID();
+  const r = await correrElEspia(trabajo, () =>
+    new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    }),
+  );
+  assert.equal(r.status, 502);
+  const detalle = JSON.stringify(await r.json());
+  const ref = /IA-LLAVE · ref ([A-Z0-9]+)/.exec(detalle)?.[1];
+  assert.ok(ref, `la pantalla no recibió la referencia: ${detalle}`);
+  const incidente = await esc.admin.query(
+    `select situacion, usuario_id from negocio.incidentes where org_id = $1 and origen = 'espia' and ref = $2`,
+    [esc.org, ref],
+  );
+  await esc.admin.query(`delete from negocio.incidentes where org_id = $1 and origen = 'espia' and ref = $2`, [esc.org, ref]);
+  assert.deepEqual(incidente.rows, [{ situacion: 'IA-LLAVE', usuario_id: esc.quien }]);
+  assert.deepEqual(await usoDelEspia(trabajo, ref), [{ resultado: 'IA-LLAVE', tokens: null, usuario_id: esc.quien }]);
 });

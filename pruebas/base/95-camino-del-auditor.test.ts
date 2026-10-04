@@ -70,6 +70,8 @@ async function limpio(): Promise<void> {
     [marca],
   );
   await esc.admin.query(`delete from negocio.ingesta_pulso where clave = 'auditoria'`);
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = $1 and agente like 'auditor%'`, [esc.org]);
+  await esc.admin.query(`delete from negocio.incidentes where org_id = $1 and origen = 'auditor'`, [esc.org]);
   await limpiar(esc);
 }
 
@@ -163,7 +165,7 @@ function unModelo(
 const siempre = (v: VeredictoDelModelo) =>
   unModelo(() => ({
     tipo: 'datos',
-    datos: { veredicto: v, tokens: 1000, milisegundos: 10, modelo: 'claude-sonnet-5' },
+    datos: { veredicto: v, tokens: 1000, milisegundos: 10, modelo: 'claude-sonnet-5', uso: { input: 900, output: 100, cacheWrite: 0, cacheRead: 0 } },
   }));
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -666,4 +668,61 @@ test('el motivo también llega a la cola del SETTER, con su propia etiqueta de f
 
   const colas = await conOrganizacion(esc.org, () => nucleoDeColas('setter', 'America/Lima'));
   assert.equal(colas.urgentes.find((u) => u.fila.id === id)?.motivo, frase);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 8 · EL USO Y LOS INCIDENTES DE LA CORRIDA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function usosDelAuditor(): Promise<{ resultado: string; ref: string | null; tokens: string | null }[]> {
+  const r = await esc.admin.query(
+    `select resultado, ref,
+            case when tokens_entrada is null then null
+                 else concat_ws('/', tokens_entrada, tokens_salida, tokens_escritura_cache, tokens_lectura_cache) end as tokens
+       from negocio.uso_de_ia where org_id = $1 and agente = 'auditor' and modelo = 'claude-sonnet-5' order by resultado, ref`,
+    [esc.org],
+  );
+  return r.rows;
+}
+
+async function incidentesDelAuditor(): Promise<{ situacion: string; donde: string | null; usuario_id: string | null }[]> {
+  const r = await esc.admin.query(
+    `select situacion, donde, usuario_id from negocio.incidentes where org_id = $1 and origen = 'auditor' order by situacion`,
+    [esc.org],
+  );
+  return r.rows;
+}
+
+test('cada conversación que llega al modelo deja su uso, con el contacto como referencia', async () => {
+  await limpio();
+  const id = await unaConversacion();
+  await auditarEmpresa(EMPRESA(), { ahora: AHORA, pedir: siempre(verde()).pedir });
+  assert.deepEqual(await usosDelAuditor(), [{ resultado: 'ok', ref: id, tokens: '900/100/0/0' }]);
+  assert.deepEqual(await incidentesDelAuditor(), []);
+});
+
+test('los fallos de una corrida son UN incidente por situación; el uso, uno por llamada y con lo que se pagó', async () => {
+  await limpio();
+  /* Un truncado llegó con un 200: se pagó, y sus contadores quedan. El rechazo no trae: nulos. Tres
+     conversaciones, dos situaciones, dos incidentes. */
+  const ids = [await unaConversacion({ nombre: `${esc.marca} a` }), await unaConversacion({ nombre: `${esc.marca} b` })];
+  await unaConversacion({ nombre: `${esc.marca} c` });
+  const m = unModelo((n) =>
+    n <= 2
+      ? { tipo: 'truncado', uso: { input: 700, output: 4000, cacheWrite: 0, cacheRead: 0 } }
+      : { tipo: 'rechazado', estado: 529, codigo: 'overloaded_error', motivo: 'Overloaded' },
+  );
+  await auditarEmpresa(EMPRESA(), { ahora: AHORA, pedir: m.pedir });
+  assert.equal(m.llamadas(), 3);
+  assert.deepEqual(await incidentesDelAuditor(), [
+    { situacion: 'IA-SATURADO', donde: 'una llamada de esta corrida', usuario_id: null },
+    { situacion: 'IA-TRUNCADO', donde: '2 llamadas de esta corrida', usuario_id: null },
+  ]);
+  const usos = await usosDelAuditor();
+  assert.deepEqual(
+    usos.map((u) => `${u.resultado} ${u.tokens}`),
+    ['IA-SATURADO null', 'IA-TRUNCADO 700/4000/0/0', 'IA-TRUNCADO 700/4000/0/0'],
+  );
+  assert.ok(usos.every((u) => u.ref !== null), 'cada fila de uso apunta a su contacto');
+  assert.ok(ids.every((id) => usos.some((u) => u.ref === id)));
 });

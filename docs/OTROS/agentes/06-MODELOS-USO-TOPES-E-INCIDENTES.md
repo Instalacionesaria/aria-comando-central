@@ -8,12 +8,14 @@
 ## De dónde sale
 
 - `D-15`, `D-16` y `D-30` de `00-MAPA.md`.
-- Lo que hay hoy: tres constantes que valen `claude-sonnet-5` (`lib/fundaciones/generacion.ts:54`,
-  `lib/auditor/modelo.ts:60`, `lib/analizadores/nucleo/anthropic.ts:33`) y el clasificador con el alias
-  `claude-haiku-4-5` (`lib/analizadores/nucleo/anthropic.ts:36`); sólo los Analizadores guardan sus tokens;
+- Lo que había al planificar, antes de AG2: tres constantes que valen `claude-sonnet-5` (`lib/fundaciones/generacion.ts:56`,
+  `lib/auditor/modelo.ts:62`, `lib/analizadores/nucleo/anthropic.ts:34`) y el clasificador con el alias
+  `claude-haiku-4-5` (`lib/analizadores/nucleo/anthropic.ts:37`); sólo los Analizadores guardan sus tokens;
   el costo es `null` porque no hay tarifa confirmada (`lib/analizadores/nucleo/pricing.ts:42`); los fallos
   se clasifican en situaciones `IA-*` (`lib/fundaciones/fallo-del-modelo.ts:72`) y quedan en
   `negocio.incidentes` (`lib/incidentes/registro.ts:32`), pero sólo desde Fundaciones, Tools y el Espía.
+  Desde AG2 guardan su uso en `negocio.uso_de_ia` el Espía, el auditor y los Analizadores, y los dos últimos
+  también sus incidentes (AG-98).
 
 ---
 
@@ -124,8 +126,15 @@ con autor nulo (`05`, `AG-82`).
 
 ## AG-98 · Incidentes
 
-- **Todo fallo de un agente** pasa por `clasificarFallo` y queda en `negocio.incidentes` (`D-30`). En AG2 se
-  suman el auditor y los Analizadores, que hoy no registran.
+- **Todo fallo de un agente** pasa por `clasificarFallo` y queda en `negocio.incidentes` (`D-30`). Desde AG2
+  también el auditor y los Analizadores, que antes no registraban.
+- **Agregados también al sincronizar los Analizadores**: lo aprieta una persona, pero clasifica hasta cuarenta
+  reuniones de una vez. El incidente lleva quién lo vio. Analizar una llamada o pedir su ficha desde la
+  pantalla anota uno por fallo, como Fundaciones.
+- **El `donde` de un incidente agregado dice el paso y cuántas** llamadas de la corrida fallaron así («la
+  clasificación de una reunión de tl;dv · 3 llamadas de esta corrida»), y lo técnico es el del primero. El
+  primero se escribe en el acto y el número se le pone al terminar: una corrida cortada por la plataforma
+  deja al menos ese.
 - **Agregados por corrida y situación** en las tareas del cron: el auditor corre cada 10 minutos con hasta
   20 inferencias, y un proveedor caído no puede llenar el panel con una fila por conversación. Los agentes
   nuevos que corren en el cron llaman al transporte con `los_agrega_quien_llama` (`AG-93`).

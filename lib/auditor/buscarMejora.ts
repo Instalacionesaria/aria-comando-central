@@ -24,6 +24,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { registrarUso } from '../agentes/uso.ts';
+import { anotarIncidente, clasificarFallo } from '../fundaciones/fallo-del-modelo.ts';
 import { COMO_LEER_LOS_AUTORES, IMPUTABLE } from './atribucion.ts';
 import {
   CRITERIO_DE_LA_MEJORA,
@@ -160,6 +162,7 @@ export async function buscarUnaMejora(
   });
 
   // ── 4 · EL MODELO. Una vez por día y por empresa. ────────────────────────
+  const desdeElPedido = Date.now();
   const r = await pedir({
     claveIa: e.claveIa,
     agente: elegido.agente,
@@ -180,8 +183,22 @@ export async function buscarUnaMejora(
     esquema: esquemaDeLaMejora(),
   });
 
+  /* Lo que consumió, y si falló su incidente. Uno solo por día y por empresa, así que no hace falta
+     agruparlo como los del carril rojo. */
+  await registrarUso({
+    orgId: e.orgId,
+    agente: 'auditor_mejora',
+    modelo: r.tipo === 'datos' ? r.datos.modelo : MODELO_DEL_AUDITOR,
+    uso: r.tipo === 'datos' ? (r.datos.uso ?? null) : 'uso' in r && r.uso ? r.uso : null,
+    duracionMs: Date.now() - desdeElPedido,
+    resultado: r.tipo === 'datos' ? 'ok' : clasificarFallo(r),
+    usuarioId: null,
+    ref: elegido.contactoId,
+  });
+
   const comun = { llamadas: 1, contactoId: elegido.contactoId };
   if (r.tipo !== 'datos') {
+    await anotarIncidente(r, { origen: 'auditor', orgId: e.orgId, donde: 'la mejora del día' });
     return { ...comun, porQueNo: null, fallo: r.tipo };
   }
 

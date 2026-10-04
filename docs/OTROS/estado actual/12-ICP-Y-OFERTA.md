@@ -105,8 +105,8 @@ como el del ICP, que además lee la ficha (`lib/fundaciones/prompts.ts:199-200`)
   (`docs/OTROS/capa-base/ETAPA-9.md:148-154`). Entran al paquete
   por `outputFileTracingIncludes` de `next.config.mjs`, declarado para la ruta que genera de esta
   pantalla y para la de Tools.
-- **El modelo** es `claude-sonnet-5` (`lib/fundaciones/generacion.ts:52`), y sólo el Research lleva
-  búsqueda web (`lib/fundaciones/generacion.ts:72`, `lib/fundaciones/generacion.ts:131`).
+- **El modelo** es `claude-sonnet-5` (`lib/fundaciones/generacion.ts:56`), y sólo el Research lleva
+  búsqueda web (`lib/fundaciones/generacion.ts:76`, `lib/fundaciones/generacion.ts:261`).
 - Alrededor de las piezas: regenerar con un ajuste (`lib/fundaciones/operaciones.ts:420-422`),
   descargar como Word o PDF (`lib/fundaciones/exportar.ts:1`), las diez últimas versiones por
   herramienta (`lib/fundaciones/almacen.ts:275-276`) y, con el Research completo, un botón que
@@ -167,7 +167,7 @@ Sólo `generar` subió. `conversar` y `rellenar` siguen en 300 s con la espera e
 240 (`lib/http/cliente.ts:239`), que cabe. **`mercado/preparar` no cabe**: también declara 300 s
 (`app/api/fundaciones/mercado/preparar/route.ts:24`), pero su inferencia —el rubro del paso 1, 100
 tokens— sale por `generar()` (`lib/fundaciones/operaciones.ts:757-760`), que espera siempre 580 s
-(`lib/fundaciones/generacion.ts:140`). Si Anthropic no contesta, corta la plataforma a los 300 y no
+(`lib/fundaciones/generacion.ts:200`). Si Anthropic no contesta, corta la plataforma a los 300 y no
 nuestro tope, sin mensaje de error; la prueba que vigila la regla mira sólo las dos rutas de generar
 (`pruebas/codigo/90-fundaciones.test.ts:969`), y otra fija ese 300 tal cual, sin compararlo con
 nada (`pruebas/codigo/133-research-mercado-real.test.ts:323`). Es una inferencia de 100 tokens y

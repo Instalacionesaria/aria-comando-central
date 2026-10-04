@@ -80,7 +80,7 @@ export async function POST(peticion: Request): Promise<Response> {
   if (llave.tipo === 'falta') return rechazo(llave.que);
 
   const id = await crearManual(contexto.orgEfectiva, { tipo, nombre, email, transcripcion });
-  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj);
+  const r = await analizarLlamada(contexto.orgEfectiva, id, llave.claveIa, reloj, 'PENDING', { usuarioId: contexto.usuarioId });
   if (r.tipo === 'rechazo') return respuestaDelRechazo(r.que);
   return ok({ id, ...r });
 }

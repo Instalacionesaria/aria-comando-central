@@ -8,12 +8,24 @@
 //   · los tokens viajan como los cuatro contadores de `TokenUsage`, y **también en el veto**: el
 //     origen no dejaba costo en las NOT_MATCH, y 43 llamadas a Sonnet del historial no dicen cuánto
 //     costaron;
-//   · `classifyCallType` ya no se traga una llave rechazada: ver su comentario.
+//   · `classifyCallType` ya no se traga una llave rechazada: ver su comentario;
+//   · `classifyCallType` cuenta lo que costó (`alTerminar`), también cuando devuelve null: el origen
+//     descartaba el uso de la clasificación;
+//   · un JSON ilegible lanza `sin_estructura` SIN el comienzo de la respuesta: ver `runAnalysis`.
 //
 // Motor de análisis y clasificación. Conserva la DOBLE COMPUERTA de los
 // originales: clasificador Haiku barato (para el sync) + gate "match:false" del
 // prompt de análisis (segunda compuerta, con toda la transcripción).
-import { callAnalyzer, callClassifier, extractJson, isUnusableKey } from './anthropic.ts';
+import type { FalloDelModelo } from '../../fundaciones/fallo-del-modelo.ts';
+import {
+  AnalyzerCallError,
+  CLASSIFY_MODEL,
+  callAnalyzer,
+  callClassifier,
+  extractJson,
+  falloDelModeloDe,
+  isUnusableKey,
+} from './anthropic.ts';
 import { buildAnalyzerSystem, buildInsightSystem } from './defs.ts';
 import { computeCostUsd, type TokenUsage } from './pricing.ts';
 import { formatTranscript } from './transcript.ts';
@@ -54,7 +66,9 @@ export async function runAnalysis(
   try {
     parsed = JSON.parse(extractJson(text));
   } catch {
-    throw new Error(`El modelo no devolvió JSON parseable. Inicio de la respuesta: ${text.slice(0, 200)}`);
+    /* Sin el comienzo de la respuesta: empieza por los datos del cliente, y este mensaje se guarda en la
+       llamada y se dibuja en la lista. El código y el uso alcanzan para saber qué pasó y cuánto costó. */
+    throw new AnalyzerCallError('sin_estructura', 'El modelo no devolvió JSON parseable.', null, { uso: usage });
   }
 
   const obj = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
@@ -112,7 +126,8 @@ export async function runInsight(
   try {
     parsed = JSON.parse(extractJson(text));
   } catch {
-    throw new Error(`El modelo no devolvió JSON parseable para ${kind}. Inicio: ${text.slice(0, 200)}`);
+    // Sin el comienzo de la respuesta, por lo mismo que en `runAnalysis`.
+    throw new AnalyzerCallError('sin_estructura', `El modelo no devolvió JSON parseable para ${kind}.`, null, { uso: usage });
   }
   const obj = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
   const insight = def.normalize(obj);
@@ -159,11 +174,26 @@ Responde ÚNICAMENTE con este JSON (sin texto adicional, sin markdown):
 {"tipo": "<uno de: ${defs.map((d) => d.tipo).join(', ')}, OTRO>", "reason": "una frase breve explicando por qué"}`;
 }
 
+/** Lo que costó UNA clasificación, haya salido o no. */
+export interface LoQueCostoClasificar {
+  modelo: string;
+  /** `null` cuando el proveedor no contestó: no se sabe qué consumió. */
+  uso: TokenUsage | null;
+  milisegundos: number;
+  /** `null` si clasificó. Un JSON ilegible es `sin_estructura`, aunque la función devuelva null. */
+  fallo: FalloDelModelo | null;
+}
+
 export interface ClassifyContext {
   title?: string | null;
   attendeeEmails?: (string | null | undefined)[];
   apiKey: string;
   waitMs?: number;
+  /**
+   * Se llama una vez por clasificación, antes de devolver o relanzar. **No debe lanzar**: quien
+   * descubre lo usa para `registrarUso`, que no lanza nunca.
+   */
+  alTerminar?: (costo: LoQueCostoClasificar) => Promise<void>;
 }
 
 // Devuelve el tipo (o 'OTRO'), o null si el clasificador falla (el sync deja la
@@ -174,6 +204,9 @@ export async function classifyCallType(
   fullText: string,
   ctx: ClassifyContext,
 ): Promise<{ tipo: TipoLlamada | 'OTRO'; reason: string } | null> {
+  const desde = Date.now();
+  let uso: TokenUsage | null = null;
+  let salida: { tipo: TipoLlamada | 'OTRO'; reason: string };
   try {
     const emails = (ctx?.attendeeEmails || []).filter(Boolean) as string[];
     const header = [
@@ -183,13 +216,22 @@ export async function classifyCallType(
       .filter(Boolean)
       .join('\n');
     const userText = (header ? header + '\n\nTRANSCRIPCIÓN:\n' : '') + fullText.slice(0, CLASSIFY_PREFIX_CHARS);
-    const { text } = await callClassifier(buildClassifierSystem(), userText, ctx.apiKey, ctx.waitMs);
+    const { text, usage } = await callClassifier(buildClassifierSystem(), userText, ctx.apiKey, ctx.waitMs);
+    uso = usage;
     const parsed = JSON.parse(extractJson(text)) as { tipo?: unknown; reason?: unknown };
     const tipo = String(parsed.tipo || '').toUpperCase();
     const reason = typeof parsed.reason === 'string' ? parsed.reason : '';
-    if (getAnalyzer(tipo)) return { tipo: tipo as TipoLlamada, reason };
-    return { tipo: 'OTRO', reason };
+    salida = getAnalyzer(tipo) ? { tipo: tipo as TipoLlamada, reason } : { tipo: 'OTRO', reason };
   } catch (e) {
+    /* Los cortes —truncado, declinado, sin texto— ya llegan nombrados desde `callClassifier`. Lo que no
+       es un error del transporte es la lectura de la respuesta: el modelo contestó, se pagó, y no dijo
+       un JSON. */
+    await ctx.alTerminar?.({
+      modelo: CLASSIFY_MODEL,
+      uso: uso ?? (e instanceof AnalyzerCallError ? (e.detalle.uso ?? null) : null),
+      milisegundos: Date.now() - desde,
+      fallo: falloDelModeloDe(e) ?? { tipo: 'sin_estructura' },
+    });
     /* ── UNA LLAVE RECHAZADA NO ES «NO SE PUDO CLASIFICAR ESTA VEZ» ──────────
      *
      * El origen devolvía null ante cualquier fallo, y null significa «dejala para la próxima
@@ -200,4 +242,7 @@ export async function classifyCallType(
     if (isUnusableKey(e)) throw e;
     return null;
   }
+  // Fuera del `try`: lo que pase acá no es un fallo de la clasificación.
+  await ctx.alTerminar?.({ modelo: CLASSIFY_MODEL, uso, milisegundos: Date.now() - desde, fallo: null });
+  return salida;
 }

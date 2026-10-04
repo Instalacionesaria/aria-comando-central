@@ -20,7 +20,8 @@
 ## El Plan de prospección
 
 Ya existe como herramienta del método que genera, **sin agente conversacional a propósito**: gasta créditos
-del monedero. Suma el registro del uso (AG2).
+del monedero. Suma el registro del uso con el resto de Fundaciones: AG2 lo dejó para después de integrar
+la rama `feature/icp-oferta-v2` (`00-MAPA.md`).
 
 ## «Todos» (diseño)
 

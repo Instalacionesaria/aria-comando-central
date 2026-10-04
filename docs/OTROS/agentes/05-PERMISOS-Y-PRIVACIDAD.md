@@ -54,7 +54,7 @@ el servidor**, no sólo en la pantalla:
 |---|---|
 | Preguntar al cerebro, borrar un hilo | rechazado: el cerebro se apaga y lo dice |
 | Generar o regenerar el Brief del closer | rechazado: gastaría la llave del cliente. El Brief ya guardado se lee |
-| Marcar «vista», resolver, descartar o validar una señal | rechazado: un autor de la principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:868-903`) |
+| Marcar «vista», resolver, descartar o validar una señal | rechazado: un autor de la principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906`) |
 | Firmar un umbral | rechazado: la firma es del Admin **de la empresa** (`D-11`) |
 | Ajustar los topes | permitido, con autor nulo: es configuración, y la casa ya lo resuelve así con `autorDelCambio` (`lib/autorizacion/sesion.ts:384-385`) |
 | Leer señales, plan, Reunión, comentario de la cabecera | permitido: sólo leen |
@@ -79,9 +79,9 @@ Ni el prompt ni la respuesta del modelo van a un registro ni a un incidente
 modelo, agente, duración, resultado (`ok` o la situación `IA-*`), quién y una referencia de hasta 64
 caracteres (el hilo, el análisis o la del incidente).
 
-Y se cierra una deuda abierta: un análisis fallido de los Analizadores guarda hoy 200 caracteres de la
-respuesta del modelo, que pueden traer datos del cliente (`lib/analizadores/nucleo/engine.ts:57`). En AG2 el
-error guarda el código, no el texto.
+Y se cerró en AG2 una deuda abierta: un análisis fallido de los Analizadores guardaba 200 caracteres de la
+respuesta del modelo, que pueden traer datos del cliente. Desde AG2 el error es `sin_estructura` y no lleva
+una palabra de la respuesta (`runAnalysis`, `lib/analizadores/nucleo/engine.ts`; prueba 201).
 
 ## AG-85 · Retención
 

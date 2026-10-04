@@ -85,7 +85,7 @@ no se marca.
   (administrador y superadministrador): un `usuario` de Acquisition no puede saltarse la validación que pide
   Arq §2.3.
 - Siempre con motivo, autor y fecha. **Bajo delegación se rechaza en el servidor**: escribir un autor de la
-  principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:868-903`).
+  principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906`).
 
 ## AG-26 · Gravedad y confianza
 

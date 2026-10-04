@@ -3,9 +3,9 @@
 > Plan del **2026-10-04**: el cerebro (el agente global del Inicio, `executive` en el código) y un agente
 > por tipo en cada inteligencia, enganchados al front de la segunda edición. Esta carpeta dice **todo lo
 > que se va a construir, cada decisión y cada riesgo, antes de tocar el código**. Prefijo de los
-> requisitos: `AG-`. Estado: **AG1 hecho** (el transporte y el uso); el usuario aprobó el 2026-10-04 el
-> conjunto de preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de
-> `fichas/F04-CONVERSION.md`. Sigue AG2.
+> requisitos: `AG-`. Estado: **AG2 hecho sin Fundaciones** (el Espía, el auditor y los Analizadores
+> registran su uso y sus incidentes); el usuario aprobó el 2026-10-04 el conjunto de preguntas de
+> `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`. Sigue el hito H1.
 
 ---
 
@@ -201,7 +201,8 @@ Tres consecuencias para el plan:
 | P0 · Medición | **Hecho** el 2026-10-04: `pull` a `97fc905` y la tabla de arriba |
 | AG0 · Documentos | **Hecho** el 2026-10-04 (`db6bc34`), con los dos OK del usuario ese mismo día |
 | AG1 · Transporte y uso | **Hecho** el 2026-10-04. La `069` se aplica a producción con el hito H1 |
-| AG2 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG2 · Los agentes que ya existen | **Hecho sin Fundaciones** el 2026-10-04, por decisión del usuario: el Espía, el auditor y los Analizadores (con la clasificación) registran su uso; los incidentes del auditor y de los Analizadores se agrupan por corrida; la `070` deja `incidentes_usuario_id_fkey` en `on delete set null`. El uso de Fundaciones espera a que se integre `feature/icp-oferta-v2`. La `069` y la `070` van a producción con el hito H1 |
+| AG3 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

@@ -24,8 +24,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ok, rechazo } from '../autorizacion/respuesta.ts';
-import { generar } from '../fundaciones/generacion.ts';
-import { rechazoDelModelo } from '../fundaciones/fallo-del-modelo.ts';
+import { registrarUso } from '../agentes/uso.ts';
+import { MODELO, generar } from '../fundaciones/generacion.ts';
+import { anotarIncidente, detalleDelFallo } from '../fundaciones/fallo-del-modelo.ts';
 import { pedirExterno } from '../http/cliente.ts';
 import { conOrganizacion } from '../datos/contexto.ts';
 import { guardarAnalisis } from './historial-del-espia.ts';
@@ -155,17 +156,48 @@ export async function analizarLosAnuncios(
     return rechazo('peticion_invalida', 'Ese trabajo no tiene anuncios para analizar.');
   }
 
+  const donde = { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}`, usuarioId: opciones.usuarioId ?? null };
+  const desde = Date.now();
   const salida = await generar({
     claveIa: opciones.claveIa,
     prompt: promptDelAnalisis(leidos.anuncios),
     tokens: TOKENS_DEL_ANALISIS,
-    donde: { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}` },
+    donde,
   });
+  /* UNA fila por pedido, no por intento: `generar` reintenta una vez tras un fallo pasajero, y la
+     duración incluye el reintento y su pausa, que es lo que esperó la persona. El intento perdido no
+     dejó contadores: un fallo pasajero es un rechazo o una respuesta que no llegó. */
+  const duracionMs = Date.now() - desde;
 
   if (salida.tipo !== 'datos') {
-    // Nombrado como en Fundaciones: situación, referencia y una línea de registro.
-    return rechazoDelModelo(salida, { origen: 'espia', orgId: opciones.orgId, donde: `trabajo ${trabajo}` });
+    /* Nombrado como en Fundaciones: situación, referencia y una línea de registro. Y el uso con la
+       MISMA referencia, para ir de la fila del uso al incidente. Sin uso: el fallo de `generar` no trae
+       contadores, ni siquiera el 200 sin texto, que sí se pagó; se anota nulo, «no se sabe». */
+    const anotado = await anotarIncidente(salida, donde);
+    await registrarUso({
+      orgId: opciones.orgId,
+      agente: 'espia',
+      modelo: MODELO,
+      uso: null,
+      duracionMs,
+      resultado: anotado.situacion,
+      usuarioId: opciones.usuarioId ?? null,
+      ref: anotado.ref,
+    });
+    return rechazo('modelo_no_disponible', detalleDelFallo(anotado));
   }
+
+  /* Un análisis cortado por el techo de tokens es `ok`: se entrega, marcado `cortado`, y se pagó entero. */
+  await registrarUso({
+    orgId: opciones.orgId,
+    agente: 'espia',
+    modelo: MODELO,
+    uso: salida.datos.uso,
+    duracionMs,
+    resultado: 'ok',
+    usuarioId: opciones.usuarioId ?? null,
+    ref: trabajo,
+  });
 
   /* Se GUARDA, para que cambiar de pestaña no obligue a volver a pagarlo (Jorge, 2026-10-03). Si
      guardar falla, el análisis igual se entrega: ya se pagó, y perderlo en pantalla sería peor. */

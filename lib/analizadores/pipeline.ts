@@ -25,16 +25,25 @@
 //   · **La ficha no va en la misma petición que el análisis.** El origen la generaba a continuación:
 //     dos inferencias de minutos en una sola función de 300 s. Acá el análisis termina y devuelve; la
 //     ficha la pide la pantalla enseguida, en otra petición, y la tarea completa las que falten.
+//   · **Cada llamada al modelo deja su uso y cada fallo su incidente** (`anotarLaLlamada`): la
+//     clasificación, el análisis y la ficha. El origen no registraba ninguno, y una llave sin saldo
+//     solo se veía en el estado de la tarea.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { registrarUso } from '../agentes/uso.ts';
+import { type FalloDelModelo, anotarIncidente, clasificarFallo } from '../fundaciones/fallo-del-modelo.ts';
+import { type IncidentesAgrupados, agruparIncidentes } from '../incidentes/agrupados.ts';
 import {
+  ANALYSIS_MODEL,
   ANALYSIS_WAIT_MS,
   AnalyzerCallError,
   CLASSIFY_WAIT_MS,
+  falloDelModeloDe,
   isOverloaded,
   isUnusableKey,
 } from './nucleo/anthropic.ts';
 import { classifyCallType, runAnalysis, runInsight } from './nucleo/engine.ts';
+import type { TokenUsage } from './nucleo/pricing.ts';
 import { insightsFor } from './nucleo/insight-registry.ts';
 import { TLDV_PAGE_SIZE, TLDV_WAIT_MS, TldvError, fetchTranscript, listRecentMeetings } from './nucleo/tldv.ts';
 import { parseTranscriptInput } from './nucleo/transcript.ts';
@@ -105,6 +114,60 @@ export function esperaDisponible(reloj: Reloj): number | null {
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /**
+ * Quién pidió el trabajo. La tarea del cron pasa `incidentes`, un grupo de su corrida
+ * (`agruparIncidentes`): un proveedor caído no llena el Panel de Incidentes con una fila por llamada.
+ * Las rutas de una sola llamada (analizar, la ficha) no lo pasan —hay una persona mirando—, y cada fallo
+ * anota el suyo con quien lo vio. `descubrir` arma su propio grupo si no le llega uno: el botón de
+ * sincronizar clasifica muchas reuniones de una vez.
+ */
+export interface QuienPide {
+  usuarioId?: string | null;
+  incidentes?: IncidentesAgrupados;
+}
+
+/** El uso de UNA llamada al modelo y, si falló, su incidente. No lanza: `registrarUso` y `anotarIncidente` tampoco. */
+async function anotarLaLlamada(
+  orgId: string,
+  quien: QuienPide,
+  llamada: {
+    agente: 'analizador_clasificar' | 'analizador_analizar' | 'analizador_ficha';
+    modelo: string;
+    uso: TokenUsage | null;
+    milisegundos: number;
+    fallo: FalloDelModelo | null;
+    /** La llamada de los Analizadores, si ya existe. La clasificación es de antes de crearla. */
+    ref: string | null;
+    /** El paso, en palabras, para el incidente. */
+    donde: string;
+  },
+): Promise<void> {
+  await registrarUso({
+    orgId,
+    agente: llamada.agente,
+    modelo: llamada.modelo,
+    uso: llamada.uso,
+    duracionMs: llamada.milisegundos,
+    resultado: llamada.fallo ? clasificarFallo(llamada.fallo) : 'ok',
+    usuarioId: quien.usuarioId ?? null,
+    ref: llamada.ref,
+  });
+  if (!llamada.fallo) return;
+  // El paso va en la clave del grupo: tres pasos que fallan igual son tres incidentes, cada uno con su nombre.
+  if (quien.incidentes) await quien.incidentes.anotar(llamada.fallo, llamada.donde);
+  else {
+    await anotarIncidente(llamada.fallo, {
+      origen: 'analizador',
+      orgId,
+      donde: llamada.donde,
+      usuarioId: quien.usuarioId ?? null,
+    });
+  }
+}
+
+/** El uso que trae un error del modelo: solo lo traen los que llegaron con un 200. */
+const usoDelError = (e: unknown): TokenUsage | null => (e instanceof AnalyzerCallError ? (e.detalle.uso ?? null) : null);
+
+/**
  * El error que se GUARDA en la llamada y se devuelve por la API.
  *
  * Un error de la base trae su SQLSTATE en `code` y un mensaje que nombra tablas y restricciones
@@ -156,8 +219,26 @@ export type ResultadoDelDescubrimiento =
  *
  * Descubre las dos, HT y OB, como el origen desde que el botón dejó de ser por pestaña: una
  * sincronización lanzada desde OB también trae las HT.
+ *
+ * Los fallos de la clasificación se agrupan SIEMPRE, también desde la pantalla: un botón clasifica
+ * hasta `TOPE_DEL_DESCUBRIMIENTO` reuniones, y con el proveedor caído serían otras tantas filas del
+ * mismo hecho. Si quien llama trae su grupo (la tarea del cron), van al suyo y lo cierra él.
  */
 export async function descubrir(
+  orgId: string,
+  opciones: Parameters<typeof descubrirYClasificar>[1],
+  quien: QuienPide = {},
+): Promise<ResultadoDelDescubrimiento> {
+  if (quien.incidentes) return descubrirYClasificar(orgId, opciones, quien);
+  const incidentes = agruparIncidentes('analizador', orgId, quien.usuarioId ?? null);
+  try {
+    return await descubrirYClasificar(orgId, opciones, { ...quien, incidentes });
+  } finally {
+    await incidentes.volcar();
+  }
+}
+
+async function descubrirYClasificar(
   orgId: string,
   opciones: {
     claveTldv: string;
@@ -166,6 +247,7 @@ export async function descubrir(
     ventanaHoras?: number;
     tope?: number;
   },
+  quien: QuienPide,
 ): Promise<ResultadoDelDescubrimiento> {
   const { claveTldv, claveIa, reloj } = opciones;
   const ventanaHoras = opciones.ventanaHoras ?? VENTANA_DEL_DESCUBRIMIENTO_HORAS;
@@ -240,6 +322,13 @@ export async function descubrir(
         attendeeEmails: (m.invitees || []).map((p) => p.email),
         apiKey: claveIa,
         waitMs: CLASSIFY_WAIT_MS,
+        alTerminar: (costo) =>
+          anotarLaLlamada(orgId, quien, {
+            agente: 'analizador_clasificar',
+            ...costo,
+            ref: null,
+            donde: 'la clasificación de una reunión de tl;dv',
+          }),
       });
     } catch (e) {
       // `classifyCallType` solo relanza una llave rechazada: todo lo demás ya es `null`.
@@ -337,6 +426,7 @@ export async function analizarLlamada(
   reloj: Reloj,
   /** El estado en que la vio quien pide analizarla. Ver `tomarParaAnalizar`. */
   esperado: EstadoTomable = 'PENDING',
+  quien: QuienPide = {},
 ): Promise<ResultadoDelAnalisis> {
   const llamada = await leerParaAnalizar(orgId, llamadaId);
   if (!llamada) return { tipo: 'rechazo', que: 'no_encontrada' };
@@ -351,8 +441,17 @@ export async function analizarLlamada(
   const tipo = llamada.tipo;
   if (!(await tomarParaAnalizar(orgId, llamadaId, esperado, tipo))) return { tipo: 'rechazo', que: 'llamada_en_curso' };
 
+  const desde = Date.now();
+  const comoLlamada = { agente: 'analizador_analizar' as const, ref: llamadaId, donde: 'el análisis de una llamada' };
   try {
     const r = await runAnalysis(tipo, llamada.transcripcion, claveIa, espera);
+    await anotarLaLlamada(orgId, quien, {
+      ...comoLlamada,
+      modelo: r.model,
+      uso: r.usage,
+      milisegundos: Date.now() - desde,
+      fallo: null,
+    });
     const comun = { tipo, modelo: r.model, uso: r.usage, costoUsd: r.costUsd, versionDeRubrica: r.rubricVersion };
     if (!r.matched) {
       await terminarConVeto(orgId, llamadaId, { ...comun, motivo: r.reason });
@@ -361,6 +460,19 @@ export async function analizarLlamada(
     await terminarConAnalisis(orgId, llamadaId, { ...comun, analisis: r.analysis, columnas: r.cols });
     return { tipo: 'hecho', estado: 'DONE', motivo: null, error: null };
   } catch (e) {
+    /* Sólo los errores del modelo dejan uso e incidente. Los demás —una escritura que la base rechazó
+       después de anotar el uso, o no hay analizador para el tipo— no son una llamada que fallara:
+       `falloDelModeloDe` los devuelve nulos, y así el uso no se anota dos veces. */
+    const fallo = falloDelModeloDe(e);
+    if (fallo) {
+      await anotarLaLlamada(orgId, quien, {
+        ...comoLlamada,
+        modelo: ANALYSIS_MODEL,
+        uso: usoDelError(e),
+        milisegundos: Date.now() - desde,
+        fallo,
+      });
+    }
     /* La llave que ya no sirve y el servicio saturado NO son fallos de la llamada: el análisis no
        llegó a ocurrir, y el próximo intento con la llave arreglada o en un rato la analiza. Vuelve
        a su estado, con su error de antes si lo tenía. */
@@ -419,6 +531,7 @@ export async function generarFicha(
   llamadaId: string,
   claveIa: string,
   reloj: Reloj,
+  quien: QuienPide = {},
 ): Promise<ResultadoDeLaFicha> {
   const llamada = await leerParaAnalizar(orgId, llamadaId);
   if (!llamada) return { tipo: 'rechazo', que: 'no_encontrada' };
@@ -430,11 +543,20 @@ export async function generarFicha(
   const espera = esperaDisponible(reloj);
   if (espera === null) return { tipo: 'rechazo', que: 'sin_tiempo' };
 
+  const desde = Date.now();
+  const comoLlamada = { agente: 'analizador_ficha' as const, ref: llamadaId, donde: 'la ficha del prospecto' };
   try {
     const r = await runInsight(def.kind, llamada.transcripcion, {
       apiKey: claveIa,
       contextHeader: cabeceraDeContexto(llamada),
       waitMs: espera,
+    });
+    await anotarLaLlamada(orgId, quien, {
+      ...comoLlamada,
+      modelo: r.model,
+      uso: r.usage,
+      milisegundos: Date.now() - desde,
+      fallo: null,
     });
     await guardarFicha(orgId, llamadaId, {
       estado: 'OK',
@@ -448,6 +570,16 @@ export async function generarFicha(
     });
     return { tipo: 'hecho', estado: 'OK', error: null };
   } catch (e) {
+    const fallo = falloDelModeloDe(e); // como en `analizarLlamada`
+    if (fallo) {
+      await anotarLaLlamada(orgId, quien, {
+        ...comoLlamada,
+        modelo: ANALYSIS_MODEL,
+        uso: usoDelError(e),
+        milisegundos: Date.now() - desde,
+        fallo,
+      });
+    }
     /* Con la llave rota o el servicio saturado la ficha no llegó a intentarse: no se guarda una
        FAILED, que no se reintenta sola y quedaría así para siempre por un problema de la llave. */
     if (isUnusableKey(e)) return { tipo: 'rechazo', que: 'llave_de_ia_rechazada' };

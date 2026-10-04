@@ -72,28 +72,59 @@
   y el modelo de Fundaciones pasado a `claude-sonnet-5-5` con su herramienta forzada. En la 171, otra
   versión en `proveedor.ts` y la dirección copiada en `llamada.ts`.
 - **Documentos**: `estado actual/17-LA-PLATAFORMA.md` (existe la tabla del uso de IA y su único escritor;
-  todavía no la escribe ningún agente: los que ya existen, desde AG2; los nuevos, desde AG5).
+  la escriben desde AG2 los agentes que ya existían, menos Fundaciones; los nuevos, desde AG5).
 
-## AG2 · Los agentes que ya existen registran su uso y sus fallos — **hito H1**
+## AG2 · Los agentes que ya existen registran su uso y sus fallos — **hecha el 2026-10-04 sin Fundaciones** — **hito H1**
 
-- **Qué**: `registrarUso` en Fundaciones (generar, conversar, rellenar), el Espía, el auditor (rojo y
-  amarillo) y los Analizadores, **incluida la clasificación**, que hoy descarta su uso. Incidentes del
-  auditor y de los Analizadores, agregados por corrida y situación. El error de un análisis fallido guarda el
-  código, no 200 caracteres de la respuesta (`lib/analizadores/nucleo/engine.ts:57`). Se quita el bloque
-  duplicado de `pedirExterno` (`lib/http/cliente.ts:392` y `:411`), sin cambiar su contrato.
-- **Deuda que deja AG1 a la vista**: `incidentes_usuario_id_fkey` es `no action` (`067`), así que un
-  incidente —aunque sea uno salvado, que la persona ni vio— vuelve imborrable a quien lo tuvo. La `068` y
-  la `069` eligieron `on delete set null` para lo que es de la organización. Cambiarla es una migración con
-  su frase menos en `QUE_LO_IMPIDE`: se decide en esta etapa, que es la que suma incidentes.
-- **Coordinación**: lo de Fundaciones choca con la rama `feature/icp-oferta-v2` (`00-MAPA.md`). Se hace
-  después de que la rama se integre, o con su conflicto resuelto a mano.
-- **Pruebas que cambian**: las del auditor y los Analizadores afirman el uso (mutación: quitar
-  `registrarUso`) y el incidente (mutación: quitar `registrarIncidente`). La del cuerpo del auditor sigue
-  igual: el cuerpo no cambia.
-- **Pruebas nuevas**: 201, el error de un análisis no guarda texto del modelo (mutación: devolver el
-  `slice`).
-- **Documentos**: `estado actual/14-ANALIZADORES.md` y `04-CONVERSATION.md` (incidentes y uso).
-- **Hito H1**: aplicar la `069`, push con OK.
+- **Qué se hizo**: `registrarUso` en el Espía (`espia`), el auditor (`auditor` en el carril rojo,
+  `auditor_mejora` en el amarillo) y los Analizadores (`analizador_clasificar`, `analizador_analizar`,
+  `analizador_ficha`), **incluida la clasificación**, que antes descartaba su uso. Una fila por llamada,
+  también las que fallan: con sus contadores si la respuesta llegó (se pagó), nulos si no. El Espía es la
+  excepción: una fila por pedido, con el reintento de `generar` adentro, y sin contadores cuando falla,
+  porque el fallo de `generar` no los trae (tampoco el 200 sin texto).
+- **Incidentes**: el auditor y los Analizadores los suman, **agregados por corrida, situación y paso** con
+  `agruparIncidentes` (`lib/incidentes/agrupados.ts`). El primero de cada grupo se escribe en el acto y al
+  terminar se le pone cuántos fueron: el auditor espera al modelo hasta 240 s en una función de 300, y una
+  corrida que la plataforma corta antes del `finally` no puede dejar el panel vacío. También agrupa el botón de sincronizar los Analizadores
+  (clasifica hasta cuarenta reuniones). Analizar o pedir la ficha desde la pantalla anota uno por fallo, con
+  quien lo vio; la mejora del día, uno solo. El Espía anota su incidente y su uso con la MISMA referencia.
+- **El error de un análisis fallido** ya no guarda texto del modelo: un JSON ilegible es
+  `AnalyzerCallError('sin_estructura')`, con el uso y sin el `slice` de la respuesta (`runAnalysis` y
+  `runInsight`). El error del transporte lleva `codigo`, `motivo` y `causa`, y `falloDelModeloDe` lo traduce
+  a las situaciones `IA-*` (`lib/analizadores/nucleo/anthropic.ts`). La clasificación mira el motivo de corte
+  como el análisis: un truncado o un rechazo ya no se anotan como `IA-ESTRUCTURA`. Y el fallo del auditor
+  sale sin la llave (`redactKey`), porque desde ahora llega al registro y al incidente. `Generacion` suma `uso` con los cuatro
+  contadores (`lib/fundaciones/generacion.ts`).
+- **Se quitó el bloque duplicado** de `lectura === 'texto'` en `pedirExterno` (`lib/http/cliente.ts`): era
+  idéntico al anterior e inalcanzable, y el contrato no cambia.
+- **Migración** `070_el_incidente_no_retiene_a_la_persona.sql`: `incidentes_usuario_id_fkey` pasa a `on delete
+  set null`, como la `068` y la `069`, y su frase sale de `QUE_LO_IMPIDE`. Se decidió con el usuario el
+  2026-10-04.
+- **Lo que quedó para después**: el uso de Fundaciones (generar, conversar, rellenar) choca con la rama
+  `feature/icp-oferta-v2` (`00-MAPA.md`), y el usuario decidió hacerlo después de que la rama se integre.
+- **Pruebas que cambian**: 172 y 173 (el uso de la clasificación, el análisis y la ficha; el incidente de la
+  pantalla con quien lo vio; uno por situación al descubrir, en la tarea y en el reintento, también cuando la
+  corrida corta), 95 y 92 (el uso del auditor y de la mejora, el incidente agrupado del rojo y el suelto del
+  amarillo), 200 (el Espía corrido con la red falsa: su uso, y la referencia que comparte con su incidente) y
+  23 (una clave del diccionario que ya no frena un borrado sobra). La del cuerpo del auditor sigue igual.
+- **Pruebas nuevas**: 201, el error de un análisis y de una ficha no guarda texto del modelo, la
+  clasificación cuenta lo que costó aunque devuelva null, y los errores del transporte se traducen con lo que
+  mandó el proveedor.
+- **Mutaciones, veintinueve vistas en rojo**: en la 201, devolver el `slice` en el análisis y en la ficha;
+  el error de lectura sin su uso; la causa de `sin_respuesta` perdida; la clasificación fallida que no cuenta.
+  En la 172, quitar `registrarUso`; quitar el incidente de la pantalla; la pantalla que no agrupa la
+  clasificación; volcar fuera del `finally`; el uso sin la persona; el uso del error ignorado. En la 173, la
+  tarea y el reintento sin agrupar; el agrupador que junta todas las situaciones. En la 95, quitar
+  `registrarUso`; anotar uno por llamada; no volcar. En la 92, quitar el uso y el incidente de la mejora. En
+  la 200, el Espía sin uso; con otra referencia que su incidente; sin los contadores de caché. En la 23, la
+  frase vieja que sigue en la lista. Una vigésima cuarta —anotar dos veces el uso cuando falla una escritura
+  después del modelo— quedó verde y mostró que la guarda que vigilaba sobraba: un error que no es del modelo
+  no deja uso (`falloDelModeloDe` lo devuelve nulo). La guarda se quitó. Después de la revisión adversarial,
+  seis más: el primero del grupo que espera a `volcar`, la clave sin el paso y `volcar` sin recontar (172,
+  173 y 95); la clasificación sin mirar el corte, y la llave en la causa y en el motivo del auditor (201).
+- **Documentos**: `estado actual/14-ANALIZADORES.md`, `04-CONVERSATION.md`, `17-LA-PLATAFORMA.md` y
+  `09-DEUDA-ABIERTA.md`; en esta carpeta, `00-MAPA`, `01`, `05`, `06` y las fichas F01, F02, F05, F08 y F11.
+- **Hito H1**: aplicar la `069` y la `070` a producción, push con OK.
 
 ## AG3 · La voz
 

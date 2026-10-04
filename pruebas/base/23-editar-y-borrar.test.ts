@@ -635,4 +635,18 @@ test('las claves de `QUE_LO_IMPIDE` son nombres de restricciones que EXISTEN', a
     'hay claves foráneas que pueden bloquear un borrado y no tienen traducción: el rechazo va a ' +
       'decir «tiene historial» sin decir cuál',
   );
+
+  // Y la otra punta: una clave que ya no frena —pasó a `set null` o a `cascade`, como
+  // `incidentes_usuario_id_fkey` en la `070`— no tiene por qué seguir en la lista. Su frase describe un
+  // impedimento que no existe, y quien la lea en el código la cree.
+  const queNoFrenan = await admin.query<{ conname: string }>(
+    `select conname from pg_constraint
+      where contype = 'f' and conname = any($1) and confdeltype not in ('a', 'r')`,
+    [claves],
+  );
+  assert.deepEqual(
+    queNoFrenan.rows.map((f) => f.conname),
+    [],
+    'el diccionario traduce claves que no frenan ningún borrado',
+  );
 });

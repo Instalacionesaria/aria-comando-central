@@ -10,7 +10,8 @@
 //   · sin tiempo para un análisis, lo descubierto queda PENDING y el sello lo dice;
 //   · con la llave de IA rechazada no se intenta ningún análisis, y el sello lo dice;
 //   · lo que deja la corrida incompleta sin ser un error —tl;dv caído, una página llena— también;
-//   · el sello `analizadores` existe en la base (sin la `058`, `sellar` falla contra el CHECK).
+//   · el sello `analizadores` existe en la base (sin la `058`, `sellar` falla contra el CHECK);
+//   · los fallos del modelo de una corrida son UN incidente por situación, también si la corrida corta.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before, beforeEach } from 'node:test';
@@ -47,6 +48,8 @@ async function limpiar(): Promise<void> {
     await esc.admin.query(`delete from negocio.${t} where org_id = any($1)`, [[esc.org, esc.otraOrg]]);
   }
   await esc.admin.query(`delete from negocio.tareas_programadas where tarea in ('analizadores', 'reintentos')`);
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = any($1) and agente like 'analizador%'`, [[esc.org, esc.otraOrg]]);
+  await esc.admin.query(`delete from negocio.incidentes where org_id = any($1) and origen = 'analizador'`, [[esc.org, esc.otraOrg]]);
 }
 
 before(async () => {
@@ -337,3 +340,63 @@ test('el reintento corre a las 5:07 de Lima, solo en su horario, y el barrido lo
   assert.deepEqual(s.rows, [{ estado: 'corrio' }]);
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS INCIDENTES DE LA CORRIDA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function incidentesDeLaCorrida(): Promise<{ situacion: string; donde: string | null; usuario_id: string | null }[]> {
+  const r = await esc.admin.query(
+    `select situacion, donde, usuario_id from negocio.incidentes where org_id = $1 and origen = 'analizador' order by situacion`,
+    [esc.org],
+  );
+  return r.rows;
+}
+
+async function usosDelAnalisis(): Promise<string[]> {
+  const r = await esc.admin.query(
+    `select resultado from negocio.uso_de_ia where org_id = $1 and agente = 'analizador_analizar' order by resultado`,
+    [esc.org],
+  );
+  return r.rows.map((f) => f.resultado);
+}
+
+test('la corrida anota UN incidente por situación, sin persona, y el uso de cada llamada', async () => {
+  /* Con el proveedor fallando, una fila por llamada llenaría el Panel de Incidentes con el mismo hecho
+     (AG-98). El uso sí es uno por llamada: cada una se pagó. */
+  await unaManualConTexto();
+  await unaManualConTexto();
+  red.analisis.push(() => delModelo('esto no es JSON'));
+  red.analisis.push(() => delModelo('esto tampoco'));
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.fallidas, 2);
+  assert.deepEqual(await incidentesDeLaCorrida(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'el análisis de una llamada · 2 llamadas de esta corrida', usuario_id: null },
+  ]);
+  assert.deepEqual(await usosDelAnalisis(), ['IA-ESTRUCTURA', 'IA-ESTRUCTURA']);
+});
+
+test('dos situaciones en una corrida son dos incidentes, también cuando la saturación corta el drenado', async () => {
+  await unaManualConTexto();
+  await unaManualConTexto();
+  red.analisis.push(() => delModelo('esto no es JSON'));
+  red.analisis.push(() => json({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }, 529));
+  const r = await correrAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.saturado, true);
+  assert.deepEqual(await incidentesDeLaCorrida(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'el análisis de una llamada · una llamada de esta corrida', usuario_id: null },
+    { situacion: 'IA-SATURADO', donde: 'el análisis de una llamada · una llamada de esta corrida', usuario_id: null },
+  ]);
+});
+
+test('el reintento de la mañana también agrupa', async () => {
+  await unaFallida();
+  await unaFallida();
+  red.analisis.push(() => delModelo('esto no es JSON'));
+  red.analisis.push(() => delModelo('esto tampoco'));
+  const r = await reintentarAnalizadores(esc.org, ACCESO, relojDe(300_000));
+  assert.equal(r.siguenFallando, 2);
+  assert.deepEqual(await incidentesDeLaCorrida(), [
+    { situacion: 'IA-ESTRUCTURA', donde: 'el análisis de una llamada · 2 llamadas de esta corrida', usuario_id: null },
+  ]);
+});

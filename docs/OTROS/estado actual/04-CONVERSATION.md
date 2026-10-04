@@ -587,6 +587,13 @@ vigentes y releídas en el código el 2026-09-28:
   comentarios en los nueve archivos de la pantalla, contadas el 2026-09-28— pero **ninguna prueba lo
   vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:776` barre sólo cuatro archivos del
   Closer.
+- **Cada llamada del auditor deja su uso, y sus fallos van al Panel de Incidentes** (desde AG2 de los
+  agentes, 2026-10-04, después de este corte). El carril rojo escribe una fila de `negocio.uso_de_ia`
+  por conversación juzgada (`auditor`, con el contacto como referencia) y junta sus fallos en UN
+  incidente por situación y por corrida (`lib/incidentes/agrupados.ts`): con el proveedor caído, uno
+  por conversación llenaría el panel cada diez minutos. El de mejora (`auditor_mejora`) anota el suyo
+  sin agrupar, porque es una llamada por día. Las pruebas: `pruebas/base/95-camino-del-auditor.test.ts`
+  y `pruebas/base/92-carril-amarillo.test.ts`.
 
 ---
 

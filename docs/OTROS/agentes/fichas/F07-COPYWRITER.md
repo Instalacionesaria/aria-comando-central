@@ -41,7 +41,7 @@ Copywriter), para que el diff entre los dos árboles sea legible.
   frecuencia, no la frase de una persona.
 - **AG-F07-3 · Si falta un dato, lo marca** («[COMPLETAR]»), como las herramientas del método; no lo inventa.
 - **AG-F07-4 · Exige su propia constante de modelo**: hoy `MODELO` es una sola para todas las herramientas
-  de Fundaciones (`lib/fundaciones/generacion.ts:54`).
+  de Fundaciones (`lib/fundaciones/generacion.ts:56`).
 
 ## Entradas desde otros lugares
 

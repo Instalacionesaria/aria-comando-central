@@ -80,6 +80,8 @@ async function limpio(): Promise<void> {
     [marca],
   );
   await esc.admin.query('delete from negocio.prompts_del_agente');
+  await esc.admin.query(`delete from negocio.uso_de_ia where org_id = $1 and agente like 'auditor%'`, [esc.org]);
+  await esc.admin.query(`delete from negocio.incidentes where org_id = $1 and origen = 'auditor'`, [esc.org]);
   await limpiar(esc);
 }
 
@@ -124,6 +126,7 @@ function unModelo(m: {
         } as never,
         milisegundos: 10,
         tokens: 500,
+        uso: { input: 450, output: 50, cacheWrite: 0, cacheRead: 0 },
         modelo: 'claude-sonnet-5',
       },
     };
@@ -655,4 +658,40 @@ test('la corrida en seco NO escribe ni llama al modelo', async () => {
     [`${esc.marca.toLowerCase()}-%`],
   );
   assert.equal(rows[0]?.n, '0');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL USO Y EL INCIDENTE DE LA MEJORA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function usosDeLaMejora(): Promise<{ resultado: string; ref: string | null; tokens: string | null }[]> {
+  const r = await esc.admin.query(
+    `select resultado, ref,
+            case when tokens_entrada is null then null
+                 else concat_ws('/', tokens_entrada, tokens_salida, tokens_escritura_cache, tokens_lectura_cache) end as tokens
+       from negocio.uso_de_ia where org_id = $1 and agente = 'auditor_mejora'`,
+    [esc.org],
+  );
+  return r.rows;
+}
+
+test('la mejora del día deja su uso, con el contacto elegido como referencia', async () => {
+  await limpio();
+  const k = await unaConversacion();
+  await buscarUnaMejora(EMPRESA(), AHORA, unModelo({ peldano: 'no_leyo', patron: 'sigue_el_guion' }).pedir);
+  assert.deepEqual(await usosDeLaMejora(), [{ resultado: 'ok', ref: k, tokens: '450/50/0/0' }]);
+});
+
+test('una mejora que falla deja su uso con la situación, y su incidente sin agrupar: es una por día', async () => {
+  await limpio();
+  const k = await unaConversacion();
+  const pedir: typeof pedirVeredicto = async () => ({ tipo: 'sin_respuesta', causa: 'se agotó el tiempo de espera a los 120 s' });
+  const r = await buscarUnaMejora(EMPRESA(), AHORA, pedir);
+  assert.equal(r.fallo, 'sin_respuesta');
+  assert.deepEqual(await usosDeLaMejora(), [{ resultado: 'IA-TIEMPO', ref: k, tokens: null }]);
+  const i = await esc.admin.query(
+    `select situacion, donde from negocio.incidentes where org_id = $1 and origen = 'auditor'`,
+    [esc.org],
+  );
+  assert.deepEqual(i.rows, [{ situacion: 'IA-TIEMPO', donde: 'la mejora del día' }]);
 });

@@ -53,6 +53,22 @@ export async function registrarIncidente(i: NuevoIncidente): Promise<void> {
   }
 }
 
+/**
+ * Cambia el `donde` de un incidente ya guardado: lo usa el grupo de una corrida para decir, al terminar,
+ * cuántas llamadas fallaron igual que la primera (`lib/incidentes/agrupados.ts`). No lanza nunca, como
+ * `registrarIncidente`.
+ */
+export async function recontarIncidente(orgId: string, ref: string, origen: string, donde: string): Promise<void> {
+  if (!UUID.test(orgId)) return;
+  try {
+    await conOrganizacion(orgId, async () => {
+      await datos().updateTable('incidentes').set({ donde }).where('ref', '=', ref).where('origen', '=', origen).execute();
+    });
+  } catch (e) {
+    console.error(`incidentes: no se pudo recontar ${ref} · ${e instanceof Error ? e.message : 'desconocido'}`);
+  }
+}
+
 /** Lo que el panel muestra de cada incidente. */
 export interface IncidenteListado {
   id: string;

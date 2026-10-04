@@ -28,7 +28,7 @@
 >   analizador HT nunca vio (`docs/OTROS/analizadores/ANALIZADORES.md:216-269`). De ahí salen el
 >   riesgo «el clasificador pierde ventas» (§ 7) y la clasificación por nombre (§ 1). `dfc406b`: el
 >   aviso de página llena, abajo. `0c09549` OB-2 y OB-3: `TIPOS_QUE_SE_ANALIZAN` pasa a HT y OB sin
->   migración (`lib/analizadores/pipeline.ts:64`), entran `DetalleOb.jsx` (333 líneas) y
+>   migración (`lib/analizadores/pipeline.ts:73`), entran `DetalleOb.jsx` (333 líneas) y
 >   `lib/analizadores/rotulos.ts` (82), y una revisión adversarial encontró 11 defectos distintos,
 >   el más visible que el rótulo pasaba por `.toLowerCase()` y la pantalla decía «no es ht ni ob».
 >   `70a84c6`: `scripts/medir-analizadores.sql` y `scripts/comparar-con-brain.sql`, atadas por
@@ -41,13 +41,13 @@
 >   lo desmintió: la página venía llena pero 48 de sus 50 eran anteriores a la ventana de 48 h, así
 >   que la cruzaba y no faltaba nada; contando nada más, el sello iba a avisar en todas las corridas
 >   de una cuenta con más de 50 reuniones, y un sello que avisa siempre deja de leerse
->   (`lib/analizadores/pipeline.ts:196-206`). Desde entonces el descubrimiento calcula
+>   (`lib/analizadores/pipeline.ts:278-288`). Desde entonces el descubrimiento calcula
 >   `paginaSinBorde`: llena **y** sin ninguna reunión anterior al corte, y una sin fecha cuenta como
->   adentro (`lib/analizadores/pipeline.ts:207-209`, anunciado en
+>   adentro (`lib/analizadores/pipeline.ts:289-291`, anunciado en
 >   `lib/analizadores/nucleo/tldv.ts:140-143`). La tarea lo pasa como `paginaLlena`
->   (`lib/analizadores/tarea.ts:80`) y solo entonces el sello lo escribe
+>   (`lib/analizadores/tarea.ts:98`) y solo entonces el sello lo escribe
 >   (`lib/negocio/barrido.ts:780-782`). Las dos caras están probadas
->   (`pruebas/base/173-tarea-del-analizador.test.ts:185-207`); que la del caso real se viera roja
+>   (`pruebas/base/173-tarea-del-analizador.test.ts:188-210`); que la del caso real se viera roja
 >   con la mutación que vuelve a contar lo dice el commit, **no re-corrido para esta foto**. El
 >   documento de requisitos lo cuenta en `docs/OTROS/analizadores/ANALIZADORES.md:168-171`. Releído
 >   el 2026-09-28 a las 23:57 UTC, después de la ventana de este corte: el sello de `aria` de la
@@ -214,21 +214,21 @@ decisiones de operación:
 
 | Qué | Valor | Dónde |
 |---|---|---|
-| Tipos que se mandan a Sonnet (el interruptor) | HT y OB | `lib/analizadores/pipeline.ts:64` |
-| Tope de reuniones nuevas por corrida | 40 | `lib/analizadores/pipeline.ts:67` |
-| Ventana del descubrimiento | 48 h | `lib/analizadores/pipeline.ts:74` |
+| Tipos que se mandan a Sonnet (el interruptor) | HT y OB | `lib/analizadores/pipeline.ts:73` |
+| Tope de reuniones nuevas por corrida | 40 | `lib/analizadores/pipeline.ts:76` |
+| Ventana del descubrimiento | 48 h | `lib/analizadores/pipeline.ts:83` |
 | Página de tl;dv (no se pide una segunda) | 50 | `lib/analizadores/nucleo/tldv.ts:138` |
-| Margen final | 15 s | `lib/analizadores/pipeline.ts:77` |
-| Mínimo que tiene que quedar para arrancar un análisis | 150 s | `lib/analizadores/pipeline.ts:83` |
-| Esperas del análisis y del clasificador | 270 y 60 s | `lib/analizadores/nucleo/anthropic.ts:42-43` |
+| Margen final | 15 s | `lib/analizadores/pipeline.ts:86` |
+| Mínimo que tiene que quedar para arrancar un análisis | 150 s | `lib/analizadores/pipeline.ts:92` |
+| Esperas del análisis y del clasificador | 270 y 60 s | `lib/analizadores/nucleo/anthropic.ts:43-44` |
 | Espera de tl;dv | 30 s | `lib/analizadores/nucleo/tldv.ts:26` |
-| Modelo del análisis y de la ficha | `claude-sonnet-5` | `lib/analizadores/nucleo/anthropic.ts:33` |
-| Modelo del clasificador | `claude-haiku-4-5` | `lib/analizadores/nucleo/anthropic.ts:36` |
-| Techo de tokens: análisis y clasificador | 20 000 y 400 | `lib/analizadores/nucleo/anthropic.ts:46-47` |
-| Lo que lee el clasificador | 6 000 caracteres | `lib/analizadores/nucleo/engine.ts:38` |
+| Modelo del análisis y de la ficha | `claude-sonnet-5` | `lib/analizadores/nucleo/anthropic.ts:34` |
+| Modelo del clasificador | `claude-haiku-4-5` | `lib/analizadores/nucleo/anthropic.ts:37` |
+| Techo de tokens: análisis y clasificador | 20 000 y 400 | `lib/analizadores/nucleo/anthropic.ts:47-48` |
+| Lo que lee el clasificador | 6 000 caracteres | `lib/analizadores/nucleo/engine.ts:50` |
 | Fin de la tarea dentro de la función | 285 s | `lib/negocio/barrido.ts:320` |
-| Pendientes pedidas por corrida | 10 | `lib/analizadores/tarea.ts:36` |
-| Reintentos automáticos por llamada | 3 | `lib/analizadores/tarea.ts:171` |
+| Pendientes pedidas por corrida | 10 | `lib/analizadores/tarea.ts:38` |
+| Reintentos automáticos por llamada | 3 | `lib/analizadores/tarea.ts:189` |
 | Minutos en ANALYZING para darla por colgada | 15 | `lib/analizadores/datos.ts:58` |
 | Minutos antes de que la tarea genere una ficha | 10 | `lib/analizadores/datos.ts:893` |
 | Tarifas confirmadas | ninguna | `lib/analizadores/nucleo/pricing.ts:42` |
@@ -240,7 +240,7 @@ Uno de esos números está **escrito dos veces**: los 15 minutos de la colgada v
 `components/analizadores/PanelDeAnalizadores.jsx:59-60`, con el comentario «La base usa el mismo».
 Ninguna prueba los ata (un `grep` de `MINUTOS_PARA_DARLA_POR_COLGADA` en `pruebas/` no devuelve nada),
 a diferencia de los 285 s, que sí están atados a `maxDuration`
-(`pruebas/base/173-tarea-del-analizador.test.ts:240`).
+(`pruebas/base/173-tarea-del-analizador.test.ts:243`).
 
 ---
 
@@ -301,7 +301,7 @@ la segunda lectura que queda escrita; la primera fue la del 2026-09-23 21:07
 
 **La tarea de cada hora**, `'41 * * * *'` en `vercel.json` y en `lib/negocio/barrido.ts:261-265`:
 en `aria` el último sello es `corrio`, 2026-09-28 17:42 UTC, **4 llamadas a proveedores** —el listado,
-una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:152-161`—.
+una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:170-179`—.
 En las otras 10 empresas con sello, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada
 hora no está verificado**: el sello es un `on conflict do update` que guarda solo la última corrida
 (`lib/negocio/barrido.ts:875-901`); la continuidad se infiere de las 8 reuniones de arriba.
@@ -315,10 +315,10 @@ que el documento anunciaba como «la primera que va a tomar»
 tarea de cada hora a las 10:42:08, como manda el reparto. Si esa HT estaba FAILED o colgada no se
 puede saber: las salidas borran el error (`lib/analizadores/datos.ts:297`). **0 llamadas tienen
 `reintentos_automaticos` > 0**: el contador sube solo cuando un reintento vuelve a fallar
-(`lib/analizadores/tarea.ts:229-233`).
+(`lib/analizadores/tarea.ts:261-265`).
 
 **La única fallida**: una OB descubierta hoy a las 17:41, tomada a las 17:41:42 y FAILED a las
-17:42:19 porque el modelo no devolvió JSON legible (`lib/analizadores/nucleo/engine.ts:57`), con 0
+17:42:19 porque el modelo no devolvió JSON legible (hoy `lib/analizadores/nucleo/engine.ts:71`), con 0
 reintentos. La toma el barrido del **2026-09-29 a las 10:07 UTC**; no verificado todavía.
 
 **Lo que dicen los informes** (agregados, sin texto): las 38 HT puntúan 1 (una), 3 (4), 4 (11), 5 (9),
@@ -359,11 +359,14 @@ Las pruebas: 174 casos en diez archivos, los numerados del 170 al 174 en `prueba
 **1 · El costo.** Nulo en los 51 análisis y en las 36 fichas OK, a propósito: la única tarifa de
 Sonnet 5 que había era un comentario del código de Brain, nunca verificado contra la facturación
 (`docs/OTROS/analizadores/ANALIZADORES.md:68-78`). Tiene que venir de la factura de Anthropic y
-cargarse en `CONFIRMED_RATES`. Y aun con la tarifa quedarían dos gastos sin contar: **una FAILED no
-guarda tokens** —`terminarConFallo` escribe solo el estado y el error
-(`lib/analizadores/datos.ts:336-344`)—, y **el clasificador no guarda su uso**: `classifyCallType` lee
-solo el texto (`lib/analizadores/nucleo/engine.ts:186`). Y el historial no se puede recalcular
-entero: a los 44 análisis copiados les faltan los dos contadores de caché (§ 4).
+cargarse en `CONFIRMED_RATES`. Al corte quedaban dos gastos sin contar: **una FAILED no guarda
+tokens** —`terminarConFallo` escribe solo el estado y el error (`lib/analizadores/datos.ts:336-344`)—,
+y **el clasificador no guardaba su uso**. **Cerrado en AG2 de los agentes (2026-10-04)**: cada llamada
+al modelo —clasificación, análisis y ficha, salga bien o mal— deja una fila en `negocio.uso_de_ia`
+(`069`) con sus cuatro contadores, `analizador_clasificar`, `analizador_analizar` o `analizador_ficha`,
+y la llamada como referencia (`anotarLaLlamada`, `lib/analizadores/pipeline.ts`); la FAILED sigue sin
+tokens en su propia fila. Y el historial no se puede recalcular entero: a los 44 análisis copiados les
+faltan los dos contadores de caché (§ 4).
 
 **2 · La historia de las corridas.** `negocio.tareas_programadas` guarda la última de cada (empresa,
 tarea) (`lib/negocio/barrido.ts:875-901`), así que no hay forma de contar cuántas corridas hubo, ni
@@ -379,7 +382,7 @@ vetadas, es decir que nada se movió.
 (`db/migraciones/056_tablas_del_analizador.sql:34-44`): lo único que une una llamada analizada con un
 contacto es el correo, y casa en 28 de 44 prospectos. Ninguna tabla ni función lo resuelve: fuera de
 `lib/analizadores/`, las tablas `analizador_*` solo se nombran en el esquema (`lib/datos/esquema.ts`)
-y en el borrado de una empresa (`lib/administracion/borrado.ts:147-152`).
+y en el borrado de una empresa (`lib/administracion/borrado.ts:146-151`).
 
 **5 · La comparación con Brain.** `scripts/comparar-con-brain.sql` da cero reuniones en común porque
 Brain no corre desde el 2026-09-19 (`scripts/comparar-con-brain.sql:16-18`). Decidido el 2026-09-23:
@@ -396,7 +399,7 @@ arranque parcial de un tema que no se tocó.
 
 **1 · Dos compuertas, y la segunda manda.** El clasificador decide en qué pestaña cae; el análisis,
 con la transcripción entera, puede decir que no era eso y la llamada queda NOT_MATCH con el motivo
-(`lib/analizadores/pipeline.ts:357-360`). Una OTRO es siempre NOT_MATCH: lo exige un `check`
+(`lib/analizadores/pipeline.ts:456-459`). Una OTRO es siempre NOT_MATCH: lo exige un `check`
 (`db/migraciones/056_tablas_del_analizador.sql:85`), y el informe (la columna `analisis`) existe si
 y solo si coincidió (`db/migraciones/056_tablas_del_analizador.sql:164`): un veto propio deja su fila
 con sus tokens, pero sin informe.
@@ -408,7 +411,7 @@ drenado de la pantalla.
 
 **3 · Una llave rota no es un fallo de la llamada.** Una llave rechazada, una cuenta sin saldo o el
 servicio saturado devuelven la llamada a su estado, cortan el drenado y no gastan reintentos
-(`lib/analizadores/pipeline.ts:364-370`, `lib/analizadores/datos.ts:354-363`).
+(`lib/analizadores/pipeline.ts:476-482`, `lib/analizadores/datos.ts:354-363`).
 
 **4 · El costo es nulo, nunca cero.** Un 0 diría «no costó nada»
 (`lib/analizadores/nucleo/pricing.ts:44-58`, `db/migraciones/056_tablas_del_analizador.sql:173-174`).
@@ -416,7 +419,7 @@ Los cuatro contadores de tokens se guardan igual, para calcular hacia atrás el 
 (en lo copiado de Brain, solo entrada y salida: § 4).
 
 **5 · Los datos duros vienen del proveedor, nunca del modelo**: fecha, duración, organizador y enlace
-salen de tl;dv (`lib/analizadores/pipeline.ts:254-267`). Y **la transcripción no sale de la base**:
+salen de tl;dv (`lib/analizadores/pipeline.ts:343-356`). Y **la transcripción no sale de la base**:
 ninguna respuesta de la API la devuelve (`lib/analizadores/datos.ts:623`).
 
 **6 · Solos en su horario y con la función entera.** La tarea de cada hora y el reintento corren sin
@@ -426,10 +429,10 @@ rechazaría todo análisis y las pendientes no se drenarían nunca, sin que nada
 fin de reloj (`lib/negocio/barrido.ts:663-671`).
 
 **7 · Qué hace cada una de las dos tareas, y qué no.** La de cada hora descubre, drena las PENDING y
-completa las fichas que nunca se generaron (`lib/analizadores/tarea.ts:66-145`). El reintento toma
+completa las fichas que nunca se generaron (`lib/analizadores/tarea.ts:68-163`). El reintento toma
 las FAILED que no agotaron sus tres intentos y las ANALYZING colgadas hace más de 15 minutos
 (`lib/analizadores/datos.ts:848-875`); no descubre, no toca las PENDING ni genera fichas
-(`lib/analizadores/tarea.ts:188-194`). Una ficha FAILED no la reintenta nadie: se rehace con el botón.
+(`lib/analizadores/tarea.ts:206-212`). Una ficha FAILED no la reintenta nadie: se rehace con el botón.
 
 **8 · Borrar deja lápida**, en la misma transacción: sin ella, la siguiente corrida traería la
 reunión de vuelta y la pagaría otra vez (`db/migraciones/056_tablas_del_analizador.sql:223-224`).
@@ -458,25 +461,31 @@ que poder leerse desde la pantalla de monitoreo sin abrir un registro»
 (`lib/negocio/barrido.ts:540-550`). Pero **ningún archivo de `lib/`, `app/` o `components/` lee
 `ultimo_motivo`** fuera del que lo escribe, y la pestaña no muestra frescura (sección 2). Con la llave de
 tl;dv revocada, la pestaña no avisaría nada hasta que alguien apriete Sincronizar, que sí lo dice
-(`app/api/analizadores/sincronizar/route.ts:34-37`); la tarea de cada hora lo escribiría en un sello
+(`app/api/analizadores/sincronizar/route.ts:38-41`); la tarea de cada hora lo escribiría en un sello
 que solo se ve con la consulta de `docs/OTROS/produccion/DESPLIEGUE.md:346` o con
 `scripts/medir-analizadores.sql:87-89`.
 Tampoco la FAILED de hoy aparece en el sello: una fallida no es un motivo
 (`lib/negocio/barrido.ts:783-785` cuenta las que quedaron sin tiempo, no las que fallaron).
 
 **La caché se paga y no se usa.** El sistema del análisis va marcado para cachear
-(`lib/analizadores/nucleo/anthropic.ts:176`), y cada análisis escribe su caché (9 774 tokens en HT,
+(`lib/analizadores/nucleo/anthropic.ts:215`), y cada análisis escribe su caché (9 774 tokens en HT,
 4 456 en OB) para que el siguiente la lea. Con un análisis cada varias horas no la lee ninguno:
 **0 tokens de lectura en 7 de 7**. Cuánto cuesta no se sabe, porque no hay tarifa; que el contador de
 lectura está en cero, sí.
 
 **El gasto que no queda escrito**: el de cada FAILED y el de cada clasificación (sección 5, punto 1).
 Una llamada que el modelo contesta mal cuatro veces —la corrida de la hora y los tres reintentos— se
-paga cuatro veces sin una sola fila de tokens.
+pagaba cuatro veces sin una sola fila de tokens. **Cerrado en AG2 de los agentes**: son cuatro filas
+de `negocio.uso_de_ia`, y los fallos van al Panel de Incidentes con `origen = 'analizador'` —uno por
+situación, por paso y por corrida en la tarea y al sincronizar (`lib/incidentes/agrupados.ts`), uno por fallo
+cuando una persona aprieta Analizar o pide la ficha—.
 
-**El error de una FAILED lleva datos del cliente.** El mensaje guarda los primeros 200 caracteres
-de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), y un informe OB empieza por los
-datos del cliente. Medido: la única FAILED de hoy tiene en su error el nombre de una persona y de su
+**El error de una FAILED lleva datos del cliente.** Al corte, el mensaje guardaba los primeros 200
+caracteres de la respuesta del modelo, y un informe OB empieza por los datos del cliente. **Cerrado
+en AG2 de los agentes** para las fallas nuevas: un JSON ilegible es `sin_estructura` y el error dice
+sólo «El modelo no devolvió JSON parseable.» (`runAnalysis`, `lib/analizadores/nucleo/engine.ts`;
+prueba `pruebas/codigo/201-el-error-del-analisis.test.ts`). Las FAILED que ya estaban guardadas
+conservan su error hasta que se reintenten. Medido: la única FAILED de hoy tiene en su error el nombre de una persona y de su
 empresa. Se guarda hasta 500 caracteres (`lib/analizadores/datos.ts:55`), la lista lo devuelve y la
 fila lo dibuja (`components/analizadores/PanelDeAnalizadores.jsx:392`). Para quien la ve es su propia
 empresa; para quien mida con SQL, **leer `error` es leer datos personales**: esta foto lo leyó una

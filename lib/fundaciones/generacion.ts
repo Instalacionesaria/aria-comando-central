@@ -24,6 +24,8 @@
 import { ESPERA_DE_GENERACION_MS, pedirExterno } from '../http/cliente.ts';
 import { type DondeFallo, clasificarFallo, esPasajero, nuevaReferencia, tecnico } from './fallo-del-modelo.ts';
 import { registrarIncidente } from '../incidentes/registro.ts';
+import { usageOf } from '../analizadores/nucleo/anthropic.ts';
+import type { TokenUsage } from '../analizadores/nucleo/pricing.ts';
 
 /**
  * El modelo. **Uno solo, y con su motivo al lado.**
@@ -82,6 +84,11 @@ export interface Generacion {
   citas: { url: string; titulo: string }[];
   milisegundos: number;
   tokens: number | null;
+  /**
+   * Los cuatro contadores, para `registrarUso`. `tokens` sigue siendo entrada más salida, que es lo
+   * que muestra la pantalla; la caché no entra ahí.
+   */
+  uso: TokenUsage;
 }
 
 /**
@@ -108,7 +115,12 @@ interface BloqueDeRespuesta {
 interface RespuestaDeAnthropic {
   content?: BloqueDeRespuesta[];
   stop_reason?: string;
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
 }
 
 /**
@@ -307,6 +319,7 @@ async function unIntento(
       citas,
       milisegundos: Date.now() - desde,
       tokens: tokens > 0 ? tokens : null,
+      uso: usageOf({ usage: uso }),
     },
   };
 }

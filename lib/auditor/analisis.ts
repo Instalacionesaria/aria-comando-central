@@ -41,6 +41,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { datos, conOrganizacion } from '../datos/contexto.ts';
+import { registrarUso } from '../agentes/uso.ts';
+import { clasificarFallo } from '../fundaciones/fallo-del-modelo.ts';
+import { type IncidentesAgrupados, agruparIncidentes } from '../incidentes/agrupados.ts';
 import { conElPulso } from '../negocio/pulso.ts';
 import { candidatosDecididos } from './candidatos.ts';
 import { escribirAnalisis } from './escritura.ts';
@@ -337,7 +340,17 @@ export async function auditarEmpresa(
 
   // ── 1 · EL CANDADO, ANTES DE GASTAR ──────────────────────────────────────
   const conPulso = await conElPulso(e.orgId, 'auditoria', async () => {
-    const r = await trabajar(e, claveIa, idDelAgente, ahora, pedir, o);
+    /* Los fallos del modelo de esta corrida, UNO por situación: con el proveedor caído, uno por
+       conversación llenaría el Panel de Incidentes cada diez minutos (`lib/incidentes/agrupados.ts`). El
+       primero de cada situación se escribe en el acto; el `finally` sólo le pone cuántos fueron, también
+       si un paso lanza a mitad de la corrida. */
+    const incidentes = agruparIncidentes('auditor', e.orgId);
+    let r: Awaited<ReturnType<typeof trabajar>>;
+    try {
+      r = await trabajar(e, claveIa, idDelAgente, ahora, pedir, o, incidentes);
+    } finally {
+      await incidentes.volcar();
+    }
     return {
       /* La marca de agua **no se usa acá**, y va en nulo a propósito. `ingesta_pulso` la comparte con
          la ingesta, donde significa «toda conversación anterior a esto ya se leyó». Este barrido no
@@ -379,6 +392,7 @@ async function trabajar(
   ahora: Date,
   pedir: PedirVeredicto,
   o: OpcionesDeAuditoria,
+  incidentes: IncidentesAgrupados,
 ): Promise<Omit<ResultadoDeLaAuditoria, 'frenoDeLaEmpresa'>> {
   const reloj = o.reloj ?? Date.now;
   const hasta = o.hasta ?? Number.POSITIVE_INFINITY;
@@ -462,12 +476,25 @@ async function trabajar(
 
     // ── 3e · EL MODELO. **Acá, y solo acá, se gasta.** ───────────────────
     llamadas += 1;
+    const desdeElPedido = Date.now();
     const r = await pedir({
       claveIa,
       agente,
       instrucciones: preparado.instrucciones,
       patrones: preparado.patrones,
       conversacion: preparado.conversacion,
+    });
+    /* Lo que consumió, salga bien o mal: una fila por llamada, fuera de toda transacción
+       (`lib/agentes/uso.ts`). Sin persona, porque la corre el cron. */
+    await registrarUso({
+      orgId: e.orgId,
+      agente: 'auditor',
+      modelo: r.tipo === 'datos' ? r.datos.modelo : MODELO_DEL_AUDITOR,
+      uso: r.tipo === 'datos' ? (r.datos.uso ?? null) : 'uso' in r && r.uso ? r.uso : null,
+      duracionMs: Date.now() - desdeElPedido,
+      resultado: r.tipo === 'datos' ? 'ok' : clasificarFallo(r),
+      usuarioId: null,
+      ref: candidato.contactoId,
     });
 
     if (r.tipo !== 'datos') {
@@ -476,6 +503,7 @@ async function trabajar(
          tokens, una estructura inválida manda a revisar el esquema, y un rechazo del proveedor manda
          a mirar la clave. Los dos que traen detalle lo llevan al renglón. */
       fallos += 1;
+      await incidentes.anotar(r);
       renglones.push({
         contactoId: candidato.contactoId,
         agente,

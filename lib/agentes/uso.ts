@@ -67,7 +67,8 @@ export type AgenteDeUso = (typeof AGENTES_DE_USO)[number];
 /**
  * Los que llaman al modelo por el transporte de los agentes (`llamada.ts`). Los demás conservan su
  * propio transporte (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-09) y anotan su uso directo con
- * `registrarUso` desde AG2: el compilador no los deja entrar por la puerta equivocada.
+ * `registrarUso`: desde AG2 el Espía, el auditor y los Analizadores; Fundaciones, cuando se integre la
+ * rama `feature/icp-oferta-v2`. El compilador no los deja entrar por la puerta equivocada.
  */
 export type AgenteNuevo = Extract<AgenteDeUso, 'executive' | 'plan' | 'reunion' | 'brief' | 'objeciones'>;
 
@@ -85,7 +86,11 @@ export interface NuevoUso {
   duracionMs: number;
   /** `ok`, o la situación con que se clasificó el fallo. */
   resultado: 'ok' | SituacionDelModelo;
-  /** Quién pidió. `null` en el cron. Bajo delegación no se llama al modelo: lo que gasta se apaga (`D-17`). */
+  /**
+   * Quién pidió: la persona de la sesión, o `null` en el cron. Los agentes nuevos no llaman al modelo bajo
+   * delegación (`D-17`); los que ya existían —el Espía, los Analizadores— sí, y acá queda la persona de la
+   * sesión aunque esté actuando en otra empresa.
+   */
   usuarioId: string | null;
   /** El hilo, el análisis o la referencia del incidente. */
   ref: string | null;

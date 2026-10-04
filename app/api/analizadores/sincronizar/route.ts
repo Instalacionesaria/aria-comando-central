@@ -30,7 +30,11 @@ export async function POST(peticion: Request): Promise<Response> {
   const acceso = await conIdentidad((db) => resolverAccesoAlAnalizador(db, contexto.orgEfectiva));
   if (acceso.tipo === 'falta') return rechazo(acceso.que);
 
-  const r = await descubrir(contexto.orgEfectiva, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj });
+  const r = await descubrir(
+    contexto.orgEfectiva,
+    { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj },
+    { usuarioId: contexto.usuarioId },
+  );
   if (r.tipo === 'falta') {
     return r.que === 'llave_de_tldv_rechazada'
       ? rechazo('llave_de_tldv_rechazada', 'tl;dv rechazó la llave. Generá una nueva y cargala en Ajustes › Credenciales.')

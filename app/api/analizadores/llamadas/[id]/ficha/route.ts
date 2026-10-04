@@ -38,7 +38,7 @@ export async function POST(
   const llave = await conIdentidad((db) => resolverLlaveDeIa(db, contexto.orgEfectiva));
   if (llave.tipo === 'falta') return rechazo(llave.que);
 
-  const r = await generarFicha(contexto.orgEfectiva, id, llave.claveIa, reloj);
+  const r = await generarFicha(contexto.orgEfectiva, id, llave.claveIa, reloj, { usuarioId: contexto.usuarioId });
   if (r.tipo === 'rechazo') return respuestaDelRechazo(r.que);
   // Una ficha FAILED se devuelve con su estado: el fallo quedó guardado en su fila, no es un rechazo.
   return ok(r);

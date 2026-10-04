@@ -459,11 +459,12 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL.
 - **La caché se paga y no se lee.** El sistema va con `cache_control`
-  (`lib/analizadores/nucleo/anthropic.ts:176`); según 14, 0 tokens leídos de caché en 7 de 7
+  (`lib/analizadores/nucleo/anthropic.ts:215`); según 14, 0 tokens leídos de caché en 7 de 7
   análisis propios.
 - **Gasto que no queda escrito.** `terminarConFallo` no guarda tokens
-  (`lib/analizadores/datos.ts:336-344`) y la clasificación descarta el uso del modelo: sólo toma
-  `text` (`lib/analizadores/nucleo/engine.ts:186`).
+  (`lib/analizadores/datos.ts:336-344`) y la clasificación descartaba el uso del modelo. **Cerrado en AG2
+  de los agentes (2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su fila
+  en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`).
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
   exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:493-501`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
@@ -642,10 +643,12 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   contacto de la subcuenta, el ejemplo de un contacto con dos etiquetas contradictorias a la vez
   (leído el 2026-09-28; [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 ya los señala).
 - **Y uno que no está en el repositorio sino en la base:** el error de una llamada fallida guarda los
-  primeros 200 caracteres de la respuesta del modelo (`lib/analizadores/nucleo/engine.ts:57`), que en
-  un informe OB empiezan por los datos del cliente, y la lista lo dibuja
-  (`components/analizadores/PanelDeAnalizadores.jsx:392`). Toda medición SQL que lea `error` lee
-  datos personales.
+  primeros 200 caracteres de la respuesta del modelo, que en un informe OB empiezan por los datos del
+  cliente, y la lista lo dibuja (`components/analizadores/PanelDeAnalizadores.jsx:392`). Toda medición
+  SQL que lea `error` lee datos personales. **Cerrado para las fallas nuevas en AG2 de los agentes
+  (2026-10-04)**: el error dice sólo «El modelo no devolvió JSON parseable.»
+  (`lib/analizadores/nucleo/engine.ts:71`); las FAILED ya guardadas conservan el suyo hasta que se
+  reintenten.
 - **Agregado el 2026-10-04, al planificar los agentes** (`docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`,
   `AG-86`): **no hay un acuerdo de tratamiento de datos con los clientes** sobre mandar datos de sus leads
   a un proveedor de IA. Ya viajan hoy la conversación del lead (el auditor) y la transcripción de la
@@ -675,7 +678,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
     (`components/ajustes/Usuarios.jsx:348-349`, `components/ajustes/Empresas.jsx:145-146`).
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
-    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:244`), lectores en `lib/auditor/`
+    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:261`), lectores en `lib/auditor/`
     (por ejemplo `lib/auditor/pantalla.ts:219`) y **24 filas**, detectadas entre el 2026-09-01 y el
     2026-09-21 (2026-09-28 23:56 UTC). Las dos consecuencias que el párrafo deduce sobre la cola
     «Intervenciones urgentes» cuelgan de esa premisa y no se re-midieron acá.
@@ -958,7 +961,8 @@ esa planificación ni lo corrige ninguna de sus etapas:
   (`lib/administracion/borrado.ts`): si un borrado se bloqueaba por un incidente, el rechazo decía
   «tiene historial» sin decir cuál. La prueba `pruebas/base/23-editar-y-borrar.test.ts` lo detectaba
   desde `46c5556`, el commit que trajo la `067`. **Cerrado el mismo 2026-10-01**: las tres tienen su
-  frase.
+  frase. Desde la `070` (AG2 de los agentes, 2026-10-04) `incidentes_usuario_id_fkey` es `on delete set
+  null` y ya no frena nada, así que su frase salió de la lista; las otras dos siguen.
 - **El CI de `main` está en rojo desde `43ce5ac`**, y no sólo por eso. Cada corrida falló por pruebas que
   dependen de la hora a la que corren:
   - en `43ce5ac`, la del mes pasado de `pruebas/base/98-setter-inicio.test.ts`, que arma «el mes pasado»

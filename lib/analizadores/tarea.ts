@@ -22,12 +22,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { AccesoAlAnalizador } from '../credenciales/resolver.ts';
+import { agruparIncidentes } from '../incidentes/agrupados.ts';
 import { contarReintento, llamadasSinFicha, paraReintentar, pendientesParaAnalizar } from './datos.ts';
 import {
   TIPOS_QUE_SE_ANALIZAN,
   analizarLlamada,
   descubrir,
   generarFicha,
+  type QuienPide,
   type Reloj,
   type ResultadoDelDescubrimiento,
 } from './pipeline.ts';
@@ -68,7 +70,23 @@ export async function correrAnalizadores(
   acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
   reloj: Reloj,
 ): Promise<ResultadoDeLaTarea> {
-  const descubrimiento = await descubrir(orgId, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj });
+  /* Los fallos del modelo de toda la corrida, uno por situación y por paso (`agruparIncidentes`). El
+     primero se escribe en el acto; el `finally` les pone cuántos fueron, también si un paso lanza. */
+  const incidentes = agruparIncidentes('analizador', orgId);
+  try {
+    return await correrLosTresPasos(orgId, acceso, reloj, { incidentes });
+  } finally {
+    await incidentes.volcar();
+  }
+}
+
+async function correrLosTresPasos(
+  orgId: string,
+  acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
+  reloj: Reloj,
+  quien: QuienPide,
+): Promise<ResultadoDeLaTarea> {
+  const descubrimiento = await descubrir(orgId, { claveTldv: acceso.claveTldv, claveIa: acceso.claveIa, reloj }, quien);
   const out: ResultadoDeLaTarea = {
     /* Un fallo del descubrimiento va entero al REGISTRO y al resultado sin su causa: el resultado viaja
        en el cuerpo de la respuesta del cron, y la causa cruda de un proveedor no sale en una respuesta
@@ -98,7 +116,7 @@ export async function correrAnalizadores(
      veces. */
   const pendientes = await pendientesParaAnalizar(orgId, TIPOS_QUE_SE_ANALIZAN, PENDIENTES_POR_CORRIDA);
   for (const [i, id] of pendientes.entries()) {
-    const r = await analizarLlamada(orgId, id, acceso.claveIa, reloj, 'PENDING');
+    const r = await analizarLlamada(orgId, id, acceso.claveIa, reloj, 'PENDING', quien);
     if (r.tipo === 'rechazo') {
       if (r.que === 'sin_tiempo') {
         out.sinTiempo = pendientes.length - i;
@@ -125,7 +143,7 @@ export async function correrAnalizadores(
      todavía: la pantalla ya las está pidiendo, y `llamadasSinFicha` espera unos minutos para no
      generarlas dos veces en paralelo. Las toma la corrida siguiente si nadie lo hizo. */
   for (const id of await llamadasSinFicha(orgId, PENDIENTES_POR_CORRIDA)) {
-    const r = await generarFicha(orgId, id, acceso.claveIa, reloj);
+    const r = await generarFicha(orgId, id, acceso.claveIa, reloj, quien);
     if (r.tipo === 'rechazo') {
       if (r.que === 'sin_tiempo') break;
       if (r.que === 'llave_de_ia_rechazada') {
@@ -197,6 +215,20 @@ export async function reintentarAnalizadores(
   acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
   reloj: Reloj,
 ): Promise<ResultadoDelReintento> {
+  const incidentes = agruparIncidentes('analizador', orgId);
+  try {
+    return await reintentarLasFallidas(orgId, acceso, reloj, { incidentes });
+  } finally {
+    await incidentes.volcar();
+  }
+}
+
+async function reintentarLasFallidas(
+  orgId: string,
+  acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
+  reloj: Reloj,
+  quien: QuienPide,
+): Promise<ResultadoDelReintento> {
   const out: ResultadoDelReintento = {
     reintentadas: 0,
     recuperadas: 0,
@@ -208,7 +240,7 @@ export async function reintentarAnalizadores(
   };
   const candidatas = await paraReintentar(orgId, TIPOS_QUE_SE_ANALIZAN, TOPE_DE_REINTENTOS, PENDIENTES_POR_CORRIDA);
   for (const [i, c] of candidatas.entries()) {
-    const r = await analizarLlamada(orgId, c.id, acceso.claveIa, reloj, c.estado);
+    const r = await analizarLlamada(orgId, c.id, acceso.claveIa, reloj, c.estado, quien);
     if (r.tipo === 'rechazo') {
       if (r.que === 'sin_tiempo') {
         out.sinTiempo = candidatas.length - i;

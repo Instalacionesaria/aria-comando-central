@@ -298,7 +298,7 @@ en la tabla del § 2. Las citas de los 276 contactos son 156, y **una** está co
 
 **5 · El Espía de Anuncios**, en Tools (`components/tools/EspiaDeAnuncios.jsx`,
 `app/api/tools/espia/route.ts`): pide a la IA hooks, ángulos y estructuras de copy de anuncios de la
-competencia (`lib/tools/espia.ts:81-88`). Sigue siendo la única capacidad del producto que lee una
+competencia (`lib/tools/espia.ts:84-92`). Sigue siendo la única capacidad del producto que lee una
 pieza, y mira hacia afuera. Y `public.closer_meta_metricas`, de la plataforma anterior, sigue con 0
 filas: ya no hace falta, porque la `050` dio tablas propias y la `053`, la columna del desglose.
 

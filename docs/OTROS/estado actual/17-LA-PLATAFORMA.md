@@ -147,12 +147,12 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
 | `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra; avisa si hay fuga | 0 al proveedor; **no deja sello** |
 | `contactos` | `lib/negocio/sincronizar.ts:157` | trae los contactos por etiqueta de territorio | 7 |
 | `mensajes` | `lib/negocio/ingesta.ts:106` | camina las conversaciones por marca de agua | 1 |
-| `auditoria` | `lib/auditor/analisis.ts:316` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
+| `auditoria` | `lib/auditor/analisis.ts:319` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 10 |
-| `mejora` | `lib/auditor/buscarMejora.ts:135` | una mejora de prompt por día y por empresa | 1 inferencia |
+| `mejora` | `lib/auditor/buscarMejora.ts:137` | una mejora de prompt por día y por empresa | 1 inferencia |
 | `anuncios` | `lib/negocio/recolectarAnuncios.ts:565` | el costo diario por anuncio, vía GoHighLevel | 40 |
-| `analizadores` | `lib/analizadores/tarea.ts:66` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
-| `reintentos` | `lib/analizadores/tarea.ts:195` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:171`) | 0 |
+| `analizadores` | `lib/analizadores/tarea.ts:68` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
+| `reintentos` | `lib/analizadores/tarea.ts:213` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:189`) | 0 |
 
 - **`contactos` va antes de `mensajes`, y eso es corrección, no gusto.** La ingesta descarta la
   conversación de un contacto que no está en `negocio.contactos` y avanza la marca de agua sobre ella:
@@ -687,7 +687,7 @@ por `activa`, y los sellos de organizaciones inactivas (§ 7). Sin columnas pers
 - **La suite**: no se corrió (§ 5.1). Las 2.273 y las tres zonas son las del mensaje de commit.
 - **La zona horaria de la máquina de la CI**: `verificar.yml` no fija `TZ`; cuál usa GitHub no lo medí.
 - **Por qué el pulso de `auditoria` tiene `atrasado = true`**, que según
-  `lib/auditor/analisis.ts:346` significa que quedó cola o hubo un corte; el sello de la misma tarea
+  `lib/auditor/analisis.ts:359` significa que quedó cola o hubo un corte; el sello de la misma tarea
   no trae motivo.
 - **Qué organizaciones se dieron de baja** entre el 2026-09-15 (15) y hoy (13).
 - **Si algo además del chequeo a mano llama a `POST /api/sonda`** (§ 2.6): desde el repositorio no se
@@ -702,8 +702,12 @@ por `activa`, y los sellos de organizaciones inactivas (§ 7). Sin columnas pers
 Agregado con AG1 del plan de los agentes (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). La `069` suma
 `negocio.uso_de_ia`, una fila por llamada al modelo con sus cuatro contadores de tokens, su duración y su
 resultado, sin una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.sql:38-77`).
-La escribe sólo `registrarUso` (`lib/agentes/uso.ts`), y **todavía no la escribe ningún agente**: los que ya
-existen empiezan en AG2 y los nuevos llegan desde AG5. Hasta entonces los únicos tokens guardados siguen
-siendo los de los Analizadores. La `069` se aplica a producción con el hito H1; con ella, `negocio` pasa a
+La escribe sólo `registrarUso` (`lib/agentes/uso.ts`). Desde AG2 la escriben el Espía (`espia`), el auditor
+(`auditor`, `auditor_mejora`) y los Analizadores (`analizador_clasificar`, `analizador_analizar`,
+`analizador_ficha`), una fila por llamada, también las que fallan —el Espía, una por pedido, con su
+reintento adentro—; Fundaciones se suma después de integrar
+la rama `feature/icp-oferta-v2`, y los agentes nuevos desde AG5. La `070` deja
+`negocio.incidentes.usuario_id` en `on delete set null`: un incidente ya no impide borrar a la persona que
+lo tuvo. La `069` se aplica a producción con el hito H1; con ella, `negocio` pasa a
 tener 35 tablas: las 29 del corte, las cinco que crearon la `063` y de la `065` a la `068`, y `uso_de_ia`.
 `lib/datos/esquema.ts` tipa entonces 46 tablas de `identidad` y `negocio`: las 40 del § 4 son las del corte.

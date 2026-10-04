@@ -10,7 +10,7 @@
 //   · Fundaciones pide **texto markdown libre** y lee bloques `type: 'text'`.
 //   · El auditor pide **una forma estricta** y lee un bloque `type: 'tool_use'`.
 //
-// Y ahí está el detalle que decide: `generacion.ts:150` filtra por `type === 'text'`, así que **un
+// Y ahí está el detalle que decide: `generacion.ts:290` filtra por `type === 'text'`, así que **un
 // bloque `tool_use` se descartaría en silencio** y la respuesta caería en `sin_texto`. Reusar esa
 // función exigía cambiarle el parseo, y su cuerpo está fijado por una prueba que afirma sus claves
 // exactas — con motivo: esa prueba existe porque un campo de más produjo un 400 en producción.
@@ -35,6 +35,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedirExterno } from '../http/cliente.ts';
+import { redactKey, usageOf } from '../analizadores/nucleo/anthropic.ts';
+import type { TokenUsage } from '../analizadores/nucleo/pricing.ts';
 import { NOMBRE_DE_LA_HERRAMIENTA, esquemaDelVeredicto, type VeredictoDelModelo } from './esquema.ts';
 import type { Agente } from './veredicto.ts';
 
@@ -79,15 +81,16 @@ export const TECHO_DE_TOKENS = 16_000;
 /**
  * Lo que sale bien.
  *
- * `tokens` se devuelve y hoy **nadie lo persiste**, igual que en Fundaciones. Queda dicho para que la
- * ausencia sea una decisión visible y no un olvido: un tablero de gasto es trabajo aparte, y sin él no
- * hay forma de saber cuánto cuesta auditar de verdad.
+ * `uso` son los cuatro contadores, y desde AG2 del plan de los agentes **se guardan**: quien audita los
+ * anota en `negocio.uso_de_ia` (`lib/auditor/analisis.ts`). `tokens` es la suma de entrada y salida que ya
+ * se devolvía, y se conserva para quien la lea.
  */
 export interface Veredicto {
   veredicto: VeredictoDelModelo;
   milisegundos: number;
   tokens: number | null;
   modelo: string;
+  uso: TokenUsage;
 }
 
 /**
@@ -100,9 +103,10 @@ export interface Veredicto {
 export type FalloDelAuditor =
   | { tipo: 'rechazado'; estado: number; codigo: string; motivo: string | null }
   | { tipo: 'sin_respuesta'; causa: string }
-  | { tipo: 'declino' }
-  | { tipo: 'truncado' }
-  | { tipo: 'sin_estructura' };
+  // Los tres que llegaron con un 200 se pagaron: traen sus contadores, para anotar el uso.
+  | { tipo: 'declino'; uso?: TokenUsage }
+  | { tipo: 'truncado'; uso?: TokenUsage }
+  | { tipo: 'sin_estructura'; uso?: TokenUsage };
 
 export type ResultadoDelAuditor = { tipo: 'datos'; datos: Veredicto } | FalloDelAuditor;
 
@@ -115,7 +119,12 @@ interface BloqueDeRespuesta {
 interface RespuestaDeAnthropic {
   content?: BloqueDeRespuesta[];
   stop_reason?: string;
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
 }
 
 /**
@@ -218,16 +227,20 @@ export async function pedirVeredicto(opciones: {
 
   /* Las dos ramas de `pedirExterno` se traducen sin colapsarlas. `motivo` es la frase que el servicio
      manda, y es el único campo que dice QUÉ estuvo mal: sin él, `invalid_request_error` cubre por
-     igual un techo fuera de rango, un campo de más y una cuenta sin saldo. */
+     igual un techo fuera de rango, un campo de más y una cuenta sin saldo.
+
+     Sin la llave: una llave con un carácter que no puede ir en una cabecera hace que `fetch` la copie
+     en su mensaje, y desde AG2 estas frases van al registro y a la fila del incidente, no sólo al
+     reporte de la corrida. Es lo que ya hace el transporte de los Analizadores. */
   if (r.tipo === 'rechazado') {
     return {
       tipo: 'rechazado',
       estado: r.estado,
       codigo: r.codigo,
-      motivo: r.detalle === undefined ? null : r.detalle,
+      motivo: r.detalle === undefined ? null : redactKey(r.detalle, opciones.claveIa),
     };
   }
-  if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta', causa: r.causa };
+  if (r.tipo === 'sin_respuesta') return { tipo: 'sin_respuesta', causa: redactKey(r.causa, opciones.claveIa) };
 
   /* ── EL MOTIVO DE CORTE SE MIRA EXPLÍCITAMENTE ────────────────────────────
    *
@@ -235,12 +248,13 @@ export async function pedirVeredicto(opciones: {
    * historia detrás: cuando el techo quedó corto, la salida vino truncada y **el análisis se perdió
    * entero con la inferencia ya pagada**, reportado como «sin veredicto» y sin decir por qué. Un
    * truncado leído como estructura inválida manda a revisar el esquema en vez de subir el techo. */
-  if (r.datos.stop_reason === 'max_tokens') return { tipo: 'truncado' };
+  const usoDelPedido = usageOf({ usage: r.datos.usage });
+  if (r.datos.stop_reason === 'max_tokens') return { tipo: 'truncado', uso: usoDelPedido };
 
   /* El modelo se negó a responder. **No es un fallo del agente auditado**: no se marca nada, no se
      escribe un análisis, y el barrido de respaldo no tiene que reintentarlo como si fuera un error
      nuestro. Es su propia rama por eso. */
-  if (r.datos.stop_reason === 'refusal') return { tipo: 'declino' };
+  if (r.datos.stop_reason === 'refusal') return { tipo: 'declino', uso: usoDelPedido };
 
   const bloques = Array.isArray(r.datos.content) ? r.datos.content : [];
   const usada = bloques.find(
@@ -252,7 +266,7 @@ export async function pedirVeredicto(opciones: {
      y hace falta igual: el día que se ofrezca una segunda, leer «el primer tool_use» tomaría la
      equivocada y el veredicto saldría de otra forma. */
   if (usada === undefined || usada.input === null || typeof usada.input !== 'object') {
-    return { tipo: 'sin_estructura' };
+    return { tipo: 'sin_estructura', uso: usoDelPedido };
   }
 
   const uso = r.datos.usage;
@@ -271,6 +285,7 @@ export async function pedirVeredicto(opciones: {
       milisegundos: Date.now() - desde,
       tokens: tokens > 0 ? tokens : null,
       modelo: MODELO_DEL_AUDITOR,
+      uso: usoDelPedido,
     },
   };
 }

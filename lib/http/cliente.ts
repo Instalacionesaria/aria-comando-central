@@ -408,25 +408,6 @@ export async function pedirExterno<T>(
     }
   }
 
-  if (lectura === 'texto' && respuesta.ok) {
-    try {
-      return { tipo: 'datos', datos: (await respuesta.text()) as T };
-    } catch (e) {
-      // El flujo se cortó a mitad: el tope nuestro, la red, o el servicio que cerró la conexión.
-      const ms = Date.now() - desde;
-      if (e instanceof Error && e.name === 'TimeoutError') {
-        return {
-          tipo: 'sin_respuesta',
-          causa: `se agotó el tiempo de espera a los ${Math.round(ms / 1000)} s (el tope es ${Math.round(espera / 1000)} s)`,
-        };
-      }
-      return {
-        tipo: 'sin_respuesta',
-        causa: `la respuesta se cortó a mitad: ${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
-      };
-    }
-  }
-
   let cuerpoLeido: unknown;
   try {
     cuerpoLeido = await respuesta.json();
