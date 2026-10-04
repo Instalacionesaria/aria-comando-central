@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL PROBLEMA, Y POR QUÉ NO ALCANZA CON DEJAR SUBIR EL ERROR
 //
-// Todas las claves foráneas del negocio hacia `identidad.usuarios` y hacia
-// `identidad.organizaciones` son `no action`. Eso significa que la base **rechaza** el borrado en
+// Las claves foráneas del negocio hacia `identidad.usuarios` y `identidad.organizaciones` que importan
+// acá son las `no action` (otras cascadean o quedan en nulo). Con ellas la base **rechaza** el borrado en
 // cuanto hay historial, que es exactamente lo que se quiere: borrar a quien registró una venta
 // destruiría la trazabilidad de esa venta.
 //
@@ -76,9 +76,10 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   enlaces_rapidos_org_id_actualizado_por_fkey: 'cargó links rápidos de la empresa',
   enlaces_de_pieza_org_id_actualizado_por_fkey: 'cargó links de piezas de Creative',
   funnels_de_campana_org_id_actualizado_por_fkey: 'asignó campañas a funnels en Acquisition',
-  /* Los incidentes de la IA (`067`): quien vio el fallo y quien lo dio por revisado. Ninguna de las dos
+  /* Los incidentes de la IA (`067`): quien tuvo el fallo —aunque el reintento lo haya salvado y no lo viera—
+     y quien lo dio por revisado. Ninguna de las dos
      claves cascadea, así que las dos pueden frenar el borrado de una persona. */
-  incidentes_usuario_id_fkey: 'vio fallos de la IA que quedaron registrados como incidentes',
+  incidentes_usuario_id_fkey: 'tuvo fallos de la IA registrados como incidentes',
   incidentes_revisado_por_fkey: 'revisó incidentes en el Panel de Incidentes',
 
   // ── Lo que puede referenciar a una EMPRESA ─────────────────────────────────
@@ -156,6 +157,10 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* El análisis con IA de las búsquedas del Espía (`068`). Se pagó con la llave de la empresa y no se
      vuelve a generar sin volver a pagarlo. La de la persona no está: es `on delete set null`. */
   analisis_del_espia_org_id_fkey: 'tiene análisis del Espía a tus competidores guardados',
+  /* El consumo de IA de la empresa (`069`): una fila por llamada al modelo, con sus tokens. Es lo que
+     dice cuánto gastó esa cuenta con su llave, y no se vuelve a medir. La de la persona no está: es
+     `on delete set null`. */
+  uso_de_ia_org_id_fkey: 'tiene el consumo de la IA registrado',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

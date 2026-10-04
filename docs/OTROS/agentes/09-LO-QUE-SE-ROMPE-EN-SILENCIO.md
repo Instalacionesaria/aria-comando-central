@@ -26,7 +26,10 @@
 | Una llamada real sin OK | Gasto en la llave de ARIA | `--confirmo N` (204) y el pedido en el chat |
 | La llave de un cliente en una evaluación | Gasto ajeno | El guion sólo corre contra la base local; la regla está en `07`, `AG-104` |
 | Un modelo mal escrito | `IA-MODELO` en todas las preguntas, con todas las pruebas en verde | La 199 y la comprobación del modelo antes de la primera llamada real |
-| Un registro guarda el texto del modelo | Datos de leads en un registro o un incidente | `uso_de_ia` sin columnas de texto; la 201 para el error de los Analizadores |
+| Una herramienta forzada con `claude-sonnet-5-5` | Un 400 en todas las preguntas, con todas las pruebas en verde | La 198 para los agentes nuevos (compara el cuerpo entero); la 199 para los que ya existían, que fuerzan su herramienta y no pueden pasar a ese modelo sin quitarla |
+| Un esquema con restricciones que el modo estricto no admite | Un 400 en todas las llamadas de ese agente | Una prueba de AG5: cada esquema de herramienta y de formato, sin `minimum`, `maximum`, `multipleOf`, `minLength` ni `maxLength`, y con `additionalProperties: false` en cada objeto |
+| Un historial que se edita entre rondas | Un 400 en las cuentas nuevas («preserved thinking») | Una prueba de AG5: rondas seguidas de una pregunta mandan las mismas instrucciones y herramientas, y el historial anterior más lo agregado |
+| Un registro guarda el texto del modelo | Datos de leads en un registro o un incidente | La 200 fija el juego exacto de columnas de `uso_de_ia`, ninguna para el texto del modelo; la 201 para el error de los Analizadores |
 | El panel del pie reusa un id prohibido | La 156 en rojo, o alguien la afloja | Ids nuevos (`03`, `AG-57`) |
 | Un aviso nuevo sin lector, o un comentario siempre encendido | La cabecera dice algo todos los días y se deja de leer | La 230 (la regla del silencio) |
 | Un tema de la Reunión de una sección que la persona no ve | Fuga entre áreas | La 229: un texto por tema, sin referencias cruzadas, y el filtro antes de tomar tres |

@@ -15,8 +15,8 @@
 // captura alcanza: el código dice qué fue, y la referencia encuentra la línea exacta en Vercel.
 //
 // Eran cuatro lugares que armaban este rechazo cada uno a su modo (la generación, la conversación,
-// el relleno y el Espía). Ahora pasan todos por acá, que es también donde se registrará el
-// incidente para el panel cuando exista.
+// el relleno y el Espía). Ahora pasan todos por acá, que es también donde se anota el incidente
+// del panel (`anotarIncidente`), lo use una ruta o el transporte de los agentes (`lib/agentes/`).
 //
 // ── EL FORMATO DEL DETALLE ES UN CONTRATO CON LA PANTALLA ────────────────────
 //
@@ -132,12 +132,18 @@ export function nuevaReferencia(): string {
 }
 
 /**
- * El rechazo de un fallo del modelo, con su línea de registro.
+ * La línea de registro y la fila del Panel de Incidentes de un fallo, con UNA referencia.
  *
  * La línea empieza con `incidente` y lleva la referencia, así que `vercel logs -q <ref>` la encuentra
  * sola. `ADR-0407` prohíbe registrar cuerpos; un código, un número y el motivo del proveedor no lo son.
+ *
+ * Aparte de `rechazoDelModelo` porque el transporte de los agentes (`lib/agentes/llamada.ts`) anota el
+ * fallo y NO devuelve una respuesta HTTP: quien lo muestra arma la suya con `detalleDelFallo`.
  */
-export async function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeFallo): Promise<Response> {
+export async function anotarIncidente(
+  fallo: FalloDelModelo,
+  dondeFallo: DondeFallo,
+): Promise<{ situacion: SituacionDelModelo; ref: string; tecnico: string }> {
   const situacion = clasificarFallo(fallo);
   const ref = nuevaReferencia();
   const detalle = tecnico(fallo);
@@ -159,7 +165,17 @@ export async function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeF
       tecnico: detalle,
     });
   }
-  return rechazo('modelo_no_disponible', `${situacion} · ref ${ref} · ${detalle}`);
+  return { situacion, ref, tecnico: detalle };
+}
+
+/** El detalle que lee la pantalla, con la forma del encabezado: `IA-SATURADO · ref 7K3QX9 · …`. */
+export function detalleDelFallo(f: { situacion: SituacionDelModelo; ref: string; tecnico: string }): string {
+  return `${f.situacion} · ref ${f.ref} · ${f.tecnico}`;
+}
+
+/** El rechazo de un fallo del modelo: su línea, su incidente y el 502 que la pantalla sabe leer. */
+export async function rechazoDelModelo(fallo: FalloDelModelo, dondeFallo: DondeFallo): Promise<Response> {
+  return rechazo('modelo_no_disponible', detalleDelFallo(await anotarIncidente(fallo, dondeFallo)));
 }
 
 /** Las situaciones que se arreglan solas: vale la pena un segundo intento antes de mostrarlas. */

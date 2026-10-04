@@ -25,7 +25,7 @@
 | Búsqueda web fuera de Research | `D-25` | — |
 | Permisos por herramienta | `D-25`: por sección, como hoy | `docs/OTROS/futuro/permisos-por-herramienta.md` |
 | La auditoría de los agentes de voz | `D-23` | — |
-| La voz del auditor y de los Analizadores, y su paso a Sonnet 5.5 | `D-15`, `D-26`: cuando se evalúen, comparando veredictos antes y después | — |
+| La voz del auditor y de los Analizadores, y su paso a Sonnet 5.5 | `D-15`, `D-26`: cuando se evalúen, comparando veredictos antes y después. El paso exige quitar el `tool_choice` forzado (Sonnet 5.5 lo rechaza) y cambiar las pruebas que fijan su cuerpo | — |
 | El acuerdo de tratamiento de datos | `D-32`: lo ve el equipo | `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md` |
 
 ## Porque falta el dato

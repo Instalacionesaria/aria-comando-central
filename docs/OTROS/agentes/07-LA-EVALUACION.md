@@ -3,7 +3,7 @@
 > Cómo se sabe que un agente hace lo que dice: una base sembrada con dos empresas sintéticas, un conjunto de
 > preguntas por agente con lo que se espera de cada una, pruebas automáticas que nunca llaman al modelo de
 > verdad, y una evaluación real que sólo corre con la llave de ARIA y con el OK del usuario cada vez.
-> Requisitos `AG-100` a `AG-109`. **El conjunto de preguntas de `AG-102` espera el OK del usuario.**
+> Requisitos `AG-100` a `AG-109`. **El conjunto de preguntas de `AG-102` lo aprobó el usuario el 2026-10-04.**
 
 ---
 
@@ -53,7 +53,7 @@ base local: la herramienta `fundaciones` se prueba con un almacén falso.
 - **Cada herramienta da la misma cifra que la ruta de su pantalla** sobre la base sembrada, en las cuatro
   ventanas.
 
-## AG-102 · El conjunto de preguntas (para aprobar)
+## AG-102 · El conjunto de preguntas (aprobado el 2026-10-04)
 
 Lo que el modelo de verdad tiene que hacer bien. Cada fila dice quién pregunta, desde dónde, qué tiene que
 contestar y qué no. Las cifras exactas se fijan cuando exista la base sembrada (AG4) y se escriben acá.
@@ -126,7 +126,8 @@ Cada respuesta real se puntúa con:
 - Corre con `scripts/evaluar-agentes.mjs` sobre la **base local** sembrada.
 - Usa **la llave de la organización principal**, que el usuario carga **a mano** en Ajustes local. Nunca va
   a un `.env` ni la escribe un agente. **Nunca la llave de un cliente.**
-- Sale por `pedirExterno`: ningún `fetch(` en `scripts/` (ADR-0305).
+- Sale por `pedirExterno`: ningún `fetch(` en el guion. En `scripts/` sólo `scripts/supabase.mjs` está
+  exceptuado (`pruebas/codigo/30-portero.test.ts:569-573`, ADR-0305).
 - **Primero imprime cuántas llamadas va a hacer**, y no corre sin `--confirmo N` con ese mismo número. Antes de
   cada tanda se le pide el OK al usuario en el chat, con el número.
 - Antes de la primera tanda, la comprobación del modelo de `06`, `AG-92`.
@@ -153,4 +154,4 @@ Todavía no hay: la primera evaluación real es en AG7.
 
 ## Preguntas abiertas
 
-- **Para el usuario**: aprobar o corregir el conjunto de `AG-102`.
+Ninguna: el conjunto de `AG-102` se aprobó el 2026-10-04 sin cambios.

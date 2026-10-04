@@ -4,7 +4,7 @@
 // POR QUÉ HTTP CRUDO Y NO EL SDK DE ANTHROPIC
 //
 // El SDK sería lo normal en cualquier otro proyecto. Acá no entra por `ADR-0305`: el proyecto
-// afirma que `fetch(` existe en **exactamente dos archivos**, y esa afirmación es lo que impide que
+// afirma que `fetch(` existe en **exactamente tres archivos**, y esa afirmación es lo que impide que
 // aparezca un segundo cliente HTTP con el manejo de errores opuesto. Un SDK trae el suyo, con su
 // propia política de reintentos y su propia forma de reportar un 429 — y desde afuera se vuelve
 // invisible cuántos caminos de red tiene el sistema.

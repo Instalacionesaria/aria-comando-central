@@ -129,7 +129,11 @@ texto libre de personas (notas, mensajes, transcripciones) no viaja; las frases 
 
 ## AG-46 · La forma de la respuesta
 
-El modelo contesta siempre con la herramienta forzada `responder`:
+El modelo contesta con la herramienta `responder`, ofrecida con `strict: true` y pedida por el prompt. **No
+se puede forzar**: `claude-sonnet-5-5` rechaza `tool_choice` de tipo `tool` o `any` con un 400 (`06`, AG-93).
+Cómo se asegura la salida —`responder` con `tool_choice` `auto`, o el formato de la salida
+(`output_config.format`) en la última ronda— y qué se hace con una respuesta que no la usó (`IA-ESTRUCTURA`)
+lo decide AG5. La forma:
 
 ```text
 conclusion        una o dos frases, la respuesta primero
@@ -182,6 +186,11 @@ Las de cada entrada están en su ficha.
 - **Memoria**: el hilo entero, dentro de un presupuesto de tokens; los turnos viejos viajan reducidos a su
   conclusión y sus cifras (`T-15`). El contexto de la empresa se vuelve a leer siempre: nada de lo que el
   modelo «recuerda» reemplaza a una herramienta.
+- **El historial es de sólo agregar** («preserved thinking» de `claude-sonnet-5-5`): dentro de las rondas de
+  una pregunta, cada turno vuelve tal cual llegó —bloques `thinking` incluidos— y las instrucciones y las
+  herramientas no cambian; cada pregunta nueva arranca con los turnos anteriores reducidos y **sin** sus
+  bloques de pensamiento. Editar un turno anterior invalida los bloques que siguen, y en las cuentas creadas
+  desde el 2026-08-31 eso es un 400.
 - **No vencen**: el autor las borra. Se borran en cascada con la persona.
 - Cada hilo guarda su **origen** (`inicio`, `pie`, `reunion`) y su contexto.
 - **Quien no ve el Inicio** también guarda sus hilos de la caja del pie, y el panel que sube le muestra la

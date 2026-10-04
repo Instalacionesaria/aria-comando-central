@@ -29,7 +29,7 @@
 - `git pull --rebase --autostash` hasta `97fc905`.
 - Producción medida sólo con lectura: lo que dice `00-MAPA.md` en «Lo medido en el Paso 0».
 
-## AG0 · Documentos — **en curso**
+## AG0 · Documentos — **hecha el 2026-10-04** (`db6bc34`)
 
 - Esta carpeta, auditada por `pruebas/codigo/101-las-citas-de-los-documentos.test.ts` desde hoy (se suma a
   `AUDITADAS`). Mutación: una cita a una línea que no existe.
@@ -42,21 +42,37 @@
   - las citas a la línea 1191 de `pruebas/codigo/90-fundaciones.test.ts`, que hoy dice otra cosa: el
     conteo literal está en la 1263.
 - **Dos OK del usuario antes de seguir**: el conjunto de preguntas (`07`, `AG-102`) y la especificación de
-  Conversion (`fichas/F04-CONVERSION.md`). La especificación sólo bloquea AG14.
+  Conversion (`fichas/F04-CONVERSION.md`). **Los dos llegaron el 2026-10-04, sin cambios.**
 
-## AG1 · El transporte y el uso
+## AG1 · El transporte y el uso — **hecha el 2026-10-04**
 
-- **Qué**: `lib/agentes/modelos.ts`, `lib/agentes/llamada.ts`, `lib/agentes/uso.ts` (`01`, `06`).
+- **Qué**: `lib/agentes/proveedor.ts` (la dirección y la versión de la API, la única copia del mundo nuevo),
+  `lib/agentes/modelos.ts`, `lib/agentes/llamada.ts`, `lib/agentes/uso.ts` (`01`, `06`). De
+  `rechazoDelModelo` salen `anotarIncidente` y `detalleDelFallo`, sin cambiar lo que hace.
 - **Migración** `069_el_uso_de_la_ia.sql`: `negocio.uso_de_ia`, con `aplicar_aislamiento`, `usuario_id`
-  con `on delete set null` y su frase en `QUE_LO_IMPIDE` para `org_id`.
-- **Pruebas que cambian**: la 90 suma `claude-sonnet-5-5` a la lista de válidos (mutación: un identificador
-  inventado); la que compara la dirección y la versión de la API se amplía o pasa a mirar la constante
-  única.
-- **Pruebas nuevas**: 198, el transporte va sólo por `pedirExterno`, reintenta una vez y sólo si es pasajero
-  (mutaciones: un segundo intento ante `IA-SIN-SALDO`; un `fetch` directo). 199, cada constante de
-  `lib/agentes/modelos.ts` está en la lista de válidos (mutación: `'claude-sonnet-55'`). 200 (base), la fila
-  de uso con sus cuatro contadores bajo RLS: otra empresa no la ve (mutación: escribirla fuera del contexto).
-- **Documentos**: `estado actual/17-LA-PLATAFORMA.md` (el uso de IA ya se mide).
+  con `on delete set null` y su frase en `QUE_LO_IMPIDE` para `org_id`. Se aplica a producción con H1.
+- **Pruebas que cambian**: la lista de válidos se muda a `pruebas/apoyo/modelos-validos.ts` y suma
+  `claude-sonnet-5-5`; la 90 la importa en las mismas seis líneas. La 171 pasa a mirar la constante única y
+  las cinco copias (mutaciones: otra versión en `proveedor.ts`; la dirección copiada en `llamada.ts`).
+- **Pruebas nuevas**: 198, el transporte va sólo por `pedirExterno`, sin herramienta forzada, reintenta una
+  vez y sólo si es pasajero, sin tiempo o con una llave que no puede ir en una cabecera no pide, trata como
+  truncada la ventana de contexto llena, no le manda esfuerzo a Haiku, los incidentes que agrega el cron, y
+  un solo escritor de `uso_de_ia`. 199, cada constante de `lib/agentes/modelos.ts` está en la lista de
+  válidos, y los módulos que fuerzan su herramienta no usan un modelo que la rechaza. 200 (base), la fila de uso con sus cuatro contadores bajo RLS, en su propia transacción, una por
+  llamada, y sin incidentes cuando los agrega quien llama.
+- **Mutaciones, las veintisiete vistas en rojo**: en la 198, un segundo intento ante `IA-SIN-SALDO`; un
+  `fetch` directo; un `tool_choice` forzado con dos herramientas; otro con una sola; `tool_choice` sin
+  herramientas; la llave sin quitar, en una respuesta que no llegó y en un rechazo; el tope entero en el
+  reintento; el tope menos la pausa, sin descontar el primer intento; devolver el primer fallo en vez del
+  segundo; pedir sin tiempo; la espera con decimales sin recortar; la infinita tratada como sin tiempo; la
+  llave inválida que sale a la red; la duración medida después de anotar; el esfuerzo fuera de
+  `output_config`; el esfuerzo mandado a Haiku; la ventana de contexto leída como respuesta; un segundo
+  escritor. En la 198 y la 200, ignorar `los_agrega_quien_llama`. En la 200, el salvado del cron que escribe
+  su incidente; escribir fuera del contexto; reusar la transacción abierta. En la 199, `'claude-sonnet-55'`,
+  y el modelo de Fundaciones pasado a `claude-sonnet-5-5` con su herramienta forzada. En la 171, otra
+  versión en `proveedor.ts` y la dirección copiada en `llamada.ts`.
+- **Documentos**: `estado actual/17-LA-PLATAFORMA.md` (existe la tabla del uso de IA y su único escritor;
+  todavía no la escribe ningún agente: los que ya existen, desde AG2; los nuevos, desde AG5).
 
 ## AG2 · Los agentes que ya existen registran su uso y sus fallos — **hito H1**
 
@@ -65,6 +81,10 @@
   auditor y de los Analizadores, agregados por corrida y situación. El error de un análisis fallido guarda el
   código, no 200 caracteres de la respuesta (`lib/analizadores/nucleo/engine.ts:57`). Se quita el bloque
   duplicado de `pedirExterno` (`lib/http/cliente.ts:392` y `:411`), sin cambiar su contrato.
+- **Deuda que deja AG1 a la vista**: `incidentes_usuario_id_fkey` es `no action` (`067`), así que un
+  incidente —aunque sea uno salvado, que la persona ni vio— vuelve imborrable a quien lo tuvo. La `068` y
+  la `069` eligieron `on delete set null` para lo que es de la organización. Cambiarla es una migración con
+  su frase menos en `QUE_LO_IMPIDE`: se decide en esta etapa, que es la que suma incidentes.
 - **Coordinación**: lo de Fundaciones choca con la rama `feature/icp-oferta-v2` (`00-MAPA.md`). Se hace
   después de que la rama se integre, o con su conflicto resuelto a mano.
 - **Pruebas que cambian**: las del auditor y los Analizadores afirman el uso (mutación: quitar
@@ -115,7 +135,10 @@
   cualquier `ev`). 208 (base), los hilos son del autor (uno ajeno da 404), borrar, el tope bajo candado con
   dos preguntas en paralelo, una fallida no cuenta, delegación rechazada (mutaciones: quitar el filtro por
   autor; quitar el candado). 209 (base), ninguna sesión `idle in transaction` mientras el modelo falso espera
-  (mutación: envolver el bucle en una transacción).
+  (mutación: envolver el bucle en una transacción). Y dos que AG1 dejó anotadas: las rondas seguidas de una
+  pregunta mandan las mismas instrucciones y herramientas y el historial anterior más lo agregado (mutación:
+  reconstruir el historial entre rondas); cada esquema de herramienta y de formato sin las restricciones que
+  el modo estricto no admite (mutación: un `maxLength`).
 - **Documentos**: `estado actual/11-EXECUTIVE.md`, `nueva-estructura/04-EL-INICIO.md`,
   `futuro/el-cerebro.md`.
 

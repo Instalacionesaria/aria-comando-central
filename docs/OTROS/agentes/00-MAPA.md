@@ -3,8 +3,9 @@
 > Plan del **2026-10-04**: el cerebro (el agente global del Inicio, `executive` en el código) y un agente
 > por tipo en cada inteligencia, enganchados al front de la segunda edición. Esta carpeta dice **todo lo
 > que se va a construir, cada decisión y cada riesgo, antes de tocar el código**. Prefijo de los
-> requisitos: `AG-`. Estado: **AG0 · documentos**, esperando dos OK del usuario (el conjunto de preguntas
-> de `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`).
+> requisitos: `AG-`. Estado: **AG1 hecho** (el transporte y el uso); el usuario aprobó el 2026-10-04 el
+> conjunto de preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de
+> `fichas/F04-CONVERSION.md`. Sigue AG2.
 
 ---
 
@@ -85,7 +86,7 @@ desarrollada en el documento que se indica.
 | `T-02` | **NE-33**: la única línea de `lib/autorizacion/secciones.ts` que cambia es la bandera de `:219`, que pasa a ser un comentario de una línea. No se suma ni se quita ninguna | `03`, `08` |
 | `T-03` | **La identidad sólo en los archivos de ruta.** La llave y el estado de las integraciones se resuelven con `conIdentidad` en la ruta; cada ruta nueva entra en `ARCHIVOS_AUTORIZADOS` (y en `CRUZAN_LOS_DOS_DOMINIOS` si corresponde) y lleva el literal `conOrganizacion(`. Nada bajo `lib/agentes/**` importa `conIdentidad` | `01`, `05` |
 | `T-04` | **Transacciones cortas**: ninguna queda abierta mientras se espera al modelo, y las herramientas corren en serie (el grupo de conexiones tiene 5, `lib/datos/capa.ts:83`) | `01` |
-| `T-05` | **El transporte es común y el cuerpo es de cada agente**: `lib/agentes/llamada.ts` sobre `pedirExterno`, con una sola constante de dirección y versión de la API | `01`, `06` |
+| `T-05` | **El transporte es común y el cuerpo es de cada agente**: `lib/agentes/llamada.ts` sobre `pedirExterno`, con una sola constante de dirección y versión de la API (`lib/agentes/proveedor.ts`), **sin forzar herramientas**: `claude-sonnet-5-5` rechaza `tool_choice` `tool` o `any` con un 400 | `01`, `06` |
 | `T-06` | **Las herramientas son adaptadores**: llaman a la misma función, con los mismos argumentos que la ruta de su pantalla, y proyectan por **lista blanca** | `03` |
 | `T-07` | **La respuesta tiene forma fija** y el servidor la valida: una cifra que no aparece en su evidencia se quita y se dice | `03` |
 | `T-08` | **Siguientes pasos y traspaso** con el molde de `lib/tools/del-espia-al-scraper.ts` | `03` |
@@ -95,7 +96,7 @@ desarrollada en el documento que se indica.
 | `T-12` | **La tarea `senales` del cron**: minuto 23, sólo a las empresas a las que les toca su mañana, sin sellar a las demás, con presupuesto propio, plantillas primero y redacción después | `02` |
 | `T-13` | **El estado del cerebro es una unión** (`listo`, `sin_permiso`, `sin_llave`, `llave_ilegible`, `delegacion`, `tope`), nunca un booleano | `03` |
 | `T-14` | **La mascota la decide el servidor**, a partir de la evidencia y no del modelo | `03` |
-| `T-15` | **La memoria es el hilo entero** dentro de un presupuesto de tokens; los turnos viejos viajan reducidos a su conclusión y sus cifras | `03` |
+| `T-15` | **La memoria es el hilo entero** dentro de un presupuesto de tokens. Dentro de las rondas de una pregunta, el historial es de sólo agregar, bloques de pensamiento incluidos; cada pregunta nueva arranca con los turnos viejos reducidos a su conclusión y sus cifras, sin pensamiento | `03` |
 | `T-16` | **La cabecera y la Reunión no usan el modelo para detectar.** La cabecera la sirve el GET de cada departamento | `04` |
 | `T-17` | **La traducción a `issue_source`** de los hallazgos del auditor | `02` |
 | `T-18` | **Las categorías de objeción** las pone Haiku una vez, al analizar la llamada, y se guardan | `fichas/F14` |
@@ -118,7 +119,7 @@ desarrollada en el documento que se indica.
 | [04-LA-REUNION-Y-LA-CABECERA.md](04-LA-REUNION-Y-LA-CABECERA.md) | La Reunión de hoy, el contador de la barra y el comentario de la cabecera |
 | [05-PERMISOS-Y-PRIVACIDAD.md](05-PERMISOS-Y-PRIVACIDAD.md) | Las capacidades nuevas, la delegación, los datos personales, las listas de autorizados |
 | [06-MODELOS-USO-TOPES-E-INCIDENTES.md](06-MODELOS-USO-TOPES-E-INCIDENTES.md) | El modelo de cada agente, la tabla de uso, los topes y los incidentes |
-| [07-LA-EVALUACION.md](07-LA-EVALUACION.md) | La base sembrada, el conjunto de preguntas por agente (para aprobar), la rúbrica y el guion de evaluación real |
+| [07-LA-EVALUACION.md](07-LA-EVALUACION.md) | La base sembrada, el conjunto de preguntas por agente (aprobado el 2026-10-04), la rúbrica y el guion de evaluación real |
 | [08-LAS-ETAPAS.md](08-LAS-ETAPAS.md) | P0 a AG16: qué toca cada etapa, sus pruebas, cómo se verifica y los hitos de push |
 | [09-LO-QUE-SE-ROMPE-EN-SILENCIO.md](09-LO-QUE-SE-ROMPE-EN-SILENCIO.md) | Cada riesgo, cómo se vería y qué lo vigila |
 | [10-LO-QUE-QUEDA-PARA-DESPUES.md](10-LO-QUE-QUEDA-PARA-DESPUES.md) | Lo que esta fase deja afuera, con su motivo |
@@ -198,8 +199,9 @@ Tres consecuencias para el plan:
 | etapa | estado |
 |---|---|
 | P0 · Medición | **Hecho** el 2026-10-04: `pull` a `97fc905` y la tabla de arriba |
-| AG0 · Documentos | **En curso**: esta carpeta |
-| AG1 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG0 · Documentos | **Hecho** el 2026-10-04 (`db6bc34`), con los dos OK del usuario ese mismo día |
+| AG1 · Transporte y uso | **Hecho** el 2026-10-04. La `069` se aplica a producción con el hito H1 |
+| AG2 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

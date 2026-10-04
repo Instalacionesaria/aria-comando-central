@@ -223,8 +223,8 @@ export function hayQueVolverAEntrar(r: Respuesta<unknown>): boolean {
 // servicio de terceros: la API de Anthropic (ver `lib/fundaciones/generacion.ts`).
 //
 // Son dos cosas distintas y comparten archivo por una razón concreta: `ADR-0305` afirma que
-// `fetch(` aparece en **exactamente dos** archivos del proyecto, y esa afirmación es lo que impide
-// que aparezca un segundo cliente HTTP con el manejo de errores opuesto. Un tercer archivo
+// `fetch(` aparece en **exactamente tres** archivos del proyecto, y esa afirmación es lo que impide
+// que aparezca un segundo cliente HTTP con el manejo de errores opuesto. Un cuarto archivo
 // —`lib/fundaciones/anthropic.ts`, digamos— rompería la prueba, y la salida fácil sería agregarlo a
 // la lista de exceptuados. Ahí se pierde la propiedad: la lista de excepciones crece y nadie vuelve
 // a saber cuántos clientes HTTP hay.
@@ -459,11 +459,11 @@ export async function pedirExterno<T>(
      * ── DÓNDE SE LEE, Y POR QUÉ ESO IMPORTA ─────────────────────────────────
      *
      * `detalle` es el campo que ya existía para «texto que lee una persona», así que el tipo no
-     * cambia y la cadena hasta la pantalla ya estaba armada. Hoy **nadie más que
-     * `lib/fundaciones/generacion.ts` lo lee**, así que en los otros consumidores esto es inerte.
+     * cambia y la cadena hasta la pantalla ya estaba armada. Empezó leyéndolo sólo la generación;
+     * hoy lo leen varios consumidores, entre ellos los que llaman a Anthropic y `lib/agentes/llamada.ts`.
      *
-     * Quien vaya a leerlo para GoHighLevel tiene que pensar antes en una cosa que acá no aplica: los
-     * mensajes de error de un CRM pueden nombrar un contacto, y eso son datos de una persona en una
+     * Quien lo lea para GoHighLevel —el envío de leads del Scraper ya lo muestra— piensa en algo que
+     * acá no aplica: los errores de un CRM pueden nombrar un contacto, y eso son datos de una persona en una
      * pantalla que quizá no le corresponde. Los de Anthropic hablan de la PETICIÓN —campos, límites,
      * saldo—, nunca de datos de terceros. */
     const error = (cuerpoLeido as { error?: { type?: unknown } } | null)?.error;

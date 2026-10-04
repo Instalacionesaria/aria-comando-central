@@ -76,7 +76,8 @@ el servidor**, no sólo en la pantalla:
 
 Ni el prompt ni la respuesta del modelo van a un registro ni a un incidente
 (`db/migraciones/067_los_incidentes.sql:23`). `negocio.uso_de_ia` no guarda texto: sólo contadores,
-modelo, agente, duración y quién.
+modelo, agente, duración, resultado (`ok` o la situación `IA-*`), quién y una referencia de hasta 64
+caracteres (el hilo, el análisis o la del incidente).
 
 Y se cierra una deuda abierta: un análisis fallido de los Analizadores guarda hoy 200 caracteres de la
 respuesta del modelo, que pueden traer datos del cliente (`lib/analizadores/nucleo/engine.ts:57`). En AG2 el

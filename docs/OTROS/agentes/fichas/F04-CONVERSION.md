@@ -1,14 +1,14 @@
-# F04 · Systems › Conversion — especificación para validar
+# F04 · Systems › Conversion — especificación validada
 
-> **Esta ficha espera el OK del usuario** (`D-23`): Conversion no tiene una especificación de agente en Arq
+> **El usuario la validó el 2026-10-04, sin cambios** (`D-23`): Conversion no tiene una especificación de agente en Arq
 > (Arq:1112 la da por pendiente), así que se escribe acá con el molde de Acquisition y lo que Conversion ya
-> dejó escrito en CV6 y CV7. Sólo bloquea AG14.
+> dejó escrito en CV6 y CV7. Se construye en AG14.
 
 | campo | valor |
 |---|---|
 | Tipo | MIDE (detector) |
 | Lugar en el front | Systems › Conversion: el botón «Plan de acción» y la tarjeta de Señales |
-| Estado | **Especificación a validar**; después se construye en AG14 |
+| Estado | **Especificación validada** el 2026-10-04; se construye en AG14 |
 | Modelo | Ninguno para detectar. `claude-sonnet-5-5` para redactar el plan, si hay llave |
 | Permisos | Los de `F03`, con la pantalla `conversion` |
 | Código | `lib/agentes/detectores/conversion.ts`, `lib/agentes/plan/conversion.ts` |
@@ -23,7 +23,7 @@ Lo mismo que su pantalla, con los mismos argumentos (`app/api/conversion/route.t
 - `embudoDelFormulario(dias)`: los estados del formulario, su cobertura y su finalización (`null` con menos
   de 10).
 
-## Las reglas propuestas
+## Las reglas
 
 | código | qué detecta | umbral provisional | piso | gravedad | entidad | destino |
 |---|---|---|---|---|---|---|
@@ -70,8 +70,7 @@ CV6-02 a CV6-08, CV7-09 (lo que le entrega a Executive). CV7-10 queda postergado
 El formulario: a 30 días, casi ningún contacto lo trae y se escribió por última vez el 2026-08-31, así que la
 primera señal real va a ser `CNV-FORMULARIO-SIN-DATOS`.
 
-## Para validar
+## Validado el 2026-10-04
 
-1. ¿Las cuatro reglas son las que importan?
-2. ¿Los destinos de cada fricción (landing y VSL a Conversion, chat a Conversation, anuncio a Acquisition)?
-3. ¿El cambio de ruta sube a validación ejecutiva?
+Las cuatro reglas, los destinos de cada fricción (landing y VSL a Conversion, chat a Conversation, anuncio a
+Acquisition) y que el cambio de ruta sube a validación ejecutiva.

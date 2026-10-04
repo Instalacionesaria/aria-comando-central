@@ -259,7 +259,7 @@ un umbral de 120 minutos (`lib/negocio/frescura.ts:203-209`, `:231`, `:258`).
 
 **Quién no:** ninguna pantalla lee el sello de `anuncios`, `auditoria`, `mejora`, `analizadores` ni
 `reintentos`. `tareas_programadas` aparece sólo en `lib/negocio/barrido.ts`,
-`lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:1511`) y un comentario de
+`lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:715`) y un comentario de
 `app/api/cron/route.ts:173` (búsqueda en `lib/`, `app/` y `components/`). O sea que si el
 colector de anuncios dejara de correr, Acquisition, Creative, Conversion y Sales no lo dirían con un
 aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo de esta carpeta.
@@ -292,7 +292,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1539-1544`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1622-1627`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
@@ -694,3 +694,16 @@ por `activa`, y los sellos de organizaciones inactivas (§ 7). Sin columnas pers
   ve ningún llamador, y los registros de Vercel no están al alcance.
 - **La hora del push** es la de creación de la corrida de la CI que disparó; un push sin corrida de
   CI no aparecería en esa lista.
+
+---
+
+## Después del corte: el uso de la IA (2026-10-04)
+
+Agregado con AG1 del plan de los agentes (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). La `069` suma
+`negocio.uso_de_ia`, una fila por llamada al modelo con sus cuatro contadores de tokens, su duración y su
+resultado, sin una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.sql:38-77`).
+La escribe sólo `registrarUso` (`lib/agentes/uso.ts`), y **todavía no la escribe ningún agente**: los que ya
+existen empiezan en AG2 y los nuevos llegan desde AG5. Hasta entonces los únicos tokens guardados siguen
+siendo los de los Analizadores. La `069` se aplica a producción con el hito H1; con ella, `negocio` pasa a
+tener 35 tablas: las 29 del corte, las cinco que crearon la `063` y de la `065` a la `068`, y `uso_de_ia`.
+`lib/datos/esquema.ts` tipa entonces 46 tablas de `identidad` y `negocio`: las 40 del § 4 son las del corte.

@@ -56,9 +56,11 @@ gasta se apaga ahí (`D-17`, `T-25`).
    tiene `credenciales.ver`.
 3. **Inquilino, transacción corta**: el hilo, el tope bajo candado de fila y la reserva de la pregunta.
 4. **El bucle del modelo, fuera de toda transacción.** Cada herramienta abre su propia
-   `conOrganizacion(orgEfectiva, …)` corta, **en serie**.
+   `conOrganizacion(orgEfectiva, …)` corta, **en serie**. Cada llamada al modelo deja su fila de uso, que
+   anota el transporte (`lib/agentes/llamada.ts`).
 5. **La validación** de la respuesta contra su evidencia (`T-07`).
-6. **Inquilino, transacción corta**: la respuesta, la evidencia y el uso.
+6. **Inquilino, transacción corta**: la respuesta y la evidencia. El uso ya lo anotó el transporte, una
+   fila por llamada y fuera de esta transacción.
 7. **La respuesta** a la pantalla.
 
 Cualquier fallo del modelo pasa por `clasificarFallo` (`lib/fundaciones/fallo-del-modelo.ts:72`) y queda
@@ -70,14 +72,16 @@ como incidente. Una pregunta que falla libera su reserva: no consume tope.
 máximo de 5 (`lib/datos/capa.ts:83`). Una transacción abierta durante una llamada de dos minutos retiene una
 conexión de cinco. Es la regla que ya siguen los Analizadores (`lib/analizadores/datos.ts:26-28`) y el
 entrevistador (`conversarConElAgente`, `lib/fundaciones/operaciones.ts:578`, que lee, llama y guarda en tres
-pasos separados). Tampoco `registrarUso` se llama dentro de una transacción abierta.
+pasos separados). Tampoco `registrarUso` se llama dentro de una transacción abierta; si igual pasa, lo dice en
+el registro y escribe en su propia transacción, que sobrevive al rollback de afuera (`lib/agentes/uso.ts`).
 
 ## AG-06 · La capa común, `lib/agentes/`
 
 | archivo | qué hace | etapa |
 |---|---|---|
+| `proveedor.ts` | La dirección y la versión de la API de Anthropic: la única copia del mundo nuevo. No importa nada | AG1 |
 | `modelos.ts` | La constante de modelo de cada agente nuevo (`D-15`) | AG1 |
-| `llamada.ts` | El transporte: arma el pedido, lo manda por `pedirExterno`, reintenta una vez si el fallo es pasajero, clasifica, registra uso e incidente. Importa la dirección y la versión de la API de un solo lugar | AG1 |
+| `llamada.ts` | El transporte: arma el pedido, lo manda por `pedirExterno`, reintenta una vez si el fallo es pasajero, clasifica, registra uso e incidente (o se lo deja agregar a una tarea del cron). Importa la dirección y la versión de `proveedor.ts`. Nunca fuerza una herramienta ni configura el pensamiento | AG1 |
 | `uso.ts` | `registrarUso`, el único escritor de `negocio.uso_de_ia`. Nunca lanza | AG1 |
 | `executive/` | El cerebro: `herramientas.ts` (el catálogo y qué se ofrece a quién), `adaptadores/*.ts` (uno por herramienta, con su proyección), `prompt.ts`, `respuesta.ts` (el esquema `responder` y la validación), `contexto.ts` (el contexto de la pantalla), `preguntar.ts` (la orquestación del ciclo de `AG-04`), `conversaciones.ts` (único escritor de sus dos tablas), `topes.ts` | AG5, AG6 |
 | `senales/` | `escritura.ts` (único escritor de `negocio.senales`, con la huella y la reconciliación), `lectura.ts`, `umbrales.ts` (el catálogo provisional en código y la lectura de las firmas) | AG8 |
@@ -108,8 +112,10 @@ Los números se vuelven a verificar en cada `pull`: otra persona empuja migracio
 
 ## AG-08 · Un escritor por tabla
 
-Lo vigila `pruebas/codigo/111-un-solo-escritor.test.ts`. Cada tabla nueva declara su escritor en la
-primera línea de su archivo, como las demás.
+Cada tabla de los agentes tiene su fila en la lista `ESCRITORES` de
+`pruebas/codigo/198-el-transporte-de-los-agentes.test.ts`, con el molde de la 180: cada etapa que crea una
+tabla suma la suya (la 111 vigila sólo `negocio.mensajes`). Y cada tabla declara su escritor en la primera
+línea de su archivo, como las demás.
 
 ## AG-09 · La frontera con lo que ya existe
 
@@ -153,7 +159,7 @@ suficiente») y «vincular el recurso al DM» (Lienzo, pantalla «Marketing · G
 
 ## AG-14 · Todo fallo de un agente es un incidente
 
-Fundaciones, Tools y el Espía ya registran (`lib/fundaciones/fallo-del-modelo.ts:152`). En AG2 se suman el
+Fundaciones, Tools y el Espía ya registran (`lib/fundaciones/fallo-del-modelo.ts:158`). En AG2 se suman el
 auditor y los Analizadores, **agregados por corrida y por situación**: el auditor corre cada 10 minutos y
 un proveedor caído no puede inundar el panel con una fila por conversación.
 

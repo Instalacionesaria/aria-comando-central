@@ -35,6 +35,7 @@ import {
 import { TldvError, fetchTranscript, listRecentMeetings } from '../../lib/analizadores/nucleo/tldv.ts';
 import { buildClassifierSystem, classifyCallType, runAnalysis } from '../../lib/analizadores/nucleo/engine.ts';
 import { parseTranscriptInput } from '../../lib/analizadores/nucleo/transcript.ts';
+import { DIRECCION_DE_LA_API, VERSION_DE_LA_API } from '../../lib/agentes/proveedor.ts';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // La red falsa
@@ -148,21 +149,55 @@ test('los modelos son constantes del código, y ningún archivo del analizador l
   assert.deepEqual(conEntorno, []);
 });
 
-test('el analizador comparte el TRANSPORTE con el auditor, y no llama a fetch directo', () => {
-  /* La misma dirección, la misma versión, las mismas dos cabeceras y la salida por `pedirExterno`.
-     Si un día el auditor cambia de versión de API y esto no, la divergencia aparece como «el
-     analizador dejó de funcionar» meses después. */
+test('la dirección y la versión de la API tienen UN lugar, y las copias que quedan dicen lo mismo', () => {
+  /* Hasta AG1 esto comparaba un par —el auditor contra el analizador— y la 116 otro —el auditor contra
+     la generación—. El relleno de Fundaciones no estaba en ninguno, y la conversación sólo en su prueba
+     de comportamiento (`pruebas/codigo/125-agente-de-fundaciones.test.ts`): si una copia se desviaba, la
+     divergencia aparecía como «dejó de funcionar» meses después.
+
+     Desde AG1 la referencia es `lib/agentes/proveedor.ts`. El transporte de los agentes nuevos las
+     importa de ahí; los cinco módulos que ya llamaban al modelo conservan su copia —su cuerpo es suyo,
+     `docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-09— y tienen que decir lo mismo. El día que uno
+     importe, sale de `COPIAS` y del barrido. */
   const fuente = (ruta: string) => {
     const a = archivosFuente(['lib']).find((x) => x.ruta === ruta);
     assert.ok(a, `no se encontró ${ruta}`);
     return a.limpio;
   };
-  const delAuditor = fuente('lib/auditor/modelo.ts');
-  const delAnalizador = fuente('lib/analizadores/nucleo/anthropic.ts');
-  for (const compartido of ["'https://api.anthropic.com/v1/messages'", "'2023-06-01'", "'x-api-key'", "'anthropic-version'", 'pedirExterno']) {
-    assert.ok(delAuditor.includes(compartido), `el auditor dejó de usar «${compartido}»`);
-    assert.ok(delAnalizador.includes(compartido), `el analizador dejó de usar «${compartido}»`);
+  const direccion = `'${DIRECCION_DE_LA_API}'`;
+  const version = `'${VERSION_DE_LA_API}'`;
+  // La entrada muerta: con la constante única vacía, todo lo de abajo compararía contra nada.
+  assert.match(DIRECCION_DE_LA_API, /^https:\/\/api\.anthropic\.com\//);
+  assert.match(VERSION_DE_LA_API, /^\d{4}-\d{2}-\d{2}$/);
+
+  const COPIAS = [
+    'lib/analizadores/nucleo/anthropic.ts',
+    'lib/auditor/modelo.ts',
+    'lib/fundaciones/conversacion.ts',
+    'lib/fundaciones/generacion.ts',
+    'lib/fundaciones/relleno.ts',
+  ];
+  for (const ruta of COPIAS) {
+    const texto = fuente(ruta);
+    for (const compartido of [direccion, version, "'x-api-key'", "'anthropic-version'", 'pedirExterno']) {
+      assert.ok(texto.includes(compartido), `${ruta} dejó de usar «${compartido}»: su transporte se separó del de los demás`);
+    }
   }
+
+  // El transporte nuevo las IMPORTA: las mismas dos cabeceras, y ninguna copia.
+  const llamada = fuente('lib/agentes/llamada.ts');
+  assert.match(llamada, /from '\.\/proveedor\.ts'/);
+  for (const usado of ['DIRECCION_DE_LA_API', 'VERSION_DE_LA_API', "'x-api-key'", "'anthropic-version'", 'pedirExterno']) {
+    assert.ok(llamada.includes(usado), `el transporte de los agentes dejó de usar «${usado}»`);
+  }
+  for (const literal of [direccion, version]) {
+    assert.ok(!llamada.includes(literal), `el transporte de los agentes copia ${literal} en vez de importarla`);
+  }
+
+  // Y nadie más escribe la dirección: una séptima copia es un transporte que se separa sin que nada lo vea.
+  const conLaDireccion = archivosFuente().filter((a) => a.limpio.includes('api.anthropic.com')).map((a) => a.ruta);
+  assert.deepEqual([...conLaDireccion].sort(), ['lib/agentes/proveedor.ts', ...COPIAS].sort());
+
   for (const a of archivosFuente(['lib/analizadores'])) {
     assert.ok(!/\bfetch\s*\(/.test(a.limpio), `${a.ruta} llama a \`fetch(\` directo`);
   }

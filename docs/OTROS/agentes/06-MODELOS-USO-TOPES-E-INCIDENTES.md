@@ -29,34 +29,49 @@ que ya existen **se quedan donde están**, con su valor.
 | La Reunión de hoy | `claude-sonnet-5-5` | ordenar y redactar no es clasificar |
 | El Brief del closer | `claude-sonnet-5-5` | crear |
 | La categoría de cada objeción | `claude-haiku-4-5-20251001` | clasificar |
-| Copywriter (sólo diseño) | `claude-sonnet-5-5` | crear |
-| Fundaciones, el Espía, el auditor | `claude-sonnet-5`, sin cambio | se evalúan después (`D-15`) |
+| Copywriter (sólo diseño) | `claude-sonnet-5-5`; su constante entra a `lib/agentes/modelos.ts` cuando se construya | crear |
+| Fundaciones, el Espía, el auditor | `claude-sonnet-5`, sin cambio | se evalúan después (`D-15`). Pasar a `claude-sonnet-5-5` exige quitar el `tool_choice` forzado del entrevistador, del relleno y del auditor; la 199 lo vigila |
 | Los Analizadores | `claude-sonnet-5` y el alias `claude-haiku-4-5`, sin cambio | ídem |
 
 ## AG-91 · La lista de modelos válidos
 
-`pruebas/codigo/90-fundaciones.test.ts:638-643` fija los identificadores aceptados; suma
-`claude-sonnet-5-5` (`claude-haiku-4-5-20251001` ya está). Una prueba nueva exige que **cada constante de
+`pruebas/apoyo/modelos-validos.ts:19-26` fija los identificadores aceptados —la usan la 90 y la 199— y suma
+`claude-sonnet-5-5` (`claude-haiku-4-5-20251001` ya estaba). La 199 exige que **cada constante de
 `lib/agentes/modelos.ts`** esté en esa lista: un identificador mal escrito no falla en ninguna prueba con
 `fetch` falseado, falla en producción con `IA-MODELO` en todas las preguntas.
 
 ## AG-92 · Antes de la primera llamada real
 
 Se comprueba, **con el OK del usuario**, que la llave de la organización principal alcanza
-`claude-sonnet-5-5`: un `GET /v1/models/claude-sonnet-5-5` por `pedirExterno`, sin tokens. Nunca con la
-llave de un cliente.
+`claude-sonnet-5-5`: un `GET /v1/models/claude-sonnet-5-5` por `pedirExterno`, sin tokens. Con el mismo OK,
+un `POST /v1/messages/count_tokens` (no genera) confirma que esta cuenta rechaza el `tool_choice` forzado con
+ese modelo, como dice la referencia de la API. Nunca con la llave de un cliente.
 
 ## AG-93 · El transporte
 
 `lib/agentes/llamada.ts`, sobre `pedirExterno`:
 
-- **la dirección y la versión de la API vienen de un solo lugar**: hoy cada módulo las repite y una prueba
-  afirma que coinciden (`lib/auditor/modelo.ts:18`); el transporte nuevo las importa, no las copia;
-- **un reintento**, sólo si el fallo es pasajero (`esPasajero`, `lib/fundaciones/fallo-del-modelo.ts:166`) y
-  llegó temprano; si el reintento sale bien, igual queda el incidente marcado `salvado`, como en `generar`;
-- clasifica el fallo, registra el uso y, si falla, el incidente;
-- la salida estructurada, con una herramienta forzada, que es la forma de la casa;
-- `cache_control` en las instrucciones y en las definiciones de herramientas.
+- **la dirección y la versión de la API vienen de un solo lugar**, `lib/agentes/proveedor.ts:19-22`: el
+  transporte las importa, y las cinco copias de los módulos que ya existían las ata la 171;
+- **un reintento**, sólo si el fallo es pasajero (`esPasajero`, `lib/fundaciones/fallo-del-modelo.ts:182`) y
+  llegó temprano —dentro de 90 s y de la mitad de lo que deja la pausa—, con lo que QUEDA del tope; si el
+  reintento sale bien, igual queda el incidente marcado `salvado`, como en `generar`;
+- sin tiempo antes de empezar es `IA-TIEMPO`, y una llave que no puede ir en una cabecera es `IA-LLAVE`, los
+  dos sin pedido; la espera se recorta a un entero;
+- truncada es tanto la respuesta que llegó al techo (`max_tokens`) como la que llenó la ventana de contexto
+  (`model_context_window_exceeded`): las dos se dicen antes de leer;
+- clasifica el fallo, registra el uso y, si falla, el incidente. Una tarea del cron pide
+  `los_agrega_quien_llama`: el transporte no escribe el incidente y la tarea los agrega por corrida (`AG-98`);
+- **la salida estructurada nunca con una herramienta forzada**: `claude-sonnet-5-5` rechaza `tool_choice`
+  `tool` o `any` con un 400. Va por `output_config.format` (un JSON Schema) o por herramientas con
+  `strict: true` que el prompt pide usar; `tool_choice` sólo viaja como `auto` o `none`. El modo estricto no admite
+  `minimum`/`maximum`, `minLength`/`maxLength` ni restricciones complejas de arreglos;
+- no se manda `thinking`: `claude-sonnet-5-5` piensa por omisión y el techo cubre pensamiento y texto. La
+  profundidad se gobierna con `esfuerzo` (`output_config.effort`), que el transporte no le manda a Haiku 4.5
+  aunque se lo pidan (lo rechaza con un 400);
+- `cache_control` en las instrucciones y en la última herramienta, de 5 minutos; opcionalmente, también en la
+  cola de la conversación. La vida de una hora no necesita cabecera beta y se decide con los contadores de
+  `negocio.uso_de_ia` (AG7).
 
 ## AG-94 · `negocio.uso_de_ia`, una fila por llamada
 
@@ -67,6 +82,11 @@ Migración `069`. Columnas: `org_id`, `id`, `creado_el`, `agente` (de un juego c
 `tokens_lectura_cache`), `duracion_ms`, `resultado` (`ok` o la situación `IA-*`), `usuario_id` (nulo en el
 cron; `on delete set null`, como la `068`) y `ref` (el hilo, el análisis o la referencia del incidente).
 **Ningún texto.**
+
+- **Una fila por llamada, no por intento**: el primer intento de un reintento es un rechazo o una respuesta
+  que no llegó, y nunca trae `usage`.
+- **Los contadores son nulos cuando el proveedor no contestó**; cuando contestó y la respuesta no sirvió
+  (truncada, declinada, sin estructura) llevan sus valores, con 0 en el contador que faltó: se pagó.
 
 - El único escritor es `registrarUso` (`lib/agentes/uso.ts`), que **nunca lanza**: un fallo al registrar el
   uso no puede tumbar la respuesta que ya se pagó.
@@ -107,7 +127,8 @@ con autor nulo (`05`, `AG-82`).
 - **Todo fallo de un agente** pasa por `clasificarFallo` y queda en `negocio.incidentes` (`D-30`). En AG2 se
   suman el auditor y los Analizadores, que hoy no registran.
 - **Agregados por corrida y situación** en las tareas del cron: el auditor corre cada 10 minutos con hasta
-  20 inferencias, y un proveedor caído no puede llenar el panel con una fila por conversación.
+  20 inferencias, y un proveedor caído no puede llenar el panel con una fila por conversación. Los agentes
+  nuevos que corren en el cron llaman al transporte con `los_agrega_quien_llama` (`AG-93`).
 - Las situaciones `IA-*` que ya existen alcanzan; el `check` de la tabla admite cualquier `IA-…`
   (`db/migraciones/067_los_incidentes.sql`). El `origen` suma `executive`, `plan`, `reunion`, `brief`,
   `objeciones`, `auditor` y `analizador`.
@@ -122,6 +143,10 @@ la del analizador, el de la clasificación de objeciones.
 ## Lo que no se pudo verificar
 
 - La tarifa de `claude-sonnet-5-5`. Hasta confirmarla contra la factura, el costo es `null`.
+- Que esta cuenta rechace el `tool_choice` forzado con `claude-sonnet-5-5`: lo dice la referencia de la API, no
+  está medido. Se confirma con `count_tokens` y el OK del usuario (`AG-92`).
+- Desde qué tamaño se cachean las instrucciones de cada modelo: un prefijo corto no se cachea y no falla. Se
+  mide en AG7 con los contadores de caché de `negocio.uso_de_ia`.
 
 ## Preguntas abiertas
 

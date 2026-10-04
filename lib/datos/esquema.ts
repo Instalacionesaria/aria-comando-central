@@ -1533,7 +1533,32 @@ export interface TablaFundacionesMensajes {
   creado_el: Generated<Date>;
 }
 
-/** Las diez tablas de identidad, la vista de permisos efectivos, y las de negocio. */
+/**
+ * Lo que consume cada llamada al modelo de IA: una fila por llamada, sin una palabra del prompt ni de
+ * la respuesta. Migración 069. El único escritor es `registrarUso` (`lib/agentes/uso.ts`).
+ *
+ * Los cuatro contadores son `null` cuando el proveedor no contestó: no se sabe qué consumió, y un cero
+ * diría que nada.
+ */
+export interface TablaUsoDeIa {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  creado_el: Generated<Date>;
+  /** Uno del juego cerrado de la `069`: `AGENTES_DE_USO` en `lib/agentes/uso.ts`. */
+  agente: string;
+  modelo: string;
+  tokens_entrada: number | null;
+  tokens_salida: number | null;
+  tokens_escritura_cache: number | null;
+  tokens_lectura_cache: number | null;
+  duracion_ms: number;
+  /** `ok`, o la situación `IA-*` del fallo. Ver `SituacionDelModelo`. */
+  resultado: string;
+  usuario_id: string | null;
+  ref: string | null;
+}
+
+/** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
   organizaciones: TablaOrganizaciones;
@@ -1589,6 +1614,7 @@ export interface BaseDeDatos {
   analizador_analisis: TablaAnalizadorAnalisis;
   analizador_fichas: TablaAnalizadorFichas;
   analizador_lapidas: TablaAnalizadorLapidas;
+  uso_de_ia: TablaUsoDeIa;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

@@ -139,7 +139,7 @@ function joinText(data: AnthropicResponse): string {
 }
 
 /** Un contador ausente es un cero de ESE contador, no un análisis gratis: el total lo decide la tarifa. */
-function usageOf(data: AnthropicResponse): TokenUsage {
+export function usageOf(data: AnthropicResponse): TokenUsage {
   const u = data.usage ?? {};
   const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
   return {

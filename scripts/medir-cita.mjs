@@ -28,7 +28,7 @@
 // nada, ni en el CRM ni en la base.
 //
 // **Y la petición va por `pedirExterno`**, como todo el resto del proyecto. No es prolijidad: el
-// `ADR-0305` afirma que `fetch(` aparece en **exactamente dos** archivos, y `30-portero` lo
+// `ADR-0305` afirma que `fetch(` aparece en **exactamente tres** archivos, y `30-portero` lo
 // comprueba. Un guion de medición con su propio `fetch` parece inofensivo —corre a mano, contra la
 // API del proveedor, sin pantalla que llenar— y ése es justamente el argumento con el que la lista
 // de excepciones crece hasta que nadie sabe cuántos clientes HTTP hay. El cable trampa saltó acá y

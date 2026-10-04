@@ -618,7 +618,7 @@ test('los cuatro entregables largos llevan el presupuesto amplio', () => {
   }
 });
 
-test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', () => {
+test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', async () => {
   /* ── FIJABA UN SOLO IDENTIFICADOR, Y EL COMENTARIO SE EQUIVOCABA ────────────
    *
    * Pedía `claude-sonnet-4-6` «porque es el que usa ARIA-brain». Fijar UNO es el defecto real: la
@@ -633,14 +633,14 @@ test('el modelo es uno de los identificadores VÁLIDOS de Anthropic', () => {
    * Queda escrito porque el error de razonamiento se repite solo: **«falla, entonces el valor es
    * inválido» no es una medición.**
    *
-   * La lista de abajo no dice «los únicos que existen»: dice «los que este proyecto acepta usar».
-   * Un valor inventado no pasa, y cambiar de modelo por un motivo real sigue siendo una línea. */
-  const VALIDOS = [
-    'claude-opus-5',
-    'claude-sonnet-5',
-    'claude-fable-5',
-    'claude-haiku-4-5-20251001',
-  ];
+   * La lista no dice «los únicos que existen»: dice «los que este proyecto acepta usar». Un valor
+   * inventado no pasa, y cambiar de modelo por un motivo real sigue siendo una línea, allá. */
+  /* Vive en `pruebas/apoyo/modelos-validos.ts` desde AG1: la 199 exige que cada modelo de
+     `lib/agentes/modelos.ts` esté en ESTA misma lista, y una prueba no puede importar a otra. Se
+     importa acá adentro, en las seis líneas de la lista de antes, porque los documentos citan líneas
+     de más abajo de este archivo y la 101 no ve una cita que se corrió y sigue en rango. */
+  const { MODELOS_VALIDOS } = await import('../apoyo/modelos-validos.ts');
+  const VALIDOS: readonly string[] = MODELOS_VALIDOS;
   assert.ok(
     VALIDOS.includes(MODELO),
     `«${MODELO}» no es un identificador de modelo válido, así que TODA generación va a fallar con 404 ` +

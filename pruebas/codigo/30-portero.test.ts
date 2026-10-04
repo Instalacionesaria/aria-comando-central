@@ -576,7 +576,7 @@ test('ADR-0305 · un solo archivo hace peticiones HTTP', () => {
   ).filter((r) => !EXCEPTUADOS.includes(r));
   assert.deepEqual(clientes, [], 'todas las peticiones pasan por `pedir(` de lib/http/cliente.ts');
 
-  // La comprobación de entrada muerta: los dos exceptuados SÍ hacen la petición.
+  // La comprobación de entrada muerta: los tres exceptuados SÍ hacen la petición.
   assert.deepEqual([...archivosQueContienen(/\bfetch\s*\(/)].sort(), [...EXCEPTUADOS].sort());
 
   // Y el aviso NO lee el cuerpo de la respuesta, que es lo que lo mantiene fuera del alcance de
