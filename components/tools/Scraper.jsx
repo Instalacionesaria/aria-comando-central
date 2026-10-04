@@ -101,7 +101,7 @@ function useTrabajo(fuente, textos = {}) {
       }
       if (d.status === 'FAILED' || d.status === 'CANCELLED') {
         setFase('error');
-        setMensaje(d.status === 'FAILED' ? 'El scraping falló. Intentá de nuevo.' : 'El scraping fue cancelado.');
+        setMensaje(d.status === 'FAILED' ? 'El scraping falló. Inténtalo de nuevo.' : 'El scraping fue cancelado.');
         return;
       }
       temporizador.current = setTimeout(tic, 5000);
@@ -241,7 +241,7 @@ function FormularioMaps({ nicho, onLeads }) {
 
   const correr = () => {
     if (!tipoDeNegocio.trim() || !localizacion.trim()) {
-      t.setFase('error'); t.setMensaje('Completá el tipo de negocio y la localización.');
+      t.setFase('error'); t.setMensaje('Completa el tipo de negocio y la localización.');
       return;
     }
     /* Las tres partes de la localización son la validación que más plata ahorra: "Perú" a secas
@@ -278,7 +278,7 @@ function FormularioMaps({ nicho, onLeads }) {
           <label htmlFor="sc-loc">Localización</label>
           <input id="sc-loc" value={localizacion} placeholder="Ej: Cayma, Arequipa, Perú"
                  onChange={(e) => setLocalizacion(e.target.value)} />
-          <p className="sc-pista">⚠ Mínimo 3 partes separadas por coma (distrito, ciudad, país). Evitá zonas demasiado amplias.</p>
+          <p className="sc-pista">⚠ Mínimo 3 partes separadas por coma (distrito, ciudad, país). Evita zonas demasiado amplias.</p>
         </div>
       </div>
       <div className="sc-rejilla">
@@ -526,7 +526,7 @@ function FormularioFacebook({ onLeads }) {
   const sacarContactos = () => {
     if (marcados.length === 0) {
       paginas.setFase('error');
-      paginas.setMensaje('Elegí al menos un anunciante con página para sacarle los contactos.');
+      paginas.setMensaje('Elige al menos un anunciante con página para sacarle los contactos.');
       return;
     }
     paginas.arrancar('facebook-pages', {
@@ -540,10 +540,10 @@ function FormularioFacebook({ onLeads }) {
 
   return (
     <div className="sc-form">
-      <div className="sc-paso-titulo">1 · Elegí una búsqueda del Espía</div>
+      <div className="sc-paso-titulo">1 · Elige una búsqueda del Espía</div>
       <div className="sc-paso">
         {busquedas === null ? (
-          <div className="sc-puente">No se pudieron leer las búsquedas del Espía. Probá de nuevo en un momento.</div>
+          <div className="sc-puente">No se pudieron leer las búsquedas del Espía. Prueba de nuevo en un momento.</div>
         ) : (busquedas ?? []).some((b) => b.status === 'COMPLETED' && (b.anuncios ?? 0) > 0) ? (
           <>
             <input
@@ -588,9 +588,9 @@ function FormularioFacebook({ onLeads }) {
         )}
         <Aviso fase={porNicho.fase} mensaje={porNicho.mensaje} />
         <div className="sc-subpista">
-          ¿No está la que buscás?{' '}
+          ¿No está la que buscas?{' '}
           <button type="button" className="sc-enlace" onClick={() => irALaVista('tools', { pestana: 'espia' })}>
-            Espiá una nueva en «Espía a tus competidores» →
+            Espía una nueva en «Espía a tus competidores» →
           </button>{' '}
           Para sacar contactos conviene la de 1.000 anuncios: trae más anunciantes.
         </div>
@@ -600,7 +600,7 @@ function FormularioFacebook({ onLeads }) {
       <div className="sc-paso">
         {anunciantes.length === 0 ? (
           <div className="sc-puente">
-            Primero elegí una búsqueda arriba.
+            Primero elige una búsqueda arriba.
           </div>
         ) : (
           <>

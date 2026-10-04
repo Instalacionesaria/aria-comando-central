@@ -71,7 +71,7 @@ export function BuscadorDeAnuncios({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !ocupado) onBuscar();
         }}
-        placeholder="Buscá por nicho, marca o página… (ej: agencias de marketing IA)"
+        placeholder="Busca por nicho, marca o página… (ej: agencias de marketing IA)"
       />
       {onCantidad ? (
         <select

@@ -375,7 +375,7 @@ export default function MisLeads() {
 
         {marcados.size === 0 ? (
           <p className="lp-pista">
-            Marcá los leads que querés subir con las casillas de la izquierda.
+            Marca los leads que quieres subir con las casillas de la izquierda.
           </p>
         ) : null}
 

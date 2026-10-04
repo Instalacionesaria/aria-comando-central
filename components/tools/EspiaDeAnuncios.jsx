@@ -115,7 +115,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
       if (d.status === 'FAILED' || d.status === 'CANCELLED') {
         setFase('error');
         setMensaje(
-          d.status === 'FAILED' ? 'La búsqueda falló. Intentá de nuevo.' : 'La búsqueda fue cancelada.',
+          d.status === 'FAILED' ? 'La búsqueda falló. Inténtalo de nuevo.' : 'La búsqueda fue cancelada.',
         );
         return;
       }
@@ -179,7 +179,7 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
     const texto = consulta.trim();
     if (!texto) {
       setFase('error');
-      setMensaje('Escribí un nicho, marca o página a espiar.');
+      setMensaje('Escribe un nicho, marca o página a espiar.');
       return;
     }
     setFase('arrancando');
@@ -218,8 +218,8 @@ export default function EspiaDeAnuncios({ puedeEditar }) {
       <div className="fd-cab">
         <h3>Espía a tus competidores</h3>
         <span className="fd-bajada">
-          Espiá la Meta Ad Library de tu competencia por nicho, marca o página. Detectá qué hooks,
-          ofertas y ángulos llevan más tiempo corriendo — señal de que convierten — y extraé los
+          Espía la Meta Ad Library de tu competencia por nicho, marca o página. Detecta qué hooks,
+          ofertas y ángulos llevan más tiempo corriendo — señal de que convierten — y extrae los
           patrones con IA.
         </span>
       </div>

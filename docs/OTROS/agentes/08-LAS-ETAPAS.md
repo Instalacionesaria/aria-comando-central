@@ -126,14 +126,23 @@
   `09-DEUDA-ABIERTA.md`; en esta carpeta, `00-MAPA`, `01`, `05`, `06` y las fichas F01, F02, F05, F08 y F11.
 - **Hito H1**: aplicar la `069` y la `070` a producción, push con OK.
 
-## AG3 · La voz
+## AG3 · La voz — **hecha el 2026-10-04 sin Fundaciones**
 
-- **Qué**: los textos de pantalla del Espía a tú neutro (por ejemplo «Escribí un nicho…» en
-  `components/tools/EspiaDeAnuncios.jsx:182`); su prompt ya tutea. **Fundaciones lo hace la rama
-  `feature/icp-oferta-v2`** (prompt, textos, `VERSION_DEL_AGENTE` 3 y su prueba «un solo tono»): esta etapa
-  sólo cubre lo que esa rama no toque, después de integrarla.
-- **Pruebas nuevas**: 202, el Espía no vosea (mutación: devolver «Escribí»). Si la rama trae su lista de
-  formas de voseo, se reusa.
+- **Qué se hizo**: todo Tools pasó a tú neutro, no sólo el Espía: también el Scraper, Mis leads, el saldo de
+  leads y el plan de prospección (`components/tools/`) y el aviso de la ruta que envía leads
+  (`app/api/tools/leads/enviar/route.ts`). Eran veintitrés textos, del estilo de «Escribí un nicho…»,
+  «Intentá de nuevo» o «Elegí una búsqueda del Espía». El prompt del Espía ya tuteaba. Se adelantó a la
+  integración de la rama porque la rama no toca ningún archivo de Tools.
+- **Fundaciones lo hace la rama `feature/icp-oferta-v2`** (prompt, textos, `VERSION_DEL_AGENTE` 3 y su prueba
+  185, «un solo tono»): después de integrarla, esta etapa sólo cubre lo que la rama no haya tocado.
+- **La lista de voseo** de la 185 de la rama se mudó a `pruebas/apoyo/voseo.ts`, con las formas que tenía
+  Tools sumadas. Al integrar la rama, la 185 puede importarla en vez de llevar su copia.
+- **Pruebas que cambian**: la 139 afirma «Habla con tu coach» en vez de «Hablá». La rama cambia otra línea
+  de la misma prueba (la 93), así que no se pisan.
+- **Pruebas nuevas**: 202, Tools no vosea —los componentes, `lib/tools/` y las rutas de `app/api/tools/`, sin
+  comentarios, y el prompt del Espía—, con una comprobación de que la lista atrapa las formas que había.
+- **Mutaciones, las cuatro vistas en rojo**: devolver «Escribí» al Espía; un «Elegí» en el Scraper; el prompt
+  del Espía con «Extraé»; la ruta de enviar con «Recargá».
 - **Fuera**: el auditor y los Analizadores (`D-26`: cuando se evalúen).
 
 ## AG4 · La base sembrada y el guion de evaluación

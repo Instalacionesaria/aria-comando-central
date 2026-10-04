@@ -131,7 +131,7 @@ export async function POST(peticion: Request): Promise<Response> {
   if (leads.length !== ids.length) {
     return rechazo(
       'peticion_invalida',
-      `Seleccionaste ${ids.length} leads y sólo ${leads.length} siguen disponibles. Recargá la lista.`,
+      `Seleccionaste ${ids.length} leads y sólo ${leads.length} siguen disponibles. Recarga la lista.`,
     );
   }
 

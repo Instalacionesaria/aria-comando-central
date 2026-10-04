@@ -82,7 +82,7 @@ test('la franja vive arriba de las dos pestañas que gastan saldo, y la confirma
   assert.match(franja, /de regalo/);
   assert.match(franja, /usados/);
   assert.match(franja, /comprados/);
-  assert.match(franja, /Se acabaron los créditos de regalo\. Hablá con tu coach para cargar más\./);
+  assert.match(franja, /Se acabaron los créditos de regalo\. Habla con tu coach para cargar más\./);
   assert.match(franja, /Una búsqueda de Google Maps necesita al menos \{MINIMO_LEADS_MAPS\} créditos\./);
   assert.match(franja, /¿Cómo se descuentan\?/);
   // La casa no ve franja: su saldo no se mira.

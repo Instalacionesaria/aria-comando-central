@@ -66,7 +66,7 @@ export default function SaldoDeLeads() {
           <span className="p"><b>{num(s.comprados)}</b> comprados</span>
         </div>
         {s.estado === 'agotado' ? (
-          <span className="sl-aviso">Se acabaron los créditos de regalo. Hablá con tu coach para cargar más.</span>
+          <span className="sl-aviso">Se acabaron los créditos de regalo. Habla con tu coach para cargar más.</span>
         ) : s.estado === 'bajo' ? (
           <span className="sl-aviso">Una búsqueda de Google Maps necesita al menos {MINIMO_LEADS_MAPS} créditos.</span>
         ) : (

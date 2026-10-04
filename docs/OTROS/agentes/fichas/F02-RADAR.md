@@ -7,7 +7,7 @@
 |---|---|
 | Tipo | CREA (el Espía); el Scraper no usa modelo |
 | Lugar en el front | Research › Radar › Espía a tus competidores y Scraper; Sales › Leads › De Radar |
-| Estado | **Existe.** Registra el uso del Espía desde AG2 y tú neutro en sus textos (AG3). «Enviar hallazgos a Copywriter»: **sólo diseño** |
+| Estado | **Existe.** Registra el uso del Espía desde AG2 y tutea en todos sus textos desde AG3. «Enviar hallazgos a Copywriter»: **sólo diseño** |
 | Modelo | `claude-sonnet-5`, sin cambio |
 | Permisos | `tools.ver` para leer; `tools.editar` para analizar (gasta tokens) y para scrapear (gasta saldo) |
 | Código | `lib/tools/espia.ts`, `lib/tools/historial-del-espia.ts`, `lib/tools/del-espia-al-scraper.ts` |

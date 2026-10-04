@@ -187,7 +187,7 @@ export default function PanelProspeccion({
             </select>
           </div>
           <p className="pr-nota">
-            Estos definen el canal y el tono del Plan de Prospección que generás abajo.
+            Estos definen el canal y el tono del Plan de Prospección que generas abajo.
           </p>
         </div>
       </div>
@@ -205,11 +205,11 @@ export default function PanelProspeccion({
       <div className="pr-zona-plan">
         {/* El orden recomendado, no un requisito: se puede generar el plan sin scrapear. */}
         <div className="pr-flujo">
-          <span className={`pr-paso${leads.length > 0 ? ' hecho' : ''}`}>1 · Scrapeá los leads</span>
+          <span className={`pr-paso${leads.length > 0 ? ' hecho' : ''}`}>1 · Scrapea los leads</span>
           <span className="pr-flecha">→</span>
-          <span className="pr-paso espera">2 · Esperá a que termine</span>
+          <span className="pr-paso espera">2 · Espera a que termine</span>
           <span className="pr-flecha">→</span>
-          <span className="pr-paso sigue">3 · Generá el plan</span>
+          <span className="pr-paso sigue">3 · Genera el plan</span>
         </div>
 
         {puedeEditar ? (
@@ -226,7 +226,7 @@ export default function PanelProspeccion({
         ) : null}
 
         <p className="pr-nota-plan">
-          Scrapeá tus leads arriba, después generá el plan de ataque con tu contexto heredado,
+          Scrapea tus leads arriba, después genera el plan de ataque con tu contexto heredado,
           canal y tono.
         </p>
       </div>

@@ -35,7 +35,7 @@ export default function VistaDelScraper({ puedeEditar }) {
       <div className="fd-cab">
         <h3>Scraper</h3>
         <span className="fd-bajada">
-          Extraé leads de Google Maps, Facebook y LinkedIn. Lo que traen las corridas queda también en{' '}
+          Extrae leads de Google Maps, Facebook y LinkedIn. Lo que traen las corridas queda también en{' '}
           {LOS_LEADS}.
         </span>
       </div>
