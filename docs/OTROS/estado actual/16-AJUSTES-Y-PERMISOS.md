@@ -445,7 +445,7 @@ se leyó lo que afirman.
 | `ADR-0304` | El `GET` pide la capacidad de su sección (desde `c109ebd`); las operaciones de una pantalla piden el mismo conjunto; lo que modifica no se conforma con una de lectura | `pruebas/codigo/30-portero.test.ts:280`, `:350`, `:461` |
 | `ADR-0305` · `ADR-0306` | Un solo cliente HTTP que distingue rechazo de vacío; el origen se verifica en todo lo que modifica | `pruebas/codigo/30-portero.test.ts:542`, `:594`, `:622` |
 | Listas sin entradas muertas | Rutas públicas, excepciones de capacidad y `SIN_PANTALLA` | `pruebas/codigo/30-portero.test.ts:644`, `:675`, `:713` |
-| El cable trampa literal | `SIN_OPERACIONES_TODAVIA` tiene largo **1**: el día que Executive tenga una ruta, `ADR-0303` falla hasta bajarle la bandera, y bajarla rompe este número | `pruebas/codigo/90-fundaciones.test.ts:1191`, `pruebas/codigo/30-portero.test.ts:325` |
+| El cable trampa literal | `SIN_OPERACIONES_TODAVIA` tiene largo **1**: el día que Executive tenga una ruta, `ADR-0303` falla hasta bajarle la bandera, y bajarla rompe este número | `pruebas/codigo/90-fundaciones.test.ts:1263`, `pruebas/codigo/30-portero.test.ts:325` |
 | Closer y Setter separados | Con `closer.ver` a secas se ve sólo Closer, y al revés | `pruebas/codigo/90-fundaciones.test.ts:1194` |
 | El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:293`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
 | La delegación | Sólo la plataforma otorga roles que administran personas | `pruebas/codigo/144-delegacion-de-roles.test.ts:64` |

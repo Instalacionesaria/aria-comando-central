@@ -646,6 +646,12 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   un informe OB empiezan por los datos del cliente, y la lista lo dibuja
   (`components/analizadores/PanelDeAnalizadores.jsx:392`). Toda medición SQL que lea `error` lee
   datos personales.
+- **Agregado el 2026-10-04, al planificar los agentes** (`docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`,
+  `AG-86`): **no hay un acuerdo de tratamiento de datos con los clientes** sobre mandar datos de sus leads
+  a un proveedor de IA. Ya viajan hoy la conversación del lead (el auditor) y la transcripción de la
+  llamada (los Analizadores); el plan de los agentes suma el Brief del closer, el único agente que manda
+  los datos de una persona. Lo ve el equipo. El error de 200 caracteres de arriba se cierra en la etapa
+  AG2 de ese plan.
 
 ---
 

@@ -263,7 +263,7 @@ Hecho en LP-6, fila por fila:
 
 **Y lo que no es de LP-6 y fue antes, en el commit de la ruta (LP-4):** la bandera
 `sinOperacionesTodavia` de `lib/autorizacion/secciones.ts:225` bajó, y el conteo literal de
-`pruebas/codigo/90-fundaciones.test.ts:1191` pasó de 2 a 1. `30-portero` la verifica en las dos
+`pruebas/codigo/90-fundaciones.test.ts:1263` pasó de 2 a 1. `30-portero` la verifica en las dos
 direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92-94`).
 
 ### LP10-11 · Lo que LP-6 NO borra, y por qué

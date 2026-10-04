@@ -59,7 +59,7 @@ const AUDITADAS = [
   'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
   'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', // ver «LA NUEVA ESTRUCTURA», al final
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', // ver «LA NUEVA ESTRUCTURA» y «LOS AGENTES», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
@@ -230,3 +230,8 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
    las audita, y es a propósito: valen para ese commit, que es donde hay que leerlas
    (`git show c4cf2a8:lib/aios/executive.js`). Lo comprobó la etapa 6 borrando los nueve archivos con
    las citas fijadas, y la prueba quedó verde; dejando una sola sin fijar, en rojo. */
+
+/* ── LOS AGENTES (2026-10-04) ─────────────────────────────────────────────────
+   `docs/OTROS/agentes/` entró el día que nació, por lo mismo que la nueva estructura: es el plan de los
+   agentes de IA, cada etapa va a mover el código que cita, y una carpeta nueva no trae deuda. La entrada
+   va en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */

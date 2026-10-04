@@ -32,7 +32,7 @@ embudo o su cajón— ya miden, y la contradicen.
 >   (09-20), Sales `c109ebd` (09-21; su maqueta se fue el mismo día, en `1c875ac`) y Leads Portal
 >   `3c361a1` (09-26). La lista derivada
 >   tiene hoy una sola clave (`lib/autorizacion/secciones.ts:225`,
->   `pruebas/codigo/90-fundaciones.test.ts:1191`).
+>   `pruebas/codigo/90-fundaciones.test.ts:1263`).
 > - **El cierre de los overlays** pasó de `creative.js` al armazón en `332c0e6` (09-19), y
 >   `executive-panel.js` dejó de sintetizar un clic sobre el botón de cierre en `0add4cc`
 >   (`lib/aios/executive-panel.js:69-78@c4cf2a8`).
@@ -400,14 +400,14 @@ tienen una forma común.
 ### Lo que haría falta para que baje la bandera
 
 El mecanismo es corto y va en un solo commit, como las siete veces anteriores que disparó el cable
-(`pruebas/codigo/90-fundaciones.test.ts:1181-1183`):
+(`pruebas/codigo/90-fundaciones.test.ts:1224-1263`):
 
 1. **Una ruta** con `export const PANTALLA = 'executive'` cuyo `GET` pida exactamente
    `tablero.ver` (`pruebas/codigo/30-portero.test.ts:280-323`).
-2. **Borrar la bandera** en `lib/autorizacion/secciones.ts:216`. Con la ruta y la bandera a la vez,
+2. **Borrar la bandera** en `lib/autorizacion/secciones.ts:219`. Con la ruta y la bandera a la vez,
    `30-portero` falla por dos lados (`pruebas/codigo/30-portero.test.ts:325-348`,
    `pruebas/codigo/30-portero.test.ts:441-452`).
-3. **Bajar el conteo literal a cero** (`pruebas/codigo/90-fundaciones.test.ts:1191`). Y decidir qué
+3. **Bajar el conteo literal a cero** (`pruebas/codigo/90-fundaciones.test.ts:1263`). Y decidir qué
    pasa con el cable trampa: con la lista vacía, la prueba de `ADR-0303` que la mira pasa sin mirar
    nada. Pero una sección nueva que nazca sin operaciones —como nació `tools`
    (`lib/autorizacion/secciones.ts:388-392`)— necesita la bandera para no dar rojo, así que

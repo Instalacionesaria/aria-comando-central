@@ -802,7 +802,7 @@ prueba `ADR-0304` que empieza en `pruebas/codigo/30-portero.test.ts:350` da rojo
 direcciones —una sección con la bandera que sí tiene ruta (`pruebas/codigo/30-portero.test.ts:442-452`),
 o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:454-457`)—; `ADR-0303` (`:325`)
 vigila además que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y el
-conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1191` obliga a decidir en vez de derivar.
+conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1263` obliga a decidir en vez de derivar.
 Por eso la ruta, la bandera y el conteo van juntos: Sales los movió de 3 a 2 en `c109ebd` y Leads
 Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`), con una prueba de base por
 pantalla que lo exige (`pruebas/base/166-la-ruta-de-sales.test.ts:82`,

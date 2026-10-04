@@ -4,6 +4,12 @@
 > **deshabilitada**, con una línea que dice que el cerebro llega en una próxima etapa
 > (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-29`). Este archivo dice qué hace falta para
 > encenderla.
+>
+> **Desde el 2026-10-04 lo planifica `docs/OTROS/agentes/`** (`03-EL-CEREBRO.md` y
+> `fichas/F00-EL-CEREBRO.md`), con las decisiones del usuario. Las dos que este archivo dejaba abiertas
+> quedaron cerradas: paga **la llave de cada empresa** (`D-02`) y la primera versión **lee, navega y
+> recomienda**, sin actuar (`D-03`). Y una cambió: la evidencia va **dentro de la respuesta**, como un
+> desplegable, no en un panel a la derecha (`D-28`). Lo de abajo queda como estaba escrito ese día.
 
 ## Qué es
 

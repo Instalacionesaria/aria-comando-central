@@ -6,6 +6,12 @@
 > por qué falta y cómo volverían**, para que quien lo retome no tenga que reconstruirlo.
 > Los requisitos ya están escritos: `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md` (`A6-`) y el
 > § A11-05 de `docs/acquisition/11-LOS-SEIS-COMPONENTES.md`. Acá no se repiten; se ordenan.
+>
+> **Desde el 2026-10-04 lo planifica `docs/OTROS/agentes/`**: Acquisition es el piloto de los detectores
+> (`fichas/F03-ACQUISITION.md`), sobre una tabla común de señales (`02-EL-CONTRATO-DE-SENALES.md`).
+> Tres cosas de este archivo dejaron de ser ciertas y están marcadas abajo: el modal ya no existe, los
+> umbrales se publican provisionales y se firman después, y las dos preguntas nuevas del § 5 tienen
+> respuesta.
 
 ---
 
@@ -28,14 +34,16 @@ Las dos salían de texto fijo. Ninguna se calculaba.
    `confidence` y `possible_causes`. No existe la tabla ni el par `entity_type`/`entity_id`.
 
 **Mientras tanto la pantalla no las finge:** no se dibuja el botón ni la tarjeta. El marcado del modal
-sigue montado en `components/Overlays.jsx`, sin nadie que lo abra.
+seguía montado en `components/Overlays.jsx`, sin nadie que lo abra. *Desde el 2026-10-01 ya no: el
+archivo se borró con los paneles del prototipo, y la prueba 156 prohíbe sus ids.*
 
 ## 3 · Lo que ya está listo para cuando vuelvan
 
 - **Los números sobre los que razonarían:** `lib/negocio/embudosDeAcquisition.ts` (AQ-3 del 14), con la
   ventana actual, la anterior y los pisos. Un agente no tendría que volver a calcular nada: lee eso.
 - **El modal:** `recoModal`, con su cierre por velo, ✕ y Escape (`lib/aios/shell.js`), vigilado por
-  `pruebas/codigo/156-cierre-de-los-overlays.test.ts`.
+  `pruebas/codigo/156-cierre-de-los-overlays.test.ts`. *Ya no existe (2026-10-01): el plan se abre con
+  `components/Ventana.jsx` e ids nuevos (`docs/OTROS/agentes/03-EL-CEREBRO.md`, `AG-57`).*
 - **Las reglas de forma**, ya escritas en `06`:
   - cada señal viaja con el conteo sobre el que se calculó (A6-01);
   - bajo diez casos, se cuenta y no se publica (A6-02);
@@ -53,7 +61,8 @@ sigue montado en `components/Overlays.jsx`, sin nadie que lo abra.
 2. **El agente detecta; no decide.** Escribe `recommended_review`, no `recommended_action`. El § 18.1 le
    prohíbe a Acquisition concluir qué campaña «sirve», y el agente hereda esa prohibición.
 3. **Los umbrales los aprueba una persona** antes de que el agente publique. Cada umbral queda escrito
-   con quién lo decidió y cuándo.
+   con quién lo decidió y cuándo. *Cambió el 2026-10-04 (`D-11`): se publican desde el primer día como
+   provisionales, marcados, y el Admin de cada empresa los firma después, con quién y cuándo.*
 4. **El front** vuelve a poner el botón y la tarjeta en su lugar del prototipo:
    - el botón «Plan de acción» en `ch-r`;
    - la tarjeta al final, con `sig`, `si`, `st-t`, `st-d` y `ev`, reglas que siguen en `app/aios.css`;
@@ -65,4 +74,6 @@ sigue montado en `components/Overlays.jsx`, sin nadie que lo abra.
 
 Las del § 8 de `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`: el eje de cada señal, a qué abre «Ver
 evidencia», dónde se guarda la señal, si el plan es generado o declarado, y quién es el dueño de una
-fuga entre etapas. A esas se suman dos nuevas: **qué agente**, y **cada cuánto corre**.
+fuga entre etapas. A esas se suman dos nuevas: **qué agente**, y **cada cuánto corre**. *Contestadas el
+2026-10-04: un detector por reglas, que corre cada mañana a la hora local de la empresa (`D-09`); las del
+§ 8 de `06` se resuelven en `docs/OTROS/agentes/fichas/F03-ACQUISITION.md`.*

@@ -276,7 +276,7 @@ No es documentación: es un cable trampa que dispara en tres lugares.
 |---|---|---|---|
 | `pruebas/codigo/30-portero.test.ts:325-348` | ninguna ruta declara la `PANTALLA` de una sección con bandera | **rojo** | verde |
 | `pruebas/codigo/30-portero.test.ts:441-458` | la bandera no miente, en las dos direcciones | **rojo** | **rojo** |
-| `pruebas/codigo/90-fundaciones.test.ts:1187-1191` | `SIN_OPERACIONES_TODAVIA.length` vale 1, literal desde LP-4 | **rojo** si se baja la bandera sin tocar el número | — |
+| `pruebas/codigo/90-fundaciones.test.ts:1255-1263` | `SIN_OPERACIONES_TODAVIA.length` vale 1, literal desde LP-4 | **rojo** si se baja la bandera sin tocar el número | — |
 
 **Requisito, cumplido en LP-4:** la ruta `app/api/leads-portal/route.ts`, la bandera bajada con su
 comentario —como el de Sales—, y el 2 que pasó a 1 **fueron en el mismo commit**. Es la séptima vez que el cable dispara,

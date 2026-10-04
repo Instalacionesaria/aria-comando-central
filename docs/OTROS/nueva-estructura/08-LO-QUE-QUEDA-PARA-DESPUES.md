@@ -59,10 +59,10 @@ dentro (`NE-37`). Lo que dibuja dentro de cada pantalla, con cifras de muestra, 
 | pieza | por qué no ahora | plan |
 |---|---|---|
 | **Los permisos por herramienta** | Hoy `tools` y `analizadores` son un permiso cada uno (`NE-07`). Partirlos exige una migración para el `check` de pestañas, un guion que mude las pestañas de las personas con rol `usuario` y cambiar las rutas | `docs/OTROS/futuro/permisos-por-herramienta.md` |
-| **El cerebro** | El chat del inicio no tiene modelo. Hace falta un modelo con herramientas **de sólo lectura** sobre las funciones que ya miden en `lib/negocio/`, con la sesión y la organización de cada persona, que sólo ofrezca lo que sus pestañas permiten. Las conversaciones se guardan en tablas nuevas con seguridad por filas forzada. Queda por decidir quién paga el modelo | `docs/OTROS/futuro/el-cerebro.md` |
-| **La lista de CONVERSACIONES** | Es el historial del cerebro. Desde la segunda edición está el rótulo, con «Próximamente» | con el cerebro |
-| **La Reunión de hoy** | Sus temas tienen que salir de reglas medibles sobre la data real —gasto en cero, caída de la entrada, citas sin asistencia, una objeción que crece—, calculadas cada mañana | con el cerebro |
-| **El comentario del cerebro en cada departamento** | Lo escribe el cerebro | con el cerebro |
+| **El cerebro** | El chat del inicio no tiene modelo. Hace falta un modelo con herramientas **de sólo lectura** sobre las funciones que ya miden en `lib/negocio/`, con la sesión y la organización de cada persona, que sólo ofrezca lo que sus pestañas permiten. Las conversaciones se guardan en tablas nuevas con seguridad por filas forzada. Paga la llave de cada empresa (decidido el 2026-10-04) | `docs/OTROS/agentes/` (`03-EL-CEREBRO.md`) |
+| **La lista de CONVERSACIONES** | Es el historial del cerebro. Desde la segunda edición está el rótulo, con «Próximamente» | con el cerebro: `docs/OTROS/agentes/fichas/F19-CONVERSACIONES.md` |
+| **La Reunión de hoy** | Sus temas tienen que salir de reglas medibles sobre la data real —gasto en cero, caída de la entrada, citas sin asistencia, una objeción que crece—, calculadas cada mañana | con el cerebro: `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md` |
+| **El comentario del cerebro en cada departamento** | Sale de reglas sobre el dato, sin modelo (decidido el 2026-10-04) | con el cerebro: `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md` |
 | **Las herramientas nuevas de Marketing**: Copywriter —Bio de Instagram, Guiones TOFU · MOFU · BOFU y Guiones de venta directa, en un solo agente— y Content Studio —Social Media Posting y el Clon de IA— | No existen; desde la segunda edición son dos «Próximamente» (`NE-13`, `NE-47`), y antes eran cinco | cada una cuando se construya, con el patrón conversacional |
 | **Seguimiento de clientes** (Client Success) | No existe; hoy es «Próximamente» | cuando se construya |
 | **Sales › Leads › Todos** (segunda edición) | Junta los contactos de GHL y los leads del scraper en una sola lista, con su origen y su etapa, las cifras por calidad de ICP y «Subir a HighLevel». Hoy son dos pantallas, cada una con su permiso; la lista junta exige decidir qué ve quien tiene uno solo | cuando se construya; hasta entonces, «Próximamente» (`NE-38`) |
@@ -70,8 +70,10 @@ dentro (`NE-37`). Lo que dibuja dentro de cada pantalla, con cifras de muestra, 
 | **Separar el Scraper de la Prospección** | Hoy el buscador queda en los dos lugares (`NE-20`) | fase de detalles |
 | **Retirar el tema de la base** | La columna `usuarios.tema` y su ruta quedan dormidas (`NE-23`) | una migración, cuando no haga falta para nada |
 | **El tema claro con los valores de la marca** | El bloque claro de `app/temas.css` quedó dormido con su paleta de antes (`NE-23`); la marca tiene su tema claro para documentos y PDFs | el día que un documento imprimible lo use |
-| **El Plan de acción y las Señales** | Los van a producir agentes de IA | `docs/OTROS/futuro/plan-y-senales-de-acquisition.md` |
+| **El Plan de acción y las Señales** | Los van a producir agentes de IA | `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`; Acquisition es el piloto |
 
 Las propuestas del documento de producto que todavía no están decididas (Selector de nicho, La Auditoría,
 Máquina de contenido, Brief del closer, Indicadores de la garantía) no entran en ningún plan hasta que se
-decidan.
+decidan. *El Brief del closer se decidió el 2026-10-04 y entra en el plan de los agentes
+(`docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`); los Indicadores de la garantía quedan diseñados sin
+fuente (`fichas/F16-SEGUIMIENTO-DE-CLIENTES.md`).*
