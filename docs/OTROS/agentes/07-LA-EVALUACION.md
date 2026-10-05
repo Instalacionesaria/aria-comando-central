@@ -49,7 +49,9 @@ locales desde la corrida; las cifras de la columna del medio las comprueba la pr
 **La empresa vacía**: sin datos, sin personas y sin llave.
 
 Lo que **no** siembra: la llave de IA. La evaluación usa la de la organización principal (`AG-104`), y la
-copia a la empresa con datos la decide la tanda del cerebro en AG7. Tampoco Fundaciones, que vive en tablas
+tanda del cerebro **no la copia** a la empresa con datos: cada pregunta pasa por el portero, por
+`identidadDelCerebro` y por `laPregunta`, como la ruta, y sólo la llave se cambia por la de ARIA, en memoria.
+Tampoco Fundaciones, que vive en tablas
 que no están en este repositorio (`public.aria_cc_*`): la herramienta `fundaciones` se prueba con un almacén
 falso. Y el Espía lista sus búsquedas de `public.aria_cc_scraper_trabajos`, que tampoco está acá: sus dos
 análisis existen, pero sin una búsqueda que los nombre no se listan en pantalla.
@@ -135,8 +137,11 @@ Cada respuesta real se puntúa con:
 
 ## AG-104 · La evaluación real
 
-- Corre con `scripts/evaluar-agentes.mjs <tanda>` sobre la **base local** sembrada. En AG4 hay una sola tanda,
-  `modelo`: la comprobación de `06`, `AG-92` (dos pedidos que no generan). Cada etapa que evalúa suma la suya.
+- Corre con `scripts/evaluar-agentes.mjs <tanda>` sobre la **base local** sembrada. Hay dos tandas: `modelo`,
+  la comprobación de `06`, `AG-92` (dos pedidos que no generan), y `cerebro` (AG7), las preguntas 1 a 16 de
+  `AG-102` —la 17 a la 20 no llegan al modelo y las miran las pruebas 206, 208 y 209—. La del cerebro siembra
+  al empezar y quita al terminar, y pide confirmar el **techo**: 16 preguntas por `RONDAS` (6), 96 pedidos;
+  después imprime lo gastado de verdad, leído de `uso_de_ia`. Cada etapa que evalúa suma la suya.
 - Usa **la llave de la organización principal**, que el usuario carga **a mano** en Ajustes local. Nunca va
   a un `.env` ni la escribe un agente. **Nunca la llave de un cliente.**
 - Sale por `pedirExterno`: ningún `fetch(` en el guion. En `scripts/` sólo `scripts/supabase.mjs` está
@@ -149,7 +154,7 @@ Cada respuesta real se puntúa con:
 
 | etapa | qué se evalúa | llamadas aproximadas |
 |---|---|---|
-| AG7 | El cerebro, las 20 preguntas | 20 a 60 (cada pregunta puede usar varias rondas) |
+| AG7 | El cerebro, las 16 preguntas que llegan al modelo | 32 a 60, con un techo de 96 (cada pregunta puede usar varias rondas) |
 | AG9 | La redacción del plan de Acquisition | 2 a 4 |
 | AG12 | El Brief, los 4 casos | 4 |
 | AG15 | La Reunión | 2 |

@@ -362,6 +362,16 @@
   `components/ConsultaAlCerebro.jsx`. Las pruebas de las etapas siguientes empiezan en la 219.
 - **Hito H2**: aplicar la `071` (la `070` ya está en producción desde H1), paso 4b, comprobar `cerebro.usar` en
   `roles_permisos`, push con OK.
+  Hecho el 2026-10-05: la `071` en producción con sus cuatro tablas forzadas, el catálogo con `cerebro.usar` en
+  los tres roles, y el push.
+- **La tanda `cerebro` de la evaluación** (`scripts/evaluar-agentes.mjs`): las preguntas 1 a 16 de `07`,
+  `AG-102`, por el mismo camino que la ruta —el portero con la sesión de la persona sembrada y la pantalla desde
+  la que pregunta, `identidadDelCerebro`, `laPregunta`, `preguntar`—, con la llave de ARIA sólo en memoria: la
+  empresa sembrada no recibe una copia. Pide confirmar el techo (16 × `RONDAS`, 96) e imprime lo gastado, leído
+  de `uso_de_ia`. Por escribir sesiones en identidad e hilos en negocio entra en `CRUZAN_LOS_DOS_DOMINIOS`; el
+  `finally` quita la empresa con todo. La 204 suma el techo (mutaciones: sin «hasta», otro número de rondas).
+  Ensayada contra la base local con un modelo falso en un guion aparte (32 rondas, la base limpia al final);
+  la corrida real espera la llave cargada y el OK.
 
 ## AG8 · Las señales
 

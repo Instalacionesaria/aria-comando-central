@@ -50,7 +50,7 @@ Las de cada entrada, en su ficha.
 
 ## Pruebas y evaluación
 
-Las de AG5, AG6 y AG7 en `08`; las 20 preguntas de `07`, `AG-102`.
+Las de AG5, AG6 y AG7 en `08`; las 20 preguntas de `07`, `AG-102` —de la 1 a la 16 con el modelo de verdad, en la tanda `cerebro` de `scripts/evaluar-agentes.mjs`—.
 
 ## Contratos que cumple
 

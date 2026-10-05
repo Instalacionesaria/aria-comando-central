@@ -525,6 +525,12 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // aceptable por la misma razón que el sembrado de desarrollo: es idempotente POR DESTRUCCIÓN —cada corrida
   // empieza quitando todo lo del prefijo—, y la prueba 205 comprueba el EFECTO, cifra por cifra.
   'db/sembrado/casos-de-los-agentes.ts',
+  // La tanda `cerebro` de la evaluación real: escribe en identidad las sesiones de las personas sembradas y
+  // en negocio lo que escribe el cerebro al preguntar (hilos, mensajes, uso). Qué queda a medias si la
+  // segunda mitad falla: sesiones y hilos de una empresa sintética, que el `finally` quita con la empresa
+  // (`quitarEmpresasDeLosAgentes` vacía cada tabla con `org_id` y las personas, y sus sesiones se van en
+  // cascada). Sólo corre contra la base local (la guarda del sembrado) y nunca toca una empresa real.
+  'scripts/evaluar-agentes.mjs',
   // La fase `verificar` de `db.mjs`: lee identidad para obtener la lista de
   // organizaciones y después abre el contexto de cada una para contar sus filas de
   // negocio. NO ESCRIBE EN NINGUNO DE LOS DOS — solo lee, así que la falta de atomicidad

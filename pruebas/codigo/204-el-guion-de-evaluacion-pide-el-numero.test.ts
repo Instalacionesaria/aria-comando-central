@@ -62,9 +62,22 @@ test('con el número correcto pasa la confirmación y se frena en la guarda de l
 });
 
 test('una tanda que no existe no corre', () => {
-  const r = correr('cerebro');
+  const r = correr('reunion');
   assert.equal(r.salida, 2);
-  assert.match(r.texto, /Tandas: modelo\./);
+  assert.match(r.texto, /Tandas: modelo, cerebro\./);
+});
+
+test('la tanda del cerebro pide confirmar su techo, y con otro número no corre', () => {
+  const sin = correr('cerebro');
+  assert.equal(sin.salida, 1);
+  assert.match(sin.texto, /Va a hacer hasta 96 pedido\(s\) a Anthropic/);
+  assert.match(sin.texto, /No corre sin el OK\. Para correrla: --confirmo 96/);
+  const otro = correr('cerebro', '--confirmo', '60');
+  assert.equal(otro.salida, 1);
+  assert.match(otro.texto, /--confirmo 60 no es 96: no corre\./);
+  // Con el techo, pasa la confirmación y se frena en la guarda de la base local, antes de sembrar nada.
+  const con = correr('cerebro', '--confirmo', '96');
+  assert.match(con.texto, /la evaluación de los agentes se niega a correr contra "proyecto-de-prueba\.supabase\.co"/);
 });
 
 test('el guion sale por `pedirExterno`: ningún `fetch(`', () => {

@@ -251,8 +251,8 @@ quien no trae la cookie de sesión; no decide ningún permiso.
 bajo `app/api/`, 53 declaran `PANTALLA` y 29 están en `SIN_PANTALLA`
 (`lib/autorizacion/secciones.ts:466-595`): son exactamente, archivo por archivo, los que no la
 declaran. No llaman a `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**:
-`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:680-688`), y la sonda, el
-cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:830-873`).
+`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:686-694`), y la sonda, el
+cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:836-879`).
 
 **Rechazos registrados.** Desde el 2026-09-15, **0** `permiso_denegado` y **0** `seccion_denegada` en
 `identidad.auditoria_accesos`; en toda la historia, 3 y 0 (consulta del 2026-09-28 agrupada por
@@ -293,7 +293,7 @@ sección, dársela sería dársela a todos los administradores (`db/arranque/001
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:682-687`). El freno por cuenta corta a los 5 intentos y bloquea 15
+(`pruebas/apoyo/autorizados.ts:688-693`). El freno por cuenta corta a los 5 intentos y bloquea 15
 minutos; el de origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con
 N=16384, r=8, p=1 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login
 exitoso (`lib/autenticacion/freno.ts:85-96`).
@@ -460,7 +460,7 @@ se leyó lo que afirman.
 | Segundo factor | La invariante del rol de plataforma, retirada; el alta voluntaria por la API | `pruebas/base/41-catalogo-de-autenticacion.test.ts:69`, `pruebas/base/43-segundo-factor.test.ts:214` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` está vacía desde el 2026-09-21: no hay ninguna excepción
-viva (`pruebas/apoyo/autorizados.ts:790-796`).
+viva (`pruebas/apoyo/autorizados.ts:796-802`).
 
 **Un cruce que el código anuncia y no encontré.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
