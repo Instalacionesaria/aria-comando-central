@@ -29,8 +29,8 @@ corrido el sembrado**, cada una se arma la suya con un prefijo propio y la quita
 sembrado de desarrollo, y varias pruebas vacían `negocio.contactos` entero. Así que quien siembra, quita:
 `node scripts/db.mjs sembrar-agentes` para mirar las pantallas en local y `node scripts/db.mjs quitar-agentes`
 antes de correr la suite; la evaluación real siembra al empezar y quita al terminar. Escribe como la
-aplicación (`conIdentidad`, `conOrganizacion`) y borra como `postgres`, porque el inquilino no tiene `delete`
-sobre `uso_de_ia` ni `incidentes`.
+aplicación (`conIdentidad`, `conOrganizacion`) y borra como `postgres`: quitar una empresa es vaciar `negocio`
+e `identidad` a la vez, y cada rol de la aplicación ve uno solo.
 
 **La empresa con datos** (zona `America/Lima`, dominios `.test`, nombres inventados). `hace N` es en días
 locales desde la corrida; las cifras de la columna del medio las comprueba la prueba

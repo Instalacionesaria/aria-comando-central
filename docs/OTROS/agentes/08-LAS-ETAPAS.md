@@ -151,7 +151,8 @@
   `sembrar-agentes` y `quitar-agentes` en `scripts/db.mjs`, y `scripts/evaluar-agentes.mjs` (`07`, `AG-104`)
   con su primera tanda, `modelo` (`06`, `AG-92`). El sembrado no queda instalado: la `11` exige las cinco
   empresas del sembrado de desarrollo, así que quien siembra, quita. Escribe como la aplicación y borra como
-  `postgres` —el inquilino no tiene `delete` sobre `uso_de_ia` ni `incidentes`—, recorriendo todas las tablas
+  `postgres` —quitar una empresa es vaciar `negocio` e `identidad` a la vez, y cada rol de la aplicación ve
+  uno solo—, recorriendo todas las tablas
   con `org_id` en pasadas: `resultados.cita_id` es `on delete set null` sin lista de columnas (`049`) y borrar
   `citas` primero anula su `org_id` (`23502`).
 - **Listas**: el sembrado entra en `ARCHIVOS_AUTORIZADOS` y en `CRUZAN_LOS_DOS_DOMINIOS`, el guion sólo en

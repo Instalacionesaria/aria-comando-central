@@ -127,9 +127,9 @@ test('ADR-0203 · nadie fuera de la capa de datos importa el controlador', () =>
       // Sus lecturas de negocio SÍ van por `conOrganizacion()` y `datos()`: no pone
       // `app.org_id` a mano, y `ADR-0201` lo hace cumplir.
       'scripts/compatibilidad.mjs',
-      // El sembrado de los agentes BORRA sus empresas sintéticas como `postgres`: el inquilino no tiene
-      // `delete` sobre `uso_de_ia` ni `incidentes`, que la evaluación llena. Escribe por la capa; sólo el
-      // borrado va por fuera, y sólo contra un anfitrión local (`exigirBaseLocalParaLosCasos`).
+      // El sembrado de los agentes BORRA sus empresas sintéticas como `postgres`: quitar una empresa es
+      // vaciar `negocio` e `identidad` a la vez, y cada rol de la aplicación ve uno solo. Escribe por la
+      // capa; sólo el borrado va por fuera, y sólo contra un anfitrión local (`exigirBaseLocalParaLosCasos`).
       'db/sembrado/casos-de-los-agentes.ts',
     ].sort(),
     'un archivo nuevo importa `pg`: o va en la capa de datos, o hay que justificarlo acá',

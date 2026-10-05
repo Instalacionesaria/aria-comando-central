@@ -24,9 +24,11 @@
 // ── ESCRIBE COMO LA APLICACIÓN, BORRA COMO EL ADMINISTRADOR ──────────────────
 //
 // Las filas entran por `conIdentidad` y `conOrganizacion`, con las mismas políticas que una petición: si una
-// columna nueva rompe el sembrado, lo rompe igual que a la aplicación. Para borrar no alcanza: el inquilino
-// no tiene `delete` sobre `uso_de_ia` ni sobre `incidentes`, que la evaluación llena. El borrado va por
-// `DATABASE_URL_ADMIN`, como `scripts/db.mjs arranque`, y sólo contra un anfitrión local.
+// columna nueva rompe el sembrado, lo rompe igual que a la aplicación. Para borrar no alcanza: cada rol de
+// la aplicación ve un solo dominio —`app_identidad` no tiene ningún permiso sobre `negocio`, y el inquilino
+// sólo lee `identidad.organizaciones`—, y quitar una empresa es vaciar los dos, en el orden que pidan las
+// claves foráneas, con sentencias que pueden fallar y reintentarse sin perder una transacción. El borrado va
+// por `DATABASE_URL_ADMIN`, como `scripts/db.mjs arranque`, y sólo contra un anfitrión local.
 //
 // Todo lo sembrado es inventado: dominios `.test`, nombres de prueba, identificadores con el prefijo.
 // ═══════════════════════════════════════════════════════════════════════════════
