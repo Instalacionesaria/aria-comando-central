@@ -55,7 +55,7 @@ botón **`7 días`** con `className="on"`.
 la misma pantalla.** Y `hist` no tiene botón, así que no hay forma de volver a él salvo recargar.
 
 **Requisito**: el botón encendido es el que **el servidor contestó**, no el que se pidió. Es lo que
-`components/creative/PanelDeCreative.jsx:89` resuelve con
+`components/creative/PanelDeCreative.jsx:92` resuelve con
 `valor={pantalla?.periodo ?? periodo}`.
 
 ---
