@@ -46,7 +46,7 @@ acá el origen es **Sales · Closer**, que es donde se registran.
 ## AG-71 · Se calcula una vez al día y se guarda
 
 Dentro de la tarea `senales` (`02`, `AG-35`), **después** de los detectores, por empresa y día local. Se
-guarda en `negocio.reuniones_del_dia` (migración `074`): **todos** los temas candidatos, ordenados, cada uno
+guarda en `negocio.reuniones_del_dia` (migración `075`): **todos** los temas candidatos, ordenados, cada uno
 con su sección de origen, su evidencia (ids y cifras) y **su propio texto**.
 
 ## AG-72 · El modelo ordena y redacta; las reglas detectan

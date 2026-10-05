@@ -220,7 +220,7 @@ Hay otra ruta que se presenta como sonda y ningún archivo de esta carpeta nombr
 (`app/api/control/route.ts:25-26`, `:35`), así que la atiende cualquier sesión activa, y lee
 `control_aislamiento` con `conOrganizacion(contexto.orgEfectiva)`: la cadena entera, del manejador a
 la base (`app/api/control/route.ts:10-12`, `:40-46`). Figura entre las rutas sin pantalla
-(`lib/autorizacion/secciones.ts:474-476`). **Nada del repositorio llama al manejador** (búsqueda de
+(`lib/autorizacion/secciones.ts:475-477`). **Nada del repositorio llama al manejador** (búsqueda de
 `api/control` en `lib/`, `app/`, `components/`, `pruebas/` y `scripts/`, 2026-09-28): las pruebas
 arman peticiones con ese camino y se las pasan al portero, sin importar la ruta
 (`pruebas/base/40-portero.test.ts:293`, `pruebas/base/42-login.test.ts:729`,
@@ -292,7 +292,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1622-1627`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1686-1691`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
@@ -636,7 +636,7 @@ minutos del medio.
      es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:132`); cuánto duran en Pro, no lo verifiqué.
    - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
      (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».
-   - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:474-475` presentan esa ruta
+   - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:475-476` presentan esa ruta
      como la sonda de la Etapa 8, o como algo que le sirve; la sonda programada no la usa (§ 2.6).
 9. **Todo el volumen es de una cuenta.** Cualquier cifra de costo, duración o frescura de esta foto
    cambia de escala con la segunda empresa conectada.
@@ -708,6 +708,14 @@ La escribe sólo `registrarUso` (`lib/agentes/uso.ts`). Desde AG2 la escriben el
 reintento adentro—; Fundaciones se suma después de integrar
 la rama `feature/icp-oferta-v2`, y los agentes nuevos desde AG5. La `070` deja
 `negocio.incidentes.usuario_id` en `on delete set null`: un incidente ya no impide borrar a la persona que
-lo tuvo. La `069` se aplica a producción con el hito H1; con ella, `negocio` pasa a
-tener 35 tablas: las 29 del corte, las cinco que crearon la `063` y de la `065` a la `068`, y `uso_de_ia`.
-`lib/datos/esquema.ts` tipa entonces 46 tablas de `identidad` y `negocio`: las 40 del § 4 son las del corte.
+lo tuvo. La `069` y la `070` se aplicaron a producción con el hito H1 (2026-10-04); con la `069`, `negocio`
+pasó a tener 35 tablas: las 29 del corte, las cinco que crearon la `063` y de la `065` a la `068`, y
+`uso_de_ia`.
+
+## Después del corte: el cerebro (2026-10-04)
+
+AG5 del plan de los agentes. La `071` suma las cuatro tablas del cerebro —`conversaciones_del_executive`,
+`mensajes_del_executive`, `topes_del_executive` y `preguntas_del_executive`—, así que `negocio` llega a 39
+tablas y `lib/datos/esquema.ts` tipa 50 de `identidad` y `negocio` (las 40 del § 4 son las del corte). Las
+escriben sólo `lib/agentes/executive/conversaciones.ts` y `topes.ts`. Van a producción con el hito H2, junto con la capacidad
+`cerebro.usar`.

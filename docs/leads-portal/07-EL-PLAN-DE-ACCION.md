@@ -316,7 +316,7 @@ coincidencias en sus 1.650 líneas (`C:\Users\USUARIO\Downloads\CC_Arquitectura_
 medido el 2026-09-26). Lo más cerca que llega es el § 5.3, «Perfil resumido del lead»
 (`C:\Users\USUARIO\Downloads\CC_Arquitectura_Funcional.md:240-265`), que es una ficha, no un
 departamento que recomienda. Y la pestaña está en el grupo AIOS, no en Inteligencia
-(`lib/autorizacion/secciones.ts:219-227`).
+(`lib/autorizacion/secciones.ts:223-231`).
 
 Las cinco pantallas de Inteligencia son departamentos con dominio, y un plan de acción es lo que un
 departamento le dice a otro. **Un portal de contactos puede no tener ninguno**, y entonces el

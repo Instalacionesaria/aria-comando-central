@@ -10,6 +10,10 @@
 > quedaron cerradas: paga **la llave de cada empresa** (`D-02`) y la primera versión **lee, navega y
 > recomienda**, sin actuar (`D-03`). Y una cambió: la evidencia va **dentro de la respuesta**, como un
 > desplegable, no en un panel a la derecha (`D-28`). Lo de abajo queda como estaba escrito ese día.
+>
+> **El servidor del cerebro está hecho desde AG5 (2026-10-04)**: `lib/agentes/executive/` y
+> `app/api/executive/route.ts`, con las herramientas de Acquisition, Sales y Leads › De GHL. Las demás llegan en
+> AG6, y la pantalla en AG7.
 
 ## Qué es
 

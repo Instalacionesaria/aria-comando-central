@@ -173,6 +173,11 @@ export const CAPACIDADES = [
   // ella cualquier closer leería las transcripciones de todo el equipo.
   'analizadores.ver',
   'analizadores.editar',
+  // ── El cerebro (AG5 de los agentes) ───────────────────────────────────
+  //
+  // Preguntar gasta la llave de IA de la empresa. Mirar el Inicio es `tablero.ver`; preguntarle al
+  // cerebro, en el Inicio o en la caja del pie de cualquier departamento, es esto.
+  'cerebro.usar',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

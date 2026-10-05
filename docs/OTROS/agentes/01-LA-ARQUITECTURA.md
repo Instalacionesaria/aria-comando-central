@@ -35,7 +35,7 @@ responde o crea. Cuándo llama al modelo cada agente lo dice su ficha.
 
 Anthropic, por HTTP directo y sin SDK, **siempre** por `pedirExterno` (`lib/http/cliente.ts:339`). ADR-0305
 permite `fetch(` sólo en tres archivos —`lib/http/cliente.ts`, `lib/deteccion/aviso.ts` y
-`scripts/supabase.mjs` (`pruebas/codigo/30-portero.test.ts:569-573`)— y prohíbe `EventSource`. Ningún
+`scripts/supabase.mjs` (`pruebas/codigo/30-portero.test.ts:573-577`)— y prohíbe `EventSource`. Ningún
 archivo nuevo de este plan, ni siquiera el guion de evaluación, llama a `fetch(`.
 
 ## AG-03 · La llave es de cada empresa
@@ -102,11 +102,12 @@ política) y con un solo archivo que las escribe. La plantilla es la `068`
 | migración | tablas | escritor | etapa |
 |---|---|---|---|
 | `069` | `uso_de_ia` | `lib/agentes/uso.ts` | AG1 |
-| `070` | `conversaciones_del_executive`, `mensajes_del_executive`, `topes_del_executive` | `lib/agentes/executive/conversaciones.ts` y `topes.ts` | AG5 |
-| `071` | `senales`, `planes_de_accion`, `umbrales`; y el `check` de `tareas_programadas` suma `senales` | `lib/agentes/senales/escritura.ts`, `lib/agentes/plan/*` (por un solo módulo de escritura), `lib/agentes/senales/umbrales.ts` | AG8 |
-| `072` | `objeciones_clasificadas` | `lib/analizadores/objeciones.ts` | AG11 |
-| `073` | `briefs_del_closer` | `lib/agentes/brief/guardar.ts` | AG12 |
-| `074` | `reuniones_del_dia` | `lib/agentes/reunion.ts` | AG15 |
+| `070` | (ninguna: `incidentes_usuario_id_fkey` pasa a `on delete set null`) | — | AG2 |
+| `071` | `conversaciones_del_executive`, `mensajes_del_executive`, `topes_del_executive`, `preguntas_del_executive` | `lib/agentes/executive/conversaciones.ts` (las dos primeras) y `topes.ts` (las dos últimas) | AG5 |
+| `072` | `senales`, `planes_de_accion`, `umbrales`; y el `check` de `tareas_programadas` suma `senales` | `lib/agentes/senales/escritura.ts`, `lib/agentes/plan/*` (por un solo módulo de escritura), `lib/agentes/senales/umbrales.ts` | AG8 |
+| `073` | `objeciones_clasificadas` | `lib/analizadores/objeciones.ts` | AG11 |
+| `074` | `briefs_del_closer` | `lib/agentes/brief/guardar.ts` | AG12 |
+| `075` | `reuniones_del_dia` | `lib/agentes/reunion.ts` | AG15 |
 
 Los números se vuelven a verificar en cada `pull`: otra persona empuja migraciones a `main`.
 

@@ -389,7 +389,7 @@ where o.activa;
 ## 9 · Executive: la última maqueta publica en nombre de seis pantallas que ya miden
 
 **Cerrado el 2026-10-01** (nueva estructura, E7): la maqueta se retiró entera —cifras, panel, chat y cajones— y la pantalla `executive` pasó a ser el Inicio, que no dibuja ninguna cifra (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`); conserva la bandera porque sigue sin ruta. Lo que sigue es la deuda como estaba el 2026-09-28. Executive es la única sección que conserva `sinOperacionesTodavia`
-(`lib/autorizacion/secciones.ts:212-218`), y `lib/aios/executive.js` no cambia desde `a7f8f91`
+(`lib/autorizacion/secciones.ts:213-219`), y `lib/aios/executive.js` no cambia desde `a7f8f91`
 (2026-08-18). Lo que la volvió deuda no es ella sino lo de alrededor: sus cifras hablan en nombre de
 departamentos que desde el 16 de septiembre publican las suyas, a un clic. El detalle pieza por pieza
 está en [11-EXECUTIVE.md](11-EXECUTIVE.md) § 3; lo verificado acá contra la base, a las 22:13 UTC:
@@ -407,7 +407,7 @@ está en [11-EXECUTIVE.md](11-EXECUTIVE.md) § 3; lo verificado acá contra la b
   (`lib/aios/executive-panel.js:12-13@c4cf2a8`), y el chat contesta «Vas 11 de 30» con Conversion y
   Sales como fuentes (`lib/aios/executive-chat.js:35-36@c4cf2a8`).
 
-La ve sólo quien tenga `tablero.ver` (`lib/autorizacion/secciones.ts:215`), y eso acota a quién le
+La ve sólo quien tenga `tablero.ver` (`lib/autorizacion/secciones.ts:216`), y eso acota a quién le
 miente, no si le miente. Lo que haría falta para bajar la bandera está en
 [11-EXECUTIVE.md](11-EXECUTIVE.md) § 5.
 
@@ -622,7 +622,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 señala), `components/views/SalesView.jsx:19-20`.
   También en una migración
   (`db/migraciones/034_varios_closers.sql:38`) y en una prueba
-  (`pruebas/codigo/91-closer-y-setter.test.ts:432`, `pruebas/codigo/91-closer-y-setter.test.ts:440`):
+  (`pruebas/codigo/91-closer-y-setter.test.ts:434`, `pruebas/codigo/91-closer-y-setter.test.ts:442`):
   10 archivos con alguno de los dos apellidos (`grep -rl` sobre las siete carpetas de fuente,
   2026-09-28).
 - **El nombre de pila de una persona del equipo está en 43 archivos** (`grep -rl` sobre `lib/`,

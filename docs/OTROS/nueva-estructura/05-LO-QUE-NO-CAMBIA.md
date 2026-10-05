@@ -25,7 +25,7 @@ lugar. Por eso la sección `executive` se **muestra** como «Inicio» sin cambia
 
 ## `NE-32` · Quién ve qué
 
-- **`menuVisible()`** (`lib/autorizacion/secciones.ts:820`) sigue siendo **la única fuente** de lo que cada
+- **`menuVisible()`** (`lib/autorizacion/secciones.ts:821`) sigue siendo **la única fuente** de lo que cada
   persona ve: capacidad, alcance por pestañas y regla de la organización principal. La estructura nueva
   reparte su resultado; **no lo vuelve a calcular**.
 - **Los tres roles** (superadministrador, administrador, usuario) y sus capacidades **no cambian**.

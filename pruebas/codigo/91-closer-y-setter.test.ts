@@ -273,9 +273,11 @@ test('un closer ve SU pestaña y nada más; un setter la suya', () => {
   assert.deepEqual(vistasDelCloser, ['closer'], 'un closer ve algo más que su pestaña');
   assert.deepEqual(vistasDelSetter, ['setter'], 'un setter ve algo más que su pestaña');
 
-  // Y en particular NO ven los siete tableros del prototipo. Es lo que `tablero.ver` decide, y
-  // sin esa capacidad el menú de un closer tendría ocho entradas en vez de una.
-  for (const t of SIN_OPERACIONES_TODAVIA) {
+  // Y en particular NO ven los tableros del prototipo. Es lo que `tablero.ver` decide, y sin esa
+  // capacidad el menú de un closer tendría ocho entradas en vez de una. La lista se escribe acá: la
+  // de `SIN_OPERACIONES_TODAVIA` quedó vacía cuando el Inicio recibió su ruta (AG5), y un bucle sobre
+  // ella ya no miraría nada.
+  for (const t of ['executive', 'contacts', 'acquisition', 'creative', 'conversion', 'conversation', 'sales']) {
     assert.ok(!vistasDelCloser.includes(t), `el closer ve el tablero "${t}"`);
     assert.ok(!vistasDelSetter.includes(t), `el setter ve el tablero "${t}"`);
   }

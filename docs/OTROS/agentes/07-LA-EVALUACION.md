@@ -140,7 +140,7 @@ Cada respuesta real se puntúa con:
 - Usa **la llave de la organización principal**, que el usuario carga **a mano** en Ajustes local. Nunca va
   a un `.env` ni la escribe un agente. **Nunca la llave de un cliente.**
 - Sale por `pedirExterno`: ningún `fetch(` en el guion. En `scripts/` sólo `scripts/supabase.mjs` está
-  exceptuado (`pruebas/codigo/30-portero.test.ts:569-573`, ADR-0305).
+  exceptuado (`pruebas/codigo/30-portero.test.ts:573-577`, ADR-0305).
 - **Primero imprime cuántas llamadas va a hacer**, y no corre sin `--confirmo N` con ese mismo número; con otro
   número se niega (prueba 204). Antes de cada tanda se le pide el OK al usuario en el chat, con el número.
 - Antes de la primera tanda, la comprobación del modelo de `06`, `AG-92`.

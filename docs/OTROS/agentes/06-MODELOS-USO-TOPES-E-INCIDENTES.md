@@ -110,10 +110,17 @@ nadie las confirme contra la factura de Anthropic, el costo es `null`, nunca `0`
 - **50 preguntas por persona y 300 por empresa por día**, por omisión (`D-16`). Viven en
   `negocio.topes_del_executive`, una fila por empresa, con quién y cuándo los cambió.
 - **El día es el de la empresa**: se cuenta desde la medianoche de su zona.
-- **Se cuentan las preguntas**, o sea los mensajes de la persona. La pregunta se **reserva** en la misma
-  transacción corta que mira el tope, bajo `select … for update` sobre la fila de topes de la empresa (la
-  casa bloquea filas, como `lib/negocio/pulso.ts`), así dos preguntas en paralelo no pasan juntas el 50.
-- **Una pregunta que falla no cuenta**: su reserva se libera.
+- **Se cuentan las preguntas** en un registro propio, `negocio.preguntas_del_executive`, una fila por
+  pregunta y sin texto, que **no cuelga de los hilos**: borrar un hilo no devuelve sus preguntas al tope (la
+  primera versión contaba los mensajes, que caen con su hilo, y borrar los hilos reiniciaba el tope; lo
+  encontró la revisión de AG5). La pregunta se **reserva** en la misma transacción corta que mira el tope,
+  bajo `select … for update` sobre la fila de topes de la empresa (la casa bloquea filas, como
+  `lib/negocio/pulso.ts`), así dos preguntas en paralelo no pasan juntas el 50.
+- **Una pregunta que falla sin que el proveedor conteste no cuenta.** Una que falla **después de pagarse**
+  —truncada, declinada, sin la forma de `responder`— **sí** cuenta: si no, una pregunta hecha para no
+  llegar nunca a la forma costaría seis rondas y se podría repetir sin límite.
+- **Una reserva vence a los diez minutos**: si la plataforma corta la función antes de marcar la pregunta,
+  esa reserva no ocupa un lugar hasta la medianoche.
 - **No cuentan**: abrir un tema de la Reunión, generar el Brief al abrir una cita, la redacción del plan
   del cron. **Sí cuenta** regenerar el Brief a mano.
 - Al llegar al tope, el cerebro pasa al estado `tope` (`03`, `AG-52`) y dice a qué hora se renueva.

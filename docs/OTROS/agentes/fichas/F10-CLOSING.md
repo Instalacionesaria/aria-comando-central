@@ -20,7 +20,7 @@ también Acquisition.
 ## Requisitos
 
 - **AG-F10-1 · El dinero es del mes calendario y es venta reportada**, no un pago verificado, y lo dice
-  siempre (Arq:267-288; `docs/OTROS/estado actual/11-EXECUTIVE.md:433-466`).
+  siempre (Arq:267-288; `docs/OTROS/estado actual/11-EXECUTIVE.md:440-473`).
 - **AG-F10-2 · ROAS, CAC y costo por venta** los calcula `economia_del_negocio` con la misma función de gasto
   que Acquisition (C7-07, A7-08). Con cero ventas: «no hay dato suficiente», diciendo que las ventas se
   registran en Sales › Closer.

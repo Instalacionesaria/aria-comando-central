@@ -13,7 +13,14 @@
 
 **Maqueta completa — y desde el 2026-09-26, la única que queda.**
 
-Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:212-218`)
+> **Después del corte, 2026-10-04 (AG5 de los agentes).** La bandera ya no está: `app/api/executive/route.ts`
+> es la primera operación del Inicio, el servidor del cerebro —preguntar (`cerebro.usar`), ver los hilos
+> propios (`tablero.ver`) y borrarlos—, y `lib/autorizacion/secciones.ts:220` quedó como un comentario de una
+> línea. El conteo literal de la 90 pasó a 0 y la 30 exige que `executive` tenga su ruta. La pantalla todavía
+> no la usa: el chat del Inicio, la caja del pie y CONVERSACIONES se conectan en AG7
+> (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo describe el corte del 2026-09-28.
+
+Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:213-219`)
 y dibuja **179 literales numéricos y catorce contactos inventados** sin haber cambiado una línea de
 datos desde el port del 2026-08-18. A 7 días dice 312 contactos, $8.525 de inversión y 11 ventas
 (`lib/aios/executive.js:17@c4cf2a8`); la base dice **3 contactos, ningún día con gasto desde el
@@ -31,7 +38,7 @@ embudo o su cajón— ya miden, y la contradicen.
 >   primera ruta: Acquisition `be5ba97` (09-16), Creative `3287f74` (09-19), Conversion `0add4cc`
 >   (09-20), Sales `c109ebd` (09-21; su maqueta se fue el mismo día, en `1c875ac`) y Leads Portal
 >   `3c361a1` (09-26). La lista derivada
->   tiene hoy una sola clave (`lib/autorizacion/secciones.ts:225`,
+>   tiene hoy una sola clave (`lib/autorizacion/secciones.ts:226`,
 >   `pruebas/codigo/90-fundaciones.test.ts:1263`).
 > - **El cierre de los overlays** pasó de `creative.js` al armazón en `332c0e6` (09-19), y
 >   `executive-panel.js` dejó de sintetizar un clic sobre el botón de cierre en `0add4cc`
@@ -89,7 +96,7 @@ No hay `docs/executive/`. Lo que cada departamento dejó escrito sobre lo que le
 ## 2 · Qué hay hoy en pantalla
 
 **La sección.** `executive`, grupo AIOS, capacidad `tablero.ver`, **sin ruta de servidor**
-(`lib/autorizacion/secciones.ts:212-218`). No existe `app/api/executive/`. Medido el 2026-09-28:
+(`lib/autorizacion/secciones.ts:213-219`). No existe `app/api/executive/`. Medido el 2026-09-28:
 de los **4 usuarios activos** de `aria`, **3 ven la pestaña** (los que no están restringidos por
 sección o la tienen concedida; misma consulta que `docs/leads-portal/12-QUIEN-VE-QUE.md:95-115`, con
 `seccion = 'executive'`). La foto del 2026-09-16 contaba once usuarios activos con `tablero.ver`
@@ -404,13 +411,13 @@ El mecanismo es corto y va en un solo commit, como las siete veces anteriores qu
 
 1. **Una ruta** con `export const PANTALLA = 'executive'` cuyo `GET` pida exactamente
    `tablero.ver` (`pruebas/codigo/30-portero.test.ts:280-323`).
-2. **Borrar la bandera** en `lib/autorizacion/secciones.ts:219`. Con la ruta y la bandera a la vez,
-   `30-portero` falla por dos lados (`pruebas/codigo/30-portero.test.ts:325-348`,
-   `pruebas/codigo/30-portero.test.ts:441-452`).
+2. **Borrar la bandera**, que estaba en la línea 219 de `lib/autorizacion/secciones.ts` (hecho en AG5). Con la ruta y la bandera a la vez,
+   `30-portero` falla por dos lados (`pruebas/codigo/30-portero.test.ts:325-352`,
+   `pruebas/codigo/30-portero.test.ts:445-456`).
 3. **Bajar el conteo literal a cero** (`pruebas/codigo/90-fundaciones.test.ts:1263`). Y decidir qué
    pasa con el cable trampa: con la lista vacía, la prueba de `ADR-0303` que la mira pasa sin mirar
    nada. Pero una sección nueva que nazca sin operaciones —como nació `tools`
-   (`lib/autorizacion/secciones.ts:388-392`)— necesita la bandera para no dar rojo, así que
+   (`lib/autorizacion/secciones.ts:389-393`)— necesita la bandera para no dar rojo, así que
    retirarla del tipo no es gratis.
 4. **Los períodos de `lib/negocio/periodo.ts:83-96`.** `data-p="mes"` se rechaza con un 400
    (`lib/negocio/periodo.ts:188-193`, `app/api/sales/route.ts:82-85`); `tri` no existe, y lo más
@@ -455,10 +462,10 @@ avance está bajo el piso de 10. Ver [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRAN
 § 3.
 
 **6 · Conversation pide otra capacidad.** Su sección es `auditor.ver` desde el 2026-09-21
-(`lib/autorizacion/secciones.ts:296-315`) y Executive es `tablero.ver`; `ADR-0304` no deja que dos
+(`lib/autorizacion/secciones.ts:297-316`) y Executive es `tablero.ver`; `ADR-0304` no deja que dos
 `GET` de una pantalla pidan conjuntos distintos. Publicar aquí sus agregados es abrirlos a quien no
 ve Conversation. Hoy no alcanza a nadie —los tres roles llevan las dos capacidades, medido el
-2026-09-21 (`lib/autorizacion/secciones.ts:303-304`) y re-medido el 2026-09-29 a las 00:25 UTC:
+2026-09-21 (`lib/autorizacion/secciones.ts:304-305`) y re-medido el 2026-09-29 a las 00:25 UTC:
 3 de 3 roles con `tablero.ver` tienen también `auditor.ver`—, pero es una decisión, no un detalle.
 
 **7 · Qué dato falta, y correlación no es causa.** § 2.6 (línea 114) y § 14 (línea 1032). `MEET`
@@ -484,7 +491,7 @@ en `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:380-385`.
 (`app/aios.css:117-125`) y la esconde `.solo` (`app/aios.css:115-116`), que ponen la navegación
 (`lib/aios/shell.js:135@c4cf2a8`) y el modo Funnel de la propia Executive (`lib/aios/executive.js:160@c4cf2a8`), que
 quien no tiene Executive no dibuja. Nada la pone al cargar, y quien no tiene Executive arranca en
-otra pestaña (`lib/autorizacion/secciones.ts:862-872`): hoy, uno de los cuatro activos vería
+otra pestaña (`lib/autorizacion/secciones.ts:863-873`): hoy, uno de los cuatro activos vería
 «Reunión de hoy» a más de 1080 px hasta su primer clic en el menú. No verificado en el navegador.
 
 **Una alarma falsa y dos luces verdes.** El punto rojo de Conversion anuncia un formulario roto en

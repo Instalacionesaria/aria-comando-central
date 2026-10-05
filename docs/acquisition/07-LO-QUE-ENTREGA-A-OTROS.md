@@ -265,7 +265,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   que no le corresponde. Es el mismo patrón que el chat ejecutivo usa para sus fuentes
   (`lib/aios/executive-chat.js:99-102`).
 - **Estado:** cumplible hoy — es navegación, no dato. La sección `acquisition` existe en
-  `lib/autorizacion/secciones.ts:242-247` con `capacidadRequerida: 'tablero.ver'`.
+  `lib/autorizacion/secciones.ts:243-248` con `capacidadRequerida: 'tablero.ver'`.
 
 ---
 
@@ -506,7 +506,7 @@ contrario**, sin que ninguno de los dos se equivoque.
 
 ### A7-33 · Acquisition se ve con permiso de tablero y declara que todavía no expone ninguna operación
 
-- **Rastro:** `lib/autorizacion/secciones.ts:242-247` — clave `acquisition`,
+- **Rastro:** `lib/autorizacion/secciones.ts:243-248` — clave `acquisition`,
   `capacidadRequerida: 'tablero.ver'`, `sinOperacionesTodavia: true`, grupo de menú «Inteligencia».
 - La bandera era literal y comprobable: el 2026-09-15 `ls app/api/` devolvía 17 carpetas y **ninguna era `acquisition`**
   (foto del 2026-09-15, § 2). El 2026-09-16 la pantalla empezó a leer datos: la bandera se fue y la ruta llama al portero

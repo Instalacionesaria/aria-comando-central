@@ -66,6 +66,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Las empresas sintéticas de los agentes (AG4): crean empresas y personas, que son identidad. Sólo en
   // local, con la misma guarda que el sembrado de desarrollo.
   'db/sembrado/casos-de-los-agentes.ts',
+  // El cerebro del Inicio (AG5): la llave de IA de la empresa se resuelve acá, en la ruta, y viaja como
+  // dato. Nada bajo `lib/agentes/` importa la conexión de identidad.
+  'app/api/executive/route.ts',
   // La evaluación real de los agentes lee la llave de IA de la organización principal, que es identidad.
   // Sólo en local, y sólo después del `--confirmo` con el número de pedidos.
   'scripts/evaluar-agentes.mjs',
@@ -485,6 +488,11 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // porque `db.mjs verificar` es una fase aparte que comprueba el EFECTO, no la ausencia
   // de error.
   'db/sembrado/organizaciones.ts',
+  // El cerebro del Inicio: LEE identidad (la llave) y escribe negocio (el hilo, la pregunta, la respuesta).
+  // Qué queda a medias si la segunda mitad falla: nada que dure. La identidad sólo se lee; lo de negocio va
+  // en dos transacciones cortas de `lib/agentes/executive/preguntar.ts`, y una pregunta que no llega a
+  // respuesta queda `fallida`, sin contar para el tope.
+  'app/api/executive/route.ts',
   // Las empresas sintéticas de los agentes: identidad por `conIdentidad()` y negocio por `conOrganizacion()`.
   // Qué queda a medias si la segunda mitad falla: las empresas y sus personas, sin datos o con parte. Es
   // aceptable por la misma razón que el sembrado de desarrollo: es idempotente POR DESTRUCCIÓN —cada corrida

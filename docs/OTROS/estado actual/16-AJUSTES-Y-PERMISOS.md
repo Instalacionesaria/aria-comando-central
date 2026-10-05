@@ -15,13 +15,13 @@
 > - **Lo que sí se movió, en nueve commits.** Cinco banderas `sinOperacionesTodavia` bajadas, cada
 >   una con la primera ruta de su pantalla: `be5ba97` Acquisition (09-16), `3287f74` Creative
 >   (09-19), `0add4cc` Conversion (09-20), `c109ebd` Sales (09-21) y `3c361a1` Leads Portal (09-26).
->   Queda **una**, `executive` (`lib/autorizacion/secciones.ts:212-218`).
+>   Queda **una**, `executive` (`lib/autorizacion/secciones.ts:213-219`).
 > - **`d8b542e` (09-17):** un superadministrador no podía cargar la credencial de una subcuenta —500
 >   por una foránea compuesta— y el mismo defecto estaba en siete escrituras. Entra `autorDelCambio`
 >   (`lib/autorizacion/sesion.ts:384-385`), § 5.
 > - **`c109ebd` y `8dcb619` (09-21):** un cable nuevo de `ADR-0304` cruza la capacidad de cada `GET`
 >   con la de su sección, y encontró la única que no cuadraba: Conversation pasa de `tablero.ver` a
->   `auditor.ver` (`lib/autorizacion/secciones.ts:296-315`).
+>   `auditor.ver` (`lib/autorizacion/secciones.ts:297-316`).
 > - **`05534de` y `35665f2` (09-23):** la sección 16, `analizadores`, con dos capacidades nuevas
 >   (`db/arranque/001_catalogo.sql:209-217`), la llave de tl;dv como quinto secreto cifrado por
 >   empresa y cuarta llave de la pantalla (migración `057`) y la clave en el `check` del alcance
@@ -56,11 +56,11 @@ están escritas:
   credenciales) y su matriz generada está en `docs/OTROS/especificacion/TRAZABILIDAD.md:70-75`
   (ADR-0301 a 0306), `:100-107` (la administración) y `:113-116` (los secretos).
 - **Decisiones del usuario, citadas literales en los comentarios.** Tres roles con la diferencia en
-  las credenciales (`db/arranque/001_catalogo.sql:345-346`); que los administradores creen personas
-  «solo para su empresa» (`db/arranque/001_catalogo.sql:397-398`); Credenciales para los
+  las credenciales (`db/arranque/001_catalogo.sql:349-350`); que los administradores creen personas
+  «solo para su empresa» (`db/arranque/001_catalogo.sql:401-402`); Credenciales para los
   administradores y Empresas y Usuarios para el superadministrador desde la principal
   (`components/views/AjustesView.jsx:8-10`); Monitoreo como «el rol de usuario con acceso a
-  monitoreo» (`db/arranque/001_catalogo.sql:247-248`); y el segundo factor opcional «a pedido
+  monitoreo» (`db/arranque/001_catalogo.sql:251-252`); y el segundo factor opcional «a pedido
   explícito» (`db/migraciones/010_segundo_factor_opcional.sql:1-8`).
 
 Dos de esas decisiones se aplicaron con una desviación declarada: Usuarios **no** se esconde fuera de
@@ -74,7 +74,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 ## 2 · Qué hay hoy en pantalla
 
 **La entrada.** La sección `credenciales`, rotulada «Ajustes», es la única del grupo `Pie`
-(`lib/autorizacion/secciones.ts:192-209`); el pie junta sus secciones y dibuja sólo la primera
+(`lib/autorizacion/secciones.ts:193-210`); el pie junta sus secciones y dibuja sólo la primera
 (`components/Nav.jsx:128@b532a78`, `:215@b532a78`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
 (`components/CommandCenter.jsx:51`). **Después del corte, el 2026-10-02** (nueva estructura, E10): Ajustes, el
@@ -106,7 +106,7 @@ credenciales, la sección `credenciales` tiene **seis** rutas (medido sobre el �
 **Quién ve Ajustes, medido el 2026-09-28.** Las 11 personas con rol de administrador o de
 superadministrador; ninguna de las 4 de rol `usuario`, a las que el reparto les niega
 `credenciales.%` entero para no mostrarles un panel que no pueden tocar
-(`db/arranque/001_catalogo.sql:357-360`). Los superadministradores ven las tres pestañas; los
+(`db/arranque/001_catalogo.sql:361-364`). Los superadministradores ven las tres pestañas; los
 administradores, Credenciales y Usuarios.
 
 **Una dependencia latente.** Usuarios y Empresas cuelgan de la vista que monta la sección
@@ -119,6 +119,10 @@ camino en pantalla. Hoy no muerde: los dos roles que llevan `usuarios.ver` lleva
 ## 3 · El modelo de permisos
 
 ### 3.1 · El catálogo: 32 capacidades, en dos lugares que tienen que coincidir
+
+> **Después del corte**: el catálogo siguió creciendo. La última, `cerebro.usar` (AG5 de los agentes,
+> 2026-10-04), preguntarle al cerebro; los tres roles la reciben por el reparto derivado y llega a
+> producción con el paso 4b del hito H2. Hoy `CAPACIDADES` tiene 35 claves.
 
 La tabla es `identidad.permisos`; la copia en código es `CAPACIDADES`
 (`lib/autorizacion/capacidades.ts:33-171`), que existe para que el portero se llame con una clave que
@@ -148,18 +152,18 @@ Por familia, con la decisión que separó cada par:
   (`db/arranque/001_catalogo.sql:209-217`).
 
 El portero pide **alguna** de las capacidades de la lista, no todas
-(`lib/autorizacion/capacidades.ts:205-210`), y «ninguna» es un valor con nombre, `NINGUNA`, para que
-una lista vacía que llegó indefinida no abra la operación (`lib/autorizacion/capacidades.ts:186`).
+(`lib/autorizacion/capacidades.ts:210-215`), y «ninguna» es un valor con nombre, `NINGUNA`, para que
+una lista vacía que llegó indefinida no abra la operación (`lib/autorizacion/capacidades.ts:191`).
 
 ### 3.2 · Los roles: tres, y el reparto se DERIVA
 
 `closer` y `setter` se reemplazaron por un único `usuario` cuando nadie los tenía asignados
 (`db/arranque/001_catalogo.sql:227-234`), y después se retiró un rol `monitoreo` que se asignaba
-persona por persona (`db/arranque/001_catalogo.sql:245-250`); `db/arranque/003_retiro_de_roles.sql`
+persona por persona (`db/arranque/001_catalogo.sql:249-254`); `db/arranque/003_retiro_de_roles.sql`
 pasa a `usuario` a quien tuviera uno retirado. El reparto declara el conjunto completo de cada
 rol —borra lo que sobra e inserta lo que falta— y los tres se derivan: el superadministrador por
 «todas», los otros dos por exclusión de prefijos, así que una capacidad nueva cae sola en los tres
-salvo que su familia esté negada (`db/arranque/001_catalogo.sql:341`, `:383-387`, `:462-466`):
+salvo que su familia esté negada (`db/arranque/001_catalogo.sql:345`, `:383-387`, `:462-466`):
 
 | Rol | Regla | Capacidades · medido el 2026-09-28 | Personas · 2026-09-28 |
 |---|---|---|---|
@@ -173,12 +177,12 @@ uno. La foto anterior no contó personas por rol; la cifra más vieja escrita es
 
 **Qué hace distinto a cada uno, además de la lista.** `superadministrador` es el único con
 `solo_principal`, que un disparador de la base ata a la organización principal
-(`lib/autorizacion/secciones.ts:739-744`), y es el único que puede conmutar la sesión a otra empresa
+(`lib/autorizacion/secciones.ts:740-745`), y es el único que puede conmutar la sesión a otra empresa
 (`lib/autorizacion/sesion.ts:292-293`). `administrador` administra las personas **de su empresa**
 desde el 2026-09-08 (`6cae3eb`): el servidor filtra por organización y
 `lib/autorizacion/delegacion.ts` le impide fabricar otro administrador
-(`db/arranque/001_catalogo.sql:406-418`). `usuario` es el único con `secciones_restringidas`
-(`db/arranque/001_catalogo.sql:291-293`).
+(`db/arranque/001_catalogo.sql:410-422`). `usuario` es el único con `secciones_restringidas`
+(`db/arranque/001_catalogo.sql:295-297`).
 
 **La regla de delegación.** Un rol que confiere alguna capacidad de escritura sobre personas
 (`lib/autorizacion/delegacion.ts:68-75`) sólo lo otorga quien tiene `organizaciones.listar`: el
@@ -191,11 +195,11 @@ superadministrador otorga los tres roles, el administrador sólo `usuario`
 guarda qué pestañas se le concedieron a cada persona. Parece violar la regla de la 003 —«solo suma,
 nunca resta» (`db/migraciones/003_roles_y_permisos.sql:114-118`)— y el código dice por qué no: no
 toca ninguna capacidad, es una intersección, y es la única forma de separar seis pantallas que
-comparten `tablero.ver` (`lib/autorizacion/secciones.ts:672-690`).
+comparten `tablero.ver` (`lib/autorizacion/secciones.ts:673-691`).
 
 - **Qué decide si se aplica** es una bandera del rol, no la presencia de filas: rol no restringido,
   las filas se ignoran; rol restringido, sólo las concedidas, y **cero filas son cero pestañas**
-  (`lib/autorizacion/secciones.ts:692-707`). Con dos roles basta uno no restringido para no estar
+  (`lib/autorizacion/secciones.ts:693-708`). Con dos roles basta uno no restringido para no estar
   restringido: `bool_and` (`lib/autorizacion/sesion.ts:246`).
 - **El `check` de la base** acepta exactamente las 16 claves de `SECCIONES`
   (`db/migraciones/059_seccion_analizadores.sql:12-19`). En producción, el 2026-09-28, la restricción
@@ -203,18 +207,18 @@ comparten `tablero.ver` (`lib/autorizacion/secciones.ts:672-690`).
   `pg_constraint`).
 - **La pantalla que lo concede** es la de Usuarios, y las casillas salen de `alcanceOfrecible`, que
   deriva de `SECCIONES` y ofrece sólo lo que la capacidad del rol habilita
-  (`lib/autorizacion/secciones.ts:638-653`); para una empresa que no es la principal no ofrece
-  Monitoreo (`lib/autorizacion/secciones.ts:426-428`). **Después del corte, el 2026-10-02** (nueva
+  (`lib/autorizacion/secciones.ts:639-654`); para una empresa que no es la principal no ofrece
+  Monitoreo (`lib/autorizacion/secciones.ts:427-429`). **Después del corte, el 2026-10-02** (nueva
   estructura, etapa E12): las casillas se agrupan por departamento, cada sección en un solo grupo y con lo
   que abre (`alcancePorDepartamento`, en `lib/autorizacion/departamentos.ts`), sobre lo mismo que ofrece
   `alcanceOfrecible` (`docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-21`).
 
 ### 3.4 · El cuarto eje: la organización principal
 
-`soloDesdeLaPrincipal` la lleva sólo Monitoreo (`lib/autorizacion/secciones.ts:436-440`), porque mira
+`soloDesdeLaPrincipal` la lleva sólo Monitoreo (`lib/autorizacion/secciones.ts:437-441`), porque mira
 el consumo de todas las empresas y ningún rol global sabe de qué empresa es quien lo tiene
-(`lib/autorizacion/secciones.ts:95-109`). Se pregunta sobre la organización **propia**, no sobre la
-que se está mirando (`lib/autorizacion/secciones.ts:755-760`), y la vuelve a preguntar la ruta
+(`lib/autorizacion/secciones.ts:96-110`). Se pregunta sobre la organización **propia**, no sobre la
+que se está mirando (`lib/autorizacion/secciones.ts:756-761`), y la vuelve a preguntar la ruta
 (`app/api/monitoreo/route.ts:125`). Medido el 2026-09-28: la única fila de alcance con `monitoreo`
 es de una persona de la principal, así que la red no está atajando a nadie.
 
@@ -245,10 +249,10 @@ quien no trae la cookie de sesión; no decide ningún permiso.
 
 **Qué rutas llaman al portero, medido sobre el árbol del 2026-09-28.** De 82 archivos `route.ts`
 bajo `app/api/`, 53 declaran `PANTALLA` y 29 están en `SIN_PANTALLA`
-(`lib/autorizacion/secciones.ts:465-594`): son exactamente, archivo por archivo, los que no la
+(`lib/autorizacion/secciones.ts:466-595`): son exactamente, archivo por archivo, los que no la
 declaran. No llaman a `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**:
-`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:645-653`), y la sonda, el
-cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:795-838`).
+`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:653-661`), y la sonda, el
+cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:803-846`).
 
 **Rechazos registrados.** Desde el 2026-09-15, **0** `permiso_denegado` y **0** `seccion_denegada` en
 `identidad.auditoria_accesos`; en toda la historia, 3 y 0 (consulta del 2026-09-28 agrupada por
@@ -256,7 +260,7 @@ cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.
 
 ### 3.6 · Qué sección pide qué capacidad
 
-Medido sobre el árbol del 2026-09-28 (`lib/autorizacion/secciones.ts:171-442`; «rutas» son los
+Medido sobre el árbol del 2026-09-28 (`lib/autorizacion/secciones.ts:172-443`; «rutas» son los
 archivos que declaran `export const PANTALLA` con esa clave) y contra producción el mismo día
 («concedidas» son las filas de `identidad.usuarios_secciones` de las cuatro personas de rol
 `usuario`, las únicas para las que cuentan):
@@ -282,14 +286,14 @@ archivos que declaran `export const PANTALLA` con esa clave) y contra producció
 
 Las tres de administración no se le pueden conceder a nadie de rol `usuario` porque su rol no las
 habilita. Monitoreo no la ve ningún administrador: su rol no la tiene, y como no restringe por
-sección, dársela sería dársela a todos los administradores (`db/arranque/001_catalogo.sql:442-457`).
+sección, dársela sería dársela a todos los administradores (`db/arranque/001_catalogo.sql:446-461`).
 
 ---
 
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:647-652`). El freno por cuenta corta a los 5 intentos y bloquea 15
+(`pruebas/apoyo/autorizados.ts:655-660`). El freno por cuenta corta a los 5 intentos y bloquea 15
 minutos; el de origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con
 N=16384, r=8, p=1 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login
 exitoso (`lib/autenticacion/freno.ts:85-96`).
@@ -417,7 +421,7 @@ correo (`components/ajustes/Usuarios.jsx:34-36`).
 **Alcance: 42 filas de 5 personas.** 31 son de las 4 de rol `usuario` —con 1, 7, 11 y 12
 pestañas— y 11 de un administrador, que el portero ignora porque su rol no restringe. Si esa
 persona pasara a `usuario`, esas 11 volverían a mandar sin que nadie las elija de nuevo: asignar un
-rol reemplaza los roles y no toca nada más (`lib/autorizacion/secciones.ts:694-698`). Ninguna fila
+rol reemplaza los roles y no toca nada más (`lib/autorizacion/secciones.ts:695-699`). Ninguna fila
 es posterior al 2026-09-15 (`concedida_el`).
 
 **Por sección**, las 31 efectivas están en la tabla del § 3.6. La consecuencia más clara:
@@ -443,11 +447,11 @@ se leyó lo que afirman.
 | `ADR-0302` | Ninguna comparación con un nombre de rol, ni con los dos retirados; sin atajo para la plataforma; toda capacidad usada está en el catálogo | `pruebas/codigo/30-portero.test.ts:193`, `:231`, `:248` |
 | `ADR-0303` | Toda sección declara una capacidad del catálogo; ninguna sección con la bandera tiene rutas | `pruebas/codigo/30-portero.test.ts:270`, `:325` |
 | `ADR-0304` | El `GET` pide la capacidad de su sección (desde `c109ebd`); las operaciones de una pantalla piden el mismo conjunto; lo que modifica no se conforma con una de lectura | `pruebas/codigo/30-portero.test.ts:280`, `:350`, `:461` |
-| `ADR-0305` · `ADR-0306` | Un solo cliente HTTP que distingue rechazo de vacío; el origen se verifica en todo lo que modifica | `pruebas/codigo/30-portero.test.ts:542`, `:594`, `:622` |
-| Listas sin entradas muertas | Rutas públicas, excepciones de capacidad y `SIN_PANTALLA` | `pruebas/codigo/30-portero.test.ts:644`, `:675`, `:713` |
+| `ADR-0305` · `ADR-0306` | Un solo cliente HTTP que distingue rechazo de vacío; el origen se verifica en todo lo que modifica | `pruebas/codigo/30-portero.test.ts:546`, `:594`, `:622` |
+| Listas sin entradas muertas | Rutas públicas, excepciones de capacidad y `SIN_PANTALLA` | `pruebas/codigo/30-portero.test.ts:648`, `:675`, `:713` |
 | El cable trampa literal | `SIN_OPERACIONES_TODAVIA` tiene largo **1**: el día que Executive tenga una ruta, `ADR-0303` falla hasta bajarle la bandera, y bajarla rompe este número | `pruebas/codigo/90-fundaciones.test.ts:1263`, `pruebas/codigo/30-portero.test.ts:325` |
 | Closer y Setter separados | Con `closer.ver` a secas se ve sólo Closer, y al revés | `pruebas/codigo/90-fundaciones.test.ts:1194` |
-| El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:293`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
+| El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:295`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
 | La delegación | Sólo la plataforma otorga roles que administran personas | `pruebas/codigo/144-delegacion-de-roles.test.ts:64` |
 | Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:346`, `:283`, `:94` |
 | El alcance, contra la base | Los dos ceros; el rechazo es del portero, no cosmético; el anti-encierro; el `check` acepta toda clave de `SECCIONES` | `pruebas/base/31-alcance.test.ts:127`, `:229`, `:287`, `:337` |
@@ -456,13 +460,13 @@ se leyó lo que afirman.
 | Segundo factor | La invariante del rol de plataforma, retirada; el alta voluntaria por la API | `pruebas/base/41-catalogo-de-autenticacion.test.ts:69`, `pruebas/base/43-segundo-factor.test.ts:214` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` está vacía desde el 2026-09-21: no hay ninguna excepción
-viva (`pruebas/apoyo/autorizados.ts:755-761`).
+viva (`pruebas/apoyo/autorizados.ts:763-769`).
 
 **Un cruce que el código anuncia y no encontré.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
 las dos direcciones». Encontré la de código → tabla
 (`pruebas/base/22-los-tres-roles.test.ts:346-353`) y la de sección → archivo que la carga
-(`pruebas/codigo/91-closer-y-setter.test.ts:293`); una que lea `identidad.permisos` y busque filas
+(`pruebas/codigo/91-closer-y-setter.test.ts:295`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre
 `pruebas/`; la que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:345`, cruza la tabla con
 el rol de plataforma, no con el código. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese
@@ -479,13 +483,13 @@ coinciden en producción.
   `components/ajustes/Usuarios.jsx:13-15` dicen que un administrador no ve Usuarios y recibe 403 en
   sus rutas. Es falso desde `6cae3eb` (2026-09-08): en producción el rol tiene `usuarios.ver`,
   `.crear`, `.editar`, `.desactivar` y `roles.asignar` (consulta del 2026-09-28), como manda
-  `db/arranque/001_catalogo.sql:389-418`.
-- **Conversation «sigue siendo `tablero.ver`».** `lib/autorizacion/secciones.ts:291-293`, veinticuatro
+  `db/arranque/001_catalogo.sql:393-422`.
+- **Conversation «sigue siendo `tablero.ver`».** `lib/autorizacion/secciones.ts:292-294`, veinticuatro
   líneas arriba de `capacidadRequerida: 'auditor.ver'` en `:315`, que es lo cierto desde `8dcb619`. Y
-  `lib/autorizacion/secciones.ts:682-686` sigue contando **siete** secciones que comparten
+  `lib/autorizacion/secciones.ts:683-687` sigue contando **siete** secciones que comparten
   `tablero.ver`, con `conversation` entre ellas: son seis.
-- **«Usuarios y credenciales no tienen menú».** `lib/autorizacion/secciones.ts:124-127` y el rótulo
-  «Las dos de administración. Sin `menu`» (`lib/autorizacion/secciones.ts:172-173`) encabezan tres
+- **«Usuarios y credenciales no tienen menú».** `lib/autorizacion/secciones.ts:125-128` y el rótulo
+  «Las dos de administración. Sin `menu`» (`lib/autorizacion/secciones.ts:173-174`) encabezan tres
   secciones, y `credenciales` tiene `menu` en `:208`. `components/ajustes/Credenciales.jsx:3` habla
   de «las tres claves y los tres identificadores»: en pantalla son cuatro claves —desde la de
   tl;dv— y cinco identificadores (`components/ajustes/Credenciales.jsx:39-131`).
@@ -501,7 +505,7 @@ coinciden en producción.
 `roles.administrar`, `configuracion.editar` y `auditoria.ver` están en el catálogo y en los roles, y
 **ninguna ruta las pide** (`grep` de cada clave sobre `app/`, `lib/` y `components/`, 2026-09-28).
 `roles.administrar` está declarada así a propósito y se le niega al administrador
-(`db/arranque/001_catalogo.sql:426-429`). Las otras dos no tienen nota: el registro de accesos que
+(`db/arranque/001_catalogo.sql:430-433`). Las otras dos no tienen nota: el registro de accesos que
 `auditoria.ver` describe no lo muestra ninguna ruta —sus dos lectores son el freno del login y la
 verificación del segundo factor, `lib/autenticacion/freno.ts:115` y
 `app/api/auth/2fo/verificar/route.ts:83`, por `grep` de `auditoria_accesos` sobre `lib/`, `app/` y

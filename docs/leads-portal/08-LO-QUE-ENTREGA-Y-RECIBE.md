@@ -324,7 +324,7 @@ Ninguna pantalla lee de Leads Portal, y LP-4 no cambia eso. Lo que produce y otr
 
 - **A Executive, la cohorte por tramo.** Es lo que la fila «Contactos» de su embudo finge
   (`LP08-13`). Pero Executive todavía no tiene operaciones de servidor
-  (`lib/autorizacion/secciones.ts:216`), y esa fila también tiene que coincidir con la de
+  (`lib/autorizacion/secciones.ts:217`), y esa fila también tiene que coincidir con la de
   Acquisition (`A7-07`): **quien la construya consume `cadenaDeCierre` o esta cohorte, no escribe
   una tercera**.
 - **A Acquisition y a Creative, nada nuevo.** «Qué campañas traen ICP alto» no se publica acá: la

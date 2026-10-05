@@ -68,13 +68,13 @@ documento es de esa hora. La ventana rueda sola: [04-CONVERSATION.md](04-CONVERS
 18 h 277 contactos y 37 canceladas de 106 donde acá hay 276 y 33 de 103, las dos correctas a su hora
 (§ «Cómo se midió este corte»). La cancelación a catorce días, **22,2 %** sobre 18, no se movió (§ 9).
 
-**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:158-161` define tres grupos del
+**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:159-162` define tres grupos del
 cuerpo del menú, más el pie donde va Ajustes: AIOS (Executive, Leads Portal, ICP & Oferta),
 Inteligencia (Acquisition, Creative, Conversion, Conversation, Sales) y Operación (Setter, Closer,
 Analizadores, Tools, Monitoreo; Analizadores entró el 2026-09-23,
-`lib/autorizacion/secciones.ts:363-366`). Las cinco de Inteligencia y Leads Portal tienen ruta propia
+`lib/autorizacion/secciones.ts:364-367`). Las cinco de Inteligencia y Leads Portal tienen ruta propia
 y dibujan datos reales; la única pantalla que sigue sin operaciones de servidor es
-Executive (`lib/autorizacion/secciones.ts:216`). Estas reglas nacieron casi todas en Operación, se
+Executive (`lib/autorizacion/secciones.ts:217`). Estas reglas nacieron casi todas en Operación, se
 ejercieron primero en Conversation y entre el 16 y el 26 de septiembre se aplicaron a las otras cinco.
 
 ---
@@ -797,9 +797,9 @@ precall (`lib/negocio/consumoDelPrecall.ts:192`, que además reescribe `cancelad
 `<> all(ESTADOS_CANCELADOS)` en `:195`)—, y «agendó» tiene dos definiciones en el producto (§ 4).
 
 **31 · La bandera `sinOperacionesTodavia` y la primera ruta de una pantalla se mueven en el mismo
-commit.** La bandera es un cable trampa editado a mano (`lib/autorizacion/secciones.ts:79-90`): la
-prueba `ADR-0304` que empieza en `pruebas/codigo/30-portero.test.ts:350` da rojo en las dos
-direcciones —una sección con la bandera que sí tiene ruta (`pruebas/codigo/30-portero.test.ts:442-452`),
+commit.** La bandera es un cable trampa editado a mano (`lib/autorizacion/secciones.ts:80-91`): la
+prueba `ADR-0304` que empieza en `pruebas/codigo/30-portero.test.ts:354` da rojo en las dos
+direcciones —una sección con la bandera que sí tiene ruta (`pruebas/codigo/30-portero.test.ts:446-456`),
 o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:454-457`)—; `ADR-0303` (`:325`)
 vigila además que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y el
 conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1263` obliga a decidir en vez de derivar.
@@ -807,17 +807,17 @@ Por eso la ruta, la bandera y el conteo van juntos: Sales los movió de 3 a 2 en
 Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`), con una prueba de base por
 pantalla que lo exige (`pruebas/base/166-la-ruta-de-sales.test.ts:82`,
 `pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). Queda `executive`
-(`lib/autorizacion/secciones.ts:216`).
+(`lib/autorizacion/secciones.ts:217`).
 
 **32 · El GET de una pantalla pide exactamente la capacidad que declara su sección.**
 `pruebas/codigo/30-portero.test.ts:280` (`c109ebd`). El agujero lo encontró una mutación: `ADR-0304`
 comparaba las capacidades de las rutas de una pantalla **entre sí** y nunca contra la sección, así que
 cambiar la de Sales a `closer.ver` dejaba la suite entera en verde — y el resultado sería una entrada de
 menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Conversation. Se resolvió en
-`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:313-315`),
+`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:314-316`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:755`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:763`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:

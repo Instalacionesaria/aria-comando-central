@@ -12,7 +12,7 @@
 | Modelo | El del cerebro; el Brief, `claude-sonnet-5-5` |
 | Permisos | Leer: `closer.ver`. Generar o regenerar el Brief: `cerebro.usar` (gasta tokens). Siempre con la sección `closer` y su alcance |
 | Código | `lib/agentes/brief/*`, `app/api/closer/brief/route.ts` (`PANTALLA='closer'`) |
-| Tabla | `negocio.briefs_del_closer` (`073`), una fila por cita, en cascada con ella |
+| Tabla | `negocio.briefs_del_closer` (`074`), una fila por cita, en cascada con ella |
 
 ## Lo que el cerebro lee acá
 

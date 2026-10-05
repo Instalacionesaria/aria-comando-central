@@ -9,7 +9,7 @@
 | Lugar en el front | El bloque CONVERSACIONES de la barra (hoy «Próximamente», `components/Nav.jsx`); el panel que sube en la caja del pie, para quien no ve el Inicio |
 | Estado | **Se construye** en AG7 |
 | Permisos | Leer la lista: la del Inicio (`tablero.ver`) o la de la sección, en el panel del pie. Borrar: `cerebro.usar` |
-| Tablas | `conversaciones_del_executive`, `mensajes_del_executive` (`070`) |
+| Tablas | `conversaciones_del_executive`, `mensajes_del_executive` (`071`) |
 
 ## Requisitos
 

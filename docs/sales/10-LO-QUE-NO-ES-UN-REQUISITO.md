@@ -104,7 +104,7 @@ Lo que sigue como estaba:
 3. **La mitad derecha del encabezado entera** (`.ch-r`, `:22-49`): el botón muerto, el segmentado
    muerto y la píldora. El período vive dentro del panel, como en las otras cuatro.
 4. **El cuerpo entero** (`:52-226`), reemplazado por `<PanelDeSales />`.
-5. **`sinOperacionesTodavia: true`** de `lib/autorizacion/secciones.ts:303`, y el conteo literal de
+5. **`sinOperacionesTodavia: true`** de `lib/autorizacion/secciones.ts:304`, y el conteo literal de
    `pruebas/codigo/90-fundaciones.test.ts:1078` de **3 a 2**.
 
 `SalesView.jsx` queda como cáscara de unas 75 líneas con el comentario de qué se tiró y por qué —la

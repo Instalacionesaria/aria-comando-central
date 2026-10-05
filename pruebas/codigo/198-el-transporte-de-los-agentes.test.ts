@@ -470,7 +470,14 @@ function escribe(tabla: string, fuente: string): boolean {
  * Las tablas de los agentes y su único escritor (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-08). La
  * 111 vigila sólo `negocio.mensajes`: cada etapa que crea una tabla de los agentes suma su fila acá.
  */
-const ESCRITORES = [{ tabla: 'uso_de_ia', escritor: 'lib/agentes/uso.ts' }];
+const ESCRITORES = [
+  { tabla: 'uso_de_ia', escritor: 'lib/agentes/uso.ts' },
+  // El cerebro (AG5, migración 071).
+  { tabla: 'conversaciones_del_executive', escritor: 'lib/agentes/executive/conversaciones.ts' },
+  { tabla: 'mensajes_del_executive', escritor: 'lib/agentes/executive/conversaciones.ts' },
+  { tabla: 'topes_del_executive', escritor: 'lib/agentes/executive/topes.ts' },
+  { tabla: 'preguntas_del_executive', escritor: 'lib/agentes/executive/topes.ts' },
+];
 
 for (const { tabla, escritor } of ESCRITORES) {
   test(`\`negocio.${tabla}\` tiene UN escritor, y es \`${escritor}\``, () => {

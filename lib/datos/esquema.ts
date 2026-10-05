@@ -1558,6 +1558,66 @@ export interface TablaUsoDeIa {
   ref: string | null;
 }
 
+/**
+ * Un hilo del cerebro, de quien lo escribió. Migración 071. El único escritor es
+ * `lib/agentes/executive/conversaciones.ts`, que filtra SIEMPRE por autor: la RLS separa empresas, no
+ * personas.
+ */
+export interface TablaConversacionesDelExecutive {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  usuario_id: string;
+  titulo: string;
+  origen: 'inicio' | 'pie' | 'reunion';
+  seccion: string | null;
+  contexto: Generated<unknown>;
+  creada_el: Generated<Date>;
+  actualizada_el: Generated<Date>;
+}
+
+/**
+ * Una pregunta o una respuesta de un hilo del cerebro. Migración 071. De la respuesta se guarda la forma
+ * validada y la evidencia como identificadores y cifras; ningún bloque de pensamiento.
+ */
+export interface TablaMensajesDelExecutive {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  conversacion_id: string;
+  rol: 'persona' | 'cerebro';
+  texto: string;
+  /** Sólo las preguntas. Una `fallida` no cuenta para el tope. */
+  estado: 'reservada' | 'respondida' | 'fallida' | null;
+  respuesta: unknown | null;
+  evidencia: unknown | null;
+  situacion: string | null;
+  ref: string | null;
+  /** Sólo las respuestas: la pregunta que contestan. */
+  responde_a: string | null;
+  creado_el: Generated<Date>;
+}
+
+/**
+ * Una pregunta al cerebro, sin texto, para contar el tope del día. Migración 071. No cuelga del hilo:
+ * borrar un hilo no devuelve sus preguntas. Escritor: `lib/agentes/executive/topes.ts`.
+ */
+export interface TablaPreguntasDelExecutive {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  usuario_id: string | null;
+  estado: Generated<'reservada' | 'respondida' | 'fallida' | 'fallida_pagada'>;
+  creada_el: Generated<Date>;
+  terminada_el: Date | null;
+}
+
+/** Los topes de preguntas del cerebro por día local. Migración 071. Escritor: `lib/agentes/executive/topes.ts`. */
+export interface TablaTopesDelExecutive {
+  org_id: ColumnaInquilino;
+  por_persona: Generated<number>;
+  por_empresa: Generated<number>;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1615,6 +1675,10 @@ export interface BaseDeDatos {
   analizador_fichas: TablaAnalizadorFichas;
   analizador_lapidas: TablaAnalizadorLapidas;
   uso_de_ia: TablaUsoDeIa;
+  conversaciones_del_executive: TablaConversacionesDelExecutive;
+  mensajes_del_executive: TablaMensajesDelExecutive;
+  topes_del_executive: TablaTopesDelExecutive;
+  preguntas_del_executive: TablaPreguntasDelExecutive;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

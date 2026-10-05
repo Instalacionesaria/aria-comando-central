@@ -7,11 +7,11 @@
 
 | riesgo | cómo se vería | qué lo vigila |
 |---|---|---|
-| El cerebro ofrece la herramienta de una sección que la persona no ve | Un closer recibe cifras de Acquisition | El portero, porque cada ruta declara su pantalla (`03`, `AG-40`), y la 210 sobre las herramientas ofrecidas |
-| Una transacción queda abierta mientras se espera al modelo | El grupo de 5 conexiones se agota y la app entera se pone lenta | La 206 (estática) y la 209 (base, `pg_stat_activity`) |
-| Un dato personal viaja al modelo | Un correo en el resultado de una herramienta | La 211: juego exacto de claves por herramienta, más la negativa |
-| El modelo inventa una cifra | Un número plausible y falso, con formato de verdadero | La 207: la cifra que no está en su evidencia se quita y se dice |
-| La herramienta da otra cifra que la pantalla | Dos verdades para «7 días» | La 212, parametrizada sobre las cuatro ventanas |
+| El cerebro ofrece la herramienta de una sección que la persona no ve | Un closer recibe cifras de Acquisition | El portero, porque cada ruta declara su pantalla (`03`, `AG-40`), y la 208 sobre las herramientas ofrecidas (AG5) |
+| Una transacción queda abierta mientras se espera al modelo | El grupo de 5 conexiones se agota y la app entera se pone lenta | La 207 (estática) y la 210 (base, `pg_stat_activity`) (AG5) |
+| Un dato personal viaja al modelo | Un correo en el resultado de una herramienta | La 213: juego exacto de claves por herramienta, más la negativa (AG5) |
+| El modelo inventa una cifra | Un número plausible y falso, con formato de verdadero | La 208: la cifra que no está en su evidencia se quita y se dice (AG5) |
+| La herramienta da otra cifra que la pantalla | Dos verdades para «7 días» | La 213, con 30 días desde AG5; las cuatro ventanas, en AG6 |
 | La capacidad no llega al catálogo de producción | 403 para todos en el cerebro, o en resolver señales | El paso 4b en cada hito y la lectura de `identidad.roles_permisos` |
 | La migración no está en producción al empujar | `42P01` en el Inicio o en el cron | La regla de aplicar antes del push, con el número verificado después del `pull` |
 | La tarea `senales` queda `saltada` en empresas sin GHL | Ninguna señal en la mayoría de las empresas | La 99: la tarea está en la excepción del token del CRM |

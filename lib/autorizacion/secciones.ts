@@ -14,7 +14,8 @@
 // **Eso dejó de ser cierto.** La Etapa 9 le dio a `icp` (ICP & Oferta) sus tres primeras
 // operaciones y sus dos capacidades propias (`fundaciones.ver`, `fundaciones.editar`), así que hoy
 // hay una pantalla de producto que se decide por capacidad y `ADR-0303` verifica algo real. Las
-// otras nueve siguen en `SIN_OPERACIONES_TODAVIA`, con el mismo cable trampa esperándolas.
+// otras nueve quedaron en `SIN_OPERACIONES_TODAVIA`, con el mismo cable trampa esperándolas, y fueron
+// saliendo de a una; la última, `executive`, el 2026-10-04 con el cerebro. Hoy la lista está vacía.
 //
 // Se conserva el párrafo de arriba en vez de borrarlo porque explica QUÉ estaba esperando la lista,
 // y la próxima pantalla que reciba una operación va a necesitar leerlo.
@@ -216,7 +217,7 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'executive',
     nombre: 'Inicio',
     capacidadRequerida: 'tablero.ver',
-    sinOperacionesTodavia: true,
+    // Bandera bajada el 2026-10-04 con `app/api/executive/route.ts`, el cerebro (AG5). No queda ninguna.
     menu: { grupo: 'AIOS', icono: '#i-exec' },
   },
   {
@@ -225,7 +226,7 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'contacts',
     nombre: 'Leads Portal',
     capacidadRequerida: 'tablero.ver',
-    // Bandera bajada el 2026-09-26 con `app/api/leads-portal/route.ts`. Sólo queda `executive`.
+    // Bandera bajada el 2026-09-26 con `app/api/leads-portal/route.ts`. Quedaba `executive`, que la bajó el cerebro (AG5).
     menu: { grupo: 'AIOS', icono: '#i-leads', galon: true },
   },
   {

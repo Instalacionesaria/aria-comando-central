@@ -1254,13 +1254,13 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   // publican la cohorte por persona con leads reales, y la maqueta de quince personas inventadas
   // deja de ser lo que la pestaña muestra. Séptima vez que el cable dispara.
   //
-  // La que queda no es una maqueta a medio construir: es la que todavía no se empezó.
+  // Y la última es **`executive`**, el Inicio: `app/api/executive/route.ts` es el cerebro (AG5 de los
+  // agentes, 2026-10-04). Octava vez que el cable dispara, y con ésta no queda ninguna pantalla del
+  // prototipo sin operaciones.
   //
-  // El número literal es el cable trampa: **el día que `executive` reciba su primera
-  // operación de servidor, esta línea falla** y alguien tiene que bajarle la bandera
-  // `sinOperacionesTodavia` en `SECCIONES` en vez de dejar una pantalla que decide por
-  // capacidad figurando como si no decidiera nada. Derivarlo lo apagaría.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 1);
+  // El número literal sigue siendo el cable trampa, ahora al revés: una sección nueva que nazca con
+  // `sinOperacionesTodavia` lo hace fallar, y alguien tiene que decidir si eso es lo que quiere.
+  assert.equal(SIN_OPERACIONES_TODAVIA.length, 0);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {

@@ -16,7 +16,7 @@
 - Lo que el front ya dejó dibujado como «Próximamente»: `components/views/ExecutiveView.jsx:58`,
   `components/ConsultaAlCerebro.jsx:56-71` y el rótulo de CONVERSACIONES en `components/Nav.jsx`.
 - Las reglas propias de Executive: consume y no recalcula, el dinero es del mes y es venta reportada,
-  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:433-466`).
+  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:440-473`).
 
 ---
 
@@ -41,14 +41,14 @@ ADR-0304 compara sólo los GET de una pantalla contra la capacidad de su secció
 entra en `MUTACIONES_CON_CAPACIDAD_DE_LECTURA`.
 
 La ruta del Inicio **baja la bandera** `sinOperacionesTodavia` de `executive`
-(`lib/autorizacion/secciones.ts:219`): la línea pasa a ser un comentario de una línea (NE-33), el conteo
-literal de `pruebas/codigo/90-fundaciones.test.ts:1263` pasa de 1 a 0 en el mismo commit, y nace la prueba
-de base de la ruta, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:799-810`).
+(hecho en AG5: `lib/autorizacion/secciones.ts:220` es ahora el comentario de una línea, NE-33), el conteo
+literal de `pruebas/codigo/90-fundaciones.test.ts` pasó de 1 a 0 en el mismo commit, y nació la prueba de base
+de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:799-810`).
 
 ## AG-41 · Sólo se ofrece lo de las pestañas que la persona ve
 
 Las secciones visibles salen de `seccionesConAlcance(permisos, alcance, desdeLaPrincipal)`
-(`lib/autorizacion/secciones.ts:798`), con los datos que ya trae el contexto de la sesión. El modelo recibe
+(`lib/autorizacion/secciones.ts:799`), con los datos que ya trae el contexto de la sesión. El modelo recibe
 **sólo** las herramientas de esas secciones; una herramienta que no se ofrece no existe para él. Con la
 caja del pie, las de la sección abierta van primero.
 
@@ -110,7 +110,8 @@ llega con el piloto de Acquisition como señales).
 Los avisos y los huecos de cada función viajan tal cual. Debajo del piso, la respuesta dice «no hay dato
 suficiente», **qué falta** y **dónde se carga** (Lienzo, pantalla «Estado especial · no hay dato
 suficiente»: «0 de 333 … se registra en Sales · Closer, cita por cita»). Sin datos no se llama al modelo
-(`AG-15` de `01`).
+(`AG-15` de `01`): a quien no ve ninguna sección con herramientas, el estado le dice `sin_datos` y la
+pregunta se rechaza con `cerebro_sin_datos`, antes de reservar (AG5).
 
 ## AG-44 · El contexto de la caja del pie
 
@@ -131,9 +132,11 @@ texto libre de personas (notas, mensajes, transcripciones) no viaja; las frases 
 
 El modelo contesta con la herramienta `responder`, ofrecida con `strict: true` y pedida por el prompt. **No
 se puede forzar**: `claude-sonnet-5-5` rechaza `tool_choice` de tipo `tool` o `any` con un 400 (`06`, AG-93).
-Cómo se asegura la salida —`responder` con `tool_choice` `auto`, o el formato de la salida
-(`output_config.format`) en la última ronda— y qué se hace con una respuesta que no la usó (`IA-ESTRUCTURA`)
-lo decide AG5. La forma:
+Lo decidió AG5 (`lib/agentes/executive/preguntar.ts`): `responder` va con las demás herramientas y
+`tool_choice` `auto`; si el modelo contesta con texto suelto, o se llega a la sexta ronda, esa ronda pide el
+formato de `responder` (`output_config.format`) con `tool_choice` `none`, sin dejar de ofrecer las
+herramientas para no cambiar el prefijo. Si ni así llega con la forma, es `IA-ESTRUCTURA` con su incidente, y
+la pregunta queda `fallida` sin contar para el tope. La forma:
 
 ```text
 conclusion        una o dos frases, la respuesta primero
@@ -155,17 +158,27 @@ Guardas de las recomendaciones (`docs/acquisition/12-QUIEN-DECIDE-QUE.md`, A7-20
 ## AG-47 · Una cifra sin respaldo se quita
 
 Cada resultado de herramienta recibe un id `ev-n` con su proyección (hasta 20 filas, el total, los avisos).
-La arma el adaptador, no el modelo. Cada cifra de `responder` dice su `ev`; el servidor comprueba que exista
-y que el valor aparezca en esa evidencia, con tolerancia de redondeo. **La que no pasa se quita** y la
-respuesta lo dice («una cifra sin respaldo se quitó»). Es el patrón de
-`lib/analizadores/nucleo/prospect-card.ts:17-19`: lo detectado sin cita se degrada. Lo mismo para las
-recomendaciones y para los nombres de herramienta.
+La arma el adaptador, no el modelo. Cada cifra de `responder` dice su `ev` **y el campo** de donde sale
+(`total.inversion`, `eslabones[1].contactos`); el servidor comprueba que el valor sea el de ese campo, con
+tolerancia de redondeo y, sólo si el campo es una proporción, como porcentaje. **La que no pasa se quita** y
+la respuesta lo dice. Contra el campo y no contra cualquier número de la evidencia: la primera versión
+buscaba en toda la evidencia, y con `dias`, `piso` y puntajes de 0 a 100 casi cualquier número inventado
+encontraba con quién coincidir (lo encontró la revisión de AG5). Es el patrón de
+`lib/analizadores/nucleo/prospect-card.ts:17-19`: lo detectado sin cita se degrada.
+
+El texto libre también se mira: cada número de la conclusión o de una recomendación tiene que estar entre
+las cifras respaldadas (salvo los largos de ventana y los años). La recomendación que no cumple se quita, como
+la que no cita ninguna evidencia; la conclusión no se puede quitar, así que se dice y la confianza baja a
+`baja`. Los nombres de herramienta inventados no se corren.
 
 ## AG-48 · La evidencia va dentro de la respuesta
 
 Un desplegable `<details>` dentro de la burbuja, no un panel aparte (`D-28`): por cada `ev`, las filas
-reales con «mostrando X de N» (A7-29). La evidencia se guarda como **ids y cifras**; los nombres se resuelven
-al mostrar, así el hilo guardado no acumula datos personales.
+reales con «mostrando X de N» (A7-29). En el hilo guardado, la evidencia queda sin las claves `nombre`, y en
+lo que escribió el modelo cada nombre que trajo la evidencia se reemplaza por «[persona]»
+(`paraGuardar`, `lib/agentes/executive/conversaciones.ts`); quedan los identificadores y las cifras. La
+respuesta del momento sí lleva los nombres. La pregunta se guarda como la escribió la persona, y quedan los
+identificadores de los leads de la cohorte —seudónimos, del CRM—.
 
 ## AG-49 · Los siguientes pasos navegan y pasan contexto
 
@@ -197,7 +210,9 @@ Las de cada entrada están en su ficha.
   lista de sus hilos de esa sección, con borrar.
 - Sin «＋» para adjuntar y sin URL para compartir.
 
-Tablas `negocio.conversaciones_del_executive` y `negocio.mensajes_del_executive`, migración `070`.
+Tablas `negocio.conversaciones_del_executive` y `negocio.mensajes_del_executive`, migración `071`. Cada
+respuesta guarda la pregunta que contesta (`responde_a`): con dos preguntas seguidas en el mismo hilo, el
+orden de llegada no alcanza para emparejarlas.
 
 ## AG-52 · El estado del cerebro
 
@@ -210,6 +225,7 @@ Una unión, nunca un booleano (`T-13`):
 | `sin_llave` | «El cerebro necesita la llave de IA de tu empresa.» Con `credenciales.ver`, un enlace a Ajustes; sin ella, «pídesela a quien administra» |
 | `llave_ilegible` | lo mismo, con el motivo |
 | `delegacion` | «Estás mirando otra empresa: el cerebro no responde aquí.» |
+| `sin_datos` | Ninguna pestaña que ve tiene herramientas: no hay qué leer, y no se llama al modelo (AG-43) |
 | `tope` | «Llegaste al tope de hoy (N preguntas).» Con la hora a la que se renueva |
 
 ## AG-53 · Topes

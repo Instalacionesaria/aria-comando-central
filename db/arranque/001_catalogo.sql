@@ -224,7 +224,11 @@ insert into identidad.permisos (clave, descripcion) values
   -- quien tiene la pestaña, analiza. Lo que la acota por persona es la casilla de la pestaña en
   -- Usuarios, no la capacidad.
   ('analizadores.ver',    'Ver la pestaña Analizadores: las llamadas HT y OB, sus informes y sus fichas'),
-  ('analizadores.editar', 'Analizar llamadas, sincronizar con tl;dv, reencaminar y borrar (consume tokens de la organización)')
+  ('analizadores.editar', 'Analizar llamadas, sincronizar con tl;dv, reencaminar y borrar (consume tokens de la organización)'),
+  -- El cerebro (AG5 de los agentes): preguntar y borrar los hilos propios. Gasta la llave de IA de la
+  -- empresa, y por eso es una capacidad aparte de `tablero.ver`, que sólo deja mirar el Inicio. La reciben
+  -- los TRES roles por el reparto derivado (`docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`).
+  ('cerebro.usar',        'Preguntarle al cerebro y borrar los hilos propios (consume tokens de la organización)')
 
 on conflict (clave) do nothing;
 

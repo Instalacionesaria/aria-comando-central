@@ -159,6 +159,12 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      dice cuánto gastó esa cuenta con su llave, y no se vuelve a medir. La de la persona no está: es
      `on delete set null`. */
   uso_de_ia_org_id_fkey: 'tiene el consumo de la IA registrado',
+  /* Lo del cerebro (`071`): los hilos de la empresa y sus mensajes, y sus topes. Los hilos caen con su
+     autor, pero la empresa no se borra con hilos adentro: son lo que su gente le preguntó. */
+  conversaciones_del_executive_org_id_fkey: 'tiene conversaciones con el cerebro',
+  mensajes_del_executive_org_id_fkey: 'tiene mensajes del cerebro',
+  topes_del_executive_org_id_fkey: 'tiene los topes del cerebro configurados',
+  preguntas_del_executive_org_id_fkey: 'tiene preguntas al cerebro registradas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

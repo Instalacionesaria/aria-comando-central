@@ -16,7 +16,7 @@
 > (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
 
 > Fuente: `CC_Arquitectura_Funcional.md` § 18.15 (`:1499-1531`) y § 18.10 (`:1369-1383`).
-> Más la declaración real de la sección en `lib/autorizacion/secciones.ts:250-256`.
+> Más la declaración real de la sección en `lib/autorizacion/secciones.ts:251-257`.
 
 ---
 
@@ -115,7 +115,7 @@ tiene un «antes» que fechar. Ver `C11-P01`.
 
 ## C12-06 · Lo que la sección declara hoy ante la capa de autorización
 
-**Rastro** · `lib/autorizacion/secciones.ts:250-256`, literal:
+**Rastro** · `lib/autorizacion/secciones.ts:251-257`, literal:
 
 ```ts
 {

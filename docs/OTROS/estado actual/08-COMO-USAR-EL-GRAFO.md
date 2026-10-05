@@ -99,7 +99,7 @@ aristas de hoy y de los cortes anteriores están en la fila «Nodos dios» de la
 | `datos()` | `lib/datos/contexto.ts:159` | La capa de datos del inquilino: las lecturas y escrituras de negocio dentro de una organización pasan por el mismo constructor de consultas, que lanza si no hay organización activa (`lib/datos/contexto.ts:151`) |
 | `conOrganizacion()` | `lib/datos/contexto.ts:76` | **Toda operación abre el contexto de su organización.** Es la regla `ADR-0202` (`docs/OTROS/especificacion/TRAZABILIDAD.md:55`), y el grafo la confirma: es el segundo nodo más conectado, contando también los nodos-archivo |
 | `exigir()` | `lib/autorizacion/portero.ts:167` | El portero: lo nombran 79 de los 82 `route.ts` de `app/api/` (`grep`, 2026-09-28 y otra vez el 2026-09-29); los tres que no son el login, el aviso del CRM y la salud |
-| `ok()` / `rechazo()` | `lib/autorizacion/respuesta.ts:300` y `lib/autorizacion/respuesta.ts:311` | La respuesta de éxito y la de rechazo |
+| `ok()` / `rechazo()` | `lib/autorizacion/respuesta.ts:313` y `lib/autorizacion/respuesta.ts:324` | La respuesta de éxito y la de rechazo |
 | `conIdentidad()` | `lib/datos/capa.ts:125` | El otro contexto: identidad va por su propio camino. Era el único de la lista que había **bajado** desde el 2026-09-17, y ya se sabe por qué: la pasada de la mañana del 2026-09-28 le había perdido llamadas desde otros archivos, y el AST completo se las devolvió (fila «Llamadas entre archivos de código») |
 | `cerrarClientes()` | `lib/datos/capa.ts:155` | Cierra los agrupadores de la base (`lib/datos/capa.ts:149`); lo nombran 75 archivos de `pruebas/` |
 | `cerrarTodo()` | `pruebas/apoyo/conexiones.ts:65` | Lo mismo del lado del apoyo de pruebas; 81 archivos de `pruebas/` lo nombran |

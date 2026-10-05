@@ -12,7 +12,7 @@
 | Modelo | `claude-sonnet-5-5` |
 | Permisos | `cerebro.usar` para preguntar y borrar; la capacidad de cada sección para leer sus herramientas; apagado bajo delegación |
 | Código | `lib/agentes/executive/`, `app/api/executive/route.ts`, una ruta `…/cerebro` por sección |
-| Tablas | `conversaciones_del_executive`, `mensajes_del_executive`, `topes_del_executive` (`070`) |
+| Tablas | `conversaciones_del_executive`, `mensajes_del_executive`, `topes_del_executive`, `preguntas_del_executive` (`071`) |
 
 ## Qué lee
 
@@ -41,7 +41,7 @@ de quien preguntó.
 
 No hay un SOP del cual partir. Las reglas que hereda son las de la plataforma: el piso de 10, los dos ceros
 (`null` es que nadie lo cargó, `0` es un hecho medido), la cohorte por un hecho de entrada, mediana y
-percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:433-466`).
+percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:440-473`).
 
 ## Sugerencias en el Inicio
 

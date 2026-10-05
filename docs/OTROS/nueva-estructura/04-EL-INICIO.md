@@ -28,7 +28,8 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    - La hora se cuenta en la **zona de la empresa**, no en la del navegador: «Buenos días» hasta las 12,
      «Buenas tardes» hasta las 19, «Buenas noches» después.
 3. **La caja de chat del diseño, deshabilitada**, con una línea que dice que **el cerebro llega en una
-   próxima etapa**.
+   próxima etapa**. Desde AG5 de los agentes (2026-10-04) el servidor existe (`app/api/executive/route.ts`);
+   la caja se conecta en AG7 (`docs/OTROS/agentes/08-LAS-ETAPAS.md`).
    - No manda nada ni finge una respuesta.
    - Los botones de «@ agente» y de área no se dibujan hasta que haya qué elegir.
 4. **No se dibujan** las tres tarjetas de «Reunión de hoy». Tienen que salir de reglas sobre datos reales
@@ -39,7 +40,7 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    tarjeta, sin una sola cifra; la `189` la deja pasar a ella sola.
 
 El inicio es el mismo para todos. Quien no tiene la sección `executive` no ve «Nueva conversación» y arranca
-en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:875`).
+en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:876`).
 
 La sección se llama **«Inicio»** en la pantalla y en Ajustes › Usuarios. Su clave sigue siendo `executive`
 (`05-LO-QUE-NO-CAMBIA.md`).

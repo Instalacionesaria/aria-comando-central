@@ -50,7 +50,7 @@ al lado: *«datos por dispositivo y periodo — reemplazar por la consulta real�
 
 No hay ninguna ruta de servidor detrás: `ls app/api/` devuelve **diecinueve carpetas y ninguna es
 `conversion`**, y la sección se declara con `sinOperacionesTodavia: true`
-(`lib/autorizacion/secciones.ts:264-270`).
+(`lib/autorizacion/secciones.ts:265-271`).
 
 **Y sin embargo, esa maqueta es la especificación.** Alguien decidió que la pantalla mostrara el
 recorrido como cinco pasos con su caída entre uno y otro, que cada paso se pudiera abrir para ver su

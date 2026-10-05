@@ -233,6 +233,18 @@ export const RECHAZOS = {
   // La función no tiene tiempo para un análisis entero. 503 y no 409: no es la llamada, es el
   // momento, y se arregla reintentando. Con la función recién arrancada no debería pasar nunca.
   sin_tiempo_para_analizar: 503,
+
+  // ── El cerebro (AG5 de los agentes) ──────────────────────────────────
+  //
+  // Bajo delegación el cerebro no responde (`D-17`): lo que gasta se apaga, y lo rechaza el servidor, no
+  // sólo la pantalla. 409: la petición está bien y la persona también; es el momento.
+  cerebro_bajo_delegacion: 409,
+  // Llegó al tope de preguntas del día, suyo o de la empresa. 429: se arregla esperando, y el detalle dice
+  // a qué hora se renueva.
+  tope_del_cerebro: 429,
+  // Ninguna de las pestañas que la persona ve tiene datos que el cerebro sepa leer (AG-43: sin datos, no
+  // se llama al modelo). 409: la pregunta está bien; lo que falta es qué leer.
+  cerebro_sin_datos: 409,
 } as const;
 
 /**

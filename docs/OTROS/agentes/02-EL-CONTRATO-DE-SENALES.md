@@ -31,7 +31,7 @@ Una fila por señal. Entre corchetes, el campo de la alerta de Arq que cubre.
 | Contrato | `perdida_contactos` (A6-11), `destino_departamento` (A6-21), `requiere_validacion_ejecutiva` (A6-22), `umbral` jsonb (el valor con que se calculó, en foto, y si era provisional), `evidencia` jsonb (en foto, `AG-28`), `issue_source` (sólo Conversation, `AG-37`) |
 | Vida | `estado` (`AG-23`), `huella`, `ultima_deteccion_el`, `vista_el`, `vista_por`, `cerrada_el`, `cerrada_por`, `motivo_cierre`, `condicion_apagada_el` |
 
-Escritor único: `lib/agentes/senales/escritura.ts`. Migración `071`.
+Escritor único: `lib/agentes/senales/escritura.ts`. Migración `072`.
 
 ## AG-21 · El juego cerrado de entidades
 

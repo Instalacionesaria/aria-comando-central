@@ -11,7 +11,7 @@
 | Modelo | Ninguno para los agregados. `claude-haiku-4-5-20251001` para la categoría de cada objeción |
 | Permisos | `analizadores.ver`, la capacidad de su sección |
 | Código | `lib/analizadores/objeciones.ts`, `lib/negocio/vinculoDeLlamadas.ts`, `lib/negocio/llamadasDeVenta.ts` |
-| Tabla | `negocio.objeciones_clasificadas` (`072`) |
+| Tabla | `negocio.objeciones_clasificadas` (`073`) |
 
 ## La categoría de cada objeción (`T-18`)
 

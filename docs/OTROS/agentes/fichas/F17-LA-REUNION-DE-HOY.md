@@ -11,7 +11,7 @@
 | Modelo | Ninguno para elegir los temas. `claude-sonnet-5-5` para ordenarlos y redactarlos, si hay llave |
 | Permisos | Leer: `tablero.ver` (la ruta del Inicio). Se filtra por las secciones de cada persona |
 | Código | `lib/agentes/reunion.ts`, dentro de la tarea `senales` |
-| Tabla | `negocio.reuniones_del_dia` (`074`) |
+| Tabla | `negocio.reuniones_del_dia` (`075`) |
 
 ## Qué lee
 

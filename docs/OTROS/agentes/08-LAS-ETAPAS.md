@@ -18,6 +18,10 @@
 - **Un hito con capacidades nuevas corre el paso 4b** del catálogo y lo comprueba leyendo
   `identidad.roles_permisos`.
 - **Se empuja por hitos**, con el OK del usuario.
+- **Los números de prueba y de migración de las etapas que siguen son los del plan original, y corren.**
+  Cada etapa toma los siguientes libres al empezar: AG2 usó la migración `070` y AG4 la prueba 205, así que el
+  cerebro fue en la `071` y en las pruebas 206 a 213, y lo que el plan numeraba `071` a `074` pasó a `072` a
+  `075`. Los números de prueba de las secciones de abajo son los del plan y se reasignan en su etapa.
 - **Pruebas nuevas desde la 198**, con un solo contador para `pruebas/codigo` y `pruebas/base`. El número
   exacto se toma al crearla; los de abajo son la intención.
 - **Ninguna llamada real al modelo** sin el OK del usuario con el número de llamadas (`07`).
@@ -171,32 +175,64 @@
   ese paso se quitó.
 - **Documentos**: `07` con las cifras exactas del sembrado.
 
-## AG5 · El cerebro, servidor I — **grande**
+## AG5 · El cerebro, servidor I — **grande** — **hecha el 2026-10-04**
 
-- **Qué**: `lib/agentes/executive/` (prompt en tú neutro, el esquema `responder` y su validación, la
-  orquestación con transacciones cortas, conversaciones, topes, los rechazos por tope, delegación y llave) y
-  las primeras herramientas: las de Acquisition, Sales y Leads › De GHL. `app/api/executive/route.ts`, que
-  **baja la bandera** (`lib/autorizacion/secciones.ts:219` pasa a ser un comentario de una línea).
-- **Migración** `070`: `conversaciones_del_executive` (autor con `on delete cascade`),
-  `mensajes_del_executive` (respuesta y evidencia como ids y cifras) y `topes_del_executive` (50 y 300).
-- **Capacidad** `cerebro.usar`, en `db/arranque/001_catalogo.sql` y `lib/autorizacion/capacidades.ts`.
-- **Pruebas que cambian**: la 90, el conteo de `:1263` baja de 1 a 0 (mutación: devolver la bandera). La 30
-  y la 91, cuyo bucle sobre `SIN_OPERACIONES_TODAVIA` queda vacío: se reemplaza por una afirmación de que
-  `executive` tiene su ruta. La de base del catálogo.
-- **Pruebas nuevas**: 205 (base), la ruta del Inicio, regla 31: GET con `tablero.ver`, POST con
-  `cerebro.usar`, una persona sin la pestaña recibe `seccion_no_concedida` (mutación: pedir otra capacidad).
-  206, nada bajo `lib/agentes/**` llama al modelo dentro de un `conOrganizacion(` ni importa `conIdentidad`
-  (mutaciones: mover la llamada adentro; importar `conIdentidad`). 207, `responder`: una cifra sin `ev`
-  válido se quita, `accion` se rechaza, un nombre de herramienta inventado se rechaza (mutación: aceptar
-  cualquier `ev`). 208 (base), los hilos son del autor (uno ajeno da 404), borrar, el tope bajo candado con
-  dos preguntas en paralelo, una fallida no cuenta, delegación rechazada (mutaciones: quitar el filtro por
-  autor; quitar el candado). 209 (base), ninguna sesión `idle in transaction` mientras el modelo falso espera
-  (mutación: envolver el bucle en una transacción). Y dos que AG1 dejó anotadas: las rondas seguidas de una
-  pregunta mandan las mismas instrucciones y herramientas y el historial anterior más lo agregado (mutación:
-  reconstruir el historial entre rondas); cada esquema de herramienta y de formato sin las restricciones que
-  el modo estricto no admite (mutación: un `maxLength`).
-- **Documentos**: `estado actual/11-EXECUTIVE.md`, `nueva-estructura/04-EL-INICIO.md`,
-  `futuro/el-cerebro.md`.
+- **Qué se hizo**: `lib/agentes/executive/` —`prompt.ts` (tú neutro, `VERSION_DEL_CEREBRO` 1), `respuesta.ts`
+  (el esquema `responder` y su validación contra la evidencia), `herramientas.ts` con `adaptadores/` (las de
+  Acquisition, Sales y Leads › De GHL: `embudos_de_acquisition`, `dinero_del_mes`, `cadena_de_cierre`,
+  `ciclo_hasta_la_cita`, `cierre_por_closer`, `cancelacion_de_citas` y `cohorte_de_leads`), `conversaciones.ts`,
+  `topes.ts`, `estado.ts` y `preguntar.ts` (el ciclo de `AG-04`)— y `app/api/executive/route.ts`, que **baja la
+  bandera** (`lib/autorizacion/secciones.ts:220` es ahora el comentario de una línea).
+- **Cómo se asegura la salida** (lo que `03`, AG-46, dejaba para esta etapa): `responder` se ofrece con
+  `strict: true` junto a las herramientas, con `tool_choice: auto`. Si el modelo contesta con texto suelto, o se
+  llega a la sexta ronda, esa ronda pide el formato de `responder` (`output_config.format`) y apaga las
+  herramientas con `tool_choice: none`, sin dejar de ofrecerlas. Si ni así contesta con la forma, es un
+  `IA-ESTRUCTURA` con su incidente, y la pregunta queda `fallida`. 120 s por llamada, 240 s en total, techo de
+  12.000 tokens y esfuerzo `medium`.
+- **Migración** `071` (la `070` la usó AG2): `conversaciones_del_executive` (autor con `on delete cascade`),
+  `mensajes_del_executive` (la respuesta validada y la evidencia sin nombres, y `responde_a`),
+  `topes_del_executive` (50 y 300) y `preguntas_del_executive` (el registro del tope, que no cuelga de los
+  hilos); sus cuatro claves de empresa con su frase en `QUE_LO_IMPIDE`.
+- **Capacidad** `cerebro.usar`, en `db/arranque/001_catalogo.sql` y `lib/autorizacion/capacidades.ts`: los
+  tres roles la reciben por el reparto derivado. **Producción la necesita con el paso 4b en el hito H2.**
+- **Códigos de rechazo nuevos**: `cerebro_bajo_delegacion` (409), `tope_del_cerebro` (429) y
+  `cerebro_sin_datos` (409).
+- **Lo que cambió la revisión adversarial**: el tope se cuenta en `preguntas_del_executive` y no en los
+  mensajes —borrar los hilos lo reiniciaba—; una reserva vence a los diez minutos; una fallida que se pagó
+  cuenta; todo lo que sigue a la reserva va dentro de un `try` que la marca fallida, y una respuesta validada
+  llega aunque no se haya podido guardar; cada cifra cita el `campo` de su evidencia y los números del texto
+  libre tienen que estar entre las cifras; el hilo guardado reemplaza los nombres de la evidencia por
+  «[persona]»; sin herramientas no se llama al modelo; las respuestas se emparejan con su pregunta por
+  `responde_a`; lo opcional del esquema va como `anyOf` con `null`; y no se empieza una ronda con menos de
+  5 s.
+- **Pruebas que cambian**: la 90, el conteo de `SIN_OPERACIONES_TODAVIA` pasa de 1 a 0; la 30 suma que
+  `executive` tiene su ruta; la 91 escribe la lista de tableros en vez de recorrer la lista vacía; la 198 suma
+  las tres tablas a `ESCRITORES`; `pruebas/apoyo/autorizados.ts` suma la ruta a las dos listas.
+- **Pruebas nuevas** (el plan las numeraba 205 a 209; la 205 la usó AG4): 206 (base) la ruta del Inicio, regla
+  31 —qué capacidad pide cada método, `seccion_no_concedida`, sin llave no llama al modelo, de punta a punta con
+  el modelo falso—; 207 nada bajo `lib/agentes/` llama al modelo dentro de una `conOrganizacion(` ni importa
+  `conIdentidad`; 208 `responder` —la cifra sin respaldo se quita, la acción se rechaza, la herramienta
+  inventada no se corre—; 209 (base) los hilos son del autor, el tope bajo candado con dos preguntas en una
+  carrera de verdad, la fallida no cuenta y la delegación se rechaza; 210 (base) ninguna sesión `idle in
+  transaction` mientras el modelo falso espera; 211 (base) las rondas sólo agregan y la pregunta siguiente
+  arranca reducida; 212 los esquemas cumplen el modo estricto; 213 (base, sobre la base sembrada) el juego
+  exacto de claves de cada herramienta, ningún correo, y la misma cifra que la ruta de su pantalla con 30 días.
+  El modelo falso es `pruebas/apoyo/cerebro.ts`.
+- **Mutaciones, treinta y una vistas en rojo**: devolver la bandera (90, 30, 206); el POST con otra capacidad
+  (206); el modelo dentro de una transacción (207 y 210); importar `conIdentidad` (207); aceptar cualquier
+  `ev`, aceptar una acción, correr una herramienta inventada (208); leer y borrar un hilo ajeno, sin el
+  candado, la fallida que cuenta, responder bajo delegación (209); el turno sin su pensamiento, sacar las
+  herramientas en la ronda del formato, el historial con texto que no es la respuesta (211); un `maxLength`
+  (212); una clave de más en una proyección, una herramienta con otro período que su pantalla (213). Y las de
+  la revisión: la fallida sin pago que cuenta, la pagada que no, la reserva que no vence, marcar sin mirar
+  si se pagó, borrar el hilo que devuelve el lugar, el guardado sin atrapar (209); guardar con los nombres
+  (213); comparar contra toda la evidencia, el porcentaje de cualquier número, no mirar la conclusión, la
+  recomendación con un número inventado (208); llamar sin herramientas (206); emparejar el historial por
+  orden (211).
+- **Lo que queda para AG6**: las demás herramientas y las rutas finas de la caja del pie; la misma cifra que la
+  pantalla en las cuatro ventanas, no sólo en 30 días.
+- **Documentos**: `estado actual/11-EXECUTIVE.md`, `nueva-estructura/04-EL-INICIO.md`, `futuro/el-cerebro.md`,
+  `03`, `09` y `00-MAPA`.
 
 ## AG6 · El cerebro, servidor II — **grande**
 
@@ -232,7 +268,7 @@
 - **Qué**: `lib/agentes/senales/*`, `lib/agentes/plan/` (la parte que guarda), `lib/agentes/detectores/correr.ts`
   y la tarea `senales` del cron (`02`, `AG-35`): `Tarea`, `TAREAS`, `HORARIOS['23 * * * *']`, la excepción
   del token del CRM, `vercel.json`.
-- **Migración** `071`: `senales`, `planes_de_accion`, `umbrales`, y el `check` de `tareas_programadas` suma
+- **Migración** `072`: `senales`, `planes_de_accion`, `umbrales`, y el `check` de `tareas_programadas` suma
   `senales`.
 - **Antes**: que alguien de ARIA cargue la zona real de las empresas activas (`00-MAPA.md`).
 - **Pruebas que cambian**: la 99 (el horario en las dos listas, la tarea en la excepción; mutación: sacarla
@@ -264,7 +300,7 @@
 - **Documentos**: `docs/acquisition/06` y `14`, `futuro/plan-y-senales-de-acquisition.md`,
   `futuro/monitor-de-atribucion.md` y la cabecera de `app/api/acquisition/route.ts`, que hoy dice que el
   monitor está dormido.
-- **Hito H3**: aplicar la `071`, paso 4b, comprobar las capacidades, push con OK.
+- **Hito H3**: aplicar la `072`, paso 4b, comprobar las capacidades, push con OK.
 
 ## AG10 · Creative Insights
 
@@ -280,7 +316,7 @@
   que faltan se clasifican en la pasada siguiente); `lib/negocio/vinculoDeLlamadas.ts` (al leer),
   `lib/negocio/llamadasDeVenta.ts`, `lib/negocio/llamadasDeOnboarding.ts` y sus herramientas del cerebro. La
   pantalla de las llamadas no cambia por dentro.
-- **Migración** `072`: `negocio.objeciones_clasificadas`.
+- **Migración** `073`: `negocio.objeciones_clasificadas`.
 - **Pruebas nuevas**: 223, las categorías son un juego cerrado con «otra», la cobertura viaja, el vínculo dice
   cuántas no casan (mutación: descartar las «otra»). 224 (base), «28 de 44» sobre la base sembrada.
 - **Documentos**: `estado actual/14-ANALIZADORES.md`.
@@ -289,11 +325,11 @@
 
 - **Qué**: `lib/agentes/brief/*` (`fichas/F13-CLOSER-Y-BRIEF.md`), `app/api/closer/brief/route.ts`
   (`PANTALLA='closer'`, `maxDuration` declarado), la marca en la cola «TUS CITAS DE HOY» y la ficha.
-- **Migración** `073`: `negocio.briefs_del_closer`, una fila por cita, en cascada con ella.
+- **Migración** `074`: `negocio.briefs_del_closer`, una fila por cita, en cascada con ella.
 - **Pruebas nuevas**: 225, un dato detectado sin fuente se degrada, «mío» no sirve el Brief de otro closer,
   bajo delegación no se genera (mutaciones: aceptar lo detectado sin fuente; servir el ajeno). 226 (base).
 - **Verificación**: una evaluación real, con OK.
-- **Hito H4**: aplicar la `072` y la `073`, push con OK.
+- **Hito H4**: aplicar la `073` y la `074`, push con OK.
 
 ## AG13 · Conversation en la tabla común
 
@@ -314,14 +350,14 @@
 - **Qué**: `lib/agentes/reunion.ts` (dentro de la tarea `senales`), `lib/agentes/cabecera.ts`, las tarjetas
   en el Inicio en lugar de la nota de `components/views/ExecutiveView.jsx:75-77`, el contador en la barra y el
   comentario en la cabecera (`04`).
-- **Migración** `074`: `negocio.reuniones_del_dia`.
+- **Migración** `075`: `negocio.reuniones_del_dia`.
 - **Pruebas que cambian**: la 189 (las tarjetas vienen sólo del servidor), la 193 (el contador), la 194 (el
   comentario es nada cuando no hay nada, y no aparece en el teléfono).
 - **Pruebas nuevas**: 229, las reglas de la Reunión, el filtro por persona antes de tomar tres, las
   plantillas sin llave (mutación: tomar tres antes de filtrar). 230, la prioridad del comentario y la regla
   del silencio (mutación: un comentario siempre encendido). 231 (base).
 - **Verificación**: una evaluación real de la redacción, con OK.
-- **Hito H5**: aplicar la `074`, push con OK.
+- **Hito H5**: aplicar la `075`, push con OK.
 
 ## AG16 · El cierre
 

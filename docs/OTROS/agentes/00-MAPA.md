@@ -3,9 +3,10 @@
 > Plan del **2026-10-04**: el cerebro (el agente global del Inicio, `executive` en el código) y un agente
 > por tipo en cada inteligencia, enganchados al front de la segunda edición. Esta carpeta dice **todo lo
 > que se va a construir, cada decisión y cada riesgo, antes de tocar el código**. Prefijo de los
-> requisitos: `AG-`. Estado: **AG4 hecho** (la base sembrada y el guion de evaluación); el hito H1 se cumplió el
+> requisitos: `AG-`. Estado: **AG5 hecho** (el servidor del cerebro: la ruta del Inicio, las primeras herramientas, los hilos y los
+> topes); el hito H1 se cumplió el
 > 2026-10-04 (la `069` y la `070` en producción, push de AG0 a AG2). El usuario aprobó ese día el conjunto de
-> preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`. Sigue AG5.
+> preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`. Sigue AG6.
 
 ---
 
@@ -204,7 +205,8 @@ Tres consecuencias para el plan:
 | AG2 · Los agentes que ya existen | **Hecho sin Fundaciones** el 2026-10-04, por decisión del usuario: el Espía, el auditor y los Analizadores (con la clasificación) registran su uso; los incidentes del auditor y de los Analizadores se agrupan por corrida; la `070` deja `incidentes_usuario_id_fkey` en `on delete set null`. El uso de Fundaciones espera a que se integre `feature/icp-oferta-v2`. **Hito H1** el mismo día: la `069` y la `070` en producción, verificadas con lectura, y push `97fc905..cd851b3` |
 | AG3 · La voz | **Hecho sin Fundaciones** el 2026-10-04: todo Tools a tú neutro, la prueba 202 y la lista de voseo en `pruebas/apoyo/voseo.ts`. La voz de Fundaciones la trae la rama |
 | AG4 · Base sembrada y evaluación | **Hecho** el 2026-10-04: `db/sembrado/casos-de-los-agentes.ts` (sólo local, no queda instalado), `scripts/evaluar-agentes.mjs` con la tanda `modelo`, y las pruebas 203, 204 y 205 |
-| AG5 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG5 · El cerebro, servidor I | **Hecho** el 2026-10-04: `lib/agentes/executive/`, `app/api/executive/route.ts` (baja la bandera), la `071` y la capacidad `cerebro.usar` (las dos van a producción con el hito H2), y las pruebas 206 a 213. Los números de las etapas siguientes corren (`08`) |
+| AG6 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

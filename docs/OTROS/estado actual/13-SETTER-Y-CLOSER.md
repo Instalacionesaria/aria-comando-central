@@ -57,19 +57,19 @@ cola no se construyó (§ 5.5).
 ### 2.1 · La declaración, y las dos capacidades
 
 Las dos pestañas están en el grupo «Operación», cada una con su capacidad de lectura propia:
-`setter.ver` y `closer.ver` (`lib/autorizacion/secciones.ts:327-350`). Que un closer no vea la
+`setter.ver` y `closer.ver` (`lib/autorizacion/secciones.ts:328-351`). Que un closer no vea la
 pestaña del setter depende, en el diseño, de que no compartan capacidad; en producción los roles
 dan las dos a todos, y lo que recorta es la lista de secciones (§ 2.4). Las **cuatro**
 sub-pestañas del closer piden `closer.ver`, no una capacidad cada una, porque dos llamadas de la
 misma pantalla con capacidades distintas dejan una parte vacía sin que se note
-(`lib/autorizacion/secciones.ts:334-338`; la Agenda lo repite en
+(`lib/autorizacion/secciones.ts:335-339`; la Agenda lo repite en
 `app/api/closer/agenda/route.ts:57-60`).
 
 La ficha del contacto y Avanzar no son de ninguna de las dos: se abren desde las dos pestañas, y
 sólo desde ellas (§ 2.5). Las nueve rutas bajo `app/api/contactos/` —la ficha y sus cinco
 pestañas, Avanzar, resolver una intervención y la sincronización de contactos— se declaran sin
 pantalla y piden capacidades propias —`contactos.ver`, `contactos.avanzar`, `contactos.resolver`,
-`contactos.comentar` (`lib/autorizacion/secciones.ts:537-577`)—; enviar desde el compositor del chat
+`contactos.comentar` (`lib/autorizacion/secciones.ts:538-578`)—; enviar desde el compositor del chat
 pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:102`).
 
 ### 2.2 · El Setter
@@ -131,7 +131,7 @@ Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:430`,
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
 `components/negocio/ListaDeContactos.jsx:424`). **No se abre desde Conversation ni desde la
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
-`lib/autorizacion/secciones.ts:548-549`, `lib/autorizacion/secciones.ts:562-563`): ningún archivo
+`lib/autorizacion/secciones.ts:549-550`, `lib/autorizacion/secciones.ts:563-564`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría
 abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:291`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
@@ -242,8 +242,8 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
   (`lib/negocio/barrido.ts:194-198`) con `2e8ce81`, el 2026-08-28.
-- **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:329`).
-  Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:362-367`).
+- **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:330`).
+  Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:363-368`).
 
 ### 3.5 · «Las vencidas NO desaparecen», y desaparecen a medianoche
 

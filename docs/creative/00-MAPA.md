@@ -30,7 +30,7 @@ inventadas y las dibujan con seis cifras de cabecera, cinco criterios de orden, 
 partida en «Funciona / No funciona», un cajón con curva de retención y guion, y un modal de doce
 recomendaciones. No había ninguna ruta de servidor detrás: `ls app/api/` devolvía dieciocho carpetas
 y ninguna era `creative`, y la sección se declaraba con `sinOperacionesTodavia: true`
-(`lib/autorizacion/secciones.ts:250-256`).
+(`lib/autorizacion/secciones.ts:251-257`).
 
 > **Las dos cosas dejaron de ser ciertas el 2026-09-19**: `app/api/creative/route.ts` existe y la
 > bandera se bajó. Se dejan en pasado y no se borran porque son de dónde salieron los requisitos de

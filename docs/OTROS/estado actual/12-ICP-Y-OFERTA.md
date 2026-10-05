@@ -47,13 +47,13 @@ Es lo único que la pantalla dice de sí misma y no cumple; ver § 5.
 
 ## 2 · Qué hay hoy
 
-**La sección.** `lib/autorizacion/secciones.ts:234-237`: clave `icp`, nombre «ICP & Oferta»,
+**La sección.** `lib/autorizacion/secciones.ts:235-238`: clave `icp`, nombre «ICP & Oferta»,
 `capacidadRequerida: 'fundaciones.ver'`, en el grupo `AIOS` del menú junto a Executive y Leads
 Portal, con el galón `›` (después del corte, desde la etapa E10 del 2026-10-02, la barra lateral la
-abre como Research › ICP & Oferta y no dibuja galones). Su comentario (`lib/autorizacion/secciones.ts:229-233`) dice que es «la
+abre como Research › ICP & Oferta y no dibuja galones). Su comentario (`lib/autorizacion/secciones.ts:230-234`) dice que es «la
 única de las diez sin la bandera» `sinOperacionesTodavia`, y eso ya no es cierto: desde el
-2026-09-26 la única que la conserva es `executive` (`lib/autorizacion/secciones.ts:216`,
-`lib/autorizacion/secciones.ts:225`).
+2026-09-26 la única que la conserva es `executive` (`lib/autorizacion/secciones.ts:217`,
+`lib/autorizacion/secciones.ts:226`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
 `CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:50-78`): siete herramientas, siete rutas y
@@ -135,7 +135,7 @@ que llama desde la propia ruta a la función de la base que copia el formulario
 
 Las cuatro que gastan resuelven la llave con `resolverAccesoAFundaciones`
 (`lib/credenciales/resolver.ts:362-369`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
-(`pruebas/apoyo/autorizados.ts:181-187`); las demás abren `conOrganizacion(` como cualquier ruta.
+(`pruebas/apoyo/autorizados.ts:184-190`); las demás abren `conOrganizacion(` como cualquier ruta.
 
 ### 2.3 · El Research y sus techos de tiempo
 

@@ -1,7 +1,7 @@
 # El documento no nombra responsables de Conversion
 
 > Fuente: `CC_Arquitectura_Funcional.md`, leído entero el 2026-09-20, más la declaración real de la
-> sección en `lib/autorizacion/secciones.ts:264-270`.
+> sección en `lib/autorizacion/secciones.ts:265-271`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
 > 530 literales inventados y 47 frases de guion que esta carpeta documenta. Las citas
@@ -65,7 +65,7 @@ adoptó por decisión del 2026-09-18.
 
 ### CV12-03 · Seis líneas, y la bandera que se mueve con la ruta
 
-**Rastro** · `lib/autorizacion/secciones.ts:264-270`, literal:
+**Rastro** · `lib/autorizacion/secciones.ts:265-271`, literal:
 
 ```ts
 {
