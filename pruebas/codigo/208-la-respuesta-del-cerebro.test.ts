@@ -19,6 +19,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { numerosDelTexto, respaldada, validarRespuesta, valorEn, type Evidencia } from '../../lib/agentes/executive/respuesta.ts';
 import { ejecutarHerramienta, herramientasPara } from '../../lib/agentes/executive/herramientas.ts';
+import { SIN_DATOS_DE_LA_RUTA } from '../../lib/agentes/executive/adaptadores/comun.ts';
 
 const EVIDENCIA: Evidencia[] = [
   { id: 'ev-1', herramienta: 'cadena_de_cierre', argumentos: { periodo: '30d' }, datos: { cohorte: 120, eslabones: [{ contactos: 46 }], tasa: 0.2927 } },
@@ -123,7 +124,7 @@ test('sin conclusión o sin las listas, la respuesta entera no sirve', () => {
 });
 
 test('un nombre de herramienta inventado, o uno que no se ofreció, no se corre', async () => {
-  const contexto = { zona: 'America/Lima', usuarioId: '00000000-0000-4000-8000-000000000000' };
+  const contexto = { zona: 'America/Lima', usuarioId: '00000000-0000-4000-8000-000000000000', secciones: ['sales'], deLaRuta: SIN_DATOS_DE_LA_RUTA };
   const deSales = herramientasPara(['sales']);
   assert.ok(deSales.some((h) => h.nombre === 'cadena_de_cierre'));
   assert.ok(!deSales.some((h) => h.nombre === 'embudos_de_acquisition'), 'se ofreció una herramienta de una sección que no se ve');
@@ -138,7 +139,7 @@ test('un nombre de herramienta inventado, o uno que no se ofreció, no se corre'
 test('la que sirve a dos secciones se ofrece con cualquiera; las de la sección abierta, primero', () => {
   assert.ok(herramientasPara(['conversation']).some((h) => h.nombre === 'cancelacion_de_citas'));
   assert.ok(herramientasPara(['sales']).some((h) => h.nombre === 'cancelacion_de_citas'));
-  assert.deepEqual(herramientasPara(['contacts']).map((h) => h.nombre), ['cohorte_de_leads']);
+  assert.deepEqual(herramientasPara(['contacts']).map((h) => h.nombre), ['cohorte_de_leads', 'frescura']);
   const conLaAbierta = herramientasPara(['acquisition', 'contacts'], 'contacts').map((h) => h.nombre);
   assert.equal(conLaAbierta[0], 'cohorte_de_leads');
 });

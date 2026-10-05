@@ -16,7 +16,7 @@
 - Lo que el front ya dejó dibujado como «Próximamente»: `components/views/ExecutiveView.jsx:58`,
   `components/ConsultaAlCerebro.jsx:56-71` y el rótulo de CONVERSACIONES en `components/Nav.jsx`.
 - Las reglas propias de Executive: consume y no recalcula, el dinero es del mes y es venta reportada,
-  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:440-473`).
+  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:442-475`).
 
 ---
 
@@ -35,6 +35,18 @@ La carpeta es la de la API de cada sección: `acquisition`, `creative`, `convers
 (Conversation), `sales`, `leads-portal` (Leads › De GHL), `setter`, `closer`, `analizadores`, `tools`
 (Radar, Funnel, Leads › De Radar y Plan de prospección) y `fundaciones` (ICP & Oferta). Todas delegan en
 `lib/agentes/executive/preguntar.ts` y llevan su `conOrganizacion(` literal (`T-03`).
+
+**Hechas en AG6.** Las once son la misma plantilla: cada una escribe su `PANTALLA` y sus capacidades, abre la
+identidad con `conIdentidad` y su `conOrganizacion(`, y lo que es igual en todas —leer y validar la
+pregunta, armar el estado, contestar con el resultado— vive en `lib/agentes/executive/caja.ts`, que también
+usa la del Inicio. Una caja lista, lee, continúa y borra sólo los hilos de su sección; el Inicio, todos.
+Y una caja no pregunta si quien pregunta no ve su sección: el POST pide `cerebro.usar`, el portero mira el
+alcance sólo de las personas restringidas, y un rol propio con `cerebro.usar` sin la capacidad de la sección
+dejaría un hilo que su caja nunca le mostraría (`seccion_no_concedida`, en `laPregunta`; lo encontró la
+revisión de AG6). La identidad del GET lee sólo la llave; la del POST lee además, si hace falta, por qué el
+auditor no audita (quien ve Conversation) y el estado de las integraciones (quien tiene `credenciales.ver`).
+Las tres pueden dejar el registro de una credencial ilegible, como en sus pantallas; el GET, que se abre
+cada vez que alguien entra a una, deja a lo sumo el de la llave.
 
 ADR-0304 compara sólo los GET de una pantalla contra la capacidad de su sección
 (`pruebas/codigo/30-portero.test.ts:280-323`); el POST pide `cerebro.usar`, que no es de lectura, así que no
@@ -56,6 +68,10 @@ caja del pie, las de la sección abierta van primero.
 - Una que sirve a dos (`cancelacion_de_citas`, en Conversation y en Sales) se ofrece si se ve cualquiera.
 - Lo de Conversation sólo con `auditor.ver`: sale solo, porque es la capacidad de su sección
   (`D-17`).
+- `estado_de_integraciones` no es de ninguna sección: se ofrece cuando la ruta resolvió su dato, que es sólo
+  para quien tiene `credenciales.ver` (AG6, `herramientasPara(…, conIntegraciones)`).
+- La prueba 214 escribe a mano el juego de cada sección, y la 216 mira lo que de verdad le llega al modelo
+  desde una caja del pie.
 
 ## AG-42 · Las herramientas
 
@@ -72,33 +88,33 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:65` | el umbral «no calibrado» |
 | `recorrido_de_los_leads` | `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:59` | conteos, no tasas |
 | `formulario_de_la_landing` | `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:60` | sus huecos |
-| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:92` | por qué no audita; **sin citas de conversaciones** |
-| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `app/api/auditoria/route.ts:97`, `app/api/sales/route.ts:109` | sus avisos |
-| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:98` | aviso y latencias |
-| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:99` | piso |
-| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `app/api/auditoria/route.ts:100` | aviso |
-| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `app/api/auditoria/route.ts:104` | `null` bajo 10 |
+| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:76` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
+| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `app/api/auditoria/route.ts:81`, `app/api/sales/route.ts:109` | sus avisos |
+| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:82` | aviso y latencias |
+| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:83` | piso |
+| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `app/api/auditoria/route.ts:84` | aviso |
+| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `app/api/auditoria/route.ts:88` | `null` bajo 10 |
 | `dinero_del_mes` | `dineroDelMes(zona, sujeto)` | sales (`tablero.ver`) | `app/api/sales/route.ts:106` | **mes calendario**, que no gobierna el selector; «venta reportada» |
 | `cadena_de_cierre` | `cadenaDeCierre(periodo.dias)` | sales | `app/api/sales/route.ts:110` | el aviso de citas que nadie registró |
 | `ciclo_hasta_la_cita` | `cicloHastaLaCita(periodo.dias)` | sales | `app/api/sales/route.ts:111` | aviso de techo |
 | `cierre_por_closer` | `cierrePorCloser(periodo.dias, catalogo)` | sales | `app/api/sales/route.ts:112` | `bajoElPiso`, `fueraDeLasFilas` |
-| `economia_del_negocio` | nueva, `lib/negocio/economiaDelNegocio.ts`: `dineroDelMes` más la inversión del mismo mes con **la misma función de gasto** que Acquisition (C7-07) | sales **y** acquisition | — (A7-08 la asigna a Executive) | con 0 ventas, «no hay dato suficiente»; siempre «venta reportada» |
+| `economia_del_negocio` | nueva, `lib/negocio/economiaDelNegocio.ts`: `dineroDelMes` con el sujeto de Sales más la inversión del mismo mes con **la misma función de gasto** que Acquisition (`cifrasPorCampana`, C7-07), del primero del mes a hoy en la zona de la empresa | sales **y** acquisition | — (A7-08 la asigna a Executive) | el retorno (cobrado / inversión) y el costo por venta, sólo con las dos mitades enteras: sin ventas, «no hay dato suficiente»; con una venta sin monto (el cobrado la sumaría como cero) o con el gasto del mes incompleto (un día antes de hoy sin filas, o el colector sin escribir hace más de 26 horas), `null` con el motivo; siempre «venta reportada»; hasta qué día llega el gasto leído (`gastoHasta`) |
 | `cohorte_de_leads` | `leadsDelPortal(periodo.dias)` | contacts (`tablero.ver`) | `app/api/leads-portal/route.ts:57` | la fila con sus 14 claves (`lib/negocio/leadsDelPortal.ts:114`), sin teléfono ni correo |
-| `leads_del_scraper` | nueva, `lib/negocio/leadsDelScraper.ts`: **sólo agregados** (por fuente, con y sin contacto, enviados al CRM) | tools (`tools.ver`) | — | la ruta de la pantalla devuelve filas con correo y teléfono: el cerebro no las ve |
-| `espia` | `busquedasDelEspia()` y `analisisDe(trabajo)` | tools | `app/api/tools/busquedas-del-espia/route.ts:25-27` | el texto del análisis, recortado |
-| `fundaciones` | el estado de Fundaciones: qué entregables hay, qué paso del método falta, extractos acotados del ICP y la oferta | icp (`fundaciones.ver`) | `app/api/fundaciones/estado/route.ts` | lo que necesita de identidad (el alumno) lo resuelve la ruta |
+| `leads_del_scraper` | nueva, `lib/negocio/leadsDelScraper.ts`: **sólo agregados** (por fuente, con correo, con teléfono, con sitio, sin contacto, y de cuántas búsquedas) | tools (`tools.ver`) | — | la ruta de la pantalla devuelve filas con correo y teléfono: el cerebro no las ve. **Cuántos se enviaron al CRM no se registra en ninguna parte**: viaja `null` con el motivo, no cero |
+| `espia` | `busquedasDelEspia()` con `trabajo: null`, `analisisDe(trabajo)` con el id de una búsqueda | tools | `app/api/tools/busquedas-del-espia/route.ts:25-27` | el texto del análisis, hasta 4.000 caracteres y sin correos, usuarios de redes ni teléfonos (`sinDatosDeContacto`): lo escribió un modelo sobre anuncios ajenos. Ante la duda, un número de siete cifras o más se borra; quedan las fechas, los años, los montos con moneda y los miles con punto que empiezan con una o dos cifras |
+| `fundaciones` | `leerEstado` y `pasoCompleto`, como `app/api/fundaciones/estado/route.ts`: los pasos del método en orden, cuáles están completos, cuál sigue, y el principio de la última versión del ICP y de la oferta | icp (`fundaciones.ver`) | `app/api/fundaciones/estado/route.ts` | no necesita identidad: el almacén es por empresa. No viajan la ficha (sus respuestas y el onboarding traen el teléfono de quien la llenó) ni las conversaciones; los extractos, hasta 1.500 caracteres y sin datos de contacto |
 | `colas_del_setter` | `colasDelSetter(zona)` | setter (`setter.ver`) | `app/api/setter/mi-dia/route.ts:53` | el territorio entero, como la pantalla; conteos por cola |
 | `inicio_del_setter` | `cockpitDelSetter(…)` y `comisionDelSetter(quien, zona)` | setter | `app/api/setter/mi-dia/route.ts:67-68` | **sólo lo propio** |
 | `pipeline_del_setter` | `pipelineDe('setter', {conCongelados:false})` | setter | `app/api/setter/pipeline/route.ts:34-35` | conteos por etapa |
 | `mi_dia_del_closer` | `colasDelDia(zona, alcance)` con `alcanceDeQuienMira` | closer (`closer.ver`) | `app/api/closer/mi-dia/route.ts:81-83` | «mío» si el closer está vinculado |
 | `inicio_del_closer` | `cockpitDelMes(…)` y `comisionDelMes(…)` | closer | `app/api/closer/mi-dia/route.ts:107-121` | sólo lo propio |
-| `agenda_del_closer` | `agendaDelCloser('closer', zona, {dias, alcance})` | closer | `app/api/closer/agenda/route.ts:93-97` | la ventana de la agenda, como la pantalla |
+| `agenda_del_closer` | `agendaDelCloser('closer', zona, {dias, alcance})` | closer | `app/api/closer/agenda/route.ts:93-97` | la ventana de la agenda, como la pantalla (15 días, sin las canceladas): la hora y el estado de cada cita, sin el contacto, su teléfono, el título ni la sala |
 | `pipeline_del_closer` | `pipelineDe('closer', {conCongelados:true, alcance})` | closer | `app/api/closer/pipeline/route.ts:37-40` | conteos por etapa |
 | `llamadas_de_venta` | nueva, `lib/negocio/llamadasDeVenta.ts` (AG11) | analizadores (`analizadores.ver`) | — | objeciones por categoría con su tendencia, puntaje por closer, llamadas sin vínculo; las frases citables (`D-20`) |
 | `llamadas_de_onboarding` | nueva, `lib/negocio/llamadasDeOnboarding.ts` (AG11) | analizadores | — | expectativas y riesgos agregados |
 | `senales_abiertas` | `lib/agentes/senales/lectura.ts` | la de cada departamento con detector | — | gravedad, ventana, «umbral provisional» |
-| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:108`) | sólo las tareas que alimentan secciones visibles | — | una fuente parada se dice como tal |
-| `estado_de_integraciones` | los estados de `resolverCredenciales`, sin valores | **sólo con `credenciales.ver`** | — | lo resuelve la ruta en identidad y lo pasa como dato |
+| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:108`) | sólo las tareas que alimentan secciones visibles: el mapa `TAREAS_POR_SECCION` de `lib/agentes/executive/adaptadores/plataforma.ts` (`contactos` en todas las que cuentan contactos; Tools e ICP no tienen, y la sonda no viaja) | — | una fuente parada se dice como tal |
+| `estado_de_integraciones` | los estados de `resolverCredenciales`, sin valores | **sólo con `credenciales.ver`** | — | lo resuelve la ruta en identidad y lo pasa como dato: `cargado` y `estado` de CRM, IA, pagos, tl;dv y Meta, sin la vista previa ni los identificadores de las cuentas |
 
 Sin herramienta en la v1, y sin sugerencias en esas pestañas: **Conversation › Prompts** (el texto de los
 prompts de los agentes del CRM; el cerebro lee los hallazgos del auditor, no los prompts) y el **monitor de
@@ -117,8 +133,13 @@ pregunta se rechaza con `cerebro_sin_datos`, antes de reservar (AG5).
 
 `{origen:'pie', seccion, pestana, entrada, sub, periodo?}`, armado con lo que la caja ya sabe
 (`components/ConsultaAlCerebro.jsx`) más el período que está mirando la pantalla. El servidor no confía en
-él: la sección ya la validó el portero, y el período se valida contra el `enum`. La caja nombra la entrada
+él: la sección es la de la ruta —el portero mira el alcance, y `laPregunta` que la persona la vea—, y el
+período se valida contra el `enum`. La caja nombra la entrada
 abierta con el dato, no a mano.
+
+En AG6 la ruta recibe sólo `{ pregunta, hilo?, periodo? }`, como la del Inicio: la sección es la `PANTALLA`
+de la ruta, no un dato del cuerpo. La pestaña, la entrada y la sub-pestaña llegan con la caja, en AG7, cuando
+haya una pantalla que las mande.
 
 ## AG-45 · Proyecciones por lista blanca
 
@@ -136,7 +157,7 @@ Lo decidió AG5 (`lib/agentes/executive/preguntar.ts`): `responder` va con las d
 `tool_choice` `auto`; si el modelo contesta con texto suelto, o se llega a la sexta ronda, esa ronda pide el
 formato de `responder` (`output_config.format`) con `tool_choice` `none`, sin dejar de ofrecer las
 herramientas para no cambiar el prefijo. Si ni así llega con la forma, es `IA-ESTRUCTURA` con su incidente, y
-la pregunta queda `fallida` sin contar para el tope. La forma:
+la pregunta queda `fallida_pagada`: cuenta para el tope, porque el proveedor contestó (`06`, AG-96). La forma:
 
 ```text
 conclusion        una o dos frases, la respuesta primero

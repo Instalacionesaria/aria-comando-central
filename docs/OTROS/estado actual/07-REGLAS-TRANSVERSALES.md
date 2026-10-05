@@ -414,7 +414,7 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:53`, `app/api/auditoria/route.ts:79`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:53`, `app/api/auditoria/route.ts:63`,
 `app/api/creative/route.ts:57`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 
@@ -429,13 +429,13 @@ tres agujeros, **y los tres se ven bien en pantalla**:
 | `?dias=-5` | `now() - interval '-5 days'`: una ventana **en el FUTURO** | Cero filas, dibujadas como «no pasó nada» |
 
 Por eso `periodoDe()` (`lib/negocio/periodo.ts:188`) devuelve `null` ante cualquier clave desconocida y
-**`null` significa rechazar**: `app/api/auditoria/route.ts:80` lo convierte en un 400. La prueba exige
+**`null` significa rechazar**: `app/api/auditoria/route.ts:64` lo convierte en un 400. La prueba exige
 el rechazo con `=== null` y prohíbe el `??` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:126`),
 porque `periodoDe(x) ?? POR_OMISION` compila, se lee razonable y es exactamente el defecto. La única
 ausencia que cae en el valor por omisión es la real, la primera carga sin parámetro (`:79`).
 
 **Y la lista viaja entera hacia los dos lados.** La clave elegida vuelve en la respuesta
-(`app/api/auditoria/route.ts:114`) para que el botón encendido describa lo que el servidor contestó;
+(`app/api/auditoria/route.ts:98`) para que el botón encendido describa lo que el servidor contestó;
 los botones salen de `PERIODOS` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:181`); y la
 lectura del navegador exige el período, sin valor por omisión propio (`lib/auditor/vista.ts:41`,
 forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:163`).
@@ -817,7 +817,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:314-316`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:763`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:790`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:

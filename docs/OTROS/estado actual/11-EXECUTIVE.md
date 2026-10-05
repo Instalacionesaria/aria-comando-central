@@ -16,8 +16,10 @@
 > **Después del corte, 2026-10-04 (AG5 de los agentes).** La bandera ya no está: `app/api/executive/route.ts`
 > es la primera operación del Inicio, el servidor del cerebro —preguntar (`cerebro.usar`), ver los hilos
 > propios (`tablero.ver`) y borrarlos—, y `lib/autorizacion/secciones.ts:220` quedó como un comentario de una
-> línea. El conteo literal de la 90 pasó a 0 y la 30 exige que `executive` tenga su ruta. La pantalla todavía
-> no la usa: el chat del Inicio, la caja del pie y CONVERSACIONES se conectan en AG7
+> línea. El conteo literal de la 90 pasó a 0 y la 30 exige que `executive` tenga su ruta. En AG6 se sumaron las
+> herramientas de las demás secciones y una ruta por sección para la caja del pie
+> (`app/api/<carpeta>/cerebro/route.ts`); lo común de todas está en `lib/agentes/executive/caja.ts`. La pantalla
+> todavía no las usa: el chat del Inicio, la caja del pie y CONVERSACIONES se conectan en AG7
 > (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo describe el corte del 2026-09-28.
 
 Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:213-219`)
@@ -202,7 +204,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   y Conversation (`lib/negocio/cadenaDeCierre.ts:46-55`), anclada al día en Acquisition, Creative y
   Conversion (`lib/negocio/recorrido.ts:186-198`). Hoy, a 30 días, dan 277 y 276.
 - **Conversaciones** — `indicadoresDelLead`, pero sólo detrás de `/api/auditoria`, que pide
-  `auditor.ver` y no `tablero.ver` (`app/api/auditoria/route.ts:71`). Ver § 6, regla 6.
+  `auditor.ver` y no `tablero.ver` (`app/api/auditoria/route.ts:55`). Ver § 6, regla 6.
 - **Visitas landing** — **no existe**: Conversion declara que no hay sesiones ni visitantes
   guardados (`lib/negocio/embudoDelFormulario.ts:129-136`). Lo que sí publica es cuántos contactos
   entraron por cada camino, en conteos y no en tasas (`lib/negocio/recorridoDelLead.ts:4-45`). Lo

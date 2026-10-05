@@ -32,7 +32,7 @@ import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
-import { laPantallaDelTecnico, type PorQueNoAudita } from '../../../lib/auditor/pantalla.ts';
+import { laPantallaDelTecnico, porQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
@@ -51,22 +51,6 @@ import { AGENTES } from '../../../lib/auditor/veredicto.ts';
    pide aparte, abajo, y no cambió. */
 export const PANTALLA = 'conversation';
 
-/**
- * Las cuatro faltas del auditor, traducidas a los tres estados que la pantalla dibuja.
- *
- * `llave_de_ia_ilegible` se colapsa con `sin_clave_ia` **acá y no antes**, y hay que decir por qué no
- * es una pérdida: para el técnico las dos significan lo mismo —*«hay que volver a cargar la llave en
- * Integraciones»*— y son la misma acción. La distinción sí importa donde se toma la decisión de
- * operar, y ahí se conserva: el sello del cron guarda el motivo exacto, que es lo que distingue «nadie
- * la cargó» de «cambió la clave maestra del servidor».
- */
-const COMO_LO_VE_LA_PANTALLA: Readonly<Record<string, PorQueNoAudita>> = {
-  auditor_apagado: 'auditor_apagado',
-  sin_llave_de_ia: 'sin_clave_ia',
-  llave_de_ia_ilegible: 'sin_clave_ia',
-  sin_id_del_agente: 'sin_id_del_agente',
-};
-
 export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['auditor.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
@@ -80,7 +64,7 @@ export async function GET(peticion: Request): Promise<Response> {
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
   const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva));
-  const noAudita = acceso.tipo === 'listo' ? null : (COMO_LO_VE_LA_PANTALLA[acceso.que] ?? null);
+  const noAudita = porQueNoAudita(acceso);
 
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma

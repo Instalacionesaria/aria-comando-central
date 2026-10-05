@@ -42,6 +42,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
+import type { AccesoAlAuditor } from '../credenciales/resolver.ts';
 import { datos } from '../datos/contexto.ts';
 import { hashDelPrompt } from './prompts.ts';
 import { AGENTES, type Agente } from './veredicto.ts';
@@ -53,6 +54,30 @@ export const TOPE_DE_CASOS = 200;
 
 /** Por qué una empresa no audita, tal como lo ve la pantalla. */
 export type PorQueNoAudita = 'auditor_apagado' | 'sin_clave_ia' | 'sin_id_del_agente';
+
+/**
+ * Las cuatro faltas del auditor, traducidas a los tres estados que la pantalla dibuja.
+ *
+ * `llave_de_ia_ilegible` se colapsa con `sin_clave_ia` **acá y no antes**, y hay que decir por qué no
+ * es una pérdida: para el técnico las dos significan lo mismo —*«hay que volver a cargar la llave en
+ * Integraciones»*— y son la misma acción. La distinción sí importa donde se toma la decisión de
+ * operar, y ahí se conserva: el sello del cron guarda el motivo exacto, que es lo que distingue «nadie
+ * la cargó» de «cambió la clave maestra del servidor».
+ *
+ * Vivía en `app/api/auditoria/route.ts`; está acá desde que el cerebro dice lo mismo que la pantalla
+ * (`lib/agentes/executive/caja.ts`): con dos copias, la primera corrección dejaría de coincidir.
+ */
+const COMO_LO_VE_LA_PANTALLA: Readonly<Record<string, PorQueNoAudita>> = {
+  auditor_apagado: 'auditor_apagado',
+  sin_llave_de_ia: 'sin_clave_ia',
+  llave_de_ia_ilegible: 'sin_clave_ia',
+  sin_id_del_agente: 'sin_id_del_agente',
+};
+
+/** Por qué no audita, de lo que resolvió `resolverAccesoAlAuditor`; `null` si audita. */
+export function porQueNoAudita(acceso: AccesoAlAuditor): PorQueNoAudita | null {
+  return acceso.tipo === 'listo' ? null : (COMO_LO_VE_LA_PANTALLA[acceso.que] ?? null);
+}
 
 /** Una tarjeta: un agente y cómo le está yendo. */
 export interface TarjetaDelAgente {

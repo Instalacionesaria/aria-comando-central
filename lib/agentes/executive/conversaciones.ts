@@ -61,7 +61,9 @@ function reducir(respuesta: unknown, texto: string): string {
 }
 
 /**
- * Reserva una pregunta: comprueba que el hilo pedido sea de quien pregunta, lee los turnos anteriores, y
+ * Reserva una pregunta: comprueba que el hilo pedido sea de quien pregunta —y, desde la caja del pie, de esa
+ * sección: continuar ahí un hilo de otra le volvería a dar al modelo conclusiones de una pestaña que quizá ya
+ * no ve—, lee los turnos anteriores, y
  * recién entonces cuenta el tope bajo candado y, si queda lugar, deja la pregunta `reservada` en el hilo y
  * en el registro del tope. Lo que no necesita el candado va antes de tomarlo: el candado es de la empresa
  * entera, y mientras se sostiene nadie más empieza una pregunta.
@@ -82,6 +84,7 @@ export async function reservarPregunta(p: {
       .select('id')
       .where('id', '=', p.hiloId)
       .where('usuario_id', '=', p.usuarioId)
+      .$if(p.origen === 'pie', (q) => q.where('seccion', '=', p.seccion))
       .executeTakeFirst();
     if (!propio) return { tipo: 'no_encontrado' };
     anteriores = await turnosAnteriores(p.hiloId);
@@ -264,13 +267,17 @@ export interface MensajeDelHilo {
   creadoEl: string;
 }
 
-/** Los mensajes de un hilo PROPIO, en orden, o `null` si no existe o es de otra persona. */
-export async function leerHilo(usuarioId: string, hiloId: string): Promise<MensajeDelHilo[] | null> {
+/**
+ * Los mensajes de un hilo PROPIO, en orden, o `null` si no existe, es de otra persona o —con `seccion`, desde
+ * la caja del pie— es de otra sección. El Inicio pasa `null` y los ve todos.
+ */
+export async function leerHilo(usuarioId: string, hiloId: string, seccion: string | null = null): Promise<MensajeDelHilo[] | null> {
   const propio = await datos()
     .selectFrom('conversaciones_del_executive')
     .select('id')
     .where('id', '=', hiloId)
     .where('usuario_id', '=', usuarioId)
+    .$if(seccion !== null, (q) => q.where('seccion', '=', seccion))
     .executeTakeFirst();
   if (!propio) return null;
   const filas = await datos()
@@ -292,12 +299,16 @@ export async function leerHilo(usuarioId: string, hiloId: string): Promise<Mensa
   }));
 }
 
-/** Borra un hilo PROPIO con sus mensajes (`D-14`: el autor borra). `false` si no existe o es de otra persona. */
-export async function borrarHilo(usuarioId: string, hiloId: string): Promise<boolean> {
+/**
+ * Borra un hilo PROPIO con sus mensajes (`D-14`: el autor borra). `false` si no existe, es de otra persona o
+ * —con `seccion`, desde la caja del pie— es de otra sección.
+ */
+export async function borrarHilo(usuarioId: string, hiloId: string, seccion: string | null = null): Promise<boolean> {
   const r = await datos()
     .deleteFrom('conversaciones_del_executive')
     .where('id', '=', hiloId)
     .where('usuario_id', '=', usuarioId)
+    .$if(seccion !== null, (q) => q.where('seccion', '=', seccion))
     .executeTakeFirst();
   return Number(r.numDeletedRows) > 0;
 }

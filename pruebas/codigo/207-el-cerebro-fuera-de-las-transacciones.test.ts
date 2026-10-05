@@ -35,13 +35,22 @@ function dentroDeConOrganizacion(codigo: string): string[] {
   return tramos;
 }
 
-const DEL_CEREBRO = archivosFuente(['lib/agentes', 'app/api/executive']);
+/** Las rutas del cerebro: la del Inicio y las cajas del pie de cada sección (AG6). */
+const ES_RUTA_DEL_CEREBRO = /^app\/api\/(executive\/route\.ts|[^/]+\/cerebro\/route\.ts)$/;
+const DEL_CEREBRO = [...archivosFuente(['lib/agentes']), ...archivosFuente(['app/api']).filter((a) => ES_RUTA_DEL_CEREBRO.test(a.ruta))];
 
 test('se leyeron los archivos del cerebro', () => {
   const rutas = DEL_CEREBRO.map((a) => a.ruta);
-  for (const r of ['lib/agentes/executive/preguntar.ts', 'lib/agentes/llamada.ts', 'app/api/executive/route.ts']) {
+  for (const r of [
+    'lib/agentes/executive/preguntar.ts',
+    'lib/agentes/executive/caja.ts',
+    'lib/agentes/llamada.ts',
+    'app/api/executive/route.ts',
+    'app/api/sales/cerebro/route.ts',
+  ]) {
     assert.ok(rutas.includes(r), `no se leyó ${r}`);
   }
+  assert.ok(rutas.filter((r) => r.endsWith('/cerebro/route.ts')).length >= 11, 'faltan cajas del pie');
 });
 
 test('ninguna llamada al modelo dentro de una `conOrganizacion(`', () => {

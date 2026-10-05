@@ -59,7 +59,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   (`app/api/sales/route.ts:109`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
 >   (`lib/autorizacion/secciones.ts:316`), la misma capacidad que su ruta
->   (`app/api/auditoria/route.ts:71`). Antes la pestaña de permisos ofrecía la casilla a un rol que
+>   (`app/api/auditoria/route.ts:55`). Antes la pestaña de permisos ofrecía la casilla a un rol que
 >   después recibía 403.
 > - **`db120a1`** (2026-09-26, Leads Portal) — `ramaDelPrecall` se exporta
 >   (`lib/negocio/consumoDelPrecall.ts:302-304`) y la ficha del portal la usa
@@ -126,7 +126,7 @@ La sección es `conversation`, grupo «Inteligencia», con `auditor.ver` desde e
 todo el cuerpo es `components/conversation/PanelDeConversation.jsx` (989 líneas; 975 en la foto
 anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:84-89`):
 Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
-transacción: `GET /api/auditoria` (`app/api/auditoria/route.ts:88-106`). El reloj recarga cada 60 s
+transacción: `GET /api/auditoria` (`app/api/auditoria/route.ts:72-90`). El reloj recarga cada 60 s
 sólo con la pantalla a la vista (`components/conversation/PanelDeConversation.jsx:208`,
 `lib/cadencia.ts:91`).
 
@@ -140,7 +140,7 @@ trabajo no puede levantar un servidor. Las cifras son las que la consulta del m�
 **1 · El período** (`components/conversation/PanelDeConversation.jsx:294-313`). Hoy · 7 días · 30
 días · Completo, dibujados desde `PERIODOS` (`lib/negocio/periodo.ts:83-96`), 30 por omisión
 (`lib/negocio/periodo.ts:109`). La clave viaja en `?periodo=` y lo que no está en la lista se
-rechaza con 400 (`app/api/auditoria/route.ts:79-80`). Sólo aparece en las dos pestañas de flujo
+rechaza con 400 (`app/api/auditoria/route.ts:63-64`). Sólo aparece en las dos pestañas de flujo
 (`components/conversation/PanelDeConversation.jsx:252`), y cambiarlo es una carga primera, no una
 recarga (`components/conversation/PanelDeConversation.jsx:168-174`).
 
@@ -270,7 +270,7 @@ hereda los mismos números.
 ── **PESTAÑA AUDITORÍA (el Supervisor del §11)** ──
 
 `lib/auditor/pantalla.ts` (394 líneas) y `components/auditoria/PanelDeAuditoria.jsx` (520). Las
-tarjetas cuentan **toda la historia** (`lib/auditor/pantalla.ts:195-241`) y por eso no hay
+tarjetas cuentan **toda la historia** (`lib/auditor/pantalla.ts:220-266`) y por eso no hay
 segmentado en esta pestaña.
 
 18. **AppFlow**: **64 análisis, 50 auditables · 30 verdes / 17 amarillos / 3 rojos**, 14 sin poder
@@ -284,10 +284,10 @@ segmentado en esta pestaña.
     `dato_faltante` ×1 y `no_leyo_a_medias` ×1 (amarillos). Entraron cuatro hallazgos desde el
     corte, el último el 2026-09-21. **Uno es de
     LeadFlow y se dibuja en la tarjeta de AppFlow**: ver riesgo 21.
-21. **La lista de conversaciones** tiene tope de 50 (`lib/auditor/pantalla.ts:50`) y **hoy corta**:
+21. **La lista de conversaciones** tiene tope de 50 (`lib/auditor/pantalla.ts:51`) y **hoy corta**:
     hay 70 análisis. AppFlow muestra 44 de 64 y lo dice. LeadFlow muestra sus 6 de 6 y **también
     dice que el tope cortó la lista**, porque `hayMas` es uno solo para las dos tarjetas
-    (`lib/auditor/pantalla.ts:380`, `components/auditoria/PanelDeAuditoria.jsx:152`).
+    (`lib/auditor/pantalla.ts:405`, `components/auditoria/PanelDeAuditoria.jsx:152`).
 
 ── **PESTAÑA PROMPTS** ──
 
@@ -338,7 +338,7 @@ ningún dato). Los tres módulos siguen arrancando desde `lib/aios/index.js:29-3
 pantalla que habla por Conversation: `grep` de «Lead Flow», «agente de voz» y «show rate» en
 `components/`, `app/` y `lib/aios/`, fuera de `components/conversation/` y `components/auditoria/`,
 el 2026-09-28, sólo acierta en `lib/aios/executive.js` y en dos comentarios de la ruta de esta misma
-pantalla (`app/api/auditoria/route.ts:125` y `app/api/auditoria/route.ts:130`). En `lib/negocio/`
+pantalla (`app/api/auditoria/route.ts:109` y `app/api/auditoria/route.ts:114`). En `lib/negocio/`
 hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:82`) que no
 habla por este departamento.
 
@@ -624,7 +624,7 @@ diría que no viene nadie; el módulo lo evita (`lib/negocio/indicadoresDeCitas.
 corte nuevo del §10.7 puede volver a caer.
 
 **6 · Dos ventanas en la misma pantalla.** Las tarjetas del supervisor cuentan toda la historia
-(`lib/auditor/pantalla.ts:195-241`); el sentimiento, treinta días. «30 verdes» al lado de «26,1 %
+(`lib/auditor/pantalla.ts:220-266`); el sentimiento, treinta días. «30 verdes» al lado de «26,1 %
 molestos» con el botón «30 días» encendido se lee como si hablaran del mismo período.
 
 **7 · El sentimiento de AppFlow se apaga solo el 2026-10-08.** Sus 23 juzgadas tienen fechas: 10 del
@@ -709,7 +709,7 @@ mismo. `8dcb619` cambió el valor y no los dos textos que lo explicaban.
 **21 · Los patrones se agrupan sin mirar el agente.** `agruparPorPatron` junta por código
 (`lib/auditor/vista.ts:100-104`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
 suyo (`components/auditoria/PanelDeAuditoria.jsx:150`), y el primero es el más reciente, porque
-los casos llegan por `detectado_el` descendente (`lib/auditor/pantalla.ts:293`). Desde el
+los casos llegan por `detectado_el` descendente (`lib/auditor/pantalla.ts:318`). Desde el
 2026-09-17 `no_lee_confirmacion_previa` tiene casos de los dos agentes —3 de AppFlow y 1 de
 LeadFlow—; hasta el 2026-09-21 el más reciente era el de LeadFlow y el patrón entero se dibujaba en
 su tarjeta, y desde ese día es uno de AppFlow, así que hoy **el caso de LeadFlow se dibuja dentro de
@@ -724,7 +724,7 @@ la sección 4)—, y la plataforma ya tiene con qué decirlo: `frescuraDe(tarea)
 (`lib/negocio/frescura.ts:108`) devuelve un aviso que sólo calla cuando la tarea está al día
 (`lib/negocio/frescura.ts:49-59`), y lo leen la Agenda del Closer, el chat de la ficha y Leads
 Portal, éste sobre las mismas `contactos` y `citas` (`app/api/leads-portal/route.ts:63-64`).
-Conversation no: `GET /api/auditoria` arma siete lecturas (`app/api/auditoria/route.ts:88-106`) y
+Conversation no: `GET /api/auditoria` arma siete lecturas (`app/api/auditoria/route.ts:72-90`) y
 ninguna es ésa. Un `grep` de `frescura` y `tareas_programadas` sobre `lib/auditor/`,
 `components/conversation/`, `components/auditoria/`, `app/api/auditoria/`,
 `lib/negocio/indicadoresDelLead.ts`, `lib/negocio/indicadoresDeCitas.ts`,

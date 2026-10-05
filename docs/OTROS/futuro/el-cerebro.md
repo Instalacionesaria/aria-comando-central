@@ -11,9 +11,9 @@
 > recomienda**, sin actuar (`D-03`). Y una cambió: la evidencia va **dentro de la respuesta**, como un
 > desplegable, no en un panel a la derecha (`D-28`). Lo de abajo queda como estaba escrito ese día.
 >
-> **El servidor del cerebro está hecho desde AG5 (2026-10-04)**: `lib/agentes/executive/` y
-> `app/api/executive/route.ts`, con las herramientas de Acquisition, Sales y Leads › De GHL. Las demás llegan en
-> AG6, y la pantalla en AG7.
+> **El servidor del cerebro está hecho (AG5 y AG6, 2026-10-04)**: `lib/agentes/executive/`,
+> `app/api/executive/route.ts` y una ruta `app/api/<carpeta>/cerebro/route.ts` por sección, con las herramientas
+> de todas las secciones que ya miden. La pantalla llega en AG7.
 
 ## Qué es
 

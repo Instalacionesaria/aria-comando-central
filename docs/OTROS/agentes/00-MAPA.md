@@ -3,10 +3,10 @@
 > Plan del **2026-10-04**: el cerebro (el agente global del Inicio, `executive` en el código) y un agente
 > por tipo en cada inteligencia, enganchados al front de la segunda edición. Esta carpeta dice **todo lo
 > que se va a construir, cada decisión y cada riesgo, antes de tocar el código**. Prefijo de los
-> requisitos: `AG-`. Estado: **AG5 hecho** (el servidor del cerebro: la ruta del Inicio, las primeras herramientas, los hilos y los
-> topes); el hito H1 se cumplió el
+> requisitos: `AG-`. Estado: **AG6 hecho** (el servidor del cerebro entero: la ruta del Inicio, una caja por sección, las 30
+> herramientas, los hilos y los topes); el hito H1 se cumplió el
 > 2026-10-04 (la `069` y la `070` en producción, push de AG0 a AG2). El usuario aprobó ese día el conjunto de
-> preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`. Sigue AG6.
+> preguntas de `07-LA-EVALUACION.md` y la especificación de Conversion de `fichas/F04-CONVERSION.md`. Sigue AG7.
 
 ---
 
@@ -206,7 +206,8 @@ Tres consecuencias para el plan:
 | AG3 · La voz | **Hecho sin Fundaciones** el 2026-10-04: todo Tools a tú neutro, la prueba 202 y la lista de voseo en `pruebas/apoyo/voseo.ts`. La voz de Fundaciones la trae la rama |
 | AG4 · Base sembrada y evaluación | **Hecho** el 2026-10-04: `db/sembrado/casos-de-los-agentes.ts` (sólo local, no queda instalado), `scripts/evaluar-agentes.mjs` con la tanda `modelo`, y las pruebas 203, 204 y 205 |
 | AG5 · El cerebro, servidor I | **Hecho** el 2026-10-04: `lib/agentes/executive/`, `app/api/executive/route.ts` (baja la bandera), la `071` y la capacidad `cerebro.usar` (las dos van a producción con el hito H2), y las pruebas 206 a 213. Los números de las etapas siguientes corren (`08`) |
-| AG6 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG6 · El cerebro, servidor II | **Hecho** el 2026-10-04: las herramientas de las demás secciones (30 en total), `economiaDelNegocio`, `leadsDelScraper`, las once rutas `app/api/<carpeta>/cerebro/route.ts` con lo común en `lib/agentes/executive/caja.ts`, y las pruebas 214 a 216 |
+| AG7 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

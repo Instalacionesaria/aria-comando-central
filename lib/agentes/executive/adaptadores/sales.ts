@@ -1,6 +1,7 @@
 // Las herramientas de Sales del cerebro, con las mismas funciones y los mismos argumentos que
 // `app/api/sales/route.ts`: el dinero del mes, la cadena de cierre, el ciclo hasta la cita, el cierre por
-// closer y la cancelación de citas (que también es de Conversation).
+// closer y la cancelación de citas (que también es de Conversation). Y la economía del mes, que cruza las
+// ventas con la inversión de Acquisition y por eso pide ver las dos secciones.
 //
 // Lo que no viaja: los textos de rótulo de cada eslabón (son de la pantalla) y el identificador del CRM
 // de cada closer. Los nombres de los closers sí: son el equipo de la empresa, y la tabla se lee por ellos.
@@ -11,6 +12,7 @@ import { cadenaDeCierre } from '../../../negocio/cadenaDeCierre.ts';
 import { cicloHastaLaCita } from '../../../negocio/cicloHastaLaCita.ts';
 import { cierrePorCloser } from '../../../negocio/cierrePorCloser.ts';
 import { tasaDeCancelacion } from '../../../negocio/indicadoresDeCitas.ts';
+import { economiaDelNegocio } from '../../../negocio/economiaDelNegocio.ts';
 import { ARGUMENTO_PERIODO, SIN_ARGUMENTOS, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
 
 export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
@@ -31,6 +33,24 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
         ...tomar(d, ['mes', 'cobrado', 'ventas', 'acuerdos'] as const),
         nota: 'Mes calendario en curso. Venta reportada por el closer, no un pago verificado.',
       };
+    },
+  },
+  {
+    nombre: 'economia_del_negocio',
+    descripcion:
+      'Sales y Acquisition: lo cobrado y las ventas del MES CALENDARIO contra la inversión en anuncios del mismo ' +
+      'mes, con el retorno (cobrado / inversión) y el costo por venta. Sin ventas, con una venta sin monto o con el ' +
+      'gasto del mes incompleto no hay retorno, y el aviso dice por qué. Venta reportada, no un pago verificado.',
+    // Cruza las dos: se ofrece sólo a quien ve las dos (AG-41).
+    secciones: ['sales', 'acquisition'],
+    todas: true,
+    esquema: SIN_ARGUMENTOS,
+    async ejecutar(_argumentos, contexto) {
+      const e = await economiaDelNegocio(contexto.zona);
+      return tomar(e, [
+        'mes', 'desde', 'hasta', 'cobrado', 'ventas', 'inversion', 'gastoHasta', 'ventasSinMonto', 'gastoEntero', 'retorno', 'costoPorVenta', 'aviso',
+        'nota',
+      ] as const);
     },
   },
   {

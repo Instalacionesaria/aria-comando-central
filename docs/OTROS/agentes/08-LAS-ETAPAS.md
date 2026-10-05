@@ -20,8 +20,8 @@
 - **Se empuja por hitos**, con el OK del usuario.
 - **Los números de prueba y de migración de las etapas que siguen son los del plan original, y corren.**
   Cada etapa toma los siguientes libres al empezar: AG2 usó la migración `070` y AG4 la prueba 205, así que el
-  cerebro fue en la `071` y en las pruebas 206 a 213, y lo que el plan numeraba `071` a `074` pasó a `072` a
-  `075`. Los números de prueba de las secciones de abajo son los del plan y se reasignan en su etapa.
+  cerebro fue en la `071` y en las pruebas 206 a 213 (AG5) y 214 a 216 (AG6), y lo que el plan numeraba `071` a
+  `074` pasó a `072` a `075`. Los números de prueba de las secciones de abajo son los del plan y se reasignan en su etapa.
 - **Pruebas nuevas desde la 198**, con un solo contador para `pruebas/codigo` y `pruebas/base`. El número
   exacto se toma al crearla; los de abajo son la intención.
 - **Ninguna llamada real al modelo** sin el OK del usuario con el número de llamadas (`07`).
@@ -234,16 +234,60 @@
 - **Documentos**: `estado actual/11-EXECUTIVE.md`, `nueva-estructura/04-EL-INICIO.md`, `futuro/el-cerebro.md`,
   `03`, `09` y `00-MAPA`.
 
-## AG6 · El cerebro, servidor II — **grande**
+## AG6 · El cerebro, servidor II — **grande** — **hecha el 2026-10-04**
 
-- **Qué**: el resto de las herramientas de `03`, `AG-42` (Creative, Conversion, Conversation, Setter,
-  Closer, Radar, Funnel, ICP & Oferta), las dos nuevas (`economiaDelNegocio`, `leadsDelScraper`) y las rutas
-  finas `…/cerebro` de cada sección.
-- **Pruebas nuevas**: 210, las herramientas ofrecidas son exactamente las de las secciones visibles; la de dos
-  secciones, sólo con las dos (mutación: ofrecer el catálogo entero). 211, cada adaptador devuelve
-  exactamente sus claves, y ningún resultado lleva `@` ni un teléfono (mutación: dejar pasar `email`). 212
-  (base), cada herramienta da la misma cifra que la ruta de su pantalla, en las cuatro ventanas (mutación:
-  recalcular en el adaptador).
+- **Qué se hizo**: las herramientas que faltaban de `03`, `AG-42`, en `lib/agentes/executive/adaptadores/`
+  —Creative (`calidad_de_piezas`, `rendimiento_de_piezas`, `fatiga_de_piezas`), Conversion
+  (`recorrido_de_los_leads`, `formulario_de_la_landing`), Conversation (`auditoria_de_agentes`, `lead_flow`,
+  `atribucion_del_lead`, `consumo_del_precall`, `sentimiento_por_flujo`), Setter (`colas_del_setter`,
+  `inicio_del_setter`, `pipeline_del_setter`), Closer (`mi_dia_del_closer`, `inicio_del_closer`,
+  `agenda_del_closer`, `pipeline_del_closer`), Tools (`leads_del_scraper`, `espia`), ICP & Oferta
+  (`fundaciones`) y las dos de la plataforma (`frescura`, `estado_de_integraciones`)—, las dos funciones nuevas
+  (`lib/negocio/economiaDelNegocio.ts`, con su herramienta `economia_del_negocio`, y
+  `lib/negocio/leadsDelScraper.ts`) y las once rutas finas `app/api/<carpeta>/cerebro/route.ts`. El catálogo
+  tiene 30 herramientas. Radar y Funnel son pestañas de Tools: ahí el cerebro lee el Espía y los leads del
+  scraper, y Funnel no tiene cifras medidas que leer (`03`, `AG-42`).
+- **Lo común de las rutas**, en `lib/agentes/executive/caja.ts`: leer y validar la pregunta, la identidad
+  (`identidadDelCerebro`, con la conexión que abre la ruta), el estado y los hilos del panel, y la respuesta.
+  La del Inicio se reescribió sobre lo mismo, sin cambiar lo que contesta. La traducción de por qué el auditor
+  no audita pasó de `app/api/auditoria/route.ts` a `lib/auditor/pantalla.ts` (`porQueNoAudita`): la usan la
+  pantalla y el cerebro.
+- **Lo que viaja y lo que no**: de las colas del Setter y del Closer y de los pipelines, sólo los conteos; de la
+  agenda, la hora y el estado de cada cita; de la auditoría, las tarjetas y los casos por patrón, sin los casos;
+  del Espía y de ICP & Oferta, el texto recortado y sin datos de contacto (`sinDatosDeContacto`); de los leads
+  del scraper, sólo agregados, y «enviados al CRM» como `null` porque no se registra; de las integraciones,
+  `cargado` y `estado`, sólo a quien tiene `credenciales.ver`.
+- **Lo que cambió la revisión adversarial**: el filtro de contactos borraba el símbolo de un usuario de una red
+  y no el usuario, y dejaba pasar un móvil escrito con puntos (`987.654.321`); ahora borra los dos, y ante la
+  duda borra un número de siete cifras o más. Una caja rechaza a quien no ve su sección
+  (`seccion_no_concedida`), y sólo lee, continúa y borra los hilos de su sección. La economía no publica
+  retorno ni costo por venta con una venta sin monto ni con el gasto del mes incompleto, y `gastoHasta` sale de
+  las mismas filas que la inversión. `frescura` da `contactos` a todas las secciones que cuentan contactos. La
+  auditoría dice `casosTruncados` cuando la pantalla llegó a su tope de casos. Y cuatro comentarios falsos: el
+  registro de auditoría del GET, `hayMas`, la regla de `frescura` y quién ve la empresa en el Closer.
+- **Pruebas que cambian**: la 207 mira también las rutas finas y `caja.ts`; la 208, el contexto nuevo de las
+  herramientas; la 213 pasa al catálogo entero, con las tres tablas de `public` creadas para la prueba
+  (`pruebas/apoyo/tablas-de-public.ts`: no existen en la base local) y sembradas con correos y teléfonos;
+  `pruebas/apoyo/autorizados.ts` suma las once rutas a las dos listas.
+- **Pruebas nuevas** (el plan las numeraba 210 a 212; esos números los usó AG5): 214, lo que se le ofrece a
+  cada sección, escrito a mano, la de dos secciones sólo con las dos, las integraciones sólo con su dato, y el
+  filtro de contactos; 215 (base), la misma cifra que la ruta de su pantalla en las cuatro ventanas y con la
+  sesión de quien mira, y la economía con y sin ventas, con una venta sin monto y con el gasto incompleto; 216
+  (base), las cajas del pie —su `PANTALLA` y sus capacidades, `seccion_no_concedida`, el hilo con su sección,
+  lo que le llega al modelo, y por qué no audita igual que la pantalla—.
+- **Mutaciones, veinticuatro vistas en rojo**: ofrecer el catálogo entero, la de dos secciones con cualquiera,
+  las integraciones a todos, una fecha tomada por teléfono, el móvil con puntos, el usuario de una red (214); el
+  análisis del Espía y el ICP sin filtrar, las filas de las colas, `frescura` de todas las tareas o sin
+  `contactos` (213); recalcular con 30 días, la economía con todo el gasto, el Closer sin su alcance, el gasto
+  siempre entero, las ventas sin monto que no cuentan (215); sin `noAudita`, las integraciones a cualquiera, la
+  caja que pregunta como el Inicio, la caja que no mira si se ve su sección, continuar, leer y borrar un hilo de
+  otra sección (216); preguntar dentro de una transacción en una ruta fina (207).
+- **Lo que queda para AG7**: la caja del pie manda sólo `{ pregunta, hilo?, periodo? }`; la pestaña, la entrada
+  y la sub-pestaña (`03`, `AG-44`) llegan con la pantalla. Las colas se comparan con la pantalla en cero contra
+  cero, porque la base sembrada no tiene filas en las colas: el alcance del Closer lo prueban el campo `de` y el
+  pipeline.
+- **Documentos**: `03`, `05`, `09`, `00-MAPA`, `fichas/F00-EL-CEREBRO.md`, `futuro/el-cerebro.md` y
+  `estado actual/11-EXECUTIVE.md`. Las pruebas de las etapas siguientes empiezan en la 217.
 
 ## AG7 · El cerebro en pantalla — **grande** — **hito H2**
 
@@ -261,7 +305,8 @@
   restringido y bajo delegación. **Una evaluación real del cerebro, con el OK del usuario** (`07`).
 - **Documentos**: `nueva-estructura/09-LA-SEGUNDA-EDICION.md` (lo «Próximamente» que deja de serlo) y los
   comentarios de `components/Nav.jsx` y `components/ConsultaAlCerebro.jsx`.
-- **Hito H2**: aplicar la `070`, paso 4b, comprobar `cerebro.usar` en `roles_permisos`, push con OK.
+- **Hito H2**: aplicar la `071` (la `070` ya está en producción desde H1), paso 4b, comprobar `cerebro.usar` en
+  `roles_permisos`, push con OK.
 
 ## AG8 · Las señales
 

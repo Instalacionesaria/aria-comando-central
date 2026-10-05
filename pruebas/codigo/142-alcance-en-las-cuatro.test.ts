@@ -85,6 +85,14 @@ const SIN_ALCANCE: Record<string, string> = {
   'app/api/closer/meta/route.ts': 'PATCH de la meta propia; no devuelve leads',
 };
 
+/**
+ * La caja del cerebro del Closer (AG6 de los agentes). Su `GET` devuelve los hilos propios, no leads ni
+ * citas; lo que lee leads o citas son las herramientas del cerebro, y ésas resuelven el alcance con la misma
+ * función en `lib/agentes/executive/adaptadores/closer.ts`. Lo cuida la prueba de abajo.
+ */
+const CAJA_DEL_CEREBRO = 'app/api/closer/cerebro/route.ts';
+const HERRAMIENTAS_DEL_CLOSER = 'lib/agentes/executive/adaptadores/closer.ts';
+
 test('las CUATRO pantallas del Closer resuelven el alcance con la misma función', () => {
   for (const ruta of CON_ALCANCE) {
     const src = sinComentarios(leer(ruta));
@@ -119,7 +127,7 @@ test('no hay una QUINTA pantalla del Closer sin decidir de quién son sus datos'
   assert.ok(todas.length >= CON_ALCANCE.length, 'no se encontraron las rutas del Closer');
 
   for (const ruta of todas) {
-    if (CON_ALCANCE.includes(ruta)) continue;
+    if (CON_ALCANCE.includes(ruta) || ruta === CAJA_DEL_CEREBRO) continue;
     const motivo = SIN_ALCANCE[ruta];
     assert.ok(
       motivo,
@@ -137,6 +145,22 @@ test('no hay una QUINTA pantalla del Closer sin decidir de quién son sus datos'
         'del Closer sin alcance devuelve los leads de todos',
     );
   }
+});
+
+test('la caja del cerebro del Closer no lee leads, y sus cuatro herramientas resuelven el alcance', () => {
+  const caja = sinComentarios(leer(CAJA_DEL_CEREBRO));
+  assert.doesNotMatch(caja, /lib\/negocio\//, 'la caja del cerebro lee de `lib/negocio`: dejó de ser sólo los hilos');
+  assert.match(caja, /loDelPanel\(contexto, PANTALLA, hilo\)/);
+  /* Cada herramienta resuelve el alcance, sin «ver como» (el cerebro mira lo que ve quien pregunta al abrir la
+     pantalla), y se lo pasa a su consulta. */
+  const herramientas = sinComentarios(leer(HERRAMIENTAS_DEL_CLOSER));
+  assert.equal((herramientas.match(/alcanceDeQuienMira\(contexto\.usuarioId, null\)/g) ?? []).length, 4);
+  // Cada llamada a las colas lleva el alcance: con un `match`, la otra llamada taparía la que no lo lleva.
+  const colas = herramientas.match(/colasDelDia\(/g) ?? [];
+  assert.equal(colas.length, 2);
+  assert.equal((herramientas.match(/colasDelDia\(contexto\.zona, alcance\)/g) ?? []).length, colas.length);
+  assert.match(herramientas, /agendaDelCloser\('closer', contexto\.zona, \{ dias: DIAS_DE_LA_AGENDA, alcance \}\)/);
+  assert.match(herramientas, /pipelineDe\('closer', \{ conCongelados: true, alcance \}\)/);
 });
 
 test('la Agenda corta por asignación en SUS TRES consultas, no solo en la lista', () => {

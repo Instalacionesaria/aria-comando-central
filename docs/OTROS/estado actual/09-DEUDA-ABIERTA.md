@@ -679,7 +679,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
     (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:261`), lectores en `lib/auditor/`
-    (por ejemplo `lib/auditor/pantalla.ts:219`) y **24 filas**, detectadas entre el 2026-09-01 y el
+    (por ejemplo `lib/auditor/pantalla.ts:244`) y **24 filas**, detectadas entre el 2026-09-01 y el
     2026-09-21 (2026-09-28 23:56 UTC). Las dos consecuencias que el párrafo deduce sobre la cola
     «Intervenciones urgentes» cuelgan de esa premisa y no se re-midieron acá.
   - Que `serie_agotada` es un sabor pendiente de conectar

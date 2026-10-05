@@ -87,7 +87,7 @@ Una línea por **departamento** (como la Simulación), calculada al leer, sin mo
 de 28 px. Prioridad:
 
 1. **Lo que falta configurar** en el departamento, **con lo que su ruta ya resuelve**: el identificador del
-   agente que audita Conversation lo resuelve hoy `app/api/auditoria/route.ts:82`. Una ruta de pantalla no
+   agente que audita Conversation lo resuelve hoy `app/api/auditoria/route.ts:66`. Una ruta de pantalla no
    suma identidad sólo para la cabecera; lo que no resuelve se dice por su consecuencia, que es un dato que
    cualquiera de esa pantalla puede ver: «Sin datos nuevos del CRM desde el 13 de septiembre» (la
    frescura). El detalle de la credencial, sólo a quien tiene `credenciales.ver`: el catálogo le niega

@@ -106,7 +106,7 @@ en código, pruebas, documentos o commits.
 `conIdentidad` sólo en archivos de ruta, del sembrado y del guion de evaluación; **nada bajo
 `lib/agentes/**` lo importa** (una prueba nueva lo vigila). Todo archivo con `conIdentidad(` va en
 `ARCHIVOS_AUTORIZADOS` (`pruebas/apoyo/autorizados.ts:27`), y si además contiene `conOrganizacion(`, en
-`CRUZAN_LOS_DOS_DOMINIOS` (`:438`), diciendo en su propio código qué pasa si la segunda mitad falla.
+`CRUZAN_LOS_DOS_DOMINIOS` (`:454`), diciendo en su propio código qué pasa si la segunda mitad falla.
 
 | archivo | qué resuelve en identidad | listas | etapa |
 |---|---|---|---|

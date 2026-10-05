@@ -33,7 +33,7 @@ import { conOrganizacion } from '../../datos/contexto.ts';
 import { type FalloDelModelo, anotarIncidente } from '../../fundaciones/fallo-del-modelo.ts';
 import { type BloqueDelModelo, type MensajeAlModelo, llamarAlModelo } from '../llamada.ts';
 import { MODELO_DEL_EXECUTIVE } from '../modelos.ts';
-import { type ContextoDeHerramienta, ejecutarHerramienta, herramientasPara, paraElModelo } from './herramientas.ts';
+import { type ContextoDeHerramienta, type DatosDeLaRuta, ejecutarHerramienta, herramientasPara, paraElModelo } from './herramientas.ts';
 import { instruccionesDelCerebro, type DatosDeLasInstrucciones } from './prompt.ts';
 import { type Evidencia, NOMBRE_DE_RESPONDER, RESPONDER, type RespuestaValidada, validarRespuesta } from './respuesta.ts';
 import { guardarRespuesta, marcarFallida, reservarPregunta, type OrigenDelHilo, type TurnoAnterior } from './conversaciones.ts';
@@ -68,6 +68,8 @@ export interface Pregunta {
   texto: string;
   /** La fecha local de la empresa (`AAAA-MM-DD`), para las instrucciones. */
   hoy: string;
+  /** Lo que la ruta resolvió en identidad: por qué el auditor no audita, el estado de las integraciones. */
+  deLaRuta: DatosDeLaRuta;
 }
 
 export type ResultadoDePreguntar =
@@ -118,7 +120,7 @@ function jsonDelTexto(contenido: readonly BloqueDelModelo[]): unknown {
 
 export async function preguntar(p: Pregunta): Promise<ResultadoDePreguntar> {
   const claves = p.secciones.map((s) => s.clave);
-  const ofrecidas = herramientasPara(claves, p.seccion);
+  const ofrecidas = herramientasPara(claves, p.seccion, p.deLaRuta.integraciones !== null);
   // AG-43: sin datos que leer no se llama al modelo. Antes de reservar: no gasta ni cuenta.
   if (ofrecidas.length === 0) return { tipo: 'sin_herramientas' };
 
@@ -189,7 +191,7 @@ async function elBucle(
     p.origen === 'pie' && p.seccion !== null ? { origen: 'pie', seccion: p.seccion, periodo: p.periodo } : { origen: 'inicio' };
   const instrucciones = instruccionesDelCerebro({ hoy: p.hoy, zona: p.zona, secciones: p.secciones, desde });
   const mensajes = mensajesIniciales(anteriores, p.texto);
-  const contextoDeHerramienta: ContextoDeHerramienta = { zona: p.zona, usuarioId: p.usuarioId };
+  const contextoDeHerramienta: ContextoDeHerramienta = { zona: p.zona, usuarioId: p.usuarioId, secciones: claves, deLaRuta: p.deLaRuta };
   const evidencias: Evidencia[] = [];
   const inicio = Date.now();
   let conFormato = false;

@@ -7,11 +7,13 @@
 
 | riesgo | cómo se vería | qué lo vigila |
 |---|---|---|
-| El cerebro ofrece la herramienta de una sección que la persona no ve | Un closer recibe cifras de Acquisition | El portero, porque cada ruta declara su pantalla (`03`, `AG-40`), y la 208 sobre las herramientas ofrecidas (AG5) |
+| El cerebro ofrece la herramienta de una sección que la persona no ve | Un closer recibe cifras de Acquisition | El portero, porque cada ruta declara su pantalla (`03`, `AG-40`); la 214, que escribe a mano el juego de cada sección, y la 216, que mira lo que le llega al modelo desde una caja del pie (AG6) |
 | Una transacción queda abierta mientras se espera al modelo | El grupo de 5 conexiones se agota y la app entera se pone lenta | La 207 (estática) y la 210 (base, `pg_stat_activity`) (AG5) |
-| Un dato personal viaja al modelo | Un correo en el resultado de una herramienta | La 213: juego exacto de claves por herramienta, más la negativa (AG5) |
+| Un dato personal viaja al modelo | Un correo en el resultado de una herramienta | La 213: juego exacto de claves de cada herramienta del catálogo, más la negativa sobre filas sembradas CON correos y teléfonos (los leads del scraper, el análisis del Espía, el ICP), y que cada cola viaje como un conteo (AG5 y AG6) |
+| Un texto libre trae un contacto | El análisis del Espía o el ICP con el teléfono de un anuncio o de quien llenó la ficha | `sinDatosDeContacto` (`lib/agentes/executive/adaptadores/comun.ts`) y la 214, que también exige que deje fechas y montos |
+| La herramienta del pie no sabe por qué el auditor no audita | El cerebro dice «audita» donde la pantalla dice que falta la llave | La traducción vive en un solo lugar, `porQueNoAudita` (`lib/auditor/pantalla.ts`), y la 216 compara la evidencia con la pantalla |
 | El modelo inventa una cifra | Un número plausible y falso, con formato de verdadero | La 208: la cifra que no está en su evidencia se quita y se dice (AG5) |
-| La herramienta da otra cifra que la pantalla | Dos verdades para «7 días» | La 213, con 30 días desde AG5; las cuatro ventanas, en AG6 |
+| La herramienta da otra cifra que la pantalla | Dos verdades para «7 días» | La 213, con 30 días desde AG5; la 215, en las cuatro ventanas y con la sesión de quien mira (AG6) |
 | La capacidad no llega al catálogo de producción | 403 para todos en el cerebro, o en resolver señales | El paso 4b en cada hito y la lectura de `identidad.roles_permisos` |
 | La migración no está en producción al empujar | `42P01` en el Inicio o en el cron | La regla de aplicar antes del push, con el número verificado después del `pull` |
 | La tarea `senales` queda `saltada` en empresas sin GHL | Ninguna señal en la mayoría de las empresas | La 99: la tarea está en la excepción del token del CRM |
