@@ -276,7 +276,7 @@ cada tarea. Para la única empresa conectada, el 2026-09-28:
 El 2026-09-15 era 1.392; la diferencia es entera la tarea `anuncios`. Los Analizadores no le hablan
 al CRM: ningún archivo de `lib/analizadores/` importa `lib/ghl/`.
 
-**La tarea `anuncios` cuesta 40 y su comentario dice 52.** `lib/negocio/barrido.ts:239-241` cuenta
+**La tarea `anuncios` cuesta 40 y su comentario dice 52.** `lib/negocio/barrido.ts:243-245` cuenta
 «trece campañas por cuatro días (hoy más los tres que se releen)», que era cierto cuando
 `DIAS_QUE_SE_RELEEN` valía 3. Vale 2 (`lib/negocio/recolectarAnuncios.ts:59`), la ventana son tres
 días, y la medición es 1 del vínculo + 13 × 3 = 40. El proveedor tarda **4,55 s por llamada** en esta
@@ -325,7 +325,7 @@ contrato; lo que se comprobó es que nada de lo que estas rutas llaman pide la c
   sin red.
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
-pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:163-166`). Estamos un orden de
+pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:167-170`). Estamos un orden de
 magnitud por debajo, también con la tarea nueva.
 
 ---
@@ -809,7 +809,7 @@ desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
 (`lib/negocio/recolectarAnuncios.ts:137-148` y `lib/negocio/recolectarAnuncios.ts:622-627`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:749-817`) no lee `vinculo`,
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:801-875`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.

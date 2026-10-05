@@ -102,7 +102,7 @@ de enlace — o sea la mitad de las cifras que este departamento publica.
 ### C8-17 · Y no cuesta ninguna llamada nueva
 
 El colector ya pide `/reporting/list?listType=ads` una vez por campaña y por día, en la tarea
-`anuncios` del cron de las `17 6 * * *` (`lib/negocio/barrido.ts:222`). **El desglose viene en esa
+`anuncios` del cron de las `17 6 * * *` (`lib/negocio/barrido.ts:226`). **El desglose viene en esa
 misma respuesta.**
 
 ### C8-18 · El desglose se guarda en una columna `jsonb`, no en columnas ni en una tabla hija

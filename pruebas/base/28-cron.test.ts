@@ -91,6 +91,11 @@ function org(id: string, slug: string, activa = true): OrganizacionListada {
 
 const CON_TOKEN = { tipo: 'listo' as const, token: 'no-se-usa', locationId: 'loc' };
 
+/* El reloj de las corridas que no prueban el presupuesto: las 12:00 de Lima. Corren TODAS las tareas, y la
+   pasada de los detectores (`senales`) depende de la hora local —antes de las 6:00 no corre ni se sella—, así
+   que con el reloj de verdad estas pruebas cambiarían de resultado según la hora a la que se corren. */
+const DE_DIA = () => Date.parse('2026-10-05T17:00:00Z');
+
 async function sellos(): Promise<{ slug: string; tarea: string; estado: string; motivo: string | null }[]> {
   return (
     await filas<{ slug: string; tarea: string; ultimo_estado: string; ultimo_motivo: string | null }>(
@@ -178,7 +183,7 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
 
-  const r = await barrerTodo('0 12 * * *', empresas);
+  const r = await barrerTodo('0 12 * * *', empresas, DE_DIA);
   const porSlug = new Map(r.renglones.filter((x) => x.tarea === 'mensajes').map((x) => [x.slug, x.estado]));
   assert.equal(porSlug.get('rota'), 'fallo');
   assert.equal(porSlug.get('alfa'), 'saltada', 'la de antes tiene que estar');
@@ -235,6 +240,10 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
       ['mensajes', 'fallo'],
       /* `reintentos` sale SALTADA por lo mismo que `analizadores`: pide las mismas dos llaves. */
       ['reintentos', 'saltada'],
+      /* `senales` sale CORRIÓ, como `anuncios`: no pide el token del CRM (AG-35), a las 12:00 de Lima le
+         toca, y con RLS forzada sus lecturas de una empresa que no existe dan cero filas. Sin detectores
+         construidos todavía (AG8), no hay departamento que medir. */
+      ['senales', 'corrio'],
     ],
     'una de las tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );
@@ -254,8 +263,15 @@ test('`corrieron` cuenta las que DE VERDAD corrieron, no las recorridas', async 
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
-  const r = await barrerTodo('0 12 * * *', empresas);
-  assert.equal(r.corrieron, 0, 'ninguna tenía credencial: nada corrió');
+  const r = await barrerTodo('0 12 * * *', empresas, DE_DIA);
+  /* Ninguna tenía credencial: no corrió nada de lo que la pide. Corre sólo la pasada de los detectores,
+     una por empresa, que no pide ninguna (AG-35) — y `corrieron` cuenta esas dos y ni una más. */
+  assert.deepEqual(
+    r.renglones.filter((x) => x.estado === 'corrio').map((x) => x.tarea),
+    ['senales', 'senales'],
+    'ninguna tenía credencial: nada de lo que la pide corrió',
+  );
+  assert.equal(r.corrieron, 2);
   assert.ok(
     r.renglones.length >= 6,
     'y aun así las seis filas se reportan: 2 empresas × 3 tareas por empresa — `contactos`, ' +
@@ -272,7 +288,7 @@ test('los cinco motivos de credencial NO se colapsan', async () => {
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'token_ilegible' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
-  const r = await barrerTodo('0 12 * * *', empresas);
+  const r = await barrerTodo('0 12 * * *', empresas, DE_DIA);
   const motivos = new Map(r.renglones.filter((x) => x.tarea === 'citas').map((x) => [x.slug, x.porque]));
   assert.equal(motivos.get('alfa'), 'sin_token');
   assert.equal(motivos.get('beta'), 'token_ilegible');
@@ -287,7 +303,7 @@ test('una empresa sin credencial cuesta CERO llamadas', async () => {
   await limpiar();
   const r = await barrerTodo('0 12 * * *', [
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
   for (const x of r.renglones) assert.equal(x.llamadas, 0, `${x.tarea} gastó llamadas sin credencial`);
 });
 
@@ -301,7 +317,7 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   await limpiar();
   await barrerTodo('0 12 * * *', [
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
   const s = await sellos();
   /* TODAS las tareas de la empresa, `sonda` afuera. `contactos` entre ellas porque una empresa sin
      token tampoco puede releer sus etiquetas; `auditoria` porque **su falta es otra** —no tiene
@@ -309,10 +325,12 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
      distintas para arreglarlo; y `anuncios` porque el Ad Manager va por el mismo token del CRM.
 
      La lista se deriva de `TAREAS` y no se escribe a mano: ver `SELLOS_POR_EMPRESA`. */
+  /* Salvo `senales`, que CORRE: mide sobre nuestra base y no pide ninguna credencial (AG-35). Sin la
+     excepción del token del CRM, saldría `saltada` con `sin_token` en toda empresa sin GoHighLevel. */
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
     TAREAS.filter((t) => t !== 'sonda')
-      .map((t) => `${t}:saltada`)
+      .map((t) => `${t}:${t === 'senales' ? 'corrio' : 'saltada'}`)
       .sort(),
   );
   /* ── Y CADA SELLO LLEVA SU PROPIO MOTIVO, QUE ES LO QUE SE GANÓ ACÁ ──────
@@ -331,6 +349,8 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   assert.equal(porTarea.get('anuncios'), 'sin_token');
   // Y los Analizadores dicen lo suyo: la llave que les falta es la de tl;dv, no el token del CRM.
   assert.match(String(porTarea.get('analizadores')), /tl;dv/);
+  // Y la pasada de los detectores, sin nada que decir.
+  assert.equal(porTarea.get('senales'), null);
 });
 
 /* ── EL CONTEO SE DERIVA, NO SE ESCRIBE ────────────────────────────────────
@@ -350,9 +370,9 @@ test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadore
   const empresas: EmpresaParaBarrer[] = [
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
-  await barrerTodo('0 12 * * *', empresas);
+  await barrerTodo('0 12 * * *', empresas, DE_DIA);
   const primera = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
-  await barrerTodo('0 12 * * *', empresas);
+  await barrerTodo('0 12 * * *', empresas, DE_DIA);
   const segunda = await filas<{ n: string }>(admin, 'select count(*)::text as n from negocio.tareas_programadas');
   assert.equal(primera[0]?.n, String(SELLOS_POR_EMPRESA), 'una tarea por empresa; `sonda` no deja sello');
   assert.equal(
@@ -369,7 +389,7 @@ test('el sello se puede leer con el contexto de SU empresa, y no se ve el de otr
   await barrerTodo('0 12 * * *', [
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
 
   const deAlfa = await conOrganizacion(alfa, () =>
     datos().selectFrom('tareas_programadas').select(['tarea']).execute(),
@@ -397,12 +417,12 @@ test('la empresa SIN sello va antes que la que ya tiene uno', async () => {
   // haría que la última empresa de la lista fuera siempre la que se queda sin tiempo, para siempre.
   await limpiar();
   // `beta` ya fue barrida; `alfa` nunca.
-  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR }]);
+  await barrerTodo('0 12 * * *', [{ org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR }], DE_DIA);
 
   const r = await barrerTodo('0 12 * * *', [
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
   // El primer renglón tiene que ser de `alfa`, que nunca se barrió, aunque venga segunda en la lista.
   assert.equal(r.renglones[0]?.slug, 'alfa', 'la que nunca se barrió tiene que ir primera');
 });
@@ -426,7 +446,7 @@ test('EL HAMBRE PERPETUA: la que se quedó SIN TIEMPO va primera la vez siguient
   // Corrida 1: `beta` sola y con tiempo. Queda con un sello normal.
   await barrerTodo('0 12 * * *', [
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
 
   // Corrida 2: `alfa` sola y SIN tiempo. Queda sellada `sin_tiempo`, y con la fecha más nueva.
   let n = 0;
@@ -445,7 +465,7 @@ test('EL HAMBRE PERPETUA: la que se quedó SIN TIEMPO va primera la vez siguient
   const r = await barrerTodo('0 12 * * *', [
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
-  ]);
+  ], DE_DIA);
 
   assert.equal(
     r.renglones[0]?.slug,

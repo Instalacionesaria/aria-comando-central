@@ -452,8 +452,8 @@ materia prima de la «tasa de errores» del §9.7 y del §10.7.
 el cron y cómo terminó. Medido el 2026-09-28 a las 23:58 UTC, en la organización `aria` las cinco
 tareas de las que vive esta pantalla estaban en `corrio` y dentro de su umbral: `contactos`,
 `mensajes` y `auditoria` hace 7 minutos (umbral 80), `citas` hace 54 (umbral 180) y `mejora` hace
-1 060, unas 17,7 h (umbral 3 000; los tres horarios, `lib/negocio/barrido.ts:194-198`,
-`lib/negocio/barrido.ts:206-210` y `lib/negocio/barrido.ts:242-246`). Tienen sello las 11 empresas
+1 060, unas 17,7 h (umbral 3 000; los tres horarios, `lib/negocio/barrido.ts:198-202`,
+`lib/negocio/barrido.ts:210-214` y `lib/negocio/barrido.ts:246-250`). Tienen sello las 11 empresas
 activas y ninguna inactiva. La pantalla no lo lee: riesgo 22.
 
 ---
@@ -498,7 +498,7 @@ la fecha de la llamada y no la del visionado (no se abrieron sus valores).
 
 **A3 · «El historial de reagendamientos»** (`components/conversation/PanelDeConversation.jsx:140`) —
 **cierto**: `reagendada_el` es una sola columna, en 16 de 333 citas, y el calendario se barre una
-vez por hora (`lib/negocio/barrido.ts:206-207`, al minuto 3).
+vez por hora (`lib/negocio/barrido.ts:210-211`, al minuto 3).
 
 ── **Falta en el CRM** ──
 
@@ -721,7 +721,7 @@ no mira la base.
 **22 · La pantalla no avisa si su dato está viejo.** Las tres primeras pestañas dibujan filas que
 escriben cinco tareas del cron —`contactos`, `mensajes`, `auditoria`, `citas` y `mejora` (ítem 9 de
 la sección 4)—, y la plataforma ya tiene con qué decirlo: `frescuraDe(tarea)`
-(`lib/negocio/frescura.ts:108`) devuelve un aviso que sólo calla cuando la tarea está al día
+(`lib/negocio/frescura.ts:110`) devuelve un aviso que sólo calla cuando la tarea está al día
 (`lib/negocio/frescura.ts:49-59`), y lo leen la Agenda del Closer, el chat de la ficha y Leads
 Portal, éste sobre las mismas `contactos` y `citas` (`app/api/leads-portal/route.ts:63-64`).
 Conversation no: `GET /api/auditoria` arma siete lecturas (`app/api/auditoria/route.ts:72-90`) y

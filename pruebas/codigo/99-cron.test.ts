@@ -333,6 +333,13 @@ test('los nombres de campaña que fallaron o vinieron recortados se DICEN en el 
   assert.equal(motivoDeLoIncompleto({ nombres: null }), null);
 });
 
+test('la pasada de los detectores dice en el sello cuántos departamentos no terminaron', () => {
+  /* Un departamento que falló no dejó su plan y se reintenta la hora siguiente (AG-35). La tarea «corrió»
+     —otros terminaron—, así que sin esta línea el sello quedaba limpio sobre una pasada incompleta. */
+  assert.match(String(motivoDeLoIncompleto({ tocaba: true, departamentosQueFallaron: 2 })), /2 departamento\(s\) no completaron/);
+  assert.equal(motivoDeLoIncompleto({ tocaba: true, departamentosQueFallaron: 0 }), null);
+});
+
 test('sin nada que decir, el motivo es NULO y la pantalla no dibuja nada', () => {
   /* La regla del silencio aplicada al registro de operación. Un motivo que aparece siempre es uno
      que nadie lee, y con él se pierde el que importa. */

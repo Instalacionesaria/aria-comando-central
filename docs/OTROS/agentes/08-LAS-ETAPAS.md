@@ -373,21 +373,48 @@
   Ensayada contra la base local con un modelo falso en un guion aparte (32 rondas, la base limpia al final);
   la corrida real espera la llave cargada y el OK.
 
-## AG8 · Las señales
+## AG8 · Las señales — **hecha el 2026-10-05**
 
-- **Qué**: `lib/agentes/senales/*`, `lib/agentes/plan/` (la parte que guarda), `lib/agentes/detectores/correr.ts`
-  y la tarea `senales` del cron (`02`, `AG-35`): `Tarea`, `TAREAS`, `HORARIOS['23 * * * *']`, la excepción
-  del token del CRM, `vercel.json`.
-- **Migración** `072`: `senales`, `planes_de_accion`, `umbrales`, y el `check` de `tareas_programadas` suma
-  `senales`.
-- **Antes**: que alguien de ARIA cargue la zona real de las empresas activas (`00-MAPA.md`).
-- **Pruebas que cambian**: la 99 (el horario en las dos listas, la tarea en la excepción; mutación: sacarla
-  de la excepción).
-- **Pruebas nuevas**: 215, la huella: una descartada no renace mientras la condición siga, una que sube de
-  gravedad nace de nuevo, `sin_medicion` cuando la fuente se apaga (mutaciones: huella única sólo entre las
-  abiertas; cerrar sola sin mirar la frescura). 216 (base), la reconciliación sobre la base. 217, la hora
-  local: Lima a las 6:23 corre y a las 5:23 no, una vez por día y por departamento, a las que no les toca no
-  se las sella, sin datos de anuncios no hay señales de costo (mutación: comparar en UTC).
+- **Qué se hizo**: `lib/agentes/senales/tipos.ts` (lo que entrega un detector, la huella, la confianza por la
+  muestra), `escritura.ts` (el único escritor de las señales: la reconciliación diaria de `02`, AG-22 y AG-23,
+  con un candado de transacción por empresa, departamento y ventana para las entregas duplicadas del cron),
+  `umbrales.ts` (el catálogo provisional —vacío hasta que cada detector sume sus reglas— y la firma),
+  `lib/agentes/plan/guardar.ts` (el plan de cada departamento, ventana y día, también vacío) y
+  `lib/agentes/detectores/correr.ts` (la pasada: a quién le toca, qué departamento ya corrió, primero medir y
+  después escribir las señales con su plan en una sola transacción). La tarea `senales` del cron: `Tarea`,
+  `TAREAS` (al final), `HORARIOS['23 * * * *']` con el umbral de una tarea diaria (2.940 minutos), la
+  excepción del token del CRM, el motivo del sello cuando un departamento no terminó, su nombre en la
+  frescura y `vercel.json`.
+- **Migración** `072`: `senales` (con el índice único parcial por huella entre las que bloquean, y los `check`
+  del ciclo de vida, del piso de 10 y de `issue_source` sólo en Conversation), `planes_de_accion`, `umbrales`,
+  y el `check` de `tareas_programadas` suma `senales`. Las tres en el mapa del borrado.
+- **«Ya corrió» es el plan**: la fila de `planes_de_accion` de las dos ventanas. Un departamento que falla no
+  deja plan y se reintenta la hora siguiente; el que terminó no vuelve a medir. A la empresa que no le toca
+  no se la sella; la primera pasada del día de una empresa sin departamentos pendientes —hoy todas: el
+  catálogo nace vacío— se sella una vez.
+- **Lo que pasó a AG9**: las capacidades `senales.resolver`, `senales.validar` y `umbrales.firmar` (con la
+  pantalla que las usa), y «sin datos de anuncios del día no hay señales de costo», que es del detector de
+  Acquisition. Ninguna pantalla lee todavía las señales: `frescura` no suma `senales` a ninguna sección.
+- **Antes de que corra en producción con detectores (AG9)**: que alguien de ARIA cargue la zona real de las
+  empresas activas (`00-MAPA.md`). Sin detectores, la pasada de AG8 no escribe nada más que su sello.
+- **Pruebas que cambian**: la 28 (la tarea corre sin credenciales y deja su sello; las corridas que no prueban
+  el presupuesto llevan un reloj fijo a las 12:00 de Lima, porque `senales` depende de la hora local y con el
+  reloj de verdad cambiaban de resultado según la hora) y la 99 (el motivo del sello).
+- **Pruebas nuevas** (el plan las numeraba 215 a 217, que usaron AG6 y AG7): 219 (base), la huella —nace una
+  vez, debajo del piso se cuenta, una descartada no renace salvo más grave o con la condición apagada,
+  `sin_medicion` sin fuente y de vuelta a `abierta`, y la base sola rechaza dos vivas con la misma huella—;
+  220 (base), la pasada —a las 10:23 UTC le toca a Tokio y no a Lima, la que no le toca no se sella, la que
+  ya corrió no se vuelve a sellar, el departamento que falla se reintenta y el que terminó no vuelve a medir,
+  al día siguiente corren todos, el plan vacío se guarda—. La 220 corre sobre el día de hoy en Lima y no sobre
+  una fecha fija: «ya corrió hoy» compara con el sello, y `sellar` escribe la hora de verdad.
+- **La prueba encontró un defecto**: el escritor no guardaba la ventana al insertar, y el `as never` del
+  `insert` lo escondía del compilador. Los escritores de AG8 van sin `as never`: una columna que falta es un
+  error de tipos.
+- **Mutaciones, once vistas en rojo**: comparar la hora en UTC, volver a correr el mismo día, volver a medir
+  el departamento que terminó, sellar a la que no le toca, sacar `senales` de la excepción del token, callar
+  los departamentos que fallaron, la huella única sólo entre las vivas, cerrar sola sin mirar la fuente, la
+  descartada que no renace aunque suba la gravedad, guardar debajo del piso, y `sin_medicion` que no vuelve a
+  `abierta`.
 
 ## AG9 · Acquisition, el piloto — **grande** — **hito H3**
 

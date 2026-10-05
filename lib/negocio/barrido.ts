@@ -41,6 +41,7 @@ import { sincronizarContactos } from './sincronizar.ts';
 import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
+import { correrLaPasada } from '../agentes/detectores/correr.ts';
 
 /**
  * Las tareas que el cron sabe hacer. Es la misma lista que el `check` de `tareas_programadas`,
@@ -62,7 +63,8 @@ export type Tarea =
   | 'mejora'
   | 'anuncios'
   | 'analizadores'
-  | 'reintentos';
+  | 'reintentos'
+  | 'senales';
 
 /**
  * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -92,6 +94,8 @@ export const TAREAS = [
   // Últimas, y no importa: no comparten una sola fila con las otras. Ver sus horarios.
   'analizadores',
   'reintentos',
+  // La pasada de los detectores, al final: lee lo que las demás trajeron.
+  'senales',
 ] as const satisfies readonly Tarea[];
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
@@ -273,6 +277,22 @@ export const HORARIOS = {
      Analizadores: un análisis necesita minutos seguidos. Umbral: 2 × 1440 + 60 = 2940. */
   '7 10 * * *': {
     tareas: ['reintentos'],
+    cadenciaMinutos: 1440,
+    umbralMinutos: 2940,
+  },
+
+  /* ── LOS DETECTORES, CADA HORA PARA QUE A CADA EMPRESA LE LLEGUE SU MAÑANA ─
+
+     `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35. El cron dispara cada hora en UTC y la pasada
+     corre a la empresa que ya pasó las 6:00 de su zona y no corrió hoy (`lib/agentes/detectores/correr.ts`).
+     Así que la cadencia de cada empresa es DIARIA aunque el disparo sea horario, y el umbral es el de una
+     tarea diaria: 2 × 1440 + 60 = 2940. Con el de una horaria, la frescura diría «atrasada» todas las tardes.
+
+     El minuto 23 porque no lo usa nadie (el 3, el 7, el 17, el 41 y los múltiplos de diez ya están), y dos
+     corridas en el mismo minuto se frenan por el candado. No pide el token del CRM ni la llave de IA: mide
+     sobre nuestra base. */
+  '23 * * * *': {
+    tareas: ['senales'],
     cadenciaMinutos: 1440,
     umbralMinutos: 2940,
   },
@@ -478,7 +498,15 @@ export async function barrerTodo(
        * esta distinción, una empresa sin token del CRM —el caso NORMAL de una empresa recién creada—
        * saldría como `saltada` en una tarea que no necesita ese token, y el motivo diría
        * `sin_token_de_crm` sobre algo que no lo usa. */
-      if (tarea !== 'auditoria' && tarea !== 'mejora' && tarea !== 'analizadores' && tarea !== 'reintentos' && acceso.tipo !== 'listo') {
+      // `senales` tampoco: mide sobre nuestra base (AG-35). Si no, se sellaría `saltada` en toda empresa sin GHL.
+      if (
+        tarea !== 'auditoria' &&
+        tarea !== 'mejora' &&
+        tarea !== 'analizadores' &&
+        tarea !== 'reintentos' &&
+        tarea !== 'senales' &&
+        acceso.tipo !== 'listo'
+      ) {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
         await sellar(org.id, tarea, 'saltada', acceso.que, 0);
         continue;
@@ -521,13 +549,16 @@ export async function barrerTodo(
                       ? await analizar(org, analizador, arranque, ahora)
                       : tarea === 'reintentos'
                         ? await reintentar(org, analizador, arranque, ahora)
-                        : await barrerCitas(org.id, conToken(acceso));
+                        : tarea === 'senales'
+                          ? await pasarLosDetectores(org, ahora)
+                          : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
           // candado en un generador de tráfico: reintentar lo que frenó a propósito.
           renglones.push({ slug: org.slug, tarea, estado: 'frenada', porque: r.porque, llamadas: 0 });
-          await sellar(org.id, tarea, 'frenada', r.porque, 0);
+          // Salvo la pasada de los detectores cuando no le tocaba: ésa no se sella. Ver `pasarLosDetectores`.
+          if (!('sinSello' in r)) await sellar(org.id, tarea, 'frenada', r.porque, 0);
           continue;
         }
         renglones.push({
@@ -660,6 +691,27 @@ async function analizar(
   return { corrio: true, resultado: r, llamadas: llamadasDeLaTarea(r) };
 }
 
+/**
+ * La pasada diaria de los detectores, con la forma que espera el bucle de arriba.
+ *
+ * A la empresa que no le toca —antes de las 6:00 de su zona, o ya corrió hoy— se la reporta y **no se la
+ * sella** (`sinSello`): el sello es una fila por empresa y tarea, y uno de «no me tocaba» cada hora haría
+ * parecer al día una tarea diaria que no corrió (AG-35). Si fallaron todos los departamentos que faltaban,
+ * es un fallo y se sella como tal; si fallaron algunos, corrió, y el sello lo dice (`motivoDeLoIncompleto`).
+ */
+async function pasarLosDetectores(
+  org: OrganizacionListada,
+  ahora: () => number,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number } | { corrio: false; porque: string; sinSello: true }> {
+  const r = await correrLaPasada({ id: org.id, zonaHoraria: org.zonaHoraria }, { ahora: new Date(ahora()) });
+  if (!r.tocaba) return { corrio: false, porque: r.porque, sinSello: true };
+  if (r.departamentosQueFallaron > 0 && !r.departamentos.some((d) => d.estado === 'corrio')) {
+    throw new Error(`senales: fallaron los ${r.departamentosQueFallaron} departamento(s) que faltaban`);
+  }
+  // La pasada no llama al modelo en AG8: mide sobre nuestra base. La redacción del plan (AG9) sumará las suyas.
+  return { corrio: true, resultado: r, llamadas: 0 };
+}
+
 /** El reintento de las 5, con el mismo fin de reloj que los Analizadores: corre solo en su horario. */
 async function reintentar(
   org: OrganizacionListada,
@@ -759,8 +811,14 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     paginaLlena?: unknown;
     descubrimiento?: unknown;
     nombres?: unknown;
+    departamentosQueFallaron?: unknown;
   };
   const partes: string[] = [];
+
+  // La pasada de los detectores: un departamento que falló no dejó su plan y se reintenta la hora siguiente.
+  if (typeof r.departamentosQueFallaron === 'number' && r.departamentosQueFallaron > 0) {
+    partes.push(`${r.departamentosQueFallaron} departamento(s) no completaron su pasada: se reintentan en la hora siguiente`);
+  }
 
   /* Los Analizadores. La llave rechazada va PRIMERO porque es lo único de esta lista que alguien
      tiene que ir a arreglar: con ella rechazada no entra ninguna reunión nueva, y la tarea «corrió». */

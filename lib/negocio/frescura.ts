@@ -96,6 +96,8 @@ const NOMBRE: Record<Tarea, string> = {
   analizadores: 'el descubrimiento y el análisis de las llamadas de tl;dv',
   // La novena: el `Record` total la pidió, como a todas.
   reintentos: 'el reintento diario de los análisis que fallaron',
+  // La décima, también.
+  senales: 'la pasada diaria de los detectores de señales',
 };
 
 /**

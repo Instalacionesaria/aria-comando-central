@@ -74,7 +74,7 @@ foto anterior, `Downloads\AIOS\AIOS_Arquitectura_Funcional_v0.2.md`, ya no exist
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`).
   Contra el código de hoy: el 1 (confirmar campos) está medido uno por uno en
   `lib/ghl/anuncios.ts:62-74`; el 2 (frecuencia) es una pasada diaria a las 06:17 UTC con relectura
-  de dos días (`lib/negocio/barrido.ts:242-246`, `lib/negocio/recolectarAnuncios.ts:59`); el 3
+  de dos días (`lib/negocio/barrido.ts:246-250`, `lib/negocio/recolectarAnuncios.ts:59`); el 3
   (guardar por día) es `negocio.metricas_de_anuncio`, con llave `(org_id, meta_anuncio_id, fecha)`
   (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`); el 5 (UTM) lo mide el monitor, con
   el defecto del § 7, riesgo 3; el 6 y el 7 están medidos en la pantalla, salvo las ventas, que no
@@ -251,7 +251,7 @@ valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde e
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:789`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:847`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
@@ -473,11 +473,11 @@ otro texto, y la versión que citaban queda en git (`bddb516`, movida por `e6308
 carpeta que cita esta foto, `docs/acquisition/11-LOS-SEIS-COMPONENTES.md:97`, manda al ad set a las
 líneas 277-280, que son la cohorte vieja: el párrafo del ad set es el que sigue (§ 4, «El ad set»).
 
-**11 · Comentarios del código que ya no dicen la verdad.** `lib/negocio/barrido.ts:239-241` sigue
+**11 · Comentarios del código que ya no dicen la verdad.** `lib/negocio/barrido.ts:243-245` sigue
 contando «cuatro días… 52 llamadas» cuando la relectura bajó a dos días y 39 llamadas
 (`lib/negocio/recolectarAnuncios.ts:59`, `:78-79`);
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone el cron a las 17:06 UTC y es a las
-06:17 (`lib/negocio/barrido.ts:220`). `lib/negocio/costoDelAnuncio.ts:443-444` justifica el umbral de
+06:17 (`lib/negocio/barrido.ts:224`). `lib/negocio/costoDelAnuncio.ts:443-444` justifica el umbral de
 dos días con que «el colector pide hoy y los tres anteriores», y pide hoy y los dos anteriores.
 
 Seis citas a `costoDelAnuncio.ts` desde otros módulos quedaron corridas (se da la línea que citan

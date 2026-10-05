@@ -1618,6 +1618,79 @@ export interface TablaTopesDelExecutive {
   actualizado_por: string | null;
 }
 
+/**
+ * Una señal de un detector, con la alerta de 14 campos y su ciclo de vida. Migración 072. Escritor único:
+ * `lib/agentes/senales/escritura.ts`. Los `numeric` llegan como `string` desde `pg`, como el gasto de los
+ * anuncios.
+ */
+export interface TablaSenales {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  creada_el: Generated<Date>;
+  departamento: 'acquisition' | 'creative' | 'conversion' | 'conversation';
+  detector: string;
+  regla: string;
+  entidad_tipo: string;
+  entidad_id: string;
+  metrica: string;
+  linea_base: ColumnType<string | null, number | null, number | null>;
+  valor_actual: ColumnType<string | null, number | null, number | null>;
+  cambio_pct: ColumnType<string | null, number | null, number | null>;
+  muestra: number | null;
+  ventana: '7d' | '30d';
+  /** Días calendario de la empresa: se escriben `AAAA-MM-DD` y `pg` los devuelve como `Date`. */
+  periodo_desde: ColumnType<Date | null, string | null, string | null>;
+  periodo_hasta: ColumnType<Date, string, string>;
+  datos_desde: ColumnType<Date | null, string | null, string | null>;
+  gravedad: 'critica' | 'alta' | 'media' | 'info';
+  confianza: 'alta' | 'media';
+  causas_posibles: Generated<string[]>;
+  revision_recomendada: string;
+  perdida_contactos: ColumnType<string | null, number | null, number | null>;
+  destino_departamento: string | null;
+  requiere_validacion_ejecutiva: Generated<boolean>;
+  umbral: unknown;
+  evidencia: unknown;
+  issue_source: string | null;
+  estado: Generated<'abierta' | 'vista' | 'resuelta' | 'descartada' | 'cerrada_sola' | 'sin_medicion'>;
+  huella: string;
+  ultima_deteccion_el: Generated<Date>;
+  vista_el: Date | null;
+  vista_por: string | null;
+  cerrada_el: Date | null;
+  cerrada_por: string | null;
+  motivo_cierre: string | null;
+  condicion_apagada_el: Date | null;
+}
+
+/**
+ * El Plan de acción de un departamento, por ventana y día local, también vacío: es la marca de que la
+ * pasada de ese departamento corrió ese día. Migración 072. Escritor único: `lib/agentes/plan/guardar.ts`.
+ */
+export interface TablaPlanesDeAccion {
+  org_id: ColumnaInquilino;
+  id: Generated<string>;
+  departamento: 'acquisition' | 'creative' | 'conversion' | 'conversation';
+  ventana: '7d' | '30d';
+  /** El día local de la empresa: se escribe `AAAA-MM-DD` y `pg` lo devuelve como `Date`. */
+  dia: ColumnType<Date, string, string>;
+  plan: unknown;
+  redaccion: unknown | null;
+  bajo_el_piso: Generated<number>;
+  bajo_el_piso_detalle: Generated<unknown>;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+/** Un umbral firmado por el Admin (`D-11`). Migración 072. Escritor único: `lib/agentes/senales/umbrales.ts`. */
+export interface TablaUmbrales {
+  org_id: ColumnaInquilino;
+  regla: string;
+  valor: ColumnType<string, number, number>;
+  firmado_el: Generated<Date>;
+  firmado_por: string | null;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1679,6 +1752,9 @@ export interface BaseDeDatos {
   mensajes_del_executive: TablaMensajesDelExecutive;
   topes_del_executive: TablaTopesDelExecutive;
   preguntas_del_executive: TablaPreguntasDelExecutive;
+  senales: TablaSenales;
+  planes_de_accion: TablaPlanesDeAccion;
+  umbrales: TablaUmbrales;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

@@ -114,7 +114,7 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `llamadas_de_venta` | nueva, `lib/negocio/llamadasDeVenta.ts` (AG11) | analizadores (`analizadores.ver`) | — | objeciones por categoría con su tendencia, puntaje por closer, llamadas sin vínculo; las frases citables (`D-20`) |
 | `llamadas_de_onboarding` | nueva, `lib/negocio/llamadasDeOnboarding.ts` (AG11) | analizadores | — | expectativas y riesgos agregados |
 | `senales_abiertas` | `lib/agentes/senales/lectura.ts` | la de cada departamento con detector | — | gravedad, ventana, «umbral provisional» |
-| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:108`) | sólo las tareas que alimentan secciones visibles: el mapa `TAREAS_POR_SECCION` de `lib/agentes/executive/adaptadores/plataforma.ts` (`contactos` en todas las que cuentan contactos; Tools e ICP no tienen, y la sonda no viaja) | — | una fuente parada se dice como tal |
+| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:110`) | sólo las tareas que alimentan secciones visibles: el mapa `TAREAS_POR_SECCION` de `lib/agentes/executive/adaptadores/plataforma.ts` (`contactos` en todas las que cuentan contactos; Tools e ICP no tienen, y la sonda no viaja) | — | una fuente parada se dice como tal |
 | `estado_de_integraciones` | los estados de `resolverCredenciales`, sin valores | **sólo con `credenciales.ver`** | — | lo resuelve la ruta en identidad y lo pasa como dato: `cargado` y `estado` de CRM, IA, pagos, tl;dv y Meta, sin la vista previa ni los identificadores de las cuentas |
 
 Sin herramienta en la v1, y sin sugerencias en esas pestañas: **Conversation › Prompts** (el texto de los

@@ -209,7 +209,8 @@ Tres consecuencias para el plan:
 | AG5 · El cerebro, servidor I | **Hecho** el 2026-10-04: `lib/agentes/executive/`, `app/api/executive/route.ts` (baja la bandera), la `071` y la capacidad `cerebro.usar` (las dos van a producción con el hito H2), y las pruebas 206 a 213. Los números de las etapas siguientes corren (`08`) |
 | AG6 · El cerebro, servidor II | **Hecho** el 2026-10-04: las herramientas de las demás secciones (30 en total), `economiaDelNegocio`, `leadsDelScraper`, las once rutas `app/api/<carpeta>/cerebro/route.ts` con lo común en `lib/agentes/executive/caja.ts`, y las pruebas 214 a 216 |
 | AG7 · El cerebro en pantalla | **Hecho** el 2026-10-05: el chat del Inicio, la caja del pie con el panel que sube, CONVERSACIONES, los topes en Ajustes y las pruebas 217 y 218. «@ agente» queda para después de integrar `feature/icp-oferta-v2`. Falta el hito H2 |
-| AG8 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG8 · Las señales | **Hecho** el 2026-10-05: `lib/agentes/senales/`, `lib/agentes/plan/guardar.ts`, `lib/agentes/detectores/correr.ts`, la tarea `senales` del cron al minuto 23 y la `072` (sólo en local hasta el hito H3), con las pruebas 219 y 220. Las capacidades de las señales pasan a AG9 |
+| AG9 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

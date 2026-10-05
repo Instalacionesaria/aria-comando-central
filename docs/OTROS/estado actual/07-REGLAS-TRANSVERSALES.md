@@ -517,8 +517,8 @@ sin estar**: el 2026-09-28 `gh api` da `protected: false` ([17-LA-PLATAFORMA.md]
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:122`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:206`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:126`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:210`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 

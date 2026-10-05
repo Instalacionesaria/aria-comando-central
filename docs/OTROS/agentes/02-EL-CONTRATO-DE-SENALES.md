@@ -52,7 +52,10 @@ identificador, nunca un nombre** (A6-05): el nombre se resuelve al mostrar.
 Con eso, **una señal descartada no renace cada mañana**: mientras la regla siga dando lo mismo, la pasada
 actualiza la descartada y no crea otra. Cuando una pasada deja de detectarla se anota
 `condicion_apagada_el`; si después vuelve, es un hecho nuevo y nace una fila nueva. Lo mismo si **la gravedad
-sube** (por ejemplo de media a crítica): es un cambio material y nace una fila nueva.
+sube** (por ejemplo de media a crítica) sobre una descartada o resuelta: es un cambio material, la decisión
+deja de bloquear y nace una fila nueva. Sobre una viva no hay decisión que respetar: se actualiza y, si estaba
+`vista`, vuelve a `abierta` sin la marca, porque lo que alguien vio era menos grave (AG8,
+`lib/agentes/senales/escritura.ts`).
 
 ## AG-23 · El ciclo de vida
 
@@ -67,7 +70,7 @@ sube** (por ejemplo de media a crítica): es un cambio material y nace una fila 
 
 `sin_medicion` existe para no mentir: si Meta deja de mandar gasto, las señales de costo no «se cierran
 solas» —eso afirmaría que la regla dejó de cumplirse cuando en realidad dejó de poder medirse—. Se decide
-con la frescura de la tarea que alimenta la regla (`frescuraDe`, `lib/negocio/frescura.ts:108`). Cuando la
+con la frescura de la tarea que alimenta la regla (`frescuraDe`, `lib/negocio/frescura.ts:110`). Cuando la
 fuente vuelve, la señal vuelve a `abierta` o pasa a `cerrada_sola`, según lo que se mida.
 
 ## AG-24 · «Vista»
@@ -173,11 +176,13 @@ Una tarea nueva del cron único (`T-12`):
   (`diaEnZona`, `:61`). **«Ya corrió» se decide por departamento**: si Creative falló, se reintenta la hora
   siguiente aunque Acquisition haya terminado.
 - **A las demás no se las sella.** `sellar` guarda una sola fila por empresa y tarea
-  (`lib/negocio/barrido.ts:875`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
-  parecer al día una tarea diaria que no corrió. Umbral de frescura de 2.940 s o más.
-- **No necesita el token del CRM**: entra en la excepción de `lib/negocio/barrido.ts:481`, como la auditoría
+  (`lib/negocio/barrido.ts:933`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
+  parecer al día una tarea diaria que no corrió. Umbral de frescura de 2.940 minutos —el de una tarea
+  diaria, aunque el disparo sea horario—. La única excepción es la primera pasada del día de una empresa sin
+  departamentos pendientes, que se sella una vez para que la frescura diga que pasó.
+- **No necesita el token del CRM**: entra en la excepción de `lib/negocio/barrido.ts:502-510`, como la auditoría
   y los Analizadores; si no, se sellaría `saltada` en toda empresa sin GHL.
-- **Presupuesto propio**, como `FIN_PARA_LOS_ANALIZADORES_MS` (`lib/negocio/barrido.ts:320`): la espera de
+- **Presupuesto propio**, como `FIN_PARA_LOS_ANALIZADORES_MS` (`lib/negocio/barrido.ts:340`): la espera de
   cada llamada al modelo es la menor entre 120 s y lo que quede menos 15 s.
 - **Primero guarda, después redacta**: las señales y el plan armado con plantillas se guardan sin modelo;
   la redacción es una mejora que, si no llega, deja el plan de plantillas.

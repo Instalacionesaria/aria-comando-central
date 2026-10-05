@@ -32,8 +32,8 @@
 
 **Construido y corriendo.**
 
-Un solo punto de entrada —`GET /api/cron`— recibe los cinco horarios de Vercel y reparte nueve
-tareas. Medido el 2026-09-28: las ocho tareas que dejan sello **corrieron** en la única empresa con
+Un solo punto de entrada —`GET /api/cron`— recibe los seis horarios de Vercel y reparte diez
+tareas (la décima, `senales`, desde el 2026-10-05). Medido el 2026-09-28, con las nueve de entonces: las ocho tareas que dejan sello **corrieron** en la única empresa con
 token del CRM y se **saltearon con su motivo** en las otras diez activas —88 sellos, 8 tareas × 11
 empresas—. Los datos de negocio viven en 29 tablas de `negocio` con RLS forzada, y **todo el volumen
 es de una sola empresa**: 594 contactos, 333 citas, 6.110 mensajes, 3.318 filas de costo por anuncio.
@@ -65,7 +65,7 @@ de seguridad activa del sistema, que no deja sello.
 
 ---
 
-## 2 · Cómo entran los datos: un cron, cinco horarios, nueve tareas
+## 2 · Cómo entran los datos: un cron, seis horarios, diez tareas
 
 ### 2.1 · El punto de entrada
 
@@ -88,9 +88,9 @@ de seguridad activa del sistema, que no deja sello.
 - **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:164-174`). Pero ese
   cuerpo sólo sirve para depurar a mano: lo que sobrevive es el sello de `negocio.tareas_programadas`.
 
-### 2.2 · Los cinco horarios
+### 2.2 · Los seis horarios
 
-Del mapa `HORARIOS` (`lib/negocio/barrido.ts:194-278`), indexado por la cadena literal del horario:
+Del mapa `HORARIOS` (`lib/negocio/barrido.ts:198-298`), indexado por la cadena literal del horario:
 
 | horario (UTC) | en Lima | tareas, en orden | umbral de atraso | desde |
 |---|---|---|---|---|
@@ -99,21 +99,22 @@ Del mapa `HORARIOS` (`lib/negocio/barrido.ts:194-278`), indexado por la cadena l
 | `17 6 * * *` | 01:17 | `mejora`, `anuncios` | 3.000 min | `mejora` antes; `anuncios` el 2026-09-16 |
 | `41 * * * *` | al minuto 41 | `analizadores` | 180 min | 2026-09-23 |
 | `7 10 * * *` | 05:07 | `reintentos` | 2.940 min | 2026-09-23 |
+| `23 * * * *` | al minuto 23; a cada empresa, después de las 6:00 de su zona | `senales` | 2.940 min | 2026-10-05 |
 
-Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:270-271`). Los minutos 3, 17, 41 y 7 no son
+Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:274-275`). Los minutos 3, 17, 41 y 7 no son
 adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
-(`lib/negocio/barrido.ts:200-203`, `:258-259`). Cuatro pruebas atan el mapa a la configuración:
+(`lib/negocio/barrido.ts:204-207`, `:258-259`). Cuatro pruebas atan el mapa a la configuración:
 
 - cada horario de `vercel.json` tiene entrada en `HORARIOS` y cada entrada está en `vercel.json`
   (`pruebas/codigo/99-cron.test.ts:80`, `:92`);
 - el umbral es al menos `2 × cadencia + 60`, para que perder una corrida no grite
-  (`lib/negocio/barrido.ts:113-120`, prueba en `pruebas/codigo/99-cron.test.ts:104`);
+  (`lib/negocio/barrido.ts:117-124`, prueba en `pruebas/codigo/99-cron.test.ts:104`);
 - un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`,
-  nunca «no hacer nada» (`lib/negocio/barrido.ts:389-399`, prueba en
+  nunca «no hacer nada» (`lib/negocio/barrido.ts:409-419`, prueba en
   `pruebas/codigo/99-cron.test.ts:227`).
 
-El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:132`); con Hobby, un
-horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:126-128`).
+El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:136`); con Hobby, un
+horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:130-132`).
 
 ### 2.3 · El bucle
 
@@ -121,18 +122,18 @@ horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/ba
   nada se acumula ni se incrementa, y el orden se decide cada vez por el sello más viejo
   (`lib/negocio/barrido.ts:15-24`).
 - **La sonda va primero**, en su propio `try/catch`: es la única señal de seguridad y cuesta cero
-  llamadas (`lib/negocio/barrido.ts:420-438`).
+  llamadas (`lib/negocio/barrido.ts:440-458`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes
-  que todas (`lib/negocio/barrido.ts:440-453`, `:844`). Sin la segunda regla, la que se queda sin
+  que todas (`lib/negocio/barrido.ts:460-473`, `:844`). Sin la segunda regla, la que se queda sin
   tiempo se sellaría última y volvería al fondo de la fila para siempre.
-- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:308`). Es un
+- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:328`). Es un
   guardia parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
-  (`lib/negocio/barrido.ts:295-306`). Los Analizadores, que corren solos, tienen hasta 285 s
-  (`lib/negocio/barrido.ts:320`).
+  (`lib/negocio/barrido.ts:315-326`). Los Analizadores, que corren solos, tienen hasta 285 s
+  (`lib/negocio/barrido.ts:340`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:875-909`). Los estados son `corrio`, `saltada`, `frenada`,
-  `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:97-98`,
-  `lib/negocio/frescura.ts:154-155`).
+  un `+1` (`lib/negocio/barrido.ts:933-967`). Los estados son `corrio`, `saltada`, `frenada`,
+  `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:101-102`,
+  `lib/negocio/frescura.ts:156-157`).
 
 **Cuánto dura una corrida, medido en los sellos de la de las 22:10 UTC del 2026-09-28** (horario
 `*/10`): van de las 22:10:16 a las 22:11:49, **93 s de los 180 del presupuesto**. Cada una de las diez
@@ -157,8 +158,8 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
 - **`contactos` va antes de `mensajes`, y eso es corrección, no gusto.** La ingesta descarta la
   conversación de un contacto que no está en `negocio.contactos` y avanza la marca de agua sobre ella:
   si el contacto se sincronizara después, sus mensajes quedarían debajo de la marca para siempre
-  (`lib/negocio/barrido.ts:146-150`; prueba en `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va
-  después de `mensajes` para no juzgar un transcript incompleto (`lib/negocio/barrido.ts:176-181`).
+  (`lib/negocio/barrido.ts:150-154`; prueba en `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va
+  después de `mensajes` para no juzgar un transcript incompleto (`lib/negocio/barrido.ts:180-185`).
 - **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:59`), porque
   Meta corrige hacia atrás y la fila se reescribe en vez de ignorarse
   (`lib/negocio/recolectarAnuncios.ts:11-19`); el relleno inicial es de 30 días
@@ -241,14 +242,14 @@ en cada push a `main` (§ 5.3).
 tarea) en `negocio.tareas_programadas`, escrita siempre; la consulta para mirarla a mano está en
 `docs/OTROS/produccion/DESPLIEGUE.md:337-352`.
 
-`frescuraDe(tarea)` la convierte en un aviso de pantalla (`lib/negocio/frescura.ts:108`) con cuatro
+`frescuraDe(tarea)` la convierte en un aviso de pantalla (`lib/negocio/frescura.ts:110`) con cuatro
 estados —`nunca`, `atrasada`, `fallando`, `al_dia`— de los que sólo el último se calla
 (`lib/negocio/frescura.ts:50-59`). El umbral es el máximo de los horarios que corren la tarea
 (`lib/negocio/frescura.ts:72`), y un `fallo` se avisa antes de mirar el umbral, porque el sello de una
-tarea que falla siempre está fresco (`lib/negocio/frescura.ts:157`). `frescuraDelAviso()` hace lo
+tarea que falla siempre está fresco (`lib/negocio/frescura.ts:159`). `frescuraDelAviso()` hace lo
 mismo con el webhook: lee `procesado_el` y no `recibido_el`, cambia `fallando` por
 `llega_sin_procesar` —avisos que llegan y no se interpretan, el caso que motivó la función— y tiene
-un umbral de 120 minutos (`lib/negocio/frescura.ts:203-209`, `:231`, `:258`).
+un umbral de 120 minutos (`lib/negocio/frescura.ts:205-211`, `:231`, `:258`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` y `frescuraDelAviso(` en `lib/`, `app/` y `components/`,
 2026-09-28):
@@ -292,7 +293,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1686-1691`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1762-1767`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
@@ -524,12 +525,12 @@ minutos del medio.
 - **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
   código, y es la que convierte el rojo en un freno (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:826`, `:459`, `:467`), así que su resultado vive sólo en la
+  propósito (`lib/negocio/barrido.ts:884`, `:459`, `:467`), así que su resultado vive sólo en la
   respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
   `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
   (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`, `:444`); sin él, `avisar()` lanza y la sonda que
-  detecte una fuga sale como `fallo` en la respuesta del cron (`lib/negocio/barrido.ts:427-437`).
+  detecte una fuga sale como `fallo` en la respuesta del cron (`lib/negocio/barrido.ts:447-457`).
   **No verificado** si hoy está cargado en Vercel.
 - **Verificar el certificado de la base.** Desde el 2026-08-24 (`86aee3b`) las tres cadenas de
   producción piden `?uselibpqcompat=true&sslmode=require`
@@ -545,7 +546,7 @@ minutos del medio.
   corrió por última vez la tarea que los alimenta (§ 3).
 - **Las tres zonas en la CI**, y el arreglo de las cuatro pruebas que dependen de la hora (§ 5.1).
 - **La espera externa corta para el camino del cron**, que el propio orquestador llama «la mitigación
-  de fondo» y no está hecha (`lib/negocio/barrido.ts:303-306`).
+  de fondo» y no está hecha (`lib/negocio/barrido.ts:323-326`).
 - **Los 25 contactos congelados siguen afirmando una frescura que no tienen.**
   `congelarLosQueYaNoEstan` pone `territorio = null` sin tocar `sincronizado_el`
   (`lib/negocio/sincronizar.ts:289-297`): medido el 2026-09-28, son 25 de 594 sin releer en la última
@@ -564,13 +565,13 @@ minutos del medio.
    reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
    `lib/negocio/recolectarAnuncios.ts:11-19`).
 2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:865-909`).
+   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:923-967`).
 3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
-   (`lib/negocio/barrido.ts:383-388`).
+   (`lib/negocio/barrido.ts:403-408`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
-   (`lib/negocio/barrido.ts:105-120`).
+   (`lib/negocio/barrido.ts:109-124`).
 5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario
-   (`lib/negocio/barrido.ts:146-154`, `:172-181`).
+   (`lib/negocio/barrido.ts:150-158`, `:172-181`).
 6. **Dos horarios no comparten minuto**, o uno queda `frenada` sin trabajar.
 7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva, no sólo qué la
    lee: ver [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). Hoy la comprobación es comparar
@@ -598,42 +599,42 @@ minutos del medio.
    sonda ni siquiera deja sello (§ 8).
 4. **El aviso del CRM dice algo falso cuando no hay actividad.** Con más de 120 minutos sin un aviso
    procesado, el chat de la ficha dibuja «Los mensajes están entrando por el ciclo de diez minutos, no
-   en el momento» (`lib/negocio/frescura.ts:347-356`, pintado en
+   en el momento» (`lib/negocio/frescura.ts:349-358`, pintado en
    `components/negocio/Ficha.jsx:282-285`). Hoy, a las 22:04 UTC, el último aviso tiene ~24 h y
    **después de él no entró ningún mensaje**: el aviso no está atrasado, el negocio está quieto. El
    último día con gasto mayor que cero en `negocio.metricas_de_anuncio` es el 2026-09-13 (medido el
    2026-09-28; hay filas hasta el 28, todas en cero o vacías), compatible con la pauta pausada y no
    verificado contra Meta ([06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9). El umbral contempla la noche
-   (`lib/negocio/frescura.ts:227-229`), no una cuenta sin tráfico.
+   (`lib/negocio/frescura.ts:229-231`), no una cuenta sin tráfico.
 5. **El presupuesto de la corrida de diez minutos ya está a la mitad con una sola empresa.** 93 s de
    180, 75 de ellos de la única con token (§ 2.3). Una segunda empresa de tamaño parecido lo acercaría
    al tope y la última quedaría `sin_tiempo`; es una inferencia de estas dos mediciones, no una prueba.
 6. **Una llamada colgada pasa el tope de la función.** `pedirExterno` espera hasta 240 s, el guardia
    sólo mira antes de cada empresa y Vercel corta a los 300 sin reintentar
-   (`lib/negocio/barrido.ts:295-306`).
+   (`lib/negocio/barrido.ts:315-326`).
 7. **Un cambio de configuración de Vercel apaga el cron sin error**: la protección a «All
    Deployments», según la ruta y sin medir (`app/api/cron/route.ts:56-61`; § 5.3). Volver a Hobby no
    es silencioso pero es peor: con horarios de menos de un día el despliegue entero falla
-   (`lib/negocio/barrido.ts:126-128`).
+   (`lib/negocio/barrido.ts:130-132`).
 8. **Documentos y comentarios que ya no dicen la verdad**, verificados hoy contra el código o la base:
    - `docs/OTROS/produccion/DESPLIEGUE.md:254-255` dice que `vercel.json` declara **un** cron diario a
      las 12:00 UTC con tres tareas, y `:356-357` que ponerse al día lleva «≈23 días con el cron
-     diario». Hay cinco horarios y nueve tareas desde el 2026-09-23. El mismo documento dice que los
+     diario». Hay cinco horarios y nueve tareas desde el 2026-09-23, y seis y diez desde el 2026-10-05. El mismo documento dice que los
      registros «en Hobby duran una hora» (`docs/OTROS/produccion/DESPLIEGUE.md:339`) y lista como
      pendiente «la tarea horaria de la sonda» (`:444`), que corre al minuto 3 desde antes del
      2026-09-15.
    - `app/api/sonda/route.ts:3` dice que a esa ruta «lo llama una tarea programada»; ninguna entrada
      de `vercel.json` la llama (§ 2.6).
-   - `lib/negocio/barrido.ts:68` y `:78` hablan de «las cinco» tareas; `TAREAS` tiene nueve
-     (`lib/negocio/barrido.ts:84-95`).
-   - `lib/negocio/barrido.ts:239-241` cuenta los anuncios como «cuatro días (hoy más los tres que se
+   - `lib/negocio/barrido.ts:70` y `:78` hablan de «las cinco» tareas; `TAREAS` tiene nueve
+     (`lib/negocio/barrido.ts:86-99`).
+   - `lib/negocio/barrido.ts:243-245` cuenta los anuncios como «cuatro días (hoy más los tres que se
      releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:59`) y el
      sello de hoy dice 40.
-   - `lib/negocio/barrido.ts:370` y `app/api/cron/route.ts:152-154` dicen que «solo una empresa de
+   - `lib/negocio/barrido.ts:390` y `app/api/cron/route.ts:152-154` dicen que «solo una empresa de
      cinco tiene llave de IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas
      tienen llave de IA y 1 tiene token (§ 7).
    - `app/api/cron/route.ts:170-172` describe la retención de registros «en el plan Hobby», y el plan
-     es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:132`); cuánto duran en Pro, no lo verifiqué.
+     es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:136`); cuánto duran en Pro, no lo verifiqué.
    - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
      (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».
    - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:475-476` presentan esa ruta

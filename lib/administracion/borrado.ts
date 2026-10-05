@@ -165,6 +165,12 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   mensajes_del_executive_org_id_fkey: 'tiene mensajes del cerebro',
   topes_del_executive_org_id_fkey: 'tiene los topes del cerebro configurados',
   preguntas_del_executive_org_id_fkey: 'tiene preguntas al cerebro registradas',
+  /* Lo de los detectores (`072`): las señales con su ciclo de vida —quién las vio, quién las resolvió y por
+     qué—, los planes de cada día y los umbrales que firmó el Admin. Es historia de decisiones que no se
+     vuelve a generar. */
+  senales_org_id_fkey: 'tiene señales de los detectores',
+  planes_de_accion_org_id_fkey: 'tiene planes de acción guardados',
+  umbrales_org_id_fkey: 'tiene umbrales firmados',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

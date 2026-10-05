@@ -109,11 +109,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
     `db/migraciones/062_reintentos_de_los_analizadores.sql:19-23`: se hace `drop` y se vuelve a
     crear con la lista completa más `activos`.
 - **`lib/negocio/barrido.ts`**: `activos` en el tipo `Tarea`, en `TAREAS` después de `anuncios`
-  (`lib/negocio/barrido.ts:88-97`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:242-246`),
+  (`lib/negocio/barrido.ts:90-101`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:246-250`),
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:496-500`); y se suma al despacho (`lib/negocio/barrido.ts:518-519`).
+  (`lib/negocio/barrido.ts:524-528`); y se suma al despacho (`lib/negocio/barrido.ts:546-547`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`

@@ -282,7 +282,7 @@ ventana de 30 días son 134 filas: 91,0 %, 70,9 %, 64,9 % y 91,8 %.
 
 **La pauta está sin entrega desde el 2026-09-14.** Por semana: 60 filas con impresiones la del 7 de
 septiembre, **cero** las del 14, el 21 y el 28, con el colector escribiendo todos los días (última
-pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:242-246`). Los contactos
+pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:246-250`). Los contactos
 nuevos caen igual: 89 la semana del 7, 4, 3 y 1 después. Es consistente con que la pauta se apagó y
 no con una ingesta rota —el barrido de contactos también corre—, lo mismo que midió Conversion
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:178-191`). **No verificado contra la

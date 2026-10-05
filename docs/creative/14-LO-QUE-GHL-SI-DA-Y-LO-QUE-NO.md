@@ -121,7 +121,7 @@ aunque no lo fuera, `negocio.metricas_de_anuncio` no tenía columna donde guarda
 
 **Y el costo de arreglarlo fue cero llamadas.** El colector de Acquisition ya pedía este endpoint
 una vez por campaña y por día, en la tarea `anuncios` del cron de las `17 6 * * *`
-(`lib/negocio/barrido.ts:222`). No hizo falta pedir nada nuevo: hizo falta guardar lo que ya llegaba.
+(`lib/negocio/barrido.ts:226`). No hizo falta pedir nada nuevo: hizo falta guardar lo que ya llegaba.
 
 **Hoy** el campo se llama `acciones`, es un `Record<string, number> | null` leído con un
 desenvolvedor que cuenta lo ilegible en vez de escribir cero, y su columna la creó la migración
