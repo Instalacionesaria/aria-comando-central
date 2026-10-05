@@ -132,6 +132,11 @@ nadie las confirme contra la factura de Anthropic, el costo es `null`, nunca `0`
 `credenciales.%`). La pantalla muestra el uso del día contra los topes. Bajo delegación se puede ajustar,
 con autor nulo (`05`, `AG-82`).
 
+Hecho en AG7: la ruta, `fijarTopes` y `topesDeLaEmpresa` en `lib/agentes/executive/topes.ts` (su único
+escritor), y la tarjeta en Ajustes › Credenciales (`components/ajustes/TopesDelCerebro.jsx`). Los dos topes
+van juntos, enteros entre 1 y `TOPE_MAXIMO` (5.000), y el de una persona no pasa al de la empresa. La prueba
+es la 218.
+
 ## AG-98 · Incidentes
 
 - **Todo fallo de un agente** pasa por `clasificarFallo` y queda en `negocio.incidentes` (`D-30`). Desde AG2

@@ -20,8 +20,8 @@
 - **Se empuja por hitos**, con el OK del usuario.
 - **Los números de prueba y de migración de las etapas que siguen son los del plan original, y corren.**
   Cada etapa toma los siguientes libres al empezar: AG2 usó la migración `070` y AG4 la prueba 205, así que el
-  cerebro fue en la `071` y en las pruebas 206 a 213 (AG5) y 214 a 216 (AG6), y lo que el plan numeraba `071` a
-  `074` pasó a `072` a `075`. Los números de prueba de las secciones de abajo son los del plan y se reasignan en su etapa.
+  cerebro fue en la `071` y en las pruebas 206 a 213 (AG5), 214 a 216 (AG6) y 217 y 218 (AG7), y lo que el
+  plan numeraba `071` a `074` pasó a `072` a `075`. Los números de prueba de las secciones de abajo son los del plan y se reasignan en su etapa.
 - **Pruebas nuevas desde la 198**, con un solo contador para `pruebas/codigo` y `pruebas/base`. El número
   exacto se toma al crearla; los de abajo son la intención.
 - **Ninguna llamada real al modelo** sin el OK del usuario con el número de llamadas (`07`).
@@ -289,22 +289,77 @@
 - **Documentos**: `03`, `05`, `09`, `00-MAPA`, `fichas/F00-EL-CEREBRO.md`, `futuro/el-cerebro.md` y
   `estado actual/11-EXECUTIVE.md`. Las pruebas de las etapas siguientes empiezan en la 217.
 
-## AG7 · El cerebro en pantalla — **grande** — **hito H2**
+## AG7 · El cerebro en pantalla — **grande** — **hito H2** — **hecha el 2026-10-05**
 
-- **Qué**: el chat del Inicio (la caja habilitada, burbujas, la mascota con estados, la evidencia
-  desplegable, el estado sin llave, bajo delegación o con tope, «@ agente»), la caja del pie con el panel que
-  sube, CONVERSACIONES como lista navegable, el traspaso (`lib/agentes/traspaso.ts`) y los topes en Ajustes
-  (`app/api/admin/cerebro/route.ts`). El borde de la caja llega a contraste 3:1.
-- **Pruebas que cambian**: la 197 (la caja habla con su ruta, nombra la entrada con el dato, no se dibuja en
-  el teléfono), la 189 (las respuestas vienen sólo del servidor, ninguna cifra escrita) y la 162 (el panel no
-  aparece en el teléfono; el chat del Inicio sí).
-- **Pruebas nuevas**: 213, la evidencia es un desplegable dentro de la burbuja, el avatar va sólo en la
-  primera, la mascota sigue su tabla, ids nuevos (mutaciones: avatar en todas; un panel lateral). 214, «@
-  agente» carga el pedido sin enviarlo (mutación: enviarlo).
-- **Verificación**: preview local y el arnés de React a 1440 y 375 px, como admin, como `usuario`
-  restringido y bajo delegación. **Una evaluación real del cerebro, con el OK del usuario** (`07`).
-- **Documentos**: `nueva-estructura/09-LA-SEGUNDA-EDICION.md` (lo «Próximamente» que deja de serlo) y los
-  comentarios de `components/Nav.jsx` y `components/ConsultaAlCerebro.jsx`.
+- **Qué se hizo**: el chat del Inicio (`components/views/ExecutiveView.jsx`: la caja habilitada con el estado
+  `listo`, los turnos, la mascota con estados, la evidencia desplegable, el estado sin llave, bajo delegación
+  o con tope, con el camino a Ajustes para quien puede cargar la llave); la caja del pie habilitada, con el
+  período que mira la pantalla y el panel que sube (`components/ConsultaAlCerebro.jsx`,
+  `components/cerebro/PanelDelCerebro.jsx`: una `Ventana` con la variante `vt-panel`); CONVERSACIONES como
+  lista navegable (`components/cerebro/ConversacionesDeLaBarra.jsx`); el traspaso (`lib/agentes/traspaso.ts`);
+  y los topes en Ajustes (`app/api/admin/cerebro/route.ts`, `components/ajustes/TopesDelCerebro.jsx`, y
+  `fijarTopes` en `lib/agentes/executive/topes.ts`). Las burbujas son `components/cerebro/Respuesta.jsx` y
+  `Evidencia.jsx`; la conversación, `Conversacion.jsx`; lo que habla con las rutas, `lib/agentes/usarCerebro.ts`.
+- **Lo que necesitó y no estaba**: el período de cada pantalla vive en su estado, así que cada panel con
+  períodos lo anuncia (`lib/agentes/periodos.ts`) y la caja lo lee; la barra no le pide nada al servidor
+  (`193`), así que el Inicio publica sus hilos (`lib/agentes/hilos-de-la-barra.ts`, en la memoria de
+  lecturas con la empresa en la clave, ADR-0703) y CONVERSACIONES los lee; un hilo guardado devuelve su
+  evidencia (`leerHilo`), para el desplegable al reabrirlo.
+- **El borde de la caja llega a 3:1** con un token nuevo, `--line-control` (`app/temas.css`): el `ink-3` de la
+  marca, `#7f8a9b`, 5,8:1 contra el fondo y 5,49:1 contra la caja. El `#5b6576` que proponía
+  `nueva-estructura/04-EL-INICIO.md` es el `ink-3` del tema claro, y la paleta oscura no lo tiene (`188`).
+- **«@ agente» no se construyó en esta etapa.** Abre la herramienta que crea con el pedido cargado, y las tres
+  que hoy crean —ICP & Oferta, Tu landing y Tu VSL— reciben ese pedido en `ChatDeHerramienta`, `PanelHerramienta`
+  y `Fundaciones`, los archivos que reescribe la rama `feature/icp-oferta-v2` (unas 600 líneas). Por la misma
+  regla que dejó para después el uso y la voz de Fundaciones (AG2, AG3), va después de integrar esa rama. Sin
+  quien reciba el pedido, el Inicio no ofrece «@ agente» (la 189 lo vigila).
+- **Lo que cambió la revisión adversarial**: cada pedido del navegador recuerda su «generación» y lo que llega
+  tarde se descarta —la respuesta de una pregunta hecha en Sales caía en la conversación de Creative, y abrir
+  otro hilo mientras se esperaba mezclaba los dos—; la caja del pie devuelve la pregunta al campo si falla y
+  muestra el error; el panel se cierra al navegar; el campo queda en sólo lectura mientras se espera, porque
+  deshabilitado soltaba el foco fuera de la ventana; después de un fallo se reabre el hilo —el servidor guarda
+  la pregunta como fallida, y reintentar dejaba dos hilos—; un hilo guardado empareja cada respuesta con su
+  pregunta por `responde_a` y dice cuál no tiene respuesta; la caja del pie avisa lo que pregunta o borra, y
+  CONVERSACIONES se entera (`avisarQueCambiaronLosHilos`) y muestra todos los hilos que manda el servidor; los
+  del Inicio se borran ahí, con un segundo clic; «Ir a Ajustes» abre Credenciales y también está en la caja y
+  en el panel; el rechazo por el tope de la empresa ya no le dice «llegaste» a la persona; claves sin
+  repetidos; el traspaso usa el pedido del evento si el navegador no deja guardar; y comentarios falsos.
+- **Lo que no se pasa todavía**: un paso «abrir» navega a su sección y su pestaña, sin el `contexto` que
+  propone el modelo (AG-49), que ninguna pantalla sabe leer; y la mascota no llega a `alerta`, que sale de las
+  señales (AG8).
+- **Pruebas que cambian**: la 197 pasa a `197-la-caja-y-las-conversaciones-del-cerebro.test.ts` —la caja
+  pregunta a la ruta de su sección con el período de la pantalla y sólo con el estado `listo`, cada ruta del
+  mapa existe y es de su sección, las pantallas anuncian su período, CONVERSACIONES lista lo que publica el
+  Inicio y lo abre ahí, y el panel va dentro de la caja, que no se dibuja en el teléfono—; la 189 —la caja del
+  Inicio pregunta por `usarCerebro`, sólo con `listo`, y la búsqueda de cifras escritas recorre todo lo que el
+  Inicio importa, no sólo el primer nivel—; la 104 y la 107 suman `app/cerebro.css`. La 162 no cambió: el panel
+  vive dentro de la caja, que la rejilla del teléfono no dibuja.
+- **Pruebas nuevas** (el plan las numeraba 213 y 214, que usaron AG5 y AG6): 217, las burbujas —la evidencia
+  dentro de la primera, la mascota sólo en la primera y sólo el turno actual sigue el cursor, ningún id del
+  prototipo ni propio, los turnos de un hilo guardado, los textos de cada estado y de cada rechazo, el período
+  anunciado y el traspaso que se toma una vez—; 218 (base), los topes en Ajustes —sus capacidades, la
+  validación, quién y cuándo, que rigen, y bajo delegación sin autor—.
+- **Mutaciones, veintiocho vistas en rojo**: la caja sin período, una ruta del mapa que no existe o es de otra
+  sección, una pantalla que deja de anunciar, la caja sin `listo`, CONVERSACIONES sin pedir el hilo, «Nueva
+  conversación» que vuelve al hilo abierto (197); el campo del Inicio sin `listo`, una cifra escrita en una
+  burbuja (189); todas las mascotas siguiendo el cursor, lo técnico del rechazo a la persona, la pregunta
+  fallida que no lo dice, un id en el panel (217); el autor bajo delegación, una persona por encima de la
+  empresa, el PUT con la capacidad de leer (218). Y las de la revisión: una respuesta vieja que se aplica,
+  abrir un hilo sin invalidar la pregunta en camino, el panel abierto al cambiar de pantalla o al seguir un
+  paso, la respuesta emparejada por orden, la pregunta sin respuesta que no lo dice (217); la caja que pierde
+  la pregunta, la barra que no se entera de lo del pie, enviar con una pregunta en camino (197); el campo
+  deshabilitado mientras se espera (189); el tope de la empresa dicho a la persona (218).
+- **Verificación**: en el preview local, con una sesión de desarrollo y dos hilos sembrados (nunca la
+  contraseña en el formulario), a 1280 y 375 px y en los dos temas: el estado sin llave con el camino a
+  Ajustes, CONVERSACIONES y su corte con puntos suspensivos (corregido ahí: la columna crecía al ancho del
+  título), un hilo reabierto con su evidencia, la caja de Sales con su motivo, el panel que sube con sus hilos,
+  Escape que lo cierra y devuelve el foco, y los topes en Ajustes. Después de la revisión, otra vez: borrar con
+  confirmación (y la barra que se actualiza), «Ir a Ajustes» que llega a Credenciales desde Usuarios, y el paso
+  «Abrir» que cierra el panel y devuelve el desplazamiento del fondo. Una pregunta real no: el preview no tiene
+  la llave de ARIA, y la evaluación real espera el OK del usuario (`07`).
+- **Documentos**: `03`, `06`, `00-MAPA`, `fichas/F00` y `F19`, `nueva-estructura/01`, `04` y `09`,
+  `futuro/el-cerebro.md`, `estado actual/11-EXECUTIVE.md`, y los comentarios de `components/Nav.jsx` y
+  `components/ConsultaAlCerebro.jsx`. Las pruebas de las etapas siguientes empiezan en la 219.
 - **Hito H2**: aplicar la `071` (la `070` ya está en producción desde H1), paso 4b, comprobar `cerebro.usar` en
   `roles_permisos`, push con OK.
 
@@ -328,7 +383,7 @@
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el
-  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:172` y la tarjeta de Señales al
+  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:175` y la tarjeta de Señales al
   final, con «Ver evidencia», «umbral provisional», resolver, descartar, validar y firmar.
 - **Rutas**: `app/api/acquisition/route.ts` suma señales, plan y lo que la persona puede hacer;
   `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts`.
@@ -393,7 +448,7 @@
 ## AG15 · La Reunión de hoy y el comentario de la cabecera — **grande** — **hito H5**
 
 - **Qué**: `lib/agentes/reunion.ts` (dentro de la tarea `senales`), `lib/agentes/cabecera.ts`, las tarjetas
-  en el Inicio en lugar de la nota de `components/views/ExecutiveView.jsx:75-77`, el contador en la barra y el
+  en el Inicio en lugar de la nota de `components/views/ExecutiveView.jsx:202-204`, el contador en la barra y el
   comentario en la cabecera (`04`).
 - **Migración** `075`: `negocio.reuniones_del_dia`.
 - **Pruebas que cambian**: la 189 (las tarjetas vienen sólo del servidor), la 193 (el contador), la 194 (el

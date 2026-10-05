@@ -34,6 +34,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { anunciarPeriodo } from '@/lib/agentes/periodos';
 import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
@@ -118,6 +119,8 @@ const ESTADOS = { ACTIVE: 'Activa', PAUSED: 'Pausada', ARCHIVED: 'Archivada', DE
 
 export default function PanelDeAcquisition() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
+  // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
+  useEffect(() => anunciarPeriodo('acquisition', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

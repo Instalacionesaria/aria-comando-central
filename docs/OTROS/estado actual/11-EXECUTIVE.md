@@ -18,9 +18,10 @@
 > propios (`tablero.ver`) y borrarlos—, y `lib/autorizacion/secciones.ts:220` quedó como un comentario de una
 > línea. El conteo literal de la 90 pasó a 0 y la 30 exige que `executive` tenga su ruta. En AG6 se sumaron las
 > herramientas de las demás secciones y una ruta por sección para la caja del pie
-> (`app/api/<carpeta>/cerebro/route.ts`); lo común de todas está en `lib/agentes/executive/caja.ts`. La pantalla
-> todavía no las usa: el chat del Inicio, la caja del pie y CONVERSACIONES se conectan en AG7
-> (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo describe el corte del 2026-09-28.
+> (`app/api/<carpeta>/cerebro/route.ts`); lo común de todas está en `lib/agentes/executive/caja.ts`. Desde AG7
+> (2026-10-05) la pantalla las usa: el chat del Inicio (`components/views/ExecutiveView.jsx`), la caja del pie
+> con su panel y CONVERSACIONES (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo describe el corte del
+> 2026-09-28.
 
 Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:213-219`)
 y dibuja **179 literales numéricos y catorce contactos inventados** sin haber cambiado una línea de
@@ -115,7 +116,7 @@ exacta.
 
 **Lo que se dibuja**, de arriba abajo:
 
-- **Dos modos**, «Equipo» por omisión y «Funnel» (`components/views/ExecutiveView.jsx:14-45@c4cf2a8`). El
+- **Dos modos**, «Equipo» por omisión y «Funnel» (`components/views/ExecutiveView.jsx:27-106@c4cf2a8`). El
   cambio lo hace `lib/aios/executive.js:151-164@c4cf2a8`, y al pasar a Funnel **destapa** el selector, la
   nota de comparación y la píldora «Personalizado» (`lib/aios/executive.js:161-163@c4cf2a8`).
 - **El mapa del equipo**: el núcleo con «3 temas hoy · 1 conflicto»

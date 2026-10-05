@@ -106,6 +106,13 @@
   --c-nube:    170 212 255;
   --line:        #151b26;
   --line-strong: #3a4456;
+  /* El borde de un campo HABILITADO, que tiene que leerse a 3:1 contra el fondo y contra su caja (WCAG
+     1.4.11). `--line-strong` da 2,0:1, y alcanzaba mientras la caja del cerebro estaba deshabilitada
+     (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Es el `ink-3` de la marca, el único gris de su paleta
+     oscura que llega: 5,8:1 contra `--bg` y 5,49:1 contra `--bg-raise`. El `#5b6576` que proponía esa nota
+     es el `ink-3` del tema CLARO, y la paleta oscura no lo tiene (`pruebas/codigo/188-*`). Lo usa la caja
+     del cerebro desde que pregunta (AG7 de los agentes). */
+  --line-control: #7f8a9b;
 
   --txt:           #f2f5f9;
   --txt-dim:       #aab3c1;
@@ -351,6 +358,9 @@
   --c-nube:     22  32  48;
   --line:        rgb(22 32 48 / 0.19);
   --line-strong: rgb(22 32 48 / 0.34);
+  /* El borde de un campo habilitado, a 3:1 (ver el tema oscuro): el `ink-4` claro de la marca, el mismo valor
+     que el `ink-3` oscuro. 3,17:1 contra `--bg` y 3,49:1 contra el blanco de `--bg-raise`. */
+  --line-control: #7f8a9b;
 
   --txt:           #060b14;
   --c-txt:         6  11  20;

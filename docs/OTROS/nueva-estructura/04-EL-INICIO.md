@@ -28,8 +28,10 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    - La hora se cuenta en la **zona de la empresa**, no en la del navegador: «Buenos días» hasta las 12,
      «Buenas tardes» hasta las 19, «Buenas noches» después.
 3. **La caja de chat del diseño, deshabilitada**, con una línea que dice que **el cerebro llega en una
-   próxima etapa**. Desde AG5 de los agentes (2026-10-04) el servidor existe (`app/api/executive/route.ts`);
-   la caja se conecta en AG7 (`docs/OTROS/agentes/08-LAS-ETAPAS.md`).
+   próxima etapa**. Desde AG5 de los agentes (2026-10-04) el servidor existe (`app/api/executive/route.ts`),
+   y **desde AG7 (2026-10-05) la caja pregunta**: se habilita con el estado `listo`, dibuja los turnos que
+   devuelve el servidor y dice por qué cuando no puede (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo
+   describe la caja deshabilitada de este corte.
    - No manda nada ni finge una respuesta.
    - Los botones de «@ agente» y de área no se dibujan hasta que haya qué elegir.
 4. **No se dibujan** las tres tarjetas de «Reunión de hoy». Tienen que salir de reglas sobre datos reales
@@ -107,7 +109,9 @@ Lo que se decidió al construirlo, además de lo de arriba:
   la que les ponen Firefox al texto de muestra y Safari de iOS al campo (esta última no se midió en un
   teléfono). El borde de la caja da 2,07:1 contra el fondo: como control deshabilitado, la WCAG 1.4.11 lo
   exime. **El día que la caja se habilite**, su borde tiene que llegar a 3:1 contra el fondo y contra la
-  caja (por ejemplo `#5b6576`: 3,45:1 y 3,26:1), o llevar otra señal de dónde está el campo.
+  caja (por ejemplo `#5b6576`: 3,45:1 y 3,26:1), o llevar otra señal de dónde está el campo. Se habilitó en
+  AG7 de los agentes con `--line-control`, `#7f8a9b` (5,8:1 y 5,49:1): `#5b6576` es el `ink-3` del tema claro
+  de la marca, y su paleta oscura no lo tiene.
 - **El saludo** vive en `lib/saludo.ts`, con la hora de `horaDelDiaEnZona` (`lib/negocio/tiempo.ts`):
   una zona inválida cae a UTC, no a la del navegador. Se recalcula cada vez que el Inicio vuelve a la
   vista. La madrugada dice «Buenos días», al pie de la letra de esta regla.

@@ -51,6 +51,8 @@ const HOJAS = [
   'app/acquisition.css',
   // La cabecera de los departamentos, el día que nace (nueva estructura, E11).
   'app/departamentos.css',
+  // El cerebro en pantalla, el día que nace (AG7 de los agentes).
+  'app/cerebro.css',
 ];
 
 /** El cuerpo de una hoja sin comentarios y sin su bloque `:root`, que es donde SÍ van los valores. */

@@ -64,6 +64,7 @@
    ========================================================================= */
 
 import { useCallback, useEffect, useState } from 'react';
+import { anunciarPeriodo } from '@/lib/agentes/periodos';
 
 import { Cuerpo } from '../auditoria/PanelDeAuditoria.jsx';
 /* `CADENCIA` se importa desde `reloj` y no desde `cadencia`, que es donde vive: es lo que ya hacen
@@ -144,6 +145,8 @@ const FLUJOS = {
 export default function PanelDeConversation() {
   const [sub, setSub] = useState(SUB[0].clave);
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
+  // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
+  useEffect(() => anunciarPeriodo('conversation', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');

@@ -280,5 +280,7 @@ Lo «Próximamente» del cerebro de `09-LA-SEGUNDA-EDICION.md` (`NE-50`):
   en el árbol. Ni en el Inicio, que tiene la suya, ni en lo del engranaje, ni en el teléfono.
 - **El comentario del cerebro de la cabecera** sigue sin dibujarse (`NE-17`).
 
-Lo vigila `pruebas/codigo/197-lo-proximamente-del-cerebro.test.ts`, con la `162` (la rejilla) y la `189`
-(la nota del Inicio).
+Desde AG7 de los agentes (2026-10-05) las dos piezas funcionan: CONVERSACIONES lista los hilos que publica el
+Inicio, y la caja pregunta a la ruta de su sección con el período de la pantalla, con su panel que sube
+(`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo vigila `pruebas/codigo/197-la-caja-y-las-conversaciones-del-cerebro.test.ts`,
+con la `162` (la rejilla) y la `189` (la caja y la nota del Inicio).

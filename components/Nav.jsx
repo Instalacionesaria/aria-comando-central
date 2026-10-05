@@ -44,6 +44,8 @@ import { irALaVista } from '../lib/aios/shell.js';
 import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
 import { entradaAbierta, queAbre } from '../lib/autorizacion/departamentos.ts';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
+import ConversacionesDeLaBarra from './cerebro/ConversacionesDeLaBarra.jsx';
+import { pedirHiloDelInicio } from '../lib/agentes/traspaso.ts';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 import { leerTrabajosEnVuelo, pestanaQueLoRetoma } from '../lib/tools/scrapers.ts';
 import { CADENCIA, usarReloj } from '../lib/reloj.ts';
@@ -153,7 +155,11 @@ export default function Nav() {
             type="button"
             className={vista === inicio.seccion ? 'nb-nueva on' : 'nb-nueva'}
             aria-current={vista === inicio.seccion ? 'page' : undefined}
-            onClick={() => irALaVista(inicio.seccion)}
+            onClick={() => {
+              /* Una conversación nueva, aunque el Inicio tenga un hilo abierto: es lo que dice el botón. */
+              pedirHiloDelInicio(null);
+              irALaVista(inicio.seccion);
+            }}
           >
             <svg className="nb-ico" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
@@ -244,15 +250,10 @@ export default function Nav() {
           </div>
         ) : null}
 
-        {/* CONVERSACIONES, como «Próximamente» (`NE-50`): el historial de lo que se le pregunta al
-            cerebro, que todavía no existe. Sin lista ni ejemplos, y no es un botón. Sólo para quien ve
-            el Inicio, como la Reunión de hoy. */}
-        {inicio ? (
-          <div className="nb-conversaciones">
-            <span className="nb-rotulo">CONVERSACIONES</span>
-            <span className="nb-proximamente">Próximamente</span>
-          </div>
-        ) : null}
+        {/* CONVERSACIONES (AG7 de los agentes): los hilos propios con el cerebro. Sólo para quien ve el
+            Inicio, como la Reunión de hoy: es donde se abren. Los lee de lo que publica el chat del Inicio,
+            así que la barra sigue sin pedirle nada al servidor. */}
+        {inicio ? <ConversacionesDeLaBarra inicio={inicio} /> : null}
 
         {/* El pie: la persona, ADMIN o USUARIO, y el engranaje con el único menú de la cuenta
             (`NE-14`). Vive entero en `MenuDeUsuario.jsx`, con su cierre de sesión. */}

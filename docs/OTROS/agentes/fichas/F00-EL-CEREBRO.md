@@ -8,7 +8,7 @@
 |---|---|
 | Tipo | EL CEREBRO |
 | Lugar en el front | El chat del Inicio; la caja «Pregúntale al cerebro sobre …» al pie de cada entrada, con su panel que sube; CONVERSACIONES en la barra |
-| Estado | **Servidor hecho** (AG5 y AG6, 2026-10-04): la ruta del Inicio, una caja por sección y 30 herramientas; la pantalla, en AG7 |
+| Estado | **Hecho** (AG5 a AG7, 2026-10-04 y 05): el servidor —la ruta del Inicio, una caja por sección, 30 herramientas— y la pantalla —el chat del Inicio, la caja del pie con su panel, CONVERSACIONES—. «@ agente», después de integrar la rama de ICP & Oferta |
 | Modelo | `claude-sonnet-5-5` |
 | Permisos | `cerebro.usar` para preguntar y borrar; la capacidad de cada sección para leer sus herramientas; apagado bajo delegación |
 | Código | `lib/agentes/executive/` (lo común de las rutas, en `caja.ts`), `app/api/executive/route.ts`, y once rutas `app/api/<carpeta>/cerebro/route.ts`, una por sección con caja al pie |
@@ -41,7 +41,7 @@ de quien preguntó.
 
 No hay un SOP del cual partir. Las reglas que hereda son las de la plataforma: el piso de 10, los dos ceros
 (`null` es que nadie lo cargó, `0` es un hecho medido), la cohorte por un hecho de entrada, mediana y
-percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:442-475`).
+percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476`).
 
 ## Sugerencias en el Inicio
 

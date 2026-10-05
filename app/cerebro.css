@@ -1,0 +1,443 @@
+/* El cerebro en pantalla (AG7 de los agentes, `docs/OTROS/agentes/03-EL-CEREBRO.md`): las burbujas de una
+ * respuesta con su evidencia, la conversación del Inicio, el panel que sube desde la caja del pie y
+ * CONVERSACIONES en la barra.
+ *
+ * Todo por token, sin colores escritos y sin sombras: la marca no lleva (`NE-28`), y el panel es una
+ * `Ventana`, que ya trae la suya. Las burbujas son las de la caja del Inicio —el fondo elevado y el radio
+ * de la marca para la caja del cerebro—, para que una respuesta se lea como parte de la misma conversación. */
+
+/* ── LA CONVERSACIÓN ──────────────────────────────────────────────────────── */
+
+.cb-conversacion {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+/* La pregunta, a la derecha y sin caja propia: lo que importa leer es la respuesta. */
+.cb-pregunta {
+  align-self: flex-end;
+  max-width: 80%;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunk);
+  color: var(--txt);
+  font-size: 15px;
+  white-space: pre-wrap;
+}
+.cb-fallo {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 13px;
+}
+
+.cb-respuesta {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.cb-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+}
+.cb-burbujas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.cb-burbuja {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+  color: var(--txt);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.cb-esperando .cb-burbuja {
+  color: var(--txt-dim);
+}
+.cb-conclusion {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+.cb-confianza {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+.cb-confianza.baja b {
+  color: var(--warn);
+}
+.cb-detalle {
+  color: var(--txt-faint);
+  font-size: 12px;
+}
+
+.cb-cifras {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.cb-cifras li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: baseline;
+}
+.cb-valor {
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.cb-cifras .cb-detalle {
+  grid-column: 2;
+}
+
+.cb-recomendaciones,
+.cb-falta {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+.cb-recomendaciones + .cb-falta {
+  margin-top: 10px;
+}
+.cb-marca {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--txt-dim);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.cb-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cb-aviso {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 13px;
+}
+.cb-siguientes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cb-ir {
+  padding: 6px 12px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cb-ir:hover {
+  background: var(--bg-float);
+}
+
+/* ── LA EVIDENCIA, DENTRO DE LA BURBUJA (`D-28`) ──────────────────────────── */
+
+.cb-evidencia {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.cb-evidencia summary {
+  cursor: pointer;
+  color: var(--txt-dim);
+  font-size: 13px;
+}
+.cb-ev {
+  margin-top: 12px;
+}
+.cb-ev h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.cb-datos {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.cb-datos > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 30%) minmax(0, 1fr);
+  gap: 8px;
+}
+.cb-datos dt {
+  color: var(--txt-dim);
+}
+.cb-datos dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cb-tabla {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.cb-tabla table {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.cb-tabla th,
+.cb-tabla td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.cb-tabla th {
+  color: var(--txt-dim);
+  font-weight: 500;
+}
+
+/* ── EL INICIO CON UNA CONVERSACIÓN ───────────────────────────────────────── */
+
+/* Con turnos, la conversación ocupa el lugar del saludo y arranca arriba: centrarla en vertical la haría
+   saltar con cada respuesta. */
+#v-executive .inicio.con-conversacion > :first-child {
+  margin-top: 0;
+}
+#v-executive .inicio-fila {
+  align-items: center;
+  gap: 12px;
+}
+#v-executive .inicio-nueva,
+#v-executive .inicio-enlace,
+.cb-texto {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+#v-executive .inicio-nota.mal,
+.cb-nota.mal {
+  color: var(--crit);
+}
+
+/* ── LA CAJA DEL PIE, HABILITADA ──────────────────────────────────────────── */
+
+.cc-motivo {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  overflow: hidden;
+  color: var(--txt-dim);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cc-motivo.mal {
+  color: var(--crit);
+}
+.cc-hilos {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── EL PANEL QUE SUBE (AG-57) ────────────────────────────────────────────── */
+
+/* La `Ventana` con la caja abajo y ancha, sobre el cuerpo del departamento. */
+.vt.vt-panel {
+  place-items: end center;
+  padding: 0 24px;
+}
+.vt-panel .vt-caja {
+  max-width: 880px;
+  max-height: min(82vh, 820px);
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.cb-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cb-panel .cb-conversacion {
+  width: 100%;
+}
+.cb-panel-barra {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cb-hilos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.cb-hilos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+}
+.cb-hilos li.on {
+  background: var(--bg-sunk);
+}
+.cb-hilo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.cb-hilo:hover {
+  background: var(--bg-float);
+}
+.cb-borrar {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.cb-nota {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 13px;
+}
+.cb-caja {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+}
+.cb-campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  font-size: 15px;
+  resize: none;
+}
+.cb-campo::placeholder {
+  color: var(--txt-faint);
+  opacity: 1;
+}
+.cb-enviar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+}
+.cb-enviar:disabled {
+  border-color: var(--line-strong);
+  color: var(--txt-faint);
+  cursor: not-allowed;
+}
+.cb-enviar svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cb-tope {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+
+/* ── CONVERSACIONES, EN LA BARRA ──────────────────────────────────────────── */
+
+/* Una columna acotada: sin `minmax(0, 1fr)` la pista crece al ancho del título y el texto se sale de la
+   barra en vez de cortarse con puntos suspensivos (medido en el preview). */
+.nb-hilos {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+.nb-hilos li {
+  min-width: 0;
+}
+.nb-hilo {
+  width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nb-hilo:hover {
+  background: var(--bg-float);
+  color: var(--txt);
+}
+.nb-vacio {
+  color: var(--txt-faint);
+  font-size: 12px;
+}

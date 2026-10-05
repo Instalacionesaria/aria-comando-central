@@ -16,8 +16,8 @@
 - El Lienzo, pantalla «Inicio · el cerebro»: la cinta «DE LA REUNIÓN DE HOY · 07:00» y tres tarjetas con
   etiqueta y origen (SIN DATOS NUEVOS, SIN REGISTRAR, SIN LECTOR).
 - La Simulación: la frase del cerebro por departamento, con una mascota de 28 px, a la derecha del título.
-- Lo que hoy está dibujado como «Próximamente»: la nota del Inicio (`components/views/ExecutiveView.jsx:75-77`),
-  la fila de la barra (`components/Nav.jsx:165-174`) y el comentario que la cabecera no dibuja
+- Lo que hoy está dibujado como «Próximamente»: la nota del Inicio (`components/views/ExecutiveView.jsx:202-204`),
+  la fila de la barra (`components/Nav.jsx:171-180`) y el comentario que la cabecera no dibuja
   (`components/CabeceraDeDepartamento.jsx:41-42`).
 
 ---
@@ -72,7 +72,7 @@ consume tope.
 
 ## AG-75 · El contador de la barra
 
-Reemplaza a «Próximamente» en la fila «Reunión de hoy» (`components/Nav.jsx:165-174`): el número de temas
+Reemplaza a «Próximamente» en la fila «Reunión de hoy» (`components/Nav.jsx:171-180`): el número de temas
 que esa persona ve hoy. La fila pasa a ser un botón que lleva al Inicio. Sólo la ve quien ve el Inicio, como
 hoy.
 

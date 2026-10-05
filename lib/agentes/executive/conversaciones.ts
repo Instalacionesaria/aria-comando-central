@@ -262,6 +262,10 @@ export interface MensajeDelHilo {
   texto: string;
   estado: string | null;
   respuesta: unknown;
+  /** La evidencia de una respuesta, como se guardó: sin las claves `nombre` (`paraGuardar`). */
+  evidencia: unknown;
+  /** De una respuesta, la pregunta que contesta: con dos preguntas seguidas, el orden no alcanza (AG-51). */
+  respondeA: string | null;
   situacion: string | null;
   ref: string | null;
   creadoEl: string;
@@ -282,7 +286,7 @@ export async function leerHilo(usuarioId: string, hiloId: string, seccion: strin
   if (!propio) return null;
   const filas = await datos()
     .selectFrom('mensajes_del_executive')
-    .select(['id', 'rol', 'texto', 'estado', 'respuesta', 'situacion', 'ref', 'creado_el'])
+    .select(['id', 'rol', 'texto', 'estado', 'respuesta', 'evidencia', 'responde_a', 'situacion', 'ref', 'creado_el'])
     .where('conversacion_id', '=', hiloId)
     .orderBy('creado_el')
     .orderBy('id')
@@ -293,6 +297,8 @@ export async function leerHilo(usuarioId: string, hiloId: string, seccion: strin
     texto: f.texto,
     estado: f.estado,
     respuesta: f.respuesta,
+    evidencia: f.evidencia,
+    respondeA: f.responde_a,
     situacion: f.situacion,
     ref: f.ref,
     creadoEl: new Date(f.creado_el).toISOString(),

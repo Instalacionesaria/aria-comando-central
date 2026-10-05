@@ -116,17 +116,17 @@ los de Acquisition, Creative, Conversion, Sales y Leads Portal—. Los de Conver
 
 | Archivo:línea | Campo | Quién lo dibuja |
 | --- | --- | --- |
-| `lib/negocio/indicadoresDeCitas.ts:72` | `aviso` (cancelación) | `components/conversation/PanelDeConversation.jsx:677` |
-| `lib/negocio/indicadoresDeCitas.ts:100` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:609` |
-| `lib/negocio/indicadoresDeCitas.ts:155` | `avisoDeAsistencia` | `components/conversation/PanelDeConversation.jsx:676` |
-| `lib/negocio/indicadoresDeCitas.ts:172` | `avisoDeConfirmacion` | `components/conversation/PanelDeConversation.jsx:965` |
-| `lib/negocio/indicadoresDelLead.ts:106` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:496` |
-| `lib/negocio/indicadoresDelLead.ts:126` | `avisoDelBooking` | `components/conversation/PanelDeConversation.jsx:507` |
+| `lib/negocio/indicadoresDeCitas.ts:72` | `aviso` (cancelación) | `components/conversation/PanelDeConversation.jsx:680` |
+| `lib/negocio/indicadoresDeCitas.ts:100` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:612` |
+| `lib/negocio/indicadoresDeCitas.ts:155` | `avisoDeAsistencia` | `components/conversation/PanelDeConversation.jsx:679` |
+| `lib/negocio/indicadoresDeCitas.ts:172` | `avisoDeConfirmacion` | `components/conversation/PanelDeConversation.jsx:968` |
+| `lib/negocio/indicadoresDelLead.ts:106` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:499` |
+| `lib/negocio/indicadoresDelLead.ts:126` | `avisoDelBooking` | `components/conversation/PanelDeConversation.jsx:510` |
 | `lib/negocio/indicadoresDelLead.ts:183` | `aviso` (Lead Flow) | **nadie — ver abajo** |
-| `lib/negocio/indicadoresDelLead.ts:185` | `avisoDeLatencias` | `components/conversation/PanelDeConversation.jsx:924` |
-| `lib/negocio/atribucionDelLead.ts:69` | `aviso` | `components/conversation/PanelDeConversation.jsx:718` |
-| `lib/negocio/consumoDelPrecall.ts:133` | `aviso` | `components/conversation/PanelDeConversation.jsx:794` |
-| `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:818` y `:835` |
+| `lib/negocio/indicadoresDelLead.ts:185` | `avisoDeLatencias` | `components/conversation/PanelDeConversation.jsx:927` |
+| `lib/negocio/atribucionDelLead.ts:69` | `aviso` | `components/conversation/PanelDeConversation.jsx:721` |
+| `lib/negocio/consumoDelPrecall.ts:133` | `aviso` | `components/conversation/PanelDeConversation.jsx:797` |
+| `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:821` y `:835` |
 | `lib/negocio/frescura.ts:58` y `:215` | `aviso` (frescura del barrido) | no re-verificado |
 
 Los otros 15 campos de las otras pantallas (28 menos los 13 de la tabla) no se auditaron uno por uno
@@ -140,7 +140,7 @@ la que abre la pantalla, entraron 276 contactos y se les escribió a 269, así q
 *«7 contacto(s) no entran en la tasa de respuesta porque todavía no se les escribió…»*, y nadie lo lee.
 En una ventana sin altas el que se pierde es el que explica el tablero entero —*«No entró ningún
 contacto nuevo al CRM en N días»* (`lib/negocio/indicadoresDelLead.ts:409`)— mientras la pestaña dibuja
-«Cada barra es sobre los 0 que entraron» (`components/conversation/PanelDeConversation.jsx:488`). **Un
+«Cada barra es sobre los 0 que entraron» (`components/conversation/PanelDeConversation.jsx:491`). **Un
 aviso sin lector es peor que un aviso siempre encendido: al segundo se lo puede aprender a ignorar, al
 primero no hay forma de notarlo.**
 
@@ -651,10 +651,10 @@ falso es la flecha, que no es un dato sino un dibujo.
 **La forma honesta, y por qué es una regla y no una decisión de diseño.**
 
 1. **La cadena se corta donde deja de ser monótona.** En Lead Flow, en «respondieron»
-   (`components/conversation/PanelDeConversation.jsx:513-541`), y el pie lo dice
-   (`components/conversation/PanelDeConversation.jsx:572-576`): «agendar no exige haber contestado».
+   (`components/conversation/PanelDeConversation.jsx:516-544`), y el pie lo dice
+   (`components/conversation/PanelDeConversation.jsx:575-579`): «agendar no exige haber contestado».
 2. **Lo que sigue es una bifurcación, no un cuarto eslabón**
-   (`components/conversation/PanelDeConversation.jsx:543-570`).
+   (`components/conversation/PanelDeConversation.jsx:546-573`).
 3. **Los dos sumandos salen de la MISMA pasada que su total** (`lib/negocio/indicadoresDelLead.ts:257-262`),
    y el complemento se calcula en el módulo (`lib/negocio/indicadoresDelLead.ts:315`), no en la pantalla.
 4. **Hay una prueba que exige la suma** (`pruebas/base/150-indicadores-del-lead.test.ts:558`) y otra
@@ -719,7 +719,7 @@ son el estado inicial que el CRM escribe al agendar, así que la rama se llama �
 reproducción» y no «no vio el video».
 
 **18 · Una cifra medida que llega a una cadena VISIBLE va fechada.** Del commit `a0e1eb5`. Cumplida en
-`components/conversation/PanelDeConversation.jsx:128` («medido en septiembre de 2026, 3 citas de 1052») y
+`components/conversation/PanelDeConversation.jsx:129` («medido en septiembre de 2026, 3 citas de 1052») y
 `:960` («las 316 citas que había al medirlo»). **Y su versión para el código, nueva:** un comentario con
 una cifra medida envejece cada vez que corre el colector, y nada avisa; `7d1bc8b` sacó tres cifras
 escritas a mano del encabezado del panel y de la ruta de Creative («5 de 26», que ya era 11 de 26) para
@@ -1041,7 +1041,7 @@ El rediseño de Conversation dejó cuatro defectos y **tres aparecieron mirando*
 | El vocabulario de períodos metía el cliente de PostgreSQL en el paquete del navegador | `lib/negocio/periodo.ts:25-34` | Lo rechazó `next build` |
 | La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:290-293` | Mirándola |
 | A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:581-585` | Mirándola a 400 px |
-| El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:765-767` | Mirándola |
+| El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:768-770` | Mirándola |
 
 **Y se repitió en el período, más grande.** A 375 px la barra lateral no colapsaba y al cuerpo le
 quedaban **75 píxeles** en las doce pantallas, «y no lo veía ninguna prueba porque no hay nada que
@@ -1144,7 +1144,7 @@ fecha del 2026-09-15 o anterior.
 
 **Encontrado de paso — la cadena visible sin fecha, que la foto anterior ya había señalado.**
 `lib/negocio/indicadoresDeCitas.ts:494-496` arma un aviso que se dibuja en pantalla
-(`components/conversation/PanelDeConversation.jsx:676`) y termina en presente: «el CRM tiene ese campo en
+(`components/conversation/PanelDeConversation.jsx:679`) y termina en presente: «el CRM tiene ese campo en
 3 de 1052 citas». La cadena vecina del panel sí está fechada (regla 18). **Sigue igual el 2026-09-28.**
 
 **Encontrado de paso — el comentario de las ventanas que afirma sin medir.** `lib/negocio/periodo.ts:48`

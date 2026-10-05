@@ -13,10 +13,11 @@
 - `docs/OTROS/futuro/el-cerebro.md`, el plan que ya existía, y Det:233-243, el orden de construcción del
   cerebro: modelo, herramientas de sólo lectura, la sesión de quien pregunta, conversaciones con RLS
   forzada, la Reunión cada mañana.
-- Lo que el front ya dejó dibujado como «Próximamente»: `components/views/ExecutiveView.jsx:58`,
-  `components/ConsultaAlCerebro.jsx:56-71` y el rótulo de CONVERSACIONES en `components/Nav.jsx`.
+- Lo que el front dejó dibujado como «Próximamente» hasta AG7: la caja del Inicio
+  (`components/views/ExecutiveView.jsx`), la del pie (`components/ConsultaAlCerebro.jsx`) y el rótulo de
+  CONVERSACIONES en `components/Nav.jsx`.
 - Las reglas propias de Executive: consume y no recalcula, el dinero es del mes y es venta reportada,
-  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:442-475`).
+  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476`).
 
 ---
 
@@ -207,6 +208,10 @@ Cada paso `abrir` se valida contra las secciones visibles y se dibuja como botó
 usa `irALaVista` y `lib/agentes/traspaso.ts`, con el molde de `lib/tools/del-espia-al-scraper.ts:13-19`
 (`sessionStorage` y un evento, leído una sola vez por la pantalla que lo recibe).
 
+Desde AG7 el botón abre la sección y su pestaña. El `contexto` que propone el modelo todavía no viaja: ninguna
+pantalla sabe leerlo, y es texto del modelo. El traspaso que sí existe es el de CONVERSACIONES al Inicio
+(el hilo que hay que abrir).
+
 ## AG-50 · Sugerencias por entrada
 
 Sólo donde están declaradas; sin sugerencias propias no se muestra ninguna (A7-21). Las de Acquisition son
@@ -241,7 +246,7 @@ Una unión, nunca un booleano (`T-13`):
 
 | estado | qué ve la persona |
 |---|---|
-| `listo` | la caja habilitada |
+| `listo` | la caja habilitada (los textos de cada estado están en `lib/agentes/pantalla.ts`, desde AG7) |
 | `sin_permiso` | no tiene `cerebro.usar`: la caja no se dibuja |
 | `sin_llave` | «El cerebro necesita la llave de IA de tu empresa.» Con `credenciales.ver`, un enlace a Ajustes; sin ella, «pídesela a quien administra» |
 | `llave_ilegible` | lo mismo, con el motivo |
@@ -281,10 +286,15 @@ Lista los **agentes que crean** que la persona ve: hoy ICP & Oferta, Tu landing 
 exista. Elegir uno y escribir el pedido abre esa herramienta con el pedido **cargado en su campo, sin
 enviarlo** (`lib/agentes/traspaso.ts`). No hay «@ agente» en la caja del pie (`D-12`).
 
+**No se construyó en AG7**: el pedido lo reciben `ChatDeHerramienta`, `PanelHerramienta` y `Fundaciones`, que
+reescribe la rama `feature/icp-oferta-v2`, y lo de Fundaciones va después de integrarla. Hasta entonces el
+Inicio no lo ofrece (`08`, AG7).
+
 ## AG-57 · El panel que sube
 
 La respuesta de la caja del pie se abre en un panel que sube sobre el cuerpo del departamento (`D-12`), con
-`components/Ventana.jsx` o su misma mecánica de foco y Escape, y con **ids nuevos**: la prueba 156 prohíbe
+`components/Ventana.jsx` o su misma mecánica de foco y Escape, y con **ids nuevos**. Hecho en AG7 con la
+`Ventana` misma y su variante `vt-panel` (`components/cerebro/PanelDelCerebro.jsx`), sin ningún id: la prueba 156 prohíbe
 `askPanel`, `askScrim`, `askTrigger` y los demás del prototipo
 (`pruebas/codigo/156-cierre-de-los-overlays.test.ts:38`), y la 162 prohíbe las clases `.ask` y `.side` en el
 armazón.

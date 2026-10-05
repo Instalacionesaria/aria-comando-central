@@ -297,7 +297,7 @@ Tres lecturas, las tres requisitos:
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
 incluidos** (`lib/negocio/calidadDelCreativo.ts:217-218`), y dibuja al lado el `n` de los que tienen
-puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:374-375`). Esta pestaña no
+puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:377-378`). Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».
 
 El efecto se midió el 2026-09-16: 18 de los 20 ceros de esa ventana caían en un solo anuncio, que

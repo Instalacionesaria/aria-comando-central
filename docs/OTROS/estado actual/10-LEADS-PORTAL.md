@@ -118,20 +118,20 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
 **Lo que dibuja el panel** (`components/leads-portal/PanelDeLeadsPortal.jsx`), de arriba abajo:
 
 1. El encabezado y el segmentado de período, con **el botón encendido que contestó el servidor**
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:100-109`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:103-112`).
 2. Los avisos, antes de las cifras: la frescura, la cola de la ventana y el aviso de la cohorte
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:272-286`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:275-289`).
 3. Cinco tarjetas —Sin calificar, ICP alto, ICP medio, ICP bajo y Todos—: contactos, porción del
    total, agendados, cierre y monto reportado; la de «Sin calificar» parte sus dos poblaciones, y
-   tocar una filtra la rejilla (`components/leads-portal/PanelDeLeadsPortal.jsx:173-184`,
+   tocar una filtra la rejilla (`components/leads-portal/PanelDeLeadsPortal.jsx:176-187`,
    `:288-327`).
 4. La barra: buscador por nombre, campaña y creativo; tramo; etapa (Todas · Agendados · Asistieron ·
-   Vendidos); contador «N de M» (`components/leads-portal/PanelDeLeadsPortal.jsx:186-243`).
+   Vendidos); contador «N de M» (`components/leads-portal/PanelDeLeadsPortal.jsx:189-246`).
 5. La rejilla, de a 60 con «Mostrar más», una tarjeta por persona con **tres estados por paso**
    en «Agendó › Asistió › Vendió» y las marcas de descartado, congelado y plantón
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:245-265`, `:334-397`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:248-268`, `:334-397`).
 6. Los huecos de la venta, que vienen de Sales con su fecha
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:399-412`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:402-415`).
 
 **Las cifras que dibuja al abrirse, calculadas desde la base el 2026-09-28** con los predicados del
 código (`scripts/medir-leads-portal.sql`, que los copia a mano y lo dice). **No se vieron en
@@ -175,7 +175,7 @@ cierre, `PISO_DE_UNA_TASA = 10` sobre los contactos del tramo
 piso (`LP06-P01`, abierta). El guardián de ceros mira 14 días de la empresa, sin la ventana
 (`lib/negocio/leadsDelPortal.ts:62`, `:336-339`). La lista viaja entera hasta 5.000 filas
 (`lib/negocio/leadsDelPortal.ts:54`) y el reloj recarga cada 60 segundos sólo con la pestaña a la
-vista (`components/leads-portal/PanelDeLeadsPortal.jsx:73-77`, `lib/cadencia.ts:91`).
+vista (`components/leads-portal/PanelDeLeadsPortal.jsx:76-80`, `lib/cadencia.ts:91`).
 
 **Las pruebas**, según los mensajes de sus commits y **no re-corridas hoy** (este trabajo no corre la
 suite): la 175 de los tramos, en `pruebas/codigo/` (LP-1, sin cifras en su mensaje);
@@ -211,7 +211,7 @@ carpeta no copia ninguno de esos datos.
 | «Calificado alto / medio / No calificado» | «ICP alto / medio / bajo»: «no calificado» es una etiqueta de descarte (`lib/negocio/tramosDelIcp.ts:55-62`) |
 | el tramo guardado a mano al lado del puntaje | derivado siempre del puntaje (`lib/negocio/tramosDelIcp.ts:13-16`) |
 | «Revenue» y «Cierre N %» por tramo | «monto reportado» y «—» con motivo (`lib/negocio/leadsDelPortal.ts:477-516`) |
-| dos estados por paso | tres: «sin registrar» no es «no asistió» (`components/leads-portal/PanelDeLeadsPortal.jsx:334-349`) |
+| dos estados por paso | tres: «sin registrar» no es «no asistió» (`components/leads-portal/PanelDeLeadsPortal.jsx:337-352`) |
 | el botón «Plan de acción», cuatro frases escritas a mano | borrado; la primera frase, medida, no da 22 % sino 17,8 % a 30 días el 2026-09-27 (`docs/leads-portal/07-EL-PLAN-DE-ACCION.md:71-104`); el 2026-09-28, 18,1 %: 50 de 277 |
 | la píldora «Personalizado» y un tercer botón que mandaba `mes` | borrados; el período se valida contra la lista (`app/api/leads-portal/route.ts:50-54`) |
 | `window.AIOSLeadCard`, que abría una ficha por NOMBRE y, si no la encontraba, la de otra persona | la ficha por id con 404 (`app/api/leads-portal/[id]/route.ts:42-45`) |
@@ -502,7 +502,7 @@ consumidor nuevo que lo llame a secas publicaría una cohorte que ninguna pantal
 **«0 vendidos» en la tarjeta «Todos».** Es un conteo de personas con venta registrada y está medido
 (`docs/leads-portal/02-METRICAS.md:229-246`), pero es el único cero de la pantalla sobre la venta,
 al lado de un «—» que dice lo mismo con otro motivo
-(`components/leads-portal/PanelDeLeadsPortal.jsx:305-307`, `:318-323`).
+(`components/leads-portal/PanelDeLeadsPortal.jsx:308-310`, `:318-323`).
 Leído solo, dice «nadie compró».
 
 **Y el que ordena a los demás: ninguna de estas cifras se vio en la pantalla andando.** Todo lo de

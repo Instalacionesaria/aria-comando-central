@@ -59,7 +59,7 @@ los abra: el plan lo anota como deuda y no se borran en esta etapa.
 
 ### LP06-03 · El botón encendido es el que contestó el servidor
 
-`components/creative/PanelDeCreative.jsx:89-90` resuelve el mismo problema con
+`components/creative/PanelDeCreative.jsx:92-93` resuelve el mismo problema con
 `valor={pantalla?.periodo ?? periodo}`, y la regla está escrita en `07-REGLAS-TRANSVERSALES.md:437-438`.
 La respuesta de esta pestaña trae el `periodo` que atendió, y el botón encendido sale de ahí, no del
 estado local. **Defecto que evita:** una petición rechazada, o una lenta que llega después de otra,

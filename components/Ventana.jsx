@@ -47,6 +47,8 @@ export default function Ventana({
   subtitulo,
   /** Con `false`, el fondo y Escape NO cierran. La ✕ y los botones propios sí. */
   cerrablePorFuera = true,
+  /** Una variante de la caja, por clase: `vt-panel` es el panel que sube del cerebro (`components/cerebro/`). */
+  clase,
   alCerrar,
   children,
 }) {
@@ -132,7 +134,7 @@ export default function Ventana({
           if (cerrablePorFuera) alCerrar?.();
         }}
       />
-      <div className="vt">
+      <div className={clase ? `vt ${clase}` : 'vt'}>
         <div
           className="vt-caja"
           role="dialog"

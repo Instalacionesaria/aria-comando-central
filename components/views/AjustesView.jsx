@@ -46,9 +46,11 @@
  * un permiso de un rol a otro sin tocar código.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSesion } from '../../app/sesion-contexto.tsx';
+import { usarPedidoDeVista } from '../../lib/vista.ts';
 import Credenciales from '../ajustes/Credenciales.jsx';
+import TopesDelCerebro from '../ajustes/TopesDelCerebro.jsx';
 import Empresas from '../ajustes/Empresas.jsx';
 import Usuarios from '../ajustes/Usuarios.jsx';
 
@@ -99,6 +101,13 @@ export default function AjustesView({ activa }) {
      * `sesion.puedeConfigurarComisiones` con la condición exacta del endpoint.
      */
   ].filter((p) => p.visible);
+
+  /* La pestaña que pide quien navega hasta acá —el «Ir a Ajustes» del cerebro pide Credenciales—. Sin esto se
+     llegaba a la última que se abrió, que podía ser Usuarios. */
+  const pedido = usarPedidoDeVista('credenciales');
+  useEffect(() => {
+    if (pedido?.pestana) setSub(pedido.pestana);
+  }, [pedido]);
 
   /* Si la pestaña activa dejó de existir se cae a la primera que quede. Sin esto, el cuerpo queda
      en blanco sin ningún error. */
@@ -151,6 +160,9 @@ export default function AjustesView({ activa }) {
          * de entrada. Es el mismo arreglo que necesitó Auditoría. */}
         <div className="cl-page">
           {activaAhora === 'credenciales' ? <Credenciales /> : null}
+          {/* Los topes del cerebro (AG-97): son de la empresa, como sus credenciales, y piden las mismas dos
+              capacidades. */}
+          {activaAhora === 'credenciales' ? <TopesDelCerebro /> : null}
           {activaAhora === 'empresas' ? (
             <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
           ) : null}

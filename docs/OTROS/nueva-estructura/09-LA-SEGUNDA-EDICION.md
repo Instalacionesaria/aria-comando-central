@@ -5,6 +5,11 @@
 > sub-pestañas**; otras **cambian de nombre**; y vuelven, como «Próximamente», piezas del cerebro que la
 > primera edición no dibujaba. Este documento dice todo lo que se va a hacer **antes de tocar el código**.
 > Los requisitos siguen el prefijo `NE-`, desde `NE-37`.
+>
+> **Desde AG7 de los agentes (2026-10-05) lo «Próximamente» del cerebro dejó de serlo**: CONVERSACIONES lista
+> los hilos y la caja «Pregúntale al cerebro sobre …» pregunta, con su panel que sube
+> (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). El comentario del cerebro de la cabecera sigue sin dibujarse
+> (`NE-17`), y llega con AG15. Lo de abajo es el plan de este corte.
 
 ---
 

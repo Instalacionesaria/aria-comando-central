@@ -79,8 +79,8 @@ y `:79`. El documento no cambió desde el corte anterior. Lo que cambió es que 
 comentario de las líneas 322-323 fecha la baja de la bandera el 2026-09-21. La vista se registra en
 `components/CommandCenter.jsx:44`, y **todas las vistas visibles se montan a la vez**
 (`components/CommandCenter.jsx:86-98`): el panel pide `/api/sales` una vez al cargar la página
-aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:63-65`); lo que sí está atado a la
-visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:70-72`,
+aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:66-68`); lo que sí está atado a la
+visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75`,
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el
 encabezado (líneas 1-52) enumera lo borrado con la medición que lo desmiente, y la bajada pasó a
 «Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72`).
@@ -107,7 +107,7 @@ para la tabla (`:92`). El sujeto del dinero es la empresa o `nadie`, nunca N+1 p
 
 **Lo que dibuja**, en el orden de `components/sales/PanelDeSales.jsx`, con lo que daría hoy. Las
 cifras las reproduje el 2026-09-28 en SQL con los predicados de cada módulo, a 30 días —el período
-con que abre la pantalla (`components/sales/PanelDeSales.jsx:42`, `lib/negocio/periodo.ts:109`)— y
+con que abre la pantalla (`components/sales/PanelDeSales.jsx:43`, `lib/negocio/periodo.ts:109`)— y
 con «Completo»; **no las leí de la pantalla**.
 
 | bloque | líneas del panel | a 30 días | con «Completo» |
@@ -123,7 +123,7 @@ con «Completo»; **no las leí de la pantalla**.
 Los ceros del dinero son **ceros medidos**: hay 6 resultados de closers en septiembre en la zona de la
 organización (`America/Lima`) y ninguno es `venta`, así que `dineroDelMes` publica `0` y no `—`
 (`lib/negocio/dineroDelMes.ts:162`). El rótulo del §5.4 va pegado a la cifra, no en un pie:
-`components/sales/PanelDeSales.jsx:208-214`, y la cadena lo repite en su aviso
+`components/sales/PanelDeSales.jsx:211-217`, y la cadena lo repite en su aviso
 (`lib/negocio/cadenaDeCierre.ts:355-358`).
 
 El aviso de la cadena dice hoy, a 30 días, que **43 de 46 contactos tuvieron una cita que ya ocurrió y
@@ -145,7 +145,7 @@ asignatario del CRM, «Registró» por quien cargó el resultado. A 30 días, en
 registró 5, el de 66 registró 0 y el de 7 registró 2 — la inversión que la etapa 6 midió
 (`lib/negocio/cierrePorCloser.ts:43-50`). La columna «Plantón» (0 · 14 · 1) sale del calendario y no
 entra en ninguna tasa (`lib/negocio/cierrePorCloser.ts:153-160`). **La tabla muestra el nombre real
-de cada closer** (`components/sales/PanelDeSales.jsx:499`), a propósito: es una evaluación de
+de cada closer** (`components/sales/PanelDeSales.jsx:502`), a propósito: es una evaluación de
 desempeño y la trata como tal (`lib/negocio/cierrePorCloser.ts:11-13`).
 
 **La concentración, y la pista del 85 %.** `docs/sales/02-METRICAS.md` dice dos cosas de `S2-12`:
@@ -172,7 +172,7 @@ la tabla (`lib/negocio/cierrePorCloser.ts:250-251`). Todas rodantes (`now() - N 
 la tabla (`lib/negocio/cierrePorCloser.ts:403-407`) y sobre los medidos en el ciclo
 (`lib/negocio/cicloHastaLaCita.ts:144-146`). **La cancelación de cabecera no tiene piso**: su tasa es
 `null` sólo con cero citas (`lib/negocio/indicadoresDeCitas.ts:67-68` y `:429`), y el panel la
-dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:366-369`). Con «7 días», a las
+dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:369-372`). Con «7 días», a las
 20:00 UTC del 2026-09-28, publicaba **40 % sobre 5 citas**; a las 22:00, 33,3 % sobre 6. Ver § 7.
 
 **Quién la ve.** 13 de los 15 usuarios activos de todas las organizaciones tienen `tablero.ver` y la
@@ -419,7 +419,7 @@ cobrado de Sales es la suma de `venta` y nada más.
 
 **3 · Es venta REPORTADA, no pago verificado. El §5.4 lo exige por escrito** (línea 288 del
 documento). Sales produce ese dato, así que el rótulo nace acá; hoy va pegado a la cifra
-(`components/sales/PanelDeSales.jsx:208-214`). Ninguna cifra de revenue de este departamento puede
+(`components/sales/PanelDeSales.jsx:211-217`). Ninguna cifra de revenue de este departamento puede
 presentarse sin él, y ninguna «CERRADA» del analizador puede reemplazarlo: es la lectura de un
 modelo, no un reporte del closer.
 

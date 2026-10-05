@@ -13,7 +13,8 @@
 >
 > **El servidor del cerebro está hecho (AG5 y AG6, 2026-10-04)**: `lib/agentes/executive/`,
 > `app/api/executive/route.ts` y una ruta `app/api/<carpeta>/cerebro/route.ts` por sección, con las herramientas
-> de todas las secciones que ya miden. La pantalla llega en AG7.
+> de todas las secciones que ya miden. **Y la pantalla, desde AG7 (2026-10-05)**: el chat del Inicio, la caja
+> del pie con su panel y CONVERSACIONES.
 
 ## Qué es
 

@@ -224,9 +224,10 @@ button.cd-sub:not(.on):hover {
 /* ── LA CAJA DEL CEREBRO, AL PIE (`NE-50`) ──────────────────────────────────
 
    La dibuja `components/ConsultaAlCerebro.jsx` en su área de la rejilla, debajo del cuerpo, con los
-   costados del cuerpo, como la cabecera. Es la caja del Inicio en un renglón —la misma línea fuerte, el
-   mismo fondo elevado, el texto de muestra en el piso de la marca y el botón de enviar como secundario,
-   sin opacidad (`app/armazon.css`, `#v-executive .inicio-caja`)—, con la palabra «Próximamente» al lado. */
+   costados del cuerpo, como la cabecera. Es la caja del Inicio en un renglón —el mismo borde de control,
+   el mismo fondo elevado, el texto de muestra en el piso de la marca y el botón de enviar como secundario
+   mientras no hay qué mandar, sin opacidad (`app/armazon.css`, `#v-executive .inicio-caja`)—. Lo que dice
+   por qué no se puede preguntar, y el panel que sube, están en `app/cerebro.css` (AG7 de los agentes). */
 .cc-consulta {
   grid-area: consulta;
   min-width: 0;
@@ -239,7 +240,8 @@ button.cd-sub:not(.on):hover {
   gap: 12px;
   min-width: 0;
   padding: 8px 8px 8px 18px;
-  border: 1px solid var(--line-strong);
+  /* El borde de control a 3:1, desde que la caja pregunta (`app/armazon.css`, la caja del Inicio). */
+  border: 1px solid var(--line-control);
   border-radius: var(--radius-sm);
   background: var(--bg-raise);
 }
@@ -264,25 +266,20 @@ button.cd-sub:not(.on):hover {
   cursor: not-allowed;
   opacity: 1;
 }
-.cc-caja .nb-proximamente {
-  flex: 0 0 auto;
-}
-/* Hasta unos 1000 px, la palabra le quita al campo el lugar del nombre de la entrada: se va, y lo que
-   dice queda en el campo deshabilitado y en la descripción para el lector. */
-@media (max-width: 1000px) {
-  .cc-caja .nb-proximamente {
-    display: none;
-  }
-}
 .cc-enviar {
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius-pill);
   background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+}
+.cc-enviar:disabled {
+  border-color: var(--line-strong);
   color: var(--txt-faint);
   cursor: not-allowed;
   opacity: 1;

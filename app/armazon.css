@@ -612,7 +612,10 @@
   flex-direction: column;
   gap: 22px;
   padding: 18px 18px 14px;
-  border: 1px solid var(--line-strong);
+  /* El borde de control, a 3:1 contra el fondo y contra la caja, desde que la caja pregunta (AG7 de los
+     agentes): con `--line-strong` daba 2,07:1, que la WCAG 1.4.11 sólo le perdona a un control
+     deshabilitado (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). */
+  border: 1px solid var(--line-control);
   border-radius: var(--radius-sm);
   background: var(--bg-raise);
   text-align: left;
@@ -632,17 +635,23 @@
 #v-executive .inicio-campo::placeholder { color: var(--txt-faint); opacity: 1; }
 #v-executive .inicio-campo:disabled { cursor: not-allowed; opacity: 1; }
 #v-executive .inicio-fila { display: flex; justify-content: flex-end; }
-/* Enviar, deshabilitado: un secundario —borde y flecha tenue— y no el primario blanco del lienzo, para
-   que no se lea como una acción que se puede tomar. Sin opacidad, por lo mismo que el texto: ni la
-   que usaría un diseño para decir «deshabilitado» ni la que agrega el navegador. */
+/* Enviar, con lo que hay para mandar: el borde de control y la flecha en el color del texto. Sin nada, o
+   con el cerebro sin poder responder, un secundario —borde y flecha tenue— para que no se lea como una
+   acción que se puede tomar. Sin opacidad, por lo mismo que el texto: ni la que usaría un diseño para
+   decir «deshabilitado» ni la que agrega el navegador. */
 #v-executive .inicio-enviar {
   width: 36px;
   height: 36px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius-pill);
   background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+}
+#v-executive .inicio-enviar:disabled {
+  border-color: var(--line-strong);
   color: var(--txt-faint);
   cursor: not-allowed;
   opacity: 1;

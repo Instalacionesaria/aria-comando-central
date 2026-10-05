@@ -1,5 +1,6 @@
 // Los topes del cerebro: cuántas preguntas por día admite, por persona y por empresa. Único escritor de
-// `negocio.topes_del_executive` y de `negocio.preguntas_del_executive` (migración 071).
+// `negocio.topes_del_executive` y de `negocio.preguntas_del_executive` (migración 071). Los topes los fija
+// el Admin desde Ajustes (`fijarTopes`, `app/api/admin/cerebro/route.ts`).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL CANDADO
@@ -123,5 +124,46 @@ export async function cerrarLugar(id: string, final: FinalDeUnaPregunta): Promis
     .set({ estado: final, terminada_el: sql`now()` } as never)
     .where('id', '=', id)
     .where('estado', '=', 'reservada')
+    .execute();
+}
+
+/** El techo de lo que el Admin puede fijar: un número fuera de escala es un error de tipeo, no un tope. */
+export const TOPE_MAXIMO = 5000;
+
+export interface TopesDeLaEmpresa {
+  porPersona: number;
+  porEmpresa: number;
+  /** Cuándo los cambió alguien, y quién; `null` si siguen los de omisión. */
+  actualizadoEl: Date | null;
+  actualizadoPor: string | null;
+}
+
+/** Los topes de la empresa, o los de omisión si nadie los fijó. Sin escribir: la fila nace al reservar. */
+export async function topesDeLaEmpresa(): Promise<TopesDeLaEmpresa> {
+  const f = await datos()
+    .selectFrom('topes_del_executive')
+    .select(['por_persona', 'por_empresa', 'actualizado_el', 'actualizado_por'])
+    .executeTakeFirst();
+  if (!f) return { ...TOPES_POR_OMISION, actualizadoEl: null, actualizadoPor: null };
+  return {
+    porPersona: Number(f.por_persona),
+    porEmpresa: Number(f.por_empresa),
+    actualizadoEl: new Date(f.actualizado_el),
+    actualizadoPor: f.actualizado_por,
+  };
+}
+
+/**
+ * Fija los dos topes de la empresa (AG-97). `autor` es quien los cambió, o `null` bajo delegación: la fila
+ * apunta a una persona de ESTA empresa, y quien mira desde otra no lo es (`autorDelCambio`). Toma el mismo
+ * candado que la reserva, así un cambio no se cruza con una pregunta que está contando.
+ */
+export async function fijarTopes(porPersona: number, porEmpresa: number, autor: string | null): Promise<void> {
+  await datos()
+    .insertInto('topes_del_executive')
+    .values({ por_persona: porPersona, por_empresa: porEmpresa, actualizado_por: autor } as never)
+    .onConflict((oc) =>
+      oc.column('org_id').doUpdateSet({ por_persona: porPersona, por_empresa: porEmpresa, actualizado_por: autor, actualizado_el: sql`now()` } as never),
+    )
     .execute();
 }

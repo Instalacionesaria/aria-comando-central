@@ -7,7 +7,9 @@
 // tenían las cifras escritas a mano en tres módulos del navegador, el chat elegía entre respuestas
 // fijas por palabras clave, y abajo de todas las pantallas una barra ofrecía «Pregúntale a Executive»
 // con Cmd+K. Se fue el 2026-10-01 con nueve archivos, y su lugar lo tomó un Inicio honesto: la
-// mascota, el saludo y una caja que dice que el cerebro todavía no llegó.
+// mascota, el saludo y una caja que, hasta AG7 de los agentes, decía que el cerebro todavía no llegó.
+// Desde AG7 pregunta de verdad (`app/api/executive/route.ts`), y lo que esto cuida de la caja es que lo
+// que se dibuja de una respuesta lo traiga el servidor.
 //
 // Borrar es fácil de deshacer sin darse cuenta: una rama vieja, un «restaurar» del editor, una
 // tarjeta de «Reunión de hoy» que alguien vuelve a pegar desde el diseño porque «ya está dibujada».
@@ -17,9 +19,10 @@
 // en el arranque; un atajo Cmd+K, se escriba como se escriba (la tecla antes o después del
 // modificador, `KeyK`, el código 75, `mod+k`); un clic sintetizado sobre una fila del menú, con
 // `.click()` o con `dispatchEvent`; una cifra o un monto en el Inicio, también dentro de una expresión,
-// en un atributo o en un componente que el Inicio importe; «Reunión de hoy» en cualquier carpeta del
-// código; quitarle el `disabled` a la caja o escribirlo `disabled={false}`; y que la mascota siga viva
-// fuera de la vista o se salga del centro de su caja.
+// en un atributo o en un componente que el Inicio importe, directa o indirectamente; «Reunión de hoy» en
+// cualquier carpeta del código; que la caja le pida algo al servidor por su cuenta, se habilite sin el
+// estado `listo` o dibuje turnos que no sean los del servidor; y que la mascota siga viva fuera de la
+// vista o se salga del centro de su caja.
 //
 // ── LO QUE NO VE ────────────────────────────────────────────────────────────
 //
@@ -157,14 +160,23 @@ test('el Inicio no lleva cifras escritas, ni las tarjetas de la reunión, ni los
   const inicio = sinComentarios(leer(INICIO));
   // En el Inicio, un número escrito a mano es una afirmación inventada.
   assert.deepEqual(cifrasEscritas(inicio), [], 'el Inicio escribe cifras a mano');
-  /* Y lo mismo en lo que el Inicio importe de `components/`: traer las tarjetas del diseño como un
-     componente hijo es la forma natural de devolverlas. La mascota no escribe cifras para la persona:
-     sus números son de forma. */
-  for (const m of inicio.matchAll(/from\s+'(\.{1,2}\/[^']+)'/g)) {
-    const ruta = posix.normalize(posix.join(dirname(INICIO).replace(/\\/g, '/'), m[1]!));
-    if (!ruta.startsWith('components/') || ruta === MASCOTA) continue;
-    assert.deepEqual(cifrasEscritas(sinComentarios(leer(ruta))), [], `\`${ruta}\`, que el Inicio importa, escribe cifras a mano`);
+  /* Y lo mismo en lo que el Inicio importe de `components/`, directa o indirectamente: traer las tarjetas
+     del diseño como un componente hijo es la forma natural de devolverlas, y desde AG7 las burbujas de
+     una respuesta están dos niveles más abajo (`Conversacion` → `Respuesta` → `Evidencia`). La mascota no
+     escribe cifras para la persona: sus números son de forma. */
+  const vistos = new Set<string>();
+  const pendientes = [INICIO];
+  while (pendientes.length > 0) {
+    const desde = pendientes.pop()!;
+    for (const m of sinComentarios(leer(desde)).matchAll(/from\s+'(\.{1,2}\/[^']+)'/g)) {
+      const ruta = posix.normalize(posix.join(dirname(desde).replace(/\\/g, '/'), m[1]!));
+      if (!ruta.startsWith('components/') || ruta === MASCOTA || vistos.has(ruta)) continue;
+      vistos.add(ruta);
+      pendientes.push(ruta);
+      assert.deepEqual(cifrasEscritas(sinComentarios(leer(ruta))), [], `\`${ruta}\`, que el Inicio importa, escribe cifras a mano`);
+    }
   }
+  assert.ok(vistos.has('components/cerebro/Respuesta.jsx'), 'el recorrido no llega a las burbujas de una respuesta: no está mirando lo que dice');
   for (const gancho of ['exFunnel', 'deptGraph', 'exBrief', 'exChanges', 'exPeriod', 'exPill', 'data-leads', 'data-datepick']) {
     assert.ok(!inicio.includes(gancho), `volvió \`${gancho}\`, un gancho de la maqueta`);
   }
@@ -195,23 +207,31 @@ test('el Inicio no lleva cifras escritas, ni las tarjetas de la reunión, ni los
   assert.match(nota, /^<p className="inicio-nota inicio-reunion">\s*<b>Reunión de hoy · próximamente\.<\/b> Aquí aparecerán los tres temas del día que detecta el cerebro\.\s*<\/p>$/, 'la nota de la Reunión dice otra cosa que el diseño, o algo más');
 });
 
-test('la caja del cerebro no manda nada ni finge una respuesta', () => {
+test('la caja del cerebro pregunta a su ruta, sólo con el estado `listo`, y no finge una respuesta', () => {
   const inicio = sinComentarios(leer(INICIO));
-  assert.doesNotMatch(inicio, /\bpedir\(|\bfetch\(/, 'el Inicio pide algo al servidor: la caja no tiene a quién preguntarle');
-  /* El atributo de verdad: `disabled` solo, o `disabled={true}`. `disabled={false}` lo habilita, y
-     `aria-disabled` no impide escribir. TODOS los campos y botones del Inicio: la caja no tiene nada
-     que hacer todavía. */
-  const deshabilitado = (tag: string) => /\sdisabled(?=[\s/>])/.test(tag) || /\sdisabled=\{\s*true\s*\}/.test(tag);
-  const controles = [...etiquetas(inicio, 'textarea'), ...etiquetas(inicio, 'input'), ...etiquetas(inicio, 'button')];
-  assert.ok(etiquetas(inicio, 'textarea').length > 0, 'el Inicio perdió el campo de la caja');
-  assert.ok(etiquetas(inicio, 'button').some((t) => /className="inicio-enviar"/.test(t)), 'el Inicio perdió el botón de enviar');
-  for (const tag of controles) {
-    assert.ok(deshabilitado(tag), `un control del Inicio se puede usar: ${tag}`);
-    // Y dice por qué, también al lector de pantalla.
-    assert.match(tag, /aria-describedby="inicioEnCamino"/, `un control del Inicio no dice por qué está deshabilitado: ${tag}`);
-  }
-  assert.ok(!inicio.includes('@ agente'), 'volvió «@ agente», que no tiene a quién elegir');
-  assert.match(inicio, /id="inicioEnCamino"[^>]*>\s*El cerebro llega en una próxima etapa/, 'la caja dejó de decir que el cerebro todavía no llegó');
+  /* La caja pregunta por `usarCerebro`, que habla con `app/api/executive/route.ts`: el Inicio no le pide
+     nada al servidor por su cuenta, que es donde una respuesta armada en el navegador entraría. */
+  assert.doesNotMatch(inicio, /\bpedir\(|\bfetch\(/, 'el Inicio le pide algo al servidor por su cuenta');
+  assert.match(inicio, /const cerebro = usarCerebro\(RUTA_DEL_INICIO, publicar\);/, 'la caja no pregunta a la ruta del Inicio');
+  /* Lo que se dibuja de una conversación son los turnos que devolvió el servidor, y nada más: ni un
+     párrafo de respuesta de muestra ni una lista propia. */
+  assert.match(inicio, /<Conversacion turnos=\{cerebro\.turnos\} pendiente=\{cerebro\.pendiente\}/, 'la conversación no son los turnos del servidor');
+  assert.doesNotMatch(inicio, /useState\(\s*\[/, 'el Inicio guarda una lista propia: los turnos son los de `usarCerebro`');
+  /* Se habilita sólo con el estado `listo` (AG-52): con otro, el servidor rechazaría la pregunta, y la
+     caja diría que se puede preguntar. */
+  assert.match(inicio, /const listo = estado\?\.tipo === 'listo';/);
+  const campo = etiquetas(inicio, 'textarea');
+  assert.equal(campo.length, 1, 'el Inicio perdió el campo de la caja, o tiene otro');
+  assert.match(campo[0]!, /\sdisabled=\{!listo\}/, 'el campo se puede usar sin el estado `listo`');
+  // Mientras se espera, sólo lectura: deshabilitado soltaría el foco.
+  assert.match(campo[0]!, /\sreadOnly=\{enCamino\}/, 'el campo se puede editar con una pregunta en camino, o suelta el foco');
+  const enviar = etiquetas(inicio, 'button').find((t) => /className="inicio-enviar"/.test(t));
+  assert.ok(enviar, 'el Inicio perdió el botón de enviar');
+  assert.match(enviar, /\sdisabled=\{!listo \|\| enCamino \|\| texto\.trim\(\) === ''\}/, 'el botón de enviar se puede usar sin el estado `listo`');
+  // Con otro estado, dice por qué —el texto de AG-52— y el campo lo nombra.
+  assert.match(inicio, /const motivo = estado \? textoDelEstado\(estado, zona, nombres\('credenciales'\)\) : cerebro\.causa;/);
+  assert.match(campo[0]!, /aria-describedby=\{motivo \|\| cerebro\.error \? 'inicioEstado' : undefined\}/, 'el campo no dice por qué no se puede usar');
+  assert.ok(!inicio.includes('@ agente'), '«@ agente» volvió sin quien reciba el pedido: las herramientas que crean se integran con otra rama');
 });
 
 test('la mascota sólo vive a la vista, y su orbe queda en el centro de su caja', () => {

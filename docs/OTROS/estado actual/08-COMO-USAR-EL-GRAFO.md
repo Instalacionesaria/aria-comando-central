@@ -177,7 +177,7 @@ qué. Hoy contesta en 3 saltos y el del medio no es código: es la regla 1 de
 que esta carpeta entrara, también eran 3 saltos, por otro lado: los dos archivos importan
 `periodo.ts`. El camino real es otro: `app/api/auditoria/route.ts:37` importa `tasaDeCancelacion`, y
 la pantalla lee esa ruta por HTTP: importa `leerLaPantalla` de `lib/auditor/vista.ts`
-(`components/conversation/PanelDeConversation.jsx:74`), que pide `RUTA = '/api/auditoria'`
+(`components/conversation/PanelDeConversation.jsx:75`), que pide `RUTA = '/api/auditoria'`
 (`lib/auditor/vista.ts:22`). **Ese salto por HTTP no es una arista**: entre `lib/auditor/vista.ts` y
 `app/api/auditoria/route.ts` no hay ninguna (fila de esos dos archivos en la § 1). Otro caso, que no
 cambió en ninguno de los tres cortes de estos días:
@@ -186,7 +186,7 @@ cambió en ninguno de los tres cortes de estos días:
 
 El 2026-09-28 había un ejemplo de camino que sí era código:
 `graphify path "leadsDelPortal.ts" "PanelDeLeadsPortal"` pasaba por `filtrosDelPortal.ts`, que la
-pantalla importa de verdad (`components/leads-portal/PanelDeLeadsPortal.jsx:36`). Hoy, también
+pantalla importa de verdad (`components/leads-portal/PanelDeLeadsPortal.jsx:37`). Hoy, también
 después del AST completo, cruza por un nodo de este mismo documento —«graphify path: el camino más
 corto, que no es el camino de los datos»—, que nombra a los dos. **Extraer documentos acorta los
 caminos**: cada documento que nombra dos archivos los deja a dos saltos, y `path` devuelve el más

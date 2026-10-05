@@ -75,7 +75,7 @@ interfaz, porque en el servidor dejaba a alguien conmutado sin pestaña y sin co
 
 **La entrada.** La sección `credenciales`, rotulada «Ajustes», es la única del grupo `Pie`
 (`lib/autorizacion/secciones.ts:193-210`); el pie junta sus secciones y dibuja sólo la primera
-(`components/Nav.jsx:128@b532a78`, `:215@b532a78`), así que una segunda ahí no se vería. La vista es
+(`components/Nav.jsx:130@b532a78`, `:215@b532a78`), así que una segunda ahí no se vería. La vista es
 `components/views/AjustesView.jsx` y se monta sólo bajo la clave `credenciales`
 (`components/CommandCenter.jsx:51`). **Después del corte, el 2026-10-02** (nueva estructura, E10): Ajustes, el
 Panel de Monitoreo e Incidentes van en el engranaje del pie de la barra lateral, que muestra todas las
@@ -85,9 +85,9 @@ llevan la cabecera con la ceja «MENÚ DE LA CUENTA», el menú dice debajo de c
 INTEGRACIONES» o «SOLO {la organización principal}», y Ajustes › Usuarios dice lo que abre cada casilla con
 el grupo, también la del Leads Portal (Sales › Leads › De GHL).
 
-**Las tres pestañas** (`components/views/AjustesView.jsx:80-83`), cada una visible si la sesión trae
+**Las tres pestañas** (`components/views/AjustesView.jsx:82-85`), cada una visible si la sesión trae
 su sección, que el servidor ya filtró con la misma función que decide el menú
-(`components/views/AjustesView.jsx:63-65`):
+(`components/views/AjustesView.jsx:65-67`):
 
 | Pestaña | Sección · capacidad | Qué hace | Rutas |
 |---|---|---|---|
@@ -97,7 +97,7 @@ su sección, que el servidor ya filtró con la misma función que decide el men�
 
 La configuración de comisiones fue una cuarta pestaña y se mudó a Closer → Inicio sin cambiar su
 autorización: sigue declarando `PANTALLA = 'credenciales'`
-(`components/views/AjustesView.jsx:84-100`, `app/api/admin/comisiones/route.ts:45`). Lo mismo quién
+(`components/views/AjustesView.jsx:86-102`, `app/api/admin/comisiones/route.ts:45`). Lo mismo quién
 es el closer, la lista de usuarios del CRM para elegirlo, el tramo del setter y los enlaces
 rápidos: `app/api/admin/closer/route.ts:50`, `app/api/admin/closer/usuarios-crm/route.ts:33`,
 `app/api/admin/setter/route.ts:51`, `app/api/admin/enlaces-rapidos/route.ts:44`. Con la de

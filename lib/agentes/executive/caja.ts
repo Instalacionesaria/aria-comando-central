@@ -184,7 +184,9 @@ export function respuestaDePreguntar(r: ResultadoDePreguntar): Response {
   if (r.tipo === 'error_interno') return rechazo('base_no_disponible');
   if (r.tipo === 'tope') {
     // Se renueva a la medianoche de la empresa; la hora exacta viaja en el GET (`usado.renuevaEl`).
-    return rechazo('tope_del_cerebro', `Llegaste al tope de hoy (${r.estado.tope} preguntas). Se renueva a la medianoche.`);
+    // De quién es el tope: «llegaste» sólo a quien llegó al suyo, no cuando la que llegó es la empresa.
+    const quien = r.estado.de === 'persona' ? 'Llegaste al tope de hoy' : 'Tu empresa llegó al tope de hoy';
+    return rechazo('tope_del_cerebro', `${quien} (${r.estado.tope} preguntas). Se renueva a la medianoche.`);
   }
   if (r.tipo === 'fallo') {
     // El detalle con la forma que la pantalla ya sabe leer: situación, referencia y lo técnico.
