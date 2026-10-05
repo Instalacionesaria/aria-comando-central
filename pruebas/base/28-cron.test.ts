@@ -67,6 +67,9 @@ after(async () => {
 
 async function limpiar(): Promise<void> {
   await admin.query('delete from negocio.tareas_programadas');
+  // Lo que deja la pasada de los detectores (`senales`), que corre en cada barrido de este archivo.
+  await admin.query('delete from negocio.senales');
+  await admin.query('delete from negocio.planes_de_accion');
   await admin.query('delete from negocio.ingesta_pulso');
   await admin.query('delete from negocio.contactos');
 }
@@ -240,10 +243,10 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
       ['mensajes', 'fallo'],
       /* `reintentos` sale SALTADA por lo mismo que `analizadores`: pide las mismas dos llaves. */
       ['reintentos', 'saltada'],
-      /* `senales` sale CORRIÓ, como `anuncios`: no pide el token del CRM (AG-35), a las 12:00 de Lima le
-         toca, y con RLS forzada sus lecturas de una empresa que no existe dan cero filas. Sin detectores
-         construidos todavía (AG8), no hay departamento que medir. */
-      ['senales', 'corrio'],
+      /* `senales` sale FALLO, como las del CRM: no pide el token (AG-35) y a las 12:00 de Lima le toca, así
+         que mide —con RLS forzada, cero filas— y al guardar el plan de Acquisition choca con la clave
+         foránea de una empresa que no existe. Sin departamento que terminara, la pasada es un fallo. */
+      ['senales', 'fallo'],
     ],
     'una de las tareas no se despachó de verdad contra la empresa: se anunció y no tocó nada',
   );

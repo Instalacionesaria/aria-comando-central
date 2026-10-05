@@ -145,9 +145,9 @@ function detectorDe(departamento: Detector['departamento'], fallas = 0, debajo =
         detecciones: departamento === 'acquisition' ? [det] : [],
         sinMedicion: [],
         debajoDelPiso: debajo ? [{ regla: 'ACQ-PRUEBA-220', entidad: { tipo: 'campana' as const, id: 'c2' }, muestra: 4 }] : [],
-        plan: { grupos: [] },
       };
     },
+    armarPlan: (p: Parameters<Detector['armarPlan']>[0]) => ({ vigentes: p.vigentes.length }),
   };
   return d;
 }
@@ -185,8 +185,22 @@ test('el departamento que falla no deja plan y se reintenta; el que terminó no 
   );
   assert.equal(deCreative?.n, '2');
 
+  // Alguien descarta la señal de los 30 días con su motivo.
+  await admin.query(
+    `update negocio.senales set estado = 'descartada', cerrada_el = now(), motivo_cierre = 'ya se sabe'
+      where org_id = $1 and ventana = '30d'`,
+    [alfa],
+  );
+
   // Al día siguiente corren todos otra vez.
   const manana = await correrLaPasada(org, { ahora: new Date('2026-10-06T11:23:00Z'), detectores });
   assert.ok(manana.tocaba);
   assert.deepEqual(manana.departamentos.map((d) => d.estado), ['corrio', 'corrio']);
+  // Y lo descartado no vuelve al plan como recomendación (A6-20): sigue detectándose, pero alguien ya lo decidió.
+  const vigentes = await filas<{ ventana: string; plan: { vigentes: number } }>(
+    admin,
+    `select ventana, plan from negocio.planes_de_accion where org_id = $1 and departamento = 'acquisition' and dia = '2026-10-06' order by ventana`,
+    [alfa],
+  );
+  assert.deepEqual(vigentes.map((p) => [p.ventana, p.plan.vigentes]), [['30d', 0], ['7d', 1]]);
 });

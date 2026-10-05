@@ -29,12 +29,14 @@ import { diaEnZona, horaDelDiaEnZona } from '../../negocio/tiempo.ts';
 import { guardarPlan } from '../plan/guardar.ts';
 import { reconciliarSenales, type ResumenDeLaReconciliacion } from '../senales/escritura.ts';
 import { umbralesFirmados } from '../senales/umbrales.ts';
+import { DETECTOR_DE_ACQUISITION } from './detector-de-acquisition.ts';
 import {
   type DebajoDelPiso,
   type DepartamentoConSenales,
   type Deteccion,
   VENTANAS_DE_LAS_SENALES,
   type VentanaDeSenal,
+  huellaDe,
 } from '../senales/tipos.ts';
 
 /** La hora local desde la que le toca a una empresa (AG-35). */
@@ -55,8 +57,16 @@ export interface ResultadoDelDetector {
   /** Las reglas cuya fuente no llegó: lo suyo que no se detectó queda `sin_medicion`. */
   sinMedicion: readonly string[];
   debajoDelPiso: readonly DebajoDelPiso[];
-  /** El plan armado con plantillas, con el formato de su departamento (AG-32). */
-  plan: unknown;
+  /** La ventana sobre la que se midió, para que el plan la declare (A6-23). */
+  periodo?: { desde: string; hasta: string };
+}
+
+/** Lo que recibe el armado del plan: lo vigente después de reconciliar. */
+export interface ParaElPlan extends ResultadoDelDetector {
+  ventana: VentanaDeSenal;
+  dia: string;
+  /** Las detecciones que nadie descartó ni resolvió todavía (A6-20). */
+  vigentes: readonly Deteccion[];
 }
 
 export interface Detector {
@@ -65,10 +75,12 @@ export interface Detector {
   nombre: string;
   /** Corre dentro de la `conOrganizacion` que abre la pasada: sólo lee. */
   detectar: (c: ContextoDelDetector) => Promise<ResultadoDelDetector>;
+  /** El plan con plantillas y el formato del departamento (AG-32). Puro. */
+  armarPlan: (p: ParaElPlan) => unknown;
 }
 
-/** Los detectores construidos. Vacío en AG8: Acquisition llega en AG9. Ver el encabezado. */
-export const DETECTORES: readonly Detector[] = [];
+/** Los detectores construidos: Acquisition desde AG9; Creative, Conversation y Conversion, en sus etapas. */
+export const DETECTORES: readonly Detector[] = [DETECTOR_DE_ACQUISITION];
 
 export interface RenglonDeLaPasada {
   departamento: DepartamentoConSenales;
@@ -132,12 +144,17 @@ export async function correrLaPasada(
             detecciones: medido.detecciones,
             sinMedicion: medido.sinMedicion,
           });
+          const debajoDelPiso = [...medido.debajoDelPiso, ...r.debajoDelPiso];
+          const decididas = new Set(r.decididas);
+          const vigentes = medido.detecciones.filter(
+            (d) => !decididas.has(huellaDe(detector.departamento, d, ventana)) && !debajoDelPiso.some((x) => x.regla === d.regla && x.entidad.tipo === d.entidad.tipo && x.entidad.id === d.entidad.id),
+          );
           await guardarPlan({
             departamento: detector.departamento,
             ventana,
             dia,
-            plan: medido.plan,
-            debajoDelPiso: [...medido.debajoDelPiso, ...r.debajoDelPiso],
+            plan: detector.armarPlan({ ...medido, debajoDelPiso, ventana, dia, vigentes }),
+            debajoDelPiso,
           });
           return r;
         });

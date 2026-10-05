@@ -416,7 +416,24 @@
   descartada que no renace aunque suba la gravedad, guardar debajo del piso, y `sin_medicion` que no vuelve a
   `abierta`.
 
-## AG9 · Acquisition, el piloto — **grande** — **hito H3**
+## AG9 · Acquisition, el piloto — **grande** — **hito H3** — **en curso**
+
+- **Primera tanda, hecha el 2026-10-05: el detector y el plan.** `lecturaDeAcquisition` sale de
+  `embudosDeAcquisition` sin cambiarle nada a la pantalla, para que el detector compare con las mismas cifras.
+  `lib/agentes/detectores/acquisition.ts` mide y detecta siete reglas (`ACQ-SIN-ENTREGA`, `ACQ-CPL-SOSTENIDO`,
+  `ACQ-GASTO-SIN-CRECIMIENTO`, `ACQ-CONCENTRACION`, `ACQ-ICP-ENTRE-CAMPANAS`, `ACQ-ESCALA-POR-CALIFICADO`,
+  `ACQ-FUGA-ENTRE-ETAPAS`), con su piso y su umbral provisional en el catálogo; `lib/agentes/plan/acquisition.ts`
+  arma el plan con plantillas. La pasada arma el plan **después** de reconciliar y sólo con lo vigente: lo que
+  una persona descartó o resolvió no vuelve a recomendarse (A6-20). «Sin entrega» pasó a ser un estado —60
+  días de historia, las pausadas fuera—: con «gastaba en la ventana anterior», la pauta parada hace 15 días no
+  daba nada en 7 días. Pruebas nuevas 221, 222 y 223 (el plan las numeraba 218 a 220, que usaron AG7 y AG8),
+  la 28 con la pasada que ahora mide y escribe, y la 220 con lo descartado fuera del plan. Mutaciones, nueve
+  vistas en rojo: el piso en 9, el presupuesto en «Haz más de esto», dos grupos invertidos, la pausada contada,
+  «sin entrega» con un día sin cerrar, la concentración sin validación ejecutiva, el plan sin ordenar, lo
+  descartado en el plan y la campaña sin funnel compitiendo por el ICP.
+- **Lo que sigue**: `ACQ-CPM-ABRUPTO` y `ACQ-CAMBIO-BRUSCO-CONJUNTO` (piden impresiones y conjuntos) y el
+  monitor de atribución en días cerrados; las capacidades y las rutas; la pantalla; la redacción con el modelo
+  y su evaluación real, con OK.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

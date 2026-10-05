@@ -639,6 +639,26 @@ export async function embudosDeAcquisition(
   /** La zona de la empresa (`identidad.organizaciones.zona_horaria`): cuándo termina su día. */
   zona: string,
 ): Promise<EmbudosDeAcquisition> {
+  return (await lecturaDeAcquisition(periodo, zona)).embudos;
+}
+
+/**
+ * Lo que lee la pantalla, con las cifras crudas de cada campaña en las dos ventanas. La pantalla usa sólo
+ * `embudos`; el detector de Acquisition (`lib/agentes/detectores/acquisition.ts`) compara contra la ventana
+ * anterior con estas mismas cifras, así que **consume la lectura de la pantalla y no la recalcula**: la misma
+ * ventana, los mismos días cerrados y la misma edad de los agendados.
+ */
+export interface LecturaDeAcquisition {
+  embudos: EmbudosDeAcquisition;
+  actual: ReadonlyMap<string, Cifras>;
+  /** `null` cuando no se compara (`embudos.sinComparacion`). Una campaña que no aparece tuvo cero. */
+  previa: ReadonlyMap<string, Cifras> | null;
+}
+
+export async function lecturaDeAcquisition(
+  periodo: { clave: ClaveDePeriodo; dias: number },
+  zona: string,
+): Promise<LecturaDeAcquisition> {
   const d = periodo.dias;
   const cerrados = periodo.clave === '7d' || periodo.clave === '30d';
   const completo = periodo.clave === 'completo';
@@ -745,7 +765,7 @@ export async function embudosDeAcquisition(
     if (!clicsComparables) for (const c of previa.values()) c.clics = null;
   }
 
-  return armarEmbudos({
+  const embudos = armarEmbudos({
     ventana,
     anterior,
     sinComparacion,
@@ -755,4 +775,5 @@ export async function embudosDeAcquisition(
     cobertura: { conCampana: n(cobertura.rows[0]?.con_campana), sobre: n(cobertura.rows[0]?.sobre) },
     sinCostos,
   });
+  return { embudos, actual, previa };
 }

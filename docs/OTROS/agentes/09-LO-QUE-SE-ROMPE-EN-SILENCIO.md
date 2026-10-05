@@ -21,7 +21,7 @@
 | La «mañana local» es la de UTC | Las señales y la Reunión llegan de madrugada en América | La hora de la cinta de la Reunión (`04`, `AG-76`) y la carga de la zona antes de AG8 |
 | Una señal descartada renace cada mañana | Se aprende a ignorar la tarjeta | La 219, y el índice único parcial de la `072` |
 | Una fuente apagada cierra señales | «Se cerró sola» cuando en realidad dejó de medirse | La 219, con `sin_medicion` |
-| Falsa alerta de «sin entrega» en una zona al este de UTC | Una crítica todas las mañanas antes de recolectar el gasto | El detector de Acquisition (AG9): sin datos de anuncios del día, no hay señales de costo |
+| Falsa alerta de «sin entrega» en una zona al este de UTC | Una crítica todas las mañanas antes de recolectar el gasto | El detector de Acquisition: con un día sin cerrar (`faltan_dias`) o el gasto incompleto, ninguna regla de gasto se publica, y «sin entrega» tampoco; la 221 |
 | Un `usuario` resuelve una señal de validación ejecutiva | Se salta la validación | La 22 (`senales.validar` no le cae) y la regla del POST |
 | Un hilo ajeno se lee por id | Una persona lee lo que preguntó un colega | La 208 (404 para un hilo ajeno) |
 | Dos preguntas en paralelo pasan el tope | 51 de 50 | La 208, con el candado de fila |

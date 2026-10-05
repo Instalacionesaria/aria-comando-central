@@ -56,6 +56,11 @@ export interface ResumenDeLaReconciliacion {
   condicionesApagadas: number;
   /** Las que llegaron por debajo del piso: no se guardan, se cuentan (AG-27). */
   debajoDelPiso: DebajoDelPiso[];
+  /**
+   * Las huellas que se detectaron y una persona ya descartó o resolvió, sin que subieran de gravedad. No
+   * van al plan: cada recomendación es una condición vigente que nadie decidió todavía (A6-20).
+   */
+  decididas: string[];
 }
 
 /** Los estados que bloquean una huella, con la condición de las decididas. Ver la migración 072. */
@@ -73,6 +78,7 @@ export async function reconciliarSenales(p: PasadaDeUnDepartamento): Promise<Res
     sinMedicion: 0,
     condicionesApagadas: 0,
     debajoDelPiso: [],
+    decididas: [],
   };
 
   // El candado de esta empresa, departamento y ventana, hasta el fin de la transacción. Ver el encabezado.
@@ -121,6 +127,7 @@ export async function reconciliarSenales(p: PasadaDeUnDepartamento): Promise<Res
         // Lo mismo que alguien ya decidió: se anota que se volvió a ver, sin tocar la foto de la decisión.
         await db.updateTable('senales').set({ ultima_deteccion_el: new Date() }).where('id', '=', previa.id).execute();
         resumen.vistasDeNuevo += 1;
+        resumen.decididas.push(huella);
       }
       continue;
     }

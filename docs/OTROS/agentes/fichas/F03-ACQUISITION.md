@@ -8,16 +8,20 @@
 |---|---|
 | Tipo | MIDE (detector) |
 | Lugar en el front | Systems › Acquisition: el botón «Plan de acción» junto al selector de período y la tarjeta de Señales al final |
-| Estado | **Se construye** en AG9, sobre las tablas de AG8 |
+| Estado | **En construcción** (AG9). Hechos: el detector con siete reglas y el plan con plantillas. Faltan `ACQ-CPM-ABRUPTO`, `ACQ-CAMBIO-BRUSCO-CONJUNTO`, el monitor, las rutas, la pantalla y la redacción |
 | Modelo | Ninguno para detectar. `claude-sonnet-5-5` para **redactar** el plan, si hay llave |
 | Permisos | Leer: `tablero.ver`. Marcar vista, resolver y descartar: `senales.resolver`. Las de validación ejecutiva: `senales.validar`. Firmar un umbral: `umbrales.firmar` |
-| Código | `lib/agentes/detectores/acquisition.ts`, `lib/agentes/plan/acquisition.ts`, `app/api/acquisition/senales/route.ts`, `app/api/acquisition/umbrales/route.ts` |
+| Código | `lib/agentes/detectores/acquisition.ts` (medir y detectar), `lib/agentes/detectores/detector-de-acquisition.ts` (lo que corre la pasada), `lib/agentes/plan/acquisition.ts`; faltan `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts` |
 
 ## Qué lee
 
-`embudosDeAcquisition` sobre **7 y 30 días cerrados** contra su ventana anterior (la misma función y la misma
-regla de ventanas que la pantalla), las métricas por anuncio y por conjunto, y la atribución de los
-contactos para el monitor. El detector es puro: recibe lo medido y devuelve señales.
+`lecturaDeAcquisition` —la lectura de `embudosDeAcquisition`, con las cifras crudas de cada campaña en las dos
+ventanas— sobre **7 y 30 días cerrados** contra su ventana anterior: la misma función, los mismos días cerrados
+y la misma edad de los agendados que la pantalla. Además, el último día con entrega de cada campaña en los
+últimos 60 días cerrados. Faltan las métricas por conjunto y la atribución para el monitor. Detectar es puro
+(`detectarEnAcquisition`): recibe lo medido y los umbrales, y devuelve detecciones, lo que quedó bajo el piso y
+las reglas que no se pudieron medir. Una regla que necesita lo que la pantalla no tiene —un día sin cerrar
+(`faltan_dias`), el gasto incompleto (`sinCostos`)— no se publica: va a «sin medición».
 
 ## Las reglas, con su umbral provisional
 
@@ -26,7 +30,7 @@ del criterio, no de una serie larga, y el Admin los firma.
 
 | código | qué detecta | umbral provisional | piso | gravedad | entidad | va a |
 |---|---|---|---|---|---|---|
-| `ACQ-SIN-ENTREGA` | Una campaña que gastaba en la ventana anterior y no entregó en los últimos 2 días cerrados o más | 2 días | no es una tasa; exige el dato de anuncios del día recolectado | **crítica** si no entrega ninguna; alta si alguna sí | campaña, o empresa si son todas | Lo que dice la data |
+| `ACQ-SIN-ENTREGA` | Una campaña activa que entregó en los últimos 60 días cerrados y lleva 2 o más sin entregar. Es un estado y no una comparación: se mide igual en las dos ventanas (con «gastaba en la ventana anterior», una pauta parada hace 15 días no daba nada en 7 días). La pausada no cuenta; la de estado desconocido, sí | 2 días | no es una tasa; exige los días cerrados al día | **crítica** si no entrega ninguna activa; alta si alguna sí | campaña, o empresa si son todas | Lo que dice la data |
 | `ACQ-CPL-SOSTENIDO` | El costo por contacto sube contra la ventana anterior | +30 % (alta desde +60 %) | 10 contactos en las dos ventanas | media o alta | campaña | Ajusta o pausa esto |
 | `ACQ-CPM-ABRUPTO` | El CPM sube contra la ventana anterior | +40 % | 1.000 impresiones en las dos | media | campaña | Lo que dice la data |
 | `ACQ-GASTO-SIN-CRECIMIENTO` | El gasto sube y los contactos no | gasto +25 % y contactos sin subir | 10 contactos en la anterior | media | empresa o campaña | Ajusta o pausa esto |
@@ -117,7 +121,8 @@ Las de A7-20: «¿Qué campaña escalo?», «¿Cuál trae el ICP que cierra?», 
 
 ## Pruebas y evaluación
 
-218, 219 y 220 de `08`; F03 en `07`, `AG-102`.
+221 (el detector es puro), 222 (el plan) y 223 (sobre la base sembrada: en 7 días, sólo la crítica de «sin
+entrega»; en 30, además, la concentración de Webinar y la fuga de Remarketing); F03 en `07`, `AG-102`.
 
 ## Contratos que cumple
 
