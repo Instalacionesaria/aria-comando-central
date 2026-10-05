@@ -101,6 +101,24 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
       return `Su costo por calificado está ${porcentaje(d.cambioPct)} por debajo del de la empresa: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados.`;
     case ACQ.fugaEntreEtapas:
       return `El paso de contacto a agendado está ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de los otros funnels: ${porcentaje(d.valorActual)} contra ${porcentaje(d.lineaBase)}, sobre ${numero(d.muestra)} contactos.`;
+    case ACQ.cpmAbrupto:
+      return `El costo por mil impresiones subió ${porcentaje(d.cambioPct)} contra ${anteriores(ventana)}: de ${numero(d.lineaBase)} a ${numero(d.valorActual)}, sobre ${numero(d.muestra)} impresiones.`;
+    case ACQ.cambioBruscoConjunto: {
+      const que = d.metrica === 'costo_por_contacto' ? 'El costo por contacto del conjunto' : 'El gasto del conjunto';
+      return `${que} ${(d.cambioPct ?? 0) >= 0 ? 'subió' : 'bajó'} ${porcentaje(d.cambioPct)} contra ${anteriores(ventana)}: de ${numero(d.lineaBase)} a ${numero(d.valorActual)}, sobre ${numero(d.muestra)} contactos.`;
+    }
+    case ACQ.atribucionContactos:
+    case ACQ.atribucionCitas:
+    case ACQ.atribucionVentas:
+    case ACQ.atribucionUtm:
+    case ACQ.atribucionSinCampana: {
+      const consecuencia = typeof ev.consecuencia === 'string' ? `; ${ev.consecuencia}` : '.';
+      const cuantos = Number(ev.cuantos ?? 0);
+      const sobre = Number(ev.sobre ?? 0);
+      return d.regla === ACQ.atribucionUtm
+        ? `${numero(cuantos)} de ${numero(sobre)} contactos con UTM traen algunas y no las cinco (${porcentaje(1 - (d.valorActual ?? 0))})${consecuencia}`
+        : `${String(ev.titulo ?? d.metrica)}: ${porcentaje(d.valorActual)}, ${numero(cuantos)} de ${numero(sobre)}${consecuencia}`;
+    }
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }
@@ -113,6 +131,13 @@ const NO_SE_MIDIO: Record<string, string> = {
   [ACQ.gastoSinCrecimiento]: 'el gasto contra los contactos: falta el gasto de algún día cerrado',
   [ACQ.concentracion]: 'el reparto del gasto: falta el gasto de algún día cerrado',
   [ACQ.escalaPorCalificado]: 'el costo por calificado: no hubo gasto o no hubo calificados en la ventana, o falta el gasto de algún día cerrado',
+  [ACQ.cpmAbrupto]: 'el costo por mil impresiones contra la ventana anterior: falta el gasto de algún día cerrado',
+  [ACQ.cambioBruscoConjunto]: 'los conjuntos contra la semana anterior: falta el gasto de algún día cerrado',
+  [ACQ.atribucionContactos]: 'cuántos contactos conservan el anuncio: no entró ningún contacto en la ventana',
+  [ACQ.atribucionCitas]: 'cuántas citas conservan el anuncio: no hubo citas en la ventana',
+  [ACQ.atribucionVentas]: 'cuántas ventas conservan el anuncio: no hay ventas reportadas en la ventana',
+  [ACQ.atribucionUtm]: 'las UTM incompletas: ningún contacto de la ventana trae UTM',
+  [ACQ.atribucionSinCampana]: 'cuántos contactos conservan la campaña: no entró ningún contacto en la ventana',
 };
 
 export function armarPlanDeAcquisition(p: ParaElPlan): PlanDeAcquisition {

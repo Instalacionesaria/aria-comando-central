@@ -126,7 +126,7 @@ nuevo que GoHighLevel agregue sería otra migración»*.
 
 **Los dos ceros se conservan con la presencia de la clave**, no con la existencia de una fila:
 `acciones ? 'videoView'`. Ese operador ya está en producción en cinco lugares
-(`costoDelAnuncio.ts:307,327`; `calidadDeLaAtribucion.ts:96,114,126`).
+(`costoDelAnuncio.ts:307,327`; `calidadDeLaAtribucion.ts:111,114,126`).
 
 **Tres estados, y hay que declararlos en el `comment on column`**: `null` = no se leyó; `{}` = el
 proveedor mandó el desglose vacío; clave ausente = ese tipo no ocurrió, **que no es cero**.

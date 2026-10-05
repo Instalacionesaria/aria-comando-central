@@ -431,9 +431,15 @@
   vistas en rojo: el piso en 9, el presupuesto en «Haz más de esto», dos grupos invertidos, la pausada contada,
   «sin entrega» con un día sin cerrar, la concentración sin validación ejecutiva, el plan sin ordenar, lo
   descartado en el plan y la campaña sin funnel compitiendo por el ICP.
-- **Lo que sigue**: `ACQ-CPM-ABRUPTO` y `ACQ-CAMBIO-BRUSCO-CONJUNTO` (piden impresiones y conjuntos) y el
-  monitor de atribución en días cerrados; las capacidades y las rutas; la pantalla; la redacción con el modelo
-  y su evaluación real, con OK.
+- **Segunda tanda, hecha el 2026-10-05: el resto de las reglas.** `ACQ-CPM-ABRUPTO` (piso de mil impresiones),
+  `ACQ-CAMBIO-BRUSCO-CONJUNTO` (sólo en 7 días; el contacto se ubica en su conjunto por `utmTerm`) y los cinco
+  puntos del monitor de atribución como señales de la empresa, con `calidadDeLaAtribucion` sobre los mismos
+  días cerrados que la pantalla —una ventana de calendario opcional; la pantalla sigue con la móvil—. La 221
+  suma sus casos y la 223 las señales del monitor sobre la base sembrada. Mutaciones, seis vistas en rojo: el
+  piso del costo por mil en 900, el conjunto también en 30 días, nombrar el cambio más chico, las UTM sin dar
+  vuelta, las ventas sin denominador medidas, y el monitor con la ventana móvil.
+- **Lo que sigue**: las capacidades y las rutas; la pantalla; la redacción con el modelo y su evaluación real,
+  con OK.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

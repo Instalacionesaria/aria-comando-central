@@ -79,7 +79,7 @@ landing» que sume los siete cuenta cinco cosas distintas.
 
 Y **ningún módulo de `lib/negocio/` consulta `atribucion_ultima`**: las veinte apariciones de
 `atribucion_primera|atribucion_ultima` en ese directorio son comentarios o consultas sobre la
-**primera** (`atribucionDelLead.ts:142,145`; `calidadDeLaAtribucion.ts:96-140`;
+**primera** (`atribucionDelLead.ts:142,145`; `calidadDeLaAtribucion.ts:111-155`;
 `calidadDelCreativo.ts:197,214,233,321`; `costoDelAnuncio.ts:330`). La columna existe, se puebla y
 no tiene lectores.
 

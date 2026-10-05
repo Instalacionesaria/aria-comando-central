@@ -8,7 +8,7 @@
 |---|---|
 | Tipo | MIDE (detector) |
 | Lugar en el front | Systems › Acquisition: el botón «Plan de acción» junto al selector de período y la tarjeta de Señales al final |
-| Estado | **En construcción** (AG9). Hechos: el detector con siete reglas y el plan con plantillas. Faltan `ACQ-CPM-ABRUPTO`, `ACQ-CAMBIO-BRUSCO-CONJUNTO`, el monitor, las rutas, la pantalla y la redacción |
+| Estado | **En construcción** (AG9). Hechos: el detector con todas las reglas de la tabla y el plan con plantillas. Faltan las rutas, la pantalla y la redacción |
 | Modelo | Ninguno para detectar. `claude-sonnet-5-5` para **redactar** el plan, si hay llave |
 | Permisos | Leer: `tablero.ver`. Marcar vista, resolver y descartar: `senales.resolver`. Las de validación ejecutiva: `senales.validar`. Firmar un umbral: `umbrales.firmar` |
 | Código | `lib/agentes/detectores/acquisition.ts` (medir y detectar), `lib/agentes/detectores/detector-de-acquisition.ts` (lo que corre la pasada), `lib/agentes/plan/acquisition.ts`; faltan `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts` |
@@ -18,7 +18,9 @@
 `lecturaDeAcquisition` —la lectura de `embudosDeAcquisition`, con las cifras crudas de cada campaña en las dos
 ventanas— sobre **7 y 30 días cerrados** contra su ventana anterior: la misma función, los mismos días cerrados
 y la misma edad de los agendados que la pantalla. Además, el último día con entrega de cada campaña en los
-últimos 60 días cerrados. Faltan las métricas por conjunto y la atribución para el monitor. Detectar es puro
+últimos 60 días cerrados; el gasto y las impresiones por campaña, y el gasto y los contactos por conjunto (el
+contacto, por su `utmTerm`), en las mismas dos ventanas; y `calidadDeLaAtribucion` sobre los mismos días
+cerrados, con una ventana de calendario que la pantalla no usa (ella sigue con la móvil). Detectar es puro
 (`detectarEnAcquisition`): recibe lo medido y los umbrales, y devuelve detecciones, lo que quedó bajo el piso y
 las reglas que no se pudieron medir. Una regla que necesita lo que la pantalla no tiene —un día sin cerrar
 (`faltan_dias`), el gasto incompleto (`sinCostos`)— no se publica: va a «sin medición».
@@ -35,11 +37,11 @@ del criterio, no de una serie larga, y el Admin los firma.
 | `ACQ-CPM-ABRUPTO` | El CPM sube contra la ventana anterior | +40 % | 1.000 impresiones en las dos | media | campaña | Lo que dice la data |
 | `ACQ-GASTO-SIN-CRECIMIENTO` | El gasto sube y los contactos no | gasto +25 % y contactos sin subir | 10 contactos en la anterior | media | empresa o campaña | Ajusta o pausa esto |
 | `ACQ-CONCENTRACION` | Una campaña se lleva casi todo el gasto | 60 % o más, con 3 o más campañas con gasto | no es una tasa | media | campaña | **Requiere validación ejecutiva** |
-| `ACQ-CAMBIO-BRUSCO-CONJUNTO` | Un conjunto cambia de golpe su gasto o su costo por contacto | ±50 % en 7 días cerrados | 10 contactos | media | conjunto | Lo que dice la data |
+| `ACQ-CAMBIO-BRUSCO-CONJUNTO` | Un conjunto cambia de golpe su gasto o su costo por contacto; se nombra el cambio más grande de los dos. Sólo en la ventana de 7 días | ±50 % en 7 días cerrados | 10 contactos | media | conjunto | Lo que dice la data |
 | `ACQ-ICP-ENTRE-CAMPANAS` | La afinidad con el ICP de una campaña está muy por debajo de su funnel | 15 puntos bajo el promedio | 10 calificados | media | campaña | Ajusta o pausa esto |
 | `ACQ-ESCALA-POR-CALIFICADO` | Una campaña consigue calificados mucho más baratos que el resto | costo por calificado ≤ 0,8 × el de la empresa en la ventana | 10 calificados | info | campaña | **Requiere validación ejecutiva** (escalar es presupuesto) |
 | `ACQ-FUGA-ENTRE-ETAPAS` | Un par de etapas contiguas pierde mucha más gente que el mismo par en los otros funnels | 15 puntos bajo | 10 en la etapa de origen | media | par de etapas | Lo que dice la data, o Para otras áreas si la etapa es de otro |
-| `ACQ-ATRIBUCION-*` | Los cinco puntos del monitor (abajo) | cobertura bajo 0,90 (`COBERTURA_SUFICIENTE`, `lib/negocio/calidadDeLaAtribucion.ts:80`) | 10 en el denominador de cada punto | media | empresa | Lo que dice la data |
+| `ACQ-ATRIBUCION-*` | Los cinco puntos del monitor (abajo), con su cifra y lo que deja de valer por ella. Las UTM cuentan lo roto: su cobertura es lo que queda entero. Un punto sin denominador —hoy, las ventas— no se mide | cobertura bajo 0,90 (`COBERTURA_SUFICIENTE`, `lib/negocio/calidadDeLaAtribucion.ts:80`) | 10 en el denominador de cada punto | media | empresa | Lo que dice la data |
 
 Valores relativos y no en moneda a propósito: el `$110` del prototipo no declaraba su moneda
 (`docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:551-580`).
@@ -121,8 +123,9 @@ Las de A7-20: «¿Qué campaña escalo?», «¿Cuál trae el ICP que cierra?», 
 
 ## Pruebas y evaluación
 
-221 (el detector es puro), 222 (el plan) y 223 (sobre la base sembrada: en 7 días, sólo la crítica de «sin
-entrega»; en 30, además, la concentración de Webinar y la fuga de Remarketing); F03 en `07`, `AG-102`.
+221 (el detector es puro), 222 (el plan) y 223 (sobre la base sembrada: en 7 días, la crítica de «sin
+entrega» y el monitor —la mitad de los contactos sin anuncio, las UTM siempre incompletas—; en 30, además, la
+concentración de Webinar y la fuga de Remarketing; las ventas, sin medir); F03 en `07`, `AG-102`.
 
 ## Contratos que cumple
 

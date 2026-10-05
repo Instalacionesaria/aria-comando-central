@@ -120,10 +120,11 @@ orden (`Cuerpo`, `:205-216`):
 (`:109`). El reloj recarga sólo con la pestaña a la vista (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 87-89)). El
 costo usa **días de calendario terminando hoy** (`lib/negocio/costoDelAnuncio.ts:34-65`: el gasto
 por `:82-84`, y los leads y la cobertura con su propia copia, `:346` y `:368`); el monitor usa
-**ventanas móviles de 24 horas** (`lib/negocio/calidadDeLaAtribucion.ts:116`, `:130`, `:142`) —ver
+**ventanas móviles de 24 horas** en la pantalla (`lib/negocio/calidadDeLaAtribucion.ts:103-107`, `:131`, `:145`, `:157`);
+el detector de Acquisition le pasa los días cerrados de la pantalla (AG9) —ver
 § 7, riesgo 2—. El piso es `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`): la
 tasa de agenda es nula por debajo (`costoDelAnuncio.ts:213`) y también las proporciones del monitor
-(`calidadDeLaAtribucion.ts:246`); el CPL se publica con un solo lead, a propósito
+(`calidadDeLaAtribucion.ts:261`); el CPL se publica con un solo lead, a propósito
 (`costoDelAnuncio.ts:139-148`). El umbral que declara una cobertura incompleta es
 `COBERTURA_SUFICIENTE = 0.9`, **elegido sin medir contra nada** y así dicho
 (`calidadDeLaAtribucion.ts:73-80`).
@@ -141,7 +142,7 @@ produce sobre esos datos, no lo que se vio:
   **39 % · 82 de 210**; ventas **— · 0 de 0**; contactos que conservan la campaña **90,6 % · 251 de
   277** (sin consecuencia, pasa el 0,9); sesiones con UTM incompletas **100 % · 264 de 264**. El
   aviso grave elegido es el de UTM: «`utmCampaign` no llega en NINGUNA de las 264 sesiones»
-  (`calidadDeLaAtribucion.ts:224-236`, `:284-298`).
+  (`calidadDeLaAtribucion.ts:239-251`, `:299-313`).
 - **Tabla**: 79 filas, 26 con gasto, **4 con tasa de agenda** (leads ≥ 10). Las cinco primeras, sin
   nombre: 564,22 de gasto · CPM 6,94 · CTR 2,36 % · 109 leads · CPL 5,18 · 44 % (48/109); 554,05 ·
   0 leads; 313,70 · 44 leads · CPL 7,13 · 45,5 %; 167,97 · 0 leads; 162,38 · 17 leads · CPL 9,55 ·
@@ -285,7 +286,7 @@ no es un único valor. 6 de los 10 cruzan con un `meta_conjunto_id` de la dimens
 
 **Primer y último toque.** `atribucion_ultima` trae `adId` en 87 de 594; un solo contacto cambió de
 anuncio entre los dos toques. Para Acquisition manda `atribucion_primera`, y es la que leen
-`costoDelAnuncio.ts:331` y `calidadDeLaAtribucion.ts:96`.
+`costoDelAnuncio.ts:331` y `calidadDeLaAtribucion.ts:111`.
 
 **Del 2026-09-15, no re-medidos**: los campos del CRM resueltos por nombre («Puntaje | ICP» 229 de
 233, «Last Landing URL» 99, siete campos del catálogo en cero, cuatro de ellos de video) y las once
@@ -325,7 +326,7 @@ fondo**: cuánto tarda esta cuenta en estabilizar sus cifras está declarado sin
 (`recolectarAnuncios.ts:33-40`), con `sincronizado_el` guardado para poder medirlo.
 
 **7 · La diferencia entre leads de Meta y de la base (§ 18.14).** Fuera de alcance y dibujada así
-(`calidadDeLaAtribucion.ts:200-206`): el `leads` del proveedor es nuestro conteo, 16 de 16 el
+(`calidadDeLaAtribucion.ts:215-221`): el `leads` del proveedor es nuestro conteo, 16 de 16 el
 2026-09-16 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:210-223`), y `results.lead` suma dos
 mecanismos de conteo que no se pueden separar (`741f27d`, 64 filas, 2026-09-19).
 
@@ -374,7 +375,7 @@ y los leads con `now()` dividía 31 días entre 30 (`costoDelAnuncio.ts:34-65`).
 declarada: acá «Hoy» es el día de calendario (`:61-63`). La excepción no alcanzó al monitor.
 
 **6 · La cohorte se arma con `alta_en_el_crm`**, no con `creado_el` (`costoDelAnuncio.ts:346`,
-`calidadDeLaAtribucion.ts:116`), con el índice que la 052 agregó para eso
+`calidadDeLaAtribucion.ts:131`), con el índice que la 052 agregó para eso
 (`db/migraciones/052_el_indice_que_la_048_dejo_debiendo.sql:1-20`).
 
 **7 · La fila «sin anuncio» se cuenta pero no compite.** Hoy se cumple por omisión: la tabla no
@@ -396,7 +397,7 @@ cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnunc
 `:445-496`).
 
 **12 · El punto invertido se marca**, o una barra llena diría «bien» en cuatro filas y «mal» en una
-(`calidadDeLaAtribucion.ts:184-194`, `PanelDeAcquisition.jsx` (en `4365cc9`, líneas 285-296)).
+(`calidadDeLaAtribucion.ts:199-209`, `PanelDeAcquisition.jsx` (en `4365cc9`, líneas 285-296)).
 
 **13 · Se ordena por gasto, no por CPL, y no se calcula revenue, CAC ni ROAS.** El CPL solo es la
 acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 326-339)).
@@ -418,7 +419,7 @@ la pantalla dice «no hay gasto desde el 13».
 **2 · «Hoy» son dos ventanas en la misma pantalla.** El botón lleva el matiz «Las últimas 24 horas,
 no el día del calendario» (`lib/negocio/periodo.ts:84`, puesto como `title` en
 `PanelDeAcquisition.jsx` (en `4365cc9`, línea 133)); el costo usa el día de calendario (`costoDelAnuncio.ts:61-63`) y el
-monitor 24 horas móviles (`calidadDeLaAtribucion.ts:116`). La ruta afirma que las dos cifras reciben
+monitor 24 horas móviles (`calidadDeLaAtribucion.ts:131`). La ruta afirma que las dos cifras reciben
 «LA MISMA ventana» (`app/api/acquisition/route.ts` (en `4365cc9`, líneas 24-25)): reciben los mismos días, no el mismo
 ancla. Medido a 30 días el 2026-09-28: **276 contactos en el aviso del costo y 277 en el monitor**,
 en la misma pantalla. Y `periodo.ts:76-77` sigue diciendo que todas las ventanas del sistema son

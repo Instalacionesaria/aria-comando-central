@@ -12,12 +12,15 @@
 //   · lo que la pantalla no puede medir —un día sin cerrar, el gasto incompleto— no se publica: va a
 //     «sin medición» (AG-35, la falsa «sin entrega» de cada mañana);
 //   · «sin entrega» es un estado: crítica si ninguna campaña activa entrega, alta por campaña si alguna sí, y
-//     una pausada no cuenta.
+//     una pausada no cuenta;
+//   · el costo por mil con su piso de mil impresiones; el conjunto sólo en 7 días, nombrando el cambio más
+//     grande; y el monitor de atribución, con su cobertura bajo 0,9 y su denominador.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACQ, detectarEnAcquisition, type MedidaDeAcquisition } from '../../lib/agentes/detectores/acquisition.ts';
+import type { PuntoDeAtribucion } from '../../lib/negocio/calidadDeLaAtribucion.ts';
 import { CATALOGO_DE_REGLAS, umbralVigente } from '../../lib/agentes/senales/umbrales.ts';
 import {
   armarEmbudos,
@@ -44,6 +47,11 @@ function medida(e: {
   entrega?: [string, number][];
   sinComparacion?: SinComparacion | null;
   sinCostos?: SinCostos | null;
+  ventana?: '7d' | '30d';
+  impresiones?: [string, { gasto: number; impresiones: number; gastoAntes: number; impresionesAntes: number }][];
+  conjuntos?: [string, { gasto: number; contactos: number; gastoAntes: number; contactosAntes: number }][];
+  /** Los puntos del monitor. Por omisión, todos con la cobertura entera: no publican nada. */
+  puntos?: Partial<Record<PuntoDeAtribucion['clave'], [number, number]>>;
 }): MedidaDeAcquisition {
   const actual = new Map(e.actual.map(([id, c]) => [id, cifras(c)]));
   const previa = e.previa === null ? null : new Map((e.previa ?? []).map(([id, c]) => [id, cifras(c)]));
@@ -57,12 +65,25 @@ function medida(e: {
     cobertura: { conCampana: 0, sobre: 0 },
     sinCostos: e.sinCostos ?? null,
   });
+  const claves: PuntoDeAtribucion['clave'][] = ['leads_con_anuncio', 'citas_con_anuncio', 'ventas_con_anuncio', 'utm_incompletas', 'sin_campana'];
   return {
-    ventana: '30d',
+    ventana: e.ventana ?? '30d',
     embudos,
     actual,
     previa,
     entrega: new Map((e.entrega ?? []).map(([id, dias]) => [id, { diasSinEntregar: dias, ultimaEntrega: '2026-09-19' }])),
+    impresiones: previa ? new Map(e.impresiones ?? []) : null,
+    conjuntos: previa && (e.ventana ?? '30d') === '7d' ? new Map(e.conjuntos ?? []) : null,
+    atribucion: {
+      dias: 30,
+      puntos: claves.map((clave) => {
+        // UTM cuenta lo roto: por omisión, ninguna incompleta.
+        const [cuantos, sobre] = e.puntos?.[clave] ?? (clave === 'utm_incompletas' ? [0, 100] : [100, 100]);
+        return { clave, titulo: `Título de ${clave}`, cuantos, sobre, proporcion: null, consecuencia: `consecuencia de ${clave}` };
+      }),
+      fueraDeAlcance: [],
+      aviso: null,
+    },
   };
 }
 
@@ -140,7 +161,7 @@ test('lo que la pantalla no puede medir no se publica: va a «sin medición»', 
   assert.deepEqual(sinCerrar.detecciones, []);
   assert.deepEqual(
     [...sinCerrar.sinMedicion].sort(),
-    [ACQ.concentracion, ACQ.cplSostenido, ACQ.escalaPorCalificado, ACQ.gastoSinCrecimiento, ACQ.sinEntrega].sort(),
+    [ACQ.concentracion, ACQ.cplSostenido, ACQ.cpmAbrupto, ACQ.escalaPorCalificado, ACQ.gastoSinCrecimiento, ACQ.sinEntrega].sort(),
   );
   // Con los días cerrados al día, la misma campaña parada sí es una señal.
   assert.deepEqual(de(detectar(medida(base)), ACQ.sinEntrega).map((d) => [d.entidad.tipo, d.gravedad]), [['empresa', 'critica']]);
@@ -177,4 +198,65 @@ test('la fuga entre contacto y agendado se mide contra los otros funnels, con su
   const chico = detectar(medida({ campanas, actual: [['50', { contactos: 20, agendados: 12 }], ['51', { contactos: 20, agendados: 11 }], ['52', { contactos: 9, agendados: 0 }]], previa: [] }));
   assert.deepEqual(de(chico, ACQ.fugaEntreEtapas), []);
   assert.deepEqual(chico.debajoDelPiso.map((x) => [x.regla, x.muestra]), [[ACQ.fugaEntreEtapas, 9]]);
+});
+
+test('el costo por mil sube contra la anterior, con su piso de mil impresiones', () => {
+  const r = detectar(
+    medida({
+      campanas: [campana('60', 'leadform'), campana('61', 'leadform')],
+      actual: [],
+      previa: [],
+      impresiones: [
+        // 60: de 10 a 15 por mil (+50 %), sobre 2.000 impresiones. 61: igual, sobre 900.
+        ['60', { gasto: 30, impresiones: 2000, gastoAntes: 20, impresionesAntes: 2000 }],
+        ['61', { gasto: 13.5, impresiones: 900, gastoAntes: 9, impresionesAntes: 900 }],
+      ],
+    }),
+  );
+  assert.deepEqual(de(r, ACQ.cpmAbrupto).map((d) => [d.entidad.id, d.lineaBase, d.valorActual, d.muestra]), [['60', 10, 15, 2000]]);
+  assert.deepEqual(r.debajoDelPiso.map((x) => [x.regla, x.entidad.id, x.muestra]), [[ACQ.cpmAbrupto, '61', 900]]);
+});
+
+test('el conjunto se mira sólo en 7 días, y se nombra el cambio más grande', () => {
+  const conjuntos: [string, { gasto: number; contactos: number; gastoAntes: number; contactosAntes: number }][] = [
+    // 70: el gasto sube 60 % y el costo por contacto baja 20 %: manda el gasto.
+    ['70', { gasto: 160, contactos: 20, gastoAntes: 100, contactosAntes: 10 }],
+    // 71: el gasto igual y el costo por contacto se duplica (+100 %): manda el costo.
+    ['71', { gasto: 100, contactos: 10, gastoAntes: 100, contactosAntes: 20 }],
+    // 72: el gasto se triplica, con 9 contactos: bajo el piso.
+    ['72', { gasto: 300, contactos: 9, gastoAntes: 100, contactosAntes: 10 }],
+  ];
+  const r = detectar(medida({ ventana: '7d', campanas: [], actual: [], previa: [], conjuntos }));
+  assert.deepEqual(de(r, ACQ.cambioBruscoConjunto).map((d) => [d.entidad.id, d.metrica, d.cambioPct]), [
+    ['70', 'inversion', 0.6],
+    ['71', 'costo_por_contacto', 1],
+  ]);
+  assert.deepEqual(r.debajoDelPiso.map((x) => [x.entidad.id, x.muestra]), [['72', 9]]);
+  // En 30 días la regla no se mira: ni señales ni «sin medición».
+  const en30 = detectar(medida({ campanas: [], actual: [], previa: [], conjuntos }));
+  assert.deepEqual(de(en30, ACQ.cambioBruscoConjunto), []);
+  assert.ok(!en30.sinMedicion.includes(ACQ.cambioBruscoConjunto));
+});
+
+test('el monitor publica la cobertura bajo 0,9 con su denominador; sin denominador, no se mide', () => {
+  const r = detectar(
+    medida({
+      campanas: [],
+      actual: [],
+      previa: [],
+      puntos: {
+        leads_con_anuncio: [80, 100], // 0,8: señal.
+        citas_con_anuncio: [5, 9], // bajo el piso.
+        ventas_con_anuncio: [0, 0], // ninguna venta: no se mide.
+        utm_incompletas: [20, 100], // 20 rotas de 100: cobertura 0,8, señal.
+        sin_campana: [95, 100], // 0,95: nada.
+      },
+    }),
+  );
+  assert.deepEqual(
+    r.detecciones.filter((d) => d.regla.startsWith('ACQ-ATRIBUCION')).map((d) => [d.regla, d.entidad.tipo, d.valorActual, d.muestra]),
+    [[ACQ.atribucionContactos, 'empresa', 0.8, 100], [ACQ.atribucionUtm, 'empresa', 0.8, 100]],
+  );
+  assert.deepEqual(r.debajoDelPiso.map((x) => [x.regla, x.muestra]), [[ACQ.atribucionCitas, 9]]);
+  assert.ok(r.sinMedicion.includes(ACQ.atribucionVentas));
 });

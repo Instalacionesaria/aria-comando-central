@@ -532,7 +532,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
   (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes.
 - **El monitor de atribución cuenta una clave que nadie trae.** Las cinco UTM incluyen `utmCampaign`
-  (`lib/negocio/calidadDeLaAtribucion.ts:89`, usadas en `lib/negocio/calidadDeLaAtribucion.ts:101-114`),
+  (`lib/negocio/calidadDeLaAtribucion.ts:89`, usadas en `lib/negocio/calidadDeLaAtribucion.ts:116-129`),
   que está en **0 de 594** contactos; GoHighLevel manda `campaign` (272 en el primer toque, 22:11 UTC)
   y la atribución ya lo usa (`lib/negocio/atribucionDelLead.ts:97`). Como el `?&` de las cinco no se
   cumple nunca, todo contacto con alguna UTM cuenta como incompleto; según

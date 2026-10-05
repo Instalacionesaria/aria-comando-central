@@ -88,7 +88,22 @@ export const COBERTURA_SUFICIENTE = 0.9;
  */
 export const LAS_CINCO_UTM = ['utmSource', 'utmMedium', 'utmCampaign', 'utmContent', 'utmTerm'] as const;
 
-export async function calidadDeLaAtribucion(dias = DIAS_DE_LA_TASA): Promise<CalidadDeLaAtribucion> {
+/**
+ * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` desde
+ *   ahora. Es la ventana del detector de Acquisition (`lib/agentes/detectores/acquisition.ts`): los mismos días
+ *   cerrados que `embudosDeAcquisition`, para que ninguna pantalla mezcle dos «7 días» (F03, A11-06). La
+ *   pantalla sigue con la ventana móvil.
+ */
+export async function calidadDeLaAtribucion(
+  dias = DIAS_DE_LA_TASA,
+  ventana: { desde: string; hasta: string } | null = null,
+): Promise<CalidadDeLaAtribucion> {
+  /* La misma regla que `embudosDeAcquisition` para un día de calendario: desde la medianoche de `desde`
+     hasta antes de la de `hasta + 1`. */
+  const en = (columna: string) =>
+    ventana === null
+      ? sql<boolean>`${sql.ref(columna)} >= now() - make_interval(days => ${dias})`
+      : sql<boolean>`${sql.ref(columna)} >= ${ventana.desde}::date and ${sql.ref(columna)} < (${ventana.hasta}::date + 1)`;
   const filas = await datos()
     .selectFrom('contactos as c')
     .select([
@@ -113,7 +128,7 @@ export async function calidadDeLaAtribucion(dias = DIAS_DE_LA_TASA): Promise<Cal
          razón de que NINGUNA sesión tenga las cinco, y sin este desglose no se puede ver. */
       ...LAS_CINCO_UTM.map((k) => sql<number>`count(*) filter (where c.atribucion_primera ? ${k})`.as(k)),
     ])
-    .where(sql<boolean>`c.alta_en_el_crm >= now() - make_interval(days => ${dias})`)
+    .where(en('c.alta_en_el_crm'))
     .executeTakeFirst();
 
   const citas = await datos()
@@ -127,7 +142,7 @@ export async function calidadDeLaAtribucion(dias = DIAS_DE_LA_TASA): Promise<Cal
     ])
     /* Por `inicio_el` y no por `alta_en_el_crm`: una cita se ubica por CUÁNDO ES, que es la misma
        regla que `atribucionDelLead` aplica al historial de la ficha. */
-    .where(sql<boolean>`ci.inicio_el >= now() - make_interval(days => ${dias})`)
+    .where(en('ci.inicio_el'))
     .executeTakeFirst();
 
   const ventas = await datos()
@@ -139,7 +154,7 @@ export async function calidadDeLaAtribucion(dias = DIAS_DE_LA_TASA): Promise<Cal
       sql<number>`count(*)`.as('ventas'),
       sql<number>`count(*) filter (where c.atribucion_primera ? 'adId')`.as('con_anuncio'),
     ])
-    .where(sql<boolean>`r.creado_el >= now() - make_interval(days => ${dias})`)
+    .where(en('r.creado_el'))
     /* `salida = 'venta'` y no una columna booleana: el vocabulario de `resultados` lo fija el
        `check` de la migración 011, y es el mismo corte que usa `comision.ts` para contar ventas.
        Dos formas distintas de contar la misma cosa es cómo dos pantallas terminan discrepando. */

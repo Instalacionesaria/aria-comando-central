@@ -16,17 +16,18 @@
 // UTC, cuyo día todavía no se recolectó (AG-35): con el colector atrasado o un día sin cerrar, la pantalla
 // dice `faltan_dias`, y ninguna regla de gasto se publica.
 //
-// ── LO QUE TODAVÍA NO ESTÁ ───────────────────────────────────────────────────
+// ── LO QUE LA PANTALLA NO TRAE ───────────────────────────────────────────────
 //
-// `ACQ-CPM-ABRUPTO` y `ACQ-CAMBIO-BRUSCO-CONJUNTO` necesitan impresiones y conjuntos, que la lectura de la
-// pantalla no trae; el monitor de atribución necesita su versión en días cerrados. Llegan en la segunda
-// tanda de AG9 (`08`).
+// El costo por mil impresiones y el cambio brusco por conjunto piden impresiones y conjuntos, que la lectura
+// de la pantalla no necesita: se leen aparte, sobre las MISMAS dos ventanas que eligió la pantalla. El
+// monitor de atribución se lee con `calidadDeLaAtribucion` sobre los mismos días cerrados (F03, A11-06).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
 import { FUNNELS, type Funnel } from '../../negocio/funnelDeLaCampana.ts';
 import { lecturaDeAcquisition, type Cifras, type EmbudosDeAcquisition } from '../../negocio/embudosDeAcquisition.ts';
+import { calidadDeLaAtribucion, type CalidadDeLaAtribucion, type PuntoDeAtribucion } from '../../negocio/calidadDeLaAtribucion.ts';
 import { PISO_DE_UNA_SENAL, type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
 
@@ -41,7 +42,26 @@ export const ACQ = {
   icpEntreCampanas: 'ACQ-ICP-ENTRE-CAMPANAS',
   escalaPorCalificado: 'ACQ-ESCALA-POR-CALIFICADO',
   fugaEntreEtapas: 'ACQ-FUGA-ENTRE-ETAPAS',
+  cpmAbrupto: 'ACQ-CPM-ABRUPTO',
+  cambioBruscoConjunto: 'ACQ-CAMBIO-BRUSCO-CONJUNTO',
+  atribucionContactos: 'ACQ-ATRIBUCION-CONTACTOS',
+  atribucionCitas: 'ACQ-ATRIBUCION-CITAS',
+  atribucionVentas: 'ACQ-ATRIBUCION-VENTAS',
+  atribucionUtm: 'ACQ-ATRIBUCION-UTM',
+  atribucionSinCampana: 'ACQ-ATRIBUCION-SIN-CAMPANA',
 } as const;
+
+/** El piso del costo por mil: mil impresiones en cada ventana. Un CPM sobre menos es ruido de la subasta. */
+export const PISO_DE_IMPRESIONES = 1000;
+
+/** Los puntos del monitor que publican señal, con su regla y su denominador. */
+const PUNTOS_DEL_MONITOR: readonly { clave: PuntoDeAtribucion['clave']; regla: string; denominador: string }[] = [
+  { clave: 'leads_con_anuncio', regla: ACQ.atribucionContactos, denominador: 'contactos' },
+  { clave: 'citas_con_anuncio', regla: ACQ.atribucionCitas, denominador: 'citas' },
+  { clave: 'ventas_con_anuncio', regla: ACQ.atribucionVentas, denominador: 'ventas reportadas' },
+  { clave: 'utm_incompletas', regla: ACQ.atribucionUtm, denominador: 'contactos con alguna UTM' },
+  { clave: 'sin_campana', regla: ACQ.atribucionSinCampana, denominador: 'contactos' },
+];
 
 /**
  * Las reglas de Acquisition, con su valor provisional (`D-11`). Los porqués son los de la ficha `F03`: salen
@@ -105,6 +125,30 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     gravedad: 'media',
     porque: 'Quince puntos menos de paso de contacto a agendado que en los otros funnels, con 10 en la etapa de origen, es una fuga del funnel y no del mercado.',
   },
+  {
+    codigo: ACQ.cpmAbrupto,
+    departamento: 'acquisition',
+    valor: 0.4,
+    denominador: 'impresiones',
+    gravedad: 'media',
+    porque: 'Un 40 % más por mil impresiones contra la ventana anterior, con mil en las dos, es la subasta o la audiencia cambiando y no el ruido de un día.',
+  },
+  {
+    codigo: ACQ.cambioBruscoConjunto,
+    departamento: 'acquisition',
+    valor: 0.5,
+    denominador: 'contactos',
+    gravedad: 'media',
+    porque: 'La mitad más o menos de gasto o de costo por contacto en una semana, con 10 contactos en las dos, es un cambio de configuración o de aprendizaje, no una tendencia.',
+  },
+  ...PUNTOS_DEL_MONITOR.map((p) => ({
+    codigo: p.regla,
+    departamento: 'acquisition' as const,
+    valor: 0.9,
+    denominador: p.denominador,
+    gravedad: 'media' as const,
+    porque: 'Es `COBERTURA_SUFICIENTE` del monitor: una atribución que pierde más de uno de cada diez ya no permite decir «este anuncio trae más».',
+  })),
 ];
 
 // ─── Lo medido ──────────────────────────────────────────────────────────────
@@ -123,6 +167,12 @@ export interface MedidaDeAcquisition {
    * entrega. Es igual en las dos ventanas: no entregar es un estado, no una comparación.
    */
   entrega: ReadonlyMap<string, { diasSinEntregar: number; ultimaEntrega: string }>;
+  /** Gasto e impresiones de cada campaña en las dos ventanas. `null` sin ventana anterior. */
+  impresiones: ReadonlyMap<string, { gasto: number; impresiones: number; gastoAntes: number; impresionesAntes: number }> | null;
+  /** Gasto y contactos de cada conjunto en las dos ventanas. Sólo en 7 días (la regla es semanal) y con anterior. */
+  conjuntos: ReadonlyMap<string, { gasto: number; contactos: number; gastoAntes: number; contactosAntes: number }> | null;
+  /** El monitor de atribución sobre los mismos días cerrados. */
+  atribucion: CalidadDeLaAtribucion;
 }
 
 /** Corre dentro de `conOrganizacion`. */
@@ -140,7 +190,70 @@ export async function medirAcquisition(ventana: VentanaDeSenal, zona: string): P
        and a.meta_campana_id is not null
        and coalesce(m.impresiones, 0) > 0
      group by 1`.execute(datos());
-  return { ventana, embudos, actual, previa, entrega: entregaDe(filas.rows, hasta) };
+  const anterior = embudos.anterior;
+  return {
+    ventana,
+    embudos,
+    actual,
+    previa,
+    entrega: entregaDe(filas.rows, hasta),
+    impresiones: anterior === null ? null : await impresionesPorCampana(embudos.ventana, anterior),
+    conjuntos: anterior === null || ventana !== '7d' ? null : await cifrasPorConjunto(embudos.ventana, anterior),
+    atribucion: await calidadDeLaAtribucion(dias, embudos.ventana),
+  };
+}
+
+type Ventana = { desde: string; hasta: string };
+const n = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
+
+/** El gasto y las impresiones de cada campaña en las dos ventanas, sumados como en `cifrasPorCampana`. */
+async function impresionesPorCampana(v: Ventana, a: Ventana) {
+  const r = await sql<{ campana: string; gasto: string | null; impresiones: string | null; gasto_antes: string | null; impresiones_antes: string | null }>`
+    select a.meta_campana_id as campana,
+           sum(m.gasto) filter (where m.fecha between ${v.desde}::date and ${v.hasta}::date) as gasto,
+           sum(m.impresiones) filter (where m.fecha between ${v.desde}::date and ${v.hasta}::date) as impresiones,
+           sum(m.gasto) filter (where m.fecha between ${a.desde}::date and ${a.hasta}::date) as gasto_antes,
+           sum(m.impresiones) filter (where m.fecha between ${a.desde}::date and ${a.hasta}::date) as impresiones_antes
+      from negocio.metricas_de_anuncio m
+      join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
+     where m.fecha between ${a.desde}::date and ${v.hasta}::date
+       and a.meta_campana_id is not null
+     group by 1`.execute(datos());
+  return new Map(
+    r.rows.map((f) => [f.campana, { gasto: n(f.gasto), impresiones: n(f.impresiones), gastoAntes: n(f.gasto_antes), impresionesAntes: n(f.impresiones_antes) }]),
+  );
+}
+
+/**
+ * El gasto y los contactos de cada conjunto en las dos ventanas. El contacto se ubica en su conjunto por
+ * `utmTerm`, que es el identificador del conjunto (la `050` lo dice con su nombre verdadero), y en su día de
+ * alta, con la misma regla de días de calendario que la pantalla.
+ */
+async function cifrasPorConjunto(v: Ventana, a: Ventana) {
+  const r = await sql<{ conjunto: string; gasto: string | null; gasto_antes: string | null; contactos: string | null; contactos_antes: string | null }>`
+    with gasto as (
+      select an.meta_conjunto_id as conjunto,
+             sum(m.gasto) filter (where m.fecha between ${v.desde}::date and ${v.hasta}::date) as gasto,
+             sum(m.gasto) filter (where m.fecha between ${a.desde}::date and ${a.hasta}::date) as gasto_antes
+        from negocio.metricas_de_anuncio m
+        join negocio.anuncios an on an.org_id = m.org_id and an.meta_anuncio_id = m.meta_anuncio_id
+       where m.fecha between ${a.desde}::date and ${v.hasta}::date
+         and an.meta_conjunto_id is not null
+       group by 1
+    ), gente as (
+      select c.atribucion_primera->>'utmTerm' as conjunto,
+             count(*) filter (where c.alta_en_el_crm >= ${v.desde}::date and c.alta_en_el_crm < (${v.hasta}::date + 1)) as contactos,
+             count(*) filter (where c.alta_en_el_crm >= ${a.desde}::date and c.alta_en_el_crm < (${a.hasta}::date + 1)) as contactos_antes
+        from negocio.contactos c
+       where c.alta_en_el_crm >= ${a.desde}::date and c.alta_en_el_crm < (${v.hasta}::date + 1)
+         and c.atribucion_primera ? 'utmTerm'
+       group by 1
+    )
+    select conjunto, g.gasto, g.gasto_antes, p.contactos, p.contactos_antes
+      from gasto g full join gente p using (conjunto)`.execute(datos());
+  return new Map(
+    r.rows.map((f) => [f.conjunto, { gasto: n(f.gasto), contactos: n(f.contactos), gastoAntes: n(f.gasto_antes), contactosAntes: n(f.contactos_antes) }]),
+  );
 }
 
 /** Puro: los días seguidos sin entregar hasta `hasta`, a partir del último día con entrega. */
@@ -458,6 +571,114 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         evidencia: { ventana: m.ventana, periodo, funnel: f, propio, otros },
       });
     }
+  }
+
+  // ── El costo por mil impresiones sube contra la anterior ──
+  if (!comparable || !conCostos || m.impresiones === null) {
+    salida.sinMedicion.push(ACQ.cpmAbrupto);
+  } else {
+    const u = umbral(ACQ.cpmAbrupto);
+    for (const [campana, x] of m.impresiones) {
+      if (x.gasto <= 0 || x.gastoAntes <= 0 || x.impresiones <= 0 || x.impresionesAntes <= 0) continue;
+      const cpm = (x.gasto / x.impresiones) * 1000;
+      const cpmAntes = (x.gastoAntes / x.impresionesAntes) * 1000;
+      const cambio = cpm / cpmAntes - 1;
+      if (cambio < u.valor) continue;
+      const muestra = Math.min(x.impresiones, x.impresionesAntes);
+      if (muestra < PISO_DE_IMPRESIONES) {
+        salida.debajoDelPiso.push({ regla: ACQ.cpmAbrupto, entidad: { tipo: 'campana', id: campana }, muestra });
+        continue;
+      }
+      salida.detecciones.push({
+        ...base,
+        regla: ACQ.cpmAbrupto,
+        entidad: { tipo: 'campana', id: campana },
+        metrica: 'cpm',
+        lineaBase: redondear(cpmAntes),
+        valorActual: redondear(cpm),
+        cambioPct: redondear(cambio, 4),
+        muestra,
+        gravedad: 'media',
+        revisionRecomendada: 'Revisa la audiencia y la competencia en la subasta de esta campaña.',
+        causasPosibles: ['puede deberse a más competencia en la subasta', 'puede deberse a una audiencia más chica o más cara'],
+        perdidaContactos: null,
+        umbral: u,
+        evidencia: { ventana: m.ventana, periodo, anterior, campana, ...x },
+      });
+    }
+  }
+
+  // ── Un conjunto cambia de golpe su gasto o su costo por contacto (sólo en 7 días) ──
+  if (m.ventana === '7d') {
+    if (!comparable || !conCostos || m.conjuntos === null) {
+      salida.sinMedicion.push(ACQ.cambioBruscoConjunto);
+    } else {
+      const u = umbral(ACQ.cambioBruscoConjunto);
+      for (const [conjunto, x] of m.conjuntos) {
+        if (x.gastoAntes <= 0 || x.gasto <= 0) continue;
+        const delGasto = x.gasto / x.gastoAntes - 1;
+        const delCosto = x.contactos > 0 && x.contactosAntes > 0 ? x.gasto / x.contactos / (x.gastoAntes / x.contactosAntes) - 1 : null;
+        // El cambio que manda es el más grande de los dos: es el que se nombra.
+        const porCosto = delCosto !== null && Math.abs(delCosto) > Math.abs(delGasto);
+        const cambio = porCosto ? delCosto! : delGasto;
+        if (Math.abs(cambio) < u.valor) continue;
+        const entidad = { tipo: 'conjunto' as const, id: conjunto };
+        const muestra = Math.min(x.contactos, x.contactosAntes);
+        if (muestra < PISO_DE_UNA_SENAL) {
+          salida.debajoDelPiso.push({ regla: ACQ.cambioBruscoConjunto, entidad, muestra });
+          continue;
+        }
+        salida.detecciones.push({
+          ...base,
+          regla: ACQ.cambioBruscoConjunto,
+          entidad,
+          metrica: porCosto ? 'costo_por_contacto' : 'inversion',
+          lineaBase: redondear(porCosto ? x.gastoAntes / x.contactosAntes : x.gastoAntes),
+          valorActual: redondear(porCosto ? x.gasto / x.contactos : x.gasto),
+          cambioPct: redondear(cambio, 4),
+          muestra,
+          gravedad: 'media',
+          revisionRecomendada: 'Revisa si el conjunto cambió de presupuesto, de puja o de audiencia esta semana.',
+          causasPosibles: ['puede deberse a un cambio de presupuesto o de puja', 'puede deberse a que el conjunto volvió a la fase de aprendizaje'],
+          perdidaContactos: null,
+          umbral: u,
+          evidencia: { ventana: m.ventana, periodo, anterior, conjunto, ...x },
+        });
+      }
+    }
+  }
+
+  // ── El monitor de atribución: cada punto con su cifra y lo que deja de valer ──
+  for (const punto of PUNTOS_DEL_MONITOR) {
+    const p = m.atribucion.puntos.find((x) => x.clave === punto.clave);
+    // Sin denominador no hay nada que medir: hoy, las ventas (no hay ninguna reportada).
+    if (!p || p.sobre === 0) {
+      salida.sinMedicion.push(punto.regla);
+      continue;
+    }
+    const u = umbral(punto.regla);
+    // `utm_incompletas` cuenta lo roto: su cobertura es lo que queda entero.
+    const cobertura = punto.clave === 'utm_incompletas' ? 1 - p.cuantos / p.sobre : p.cuantos / p.sobre;
+    if (cobertura >= u.valor) continue;
+    if (p.sobre < PISO_DE_UNA_SENAL) {
+      salida.debajoDelPiso.push({ regla: punto.regla, entidad: { tipo: 'empresa', id: 'empresa' }, muestra: p.sobre });
+      continue;
+    }
+    salida.detecciones.push({
+      ...base,
+      regla: punto.regla,
+      entidad: { tipo: 'empresa', id: 'empresa' },
+      metrica: `cobertura_${punto.clave}`,
+      lineaBase: null,
+      valorActual: redondear(cobertura, 4),
+      cambioPct: null,
+      muestra: p.sobre,
+      gravedad: 'media',
+      revisionRecomendada: 'Revisa cómo llegan los datos de origen de los contactos antes de comparar anuncios.',
+      perdidaContactos: null,
+      umbral: u,
+      evidencia: { ventana: m.ventana, periodo, punto: p.clave, titulo: p.titulo, cuantos: p.cuantos, sobre: p.sobre, consecuencia: p.consecuencia },
+    });
   }
 
   return salida;
