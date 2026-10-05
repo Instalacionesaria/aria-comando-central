@@ -245,6 +245,14 @@ export const RECHAZOS = {
   // Ninguna de las pestañas que la persona ve tiene datos que el cerebro sepa leer (AG-43: sin datos, no
   // se llama al modelo). 409: la pregunta está bien; lo que falta es qué leer.
   cerebro_sin_datos: 409,
+
+  // ── Las señales (AG9 de los agentes) ─────────────────────────────────
+  //
+  // Bajo delegación no se marca, no se resuelve ni se firma (`05`, AG-82): un autor de la principal dentro de
+  // un cliente da `23503`, y la firma de un umbral es del Admin DE LA EMPRESA. 409, como el cerebro.
+  senales_bajo_delegacion: 409,
+  // La señal ya está cerrada —resuelta, descartada o cerrada sola—: no hay nada que resolver. 409.
+  senal_cerrada: 409,
 } as const;
 
 /**

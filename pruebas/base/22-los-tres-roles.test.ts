@@ -179,14 +179,20 @@ test('la diferencia entre `usuario` y `administrador` es las credenciales Y LAS 
       'credenciales.editar',
       'credenciales.ver',
       'roles.asignar',
+      /* La tercera diferencia, de AG9 de los agentes (`D-11`, AG-80): validar lo que requiere validación
+         ejecutiva y firmar un umbral son del Admin. Un `usuario` resuelve y descarta las locales. */
+      'senales.validar',
+      'umbrales.firmar',
       'usuarios.crear',
       'usuarios.desactivar',
       'usuarios.editar',
       'usuarios.ver',
     ],
-    'la diferencia entre administrador y usuario dejó de ser las credenciales y las personas de su ' +
-      'empresa',
+    'la diferencia entre administrador y usuario dejó de ser las credenciales, las personas de su ' +
+      'empresa y la validación y los umbrales de las señales',
   );
+  // Y lo que el `usuario` sí tiene de las señales: resolver y descartar las locales.
+  assert.ok(usuario.has('senales.resolver'), 'el usuario no puede resolver las señales de su pantalla');
 
   /* ── Y LA ASIMETRÍA AL REVÉS, QUE ERA VACÍA Y AHORA TIENE UNA COSA ───────
    *

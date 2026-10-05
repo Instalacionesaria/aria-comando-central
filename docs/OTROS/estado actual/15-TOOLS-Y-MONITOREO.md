@@ -211,7 +211,7 @@ Facebook, `pruebas/codigo/127-anunciantes-de-facebook.test.ts`, con 11 (hay otra
 `127-filas-clicables`, que no es de Tools). Todas son de `pruebas/codigo/`: leen el texto del
 código y ninguna toca una tabla del scraper, porque la base local no las tiene (§ 6). Lo que sí
 corre contra la base local es la autorización del panel: que lo dé `usuario` con la pestaña y nunca
-`administrador` (`pruebas/base/22-los-tres-roles.test.ts:283`) y que el alta con sólo esa pestaña
+`administrador` (`pruebas/base/22-los-tres-roles.test.ts:289`) y que el alta con sólo esa pestaña
 se acepte en la principal y se rechace en un cliente (`pruebas/base/31-alcance.test.ts:461`).
 
 ---
@@ -359,13 +359,13 @@ anota una sola vez (`lib/tools/medicion.ts:82-84`).
 
 **8 · El panel tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por
 derivación; la pestaña concedida, porque `usuario` restringe por sección; y ser de la organización
-principal (`lib/autorizacion/secciones.ts:416-425`, `db/arranque/001_catalogo.sql:366-391`). La
+principal (`lib/autorizacion/secciones.ts:416-425`, `db/arranque/001_catalogo.sql:372-397`). La
 tercera se mide sobre la organización **propia**, no la que se está mirando, para que conmutar no
 apague el panel (`lib/autorizacion/secciones.ts:112-119`, `:755-760`). El formulario de Usuarios no
 ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no
-tiene la capacidad, porque ahí no hay segunda mitad (`db/arranque/001_catalogo.sql:446-470`), y el
+tiene la capacidad, porque ahí no hay segunda mitad (`db/arranque/001_catalogo.sql:456-480`), y el
 catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
-(`db/arranque/001_catalogo.sql:739-758`).
+(`db/arranque/001_catalogo.sql:753-772`).
 
 **9 · El panel cruza empresas con un bucle, no con una consulta.** Un `group by org_id` bajo RLS
 devuelve una fila; las otras dos salidas —una función `security definer` o un rol sin RLS— dejan la

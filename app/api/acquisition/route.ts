@@ -27,8 +27,10 @@
 // dibuja (docs/acquisition/14, A14-15), y calcularlos en cada carga para nadie costaba dos lecturas.
 // Con ellos se va el «Hoy» de dos significados de la misma respuesta: el monitor contaba 24 horas
 // móviles por día, y los funnels, días de calendario (A14-10). `costoDelAnuncio` sigue vivo porque
-// lo usa Creative; el monitor queda dormido, con sus pruebas, por decisión del usuario del
-// 2026-09-30 (`docs/OTROS/futuro/monitor-de-atribucion.md`).
+// lo usa Creative. El monitor quedó dormido el 2026-09-30 por decisión del usuario
+// (`docs/OTROS/futuro/monitor-de-atribucion.md`) y volvió con AG9 de los agentes como señales del detector
+// de Acquisition, en los mismos días cerrados que los funnels: esta ruta las publica en `senales`, ya
+// guardadas por la pasada diaria, y no las calcula en cada carga.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../lib/autorizacion/portero.ts';
@@ -36,6 +38,8 @@ import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { embudosDeAcquisition } from '../../../lib/negocio/embudosDeAcquisition.ts';
+import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
+import { textoDe } from '../../../lib/agentes/plan/acquisition.ts';
 
 export const PANTALLA = 'acquisition';
 
@@ -55,9 +59,23 @@ export async function GET(peticion: Request): Promise<Response> {
 
   /* No es una sola foto de las filas —la transacción es READ COMMITTED y cada sentencia ve la suya—,
      pero sí un solo `current_date` para todas las ventanas. */
-  const embudos = await conOrganizacion(contexto.orgEfectiva, () =>
-    embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria),
-  );
+  /* Las señales son de 7 o de 30 días cerrados (AG-28): con «hoy» o «completo» no hay ventana que mostrar, y
+     la tarjeta dice sobre cuáles se calculan. Se leen en la misma transacción que los embudos. */
+  const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
+  const { embudos, senales } = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const embudos = await embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria);
+    const lista = ventana === null ? [] : await senalesDeLaPantalla('acquisition', ventana, textoDe);
+    return {
+      embudos,
+      senales: {
+        ventana,
+        lista,
+        estado: estadoDelDepartamento(lista),
+        plan: ventana === null ? null : await ultimoPlan('acquisition', ventana),
+        reglas: await reglasDelDepartamento('acquisition'),
+      },
+    };
+  });
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
@@ -68,5 +86,14 @@ export async function GET(peticion: Request): Promise<Response> {
     /* Si esta sesión puede asignar funnels: la misma capacidad que pide `PUT /api/acquisition/funnel`.
        La decide el servidor para que la pantalla no ofrezca un selector que después responde 403. */
     puedeAsignar: contexto.permisos.has('credenciales.editar'),
+    senales,
+    /* Lo que esta sesión puede hacer con las señales: las mismas capacidades que piden
+       `app/api/acquisition/senales` y `…/umbrales`, y nada bajo delegación (AG-82). La pantalla no ofrece un
+       botón que después responde 403. */
+    puedeConSenales: {
+      resolver: contexto.permisos.has('senales.resolver') && !contexto.mirandoOtraOrganizacion,
+      validar: contexto.permisos.has('senales.validar') && !contexto.mirandoOtraOrganizacion,
+      firmar: contexto.permisos.has('umbrales.firmar') && !contexto.mirandoOtraOrganizacion,
+    },
   });
 }

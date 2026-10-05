@@ -83,7 +83,7 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 
 | herramienta | función | sección (capacidad) | como la ruta | qué viaja además |
 |---|---|---|---|---|
-| `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:58-60` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
+| `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:66` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
 | `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:63` | el aviso si falta el campo del ICP |
 | `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:64` | sus huecos |
 | `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:65` | el umbral «no calibrado» |

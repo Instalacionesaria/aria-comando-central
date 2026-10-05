@@ -212,3 +212,48 @@ async function insertar(p: PasadaDeUnDepartamento, d: Deteccion, huella: string)
     })
     .execute();
 }
+
+// ─── Lo que hace una persona ────────────────────────────────────────────────
+//
+// `02`, AG-24 y AG-25. Quien llama comprobó la capacidad y que no esté bajo delegación; estas funciones sólo
+// escriben, y sólo sobre una señal del departamento que se nombra: una ruta de Acquisition no cierra una
+// señal de Creative aunque reciba su id.
+
+export type ResultadoDeUnaDecision = 'hecho' | 'no_encontrada' | 'cerrada';
+
+/** «Vista» la marca la primera persona que abre la evidencia (AG-24). Ya vista o cerrada, no cambia nada. */
+export async function marcarVista(departamento: DepartamentoConSenales, id: string, quien: string): Promise<ResultadoDeUnaDecision> {
+  const r = await datos()
+    .updateTable('senales')
+    .set({ estado: 'vista', vista_el: new Date(), vista_por: quien })
+    .where('id', '=', id)
+    .where('departamento', '=', departamento)
+    .where('estado', '=', 'abierta')
+    .executeTakeFirst();
+  if (Number(r.numUpdatedRows) > 0) return 'hecho';
+  return (await existe(departamento, id)) ? 'hecho' : 'no_encontrada';
+}
+
+/** Resolver o descartar, siempre con motivo, autor y fecha (AG-25). Sólo sobre una viva. */
+export async function cerrarSenal(
+  departamento: DepartamentoConSenales,
+  id: string,
+  estado: 'resuelta' | 'descartada',
+  motivo: string,
+  quien: string,
+): Promise<ResultadoDeUnaDecision> {
+  const r = await datos()
+    .updateTable('senales')
+    .set({ estado, motivo_cierre: motivo, cerrada_el: new Date(), cerrada_por: quien })
+    .where('id', '=', id)
+    .where('departamento', '=', departamento)
+    .where('estado', 'in', VIVAS)
+    .executeTakeFirst();
+  if (Number(r.numUpdatedRows) > 0) return 'hecho';
+  return (await existe(departamento, id)) ? 'cerrada' : 'no_encontrada';
+}
+
+async function existe(departamento: DepartamentoConSenales, id: string): Promise<boolean> {
+  const f = await datos().selectFrom('senales').select('id').where('id', '=', id).where('departamento', '=', departamento).executeTakeFirst();
+  return f !== undefined;
+}

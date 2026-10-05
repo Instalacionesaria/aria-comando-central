@@ -56,11 +56,11 @@ están escritas:
   credenciales) y su matriz generada está en `docs/OTROS/especificacion/TRAZABILIDAD.md:70-75`
   (ADR-0301 a 0306), `:100-107` (la administración) y `:113-116` (los secretos).
 - **Decisiones del usuario, citadas literales en los comentarios.** Tres roles con la diferencia en
-  las credenciales (`db/arranque/001_catalogo.sql:349-350`); que los administradores creen personas
-  «solo para su empresa» (`db/arranque/001_catalogo.sql:401-402`); Credenciales para los
+  las credenciales (`db/arranque/001_catalogo.sql:355-356`); que los administradores creen personas
+  «solo para su empresa» (`db/arranque/001_catalogo.sql:422-423`); Credenciales para los
   administradores y Empresas y Usuarios para el superadministrador desde la principal
   (`components/views/AjustesView.jsx:8-10`); Monitoreo como «el rol de usuario con acceso a
-  monitoreo» (`db/arranque/001_catalogo.sql:251-252`); y el segundo factor opcional «a pedido
+  monitoreo» (`db/arranque/001_catalogo.sql:257-258`); y el segundo factor opcional «a pedido
   explícito» (`db/migraciones/010_segundo_factor_opcional.sql:1-8`).
 
 Dos de esas decisiones se aplicaron con una desviación declarada: Usuarios **no** se esconde fuera de
@@ -106,7 +106,7 @@ credenciales, la sección `credenciales` tiene **seis** rutas (medido sobre el �
 **Quién ve Ajustes, medido el 2026-09-28.** Las 11 personas con rol de administrador o de
 superadministrador; ninguna de las 4 de rol `usuario`, a las que el reparto les niega
 `credenciales.%` entero para no mostrarles un panel que no pueden tocar
-(`db/arranque/001_catalogo.sql:361-364`). Los superadministradores ven las tres pestañas; los
+(`db/arranque/001_catalogo.sql:367-370`). Los superadministradores ven las tres pestañas; los
 administradores, Credenciales y Usuarios.
 
 **Una dependencia latente.** Usuarios y Empresas cuelgan de la vista que monta la sección
@@ -152,18 +152,18 @@ Por familia, con la decisión que separó cada par:
   (`db/arranque/001_catalogo.sql:209-217`).
 
 El portero pide **alguna** de las capacidades de la lista, no todas
-(`lib/autorizacion/capacidades.ts:210-215`), y «ninguna» es un valor con nombre, `NINGUNA`, para que
-una lista vacía que llegó indefinida no abra la operación (`lib/autorizacion/capacidades.ts:191`).
+(`lib/autorizacion/capacidades.ts:217-222`), y «ninguna» es un valor con nombre, `NINGUNA`, para que
+una lista vacía que llegó indefinida no abra la operación (`lib/autorizacion/capacidades.ts:198`).
 
 ### 3.2 · Los roles: tres, y el reparto se DERIVA
 
 `closer` y `setter` se reemplazaron por un único `usuario` cuando nadie los tenía asignados
-(`db/arranque/001_catalogo.sql:227-234`), y después se retiró un rol `monitoreo` que se asignaba
-persona por persona (`db/arranque/001_catalogo.sql:249-254`); `db/arranque/003_retiro_de_roles.sql`
+(`db/arranque/001_catalogo.sql:227-240`), y después se retiró un rol `monitoreo` que se asignaba
+persona por persona (`db/arranque/001_catalogo.sql:255-260`); `db/arranque/003_retiro_de_roles.sql`
 pasa a `usuario` a quien tuviera uno retirado. El reparto declara el conjunto completo de cada
 rol —borra lo que sobra e inserta lo que falta— y los tres se derivan: el superadministrador por
 «todas», los otros dos por exclusión de prefijos, así que una capacidad nueva cae sola en los tres
-salvo que su familia esté negada (`db/arranque/001_catalogo.sql:345`, `:383-387`, `:462-466`):
+salvo que su familia esté negada (`db/arranque/001_catalogo.sql:351`, `:383-387`, `:462-466`):
 
 | Rol | Regla | Capacidades · medido el 2026-09-28 | Personas · 2026-09-28 |
 |---|---|---|---|
@@ -181,8 +181,8 @@ uno. La foto anterior no contó personas por rol; la cifra más vieja escrita es
 (`lib/autorizacion/sesion.ts:292-293`). `administrador` administra las personas **de su empresa**
 desde el 2026-09-08 (`6cae3eb`): el servidor filtra por organización y
 `lib/autorizacion/delegacion.ts` le impide fabricar otro administrador
-(`db/arranque/001_catalogo.sql:410-422`). `usuario` es el único con `secciones_restringidas`
-(`db/arranque/001_catalogo.sql:295-297`).
+(`db/arranque/001_catalogo.sql:420-432`). `usuario` es el único con `secciones_restringidas`
+(`db/arranque/001_catalogo.sql:301-303`).
 
 **La regla de delegación.** Un rol que confiere alguna capacidad de escritura sobre personas
 (`lib/autorizacion/delegacion.ts:68-75`) sólo lo otorga quien tiene `organizaciones.listar`: el
@@ -286,7 +286,7 @@ archivos que declaran `export const PANTALLA` con esa clave) y contra producció
 
 Las tres de administración no se le pueden conceder a nadie de rol `usuario` porque su rol no las
 habilita. Monitoreo no la ve ningún administrador: su rol no la tiene, y como no restringe por
-sección, dársela sería dársela a todos los administradores (`db/arranque/001_catalogo.sql:446-461`).
+sección, dársela sería dársela a todos los administradores (`db/arranque/001_catalogo.sql:456-471`).
 
 ---
 
@@ -453,7 +453,7 @@ se leyó lo que afirman.
 | Closer y Setter separados | Con `closer.ver` a secas se ve sólo Closer, y al revés | `pruebas/codigo/90-fundaciones.test.ts:1194` |
 | El catálogo se carga | Cada capacidad de sección la carga `db/arranque/001_catalogo.sql` o la 003 | `pruebas/codigo/91-closer-y-setter.test.ts:295`, `pruebas/codigo/90-fundaciones.test.ts:1231` |
 | La delegación | Sólo la plataforma otorga roles que administran personas | `pruebas/codigo/144-delegacion-de-roles.test.ts:64` |
-| Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:346`, `:283`, `:94` |
+| Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:352`, `:283`, `:94` |
 | El alcance, contra la base | Los dos ceros; el rechazo es del portero, no cosmético; el anti-encierro; el `check` acepta toda clave de `SECCIONES` | `pruebas/base/31-alcance.test.ts:127`, `:229`, `:287`, `:337` |
 | Aislamiento | Con la organización A no se ve una fila de la B; el migrador informa cero filas sin error | `pruebas/base/30-aislamiento.test.ts:114`, `:262` |
 | Credenciales | Sin credencial no opera y no cae a la de nadie | `pruebas/base/60-credenciales.test.ts:258` |
@@ -465,7 +465,7 @@ viva (`pruebas/apoyo/autorizados.ts:796-802`).
 **Un cruce que el código anuncia y no encontré.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
 las dos direcciones». Encontré la de código → tabla
-(`pruebas/base/22-los-tres-roles.test.ts:346-353`) y la de sección → archivo que la carga
+(`pruebas/base/22-los-tres-roles.test.ts:352-359`) y la de sección → archivo que la carga
 (`pruebas/codigo/91-closer-y-setter.test.ts:295`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre
 `pruebas/`; la que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:345`, cruza la tabla con
@@ -483,7 +483,7 @@ coinciden en producción.
   `components/ajustes/Usuarios.jsx:13-15` dicen que un administrador no ve Usuarios y recibe 403 en
   sus rutas. Es falso desde `6cae3eb` (2026-09-08): en producción el rol tiene `usuarios.ver`,
   `.crear`, `.editar`, `.desactivar` y `roles.asignar` (consulta del 2026-09-28), como manda
-  `db/arranque/001_catalogo.sql:393-422`.
+  `db/arranque/001_catalogo.sql:399-432`.
 - **Conversation «sigue siendo `tablero.ver`».** `lib/autorizacion/secciones.ts:292-294`, veinticuatro
   líneas arriba de `capacidadRequerida: 'auditor.ver'` en `:315`, que es lo cierto desde `8dcb619`. Y
   `lib/autorizacion/secciones.ts:683-687` sigue contando **siete** secciones que comparten
@@ -505,7 +505,7 @@ coinciden en producción.
 `roles.administrar`, `configuracion.editar` y `auditoria.ver` están en el catálogo y en los roles, y
 **ninguna ruta las pide** (`grep` de cada clave sobre `app/`, `lib/` y `components/`, 2026-09-28).
 `roles.administrar` está declarada así a propósito y se le niega al administrador
-(`db/arranque/001_catalogo.sql:430-433`). Las otras dos no tienen nota: el registro de accesos que
+(`db/arranque/001_catalogo.sql:440-443`). Las otras dos no tienen nota: el registro de accesos que
 `auditoria.ver` describe no lo muestra ninguna ruta —sus dos lectores son el freno del login y la
 verificación del segundo factor, `lib/autenticacion/freno.ts:115` y
 `app/api/auth/2fo/verificar/route.ts:83`, por `grep` de `auditoria_accesos` sobre `lib/`, `app/` y

@@ -131,6 +131,9 @@ export type Accion =
      los links: asignar y quitar son hechos distintos. */
   | 'funnel_de_campana_asignado'
   | 'funnel_de_campana_quitado'
+  /* La firma de un umbral de los detectores (AG9 de los agentes; `D-11`). Se audita porque cambia qué señal
+     nace desde la próxima pasada, y la firma tiene que poder leerse con su valor provisional al lado. */
+  | 'umbral_firmado'
   // ── Etapa 14 · el alcance por sección ─────────────────────────────────────────
   //
   // NO se reusa `permiso_denegado`, y el motivo es la señal: esa agrupa por
@@ -221,6 +224,13 @@ export interface Detalle {
   campana?: string;
   /** El funnel que se asignó, o el que se quitó (`leadform`, `profile` o `booking`). */
   funnel?: string;
+  /**
+   * La regla de un detector, en `umbral_firmado` (`ACQ-CPL-SOSTENIDO`), con el valor firmado y el
+   * provisional que reemplaza: sin los dos, la fila diría que alguien firmó y no qué cambió.
+   */
+  regla?: string;
+  valor?: number;
+  provisional?: number;
 }
 
 /**
@@ -272,6 +282,8 @@ export async function auditarAdministracion(
       // El funnel de una campaña. Mismo objetivo que los links: la empresa.
       | 'funnel_de_campana_asignado'
       | 'funnel_de_campana_quitado'
+      // La firma de un umbral. Mismo objetivo: la empresa, cuya configuración cambia.
+      | 'umbral_firmado'
     >;
     actor: string;
     objetivo: string;

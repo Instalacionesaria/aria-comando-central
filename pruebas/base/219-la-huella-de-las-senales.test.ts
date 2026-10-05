@@ -21,7 +21,7 @@ import type { Client } from 'pg';
 import { cerrarTodo, conectar, unaFila, filas } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
-import { reconciliarSenales, type PasadaDeUnDepartamento } from '../../lib/agentes/senales/escritura.ts';
+import { cerrarSenal, marcarVista, reconciliarSenales, type PasadaDeUnDepartamento } from '../../lib/agentes/senales/escritura.ts';
 import type { Deteccion, Gravedad } from '../../lib/agentes/senales/tipos.ts';
 
 let admin: Client;
@@ -170,4 +170,17 @@ test('la base lo sostiene sola: una viva por huella, y `issue_source` sólo en C
     admin.query(`update negocio.senales set muestra = 9 where org_id = $1`, [alfa]),
     (e: { code?: string }) => e.code === '23514',
   );
+});
+
+test('una persona sólo marca o cierra señales del departamento que nombra, y una cerrada no se reabre', async () => {
+  await pasar([deteccion('c1')]);
+  const id = (await admin.query<{ id: string }>('select id from negocio.senales where org_id = $1', [alfa])).rows[0]!.id;
+  // Desde otro departamento, la señal no existe: ni se marca ni se cierra.
+  assert.equal(await conOrganizacion(alfa, () => marcarVista('creative', id, ana)), 'no_encontrada');
+  assert.equal(await conOrganizacion(alfa, () => cerrarSenal('creative', id, 'descartada', 'x', ana)), 'no_encontrada');
+  assert.deepEqual((await senales()).map((x) => x.estado), ['abierta']);
+  assert.equal(await conOrganizacion(alfa, () => cerrarSenal('acquisition', id, 'resuelta', 'Hecho.', ana)), 'hecho');
+  assert.equal(await conOrganizacion(alfa, () => cerrarSenal('acquisition', id, 'descartada', 'Otra vez.', ana)), 'cerrada');
+  assert.equal(await conOrganizacion(alfa, () => marcarVista('acquisition', id, ana)), 'hecho', 'marcar vista una cerrada no es un error');
+  assert.deepEqual((await senales()).map((x) => x.estado), ['resuelta']);
 });

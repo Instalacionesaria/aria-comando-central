@@ -414,7 +414,7 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:53`, `app/api/auditoria/route.ts:63`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:57`, `app/api/auditoria/route.ts:63`,
 `app/api/creative/route.ts:57`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 

@@ -46,9 +46,9 @@ personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conver
 
 | rol | ¿trae `tablero.ver`? | ¿restringido por sección? | ve la pestaña | rastro |
 |---|---|---|---|---|
-| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:345` |
-| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:466-470` |
-| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:387-391`, `:241-243`, `:291-293` |
+| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:351` |
+| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:476-480` |
+| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:393-397`, `:241-243`, `:291-293` |
 
 «Restringido» es la bandera `secciones_restringidas` del rol
 (`db/migraciones/017_alcance_de_secciones.sql:54`): con ella puesta, la persona ve sólo las
@@ -130,7 +130,7 @@ select (select count(*) from identidad.usuarios u where u.org_id = (select id fr
 
 Y no es una casualidad de estas cuatro personas: de los tres roles que existen, **ninguno trae
 `tablero.ver` sin `contactos.ver`**. Los tres repartos se derivan del catálogo entero y ninguno
-excluye `contactos.%` (`db/arranque/001_catalogo.sql:345`, `:383-387`, `:462-466`).
+excluye `contactos.%` (`db/arranque/001_catalogo.sql:351`, `:383-387`, `:462-466`).
 
 **Conclusión, verificada:** el portal **no le abre un dato personal a nadie que no pudiera leerlo
 ya**.
@@ -254,7 +254,7 @@ muestra: no es una exposición nueva.
 
 ### LP12-09 · Nada de esto queda guardado en un caché
 
-`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:306-308`), y el lector
+`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:314-316`), y el lector
 del navegador pide también sin caché (`lib/http/cliente.ts:147-149`). **Requisito:** la pantalla no
 guarda la lista ni la ficha en el almacenamiento del navegador. Una lista de 593 nombres que
 sobrevive al cierre de sesión en una computadora compartida es la fuga más barata de todas.

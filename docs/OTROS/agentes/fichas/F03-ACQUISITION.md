@@ -8,10 +8,10 @@
 |---|---|
 | Tipo | MIDE (detector) |
 | Lugar en el front | Systems › Acquisition: el botón «Plan de acción» junto al selector de período y la tarjeta de Señales al final |
-| Estado | **En construcción** (AG9). Hechos: el detector con todas las reglas de la tabla y el plan con plantillas. Faltan las rutas, la pantalla y la redacción |
+| Estado | **En construcción** (AG9). Hechos: el detector con todas las reglas de la tabla, el plan con plantillas, las capacidades y las rutas. Faltan la pantalla y la redacción |
 | Modelo | Ninguno para detectar. `claude-sonnet-5-5` para **redactar** el plan, si hay llave |
 | Permisos | Leer: `tablero.ver`. Marcar vista, resolver y descartar: `senales.resolver`. Las de validación ejecutiva: `senales.validar`. Firmar un umbral: `umbrales.firmar` |
-| Código | `lib/agentes/detectores/acquisition.ts` (medir y detectar), `lib/agentes/detectores/detector-de-acquisition.ts` (lo que corre la pasada), `lib/agentes/plan/acquisition.ts`; faltan `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts` |
+| Código | `lib/agentes/detectores/acquisition.ts` (medir y detectar), `lib/agentes/detectores/detector-de-acquisition.ts` (lo que corre la pasada), `lib/agentes/plan/acquisition.ts`, `lib/agentes/senales/lectura.ts`, `app/api/acquisition/senales/route.ts`, `app/api/acquisition/umbrales/route.ts`, y `senales` y `puedeConSenales` en el GET de `app/api/acquisition/route.ts` |
 
 ## Qué lee
 

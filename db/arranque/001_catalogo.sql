@@ -228,7 +228,13 @@ insert into identidad.permisos (clave, descripcion) values
   -- El cerebro (AG5 de los agentes): preguntar y borrar los hilos propios. Gasta la llave de IA de la
   -- empresa, y por eso es una capacidad aparte de `tablero.ver`, que sólo deja mirar el Inicio. La reciben
   -- los TRES roles por el reparto derivado (`docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`).
-  ('cerebro.usar',        'Preguntarle al cerebro y borrar los hilos propios (consume tokens de la organización)')
+  ('cerebro.usar',        'Preguntarle al cerebro y borrar los hilos propios (consume tokens de la organización)'),
+  -- Las señales de los detectores (AG9 de los agentes; `docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`, AG-80).
+  -- Marcar vista, resolver y descartar las locales los tres roles; las que requieren validación ejecutiva y la
+  -- firma de un umbral, sólo administrador y superadministrador: al `usuario` se le niegan en su reparto.
+  ('senales.resolver',    'Marcar vista, resolver y descartar las señales de los detectores de las pantallas que ve'),
+  ('senales.validar',     'Resolver y descartar las señales que requieren validación ejecutiva'),
+  ('umbrales.firmar',     'Firmar el umbral de una regla de los detectores: pasa de provisional a firme')
 
 on conflict (clave) do nothing;
 
@@ -399,7 +405,11 @@ begin
                       and clave not like 'usuarios.%'
                       and clave not like 'roles.%'
                       and clave not like 'credenciales.%'
-                      and clave not like 'incidentes.%')),
+                      and clave not like 'incidentes.%'
+                      -- La validación ejecutiva y la firma de los umbrales son del Admin (`D-11`, AG-80): un
+                      -- `usuario` de Acquisition no puede saltarse la validación que pide la arquitectura.
+                      and clave <> 'senales.validar'
+                      and clave not like 'umbrales.%')),
 
       -- El administrador: todo lo de SU empresa, **incluidas las personas de su empresa**.
       --
@@ -705,6 +715,10 @@ begin
            'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.desactivar',
            'roles.asignar'
          ])
+     -- Y las dos del Admin en las señales (AG9 de los agentes, `D-11`): validar lo que requiere validación
+     -- ejecutiva y firmar los umbrales. Se le niegan al `usuario` en su reparto, de arriba.
+     and rp.permiso <> 'senales.validar'
+     and rp.permiso not like 'umbrales.%'
      and not exists (
        select 1 from identidad.roles u
          join identidad.roles_permisos ru on ru.rol_id = u.id
@@ -712,9 +726,9 @@ begin
 
   if v_sobran is not null then
     raise exception
-      'el administrador tiene capacidades que el usuario no, y que no son credenciales ni la '
-      'administración de personas de su empresa: %. La diferencia entre los dos roles dejó de '
-      'ser la que se pidió.', v_sobran;
+      'el administrador tiene capacidades que el usuario no, y que no son credenciales, la '
+      'administración de personas de su empresa, ni la validación y los umbrales de las señales: %. La '
+      'diferencia entre los dos roles dejó de ser la que se pidió.', v_sobran;
   end if;
 
   -- ── Y QUE EL USUARIO VEA ALGO ─────────────────────────────────────────────

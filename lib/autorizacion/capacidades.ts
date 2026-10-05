@@ -178,6 +178,13 @@ export const CAPACIDADES = [
   // Preguntar gasta la llave de IA de la empresa. Mirar el Inicio es `tablero.ver`; preguntarle al
   // cerebro, en el Inicio o en la caja del pie de cualquier departamento, es esto.
   'cerebro.usar',
+  // ── Las señales de los detectores (AG9 de los agentes) ────────────────────
+  //
+  // Marcar vista, resolver y descartar es de quien ve la pantalla; resolver o descartar lo que requiere
+  // validación ejecutiva, y firmar un umbral, del Admin (`D-11`).
+  'senales.resolver',
+  'senales.validar',
+  'umbrales.firmar',
 ] as const;
 
 export type Capacidad = (typeof CAPACIDADES)[number];

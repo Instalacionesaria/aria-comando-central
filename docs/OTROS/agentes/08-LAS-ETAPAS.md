@@ -438,8 +438,18 @@
   suma sus casos y la 223 las señales del monitor sobre la base sembrada. Mutaciones, seis vistas en rojo: el
   piso del costo por mil en 900, el conjunto también en 30 días, nombrar el cambio más chico, las UTM sin dar
   vuelta, las ventas sin denominador medidas, y el monitor con la ventana móvil.
-- **Lo que sigue**: las capacidades y las rutas; la pantalla; la redacción con el modelo y su evaluación real,
-  con OK.
+- **Tercera tanda, hecha el 2026-10-05: las capacidades y las rutas.** `senales.resolver` (los tres roles),
+  `senales.validar` y `umbrales.firmar` (administrador y superadministrador: al `usuario` se le niegan en su
+  reparto, y la comprobación del catálogo y la 22 cuentan la diferencia nueva). `app/api/acquisition/senales`
+  (POST: vista, resolver, descartar; lo de validación ejecutiva pide además `senales.validar`; con motivo;
+  sólo señales de Acquisition), `app/api/acquisition/umbrales` (PUT, con su fila de auditoría
+  `umbral_firmado`) y el GET de Acquisition con `senales` —las vivas de la ventana, con el nombre de la
+  campaña resuelto, el último plan, las reglas con su umbral vigente y el estado del departamento— y
+  `puedeConSenales`. Bajo delegación no se marca, no se resuelve y no se firma (`senales_bajo_delegacion`).
+  `lib/agentes/senales/lectura.ts` lee para la pantalla; el escritor suma marcar vista y cerrar. Pruebas: 224
+  nueva (base, por los manejadores), la 219 con el filtro de departamento del escritor, la 22 y la 181.
+  Mutaciones, siete vistas en rojo.
+- **Lo que sigue**: la pantalla; la redacción con el modelo y su evaluación real, con OK.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

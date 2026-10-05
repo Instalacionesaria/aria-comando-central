@@ -135,7 +135,7 @@ tiene un «antes» que fechar. Ver `C11-P01`.
 
 - **`capacidadRequerida: 'tablero.ver'`** es la correcta y no hay que inventar otra: siete pantallas la
   comparten, y lo que separa a las personas es el **alcance**, no la capacidad. Acquisition lo dejó
-  escrito en `app/api/acquisition/route.ts:43-46`.
+  escrito en `app/api/acquisition/route.ts:47-50`.
 - **`sinOperacionesTodavia: true` YA NO ESTÁ**, y el bloque de arriba es de antes de construir la
   pantalla. Era un cable trampa del `ADR-0304` que funciona en las dos direcciones: con la bandera
   puesta, crear una ruta que declare `PANTALLA = 'creative'` pone la suite en rojo; sin la bandera y

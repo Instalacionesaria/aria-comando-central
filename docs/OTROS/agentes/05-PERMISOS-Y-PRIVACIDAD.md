@@ -31,7 +31,7 @@
 - **Cada capacidad entra con su primera ruta** (`T-22`): una capacidad sin puerta es lo que el catálogo le
   reprocha a `roles.administrar`.
 - Una capacidad nueva **cae sola en los tres roles** salvo que se la excluya: el rol `usuario` se deriva por
-  exclusión de familias (`db/arranque/001_catalogo.sql:397-402`).
+  exclusión de familias (`db/arranque/001_catalogo.sql:403-412`).
 - `pruebas/base/22-los-tres-roles.test.ts` pasa a afirmar que `usuario` **no** tiene `senales.validar` ni
   `umbrales.firmar` y que el administrador sí.
 - **En producción, cada hito con capacidades nuevas corre el paso 4b** (`001_catalogo.sql` con
