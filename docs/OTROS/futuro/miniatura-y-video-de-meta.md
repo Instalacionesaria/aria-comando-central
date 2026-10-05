@@ -113,7 +113,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:524-528`); y se suma al despacho (`lib/negocio/barrido.ts:546-547`).
+  (`lib/negocio/barrido.ts:529-533`); y se suma al despacho (`lib/negocio/barrido.ts:551-552`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`

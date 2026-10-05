@@ -454,7 +454,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras medidas hoy
 las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:571-581`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:576-586`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL.
@@ -466,7 +466,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   de los agentes (2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su fila
   en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`).
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:521-529`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:526-534`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -490,7 +490,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
   pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627`, el
   campo en `lib/negocio/recolectarAnuncios.ts:149`), pero `motivoDeLoIncompleto`
-  (`lib/negocio/barrido.ts:801`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
+  (`lib/negocio/barrido.ts:813`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
   (`lib/negocio/recolectarAnuncios.ts:261-320`): hoy son 13 `campaignId` numéricos distintos en el

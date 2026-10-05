@@ -74,18 +74,19 @@ de seguridad activa del sistema, que no deja sello.
   (`app/api/cron/route.ts:9-13`). Las corridas duplicadas, que Vercel admite, las frena el candado
   del pulso (`app/api/cron/route.ts:19-21`).
 - **La autenticación.** Sin `CRON_SECRET` responde 403 y lo grita en el registro, no en el cuerpo
-  (`app/api/cron/route.ts:97-110`); la cabecera trae el prefijo `Bearer ` como parte del valor y se
-  compara con `timingSafeEqual` (`app/api/cron/route.ts:84-91`, `:112-114`). Nunca se autoriza por el
+  (`app/api/cron/route.ts:98-111`); la cabecera trae el prefijo `Bearer ` como parte del valor y se
+  compara con `timingSafeEqual` (`app/api/cron/route.ts:85-92`, `:112-114`). Nunca se autoriza por el
   user agent (`app/api/cron/route.ts:44-45`).
 - **Vive bajo `/api/`** porque `proxy.ts` redirige todo lo demás a `/entrar`, y una respuesta 3xx
   da la corrida por terminada sin rastro (`app/api/cron/route.ts:49-54`); lo ata
   `pruebas/codigo/99-cron.test.ts:269`.
-- **`maxDuration = 300`**, declarado en la ruta y no en `vercel.json` (`app/api/cron/route.ts:81`,
+- **`maxDuration = 300`**, declarado en la ruta y no en `vercel.json` (`app/api/cron/route.ts:82`,
   prueba en `pruebas/codigo/99-cron.test.ts:252`).
 - **La fase de identidad va primero y se cierra antes del bucle**: lista las empresas, se queda con
-  las activas (`app/api/cron/route.ts:147`) y resuelve en la misma transacción sus tres accesos —al
-  CRM, al auditor y a los Analizadores— (`app/api/cron/route.ts:140-162`).
-- **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:164-174`). Pero ese
+  las activas (`app/api/cron/route.ts:151`) y resuelve en la misma transacción sus tres accesos —al
+  CRM, al auditor y a los Analizadores— y, sólo en el horario de `senales`, la llave de IA para redactar el
+  Plan de acción (`app/api/cron/route.ts:144-168`; AG9 de los agentes).
+- **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:170-180`). Pero ese
   cuerpo sólo sirve para depurar a mano: lo que sobrevive es el sello de `negocio.tareas_programadas`.
 
 ### 2.2 · Los seis horarios
@@ -110,7 +111,7 @@ adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `fr
 - el umbral es al menos `2 × cadencia + 60`, para que perder una corrida no grite
   (`lib/negocio/barrido.ts:117-124`, prueba en `pruebas/codigo/99-cron.test.ts:104`);
 - un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`,
-  nunca «no hacer nada» (`lib/negocio/barrido.ts:409-419`, prueba en
+  nunca «no hacer nada» (`lib/negocio/barrido.ts:414-424`, prueba en
   `pruebas/codigo/99-cron.test.ts:227`).
 
 El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:136`); con Hobby, un
@@ -122,16 +123,16 @@ horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/ba
   nada se acumula ni se incrementa, y el orden se decide cada vez por el sello más viejo
   (`lib/negocio/barrido.ts:15-24`).
 - **La sonda va primero**, en su propio `try/catch`: es la única señal de seguridad y cuesta cero
-  llamadas (`lib/negocio/barrido.ts:440-458`).
+  llamadas (`lib/negocio/barrido.ts:445-463`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes
-  que todas (`lib/negocio/barrido.ts:460-473`, `:844`). Sin la segunda regla, la que se queda sin
+  que todas (`lib/negocio/barrido.ts:465-478`, `:844`). Sin la segunda regla, la que se queda sin
   tiempo se sellaría última y volvería al fondo de la fila para siempre.
 - **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:328`). Es un
   guardia parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
   (`lib/negocio/barrido.ts:315-326`). Los Analizadores, que corren solos, tienen hasta 285 s
   (`lib/negocio/barrido.ts:340`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:933-967`). Los estados son `corrio`, `saltada`, `frenada`,
+  un `+1` (`lib/negocio/barrido.ts:945-979`). Los estados son `corrio`, `saltada`, `frenada`,
   `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:101-102`,
   `lib/negocio/frescura.ts:156-157`).
 
@@ -261,7 +262,7 @@ un umbral de 120 minutos (`lib/negocio/frescura.ts:205-211`, `:231`, `:258`).
 **Quién no:** ninguna pantalla lee el sello de `anuncios`, `auditoria`, `mejora`, `analizadores` ni
 `reintentos`. `tareas_programadas` aparece sólo en `lib/negocio/barrido.ts`,
 `lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:715`) y un comentario de
-`app/api/cron/route.ts:173` (búsqueda en `lib/`, `app/` y `components/`). O sea que si el
+`app/api/cron/route.ts:179` (búsqueda en `lib/`, `app/` y `components/`). O sea que si el
 colector de anuncios dejara de correr, Acquisition, Creative, Conversion y Sales no lo dirían con un
 aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo de esta carpeta.
 
@@ -482,7 +483,7 @@ Ese mismo día, la foto anterior de [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-G
 «organizaciones que el cron barre» (la fila sigue en su § 1, rotulada ahora como sellos). No eran 13
 barridas: la cifra es `count(distinct org_id)` de `tareas_programadas`,
 que cuenta organizaciones **con sello**. El cron se queda con las activas desde el 2026-08-26
-(`f17a464`, `app/api/cron/route.ts:147`), y un sello sólo se borra en cascada cuando se borra la
+(`f17a464`, `app/api/cron/route.ts:151`), y un sello sólo se borra en cascada cuando se borra la
 organización (`db/migraciones/014_tareas_programadas.sql:46`): una empresa desactivada conserva los
 suyos. Hoy no queda ninguno así: 11 organizaciones con sello, las 11 activas, 0 sellos de
 organizaciones inactivas (medido el 2026-09-28 a las 23:57 UTC). Que la 13.ª fuera una organización
@@ -525,12 +526,12 @@ minutos del medio.
 - **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
   código, y es la que convierte el rojo en un freno (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:884`, `:459`, `:467`), así que su resultado vive sólo en la
+  propósito (`lib/negocio/barrido.ts:896`, `:459`, `:467`), así que su resultado vive sólo en la
   respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
   `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
   (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`, `:444`); sin él, `avisar()` lanza y la sonda que
-  detecte una fuga sale como `fallo` en la respuesta del cron (`lib/negocio/barrido.ts:447-457`).
+  detecte una fuga sale como `fallo` en la respuesta del cron (`lib/negocio/barrido.ts:452-462`).
   **No verificado** si hoy está cargado en Vercel.
 - **Verificar el certificado de la base.** Desde el 2026-08-24 (`86aee3b`) las tres cadenas de
   producción piden `?uselibpqcompat=true&sslmode=require`
@@ -565,9 +566,9 @@ minutos del medio.
    reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
    `lib/negocio/recolectarAnuncios.ts:11-19`).
 2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:923-967`).
+   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:935-979`).
 3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
-   (`lib/negocio/barrido.ts:403-408`).
+   (`lib/negocio/barrido.ts:408-413`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
    (`lib/negocio/barrido.ts:109-124`).
 5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario
@@ -595,7 +596,7 @@ minutos del medio.
    cualquier push de la primera hora de la madrugada de Lima, y una de ellas también en la segunda
    (§ 5.1).
 3. **El modo de fallar del cron es el silencio.** Fuera del sello no hay nada: la respuesta del cron
-   se pierde con el registro y Vercel no alerta por ausencia (`app/api/cron/route.ts:166-173`). La
+   se pierde con el registro y Vercel no alerta por ausencia (`app/api/cron/route.ts:172-179`). La
    sonda ni siquiera deja sello (§ 8).
 4. **El aviso del CRM dice algo falso cuando no hay actividad.** Con más de 120 minutos sin un aviso
    procesado, el chat de la ficha dibuja «Los mensajes están entrando por el ciclo de diez minutos, no
@@ -630,10 +631,10 @@ minutos del medio.
    - `lib/negocio/barrido.ts:243-245` cuenta los anuncios como «cuatro días (hoy más los tres que se
      releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:59`) y el
      sello de hoy dice 40.
-   - `lib/negocio/barrido.ts:390` y `app/api/cron/route.ts:152-154` dicen que «solo una empresa de
+   - `lib/negocio/barrido.ts:390` y `app/api/cron/route.ts:156-158` dicen que «solo una empresa de
      cinco tiene llave de IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas
      tienen llave de IA y 1 tiene token (§ 7).
-   - `app/api/cron/route.ts:170-172` describe la retención de registros «en el plan Hobby», y el plan
+   - `app/api/cron/route.ts:176-178` describe la retención de registros «en el plan Hobby», y el plan
      es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:136`); cuánto duran en Pro, no lo verifiqué.
    - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
      (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».

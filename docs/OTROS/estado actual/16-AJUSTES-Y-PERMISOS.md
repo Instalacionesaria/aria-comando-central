@@ -390,7 +390,7 @@ altas, el 17 y el 24, las dos empresas cliente activas (una con dos personas y f
 credenciales, otra con una persona y sin fila).
 
 **El cron barre las activas, y los sellos lo confirman.** Toma la lista entera y se queda con las
-activas (`app/api/cron/route.ts:147`, desde `f17a464`, 2026-08-26); los sellos de
+activas (`app/api/cron/route.ts:151`, desde `f17a464`, 2026-08-26); los sellos de
 `negocio.tareas_programadas` sólo se van con su organización (`on delete cascade`,
 `db/migraciones/014_tareas_programadas.sql:46`; ningún `delete` sobre esa tabla en `lib/`, `app/`,
 `scripts/` ni `db/`). Medido el 2026-09-28 a las 23:56 UTC: **11** organizaciones con sello, las

@@ -176,11 +176,11 @@ Una tarea nueva del cron único (`T-12`):
   (`diaEnZona`, `:61`). **«Ya corrió» se decide por departamento**: si Creative falló, se reintenta la hora
   siguiente aunque Acquisition haya terminado.
 - **A las demás no se las sella.** `sellar` guarda una sola fila por empresa y tarea
-  (`lib/negocio/barrido.ts:933`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
+  (`lib/negocio/barrido.ts:945`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
   parecer al día una tarea diaria que no corrió. Umbral de frescura de 2.940 minutos —el de una tarea
   diaria, aunque el disparo sea horario—. La única excepción es la primera pasada del día de una empresa sin
   departamentos pendientes, que se sella una vez para que la frescura diga que pasó.
-- **No necesita el token del CRM**: entra en la excepción de `lib/negocio/barrido.ts:502-510`, como la auditoría
+- **No necesita el token del CRM**: entra en la excepción de `lib/negocio/barrido.ts:507-515`, como la auditoría
   y los Analizadores; si no, se sellaría `saltada` en toda empresa sin GHL.
 - **Presupuesto propio**, como `FIN_PARA_LOS_ANALIZADORES_MS` (`lib/negocio/barrido.ts:340`): la espera de
   cada llamada al modelo es la menor entre 120 s y lo que quede menos 15 s.

@@ -98,7 +98,7 @@ prohíbe (`:17-22`). Devuelve la clave del período que contestó (`:56-63`).
 **La vista y el cliente.** `components/views/AcquisitionView.jsx` (59 líneas) sólo pone el
 encabezado y monta el panel; la bajada cambió a «Qué costó cada anuncio, y cuánto vale esa cifra»
 (`:49`) porque la vieja —«y cuáles sirven»— era la conclusión que el § 18.1 prohíbe (`:46-48`). Lo
-que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:37-49`
+que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:70-82`
 pide y no calcula nada.
 
 **El panel.** `components/acquisition/PanelDeAcquisition.jsx`, 410 líneas, tres bloques en este
@@ -252,7 +252,7 @@ valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde e
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:847`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:859`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
