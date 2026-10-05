@@ -13,7 +13,9 @@
 //     (`utmCampaign` no llega nunca);
 //   · en 30 días, además, la concentración de Webinar —a validación ejecutiva— y la fuga de Remarketing;
 //   · las ventas no se miden: no hay ninguna reportada;
-//   · los dos planes guardados, con cada señal en su grupo.
+//   · los dos planes guardados, con cada señal en su grupo;
+//   · con llave, la pasada redacta los dos planes con el modelo —falso— y guarda lo que pasó la validación, con
+//     su uso; sin llave, no llama y el plan queda con plantillas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -96,4 +98,71 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
   // Lo que no se pudo medir se dice en vez de callarlo: en 7 días, el costo por calificado (sin gasto), las
   // citas (ninguna) y las ventas (ninguna reportada).
   assert.equal(de7.sinMedicion.length, 3);
+});
+
+/** Borra lo de la pasada anterior: si no, Acquisition «ya corrió hoy» y no vuelve a medir ni a redactar. */
+async function otraVez(): Promise<void> {
+  await admin.query('delete from negocio.senales where org_id = $1', [e.conDatos]);
+  await admin.query('delete from negocio.planes_de_accion where org_id = $1', [e.conDatos]);
+}
+
+const aLas12 = () => new Date(`${diaEnZona(new Date(), ZONA_DE_LOS_CASOS)}T17:00:00Z`);
+
+test('con llave, la pasada redacta el plan y guarda lo que pasó la validación, con su uso', async () => {
+  await otraVez();
+  /* El modelo falso lee los renglones del pedido y devuelve cada frase tal cual, salvo la primera, a la que le
+     pone un superlativo: ésa se quita y su renglón queda con la plantilla. Cualquier otro pedido lanza. */
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (String(url) !== 'https://api.anthropic.com/v1/messages') throw new Error(`la prueba no esperaba un pedido a ${String(url)}`);
+    llamadas += 1;
+    const cuerpo = JSON.parse(String(init?.body)) as { messages: { content: string }[] };
+    const { renglones } = JSON.parse(cuerpo.messages[0]!.content) as { renglones: { clave: string; texto: string }[] };
+    const frases = renglones.map((r, i) => ({ clave: r.clave, frase: i === 0 ? `Es el más grave: ${r.texto}` : r.texto }));
+    return new Response(
+      JSON.stringify({
+        content: [{ type: 'text', text: JSON.stringify({ renglones: frases }) }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 900, output_tokens: 200, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  }) as typeof globalThis.fetch;
+  try {
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: 'sk-de-prueba-223' });
+    assert.ok(r.tocaba);
+    assert.deepEqual(r.departamentos[0]!.redaccion, { '7d': 'redactada', '30d': 'redactada' });
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(llamadas, 2, 'una llamada por ventana');
+  const planes = await filas<{ ventana: string; redaccion: { renglones: Record<string, string>; quitadas: { superlativo: number } } }>(
+    admin,
+    'select ventana, redaccion from negocio.planes_de_accion where org_id = $1 order by ventana',
+    [e.conDatos],
+  );
+  for (const p of planes) {
+    assert.equal(p.redaccion.quitadas.superlativo, 1, `${p.ventana}: el superlativo pasó`);
+    assert.ok(!('data:0' in p.redaccion.renglones), `${p.ventana}: la frase con el superlativo se guardó`);
+    assert.ok(Object.keys(p.redaccion.renglones).length >= 3, `${p.ventana}: no se guardó lo que pasó`);
+  }
+  const uso = await filas<{ n: string }>(admin, `select count(*)::text as n from negocio.uso_de_ia where org_id = $1 and agente = 'plan'`, [e.conDatos]);
+  assert.equal(uso[0]!.n, '2');
+});
+
+test('sin llave no se llama al modelo, y el plan queda con plantillas', async () => {
+  await otraVez();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error('sin llave no se llama al modelo');
+  }) as typeof globalThis.fetch;
+  try {
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: null });
+    assert.deepEqual(r.departamentos[0]!.redaccion, { '7d': 'sin_llave', '30d': 'sin_llave' });
+  } finally {
+    globalThis.fetch = original;
+  }
+  const planes = await filas<{ redaccion: unknown }>(admin, 'select redaccion from negocio.planes_de_accion where org_id = $1', [e.conDatos]);
+  assert.deepEqual(planes.map((p) => p.redaccion), [null, null]);
 });

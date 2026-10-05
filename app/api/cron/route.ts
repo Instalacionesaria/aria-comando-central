@@ -68,9 +68,10 @@ import {
   resolverAccesoAGhl,
   resolverAccesoAlAnalizador,
   resolverAccesoAlAuditor,
+  resolverLlaveDeIa,
 } from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
-import { barrerTodo, type EmpresaParaBarrer } from '../../../lib/negocio/barrido.ts';
+import { barrerTodo, tareasDelHorario, type EmpresaParaBarrer } from '../../../lib/negocio/barrido.ts';
 
 /**
  * El tope de Vercel en el plan Hobby, y no hay palanca para subirlo ahí.
@@ -137,6 +138,9 @@ export async function GET(peticion: Request): Promise<Response> {
    * filtro por organización lo pone una consulta a mano, y olvidarse un `where` ahí entrega el token
    * de una empresa a otra sin ningún error.
    */
+  /* La llave de IA para redactar el Plan de acción se descifra SÓLO en la corrida que trae la pasada de los
+     detectores (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las otras cinco no hace falta. */
+  const conLaPasada = tareasDelHorario(horario).tareas.includes('senales');
   const empresas: EmpresaParaBarrer[] = await conIdentidad(async (db) => {
     const todas = await listarOrganizaciones(db);
     // ── EL FILTRO POR `activa`, QUE LA CONSULTA NO TRAE ─────────────────────
@@ -157,6 +161,8 @@ export async function GET(peticion: Request): Promise<Response> {
         auditor: await resolverAccesoAlAuditor(db, org.id),
         // El tercero, por el mismo motivo y en la misma transacción: las llaves de los Analizadores.
         analizador: await resolverAccesoAlAnalizador(db, org.id),
+        // Y la de redactar el plan, sólo con la pasada. Sin llave, el plan queda con plantillas.
+        llaveDeIa: conLaPasada ? llaveLista(await resolverLlaveDeIa(db, org.id)) : null,
       })),
     );
   });
@@ -172,4 +178,9 @@ export async function GET(peticion: Request): Promise<Response> {
    * invocaciones —las dos alertas de Vercel son por exceso—. Lo que sobrevive a la hora es el sello
    * de `negocio.tareas_programadas`, y ése es el que hay que mirar para saber si el cron corre. */
   return ok(r);
+}
+
+/** La llave descifrada, o `null` si falta o no se puede leer: la pasada mide igual y redacta con plantillas. */
+function llaveLista(l: Awaited<ReturnType<typeof resolverLlaveDeIa>>): string | null {
+  return l.tipo === 'listo' ? l.claveIa : null;
 }

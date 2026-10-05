@@ -117,6 +117,8 @@ function CuerpoDelPlan({ senales, nombres, funnels }) {
     return <p className="acq-plan-nota">Todavía no hay plan para esta ventana: la pasada de los detectores corre cada mañana, después de las 6:00.</p>;
   }
   const p = guardado.plan;
+  // La frase que redactó el modelo para cada renglón, si la hay; si no, la de la plantilla con su revisión.
+  const redactadas = guardado.redaccion?.renglones ?? {};
   const conRenglones = p.grupos.filter((g) => g.renglones.length > 0);
   return (
     <>
@@ -124,13 +126,14 @@ function CuerpoDelPlan({ senales, nombres, funnels }) {
       {conRenglones.map((g) => (
         <div key={g.clave} className={`reco-group ${CLASE_DEL_GRUPO[g.clave] ?? ''}`.trim()}>
           <h4>{g.titulo}</h4>
-          {g.renglones.map((r) => {
+          {g.renglones.map((r, i) => {
             const nombre = nombreDe(r.entidad, nombres, funnels);
+            const redactada = redactadas[`${g.clave}:${i}`];
             return (
               <div key={`${r.regla}:${r.entidad.tipo}:${r.entidad.id}`} className={`reco-item ${CLASE_DEL_GRUPO[g.clave] ?? ''}`.trim()}>
                 <span>
                   {nombre ? <b>{nombre}: </b> : null}
-                  {r.texto} {r.revision}
+                  {redactada ?? `${r.texto} ${r.revision}`}
                   {r.perdidaContactos === null ? null : <span className="acq-perdida"> Pierde unos {r.perdidaContactos} contactos.</span>}
                 </span>
               </div>
@@ -141,7 +144,9 @@ function CuerpoDelPlan({ senales, nombres, funnels }) {
       <p className="acq-plan-pie">
         {guardado.bajoElPiso > 0 ? `${guardado.bajoElPiso} ${guardado.bajoElPiso === 1 ? 'detección quedó' : 'detecciones quedaron'} por debajo del piso de muestra y no se publican. ` : ''}
         {p.sinMedicion.length > 0 ? `No se pudo medir: ${p.sinMedicion.join('; ')}. ` : ''}
-        Calculado el {fechaCorta(guardado.dia)}. Lo que alguien ya resolvió o descartó no vuelve a recomendarse.
+        Calculado el {fechaCorta(guardado.dia)}.{' '}
+        {guardado.redaccion ? 'Las frases las redactó el modelo con las cifras del cálculo; la que traía otra cifra o un superlativo quedó como estaba. ' : ''}
+        Lo que alguien ya resolvió o descartó no vuelve a recomendarse.
       </p>
     </>
   );

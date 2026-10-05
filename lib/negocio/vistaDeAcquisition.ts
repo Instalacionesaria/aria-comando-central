@@ -52,7 +52,14 @@ export interface SenalesDeAcquisition {
   ventana: '7d' | '30d' | null;
   lista: SenalParaMostrar[];
   estado: 'crit' | 'warn' | 'ok';
-  plan: { dia: string; plan: PlanDeAcquisition; bajoElPiso: number; actualizado: string } | null;
+  plan: {
+    dia: string;
+    plan: PlanDeAcquisition;
+    /** La redacción del modelo, ya validada: una frase por renglón (`grupo:índice`). `null` sin llave o sin respuesta. */
+    redaccion: { renglones: Record<string, string>; quitadas: { cifra: number; superlativo: number; otras: number } } | null;
+    bajoElPiso: number;
+    actualizado: string;
+  } | null;
   reglas: ReglaDeAcquisition[];
 }
 

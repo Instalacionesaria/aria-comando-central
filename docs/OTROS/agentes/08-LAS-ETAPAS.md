@@ -466,7 +466,18 @@
   tenían el estilo del navegador —ahora `fd-btn`—, y el umbral se leía «0.9» con un porqué que nombraba
   código: cada regla del catálogo dice su unidad (`proporcion`, `puntos_porcentuales`, `puntos`, `dias`) y la
   pantalla muestra y recibe «90 %».
-- **Lo que sigue**: la redacción con el modelo y su evaluación real, con OK.
+- **Quinta tanda, hecha el 2026-10-05: la redacción.** `lib/agentes/plan/redaccion.ts`: después de guardar el
+  plan con plantillas, si la empresa tiene llave, `claude-sonnet-5-5` reescribe cada renglón (esfuerzo bajo,
+  formato estricto, una llamada por ventana). Cada frase se valida: ninguna cifra que no esté en su renglón y
+  ningún superlativo, porque la plantilla no trae el ranking que lo sostenga (A6-18); la que no pasa deja la
+  frase de la plantilla, y lo quitado se cuenta. La espera es la menor entre 120 s y lo que le queda a la función
+  menos 15 s; sin tiempo, no se pide. La llave la resuelve la ruta del cron sólo en el horario de `senales`
+  (AG-35); el uso queda con el agente `plan`. La pantalla muestra la frase redactada y lo dice en el pie. La
+  tanda `plan` de `scripts/evaluar-agentes.mjs` (dos pedidos), ensayada con un modelo falso. Pruebas: 225
+  (código, la validación) y la 223 con la pasada que redacta y la que no tiene llave. Mutaciones, cinco vistas
+  en rojo: una cifra inventada, un superlativo, una frase vacía o repetida, pedir sin llave y no guardar.
+- **Lo que sigue**: la evaluación real de la redacción (con la llave cargada y OK), la suite completa y el hito
+  H3.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

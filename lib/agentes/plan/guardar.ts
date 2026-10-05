@@ -8,6 +8,7 @@
 // Volver a guardar el mismo día reemplaza el plan y borra la redacción: lo que redactó el modelo se escribió
 // sobre el plan anterior, y sus cifras pueden no ser las de ahora.
 
+import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
 import type { DebajoDelPiso, DepartamentoConSenales, VentanaDeSenal } from '../senales/tipos.ts';
 
@@ -33,5 +34,19 @@ export async function guardarPlan(p: PlanParaGuardar): Promise<void> {
     .insertInto('planes_de_accion')
     .values({ departamento: p.departamento, ventana: p.ventana, dia: p.dia, ...columnas })
     .onConflict((oc) => oc.columns(['org_id', 'departamento', 'ventana', 'dia']).doUpdateSet(columnas))
+    .execute();
+}
+
+/**
+ * La redacción del modelo, sobre el plan de ese día (AG-32). Va aparte y después: el plan de plantillas ya
+ * está guardado, y si esto falla queda ése.
+ */
+export async function guardarRedaccion(p: { departamento: DepartamentoConSenales; ventana: VentanaDeSenal; dia: string; redaccion: unknown }): Promise<void> {
+  await datos()
+    .updateTable('planes_de_accion')
+    .set({ redaccion: JSON.stringify(p.redaccion), actualizado_el: new Date() })
+    .where('departamento', '=', p.departamento)
+    .where('ventana', '=', p.ventana)
+    .where(sql<boolean>`dia = ${p.dia}::date`)
     .execute();
 }

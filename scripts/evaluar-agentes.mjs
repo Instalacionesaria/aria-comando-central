@@ -30,7 +30,10 @@
 // (`db/sembrado/casos-de-los-agentes.ts`), que siembra al empezar y quita al terminar. Pide confirmar el
 // TECHO de pedidos —seis rondas por pregunta—, e imprime lo gastado de verdad, leído de `uso_de_ia`.
 //
-// La redacción del plan (AG9), el Brief (AG12) y la Reunión (AG15) suman las suyas.
+// `plan` (AG9): la redacción del Plan de acción de Acquisition, dos pedidos, uno por ventana, sobre la base
+// sembrada, con lo que la validación quitó.
+//
+// El Brief (AG12) y la Reunión (AG15) suman las suyas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
@@ -189,6 +192,56 @@ async function correrElCerebro(llave) {
   }
 }
 
+/**
+ * La redacción del Plan de acción de Acquisition (`07`, AG-102, F03): la pasada de los detectores de verdad
+ * sobre la empresa sembrada, con la llave de ARIA sólo en memoria. Dos pedidos, uno por ventana. Imprime cada
+ * frase redactada al lado de la de la plantilla, lo que la validación quitó y el uso, leído de `uso_de_ia`.
+ */
+async function correrElPlan(llave) {
+  const { sql } = await import('kysely');
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { correrLaPasada } = await import('../lib/agentes/detectores/correr.ts');
+  const { renglonesParaRedactar } = await import('../lib/agentes/plan/redaccion.ts');
+  const { diaEnZona } = await import('../lib/negocio/tiempo.ts');
+  const { PREFIJO_DE_LA_EVALUACION, ZONA_DE_LOS_CASOS, quitarEmpresasDeLosAgentes, sembrarCasosDeLosAgentes } = await import('../db/sembrado/casos-de-los-agentes.ts');
+
+  const e = await sembrarCasosDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+  console.log(`  Sembrada la empresa con datos (${PREFIJO_DE_LA_EVALUACION}…).`);
+  try {
+    // Las 12:00 de hoy en la zona de los casos: le toca, y el sembrado es relativo a hoy.
+    const ahora = new Date(`${diaEnZona(new Date(), ZONA_DE_LOS_CASOS)}T17:00:00Z`);
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora, llave });
+    console.log(`  redacción: ${JSON.stringify(r.tocaba ? r.departamentos.map((d) => d.redaccion) : r.porque)}`);
+    const planes = await conOrganizacion(e.conDatos, () =>
+      datos().selectFrom('planes_de_accion').select(['ventana', 'plan', 'redaccion']).orderBy('ventana').execute(),
+    );
+    for (const p of planes) {
+      console.log(`\n── Plan de ${p.ventana}`);
+      const redactadas = p.redaccion?.renglones ?? {};
+      for (const o of renglonesParaRedactar(p.plan)) {
+        console.log(`  [${o.clave}] plantilla: ${o.texto} ${o.revision}`);
+        console.log(`  [${o.clave}] redactada: ${redactadas[o.clave] ?? '(se quitó: queda la plantilla)'}`);
+      }
+      console.log(`  quitadas: ${JSON.stringify(p.redaccion?.quitadas ?? null)}`);
+    }
+    const uso = await conOrganizacion(e.conDatos, () =>
+      datos()
+        .selectFrom('uso_de_ia')
+        .where('agente', '=', 'plan')
+        .select([
+          sql`count(*)`.as('llamadas'),
+          sql`coalesce(sum(tokens_entrada), 0)`.as('entrada'),
+          sql`coalesce(sum(tokens_salida), 0)`.as('salida'),
+        ])
+        .executeTakeFirstOrThrow(),
+    );
+    console.log(`\nTotal: ${uso.llamadas} llamada(s), ${uso.entrada} tokens de entrada y ${uso.salida} de salida.`);
+  } finally {
+    await quitarEmpresasDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+    console.log('  Quitada la empresa sembrada.');
+  }
+}
+
 /** Cada tanda dice cuántos pedidos hace ANTES de hacerlos, y cómo los hace. */
 const TANDAS = {
   modelo: {
@@ -217,6 +270,11 @@ const TANDAS = {
     pedidos: TECHO_DEL_CEREBRO,
     techo: true,
     correr: correrElCerebro,
+  },
+  plan: {
+    que: 'la redacción del Plan de acción de Acquisition, en 7 y en 30 días, sobre la base sembrada (F03)',
+    pedidos: 2,
+    correr: correrElPlan,
   },
 };
 

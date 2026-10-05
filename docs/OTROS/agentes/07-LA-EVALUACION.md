@@ -141,7 +141,9 @@ Cada respuesta real se puntúa con:
   la comprobación de `06`, `AG-92` (dos pedidos que no generan), y `cerebro` (AG7), las preguntas 1 a 16 de
   `AG-102` —la 17 a la 20 no llegan al modelo y las miran las pruebas 206, 208 y 209—. La del cerebro siembra
   al empezar y quita al terminar, y pide confirmar el **techo**: 16 preguntas por `RONDAS` (6), 96 pedidos;
-  después imprime lo gastado de verdad, leído de `uso_de_ia`. Cada etapa que evalúa suma la suya.
+  después imprime lo gastado de verdad, leído de `uso_de_ia`. Y `plan` (AG9): la redacción del Plan de acción
+  de Acquisition sobre la base sembrada, dos pedidos, con cada frase redactada al lado de la de la plantilla y
+  lo que la validación quitó. Cada etapa que evalúa suma la suya.
 - Usa **la llave de la organización principal**, que el usuario carga **a mano** en Ajustes local. Nunca va
   a un `.env` ni la escribe un agente. **Nunca la llave de un cliente.**
 - Sale por `pedirExterno`: ningún `fetch(` en el guion. En `scripts/` sólo `scripts/supabase.mjs` está

@@ -397,6 +397,11 @@ export interface EmpresaParaBarrer {
   auditor: AccesoAlAuditor;
   /** Las llaves de tl;dv y de IA de los Analizadores. Sin tl;dv es el caso normal: no descubre. */
   analizador: AccesoAlAnalizador;
+  /**
+   * La llave de IA, para redactar el Plan de acción. La resuelve la ruta SÓLO en el horario de `senales`
+   * (AG-35): en las demás corridas no hace falta descifrarla. Ausente o `null`, el plan queda con plantillas.
+   */
+  llaveDeIa?: string | null;
 }
 
 /**
@@ -472,7 +477,7 @@ export async function barrerTodo(
     return a.sello - b.sello;
   });
 
-  for (const { org, acceso, auditor, analizador } of conSello) {
+  for (const { org, acceso, auditor, analizador, llaveDeIa } of conSello) {
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
@@ -550,7 +555,7 @@ export async function barrerTodo(
                       : tarea === 'reintentos'
                         ? await reintentar(org, analizador, arranque, ahora)
                         : tarea === 'senales'
-                          ? await pasarLosDetectores(org, ahora)
+                          ? await pasarLosDetectores(org, llaveDeIa ?? null, arranque, ahora)
                           : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
@@ -701,15 +706,22 @@ async function analizar(
  */
 async function pasarLosDetectores(
   org: OrganizacionListada,
+  llave: string | null,
+  arranque: number,
   ahora: () => number,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number } | { corrio: false; porque: string; sinSello: true }> {
-  const r = await correrLaPasada({ id: org.id, zonaHoraria: org.zonaHoraria }, { ahora: new Date(ahora()) });
+  /* La redacción usa la función entera, como los Analizadores: la pasada corre sola en su horario. */
+  const r = await correrLaPasada(
+    { id: org.id, zonaHoraria: org.zonaHoraria },
+    { ahora: new Date(ahora()), llave, hasta: arranque + FIN_PARA_LOS_ANALIZADORES_MS, ahoraMs: ahora },
+  );
   if (!r.tocaba) return { corrio: false, porque: r.porque, sinSello: true };
   if (r.departamentosQueFallaron > 0 && !r.departamentos.some((d) => d.estado === 'corrio')) {
     throw new Error(`senales: fallaron los ${r.departamentosQueFallaron} departamento(s) que faltaban`);
   }
-  // La pasada no llama al modelo en AG8: mide sobre nuestra base. La redacción del plan (AG9) sumará las suyas.
-  return { corrio: true, resultado: r, llamadas: 0 };
+  // Las llamadas son las de la redacción: una por plan redactado. Medir no llama a nadie.
+  const llamadas = r.departamentos.reduce((n, d) => n + Object.values(d.redaccion ?? {}).filter((x) => x === 'redactada' || x === 'sin_respuesta').length, 0);
+  return { corrio: true, resultado: r, llamadas };
 }
 
 /** El reintento de las 5, con el mismo fin de reloj que los Analizadores: corre solo en su horario. */
