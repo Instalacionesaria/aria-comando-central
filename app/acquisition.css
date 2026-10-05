@@ -89,10 +89,25 @@
 #v-acquisition .acq-sig-firma p { flex-basis: 100%; margin: 0; color: var(--txt-dim); }
 #v-acquisition .acq-sig-decision label,
 #v-acquisition .acq-sig-firma label { display: flex; gap: 6px; align-items: center; }
+#v-acquisition .acq-sig-decision input,
+#v-acquisition .acq-sig-firma input {
+  font: inherit; font-size: 12.5px; color: var(--txt); background: var(--bg-raise);
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 9px;
+}
 #v-acquisition .acq-sig-decision input { width: min(320px, 100%); }
 #v-acquisition .acq-sig-firma input { width: 80px; }
-#v-acquisition .acq-sig-secundario { opacity: .75; }
+/* Los botones son los de la casa (`fd-btn`), un poco más bajos para caber en la tarjeta. */
+#v-acquisition .acq-sig-decision .fd-btn,
+#v-acquisition .acq-sig-firma .fd-btn { padding: 7px 12px; }
 #v-acquisition .acq-sig-nota { margin: 0; padding: 11px 14px; font-size: 12px; color: var(--txt-dim); }
+/* La evidencia la dibuja el `Valor` del cerebro (`components/cerebro/Evidencia.jsx`), pensado para su burbuja:
+   acá anida objetos dentro de una tarjeta angosta, y sus columnas de 120 px como mínimo desbordaban. */
+#v-acquisition .acq-sig-evidencia .cb-datos { font-size: 12px; }
+#v-acquisition .acq-sig-evidencia .cb-datos > div { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); }
+/* Adentro de otro valor, la clave y el valor van en el mismo renglón: con columnas, «agendados» se partía. */
+#v-acquisition .acq-sig-evidencia .cb-datos .cb-datos > div { display: flex; flex-wrap: wrap; gap: 0 6px; }
+/* Y la clave no se parte: hereda el `overflow-wrap: anywhere` del valor que la contiene. */
+#v-acquisition .acq-sig-evidencia .cb-datos .cb-datos dt { overflow-wrap: normal; }
 #v-acquisition .acq-falla-chica { color: var(--crit); font-size: 11px; }
 /* El plan vive en `Ventana`, que se monta adentro de la vista (no usa portal): el `#v-acquisition` alcanza. */
 #v-acquisition .acq-plan-nota,

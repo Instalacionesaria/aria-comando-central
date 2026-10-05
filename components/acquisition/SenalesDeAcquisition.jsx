@@ -68,8 +68,10 @@ function fechaCorta(iso) {
  * El nombre de la entidad: el de la campaña si GoHighLevel lo mandó, el rótulo del funnel, o nada (la
  * empresa entera). Un conjunto no tiene nombre guardado: se dibuja su identificador.
  */
-function nombreDe(entidad, nombres, funnels) {
+function nombreDe(entidad, nombres, funnels, delServidor = null) {
   if (entidad.tipo === 'empresa') return null;
+  // El que resolvió el servidor con `negocio.campanas`, que conoce también las campañas sin datos en la ventana.
+  if (delServidor) return delServidor;
   if (entidad.tipo === 'campana') return nombres.get(entidad.id) ?? `Campaña ${entidad.id}`;
   if (entidad.tipo === 'par_de_etapas') return funnels[entidad.id.split(':')[0]]?.nombre ?? entidad.id;
   if (entidad.tipo === 'conjunto') return `Conjunto ${entidad.id}`;
@@ -78,8 +80,10 @@ function nombreDe(entidad, nombres, funnels) {
 
 // ─── El Plan de acción ──────────────────────────────────────────────────────
 
-export function BotonDelPlan({ senales, nombres, funnels }) {
+export function BotonDelPlan({ senales, nombres: deLosEmbudos, funnels }) {
   const [abierto, setAbierto] = useState(false);
+  // Los nombres que resolvió el servidor para las señales vivas, sobre los de los embudos.
+  const nombres = new Map([...deLosEmbudos, ...(senales?.lista ?? []).filter((s) => s.nombre).map((s) => [s.entidad.id, s.nombre])]);
   return (
     <>
       <button type="button" className="reco-btn" onClick={() => setAbierto(true)}>
@@ -157,7 +161,7 @@ export function TarjetaDeSenales({ senales, puede, nombres, funnels, alCambiar }
         <p className="acq-sig-nota">Ninguna señal abierta en los últimos {DIAS[senales.ventana]} días cerrados.</p>
       ) : (
         senales.lista.map((s) => (
-          <Senal key={s.id} s={s} puede={puede} nombre={nombreDe(s.entidad, nombres, funnels)} regla={senales.reglas.find((r) => r.codigo === s.regla)} alCambiar={alCambiar} />
+          <Senal key={s.id} s={s} puede={puede} nombre={nombreDe(s.entidad, nombres, funnels, s.nombre)} regla={senales.reglas.find((r) => r.codigo === s.regla)} alCambiar={alCambiar} />
         ))
       )}
     </div>
@@ -231,10 +235,10 @@ function Senal({ s, puede, nombre, regla, alCambiar }) {
               Motivo para {decidiendo === 'resolver' ? 'resolverla' : 'descartarla'}
               <input type="text" value={motivo} maxLength={500} onChange={(e) => setMotivo(e.target.value)} disabled={enviando} autoFocus />
             </label>
-            <button type="button" onClick={confirmar} disabled={enviando || motivo.trim() === ''}>
+            <button type="button" className="fd-btn" onClick={confirmar} disabled={enviando || motivo.trim() === ''}>
               {enviando ? 'Guardando…' : 'Confirmar'}
             </button>
-            <button type="button" className="acq-sig-secundario" onClick={() => setDecidiendo(null)} disabled={enviando}>
+            <button type="button" className="fd-btn sec" onClick={() => setDecidiendo(null)} disabled={enviando}>
               Cancelar
             </button>
             {fallo ? <span className="acq-falla-chica">{fallo}</span> : null}
@@ -260,17 +264,31 @@ function Senal({ s, puede, nombre, regla, alCambiar }) {
   );
 }
 
+/**
+ * Cómo se muestra y se escribe el valor de cada unidad. El catálogo guarda una proporción como 0,3; quien firma
+ * piensa en «30 %», así que se multiplica para mostrar y se divide para guardar.
+ */
+const UNIDAD = {
+  proporcion: { escala: 100, sufijo: '%' },
+  puntos_porcentuales: { escala: 100, sufijo: 'puntos' },
+  puntos: { escala: 1, sufijo: 'puntos' },
+  dias: { escala: 1, sufijo: 'días' },
+};
+const NUMERO = new Intl.NumberFormat('es', { maximumFractionDigits: 2 });
+
 /** Firmar el umbral de la regla: el valor que se firma pasa a regir desde la próxima pasada. */
 function Firma({ regla, alCambiar }) {
-  const [valor, setValor] = useState(String(regla.valor));
+  const u = UNIDAD[regla.unidad] ?? UNIDAD.puntos;
+  const enSuUnidad = (x) => `${NUMERO.format(x * u.escala)} ${u.sufijo}`;
+  const [valor, setValor] = useState(NUMERO.format(regla.valor * u.escala));
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState('');
-  const numero = Number(valor.replace(',', '.'));
+  const numero = Number(valor.replace(/\./g, '').replace(',', '.'));
 
   async function firmar() {
     setEnviando(true);
     setFallo('');
-    const r = await firmarUmbralDeAcquisition(regla.codigo, numero);
+    const r = await firmarUmbralDeAcquisition(regla.codigo, numero / u.escala);
     setEnviando(false);
     if (r.tipo === 'fallo') setFallo(r.mensaje);
     else alCambiar();
@@ -279,14 +297,15 @@ function Firma({ regla, alCambiar }) {
   return (
     <div className="acq-sig-firma">
       <p>
-        Umbral {regla.provisional ? 'provisional' : 'firmado'}: {regla.valor}
-        {regla.provisional ? '' : ` (el provisional era ${regla.valorProvisional})`}. {regla.porque}
+        Umbral {regla.provisional ? 'provisional' : 'firmado'}: {enSuUnidad(regla.valor)}
+        {regla.provisional ? '' : ` (el provisional era ${enSuUnidad(regla.valorProvisional)})`}. {regla.porque}
       </p>
       <label>
-        Valor
+        Nuevo valor
         <input type="text" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} disabled={enviando} />
+        {u.sufijo}
       </label>
-      <button type="button" onClick={firmar} disabled={enviando || !Number.isFinite(numero) || numero <= 0}>
+      <button type="button" className="fd-btn" onClick={firmar} disabled={enviando || !Number.isFinite(numero) || numero <= 0}>
         {enviando ? 'Firmando…' : 'Firmar umbral'}
       </button>
       {fallo ? <span className="acq-falla-chica">{fallo}</span> : null}

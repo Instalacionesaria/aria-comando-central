@@ -14,8 +14,13 @@ export interface ReglaDelCatalogo {
   /** `ACQ-CPL-SOSTENIDO`: departamento y nombre, en mayúsculas. */
   codigo: string;
   departamento: DepartamentoConSenales;
-  /** El valor provisional. */
+  /** El valor provisional, en la unidad de la regla. */
   valor: number;
+  /**
+   * Cómo se lee el valor para firmarlo: `proporcion` (0,3 es 30 %), `puntos_porcentuales` (0,15 es 15 puntos de
+   * una tasa), `puntos` (de ICP) o `dias`. La pantalla lo muestra y lo recibe en esa unidad; se guarda como está.
+   */
+  unidad: 'proporcion' | 'puntos_porcentuales' | 'puntos' | 'dias';
   /** Qué cuenta el denominador: impresiones, contactos, citas, llamadas. Nulo en una regla de ausencia. */
   denominador: string | null;
   gravedad: Gravedad;

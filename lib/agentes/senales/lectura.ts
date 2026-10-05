@@ -127,6 +127,7 @@ export async function reglasDelDepartamento(departamento: DepartamentoConSenales
   const firmados = await umbralesFirmados();
   return CATALOGO_DE_REGLAS.filter((r) => r.departamento === departamento).map((r) => ({
     codigo: r.codigo,
+    unidad: r.unidad,
     denominador: r.denominador,
     gravedad: r.gravedad,
     porque: r.porque,

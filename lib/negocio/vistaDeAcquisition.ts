@@ -38,6 +38,7 @@ export interface PantallaDeAcquisition {
 
 export interface ReglaDeAcquisition {
   codigo: string;
+  unidad: 'proporcion' | 'puntos_porcentuales' | 'puntos' | 'dias';
   denominador: string | null;
   gravedad: string;
   porque: string;

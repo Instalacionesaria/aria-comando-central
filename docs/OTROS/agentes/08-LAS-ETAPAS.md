@@ -458,8 +458,15 @@
   mismo `Valor` del cerebro), resolver y descartar con motivo, y firmar el umbral para quien puede. Con «hoy» o
   «completo», la tarjeta y el plan dicen que se calculan sobre 7 y 30 días cerrados. El nombre de cada campaña
   sale de los embudos; el del funnel, de los rótulos de la pantalla.
-- **Lo que sigue**: verificar la pantalla en el preview con login; la redacción con el modelo y su evaluación
-  real, con OK.
+- **Verificada el 2026-10-05 en el preview local**, con la sesión de la fundadora y señales de ejemplo copiadas de
+  la base sembrada, a 419 px y a 1.100 px: la tarjeta, el plan, «Ver evidencia» (marcó vista), resolver con
+  motivo (la base guardó el motivo y el autor) y firmar un umbral (guardó 0,85 con su autor). Lo que encontró:
+  el nombre de una campaña sin datos en la ventana no se resolvía —ahora manda el que resuelve el servidor—,
+  las frases del monitor traían acentos graves, la evidencia anidada desbordaba en el teléfono, los controles
+  tenían el estilo del navegador —ahora `fd-btn`—, y el umbral se leía «0.9» con un porqué que nombraba
+  código: cada regla del catálogo dice su unidad (`proporcion`, `puntos_porcentuales`, `puntos`, `dias`) y la
+  pantalla muestra y recibe «90 %».
+- **Lo que sigue**: la redacción con el modelo y su evaluación real, con OK.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

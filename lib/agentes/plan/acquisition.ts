@@ -112,7 +112,8 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
     case ACQ.atribucionVentas:
     case ACQ.atribucionUtm:
     case ACQ.atribucionSinCampana: {
-      const consecuencia = typeof ev.consecuencia === 'string' ? `; ${ev.consecuencia}` : '.';
+      // La consecuencia es la del monitor, que marca los nombres de campo con acentos graves: acá van limpios.
+      const consecuencia = typeof ev.consecuencia === 'string' ? `; ${ev.consecuencia.replace(/`/g, '')}` : '.';
       const cuantos = Number(ev.cuantos ?? 0);
       const sobre = Number(ev.sobre ?? 0);
       return d.regla === ACQ.atribucionUtm
