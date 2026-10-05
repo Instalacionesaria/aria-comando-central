@@ -159,6 +159,7 @@ test('sin llave no se llama al modelo, y el plan queda con plantillas', async ()
   }) as typeof globalThis.fetch;
   try {
     const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: null });
+    assert.ok(r.tocaba);
     assert.deepEqual(r.departamentos[0]!.redaccion, { '7d': 'sin_llave', '30d': 'sin_llave' });
   } finally {
     globalThis.fetch = original;
