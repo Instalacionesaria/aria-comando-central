@@ -118,14 +118,23 @@ export interface MensajeAlModelo {
 }
 
 /**
- * Una herramienta que el agente ofrece. Sale con `strict: true`: su esquema lleva `additionalProperties:
- * false` y `required` en cada objeto, y ninguna de las restricciones que el modo estricto no admite (ver
- * el encabezado). Si no, el proveedor contesta 400.
+ * El proveedor admite hasta 20 herramientas con `strict: true` por pedido; con más contesta 400 («Too many
+ * strict tools»). Lo encontró la primera evaluación real del cerebro (2026-10-05), con 31 para el admin, y
+ * ninguna prueba con la red falseada lo podía ver. Lo vigila la 212 sobre el juego más grande del cerebro.
+ */
+export const MAXIMO_DE_HERRAMIENTAS_ESTRICTAS = 20;
+
+/**
+ * Una herramienta que el agente ofrece. Con `estricta`, sale con `strict: true` y el proveedor garantiza la
+ * forma de lo que el modelo escribe: su esquema lleva `additionalProperties: false` y `required` en cada
+ * objeto, y ninguna de las restricciones que el modo estricto no admite (ver el encabezado), o el proveedor
+ * contesta 400. Sin `estricta`, la forma la valida quien ejecuta la herramienta.
  */
 export interface HerramientaDelModelo {
   nombre: string;
   descripcion: string;
   esquema: Record<string, unknown>;
+  estricta: boolean;
 }
 
 /** Un bloque de la respuesta, como llegó. Se lee por `type` y por `name`, nunca por posición. */
@@ -383,7 +392,7 @@ function cuerpoDelPedido(p: PedidoAlModelo<unknown>): Record<string, unknown> {
       name: h.nombre,
       description: h.descripcion,
       input_schema: h.esquema,
-      strict: true,
+      ...(h.estricta ? { strict: true } : {}),
       // La última marca el corte: las herramientas van primero en el prefijo y no cambian entre las
       // rondas de una misma pregunta.
       ...(i === herramientas.length - 1 ? { cache_control: { type: 'ephemeral' } } : {}),

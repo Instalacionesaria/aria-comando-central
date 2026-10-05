@@ -182,6 +182,14 @@ test('al modelo se le ofrece lo de las pestañas que se ven, y las integraciones
   assert.ok(!ofrecidas(modelo).includes('estado_de_integraciones'));
   // Las de la caja abierta van primero.
   assert.equal((modelo.cuerpos[0]!.tools as { name: string }[])[0]!.name, 'dinero_del_mes');
+  /* Y sabe cuáles le faltan, con su sección: sin eso, a «¿qué dicen los agentes del CRM?» contestaba con
+     sus propias colas (la primera evaluación real, 2026-10-05). Sin las de integraciones, que no son de
+     ninguna sección. */
+  const instrucciones = JSON.stringify(modelo.cuerpos[0]!.system);
+  const linea = /existen, pero esta persona no las tiene: ([^.]*)\./.exec(instrucciones)?.[1] ?? '';
+  assert.match(linea, /auditoria_de_agentes \(Conversation\)/);
+  for (const propia of ofrecidas(modelo)) assert.ok(!linea.includes(`${propia} (`), `${propia} es suya y figura como ajena`);
+  assert.ok(!linea.includes('estado_de_integraciones'));
   modelo.quitar();
 
   // Quien administra tiene `credenciales.ver`: a él sí se le ofrece.
@@ -189,6 +197,8 @@ test('al modelo se le ofrece lo de las pestañas que se ven, y las integraciones
   assert.equal((await preguntarEn(delCloser, '/api/closer/cerebro', { pregunta: '¿Está todo conectado?' })).status, 200);
   assert.ok(ofrecidas(modelo).includes('estado_de_integraciones'));
   assert.ok(ofrecidas(modelo).includes('embudos_de_acquisition'), 'quien administra ve Acquisition: también desde la caja del Closer');
+  // Quien ve todo no tiene lecturas ajenas: la línea no viaja.
+  assert.doesNotMatch(JSON.stringify(modelo.cuerpos[0]!.system), /esta persona no las tiene/);
 });
 
 test('el estado de las integraciones y por qué el auditor no audita llegan como dato, iguales a su pantalla', async () => {

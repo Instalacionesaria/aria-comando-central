@@ -192,5 +192,7 @@ export function respuestaDePreguntar(r: ResultadoDePreguntar): Response {
     // El detalle con la forma que la pantalla ya sabe leer: situación, referencia y lo técnico.
     return rechazo('modelo_no_disponible', `${r.situacion} · ref ${r.ref} · ${r.detalle}`);
   }
-  return ok(r);
+  // Lo que la validación quitó es para la evaluación: la pantalla ya lo dice en los avisos.
+  const { quitado: _paraLaEvaluacion, ...respondida } = r;
+  return ok(respondida);
 }

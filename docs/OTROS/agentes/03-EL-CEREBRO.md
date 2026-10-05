@@ -130,6 +130,12 @@ suficiente»: «0 de 333 … se registra en Sales · Closer, cita por cita»). S
 (`AG-15` de `01`): a quien no ve ninguna sección con herramientas, el estado le dice `sin_datos` y la
 pregunta se rechaza con `cerebro_sin_datos`, antes de reservar (AG5).
 
+Lo que existe y la persona no ve se le nombra al modelo: el prompt lista las lecturas del catálogo que no se le
+ofrecen, con su sección (`lecturas ajenas`, sin las de integraciones), y le pide decir que eso no está en lo
+que la persona puede ver y en qué sección está. Sin esa lista, la regla «si una herramienta no está, dilo»
+no alcanzaba: en la primera evaluación real un setter preguntó por los agentes del CRM y oyó «no hay nada
+que reportar», leído de sus propias colas (`07`, Resultados). La mira la 216; el prompt pasó a la versión 2.
+
 ## AG-44 · El contexto de la caja del pie
 
 `{origen:'pie', seccion, pestana, entrada, sub, periodo?}`, armado con lo que la caja ya sabe
@@ -152,7 +158,9 @@ texto libre de personas (notas, mensajes, transcripciones) no viaja; las frases 
 
 ## AG-46 · La forma de la respuesta
 
-El modelo contesta con la herramienta `responder`, ofrecida con `strict: true` y pedida por el prompt. **No
+El modelo contesta con la herramienta `responder`, ofrecida con `strict: true` y pedida por el prompt —es
+la única estricta: el proveedor admite 20 por pedido y el admin recibe 30 de lectura, que van sin `strict` y
+cuyo único argumento, el `periodo`, valida el servidor (la 212)—. **No
 se puede forzar**: `claude-sonnet-5-5` rechaza `tool_choice` de tipo `tool` o `any` con un 400 (`06`, AG-93).
 Lo decidió AG5 (`lib/agentes/executive/preguntar.ts`): `responder` va con las demás herramientas y
 `tool_choice` `auto`; si el modelo contesta con texto suelto, o se llega a la sexta ronda, esa ronda pide el

@@ -77,6 +77,8 @@ export const RESPONDER: HerramientaDelModelo = {
     'Entrega la respuesta final a la persona. Úsala UNA vez, al final, cuando ya leíste lo que necesitabas. ' +
     'Cada cifra cita la evidencia (ev-1, ev-2…) y el campo exacto de donde sale; una cifra que no está en ese ' +
     'campo se quita. Todo número de la conclusión y de las recomendaciones tiene que estar entre las cifras.',
+  // La única estricta del cerebro: el proveedor garantiza la forma, y la validación de abajo, el contenido.
+  estricta: true,
   esquema: {
     type: 'object',
     additionalProperties: false,
@@ -213,7 +215,20 @@ const esTexto = (v: unknown): v is string => typeof v === 'string';
 const esArreglo = (v: unknown): v is unknown[] => Array.isArray(v);
 const esObjeto = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
-export type ResultadoDeLaValidacion = { tipo: 'valida'; respuesta: RespuestaValidada } | { tipo: 'invalida'; motivo: string };
+/**
+ * Lo que la validación quitó o no pudo respaldar, tal como lo escribió el modelo, con lo que había en el campo
+ * que citó. No se guarda ni va a la pantalla —la pantalla ya lo dice en los avisos—: es para la evaluación
+ * (`scripts/evaluar-agentes.mjs`), que sin esto sólo sabría cuántas se quitaron y no por qué.
+ */
+export interface LoQuitado {
+  cifras: { valor: unknown; ev: unknown; campo: unknown; enElCampo: unknown }[];
+  /** Los números de la conclusión que no son cifras respaldadas. */
+  enLaConclusion: number[];
+}
+
+export type ResultadoDeLaValidacion =
+  | { tipo: 'valida'; respuesta: RespuestaValidada; quitado: LoQuitado }
+  | { tipo: 'invalida'; motivo: string };
 
 /**
  * Valida lo que el modelo mandó en `responder` contra la evidencia de esta pregunta y las secciones que la
@@ -236,11 +251,17 @@ export function validarRespuesta(
 
   // ── Las cifras: cada una contra el campo que cita ──────────────────────────
   const cifrasValidas: CifraDelCerebro[] = [];
+  const quitado: LoQuitado = { cifras: [], enLaConclusion: [] };
   let sinRespaldo = 0;
   for (const c of cifras as unknown[]) {
     const ev = esObjeto(c) && esTexto(c.ev) ? porId.get(c.ev) : undefined;
     if (!esObjeto(c) || typeof c.valor !== 'number' || !esTexto(c.campo) || !ev || !respaldada(c.valor, valorEn(ev.datos, c.campo))) {
       sinRespaldo += 1;
+      quitado.cifras.push(
+        esObjeto(c)
+          ? { valor: c.valor, ev: c.ev, campo: c.campo, enElCampo: ev && esTexto(c.campo) ? valorEn(ev.datos, c.campo) : undefined }
+          : { valor: c, ev: undefined, campo: undefined, enElCampo: undefined },
+      );
       continue;
     }
     cifrasValidas.push({
@@ -261,11 +282,12 @@ export function validarRespuesta(
     );
   }
 
-  /** ¿Todos los números de este texto son cifras respaldadas (o largos de ventana, o años)? */
-  const respaldados = (texto: string) =>
-    numerosDelTexto(texto).every(
-      (n) => NUMEROS_QUE_NO_SON_CIFRAS.includes(n) || esAnio(n) || cifrasValidas.some((c) => formas(c.valor).some((f) => igual(n, f))),
+  /** Los números de este texto que no son cifras respaldadas (ni largos de ventana, ni años). */
+  const sinRespaldoEn = (texto: string) =>
+    numerosDelTexto(texto).filter(
+      (n) => !(NUMEROS_QUE_NO_SON_CIFRAS.includes(n) || esAnio(n) || cifrasValidas.some((c) => formas(c.valor).some((f) => igual(n, f)))),
     );
+  const respaldados = (texto: string) => sinRespaldoEn(texto).length === 0;
 
   // ── Las recomendaciones: citan lo leído, y sus números son cifras respaldadas ──
   const recomendacionesValidas: RespuestaDelCerebro['recomendaciones'] = [];
@@ -287,7 +309,8 @@ export function validarRespuesta(
   }
 
   // ── La conclusión: no se puede quitar, pero se dice y baja la confianza ──────
-  const conclusionRespaldada = respaldados(conclusion);
+  quitado.enLaConclusion = sinRespaldoEn(conclusion);
+  const conclusionRespaldada = quitado.enLaConclusion.length === 0;
   if (!conclusionRespaldada) avisos.push('La conclusión menciona un número que no está entre las cifras respaldadas: tómala con cuidado.');
 
   const visibles = new Set(seccionesVisibles);
@@ -326,5 +349,6 @@ export function validarRespuesta(
       siguientes: siguientesValidos,
       avisos,
     },
+    quitado,
   };
 }

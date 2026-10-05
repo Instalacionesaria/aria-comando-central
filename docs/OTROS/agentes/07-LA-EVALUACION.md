@@ -168,7 +168,39 @@ de la rúbrica por pregunta y lo que se cambió por lo que salió mal.
 
 ## Resultados
 
-Todavía no hay: la primera evaluación real es en AG7.
+### 2026-10-05 · la primera, con la llave de ARIA cargada a mano en local
+
+**`modelo`** (2 pedidos, `AG-92`): la llave alcanza `claude-sonnet-5-5`, y `count_tokens` con la herramienta
+forzada se rechaza con un 400, como dice la referencia. Confirmado lo que decidió AG1.
+
+**`cerebro`** (techo 96; prompt versión 1): **19 llamadas** en `uso_de_ia`, de las que **12 fueron un 400** y
+**7 rondas se respondieron**: 3.060 tokens de entrada, 15.896 leídos de la caché y 2.773 de salida.
+
+- **Lo que la frenó**: todas las preguntas del admin (1 a 11 y 16) fallaron en la primera ronda con
+  `400 · Too many strict tools (31). The maximum number of strict tools supported is 20`. Las herramientas
+  salían todas con `strict: true`; el admin recibe 30 y `responder`. Ninguna prueba lo podía ver: el modelo
+  falso no tiene ese límite. **Arreglo**: sólo `responder` es estricta (`06`, `AG-93`; la 212 vigila el juego
+  más grande; la 198 lo que viaja). En producción, el cerebro del admin no habría respondido nunca.
+- **12** · closer, «¿Cuánto gastamos en Meta?»: **bien**. Una ronda, sin herramientas: «desde la vista de
+  closer no tengo ninguna herramienta con inversión», ninguna cifra de Acquisition. Tú neutro.
+- **13** · closer, «¿Qué citas tengo hoy?»: leyó `agenda_del_closer` y `frescura`; 0 citas en los próximos
+  15 días, respaldada, y avisó que el barrido del calendario nunca corrió (cierto en la base sembrada). La
+  conclusión quedó marcada como dudosa por el «15» de «los próximos 15 días»: es el largo de la agenda, no una
+  cifra, y no está entre los largos que la validación perdona (`NUMEROS_QUE_NO_SON_CIFRAS`). Falso positivo
+  anotado, sin cambiar todavía: el 15 también puede ser una cifra de verdad.
+- **14** · closer, «¿Cuánto llevo de comisión?»: «no llevas comisión en octubre: todavía no hay ningún
+  resultado registrado», con la venta como reportada. Correcto en lo que dice, pero **se quitaron 2 cifras** y
+  esta corrida no decía cuáles. **Arreglo**: la validación informa lo quitado con lo que había en el campo
+  (`LoQuitado`), el guion lo imprime y la ruta no lo manda a la pantalla (la 208).
+- **15** · setter, «¿Qué dicen los agentes del CRM?»: **mal**. No recibió las herramientas de Conversation,
+  como corresponde, pero contestó «los agentes no muestran nada que reportar», leído de sus colas, en vez de
+  decir que eso no está en lo que puede ver. Además, 3 cifras quitadas y un «0» sin respaldo en la
+  conclusión. **Arreglo**: el prompt nombra las lecturas que existen y la persona no tiene, con su sección
+  (`03`, `AG-43`; la 216); `VERSION_DEL_CEREBRO` 2.
+- Rúbrica de lo respondido: tú neutro en las cuatro; ninguna cifra sin respaldo publicada (la validación las
+  quitó); ningún porcentaje; se negó bien en la 12 y mal en la 15.
+
+Queda **repetir la tanda** con los arreglos, con un OK nuevo.
 
 ## Preguntas abiertas
 

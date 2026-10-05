@@ -68,7 +68,10 @@ ese modelo, como dice la referencia de la API. Nunca con la llave de un cliente.
 - **la salida estructurada nunca con una herramienta forzada**: `claude-sonnet-5-5` rechaza `tool_choice`
   `tool` o `any` con un 400. Va por `output_config.format` (un JSON Schema) o por herramientas con
   `strict: true` que el prompt pide usar; `tool_choice` sólo viaja como `auto` o `none`. El modo estricto no admite
-  `minimum`/`maximum`, `minLength`/`maxLength` ni restricciones complejas de arreglos;
+  `minimum`/`maximum`, `minLength`/`maxLength` ni restricciones complejas de arreglos, y **admite hasta 20
+  herramientas estrictas por pedido** (`MAXIMO_DE_HERRAMIENTAS_ESTRICTAS`): cada herramienta dice si lo es
+  (`estricta`), y sólo viaja `strict` en las que sí. Lo encontró la primera evaluación real: 31 estrictas para el
+  admin, un 400 en todas sus preguntas;
 - no se manda `thinking`: `claude-sonnet-5-5` piensa por omisión y el techo cubre pensamiento y texto. La
   profundidad se gobierna con `esfuerzo` (`output_config.effort`), que el transporte no le manda a Haiku 4.5
   aunque se lo pidan (lo rechaza con un 400);

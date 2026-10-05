@@ -166,6 +166,13 @@ async function correrElCerebro(llave) {
         for (const c of x.no_hay_dato) console.log(`  no hay dato: ${c.falta} · se carga en ${c.donde_se_carga}`);
         for (const c of x.siguientes) console.log(`  siguiente: abrir ${c.seccion}${c.pestana ? ` › ${c.pestana}` : ''}`);
         for (const a of x.avisos) console.log(`  aviso: ${a}`);
+        // Lo que la validación quitó, tal como lo escribió el modelo y con lo que había en el campo que citó:
+        // sin esto, la evaluación sólo sabe cuántas cifras se quitaron y no si el error es del modelo o de la regla.
+        for (const c of r.quitado.cifras) {
+          const enElCampo = JSON.stringify(c.enElCampo) ?? 'nada (el campo no existe)';
+          console.log(`  quitada: ${c.valor} · ${c.ev} ${c.campo} · en el campo: ${enElCampo.length > 160 ? `${enElCampo.slice(0, 160)}…` : enElCampo}`);
+        }
+        if (r.quitado.enLaConclusion.length > 0) console.log(`  en la conclusión, sin respaldo: ${r.quitado.enLaConclusion.join(', ')}`);
         console.log(`  mascota: ${r.mascota}`);
       } else if (r.tipo === 'fallo') {
         console.log(`  ${r.situacion} · ref ${r.ref} · ${r.detalle}`);

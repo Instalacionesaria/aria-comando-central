@@ -8,12 +8,18 @@
 // `minItems`…—. Por HTTP directo no hay un SDK que las quite: un esquema que las use es un 400 en cada
 // pregunta, con todas las pruebas de la red falseada en verde. Y todo objeto lleva
 // `additionalProperties: false` y todas sus claves en `required`.
+//
+// Y el límite que encontró la primera evaluación real (2026-10-05): el proveedor admite 20 herramientas
+// estrictas por pedido, y el admin recibía 31 —las 30 de lectura y `responder`—. Todas sus preguntas eran un
+// 400. Ahora sólo `responder` es estricta; esta prueba mira el juego más grande que el cerebro puede ofrecer.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HERRAMIENTAS } from '../../lib/agentes/executive/herramientas.ts';
+import { HERRAMIENTAS, herramientasPara, paraElModelo } from '../../lib/agentes/executive/herramientas.ts';
 import { RESPONDER } from '../../lib/agentes/executive/respuesta.ts';
+import { MAXIMO_DE_HERRAMIENTAS_ESTRICTAS } from '../../lib/agentes/llamada.ts';
+import { SECCIONES } from '../../lib/autorizacion/secciones.ts';
 
 const NO_ADMITIDAS = [
   'minLength', 'maxLength', 'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf',
@@ -48,6 +54,16 @@ test('el detector ve lo que tiene que ver', () => {
   assert.deepEqual(defectos({ type: 'object', additionalProperties: false, required: ['a'], properties: { a: { type: 'string', maxLength: 3 } } }), ['$.a: maxLength']);
   assert.deepEqual(defectos({ type: 'object', required: [], properties: {} }), ['$: sin additionalProperties: false']);
   assert.deepEqual(defectos({ type: 'object', additionalProperties: false, required: [], properties: { a: { type: 'string' } } }), ['$: required no son todas las claves']);
+});
+
+test('quien ve todo recibe a lo sumo 20 herramientas estrictas, y `responder` es una', () => {
+  /* Todas las secciones y las integraciones: el juego más grande. Es el mismo arreglo que arma `preguntar`
+     (`[...ofrecidas.map(paraElModelo), RESPONDER]`). */
+  const juego = [...herramientasPara(SECCIONES.map((s) => s.clave), null, true).map(paraElModelo), RESPONDER];
+  assert.ok(juego.length > MAXIMO_DE_HERRAMIENTAS_ESTRICTAS, 'el juego entra entero en el límite: esta prueba no miraría nada');
+  const estrictas = juego.filter((h) => h.estricta).map((h) => h.nombre);
+  assert.ok(estrictas.length <= MAXIMO_DE_HERRAMIENTAS_ESTRICTAS, `${estrictas.length} estrictas: el proveedor contesta 400 a todo`);
+  assert.ok(estrictas.includes(RESPONDER.nombre), '`responder` sin `strict`: el proveedor ya no garantiza la forma de la respuesta');
 });
 
 test('los nombres son únicos y ninguno choca con `responder`', () => {

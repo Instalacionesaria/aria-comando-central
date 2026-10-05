@@ -76,9 +76,14 @@ export function herramientasPara(
   return [...ofrecidas].sort((a, b) => deLaAbierta(a) - deLaAbierta(b));
 }
 
-/** Lo que viaja al modelo de cada herramienta ofrecida. */
+/**
+ * Lo que viaja al modelo de cada herramienta ofrecida. **Sin `strict`**: el admin recibe 30 y el proveedor
+ * admite 20 estrictas (`MAXIMO_DE_HERRAMIENTAS_ESTRICTAS`). No hace falta: sus argumentos son a lo sumo un
+ * `periodo`, que `ejecutarHerramienta` valida, y lo demás se ignora. La estricta es `responder`, cuya forma
+ * sí importa. Los esquemas siguen cumpliendo el modo estricto (la 212), por si alguna vuelve a serlo.
+ */
 export function paraElModelo(h: DefinicionDeHerramienta): HerramientaDelModelo {
-  return { nombre: h.nombre, descripcion: h.descripcion, esquema: h.esquema };
+  return { nombre: h.nombre, descripcion: h.descripcion, esquema: h.esquema, estricta: false };
 }
 
 export type ResultadoDeHerramienta = { tipo: 'datos'; datos: unknown } | { tipo: 'error'; mensaje: string };

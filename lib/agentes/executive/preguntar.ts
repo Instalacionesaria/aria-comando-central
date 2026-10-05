@@ -33,9 +33,10 @@ import { conOrganizacion } from '../../datos/contexto.ts';
 import { type FalloDelModelo, anotarIncidente } from '../../fundaciones/fallo-del-modelo.ts';
 import { type BloqueDelModelo, type MensajeAlModelo, llamarAlModelo } from '../llamada.ts';
 import { MODELO_DEL_EXECUTIVE } from '../modelos.ts';
-import { type ContextoDeHerramienta, type DatosDeLaRuta, ejecutarHerramienta, herramientasPara, paraElModelo } from './herramientas.ts';
+import { SECCIONES } from '../../autorizacion/secciones.ts';
+import { type ContextoDeHerramienta, type DatosDeLaRuta, HERRAMIENTAS, ejecutarHerramienta, herramientasPara, paraElModelo } from './herramientas.ts';
 import { instruccionesDelCerebro, type DatosDeLasInstrucciones } from './prompt.ts';
-import { type Evidencia, NOMBRE_DE_RESPONDER, RESPONDER, type RespuestaValidada, validarRespuesta } from './respuesta.ts';
+import { type Evidencia, type LoQuitado, NOMBRE_DE_RESPONDER, RESPONDER, type RespuestaValidada, validarRespuesta } from './respuesta.ts';
 import { guardarRespuesta, marcarFallida, reservarPregunta, type OrigenDelHilo, type TurnoAnterior } from './conversaciones.ts';
 import { cerrarLugar } from './topes.ts';
 import { estadoDeTope, type EstadoDelCerebro } from './estado.ts';
@@ -80,6 +81,8 @@ export type ResultadoDePreguntar =
       /** La evidencia completa, para el desplegable de la respuesta (AG-48). En el hilo se guarda sin nombres. */
       evidencia: Evidencia[];
       mascota: EstadoDeLaMascota;
+      /** Lo que la validación quitó, para la evaluación. La ruta no lo manda (`respuestaDePreguntar`). */
+      quitado: LoQuitado;
     }
   | { tipo: 'tope'; estado: Extract<EstadoDelCerebro, { tipo: 'tope' }> }
   | { tipo: 'no_encontrado' }
@@ -189,7 +192,14 @@ async function elBucle(
   const herramientas = [...ofrecidas.map(paraElModelo), RESPONDER];
   const desde: DatosDeLasInstrucciones['desde'] =
     p.origen === 'pie' && p.seccion !== null ? { origen: 'pie', seccion: p.seccion, periodo: p.periodo } : { origen: 'inicio' };
-  const instrucciones = instruccionesDelCerebro({ hoy: p.hoy, zona: p.zona, secciones: p.secciones, desde });
+  // Las del catálogo que no se le ofrecen, con el nombre de su sección. Las de integraciones no: no son de
+  // ninguna sección, y a quien no ve Credenciales no se le dice que existen.
+  const nombreDe = (clave: string) => SECCIONES.find((s) => s.clave === clave)?.nombre ?? clave;
+  const ajenas = HERRAMIENTAS.filter((h) => h.requiere === undefined && !ofrecidas.includes(h)).map((h) => ({
+    nombre: h.nombre,
+    seccion: h.secciones.map(nombreDe).join(h.todas ? ' y ' : ' o '),
+  }));
+  const instrucciones = instruccionesDelCerebro({ hoy: p.hoy, zona: p.zona, secciones: p.secciones, ajenas, desde });
   const mensajes = mensajesIniciales(anteriores, p.texto);
   const contextoDeHerramienta: ContextoDeHerramienta = { zona: p.zona, usuarioId: p.usuarioId, secciones: claves, deLaRuta: p.deLaRuta };
   const evidencias: Evidencia[] = [];
@@ -253,7 +263,7 @@ async function elBucle(
           // Si tampoco se puede cerrar, la reserva vence sola a los diez minutos.
         }
       }
-      return { tipo: 'respondida', hiloId, respuesta, evidencia: evidencias, mascota: respuesta.cifras.length > 0 ? 'hallazgo' : 'neutral' };
+      return { tipo: 'respondida', hiloId, respuesta, evidencia: evidencias, mascota: respuesta.cifras.length > 0 ? 'hallazgo' : 'neutral', quitado: v.quitado };
     }
     if (conFormato) return anotar({ tipo: 'sin_estructura' }, 'el cerebro no contestó con el formato de responder');
 

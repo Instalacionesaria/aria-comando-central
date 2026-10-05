@@ -13,6 +13,8 @@
 //     conclusión con un número así se marca y baja la confianza.
 //   · Una acción se rechaza (`D-03`: la v1 lee y navega), y un paso a una sección que no se ve, también.
 //   · Un nombre de herramienta inventado, o uno que esta persona no tiene, no se corre.
+//   · Lo quitado se informa tal como lo escribió el modelo, con lo que había en el campo, para la evaluación
+//     real (`scripts/evaluar-agentes.mjs`); la ruta no lo manda a la pantalla.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -20,6 +22,7 @@ import assert from 'node:assert/strict';
 import { numerosDelTexto, respaldada, validarRespuesta, valorEn, type Evidencia } from '../../lib/agentes/executive/respuesta.ts';
 import { ejecutarHerramienta, herramientasPara } from '../../lib/agentes/executive/herramientas.ts';
 import { SIN_DATOS_DE_LA_RUTA } from '../../lib/agentes/executive/adaptadores/comun.ts';
+import { respuestaDePreguntar } from '../../lib/agentes/executive/caja.ts';
 
 const EVIDENCIA: Evidencia[] = [
   { id: 'ev-1', herramienta: 'cadena_de_cierre', argumentos: { periodo: '30d' }, datos: { cohorte: 120, eslabones: [{ contactos: 46 }], tasa: 0.2927 } },
@@ -49,6 +52,26 @@ test('una cifra que es la de su campo queda; las demás se quitan y se dice', ()
   assert.deepEqual(r.avisos, ['Se quitaron 3 cifras que no estaban en lo que leyó el cerebro.']);
   // Con una cifra quitada, la confianza no puede quedar alta.
   assert.equal(r.confianza.nivel, 'media');
+});
+
+test('lo quitado se informa con lo que había en el campo, y la ruta no lo manda', async () => {
+  const v = validarRespuesta(
+    base({ conclusion: 'Agendaron 46, y 47 dijo otro.', cifras: [cifra(46), cifra(47), cifra(46, 'cohorte', 'ev-9')] }),
+    EVIDENCIA,
+    ['sales'],
+  );
+  assert.equal(v.tipo, 'valida');
+  const { quitado, respuesta } = v as Extract<typeof v, { tipo: 'valida' }>;
+  assert.deepEqual(quitado, {
+    cifras: [
+      { valor: 47, ev: 'ev-1', campo: 'eslabones[0].contactos', enElCampo: 46 },
+      { valor: 46, ev: 'ev-9', campo: 'cohorte', enElCampo: undefined },
+    ],
+    enLaConclusion: [47],
+  });
+  const enviado = (await respuestaDePreguntar({ tipo: 'respondida', hiloId: 'h', respuesta, evidencia: EVIDENCIA, mascota: 'hallazgo', quitado }).json()) as Record<string, unknown>;
+  assert.equal('quitado' in enviado, false, 'lo quitado llegó a la pantalla');
+  assert.equal(enviado.hiloId, 'h');
 });
 
 test('una cifra sin `ev` válido se quita aunque el número exista en otra parte', () => {

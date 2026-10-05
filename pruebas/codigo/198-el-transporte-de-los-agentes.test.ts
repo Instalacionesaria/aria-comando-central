@@ -162,8 +162,9 @@ test('sale por `pedirExterno`, con la llave en su cabecera y un cuerpo que `clau
      llamadas, y ninguna otra prueba con la red falseada lo vería. Por eso el cuerpo se compara entero. */
   const { salida, peticiones } = await conLaRed([respuestaBuena()], {
     herramientas: [
-      { nombre: 'uno', descripcion: 'la primera', esquema: ESQUEMA },
-      { nombre: 'dos', descripcion: 'la segunda', esquema: ESQUEMA },
+      { nombre: 'uno', descripcion: 'la primera', esquema: ESQUEMA, estricta: true },
+      // Sin `estricta` no viaja `strict`: el proveedor admite 20 estrictas por pedido.
+      { nombre: 'dos', descripcion: 'la segunda', esquema: ESQUEMA, estricta: false },
     ],
   });
   assert.equal(salida.tipo, 'datos');
@@ -179,7 +180,7 @@ test('sale por `pedirExterno`, con la llave en su cabecera y un cuerpo que `clau
     messages: [{ role: 'user', content: 'EL PEDIDO' }],
     tools: [
       { name: 'uno', description: 'la primera', input_schema: ESQUEMA, strict: true },
-      { name: 'dos', description: 'la segunda', input_schema: ESQUEMA, strict: true, cache_control: { type: 'ephemeral' } },
+      { name: 'dos', description: 'la segunda', input_schema: ESQUEMA, cache_control: { type: 'ephemeral' } },
     ],
     output_config: { format: { type: 'json_schema', schema: ESQUEMA } },
   });
@@ -202,7 +203,7 @@ test('con UNA herramienta y sin formato —la ronda del cerebro, la forma del au
      rondas del cerebro. Se compara el cuerpo entero, sin `tool_choice` y sin `output_config`. */
   const { peticiones } = await conLaRed(
     [() => json({ content: [{ type: 'tool_use', id: 't', name: 'responder', input: { ok: true } }], stop_reason: 'tool_use', usage: USO })],
-    { herramientas: [{ nombre: 'responder', descripcion: 'la respuesta', esquema: ESQUEMA }], formato: undefined, leer: leerHerramienta('responder') },
+    { herramientas: [{ nombre: 'responder', descripcion: 'la respuesta', esquema: ESQUEMA, estricta: true }], formato: undefined, leer: leerHerramienta('responder') },
   );
   assert.deepEqual(peticiones[0]!.cuerpo, {
     model: 'claude-sonnet-5-5',
@@ -218,7 +219,7 @@ test('lo opcional viaja sólo cuando se pide: esfuerzo, `tool_choice` `none` y e
      la cola es el `cache_control` de primer nivel. Sin pedirlos, el cuerpo de la prueba de arriba no los
      lleva: a Haiku 4.5 un `effort` lo rechaza. */
   const { peticiones } = await conLaRed([respuestaBuena()], {
-    herramientas: [{ nombre: 'uno', descripcion: 'la primera', esquema: ESQUEMA }],
+    herramientas: [{ nombre: 'uno', descripcion: 'la primera', esquema: ESQUEMA, estricta: true }],
     esfuerzo: 'medium',
     herramientasPermitidas: 'none',
     cachearLaConversacion: true,
