@@ -61,7 +61,8 @@ function Tabla({ filas, total }) {
   );
 }
 
-function Valor({ v, nivel = 0 }) {
+/** Un valor de evidencia, dibujado por su forma. Lo usa también la tarjeta de Señales de Acquisition. */
+export function Valor({ v, nivel = 0 }) {
   if (esPrimitivo(v)) return <span>{primitivo(v)}</span>;
   if (Array.isArray(v)) {
     if (v.length === 0) return <span>—</span>;

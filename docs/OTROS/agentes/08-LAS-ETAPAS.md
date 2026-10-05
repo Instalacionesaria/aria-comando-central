@@ -449,7 +449,17 @@
   `lib/agentes/senales/lectura.ts` lee para la pantalla; el escritor suma marcar vista y cerrar. Pruebas: 224
   nueva (base, por los manejadores), la 219 con el filtro de departamento del escritor, la 22 y la 181.
   Mutaciones, siete vistas en rojo.
-- **Lo que sigue**: la pantalla; la redacción con el modelo y su evaluación real, con OK.
+- **Cuarta tanda, hecha el 2026-10-05: la pantalla.** `components/acquisition/SenalesDeAcquisition.jsx`, con el
+  marcado del prototipo: el botón «Plan de acción» junto al período, que abre el plan de la ventana elegida en
+  `Ventana` (los grupos con renglones, lo que quedó bajo el piso, lo que no se pudo medir y el día en que se
+  calculó), y la tarjeta «Señales detectadas · sin recomendación automática» al final, con el ícono por
+  gravedad, la pérdida o «sin pérdida calculable», las marcas «umbral provisional», «requiere validación
+  ejecutiva», «vista» y «sin medición hoy», «Ver evidencia» (que la marca vista y dibuja la evidencia con el
+  mismo `Valor` del cerebro), resolver y descartar con motivo, y firmar el umbral para quien puede. Con «hoy» o
+  «completo», la tarjeta y el plan dicen que se calculan sobre 7 y 30 días cerrados. El nombre de cada campaña
+  sale de los embudos; el del funnel, de los rótulos de la pantalla.
+- **Lo que sigue**: verificar la pantalla en el preview con login; la redacción con el modelo y su evaluación
+  real, con OK.
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el

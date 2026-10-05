@@ -18,8 +18,6 @@
  *
  * ── LO QUE EL PROTOTIPO TENÍA Y ESTA PANTALLA NO ──────────────────────────
  *
- *   · **«Plan de acción» y «Señales detectadas»**: para los agentes de IA, en una etapa posterior
- *     (A14-16).
  *   · **«Personalizado» y el rango con «Comparar vs»**: el período es el del sistema (A14-10).
  *   · **«Tasa: Paso a paso / Acumulada»**: con los clics fuera y el formulario sin dato, las dos
  *     tasas dan el mismo número, y el usuario decidió no dibujar un control que no cambia nada (A14-09).
@@ -31,6 +29,11 @@
  * «Sin funnel», donde empiezan todas (A14-14). El selector se dibuja sólo si el servidor dijo que esta
  * sesión puede asignar y no se está mirando otra empresa, como el link manual de Creative: ofrecer un
  * control que va a dar 403 es el `07` § 4.
+ *
+ * ── Y LO QUE VOLVIÓ CON LOS AGENTES (AG9) ─────────────────────────────────
+ *
+ * El botón «Plan de acción» y la tarjeta «Señales detectadas» del prototipo (A14-16), en
+ * `SenalesDeAcquisition.jsx`, con lo que guarda cada mañana la pasada del detector de Acquisition.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,6 +43,7 @@ import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { guardarFunnelDeLaCampana, leerAcquisition, sacarFunnelDeLaCampana } from '@/lib/negocio/vistaDeAcquisition';
 import { useSesion } from '../../app/sesion-contexto.tsx';
+import { BotonDelPlan, TarjetaDeSenales } from './SenalesDeAcquisition.jsx';
 
 /* Los tres funnels del prototipo (`FUNNELS`, línea 5344): nombre, rótulo de cada etapa y rótulo de su
    costo. Son texto de pantalla y no reglas: qué etapas tiene cada uno lo dice el servidor
@@ -173,6 +177,7 @@ export default function PanelDeAcquisition() {
           <span className="cre-desc">Tres funnels con su propia cadena · la calidad se mide con calificados e ICP</span>
         </div>
         <div className="ch-r">
+          {pantalla ? <BotonDelPlan senales={pantalla.senales} nombres={nombresDeCampanas(pantalla)} funnels={FUNNELS} /> : null}
           <div className="ch-period">
             {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió: con el estado
                 local, una respuesta que se cruza con otra deja el botón describiendo cifras que no
@@ -235,8 +240,21 @@ function Cuerpo({ p, alCambiar }) {
         ))}
       </div>
       <Tablas e={e} puedeAsignar={puedeAsignar} alCambiar={alCambiar} />
+      <TarjetaDeSenales
+        senales={p.senales}
+        // Lo decide el servidor; mirando otra empresa, nada (AG-82), como el selector de funnel.
+        puede={sesion?.mirandoOtraOrganizacion ? { resolver: false, validar: false, firmar: false } : p.puedeConSenales}
+        nombres={nombresDeCampanas(p)}
+        funnels={FUNNELS}
+        alCambiar={alCambiar}
+      />
     </>
   );
+}
+
+/** El nombre de cada campaña, de los embudos: el plan y las señales traen identificadores (A6-05). */
+function nombresDeCampanas(p) {
+  return new Map(p.embudos.campanas.filter((c) => c.nombre).map((c) => [c.campana, c.nombre]));
 }
 
 /** La variación, como el `delta()` del prototipo (línea 5463). El color lo trae el servidor. */
