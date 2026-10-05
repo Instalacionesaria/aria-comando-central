@@ -739,10 +739,10 @@ oculta = cero intervalos. Las cadencias viven en `lib/cadencia.ts`, con `intelig
 argumento no depende del número.
 
 **22 · Ninguna ruta autenticada se cachea.** `ADR-0701`, forzado por `pruebas/codigo/70-publicacion.test.ts`
-y por `pruebas/codigo/10-arquitectura.test.ts:304`, `:356` y `:399`.
+y por `pruebas/codigo/10-arquitectura.test.ts:308`, `:356` y `:399`.
 
 **23 · Toda operación abre el contexto de su organización.** `ADR-0202`, forzado por
-`pruebas/codigo/10-arquitectura.test.ts:234`: «olvidarse NO FALLA» (`:10-11`), y en el sistema del que
+`pruebas/codigo/10-arquitectura.test.ts:238`: «olvidarse NO FALLA» (`:10-11`), y en el sistema del que
 salen estas notas catorce operaciones ya estaban escritas así (`:17`).
 
 **24 · Toda fecha que una persona lee se formatea en la zona de la ORGANIZACIÓN.** `lib/negocio/tiempo.ts:1-24`
@@ -817,7 +817,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:313-315`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:744`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:755`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:

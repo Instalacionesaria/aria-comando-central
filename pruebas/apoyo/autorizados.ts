@@ -63,6 +63,12 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Está acá porque el propio 04 § 4 advierte que sin la exención "la prueba falla
   // sobre código correcto y se termina ignorando".
   'db/sembrado/organizaciones.ts',
+  // Las empresas sintéticas de los agentes (AG4): crean empresas y personas, que son identidad. Sólo en
+  // local, con la misma guarda que el sembrado de desarrollo.
+  'db/sembrado/casos-de-los-agentes.ts',
+  // La evaluación real de los agentes lee la llave de IA de la organización principal, que es identidad.
+  // Sólo en local, y sólo después del `--confirmo` con el número de pedidos.
+  'scripts/evaluar-agentes.mjs',
   // La fase `verificar` lee las organizaciones para recorrerlas de una en una. Es
   // exactamente el caso que el 04 § 4 nombra como legítimo: las tareas programadas
   // "necesitan la LISTA de organizaciones, y después trabajar de una en una, abriendo el
@@ -479,6 +485,11 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // porque `db.mjs verificar` es una fase aparte que comprueba el EFECTO, no la ausencia
   // de error.
   'db/sembrado/organizaciones.ts',
+  // Las empresas sintéticas de los agentes: identidad por `conIdentidad()` y negocio por `conOrganizacion()`.
+  // Qué queda a medias si la segunda mitad falla: las empresas y sus personas, sin datos o con parte. Es
+  // aceptable por la misma razón que el sembrado de desarrollo: es idempotente POR DESTRUCCIÓN —cada corrida
+  // empieza quitando todo lo del prefijo—, y la prueba 205 comprueba el EFECTO, cifra por cifra.
+  'db/sembrado/casos-de-los-agentes.ts',
   // La fase `verificar` de `db.mjs`: lee identidad para obtener la lista de
   // organizaciones y después abre el contexto de cada una para contar sus filas de
   // negocio. NO ESCRIBE EN NINGUNO DE LOS DOS — solo lee, así que la falta de atomicidad

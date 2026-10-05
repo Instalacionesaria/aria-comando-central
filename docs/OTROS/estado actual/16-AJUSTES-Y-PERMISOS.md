@@ -130,7 +130,7 @@ Las capacidades **no se cargan por migración**. `identidad.permisos` tiene RLS 
 para el migrador, así que un `insert` desde una migración escribe cero filas
 (`db/arranque/001_catalogo.sql:4-11`). Las carga `db/arranque/001_catalogo.sql:75-219` con la
 credencial de nivel clúster, y en producción eso es un paso a mano en tres comandos
-(`scripts/db.mjs:273-275`). Se corrió después del 2026-09-23: las dos de Analizadores están en la
+(`scripts/db.mjs:275-277`). Se corrió después del 2026-09-23: las dos de Analizadores están en la
 tabla.
 
 Por familia, con la decisión que separó cada par:
@@ -247,8 +247,8 @@ quien no trae la cookie de sesión; no decide ningún permiso.
 bajo `app/api/`, 53 declaran `PANTALLA` y 29 están en `SIN_PANTALLA`
 (`lib/autorizacion/secciones.ts:465-594`): son exactamente, archivo por archivo, los que no la
 declaran. No llaman a `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**:
-`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:634-642`), y la sonda, el
-cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:784-827`).
+`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:645-653`), y la sonda, el
+cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:795-838`).
 
 **Rechazos registrados.** Desde el 2026-09-15, **0** `permiso_denegado` y **0** `seccion_denegada` en
 `identidad.auditoria_accesos`; en toda la historia, 3 y 0 (consulta del 2026-09-28 agrupada por
@@ -289,7 +289,7 @@ sección, dársela sería dársela a todos los administradores (`db/arranque/001
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:636-641`). El freno por cuenta corta a los 5 intentos y bloquea 15
+(`pruebas/apoyo/autorizados.ts:647-652`). El freno por cuenta corta a los 5 intentos y bloquea 15
 minutos; el de origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con
 N=16384, r=8, p=1 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login
 exitoso (`lib/autenticacion/freno.ts:85-96`).
@@ -456,7 +456,7 @@ se leyó lo que afirman.
 | Segundo factor | La invariante del rol de plataforma, retirada; el alta voluntaria por la API | `pruebas/base/41-catalogo-de-autenticacion.test.ts:69`, `pruebas/base/43-segundo-factor.test.ts:214` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` está vacía desde el 2026-09-21: no hay ninguna excepción
-viva (`pruebas/apoyo/autorizados.ts:744-750`).
+viva (`pruebas/apoyo/autorizados.ts:755-761`).
 
 **Un cruce que el código anuncia y no encontré.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
@@ -525,7 +525,7 @@ especificación, que vive en el repositorio hermano; acá sólo se ve.
 ### 8.4 · Lo demás
 
 - **Agregar una capacidad no es una migración**: hay que correr `db/arranque/001_catalogo.sql` contra
-  producción a mano (`scripts/db.mjs:273-275`), y como una migración, antes del push
+  producción a mano (`scripts/db.mjs:275-277`), y como una migración, antes del push
   ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 8). Olvidarlo deja la
   pantalla en 403 para todos (`lib/autorizacion/capacidades.ts:12-16`).
 - **Analizadores sin conceder** a ninguna de las cuatro personas de rol restringido (§ 6). No es un

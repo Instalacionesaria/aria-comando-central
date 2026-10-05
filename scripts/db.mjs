@@ -13,6 +13,8 @@
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
+//   node scripts/db.mjs sembrar-agentes   las dos empresas sintéticas de los agentes (sólo local)
+//   node scripts/db.mjs quitar-agentes    y quitarlas: la prueba 11 exige las cinco del sembrado
 //
 // `reset` imprime QUÉ FASES COMPLETÓ, nunca un "listo" liso. Escribe en dos
 // dominios con dos conexiones —migraciones como `migrador`, sembrado como
@@ -339,6 +341,23 @@ async function sembrar() {
 }
 
 /**
+ * Las dos empresas sintéticas de los agentes (`db/sembrado/casos-de-los-agentes.ts`), para mirarlas en las
+ * pantallas locales. NO es parte de `reset`: la suite exige exactamente las organizaciones del sembrado de
+ * desarrollo, así que se quitan con `quitar-agentes` antes de correrla.
+ */
+async function sembrarAgentes() {
+  const { sembrarCasosDeLosAgentes } = await import('../db/sembrado/casos-de-los-agentes.ts');
+  const e = await sembrarCasosDeLosAgentes();
+  console.log(`  la empresa con datos ${e.conDatos} y la vacía ${e.vacia}, con cuatro personas`);
+  console.log('  antes de correr la suite: node scripts/db.mjs quitar-agentes');
+}
+
+async function quitarAgentes() {
+  const { quitarEmpresasDeLosAgentes, PREFIJO_DE_LA_EVALUACION } = await import('../db/sembrado/casos-de-los-agentes.ts');
+  console.log(`  ${await quitarEmpresasDeLosAgentes(PREFIJO_DE_LA_EVALUACION)} empresa(s) quitada(s)`);
+}
+
+/**
  * Contra la base, no contra el código.
  *
  * EJECUCION § 6: "Nada se marca como terminado sin verificarlo contra la base.
@@ -450,6 +469,8 @@ const FASES = {
   retiro,
   sembrar,
   verificar,
+  'sembrar-agentes': sembrarAgentes,
+  'quitar-agentes': quitarAgentes,
 };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
 const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'verificar'];

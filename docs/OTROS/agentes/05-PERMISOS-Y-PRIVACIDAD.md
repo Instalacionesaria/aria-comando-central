@@ -106,7 +106,7 @@ en código, pruebas, documentos o commits.
 `conIdentidad` sólo en archivos de ruta, del sembrado y del guion de evaluación; **nada bajo
 `lib/agentes/**` lo importa** (una prueba nueva lo vigila). Todo archivo con `conIdentidad(` va en
 `ARCHIVOS_AUTORIZADOS` (`pruebas/apoyo/autorizados.ts:27`), y si además contiene `conOrganizacion(`, en
-`CRUZAN_LOS_DOS_DOMINIOS` (`:432`), diciendo en su propio código qué pasa si la segunda mitad falla.
+`CRUZAN_LOS_DOS_DOMINIOS` (`:438`), diciendo en su propio código qué pasa si la segunda mitad falla.
 
 | archivo | qué resuelve en identidad | listas | etapa |
 |---|---|---|---|
@@ -114,7 +114,7 @@ en código, pruebas, documentos o commits.
 | `app/api/<sección>/cerebro/route.ts`, una por sección | lo mismo, para su sección | las dos | AG6 |
 | `app/api/closer/brief/route.ts` | la llave | las dos | AG12 |
 | `db/sembrado/casos-de-los-agentes.ts` | crea las empresas sintéticas | las dos | AG4 |
-| `scripts/evaluar-agentes.mjs` | la llave de la organización principal, en la base local | las dos | AG4 |
+| `scripts/evaluar-agentes.mjs` | la llave de la organización principal, en la base local | `ARCHIVOS_AUTORIZADOS`; las dos cuando una tanda abra la empresa sembrada (AG7) | AG4 |
 | `app/api/<sección>/senales/route.ts`, `…/umbrales/route.ts`, `app/api/admin/cerebro/route.ts` | nada | ninguna: llevan `conOrganizacion(` literal | AG9, AG7 |
 
 El cron (`app/api/cron/route.ts`) ya está en las dos listas; la tarea `senales` usa las llaves que el cron
@@ -130,8 +130,8 @@ sube. No ve CONVERSACIONES ni la Reunión de hoy, igual que hoy.
 
 ## Lo que no se pudo verificar
 
-- Si `scripts/evaluar-agentes.mjs` necesita identidad o le alcanza con leer la llave cargada en la base
-  local por el camino de las rutas. Se decide en AG4; la tabla de arriba toma el peor caso.
+- ~~Si `scripts/evaluar-agentes.mjs` necesita identidad.~~ Decidido en AG4: sí, lee la llave de la
+  organización principal con `conIdentidad` y `resolverLlaveDeIa`, como las rutas. Está en la tabla de arriba.
 
 ## Preguntas abiertas
 

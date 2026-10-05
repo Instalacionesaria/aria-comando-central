@@ -47,7 +47,8 @@ que ya existen **se quedan donde están**, con su valor.
 Se comprueba, **con el OK del usuario**, que la llave de la organización principal alcanza
 `claude-sonnet-5-5`: un `GET /v1/models/claude-sonnet-5-5` por `pedirExterno`, sin tokens. Con el mismo OK,
 un `POST /v1/messages/count_tokens` (no genera) confirma que esta cuenta rechaza el `tool_choice` forzado con
-ese modelo, como dice la referencia de la API. Nunca con la llave de un cliente.
+ese modelo, como dice la referencia de la API. Nunca con la llave de un cliente. Es la tanda `modelo` de
+`scripts/evaluar-agentes.mjs` (AG4): `--confirmo 2`.
 
 ## AG-93 · El transporte
 

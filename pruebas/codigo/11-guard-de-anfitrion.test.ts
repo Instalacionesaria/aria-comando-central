@@ -179,7 +179,7 @@ test('`conectar()` llama al guard', () => {
   );
 });
 
-test('los cinco llamadores del guard siguen ahí', () => {
+test('los llamadores del guard siguen ahí, y no hay otros', () => {
   // La lista es explícita y con motivo, no un conteo. Un conteo sube y baja sin que
   // nadie mire; una lista obliga a justificar la entrada nueva en el diff.
   //
@@ -195,6 +195,10 @@ test('los cinco llamadores del guard siguen ahí', () => {
     'scripts/db.mjs',
     // La compuerta, que construye su propio cliente y por eso llama al guard a mano.
     'pruebas/base/01-controlador-transaccion.test.ts',
+    // Crea empresas y personas sintéticas y borra todo lo de ellas como `postgres` (AG4).
+    'db/sembrado/casos-de-los-agentes.ts',
+    // Lee descifrada la llave de IA de la organización principal (AG4).
+    'scripts/evaluar-agentes.mjs',
   ].sort();
 
   const hallados = archivosQueContienen(/exigirAnfitrionLocal\s*\(/, [

@@ -145,14 +145,29 @@
   del Espía con «Extraé»; la ruta de enviar con «Recargá».
 - **Fuera**: el auditor y los Analizadores (`D-26`: cuando se evalúen).
 
-## AG4 · La base sembrada y el guion de evaluación
+## AG4 · La base sembrada y el guion de evaluación — **hecha el 2026-10-04**
 
-- **Qué**: el constructor de datos compartido, `db/sembrado/casos-de-los-agentes.ts` (`07`, `AG-100`) y
-  `scripts/evaluar-agentes.mjs` (`07`, `AG-104`). Los dos entran en las listas de autorizados (`05`,
-  `AG-88`).
-- **Pruebas nuevas**: 203, el sembrado se niega fuera de un anfitrión local (mutación: quitar la guarda).
-  204, el guion no corre sin `--confirmo N` igual al número que imprime y no tiene `fetch(` (mutaciones:
-  aceptar cualquier número; un `fetch`).
+- **Qué se hizo**: el constructor compartido `db/sembrado/casos-de-los-agentes.ts` (`07`, `AG-100`), con
+  `sembrar-agentes` y `quitar-agentes` en `scripts/db.mjs`, y `scripts/evaluar-agentes.mjs` (`07`, `AG-104`)
+  con su primera tanda, `modelo` (`06`, `AG-92`). El sembrado no queda instalado: la `11` exige las cinco
+  empresas del sembrado de desarrollo, así que quien siembra, quita. Escribe como la aplicación y borra como
+  `postgres` —el inquilino no tiene `delete` sobre `uso_de_ia` ni `incidentes`—, recorriendo todas las tablas
+  con `org_id` en pasadas: `resultados.cita_id` es `on delete set null` sin lista de columnas (`049`) y borrar
+  `citas` primero anula su `org_id` (`23502`).
+- **Listas**: el sembrado entra en `ARCHIVOS_AUTORIZADOS` y en `CRUZAN_LOS_DOS_DOMINIOS`, el guion sólo en
+  `ARCHIVOS_AUTORIZADOS` (todavía no abre ninguna empresa: lo hará la tanda del cerebro); los dos, en la lista de
+  llamadores de la guarda de anfitrión (la `11`), y el sembrado en la de quienes importan `pg` (la `10`), por
+  el borrado.
+- **Pruebas nuevas**: 203, el sembrado y el borrado se niegan si la base de identidad o la de administración no
+  es local. 204, el guion corrido como proceso: sin `--confirmo` dice el número y no corre, con otro número se
+  niega antes de mirar la base, con el correcto llega hasta la guarda, y no tiene `fetch(`; corre con la base
+  remota inexistente, así que nunca puede gastar. 205 (base), las cifras de `07` con las funciones de las
+  pantallas, y que sembrar dos veces deja lo mismo.
+- **Mutaciones, nueve vistas en rojo**: sin la guarda; la guarda que sólo mira identidad (203); aceptar
+  cualquier número; correr sin confirmar; un `fetch` (204); otro gasto de Webinar; «precio» una vez menos; un
+  resultado que es venta; sin el tramo de contactos que da historia a la comparación (205). Una décima —quitar
+  sin borrar antes lo que cuelga de cada persona— quedó verde: esas tablas caen en cascada con la persona, y
+  ese paso se quitó.
 - **Documentos**: `07` con las cifras exactas del sembrado.
 
 ## AG5 · El cerebro, servidor I — **grande**
