@@ -171,6 +171,18 @@ export function valorEn(datos: unknown, campo: string): unknown {
   return v;
 }
 
+/**
+ * El campo que la cifra cita, como ruta dentro de `datos`. Al modelo cada resultado le llega envuelto,
+ * `{ev, datos: {...}}` (`preguntar.ts`), así que escribir `datos.total.inversion` es tan natural como
+ * `total.inversion`: en la segunda evaluación real (2026-10-05) casi todas las cifras quitadas eran
+ * correctas y venían con ese prefijo. Primero la ruta tal cual —por si la evidencia tiene su propio `datos`—
+ * y, si no existe, sin el prefijo. Nada más se perdona: la cifra sigue comparándose con UN campo.
+ */
+export function campoCitado(datos: unknown, campo: string): string {
+  if (valorEn(datos, campo) !== undefined || !campo.startsWith('datos.')) return campo;
+  return campo.slice('datos.'.length);
+}
+
 /** Las formas en que se puede escribir un número: tal cual, redondeado, y como porcentaje si es una proporción. */
 function formas(x: number): number[] {
   const redondeos = (y: number) => [y, Math.round(y), Math.round(y * 10) / 10, Math.round(y * 100) / 100];
@@ -193,11 +205,20 @@ export function respaldada(valor: number, enElCampo: unknown): boolean {
 }
 
 /**
+ * Las fechas escritas con el mes: «4 oct», «21–27 sep», «5 de octubre». La segunda evaluación real
+ * (2026-10-05) marcó como dudosa una conclusión por «la semana anterior (21–27 sep)»: los días no son cifras.
+ */
+// El mes entero o su abreviatura y nada más: con un prefijo suelto, «3 marcas» o «10 mayores» dejarían de
+// contarse como cifras.
+const FECHA_CON_MES =
+  /\d{1,2}(?:\s*[–-]\s*\d{1,2})?\s+(?:de\s+)?(?:ene(?:ro)?|feb(?:rero)?|mar(?:zo)?|abr(?:il)?|may(?:o)?|jun(?:io)?|jul(?:io)?|ago(?:sto)?|sept?(?:iembre)?|set(?:iembre)?|oct(?:ubre)?|nov(?:iembre)?|dic(?:iembre)?)(?![a-záéíóúñ])\.?/gi;
+
+/**
  * Los números de un texto escrito en español: «4.060» es cuatro mil sesenta, «29,3» es veintinueve coma
- * tres. Las fechas (`2026-10-04`) y las horas no cuentan como cifras.
+ * tres. Las fechas (`2026-10-04`, «4 oct») y las horas no cuentan como cifras.
  */
 export function numerosDelTexto(texto: string): number[] {
-  const sinFechas = texto.replace(/\d{4}-\d{2}-\d{2}/g, ' ').replace(/\d{1,2}:\d{2}/g, ' ');
+  const sinFechas = texto.replace(/\d{4}-\d{2}-\d{2}/g, ' ').replace(FECHA_CON_MES, ' ').replace(/\d{1,2}:\d{2}/g, ' ');
   const salida: number[] = [];
   for (const m of sinFechas.matchAll(/\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/g)) {
     const crudo = m[0];
@@ -255,11 +276,12 @@ export function validarRespuesta(
   let sinRespaldo = 0;
   for (const c of cifras as unknown[]) {
     const ev = esObjeto(c) && esTexto(c.ev) ? porId.get(c.ev) : undefined;
-    if (!esObjeto(c) || typeof c.valor !== 'number' || !esTexto(c.campo) || !ev || !respaldada(c.valor, valorEn(ev.datos, c.campo))) {
+    const campo = ev && esObjeto(c) && esTexto(c.campo) ? campoCitado(ev.datos, c.campo) : undefined;
+    if (!esObjeto(c) || typeof c.valor !== 'number' || !ev || campo === undefined || !respaldada(c.valor, valorEn(ev.datos, campo))) {
       sinRespaldo += 1;
       quitado.cifras.push(
         esObjeto(c)
-          ? { valor: c.valor, ev: c.ev, campo: c.campo, enElCampo: ev && esTexto(c.campo) ? valorEn(ev.datos, c.campo) : undefined }
+          ? { valor: c.valor, ev: c.ev, campo: c.campo, enElCampo: ev && campo !== undefined ? valorEn(ev.datos, campo) : undefined }
           : { valor: c, ev: undefined, campo: undefined, enElCampo: undefined },
       );
       continue;
@@ -271,7 +293,8 @@ export function validarRespuesta(
       periodo: esTexto(c.periodo) ? c.periodo : '',
       fuente: esTexto(c.fuente) ? c.fuente : '',
       ev: ev.id,
-      campo: c.campo,
+      // Se guarda la ruta que se comprobó, sin el prefijo: la que existe en la evidencia guardada.
+      campo,
     });
   }
   if (sinRespaldo > 0) {

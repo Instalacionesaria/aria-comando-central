@@ -19,7 +19,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { numerosDelTexto, respaldada, validarRespuesta, valorEn, type Evidencia } from '../../lib/agentes/executive/respuesta.ts';
+import { campoCitado, numerosDelTexto, respaldada, validarRespuesta, valorEn, type Evidencia } from '../../lib/agentes/executive/respuesta.ts';
 import { ejecutarHerramienta, herramientasPara } from '../../lib/agentes/executive/herramientas.ts';
 import { SIN_DATOS_DE_LA_RUTA } from '../../lib/agentes/executive/adaptadores/comun.ts';
 import { respuestaDePreguntar } from '../../lib/agentes/executive/caja.ts';
@@ -97,6 +97,20 @@ test('la tolerancia es de redondeo y nada más, contra el valor del campo', () =
 test('los números del texto se leen en español, sin fechas ni horas', () => {
   assert.deepEqual(numerosDelTexto('Invertiste 4.060 en 30 días, un 29,3 % menos.'), [4060, 30, 29.3]);
   assert.deepEqual(numerosDelTexto('Desde el 2026-10-04 a las 10:30.'), []);
+  // Las fechas con el mes, como las escribió el modelo en la segunda evaluación real.
+  assert.deepEqual(numerosDelTexto('La semana anterior (21–27 sep), del 28 sep–4 oct y el 5 de octubre.'), []);
+  // Sólo el mes: una palabra que empieza como uno sigue dejando ver su cifra.
+  assert.deepEqual(numerosDelTexto('Hay 3 marcas, 10 mayores y 4 setters.'), [3, 10, 4]);
+});
+
+test('el campo se cita dentro de `datos`, con o sin el prefijo con que lo ve el modelo', () => {
+  /* Al modelo cada resultado le llega como `{ev, datos}`: «datos.cohorte» es la misma ruta que «cohorte».
+     Se guarda sin el prefijo. Una evidencia con su propio `datos` se lee tal cual. */
+  const r = validar(base({ cifras: [cifra(120, 'datos.cohorte'), cifra(46, 'datos.eslabones[0].contactos'), cifra(47, 'datos.eslabones[0].contactos')] }));
+  assert.deepEqual(r.cifras.map((c) => [c.valor, c.campo]), [[120, 'cohorte'], [46, 'eslabones[0].contactos']]);
+  assert.equal(campoCitado({ datos: { a: 1 } }, 'datos.a'), 'datos.a');
+  assert.equal(campoCitado({ a: 1 }, 'datos.a'), 'a');
+  assert.equal(campoCitado({ a: 1 }, 'otra.a'), 'otra.a');
 });
 
 test('un número de la conclusión que no está entre las cifras se marca, y la confianza baja', () => {

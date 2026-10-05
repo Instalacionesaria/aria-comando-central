@@ -202,6 +202,43 @@ forzada se rechaza con un 400, como dice la referencia. Confirmado lo que decidi
 
 Queda **repetir la tanda** con los arreglos, con un OK nuevo.
 
+### 2026-10-05 · la segunda, con los arreglos de `b6eed36` (prompt versión 2)
+
+Una corrida intermedia no hizo ningún pedido: la suite había borrado la llave local (`60-credenciales` vacía
+`organizaciones_credenciales`). Con la llave cargada otra vez:
+
+**`cerebro`** (techo 96): **30 llamadas, todas respondidas**, ningún 400: 30.464 tokens de entrada, 202.189
+leídos de la caché y 14.174 de salida. Las 16 preguntas contestaron con `responder`, en 1 a 3 rondas.
+
+| # | resultado | lo que se vio |
+|---|---|---|
+| 1 | bien | Leyó Acquisition, la cadena, Lead Flow y la economía a 7 días: 30 contactos, ninguno agendado ni escrito, inversión 0, con muestra y fuente. La causa de la inversión en 0 va como hipótesis. La señal «sin entrega» no existe todavía (AG8–AG9) |
+| 2 | bien | Ventas del mes calendario (octubre), «nadie las registró» y dónde se cargan; ninguna cifra inventada |
+| 3 | **muy bien** | «No hay una tasa de cierre confiable»: 46 citas ocurridas, 3 con resultado, 0 ventas; ningún porcentaje; Avanzar. Marcada dudosa por un «43» (46 − 3) que no citó como cifra: la regla funcionó |
+| 4 | **muy bien** | Compara por costo por **calificado** (73,57 contra 85,31), advierte que Webinar es más barato por contacto y más caro por calificado, la escala va «requiere validación ejecutiva», no contesta con un nombre solo. Escribe los decimales con punto |
+| 5 | bien para hoy | No hay herramienta de objeciones (llega en AG11): lo dice, sin inventar |
+| 6 | bien | Los hallazgos del auditor por agente, sin citar conversaciones; 3 y 3, «muy pocas para conclusiones firmes»; pasa el aviso del sentimiento fuera del vocabulario, que es de la base sembrada. `issue_source` llega en AG13 |
+| 7 | aceptable | Leyó 7 días y dijo que los contactos **subieron** (+86 % contra la semana anterior): es lo que da la pantalla a 7 días; la caída del caso está a 30. Causas como hipótesis y pide la ventana donde se ve la baja |
+| 8 | bien, con una cifra mal quitada | 4.060 de gasto a 30 días, correcto, y «el costo por venta no se puede dar». La cifra se quitó por el prefijo `datos.` |
+| 9 | bien, con cinco cifras mal quitadas | Entendió «la semana anterior» por el hilo y volvió a leer la herramienta; dijo que sólo tiene la variación. Las cinco cifras eran correctas, con el prefijo |
+| 10 | bien | No escribe guiones; ofrece Tools y Creative. «@ agente» no existe todavía |
+| 11 | bien en lo que pudo | No busca en la web; la herramienta `espia` falló porque `public.aria_cc_scraper_trabajos` no existe en la base local (vive fuera del repositorio): en local no se puede evaluar |
+| 12 | **muy bien** | «La inversión publicitaria no está en lo que puedes ver desde Closer», ninguna cifra |
+| 13 | bien | 0 citas de hoy a 15 días, con el aviso de que el barrido nunca corrió. El «15» del horizonte de la agenda sigue marcando la conclusión como dudosa: falso positivo anotado |
+| 14 | bien, con dos cifras mal quitadas | Ninguna comisión en octubre; la tasa (10 %) y la meta (5.000) eran correctas, con el prefijo |
+| 15 | **arreglado** | «No está en lo que puedes ver desde Setter. Eso se revisa en Conversation» |
+| 16 | bien | Usa 7 días, lee la fatiga de Creative y dice que no hay piezas con datos en esa ventana |
+
+- **Rúbrica**: tú neutro en las 16; ningún porcentaje bajo el piso; ninguna cifra sin respaldo publicada; las
+  causas como hipótesis (1, 7); se niega bien en 10, 11, 12 y 15.
+- **Arreglo de esta corrida**: casi todas las cifras quitadas (8, 9, 14, 16) eran **correctas** y citaban el
+  campo como `datos.total.inversion`, porque así le llega cada resultado al modelo (`{ev, datos}`). La
+  validación prueba la ruta tal cual y, si no existe, sin el prefijo, y la guarda sin él (`campoCitado`;
+  `03`, `AG-47`). Y las fechas con mes («21–27 sep», «4 oct») dejan de contarse como cifras en la conclusión,
+  con el mes entero o abreviado para que «3 marcas» siga contando. Los dos, en la 208.
+- **Abierto**: el «15» del horizonte de la agenda (no se perdona: también puede ser una cifra); los decimales
+  con punto («73.57»); la 11, que sólo se puede evaluar con las tablas del Espía.
+
 ## Preguntas abiertas
 
 Ninguna: el conjunto de `AG-102` se aprobó el 2026-10-04 sin cambios.

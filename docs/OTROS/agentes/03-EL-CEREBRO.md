@@ -193,11 +193,15 @@ La arma el adaptador, no el modelo. Cada cifra de `responder` dice su `ev` **y e
 tolerancia de redondeo y, sólo si el campo es una proporción, como porcentaje. **La que no pasa se quita** y
 la respuesta lo dice. Contra el campo y no contra cualquier número de la evidencia: la primera versión
 buscaba en toda la evidencia, y con `dias`, `piso` y puntajes de 0 a 100 casi cualquier número inventado
-encontraba con quién coincidir (lo encontró la revisión de AG5). Es el patrón de
+encontraba con quién coincidir (lo encontró la revisión de AG5). Al modelo cada resultado le llega como
+`{ev, datos}`, así que el campo puede venir como `datos.total.inversion`: si la ruta tal cual no existe, se
+prueba sin el prefijo, y se guarda sin él (`campoCitado`; la segunda evaluación real quitó así cifras
+correctas). Es el patrón de
 `lib/analizadores/nucleo/prospect-card.ts:17-19`: lo detectado sin cita se degrada.
 
 El texto libre también se mira: cada número de la conclusión o de una recomendación tiene que estar entre
-las cifras respaldadas (salvo los largos de ventana y los años). La recomendación que no cumple se quita, como
+las cifras respaldadas (salvo los largos de ventana, los años y las fechas: `2026-10-04`, «4 oct», «21–27
+sep»; el mes tiene que estar entero o abreviado, para que «3 marcas» siga contando). La recomendación que no cumple se quita, como
 la que no cita ninguna evidencia; la conclusión no se puede quitar, así que se dice y la confianza baja a
 `baja`. Los nombres de herramienta inventados no se corren.
 
