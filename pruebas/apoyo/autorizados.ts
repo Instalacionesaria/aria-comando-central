@@ -82,6 +82,8 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/analizadores/cerebro/route.ts',
   'app/api/tools/cerebro/route.ts',
   'app/api/fundaciones/cerebro/route.ts',
+  // El Brief del closer (AG12): la llave de IA de la empresa, resuelta en la ruta, como el cerebro.
+  'app/api/closer/brief/route.ts',
   // La evaluación real de los agentes lee la llave de IA de la organización principal, que es identidad.
   // Sólo en local, y sólo después del `--confirmo` con el número de pedidos.
   'scripts/evaluar-agentes.mjs',
@@ -520,6 +522,11 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   'app/api/analizadores/cerebro/route.ts',
   'app/api/tools/cerebro/route.ts',
   'app/api/fundaciones/cerebro/route.ts',
+  // El Brief del closer: LEE identidad (la llave) y escribe negocio (el Brief y, al regenerar, el lugar en el
+  // tope). Qué queda a medias si la segunda mitad falla: nada que dure. La identidad sólo se lee; el Brief se
+  // guarda en una transacción corta después del modelo, y un lugar reservado que no se cierra deja de contar a
+  // los diez minutos (`lib/agentes/executive/topes.ts`).
+  'app/api/closer/brief/route.ts',
   // Las empresas sintéticas de los agentes: identidad por `conIdentidad()` y negocio por `conOrganizacion()`.
   // Qué queda a medias si la segunda mitad falla: las empresas y sus personas, sin datos o con parte. Es
   // aceptable por la misma razón que el sembrado de desarrollo: es idempotente POR DESTRUCCIÓN —cada corrida

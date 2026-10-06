@@ -159,7 +159,7 @@ const CASO = {
  * esconde el próximo defecto de éstos.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
-function FilaDeAgenda({ item, zona, onAbrir }) {
+function FilaDeAgenda({ item, zona, onAbrir, marca }) {
   const c = item.cita;
   return (
     <div
@@ -178,6 +178,13 @@ function FilaDeAgenda({ item, zona, onAbrir }) {
             `var(--crit)` cuando la cita venció, que es la misma información en el lugar donde se
             mira — y el estado crudo del CRM (`booked`, `confirmed`) está en la ficha. */}
         <div className="md-nm">{item.fila.nombre}</div>
+        {/* La marca del Brief de esta cita (AG12 de los agentes): listo, o sin formulario. */}
+        {marca?.listo || marca?.sinFormulario ? (
+          <div className="br-marcas">
+            {marca.listo ? <span className="br-chip br-listo">BRIEF LISTO</span> : null}
+            {marca.sinFormulario ? <span className="br-chip">SIN FORMULARIO</span> : null}
+          </div>
+        ) : null}
       </div>
       <div className="md-acts">
         {/* ────────────────────────── CUANDO LA REUNIÓN TERMINÓ, NO HAY A QUÉ UNIRSE ──────────────────────────
@@ -257,6 +264,8 @@ export default function MiDia({
    * «Seguimientos de hoy». Sin el nombre adelante, replegar en el Closer replegaría en el Setter.
    */
   tablero = null,
+  /** La marca del Brief de cada cita de la agenda, por id de cita (`app/api/closer/mi-dia`). Sólo el Closer. */
+  briefs = null,
 }) {
   /* LA FICHA. `onAbrir` de `Fila.jsx` existia desde la Etapa 11, documentado, **y sin un solo
      llamador**: su comentario decia *"todavia no hay ficha -es el paso siguiente- asi que cuando no
@@ -344,13 +353,14 @@ export default function MiDia({
                     /* El MISMO manejador que las otras cuatro colas: `item.fila` es una `Fila`
                        completa —la arma `lib/negocio/miDia.ts` desde la caché de contactos— así
                        que su `id` es el del contacto, no el de la cita. */
-                    onAbrir={(fila) => setAbierta(fila.id)}
+                    marca={briefs?.[item.cita.id] ?? null}
+                    onAbrir={(fila) => setAbierta({ contacto: fila.id, cita: briefs ? item.cita.id : null })}
                   />
                 );
               }
               return (
                 <div key={item.fila.id + i}>
-                  <Fila fila={item.fila} onAbrir={(fila) => setAbierta(fila.id)} />
+                  <Fila fila={item.fila} onAbrir={(fila) => setAbierta({ contacto: fila.id, cita: null })} />
                   {/* Lo propio de cada cola va DEBAJO de la fila compartida, no dentro: la
                       fila es el mismo componente en las cinco colas y en el Pipeline, y
                       meterle casos por cola sería el camino a cinco variantes que divergen. */}
@@ -427,7 +437,7 @@ export default function MiDia({
       {/* La ficha se abre DONDE se la invoco y nunca navega: es un panel superpuesto, asi que la
           lista de atras conserva su posicion de scroll y al cerrar se vuelve exactamente a donde
           se estaba. Ver `components/negocio/Ficha.jsx`. */}
-      {abierta ? <Ficha contactoId={abierta} alCerrar={() => setAbierta(null)} /> : null}
+      {abierta ? <Ficha contactoId={abierta.contacto} citaId={abierta.cita} alCerrar={() => setAbierta(null)} /> : null}
     </>
   );
 }

@@ -41,6 +41,7 @@ import {
 } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
 import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
+import { marcasDelBrief } from '../../../../lib/agentes/brief/guardar.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'closer';
@@ -65,7 +66,7 @@ export async function GET(peticion: Request): Promise<Response> {
    * Un closer vinculado que lo mande a mano recibe su propio alcance igual. */
   const verComo = verComoDeLaUrl(peticion);
 
-  const { colas, cockpit, comision, closers, alcance, propio } = await conOrganizacion(
+  const { colas, cockpit, comision, closers, alcance, propio, briefs } = await conOrganizacion(
     contexto.orgEfectiva,
     async () => {
       /* ── DE QUIÉN SON LOS LEADS DE ESTA PANTALLA ─────────────────────────
@@ -120,7 +121,12 @@ export async function GET(peticion: Request): Promise<Response> {
         sujeto.tipo === 'persona' && sujeto.usuarioId !== ''
           ? await comisionDelMes(sujeto.usuarioId, zona)
           : null;
-      return { colas, cockpit, comision, closers, alcance, propio };
+      /* La marca de cada cita de la agenda: «BRIEF LISTO» y «SIN FORMULARIO» (AG12 de los agentes). Sin modelo:
+         lee lo guardado y el formulario del contacto. */
+      const briefs = await marcasDelBrief(
+        colas.agenda.flatMap((i) => (i.cita ? [{ citaId: i.cita.id, contactoId: i.fila.id }] : [])),
+      );
+      return { colas, cockpit, comision, closers, alcance, propio, briefs };
     },
   );
   /* De quién son los números que se están mostrando. `null` = de toda la empresa, que no es lo
@@ -167,5 +173,7 @@ export async function GET(peticion: Request): Promise<Response> {
        imposible por la clave foránea compuesta. Mandarlo a configurar algo imposible es
        mentirle. */
     mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
+    /* Por cita de la agenda: si su Brief está listo y si el contacto no tiene formulario. */
+    briefs,
   });
 }

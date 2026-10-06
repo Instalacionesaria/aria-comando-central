@@ -135,7 +135,7 @@ que llama desde la propia ruta a la función de la base que copia el formulario
 
 Las cuatro que gastan resuelven la llave con `resolverAccesoAFundaciones`
 (`lib/credenciales/resolver.ts:362-369`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
-(`pruebas/apoyo/autorizados.ts:197-203`); las demás abren `conOrganizacion(` como cualquier ruta.
+(`pruebas/apoyo/autorizados.ts:199-205`); las demás abren `conOrganizacion(` como cualquier ruta.
 
 ### 2.3 · El Research y sus techos de tiempo
 

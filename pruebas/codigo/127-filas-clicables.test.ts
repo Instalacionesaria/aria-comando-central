@@ -112,14 +112,15 @@ test('toda fila `md-r` responde al clic', () => {
 test('la fila de la Agenda de hoy abre la ficha del CONTACTO', () => {
   /* La instancia concreta, y con la mitad que el barrido de arriba no puede ver: **con qué
      identificador** la abre. `item` trae dos —el de la cita y el del contacto— y la ficha es del
-     contacto. Con el de la cita, el clic respondería y la ficha diría «no encontrado». */
+     contacto. Con el de la cita, el clic respondería y la ficha diría «no encontrado». Desde AG12 de los
+     agentes la abre con los dos, cada uno en su lugar: el contacto para la ficha y la cita para su Brief. */
   const midia = codigo('components/closer/MiDia.jsx');
 
   const llamada = midia.match(/<FilaDeAgenda[\s\S]*?\/>/);
   assert.ok(llamada, 'no está el llamador de `FilaDeAgenda`');
   assert.match(
     llamada[0],
-    /onAbrir=\{\(fila\) @@ setAbierta\(fila\.id\)\}/,
+    /onAbrir=\{\(fila\) @@ setAbierta\(\{ contacto: fila\.id, cita: [^}]*\}\)\}/,
     'la fila de agenda no recibe el mismo manejador que las otras cuatro colas',
   );
 

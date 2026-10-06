@@ -86,7 +86,7 @@ respuesta de Mi Día declara `llamadasAlCrm: 0` (`app/api/setter/mi-dia/route.ts
 
 `components/views/CloserView.jsx`, 404 líneas. Inicio · Mi Día · Pipeline · Agenda
 (`components/views/CloserView.jsx:46-51`). Seis rutas bajo `app/api/closer/`, todas con `closer.ver`:
-`mi-dia` (colas + cockpit + comisión, `app/api/closer/mi-dia/route.ts:48-125`), `agenda`, `pipeline`,
+`mi-dia` (colas + cockpit + comisión, `app/api/closer/mi-dia/route.ts:49-131`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
 `app/api/closer/agenda/refrescar/route.ts:50`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
@@ -126,7 +126,7 @@ mismo usuario del CRM es el vínculo de uno de los tres closers designados.
 `components/negocio/Ficha.jsx`, 1.432 líneas, con sus lecturas en `lib/negocio/ficha.ts`, 740. Es un
 panel lateral que se superpone y no navega, y un solo componente para toda la aplicación
 (`components/negocio/Ficha.jsx:3-16`). Se abre desde seis lugares, todos de estas dos pestañas: Mi
-Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:430`,
+Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:440`,
 `components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:554`), y el mismo Mi Día, el
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
 `components/negocio/ListaDeContactos.jsx:424`). **No se abre desde Conversation ni desde la
@@ -136,20 +136,20 @@ de `components/conversation/` ni de `components/auditoria/` la importa, y la lis
 abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:291`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
 
-El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1070-1072`,
-`components/negocio/Ficha.jsx:1189`): «Ver en GHL» y «Agendar» funcionaban y se quitaron para que el
-trabajo no termine en el CRM (`components/negocio/Ficha.jsx:1050-1067`). Al abrirse pide
-`GET /api/contactos/[id]` (`components/negocio/Ficha.jsx:572`) y cada pestaña pide su ruta cuando se
-la abre (`components/negocio/Ficha.jsx:652`); sólo el Chat tiene reloj, las otras cuatro se piden una
+El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1076-1078`,
+`components/negocio/Ficha.jsx:1197`): «Ver en GHL» y «Agendar» funcionaban y se quitaron para que el
+trabajo no termine en el CRM (`components/negocio/Ficha.jsx:1056-1073`). Al abrirse pide
+`GET /api/contactos/[id]` (`components/negocio/Ficha.jsx:578`) y cada pestaña pide su ruta cuando se
+la abre (`components/negocio/Ficha.jsx:658`); sólo el Chat tiene reloj, las otras cuatro se piden una
 vez y se quedan (`components/negocio/Ficha.jsx:31-35`). Las cinco pestañas, en su orden
-(`components/negocio/Ficha.jsx:93-99`), con lo que hay en la base, medido el 2026-09-28 a las 23:58
+(`components/negocio/Ficha.jsx:94-100`), con lo que hay en la base, medido el 2026-09-28 a las 23:58
 UTC sobre toda la tabla:
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
 | Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:209-225`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
 | Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:342-349`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:122-124`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:101-106`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:451-472`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:451-472`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
 | Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:572-573`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:575-628`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
 | Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:397-399`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
@@ -165,10 +165,10 @@ con otra capacidad, `contactos.comentar` (`app/api/contactos/[id]/notas/route.ts
 `origen = 'plataforma'` (`app/api/contactos/[id]/notas/route.ts:127`).
 
 **Los enlaces rápidos.** El compositor ofrece un menú que pide a `/api/enlaces-rapidos`
-(`components/negocio/Ficha.jsx:630`) y filtra por el territorio del contacto
-(`components/negocio/Ficha.jsx:877-883`), con la sala y el reagendar de la cita adelante cuando el
-servidor los manda (`components/negocio/Ficha.jsx:885-930`); elegir uno pega sólo la URL en el
-borrador (`components/negocio/Ficha.jsx:944-946`). Se agregan y se borran desde el Inicio de cada
+(`components/negocio/Ficha.jsx:636`) y filtra por el territorio del contacto
+(`components/negocio/Ficha.jsx:883-889`), con la sala y el reagendar de la cita adelante cuando el
+servidor los manda (`components/negocio/Ficha.jsx:891-936`); elegir uno pega sólo la URL en el
+borrador (`components/negocio/Ficha.jsx:950-952`). Se agregan y se borran desde el Inicio de cada
 pestaña (`components/closer/Inicio.jsx:239`, `components/setter/Inicio.jsx:281`,
 `components/negocio/EnlacesRapidos.jsx:138`, `components/negocio/EnlacesRapidos.jsx:162`).
 `negocio.enlaces_rapidos` tiene **10 filas, las 10 del territorio closer y 0 del setter**, de una
@@ -238,7 +238,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
   `app/api/setter/mi-dia/route.ts:57-58`, `components/setter/Inicio.jsx:10-11` y
   `components/setter/PorcentajesDelSetter.jsx:15-16`. La clave es `(org_id, usuario_id)` desde la
   `034` (`db/migraciones/034_varios_closers.sql:61`, aplicada el 2026-09-01), y hay tres filas.
-- **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:391-397`).
+- **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:392-398`).
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
   (`lib/negocio/barrido.ts:198-202`) con `2e8ce81`, el 2026-08-28.
@@ -424,7 +424,7 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
 1. **No hay cola de «registro pendiente».** Mi Día tiene cinco colas —urgentes, agenda, buzón,
    seguimientos, completadas (`lib/negocio/miDia.ts:42-47`)—; la cita sin cerrar vive sólo en «Agenda
    de hoy», hasta medianoche (§ 3.5), y **no suma al contador de tareas**: «una cita es un evento, no
-   una tarea» (`lib/negocio/miDia.ts:172-184`). El documento hermano pedía esa cola.
+   una tarea» (`lib/negocio/miDia.ts:173-185`). El documento hermano pedía esa cola.
 2. **Avanzar olvida a los 14 días.** De las **95 citas cerrables** de la base (alcanzables, no
    canceladas, ya ocurridas; la más vieja del 2026-08-24; medido a las 18:03 UTC del corte), **80
    ya no se pueden cerrar con asistencia** desde la aplicación, porque salieron de la ventana de
@@ -553,7 +553,7 @@ tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:156-171`,
 
 **8 · El alcance no es un permiso.** Vive en la consulta, y el closer sin vincular ve todo, porque
 mostrarle cero le diría «no hay trabajo» (`lib/negocio/alcanceDelCloser.ts:23-38`). La comisión es
-de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:109-122`).
+de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:110-123`).
 
 ---
 

@@ -1706,6 +1706,21 @@ export interface TablaObjecionesClasificadas {
   clasificada_el: Generated<Date>;
 }
 
+/**
+ * El Brief del closer de una cita (`D-19`). Migración 074. Escritor único: `lib/agentes/brief/guardar.ts`.
+ * `huella` = la de lo que leyó: si cambió, hay datos nuevos.
+ */
+export interface TablaBriefsDelCloser {
+  org_id: ColumnaInquilino;
+  cita_id: string;
+  brief: ColumnType<unknown, string, string>;
+  sin_formulario: boolean;
+  huella: string;
+  modelo: string;
+  generado_el: Generated<Date>;
+  generado_por: string | null;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1771,6 +1786,7 @@ export interface BaseDeDatos {
   planes_de_accion: TablaPlanesDeAccion;
   umbrales: TablaUmbrales;
   objeciones_clasificadas: TablaObjecionesClasificadas;
+  briefs_del_closer: TablaBriefsDelCloser;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

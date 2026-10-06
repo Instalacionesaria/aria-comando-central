@@ -107,8 +107,8 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `colas_del_setter` | `colasDelSetter(zona)` | setter (`setter.ver`) | `app/api/setter/mi-dia/route.ts:53` | el territorio entero, como la pantalla; conteos por cola |
 | `inicio_del_setter` | `cockpitDelSetter(…)` y `comisionDelSetter(quien, zona)` | setter | `app/api/setter/mi-dia/route.ts:67-68` | **sólo lo propio** |
 | `pipeline_del_setter` | `pipelineDe('setter', {conCongelados:false})` | setter | `app/api/setter/pipeline/route.ts:34-35` | conteos por etapa |
-| `mi_dia_del_closer` | `colasDelDia(zona, alcance)` con `alcanceDeQuienMira` | closer (`closer.ver`) | `app/api/closer/mi-dia/route.ts:81-83` | «mío» si el closer está vinculado |
-| `inicio_del_closer` | `cockpitDelMes(…)` y `comisionDelMes(…)` | closer | `app/api/closer/mi-dia/route.ts:107-121` | sólo lo propio |
+| `mi_dia_del_closer` | `colasDelDia(zona, alcance)` con `alcanceDeQuienMira` | closer (`closer.ver`) | `app/api/closer/mi-dia/route.ts:82-84` | «mío» si el closer está vinculado |
+| `inicio_del_closer` | `cockpitDelMes(…)` y `comisionDelMes(…)` | closer | `app/api/closer/mi-dia/route.ts:108-122` | sólo lo propio |
 | `agenda_del_closer` | `agendaDelCloser('closer', zona, {dias, alcance})` | closer | `app/api/closer/agenda/route.ts:93-97` | la ventana de la agenda, como la pantalla (15 días, sin las canceladas): la hora y el estado de cada cita, sin el contacto, su teléfono, el título ni la sala |
 | `pipeline_del_closer` | `pipelineDe('closer', {conCongelados:true, alcance})` | closer | `app/api/closer/pipeline/route.ts:37-40` | conteos por etapa |
 | `llamadas_de_venta` | nueva, `lib/negocio/llamadasDeVenta.ts` (AG11) | analizadores (`analizadores.ver`) | — | objeciones por categoría con su cobertura y si «crece» (con piso), puntaje por closer (con piso, por su nombre), llamadas con y sin vínculo; las frases citables (`D-20`) |

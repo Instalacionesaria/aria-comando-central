@@ -296,7 +296,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
   `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:91-112`,
   acotadas a las pantallas de Inteligencia, que ya no las emiten;
 - **vivas fuera**: de la familia `.ld-*`, sólo `.ld-time`, `.ld-dot`, `.ld-t`, `.ld-m` y `.ld-when`,
-  que emite también la ficha de las pestañas de operación (`components/negocio/Ficha.jsx:409-420`);
+  que emite también la ficha de las pestañas de operación (`components/negocio/Ficha.jsx:414-425`);
   y `.kv-box`, `.kv`, `.dw-sec-t`, `.dw-block`, `.dw-empty` y `.r`, que emite la misma ficha. Además,
   `.kv-box`, `.kv`, `.dw-sec-t` y `.r`, el aviso del CRM de Ajustes
   (`components/ajustes/AvisoDelCrm.jsx`); `.dw-sec-t` y `.dw-block`, Executive; y `.dw-empty`, las

@@ -513,7 +513,7 @@ export default function Agenda({ zonaHoraria, verComo = null }) {
                             <button
                               type="button"
                               className="fd-btn sec"
-                              onClick={() => setAbierta(c.contactoId)}
+                              onClick={() => setAbierta({ contacto: c.contactoId, cita: c.id })}
                             >
                               Abrir la ficha
                             </button>
@@ -552,7 +552,8 @@ export default function Agenda({ zonaHoraria, verComo = null }) {
           porque registrar un resultado adentro puede cambiar lo que esta lista muestra. */}
       {abierta ? (
         <Ficha
-          contactoId={abierta}
+          contactoId={abierta.contacto}
+          citaId={abierta.cita}
           alCerrar={() => {
             setAbierta(null);
             void refrescar();

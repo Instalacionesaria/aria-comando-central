@@ -574,6 +574,28 @@ Lo que decía el plan:
 
 ## AG12 · El Brief del closer — **grande** — **hito H4**
 
+- **Hecho el 2026-10-05, sin push.** La `074` (`negocio.briefs_del_closer`) sólo en local: va a producción con el
+  hito H4, antes del push. La `073` ya está en producción desde AG11. Sin capacidad nueva: leer pide
+  `closer.ver` y generar `cerebro.usar`, como la caja del pie.
+- **Lo que lee** (`lib/agentes/brief/entrada.ts`): el formulario (campos del CRM con valor), la ficha del lead,
+  la ficha de la última llamada vinculada y las objeciones frecuentes de 30 días, cada dato con su clave de
+  fuente; sin teléfono ni correo. **Lo que acepta** (`lib/agentes/brief/brief.ts`): lo detectado sin una
+  fuente que se le dio, o con una cita que no está en ella, se degrada; lo de la empresa, sólo por su fuente.
+- **La ruta** (`app/api/closer/brief/route.ts`, `maxDuration` 300): el GET lee el guardado y dice si hay datos
+  nuevos y por qué no se puede generar; el POST genera al abrir (no cuenta) o regenera a mano (cuenta, con el
+  candado de los topes). Más estricta que la ficha: territorio del closer y «mío». Bajo delegación y sin llave,
+  no se genera.
+- **La pantalla**: Mi Día marca cada cita con «BRIEF LISTO» y «SIN FORMULARIO» (la cita de la cola ahora trae su
+  id), y la ficha abierta desde una cita —Mi Día o la Agenda— trae la pestaña «Brief», primera, que lo genera
+  al abrir si no hay uno (`components/closer/BriefDeLaCita.jsx`, estilos en `app/closer.css`).
+- **Pruebas nuevas**: 232 (código: cada dato con su fuente) y 233 (base: la ruta y las marcas, con el modelo
+  falso). Cambian la 127 (la fila de la agenda abre con contacto y cita), la 133 (el cliente espera el tope de
+  la ruta) y la 142 (el Brief resuelve el alcance propio, sin «ver como»). Un defecto que encontró la 232: una
+  objeción degradada seguía marcada «de la empresa». Mutaciones, 14 vistas en rojo.
+- **Lo que falta para H4**: una evaluación real del Brief (llave de ARIA y OK), aplicar la `074` y el push.
+
+Lo que decía el plan:
+
 - **Qué**: `lib/agentes/brief/*` (`fichas/F13-CLOSER-Y-BRIEF.md`), `app/api/closer/brief/route.ts`
   (`PANTALLA='closer'`, `maxDuration` declarado), la marca en la cola «TUS CITAS DE HOY» y la ficha.
 - **Migración** `074`: `negocio.briefs_del_closer`, una fila por cita, en cascada con ella.

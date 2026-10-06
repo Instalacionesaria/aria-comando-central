@@ -93,6 +93,8 @@ export interface EnLaCola {
   motivo?: string;
   /** Agenda: la hora, el estado y la sala. Solo la usa el Closer. */
   cita?: {
+    /** La cita, para abrir su Brief (AG12 de los agentes). */
+    id: string;
     inicioEl: Date | null;
     estado: string | null;
     salaUrl: string | null;

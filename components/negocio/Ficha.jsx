@@ -60,6 +60,7 @@ import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { usarCierreDeMenu } from '../../lib/menu.ts';
 import { NOMBRE_DE_LA_ZONA, TITULO_DE_LOS_ENLACES } from '../../lib/enlaces.ts';
 import Avanzar from './Avanzar.jsx';
+import BriefDeLaCita from '../closer/BriefDeLaCita.jsx';
 import { SeisIconos } from './Fila.jsx';
 
 /* Los seis íconos se importan de `Fila.jsx` y NO se copian.
@@ -97,6 +98,10 @@ const PESTANAS = [
   { clave: 'historial', camino: 'historial', glifo: '◷', nombre: 'Historial', lista: 'eventos' },
   { clave: 'notas', camino: 'notas', glifo: '▤', nombre: 'Notas', lista: 'notas' },
 ];
+
+/* La pestaña del Brief (AG12 de los agentes): sólo cuando la ficha se abre desde una cita del Closer —Mi Día o
+   la Agenda—, porque el Brief es de la cita y no del contacto. Va primera: es lo que se abre a preparar. */
+const PESTANA_DEL_BRIEF = { clave: 'brief', glifo: '✦', nombre: 'Brief' };
 
 const GRUPOS_DEL_PERFIL = [
   { clave: 'detalles', titulo: 'Detalles' },
@@ -479,7 +484,8 @@ function Cuerpo({
   );
 }
 
-export default function Ficha({ contactoId, alCerrar }) {
+export default function Ficha({ contactoId, alCerrar, citaId = null }) {
+  const pestanasVisibles = citaId ? [PESTANA_DEL_BRIEF, ...PESTANAS] : PESTANAS;
   const [contacto, setContacto] = useState(null);
   /** Los dos de la cita, que vienen con el contacto. `null` = no tiene cita aprovechable. */
   const [enlacesDeCita, setEnlacesDeCita] = useState(null);
@@ -489,7 +495,7 @@ export default function Ficha({ contactoId, alCerrar }) {
   /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
-  const [activa, setActiva] = useState('chat');
+  const [activa, setActiva] = useState(citaId ? 'brief' : 'chat');
   /** Lo que trajo cada pestaña, por clave. `undefined` = todavía no se pidió. */
   const [pestanas, setPestanas] = useState({});
   const [nota, setNota] = useState('');
@@ -1100,7 +1106,7 @@ export default function Ficha({ contactoId, alCerrar }) {
             entre «◔» y «Chat» era el del espacio tipográfico. Viene del prototipo, que escribía
             igual. Ahora son dos ítems, el `gap` se cumple, y el glifo se puede atenuar aparte. */}
         <div className="cw-tabs" role="tablist" aria-label="Secciones del contacto">
-          {PESTANAS.map((p) => (
+          {pestanasVisibles.map((p) => (
             <button
               key={p.clave}
               type="button"
@@ -1132,6 +1138,8 @@ export default function Ficha({ contactoId, alCerrar }) {
               <i>⚠</i>
               <span>{causa}</span>
             </div>
+          ) : activa === 'brief' ? (
+            <BriefDeLaCita citaId={citaId} />
           ) : (
             <Cuerpo
             activa={activa}

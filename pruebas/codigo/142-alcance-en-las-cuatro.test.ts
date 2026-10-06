@@ -91,6 +91,17 @@ const SIN_ALCANCE: Record<string, string> = {
  * función en `lib/agentes/executive/adaptadores/closer.ts`. Lo cuida la prueba de abajo.
  */
 const CAJA_DEL_CEREBRO = 'app/api/closer/cerebro/route.ts';
+
+/**
+ * Las que resuelven el alcance PROPIO de quien pide, sin «ver como», cada una con su motivo.
+ *
+ *   · `brief` (AG12 de los agentes) — el Brief de UNA cita que quien pide abrió. Con «mío», sólo de sus
+ *     contactos, y eso lo decide `entradaDelBrief` con el alcance. «Ver como» sólo estrecha lo que ve quien ya
+ *     ve todo: la cita que abrió es de su territorio, y no hay una lista que el selector tenga que acotar.
+ */
+const ALCANCE_PROPIO: Record<string, string> = {
+  'app/api/closer/brief/route.ts': 'el Brief de una cita abierta; «mío» lo acota, «ver como» no aplica',
+};
 const HERRAMIENTAS_DEL_CLOSER = 'lib/agentes/executive/adaptadores/closer.ts';
 
 test('las CUATRO pantallas del Closer resuelven el alcance con la misma función', () => {
@@ -127,7 +138,7 @@ test('no hay una QUINTA pantalla del Closer sin decidir de quién son sus datos'
   assert.ok(todas.length >= CON_ALCANCE.length, 'no se encontraron las rutas del Closer');
 
   for (const ruta of todas) {
-    if (CON_ALCANCE.includes(ruta) || ruta === CAJA_DEL_CEREBRO) continue;
+    if (CON_ALCANCE.includes(ruta) || ruta === CAJA_DEL_CEREBRO || ruta in ALCANCE_PROPIO) continue;
     const motivo = SIN_ALCANCE[ruta];
     assert.ok(
       motivo,
@@ -205,4 +216,16 @@ test('el selector «ver como» viaja a las sub-pestañas que lo obedecen', () =>
     /usarLectura\(\s*[\s\S]{0,300}?verComo/,
     'la Agenda recibe «ver como» y no lo manda en el camino que lee, o lo manda fuera de la clave',
   );
+});
+
+test('el Brief resuelve el alcance propio y se lo pasa a lo que lee, en el GET y en el POST', () => {
+  for (const ruta of Object.keys(ALCANCE_PROPIO)) {
+    const src = sinComentarios(leer(ruta));
+    assert.equal((src.match(/alcanceDeQuienMira\s*\(/g) ?? []).length, 2, `\`${ruta}\` no resuelve el alcance en sus dos operaciones`);
+    assert.equal(
+      (src.match(/entradaDelBrief\(\s*cita\s*,\s*alcance\s*\)/g) ?? []).length,
+      2,
+      `\`${ruta}\` resuelve el alcance y no se lo pasa a lo que lee: serviría el Brief de la cita de otro closer`,
+    );
+  }
 });

@@ -283,6 +283,7 @@ export default function CloserView({ activa }) {
           tablero="closer/dia"
           colas={datos.colas}
           zonaHoraria={datos.zonaHoraria}
+          briefs={datos.briefs ?? {}}
           /* Resolver saca al contacto de la cola en el servidor. Sin la recarga, la pantalla lo
              seguiría mostrando y el vendedor apretaría el botón otra vez sobre algo ya hecho. */
           alResolver={() => void cargar()}

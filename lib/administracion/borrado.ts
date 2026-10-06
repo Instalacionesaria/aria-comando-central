@@ -174,6 +174,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* La categoría de cada objeción (`073`): cae con su llamada, y la llamada ya frena el borrado. Se nombra
      igual, por si alguna vez queda sola. */
   objeciones_clasificadas_org_id_fkey: 'tiene objeciones de llamadas clasificadas',
+  /* El Brief de cada cita (`074`): cae con su cita, y las citas ya frenan el borrado. */
+  briefs_del_closer_org_id_fkey: 'tiene briefs de citas del closer',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

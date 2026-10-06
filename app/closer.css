@@ -2059,3 +2059,36 @@
 #v-analizadores .az-renglones { margin: 0; padding-left: 16px; font-size: 12px; color: var(--txt); }
 #v-analizadores .az-renglones li { margin: 2px 0; }
 #v-analizadores .az-momento { margin: 6px 0; font-size: 12.5px; color: var(--txt); }
+
+/* ── EL BRIEF DE LA CITA (AG12 de los agentes) ──────────────────────────────
+ *
+ * `components/closer/BriefDeLaCita.jsx`, dentro de la ficha. Cuatro secciones con títulos chicos y cada dato
+ * en su renglón: el rótulo, el valor y debajo, más tenue, la cita y su fuente. Lo que no consta o es ambiguo
+ * se atenúa: se lee, pero no compite con lo que la persona dijo. Las marcas de Mi Día son las píldoras chicas
+ * de la casa, en mayúsculas como las nombra el Lienzo. */
+.br { display: flex; flex-direction: column; gap: 14px; }
+.br-sec h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--txt-dim); }
+.br-sec ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.br-dato { display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr); gap: 2px 10px; font-size: 12.5px; }
+.br-et { color: var(--txt-dim); }
+.br-val { color: var(--txt); overflow-wrap: anywhere; }
+.br-fuente { grid-column: 2; font-size: 11px; color: var(--txt-faint); overflow-wrap: anywhere; }
+.br-no_consta .br-val,
+.br-ambiguo .br-val { color: var(--txt-faint); }
+.br-marca { font-style: normal; color: var(--txt-faint); }
+.br-vacio { font-size: 12px; color: var(--txt-faint); }
+.br-nota { margin: 6px 0 0; font-size: 11.5px; color: var(--txt-dim); }
+.br-sug,
+.br-preg { margin: 6px 0 0; font-size: 12.5px; color: var(--txt); line-height: 1.45; }
+.br-nuevos { align-items: center; }
+.br-nuevos .fd-btn { margin-left: auto; padding: 5px 10px; }
+.br-regenerar { align-self: flex-start; padding: 6px 12px; }
+.br-marcas { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.br-chip { font-size: 9.5px; letter-spacing: .05em; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--txt-dim); }
+.br-listo { border-color: rgb(var(--c-acento) / .5); color: var(--accent); }
+
+/* En el teléfono, el rótulo arriba del valor: dos columnas en 375 px parten cada palabra. */
+@media (max-width: 760px) {
+  .br-dato { grid-template-columns: minmax(0, 1fr); }
+  .br-fuente { grid-column: 1; }
+}

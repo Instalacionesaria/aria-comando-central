@@ -97,7 +97,7 @@ export async function colasDelDia(
    * después se dibuja. */
   const citas = await datos()
     .selectFrom('citas')
-    .select(['contacto_id', 'inicio_el', 'fin_el', 'estado_ghl', 'sala_url'])
+    .select(['id', 'contacto_id', 'inicio_el', 'fin_el', 'estado_ghl', 'sala_url'])
     // El día en la zona de la organización. `timezone(zona, now())` da el ahora local, y
     // `date_trunc('day', …)` su medianoche. Comparar contra `current_date` usaría la zona del
     // SERVIDOR, que no es la de nadie.
@@ -155,6 +155,7 @@ export async function colasDelDia(
     resultado.agenda.push({
       fila,
       cita: {
+        id: c.id,
         inicioEl: c.inicio_el,
         estado: c.estado_ghl,
         salaUrl: c.sala_url,
