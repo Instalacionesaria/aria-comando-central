@@ -26,6 +26,16 @@
 > 5. La carpeta pasa de 10 archivos a 18 y cubre todo el menú, no sólo los cinco departamentos de
 >    Inteligencia.
 >
+> **Después del corte, del 2026-10-03 al 2026-10-06: los agentes de IA** (`docs/OTROS/agentes/00-MAPA.md`,
+> etapas AG0 a AG16). Lo que esta foto describe como maqueta o como «Próximamente» en el Executive ya mide: el
+> cerebro responde con herramientas de sólo lectura en el Inicio y al pie de cada sección; Acquisition,
+> Creative Insights, Conversion y Conversation tienen señales guardadas cada mañana, su Plan de acción y el
+> comentario de su cabecera; el closer tiene el Brief de cada cita; las objeciones de las llamadas de venta se
+> clasifican; y el Inicio tiene la Reunión de hoy. Todo uso del modelo queda en `negocio.uso_de_ia`. Siete
+> migraciones nuevas, de la `069` a la `075`, todas en producción el 2026-10-06. Algunos archivos llevan su
+> nota fechada (11-EXECUTIVE, el que más cambió); los demás **no se revisaron afirmación por afirmación** contra
+> esto: donde hablan de esas pantallas, la verdad de hoy está en `docs/OTROS/agentes/`.
+>
 > **La foto anterior** se lee con `git show 1c55149:"docs/OTROS/estado actual/<archivo>"`: es la del
 > 2026-09-15 con las correcciones fechadas que le agregaron `bddb516`, `c8494e6`, `3287f74`,
 > `0add4cc`, `aed4f27` y `4fc9e43`, hasta el 2026-09-26, y el traslado a `docs/OTROS/` del

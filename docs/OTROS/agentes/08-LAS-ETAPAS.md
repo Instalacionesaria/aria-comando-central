@@ -726,6 +726,20 @@ Lo que decía el plan:
 
 ## AG16 · El cierre
 
+- **Hecho el 2026-10-06.** `00-MAPA.md` con el estado de cada etapa (las filas que decían «sin push» o «sólo en
+  local» quedaron al día) y la comprobación en producción, con `scripts/supabase.mjs leer`, de que están todas
+  las tablas del plan, de la `069` a la `075`. Los resultados de las evaluaciones, en `07`. En
+  `estado actual/`, una nota fechada en su mapa y otra en `11-EXECUTIVE.md`; los demás archivos de esa carpeta
+  no se revisaron afirmación por afirmación, y su mapa lo dice.
+- **Las citas**: cada etapa las reapuntó con el mapa de su diff y la 101 está en verde. La revisión encontró
+  que el guion movía también las citas fijadas a un commit (`archivo:N@sha`), que no se mueven: se arregló, se
+  devolvieron las dos que había corrido una etapa anterior y quedó en la memoria del proyecto.
+- **Lo que queda abierto** está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`; además, la evaluación real de la
+  clasificación de objeciones (AG11), que nunca se corrió, y una versión del prompt de la Reunión que no reciba
+  la etiqueta del tema (`07`).
+
+Lo que decía el plan:
+
 - `00-MAPA.md` con el estado de cada etapa, los resultados de la evaluación en `07`, las notas de «después
   del corte» en `estado actual/`, la memoria del proyecto, y una revisión de todas las citas con el mapa de los
   diffs. Push final con OK.

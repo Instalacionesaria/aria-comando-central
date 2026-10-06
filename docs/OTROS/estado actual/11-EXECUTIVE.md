@@ -23,6 +23,13 @@
 > con su panel y CONVERSACIONES (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). Lo de abajo describe el corte del
 > 2026-09-28.
 
+> **Después del corte, 2026-10-06 (AG15 de los agentes).** La «Reunión de hoy» que la maqueta dibujaba con
+> cifras escritas a mano existe de verdad: la arma cada mañana la pasada de los detectores con señales y reglas
+> sobre datos reales (`negocio.reuniones_del_dia`, migración `075`), el Inicio muestra hasta tres temas
+> filtrados por las secciones de cada persona (`components/cerebro/ReunionDeHoy.jsx`), la barra cuenta los de
+> hoy y tocar uno abre una conversación. El diseño y lo que no se construyó están en
+> `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`.
+
 Executive es la última sección con `sinOperacionesTodavia` (`lib/autorizacion/secciones.ts:213-219`)
 y dibuja **179 literales numéricos y catorce contactos inventados** sin haber cambiado una línea de
 datos desde el port del 2026-08-18. A 7 días dice 312 contactos, $8.525 de inversión y 11 ventas
