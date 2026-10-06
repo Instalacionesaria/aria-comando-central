@@ -102,12 +102,12 @@ porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/seccione
 décima salida de la lista, quinta vez que el cable dispara (`pruebas/codigo/90-fundaciones.test.ts:1172-1174`).
 El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:273-274`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
-**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:45-70`) pide `tablero.ver`
-por el portero (`app/api/conversion/route.ts:49`), **rechaza** con 400 un período que no está en la
-lista en vez de corregirlo (`app/api/conversion/route.ts:52-56`), le pasa **la misma ventana** a los
-dos módulos (`app/api/conversion/route.ts:58-61`) y devuelve la clave del período que usó
-(`app/api/conversion/route.ts:63-69`). El lector del navegador exige el período, sin valor por
-omisión (`lib/negocio/vistaDeConversion.ts:36-48`).
+**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:47-93`) pide `tablero.ver`
+por el portero (`app/api/conversion/route.ts:51`), **rechaza** con 400 un período que no está en la
+lista en vez de corregirlo (`app/api/conversion/route.ts:54-58`), le pasa **la misma ventana** a los
+dos módulos (`app/api/conversion/route.ts:63-76`) y devuelve la clave del período que usó
+(`app/api/conversion/route.ts:78-92`). El lector del navegador exige el período, sin valor por
+omisión (`lib/negocio/vistaDeConversion.ts:42-54`).
 
 **La vista.** `components/views/ConversionView.jsx` (79 líneas) es una cáscara: su encabezado dice qué
 se tiró y por qué (`components/views/ConversionView.jsx:21-44`), la bajada cambió a *«Por dónde entra
@@ -115,30 +115,30 @@ la gente, y quién abandona el formulario»* (`components/views/ConversionView.j
 (`components/views/ConversionView.jsx:74`).
 
 **El panel.** `components/conversion/PanelDeConversion.jsx` (478 líneas) dibuja, en este orden
-(`components/conversion/PanelDeConversion.jsx:161-172`):
+(`components/conversion/PanelDeConversion.jsx:164-176`):
 
-1. **La barra de períodos**, siempre presente (`components/conversion/PanelDeConversion.jsx:86-89`),
+1. **La barra de períodos**, siempre presente (`components/conversion/PanelDeConversion.jsx:87-92`),
    con los cuatro de `lib/negocio/periodo.ts:83-96`. Abre en **30 días**
-   (`lib/negocio/periodo.ts:109`, `components/conversion/PanelDeConversion.jsx:49`) y enciende el
-   botón que el servidor contestó, no el que se pidió (`components/conversion/PanelDeConversion.jsx:88`).
+   (`lib/negocio/periodo.ts:109`, `components/conversion/PanelDeConversion.jsx:50`) y enciende el
+   botón que el servidor contestó, no el que se pidió (`components/conversion/PanelDeConversion.jsx:91`).
    Se recarga cada 60 segundos sólo con la pestaña a la vista
-   (`components/conversion/PanelDeConversion.jsx:79-81`, `lib/cadencia.ts:91`).
-2. **«Cuánto vale lo que dice esta pantalla»** (`components/conversion/PanelDeConversion.jsx:182-250`):
+   (`components/conversion/PanelDeConversion.jsx:80-82`, `lib/cadencia.ts:91`).
+2. **«Cuánto vale lo que dice esta pantalla»** (`components/conversion/PanelDeConversion.jsx:186-254`):
    la cobertura del recorrido (contactos con dirección sobre la cohorte), la cobertura del formulario
    (contactos con el campo sobre la cohorte) y el rango real de cada bloque, que casi nunca es la
-   ventana pedida (`components/conversion/PanelDeConversion.jsx:240-247`).
-3. **«Por dónde entró la gente»** (`components/conversion/PanelDeConversion.jsx:259-326`): una fila
+   ventana pedida (`components/conversion/PanelDeConversion.jsx:244-251`).
+3. **«Por dónde entró la gente»** (`components/conversion/PanelDeConversion.jsx:263-330`): una fila
    por familia con contactos, porción de la cohorte y **un conteo** de agendados, no una tasa. Al lado
    del nombre, una nota cuando al menos el 90 % de la fila tiene la dirección registrada al reservar
-   (`components/conversion/PanelDeConversion.jsx:337-350`), y al pie el aviso del servidor.
+   (`components/conversion/PanelDeConversion.jsx:341-354`), y al pie el aviso del servidor.
 4. **«Cuántos abandonan el formulario de la landing»**
-   (`components/conversion/PanelDeConversion.jsx:365-416`): los tres estados del campo, la tasa de
+   (`components/conversion/PanelDeConversion.jsx:369-420`): los tres estados del campo, la tasa de
    finalización —o «—» con el rótulo «no alcanza para una tasa»
-   (`components/conversion/PanelDeConversion.jsx:386-389`)— y la contradicción entre lo que dice el
-   campo y lo que dicen las citas (`components/conversion/PanelDeConversion.jsx:427-439`).
-5. **«Lo que esta pantalla no puede medir»** (`components/conversion/PanelDeConversion.jsx:461-481`):
+   (`components/conversion/PanelDeConversion.jsx:390-393`)— y la contradicción entre lo que dice el
+   campo y lo que dicen las citas (`components/conversion/PanelDeConversion.jsx:431-443`).
+5. **«Lo que esta pantalla no puede medir»** (`components/conversion/PanelDeConversion.jsx:465-485`):
    los cinco huecos, bajo un encabezado fechado el 20 de septiembre
-   (`components/conversion/PanelDeConversion.jsx:469-470`). Ver § 5.
+   (`components/conversion/PanelDeConversion.jsx:473-474`). Ver § 5.
 
 **Los módulos.** `lib/negocio/recorrido.ts` (315 líneas) tiene la clasificación: siete familias
 (`lib/negocio/recorrido.ts:55-63`), sus rótulos (`lib/negocio/recorrido.ts:68-94`), la lista de hosts
@@ -160,7 +160,7 @@ el formulario y los huecos. Las pruebas son 24: 13 en `pruebas/base/160-recorrid
   (`lib/negocio/embudoDelFormulario.ts:235-237`, `lib/negocio/indicadoresDeCitas.ts:309`); la porción de
   cada familia se publica sin piso porque es un conteo exacto (`lib/negocio/recorridoDelLead.ts:191-194`);
   el aviso de circularidad exige 10 contactos y el 90 % (`lib/negocio/recorridoDelLead.ts:263-265`), y la
-  nota por fila sólo el 90 % (`components/conversion/PanelDeConversion.jsx:340`).
+  nota por fila sólo el 90 % (`components/conversion/PanelDeConversion.jsx:344`).
 - **El valor por omisión de los módulos es `DIAS_DE_LA_TASA = 14`**
   (`lib/negocio/indicadoresDeCitas.ts:319`, `lib/negocio/recorridoDelLead.ts:135`), pero la ruta
   siempre pasa el período, así que la pantalla nunca mide catorce días.
@@ -363,7 +363,7 @@ sin una excepción—. La regla: **mientras el censo de un campo numérico tenga
 ese campo no es una medición: es un indicador de que algo se instaló y no funcionó**, y se reporta
 como alarma, no como cifra. En código: el VSL es un hueco y no una cifra
 (`lib/negocio/embudoDelFormulario.ts:117-127`), y la finalización bajo el piso es «—» y no «0 %»
-(`components/conversion/PanelDeConversion.jsx:386-389`).
+(`components/conversion/PanelDeConversion.jsx:390-393`).
 
 **2. Nunca mezclar cohortes de antes y después del 2026-08-31.**
 
@@ -478,18 +478,18 @@ clase de texto que la regla del proyecto trata como defecto de primera clase, po
 
 **3. La fila «Landing con VSL» de septiembre es casi toda circular, y no lleva la marca.**
 En 30 días son 43 contactos, 37 capturados al reservar (86 %) y 30 «agendaron». La marca pide el 90 %
-(`components/conversion/PanelDeConversion.jsx:340`, `lib/negocio/recorridoDelLead.ts:263-265`), así que
+(`components/conversion/PanelDeConversion.jsx:344`, `lib/negocio/recorridoDelLead.ts:263-265`), así que
 la fila sale limpia y sus 30 agendados se leen como conversión de la landing. Y su rótulo —*«Entró
 por la página propia con el video y el formulario»* (`lib/negocio/recorrido.ts:69-72`)— describe
 agosto: en septiembre, 31 de sus 32 contactos tienen esa dirección registrada al reservar.
 
 **4. «Hoy» dice una cosa al pasar el cursor y mide otra.** El título del botón dice *«Las últimas 24
 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
-`components/conversion/PanelDeConversion.jsx:116`), y la cohorte de Conversion es el día de calendario
+`components/conversion/PanelDeConversion.jsx:119`), y la cohorte de Conversion es el día de calendario
 desde la medianoche UTC (`lib/negocio/recorrido.ts:197-199`). `lib/negocio/costoDelAnuncio.ts:61-63`
 admite la diferencia para Acquisition, pero el título es compartido y no cambió. Además,
 `lib/negocio/recorrido.ts:193-195` justifica el anclaje porque Conversion *«cruza sus contactos con el
-gasto y con las piezas»*, y la ruta no lee ni gasto ni piezas (`app/api/conversion/route.ts:58-61`).
+gasto y con las piezas»*, y la ruta no lee ni gasto ni piezas (`app/api/conversion/route.ts:63-76`).
 
 **5. Executive sigue publicando en nombre de Conversion.** Móvil contra escritorio, la retención del
 VSL, visitas a la landing y una falla de formulario con su pérdida en contactos (§ 3). Ahora hay una

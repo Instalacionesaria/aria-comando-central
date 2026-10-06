@@ -637,6 +637,24 @@ Lo que decía el plan:
 
 ## AG14 · Conversion
 
+- **Hecho el 2026-10-06, sin push.** Sin migración ni capacidad nueva.
+- **El detector** (`lib/agentes/detectores/conversion.ts`) con las cuatro reglas validadas, sobre las mismas
+  funciones y días que la pantalla; la ventana anterior, con la misma función al doble de días. «Sin rastro» no
+  compite (lo encontró la base sembrada: todo era de esa familia, y caía en «No tocar»).
+- **El plan** (`lib/agentes/plan/conversion.ts`): «Qué hacer primero» con las tres que más gente pierden (el
+  armado común suma un `tope` por grupo y cuenta lo que quedó afuera), «Lo que dice la data», la validación
+  ejecutiva para el cambio de ruta y «No tocar», que llega como renglón informativo del detector y no es señal
+  (`informativas`, en la pasada y en el armado común).
+- **La pantalla y las rutas**: botón y tarjeta en Conversion, las rutas gemelas, y el GET con sus señales. La
+  lectura de las señales nombra cada familia por su rótulo.
+- **Pruebas nuevas**: 236 (código) y 237 (base, con la ventana anterior comparada contra un conteo directo).
+  Cambia la 223 (la pasada corre los cuatro). Mutaciones, 17 vistas en rojo; dos casos se sumaron porque sus
+  mutaciones quedaban verdes (una familia apenas bajo la cohorte y el formulario con la cohorte bajo el piso).
+- **Verificada en el preview local**: lo que encontró fue el id crudo de la familia delante de cada renglón y
+  «bajó a el 24 %».
+
+Lo que decía el plan:
+
 - **Qué**: el detector según la especificación validada (`fichas/F04-CONVERSION.md`), su plan con el formato
   CV6, su tarjeta y su botón.
 - **Pruebas nuevas**: 228, sólo las tres primeras fugas, el bloque «No tocar», ningún nombre de persona

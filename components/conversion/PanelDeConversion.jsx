@@ -44,6 +44,7 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerConversion } from '@/lib/negocio/vistaDeConversion';
+import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
 
 export default function PanelDeConversion() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -84,6 +85,8 @@ export default function PanelDeConversion() {
     <>
       {/* La barra, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar. */}
       <div className="cs-barra">
+        {/* El plan del detector de Conversion (AG14 de los agentes), con lo que guardó la pasada de la mañana. */}
+        {pantalla?.senales ? <BotonDelPlan departamento="conversion" senales={pantalla.senales} /> : null}
         {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió. */}
         <Periodos valor={pantalla?.periodo ?? periodo} alElegir={setPeriodo} />
       </div>
@@ -95,7 +98,7 @@ export default function PanelDeConversion() {
       ) : pantalla === null ? null : (
         /* La clave reinicia el cuerpo al cambiar de ventana: sin ella, lo que esté desplegado
            sobrevive al cambio y queda describiendo otra ventana. */
-        <Cuerpo key={pantalla.periodo} p={pantalla} />
+        <Cuerpo key={pantalla.periodo} p={pantalla} alCambiar={recargar} />
       )}
     </>
   );
@@ -158,13 +161,14 @@ function fechaCorta(iso) {
   return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}${a === esteAno ? '' : ` ${a}`}`;
 }
 
-function Cuerpo({ p }) {
+function Cuerpo({ p, alCambiar }) {
   return (
     <>
       {/* La cobertura ANTES de cualquier reparto. Es el § 18.5. */}
       <Cobertura p={p} />
       <PorRecorrido r={p.recorrido} />
       <EmbudoDelFormulario f={p.formulario} />
+      {p.senales ? <TarjetaDeSenales departamento="conversion" senales={p.senales} puede={p.puedeConSenales} alCambiar={alCambiar} /> : null}
       {/* Y lo último: qué NO muestra esta pantalla, y por qué. Ver `Huecos`. */}
       <Huecos lista={p.formulario.fueraDeAlcance} />
     </>

@@ -32,6 +32,7 @@ import { umbralesFirmados } from '../senales/umbrales.ts';
 import { DETECTOR_DE_ACQUISITION } from './detector-de-acquisition.ts';
 import { DETECTOR_DE_CREATIVE } from './detector-de-creative.ts';
 import { DETECTOR_DE_CONVERSATION } from './detector-de-conversation.ts';
+import { DETECTOR_DE_CONVERSION } from './detector-de-conversion.ts';
 import {
   type DebajoDelPiso,
   type DepartamentoConSenales,
@@ -59,6 +60,11 @@ export interface ResultadoDelDetector {
   /** Las reglas cuya fuente no llegó: lo suyo que no se detectó queda `sin_medicion`. */
   sinMedicion: readonly string[];
   debajoDelPiso: readonly DebajoDelPiso[];
+  /**
+   * Renglones del plan que NO son señales: no se reconcilian ni se guardan en `negocio.senales`, sólo van al
+   * plan. Conversion los usa para «No tocar» (CV6-04): las familias que agendan igual o mejor que la cohorte.
+   */
+  informativas?: readonly Deteccion[];
   /** La ventana sobre la que se midió, para que el plan la declare (A6-23). */
   periodo?: { desde: string; hasta: string };
 }
@@ -93,8 +99,8 @@ const MARGEN_DEL_FINAL_MS = 15_000;
 /** Debajo de esto no se pide: la llamada terminaría cortada y se pagaría igual. */
 const ESPERA_MINIMA_DE_LA_REDACCION_MS = 20_000;
 
-/** Los detectores construidos: Acquisition desde AG9, Creative desde AG10, Conversation desde AG13; Conversion, en su etapa. */
-export const DETECTORES: readonly Detector[] = [DETECTOR_DE_ACQUISITION, DETECTOR_DE_CREATIVE, DETECTOR_DE_CONVERSATION];
+/** Los cuatro detectores: Acquisition desde AG9, Creative desde AG10, Conversation desde AG13 y Conversion desde AG14. */
+export const DETECTORES: readonly Detector[] = [DETECTOR_DE_ACQUISITION, DETECTOR_DE_CREATIVE, DETECTOR_DE_CONVERSATION, DETECTOR_DE_CONVERSION];
 
 export interface RenglonDeLaPasada {
   departamento: DepartamentoConSenales;

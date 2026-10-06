@@ -18,6 +18,8 @@ import { pedir } from '../http/cliente.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
 import type { RecorridoDeLosLeads } from './recorridoDelLead.ts';
 import type { EmbudoDelFormulario } from './embudoDelFormulario.ts';
+import type { PlanDeConversion } from '../agentes/plan/conversion.ts';
+import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
 const RUTA = '/api/conversion';
 
@@ -27,6 +29,10 @@ export interface PantallaDeConversion {
   recorrido: RecorridoDeLosLeads;
   /** Cuántos abandonan el formulario de la landing, y los cinco huecos declarados. */
   formulario: EmbudoDelFormulario;
+  /** Las señales del detector (AG14 de los agentes): las vivas de la ventana, el último plan y las reglas. */
+  senales: SenalesDelDepartamento<PlanDeConversion>;
+  /** Lo que esta sesión puede hacer con ellas. Todo `false` bajo delegación. */
+  puedeConSenales: PuedeConSenales;
 }
 
 export type ResultadoDeConversion =

@@ -215,7 +215,8 @@ Tres consecuencias para el plan:
 | AG11 · Llamadas | **Hecho** el 2026-10-05, sin push: la categoría de cada objeción en la tarea del analizador (`073`, sólo en local), el vínculo al leer, los agregados de venta y de onboarding y sus dos herramientas, con las pruebas 229 a 231 |
 | AG12 · El Brief del closer | **Hecho** el 2026-10-05: la `074`, la ruta, la pestaña «Brief» de la ficha abierta desde una cita y las marcas de Mi Día, con las pruebas 232 y 233, y su evaluación real (`07`). **Hito H4** el mismo día: la `074` en producción y push |
 | AG13 · Conversation en la tabla común | **Hecho** el 2026-10-06, sin push: los hallazgos del auditor traducidos a señales con `issue_source`, su plan por agente y la tarjeta y el botón en la pestaña Auditoría, con las pruebas 234 y 235. Sin migración |
-| AG14 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG14 · Conversion | **Hecho** el 2026-10-06, sin push: el detector con las cuatro reglas validadas, su plan con «Qué hacer primero» (tres) y «No tocar», y la tarjeta y el botón en su pantalla, con las pruebas 236 y 237. Sin migración |
+| AG15 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

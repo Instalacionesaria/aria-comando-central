@@ -31,6 +31,8 @@ export interface PlanDelDepartamento<G extends string = string> {
   debajoDelPiso: number;
   /** Lo que no se pudo medir en esta pasada, en palabras. */
   sinMedicion: string[];
+  /** Cuántos renglones quedaron fuera por el tope de su grupo. Cero sin tope. */
+  fueraDelTope: number;
 }
 
 export interface FormatoDelPlan<G extends string = string> {
@@ -47,12 +49,18 @@ export interface FormatoDelPlan<G extends string = string> {
    * cuántas conversaciones toca cada patrón. Sin él, por la entidad.
    */
   desempate?: (d: Deteccion) => number;
+  /**
+   * Cuántos renglones muestra un grupo, como mucho, después de ordenar. Conversion muestra sólo las tres fugas con
+   * más pérdida (CV6-02, CV6-03). Lo que queda afuera se cuenta en `fueraDelTope` y sigue en la tarjeta.
+   */
+  tope?: Partial<Record<G, number>>;
 }
 
 export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan): PlanDelDepartamento<G> {
   const grupos = f.grupos.map((g) => ({ clave: g.clave, titulo: g.titulo, renglones: [] as RenglonDelPlan[] }));
   const peso = new Map<RenglonDelPlan, number>();
-  for (const d of p.vigentes) {
+  // Lo vigente y, después, lo informativo (que no es señal y sólo vive en el plan).
+  for (const d of [...p.vigentes, ...(p.informativas ?? [])]) {
     const renglon: RenglonDelPlan = {
       regla: d.regla,
       entidad: d.entidad,
@@ -77,6 +85,14 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
         a.entidad.id.localeCompare(b.entidad.id),
     );
   }
+  let fueraDelTope = 0;
+  for (const g of grupos) {
+    const tope = f.tope?.[g.clave];
+    if (tope !== undefined && g.renglones.length > tope) {
+      fueraDelTope += g.renglones.length - tope;
+      g.renglones = g.renglones.slice(0, tope);
+    }
+  }
   return {
     departamento: f.departamento,
     ventana: p.ventana,
@@ -85,6 +101,7 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
     grupos,
     debajoDelPiso: p.debajoDelPiso.length,
     sinMedicion: p.sinMedicion.map((r) => f.noSeMidio[r] ?? r),
+    fueraDelTope,
   };
 }
 

@@ -9,6 +9,7 @@
 
 import { datos } from '../../datos/contexto.ts';
 import { NOMBRE_DEL_AGENTE } from '../../auditor/vista.ts';
+import { ROTULOS, type Familia } from '../../negocio/recorrido.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from './umbrales.ts';
 import type { DepartamentoConSenales, Deteccion, Gravedad, VentanaDeSenal } from './tipos.ts';
 
@@ -163,6 +164,9 @@ function nombreDe(
       return anuncios.get(entidad.id) ?? null;
     case 'pieza':
       return entidad.id;
+    case 'familia_de_entrada':
+      // La familia por su rótulo de pantalla (Conversion): «Landing con VSL», no `landing`.
+      return ROTULOS[entidad.id as Familia]?.titulo ?? entidad.id;
     case 'patron': {
       // `agente:patron`: se nombra por el agente del CRM, como la pantalla (LeadFlow, AppFlow).
       const agente = entidad.id.split(':')[0]!;

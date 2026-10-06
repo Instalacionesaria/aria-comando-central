@@ -39,6 +39,8 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { recorridoDelLead } from '../../../lib/negocio/recorridoDelLead.ts';
 import { embudoDelFormulario } from '../../../lib/negocio/embudoDelFormulario.ts';
+import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
+import { textoDeConversion } from '../../../lib/agentes/plan/conversion.ts';
 
 export const PANTALLA = 'conversion';
 
@@ -55,10 +57,23 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const [recorrido, formulario] = await conOrganizacion(contexto.orgEfectiva, async () => [
-    await recorridoDelLead(periodo.dias),
-    await embudoDelFormulario(periodo.dias),
-  ]);
+  /* Las señales del detector de Conversion (AG14 de los agentes), de 7 o de 30 días; con «hoy» o «completo»,
+     ninguna, y la tarjeta lo dice. Las guarda la pasada de cada mañana; acá sólo se leen. */
+  const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
+  const [recorrido, formulario, senales] = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const lista = ventana === null ? [] : await senalesDeLaPantalla('conversion', ventana, textoDeConversion);
+    return [
+      await recorridoDelLead(periodo.dias),
+      await embudoDelFormulario(periodo.dias),
+      {
+        ventana,
+        lista,
+        estado: estadoDelDepartamento(lista),
+        plan: ventana === null ? null : await ultimoPlan('conversion', ventana),
+        reglas: await reglasDelDepartamento('conversion'),
+      },
+    ] as const;
+  });
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
@@ -66,5 +81,13 @@ export async function GET(peticion: Request): Promise<Response> {
     periodo: periodo.clave,
     recorrido,
     formulario,
+    senales,
+    /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/conversion/senales` y
+       `…/umbrales`, y nada bajo delegación (AG-82). */
+    puedeConSenales: {
+      resolver: contexto.permisos.has('senales.resolver') && !contexto.mirandoOtraOrganizacion,
+      validar: contexto.permisos.has('senales.validar') && !contexto.mirandoOtraOrganizacion,
+      firmar: contexto.permisos.has('umbrales.firmar') && !contexto.mirandoOtraOrganizacion,
+    },
   });
 }

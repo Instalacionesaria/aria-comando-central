@@ -36,6 +36,7 @@ const DEPARTAMENTOS = {
   acquisition: { nombre: 'Acquisition', cerrados: true, conPerdida: true },
   creative: { nombre: 'Creative Insights', cerrados: false, conPerdida: false },
   conversation: { nombre: 'Conversation', cerrados: false, conPerdida: false },
+  conversion: { nombre: 'Conversion', cerrados: false, conPerdida: true },
 };
 
 /** El rótulo corto de cada regla, para el título de la señal. El texto largo lo trae el servidor. */
@@ -59,6 +60,10 @@ const TITULO = {
   'CRE-FRECUENCIA-ALTA': 'La misma gente lo ve muchas veces',
   'CRE-ICP-POR-PIEZA': 'ICP bajo el de su etapa',
   'CONV-PATRON-ABIERTO': 'Patrón abierto',
+  'CNV-FAMILIA-QUE-NO-AGENDA': 'Un recorrido que agenda poco',
+  'CNV-CAMBIO-DE-RUTA': 'Cambió la ruta de entrada',
+  'CNV-FORMULARIO-ABANDONO': 'Abandonan el formulario',
+  'CNV-FORMULARIO-SIN-DATOS': 'El formulario dejó de llegar',
 };
 
 /** El ícono y el color de cada gravedad, como los del prototipo (`.sig .si`). */
@@ -99,6 +104,9 @@ function nombreDe(entidad, nombres, funnels, delServidor = null) {
   /* Un patrón del auditor: en la tarjeta, el agente que resolvió el servidor (arriba); en el plan, nada, porque el
      grupo ya es el agente y la frase trae el título del patrón. Su id (`agente:patron`) no se lee. */
   if (entidad.tipo === 'patron') return null;
+  /* Lo mismo con una familia de entrada o el formulario (Conversion): la tarjeta los nombra con lo que resolvió el
+     servidor; el plan, por la frase, que ya los trae. */
+  if (entidad.tipo === 'familia_de_entrada' || (entidad.tipo === 'funnel' && entidad.id === 'formulario')) return null;
   // Una pieza no tiene otro identificador que su nombre normalizado.
   return entidad.id;
 }
@@ -174,6 +182,7 @@ function CuerpoDelPlan({ d, senales, nombres, funnels }) {
       <p className="sen-plan-pie">
         {guardado.bajoElPiso > 0 ? `${guardado.bajoElPiso} ${guardado.bajoElPiso === 1 ? 'detección quedó' : 'detecciones quedaron'} por debajo del piso de muestra y no se publican. ` : ''}
         {p.sinMedicion.length > 0 ? `No se pudo medir: ${p.sinMedicion.join('; ')}. ` : ''}
+        {p.fueraDelTope > 0 ? `${p.fueraDelTope} ${p.fueraDelTope === 1 ? 'fricción más, con menos pérdida, queda' : 'fricciones más, con menos pérdida, quedan'} en la tarjeta de Señales. ` : ''}
         Calculado el {fechaCorta(guardado.dia)}.{' '}
         {guardado.redaccion ? 'Las frases las redactó el modelo con las cifras del cálculo; la que traía otra cifra o un superlativo quedó como estaba. ' : ''}
         Lo que alguien ya resolvió o descartó no vuelve a recomendarse.

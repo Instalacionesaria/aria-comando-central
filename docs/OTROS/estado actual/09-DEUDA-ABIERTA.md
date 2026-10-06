@@ -525,7 +525,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   muestra 3 y no 26.
 - **El botón «Hoy» promete «las últimas 24 horas, no el día del calendario»**
   (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion
-  (`components/conversion/PanelDeConversion.jsx:116`) —Acquisition dejó de dibujarlo en AQ-4, el
+  (`components/conversion/PanelDeConversion.jsx:119`) —Acquisition dejó de dibujarlo en AQ-4, el
   2026-09-30—, cuyas cohortes se anclan al día de
   calendario (`lib/negocio/recorrido.ts:197-199`; el propio `lib/negocio/costoDelAnuncio.ts:61-63`
   lo admite). Y `lib/negocio/periodo.ts:76-77` sigue diciendo
@@ -545,7 +545,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
-  (`components/conversion/PanelDeConversion.jsx:340`, `lib/negocio/recorridoDelLead.ts:263-265`) y la
+  (`components/conversion/PanelDeConversion.jsx:344`, `lib/negocio/recorridoDelLead.ts:263-265`) y la
   fila da 86 % a 30 días según [03-CONVERSION.md](03-CONVERSION.md) (no re-medido); su rótulo
   (`lib/negocio/recorrido.ts:69-72`) describe el recorrido de agosto.
 - **La cobertura de Conversion dice «de 570» sobre una base de 594** sin declarar los 24 sin alta
@@ -591,8 +591,9 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   `adId` llega «si y sólo si» el lead entró por Facebook o Instagram; 01 midió hoy 4 de 217 que no
   (no re-medido).
 - `lib/negocio/recorrido.ts:193-195` justifica la ventana anclada porque Conversion cruza con el
-  gasto y las piezas; la ruta sólo llama a `recorridoDelLead` y a `embudoDelFormulario`
-  (`app/api/conversion/route.ts:58-61`).
+  gasto y las piezas; de lo que mide, la ruta sólo llama a `recorridoDelLead` y a `embudoDelFormulario` (desde
+  AG14 de los agentes además lee sus señales guardadas, que no cruzan gasto ni piezas)
+  (`app/api/conversion/route.ts:63-76`).
 - `lib/negocio/tramosDelIcp.ts:20` («47 de los 471») no dice la fecha en esa línea. (El «79 anuncios y
   12 con gasto» del panel anterior de Acquisition salió con él en AQ-4.)
 - `lib/negocio/leadsDelPortal.ts:272-275`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es
