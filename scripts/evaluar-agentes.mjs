@@ -210,7 +210,8 @@ async function correrElPlan(llave) {
   try {
     // Las 12:00 de hoy en la zona de los casos: le toca, y el sembrado es relativo a hoy.
     const ahora = new Date(`${diaEnZona(new Date(), ZONA_DE_LOS_CASOS)}T17:00:00Z`);
-    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora, llave });
+    // Sin la Reunión: con llave, la redactaría también, y la tanda haría un pedido más de los que declara.
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora, llave, conReunion: false });
     console.log(`  redacción: ${JSON.stringify(r.tocaba ? r.departamentos.map((d) => d.redaccion) : r.porque)}`);
     const planes = await conOrganizacion(e.conDatos, () =>
       datos().selectFrom('planes_de_accion').select(['ventana', 'plan', 'redaccion']).orderBy('ventana').execute(),
@@ -228,6 +229,65 @@ async function correrElPlan(llave) {
       datos()
         .selectFrom('uso_de_ia')
         .where('agente', '=', 'plan')
+        .select([
+          sql`count(*)`.as('llamadas'),
+          sql`coalesce(sum(tokens_entrada), 0)`.as('entrada'),
+          sql`coalesce(sum(tokens_salida), 0)`.as('salida'),
+        ])
+        .executeTakeFirstOrThrow(),
+    );
+    console.log(`\nTotal: ${uso.llamadas} llamada(s), ${uso.entrada} tokens de entrada y ${uso.salida} de salida.`);
+  } finally {
+    await quitarEmpresasDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+    console.log('  Quitada la empresa sembrada.');
+  }
+}
+
+/**
+ * La redacción de la Reunión de hoy (`07`, AG15, F17): la pasada de verdad SIN llave sobre la empresa sembrada
+ * —detectores y Reunión con plantillas, sin ningún pedido—, y después un solo pedido para ordenar y redactar sus
+ * temas, con la llave de ARIA sólo en memoria. Imprime el orden de las reglas y el del modelo, cada frase al lado
+ * de su plantilla, lo que la validación quitó y el uso, leído de `uso_de_ia`.
+ */
+async function correrLaReunion(llave) {
+  const { sql } = await import('kysely');
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { correrLaPasada } = await import('../lib/agentes/detectores/correr.ts');
+  const { redactarReunion } = await import('../lib/agentes/reunion/redaccion.ts');
+  const { guardarRedaccionDeLaReunion, temasEnSuOrden, ultimaReunion } = await import('../lib/agentes/reunion/guardar.ts');
+  const { diaEnZona } = await import('../lib/negocio/tiempo.ts');
+  const { PREFIJO_DE_LA_EVALUACION, ZONA_DE_LOS_CASOS, quitarEmpresasDeLosAgentes, sembrarCasosDeLosAgentes } = await import('../db/sembrado/casos-de-los-agentes.ts');
+
+  const e = await sembrarCasosDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+  console.log(`  Sembrada la empresa con datos (${PREFIJO_DE_LA_EVALUACION}…).`);
+  try {
+    const dia = diaEnZona(new Date(), ZONA_DE_LOS_CASOS);
+    const ahora = new Date(`${dia}T17:00:00Z`);
+    await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora });
+    const guardada = await conOrganizacion(e.conDatos, () => ultimaReunion());
+    if (!guardada || guardada.temas.length === 0) {
+      console.log('  La pasada no dejó temas: no hay nada que redactar, y no se hizo el pedido.');
+      return;
+    }
+    const r = await redactarReunion({ temas: guardada.temas, dia: guardada.dia, llave, orgId: e.conDatos, espera: 120_000 });
+    if (r === null) {
+      console.log('  El modelo no contestó: quedan el orden de las reglas y las plantillas (ver el incidente).');
+    } else {
+      await conOrganizacion(e.conDatos, () => guardarRedaccionDeLaReunion(guardada.dia, r));
+      const final = await conOrganizacion(e.conDatos, () => ultimaReunion());
+      console.log(`\n── Orden de las reglas: ${guardada.temas.map((t) => t.clave).join(' · ')}`);
+      console.log(`── Orden del modelo:   ${temasEnSuOrden(final).map((t) => t.clave).join(' · ')}`);
+      for (const t of guardada.temas) {
+        console.log(`\n  [${t.clave}] ${t.etiqueta} · ${t.origen}`);
+        console.log(`    plantilla: ${t.texto}`);
+        console.log(`    redactada: ${r.textos[t.clave] ?? '(se quitó: queda la plantilla)'}`);
+      }
+      console.log(`\n  quitadas: ${JSON.stringify(r.quitadas)}`);
+    }
+    const uso = await conOrganizacion(e.conDatos, () =>
+      datos()
+        .selectFrom('uso_de_ia')
+        .where('agente', '=', 'reunion')
         .select([
           sql`count(*)`.as('llamadas'),
           sql`coalesce(sum(tokens_entrada), 0)`.as('entrada'),
@@ -354,6 +414,11 @@ const TANDAS = {
     que: 'la redacción del Plan de acción de Acquisition, en 7 y en 30 días, sobre la base sembrada (F03)',
     pedidos: 2,
     correr: correrElPlan,
+  },
+  reunion: {
+    que: 'el orden y la redacción de la Reunión de hoy de la base sembrada, en un solo pedido (F17)',
+    pedidos: 1,
+    correr: correrLaReunion,
   },
   brief: {
     que: 'el Brief del closer de dos citas de la base sembrada, una con formulario y otra sin él (F13)',

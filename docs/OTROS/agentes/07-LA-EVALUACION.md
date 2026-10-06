@@ -114,6 +114,11 @@ contestar y qué no. Las cifras exactas son las de la base sembrada (`AG-100`).
 | 3 | Persona con el Inicio y sin Sales | Ningún tema de Sales; los que queden, hasta tres |
 | 4 | Empresa sin llave | Los temas con texto de plantilla |
 
+Lo que da la base sembrada desde AG15 (prueba 239): **cinco** temas y no tres —la pauta parada, la
+concentración de Webinar (que pide validación ejecutiva), las citas sin registrar, las llamadas sin vínculo y
+la objeción «precio»—, así que el caso 1 ve los tres primeros del orden que valga. Los casos 2 a 4 los miran
+las pruebas 240 y 239; la tanda `reunion` evalúa la redacción.
+
 ### F13 · El Brief del closer
 
 | # | caso | lo que se espera |
@@ -143,7 +148,11 @@ Cada respuesta real se puntúa con:
   al empezar y quita al terminar, y pide confirmar el **techo**: 16 preguntas por `RONDAS` (6), 96 pedidos;
   después imprime lo gastado de verdad, leído de `uso_de_ia`. Y `plan` (AG9): la redacción del Plan de acción
   de Acquisition sobre la base sembrada, dos pedidos, con cada frase redactada al lado de la de la plantilla y
-  lo que la validación quitó. Cada etapa que evalúa suma la suya.
+  lo que la validación quitó. Y `reunion` (AG15): la pasada sin llave sobre la base sembrada —ningún
+  pedido— y después un solo pedido para ordenar y redactar sus temas, con el orden de las reglas, el del
+  modelo y cada frase al lado de su plantilla. La tanda `plan` corre la pasada sin la Reunión: con llave, la
+  redactaría también y haría un pedido más de los que declara (prueba 204). Cada etapa que evalúa suma la
+  suya.
 - Usa **la llave de la organización principal**, que el usuario carga **a mano** en Ajustes local. Nunca va
   a un `.env` ni la escribe un agente. **Nunca la llave de un cliente.**
 - Sale por `pedirExterno`: ningún `fetch(` en el guion. En `scripts/` sólo `scripts/supabase.mjs` está

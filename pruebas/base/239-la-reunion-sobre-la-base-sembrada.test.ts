@@ -9,6 +9,8 @@
 //
 //   · los cinco temas exactos, con su etiqueta, su sección y su texto, en el orden de las reglas;
 //   · la entrada de la semana se cuenta en días de la empresa, igual que un conteo directo por rango de horas;
+//   · con llave, el modelo —falso— la ordena y la redacta, y se guarda lo que pasó la validación, con su uso;
+//     un tema que el modelo no nombró queda al final con su plantilla;
 //   · el mismo día no vuelve a medirla; sin la fila, la hora siguiente la rehace sin volver a medir los
 //     departamentos.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -22,6 +24,7 @@ import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { ZONA_DE_LOS_CASOS, quitarEmpresasDeLosAgentes, sembrarCasosDeLosAgentes, type EmpresasDeLosAgentes } from '../../db/sembrado/casos-de-los-agentes.ts';
 import { correrLaPasada } from '../../lib/agentes/detectores/correr.ts';
 import { medirLaReunion, REU } from '../../lib/agentes/reunion/temas.ts';
+import { temasEnSuOrden, ultimaReunion } from '../../lib/agentes/reunion/guardar.ts';
 import { diaEnZona } from '../../lib/negocio/tiempo.ts';
 
 const PREFIJO = 'agentes-239-';
@@ -52,7 +55,8 @@ test('la pasada guarda los cinco temas de la base sembrada, en el orden de las r
   // Las 12:00 de hoy en la zona de los casos: le toca, y el sembrado es relativo a hoy.
   const r = await correrLaPasada(org(), { ahora: new Date(`${hoy()}T17:00:00Z`) });
   assert.ok(r.tocaba);
-  assert.deepEqual(r.reunion, { estado: 'corrio', temas: 5 });
+  // Sin llave, el orden de las reglas y las plantillas: no se llama al modelo.
+  assert.deepEqual(r.reunion, { estado: 'corrio', temas: 5, redaccion: 'sin_llave' });
   const [g, ...otras] = await reuniones();
   assert.deepEqual(otras, []);
   assert.equal(g!.dia, hoy());
@@ -124,7 +128,58 @@ test('el mismo día no vuelve a medirla; sin la fila, la rehace sin volver a med
   const rehecha = await correrLaPasada(org(), { ahora: new Date(`${hoy()}T19:00:00Z`) });
   assert.ok(rehecha.tocaba);
   assert.deepEqual(rehecha.departamentos.map((d) => d.estado), ['ya_corrio', 'ya_corrio', 'ya_corrio', 'ya_corrio']);
-  assert.deepEqual(rehecha.reunion, { estado: 'corrio', temas: 5 });
+  assert.deepEqual(rehecha.reunion, { estado: 'corrio', temas: 5, redaccion: 'sin_llave' });
   assert.deepEqual(await filas(admin, 'select count(*)::text as n from negocio.planes_de_accion where org_id = $1', [e.conDatos]), planesAntes);
   assert.equal((await reuniones()).length, 1);
 });
+
+test('con llave, el modelo la ordena y la redacta; lo que no pasa la validación queda con su plantilla', async () => {
+  await admin.query('delete from negocio.reuniones_del_dia where org_id = $1', [e.conDatos]);
+  await admin.query(`delete from negocio.uso_de_ia where org_id = $1 and agente = 'reunion'`, [e.conDatos]);
+  /* El modelo falso invierte el orden y deja afuera el primero de ese orden invertido; repite cada texto con «Hoy:» adelante, salvo
+     uno, al que le agrega el nombre de otra área: ése se quita. Cualquier otro pedido lanza. */
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (String(url) !== 'https://api.anthropic.com/v1/messages') throw new Error(`la prueba no esperaba un pedido a ${String(url)}`);
+    llamadas += 1;
+    const cuerpo = JSON.parse(String(init?.body)) as { messages: { content: string }[] };
+    const { temas } = JSON.parse(cuerpo.messages[0]!.content) as { temas: { clave: string; texto: string; origen: string }[] };
+    const orden = temas.map((t) => t.clave).reverse().slice(1);
+    const frases = temas.map((t) => ({ clave: t.clave, frase: t.origen === 'Sales · Closer' ? `${t.texto} Mira también Acquisition.` : `Hoy: ${t.texto}` }));
+    return new Response(
+      JSON.stringify({
+        content: [{ type: 'text', text: JSON.stringify({ orden, temas: frases }) }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 700, output_tokens: 300, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  }) as typeof globalThis.fetch;
+  try {
+    const r = await correrLaPasada(org(), { ahora: new Date(`${hoy()}T20:00:00Z`), llave: 'sk-de-prueba-239' });
+    assert.ok(r.tocaba);
+    assert.deepEqual(r.reunion, { estado: 'corrio', temas: 5, redaccion: 'redactada' });
+    assert.equal(llamadas, 1, 'la Reunión se redacta en un solo pedido');
+  } finally {
+    globalThis.fetch = original;
+  }
+  const g = await conOrganizacion(e.conDatos, () => ultimaReunion());
+  assert.deepEqual(g!.redaccion!.quitadas, { cifra: 0, superlativo: 0, cruzada: 1, otras: 0 });
+  assert.deepEqual(
+    temasEnSuOrden(g!).map((t) => [t.regla, t.texto.startsWith('Hoy: ')]),
+    [
+      // El orden del modelo: los cuatro que nombró, al revés.
+      [REU.llamadasSinVinculo, true],
+      // La frase que nombró otra área se quitó: queda la plantilla.
+      [REU.citasSinRegistrar, false],
+      ['ACQ-CONCENTRACION', true],
+      [REU.sinEntrega, true],
+      // El que no nombró, al final, con la frase que redactó.
+      [REU.objecionFrecuente, true],
+    ],
+  );
+  const uso = await filas<{ n: string }>(admin, `select count(*)::text as n from negocio.uso_de_ia where org_id = $1 and agente = 'reunion'`, [e.conDatos]);
+  assert.equal(uso[0]!.n, '1');
+});
+

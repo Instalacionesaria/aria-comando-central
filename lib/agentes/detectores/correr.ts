@@ -29,8 +29,9 @@ import { diaEnZona, horaDelDiaEnZona } from '../../negocio/tiempo.ts';
 import { guardarPlan, guardarRedaccion } from '../plan/guardar.ts';
 import { reconciliarSenales, type ResumenDeLaReconciliacion } from '../senales/escritura.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from '../senales/umbrales.ts';
-import { medirLaReunion, temasDeLaReunion } from '../reunion/temas.ts';
-import { guardarReunion } from '../reunion/guardar.ts';
+import { medirLaReunion, temasDeLaReunion, type TemaDeLaReunion } from '../reunion/temas.ts';
+import { guardarRedaccionDeLaReunion, guardarReunion } from '../reunion/guardar.ts';
+import { redactarReunion } from '../reunion/redaccion.ts';
 import { DETECTOR_DE_ACQUISITION } from './detector-de-acquisition.ts';
 import { DETECTOR_DE_CREATIVE } from './detector-de-creative.ts';
 import { DETECTOR_DE_CONVERSATION } from './detector-de-conversation.ts';
@@ -108,10 +109,13 @@ export interface RenglonDeLaPasada {
   departamento: DepartamentoConSenales;
   estado: 'corrio' | 'ya_corrio' | 'fallo';
   /** Qué pasó con la redacción de cada ventana: sin llave no se pide; sin tiempo, tampoco. */
-  redaccion?: Partial<Record<VentanaDeSenal, 'redactada' | 'sin_llave' | 'sin_tiempo' | 'sin_respuesta' | 'no_aplica'>>;
+  redaccion?: Partial<Record<VentanaDeSenal, EstadoDeLaRedaccion>>;
   /** Lo que hizo la reconciliación en cada ventana, en cuentas. */
   ventanas?: Partial<Record<VentanaDeSenal, Omit<ResumenDeLaReconciliacion, 'debajoDelPiso'> & { debajoDelPiso: number }>>;
 }
+
+/** Qué pasó con la redacción de un plan o de la Reunión: sólo `redactada` llamó al modelo y guardó. */
+export type EstadoDeLaRedaccion = 'redactada' | 'sin_llave' | 'sin_tiempo' | 'sin_respuesta' | 'no_aplica';
 
 export type ResultadoDeLaPasada =
   | { tocaba: false; porque: string }
@@ -121,7 +125,7 @@ export type ResultadoDeLaPasada =
       departamentos: RenglonDeLaPasada[];
       departamentosQueFallaron: number;
       /** La Reunión de hoy (AG-71), después de los detectores: una vez por día; si falló, la intenta la hora siguiente. */
-      reunion: { estado: 'corrio' | 'ya_corrio' | 'fallo'; temas?: number };
+      reunion: { estado: 'corrio' | 'ya_corrio' | 'fallo'; temas?: number; redaccion?: EstadoDeLaRedaccion };
     };
 
 export async function correrLaPasada(
@@ -213,8 +217,9 @@ export async function correrLaPasada(
   }
   /* La Reunión de hoy, después de los detectores: lee las señales que acaban de quedar. Una vez por día; sin fila,
      la hora siguiente la vuelve a intentar. Un departamento que falló no la frena: sus señales de ayer siguen
-     abiertas y entran tal cual, porque un detector roto no debe dejar a la empresa sin Reunión. Su redacción con
-     el modelo llega después (AG-72). */
+     abiertas y entran tal cual, porque un detector roto no debe dejar a la empresa sin Reunión. Primero se guarda
+     con el orden de las reglas y las plantillas, y después el modelo la ordena y la redacta si se puede (AG-72):
+     un solo intento, como el plan; si no llega, quedan las plantillas. */
   let reunion: Extract<ResultadoDeLaPasada, { tocaba: true }>['reunion'] = { estado: 'ya_corrio' };
   if (!reunionHecha) {
     try {
@@ -225,7 +230,7 @@ export async function correrLaPasada(
         await guardarReunion(dia, t);
         return t;
       });
-      reunion = { estado: 'corrio', temas: temas.length };
+      reunion = { estado: 'corrio', temas: temas.length, redaccion: await redactarLaReunion(temas) };
     } catch (e) {
       console.error('senales: falló la Reunión', e);
       reunion = { estado: 'fallo' };
@@ -241,13 +246,29 @@ export async function correrLaPasada(
   async function redactar(detector: Detector, plan: unknown, ventana: VentanaDeSenal) {
     if (!detector.redactar) return 'no_aplica' as const;
     if (!opciones.llave) return 'sin_llave' as const;
-    const ahoraMs = opciones.ahoraMs ?? Date.now;
-    const queda = (opciones.hasta ?? Number.POSITIVE_INFINITY) - ahoraMs() - MARGEN_DEL_FINAL_MS;
-    const espera = Math.min(ESPERA_DE_LA_REDACCION_MS, queda);
+    const espera = esperaDisponible();
     if (espera < ESPERA_MINIMA_DE_LA_REDACCION_MS) return 'sin_tiempo' as const;
     const r = await detector.redactar(plan, { llave: opciones.llave, orgId: org.id, espera });
     if (r === null) return 'sin_respuesta' as const;
     await conOrganizacion(org.id, () => guardarRedaccion({ departamento: detector.departamento, ventana, dia, redaccion: r }));
     return 'redactada' as const;
+  }
+
+  /** Lo mismo para la Reunión: sin temas no hay nada que ordenar ni redactar, y no se paga un pedido. */
+  async function redactarLaReunion(temas: readonly TemaDeLaReunion[]): Promise<EstadoDeLaRedaccion> {
+    if (temas.length === 0) return 'no_aplica';
+    if (!opciones.llave) return 'sin_llave';
+    const espera = esperaDisponible();
+    if (espera < ESPERA_MINIMA_DE_LA_REDACCION_MS) return 'sin_tiempo';
+    const r = await redactarReunion({ temas, dia, llave: opciones.llave, orgId: org.id, espera });
+    if (r === null) return 'sin_respuesta';
+    await conOrganizacion(org.id, () => guardarRedaccionDeLaReunion(dia, r));
+    return 'redactada';
+  }
+
+  function esperaDisponible(): number {
+    const ahoraMs = opciones.ahoraMs ?? Date.now;
+    const queda = (opciones.hasta ?? Number.POSITIVE_INFINITY) - ahoraMs() - MARGEN_DEL_FINAL_MS;
+    return Math.min(ESPERA_DE_LA_REDACCION_MS, queda);
   }
 }

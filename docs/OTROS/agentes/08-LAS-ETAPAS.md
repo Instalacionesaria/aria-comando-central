@@ -686,6 +686,16 @@ Lo que decía el plan:
   tenían la misma hora; el preview mostró la fecha cruda («2026-10-06») en el primer mensaje; y la suite
   encontró que abrir un tema escribía los hilos fuera de su único escritor (ahora `abrirHiloDeUnTema`, en
   `lib/agentes/executive/conversaciones.ts`) y que las tarjetas estrenaban un `id`.
+- **Tanda 3, la redacción, hecha el 2026-10-06, sin push.** `lib/agentes/reunion/redaccion.ts`: el modelo
+  ordena y redacta en un pedido, después de guardar con plantillas; cada frase se valida contra su propio tema
+  (cifras, superlativos, términos entre comillas y nombres de otras áreas). La tanda `reunion` del guion de
+  evaluación (un pedido), y la del plan corre sin la Reunión.
+- **Pruebas**: nueva la 241 (código: la validación, y sin temas no hay pedido); la 239 suma la pasada con el
+  modelo falso; cambia la 204 (usaba «reunion» como tanda que no existe). Mutaciones, 11 vistas en rojo; una
+  quedaba verde (pedir sin temas: el `fetch` falso lanzaba y el transporte lo atrapaba), y ahora se cuentan
+  los pedidos.
+- **La suite en tres zonas**: verde salvo la del hash de la fundadora local (viene de antes, del estado de la
+  base) y una caída única de la 94 en UTC, sin aserción, que corrida sola pasa (dos veces).
 
 Lo que decía el plan:
 

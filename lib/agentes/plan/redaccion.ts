@@ -33,7 +33,7 @@ export interface RedaccionDelPlan {
 const TECHO_DE_LA_REDACCION = 4000;
 
 /** «el más», «la mejor», «los mayores», «máximo»: comparaciones que piden un ranking que el renglón no trae. */
-const SUPERLATIVO = /(?<![a-záéíóúñ])(?:(?:el|la|los|las|lo)\s+(?:m[aá]s|menos|mejor(?:es)?|peor(?:es)?|mayor(?:es)?|menor(?:es)?)|m[aá]xim[oa]s?|m[ií]nim[oa]s?|r[eé]cord)(?![a-záéíóúñ])/i;
+export const SUPERLATIVO = /(?<![a-záéíóúñ])(?:(?:el|la|los|las|lo)\s+(?:m[aá]s|menos|mejor(?:es)?|peor(?:es)?|mayor(?:es)?|menor(?:es)?)|m[aá]xim[oa]s?|m[ií]nim[oa]s?|r[eé]cord)(?![a-záéíóúñ])/i;
 
 export const INSTRUCCIONES_DE_LA_REDACCION = `Redactas el Plan de acción de un departamento de marketing y ventas: la pauta, los creativos o los agentes que atienden a los contactos. Hablas en español neutro, tuteando, con frases cortas. Nunca uses voseo.
 

@@ -76,6 +76,20 @@ con su sección de origen, su evidencia (ids y cifras) y **su propio texto**.
 - **Sin llave**: el orden es el de las reglas (gravedad, después pérdida en contactos) y el texto sale de
   plantillas.
 
+Lo construido (`lib/agentes/reunion/redaccion.ts`; la pasada, en `lib/agentes/detectores/correr.ts`):
+
+- **Primero se guarda, después se redacta**, como el plan: un solo pedido por empresa y día, con la misma
+  espera (la menor entre 120 s y lo que le queda a la función menos 15 s). Sin temas no hay pedido. Si no
+  llega, quedan el orden de las reglas y las plantillas.
+- **El orden**: sólo claves que existen, sin repetir. Lo que el modelo no nombró va al final, en el orden de
+  las reglas: un tema no se pierde porque el modelo lo olvidó.
+- **Cada frase se valida contra su propio tema**, y la que no pasa conserva la plantilla: ninguna cifra que
+  su texto no traiga, ningún superlativo, ningún término «entre comillas» ajeno y ningún nombre del origen de
+  otro tema que no sea también del suyo («Acquisition» en un tema de Closer; «Sales» en uno de Closer sí
+  vale). Esta última es la regla de las referencias cruzadas, medida.
+- La validación de `03`, `AG-47`, es la de las cifras del cerebro contra su evidencia; acá la evidencia es el
+  texto del tema, y la regla es la misma.
+
 ## AG-73 · Se filtra por persona y recién después se toman tres
 
 Al leer, se quitan los temas de las secciones que la persona no ve (Det:194-195) y **después** se toman los

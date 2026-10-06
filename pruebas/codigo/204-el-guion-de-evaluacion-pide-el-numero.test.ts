@@ -62,9 +62,9 @@ test('con el número correcto pasa la confirmación y se frena en la guarda de l
 });
 
 test('una tanda que no existe no corre', () => {
-  const r = correr('reunion');
+  const r = correr('inexistente');
   assert.equal(r.salida, 2);
-  assert.match(r.texto, /Tandas: modelo, cerebro, plan, brief\./);
+  assert.match(r.texto, /Tandas: modelo, cerebro, plan, reunion, brief\./);
 });
 
 test('la tanda del cerebro pide confirmar su techo, y con otro número no corre', () => {
@@ -84,4 +84,14 @@ test('el guion sale por `pedirExterno`: ningún `fetch(`', () => {
   const codigo = sinComentarios(readFileSync(GUION, 'utf8'));
   assert.doesNotMatch(codigo, /\bfetch\s*\(/);
   assert.match(codigo, /pedirExterno\(/);
+});
+
+test('la tanda de la Reunión declara un pedido, y la del plan ya no la mide', () => {
+  const r = correr('reunion');
+  assert.equal(r.salida, 1);
+  assert.match(r.texto, /Va a hacer 1 pedido\(s\) a Anthropic/);
+  /* Con llave, la pasada también redacta la Reunión: la tanda del plan, que declara dos pedidos, haría tres
+     (AG15 de los agentes). */
+  const guion = readFileSync(join(RAIZ, 'scripts/evaluar-agentes.mjs'), 'utf8');
+  assert.match(guion, /\{ ahora, llave, conReunion: false \}/, 'la tanda del plan redacta también la Reunión');
 });

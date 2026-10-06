@@ -10,6 +10,8 @@ export interface RedaccionDeLaReunion {
   orden: string[];
   textos: Record<string, string>;
   modelo: string;
+  /** Cuántas frases descartó la validación, y por qué (`./redaccion.ts`). */
+  quitadas?: { cifra: number; superlativo: number; cruzada: number; otras: number };
 }
 
 export interface ReunionGuardada {
