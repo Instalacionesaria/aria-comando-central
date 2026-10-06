@@ -75,6 +75,7 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { POR_QUE_NO_AUDITA, agruparPorPatron, leerLaPantalla } from '@/lib/auditor/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 /**
  * Las cuatro pestañas.
@@ -149,6 +150,8 @@ export default function PanelDeConversation() {
   // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
   useEffect(() => anunciarPeriodo('conversation', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('conversation', pantalla ? (pantalla.comentario ?? null) : undefined);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   /* Qué patrón está abierto. Se guarda el CÓDIGO y no un índice: la lista se reordena al recargar

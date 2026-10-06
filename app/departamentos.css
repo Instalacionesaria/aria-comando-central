@@ -123,6 +123,26 @@ button.cd-pestana:hover {
    El foco va POR FUERA, y no por dentro como en la fila de arriba: en la abierta, por dentro, el anillo
    caía sobre su propio fondo invertido y sólo cambiaba el color de un canto. En el teléfono, donde la
    fila se desliza y recorta, la fila deja abajo y arriba el lugar del anillo. */
+/* El comentario del cerebro (AG15 de los agentes): una línea con la mascota de 28 px, al final de la cabecera,
+   debajo de la línea y de las sub-pestañas —a la derecha del título, como en la Simulación, están las pestañas—. En el teléfono no va
+   (`D-27`). */
+.cd-comentario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px var(--cd-costado) 0;
+  color: var(--txt-dim);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.cd-comentario .cd-mascota {
+  flex: 0 0 auto;
+}
+.cd-comentario .cd-texto {
+  min-width: 0;
+}
 .cd-subs {
   display: flex;
   flex-wrap: wrap;
@@ -298,6 +318,9 @@ button.cd-sub:not(.on):hover {
 @media (max-width: 760px) {
   .cd {
     --cd-costado: 16px;
+  }
+  .cd-comentario {
+    display: none;
   }
   .cd-arriba {
     gap: 12px;

@@ -45,12 +45,15 @@ import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerConversion } from '@/lib/negocio/vistaDeConversion';
 import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 export default function PanelDeConversion() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
   // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
   useEffect(() => anunciarPeriodo('conversion', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('conversion', pantalla ? (pantalla.comentario ?? null) : undefined);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

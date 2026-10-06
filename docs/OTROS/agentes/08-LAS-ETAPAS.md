@@ -482,7 +482,7 @@
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el
-  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:179` y la tarjeta de Señales al
+  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:182` y la tarjeta de Señales al
   final, con «Ver evidencia», «umbral provisional», resolver, descartar, validar y firmar.
 - **Rutas**: `app/api/acquisition/route.ts` suma señales, plan y lo que la persona puede hacer;
   `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts`.
@@ -696,6 +696,14 @@ Lo que decía el plan:
   los pedidos.
 - **La suite en tres zonas**: verde salvo la del hash de la fundadora local (viene de antes, del estado de la
   base) y una caída única de la 94 en UTC, sin aserción, que corrida sola pasa (dos veces).
+- **Tanda 4, el comentario de la cabecera, hecha el 2026-10-06, sin push.** `lib/agentes/cabecera.ts`: la
+  prioridad (lo que falta configurar, la señal crítica o alta, una regla de la Reunión de hoy) y el silencio;
+  lo sirven los GET de Acquisition, Creative Insights, Conversion y Conversation, el panel lo publica y la
+  cabecera lo dibuja al final, con la mascota, y no en el teléfono. Research, Marketing y Sales quedan para
+  después (`10`).
+- **Pruebas nuevas**: 242 (código) y 243 (base). Mutaciones, 11 vistas en rojo, la del comentario siempre
+  encendido incluida. Verificado en el preview local: la principal local nunca corrió la lectura de los
+  anuncios, y la cabecera de Acquisition lo dice; en producción las empresas activas están al día.
 
 Lo que decía el plan:
 

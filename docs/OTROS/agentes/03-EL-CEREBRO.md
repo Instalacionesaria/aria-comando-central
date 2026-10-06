@@ -83,18 +83,18 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 
 | herramienta | función | sección (capacidad) | como la ruta | qué viaja además |
 |---|---|---|---|---|
-| `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:66` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
-| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:75` | el aviso si falta el campo del ICP |
-| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:76` | sus huecos |
-| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:77` | el umbral «no calibrado» |
-| `recorrido_de_los_leads` | `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:66` | conteos, no tasas |
-| `formulario_de_la_landing` | `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:67` | sus huecos |
-| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:83` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
-| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `app/api/auditoria/route.ts:88`, `app/api/sales/route.ts:109` | sus avisos |
-| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:89` | aviso y latencias |
-| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:90` | piso |
-| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `app/api/auditoria/route.ts:91` | aviso |
-| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `app/api/auditoria/route.ts:95` | `null` bajo 10 |
+| `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:67` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
+| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:76` | el aviso si falta el campo del ICP |
+| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:77` | sus huecos |
+| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:78` | el umbral «no calibrado» |
+| `recorrido_de_los_leads` | `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:67` | conteos, no tasas |
+| `formulario_de_la_landing` | `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:68` | sus huecos |
+| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:84` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
+| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `app/api/auditoria/route.ts:89`, `app/api/sales/route.ts:109` | sus avisos |
+| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:90` | aviso y latencias |
+| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:91` | piso |
+| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `app/api/auditoria/route.ts:92` | aviso |
+| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `app/api/auditoria/route.ts:96` | `null` bajo 10 |
 | `dinero_del_mes` | `dineroDelMes(zona, sujeto)` | sales (`tablero.ver`) | `app/api/sales/route.ts:106` | **mes calendario**, que no gobierna el selector; «venta reportada» |
 | `cadena_de_cierre` | `cadenaDeCierre(periodo.dias)` | sales | `app/api/sales/route.ts:110` | el aviso de citas que nadie registró |
 | `ciclo_hasta_la_cita` | `cicloHastaLaCita(periodo.dias)` | sales | `app/api/sales/route.ts:111` | aviso de techo |

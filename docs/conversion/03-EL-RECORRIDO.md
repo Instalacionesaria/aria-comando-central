@@ -143,7 +143,7 @@ el período ni el dispositivo**. Y `Tiempo medio` siempre dice `▲ mejor` sin c
 
 **Lo que sobrevive**: la decisión de que cada paso lleve **dos** cifras de contexto además de su tasa.
 Es la misma forma que Creative resolvió metiendo la interacción y el click-to-landing en la nota de
-la pieza en vez de darles columna (`components/creative/PanelDeCreative.jsx:424-433`).
+la pieza en vez de darles columna (`components/creative/PanelDeCreative.jsx:427-436`).
 
 ---
 

@@ -7,10 +7,10 @@
 |---|---|
 | Tipo | EL CEREBRO (sin pregunta, sin modelo) |
 | Lugar en el front | La cabecera de cada departamento (`components/CabeceraDeDepartamento.jsx`) |
-| Estado | **Se construye** en AG15 |
+| Estado | **Hecho** en AG15 el 2026-10-06 para Acquisition, Creative Insights, Conversion y Conversation. Research, Marketing y Sales quedan para después (`10`) |
 | Modelo | Ninguno |
 | Permisos | La capacidad de la sección abierta: lo sirve el GET de esa pantalla. Funciona sin llave |
-| Código | `lib/agentes/cabecera.ts` |
+| Código | `lib/agentes/cabecera.ts` (la prioridad y las fuentes), `lib/agentes/comentario-de-la-cabecera.ts` (del panel a la cabecera); lo sirven los GET de `app/api/acquisition`, `creative`, `conversion` y `auditoria` |
 
 ## La prioridad
 
@@ -41,4 +41,4 @@ Los ejemplos son la forma; las cifras salen siempre del dato.
 
 ## Pruebas
 
-230 de `08`, y la 194 cambia: el comentario es nada cuando no hay nada.
+242 (código: la prioridad, el silencio, la frescura, nada escrito a mano y nada en el teléfono) y 243 (base: los GET de Acquisition y de Conversation). La 194 sigue en verde: el comentario va después de las sub-pestañas.

@@ -187,7 +187,7 @@ export async function frescuraDe(tarea: Tarea): Promise<Frescura> {
  * `1440 minutos` es cierto y no se puede leer de un vistazo, y este texto aparece arriba de una
  * pantalla que alguien está usando para trabajar.
  */
-function enPalabras(minutos: number): string {
+export function enPalabras(minutos: number): string {
   if (minutos < 60) return `${Math.max(1, Math.round(minutos))} minutos`;
   const horas = Math.round(minutos / 60);
   if (horas < 48) return horas === 1 ? '1 hora' : `${horas} horas`;

@@ -36,10 +36,16 @@
  * `navegacion.engranaje`, y ninguna fila. De esas pantallas se oculta sólo el `h2`: la bajada de Ajustes
  * dice de qué empresa es la configuración, y quien administra puede estar mirando otra.
  *
+ * ── EL COMENTARIO DEL CEREBRO (AG15 de los agentes) ─────────────────────────
+ *
+ * Una línea con la mascota de 28 px (`NE-17`.3; `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77
+ * a AG-79). No la escribe nadie acá: la sirve el GET de la pantalla abierta, de reglas y sin modelo, y el
+ * panel la publica para la sección (`lib/agentes/comentario-de-la-cabecera.ts`). Sin comentario no se dibuja
+ * nada —la regla del silencio—, y en el teléfono tampoco (`D-27`): lo esconde la hoja. Va al final, debajo
+ * de la línea y de las sub-pestañas, y no a la derecha del título, donde están las pestañas.
+ *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
- *   · el comentario del cerebro de la derecha, con la mascota (`NE-17`.3): el cerebro no existe, y un
- *     comentario escrito a mano sería una cifra inventada con otra forma;
  *   · la fila de pestañas de un departamento con UNA sola entrada —un closer que sólo ve Sales ›
  *     Closer—: una sola pestaña no es una pestaña, como en Ajustes;
  *   · la segunda fila de una entrada que no es un grupo.
@@ -54,6 +60,8 @@ import { useSesion } from '../app/sesion-contexto.tsx';
 import { irALaVista } from '../lib/aios/shell.js';
 import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
 import { entradaAbierta } from '../lib/autorizacion/departamentos.ts';
+import { usarComentario } from '../lib/agentes/comentario-de-la-cabecera.ts';
+import Mascota from './marca/Mascota.jsx';
 
 const SIN_NAVEGACION = { inicio: null, departamentos: [], engranaje: [] };
 
@@ -75,6 +83,7 @@ export default function CabeceraDeDepartamento() {
   const abierta = entradaAbierta(navegacion, vista, pestana);
   const departamento = abierta ? navegacion.departamentos.find((d) => d.clave === abierta.departamento) : null;
   const delEngranaje = abierta ? null : (navegacion.engranaje.find((e) => e.seccion === vista) ?? null);
+  const comentario = usarComentario(abierta ? vista : null);
 
   // Cada vez que cambia la entrada abierta, su pestaña a la vista, y su sub-pestaña en la suya.
   const fila = useRef(null);
@@ -160,6 +169,12 @@ export default function CabeceraDeDepartamento() {
             );
           })}
         </nav>
+      ) : null}
+      {comentario ? (
+        <p className="cd-comentario">
+          <Mascota className="cd-mascota" diametro={28} viva={false} />
+          <span className="cd-texto">{comentario.texto}</span>
+        </p>
       ) : null}
     </section>
   );

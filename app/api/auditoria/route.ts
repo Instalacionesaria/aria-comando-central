@@ -35,6 +35,7 @@ import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, porQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeConversation } from '../../../lib/agentes/plan/conversation.ts';
+import { comentarioDelDepartamento, FALTA_DEL_AUDITOR } from '../../../lib/agentes/cabecera.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
@@ -76,7 +77,7 @@ export async function GET(peticion: Request): Promise<Response> {
      «completo» elegidos en un flujo, la tarjeta pediría elegir 7 o 30 sin un control a la vista. Así que es la
      de 7 días si se eligió 7, y la de 30 si no, y la tarjeta dice cuál. Las guarda la pasada de cada mañana. */
   const ventana: '7d' | '30d' = periodo.clave === '7d' ? '7d' : '30d';
-  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento, senales] =
+  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento, senales, comentario] =
     await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
@@ -103,12 +104,17 @@ export async function GET(peticion: Request): Promise<Response> {
           reglas: await reglasDelDepartamento('conversation'),
         };
       })(),
+      // Lo que falta configurar lo resolvió esta ruta arriba (por qué el auditor no audita).
+      await comentarioDelDepartamento('conversation', contexto.organizacion.zonaHoraria, noAudita ? FALTA_DEL_AUDITOR[noAudita] : null),
     ] as const,
   );
 
   return ok({
     ...pantalla,
     senales,
+    /* El comentario de la cabecera (AG15 de los agentes, `04`, AG-77): de reglas, sin modelo, y no depende del
+       período elegido. `null` es la regla del silencio. */
+    comentario,
     /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/auditoria/senales` y
        `…/umbrales`, y nada bajo delegación (AG-82). */
     puedeConSenales: {

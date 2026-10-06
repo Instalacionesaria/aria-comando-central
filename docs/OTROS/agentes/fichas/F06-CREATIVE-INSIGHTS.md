@@ -14,7 +14,7 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con los mismos argumentos (`app/api/creative/route.ts:75-77`): la calidad, el
+Lo mismo que su pantalla, con los mismos argumentos (`app/api/creative/route.ts:76-78`): la calidad, el
 rendimiento y la fatiga de cada pieza, sobre los mismos días que la pantalla. Esas ventanas llegan hasta hoy
 —`ventanaDeMetricas` y la cohorte de contactos— y no son de días cerrados como las de Acquisition: una señal
 calculada sobre otra ventana diría otra cifra que la que se ve.

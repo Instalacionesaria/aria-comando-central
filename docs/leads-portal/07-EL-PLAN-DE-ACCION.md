@@ -159,7 +159,7 @@ no se sostiene, porque el destino no publica la respuesta**:
 - el panel de Acquisition publica el costo por anuncio y el monitor de atribución, y nada más
   (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:16-18`); no tiene una columna de ICP;
 - la única pantalla que hoy cruza el puntaje con el origen es **Creative**, que publica el ICP
-  promedio por creativo y etapa (`components/creative/PanelDeCreative.jsx:387`), y con una regla de
+  promedio por creativo y etapa (`components/creative/PanelDeCreative.jsx:390`), y con una regla de
   ceros distinta de la de esta pestaña (`LP08-08`).
 
 **Y forma un circuito con el plan de Acquisition.** El ítem 9 del plan que Acquisition borró decía

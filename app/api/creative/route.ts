@@ -50,6 +50,7 @@ import { fatigaDelCreativo } from '../../../lib/negocio/fatigaDelCreativo.ts';
 import { enlacesDeLasPiezas } from '../../../lib/negocio/enlaceDeLaPieza.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeCreative } from '../../../lib/agentes/plan/creative.ts';
+import { comentarioDelDepartamento } from '../../../lib/agentes/cabecera.ts';
 
 export const PANTALLA = 'creative';
 
@@ -69,7 +70,7 @@ export async function GET(peticion: Request): Promise<Response> {
   /* Las señales son de 7 o de 30 días (AG-28): con «hoy» o «completo» no hay ventana que mostrar, y la
      tarjeta dice sobre cuáles se calculan. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const [calidad, rendimiento, fatiga, enlaces, senales] = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const [calidad, rendimiento, fatiga, enlaces, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('creative', ventana, textoDeCreative);
     return [
       await calidadDelCreativo(periodo.dias),
@@ -85,10 +86,14 @@ export async function GET(peticion: Request): Promise<Response> {
         plan: ventana === null ? null : await ultimoPlan('creative', ventana),
         reglas: await reglasDelDepartamento('creative'),
       },
+      await comentarioDelDepartamento('creative', contexto.organizacion.zonaHoraria),
     ] as const;
   });
 
   return ok({
+    /* El comentario de la cabecera (AG15 de los agentes, `04`, AG-77): de reglas, sin modelo, y no depende del
+       período elegido. `null` es la regla del silencio. */
+    comentario,
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,

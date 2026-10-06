@@ -15,7 +15,7 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con los mismos argumentos (`app/api/conversion/route.ts:63-76`):
+Lo mismo que su pantalla, con los mismos argumentos (`app/api/conversion/route.ts:64-78`):
 
 - `recorridoDelLead(dias)`: por cada familia de entrada, cuántos contactos entraron por ahí, qué porción de la
   cohorte son, cuántos agendaron (**un conteo, no una tasa**) y cuántos traen la dirección capturada al

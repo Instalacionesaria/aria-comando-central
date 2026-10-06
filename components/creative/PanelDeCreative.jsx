@@ -46,6 +46,7 @@ import { leerCreative } from '@/lib/negocio/vistaDeCreative';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import FichaDelCreativo from './FichaDelCreativo';
 import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 /** Cuántas piezas se dibujan de entrada en cada tabla. Las demás, detrás de un botón que las cuenta. */
 const PIEZAS_A_LA_VISTA = 10;
@@ -58,6 +59,8 @@ export default function PanelDeCreative() {
   // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
   useEffect(() => anunciarPeriodo('creative', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('creative', pantalla ? (pantalla.comentario ?? null) : undefined);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

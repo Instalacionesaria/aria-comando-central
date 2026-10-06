@@ -216,7 +216,7 @@ Tres consecuencias para el plan:
 | AG12 · El Brief del closer | **Hecho** el 2026-10-05: la `074`, la ruta, la pestaña «Brief» de la ficha abierta desde una cita y las marcas de Mi Día, con las pruebas 232 y 233, y su evaluación real (`07`). **Hito H4** el mismo día: la `074` en producción y push |
 | AG13 · Conversation en la tabla común | **Hecho** el 2026-10-06, sin push: los hallazgos del auditor traducidos a señales con `issue_source`, su plan por agente y la tarjeta y el botón en la pestaña Auditoría, con las pruebas 234 y 235. Sin migración |
 | AG14 · Conversion | **Hecho** el 2026-10-06, sin push: el detector con las cuatro reglas validadas, su plan con «Qué hacer primero» (tres) y «No tocar», y la tarjeta y el botón en su pantalla, con las pruebas 236 y 237. Sin migración |
-| AG15 · La Reunión y la cabecera | **En curso**, sin push: el servidor de la Reunión (la `075` sólo en local, las cinco reglas, la pasada que la guarda una vez por día) el Inicio (las tarjetas, el contador de la barra y abrir un tema) y la redacción con el modelo, hechos el 2026-10-06, con las pruebas 238 a 241. Faltan la evaluación real de la redacción (con OK) y la cabecera |
+| AG15 · La Reunión y la cabecera | **En curso**, sin push: el servidor de la Reunión (la `075` sólo en local, las cinco reglas, la pasada que la guarda una vez por día) el Inicio (las tarjetas, el contador de la barra y abrir un tema), la redacción con el modelo y el comentario de la cabecera de los cuatro departamentos con señales, hechos el 2026-10-06, con las pruebas 238 a 243. Faltan la evaluación real de la redacción (con OK) y el hito H5 |
 | AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita

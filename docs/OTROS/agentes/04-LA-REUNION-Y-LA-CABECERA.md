@@ -16,9 +16,8 @@
 - El Lienzo, pantalla «Inicio · el cerebro»: la cinta «DE LA REUNIÓN DE HOY · 07:00» y tres tarjetas con
   etiqueta y origen (SIN DATOS NUEVOS, SIN REGISTRAR, SIN LECTOR).
 - La Simulación: la frase del cerebro por departamento, con una mascota de 28 px, a la derecha del título.
-- Lo que estaba dibujado como «Próximamente» antes de AG15: la nota del Inicio, la fila de la barra (las dos
-  reemplazadas en AG15) y el comentario que la cabecera no dibuja
-  (`components/CabeceraDeDepartamento.jsx:41-42`).
+- Lo que estaba dibujado como «Próximamente», o no se dibujaba, antes de AG15: la nota del Inicio, la fila de
+  la barra y el comentario de la cabecera. Los tres llegaron en AG15.
 
 ---
 
@@ -143,7 +142,7 @@ Una línea por **departamento** (como la Simulación), calculada al leer, sin mo
 de 28 px. Prioridad:
 
 1. **Lo que falta configurar** en el departamento, **con lo que su ruta ya resuelve**: el identificador del
-   agente que audita Conversation lo resuelve hoy `app/api/auditoria/route.ts:68`. Una ruta de pantalla no
+   agente que audita Conversation lo resuelve hoy `app/api/auditoria/route.ts:69`. Una ruta de pantalla no
    suma identidad sólo para la cabecera; lo que no resuelve se dice por su consecuencia, que es un dato que
    cualquiera de esa pantalla puede ver: «Sin datos nuevos del CRM desde el 13 de septiembre» (la
    frescura). El detalle de la credencial, sólo a quien tiene `credenciales.ver`: el catálogo le niega
@@ -164,9 +163,24 @@ de 28 px. Prioridad:
 de reglas funciona sin llave (`D-02`), así que no puede depender de `cerebro.usar`. El panel abierto le
 entrega el comentario a la cabecera.
 
-La cabecera tiene hoy el título y las pestañas en la misma fila; meter el comentario a la derecha del título
-obliga a reordenar `.cd-arriba` (`components/CabeceraDeDepartamento.jsx`), y a sacar el comentario del
-bloque «lo que no se dibuja» de `:41-42`.
+La cabecera tiene el título y las pestañas en la misma fila, así que el comentario no va a la derecha del
+título: va al final de la cabecera, debajo de la línea y de las sub-pestañas, con la mascota de 28 px.
+
+Lo construido (`lib/agentes/cabecera.ts`, `lib/agentes/comentario-de-la-cabecera.ts`):
+
+- **Lo sirven los GET de las cuatro pantallas con señales**: Acquisition, Creative Insights, Conversion y
+  Conversation, en su misma transacción, como `comentario` (`{ texto, fuente }` o `null`). No depende del
+  período elegido: las señales son las de las dos ventanas.
+- **Lo que falta configurar**: en Conversation, por qué el auditor no audita, que la ruta ya resolvía; en las
+  otras tres, la frescura de lo que la pantalla lee (los anuncios en Acquisition y Creative, los contactos en
+  Conversion), dicha en una línea. En producción, el 2026-10-06, las once empresas activas tenían las dos
+  tareas selladas hace menos de doce horas («saltada» cuenta como al día).
+- **La regla** es un tema `REU-…` de la Reunión de HOY de esa sección: sale de la fila que guardó la pasada.
+- **Cómo llega a la cabecera**: el panel lo publica por sección y la cabecera lee el de la sección a la vista;
+  la cabecera no le pide nada al servidor.
+- **Lo que no tiene comentario todavía**: Research y Marketing (lo que falta en Fundaciones espera la rama de
+  ICP & Oferta) y Sales (sus pestañas piden cada una lo suyo, y la regla de las citas sin registrar es de la
+  empresa entera, que no es lo que ve un closer con alcance propio). Está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`.
 
 ## AG-79 · Teléfono y delegación
 

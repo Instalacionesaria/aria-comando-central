@@ -446,8 +446,8 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
 (`lib/negocio/indicadoresDeCitas.ts:453-456`). Medido el 2026-09-28 a las 18 h UTC con ese mismo
 filtro —alcanzables, sin descartados, ya ocurridas—: **106 citas a 30 días y 0 con asistencia**; 17 a
 14 días, 142 en «completo». La pantalla dibuja «—» y «asistencia · 0 de 106 cerradas»
-(`components/conversation/PanelDeConversation.jsx:617-622`) y el eslabón «Se presentaron» con «nadie
-lo registró» (`components/conversation/PanelDeConversation.jsx:647-653`). **No es un 0 %: es un
+(`components/conversation/PanelDeConversation.jsx:620-625`) y el eslabón «Se presentaron» con «nadie
+lo registró» (`components/conversation/PanelDeConversation.jsx:650-656`). **No es un 0 %: es un
 guion**, y es lo correcto.
 
 Los tres conteos ruedan con el reloj, porque la ventana la calcula la base con `now()`

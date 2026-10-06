@@ -108,7 +108,7 @@ Vuelve como señales, **en días de calendario cerrados** y con la misma regla d
 
 ## La pantalla
 
-- **El botón «Plan de acción»** en `components/acquisition/PanelDeAcquisition.jsx:179`, junto al selector de
+- **El botón «Plan de acción»** en `components/acquisition/PanelDeAcquisition.jsx:182`, junto al selector de
   período. Abre el plan de la ventana elegida en `components/Ventana.jsx`.
 - **La tarjeta de Señales**, al final: el encabezado de A6-12, las señales de la ventana elegida ordenadas por
   gravedad y pérdida, cada una con sus cinco partes, «umbral provisional» cuando corresponde y «Ver

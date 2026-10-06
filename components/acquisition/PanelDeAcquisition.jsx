@@ -44,6 +44,7 @@ import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { guardarFunnelDeLaCampana, leerAcquisition, sacarFunnelDeLaCampana } from '@/lib/negocio/vistaDeAcquisition';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 /* Los tres funnels del prototipo (`FUNNELS`, línea 5344): nombre, rótulo de cada etapa y rótulo de su
    costo. Son texto de pantalla y no reglas: qué etapas tiene cada uno lo dice el servidor
@@ -126,6 +127,8 @@ export default function PanelDeAcquisition() {
   // La caja del cerebro del pie pregunta con el período que se está mirando (`lib/agentes/periodos.ts`).
   useEffect(() => anunciarPeriodo('acquisition', periodo), [periodo]);
   const [pantalla, setPantalla] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('acquisition', pantalla ? (pantalla.comentario ?? null) : undefined);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 

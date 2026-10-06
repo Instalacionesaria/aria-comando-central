@@ -39,6 +39,7 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { embudosDeAcquisition } from '../../../lib/negocio/embudosDeAcquisition.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
+import { comentarioDelDepartamento } from '../../../lib/agentes/cabecera.ts';
 import { textoDe } from '../../../lib/agentes/plan/acquisition.ts';
 
 export const PANTALLA = 'acquisition';
@@ -62,7 +63,7 @@ export async function GET(peticion: Request): Promise<Response> {
   /* Las señales son de 7 o de 30 días cerrados (AG-28): con «hoy» o «completo» no hay ventana que mostrar, y
      la tarjeta dice sobre cuáles se calculan. Se leen en la misma transacción que los embudos. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const { embudos, senales } = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const { embudos, senales, comentario } = await conOrganizacion(contexto.orgEfectiva, async () => {
     const embudos = await embudosDeAcquisition(periodo, contexto.organizacion.zonaHoraria);
     const lista = ventana === null ? [] : await senalesDeLaPantalla('acquisition', ventana, textoDe);
     return {
@@ -74,10 +75,14 @@ export async function GET(peticion: Request): Promise<Response> {
         plan: ventana === null ? null : await ultimoPlan('acquisition', ventana),
         reglas: await reglasDelDepartamento('acquisition'),
       },
+      comentario: await comentarioDelDepartamento('acquisition', contexto.organizacion.zonaHoraria),
     };
   });
 
   return ok({
+    /* El comentario de la cabecera (AG15 de los agentes, `04`, AG-77): de reglas, sin modelo, y no depende del
+       período elegido. `null` es la regla del silencio. */
+    comentario,
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ. Si un día las dos dejan de coincidir, el botón encendido sigue describiendo
        las cifras que están abajo. */

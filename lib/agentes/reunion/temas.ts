@@ -54,7 +54,7 @@ export interface TemaDeLaReunion {
 }
 
 /** La sección y el origen de cada departamento con detector. */
-const DE_CADA_DEPARTAMENTO: Readonly<Record<DepartamentoConSenales, { seccion: string; origen: string; texto: (d: Parameters<typeof textoDeCreative>[0], v: '7d' | '30d') => string }>> = {
+export const DE_CADA_DEPARTAMENTO: Readonly<Record<DepartamentoConSenales, { seccion: string; origen: string; texto: (d: Parameters<typeof textoDeCreative>[0], v: '7d' | '30d') => string }>> = {
   acquisition: { seccion: 'acquisition', origen: 'Systems · Acquisition', texto: textoDeAcquisition },
   creative: { seccion: 'creative', origen: 'Marketing · Creative Insights', texto: (d) => textoDeCreative(d) },
   conversion: { seccion: 'conversion', origen: 'Systems · Conversion', texto: textoDeConversion },

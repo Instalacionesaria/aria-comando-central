@@ -126,7 +126,7 @@ su nombre y no por un número.
 
 ### LP08-08 · De Creative: nada, y tres divergencias que se declaran
 
-Creative publica el ICP promedio por creativo (`components/creative/PanelDeCreative.jsx:387`). Esta
+Creative publica el ICP promedio por creativo (`components/creative/PanelDeCreative.jsx:390`). Esta
 pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ninguna está mal:**
 
 | | Creative | Leads Portal |
