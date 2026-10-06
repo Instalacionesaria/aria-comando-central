@@ -40,6 +40,8 @@ export interface RenglonDelPlan {
   muestra: number | null;
   texto: string;
   revision: string;
+  /** Las hipótesis de la regla: la redacción sólo puede nombrar éstas como causa. */
+  causas: readonly string[];
 }
 
 export interface PlanDeAcquisition {
@@ -113,7 +115,7 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
     case ACQ.atribucionUtm:
     case ACQ.atribucionSinCampana: {
       // La consecuencia es la del monitor, que marca los nombres de campo con acentos graves: acá van limpios.
-      const consecuencia = typeof ev.consecuencia === 'string' ? `; ${ev.consecuencia.replace(/`/g, '')}` : '.';
+      const consecuencia = typeof ev.consecuencia === 'string' ? `; ${paraUnaPersona(ev.consecuencia)}` : '.';
       const cuantos = Number(ev.cuantos ?? 0);
       const sobre = Number(ev.sobre ?? 0);
       return d.regla === ACQ.atribucionUtm
@@ -123,6 +125,22 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }
+}
+
+/**
+ * La consecuencia del monitor, escrita para su pantalla: marca los campos con acentos graves y cita las
+ * secciones de la arquitectura de producto (`§ 18.12`). En el plan va sin las dos cosas —la primera
+ * evaluación real de la redacción las dejó pasar tal cual—: sin los acentos, y sin la oración o la cláusula que
+ * cita una sección.
+ */
+export function paraUnaPersona(consecuencia: string): string {
+  const oraciones = consecuencia.replace(/`/g, '').split(/(?<=\.)\s+/)
+    // Una oración que cita una sección antes de su primera coma es la cita misma: «Y el § 18.6 ya dice…».
+    .filter((o) => !/^[^,]*§/.test(o));
+  return oraciones
+    .map((o) => o.replace(/,\s*que es el que el\s*§\s*[\d.]+\s*necesita/g, '').replace(/\s*§\s*[\d.]+/g, ''))
+    .join(' ')
+    .trim();
 }
 
 /** Lo que no se pudo medir, en palabras. */
@@ -152,6 +170,7 @@ export function armarPlanDeAcquisition(p: ParaElPlan): PlanDeAcquisition {
       muestra: d.muestra,
       texto: textoDe(d, p.ventana),
       revision: d.revisionRecomendada,
+      causas: d.causasPosibles,
     });
   }
   // Primero lo que más gente pierde; lo que no tiene pérdida, después; a igual pérdida, lo más grave.

@@ -37,12 +37,12 @@ const SUPERLATIVO = /(?<![a-záéíóúñ])(?:(?:el|la|los|las|lo)\s+(?:m[aá]s|
 
 export const INSTRUCCIONES_DE_LA_REDACCION = `Redactas el Plan de acción de un departamento de pauta publicitaria. Hablas en español neutro, tuteando, con frases cortas. Nunca uses voseo.
 
-Recibes renglones ya calculados. Para cada uno, escribe UNA frase más clara para quien decide la pauta, que diga qué se midió y qué revisar.
+Recibes renglones ya calculados. Para cada uno, escribe UNA frase más clara para quien decide la pauta: empieza por el hallazgo y termina con qué revisar. No empieces con «Se midió» ni repitas la misma apertura en todos.
 
 Reglas:
 - Usa sólo las cifras del renglón, tal como están. No calcules, no redondees y no agregues ninguna cifra.
 - No uses superlativos («el más», «la mejor», «la mayor», «el peor», «máximo»): el renglón no trae el ranking que los sostenga.
-- Las causas son hipótesis: «puede deberse a…».
+- Las causas son hipótesis: «puede deberse a…», y sólo las que trae el renglón en «causas». Si no trae ninguna, no nombres causas.
 - No recomiendes escalar por costo por contacto: la escala se decide por costo por calificado.
 - Si el renglón es del grupo de validación ejecutiva, dilo: lo decide la dirección.
 - Devuelve todos los renglones, con su misma clave.`;
@@ -68,7 +68,7 @@ const FORMATO = {
 /** Los renglones del plan con su clave estable: `grupo:índice`. */
 export function renglonesParaRedactar(plan: Pick<PlanDeAcquisition, 'grupos'>) {
   return plan.grupos.flatMap((g) =>
-    g.renglones.map((r, i) => ({ clave: `${g.clave}:${i}`, grupo: g.titulo, texto: r.texto, revision: r.revision })),
+    g.renglones.map((r, i) => ({ clave: `${g.clave}:${i}`, grupo: g.titulo, texto: r.texto, revision: r.revision, causas: r.causas ?? [] })),
   );
 }
 

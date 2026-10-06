@@ -241,6 +241,21 @@ leídos de la caché y 14.174 de salida. Las 16 preguntas contestaron con `respo
 - **Abierto**: el «15» del horizonte de la agenda (no se perdona: también puede ser una cifra); los decimales
   con punto («73.57»); la 11, que sólo se puede evaluar con las tablas del Espía.
 
+### 2026-10-05 · la redacción del Plan de acción de Acquisition (F03)
+
+**`plan`** (2 pedidos, uno por ventana): **2 llamadas**, 1.463 tokens de entrada y 1.156 de salida. Las 10 frases
+—6 en 30 días, 4 en 7— se redactaron y **ninguna se quitó**: ni una cifra fuera de su renglón, ni un
+superlativo.
+
+- **Bien**: tú neutro en las diez; las cifras tal cual (0 % contra 57 %, 83 %, 99 de 119, 15 días); las causas
+  como hipótesis («puede deberse a»); la concentración dice que lo decide la dirección.
+- **Lo que se corrigió después**: las diez empezaban con «Se midió…» —el prompt pedía «qué se midió»—, ahora
+  pide empezar por el hallazgo y variar la apertura; la frase de las UTM arrastraba «el § 18.12» de la
+  consecuencia del monitor, que ahora llega al plan sin citas a secciones ni acentos graves
+  (`paraUnaPersona`); y en la fuga de Profile el modelo propuso una causa que el renglón no traía («fallas en el
+  seguimiento»): cada renglón lleva ahora sus hipótesis y el prompt le pide nombrar sólo ésas. Las tres, en la
+  222. Falta repetir la tanda con OK para ver el efecto.
+
 ## Preguntas abiertas
 
 Ninguna: el conjunto de `AG-102` se aprobó el 2026-10-04 sin cambios.

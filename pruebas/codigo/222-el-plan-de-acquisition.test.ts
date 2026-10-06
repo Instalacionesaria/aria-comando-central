@@ -15,7 +15,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { armarPlanDeAcquisition, GRUPOS_DEL_PLAN_DE_ACQUISITION } from '../../lib/agentes/plan/acquisition.ts';
+import { armarPlanDeAcquisition, GRUPOS_DEL_PLAN_DE_ACQUISITION, paraUnaPersona } from '../../lib/agentes/plan/acquisition.ts';
 import { ACQ } from '../../lib/agentes/detectores/acquisition.ts';
 import type { Deteccion } from '../../lib/agentes/senales/tipos.ts';
 
@@ -99,4 +99,23 @@ test('cada frase lleva la métrica, el valor y la base, con el verbo de un perí
   assert.ok(textos.includes('El costo por contacto subió 40 % contra los 30 días anteriores: de 50 a 70, sobre 14 contactos.'), textos.join('\n'));
   // Entre entidades: «está … por debajo de».
   assert.ok(textos.includes('Su ICP promedio está 20 puntos por debajo del de su funnel: 40 contra 60, sobre 10 calificados con puntaje.'), textos.join('\n'));
+});
+
+test('la consecuencia del monitor llega sin acentos graves ni citas a secciones', () => {
+  /* La primera evaluación real de la redacción dejó pasar «el § 18.12» tal cual: es una referencia de la
+     arquitectura de producto, no algo que quien decide la pauta pueda leer. */
+  assert.equal(
+    paraUnaPersona('`utmCampaign` no llega en NINGUNA: un enlace que manda algunas UTM pierde el corte por creativo, que es el que el § 18.12 necesita.'),
+    'utmCampaign no llega en NINGUNA: un enlace que manda algunas UTM pierde el corte por creativo.',
+  );
+  assert.equal(
+    paraUnaPersona('el costo por venta por anuncio no se puede calcular con esta cobertura. Y el § 18.6 ya dice que ese cálculo es de Business Intelligence, no de acá.'),
+    'el costo por venta por anuncio no se puede calcular con esta cobertura.',
+  );
+  assert.equal(paraUnaPersona('Sin nada que limpiar.'), 'Sin nada que limpiar.');
+});
+
+test('cada renglón lleva las hipótesis de su regla, para que la redacción no invente otras', () => {
+  const p = plan([deteccion(ACQ.cplSostenido, '1', { causasPosibles: ['puede deberse a la fatiga del creativo'] })]);
+  assert.deepEqual(p.grupos.find((g) => g.clave === 'ajusta')!.renglones[0]!.causas, ['puede deberse a la fatiga del creativo']);
 });
