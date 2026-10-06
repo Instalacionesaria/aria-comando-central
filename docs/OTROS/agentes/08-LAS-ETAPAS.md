@@ -704,6 +704,11 @@ Lo que decía el plan:
 - **Pruebas nuevas**: 242 (código) y 243 (base). Mutaciones, 11 vistas en rojo, la del comentario siempre
   encendido incluida. Verificado en el preview local: la principal local nunca corrió la lectura de los
   anuncios, y la cabecera de Acquisition lo dice; en producción las empresas activas están al día.
+- **Hito H5, el 2026-10-06**, con el OK del usuario: la `075` aplicada a producción en modo de pedir permiso y
+  verificada (RLS forzada, una política, sin filas); push `28d6954..fe727e5` (las cuatro tandas, sin capacidad
+  nueva: no hizo falta el catálogo). La evaluación real de la redacción, un pedido, está en `07`: ninguna frase
+  quitada, el orden del modelo pasó la concentración de Webinar al último, y una frase tomó la etiqueta SIN
+  DATOS NUEVOS por el problema.
 
 Lo que decía el plan:
 

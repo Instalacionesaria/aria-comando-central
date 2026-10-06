@@ -7,7 +7,7 @@
 |---|---|
 | Tipo | EL CEREBRO (sin pregunta) |
 | Lugar en el front | La cinta «DE LA REUNIÓN DE HOY · HH:MM» del Inicio y la fila «Reunión de hoy» de la barra |
-| Estado | **Hecho** en AG15 el 2026-10-06: el servidor (las reglas, la medida, la pasada y la redacción con el modelo), las tarjetas del Inicio, el contador de la barra y abrir un tema. Falta la evaluación real de la redacción, con OK |
+| Estado | **Hecho** en AG15 el 2026-10-06: el servidor (las reglas, la medida, la pasada y la redacción con el modelo), las tarjetas del Inicio, el contador de la barra y abrir un tema. La `075` en producción y la evaluación real de la redacción el mismo día (1 llamada, en `07`) |
 | Modelo | Ninguno para elegir los temas. `claude-sonnet-5-5` para ordenarlos y redactarlos, si hay llave |
 | Permisos | Leer: `tablero.ver` (la ruta del Inicio). Se filtra por las secciones de cada persona |
 | Código | `lib/agentes/reunion/reglas.ts` (las reglas del catálogo), `temas.ts` (la medida y los temas), `guardar.ts` (el único escritor), `leer.ts` (lo que ve cada persona y abrir un tema), `redaccion.ts` (el orden y las frases del modelo, validadas); la pasada, en `lib/agentes/detectores/correr.ts`; la ruta `app/api/executive/reunion`; `components/cerebro/ReunionDeHoy.jsx` y `ReunionDeLaBarra.jsx` |

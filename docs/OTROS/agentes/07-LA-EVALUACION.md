@@ -286,6 +286,26 @@ se degradó**: todo lo «detectado» citaba una fuente que se le dio, con palabr
   hay dato, y el modelo lo devolvió como un dato ambiguo de la persona. Ya no viaja (`entradaDelBrief`, y la 233
   lo mira).
 
+### 2026-10-06 · la redacción de la Reunión de hoy (F17)
+
+**`reunion`** (1 pedido, con el OK del usuario): **1 llamada**, 584 tokens de entrada y 593 de salida, sobre los
+cinco temas de la base sembrada. **Ninguna frase se quitó**: ninguna cifra nueva, ningún superlativo, ninguna
+referencia a otra área ni a un término de otro tema.
+
+- **El orden**: el modelo dejó primero la pauta parada (la crítica), después las citas sin registrar, las
+  llamadas sin vínculo y la objeción, y **pasó al último la concentración de Webinar**, que las reglas ponían
+  segunda. Es defendible —la concentración no pierde contactos hoy y la decide la dirección—, y el orden del
+  modelo es justamente lo que se le pide.
+- **Los textos**: conservan la plantilla entera y le suman una frase de qué mirar («Conviene pedir que se
+  registre la asistencia…»), en tú neutro y sin voseo. La de validación ejecutiva lo mantiene («lo decide la
+  dirección»).
+- **Lo que se lee mal**: en la pauta parada agregó «Conviene revisar hoy por qué no hay datos nuevos», que
+  toma la etiqueta (SIN DATOS NUEVOS) por el problema: lo que pasa es que las campañas no gastan, no que falten
+  datos. No es una cifra ni una referencia cruzada, así que la validación no puede verlo; queda anotado para
+  la próxima versión del prompt, que podría no recibir la etiqueta.
+- **Lo que aporta**: poco más que la plantilla. Con estos cinco temas, la redacción sirve sobre todo por el
+  orden; las frases nuevas son prudentes y genéricas.
+
 ## Preguntas abiertas
 
 Ninguna: el conjunto de `AG-102` se aprobó el 2026-10-04 sin cambios.
