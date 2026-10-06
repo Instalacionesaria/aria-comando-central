@@ -9,8 +9,9 @@ dentro», todas las pantallas):
    selector de empresa** como píldora. Es el `SelectorDeEmpresa` de hoy: sólo se abre para quien puede
    cambiar de empresa.
 2. **«Nueva conversación»**, botón píldora: abre el **Inicio** (la sección `executive`).
-3. **«Reunión de hoy»**: se ve como **«Próximamente»**, sin contador (`NE-05`). Sus temas tienen que salir
-   de reglas sobre datos reales, y eso todavía no existe.
+3. **«Reunión de hoy»**: se vio como **«Próximamente»**, sin contador (`NE-05`), hasta que sus temas
+   salieron de reglas sobre datos reales. Desde AG15 de los agentes es un botón que lleva al Inicio, con el
+   número de temas de hoy que la persona ve (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-75).
 4. **DEPARTAMENTOS**, rótulo mono en mayúsculas, y debajo los cinco departamentos como acordeones. Cada uno
    se despliega y lista sus entradas. **Sólo queda abierto el que está en uso.**
 5. **CONVERSACIONES**: el historial de las conversaciones con el cerebro, que todavía no existe. En la
@@ -139,9 +140,9 @@ construirla, además de lo de arriba:
   un pedido. Si la barra marcara por el último pedido, mentiría.
 - **El acordeón** sigue al departamento en uso cada vez que éste cambia; en el Inicio y en lo del
   engranaje, ninguno queda abierto, como en el lienzo. Entre un cambio y otro, la cabecera abre otro a mano.
-- **La Reunión de hoy** dice «Próximamente», no navega y no tiene contador, y sólo la ve quien ve el Inicio:
-  un closer ve Sales › Closer y nada más (`NE-16`). La palabra va debajo del nombre, como en las entradas: al
-  lado, en el ancho de la barra, partía «Reunión de hoy» en dos renglones. El tono es el del lienzo.
+- **La Reunión de hoy** decía «Próximamente», no navegaba y no tenía contador. Desde AG15 de los agentes
+  lleva al Inicio y muestra el número de temas de hoy que publica el Inicio. Sigue viéndola sólo quien ve el
+  Inicio: un closer ve Sales › Closer y nada más (`NE-16`). El tono es el del lienzo.
 - **Una «Próximamente»** lleva la palabra debajo del nombre, en mono: el tono no alcanza para distinguirla,
   porque una entrada en reposo ya es el piso del texto de la marca.
 - **El punto «scrapeando»** va en la entrada desde la que el trabajo se vuelve a ver: las búsquedas de

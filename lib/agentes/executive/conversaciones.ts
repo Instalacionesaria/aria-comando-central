@@ -231,6 +231,63 @@ export async function marcarFallida(preguntaId: string, lugarId: string, situaci
   await cerrarLugar(lugarId, pagada ? 'fallida_pagada' : 'fallida');
 }
 
+/**
+ * El hilo de un tema de la Reunión de hoy (AG-74), armado sin modelo por `lib/agentes/reunion/leer.ts`: lo
+ * tocado y, como respuesta, el tema. No reserva lugar: abrir un tema no cuenta para el tope. El mismo tema del
+ * mismo día, para la misma persona, vuelve a su hilo.
+ */
+export async function abrirHiloDeUnTema(p: {
+  usuarioId: string;
+  dia: string;
+  clave: string;
+  titulo: string;
+  tocado: string;
+  respuesta: RespuestaValidada;
+  evidencia: readonly Evidencia[];
+}): Promise<string> {
+  const abierto = await datos()
+    .selectFrom('conversaciones_del_executive')
+    .select('id')
+    .where('usuario_id', '=', p.usuarioId)
+    .where('origen', '=', 'reunion')
+    .where(sql<boolean>`contexto->>'dia' = ${p.dia} and contexto->>'tema' = ${p.clave}`)
+    .executeTakeFirst();
+  if (abierto) return abierto.id;
+
+  const hilo = await datos()
+    .insertInto('conversaciones_del_executive')
+    .values({
+      usuario_id: p.usuarioId,
+      titulo: p.titulo.slice(0, LARGO_DEL_TITULO),
+      origen: 'reunion',
+      seccion: null,
+      contexto: JSON.stringify({ dia: p.dia, tema: p.clave }),
+    } as never)
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const tocado = await datos()
+    .insertInto('mensajes_del_executive')
+    .values({ conversacion_id: hilo.id, rol: 'persona', texto: p.tocado, estado: 'respondida' } as never)
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const guardable = paraGuardar(p.respuesta, p.evidencia);
+  await datos()
+    .insertInto('mensajes_del_executive')
+    .values({
+      conversacion_id: hilo.id,
+      rol: 'cerebro',
+      texto: guardable.respuesta.conclusion,
+      respuesta: JSON.stringify(guardable.respuesta),
+      evidencia: JSON.stringify(guardable.evidencia),
+      responde_a: tocado.id,
+      // Los dos mensajes van en la misma transacción, y `now()` les daría la misma hora: el hilo se lee por
+      // hora y después por id, que es al azar. La hora del reloj deja la respuesta después de lo tocado.
+      creado_el: sql`clock_timestamp()`,
+    } as never)
+    .execute();
+  return hilo.id;
+}
+
 export interface HiloListado {
   id: string;
   titulo: string;

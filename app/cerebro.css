@@ -242,6 +242,81 @@
   color: var(--crit);
 }
 
+/* ── LA REUNIÓN DE HOY EN EL INICIO (AG15) ────────────────────────────────── */
+
+/* La cinta del lienzo en mono y mayúsculas, y hasta tres tarjetas en fila; en el teléfono, una debajo de
+   otra. Del ancho de la caja, para que la columna del Inicio no cambie de borde. */
+#v-executive .inicio-reunion {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+#v-executive .ir-cinta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+#v-executive .ir-vacia {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+#v-executive .ir-temas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#v-executive .ir-tema {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+  color: var(--txt);
+  font: inherit;
+  text-align: left;
+}
+#v-executive button.ir-tema {
+  cursor: pointer;
+  transition: background .15s ease;
+}
+#v-executive button.ir-tema:hover {
+  background: var(--bg-float);
+}
+#v-executive .ir-etiqueta {
+  align-self: flex-start;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-float);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--txt-dim);
+}
+#v-executive .ir-texto {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+#v-executive .ir-origen {
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+
 /* ── LA CAJA DEL PIE, HABILITADA ──────────────────────────────────────────── */
 
 .cc-motivo {

@@ -20,7 +20,7 @@
 // modificador, `KeyK`, el código 75, `mod+k`); un clic sintetizado sobre una fila del menú, con
 // `.click()` o con `dispatchEvent`; una cifra o un monto en el Inicio, también dentro de una expresión,
 // en un atributo o en un componente que el Inicio importe, directa o indirectamente; «Reunión de hoy» en
-// cualquier carpeta del código; que la caja le pida algo al servidor por su cuenta, se habilite sin el
+// cualquier carpeta del código fuera de sus dos componentes, o una tarjeta con algo que no sea un campo del tema; que la caja le pida algo al servidor por su cuenta, se habilite sin el
 // estado `listo` o dibuje turnos que no sean los del servidor; y que la mascota siga viva fuera de la
 // vista o se salga del centro de su caja.
 //
@@ -180,31 +180,28 @@ test('el Inicio no lleva cifras escritas, ni las tarjetas de la reunión, ni los
   for (const gancho of ['exFunnel', 'deptGraph', 'exBrief', 'exChanges', 'exPeriod', 'exPill', 'data-leads', 'data-datepick']) {
     assert.ok(!inicio.includes(gancho), `volvió \`${gancho}\`, un gancho de la maqueta`);
   }
-  /* La Reunión de hoy tiene que salir de reglas sobre datos reales, que no existen todavía (`NE-29`.4).
-     La barra lateral sí la nombra desde la etapa E10, como «Próximamente» y sin contador (`NE-11`):
-     eso lo vigila `193-la-barra-lateral.test.ts`, y por eso de `Nav.jsx` se saca SÓLO ese bloque antes
-     de mirar. «Cambios en curso», la otra tarjeta de la maqueta, no tiene excepción en ningún archivo. */
-  /* Desde la segunda edición (`NE-50`), el Inicio lleva UNA nota que dice qué va a aparecer —con el texto
-     del diseño—, y también se saca antes de mirar: una nota, no una tarjeta. Que siga siendo eso lo
-     mira la aserción de abajo. */
-  const NOTA = /<p className="inicio-nota inicio-reunion">[\s\S]*?<\/p>/;
-  const sinLaFilaDeLaBarra = (a: { ruta: string; contenido: string }) =>
-    a.ruta === 'components/Nav.jsx'
-      ? a.contenido.replace(/<div className="nb-reunion">[\s\S]*?<\/div>/, '')
-      : a.ruta === INICIO
-        ? a.contenido.replace(NOTA, '')
-        : a.contenido;
+  assert.ok(vistos.has('components/cerebro/ReunionDeHoy.jsx'), 'el recorrido no llega a las tarjetas de la Reunión: no está mirando lo que dicen');
+  /* La Reunión de hoy sale de reglas sobre datos reales desde AG15 de los agentes: la trae el servidor y la
+     dibujan dos componentes, las tarjetas del Inicio y la fila de la barra. Fuera de ellos, «Reunión de hoy»
+     en el código es una tarjeta de la maqueta que volvió. «Cambios en curso», la otra tarjeta de la maqueta,
+     no tiene excepción en ningún archivo. */
+  const DIBUJAN_LA_REUNION = ['components/cerebro/ReunionDeHoy.jsx', 'components/cerebro/ReunionDeLaBarra.jsx'];
   const conReunion = archivosFuente(['app', 'components', 'lib'])
     .filter((a) => /\.(jsx?|tsx?)$/.test(a.ruta))
-    .filter((a) => /Reunión de hoy|Cambios en curso/.test(sinComentarios(sinLaFilaDeLaBarra(a))))
+    .filter((a) => (DIBUJAN_LA_REUNION.includes(a.ruta) ? /Cambios en curso/ : /Reunión de hoy|Cambios en curso/).test(sinComentarios(a.contenido)))
     .map((a) => a.ruta);
   assert.deepEqual(conReunion, [], 'volvieron las tarjetas de la reunión de la maqueta');
-  /* La nota: un solo párrafo con el texto del diseño, ENTERO y nada más —completarla con los temas de la
-     maqueta sería volver a las tarjetas con otra forma—. */
-  const nota = NOTA.exec(inicio)?.[0];
-  assert.ok(nota, 'el Inicio perdió la nota de la Reunión de hoy');
-  assert.equal((inicio.match(/Reunión de hoy/g) ?? []).length, 1, 'el Inicio nombra la Reunión de hoy fuera de su nota');
-  assert.match(nota, /^<p className="inicio-nota inicio-reunion">\s*<b>Reunión de hoy · próximamente\.<\/b> Aquí aparecerán los tres temas del día que detecta el cerebro\.\s*<\/p>$/, 'la nota de la Reunión dice otra cosa que el diseño, o algo más');
+  /* Las tarjetas dibujan lo que trae el servidor, y nada escrito: ni una etiqueta del Lienzo («SIN
+     REGISTRAR») ni un tema. Cada texto de una tarjeta sale de un campo del tema. */
+  const tarjetas = sinComentarios(leer('components/cerebro/ReunionDeHoy.jsx'));
+  for (const etiqueta of ['CADENA', 'CONTRADICCIÓN', 'PATRÓN', 'SIN DATOS', 'SIN REGISTRAR', 'SIN LECTOR']) {
+    assert.ok(!tarjetas.includes(etiqueta) && !inicio.includes(etiqueta), `una tarjeta escribe «${etiqueta}» a mano`);
+  }
+  const contenido = /const contenido = \(([\s\S]*?)\n\s*\);/.exec(tarjetas)?.[1];
+  assert.ok(contenido, 'no se encontró lo que dibuja una tarjeta');
+  assert.deepEqual([...contenido.matchAll(/>([^<]*)</g)].map((m) => m[1]!.trim()).filter(Boolean), ['{t.etiqueta}', '{t.texto}', '{t.origen}'], 'una tarjeta dibuja algo que no es un campo del tema');
+  assert.match(inicio, /const reunion = cerebro\.panel\?\.reunion;/, 'las tarjetas no salen del panel que trae el servidor');
+  assert.match(inicio, /<ReunionDeHoy\s+reunion=\{reunion\}/, 'las tarjetas no reciben la Reunión del servidor');
 });
 
 test('la caja del cerebro pregunta a su ruta, sólo con el estado `listo`, y no finge una respuesta', () => {

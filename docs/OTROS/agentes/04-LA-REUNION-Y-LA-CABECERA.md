@@ -16,8 +16,8 @@
 - El Lienzo, pantalla «Inicio · el cerebro»: la cinta «DE LA REUNIÓN DE HOY · 07:00» y tres tarjetas con
   etiqueta y origen (SIN DATOS NUEVOS, SIN REGISTRAR, SIN LECTOR).
 - La Simulación: la frase del cerebro por departamento, con una mascota de 28 px, a la derecha del título.
-- Lo que hoy está dibujado como «Próximamente»: la nota del Inicio (`components/views/ExecutiveView.jsx:202-204`),
-  la fila de la barra (`components/Nav.jsx:171-180`) y el comentario que la cabecera no dibuja
+- Lo que estaba dibujado como «Próximamente» antes de AG15: la nota del Inicio, la fila de la barra (las dos
+  reemplazadas en AG15) y el comentario que la cabecera no dibuja
   (`components/CabeceraDeDepartamento.jsx:41-42`).
 
 ---
@@ -83,17 +83,40 @@ tres primeros. Elegir tres antes de filtrar dejaría con menos tarjetas a quien 
 Si quedan menos de tres, se muestran los que haya; si no queda ninguno, la cinta dice que la pasada corrió y
 no hubo temas, con su hora.
 
+Lo construido (`lib/agentes/reunion/leer.ts`, `components/cerebro/ReunionDeHoy.jsx`):
+
+- El GET del Inicio la trae sin `?hilo=`, con `tablero.ver`: sólo lee, así que se ve sin llave, sin
+  `cerebro.usar` y bajo delegación (`AG-79`). La tarjeta no lleva la evidencia; viaja al abrir el tema.
+- Antes de la pasada de la mañana se ve la última que corrió, con su fecha: «De la última Reunión · 5 de
+  octubre, 06:23». No se hace pasar por la de hoy, y no suma al contador.
+
 ## AG-74 · Tocar un tema abre una conversación
 
 Una conversación nueva, con origen `reunion`, con el tema y su evidencia ya cargados. El primer mensaje lo
 arma el servidor con lo guardado; **el modelo no se llama hasta la primera pregunta**, y abrir el tema no
 consume tope.
 
+Lo construido (`app/api/executive/reunion/route.ts`, `lib/agentes/reunion/leer.ts`; el hilo lo escribe
+`abrirHiloDeUnTema`, en el único escritor de las conversaciones):
+
+- **Un turno ya respondido**: lo tocado («SIN REGISTRAR · Sales · Closer») y, como respuesta, el tema con su
+  evidencia y la pantalla de su sección como siguiente paso. Así la primera pregunta ya tiene el tema en el
+  hilo que ve el modelo. El tope se cuenta en `preguntas_del_executive`, donde abrir no escribe.
+- **Pide `cerebro.usar`**, como preguntar y borrar: escribe un hilo a nombre de quien toca (`D-14`). Sin esa
+  capacidad, o bajo delegación, las tarjetas se leen pero no se abren. La llave y el tope no hacen falta.
+- **El mismo tema del mismo día vuelve a su conversación**; un tema de una sección que la persona no ve da
+  404, como uno que no existe. Puede abrirse cualquiera de los que ve, no sólo los tres de las tarjetas: la
+  redacción puede cambiar el orden.
+- **Lo que encontró la prueba 240**: los dos mensajes iban en la misma transacción, con la misma hora, y el
+  hilo los devolvía en cualquier orden. La respuesta lleva la hora del reloj.
+
 ## AG-75 · El contador de la barra
 
-Reemplaza a «Próximamente» en la fila «Reunión de hoy» (`components/Nav.jsx:171-180`): el número de temas
-que esa persona ve hoy. La fila pasa a ser un botón que lleva al Inicio. Sólo la ve quien ve el Inicio, como
-hoy.
+Reemplaza a «Próximamente» en la fila «Reunión de hoy» (`components/cerebro/ReunionDeLaBarra.jsx`): el
+número de temas que esa persona ve hoy. La fila pasa a ser un botón que lleva al Inicio sin una conversación
+abierta, donde están las tarjetas. Sólo la ve quien ve el Inicio, como antes. La barra no le pide nada al
+servidor: el número lo publica el Inicio cada vez que lee su panel, por el mismo camino que los hilos de
+CONVERSACIONES (`lib/agentes/hilos-de-la-barra.ts`). Sin temas de hoy no hay contador.
 
 ## AG-76 · La hora de la cinta
 

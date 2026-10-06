@@ -12,6 +12,9 @@
 //
 // Se guardan en la memoria de lecturas con la clave de `usarClaveDeLectura`, que lleva la empresa
 // (ADR-0703): un superadministrador que pasa de una empresa a otra no ve los hilos de la anterior.
+//
+// Por el mismo camino viaja el contador de la Reunión de hoy (AG15, `04`, AG-75): cuántos temas de hoy ve la
+// persona, que el Inicio publica cada vez que lee su panel.
 
 import { useCallback, useSyncExternalStore } from 'react';
 import { guardar, leerGuardado } from '../lecturas.ts';
@@ -38,27 +41,48 @@ function suscribir(fn: () => void): () => void {
   };
 }
 
-/** Publicar los hilos: el chat del Inicio, cada vez que los vuelve a leer. */
-export function usarPublicarHilos(): (hilos: readonly HiloDeLaBarra[]) => void {
-  const clave = usarClaveDeLectura(CAMINO);
+/** El contador de la Reunión: otra entrada de la memoria, con el mismo aviso. */
+const CAMINO_DE_LA_REUNION = 'cerebro/reunion-de-la-barra';
+
+function usarPublicar<T>(camino: string): (valor: T) => void {
+  const clave = usarClaveDeLectura(camino);
   return useCallback(
-    (hilos: readonly HiloDeLaBarra[]) => {
+    (valor: T) => {
       if (clave === null) return;
-      guardar(clave, hilos);
+      guardar(clave, valor);
       for (const fn of oyentes) fn();
     },
     [clave],
   );
 }
 
-/** Los hilos publicados para la empresa de la sesión, o `null` si todavía no se leyeron. */
-export function usarHilosDeLaBarra(): readonly HiloDeLaBarra[] | null {
-  const clave = usarClaveDeLectura(CAMINO);
+function usarPublicado<T>(camino: string): T | null {
+  const clave = usarClaveDeLectura(camino);
   return useSyncExternalStore(
     suscribir,
-    () => (clave === null ? null : (leerGuardado<readonly HiloDeLaBarra[]>(clave)?.valor ?? null)),
+    () => (clave === null ? null : (leerGuardado<T>(clave)?.valor ?? null)),
     () => null,
   );
+}
+
+/** Publicar los hilos: el chat del Inicio, cada vez que los vuelve a leer. */
+export function usarPublicarHilos(): (hilos: readonly HiloDeLaBarra[]) => void {
+  return usarPublicar<readonly HiloDeLaBarra[]>(CAMINO);
+}
+
+/** Los hilos publicados para la empresa de la sesión, o `null` si todavía no se leyeron. */
+export function usarHilosDeLaBarra(): readonly HiloDeLaBarra[] | null {
+  return usarPublicado<readonly HiloDeLaBarra[]>(CAMINO);
+}
+
+/** Publicar cuántos temas de HOY ve la persona: el Inicio, cada vez que lee su panel. Cero si no hay de hoy. */
+export function usarPublicarTemasDeHoy(): (temas: number) => void {
+  return usarPublicar<number>(CAMINO_DE_LA_REUNION);
+}
+
+/** Cuántos temas de hoy ve la persona, o `null` si el Inicio todavía no los leyó. */
+export function usarTemasDeHoy(): number | null {
+  return usarPublicado<number>(CAMINO_DE_LA_REUNION);
 }
 
 const EVENTO = 'aria:cambiaron-los-hilos-del-cerebro';

@@ -7,10 +7,10 @@
 |---|---|
 | Tipo | EL CEREBRO (sin pregunta) |
 | Lugar en el front | La cinta «DE LA REUNIÓN DE HOY · HH:MM» del Inicio y la fila «Reunión de hoy» de la barra |
-| Estado | **Se construye** en AG15: el servidor (las reglas, la medida y la pasada) hecho el 2026-10-06 |
+| Estado | **Se construye** en AG15: el servidor (las reglas, la medida y la pasada), las tarjetas del Inicio, el contador de la barra y abrir un tema, hechos el 2026-10-06; falta la redacción con el modelo |
 | Modelo | Ninguno para elegir los temas. `claude-sonnet-5-5` para ordenarlos y redactarlos, si hay llave |
 | Permisos | Leer: `tablero.ver` (la ruta del Inicio). Se filtra por las secciones de cada persona |
-| Código | `lib/agentes/reunion/reglas.ts` (las reglas del catálogo), `temas.ts` (la medida y los temas), `guardar.ts` (el único escritor); la pasada, en `lib/agentes/detectores/correr.ts` |
+| Código | `lib/agentes/reunion/reglas.ts` (las reglas del catálogo), `temas.ts` (la medida y los temas), `guardar.ts` (el único escritor), `leer.ts` (lo que ve cada persona y abrir un tema); la pasada, en `lib/agentes/detectores/correr.ts`; la ruta `app/api/executive/reunion`; `components/cerebro/ReunionDeHoy.jsx` y `ReunionDeLaBarra.jsx` |
 | Tabla | `negocio.reuniones_del_dia` (`075`) |
 
 ## Qué lee
@@ -33,4 +33,4 @@ texto. Al leer, se filtran por persona y se toman tres.
 
 ## Pruebas y evaluación
 
-238 (código) y 239 (base) de `08`; F17 en `07`, `AG-102`.
+238 (código), 239 y 240 (base) de `08`; cambian la 189 y la 193; F17 en `07`, `AG-102`.

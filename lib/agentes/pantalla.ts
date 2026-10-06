@@ -4,6 +4,9 @@
 /** La ruta del chat del Inicio. */
 export const RUTA_DEL_INICIO = '/api/executive';
 
+/** Abrir un tema de la Reunión de hoy como conversación (AG15, `04`, AG-74). */
+export const RUTA_DE_LOS_TEMAS = '/api/executive/reunion';
+
 /**
  * La ruta de la caja del pie de cada sección: la carpeta de la API de esa sección más `/cerebro` (AG-40).
  * La clave es la de la sección, que es la `PANTALLA` de la ruta; Conversation, Leads › De GHL e ICP & Oferta

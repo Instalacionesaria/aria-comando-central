@@ -39,7 +39,9 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    diseño sería volver a la maqueta. Desde la segunda edición (`09-LA-SEGUNDA-EDICION.md`, `NE-50`), una
    nota debajo de la caja dice qué va a aparecer, con el texto del diseño: «Reunión de hoy ·
    próximamente. Aquí aparecerán los tres temas del día que detecta el cerebro.» Una nota y no una
-   tarjeta, sin una sola cifra; la `189` la deja pasar a ella sola.
+   tarjeta, sin una sola cifra; la `189` la deja pasar a ella sola. **Desde AG15 de los agentes** las
+   tarjetas existen y la nota se fue: las trae el servidor, salen de reglas sobre datos reales y se filtran
+   por persona (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73 a AG-76).
 
 El inicio es el mismo para todos. Quien no tiene la sección `executive` no ve «Nueva conversación» y arranca
 en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:876`).

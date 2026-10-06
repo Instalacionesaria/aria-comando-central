@@ -103,7 +103,7 @@ equivocado.
 
 ## S12-05 · El galón, y por qué se queda
 
-`secciones.ts:304` — `galon: true`. Lo dibujaba `components/Nav.jsx:196@b532a78` y lo llevan cinco secciones:
+`secciones.ts:304` — `galon: true`. Lo dibujaba `components/Nav.jsx:190@b532a78` y lo llevan cinco secciones:
 `contacts`, `icp`, `creative`, `conversion` y `sales`.
 
 `docs/OTROS/estado actual/02-CREATIVE.md:225-226` recoge que la foto anterior lo señalaba como el

@@ -18,16 +18,15 @@
  * habilita sólo con el estado `listo`; con cualquier otro, dice por qué con el texto de la tabla de AG-52
  * (`lib/agentes/pantalla.ts`), que es el mismo estado con que el servidor rechazaría la pregunta.
  *
- * Sin conversación abierta se ve como antes: la mascota grande, el saludo y la caja, centrados. Con una
- * conversación, los turnos ocupan el lugar del saludo y la caja queda debajo. Los hilos se abren desde
+ * Sin conversación abierta se ve como antes: la mascota grande, el saludo y la caja, centrados, y debajo la
+ * Reunión de hoy (AG15, `components/cerebro/ReunionDeHoy.jsx`), que también trae el servidor: tocar un tema lo
+ * abre como conversación. Con una conversación, los turnos ocupan el lugar del saludo y la caja queda debajo.
+ * Cuántos temas de hoy ve la persona se publica para el contador de la barra. Los hilos se abren desde
  * CONVERSACIONES, en la barra (`components/cerebro/ConversacionesDeLaBarra.jsx`), que los lee de lo que
  * este chat publica: la barra no le pide nada al servidor.
  *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
- *   · las tarjetas de «Reunión de hoy»: tienen que salir de las señales y de reglas sobre datos reales,
- *     que llegan con AG15. Desde la segunda edición, una nota dice qué va a aparecer ahí, con el texto del
- *     diseño (`NE-50`): una nota, no una tarjeta, y sin una sola cifra;
  *   · «@ agente»: abre la herramienta que crea con el pedido cargado, y las que hoy crean viven en ICP &
  *     Oferta, que se integra con otra rama antes de tocarla (`08-LAS-ETAPAS.md`, AG7);
  *   · el selector de áreas y el «+»: el cerebro lee lo que la persona ve, y no se adjunta nada (AG-51).
@@ -42,10 +41,11 @@ import { irALaVista } from '../../lib/aios/shell.js';
 import { saludo } from '../../lib/saludo.ts';
 import { puedeIrAAjustes, RUTA_DEL_INICIO, textoDelEstado } from '../../lib/agentes/pantalla.ts';
 import { usarCerebro } from '../../lib/agentes/usarCerebro.ts';
-import { alCambiarLosHilos, usarPublicarHilos } from '../../lib/agentes/hilos-de-la-barra.ts';
+import { alCambiarLosHilos, usarPublicarHilos, usarPublicarTemasDeHoy } from '../../lib/agentes/hilos-de-la-barra.ts';
 import { alPedirHiloDelInicio, tomarHiloDelInicio } from '../../lib/agentes/traspaso.ts';
 import Mascota from '../marca/Mascota.jsx';
 import Conversacion from '../cerebro/Conversacion.jsx';
+import ReunionDeHoy from '../cerebro/ReunionDeHoy.jsx';
 
 export default function ExecutiveView({ activa }) {
   const sesion = useSesion();
@@ -66,6 +66,12 @@ export default function ExecutiveView({ activa }) {
   const publicar = usarPublicarHilos();
   const cerebro = usarCerebro(RUTA_DEL_INICIO, publicar);
   const { abrir, nueva, recargar } = cerebro;
+  const publicarTemas = usarPublicarTemasDeHoy();
+  const reunion = cerebro.panel?.reunion;
+  // El contador de la barra: los temas de HOY que ve la persona. Antes de leer el panel no se publica nada.
+  useEffect(() => {
+    if (reunion !== undefined) publicarTemas(reunion?.deHoy ? reunion.temas.length : 0);
+  }, [reunion, publicarTemas]);
   const [texto, setTexto] = useState('');
   // Borrar no tiene vuelta atrás: el primer clic pregunta, el segundo borra.
   const [porBorrar, setPorBorrar] = useState(false);
@@ -199,9 +205,12 @@ export default function ExecutiveView({ activa }) {
           </p>
         ) : null}
         {hayConversacion ? null : (
-          <p className="inicio-nota inicio-reunion">
-            <b>Reunión de hoy · próximamente.</b> Aquí aparecerán los tres temas del día que detecta el cerebro.
-          </p>
+          <ReunionDeHoy
+            reunion={reunion}
+            // Abrir escribe un hilo: hace falta `cerebro.usar` y no estar mirando otra empresa. La llave y el tope no.
+            puedeAbrir={estado !== null && estado.tipo !== 'sin_permiso' && estado.tipo !== 'delegacion'}
+            alAbrir={(clave) => void cerebro.abrirTema(clave)}
+          />
         )}
       </div>
     </section>

@@ -8,8 +8,8 @@
 //
 //   · que vuelva a decidir quién ve qué —leer el menú agrupado, los permisos, un rol— en vez de
 //     repartir lo que `menuVisible()` ya dejó pasar: dos definiciones de lo mismo;
-//   · que una «Próximamente» navegue, o que la Reunión de hoy muestre un contador: una puerta a nada,
-//     o una cifra sin reglas detrás (`NE-05`, `NE-13`);
+//   · que una «Próximamente» navegue, o que la Reunión de hoy muestre un número que no publicó el Inicio:
+//     una puerta a nada, o una cifra sin reglas detrás (`NE-05`, `NE-13`; AG15 de los agentes);
 //   · que la entrada marcada salga del último PEDIDO y no de lo que la pantalla DIBUJA: Tools cambia
 //     de pestaña por dentro, y la barra marcaría una entrada que no está abierta, en otro departamento;
 //   · que el rótulo ADMIN/USUARIO salga de otra cosa que `restringido` (`NE-15`);
@@ -23,7 +23,8 @@
 // Las mutaciones que la ponen en rojo: que la barra lea otra cosa de la sesión que `navegacion` y
 // `arranque`, la desestructure, la pida otra vez o pida algo al servidor; destinos del engranaje
 // filtrados o escritos a mano; darle un botón, un `onClick`, un `data-view`, un `role`, un `tabIndex`
-// o un `onKeyDown` a una «Próximamente»; un contador en la Reunión de hoy, adentro o al lado; marcar
+// o un `onKeyDown` a una «Próximamente»; un contador de la Reunión de hoy que no sea el que publica el
+// Inicio, que se dibuje en cero, que se lea suelto o que no lleve a las tarjetas; marcar
 // por `pedidoDeVista`, por la sección sola o sin abrir el departamento en uso; que `entradaAbierta`
 // ignore la pestaña o adivine; que la barra escuche la pestaña después de pintar, o no la escuche; que
 // anunciar avise antes de guardar, avise dos veces, toque el pedido o avise a los oyentes de la vista;
@@ -144,7 +145,7 @@ test('la barra lee `navegacion` y nada más', () => {
   assert.match(recorrido, /alIrALaSeccion\?\.\(destino\.seccion\)/, 'un destino del engranaje no navega a su sección');
 });
 
-test('las «Próximamente» no navegan, y la Reunión de hoy no cuenta nada', () => {
+test('las «Próximamente» no navegan, y la Reunión de hoy cuenta sólo lo que publica el Inicio', () => {
   const nav = NAV();
   const m = /if \((e\.proximamente|'proximamente' in e)\)/.exec(nav);
   assert.ok(m, 'no se encontró la rama de las «Próximamente»');
@@ -152,20 +153,20 @@ test('las «Próximamente» no navegan, y la Reunión de hoy no cuenta nada', ()
   assert.match(rama, /Próximamente/, 'una «Próximamente» no lo dice');
   assert.doesNotMatch(rama, /<button|<a\b|onClick|onKey|tabIndex|role=|irALaVista|data-view|nav-item|href=/, 'una «Próximamente» navega, o se ofrece como algo que navega');
 
-  // La Reunión: todo lo que va dentro de su `{inicio ? ( … )}`, y nada al lado.
-  const r = nav.indexOf('<div className="nb-reunion">');
-  assert.ok(r > 0, 'no se encontró la Reunión de hoy');
-  const antes = nav.slice(0, r);
-  assert.match(antes, /\{inicio \? \(\s*$/, 'la Reunión de hoy se dibuja aunque la persona no vea el Inicio (`NE-16`)');
-  const abre = antes.lastIndexOf('(');
-  const reunion = bloque(nav, abre, '(', ')');
-  assert.match(reunion, /Reunión de hoy/);
-  assert.match(reunion, /Próximamente/, 'la Reunión de hoy dejó de decir «Próximamente»');
-  const sinIconos = reunion.replace(/<svg[\s\S]*?<\/svg>/g, '');
-  assert.doesNotMatch(sinIconos, /\d|\{/, 'la Reunión de hoy muestra un contador o un dato');
-  const etiquetas = [...sinIconos.matchAll(/<([A-Za-z][\w.]*)[^>]*>/g)].map((e) => e[0]);
-  assert.deepEqual(etiquetas, ['<div className="nb-reunion">', '<span className="n">', '<span className="nb-proximamente">'], 'la Reunión de hoy lleva algo más que su nombre y la palabra');
-  assert.match(nav.slice(abre + reunion.length), /^\s*:\s*null\}\s*\{departamentos\.length > 0 \?/, 'al lado de la Reunión de hoy se dibuja otra cosa');
+  /* La Reunión (AG15 de los agentes): sólo para quien ve el Inicio (`NE-16`), y nada al lado. Su número de
+     temas sale de reglas sobre datos reales, y lo trae el Inicio: la fila no le pide nada al servidor, no lo
+     calcula, y sin temas de hoy no dibuja contador. */
+  assert.match(nav, /\{inicio \? <ReunionDeLaBarra inicio=\{inicio\} \/> : null\}\s*\{departamentos\.length > 0 \?/, 'la Reunión de hoy se dibuja aunque la persona no vea el Inicio, o algo se dibuja a su lado');
+  const fila = sinComentarios(fuente('components/cerebro/ReunionDeLaBarra.jsx'));
+  assert.doesNotMatch(fila, /\bpedir\(|\bfetch\(|usarLectura|usarCerebro/, 'la fila de la Reunión le pide algo al servidor');
+  assert.match(fila, /const temas = usarTemasDeHoy\(\);/, 'el contador no sale de lo que publica el Inicio');
+  assert.match(fila, /const hay = typeof temas === 'number' && temas > 0;/, 'el contador se dibuja sin temas de hoy');
+  assert.match(fila, /\{hay \? \(\s*<span className="nb-contador" aria-hidden="true">\s*\{temas\}\s*<\/span>\s*\) : null\}/, 'el contador dibuja otra cosa que el número publicado, o se lee suelto');
+  // Lleva al Inicio sin una conversación abierta: ahí están las tarjetas.
+  assert.match(fila, /pedirHiloDelInicio\(null\);\s*irALaVista\(inicio\.seccion\);/, 'la Reunión de hoy no lleva a las tarjetas del Inicio');
+  // Lo que publica el Inicio: los temas de HOY que ve la persona, del panel que trajo el servidor.
+  const inicio = sinComentarios(fuente('components/views/ExecutiveView.jsx'));
+  assert.match(inicio, /if \(reunion !== undefined\) publicarTemas\(reunion\?\.deHoy \? reunion\.temas\.length : 0\);/, 'el Inicio publica otro número que los temas de hoy que ve la persona');
 });
 
 test('la entrada abierta sale de la pantalla y de la pestaña que DIBUJA', () => {
@@ -404,9 +405,8 @@ test('la barra no aplasta lo suyo: se desplaza entera', () => {
   assert.match(regla(hoja, '.nav > *'), /flex-shrink:\s*0;/, 'los bloques de la barra encogen en vez de desplazarse');
   // Y la barra de desplazamiento aparece en su canal, sin angostar las filas al abrir un departamento.
   assert.match(regla(hoja, '.nav'), /scrollbar-gutter:\s*stable both-edges;/, 'las filas saltan cuando aparece la barra de desplazamiento');
-  // La Reunión, con «Próximamente» debajo: al lado partía el nombre en dos renglones.
-  assert.match(regla(hoja, '.nb-reunion .nb-ico'), /grid-row:\s*1 \/ span 2;/, '«Próximamente» va al lado del nombre de la Reunión');
-  assert.match(regla(hoja, '.nb-reunion .n, .nb-reunion .nb-proximamente'), /grid-column:\s*2;/, '«Próximamente» va al lado del nombre de la Reunión');
+  // La Reunión, con el contador en su propia columna: el nombre se recorta antes de empujarlo fuera.
+  assert.match(regla(hoja, '.nb-reunion'), /grid-template-columns:\s*auto minmax\(0, 1fr\) auto;/, 'el contador de la Reunión no tiene su columna');
 });
 
 test('cada departamento dice cuántas entradas tiene, y el menú de la cuenta el subtítulo de cada destino', () => {

@@ -27,12 +27,10 @@
  *
  * ── LO QUE NO SE DIBUJA, Y POR QUÉ ──────────────────────────────────────────
  *
- *   · la lista de CONVERSACIONES: es el historial del cerebro, que todavía no existe. Desde la segunda
- *     edición se dibuja el rótulo con «Próximamente», sin lista y sin acción (`NE-50`), y sólo para quien
- *     ve el Inicio, que es donde se conversa;
- *   · el contador de la Reunión de hoy: sus temas tienen que salir de reglas sobre datos reales
- *     (`NE-05`). La fila dice «Próximamente», no navega, y sólo la ve quien ve el Inicio: un closer ve
- *     Sales › Closer y nada más (`NE-16`);
+ *   · CONVERSACIONES y la Reunión de hoy, para quien no ve el Inicio: se conversa y se leen los temas
+ *     ahí. Un closer ve Sales › Closer y nada más (`NE-16`). Para quien lo ve, las dos llegaron con los
+ *     agentes (AG7 y AG15): la lista de hilos y el contador, que publica el Inicio —la barra no le pide nada
+ *     al servidor—;
  *   · el ícono y el galón de cada sección, del menú viejo: la barra nueva dibuja el ícono de cada
  *     DEPARTAMENTO, del lienzo, en línea y sin el sprite (el sprite no tiene esos dibujos y no se le
  *     da a un símbolo un segundo significado).
@@ -45,6 +43,7 @@ import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
 import { entradaAbierta, queAbre } from '../lib/autorizacion/departamentos.ts';
 import MenuDeUsuario from './MenuDeUsuario.jsx';
 import ConversacionesDeLaBarra from './cerebro/ConversacionesDeLaBarra.jsx';
+import ReunionDeLaBarra from './cerebro/ReunionDeLaBarra.jsx';
 import { pedirHiloDelInicio } from '../lib/agentes/traspaso.ts';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
 import { leerTrabajosEnVuelo, pestanaQueLoRetoma } from '../lib/tools/scrapers.ts';
@@ -168,16 +167,9 @@ export default function Nav() {
           </button>
         ) : null}
 
-        {inicio ? (
-          <div className="nb-reunion">
-            <svg className="nb-ico" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4 12H2M22 12h-2" />
-            </svg>
-            <span className="n">Reunión de hoy</span>
-            <span className="nb-proximamente">Próximamente</span>
-          </div>
-        ) : null}
+        {/* La Reunión de hoy (AG15 de los agentes): lleva al Inicio, con el número de temas de hoy que publica
+            el Inicio. Sólo para quien ve el Inicio, que es donde están las tarjetas. */}
+        {inicio ? <ReunionDeLaBarra inicio={inicio} /> : null}
 
         {departamentos.length > 0 ? (
           <div className="nb-departamentos">

@@ -675,11 +675,22 @@ Lo que decía el plan:
   de la sesión de la base y se mide en Tokio).
 - **Lo que encontró la base sembrada**: el texto de la señal de concentración dice «la ventana», que en la
   tarjeta no se ve; se agregó «Sobre los últimos 30 días».
+- **Tanda 2, el Inicio, hecha el 2026-10-06, sin push.** El GET del Inicio trae la Reunión de cada persona;
+  las tarjetas reemplazan a la nota; la fila de la barra es un botón con el contador que publica el Inicio; y
+  la ruta nueva `app/api/executive/reunion` abre un tema como conversación sin modelo ni tope.
+- **Pruebas**: nueva la 240 (base: lo que ve cada persona, la de ayer, abrir un tema, el mismo hilo, 404 y
+  delegación). Cambian la 189 (las tarjetas, sólo campos del tema y sólo del servidor) y la 193 (el
+  contador, sólo el publicado, nunca en cero). Mutaciones, 12 vistas en rojo; un caso se sumó porque su
+  mutación quedaba verde (la Reunión de ayer presentada como la de hoy).
+- **Lo que encontró**: la 240 salía roja una de cada tres veces, porque los dos mensajes del tema abierto
+  tenían la misma hora; el preview mostró la fecha cruda («2026-10-06») en el primer mensaje; y la suite
+  encontró que abrir un tema escribía los hilos fuera de su único escritor (ahora `abrirHiloDeUnTema`, en
+  `lib/agentes/executive/conversaciones.ts`) y que las tarjetas estrenaban un `id`.
 
 Lo que decía el plan:
 
 - **Qué**: `lib/agentes/reunion.ts` (dentro de la tarea `senales`), `lib/agentes/cabecera.ts`, las tarjetas
-  en el Inicio en lugar de la nota de `components/views/ExecutiveView.jsx:202-204`, el contador en la barra y el
+  en el Inicio en lugar de la nota del Inicio, el contador en la barra y el
   comentario en la cabecera (`04`).
 - **Migración** `075`: `negocio.reuniones_del_dia`.
 - **Pruebas que cambian**: la 189 (las tarjetas vienen sólo del servidor), la 193 (el contador), la 194 (el

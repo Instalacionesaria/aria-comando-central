@@ -44,8 +44,10 @@ import {
   loDelPanel,
   respuestaDePreguntar,
   respuestaDelPanel,
+  seccionesVisibles,
 } from '../../../lib/agentes/executive/caja.ts';
 import { preguntar } from '../../../lib/agentes/executive/preguntar.ts';
+import { reunionParaUnaPersona } from '../../../lib/agentes/reunion/leer.ts';
 
 export const PANTALLA = 'executive';
 
@@ -53,8 +55,9 @@ export const PANTALLA = 'executive';
 export const maxDuration = 300;
 
 /**
- * El estado del cerebro, los hilos propios y —con `?hilo=`— los mensajes de uno de ellos. Los temas de la
- * Reunión llegan en AG15.
+ * El estado del cerebro, los hilos propios y —con `?hilo=`— los mensajes de uno de ellos; sin `?hilo=`, la
+ * Reunión de hoy como la ve esta persona (AG15, `04`, AG-73): sólo lee, así que se ve también sin llave,
+ * sin `cerebro.usar` y bajo delegación (AG-79).
  */
 export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['tablero.ver'], PANTALLA);
@@ -64,8 +67,12 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const { llave } = await conIdentidad((db) => identidadDelCerebro(db, contexto, false));
   // Todos los hilos propios, de cualquier sección: el Inicio es donde se ven juntos.
-  const panel = await conOrganizacion(contexto.orgEfectiva, () => loDelPanel(contexto, null, hilo));
-  return respuestaDelPanel(contexto, llave, panel, hilo, { temasDeLaReunion: [] });
+  const visibles = seccionesVisibles(contexto).map((s) => s.clave);
+  const { panel, reunion } = await conOrganizacion(contexto.orgEfectiva, async () => ({
+    panel: await loDelPanel(contexto, null, hilo),
+    reunion: hilo === null ? await reunionParaUnaPersona(visibles, contexto.organizacion.zonaHoraria) : undefined,
+  }));
+  return respuestaDelPanel(contexto, llave, panel, hilo, reunion === undefined ? {} : { reunion });
 }
 
 /** Preguntar: `{ pregunta, hilo?, periodo? }`. */

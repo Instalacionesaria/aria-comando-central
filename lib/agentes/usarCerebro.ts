@@ -32,7 +32,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ESPERA_DE_RUTA_LARGA_MS, pedir } from '../http/cliente.ts';
-import { textoDelRechazo, type EstadoDelCerebro } from './pantalla.ts';
+import { RUTA_DE_LOS_TEMAS, textoDelRechazo, type EstadoDelCerebro } from './pantalla.ts';
 import type { HiloDeLaBarra } from './hilos-de-la-barra.ts';
 
 /** Una cifra, una recomendación, lo que falta: la forma de `RespuestaValidada` (`./executive/respuesta.ts`). */
@@ -59,10 +59,20 @@ export type Turno =
   | { tipo: 'cerebro'; clave: string; respuesta: RespuestaEnPantalla; evidencia: EvidenciaEnPantalla[]; mascota: string }
   | { tipo: 'fallo'; clave: string; texto: string };
 
+/** La Reunión de hoy como la ve la persona: la forma de `ReunionEnPantalla` (`./reunion/leer.ts`). */
+export interface ReunionEnPantalla {
+  dia: string;
+  hora: string;
+  deHoy: boolean;
+  temas: { clave: string; etiqueta: string; origen: string; seccion: string; texto: string }[];
+}
+
 export interface PanelDelCerebro {
   estado: EstadoDelCerebro;
   usado: { porPersona: number; usadasPorPersona: number; renuevaEl: string };
   hilos: HiloDeLaBarra[];
+  /** Sólo en el Inicio (AG15): `null` si la pasada nunca corrió. */
+  reunion?: ReunionEnPantalla | null;
 }
 
 export interface MensajeGuardado {
@@ -127,6 +137,8 @@ export interface Cerebro {
   /** Pregunta. `false` si no llegó una respuesta y la pregunta tiene que volver al campo. */
   preguntar: (texto: string, periodo: string | null) => Promise<boolean>;
   borrar: (hilo: string) => Promise<void>;
+  /** Abre un tema de la Reunión de hoy como conversación y la muestra (AG-74). Sólo el Inicio tiene temas. */
+  abrirTema: (clave: string) => Promise<void>;
 }
 
 /**
@@ -296,5 +308,25 @@ export function usarCerebro(
     await leerPanel();
   }, [leerPanel]);
 
-  return { panel, situacion, causa, hiloId, turnos, pendiente, error, recargar, abrir, nueva, preguntar, borrar };
+  const abrirTema = useCallback(
+    async (clave: string) => {
+      generacion.current += 1;
+      const de = generacion.current;
+      setPendiente(null);
+      setError(null);
+      const r = await pedir<{ hilo: string }>(RUTA_DE_LOS_TEMAS, { metodo: 'POST', cuerpo: { tema: clave } });
+      if (!vigente(de)) return;
+      if (r.tipo !== 'datos') {
+        setError(r.tipo === 'rechazado' ? textoDelRechazo(r.codigo, r.detalle) : 'No se pudo contactar al servidor.');
+        return;
+      }
+      // El hilo nuevo aparece en CONVERSACIONES, y después se muestra.
+      avisos.current.alPreguntarOBorrar?.();
+      await leerPanel();
+      if (vigente(de)) await mostrarHilo(r.datos.hilo, de);
+    },
+    [leerPanel, mostrarHilo],
+  );
+
+  return { panel, situacion, causa, hiloId, turnos, pendiente, error, recargar, abrir, nueva, preguntar, borrar, abrirTema };
 }
