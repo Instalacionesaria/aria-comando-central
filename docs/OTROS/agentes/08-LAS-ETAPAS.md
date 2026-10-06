@@ -662,6 +662,22 @@ Lo que decía el plan:
 
 ## AG15 · La Reunión de hoy y el comentario de la cabecera — **grande** — **hito H5**
 
+- **Tanda 1, el servidor de la Reunión, hecha el 2026-10-06, sin push.** La `075` (`negocio.reuniones_del_dia`,
+  sólo en local). Las cinco reglas en el catálogo con el departamento `reunion`
+  (`lib/agentes/reunion/reglas.ts`), la medida y los temas (`temas.ts`), el único escritor (`guardar.ts`), y la
+  pasada que la guarda una vez por día después de los detectores. Sobre la base sembrada salen cinco temas:
+  la pauta parada, la concentración de Webinar, las citas sin registrar, las llamadas sin vínculo y la
+  objeción «precio».
+- **Pruebas nuevas**: 238 (código: cada regla con su piso, el orden, el filtro antes de tomar tres, la
+  redacción que no pierde temas) y 239 (base: los cinco temas exactos, la entrada en días de la empresa
+  contra un conteo directo, una vez por día). Mutaciones, 14 vistas en rojo; dos casos se sumaron porque sus
+  mutaciones quedaban verdes (la pérdida a igual gravedad, y la frontera del día, que en Lima coincidía con la
+  de la sesión de la base y se mide en Tokio).
+- **Lo que encontró la base sembrada**: el texto de la señal de concentración dice «la ventana», que en la
+  tarjeta no se ve; se agregó «Sobre los últimos 30 días».
+
+Lo que decía el plan:
+
 - **Qué**: `lib/agentes/reunion.ts` (dentro de la tarea `senales`), `lib/agentes/cabecera.ts`, las tarjetas
   en el Inicio en lugar de la nota de `components/views/ExecutiveView.jsx:202-204`, el contador en la barra y el
   comentario en la cabecera (`04`).

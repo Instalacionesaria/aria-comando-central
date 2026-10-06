@@ -12,11 +12,13 @@ import { REGLAS_DE_ACQUISITION } from '../detectores/acquisition.ts';
 import { REGLAS_DE_CREATIVE } from '../detectores/creative.ts';
 import { REGLAS_DE_CONVERSATION } from '../detectores/conversation.ts';
 import { REGLAS_DE_CONVERSION } from '../detectores/conversion.ts';
+import { REGLAS_DE_LA_REUNION } from '../reunion/reglas.ts';
 
 export interface ReglaDelCatalogo {
   /** `ACQ-CPL-SOSTENIDO`: departamento y nombre, en mayúsculas. */
   codigo: string;
-  departamento: DepartamentoConSenales;
+  /** El departamento del detector, o `reunion`: las reglas de la Reunión de hoy viven en el mismo catálogo (AG-70). */
+  departamento: DepartamentoConSenales | 'reunion';
   /** El valor provisional, en la unidad de la regla. */
   valor: number;
   /**
@@ -38,6 +40,7 @@ export const CATALOGO_DE_REGLAS: readonly ReglaDelCatalogo[] = [
   ...REGLAS_DE_CREATIVE,
   ...REGLAS_DE_CONVERSATION,
   ...REGLAS_DE_CONVERSION,
+  ...REGLAS_DE_LA_REUNION,
 ];
 
 /** Lo que el Admin firmó en esta empresa, por código de regla. */

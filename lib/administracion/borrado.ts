@@ -176,6 +176,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   objeciones_clasificadas_org_id_fkey: 'tiene objeciones de llamadas clasificadas',
   /* El Brief de cada cita (`074`): cae con su cita, y las citas ya frenan el borrado. */
   briefs_del_closer_org_id_fkey: 'tiene briefs de citas del closer',
+  /* La Reunión de cada día (`075`): lo que la empresa vio como temas del día, con su texto. */
+  reuniones_del_dia_org_id_fkey: 'tiene reuniones del día guardadas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

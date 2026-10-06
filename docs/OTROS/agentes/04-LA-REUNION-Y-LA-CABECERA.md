@@ -43,11 +43,30 @@ Las etiquetas son un juego cerrado: las de Det:194 (cadena, contradicción, patr
 registrar) más SIN LECTOR, que el Lienzo usa. El Lienzo atribuye las citas sin registrar a Conversation;
 acá el origen es **Sales · Closer**, que es donde se registran.
 
+Lo que fijó la construcción (`lib/agentes/reunion/reglas.ts` y `temas.ts`):
+
+- **Los umbrales provisionales**: «sin entrega», una señal; la caída de la entrada, 40 %; las citas sin
+  registrar, una; la objeción frecuente, una en la ventana; las llamadas sin vínculo, una de cada cinco
+  (20 %). Las cinco reglas están en el catálogo con el departamento `reunion`.
+- **Las señales de validación ejecutiva entran desde la ventana de 30 días**: la misma decisión aparece en las
+  dos ventanas y un tema por decisión basta. El texto de la señal habla de «la ventana», que en su pantalla
+  se ve arriba; en la tarjeta se agrega «Sobre los últimos 30 días».
+- **«Sin entrega»** lee la señal de 7 días, que mira los últimos días cerrados. Si es de la empresa, el tema
+  usa su texto y su gravedad; si son campañas sueltas mientras otras siguen, es alta y las nombra.
+- **La entrada** se cuenta en días de la empresa (su zona), con los 7 días cerrados contra los 7 anteriores.
+- **«Crece»** es el de `llamadasDeVenta`, con su piso (`AG-F14-1`); la tarjeta no lo recalcula.
+
 ## AG-71 · Se calcula una vez al día y se guarda
 
 Dentro de la tarea `senales` (`02`, `AG-35`), **después** de los detectores, por empresa y día local. Se
 guarda en `negocio.reuniones_del_dia` (migración `075`): **todos** los temas candidatos, ordenados, cada uno
 con su sección de origen, su evidencia (ids y cifras) y **su propio texto**.
+
+- **Una vez por día**: la pasada no entra si los departamentos ya corrieron, la tarea está sellada hoy y la
+  fila del día existe. Sin la fila, la hora siguiente la rehace sin volver a medir los departamentos.
+- **Un departamento que falló no la frena**: sus señales de ayer siguen abiertas y entran tal cual. Un
+  detector roto no debe dejar a la empresa sin Reunión.
+- La pasada con una lista de detectores a medida (las pruebas de un detector) no mide la Reunión.
 
 ## AG-72 · El modelo ordena y redacta; las reglas detectan
 

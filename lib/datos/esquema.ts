@@ -1721,6 +1721,18 @@ export interface TablaBriefsDelCloser {
   generado_por: string | null;
 }
 
+/**
+ * La Reunión de hoy de una empresa (AG-71). Migración 075. Escritor único: `lib/agentes/reunion/guardar.ts`.
+ * `temas` son TODOS los candidatos, ordenados; los tres se eligen al leer, después de filtrar por persona.
+ */
+export interface TablaReunionesDelDia {
+  org_id: ColumnaInquilino;
+  dia: ColumnType<Date, string, string>;
+  temas: ColumnType<unknown, string, string>;
+  redaccion: ColumnType<unknown | null, string | null, string | null>;
+  corrio_el: Generated<Date>;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1787,6 +1799,7 @@ export interface BaseDeDatos {
   umbrales: TablaUmbrales;
   objeciones_clasificadas: TablaObjecionesClasificadas;
   briefs_del_closer: TablaBriefsDelCloser;
+  reuniones_del_dia: TablaReunionesDelDia;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

@@ -28,7 +28,9 @@ import { conOrganizacion, datos } from '../../datos/contexto.ts';
 import { diaEnZona, horaDelDiaEnZona } from '../../negocio/tiempo.ts';
 import { guardarPlan, guardarRedaccion } from '../plan/guardar.ts';
 import { reconciliarSenales, type ResumenDeLaReconciliacion } from '../senales/escritura.ts';
-import { umbralesFirmados } from '../senales/umbrales.ts';
+import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from '../senales/umbrales.ts';
+import { medirLaReunion, temasDeLaReunion } from '../reunion/temas.ts';
+import { guardarReunion } from '../reunion/guardar.ts';
 import { DETECTOR_DE_ACQUISITION } from './detector-de-acquisition.ts';
 import { DETECTOR_DE_CREATIVE } from './detector-de-creative.ts';
 import { DETECTOR_DE_CONVERSATION } from './detector-de-conversation.ts';
@@ -113,7 +115,14 @@ export interface RenglonDeLaPasada {
 
 export type ResultadoDeLaPasada =
   | { tocaba: false; porque: string }
-  | { tocaba: true; dia: string; departamentos: RenglonDeLaPasada[]; departamentosQueFallaron: number };
+  | {
+      tocaba: true;
+      dia: string;
+      departamentos: RenglonDeLaPasada[];
+      departamentosQueFallaron: number;
+      /** La Reunión de hoy (AG-71), después de los detectores: una vez por día; si falló, la intenta la hora siguiente. */
+      reunion: { estado: 'corrio' | 'ya_corrio' | 'fallo'; temas?: number };
+    };
 
 export async function correrLaPasada(
   org: { id: string; zonaHoraria: string },
@@ -125,6 +134,11 @@ export async function correrLaPasada(
     /** Hasta cuándo puede llamar al modelo, en milisegundos del reloj de `ahoraMs`. */
     hasta?: number;
     ahoraMs?: () => number;
+    /**
+     * Si corre la Reunión de hoy después de los detectores. Por omisión, sí con los detectores de siempre y no con
+     * una lista a medida: una prueba de un detector no tiene por qué medir la Reunión.
+     */
+    conReunion?: boolean;
   },
 ): Promise<ResultadoDeLaPasada> {
   const { ahora } = opciones;
@@ -135,7 +149,8 @@ export async function correrLaPasada(
   }
   const dia = diaEnZona(ahora, zona);
 
-  const { hechos, selladaHoy } = await conOrganizacion(org.id, async () => {
+  const conReunion = opciones.conReunion ?? opciones.detectores === undefined;
+  const { hechos, selladaHoy, reunionHecha } = await conOrganizacion(org.id, async () => {
     const planes = await datos()
       .selectFrom('planes_de_accion')
       .select(['departamento', 'ventana'])
@@ -149,10 +164,11 @@ export async function correrLaPasada(
     return {
       hechos: new Set(planes.map((p) => `${p.departamento}·${p.ventana}`)),
       selladaHoy: sello !== undefined && sello.ultimo_estado === 'corrio' && diaEnZona(sello.ultima_corrida_el, zona) === dia,
+      reunionHecha: !conReunion || (await datos().selectFrom('reuniones_del_dia').select('dia').where(sql<boolean>`dia = ${dia}::date`).executeTakeFirst()) !== undefined,
     };
   });
   const yaCorrio = (d: Detector) => VENTANAS_DE_LAS_SENALES.every((v) => hechos.has(`${d.departamento}·${v}`));
-  if (detectores.every(yaCorrio) && selladaHoy) return { tocaba: false, porque: 'ya corrió hoy' };
+  if (detectores.every(yaCorrio) && selladaHoy && reunionHecha) return { tocaba: false, porque: 'ya corrió hoy' };
 
   const departamentos: RenglonDeLaPasada[] = [];
   for (const detector of detectores) {
@@ -195,7 +211,27 @@ export async function correrLaPasada(
       departamentos.push({ departamento: detector.departamento, estado: 'fallo' });
     }
   }
-  return { tocaba: true, dia, departamentos, departamentosQueFallaron: departamentos.filter((d) => d.estado === 'fallo').length };
+  /* La Reunión de hoy, después de los detectores: lee las señales que acaban de quedar. Una vez por día; sin fila,
+     la hora siguiente la vuelve a intentar. Un departamento que falló no la frena: sus señales de ayer siguen
+     abiertas y entran tal cual, porque un detector roto no debe dejar a la empresa sin Reunión. Su redacción con
+     el modelo llega después (AG-72). */
+  let reunion: Extract<ResultadoDeLaPasada, { tocaba: true }>['reunion'] = { estado: 'ya_corrio' };
+  if (!reunionHecha) {
+    try {
+      const temas = await conOrganizacion(org.id, async () => {
+        const firmados = await umbralesFirmados();
+        const umbral = (codigo: string) => umbralVigente(CATALOGO_DE_REGLAS.find((r) => r.codigo === codigo)!, firmados);
+        const t = temasDeLaReunion(await medirLaReunion(zona), umbral);
+        await guardarReunion(dia, t);
+        return t;
+      });
+      reunion = { estado: 'corrio', temas: temas.length };
+    } catch (e) {
+      console.error('senales: falló la Reunión', e);
+      reunion = { estado: 'fallo' };
+    }
+  }
+  return { tocaba: true, dia, departamentos, departamentosQueFallaron: departamentos.filter((d) => d.estado === 'fallo').length, reunion };
 
   /**
    * Primero se guardó el plan con plantillas; esto lo mejora si se puede (AG-35). La espera es la menor entre

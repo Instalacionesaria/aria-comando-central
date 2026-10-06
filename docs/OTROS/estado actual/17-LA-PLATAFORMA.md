@@ -294,7 +294,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1794-1799`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1807-1812`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
