@@ -3,12 +3,13 @@
 // (migración 072). Lo que lee o escribe la base corre dentro de `conOrganizacion(`.
 //
 // El catálogo nació vacío en AG8: cada detector suma sus reglas en la etapa que lo construye (Acquisition en
-// AG9). Una regla declara su denominador porque el piso de 10 se aplica a ESE número (AG-26), y su porqué
+// AG9, Creative en AG10). Una regla declara su denominador porque el piso de 10 se aplica a ESE número (AG-26), y su porqué
 // porque un valor provisional sin razón escrita no se puede firmar con criterio.
 
 import { datos } from '../../datos/contexto.ts';
 import type { DepartamentoConSenales, Gravedad } from './tipos.ts';
 import { REGLAS_DE_ACQUISITION } from '../detectores/acquisition.ts';
+import { REGLAS_DE_CREATIVE } from '../detectores/creative.ts';
 
 export interface ReglaDelCatalogo {
   /** `ACQ-CPL-SOSTENIDO`: departamento y nombre, en mayúsculas. */
@@ -18,9 +19,10 @@ export interface ReglaDelCatalogo {
   valor: number;
   /**
    * Cómo se lee el valor para firmarlo: `proporcion` (0,3 es 30 %), `puntos_porcentuales` (0,15 es 15 puntos de
-   * una tasa), `puntos` (de ICP) o `dias`. La pantalla lo muestra y lo recibe en esa unidad; se guarda como está.
+   * una tasa), `puntos` (de ICP), `dias` o `veces` (la frecuencia de un anuncio). La pantalla lo muestra y lo recibe
+   * en esa unidad; se guarda como está.
    */
-  unidad: 'proporcion' | 'puntos_porcentuales' | 'puntos' | 'dias';
+  unidad: 'proporcion' | 'puntos_porcentuales' | 'puntos' | 'dias' | 'veces';
   /** Qué cuenta el denominador: impresiones, contactos, citas, llamadas. Nulo en una regla de ausencia. */
   denominador: string | null;
   gravedad: Gravedad;
@@ -29,7 +31,7 @@ export interface ReglaDelCatalogo {
 }
 
 /** Las reglas de todos los detectores. Ver el encabezado. */
-export const CATALOGO_DE_REGLAS: readonly ReglaDelCatalogo[] = [...REGLAS_DE_ACQUISITION];
+export const CATALOGO_DE_REGLAS: readonly ReglaDelCatalogo[] = [...REGLAS_DE_ACQUISITION, ...REGLAS_DE_CREATIVE];
 
 /** Lo que el Admin firmó en esta empresa, por código de regla. */
 export async function umbralesFirmados(): Promise<ReadonlyMap<string, number>> {

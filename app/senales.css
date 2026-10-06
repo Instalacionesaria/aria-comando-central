@@ -1,0 +1,64 @@
+/* Las señales y el Plan de acción de los departamentos con detector (AG9 y AG10 de los agentes):
+ * `components/senales/SenalesDelDepartamento.jsx`, en Acquisition y en Creative Insights.
+ *
+ * Hoja aparte y no en `acquisition.css` ni en `creative.css`: el mismo componente se dibuja en las dos vistas y
+ * con dos copias las dos tarjetas se separarían en la primera corrección. Va acotada a las dos vistas por su id,
+ * con la misma especificidad que tenía en la hoja de Acquisition, para que nada de la estética de cada una la
+ * pise ni la cambie.
+ *
+ * El marcado es el del prototipo —`.sig`, `.reco-group`, `.reco-btn`, con sus reglas de `app/aios.css`—, y
+ * acá sólo lo que el prototipo no tenía: el color por gravedad, las marcas de cada señal y los controles de
+ * resolver, descartar y firmar. Los colores son los tokens de la paleta, con el mismo `.14` de fondo que el
+ * prototipo le ponía al ícono. */
+:is(#v-acquisition, #v-creative) .sen-tarjeta { margin-top: 14px; }
+:is(#v-acquisition, #v-creative) .sig .si.g-critica { background: rgb(var(--c-crit) / .14); color: var(--crit); }
+:is(#v-acquisition, #v-creative) .sig .si.g-alta,
+:is(#v-acquisition, #v-creative) .sig .si.g-media { background: rgb(var(--c-warn) / .14); color: var(--warn); }
+:is(#v-acquisition, #v-creative) .sig .si.g-info { background: rgb(var(--c-acento) / .14); color: var(--accent); }
+:is(#v-acquisition, #v-creative) .sen-cuerpo { flex: 1; min-width: 0; }
+:is(#v-acquisition, #v-creative) .sen-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--txt-dim); }
+:is(#v-acquisition, #v-creative) .sen-chip { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); }
+:is(#v-acquisition, #v-creative) .sen-chip-ejecutiva { border-color: rgb(var(--c-acento) / .5); color: var(--accent); }
+:is(#v-acquisition, #v-creative) .sen-acciones { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; align-self: center; }
+:is(#v-acquisition, #v-creative) .sig button.ev { background: none; border: 0; padding: 0; font: inherit; font-size: 11.5px; color: var(--accent); cursor: pointer; }
+:is(#v-acquisition, #v-creative) .sen-evidencia,
+:is(#v-acquisition, #v-creative) .sen-decision,
+:is(#v-acquisition, #v-creative) .sen-firma { margin-top: 8px; font-size: 12px; }
+:is(#v-acquisition, #v-creative) .sen-revision,
+:is(#v-acquisition, #v-creative) .sen-causas { margin: 0 0 6px; color: var(--txt-dim); }
+:is(#v-acquisition, #v-creative) .sen-decision,
+:is(#v-acquisition, #v-creative) .sen-firma { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+:is(#v-acquisition, #v-creative) .sen-firma p { flex-basis: 100%; margin: 0; color: var(--txt-dim); }
+:is(#v-acquisition, #v-creative) .sen-decision label,
+:is(#v-acquisition, #v-creative) .sen-firma label { display: flex; gap: 6px; align-items: center; }
+:is(#v-acquisition, #v-creative) .sen-decision input,
+:is(#v-acquisition, #v-creative) .sen-firma input {
+  font: inherit; font-size: 12.5px; color: var(--txt); background: var(--bg-raise);
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 9px;
+}
+:is(#v-acquisition, #v-creative) .sen-decision input { width: min(320px, 100%); }
+:is(#v-acquisition, #v-creative) .sen-firma input { width: 80px; }
+/* Los botones son los de la casa (`fd-btn`), un poco más bajos para caber en la tarjeta. */
+:is(#v-acquisition, #v-creative) .sen-decision .fd-btn,
+:is(#v-acquisition, #v-creative) .sen-firma .fd-btn { padding: 7px 12px; }
+:is(#v-acquisition, #v-creative) .sen-nota { margin: 0; padding: 11px 14px; font-size: 12px; color: var(--txt-dim); }
+/* La evidencia la dibuja el `Valor` del cerebro (`components/cerebro/Evidencia.jsx`), pensado para su burbuja:
+   acá anida objetos dentro de una tarjeta angosta, y sus columnas de 120 px como mínimo desbordaban. */
+:is(#v-acquisition, #v-creative) .sen-evidencia .cb-datos { font-size: 12px; }
+:is(#v-acquisition, #v-creative) .sen-evidencia .cb-datos > div { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); }
+/* Adentro de otro valor, la clave y el valor van en el mismo renglón: con columnas, «agendados» se partía. */
+:is(#v-acquisition, #v-creative) .sen-evidencia .cb-datos .cb-datos > div { display: flex; flex-wrap: wrap; gap: 0 6px; }
+/* Y la clave no se parte: hereda el `overflow-wrap: anywhere` del valor que la contiene. */
+:is(#v-acquisition, #v-creative) .sen-evidencia .cb-datos .cb-datos dt { overflow-wrap: normal; }
+:is(#v-acquisition, #v-creative) .sen-falla-chica { color: var(--crit); font-size: 11px; }
+/* El plan vive en `Ventana`, que se monta adentro de la vista (no usa portal): el id de la vista alcanza. */
+:is(#v-acquisition, #v-creative) .sen-plan-nota,
+:is(#v-acquisition, #v-creative) .sen-plan-pie { font-size: 12px; color: var(--txt-dim); line-height: 1.45; }
+:is(#v-acquisition, #v-creative) .sen-plan-pie { margin-top: 12px; }
+:is(#v-acquisition, #v-creative) .sen-perdida { color: var(--txt-dim); }
+
+/* En el teléfono, las acciones de cada señal bajan debajo del texto. El corte es el del menú (`app/armazon.css`). */
+@media (max-width: 760px) {
+  :is(#v-acquisition, #v-creative) .sig { flex-wrap: wrap; }
+  :is(#v-acquisition, #v-creative) .sen-acciones { flex-direction: row; align-items: center; width: 100%; justify-content: flex-end; }
+}

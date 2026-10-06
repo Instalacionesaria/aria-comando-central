@@ -16,12 +16,16 @@
 //     dice sobre qué ventana se calculó (A6-23).
 //   · Lo que quedó bajo el piso se cuenta (AG-27) y lo que no se pudo medir se dice.
 //
-// Cuando haya llave, el modelo sólo redacta dentro de estos renglones (AG-32); si no llega, queda esto.
+// El armado es el de todos los departamentos (`./comun.ts`); acá vive el formato de Acquisition. Cuando haya
+// llave, el modelo sólo redacta dentro de estos renglones (AG-32); si no llega, queda esto.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { ParaElPlan } from '../detectores/correr.ts';
 import { ACQ, DIAS_DE_HISTORIA_DE_LA_ENTREGA } from '../detectores/acquisition.ts';
-import { GRAVEDADES, type Deteccion } from '../senales/tipos.ts';
+import type { Deteccion } from '../senales/tipos.ts';
+import { anteriores, armarPlan, numero, porcentaje, puntos, type FormatoDelPlan, type PlanDelDepartamento } from './comun.ts';
+
+export type { RenglonDelPlan } from './comun.ts';
 
 export const GRUPOS_DEL_PLAN_DE_ACQUISITION = [
   { clave: 'data', titulo: 'Lo que dice la data' },
@@ -31,30 +35,6 @@ export const GRUPOS_DEL_PLAN_DE_ACQUISITION = [
   { clave: 'validacion', titulo: 'Requiere validación ejecutiva' },
 ] as const;
 export type GrupoDelPlan = (typeof GRUPOS_DEL_PLAN_DE_ACQUISITION)[number]['clave'];
-
-export interface RenglonDelPlan {
-  regla: string;
-  entidad: Deteccion['entidad'];
-  gravedad: Deteccion['gravedad'];
-  perdidaContactos: number | null;
-  muestra: number | null;
-  texto: string;
-  revision: string;
-  /** Las hipótesis de la regla: la redacción sólo puede nombrar éstas como causa. */
-  causas: readonly string[];
-}
-
-export interface PlanDeAcquisition {
-  departamento: 'acquisition';
-  ventana: ParaElPlan['ventana'];
-  dia: string;
-  /** La ventana sobre la que se calculó (A6-23). Nula si no se pudo medir ninguna. */
-  periodo: { desde: string; hasta: string } | null;
-  grupos: { clave: GrupoDelPlan; titulo: string; renglones: RenglonDelPlan[] }[];
-  debajoDelPiso: number;
-  /** Lo que no se pudo medir en esta pasada, en palabras. */
-  sinMedicion: string[];
-}
 
 /** El grupo de cada regla. Lo de presupuesto, a validación ejecutiva (A6-22). */
 function grupoDe(d: Deteccion): GrupoDelPlan {
@@ -69,14 +49,6 @@ function grupoDe(d: Deteccion): GrupoDelPlan {
       return 'data';
   }
 }
-
-const NUMERO = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2, useGrouping: 'always' } as Intl.NumberFormatOptions);
-const numero = (x: number | null | undefined) => (x === null || x === undefined ? '—' : NUMERO.format(x));
-const porcentaje = (x: number | null | undefined) => (x === null || x === undefined ? '—' : `${NUMERO.format(Math.round(Math.abs(x) * 100))} %`);
-const puntos = (x: number) => NUMERO.format(Math.round(x * 100));
-
-/** Los días de la ventana, en palabras: «los 30 días anteriores». */
-const anteriores = (v: ParaElPlan['ventana']) => `los ${v === '7d' ? 7 : 30} días anteriores`;
 
 /** La frase de cada regla: métrica, valor y base juntas (A6-06), con el verbo que corresponde (A6-07). */
 export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
@@ -159,36 +131,17 @@ const NO_SE_MIDIO: Record<string, string> = {
   [ACQ.atribucionSinCampana]: 'cuántos contactos conservan la campaña: no entró ningún contacto en la ventana',
 };
 
+/** El formato de Acquisition: sus cuatro grupos y la validación ejecutiva (A6-17, A6-22). */
+export const FORMATO_DE_ACQUISITION: FormatoDelPlan<GrupoDelPlan> = {
+  departamento: 'acquisition',
+  grupos: GRUPOS_DEL_PLAN_DE_ACQUISITION,
+  grupoDe,
+  textoDe,
+  noSeMidio: NO_SE_MIDIO,
+};
+
+export type PlanDeAcquisition = PlanDelDepartamento<GrupoDelPlan>;
+
 export function armarPlanDeAcquisition(p: ParaElPlan): PlanDeAcquisition {
-  const grupos = GRUPOS_DEL_PLAN_DE_ACQUISITION.map((g) => ({ clave: g.clave, titulo: g.titulo, renglones: [] as RenglonDelPlan[] }));
-  for (const d of p.vigentes) {
-    grupos.find((g) => g.clave === grupoDe(d))!.renglones.push({
-      regla: d.regla,
-      entidad: d.entidad,
-      gravedad: d.gravedad,
-      perdidaContactos: d.perdidaContactos,
-      muestra: d.muestra,
-      texto: textoDe(d, p.ventana),
-      revision: d.revisionRecomendada,
-      causas: d.causasPosibles,
-    });
-  }
-  // Primero lo que más gente pierde; lo que no tiene pérdida, después; a igual pérdida, lo más grave.
-  for (const g of grupos) {
-    g.renglones.sort(
-      (a, b) =>
-        (b.perdidaContactos ?? -1) - (a.perdidaContactos ?? -1) ||
-        GRAVEDADES.indexOf(a.gravedad) - GRAVEDADES.indexOf(b.gravedad) ||
-        a.entidad.id.localeCompare(b.entidad.id),
-    );
-  }
-  return {
-    departamento: 'acquisition',
-    ventana: p.ventana,
-    dia: p.dia,
-    periodo: p.periodo ?? null,
-    grupos,
-    debajoDelPiso: p.debajoDelPiso.length,
-    sinMedicion: p.sinMedicion.map((r) => NO_SE_MIDIO[r] ?? r),
-  };
+  return armarPlan(FORMATO_DE_ACQUISITION, p);
 }

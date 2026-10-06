@@ -1,9 +1,11 @@
 // Lo que una pantalla lee de las señales y del plan (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-28 a
 // AG-34). **Corre dentro de `conOrganizacion(`.** Sólo lee: «vista» la marca un POST aparte (AG-24).
 //
-// La entidad viaja como identificador y el nombre de una campaña se resuelve acá, al mostrar (A6-05), por
-// `negocio.campanas`. El rótulo de un funnel lo pone la pantalla, que ya lo tiene. Lo que no tiene nombre —un
-// conjunto, una campaña que GoHighLevel no listó— viaja sin él y la pantalla dibuja el identificador.
+// La entidad viaja como identificador y el nombre de una campaña o de un anuncio se resuelve acá, al mostrar
+// (A6-05), por `negocio.campanas` y `negocio.anuncios`. Una pieza no tiene otro identificador que su nombre
+// normalizado (`lib/negocio/creativo.ts`), así que ése es su nombre. El rótulo de un funnel lo pone la pantalla,
+// que ya lo tiene. Lo que no tiene nombre —un conjunto, una campaña que GoHighLevel no listó— viaja sin él y la
+// pantalla dibuja el identificador.
 
 import { datos } from '../../datos/contexto.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from './umbrales.ts';
@@ -50,6 +52,9 @@ export async function senalesDeLaPantalla(
   const campanas = filas.some((f) => f.entidad_tipo === 'campana')
     ? new Map((await datos().selectFrom('campanas').select(['meta_campana_id', 'nombre']).execute()).map((c) => [c.meta_campana_id, c.nombre]))
     : new Map<string, string | null>();
+  const anuncios = filas.some((f) => f.entidad_tipo === 'anuncio')
+    ? new Map((await datos().selectFrom('anuncios').select(['meta_anuncio_id', 'nombre']).execute()).map((a) => [a.meta_anuncio_id, a.nombre]))
+    : new Map<string, string | null>();
 
   const salida = filas.map((f): SenalParaMostrar => {
     const deteccion: Deteccion = {
@@ -75,7 +80,7 @@ export async function senalesDeLaPantalla(
       id: f.id,
       regla: f.regla,
       entidad: deteccion.entidad,
-      nombre: nombreDe(deteccion.entidad, campanas),
+      nombre: nombreDe(deteccion.entidad, campanas, anuncios),
       gravedad: f.gravedad,
       confianza: f.confianza,
       estado: f.estado as SenalParaMostrar['estado'],
@@ -143,8 +148,21 @@ export function estadoDelDepartamento(senales: readonly Pick<SenalParaMostrar, '
   return 'ok';
 }
 
-function nombreDe(entidad: Deteccion['entidad'], campanas: ReadonlyMap<string, string | null>): string | null {
-  return entidad.tipo === 'campana' ? (campanas.get(entidad.id) ?? null) : null;
+function nombreDe(
+  entidad: Deteccion['entidad'],
+  campanas: ReadonlyMap<string, string | null>,
+  anuncios: ReadonlyMap<string, string | null>,
+): string | null {
+  switch (entidad.tipo) {
+    case 'campana':
+      return campanas.get(entidad.id) ?? null;
+    case 'anuncio':
+      return anuncios.get(entidad.id) ?? null;
+    case 'pieza':
+      return entidad.id;
+    default:
+      return null;
+  }
 }
 
 const numero = (v: string | number | null) => (v === null ? null : Number(v));

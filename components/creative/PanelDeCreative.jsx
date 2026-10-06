@@ -45,6 +45,7 @@ import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerCreative } from '@/lib/negocio/vistaDeCreative';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import FichaDelCreativo from './FichaDelCreativo';
+import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
 
 /** Cuántas piezas se dibujan de entrada en cada tabla. Las demás, detrás de un botón que las cuenta. */
 const PIEZAS_A_LA_VISTA = 10;
@@ -91,6 +92,8 @@ export default function PanelDeCreative() {
     <>
       {/* La barra, SIEMPRE: si apareciera con los datos, la pantalla salta al cargar. */}
       <div className="cs-barra">
+        {/* El plan del detector de Creative (AG10 de los agentes), con lo que guardó la pasada de la mañana. */}
+        {pantalla ? <BotonDelPlan departamento="creative" senales={pantalla.senales} /> : null}
         {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió. */}
         <Periodos valor={pantalla?.periodo ?? periodo} alElegir={setPeriodo} />
       </div>
@@ -102,7 +105,7 @@ export default function PanelDeCreative() {
       ) : pantalla === null ? null : (
         /* La clave reinicia el cuerpo al cambiar de ventana: sin ella, los «ver todas» desplegados
            sobreviven al cambio y quedan describiendo otra ventana con el botón ya consumido. */
-        <Cuerpo key={pantalla.periodo} p={pantalla} />
+        <Cuerpo key={pantalla.periodo} p={pantalla} alCambiar={recargar} />
       )}
     </>
   );
@@ -174,7 +177,7 @@ function fechaCorta(iso) {
   return `${Number(d)} ${MESES[Number(m) - 1] ?? ''}${a === esteAno ? '' : ` ${a}`}`;
 }
 
-function Cuerpo({ p }) {
+function Cuerpo({ p, alCambiar }) {
   /* El cajón de la pieza (docs/creative/15, C15-02). Se abre desde la subasta y desde la tabla de
      gente, y se apoya en la fila del RENDIMIENTO: es la que lleva los anuncios de la pieza. Una pieza
      de la tabla de gente sin fila de rendimiento —un nombre que no es de ningún anuncio— no se abre:
@@ -205,6 +208,13 @@ function Cuerpo({ p }) {
         />
       ) : null}
       <Fatiga f={p.fatiga} />
+      <TarjetaDeSenales
+        departamento="creative"
+        senales={p.senales}
+        // Lo decide el servidor; mirando otra empresa, nada (AG-82), como en Acquisition.
+        puede={sesion?.mirandoOtraOrganizacion ? { resolver: false, validar: false, firmar: false } : p.puedeConSenales}
+        alCambiar={alCambiar}
+      />
       {/* Y lo último: qué NO muestra esta pantalla, y por qué. Ver `Huecos`. */}
       <Huecos lista={p.rendimiento.fueraDeAlcance} />
     </>

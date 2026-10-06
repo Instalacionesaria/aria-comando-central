@@ -86,7 +86,7 @@ Debe detectar:
 | **Caídas inusuales de CTR** | **se puede hoy**, con los 32 días ya guardados. Medido: `Evoluciona native` de 2,76 % a 1,98 % en 20 días (`C2-24`) |
 | **Aumentos abruptos de CPM** | **se puede**: el CPM se deriva de gasto e impresiones, las dos sumables |
 | **Aumento sostenido de CPL** | **se puede**: gasto y contactos por ventana |
-| Frecuencia alta | **no se agrega** (`C2-05`). Por día y por anuncio sí; «alta» necesitaría un umbral y no hay |
+| Frecuencia alta | **no se agrega** a la pieza (`C2-05`). Por anuncio sí: desde AG10 de los agentes se publica como `CRE-FRECUENCIA-ALTA`, pesada por impresiones en 7 días, con un umbral **provisional** de 3 que el Admin puede firmar |
 | **Spend sin crecimiento proporcional** | **se puede**: es gasto contra contactos en el tiempo |
 | Diferencias entre leads de Meta y la base | **depende de `C14-P02`.** La `050` lo declaró muerto midiendo el campo `leads`; `results.lead` es otro campo y podría revivirlo |
 | **Anuncios sin entrega** | **se puede, y ya está resuelto**: `costoDelAnuncio` publica *«No entregó ni un día de esta ventana. No es que gastara cero: no se mostró»* |
@@ -96,7 +96,8 @@ Debe detectar:
 
 **Seis de las diez se pueden construir**, y cuatro de esas seis son de Acquisition por grano, no de
 Creative. Las que le toca publicar a Creative son la caída de CTR y la concentración de presupuesto
-por pieza.
+por pieza. Desde AG10 de los agentes las publica el detector de Creative, con la frecuencia por anuncio y el
+ICP de cada pieza contra su etapa (`C6-04a`): `docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`.
 
 ### C11-05 · El esquema de la alerta: catorce campos
 

@@ -19,8 +19,8 @@ import { pedir } from '../http/cliente.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
 import type { EmbudosDeAcquisition } from './embudosDeAcquisition.ts';
 import type { Funnel, FunnelDeCampana } from './funnelDeLaCampana.ts';
-import type { SenalParaMostrar } from '../agentes/senales/lectura.ts';
 import type { PlanDeAcquisition } from '../agentes/plan/acquisition.ts';
+import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
 const RUTA = '/api/acquisition';
 
@@ -33,35 +33,12 @@ export interface PantallaDeAcquisition {
   /** Las señales del detector (AG9 de los agentes): las vivas de la ventana, el último plan y las reglas. */
   senales: SenalesDeAcquisition;
   /** Lo que esta sesión puede hacer con ellas. Todo `false` bajo delegación. */
-  puedeConSenales: { resolver: boolean; validar: boolean; firmar: boolean };
+  puedeConSenales: PuedeConSenales;
 }
 
-export interface ReglaDeAcquisition {
-  codigo: string;
-  unidad: 'proporcion' | 'puntos_porcentuales' | 'puntos' | 'dias';
-  denominador: string | null;
-  gravedad: string;
-  porque: string;
-  valorProvisional: number;
-  valor: number;
-  provisional: boolean;
-}
 
-export interface SenalesDeAcquisition {
-  /** `null` con «hoy» o «completo»: las señales son de 7 o de 30 días cerrados. */
-  ventana: '7d' | '30d' | null;
-  lista: SenalParaMostrar[];
-  estado: 'crit' | 'warn' | 'ok';
-  plan: {
-    dia: string;
-    plan: PlanDeAcquisition;
-    /** La redacción del modelo, ya validada: una frase por renglón (`grupo:índice`). `null` sin llave o sin respuesta. */
-    redaccion: { renglones: Record<string, string>; quitadas: { cifra: number; superlativo: number; otras: number } } | null;
-    bajoElPiso: number;
-    actualizado: string;
-  } | null;
-  reglas: ReglaDeAcquisition[];
-}
+/** Las señales de Acquisition: las de todos los departamentos (`./vistaDeSenales.ts`), con su plan. */
+export type SenalesDeAcquisition = SenalesDelDepartamento<PlanDeAcquisition>;
 
 export type ResultadoDeAcquisition =
   | { tipo: 'datos'; pantalla: PantallaDeAcquisition }
@@ -100,26 +77,4 @@ export function guardarFunnelDeLaCampana(campana: string, funnel: Funnel): Promi
 /** Quita el funnel de una campaña: vuelve a «Sin funnel». */
 export function sacarFunnelDeLaCampana(campana: string): Promise<ResultadoDelFunnel> {
   return escribirFunnel('DELETE', `/api/acquisition/funnel?campana=${encodeURIComponent(campana)}`);
-}
-
-/** Lo que devuelve una decisión sobre una señal o una firma: listo, o el motivo del servidor. */
-export type ResultadoDeUnaSenal = { tipo: 'listo' } | { tipo: 'fallo'; mensaje: string };
-
-/**
- * Marcar vista, resolver o descartar (`POST /api/acquisition/senales`). Resolver y descartar llevan motivo;
- * quién y cuándo los pone el servidor.
- */
-export async function decidirSenal(id: string, accion: 'vista' | 'resolver' | 'descartar', motivo?: string): Promise<ResultadoDeUnaSenal> {
-  const r = await pedir<unknown>('/api/acquisition/senales', { metodo: 'POST', cuerpo: { id, accion, ...(motivo ? { motivo } : {}) } });
-  if (r.tipo === 'datos') return { tipo: 'listo' };
-  if (r.tipo === 'rechazado') return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo guardar la decisión.' };
-  return { tipo: 'fallo', mensaje: 'No se pudo conectar para guardar la decisión.' };
-}
-
-/** Firmar el umbral de una regla (`PUT /api/acquisition/umbrales`): pasa de provisional a firme. */
-export async function firmarUmbralDeAcquisition(regla: string, valor: number): Promise<ResultadoDeUnaSenal> {
-  const r = await pedir<unknown>('/api/acquisition/umbrales', { metodo: 'PUT', cuerpo: { regla, valor } });
-  if (r.tipo === 'datos') return { tipo: 'listo' };
-  if (r.tipo === 'rechazado') return { tipo: 'fallo', mensaje: r.detalle || 'No se pudo firmar el umbral.' };
-  return { tipo: 'fallo', mensaje: 'No se pudo conectar para firmar el umbral.' };
 }

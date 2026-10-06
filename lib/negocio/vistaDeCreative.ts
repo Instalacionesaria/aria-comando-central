@@ -19,6 +19,8 @@ import type { CalidadDeLosCreativos } from './calidadDelCreativo.ts';
 import type { RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
 import type { FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
 import type { EnlaceDePieza } from './enlaceDeLaPieza.ts';
+import type { PlanDeCreative } from '../agentes/plan/creative.ts';
+import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
 const RUTA = '/api/creative';
 
@@ -32,6 +34,10 @@ export interface PantallaDeCreative {
   fatiga: FatigaDeLosCreativos;
   /** El link manual de cada pieza que lo tiene: el respaldo del video (docs/creative/15, C15-06). */
   enlaces: EnlaceDePieza[];
+  /** Las señales del detector (AG10 de los agentes): las vivas de la ventana, el último plan y las reglas. */
+  senales: SenalesDelDepartamento<PlanDeCreative>;
+  /** Lo que esta sesión puede hacer con ellas. Todo `false` bajo delegación. */
+  puedeConSenales: PuedeConSenales;
 }
 
 export type ResultadoDeCreative =

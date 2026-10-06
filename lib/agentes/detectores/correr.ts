@@ -30,6 +30,7 @@ import { guardarPlan, guardarRedaccion } from '../plan/guardar.ts';
 import { reconciliarSenales, type ResumenDeLaReconciliacion } from '../senales/escritura.ts';
 import { umbralesFirmados } from '../senales/umbrales.ts';
 import { DETECTOR_DE_ACQUISITION } from './detector-de-acquisition.ts';
+import { DETECTOR_DE_CREATIVE } from './detector-de-creative.ts';
 import {
   type DebajoDelPiso,
   type DepartamentoConSenales,
@@ -91,8 +92,8 @@ const MARGEN_DEL_FINAL_MS = 15_000;
 /** Debajo de esto no se pide: la llamada terminaría cortada y se pagaría igual. */
 const ESPERA_MINIMA_DE_LA_REDACCION_MS = 20_000;
 
-/** Los detectores construidos: Acquisition desde AG9; Creative, Conversation y Conversion, en sus etapas. */
-export const DETECTORES: readonly Detector[] = [DETECTOR_DE_ACQUISITION];
+/** Los detectores construidos: Acquisition desde AG9, Creative desde AG10; Conversation y Conversion, en sus etapas. */
+export const DETECTORES: readonly Detector[] = [DETECTOR_DE_ACQUISITION, DETECTOR_DE_CREATIVE];
 
 export interface RenglonDeLaPasada {
   departamento: DepartamentoConSenales;

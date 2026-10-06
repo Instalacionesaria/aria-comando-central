@@ -98,7 +98,7 @@ prohíbe (`:17-22`). Devuelve la clave del período que contestó (`:56-63`).
 **La vista y el cliente.** `components/views/AcquisitionView.jsx` (59 líneas) sólo pone el
 encabezado y monta el panel; la bajada cambió a «Qué costó cada anuncio, y cuánto vale esa cifra»
 (`:49`) porque la vieja —«y cuáles sirven»— era la conclusión que el § 18.1 prohíbe (`:46-48`). Lo
-que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:70-82`
+que se quitó y no debe volver está escrito en `:19-29`. `lib/negocio/vistaDeAcquisition.ts:47-59`
 pide y no calcula nada.
 
 **El panel.** `components/acquisition/PanelDeAcquisition.jsx`, 410 líneas, tres bloques en este

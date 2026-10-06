@@ -84,9 +84,9 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | herramienta | función | sección (capacidad) | como la ruta | qué viaja además |
 |---|---|---|---|---|
 | `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:66` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
-| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:63` | el aviso si falta el campo del ICP |
-| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:64` | sus huecos |
-| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:65` | el umbral «no calibrado» |
+| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:75` | el aviso si falta el campo del ICP |
+| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:76` | sus huecos |
+| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:77` | el umbral «no calibrado» |
 | `recorrido_de_los_leads` | `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:59` | conteos, no tasas |
 | `formulario_de_la_landing` | `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:60` | sus huecos |
 | `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:76` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |

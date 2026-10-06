@@ -19,7 +19,7 @@
 import { llamarAlModelo } from '../llamada.ts';
 import { MODELO_DEL_PLAN } from '../modelos.ts';
 import { numerosDelTexto } from '../executive/respuesta.ts';
-import type { PlanDeAcquisition } from './acquisition.ts';
+import type { PlanDelDepartamento } from './comun.ts';
 
 export interface RedaccionDelPlan {
   modelo: string;
@@ -66,7 +66,7 @@ const FORMATO = {
 } as const;
 
 /** Los renglones del plan con su clave estable: `grupo:índice`. */
-export function renglonesParaRedactar(plan: Pick<PlanDeAcquisition, 'grupos'>) {
+export function renglonesParaRedactar(plan: Pick<PlanDelDepartamento, 'grupos'>) {
   return plan.grupos.flatMap((g) =>
     g.renglones.map((r, i) => ({ clave: `${g.clave}:${i}`, grupo: g.titulo, texto: r.texto, revision: r.revision, causas: r.causas ?? [] })),
   );
@@ -110,7 +110,7 @@ export function validarRedaccion(
  * el plan de plantillas. El fallo deja su uso y su incidente por el transporte.
  */
 export async function redactarPlan(p: {
-  plan: Pick<PlanDeAcquisition, 'grupos' | 'departamento' | 'ventana'>;
+  plan: Pick<PlanDelDepartamento, 'grupos' | 'departamento' | 'ventana'>;
   llave: string;
   orgId: string;
   espera: number;

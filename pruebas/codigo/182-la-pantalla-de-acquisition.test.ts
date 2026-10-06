@@ -155,9 +155,11 @@ test('lo nuevo vive en `app/acquisition.css`, acotado; nada de la estética de o
   }
 
   /* Ninguna otra hoja, fuera de la del prototipo, tiene una regla para la vista: cualquier regla de la
-     estética que la nombre pisaría el look del prototipo. */
+     estética que la nombre pisaría el look del prototipo. La excepción es `senales.css`: la tarjeta de señales
+     y el plan son un componente que comparten Acquisition y Creative (AG10 de los agentes), y su hoja nombra
+     las dos vistas sólo para esas clases. */
   for (const nombre of readdirSync(join(RAIZ, 'app')).filter((n) => n.endsWith('.css'))) {
-    if (nombre === 'aios.css' || nombre === 'acquisition.css') continue;
+    if (nombre === 'aios.css' || nombre === 'acquisition.css' || nombre === 'senales.css') continue;
     const t = sinComentarios(leer(`app/${nombre}`));
     assert.doesNotMatch(t, /#v-acquisition/, `app/${nombre} tiene una regla para #v-acquisition`);
   }

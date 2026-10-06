@@ -97,32 +97,32 @@ consulta (`docs/creative/07-LO-QUE-ENTREGA-Y-RECIBE.md:41-71`).
 
 ## 2 · Qué hay hoy en pantalla
 
-**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:45`),
-pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:51`), **rechaza** el período que no
-está en la lista en vez de corregirlo (`app/api/creative/route.ts:57-58`) y corre los tres módulos con la
-misma ventana (`app/api/creative/route.ts:60-64`). La sección ya no declara `sinOperacionesTodavia`
+**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:53`),
+pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:59`), **rechaza** el período que no
+está en la lista en vez de corregirlo (`app/api/creative/route.ts:65-66`) y corre los tres módulos con la
+misma ventana (`app/api/creative/route.ts:68-76`). La sección ya no declara `sinOperacionesTodavia`
 (`lib/autorizacion/secciones.ts:251-264`).
 
 **La vista y el panel.** `components/views/CreativeView.jsx` (70 líneas) sólo pone el encabezado
 —«Qué pieza trae mejor gente, y sobre cuántos datos» (`components/views/CreativeView.jsx:60`)— y monta
 el panel. `components/creative/PanelDeCreative.jsx` (611 líneas) pide por `leerCreative`
-(`lib/negocio/vistaDeCreative.ts:38-50`), recarga cada 60 s mientras la pestaña está a la vista
-(`components/creative/PanelDeCreative.jsx:84-86`, `lib/cadencia.ts:91`) y dibuja cinco bloques en este
-orden (`components/creative/PanelDeCreative.jsx:175-187`):
+(`lib/negocio/vistaDeCreative.ts:44-56`), recarga cada 60 s mientras la pestaña está a la vista
+(`components/creative/PanelDeCreative.jsx:85-87`, `lib/cadencia.ts:91`) y dibuja cinco bloques en este
+orden (`components/creative/PanelDeCreative.jsx:178-190`):
 
-1. **Cuánto vale lo que dice esta pantalla** (`components/creative/PanelDeCreative.jsx:235-289`): la
+1. **Cuánto vale lo que dice esta pantalla** (`components/creative/PanelDeCreative.jsx:245-299`): la
    cobertura del puente nombre↔anuncio con sus dos pérdidas, las dos ventanas dichas en una frase y
    el aviso de la calidad, que queda a la vista.
-2. **Qué gente trae cada pieza** (`components/creative/PanelDeCreative.jsx:297-392`): una tabla por
+2. **Qué gente trae cada pieza** (`components/creative/PanelDeCreative.jsx:307-402`): una tabla por
    etapa —TOFU, MOFU, BOFU y «Sin etapa» al final— con Pieza, Contactos, Agenda con su fracción, ICP
-   con su n y Anuncios (`components/creative/PanelDeCreative.jsx:352-356`); diez filas a la vista y el
-   resto detrás de un botón que las cuenta (`components/creative/PanelDeCreative.jsx:48`).
-3. **Cómo se comportó cada pieza en la subasta** (`components/creative/PanelDeCreative.jsx:399-498`):
+   con su n y Anuncios (`components/creative/PanelDeCreative.jsx:362-366`); diez filas a la vista y el
+   resto detrás de un botón que las cuenta (`components/creative/PanelDeCreative.jsx:49`).
+3. **Cómo se comportó cada pieza en la subasta** (`components/creative/PanelDeCreative.jsx:409-508`):
    ordenadas por gasto, *«que es un hecho»*; Gasto, CTR, Hook, Link CTR y Landing, con la interacción
-   y el click-to-landing en la nota de la pieza (`components/creative/PanelDeCreative.jsx:458-478`).
-4. **Qué piezas están perdiendo gancho** (`components/creative/PanelDeCreative.jsx:561-614`): sólo las
+   y el click-to-landing en la nota de la pieza (`components/creative/PanelDeCreative.jsx:468-488`).
+4. **Qué piezas están perdiendo gancho** (`components/creative/PanelDeCreative.jsx:571-624`): sólo las
    que tienen veredicto, con `con/sobre` arriba.
-5. **Lo que esta pantalla no puede medir** (`components/creative/PanelDeCreative.jsx:206-226`): los
+5. **Lo que esta pantalla no puede medir** (`components/creative/PanelDeCreative.jsx:209-236`): los
    cuatro huecos, «medido contra la API de GoHighLevel el 18 de septiembre de 2026».
 
 **Los módulos que deciden** (el panel no calcula nada, `lib/negocio/vistaDeCreative.ts:3-14`):
@@ -160,7 +160,7 @@ Las otras nueve filas tienen de 1 a 8 contactos y salen con conteo y sin tasa, y
 lead que traen era lo único que la base permitía y ninguna pantalla lo hacía. Es lo que el § 18.6
 pide («ICP promedio por anuncio») y lo que el § 2.5 defiende, y hoy está construido. Que tampoco es
 el orden del negocio —faltan las ventas— la pantalla lo dice sobre la subasta
-(`components/creative/PanelDeCreative.jsx:412-413`), no sobre esta tabla.
+(`components/creative/PanelDeCreative.jsx:422-423`), no sobre esta tabla.
 
 **Cómo se comportó cada pieza en la subasta** — 32 piezas en la tabla, 14 con gasto, **1.974,93** de
 gasto en la ventana; las cinco de más gasto (tasas redondeadas):
@@ -191,7 +191,7 @@ de este período…»* más *«9 de 14 pieza(s) no llegan a 10 contactos»*.
 **Con «Hoy» y «7 días» casi no hay pantalla**: la cohorte es de 1 y 3 contactos, la subasta lista las
 32 piezas con guiones —las 79 filas diarias existen, ninguna trae impresiones
 y cada `sum` da nulo (`lib/negocio/costoDelAnuncio.ts:282-288`)— y el bloque de fatiga no se dibuja
-(`components/creative/PanelDeCreative.jsx:563`). Con «Completo»: 570 contactos, 37 filas, y la más
+(`components/creative/PanelDeCreative.jsx:573`). Con «Completo»: 570 contactos, 37 filas, y la más
 grande es «agendamiento - yaping - 23/07» **sin etapa** (196 contactos, 16 % de agenda): son altas
 del 2026-08-07 al 08-31 que no traen ningún nombre de campaña del que leer la etapa.
 
@@ -213,7 +213,7 @@ existe y sus líneas están en el historial de git. Lo que cada cosa fue, y lo q
 | cinco criterios de orden elegibles | orden fijo: por volumen la calidad (`lib/negocio/calidadDelCreativo.ts:253-255`), por gasto la subasta (`lib/negocio/rendimientoDelCreativo.ts:360`); el criterio elegible no se construyó |
 | la partición «Funciona / No funciona» por el promedio | borrada: con etapas mezcladas mandaba a pausar a las TOFU (`components/views/CreativeView.jsx:34-37`); hoy hay una tabla por etapa y ningún corte |
 | la curva de retención y el guion con líneas rojas | **borrados sin reemplazo**, y es el único requisito que se borró en vez de postergarse (`components/views/CreativeView.jsx:27-33`) |
-| el «Plan de acción», doce frases | borrado: diez no tenían fuente (`components/views/CreativeView.jsx:19-23`) |
+| el «Plan de acción», doce frases | borrado: diez no tenían fuente (`components/views/CreativeView.jsx:19-23`). Volvió con AG10 de los agentes, con las cuatro frases medidas del detector (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`) |
 | un selector de rango y cuatro presets propios | los cuatro botones de `PERIODOS` (`components/views/CreativeView.jsx:24-26`) |
 | 18 puertas a un panel de catorce personas inventadas | borradas de Creative (`components/views/CreativeView.jsx:38-40`); el panel sigue en Executive |
 | alcance, frecuencia, DM, interacción social, inversión y cierres por pieza | alcance y frecuencia no se agregan; la interacción (`postEngagement`) va en la nota de cada pieza; la inversión es el gasto consumido; DM por pieza y cierres no hay |
@@ -381,10 +381,10 @@ mitigación de que dos piezas distintas con el mismo nombre se fundan
 
 **3 · TOFU y BOFU no se comparan, en ninguna cifra de conversión.** En código: se agrupa por (pieza,
 etapa) (`lib/negocio/calidadDelCreativo.ts:231`) y se dibuja una tabla por etapa
-(`components/creative/PanelDeCreative.jsx:294-334`). Re-medido: BOFU 78 % de agenda, TOFU de 31 % a
+(`components/creative/PanelDeCreative.jsx:304-344`). Re-medido: BOFU 78 % de agenda, TOFU de 31 % a
 43 %; el 2026-09-15 eran 83,9 % contra 36,8-45,7 %. La etapa se lee del segmento del nombre de
 campaña, y lo que no trae segmento es un grupo aparte, no una etapa forzada
-(`components/creative/PanelDeCreative.jsx:343-347`).
+(`components/creative/PanelDeCreative.jsx:353-357`).
 
 **4 · Los nombres se normalizan antes de agrupar.** En la ventana hay 12 cadenas de campaña crudas y
 10 en mayúsculas. La etapa ya no depende de eso —se lee por segmento exacto, no por el nombre entero
@@ -433,7 +433,7 @@ una fila (`lib/negocio/creativo.ts:49-51`). Re-medido: 19 de 276 sin `utmContent
 
 **9 · Las cifras se miden sobre `alta_en_el_crm`, y hay que decir desde cuándo.** La `048` lo dejó
 escrito (`db/migraciones/048_de_donde_vino_el_lead.sql:53-54`) y la pantalla dice la fecha real de
-la cohorte (`components/creative/PanelDeCreative.jsx:274-284`). `adId` sigue en 35 contactos de
+la cohorte (`components/creative/PanelDeCreative.jsx:284-294`). `adId` sigue en 35 contactos de
 agosto y 178 de septiembre: la diferencia es la ingesta, no el rendimiento.
 
 **10 · Lo que Creative NO calcula.** El gasto se consume de `costoDelAnuncio`, no se vuelve a sumar
@@ -473,8 +473,8 @@ del mismo puntaje: Creative el campo del CRM (271 con número) y Leads Portal `c
 Es la pregunta (b) de la foto anterior, decidida —no contestada— en una pantalla y no en la otra.
 
 **3 · El CTR bajo el piso sale como un guion pelado.** La celda es `pct(f.ctr) ?? '—'`
-(`components/creative/PanelDeCreative.jsx:481`), sin la nota que `CeldaDeAccion` agregó para las otras
-tres tasas justamente por esto (`components/creative/PanelDeCreative.jsx:506-558`). En 30 días, 26 de
+(`components/creative/PanelDeCreative.jsx:491`), sin la nota que `CeldaDeAccion` agregó para las otras
+tres tasas justamente por esto (`components/creative/PanelDeCreative.jsx:516-568`). En 30 días, 26 de
 32 piezas no tienen CTR: 18 porque no entregaron y 8 porque no llegan a mil impresiones, y se ven
 igual. Las impresiones, los clics, el CPM y el CPC viajan en la respuesta y no se dibujan, aunque el
 módulo dice que viajan para que se vea sobre qué base se calló
@@ -482,7 +482,7 @@ módulo dice que viajan para que se vea sobre qué base se calló
 
 **4 · «Hoy» dice 24 horas y calcula el día.** El botón lleva de título el matiz de `PERIODOS`, *«Las
 últimas 24 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
-`components/creative/PanelDeCreative.jsx:121`), y los tres módulos calculan el día de calendario, como
+`components/creative/PanelDeCreative.jsx:124`), y los tres módulos calculan el día de calendario, como
 `costoDelAnuncio` deja escrito para su pantalla (`lib/negocio/costoDelAnuncio.ts:58-63`). En la sesión
 de mi medición `current_date` es UTC y la organización es de `America/Lima`; la zona de la sesión de
 la aplicación no la verifiqué. Además Leads Portal arma su «30 días» con `now()` móvil

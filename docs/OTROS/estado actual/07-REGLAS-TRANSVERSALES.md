@@ -415,7 +415,7 @@ llamada de las 18 dependa del 14.
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:57`, `app/api/auditoria/route.ts:63`,
-`app/api/creative/route.ts:57`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
+`app/api/creative/route.ts:65`, `app/api/conversion/route.ts:55`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido

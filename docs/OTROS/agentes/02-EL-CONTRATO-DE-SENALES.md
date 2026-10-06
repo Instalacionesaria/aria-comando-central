@@ -139,7 +139,7 @@ cuando está vacía** (el plan vacío dice que se miró y no hubo nada).
 | departamento | formato | de dónde |
 |---|---|---|
 | Acquisition | Cuatro grupos en este orden —«Lo que dice la data», «Ajusta o pausa esto», «Haz más de esto», «Para otras áreas»— más «Requiere validación ejecutiva», adonde van las recomendaciones de presupuesto sin cambiar de redacción. Todo superlativo con el ranking que lo sostiene; la escala por costo por **calificado**, no por contacto; cada recomendación, una condición vigente; calculado sobre la ventana que dice mirar | A6-17 a A6-23 |
-| Creative | Sus propios grupos, con el subtítulo que dice criterio y ventana, y el verbo de la medición («está bajo el promedio de su etapa», no «pausá»). «Ideas para producir» no va: generar es de Copywriter | C6-01, C6-02, C6-10 |
+| Creative | Sus propios grupos en el orden de C6-02 —«Lo que dice la data» (el ICP de una pieza contra su etapa), «Haz más de esto» (vacío mientras ninguna regla mida lo que anda bien), «Ajusta o pausa esto» (la caída del CTR y la frecuencia)— más «Requiere validación ejecutiva» (la concentración del gasto), con el subtítulo que dice criterio y ventana, y el verbo de la medición («está bajo el promedio de su etapa», no «pausá»). «Ideas para producir» no va: generar es de Copywriter | C6-01, C6-02, C6-10 |
 | Conversion | Las fugas ordenadas por personas perdidas; sólo las tres primeras bajo «Qué hacer primero»; el bloque «No tocar»; a quién le toca cada fricción; ningún coeficiente de recuperación inventado; ningún nombre de persona | CV6-02 a CV6-08 |
 | Conversation | Por agente del CRM y por patrón, con su `issue_source`; el auditor sigue proponiendo y una persona sigue aprobando los cambios de prompt (Arq:933-949) | `AG-37` |
 
@@ -150,7 +150,8 @@ pasa por la misma validación que las respuestas del cerebro: una cifra que no e
 ## AG-33 · Los umbrales
 
 - **El catálogo provisional vive en el código** (`lib/agentes/senales/umbrales.ts`): cada regla con su
-  código, su valor, su denominador, su piso, su gravedad y el porqué del valor. En pantalla, cada señal
+  código, su valor, su unidad (`proporcion`, `puntos_porcentuales`, `puntos`, `dias` o `veces`), su denominador,
+  su piso, su gravedad y el porqué del valor. En pantalla, cada señal
   calculada con un valor provisional dice «umbral provisional».
 - **La firma vive en `negocio.umbrales`**: una fila por empresa y regla, con el valor firme, quién y
   cuándo. La escribe quien tiene `umbrales.firmar` (el Admin, `D-11`), desde la misma tarjeta de Señales.

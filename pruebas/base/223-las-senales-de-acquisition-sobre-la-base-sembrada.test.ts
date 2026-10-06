@@ -31,6 +31,7 @@ import {
   type EmpresasDeLosAgentes,
 } from '../../db/sembrado/casos-de-los-agentes.ts';
 import { correrLaPasada } from '../../lib/agentes/detectores/correr.ts';
+import { DETECTOR_DE_ACQUISITION } from '../../lib/agentes/detectores/detector-de-acquisition.ts';
 import { diaEnZona } from '../../lib/negocio/tiempo.ts';
 
 const PREFIJO = 'agentes-223-';
@@ -54,12 +55,14 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
   const hoy = diaEnZona(new Date(), ZONA_DE_LOS_CASOS);
   const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: new Date(`${hoy}T17:00:00Z`) });
   assert.ok(r.tocaba);
-  assert.deepEqual(r.departamentos.map((d) => [d.departamento, d.estado]), [['acquisition', 'corrio']]);
+  // La pasada por omisión corre los dos detectores construidos; acá se miran las de Acquisition.
+  assert.deepEqual(r.departamentos.map((d) => [d.departamento, d.estado]), [['acquisition', 'corrio'], ['creative', 'corrio']]);
 
   const senales = await filas<{ ventana: string; regla: string; entidad_tipo: string; entidad_id: string; gravedad: string; valor_actual: string; muestra: number | null; requiere_validacion_ejecutiva: boolean; estado: string }>(
     admin,
     `select ventana, regla, entidad_tipo, entidad_id, gravedad, valor_actual, muestra, requiere_validacion_ejecutiva, estado
-       from negocio.senales where org_id = $1 order by ventana collate "C", regla collate "C", entidad_id collate "C"`,
+       from negocio.senales where org_id = $1 and departamento = 'acquisition'
+      order by ventana collate "C", regla collate "C", entidad_id collate "C"`,
     [e.conDatos],
   );
   assert.deepEqual(
@@ -83,7 +86,7 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
 
   const planes = await filas<{ ventana: string; plan: { grupos: { clave: string; renglones: { regla: string }[] }[]; sinMedicion: string[] } }>(
     admin,
-    'select ventana, plan from negocio.planes_de_accion where org_id = $1 order by ventana',
+    `select ventana, plan from negocio.planes_de_accion where org_id = $1 and departamento = 'acquisition' order by ventana`,
     [e.conDatos],
   );
   const reglasPorGrupo = (p: (typeof planes)[number]['plan']) =>
@@ -98,6 +101,18 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
   // Lo que no se pudo medir se dice en vez de callarlo: en 7 días, el costo por calificado (sin gasto), las
   // citas (ninguna) y las ventas (ninguna reportada).
   assert.equal(de7.sinMedicion.length, 3);
+
+  /* Creative corrió en la misma pasada y no publicó nada, porque no pudo medir: la base sembrada no tiene el
+     sello de la lectura de anuncios ni el campo de ICP. Su plan lo dice regla por regla (la frecuencia sólo en
+     7 días), en vez de callar como si no hubiera nada que mirar. */
+  const deCreative = await filas<{ n: string }>(admin, `select count(*)::text as n from negocio.senales where org_id = $1 and departamento = 'creative'`, [e.conDatos]);
+  assert.equal(deCreative[0]!.n, '0');
+  const planesDeCreative = await filas<{ ventana: string; plan: { sinMedicion: string[] } }>(
+    admin,
+    `select ventana, plan from negocio.planes_de_accion where org_id = $1 and departamento = 'creative' order by ventana`,
+    [e.conDatos],
+  );
+  assert.deepEqual(planesDeCreative.map((p) => [p.ventana, p.plan.sinMedicion.length]), [['30d', 3], ['7d', 4]]);
 });
 
 /** Borra lo de la pasada anterior: si no, Acquisition «ya corrió hoy» y no vuelve a medir ni a redactar. */
@@ -107,6 +122,8 @@ async function otraVez(): Promise<void> {
 }
 
 const aLas12 = () => new Date(`${diaEnZona(new Date(), ZONA_DE_LOS_CASOS)}T17:00:00Z`);
+/** La redacción se prueba sobre el plan de Acquisition: con Creative en la pasada, las cuentas serían de los dos. */
+const SOLO_ACQUISITION = [DETECTOR_DE_ACQUISITION];
 
 test('con llave, la pasada redacta el plan y guarda lo que pasó la validación, con su uso', async () => {
   await otraVez();
@@ -130,7 +147,7 @@ test('con llave, la pasada redacta el plan y guarda lo que pasó la validación,
     );
   }) as typeof globalThis.fetch;
   try {
-    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: 'sk-de-prueba-223' });
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: 'sk-de-prueba-223', detectores: SOLO_ACQUISITION });
     assert.ok(r.tocaba);
     assert.deepEqual(r.departamentos[0]!.redaccion, { '7d': 'redactada', '30d': 'redactada' });
   } finally {
@@ -158,7 +175,7 @@ test('sin llave no se llama al modelo, y el plan queda con plantillas', async ()
     throw new Error('sin llave no se llama al modelo');
   }) as typeof globalThis.fetch;
   try {
-    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: null });
+    const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: aLas12(), llave: null, detectores: SOLO_ACQUISITION });
     assert.ok(r.tocaba);
     assert.deepEqual(r.departamentos[0]!.redaccion, { '7d': 'sin_llave', '30d': 'sin_llave' });
   } finally {

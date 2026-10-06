@@ -32,6 +32,12 @@
 // Dibujar una antes que las otras muestra, durante esos segundos, un ranking sin la cobertura que lo
 // califica — que es exactamente lo que el § 18.5 prohíbe. Y las tres reciben LA MISMA ventana: con
 // ventanas distintas, el ICP hablaría de treinta días y el hook rate de tres, sin decirlo.
+//
+// ── Y LAS SEÑALES, QUE NO SE CALCULAN ACÁ ─────────────────────────────────
+//
+// Desde AG10 de los agentes, el detector de Creative guarda cada mañana sus señales y su Plan de acción
+// (`lib/agentes/detectores/creative.ts`): esta ruta las publica en `senales`, en la misma transacción que las
+// cifras, y no las recalcula en cada carga.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../lib/autorizacion/portero.ts';
@@ -42,6 +48,8 @@ import { calidadDelCreativo } from '../../../lib/negocio/calidadDelCreativo.ts';
 import { rendimientoDelCreativo } from '../../../lib/negocio/rendimientoDelCreativo.ts';
 import { fatigaDelCreativo } from '../../../lib/negocio/fatigaDelCreativo.ts';
 import { enlacesDeLasPiezas } from '../../../lib/negocio/enlaceDeLaPieza.ts';
+import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
+import { textoDeCreative } from '../../../lib/agentes/plan/creative.ts';
 
 export const PANTALLA = 'creative';
 
@@ -58,16 +66,27 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const [calidad, rendimiento, fatiga, enlaces] = await conOrganizacion(contexto.orgEfectiva, async () =>
-    [
+  /* Las señales son de 7 o de 30 días (AG-28): con «hoy» o «completo» no hay ventana que mostrar, y la
+     tarjeta dice sobre cuáles se calculan. */
+  const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
+  const [calidad, rendimiento, fatiga, enlaces, senales] = await conOrganizacion(contexto.orgEfectiva, async () => {
+    const lista = ventana === null ? [] : await senalesDeLaPantalla('creative', ventana, textoDeCreative);
+    return [
       await calidadDelCreativo(periodo.dias),
       await rendimientoDelCreativo(periodo.dias),
       await fatigaDelCreativo(periodo.dias),
       /* Los links manuales de las piezas (docs/creative/15, C15-06): el respaldo del video, que el
          cajón de la pieza ofrece como «Ver en Facebook / Instagram». No dependen de la ventana. */
       await enlacesDeLasPiezas(),
-    ] as const,
-  );
+      {
+        ventana,
+        lista,
+        estado: estadoDelDepartamento(lista),
+        plan: ventana === null ? null : await ultimoPlan('creative', ventana),
+        reglas: await reglasDelDepartamento('creative'),
+      },
+    ] as const;
+  });
 
   return ok({
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
@@ -77,5 +96,13 @@ export async function GET(peticion: Request): Promise<Response> {
     rendimiento,
     fatiga,
     enlaces,
+    senales,
+    /* Lo que esta sesión puede hacer con las señales: las mismas capacidades que piden
+       `app/api/creative/senales` y `…/umbrales`, y nada bajo delegación (AG-82). */
+    puedeConSenales: {
+      resolver: contexto.permisos.has('senales.resolver') && !contexto.mirandoOtraOrganizacion,
+      validar: contexto.permisos.has('senales.validar') && !contexto.mirandoOtraOrganizacion,
+      firmar: contexto.permisos.has('umbrales.firmar') && !contexto.mirandoOtraOrganizacion,
+    },
   });
 }

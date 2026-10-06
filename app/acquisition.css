@@ -62,59 +62,6 @@
   outline-offset: -2px;
 }
 
-/* ── LAS SEÑALES Y EL PLAN DE ACCIÓN (AG9 de los agentes) ────────────────────
- *
- * El marcado es el del prototipo —`.sig`, `.reco-group`, `.reco-btn`, con sus reglas de `app/aios.css`—, y
- * acá sólo lo que el prototipo no tenía: el color por gravedad, las marcas de cada señal y los controles de
- * resolver, descartar y firmar. Los colores son los tokens de la paleta, con el mismo `.14` de fondo que el
- * prototipo le ponía al ícono. */
-#v-acquisition .acq-senales { margin-top: 14px; }
-#v-acquisition .sig .si.g-critica { background: rgb(var(--c-crit) / .14); color: var(--crit); }
-#v-acquisition .sig .si.g-alta,
-#v-acquisition .sig .si.g-media { background: rgb(var(--c-warn) / .14); color: var(--warn); }
-#v-acquisition .sig .si.g-info { background: rgb(var(--c-acento) / .14); color: var(--accent); }
-#v-acquisition .acq-sig-cuerpo { flex: 1; min-width: 0; }
-#v-acquisition .acq-sig-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--txt-dim); }
-#v-acquisition .acq-chip { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); }
-#v-acquisition .acq-chip-ejecutiva { border-color: rgb(var(--c-acento) / .5); color: var(--accent); }
-#v-acquisition .acq-sig-acciones { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; align-self: center; }
-#v-acquisition .sig button.ev { background: none; border: 0; padding: 0; font: inherit; font-size: 11.5px; color: var(--accent); cursor: pointer; }
-#v-acquisition .acq-sig-evidencia,
-#v-acquisition .acq-sig-decision,
-#v-acquisition .acq-sig-firma { margin-top: 8px; font-size: 12px; }
-#v-acquisition .acq-sig-revision,
-#v-acquisition .acq-sig-causas { margin: 0 0 6px; color: var(--txt-dim); }
-#v-acquisition .acq-sig-decision,
-#v-acquisition .acq-sig-firma { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-#v-acquisition .acq-sig-firma p { flex-basis: 100%; margin: 0; color: var(--txt-dim); }
-#v-acquisition .acq-sig-decision label,
-#v-acquisition .acq-sig-firma label { display: flex; gap: 6px; align-items: center; }
-#v-acquisition .acq-sig-decision input,
-#v-acquisition .acq-sig-firma input {
-  font: inherit; font-size: 12.5px; color: var(--txt); background: var(--bg-raise);
-  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 9px;
-}
-#v-acquisition .acq-sig-decision input { width: min(320px, 100%); }
-#v-acquisition .acq-sig-firma input { width: 80px; }
-/* Los botones son los de la casa (`fd-btn`), un poco más bajos para caber en la tarjeta. */
-#v-acquisition .acq-sig-decision .fd-btn,
-#v-acquisition .acq-sig-firma .fd-btn { padding: 7px 12px; }
-#v-acquisition .acq-sig-nota { margin: 0; padding: 11px 14px; font-size: 12px; color: var(--txt-dim); }
-/* La evidencia la dibuja el `Valor` del cerebro (`components/cerebro/Evidencia.jsx`), pensado para su burbuja:
-   acá anida objetos dentro de una tarjeta angosta, y sus columnas de 120 px como mínimo desbordaban. */
-#v-acquisition .acq-sig-evidencia .cb-datos { font-size: 12px; }
-#v-acquisition .acq-sig-evidencia .cb-datos > div { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); }
-/* Adentro de otro valor, la clave y el valor van en el mismo renglón: con columnas, «agendados» se partía. */
-#v-acquisition .acq-sig-evidencia .cb-datos .cb-datos > div { display: flex; flex-wrap: wrap; gap: 0 6px; }
-/* Y la clave no se parte: hereda el `overflow-wrap: anywhere` del valor que la contiene. */
-#v-acquisition .acq-sig-evidencia .cb-datos .cb-datos dt { overflow-wrap: normal; }
-#v-acquisition .acq-falla-chica { color: var(--crit); font-size: 11px; }
-/* El plan vive en `Ventana`, que se monta adentro de la vista (no usa portal): el `#v-acquisition` alcanza. */
-#v-acquisition .acq-plan-nota,
-#v-acquisition .acq-plan-pie { font-size: 12px; color: var(--txt-dim); line-height: 1.45; }
-#v-acquisition .acq-plan-pie { margin-top: 12px; }
-#v-acquisition .acq-perdida { color: var(--txt-dim); }
-
 /* ── EL TELÉFONO, A 375 px ───────────────────────────────────────────────────
  *
  * El prototipo tenía dos cortes: 1380 px —las tarjetas de funnel en una columna y las cifras en
@@ -133,7 +80,4 @@
   #v-acquisition .acq-desliza { overflow-x: auto; }
   #v-acquisition .acq-desliza > .col-head,
   #v-acquisition .acq-desliza > .rows { min-width: 760px; }
-  /* Las acciones de cada señal bajan debajo del texto. */
-  #v-acquisition .sig { flex-wrap: wrap; }
-  #v-acquisition .acq-sig-acciones { flex-direction: row; align-items: center; width: 100%; justify-content: flex-end; }
 }

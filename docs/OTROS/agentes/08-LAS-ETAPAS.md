@@ -449,7 +449,8 @@
   `lib/agentes/senales/lectura.ts` lee para la pantalla; el escritor suma marcar vista y cerrar. Pruebas: 224
   nueva (base, por los manejadores), la 219 con el filtro de departamento del escritor, la 22 y la 181.
   Mutaciones, siete vistas en rojo.
-- **Cuarta tanda, hecha el 2026-10-05: la pantalla.** `components/acquisition/SenalesDeAcquisition.jsx`, con el
+- **Cuarta tanda, hecha el 2026-10-05: la pantalla.** `components/acquisition/SenalesDeAcquisition.jsx` (desde AG10,
+  `components/senales/SenalesDelDepartamento.jsx`, compartido con Creative), con el
   marcado del prototipo: el botón «Plan de acción» junto al período, que abre el plan de la ventana elegida en
   `Ventana` (los grupos con renglones, lo que quedó bajo el piso, lo que no se pudo medir y el día en que se
   calculó), y la tarjeta «Señales detectadas · sin recomendación automática» al final, con el ícono por
@@ -502,11 +503,40 @@
 
 ## AG10 · Creative Insights
 
-- **Qué**: el detector (`fichas/F06-CREATIVE-INSIGHTS.md`), su Plan de acción con el formato C6, la tarjeta y
-  el botón en su pantalla, sus rutas de señales y umbrales.
-- **Pruebas nuevas**: 221, el grano: Creative publica piezas, nunca campañas ni conjuntos (mutación:
-  publicar una señal de campaña). 222 (base), el detector sobre la base.
-- **Documentos**: `docs/creative/06` y `11`.
+- **Hecho el 2026-10-05, sin push.** Sin migración: las tablas de la `072` ya guardan cualquier departamento, y
+  las capacidades son las de AG9.
+- **El detector** (`lib/agentes/detectores/creative.ts`, `fichas/F06-CREATIVE-INSIGHTS.md`): cuatro reglas
+  —`CRE-CAIDA-DE-CTR`, `CRE-CONCENTRACION`, `CRE-FRECUENCIA-ALTA` y `CRE-ICP-POR-PIEZA`— sobre las mismas
+  funciones y los mismos días que la pantalla, más la frecuencia de cada anuncio pesada por impresiones. Sólo
+  piezas y anuncios: lo de campaña y de conjunto es de Acquisition (C11-04). El ICP se compara dentro de la
+  etapa (C3-06). La unidad nueva `veces` en el catálogo, para la frecuencia. Lo que tiene de propio el plan
+  vive en `lib/agentes/plan/creative.ts`; el armado, el orden y la ventana pasaron a `lib/agentes/plan/comun.ts`,
+  que comparten los dos departamentos. Corre en la pasada diaria junto a Acquisition (`DETECTORES`).
+- **El ciclo de módulos que apareció**: la frescura lee los horarios de `barrido.ts`, que importa la pasada, que
+  importa este detector y su plan; importada arriba, el plan leía `CRE` antes de que existiera y la 221 se caía.
+  Se carga al medir.
+- **Las rutas**: `app/api/creative/senales` y `…/umbrales`, gemelas de las de Acquisition y no una función
+  compartida (cada ruta llama al portero con su pantalla y abre su `conOrganizacion(`), y el GET de Creative con
+  `senales` y `puedeConSenales`. `lib/agentes/senales/lectura.ts` resuelve al mostrar el nombre de un anuncio
+  (`negocio.anuncios`) y el de una pieza (su id).
+- **La pantalla**: el componente de AG9 pasó a `components/senales/SenalesDelDepartamento.jsx`, con el
+  departamento como dato (nombre, ventanas de días cerrados o hasta hoy, si calcula gente perdida), y su estilo a
+  `app/senales.css`, acotado a las dos vistas. Las escrituras del navegador, a `lib/negocio/vistaDeSenales.ts`.
+  En Creative, el botón va en la barra y la tarjeta después de la fatiga.
+- **Pruebas nuevas**: 226 (código: el grano, cada regla, el ICP dentro de la etapa, «sin medición», el plan), 227
+  (base: la frecuencia, la frescura y los nombres al mostrar) y 228 (base: las rutas). Cambian la 104, la 107 y
+  la 182 por la hoja nueva, y la 223: la pasada corre los dos detectores, y sobre la base sembrada Creative no
+  publica nada y dice qué no pudo medir (no hay sello de la lectura de anuncios ni campo de ICP); sus dos pruebas
+  de la redacción corren sólo Acquisition. Mutaciones, 26 vistas en rojo: la caída sin veredicto, la concentración con dos
+  piezas o sin validación, la frecuencia sin piso o en 30 días, el ICP entre etapas o con la fila sin etapa, la
+  pieza en dos etapas, la caída sin frescura, el ICP sin campo, la frecuencia en otro grupo, el CTR multiplicado,
+  la frecuencia sin peso, las impresiones de los días sin frecuencia, «fallando» como al día, el anuncio y la
+  pieza sin nombre, siete en las rutas, Creative fuera de la pasada y Creative midiendo sin la lectura al día. Queda verde la unión del anuncio sin `org_id`: la política de fila ya
+  lo impide, y la unión por las dos columnas es la segunda línea.
+- **Verificada en el preview local**, con señales de ejemplo en la empresa principal, a 1.440 y a 375 px: la
+  tarjeta, el plan y «Ver evidencia» (marcó vista). Lo que encontró: el estilo de la tarjeta estaba acotado a
+  `#v-acquisition` y en Creative se veían los botones del navegador; de ahí la hoja compartida.
+- **Lo que sigue**: el push, con OK. La migración no hace falta.
 
 ## AG11 · Llamadas: objeciones, vínculo y agregados
 

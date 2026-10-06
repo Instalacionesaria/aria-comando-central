@@ -33,7 +33,7 @@
  * ── Y LO QUE VOLVIÓ CON LOS AGENTES (AG9) ─────────────────────────────────
  *
  * El botón «Plan de acción» y la tarjeta «Señales detectadas» del prototipo (A14-16), en
- * `SenalesDeAcquisition.jsx`, con lo que guarda cada mañana la pasada del detector de Acquisition.
+ * `components/senales/SenalesDelDepartamento.jsx`, con lo que guarda cada mañana la pasada del detector de Acquisition.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -43,7 +43,7 @@ import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { guardarFunnelDeLaCampana, leerAcquisition, sacarFunnelDeLaCampana } from '@/lib/negocio/vistaDeAcquisition';
 import { useSesion } from '../../app/sesion-contexto.tsx';
-import { BotonDelPlan, TarjetaDeSenales } from './SenalesDeAcquisition.jsx';
+import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
 
 /* Los tres funnels del prototipo (`FUNNELS`, línea 5344): nombre, rótulo de cada etapa y rótulo de su
    costo. Son texto de pantalla y no reglas: qué etapas tiene cada uno lo dice el servidor
@@ -177,7 +177,7 @@ export default function PanelDeAcquisition() {
           <span className="cre-desc">Tres funnels con su propia cadena · la calidad se mide con calificados e ICP</span>
         </div>
         <div className="ch-r">
-          {pantalla ? <BotonDelPlan senales={pantalla.senales} nombres={nombresDeCampanas(pantalla)} funnels={FUNNELS} /> : null}
+          {pantalla ? <BotonDelPlan departamento="acquisition" senales={pantalla.senales} nombres={nombresDeCampanas(pantalla)} funnels={FUNNELS} /> : null}
           <div className="ch-period">
             {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió: con el estado
                 local, una respuesta que se cruza con otra deja el botón describiendo cifras que no
@@ -241,6 +241,7 @@ function Cuerpo({ p, alCambiar }) {
       </div>
       <Tablas e={e} puedeAsignar={puedeAsignar} alCambiar={alCambiar} />
       <TarjetaDeSenales
+        departamento="acquisition"
         senales={p.senales}
         // Lo decide el servidor; mirando otra empresa, nada (AG-82), como el selector de funnel.
         puede={sesion?.mirandoOtraOrganizacion ? { resolver: false, validar: false, firmar: false } : p.puedeConSenales}

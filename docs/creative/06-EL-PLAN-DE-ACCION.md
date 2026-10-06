@@ -107,12 +107,20 @@ frase sostenible de doce, lo que abriría es un modal casi vacío que promete un
 Lo que **no** se borra es el requisito: el día que haya tres o cuatro frases medidas —y `C6-04a` más
 la fatiga de `C2-24` ya son dos— el bloque vuelve, con su subtítulo de criterio y ventana.
 
+**Volvió el 2026-10-05, con AG10 de los agentes** (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`): el
+detector guarda cada mañana cuatro frases medidas —el ICP de una pieza contra su etapa, la caída del CTR, la
+frecuencia de un anuncio y la concentración del gasto— y el botón abre el plan de la ventana elegida, con
+«Lo que dice la data», «Ajusta o pausa esto» y «Requiere validación ejecutiva». «Haz más de esto» queda vacío
+hasta que una regla mida lo que anda bien, y «Ideas para producir» no vuelve.
+
 ### C6-09 · La recomendación tiene que traer su evidencia
 
 **Qué es** · Cada frase dice sobre qué población y qué ventana se calculó, y se puede abrir.
 **Rastro** · El § 2.6 del documento pide explicabilidad; `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`
 lo numeró como `A6-14`…`A6-16` y anotó que **el prototipo lo enuncia y no lo implementa**.
-**Estado** · Es requisito y hoy no está en ninguna de las dos pantallas.
+**Estado** · Es requisito. Desde AG10 de los agentes, cada señal de la tarjeta dice su período y abre su
+evidencia («Ver evidencia»), con la cifra, la muestra y la ventana con que se calculó; el plan dice en el
+subtítulo sobre qué ventana.
 
 ### C6-10 · Ninguna recomendación puede ejecutarse desde el producto
 

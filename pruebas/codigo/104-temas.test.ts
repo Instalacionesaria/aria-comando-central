@@ -49,6 +49,8 @@ const HOJAS = [
   'app/creative.css',
   // Acquisition con el front del prototipo, el día que nace (AQ-4).
   'app/acquisition.css',
+  // Las señales y el plan de los departamentos con detector, el día que nace (AG10 de los agentes).
+  'app/senales.css',
   // La cabecera de los departamentos, el día que nace (nueva estructura, E11).
   'app/departamentos.css',
   // El cerebro en pantalla, el día que nace (AG7 de los agentes).

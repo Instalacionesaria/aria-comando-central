@@ -84,6 +84,10 @@
    `aios.css`. */
 @import "./acquisition.css" layer(components);
 
+/* Las señales y el Plan de acción de los departamentos con detector (AG9 y AG10 de los agentes): un solo
+   componente en Acquisition y en Creative Insights, y por eso una sola hoja. */
+@import "./senales.css" layer(components);
+
 /* La cabecera de cada departamento (nueva estructura, E11): la ceja, el nombre de la entrada abierta y
    la fila de pestañas, y la regla que oculta los títulos propios de las pantallas debajo de ella. */
 @import "./departamentos.css" layer(components);
