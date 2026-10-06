@@ -592,7 +592,9 @@ Lo que decía el plan:
   falso). Cambian la 127 (la fila de la agenda abre con contacto y cita), la 133 (el cliente espera el tope de
   la ruta) y la 142 (el Brief resuelve el alcance propio, sin «ver como»). Un defecto que encontró la 232: una
   objeción degradada seguía marcada «de la empresa». Mutaciones, 14 vistas en rojo.
-- **Lo que falta para H4**: una evaluación real del Brief (llave de ARIA y OK), aplicar la `074` y el push.
+- **Hito H4 hecho el 2026-10-05**, con el OK del usuario: la `074` en producción (RLS forzada y su política,
+  verificado con lectura) y push. **La evaluación real** (tanda `brief` de `scripts/evaluar-agentes.mjs`, 2
+  llamadas): ningún dato degradado; un arreglo, «Sin rastro» ya no viaja como dato (`07`).
 
 Lo que decía el plan:
 

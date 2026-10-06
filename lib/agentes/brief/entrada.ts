@@ -132,7 +132,9 @@ export async function entradaDelBrief(citaId: string, alcance: AlcanceDelCloser)
     poner('puntaje', 'Puntaje de ICP', lead.puntaje.valor === null ? null : `${lead.puntaje.valor} (${lead.puntaje.rotulo})`);
     poner('campana', 'Campaña por la que entró', lead.recorrido.entro.campana);
     poner('creativo', 'Anuncio por el que entró', lead.recorrido.entro.creativo);
-    poner('llego_por', 'Cómo llegó a agendar', lead.recorrido.llegoPor.titulo);
+    /* «Sin rastro» es el rótulo de que no hay dato, no un dato: viajando, la evaluación real lo vio volver como
+       un dato «ambiguo» de la persona. */
+    if (lead.recorrido.llegoPor.familia !== 'sin-rastro') poner('llego_por', 'Cómo llegó a agendar', lead.recorrido.llegoPor.titulo);
     poner('precall', 'Lo que vio del video previo a la llamada', lead.precall.valor);
   }
 

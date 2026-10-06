@@ -90,7 +90,9 @@ async function sembrar(): Promise<void> {
   closer = await sesionDe(id);
   sesionesPropias.push(closer);
 
-  const hoy = new Date(Date.now() + 2 * 3600_000);
+  /* Ahora mismo, y no «en dos horas»: cerca de la medianoche de la empresa, dos horas después ya es mañana y la cita
+     sale de la agenda de hoy de Mi Día. Una cita que ya empezó sigue en la agenda (baja y se marca vencida). */
+  const hoy = new Date();
   const suyo = await unContacto(esc, { crmAsignadoA: CRM_UNO, telefono: TELEFONO, nombre: `${esc.marca} con formulario` });
   contactoSuyo = suyo.id;
   await esc.admin.query(`update negocio.contactos set campos_del_crm = $2 where id = $1`, [suyo.id, JSON.stringify({ [CAMPO]: 'Entre 10 y 20 mil dólares' })]);
@@ -147,6 +149,8 @@ test('generar al abrir guarda el Brief validado, y abrirlo otra vez no lo vuelve
   const enviado = JSON.stringify(modelo.cuerpos[0]);
   assert.ok(!enviado.includes(TELEFONO), 'el teléfono viajó al modelo');
   assert.match(enviado, /formulario:1/);
+  // «Sin rastro» es el rótulo de que no hay dato: no viaja como si lo fuera (lo vio la evaluación real).
+  assert.doesNotMatch(enviado, /llego_por|Sin rastro/);
   // Abrirlo de nuevo: el guardado, sin otro pedido (el guion está vacío y lanzaría).
   const otra = await leerRespuesta<{ brief: unknown }>(await pedirBrief({ cita: citas.suya }));
   assert.equal(otra.estado, 200);

@@ -64,7 +64,7 @@ test('con el número correcto pasa la confirmación y se frena en la guarda de l
 test('una tanda que no existe no corre', () => {
   const r = correr('reunion');
   assert.equal(r.salida, 2);
-  assert.match(r.texto, /Tandas: modelo, cerebro, plan\./);
+  assert.match(r.texto, /Tandas: modelo, cerebro, plan, brief\./);
 });
 
 test('la tanda del cerebro pide confirmar su techo, y con otro número no corre', () => {

@@ -242,6 +242,85 @@ async function correrElPlan(llave) {
   }
 }
 
+/**
+ * El Brief del closer (`07`, AG12, F13): dos citas del territorio del closer de la empresa sembrada, una con un
+ * formulario sintético contestado y otra sin formulario. Un pedido por cita, con la llave de ARIA sólo en memoria.
+ * Imprime las cuatro secciones con la fuente y la cita de cada dato, cuántos datos se degradaron y el uso.
+ */
+async function correrElBrief(llave) {
+  const { sql } = await import('kysely');
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { entradaDelBrief } = await import('../lib/agentes/brief/entrada.ts');
+  const { generarBrief } = await import('../lib/agentes/brief/brief.ts');
+  const { PREFIJO_DE_LA_EVALUACION, quitarEmpresasDeLosAgentes, sembrarCasosDeLosAgentes } = await import('../db/sembrado/casos-de-los-agentes.ts');
+
+  const e = await sembrarCasosDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+  console.log(`  Sembrada la empresa con datos (${PREFIJO_DE_LA_EVALUACION}…).`);
+  try {
+    // Dos citas del territorio del closer; a la primera, un formulario sintético con tres respuestas.
+    const citas = await conOrganizacion(e.conDatos, async () => {
+      const filas = await datos()
+        .selectFrom('citas as c')
+        .innerJoin('contactos as k', (j) => j.onRef('k.org_id', '=', 'c.org_id').onRef('k.id', '=', 'c.contacto_id'))
+        .select(['c.id', 'c.contacto_id'])
+        .where('k.territorio', '=', 'closer')
+        .orderBy('c.inicio_el', 'desc')
+        .limit(2)
+        .execute();
+      if (filas.length < 2) throw new Error('la base sembrada no tiene dos citas del closer');
+      await datos().insertInto('carpetas_del_crm').values({ carpeta_id: 'eval-brief', nombre: 'Formulario', grupo: 'calificacion' }).execute();
+      const campos = [
+        ['eval-brief-1', 'Facturación mensual', 'Entre 5 y 10 mil dólares al mes'],
+        ['eval-brief-2', '¿Cuál es tu mayor problema hoy?', 'Tengo pocos pacientes nuevos y casi todos vienen por referidos'],
+        ['eval-brief-3', '¿Qué probaste antes?', 'Anuncios en Instagram con una agencia, sin resultados que se pudieran medir'],
+      ];
+      for (const [i, [id, nombre]] of campos.entries()) {
+        await datos().insertInto('campos_del_crm').values({ campo_id: id, nombre, carpeta_id: 'eval-brief', tipo: 'TEXT', posicion: i + 1 }).execute();
+      }
+      await datos()
+        .updateTable('contactos')
+        .set({ campos_del_crm: JSON.stringify(Object.fromEntries(campos.map(([id, , valor]) => [id, valor]))) })
+        .where('id', '=', filas[0].contacto_id)
+        .execute();
+      return filas.map((f) => f.id);
+    });
+
+    for (const [i, cita] of citas.entries()) {
+      const entrada = await conOrganizacion(e.conDatos, () => entradaDelBrief(cita, { tipo: 'todo' }));
+      console.log(`
+── Cita ${i + 1}: ${entrada.formulario.length} respuesta(s) del formulario, ${entrada.ficha.length} dato(s) de la ficha, ${entrada.llamada.length} de una llamada, ${entrada.objecionesFrecuentes.length} categoría(s) de objeción de la empresa`);
+      const r = await generarBrief({ entrada, llave, orgId: e.conDatos, usuarioId: e.personas.admin, espera: 120_000 });
+      if (r.tipo === 'fallo') {
+        console.log(`  ${r.situacion} · ref ${r.ref}`);
+        continue;
+      }
+      const dato = (d) => `${d.etiqueta}: ${d.estado}${d.valor ? ` · ${d.valor}` : ''}${d.fuente ? ` · [${d.fuente}]` : ''}${d.cita ? ` · «${d.cita}»` : ''}`;
+      for (const d of r.brief.quienEs) console.log(`  quién es · ${dato(d)}`);
+      for (const d of r.brief.queDijo) console.log(`  qué dijo · ${dato(d)}`);
+      console.log(`  objeción · ${dato(r.brief.objecionProbable)}${r.brief.objecionProbable.deLaEmpresa ? ' · DE LA EMPRESA' : ''}`);
+      if (r.brief.objecionProbable.sugerencia) console.log(`  sugerencia · ${r.brief.objecionProbable.sugerencia}`);
+      console.log(`  para abrir · ${r.brief.preguntaParaAbrir}`);
+      console.log(`  degradados: ${r.brief.degradados}`);
+    }
+    const uso = await conOrganizacion(e.conDatos, () =>
+      datos()
+        .selectFrom('uso_de_ia')
+        .where('agente', '=', 'brief')
+        .select([
+          sql`count(*)`.as('llamadas'),
+          sql`coalesce(sum(tokens_entrada), 0)`.as('entrada'),
+          sql`coalesce(sum(tokens_salida), 0)`.as('salida'),
+        ])
+        .executeTakeFirstOrThrow(),
+    );
+    console.log(`
+Total: ${uso.llamadas} llamada(s), ${uso.entrada} tokens de entrada y ${uso.salida} de salida.`);
+  } finally {
+    await quitarEmpresasDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+    console.log('  Quitada la empresa sembrada.');
+  }
+}
+
 /** Cada tanda dice cuántos pedidos hace ANTES de hacerlos, y cómo los hace. */
 const TANDAS = {
   modelo: {
@@ -275,6 +354,11 @@ const TANDAS = {
     que: 'la redacción del Plan de acción de Acquisition, en 7 y en 30 días, sobre la base sembrada (F03)',
     pedidos: 2,
     correr: correrElPlan,
+  },
+  brief: {
+    que: 'el Brief del closer de dos citas de la base sembrada, una con formulario y otra sin él (F13)',
+    pedidos: 2,
+    correr: correrElBrief,
   },
 };
 

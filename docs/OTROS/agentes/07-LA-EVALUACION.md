@@ -260,6 +260,23 @@ superlativo.
   contactos (83 %)…», «Una campaña se lleva el 67 % del gasto…»), ninguna cita una sección, y las causas son las
   de cada regla (la fuga de Profile: «la página de agenda o el seguimiento después del contacto»).
 
+### 2026-10-05 · el Brief del closer (F13)
+
+**`brief`** (2 pedidos, con el OK del usuario): **2 llamadas**, 916 tokens de entrada y 1.878 de salida, sobre dos
+citas de la base sembrada: una con un formulario sintético de tres respuestas y otra sin formulario. **Ningún dato
+se degradó**: todo lo «detectado» citaba una fuente que se le dio, con palabras que estaban en ella. Los casos 3 y
+4 de la tabla de arriba los cubren la 232 y la 233, sin modelo.
+
+- **Caso 1, con formulario**: «Qué dijo» con sus dos respuestas, cada una con su fuente y su cita; la objeción
+  probable salió **del formulario** —desconfianza por una agencia anterior sin resultados medibles, con la cita
+  de la pregunta 3— y no de la empresa; la sugerencia no la contradice; la pregunta para abrir retoma lo que la
+  persona escribió.
+- **Caso 2, sin formulario**: «Qué dijo», no consta; la objeción probable es la más frecuente de la empresa
+  (precio, 12 veces) y **dice que no es algo que la persona dijo**; la pregunta para abrir no afirma nada de ella.
+- **Lo que se corrigió después**: la ficha mandaba «Cómo llegó a agendar: Sin rastro», que es el rótulo de que no
+  hay dato, y el modelo lo devolvió como un dato ambiguo de la persona. Ya no viaja (`entradaDelBrief`, y la 233
+  lo mira).
+
 ## Preguntas abiertas
 
 Ninguna: el conjunto de `AG-102` se aprobó el 2026-10-04 sin cambios.
