@@ -33,6 +33,7 @@
 // Todo lo sembrado es inventado: dominios `.test`, nombres de prueba, identificadores con el prefijo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { createHash } from 'node:crypto';
 import pg from 'pg';
 import { sql } from 'kysely';
 import { conIdentidad } from '../../lib/datos/capa.ts';
@@ -110,6 +111,17 @@ export const CASOS = {
   llamadas: { total: 44, analizadas: 38, noEs: 3, pendientes: 2, fallidas: 1, vinculables: 28 },
   /** La objeción «precio»: 9 veces en las analizadas de hace 1 a hace 14, 3 en las de hace 15 a hace 28. */
   precio: { ultimos14: 9, anteriores14: 3 },
+  /**
+   * La categoría que Haiku le habría puesto a cada objeción (AG11). «confianza» queda SIN clasificar a
+   * propósito: la cobertura de las objeciones no es completa, y lo que cuenta tiene que decirlo.
+   */
+  categorias: { precio: 'precio', tiempo: 'momento' } as Record<string, string>,
+  /** Llamadas de onboarding analizadas, una por estado del cliente: bloqueado, a medias con riesgo, y listo. */
+  onboarding: [
+    { empresa: 'Clínica Sintética Norte', readiness: 'BLOQUEADO', commitmentLevel: 'MEDIO', riskFlags: ['No tiene cuenta de GoHighLevel.'], hace: 3 },
+    { empresa: 'Estudio Sintético Sur', readiness: 'PARCIAL', commitmentLevel: 'ALTO', riskFlags: [], hace: 5 },
+    { empresa: null, readiness: 'LISTO', commitmentLevel: 'ALTO', riskFlags: [], hace: 8 },
+  ],
   /** Hallazgos abiertos del auditor: un rojo y dos amarillos por agente del CRM. */
   hallazgos: [
     { agente: 'chat_post_agenda', severidad: 'rojo', patron: 'promete_descuento', categoria: 'comportamiento' },
@@ -467,6 +479,21 @@ export async function construirEmpresaConDatos(org: string, personas: PersonasDe
       else if (conPrecio) precioAnterior += 1;
       const objeciones = [...(conPrecio ? ['precio'] : []), ...(i % 4 === 0 ? ['tiempo'] : []), ...(i % 5 === 1 ? ['confianza'] : [])];
       const puntaje = 3 + (i % 6);
+      // La categoría de cada objeción con una en `CASOS.categorias`, por posición y huella, como la guarda la tarea.
+      for (const [indice, objecion] of objeciones.entries()) {
+        const categoria = CASOS.categorias[objecion];
+        if (!categoria) continue;
+        await datos()
+          .insertInto('objeciones_clasificadas')
+          .values({
+            llamada_id: llamadaId,
+            indice,
+            huella: createHash('md5').update(objecion).digest('hex'),
+            categoria: categoria as 'precio' | 'momento',
+            modelo: 'claude-haiku-4-5-20251001',
+          })
+          .execute();
+      }
       await datos()
         .insertInto('analizador_analisis')
         .values({
@@ -486,6 +513,46 @@ export async function construirEmpresaConDatos(org: string, personas: PersonasDe
     }
     if (precioReciente !== CASOS.precio.ultimos14 || precioAnterior !== CASOS.precio.anteriores14) {
       throw new Error(`«precio» quedó ${precioReciente} y ${precioAnterior}, no ${CASOS.precio.ultimos14} y ${CASOS.precio.anteriores14}`);
+    }
+
+    // ── Las llamadas de onboarding ──
+    for (const [i, ob] of CASOS.onboarding.entries()) {
+      const llamada = await datos()
+        .insertInto('analizador_llamadas')
+        .values({
+          tipo: 'OB',
+          proveedor: 'TLDV',
+          reunion_externa_id: id('onboarding', i + 1),
+          titulo: `Onboarding ${i + 1}`,
+          prospecto_nombre: `Cliente sintético ${i + 1}`,
+          prospecto_email: `cliente-${i + 1}@fuera-${prefijo.replace(/[^a-z0-9]/g, '')}.test`,
+          estado: 'DONE',
+          fecha_de_la_reunion: momentoHace(ob.hace, '11:00'),
+          duracion_seg: 2400,
+          organizador_nombre: 'Closer Uno',
+        } as never)
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await datos()
+        .insertInto('analizador_analisis')
+        .values({
+          llamada_id: (llamada as { id: string }).id,
+          tipo: 'OB',
+          coincide: true,
+          analisis: JSON.stringify({
+            company: ob.empresa,
+            primaryName: `Cliente sintético ${i + 1}`,
+            readiness: ob.readiness,
+            commitmentLevel: ob.commitmentLevel,
+            riskFlags: ob.riskFlags,
+            mainGoal: 'Conseguir sus primeros cinco clientes en tres meses.',
+          }),
+          modelo: 'claude-sonnet-5',
+          version_de_rubrica: 'onboarding.es.md@v1',
+          resumen: 'Un onboarding sintético.',
+          analizado_el: momentoHace(ob.hace, '12:00'),
+        } as never)
+        .execute();
     }
   });
 

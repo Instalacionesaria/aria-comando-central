@@ -127,7 +127,7 @@ test('Sales: 46 citas pasadas en la cohorte de 30 días, 3 con resultado y ningu
 
 test('las llamadas de venta: 44, 38 analizadas, 28 vinculables por correo, y «precio» 9 contra 3', async () => {
   const estados = await admin.query<{ estado: string; n: string }>(
-    'select estado, count(*) as n from negocio.analizador_llamadas where org_id = $1 group by 1 order by 1',
+    `select estado, count(*) as n from negocio.analizador_llamadas where org_id = $1 and tipo <> 'OB' group by 1 order by 1`,
     [e.conDatos],
   );
   assert.deepEqual(
@@ -149,6 +149,25 @@ test('las llamadas de venta: 44, 38 analizadas, 28 vinculables por correo, y «p
       [e.conDatos, desde, hasta],
     );
   assert.deepEqual([await precio(0, 14), await precio(14, 28)], [9, 3]);
+  // Y la categoría de cada objeción (AG11): «precio» y «tiempo» clasificadas, «confianza» sin clasificar.
+  const categorias = await admin.query<{ categoria: string; n: string }>(
+    'select categoria, count(*) as n from negocio.objeciones_clasificadas where org_id = $1 group by 1 order by 1',
+    [e.conDatos],
+  );
+  assert.deepEqual(
+    categorias.rows.map((f) => [f.categoria, Number(f.n)]),
+    [['momento', 10], ['precio', 12]],
+  );
+});
+
+test('las llamadas de onboarding: tres analizadas, una por estado del cliente', async () => {
+  const filas = await admin.query<{ readiness: string }>(
+    `select a.analisis->>'readiness' as readiness from negocio.analizador_llamadas l
+       join negocio.analizador_analisis a on a.org_id = l.org_id and a.llamada_id = l.id
+      where l.org_id = $1 and l.tipo = 'OB' and l.estado = 'DONE' order by 1`,
+    [e.conDatos],
+  );
+  assert.deepEqual(filas.rows.map((f) => f.readiness), ['BLOQUEADO', 'LISTO', 'PARCIAL']);
 });
 
 test('Conversation: por agente del CRM, un rojo y dos amarillos abiertos', async () => {

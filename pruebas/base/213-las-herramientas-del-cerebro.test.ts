@@ -264,6 +264,17 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     filas: [['pasos', ['clave', 'completo', 'id', 'paso', 'ultimaEl', 'versiones']]],
     argumentos: {},
   },
+  llamadas_de_venta: {
+    arriba: ['closers', 'dias', 'frases', 'llamadas', 'llamadasAntes', 'objeciones'],
+    filas: [
+      ['closers', ['closer', 'llamadas', 'puntajePromedio']],
+      ['frases', ['categoria', 'enlace', 'frase', 'ganada', 'minuto']],
+    ],
+  },
+  llamadas_de_onboarding: {
+    arriba: ['avisoDeLasMetas', 'clientes', 'dias', 'estados', 'lista', 'llamadas', 'riesgos'],
+    filas: [['lista', ['arranque', 'compromiso', 'empresa', 'estado', 'meta', 'senalesDeRiesgo']]],
+  },
   frescura: { arriba: ['tareas'], argumentos: {} },
   estado_de_integraciones: { arriba: ['integraciones'], argumentos: {} },
 };

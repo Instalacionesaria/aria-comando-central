@@ -41,7 +41,7 @@ import { parseTranscriptInput } from './nucleo/transcript.ts';
 import type { TokenUsage } from './nucleo/pricing.ts';
 
 /** Corre `trabajo` en la transacción de la organización, abriéndola si hace falta. */
-async function enOrganizacion<T>(orgId: string, trabajo: (db: Trx) => Promise<T>): Promise<T> {
+export async function enOrganizacion<T>(orgId: string, trabajo: (db: Trx) => Promise<T>): Promise<T> {
   if (hayOrganizacion()) {
     const abierta = organizacionActual();
     // Un contexto ajeno no se reutiliza en silencio: leería y escribiría las llamadas de otra.

@@ -153,8 +153,8 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
 | `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 10 |
 | `mejora` | `lib/auditor/buscarMejora.ts:137` | una mejora de prompt por día y por empresa | 1 inferencia |
 | `anuncios` | `lib/negocio/recolectarAnuncios.ts:565` | el costo diario por anuncio, vía GoHighLevel | 40 |
-| `analizadores` | `lib/analizadores/tarea.ts:68` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
-| `reintentos` | `lib/analizadores/tarea.ts:213` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:189`) | 0 |
+| `analizadores` | `lib/analizadores/tarea.ts:75` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
+| `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
 
 - **`contactos` va antes de `mensajes`, y eso es corrección, no gusto.** La ingesta descarta la
   conversación de un contacto que no está en `negocio.contactos` y avanza la marca de agua sobre ella:
@@ -167,7 +167,7 @@ sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y 
   (`lib/negocio/recolectarAnuncios.ts:67`). Su detalle y lo que falta de Meta están en
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9 y en [01-ACQUISITION.md](01-ACQUISITION.md).
 - **Los Analizadores corren solos y cada hora** porque un análisis necesita minutos seguidos y en una
-  corrida de 300 s entran un descubrimiento y uno o dos análisis (`lib/analizadores/tarea.ts:1-21`).
+  corrida de 300 s entran un descubrimiento y uno o dos análisis (`lib/analizadores/tarea.ts:1-25`).
   Su detalle es de [14-ANALIZADORES.md](14-ANALIZADORES.md).
 - **La lista de tareas válidas la cierra también la base**: el `check` de
   `tareas_programadas.tarea` acepta exactamente las nueve desde la `062`
@@ -294,7 +294,7 @@ aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo 
 El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
 seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
 (en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1762-1767`; eran cuatro). **No son las seis que hay en producción**
+(`lib/datos/esquema.ts:1778-1783`; eran cuatro). **No son las seis que hay en producción**
 (`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
 `scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
 `:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código

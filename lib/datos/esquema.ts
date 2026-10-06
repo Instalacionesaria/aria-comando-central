@@ -1691,6 +1691,21 @@ export interface TablaUmbrales {
   firmado_por: string | null;
 }
 
+/**
+ * La categoría de una objeción de una llamada de venta analizada (`T-18`). Migración 073. Escritor único:
+ * `lib/analizadores/objeciones.ts`. El texto de la objeción no se copia: vive en el análisis.
+ */
+export interface TablaObjecionesClasificadas {
+  org_id: ColumnaInquilino;
+  llamada_id: string;
+  indice: number;
+  /** `md5` del texto de la objeción: la categoría vale mientras el texto sea el mismo. */
+  huella: string;
+  categoria: 'precio' | 'momento' | 'decisor' | 'confianza' | 'encaje' | 'otra';
+  modelo: string;
+  clasificada_el: Generated<Date>;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -1755,6 +1770,7 @@ export interface BaseDeDatos {
   senales: TablaSenales;
   planes_de_accion: TablaPlanesDeAccion;
   umbrales: TablaUmbrales;
+  objeciones_clasificadas: TablaObjecionesClasificadas;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo

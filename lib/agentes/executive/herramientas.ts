@@ -31,13 +31,14 @@ import { HERRAMIENTAS_DEL_CLOSER } from './adaptadores/closer.ts';
 import { HERRAMIENTAS_DE_TOOLS } from './adaptadores/tools.ts';
 import { HERRAMIENTAS_DE_FUNDACIONES } from './adaptadores/fundaciones.ts';
 import { HERRAMIENTAS_DE_LA_PLATAFORMA } from './adaptadores/plataforma.ts';
+import { HERRAMIENTAS_DE_LOS_ANALIZADORES } from './adaptadores/analizadores.ts';
 import { type ContextoDeHerramienta, type DefinicionDeHerramienta, periodoPedido } from './adaptadores/comun.ts';
 
 export type { ContextoDeHerramienta, DatosDeLaRuta, DefinicionDeHerramienta } from './adaptadores/comun.ts';
 
 /**
- * El catálogo entero. Las llamadas de venta y de onboarding (Analizadores) llegan en AG11, y las señales
- * abiertas con los detectores (AG8).
+ * El catálogo entero. Las llamadas de venta y de onboarding (Analizadores) llegaron en AG11; las señales
+ * abiertas llegan con los detectores.
  */
 export const HERRAMIENTAS: readonly DefinicionDeHerramienta[] = [
   ...HERRAMIENTAS_DE_ACQUISITION,
@@ -51,6 +52,7 @@ export const HERRAMIENTAS: readonly DefinicionDeHerramienta[] = [
   ...HERRAMIENTAS_DE_TOOLS,
   ...HERRAMIENTAS_DE_FUNDACIONES,
   ...HERRAMIENTAS_DE_LA_PLATAFORMA,
+  ...HERRAMIENTAS_DE_LOS_ANALIZADORES,
 ];
 
 /**

@@ -45,7 +45,7 @@
 >   `paginaSinBorde`: llena **y** sin ninguna reunión anterior al corte, y una sin fecha cuenta como
 >   adentro (`lib/analizadores/pipeline.ts:289-291`, anunciado en
 >   `lib/analizadores/nucleo/tldv.ts:140-143`). La tarea lo pasa como `paginaLlena`
->   (`lib/analizadores/tarea.ts:98`) y solo entonces el sello lo escribe
+>   (`lib/analizadores/tarea.ts:105`) y solo entonces el sello lo escribe
 >   (`lib/negocio/barrido.ts:850-852`). Las dos caras están probadas
 >   (`pruebas/base/173-tarea-del-analizador.test.ts:188-210`); que la del caso real se viera roja
 >   con la mutación que vuelve a contar lo dice el commit, **no re-corrido para esta foto**. El
@@ -227,8 +227,8 @@ decisiones de operación:
 | Techo de tokens: análisis y clasificador | 20 000 y 400 | `lib/analizadores/nucleo/anthropic.ts:47-48` |
 | Lo que lee el clasificador | 6 000 caracteres | `lib/analizadores/nucleo/engine.ts:50` |
 | Fin de la tarea dentro de la función | 285 s | `lib/negocio/barrido.ts:340` |
-| Pendientes pedidas por corrida | 10 | `lib/analizadores/tarea.ts:38` |
-| Reintentos automáticos por llamada | 3 | `lib/analizadores/tarea.ts:189` |
+| Pendientes pedidas por corrida | 10 | `lib/analizadores/tarea.ts:42` |
+| Reintentos automáticos por llamada | 3 | `lib/analizadores/tarea.ts:207` |
 | Minutos en ANALYZING para darla por colgada | 15 | `lib/analizadores/datos.ts:58` |
 | Minutos antes de que la tarea genere una ficha | 10 | `lib/analizadores/datos.ts:893` |
 | Tarifas confirmadas | ninguna | `lib/analizadores/nucleo/pricing.ts:42` |
@@ -301,7 +301,7 @@ la segunda lectura que queda escrita; la primera fue la del 2026-09-23 21:07
 
 **La tarea de cada hora**, `'41 * * * *'` en `vercel.json` y en `lib/negocio/barrido.ts:265-269`:
 en `aria` el último sello es `corrio`, 2026-09-28 17:42 UTC, **4 llamadas a proveedores** —el listado,
-una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:170-179`—.
+una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:188-197`—.
 En las otras 10 empresas con sello, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada
 hora no está verificado**: el sello es un `on conflict do update` que guarda solo la última corrida
 (`lib/negocio/barrido.ts:945-971`); la continuidad se infiere de las 8 reuniones de arriba.
@@ -315,7 +315,7 @@ que el documento anunciaba como «la primera que va a tomar»
 tarea de cada hora a las 10:42:08, como manda el reparto. Si esa HT estaba FAILED o colgada no se
 puede saber: las salidas borran el error (`lib/analizadores/datos.ts:297`). **0 llamadas tienen
 `reintentos_automaticos` > 0**: el contador sube solo cuando un reintento vuelve a fallar
-(`lib/analizadores/tarea.ts:261-265`).
+(`lib/analizadores/tarea.ts:279-283`).
 
 **La única fallida**: una OB descubierta hoy a las 17:41, tomada a las 17:41:42 y FAILED a las
 17:42:19 porque el modelo no devolvió JSON legible (hoy `lib/analizadores/nucleo/engine.ts:71`), con 0
@@ -428,11 +428,12 @@ rechazaría todo análisis y las pendientes no se drenarían nunca, sin que nada
 (`lib/negocio/barrido.ts:252-269` y `lib/negocio/barrido.ts:330-340`); el reintento recibe el mismo
 fin de reloj (`lib/negocio/barrido.ts:727-735`).
 
-**7 · Qué hace cada una de las dos tareas, y qué no.** La de cada hora descubre, drena las PENDING y
-completa las fichas que nunca se generaron (`lib/analizadores/tarea.ts:68-163`). El reintento toma
+**7 · Qué hace cada una de las dos tareas, y qué no.** La de cada hora descubre, drena las PENDING,
+completa las fichas que nunca se generaron y, desde AG11 de los agentes, clasifica las objeciones que no tienen
+categoría (`lib/analizadores/tarea.ts:75-181`). El reintento toma
 las FAILED que no agotaron sus tres intentos y las ANALYZING colgadas hace más de 15 minutos
 (`lib/analizadores/datos.ts:848-875`); no descubre, no toca las PENDING ni genera fichas
-(`lib/analizadores/tarea.ts:206-212`). Una ficha FAILED no la reintenta nadie: se rehace con el botón.
+(`lib/analizadores/tarea.ts:224-230`). Una ficha FAILED no la reintenta nadie: se rehace con el botón.
 
 **8 · Borrar deja lápida**, en la misma transacción: sin ella, la siguiente corrida traería la
 reunión de vuelta y la pagaría otra vez (`db/migraciones/056_tablas_del_analizador.sql:223-224`).
@@ -443,6 +444,12 @@ lo que se mueve pierde su análisis y su ficha viejos en la misma transacción.
 **10 · Ocho reuniones no son una tasa.** `scripts/medir-analizadores.sql` imprime «66,7 % no es HT» y
 «25,0 % no es OB», sobre 3 y 4 casos. El piso del proyecto para publicar una tasa es 10
 (`lib/negocio/indicadoresDeCitas.ts:309`); acá solo valen conteos.
+
+**11 · La categoría de una objeción es de un juego cerrado, y vale mientras su texto sea el mismo** (AG11 de los
+agentes, `docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md`). Haiku la pone una vez por llamada, en la tarea
+de cada hora: precio, momento, decisor, confianza, encaje u otra. Se guarda en `negocio.objeciones_clasificadas`
+(`073`) por posición y por la huella del texto; lo que no se pudo clasificar se pide en la corrida siguiente, y
+lo que la cuenta nunca esconde es la cobertura.
 
 ---
 

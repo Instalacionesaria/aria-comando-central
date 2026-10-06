@@ -1,4 +1,5 @@
-// La tarea programada de los Analizadores: descubrir, drenar y completar fichas, por empresa.
+// La tarea programada de los Analizadores: descubrir, drenar, completar fichas y clasificar las objeciones, por
+// empresa.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // DE DÓNDE VIENE, Y POR QUÉ CORRE CADA HORA Y NO UNA VEZ POR DÍA
@@ -10,12 +11,14 @@
 // y veinticuatro corridas cortas drenan lo que tres largas drenaban, sin compartir el tiempo con las
 // tareas del CRM.
 //
-// ── EL ORDEN DE LOS TRES PASOS ────────────────────────────────────────────────
+// ── EL ORDEN DE LOS CUATRO PASOS ──────────────────────────────────────────────
 //
 //   1. **Descubrir**, que es barato (tl;dv y Haiku) y es lo único que trae trabajo nuevo.
 //   2. **Drenar** las pendientes de los tipos que se analizan, en orden de llegada, mientras quepa
 //      un análisis entero. Lo que no entra queda PENDING para la corrida siguiente.
 //   3. **Completar las fichas** que falten, con el tiempo que sobre.
+//   4. **Clasificar las objeciones** de las HT analizadas que todavía no tienen categoría (AG11 de los agentes,
+//      `./objeciones.ts`): lo más barato y lo que menos apura, al final. Lo que no entra lo toma la siguiente.
 //
 // Cada paso mira el reloj por su cuenta (`pipeline.ts`): lo que no cabe no arranca, y nada queda
 // tomado por una inferencia cortada a la mitad.
@@ -24,6 +27,7 @@
 import type { AccesoAlAnalizador } from '../credenciales/resolver.ts';
 import { agruparIncidentes } from '../incidentes/agrupados.ts';
 import { contarReintento, llamadasSinFicha, paraReintentar, pendientesParaAnalizar } from './datos.ts';
+import { clasificarObjeciones } from './objeciones.ts';
 import {
   TIPOS_QUE_SE_ANALIZAN,
   analizarLlamada,
@@ -59,6 +63,9 @@ export interface ResultadoDeLaTarea {
   fichasFallidas: number;
   /** Pendientes que quedaron sin analizar porque no alcanzó el tiempo. Las toma la próxima corrida. */
   sinTiempo: number;
+  /** Las objeciones que quedaron con categoría, y cuántas veces se le habló al modelo para eso. */
+  objeciones: number;
+  pedidasDeObjeciones: number;
 }
 
 /**
@@ -74,13 +81,13 @@ export async function correrAnalizadores(
      primero se escribe en el acto; el `finally` les pone cuántos fueron, también si un paso lanza. */
   const incidentes = agruparIncidentes('analizador', orgId);
   try {
-    return await correrLosTresPasos(orgId, acceso, reloj, { incidentes });
+    return await correrLosCuatroPasos(orgId, acceso, reloj, { incidentes });
   } finally {
     await incidentes.volcar();
   }
 }
 
-async function correrLosTresPasos(
+async function correrLosCuatroPasos(
   orgId: string,
   acceso: Extract<AccesoAlAnalizador, { tipo: 'listo' }>,
   reloj: Reloj,
@@ -102,6 +109,8 @@ async function correrLosTresPasos(
     fichas: 0,
     fichasFallidas: 0,
     sinTiempo: 0,
+    objeciones: 0,
+    pedidasDeObjeciones: 0,
   };
   if (descubrimiento.tipo === 'fallo') console.error('analizadores: el descubrimiento falló', orgId, descubrimiento.causa);
   if (descubrimiento.tipo === 'falta') {
@@ -159,6 +168,15 @@ async function correrLosTresPasos(
     if (r.estado === 'OK') out.fichas++;
     else out.fichasFallidas++;
   }
+
+  /* Las objeciones sin categoría, con lo que sobre. Con la llave rechazada o el proveedor saturado en las fichas,
+     cada pedida repetiría el rechazo. */
+  if (out.llaveRechazada || out.saturado) return out;
+  const o = await clasificarObjeciones(orgId, acceso.claveIa, reloj, quien);
+  out.objeciones = o.clasificadas;
+  out.pedidasDeObjeciones = o.pedidas;
+  if (o.llaveRechazada) out.llaveRechazada = 'ia';
+  if (o.saturado) out.saturado = true;
   return out;
 }
 
@@ -175,7 +193,7 @@ export function llamadasDeLaTarea(r: ResultadoDeLaTarea): number {
         (d.descubiertas + d.internas + d.sinClasificar + d.pendientesDeTranscripcion) + // transcripciones
         (d.descubiertas + d.internas + d.sinClasificar) // clasificaciones
       : 1;
-  return descubrimiento + r.analizadas + r.vetadas + r.fallidas + r.fichas + r.fichasFallidas;
+  return descubrimiento + r.analizadas + r.vetadas + r.fallidas + r.fichas + r.fichasFallidas + r.pedidasDeObjeciones;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

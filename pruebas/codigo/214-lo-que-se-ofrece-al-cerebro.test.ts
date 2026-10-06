@@ -41,7 +41,7 @@ const POR_SECCION: Record<string, string[]> = {
   contacts: ['cohorte_de_leads', 'frescura'],
   setter: ['colas_del_setter', 'frescura', 'inicio_del_setter', 'pipeline_del_setter'],
   closer: ['agenda_del_closer', 'frescura', 'inicio_del_closer', 'mi_dia_del_closer', 'pipeline_del_closer'],
-  analizadores: ['frescura'],
+  analizadores: ['frescura', 'llamadas_de_onboarding', 'llamadas_de_venta'],
   tools: ['espia', 'leads_del_scraper'],
   icp: ['fundaciones'],
   credenciales: [],

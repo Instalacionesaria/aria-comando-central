@@ -43,6 +43,12 @@ export const red = {
   llamadasAlClasificador: 0,
   llamadasAlAnalisis: 0,
   cuerposDelAnalisis: [] as Record<string, unknown>[],
+  /**
+   * Qué contesta la categoría de las objeciones (AG11), en orden. Sin nada encolado, «precio» para la objeción
+   * que nombra el precio y «otra» para las demás.
+   */
+  objeciones: [] as ((pedidas: { indice: number; texto: string }[]) => Response)[],
+  llamadasALasObjeciones: 0,
   reiniciar() {
     this.reuniones = [];
     this.clasificacion = {};
@@ -52,6 +58,8 @@ export const red = {
     this.llamadasAlClasificador = 0;
     this.llamadasAlAnalisis = 0;
     this.cuerposDelAnalisis = [];
+    this.objeciones = [];
+    this.llamadasALasObjeciones = 0;
   },
 };
 
@@ -103,6 +111,13 @@ const falsa = (async (url: RequestInfo | URL, init?: RequestInit) => {
       const texto = cuerpo.messages[0]!.content;
       const titulo = Object.keys(red.clasificacion).find((t) => texto.includes(`TÍTULO DE LA REUNIÓN: ${t}`));
       return delModelo(titulo ? JSON.stringify({ tipo: red.clasificacion[titulo], reason: `porque ${titulo}` }) : 'no sé');
+    }
+    if (cuerpo.model === 'claude-haiku-4-5-20251001') {
+      red.llamadasALasObjeciones++;
+      const pedidas = (JSON.parse(cuerpo.messages[0]!.content) as { objeciones: { indice: number; texto: string }[] }).objeciones;
+      const siguiente = red.objeciones.shift();
+      if (siguiente) return siguiente(pedidas);
+      return delModelo(JSON.stringify({ categorias: pedidas.map((o) => ({ indice: o.indice, categoria: /precio/i.test(o.texto) ? 'precio' : 'otra' })) }));
     }
     red.llamadasAlAnalisis++;
     red.cuerposDelAnalisis.push(cuerpo as unknown as Record<string, unknown>);

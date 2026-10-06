@@ -540,6 +540,29 @@
 
 ## AG11 · Llamadas: objeciones, vínculo y agregados
 
+- **Hecho el 2026-10-05, sin push.** La `073` (`negocio.objeciones_clasificadas`) sólo en local: va a producción
+  antes del push que la lleve. Sin capacidad nueva.
+- **La categoría de cada objeción** (`lib/analizadores/objeciones.ts`): el cuarto paso de la tarea del
+  analizador, una pedida a `claude-haiku-4-5-20251001` por llamada, con lo que sobre de la corrida; por
+  posición y por la huella del texto, así que una objeción que cambia con un nuevo análisis se clasifica de
+  nuevo. El juego vive en `lib/analizadores/categorias.ts` para que quien cuenta no arrastre el transporte.
+- **El vínculo** (`lib/negocio/vinculoDeLlamadas.ts`), al leer: por correo y, si no, por una sola cita a ±12
+  horas; con dos contactos citados, ambigua.
+- **Los agregados** (`lib/negocio/llamadasDeVenta.ts`, `lib/negocio/llamadasDeOnboarding.ts`) y sus dos
+  herramientas del cerebro, con la sección Analizadores. Lo que se apartó de la ficha: las metas de onboarding
+  no se cuentan (texto libre), las frases citables de onboarding quedan para después, y el cliente va por su
+  empresa, sin nombre de persona.
+- **El sembrado** suma las categorías de las objeciones («confianza» sin clasificar, para que la cobertura no
+  sea completa) y tres llamadas de onboarding, una por estado.
+- **Pruebas nuevas**: 229 (código: el juego cerrado igual en el código, el tipo y la migración; lo que vale de
+  la respuesta; el vínculo y el estado del cliente), 230 (base: la tarea clasifica por reconciliación, con la
+  red falsa) y 231 (base: los agregados sobre la base sembrada, a 30 días y «completo»: a 7 días la llamada de
+  hace 7 entra o no según la hora). Cambian la 205 (el sembrado), la 213 y la 214 (las herramientas), y la red
+  falsa de los Analizadores conoce a Haiku de las objeciones. Mutaciones, 17 vistas en rojo.
+- **Lo que no se hizo**: una evaluación real de la clasificación (pide la llave de ARIA y el OK).
+
+Lo que decía el plan:
+
 - **Qué**: la categoría de cada objeción la pone Haiku en la tarea del analizador, por reconciliación (las
   que faltan se clasifican en la pasada siguiente); `lib/negocio/vinculoDeLlamadas.ts` (al leer),
   `lib/negocio/llamadasDeVenta.ts`, `lib/negocio/llamadasDeOnboarding.ts` y sus herramientas del cerebro. La

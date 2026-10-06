@@ -171,6 +171,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   senales_org_id_fkey: 'tiene señales de los detectores',
   planes_de_accion_org_id_fkey: 'tiene planes de acción guardados',
   umbrales_org_id_fkey: 'tiene umbrales firmados',
+  /* La categoría de cada objeción (`073`): cae con su llamada, y la llamada ya frena el borrado. Se nombra
+     igual, por si alguna vez queda sola. */
+  objeciones_clasificadas_org_id_fkey: 'tiene objeciones de llamadas clasificadas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 };
 

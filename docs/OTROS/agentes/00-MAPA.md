@@ -212,7 +212,8 @@ Tres consecuencias para el plan:
 | AG8 · Las señales | **Hecho** el 2026-10-05: `lib/agentes/senales/`, `lib/agentes/plan/guardar.ts`, `lib/agentes/detectores/correr.ts`, la tarea `senales` del cron al minuto 23 y la `072` (sólo en local hasta el hito H3), con las pruebas 219 y 220. Las capacidades de las señales pasan a AG9 |
 | AG9 · Acquisition piloto | **Hecho** el 2026-10-05: el detector, el plan con su redacción, las capacidades, las rutas y la pantalla, con las pruebas 221 a 225 y dos evaluaciones reales de la redacción (`07`). **Hito H3** el mismo día: la `072` y las capacidades en producción, y push |
 | AG10 · Creative Insights | **Hecho** el 2026-10-05, sin push: el detector con cuatro reglas, su plan con el formato C6, las rutas y la tarjeta en su pantalla —el mismo componente que Acquisition—, con las pruebas 226 a 228. Sin migración |
-| AG11 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
+| AG11 · Llamadas | **Hecho** el 2026-10-05, sin push: la categoría de cada objeción en la tarea del analizador (`073`, sólo en local), el vínculo al leer, los agregados de venta y de onboarding y sus dos herramientas, con las pruebas 229 a 231 |
+| AG12 a AG16 | Sin empezar. Ver `08-LAS-ETAPAS.md` |
 
 ## Cómo se cita
 

@@ -7,18 +7,18 @@
 |---|---|
 | Tipo | RETIENE (agregados) |
 | Lugar en el front | Client Success › Llamadas de onboarding, y su caja del pie |
-| Estado | **Se construye** en AG11, sólo lectura |
+| Estado | **Hecho** en AG11, el 2026-10-05, sólo lectura |
 | Modelo | Ninguno |
 | Permisos | `analizadores.ver` |
-| Código | `lib/negocio/llamadasDeOnboarding.ts` |
+| Código | `lib/negocio/llamadasDeOnboarding.ts`; la herramienta `llamadas_de_onboarding` en `lib/agentes/executive/adaptadores/analizadores.ts` |
 
 ## Qué produce
 
 | agregado | qué dice |
 |---|---|
-| Lo que esperan | Las expectativas más frecuentes de los clientes en su onboarding, por conteo |
+| Lo que esperan | **No se cuenta**: la meta de cada cliente es texto libre, y dos metas parecidas escritas distinto contarían como dos. Se lista por cliente, y el aviso lo dice |
 | Riesgos | Cuántas llamadas traen señales de riesgo, y de qué tipo |
-| Estado por cliente | EN RIESGO, ATENCIÓN o AL DÍA, como el Lienzo (pantalla «Client Success · Analizador OB»), contado |
+| Estado por cliente | EN RIESGO, ATENCIÓN o AL DÍA, como el Lienzo (pantalla «Client Success · Analizador OB»), contado, por la última llamada del cliente en la ventana. La regla es provisional y está escrita en el código, no en el modelo: EN RIESGO si el análisis dice arranque bloqueado o compromiso bajo; ATENCIÓN si está a medias o trae alguna señal de riesgo; AL DÍA si no |
 
 ## El vínculo
 
@@ -28,8 +28,11 @@ aparte.
 ## Requisitos
 
 - **AG-F15-1 · Sólo lee** (`D-21`): no escribe al cliente ni al CRM.
-- **AG-F15-2 · Ninguna transcripción viaja al cerebro**: conteos y, con `analizadores.ver`, frases citables
-  con su minuto.
+- **AG-F15-2 · Ninguna transcripción viaja al cerebro**: conteos, el estado y la meta de cada cliente. Las
+  frases citables de onboarding quedan para después: el análisis OB trae momentos clave, no objeciones con su
+  evidencia.
+- **El cliente va por su empresa**, y si no la dijo, sin nombre: el nombre del titular y su correo son datos de
+  una persona (`D-17`).
 
 ## Sugerencias en la caja del pie
 
