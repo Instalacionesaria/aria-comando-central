@@ -254,7 +254,11 @@ superlativo.
   consecuencia del monitor, que ahora llega al plan sin citas a secciones ni acentos graves
   (`paraUnaPersona`); y en la fuga de Profile el modelo propuso una causa que el renglón no traía («fallas en el
   seguimiento»): cada renglón lleva ahora sus hipótesis y el prompt le pide nombrar sólo ésas. Las tres, en la
-  222. Falta repetir la tanda con OK para ver el efecto.
+  222.
+- **La segunda corrida, con los arreglos** (OK del usuario): 2 llamadas, 1.666 tokens de entrada y 1.248 de
+  salida; las 10 frases redactadas y ninguna quitada. Empiezan por el hallazgo («Conservan el anuncio 99 de 119
+  contactos (83 %)…», «Una campaña se lleva el 67 % del gasto…»), ninguna cita una sección, y las causas son las
+  de cada regla (la fuga de Profile: «la página de agenda o el seguimiento después del contacto»).
 
 ## Preguntas abiertas
 
