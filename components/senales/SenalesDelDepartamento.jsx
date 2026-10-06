@@ -35,6 +35,7 @@ import { decidirSenal, firmarUmbral } from '@/lib/negocio/vistaDeSenales';
 const DEPARTAMENTOS = {
   acquisition: { nombre: 'Acquisition', cerrados: true, conPerdida: true },
   creative: { nombre: 'Creative Insights', cerrados: false, conPerdida: false },
+  conversation: { nombre: 'Conversation', cerrados: false, conPerdida: false },
 };
 
 /** El rótulo corto de cada regla, para el título de la señal. El texto largo lo trae el servidor. */
@@ -57,6 +58,7 @@ const TITULO = {
   'CRE-CONCENTRACION': 'El gasto se concentra en una pieza',
   'CRE-FRECUENCIA-ALTA': 'La misma gente lo ve muchas veces',
   'CRE-ICP-POR-PIEZA': 'ICP bajo el de su etapa',
+  'CONV-PATRON-ABIERTO': 'Patrón abierto',
 };
 
 /** El ícono y el color de cada gravedad, como los del prototipo (`.sig .si`). */
@@ -94,6 +96,9 @@ function nombreDe(entidad, nombres, funnels, delServidor = null) {
   if (entidad.tipo === 'anuncio') return nombres.get(entidad.id) ?? `Anuncio ${entidad.id}`;
   if (entidad.tipo === 'par_de_etapas') return funnels[entidad.id.split(':')[0]]?.nombre ?? entidad.id;
   if (entidad.tipo === 'conjunto') return `Conjunto ${entidad.id}`;
+  /* Un patrón del auditor: en la tarjeta, el agente que resolvió el servidor (arriba); en el plan, nada, porque el
+     grupo ya es el agente y la frase trae el título del patrón. Su id (`agente:patron`) no se lee. */
+  if (entidad.tipo === 'patron') return null;
   // Una pieza no tiene otro identificador que su nombre normalizado.
   return entidad.id;
 }

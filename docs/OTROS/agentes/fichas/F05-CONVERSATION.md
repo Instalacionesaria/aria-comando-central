@@ -8,20 +8,25 @@
 |---|---|
 | Tipo | MIDE. El auditor es el Supervisor de Arq, que «no es un agente conversacional» (Arq:793-801) |
 | Lugar en el front | Systems › Conversation (Auditoría y Prompts) |
-| Estado | **El auditor existe** y no cambia. La traducción a señales **se construye** en AG13 |
+| Estado | **El auditor existe** y no cambia. La traducción a señales, **hecha** en AG13 el 2026-10-06 |
 | Modelo | El auditor, `claude-sonnet-5`, sin cambio. La traducción, ninguno |
 | Permisos | Todo con `auditor.ver`, la capacidad de su sección. Resolver señales: `senales.resolver` con la pantalla `conversation` |
-| Código | `lib/auditor/*` (no cambia); `lib/agentes/detectores/conversation.ts` (nuevo) |
+| Código | `lib/auditor/*` (no cambia); `lib/agentes/detectores/conversation.ts` (la traducción), `detector-de-conversation.ts` (para la pasada), `lib/agentes/plan/conversation.ts`; las rutas `app/api/auditoria/senales` y `…/umbrales` |
 
 ## Qué lee
 
-Los hallazgos del auditor de 14 días (`negocio.hallazgos`), por agente del CRM (LeadFlow y AppFlow) y por
-patrón.
+Los casos abiertos de la pantalla (`laPantallaDelTecnico`, `lib/auditor/pantalla.ts`), con el texto de su
+patrón ya elegido —el del hallazgo más reciente—, por agente del CRM (LeadFlow y AppFlow) y por patrón, y sólo
+los detectados dentro de la ventana de la señal: **7 o 30 días**, como los demás detectores (AG-28). Esta ficha
+decía 14 días; la ventana de la señal manda. Sin la tarea del auditor al día, la regla va a «sin medición».
 
 ## Qué produce
 
-Una señal por agente y patrón, con su muestra, su `issue_source` (`02`, `AG-37`) y su evidencia como ids de
-conversaciones, **nunca citas**: las conversaciones son de los leads del cliente.
+Una señal por agente y patrón (`CONV-PATRON-ABIERTO`, entidad `patron` con id `agente:patron`), con cuántas
+conversaciones toca, su `issue_source` (`02`, `AG-37`) y su evidencia como ids de hallazgos y de contactos, **nunca
+citas**: las conversaciones son de los leads del cliente. Con algún caso rojo, gravedad `alta`; si no, `media`.
+No lleva muestra: no es una tasa, son casos que el auditor ya juzgó uno por uno. El umbral provisional es un caso;
+firmado más alto, sólo los patrones que se repiten.
 
 ## Lo que no cambia
 
@@ -39,7 +44,14 @@ por corrida y situación (`lib/incidentes/agrupados.ts`); el de la mejora del d�
 ## El Plan de acción
 
 Por agente del CRM y por patrón, con su `issue_source` y la revisión recomendada; ordenado por gravedad (rojo,
-después amarillo) y por cuántas conversaciones toca.
+después amarillo) y por cuántas conversaciones toca. Un grupo por agente, con su nombre de pantalla.
+
+## La pantalla
+
+El botón «Plan de acción» en la barra y la tarjeta de Señales al final, **en la pestaña Auditoría**, que es donde
+están los patrones. Esa pestaña no tiene selector de período: sus señales son las de 7 días si se eligió 7 en un
+flujo, y las de 30 si no, y la tarjeta dice cuál. En la tarjeta cada señal se nombra por su agente; en el plan,
+por el título del patrón.
 
 ## Sugerencias en la caja del pie
 

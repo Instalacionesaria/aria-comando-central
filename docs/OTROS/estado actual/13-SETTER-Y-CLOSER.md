@@ -133,7 +133,7 @@ mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
 `lib/autorizacion/secciones.ts:549-550`, `lib/autorizacion/secciones.ts:563-564`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría
-abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:291`). Leads Portal tiene
+abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:298`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
 
 El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1076-1078`,
@@ -446,8 +446,8 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
 (`lib/negocio/indicadoresDeCitas.ts:453-456`). Medido el 2026-09-28 a las 18 h UTC con ese mismo
 filtro —alcanzables, sin descartados, ya ocurridas—: **106 citas a 30 días y 0 con asistencia**; 17 a
 14 días, 142 en «completo». La pantalla dibuja «—» y «asistencia · 0 de 106 cerradas»
-(`components/conversation/PanelDeConversation.jsx:614-619`) y el eslabón «Se presentaron» con «nadie
-lo registró» (`components/conversation/PanelDeConversation.jsx:644-650`). **No es un 0 %: es un
+(`components/conversation/PanelDeConversation.jsx:617-622`) y el eslabón «Se presentaron» con «nadie
+lo registró» (`components/conversation/PanelDeConversation.jsx:647-653`). **No es un 0 %: es un
 guion**, y es lo correcto.
 
 Los tres conteos ruedan con el reloj, porque la ventana la calcula la base con `now()`

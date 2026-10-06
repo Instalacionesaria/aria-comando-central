@@ -608,6 +608,28 @@ Lo que decía el plan:
 
 ## AG13 · Conversation en la tabla común
 
+- **Hecho el 2026-10-06, sin push.** Sin migración ni capacidad nueva.
+- **La traducción** (`lib/agentes/detectores/conversation.ts`): los casos abiertos de la pantalla del auditor,
+  dentro de la ventana de la señal, a una señal por agente y patrón con su `issue_source` (AG-37); sin la tarea del
+  auditor al día, «sin medición». Corre en la pasada diaria con los otros dos (`DETECTORES`). El auditor no
+  cambia y sigue siendo el único escritor de `negocio.hallazgos`.
+- **El plan** (`lib/agentes/plan/conversation.ts`): un grupo por agente, lo más grave primero y, a igual
+  gravedad, el patrón que toca más conversaciones; para eso el armado común suma un `desempate` opcional. El
+  prompt de la redacción ya no dice «pauta publicitaria»: sirve a los tres departamentos.
+- **La pantalla y las rutas**: la tarjeta y el botón en la pestaña Auditoría; las rutas gemelas bajo
+  `app/api/auditoria`; el GET de la pantalla con sus señales (7 días si se eligió 7, 30 si no: la pestaña no
+  tiene período).
+- **Dos defectos que encontraron las pruebas**: al leer, la lectura de las señales rearmaba la detección sin su
+  `issue_source`, y la frase perdía de dónde parece venir el error; y el plan mostraba el id crudo del patrón
+  (lo vio el preview).
+- **Pruebas nuevas**: 234 (código: la traducción cubre toda combinación, la detección, el plan, y nada en
+  `lib/agentes` escribe `hallazgos`) y 235 (base: la pasada, el GET y las rutas). Cambia la 223 (la pasada corre
+  los tres). Mutaciones, 12 vistas en rojo.
+- **Verificada en el preview local** con señales de ejemplo: la tarjeta nombra al agente (AppFlow, LeadFlow) y
+  dice de dónde parece venir el error; el plan, por agente.
+
+Lo que decía el plan:
+
 - **Qué**: el traductor de hallazgos a señales con `issue_source` (`02`, `AG-37`), la tarjeta de Señales y el
   botón «Plan de acción» en su pantalla. El auditor no cambia.
 - **Pruebas nuevas**: 227, la tabla de traducción cubre toda combinación, y el auditor sigue siendo el único

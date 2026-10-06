@@ -1,14 +1,14 @@
 // Las señales de un departamento desde el navegador: lo que llega en el GET de su pantalla y las dos escrituras
-// (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 a AG-34). Lo comparten Acquisition y Creative
-// Insights; cada uno tiene sus rutas (`app/api/<departamento>/senales` y `…/umbrales`), que vuelven a comprobar
-// la capacidad y la delegación.
+// (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 a AG-34). Lo comparten Acquisition, Creative
+// Insights y Conversation; cada uno tiene sus rutas (`<ruta de su pantalla>/senales` y `…/umbrales`, la de
+// Conversation bajo `app/api/auditoria`), que vuelven a comprobar la capacidad y la delegación.
 
 import { pedir } from '../http/cliente.ts';
 import type { SenalParaMostrar } from '../agentes/senales/lectura.ts';
 import type { PlanDelDepartamento } from '../agentes/plan/comun.ts';
 
 /** Los departamentos con pantalla de señales, y la ruta de cada uno. */
-export const RUTAS_DE_LAS_SENALES = { acquisition: '/api/acquisition', creative: '/api/creative' } as const;
+export const RUTAS_DE_LAS_SENALES = { acquisition: '/api/acquisition', creative: '/api/creative', conversation: '/api/auditoria' } as const;
 export type DepartamentoConPantalla = keyof typeof RUTAS_DE_LAS_SENALES;
 
 export interface ReglaDelDepartamento {

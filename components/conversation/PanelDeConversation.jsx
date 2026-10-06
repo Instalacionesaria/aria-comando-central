@@ -67,6 +67,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { anunciarPeriodo } from '@/lib/agentes/periodos';
 
 import { Cuerpo } from '../auditoria/PanelDeAuditoria.jsx';
+import { BotonDelPlan } from '../senales/SenalesDelDepartamento.jsx';
 /* `CADENCIA` se importa desde `reloj` y no desde `cadencia`, que es donde vive: es lo que ya hacen
    `CloserView` y `SetterView`, y tener dos caminos al mismo número invita a que alguien crea que son
    dos números. `reloj` lo reexporta justamente para eso. */
@@ -253,6 +254,8 @@ export default function PanelDeConversation() {
             encendido encima de una lista que no cambia al tocarlo es peor que no tenerlo —enseña
             que el control no hace nada, y después tampoco se usa donde sí hace. */}
         {FLUJOS[sub] ? <Periodos valor={periodo} alElegir={setPeriodo} /> : null}
+        {/* El plan de los patrones del auditor (AG13 de los agentes), donde están los patrones: en Auditoría. */}
+        {sub === 'auditoria' && pantalla?.senales ? <BotonDelPlan departamento="conversation" senales={pantalla.senales} /> : null}
       </div>
 
       {FLUJOS[sub] ? (

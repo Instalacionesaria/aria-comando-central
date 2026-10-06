@@ -194,7 +194,7 @@ nada que construir.
   nunca cuál. El valor aparece una sola vez en el código, en un comentario
   (`lib/negocio/recorrido.ts:17`). Y la pantalla de Conversation sigue diciendo que un trigger link
   «es un sistema aparte —un redirector con un token por contacto—»
-  (`components/conversation/PanelDeConversation.jsx:99`). Por cita, uniendo las citas con
+  (`components/conversation/PanelDeConversation.jsx:100`). Por cita, uniendo las citas con
   calendario de los últimos 30 días con su contacto, como hizo la foto anterior: **33 de 192**
   (2026-09-28 22:40 UTC; eran 32 de 206 a las 18:17 del 2026-09-15).
 
@@ -233,8 +233,8 @@ tarjeta va 2 (hoy), 6 (7 días), 103 (30 días) y 143 (completo) a las 22:03 UTC
 es 0 en las cuatro. El 2026-09-15 era 2 · 29 · 128 · 128.
 
 La pantalla lo dibuja como el hueco que es: «asistencia · 0 de 103 cerradas»
-(`components/conversation/PanelDeConversation.jsx:617`) y el eslabón «Se presentaron» con «nadie lo
-registró» (`components/conversation/PanelDeConversation.jsx:645-649`). El servidor aplica el mismo
+(`components/conversation/PanelDeConversation.jsx:620`) y el eslabón «Se presentaron» con «nadie lo
+registró» (`components/conversation/PanelDeConversation.jsx:648-652`). El servidor aplica el mismo
 criterio: el denominador filtra `asistio is not null` (`lib/negocio/indicadoresDeCitas.ts:373-376`) y
 la tasa es `null` por debajo del piso (`lib/negocio/indicadoresDeCitas.ts:453-456`). Sin ese filtro
 la tasa sería 0 % sobre 103 y diría, plausible y falsamente, que no se presenta nadie.
@@ -307,13 +307,13 @@ cohorte que era casi entera de agosto y septiembre de 2026. **`bddb516` lo cerr�
 `desde` sigue siendo el mínimo (`lib/negocio/indicadoresDelLead.ts:268`), pero viaja con la mediana y
 con un guardián que habla cuando la fecha describe a un caso suelto (`avisoDeLaCola`,
 `lib/negocio/periodo.ts:158-176`, con el umbral de 0,25 en `lib/negocio/periodo.ts:147`), y la
-pantalla lo dibuja en las dos pestañas (`components/conversation/PanelDeConversation.jsx:499`,
-`components/conversation/PanelDeConversation.jsx:612`). Medido el 2026-09-28 a las 22:14 UTC: la
+pantalla lo dibuja en las dos pestañas (`components/conversation/PanelDeConversation.jsx:502`,
+`components/conversation/PanelDeConversation.jsx:615`). Medido el 2026-09-28 a las 22:14 UTC: la
 mitad de los 570 contactos con alta entró después del 2026-08-28 y la proporción da **0,077**, así
 que el aviso está encendido en «Completo», que es donde tiene que estar.
 
 **Lo que no se cerró: la fecha se sigue dibujando sin año.** `fechaCorta` formatea con `day` y `month`
-y nada más (`components/conversation/PanelDeConversation.jsx:393-398`), así que el 2025-08-08 de Lead
+y nada más (`components/conversation/PanelDeConversation.jsx:396-401`), así que el 2025-08-08 de Lead
 Flow sale «8 de agosto» al lado del «24 de agosto» de Appointment Flow, que es de 2026. El aviso sí
 lleva el año (`lib/negocio/periodo.ts:172`), pero en su propia frase; la fecha que el lector ve
 primero sigue siendo la que no lo tiene. Cuesta una línea.
@@ -847,9 +847,9 @@ Es deuda de herramienta y no de producto, pero sin ella la próxima foto ubica m
   (`00e251d` hizo lo mismo en Conversion con la base local sembrada). Nadie miró si los números que
   hoy manda la base entran.
 - **Dónde quedó la línea entre aviso visible y nota escondida.** La decide un solo componente:
-  `Nota` (`components/conversation/PanelDeConversation.jsx:340`) devuelve `<p className="cs-grave">`
-  cuando la nota es grave (`components/conversation/PanelDeConversation.jsx:343`) y el botón con
-  ícono cuando no (`components/conversation/PanelDeConversation.jsx:346`). **Ninguna prueba mira ese
+  `Nota` (`components/conversation/PanelDeConversation.jsx:343`) devuelve `<p className="cs-grave">`
+  cuando la nota es grave (`components/conversation/PanelDeConversation.jsx:346`) y el botón con
+  ícono cuando no (`components/conversation/PanelDeConversation.jsx:349`). **Ninguna prueba mira ese
   reparto.** La foto anterior decía que `cs-grave` no aparecía en `pruebas/`; hoy aparece en
   `pruebas/codigo/147-lo-que-el-panel-dibuja.test.ts:7`, pero esa prueba comprueba que cada clase
   tenga una regla de CSS y no por qué canal sale un aviso
@@ -858,7 +858,7 @@ Es deuda de herramienta y no de producto, pero sin ella la próxima foto ubica m
   `lib/negocio/indicadoresDeCitas.ts:155`, `lib/negocio/indicadoresDeCitas.ts:172`), y «grave» en
   `lib/negocio/` sólo aparece en comentarios. Mientras sea así, mover un `grave` en una
   refactorización no rompe nada. Hoy la tarjeta de citas enciende dos avisos graves seguidos
-  (`components/conversation/PanelDeConversation.jsx:679-680`); hay que mirar si se leen como dos
+  (`components/conversation/PanelDeConversation.jsx:682-683`); hay que mirar si se leen como dos
   cosas.
 - **Leads Portal con sesión**: § 10.
 - **El 500 de la autoría bajo delegación** no se reprodujo en vivo: § 20.

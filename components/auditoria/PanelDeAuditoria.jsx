@@ -74,6 +74,7 @@ import {
   ZONA_DEL_AGENTE,
   guardarElPrompt,
 } from '@/lib/auditor/vista';
+import { TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
 
 /** Una fecha corta y legible. `null` se dibuja como un guion, nunca como «hoy». */
 function cuando(valor) {
@@ -94,6 +95,8 @@ const ICONO_DEL_AGENTE = {
  * `'prompts'` y llega por propiedad: ver el encabezado del archivo.
  */
 export function Cuerpo({ cargando, error, pantalla, patrones, sub, abierto, alAbrir, alRecargar }) {
+  /* Las señales del auditor traducidas (AG13 de los agentes): al final, después de los dos agentes, como en las
+     demás pantallas con detector. La recarga es la de la pantalla: resolver o firmar cambia lo que muestra. */
   if (cargando) return <p className="aud-estado">Cargando la auditoría…</p>;
   /* Un error dibujado como «no hay hallazgos» es el cero indistinguible que este módulo persigue en
      otras cuatro formas. */
@@ -154,6 +157,10 @@ export function Cuerpo({ cargando, error, pantalla, patrones, sub, abierto, alAb
           alAbrir={alAbrir}
         />
       ))}
+
+      {pantalla.senales ? (
+        <TarjetaDeSenales departamento="conversation" senales={pantalla.senales} puede={pantalla.puedeConSenales} alCambiar={alRecargar} />
+      ) : null}
     </>
   );
 }

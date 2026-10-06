@@ -56,7 +56,7 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
   const r = await correrLaPasada({ id: e.conDatos, zonaHoraria: ZONA_DE_LOS_CASOS }, { ahora: new Date(`${hoy}T17:00:00Z`) });
   assert.ok(r.tocaba);
   // La pasada por omisión corre los dos detectores construidos; acá se miran las de Acquisition.
-  assert.deepEqual(r.departamentos.map((d) => [d.departamento, d.estado]), [['acquisition', 'corrio'], ['creative', 'corrio']]);
+  assert.deepEqual(r.departamentos.map((d) => [d.departamento, d.estado]), [['acquisition', 'corrio'], ['creative', 'corrio'], ['conversation', 'corrio']]);
 
   const senales = await filas<{ ventana: string; regla: string; entidad_tipo: string; entidad_id: string; gravedad: string; valor_actual: string; muestra: number | null; requiere_validacion_ejecutiva: boolean; estado: string }>(
     admin,

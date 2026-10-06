@@ -219,8 +219,10 @@ hallazgos de 14 días y publica **una señal por agente del CRM y por patrón**,
 | `comportamiento` sin fragmento | `agent_execution` |
 | `base_conocimiento` o `informacion_adicional` | `missing_data` |
 
-`missing_tool`, `workflow_configuration` y `external_failure` se declaran «sin fuente hoy». La gravedad:
-rojo da `alta`, amarillo da `media`. El auditor sigue siendo el único escritor de `negocio.hallazgos`.
+`missing_tool`, `workflow_configuration` y `external_failure` se declaran «sin fuente hoy», y un hallazgo sin
+categoría no lleva `issue_source`: no se inventa una fuente. La gravedad: rojo da `alta`, amarillo da `media`. El
+auditor sigue siendo el único escritor de `negocio.hallazgos` (lo mira `pruebas/codigo/234`). Hecho en AG13: los
+hallazgos son los abiertos de la ventana de la señal, 7 o 30 días, no los de 14 días.
 
 ## AG-38 · Lo que la tabla no hace
 

@@ -3,13 +3,14 @@
 // (migración 072). Lo que lee o escribe la base corre dentro de `conOrganizacion(`.
 //
 // El catálogo nació vacío en AG8: cada detector suma sus reglas en la etapa que lo construye (Acquisition en
-// AG9, Creative en AG10). Una regla declara su denominador porque el piso de 10 se aplica a ESE número (AG-26), y su porqué
+// AG9, Creative en AG10, Conversation en AG13). Una regla declara su denominador porque el piso de 10 se aplica a ESE número (AG-26), y su porqué
 // porque un valor provisional sin razón escrita no se puede firmar con criterio.
 
 import { datos } from '../../datos/contexto.ts';
 import type { DepartamentoConSenales, Gravedad } from './tipos.ts';
 import { REGLAS_DE_ACQUISITION } from '../detectores/acquisition.ts';
 import { REGLAS_DE_CREATIVE } from '../detectores/creative.ts';
+import { REGLAS_DE_CONVERSATION } from '../detectores/conversation.ts';
 
 export interface ReglaDelCatalogo {
   /** `ACQ-CPL-SOSTENIDO`: departamento y nombre, en mayúsculas. */
@@ -31,7 +32,7 @@ export interface ReglaDelCatalogo {
 }
 
 /** Las reglas de todos los detectores. Ver el encabezado. */
-export const CATALOGO_DE_REGLAS: readonly ReglaDelCatalogo[] = [...REGLAS_DE_ACQUISITION, ...REGLAS_DE_CREATIVE];
+export const CATALOGO_DE_REGLAS: readonly ReglaDelCatalogo[] = [...REGLAS_DE_ACQUISITION, ...REGLAS_DE_CREATIVE, ...REGLAS_DE_CONVERSATION];
 
 /** Lo que el Admin firmó en esta empresa, por código de regla. */
 export async function umbralesFirmados(): Promise<ReadonlyMap<string, number>> {

@@ -42,12 +42,18 @@ export interface FormatoDelPlan<G extends string = string> {
   textoDe: (d: Deteccion, ventana: VentanaDeSenal) => string;
   /** Lo que no se pudo medir, en palabras, por regla. */
   noSeMidio: Readonly<Record<string, string>>;
+  /**
+   * El último criterio de orden, después de la pérdida y la gravedad: más alto, primero. Conversation ordena por
+   * cuántas conversaciones toca cada patrón. Sin él, por la entidad.
+   */
+  desempate?: (d: Deteccion) => number;
 }
 
 export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan): PlanDelDepartamento<G> {
   const grupos = f.grupos.map((g) => ({ clave: g.clave, titulo: g.titulo, renglones: [] as RenglonDelPlan[] }));
+  const peso = new Map<RenglonDelPlan, number>();
   for (const d of p.vigentes) {
-    grupos.find((g) => g.clave === f.grupoDe(d))!.renglones.push({
+    const renglon: RenglonDelPlan = {
       regla: d.regla,
       entidad: d.entidad,
       gravedad: d.gravedad,
@@ -56,14 +62,18 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
       texto: f.textoDe(d, p.ventana),
       revision: d.revisionRecomendada,
       causas: d.causasPosibles,
-    });
+    };
+    peso.set(renglon, f.desempate?.(d) ?? 0);
+    grupos.find((g) => g.clave === f.grupoDe(d))!.renglones.push(renglon);
   }
-  // Primero lo que más gente pierde; lo que no tiene pérdida, después; a igual pérdida, lo más grave.
+  // Primero lo que más gente pierde; lo que no tiene pérdida, después; a igual pérdida, lo más grave; y después, el
+  // desempate del departamento.
   for (const g of grupos) {
     g.renglones.sort(
       (a, b) =>
         (b.perdidaContactos ?? -1) - (a.perdidaContactos ?? -1) ||
         GRAVEDADES.indexOf(a.gravedad) - GRAVEDADES.indexOf(b.gravedad) ||
+        peso.get(b)! - peso.get(a)! ||
         a.entidad.id.localeCompare(b.entidad.id),
     );
   }

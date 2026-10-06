@@ -205,7 +205,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   y Conversation (`lib/negocio/cadenaDeCierre.ts:46-55`), anclada al día en Acquisition, Creative y
   Conversion (`lib/negocio/recorrido.ts:186-198`). Hoy, a 30 días, dan 277 y 276.
 - **Conversaciones** — `indicadoresDelLead`, pero sólo detrás de `/api/auditoria`, que pide
-  `auditor.ver` y no `tablero.ver` (`app/api/auditoria/route.ts:55`). Ver § 6, regla 6.
+  `auditor.ver` y no `tablero.ver` (`app/api/auditoria/route.ts:57`). Ver § 6, regla 6.
 - **Visitas landing** — **no existe**: Conversion declara que no hay sesiones ni visitantes
   guardados (`lib/negocio/embudoDelFormulario.ts:129-136`). Lo que sí publica es cuántos contactos
   entraron por cada camino, en conteos y no en tasas (`lib/negocio/recorridoDelLead.ts:4-45`). Lo

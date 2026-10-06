@@ -33,6 +33,8 @@ import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, porQueNoAudita } from '../../../lib/auditor/pantalla.ts';
+import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
+import { textoDeConversation } from '../../../lib/agentes/plan/conversation.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
 import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
 import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
@@ -69,7 +71,12 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos
      lecturas que se dibujan juntas, y en dos transacciones podrían ver estados distintos de la misma
      tabla — la cifra diría una cosa y la agenda de al lado otra, sin que nada falle. */
-  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento] =
+  /* Las señales del auditor traducidas (AG13 de los agentes), de 7 o de 30 días como las demás. Se muestran en la
+     pestaña Auditoría, que NO tiene selector de período —sus listas no se acotan por ventana—: con «hoy» o
+     «completo» elegidos en un flujo, la tarjeta pediría elegir 7 o 30 sin un control a la vista. Así que es la
+     de 7 días si se eligió 7, y la de 30 si no, y la tarjeta dice cuál. Las guarda la pasada de cada mañana. */
+  const ventana: '7d' | '30d' = periodo.clave === '7d' ? '7d' : '30d';
+  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento, senales] =
     await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
@@ -86,11 +93,29 @@ export async function GET(peticion: Request): Promise<Response> {
          promedio que no describe a ninguna. Medido, hoy pre-agenda no tiene ni un veredicto.
          La lista sale del catálogo: nombrar un agente acá está prohibido y el motivo es caro. */
       await sentimientoPorFlujo(periodo.dias),
-    ],
+      await (async () => {
+        const lista = await senalesDeLaPantalla('conversation', ventana, textoDeConversation);
+        return {
+          ventana,
+          lista,
+          estado: estadoDelDepartamento(lista),
+          plan: await ultimoPlan('conversation', ventana),
+          reglas: await reglasDelDepartamento('conversation'),
+        };
+      })(),
+    ] as const,
   );
 
   return ok({
     ...pantalla,
+    senales,
+    /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/auditoria/senales` y
+       `…/umbrales`, y nada bajo delegación (AG-82). */
+    puedeConSenales: {
+      resolver: contexto.permisos.has('senales.resolver') && !contexto.mirandoOtraOrganizacion,
+      validar: contexto.permisos.has('senales.validar') && !contexto.mirandoOtraOrganizacion,
+      firmar: contexto.permisos.has('umbrales.firmar') && !contexto.mirandoOtraOrganizacion,
+    },
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ, no con lo que pidió. Si un día las dos dejan de coincidir —una petición que
        se cruza con otra, una respuesta guardada— el botón encendido sigue describiendo las cifras que
