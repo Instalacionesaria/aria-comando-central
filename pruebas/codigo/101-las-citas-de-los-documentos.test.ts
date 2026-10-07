@@ -58,6 +58,8 @@ const AUDITADAS = [
   'docs/OTROS/estado actual',
   'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
   'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
+  // El plan de las ventanas en el día de la empresa (2026-10-07): diagnosticado y dejado para después.
+  'docs/OTROS/futuro/el-dia-de-la-empresa.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
   'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', // ver «LA NUEVA ESTRUCTURA» y «LOS AGENTES», al final
 ];

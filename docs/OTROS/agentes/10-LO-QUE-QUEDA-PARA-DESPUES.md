@@ -44,3 +44,4 @@
 | Los indicadores de la garantía | Det los propone sin fuente |
 | La voz de los mensajes de error que ya existen | Se ven en la etapa de cada pantalla |
 | El comentario de la cabecera en Research y Marketing (AG15) | Lo que falta en Fundaciones, que espera la rama de ICP & Oferta |
+| Las ventanas en el día de la empresa | Diagnosticado y diseñado el 2026-10-07 (`docs/OTROS/futuro/el-dia-de-la-empresa.md`); los detectores de Creative, Conversion y Conversation publican su período en el día UTC. Se deja para después por decisión del usuario |
