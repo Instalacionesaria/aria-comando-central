@@ -42,6 +42,7 @@ import {
 import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
 import { colasDelDia } from '../../../../lib/negocio/miDia.ts';
 import { marcasDelBrief } from '../../../../lib/agentes/brief/guardar.ts';
+import { comentarioDelCloser } from '../../../../lib/agentes/cabecera.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'closer';
@@ -66,7 +67,7 @@ export async function GET(peticion: Request): Promise<Response> {
    * Un closer vinculado que lo mande a mano recibe su propio alcance igual. */
   const verComo = verComoDeLaUrl(peticion);
 
-  const { colas, cockpit, comision, closers, alcance, propio, briefs } = await conOrganizacion(
+  const { colas, cockpit, comision, closers, alcance, propio, briefs, comentario } = await conOrganizacion(
     contexto.orgEfectiva,
     async () => {
       /* ── DE QUIÉN SON LOS LEADS DE ESTA PANTALLA ─────────────────────────
@@ -126,7 +127,10 @@ export async function GET(peticion: Request): Promise<Response> {
       const briefs = await marcasDelBrief(
         colas.agenda.flatMap((i) => (i.cita ? [{ citaId: i.cita.id, contactoId: i.fila.id }] : [])),
       );
-      return { colas, cockpit, comision, closers, alcance, propio, briefs };
+      /* El comentario de la cabecera (AG15 de los agentes, AG-77): las citas sin registrar con ESTE alcance, no las
+         de la empresa entera que cuenta la Reunión. */
+      const comentario = await comentarioDelCloser(alcance);
+      return { colas, cockpit, comision, closers, alcance, propio, briefs, comentario };
     },
   );
   /* De quién son los números que se están mostrando. `null` = de toda la empresa, que no es lo
@@ -175,5 +179,6 @@ export async function GET(peticion: Request): Promise<Response> {
     mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
     /* Por cita de la agenda: si su Brief está listo y si el contacto no tiene formulario. */
     briefs,
+    comentario,
   });
 }

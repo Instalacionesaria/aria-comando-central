@@ -29,7 +29,7 @@ les toca a todas por igual y no se repite en cada fila.
 ## `NE-19` · Tools y Analizadores, partidos sin partir el permiso
 
 Son **una sección cada uno**, con sus pestañas como estado interno (`components/fundaciones/Fundaciones.jsx`
-y `components/analizadores/PanelDeAnalizadores.jsx:48`). En la estructura nueva sus pestañas viven en
+y `components/analizadores/PanelDeAnalizadores.jsx:49`). En la estructura nueva sus pestañas viven en
 departamentos distintos, así que **la pestaña la elige la navegación**:
 
 - abrir «Research › Espía de anuncios» es abrir la vista `tools` **pidiéndole** la pestaña `espia`;

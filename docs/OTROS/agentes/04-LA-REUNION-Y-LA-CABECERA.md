@@ -178,9 +178,15 @@ Lo construido (`lib/agentes/cabecera.ts`, `lib/agentes/comentario-de-la-cabecera
 - **La regla** es un tema `REU-…` de la Reunión de HOY de esa sección: sale de la fila que guardó la pasada.
 - **Cómo llega a la cabecera**: el panel lo publica por sección y la cabecera lee el de la sección a la vista;
   la cabecera no le pide nada al servidor.
+- **Sales, desde el 2026-10-07**: en Closer lo sirve el GET de Mi Día, con la regla propia de las citas que ya
+  ocurrieron y nadie registró —las mismas que Avanzar ofrece cerrar (`citaCerrable`, los últimos 14 días) y
+  con el MISMO alcance que sus colas: las de los contactos asignados al closer que se mira, o las de la
+  empresa—, y antes la lectura del calendario si no está al día. La regla de la Reunión cuenta contactos de la
+  empresa entera, y a un closer con alcance propio le diría lo de los demás. En Llamadas de venta lo sirve el
+  GET de la lista (el de `…/estado` es de identidad y no puede leer negocio): el análisis de tl;dv y la regla de
+  la Reunión de hoy de su sección. El Setter no tiene nada medible y calla.
 - **Lo que no tiene comentario todavía**: Research y Marketing (lo que falta en Fundaciones espera la rama de
-  ICP & Oferta) y Sales (sus pestañas piden cada una lo suyo, y la regla de las citas sin registrar es de la
-  empresa entera, que no es lo que ve un closer con alcance propio). Está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`.
+  ICP & Oferta). Está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`.
 
 ## AG-79 · Teléfono y delegación
 

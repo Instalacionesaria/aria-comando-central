@@ -9,7 +9,8 @@
 //   · la prioridad: lo que falta configurar, después la señal crítica o alta más grave, después una regla;
 //   · la regla del silencio: sin ninguna de las tres, nada; una señal media o sin medición no habla;
 //   · la frescura, en una línea por su consecuencia;
-//   · la cabecera dibuja sólo el texto que publicó el panel, y en el teléfono no lo dibuja.
+//   · la cabecera dibuja sólo el texto que publicó el panel, y en el teléfono no lo dibuja;
+//   · Sales (2026-10-07): la regla de las citas sin registrar, y Closer y Llamadas la publican.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -17,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ, sinComentarios } from '../apoyo/fuente.ts';
-import { comentarioDeLaCabecera, faltaPorFrescura, type FuentesDeLaCabecera } from '../../lib/agentes/cabecera.ts';
+import { comentarioDeLaCabecera, faltaPorFrescura, textoDeCitasSinRegistrar, type FuentesDeLaCabecera } from '../../lib/agentes/cabecera.ts';
 
 const senal = (gravedad: 'critica' | 'alta' | 'media' | 'info', texto: string, perdidaContactos: number | null = null, estado: 'abierta' | 'vista' | 'sin_medicion' = 'abierta') => ({
   gravedad,
@@ -76,5 +77,17 @@ test('la cabecera dibuja sólo el texto publicado, y en el teléfono no lo dibuj
       sinComentarios(readFileSync(join(RAIZ, archivo), 'utf8')).includes(`usarPublicarComentario('${seccion}', pantalla ? (pantalla.comentario ?? null) : undefined);`),
       `${archivo} no publica el comentario de su GET`,
     );
+  }
+});
+
+test('Sales: la regla de las citas sin registrar, en una línea; cero, nada; y sus dos paneles la publican', () => {
+  assert.equal(textoDeCitasSinRegistrar(0), null);
+  assert.equal(textoDeCitasSinRegistrar(1), 'Una cita de los últimos 14 días ya ocurrió y espera que se registre si el prospecto se presentó.');
+  assert.equal(textoDeCitasSinRegistrar(15), '15 citas de los últimos 14 días ya ocurrieron y esperan que se registre si el prospecto se presentó.');
+  for (const [archivo, publica] of [
+    ['components/views/CloserView.jsx', "usarPublicarComentario('closer', datos ? (datos.comentario ?? null) : undefined);"],
+    ['components/analizadores/PanelDeAnalizadores.jsx', "usarPublicarComentario('analizadores', lista ? (lista.comentario ?? null) : undefined);"],
+  ] as const) {
+    assert.ok(sinComentarios(readFileSync(join(RAIZ, archivo), 'utf8')).includes(publica), `${archivo} no publica el comentario de su GET`);
   }
 });

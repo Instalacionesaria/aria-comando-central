@@ -44,4 +44,3 @@
 | Los indicadores de la garantía | Det los propone sin fuente |
 | La voz de los mensajes de error que ya existen | Se ven en la etapa de cada pantalla |
 | El comentario de la cabecera en Research y Marketing (AG15) | Lo que falta en Fundaciones, que espera la rama de ICP & Oferta |
-| El comentario de la cabecera en Sales (AG15) | Un GET que lo sirva —cada pestaña pide lo suyo— y la regla de las citas sin registrar con el alcance de quien mira: hoy es de la empresa entera |

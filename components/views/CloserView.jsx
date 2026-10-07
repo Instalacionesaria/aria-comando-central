@@ -42,6 +42,7 @@ import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
 import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import MiDia from '../closer/MiDia.jsx';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 const SUB = [
   { clave: 'inicio', nombre: 'Inicio', icono: '#i-exec' },
@@ -93,6 +94,8 @@ export default function CloserView({ activa }) {
      equipo. Lo responde el SERVIDOR con la condición exacta del endpoint, no se deduce del rol. */
   const sesion = useSesion();
   const [datos, setDatos] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('closer', datos ? (datos.comentario ?? null) : undefined);
   const [situacion, setSituacion] = useState('cargando');
   const [causa, setCausa] = useState(null);
 

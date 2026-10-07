@@ -13,15 +13,27 @@
 //      trae): sale de la fila que guardó la pasada, no se vuelve a medir.
 //   4. Nada. Sin una de las anteriores no se dibuja nada (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md`).
 //
-// Lo que falta en Fundaciones (la cuarta fuente del diseño) no está: Research y Marketing esperan la rama
-// de ICP & Oferta, y sus pantallas no tienen todavía un GET que lo sirva. Tampoco Sales: sus pestañas piden
-// cada una lo suyo, y la regla de las citas sin registrar es de la empresa entera, que no es lo que ve un
-// closer con alcance propio (`10-LO-QUE-QUEDA-PARA-DESPUES.md`).
+// ── SALES (2026-10-07) ───────────────────────────────────────────────────
+//
+// Sales no tiene señales. En Closer, la regla es la suya y no la de la Reunión: las citas que ya ocurrieron y
+// nadie registró, con el MISMO alcance que las colas de Mi Día (las de los contactos asignados al closer que se
+// mira, o las de la empresa) y la misma ventana y el mismo predicado con que Avanzar ofrece cerrarlas
+// (`citaCerrable`, `DIAS_DE_LA_TASA`). La de la Reunión cuenta contactos de la empresa entera, y a un closer con
+// alcance propio le diría lo de los demás. En Llamadas de venta, la regla de la Reunión de hoy de esa sección. El
+// Setter no tiene nada medible: calla.
+//
+// Lo que falta en Fundaciones (la cuarta fuente del diseño) no está: Research y Marketing esperan la rama de ICP
+// & Oferta, y sus pantallas no tienen todavía un GET que lo sirva (`10-LO-QUE-QUEDA-PARA-DESPUES.md`).
 //
 // **Corre dentro de `conOrganizacion(`**: lo llama el GET de cada pantalla, en su transacción.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { sql } from 'kysely';
+import { datos } from '../datos/contexto.ts';
 import { enPalabras, frescuraDe, type Frescura } from '../negocio/frescura.ts';
+import { citaCerrable } from '../negocio/citasAlcanzables.ts';
+import { DIAS_DE_LA_TASA } from '../negocio/indicadoresDeCitas.ts';
+import type { AlcanceDelCloser } from '../negocio/alcanceDelCloser.ts';
 import { diaEnZona } from '../negocio/tiempo.ts';
 import type { PorQueNoAudita } from '../auditor/pantalla.ts';
 import { senalesDeLaPantalla, type SenalParaMostrar } from './senales/lectura.ts';
@@ -96,8 +108,55 @@ export async function comentarioDelDepartamento(
     faltaConFrescura = faltaPorFrescura(await frescuraDe(lee.tarea), lee.que);
   }
   const senales = [...(await senalesDeLaPantalla(departamento, '7d', de.texto)), ...(await senalesDeLaPantalla(departamento, '30d', de.texto))];
+  return comentarioDeLaCabecera({ falta: faltaConFrescura, senales, regla: await reglaDeHoy(de.seccion, zona) });
+}
+
+/** El texto de una regla `REU-…` de la Reunión de HOY de esa sección, o `null`. La de ayer no habla. */
+async function reglaDeHoy(seccion: string, zona: string): Promise<string | null> {
   const r = await ultimaReunion();
-  const regla =
-    r && r.dia === diaEnZona(new Date(), zona) ? (temasEnSuOrden(r).find((t) => t.seccion === de.seccion && t.regla.startsWith('REU-'))?.texto ?? null) : null;
-  return comentarioDeLaCabecera({ falta: faltaConFrescura, senales, regla });
+  if (!r || r.dia !== diaEnZona(new Date(), zona)) return null;
+  return temasEnSuOrden(r).find((t) => t.seccion === seccion && t.regla.startsWith('REU-'))?.texto ?? null;
+}
+
+/** «3 citas que ya ocurrieron esperan…»: la regla del Closer, en una línea. Pura. */
+export function textoDeCitasSinRegistrar(n: number): string | null {
+  if (n <= 0) return null;
+  return n === 1
+    ? `Una cita de los últimos ${DIAS_DE_LA_TASA} días ya ocurrió y espera que se registre si el prospecto se presentó.`
+    : `${n} citas de los últimos ${DIAS_DE_LA_TASA} días ya ocurrieron y esperan que se registre si el prospecto se presentó.`;
+}
+
+/**
+ * Las citas que ya ocurrieron y nadie registró, con el alcance de quien mira: las mismas que Avanzar ofrece
+ * cerrar, en su misma ventana.
+ */
+export async function citasSinRegistrar(alcance: AlcanceDelCloser): Promise<number> {
+  const fila = await datos()
+    .selectFrom('citas as ci')
+    .innerJoin('contactos as c', 'c.id', 'ci.contacto_id')
+    .select(sql<string>`count(*)::text`.as('n'))
+    .where(citaCerrable('ci'))
+    .where('ci.asistio', 'is', null)
+    .where(sql<boolean>`ci.inicio_el >= now() - make_interval(days => ${DIAS_DE_LA_TASA})`)
+    .$if(alcance.tipo === 'mio', (q) => q.where('c.crm_asignado_a', '=', (alcance as { crmUsuarioId: string }).crmUsuarioId))
+    .executeTakeFirstOrThrow();
+  return Number(fila.n);
+}
+
+/** El comentario de Closer: la lectura del calendario, y las citas sin registrar de su alcance. */
+export async function comentarioDelCloser(alcance: AlcanceDelCloser): Promise<ComentarioDeLaCabecera | null> {
+  return comentarioDeLaCabecera({
+    falta: faltaPorFrescura(await frescuraDe('citas'), 'la lectura del calendario'),
+    senales: [],
+    regla: textoDeCitasSinRegistrar(await citasSinRegistrar(alcance)),
+  });
+}
+
+/** El comentario de Llamadas de venta: el análisis de tl;dv, y la regla de la Reunión de hoy de su sección. */
+export async function comentarioDeLasLlamadas(zona: string): Promise<ComentarioDeLaCabecera | null> {
+  return comentarioDeLaCabecera({
+    falta: faltaPorFrescura(await frescuraDe('analizadores'), 'el descubrimiento y el análisis de las llamadas de tl;dv'),
+    senales: [],
+    regla: await reglaDeHoy('analizadores', zona),
+  });
 }

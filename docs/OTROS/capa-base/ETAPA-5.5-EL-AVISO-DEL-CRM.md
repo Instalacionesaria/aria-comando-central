@@ -26,7 +26,7 @@
 
 **Hacerlo, pero no como está escrito en ninguna de las tres: arrancar HOY por el defecto de duplicados que ya existe sin ningún webhook, cosechar los payloads reales del inbox de la plataforma anterior en vez de esperar una captura futura, y construir el receptor con la arquitectura de la 1ª pero con la ATRIBUCIÓN POR EL SECRETO de la 2ª —que borra de raíz su objeción más fuerte— más el portón de pimienta global que evita que un desconocido apague el login de todos los inquilinos, y con un monitor que mide LO PROCESADO y no LO RECIBIDO; y NO tocar ninguna cadencia en esta etapa.**
 
-No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El ahorro de las 360 llamadas/hora **no es de esta etapa y probablemente no vale su riesgo por sí solo**: esas 360 se pagan únicamente con el Closer a la vista y son 0 con la pestaña cerrada (`components/views/CloserView.jsx:150`, verificado). Lo que el aviso compra de verdad es otra cosa, y es grande: **fuera del horario en que alguien mira, la latencia real de un mensaje entrante es de hasta 24 horas**, porque los 10 s son `CADENCIA.operacion` con la pestaña a la vista y el cron corre una vez por día (`vercel.json` = `"0 12 * * *"`, `HORARIOS` con una sola entrada diaria, verificado). Ésa es la razón del trabajo, y hay que decirla así porque hay un competidor mucho más barato para el mismo problema — ver el punto 2, ítem A.
+No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El ahorro de las 360 llamadas/hora **no es de esta etapa y probablemente no vale su riesgo por sí solo**: esas 360 se pagan únicamente con el Closer a la vista y son 0 con la pestaña cerrada (`components/views/CloserView.jsx:153`, verificado). Lo que el aviso compra de verdad es otra cosa, y es grande: **fuera del horario en que alguien mira, la latencia real de un mensaje entrante es de hasta 24 horas**, porque los 10 s son `CADENCIA.operacion` con la pestaña a la vista y el cron corre una vez por día (`vercel.json` = `"0 12 * * *"`, `HORARIOS` con una sola entrada diaria, verificado). Ésa es la razón del trabajo, y hay que decirla así porque hay un competidor mucho más barato para el mismo problema — ver el punto 2, ítem A.
 
 ---
 
@@ -226,7 +226,7 @@ Es la mitad del trabajo que consiste en no hacer nada, y hay que hacerla explíc
 
 ## 6 · LA TABLA DE COSTO
 
-Todo por **empresa y por hora**. Verificado en `pruebas/codigo/109-consumo.test.ts:6-8`, `lib/cadencia.ts:40`, `lib/negocio/pulso.ts:102`, `components/views/CloserView.jsx:150`, `vercel.json`.
+Todo por **empresa y por hora**. Verificado en `pruebas/codigo/109-consumo.test.ts:6-8`, `lib/cadencia.ts:40`, `lib/negocio/pulso.ts:102`, `components/views/CloserView.jsx:153`, `vercel.json`.
 
 | Escenario | Pedidos a Vercel/hora | Llamadas al CRM/hora | Latencia de un entrante |
 |---|---|---|---|

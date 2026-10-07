@@ -42,6 +42,7 @@ import { anunciarPestana } from '@/lib/aios/shell';
 import { fraseDelVeto, rotuloDelEstado } from '@/lib/analizadores/rotulos';
 import DetalleHt from './DetalleHt.jsx';
 import DetalleOb from './DetalleOb.jsx';
+import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 /* Las dos pestañas. Las elige la navegación —Sales › Llamadas de venta y Client Success › Llamadas de onboarding—:
    desde la etapa E11 la pantalla no dibuja barra propia, así que no llevan nombre ni ícono. */
@@ -94,6 +95,8 @@ export default function PanelDeAnalizadores() {
   const [pestana, setPestana] = useState('HT');
   const [filtro, setFiltro] = useState('analizadas');
   const [lista, setLista] = useState(null);
+  // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
+  usarPublicarComentario('analizadores', lista ? (lista.comentario ?? null) : undefined);
   const [error, setError] = useState('');
   const [estado, setEstado] = useState(null);
   const [errorDeEstado, setErrorDeEstado] = useState('');

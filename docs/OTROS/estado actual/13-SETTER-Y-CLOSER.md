@@ -85,8 +85,8 @@ respuesta de Mi Día declara `llamadasAlCrm: 0` (`app/api/setter/mi-dia/route.ts
 ### 2.3 · El Closer
 
 `components/views/CloserView.jsx`, 404 líneas. Inicio · Mi Día · Pipeline · Agenda
-(`components/views/CloserView.jsx:46-51`). Seis rutas bajo `app/api/closer/`, todas con `closer.ver`:
-`mi-dia` (colas + cockpit + comisión, `app/api/closer/mi-dia/route.ts:49-131`), `agenda`, `pipeline`,
+(`components/views/CloserView.jsx:47-52`). Seis rutas bajo `app/api/closer/`, todas con `closer.ver`:
+`mi-dia` (colas + cockpit + comisión, `app/api/closer/mi-dia/route.ts:50-135`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
 `app/api/closer/agenda/refrescar/route.ts:50`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
@@ -100,7 +100,7 @@ servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDe
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s
-que dispara la ingesta de mensajes y recarga las colas (`components/views/CloserView.jsx:170-183`,
+que dispara la ingesta de mensajes y recarga las colas (`components/views/CloserView.jsx:173-186`,
 `lib/cadencia.ts:40`). Los contactos entran solos cada diez minutos por el cron
 (`lib/negocio/barrido.ts:198-202`).
 
@@ -238,7 +238,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
   `app/api/setter/mi-dia/route.ts:57-58`, `components/setter/Inicio.jsx:10-11` y
   `components/setter/PorcentajesDelSetter.jsx:15-16`. La clave es `(org_id, usuario_id)` desde la
   `034` (`db/migraciones/034_varios_closers.sql:61`, aplicada el 2026-09-01), y hay tres filas.
-- **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:392-398`).
+- **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:395-401`).
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
   (`lib/negocio/barrido.ts:198-202`) con `2e8ce81`, el 2026-08-28.
@@ -553,7 +553,7 @@ tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:156-171`,
 
 **8 · El alcance no es un permiso.** Vive en la consulta, y el closer sin vincular ve todo, porque
 mostrarle cero le diría «no hay trabajo» (`lib/negocio/alcanceDelCloser.ts:23-38`). La comisión es
-de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:110-123`).
+de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:111-124`).
 
 ---
 

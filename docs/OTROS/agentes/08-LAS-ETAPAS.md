@@ -737,6 +737,10 @@ Lo que decía el plan:
 - **Lo que queda abierto** está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`.
 - **Después del cierre, el 2026-10-07**: el pedido de la redacción de la Reunión ya no lleva la etiqueta del
   tema, que el modelo leía como el problema; la evaluación repetida (1 pedido) lo confirma (`07`).
+- **Después del cierre, el 2026-10-07**: el comentario de la cabecera en Sales (`04`, AG-78). Closer, con las
+  citas sin registrar del alcance de quien mira, servido por Mi Día; Llamadas de venta, servido por su lista.
+  Prueba nueva 244; cambia la 242. Mutaciones, 8 vistas en rojo; una quedaba verde (Mi Día con el alcance de
+  la empresa) hasta sumar un closer vinculado al CRM.
 - **Después del cierre, el 2026-10-07**: la evaluación real de la clasificación de objeciones (AG11), que no se
   había corrido. Nueva tanda `objeciones` del guion (4 pedidos sobre 20 objeciones sintéticas, por la misma
   pedida que la tarea, que ahora es `pedirCategorias`): 20 de 20 (`07`).

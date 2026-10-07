@@ -13,6 +13,7 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { contarPorFiltro, listarLlamadas } from '../../../../lib/analizadores/datos.ts';
 import { filtroDe, pestanaDe } from '../../../../lib/analizadores/rutas.ts';
+import { comentarioDeLasLlamadas } from '../../../../lib/agentes/cabecera.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'analizadores';
@@ -30,11 +31,14 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const orgId = contexto.orgEfectiva;
   try {
-    const { llamadas, cuenta } = await conOrganizacion(orgId, async () => ({
+    const { llamadas, cuenta, comentario } = await conOrganizacion(orgId, async () => ({
       llamadas: await listarLlamadas(orgId, tipo, filtro),
       cuenta: await contarPorFiltro(orgId, tipo),
+      /* El comentario de la cabecera (AG15 de los agentes, `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`,
+         AG-77): va con la lista y no con `…/estado`, que es de identidad y no puede leer negocio (ADR-0209). */
+      comentario: await comentarioDeLasLlamadas(contexto.organizacion.zonaHoraria),
     }));
-    return ok({ tipo, filtro, llamadas, cuenta });
+    return ok({ tipo, filtro, llamadas, cuenta, comentario });
   } catch (e) {
     /* «No pude leer» NO es «no hay llamadas». Con un `ok([])` acá, una caída de la base se vería
        como una pestaña vacía —que es un estado normal— y nadie la reportaría. */

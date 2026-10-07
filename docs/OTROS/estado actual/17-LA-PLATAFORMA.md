@@ -201,7 +201,7 @@ Medido el 2026-09-28 22:04 UTC (re-medido a las 22:26, sin cambios):
 ### 2.6 · Los disparos manuales, que siguen vivos
 
 El cron no es el único que trae datos. El Closer y el Setter piden la ingesta desde el navegador,
-cada 10 s mientras la pestaña está a la vista (`components/views/CloserView.jsx:173`, `:183`;
+cada 10 s mientras la pestaña está a la vista (`components/views/CloserView.jsx:176`, `:183`;
 `components/views/SetterView.jsx:237`, `:242` → `app/api/mensajes/ingesta/route.ts:62`), la Agenda
 tiene su botón de refresco (`components/closer/Agenda.jsx:173` →
 `app/api/closer/agenda/refrescar/route.ts:63`) y la lista de contactos el suyo
