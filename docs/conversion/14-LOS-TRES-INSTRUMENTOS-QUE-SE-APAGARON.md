@@ -80,7 +80,7 @@ landing» que sume los siete cuenta cinco cosas distintas.
 Y **ningún módulo de `lib/negocio/` consulta `atribucion_ultima`**: las veinte apariciones de
 `atribucion_primera|atribucion_ultima` en ese directorio son comentarios o consultas sobre la
 **primera** (`atribucionDelLead.ts:142,145`; `calidadDeLaAtribucion.ts:111-155`;
-`calidadDelCreativo.ts:197,214,233,321`; `costoDelAnuncio.ts:330`). La columna existe, se puebla y
+`calidadDelCreativo.ts:197,214,233,321`; `costoDelAnuncio.ts:339`). La columna existe, se puebla y
 no tiene lectores.
 
 Eso es exactamente la regla 6 del departamento (`03-CONVERSION.md:415-416`): *«Acquisition mira el
@@ -165,7 +165,7 @@ Los 72 de diferencia entre 119 y 47 son **citas congeladas**: el CRM ya no devue
 repositorio ya conoce ese caso (regla 4 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:267-273`).
 
 **Consecuencia de diseño:** el agendamiento de Conversion sale del mismo `exists` con
-`ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:341-344`, `calidadDelCreativo.ts:223-226`,
+`ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:350-353`, `calidadDelCreativo.ts:223-226`,
 `atribucionDelLead.ts:150-153` e `indicadoresDelLead.ts:243`. Si saliera del campo, esta pantalla
 diría 121 donde las otras dicen 47, y **nadie tendría cómo saber cuál de las dos está mal**.
 

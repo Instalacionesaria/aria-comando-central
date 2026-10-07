@@ -53,7 +53,7 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
 
 **Y el marcado tampoco está al día.** Los cuatro paneles nuevos emiten `db-seg cs-periodos` con
 `role="group"` y `aria-label` (`PanelDeConversion.jsx:106`, `PanelDeCreative.jsx:111`,
-`PanelDeAcquisition.jsx:202`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
+`PanelDeAcquisition.jsx:205`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
 
 ---
 

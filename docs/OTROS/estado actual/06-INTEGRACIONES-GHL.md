@@ -176,9 +176,14 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | 13 | `GET /conversations/messages/{id}` | tercera pasada de entregas | 2 por ciclo (`lib/negocio/entregas.ts:52`) | `lib/ghl/conversaciones.ts:294` |
 | 14 | `POST /conversations/messages` | enviar desde el chat | por acción de una persona | `lib/ghl/conversaciones.ts:419` |
 | 15 | `GET /ad-publishing/facebook/integration` | cron `anuncios`, el «paso 0» | 1 por día | `lib/ghl/anuncios.ts:250` |
-| 16 | `GET /ad-publishing/facebook/reporting/list` | cron `anuncios`, 1 por campaña y por día | 39 por día (13 campañas × 3 días) | `lib/ghl/anuncios.ts:466` |
+| 16 | `GET /ad-publishing/facebook/reporting/list` | cron `anuncios`, 1 por campaña y por día | 39 por día (13 campañas × 3 días) | `lib/ghl/anuncios.ts:466@d17e029` |
 | 17 | `GET /ad-publishing/facebook/entity` | **nadie** | nunca en producción | `lib/ghl/anuncios.ts:327` |
-| 18 | `GET /ad-publishing/facebook/reporting` | **nadie** | nunca en producción | `lib/ghl/anuncios.ts:549` |
+| 18 | `GET /ad-publishing/facebook/reporting` | **nadie** | nunca en producción | `lib/ghl/anuncios.ts:621` |
+
+> **Desde la `076` (2026-10-07)** las filas 16 a 18 cambiaron: la 18 la llama el colector una vez por día, en
+> tramos de veinte días porque el proveedor corta en 25 filas, y es la referencia del gasto; la 17 se lee al
+> principio de cada pasada; y la 16 se pide para las campañas que pueden estar gastando, más los rangos del
+> relleno de cada hora. Ver `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-23 a C14-27.
 
 Las 17 rutas son 18 operaciones porque la 3 y la 4 comparten ruta. Las cuatro de anuncios las alcanza
 el mismo Private Integration Token que ya usaba el barrido, bajo el alcance `adPublishing`
@@ -234,7 +239,7 @@ Instagram y 128 registros de llamada**, el 10 % del tráfico de nuestros contact
 (`lib/ghl/entrega.ts:225-231`). Del 2026-09-14, no re-medido: es una decisión de producto de ese día.
 
 **`GET /ad-publishing/facebook/reporting/list` (nueva).** Lee 14 claves por fila y guarda 13
-(`lib/ghl/anuncios.ts:504-519`). La que se lee y **no** se guarda es `leads`, que no es el conteo de
+(`lib/ghl/anuncios.ts:484-499`). La que se lee y **no** se guarda es `leads`, que no es el conteo de
 Meta sino el nuestro dando un rodeo por el proveedor: 16 de 16 coincidencias el 2026-09-16 y 14 de 15
 el 2026-09-19 (`lib/ghl/anuncios.ts:426-441`). Tampoco entran `sales`, `revenue` ni `averageRevenue`
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:208-223`). Y `results` —el desglose de acciones de
@@ -243,7 +248,7 @@ Meta— se tiraba entero hasta el 2026-09-19 porque `numero()` convertía el obj
 Medido hoy: 275 de las 3.318 filas tienen desglose, y 237 de las 263 filas con gasto mayor que cero.
 
 **`GET /ad-publishing/facebook/reporting` (nueva, sin llamador).** Si se usara: `conversions` y
-`costPerConversion` vienen en cero en todo el período y no se leen (`lib/ghl/anuncios.ts:545-547`).
+`costPerConversion` vienen en cero en todo el período y no se leen (`lib/ghl/anuncios.ts:617-619`).
 
 ### El costo de las carpetas, que conviene mirar
 
@@ -276,14 +281,14 @@ cada tarea. Para la única empresa conectada, el 2026-09-28:
 El 2026-09-15 era 1.392; la diferencia es entera la tarea `anuncios`. Los Analizadores no le hablan
 al CRM: ningún archivo de `lib/analizadores/` importa `lib/ghl/`.
 
-**La tarea `anuncios` cuesta 40 y su comentario dice 52.** `lib/negocio/barrido.ts:243-245` cuenta
+**La tarea `anuncios` cuesta 40 y su comentario dice 52.** `lib/negocio/barrido.ts:243-245@d17e029` cuenta
 «trece campañas por cuatro días (hoy más los tres que se releen)», que era cierto cuando
-`DIAS_QUE_SE_RELEEN` valía 3. Vale 2 (`lib/negocio/recolectarAnuncios.ts:59`), la ventana son tres
+`DIAS_QUE_SE_RELEEN` valía 3. Vale 2 (`lib/negocio/recolectarAnuncios.ts:61`), la ventana son tres
 días, y la medición es 1 del vínculo + 13 × 3 = 40. El proveedor tarda **4,55 s por llamada** en esta
-familia —390 llamadas en 1.775 s en el relleno del 2026-09-16, `lib/negocio/recolectarAnuncios.ts:81-82`—,
-así que la pasada tiene su propio tope de 120 s (`lib/negocio/recolectarAnuncios.ts:94`). Su último
+familia —390 llamadas en 1.775 s en el relleno del 2026-09-16, `lib/negocio/recolectarAnuncios.ts:91-92`—,
+así que la pasada tiene su propio tope de 120 s (`lib/negocio/recolectarAnuncios.ts:106`). Su último
 sello dice «3 par(es) (campaña, día) sin datos»: es compatible con `888888`, la campaña de prueba
-que devuelve 500 desde siempre (`lib/negocio/recolectarAnuncios.ts:111-116`), en los tres días de la
+que devuelve 500 desde siempre (`lib/negocio/recolectarAnuncios.ts:111-116@d17e029`), en los tres días de la
 ventana — **no verificado**: la base guarda la cuenta, no los pares.
 
 A eso se le suman tres caminos que no tienen horario:
@@ -325,7 +330,7 @@ contrato; lo que se comprobó es que nada de lo que estas rutas llaman pide la c
   sin red.
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
-pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:167-170`). Estamos un orden de
+pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:171-174`). Estamos un orden de
 magnitud por debajo, también con la tarea nueva.
 
 ---
@@ -742,7 +747,7 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 | **La grabación de la llamada** | `attachments[0]` en 128 de 128. | `leerMensaje` no lee `attachments`. |
 | **Una venta marcada en el CRM** | `venta_ganada` en 1 contacto (§ 4). | Sales cuenta sólo lo que registra Avanzar. |
 | **El catálogo real de etiquetas** | `GET /locations/{loc}/tags` está implementado (`lib/ghl/cliente.ts:450`). | Sólo se llama cuando la búsqueda trae cero contactos. Nunca se ejecutó en régimen. |
-| **La estructura y la serie de la cuenta** | `estructuraDeAnuncios` y `serieDeLaCuenta` implementadas y probadas (`lib/ghl/anuncios.ts:327` y `lib/ghl/anuncios.ts:549`). | Sin llamador. La serie de la cuenta es la única vía al **CPM** agregado y a la comprobación «la suma por anuncio no se pasa del total» (`lib/ghl/anuncios.ts:538-544`). **Desde el 2026-09-30 `estructuraDeAnuncios` sí tiene llamador**: ver la nota del final. |
+| **La estructura y la serie de la cuenta** | `estructuraDeAnuncios` y `serieDeLaCuenta` implementadas y probadas (`lib/ghl/anuncios.ts:327` y `lib/ghl/anuncios.ts:621`). | Sin llamador. La serie de la cuenta es la única vía al **CPM** agregado y a la comprobación «la suma por anuncio no se pasa del total» (`lib/ghl/anuncios.ts:586-616`). **Desde el 2026-09-30 `estructuraDeAnuncios` sí tiene llamador**: ver la nota del final. |
 
 ---
 
@@ -806,10 +811,12 @@ nuestro: `numero` sólo devuelve un número cuando el proveedor lo mandó, y nul
 clave (`lib/ghl/anuncios.ts:172-177`). O sea que «sin gasto desde el 14» es exacto; «gasto en cero
 desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 
+**Corregido el 2026-10-07 (`076`)**: la cuenta sí gastó. Las 13 campañas que el colector pedía no gastaban, pero una campaña de mensajes —cuyos contactos llegan sin `campaignId`, así que no estaba en la lista— gastó 200,19 del 30-sep al 6-oct; del 12-sep al 6-oct la cuenta gastó 838,58, medido con la serie de la cuenta contra el Administrador de anuncios (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-23). Lo exacto era «sin gasto desde el 14 en las campañas que se pedían».
+
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
-(`lib/negocio/recolectarAnuncios.ts:137-148` y `lib/negocio/recolectarAnuncios.ts:622-627`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:813-887`) no lee `vinculo`,
+(`lib/negocio/recolectarAnuncios.ts:137-148@d17e029` y `lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), pero
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:835-925`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.
@@ -866,7 +873,8 @@ contactos con anuncio atribuido      213
 
 `negocio.resultados` tiene **7 filas en total** (`seguimiento` 4, `no_show` 2, `no_interesa` 1),
 **ninguna venta y ninguna desde el 2026-09-09**. Un ROAS por anuncio calculado hoy se apoyaría en 3
-hechos, y sin gasto desde el 14 no hay ventana nueva que medir. Conectar Meta antes de que
+hechos, y sin gasto desde el 14 no hay ventana nueva que medir (**falso, corregido el 2026-10-07**: la
+cuenta gastó en una campaña de mensajes que no se recolectaba; ver arriba). Conectar Meta antes de que
 el registro de resultados tenga volumen produce lo que este proyecto persigue en todas partes: un
 número plausible que contesta otra pregunta.
 

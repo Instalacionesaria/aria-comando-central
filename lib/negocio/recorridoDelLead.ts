@@ -42,7 +42,7 @@
 // circular. Publicar la tasa y una nota al pie sería publicar la tasa.
 //
 // El conteo de agendados sale del mismo `exists` sobre `ghl_calendario_id` que usan
-// `costoDelAnuncio.ts:341-344`, `calidadDelCreativo.ts:223-226`, `atribucionDelLead.ts:150-153` e
+// `costoDelAnuncio.ts:350-353`, `calidadDelCreativo.ts:223-226`, `atribucionDelLead.ts:150-153` e
 // `indicadoresDelLead.ts:243`. No sale del campo `Form Landing VSL`, que dice `Agendado` 121 veces
 // cuando las citas alcanzables son 47: publicarlo sería la tercera cifra de agendamiento del
 // producto.

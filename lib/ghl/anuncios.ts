@@ -451,34 +451,14 @@ export interface MetricaDeAnuncio {
 }
 
 /**
- * Las métricas de los anuncios de UNA campaña en UN día.
- *
- * ── UN DÍA POR LLAMADA, Y ES UNA RESTRICCIÓN DEL PROVEEDOR ──────────────────
- *
- * `groupBy=day` funciona en `/reporting` y **se ignora acá**: con `startDate` y `endDate` distintos
- * devuelve UNA fila por anuncio con el total del rango. Medido el 2026-09-16 sobre la campaña
- * `120249590301010467`: el rango 09-10→09-12 da diez filas con `spend 24,3`, y 09-11→09-11 da diez
- * filas con `spend 6,23`. Por eso la firma pide `dia` y no un rango: es la única forma de guardar
- * por fecha, que es lo que el § 18.4 exige.
- *
- * El costo de llamadas sale de ahí y hay que tenerlo a la vista: una por campaña y por día.
+ * Las filas de `/reporting/list` a métricas por anuncio. La comparten la lectura de un día y el total de un
+ * rango: una regla de lectura escrita dos veces se corrige en una sola.
  */
-export async function metricasPorAnuncio(
-  acceso: { token: string; locationId: string },
+function filasDeAnuncios(
+  lista: readonly unknown[],
+  /** La campaña que se pidió: la fila la trae casi siempre, y si no, es ésta. */
   campanaId: string,
-  /** Un día, en `YYYY-MM-DD`. */
-  dia: string,
-): Promise<ResultadoDeGhl<MetricaDeAnuncio[]> & { ilegibles?: number; accionesIlegibles?: number }> {
-  const r = await leer<unknown>(
-    `${BASE}/ad-publishing/facebook/reporting/list?locationId=${encodeURIComponent(acceso.locationId)}` +
-      `&listType=ads&type=${ORIGEN}&campaignId=${encodeURIComponent(campanaId)}` +
-      `&startDate=${dia}&endDate=${dia}`,
-    acceso.token,
-  );
-  if (r.tipo !== 'datos') return r;
-
-  const lista = Array.isArray(r.datos) ? r.datos : [];
-
+): { datos: MetricaDeAnuncio[]; ilegibles: number; accionesIlegibles: number } {
   /* ── LAS FILAS QUE NO SE PUEDEN LEER SE CUENTAN, NO SE TIRAN EN SILENCIO ──
    *
    * Una fila sin `adId` no se puede guardar: es la llave de las dos tablas. Pero descartarla sin
@@ -520,7 +500,75 @@ export async function metricasPorAnuncio(
       ];
   });
 
-  return { tipo: 'datos', datos, ilegibles, accionesIlegibles };
+  return { datos, ilegibles, accionesIlegibles };
+}
+
+/**
+ * Las métricas de los anuncios de UNA campaña en UN día.
+ *
+ * ── UN DÍA POR LLAMADA, Y ES UNA RESTRICCIÓN DEL PROVEEDOR ──────────────────
+ *
+ * `groupBy=day` funciona en `/reporting` y **se ignora acá**: con `startDate` y `endDate` distintos
+ * devuelve UNA fila por anuncio con el total del rango. Medido el 2026-09-16 sobre la campaña
+ * `120249590301010467`: el rango 09-10→09-12 da diez filas con `spend 24,3`, y 09-11→09-11 da diez
+ * filas con `spend 6,23`. Por eso la firma pide `dia` y no un rango: es la única forma de guardar
+ * por fecha, que es lo que el § 18.4 exige.
+ *
+ * El costo de llamadas sale de ahí y hay que tenerlo a la vista: una por campaña y por día.
+ */
+export async function metricasPorAnuncio(
+  acceso: { token: string; locationId: string },
+  campanaId: string,
+  /** Un día, en `YYYY-MM-DD`. */
+  dia: string,
+): Promise<ResultadoDeGhl<MetricaDeAnuncio[]> & { ilegibles?: number; accionesIlegibles?: number }> {
+  const r = await leer<unknown>(
+    `${BASE}/ad-publishing/facebook/reporting/list?locationId=${encodeURIComponent(acceso.locationId)}` +
+      `&listType=ads&type=${ORIGEN}&campaignId=${encodeURIComponent(campanaId)}` +
+      `&startDate=${dia}&endDate=${dia}`,
+    acceso.token,
+  );
+  if (r.tipo !== 'datos') return r;
+
+  return { tipo: 'datos', ...filasDeAnuncios(Array.isArray(r.datos) ? r.datos : [], campanaId) };
+}
+
+/**
+ * Cuánto gastó UNA campaña en un RANGO de días: una sola llamada para muchos días.
+ *
+ * Usa justo lo que obliga a `metricasPorAnuncio` a pedir de a un día: con `startDate` y `endDate` distintos,
+ * `/reporting/list` devuelve una fila por anuncio con el TOTAL del rango. Medido el 2026-10-07 contra el
+ * Administrador de anuncios: la campaña de mensajes del 30-sep al 6-oct suma 200,19, igual al centavo; una
+ * campaña que nunca gastó, en 50 días, devuelve sus 5 anuncios sin `spend` y suma 0.
+ *
+ * ── ACÁ UN NULO SUMA CERO, Y NO CONTRADICE LA REGLA DE LOS DOS CEROS ──────────
+ *
+ * El escritor guarda el nulo como nulo porque una métrica diaria distingue «no entregó» de «costó cero». Esta
+ * pregunta es otra —¿gastó algo en el rango?— y para ella un anuncio sin `spend` no gastó. El total nunca se
+ * guarda como métrica diaria: sólo decide si hay que bajar a los días, y un cero se anota como cero probado.
+ *
+ * Una lista vacía también suma cero, y por eso el colector comprueba el vínculo con Meta antes de llamar: sin
+ * vínculo el proveedor devuelve vacío sin fallar, y ese vacío no es un cero.
+ */
+export async function totalDeLaCampana(
+  acceso: { token: string; locationId: string },
+  campanaId: string,
+  /** El primer y el último día, en `YYYY-MM-DD`, los dos incluidos. */
+  desde: string,
+  hasta: string,
+): Promise<ResultadoDeGhl<{ gasto: number; anuncios: number }> & { ilegibles?: number }> {
+  const r = await leer<unknown>(
+    `${BASE}/ad-publishing/facebook/reporting/list?locationId=${encodeURIComponent(acceso.locationId)}` +
+      `&listType=ads&type=${ORIGEN}&campaignId=${encodeURIComponent(campanaId)}` +
+      `&startDate=${desde}&endDate=${hasta}`,
+    acceso.token,
+  );
+  if (r.tipo !== 'datos') return r;
+
+  const { datos, ilegibles } = filasDeAnuncios(Array.isArray(r.datos) ? r.datos : [], campanaId);
+  // En centavos y de vuelta, para que diez sumas de `0.1` no dejen un `0.30000000000000004` en el cuadre.
+  const centavos = datos.reduce((s, m) => s + Math.round((m.gasto ?? 0) * 100), 0);
+  return { tipo: 'datos', datos: { gasto: centavos / 100, anuncios: datos.length }, ilegibles };
 }
 
 /** Una fila del reporte agregado de la CUENTA, un día. */
@@ -536,11 +584,35 @@ export interface DiaDeLaCuenta {
 }
 
 /**
- * La serie diaria de toda la cuenta publicitaria.
+ * Cuántos días se piden por llamada de la serie. **El proveedor corta en 25 filas, y no lo dice.**
  *
- * Es la única llamada que devuelve **CPM**, y es una sola para todo el período — contra una por
- * campaña y por día del desglose. Sirve para el total del encabezado y como comprobación: la suma
- * del gasto por anuncio no debería pasarse del gasto de la cuenta.
+ * Medido el 2026-10-07: del 18-ago al 6-oct (50 días) devolvió 25 filas, del 18-ago al 11-sep, y `totals`
+ * sumaba sólo esas 25 — así que tampoco sirve para notar el corte. Del 7-sep al 6-oct (30 días) devolvió 25
+ * filas hasta el 2-oct, y faltaban 97,69 de los 2.234,55 del Administrador de anuncios. Partido en tramos, el
+ * 7-sep→6-oct suma 2.234,55 y el 30-sep→6-oct 200,19: los dos al centavo.
+ *
+ * Veinte y no veinticinco: un tramo de N días no puede traer más de N filas, así que con 20 el corte queda a
+ * cinco filas de distancia si el proveedor lo baja un poco. Cuesta una llamada más cada cien días.
+ */
+export const DIAS_POR_TRAMO_DE_LA_SERIE = 20;
+
+/** El día siguiente de un `YYYY-MM-DD`, en UTC. */
+function diaSiguiente(dia: string, n = 1): string {
+  return new Date(Date.parse(`${dia}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * La serie diaria de toda la cuenta publicitaria, del `desde` al `hasta`, con TODOS los días.
+ *
+ * Es la referencia del colector (`076`): un día está completo cuando la suma por anuncio cuadra con esto. Y la
+ * única llamada que devuelve **CPM**.
+ *
+ * ── LOS DÍAS SIN GASTO NO VIENEN, Y SE DEVUELVEN EN CERO ───────────────────────
+ *
+ * Medido el 2026-10-07: del 12-sep al 6-oct (25 días) vinieron 23 filas, y las dos que faltaban son días sin
+ * gasto; la suma coincide con el Administrador de anuncios. Así que un día que no vino, dentro de un tramo que
+ * sí vino, es un cero medido. Un tramo que falla hace fallar la serie entera: un cero inventado para un día que
+ * no se pudo leer es exactamente la fuga que esto cierra.
  *
  * `conversions` y `costPerConversion` vienen en la respuesta y **no se leen**: medidos en cero en
  * todo el período, porque dependen de una configuración de conversiones que esta cuenta no tiene.
@@ -550,35 +622,46 @@ export async function serieDeLaCuenta(
   acceso: { token: string; locationId: string },
   desde: string,
   hasta: string,
-): Promise<ResultadoDeGhl<DiaDeLaCuenta[]>> {
+): Promise<ResultadoDeGhl<DiaDeLaCuenta[]> & { llamadas: number }> {
   const campos = 'impressions,clicks,spend,cpc,cpm,reach,frequency';
-  const r = await leer<Record<string, unknown>>(
-    `${BASE}/ad-publishing/facebook/reporting?locationId=${encodeURIComponent(acceso.locationId)}` +
-      `&groupBy=day&type=${ORIGEN}&startDate=${desde}&endDate=${hasta}` +
-      `&fields=${encodeURIComponent(campos)}`,
-    acceso.token,
-  );
-  if (r.tipo !== 'datos') return r;
+  const salida: DiaDeLaCuenta[] = [];
+  let llamadas = 0;
 
-  const lista = Array.isArray(r.datos?.grouped) ? r.datos.grouped : [];
-  return {
-    tipo: 'datos',
-    datos: lista.flatMap((x) => {
+  for (let inicio = desde; inicio <= hasta; inicio = diaSiguiente(inicio, DIAS_POR_TRAMO_DE_LA_SERIE)) {
+    const ultimoDelTramo = diaSiguiente(inicio, DIAS_POR_TRAMO_DE_LA_SERIE - 1);
+    const fin = ultimoDelTramo < hasta ? ultimoDelTramo : hasta;
+    const r = await leer<Record<string, unknown>>(
+      `${BASE}/ad-publishing/facebook/reporting?locationId=${encodeURIComponent(acceso.locationId)}` +
+        `&groupBy=day&type=${ORIGEN}&startDate=${inicio}&endDate=${fin}` +
+        `&fields=${encodeURIComponent(campos)}`,
+      acceso.token,
+    );
+    llamadas += 1;
+    if (r.tipo !== 'datos') return { ...r, llamadas };
+
+    const vinieron = new Map<string, DiaDeLaCuenta>();
+    for (const x of Array.isArray(r.datos?.grouped) ? r.datos.grouped : []) {
       const o = (x ?? {}) as Record<string, unknown>;
       const dia = texto(o.dateStart);
-      if (dia === null) return [];
-      return [
-        {
-          dia,
-          gasto: numero(o.spend),
-          impresiones: numero(o.impressions),
-          clics: numero(o.clicks),
-          cpc: numero(o.cpc),
-          cpm: numero(o.cpm),
-          alcance: numero(o.reach),
-          frecuencia: numero(o.frequency),
-        },
-      ];
-    }),
-  };
+      // Una fila sin fecha no se puede ubicar, y una fuera del tramo no es de esta pregunta.
+      if (dia === null || dia < inicio || dia > fin) continue;
+      vinieron.set(dia, {
+        dia,
+        gasto: numero(o.spend),
+        impresiones: numero(o.impressions),
+        clics: numero(o.clicks),
+        cpc: numero(o.cpc),
+        cpm: numero(o.cpm),
+        alcance: numero(o.reach),
+        frecuencia: numero(o.frequency),
+      });
+    }
+    for (let dia = inicio; dia <= fin; dia = diaSiguiente(dia)) {
+      salida.push(
+        vinieron.get(dia) ?? { dia, gasto: 0, impresiones: 0, clics: 0, cpc: null, cpm: null, alcance: 0, frecuencia: null },
+      );
+    }
+  }
+
+  return { tipo: 'datos', datos: salida, llamadas };
 }

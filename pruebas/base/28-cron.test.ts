@@ -186,7 +186,18 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
     { org: org(beta, 'beta'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ];
 
-  const r = await barrerTodo('0 12 * * *', empresas, DE_DIA);
+  /* La red, cortada: desde la `076` la pasada de anuncios le pregunta a GoHighLevel por el vínculo con Meta antes
+     de tocar la base, y con el token de mentira de la empresa rota ese pedido saldría de verdad. */
+  const fetchOriginal = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error('sin red en esta prueba');
+  }) as typeof globalThis.fetch;
+  let r: Awaited<ReturnType<typeof barrerTodo>>;
+  try {
+    r = await barrerTodo('0 12 * * *', empresas, DE_DIA);
+  } finally {
+    globalThis.fetch = fetchOriginal;
+  }
   const porSlug = new Map(r.renglones.filter((x) => x.tarea === 'mensajes').map((x) => [x.slug, x.estado]));
   assert.equal(porSlug.get('rota'), 'fallo');
   assert.equal(porSlug.get('alfa'), 'saltada', 'la de antes tiene que estar');
@@ -225,17 +236,18 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
       /* `analizadores` sale SALTADA por lo mismo que el auditor: no le habla al CRM y le falta su
          llave —la de tl;dv—, así que ni llega a tocar la base de la empresa rota. */
       ['analizadores', 'saltada'],
-      /* Y `anuncios` sale CORRIÓ, que es el tercer desenlace de esta lista y hay que explicarlo
-         porque parece el error de los otros dos.
+      /* Y `anuncios` sale FALLO por otro camino que las tres del CRM: desde la `076` su primer paso es
+         preguntar por el vínculo con Meta —sin vínculo no escribe nada, para que un vacío no se guarde
+         como cero—, y acá ese pedido no tiene red. Que no se pueda ni preguntar es la tarea fallando.
 
-         Esta empresa tiene un identificador que no existe. Con RLS forzada, preguntar por sus
-         contactos no lanza: devuelve CERO FILAS. Así que el colector encuentra cero campañas en la
-         atribución, no tiene nada que pedirle al proveedor, y termina sin llamar a nadie — que es
-         exactamente lo que hace con una empresa nueva y de verdad.
-
-         No es una tarea que se anunció y no tocó nada: es una tarea que tocó la base, no encontró
-         trabajo, y lo dijo. La diferencia se ve en el resumen, que lleva `campanas: 0`. */
-      ['anuncios', 'corrio'],
+         Hasta la `076` salía CORRIÓ sin llamar a nadie: armaba sus campañas desde la atribución y una
+         empresa sin contactos no tenía ninguna. Era ese mismo universo el que dejaba afuera a la campaña
+         de mensajes. */
+      ['anuncios', 'fallo'],
+      /* `anuncios_relleno` sale CORRIÓ: lee la base primero, y una empresa sin serie de la cuenta ni
+         métricas —la RLS devuelve cero filas de un identificador que no existe— no tiene nada que
+         rellenar ni a quién preguntarle. Cero llamadas, que es lo que hace con una empresa sin Meta. */
+      ['anuncios_relleno', 'corrio'],
       ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],

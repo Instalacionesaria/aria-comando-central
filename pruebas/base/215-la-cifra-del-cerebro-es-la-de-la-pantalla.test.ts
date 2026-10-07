@@ -198,23 +198,29 @@ for (const quien of ['closerUno', 'admin'] as const) {
 test('la economía del mes: las ventas de Sales, la inversión del mes y, con cero ventas, sin retorno', async () => {
   /* El sembrado deja de gastar hace 16 días, así que en los primeros días de un mes no hay gasto del mes y la
      inversión sería nula con cualquier ventana. Un gasto de hoy hace que el mes tenga uno, y que todo lo
-     anterior quede afuera. */
+     anterior quede afuera. Va en las dos tablas, como lo deja el colector: la métrica del anuncio y el total
+     de la cuenta (`076`). */
   await admin.query(
     `insert into negocio.metricas_de_anuncio (org_id, meta_anuncio_id, fecha, gasto)
      select org_id, meta_anuncio_id, timezone($2, now())::date, 123.45 from negocio.anuncios where org_id = $1 order by meta_anuncio_id limit 1`,
+    [e.conDatos, ZONA_DE_LOS_CASOS],
+  );
+  await admin.query(
+    `insert into negocio.gasto_de_la_cuenta (org_id, fecha, gasto) values ($1, timezone($2, now())::date, 123.45)
+     on conflict (org_id, fecha) do update set gasto = excluded.gasto`,
     [e.conDatos, ZONA_DE_LOS_CASOS],
   );
   const s = await pantalla(sales, '/api/sales?periodo=30d');
   const h = await herramienta('economia_del_negocio', {}, 'admin');
   assert.deepEqual(h.ventas, s.dinero.ventas);
   assert.deepEqual(h.cobrado, s.dinero.cobrado);
-  // La inversión del mes, contada aparte: el gasto de los días del mes calendario de la empresa.
+  /* La inversión del mes, contada aparte: el total de la cuenta en los días del mes calendario de la empresa. Lo
+     que Meta cobró, no la suma por campaña: las ventas no se atribuyen a una campaña (A14-19). */
   const r = await admin.query<{ inversion: string | null }>(
-    `select sum(m.gasto) as inversion
-       from negocio.metricas_de_anuncio m
-       join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
-      where m.org_id = $1 and a.meta_campana_id is not null
-        and m.fecha between date_trunc('month', timezone($2, now()))::date and timezone($2, now())::date`,
+    `select sum(g.gasto) as inversion
+       from negocio.gasto_de_la_cuenta g
+      where g.org_id = $1
+        and g.fecha between date_trunc('month', timezone($2, now()))::date and timezone($2, now())::date`,
     [e.conDatos, ZONA_DE_LOS_CASOS],
   );
   const esperada = r.rows[0]!.inversion;
@@ -239,7 +245,7 @@ test('la economía con ventas: el retorno y el costo por venta, y sin ellos con 
   await resultado(500);
   const conVentas = await herramienta('economia_del_negocio', {}, 'admin');
   assert.equal(conVentas.ventas.valor, 2);
-  assert.equal(conVentas.gastoEntero, true, 'el sembrado tiene filas de métricas en todos los días del mes antes de hoy');
+  assert.equal(conVentas.gastoEntero, true, 'el sembrado tiene el total de la cuenta en todos los días del mes antes de hoy');
   const inversion = conVentas.inversion.valor as number;
   assert.ok(inversion > 0);
   assert.equal(conVentas.retorno, Math.round((1500 / inversion) * 100) / 100);
@@ -253,14 +259,14 @@ test('la economía con ventas: el retorno y el costo por venta, y sin ellos con 
   assert.match(String(sinMonto.aviso), /sin monto/);
   await admin.query(`delete from negocio.resultados where org_id = $1 and salida = 'venta' and monto is null`, [e.conDatos]);
 
-  /* El gasto incompleto: un día del mes, antes de hoy, sin ninguna fila. El primero de un mes no hay días
-     antes de hoy, así que ese día se borra la fila de hoy: sin gasto del mes, tampoco hay retorno. */
+  /* El gasto incompleto: un día del mes, antes de hoy, sin el total de la cuenta. El primero de un mes no hay
+     días antes de hoy, así que ese día se borra la fila de hoy: sin gasto del mes, tampoco hay retorno. */
   const r = await admin.query<{ desde: string; hasta: string }>(
     `select date_trunc('month', timezone($1, now()))::date::text as desde, timezone($1, now())::date::text as hasta`,
     [ZONA_DE_LOS_CASOS],
   );
   const { desde, hasta } = r.rows[0]!;
-  await admin.query('delete from negocio.metricas_de_anuncio where org_id = $1 and fecha = $2::date', [e.conDatos, desde === hasta ? hasta : desde]);
+  await admin.query('delete from negocio.gasto_de_la_cuenta where org_id = $1 and fecha = $2::date', [e.conDatos, desde === hasta ? hasta : desde]);
   const incompleto = await herramienta('economia_del_negocio', {}, 'admin');
   assert.deepEqual([incompleto.retorno, incompleto.costoPorVenta], [null, null]);
   if (desde !== hasta) {

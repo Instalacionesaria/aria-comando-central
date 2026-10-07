@@ -39,6 +39,7 @@ function medida(e: Partial<{
   campoDeIcp: string | null;
   frecuencias: [string, number, number][];
   anunciosAlDia: boolean;
+  gastoCuadra: boolean;
 }>): MedidaDeCreative {
   const ventana = e.ventana ?? '30d';
   return {
@@ -49,6 +50,7 @@ function medida(e: Partial<{
     fatiga: { filas: e.fatiga ?? [] },
     frecuencias: ventana === '7d' ? new Map((e.frecuencias ?? []).map(([id, frecuencia, impresiones]) => [id, { frecuencia, impresiones, creativo: 'pieza' }])) : null,
     anunciosAlDia: e.anunciosAlDia ?? true,
+    gastoCuadra: e.gastoCuadra ?? true,
   };
 }
 
@@ -96,6 +98,14 @@ test('la concentración: tres piezas con gasto o más, y sólo a validación eje
   // 35 % justo entra; la pieza sin gasto no cuenta como una de las tres.
   assert.deepEqual(c.map((d) => [d.entidad.id, d.valorActual, d.requiereValidacionEjecutiva]), [['a', 0.35, true], ['b', 0.35, true]]);
   assert.equal((c[0]!.evidencia as { piezas: unknown[] }).piezas.length, 3);
+});
+
+test('con el gasto de la cuenta sin cuadrar, la concentración va a «sin medición»', () => {
+  /* Falta el gasto de alguna campaña: el total es corto y la parte de cada pieza sale inflada (`076`).
+     Mutación: sacar `gastoCuadra` de la compuerta. */
+  const r = detectar(medida({ gastoCuadra: false, rendimiento: [pieza('a', 350), pieza('b', 350), pieza('c', 300)] }));
+  assert.deepEqual(de(r, CRE.concentracion), []);
+  assert.ok(r.sinMedicion.includes(CRE.concentracion));
 });
 
 test('la frecuencia: sólo en 7 días, con su piso de mil impresiones', () => {

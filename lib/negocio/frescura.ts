@@ -92,6 +92,8 @@ const NOMBRE: Record<Tarea, string> = {
   // Y la séptima otra vez. Tres veces seguidas: el `Record` total es lo que hace que agregar una
   // tarea sea imposible de olvidar acá.
   anuncios: 'la lectura del costo de los anuncios',
+  // La undécima (`076`): el relleno de los días que no cuadran con la cuenta.
+  anuncios_relleno: 'el relleno del gasto de las campañas',
   // La octava, y el `Record` total la pidió de nuevo.
   analizadores: 'el descubrimiento y el análisis de las llamadas de tl;dv',
   // La novena: el `Record` total la pidió, como a todas.

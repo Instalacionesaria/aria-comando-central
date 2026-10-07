@@ -13,7 +13,7 @@
 //   · `mensajes` donde se leen conversaciones: la ficha de contacto que se abre desde el Setter y el Closer
 //     (`lib/negocio/ficha.ts`) y Lead Flow, en Conversation;
 //   · `auditoria` y `mejora`, el auditor, en Conversation;
-//   · `anuncios`, el gasto de Meta, en Acquisition y Creative;
+//   · `anuncios` y `anuncios_relleno`, el gasto de Meta, en Acquisition y Creative;
 //   · `analizadores` y `reintentos`, en Analizadores.
 // La `sonda` es de la plataforma y no alimenta ninguna pantalla de negocio: no viaja.
 //
@@ -35,8 +35,8 @@ export const TAREAS_POR_SECCION: Readonly<Record<string, readonly Tarea[]>> = {
   sales: ['contactos', 'citas'],
   conversation: ['contactos', 'citas', 'mensajes', 'auditoria', 'mejora'],
   conversion: ['contactos'],
-  acquisition: ['contactos', 'anuncios'],
-  creative: ['contactos', 'anuncios'],
+  acquisition: ['contactos', 'anuncios', 'anuncios_relleno'],
+  creative: ['contactos', 'anuncios', 'anuncios_relleno'],
   analizadores: ['analizadores', 'reintentos'],
 };
 

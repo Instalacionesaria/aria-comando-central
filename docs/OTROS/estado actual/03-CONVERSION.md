@@ -486,7 +486,7 @@ agosto: en septiembre, 31 de sus 32 contactos tienen esa dirección registrada a
 **4. «Hoy» dice una cosa al pasar el cursor y mide otra.** El título del botón dice *«Las últimas 24
 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
 `components/conversion/PanelDeConversion.jsx:122`), y la cohorte de Conversion es el día de calendario
-desde la medianoche UTC (`lib/negocio/recorrido.ts:197-199`). `lib/negocio/costoDelAnuncio.ts:61-63`
+desde la medianoche UTC (`lib/negocio/recorrido.ts:197-199`). `lib/negocio/costoDelAnuncio.ts:62-64`
 admite la diferencia para Acquisition, pero el título es compartido y no cambió. Además,
 `lib/negocio/recorrido.ts:193-195` justifica el anclaje porque Conversion *«cruza sus contactos con el
 gasto y con las piezas»*, y la ruta no lee ni gasto ni piezas (`app/api/conversion/route.ts:64-78`).

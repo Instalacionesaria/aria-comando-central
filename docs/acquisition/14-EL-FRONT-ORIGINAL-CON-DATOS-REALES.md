@@ -86,6 +86,9 @@ documento y no en la pantalla. Los huecos usan **sólo** estas frases:
 | la asignación de un funnel falló | «No se pudo guardar. Reintenta.» |
 | la primera carga | «Cargando…» |
 | falta algún día de gasto cerrado, o el colector está atrasado (`faltan_dias`, `gasto_incompleto`) | «Faltan días de gasto.» |
+| todos los días tienen el total de la cuenta y el detalle por campaña todavía no lo explica (`gasto.motivo: no_cuadra`, A14-19) | «Falta gasto de algunas campañas.» |
+| una campaña que nunca trajo un contacto con su campaña en la atribución: su pie, y el guion en sus etapas de personas (A14-19) | «Sin contactos atribuidos» |
+| al pie de la Inversión, después del monto que gastaron esas campañas (A14-19) | «sin contactos atribuidos» |
 | la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
 | «Hoy» no publica costos (`sinCostos: hoy`) | «Hoy, sin costos.» |
 | una campaña que GoHighLevel no listó, y que por eso no se puede asignar | «No figura en Meta» |
@@ -203,7 +206,9 @@ usuario el 2026-09-30. Con los clics fuera —no son personas (A14-05)— y «Co
 un control que no cambia nada. Vuelve el día que una etapa las haga diferir —la del formulario, si
 vuelve a tener dato—, y con él la tasa acumulada (A2-27).
 
-**Fórmula** · Una tasa con denominador bajo `PISO_DE_UNA_TASA` (10,
+**Fórmula** · Los costos de personas —por contacto, por agendado, por calificado— se pagan con la **inversión
+con contactos**, la de las campañas que trajeron algún contacto atribuido; el costo por clic, con el gasto con
+desglose de Meta (A14-19). Una tasa con denominador bajo `PISO_DE_UNA_TASA` (10,
 `lib/negocio/indicadoresDeCitas.ts:309`) se dibuja «—». Un costo con la etapa en cero también, y **un
 costo de una ventana sin inversión**: con la pauta parada llegan contactos de lo que se gastó antes, y
 «$0 por contacto» diría que salieron gratis. En «Hoy» no hay costos: el gasto de hoy es una foto de la
@@ -228,9 +233,11 @@ contactos por el día de su alta. Y, decidido por el usuario el 2026-09-30 despu
 AQ-3:
 
 - **«7 días» y «30 días» son días CERRADOS**: los 7 o 30 días completos hasta el último día que el
-  colector ya releyó DESPUÉS de que terminó, como en el Administrador de anuncios de Meta. El gasto de
+  colector ya releyó DESPUÉS de que terminó, como en el Administrador de anuncios de Meta. Desde la `076` lo
+  que se relee es el **total de la cuenta** de ese día (`negocio.gasto_de_la_cuenta`), y el día está entero
+  cuando además el detalle por campaña cuadra con él (A14-19). El total de
   un día se lee a las 06:17 UTC de ese día y se relee a la misma hora del siguiente —medido en
-  producción: cada día del 2026-09-26 al 09-29 se releyó al día siguiente a las 06:19 UTC—, así que
+  producción, sobre las métricas: cada día del 2026-09-26 al 09-29 se releyó al día siguiente a las 06:19 UTC—, así que
   **ayer recién está cerrado después de la pasada de hoy**, y si una pasada se perdió, anteayer tampoco.
   «Terminó» es a la medianoche de la empresa (`zona_horaria`; ARIA, America/Lima), la mejor
   aproximación a la de la cuenta de Meta, que la API no dice. En una empresa al oeste de UTC−6 su
@@ -239,11 +246,10 @@ AQ-3:
   por la última escritura y por días**: si el colector no escribe hace más de 26 horas, o si el último
   día cerrado quedó más de tres días atrás —escribir no es cerrar, y tres es el peor caso normal, al
   oeste de UTC−6 antes de la pasada—, la ventana termina ayer y no compara ni publica costos.
-  **Un límite conocido**: un día que nunca se releyó después de terminar —en Lima, si se pierden las dos
-  pasadas que lo releen; al oeste de UTC−6, con perder una— queda abierto para siempre, porque el
-  colector no vuelve a pedir un día que ya tiene filas y en régimen su presupuesto no alcanza para
-  hacerlo (el tramo fijo solo ya lo gasta). Las ventanas que lo contienen no comparan ni publican
-  costos hasta que el día sale de ellas, y «Completo» ya no los publica. Una ventana con un día a medias compararía seis días y medio contra siete cerrados: la
+  **El límite que había, cerrado con la `076`**: un día que nunca se releía después de terminar quedaba
+  abierto para siempre, porque el colector no volvía a pedir un día que ya tenía filas. Ahora el relleno
+  de cada hora vuelve a pedir el total de la cuenta de los días que no lo tienen cerrado, desde anteayer
+  hacia atrás. Una ventana con un día a medias compararía seis días y medio contra siete cerrados: la
   flecha bajaría siempre, en rojo, con el negocio igual;
 - **«Hoy» es hoy**, a medias: no compara y no publica costos (A14-09);
 - **«Completo» es todo lo guardado**: empieza en el primer dato —gasto o contacto con campaña, el más
@@ -271,9 +277,10 @@ justo antes. Los calificados, por ahora no (ver abajo).
 - se empareja por la clave de la campaña y no por su posición (A1-15).
 
 Y las que los documentos pedían, o que salieron de la revisión de AQ-3:
-- **las dos ventanas tienen que estar enteras**. El colector escribe una fila por anuncio y por día aunque
-  no haya entrega, así que un día sin ninguna fila de gasto es un día que nadie pidió; y un día con
-  filas que nunca se releyó después de terminar tampoco cuenta (A14-10). Si falta uno en la ventana
+- **las dos ventanas tienen que estar enteras**: cada día con el total de la cuenta releído después de
+  terminar, y el detalle por campaña cuadrando con él (A14-10, A14-19). Un día sin el total de la cuenta es
+  un día que nadie pidió; uno con filas que no cuadra —la cuenta dice 200 y por campaña se leyó 0— tampoco
+  cuenta. Hasta la `076` bastaba con que el día tuviera filas, y así se escondió la fuga. Si falta uno en la ventana
   actual, «sin comparación» (`faltan_dias`); si falta en la anterior, o los contactos empiezan después
   de ella, también (`sin_historia`). Una ventana anterior guardada a medias achica el
   denominador, y la flecha sube contra días que nadie guardó (P-04 de `05`);
@@ -287,9 +294,10 @@ Y las que los documentos pedían, o que salieron de la revisión de AQ-3:
   siempre, en verde—. Vuelve el día que se guarde cuándo se pone cada etiqueta de descarte;
 - **en los costos, bajar es bueno** (P-06 de `05`). El prototipo no les dibuja flecha, así que hoy no
   llevan variación; si algún día la llevan, el color va invertido;
-- **la Inversión lleva flecha sin color**, porque subir no es bueno ni malo (P-07 de `05`). Un límite
-  conocido: una campaña recién asignada a un funnel entra con su gasto desde dos días antes de la primera
-  pasada que la pide, así que la flecha de su funnel y la del total la cuentan como crecimiento;
+- **la Inversión lleva flecha sin color**, porque subir no es bueno ni malo (P-07 de `05`). La del total
+  compara el total de la cuenta contra el de la cuenta (A14-19). El límite que había —una campaña recién
+  asignada a un funnel entraba con su gasto desde dos días antes de la primera pasada que la pedía— se cerró
+  con la `076`: el colector pide todas las campañas de la cuenta, y el relleno trae su gasto hacia atrás;
 - **con la anterior en cero no hay porcentaje**, y con la actual en cero sí: es una caída del 100 %. El
   prototipo se guardaba también de la actual en cero (`if(!prev || !cur)`), y A5-16 de `05` pide sólo la
   guarda del denominador.
@@ -319,7 +327,8 @@ cuando faltan, con las frases de A14-02.
 **Qué es** · La fila de la tabla muestra el nombre de la campaña y su estado.
 
 **Fórmula** · Se guardan en `negocio.campanas` (migración `065`), que llena el colector de anuncios con
-`estructuraDeAnuncios` en el nivel `CAMPAIGN`, al final de cada pasada con campañas que pedir. Una campaña sin nombre se guarda
+`estructuraDeAnuncios` en el nivel `CAMPAIGN`, al principio de cada pasada: desde la `076` es el universo de
+campañas que el colector pide. Una campaña sin nombre se guarda
 con el nombre nulo —no con uno inventado— y se muestra con su id. El nombre se conserva si una lectura
 no lo trae; el estado es la foto de la última lectura.
 
@@ -331,7 +340,7 @@ cron.
 
 **Qué es** · Las campañas sin asignar se listan al final, con el selector de funnel para quien puede
 asignar. Sus cifras no entran en las tres tarjetas, pero **sí en las cinco cifras de arriba**, que suman
-todo lo que la pauta trajo.
+todo lo que la pauta trajo. Desde la `076` la Inversión de arriba es la de toda la cuenta (A14-19).
 
 **Estado** · **El cálculo, construido el 2026-09-30** (AQ-3): `sinFunnel` y el total de todas las
 campañas. Dibujado en AQ-4: es la última tabla, y abre desplegada mientras tenga campañas —las otras
@@ -383,6 +392,47 @@ campaña que GoHighLevel no listó —`conocida: false`— va a «Sin funnel» c
 se puede asignar (la foránea de la `066`).
 
 **Estado** · **Construido el 2026-09-30** (AQ-3).
+
+### A14-19 · Inversión e inversión con contactos
+
+**Por qué existe** · El 2026-10-07 la pantalla decía 0 de inversión en 7 días y el Administrador de anuncios de
+la misma cuenta 200,19; en 30 días, 865,58 contra 2.234,55. El colector pedía sólo las 13 campañas que nombraba
+nuestra atribución, y la que gastó en la semana era una campaña de mensajes: sus contactos llegan como
+`instagram` o `facebook`, sin `campaignId`, así que no podía entrar nunca. Y nadie lo vio porque un día con
+filas se daba por entero, y las filas nulas de las campañas pausadas tapaban a la única que gastó.
+
+**Qué es** · Dos inversiones, cada una con un solo uso:
+
+- **La Inversión** es lo que Meta cobró en toda la cuenta en la ventana, de todas las campañas, crucen o no con
+  contactos: la serie diaria de la cuenta (`negocio.gasto_de_la_cuenta`, la `076`), igual al Administrador de
+  anuncios. Es la de las cinco cifras de arriba y la de la economía del cerebro, porque las ventas no se
+  atribuyen a una campaña. Las filas, los funnels y la concentración suman el gasto por campaña.
+- **La inversión con contactos** es la de las campañas que alguna vez trajeron un contacto con su
+  `campaignId` en `atribucion_primera`. Es el único numerador de los costos de personas —por contacto, por
+  agendado, por calificado—, en la campaña, en el funnel y en el total. El costo por clic sigue siendo de Meta.
+
+La diferencia se publica al pie de la Inversión: «$X sin contactos atribuidos». Ahí entra el gasto de las
+campañas sin contactos y, mientras el relleno busca, el que la cuenta cobró y ninguna campaña leída explica
+todavía.
+
+**El criterio es por evidencia y no por objetivo de Meta**: una campaña de mensajes también puede tener objetivo
+de leads, y once de doce campañas lo tenían (A14-03). Una campaña sin contactos atribuidos dibuja «—» en sus
+etapas de personas, con «Sin contactos atribuidos» al pie: no se sabe cuánta gente trajo, y un 0 diría que no
+trajo a nadie. Un límite: una campaña de leads nueva, antes de su primer contacto, tampoco paga costos.
+
+**El gasto entero** · Un día está entero cuando tiene el total de la cuenta releído después de terminar y el
+detalle por campaña cuadra con él, con una tolerancia de diez centavos, o cuando se declaró residuo: gasto que
+ninguna campaña listada explica, por ejemplo de una campaña borrada. Se distinguen tres ceros: el medido —la
+cuenta dijo 0—, el no pedido —no hay total de la cuenta, «Faltan días de gasto.»— y el parcial —la cuenta dice
+200 y por campaña se leyó 0, «Falta gasto de algunas campañas.»—. El motivo viaja en `gasto.motivo`
+(`colector_atrasado`, `dias_sin_leer`, `no_cuadra`).
+
+**Rastro** · `lib/negocio/gastoDeLaCuenta.ts` (el cuadre, la cobertura), `lib/negocio/recolectarAnuncios.ts`
+(la pasada diaria), `lib/negocio/rellenarAnuncios.ts` (el relleno de cada hora) y
+`lib/negocio/embudosDeAcquisition.ts` (`inversionConContactos`, `gasto`).
+
+**Estado** · **Construido el 2026-10-07.** La atribución de los mensajes —cuántos DMs trajo cada campaña— queda
+fuera: hoy ningún contacto de mensajes trae su campaña.
 
 ---
 

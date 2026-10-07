@@ -7,8 +7,10 @@
 // Las dos mitades salen de las funciones de sus pantallas, y ésa es la razón de este archivo:
 //   · lo vendido, de `dineroDelMes` con el sujeto de Sales (`app/api/sales/route.ts`): los closers de
 //     la empresa. Es **venta reportada** por el closer al cerrar la cita, no un pago verificado;
-//   · lo invertido, de `cifrasPorCampana`, la misma lectura del gasto que los funnels de Acquisition
-//     (C7-07): la suma de `metricas_de_anuncio` de las campañas, en los días del mes.
+//   · lo invertido, de la serie diaria de TODA la cuenta publicitaria (`negocio.gasto_de_la_cuenta`, `076`), la
+//     misma que da la inversión del total de Acquisition: lo que Meta cobró, igual al Administrador de anuncios.
+//     No la suma por campaña: las ventas no se atribuyen a una campaña, así que el retorno y el costo por venta
+//     se dividen por todo lo que se gastó, crucen o no las campañas con contactos (A14-19).
 //
 // Los dos hablan del MISMO mes: el calendario de la empresa, con la misma expresión que `dineroDelMes`
 // (`date_trunc('month', timezone(zona, now()))`), calculada por la base y no por la aplicación.
@@ -20,12 +22,12 @@
 //   · **cero ventas**: «no hay dato suficiente», y dónde se registran;
 //   · **una venta sin monto**: el cobrado de `dineroDelMes` la suma como cero, así que el retorno saldría
 //     más bajo —o en cero—, sin que nada lo dijera (`ventasDelContacto.ts` advierte contra ese mismo `?? 0`);
-//   · **el gasto del mes incompleto**: un día del mes, antes de hoy, sin ninguna fila de métricas, o el
-//     colector sin escribir hace más de 26 horas —el mismo umbral que Acquisition—. El colector escribe una
-//     fila por anuncio y por día aunque no haya entregado, así que un día sin filas es un día que nadie pidió,
-//     y su gasto faltaría en el denominador.
-// Además, los últimos días leídos pueden estar a medias: el colector lee un día de madrugada y lo relee en la
-// pasada siguiente, y al oeste de UTC−6 ni eso lo cierra (`embudosDeAcquisition.ts`, el último día cerrado).
+//   · **el gasto del mes incompleto**: un día del mes, antes de hoy, sin el total de la cuenta, o la serie sin
+//     leer hace más de 26 horas —el mismo umbral que Acquisition—. El proveedor omite los días sin gasto y el
+//     colector los guarda en cero, así que un día sin fila es un día que nadie pidió, y su gasto faltaría en el
+//     denominador. Que el detalle por campaña cuadre no hace falta acá: el total de la cuenta no depende de él.
+// Además, los últimos días leídos pueden estar a medias: el colector lee la serie de madrugada y la relee en la
+// pasada siguiente, y al oeste de UTC−6 ni eso cierra el día (`embudosDeAcquisition.ts`, el último día cerrado).
 // Eso va en la nota y no en el aviso: es cierto siempre, y un aviso que aparece siempre se aprende a ignorar.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -33,7 +35,6 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { closersDeLaEmpresa } from './alcanceDelCloser.ts';
 import { dineroDelMes, type Indicador } from './dineroDelMes.ts';
-import { cifrasPorCampana } from './embudosDeAcquisition.ts';
 
 export interface EconomiaDelNegocio {
   /** El mes, como lo escribe `dineroDelMes`. */
@@ -45,7 +46,7 @@ export interface EconomiaDelNegocio {
   ventas: Indicador;
   /** La inversión en anuncios del mes. `valor: null` si no hay ningún gasto guardado. */
   inversion: Indicador;
-  /** El último día del mes con gasto leído, de las mismas filas que la inversión. `null` sin gasto. */
+  /** El último día del mes con el total de la cuenta leído, de las mismas filas que la inversión. `null` sin ninguno. */
   gastoHasta: string | null;
   /** Ventas del mes registradas sin monto: con alguna, no hay retorno. */
   ventasSinMonto: number;
@@ -79,22 +80,21 @@ export async function economiaDelNegocio(zona: string): Promise<EconomiaDelNegoc
            to_char(timezone(${zona}, now())::date, 'YYYY-MM-DD') as hasta`.execute(datos());
   const { desde, hasta } = bordes.rows[0]!;
 
-  const porCampana = await cifrasPorCampana(desde, hasta);
-  const inversionTotal = redondear([...porCampana.values()].reduce((s, c) => s + c.inversion, 0));
-  /* Las mismas filas que suma `cifrasPorCampana`: las de anuncios con campaña. Con otro filtro, `gastoHasta`
-     podría tener fecha junto a una inversión de cero, y los dos se contradirían. */
-  const gasto = await sql<{ dia: string | null; dias_con_filas: string; dias_previos: number; atrasado: boolean }>`
-    select to_char(max(m.fecha) filter (where m.gasto is not null and a.meta_campana_id is not null), 'YYYY-MM-DD') as dia,
-           (select count(distinct x.fecha) from negocio.metricas_de_anuncio x
-             where x.fecha >= ${desde}::date and x.fecha < ${hasta}::date) as dias_con_filas,
+  /* La serie de la cuenta: la suma del mes, el último día leído, cuántos días anteriores a hoy tienen total, y si
+     la serie está al día. Las mismas filas para las tres cosas, así `gastoHasta` no puede tener fecha junto a una
+     inversión que no la incluye. */
+  const gasto = await sql<{ suma: string | null; dia: string | null; dias_con_total: string; dias_previos: number; atrasado: boolean }>`
+    select sum(g.gasto) as suma,
+           to_char(max(g.fecha), 'YYYY-MM-DD') as dia,
+           count(*) filter (where g.fecha < ${hasta}::date) as dias_con_total,
            (${hasta}::date - ${desde}::date) as dias_previos,
-           coalesce((select max(sincronizado_el) from negocio.metricas_de_anuncio) < now() - interval '26 hours', true) as atrasado
-      from negocio.metricas_de_anuncio m
-      join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
-     where m.fecha between ${desde}::date and ${hasta}::date`.execute(datos());
+           coalesce((select max(leido_el) from negocio.gasto_de_la_cuenta) < now() - interval '26 hours', true) as atrasado
+      from negocio.gasto_de_la_cuenta g
+     where g.fecha between ${desde}::date and ${hasta}::date`.execute(datos());
   const g = gasto.rows[0]!;
   const gastoHasta = g.dia;
-  const gastoEntero = !g.atrasado && Number(g.dias_con_filas) === Number(g.dias_previos);
+  const inversionTotal = redondear(Number(g.suma ?? 0));
+  const gastoEntero = !g.atrasado && Number(g.dias_con_total) === Number(g.dias_previos);
 
   // Las ventas sin monto, con el mismo filtro que `dineroDelMes`: las del mes, de los closers de la empresa.
   const deQuien = sujeto.tipo === 'empresa' ? sujeto.usuarioIds : [];

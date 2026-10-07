@@ -25,6 +25,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
+import { diasSinCuadrar } from './gastoDeLaCuenta.ts';
 import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { COBERTURA_SUFICIENTE } from './calidadDeLaAtribucion.ts';
@@ -179,6 +180,12 @@ export interface CostoDeLosAnuncios {
    * términos: una proporción sola se lee como precisión y el par dice de cuántos habla.
    */
   cobertura: { con: number; sobre: number };
+  /**
+   * Cuántos días de la ventana tienen un total de la cuenta que el detalle por campaña no explica (`076`): falta
+   * el gasto de alguna campaña, y el relleno de cada hora la está buscando. Mientras tanto la tabla puede tener
+   * anuncios de menos, y la parte del gasto de cada pieza sale sobre un total corto.
+   */
+  diasSinCuadrar: number;
   aviso: string | null;
 }
 
@@ -246,6 +253,7 @@ export async function costoDelAnuncio(dias = DIAS_DE_LA_TASA): Promise<CostoDeLo
   const gastoTotal = conGasto.length === 0 ? null : redondear(conGasto.reduce((s, f) => s + (f.gasto ?? 0), 0), 2);
 
   const { primero, ultimo } = await ventanaGuardada(dias);
+  const sinCuadrar = await diasSinCuadrar((alias) => ventanaDeMetricas(alias, dias));
 
   return {
     dias,
@@ -254,7 +262,8 @@ export async function costoDelAnuncio(dias = DIAS_DE_LA_TASA): Promise<CostoDeLo
     filas,
     gastoTotal,
     cobertura,
-    aviso: avisoDe(filas, cobertura, gastoTotal, ultimo, dias),
+    diasSinCuadrar: sinCuadrar,
+    aviso: avisoDe(filas, cobertura, gastoTotal, ultimo, dias, sinCuadrar),
   };
 }
 
@@ -387,28 +396,26 @@ async function ventanaGuardada(dias: number): Promise<{ primero: string | null; 
    * el lector divide de cabeza por el período equivocado y no hay nada que lo desmienta.
    *
    * Es exactamente la lectura que estas dos fechas existen para impedir, con el signo cambiado. */
-  const f = await datos()
-    .selectFrom('metricas_de_anuncio')
-    .select((eb) => [eb.fn.min('fecha').as('primero'), eb.fn.max('fecha').as('ultimo')])
-    /* `ventanaDeMetricas` y NO el predicado escrito a mano, que es lo que había: el mismo
-       `fecha > (current_date - make_interval(days => N))`, copiado, **en el mismo archivo que
-       exporta la función** y a cien líneas de un comentario que dice «la ventana, en el único
-       lugar donde está escrita».
-
-       Y es el peor lugar posible para una segunda copia: estas dos fechas son las que la pantalla
-       imprime como el período de las cifras. Si las dos definiciones se separaran alguna vez, el
-       encabezado describiría una ventana y los números otra — que es, con el signo cambiado,
-       exactamente el defecto que el comentario de arriba cuenta que ya se pagó una vez. */
-    .where(ventanaDeMetricas('metricas_de_anuncio', dias))
-    .executeTakeFirst();
-
-  return { primero: comoDia(f?.primero), ultimo: comoDia(f?.ultimo) };
-}
-
-/** `date` llega como `Date` o como texto según el controlador. Las dos formas dan el mismo día. */
-function comoDia(v: unknown): string | null {
-  if (v === null || v === undefined) return null;
-  return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10);
+  /* ── Y TAMBIÉN DE LA SERIE DE LA CUENTA (`076`) ─────────────────────────────
+   *
+   * Hasta la `076` las campañas pausadas dejaban una fila nula por día, así que el último día con métricas era
+   * el último leído. Ahora la pasada diaria sólo pide las campañas que pueden estar gastando: con la pauta
+   * parada no escribe ninguna métrica, y el último día de métricas quedaría quieto mientras la serie de la
+   * cuenta sigue diciendo, cada día, que no se gastó. Sin la serie, el aviso de abajo diría «a los últimos días
+   * les falta el gasto» sobre días que sí se leyeron y dieron cero. Las fechas salen como texto (`to_char`): el
+   * controlador entrega un `date` como un `Date` a medianoche LOCAL, y pasarlo por `toISOString` lo corre un día
+   * cuando el proceso no está en UTC.
+   *
+   * `ventanaDeMetricas` y NO el predicado escrito a mano, que es lo que había antes: el mismo
+   * `fecha > (current_date - make_interval(days => N))`, copiado, en el mismo archivo que exporta la función.
+   * Estas dos fechas son las que la pantalla imprime como el período de las cifras: si las dos definiciones se
+   * separaran, el encabezado describiría una ventana y los números otra. */
+  const f = await sql<{ primero: string | null; ultimo: string | null }>`
+    select to_char(min(fecha), 'YYYY-MM-DD') as primero, to_char(max(fecha), 'YYYY-MM-DD') as ultimo
+      from (select m.fecha from negocio.metricas_de_anuncio m where ${ventanaDeMetricas('m', dias)}
+            union all
+            select g.fecha from negocio.gasto_de_la_cuenta g where ${ventanaDeMetricas('g', dias)}) as x`.execute(datos());
+  return { primero: f.rows[0]?.primero ?? null, ultimo: f.rows[0]?.ultimo ?? null };
 }
 
 /** `numeric` y `bigint` llegan como texto desde `pg`. Nulo se conserva; no se convierte en cero. */
@@ -429,6 +436,7 @@ function avisoDe(
   gastoTotal: number | null,
   ultimo: string | null,
   dias: number,
+  sinCuadrar = 0,
 ): string | null {
   if (filas.length === 0) {
     return gastoTotal === null
@@ -463,6 +471,16 @@ function avisoDe(
         'que gastaron temprano, no a los que más gastaron.'
       );
     }
+  }
+
+  /* 1 bis · Días con gasto de la cuenta que ninguna campaña leída explica todavía (`076`). Invalida lo mismo que
+     la ventana cortada —la tabla ordenada por gasto puede no tener al que más gastó—, así que va justo después. */
+  if (sinCuadrar > 0) {
+    return (
+      `En ${sinCuadrar === 1 ? 'un día' : `${sinCuadrar} días`} de esta ventana la cuenta de Meta gastó más de lo ` +
+      'que suman sus campañas leídas: el gasto que falta se está buscando cada hora. Hasta entonces la tabla ' +
+      'puede no tener a todos los anuncios que gastaron.'
+    );
   }
 
   /* 2 · La cobertura, porque invalida la columna de leads entera y no se ve.

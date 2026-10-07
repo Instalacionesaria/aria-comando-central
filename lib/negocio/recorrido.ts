@@ -186,11 +186,11 @@ function comillas(v: string): string {
 /**
  * La ventana de la cohorte de contactos, anclada al día. **Un solo lugar, y por eso es exportada.**
  *
- * Es la misma que usan `costoDelAnuncio.ts:348` y `calidadDelCreativo.ts:230`, y tiene que serlo:
+ * Es la misma que usan `costoDelAnuncio.ts:357` y `calidadDelCreativo.ts:230`, y tiene que serlo:
  * las tres pantallas cuentan contactos sobre la misma ventana y con la misma etiqueta arriba.
  *
  * **Anclada al día y no móvil de 24 horas**, al revés que el resto del sistema. El argumento entero
- * está en `costoDelAnuncio.ts:33-63`: Conversion cruza sus contactos con el gasto y con las piezas,
+ * está en `costoDelAnuncio.ts:34-64`: Conversion cruza sus contactos con el gasto y con las piezas,
  * que viven en columnas `date`, y mezclar las dos formas dividió una vez treinta y un días de gasto
  * entre treinta de leads.
  */

@@ -245,7 +245,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:138-148`, Business según
   `docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:134-136`. Business no tiene pantalla.
 - **El costo por etapa** — Acquisition publica el gasto por lead **de cada anuncio**
-  (`lib/negocio/costoDelAnuncio.ts:212`); el de la empresa entera, por etapa, no lo calcula nadie.
+  (`lib/negocio/costoDelAnuncio.ts:219`); el de la empresa entera, por etapa, no lo calcula nadie.
 - **La comparación contra la ventana anterior** (`PREVP`, `lib/aios/executive.js:57-63@c4cf2a8`) —
   **ninguna ruta la calcula**: un `grep` sobre `lib/negocio/` y `app/api/` no encuentra ninguna
   ventana previa. Lo más cercano, `fatigaDelCreativo`, compara dos mitades de la misma ventana por
@@ -460,7 +460,7 @@ construcción es la de Sales.
 
 **3 · Gasto y contactos, en la misma ventana.** El gasto es un `date` y la cohorte un instante; mezclar
 las dos formas dividió una vez treinta y un días de gasto entre treinta de leads
-(`lib/negocio/costoDelAnuncio.ts:33-63`). Todo costo por etapa de Executive cae ahí.
+(`lib/negocio/costoDelAnuncio.ts:34-64`). Todo costo por etapa de Executive cae ahí.
 
 **4 · El dinero es del mes calendario, y es venta reportada.** No lo gobierna el selector
 (`app/api/sales/route.ts:24-26`) y no es un pago verificado (`lib/negocio/cadenaDeCierre.ts:353-358`,

@@ -1,192 +1,96 @@
-// Qué días pide el colector de anuncios, y qué hace cuando una campaña se pudre. Tipo: Código.
+// Qué pide el colector de anuncios, qué da por completo, y qué hace cuando una campaña se pudre. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOS DOS DEFECTOS QUE ESTE ARCHIVO EXISTE PARA ATRAPAR, Y NINGUNO FALLA SOLO
+// LA FUGA QUE ESTE ARCHIVO EXISTE PARA QUE NO VUELVA (`076`)
 //
-// **1 · Un día que se deja de pedir no vuelve.** `diasQueFaltan` decide la ventana de cada pasada.
-// Si se equivoca por un día —el clásico `<` donde iba `<=`— el sistema queda con un agujero
-// permanente en el calendario de gasto: la pasada siguiente arranca del último día guardado, que
-// nunca incluyó al que faltó. Y no falla nada: la pantalla muestra una serie con un hueco, que se
-// lee como «ese día no se gastó».
+// El 2026-10-07 la app decía 0 de inversión en 7 días y el Administrador de anuncios de la misma cuenta
+// 200,19. El colector pedía sólo las campañas de nuestra atribución (13 de 61), una campaña de mensajes no
+// podía entrar nunca, y «completo» quería decir «el día tiene filas»: las filas nulas de las pausadas tapaban
+// a la única que gastó. Ninguna prueba lo vio porque todas inyectaban la lista de campañas.
 //
-// **2 · Una campaña podrida que aborta la pasada.** No es una hipótesis: `atribucion_primera` tiene
-// un `888888` que alguien dejó, y pedirle métricas devuelve **HTTP 500**. Si un 500 tumbara la
-// pasada, ese único contacto bloquearía el costo de las otras doce campañas para siempre — y el
-// síntoma sería «Acquisition no tiene datos», sin nada que mirar.
+// Ahora se prueba lo que decide: el universo (la cuenta, no la atribución), la referencia (un día está completo
+// cuando cuadra con la cuenta), lo pendiente por (campaña, día) y no por empresa, y que un fallo nunca se
+// guarde como un cero. Cada prueba nombra la mutación que la pone en rojo.
 //
-// Los dos son de los que no fallan solos: producen una pantalla que se dibuja bien y miente.
+// Y siguen las de antes que todavía valen: una campaña que devuelve 500 no aborta la pasada, se reintenta una
+// vez, y lo que falla dos veces queda anotado.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  diasQuePedir,
-  DIAS_QUE_SE_RELEEN,
+  DIAS_DE_LA_SERIE_QUE_SE_RELEEN,
   DIAS_DE_RELLENO,
-  MAXIMO_DE_DIAS_POR_PASADA,
+  DIAS_QUE_SE_RELEEN,
   PRESUPUESTO_MS,
   recolectarAnuncios,
+  type PlanDelDia,
 } from '../../lib/negocio/recolectarAnuncios.ts';
+import { FIN_DEL_RELLENO_MS, rellenarAnuncios, type FotoDelRelleno } from '../../lib/negocio/rellenarAnuncios.ts';
+import {
+  consultasIniciales,
+  cuadra,
+  estadoDelDia,
+  finSeguro,
+  lecturaFinal,
+  ordenar,
+  paresDelTramoFijo,
+  partirRango,
+  sumarDias,
+  TOLERANCIA_DEL_CUADRE,
+  type Consulta,
+  type DiaDeLaSerie,
+  type LecturaDeGasto,
+} from '../../lib/negocio/gastoDeLaCuenta.ts';
 import type { MetricaDeAnuncio } from '../../lib/ghl/anuncios.ts';
 
 /** Un instante fijo, para que la suite dé lo mismo en las tres zonas. */
-const AHORA = Date.parse('2026-09-16T11:30:00Z');
-const HOY = '2026-09-16';
-/** El acceso no se usa: las cuatro pruebas de abajo reemplazan al proveedor. */
+const AHORA = Date.parse('2026-10-07T06:17:00Z');
+const HOY = '2026-10-07';
+/** El acceso no se usa: el proveedor se reemplaza en todas. */
 const ACCESO = { token: 'no-se-usa', locationId: 'no-se-usa' };
+/* Un uuid cualquiera, y tiene que SER un uuid: los escritores corren dentro de `conOrganizacion`, que valida la
+   forma antes de abrir contexto. No se conecta a nada porque todos los escritores están inyectados. */
+const ORG = '00000000-0000-4000-8000-000000000000';
 
-/** El paso 0, falso y vinculado. Sin esto cada prueba saldría a la red del proveedor de verdad. */
 const VINCULO_OK = async () => ({
   tipo: 'datos' as const,
   datos: { estado: 'connected', cuentaId: 'act_1349863156073553', paginas: 1 },
 });
-/**
- * Los nombres de las campañas, falsos y vacíos. Es el paso del final de la pasada (`065`): sin esto,
- * cada prueba de abajo saldría a la red del proveedor de verdad, igual que sin `VINCULO_OK`. Vacíos
- * a propósito, así el escritor de campañas no se llama y ninguna prueba de código toca la base.
- */
 const SIN_CAMPANAS = async () => ({ tipo: 'datos' as const, datos: [], corto: false, paginas: 1 });
-/* Un uuid cualquiera, y tiene que SER un uuid: el escritor corre dentro de `conOrganizacion`, que
-   valida la forma antes de abrir contexto. No se conecta a nada porque el escritor está inyectado. */
-const ORG = '00000000-0000-4000-8000-000000000000';
+const SERIE_VACIA = async () => ({ tipo: 'datos' as const, datos: [], llamadas: 1 });
+const FALLA = { tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } };
 
-/**
- * Los días de la ventana que ya tienen filas, contando hacia atrás desde hoy.
- *
- * Reemplaza al viejo `ultimoDia`, y el cambio no es de forma: una marca de agua no puede describir
- * un conjunto con agujeros, y los agujeros son el caso normal. Ver `diasQuePedir`.
- */
-function guardadosHasta(dia: string | null): Set<string> {
-  const g = new Set<string>();
-  if (dia === null) return g;
-  const tope = Date.parse(`${dia}T00:00:00Z`);
-  for (let i = 0; i < MAXIMO_DE_DIAS_POR_PASADA + 5; i += 1) {
-    g.add(new Date(tope - i * 86_400_000).toISOString().slice(0, 10));
-  }
-  return g;
+/** Un plan de la pasada diaria: las candidatas son las activas más las que gastaron hace poco. */
+function plan(activas: string[], conGastoReciente: string[] = [], inicio: string | null = '2026-08-18'): PlanDelDia {
+  return { inicio, activas, conGastoReciente };
 }
 
-/** Todo guardado menos los días que se nombren: así se siembra un agujero. */
-function guardadosSalvo(...huecos: string[]): Set<string> {
-  const g = guardadosHasta(HOY);
-  for (const h of huecos) g.delete(h);
-  return g;
+/** Las piezas de una pasada diaria sin red ni base. Cada prueba pisa lo que mira. */
+function piezas(extra: Parameters<typeof recolectarAnuncios>[2] = {}): Parameters<typeof recolectarAnuncios>[2] {
+  return {
+    ahora: AHORA,
+    reloj: () => 0,
+    vinculo: VINCULO_OK,
+    listarCampanas: SIN_CAMPANAS,
+    serie: SERIE_VACIA,
+    escribirSerie: async () => {},
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+    escribir: async () => {},
+    plan: plan([]),
+    ...extra,
+  };
 }
 
-// ─── 1 · La ventana de días ───────────────────────────────────
-
-test('la tabla vacía pide la ventana entera, y el PRIMERO es HOY', () => {
-  const dias = diasQuePedir(new Set(), AHORA);
-
-  assert.equal(dias.length, MAXIMO_DE_DIAS_POR_PASADA, 'sin nada guardado se piden todos los días de la ventana');
-  assert.equal(dias[0], HOY, 'la lista va del más nuevo al más viejo');
-  assert.equal(dias[dias.length - 1], '2026-08-18', 'treinta días contando hoy arrancan el 18 de agosto');
-});
-
-test('HOY se pide SIEMPRE y va PRIMERO, esté guardado o no', () => {
-  /* ══ LA PRUEBA QUE FALTABA, Y SU AUSENCIA COSTÓ UN DEFECTO EN PRODUCCIÓN ══
-   *
-   * Que hoy ESTÉ en la lista no alcanza: estaba, y el colector igual no llegaba nunca. Lo que
-   * importa es que vaya PRIMERO, porque el guardia de `PRESUPUESTO_MS` corta por el final.
-   *
-   * Medido el 2026-09-18 con el cron corriendo solo: la tarea decía `corrio` con 39 llamadas
-   * reales y `max(fecha)` llevaba dos días sin moverse. */
-  for (const guardados of [new Set<string>(), guardadosHasta(HOY), guardadosHasta('2026-09-15'), guardadosSalvo('2026-09-01')]) {
-    assert.equal(diasQuePedir(guardados, AHORA)[0], HOY, 'el PRIMERO tiene que ser hoy');
-  }
-});
-
-test('hoy y las relecturas se piden AUNQUE estén guardados', () => {
-  // Meta corrige hacia atrás: una lectura vieja no es definitiva. Si el tramo fijo se filtrara por
-  // «lo que falta», una corrección del proveedor no entraría nunca.
-  const dias = diasQuePedir(guardadosHasta(HOY), AHORA);
-
-  assert.equal(dias.length, DIAS_QUE_SE_RELEEN + 1, 'con todo guardado sólo queda el tramo fijo');
-  assert.deepEqual(dias, ['2026-09-16', '2026-09-15', '2026-09-14']);
-});
-
-test('un HUECO viejo vuelve a la lista, y va DETRÁS del tramo fijo', () => {
-  /* ══ ESTO ES LO QUE RESTITUYE LA RECONCILIACIÓN ════════════════════
-   *
-   * La versión anterior derivaba la ventana de `max(fecha)`, así que un día que el presupuesto
-   * sacrificaba quedaba perdido POR CONSTRUCCIÓN: la marca de agua avanzaba igual y ese día no
-   * volvía a entrar en ninguna ventana. Con la tabla vacía, el relleno de treinta guardaba tres y
-   * los otros veintisiete no se pedían nunca más.
-   *
-   * Acá el hueco se deriva de la AUSENCIA de filas, así que sigue apareciendo hasta que se llene. */
-  const dias = diasQuePedir(guardadosSalvo('2026-09-01', '2026-08-25'), AHORA);
-
-  assert.ok(dias.includes('2026-09-01'), 'el hueco no volvió a la lista');
-  assert.ok(dias.includes('2026-08-25'), 'el segundo hueco tampoco');
-  // Y detrás del tramo fijo: lo que el presupuesto sacrifica son los huecos, nunca hoy.
-  assert.ok(
-    dias.indexOf('2026-09-01') >= DIAS_QUE_SE_RELEEN + 1,
-    'un hueco se coló delante del tramo fijo: el presupuesto sacrificaría una relectura en su lugar',
-  );
-  // Del más nuevo al más viejo también entre huecos.
-  assert.ok(dias.indexOf('2026-09-01') < dias.indexOf('2026-08-25'), 'los huecos no van del más nuevo al más viejo');
-});
-
-test('el presupuesto sacrifica HUECOS, nunca el día de hoy', () => {
-  // La misma propiedad dicha como la usa el colector: tome los N días que tome, hoy está entre
-  // ellos. Es lo que hace que la pantalla nunca se quede sin el día en curso.
-  const dias = diasQuePedir(new Set(), AHORA);
-  for (let entran = 1; entran <= dias.length; entran += 1) {
-    assert.ok(dias.slice(0, entran).includes(HOY), `con presupuesto para ${entran} día(s), hoy quedó afuera`);
-  }
-});
-
-test('los días no se repiten, y el tramo fijo va en orden descendente', () => {
-  const dias = diasQuePedir(guardadosSalvo('2026-09-05'), AHORA);
-  assert.equal(new Set(dias).size, dias.length, 'hay días repetidos: se pagarían dos veces');
-
-  const fijo = dias.slice(0, DIAS_QUE_SE_RELEEN + 1);
-  for (let i = 1; i < fijo.length; i += 1) {
-    const anterior = Date.parse(`${fijo[i - 1]}T00:00:00Z`);
-    const actual = Date.parse(`${fijo[i]}T00:00:00Z`);
-    assert.equal(anterior - actual, 86_400_000, `salto o inversión entre ${fijo[i - 1]} y ${fijo[i]}`);
-  }
-});
-
-test('la ventana nunca pasa del tope, aunque falte todo', () => {
-  // Sin el tope, una tabla vacía de un año serían miles de llamadas en una función de 300 segundos.
-  assert.equal(diasQuePedir(new Set(), AHORA).length, MAXIMO_DE_DIAS_POR_PASADA);
-});
-
-test('el tramo fijo ENTRA en el presupuesto, o `atrasado` sería permanente', () => {
-  /* ══ LA CUENTA QUE ATA LAS TRES CONSTANTES ══════════════════════════
-   *
-   * Medido el 2026-09-18 contra producción: 13 campañas y 4,55 s por llamada, o sea ~59 s por cada
-   * día pedido. En régimen —sin huecos— la ventana es exactamente el tramo fijo.
-   *
-   * Si ese tramo no entrara en `PRESUPUESTO_MS`, el guardia cortaría TODAS las pasadas y `atrasado`
-   * quedaría encendido para siempre — un aviso que aparece siempre es uno que nadie lee. Con
-   * `DIAS_QUE_SE_RELEEN = 3` eran 4 días y 237 s contra 120 s: no entraba.
-   *
-   * El guardia se comprueba ANTES de cada día, así que el último puede arrancar con el presupuesto
-   * casi agotado y completarse igual. Por eso la condición es sobre los días ANTERIORES al último. */
-  const CAMPANAS_MEDIDAS = 13;
-  const MS_POR_LLAMADA = 4550;
-  const dias = diasQuePedir(guardadosHasta(HOY), AHORA);
-
-  assert.equal(dias.length, DIAS_QUE_SE_RELEEN + 1, 'en régimen la ventana es el tramo fijo');
-  assert.ok(
-    (dias.length - 1) * CAMPANAS_MEDIDAS * MS_POR_LLAMADA <= PRESUPUESTO_MS,
-    `la ventana de ${dias.length} días no entra en ${PRESUPUESTO_MS / 1000} s: el guardia cortaría siempre`,
-  );
-});
-
-// ─── 2 · Lo que pasa cuando una campaña se pudre ────────────────────────────
-
-/** Una métrica cualquiera, con el `adId` que se le pida. */
-function metrica(anuncioId: string): MetricaDeAnuncio {
+/** Una métrica cualquiera, con el `adId` y el gasto que se pidan. */
+function metrica(anuncioId: string, gasto: number | null = 12.5): MetricaDeAnuncio {
   return {
     anuncioId,
     adSetId: '120249633901560467',
     campanaId: '120249633901590467',
     nombre: 'un anuncio',
     objetivo: 'OUTCOME_LEADS',
-    gasto: 12.5,
+    gasto,
     impresiones: 100,
     clics: 3,
     ctr: 3,
@@ -198,616 +102,708 @@ function metrica(anuncioId: string): MetricaDeAnuncio {
   };
 }
 
+// ─── Las fotos del gasto, para las decisiones puras y el relleno ──────────────
+
+/** Una lectura final: leída mucho después del día. */
+const LEIDA = Date.parse('2026-10-07T06:17:00Z');
+const lectura = (gasto: number, leidoEl = LEIDA, porRango = false): LecturaDeGasto => ({ gasto, leidoEl, porRango });
+const diaDeLaSerie = (gasto: number | null, extra: Partial<DiaDeLaSerie> = {}): DiaDeLaSerie => ({
+  gasto,
+  leidoEl: LEIDA,
+  cambioEl: null,
+  redescubiertoEl: null,
+  residuoEl: null,
+  ...extra,
+});
+
+/**
+ * Una foto: la serie de la cuenta por día, el detalle por anuncio por día, y las lecturas por campaña.
+ * `lecturas` va como `{ campaña: { día: lectura } }` para que cada prueba se lea de un vistazo.
+ */
+function foto(
+  universo: string[],
+  serie: Record<string, DiaDeLaSerie>,
+  detalle: Record<string, number>,
+  lecturas: Record<string, Record<string, LecturaDeGasto>> = {},
+): FotoDelRelleno {
+  const dias = Object.keys(serie).sort();
+  return {
+    inicio: dias[0] ?? null,
+    universo,
+    serie: new Map(Object.entries(serie)),
+    detalle: new Map(Object.entries(detalle)),
+    lecturas: new Map(Object.entries(lecturas).map(([c, m]) => [c, new Map(Object.entries(m))])),
+  };
+}
+
+// ─── 1 · Qué cuadra y qué es final ───────────────────────────────────────────
+
+test('un día cuadra con la diferencia JUSTO en la tolerancia, y no un centavo más', () => {
+  // Mutación: `<` en lugar de `<=`, o la tolerancia en dólares comparada contra centavos.
+  assert.equal(cuadra(200.19, 200.19 - TOLERANCIA_DEL_CUADRE), true);
+  assert.equal(cuadra(200.19, 200.19 + TOLERANCIA_DEL_CUADRE), true, 'el detalle por encima también cuadra');
+  assert.equal(cuadra(200.19, 200.19 - TOLERANCIA_DEL_CUADRE - 0.01), false);
+  // El caso que motivó todo: la cuenta gastó y el detalle de las campañas pedidas dio cero.
+  assert.equal(cuadra(200.19, 0), false, 'la cuenta dice 200,19 y por campaña se leyó cero: eso no cuadra');
+  assert.equal(cuadra(null, 0), false, 'sin total de la cuenta no hay contra qué cuadrar');
+});
+
+test('una lectura es final desde las 00:00 UTC de dos días después, y no antes', () => {
+  // El día de la cuenta termina, en el peor huso, a esa hora. Mutación: `+ 1` día en `finSeguro`.
+  const dia = '2026-10-01';
+  assert.equal(finSeguro(dia), Date.parse('2026-10-03T00:00:00Z'));
+  assert.equal(lecturaFinal(lectura(5, Date.parse('2026-10-02T23:59:00Z')), dia, undefined), false);
+  assert.equal(lecturaFinal(lectura(5, Date.parse('2026-10-03T00:00:00Z')), dia, undefined), true);
+});
+
+test('una corrección de Meta vuelve a pedir lo que GASTÓ, y deja los ceros', () => {
+  // Mutación: ignorar `cambio_el`, o volver a pedir también los ceros (cientos de llamadas por corrección).
+  const dia = '2026-10-01';
+  const serie = diaDeLaSerie(100, { cambioEl: Date.parse('2026-10-06T06:17:00Z') });
+  assert.equal(lecturaFinal(lectura(40, Date.parse('2026-10-05T06:17:00Z')), dia, serie), false);
+  assert.equal(lecturaFinal(lectura(40, Date.parse('2026-10-06T07:00:00Z')), dia, serie), true);
+  assert.equal(lecturaFinal(lectura(0, Date.parse('2026-10-05T06:17:00Z')), dia, serie), true);
+});
+
+test('un día que cuadra prueba el cero de las campañas que no se leyeron, sin llamar', () => {
+  /* La cuenta dice 50 y la única campaña leída dio 50: las otras sesenta no gastaron, y no hace falta
+     preguntarles. Mutación: pedir las campañas no leídas de un día que cuadra. */
+  const f = foto(['a', 'b', 'c'], { '2026-10-01': diaDeLaSerie(50) }, { '2026-10-01': 50 }, { a: { '2026-10-01': lectura(50) } });
+  assert.equal(estadoDelDia(f, '2026-10-01'), 'cuadra');
+  assert.deepEqual(consultasIniciales(f, []), []);
+});
+
+test('los estados de un día que no cuadra', () => {
+  const dia = '2026-10-01';
+  const todas = { a: { [dia]: lectura(30) }, b: { [dia]: lectura(0, LEIDA, true) } };
+  // Sin total, o con un total leído antes de que el día terminara.
+  assert.equal(estadoDelDia(foto(['a'], {}, {}), dia), 'sin_serie');
+  assert.equal(
+    estadoDelDia(foto(['a'], { [dia]: diaDeLaSerie(50, { leidoEl: Date.parse('2026-10-02T06:17:00Z') }) }, {}), dia),
+    'sin_serie',
+  );
+  // A alguna campaña le falta su lectura.
+  assert.equal(estadoDelDia(foto(['a', 'b'], { [dia]: diaDeLaSerie(50) }, { [dia]: 30 }, { a: todas.a }), dia), 'pendiente');
+  // Todas leídas y no cuadra: primero se redescubre, después es residuo, y el declarado se queda.
+  assert.equal(estadoDelDia(foto(['a', 'b'], { [dia]: diaDeLaSerie(50) }, { [dia]: 30 }, todas), dia), 'por_redescubrir');
+  assert.equal(
+    estadoDelDia(foto(['a', 'b'], { [dia]: diaDeLaSerie(50, { redescubiertoEl: LEIDA }) }, { [dia]: 30 }, todas), dia),
+    'nuevo_residuo',
+  );
+  assert.equal(
+    estadoDelDia(foto(['a', 'b'], { [dia]: diaDeLaSerie(50, { residuoEl: LEIDA }) }, { [dia]: 30 }, todas), dia),
+    'residuo',
+  );
+});
+
+// ─── 2 · Qué consultas hacen falta ───────────────────────────────────────────
+
+test('una campaña que entra TARDE pide todos sus días pendientes, no sólo los tres fijos', () => {
+  /* El defecto viejo: los días «ya guardados» se contaban por empresa, así que una campaña nueva en una cuenta
+     con filas de otras sólo recibía hoy y los dos anteriores. Acá la campaña `nueva` no tiene ninguna lectura
+     en treinta días que no cuadran: su rango tiene que cubrirlos todos.
+     Mutación: volver al conjunto de días por organización (un día con lecturas de otra campaña se da por leído). */
+  const dias = Array.from({ length: 30 }, (_, i) => sumarDias('2026-09-05', i));
+  const serie = Object.fromEntries(dias.map((d) => [d, diaDeLaSerie(80)]));
+  const detalle = Object.fromEntries(dias.map((d) => [d, 30]));
+  const vieja = { vieja: Object.fromEntries(dias.map((d) => [d, lectura(30)])) };
+  const cola = consultasIniciales(foto(['vieja', 'nueva'], serie, detalle, vieja), dias);
+  assert.deepEqual(cola, [{ tipo: 'rango', campana: 'nueva', desde: dias[0], hasta: dias[29], dias, conocido: 0 }]);
+});
+
+test('una lectura vieja que GASTÓ se pide por día; una sin gasto entra en el rango', () => {
+  const d = '2026-10-01';
+  const vieja = Date.parse('2026-10-01T06:17:00Z'); // leída antes de que el día terminara
+  const f = foto(['a', 'b'], { [d]: diaDeLaSerie(80) }, { [d]: 30 }, { a: { [d]: lectura(30, vieja) }, b: { [d]: lectura(0, vieja) } });
+  assert.deepEqual(consultasIniciales(f, [d]), [
+    { tipo: 'dia', campana: 'a', dia: d },
+    { tipo: 'rango', campana: 'b', desde: d, hasta: d, dias: [d], conocido: 0 },
+  ]);
+});
+
+test('un rango que no gastó deja CEROS en sus días sin leer; descuenta lo ya leído', () => {
+  // Mutación: comparar el total sin restar lo conocido (un día ya leído con gasto haría partir el rango).
+  const f = foto(['a'], {}, {});
+  const c = { tipo: 'rango' as const, campana: 'a', desde: '2026-09-01', hasta: '2026-09-30', dias: ['2026-09-02', '2026-09-20'], conocido: 75.4 };
+  assert.deepEqual(partirRango(f, c, 75.4), { ceros: ['2026-09-02', '2026-09-20'] });
+  assert.deepEqual(partirRango(f, c, 75.4 + TOLERANCIA_DEL_CUADRE), { ceros: ['2026-09-02', '2026-09-20'] });
+  assert.ok('siguientes' in partirRango(f, c, 75.4 + TOLERANCIA_DEL_CUADRE + 0.01), 'gastó más de lo conocido: hay que bajar');
+});
+
+test('un rango que gastó se parte en SEMANAS desde el final, y una semana en días', () => {
+  /* Mutación: partir en mitades, o desde el principio (lo más nuevo quedaría para el final), o pedir días de
+     una semana sin días pendientes. */
+  const f = foto(['a'], {}, {});
+  const dias = ['2026-09-01', '2026-09-10', '2026-09-29'];
+  const largo = partirRango(f, { tipo: 'rango', campana: 'a', desde: '2026-09-01', hasta: '2026-09-30', dias, conocido: 0 }, 20);
+  assert.ok('siguientes' in largo);
+  assert.deepEqual(
+    largo.siguientes.map((c) => (c.tipo === 'rango' ? `${c.desde}..${c.hasta}:${c.dias.join(',')}` : c.dia)),
+    ['2026-09-24..2026-09-30:2026-09-29', '2026-09-10..2026-09-16:2026-09-10', '2026-09-01..2026-09-02:2026-09-01'],
+  );
+  const semana = partirRango(f, { tipo: 'rango', campana: 'a', desde: '2026-09-24', hasta: '2026-09-30', dias: ['2026-09-25', '2026-09-29'], conocido: 0 }, 20);
+  assert.deepEqual(semana, {
+    siguientes: [
+      { tipo: 'dia', campana: 'a', dia: '2026-09-29' },
+      { tipo: 'dia', campana: 'a', dia: '2026-09-25' },
+    ],
+  });
+});
+
+test('la cola va de lo más NUEVO a lo más viejo, y en el mismo final, lo más largo primero', () => {
+  // Mutación: invertir el orden. «7 días» se completaría después que agosto.
+  const cola: Consulta[] = [
+    { tipo: 'dia', campana: 'a', dia: '2026-09-01' },
+    { tipo: 'dia', campana: 'b', dia: '2026-10-05' },
+    { tipo: 'rango', campana: 'c', desde: '2026-09-01', hasta: '2026-10-05', dias: [], conocido: 0 },
+  ];
+  assert.deepEqual(
+    ordenar(cola).map((c) => c.campana),
+    ['c', 'b', 'a'],
+  );
+});
+
+test('el tramo fijo: hoy primero, los tres días, y sólo las candidatas', () => {
+  // Mutación: del más viejo al más nuevo (anteayer lo cubre también el relleno; hoy, sólo esta pasada).
+  assert.deepEqual(paresDelTramoFijo(HOY, ['x', 'y']), [
+    { campana: 'x', dia: '2026-10-07' },
+    { campana: 'y', dia: '2026-10-07' },
+    { campana: 'x', dia: '2026-10-06' },
+    { campana: 'y', dia: '2026-10-06' },
+    { campana: 'x', dia: '2026-10-05' },
+    { campana: 'y', dia: '2026-10-05' },
+  ]);
+  assert.equal(DIAS_QUE_SE_RELEEN, 2);
+});
+
+test('el tramo fijo ENTRA en el presupuesto con las campañas activas de régimen', () => {
+  /* La cuenta: el vínculo, una página de campañas y tres llamadas de la serie (sesenta días en tramos de
+     veinte) son 5; más tres por candidata. A 4,55 s por llamada —medido el 2026-09-16—, siete candidatas
+     caben en 118 s. La cuenta tiene entre una y tres activas. Si no entrara, `atrasado` quedaría encendido
+     siempre, y un aviso que aparece siempre es uno que nadie lee. */
+  const FIJAS = 5;
+  const MS_POR_LLAMADA = 4550;
+  assert.equal(Math.ceil(DIAS_DE_LA_SERIE_QUE_SE_RELEEN / 20), 3);
+  assert.ok((FIJAS + 3 * 7) * MS_POR_LLAMADA <= PRESUPUESTO_MS, 'siete candidatas ya no entran en el presupuesto');
+});
+
+// ─── 3 · La pasada diaria ────────────────────────────────────────────────────
+
+test('se piden las campañas ACTIVE y las que gastaron hace poco, aunque no traigan contactos', async () => {
+  /* La campaña de mensajes no tenía anuncios guardados ni contactos con su `campaignId`: con la atribución
+     como universo no se pedía nunca. Mutación: volver a armar las candidatas desde la atribución, o sacar
+     las que gastaron hace poco (una pausada ayer gastó ayer). */
+  const pedidas = new Set<string>();
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(['mensajes'], ['pausada-ayer']),
+      pedir: async (_a, campana) => {
+        pedidas.add(campana);
+        return { tipo: 'datos', datos: [] };
+      },
+    }),
+  );
+  assert.deepEqual([...pedidas].sort(), ['mensajes', 'pausada-ayer']);
+  assert.equal(r.resultado.campanas, 2);
+  assert.equal(r.resultado.desde, '2026-10-05');
+  assert.equal(r.resultado.hasta, HOY);
+});
+
+test('sin Meta vinculado no se pide ni se escribe NADA', async () => {
+  /* Sin vínculo el proveedor devuelve vacío sin fallar, y con los ceros probados un vacío guardado sería
+     permanente. Mutación: sacar la compuerta. */
+  let despues = 0;
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'disconnected', cuentaId: null, paginas: 0 } }),
+      listarCampanas: async () => {
+        despues += 1;
+        return { tipo: 'datos', datos: [], corto: false, paginas: 1 };
+      },
+      serie: async () => {
+        despues += 1;
+        return { tipo: 'datos', datos: [], llamadas: 1 };
+      },
+      plan: plan(['a']),
+      pedir: async () => {
+        despues += 1;
+        return { tipo: 'datos', datos: [] };
+      },
+    }),
+  );
+  assert.equal(despues, 0, 'se llamó al proveedor sin vínculo');
+  assert.equal(r.resultado.vinculo?.estado, 'disconnected');
+  assert.equal(r.resultado.llamadas, 1);
+});
+
+test('si no se puede preguntar por el vínculo, la tarea FALLA', async () => {
+  // Es el token o el proveedor: devolver éxito dejaría el sello en verde sobre una pasada que no hizo nada.
+  await assert.rejects(() => recolectarAnuncios(ORG, ACCESO, piezas({ vinculo: async () => FALLA })), /vínculo con Meta/);
+});
+
+test('la serie de la cuenta se pide desde el primer día guardado, y como mucho sesenta días', async () => {
+  // Mutación: pedir sólo los últimos días (las correcciones de Meta no se verían), o desde el principio siempre.
+  const pedidas: string[] = [];
+  const serie = async (_a: unknown, desde: string, hasta: string) => {
+    pedidas.push(`${desde}..${hasta}`);
+    return { tipo: 'datos' as const, datos: [], llamadas: 3 };
+  };
+  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], '2026-08-18') }));
+  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], '2026-01-01') }));
+  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], null) }));
+  assert.deepEqual(pedidas, [
+    `2026-08-18..${HOY}`,
+    `${sumarDias(HOY, -(DIAS_DE_LA_SERIE_QUE_SE_RELEEN - 1))}..${HOY}`,
+    `${sumarDias(HOY, -(DIAS_DE_RELLENO - 1))}..${HOY}`,
+  ]);
+});
+
+test('una serie que falla se anota y la pasada sigue con las campañas', async () => {
+  let escrita = false;
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      serie: async () => ({ ...FALLA, llamadas: 1 }),
+      escribirSerie: async () => {
+        escrita = true;
+      },
+      plan: plan(['a']),
+    }),
+  );
+  assert.equal(escrita, false, 'se escribió una serie que no llegó');
+  assert.deepEqual(r.resultado.cuenta, { tipo: 'fallo', porque: 'rechazado' });
+  assert.equal(r.corrio, true);
+});
+
+test('una lectura que FALLA nunca se escribe; una que vuelve vacía, sí (es un cero leído)', async () => {
+  /* Mutación: tratar el fallo como una lectura vacía. El escritor guarda el par, y un par con cero es un cero
+     probado: el relleno daría por leída una campaña que nadie pudo leer. */
+  const escritas: string[] = [];
+  await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(['rota', 'vacia']),
+      pedir: async (_a, campana) => (campana === 'rota' ? FALLA : { tipo: 'datos', datos: [] }),
+      escribir: async (campana, dia) => {
+        escritas.push(`${campana}|${dia}`);
+      },
+    }),
+  );
+  assert.ok(escritas.every((e) => e.startsWith('vacia|')), `se escribió una lectura que falló: ${escritas.join(', ')}`);
+  assert.equal(escritas.length, DIAS_QUE_SE_RELEEN + 1, 'la lectura vacía no se escribió: la campaña quedaría pendiente');
+});
+
 test('una campaña que devuelve 500 NO aborta la pasada, y se informa UNA vez', async () => {
   const pedidas: string[] = [];
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    async pedir(_acceso, campana) {
-      pedidas.push(campana);
-      // La podrida falla siempre; la buena nunca devuelve filas, así que no se toca la base.
-      return campana === '888888'
-        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
-        : { tipo: 'datos', datos: [] };
-    },
-    // Las piezas se inyectan para que esta prueba no necesite base. Ver `PiezasDelColector`.
-    campanas: ['888888', '120249633901590467'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(r.corrio, true, 'la pasada tiene que completar');
-  assert.deepEqual(
-    r.resultado.fallidas,
-    [{ campana: '888888', porque: 'rechazado' }],
-    'una campaña que falla los cinco días se informa UNA vez, no cinco',
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(['podrida', 'buena']),
+      pedir: async (_a, campana) => {
+        pedidas.push(campana);
+        return campana === 'podrida' ? FALLA : { tipo: 'datos', datos: [] };
+      },
+    }),
   );
-  // Y la buena se pidió los cinco días igual, o sea que el fallo no cortó el bucle.
-  assert.equal(
-    pedidas.filter((c) => c === '120249633901590467').length,
-    DIAS_QUE_SE_RELEEN + 1,
-    'la campaña buena tiene que pedirse todos los días de la ventana',
-  );
+  assert.deepEqual(r.resultado.fallidas, [{ campana: 'podrida', porque: 'rechazado' }]);
+  assert.equal(pedidas.filter((c) => c === 'buena').length, DIAS_QUE_SE_RELEEN + 1);
 });
 
-test('si fallan TODAS las campañas, la tarea LANZA', async () => {
-  // Es la distinción que hace útil a la tolerancia anterior: una campaña podrida es un dato malo y
-  // la pasada sigue; todas fallando es un token rechazado o el proveedor caído, y devolver eso como
-  // éxito dejaría el sello en verde sobre una pasada que no escribió nada.
+test('si no anda NADA —ni la serie ni ningún par—, la tarea LANZA', async () => {
   await assert.rejects(
     () =>
-      recolectarAnuncios(ORG, ACCESO, {
-        ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-        pedir: async () => ({ tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 401, codigo: 'sin_codigo' } }),
-        campanas: ['888888', '120249633901590467'],
-        guardados: guardadosHasta('2026-09-15'),
-      }),
-    /rechazó las 2 campañas/,
+      recolectarAnuncios(ORG, ACCESO, piezas({ serie: async () => ({ ...FALLA, llamadas: 1 }), plan: plan(['a', 'b']), pedir: async () => FALLA })),
+    /no devolvió la serie de la cuenta ni ninguna de las 2 campañas/,
   );
 });
 
-test('sin campañas en la atribución no se pide NADA', async () => {
-  // Una organización que todavía no recibió ningún contacto por anuncio no tiene nada que pedir, y
-  // pedir las 61 campañas de la cuenta serían 1.830 llamadas para guardar el costo de anuncios que
-  // no se pueden cruzar con nadie.
-  let llamadas = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    pedir: async () => {
-      llamadas += 1;
-      return { tipo: 'datos', datos: [] };
-    },
-    campanas: [],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(llamadas, 0, 'no se puede llamar al proveedor sin campañas que pedir');
-  assert.equal(r.resultado.llamadas, 0);
-  assert.equal(r.resultado.campanas, 0);
+test('con la serie leída, que fallen todos los pares no tumba la tarea: quedan huecos', async () => {
+  // La serie es lo que dice si falta gasto; lo que no se pudo leer lo busca el relleno.
+  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']), pedir: async () => FALLA }));
+  assert.equal(r.resultado.huecos.length, DIAS_QUE_SE_RELEEN + 1);
 });
 
-test('el resumen cuenta ANUNCIOS DISTINTOS, no filas', async () => {
-  // Cinco días del mismo anuncio son cinco filas de métrica y UN anuncio. Contar filas acá diría
-  // «75 anuncios» de una cuenta que tiene 15, y esa cifra es la que va al registro del barrido.
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    pedir: async () => ({ tipo: 'datos', datos: [metrica('120249633901580467')] }),
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-15'),
-    // El escritor también se inyecta: acá se comprueba el CONTEO, no la escritura.
-    escribir: async () => {},
-  });
-
-  assert.equal(r.resultado.anuncios, 1, 'el mismo anuncio cinco días es UN anuncio');
-  assert.equal(r.resultado.metricas, DIAS_QUE_SE_RELEEN + 1, 'una fila de métrica por día del tramo fijo');
-});
-
-// ─── 3 · El presupuesto de tiempo y el reintento ───────────────────────────
-//
-// Los dos salieron del relleno inicial contra producción, y ninguno estaba en el diseño.
-
-test('la pasada CORTA cuando se le acaba el tiempo, y lo DICE', async () => {
-  /* Medido el 2026-09-16: 390 llamadas en 1.775 segundos, o sea 4,55 s por llamada. La pasada diaria
-   * son 52 llamadas y 237 segundos, contra un `maxDuration` de 300 para la función ENTERA del cron.
-   * Sin este corte, una empresa que entra con 100 segundos gastados sale a los 337 — con la función
-   * cortada a la mitad, y la plataforma no reintenta.
-   *
-   * El reloj sube 5 segundos por llamada, que es el ritmo medido redondeado hacia arriba. */
+test('la pasada CORTA entre pares cuando se le acaba el tiempo, y lo DICE', async () => {
+  /* El guardia va antes de CADA llamada: la pasada vieja lo miraba entre días, porque un día a medias se daba
+     por completo. Ahora lo pendiente se lleva por par. Mutación: volver al control entre días (la prueba
+     cuenta las llamadas: con el control por día se completaría el día en curso). */
   let t = 0;
   let pedidas = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => t,
-    pedir: async () => {
-      pedidas += 1;
-      t += 5_000;
-      return { tipo: 'datos', datos: [] };
-    },
-    campanas: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'],
-    guardados: new Set<string>(), // 30 días × 13 campañas = 390 llamadas = 1.950 s, muy por encima del tope
-  });
-
-  assert.equal(r.resultado.atrasado, true, 'se pasó del presupuesto y no lo dijo');
-  assert.ok(pedidas < 390, `pidió las ${pedidas} llamadas enteras: el guardia no cortó`);
-  // Y cortó donde tenía que cortar: el tope son 120 s a 5 s la llamada, o sea 24 llamadas, y el
-  // corte es entre DÍAS — así que se completan los días enteros que entren.
-  assert.equal(pedidas % 13, 0, 'cortó a mitad de un día: ese día queda incompleto y nadie vuelve por él');
-  assert.ok(pedidas * 5_000 <= PRESUPUESTO_MS + 13 * 5_000, 'se pasó más de un día entero del tope');
-});
-
-test('el resumen reporta la ventana AL DERECHO, no la lista al revés', async () => {
-  /* `dias` va del más nuevo al más viejo, así que el primero es `hasta` y el último `desde`.
-   * Tomarlos en el orden de la lista da un resumen con la ventana invertida — y ese resumen es lo
-   * que queda en el registro del cron, o sea el único sitio donde alguien mira qué hizo la pasada.
-   *
-   * Una ventana invertida ahí no falla: dice "del 18 al 16", que se lee como un error de tipeo
-   * hasta que alguien intenta usarla para diagnosticar un hueco. */
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [] }),
-    campanas: ['1'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(r.resultado.desde, '2026-09-14', 'el `desde` tiene que ser el día más VIEJO de la ventana');
-  assert.equal(r.resultado.hasta, HOY, 'el `hasta` tiene que ser el día más NUEVO, que es hoy');
-  assert.ok(
-    String(r.resultado.desde) <= String(r.resultado.hasta),
-    `la ventana quedó invertida: ${r.resultado.desde} → ${r.resultado.hasta}`,
+  const candidatas = Array.from({ length: 13 }, (_, i) => `c${i}`);
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(candidatas),
+      reloj: () => t,
+      pedir: async () => {
+        pedidas += 1;
+        t += 5_000;
+        return { tipo: 'datos', datos: [] };
+      },
+    }),
   );
+  assert.equal(r.resultado.atrasado, true, 'se pasó del presupuesto y no lo dijo');
+  assert.equal(pedidas, PRESUPUESTO_MS / 5_000 + 1, 'el corte no fue en el primer par pasado el presupuesto');
 });
 
 test('una pasada que ENTRA en el presupuesto no se declara atrasada', async () => {
-  // La comprobación que hace útil a la anterior: un `atrasado: true` fijo la dejaría en verde, y
-  // entonces la pantalla avisaría de un atraso todos los días — que es un aviso que nadie lee.
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [] }),
-    campanas: ['1'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
+  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']) }));
   assert.equal(r.resultado.atrasado, false);
   assert.deepEqual(r.resultado.huecos, []);
 });
 
-test('el resumen DICE si Meta sigue vinculado, y cuenta las filas que no pudo leer', async () => {
-  /* ══ DOS FALLOS QUE NO LANZAN Y DEJAN LA PANTALLA EN CERO ═══════════════
-   *
-   * **Sin vínculo con Meta, el proveedor devuelve vacío sin fallar.** La pasada sella `corrio`,
-   * escribe cero filas, y la pantalla dibuja un cero que se lee como «no se invirtió nada» en vez
-   * de «está desconectado». El cliente tenía la comprobación desde el primer día —su comentario la
-   * llama «el paso 0 de todo lo demás»— y **no la llamaba nadie**.
-   *
-   * **Y una fila sin `adId` se descartaba en silencio.** Si el proveedor renombra esa clave, se
-   * caen TODAS las filas y la pasada sigue reportando éxito. No es abstracto: esta misma API ya
-   * cambió dos formas bajo nuestros pies (el arreglo pelado de la respuesta, el cursor `next`). */
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    reloj: () => 0,
-    vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'disconnected', cuentaId: null, paginas: 0 } }),
-    listarCampanas: SIN_CAMPANAS,
-    pedir: async () => ({ tipo: 'datos' as const, datos: [], ilegibles: 3 }),
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta(HOY),
-  });
-
-  assert.equal(r.resultado.vinculo?.estado, 'disconnected', 'el estado del vínculo no llegó al resumen');
-  assert.equal(
-    r.resultado.ilegibles,
-    3 * (DIAS_QUE_SE_RELEEN + 1),
-    'las filas ilegibles se descartaron sin contarlas: un cambio de clave del proveedor sería invisible',
+test('un par que falla se REINTENTA una vez; lo que falla dos veces queda como hueco', async () => {
+  const vistas = new Map<string, number>();
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(['transitoria', 'podrida']),
+      pedir: async (_a, campana, dia) => {
+        const clave = `${campana}|${dia}`;
+        const veces = (vistas.get(clave) ?? 0) + 1;
+        vistas.set(clave, veces);
+        if (campana === 'podrida') return FALLA;
+        return dia === '2026-10-06' && veces === 1 ? FALLA : { tipo: 'datos', datos: [] };
+      },
+    }),
   );
-});
-
-test('si no se puede preguntar por el vínculo, el resumen dice NULO y la pasada sigue', async () => {
-  // Un fallo del paso 0 no puede impedir recolectar lo que sí se pueda: son dos cosas distintas, y
-  // `null` dice «no se pudo preguntar», que no es lo mismo que «está desconectado».
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    reloj: () => 0,
-    vinculo: async () => ({ tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } }),
-    listarCampanas: SIN_CAMPANAS,
-    pedir: async () => ({ tipo: 'datos' as const, datos: [] }),
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta(HOY),
-  });
-
-  assert.equal(r.resultado.vinculo, null, '«no se pudo preguntar» tiene que ser nulo, no un estado inventado');
-  assert.equal(r.corrio, true, 'un fallo del paso 0 tumbó la pasada entera');
+  assert.equal(vistas.get('transitoria|2026-10-06'), 2, 'el par que falló no se reintentó');
+  assert.equal(vistas.get('transitoria|2026-10-07'), 1, 'se reintentó un par que NO había fallado');
+  assert.ok(r.resultado.huecos.every((h) => h.campana === 'podrida'));
+  assert.equal(r.resultado.huecos.length, DIAS_QUE_SE_RELEEN + 1);
+  assert.deepEqual(r.resultado.fallidas, [{ campana: 'podrida', porque: 'rechazado' }], 'la que se recuperó sigue acusada');
 });
 
 test('un reintento que no entra en el presupuesto NO enciende `atrasado`', async () => {
-  /* ══ DOS HECHOS DISTINTOS QUE ESTABAN COLAPSADOS EN UNA SOLA SEÑAL ════════
-   *
-   * `atrasado` significa **quedaron días de la ventana sin pedir**, o sea falta gasto. Que un
-   * REINTENTO no entre en el presupuesto no deja ningún día sin pedir: deja un par (campaña, día)
-   * sin corregir, y eso se dice con nombre y fecha en `huecos`.
-   *
-   * Medido el 2026-09-18 en producción: la ventana de tres días entra completa en 144 s y los
-   * reintentos arrancan con el presupuesto ya gastado, así que el aviso se encendía TODOS los días
-   * — por no reintentar `888888`, una campaña de prueba que devuelve 500 desde siempre.
-   *
-   * Un aviso que aparece siempre es uno que nadie lee, y con él se pierde el caso que sí importa.
-   *
-   * Acá el reloj se queda quieto durante los días y salta pasado el presupuesto justo antes de los
-   * reintentos: la ventana se completa entera y lo único que no entra es la segunda vuelta. */
+  // `atrasado` es «quedaron pares sin pedir»; un reintento que no entra es un hueco con nombre y fecha.
   let t = 0;
   let pedidas = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => t,
-    pedir: async (_a, campana) => {
-      pedidas += 1;
-      // Los días no consumen tiempo; el salto ocurre cuando ya se pidieron todos.
-      if (pedidas === (DIAS_QUE_SE_RELEEN + 1) * 2) t = PRESUPUESTO_MS + 1;
-      return campana === '888888'
-        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
-        : { tipo: 'datos', datos: [] };
-    },
-    campanas: ['888888', '120249633901590467'],
-    guardados: guardadosHasta(HOY),
-  });
-
-  const dias = DIAS_QUE_SE_RELEEN + 1;
-  assert.equal(r.resultado.dias, dias, 'la ventana en régimen');
-  assert.equal(
-    r.resultado.atrasado,
-    false,
-    'se encendió `atrasado` sin que faltara ningún día: el aviso quedaría puesto todas las pasadas',
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      plan: plan(['podrida', 'buena']),
+      reloj: () => t,
+      pedir: async (_a, campana) => {
+        pedidas += 1;
+        if (pedidas === (DIAS_QUE_SE_RELEEN + 1) * 2) t = PRESUPUESTO_MS + 1;
+        return campana === 'podrida' ? FALLA : { tipo: 'datos', datos: [] };
+      },
+    }),
   );
-  // Y lo que SÍ hay que reportar está, con su nombre y su fecha.
-  assert.equal(r.resultado.huecos.length, dias, 'cada día de la campaña podrida tiene que quedar como hueco');
-  assert.ok(
-    r.resultado.huecos.every((h) => h.campana === '888888'),
-    'se anotó como hueco una campaña que no falló',
+  assert.equal(r.resultado.atrasado, false);
+  assert.equal(r.resultado.huecos.length, DIAS_QUE_SE_RELEEN + 1);
+});
+
+test('el resumen cuenta ANUNCIOS DISTINTOS, no filas', async () => {
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({ plan: plan(['a']), pedir: async () => ({ tipo: 'datos', datos: [metrica('120249633901580467')] }) }),
   );
+  assert.equal(r.resultado.anuncios, 1);
+  assert.equal(r.resultado.metricas, DIAS_QUE_SE_RELEEN + 1);
 });
 
-test('un par (campaña, día) que falla se REINTENTA una vez, y sólo una', async () => {
-  /* El caso que lo motivó es real: en el relleno inicial la campaña `120249590301010467` falló UN
-   * día de treinta y quedó con 290 filas de 300. Ese día no vuelve solo — `diasQueFaltan` arranca del
-   * último día guardado, y ese día ya quedó atrás.
-   *
-   * Acá el proveedor falla la primera vez que le preguntan por el 09-14 y funciona la segunda. */
-  const vistas = new Map<string, number>();
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    pedir: async (_a, campana, dia) => {
-      const clave = `${campana}|${dia}`;
-      const veces = (vistas.get(clave) ?? 0) + 1;
-      vistas.set(clave, veces);
-      return dia === '2026-09-14' && veces === 1
-        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
-        : { tipo: 'datos', datos: [] };
-    },
-    campanas: ['120249590301010467'],
-    guardados: guardadosHasta('2026-09-16'),
-  });
-
-  assert.equal(vistas.get('120249590301010467|2026-09-14'), 2, 'el día que falló no se reintentó');
-  assert.equal(vistas.get('120249590301010467|2026-09-15'), 1, 'se reintentó un día que NO había fallado');
-  assert.deepEqual(r.resultado.huecos, [], 'el reintento anduvo: no tendría que quedar hueco');
+test('el resumen cuenta las filas que el proveedor mandó y no se pudieron leer', async () => {
+  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']), pedir: async () => ({ tipo: 'datos', datos: [], ilegibles: 3 }) }));
+  assert.equal(r.resultado.ilegibles, 3 * (DIAS_QUE_SE_RELEEN + 1));
 });
 
-test('una campaña que se RECUPERA en el reintento deja de figurar como fallida', async () => {
-  /* `fallidas` sale del mapa que se llena en la primera vuelta, así que una campaña que falló una
-   * vez y se recuperó seguía acusada. El caso es el que motivó el reintento: en el relleno inicial
-   * `120249590301010467` falló UN día de treinta por un 500 pasajero. */
-  let primera = true;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    pedir: async () => {
-      if (primera) {
-        primera = false;
-        return { tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } };
-      }
-      return { tipo: 'datos' as const, datos: [] };
-    },
-    campanas: ['120249590301010467'],
-    guardados: guardadosHasta(HOY),
-  });
+// ─── 4 · Las campañas de la cuenta (`065`), al principio ─────────────────────
 
-  assert.deepEqual(r.resultado.huecos, [], 'el reintento anduvo: no tendría que quedar hueco');
-  assert.deepEqual(
-    r.resultado.fallidas,
-    [],
-    'la campaña se recuperó y el resumen la sigue acusando de podrida',
-  );
-});
-
-test('una campaña que se recupera en UN día y sigue rota en otro NO se limpia', async () => {
-  let vistas15 = false;
-  // La comprobación que hace útil a la anterior: limpiar sin mirar los huecos declararía sana a una
-  // campaña que sigue sin datos en otro día de la misma ventana.
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    /* Dos días fallan en la primera vuelta: el 15 se recupera en el reintento y el 14 no. El ORDEN
-       importa y por eso está así: el reintento que ANDA llega ANTES que el que falla, que es el caso
-       en que una comprobación hecha dentro del bucle —mirando sólo los huecos acumulados hasta ese
-       momento— declara sana a una campaña que se va a romper dos líneas después. Medido por
-       mutación. */
-    pedir: async (_a, _c, dia) => {
-      const falla = { tipo: 'fallo' as const, fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' } };
-      if (dia === '2026-09-14') return falla;
-      if (dia === '2026-09-15') {
-        const primeraDelQuince = !vistas15;
-        vistas15 = true;
-        return primeraDelQuince ? falla : { tipo: 'datos' as const, datos: [] };
-      }
-      return { tipo: 'datos' as const, datos: [] };
-    },
-    campanas: ['120249590301010467'],
-    guardados: guardadosHasta(HOY),
-  });
-
-  assert.equal(r.resultado.huecos.length, 1, 'el día que falla siempre tiene que quedar como hueco');
-  assert.equal(
-    r.resultado.fallidas.length,
-    1,
-    'se declaró sana una campaña que sigue sin datos en un día de la ventana',
-  );
-});
-
-test('lo que falla DOS veces queda anotado como hueco, no se reintenta para siempre', async () => {
-  // Es la otra mitad: un identificador podrido —el `888888` que hay en producción— falla siempre, y
-  // reintentarlo en bucle gastaría el presupuesto entero en una campaña que no existe.
-  let llamadas = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    listarCampanas: SIN_CAMPANAS,
-    reloj: () => 0,
-    pedir: async (_a, campana) => {
-      llamadas += 1;
-      return campana === '888888'
-        ? { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 500, codigo: 'sin_codigo' } }
-        : { tipo: 'datos', datos: [] };
-    },
-    campanas: ['888888', '120249633901590467'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  const dias = DIAS_QUE_SE_RELEEN + 1;
-  assert.equal(r.resultado.huecos.length, dias, 'cada día de la podrida tiene que quedar como hueco');
-  assert.equal(llamadas, dias * 2 + dias, `${dias} días × 2 campañas, más ${dias} reintentos de la podrida`);
-});
-
-// ─── 4 · Los nombres de las campañas (`065`) ────────────────────────────────
-//
-// El front de Acquisition agrupa por campaña y la base sólo tenía su identificador. El colector los
-// lee en la misma pasada, UNA vez y al FINAL: ver el comentario del paso en `recolectarAnuncios`.
-
-/** Dos campañas como las devuelve `estructuraDeAnuncios` en el nivel `CAMPAIGN`. */
 const DOS_CAMPANAS = [
   { id: '120249633901590467', nombre: 'bofu - agendamiento', estado: 'ACTIVE', cuentaId: 'act_1349863156073553' },
   { id: '120249254209020467', nombre: null, estado: 'PAUSED', cuentaId: 'act_1349863156073553' },
 ];
 
-test('los nombres de las campañas se piden UNA vez, al FINAL de la pasada, y se escriben', async () => {
-  /* Al final y no al principio: al principio se comerían presupuesto del bucle de días, porque
-     `arranque` se toma antes del vínculo. El orden es la prueba. */
+test('las campañas se leen y se escriben ANTES de pedir nada más: son el universo', async () => {
+  // Mutación: leerlas al final (una campaña nueva no entraría en las candidatas de su primer día).
   const orden: string[] = [];
-  let escritas: readonly unknown[] | null = null;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => 0,
-    pedir: async () => {
-      orden.push('metricas');
-      return { tipo: 'datos', datos: [] };
-    },
-    listarCampanas: async () => {
-      orden.push('nombres');
-      return { tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 };
-    },
-    escribirCampanas: async (lista) => {
-      escritas = lista;
-    },
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(orden.filter((x) => x === 'nombres').length, 1, 'los nombres se pidieron más de una vez');
-  assert.equal(orden[orden.length - 1], 'nombres', 'los nombres se pidieron antes de terminar las métricas');
-  assert.deepEqual(escritas, DOS_CAMPANAS, 'lo que llegó no es lo que se escribió');
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      listarCampanas: async () => {
+        orden.push('campanas');
+        return { tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 };
+      },
+      escribirCampanas: async () => {
+        orden.push('escritas');
+      },
+      serie: async () => {
+        orden.push('serie');
+        return { tipo: 'datos', datos: [], llamadas: 3 };
+      },
+      plan: plan(['a']),
+      pedir: async () => {
+        orden.push('par');
+        return { tipo: 'datos', datos: [] };
+      },
+    }),
+  );
+  assert.deepEqual(orden.slice(0, 3), ['campanas', 'escritas', 'serie']);
   assert.deepEqual(r.resultado.nombres, { tipo: 'leidas', campanas: 2, corto: false });
-  // El vínculo, los tres días del tramo fijo y la página de campañas.
-  assert.equal(r.resultado.llamadas, 1 + (DIAS_QUE_SE_RELEEN + 1) + 1, 'la página de campañas no se contó');
+  // El vínculo, una página, tres de la serie y los tres días de la candidata.
+  assert.equal(r.resultado.llamadas, 1 + 1 + 3 + (DIAS_QUE_SE_RELEEN + 1));
 });
 
-test('una lista de campañas vacía no llama al escritor', async () => {
-  // Abrir contexto de organización para escribir cero filas es una conexión que no hace nada.
-  let llamadas = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [] }),
-    listarCampanas: SIN_CAMPANAS,
-    escribirCampanas: async () => {
-      llamadas += 1;
-    },
-    campanas: ['1'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(llamadas, 0, 'se llamó al escritor con una lista vacía');
-  assert.deepEqual(r.resultado.nombres, { tipo: 'leidas', campanas: 0, corto: false });
+test('una lista de campañas vacía no llama al escritor; una recortada lo dice', async () => {
+  let escritas = 0;
+  const vacia = await recolectarAnuncios(ORG, ACCESO, piezas({ escribirCampanas: async () => void (escritas += 1) }));
+  assert.equal(escritas, 0);
+  assert.deepEqual(vacia.resultado.nombres, { tipo: 'leidas', campanas: 0, corto: false });
+  const recortada = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({ listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: true, paginas: 20 }), escribirCampanas: async () => {} }),
+  );
+  assert.deepEqual(recortada.resultado.nombres, { tipo: 'leidas', campanas: 2, corto: true });
 });
 
-test('una lista de campañas RECORTADA lo dice en el resumen', async () => {
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [] }),
-    listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: true, paginas: 20 }),
-    escribirCampanas: async () => {},
-    campanas: ['1'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.deepEqual(r.resultado.nombres, { tipo: 'leidas', campanas: 2, corto: true });
-  assert.equal(r.resultado.llamadas, 1 + (DIAS_QUE_SE_RELEEN + 1) + 20, 'las veinte páginas se contaron como una');
-});
-
-test('si los nombres FALLAN, la pasada sigue y el resumen lo dice', async () => {
-  /* Las métricas ya están escritas y en la tabla quedan los nombres de la última lectura buena, si
-     la hubo: un 500 acá no puede convertir en fallo una pasada que hizo su trabajo. */
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [metrica('120249633901580467')] }),
-    escribir: async () => {},
-    listarCampanas: async () => ({
-      tipo: 'fallo' as const,
-      fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' },
+test('si las campañas FALLAN, la pasada sigue y cuenta las páginas pedidas', async () => {
+  const r = await recolectarAnuncios(
+    ORG,
+    ACCESO,
+    piezas({
+      listarCampanas: async () => ({ ...FALLA, paginas: 3 }),
+      escribirCampanas: async () => {
+        throw new Error('no se escribe lo que no llegó');
+      },
+      plan: plan(['a']),
     }),
-    escribirCampanas: async () => {
-      throw new Error('no se escribe lo que no llegó');
-    },
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(r.corrio, true);
+  );
   assert.deepEqual(r.resultado.nombres, { tipo: 'fallo', porque: 'rechazado' });
-  assert.equal(r.resultado.metricas, DIAS_QUE_SE_RELEEN + 1, 'el fallo de los nombres se llevó las métricas');
-  // Un fallo sin el dato de páginas cuenta una: es lo mínimo que costó preguntar.
-  assert.equal(r.resultado.llamadas, 1 + (DIAS_QUE_SE_RELEEN + 1) + 1, 'el fallo de los nombres no se contó');
-});
-
-test('un fallo a mitad de la paginación cuenta las páginas que sí se pidieron', async () => {
-  // Si falla la tercera página, se hicieron tres llamadas, y el sello del cron tiene que decir tres.
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => 0,
-    pedir: async () => ({ tipo: 'datos', datos: [] }),
-    listarCampanas: async () => ({
-      tipo: 'fallo' as const,
-      fallo: { tipo: 'rechazado' as const, estado: 500, codigo: 'sin_codigo' },
-      paginas: 3,
-    }),
-    escribirCampanas: async () => {},
-    campanas: ['1'],
-    guardados: guardadosHasta('2026-09-15'),
-  });
-
-  assert.equal(r.resultado.llamadas, 1 + (DIAS_QUE_SE_RELEEN + 1) + 3, 'las páginas pedidas antes del fallo se perdieron');
+  assert.equal(r.resultado.llamadas, 1 + 3 + 1 + (DIAS_QUE_SE_RELEEN + 1));
 });
 
 test('un fallo al ESCRIBIR las campañas NO se atrapa: es un defecto nuestro', async () => {
-  /* Un fallo del proveedor se anota y la pasada sigue; uno de la base —un permiso, una RLS, un
-     `42P10`— tiene que sonar. Atraparlo lo convertiría en «GoHighLevel no devolvió los nombres»,
-     que es falso y manda a mirar al proveedor equivocado. */
   await assert.rejects(
     () =>
-      recolectarAnuncios(ORG, ACCESO, {
-        ahora: AHORA,
-        vinculo: VINCULO_OK,
-        reloj: () => 0,
-        pedir: async () => ({ tipo: 'datos', datos: [] }),
-        listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 }),
-        escribirCampanas: async () => {
-          throw new Error('la base rechazó la escritura de campañas');
-        },
-        campanas: ['1'],
-        guardados: guardadosHasta('2026-09-15'),
-      }),
+      recolectarAnuncios(
+        ORG,
+        ACCESO,
+        piezas({
+          listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 }),
+          escribirCampanas: async () => {
+            throw new Error('la base rechazó la escritura de campañas');
+          },
+        }),
+      ),
     /la base rechazó la escritura de campañas/,
   );
 });
 
-test('una pasada ATRASADA pide igual los nombres', async () => {
-  /* Hasta la revisión de AQ-1 no los pedía, y era un agujero: `atrasado` puede quedar encendido
-     semanas —una empresa nueva empieza con 27 días sin pedir, y el tramo fijo solo ya pasa el
-     presupuesto—, así que su tabla de campañas quedaba vacía todo ese tiempo sin que el sello lo
-     dijera. Y no ahorraba tiempo: una pasada atrasada termina tan tarde como una completa. */
-  let t = 0;
-  let pedidos = 0;
-  const r = await recolectarAnuncios(ORG, ACCESO, {
+// ─── 5 · El relleno ──────────────────────────────────────────────────────────
+
+/** Las piezas del relleno sin red ni base. Cuenta las llamadas al proveedor en `llamadas`. */
+function piezasDelRelleno(f: FotoDelRelleno | (() => FotoDelRelleno), extra: Parameters<typeof rellenarAnuncios>[4] = {}) {
+  const registro = { llamadas: [] as string[], ceros: [] as string[], escritas: [] as string[], redescubiertos: [] as string[], residuos: [] as string[] };
+  const p: Parameters<typeof rellenarAnuncios>[4] = {
     ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => t,
-    pedir: async () => {
-      t += 5_000;
+    reloj: () => 0,
+    foto: async () => (typeof f === 'function' ? f() : f),
+    vinculo: async () => {
+      registro.llamadas.push('vinculo');
+      return VINCULO_OK();
+    },
+    serie: async (_a, desde, hasta) => {
+      registro.llamadas.push(`serie ${desde}..${hasta}`);
+      return { tipo: 'datos', datos: [], llamadas: 1 };
+    },
+    escribirSerie: async () => {},
+    pedir: async (_a, campana, dia) => {
+      registro.llamadas.push(`dia ${campana} ${dia}`);
       return { tipo: 'datos', datos: [] };
     },
-    listarCampanas: async () => {
-      pedidos += 1;
-      return { tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 };
+    escribir: async (campana, dia) => {
+      registro.escritas.push(`${campana} ${dia}`);
     },
-    escribirCampanas: async () => {},
-    campanas: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'],
-    guardados: new Set<string>(),
-  });
+    total: async (_a, campana, desde, hasta) => {
+      registro.llamadas.push(`rango ${campana} ${desde}..${hasta}`);
+      return { tipo: 'datos', datos: { gasto: 0, anuncios: 0 } };
+    },
+    escribirCeros: async (campana, dias) => {
+      for (const d of dias) registro.ceros.push(`${campana} ${d}`);
+    },
+    redescubrir: async (d) => void registro.redescubiertos.push(d),
+    declararResiduo: async (d) => void registro.residuos.push(d),
+    ...extra,
+  };
+  return { p, registro };
+}
 
-  assert.equal(r.resultado.atrasado, true, 'el armado de la prueba no agotó el presupuesto');
-  assert.equal(pedidos, 1, 'una pasada atrasada no pidió los nombres');
-  assert.deepEqual(r.resultado.nombres, { tipo: 'leidas', campanas: 2, corto: false });
+/** Del `desde` al `hasta`, todos con la misma fila de la serie y el mismo detalle. */
+function dias(desde: string, hasta: string): string[] {
+  const salida: string[] = [];
+  for (let d = desde; d <= hasta; d = sumarDias(d, 1)) salida.push(d);
+  return salida;
+}
+
+test('sin serie todavía, el relleno no hace NINGUNA llamada', async () => {
+  // Una empresa sin Meta: preguntar por el vínculo cada hora serían 24 llamadas por día para nada.
+  const { p, registro } = piezasDelRelleno(foto(['a'], {}, {}));
+  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.deepEqual(registro.llamadas, []);
+  assert.equal(r.llamadas, 0);
 });
 
-test('al ritmo de régimen la pasada pasa los 120 s, y los nombres se piden igual', async () => {
-  /* En régimen el tramo fijo termina pasado `PRESUPUESTO_MS`: el guardia se mira ANTES de cada
-     día, así que el tercero arranca a los ~118 s y se completa. Un guardia de tiempo delante de los
-     nombres —el mismo que usan los reintentos, fácil de copiar «para emparejar»— los saltaría
-     todos los días, y el sello no diría nada: `null` no produce frase. 4,55 s por llamada es el
-     ritmo medido del relleno, y 13 las campañas de producción. */
-  let t = 0;
-  let pedidos = 0;
-  const campanas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'];
-  const r = await recolectarAnuncios(ORG, ACCESO, {
-    ahora: AHORA,
-    vinculo: VINCULO_OK,
-    reloj: () => t,
-    pedir: async () => {
-      t += 4_550;
-      return { tipo: 'datos', datos: [] };
-    },
-    listarCampanas: async () => {
-      pedidos += 1;
-      return { tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 };
-    },
-    escribirCampanas: async () => {},
-    campanas,
-    guardados: guardadosHasta(HOY),
-  });
-
-  assert.equal(r.resultado.atrasado, false, 'el tramo fijo tenía que entrar entero');
-  assert.ok(t > PRESUPUESTO_MS, `el armado no pasó el presupuesto: ${t} ms`);
-  assert.equal(pedidos, 1, 'pasado el presupuesto, los nombres no se pidieron');
-  assert.equal(r.resultado.nombres?.tipo, 'leidas');
+test('con gasto del colector viejo y sin serie, el relleno pide la serie desde el primer día de métricas', async () => {
+  /* La transición de la `076`: sin esto, desde el despliegue hasta la pasada de las 06:17 UTC Acquisition diría
+     que el colector está atrasado. Mutación: tomar el primer día sólo de la serie. */
+  const { p, registro } = piezasDelRelleno({ ...foto(['a'], {}, {}), inicio: '2026-09-20' });
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.deepEqual(registro.llamadas, ['vinculo', 'serie 2026-09-20..2026-10-05']);
 });
 
-test('que los nombres anden NO salva una pasada en la que fallaron TODAS las métricas', async () => {
-  /* Todas las métricas rechazadas es un token rechazado o el proveedor caído, y eso lanza. Los
-     nombres no se piden: con el token rechazado también fallarían, y pedirlos sería una llamada
-     más para enterarse de lo mismo. */
-  let pedidos = 0;
-  await assert.rejects(
-    () =>
-      recolectarAnuncios(ORG, ACCESO, {
-        ahora: AHORA,
-        vinculo: VINCULO_OK,
-        reloj: () => 0,
-        pedir: async () => ({ tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 401, codigo: 'sin_codigo' } }),
-        listarCampanas: async () => {
-          pedidos += 1;
-          return { tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 };
-        },
-        escribirCampanas: async () => {},
-        campanas: ['1', '2'],
-        guardados: guardadosHasta('2026-09-15'),
-      }),
-    /rechazó las 2 campañas/,
+test('con todo cuadrado, el relleno no hace NINGUNA llamada', async () => {
+  const todos = dias('2026-09-01', '2026-10-05');
+  const f = foto(['a', 'b'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), Object.fromEntries(todos.map((d) => [d, 10])));
+  const { p, registro } = piezasDelRelleno(f);
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.deepEqual(registro.llamadas, []);
+});
+
+for (const [hora, hoyUtc] of [
+  ['23:53', '2026-10-07'],
+  ['00:53', '2026-10-08'],
+] as const) {
+  test(`el relleno nunca pide un día más nuevo que hoy−2 en UTC (a las ${hora} UTC)`, async () => {
+    /* Hasta las 00:00 UTC de dos días después el día de la cuenta puede no haber terminado en su huso, y un
+       cero leído a medias sería un cero falso. Mutación: `hoy − 1`. */
+    const instante = Date.parse(`${hoyUtc}T${hora}:00Z`);
+    const todos = dias('2026-09-28', hoyUtc);
+    const f = foto(['a'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10, { leidoEl: instante })])), {});
+    const { p, registro } = piezasDelRelleno(f, { ahora: instante });
+    await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+    const tope = sumarDias(hoyUtc, -2);
+    const pedidos = registro.llamadas.filter((l) => l.startsWith('rango')).map((l) => l.split('..')[1]!);
+    assert.ok(pedidos.length > 0, 'el armado de la prueba no pidió nada');
+    assert.ok(pedidos.every((h) => h <= tope), `se pidió hasta ${pedidos.join(', ')} con tope ${tope}`);
+  });
+}
+
+test('un rango en cero deja ceros, y NUNCA se escribe como métrica diaria', async () => {
+  // Mutación: llamar al escritor de métricas con el resultado de un rango.
+  const todos = dias('2026-09-20', '2026-10-05');
+  const f = foto(['a', 'b'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), {}, {});
+  const { p, registro } = piezasDelRelleno(f, {
+    total: async (_a, campana, desde, hasta) => {
+      registro.llamadas.push(`rango ${campana} ${desde}..${hasta}`);
+      return { tipo: 'datos', datos: { gasto: campana === 'a' ? 0 : 160, anuncios: 2 } };
+    },
+  });
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.equal(registro.ceros.filter((c) => c.startsWith('a ')).length, todos.length, 'la que no gastó no quedó en cero');
+  assert.ok(!registro.ceros.some((c) => c.startsWith('b ')), 'se anotó un cero a una campaña que gastó');
+  assert.ok(registro.escritas.every((e) => e.startsWith('b ')), 'un rango se escribió como métrica');
+});
+
+test('una campaña que gastó baja del rango a las semanas y de las semanas a los días', async () => {
+  // La de mensajes: gastó del 30-sep al 5-oct. Sólo esos días se piden de a uno.
+  const todos = dias('2026-09-08', '2026-10-05');
+  const gastaEn = new Set(dias('2026-09-30', '2026-10-05'));
+  const f = foto(['mensajes'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(gastaEn.has(d) ? 30 : 0)])), {});
+  const { p, registro } = piezasDelRelleno(f, {
+    total: async (_a, campana, desde, hasta) => {
+      registro.llamadas.push(`rango ${campana} ${desde}..${hasta}`);
+      const gasto = dias(desde, hasta).filter((d) => gastaEn.has(d)).length * 30;
+      return { tipo: 'datos', datos: { gasto, anuncios: 3 } };
+    },
+    pedir: async (_a, campana, dia) => {
+      registro.llamadas.push(`dia ${campana} ${dia}`);
+      return { tipo: 'datos', datos: [metrica('anuncio', 30)] };
+    },
+  });
+  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  const pedidosPorDia = registro.llamadas.filter((l) => l.startsWith('dia')).map((l) => l.split(' ')[2]!).sort();
+  // Los días de la semana que gastó que no gastaron también se piden: la semana sólo dice que gastó algo.
+  assert.ok([...gastaEn].every((d) => pedidosPorDia.includes(d)), 'faltó pedir un día que gastó');
+  assert.ok(pedidosPorDia.every((d) => d >= '2026-09-29'), `se pidió de a un día fuera de las semanas que gastaron: ${pedidosPorDia}`);
+  assert.equal(r.resultado.atrasado, false);
+});
+
+test('un rango que FALLA no deja ceros: los días siguen pendientes', async () => {
+  // Mutación: tratar el fallo como un total en cero.
+  const todos = dias('2026-09-20', '2026-10-05');
+  const f = foto(['a'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), {});
+  const { p, registro } = piezasDelRelleno(f, {
+    total: async (_a, campana, desde, hasta) => {
+      registro.llamadas.push(`rango ${campana} ${desde}..${hasta}`);
+      return FALLA;
+    },
+  });
+  await assert.rejects(() => rellenarAnuncios(ORG, ACCESO, 0, () => 0, p), /rechazó/);
+  assert.deepEqual(registro.ceros, []);
+});
+
+test('sin Meta vinculado, el relleno no busca nada', async () => {
+  const todos = dias('2026-09-20', '2026-10-05');
+  const f = foto(['a'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), {});
+  const { p, registro } = piezasDelRelleno(f, {
+    vinculo: async () => {
+      registro.llamadas.push('vinculo');
+      return { tipo: 'datos' as const, datos: { estado: 'disconnected', cuentaId: null, paginas: 0 } };
+    },
+  });
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.deepEqual(registro.llamadas, ['vinculo']);
+  assert.deepEqual(registro.ceros, []);
+});
+
+test('los días sin total de la cuenta se piden primero, en una sola serie', async () => {
+  const todos = dias('2026-09-20', '2026-10-05');
+  const serie = Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)]));
+  delete serie['2026-09-25'];
+  delete serie['2026-09-27'];
+  const { p, registro } = piezasDelRelleno(foto(['a'], serie, Object.fromEntries(todos.map((d) => [d, 10]))));
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  assert.deepEqual(registro.llamadas, ['vinculo', 'serie 2026-09-25..2026-09-27']);
+});
+
+test('un día con todo leído que no cuadra se REDESCUBRE una vez, y después es residuo', async () => {
+  // Mutación: no borrar nunca los ceros (un silencio del proveedor quedaría como cero para siempre), o
+  // borrarlos siempre (el relleno giraría sobre el mismo día cada hora).
+  const d = '2026-10-01';
+  const lecturas = { a: { [d]: lectura(30) }, b: { [d]: lectura(0, LEIDA, true) } };
+  // Los días siguientes, hasta hoy−2, sin gasto y cuadrados: el único que no cuadra es `d`.
+  const resto = Object.fromEntries(dias('2026-10-02', '2026-10-05').map((x) => [x, diaDeLaSerie(0)]));
+  const primera = piezasDelRelleno(foto(['a', 'b'], { [d]: diaDeLaSerie(50), ...resto }, { [d]: 30 }, lecturas));
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, primera.p);
+  assert.deepEqual(primera.registro.redescubiertos, [d]);
+  assert.deepEqual(primera.registro.residuos, []);
+
+  const segunda = piezasDelRelleno(
+    foto(['a', 'b'], { [d]: diaDeLaSerie(50, { redescubiertoEl: LEIDA }), ...resto }, { [d]: 30 }, lecturas),
   );
-  assert.equal(pedidos, 0, 'se pidieron los nombres de una pasada que igual iba a fallar');
+  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, segunda.p);
+  assert.deepEqual(segunda.registro.redescubiertos, []);
+  assert.deepEqual(segunda.registro.residuos, [d]);
+  assert.deepEqual(segunda.registro.llamadas, [], 'un residuo no se busca');
+});
+
+test('el relleno corta cuando se le acaba el tiempo, y lo DICE', async () => {
+  const todos = dias('2026-09-20', '2026-10-05');
+  const f = foto(['a', 'b', 'c'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), {});
+  let t = 0;
+  const { p, registro } = piezasDelRelleno(f, {
+    reloj: () => t,
+    total: async (_a, campana, desde, hasta) => {
+      registro.llamadas.push(`rango ${campana} ${desde}..${hasta}`);
+      t = FIN_DEL_RELLENO_MS + 1;
+      return { tipo: 'datos', datos: { gasto: 0, anuncios: 0 } };
+    },
+  });
+  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => t, p);
+  assert.equal(r.resultado.atrasado, true);
+  assert.equal(registro.llamadas.filter((l) => l.startsWith('rango')).length, 1, 'siguió llamando pasado el fin');
 });

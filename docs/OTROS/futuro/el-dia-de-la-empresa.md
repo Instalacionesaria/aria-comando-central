@@ -15,12 +15,13 @@ Para una empresa en America/Lima (UTC−5), de 19:00 a 24:00 locales `current_da
 Dónde, en `current_date`:
 
 - La cohorte de Conversion, `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:198`), y las copias a mano de
-  Creative (`lib/negocio/calidadDelCreativo.ts:228`) y del costo por anuncio (`lib/negocio/costoDelAnuncio.ts:346`).
-- La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:83`), sin tope arriba.
-- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:100`,
+  Creative (`lib/negocio/calidadDelCreativo.ts:228`) y del costo por anuncio (`lib/negocio/costoDelAnuncio.ts:355`).
+- La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:84`), sin tope arriba.
+- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:106`,
   `lib/agentes/detectores/conversion.ts:122`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:81`).
-- El último día cerrado de Acquisition (`lib/negocio/embudosDeAcquisition.ts:685` y la cota de atraso de `:692`).
+- El último día cerrado de Acquisition, que desde la `076` se mide sobre la serie de la cuenta
+  (`lib/negocio/gastoDeLaCuenta.ts:310` y la cota de atraso de `:317`).
 
 Y dos que se ven directo en pantalla, fuera de las ventanas:
 
@@ -58,8 +59,10 @@ cualquier hora, y una de código que prohíba `current_date` y los `::date` sin 
 **Parte B, Acquisition, después de medir:**
 
 - Su último día cerrado convive con el colector de anuncios, que guarda el día de la cuenta publicitaria
-  (`lib/negocio/recolectarAnuncios.ts:236`, que dice que la API no expone esa zona; a comprobar).
-- Los escenarios de Lima y Los Ángeles de la 181 (`pruebas/base/181-embudos-de-acquisition.test.ts:709-710` y
+  (`lib/negocio/gastoDeLaCuenta.ts:54`: la API no expone esa zona). Medido el 2026-10-07: las sumas por día
+  de la serie coinciden al centavo con el Administrador de anuncios en 7 y 30 días, así que el día del
+  proveedor es el de la cuenta; su zona sigue sin saberse.
+- Los escenarios de Lima y Los Ángeles de la 181 (`pruebas/base/181-embudos-de-acquisition.test.ts:740-741` y
   `:731`) siembran anclados al día UTC y habría que rehacerlos y correrlos de noche: un escéptico mostró que
   con el cambio mecánico se ponen rojos, o quedan verdes sin probar nada, entre las 19:00 y las 24:00 de Lima.
 - El «− 3» de la cota de atraso está justificado en días UTC; en días locales el desfase normal es 2.
@@ -69,7 +72,7 @@ cualquier hora, y una de código que prohíba `current_date` y los `::date` sin 
 - En producción, con `scripts/supabase.mjs leer`: que la zona de cada empresa sea válida, y la cohorte de 30
   días con las dos expresiones a las 20:00 de Lima.
 - En qué zona viene el día del gasto de Meta.
-- Que `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-411`) no corra un día cuando el proceso de Node no está en
-  UTC: pasa por `toISOString` un `date` que el controlador entrega como medianoche local. En producción no se
-  nota; corriendo la suite en Asia/Tokyo, sí.
+- ~~Que `comoDia` de `lib/negocio/costoDelAnuncio.ts` no corra un día cuando el proceso de Node no está en UTC.~~
+  Resuelto con la `076` (2026-10-07): la ventana guardada de Creative sale ahora como texto (`to_char`), y
+  `comoDia` se borró.
 - La suite entera de día y otra vez entre las 19:00 y las 24:00 de Lima, que es cuando el defecto existe.

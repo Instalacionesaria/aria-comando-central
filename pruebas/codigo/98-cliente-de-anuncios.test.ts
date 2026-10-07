@@ -29,6 +29,7 @@ import {
   integracionDeAnuncios,
   metricasPorAnuncio,
   serieDeLaCuenta,
+  totalDeLaCampana,
 } from '../../lib/ghl/anuncios.ts';
 import { recolectarAnuncios } from '../../lib/negocio/recolectarAnuncios.ts';
 
@@ -234,11 +235,13 @@ test('el colector pide los nombres en el nivel CAMPAIGN, no en otro', async () =
     reloj: () => 0,
     vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'connected', cuentaId: null, paginas: 1 } }),
     pedir: async () => ({ tipo: 'datos', datos: [] }),
+    escribir: async () => {},
+    serie: async () => ({ tipo: 'datos', datos: [], llamadas: 1 }),
+    escribirSerie: async () => {},
     escribirCampanas: async (lista) => {
       escritas = lista;
     },
-    campanas: ['120249633901590467'],
-    guardados: new Set(['2026-09-16', '2026-09-15', '2026-09-14']),
+    plan: { inicio: '2026-09-14', activas: ['120249633901590467'], conGastoReciente: [] },
   });
 
   assert.equal(pedidas.length, 1, 'el colector pidió al proveedor algo más que la lista de campañas');
@@ -450,4 +453,64 @@ test('la serie diaria sale de `grouped`, y un día sin `dateStart` se descarta',
   assert.equal(r.datos.length, 1, 'se coló una fila sin fecha, que no se puede ubicar en el tiempo');
   assert.equal(r.datos[0]?.dia, '2026-08-17');
   assert.equal(r.datos[0]?.cpm, 2.922377);
+});
+
+test('la serie se pide en tramos de veinte días: el proveedor corta en 25 filas sin decirlo', async () => {
+  /* Medido el 2026-10-07: del 18-ago al 6-oct devolvió 25 filas y cortó el 11-sep, con `totals` sumando sólo
+     esas. La app decía 0 en 7 días sobre una cuenta que gastó 200,19. Mutación: pedir el rango entero de una
+     vez, o tramos de más de 25 días. */
+  for (let i = 0; i < 3; i++) respuestas.push({ estado: 200, cuerpo: { grouped: [] } });
+  const r = await serieDeLaCuenta(ACCESO, '2026-08-18', '2026-10-06');
+  assert.equal(r.tipo, 'datos');
+  assert.equal(r.llamadas, 3);
+  const tramos = pedidas.map((u) => `${new URL(u).searchParams.get('startDate')}..${new URL(u).searchParams.get('endDate')}`);
+  assert.deepEqual(tramos, ['2026-08-18..2026-09-06', '2026-09-07..2026-09-26', '2026-09-27..2026-10-06']);
+});
+
+test('un día que no vino dentro de un tramo que sí vino es un CERO; un tramo que falla, falla todo', async () => {
+  /* El proveedor omite los días sin gasto (medido: 23 filas para 25 días, y la suma coincide con Meta). Un
+     tramo que falla no puede devolver ceros inventados: es exactamente la fuga. */
+  respuestas.push({ estado: 200, cuerpo: { grouped: [{ dateStart: '2026-10-01', spend: '36.67' }] } });
+  const r = await serieDeLaCuenta(ACCESO, '2026-09-30', '2026-10-02');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+  assert.deepEqual(
+    r.datos.map((d) => [d.dia, d.gasto]),
+    [
+      ['2026-09-30', 0],
+      ['2026-10-01', 36.67],
+      ['2026-10-02', 0],
+    ],
+  );
+
+  respuestas.push({ estado: 200, cuerpo: { grouped: [] } });
+  respuestas.push({ estado: 500, cuerpo: {} });
+  const fallida = await serieDeLaCuenta(ACCESO, '2026-08-18', '2026-09-20');
+  assert.equal(fallida.tipo, 'fallo', 'un tramo que falló devolvió días');
+  assert.equal(fallida.llamadas, 2);
+});
+
+test('el total de una campaña en un RANGO manda dos fechas distintas y suma el gasto, con los nulos en cero', async () => {
+  /* Medido el 2026-10-07: la campaña de mensajes del 30-sep al 6-oct suma 200,19, igual al Administrador de
+     anuncios; una que nunca gastó devuelve sus anuncios sin `spend`. Mutación: mandar el mismo día en las dos
+     fechas, o descartar las filas ilegibles sin contarlas. */
+  respuestas.push({
+    estado: 200,
+    cuerpo: [
+      { adId: '1', spend: '1.61' },
+      { adId: '2', spend: '25.7' },
+      { adId: '3' },
+      { ad_id: '4', spend: '9.36' },
+    ],
+  });
+  const r = await totalDeLaCampana(ACCESO, '120249633901590467', '2026-09-30', '2026-10-06');
+  assert.equal(r.tipo, 'datos');
+  if (r.tipo !== 'datos') return;
+  assert.equal(r.datos.gasto, 27.31);
+  assert.equal(r.datos.anuncios, 3);
+  assert.equal(r.ilegibles, 1);
+  const u = new URL(pedidas[0]!);
+  assert.equal(u.searchParams.get('startDate'), '2026-09-30');
+  assert.equal(u.searchParams.get('endDate'), '2026-10-06');
+  assert.equal(u.searchParams.get('campaignId'), '120249633901590467');
 });

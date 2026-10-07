@@ -15,7 +15,8 @@
   pedido no esperado lanza, porque «un `fetch` real desde acá gastaría la llave de alguien»
   (`pruebas/apoyo/analizador.ts`).
 - Lo medido en el Paso 0: el negocio real está detenido (sin gasto desde el 2026-09-13, cero ventas), así
-  que producción no sirve para probar casi ninguna regla.
+  que producción no sirve para probar casi ninguna regla. **El gasto, corregido el 2026-10-07**: era lo que la
+  app veía; la cuenta sí gastó, en una campaña de mensajes que el colector no pedía (la `076`).
 
 ---
 

@@ -35,7 +35,7 @@ del criterio, no de una serie larga, y el Admin los firma.
 | `ACQ-SIN-ENTREGA` | Una campaña activa que entregó en los últimos 60 días cerrados y lleva 2 o más sin entregar. Es un estado y no una comparación: se mide igual en las dos ventanas (con «gastaba en la ventana anterior», una pauta parada hace 15 días no daba nada en 7 días). La pausada no cuenta; la de estado desconocido, sí | 2 días | no es una tasa; exige los días cerrados al día | **crítica** si no entrega ninguna activa; alta si alguna sí | campaña, o empresa si son todas | Lo que dice la data |
 | `ACQ-CPL-SOSTENIDO` | El costo por contacto sube contra la ventana anterior | +30 % (alta desde +60 %) | 10 contactos en las dos ventanas | media o alta | campaña | Ajusta o pausa esto |
 | `ACQ-CPM-ABRUPTO` | El CPM sube contra la ventana anterior | +40 % | 1.000 impresiones en las dos | media | campaña | Lo que dice la data |
-| `ACQ-GASTO-SIN-CRECIMIENTO` | El gasto sube y los contactos no | gasto +25 % y contactos sin subir | 10 contactos en la anterior | media | empresa o campaña | Ajusta o pausa esto |
+| `ACQ-GASTO-SIN-CRECIMIENTO` | El gasto sube y los contactos no | gasto +25 % y contactos sin subir; el gasto es el de las campañas que traen contactos atribuidos (A14-19, desde la `076`): una de mensajes no la enciende | 10 contactos en la anterior | media | empresa o campaña | Ajusta o pausa esto |
 | `ACQ-CONCENTRACION` | Una campaña se lleva casi todo el gasto | 60 % o más, con 3 o más campañas con gasto | no es una tasa | media | campaña | **Requiere validación ejecutiva** |
 | `ACQ-CAMBIO-BRUSCO-CONJUNTO` | Un conjunto cambia de golpe su gasto o su costo por contacto; se nombra el cambio más grande de los dos. Sólo en la ventana de 7 días | ±50 % en 7 días cerrados | 10 contactos | media | conjunto | Lo que dice la data |
 | `ACQ-ICP-ENTRE-CAMPANAS` | La afinidad con el ICP de una campaña está muy por debajo de su funnel | 15 puntos bajo el promedio | 10 calificados | media | campaña | Ajusta o pausa esto |
@@ -108,7 +108,7 @@ Vuelve como señales, **en días de calendario cerrados** y con la misma regla d
 
 ## La pantalla
 
-- **El botón «Plan de acción»** en `components/acquisition/PanelDeAcquisition.jsx:182`, junto al selector de
+- **El botón «Plan de acción»** en `components/acquisition/PanelDeAcquisition.jsx:185`, junto al selector de
   período. Abre el plan de la ventana elegida en `components/Ventana.jsx`.
 - **La tarjeta de Señales**, al final: el encabezado de A6-12, las señales de la ventana elegida ordenadas por
   gravedad y pérdida, cada una con sus cinco partes, «umbral provisional» cuando corresponde y «Ver

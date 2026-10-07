@@ -1,4 +1,4 @@
-// UN SOLO escritor de las dos tablas nuevas de Acquisition (`065` y `066`). Tipo: Código.
+// UN SOLO escritor de las tablas de Acquisition (`065`, `066` y `076`). Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ ESTO ES DE CÓDIGO Y NO DE COMPORTAMIENTO
@@ -38,6 +38,11 @@ function escribe(tabla: string, fuente: string): boolean {
 
 const ESCRITORES = [
   { tabla: 'campanas', escritor: 'lib/negocio/recolectarAnuncios.ts' },
+  /* Las dos de la `076`. El relleno (`rellenarAnuncios.ts`) escribe a través de los escritores exportados de
+     `recolectarAnuncios.ts`: el rango que no pisa una lectura del día y el cambio que reinicia el residuo son
+     reglas de su escritor, y un segundo escritor se las saltearía. */
+  { tabla: 'gasto_de_la_cuenta', escritor: 'lib/negocio/recolectarAnuncios.ts' },
+  { tabla: 'lecturas_de_gasto', escritor: 'lib/negocio/recolectarAnuncios.ts' },
   { tabla: 'funnels_de_campana', escritor: 'lib/negocio/funnelDeLaCampana.ts' },
 ];
 

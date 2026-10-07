@@ -402,14 +402,21 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
     salida.sinMedicion.push(ACQ.gastoSinCrecimiento);
   } else {
     const u = umbral(ACQ.gastoSinCrecimiento);
+    /* El gasto que se mide es el de las campañas que traen contactos (A14-19): el de una campaña de mensajes,
+       cuyos contactos llegan sin `campaignId`, sube sin que «sus» contactos puedan subir, y la regla saltaría por
+       un hueco de atribución y no por el anuncio. Una campaña sin contactos tiene cero acá, y no compara. */
     type Gasto = { inversion: number; contactos: number };
+    const deCampana = (c: Cifras): Gasto => ({ inversion: c.inversionConContactos, contactos: c.contactos });
     const candidatas: [Deteccion['entidad'], Gasto, Gasto][] = [];
     for (const [campana, ahora] of m.actual) {
       const antes = previaDe(campana);
-      if (antes) candidatas.push([{ tipo: 'campana', id: campana }, ahora, antes]);
+      if (antes) candidatas.push([{ tipo: 'campana', id: campana }, deCampana(ahora), deCampana(antes)]);
     }
     const suma = (mapa: ReadonlyMap<string, Cifras>): Gasto =>
-      [...mapa.values()].reduce((s, c) => ({ inversion: s.inversion + c.inversion, contactos: s.contactos + c.contactos }), { inversion: 0, contactos: 0 });
+      [...mapa.values()].reduce(
+        (s, c) => ({ inversion: s.inversion + c.inversionConContactos, contactos: s.contactos + c.contactos }),
+        { inversion: 0, contactos: 0 },
+      );
     candidatas.push([{ tipo: 'empresa', id: 'empresa' }, suma(m.actual), suma(m.previa!)]);
     for (const [entidad, ahora, antes] of candidatas) {
       if (antes.inversion <= 0) continue;

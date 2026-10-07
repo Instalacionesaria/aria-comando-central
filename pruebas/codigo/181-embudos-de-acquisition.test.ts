@@ -40,9 +40,12 @@ import {
 import { PISO_DE_UNA_TASA } from '../../lib/negocio/indicadoresDeCitas.ts';
 import { archivosFuente } from '../apoyo/fuente.ts';
 
-/** Unas cifras con lo que se nombre y el resto en cero. */
+/**
+ * Unas cifras con lo que se nombre y el resto en cero. Por omisión la campaña trae contactos atribuidos: toda su
+ * inversión paga los costos de personas (A14-19).
+ */
 function cifras(c: Partial<Cifras>): Cifras {
-  return { ...CIFRAS_VACIAS, ...c };
+  return { ...CIFRAS_VACIAS, inversionConContactos: c.inversion ?? 0, ...c };
 }
 
 // ─── 1 · Las cuentas sueltas ────────────────────────────────────────────────
@@ -127,8 +130,8 @@ test('un funnel suma los agendados, los calificados y el ICP de sus campañas', 
     anterior: null,
     sinComparacion: 'periodo',
     campanas: [
-      { campana: '1', nombre: 'a', estado: null, conocida: true, funnel: 'profile' },
-      { campana: '2', nombre: 'b', estado: null, conocida: true, funnel: 'profile' },
+      { campana: '1', nombre: 'a', estado: null, conocida: true, conContactos: true, funnel: 'profile' },
+      { campana: '2', nombre: 'b', estado: null, conocida: true, conContactos: true, funnel: 'profile' },
     ],
     actual: new Map([
       ['1', una],
@@ -253,11 +256,11 @@ function pantalla(previa: Map<string, Cifras> | null) {
     anterior: previa === null ? null : { desde: '2026-09-17', hasta: '2026-09-23' },
     sinComparacion: previa === null ? 'periodo' : null,
     campanas: [
-      { campana: '300', nombre: 'bofu', estado: 'ACTIVE', conocida: true, funnel: 'leadform' },
-      { campana: '100', nombre: 'tofu', estado: 'ACTIVE', conocida: true, funnel: 'booking' },
-      { campana: '200', nombre: 'a mano', estado: null, conocida: true, funnel: null },
-      { campana: '400', nombre: null, estado: null, conocida: false, funnel: null },
-      { campana: '500', nombre: 'otra bofu', estado: 'PAUSED', conocida: true, funnel: 'leadform' },
+      { campana: '300', nombre: 'bofu', estado: 'ACTIVE', conocida: true, conContactos: true, funnel: 'leadform' },
+      { campana: '100', nombre: 'tofu', estado: 'ACTIVE', conocida: true, conContactos: true, funnel: 'booking' },
+      { campana: '200', nombre: 'a mano', estado: null, conocida: true, conContactos: true, funnel: null },
+      { campana: '400', nombre: null, estado: null, conocida: false, conContactos: true, funnel: null },
+      { campana: '500', nombre: 'otra bofu', estado: 'PAUSED', conocida: true, conContactos: true, funnel: 'leadform' },
     ],
     actual: new Map([
       ['300', cifras({ inversion: 50, contactos: 9 })],
@@ -305,6 +308,67 @@ test('sin ventana anterior nada compara; con ella, una campaña que no aparece t
   assert.deepEqual(con.total.etapas[0]?.variacion, { tipo: 'sube', porcentaje: 0.7, lectura: 'buena' });
 });
 
+// ─── 4 · La inversión de la cuenta y la inversión con contactos (A14-19, `076`) ──
+
+/** La pantalla de 7 días con una campaña de leads y una de mensajes, que nunca trajo contactos atribuidos. */
+function conMensajes(gasto?: { deLaCuenta: number | null; deLaCuentaAnterior: number | null; motivo: null }, previa: Map<string, Cifras> | null = null) {
+  return armarEmbudos({
+    ventana: VENTANA,
+    anterior: previa === null ? null : { desde: '2026-09-17', hasta: '2026-09-23' },
+    sinComparacion: previa === null ? 'periodo' : null,
+    campanas: [
+      { campana: '10', nombre: 'leads', estado: 'PAUSED', conocida: true, conContactos: true, funnel: 'leadform' },
+      { campana: '20', nombre: 'mensajes', estado: 'ACTIVE', conocida: true, conContactos: false, funnel: null },
+    ],
+    actual: new Map([
+      ['10', cifras({ inversion: 100, contactos: 10, agendados: 4, calificados: 2 })],
+      ['20', cifras({ inversion: 200.19, inversionConContactos: 0, clics: 30, inversionConDesglose: 200.19 })],
+    ]),
+    previa,
+    cobertura: { conCampana: 10, sobre: 12 },
+    sinCostos: null,
+    gasto,
+  });
+}
+
+test('una campaña sin contactos atribuidos suma inversión y NO paga el costo por contacto de las demás', () => {
+  /* La de mensajes: sus contactos llegan sin `campaignId`. Con la inversión entera en el numerador, el costo por
+     contacto del total pasaría de 10 a 30. Mutación: los costos de personas con `inversion`. */
+  const p = conMensajes();
+  const total = p.total;
+  assert.equal(total.inversion, 300.19);
+  assert.equal(total.conGasto, 2);
+  assert.equal(total.inversionSinContactos, 200.19);
+  assert.equal(total.etapas.find((e) => e.etapa === 'contactos')?.costo, 10, 'el costo por contacto lo pagó la campaña de mensajes');
+  assert.equal(total.calificados.costo, 50);
+  // El costo por clic sigue siendo de Meta: todo el gasto con desglose sobre todos los clics.
+  assert.equal(total.etapas.find((e) => e.etapa === 'clics')?.costo, 200.19 / 30);
+  // Y la campaña de mensajes no tiene costos de personas: no se sabe cuánta gente trajo.
+  const mensajes = p.campanas.find((c) => c.campana === '20')!;
+  assert.equal(mensajes.conContactos, false);
+  assert.equal(mensajes.cifras.etapas.find((e) => e.etapa === 'contactos')?.costo, null);
+  assert.equal(mensajes.cifras.inversionSinContactos, 200.19);
+});
+
+test('la inversión del TOTAL es la de la cuenta cuando la serie cubre la ventana', () => {
+  /* El Administrador de anuncios dice 2.234,55 aunque el relleno no haya encontrado todavía todas las campañas.
+     Mutación: el total con la suma por campaña. */
+  const p = conMensajes({ deLaCuenta: 2234.55, deLaCuentaAnterior: null, motivo: null });
+  assert.equal(p.total.inversion, 2234.55);
+  assert.equal(p.total.inversionSinContactos, 2134.55, 'lo que la cuenta cobró sin campaña leída no paga costos de personas');
+  assert.equal(p.total.etapas.find((e) => e.etapa === 'contactos')?.costo, 10, 'la diferencia de la cuenta entró en el costo por contacto');
+  assert.deepEqual(p.gasto, { deLaCuenta: 2234.55, motivo: null });
+  // Sin la serie, el total es la suma de las campañas.
+  assert.equal(conMensajes({ deLaCuenta: null, deLaCuentaAnterior: null, motivo: null }).total.inversion, 300.19);
+});
+
+test('la flecha de la Inversión del total compara la cuenta contra la cuenta', () => {
+  // Mutación: comparar la cuenta de ahora contra la suma por campaña de antes.
+  const previa = new Map([['10', cifras({ inversion: 100, contactos: 10 })]]);
+  const p = conMensajes({ deLaCuenta: 300, deLaCuentaAnterior: 200, motivo: null }, previa);
+  assert.deepEqual(p.total.variacionDeInversion, { tipo: 'sube', porcentaje: 0.5, lectura: 'neutra' });
+});
+
 test('dos campañas empatadas en inversión y contactos van por identificador, no por cómo llegan', () => {
   /* Con la pauta parada, los empates en 0/0 son lo común, y la lectura de la base no trae orden: sin
      este desempate, las filas cambiarían de lugar entre una lectura y la siguiente. */
@@ -313,7 +377,7 @@ test('dos campañas empatadas en inversión y contactos van por identificador, n
       ventana: VENTANA,
       anterior: null,
       sinComparacion: 'periodo',
-      campanas: orden.map((campana) => ({ campana, nombre: null, estado: null, conocida: true, funnel: null })),
+      campanas: orden.map((campana) => ({ campana, nombre: null, estado: null, conocida: true, conContactos: true, funnel: null })),
       actual: new Map(),
       previa: null,
       cobertura: { conCampana: 0, sobre: 0 },

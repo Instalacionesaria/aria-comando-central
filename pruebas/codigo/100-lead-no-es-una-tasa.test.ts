@@ -15,7 +15,7 @@
 //
 // O sea que una tasa construida sobre `lead` publicaría aproximadamente el doble de lo real. Y no
 // fallaría: daría un número más grande y perfectamente creíble, que es exactamente el defecto de
-// grano que `costoDelAnuncio.ts:157-164` documenta para este mismo par de tablas.
+// grano que `costoDelAnuncio.ts:158-165` documenta para este mismo par de tablas.
 //
 // El comentario que lo explica está en `rendimientoDelCreativo.ts`, al lado de la lista. **Un
 // comentario no impide una línea**: esta prueba sí, y muere en el momento en que alguien agregue

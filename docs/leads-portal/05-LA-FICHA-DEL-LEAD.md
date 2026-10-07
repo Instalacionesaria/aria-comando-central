@@ -322,7 +322,7 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1000-1008`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1036-1044`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
   | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:951-952`). Ver `LP05-P02` | — |

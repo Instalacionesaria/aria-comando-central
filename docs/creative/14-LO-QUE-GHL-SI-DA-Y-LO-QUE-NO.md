@@ -121,7 +121,7 @@ aunque no lo fuera, `negocio.metricas_de_anuncio` no tenía columna donde guarda
 
 **Y el costo de arreglarlo fue cero llamadas.** El colector de Acquisition ya pedía este endpoint
 una vez por campaña y por día, en la tarea `anuncios` del cron de las `17 6 * * *`
-(`lib/negocio/barrido.ts:226`). No hizo falta pedir nada nuevo: hizo falta guardar lo que ya llegaba.
+(`lib/negocio/barrido.ts:230`). No hizo falta pedir nada nuevo: hizo falta guardar lo que ya llegaba.
 
 **Hoy** el campo se llama `acciones`, es un `Record<string, number> | null` leído con un
 desenvolvedor que cuenta lo ilegible en vez de escribir cero, y su columna la creó la migración
@@ -227,7 +227,7 @@ Y por `listType` en `/reporting/list`:
 
 | valor | resultado |
 |---|---|
-| `campaigns` | **200** · 61 campañas · `name, status, campaignId, adAccountId, locationId` |
+| `campaigns` | **200** · 61 campañas · `name, status, campaignId, adAccountId, locationId`, **sin gasto** (`C14-26`) |
 | `adsets` · `ads` | **200**, y exigen `campaignId` |
 | `creatives` · `creative` · `ad_creatives` · `adcreatives` · `videos` · `posts` | **422** `«listType must be a valid enum value»` |
 
@@ -511,3 +511,45 @@ de Meta ni de un link. No hay nada que traer de ahí para los anuncios del Busin
 
 **Consecuencia:** la fuente de la miniatura y el video es Meta directo, con un token propio del
 Business Manager. Está en `15-LA-MINIATURA-Y-EL-VIDEO.md`.
+
+## 7 · La medición del 2026-10-07: el gasto de TODA la cuenta
+
+La app decía 0 de inversión en 7 días y 865,58 en 30, y el Administrador de anuncios de la misma cuenta decía
+200,19 y 2.234,55, con 61 campañas. El colector pedía sólo las 13 campañas que nombraba nuestra atribución, y
+una campaña de mensajes —sus contactos llegan como `instagram` o `facebook`, sin `campaignId`— no entraba nunca.
+Antes de cambiarlo se midió qué da el proveedor, con `scripts/medir-gasto-de-la-cuenta.mjs`: sólo `GET`, con
+el token de la empresa principal, 11 llamadas. Las campañas se nombran por su papel: el repositorio es público.
+
+### C14-23 · La serie diaria de la cuenta corta en 25 filas, y no lo dice
+
+`GET /reporting?groupBy=day` del 18-ago al 6-oct (50 días) devolvió **25 filas**, del 18-ago al 11-sep, y
+`totals.spend` sumaba sólo esas 25. Del 7-sep al 6-oct (30 días): 25 filas hasta el 2-oct, y faltaban 97,69.
+Ni la cantidad de filas ni `totals` avisan del corte. **Partida en tramos de no más de 25 días, la serie suma
+200,19 en 7 días y 2.234,55 en 30: al centavo con el Administrador de anuncios.** El cliente la pide en tramos
+de 20 (`DIAS_POR_TRAMO_DE_LA_SERIE`, `lib/ghl/anuncios.ts`).
+
+### C14-24 · Los días sin gasto no vienen
+
+Del 12-sep al 6-oct (25 días) llegaron 23 filas, y la suma coincide con Meta: los dos días que faltan son días
+sin gasto. Un día que no vino, dentro de un tramo que sí vino, es un **cero medido**; un tramo que falla no
+dice nada de sus días. Así lo guarda el colector en `negocio.gasto_de_la_cuenta` (la `076`).
+
+### C14-25 · `/reporting/list?listType=ads` sin `campaignId`: 422
+
+Confirmado en dos días (el 1-oct y el 10-sep): sin `campaignId` responde **422**. No hay una llamada que dé
+todos los anuncios de la cuenta en un día. Es lo que la tabla de la § 4 ya decía de `adsets · ads`.
+
+### C14-26 · `listType=campaigns` no trae gasto
+
+Pedido para un solo día: 200 con las 61 campañas, y **ninguna con `spend`**; las claves son las de la § 4. No
+sirve para saber qué campaña gastó.
+
+### C14-27 · Un rango por campaña da el total del rango, y un cero viene sin `spend`
+
+`/reporting/list?listType=ads` con `campaignId` y un rango suma (la cabecera de `lib/ghl/anuncios.ts` lo había
+medido con tres días): la campaña de mensajes del 30-sep al 6-oct devolvió sus 3 anuncios con **200,19**, igual a
+Meta, con objetivo `OUTCOME_ENGAGEMENT`. Una campaña que nunca gastó, en 50 días, devolvió sus 5 anuncios **sin
+`spend` ni `impressions`**: suma cero. De ahí el relleno: un rango por campaña, y sólo lo que gastó se parte en
+semanas y en días (`totalDeLaCampana`, `lib/negocio/rellenarAnuncios.ts`).
+
+Las latencias medidas: un tramo de la serie, 0,6 a 1 s; un rango de una campaña, 2 a 4,6 s; un 422, 0,2 a 0,3 s.

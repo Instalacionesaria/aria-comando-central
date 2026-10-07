@@ -16,7 +16,7 @@
           la vista y ya son 0 con la pestaña cerrada. Lo que el aviso compra es LATENCIA: de hasta 24
           horas a segundos fuera del horario en que alguien mira.
        3. Y hay un competidor mucho mas barato para ese mismo problema: si el plan de Vercel es Pro,
-          descomentar dos renglones de `lib/negocio/barrido.ts:91-92` baja las 24 horas a 10 minutos,
+          descomentar dos renglones de `lib/negocio/barrido.ts:93-94` baja las 24 horas a 10 minutos,
           gratis y sin superficie de ataque nueva. Es el punto 2-A, y es una mirada al panel.
 -->
 
@@ -35,7 +35,7 @@ No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El a
 La lista de las tres propuestas tiene siete a diez ítems y **bloquea de más**. Verifiqué en disco cuáles ya están contestados. Queda esto, y es corto.
 
 ### A · ¿El plan de Vercel es Hobby o Pro? — UNA MIRADA AL PANEL. **BLOQUEA LA DECISIÓN, NO EL CÓDIGO.**
-Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:82-86` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
+Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:84-88` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
 Fuente: panel de Vercel → Settings → Billing. Cinco segundos.
 
 ### B · Cosechar los payloads reales del inbox de la plataforma anterior — UNA CONSULTA SQL. **BLOQUEA LA ETAPA 6.**
@@ -160,7 +160,7 @@ Verificado: contra cuerpos enormes este repositorio no hace **nada** a nivel glo
   - `llega_sin_procesar` → **el cuarto estado, y es el que justifica la etapa.** Hay filas recientes y ninguna procesada. Texto: «el CRM está avisando y no se está interpretando: revisá el `?evento=` y el catálogo». Sin este estado, el modo de fallo insignia —el administrador pega `?evento=mensaje_entrante` en vez de `mensaje.entrante`, o pega la URL base sin query param (`aria-project-closer-setter/docs/03-INTEGRACION-GHL.md:296-297`)— produce 200, fila fresca, `al_dia`, la pantalla no dibuja nada, y **el 100 % del aviso está inerte** mientras cada mensaje sigue entrando con hasta 24 h de retraso.
   - `atrasada` → hay procesados y el último es más viejo que el umbral.
   - `al_dia` → `null`, y la pantalla no dice nada.
-- **El umbral NO sale de `HORARIOS`.** Verificado por qué: `umbralDe(tarea)` devuelve `null` cuando la tarea no está en el mapa, y `frescuraDe` entonces devuelve `{ estado: 'al_dia', minutos: null, umbralMinutos: 0, aviso: null }` — **silencio, sin error** (`lib/negocio/frescura.ts:107-110`). Un webhook no tiene cadencia: se dispara cuando una persona escribe. Así que el umbral es una decisión de producto escrita con su número y su motivo, y **la comparación que importa no es contra un reloj sino entre dos columnas**: `procesado_el` contra `recibido_el`, que sí es medible sin cadencia.
+- **El umbral NO sale de `HORARIOS`.** Verificado por qué: `umbralDe(tarea)` devuelve `null` cuando la tarea no está en el mapa, y `frescuraDe` entonces devuelve `{ estado: 'al_dia', minutos: null, umbralMinutos: 0, aviso: null }` — **silencio, sin error** (`lib/negocio/frescura.ts:109-112`). Un webhook no tiene cadencia: se dispara cuando una persona escribe. Así que el umbral es una decisión de producto escrita con su número y su motivo, y **la comparación que importa no es contra un reloj sino entre dos columnas**: `procesado_el` contra `recibido_el`, que sí es medible sin cadencia.
 - **La falta del query param se cuenta como `error` en la fila**, y ahora eso tiene lector.
 - **Campo HERMANO en la respuesta, nunca dentro de `falta`** — el motivo ya está escrito en el encabezado de `frescura.ts` y verifiqué el contrato: `falta` existe solo cuando `valor` es nulo, y un atraso convive con datos presentes.
 - **CONTROL POSITIVO, obligatorio antes de apuntar ningún workflow:** un cuerpo de prueba con el secreto real contra producción **tiene que dejar una fila** (`atribucion: 'ilegible'` sirve). Sin esto, «la tabla está vacía» es indistinguible de «todavía no hubo eventos» y de «rechazamos el 100 %», y tres de las cuatro mediciones que la 2ª propuesta proponía las satisface un endpoint completamente muerto.

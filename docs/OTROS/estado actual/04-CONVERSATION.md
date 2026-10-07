@@ -163,7 +163,7 @@ el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:206-216`) y cifras vacías.
 **6** · **3** desde la del 31 de agosto. En `negocio.metricas_de_anuncio` **no hay un solo día con
 gasto ni con impresiones después del 13**: 13 filas en 0,00, todas del 14 al 17, y 1 172 **nulas**
 —303 del 14 al 17 y las 869 que hay desde el 18—, y nulo es «el anuncio no entregó ese día», no un
-cero (`lib/negocio/recolectarAnuncios.ts:416-418`). Medido el 2026-09-28 a las 23:56 UTC, con el
+cero (`lib/negocio/recolectarAnuncios.ts:242-244`). Medido el 2026-09-28 a las 23:56 UTC, con el
 colector sincronizando hasta las 06:20 UTC de ese día. El barrido está vivo —el último contacto lo
 creó hoy a las 13:50 UTC—, así que el hueco es de leads y no de ingesta. **Por qué se pausó la pauta
 no está verificado**: no hay en la base nada que lo diga.
@@ -452,8 +452,8 @@ materia prima de la «tasa de errores» del §9.7 y del §10.7.
 el cron y cómo terminó. Medido el 2026-09-28 a las 23:58 UTC, en la organización `aria` las cinco
 tareas de las que vive esta pantalla estaban en `corrio` y dentro de su umbral: `contactos`,
 `mensajes` y `auditoria` hace 7 minutos (umbral 80), `citas` hace 54 (umbral 180) y `mejora` hace
-1 060, unas 17,7 h (umbral 3 000; los tres horarios, `lib/negocio/barrido.ts:198-202`,
-`lib/negocio/barrido.ts:210-214` y `lib/negocio/barrido.ts:246-250`). Tienen sello las 11 empresas
+1 060, unas 17,7 h (umbral 3 000; los tres horarios, `lib/negocio/barrido.ts:202-206`,
+`lib/negocio/barrido.ts:214-218` y `lib/negocio/barrido.ts:251-255`). Tienen sello las 11 empresas
 activas y ninguna inactiva. La pantalla no lo lee: riesgo 22.
 
 ---
@@ -498,7 +498,7 @@ la fecha de la llamada y no la del visionado (no se abrieron sus valores).
 
 **A3 · «El historial de reagendamientos»** (`components/conversation/PanelDeConversation.jsx:142`) —
 **cierto**: `reagendada_el` es una sola columna, en 16 de 333 citas, y el calendario se barre una
-vez por hora (`lib/negocio/barrido.ts:210-211`, al minuto 3).
+vez por hora (`lib/negocio/barrido.ts:214-215`, al minuto 3).
 
 ── **Falta en el CRM** ──
 
@@ -721,7 +721,7 @@ no mira la base.
 **22 · La pantalla no avisa si su dato está viejo.** Las tres primeras pestañas dibujan filas que
 escriben cinco tareas del cron —`contactos`, `mensajes`, `auditoria`, `citas` y `mejora` (ítem 9 de
 la sección 4)—, y la plataforma ya tiene con qué decirlo: `frescuraDe(tarea)`
-(`lib/negocio/frescura.ts:110`) devuelve un aviso que sólo calla cuando la tarea está al día
+(`lib/negocio/frescura.ts:112`) devuelve un aviso que sólo calla cuando la tarea está al día
 (`lib/negocio/frescura.ts:49-59`), y lo leen la Agenda del Closer, el chat de la ficha y Leads
 Portal, éste sobre las mismas `contactos` y `citas` (`app/api/leads-portal/route.ts:63-64`).
 Conversation no: `GET /api/auditoria` arma nueve lecturas —la octava, las señales del auditor traducidas (AG13 de los agentes); la novena, el comentario de la cabecera (AG15)— (`app/api/auditoria/route.ts:80-110`) y

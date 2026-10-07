@@ -142,8 +142,8 @@ const claves = (o: unknown) => Object.keys(o as object).sort();
  */
 const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]; argumentos?: Record<string, unknown> }> = {
   embudos_de_acquisition: {
-    arriba: ['anterior', 'campanas', 'cobertura', 'funnels', 'periodo', 'sinComparacion', 'sinCostos', 'sinFunnel', 'total', 'ventana'],
-    filas: [['campanas', ['campana', 'cifras', 'estado', 'funnel', 'nombre']]],
+    arriba: ['anterior', 'campanas', 'cobertura', 'funnels', 'gasto', 'periodo', 'sinComparacion', 'sinCostos', 'sinFunnel', 'total', 'ventana'],
+    filas: [['campanas', ['campana', 'cifras', 'conContactos', 'estado', 'funnel', 'nombre']]],
   },
   calidad_de_piezas: {
     arriba: ['aviso', 'campoDeIcp', 'congeladas', 'desde', 'dias', 'hasta', 'piezas', 'puente'],
@@ -348,9 +348,9 @@ test('`frescura` habla sólo de las fuentes de las secciones que se ven', async 
     const r = await conOrganizacion(e.conDatos, () => ejecutarHerramienta('frescura', {}, herramientasPara(secciones), contexto));
     return Object.keys((r as { datos: { tareas: object } }).datos.tareas).sort();
   };
-  assert.deepEqual(await deLas(['acquisition']), ['anuncios', 'contactos']);
+  assert.deepEqual(await deLas(['acquisition']), ['anuncios', 'anuncios_relleno', 'contactos']);
   assert.deepEqual(await deLas(['conversion']), ['contactos']);
-  assert.deepEqual(await deLas(['closer', 'creative']), ['anuncios', 'citas', 'contactos', 'mensajes']);
+  assert.deepEqual(await deLas(['closer', 'creative']), ['anuncios', 'anuncios_relleno', 'citas', 'contactos', 'mensajes']);
   assert.deepEqual(await deLas(['analizadores']), ['analizadores', 'reintentos']);
   // La sonda es de la plataforma: no viaja a nadie.
   assert.ok(!(await deLas(SECCIONES_DE_TODO)).includes('sonda'));

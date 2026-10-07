@@ -975,6 +975,42 @@ export interface TablaCampanas {
 }
 
 /**
+ * El gasto diario de toda la cuenta publicitaria. Migración 076.
+ *
+ * Es la referencia del colector: un día está completo cuando la suma por anuncio cuadra con este total. El
+ * proveedor omite los días sin gasto, y un día omitido dentro de un tramo leído se guarda en 0.
+ */
+export interface TablaGastoDeLaCuenta {
+  org_id: ColumnaInquilino;
+  /** El día de la cuenta publicitaria, como lo devuelve el proveedor. */
+  fecha: Date;
+  gasto: string | null;
+  impresiones: string | null;
+  clics: string | null;
+  leido_el: Generated<Date>;
+  /** La última vez que el total cambió entre dos lecturas: Meta corrige hacia atrás. */
+  cambio_el: Date | null;
+  /** Cuándo se borraron sus ceros de rango para volver a descubrirlos (una sola vez). */
+  redescubierto_el: Date | null;
+  /** Cuándo se declaró residuo: no cuadra con todas sus campañas leídas. */
+  residuo_el: Date | null;
+}
+
+/**
+ * Qué (campaña, día) ya se leyó y cuánto gastó. Migración 076.
+ *
+ * `por_rango` = un cero probado con un rango, sin métricas por anuncio. Un rango nunca pisa una lectura del día.
+ */
+export interface TablaLecturasDeGasto {
+  org_id: ColumnaInquilino;
+  meta_campana_id: string;
+  fecha: Date;
+  gasto: string;
+  por_rango: boolean;
+  leido_el: Generated<Date>;
+}
+
+/**
  * El último análisis con IA de cada búsqueda del Espía. Migración 068. Los anuncios viven en el
  * trabajo del scraper; esto guarda sólo lo que genera Comando Central.
  */
@@ -1778,6 +1814,8 @@ export interface BaseDeDatos {
   campos_del_crm: TablaCamposDelCrm;
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
+  gasto_de_la_cuenta: TablaGastoDeLaCuenta;
+  lecturas_de_gasto: TablaLecturasDeGasto;
   incidentes: TablaIncidentes;
   analisis_del_espia: TablaAnalisisDelEspia;
   funnels_de_campana: TablaFunnelsDeCampana;

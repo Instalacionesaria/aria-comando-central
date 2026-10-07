@@ -21,7 +21,8 @@
 > - **Cinco secciones dejaron de ser maqueta** —Acquisition (16 sep), Creative (19), Conversion
 >   (20), Sales (21) y Leads Portal (26)— y una nació sin maqueta previa, Analizadores (23). Cada
 >   una dejó su deuda: está en los § 9 a § 18, verificada una por una contra el código.
-> - **La deuda nueva más cara no es de código.** La pauta no gasta desde el 2026-09-14 y la ventana
+> - **La deuda nueva más cara no es de código.** La pauta no gasta desde el 2026-09-14 (**falso, corregido
+>   el 2026-10-07**: gastaba una campaña de mensajes que el colector no pedía, § 12) y la ventana
 >   por omisión se está vaciando (§ 12), y el repositorio es público con nombres de personas reales
 >   en decenas de archivos (§ 15).
 
@@ -454,7 +455,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras medidas hoy
 las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:576-586`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:598-608`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL.
@@ -466,7 +467,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   de los agentes (2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su fila
   en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`).
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:526-534`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:546-554`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -481,6 +482,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 
 ## 12 · Datos del negocio que cambian la lectura de todo
 
+- **Corregido el 2026-10-07 (`076`)**: la cuenta sí gastó. Las 13 campañas que el colector pedía no gastaban, pero una campaña de mensajes —cuyos contactos llegan sin `campaignId`, así que no estaba en la lista— gastó 200,19 del 30-sep al 6-oct; del 12-sep al 6-oct la cuenta gastó 838,58, medido con la serie de la cuenta contra el Administrador de anuncios (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-23).
 - **La pauta no gasta desde el 2026-09-14.** El último día con `gasto > 0` en
   `negocio.metricas_de_anuncio` es el 2026-09-13 (3.318 filas, medido 22:11 UTC), y desde el
   2026-09-14 entraron **8 contactos**; a 7 días, 3. Toda cifra de Acquisition, Creative y Leads
@@ -488,12 +490,12 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   ventana por omisión de 30 días va a quedar debajo del piso de 10
   ([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)).
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
-  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627`, el
-  campo en `lib/negocio/recolectarAnuncios.ts:149`), pero `motivoDeLoIncompleto`
-  (`lib/negocio/barrido.ts:813`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
+  pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`, el
+  campo en `lib/negocio/recolectarAnuncios.ts:145`), pero `motivoDeLoIncompleto`
+  (`lib/negocio/barrido.ts:835`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
-  (`lib/negocio/recolectarAnuncios.ts:261-320`): hoy son 13 `campaignId` numéricos distintos en el
+  (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`): hoy son 13 `campaignId` numéricos distintos en el
   primer toque (22:32 UTC); las 61 de la cuenta son las del comentario, contadas el 2026-09-16. Una
   campaña nueva cuyos leads no traigan el toque sería invisible, y eso no se puede ver desde la base.
 - **Hay una venta en el CRM que Sales no ve.** La etiqueta `venta_ganada` está en **1 contacto** y
@@ -527,7 +529,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion
   (`components/conversion/PanelDeConversion.jsx:122`) —Acquisition dejó de dibujarlo en AQ-4, el
   2026-09-30—, cuyas cohortes se anclan al día de
-  calendario (`lib/negocio/recorrido.ts:197-199`; el propio `lib/negocio/costoDelAnuncio.ts:61-63`
+  calendario (`lib/negocio/recorrido.ts:197-199`; el propio `lib/negocio/costoDelAnuncio.ts:62-64`
   lo admite). Y `lib/negocio/periodo.ts:76-77` sigue diciendo
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
   (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes.
@@ -540,7 +542,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   la campaña (el texto del aviso no se re-leyó acá). Desde AQ-4 (2026-09-30) el monitor está dormido:
   no se dibuja ni se calcula (`docs/OTROS/futuro/monitor-de-atribucion.md`).
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
-  (`lib/negocio/costoDelAnuncio.ts:288`), y hay **38 filas con gasto 0 y sin impresiones** (22:11
+  (`lib/negocio/costoDelAnuncio.ts:297`), y hay **38 filas con gasto 0 y sin impresiones** (22:11
   UTC); la nota se dibujaba en la tabla por anuncio de Acquisition, que salió con AQ-4. Creative lo
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
@@ -567,11 +569,11 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
 Un comentario falso es un defecto de primera clase: quien lo lee para decidir, decide sobre otro
 sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 
-- `lib/negocio/barrido.ts:243-245` cuenta **52 llamadas por día** «por cuatro días»; se releen dos
-  (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:59`), o sea 39, y
+- `lib/negocio/barrido.ts:243-245@d17e029` cuenta **52 llamadas por día** «por cuatro días»; se releen dos
+  (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:61`), o sea 39, y
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) midió 40.
 - `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone la tarea `anuncios` en «el cron de
-  las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:224`).
+  las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:228`).
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
   `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:319-320` pone `score` y `responsable_id` entre
   lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:421` y `lib/negocio/sincronizar.ts:481`,
@@ -582,12 +584,12 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 - `lib/ghl/cliente.ts:1` dice «Solo lectura de contactos»; el archivo pone y quita etiquetas
   (`lib/ghl/cliente.ts:590`, `lib/ghl/cliente.ts:636`).
 - **Cerrado el 2026-09-30 (AQ-1 de Acquisition).** La copia huérfana del bloque de
-  `lib/negocio/recolectarAnuncios.ts:550-564` se borró: en su lugar quedó el escritor de campañas.
-- `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412`) usa `toISOString()` sobre un `date`, que es
-  exactamente lo que `lib/negocio/recolectarAnuncios.ts:329-333` documenta como defecto al este de
+  `lib/negocio/recolectarAnuncios.ts:494-507` se borró: en su lugar quedó el escritor de campañas.
+- `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412@d17e029`) usa `toISOString()` sobre un `date`, que es
+  exactamente lo que `lib/negocio/recolectarAnuncios.ts:329-333@d17e029` documenta como defecto al este de
   UTC. En producción (UTC) no se nota; leído, no ejecutado.
-- `lib/negocio/costoDelAnuncio.ts:492` numera «2 ·» el tercer aviso (el de
-  `lib/negocio/costoDelAnuncio.ts:468` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el
+- `lib/negocio/costoDelAnuncio.ts:510` numera «2 ·» el tercer aviso (el de
+  `lib/negocio/costoDelAnuncio.ts:486` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el
   `adId` llega «si y sólo si» el lead entró por Facebook o Instagram; 01 midió hoy 4 de 217 que no
   (no re-medido).
 - `lib/negocio/recorrido.ts:193-195` justifica la ventana anclada porque Conversion cruza con el
@@ -789,12 +791,12 @@ el documento miente o si buscó mal.
   `docs/conversion/` a líneas de 07 no se revisaron acá.
 - **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:162`, `lib/negocio/rendimientoDelCreativo.ts:116`
   y `lib/negocio/rendimientoDelCreativo.ts:231` mandan el defecto de grano a las líneas 157-164 de
-  `costoDelAnuncio.ts`, y hoy está hacia `lib/negocio/costoDelAnuncio.ts:193`;
+  `costoDelAnuncio.ts`, y hoy está hacia `lib/negocio/costoDelAnuncio.ts:200`;
   `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las líneas 88-95, y está hacia
-  `lib/negocio/costoDelAnuncio.ts:118`; `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287 lo
-  que está en `lib/negocio/costoDelAnuncio.ts:288`; y `lib/negocio/recorrido.ts:189` manda a la 348 de
+  `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287 lo
+  que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189` manda a la 348 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
-  `lib/negocio/costoDelAnuncio.ts:346` y `lib/negocio/calidadDelCreativo.ts:228`.
+  `lib/negocio/costoDelAnuncio.ts:355` y `lib/negocio/calidadDelCreativo.ts:228`.
 
 Lo que haría falta: que la auditoría sume `docs/conversion/`, `docs/acquisition/` y los comentarios
 del código, y que las citas entre documentos de carpetas distintas vayan por sección y no por línea,

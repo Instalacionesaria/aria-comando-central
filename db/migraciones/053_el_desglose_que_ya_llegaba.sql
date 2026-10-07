@@ -55,7 +55,7 @@
 -- **Multiplica el grano.** La consulta de la pantalla divide una acción por impresiones. Las
 -- impresiones son UNA fila por (anuncio, día); las acciones serían quince a veinticinco. Unirlas
 -- multiplica el denominador y el hook rate sale unas veinte veces más chico y perfectamente
--- creíble. `lib/negocio/costoDelAnuncio.ts:157-164` documenta ese defecto para ESTE MISMO par de
+-- creíble. `lib/negocio/costoDelAnuncio.ts:158-165` documenta ese defecto para ESTE MISMO par de
 -- tablas: «Es el defecto clásico de unir dos hechos de distinto grano, y no falla: devuelve un
 -- número más grande.»
 --
@@ -76,7 +76,7 @@
 --
 -- El argumento a favor de la tabla hija era que sólo la existencia de una fila distingue «Meta no
 -- reportó ese tipo» de «reportó cero». Es falso: `acciones ? 'videoView'` hace lo mismo, y ese
--- operador ya está en producción en cinco lugares (`costoDelAnuncio.ts:346` y `:367`,
+-- operador ya está en producción en cinco lugares (`costoDelAnuncio.ts:355` y `:367`,
 -- `calidadDeLaAtribucion.ts:96`, `:114` y `:126`).
 --
 -- Y desaparece la parte más frágil de aquel diseño: con filas hijas había que borrar el sobrante
@@ -94,7 +94,7 @@ alter table negocio.metricas_de_anuncio
 -- atribución y uno que nunca se sincronizó se distinguen por `sincronizado_el`».
 --
 -- **Acá ese discriminador no sirve**, y es medible por qué: `diasQuePedir`
--- (`lib/negocio/recolectarAnuncios.ts:237`) sólo vuelve a pedir hoy, los dos días anteriores, y los
+-- (`lib/negocio/recolectarAnuncios.ts:237@d17e029`) sólo vuelve a pedir hoy, los dos días anteriores, y los
 -- días que no tienen NINGUNA fila. Las ~2.500 filas ya guardadas tienen fila, así que no se releen
 -- nunca y su `sincronizado_el` va a seguir diciendo lo mismo que hoy. Con `default '{}'`, esas
 -- 2.500 filas afirmarían «el proveedor mandó el desglose y estaba vacío» — una mentira sobre 2.500

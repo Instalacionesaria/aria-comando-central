@@ -102,7 +102,7 @@ de enlace — o sea la mitad de las cifras que este departamento publica.
 ### C8-17 · Y no cuesta ninguna llamada nueva
 
 El colector ya pide `/reporting/list?listType=ads` una vez por campaña y por día, en la tarea
-`anuncios` del cron de las `17 6 * * *` (`lib/negocio/barrido.ts:226`). **El desglose viene en esa
+`anuncios` del cron de las `17 6 * * *` (`lib/negocio/barrido.ts:230`). **El desglose viene en esa
 misma respuesta.**
 
 ### C8-18 · El desglose se guarda en una columna `jsonb`, no en columnas ni en una tabla hija
@@ -118,7 +118,7 @@ nuevo que GoHighLevel agregue sería otra migración»*.
 
 1. **Multiplica el grano.** Las impresiones son **una** fila por (anuncio, día); las acciones serían
    **15-25**. Unirlas para dividir multiplica el denominador y el hook rate sale ~20 veces más chico y
-   perfectamente creíble. `lib/negocio/costoDelAnuncio.ts:157-164` documenta ese defecto **para este
+   perfectamente creíble. `lib/negocio/costoDelAnuncio.ts:158-165` documenta ese defecto **para este
    mismo par de tablas**: *«no falla: devuelve un número más grande»*.
 2. **Costo de escritura.** El colector ya consume ~164 s del presupuesto de 120 s en su tramo fijo de
    tres días (12 campañas × 4,55 s medidos). Veinte inserciones más por anuncio-día encenderían
@@ -126,13 +126,14 @@ nuevo que GoHighLevel agregue sería otra migración»*.
 
 **Los dos ceros se conservan con la presencia de la clave**, no con la existencia de una fila:
 `acciones ? 'videoView'`. Ese operador ya está en producción en cinco lugares
-(`costoDelAnuncio.ts:307,327`; `calidadDeLaAtribucion.ts:111,114,126`).
+(`costoDelAnuncio.ts:316,327`; `calidadDeLaAtribucion.ts:111,114,126`).
 
 **Tres estados, y hay que declararlos en el `comment on column`**: `null` = no se leyó; `{}` = el
 proveedor mandó el desglose vacío; clave ausente = ese tipo no ocurrió, **que no es cero**.
 
 **Sin `not null default '{}'`**, al revés que la `048`: las ~2.500 filas ya guardadas no se vuelven a
-leer nunca —`diasQuePedir` sólo repide los días **sin ninguna fila**— así que un `'{}'` las haría
+leer nunca —`diasQuePedir` sólo repedía los días **sin ninguna fila**; desde la `076` el colector pide por
+(campaña, día) y no vuelve a leer lo que ya tiene— así que un `'{}'` las haría
 afirmar «Meta mandó un desglose vacío», que es una mentira sobre 2.500 filas.
 
 **La normalización a números va en el escritor.** Un `(acciones->>'videoView')::numeric` sobre un valor

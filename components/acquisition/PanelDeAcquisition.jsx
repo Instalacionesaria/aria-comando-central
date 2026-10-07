@@ -88,6 +88,9 @@ const FRASE = {
   noGuardo: 'No se pudo guardar. Reintenta.',
   cargando: 'Cargando…',
   faltanDias: 'Faltan días de gasto.',
+  faltaGasto: 'Falta gasto de algunas campañas.',
+  sinContactos: 'Sin contactos atribuidos',
+  inversionSinContactos: 'sin contactos atribuidos',
   sinHistoria: 'Sin historia para comparar.',
   hoySinCostos: 'Hoy, sin costos.',
   noFigura: 'No figura en Meta',
@@ -297,7 +300,15 @@ function Cifras({ e }) {
   const agendados = etapa(t, 'agendados');
   const cifras = [
     // La ventana siempre, también sin gasto: los contactos de abajo siguen siendo de esos días (A14-10).
-    ['Inversión', cf(t.inversion), t.variacionDeInversion, t.inversion > 0 ? rangoDe(e.ventana) : `${FRASE.sinGasto} · ${rangoDe(e.ventana)}`],
+    [
+      'Inversión',
+      cf(t.inversion),
+      t.variacionDeInversion,
+      t.inversion > 0
+        ? /* Lo que la cuenta gastó en campañas sin contactos atribuidos no paga ningún costo de personas (A14-19). */
+          `${rangoDe(e.ventana)}${t.inversionSinContactos > 0 ? ` · ${cf(t.inversionSinContactos)} ${FRASE.inversionSinContactos}` : ''}`
+        : `${FRASE.sinGasto} · ${rangoDe(e.ventana)}`,
+    ],
     ['Contactos', o(contactos?.valor, nf), contactos?.variacion, 'todas las campañas'],
     ['Clics a landing VSL', o(clics?.valor, nf), clics?.variacion, FRASE.deMeta],
     ['Agendados', o(agendados?.valor, nf), agendados?.variacion, 'volumen total'],
@@ -326,7 +337,10 @@ function Cifras({ e }) {
  */
 function Nota({ e }) {
   const motivos = [];
-  if (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto') motivos.push(FRASE.faltanDias);
+  /* `no_cuadra`: todos los días tienen el total de la cuenta y el detalle por campaña todavía no lo explica; el
+     relleno de cada hora lo está buscando (A14-19). Es otro hecho que «faltan días», y otra frase. */
+  if (e.gasto?.motivo === 'no_cuadra') motivos.push(FRASE.faltaGasto);
+  else if (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto') motivos.push(FRASE.faltanDias);
   else if (e.sinComparacion === 'sin_historia') motivos.push(FRASE.sinHistoria);
   if (e.sinCostos === 'hoy') motivos.push(FRASE.hoySinCostos);
   return (
@@ -521,6 +535,7 @@ function Tabla({ clave, cfg, g, campanas, abierta, alAlternar, puedeAsignar, alC
                   cfg={cfg}
                   grilla={grilla}
                   r={c.cifras}
+                  sinContactos={!c.conContactos}
                   nombre={c.nombre ?? c.campana}
                   pie={
                     <Pie c={c} puedeAsignar={puedeAsignar} alCambiar={alCambiar} />
@@ -542,9 +557,16 @@ function Tabla({ clave, cfg, g, campanas, abierta, alAlternar, puedeAsignar, alC
   );
 }
 
-/** Una fila: una campaña o el total del grupo. */
-function Fila({ cfg, grilla, r, nombre, pie, total = false }) {
+/**
+ * Una fila: una campaña o el total del grupo.
+ *
+ * `sinContactos`: la campaña nunca trajo un contacto con su campaña en la atribución —una de mensajes, cuyos
+ * contactos llegan sin `campaignId`—. Sus etapas de personas no son cero: no se sabe cuánta gente trajo, y se
+ * dibujan con el guion (A14-19). Los clics sí: los cuenta Meta.
+ */
+function Fila({ cfg, grilla, r, nombre, pie, total = false, sinContactos = false }) {
   const q = r.calificados;
+  const personas = (v) => (sinContactos ? FRASE.guion : nf(v));
   return (
     <div className={total ? 'row-i acq-tot' : 'row-i'} style={grilla}>
       <div>
@@ -554,7 +576,7 @@ function Fila({ cfg, grilla, r, nombre, pie, total = false }) {
       <div className="num">{cf(r.inversion)}</div>
       {r.etapas.map((s, i) => (
         <div className="num" key={s.etapa}>
-          <span>{o(s.valor, nf)}</span>
+          <span>{s.deMeta ? o(s.valor, nf) : o(s.valor, personas)}</span>
           <div className="acq-sub">
             {s.etapa === 'forms'
               ? FRASE.sinDato
@@ -563,7 +585,7 @@ function Fila({ cfg, grilla, r, nombre, pie, total = false }) {
         </div>
       ))}
       <div className="num acq-q">
-        <span>{nf(q.valor)}</span>
+        <span>{personas(q.valor)}</span>
         <div className="acq-sub">
           {q.variacion.tipo === 'sin_comparacion' ? FRASE.sinComparacion : <Delta v={q.variacion} />}
         </div>
@@ -592,7 +614,8 @@ function Pie({ c, puedeAsignar, alCambiar }) {
   const [guardando, setGuardando] = useState(null);
   const [fallo, setFallo] = useState('');
 
-  const estado = c.conocida ? `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta` : FRASE.noFigura;
+  const enMeta = c.conocida ? `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta` : FRASE.noFigura;
+  const estado = c.conContactos ? enMeta : `${enMeta} · ${FRASE.sinContactos}`;
   if (!puedeAsignar || !c.conocida) return estado;
 
   async function elegir(valor) {

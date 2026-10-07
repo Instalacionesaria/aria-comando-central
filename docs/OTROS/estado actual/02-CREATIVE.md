@@ -137,8 +137,8 @@ orden (`components/creative/PanelDeCreative.jsx:181-193`):
 **Las ventanas.** Los cuatro botones salen de `PERIODOS` (`lib/negocio/periodo.ts:83-96`). Las tres
 consultas anclan la ventana **al día de calendario** y no a 24 horas: los contactos con
 `alta_en_el_crm >= current_date - (días - 1)` (`lib/negocio/calidadDelCreativo.ts:228`) y las
-métricas con `fecha > current_date - días` (`lib/negocio/costoDelAnuncio.ts:82-84`), por el motivo
-que explica `lib/negocio/costoDelAnuncio.ts:34-65`.
+métricas con `fecha > current_date - días` (`lib/negocio/costoDelAnuncio.ts:83-85`), por el motivo
+que explica `lib/negocio/costoDelAnuncio.ts:35-66`.
 
 **Lo que dibuja hoy con 30 días**, repitiendo las consultas de los tres módulos contra producción:
 
@@ -190,7 +190,7 @@ de este período…»* más *«9 de 14 pieza(s) no llegan a 10 contactos»*.
 
 **Con «Hoy» y «7 días» casi no hay pantalla**: la cohorte es de 1 y 3 contactos, la subasta lista las
 32 piezas con guiones —las 79 filas diarias existen, ninguna trae impresiones
-y cada `sum` da nulo (`lib/negocio/costoDelAnuncio.ts:282-288`)— y el bloque de fatiga no se dibuja
+y cada `sum` da nulo (`lib/negocio/costoDelAnuncio.ts:291-297`)— y el bloque de fatiga no se dibuja
 (`components/creative/PanelDeCreative.jsx:576`). Con «Completo»: 570 contactos, 37 filas, y la más
 grande es «agendamiento - yaping - 23/07» **sin etapa** (196 contactos, 16 % de agenda): son altas
 del 2026-08-07 al 08-31 que no traen ningún nombre de campaña del que leer la etapa.
@@ -282,7 +282,7 @@ ventana de 30 días son 134 filas: 91,0 %, 70,9 %, 64,9 % y 91,8 %.
 
 **La pauta está sin entrega desde el 2026-09-14.** Por semana: 60 filas con impresiones la del 7 de
 septiembre, **cero** las del 14, el 21 y el 28, con el colector escribiendo todos los días (última
-pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:246-250`). Los contactos
+pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:251-255`). Los contactos
 nuevos caen igual: 89 la semana del 7, 4, 3 y 1 después. Es consistente con que la pauta se apagó y
 no con una ingesta rota —el barrido de contactos también corre—, lo mismo que midió Conversion
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:178-191`). **No verificado contra la
@@ -325,7 +325,7 @@ repositorio: buscando `graph.facebook` en `lib/`, `app/` y `scripts/` no aparece
 **Tres que llegan y no se usan, a propósito:**
 
 - **La frecuencia y el alcance** llegan por día y por anuncio, y no se agregan: sumarlos cuenta varias
-  veces a la misma persona (`lib/negocio/costoDelAnuncio.ts:115-125`,
+  veces a la misma persona (`lib/negocio/costoDelAnuncio.ts:116-126`,
   `lib/negocio/fatigaDelCreativo.ts:6-19`).
 - **`results.lead`** es de Meta y suma dos mecanismos de conteo que ocurren en los mismos anuncios;
   dividirlo por impresiones publicaría el doble (`lib/negocio/rendimientoDelCreativo.ts:100-123`,
@@ -455,7 +455,7 @@ Hoy se cuenta con un `exists` compartido, `tieneCitaAlcanzable`, y no con un `jo
 
 **1 · La pantalla describe con precisión un período que terminó, y no lo dice.** Desde el 2026-09-14
 no hay impresiones, pero el colector escribe las 79 filas de cada día, así que las fechas del gasto
-son las de las filas y no las de la entrega (`lib/negocio/costoDelAnuncio.ts:381-406`): la frase
+son las de las filas y no las de la entrega (`lib/negocio/costoDelAnuncio.ts:381-406@d17e029`): la frase
 dice «El gasto, del 30 ago al 28 sep» sobre un gasto que termina el 13. El aviso de «ventana
 incompleta» de `costoDelAnuncio` no se enciende por lo mismo, y Creative no lo lee. Lo único que lo
 delata es la nota de cada pieza, detrás de un ícono. **Si la pauta no vuelve, desde el 2026-10-13 la
@@ -483,7 +483,7 @@ módulo dice que viajan para que se vea sobre qué base se calló
 **4 · «Hoy» dice 24 horas y calcula el día.** El botón lleva de título el matiz de `PERIODOS`, *«Las
 últimas 24 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
 `components/creative/PanelDeCreative.jsx:127`), y los tres módulos calculan el día de calendario, como
-`costoDelAnuncio` deja escrito para su pantalla (`lib/negocio/costoDelAnuncio.ts:58-63`). En la sesión
+`costoDelAnuncio` deja escrito para su pantalla (`lib/negocio/costoDelAnuncio.ts:59-64`). En la sesión
 de mi medición `current_date` es UTC y la organización es de `America/Lima`; la zona de la sesión de
 la aplicación no la verifiqué. Además Leads Portal arma su «30 días» con `now()` móvil
 (`lib/negocio/leadsDelPortal.ts:300`): hoy 277 contactos contra los 276 de Creative, con la misma
@@ -493,7 +493,7 @@ etiqueta.
 `lib/negocio/calidadDelCreativo.ts:228`, `lib/negocio/calidadDelCreativo.ts:266`,
 `lib/negocio/calidadDelCreativo.ts:283` y `lib/negocio/calidadDelCreativo.ts:330` repiten a mano el
 predicado que `lib/negocio/recorrido.ts:197-199` exporta como «un solo lugar», y `costoDelAnuncio`
-suma dos más (`lib/negocio/costoDelAnuncio.ts:346` sus leads, `lib/negocio/costoDelAnuncio.ts:368` su
+suma dos más (`lib/negocio/costoDelAnuncio.ts:355` sus leads, `lib/negocio/costoDelAnuncio.ts:377` su
 cobertura de `adId`). Hoy son idénticas; si una cambia, la misma etiqueta cubrirá dos ventanas distintas.
 
 **6 · Un `results` con otra forma se tiraría en silencio.** `desglose()` devuelve `acciones: null` y
@@ -504,9 +504,9 @@ Con otra, el hook rate y las tasas de enlace pasarían a «el proveedor no repor
 
 **7 · Los comentarios de los módulos citan líneas que se corrieron.** Varias citas a
 `costoDelAnuncio` y a `indicadoresDeCitas` dentro de los tres módulos resuelven y muestran otra cosa:
-el defecto de grano que citan está hoy en `lib/negocio/costoDelAnuncio.ts:188-194`, el alcance que no
-se suma en `lib/negocio/costoDelAnuncio.ts:115-125`, el `gasto is not null` en
-`lib/negocio/costoDelAnuncio.ts:288` y el conteo de congeladas de `tasaDeCancelacion` en
+el defecto de grano que citan está hoy en `lib/negocio/costoDelAnuncio.ts:195-201`, el alcance que no
+se suma en `lib/negocio/costoDelAnuncio.ts:116-126`, el `gasto is not null` en
+`lib/negocio/costoDelAnuncio.ts:297` y el conteo de congeladas de `tasaDeCancelacion` en
 `lib/negocio/indicadoresDeCitas.ts:350`. Una línea corrida no falla: manda a leer otra cosa.
 
 **8 · Executive publica un Creative sano y activo.** «8 piezas activas» con punto verde, y un «hook

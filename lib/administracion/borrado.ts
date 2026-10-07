@@ -128,6 +128,10 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      nombres se vuelven a leer de GoHighLevel, pero **borrarlos no es gratis**: el funnel asignado a
      mano a cada campaña (`066`) cascadea desde acá, y ése no se vuelve a leer de ningún lado. */
   campanas_org_id_fkey: 'tiene las campañas de Meta cargadas',
+  /* El gasto diario de la cuenta y lo ya leído por campaña (`076`): los escribe el mismo colector y se
+     vuelven a leer de GoHighLevel, así que la acción es la misma que con los anuncios. */
+  gasto_de_la_cuenta_org_id_fkey: 'tiene el gasto diario de la cuenta publicitaria cargado',
+  lecturas_de_gasto_org_id_fkey: 'tiene el gasto de sus campañas por día cargado',
   /* El funnel de cada campaña (`066`). A diferencia de las de arriba, esto lo decide una persona:
      borrarlo pierde una decisión, no un dato que se vuelve a leer.
 

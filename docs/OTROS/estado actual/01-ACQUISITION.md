@@ -74,7 +74,7 @@ foto anterior, `Downloads\AIOS\AIOS_Arquitectura_Funcional_v0.2.md`, ya no exist
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`).
   Contra el código de hoy: el 1 (confirmar campos) está medido uno por uno en
   `lib/ghl/anuncios.ts:62-74`; el 2 (frecuencia) es una pasada diaria a las 06:17 UTC con relectura
-  de dos días (`lib/negocio/barrido.ts:246-250`, `lib/negocio/recolectarAnuncios.ts:59`); el 3
+  de dos días (`lib/negocio/barrido.ts:251-255`, `lib/negocio/recolectarAnuncios.ts:61`); el 3
   (guardar por día) es `negocio.metricas_de_anuncio`, con llave `(org_id, meta_anuncio_id, fecha)`
   (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`); el 5 (UTM) lo mide el monitor, con
   el defecto del § 7, riesgo 3; el 6 y el 7 están medidos en la pantalla, salvo las ventas, que no
@@ -118,14 +118,14 @@ orden (`Cuerpo`, `:205-216`):
 
 **Ventanas y pisos.** Cuatro botones de `lib/negocio/periodo.ts:83-96`, 30 días por omisión
 (`:109`). El reloj recarga sólo con la pestaña a la vista (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 87-89)). El
-costo usa **días de calendario terminando hoy** (`lib/negocio/costoDelAnuncio.ts:34-65`: el gasto
+costo usa **días de calendario terminando hoy** (`lib/negocio/costoDelAnuncio.ts:35-66`: el gasto
 por `:82-84`, y los leads y la cobertura con su propia copia, `:346` y `:368`); el monitor usa
 **ventanas móviles de 24 horas** en la pantalla (`lib/negocio/calidadDeLaAtribucion.ts:103-107`, `:131`, `:145`, `:157`);
 el detector de Acquisition le pasa los días cerrados de la pantalla (AG9) —ver
 § 7, riesgo 2—. El piso es `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`): la
-tasa de agenda es nula por debajo (`costoDelAnuncio.ts:213`) y también las proporciones del monitor
+tasa de agenda es nula por debajo (`costoDelAnuncio.ts:220`) y también las proporciones del monitor
 (`calidadDeLaAtribucion.ts:261`); el CPL se publica con un solo lead, a propósito
-(`costoDelAnuncio.ts:139-148`). El umbral que declara una cobertura incompleta es
+(`costoDelAnuncio.ts:140-149`). El umbral que declara una cobertura incompleta es
 `COBERTURA_SUFICIENTE = 0.9`, **elegido sin medir contra nada** y así dicho
 (`calidadDeLaAtribucion.ts:73-80`).
 
@@ -137,7 +137,7 @@ produce sobre esos datos, no lo que se vio:
 
 - **Encabezado**: «Del 30 ago al 28 sep, que es lo que hay guardado» y **1.974,93 en 26 anuncios de
   79**. Aviso grave, el de cobertura: «77 de 276 contactos de esta ventana no traen anuncio…»
-  (`costoDelAnuncio.ts:479-490`).
+  (`costoDelAnuncio.ts:497-508`).
 - **Monitor** (a esa hora): contactos que conservan el anuncio **71,8 % · 199 de 277**; citas
   **39 % · 82 de 210**; ventas **— · 0 de 0**; contactos que conservan la campaña **90,6 % · 251 de
   277** (sin consecuencia, pasa el 0,9); sesiones con UTM incompletas **100 % · 264 de 264**. El
@@ -149,7 +149,7 @@ produce sobre esos datos, no lo que se vio:
   35,3 %. **Tres de esas cinco son idénticas a las que `7f6235c` publicó el 2026-09-16**: después
   del 13 no se gastó nada más. Las otras dos eran 564,26 y 200,03 y bajan porque la ventana arranca
   el 30 de agosto; la primera de entonces (744,58) gastó todo antes. 13 anuncios gastaron sin leads, y
-  ese aviso no sale: va antes el de cobertura, y sale uno solo (`costoDelAnuncio.ts:421-425`, `:492-496`).
+  ese aviso no sale: va antes el de cobertura, y sale uno solo (`costoDelAnuncio.ts:428-432`, `:492-496`).
 - **«Hoy» y «7 días»**: 79 filas con 0 leads y todo lo demás en guion; encabezado «—» en 0 anuncios
   de 79; **ningún aviso de costo** (la cobertura tiene 1 y 3 contactos, bajo el piso) y el monitor con
   todas sus proporciones nulas.
@@ -248,16 +248,16 @@ el 18, las 869 filas son nulas**. Último día con gasto mayor que cero: 2026-09
 **La dimensión.** `negocio.anuncios`: 79 anuncios, **32 nombres distintos** (21 nombres repetidos,
 hasta seis anuncios con el mismo), 12 campañas. `meta_conjunto_id` está en **59 de 79**, con 11
 valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde entonces el
-`coalesce` de `lib/negocio/recolectarAnuncios.ts:402` conserva lo que llega. **Ninguna línea del
+`coalesce` de `lib/negocio/recolectarAnuncios.ts:228` conserva lo que llega. **Ninguna línea del
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:859`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:897`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
 motivo no nombra la campaña. Pide 13 campañas, las que aparecen en nuestra atribución
-(`recolectarAnuncios.ts:261-320`); 1 contacto lleva `888888`.
+(`recolectarAnuncios.ts:261-320@d17e029`); 1 contacto lleva `888888`.
 
 **Los contactos.** 594 en total (584 el 2026-09-15). Con `adId`, **213**; con `campaignId`, **358**;
 15 anuncios distintos: **las tres cifras son las mismas que midió `3d96e8c` el 2026-09-16**. Por
@@ -266,6 +266,7 @@ y 1** en las tres semanas siguientes, **ninguno con anuncio ni con campaña ni `
 último contacto con `adId` o `campaignId` entró el **2026-09-13 a las 05:13 UTC**. La ingesta sí
 anda: `max(creado_el)` es del 28 a las 13:50 UTC y 569 de 594 contactos se tocaron en la hora previa
 a las 18:05 UTC. Meta y el CRM coinciden: no hay pauta en las 13 campañas que se piden (§ 5.10).
+**Corregido el 2026-10-07 (`076`)**: la cuenta sí gastó. Las 13 campañas que el colector pedía no gastaban, pero una campaña de mensajes —cuyos contactos llegan sin `campaignId`, así que no estaba en la lista— gastó 200,19 del 30-sep al 6-oct; del 12-sep al 6-oct la cuenta gastó 838,58, medido con la serie de la cuenta contra el Administrador de anuncios (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-23).
 
 **La cobertura por puerta, sobre los 358 con campaña**: `facebook`/`instagram` **213 de 213** con
 `adId`, `External Form` **0 de 98**, `calendar` **0 de 47**. Idéntica a la de `3d96e8c`. Sobre todos
@@ -286,7 +287,7 @@ no es un único valor. 6 de los 10 cruzan con un `meta_conjunto_id` de la dimens
 
 **Primer y último toque.** `atribucion_ultima` trae `adId` en 87 de 594; un solo contacto cambió de
 anuncio entre los dos toques. Para Acquisition manda `atribucion_primera`, y es la que leen
-`costoDelAnuncio.ts:331` y `calidadDeLaAtribucion.ts:111`.
+`costoDelAnuncio.ts:340` y `calidadDeLaAtribucion.ts:111`.
 
 **Del 2026-09-15, no re-medidos**: los campos del CRM resueltos por nombre («Puntaje | ICP» 229 de
 233, «Last Landing URL» 99, siete campos del catálogo en cero, cuatro de ellos de video) y las once
@@ -321,9 +322,9 @@ CTR sí existe, y la publica Creative: § 2): 0 columnas `entity_type`/`entity_i
 como «— · 0 de 0» y no como 0 %, que es lo correcto.
 
 **6 · La frecuencia de sincronización de Meta.** Resuelta en forma —una pasada diaria que relee hoy
-y dos días atrás y rellena los huecos del resto (`recolectarAnuncios.ts:192-259`)— y **no medida en
+y dos días atrás y rellena los huecos del resto (`recolectarAnuncios.ts:192-259@d17e029`)— y **no medida en
 fondo**: cuánto tarda esta cuenta en estabilizar sus cifras está declarado sin medir
-(`recolectarAnuncios.ts:33-40`), con `sincronizado_el` guardado para poder medirlo.
+(`recolectarAnuncios.ts:33-40@d17e029`), con `sincronizado_el` guardado para poder medirlo.
 
 **7 · La diferencia entre leads de Meta y de la base (§ 18.14).** Fuera de alcance y dibujada así
 (`calidadDeLaAtribucion.ts:215-221`): el `leads` del proveedor es nuestro conteo, 16 de 16 el
@@ -335,14 +336,16 @@ pasada: detectar un cambio exige una tabla de cambios que no existe
 (`calidadDeLaAtribucion.ts:26-29`).
 
 **9 · Lo que se guarda y no se dibuja.** Alcance y frecuencia por día (no se pueden sumar,
-`costoDelAnuncio.ts:115-125`), impresiones, clics y CPC. Y **ningún corte por ad set ni por
+`costoDelAnuncio.ts:116-126`), impresiones, clics y CPC. Y **ningún corte por ad set ni por
 campaña** en esta pantalla, aunque `meta_conjunto_id` y `meta_campana_id` están en la dimensión.
 
 **10 · Las campañas que nuestra atribución no nombra.** El colector pide sólo las campañas que
-aparecen en `atribucion_primera` (`recolectarAnuncios.ts:266-267`: la cuenta tenía 61 y nosotros 13).
+aparecen en `atribucion_primera` (`recolectarAnuncios.ts:266-267@d17e029`: la cuenta tenía 61 y nosotros 13).
 Una campaña nueva cuyos leads entren por formulario o calendario —que no traen campaña, § 4— nunca
 se pediría, y su gasto no existiría para esta pantalla. Si hay una campaña así desde el 13 de
-septiembre, **no verificado**: desde la base no se puede ver.
+septiembre, **no verificado**: desde la base no se puede ver. **Pasó, y se cerró el 2026-10-07 (`076`)**: la
+había, una campaña de mensajes, y la app decía 0 de inversión en 7 días contra 200,19 de Meta. El colector
+pide ahora todas las campañas de la cuenta, y un día está completo cuando cuadra con el total de la cuenta.
 
 **11 · Calificado y costo por calificado.** Dependen de que Business exponga la calificación
 (§ 18.7); la decisión de quién define «calificado» sigue abierta.
@@ -354,46 +357,46 @@ septiembre, **no verificado**: desde la base no se puede ver.
 ## 6 · Reglas propias
 
 **1 · La clave del anuncio es `adId`, nunca el nombre.** La tabla agrupa por `meta_anuncio_id`
-(`costoDelAnuncio.ts:295`); con 79 anuncios y 32 nombres, agrupar por nombre fundiría campañas
+(`costoDelAnuncio.ts:304`); con 79 anuncios y 32 nombres, agrupar por nombre fundiría campañas
 distintas. El § 18.5 lo pide así.
 
 **2 · Las métricas son nulables y el guion es «no se sabe».** El proveedor omite las claves cuando
 el anuncio no entregó, y un 0 en su lugar borraría la diferencia con «entregó gratis»
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:176-190`); `sum` ignora los nulos y devuelve
-nulo si todos lo son (`costoDelAnuncio.ts:282-285`). Medido hoy hay un tercer estado que la regla no
+nulo si todos lo son (`costoDelAnuncio.ts:291-294`). Medido hoy hay un tercer estado que la regla no
 previó: **38 filas con gasto 0,00 y sin impresiones**, todas entre el 19 de agosto y el 17 de
 septiembre (§ 7, riesgo 4).
 
 **3 · Las derivadas se calculan sobre las sumas**, no promediando las del proveedor
-(`costoDelAnuncio.ts:311-316`); alcance y frecuencia no se agregan (`:115-125`).
+(`costoDelAnuncio.ts:320-325`); alcance y frecuencia no se agregan (`:115-125`).
 
 **4 · Gasto y leads van en dos consultas.** Tienen grano distinto y unirlos multiplica el gasto por
-los leads sin fallar (`costoDelAnuncio.ts:185-194`).
+los leads sin fallar (`costoDelAnuncio.ts:192-201`).
 
 **5 · La ventana del costo se ancla al día.** El gasto vive en un `date`; recortarlo con `current_date`
-y los leads con `now()` dividía 31 días entre 30 (`costoDelAnuncio.ts:34-65`). Consecuencia
+y los leads con `now()` dividía 31 días entre 30 (`costoDelAnuncio.ts:35-66`). Consecuencia
 declarada: acá «Hoy» es el día de calendario (`:61-63`). La excepción no alcanzó al monitor.
 
-**6 · La cohorte se arma con `alta_en_el_crm`**, no con `creado_el` (`costoDelAnuncio.ts:346`,
+**6 · La cohorte se arma con `alta_en_el_crm`**, no con `creado_el` (`costoDelAnuncio.ts:355`,
 `calidadDeLaAtribucion.ts:131`), con el índice que la 052 agregó para eso
 (`db/migraciones/052_el_indice_que_la_048_dejo_debiendo.sql:1-20`).
 
 **7 · La fila «sin anuncio» se cuenta pero no compite.** Hoy se cumple por omisión: la tabla no
 tiene fila sin anuncio, y el tamaño del hueco viaja aparte, en `cobertura` y en el monitor
-(`costoDelAnuncio.ts:177-181`). Es el mismo criterio que la fila «Otras» sin tasa de
+(`costoDelAnuncio.ts:178-182`). Es el mismo criterio que la fila «Otras» sin tasa de
 `lib/negocio/atribucionDelLead.ts:195-198`.
 
 **8 · Manda el primer toque.** `atribucion_primera` tiene `adId` en 213 contactos y
 `atribucion_ultima` en 87 (§ 4).
 
 **9 · El piso es para proporciones; el CPL se publica con un lead**, porque es un hecho y no una
-tasa, y `leads` viaja al lado (`costoDelAnuncio.ts:139-148`, `:212-213`).
+tasa, y `leads` viaja al lado (`costoDelAnuncio.ts:140-149`, `:212-213`).
 
 **10 · La cobertura va arriba y en la misma respuesta** (`app/api/acquisition/route.ts` (en `4365cc9`, líneas 17-22),
-`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 209-212)), con sus dos términos (`costoDelAnuncio.ts:177-181`).
+`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 209-212)), con sus dos términos (`costoDelAnuncio.ts:178-182`).
 
 **11 · Un aviso por bloque, elegido por lo que más invalida**: la ventana cortada antes que la
-cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnuncio.ts:421-425`,
+cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnuncio.ts:428-432`,
 `:445-496`).
 
 **12 · El punto invertido se marca**, o una barra llena diría «bien» en cuatro filas y «mal» en una
@@ -403,7 +406,7 @@ cobertura, y ésta antes que los anuncios que gastaron sin leads (`costoDelAnunc
 acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 326-339)).
 
 **14 · El colector reconcilia y no olvida.** Pide lo que falta, no lo que sigue a una marca de agua
-(`recolectarAnuncios.ts:192-259`), y conserva el conjunto que ya sabía (`:351`).
+(`recolectarAnuncios.ts:192-259@d17e029`), y conserva el conjunto que ya sabía (`:351`).
 
 ---
 
@@ -411,14 +414,14 @@ acción que el § 18.10 prohíbe decidir sin validación (`PanelDeAcquisition.js
 
 **1 · La ventana por omisión describe treinta días de una pauta que gastó en quince.** El
 encabezado dice «Del 30 ago al 28 sep» porque `hasta` es el máximo de `fecha` y hay filas —vacías—
-de todos los días (`costoDelAnuncio.ts:381-406`); por lo mismo, el aviso de ventana incompleta no
+de todos los días (`costoDelAnuncio.ts:381-406@d17e029`); por lo mismo, el aviso de ventana incompleta no
 puede dispararse (`:445-466`). Dividir 1.974,93 por 30 da 65,83 por día; el gasto real fue de 131,66
 por día durante 15 días y ninguno los otros 15 (casi todas filas nulas, «no entregó»: § 4). Nada en
 la pantalla dice «no hay gasto desde el 13».
 
 **2 · «Hoy» son dos ventanas en la misma pantalla.** El botón lleva el matiz «Las últimas 24 horas,
 no el día del calendario» (`lib/negocio/periodo.ts:84`, puesto como `title` en
-`PanelDeAcquisition.jsx` (en `4365cc9`, línea 133)); el costo usa el día de calendario (`costoDelAnuncio.ts:61-63`) y el
+`PanelDeAcquisition.jsx` (en `4365cc9`, línea 133)); el costo usa el día de calendario (`costoDelAnuncio.ts:62-64`) y el
 monitor 24 horas móviles (`calidadDeLaAtribucion.ts:131`). La ruta afirma que las dos cifras reciben
 «LA MISMA ventana» (`app/api/acquisition/route.ts` (en `4365cc9`, líneas 24-25)): reciben los mismos días, no el mismo
 ancla. Medido a 30 días el 2026-09-28: **276 contactos en el aviso del costo y 277 en el monitor**,
@@ -433,7 +436,7 @@ grave de hoy manda a revisar enlaces que, según la URL de aterrizaje que midió
 (con `utm_campaign=` adentro, 2026-09-15), están bien armados.
 
 **4 · «Entregó N días» cuenta días sin impresiones.** `diasConEntrega` cuenta `gasto is not null`
-(`costoDelAnuncio.ts:288`) y la nota dice «Entregó N días de la ventana»
+(`costoDelAnuncio.ts:297`) y la nota dice «Entregó N días de la ventana»
 (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 380-386)). Medido a 30 días: el anuncio de mayor gasto dice 16 y tuvo
 impresiones en 12; 14 de los 79 anuncios dan cifras distintas por las dos vías; dos anuncios
 figuran con gasto cero y «Entregó» uno o dos días sin una sola impresión. Creative lo corrigió de su
@@ -474,23 +477,23 @@ otro texto, y la versión que citaban queda en git (`bddb516`, movida por `e6308
 carpeta que cita esta foto, `docs/acquisition/11-LOS-SEIS-COMPONENTES.md:97`, manda al ad set a las
 líneas 277-280, que son la cohorte vieja: el párrafo del ad set es el que sigue (§ 4, «El ad set»).
 
-**11 · Comentarios del código que ya no dicen la verdad.** `lib/negocio/barrido.ts:243-245` sigue
+**11 · Comentarios del código que ya no dicen la verdad.** `lib/negocio/barrido.ts:243-245@d17e029` sigue
 contando «cuatro días… 52 llamadas» cuando la relectura bajó a dos días y 39 llamadas
-(`lib/negocio/recolectarAnuncios.ts:59`, `:78-79`);
+(`lib/negocio/recolectarAnuncios.ts:61`, `:78-79`);
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone el cron a las 17:06 UTC y es a las
-06:17 (`lib/negocio/barrido.ts:224`). `lib/negocio/costoDelAnuncio.ts:443-444` justifica el umbral de
+06:17 (`lib/negocio/barrido.ts:228`). `lib/negocio/costoDelAnuncio.ts:451-452` justifica el umbral de
 dos días con que «el colector pide hoy y los tres anteriores», y pide hoy y los dos anteriores.
 
 Seis citas a `costoDelAnuncio.ts` desde otros módulos quedaron corridas (se da la línea que citan
 de ese archivo y dónde está hoy lo citado): `lib/negocio/calidadDelCreativo.ts:162`,
 `lib/negocio/rendimientoDelCreativo.ts:116` y `:231` mandan a la 157-164 por el defecto de grano,
-que está en `costoDelAnuncio.ts:185-194`; `lib/negocio/fatigaDelCreativo.ts:7` manda a la 88-95 por
-el alcance, que está en `costoDelAnuncio.ts:115-125`; `lib/negocio/recorrido.ts:189` manda a la 348
-por la ventana de la cohorte, que está en `costoDelAnuncio.ts:346`; y
-`lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287, que está en `costoDelAnuncio.ts:288`.
+que está en `costoDelAnuncio.ts:192-201`; `lib/negocio/fatigaDelCreativo.ts:7` manda a la 88-95 por
+el alcance, que está en `costoDelAnuncio.ts:116-126`; `lib/negocio/recorrido.ts:189` manda a la 348
+por la ventana de la cohorte, que está en `costoDelAnuncio.ts:355`; y
+`lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287, que está en `costoDelAnuncio.ts:297`.
 
-Y `comoDia` (`costoDelAnuncio.ts:409-412`) formatea con `toISOString()` un `date` que el
-controlador entrega a medianoche local —el defecto exacto que `recolectarAnuncios.ts:329-333`
+Y `comoDia` (`costoDelAnuncio.ts:409-412@d17e029`) formatea con `toISOString()` un `date` que el
+controlador entrega a medianoche local —el defecto exacto que `recolectarAnuncios.ts:329-333@d17e029`
 documenta—: al este de Greenwich `desde` y `hasta` saldrían un día antes. En producción, que corre en
 UTC, no se nota; **leído del código, no ejecutado**.
 

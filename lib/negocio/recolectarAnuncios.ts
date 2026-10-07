@@ -1,4 +1,4 @@
-// Traer de GoHighLevel lo que costó cada anuncio cada día, y guardarlo por fecha.
+// Traer de GoHighLevel lo que costó cada anuncio cada día, y el total diario de la cuenta, y guardarlos por fecha.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTE MÓDULO HACE INNECESARIO
@@ -12,12 +12,31 @@
 //
 // Misma propiedad que gobierna `barrido.ts`: el cron de Vercel admite corridas perdidas y corridas
 // duplicadas, y no reintenta nunca. Así que nada se acumula y nada se incrementa — cada pasada
-// mira qué días faltan, los pide, y los reescribe. Una pasada perdida se arregla sola en la
-// siguiente porque el último día guardado no avanzó.
+// mira qué falta, lo pide, y lo reescribe. Una pasada perdida se arregla sola en la siguiente,
+// porque lo que faltaba sigue faltando.
 //
 // Y eso es lo que permite que el `on conflict` REESCRIBA en vez de ignorar: **Meta corrige datos
 // hacia atrás**, así que la fila de anteayer puede cambiar mañana sin que nada falle. Ignorar el
 // conflicto congelaría la primera lectura, que suele ser la peor.
+//
+// ── TODA LA CUENTA, NO LA ATRIBUCIÓN (`076`) ────────────────────────────────
+//
+// Hasta el 2026-10-07 este colector pedía sólo las campañas que aparecían en nuestra atribución: 13 de 61.
+// Una campaña de mensajes, cuyos contactos llegan como `instagram` o `facebook` sin `campaignId`, no podía
+// entrar nunca, y la app decía 0 de inversión en 7 días contra 200,19 del Administrador de anuncios. Nadie lo
+// vio porque «completo» quería decir «el día tiene filas», y las filas nulas de las campañas pausadas tapaban
+// a la única que gastó.
+//
+// Ahora el universo son las campañas de la cuenta (`negocio.campanas`), y la referencia es el total diario de
+// la cuenta (`negocio.gasto_de_la_cuenta`): un día está completo cuando la suma por anuncio cuadra con él
+// (`gastoDeLaCuenta.ts`). Lo ya leído se anota por (campaña, día) en `negocio.lecturas_de_gasto`.
+//
+// Son dos tareas, y este archivo tiene los escritores de las dos:
+//
+//   · ésta, `anuncios`, una vez por día: el vínculo, las campañas, la serie de la cuenta, y hoy, ayer y
+//     anteayer de las campañas que pueden estar gastando;
+//   · `anuncios_relleno` (`rellenarAnuncios.ts`), cada hora: los días cerrados que no cuadran, desde el
+//     primero guardado, buscando con rangos qué campaña gastó.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -26,80 +45,73 @@ import {
   estructuraDeAnuncios,
   integracionDeAnuncios,
   metricasPorAnuncio,
+  serieDeLaCuenta,
+  type DiaDeLaCuenta,
   type EntidadDeAnuncio,
   type MetricaDeAnuncio,
 } from '../ghl/anuncios.ts';
+import { diaUtc, paresDelTramoFijo, sumarDias, TOLERANCIA_DEL_CUADRE } from './gastoDeLaCuenta.ts';
 
 /**
- * Cuántos días hacia atrás se vuelven a pedir en cada pasada.
+ * Cuántos días hacia atrás de hoy pide SIEMPRE la pasada diaria: hoy, ayer y anteayer.
  *
- * **Cuántos días conviene releer no está medido, y hay que decirlo.** Meta corrige cifras hacia
- * atrás y no sabemos cuánto tarda esta cuenta en estabilizarlas. Lo que sí queda hecho es la forma
- * de medirlo: `metricas_de_anuncio.sincronizado_el` guarda cuándo se leyó cada fila, así que
- * comparar dos lecturas del mismo día dice cuánto se movió y con cuánto retraso.
- *
- * ── PERO EL VALOR SÍ ESTÁ MEDIDO, Y ES EL QUE ENTRA EN EL PRESUPUESTO ──────
- *
- * Empezó en 3 y **no cabía**. La cuenta, con las cifras de producción del 2026-09-18:
- *
- *     13 campañas × 4,55 s por llamada  =  59 s por día pedido
- *     ventana = hoy + DIAS_QUE_SE_RELEEN
- *
- * Con 3, la ventana son 4 días = 237 s contra un `PRESUPUESTO_MS` de 120 s: el guardia cortaba
- * siempre y `atrasado` quedaba en verdadero **todas las pasadas** — que es un aviso que aparece
- * siempre, o sea uno que nadie lee.
- *
- * Con 2, la ventana son 3 días = 177 s. El guardia se comprueba ANTES de cada día, así que el
- * tercero arranca con 118 s gastados y entra: la pasada completa la ventana y `atrasado` queda en
- * falso, que es lo que lo vuelve una señal.
- *
- * Subirlo exige subir el presupuesto, y el presupuesto está atado al `maxDuration` de 300 s de la
- * función entera del cron. No es una preferencia: es lo que cabe.
+ * Dos y no más porque el día de la cuenta termina, en el peor huso, a las 00:00 UTC de dos días después
+ * (`finSeguro`): la lectura de anteayer en esta pasada ya es final, y de ahí para atrás se ocupa el relleno.
  */
 export const DIAS_QUE_SE_RELEEN = 2;
 
 /**
- * Cuántos días se piden la primera vez, cuando la tabla está vacía para esta organización.
+ * Cuántos días de la serie de la cuenta se piden la primera vez, cuando la empresa no tiene nada guardado.
  *
  * Treinta porque es la ventana que las pantallas de este sistema ofrecen (`lib/negocio/periodo.ts`),
- * no porque el proveedor tenga ese límite. Cuesta 13 × 30 = 390 llamadas **una sola vez**.
+ * no porque el proveedor tenga ese límite. La serie son dos llamadas por cada cuarenta días.
  */
 export const DIAS_DE_RELLENO = 30;
 
 /**
- * El tope de días de UNA pasada, y por qué existe.
+ * Cuántos días de la serie de la cuenta se releen en cada pasada diaria.
  *
- * Sin él, una organización que estuvo un mes sin corridas pediría trece llamadas por cada día
- * perdido en una sola función de 300 segundos. Con él, la pasada hace lo que entra y la siguiente
- * sigue desde donde quedó — que es la misma reconciliación de siempre, aplicada al calendario.
+ * Para ver las correcciones de Meta: un total que cambia marca `cambio_el`, y el relleno vuelve a pedir lo que
+ * esas campañas gastaron. Sesenta días cubren con holgura la ventana de atribución más larga de Meta, que es de
+ * 28 días, y son tres llamadas.
  */
-export const MAXIMO_DE_DIAS_POR_PASADA = 30;
+export const DIAS_DE_LA_SERIE_QUE_SE_RELEEN = 60;
 
 /**
- * El presupuesto de tiempo de UNA pasada, en milisegundos. **Sale de una medición, no de un criterio.**
+ * Hasta cuántos días atrás una campaña que gastó sigue siendo candidata de la pasada diaria.
+ *
+ * Una campaña pausada ayer gastó ayer: tiene que releerse aunque ya no esté ACTIVE. Una semana alcanza para
+ * cubrir los tres días que la pasada pide.
+ */
+export const DIAS_DE_GASTO_RECIENTE = 7;
+
+/**
+ * El presupuesto de tiempo de UNA pasada diaria, en milisegundos. **Sale de una medición, no de un criterio.**
  *
  * El relleno inicial contra la subcuenta real, el 2026-09-16: **390 llamadas en 1.775 segundos**, o
  * sea **4,55 s por llamada**. El Ad Manager de GoHighLevel es mucho más lento que el resto de su API.
  *
- * A ese ritmo la pasada diaria —13 campañas por 3 días, que es el tramo fijo de `diasQuePedir`—
- * son 39 llamadas y **177 segundos**, contra un `maxDuration` de 300 para la función ENTERA del
- * cron. Y el guardia de `barrido.ts` no alcanza: `PRESUPUESTO_MS` se comprueba **antes de empezar
- * cada empresa**, no entre tareas, así que una empresa que entra con 100 segundos gastados sale de
- * esta tarea a los 277 — y con un día de huecos que rellenar, se pasa de los 300 y la plataforma
- * corta la función sin reintentar.
+ * El guardia de `barrido.ts` no alcanza: `PRESUPUESTO_MS` de allá se comprueba **antes de empezar cada
+ * empresa**, no entre tareas, así que una empresa que entra con 100 segundos gastados sale de esta tarea a
+ * los 220 — y la función entera tiene un `maxDuration` de 300.
  *
- * Con este tope la pasada hace lo que entra, lo dice en `atrasado`, y la siguiente sigue desde donde
- * quedó. Es la misma reconciliación de siempre, y es lo que hace que cortar no cueste nada.
+ * Con este tope la pasada hace lo que entra, lo dice en `atrasado`, y lo que quedó de anteayer lo toma el
+ * relleno de la hora siguiente. Se comprueba antes de CADA llamada: la pasada vieja lo comprobaba entre días,
+ * porque un día a medias se daba por completo; ahora lo pendiente se lleva por par y cortar entre dos pares no
+ * deja nada mal contado.
+ *
+ * La cuenta en régimen: el vínculo, una página de campañas y tres de la serie son 5 llamadas, más 3 por cada
+ * candidata. Con las 1 a 3 campañas activas de esta cuenta son 8 a 14 llamadas, unos 60 segundos.
  */
 export const PRESUPUESTO_MS = 120_000;
 
-/** Qué pasó con una campaña en esta pasada. Los fallos se informan uno por uno, nunca en silencio. */
+/** Qué pasó en una pasada diaria. Los fallos se informan uno por uno, nunca en silencio. */
 export interface ResumenDeAnuncios {
-  /** Cuántos días se pidieron, y cuáles fueron el primero y el último. */
+  /** Cuántos días pide el tramo fijo, y cuáles fueron el primero y el último. */
   dias: number;
   desde: string | null;
   hasta: string | null;
-  /** Cuántas campañas se recorrieron. */
+  /** Cuántas campañas candidatas se pidieron: las ACTIVE más las que gastaron en la última semana. */
   campanas: number;
   /** Filas de anuncio escritas o reescritas. */
   metricas: number;
@@ -108,262 +120,76 @@ export interface ResumenDeAnuncios {
   /**
    * Las campañas que fallaron, con su motivo. **Una campaña que falla no aborta la pasada.**
    *
-   * Es un caso real y medido, no una precaución: `atribucion_primera` tiene un `888888` —un valor
-   * de prueba que alguien dejó— y pedirle métricas devuelve **HTTP 500**, no un 404. Si un 500
-   * tumbara la pasada, ese único contacto bloquearía el costo de las otras doce campañas para
-   * siempre, y el síntoma sería «Acquisition no tiene datos» sin nada que mirar.
+   * Es un caso real y medido, no una precaución: la atribución tenía un `888888` —un valor de prueba que
+   * alguien dejó— y pedirle métricas devolvía **HTTP 500**, no un 404. Ya no se pide —el universo son las
+   * campañas de la cuenta—, pero un 500 de una campaña de verdad tampoco puede tumbar la pasada.
    */
   fallidas: { campana: string; porque: string }[];
   /**
-   * `true` = se agotó `PRESUPUESTO_MS` **y quedaron días de la ventana sin pedir**, o sea que falta
-   * gasto. Una cola incompleta tiene que decirlo, que es la misma regla que `Cierre.atrasado`
-   * aplica en la ingesta y en las citas.
+   * `true` = se agotó `PRESUPUESTO_MS` **y quedaron pares del tramo fijo sin pedir**. Una cola incompleta
+   * tiene que decirlo, que es la misma regla que `Cierre.atrasado` aplica en la ingesta y en las citas.
    *
-   * **Sólo eso.** No se enciende porque un reintento no haya entrado en el presupuesto: eso no deja
-   * ningún día sin pedir y ya se informa, con nombre y fecha, en `huecos`. La distinción no es
-   * cosmética — ver el comentario del bucle de reintentos.
+   * **Sólo eso.** No se enciende porque un reintento no haya entrado en el presupuesto: eso ya se informa,
+   * con nombre y fecha, en `huecos`.
    */
   atrasado: boolean;
-  /**
-   * Los pares (campaña, día) que fallaron DOS veces: en la vuelta normal y en el reintento.
-   *
-   * Existe porque el relleno inicial dejó uno. Un par (campaña, día) que falla cuando los de
-   * alrededor salen bien **no lo rescata `diasQuePedir`**: ese día SÍ tiene filas —las de las otras
-   * doce campañas— así que no cuenta como faltante. El reintento cierra el caso transitorio, que
-   * fue el que ocurrió, y esta lista deja anotado el que no.
-   */
+  /** Los pares (campaña, día) que fallaron DOS veces: en la vuelta normal y en el reintento. */
   huecos: { campana: string; dia: string }[];
   /**
-   * El vínculo con Meta, comprobado al principio de la pasada. `null` = no se pudo preguntar.
+   * El vínculo con Meta, comprobado al principio de la pasada. **Es una compuerta**: sin `connected` no se
+   * escribe nada.
    *
-   * ── POR QUÉ VALE UNA LLAMADA DE LAS 39 ──────────────────────────────────
-   *
-   * Porque sin vínculo el proveedor **devuelve vacío sin fallar**, y ése es el peor modo posible:
-   * la pasada sella `corrio`, escribe cero filas, y la pantalla dibuja un cero que se lee como «no
-   * se invirtió nada» en vez de «Meta está desconectado». Son dos hechos opuestos con la misma
-   * pinta, que es exactamente lo que este proyecto persigue en todas partes.
-   *
-   * El cliente ya tenía la función y su comentario la llamaba «el paso 0 de todo lo demás». **No la
-   * llamaba nadie.**
+   * Sin vínculo el proveedor **devuelve vacío sin fallar**, y con los ceros probados de `076` un vacío guardado
+   * como cero sería permanente: el relleno daría por probado que no gastó una campaña que nadie pudo leer.
    */
   vinculo: { estado: string | null; cuentaId: string | null } | null;
   /**
    * Filas que el proveedor mandó y **no se pudieron leer** por falta de `adId`.
    *
-   * Cero es lo normal y lo que se espera. Un número distinto de cero sobre una pasada que por lo
-   * demás anduvo es la firma de que el proveedor cambió el nombre de una clave — el peor fallo de
-   * este cliente, porque no lanza: la pantalla se queda vacía y el sello dice `corrio`.
-   *
-   * Ya cambió dos formas bajo nuestros pies (el arreglo de la respuesta, el nombre del cursor), así
-   * que esto no es una precaución abstracta.
+   * Cero es lo normal. Un número distinto de cero sobre una pasada que por lo demás anduvo es la firma de que
+   * el proveedor cambió el nombre de una clave — el peor fallo de este cliente, porque no lanza.
    */
   ilegibles: number;
   /**
-   * Valores del desglose de acciones que llegaron y **no se pudieron leer como número**.
-   *
-   * Cuenta aparte de `ilegibles` y no es un lujo: los dos dicen cosas distintas. `ilegibles` dice
-   * que cambió la forma de la FILA —el proveedor renombró `adId`— y la pasada escribe menos filas
-   * de las que debería. Éste dice que cambió la forma del DESGLOSE, y la pasada escribe todas las
-   * filas con un tipo de acción de menos. Sumarlos haría que el primero, que es el grave, se
-   * pierda adentro del segundo.
+   * Valores del desglose de acciones que llegaron y **no se pudieron leer como número**. Aparte de
+   * `ilegibles`: aquél dice que se escribieron menos filas, éste que se escribieron todas con un dato de menos.
    */
   accionesIlegibles: number;
   /**
-   * Los nombres de las campañas (`065`), leídos al final de la pasada.
+   * Las campañas de la cuenta (`065`), leídas al PRINCIPIO de la pasada, porque son el universo que se pide.
    *
-   *   · `leidas`: cuántas campañas listó la cuenta, y si la lista vino recortada por el tope de
-   *     páginas de `estructuraDeAnuncios`.
-   *   · `fallo`: el proveedor no las devolvió. **No tumba la pasada**: las métricas ya están
-   *     escritas, y en la tabla quedan los nombres de la última lectura buena, si la hubo.
-   *   · `null`: no se pidieron, porque no había ninguna campaña que pedir y la pasada salió antes
-   *     de llamar a nadie. Una pasada atrasada SÍ los pide: ver el comentario del paso.
+   *   · `leidas`: cuántas listó la cuenta, y si la lista vino recortada por el tope de páginas;
+   *   · `fallo`: el proveedor no las devolvió. **No tumba la pasada**: se piden las de la última lectura buena.
    */
   nombres: { tipo: 'leidas'; campanas: number; corto: boolean } | { tipo: 'fallo'; porque: string } | null;
+  /** La serie de la cuenta (`076`): qué días se releyeron, o por qué no. */
+  cuenta: { tipo: 'leida'; desde: string; hasta: string } | { tipo: 'fallo'; porque: string } | null;
   llamadas: number;
 }
 
-/** Un día en `YYYY-MM-DD`, en UTC. */
-function diaDe(t: number): string {
-  return new Date(t).toISOString().slice(0, 10);
-}
-
-const DIA_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Los días que hay que pedir esta pasada, **del más nuevo al más viejo**.
- *
- * ═════════════════════════════════════════════════════════════════════════════
- * LA VENTANA SALE DE LO QUE FALTA, NO DE UNA MARCA DE AGUA. LAS DOS FORMAS ANTERIORES FALLARON.
- *
- * **Primer intento: días en orden cronológico desde `max(fecha) - N`.** El guardia de
- * `PRESUPUESTO_MS` corta entre días, así que sacrificaba los más NUEVOS y nunca llegaba a hoy.
- * Medido en producción el 2026-09-18: la tarea sellaba `corrio` con 39 llamadas reales y
- * `max(fecha)` llevaba dos días sin moverse. La pasada siguiente pedía lo mismo. Para siempre.
- *
- * **Segundo intento: los mismos días, invertidos.** Arregla eso y rompe lo otro: ahora
- * `max(fecha)` avanza SIEMPRE, así que lo que el presupuesto sacrifica queda perdido por
- * construcción. Con la tabla vacía, el relleno de treinta días escribía tres y los otros
- * veintisiete no volvían a entrar en ninguna ventana; una pasada perdida dejaba un hueco
- * permanente a mitad del calendario de gasto.
- *
- * Los dos defectos son el mismo: **una marca de agua no puede describir un conjunto con agujeros.**
- *
- * ── LO QUE HACE ESTA VERSIÓN ─────────────────────────────────────
- *
- * Se le pasa el conjunto de días que YA tienen filas, y la lista se arma en dos tramos:
- *
- *   1 · **Los que se piden siempre**: hoy y los `DIAS_QUE_SE_RELEEN` anteriores, estén o no
- *       guardados. Meta corrige hacia atrás, así que una lectura vieja no es definitiva.
- *   2 · **Los que faltan**: del resto de la ventana, sólo los que no tienen NI UNA fila.
- *
- * Los dos tramos van del más nuevo al más viejo, y el segundo detrás del primero. Así el
- * presupuesto sacrifica siempre los huecos más viejos — que siguen faltando y vuelven a aparecer
- * en la lista de la pasada siguiente, hasta que se llenen. **Eso es lo que restituye la
- * reconciliación**: nada depende de que una pasada termine.
- *
- * ── POR QUÉ «SIN FILAS» ES UNA SEÑAL SÓLIDA, MEDIDO ──────────────────────
- *
- * Porque el proveedor devuelve una fila por anuncio **aunque no haya entregado** — con las siete
- * métricas ausentes, que es de donde sale la regla de los dos ceros de este módulo. Así que un día
- * recolectado siempre tiene filas, y cero filas significa que nadie lo pidió nunca.
- *
- * Comprobado contra producción el 2026-09-18 sobre los treinta días de la ventana: **cero días sin
- * filas**. Si algún día una campaña dejara de tener anuncios y ninguna otra cubriera esa fecha, ese
- * día se volvería a pedir en cada pasada; el costo está acotado a trece llamadas y la ventana a
- * treinta días, y el `atrasado` lo diría.
- *
- * ── Y POR QUÉ EL DÍA ES UTC Y NO LA ZONA DE LA EMPRESA ──────────────────
- *
- * Porque el día que el proveedor devuelve es el de la cuenta publicitaria, que no conocemos y que
- * la API no expone. Pedir «el 10 de septiembre» devuelve lo que Meta considera el 10 de septiembre,
- * y traducirlo a la zona de la organización sería inventar un huso que el dato no trae.
- *
- * ── Y POR QUÉ HOY ENTRA, SABIENDO QUE ESTÁ INCOMPLETO ──────────────────
- *
- * Porque `DIAS_QUE_SE_RELEEN` lo corrige mañana y pasado. Dejarlo afuera daría una pantalla que
- * nunca muestra el día en curso — y la alternativa, mostrarlo sin volver a pedirlo, es la que
- * congelaría una cifra parcial como si fuera final.
- */
-export function diasQuePedir(guardados: ReadonlySet<string>, ahora: number): string[] {
-  // La ventana entera, del más nuevo al más viejo.
-  const ventana: string[] = [];
-  for (let i = 0; i < MAXIMO_DE_DIAS_POR_PASADA; i += 1) ventana.push(diaDe(ahora - i * DIA_MS));
-
-  // Tramo 1: se piden siempre, haya o no filas. `slice` y no un bucle aparte para que el largo
-  // salga de la constante y no de una cuenta escrita a mano.
-  const siempre = ventana.slice(0, DIAS_QUE_SE_RELEEN + 1);
-  // Tramo 2: del resto, sólo lo que no tiene ni una fila.
-  const faltan = ventana.slice(DIAS_QUE_SE_RELEEN + 1).filter((d) => !guardados.has(d));
-
-  return [...siempre, ...faltan];
-}
-
-/**
- * Las campañas que hay que pedir: **las que aparecen en nuestra atribución, más las que alguien
- * asignó a un funnel de Acquisition** (`066`) **y las que ya tienen anuncios guardados** (ver abajo).
- * No las 61 de la cuenta.
- *
- * La cuenta tiene 61 campañas y nosotros recibimos contactos de 13. Pedir las 61 costaría cuatro
- * veces más llamadas para guardar el costo de anuncios que ningún contacto nuestro menciona, y ese
- * costo no se puede cruzar con nada: el § 18.5 sólo deja publicar por anuncio lo que tiene su
- * cobertura al lado. Una campaña asignada a mano es la excepción: alguien dijo que importa.
- *
- * El filtro `~ '^[0-9]+$'` saca `{{campaign.id}}`, una plantilla de GoHighLevel que nunca se
- * expandió. **No saca `888888`**, que es numérico y no existe — para eso está la tolerancia al
- * fallo por campaña, porque un filtro por forma no puede distinguir un identificador falso de uno
- * verdadero.
- */
-async function campanasNuestras(): Promise<string[]> {
-  const filas = await datos()
-    .selectFrom('contactos')
-    .select((eb) => eb.ref('atribucion_primera', '->>').key('campaignId').as('campana'))
-    .distinct()
-    .where((eb) => eb.ref('atribucion_primera', '->>').key('campaignId'), 'is not', null)
-    .execute();
-
-  /* ── Y LAS QUE ALGUIEN ASIGNÓ A UN FUNNEL (`066`), AUNQUE NO TRAJERAN A NADIE ────
-     Sin esto, una campaña que se lanza, se asigna a Booking directo y gasta cinco días sin un solo
-     lead tendría gasto cero en su tarjeta de Acquisition: la tarjeta diría «sin gasto» sobre una
-     campaña que gastó. Lo encontró la revisión de AQ-3. El costo de pedirla es el mismo que el de
-     cualquier otra: una llamada por día pedido, tres por pasada. Y la lista no puede crecer sin techo,
-     porque el guardia de `PRESUPUESTO_MS` se comprueba antes de cada DÍA: el tercero del tramo fijo
-     arranca después del vínculo y de los dos primeros, o sea a (1 + 2 × 13) × 3,6 s = 97 s de los 120,
-     con las 13 campañas de hoy y los 3,6 s por llamada medidos en régimen (144 s por 40 llamadas).
-     Cada campaña de más le suma 7,2 s: caben tres, y con la cuarta el tercer día ya no entra y la
-     pasada queda `atrasado`. Al oeste de UTC−6 esa tercera lectura es la única que cierra un día
-     (docs/acquisition/14, A14-10).
-     **Casi no rellena hacia atrás**: entra lo que la pasada pide igual —hoy y los dos días que se
-     releen—, y el gasto de antes de eso no. Una flecha de un funnel que acaba de recibir una campaña
-     compara, entonces, una ventana con su gasto contra otra sin él (docs/acquisition/14, A14-11).
-
-     ── Y LAS QUE YA TIENEN ANUNCIOS GUARDADOS ───────────────────────────────
-     Para que pedir sea monótono: una campaña asignada que después vuelve a «Sin funnel» seguiría
-     gastando en Meta, y sin esto el colector dejaría de pedirla y su gasto quedaría congelado en la
-     fecha de la quita (lo encontró la tercera revisión de AQ-3). */
-  const asignadas = await datos().selectFrom('funnels_de_campana').select('meta_campana_id').execute();
-  const conAnuncios = await datos()
-    .selectFrom('anuncios')
-    .select('meta_campana_id')
-    .distinct()
-    .where('meta_campana_id', 'is not', null)
-    .execute();
-
-  return [
-    ...new Set([
-      ...filas.map((f) => f.campana as string | null),
-      ...asignadas.map((a) => a.meta_campana_id),
-      ...conAnuncios.map((a) => a.meta_campana_id),
-    ]),
-  ]
-    .filter((c): c is string => c !== null && /^[0-9]+$/.test(c))
-    .sort();
-}
-
-/**
- * Qué días de la ventana YA tienen filas.
- *
- * Reemplaza a un `max(fecha)`, y el motivo está en `diasQuePedir`: una marca de agua no puede
- * describir un conjunto con agujeros, y los agujeros son el caso normal —una pasada perdida, un
- * presupuesto agotado— y no el excepcional.
- *
- * ── EL `date` SE FORMATEA EN UTC A MANO, Y NO CON `toISOString()` ─────────
- *
- * El controlador entrega un `date` de PostgreSQL como un `Date` a **medianoche LOCAL**. Al este de
- * Greenwich, `toISOString()` sobre esa medianoche devuelve el día ANTERIOR — así que en Asia el
- * conjunto quedaría corrido un día y el colector pediría de más para siempre, sin fallar.
- */
-async function diasConFilas(): Promise<Set<string>> {
-  const filas = await datos()
-    .selectFrom('metricas_de_anuncio')
-    .select('fecha')
-    .distinct()
-    .execute();
-
-  const dias = new Set<string>();
-  for (const f of filas) {
-    const v = f.fecha as Date | string | null | undefined;
-    if (v === null || v === undefined) continue;
-    dias.add(v instanceof Date ? comoDiaLocal(v) : String(v).slice(0, 10));
-  }
-  return dias;
-}
-
-/** Un `Date` que representa una medianoche LOCAL, escrito como su día. Ver `diasConFilas`. */
-function comoDiaLocal(d: Date): string {
+/** Un `Date` que representa una medianoche LOCAL, escrito como su día. */
+export function comoDiaLocal(d: Date): string {
   const mes = String(d.getMonth() + 1).padStart(2, '0');
   const dia = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
+/** Lo que una lectura de un día suma, en centavos y de vuelta: un nulo no gastó. */
+function gastoDe(metricas: readonly MetricaDeAnuncio[]): number {
+  return metricas.reduce((s, m) => s + Math.round((m.gasto ?? 0) * 100), 0) / 100;
+}
+
 /**
- * Guarda un lote de métricas: primero la dimensión, después el hecho.
+ * Guarda la lectura de UNA campaña en UN día: primero la dimensión, después el hecho, y al final el par.
  *
  * El orden no es estilo: la clave foránea compuesta de `metricas_de_anuncio` exige que el anuncio
  * exista. Invertirlo daría un `23503` en la primera fila de cada anuncio nuevo.
+ *
+ * El par (`lecturas_de_gasto`) se escribe aunque no haya venido ningún anuncio: una lectura que anduvo y
+ * devolvió vacío es un cero leído, y sin la fila la campaña seguiría pendiente para siempre. Una lectura que
+ * FALLÓ no llega acá: un fallo nunca se guarda como un cero.
  */
-async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Promise<void> {
-  if (metricas.length === 0) return;
-
+export async function guardar(campana: string, dia: string, metricas: readonly MetricaDeAnuncio[]): Promise<void> {
   for (const m of metricas) {
     await datos()
       .insertInto('anuncios')
@@ -466,6 +292,16 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
       )
       .execute();
   }
+
+  /* El par, reescrito: una lectura del día pisa un cero de rango, y una relectura pisa la anterior. */
+  const gasto = gastoDe(metricas);
+  await datos()
+    .insertInto('lecturas_de_gasto')
+    .values({ meta_campana_id: campana, fecha: dia, gasto, por_rango: false, leido_el: new Date() } as never)
+    .onConflict((oc) =>
+      oc.columns(['org_id', 'meta_campana_id', 'fecha']).doUpdateSet({ gasto, por_rango: false, leido_el: new Date() } as never),
+    )
+    .execute();
 }
 
 /**
@@ -477,7 +313,7 @@ async function guardar(metricas: readonly MetricaDeAnuncio[], dia: string): Prom
  * —una lectura que no trae `name` no borra el que ya teníamos—; el estado dice CÓMO ESTÁ HOY, y
  * conservar uno viejo al lado de un `sincronizado_el` nuevo afirmaría algo que nadie confirmó.
  */
-async function guardarCampanas(lista: readonly EntidadDeAnuncio[]): Promise<void> {
+export async function guardarCampanas(lista: readonly EntidadDeAnuncio[]): Promise<void> {
   for (const c of lista) {
     await datos()
       .insertInto('campanas')
@@ -500,67 +336,174 @@ async function guardarCampanas(lista: readonly EntidadDeAnuncio[]): Promise<void
 }
 
 /**
+ * Guarda la serie de la cuenta (`076`). **El único escritor de `negocio.gasto_de_la_cuenta`.**
+ *
+ * Reescribe plano —Meta corrige hacia atrás y la lectura nueva es la buena— y anota `cambio_el` sólo si el total
+ * se movió más que la tolerancia del cuadre: un centavo de redondeo no es una corrección. Cuando cambia, el
+ * día pierde el redescubrimiento y el residuo: con otro total, lo que no cuadraba puede cuadrar, y lo que se
+ * declaró residuo merece otra vuelta.
+ */
+export async function guardarSerie(dias: readonly DiaDeLaCuenta[]): Promise<void> {
+  const cambio = sql<boolean>`abs(round(coalesce(gasto_de_la_cuenta.gasto, 0) * 100) - round(coalesce(excluded.gasto, 0) * 100)) > ${Math.round(TOLERANCIA_DEL_CUADRE * 100)}`;
+  for (const d of dias) {
+    await datos()
+      .insertInto('gasto_de_la_cuenta')
+      .values({
+        fecha: d.dia,
+        gasto: d.gasto,
+        impresiones: d.impresiones,
+        clics: d.clics,
+        leido_el: new Date(),
+      } as never)
+      .onConflict((oc) =>
+        // Las DOS columnas de la clave primaria, como en `anuncios`: con una sola, `42P10`.
+        oc.columns(['org_id', 'fecha']).doUpdateSet({
+          gasto: sql`excluded.gasto`,
+          impresiones: sql`excluded.impresiones`,
+          clics: sql`excluded.clics`,
+          leido_el: new Date(),
+          cambio_el: sql`case when ${cambio} then now() else gasto_de_la_cuenta.cambio_el end`,
+          redescubierto_el: sql`case when ${cambio} then null else gasto_de_la_cuenta.redescubierto_el end`,
+          residuo_el: sql`case when ${cambio} then null else gasto_de_la_cuenta.residuo_el end`,
+        } as never),
+      )
+      .execute();
+  }
+}
+
+/**
+ * Anota como CEROS PROBADOS los días de una campaña cuyo rango no gastó. **Nunca pisa una lectura del día**: si
+ * el par ya se leyó de a un día, esa lectura tiene sus métricas detrás y vale más que un total.
+ */
+export async function guardarCeros(campana: string, dias: readonly string[]): Promise<void> {
+  for (const dia of dias) {
+    await datos()
+      .insertInto('lecturas_de_gasto')
+      .values({ meta_campana_id: campana, fecha: dia, gasto: 0, por_rango: true, leido_el: new Date() } as never)
+      .onConflict((oc) => oc.columns(['org_id', 'meta_campana_id', 'fecha']).doNothing())
+      .execute();
+  }
+}
+
+/**
+ * La primera vez que un día no cuadra con todas sus campañas leídas: se borran sus CEROS —de rango y del día—
+ * para volver a descubrirlos, y se anota cuándo. Un vacío del proveedor pudo ser un silencio y no un cero, y esto
+ * le da una sola vuelta más. Lo que gastó no se borra: tiene sus métricas detrás.
+ */
+export async function redescubrir(dia: string): Promise<void> {
+  await datos().deleteFrom('lecturas_de_gasto').where('fecha', '=', dia as never).where('gasto', '=', '0').execute();
+  await datos()
+    .updateTable('gasto_de_la_cuenta')
+    .set({ redescubierto_el: new Date() } as never)
+    .where('fecha', '=', dia as never)
+    .execute();
+}
+
+/** Un día que sigue sin cuadrar después de redescubrirlo: su diferencia es gasto que ninguna campaña listada explica. */
+export async function declararResiduo(dia: string): Promise<void> {
+  await datos().updateTable('gasto_de_la_cuenta').set({ residuo_el: new Date() } as never).where('fecha', '=', dia as never).execute();
+}
+
+/**
+ * La primera vez, los pares que el colector viejo ya leyó pasan a `lecturas_de_gasto`, desde sus métricas.
+ *
+ * La migración no puede hacerlo: con RLS forzada el migrador ve cero filas (`050`). Se hace UNA vez —si la
+ * empresa ya tiene alguna lectura, no hace nada—, porque después las métricas no alcanzan para decir qué se leyó:
+ * un redescubrimiento borra lecturas en cero que tienen métricas nulas detrás, y volver a sembrarlas lo desharía.
+ * La llaman las dos tareas, la que corra primero: sin ella el relleno buscaría con rangos lo que ya se leyó.
+ */
+export async function sembrarLecturasDeLasMetricas(): Promise<void> {
+  /* `org_id` va escrito, y sale de las métricas: esto es SQL crudo, y la capa de datos pone la organización sólo
+     en los `insertInto` de Kysely. Sin él, la fila nace sin empresa y la RLS la rechaza. Bajo la RLS las métricas
+     que se leen son sólo las de la empresa activa, así que no puede venir otra. */
+  await sql`
+    insert into negocio.lecturas_de_gasto (org_id, meta_campana_id, fecha, gasto, por_rango, leido_el)
+    select m.org_id, a.meta_campana_id, m.fecha, coalesce(sum(m.gasto), 0), false, max(m.sincronizado_el)
+      from negocio.metricas_de_anuncio m
+      join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
+     where a.meta_campana_id is not null
+       and not exists (select 1 from negocio.lecturas_de_gasto)
+     group by m.org_id, a.meta_campana_id, m.fecha
+    on conflict do nothing`.execute(datos());
+}
+
+/** Lo que la pasada diaria necesita saber de la base antes de pedir nada. */
+export interface PlanDelDia {
+  /** El primer día con gasto guardado —de la serie o de las métricas—, o `null` si no hay nada. */
+  inicio: string | null;
+  /** Las campañas que la última lectura de la cuenta dio por ACTIVE. */
+  activas: readonly string[];
+  /** Las que gastaron en los últimos `DIAS_DE_GASTO_RECIENTE` días, aunque ya estén pausadas. */
+  conGastoReciente: readonly string[];
+}
+
+/** Arma el plan de la pasada diaria. Corre dentro de `conOrganizacion(`, y siembra las lecturas viejas la primera vez. */
+export async function prepararElPlanDelDia(hoy: string): Promise<PlanDelDia> {
+  await sembrarLecturasDeLasMetricas();
+  const r = await sql<{ inicio: string | null }>`
+    select to_char(least((select min(fecha) from negocio.gasto_de_la_cuenta),
+                         (select min(fecha) from negocio.metricas_de_anuncio)), 'YYYY-MM-DD') as inicio`.execute(datos());
+  const activas = await datos().selectFrom('campanas').select('meta_campana_id').where('estado', '=', 'ACTIVE').execute();
+  const recientes = await sql<{ campana: string }>`
+    select distinct meta_campana_id as campana from negocio.lecturas_de_gasto
+     where fecha >= ${sumarDias(hoy, -DIAS_DE_GASTO_RECIENTE)}::date and gasto > 0`.execute(datos());
+  return {
+    inicio: r.rows[0]?.inicio ?? null,
+    activas: activas.map((a) => a.meta_campana_id),
+    conGastoReciente: recientes.rows.map((f) => f.campana),
+  };
+}
+
+/**
  * Las piezas que la prueba reemplaza. Mismo idioma que `barrerCitas`, que inyecta sus `lectores`.
  *
- * No están acá por comodidad de la prueba: están porque las cuatro son la frontera del módulo —el
- * reloj, el proveedor, nuestra base de lectura y nuestra base de escritura—, y una prueba que tenga
- * que levantar las cuatro para comprobar que un `<` no era un `<=` no se escribe.
+ * No están acá por comodidad de la prueba: están porque son la frontera del módulo —el reloj, el proveedor,
+ * nuestra base de lectura y nuestra base de escritura—, y una prueba que tenga que levantarlas todas para
+ * comprobar que un `<` no era un `<=` no se escribe. Cada escritor lleva su contexto de organización ADENTRO:
+ * con el envoltorio afuera, reemplazarlo en una prueba seguía abriendo una conexión.
  */
 export interface PiezasDelColector {
   /** El reloj. Fijarlo es lo que hace que la suite dé lo mismo en las tres zonas horarias. */
   ahora?: number;
   /**
-   * El cronómetro del presupuesto, aparte de `ahora`. Son dos cosas distintas: `ahora` decide QUÉ
-   * DÍAS se piden y esto decide CUÁNDO SE CORTA. Una prueba del corte tiene que poder avanzar el
-   * segundo sin mover el primero, o la ventana cambiaría a mitad de la pasada.
+   * El cronómetro del presupuesto, aparte de `ahora`. Son dos cosas distintas: `ahora` decide QUÉ DÍAS se
+   * piden y esto decide CUÁNDO SE CORTA. Una prueba del corte tiene que poder avanzar el segundo sin mover el
+   * primero.
    */
   reloj?: () => number;
-  pedir?: typeof metricasPorAnuncio;
-  /**
-   * El paso 0: si Meta sigue vinculado. Sin esto, `integracionDeAnuncios` contra el proveedor real.
-   *
-   * Es inyectable por lo mismo que `pedir`: una prueba de la ventana de días no tiene por qué salir
-   * a la red, y una que lo hiciera fallaría distinto según haya conexión.
-   */
+  /** El paso 0, la compuerta: si Meta sigue vinculado. */
   vinculo?: typeof integracionDeAnuncios;
-  /** Qué campañas pedir. Sin esto, salen de nuestra atribución. */
-  campanas?: readonly string[];
-  /**
-   * Qué días YA tienen filas. `undefined` = preguntarle a la base.
-   *
-   * Es un conjunto y no un «hasta dónde llegué» porque los agujeros son el caso normal. Ver
-   * `diasQuePedir`.
-   */
-  guardados?: ReadonlySet<string>;
-  /**
-   * Dónde se escribe, **con su propio contexto de organización adentro**. Sin esto, las dos tablas
-   * de la migración 050 dentro de `conOrganizacion`.
-   */
-  escribir?: (metricas: readonly MetricaDeAnuncio[], dia: string) => Promise<void>;
-  /**
-   * Las campañas de la cuenta, con su nombre. Sin esto, `estructuraDeAnuncios` en el nivel
-   * `CAMPAIGN` contra el proveedor real. Inyectable por lo mismo que `vinculo`: una prueba de la
-   * ventana de días no tiene por qué salir a la red.
-   */
+  /** Las campañas de la cuenta. Sin esto, `estructuraDeAnuncios` en el nivel `CAMPAIGN`. */
   listarCampanas?: (acceso: { token: string; locationId: string }) => ReturnType<typeof estructuraDeAnuncios>;
-  /** Dónde se escriben, con su propio contexto de organización. Sin esto, `negocio.campanas`. */
   escribirCampanas?: (lista: readonly EntidadDeAnuncio[]) => Promise<void>;
+  /** La serie de la cuenta, y dónde se escribe. */
+  serie?: typeof serieDeLaCuenta;
+  escribirSerie?: (dias: readonly DiaDeLaCuenta[]) => Promise<void>;
+  /** Las métricas de una campaña en un día, y dónde se escriben (el hecho, la dimensión y el par). */
+  pedir?: typeof metricasPorAnuncio;
+  escribir?: (campana: string, dia: string, metricas: readonly MetricaDeAnuncio[]) => Promise<void>;
+  /** El plan de la pasada diaria. `undefined` = preguntarle a la base. */
+  plan?: PlanDelDia;
+}
+
+/** El mayor de dos `YYYY-MM-DD`. */
+function elMasNuevo(a: string, b: string): string {
+  return a > b ? a : b;
 }
 
 /**
- * Una pasada completa para una organización.
+ * Una pasada diaria completa para una organización.
  *
  * ── NO PASA POR `conElPulso`, POR EL MISMO MOTIVO QUE `contactos` ──────────
  *
- * El candado existe para el reloj del navegador, que dispara cada diez segundos. Esta tarea la
- * dispara sólo el cron, una vez por día. Meterla en el candado le pondría un antirrebote a algo que
- * no tiene tráfico que acotar.
+ * El candado existe para el reloj del navegador, que dispara cada diez segundos. Esta tarea la dispara sólo el
+ * cron, una vez por día.
  *
- * ── UN FALLO DE CAMPAÑA SE CUENTA; UNO DE TODAS, SE LANZA ─────────────────
+ * ── UN FALLO DE CAMPAÑA SE CUENTA; UNO DE TODO, SE LANZA ─────────────────
  *
- * La diferencia importa. Una campaña que devuelve 500 es un identificador podrido y la pasada tiene
- * que seguir. Que fallen TODAS es un token rechazado o el proveedor caído, y eso sí es un fallo de
- * la tarea: devolverlo como éxito dejaría el sello en verde sobre una pasada que no escribió nada.
+ * Una campaña que devuelve 500 es un dato malo y la pasada tiene que seguir. Que no ande nada —ni el vínculo,
+ * ni la serie, ni ningún par— es un token rechazado o el proveedor caído, y eso sí es un fallo de la tarea:
+ * devolverlo como éxito dejaría el sello en verde sobre una pasada que no escribió nada.
  */
 export async function recolectarAnuncios(
   orgId: string,
@@ -568,41 +511,25 @@ export async function recolectarAnuncios(
   piezas: PiezasDelColector = {},
 ): Promise<{ corrio: true; resultado: ResumenDeAnuncios; llamadas: number }> {
   const ahora = piezas.ahora ?? Date.now();
+  const reloj = piezas.reloj ?? Date.now;
+  const hoy = diaUtc(ahora);
   const pedir = piezas.pedir ?? metricasPorAnuncio;
   const mirarElVinculo = piezas.vinculo ?? integracionDeAnuncios;
-  const reloj = piezas.reloj ?? Date.now;
-  // El envoltorio de organización va ADENTRO del escritor y no en el bucle, y no es acomodo: el
-  // escritor es la frontera con la base, así que es él quien tiene que decir en qué contexto
-  // escribe. Con el envoltorio afuera, reemplazarlo en una prueba seguía abriendo una conexión —o
-  // sea que la pieza inyectable no aislaba de la base, que es lo único para lo que existe.
-  const escribir =
-    piezas.escribir ??
-    ((m: readonly MetricaDeAnuncio[], d: string) => conOrganizacion(orgId, () => guardar(m, d)));
   const listarCampanas =
     piezas.listarCampanas ?? ((a: { token: string; locationId: string }) => estructuraDeAnuncios(a, 'CAMPAIGN'));
   const escribirCampanas =
-    piezas.escribirCampanas ??
-    ((lista: readonly EntidadDeAnuncio[]) => conOrganizacion(orgId, () => guardarCampanas(lista)));
-
-  // Las dos lecturas van en UNA sola entrada a la organización, no en dos: `conOrganizacion` abre
-  // contexto y el contexto cuesta, y las dos preguntas se contestan con la misma conexión.
-  const { campanas, guardados } =
-    piezas.campanas !== undefined && piezas.guardados !== undefined
-      ? { campanas: piezas.campanas, guardados: piezas.guardados }
-      : await conOrganizacion(orgId, async () => ({
-          campanas: piezas.campanas ?? (await campanasNuestras()),
-          guardados: piezas.guardados ?? (await diasConFilas()),
-        }));
-
-  const dias = diasQuePedir(guardados, ahora);
+    piezas.escribirCampanas ?? ((lista: readonly EntidadDeAnuncio[]) => conOrganizacion(orgId, () => guardarCampanas(lista)));
+  const pedirSerie = piezas.serie ?? serieDeLaCuenta;
+  const escribirSerie = piezas.escribirSerie ?? ((d: readonly DiaDeLaCuenta[]) => conOrganizacion(orgId, () => guardarSerie(d)));
+  const escribir =
+    piezas.escribir ??
+    ((c: string, d: string, m: readonly MetricaDeAnuncio[]) => conOrganizacion(orgId, () => guardar(c, d, m)));
 
   const resumen: ResumenDeAnuncios = {
-    dias: dias.length,
-    // `dias` viene del más nuevo al más viejo, así que el primero es `hasta` y el último `desde`.
-    // Tomarlos al derecho —como estaban— daría un resumen con la ventana invertida.
-    desde: dias[dias.length - 1] ?? null,
-    hasta: dias[0] ?? null,
-    campanas: campanas.length,
+    dias: DIAS_QUE_SE_RELEEN + 1,
+    desde: sumarDias(hoy, -DIAS_QUE_SE_RELEEN),
+    hasta: hoy,
+    campanas: 0,
     metricas: 0,
     anuncios: 0,
     fallidas: [],
@@ -612,89 +539,103 @@ export async function recolectarAnuncios(
     ilegibles: 0,
     accionesIlegibles: 0,
     nombres: null,
+    cuenta: null,
     llamadas: 0,
   };
-
-  if (campanas.length === 0 || dias.length === 0) return { corrio: true, resultado: resumen, llamadas: 0 };
-
   const arranque = reloj();
 
-  /* El paso 0. Se pregunta UNA vez por pasada y no aborta nada: si el vínculo está roto, las 39
-     llamadas siguientes van a devolver vacío igual, y lo que importa es que el resumen lo DIGA en
-     vez de dejar un cero indistinguible de «no se gastó». */
+  /* ── 1 · EL VÍNCULO, COMO COMPUERTA ────────────────────────────────────────
+     Sin vínculo el proveedor devuelve vacío sin fallar, y un vacío convertido en cero sería permanente. Si no se
+     puede ni preguntar, es el token o el proveedor: la tarea falla, y el tipo del fallo va al registro (ADR-0704). */
   const v = await mirarElVinculo(acceso);
   resumen.llamadas += 1;
-  resumen.vinculo = v.tipo === 'datos' ? { estado: v.datos.estado, cuentaId: v.datos.cuentaId } : null;
+  if (v.tipo !== 'datos') throw new Error(`no se pudo comprobar el vínculo con Meta: ${v.fallo.tipo}`);
+  resumen.vinculo = { estado: v.datos.estado, cuentaId: v.datos.cuentaId };
+  if (v.datos.estado !== 'connected') return { corrio: true, resultado: resumen, llamadas: resumen.llamadas };
+
+  /* ── 2 · LAS CAMPAÑAS, AL PRINCIPIO ─────────────────────────────────────────
+     Son el universo: una campaña nueva tiene que estar en la tabla antes de armar el plan. Un fallo del proveedor
+     no tumba nada —se piden las de la última lectura buena—; un fallo AL ESCRIBIR no se atrapa: es un defecto
+     nuestro. */
+  const n = await listarCampanas(acceso);
+  // Las páginas pedidas, también cuando falló a mitad: `estructuraDeAnuncios` las devuelve en las dos ramas.
+  resumen.llamadas += n.paginas ?? 1;
+  if (n.tipo === 'datos') {
+    if (n.datos.length > 0) await escribirCampanas(n.datos);
+    resumen.nombres = { tipo: 'leidas', campanas: n.datos.length, corto: n.corto === true };
+  } else {
+    resumen.nombres = { tipo: 'fallo', porque: n.fallo.tipo };
+  }
+
+  const plan = piezas.plan ?? (await conOrganizacion(orgId, () => prepararElPlanDelDia(hoy)));
+
+  /* ── 3 · LA SERIE DE LA CUENTA ──────────────────────────────────────────────
+     Desde el primer día guardado, o los últimos `DIAS_DE_RELLENO` si no hay nada, y como mucho los últimos
+     `DIAS_DE_LA_SERIE_QUE_SE_RELEEN`: lo de antes ya se leyó cerrado. */
+  const desdeSerie = elMasNuevo(
+    plan.inicio ?? sumarDias(hoy, -(DIAS_DE_RELLENO - 1)),
+    sumarDias(hoy, -(DIAS_DE_LA_SERIE_QUE_SE_RELEEN - 1)),
+  );
+  const s = await pedirSerie(acceso, desdeSerie, hoy);
+  resumen.llamadas += s.llamadas;
+  let algoAnduvo = false;
+  if (s.tipo === 'datos') {
+    await escribirSerie(s.datos);
+    algoAnduvo = true;
+    resumen.cuenta = { tipo: 'leida', desde: desdeSerie, hasta: hoy };
+  } else {
+    resumen.cuenta = { tipo: 'fallo', porque: s.fallo.tipo };
+  }
+
+  /* ── 4 · HOY, AYER Y ANTEAYER DE LAS CANDIDATAS ─────────────────────────────
+     Las ACTIVE, y las que gastaron en la última semana aunque ya estén pausadas. Lo que otra campaña haya
+     gastado en estos días lo descubre el relleno cuando el día se cierra: la cuenta lo dice, porque no cuadra. */
+  const candidatas = [...new Set([...plan.activas, ...plan.conGastoReciente])].sort();
+  resumen.campanas = candidatas.length;
 
   const vistos = new Set<string>();
-  // Se cuenta por CAMPAÑA y no por llamada: una campaña que falla el mismo día en los cinco días es
-  // un solo identificador podrido, y listarlo cinco veces escondería que es uno.
+  // Por CAMPAÑA y no por llamada: una campaña que falla los tres días es un solo identificador podrido.
   const conFallo = new Map<string, string>();
-  // Y aparte los pares (campaña, día), que son lo que hay que reintentar. Es otra pregunta.
   const paraReintentar: { campana: string; dia: string }[] = [];
-  let algunaAnduvo = false;
 
-  /** Pide un par y guarda lo que venga. Devuelve `false` si falló. */
+  /** Pide un par y guarda lo que venga. Devuelve `false` si falló, y entonces no escribe nada. */
   async function pedirYGuardar(campana: string, dia: string): Promise<boolean> {
     const r = await pedir(acceso, campana, dia);
     resumen.llamadas += 1;
-
     if (r.tipo !== 'datos') {
       conFallo.set(campana, r.fallo.tipo);
       return false;
     }
-    algunaAnduvo = true;
+    algoAnduvo = true;
     resumen.ilegibles += r.ilegibles ?? 0;
     resumen.accionesIlegibles += r.accionesIlegibles ?? 0;
-    if (r.datos.length === 0) return true;
-
-    await escribir(r.datos, dia);
+    await escribir(campana, dia, r.datos);
     resumen.metricas += r.datos.length;
     for (const m of r.datos) vistos.add(m.anuncioId);
     return true;
   }
 
-  for (const dia of dias) {
-    /* El guardia va entre DÍAS y no entre campañas, y la diferencia importa: cortar a mitad de un
-       día dejaría ese día con la mitad de las campañas, y el día siguiente lo daría por hecho —
-       porque un día a medias SÍ tiene filas y `diasQuePedir` lo daría por hecho. Cortando entre
-       días, lo que queda sin pedir es un sufijo limpio que la pasada siguiente vuelve a tomar
-       —porque esos días siguen sin filas y vuelven a aparecer en la lista—. */
+  const pares = paresDelTramoFijo(hoy, candidatas);
+  for (let i = 0; i < pares.length; i += 1) {
+    // El guardia, antes de CADA llamada. Lo que quede sin pedir de anteayer lo toma el relleno.
     if (reloj() - arranque > PRESUPUESTO_MS) {
       resumen.atrasado = true;
       break;
     }
-    for (const campana of campanas) {
-      if (!(await pedirYGuardar(campana, dia))) paraReintentar.push({ campana, dia });
-    }
+    const { campana, dia } = pares[i]!;
+    if (!(await pedirYGuardar(campana, dia))) paraReintentar.push({ campana, dia });
   }
 
   /* ── EL REINTENTO, Y POR QUÉ NO ESTÁ EN `leer()` ──────────────────────────
    *
-   * El cliente reintenta el 429 con retroceso, porque un 429 dice «volvé a intentar». Un 500 no dice
-   * eso, así que reintentarlo dentro de la misma llamada sería insistirle a un servidor que ya
-   * contestó. Acá es distinto: pasaron minutos, el proveedor puede haberse recuperado, y **el costo
-   * de no reintentar es permanente**.
+   * El cliente reintenta el 429 con retroceso, porque un 429 dice «volvé a intentar». Un 500 no dice eso, así
+   * que reintentarlo dentro de la misma llamada sería insistirle a un servidor que ya contestó. Acá pasaron
+   * segundos o minutos, y el proveedor puede haberse recuperado. Medido en el relleno inicial del 2026-09-16:
+   * una campaña falló UN día de treinta por un 500 pasajero.
    *
-   * Medido en el relleno inicial: la campaña `120249590301010467` falló UN día de treinta y quedó con
-   * 290 filas de 300. Ese día no vuelve solo, porque la pasada siguiente arranca del último día
-   * guardado y ese día ya está «pasado».
-   *
-   * Sólo una vuelta más, y sólo sobre lo que falló. Si vuelve a fallar, queda anotado en `huecos` en
-   * vez de reintentarse para siempre. */
-  /* ── Y EL REINTENTO **NO** MARCA `atrasado`, QUE ES OTRA COSA ─────────────
-   *
-   * Lo marcaba, y eso lo dejaba encendido todos los días. Medido el 2026-09-18 en régimen: la
-   * ventana de tres días entra completa en 144 s, y los reintentos arrancan con el presupuesto ya
-   * gastado — así que el aviso se encendía por no reintentar `888888`, una campaña de prueba que
-   * alguien dejó en la atribución y que devuelve 500 desde siempre.
-   *
-   * Son dos hechos distintos y colapsarlos inutiliza al más grave: `atrasado` significa **quedó
-   * ventana sin pedir**, o sea faltan días de gasto. Que un reintento no entre en el presupuesto no
-   * deja ningún día sin pedir; deja un par (campaña, día) sin corregir, y eso ya se dice con su
-   * nombre y su fecha en `huecos`.
-   *
-   * Un aviso que aparece siempre es uno que nadie lee, y éste iba camino a serlo. */
+   * Sólo una vuelta más, y sólo sobre lo que falló. Si vuelve a fallar queda en `huecos`, y **no** enciende
+   * `atrasado`: eso quiere decir que quedaron pares sin pedir, no que uno falló. Un aviso que aparece siempre
+   * es uno que nadie lee. */
   for (const { campana, dia } of paraReintentar) {
     if (reloj() - arranque > PRESUPUESTO_MS) {
       resumen.huecos.push({ campana, dia });
@@ -703,61 +644,15 @@ export async function recolectarAnuncios(
     if (!(await pedirYGuardar(campana, dia))) resumen.huecos.push({ campana, dia });
   }
 
-  if (!algunaAnduvo) {
-    // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle del barrido pone el
-    // texto genérico. Ver `releerContactos`, que hace exactamente lo mismo.
-    throw new Error(`el CRM rechazó las ${campanas.length} campañas`);
-  }
-
-  /* ── LOS NOMBRES DE LAS CAMPAÑAS, AL FINAL DE LA PASADA ────────────────────
-   *
-   * Al final porque ahí no le quitan presupuesto al bucle de días: `arranque` se toma antes del
-   * vínculo, y todo lo que corre delante del bucle se come margen de los días.
-   *
-   * **Sin guardia de tiempo, y sin depender de `atrasado`.** Las dos cosas son a propósito:
-   *
-   *   · En régimen la pasada ya termina pasados los 120 s de `PRESUPUESTO_MS` —el guardia se
-   *     comprueba antes de cada día, así que el último arranca con el presupuesto casi agotado—, y
-   *     un guardia acá saltaría los nombres siempre.
-   *   · Depender de `atrasado` no ahorraba tiempo y dejaba un agujero. Una pasada atrasada corta en
-   *     el primer control pasado el presupuesto, así que termina a lo sumo un día después de los
-   *     120 s, igual que una completa. Y `atrasado` puede quedar encendido semanas: una empresa nueva
-   *     empieza con 27 días sin pedir y el tramo fijo solo ya pasa los 120 s, así que su tabla de
-   *     campañas quedaba vacía todo ese tiempo sin que el sello lo dijera. Lo encontró la revisión de
-   *     AQ-1, y por eso la condición se sacó.
-   *
-   * Lo que el presupuesto protege es el `maxDuration` de la función entera, y esta lectura no lo
-   * amenaza: la cuenta tenía 61 campañas el 2026-09-16 y la página del proveedor es de 100.
-   *
-   * Un fallo del proveedor se anota y no tumba nada: las métricas de hoy no dependen de los nombres,
-   * y en la tabla quedan los de la última lectura buena, si la hubo. Un fallo AL ESCRIBIR, en cambio,
-   * no se atrapa: es un defecto nuestro, y tiene que sonar como cualquier otro error de la base. */
-  const n = await listarCampanas(acceso);
-  /* Las páginas pedidas, también cuando falló a mitad: `estructuraDeAnuncios` las devuelve en las
-     dos ramas. Si falta el dato, una, que es el mínimo que costó preguntar. */
-  resumen.llamadas += n.paginas ?? 1;
-  if (n.tipo === 'datos') {
-    if (n.datos.length > 0) await escribirCampanas(n.datos);
-    resumen.nombres = { tipo: 'leidas', campanas: n.datos.length, corto: n.corto === true };
-  } else {
-    // El tipo del fallo, no su texto: el detalle va al registro (`ADR-0704`).
-    resumen.nombres = { tipo: 'fallo', porque: n.fallo.tipo };
+  if (!algoAnduvo) {
+    // El detalle va al registro y NO al cuerpo (`ADR-0704`); el bucle del barrido pone el texto genérico.
+    throw new Error(`el CRM no devolvió la serie de la cuenta ni ninguna de las ${candidatas.length} campañas`);
   }
 
   resumen.anuncios = vistos.size;
-  /* ── UNA CAMPAÑA QUE SE RECUPERÓ NO SIGUE ACUSADA ──────────────────────────
-   *
-   * `conFallo` se llena en la primera vuelta, así que una campaña que falló una vez y anduvo en el
-   * reintento seguía apareciendo como podrida. Es exactamente el caso que motivó el reintento: en
-   * el relleno inicial `120249590301010467` falló UN día de treinta por un 500 pasajero.
-   *
-   * Se decide DESPUÉS del bucle y no adentro, y eso no es estilo: adentro, la comprobación sólo ve
-   * los huecos acumulados hasta ese momento, así que el veredicto dependía del orden en que
-   * llegaran los reintentos. Medido por mutación: con el fallo permanente DESPUÉS del transitorio,
-   * la campaña rota salía declarada sana.
-   *
-   * Queda acusada la que dejó algún hueco — o sea la que sigue sin datos en algún día de la
-   * ventana. */
+  /* Una campaña que se recuperó en el reintento no sigue acusada. Se decide DESPUÉS del bucle: adentro, el
+     veredicto dependía del orden en que llegaran los reintentos (medido por mutación). Queda acusada la que
+     dejó algún hueco. */
   const conHueco = new Set(resumen.huecos.map((h) => h.campana));
   resumen.fallidas = [...conFallo]
     .filter(([campana]) => conHueco.has(campana))

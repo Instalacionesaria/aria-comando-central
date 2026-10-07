@@ -31,12 +31,14 @@ import {
   type SinCostos,
 } from '../../lib/negocio/embudosDeAcquisition.ts';
 
-const cifras = (c: Partial<Cifras>): Cifras => ({ ...CIFRAS_VACIAS, ...c });
+/** Por omisión la campaña trae contactos atribuidos: toda su inversión paga los costos de personas (A14-19). */
+const cifras = (c: Partial<Cifras>): Cifras => ({ ...CIFRAS_VACIAS, inversionConContactos: c.inversion ?? 0, ...c });
 const campana = (id: string, funnel: CampanaConocida['funnel'], estado = 'ACTIVE'): CampanaConocida => ({
   campana: id,
   nombre: `Nombre visible ${id}`,
   estado,
   conocida: true,
+  conContactos: true,
   funnel,
 });
 
@@ -107,6 +109,33 @@ test('el costo por contacto: +30 % es media, desde +60 % alta, y debajo de 10 co
   assert.deepEqual(r.debajoDelPiso, [{ regla: ACQ.cplSostenido, entidad: { tipo: 'campana', id: '3' }, muestra: 9 }]);
   // Los contactos que la inversión de hoy habría traído al costo de antes: 800 / 50 - 10.
   assert.equal(de(r, ACQ.cplSostenido)[1]!.perdidaContactos, 6);
+});
+
+test('el gasto de una campaña SIN contactos atribuidos no enciende «gasto sin crecimiento»', () => {
+  /* La campaña de mensajes: sus contactos llegan sin `campaignId`, así que su gasto sube sin que «sus» contactos
+     puedan subir. La regla saltaría por un hueco de atribución y no por el anuncio (A14-19). Mutación: medir
+     la regla con la inversión entera. */
+  const base = {
+    campanas: [campana('leads', 'leadform'), campana('mensajes', null)],
+    previa: [
+      ['leads', { inversion: 500, contactos: 20 }],
+      ['mensajes', { inversion: 100, inversionConContactos: 0 }],
+    ] as [string, Partial<Cifras>][],
+  };
+  const r = detectar(
+    medida({
+      ...base,
+      actual: [
+        ['leads', { inversion: 500, contactos: 20 }],
+        ['mensajes', { inversion: 700, inversionConContactos: 0 }],
+      ],
+    }),
+  );
+  assert.deepEqual(de(r, ACQ.gastoSinCrecimiento), [], 'la campaña de mensajes encendió la regla de la empresa');
+
+  // Y la regla sigue viva con las campañas que sí traen contactos.
+  const conLeads = detectar(medida({ ...base, actual: [['leads', { inversion: 800, contactos: 20 }], ['mensajes', { inversion: 100, inversionConContactos: 0 }]] }));
+  assert.ok(de(conLeads, ACQ.gastoSinCrecimiento).length > 0, 'el armado no enciende la regla con la campaña de leads');
 });
 
 test('la entidad es un identificador, nunca un nombre; la campaña sin funnel no compite por el ICP', () => {

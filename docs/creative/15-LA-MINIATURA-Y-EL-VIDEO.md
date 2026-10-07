@@ -49,7 +49,8 @@ app sólo maneja su propia cuenta, el acceso estándar a `ads_read` alcanza, **s
 
 **Qué es** · Una imagen chica al lado del nombre de la pieza, en la tabla de la subasta y en el cajón.
 **Fórmula** · De los anuncios de la pieza, **el de más impresiones en la ventana**. Si ninguno entregó
-en la ventana —la pauta está parada desde el 2026-09-14—, el de más impresiones en toda la historia
+en la ventana —las campañas que se recolectaban no entregaban desde el 2026-09-14; la de mensajes sí, y
+entró con la `076`—, el de más impresiones en toda la historia
 guardada. Empate: el `meta_anuncio_id` menor. Una función pura, probada por separado.
 **Estado** · Planificado (CR-7). **Por qué una regla y no «la primera»**: con seis anuncios por
 pieza, «la primera» es la que la base devuelve primero, y eso cambia sin que nadie lo decida.

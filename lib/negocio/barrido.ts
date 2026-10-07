@@ -39,6 +39,7 @@ import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { recolectarAnuncios } from './recolectarAnuncios.ts';
+import { rellenarAnuncios } from './rellenarAnuncios.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import { correrLaPasada } from '../agentes/detectores/correr.ts';
@@ -62,6 +63,7 @@ export type Tarea =
   | 'auditoria'
   | 'mejora'
   | 'anuncios'
+  | 'anuncios_relleno'
   | 'analizadores'
   | 'reintentos'
   | 'senales';
@@ -91,6 +93,8 @@ export const TAREAS = [
   'citas',
   'mejora',
   'anuncios',
+  // Después de `anuncios`: rellena lo que la pasada diaria dejó sin cuadrar. Sola en su horario.
+  'anuncios_relleno',
   // Últimas, y no importa: no comparten una sola fila con las otras. Ver sus horarios.
   'analizadores',
   'reintentos',
@@ -240,9 +244,10 @@ export const HORARIOS = {
      que no comparte ni una fila con las otras seis. No lee contactos para escribirlos, no avanza
      ninguna marca de agua y nadie espera su resultado.
 
-     El costo, contado: trece campañas —las que aparecen en nuestra atribución, no las sesenta y una
-     de la cuenta— por cuatro días (hoy más los tres que se releen por las correcciones de Meta) son
-     **52 llamadas por día y por empresa**. El relleno inicial son 13 x 30 = 390, una sola vez. */
+     El costo, contado (`076`): el vínculo, las campañas y la serie de la cuenta son unas 5 llamadas, más
+     tres por cada campaña candidata —las ACTIVE y las que gastaron en la última semana—. Con las 1 a 3
+     campañas activas de esta cuenta, 8 a 14 llamadas por día y por empresa. Lo que la cuenta dice que
+     gastó otra campaña lo busca el relleno, en su propio horario. */
   '17 6 * * *': {
     tareas: ['mejora', 'anuncios'],
     cadenciaMinutos: 1440,
@@ -264,6 +269,21 @@ export const HORARIOS = {
      2 × 60 + 60 = 180. */
   '41 * * * *': {
     tareas: ['analizadores'],
+    cadenciaMinutos: 60,
+    umbralMinutos: 180,
+  },
+
+  /* ── EL RELLENO DEL GASTO, CADA HORA Y SOLO (`076`) ──────────────────────
+
+     Busca qué campaña gastó en los días cerrados que no cuadran con la cuenta. La primera vez son cientos de
+     llamadas —61 campañas a unos 3 a 4,5 s cada una—, así que va solo en su horario, con su propio
+     presupuesto (`FIN_DEL_RELLENO_MS`), y cada corrida sigue donde quedó la anterior. Cuando todo cuadra no
+     hace ninguna llamada.
+
+     El minuto 53 porque no lo usa nadie (el 3, el 7, el 17, el 23, el 41 y los múltiplos de diez ya están), y
+     dos corridas en el mismo minuto se frenan por el candado. El umbral respeta la regla: 2 × 60 + 60 = 180. */
+  '53 * * * *': {
+    tareas: ['anuncios_relleno'],
     cadenciaMinutos: 60,
     umbralMinutos: 180,
   },
@@ -550,13 +570,15 @@ export async function barrerTodo(
                   ? await mejorar(org, auditor)
                   : tarea === 'anuncios'
                     ? await recolectarAnuncios(org.id, conToken(acceso))
-                    : tarea === 'analizadores'
-                      ? await analizar(org, analizador, arranque, ahora)
-                      : tarea === 'reintentos'
-                        ? await reintentar(org, analizador, arranque, ahora)
-                        : tarea === 'senales'
-                          ? await pasarLosDetectores(org, llaveDeIa ?? null, arranque, ahora)
-                          : await barrerCitas(org.id, conToken(acceso));
+                    : tarea === 'anuncios_relleno'
+                      ? await rellenarAnuncios(org.id, conToken(acceso), arranque, ahora)
+                      : tarea === 'analizadores'
+                        ? await analizar(org, analizador, arranque, ahora)
+                        : tarea === 'reintentos'
+                          ? await reintentar(org, analizador, arranque, ahora)
+                          : tarea === 'senales'
+                            ? await pasarLosDetectores(org, llaveDeIa ?? null, arranque, ahora)
+                            : await barrerCitas(org.id, conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -580,7 +602,7 @@ export async function barrerTodo(
          * marcarla como tal haría que el cron la reintentara— pero dejó trabajo sin hacer, y eso
          * tiene que poder leerse desde la pantalla de monitoreo sin abrir un registro.
          *
-         * Hoy lo informan `anuncios` y `analizadores`. `motivoDeLoIncompleto` devuelve nulo para las demás, así
+         * Hoy lo informan `anuncios`, `anuncios_relleno`, `analizadores` y `senales`. `motivoDeLoIncompleto` devuelve nulo para las demás, así
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
         await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
@@ -824,6 +846,9 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     descubrimiento?: unknown;
     nombres?: unknown;
     departamentosQueFallaron?: unknown;
+    vinculo?: unknown;
+    cuenta?: unknown;
+    residuos?: unknown;
   };
   const partes: string[] = [];
 
@@ -852,6 +877,19 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   }
   if (typeof r.sinTiempo === 'number' && r.sinTiempo > 0) {
     partes.push(`${r.sinTiempo} llamada(s) quedaron para la próxima corrida por tiempo`);
+  }
+
+  /* El gasto de Meta (`076`). Sin vínculo, la pasada no escribe nada a propósito —un vacío del proveedor
+     guardado como cero sería permanente—, y sin esta línea el sello quedaba limpio sobre una pasada que no
+     leyó el gasto. */
+  const v = r.vinculo as { estado?: unknown } | null | undefined;
+  if (v != null && v.estado !== 'connected') {
+    partes.push('Meta no está vinculado en GoHighLevel: no se leyó el gasto');
+  }
+  const cuenta = r.cuenta as { tipo?: unknown } | null | undefined;
+  if (cuenta?.tipo === 'fallo') partes.push('GoHighLevel no devolvió el gasto de la cuenta: no se renovó en esta pasada');
+  if (Array.isArray(r.residuos) && r.residuos.length > 0) {
+    partes.push(`${r.residuos.length} día(s) con gasto de la cuenta que ninguna campaña listada explica`);
   }
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');

@@ -46,7 +46,7 @@
 // ── LA VENTANA ES RODANTE, Y ACÁ SÍ ─────────────────────────────────────────
 //
 // `now() - N días`, como Conversation, y **no** anclada al día como Acquisition, Creative y
-// Conversion. La excepción de esas tres está escrita en `costoDelAnuncio.ts:33-63` y tiene un motivo
+// Conversion. La excepción de esas tres está escrita en `costoDelAnuncio.ts:34-64` y tiene un motivo
 // concreto: cruzan contactos con el gasto, que vive en una columna `date`, y mezclar las dos formas
 // dividió una vez treinta y un días de gasto entre treinta de leads.
 //

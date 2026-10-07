@@ -57,6 +57,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // credenciales, y después una por una. Sólo `GET`; imprime claves y hosts, nunca valores, y una
   // clave con forma de secreto —`/integration` trae el token de la Página— se nombra y no se sigue.
   'scripts/medir-activos-en-ghl.mjs',
+  // El quinto, con el mismo argumento (2026-10-07): mide cómo trae el Ad Manager de GoHighLevel el gasto de
+  // TODA la cuenta —la serie diaria y su corte de 25 filas, el total de una campaña en un rango— antes de
+  // cambiar el colector (`076`). Lee la empresa principal y su credencial. Sólo `GET`; imprime conteos,
+  // sumas y claves, nunca ids ni nombres: la campaña de la sonda va por argumento.
+  'scripts/medir-gasto-de-la-cuenta.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.

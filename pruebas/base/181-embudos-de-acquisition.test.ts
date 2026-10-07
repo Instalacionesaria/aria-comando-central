@@ -24,7 +24,10 @@
 //     cubre la anterior — mutaciones: dar cada cobertura por hecha;
 //   · «Hoy» no compara ni publica costos — mutación: costos en «Hoy»;
 //   · el universo incluye la campaña asignada sin actividad y la que GoHighLevel no listó;
-//   · otra empresa no se cuela — la RLS; y la ruta respeta el período y dice si la sesión puede asignar.
+//   · otra empresa no se cuela — la RLS; y la ruta respeta el período y dice si la sesión puede asignar;
+//   · desde la `076`, el día está entero si la serie de la cuenta lo cerró y el detalle cuadra con ella: un
+//     día con filas que no cuadra no cuenta, uno sin filas con la cuenta en cero sí, y la inversión del total
+//     es la de la cuenta — mutaciones: volver a contar días con filas, y el total con la suma por campaña.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -60,7 +63,7 @@ let hoy: (menos: number) => string;
 
 /** Borra una empresa de esta prueba y todo lo suyo. */
 async function borrarEmpresa(org: string): Promise<void> {
-  for (const tabla of ['funnels_de_campana', 'campanas', 'citas', 'contactos', 'metricas_de_anuncio', 'anuncios']) {
+  for (const tabla of ['funnels_de_campana', 'campanas', 'citas', 'contactos', 'metricas_de_anuncio', 'anuncios', 'gasto_de_la_cuenta', 'lecturas_de_gasto']) {
     await esc.admin.query(`delete from negocio.${tabla} where org_id = $1`, [org]);
   }
   await esc.admin.query('delete from identidad.organizaciones where id = $1', [org]);
@@ -163,6 +166,16 @@ before(async () => {
   // C2: hace dos, con gasto y sin desglose; hace uno, con desglose SIN `linkClick`.
   await unDia(A2, 2, 3, null);
   await unDia(A2, 1, 0, { videoView: 3 });
+  /* El total de la cuenta de cada día (`076`), igual a la suma por anuncio: así lo deja el colector cuando
+     cuadra. Su lectura es lo que cierra el día; las pruebas de abajo la mueven para sembrar días sin cerrar. */
+  await esc.admin.query(
+    `insert into negocio.gasto_de_la_cuenta (org_id, fecha, gasto)
+     select $1, m.fecha, coalesce(sum(m.gasto), 0)
+       from negocio.metricas_de_anuncio m
+      where m.org_id = $1
+      group by m.fecha`,
+    [propia],
+  );
 
   const mediodia = (hace: number) => `(current_date - ${hace})::timestamptz + interval '12 hours'`;
   // Doce calificados de C1: diez con puntaje, uno en cero y uno sin puntaje.
@@ -217,21 +230,33 @@ const zonas = new Map<string, string>();
 const zonaDe = (org: string) => zonas.get(org) ?? 'UTC';
 const periodo = (clave: ClaveDePeriodo) => PERIODOS.find((p) => p.clave === clave)!;
 
-/** Saca las filas de gasto de un día, corre `f`, y las devuelve. Para sembrar un hueco. */
+/**
+ * Saca el gasto de un día —su total de la cuenta y sus filas de métricas—, corre `f`, y lo devuelve. Para sembrar
+ * un día que nadie pidió.
+ */
 async function sinElDia<T>(hace: number, f: () => Promise<T>): Promise<T> {
   const guardadas = await esc.admin.query(
     `delete from negocio.metricas_de_anuncio where org_id = $1 and fecha = current_date - $2::int returning *`,
     [propia, hace],
   );
+  const cuenta = await esc.admin.query(
+    `delete from negocio.gasto_de_la_cuenta where org_id = $1 and fecha = current_date - $2::int returning *`,
+    [propia, hace],
+  );
   try {
     return await f();
   } finally {
-    for (const g of guardadas.rows as Record<string, unknown>[]) {
-      const columnas = Object.keys(g);
-      await esc.admin.query(
-        `insert into negocio.metricas_de_anuncio (${columnas.join(', ')}) values (${columnas.map((_, i) => `$${i + 1}`).join(', ')})`,
-        columnas.map((c) => (c === 'acciones' && g[c] !== null ? JSON.stringify(g[c]) : g[c])),
-      );
+    for (const [tabla, filas] of [
+      ['metricas_de_anuncio', guardadas.rows],
+      ['gasto_de_la_cuenta', cuenta.rows],
+    ] as const) {
+      for (const g of filas as Record<string, unknown>[]) {
+        const columnas = Object.keys(g);
+        await esc.admin.query(
+          `insert into negocio.${tabla} (${columnas.join(', ')}) values (${columnas.map((_, i) => `$${i + 1}`).join(', ')})`,
+          columnas.map((c) => (c === 'acciones' && g[c] !== null ? JSON.stringify(g[c]) : g[c])),
+        );
+      }
     }
   }
 }
@@ -427,7 +452,7 @@ test('antes de que el colector relea ayer, la ventana cerrada termina anteayer',
   /* El gasto de un día se lee a las 06:17 UTC de ese día y se relee a la misma hora del siguiente. Si la
      única lectura de ayer es de ayer mismo, ayer todavía es la foto de la madrugada. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = (current_date - 1)::timestamptz + interval '6 hours'
+    `update negocio.gasto_de_la_cuenta set leido_el = (current_date - 1)::timestamptz + interval '6 hours'
       where org_id = $1 and fecha = current_date - 1`,
     [propia],
   );
@@ -437,7 +462,7 @@ test('antes de que el colector relea ayer, la ventana cerrada termina anteayer',
     assert.deepEqual(p.anterior, { desde: hoy(15), hasta: hoy(9) });
   } finally {
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha = current_date - 1`,
+      `update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha = current_date - 1`,
       [propia],
     );
   }
@@ -495,6 +520,11 @@ test('el universo: la asignada sin actividad y la que GoHighLevel no listó tamb
   assert.equal(p.funnels.booking.inversion, 0);
   // El total: 14 de C1 + 3 de C2. Los 1000 de alfa, con la misma campaña y el mismo día, no.
   assert.equal(p.total.inversion, 17, 'se coló el gasto de otra empresa, o faltó uno de esta');
+  /* C2 nunca trajo un contacto con su campaña: sus 3 no pagan el costo por contacto (A14-19). Con la inversión
+     entera, el costo por contacto del total sería 17 / 17. */
+  assert.deepEqual([de(C1)?.conContactos, de(C2)?.conContactos, de(C3)?.conContactos], [true, false, true]);
+  assert.equal(p.total.inversionSinContactos, 3);
+  assert.equal(p.total.etapas[0]?.costo, 14 / 17, 'la campaña sin contactos pagó el costo por contacto del total');
   assert.equal(p.total.etapas[0]?.valor, 17, '16 de C1 y 1 de C3; no la plantilla ni el sin atribución');
   // 16 de C1 + 1 de C3 con campaña; más la plantilla y el sin atribución.
   assert.deepEqual(p.cobertura, { conCampana: 17, sobre: 19 });
@@ -549,7 +579,7 @@ test('la ruta respeta el período, trae los funnels y dice si la sesión puede a
 test('si el colector dejó de escribir hace más de 26 horas, la ventana termina ayer y no compara ni publica costos', async () => {
   /* Pasadas perdidas: la última escritura es de hace treinta horas. Dar la ventana por buena sería
      comparar días que el colector no volvió a mirar. */
-  await esc.admin.query(`update negocio.metricas_de_anuncio set sincronizado_el = now() - interval '30 hours' where org_id = $1`, [propia]);
+  await esc.admin.query(`update negocio.gasto_de_la_cuenta set leido_el = now() - interval '30 hours' where org_id = $1`, [propia]);
   try {
     const p = await enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia)));
     assert.deepEqual([p.sinComparacion, p.anterior, p.sinCostos], ['faltan_dias', null, 'gasto_incompleto']);
@@ -557,14 +587,14 @@ test('si el colector dejó de escribir hace más de 26 horas, la ventana termina
 
     /* Veinticinco horas es lo normal: la pasada es diaria, y un minuto antes de la de hoy la última
        escritura tiene casi veinticuatro. No es atraso. */
-    await esc.admin.query(`update negocio.metricas_de_anuncio set sincronizado_el = now() - interval '25 hours' where org_id = $1`, [
+    await esc.admin.query(`update negocio.gasto_de_la_cuenta set leido_el = now() - interval '25 hours' where org_id = $1`, [
       propia,
     ]);
     const alDia = await enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia)));
     assert.notEqual(alDia.sinComparacion, 'faltan_dias', 'una pasada puntual se leyó como atraso');
     assert.equal(alDia.sinCostos, null);
   } finally {
-    await esc.admin.query(`update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1`, [propia]);
+    await esc.admin.query(`update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1`, [propia]);
   }
 });
 
@@ -574,12 +604,12 @@ test('un día del medio que nunca se releyó después de terminar apaga la compa
      Ayer, releído a las 06:17 UTC de hoy, para que en Lima esté cerrado a cualquier hora de la corrida:
      el instante puede quedar en el futuro, y no importa, porque el atraso sólo mira hacia atrás. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = current_date::timestamptz + interval '6 hours 17 minutes'
+    `update negocio.gasto_de_la_cuenta set leido_el = current_date::timestamptz + interval '6 hours 17 minutes'
       where org_id = $1 and fecha = current_date - 1`,
     [propia],
   );
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = fecha::timestamptz + interval '6 hours'
+    `update negocio.gasto_de_la_cuenta set leido_el = fecha::timestamptz + interval '6 hours'
       where org_id = $1 and fecha = current_date - 4`,
     [propia],
   );
@@ -590,7 +620,7 @@ test('un día del medio que nunca se releyó después de terminar apaga la compa
     /* Releído a las 03:00 UTC del día siguiente: cerrado en UTC, todavía no en Lima (05:00 UTC). La
        cobertura cierra los días con la zona de la empresa, como el último día cerrado. */
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = (fecha + 1)::timestamptz + interval '3 hours'
+      `update negocio.gasto_de_la_cuenta set leido_el = (fecha + 1)::timestamptz + interval '3 hours'
         where org_id = $1 and fecha = current_date - 4`,
       [propia],
     );
@@ -601,7 +631,7 @@ test('un día del medio que nunca se releyó después de terminar apaga la compa
     assert.equal(enLima.sinComparacion, 'faltan_dias', 'la cobertura cerró el día con la medianoche de UTC');
   } finally {
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha in (current_date - 1, current_date - 4)`,
+      `update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha in (current_date - 1, current_date - 4)`,
       [propia],
     );
   }
@@ -612,12 +642,12 @@ test('un día de la ventana anterior releído antes de la medianoche de la empre
      siete días va de hace catorce a hace ocho. Un día suyo releído a las 03:00 UTC del siguiente está
      cerrado en UTC y no en Lima. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = current_date::timestamptz + interval '6 hours 17 minutes'
+    `update negocio.gasto_de_la_cuenta set leido_el = current_date::timestamptz + interval '6 hours 17 minutes'
       where org_id = $1 and fecha = current_date - 1`,
     [propia],
   );
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = (fecha + 1)::timestamptz + interval '3 hours'
+    `update negocio.gasto_de_la_cuenta set leido_el = (fecha + 1)::timestamptz + interval '3 hours'
       where org_id = $1 and fecha = current_date - 11`,
     [propia],
   );
@@ -629,7 +659,7 @@ test('un día de la ventana anterior releído antes de la medianoche de la empre
     assert.equal(enLima.sinComparacion, 'sin_historia', 'la anterior cerró el día con la medianoche de UTC');
   } finally {
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha in (current_date - 1, current_date - 11)`,
+      `update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha in (current_date - 1, current_date - 11)`,
       [propia],
     );
   }
@@ -640,7 +670,7 @@ test('si el colector escribe pero ya no cierra días, también está atrasado: l
      pero el último día cerrado es de hace cinco. Sin la cota de días, la ventana terminaría ahí, con
      flechas y costos de una semana que ya pasó. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = fecha::timestamptz + interval '6 hours'
+    `update negocio.gasto_de_la_cuenta set leido_el = fecha::timestamptz + interval '6 hours'
       where org_id = $1 and fecha between current_date - 4 and current_date - 1`,
     [propia],
   );
@@ -652,7 +682,7 @@ test('si el colector escribe pero ya no cierra días, también está atrasado: l
     /* Con el último cerrado de hace tres, que es lo normal al oeste de UTC−6 antes de la pasada, no hay
        atraso: la ventana termina ahí y los costos se publican. */
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha in (current_date - 3, current_date - 4)`,
+      `update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha in (current_date - 3, current_date - 4)`,
       [propia],
     );
     const normal = await enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia)));
@@ -661,7 +691,7 @@ test('si el colector escribe pero ya no cierra días, también está atrasado: l
     assert.equal(normal.sinCostos, null);
   } finally {
     await esc.admin.query(
-      `update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha between current_date - 4 and current_date - 1`,
+      `update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha between current_date - 4 and current_date - 1`,
       [propia],
     );
   }
@@ -684,6 +714,7 @@ test('«Completo» con el primer dato de hoy no publica costos: no hay ningún d
        values ($1, $2, current_date, 5, 100, 5)`,
       [otra, A1],
     );
+    await esc.admin.query(`insert into negocio.gasto_de_la_cuenta (org_id, fecha, gasto) values ($1, current_date, 5)`, [otra]);
     await esc.admin.query(
       `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera)
        values ($1, $2, 'Contacto 181', 'setter', now(), $3::jsonb)`,
@@ -701,7 +732,7 @@ test('una empresa al oeste de UTC−6 termina la ventana antes, sin parecer atra
      cerrado. La de Los Ángeles (07:00 u 08:00 UTC) no: ayer no está cerrado, y la ventana termina
      anteayer. Ninguna de las dos está atrasada: el colector escribió hoy. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = current_date::timestamptz + interval '6 hours 17 minutes'
+    `update negocio.gasto_de_la_cuenta set leido_el = current_date::timestamptz + interval '6 hours 17 minutes'
       where org_id = $1 and fecha = current_date - 1`,
     [propia],
   );
@@ -712,7 +743,7 @@ test('una empresa al oeste de UTC−6 termina la ventana antes, sin parecer atra
     assert.equal(enLosAngeles.ventana.hasta, hoy(2));
     assert.deepEqual([enLima.sinComparacion, enLosAngeles.sinComparacion], [null, null], 'una de las dos pareció atrasada');
   } finally {
-    await esc.admin.query(`update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha = current_date - 1`, [
+    await esc.admin.query(`update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha = current_date - 1`, [
       propia,
     ]);
   }
@@ -722,7 +753,7 @@ test('el día cierra a la medianoche de la EMPRESA, no a la de UTC', async () =>
   /* Una relectura a las 03:00 UTC ya pasó la medianoche de UTC, pero no la de Lima (05:00 UTC): para
      una empresa en Lima, ayer todavía no terminó cuando se releyó. */
   await esc.admin.query(
-    `update negocio.metricas_de_anuncio set sincronizado_el = current_date::timestamptz + interval '3 hours'
+    `update negocio.gasto_de_la_cuenta set leido_el = current_date::timestamptz + interval '3 hours'
       where org_id = $1 and fecha = current_date - 1`,
     [propia],
   );
@@ -732,8 +763,81 @@ test('el día cierra a la medianoche de la EMPRESA, no a la de UTC', async () =>
     assert.equal(enUtc.ventana.hasta, hoy(1));
     assert.equal(enLima.ventana.hasta, hoy(2), 'dio por cerrado un día que en la empresa todavía no había terminado');
   } finally {
-    await esc.admin.query(`update negocio.metricas_de_anuncio set sincronizado_el = now() where org_id = $1 and fecha = current_date - 1`, [
+    await esc.admin.query(`update negocio.gasto_de_la_cuenta set leido_el = now() where org_id = $1 and fecha = current_date - 1`, [
       propia,
     ]);
+  }
+});
+
+// ─── 4 · El gasto contra la cuenta (`076`) ──────────────────────────────────
+
+/** Corre `f` con el total de la cuenta de un día cambiado por `sql`, y lo devuelve. */
+async function conLaCuenta<T>(hace: number, set: string, f: () => Promise<T>): Promise<T> {
+  const antes = await esc.admin.query<{ gasto: string | null; residuo_el: Date | null }>(
+    `select gasto, residuo_el from negocio.gasto_de_la_cuenta where org_id = $1 and fecha = current_date - $2::int`,
+    [propia, hace],
+  );
+  await esc.admin.query(`update negocio.gasto_de_la_cuenta set ${set} where org_id = $1 and fecha = current_date - $2::int`, [propia, hace]);
+  try {
+    return await f();
+  } finally {
+    await esc.admin.query(
+      `update negocio.gasto_de_la_cuenta set gasto = $3, residuo_el = $4 where org_id = $1 and fecha = current_date - $2::int`,
+      [propia, hace, antes.rows[0]!.gasto, antes.rows[0]!.residuo_el],
+    );
+  }
+}
+
+test('un día con filas que NO cuadra con la cuenta no está entero, y el total dice lo que cobró Meta', async () => {
+  /* Es la fuga: el 1-oct tenía filas nulas de doce campañas y la cuenta decía 36,67 de la que sí gastó. La app
+     daba el día por entero y la inversión en cero. Mutación: volver a contar días con filas. */
+  const p = await conLaCuenta(2, 'gasto = gasto + 50', () => enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia))));
+  assert.deepEqual([p.sinComparacion, p.sinCostos, p.gasto.motivo], ['faltan_dias', 'gasto_incompleto', 'no_cuadra']);
+  assert.equal(p.total.inversion, 67, 'el total no es lo que cobró la cuenta');
+  assert.equal(p.gasto.deLaCuenta, 67);
+  assert.equal(p.total.inversionSinContactos, 53, 'lo que ninguna campaña leída explica no paga costos de personas');
+});
+
+test('un residuo declarado cuenta como entero: es gasto que ninguna campaña listada explica', async () => {
+  const p = await conLaCuenta(2, 'gasto = gasto + 50, residuo_el = now()', () =>
+    enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia))),
+  );
+  assert.deepEqual([p.sinComparacion, p.sinCostos, p.gasto.motivo], [null, null, null]);
+  assert.equal(p.total.inversion, 67);
+});
+
+test('un día SIN filas de métricas, con la cuenta cerrada y en cero, está entero', async () => {
+  /* Con la pauta parada el colector ya no pide las campañas pausadas, así que un día sin gasto no tiene filas:
+     tiene el cero de la cuenta. Mutación: exigir filas de métricas para dar el día por leído. */
+  const guardadas = await esc.admin.query(
+    `delete from negocio.metricas_de_anuncio where org_id = $1 and fecha = current_date - 5 returning *`,
+    [propia],
+  );
+  try {
+    const p = await enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia)));
+    assert.deepEqual([p.sinComparacion, p.sinCostos], [null, null], 'un día que la cuenta midió en cero se leyó como no pedido');
+  } finally {
+    for (const g of guardadas.rows as Record<string, unknown>[]) {
+      const columnas = Object.keys(g);
+      await esc.admin.query(
+        `insert into negocio.metricas_de_anuncio (${columnas.join(', ')}) values (${columnas.map((_, i) => `$${i + 1}`).join(', ')})`,
+        columnas.map((c) => (c === 'acciones' && g[c] !== null ? JSON.stringify(g[c]) : g[c])),
+      );
+    }
+  }
+});
+
+test('con métricas guardadas y sin la serie de la cuenta, el colector cuenta como atrasado', async () => {
+  // La transición: hasta la primera pasada nueva, las métricas solas ya no dicen si el día está completo.
+  const guardadas = await esc.admin.query(`delete from negocio.gasto_de_la_cuenta where org_id = $1 returning fecha, gasto`, [propia]);
+  try {
+    const p = await enLaPropia(() => embudosDeAcquisition(periodo('7d'), zonaDe(propia)));
+    assert.deepEqual([p.sinComparacion, p.sinCostos, p.gasto.motivo], ['faltan_dias', 'gasto_incompleto', 'colector_atrasado']);
+    assert.equal(p.gasto.deLaCuenta, null);
+    assert.equal(p.total.inversion, 17, 'sin la serie, el total es la suma por campaña');
+  } finally {
+    for (const g of guardadas.rows as { fecha: Date; gasto: string }[]) {
+      await esc.admin.query(`insert into negocio.gasto_de_la_cuenta (org_id, fecha, gasto) values ($1, $2, $3)`, [propia, g.fecha, g.gasto]);
+    }
   }
 });

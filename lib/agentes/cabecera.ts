@@ -35,6 +35,8 @@ import { citaCerrable } from '../negocio/citasAlcanzables.ts';
 import { DIAS_DE_LA_TASA } from '../negocio/indicadoresDeCitas.ts';
 import type { AlcanceDelCloser } from '../negocio/alcanceDelCloser.ts';
 import { diaEnZona } from '../negocio/tiempo.ts';
+import { ventanaDeMetricas } from '../negocio/costoDelAnuncio.ts';
+import { diasSinCuadrar } from '../negocio/gastoDeLaCuenta.ts';
 import type { PorQueNoAudita } from '../auditor/pantalla.ts';
 import { senalesDeLaPantalla, type SenalParaMostrar } from './senales/lectura.ts';
 import type { DepartamentoConSenales } from './senales/tipos.ts';
@@ -76,6 +78,22 @@ export function faltaPorFrescura(f: Frescura, que: string): string | null {
   return null;
 }
 
+/**
+ * Lo que falta cuando la cuenta de Meta gastó más de lo que suman sus campañas leídas (`076`), en una línea;
+ * `null` si todo cuadra. Pura. Va en la cabecera de Acquisition y de Creative con la prioridad de lo que falta
+ * configurar: mientras el relleno busca qué campaña gastó, los costos y las partes del gasto salen cortos.
+ */
+export function faltaPorCuadre(diasSinCuadrar: number): string | null {
+  if (diasSinCuadrar <= 0) return null;
+  return (
+    `En ${diasSinCuadrar === 1 ? 'un día' : `${diasSinCuadrar} días`} de la última semana la cuenta de Meta gastó más ` +
+    'de lo que suman sus campañas leídas: el gasto que falta se está buscando cada hora.'
+  );
+}
+
+/** Los días de la semana que mira la cabecera para el cuadre: la misma que la ventana corta de las pantallas. */
+const DIAS_DEL_CUADRE = 7;
+
 /** Por qué el auditor no audita, en una línea. La pantalla de Conversation ya lo dice en detalle. */
 export const FALTA_DEL_AUDITOR: Readonly<Record<PorQueNoAudita, string>> = {
   auditor_apagado: 'El auditor está apagado: las conversaciones de los agentes no se revisan.',
@@ -106,6 +124,10 @@ export async function comentarioDelDepartamento(
   if (faltaConFrescura === null && departamento !== 'conversation') {
     const lee = LO_QUE_LEE[departamento];
     faltaConFrescura = faltaPorFrescura(await frescuraDe(lee.tarea), lee.que);
+  }
+  // Y el gasto de las campañas contra el de la cuenta, en las dos pantallas que lo leen.
+  if (faltaConFrescura === null && (departamento === 'acquisition' || departamento === 'creative')) {
+    faltaConFrescura = faltaPorCuadre(await diasSinCuadrar((alias) => ventanaDeMetricas(alias, DIAS_DEL_CUADRE)));
   }
   const senales = [...(await senalesDeLaPantalla(departamento, '7d', de.texto)), ...(await senalesDeLaPantalla(departamento, '30d', de.texto))];
   return comentarioDeLaCabecera({ falta: faltaConFrescura, senales, regla: await reglaDeHoy(de.seccion, zona) });

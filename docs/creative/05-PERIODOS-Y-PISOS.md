@@ -147,7 +147,7 @@ otra cohorte y otras cifras.
 `timestamptz`.
 **Rastro** · `db/migraciones/050:169-173`: *«el proveedor entrega `dateStart`/`dateStop` como día
 calendario de la zona de la cuenta publicitaria, no como instante… lo que no es un instante no se
-guarda como instante»*. Y `lib/negocio/costoDelAnuncio.ts:32-63` ya resolvió el corte: las tres
+guarda como instante»*. Y `lib/negocio/costoDelAnuncio.ts:33-64` ya resolvió el corte: las tres
 consultas usan la misma ventana anclada al día.
 **Estado** · Se reusa el mismo anclaje. Mezclar las dos formas hace que el gasto y los contactos de
 «hoy» hablen de dos ventanas que no coinciden, y la diferencia es de horas — invisible y suficiente

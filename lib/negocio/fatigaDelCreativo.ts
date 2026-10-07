@@ -4,7 +4,7 @@
 // LA MITAD DE LA FATIGA DEL § 18.12 NO SE PUEDE CONSTRUIR, Y HAY QUE DECIRLO
 //
 // El indicador clásico es «la frecuencia sube y el CTR baja». La primera mitad **no existe** y no es
-// una limitación del proveedor: es aritmética. `costoDelAnuncio.ts:88-95` ya lo dejó escrito para el
+// una limitación del proveedor: es aritmética. `costoDelAnuncio.ts:89-96` ya lo dejó escrito para el
 // alcance y la frecuencia:
 //
 //     «Sumar siete días de alcance cuenta siete veces a quien vio el anuncio los siete días… es un

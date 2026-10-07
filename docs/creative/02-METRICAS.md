@@ -78,7 +78,7 @@ cero reproducciones». Una pieza estática no tiene reproducciones **nunca**, y 
 ### C2-05 · El alcance y la frecuencia no se agregan, y por eso no están
 
 **Qué es** · No hay «alcance de la pieza en la ventana» ni «frecuencia de la pieza».
-**Rastro** · `lib/negocio/costoDelAnuncio.ts:88-95`: *«Sumar siete días de alcance cuenta siete veces a
+**Rastro** · `lib/negocio/costoDelAnuncio.ts:89-96`: *«Sumar siete días de alcance cuenta siete veces a
 quien vio el anuncio los siete días… es un número más grande que no significa nada, y que encima se
 parece a uno que sí.»*
 **Estado** · **Al grano de la pieza es peor que al grano del anuncio**: la misma persona alcanzada por
@@ -247,7 +247,7 @@ el equivocado es un defecto silencioso: la columna se llena con números plausib
 **Estado** · **Construible hoy.** Medido: de 31 % a 77 % según la pieza, con cinco piezas sobre el
 piso en 30 días. **Se cuenta con `count(distinct contacto_id)`** — verificado en
 `02-CREATIVE.md:445-448`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
-Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:302-305`, o
+Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:311-314`, o
 las dos pantallas no sumarían igual.
 
 ### C2-19 · Las citas congeladas viajan al lado de la tasa de agenda
@@ -293,7 +293,7 @@ de `07-REGLAS-TRANSVERSALES.md`. Creative agrupa lo que Acquisition ya calculó.
 ### C2-23 · CPL por pieza
 
 **Fórmula** · Gasto de la pieza / contactos de la pieza.
-**Piso** · **Ninguno, y no es una inconsistencia.** `lib/negocio/costoDelAnuncio.ts:110-118` lo dejó
+**Piso** · **Ninguno, y no es una inconsistencia.** `lib/negocio/costoDelAnuncio.ts:111-119` lo dejó
 escrito: *«el piso existe para las PROPORCIONES… El CPL no es una proporción — "gastamos 200 y entró
 uno" es un hecho exacto sobre lo que ya pasó.»* Lo que lo salva es que el conteo de contactos viaja al
 lado.

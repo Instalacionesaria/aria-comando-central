@@ -9,7 +9,9 @@
 // campaña y por funnel. El navegador no calcula nada: dibuja lo que llega, igual que antes
 // (`lib/negocio/vistaDeAcquisition.ts`).
 //
-//   · inversión y clics: `negocio.metricas_de_anuncio`, sumado por `anuncios.meta_campana_id`;
+//   · inversión y clics: `negocio.metricas_de_anuncio`, sumado por `anuncios.meta_campana_id`. La inversión
+//     del TOTAL es la de toda la cuenta (`negocio.gasto_de_la_cuenta`, `076`), igual al Administrador de
+//     anuncios; los costos de personas se pagan sólo con la de las campañas que traen contactos (A14-19);
 //   · contactos: los que traen esa campaña en `atribucion_primera->>'campaignId'`, dados de alta en la
 //     ventana (A14-04);
 //   · agendados: `tieneCitaAlcanzable`; calificados: agendados sin `contactoDescartado` (A14-07);
@@ -57,6 +59,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { contactoDescartado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { coberturaDelGasto, estadoDeLaSerie, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
 import { funnelsDeLasCampanas, FUNNELS, type Funnel } from './funnelDeLaCampana.ts';
 import { PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
@@ -87,6 +90,12 @@ export const ETAPAS: Readonly<Record<ClaveDeGrupo, readonly Etapa[]>> = {
 export interface Cifras {
   inversion: number;
   /**
+   * La inversión de las campañas que trajeron algún contacto atribuido, alguna vez (A14-19). Es el único
+   * numerador de los costos de personas —por contacto, por agendado, por calificado—: una campaña de mensajes,
+   * cuyos contactos llegan sin `campaignId`, no puede inflar el costo por contacto de las demás.
+   */
+  inversionConContactos: number;
+  /**
    * El gasto de las filas CON desglose de acciones, que es de donde salen los clics. El costo por clic
    * divide esto y no la inversión entera: las filas sin desglose gastaron, pero sus clics no se saben.
    */
@@ -112,6 +121,7 @@ export interface Cifras {
 
 export const CIFRAS_VACIAS: Readonly<Cifras> = {
   inversion: 0,
+  inversionConContactos: 0,
   inversionConDesglose: 0,
   clics: null,
   contactos: 0,
@@ -156,8 +166,9 @@ export interface EtapaDelGrupo {
    */
   tasa: number | null;
   /**
-   * Inversión dividida por la etapa —la de los clics, por el gasto con desglose—. `null` sin inversión,
-   * sin etapa, en «Hoy», o si el gasto de la ventana no está entero (A14-09; el motivo, en `sinCostos`).
+   * Inversión dividida por la etapa —la de los clics, por el gasto con desglose; la de personas, por la
+   * inversión con contactos (A14-19)—. `null` sin inversión, sin etapa, en «Hoy», o si el gasto de la ventana
+   * no está entero (A14-09; el motivo, en `sinCostos`).
    */
   costo: number | null;
   variacion: Variacion;
@@ -189,7 +200,14 @@ export interface CalificadosDelGrupo {
 export interface Grupo {
   clave: ClaveDeGrupo;
   campanas: number;
+  /** Cuántas de esas campañas gastaron en la ventana. */
+  conGasto: number;
   inversion: number;
+  /**
+   * La parte de la inversión que no paga ningún costo de personas: la de las campañas sin contactos atribuidos
+   * y, en el total, la que la cuenta cobró sin que ninguna campaña leída la explique (A14-19).
+   */
+  inversionSinContactos: number;
   variacionDeInversion: Variacion;
   etapas: EtapaDelGrupo[];
   calificados: CalificadosDelGrupo;
@@ -203,6 +221,11 @@ export interface CampanaDeAcquisition {
   estado: string | null;
   /** Si GoHighLevel la listó (`065`). Sólo una conocida se puede asignar a un funnel (`066`). */
   conocida: boolean;
+  /**
+   * Si alguna vez trajo un contacto con su `campaignId` en la atribución. Sin eso, sus etapas de personas se
+   * dibujan «—» y no 0: no se sabe cuánta gente trajo (A14-19).
+   */
+  conContactos: boolean;
   funnel: Funnel | null;
   cifras: Grupo;
 }
@@ -231,6 +254,15 @@ export interface EmbudosDeAcquisition {
   anterior: { desde: string; hasta: string } | null;
   sinComparacion: SinComparacion | null;
   sinCostos: SinCostos | null;
+  /**
+   * El gasto de la ventana según la cuenta (`076`):
+   *
+   *   · `deLaCuenta`: lo que Meta cobró en toda la cuenta, que es la inversión del total. `null` si a algún día
+   *     de la ventana le falta el total de la cuenta: entonces el total suma lo leído por campaña;
+   *   · `motivo`: por qué el gasto no está entero, o `null`. `no_cuadra` es «falta gasto de algunas campañas»:
+   *     la cuenta dice más de lo que se alcanzó a leer por campaña, y el relleno lo está buscando.
+   */
+  gasto: { deLaCuenta: number | null; motivo: MotivoDelGasto | null };
   total: Grupo;
   funnels: Record<Funnel, Grupo>;
   sinFunnel: Grupo;
@@ -285,6 +317,7 @@ export function variacion(actual: number | null, anterior: number | null | undef
 export function sumar(a: Cifras, b: Cifras): Cifras {
   return {
     inversion: a.inversion + b.inversion,
+    inversionConContactos: a.inversionConContactos + b.inversionConContactos,
     inversionConDesglose: a.inversionConDesglose + b.inversionConDesglose,
     clics: a.clics === null && b.clics === null ? null : (a.clics ?? 0) + (b.clics ?? 0),
     contactos: a.contactos + b.contactos,
@@ -321,6 +354,8 @@ export function armarGrupo(
   anterior: Cifras | null,
   campanas: number,
   conCostos = true,
+  /** Cuántas campañas del grupo gastaron. Por omisión, una si gastó: el grupo de una sola campaña. */
+  conGasto = actual.inversion > 0 ? 1 : 0,
 ): Grupo {
   const calculadas: EtapaDelGrupo[] = [];
   /* La etapa de personas anterior con dato: contra ella se mide la tasa. Se salta `clics` —son
@@ -336,8 +371,9 @@ export function armarGrupo(
       valor,
       deMeta,
       tasa: i === 0 || deMeta ? null : tasa(valor, anteriorDePersonas),
-      // Los clics se pagan con el gasto de las filas que los cuentan; el resto, con la inversión entera.
-      costo: costoDe(deMeta ? actual.inversionConDesglose : actual.inversion, valor),
+      /* Los clics se pagan con el gasto de las filas que los cuentan; las personas, con el de las campañas que
+         traen contactos (A14-19). */
+      costo: costoDe(deMeta ? actual.inversionConDesglose : actual.inversionConContactos, valor),
       variacion: variacion(valor, anterior === null ? null : valorDe(etapa, anterior), 'mas_es_mejor'),
     });
     if (!deMeta && valor !== null) anteriorDePersonas = valor;
@@ -346,14 +382,16 @@ export function armarGrupo(
   return {
     clave,
     campanas,
+    conGasto,
     inversion: actual.inversion,
+    inversionSinContactos: Math.max(0, Math.round((actual.inversion - actual.inversionConContactos) * 100) / 100),
     variacionDeInversion: variacion(actual.inversion, anterior?.inversion, 'neutro'),
     etapas: calculadas,
     calificados: {
       valor: actual.calificados,
       variacion: { tipo: 'sin_comparacion' },
       tasa: tasa(actual.calificados, actual.agendados),
-      costo: costoDe(actual.inversion, actual.calificados),
+      costo: costoDe(actual.inversionConContactos, actual.calificados),
       icp: {
         alto: actual.alto,
         medio: actual.medio,
@@ -371,6 +409,7 @@ export interface CampanaConocida {
   nombre: string | null;
   estado: string | null;
   conocida: boolean;
+  conContactos: boolean;
   funnel: Funnel | null;
 }
 
@@ -391,6 +430,11 @@ export function armarEmbudos(entrada: {
   cobertura: { conCampana: number; sobre: number };
   /** Por qué no hay costos, o `null` si los hay. */
   sinCostos: SinCostos | null;
+  /**
+   * El total de la cuenta en la ventana y en la anterior (`null` si le falta algún día), y por qué el gasto no
+   * está entero. Sin esto —las pruebas puras—, el total es la suma de las campañas.
+   */
+  gasto?: { deLaCuenta: number | null; deLaCuentaAnterior: number | null; motivo: MotivoDelGasto | null };
 }): EmbudosDeAcquisition {
   const deLa = (m: ReadonlyMap<string, Cifras>, c: string) => m.get(c) ?? CIFRAS_VACIAS;
 
@@ -414,7 +458,26 @@ export function armarEmbudos(entrada: {
     const actual = cuales.reduce((s, c) => sumar(s, c.actual), CIFRAS_VACIAS);
     const anterior =
       entrada.previa === null ? null : cuales.reduce((s, c) => sumar(s, c.anterior ?? CIFRAS_VACIAS), CIFRAS_VACIAS);
-    return armarGrupo(clave, ETAPAS[clave], actual, anterior, cuales.length, entrada.sinCostos === null);
+    const conGasto = cuales.filter((c) => c.actual.inversion > 0).length;
+    return armarGrupo(clave, ETAPAS[clave], actual, anterior, cuales.length, entrada.sinCostos === null, conGasto);
+  }
+
+  /* ── LA INVERSIÓN DEL TOTAL ES LA DE LA CUENTA (A14-19) ────────────────────
+     Lo que Meta cobró, de todas las campañas, crucen o no con contactos: igual al Administrador de anuncios. La
+     suma por campaña queda por debajo mientras el relleno busca qué campaña gastó, o si un día es residuo (gasto
+     de una campaña que la cuenta ya no lista). Los costos de personas no cambian: se pagan con la inversión con
+     contactos, que sale de las campañas. Lo que la cuenta cobró de más va a `inversionSinContactos`. */
+  const total = grupo('total', campanas);
+  const deLaCuenta = entrada.gasto?.deLaCuenta ?? null;
+  if (deLaCuenta !== null) {
+    const anterior = entrada.gasto?.deLaCuentaAnterior ?? null;
+    total.inversion = deLaCuenta;
+    total.inversionSinContactos = Math.max(
+      0,
+      Math.round((deLaCuenta - campanas.reduce((s, c) => s + c.actual.inversionConContactos, 0)) * 100) / 100,
+    );
+    total.variacionDeInversion =
+      entrada.previa === null ? { tipo: 'sin_comparacion' } : variacion(deLaCuenta, anterior, 'neutro');
   }
 
   const funnels = Object.fromEntries(
@@ -426,14 +489,16 @@ export function armarEmbudos(entrada: {
     anterior: entrada.anterior,
     sinComparacion: entrada.sinComparacion,
     sinCostos: entrada.sinCostos,
-    total: grupo('total', campanas),
+    gasto: { deLaCuenta, motivo: entrada.gasto?.motivo ?? null },
+    total,
     funnels,
     sinFunnel: grupo('sin_funnel', campanas.filter((c) => c.funnel === null)),
-    campanas: campanas.map(({ campana, nombre, estado, conocida, funnel, cifras }) => ({
+    campanas: campanas.map(({ campana, nombre, estado, conocida, conContactos, funnel, cifras }) => ({
       campana,
       nombre,
       estado,
       conocida,
+      conContactos,
       funnel,
       cifras,
     })),
@@ -516,6 +581,11 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
        and c.atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}
      group by c.atribucion_primera->>'campaignId'`.execute(datos());
 
+  /* Las campañas que trajeron algún contacto atribuido, ALGUNA VEZ y no sólo en la ventana: una campaña de
+     leads que esta semana gastó sin traer a nadie sí tiene que pagar el costo por contacto —es justo lo que ese
+     costo mide—; una de mensajes, cuyos contactos llegan sin `campaignId`, no (A14-19). */
+  const conContactos = await campanasConContactos();
+
   const cifras = new Map<string, Cifras>();
   const de = (campana: string) => {
     let c = cifras.get(campana);
@@ -528,6 +598,7 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
   for (const g of gasto.rows) {
     const c = de(g.campana);
     c.inversion = n(g.inversion);
+    c.inversionConContactos = conContactos.has(g.campana) ? c.inversion : 0;
     c.inversionConDesglose = n(g.inversion_con_desglose);
     /* Sin entrega, cero clics. Con entrega y sin ningún desglose, no se saben. Con desglose, la suma de
        `linkClick` —cero si ese tipo no ocurrió—; si sólo una parte de las filas lo trae, el costo por
@@ -547,6 +618,14 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
     c.conPuntaje = n(p.con_puntaje);
   }
   return cifras;
+}
+
+/** Las campañas que alguna vez trajeron un contacto con su `campaignId` en la atribución (A14-19). */
+async function campanasConContactos(): Promise<Set<string>> {
+  const r = await sql<{ campana: string }>`
+    select distinct atribucion_primera->>'campaignId' as campana from negocio.contactos
+     where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}`.execute(datos());
+  return new Set(r.rows.map((f) => f.campana));
 }
 
 /**
@@ -569,62 +648,47 @@ async function universoDeCampanas(): Promise<CampanaConocida[]> {
       left join negocio.campanas k on k.meta_campana_id = t.campana`.execute(datos());
 
   const funnels = new Map((await funnelsDeLasCampanas()).map((f) => [f.campana, f.funnel]));
+  const conContactos = await campanasConContactos();
   return filas.rows.map((f) => ({
     campana: f.campana,
     nombre: f.nombre,
     estado: f.estado,
     conocida: f.conocida,
+    conContactos: conContactos.has(f.campana),
     funnel: funnels.get(f.campana) ?? null,
   }));
 }
 
 /**
- * Si un día de métricas está CERRADO: alguna fila suya se releyó después de la medianoche de la empresa
- * siguiente a ese día. Se usa dentro de un `group by fecha`. Un solo lugar para las dos preguntas que lo
- * necesitan: cuál es el último día cerrado, y si una ventana tiene todos sus días cerrados.
- */
-function diaCerrado(zona: string) {
-  return sql<boolean>`max(sincronizado_el) >= ((fecha + 1)::timestamp at time zone ${zona})`;
-}
-
-/**
  * Si los datos guardados describen una ventana entera, para poder compararla.
  *
- *   · **El gasto, día por día, y cada día CERRADO.** El colector escribe una fila por anuncio y por día
- *     aunque no haya entregado (`recolectarAnuncios.ts`, «un día recolectado siempre tiene filas»; en
- *     producción, 44 de 44 días con filas del 2026-08-18 al 09-30), así que un día sin ninguna fila es un
- *     día que nadie pidió. Y un día con filas que nunca se releyó después de terminar es una foto de
- *     antes de que terminara: en Lima, si se perdieron las dos pasadas que lo releen; al oeste de UTC−6,
- *     con perder una, porque ahí sólo la tercera lectura lo cierra. Queda así para siempre, porque el
- *     colector no vuelve a pedir un día que ya tiene filas. Se cuentan sólo los días cerrados (lo
- *     encontró la cuarta revisión de AQ-3), y el precio está dicho en docs/acquisition/14, A14-10: las
- *     ventanas que contienen ese día no comparan ni publican costos hasta que el día sale de ellas, y
- *     «Completo» ya no los publica. Una empresa sin ninguna métrica y sin contactos de
- *     campaña no frena: nunca pautó, y su inversión cero compara bien. Si tiene contactos de campaña, sí
- *     pautó y lo que falta es la recolección: el gasto no está entero.
+ *   · **El gasto, contra la cuenta** (`coberturaDelGasto`, `076`): cada día con su total de la cuenta, releído
+ *     después de terminar en la zona de la empresa, y el detalle por campaña cuadrando con él. Hasta el
+ *     2026-10-07 bastaba con que el día tuviera alguna fila de métricas, y así se escondió que el colector pedía
+ *     13 de las 61 campañas: las filas nulas de las pausadas tapaban a la única que gastó. El precio de un día
+ *     sin cerrar está dicho en docs/acquisition/14, A14-10: las ventanas que lo contienen no comparan ni
+ *     publican costos hasta que el día sale de ellas. Una empresa sin ningún gasto guardado y sin contactos de
+ *     campaña no frena: nunca pautó, y su inversión cero compara bien. Si tiene contactos de campaña, sí pautó y
+ *     lo que falta es la recolección: el gasto no está entero.
  *   · **Los contactos, por su comienzo.** Un día sin altas es un día normal, así que acá no se pueden
  *     ver huecos; lo que sí se exige es que la historia empiece antes de la ventana.
  *   · **Los clics, por el comienzo del desglose**, que es posterior al del gasto (la `053`). Sin él, la
  *     ventana anterior tendría gasto sin clics y la flecha de los clics mentiría; ahí se apaga sólo esa.
  */
 async function coberturaDeLaVentana(desde: string, hasta: string, dias: number, zona: string) {
-  const r = await sql<{ hay_metricas: boolean; dias_con_metricas: string; contactos_desde: string | null; desglose_desde: string | null }>`
-    select exists (select 1 from negocio.metricas_de_anuncio) as hay_metricas,
-           (select count(*) from (
-              select fecha from negocio.metricas_de_anuncio
-               where fecha between ${desde}::date and ${hasta}::date
-               group by fecha
-              having ${diaCerrado(zona)}) as x) as dias_con_metricas,
+  const g = await coberturaDelGasto(desde, hasta, dias, zona);
+  const r = await sql<{ hay_gasto: boolean; contactos_desde: string | null; desglose_desde: string | null }>`
+    select (exists (select 1 from negocio.gasto_de_la_cuenta) or exists (select 1 from negocio.metricas_de_anuncio)) as hay_gasto,
            (select to_char(min(alta_en_el_crm)::date, 'YYYY-MM-DD') from negocio.contactos
              where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}) as contactos_desde,
            (select to_char(min(fecha), 'YYYY-MM-DD') from negocio.metricas_de_anuncio
              where acciones is not null) as desglose_desde`.execute(datos());
   const f = r.rows[0]!;
+  const sinPautaNunca = !f.hay_gasto && f.contactos_desde === null;
+  const motivo: MotivoDelGasto | null = f.hay_gasto ? g.motivo : sinPautaNunca ? null : 'dias_sin_leer';
   return {
-    /* `dias > 0`: una ventana de cero días —«Completo» con el primer dato de hoy, que todavía no tiene
-       ningún día cerrado— daría cero de cero y pasaría sin haber mirado nada (lo encontró la quinta
-       revisión). */
-    gasto: f.hay_metricas ? dias > 0 && n(f.dias_con_metricas) === dias : f.contactos_desde === null,
+    gasto: motivo === null,
+    motivo,
     contactos: f.contactos_desde === null || f.contactos_desde <= desde,
     clics: f.desglose_desde === null || f.desglose_desde <= desde,
   };
@@ -663,46 +727,29 @@ export async function lecturaDeAcquisition(
   const cerrados = periodo.clave === '7d' || periodo.clave === '30d';
   const completo = periodo.clave === 'completo';
 
-  /* El último día CERRADO (`diaCerrado`). El colector lee un día a las 06:17 UTC de ese día y lo relee
-     a la misma hora del siguiente, así que hasta esa pasada, ayer todavía es la foto de la madrugada.
-     En una empresa al oeste de UTC−6 ni la relectura del día siguiente lo cierra —su medianoche cae
-     después de las 06:17 UTC—, y el último cerrado es anteayer o el anterior: la ventana termina ahí.
+  /* El último día CERRADO: el último anterior a hoy cuyo total de la cuenta se releyó después de la medianoche
+     siguiente de la empresa (`estadoDeLaSerie`). El colector lee la serie a las 06:17 UTC, así que hasta esa
+     pasada ayer todavía es la foto de la madrugada; en una empresa al oeste de UTC−6 ni la pasada del día
+     siguiente lo cierra —su medianoche cae después de las 06:17 UTC—, y el último cerrado es anteayer o el
+     anterior: la ventana termina ahí.
 
-     **El colector atrasado se mide primero por su última escritura**: más de 26 horas sin escribir es
-     una pasada diaria perdida, con dos horas de margen para lo que tarda el cron. Contar sólo cuántos
-     días atrás quedó el último cerrado, con la cota de dos que había, hacía parecer atrasada todas las
-     noches a una empresa en Los Ángeles sin una sola pasada perdida (lo encontró la cuarta revisión).
-
-     **Y además por días, con la cota del peor caso normal**, porque escribir no es cerrar: una pasada
-     que sigue escribiendo hoy y ayer pero ya no llega al tercer día —el presupuesto lo corta con cuatro
-     campañas de más, ver `campanasNuestras`— no cierra ningún día al oeste de UTC−6, y sin esta cota la
-     ventana se quedaría quieta en una semana vieja, con flechas y costos (lo encontró la quinta). Tres
-     días es el desfase más grande que da una pasada al día en cualquier zona: al oeste de UTC−6, antes
-     de la pasada de hoy, el último cerrado es de hace tres. */
-  const h = await sql<{ hay_metricas: boolean; ultimo_cerrado: string | null; atrasado: boolean; primer_dato: string | null }>`
-    with cerrados as (
-      select fecha from negocio.metricas_de_anuncio
-       where fecha < current_date
-       group by fecha
-      having ${diaCerrado(zona)}
-    )
-    select exists (select 1 from negocio.metricas_de_anuncio) as hay_metricas,
-           to_char((select max(fecha) from cerrados), 'YYYY-MM-DD') as ultimo_cerrado,
-           coalesce((select max(sincronizado_el) from negocio.metricas_de_anuncio) < now() - interval '26 hours', true)
-             or coalesce((select max(fecha) from cerrados) < current_date - 3, false) as atrasado,
-           to_char(least((select min(fecha) from negocio.metricas_de_anuncio),
-                         (select min(alta_en_el_crm)::date from negocio.contactos
-                           where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA})), 'YYYY-MM-DD') as primer_dato`.execute(
-    datos(),
-  );
-  const historia = h.rows[0]!;
-  /* Sin métricas no hay nada que esperar: ayer está cerrado. Con métricas, el último día cerrado; si
-     el colector dejó de escribir, la ventana termina ayer igual y no compara (`faltan_dias`). */
-  const colectorAtrasado = historia.hay_metricas && historia.atrasado;
-  const ultimoCerrado = !historia.hay_metricas || colectorAtrasado ? null : historia.ultimo_cerrado;
+     **El colector atrasado**: la serie sin leer hace más de 26 horas —una pasada diaria perdida, con dos horas
+     de margen—, o su último día cerrado de hace más de tres —escribir no es cerrar, y tres días es el desfase
+     más grande que da una pasada al día en cualquier zona—. Lo encontraron la cuarta y la quinta revisión de
+     AQ-3, sobre las métricas; desde la `076` se mide sobre la serie, que es la que dice si un día está entero. */
+  const serie = await estadoDeLaSerie(zona);
+  const contactos = await sql<{ desde: string | null }>`
+    select to_char(min(alta_en_el_crm)::date, 'YYYY-MM-DD') as desde from negocio.contactos
+     where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}`.execute(datos());
+  const primerDato =
+    [serie.primerDato, contactos.rows[0]?.desde ?? null].filter((d): d is string => d !== null).sort()[0] ?? null;
+  /* Sin gasto guardado no hay nada que esperar: ayer está cerrado. Con gasto, el último día cerrado; si el
+     colector está atrasado, la ventana termina ayer igual y no compara (`faltan_dias`). */
+  const colectorAtrasado = serie.atrasado;
+  const ultimoCerrado = !serie.hayDatos || colectorAtrasado ? null : serie.ultimoCerrado;
 
   /* Las fechas salen de la base y viajan como texto: `current_date` es el de la base, y un `date` que
-     pasa por un `Date` de JavaScript se corre un día al este de Greenwich (ver `diasConFilas` en
+     pasa por un `Date` de JavaScript se corre un día al este de Greenwich (ver `comoDiaLocal` en
      `recolectarAnuncios.ts`). «Completo» empieza en el primer dato y no en `current_date - 3649`. */
   const bordes = await sql<{
     desde: string;
@@ -711,14 +758,16 @@ export async function lecturaDeAcquisition(
     ant_hasta: string;
     cierre: string;
     dias_hasta_el_cierre: number;
+    dias: number;
   }>`
     select to_char(x.desde, 'YYYY-MM-DD') as desde,
            to_char(x.hasta, 'YYYY-MM-DD') as hasta,
            to_char(x.desde - (x.hasta - x.desde + 1), 'YYYY-MM-DD') as ant_desde,
            to_char(x.desde - 1, 'YYYY-MM-DD') as ant_hasta,
            to_char(least(x.hasta, x.cierre), 'YYYY-MM-DD') as cierre,
-           (least(x.hasta, x.cierre) - x.desde + 1)::int as dias_hasta_el_cierre
-      from (select case when ${completo} then coalesce(${historia.primer_dato}::date, current_date)
+           (least(x.hasta, x.cierre) - x.desde + 1)::int as dias_hasta_el_cierre,
+           (x.hasta - x.desde + 1)::int as dias
+      from (select case when ${completo} then coalesce(${primerDato}::date, current_date)
                         when ${cerrados} then coalesce(${ultimoCerrado}::date, current_date - 1) - ${d - 1}::int
                         else current_date end as desde,
                    case when ${cerrados} then coalesce(${ultimoCerrado}::date, current_date - 1)
@@ -747,6 +796,11 @@ export async function lecturaDeAcquisition(
   const sinCostos: SinCostos | null =
     periodo.clave === 'hoy' ? 'hoy' : colectorAtrasado || !actualEntera.gasto ? 'gasto_incompleto' : null;
 
+  /* Lo que la cuenta cobró en la ventana ENTERA —con hoy a medias en «Hoy» y en «Completo»—, que es la inversión
+     del total; y en la anterior, para su flecha. `null` si a algún día le falta el total de la cuenta. */
+  const deLaCuenta = (await coberturaDelGasto(ventana.desde, ventana.hasta, Number(b.dias), zona)).deLaCuenta;
+  const motivoDelGasto: MotivoDelGasto | null = colectorAtrasado ? 'colector_atrasado' : actualEntera.motivo;
+
   const cobertura = await sql<{ con_campana: string; sobre: string }>`
     select count(*) filter (where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}) as con_campana,
            count(*) as sobre
@@ -774,6 +828,12 @@ export async function lecturaDeAcquisition(
     previa,
     cobertura: { conCampana: n(cobertura.rows[0]?.con_campana), sobre: n(cobertura.rows[0]?.sobre) },
     sinCostos,
+    gasto: {
+      deLaCuenta,
+      deLaCuentaAnterior:
+        anterior === null ? null : (await coberturaDelGasto(anterior.desde, anterior.hasta, d, zona)).deLaCuenta,
+      motivo: periodo.clave === 'hoy' ? null : motivoDelGasto,
+    },
   });
   return { embudos, actual, previa };
 }

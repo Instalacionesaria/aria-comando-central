@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ, sinComentarios } from '../apoyo/fuente.ts';
-import { comentarioDeLaCabecera, faltaPorFrescura, textoDeCitasSinRegistrar, type FuentesDeLaCabecera } from '../../lib/agentes/cabecera.ts';
+import { comentarioDeLaCabecera, faltaPorCuadre, faltaPorFrescura, textoDeCitasSinRegistrar, type FuentesDeLaCabecera } from '../../lib/agentes/cabecera.ts';
 
 const senal = (gravedad: 'critica' | 'alta' | 'media' | 'info', texto: string, perdidaContactos: number | null = null, estado: 'abierta' | 'vista' | 'sin_medicion' = 'abierta') => ({
   gravedad,
@@ -55,6 +55,16 @@ test('la frescura, en una línea por su consecuencia; al día, nada', () => {
   assert.equal(faltaPorFrescura(f('nunca', null), 'la lectura de los contactos'), 'La lectura de los contactos nunca corrió sola en esta empresa: lo de esta pantalla no se renueva.');
   assert.equal(faltaPorFrescura(f('atrasada', 3 * 24 * 60), 'la lectura de los contactos'), 'Sin datos nuevos: la lectura de los contactos no corre desde hace 3 días.');
   assert.equal(faltaPorFrescura(f('fallando', 120), 'la lectura de los contactos'), 'La lectura de los contactos falló la última vez, hace 2 horas: puede haber datos sin traer.');
+});
+
+test('el gasto que no cuadra con la cuenta se dice en la cabecera; con todo cuadrado, nada (`076`)', () => {
+  // La regla del silencio: con cero días sin cuadrar no hay línea. Mutación: `< 0` en lugar de `<= 0`.
+  assert.equal(faltaPorCuadre(0), null);
+  assert.equal(
+    faltaPorCuadre(1),
+    'En un día de la última semana la cuenta de Meta gastó más de lo que suman sus campañas leídas: el gasto que falta se está buscando cada hora.',
+  );
+  assert.match(String(faltaPorCuadre(3)), /^En 3 días de la última semana/);
 });
 
 test('la cabecera dibuja sólo el texto publicado, y en el teléfono no lo dibuja', () => {

@@ -45,7 +45,7 @@ leen citas agregan una tercera:
 | `negocio.closer_asignado` | el puente entre el asignado del CRM y un closer nuestro | `db/migraciones/020_closer_asignado.sql:56` |
 | `identidad.usuarios` | el nombre de ese closer, que `closersDeLaEmpresa` trae con un `innerJoin` (`lib/negocio/alcanceDelCloser.ts:83`) | `db/migraciones/002_organizaciones_y_usuarios.sql:72` |
 | `negocio.anuncios` | el nombre del anuncio cuando `adId` cruza | `db/migraciones/050_lo_que_costo_cada_anuncio.sql:83`; la llave es `meta_anuncio_id` (`:93`) y el nombre, `nombre` (`:105`) |
-| `negocio.tareas_programadas` | si el barrido está al día (`frescuraDe`, `lib/negocio/frescura.ts:110`) | `db/migraciones/014_tareas_programadas.sql:41` |
+| `negocio.tareas_programadas` | si el barrido está al día (`frescuraDe`, `lib/negocio/frescura.ts:112`) | `db/migraciones/014_tareas_programadas.sql:41` |
 
 **Requisito:** la pestaña se construye sobre estas diez y **ninguna etapa agrega una columna ni
 una sincronización nueva**. Es la decisión del 2026-09-26 —el universo son los contactos que ya se

@@ -115,7 +115,7 @@ que **un mismo host aparece con `medium = External Form` al 13 % y con `medium =
 Es el mismo defecto que `CV1-05` describe para la tasa de conversión de la landing, una capa más
 abajo: un denominador definido en parte por el numerador.
 
-**Estado** · **El conteo, construible hoy**, con el `exists` de `costoDelAnuncio.ts:341-344`. **La
+**Estado** · **El conteo, construible hoy**, con el `exists` de `costoDelAnuncio.ts:350-353`. **La
 tasa, retirada por circular.** Volvería a ser publicable el día que exista una tabla de sesiones —
 el mismo hueco que `CV11-03` declara.
 

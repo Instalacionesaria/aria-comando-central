@@ -340,6 +340,27 @@ test('la pasada de los detectores dice en el sello cuántos departamentos no ter
   assert.equal(motivoDeLoIncompleto({ tocaba: true, departamentosQueFallaron: 0 }), null);
 });
 
+test('el gasto de Meta dice en el sello si no está vinculado, si la serie falló o si hay residuos (`076`)', () => {
+  /* Sin vínculo la pasada no escribe nada, a propósito: un vacío del proveedor guardado como cero sería
+     permanente. Sin esta línea el sello quedaba limpio sobre una pasada que no leyó el gasto. */
+  assert.match(String(motivoDeLoIncompleto({ vinculo: { estado: 'disconnected', cuentaId: null } })), /Meta no está vinculado/);
+  assert.equal(motivoDeLoIncompleto({ vinculo: { estado: 'connected', cuentaId: 'act_1' } }), null);
+  // El relleno que no tuvo nada que hacer no preguntó por el vínculo: nulo, y nada que decir.
+  assert.equal(motivoDeLoIncompleto({ vinculo: null, residuos: [], huecos: [], atrasado: false }), null);
+  assert.match(String(motivoDeLoIncompleto({ cuenta: { tipo: 'fallo', porque: 'rechazado' } })), /gasto de la cuenta/);
+  assert.match(String(motivoDeLoIncompleto({ residuos: ['2026-09-10'] })), /1 día\(s\) con gasto de la cuenta que ninguna campaña/);
+});
+
+test('el relleno del gasto corre SOLO en su horario, y cada hora', () => {
+  /* Busca entre 61 campañas: la primera vez son cientos de llamadas. Compartiendo la corrida con la pasada
+     diaria, la guardia de tiempo lo cortaría siempre. Mutación: sumarlo a `17 6 * * *`. */
+  const suyos = Object.entries(HORARIOS).filter(([, h]) => (h.tareas as readonly string[]).includes('anuncios_relleno'));
+  assert.deepEqual(
+    suyos.map(([horario, h]) => [horario, h.tareas, h.cadenciaMinutos]),
+    [['53 * * * *', ['anuncios_relleno'], 60]],
+  );
+});
+
 test('sin nada que decir, el motivo es NULO y la pantalla no dibuja nada', () => {
   /* La regla del silencio aplicada al registro de operación. Un motivo que aparece siempre es uno
      que nadie lee, y con él se pierde el que importa. */

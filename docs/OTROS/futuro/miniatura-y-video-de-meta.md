@@ -109,11 +109,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
     `db/migraciones/062_reintentos_de_los_analizadores.sql:19-23`: se hace `drop` y se vuelve a
     crear con la lista completa más `activos`.
 - **`lib/negocio/barrido.ts`**: `activos` en el tipo `Tarea`, en `TAREAS` después de `anuncios`
-  (`lib/negocio/barrido.ts:90-101`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:246-250`),
+  (`lib/negocio/barrido.ts:92-105`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:251-255`),
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:529-533`); y se suma al despacho (`lib/negocio/barrido.ts:551-552`).
+  (`lib/negocio/barrido.ts:549-553`); y se suma al despacho (`lib/negocio/barrido.ts:571-572`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`
@@ -131,7 +131,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   - un anuncio cuyo `account_id` no es la cuenta cargada se descarta (`cuenta_ajena`, `C15-11`):
     `negocio.anuncios` no guarda la cuenta, así que la comparación es contra `meta_cuenta_id`;
   - toda URL pasa por `medioPermitido` antes de escribirse; la que no pasa, no se guarda;
-  - presupuesto de tiempo como `PRESUPUESTO_MS` (`lib/negocio/recolectarAnuncios.ts:94`), y la marca
+  - presupuesto de tiempo como `PRESUPUESTO_MS` (`lib/negocio/recolectarAnuncios.ts:106`), y la marca
     de «incompleto» si no alcanza.
 - **Pruebas, cada una con su mutación**: una miniatura ausente es `null` y no `''`; la segunda pasada
   reescribe; un 500 en un anuncio no tumba a los demás; un host fuera de la lista no se escribe; la
@@ -141,7 +141,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
 
 - **`lib/negocio/activoDelCreativo.ts`**:
   - `elegirLaMiniatura`, pura: gana el anuncio de la pieza con más impresiones en la ventana; si
-    ninguno entregó —la pauta está parada desde el 2026-09-14—, el de más impresiones en toda la
+    ninguno entregó —como las campañas que se recolectaban desde el 2026-09-14—, el de más impresiones en toda la
     historia; el empate se rompe por el `meta_anuncio_id` menor.
   - `activosDeLasPiezas` filtra `miniatura_caduca_el > now()` **en SQL**: una miniatura vencida no se
     dibuja, se muestra el hueco (`C15-05`).

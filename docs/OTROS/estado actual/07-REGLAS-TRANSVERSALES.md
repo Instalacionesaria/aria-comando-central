@@ -456,7 +456,7 @@ tienen; `inicio_el` es `not null` por esquema.
 **La ventana la calcula la BASE, no la aplicación** (`lib/negocio/indicadoresDeCitas.ts:394-396`): «es
 la única forma de que el “ahora” sea el mismo reloj que escribió las filas». **Con una excepción
 declarada, que es nueva:** el gasto de anuncios vive en una columna `date`, así que
-`lib/negocio/costoDelAnuncio.ts:36-44` cuenta días de calendario y no 24 horas, y lo dice en su
+`lib/negocio/costoDelAnuncio.ts:37-45` cuenta días de calendario y no 24 horas, y lo dice en su
 encabezado en vez de mezclar las dos formas (ver la regla 41).
 
 **Una cifra que cruza el piso hacia abajo sola, y ya pasó.** El sentimiento del auditor: medido el
@@ -517,8 +517,8 @@ sin estar**: el 2026-09-28 `gh api` da `protected: false` ([17-LA-PLATAFORMA.md]
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:126`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:210`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:130`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:214`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -817,7 +817,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:314-316`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:803`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:808`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -915,7 +915,7 @@ ocurrieron en N días, y **las dos últimas dicen «30 días» y describen pobla
 contra un denominador de días con impresiones —otro predicado y otro grano, 12,7 % de diferencia— y se
 arregló poniendo el grano en el nombre, `anuncioDiasConLaClave / anuncioDiasConEntrega` (`7d1bc8b`),
 «porque el comentario no alcanzó». Y el gasto de anuncios cuenta días de calendario y no 24 horas, y lo
-declara (`lib/negocio/costoDelAnuncio.ts:36-44`).
+declara (`lib/negocio/costoDelAnuncio.ts:37-45`).
 
 ---
 

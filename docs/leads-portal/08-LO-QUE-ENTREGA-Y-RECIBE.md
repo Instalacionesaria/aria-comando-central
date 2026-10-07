@@ -45,8 +45,8 @@ proveedor ni escribe en la base.
 
 ### LP08-02 · La frescura viaja con la cifra, porque la caída del 14 de septiembre es real
 
-**Rastro** · `frescuraDe` (`lib/negocio/frescura.ts:110`) sobre las tareas `'contactos'` y `'citas'`
-(`lib/negocio/barrido.ts:57-61`).
+**Rastro** · `frescuraDe` (`lib/negocio/frescura.ts:112`) sobre las tareas `'contactos'` y `'citas'`
+(`lib/negocio/barrido.ts:58-62`).
 
 **Estado** · Las altas por semana fueron 117, 90, 53, 175 y 89 en las semanas que empiezan del 10 de
 agosto al 7 de septiembre, y **4 y 3 desde la del 14** (censo del 2026-09-26). Es real: se pausaron

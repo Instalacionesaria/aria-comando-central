@@ -159,7 +159,7 @@ export async function calidadDelCreativo(
  * Consulta aparte y no una subconsulta correlacionada, y el motivo no es de estilo: son dos hechos
  * de **distinto grano** —uno por contacto, otro por anuncio— y unirlos en una sola consulta
  * multiplicaría los contactos por la cantidad de anuncios de la pieza, hasta seis. Es el defecto que
- * `costoDelAnuncio.ts:157-164` documenta para su propio par de tablas: «no falla, devuelve un número
+ * `costoDelAnuncio.ts:158-165` documenta para su propio par de tablas: «no falla, devuelve un número
  * más grande».
  *
  * (El primer intento sí la escribió correlacionada, y PostgreSQL la rechazó con `42803` porque la
@@ -216,7 +216,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
       sql<number>`count(*)`.as('contactos'),
       sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
       sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
-      /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:341-344` y que
+      /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:350-353` y que
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
          *

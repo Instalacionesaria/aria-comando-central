@@ -47,6 +47,9 @@ async function limpiar(): Promise<void> {
   await esc.admin.query('delete from negocio.metricas_de_anuncio where meta_anuncio_id like $1', [`${MARCA}%`]);
   await esc.admin.query('delete from negocio.anuncios where meta_anuncio_id like $1', [`${MARCA}%`]);
   await esc.admin.query('delete from negocio.campanas where meta_campana_id like $1', [`${MARCA}%`]);
+  // Las dos de la `076`: las escribe el colector de esta empresa en cada pasada, y ninguna otra prueba las deja.
+  await esc.admin.query('delete from negocio.lecturas_de_gasto where org_id = $1', [esc.org]);
+  await esc.admin.query('delete from negocio.gasto_de_la_cuenta where org_id = $1', [esc.org]);
 }
 
 before(async () => {
@@ -103,18 +106,15 @@ function conEntrega(anuncioId: string): MetricaDeAnuncio {
 const SIN_RED = {
   vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'connected', cuentaId: null, paginas: 1 } }),
   listarCampanas: async () => ({ tipo: 'datos' as const, datos: [], corto: false, paginas: 1 }),
+  // Y la serie de la cuenta (`076`), vacía: las pruebas de la serie escriben con su escritor, más abajo.
+  serie: async () => ({ tipo: 'datos' as const, datos: [], llamadas: 1 }),
 };
+
+/** El plan de una pasada que pide sólo esta campaña: la que el proveedor falso contesta. */
+const SOLO_ESTA = { plan: { inicio: '2026-09-14', activas: ['120249633901590467'], conGastoReciente: [] } };
 
 /** El único día en que el proveedor falso devuelve algo. Ver `unaPasada`. */
 const DIA = '2026-09-14';
-
-/** Todos los días de la ventana dados por guardados: así la pasada pide sólo el tramo fijo. */
-function guardadosHasta(dia: string): Set<string> {
-  const g = new Set<string>();
-  const tope = Date.parse(`${dia}T00:00:00Z`);
-  for (let i = 0; i < 40; i += 1) g.add(new Date(tope - i * 86_400_000).toISOString().slice(0, 10));
-  return g;
-}
 
 /**
  * Corre una pasada que escribe **UNA sola vez**.
@@ -131,9 +131,8 @@ function guardadosHasta(dia: string): Set<string> {
 async function unaPasada(metricas: readonly MetricaDeAnuncio[]) {
   return recolectarAnuncios(esc.org, ACCESO, {
     ...SIN_RED,
+    ...SOLO_ESTA,
     ahora: AHORA,
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-16'),
     pedir: async (_acceso, _campana, dia) => ({
       tipo: 'datos',
       datos: dia === DIA ? [...metricas] : [],
@@ -319,9 +318,8 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
 
   await recolectarAnuncios(esc.org, ACCESO, {
     ...SIN_RED,
+    ...SOLO_ESTA,
     ahora: AHORA,
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-16'),
     pedir: async (_a, _c, dia) => ({
       tipo: 'datos',
       /* El día más nuevo SÍ trae el conjunto y los siguientes NO, y ese orden es la prueba: el
@@ -354,9 +352,8 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
 async function pasadaConCampanas(lista: readonly { id: string; nombre: string | null; estado: string | null }[]) {
   return recolectarAnuncios(esc.org, ACCESO, {
     ...SIN_RED,
+    ...SOLO_ESTA,
     ahora: AHORA,
-    campanas: ['120249633901590467'],
-    guardados: guardadosHasta('2026-09-16'),
     pedir: async () => ({ tipo: 'datos', datos: [] }),
     listarCampanas: async () => ({
       tipo: 'datos',
@@ -480,58 +477,224 @@ test('las campañas también respetan la organización activa', async () => {
   assert.equal(ajenas.length, 0, 'la OTRA organización vio una campaña que no es suya');
 });
 
-test('el colector pide también las campañas asignadas a un funnel, aunque no traigan contactos', async () => {
-  /* Una campaña que se lanza, se asigna a un funnel y gasta sin un solo lead tendría gasto cero en su
-     tarjeta de Acquisition si el colector sólo pidiera las campañas de la atribución. */
-  const asignada = `${MARCA}a1`.replace(/\D/g, '9');
-  await esc.admin.query(
-    `insert into negocio.campanas (org_id, meta_campana_id, nombre) values ($1, $2, 'asignada sin leads') on conflict do nothing`,
-    [esc.org, asignada],
+// ─── EL GASTO DE TODA LA CUENTA (`076`) ──────────────────────────────────────
+//
+// Los escritores corren dentro de `conOrganizacion`; por eso van acá, por el mismo motivo que los dos ceros.
+
+const CAMPANA = '120249633901590467';
+
+async function enLaEmpresa<T>(f: () => Promise<T>): Promise<T> {
+  const { conOrganizacion } = await import('../../lib/datos/contexto.ts');
+  return conOrganizacion(esc.org, f);
+}
+
+async function filaDeLaCuenta(fecha: string) {
+  const r = await esc.admin.query<{ gasto: string | null; cambio_el: Date | null; redescubierto_el: Date | null; residuo_el: Date | null }>(
+    'select gasto, cambio_el, redescubierto_el, residuo_el from negocio.gasto_de_la_cuenta where org_id = $1 and fecha = $2',
+    [esc.org, fecha],
   );
+  return r.rows;
+}
+
+async function lecturaDe(campana: string, fecha: string) {
+  const r = await esc.admin.query<{ gasto: string; por_rango: boolean }>(
+    'select gasto, por_rango from negocio.lecturas_de_gasto where org_id = $1 and meta_campana_id = $2 and fecha = $3',
+    [esc.org, campana, fecha],
+  );
+  return r.rows;
+}
+
+const diaDeLaCuenta = (dia: string, gasto: number | null) => ({
+  dia,
+  gasto,
+  impresiones: 100,
+  clics: 3,
+  cpc: null,
+  cpm: null,
+  alcance: 90,
+  frecuencia: null,
+});
+
+test('la serie de la cuenta se REESCRIBE, y `cambio_el` se marca sólo si el total se movió', async () => {
+  /* Meta corrige hacia atrás: la lectura nueva es la buena. Un centavo de redondeo no es una corrección, y
+     marcarla haría volver a pedir todo lo que gastó ese día. Mutación: `on conflict do nothing`, o marcar
+     `cambio_el` en cada lectura. */
+  const { guardarSerie } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(() => guardarSerie([diaDeLaCuenta('2026-10-01', 200.19)]));
+  assert.deepEqual((await filaDeLaCuenta('2026-10-01')).map((f) => [f.gasto, f.cambio_el]), [['200.1900', null]]);
+
+  await enLaEmpresa(() => guardarSerie([diaDeLaCuenta('2026-10-01', 200.25)]));
+  const quieto = await filaDeLaCuenta('2026-10-01');
+  assert.equal(quieto[0]?.gasto, '200.2500', 'la relectura no reescribió el total');
+  assert.equal(quieto[0]?.cambio_el, null, 'seis centavos de redondeo se tomaron como una corrección');
+
   await esc.admin.query(
-    `insert into negocio.funnels_de_campana (org_id, meta_campana_id, funnel) values ($1, $2, 'booking') on conflict do nothing`,
-    [esc.org, asignada],
+    `update negocio.gasto_de_la_cuenta set redescubierto_el = now(), residuo_el = now() where org_id = $1 and fecha = '2026-10-01'`,
+    [esc.org],
+  );
+  await enLaEmpresa(() => guardarSerie([diaDeLaCuenta('2026-10-01', 236.86)]));
+  const movido = await filaDeLaCuenta('2026-10-01');
+  assert.ok(movido[0]?.cambio_el instanceof Date, 'una corrección de Meta no quedó marcada');
+  assert.equal(movido[0]?.redescubierto_el, null, 'con otro total, el día merece otra vuelta');
+  assert.equal(movido[0]?.residuo_el, null);
+});
+
+test('un cero de RANGO no pisa una lectura del día, y una lectura del día sí pisa un rango', async () => {
+  // Mutación: el rango con `do update`. La lectura del día tiene sus métricas detrás y vale más que un total.
+  const { guardar, guardarCeros } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(() => guardar(CAMPANA, '2026-10-02', [conEntrega(`${MARCA}20`)]));
+  await enLaEmpresa(() => guardarCeros(CAMPANA, ['2026-10-02', '2026-10-03']));
+  assert.deepEqual(await lecturaDe(CAMPANA, '2026-10-02'), [{ gasto: '69.5900', por_rango: false }]);
+  assert.deepEqual(await lecturaDe(CAMPANA, '2026-10-03'), [{ gasto: '0.0000', por_rango: true }]);
+
+  await enLaEmpresa(() => guardar(CAMPANA, '2026-10-03', [conEntrega(`${MARCA}21`)]));
+  assert.deepEqual(await lecturaDe(CAMPANA, '2026-10-03'), [{ gasto: '69.5900', por_rango: false }]);
+});
+
+test('una lectura del día que vuelve VACÍA deja su cero: la campaña no queda pendiente', async () => {
+  const { guardar } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(() => guardar(CAMPANA, '2026-10-04', []));
+  assert.deepEqual(await lecturaDe(CAMPANA, '2026-10-04'), [{ gasto: '0.0000', por_rango: false }]);
+});
+
+test('redescubrir borra los CEROS del día, deja lo que gastó, y anota cuándo', async () => {
+  // Mutación: borrar también lo que gastó (tiene métricas detrás), o no anotar (giraría cada hora).
+  const { guardar, guardarCeros, guardarSerie, redescubrir } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(async () => {
+    await guardarSerie([diaDeLaCuenta('2026-10-05', 100)]);
+    await guardar(CAMPANA, '2026-10-05', [conEntrega(`${MARCA}22`)]);
+    await guardarCeros('99999901', ['2026-10-05']);
+    await guardar('99999902', '2026-10-05', []);
+    await redescubrir('2026-10-05');
+  });
+  assert.equal((await lecturaDe(CAMPANA, '2026-10-05')).length, 1, 'se borró una lectura que gastó');
+  assert.equal((await lecturaDe('99999901', '2026-10-05')).length, 0, 'el cero de rango no se borró');
+  assert.equal((await lecturaDe('99999902', '2026-10-05')).length, 0, 'el cero del día no se borró');
+  assert.ok((await filaDeLaCuenta('2026-10-05'))[0]?.redescubierto_el instanceof Date);
+
+  // Y si después sigue sin cuadrar, se declara residuo: el día deja de buscarse.
+  const { declararResiduo } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(() => declararResiduo('2026-10-05'));
+  assert.ok((await filaDeLaCuenta('2026-10-05'))[0]?.residuo_el instanceof Date, 'el residuo no quedó anotado');
+});
+
+/** Una métrica del colector viejo, en un día fuera del tramo fijo de `AHORA`, sin su lectura. */
+const VIEJO = '2026-08-20';
+async function metricaVieja(): Promise<void> {
+  const { guardar } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(() => guardar(CAMPANA, VIEJO, [conEntrega(`${MARCA}24`)]));
+  await esc.admin.query('delete from negocio.lecturas_de_gasto where org_id = $1', [esc.org]);
+}
+
+test('la primera pasada pasa a lecturas los pares que el colector viejo ya leyó, una sola vez', async () => {
+  /* La migración no puede hacerlo: con RLS el migrador ve cero filas. Mutación: no sembrar (los ~600 pares
+     viejos se volverían a pedir), o sembrar en cada pasada (un redescubrimiento se desharía solo). Y sin el plan
+     inyectado: con él la siembra no corría, y un `insert` sin `org_id` que la RLS rechazaba pasó sin verse. */
+  await metricaVieja();
+  await recolectarAnuncios(esc.org, ACCESO, { ...SIN_RED, ahora: AHORA, pedir: async () => ({ tipo: 'datos', datos: [] }) });
+  assert.deepEqual(await lecturaDe(CAMPANA, VIEJO), [{ gasto: '69.5900', por_rango: false }]);
+
+  await esc.admin.query(`delete from negocio.lecturas_de_gasto where org_id = $1 and fecha = $2`, [esc.org, VIEJO]);
+  await recolectarAnuncios(esc.org, ACCESO, {
+    ...SIN_RED,
+    ahora: AHORA,
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+  });
+  assert.equal((await lecturaDe(CAMPANA, VIEJO)).length, 0, 'se volvieron a sembrar lecturas con la empresa ya sembrada');
+});
+
+test('el relleno también siembra las lecturas viejas antes de buscar: si corre primero, no repide lo leído', async () => {
+  /* Después del despliegue el relleno puede correr antes que la pasada diaria. Sin la siembra buscaría con rangos
+     —y releería de a un día— los pares que el colector viejo ya leyó. Mutación: leer la foto sin sembrar. */
+  await metricaVieja();
+  const { rellenarAnuncios } = await import('../../lib/negocio/rellenarAnuncios.ts');
+  const nada = async () => {};
+  await rellenarAnuncios(esc.org, ACCESO, Date.now(), Date.now, {
+    vinculo: SIN_RED.vinculo,
+    serie: SIN_RED.serie,
+    escribirSerie: nada,
+    pedir: async () => ({ tipo: 'datos', datos: [] }),
+    escribir: nada,
+    total: async () => ({ tipo: 'datos', datos: { gasto: 0, anuncios: 0 } }),
+    escribirCeros: nada,
+    redescubrir: nada,
+    declararResiduo: nada,
+  });
+  assert.deepEqual(await lecturaDe(CAMPANA, VIEJO), [{ gasto: '69.5900', por_rango: false }], 'el relleno no sembró las lecturas del colector viejo');
+});
+
+test('el plan de la pasada: las campañas ACTIVE y las que gastaron en la última semana, no las demás', async () => {
+  /* La campaña de mensajes no tenía anuncios ni contactos: con el universo de la atribución no se pedía nunca.
+     Mutación: armar las candidatas desde la atribución, o sacar las que gastaron hace poco. */
+  const activa = '99999931';
+  const pausadaAyer = '99999932';
+  const pausadaVieja = '99999933';
+  await esc.admin.query(
+    `insert into negocio.campanas (org_id, meta_campana_id, nombre, estado)
+     values ($1, $2, 'activa', 'ACTIVE'), ($1, $3, 'pausada ayer', 'PAUSED'), ($1, $4, 'pausada vieja', 'PAUSED')`,
+    [esc.org, activa, pausadaAyer, pausadaVieja],
   );
   try {
+    const { guardarCeros } = await import('../../lib/negocio/recolectarAnuncios.ts');
+    // Una lectura cualquiera, para que la siembra de las viejas no corra; y el gasto de ayer.
+    await enLaEmpresa(() => guardarCeros(pausadaVieja, ['2026-09-01']));
+    await esc.admin.query(
+      `insert into negocio.lecturas_de_gasto (org_id, meta_campana_id, fecha, gasto, por_rango) values ($1, $2, '2026-09-15', 12, false)`,
+      [esc.org, pausadaAyer],
+    );
     const pedidas = new Set<string>();
     await recolectarAnuncios(esc.org, ACCESO, {
       ...SIN_RED,
       ahora: AHORA,
-      guardados: guardadosHasta('2026-09-16'),
       pedir: async (_a, campana) => {
         pedidas.add(campana);
         return { tipo: 'datos', datos: [] };
       },
     });
-    assert.ok(pedidas.has(asignada), 'el colector no pidió la campaña asignada sin contactos');
+    assert.ok(pedidas.has(activa), 'no se pidió la campaña ACTIVE');
+    assert.ok(pedidas.has(pausadaAyer), 'no se pidió la que gastó ayer');
+    assert.ok(!pedidas.has(pausadaVieja), 'se pidió una pausada que no gasta hace más de una semana');
   } finally {
-    await esc.admin.query('delete from negocio.funnels_de_campana where meta_campana_id = $1', [asignada]);
-    await esc.admin.query('delete from negocio.campanas where meta_campana_id = $1', [asignada]);
+    await esc.admin.query('delete from negocio.campanas where meta_campana_id in ($1, $2, $3)', [activa, pausadaAyer, pausadaVieja]);
   }
 });
 
-test('el colector sigue pidiendo una campaña con anuncios guardados aunque ya no tenga funnel ni contactos', async () => {
-  /* Que pedir sea monótono: una campaña asignada que vuelve a «Sin funnel» sigue gastando en Meta, y
-     sin esto su gasto quedaría congelado en la fecha de la quita. */
-  const campana = '99999977';
-  const anuncio = `${MARCA}77`;
-  await esc.admin.query(
-    `insert into negocio.anuncios (org_id, meta_anuncio_id, meta_campana_id, nombre) values ($1, $2, $3, 'ya guardado')`,
-    [esc.org, anuncio, campana],
+test('el gasto de la cuenta y las lecturas respetan la organización activa', async () => {
+  // Las dos tablas de la `076`, con la misma comprobación que las de arriba.
+  const { guardarCeros, guardarSerie } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  await enLaEmpresa(async () => {
+    await guardarSerie([diaDeLaCuenta('2026-09-30', 50)]);
+    await guardarCeros(CAMPANA, ['2026-09-30']);
+  });
+  const { conOrganizacion, datos } = await import('../../lib/datos/contexto.ts');
+  const ver = (org: string) =>
+    conOrganizacion(org, async () => ({
+      cuenta: (await datos().selectFrom('gasto_de_la_cuenta').select('fecha').where('fecha', '=', '2026-09-30' as never).execute()).length,
+      lecturas: (await datos().selectFrom('lecturas_de_gasto').select('fecha').where('fecha', '=', '2026-09-30' as never).execute()).length,
+    }));
+  assert.deepEqual(await ver(esc.org), { cuenta: 1, lecturas: 1 }, 'la empresa dueña no ve lo suyo');
+  assert.deepEqual(await ver(esc.otraOrg), { cuenta: 0, lecturas: 0 }, 'la OTRA empresa vio el gasto de esta');
+});
+
+test('la foto del relleno lee las fechas como texto y los montos como números', async () => {
+  /* Un `date` que pasa por un `Date` de JavaScript se corre un día al este de Greenwich: con la suite en
+     Asia/Tokyo, la foto pondría cada lectura en el día anterior. Mutación: leer `fecha` sin `to_char`. */
+  const { guardarCeros, guardarSerie } = await import('../../lib/negocio/recolectarAnuncios.ts');
+  const { fotoDelRelleno } = await import('../../lib/negocio/rellenarAnuncios.ts');
+  await enLaEmpresa(async () => {
+    await guardarSerie([diaDeLaCuenta('2026-09-28', 12.5), diaDeLaCuenta('2026-09-29', 0)]);
+    await guardarCeros(CAMPANA, ['2026-09-29']);
+  });
+  const f = await enLaEmpresa(() => fotoDelRelleno('2026-09-29'));
+  // El primer día es el más viejo de la serie o de las métricas: las pruebas de arriba dejaron métricas antes.
+  const primero = await esc.admin.query<{ d: string }>(
+    `select to_char(least((select min(fecha) from negocio.gasto_de_la_cuenta where org_id = $1),
+                          (select min(fecha) from negocio.metricas_de_anuncio where org_id = $1)), 'YYYY-MM-DD') as d`,
+    [esc.org],
   );
-  try {
-    const pedidas = new Set<string>();
-    await recolectarAnuncios(esc.org, ACCESO, {
-      ...SIN_RED,
-      ahora: AHORA,
-      guardados: guardadosHasta('2026-09-16'),
-      pedir: async (_a, c) => {
-        pedidas.add(c);
-        return { tipo: 'datos', datos: [] };
-      },
-    });
-    assert.ok(pedidas.has(campana), 'el colector dejó de pedir una campaña que ya tiene anuncios guardados');
-  } finally {
-    await esc.admin.query('delete from negocio.anuncios where meta_anuncio_id = $1', [anuncio]);
-  }
+  assert.equal(f.inicio, primero.rows[0]!.d);
+  assert.ok(f.inicio! <= '2026-09-28', 'el primer día no miró las métricas');
+  assert.equal(f.serie.get('2026-09-28')?.gasto, 12.5);
+  assert.equal(f.lecturas.get(CAMPANA)?.get('2026-09-29')?.gasto, 0);
+  assert.equal(f.lecturas.get(CAMPANA)?.get('2026-09-29')?.porRango, true);
 });

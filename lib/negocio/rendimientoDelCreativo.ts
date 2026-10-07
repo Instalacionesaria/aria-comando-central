@@ -113,7 +113,7 @@ export const ACCIONES_QUE_LEEMOS = {
  *
  * Nuestros contactos de esos 10 anuncios son 197: el 90 % de **una** de las dos cifras y el 45 % de
  * la suma. Dividir `lead` por impresiones publicaría una tasa de conversión del doble de la real,
- * y —como el defecto de grano de `costoDelAnuncio.ts:157-164`— no fallaría: daría un número más
+ * y —como el defecto de grano de `costoDelAnuncio.ts:158-165`— no fallaría: daría un número más
  * grande y perfectamente creíble.
  *
  * Qué son los dos hechos exactamente, Meta no lo documenta en ningún lado que se pueda leer desde
@@ -218,7 +218,7 @@ export interface FilaDeRendimiento {
    * Se construía sumando el `diasConEntrega` de cada anuncio que devuelve `costoDelAnuncio`, y eso
    * fallaba dos veces:
    *
-   *   · **Otro predicado.** El de `costoDelAnuncio.ts:287` cuenta `gasto is not null`; el
+   *   · **Otro predicado.** El de `costoDelAnuncio.ts:296` cuenta `gasto is not null`; el
    *     denominador de todas las tasas de acá cuenta `impresiones is not null`. Medido el
    *     2026-09-19 sobre los 30 días: **35 de 275 filas tienen gasto y no tienen impresiones**, o
    *     sea que los dos números diferían en el 12,7 % de las filas. Y la pantalla los dibujaba en
@@ -228,7 +228,7 @@ export interface FilaDeRendimiento {
    *     dos de sus anuncios entregaron. Medido: **11 de 26 piezas** daban un número inflado, hasta
    *     en 7 días. Hoy no supera los 30 de la ventana por casualidad del borde —el máximo da
    *     exactamente 30—, y el día que dos anuncios se solapen dirá «entregó 34 días» en una ventana
-   *     de 30: el defecto de grano de `costoDelAnuncio.ts:157-164` otra vez, que no falla y
+   *     de 30: el defecto de grano de `costoDelAnuncio.ts:158-165` otra vez, que no falla y
    *     devuelve un número más grande y creíble.
    *
    * Ahora sale de `count(distinct fecha)` en la MISMA consulta que el denominador de las tasas, así

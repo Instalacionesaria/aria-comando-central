@@ -333,6 +333,17 @@ export async function construirEmpresaConDatos(org: string, personas: PersonasDe
       }
     }
     await datos().insertInto('metricas_de_anuncio').values(filas as never).execute();
+
+    /* El total de la cuenta de cada día (`076`), igual a la suma por anuncio: es la referencia contra la que se
+       mide si el gasto está entero, y su lectura es lo que cierra el día. Sin él, Acquisition, el cerebro y la
+       economía dirían que el colector está atrasado. Los días sin entrega van en cero, como los guarda el
+       colector cuando el proveedor los omite. */
+    const cuenta = [];
+    for (let hace = 1; hace <= CASOS.diasDeMetricas; hace++) {
+      const gasto = CASOS.campanas.reduce((s, c) => s + (c.gastoPorDia(hace) ?? 0), 0);
+      cuenta.push({ fecha: fechaHace(hace), gasto });
+    }
+    await datos().insertInto('gasto_de_la_cuenta').values(cuenta as never).execute();
   });
 
   // ── Los contactos, con su atribución ──────────────────────────────────────

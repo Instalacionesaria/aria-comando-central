@@ -26,6 +26,7 @@ import { calidadDelCreativo, type CalidadDeLosCreativos } from '../../negocio/ca
 import { rendimientoDelCreativo, PISO_DE_IMPRESIONES, type RendimientoDeLosCreativos } from '../../negocio/rendimientoDelCreativo.ts';
 import { fatigaDelCreativo, type FatigaDeLosCreativos } from '../../negocio/fatigaDelCreativo.ts';
 import { ventanaDeMetricas } from '../../negocio/costoDelAnuncio.ts';
+import { diasSinCuadrar } from '../../negocio/gastoDeLaCuenta.ts';
 import { llaveDelCreativo } from '../../negocio/creativo.ts';
 import { type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
@@ -88,6 +89,11 @@ export interface MedidaDeCreative {
   frecuencias: ReadonlyMap<string, { frecuencia: number; impresiones: number; creativo: string | null }> | null;
   /** Si la lectura de anuncios del cron está al día: sin ella, gasto y entrega no se miden. */
   anunciosAlDia: boolean;
+  /**
+   * Si el gasto por anuncio de la ventana cuadra con el de la cuenta (`076`). Sin eso, a la tabla le falta el
+   * gasto de alguna campaña, y la parte del gasto de cada pieza sale sobre un total corto.
+   */
+  gastoCuadra: boolean;
 }
 
 /** Corre dentro de `conOrganizacion`. */
@@ -111,6 +117,7 @@ export async function medirCreative(ventana: VentanaDeSenal): Promise<MedidaDeCr
     fatiga,
     frecuencias,
     anunciosAlDia: anuncios.estado === 'al_dia',
+    gastoCuadra: (await diasSinCuadrar((alias) => ventanaDeMetricas(alias, dias))) === 0,
   };
 }
 
@@ -179,7 +186,8 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
   }
 
   // ── Una pieza se lleva una parte grande del gasto ──
-  if (!m.anunciosAlDia) {
+  // Con el gasto de la cuenta sin cuadrar, el total es corto y la parte de cada pieza sale inflada (`076`).
+  if (!m.anunciosAlDia || !m.gastoCuadra) {
     salida.sinMedicion.push(CRE.concentracion);
   } else {
     const u = umbral(CRE.concentracion);
