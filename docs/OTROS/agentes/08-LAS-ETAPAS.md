@@ -741,6 +741,13 @@ Lo que decía el plan:
   citas sin registrar del alcance de quien mira, servido por Mi Día; Llamadas de venta, servido por su lista.
   Prueba nueva 244; cambia la 242. Mutaciones, 8 vistas en rojo; una quedaba verde (Mi Día con el alcance de
   la empresa) hasta sumar un closer vinculado al CRM.
+- **Después del cierre, el 2026-10-07**: la prueba 205 fallaba todas las mañanas, de las 0:00 a las 10:00 de
+  Lima (cohorte 125 en vez de 120). La base sembrada daba de alta a los contactos a las 10:00 locales y
+  `cadenaDeCierre(30)` corta en `now() - 30 días`: antes de esa hora entraban los 5 contactos de hace 30. Ahora
+  se siembran a las 00:00 (`db/sembrado/casos-de-los-agentes.ts`). Un flujo de 8 agentes cruzó cada fecha
+  sembrada con cada ventana de lectura y cada cifra fijada: era la única que dependía de la hora. Medido con
+  la cohorte simulada a cada hora del día: antes, 125 de 0 a 10 y 120 después; ahora, 120 a toda hora. Queda
+  una franja de segundos si una corrida cruza la medianoche de Lima entre que siembra y que mide.
 - **Después del cierre, el 2026-10-07**: la evaluación real de la clasificación de objeciones (AG11), que no se
   había corrido. Nueva tanda `objeciones` del guion (4 pedidos sobre 20 objeciones sintéticas, por la misma
   pedida que la tarea, que ahora es `pedirCategorias`): 20 de 20 (`07`).

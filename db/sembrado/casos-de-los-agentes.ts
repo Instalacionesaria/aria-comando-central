@@ -363,7 +363,12 @@ export async function construirEmpresaConDatos(org: string, personas: PersonasDe
             nombre: `Contacto sintético ${n}`,
             email: correoDe(n),
             territorio: tramo.campana === 1 ? 'closer' : 'setter',
-            alta_en_el_crm: momentoHace(hace, '10:00'),
+            /* A la medianoche local, y no a una hora «realista»: el alta de hace N días a las 00:00 queda fuera de toda
+               ventana corrida de N días (`now() - N días`, como `cadenaDeCierre`) a cualquier hora en que se lea, y la
+               de hoy nunca es futura. Sigue siendo el mismo día de calendario en UTC (las 05:00), así que las ventanas
+               por fecha no cambian. A las 10:00, antes de esa hora entraban los 5 contactos de hace 30 y la prueba 205
+               daba una cohorte de 125 en vez de 120 toda la mañana (medido el 2026-10-07). */
+            alta_en_el_crm: momentoHace(hace, '00:00'),
             atribucion_primera: JSON.stringify(atribucion),
             atribucion_ultima: JSON.stringify(atribucion),
           } as never)
