@@ -145,6 +145,30 @@ export interface ResultadoDeLasObjeciones {
   saturado: boolean;
 }
 
+/**
+ * Una pedida: las objeciones de UNA llamada, juntas. La usan la tarea y la evaluación real
+ * (`scripts/evaluar-agentes.mjs objeciones`), así que lo que se evalúa es exactamente lo que corre.
+ */
+export function pedirCategorias(l: Pick<LlamadaConObjeciones, 'llamadaId' | 'objeciones'>, llave: string, orgId: string, quien: QuienPide = {}) {
+  return llamarAlModelo({
+    agente: 'objeciones',
+    modelo: MODELO_DE_LAS_OBJECIONES,
+    llave,
+    orgId,
+    usuarioId: quien.usuarioId ?? null,
+    ref: l.llamadaId,
+    donde: 'la categoría de las objeciones de una llamada',
+    techo: TECHO_DE_LA_CLASIFICACION,
+    instrucciones: INSTRUCCIONES_DE_LAS_OBJECIONES,
+    mensajes: [{ role: 'user', content: JSON.stringify({ objeciones: l.objeciones.map((o) => ({ indice: o.indice, texto: o.texto })) }) }],
+    formato: FORMATO,
+    espera: ESPERA_DE_LA_CLASIFICACION_MS,
+    // En la tarea, los fallos de la corrida van al grupo de incidentes de la tarea: uno por situación.
+    incidentes: quien.incidentes ? 'los_agrega_quien_llama' : 'cada_llamada',
+    leer: leerJson,
+  });
+}
+
 /** Cuántas llamadas se miran por corrida. Más de las que caben: el reloj es el que corta. */
 const LLAMADAS_POR_CORRIDA = 10;
 
@@ -158,23 +182,7 @@ export async function clasificarObjeciones(orgId: string, llave: string, reloj: 
       break;
     }
     out.pedidas++;
-    const r = await llamarAlModelo({
-      agente: 'objeciones',
-      modelo: MODELO_DE_LAS_OBJECIONES,
-      llave,
-      orgId,
-      usuarioId: quien.usuarioId ?? null,
-      ref: l.llamadaId,
-      donde: 'la categoría de las objeciones de una llamada',
-      techo: TECHO_DE_LA_CLASIFICACION,
-      instrucciones: INSTRUCCIONES_DE_LAS_OBJECIONES,
-      mensajes: [{ role: 'user', content: JSON.stringify({ objeciones: l.objeciones.map((o) => ({ indice: o.indice, texto: o.texto })) }) }],
-      formato: FORMATO,
-      espera: ESPERA_DE_LA_CLASIFICACION_MS,
-      // En la tarea, los fallos de la corrida van al grupo de incidentes de la tarea: uno por situación.
-      incidentes: quien.incidentes ? 'los_agrega_quien_llama' : 'cada_llamada',
-      leer: leerJson,
-    });
+    const r = await pedirCategorias(l, llave, orgId, quien);
     if (r.tipo === 'fallo') {
       if (quien.incidentes) await quien.incidentes.anotar(r.fallo, 'la categoría de las objeciones');
       // Con la llave rechazada o el proveedor saturado, cada pedida siguiente repetiría el fallo.

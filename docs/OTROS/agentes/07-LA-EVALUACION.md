@@ -128,6 +128,20 @@ las pruebas 240 y 239; la tanda `reunion` evalúa la redacción.
 | 3 | Un dato detectado sin fuente | Se degrada a «ambiguo» |
 | 4 | Closer con «mío» pidiendo el Brief de una cita de otro closer | Rechazado |
 
+### F14 · La categoría de las objeciones (escrito el 2026-10-07)
+
+Veinte objeciones sintéticas, escritas como las diría un prospecto y sin datos de nadie, en cuatro llamadas de
+cinco (una pedida por llamada, como la tarea del analizador). Quince tienen una sola categoría correcta; cinco son
+ambiguas y aceptan dos. El conjunto entero está en `scripts/evaluar-agentes.mjs` (`OBJECIONES_DE_LA_EVALUACION`).
+
+| caso | ejemplo | se acepta |
+|---|---|---|
+| Claras, una por categoría y por llamada (llamadas 1, 2 y 4) | «¿Hay forma de pagarlo en cuotas? Al contado no llego.» | `precio` |
+| Entre confianza y precio | «Si viera los resultados que me dices no me importaría pagarlo, pero no los veo.» | `confianza` o `precio` |
+| Entre encaje y momento | «No tengo tiempo para grabar videos todas las semanas.» | `encaje` o `momento` |
+| Una evasiva | «Me interesa, mándame la información por correo y lo reviso.» | `otra` o `momento` |
+| Una queja del contacto | «No me gustó cómo me contactaron, fueron muy insistentes.» | `otra` o `confianza` |
+
 ## AG-103 · La rúbrica
 
 Cada respuesta real se puntúa con:
@@ -305,6 +319,18 @@ referencia a otra área ni a un término de otro tema.
   la próxima versión del prompt, que podría no recibir la etiqueta.
 - **Lo que aporta**: poco más que la plantilla. Con estos cinco temas, la redacción sirve sobre todo por el
   orden; las frases nuevas son prudentes y genéricas.
+
+### 2026-10-07 · la categoría de las objeciones (F14)
+
+**`objeciones`** (4 pedidos, con el OK del usuario): **4 llamadas** a `claude-haiku-4-5-20251001`, 2.416 tokens de
+entrada y 251 de salida, por `pedirCategorias` —la misma pedida que hace la tarea del analizador— y
+`validarCategorias`. **20 aciertos de 20**, ninguna objeción sin categoría y ningún índice inventado. En las
+cinco ambiguas eligió `confianza` (los resultados que no ve), `encaje` (no tiene tiempo para grabar), `momento`
+(ver cómo le va el mes), `otra` (que le manden información) y `otra` (la queja del contacto).
+
+Lo que esto no mide: cómo escribe las objeciones el analizador de verdad, que las resume a su manera. Con las
+llamadas reales, la cobertura —cuántas quedan sin categoría— la cuenta `llamadasDeVenta` (`objeciones.total`
+contra `clasificadas`), que lee el cerebro; ninguna pantalla la muestra.
 
 ## Preguntas abiertas
 

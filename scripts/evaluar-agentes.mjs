@@ -303,6 +303,94 @@ async function correrLaReunion(llave) {
 }
 
 /**
+ * El conjunto de la clasificación de objeciones (`07`, AG11, F14): cuatro llamadas sintéticas de cinco
+ * objeciones cada una, escritas como las diría un prospecto, sin datos de nadie. Cada una con las categorías que
+ * se aceptan: una sola si es clara, dos si la frase admite las dos (las cinco de la tercera llamada y la última
+ * de la cuarta).
+ */
+const OBJECIONES_DE_LA_EVALUACION = [
+  [
+    ['Me parece mucho dinero para lo que estoy facturando ahora.', ['precio']],
+    ['Lo tengo que hablar con mi socio antes de firmar nada.', ['decisor']],
+    ['Estamos en temporada alta y no tengo cabeza para empezar algo nuevo.', ['momento']],
+    ['Ya contraté a una agencia el año pasado y no vi ni un paciente nuevo.', ['confianza']],
+    ['Mi clínica es muy pequeña, no sé si esto aplica para mí.', ['encaje']],
+  ],
+  [
+    ['¿Hay forma de pagarlo en cuotas? Al contado no llego.', ['precio']],
+    ['Las finanzas las lleva mi esposa: ella tiene que dar el visto bueno.', ['decisor']],
+    ['Prefiero esperar a enero, cuando cierre el año.', ['momento']],
+    ['¿Qué garantía me dan de que esto va a funcionar?', ['confianza']],
+    ['Yo trabajo sólo por referidos y no quiero hacer publicidad.', ['encaje']],
+  ],
+  [
+    ['Si viera los resultados que me dices no me importaría pagarlo, pero no los veo.', ['confianza', 'precio']],
+    ['No tengo tiempo para grabar videos todas las semanas.', ['encaje', 'momento']],
+    ['Tengo que ver cómo me va este mes antes de comprometerme.', ['momento', 'precio']],
+    ['Las inversiones de marketing las aprueba el directorio.', ['decisor']],
+    ['Me interesa, mándame la información por correo y lo reviso.', ['otra', 'momento']],
+  ],
+  [
+    ['Ustedes son muy nuevos, no conozco a nadie que haya trabajado con ustedes.', ['confianza']],
+    ['Mis pacientes son mayores, no están en Instagram.', ['encaje']],
+    ['Me sale más barato contratar a un practicante.', ['precio']],
+    ['Ahora mismo estoy mudando el consultorio.', ['momento']],
+    ['No me gustó cómo me contactaron, fueron muy insistentes.', ['otra', 'confianza']],
+  ],
+];
+
+/**
+ * La clasificación de objeciones (`07`, AG11, F14): el conjunto de arriba, una llamada por pedido, por
+ * `pedirCategorias` —la misma pedida que hace la tarea del analizador— y `validarCategorias`. El uso se anota a la
+ * empresa sembrada, que se quita al terminar. Imprime cada objeción con lo esperado y lo devuelto, los aciertos y
+ * el uso, leído de `uso_de_ia`.
+ */
+async function correrLasObjeciones(llave) {
+  const { sql } = await import('kysely');
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { pedirCategorias, validarCategorias } = await import('../lib/analizadores/objeciones.ts');
+  const { PREFIJO_DE_LA_EVALUACION, quitarEmpresasDeLosAgentes, sembrarCasosDeLosAgentes } = await import('../db/sembrado/casos-de-los-agentes.ts');
+
+  const e = await sembrarCasosDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+  console.log(`  Sembrada la empresa con datos (${PREFIJO_DE_LA_EVALUACION}…), sólo para anotar el uso.`);
+  let aciertos = 0;
+  let total = 0;
+  let sinCategoria = 0;
+  try {
+    for (const [n, llamada] of OBJECIONES_DE_LA_EVALUACION.entries()) {
+      const objeciones = llamada.map(([texto], indice) => ({ indice, huella: '', texto }));
+      const r = await pedirCategorias({ llamadaId: `evaluacion-${n + 1}`, objeciones }, llave, e.conDatos);
+      console.log(`\n── Llamada ${n + 1}${r.tipo === 'fallo' ? ` · FALLÓ: ${r.situacion}` : ''}`);
+      const categorias = r.tipo === 'fallo' ? new Map() : validarCategorias(objeciones, r.datos);
+      for (const [indice, [texto, aceptadas]] of llamada.entries()) {
+        const devuelta = categorias.get(indice) ?? null;
+        const bien = devuelta !== null && aceptadas.includes(devuelta);
+        total += 1;
+        if (bien) aciertos += 1;
+        if (devuelta === null) sinCategoria += 1;
+        console.log(`  ${bien ? 'bien' : 'MAL '} · ${devuelta ?? '(sin categoría)'} · esperada ${aceptadas.join(' o ')} · ${texto}`);
+      }
+    }
+    console.log(`\nAciertos: ${aciertos} de ${total}; sin categoría: ${sinCategoria}.`);
+    const uso = await conOrganizacion(e.conDatos, () =>
+      datos()
+        .selectFrom('uso_de_ia')
+        .where('agente', '=', 'objeciones')
+        .select([
+          sql`count(*)`.as('llamadas'),
+          sql`coalesce(sum(tokens_entrada), 0)`.as('entrada'),
+          sql`coalesce(sum(tokens_salida), 0)`.as('salida'),
+        ])
+        .executeTakeFirstOrThrow(),
+    );
+    console.log(`Total: ${uso.llamadas} llamada(s), ${uso.entrada} tokens de entrada y ${uso.salida} de salida.`);
+  } finally {
+    await quitarEmpresasDeLosAgentes(PREFIJO_DE_LA_EVALUACION);
+    console.log('  Quitada la empresa sembrada.');
+  }
+}
+
+/**
  * El Brief del closer (`07`, AG12, F13): dos citas del territorio del closer de la empresa sembrada, una con un
  * formulario sintético contestado y otra sin formulario. Un pedido por cita, con la llave de ARIA sólo en memoria.
  * Imprime las cuatro secciones con la fuente y la cita de cada dato, cuántos datos se degradaron y el uso.
@@ -424,6 +512,11 @@ const TANDAS = {
     que: 'el Brief del closer de dos citas de la base sembrada, una con formulario y otra sin él (F13)',
     pedidos: 2,
     correr: correrElBrief,
+  },
+  objeciones: {
+    que: `la categoría de ${OBJECIONES_DE_LA_EVALUACION.flat().length} objeciones sintéticas, una llamada por pedido, con el modelo de la tarea (F14)`,
+    pedidos: OBJECIONES_DE_LA_EVALUACION.length,
+    correr: correrLasObjeciones,
   },
 };
 
