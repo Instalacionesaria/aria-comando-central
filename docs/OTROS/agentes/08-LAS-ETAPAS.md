@@ -734,8 +734,9 @@ Lo que decía el plan:
 - **Las citas**: cada etapa las reapuntó con el mapa de su diff y la 101 está en verde. La revisión encontró
   que el guion movía también las citas fijadas a un commit (`archivo:N@sha`), que no se mueven: se arregló, se
   devolvieron las dos que había corrido una etapa anterior y quedó en la memoria del proyecto.
-- **Lo que queda abierto** está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`; además una versión del prompt de la Reunión que no reciba
-  la etiqueta del tema (`07`).
+- **Lo que queda abierto** está en `10-LO-QUE-QUEDA-PARA-DESPUES.md`.
+- **Después del cierre, el 2026-10-07**: el pedido de la redacción de la Reunión ya no lleva la etiqueta del
+  tema, que el modelo leía como el problema; la evaluación repetida (1 pedido) lo confirma (`07`).
 - **Después del cierre, el 2026-10-07**: la evaluación real de la clasificación de objeciones (AG11), que no se
   había corrido. Nueva tanda `objeciones` del guion (4 pedidos sobre 20 objeciones sintéticas, por la misma
   pedida que la tarea, que ahora es `pedirCategorias`): 20 de 20 (`07`).

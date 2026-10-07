@@ -6,7 +6,9 @@
 //
 // Los temas ya están guardados con el orden de las reglas y sus plantillas cuando esto corre: si la redacción
 // no llega, se quedan así (`AG-35`, «primero guarda, después redacta»). Al modelo se le dan los candidatos —su
-// clave, su etiqueta, su origen, su gravedad y su texto— y devuelve un orden y una frase por tema. Se comprueba:
+// clave, su origen, su gravedad y su texto— y devuelve un orden y una frase por tema. La etiqueta del Lienzo (SIN
+// DATOS NUEVOS, CADENA…) no viaja: es un rótulo de la tarjeta, y la primera evaluación real mostró que el modelo la
+// leía como el problema («revisa por qué no hay datos nuevos» para campañas que no gastan). Se comprueba:
 //
 //   · el orden: sólo claves que existen, sin repetir. Lo que no nombró va al final en el orden de las reglas
 //     (`temasEnSuOrden`): un tema no se pierde porque el modelo lo olvidó;
@@ -143,7 +145,7 @@ export async function redactarReunion(p: {
     mensajes: [
       {
         role: 'user',
-        content: JSON.stringify({ temas: p.temas.map((t) => ({ clave: t.clave, etiqueta: t.etiqueta, origen: t.origen, gravedad: t.gravedad, texto: t.texto })) }),
+        content: JSON.stringify({ temas: p.temas.map((t) => ({ clave: t.clave, origen: t.origen, gravedad: t.gravedad, texto: t.texto })) }),
       },
     ],
     formato: FORMATO,

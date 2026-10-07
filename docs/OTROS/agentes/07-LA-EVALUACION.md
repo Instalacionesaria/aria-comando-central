@@ -320,6 +320,15 @@ referencia a otra área ni a un término de otro tema.
 - **Lo que aporta**: poco más que la plantilla. Con estos cinco temas, la redacción sirve sobre todo por el
   orden; las frases nuevas son prudentes y genéricas.
 
+### 2026-10-07 · la Reunión, otra vez, sin la etiqueta en el pedido (F17)
+
+**`reunion`** (1 pedido, con el OK del usuario): **1 llamada**, 503 tokens de entrada y 632 de salida. El
+pedido ya no lleva la etiqueta del tema (la 239 lo exige). **Ninguna frase se quitó.** La pauta parada dice
+ahora «Conviene revisar hoy por qué dejaron de entregar, porque sin entrega no llegan contactos nuevos»: el
+problema correcto. El orden cambió otra vez —la concentración de Webinar cuarta y las llamadas sin vínculo
+últimas—; el modelo no lo explica, y el orden es lo que se le pide. Una frase infiere un poco («para no perder
+el seguimiento de esas ventas», de citas sin registrar), sin cifras ni otra área.
+
 ### 2026-10-07 · la categoría de las objeciones (F14)
 
 **`objeciones`** (4 pedidos, con el OK del usuario): **4 llamadas** a `claude-haiku-4-5-20251001`, 2.416 tokens de

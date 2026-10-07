@@ -140,11 +140,13 @@ test('con llave, el modelo la ordena y la redacta; lo que no pasa la validación
      uno, al que le agrega el nombre de otra área: ése se quita. Cualquier otro pedido lanza. */
   const original = globalThis.fetch;
   let llamadas = 0;
+  let clavesDeLosTemas: string[] = [];
   globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
     if (String(url) !== 'https://api.anthropic.com/v1/messages') throw new Error(`la prueba no esperaba un pedido a ${String(url)}`);
     llamadas += 1;
     const cuerpo = JSON.parse(String(init?.body)) as { messages: { content: string }[] };
     const { temas } = JSON.parse(cuerpo.messages[0]!.content) as { temas: { clave: string; texto: string; origen: string }[] };
+    clavesDeLosTemas = [...new Set(temas.flatMap((t) => Object.keys(t)))].sort();
     const orden = temas.map((t) => t.clave).reverse().slice(1);
     const frases = temas.map((t) => ({ clave: t.clave, frase: t.origen === 'Sales · Closer' ? `${t.texto} Mira también Acquisition.` : `Hoy: ${t.texto}` }));
     return new Response(
@@ -161,6 +163,8 @@ test('con llave, el modelo la ordena y la redacta; lo que no pasa la validación
     assert.ok(r.tocaba);
     assert.deepEqual(r.reunion, { estado: 'corrio', temas: 5, redaccion: 'redactada' });
     assert.equal(llamadas, 1, 'la Reunión se redacta en un solo pedido');
+    // La etiqueta no viaja: el modelo la tomaba por el problema (`07`, la evaluación del 2026-10-06).
+    assert.deepEqual(clavesDeLosTemas, ['clave', 'gravedad', 'origen', 'texto']);
   } finally {
     globalThis.fetch = original;
   }
