@@ -222,7 +222,7 @@ Hay otra ruta que se presenta como sonda y ningún archivo de esta carpeta nombr
 (`app/api/control/route.ts:25-26`, `:35`), así que la atiende cualquier sesión activa, y lee
 `control_aislamiento` con `conOrganizacion(contexto.orgEfectiva)`: la cadena entera, del manejador a
 la base (`app/api/control/route.ts:10-12`, `:40-46`). Figura entre las rutas sin pantalla
-(`lib/autorizacion/secciones.ts:475-477`). **Nada del repositorio llama al manejador** (búsqueda de
+(`lib/autorizacion/secciones.ts:498-500`). **Nada del repositorio llama al manejador** (búsqueda de
 `api/control` en `lib/`, `app/`, `components/`, `pruebas/` y `scripts/`, 2026-09-28): las pruebas
 arman peticiones con ese camino y se las pasan al portero, sin importar la ruta
 (`pruebas/base/40-portero.test.ts:293`, `pruebas/base/42-login.test.ts:729`,
@@ -424,7 +424,7 @@ ejes —forma del DOM, texto, geometría—. Con Leads Portal salió la última 
 vacía** (`scripts/paridad.mjs:153`, commit `aed4f27`); quedan tres pasos de Executive, así que la
 compuerta no se retira (`scripts/paridad.mjs:147-150@c4cf2a8`). El mismo archivo admite que **hace tiempo que no corre**: no está en la CI,
 necesita los navegadores de Playwright instalados a mano y una sesión
-(`scripts/paridad.mjs:141-146`). El conteo de la lista lo ata `pruebas/codigo/90-fundaciones.test.ts:1394-1399`.
+(`scripts/paridad.mjs:141-146`). El conteo de la lista lo ata `pruebas/codigo/90-fundaciones.test.ts:1397-1402`.
 La geometría no la reemplaza ninguna prueba que lea el fuente (`scripts/paridad.mjs:131`).
 **Después del corte, el 2026-10-01**: la compuerta se retiró en la etapa E7 de la nueva estructura. Los tres pasos de Executive se fueron con la maqueta, y con `VISTAS` y `PASOS` vacías el guardián imprime «retirada» y sale 0 (`scripts/paridad.mjs:301-305`).
 
@@ -638,7 +638,7 @@ minutos del medio.
      es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:140`); cuánto duran en Pro, no lo verifiqué.
    - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
      (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».
-   - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:475-476` presentan esa ruta
+   - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:498-499` presentan esa ruta
      como la sonda de la Etapa 8, o como algo que le sirve; la sonda programada no la usa (§ 2.6).
 9. **Todo el volumen es de una cuenta.** Cualquier cifra de costo, duración o frescura de esta foto
    cambia de escala con la segunda empresa conectada.

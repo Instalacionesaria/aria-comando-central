@@ -14,7 +14,7 @@
 
 ### LP12-01 · `tablero.ver`, y la sección `contacts` cuando el rol es restringido
 
-La sección ya está declarada así (`lib/autorizacion/secciones.ts:223-231`):
+La sección ya está declarada así (`lib/autorizacion/secciones.ts:233-241`):
 
 ```ts
 {
@@ -35,10 +35,10 @@ decide en dos pasos, y cada uno tiene su código de rechazo:
 | 5 | ¿el rol tiene `tablero.ver`? | `sin_permiso`, 403, y queda auditado | `lib/autorizacion/portero.ts:219-246` |
 | 6 | ¿la sección `contacts` está en el alcance de la persona? | `seccion_no_concedida`, 403 | `lib/autorizacion/portero.ts:276-295`, `lib/autorizacion/respuesta.ts:51` |
 
-El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:689-691`).
+El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:716-718`).
 
 **No se crea una capacidad nueva.** Siete secciones comparten `tablero.ver` y ninguna combinación de
-capacidades puede separarlas (`lib/autorizacion/secciones.ts:683-687`); lo que separa a las
+capacidades puede separarlas (`lib/autorizacion/secciones.ts:710-714`); lo que separa a las
 personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conversion y Sales
 (`docs/sales/12-QUIEN-VE-QUE.md:53-75`).
 
@@ -53,7 +53,7 @@ personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conver
 «Restringido» es la bandera `secciones_restringidas` del rol
 (`db/migraciones/017_alcance_de_secciones.sql:54`): con ella puesta, la persona ve sólo las
 secciones que tiene en `identidad.usuarios_secciones` (`db/migraciones/017_alcance_de_secciones.sql:64`),
-y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:701-705`).
+y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:728-732`).
 
 **Y ya no hay un rol de closer.** Los roles `closer` y `setter` salieron del catálogo
 (`db/arranque/003_retiro_de_roles.sql:13-14`): quien cierra hoy es un `usuario` con la pestaña Closer
@@ -74,7 +74,7 @@ las descubra en producción:
   pasa nada: ARIA no tiene administradores activos (`LP12-03`) y las demás empresas no tienen
   contactos (`09-DE-DONDE-VIENE-CADA-DATO.md`, `LP09-13`).
 - **Un superadministrador puede mirar la pestaña de otra empresa**, porque es el único que puede
-  conmutar la organización que mira (`lib/autorizacion/secciones.ts:747-749`). Es la misma regla que
+  conmutar la organización que mira (`lib/autorizacion/secciones.ts:774-776`). Es la misma regla que
   en Closer.
 
 ---
@@ -266,9 +266,9 @@ sobrevive al cierre de sesión en una computadora compartida es la fuga más bar
 ### LP12-10 · `sinOperacionesTodavia` bajó en LP-4, en el mismo commit que la primera ruta
 
 `contacts` era una de las dos secciones que conservaban la bandera, junto con `executive`
-(`lib/autorizacion/secciones.ts:217`). El comentario de Sales lo anticipaba cuando decía *«las dos que
-quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:326-327`). En LP-4 la línea de la bandera pasó
-a ser su comentario (`lib/autorizacion/secciones.ts:226`), y queda sólo `executive`.
+(`lib/autorizacion/secciones.ts:227`). El comentario de Sales lo anticipaba cuando decía *«las dos que
+quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:336-337`). En LP-4 la línea de la bandera pasó
+a ser su comentario (`lib/autorizacion/secciones.ts:236`), y queda sólo `executive`.
 
 No es documentación: es un cable trampa que dispara en tres lugares.
 
@@ -276,7 +276,7 @@ No es documentación: es un cable trampa que dispara en tres lugares.
 |---|---|---|---|
 | `pruebas/codigo/30-portero.test.ts:325-352` | ninguna ruta declara la `PANTALLA` de una sección con bandera | **rojo** | verde |
 | `pruebas/codigo/30-portero.test.ts:445-462` | la bandera no miente, en las dos direcciones | **rojo** | **rojo** |
-| `pruebas/codigo/90-fundaciones.test.ts:1255-1263` | `SIN_OPERACIONES_TODAVIA.length` vale 1, literal desde LP-4 | **rojo** si se baja la bandera sin tocar el número | — |
+| `pruebas/codigo/90-fundaciones.test.ts:1255-1263@22ec755` | `SIN_OPERACIONES_TODAVIA.length` vale 1, literal desde LP-4 | **rojo** si se baja la bandera sin tocar el número | — |
 
 **Requisito, cumplido en LP-4:** la ruta `app/api/leads-portal/route.ts`, la bandera bajada con su
 comentario —como el de Sales—, y el 2 que pasó a 1 **fueron en el mismo commit**. Es la séptima vez que el cable dispara,
@@ -301,9 +301,9 @@ no se mueve: no se crea ningún rol.
 
 ### LP12-12 · Lo que el cambio no toca
 
-- **El galón se queda** (`lib/autorizacion/secciones.ts:227`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja), por el precedente de Creative: el
+- **El galón se queda** (`lib/autorizacion/secciones.ts:237`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja), por el precedente de Creative: el
   adorno es del prototipo, y lo que estaba mal no era él sino que detrás no hubiera nada
-  (`lib/autorizacion/secciones.ts:259-262`).
+  (`lib/autorizacion/secciones.ts:269-272`).
 - **No se pierde cobertura en `91-closer-y-setter`.** Su recorrido de los tableros itera
   `SIN_OPERACIONES_TODAVIA` (hasta AG5 de los agentes, que la dejó vacía; hoy recorre una lista escrita,
   `pruebas/codigo/91-closer-y-setter.test.ts:280-283`), así que cuando

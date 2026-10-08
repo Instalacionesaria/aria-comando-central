@@ -81,10 +81,10 @@ GoHighLevel, la caída de altas del 14 de septiembre es real, y el ICP interno s
 ## 2 · Qué hay hoy en pantalla
 
 **La sección.** `contacts`, «Leads Portal», grupo AIOS, con `tablero.ver`
-(`lib/autorizacion/secciones.ts:223-231`); la bandera se bajó en LP-4 y el comentario lo dice en
-`lib/autorizacion/secciones.ts:226`. Queda una sola sección sin operaciones de servidor,
-`executive` (`lib/autorizacion/secciones.ts:217`), y el conteo lo fija
-`pruebas/codigo/90-fundaciones.test.ts:1263`.
+(`lib/autorizacion/secciones.ts:233-241`); la bandera se bajó en LP-4 y el comentario lo dice en
+`lib/autorizacion/secciones.ts:236`. Queda una sola sección sin operaciones de servidor,
+`executive` (`lib/autorizacion/secciones.ts:227`), y el conteo lo fija
+`pruebas/codigo/90-fundaciones.test.ts:1263@22ec755`.
 La vista es una envoltura que monta el panel (`components/views/ContactsView.jsx:33-45`), con una
 cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:1-31`).
 

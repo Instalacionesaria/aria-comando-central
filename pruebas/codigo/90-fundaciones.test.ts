@@ -1260,7 +1260,10 @@ test('la pantalla `icp` salió de la lista de "sin operaciones" y entró al cat�
   //
   // El número literal sigue siendo el cable trampa, ahora al revés: una sección nueva que nazca con
   // `sinOperacionesTodavia` lo hace fallar, y alguien tiene que decidir si eso es lo que quiere.
-  assert.equal(SIN_OPERACIONES_TODAVIA.length, 0);
+  //
+  // Se decidió una vez, el 2026-10-08: **`clientos`** nace sin operaciones y así se queda, porque es un
+  // `iframe` de una herramienta ajena en prueba y no le pide nada a nuestro servidor.
+  assert.deepEqual(SIN_OPERACIONES_TODAVIA, ['clientos']);
 });
 
 test('`setter` y `closer` salieron de la lista, cada uno con su propia capacidad', () => {

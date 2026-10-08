@@ -51,10 +51,10 @@ cada entrada del menú**: si mide o inventa, sobre qué datos, con qué reglas y
 ## 1 · Las catorce secciones del menú
 
 El menú sale de una sola lista, `SECCIONES`, repartida en los grupos de `GRUPOS_DEL_MENU`: AIOS sin
-rótulo, «Inteligencia», «Operación» y el pie (`lib/autorizacion/secciones.ts:146-162`). Una sección
+rótulo, «Inteligencia», «Operación» y el pie (`lib/autorizacion/secciones.ts:156-172`). Una sección
 es maqueta cuando lleva la bandera `sinOperacionesTodavia`, que dice que no tiene ninguna ruta de
 servidor detrás; la lista de las que la llevan se deriva de ahí
-(`lib/autorizacion/secciones.ts:455-457`). El 2026-09-15 la llevaban seis de trece —`executive`,
+(`lib/autorizacion/secciones.ts:465-480`). El 2026-09-15 la llevaban seis de trece —`executive`,
 `contacts`, `acquisition`, `creative`, `conversion` y `sales`
 (`git show 93a1341:lib/autorizacion/secciones.ts`)—; hoy, una.
 
@@ -77,8 +77,8 @@ servidor detrás; la lista de las que la llevan se deriva de ahí
 
 Las fechas de «Desde» son las del commit que le dio a la sección su primera operación de servidor o
 le borró la maqueta. La clave y la capacidad de cada fila están en
-`lib/autorizacion/secciones.ts:172-443`; Empresas y Usuarios son secciones sin entrada propia en el
-menú, pestañas de Ajustes (`lib/autorizacion/secciones.ts:173-192`). La capacidad de la sección no
+`lib/autorizacion/secciones.ts:182-453`; Empresas y Usuarios son secciones sin entrada propia en el
+menú, pestañas de Ajustes (`lib/autorizacion/secciones.ts:183-202`). La capacidad de la sección no
 es siempre la única puerta: guardar un prompt del auditor pide `auditor.editar`
 (`app/api/auditoria/prompts/route.ts:69`), y el Panel de Monitoreo pide tres cosas a la vez
 ([16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) § 3). El sexto departamento que la foto
@@ -91,7 +91,7 @@ sección: ninguna clave de `SECCIONES` lo nombra.
 
 **1 · Trece de las catorce secciones miden, y la única maqueta habla en nombre de las otras.** El
 2026-09-15 medían siete de trece. Hoy la bandera queda sólo en `executive`
-(`lib/autorizacion/secciones.ts:213-219`), y `lib/aios/` pasó de 13 archivos a 8: se borraron las
+(`lib/autorizacion/secciones.ts:223-229`), y `lib/aios/` pasó de 13 archivos a 8: se borraron las
 maquetas de Acquisition (dos archivos), Creative, Conversion y Leads Portal; la de Sales vivía en
 `components/views/SalesView.jsx`, que pasó de 231 líneas a 82. Executive no cambió una línea de datos
 desde el port, y lo que dibuja contradice a las seis pantallas a las que enlaza

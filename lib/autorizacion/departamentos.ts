@@ -110,6 +110,8 @@ export const ENTRADAS: readonly Entrada[] = [
   { departamento: 'sales', seccion: 'analizadores', pestana: 'HT', nombre: 'Llamadas de venta' },
 
   { departamento: 'client-success', seccion: 'analizadores', pestana: 'OB', nombre: 'Llamadas de onboarding' },
+  // La herramienta externa en prueba, sólo para la organización principal (2026-10-08).
+  { departamento: 'client-success', seccion: 'clientos' },
   { departamento: 'client-success', proximamente: true, nombre: 'Seguimiento de clientes' },
 ];
 

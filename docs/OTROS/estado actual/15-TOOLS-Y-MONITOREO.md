@@ -43,14 +43,14 @@ septiembre escribe en una tabla que no existe, cuya migración no está en el re
 (`components/views/ToolsView.jsx:99-101`): lo que se hace *después* del método, no una pieza de él
 (`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y
 `tools.editar` (`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito:
-darle Tools a alguien le daría también ICP & Oferta (`lib/autorizacion/secciones.ts:395-398`).
+darle Tools a alguien le daría también ICP & Oferta (`lib/autorizacion/secciones.ts:405-408`).
 
 **El Panel de Monitoreo** es «la pantalla con la que ARIA mira a sus clientes: cuántos scrapeos
-hizo cada empresa y con qué scraper» (`lib/autorizacion/secciones.ts:411-414`). Tiene una sola
+hizo cada empresa y con qué scraper» (`lib/autorizacion/secciones.ts:421-424`). Tiene una sola
 capacidad, `monitoreo.ver`, de lectura (`db/arranque/001_catalogo.sql:103-104`, `:125`), y es **la
-única sección con `soloDesdeLaPrincipal`** (`lib/autorizacion/secciones.ts:416`, `:439`). Las dos
+única sección con `soloDesdeLaPrincipal`** (`lib/autorizacion/secciones.ts:426`, `:439`). Las dos
 van en el grupo Operación, después de Setter, Closer y Analizadores
-(`lib/autorizacion/secciones.ts:340-442`).
+(`lib/autorizacion/secciones.ts:350-452`).
 
 **Ninguna de las dos está en el prototipo.** `aios-command-center_1.html` tiene diez vistas
 —acquisition, closer, contacts, conversation, conversion, creative, executive, icp, sales y
@@ -62,7 +62,7 @@ el panel viene del «Panel de Control» de ARIA-brain, que leía el hub y se bor
 **Por eso tampoco están en `scripts/paridad.mjs`**, y el motivo está escrito en las dos secciones:
 esa compuerta compara contra el prototipo, y comparar una pantalla que ahí no existe daría un rojo
 permanente, que «no se arregla — se ignora, y con él se ignoran los demás»
-(`lib/autorizacion/secciones.ts:400-402`, `:430-432`; lo mismo en
+(`lib/autorizacion/secciones.ts:410-412`, `:430-432`; lo mismo en
 `components/views/MonitoreoView.jsx:3-5`). Hoy la pregunta es además académica: la lista `VISTAS`
 de la compuerta quedó vacía el 2026-09-26 (`aed4f27`) y la compuerta no corre en la integración
 continua (`scripts/paridad.mjs:140-153`).
@@ -161,7 +161,7 @@ que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
 dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:47`) y dice «Todavía no
 usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:38-44`). Se lee **una vez**, al
 montarse (`components/tools/SaldoDeLeads.jsx:26-34`), y la vista se monta al entrar a la
-aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:84-95`).
+aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:86-97`).
 **Después del corte**, desde la etapa E11 (2026-10-02), la franja se monta sólo con Tools a la vista y
 en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos. Y desde el mismo día dice el saldo en **créditos**, con la equivalencia a la vista: «1 lead = 1 crédito» (la cuenta no cambió).
 
@@ -211,8 +211,8 @@ Facebook, `pruebas/codigo/127-anunciantes-de-facebook.test.ts`, con 11 (hay otra
 `127-filas-clicables`, que no es de Tools). Todas son de `pruebas/codigo/`: leen el texto del
 código y ninguna toca una tabla del scraper, porque la base local no las tiene (§ 6). Lo que sí
 corre contra la base local es la autorización del panel: que lo dé `usuario` con la pestaña y nunca
-`administrador` (`pruebas/base/22-los-tres-roles.test.ts:289`) y que el alta con sólo esa pestaña
-se acepte en la principal y se rechace en un cliente (`pruebas/base/31-alcance.test.ts:461`).
+`administrador` (`pruebas/base/22-los-tres-roles.test.ts:299`) y que el alta con sólo esa pestaña
+se acepte en la principal y se rechace en un cliente (`pruebas/base/31-alcance.test.ts:464`).
 
 ---
 
@@ -359,7 +359,7 @@ anota una sola vez (`lib/tools/medicion.ts:82-84`).
 
 **8 · El panel tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por
 derivación; la pestaña concedida, porque `usuario` restringe por sección; y ser de la organización
-principal (`lib/autorizacion/secciones.ts:416-425`, `db/arranque/001_catalogo.sql:372-397`). La
+principal (`lib/autorizacion/secciones.ts:426-435`, `db/arranque/001_catalogo.sql:372-397`). La
 tercera se mide sobre la organización **propia**, no la que se está mirando, para que conmutar no
 apague el panel (`lib/autorizacion/secciones.ts:112-119`, `:755-760`). El formulario de Usuarios no
 ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no
@@ -471,7 +471,7 @@ tablas del backend» es una convención de tipos: en producción `app_inquilino`
 `UPDATE` y `DELETE` sobre las tres (`has_table_privilege`, medido el 2026-09-28).
 
 **El panel consulta todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas
-las vistas visibles se montan juntas (`components/CommandCenter.jsx:84-95`) y el panel carga al
+las vistas visibles se montan juntas (`components/CommandCenter.jsx:86-97`) y el panel carga al
 montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
 entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
 lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:10-13`): después de un scraping no se

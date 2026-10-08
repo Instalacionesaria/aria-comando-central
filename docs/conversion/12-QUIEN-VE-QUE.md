@@ -1,7 +1,7 @@
 # El documento no nombra responsables de Conversion
 
 > Fuente: `CC_Arquitectura_Funcional.md`, leído entero el 2026-09-20, más la declaración real de la
-> sección en `lib/autorizacion/secciones.ts:265-271`.
+> sección en `lib/autorizacion/secciones.ts:275-281`.
 
 > **`lib/aios/conversion.js` YA NO EXISTE.** Se borró el 2026-09-20, y con él las 655 líneas con
 > 530 literales inventados y 47 frases de guion que esta carpeta documenta. Las citas
@@ -65,7 +65,7 @@ adoptó por decisión del 2026-09-18.
 
 ### CV12-03 · Seis líneas, y la bandera que se mueve con la ruta
 
-**Rastro** · `lib/autorizacion/secciones.ts:265-271`, literal:
+**Rastro** · `lib/autorizacion/secciones.ts:275-281`, literal:
 
 ```ts
 {
@@ -87,7 +87,7 @@ adoptó por decisión del 2026-09-18.
   suite en rojo; sin la bandera y sin ruta, también. **La bandera y la ruta se mueven juntas, en el
   mismo cambio.** Conversion sería el **tercer departamento** que la baja.
 - **`galon: true` se queda** (desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja). El precedente ya resolvió esa duda: *«el galón es del prototipo… Lo que
-  estaba mal no era el adorno: era que detrás no hubiera nada»* (`secciones.ts:257-261`).
+  estaba mal no era el adorno: era que detrás no hubiera nada»* (`secciones.ts:267-271`).
 
 ---
 

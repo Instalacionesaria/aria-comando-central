@@ -30,7 +30,7 @@ La pestaña Acquisition existe, se dibuja entera y no tiene una sola cifra real:
 KPIs, tres tarjetas de embudo, tres tablas, dos alertas escritas a mano y un modal de nueve
 recomendaciones. No hay ninguna ruta de servidor detrás: `ls app/api/` devuelve diecisiete carpetas
 y ninguna es `acquisition`, y la sección se declara con `sinOperacionesTodavia: true`
-(`lib/autorizacion/secciones.ts:243-248`).
+(`lib/autorizacion/secciones.ts:253-258`).
 
 **Y sin embargo, esa maqueta es la especificación.** Alguien decidió que la pantalla mostrara la
 inversión del período, los contactos, los clics, los agendados, los calificados, el costo por

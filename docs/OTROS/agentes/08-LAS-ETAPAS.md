@@ -182,7 +182,7 @@
   Acquisition, Sales y Leads › De GHL: `embudos_de_acquisition`, `dinero_del_mes`, `cadena_de_cierre`,
   `ciclo_hasta_la_cita`, `cierre_por_closer`, `cancelacion_de_citas` y `cohorte_de_leads`), `conversaciones.ts`,
   `topes.ts`, `estado.ts` y `preguntar.ts` (el ciclo de `AG-04`)— y `app/api/executive/route.ts`, que **baja la
-  bandera** (`lib/autorizacion/secciones.ts:220` es ahora el comentario de una línea).
+  bandera** (`lib/autorizacion/secciones.ts:230` es ahora el comentario de una línea).
 - **Cómo se asegura la salida** (lo que `03`, AG-46, dejaba para esta etapa): `responder` se ofrece con
   `strict: true` junto a las herramientas, con `tool_choice: auto`. Si el modelo contesta con texto suelto, o se
   llega a la sexta ronda, esa ronda pide el formato de `responder` (`output_config.format`) y apaga las

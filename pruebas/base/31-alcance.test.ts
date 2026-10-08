@@ -340,11 +340,14 @@ test('toda clave de `SECCIONES` es aceptada por el `check` de la base', async ()
   // `secciones.ts` existe para cerrar.
   await limpiar();
   const p = await persona('usuario');
-  const { SECCIONES } = await import('../../lib/autorizacion/secciones.ts');
-  for (const s of SECCIONES) {
+  /* Las que se pueden conceder: `clavesDeSeccion`, con lo que validan las rutas. Las `sinAlcance` —la
+     herramienta en prueba de la principal— no se conceden nunca, y la base no tiene por qué aceptarlas. */
+  const { clavesDeSeccion } = await import('../../lib/autorizacion/secciones.ts');
+  const concedibles = clavesDeSeccion();
+  for (const clave of concedibles) {
     await admin.query(
       'insert into identidad.usuarios_secciones (usuario_id, seccion) values ($1, $2)',
-      [p, s.clave],
+      [p, clave],
     );
   }
   const guardadas = await filas<{ n: string }>(
@@ -352,7 +355,7 @@ test('toda clave de `SECCIONES` es aceptada por el `check` de la base', async ()
     'select count(*)::text as n from identidad.usuarios_secciones where usuario_id = $1',
     [p],
   );
-  assert.equal(Number(guardadas[0]?.n), SECCIONES.length, 'el `check` rechazó una clave del catálogo');
+  assert.equal(Number(guardadas[0]?.n), concedibles.length, 'el `check` rechazó una clave del catálogo');
 });
 
 test('borrar a la persona se lleva su alcance', async () => {

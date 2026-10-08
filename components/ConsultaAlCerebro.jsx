@@ -68,7 +68,9 @@ export default function ConsultaAlCerebro() {
     setAbiertoElPanel(false);
   }, [vista]);
 
-  if (!abierta) return null;
+  /* Sin ruta, no hay caja (`RUTA_DE_LA_CAJA`): Client OS es una herramienta ajena en un `iframe`, y el cerebro
+     no tiene nada que leer de ella. Dibujar la caja igual era ofrecer una pregunta que nadie contesta. */
+  if (!abierta || rutaDeLaCaja(vista) === null) return null;
   const estado = cerebro.panel?.estado ?? null;
   if (estado?.tipo === 'sin_permiso') return null;
 

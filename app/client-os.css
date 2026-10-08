@@ -1,0 +1,33 @@
+/* Client OS, la herramienta externa en prueba (`components/views/ClientOsView.jsx`). NO viene del prototipo.
+   ==========================================================================
+
+   El `iframe` ocupa todo el alto que la vista le deja: la vista ya es un flex en columna de alto completo
+   (`.view` en `app/aios.css`). Ni un color a mano ni una sombra: lo comprueban
+   `pruebas/codigo/104-temas.test.ts` y `107-sin-sombras.test.ts`. */
+
+.cos-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.cos-nota {
+  color: var(--txt-dim);
+}
+
+.cos-afuera {
+  color: var(--txt-dim);
+  text-decoration: underline;
+}
+
+.cos-marco {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}

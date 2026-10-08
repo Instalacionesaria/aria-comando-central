@@ -220,10 +220,10 @@ Borrar la maqueta no borra las preguntas que hacía. Sobreviven, con su ficha en
 - **la búsqueda por nombre, campaña y creativo** (`LP04-10`);
 - **las secciones de la ficha** —recorrido, cuestionario, interacciones, publicidad, calificación,
   contacto—, cada una llena con dato real o declarada como hueco (`05-LA-FICHA-DEL-LEAD.md`);
-- **la clave `contacts`** (`lib/autorizacion/secciones.ts:223`) **y el `id="v-contacts"`**
+- **la clave `contacts`** (`lib/autorizacion/secciones.ts:233`) **y el `id="v-contacts"`**
   (`aios-command-center_1.html:3024`).
 
-**El galón del menú se queda** (`lib/autorizacion/secciones.ts:227`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja): el precedente de Sales y
+**El galón del menú se queda** (`lib/autorizacion/secciones.ts:237`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja): el precedente de Sales y
 Creative es que el adorno no era lo que estaba mal (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:113-114`).
 
 ---
@@ -262,8 +262,8 @@ Hecho en LP-6, fila por fila:
 | `pruebas/codigo/178-la-maqueta-del-leads-portal-se-fue.test.ts` | nueva | que el archivo ya no exista, que no quede `initLeadsPortal` ni `window.AIOSLeadCard`, que la vista no tenga `lpPlanBtn`, `data-datepick` ni `data-leads`, que el panel nuevo no tenga montos literales, y que la ruta de detalle no importe la sincronización |
 
 **Y lo que no es de LP-6 y fue antes, en el commit de la ruta (LP-4):** la bandera
-`sinOperacionesTodavia` de `lib/autorizacion/secciones.ts:226` bajó, y el conteo literal de
-`pruebas/codigo/90-fundaciones.test.ts:1263` pasó de 2 a 1. `30-portero` la verifica en las dos
+`sinOperacionesTodavia` de `lib/autorizacion/secciones.ts:236` bajó, y el conteo literal de
+`pruebas/codigo/90-fundaciones.test.ts:1263@22ec755` pasó de 2 a 1. `30-portero` la verifica en las dos
 direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92-94`).
 
 ### LP10-11 · Lo que LP-6 NO borra, y por qué
@@ -302,7 +302,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
   (`components/ajustes/AvisoDelCrm.jsx`); `.dw-sec-t` y `.dw-block`, Executive; y `.dw-empty`, las
   pantallas del Closer. Borrar cualquiera rompería otra pantalla **sin que nada falle**;
 - **ninguna hoja tenía una regla bajo `#v-contacts`** hasta LP-5. La pestaña no recibió la estética
-  de operación —es del grupo AIOS, no de Inteligencia (`lib/autorizacion/secciones.ts:212`)—, así que
+  de operación —es del grupo AIOS, no de Inteligencia (`lib/autorizacion/secciones.ts:222`)—, así que
   no había un `:is(…)` que ampliar, como sí lo hubo en Sales
   (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:144-152`). LP-5 le dio su propia hoja,
   `app/leads-portal.css`, en la capa `components`.

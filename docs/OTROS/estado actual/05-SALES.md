@@ -75,10 +75,10 @@ y `:79`. El documento no cambió desde el corte anterior. Lo que cambió es que 
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `lib/autorizacion/secciones.ts:320-326`: clave `sales`, capacidad `tablero.ver`, y el
+**La sección.** `lib/autorizacion/secciones.ts:330-336`: clave `sales`, capacidad `tablero.ver`, y el
 comentario de las líneas 322-323 fecha la baja de la bandera el 2026-09-21. La vista se registra en
-`components/CommandCenter.jsx:44`, y **todas las vistas visibles se montan a la vez**
-(`components/CommandCenter.jsx:86-98`): el panel pide `/api/sales` una vez al cargar la página
+`components/CommandCenter.jsx:45`, y **todas las vistas visibles se montan a la vez**
+(`components/CommandCenter.jsx:88-100`): el panel pide `/api/sales` una vez al cargar la página
 aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:66-68`); lo que sí está atado a la
 visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75`,
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el

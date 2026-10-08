@@ -47,13 +47,13 @@ Es lo único que la pantalla dice de sí misma y no cumple; ver § 5.
 
 ## 2 · Qué hay hoy
 
-**La sección.** `lib/autorizacion/secciones.ts:235-238`: clave `icp`, nombre «ICP & Oferta»,
+**La sección.** `lib/autorizacion/secciones.ts:245-248`: clave `icp`, nombre «ICP & Oferta»,
 `capacidadRequerida: 'fundaciones.ver'`, en el grupo `AIOS` del menú junto a Executive y Leads
 Portal, con el galón `›` (después del corte, desde la etapa E10 del 2026-10-02, la barra lateral la
-abre como Research › ICP & Oferta y no dibuja galones). Su comentario (`lib/autorizacion/secciones.ts:230-234`) dice que es «la
+abre como Research › ICP & Oferta y no dibuja galones). Su comentario (`lib/autorizacion/secciones.ts:240-244`) dice que es «la
 única de las diez sin la bandera» `sinOperacionesTodavia`, y eso ya no es cierto: desde el
-2026-09-26 la única que la conserva es `executive` (`lib/autorizacion/secciones.ts:217`,
-`lib/autorizacion/secciones.ts:226`).
+2026-09-26 la única que la conserva es `executive` (`lib/autorizacion/secciones.ts:227`,
+`lib/autorizacion/secciones.ts:236`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
 `CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:50-78`): siete herramientas, siete rutas y
@@ -62,7 +62,7 @@ proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.js
 primera vista con estado en React y salió a propósito de `npm run paridad`
 (`docs/OTROS/capa-base/ETAPA-9.md:181-195`).
 
-Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:84-95` dibuja
+Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:86-97` dibuja
 todas las secciones visibles de una vez, y `Fundaciones` pide su estado al montarse
 (`components/fundaciones/Fundaciones.jsx:202-204`). Cada entrada a Comando Central de alguien con la
 pestaña lee la fila de su organización, aunque nunca abra ICP & Oferta.

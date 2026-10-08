@@ -26,6 +26,7 @@ import ToolsView from './views/ToolsView';
 import MonitoreoView from './views/MonitoreoView';
 import IncidentesView from './views/IncidentesView';
 import AjustesView from './views/AjustesView';
+import ClientOsView from './views/ClientOsView';
 
 /* La vista de cada pantalla, por su clave.
  *
@@ -49,6 +50,7 @@ const VISTAS = {
   monitoreo: MonitoreoView,
   incidentes: IncidentesView,
   credenciales: AjustesView,
+  clientos: ClientOsView,
 };
 
 export default function CommandCenter() {

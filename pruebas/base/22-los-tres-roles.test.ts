@@ -286,6 +286,16 @@ test('el catálogo tiene EXACTAMENTE los roles de sistema que reparte', async ()
   assert.deepEqual(r.rows.map((f) => f.clave), ['administrador', 'superadministrador', 'usuario']);
 });
 
+test('la capacidad de Client OS la tienen los TRES roles: «cualquier tipo de permiso»', async () => {
+  /* Client OS (`245`) se ve en toda la principal porque su capacidad la tiene cualquier rol, y porque no se
+     recorta por pestañas. La primera mitad la decide el catálogo, y sólo se puede ver acá, contra la base. */
+  const { SECCIONES } = await import('../../lib/autorizacion/secciones.ts');
+  const capacidad = SECCIONES.find((s) => s.clave === 'clientos')!.capacidadRequerida;
+  for (const rol of ['usuario', 'administrador', 'superadministrador']) {
+    assert.ok((await capacidadesDe(rol)).includes(capacidad), `el rol \`${rol}\` no tiene \`${capacidad}\`: no vería Client OS`);
+  }
+});
+
 test('el Panel de Monitoreo lo da `usuario` + la pestaña, y NUNCA `administrador`', async () => {
   /* ══════════════════════════════════════════════════════════════════════════
      LAS DOS MITADES DEL PERMISO, Y LA ASIMETRÍA QUE PARECE UN ERROR
@@ -335,7 +345,8 @@ test('el Panel de Monitoreo lo da `usuario` + la pestaña, y NUNCA `administrado
     { restringido: true, concedidas: new Set(['monitoreo']) },
     DESDE_LA_PRINCIPAL,
   ).map((s) => s.clave);
-  assert.deepEqual(conLaPestana, ['monitoreo']);
+  // Más `clientos`, la herramienta en prueba de la principal: no se recorta por pestañas, a propósito (`245`).
+  assert.deepEqual(conLaPestana, ['monitoreo', 'clientos']);
 
   const sinLaPestana = seccionesConAlcance(
     delUsuario,

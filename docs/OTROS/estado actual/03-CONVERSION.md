@@ -96,11 +96,11 @@ cruzar con un contacto. Conversion no las usa; las publica Creative.
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `conversion` se registra en `lib/autorizacion/secciones.ts:265-276` con
+**La sección.** `conversion` se registra en `lib/autorizacion/secciones.ts:275-286` con
 `capacidadRequerida: 'tablero.ver'` y **sin** `sinOperacionesTodavia`: la bandera bajó con la ruta,
-porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:269-271`): la
+porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:279-281`): la
 décima salida de la lista, quinta vez que el cable dispara (`pruebas/codigo/90-fundaciones.test.ts:1172-1174`).
-El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:273-274`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
+El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:283-284`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
 **La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:48-98`) pide `tablero.ver`
 por el portero (`app/api/conversion/route.ts:52`), **rechaza** con 400 un período que no está en la
@@ -225,7 +225,7 @@ El número depende de qué se cuenta como literal, así que no lo fijo.
 
 **Lo que Executive todavía inventa en nombre de Conversion** (la pantalla entera está en
 [11-EXECUTIVE.md](11-EXECUTIVE.md)). Executive es la única pantalla que
-conserva `sinOperacionesTodavia: true` (`lib/autorizacion/secciones.ts:213-219`), y sus tres módulos
+conserva `sinOperacionesTodavia: true` (`lib/autorizacion/secciones.ts:223-229`), y sus tres módulos
 siguen cargándose (`lib/aios/index.js:29-37@c4cf2a8`; **después del corte, el 2026-10-01**, se borraron con la maqueta, en la etapa E7 de la nueva estructura). Citan a Conversion como fuente de cifras que Conversion
 ya demostró que no existen:
 

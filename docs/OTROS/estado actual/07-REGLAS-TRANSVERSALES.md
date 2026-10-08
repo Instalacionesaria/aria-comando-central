@@ -68,13 +68,13 @@ documento es de esa hora. La ventana rueda sola: [04-CONVERSATION.md](04-CONVERS
 18 h 277 contactos y 37 canceladas de 106 donde acá hay 276 y 33 de 103, las dos correctas a su hora
 (§ «Cómo se midió este corte»). La cancelación a catorce días, **22,2 %** sobre 18, no se movió (§ 9).
 
-**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:159-162` define tres grupos del
+**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:169-172` define tres grupos del
 cuerpo del menú, más el pie donde va Ajustes: AIOS (Executive, Leads Portal, ICP & Oferta),
 Inteligencia (Acquisition, Creative, Conversion, Conversation, Sales) y Operación (Setter, Closer,
 Analizadores, Tools, Monitoreo; Analizadores entró el 2026-09-23,
-`lib/autorizacion/secciones.ts:364-367`). Las cinco de Inteligencia y Leads Portal tienen ruta propia
+`lib/autorizacion/secciones.ts:374-377`). Las cinco de Inteligencia y Leads Portal tienen ruta propia
 y dibujan datos reales; la única pantalla que sigue sin operaciones de servidor es
-Executive (`lib/autorizacion/secciones.ts:217`). Estas reglas nacieron casi todas en Operación, se
+Executive (`lib/autorizacion/secciones.ts:227`). Estas reglas nacieron casi todas en Operación, se
 ejercieron primero en Conversation y entre el 16 y el 26 de septiembre se aplicaron a las otras cinco.
 
 ---
@@ -802,19 +802,19 @@ prueba `ADR-0304` que empieza en `pruebas/codigo/30-portero.test.ts:354` da rojo
 direcciones —una sección con la bandera que sí tiene ruta (`pruebas/codigo/30-portero.test.ts:446-456`),
 o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:454-457`)—; `ADR-0303` (`:325`)
 vigila además que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y el
-conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1263` obliga a decidir en vez de derivar.
+conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1263@22ec755` obliga a decidir en vez de derivar.
 Por eso la ruta, la bandera y el conteo van juntos: Sales los movió de 3 a 2 en `c109ebd` y Leads
 Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`), con una prueba de base por
 pantalla que lo exige (`pruebas/base/166-la-ruta-de-sales.test.ts:82`,
 `pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). Queda `executive`
-(`lib/autorizacion/secciones.ts:217`).
+(`lib/autorizacion/secciones.ts:227`).
 
 **32 · El GET de una pantalla pide exactamente la capacidad que declara su sección.**
 `pruebas/codigo/30-portero.test.ts:280` (`c109ebd`). El agujero lo encontró una mutación: `ADR-0304`
 comparaba las capacidades de las rutas de una pantalla **entre sí** y nunca contra la sección, así que
 cambiar la de Sales a `closer.ver` dejaba la suite entera en verde — y el resultado sería una entrada de
 menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Conversation. Se resolvió en
-`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:314-316`),
+`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:324-326`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
 `tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:808`).

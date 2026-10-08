@@ -178,7 +178,7 @@ test('el contador del diseño, y lo que el engranaje dice de cada destino', () =
   // Las entradas de cada departamento, como las cuenta la barra: un grupo una vez, con las «Próximamente».
   assert.deepEqual(
     navegacion().departamentos.map((d) => [d.nombre, d.entradas.length]),
-    [['Research', 2], ['Systems', 3], ['Marketing', 4], ['Sales', 5], ['Client Success', 2]],
+    [['Research', 2], ['Systems', 3], ['Marketing', 4], ['Sales', 5], ['Client Success', 3]],
   );
   /* El engranaje: la ceja de su cabecera, el subtítulo de Ajustes, y si el destino sólo se ve desde la
      principal, que sale del menú (`soloDesdeLaPrincipal`) y no de la clave. */

@@ -101,7 +101,7 @@ consulta (`docs/creative/07-LO-QUE-ENTREGA-Y-RECIBE.md:41-71`).
 pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:60`), **rechaza** el período que no
 está en la lista en vez de corregirlo (`app/api/creative/route.ts:66-67`) y corre los tres módulos con la
 misma ventana (`app/api/creative/route.ts:69-77`). La sección ya no declara `sinOperacionesTodavia`
-(`lib/autorizacion/secciones.ts:251-264`).
+(`lib/autorizacion/secciones.ts:261-274`).
 
 **La vista y el panel.** `components/views/CreativeView.jsx` (70 líneas) sólo pone el encabezado
 —«Qué pieza trae mejor gente, y sobre cuántos datos» (`components/views/CreativeView.jsx:60`)— y monta
@@ -225,7 +225,7 @@ Del CSS se fueron 141 reglas muertas con la construcción y 41 más en la revisi
 **El galón `›` del menú se quedó.** La foto anterior lo señalaba como el detalle que hacía que la
 maqueta pareciera tan real como ICP & Oferta, porque nada en la interfaz avisaba que lo que se veía
 era inventado. Se conservó a propósito: es del prototipo, y lo que estaba mal no era el adorno sino
-que detrás no hubiera nada (`lib/autorizacion/secciones.ts:259-263`). Después del corte: desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
+que detrás no hubiera nada (`lib/autorizacion/secciones.ts:269-273`). Después del corte: desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
 **Lo que Executive todavía inventa en nombre de Creative** (Executive sigue siendo maqueta):
 

@@ -52,7 +52,7 @@ comparación no es una tabla.
 
 ## S12-03 · Lo que el código dice hoy
 
-`lib/autorizacion/secciones.ts:300-306`:
+`lib/autorizacion/secciones.ts:310-316`:
 
 ```ts
 {
@@ -70,7 +70,7 @@ comparación no es una tabla.
 
 **La capacidad es `tablero.ver`**, compartida por siete secciones: `executive`, `contacts`,
 `acquisition`, `creative`, `conversion`, `conversation` y `sales`. El propio comentario de
-`secciones.ts:645-649` la usa como argumento de por qué el alcance por persona **no se puede expresar
+`secciones.ts:668-672` la usa como argumento de por qué el alcance por persona **no se puede expresar
 con capacidades**.
 
 **Requisito que sale de ahí:** no se inventa una `sales.ver`. Lo que separa a estas siete pantallas es
@@ -103,7 +103,7 @@ equivocado.
 
 ## S12-05 · El galón, y por qué se queda
 
-`secciones.ts:304` — `galon: true`. Lo dibujaba `components/Nav.jsx:190@b532a78` y lo llevan cinco secciones:
+`secciones.ts:314` — `galon: true`. Lo dibujaba `components/Nav.jsx:190@b532a78` y lo llevan cinco secciones:
 `contacts`, `icp`, `creative`, `conversion` y `sales`.
 
 `docs/OTROS/estado actual/02-CREATIVE.md:225-226` recoge que la foto anterior lo señalaba como el
@@ -116,10 +116,10 @@ la barra lateral nueva (etapa E10) no dibuja galones, y `galon` quedó en `secci
 
 ## S12-06 · La bandera, y el cable trampa que dispara cuando se baje
 
-`sinOperacionesTodavia: true` (`secciones.ts:303`). **Sales es una de las tres que quedan**, junto con
+`sinOperacionesTodavia: true` (`secciones.ts:313`). **Sales es una de las tres que quedan**, junto con
 `executive` (`:216`) y `contacts` (`:225`) — de nueve que eran.
 
-No es documentación: `secciones.ts:417-419` deriva de ella `SIN_OPERACIONES_TODAVIA`, y el cable
+No es documentación: `secciones.ts:427-429` deriva de ella `SIN_OPERACIONES_TODAVIA`, y el cable
 trampa de `ADR-0304` la verifica **en las dos direcciones** (`pruebas/codigo/30-portero.test.ts:295`,
 `:400`, `:408`):
 

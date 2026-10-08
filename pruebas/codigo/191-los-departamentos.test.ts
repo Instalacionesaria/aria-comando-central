@@ -143,10 +143,13 @@ test('la visibilidad sale sólo del menú', () => {
   const modelo = sinComentarios(fuente('lib/autorizacion/departamentos.ts'));
   assert.doesNotMatch(modelo, /\bimport\b/, 'el modelo de departamentos importa algo: la visibilidad tiene que llegarle hecha');
 
-  // Para cada sección del menú, quien sólo tiene ésa ve sólo ésa: ni más, ni menos.
+  /* Para cada sección del menú, quien sólo tiene ésa ve sólo ésa: ni más, ni menos. Más las `sinAlcance` —la
+     herramienta en prueba de la principal—, que no se recortan por pestañas a propósito (`245`). */
+  const sinAlcance = SECCIONES.filter((s) => s.sinAlcance).map((s) => s.clave);
   for (const c of CON_MENU) {
     const n = navegacion(TODAS, { restringido: true, concedidas: new Set([c]) });
-    assert.deepEqual(seccionesDe(n), [c], `con sólo \`${c}\` la barra deja abrir ${JSON.stringify(seccionesDe(n))}`);
+    const esperadas = [...new Set([c, ...sinAlcance])].sort();
+    assert.deepEqual([...seccionesDe(n)].sort(), esperadas, `con sólo \`${c}\` la barra deja abrir ${JSON.stringify(seccionesDe(n))}`);
   }
 
   // Un closer ve Sales › Closer, y nada más: ni el Inicio, ni el engranaje, ni Marketing por sus «Próximamente».
@@ -178,7 +181,7 @@ test('el orden es el de `NE-45`, y cada ceja la del documento', () => {
       ['Systems', ['Acquisition', 'Conversion', 'Conversation']],
       ['Marketing', ['Creative Insights', 'Copywriter (próximamente)', 'Funnel [Tu landing · Tu VSL]', 'Content Studio (próximamente)']],
       ['Sales', ['Closing', 'Leads [Todos (próximamente) · De GHL · De Radar · Plan de prospección]', 'Setter', 'Closer', 'Llamadas de venta']],
-      ['Client Success', ['Llamadas de onboarding', 'Seguimiento de clientes (próximamente)']],
+      ['Client Success', ['Llamadas de onboarding', 'Client OS', 'Seguimiento de clientes (próximamente)']],
     ],
     engranaje: ['Ajustes', 'Panel de Monitoreo', 'Incidentes'],
   });

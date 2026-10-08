@@ -40,6 +40,8 @@ const HOJAS = [
   'app/operacion-estetica.css',
   'app/monitoreo.css',
   'app/incidentes.css',
+  // Client OS, el marco de la herramienta en prueba, el día que nace.
+  'app/client-os.css',
   'app/auditoria.css',
   // Los cinco tableros. Entra el día que se crea, no después: es la regla que el comentario de
   // arriba se pone a sí misma, y una hoja nueva es justo cuando se olvida.

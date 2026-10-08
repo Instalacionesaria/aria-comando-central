@@ -44,7 +44,7 @@ Del lienzo, pantalla «Inicio · el cerebro», con lo que la data de hoy permite
    por persona (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73 a AG-76).
 
 El inicio es el mismo para todos. Quien no tiene la sección `executive` no ve «Nueva conversación» y arranca
-en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:876`).
+en su primera pantalla, como hoy (`seccionDeArranque`, `lib/autorizacion/secciones.ts:904`).
 
 La sección se llama **«Inicio»** en la pantalla y en Ajustes › Usuarios. Su clave sigue siendo `executive`
 (`05-LO-QUE-NO-CAMBIA.md`).

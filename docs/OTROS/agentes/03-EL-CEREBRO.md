@@ -54,14 +54,14 @@ ADR-0304 compara sólo los GET de una pantalla contra la capacidad de su secció
 entra en `MUTACIONES_CON_CAPACIDAD_DE_LECTURA`.
 
 La ruta del Inicio **baja la bandera** `sinOperacionesTodavia` de `executive`
-(hecho en AG5: `lib/autorizacion/secciones.ts:220` es ahora el comentario de una línea, NE-33), el conteo
+(hecho en AG5: `lib/autorizacion/secciones.ts:230` es ahora el comentario de una línea, NE-33), el conteo
 literal de `pruebas/codigo/90-fundaciones.test.ts` pasó de 1 a 0 en el mismo commit, y nació la prueba de base
 de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:799-810`).
 
 ## AG-41 · Sólo se ofrece lo de las pestañas que la persona ve
 
 Las secciones visibles salen de `seccionesConAlcance(permisos, alcance, desdeLaPrincipal)`
-(`lib/autorizacion/secciones.ts:799`), con los datos que ya trae el contexto de la sesión. El modelo recibe
+(`lib/autorizacion/secciones.ts:826`), con los datos que ya trae el contexto de la sesión. El modelo recibe
 **sólo** las herramientas de esas secciones; una herramienta que no se ofrece no existe para él. Con la
 caja del pie, las de la sección abierta van primero.
 

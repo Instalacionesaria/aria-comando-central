@@ -58,7 +58,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   (`lib/negocio/indicadoresDeCitas.ts:329-331`). Sales consume esa misma función
 >   (`app/api/sales/route.ts:109`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
->   (`lib/autorizacion/secciones.ts:316`), la misma capacidad que su ruta
+>   (`lib/autorizacion/secciones.ts:326`), la misma capacidad que su ruta
 >   (`app/api/auditoria/route.ts:58`). Antes la pestaña de permisos ofrecía la casilla a un rol que
 >   después recibía 403.
 > - **`db120a1`** (2026-09-26, Leads Portal) — `ramaDelPrecall` se exporta
@@ -122,7 +122,7 @@ Asistencia → Venta · **§17** los otros departamentos todavía sin especifica
 ## 2 · Qué hay hoy en pantalla
 
 La sección es `conversation`, grupo «Inteligencia», con `auditor.ver` desde el 2026-09-21
-(`lib/autorizacion/secciones.ts:295-318`). La vista es `components/views/ConversationView.jsx:43` y
+(`lib/autorizacion/secciones.ts:305-328`). La vista es `components/views/ConversationView.jsx:43` y
 todo el cuerpo es `components/conversation/PanelDeConversation.jsx` (989 líneas; 975 en la foto
 anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:87-92`):
 Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
@@ -702,7 +702,7 @@ de agosto». En las citas el aviso calla en los cuatro períodos, y un campo sie
 creer que no funciona.
 
 **20 · Dos comentarios dicen que la sección pide `tablero.ver`.**
-`lib/autorizacion/secciones.ts:292` («La capacidad de la SECCIÓN sigue siendo `tablero.ver`»)
+`lib/autorizacion/secciones.ts:302` («La capacidad de la SECCIÓN sigue siendo `tablero.ver`»)
 contradice a la línea 315 del mismo archivo, y `components/views/ConversationView.jsx:37-39` dice lo
 mismo. `8dcb619` cambió el valor y no los dos textos que lo explicaban.
 

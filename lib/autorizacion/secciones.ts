@@ -120,6 +120,16 @@ export interface Seccion {
    */
   soloDesdeLaPrincipal?: true;
   /**
+   * `true` = la pantalla **no se recorta por pestañas**: la ve toda persona que tenga su capacidad, con
+   * cualquier alcance, y por eso tampoco se ofrece como casilla en Ajustes › Usuarios.
+   *
+   * Existe para las pantallas de prueba que la organización principal quiere ver entera antes de dárselas a
+   * nadie más (Client OS, 2026-10-08): *«cualquier usuario podría verlo con cualquier tipo de permiso»*. Va
+   * siempre con `soloDesdeLaPrincipal` —la `245` lo exige— y con una capacidad que tienen los tres roles: así
+   * las empresas cliente no la ven, y nadie de la principal queda afuera por su alcance.
+   */
+  sinAlcance?: true;
+  /**
    * Cómo se dibuja en el menú lateral. **Ausente = no tiene entrada en el menú.**
    *
    * `usuarios` y `credenciales` son así: tienen operaciones y capacidad, y no tienen pantalla
@@ -453,6 +463,19 @@ export const SECCIONES: readonly Seccion[] = [
     soloDesdeLaPrincipal: true,
     menu: { grupo: 'Administración', icono: '#i-incidentes' },
   },
+  {
+    // Client OS (2026-10-08): una herramienta externa de seguimiento de clientes, embebida en un `iframe`,
+    // que ARIA prueba antes de ofrecerla al resto. Sólo desde la principal, sin recorte por pestañas, y con
+    // `tablero.ver`, que tienen los tres roles: la ve cualquier persona de ARIA. No llama a ninguna
+    // operación nuestra. No está en el prototipo, así que tampoco en `scripts/paridad.mjs`.
+    clave: 'clientos',
+    nombre: 'Client OS',
+    capacidadRequerida: 'tablero.ver',
+    sinOperacionesTodavia: true,
+    soloDesdeLaPrincipal: true,
+    sinAlcance: true,
+    menu: { grupo: 'Operación', icono: '#i-leads' },
+  },
 ];
 
 /**
@@ -652,7 +675,8 @@ export function seccionesVisibles(permisos: ReadonlySet<string>): readonly Secci
 export function alcanceOfrecible(
   permisos: ReadonlySet<string>,
 ): readonly { grupo: { clave: string; etiqueta: string | null }; secciones: readonly Seccion[] }[] {
-  const alcanzables = seccionesVisibles(permisos);
+  // Las que no se recortan por pestañas no se ofrecen: una casilla que no cambia nada es un control mentiroso.
+  const alcanzables = seccionesVisibles(permisos).filter((s) => !s.sinAlcance);
   const conMenu = GRUPOS_DEL_MENU.map((grupo) => ({
     grupo,
     secciones: alcanzables.filter((s) => s.menu?.grupo === grupo.clave),
@@ -667,7 +691,10 @@ export function alcanceOfrecible(
 }
 
 export function clavesDeSeccion(): readonly string[] {
-  return SECCIONES.map((s) => s.clave);
+  /* Las que se pueden CONCEDER: sin las `sinAlcance`, que no se recortan por pestañas. Las dos rutas que dan
+     pestañas validan contra esta lista, así que un pedido con una de ésas es un 400 limpio, y no una fila que
+     el `check` de `identidad.usuarios_secciones` rechazaría —ni lo necesita: nadie la concede—. */
+  return SECCIONES.filter((s) => !s.sinAlcance).map((s) => s.clave);
 }
 
 /**
@@ -803,7 +830,8 @@ export function seccionesConAlcance(
 ): readonly Seccion[] {
   const delRol = filtrarPorOrganizacion(seccionesVisibles(permisos), desdeLaPrincipal);
   if (!alcance.restringido) return delRol;
-  return delRol.filter((s) => alcance.concedidas.has(s.clave));
+  // `sinAlcance`: la pantalla de prueba de la principal la ve toda la principal, con cualquier alcance.
+  return delRol.filter((s) => s.sinAlcance === true || alcance.concedidas.has(s.clave));
 }
 
 /**
@@ -879,7 +907,10 @@ export function seccionDeArranque(
   const esPie = (clave: string) => GRUPOS_DEL_MENU.find((g) => g.clave === clave)?.pie === true;
   const enOrden = [...menu.filter((g) => !esPie(g.grupo.clave)), ...menu.filter((g) => esPie(g.grupo.clave))];
   for (const g of enOrden) {
-    const seccion = g.secciones[0];
+    /* Una pantalla `sinAlcance` —la herramienta de prueba de la principal— nunca es la de arranque: la ve todo
+       el mundo, y abrir ahí a quien sólo tiene Ajustes, o nada concedido, sería abrirlo en una herramienta
+       ajena que nadie le dio. Sigue en la barra, para el que la quiera abrir. */
+    const seccion = g.secciones.find((s) => !s.sinAlcance);
     if (seccion) return { seccion, grupo: g.grupo.clave };
   }
   return null;

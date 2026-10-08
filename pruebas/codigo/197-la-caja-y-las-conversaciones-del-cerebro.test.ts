@@ -120,9 +120,10 @@ test('la caja nombra la entrada abierta con el dato, y sólo con un departamento
   const leidos = new Set([...c.matchAll(/\bsesion\??\.(\w+)/g)].map((m) => m[1]));
   assert.deepEqual([...leidos].sort(), ['arranque', 'navegacion', 'organizacion', 'secciones'], 'la caja lee otra cosa de la sesión');
   assert.match(c, /const vista = usarUbicacion\(\) \?\? sesion\?\.arranque\?\.seccion\.clave \?\? null;\s*const pestana = usarPestanaDibujada\(vista\);\s*const abierta = entradaAbierta\(navegacion, vista, pestana\);/, 'la caja no sale de la misma cuenta que la cabecera');
-  // Sin entrada abierta —el Inicio, lo del engranaje— no hay caja, y nada se dibuja antes de saberlo.
+  /* Sin entrada abierta —el Inicio, lo del engranaje— no hay caja, y nada se dibuja antes de saberlo. Tampoco
+     en una entrada sin ruta del cerebro, como Client OS (`245`). */
   const desde = c.indexOf('export default function ConsultaAlCerebro');
-  const guarda = c.indexOf('if (!abierta) return null;');
+  const guarda = c.indexOf('if (!abierta || rutaDeLaCaja(vista) === null) return null;');
   assert.ok(desde > 0 && guarda > desde, 'la caja se dibuja sin un departamento abierto');
   assert.doesNotMatch(c.slice(desde, guarda), /\breturn\b/);
   assert.match(c, /const sobre = `Pregúntale al cerebro sobre \$\{abierta\.nombre\}`;/, 'la caja no pregunta sobre la entrada abierta');

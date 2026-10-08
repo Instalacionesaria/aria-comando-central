@@ -104,13 +104,13 @@ Lo que sigue como estaba:
 3. **La mitad derecha del encabezado entera** (`.ch-r`, `:22-49`): el botón muerto, el segmentado
    muerto y la píldora. El período vive dentro del panel, como en las otras cuatro.
 4. **El cuerpo entero** (`:52-226`), reemplazado por `<PanelDeSales />`.
-5. **`sinOperacionesTodavia: true`** de `lib/autorizacion/secciones.ts:304`, y el conteo literal de
+5. **`sinOperacionesTodavia: true`** de `lib/autorizacion/secciones.ts:314`, y el conteo literal de
    `pruebas/codigo/90-fundaciones.test.ts:1078` de **3 a 2**.
 
 `SalesView.jsx` queda como cáscara de unas 75 líneas con el comentario de qué se tiró y por qué —la
 forma de `CreativeView.jsx` (70) y `ConversionView.jsx` (79)—.
 
-**El galón se queda** (`secciones.ts:304`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja). Es el precedente de Creative: el adorno es del prototipo y
+**El galón se queda** (`secciones.ts:314`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja). Es el precedente de Creative: el adorno es del prototipo y
 lo que estaba mal no era él, sino que detrás no hubiera nada.
 
 ---

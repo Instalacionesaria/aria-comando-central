@@ -96,7 +96,12 @@ test('`alcanceOfrecible` es TOTAL: ninguna sección alcanzable se cae', () => {
   // interfaz no puede conceder: nadie podría restringirlas nunca.
   const todas = new Set(SECCIONES.map((s) => s.capacidadRequerida));
   const ofrecidas = alcanceOfrecible(todas).flatMap((g) => g.secciones.map((s) => s.clave));
+  /* Todas menos las `sinAlcance`, que no se recortan por pestañas: ofrecerlas sería una casilla que no cambia
+     nada (`245`). */
   assert.deepEqual([...ofrecidas].sort(), [...clavesDeSeccion()].sort());
+  // Las concedibles son todas menos las `sinAlcance`, y hoy hay una: si no, esto no miraría nada.
+  assert.equal(clavesDeSeccion().length, SECCIONES.filter((s) => !s.sinAlcance).length);
+  assert.ok(clavesDeSeccion().length < SECCIONES.length, 'ya no hay ninguna `sinAlcance` que la lista tenga que dejar afuera');
   assert.equal(new Set(ofrecidas).size, ofrecidas.length, 'una sección aparece en dos grupos');
 });
 
@@ -147,12 +152,17 @@ test('`alcanceOfrecible` no devuelve grupos vacíos', () => {
 test('el corte del alcance se aplica ANTES de agrupar el menú', () => {
   // Aplicado afuera, sobre el menú ya agrupado, quedarían grupos con título y nada adentro.
   const todas = new Set(SECCIONES.map((s) => s.capacidadRequerida));
-  const menu = menuVisible(todas, { restringido: true, concedidas: new Set(['executive']) }, DESDE_LA_PRINCIPAL);
+  // Desde una empresa cliente: ahí no llega ninguna `sinAlcance`, así que lo único que pasa es lo concedido.
+  const menu = menuVisible(todas, { restringido: true, concedidas: new Set(['executive']) }, false);
   assert.equal(menu.length, 1, 'quedaron grupos vacíos al aplicar el alcance');
   assert.deepEqual(
     menu[0]?.secciones.map((s) => s.clave),
     ['executive'],
   );
+  // Y desde la principal, ningún grupo vacío tampoco: cada grupo que viene trae algo adentro.
+  for (const g of menuVisible(todas, { restringido: true, concedidas: new Set(['executive']) }, DESDE_LA_PRINCIPAL)) {
+    assert.ok(g.secciones.length > 0, `el grupo «${g.grupo.clave}» vino vacío`);
+  }
 });
 
 test('el alcance es una INTERSECCIÓN, nunca una unión', () => {

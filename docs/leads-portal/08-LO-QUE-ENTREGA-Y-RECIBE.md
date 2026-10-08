@@ -253,7 +253,7 @@ se hacía mal.
    ejecutivo». La compuerta **no** quedó retirada: el guardián sólo se dispara con `VISTAS` y `PASOS`
    vacías a la vez (`:301-305`), y quedan «Ask Executive» (`:186-187`), «funnel ejecutivo»
    (`:209-211`) y el mudado.
-7. **`pruebas/codigo/90-fundaciones.test.ts:1274-1339`** exigía exactamente `['contacts']`. Ahora exige
+7. **`pruebas/codigo/90-fundaciones.test.ts:1277-1342`** exigía exactamente `['contacts']`. Ahora exige
    la lista vacía (`:1321-1326`), que ningún paso nombre `#v-contacts` (`:1333`) y que el cajón se abra
    desde el embudo de Executive (`:1334-1338`), con su motivo.
 8. **El calendario se queda sin quién lo abra.** La píldora de esta pestaña
@@ -324,7 +324,7 @@ Ninguna pantalla lee de Leads Portal, y LP-4 no cambia eso. Lo que produce y otr
 
 - **A Executive, la cohorte por tramo.** Es lo que la fila «Contactos» de su embudo finge
   (`LP08-13`). Pero Executive todavía no tiene operaciones de servidor
-  (`lib/autorizacion/secciones.ts:217`), y esa fila también tiene que coincidir con la de
+  (`lib/autorizacion/secciones.ts:227`), y esa fila también tiene que coincidir con la de
   Acquisition (`A7-07`): **quien la construya consume `cadenaDeCierre` o esta cohorte, no escribe
   una tercera**.
 - **A Acquisition y a Creative, nada nuevo.** «Qué campañas traen ICP alto» no se publica acá: la

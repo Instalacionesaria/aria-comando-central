@@ -85,7 +85,7 @@ foto anterior, `Downloads\AIOS\AIOS_Arquitectura_Funcional_v0.2.md`, ya no exist
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `lib/autorizacion/secciones.ts:242-250`: clave `acquisition`, capacidad
+**La sección.** `lib/autorizacion/secciones.ts:252-260`: clave `acquisition`, capacidad
 `tablero.ver`, grupo «Inteligencia», y ya sin `sinOperacionesTodavia` —la bandera se fue en el mismo
 commit que la ruta, porque `ADR-0304` la verifica en las dos direcciones (`:245-247`)—.
 

@@ -72,6 +72,8 @@
 
 @import "./monitoreo.css" layer(components);
 @import "./incidentes.css" layer(components);
+/* Client OS, la herramienta externa en prueba (2026-10-08): el marco del `iframe`. */
+@import "./client-os.css" layer(components);
 @import "./auditoria.css" layer(components);
 
 /* Leads Portal con leads reales. Hoja aparte por lo mismo que `closer.css`: agrega lo que la maqueta

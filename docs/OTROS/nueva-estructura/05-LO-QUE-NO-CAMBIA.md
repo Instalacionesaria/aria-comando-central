@@ -12,7 +12,7 @@ cinco hasta la etapa E10, cuando se fue `GROUP`:
 
 | es… | dónde |
 |---|---|
-| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:36` |
+| la clave de la vista | `id="v-<clave>"` de cada `components/views/*View.jsx`, y el mapa `VISTAS` de `components/CommandCenter.jsx:37` |
 | la pantalla de cada ruta | `export const PANTALLA = '<clave>'` en `app/api/**/route.ts`; el portero (`exigir`) niega con 403 a quien no tiene esa pestaña |
 | un valor permitido en la base | el `check` de `identidad.usuarios_secciones.seccion`, que guarda las pestañas de cada persona |
 | la clave del grupo de las migas | `GROUP` en `lib/aios/shell.js:35@b532a78`: **se fue en E10**, con las migas |
@@ -25,7 +25,7 @@ lugar. Por eso la sección `executive` se **muestra** como «Inicio» sin cambia
 
 ## `NE-32` · Quién ve qué
 
-- **`menuVisible()`** (`lib/autorizacion/secciones.ts:821`) sigue siendo **la única fuente** de lo que cada
+- **`menuVisible()`** (`lib/autorizacion/secciones.ts:849`) sigue siendo **la única fuente** de lo que cada
   persona ve: capacidad, alcance por pestañas y regla de la organización principal. La estructura nueva
   reparte su resultado; **no lo vuelve a calcular**.
 - **Los tres roles** (superadministrador, administrador, usuario) y sus capacidades **no cambian**.
