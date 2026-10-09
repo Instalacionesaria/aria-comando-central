@@ -420,7 +420,7 @@ otro departamento, y Acquisition dibuja una etapa de landing dentro de sus tres 
 `src:'VTurb'` para el VSL, y los dos se muestran en pantalla como fuentes conectadas
 (`conversion.js:398`, `:400`, `:420`, `:422`; `components/views/ConversionView.jsx:25@4da946d`, `:29@4da946d`). Los dos eran cadenas de texto y
 nada más —ni cliente, ni ruta, ni tabla, ni variable de entorno—, y la pantalla afirmaba dos integraciones que nunca existieron;
-el 2026-09-20 se borraron los chips, y Clarity sigue sin estar en el código (`03-CONVERSION.md:215`, `03-CONVERSION.md:327`).
+el 2026-09-20 se borraron los chips, y Clarity sigue sin estar en el código (`03-CONVERSION.md:215@b3ca9ad`, `03-CONVERSION.md:327@b3ca9ad`).
 
 **(c) Qué mide exactamente, y si es la misma cosa en los tres embudos.** Acá está el problema que
 ninguna de las dos respuestas anteriores resuelve, y está medido: **los leads del formulario nativo de Meta casi nunca ven
@@ -444,7 +444,7 @@ respuestas distintas y ninguna es la que hay hoy.
 el vocabulario que esta etapa necesita —`Form incompleto sin agendar` 87, `Form completo sin agendar`
 39, `Agendado` 121— sobre **247 contactos**; su último día es el **2026-08-31**, en la ventana de 14
 días del 2026-09-15 eran **0** (foto del 2026-09-15, línea 230) y el 2026-09-28 siguen en cero desde
-septiembre (`03-CONVERSION.md:266`). No es una fuente que nunca existió: es una que dejó de escribir.
+septiembre (`03-CONVERSION.md:266@b3ca9ad`). No es una fuente que nunca existió: es una que dejó de escribir.
 
 Eso cambia la pregunta. No es «de dónde sacamos formularios completados» sino **qué se apagó el 31 de agosto**, y hay que mirarlo en GoHighLevel
 y en la landing, no en esta base — es el mismo pendiente que la foto del 2026-09-15 de Creative dejaba abierto para «VSL % máximo visto», que se
@@ -531,7 +531,7 @@ al piso de 10 contactos, y un embudo entero puede quedar en cero en una ventana 
   requisito A1-15.
 - **La etapa `forms` sí tuvo fuente.** El inventario dice «no existe, no hay tabla de eventos de
   formulario». El campo del CRM «Form Landing VSL» trae el vocabulario exacto sobre 247 contactos y se
-  apagó el 2026-08-31 (`03-CONVERSION.md:266`). Cambia la pregunta de «de dónde lo sacamos» a «qué se
+  apagó el 2026-08-31 (`03-CONVERSION.md:266@b3ca9ad`). Cambia la pregunta de «de dónde lo sacamos» a «qué se
   apagó».
 - **La etapa `clics` ya tiene dueño declarado y proveedores nombrados en el prototipo**, y no es
   Acquisition: Conversion la mide como `sesiones` con `src:'Clarity'` (`conversion.js:35`) y Executive

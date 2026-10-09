@@ -61,7 +61,7 @@ decisión de ruta.** Por qué se tomó, la base no lo dice — queda como `CV14-
 | `trabaja-con-nosotros.ariaia.com` | 4 | 3 | reclutamiento — **no es del embudo comercial** |
 | *(sin url)* | 115 | 60 | **no es «desconocido»** — 89 son formulario nativo de Meta y 26 no traen nada, todos de agosto. Ver `CV1-10` |
 
-Es la regla 5 de `docs/OTROS/estado actual/03-CONVERSION.md:404-411` medida de nuevo veinte días después y
+Es la regla 5 de `docs/OTROS/estado actual/03-CONVERSION.md:404-411@b3ca9ad` medida de nuevo veinte días después y
 sobre otra columna: **sigue valiendo, y los repartos cambiaron**. Una métrica de «visitas a la
 landing» que sume los siete cuenta cinco cosas distintas.
 
@@ -83,7 +83,7 @@ Y **ningún módulo de `lib/negocio/` consulta `atribucion_ultima`**: las veinte
 `calidadDelCreativo.ts:197,214,233,321`; `costoDelAnuncio.ts:339`). La columna existe, se puebla y
 no tiene lectores.
 
-Eso es exactamente la regla 6 del departamento (`03-CONVERSION.md:415-416`): *«Acquisition mira el
+Eso es exactamente la regla 6 del departamento (`03-CONVERSION.md:415-416@b3ca9ad`): *«Acquisition mira el
 primer toque —de qué anuncio vino—; Conversion mira el último —por dónde volvió a entrar—.
 Confundirlos hace que el departamento mida cero y lo reporte como ausencia.»*
 
@@ -121,7 +121,7 @@ De los 172 campos del catálogo, ocho suenan a landing, VSL o formulario:
 | `Video Watch Percentage` | 0 | 0 | definido y nunca escrito |
 
 La columna «≠ cero» es la que decide, y es la regla 1 del departamento
-(`03-CONVERSION.md:362-363`): *«mientras el censo de un campo numérico tenga un solo valor distinto,
+(`03-CONVERSION.md:362-363@b3ca9ad`): *«mientras el censo de un campo numérico tenga un solo valor distinto,
 ese campo no es una medición: es un indicador de que algo se instaló y no funcionó»*.
 
 ### CV14-07 · El VSL no es un hueco de datos: es un campo que afirma «vio cero»
@@ -204,7 +204,7 @@ porque dejó de haber quien pasara por el formulario. Si la landing vuelve, el c
 El `§ 18.16:1546-1552` enumera lo que Acquisition le debe a Conversion: campaña y anuncio de origen,
 calidad del tráfico, CTR, **landing page views**, y diferencias por audiencia y placement.
 
-`docs/OTROS/estado actual/03-CONVERSION.md:79-80` recuerda que el corte del 2026-09-15 afirmaba *«ninguna llega hoy»*
+`docs/OTROS/estado actual/03-CONVERSION.md:79-80@b3ca9ad` recuerda que el corte del 2026-09-15 afirmaba *«ninguna llega hoy»*
 y nombraba «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19**:
 `landingPageView` llega en el desglose de acciones de Meta, se guarda en
 `negocio.metricas_de_anuncio.acciones` (creada por `db/migraciones/053_el_desglose_que_ya_llegaba.sql`)

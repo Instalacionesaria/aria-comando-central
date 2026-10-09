@@ -42,7 +42,7 @@
 
 **Estado** · La foto del 2026-09-15 afirmaba que de las cinco *«ninguna llega hoy»* y nombraba
 «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19** (lo registra
-`docs/OTROS/estado actual/03-CONVERSION.md:79-93`): el desglose de acciones de Meta trae `landingPageView`
+`docs/OTROS/estado actual/03-CONVERSION.md:79-93@b3ca9ad`): el desglose de acciones de Meta trae `landingPageView`
 por anuncio y por día, se guarda en `negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se
 publica en `lib/negocio/rendimientoDelCreativo.ts:96` como «Vistas de la landing».
 
@@ -63,7 +63,7 @@ el `§ 2.4:94-99`.
 
 ### CV7-03 · Dos videos distintos, y el deslinde importa
 
-**Rastro** · Regla 7 del departamento, `03-CONVERSION.md:425-427`: *«Creative mide retención del
+**Rastro** · Regla 7 del departamento, `03-CONVERSION.md:425-427@b3ca9ad`: *«Creative mide retención del
 ANUNCIO (las reproducciones de Meta); Conversion mide la del VSL de la landing. Son dos videos»*.
 
 **Estado** · Creative mide `videoView` de Meta —las reproducciones del anuncio— y lo publica como
@@ -160,8 +160,8 @@ distintas (`CV14-01`). El cruce se hace por nombre de creativo o no se hace.
 ### CV7-11 · El corte del 2026-09-15 de `03-CONVERSION.md` quedó viejo en un punto
 
 Afirmaba que de las cinco cosas del `§ 18.16` *«ninguna llega hoy»*. **Una llega desde el 2026-09-19**
-(`CV7-02`), y el corte del 2026-09-28 ya lo corrige (`03-CONVERSION.md:79-90`). Sus nueve reglas
-conservan el número (`03-CONVERSION.md:352-443`) y son la ley de esta carpeta.
+(`CV7-02`), y el corte del 2026-09-28 ya lo corrige (`03-CONVERSION.md:79-90@b3ca9ad`). Sus nueve reglas
+conservan el número (`03-CONVERSION.md:352-443@b3ca9ad`) y son la ley de esta carpeta.
 
 ---
 

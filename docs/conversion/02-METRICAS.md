@@ -48,17 +48,17 @@ nada falle.
 
 1. **Los ceros son tres.** No hay campo · el campo dice cero · el medidor no reportó. Un campo cuyo
    censo tiene un solo valor distinto **no es una medición: es una alarma**
-   (`docs/OTROS/estado actual/03-CONVERSION.md:358-366`).
-2. **Ninguna serie cruza el 2026-08-31 sin decirlo** (`03-CONVERSION.md:368-373`). Ver `CV1-06`.
-3. **Los hosts no se suman** (`03-CONVERSION.md:404-411`). Siete hosts, cinco cosas distintas.
-4. **La fuente es el último toque**, no el primero (`03-CONVERSION.md:413-418`). Ver `CV1-02`.
-5. **Ninguna tasa cuyo denominador se defina por haber convertido** (`03-CONVERSION.md:387-395`).
+   (`docs/OTROS/estado actual/03-CONVERSION.md:358-366@b3ca9ad`).
+2. **Ninguna serie cruza el 2026-08-31 sin decirlo** (`03-CONVERSION.md:368-373@b3ca9ad`). Ver `CV1-06`.
+3. **Los hosts no se suman** (`03-CONVERSION.md:404-411@b3ca9ad`). Siete hosts, cinco cosas distintas.
+4. **La fuente es el último toque**, no el primero (`03-CONVERSION.md:413-418@b3ca9ad`). Ver `CV1-02`.
+5. **Ninguna tasa cuyo denominador se defina por haber convertido** (`03-CONVERSION.md:387-395@b3ca9ad`).
    Ver `CV1-05`.
 6. **El piso es del denominador**, no del total: `PISO_DE_UNA_TASA = 10`
    (`lib/negocio/indicadoresDeCitas.ts:329`). Y acá hay que subirlo — ver `CV5-05`.
 7. **Ningún identificador de GoHighLevel escrito a mano.** `campoPorNombre()`
    (`lib/negocio/camposDelCrm.ts:307-320`) es la única puerta, y devuelve `null` —no cero— si alguien
-   renombra el campo (`03-CONVERSION.md:437-443`).
+   renombra el campo (`03-CONVERSION.md:437-443@b3ca9ad`).
 8. **El agendamiento sale de `negocio.citas`**, con el mismo `exists` sobre `ghl_calendario_id` que
    usan los otros cuatro módulos, o las pantallas no suman igual. Ver `CV2-09`.
 
@@ -75,7 +75,7 @@ formulario nativo de Meta, o ningún rastro.
 **Población** · Contactos con `alta_en_el_crm` en la ventana. **Todos**, incluidos los que no traen
 URL — ésos son su propia fila, no un descarte.
 **Rastro** · `conversion.js:10-14` (el prototipo cuenta sesiones por dispositivo); regla 5 de
-`03-CONVERSION.md:404-411`; medición `CV14-03`.
+`03-CONVERSION.md:404-411@b3ca9ad`; medición `CV14-03`.
 **Estado** · **Construible hoy.** `atribucion_ultima->>'url'` está en **475 de 590** contactos
 (80,5 %). Es la cifra que contesta la pregunta más grande que la pantalla puede hacerse hoy, y
 ninguna otra pantalla la publica.
@@ -93,7 +93,7 @@ ninguna otra pantalla la publica.
 **Unidad** · Dos conteos. La proporción de la fila sobre la cohorte sí se publica (`porcion`), que
 es una pregunta distinta: **cuánta gente va por cada camino**.
 **Población** · Contactos con `alta_en_el_crm` en la ventana, por familia.
-**Rastro** · `conversion.js:197-199` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:447-455`;
+**Rastro** · `conversion.js:197-199` dibuja `Agendan` sobre visitas; `03-CONVERSION.md:447-455@b3ca9ad`;
 `lib/negocio/recorridoDelLead.ts`.
 
 **Por qué no es una tasa.** Medido el 2026-09-20 sobre la ventana de 30 días (335 contactos):
@@ -141,7 +141,7 @@ agendar y cuántos agendaron.
 **Unidad** · Conteo y proporción.
 **Población** · Contactos que traen el campo. **No la cohorte entera**: quien no llegó al formulario
 no tiene el campo, y meterlo en el denominador mezclaría dos preguntas.
-**Rastro** · `conversion.js:194-196` (`Empiezan el form`); `03-CONVERSION.md:266-267`; medición
+**Rastro** · `conversion.js:194-196` (`Empiezan el form`); `03-CONVERSION.md:266-267@b3ca9ad`; medición
 `CV14-08`.
 **Estado** · **Construible, y la población murió el 2026-08-31.** Medido: `Agendado` 121, `Form
 incompleto sin agendar` 87, `Form completo sin agendar` 39. **Cero contactos de septiembre lo
@@ -165,7 +165,7 @@ baja»*. Y el `§ 9.7:611`, donde figura como KPI de **Lead Flow** — ver `CV1-
 **Fórmula** · Conteo de valores fuera del vocabulario.
 **Unidad** · Conteo.
 **Población** · Contactos que traen el campo.
-**Rastro** · Regla 4 del departamento, `03-CONVERSION.md:397-402`; el precedente de
+**Rastro** · Regla 4 del departamento, `03-CONVERSION.md:397-402@b3ca9ad`; el precedente de
 `lib/negocio/consumoDelPrecall.ts:74-85` con `-20%`, `Clic a link` y `Accede: sin reproducir`.
 **Estado** · **Obligatorio.** `negocio.campos_del_crm` **no guarda las opciones declaradas** de un
 campo, así que contar los huérfanos es la única forma de enterarse de que el CRM agregó un cuarto
@@ -179,7 +179,7 @@ manera.
 ### CV2-07 · Un tipo de dato ausente no es un cero
 
 **Qué es** · La regla que separa este catálogo de la maqueta.
-**Rastro** · Regla 1, `03-CONVERSION.md:358-366`.
+**Rastro** · Regla 1, `03-CONVERSION.md:358-366@b3ca9ad`.
 **Estado** · El caso que lo prueba: `VSL % máximo visto` se escribió **79 veces y las 79 dicen `0`**.
 Publicar «0 % de visionado promedio» sería técnicamente cierto y completamente engañoso. Va como
 **alarma**, no como cifra. Ver `CV11-04`.
@@ -316,11 +316,11 @@ no publicar la banda y publicar la serie. No hay una tercera.
 ### CV2-P02 · ¿El «dispositivo» es un corte de primera clase?
 
 El prototipo lo ofrece como filtro permanente (`ConversionView.jsx:66-79@4da946d`) y guarda bandas distintas
-por dispositivo (`conversion.js:23-27`). Medido el 2026-09-14 (`03-CONVERSION.md:345-347`): el
+por dispositivo (`conversion.js:23-27`). Medido el 2026-09-14 (`03-CONVERSION.md:345-347@b3ca9ad`): el
 dispositivo **se puede derivar hoy** del `userAgent`, sobre 162 citas → 107 móvil, 14 escritorio, 41
 sin dato. Pero el cohorte de escritorio son **14**, y la regla 8 del departamento, en su versión del
 2026-09-16 (`bddb516`, líneas 250-252), dice que cualquier segundo corte cae bajo el piso: *«O se
-publica sin desglose, o no se publica.»* El filtro se borró después (`03-CONVERSION.md:431-433`).
+publica sin desglose, o no se publica.»* El filtro se borró después (`03-CONVERSION.md:431-433@b3ca9ad`).
 
 ---
 

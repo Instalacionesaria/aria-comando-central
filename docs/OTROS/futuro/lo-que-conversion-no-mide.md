@@ -21,7 +21,7 @@ video: el medidor no reporta. Los otros dos campos de porcentaje de video están
 **Qué haría falta** · Arreglar vTurb o su integración con el CRM, que está fuera de este sistema. Y conviene
 que sean **eventos con fecha** y no un campo por contacto que se sobrescribe: un campo `% máximo visto` con 79
 ceros es exactamente el dato que hoy no sirve (riesgo 10 de
-`docs/OTROS/estado actual/03-CONVERSION.md:520-522`).
+`docs/OTROS/estado actual/03-CONVERSION.md:520-522@b3ca9ad`).
 
 ## 2 · Las sesiones, los visitantes y el dispositivo
 

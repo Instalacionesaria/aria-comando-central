@@ -220,7 +220,7 @@ chip: la de `frescuraDe` promete una lectura al abrir la pantalla, y ésta no le
 
 El segmentado **no** lleva el `title` del matiz de «Hoy» (`lib/negocio/periodo.ts:84`): dice «las últimas 24
 horas», y acá «Hoy» es el día de calendario. Es el mismo arreglo que A14-10 y cierra el riesgo 4 de
-`docs/OTROS/estado actual/03-CONVERSION.md:486-492`.
+`docs/OTROS/estado actual/03-CONVERSION.md:486-492@b3ca9ad`.
 
 **La diferencia con el resto del sistema, dicha** · Creative sigue terminando sus ventanas hoy, así que «7
 días» puede dar otra cifra en Creative que acá. Es la misma contrapartida que A14-10.
@@ -239,7 +239,7 @@ con denominador bajo `PISO_DE_UNA_TASA` (10, `lib/negocio/indicadoresDeCitas.ts:
 
 **Lo que no entra** · Los 24 contactos sin fecha de alta no caen en ninguna ventana, tampoco en «Completo».
 En «Completo» la nota lo dice (CV15-10). Es el riesgo 6 de
-`docs/OTROS/estado actual/03-CONVERSION.md:498-502`.
+`docs/OTROS/estado actual/03-CONVERSION.md:498-502@b3ca9ad`.
 
 **Estado** · **El cálculo, construido el 2026-10-08** (CV-2): `lecturaDeConversion`, en `lib/negocio/pasosDeConversion.ts`. Se dibuja desde el 2026-10-09 (CV-4).
 
@@ -373,7 +373,7 @@ contacto». Sus dos `.jmx`:
   landing gane o pierda porción es un cambio de ruta, no algo bueno o malo.
 
 **Qué no es** · «Por la landing» no dice «vio la landing». La familia de septiembre es casi toda circular
-(`docs/OTROS/estado actual/03-CONVERSION.md:479-484`). El cajón marca sólo la fila registrada entera al reservar, y
+(`docs/OTROS/estado actual/03-CONVERSION.md:479-484@b3ca9ad`). El cajón marca sólo la fila registrada entera al reservar, y
 el aviso del servidor nombra las que lo son en un 90 % o más, con el piso; la de septiembre, con el 86 %, queda sin
 marca (el riesgo 3 de ese documento).
 
@@ -404,7 +404,7 @@ corte del 2026-08-31.
 - **Cruza el corte** —hoy, «Completo»—: `.jv` es `con / cohorte hasta el corte`, y la `j-sub` dice «**{con}**
   lo empiezan · hasta el {corte}». **El denominador es la cohorte anterior al corte, no la ventana**: la
   regla 2 del departamento prohíbe mezclar las dos épocas en una cifra
-  (`docs/OTROS/estado actual/03-CONVERSION.md:368`), y `docs/conversion/05-PERIODOS-Y-PISOS.md:81-97`
+  (`docs/OTROS/estado actual/03-CONVERSION.md:368@b3ca9ad`), y `docs/conversion/05-PERIODOS-Y-PISOS.md:81-97`
   pide no publicarlas como una sola serie.
 - **Sus `jmx`** · «Lo completan»: la `finalizacion` del embudo, con el piso sobre `con`
   (`lib/negocio/embudoDelFormulario.ts:251`). «Tiempo medio»: «—».
@@ -648,7 +648,7 @@ desborda nada, ni la pantalla ni los tres cajones; a 375 px el cajón ocupa el a
 
 - **El hueco de Clarity** (`lib/negocio/embudoDelFormulario.ts:139-144@b2dcdf5`) decía que Clarity aparecía en la
   pantalla como fuente conectada. No aparece desde el 2026-09-20. Es el riesgo 2 de
-  `docs/OTROS/estado actual/03-CONVERSION.md:473-477`.
+  `docs/OTROS/estado actual/03-CONVERSION.md:473-477@b3ca9ad`.
 - **Los encabezados** de la vista, del panel, de la ruta, de `lib/negocio/vistaDeConversion.ts` y del
   detector describen el reparto como bloque principal.
 - **El comentario de `ventanaDeLaCohorte`** (`lib/negocio/recorrido.ts:187-200`): corregido el 2026-10-08 (CV-1); ya no dice que

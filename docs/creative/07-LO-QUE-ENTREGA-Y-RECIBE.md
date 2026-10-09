@@ -132,7 +132,7 @@ distintos para la misma ventana** sin que ninguna falle. Es el defecto del `not 
 |---|---|---|
 | Gasto, CPM, CPC, CTR, frecuencia **por anuncio** | **Acquisition** | § 18.16. Creative los consume al grano de la pieza |
 | El monitor de atribución del § 18.14 | **Acquisition** | ya está construido en `lib/negocio/calidadDeLaAtribucion.ts` |
-| La retención del VSL de la landing | **Conversion** | `docs/OTROS/estado actual/03-CONVERSION.md:425-427`: *«Creative mide retención del ANUNCIO […]; Conversion mide la del VSL de la landing. Son dos videos»* Y el medidor está roto: cinco campos en 0 de 233 |
+| La retención del VSL de la landing | **Conversion** | `docs/OTROS/estado actual/03-CONVERSION.md:425-427@b3ca9ad`: *«Creative mide retención del ANUNCIO […]; Conversion mide la del VSL de la landing. Son dos videos»* Y el medidor está roto: cinco campos en 0 de 233 |
 | El video precall | **Conversation** | es el § 10.6: el video que se manda **después** de agendar |
 | La calificación del lead como etiqueta binaria | **Business**, cuando la exponga | § 18.7: «cost per qualified lead, **cuando Business Intelligence exponga la calificación**» |
 | Revenue, CAC, ROAS, ventas | **Business** | § 18.6. `negocio.resultados` tiene 7 filas y cero ventas |

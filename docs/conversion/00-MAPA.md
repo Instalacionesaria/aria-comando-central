@@ -159,7 +159,7 @@ es requisito —nadie decidió integrarlos—: es una **afirmación falsa en pan
 porque es el que cambió lo que ya estaba escrito: la foto de Conversion del 2026-09-15 afirmaba que de
 las cinco cosas que Acquisition le debe a Conversion según el `§ 18.16`, *«ninguna llega hoy»*, y nombraba
 «Landing page views» entre las inexistentes. **Eso dejó de ser cierto el 2026-09-19**: llega, por anuncio y
-por día, en `negocio.metricas_de_anuncio.acciones` (lo registra `docs/OTROS/estado actual/03-CONVERSION.md:79-93`).
+por día, en `negocio.metricas_de_anuncio.acciones` (lo registra `docs/OTROS/estado actual/03-CONVERSION.md:79-93@b3ca9ad`).
 
 El `15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (`CV15-`) nació el 2026-10-08, después de estas tablas: ver la última sección. Si un nombre de archivo de estas tablas no está en la carpeta, **manda la carpeta**. Cada requisito se
 cita por su número completo —`CV2-07`, `CV8-12`— desde cualquier documento.
@@ -189,8 +189,8 @@ la constante `CV` (`conversion.js:10`), los contenedores `#cvStats`, `#cvInfo`, 
 ## La cuarta fuente-ley
 
 Además del prototipo, del documento funcional y de la medición propia, esta carpeta obedece a
-**`docs/OTROS/estado actual/03-CONVERSION.md:352-443`**, que tiene **nueve reglas propias del departamento**, medidas el 2026-09-15 y
-re-medidas el 2026-09-28, más tres del 2026-09-20 (`03-CONVERSION.md:445-461`). De las nueve, las tres que gobiernan todo lo demás:
+**`docs/OTROS/estado actual/03-CONVERSION.md:352-443@b3ca9ad`**, que tiene **nueve reglas propias del departamento**, medidas el 2026-09-15 y
+re-medidas el 2026-09-28, más tres del 2026-09-20 (`03-CONVERSION.md:445-461@b3ca9ad`). De las nueve, las tres que gobiernan todo lo demás:
 
 1. **Los ceros son tres, no dos.** No hay campo · el campo dice cero · el medidor no reportó.
    *«Mientras el censo de un campo numérico tenga un solo valor distinto, ese campo no es una

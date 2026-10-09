@@ -271,7 +271,7 @@ export async function ultimoDiaDelFormulario(): Promise<string | null> {
  * Si la ventana pedida cruza el corte de época.
  *
  * Es la regla 2 del departamento —*«nunca mezclar cohortes de antes y después del 2026-08-31»*,
- * `docs/OTROS/estado actual/03-CONVERSION.md:368`— convertida en un campo que la pantalla no puede
+ * `docs/OTROS/estado actual/03-CONVERSION.md:368@b3ca9ad`— convertida en un campo que la pantalla no puede
  * ignorar por descuido. Una regla que vive sólo en un documento es una regla que el próximo viola.
  *
  * Medido el 2026-09-20 con las cuatro ventanas del sistema: **las dos que NO cruzan el corte no

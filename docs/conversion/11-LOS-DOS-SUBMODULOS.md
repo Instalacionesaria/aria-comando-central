@@ -86,7 +86,7 @@ landing.
 **No es un hueco de datos: es un campo que afirma «vio cero».** Setenta y nueve veces, sin una sola
 excepción. Un campo vacío se nota; un cero se publica.
 
-Es la regla 1 del departamento en su forma más pura (`docs/OTROS/estado actual/03-CONVERSION.md:362-364`):
+Es la regla 1 del departamento en su forma más pura (`docs/OTROS/estado actual/03-CONVERSION.md:362-364@b3ca9ad`):
 *«mientras el censo de un campo numérico tenga un solo valor distinto, ese campo no es una medición:
 es un indicador de que algo se instaló y no funcionó»*, y se reporta **como alarma, no como cifra**.
 
@@ -146,7 +146,7 @@ propuesto y no decidido.
 ### CV11-P02 · ¿La retención del VSL es de Conversion o de Creative?
 
 La regla 7 del departamento dice que es de Conversion, porque *«Creative mide retención del ANUNCIO
-[…]; Conversion mide la del VSL de la landing. Son dos videos»* (`03-CONVERSION.md:425-427`). Es convincente.
+[…]; Conversion mide la del VSL de la landing. Son dos videos»* (`03-CONVERSION.md:425-427@b3ca9ad`). Es convincente.
 Pero el `§ 18.12:1433-1447` pone el análisis de retención dentro del `Creative Performance Analyzer`, y
 el `§ 18.16:1537-1544` hace que Acquisition le entregue «retención» a Creative. **El documento no
 distingue los dos videos en ninguna parte.** Mientras los dos estén en cero, la pregunta es teórica.

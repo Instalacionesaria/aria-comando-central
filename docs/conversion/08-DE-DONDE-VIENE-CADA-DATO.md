@@ -38,7 +38,7 @@
 | `CV8-07` | La cohorte | `contactos.alta_en_el_crm` | 590 de 590 |
 | `CV8-08` | El creativo de origen | `atribucion_primera->>'utmContent'` | 93 de 104 en la landing propia |
 | `CV8-09` | Las vistas de landing de Meta | `metricas_de_anuncio.acciones->>'landingPageView'` | 150 de 240 filas anuncio-día (63 %) |
-| `CV8-10` | El dispositivo | `atribucion_*->>'userAgent'` | 121 de 162 citas, del 2026-09-14 (`03-CONVERSION.md:345-347`) |
+| `CV8-10` | El dispositivo | `atribucion_*->>'userAgent'` | 121 de 162 citas, del 2026-09-14 (`03-CONVERSION.md:345-347@b3ca9ad`) |
 
 ### CV8-11 · Lo que existe y está en cero
 
@@ -76,7 +76,7 @@
 para que el denominador no cambie entre corridas (`:313-315`); y **`null` es un retorno legítimo**:
 quien lo use *«tiene que poder decir "no sé" en vez de "cero"»* (`:298-300`).
 
-Es la regla 9 del departamento (`03-CONVERSION.md:437-443`). Los tres campos que el código ya nombra
+Es la regla 9 del departamento (`03-CONVERSION.md:437-443@b3ca9ad`). Los tres campos que el código ya nombra
 así:
 
 ```
@@ -102,7 +102,7 @@ entera de atribución y la de VSL.
 
 ### CV8-15 · Un campo con un solo valor distinto no es una medición
 
-**Rastro** · Regla 1, `03-CONVERSION.md:358-366`.
+**Rastro** · Regla 1, `03-CONVERSION.md:358-366@b3ca9ad`.
 **Estado** · `VSL % máximo visto` es el caso de libro: **79 escrituras, 79 ceros, ninguna excepción**.
 Un campo vacío se nota; un cero se publica. La distinción de los tres estados —no hay campo · el
 campo dice cero · el medidor no reportó— **no se puede resolver desde la base**, y por eso el

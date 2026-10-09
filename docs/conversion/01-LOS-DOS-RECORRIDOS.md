@@ -46,7 +46,7 @@ consecuencia está en `CV1-05`.
 
 ### CV1-02 · La llave es el ÚLTIMO toque, no el primero
 
-**Rastro** · Regla 6 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:415-416`: *«Acquisition
+**Rastro** · Regla 6 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:415-416@b3ca9ad`: *«Acquisition
 mira el primer toque —de qué anuncio vino—; Conversion mira el último —por dónde volvió a entrar—.
 Confundirlos hace que el departamento mida cero y lo reporte como ausencia.»*
 
@@ -103,7 +103,7 @@ no es monótona no es un embudo»*.
 
 ### CV1-05 · «Visitó la landing» y «la URL quedó registrada» no son lo mismo
 
-**Rastro** · Regla 3 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:387-390`. Medido
+**Rastro** · Regla 3 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:387-390@b3ca9ad`. Medido
 allí el 2026-09-14: de los 48 contactos de la ventana con rastro de `accelerator.ariaia.com`, **44 tienen
 `medium = calendar`** — o sea que su URL se escribió **en el momento de reservar**, no al navegar.
 
@@ -123,7 +123,7 @@ a sí misma.
 
 ### CV1-06 · Ninguna serie puede cruzar el 2026-08-31 en silencio
 
-**Rastro** · Regla 2 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:368-371`: *«Cualquier
+**Rastro** · Regla 2 del departamento, `docs/OTROS/estado actual/03-CONVERSION.md:368-371@b3ca9ad`: *«Cualquier
 serie que cruce esa fecha muestra un derrumbe fantasma de los indicadores de landing y de VSL, y no
 es una caída de conversión: es un cambio de ruta de adquisición.»* La foto del 2026-09-15 la llamaba
 «la regla más importante y la que más fácil se viola».
@@ -172,7 +172,7 @@ de JavaScript.
 
 ### CV1-09 · El precall NO es de este departamento
 
-**Rastro** · Regla 7, `docs/OTROS/estado actual/03-CONVERSION.md:420-424`. El prototipo lo dibuja en el
+**Rastro** · Regla 7, `docs/OTROS/estado actual/03-CONVERSION.md:420-424@b3ca9ad`. El prototipo lo dibuja en el
 paso «Gracias» como «video de bienvenida» (`conversion.js:545-548`).
 
 **Estado** · El consumo del video precall es el `§ 10.6` del documento —**Appointment Flow**— y ya

@@ -344,7 +344,7 @@ calibrado**; o no publicar el veredicto y publicar la serie. No hay una tercera.
 
 ## 7 · Lo que NO es una métrica de Creative, aunque aparezca en su pantalla
 
-1. **La retención del VSL.** Es de Conversion — `docs/OTROS/estado actual/03-CONVERSION.md:425-427` lo deslinda:
+1. **La retención del VSL.** Es de Conversion — `docs/OTROS/estado actual/03-CONVERSION.md:425-427@b3ca9ad` lo deslinda:
    *«Creative mide retención del ANUNCIO […]; Conversion mide la del VSL de la landing. Son dos videos»*.
    Y además **el medidor está roto**: los cinco campos están en 0 de 233, y los 79 valores históricos
    valen todos exactamente `0`. Una pantalla que los promedie publica «retención del VSL: 0 %» y va a

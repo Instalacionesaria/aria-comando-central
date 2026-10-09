@@ -75,12 +75,12 @@ la misma pantalla.** Y `hist` no tiene botón, así que no hay forma de volver a
 
 **Ésta es la tabla que gobierna el departamento entero.** No hay una sola ventana que tenga volumen
 **y** no cruce el corte. Las dos fallan de maneras opuestas, como anticipó la foto del 2026-09-15
-(sus cifras siguen en `docs/OTROS/estado actual/03-CONVERSION.md:382-385`) — y peor, porque desde
+(sus cifras siguen en `docs/OTROS/estado actual/03-CONVERSION.md:382-385@b3ca9ad`) — y peor, porque desde
 entonces la pauta se apagó (`CV14-10`) y «7 días» pasó de poco volumen a **cuatro contactos**.
 
 ### CV5-04 · El botón por omisión es el que viola la regla 2
 
-**Rastro** · Regla 2, `03-CONVERSION.md:368-373`.
+**Rastro** · Regla 2, `03-CONVERSION.md:368-373@b3ca9ad`.
 **Estado** · `30d` abre en el 2026-08-22, o sea **nueve días antes del corte**, y parte la cohorte en
 dos regímenes de adquisición: 335 contactos de los cuales 63 traen el campo del formulario y 272 no
 podían traerlo. Una tasa sobre ese denominador divide un numerador que casi sólo pueden aportar los
