@@ -126,3 +126,11 @@ y sería el único de los tres que no depende de que alguien cambie su conducta.
 
 **Cómo se contesta:** con el censo de `campos_del_crm` filtrado por nombre —el mismo método que
 encontró los 13 campos de dinero en cero— y un vistazo a `contactos.etiquetas`.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+La tarjeta vuelve con el catálogo real de «No le interesa» (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-11), los motivos fuera del catálogo en su
+propia fila, y el `hint` «{N} sin venta». **`S5-P01`**: no se usan campos del CRM; los motivos salen de Avanzar. El
+2026-10-09 hay un solo motivo registrado en toda la historia, «Otro», del 2026-08-30.

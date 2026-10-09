@@ -186,3 +186,11 @@ una fila se lee como una unidad**.
 
 El día que haya volumen, el desglose de dinero por persona entra **dentro del bloque del mes** y con
 su rótulo. Ver `06-PERIODOS-Y-PISOS.md`.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+La tabla vuelve con las seis columnas del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-09): Agendadas y Asistieron del eje del CRM;
+Ventas, Cierre y Revenue de lo registrado. La subfila dice «{N} contactos asignados» y no «ICP alto asignado». Las
+filas siguen sin ranking. Las cifras de esta página son de 14 días; la pantalla abre en 30.

@@ -126,3 +126,11 @@ venta:
 
 Un `$0` grande y en verde al lado de una cadena de cuatro eslabones afirma que el negocio no vende.
 El mismo cero con su denominador —*«0 de 7 intentos registrados terminó en venta»*— dice un hecho.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+Los cuatro vuelven con sus rótulos del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-05 a S15-08): Asistencias y Tasa de cierre en «—»
+con su motivo mientras no haya dato; Ventas y Revenue reportado con lo registrado en la ventana elegida, que el
+2026-10-09 es 0 y $0 a 30 días. «Revenue reportado» lleva debajo «reportado por el closer».

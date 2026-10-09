@@ -133,3 +133,11 @@ no pide ventana. Sales sí pide.
 
 **Defecto que evita:** que un módulo se quede con su valor por omisión mientras los otros dos usan el
 período elegido. La pantalla mostraría tres cifras de tres ventanas con un solo botón encendido.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+Las ventanas siguen rodantes (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-04 y `S15-P01`): Acquisition y Conversion cortan en días cerrados, y
+Sales no, porque no lee anuncios. El dinero del mes sigue por mes calendario, ahora en la tarjeta de abajo
+(S15-12).

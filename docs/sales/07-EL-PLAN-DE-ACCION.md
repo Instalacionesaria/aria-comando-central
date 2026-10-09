@@ -117,3 +117,11 @@ real y un rótulo (`S4-02`), y los motivos son otra taxonomía (`S5-02`).
 
 En las dos reescrituras anteriores la bajada se cambió por el mismo motivo: prometía algo que la
 medición dice que no se puede construir.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+El encabezado vuelve al del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-03), con la bajada «Cierre, closers y motivos de pérdida» y sólo
+el segmentado. «Plan de acción» y «Personalizado» siguen fuera; lo que haría falta para un plan está en
+`docs/OTROS/futuro/lo-que-sales-no-mide.md`.

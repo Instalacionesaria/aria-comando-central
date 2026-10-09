@@ -266,3 +266,15 @@ El detalle completo está en `14-LOS-CINCO-ESLABONES.md`.
 2. **La asistencia sale de `citas.asistio` y de ningún otro lado.** Nunca de la salida. Ver `S1-08`.
 3. **El dinero no se recalcula.** `lib/negocio/inicio.ts` es el dueño del hecho «venta»; Sales lo
    consume. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+- **`S1-P01`**: los siete resultados son anteriores a la `049`, que agregó la cita al resultado
+  (`docs/OTROS/estado actual/13-SETTER-Y-CLOSER.md`, § 5.1). Por eso ninguno tiene `cita_id`, y la medición de S1-08
+  («tenían una cita ofrecible») no puede ser: en ese momento Avanzar no ofrecía ninguna.
+- **`S1-P02`**: `asistio` sigue vacío, en las 363 citas del 2026-10-09. Ese día el calendario marca 3 «showed» por
+  primera vez. La pantalla nueva no los toma como asistencia (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-05 y `S15-P04`).
+- **La venta sigue sin existir**: el 2026-10-09 `negocio.resultados` tiene las mismas 7 filas, la última del
+  2026-09-09.

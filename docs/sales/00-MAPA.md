@@ -166,3 +166,15 @@ Viven en el archivo donde nacen. El índice:
 | `S8-P01` | ¿Business va a existir como pantalla? El documento le da revenue, CAC, ROAS y la tasa de cierre | `08` |
 | `S12-P01` | ¿Quién es el dueño de Sales? El documento nombra un «Responsable de Ventas» y nunca más | `12` |
 | `S13-P01` | ¿La contradicción entre las dos maquetas (18 ventas contra 11) fue un descuido o dos épocas? | `13` |
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+El `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (`S15-`) nació el 2026-10-09: la pestaña vuelve al front del prototipo con los datos reales. Fija qué
+dato va en cada lugar de la maqueta y trae sus preguntas, `S15-P01` a `S15-P05`. Contesta `S1-P01`, `S1-P02`,
+`S5-P01` y `S13-P01` (su § 4).
+
+Dos correcciones a este índice: las preguntas `S4-P01`, `S5-P01`, `S8-P01`, `S12-P01` y `S13-P01` aparecen dos veces
+en la tabla de § 6, y «la ventana de 14 días que la pantalla dibuja por omisión» no es la de la pantalla, que abre en
+30 días (`lib/negocio/periodo.ts:109`).

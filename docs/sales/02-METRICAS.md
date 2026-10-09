@@ -268,3 +268,16 @@ tasa de **cancelación** (`S2-04`), que es otra pregunta y hay que rotularla com
 | `S2-14` | Revenue reportado | **no** |
 | `S2-15` | Tasa de cierre | **no**, y es de Business |
 | `S2-16` | Asistencias | **no** |
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+- **`S2-04`, la cancelación**: el 59,2 % incluye las citas de contactos descartados, y la función no tiene piso
+  (`lib/negocio/indicadoresDeCitas.ts:449`). Sin descartados, el 2026-09-28 daba 39,7 %. En la pantalla nueva va en la
+  tarjeta de abajo, con su aviso (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-12).
+- **`S2-12`, la concentración**: el índice dice 85 % y el cuerpo 62,7 %. El 2026-09-28, a 30 días, era 69,5 %.
+- **«La ventana por omisión de 14 días»**: la pantalla abre en 30 días (`lib/negocio/periodo.ts:109`); 14 es el valor
+  por omisión de las funciones, que la ruta nunca usa.
+- **Tasa de cierre y revenue**: vuelven a la fila de cifras con lo registrado en la ventana, «—» mientras no haya
+  intentos ni ventas (S15-06 a S15-08).

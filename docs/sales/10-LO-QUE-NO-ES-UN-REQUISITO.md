@@ -179,3 +179,11 @@ Estos son **requisitos sin fuente**, no andamiaje. Vuelven el día que haya de d
 
 Se posterga **por escrito y con su medición**, que es lo que convierte un hueco en un hueco declarado
 en vez de en una regresión.
+
+---
+
+## Contestado el 2026-10-09, al volver al front del prototipo
+
+Vuelven los cuatro bloques del prototipo con datos reales (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Siguen fuera de la lista: «Plan de acción»,
+«Personalizado», la clave `mes`, los nombres escritos a mano, «ICP alto asignado» y los motivos inventados. Las
+clases `.grid-4`, `.stat`, `.col-head` y `.mini-bar` vuelven a tener emisor.
