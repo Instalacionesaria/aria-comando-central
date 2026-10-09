@@ -33,9 +33,10 @@ import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
-import { montar, pedirComo, type Escenario } from '../apoyo/closer.ts';
+import { limpiar, montar, pedirComo, unContacto, type Escenario } from '../apoyo/closer.ts';
 import { GET as sales, PANTALLA } from '../../app/api/sales/route.ts';
 import { VENTANAS, type VentanaDeSales } from '../../lib/negocio/ventanasDeSales.ts';
 import { PERIODOS } from '../../lib/negocio/periodo.ts';
@@ -63,6 +64,7 @@ before(async () => {
 });
 after(async () => {
   await conCloser(false);
+  await limpiar(esc);
   await cerrarTodo();
   await cerrarClientes();
 });
@@ -167,6 +169,8 @@ test('ningún módulo de Sales lee los campos personalizados del CRM', () => {
   const raiz = join(import.meta.dirname, '..', '..');
   const archivos = [
     'app/api/sales/route.ts',
+    'lib/negocio/lecturaDeSales.ts',
+    'lib/negocio/motivosDeNoVenta.ts',
     'lib/negocio/cadenaDeCierre.ts',
     'lib/negocio/cicloHastaLaCita.ts',
     'lib/negocio/cierrePorCloser.ts',
@@ -181,6 +185,40 @@ test('ningún módulo de Sales lee los campos personalizados del CRM', () => {
       );
     }
   }
+});
+
+test('`pantalla` trae lo que dibuja el front del prototipo, y nada más', async () => {
+  /* `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13: el servidor arma las cuatro cifras, la tabla, los
+     motivos y la tarjeta de abajo; los bloques de siempre siguen viajando con su forma. */
+  const cuerpo = await pedir('30d');
+  const p = bloque(cuerpo, 'pantalla');
+  assert.deepEqual(Object.keys(p).sort(), ['cifras', 'closers', 'comercial', 'motivos']);
+  assert.deepEqual(Object.keys(bloque(p, 'cifras')).sort(), ['asistencias', 'revenue', 'tasaDeCierre', 'ventas']);
+  /* La cancelación de la tarjeta es la del bloque de siempre, de 0 a 1: la función la da de 0 a 100. */
+  const tasa = bloque(cuerpo, 'cancelacion')['tasa'] as number | null;
+  assert.equal(bloque(bloque(p, 'comercial'), 'cancelacion')['tasa'], tasa === null ? null : tasa / 100);
+});
+
+test('el texto libre de un motivo no viaja: sólo su conteo, fuera del catálogo', async () => {
+  /* S15-15. `resultados.detalle` es texto libre: lo que el closer escribió puede llevar cualquier cosa de una
+     persona. Del motivo sólo viaja el nombre cuando casa con el catálogo de Avanzar. */
+  await conCloser(true);
+  const c = await unContacto(esc, { crmAsignadoA: CRM });
+  const libre = `texto-libre-${randomUUID().slice(0, 8)}`;
+  for (const detalle of [libre, 'Precio']) {
+    await esc.admin.query(
+      `insert into negocio.resultados (org_id, contacto_id, salida, rol, registrado_por, detalle)
+         values ($1, $2, 'no_interesa', 'closer', $3, $4)`,
+      [esc.org, c.id, esc.quien, detalle],
+    );
+  }
+  const cuerpo = await pedir('30d');
+  await limpiar(esc);
+  await conCloser(false);
+  assert.equal(JSON.stringify(cuerpo).includes(libre), false, 'el texto libre del motivo viajó en la respuesta');
+  const motivos = bloque(bloque(cuerpo, 'pantalla'), 'motivos');
+  assert.ok((motivos['fueraDelCatalogo'] as number) >= 1, 'el motivo fuera del catálogo no se contó aparte');
+  assert.ok((motivos['filas'] as { motivo: string }[]).some((f) => f.motivo === 'Precio'), 'el motivo del catálogo no viajó');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -223,6 +261,8 @@ test('el MISMO período llega a los cuatro bloques que gobierna, y no al dinero'
         `el bloque "${k}" quedó en otra ventana con el botón de "${p.clave}" encendido`,
       );
     }
+    /* Los motivos del front, también: cuentan los «No le interesa» de la misma ventana que la tabla. */
+    assert.equal(bloque(bloque(cuerpo, 'pantalla'), 'motivos')['dias'], p.dias, 'los motivos quedaron en otra ventana');
     /* Y el dinero NO tiene `dias`: no lo gobierna el selector, y si algún día lo tuviera sería
        porque alguien lo recalculó acá en vez de consumirlo. */
     assert.equal('dias' in bloque(cuerpo, 'dinero'), false, 'el dinero quedó atado al selector');

@@ -194,6 +194,17 @@ export interface LecturaDeSales {
 }
 
 /**
+ * El sujeto del dinero: los closers de la empresa, o `nadie` sin ninguno. `{tipo:'empresa'}` con la lista vacía no
+ * puede llegar a la consulta —un `in ()` es SQL inválido—, y `nadie` es el estado que hace que el dinero salga «—»
+ * con su motivo en vez de cero. Lo comparten esta lectura y la herramienta `dinero_del_mes` del cerebro.
+ */
+export function sujetoDelDinero(catalogo: readonly CloserConfigurado[]) {
+  return catalogo.length === 0
+    ? ({ tipo: 'nadie' } as const)
+    : ({ tipo: 'empresa', usuarioIds: catalogo.map((k) => k.usuarioId) } as const);
+}
+
+/**
  * Lo que lee la pantalla de Sales en una ventana. Corre dentro de `conOrganizacion`.
  *
  * Los closers se leen una vez: el sujeto del dinero, las filas de la tabla y los motivos tienen que hablar de las
@@ -201,12 +212,7 @@ export interface LecturaDeSales {
  */
 export async function lecturaDeSales(dias: number, zonaHoraria: string): Promise<LecturaDeSales> {
   const catalogo: CloserConfigurado[] = await closersDeLaEmpresa();
-  const sujeto =
-    catalogo.length === 0
-      ? ({ tipo: 'nadie' } as const)
-      : ({ tipo: 'empresa', usuarioIds: catalogo.map((k) => k.usuarioId) } as const);
-
-  const dinero = await dineroDelMes(zonaHoraria, sujeto);
+  const dinero = await dineroDelMes(zonaHoraria, sujetoDelDinero(catalogo));
   const cancelacion = await tasaDeCancelacion(dias);
   const cadena = await cadenaDeCierre(dias);
   const ciclo = await cicloHastaLaCita(dias);

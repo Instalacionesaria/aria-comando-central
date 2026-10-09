@@ -415,7 +415,7 @@ llamada de las 18 dependa del 14.
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:66`,
-`app/api/creative/route.ts:66`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:84`,
+`app/api/creative/route.ts:66`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:83`,
 `app/api/leads-portal/route.ts:53`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
@@ -894,7 +894,7 @@ ocurrido». **No verificado** cuándo corrió por última vez.
 publicaba los huecos ni la pantalla los dibujaba — donde la maqueta tenía números inventados, «un hueco
 que se omite no se distingue de una regresión». El patrón es `fueraDeAlcance`
 (`lib/negocio/calidadDeLaAtribucion.ts:68-69`), y Sales y Leads Portal le agregaron la fecha:
-`MEDIDO_EL` viaja con la lista (`lib/negocio/huecosDeSales.ts:39-46`, `app/api/sales/route.ts:125`;
+`MEDIDO_EL` viaja con la lista (`lib/negocio/huecosDeSales.ts:39-46`, `app/api/sales/route.ts:101`;
 `lib/negocio/huecosDelLeadsPortal.ts:37`) porque sin ella «no hay ventas registradas» se lee como un
 hecho permanente del producto. **La deuda que trae:** `MEDIDO_EL` es un literal escrito a mano, y envejece
 como cualquier cifra de comentario (lo registra [05-SALES.md](05-SALES.md)).
@@ -910,7 +910,7 @@ regla de «todo en la misma pasada» (§ 9) llevada de una tarjeta a una pantall
 **41 · «Los últimos 30 días» pueden ser tres poblaciones: cada una viaja con su nombre y su grano.** En
 Sales conviven el mes calendario del dinero, los contactos dados de alta en N días y las citas que
 ocurrieron en N días, y **las dos últimas dicen «30 días» y describen poblaciones distintas**
-(`app/api/sales/route.ts:18-30`, `c109ebd`); por eso las ventanas viajan descritas en la respuesta
+(`app/api/sales/route.ts:22-34`, `c109ebd`); por eso las ventanas viajan descritas en la respuesta
 (`lib/negocio/ventanasDeSales.ts`). En Creative, «días de la ventana» sumaba días de gasto por anuncio
 contra un denominador de días con impresiones —otro predicado y otro grano, 12,7 % de diferencia— y se
 arregló poniendo el grano en el nombre, `anuncioDiasConLaClave / anuncioDiasConEntrega` (`7d1bc8b`),

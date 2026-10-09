@@ -37,7 +37,9 @@ const POR_SECCION: Record<string, string[]> = {
   conversation: [
     'atribucion_del_lead', 'auditoria_de_agentes', 'cancelacion_de_citas', 'consumo_del_precall', 'frescura', 'lead_flow', 'sentimiento_por_flujo',
   ],
-  sales: ['cadena_de_cierre', 'cancelacion_de_citas', 'ciclo_hasta_la_cita', 'cierre_por_closer', 'dinero_del_mes', 'frescura'],
+  sales: [
+    'cadena_de_cierre', 'cancelacion_de_citas', 'ciclo_hasta_la_cita', 'cierre_por_closer', 'dinero_del_mes', 'frescura', 'motivos_de_no_venta',
+  ],
   contacts: ['cohorte_de_leads', 'frescura'],
   setter: ['colas_del_setter', 'frescura', 'inicio_del_setter', 'pipeline_del_setter'],
   closer: ['agenda_del_closer', 'frescura', 'inicio_del_closer', 'mi_dia_del_closer', 'pipeline_del_closer'],

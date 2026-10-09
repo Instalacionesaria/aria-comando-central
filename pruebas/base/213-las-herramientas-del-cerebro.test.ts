@@ -214,14 +214,19 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     arriba: ['aviso', 'avisoDelTecho', 'cobertura', 'cohorte', 'dias', 'p50', 'p90', 'piso', 'sinCitaTodavia', 'techoDeLaVentana'],
   },
   cierre_por_closer: {
-    arriba: ['aviso', 'bajoElPiso', 'closers', 'coberturaDeLaTabla', 'concentracion', 'dias', 'fueraDeLasFilas', 'piso'],
+    arriba: ['aviso', 'bajoElPiso', 'cifras', 'closers', 'coberturaDeLaTabla', 'concentracion', 'dias', 'fueraDeLasFilas', 'piso'],
     filas: [
       [
         'closers',
-        ['aviso', 'canceladas', 'citas', 'conAsistencia', 'contactos', 'intentos', 'nombre', 'porSalida', 'sePresentaron', 'tasaDeAsistencia', 'tasaDeCancelacion', 'tasaDeCierre', 'usuarioId', 'ventas'],
+        [
+          'aviso', 'canceladas', 'citas', 'conAsistencia', 'contactos', 'intentos', 'montoDeVentas', 'nombre', 'porSalida', 'sePresentaron',
+          'tasaDeAsistencia', 'tasaDeCancelacion', 'tasaDeCierre', 'usuarioId', 'ventas',
+        ],
       ],
     ],
   },
+  /* Sin `filas`: la base sembrada no tiene ningún «No le interesa», y lo que cada fila trae lo mira la 248. */
+  motivos_de_no_venta: { arriba: ['dias', 'filas', 'fueraDelCatalogo', 'porcionFueraDelCatalogo', 'sinVenta', 'total'] },
   cancelacion_de_citas: {
     arriba: [
       'aviso', 'avisoDeAsistencia', 'avisoDeConfirmacion', 'avisoDeLaVentana', 'canceladas', 'citas', 'conAsistencia', 'conConfirmacion',

@@ -1,19 +1,31 @@
 // Las herramientas de Sales del cerebro, con las mismas funciones y los mismos argumentos que
 // `app/api/sales/route.ts`: el dinero del mes, la cadena de cierre, el ciclo hasta la cita, el cierre por
-// closer y la cancelación de citas (que también es de Conversation). Y la economía del mes, que cruza las
-// ventas con la inversión de Acquisition y por eso pide ver las dos secciones.
+// closer, los motivos de no venta y la cancelación de citas (que también es de Conversation). Y la economía del
+// mes, que cruza las ventas con la inversión de Acquisition y por eso pide ver las dos secciones.
 //
-// Lo que no viaja: los textos de rótulo de cada eslabón (son de la pantalla) y el identificador del CRM
-// de cada closer. Los nombres de los closers sí: son el equipo de la empresa, y la tabla se lee por ellos.
+// Las dos que publican lo que la pantalla ARMA —las cuatro cifras de arriba con la tabla, y los motivos— leen la
+// misma lectura que la ruta, `lecturaDeSales`: lo que el cerebro dice de una cifra es lo que la pantalla dibuja
+// (S15-14 de `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Las demás llaman a la misma función con los
+// mismos argumentos que la lectura, y no cargan con las otras cinco consultas.
+//
+// Lo que no viaja: los textos de rótulo de cada eslabón (son de la pantalla), el identificador del CRM de cada
+// closer y el texto libre de un motivo. Los nombres de los closers sí: son el equipo de la empresa, y la tabla se
+// lee por ellos.
 
 import { closersDeLaEmpresa } from '../../../negocio/alcanceDelCloser.ts';
 import { dineroDelMes } from '../../../negocio/dineroDelMes.ts';
 import { cadenaDeCierre } from '../../../negocio/cadenaDeCierre.ts';
 import { cicloHastaLaCita } from '../../../negocio/cicloHastaLaCita.ts';
-import { cierrePorCloser } from '../../../negocio/cierrePorCloser.ts';
 import { tasaDeCancelacion } from '../../../negocio/indicadoresDeCitas.ts';
 import { economiaDelNegocio } from '../../../negocio/economiaDelNegocio.ts';
-import { ARGUMENTO_PERIODO, SIN_ARGUMENTOS, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
+import { lecturaDeSales, sujetoDelDinero } from '../../../negocio/lecturaDeSales.ts';
+import {
+  ARGUMENTO_PERIODO, type ContextoDeHerramienta, SIN_ARGUMENTOS, type DefinicionDeHerramienta, periodoPedido, primeras, tomar,
+} from './comun.ts';
+
+/** La lectura de la pantalla, con el período pedido y la zona de la empresa. */
+const leer = (argumentos: Record<string, unknown>, contexto: ContextoDeHerramienta) =>
+  lecturaDeSales(periodoPedido(argumentos)!.dias, contexto.zona);
 
 export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
   {
@@ -24,11 +36,8 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
     secciones: ['sales'],
     esquema: SIN_ARGUMENTOS,
     async ejecutar(_argumentos, contexto) {
-      // El mismo sujeto que arma la ruta: los closers de la empresa, o nadie.
-      const catalogo = await closersDeLaEmpresa();
-      const sujeto =
-        catalogo.length === 0 ? ({ tipo: 'nadie' } as const) : ({ tipo: 'empresa', usuarioIds: catalogo.map((k) => k.usuarioId) } as const);
-      const d = await dineroDelMes(contexto.zona, sujeto);
+      // El mismo sujeto que arma la lectura de la pantalla: los closers de la empresa, o nadie.
+      const d = await dineroDelMes(contexto.zona, sujetoDelDinero(await closersDeLaEmpresa()));
       return {
         ...tomar(d, ['mes', 'cobrado', 'ventas', 'acuerdos'] as const),
         nota: 'Mes calendario en curso. Venta reportada por el closer, no un pago verificado.',
@@ -81,26 +90,45 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
   {
     nombre: 'cierre_por_closer',
     descripcion:
-      'Sales: por closer, citas, cancelaciones, asistencia, intentos registrados, ventas y tasa de cierre. Las ' +
-      'tasas son nulas bajo el piso de 10.',
+      'Sales: las cuatro cifras de arriba de la pantalla (`cifras`: asistencias, tasa de cierre, ventas y revenue ' +
+      'reportado, la tasa como fracción de 0 a 1) y, por closer, citas, cancelaciones, asistencia, intentos ' +
+      'registrados, ventas, el monto reportado de esas ventas y la tasa de cierre. Una cifra sin valor trae su ' +
+      'motivo: `sin_asistencia` (nadie marca la asistencia), `sin_registros` (ningún resultado en la ventana) o ' +
+      '`bajo_el_piso` (menos de 10 intentos). Ventas, revenue y tasa son lo que registraron los closers; el revenue ' +
+      'es reportado por el closer, no un pago verificado. Las tasas de las filas son nulas bajo el piso de 10.',
     secciones: ['sales'],
     esquema: ARGUMENTO_PERIODO,
-    async ejecutar(argumentos) {
-      const catalogo = await closersDeLaEmpresa();
-      const c = await cierrePorCloser(periodoPedido(argumentos)!.dias, catalogo);
+    async ejecutar(argumentos, contexto) {
+      const l = await leer(argumentos, contexto);
+      const c = l.closers;
       const filas = primeras(c.filas);
       return {
+        cifras: l.pantalla.cifras,
         ...tomar(c, ['dias', 'fueraDeLasFilas', 'coberturaDeLaTabla', 'concentracion', 'bajoElPiso', 'piso', 'aviso'] as const),
         closers: {
           filas: filas.filas.map((f) =>
             tomar(f, [
               'usuarioId', 'nombre', 'contactos', 'citas', 'canceladas', 'tasaDeCancelacion', 'conAsistencia', 'sePresentaron',
-              'tasaDeAsistencia', 'intentos', 'porSalida', 'ventas', 'tasaDeCierre', 'aviso',
+              'tasaDeAsistencia', 'intentos', 'porSalida', 'ventas', 'montoDeVentas', 'tasaDeCierre', 'aviso',
             ] as const),
           ),
           total: filas.total,
         },
       };
+    },
+  },
+  {
+    nombre: 'motivos_de_no_venta',
+    descripcion:
+      'Sales: por qué dijo que no la gente que los closers registraron como «No le interesa» en la ventana, por los ' +
+      'motivos del catálogo de Avanzar (Precio, No es el momento, Competencia, No califica, Otro), con la porción de ' +
+      'cada uno como fracción de 0 a 1. Los que no traen motivo o traen uno fuera del catálogo se cuentan aparte. ' +
+      '`sinVenta` son los resultados registrados que no fueron venta. No son las objeciones de las llamadas analizadas.',
+    secciones: ['sales'],
+    esquema: ARGUMENTO_PERIODO,
+    async ejecutar(argumentos, contexto) {
+      const m = (await leer(argumentos, contexto)).pantalla.motivos;
+      return tomar(m, ['dias', 'total', 'filas', 'fueraDelCatalogo', 'porcionFueraDelCatalogo', 'sinVenta'] as const);
     },
   },
   {

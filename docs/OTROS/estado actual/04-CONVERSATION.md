@@ -56,7 +56,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   `tieneCitaAlcanzable`, de `lib/negocio/citasAlcanzables.ts:54` a
 >   `lib/negocio/citasAlcanzables.ts:135`—, y `tasaDeCancelacion` los instancia
 >   (`lib/negocio/indicadoresDeCitas.ts:349-351`). Sales consume esa misma función
->   (`app/api/sales/route.ts:109`): la cancelación de las dos pantallas es un solo número.
+>   (`app/api/sales/route.ts:109@48ee16d`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
 >   (`lib/autorizacion/secciones.ts:326`), la misma capacidad que su ruta
 >   (`app/api/auditoria/route.ts:58`). Antes la pestaña de permisos ofrecía la casilla a un rol que

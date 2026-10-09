@@ -482,7 +482,7 @@ que tienen una venta. Recalculada el 2026-09-28 con sus mismos predicados:
 | completo, 2026-09-21 (`lib/negocio/cadenaDeCierre.ts:8-12`) | 566 | 197 | 75 | 4 | 0 |
 | completo, 2026-09-28 18 h UTC | 570 | 200 | 77 | **4** | **0** |
 | completo, 2026-09-28 23:58 UTC | 570 | 200 | 78 | **4** | **0** |
-| 30 días, 2026-09-28 18 h UTC (la que abre la pantalla, `app/api/sales/route.ts:84-110`) | 277 | 139 | 46 | **3** | **0** |
+| 30 días, 2026-09-28 18 h UTC (la que abre la pantalla, `app/api/sales/route.ts:84-110@48ee16d`) | 277 | 139 | 46 | **3** | **0** |
 | 30 días, re-medida entre las 23:58 UTC del 28 y las 00:02 UTC del 29 | 276 | 139 | 47 | **3** | **0** |
 
 En una semana entraron 4 contactos, 3 agendaron, 2 contactos más tuvieron su cita ya ocurrida (3 a

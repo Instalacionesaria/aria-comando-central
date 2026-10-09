@@ -207,7 +207,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
 **Qué ruta ya calcula cada fila, y qué no existe:**
 
 - **Contactos** — cuatro rutas cuentan la cohorte por `alta_en_el_crm`: `cadenaDeCierre` en Sales
-  (`app/api/sales/route.ts:110`), `leadsDelPortal` en Leads Portal, `recorridoDelLead` en Conversion
+  (`app/api/sales/route.ts:110@48ee16d`), `leadsDelPortal` en Leads Portal, `recorridoDelLead` en Conversion
   e `indicadoresDelLead` en Conversation. **Con dos formas de ventana**: móvil en Sales, Leads Portal
   y Conversation (`lib/negocio/cadenaDeCierre.ts:46-55`), anclada al día en Acquisition, Creative y
   Conversion (`lib/negocio/recorrido.ts:187-202`). Hoy, a 30 días, dan 277 y 276.
@@ -430,7 +430,7 @@ El mecanismo es corto y va en un solo commit, como las siete veces anteriores qu
    (`lib/autorizacion/secciones.ts:399-403`)— necesita la bandera para no dar rojo, así que
    retirarla del tipo no es gratis.
 4. **Los períodos de `lib/negocio/periodo.ts:83-96`.** `data-p="mes"` se rechaza con un 400
-   (`lib/negocio/periodo.ts:188-193`, `app/api/sales/route.ts:82-85`); `tri` no existe, y lo más
+   (`lib/negocio/periodo.ts:188-193`, `app/api/sales/route.ts:82-85@48ee16d`); `tri` no existe, y lo más
    cercano a `hist` es `completo`.
 5. **La paridad.** «funnel ejecutivo» y «grupo de contactos» comparan el texto de `#exFunnel` y del
    cajón contra el prototipo (`scripts/paridad.mjs:209-212@c4cf2a8`, `scripts/paridad.mjs:346-356`): con
@@ -463,7 +463,7 @@ las dos formas dividió una vez treinta y un días de gasto entre treinta de lea
 (`lib/negocio/costoDelAnuncio.ts:34-64`). Todo costo por etapa de Executive cae ahí.
 
 **4 · El dinero es del mes calendario, y es venta reportada.** No lo gobierna el selector
-(`app/api/sales/route.ts:24-26`) y no es un pago verificado (`lib/negocio/cadenaDeCierre.ts:353-358`,
+(`app/api/sales/route.ts:28-30`) y no es un pago verificado (`lib/negocio/cadenaDeCierre.ts:353-358`,
 § 5.4 del documento). Y el del closer no se suma con el del setter (`lib/negocio/etapas.ts:86-94`).
 
 **5 · Los dos ceros y el piso.** Con cero ventas, el ticket y el costo por venta dan `NaN` o

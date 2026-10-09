@@ -69,7 +69,7 @@ organización que tiene datos.
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
 | Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:229` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
-| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `app/api/sales/route.ts:106-112` | — |
+| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:215-218` | — |
 
 ### Lo que la medición del 2026-10-09 agregó
 
@@ -277,17 +277,24 @@ lectura, no en la función, que la comparten Conversation y Closer. El navegador
 lugar, y deja de calcular proporciones y anchos de barra (hoy, `components/sales/PanelDeSales.jsx:249`).
 
 **La respuesta crece, no cambia** · Siguen `periodo`, `ventanas`, `dinero`, `cancelacion`, `cadena`, `ciclo` y
-`closers`. Se agregan `cifras` (las cuatro de la fila), `motivos` y el monto por closer. `huecos` sale de la
-respuesta y queda para el cerebro.
+`closers`, este último con el monto reportado de cada fila (`montoDeVentas`). Se agrega `pantalla`, lo que dibuja el
+front: `cifras` (las cuatro de la fila), `closers` (las filas de la tabla, cada columna con su motivo), `motivos` y
+`comercial` (la tarjeta de abajo). `huecos` sigue viajando mientras lo dibuje el panel de hoy y sale con el front, en
+SA-3; el módulo `lib/negocio/huecosDeSales.ts` queda, porque Leads Portal comparte tres de sus huecos.
 
-**Estado** · La lectura, construida el 2026-10-09 (SA-1): `lib/negocio/lecturaDeSales.ts`, con `armarSales` pura; la ruta, por construir (SA-2).
+**Estado** · Construido el 2026-10-09: la lectura en SA-1 (`lib/negocio/lecturaDeSales.ts`, con `armarSales` pura) y
+la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:90-92`). `huecos` sale en SA-3.
 
 ### S15-14 · El cerebro lee lo mismo
 
-**Qué es** · Las seis herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:20`) leen la misma
-lectura, y se agrega `motivos_de_no_venta`. Lo que el cerebro dice de una cifra es lo que la pantalla dibuja.
+**Qué es** · Las herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:32`) dicen lo mismo que la
+pantalla. Las dos que publican lo que la pantalla ARMA leen la misma lectura que la ruta: `cierre_por_closer`, que
+suma las cuatro `cifras` y el monto de cada fila, y la nueva `motivos_de_no_venta`. Las demás —el dinero del mes, la
+cadena, el ciclo y la cancelación— llaman a la misma función con los mismos argumentos que la lectura, sin cargar con
+las otras cinco consultas. Lo que el cerebro dice de una cifra es lo que la pantalla dibuja.
 
-**Estado** · Por construir (SA-2).
+**Estado** · Construido el 2026-10-09 (SA-2). Lo prueban `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts`
+en las cuatro ventanas y `pruebas/base/213-las-herramientas-del-cerebro.test.ts` con sus claves.
 
 ### S15-15 · Sin datos personales
 
@@ -295,7 +302,8 @@ lectura, y se agrega `motivos_de_no_venta`. Lo que el cerebro dice de una cifra 
 resultado. Del `detalle` sólo se usa su motivo cuando casa con el catálogo; lo demás se cuenta, no se muestra. No
 vuelven los `data-leads`.
 
-**Estado** · Por construir (SA-3).
+**Estado** · El servidor, construido el 2026-10-09: el texto libre de un motivo no viaja en la respuesta (lo prueba
+`pruebas/base/166-la-ruta-de-sales.test.ts`); la pantalla, por construir (SA-3).
 
 ### S15-16 · El teléfono
 
@@ -333,7 +341,7 @@ tarjeta de abajo apila sus secciones. Lo nuevo va en `app/sales.css`.
 |---|---|---|
 | SA-0 | Este documento, las correcciones al final de los otros, `docs/OTROS/futuro/lo-que-sales-no-mide.md` y la medición del 2026-10-09 | **hecho el 2026-10-09**, revisado por el usuario |
 | SA-1 | El servidor: `motivosDeNoVenta`, el monto por closer, las cuatro cifras y `lecturaDeSales`, con sus pruebas | **hecho el 2026-10-09**: `pruebas/codigo/248-lectura-de-sales.test.ts` y `pruebas/base/248-lectura-de-sales.test.ts`, 18 mutaciones muertas |
-| SA-2 | La ruta y el cerebro sobre la lectura única | por hacer |
+| SA-2 | La ruta y el cerebro sobre la lectura única | **hecho el 2026-10-09**: `pantalla` en la respuesta, `motivos_de_no_venta` en el cerebro, 11 mutaciones muertas |
 | SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | por hacer |
 | SA-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |

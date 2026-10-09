@@ -138,7 +138,7 @@ for (const { clave } of PERIODOS) {
     for (const flujo of Object.keys(p.sentimiento)) assert.equal(sentimiento[flujo].juzgadas, p.sentimiento[flujo].juzgadas, flujo);
   });
 
-  test(`Sales con «${clave}»: la cadena, el ciclo, el cierre por closer y la cancelación`, async () => {
+  test(`Sales con «${clave}»: la cadena, el ciclo, el cierre por closer, las cifras, los motivos y la cancelación`, async () => {
     const p = await pantalla(sales, `/api/sales?periodo=${clave}`);
     const cadena = await herramienta('cadena_de_cierre', periodo);
     assert.equal(cadena.cohorte, p.cadena.cohorte);
@@ -146,7 +146,13 @@ for (const { clave } of PERIODOS) {
     const ciclo = await herramienta('ciclo_hasta_la_cita', periodo);
     assert.deepEqual([ciclo.p50, ciclo.p90, ciclo.cohorte], [p.ciclo.p50, p.ciclo.p90, p.ciclo.cohorte]);
     const cierre = await herramienta('cierre_por_closer', periodo);
-    assert.deepEqual(pares(cierre.closers.filas, 'usuarioId', 'citas', 'ventas'), pares(p.closers.filas, 'usuarioId', 'citas', 'ventas'));
+    assert.deepEqual(
+      pares(cierre.closers.filas, 'usuarioId', 'citas', 'ventas', 'montoDeVentas'),
+      pares(p.closers.filas, 'usuarioId', 'citas', 'ventas', 'montoDeVentas'),
+    );
+    // Las cuatro de arriba de la pantalla, con su motivo: lo que el cerebro dice de una cifra es lo que se dibuja (S15-14).
+    assert.deepEqual(cierre.cifras, p.pantalla.cifras);
+    assert.deepEqual(await herramienta('motivos_de_no_venta', periodo), p.pantalla.motivos);
     const cancelacion = await herramienta('cancelacion_de_citas', periodo);
     assert.deepEqual([cancelacion.citas, cancelacion.tasa], [p.cancelacion.citas, p.cancelacion.tasa]);
   });

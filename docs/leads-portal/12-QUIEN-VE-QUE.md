@@ -27,7 +27,7 @@ La sección ya está declarada así (`lib/autorizacion/secciones.ts:233-241`):
 ```
 
 Lo que falta es el lado del servidor, y sigue el patrón de Sales: `export const PANTALLA = 'contacts'`
-y `exigir(peticion, ['tablero.ver'], PANTALLA)` (`app/api/sales/route.ts:69`, `:75`). El portero
+y `exigir(peticion, ['tablero.ver'], PANTALLA)` (`app/api/sales/route.ts:68`, `:75`). El portero
 decide en dos pasos, y cada uno tiene su código de rechazo:
 
 | paso | qué mira | si falla | rastro |

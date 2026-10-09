@@ -85,7 +85,7 @@ visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75`,
 encabezado (líneas 1-52) enumera lo borrado con la medición que lo desmiente, y la bajada pasó a
 «Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72`).
 
-**La ruta.** `app/api/sales/route.ts:71-132`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
+**La ruta.** `app/api/sales/route.ts:70-110`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
 **rechaza** con 400 un período que no está en la lista en vez de corregirlo (`:84-85`), corre todo en
 una transacción por organización (`:87-115`) y lee la lista de closers una sola vez para el dinero y
 para la tabla (`:92`). El sujeto del dinero es la empresa o `nadie`, nunca N+1 por closer
@@ -161,7 +161,7 @@ es lo que la pantalla muestra**: 14 días no es un botón (`lib/negocio/periodo.
 ve hoy es **69,5 % a 30 días** (66 de 95) y 76,4 % con «Completo» (97 de 127); con el umbral de
 `0.6` (`lib/negocio/cierrePorCloser.ts:92`) el aviso de concentración está encendido. Ojo: el
 62,7 % de la concentración no tiene nada que ver con el 62,7 % de cancelación que `9931f4d` corrigió
-(`app/api/sales/route.ts:107-108`); son dos cifras distintas con el mismo valor.
+(`app/api/sales/route.ts:107-108@48ee16d`); son dos cifras distintas con el mismo valor.
 
 **Ventanas y pisos.** Tres ventanas en una pantalla, y viajan descritas
 (`lib/negocio/ventanasDeSales.ts:39-52`): el MES calendario en la zona de la empresa para el dinero
@@ -437,8 +437,8 @@ con `PERIODO_POR_OMISION = '30d'` porque catorce no está entre los botones
 (`lib/negocio/periodo.ts:98-109`). `DIAS_DE_LA_TASA` sigue vivo como argumento por omisión de más
 de una docena de funciones de `lib/negocio/` y `lib/auditor/` (búsqueda del 2026-09-28), entre ellas
 las cuatro que llama Sales, y la ruta de Sales se lo pisa en las cuatro con la ventana pedida
-(`app/api/sales/route.ts:109-112`); lo que no está en la lista se RECHAZA con un 400
-(`lib/negocio/periodo.ts:188-193`; `app/api/sales/route.ts:85`). Ya construida, se cumple dentro de
+(`app/api/sales/route.ts:109-112@48ee16d`); lo que no está en la lista se RECHAZA con un 400
+(`lib/negocio/periodo.ts:188-193`; `app/api/sales/route.ts:84`). Ya construida, se cumple dentro de
 Sales: **los cuatro módulos reciben la misma ventana**. Fuera de Sales no: `citasParaCerrar`, que
 decide qué cita ofrece Avanzar para responder la asistencia, se queda con sus catorce
 (`lib/negocio/citasParaCerrar.ts:60`), así que la cadena y Avanzar miran dos poblaciones (§ 2). Y el
