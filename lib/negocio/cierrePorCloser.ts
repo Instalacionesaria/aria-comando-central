@@ -170,6 +170,12 @@ export interface CierreDeUnCloser {
   porSalida: Record<string, number>;
   /** Sólo `salida = 'venta'`. **Nunca `venta_chica`**: son dos negocios y no se suman. */
   ventas: number;
+  /**
+   * El monto que esta persona reportó en esas ventas: la suma de `monto` de sus resultados `venta` en la
+   * ventana. Cero con ventas sin monto cargado. Es lo REPORTADO, no un pago verificado
+   * (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-08 y S15-09).
+   */
+  montoDeVentas: number;
   tasaDeCierre: number | null;
   /** Qué le falta a ESTA fila para tener tasas. **`null` ⟹ la fila no dibuja ninguna nota.** */
   aviso: string | null;
@@ -296,7 +302,7 @@ export async function cierrePorCloser(
      * `venta_chica` si aparece y `ventas` no la suma. */
   const ejePropio = await datos()
     .selectFrom('resultados')
-    .select(['registrado_por', 'salida', sql<number>`count(*)`.as('n')])
+    .select(['registrado_por', 'salida', sql<number>`count(*)`.as('n'), sql<string>`coalesce(sum(monto::numeric), 0)`.as('monto')])
     /* La misma cantidad de días, anclada a otra columna: acá el hecho es cuándo se REGISTRÓ, no
        cuándo era la cita. Que las dos ventanas midan lo mismo y cuenten cosas distintas es propio de
        las dos columnas, y el aviso de la tabla lo dice. */
@@ -327,10 +333,12 @@ export async function cierrePorCloser(
 
     const porSalida: Record<string, number> = {};
     let intentos = 0;
+    let montoDeVentas = 0;
     for (const r of ejePropio) {
       if (r.registrado_por !== c.usuarioId) continue;
       porSalida[r.salida] = Number(r.n);
       intentos += Number(r.n);
+      if (r.salida === 'venta') montoDeVentas = Number(r.monto);
     }
     /* `['venta']` por clave exacta y no una búsqueda de subcadena: la `venta_chica` del setter es
        otro negocio con otra comisión y no se suma, nunca (`lib/negocio/etapas.ts:86-94`). */
@@ -353,6 +361,7 @@ export async function cierrePorCloser(
       intentos,
       porSalida,
       ventas,
+      montoDeVentas,
       tasaDeCierre: tasa(ventas, intentos),
       aviso: avisoDeLaFila({ sinEje, citas, conAsistencia, noShowDelCalendario, intentos }),
     };

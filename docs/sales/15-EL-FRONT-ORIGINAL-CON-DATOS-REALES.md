@@ -64,10 +64,10 @@ organización que tiene datos.
 |---|---|---|---|
 | Encabezado | «Sales», «Cierre, closers y motivos de pérdida» y los cuatro períodos de `lib/negocio/periodo.ts:83-96` | — | — |
 | Asistencias | las citas ocurridas en la ventana con `asistio` marcado como presente | `negocio.citas.asistio` | **0 de 363** citas con la asistencia marcada: «—», «Nadie marca la asistencia.» |
-| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:328-356` | 1 intento en 30 días: «—» |
-| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:337` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
+| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:334-365` | 1 intento en 30 días: «—» |
+| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:345` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
-| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:223` | 3 closers, 2 registraron alguna vez |
+| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:229` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
 | La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `app/api/sales/route.ts:106-112` | — |
 
@@ -133,7 +133,7 @@ Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del c
 | «Agendadas» | igual, pero son citas del CRM, no resultados | dos ejes distintos (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
 
 **Estado** · Por construir (SA-3): la lista vivirá en una constante `FRASE` de `components/sales/comun.jsx`, y una
-prueba nueva, la 248, exigirá que las dos coincidan en las dos direcciones.
+prueba nueva, la 249, exigirá que las dos coincidan en las dos direcciones.
 
 ### S15-03 · El encabezado
 
@@ -168,23 +168,24 @@ Sales no, por las dos razones de § 1. Es `S15-P01`.
 
 **Qué es** · Cuántas citas de la ventana tienen la asistencia marcada como presente.
 
-**Fórmula** · Citas ocurridas en la ventana con `asistio = true`. Si ninguna cita de la ventana tiene `asistio`
+**Fórmula** · Citas ocurridas en la ventana con `asistio = true`: el `sePresentaron` de `tasaDeCancelacion`, con su
+misma población —las citas alcanzables y sin contactos descartados (`lib/negocio/indicadoresDeCitas.ts:397-399`)—. Si ninguna cita de la ventana tiene `asistio`
 marcado, «—» con «Nadie marca la asistencia.»: no es cero, porque nadie respondió la pregunta.
 
 **Qué no es** · No es el «showed» del calendario: el calendario marca algunas citas y no otras, y un conteo sin
 denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). Es `S15-P04`.
 
-**Estado** · Por construir (SA-1). Hoy, «—».
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `asistencias` de `armarSales`, en `lib/negocio/lecturaDeSales.ts`; el dibujo, por construir (SA-3). Hoy, «—».
 
 ### S15-06 · Tasa de cierre
 
 **Qué es** · Ventas sobre intentos de los closers en la ventana.
 
-**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:328-356`).
+**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:334-365`).
 Un intento es un resultado registrado por el closer. Con menos de `PISO_DE_UNA_TASA` (10) intentos, «—» con
 «Pocos intentos para una tasa.».
 
-**Estado** · Por construir (SA-1). Hoy, «—»: un intento en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `tasaDeCierre` de `armarSales`; el dibujo, por construir (SA-3). Hoy, «—»: un intento en 30 días.
 
 ### S15-07 · Ventas
 
@@ -195,7 +196,7 @@ setter es otra cosa y no se suma.
 en esta ventana.»; con resultados y sin ventas, **0**, que es un cero medido. Es la misma distinción de
 `dineroDelMes` (`lib/negocio/dineroDelMes.ts:156-186`).
 
-**Estado** · Por construir (SA-1). Hoy, 0 en 30 días y «—» en 7.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, por construir (SA-3). Hoy, 0 en 30 días y «—» en 7.
 
 ### S15-08 · Revenue reportado
 
@@ -205,7 +206,7 @@ verificado.
 **Fórmula** · La suma de `monto` de los resultados `venta` de los closers en la ventana, con la misma distinción
 que Ventas. El color es el del prototipo, `var(--exec)`, por una clase de `app/sales.css` y no en línea.
 
-**Estado** · Por construir (SA-1). Hoy, $0 en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `revenue` de `armarSales`, que suma el `montoDeVentas` nuevo de cada fila de `cierrePorCloser`; el dibujo, por construir (SA-3). Hoy, $0 en 30 días.
 
 ### S15-09 · La tabla de closers
 
@@ -215,11 +216,11 @@ del catálogo.
 | columna | dato | fuente |
 |---|---|---|
 | Closer | el nombre del catálogo de la empresa; debajo, «{N} contactos asignados» | `closersDeLaEmpresa()` |
-| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:223` |
+| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:229` |
 | Asistieron | sus citas con `asistio` presente; sin ninguna marcada, «—» | igual |
-| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:337` |
-| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:356` |
-| Revenue | el monto reportado de sus ventas | nuevo en SA-1 |
+| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:345` |
+| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:365` |
+| Revenue | el monto reportado de sus ventas | `montoDeVentas`, nuevo en SA-1 |
 
 **Los dos ejes, dichos** · Agendadas y Asistieron cuentan citas del CRM; Ventas, Cierre y Revenue cuentan lo que
 la persona registró. La nota de la tabla, que escribe el servidor, lo dice.
@@ -227,14 +228,14 @@ la persona registró. La nota de la tabla, que escribe el servidor, lo dice.
 **Sin datos de personas en este documento ni en las pruebas** · Las filas muestran los nombres del catálogo de la
 empresa, como la pantalla de hoy. Acá se habla de «closer 1, 2 y 3».
 
-**Estado** · Por construir (SA-1 y SA-3).
+**Estado** · Las filas, construidas el 2026-10-09 (SA-1): `closers.filas` de `armarSales`, cada columna con su motivo; el dibujo, por construir (SA-3).
 
 ### S15-10 · El encabezado de la tarjeta de motivos
 
 **Qué es** · «Motivos de no venta», con el `hint` «{N} sin venta»: los resultados de los closers en la ventana
 cuya salida no es una venta.
 
-**Estado** · Por construir (SA-1).
+**Estado** · El conteo, construido el 2026-10-09 (SA-1): `motivos.sinVenta` de `armarSales`; el dibujo, por construir (SA-3).
 
 ### S15-11 · Los motivos de no venta
 
@@ -250,7 +251,7 @@ motivos registrados.».
 una pérdida, y piden otra capacidad. Tampoco los campos del CRM: `docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md` mide
 que no los hay.
 
-**Estado** · Por construir (SA-1). Hoy: 1 en toda la historia, ninguno en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `lib/negocio/motivosDeNoVenta.ts`; el dibujo, por construir (SA-3). Hoy: 1 en toda la historia, ninguno en 30 días.
 
 ### S15-12 · La cadena comercial, abajo
 
@@ -279,7 +280,7 @@ lugar, y deja de calcular proporciones y anchos de barra (hoy, `components/sales
 `closers`. Se agregan `cifras` (las cuatro de la fila), `motivos` y el monto por closer. `huecos` sale de la
 respuesta y queda para el cerebro.
 
-**Estado** · Por construir (SA-1 y SA-2).
+**Estado** · La lectura, construida el 2026-10-09 (SA-1): `lib/negocio/lecturaDeSales.ts`, con `armarSales` pura; la ruta, por construir (SA-2).
 
 ### S15-14 · El cerebro lee lo mismo
 
@@ -330,10 +331,10 @@ tarjeta de abajo apila sus secciones. Lo nuevo va en `app/sales.css`.
 
 | etapa | qué | estado |
 |---|---|---|
-| SA-0 | Este documento, las correcciones al final de los otros, `docs/OTROS/futuro/lo-que-sales-no-mide.md` y la medición del 2026-10-09 | **escrito el 2026-10-09**, para la revisión del usuario |
-| SA-1 | El servidor: `motivosDeNoVenta`, el monto por closer, las cuatro cifras y `lecturaDeSales`, con sus pruebas | por hacer |
+| SA-0 | Este documento, las correcciones al final de los otros, `docs/OTROS/futuro/lo-que-sales-no-mide.md` y la medición del 2026-10-09 | **hecho el 2026-10-09**, revisado por el usuario |
+| SA-1 | El servidor: `motivosDeNoVenta`, el monto por closer, las cuatro cifras y `lecturaDeSales`, con sus pruebas | **hecho el 2026-10-09**: `pruebas/codigo/248-lectura-de-sales.test.ts` y `pruebas/base/248-lectura-de-sales.test.ts`, 18 mutaciones muertas |
 | SA-2 | La ruta y el cerebro sobre la lectura única | por hacer |
-| SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 248 | por hacer |
+| SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | por hacer |
 | SA-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
 
