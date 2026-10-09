@@ -14,7 +14,7 @@
 //
 // ── EL TIPO ES EL CONTRATO, Y SE ESCRIBE UNA SOLA VEZ ───────────────────────
 //
-// Los seis bloques se importan de sus módulos con `import type`. Redeclararlos acá daría dos
+// Los bloques se importan de sus módulos con `import type`. Redeclararlos acá daría dos
 // definiciones que compilan mientras coincidan y **dejan de coincidir sin que nada falle** — el
 // mismo motivo por el que `inicio.ts:34-38` re-exporta sus tipos en vez de copiarlos.
 //
@@ -47,7 +47,7 @@ export interface PantallaDeSales {
   ventanas: typeof VENTANAS;
   /** Cobrado, ventas y acuerdos. **Del mes calendario**, no del período de arriba. */
   dinero: DineroDelMes;
-  /** La cifra de cabecera. Se CONSUME de `tasaDeCancelacion`: Sales es su segundo consumidor. */
+  /** La cancelación, de 0 a 100. Se CONSUME de `tasaDeCancelacion`: Sales es su segundo consumidor. */
   cancelacion: Cancelacion;
   /** Los cinco eslabones, con el contacto como unidad en los cinco. */
   cadena: CadenaDeCierre;
@@ -55,7 +55,10 @@ export interface PantallaDeSales {
   ciclo: CicloHastaLaCita;
   /** Una fila por closer configurado, en orden de designación. */
   closers: CierreDeLosClosers;
-  /** Lo que dibuja el front del prototipo: las cuatro cifras, la tabla, los motivos y la tarjeta de abajo, de 0 a 1. */
+  /**
+   * Lo que el front arma: las cuatro cifras, la tabla, los motivos y lo de la tarjeta de abajo que se calcula, de 0 a
+   * 1. Los eslabones, el dinero y el texto de las ventanas los lee de los bloques de arriba.
+   */
   pantalla: PantallaDeSalesArmada;
 }
 

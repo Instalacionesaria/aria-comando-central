@@ -6,7 +6,8 @@
 // Del catálogo real de Avanzar: al registrar «No le interesa» el closer elige un motivo de una lista cerrada
 // (`lib/negocio/salidas.ts`), y se guarda en `resultados.detalle`. Es la tarjeta «Motivos de no venta» del
 // prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-11), con los motivos de verdad: los del
-// prototipo —«No es quien decide», «Pidió tiempo»— no existen en ningún catálogo.
+// prototipo no son de «No le interesa» —«No es quien decide» no existe en ningún catálogo, y «Pidió tiempo» es una
+// opción de `nurture`, otra salida—.
 //
 // No salen de las objeciones que el modelo clasifica en las llamadas analizadas —son de una llamada, no de una
 // pérdida, y piden otra capacidad— ni de los campos del CRM, que no los tienen
@@ -75,7 +76,9 @@ export function repartirMotivos(dias: number, conteos: readonly { detalle: strin
  * Los motivos de la ventana, de los closers configurados. Corre dentro de `conOrganizacion`.
  *
  * La ventana es la de lo registrado en la tabla de closers: `creado_el` desde hace `dias` días
- * (`lib/negocio/cierrePorCloser.ts`, el eje propio), para que «{N} sin venta» y los motivos cuenten lo mismo.
+ * (`lib/negocio/cierrePorCloser.ts`, el eje propio), para que los motivos y «{N} sin venta» hablen de la misma
+ * ventana. No cuentan lo mismo: «{N} sin venta» suma toda salida que no es venta —seguimiento, no show, nurture—, y
+ * los motivos sólo los «No le interesa».
  * Sin closers no se consulta: un `in ()` es SQL inválido, y no hay de quién contar.
  */
 export async function motivosDeNoVenta(

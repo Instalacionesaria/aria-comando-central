@@ -7,9 +7,11 @@
 //
 //   · los motivos cuentan los «No le interesa» de los closers configurados, en la ventana, por el catálogo, y lo
 //     que no casa va aparte — mutaciones: sacar el filtro de salida, el de quién registró o el de la ventana;
-//   · el monto de cada closer es la suma de SUS ventas — mutación: sumar el monto de todas las salidas;
+//   · el monto de cada closer es la suma de SUS ventas —ni `venta_chica` ni `acuerdo_sin_pago`—, y la venta sin
+//     monto se cuenta aparte — mutación: sumar el monto de todas las salidas, o de las que empiezan con «venta»;
 //   · la lectura entera: sin ningún resultado, ventas y revenue son «—»; con resultados sin ventas, cero
-//     medido; y la asistencia es la de la cancelación, no otra cuenta.
+//     medido; el revenue es el de la ventana y no el del mes; y la asistencia es la de la cancelación, con una
+//     cita marcada de verdad — mutación: tomar el revenue de `dineroDelMes`, o publicar la asistencia sin mirar.
 //
 // La organización `alfa` la comparten otras pruebas, así que lo que depende de TODA la empresa —la asistencia—
 // se compara contra la función de la que sale, no contra un número fijo.
@@ -158,7 +160,10 @@ test('el monto de cada closer es la suma de sus ventas de la ventana, y nada má
   await unContacto(CRM_A, [
     { salida: 'venta', registradoPor: uno, monto: 1200.5 },
     { salida: 'venta', registradoPor: uno, monto: 800 },
+    { salida: 'venta', registradoPor: uno },
     { salida: 'seguimiento', registradoPor: uno, monto: 999 },
+    { salida: 'venta_chica', registradoPor: uno, monto: 300 },
+    { salida: 'acuerdo_sin_pago', registradoPor: uno, monto: 450 },
     { salida: 'venta', registradoPor: uno, monto: 5000, haceDias: 40 },
   ]);
   await unContacto(CRM_B, [{ salida: 'no_interesa', registradoPor: dos, detalle: 'Precio' }]);
@@ -166,7 +171,9 @@ test('el monto de cada closer es la suma de sus ventas de la ventana, y nada má
   const r = await enAlfa(async () => cierrePorCloser(30, await closersDeLaEmpresa()));
   const [a, b] = r.filas;
   assert.equal(a!.montoDeVentas, 2000.5, 'el monto suma otra salida o una venta de afuera de la ventana');
-  assert.equal(a!.ventas, 2);
+  assert.equal(a!.ventas, 3);
+  assert.equal(a!.ventasSinMonto, 1, 'la venta sin monto no se contó aparte');
+  assert.equal(b!.ventasSinMonto, 0);
   assert.equal(b!.montoDeVentas, 0, 'sin ventas el monto es cero medido');
 });
 
@@ -207,14 +214,40 @@ test('con ventas, la lectura publica las ventas y el monto reportado de los clos
   assert.deepEqual(l.pantalla.closers.filas[0]!.revenue, { valor: 1500, motivo: null });
 });
 
+test('el revenue es el de la ventana elegida, no el del mes calendario', async () => {
+  /* Una venta de hace 40 días cae en una ventana de 60 y nunca en el mes en curso, que dura a lo sumo 31: si el
+     revenue se tomara de `dineroDelMes`, no la contaría. */
+  await limpiar();
+  const uno = await unaPersona('Closer uno');
+  await designar(uno, CRM_A, 3);
+  await unContacto(CRM_A, [
+    { salida: 'venta', registradoPor: uno, monto: 1500 },
+    { salida: 'venta', registradoPor: uno, monto: 700, haceDias: 40 },
+  ]);
+  const l = await enAlfa(() => lecturaDeSales(60, 'America/Lima'));
+  assert.deepEqual(l.pantalla.cifras.revenue, { valor: 2200, motivo: null });
+  assert.deepEqual(l.pantalla.cifras.ventas, { valor: 2, motivo: null });
+  assert.notEqual(l.dinero.cobrado.valor, 2200, 'el mes contó la venta de hace 40 días: la prueba no separa las dos ventanas');
+});
+
 test('la asistencia es la de la cancelación de la empresa, y la tarjeta de abajo la lleva de 0 a 1', async () => {
   await limpiar();
+  /* Una cita ocurrida y marcada como presente: sin ella, `alfa` puede no tener ninguna y la comparación de abajo
+     miraría sólo la rama de «Nadie marca la asistencia». */
+  const { rows } = await esc.admin.query<{ id: string }>(
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, crm_asignado_a, etiquetas)
+     values ($1, $2, 'Lead de prueba', 'closer', now() - interval '2 days', $3, '{}'::text[]) returning id`,
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, CRM_A],
+  );
+  await esc.admin.query(
+    `insert into negocio.citas (org_id, contacto_id, ghl_evento_id, ghl_calendario_id, inicio_el, fin_el, estado_ghl, asistio)
+     values ($1, $2, $3, 'cal-lectura-sales', now() - interval '3 hours', now() - interval '2 hours', 'confirmed', true)`,
+    [esc.org, rows[0]!.id, `cita-${randomUUID().slice(0, 8)}`],
+  );
   const l = await enAlfa(() => lecturaDeSales(30, 'America/Lima'));
   const c = l.cancelacion;
-  assert.deepEqual(
-    l.pantalla.cifras.asistencias,
-    c.conAsistencia === 0 ? { valor: null, motivo: 'sin_asistencia' } : { valor: c.sePresentaron, motivo: null },
-  );
+  assert.ok(c.sePresentaron >= 1, 'la cita marcada no entró en la cancelación: la prueba no mira nada');
+  assert.deepEqual(l.pantalla.cifras.asistencias, { valor: c.sePresentaron, motivo: null });
   assert.equal(l.pantalla.comercial.cancelacion.tasa, c.tasa === null ? null : c.tasa / 100);
   assert.equal(l.pantalla.comercial.cancelacion.citas, c.citas);
 });

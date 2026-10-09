@@ -85,7 +85,7 @@ visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75@a
 encabezado (líneas 1-52) enumera lo borrado con la medición que lo desmiente, y la bajada pasó a
 «Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72@a39a732`).
 
-**La ruta.** `app/api/sales/route.ts:70-107`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
+**La ruta.** `app/api/sales/route.ts:75-112`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
 **rechaza** con 400 un período que no está en la lista en vez de corregirlo (`:84-85`), corre todo en
 una transacción por organización (`:87-115`) y lee la lista de closers una sola vez para el dinero y
 para la tabla (`:92`). El sujeto del dinero es la empresa o `nadie`, nunca N+1 por closer
@@ -139,8 +139,8 @@ pero ya no la asistencia de esa cita.
 
 **La tabla por closer.** Tres filas, una por closer configurado y vinculado (3 de 3 con vínculo al
 CRM, medido el 2026-09-28), en orden de designación y nunca por tasa; el de más citas sale segundo y
-no último, como dice su comentario (`lib/negocio/cierrePorCloser.ts:233-242`). Las columnas son dos
-ejes que no se leen como embudo (`lib/negocio/cierrePorCloser.ts:512-516`): personas y citas por el
+no último, como dice su comentario (`lib/negocio/cierrePorCloser.ts:235-244`). Las columnas son dos
+ejes que no se leen como embudo (`lib/negocio/cierrePorCloser.ts:516-520`): personas y citas por el
 asignatario del CRM, «Registró» por quien cargó el resultado. A 30 días, en ese orden, el de 22 citas
 registró 5, el de 66 registró 0 y el de 7 registró 2 — la inversión que la etapa 6 midió
 (`lib/negocio/cierrePorCloser.ts:43-50`). La columna «Plantón» (0 · 14 · 1) sale del calendario y no
@@ -152,7 +152,7 @@ desempeño y la trata como tal (`lib/negocio/cierrePorCloser.ts:11-13`).
 «85 %» en el índice (`docs/sales/02-METRICAS.md:266`) y «32 de 51 (62,7 %)» en el cuerpo
 (`docs/sales/02-METRICAS.md:210`). **La del cuerpo es la que describe lo construido**: el código
 divide las CITAS del closer más grande por las citas de las filas
-(`lib/negocio/cierrePorCloser.ts:395-398`) y el 62,7 % es esa cuenta a 14 días el 2026-09-21. El
+(`lib/negocio/cierrePorCloser.ts:399-402`) y el 62,7 % es esa cuenta a 14 días el 2026-09-21. El
 85 % es la sonda del 2026-09-20 sobre CONTACTOS asignados —213 de 250, en el texto original de
 `8a0368a`— que el índice no actualizó cuando `b31755b` corrigió el cuerpo. Sigue siendo cierto
 como otra pregunta (215 de 252 contactos asignados a closers, 85,3 %, medido el 2026-09-28), pero
@@ -167,9 +167,9 @@ ve hoy es **69,5 % a 30 días** (66 de 95) y 76,4 % con «Completo» (97 de 127)
 (`lib/negocio/ventanasDeSales.ts:39-52`): el MES calendario en la zona de la empresa para el dinero
 (`lib/negocio/dineroDelMes.ts:105`); la COHORTE de contactos dados de alta en N días para la cadena y
 el ciclo (`lib/negocio/cadenaDeCierre.ts:169`); las CITAS ocurridas en N días para la cancelación y
-la tabla (`lib/negocio/cierrePorCloser.ts:256-257`). Todas rodantes (`now() - N días`). El piso es
+la tabla (`lib/negocio/cierrePorCloser.ts:258-259`). Todas rodantes (`now() - N días`). El piso es
 `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`) sobre el denominador: por fila en
-la tabla (`lib/negocio/cierrePorCloser.ts:412-416`) y sobre los medidos en el ciclo
+la tabla (`lib/negocio/cierrePorCloser.ts:416-420`) y sobre los medidos en el ciclo
 (`lib/negocio/cicloHastaLaCita.ts:144-146`). **La cancelación de cabecera no tiene piso**: su tasa es
 `null` sólo con cero citas (`lib/negocio/indicadoresDeCitas.ts:67-68` y `:449`), y el panel la
 dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:369-372@a39a732`). Con «7 días», a las
@@ -406,7 +406,7 @@ Está escrita con su motivo en `lib/negocio/etapas.ts:86-94`: el mapa `ETAPA_DE_
 (`lib/negocio/etapas.ts:76-84`) tenía las nueve salidas y mandaba `venta_chica` a `ganado`, y el
 texto que quedó dice que una venta chica de $497 en la misma columna que un cierre de $12.000 son
 «dos negocios sumados en un número». Hoy lo cumplen el código de Sales por clave exacta
-(`lib/negocio/cierrePorCloser.ts:343-345`) y el predicado compartido
+(`lib/negocio/cierrePorCloser.ts:346-348`) y el predicado compartido
 (`lib/negocio/ventasDelContacto.ts:27`). Si el setter registra su primera `venta_chica`, un
 `sum(monto)` sin filtro de salida infla el revenue del closer y no falla nada.
 
@@ -438,7 +438,7 @@ con `PERIODO_POR_OMISION = '30d'` porque catorce no está entre los botones
 de una docena de funciones de `lib/negocio/` y `lib/auditor/` (búsqueda del 2026-09-28), entre ellas
 las cuatro que llama Sales, y la ruta de Sales se lo pisa en las cuatro con la ventana pedida
 (`app/api/sales/route.ts:109-112@48ee16d`); lo que no está en la lista se RECHAZA con un 400
-(`lib/negocio/periodo.ts:188-193`; `app/api/sales/route.ts:84`). Ya construida, se cumple dentro de
+(`lib/negocio/periodo.ts:188-193`; `app/api/sales/route.ts:89`). Ya construida, se cumple dentro de
 Sales: **los cuatro módulos reciben la misma ventana**. Fuera de Sales no: `citasParaCerrar`, que
 decide qué cita ofrece Avanzar para responder la asistencia, se queda con sus catorce
 (`lib/negocio/citasParaCerrar.ts:60`), así que la cadena y Avanzar miran dos poblaciones (§ 2). Y el
@@ -455,7 +455,7 @@ venta— y el 2026-10-01 pasa solo al (3) si nadie registra nada (ver § 7).
 **6 · El denominador de una tasa de asistencia lleva `asistio is not null`.**
 `lib/negocio/indicadoresDeCitas.ts:385-394`: como el nulo es el caso normal, sin ese filtro «la tasa
 diría que no se presenta casi nadie. Sería una cifra plausible, alarmante y falsa». La tabla por
-closer lo repite por fila (`lib/negocio/cierrePorCloser.ts:275-279`). Con 0 de 333 citas con
+closer lo repite por fila (`lib/negocio/cierrePorCloser.ts:277-281`). Con 0 de 333 citas con
 asistencia, ese denominador es cero y la tasa es `null`.
 
 **7 · «No-show» ya no es una opción de detalle de `nurture`, y no es un recorte.**
@@ -545,7 +545,7 @@ pasa a `—` con «Todavía no se registró ningún resultado este mes»
 
 **Confundir «nadie registró la asistencia» con «nadie asistió».** Una tasa de asistencia sobre las
 333 citas sin `asistio is not null` da 0 % y dispara una crisis que no existe. La tabla lo evita por
-fila (`lib/negocio/cierrePorCloser.ts:275-279`); una cifra nueva que no use los predicados
+fila (`lib/negocio/cierrePorCloser.ts:277-281`); una cifra nueva que no use los predicados
 compartidos puede no evitarlo.
 
 **Sumar `venta_chica` con `venta`, o lo prometido con lo cobrado.** Hoy dan cero porque no hay

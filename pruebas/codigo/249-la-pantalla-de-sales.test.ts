@@ -12,11 +12,13 @@
 //   · la sección no lleva `estetica-op` y su envoltorio es el del prototipo — mutación: volver a ponerla;
 //   · el encabezado es el del prototipo, sin «Plan de acción» ni «Personalizado» — mutación: cambiar la bajada;
 //   · las cuatro cifras y las seis columnas llevan los rótulos del prototipo, en su orden — mutación: cambiar uno;
-//   · cada cifra sale del lugar que le toca en `pantalla` — mutación: intercambiar dos;
+//   · cada cifra sale del lugar que le toca en `pantalla`, con su formato — mutación: intercambiar dos, o dibujar
+//     una tasa con el formato de un conteo;
 //   · los bloques van en el orden del prototipo, y debajo la cadena comercial — mutación: los motivos primero;
 //   · las frases son las de S15-02, en las dos direcciones — mutación: cambiar una;
-//   · cada motivo de una cifra sin valor tiene su frase — mutación: una frase de más o de menos;
-//   · la tabla no se ordena ni se filtra — mutación: un `sort` o un `filter`;
+//   · cada motivo de una cifra sin valor tiene SU frase — mutación: una de más o de menos, o dos intercambiadas;
+//   · la tabla no se ordena, no se filtra ni se recorta, en ningún lugar del panel — mutación: un `toSorted` o un
+//     `slice`;
 //   · no vuelven el plan, «Personalizado», la clave `mes`, los nombres de la maqueta ni «ICP alto asignado»;
 //   · se multiplica por 100 en un solo lugar — mutación: un segundo `* 100`;
 //   · lo nuevo vive en `app/sales.css`, acotado, y ninguna otra hoja alcanza a la vista.
@@ -88,7 +90,7 @@ test('las cuatro cifras y las seis columnas llevan los rótulos del prototipo, e
   const columnas = [...cabecera.matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1]!);
   assert.equal(columnas.length, 6, 'no se leyeron las seis columnas del prototipo');
   const closers = funcion(panel(), 'Closers');
-  const delPanelCol = [...closers.slice(closers.indexOf('col-head'), closers.indexOf('className="rows"')).matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1]!);
+  const delPanelCol = [...closers.slice(closers.indexOf('col-head'), closers.indexOf('className="rows"')).matchAll(/<span role="columnheader">([^<]+)<\/span>/g)].map((m) => m[1]!);
   assert.deepEqual(delPanelCol, columnas, 'la tabla no lleva las columnas del prototipo (S15-09)');
 
   assert.match(proto, /<div class="card-head">Closers<\/div>/);
@@ -100,13 +102,30 @@ test('las cuatro cifras y las seis columnas llevan los rótulos del prototipo, e
 test('cada cifra y cada columna sale del lugar que le toca en `pantalla`', () => {
   const cuerpo = funcion(panel(), 'Cuerpo');
   assert.match(cuerpo, /const \{ cifras, closers, motivos, comercial \} = p\.pantalla;/);
-  for (const [rotulo, clave] of [['Asistencias', 'asistencias'], ['Tasa de cierre', 'tasaDeCierre'], ['Ventas', 'ventas'], ['Revenue reportado', 'revenue']]) {
-    assert.match(cuerpo, new RegExp(`<Cifra rotulo="${rotulo}" c=\\{cifras\\.${clave}\\}`), `«${rotulo}» no dibuja \`cifras.${clave}\``);
+  for (const [rotulo, clave, formato] of [
+    ['Asistencias', 'asistencias', 'miles'],
+    ['Tasa de cierre', 'tasaDeCierre', 'pf'],
+    ['Ventas', 'ventas', 'miles'],
+    ['Revenue reportado', 'revenue', 'plata'],
+  ]) {
+    assert.match(
+      cuerpo,
+      new RegExp(`<Cifra rotulo="${rotulo}" c=\\{cifras\\.${clave}\\} formato=\\{${formato}\\}`),
+      `«${rotulo}» no dibuja \`cifras.${clave}\` con \`${formato}\``,
+    );
   }
   const filas = funcion(panel(), 'Closers');
-  const orden = ['o(f.agendadas, miles)', '<Celda c={f.asistieron}', '<Celda c={f.ventas}', '<Celda c={f.cierre}', '<Celda c={f.revenue}'].map((x) => filas.indexOf(x));
-  assert.ok(orden.every((x) => x !== -1), `falta una columna: ${JSON.stringify(orden)}`);
+  const orden = [
+    'o(f.agendadas, miles)',
+    '<Celda c={f.asistieron} formato={miles} />',
+    '<Celda c={f.ventas} formato={miles} />',
+    '<Celda c={f.cierre} formato={pf} />',
+    '<Celda c={f.revenue} formato={plata} rev />',
+  ].map((x) => filas.indexOf(x));
+  assert.ok(orden.every((x) => x !== -1), `falta una columna, o cambió su formato: ${JSON.stringify(orden)}`);
   assert.deepEqual([...orden].sort((a, b) => a - b), orden, 'las columnas cambiaron de orden');
+  // La cancelación, con el decimal con que la publica `tasaDeCancelacion` y la dibuja Conversation.
+  assert.match(funcion(panel(), 'LaCadenaComercial'), /<Par nombre="Tasa de cancelación" valor=\{o\(c\.cancelacion\.tasa, pf1\)\} \/>/);
   assert.match(filas, /`\$\{miles\(f\.contactos\)\} contactos asignados`/, 'la subfila no es «{N} contactos asignados» (S15-02)');
 });
 
@@ -135,22 +154,38 @@ test('las frases son las de S15-02, ni una más ni una menos', () => {
   assert.deepEqual(delPanel, delDoc, 'la lista del panel y la de S15-02 no coinciden: una frase nueva entra primero al documento');
 });
 
-test('cada motivo de una cifra sin valor tiene su frase, y son los del servidor', () => {
+test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor', () => {
   const tipo = /export type MotivoDeLaCifra =([^;]+);/.exec(leer('lib/negocio/lecturaDeSales.ts'))?.[1] ?? '';
   const delServidor = [...tipo.matchAll(/'(\w+)'/g)].map((m) => m[1]!).sort();
-  assert.equal(delServidor.length, 3, 'no se leyeron los motivos del servidor');
+  assert.equal(delServidor.length, 6, 'no se leyeron los motivos del servidor');
   const c = comun();
+  const frases = c.slice(c.indexOf('export const FRASE = {'), c.indexOf('};', c.indexOf('export const FRASE = {')));
+  const texto = Object.fromEntries([...frases.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
   const bloque = c.slice(c.indexOf('export const FRASE_DEL_MOTIVO = {'), c.indexOf('};', c.indexOf('export const FRASE_DEL_MOTIVO = {')));
-  assert.deepEqual([...bloque.matchAll(/(\w+): FRASE\.\w+/g)].map((m) => m[1]!).sort(), delServidor);
+  const mapa = Object.fromEntries([...bloque.matchAll(/(\w+): FRASE\.(\w+)/g)].map((m) => [m[1], texto[m[2]!]]));
+  assert.deepEqual(Object.keys(mapa).sort(), delServidor);
+  /* Y cada uno con la frase de su situación en S15-02: dos frases intercambiadas pasarían una comparación de
+     conjuntos y dirían «Pocos intentos» de una ventana sin un solo registro. */
+  assert.deepEqual(mapa, {
+    sin_closers: 'Sin closers configurados.',
+    sin_citas: 'Sin citas en esta ventana.',
+    sin_asistencia: 'Nadie marca la asistencia.',
+    sin_registros: 'Nadie registró en esta ventana.',
+    bajo_el_piso: 'Pocos intentos para una tasa.',
+    venta_sin_monto: 'Hay ventas sin monto.',
+  });
+  assert.match(funcion(panel(), 'Celda'), /c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? undefined\) : undefined/, 'la celda no dice el motivo de su «—»');
+  // El color del revenue, sólo con un monto: un «—» va como los demás.
+  assert.match(funcion(panel(), 'Celda'), /className=\{rev && c\.valor !== null \? 'num rev' : 'num'\}/, 'el «—» del revenue lleva el color de un monto');
+  // La nota de cada closer, a la vista con su nombre: un `title` no se lee en el teléfono ni con el teclado.
+  assert.match(funcion(panel(), 'Closers'), /<b>\{f\.nombre\}<\/b>: \{f\.aviso\}/, 'la nota de cada fila quedó escondida');
   // Una cifra sin valor dice «—» y su motivo; la del revenue, con valor, «reportado por el closer».
   assert.match(funcion(panel(), 'Cifra'), /c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? null\) : esRevenue \? FRASE\.reportado : null/);
 });
 
-test('la tabla no ordena ni filtra a nadie, y los motivos van en el orden del servidor', () => {
-  const t = panel();
-  for (const nombre of ['Closers', 'Motivos']) {
-    assert.doesNotMatch(funcion(t, nombre), /\.sort\(|\.filter\(|\.reverse\(/, `${nombre} reordena o filtra lo que llega (S15-09, S15-11)`);
-  }
+test('la tabla no ordena, filtra ni recorta a nadie, y los motivos van en el orden del servidor', () => {
+  /* En todo el panel y no sólo en las dos tarjetas: `Cuerpo` podría ordenar las filas antes de pasarlas. */
+  assert.doesNotMatch(panel(), /\.(sort|toSorted|filter|reverse|toReversed|slice|splice)\(/, 'el panel reordena, filtra o recorta lo que llega (S15-09, S15-11)');
 });
 
 test('no vuelven el plan, «Personalizado», la clave `mes`, las cifras de la maqueta ni la regla de ICP', () => {
@@ -178,9 +213,11 @@ test('no vuelven el plan, «Personalizado», la clave `mes`, las cifras de la ma
 test('el navegador no calcula: se multiplica por 100 en un solo lugar', () => {
   const todo = panel() + comun();
   assert.equal([...todo.matchAll(/\*\s*100\b/g)].length, 1, 'hay otra multiplicación por 100: todo viaja de 0 a 1 y se convierte una vez (S15-13)');
-  assert.match(comun(), /export const cien = \(v\) => Math\.round\(v \* 100\);/);
-  // Ninguna división: las porciones llegan hechas.
-  assert.doesNotMatch(panel(), /[\w)\]]\s\/\s[\w(]/, 'el panel divide: una porción se calculó en el navegador');
+  assert.match(comun(), /export const cien = \(v, d = 0\) => Math\.round\(v \* 100 \* 10 \*\* d\) \/ 10 \*\* d;/);
+  /* Ninguna división: las porciones llegan hechas. Sin las líneas de `import`, cuyas rutas tienen barras, y con
+     o sin espacios alrededor. */
+  const sinImports = panel().replace(/^import .*$/gm, '');
+  assert.doesNotMatch(sinImports, /[\w)\]]\s*\/\s*[\w(]/, 'el panel divide: una porción se calculó en el navegador');
 });
 
 /** Las partes de un selector agrupado, partiendo sólo en las comas de afuera de los paréntesis. */

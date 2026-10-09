@@ -64,12 +64,12 @@ organización que tiene datos.
 |---|---|---|---|
 | Encabezado | «Sales», «Cierre, closers y motivos de pérdida» y los cuatro períodos de `lib/negocio/periodo.ts:83-96` | — | — |
 | Asistencias | las citas ocurridas en la ventana con `asistio` marcado como presente | `negocio.citas.asistio` | **0 de 363** citas con la asistencia marcada: «—», «Nadie marca la asistencia.» |
-| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:334-365` | 1 intento en 30 días: «—» |
-| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:345` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
+| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:336-369` | 1 intento en 30 días: «—» |
+| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:348` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
-| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:229` | 3 closers, 2 registraron alguna vez |
+| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:231` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
-| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:215-218` | — |
+| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:246` y `lib/negocio/lecturaDeSales.ts:272-274` | — |
 
 ### Lo que la medición del 2026-10-09 agregó
 
@@ -83,6 +83,9 @@ organización que tiene datos.
 - **Los closers son 3**, los tres con su usuario del CRM. **Dos registraron alguna vez**, y en 30 días hay **un
   resultado**.
 - **Los contactos son 620**, 24 sin alta. Las altas por semana desde el 2026-08-31: 175, 89, 5, 5, 11 y 6.
+- **Ese único resultado de 30 días es del 2026-09-09**: la ventana es rodante y lo alcanzaba por un día. Desde el
+  2026-10-10, sin un registro nuevo, Ventas y Revenue dicen «—» también en 30 días, y en la tabla dicen «—» los
+  closers sin resultados en la ventana. Los ceros de este documento son los del día de la medición.
 
 ---
 
@@ -113,12 +116,14 @@ y `app/sales.css`; `#v-sales` salió de `app/inteligencia-estetica.css`. Lo prue
 | cifra o tasa sin dato, o bajo el piso | «—» |
 | sección o métrica sin fuente | «Sin dato» |
 | la asistencia, en las cifras y en la tabla | «Nadie marca la asistencia.» |
+| la asistencia sin ninguna cita en la ventana | «Sin citas en esta ventana.» |
 | ventas o revenue sin ningún resultado en la ventana | «Nadie registró en esta ventana.» |
 | el revenue, debajo de la cifra | «reportado por el closer» |
 | la tasa de cierre bajo el piso de intentos | «Pocos intentos para una tasa.» |
+| el revenue con alguna venta sin monto | «Hay ventas sin monto.» |
 | la tarjeta de motivos sin ningún motivo en la ventana | «Sin motivos registrados.» |
 | los motivos que no casan con el catálogo | «Fuera del catálogo» |
-| la tabla sin closers configurados | «Sin closers configurados.» |
+| la tabla, y las cifras de lo registrado, sin closers configurados | «Sin closers configurados.» |
 | la cadena con la cohorte vacía | «Sin contactos en este período» |
 | la primera carga | «Cargando…» |
 | la lectura falló | «No se pudo leer. Reintenta.» |
@@ -132,6 +137,7 @@ Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del c
 | la subfila «ICP alto asignado» | «{N} contactos asignados» | la asignación por ICP no existe (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
 | «56 llamadas sin cierre» | «{N} sin venta» | se cuentan resultados registrados, no llamadas |
 | los motivos «No es quien decide», «Sin necesidad clara», «Pidió tiempo» | los del catálogo: Precio, No es el momento, Competencia, No califica, Otro | `lib/negocio/salidas.ts:159-167`; «Pidió tiempo» es de otra salida |
+| las barras de los motivos: las dos primeras en el color de alerta y las otras en gris | las del catálogo en el de alerta y la de fuera del catálogo en gris | el color dice de dónde viene el motivo, no su lugar en la lista |
 | «Agendadas» | igual, pero son citas del CRM, no resultados | dos ejes distintos (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
 
 **Estado** · Construido el 2026-10-09 (SA-3): la lista vive en la constante `FRASE` de `components/sales/comun.jsx`,
@@ -172,7 +178,8 @@ Sales no, por las dos razones de § 1. Es `S15-P01`.
 
 **Fórmula** · Citas ocurridas en la ventana con `asistio = true`: el `sePresentaron` de `tasaDeCancelacion`, con su
 misma población —las citas alcanzables y sin contactos descartados (`lib/negocio/indicadoresDeCitas.ts:397-399`)—. Si ninguna cita de la ventana tiene `asistio`
-marcado, «—» con «Nadie marca la asistencia.»: no es cero, porque nadie respondió la pregunta.
+marcado, «—» con «Nadie marca la asistencia.»: no es cero, porque nadie respondió la pregunta. Sin ninguna cita
+en la ventana, «—» con «Sin citas en esta ventana.».
 
 **Qué no es** · No es el «showed» del calendario: el calendario marca algunas citas y no otras, y un conteo sin
 denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). Es `S15-P04`.
@@ -183,9 +190,10 @@ denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). 
 
 **Qué es** · Ventas sobre intentos de los closers en la ventana.
 
-**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:334-365`).
+**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:336-369`).
 Un intento es un resultado registrado por el closer. Con menos de `PISO_DE_UNA_TASA` (10) intentos, «—» con
-«Pocos intentos para una tasa.».
+«Pocos intentos para una tasa.»; sin ninguno, «Nadie registró en esta ventana.»; sin closers configurados, «Sin
+closers configurados.».
 
 **Estado** · El cálculo, construido el 2026-10-09 (SA-1): `tasaDeCierre` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, «—»: un intento en 30 días.
 
@@ -195,10 +203,11 @@ Un intento es un resultado registrado por el closer. Con menos de `PISO_DE_UNA_T
 setter es otra cosa y no se suma.
 
 **Fórmula** · Σ `ventas` de las filas. Sin ningún resultado de los closers en la ventana, «—» con «Nadie registró
-en esta ventana.»; con resultados y sin ventas, **0**, que es un cero medido. Es la misma distinción de
+en esta ventana.»; sin closers configurados, «Sin closers configurados.»; con resultados y sin ventas, **0**, que
+es un cero medido. Es la misma distinción de
 `dineroDelMes` (`lib/negocio/dineroDelMes.ts:156-186`).
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, 0 en 30 días y «—» en 7.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). El 2026-10-09, 0 en 30 días y «—» en 7.
 
 ### S15-08 · Revenue reportado
 
@@ -206,9 +215,10 @@ en esta ventana.»; con resultados y sin ventas, **0**, que es un cero medido. E
 verificado.
 
 **Fórmula** · La suma de `monto` de los resultados `venta` de los closers en la ventana, con la misma distinción
-que Ventas. El color es el del prototipo, `var(--exec)`, por una clase de `app/sales.css` y no en línea.
+que Ventas. Con alguna venta sin monto, «—» con «Hay ventas sin monto.»: sumarla como cero publicaría un monto más
+chico que el reportado (`ventasSinMonto` de `cierrePorCloser`, por fila). El color es el del prototipo, `var(--exec)`, por una clase de `app/sales.css` y no en línea.
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `revenue` de `armarSales`, que suma el `montoDeVentas` nuevo de cada fila de `cierrePorCloser`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, $0 en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `revenue` de `armarSales`, que suma el `montoDeVentas` nuevo de cada fila de `cierrePorCloser`; el dibujo, construido el 2026-10-09 (SA-3). El 2026-10-09, $0 en 30 días.
 
 ### S15-09 · La tabla de closers
 
@@ -218,10 +228,10 @@ del catálogo.
 | columna | dato | fuente |
 |---|---|---|
 | Closer | el nombre del catálogo de la empresa; debajo, «{N} contactos asignados» | `closersDeLaEmpresa()` |
-| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:229` |
+| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:231` |
 | Asistieron | sus citas con `asistio` presente; sin ninguna marcada, «—» | igual |
-| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:345` |
-| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:365` |
+| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:348` |
+| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:369` |
 | Revenue | el monto reportado de sus ventas | `montoDeVentas`, nuevo en SA-1 |
 
 **Los dos ejes, dichos** · Agendadas y Asistieron cuentan citas del CRM; Ventas, Cierre y Revenue cuentan lo que
@@ -281,21 +291,24 @@ lugar, y deja de calcular proporciones y anchos de barra (la pantalla anterior l
 `components/sales/PanelDeSales.jsx:249@a39a732`).
 
 **La respuesta crece, no cambia** · Siguen `periodo`, `ventanas`, `dinero`, `cancelacion`, `cadena`, `ciclo` y
-`closers`, este último con el monto reportado de cada fila (`montoDeVentas`). Se agrega `pantalla`, lo que dibuja el
-front: `cifras` (las cuatro de la fila), `closers` (las filas de la tabla, cada columna con su motivo), `motivos` y
-`comercial` (la tarjeta de abajo). `huecos` salió de la respuesta con el front, en SA-3; el módulo
+`closers`, este último con el monto reportado de cada fila (`montoDeVentas`, y `ventasSinMonto`). Se agrega
+`pantalla`, lo que el front arma: `cifras` (las cuatro de la fila), `closers` (las filas de la tabla, cada columna
+con su motivo), `motivos` y `comercial` (las coberturas, la cancelación de 0 a 1 y el ciclo). Los eslabones de la
+cadena, el dinero del mes y el texto de cada ventana, la tarjeta de abajo los lee de sus bloques de siempre, que ya
+viajan hechos. `huecos` salió de la respuesta con el front, en SA-3; el módulo
 `lib/negocio/huecosDeSales.ts` queda, porque Leads Portal comparte tres de sus huecos.
 
 **Estado** · Construido el 2026-10-09: la lectura en SA-1 (`lib/negocio/lecturaDeSales.ts`, con `armarSales` pura) y
-la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:90-92`). `huecos` salió en SA-3.
+la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:95-97`). `huecos` salió en SA-3.
 
 ### S15-14 · El cerebro lee lo mismo
 
-**Qué es** · Las herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:32`) dicen lo mismo que la
-pantalla. Las dos que publican lo que la pantalla ARMA leen la misma lectura que la ruta: `cierre_por_closer`, que
-suma las cuatro `cifras` y el monto de cada fila, y la nueva `motivos_de_no_venta`. Las demás —el dinero del mes, la
-cadena, el ciclo y la cancelación— llaman a la misma función con los mismos argumentos que la lectura, sin cargar con
-las otras cinco consultas. Lo que el cerebro dice de una cifra es lo que la pantalla dibuja.
+**Qué es** · Las herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:31`) dicen lo mismo que la
+pantalla. Las dos que publican lo que la pantalla ARMA leen la mitad del cierre de la lectura,
+`lecturaDelCierre`, que es la que la ruta usa: `cierre_por_closer`, que suma las cuatro `cifras` y el monto de cada
+fila, y la nueva `motivos_de_no_venta`. La mitad del cierre lee los closers, la cancelación, la tabla y los motivos,
+sin la cadena, el ciclo ni el dinero, que esas dos no publican. Las demás —el dinero del mes, la cadena, el ciclo y
+la cancelación— llaman a la misma función con los mismos argumentos que la lectura. Lo que el cerebro dice de una cifra es lo que la pantalla dibuja.
 
 **Estado** · Construido el 2026-10-09 (SA-2). Lo prueban `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts`
 en las cuatro ventanas y `pruebas/base/213-las-herramientas-del-cerebro.test.ts` con sus claves.
@@ -351,7 +364,7 @@ con su regla; y las citas a la pantalla anterior quedaron fijadas al commit dond
 | SA-1 | El servidor: `motivosDeNoVenta`, el monto por closer, las cuatro cifras y `lecturaDeSales`, con sus pruebas | **hecho el 2026-10-09**: `pruebas/codigo/248-lectura-de-sales.test.ts` y `pruebas/base/248-lectura-de-sales.test.ts`, 18 mutaciones muertas |
 | SA-2 | La ruta y el cerebro sobre la lectura única | **hecho el 2026-10-09**: `pantalla` en la respuesta, `motivos_de_no_venta` en el cerebro, 11 mutaciones muertas |
 | SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | **hecho el 2026-10-09**: 24 mutaciones muertas; mirado a 1440 y 375 px |
-| SA-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
+| SA-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-09**: cuatro lentes; ver el anexo al final |
 | SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
 
 ---
@@ -367,3 +380,37 @@ Cada una tiene una respuesta tomada por defecto, que es la que se construye si n
 | `S15-P03` | ¿El revenue baja a la tabla de closers? | sí, el monto reportado de cada uno (S15-09) |
 | `S15-P04` | ¿Asistencias toma el «showed» del calendario? | no: sólo `asistio` (S15-05) |
 | `S15-P05` | ¿Sales tiene, más adelante, un detector con su plan? | queda en `docs/OTROS/futuro/lo-que-sales-no-mide.md` |
+
+---
+
+## Anexo · La revisión de SA-4 (2026-10-09)
+
+Cuatro lentes independientes leyeron lo construido en SA-0 a SA-3 —el servidor, el front, los documentos y las
+pruebas— y cada hallazgo se comprobó contra el código antes de corregirlo. Lo que cambió:
+
+- **Tres motivos nuevos para un «—»** (S15-02): sin closers configurados las cifras de lo registrado dicen «Sin
+  closers configurados.» y no «Nadie registró»; sin citas en la ventana, la asistencia dice «Sin citas en esta
+  ventana.»; y una venta sin monto deja el revenue en «—» con «Hay ventas sin monto.» en vez de sumarla como cero
+  (`ventasSinMonto`, nuevo en cada fila de `cierrePorCloser`).
+- **El revenue se suma en centavos**: la suma de las filas en JavaScript dejaba colas de coma flotante en lo que
+  lee el cerebro.
+- **El cerebro lee la mitad del cierre** (S15-14): `cierre_por_closer` y `motivos_de_no_venta` corrían la lectura
+  entera, la cadena, el ciclo y el dinero incluidos, que no publican.
+- **El front**: la cancelación con su decimal, como la publica `tasaDeCancelacion` y la dibuja Conversation; la
+  nota de cada closer, a la vista y no sólo en un `title`; los roles de tabla, fila y celda; la línea entre las
+  secciones de la tarjeta de abajo venga lo que venga antes; el «—» del revenue sin el color de un monto; y en el
+  teléfono, la cifra y la porción de cada eslabón sin partirse. El color de las barras es un desvío del prototipo, y
+  quedó declarado.
+- **Las pruebas**: el revenue de la ventana contra el del mes, `venta_chica` y `acuerdo_sin_pago` con monto, una
+  fila con intentos y sin ventas, cada motivo con SU frase, el formato de cada cifra y de cada columna, y ningún
+  orden ni recorte en todo el panel. La asistencia de la base 248 mira una cita marcada de verdad.
+- **Los textos**: la ventana de los motivos y «{N} sin venta» comparten ventana pero no cuentan lo mismo; «Pidió
+  tiempo» sí existe, en `nurture`; tres citas fijadas al commit equivocado; y los ceros de este documento llevan su
+  fecha, porque el único resultado de 30 días estaba en el borde de la ventana.
+
+Lo que se revisó y se sostuvo: las ventanas de cada cifra, el `in ()` vacío, que `venta_chica` no cuente, la escala
+de la cancelación, el piso, el closer sin vínculo, que el texto libre no viaje, las guardas de carga y que sacar
+`#v-sales` de la hoja de Inteligencia no movió a Creative ni a Conversation.
+
+La 215 compara al cerebro con la pantalla, que leen la misma lectura: lo que protege es que el período y la zona
+lleguen igual a las dos, no que la cifra sea correcta. La corrección la miran la 248 de código y la de base.

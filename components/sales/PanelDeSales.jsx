@@ -38,7 +38,7 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerSales } from '@/lib/negocio/vistaDeSales';
-import { FRASE, FRASE_DEL_MOTIVO, cien, miles, o, pf, plata } from './comun.jsx';
+import { FRASE, FRASE_DEL_MOTIVO, cien, miles, o, pf, pf1, plata } from './comun.jsx';
 
 export default function PanelDeSales() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -184,11 +184,20 @@ function Cifra({ rotulo, c, formato, esRevenue = false }) {
   );
 }
 
-/** Una celda numérica de la tabla. Sin valor, «—», y el motivo en el `title`: la celda no tiene lugar para la frase. */
-function Celda({ c, formato, clase = 'num' }) {
+/**
+ * Una celda numérica de la tabla. Sin valor, «—», y el motivo en el `title` y en la etiqueta de la celda: no tiene
+ * lugar para la frase, y la fila de cifras de arriba ya la dice. El color del revenue, sólo con un monto: un «—» va
+ * como los demás.
+ */
+function Celda({ c, formato, rev = false }) {
   const motivo = c.valor === null ? (FRASE_DEL_MOTIVO[c.motivo] ?? undefined) : undefined;
   return (
-    <div className={clase} title={motivo} aria-label={motivo === undefined ? undefined : `${FRASE.guion} ${motivo}`}>
+    <div
+      className={rev && c.valor !== null ? 'num rev' : 'num'}
+      role="cell"
+      title={motivo}
+      aria-label={motivo === undefined ? undefined : `${FRASE.guion} ${motivo}`}
+    >
       {o(c.valor, formato)}
     </div>
   );
@@ -197,7 +206,8 @@ function Celda({ c, formato, clase = 'num' }) {
 /**
  * La tarjeta «Closers» (S15-09): las seis columnas del prototipo, una fila por closer configurado, sin ranking.
  * Agendadas y Asistieron son citas del CRM; Ventas, Cierre y Revenue, lo que la persona registró. La nota de la
- * tabla, que escribe el servidor, lo dice; la de cada fila va en el `title` del nombre.
+ * tabla, que escribe el servidor, lo dice; la de cada fila va debajo, con su nombre, porque un `title` no se lee
+ * en el teléfono ni con el teclado.
  */
 function Closers({ t }) {
   return (
@@ -206,33 +216,42 @@ function Closers({ t }) {
       {t.filas.length === 0 ? (
         <p className="sl-vacio">{FRASE.sinClosers}</p>
       ) : (
-        <div className="sl-desliza">
-          <div className="col-head sl-closers">
-            <span>Closer</span>
-            <span>Agendadas</span>
-            <span>Asistieron</span>
-            <span>Ventas</span>
-            <span>Cierre</span>
-            <span>Revenue</span>
+        <div className="sl-desliza" role="table" aria-label="Closers">
+          <div className="col-head sl-closers" role="row">
+            <span role="columnheader">Closer</span>
+            <span role="columnheader">Agendadas</span>
+            <span role="columnheader">Asistieron</span>
+            <span role="columnheader">Ventas</span>
+            <span role="columnheader">Cierre</span>
+            <span role="columnheader">Revenue</span>
           </div>
-          <div className="rows">
+          <div className="rows" role="rowgroup">
             {t.filas.map((f) => (
-              <div className="row-i sl-closers" key={f.usuarioId}>
-                <div title={f.aviso ?? undefined}>
+              <div className="row-i sl-closers" role="row" key={f.usuarioId}>
+                <div role="cell">
                   <div className="rn">{f.nombre}</div>
                   <div className="rs">{f.contactos === null ? FRASE.sinDato : `${miles(f.contactos)} contactos asignados`}</div>
                 </div>
-                <div className="num">{o(f.agendadas, miles)}</div>
+                <div className="num" role="cell">
+                  {o(f.agendadas, miles)}
+                </div>
                 <Celda c={f.asistieron} formato={miles} />
                 <Celda c={f.ventas} formato={miles} />
                 <Celda c={f.cierre} formato={pf} />
-                <Celda c={f.revenue} formato={plata} clase="num rev" />
+                <Celda c={f.revenue} formato={plata} rev />
               </div>
             ))}
           </div>
         </div>
       )}
       {t.aviso ? <p className="sl-aviso">{t.aviso}</p> : null}
+      {t.filas.map((f) =>
+        f.aviso ? (
+          <p className="sl-aviso" key={f.usuarioId}>
+            <b>{f.nombre}</b>: {f.aviso}
+          </p>
+        ) : null,
+      )}
     </div>
   );
 }
@@ -310,7 +329,7 @@ function LaCadenaComercial({ c, cadena, dinero, ventanas }) {
       <div className="rows">
         <Par nombre="Citas de la ventana" valor={miles(c.cancelacion.citas)} />
         <Par nombre="Canceladas" valor={miles(c.cancelacion.canceladas)} />
-        <Par nombre="Tasa de cancelación" valor={o(c.cancelacion.tasa, pf)} />
+        <Par nombre="Tasa de cancelación" valor={o(c.cancelacion.tasa, pf1)} />
       </div>
       {c.cancelacion.aviso ? <p className="sl-aviso">{c.cancelacion.aviso}</p> : null}
 

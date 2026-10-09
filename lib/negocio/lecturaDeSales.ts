@@ -6,21 +6,25 @@
 // La pestaña vuelve al front del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): cuatro
 // cifras, la tabla de closers, los motivos de no venta y, debajo, la cadena comercial. Este módulo compone lo que
 // ya se mide —`dineroDelMes`, `tasaDeCancelacion`, `cadenaDeCierre`, `cicloHastaLaCita`, `cierrePorCloser` y
-// `motivosDeNoVenta`— y arma con eso lo que la pantalla dibuja. La ruta y el cerebro leen esta misma lectura,
-// así que lo que el cerebro dice de una cifra es lo que la pantalla dibuja (S15-14).
+// `motivosDeNoVenta`— y arma con eso lo que la pantalla dibuja. La ruta lee la lectura entera; las herramientas
+// del cerebro que publican lo armado —las cuatro cifras con la tabla, y los motivos— leen su mitad del cierre,
+// `lecturaDelCierre`, que es la misma que la lectura entera usa: lo que el cerebro dice de una cifra es lo que la
+// pantalla dibuja (S15-14), sin cargar con la cadena, el ciclo ni el dinero, que esas herramientas no publican.
 //
-// Tiene dos mitades, como `lib/negocio/pasosDeConversion.ts`: `armarSales`, pura y probada sin base, y
-// `lecturaDeSales`, que lee.
+// Tiene dos mitades, como `lib/negocio/pasosDeConversion.ts`: `armarCierre` y `armarSales`, puras y probadas sin
+// base, y `lecturaDelCierre` y `lecturaDeSales`, que leen.
 //
 // ── DE QUIÉN SON LAS CIFRAS ───────────────────────────────────────────────────
 //
 //   · **Asistencias** sale de la cancelación, que cuenta las citas de TODA la empresa en la ventana. Sin ninguna
-//     cita con la asistencia respondida es «—» y no cero: nadie respondió la pregunta (S15-05).
+//     cita es «—» porque no hubo citas; con citas y ninguna con la asistencia respondida, «—» porque nadie
+//     respondió la pregunta. Ninguno de los dos es cero (S15-05).
 //   · **Ventas, Revenue y Tasa de cierre** son lo que registraron los closers configurados: la misma población
 //     que `dineroDelMes`. No son un total de la empresa sacado de sumar la tabla de citas —eso la tabla no lo
 //     publica, porque sus filas no cubren todas las citas—: son los resultados registrados, que sólo registran
-//     los closers. Sin ningún resultado en la ventana es «—»; con resultados y sin ventas, cero medido (S15-06 a
-//     S15-08).
+//     los closers. Sin closers configurados es «—» porque no hay de quién; sin ningún resultado en la ventana,
+//     «—» porque nadie registró; con resultados y sin ventas, cero medido (S15-06 a S15-08). Una venta sin monto
+//     deja al revenue en «—»: sumarla como cero publicaría un monto más chico que el reportado.
 //
 // Todo lo que viaja en `pantalla` va de 0 a 1. La cancelación sigue viajando también entera, de 0 a 100, en su
 // propio objeto: la función la comparten Conversation, Closer y el cerebro, y su contrato no cambia (S15-13).
@@ -37,11 +41,12 @@ import { motivosDeNoVenta, type MotivosDeNoVenta } from './motivosDeNoVenta.ts';
 // ─── Los tipos ──────────────────────────────────────────────────────────────
 
 /**
- * Por qué una cifra no tiene valor: `sin_asistencia` —nadie marcó la asistencia—, `sin_registros` —nadie registró
- * un resultado en la ventana— o `bajo_el_piso` —hay registros, pocos para una tasa—. La frase la elige la pantalla
- * de su lista cerrada (S15-02).
+ * Por qué una cifra no tiene valor: `sin_closers` —no hay closers configurados—, `sin_citas` —no hubo citas en la
+ * ventana—, `sin_asistencia` —hubo y nadie marcó la asistencia—, `sin_registros` —nadie registró un resultado en
+ * la ventana—, `bajo_el_piso` —hay registros, pocos para una tasa— o `venta_sin_monto` —alguna venta no trae su
+ * monto—. La frase la elige la pantalla de su lista cerrada (S15-02).
  */
-export type MotivoDeLaCifra = 'sin_asistencia' | 'sin_registros' | 'bajo_el_piso';
+export type MotivoDeLaCifra = 'sin_closers' | 'sin_citas' | 'sin_asistencia' | 'sin_registros' | 'bajo_el_piso' | 'venta_sin_monto';
 
 export interface CifraDeSales {
   /** Un conteo, un monto o una proporción de 0 a 1. `null`: «—», y el motivo dice por qué. */
@@ -80,27 +85,38 @@ export interface Proporcion {
   porcion: number | null;
 }
 
-/** La tarjeta de abajo: lo que la pantalla de hoy mide y el prototipo no tenía (S15-12). */
+/**
+ * Lo de la tarjeta de abajo que se arma acá: las coberturas, la cancelación de 0 a 1 y el ciclo (S15-12). Los
+ * eslabones de la cadena, el dinero del mes y el texto de cada ventana la pantalla los lee de sus bloques de
+ * siempre, que ya viajan hechos.
+ */
 export interface ComercialDeSales {
   cobertura: { cohorte: Proporcion; tabla: Proporcion };
   cancelacion: { citas: number; canceladas: number; tasa: number | null; aviso: string | null };
   ciclo: { p50: number | null; p90: number | null; cobertura: Proporcion; avisoDelTecho: string | null; aviso: string | null };
 }
 
-export interface PantallaDeSalesArmada {
+/** Lo que publican las cuatro cifras, la tabla y los motivos: lo que lee también el cerebro. */
+export interface CierreArmado {
   cifras: CifrasDeSales;
   closers: { filas: FilaDeCloser[]; aviso: string | null };
   /** Los motivos, con «{N} sin venta»: los resultados de los closers en la ventana que no son una venta. */
   motivos: MotivosDeNoVenta & { sinVenta: number };
+}
+
+export interface PantallaDeSalesArmada extends CierreArmado {
   comercial: ComercialDeSales;
 }
 
-export interface EntradaDeSales {
+export interface EntradaDelCierre {
   cancelacion: Cancelacion;
-  cadena: CadenaDeCierre;
-  ciclo: CicloHastaLaCita;
   closers: CierreDeLosClosers;
   motivos: MotivosDeNoVenta;
+}
+
+export interface EntradaDeSales extends EntradaDelCierre {
+  cadena: CadenaDeCierre;
+  ciclo: CicloHastaLaCita;
 }
 
 // ─── Las cuentas, puras ─────────────────────────────────────────────────────
@@ -119,19 +135,35 @@ function cierre(ventas: number, intentos: number): CifraDeSales {
   return conValor(ventas / intentos);
 }
 
-/** Lo que dibuja la pantalla, desde lo leído. Sin base: la prueba lo arma con números a mano. */
-export function armarSales(e: EntradaDeSales): PantallaDeSalesArmada {
+/** Un monto reportado: sin ninguna venta sin monto, la suma; con alguna, «—» con su motivo. */
+function monto(suma: number, sinMonto: number): CifraDeSales {
+  return sinMonto > 0 ? sinValor('venta_sin_monto') : conValor(suma);
+}
+
+/**
+ * Las cuatro cifras, la tabla y los motivos, desde lo leído. Sin base: la prueba lo arma con números a mano.
+ *
+ * Los montos de las filas llegan exactos —la base los suma en `numeric`—, pero su suma acá es de JavaScript y
+ * dejaría colas de coma flotante (`2300.0000000000005`) en lo que lee el cerebro: se redondea a centavos.
+ */
+export function armarCierre(e: EntradaDelCierre): CierreArmado {
   const filas = e.closers.filas;
   const intentos = filas.reduce((s, f) => s + f.intentos, 0);
   const ventas = filas.reduce((s, f) => s + f.ventas, 0);
-  const monto = filas.reduce((s, f) => s + f.montoDeVentas, 0);
+  const suma = Math.round(filas.reduce((s, f) => s + f.montoDeVentas, 0) * 100) / 100;
+  const sinMonto = filas.reduce((s, f) => s + f.ventasSinMonto, 0);
+  const sinClosers = filas.length === 0;
 
   const cifras: CifrasDeSales = {
     asistencias:
-      e.cancelacion.conAsistencia === 0 ? sinValor('sin_asistencia') : conValor(e.cancelacion.sePresentaron),
-    tasaDeCierre: cierre(ventas, intentos),
-    ventas: intentos === 0 ? sinValor('sin_registros') : conValor(ventas),
-    revenue: intentos === 0 ? sinValor('sin_registros') : conValor(monto),
+      e.cancelacion.citas === 0
+        ? sinValor('sin_citas')
+        : e.cancelacion.conAsistencia === 0
+          ? sinValor('sin_asistencia')
+          : conValor(e.cancelacion.sePresentaron),
+    tasaDeCierre: sinClosers ? sinValor('sin_closers') : cierre(ventas, intentos),
+    ventas: sinClosers ? sinValor('sin_closers') : intentos === 0 ? sinValor('sin_registros') : conValor(ventas),
+    revenue: sinClosers ? sinValor('sin_closers') : intentos === 0 ? sinValor('sin_registros') : monto(suma, sinMonto),
   };
 
   const tabla: FilaDeCloser[] = filas.map((f) => ({
@@ -143,20 +175,29 @@ export function armarSales(e: EntradaDeSales): PantallaDeSalesArmada {
     asistieron:
       f.conAsistencia === null
         ? sinValor(null)
-        : f.conAsistencia === 0
-          ? sinValor('sin_asistencia')
-          : conValor(f.sePresentaron ?? 0),
+        : f.citas === 0
+          ? sinValor('sin_citas')
+          : f.conAsistencia === 0
+            ? sinValor('sin_asistencia')
+            : conValor(f.sePresentaron ?? 0),
     ventas: f.intentos === 0 ? sinValor('sin_registros') : conValor(f.ventas),
     cierre: cierre(f.ventas, f.intentos),
-    revenue: f.intentos === 0 ? sinValor('sin_registros') : conValor(f.montoDeVentas),
+    revenue: f.intentos === 0 ? sinValor('sin_registros') : monto(f.montoDeVentas, f.ventasSinMonto),
     aviso: f.aviso,
   }));
 
-  const ciclo = e.ciclo;
   return {
     cifras,
     closers: { filas: tabla, aviso: e.closers.aviso },
     motivos: { ...e.motivos, sinVenta: intentos - ventas },
+  };
+}
+
+/** Lo que dibuja la pantalla, desde lo leído. Sin base: la prueba lo arma con números a mano. */
+export function armarSales(e: EntradaDeSales): PantallaDeSalesArmada {
+  const ciclo = e.ciclo;
+  return {
+    ...armarCierre(e),
     comercial: {
       cobertura: {
         cohorte: proporcion(e.cadena.coberturaDeLaCohorte.con, e.cadena.coberturaDeLaCohorte.sobre),
@@ -182,6 +223,32 @@ export function armarSales(e: EntradaDeSales): PantallaDeSalesArmada {
 
 // ─── La lectura ─────────────────────────────────────────────────────────────
 
+/**
+ * El sujeto del dinero: los closers de la empresa, o `nadie` sin ninguno. `{tipo:'empresa'}` con la lista vacía no
+ * puede llegar a la consulta —un `in ()` es SQL inválido—, y `nadie` es el estado que hace que el dinero salga «—»
+ * con su motivo en vez de cero. Lo comparten esta lectura y la herramienta `dinero_del_mes` del cerebro.
+ */
+export function sujetoDelDinero(catalogo: readonly CloserConfigurado[]) {
+  return catalogo.length === 0
+    ? ({ tipo: 'nadie' } as const)
+    : ({ tipo: 'empresa', usuarioIds: catalogo.map((k) => k.usuarioId) } as const);
+}
+
+export interface LecturaDelCierre extends EntradaDelCierre {
+  /** Los closers configurados, leídos una vez: la tabla y los motivos hablan de las mismas personas. */
+  catalogo: CloserConfigurado[];
+  cierre: CierreArmado;
+}
+
+/** La mitad del cierre: lo que leen las cuatro cifras, la tabla y los motivos. Corre dentro de `conOrganizacion`. */
+export async function lecturaDelCierre(dias: number): Promise<LecturaDelCierre> {
+  const catalogo: CloserConfigurado[] = await closersDeLaEmpresa();
+  const cancelacion = await tasaDeCancelacion(dias);
+  const closers = await cierrePorCloser(dias, catalogo);
+  const motivos = await motivosDeNoVenta(dias, catalogo);
+  return { catalogo, cancelacion, closers, motivos, cierre: armarCierre({ cancelacion, closers, motivos }) };
+}
+
 export interface LecturaDeSales {
   dinero: DineroDelMes;
   cancelacion: Cancelacion;
@@ -194,30 +261,17 @@ export interface LecturaDeSales {
 }
 
 /**
- * El sujeto del dinero: los closers de la empresa, o `nadie` sin ninguno. `{tipo:'empresa'}` con la lista vacía no
- * puede llegar a la consulta —un `in ()` es SQL inválido—, y `nadie` es el estado que hace que el dinero salga «—»
- * con su motivo en vez de cero. Lo comparten esta lectura y la herramienta `dinero_del_mes` del cerebro.
- */
-export function sujetoDelDinero(catalogo: readonly CloserConfigurado[]) {
-  return catalogo.length === 0
-    ? ({ tipo: 'nadie' } as const)
-    : ({ tipo: 'empresa', usuarioIds: catalogo.map((k) => k.usuarioId) } as const);
-}
-
-/**
  * Lo que lee la pantalla de Sales en una ventana. Corre dentro de `conOrganizacion`.
  *
- * Los closers se leen una vez: el sujeto del dinero, las filas de la tabla y los motivos tienen que hablar de las
- * mismas personas. Sin closers, el sujeto del dinero es `nadie`, que es lo que hace que salga «—» con su motivo.
+ * Los closers se leen una vez, en la mitad del cierre: el sujeto del dinero, las filas de la tabla y los motivos
+ * tienen que hablar de las mismas personas. Sin closers, el sujeto del dinero es `nadie`, que es lo que hace que
+ * salga «—» con su motivo.
  */
 export async function lecturaDeSales(dias: number, zonaHoraria: string): Promise<LecturaDeSales> {
-  const catalogo: CloserConfigurado[] = await closersDeLaEmpresa();
+  const { catalogo, cancelacion, closers, motivos } = await lecturaDelCierre(dias);
   const dinero = await dineroDelMes(zonaHoraria, sujetoDelDinero(catalogo));
-  const cancelacion = await tasaDeCancelacion(dias);
   const cadena = await cadenaDeCierre(dias);
   const ciclo = await cicloHastaLaCita(dias);
-  const closers = await cierrePorCloser(dias, catalogo);
-  const motivos = await motivosDeNoVenta(dias, catalogo);
 
   return {
     dinero,

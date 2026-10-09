@@ -34,13 +34,18 @@
 //   3 · CITAS que OCURRIERON en los últimos N días — la cancelación y la tabla por closer. Se
 //       pregunta por reuniones que pasaron, no por gente que entró.
 //
-// Con la 2 y la 3 confundidas, la tabla no cuadra contra la cifra de cabecera y no falla nada. Por
-// eso `ventanas` viaja en la respuesta con el texto de cada una: la pantalla es `'use client'` y no
-// puede importar nada de acá para explicarlo.
+// Con la 2 y la 3 confundidas, la tabla no cuadra contra la cadena y no falla nada. Por eso `ventanas`
+// viaja en la respuesta con el texto de cada una: la pantalla es `'use client'` y no puede importar nada
+// de acá para explicarlo.
 //
-// ── EL DINERO SE CONSUME Y NO SE RECALCULA, Y NO BAJA A LA TABLA ───────────
+// Y una cuarta, sin texto propio: lo REGISTRADO en los últimos N días —los resultados por `creado_el`—,
+// que es la de Ventas, Revenue y Tasa de cierre, de las columnas de lo registrado de la tabla y de los
+// motivos. La nota de la tabla, que escribe `cierrePorCloser`, dice que sus dos ejes cuentan distinto.
 //
-// `dineroDelMes` se llama **una vez**, dentro de la lectura, con `{tipo:'empresa'}`. No N+1 por closer: su consulta corta
+// ── EL DINERO DEL MES SE CONSUME Y NO SE RECALCULA, Y NO BAJA A LA TABLA ───
+//
+// `dineroDelMes` se llama **una vez**, dentro de la lectura, con `{tipo:'empresa'}` —o `nadie`, sin closers—.
+// El revenue de cada fila de la tabla no sale de ahí: es el de la ventana, de `cierrePorCloser`. No N+1 por closer: su consulta corta
 // por `registrado_por` y la de las etiquetas por `crm_asignado_a`, así que las filas nunca sumarían
 // el total y la tabla mentiría sin que nada fallara. El motivo largo está en el plan de la pantalla
 // y en `inicio.ts:123-125`.

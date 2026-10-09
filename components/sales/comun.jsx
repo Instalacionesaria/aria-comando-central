@@ -10,6 +10,8 @@ export const FRASE = {
   sinDato: 'Sin dato',
   sinAsistencia: 'Nadie marca la asistencia.',
   sinRegistros: 'Nadie registró en esta ventana.',
+  sinCitas: 'Sin citas en esta ventana.',
+  ventaSinMonto: 'Hay ventas sin monto.',
   reportado: 'reportado por el closer',
   bajoElPiso: 'Pocos intentos para una tasa.',
   sinMotivos: 'Sin motivos registrados.',
@@ -22,19 +24,24 @@ export const FRASE = {
 
 /** La frase de cada motivo por el que una cifra no tiene valor (`MotivoDeLaCifra` de `lecturaDeSales.ts`). */
 export const FRASE_DEL_MOTIVO = {
+  sin_closers: FRASE.sinClosers,
+  sin_citas: FRASE.sinCitas,
   sin_asistencia: FRASE.sinAsistencia,
   sin_registros: FRASE.sinRegistros,
   bajo_el_piso: FRASE.bajoElPiso,
+  venta_sin_monto: FRASE.ventaSinMonto,
 };
 
 // ─── Los formatos. El guion es «no se sabe» o «bajo el piso», NUNCA un cero. ──
 
-/** Lo único que multiplica por 100: todo viaja de 0 a 1 (S15-13). */
-export const cien = (v) => Math.round(v * 100);
+/** Lo único que multiplica por 100: todo viaja de 0 a 1 (S15-13). `d`, los decimales que se conservan. */
+export const cien = (v, d = 0) => Math.round(v * 100 * 10 ** d) / 10 ** d;
 
 /** Un conteo entero, como lo escribe el prototipo: «1,240». */
 export const miles = (n) => n.toLocaleString('es-PE');
 /** Un monto reportado, con el signo del prototipo: «$55,200». */
 export const plata = (n) => `$${Math.round(n).toLocaleString('es-PE')}`;
 export const pf = (v) => `${cien(v)}%`;
+/** Con un decimal: la cancelación, que `tasaDeCancelacion` publica así y Conversation dibuja así. */
+export const pf1 = (v) => `${cien(v, 1).toLocaleString('es-PE')}%`;
 export const o = (v, formato) => (v === null || v === undefined ? FRASE.guion : formato(v));

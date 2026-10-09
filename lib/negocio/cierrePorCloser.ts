@@ -172,10 +172,12 @@ export interface CierreDeUnCloser {
   ventas: number;
   /**
    * El monto que esta persona reportó en esas ventas: la suma de `monto` de sus resultados `venta` en la
-   * ventana. Cero con ventas sin monto cargado. Es lo REPORTADO, no un pago verificado
-   * (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-08 y S15-09).
+   * ventana. Es lo REPORTADO, no un pago verificado (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-08
+   * y S15-09). Una venta sin monto no suma: la cuenta `ventasSinMonto`, y con alguna el monto no es la cifra.
    */
   montoDeVentas: number;
+  /** Sus ventas de la ventana sin monto cargado. Un monto nulo no es cero (`db/migraciones/011`, `monto`). */
+  ventasSinMonto: number;
   tasaDeCierre: number | null;
   /** Qué le falta a ESTA fila para tener tasas. **`null` ⟹ la fila no dibuja ninguna nota.** */
   aviso: string | null;
@@ -302,7 +304,7 @@ export async function cierrePorCloser(
      * `venta_chica` si aparece y `ventas` no la suma. */
   const ejePropio = await datos()
     .selectFrom('resultados')
-    .select(['registrado_por', 'salida', sql<number>`count(*)`.as('n'), sql<string>`coalesce(sum(monto::numeric), 0)`.as('monto')])
+    .select(['registrado_por', 'salida', sql<number>`count(*)`.as('n'), sql<string>`coalesce(sum(monto::numeric), 0)`.as('monto'), sql<number>`count(*) filter (where monto is null)`.as('sin_monto')])
     /* La misma cantidad de días, anclada a otra columna: acá el hecho es cuándo se REGISTRÓ, no
        cuándo era la cita. Que las dos ventanas midan lo mismo y cuenten cosas distintas es propio de
        las dos columnas, y el aviso de la tabla lo dice. */
@@ -334,11 +336,12 @@ export async function cierrePorCloser(
     const porSalida: Record<string, number> = {};
     let intentos = 0;
     let montoDeVentas = 0;
+    let ventasSinMonto = 0;
     for (const r of ejePropio) {
       if (r.registrado_por !== c.usuarioId) continue;
       porSalida[r.salida] = Number(r.n);
       intentos += Number(r.n);
-      if (r.salida === 'venta') montoDeVentas = Number(r.monto);
+      if (r.salida === 'venta') [montoDeVentas, ventasSinMonto] = [Number(r.monto), Number(r.sin_monto)];
     }
     /* `['venta']` por clave exacta y no una búsqueda de subcadena: la `venta_chica` del setter es
        otro negocio con otra comisión y no se suma, nunca (`lib/negocio/etapas.ts:86-94`). */
@@ -362,6 +365,7 @@ export async function cierrePorCloser(
       porSalida,
       ventas,
       montoDeVentas,
+      ventasSinMonto,
       tasaDeCierre: tasa(ventas, intentos),
       aviso: avisoDeLaFila({ sinEje, citas, conAsistencia, noShowDelCalendario, intentos }),
     };

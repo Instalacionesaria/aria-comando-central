@@ -3,7 +3,7 @@
 > Requisitos derivados del prototipo de Sales y de una medición propia sobre el código del
 > **2026-09-20**. Cada afirmación lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:22-49@a39a732` dibuja tres controles en la mitad derecha del encabezado. **Los
+`components/views/SalesView.jsx:22-49@833fc51` dibuja tres controles en la mitad derecha del encabezado. **Los
 tres están muertos, y cada uno de una forma distinta.**
 
 ---

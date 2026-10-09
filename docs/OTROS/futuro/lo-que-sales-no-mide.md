@@ -25,8 +25,9 @@ calendario como asistencia, decidida por el negocio (`docs/sales/15-EL-FRONT-ORI
 
 **Dónde se dibujaría** · «Ventas», «Revenue reportado» y «Tasa de cierre», en la fila y en la tabla.
 
-**Por qué no hay dato** · Se dibujan, y hoy dicen 0, $0 y «—»: `negocio.resultados` tiene 7 filas y ninguna
-venta. La última es del 2026-09-09.
+**Por qué no hay dato** · Se dibujan, y el 2026-10-09 decían 0, $0 y «—» a 30 días: `negocio.resultados` tiene 7
+filas y ninguna venta. La última es del 2026-09-09, así que desde el día siguiente las tres dicen «—» también a 30
+días.
 
 **Qué haría falta** · Registrar cada llamada en Avanzar, con su salida y su monto.
 

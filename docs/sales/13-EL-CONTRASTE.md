@@ -62,7 +62,7 @@ Hay **dos maquetas** afirmando cosas distintas sobre la misma pantalla:
 
 | dónde | ventas | tasa de cierre |
 |---|---|---|
-| `components/views/SalesView.jsx:80@a39a732,70` | **18** | **24 %** |
+| `components/views/SalesView.jsx:80@833fc51` y `components/views/SalesView.jsx:70@833fc51` | **18** | **24 %** |
 | `lib/aios/executive.js:194-197@c4cf2a8` | **11** | **31 %** |
 
 Y el embudo ejecutivo de `lib/aios/executive.js:27-28@c4cf2a8` declara dos de sus pasos con `own:'Sales',

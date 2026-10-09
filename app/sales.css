@@ -30,7 +30,8 @@
 
 /* ── LAS CUATRO CIFRAS ───────────────────────────────────────────────────── */
 
-/* El color del revenue, que el prototipo ponía en línea (`style="color:var(--exec)"`). Sin valor, el «—» va gris. */
+/* El color del revenue, que el prototipo ponía en línea (`style="color:var(--exec)"`). Sin valor, el «—» lleva el
+   color de las otras cifras: la clase sólo se pone con un monto. */
 #v-sales .stat .s-v.sl-rev { color: var(--exec); }
 
 /* El motivo de un «—», o «reportado por el closer», debajo de la cifra (S15-02). */
@@ -52,8 +53,9 @@
 /* Ninguna fila abre nada: el puntero de mano del prototipo prometería un clic. */
 #v-sales .row-i { cursor: default; }
 
-/* Los colores de las barras: los motivos del catálogo en el de alerta, como el prototipo; los de fuera del
-   catálogo, en gris; las proporciones de la tarjeta de abajo, en el acento. */
+/* Los colores de las barras. El prototipo pintaba las dos primeras en el de alerta y las otras en gris, por su
+   lugar; acá el color dice de dónde viene el motivo —del catálogo, en el de alerta; de fuera, en gris—, que es el
+   desvío declarado en S15-02. Las proporciones de la tarjeta de abajo, en el acento. */
 #v-sales .mini-bar i.sl-catalogo { background: var(--warn); }
 #v-sales .mini-bar i.sl-fuera { background: var(--txt-faint); }
 #v-sales .mini-bar i.sl-barra { background: var(--accent); }
@@ -66,7 +68,7 @@
   color: var(--txt-faint);
 }
 
-/* El aviso del servidor, como viene, al pie de su bloque. */
+/* El aviso del servidor, como viene, al pie de su bloque; también la nota de cada closer, con su nombre. */
 #v-sales .sl-aviso {
   margin: 0;
   padding: 10px 16px;
@@ -82,6 +84,7 @@
 
 /* El encabezado de cada sección, con la franja del `col-head` del prototipo: el título y qué población cuenta. */
 #v-sales .sl-sec {
+  border-top: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -92,9 +95,9 @@
 }
 #v-sales .sl-sec-t { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; }
 #v-sales .sl-sec-m { font-size: 10.5px; color: var(--txt-faint); }
-/* Entre una sección y la siguiente, la línea que separa. */
-#v-sales .rows + .sl-sec { border-top: 1px solid var(--line); }
-#v-sales .sl-aviso + .sl-sec { border-top: 0; }
+/* Cada sección empieza con su línea, venga de filas, de un aviso o de un vacío; la primera ya la tiene en el
+   borde del `card-head`. */
+#v-sales .card-head + .sl-sec { border-top: 0; }
 
 /* ── EL TELÉFONO, A 375 px (S15-16) ────────────────────────────────────────
  *
@@ -108,5 +111,7 @@
   #v-sales .sl-desliza { overflow-x: auto; }
   #v-sales .sl-desliza > .col-head { min-width: 560px; }
   #v-sales .sl-desliza > .rows { min-width: 560px; }
-  #v-sales .sl-eslabon { grid-template-columns: 1.4fr .7fr 1fr .7fr; }
+  /* La cifra y la porción toman su ancho —«596 de 620» no se parte— y la barra, lo que queda. */
+  #v-sales .sl-eslabon { grid-template-columns: minmax(0, 1fr) auto minmax(40px, .8fr) auto; }
+  #v-sales .sl-eslabon .num { white-space: nowrap; }
 }

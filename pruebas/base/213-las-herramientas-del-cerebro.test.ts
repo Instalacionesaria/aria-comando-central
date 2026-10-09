@@ -220,12 +220,13 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
         'closers',
         [
           'aviso', 'canceladas', 'citas', 'conAsistencia', 'contactos', 'intentos', 'montoDeVentas', 'nombre', 'porSalida', 'sePresentaron',
-          'tasaDeAsistencia', 'tasaDeCancelacion', 'tasaDeCierre', 'usuarioId', 'ventas',
+          'tasaDeAsistencia', 'tasaDeCancelacion', 'tasaDeCierre', 'usuarioId', 'ventas', 'ventasSinMonto',
         ],
       ],
     ],
   },
-  /* Sin `filas`: la base sembrada no tiene ningún «No le interesa», y lo que cada fila trae lo mira la 248. */
+  /* Sin `filas`: el único «No le interesa» de la base sembrada no trae motivo, así que cuenta fuera del catálogo y
+     las filas van vacías. Lo que cada fila trae lo mira la 248. */
   motivos_de_no_venta: { arriba: ['dias', 'filas', 'fueraDelCatalogo', 'porcionFueraDelCatalogo', 'sinVenta', 'total'] },
   cancelacion_de_citas: {
     arriba: [
