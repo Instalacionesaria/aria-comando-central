@@ -639,8 +639,8 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 **Estado** · **Las reglas, construidas el 2026-10-09** (CV-4) en `app/conversion.css`: entre el escritorio y el
 teléfono las cinco tarjetas van en tres columnas, la tira en un panel por fila y sin las flechas; desde 760 px,
 una tarjeta por fila, la fila del plan y del período al ancho —el segmentado parte sus botones en dos renglones
-si no entra— y el cajón también. A 375 px no hay desborde a lo ancho (visto en el navegador el 2026-10-09); la
-comparación lado a lado va en CV-5.
+si no entra— y el cajón también. **Visto en el navegador el 2026-10-09** (CV-5): a 1440, 1180, 1125 y 375 px no
+desborda nada, ni la pantalla ni los tres cajones; a 375 px el cajón ocupa el ancho y su rejilla va en dos columnas.
 
 ### CV15-26 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
@@ -702,7 +702,7 @@ ya no se dibuja, pero viaja en `formulario.fueraDeAlcance` y lo lee el cerebro.
 | CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | **hecho el 2026-10-08** |
 | CV-3 | La ruta, el cerebro y el detector | **hecho el 2026-10-08** |
 | CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | **hecho el 2026-10-09** |
-| CV-5 | La comparación lado a lado contra el prototipo, el humo con login, el teléfono y la subida | por hacer |
+| CV-5 | La comparación lado a lado contra el prototipo, el humo con login, el teléfono y la subida | **hecho el 2026-10-09**: la letra, los rellenos, los radios y los espacios, medidos en los dos, coinciden salvo los desvíos declarados (el panel 1 con tres celdas, las métricas en dos renglones); a 1180 px las cinco columnas miden lo mismo que en el prototipo; y el usuario revisó la pantalla en producción |
 
 Cada etapa lleva sus pruebas vistas en rojo con su mutación. Las migraciones, si hiciera falta alguna, van a
 producción antes del push.
