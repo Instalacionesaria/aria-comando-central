@@ -3,17 +3,17 @@
 > Requisitos derivados del prototipo de Sales y de una medición propia sobre el código del
 > **2026-09-20**. Cada afirmación lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:22-49` dibuja tres controles en la mitad derecha del encabezado. **Los
+`components/views/SalesView.jsx:22-49@a39a732` dibuja tres controles en la mitad derecha del encabezado. **Los
 tres están muertos, y cada uno de una forma distinta.**
 
 ---
 
 ## S7-01 · El botón «Plan de acción» — no abre nada, y eso lo hace el peor de los tres prototipos
 
-`SalesView.jsx:23-28`, `className="reco-btn"`, `id="slPlanBtn"`, con el glifo `◈`.
+`SalesView.jsx:23-28@833fc51`, `className="reco-btn"`, `id="slPlanBtn"`, con el glifo `◈`.
 
 **No tiene ningún oyente.** `slPlanBtn` aparece exactamente dos veces en todo el árbol servido:
-`SalesView.jsx:23` y `aios-command-center_1.html:2940`, que es el prototipo de referencia y no se
+`SalesView.jsx:23@833fc51` y `aios-command-center_1.html:2940`, que es el prototipo de referencia y no se
 sirve. El único «Plan de acción» cableado del sistema es el de Leads Portal
 (`lib/aios/period-controls.js:38@c4cf2a8` → `lpPlanBtn`).
 
@@ -40,7 +40,7 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
 
 ## S7-02 · El segmentado de período — no escucha, y su tercer botón es inválido
 
-`SalesView.jsx:29-40`, `<div className="db-seg" id="slPeriod">`, tres botones.
+`SalesView.jsx:29-40@833fc51`, `<div className="db-seg" id="slPeriod">`, tres botones.
 
 **Dos defectos independientes:**
 
@@ -59,7 +59,7 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
 
 ## S7-03 · La píldora «Personalizado» — el único que reacciona, y para empeorar las cosas
 
-`SalesView.jsx:41-48`, `className="pill"`, `data-datepick="sl"`, `id="slPill"`.
+`SalesView.jsx:41-48@833fc51`, `className="pill"`, `data-datepick="sl"`, `id="slPill"`.
 
 **Éste sí hace algo, y es lo peor que podría hacer.** `lib/aios/datepicker.js:125-131@c4cf2a8` engancha un
 oyente delegado global a `[data-datepick]`, así que **el calendario abre**. Pero
@@ -106,12 +106,12 @@ Con dos observaciones que valen para las tres pantallas:
    aplica entre todos los bloques.
 2. **La mitad derecha (`.ch-r`) se va entera.** Al 2026-09-21 Creative y Conversion ya la habían borrado, y
    **Sales era la única de las cinco que la conservaba**, lo cual dejaba desactualizado el comentario de
-   `app/inteligencia-estetica.css:37-41`, que afirma que las cinco la comparten. Desde AQ-4 y CV-4,
+   `app/inteligencia-estetica.css:42-46`, que afirma que las cinco la comparten. Desde AQ-4 y CV-4,
    Acquisition y Conversion la vuelven a dibujar, con el encabezado del prototipo.
 
 ## S7-05 · Y la bajada cambia, como en las otras dos
 
-Hoy dice **«Cierre, closers y motivos de pérdida»** (`SalesView.jsx:18`). Las tres cosas que promete
+Hoy dice **«Cierre, closers y motivos de pérdida»** (`SalesView.jsx:18@833fc51`). Las tres cosas que promete
 son justamente las tres que la medición cuestiona: el cierre no existe (`S1-01`), los closers son uno
 real y un rótulo (`S4-02`), y los motivos son otra taxonomía (`S5-02`).
 

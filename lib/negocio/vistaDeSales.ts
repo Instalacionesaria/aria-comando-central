@@ -4,16 +4,13 @@
 // NO CALCULA NADA, Y ACÁ ESO NO ES LO PRINCIPAL: LO PRINCIPAL ES QUE NO INVENTA
 //
 // Las otras tres pantallas de Inteligencia tenían un módulo en `lib/aios/` que calculaba en el
-// navegador —450 líneas en Creative, 655 en Conversion—. **Sales no tiene módulo que borrar**:
-// `components/views/SalesView.jsx` son 231 líneas de marcado estático con **23 literales**, sin un
-// `fetch`, sin estado y sin una sola interpolación.
-//
-// Y es aritméticamente coherente: 31+43=74, 10+8=18, 18/74≈24 %, $31.000+$24.200=$55.200, 74−18=56,
-// y los cuatro anchos de barra son cada conteo sobre 56. Pasa cualquier lectura de plausibilidad, y
-// **por eso engaña**. Una de esas cifras está al lado del nombre de una persona real.
+// navegador —450 líneas en Creative, 655 en Conversion—. **Sales no tuvo módulo que borrar**: su
+// maqueta eran 231 líneas de marcado estático con **23 literales**, sin un `fetch`, sin estado y sin
+// una sola interpolación, aritméticamente coherentes entre sí y por eso engañosas.
 //
 // Acá el cliente pide y dibuja. Cada cifra llega con su piso aplicado, su nulo donde no se puede
-// decir y su aviso escrito.
+// decir —con el motivo— y su aviso escrito. Desde el 2026-10-09 lo que dibuja el front del prototipo
+// llega armado en `pantalla` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13).
 //
 // ── EL TIPO ES EL CONTRATO, Y SE ESCRIBE UNA SOLA VEZ ───────────────────────
 //
@@ -33,7 +30,7 @@ import type { CadenaDeCierre } from './cadenaDeCierre.ts';
 import type { CicloHastaLaCita } from './cicloHastaLaCita.ts';
 import type { CierreDeLosClosers } from './cierrePorCloser.ts';
 import type { VENTANAS } from './ventanasDeSales.ts';
-import type { HuecoDeSales } from './huecosDeSales.ts';
+import type { PantallaDeSalesArmada } from './lecturaDeSales.ts';
 
 const RUTA = '/api/sales';
 
@@ -48,8 +45,6 @@ export interface PantallaDeSales {
    * `import type` no arrastra nada al paquete del navegador: se borra al compilar.
    */
   ventanas: typeof VENTANAS;
-  /** Lo que la pantalla no puede decir. **Lista vacía ⟹ el bloque no se dibuja.** */
-  huecos: { medidoEl: string; lista: readonly HuecoDeSales[] };
   /** Cobrado, ventas y acuerdos. **Del mes calendario**, no del período de arriba. */
   dinero: DineroDelMes;
   /** La cifra de cabecera. Se CONSUME de `tasaDeCancelacion`: Sales es su segundo consumidor. */
@@ -60,6 +55,8 @@ export interface PantallaDeSales {
   ciclo: CicloHastaLaCita;
   /** Una fila por closer configurado, en orden de designación. */
   closers: CierreDeLosClosers;
+  /** Lo que dibuja el front del prototipo: las cuatro cifras, la tabla, los motivos y la tarjeta de abajo, de 0 a 1. */
+  pantalla: PantallaDeSalesArmada;
 }
 
 export type ResultadoDeSales =
@@ -71,8 +68,8 @@ export async function leerSales(periodo: ClaveDePeriodo): Promise<ResultadoDeSal
      opcional, una llamada que se olvide de pasarlo compila, pide treinta días y enciende el botón
      que diga el estado local. Los dos se ven bien y no coinciden.
      *
-     Acá tiene un filo extra: el segmentado de la maqueta que esta pantalla reemplaza tiene un botón
-     que manda `data-p="mes"`, que no es ninguna de las cuatro claves. Con el tipo obligatorio, esa
+     Acá tiene un filo extra: el segmentado del prototipo tenía un botón que mandaba `data-p="mes"`,
+     que no es ninguna de las cuatro claves. Con el tipo obligatorio, esa
      clave no compila; sin él, viajaría y el servidor la rechazaría con un 400 que la pantalla
      dibujaría como «no se pudo leer». */
   const r = await pedir<PantallaDeSales>(`${RUTA}?periodo=${encodeURIComponent(periodo)}`);

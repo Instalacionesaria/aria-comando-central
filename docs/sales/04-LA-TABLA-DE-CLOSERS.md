@@ -5,7 +5,7 @@
 > Requisitos derivados del prototipo de Sales y de una medición propia contra producción del
 > **2026-09-20**. Cada requisito lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:19-24` deja anotada la tarjeta «Closers» que la maqueta dibujaba, con
+`components/views/SalesView.jsx:19-24@a39a732` deja anotada la tarjeta «Closers» que la maqueta dibujaba, con
 seis columnas y **dos filas**.
 
 | | Closer | Agendadas | Asistieron | Ventas | Cierre | Revenue |

@@ -36,7 +36,7 @@ nombre.** Este archivo mide lo que sí existe, eslabón por eslabón.
 **Unidad** · Conteo de contactos. El conteo de **citas** viaja al lado como segundo término, nunca
 como el número del eslabón.
 **Población** · La cohorte de la ventana.
-**Rastro** · `§ 5.2:227-236`; `SalesView.jsx:14-18` anota los cuatro KPI que esta cadena reemplazó.
+**Rastro** · `§ 5.2:227-236`; `SalesView.jsx:14-18@a39a732` anota los cuatro KPI que esta cadena reemplazó.
 **Estado** · **Construida** en `lib/negocio/cadenaDeCierre.ts`, salvo el último eslabón.
 
 ### Por qué la unidad es el contacto en los cuatro

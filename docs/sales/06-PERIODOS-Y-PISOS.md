@@ -24,7 +24,7 @@ usarlo sin arrastrar la base al paquete.
 
 ## S6-02 · Y el segmentado del prototipo manda una clave que no existe
 
-`SalesView.jsx:29-40` dibuja tres botones: `data-p="hoy"`, `data-p="7d"` y **`data-p="mes"`** (`:37`),
+`SalesView.jsx:29-40@833fc51` dibuja tres botones: `data-p="hoy"`, `data-p="7d"` y **`data-p="mes"`** (`:37`),
 rotulado «30 días».
 
 **`mes` no está en `PERIODOS`.** Si ese botón llegara alguna vez al servidor, `periodoDe('mes')`

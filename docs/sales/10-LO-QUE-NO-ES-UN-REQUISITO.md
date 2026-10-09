@@ -123,7 +123,7 @@ lo que estaba mal no era él, sino que detrás no hubiera nada.
 
 | clase | dónde está definida |
 |---|---|
-| `grid-4` | `app/aios.css:532` + `app/inteligencia-estetica.css:679-681` |
+| `grid-4` | `app/aios.css:532` + `app/inteligencia-estetica.css:679-681@a39a732` |
 | `stat` | `app/aios.css:536-537` + `inteligencia-estetica.css:683-689@8a0368a` |
 | `s-l` | `app/aios.css:536` + `inteligencia-estetica.css:684-689@8a0368a` |
 | `s-v` | `app/aios.css:537` + `inteligencia-estetica.css:683@8a0368a` |
@@ -153,9 +153,9 @@ un panel de Inteligencia dibuja tenga al menos una regla que alcance a SU vista.
 
 **Y dos avisos concretos:**
 
-- `app/inteligencia-estetica.css:665-667` dice textualmente que la regla de `grid-4` **queda sólo
+- `app/inteligencia-estetica.css:665-667@a39a732` dice textualmente que la regla de `grid-4` **queda sólo
   porque Sales la sigue emitiendo**. Es la última.
-- `app/inteligencia-estetica.css:37-41` afirma que las cinco pantallas de Inteligencia comparten
+- `app/inteligencia-estetica.css:42-46` afirma que las cinco pantallas de Inteligencia comparten
   `.ch-r`. **No era cierto** el 2026-09-21: Creative y Conversion lo habían borrado, y Sales era la única que
   quedaba. Hoy lo dibujan Acquisition (AQ-4) y Conversion (CV-4), que volvieron al encabezado del prototipo.
 

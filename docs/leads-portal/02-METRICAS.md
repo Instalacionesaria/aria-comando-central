@@ -217,7 +217,7 @@ asistencia respondida, y hoy son cero.
 **Fórmula** · `exists` de una cita de la persona con `marcadaComoPlanton` (`estado_ghl = 'noshow'`).
 **Unidad** · Sí o no por persona.
 **Población** · La persona, en su fila y en su ficha.
-**Rastro** · `lib/negocio/citasAlcanzables.ts:87-113`; `lib/negocio/huecosDeSales.ts:28-30`.
+**Rastro** · `lib/negocio/citasAlcanzables.ts:87-113`; `lib/negocio/huecosDeSales.ts:35-37`.
 **Estado** · **Construible hoy.** Medido el 2026-09-27: **15 personas** en toda la base. Es la única señal de
 asistencia que existe, y es asimétrica: el lado negativo se observa y el positivo no
 (`lib/negocio/citasAlcanzables.ts:96-100`).
@@ -238,7 +238,7 @@ calcula.
 **Rastro** · `aios-command-center_1.html:4710` (`vend`); el filtro «Vendidos» de
 `aios-command-center_1.html:3063`; `§ 5.3:262` («Resultado de venta»).
 **Estado** · **La forma sí; hoy vale 0.** Medido el 2026-09-27: 0 personas con venta. Los resultados que existen
-son seguimiento 4, no_show 2 y no_interesa 1, los mismos siete que `lib/negocio/huecosDeSales.ts:9-11`
+son seguimiento 4, no_show 2 y no_interesa 1, los mismos siete que `lib/negocio/huecosDeSales.ts:16-18`
 contó el 2026-09-21.
 
 > **No es el último eslabón de la cadena de Sales.** La cadena cuenta la venta sólo si la persona
@@ -263,7 +263,7 @@ contó el 2026-09-21.
 lead a venta, y el rótulo lo dice.
 **Piso** · `PISO_DE_UNA_TASA` sobre los contactos del tramo.
 **Rastro** · `aios-command-center_1.html:4719` (`rate(vend, n)`) y `:4730` (la tarjeta «Todos»);
-`lib/negocio/huecosDeSales.ts:57-62`.
+`lib/negocio/huecosDeSales.ts:64-69`.
 **Estado** · **`null` hoy, con motivo.** El valor sale del primer caso que se cumpla, en el mismo
 orden que `LP03-12`:
 
@@ -274,7 +274,7 @@ orden que `LP03-12`:
 | 3 | todo lo demás | vendidos / contactos, **cero incluido** | `null` |
 
 El caso 1 es el de hoy, y está escrito así para **no contradecir a Sales**: su hueco dice que no hay
-ninguna venta que sumar y que un número ahí afirmaría otra cosa (`lib/negocio/huecosDeSales.ts:49-62`).
+ninguna venta que sumar y que un número ahí afirmaría otra cosa (`lib/negocio/huecosDeSales.ts:56-69`).
 La maqueta, con su `rate`, dibujaría «Cierre 0%» en cada tarjeta sin ventas. Si el caso 1 se mide en
 la empresa o en la ventana es la pregunta `LP03-P02`; hoy dan lo mismo.
 

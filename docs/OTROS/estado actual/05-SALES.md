@@ -79,13 +79,13 @@ y `:79`. El documento no cambió desde el corte anterior. Lo que cambió es que 
 comentario de las líneas 322-323 fecha la baja de la bandera el 2026-09-21. La vista se registra en
 `components/CommandCenter.jsx:45`, y **todas las vistas visibles se montan a la vez**
 (`components/CommandCenter.jsx:88-100`): el panel pide `/api/sales` una vez al cargar la página
-aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:66-68`); lo que sí está atado a la
-visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75`,
+aunque nadie abra Sales (`components/sales/PanelDeSales.jsx:66-68@a39a732`); lo que sí está atado a la
+visibilidad es el refresco cada 60 s (`components/sales/PanelDeSales.jsx:73-75@a39a732`,
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es hoy una cáscara de 82 líneas: el
 encabezado (líneas 1-52) enumera lo borrado con la medición que lo desmiente, y la bajada pasó a
-«Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72`).
+«Hasta dónde llega la cadena, y dónde se corta» (`components/views/SalesView.jsx:72@a39a732`).
 
-**La ruta.** `app/api/sales/route.ts:70-110`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
+**La ruta.** `app/api/sales/route.ts:70-107`, un solo `GET`: pide `tablero.ver` al portero (`:75`),
 **rechaza** con 400 un período que no está en la lista en vez de corregirlo (`:84-85`), corre todo en
 una transacción por organización (`:87-115`) y lee la lista de closers una sola vez para el dinero y
 para la tabla (`:92`). El sujeto del dinero es la empresa o `nadie`, nunca N+1 por closer
@@ -107,7 +107,7 @@ para la tabla (`:92`). El sujeto del dinero es la empresa o `nadie`, nunca N+1 p
 
 **Lo que dibuja**, en el orden de `components/sales/PanelDeSales.jsx`, con lo que daría hoy. Las
 cifras las reproduje el 2026-09-28 en SQL con los predicados de cada módulo, a 30 días —el período
-con que abre la pantalla (`components/sales/PanelDeSales.jsx:43`, `lib/negocio/periodo.ts:109`)— y
+con que abre la pantalla (`components/sales/PanelDeSales.jsx:43@a39a732`, `lib/negocio/periodo.ts:109`)— y
 con «Completo»; **no las leí de la pantalla**.
 
 | bloque | líneas del panel | a 30 días | con «Completo» |
@@ -123,7 +123,7 @@ con «Completo»; **no las leí de la pantalla**.
 Los ceros del dinero son **ceros medidos**: hay 6 resultados de closers en septiembre en la zona de la
 organización (`America/Lima`) y ninguno es `venta`, así que `dineroDelMes` publica `0` y no `—`
 (`lib/negocio/dineroDelMes.ts:162`). El rótulo del §5.4 va pegado a la cifra, no en un pie:
-`components/sales/PanelDeSales.jsx:211-217`, y la cadena lo repite en su aviso
+`components/sales/PanelDeSales.jsx:211-217@a39a732`, y la cadena lo repite en su aviso
 (`lib/negocio/cadenaDeCierre.ts:355-358`).
 
 El aviso de la cadena dice hoy, a 30 días, que **43 de 46 contactos tuvieron una cita que ya ocurrió y
@@ -145,7 +145,7 @@ asignatario del CRM, «Registró» por quien cargó el resultado. A 30 días, en
 registró 5, el de 66 registró 0 y el de 7 registró 2 — la inversión que la etapa 6 midió
 (`lib/negocio/cierrePorCloser.ts:43-50`). La columna «Plantón» (0 · 14 · 1) sale del calendario y no
 entra en ninguna tasa (`lib/negocio/cierrePorCloser.ts:153-160`). **La tabla muestra el nombre real
-de cada closer** (`components/sales/PanelDeSales.jsx:502`), a propósito: es una evaluación de
+de cada closer** (`components/sales/PanelDeSales.jsx:502@a39a732`), a propósito: es una evaluación de
 desempeño y la trata como tal (`lib/negocio/cierrePorCloser.ts:11-13`).
 
 **La concentración, y la pista del 85 %.** `docs/sales/02-METRICAS.md` dice dos cosas de `S2-12`:
@@ -172,7 +172,7 @@ la tabla (`lib/negocio/cierrePorCloser.ts:256-257`). Todas rodantes (`now() - N 
 la tabla (`lib/negocio/cierrePorCloser.ts:412-416`) y sobre los medidos en el ciclo
 (`lib/negocio/cicloHastaLaCita.ts:144-146`). **La cancelación de cabecera no tiene piso**: su tasa es
 `null` sólo con cero citas (`lib/negocio/indicadoresDeCitas.ts:67-68` y `:449`), y el panel la
-dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:369-372`). Con «7 días», a las
+dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:369-372@a39a732`). Con «7 días», a las
 20:00 UTC del 2026-09-28, publicaba **40 % sobre 5 citas**; a las 22:00, 33,3 % sobre 6. Ver § 7.
 
 **Quién la ve.** 13 de los 15 usuarios activos de todas las organizaciones tienen `tablero.ver` y la
@@ -187,20 +187,20 @@ verificado. El 2026-09-16 este archivo contaba 11 usuarios activos, todos con ac
 
 **La maqueta de Sales ya no existe.** Se borró el 2026-09-21 (`1c875ac`); su inventario completo,
 con la medición que desmiente cada pieza, está en el encabezado de
-`components/views/SalesView.jsx:1-52` y la lista de borrado en
+`components/views/SalesView.jsx:1-52@a39a732` y la lista de borrado en
 `docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:90`. Lo que había y lo que lo reemplazó:
 
 | lo que dibujaba (hasta el 2026-09-21) | qué hay hoy |
 |---|---|
-| Cuatro tarjetas: Asistencias 74, Tasa de cierre 24 %, Ventas 18, Revenue reportado $55,200 | el bloque de dinero (cero medido) y la cadena; la tasa de cierre y el revenue van como huecos declarados (`lib/negocio/huecosDeSales.ts:57-62`) |
+| Cuatro tarjetas: Asistencias 74, Tasa de cierre 24 %, Ventas 18, Revenue reportado $55,200 | el bloque de dinero (cero medido) y la cadena; la tasa de cierre y el revenue van como huecos declarados (`lib/negocio/huecosDeSales.ts:64-69`) |
 | Tabla de dos filas: un closer real con su nombre completo, «ICP alto asignado» y 44/31/10/32 %/$31,000; y «Asesor comercial», «ICP medio y bajo», 63/43/8/19 %/$24,200 | la tabla de tres filas del catálogo, con cancelación, plantón y lo registrado; ninguna venta ni revenue por persona |
-| «Motivos de no venta»: «56 llamadas sin cierre», Precio 21, No es quien decide 13, Sin necesidad clara 12, Pidió tiempo 10 | hueco declarado: 1 fila `no_interesa` en toda la base, con «Otro» (`lib/negocio/huecosDeSales.ts:71-77`) |
+| «Motivos de no venta»: «56 llamadas sin cierre», Precio 21, No es quien decide 13, Sin necesidad clara 12, Pidió tiempo 10 | hueco declarado: 1 fila `no_interesa` en toda la base, con «Otro» (`lib/negocio/huecosDeSales.ts:78-84`) |
 | Selector «Hoy / 7 días / 30 días», cuyo tercer botón mandaba `data-p="mes"` | el segmentado de las cuatro claves de `lib/negocio/periodo.ts:83-96`, que enciende el botón que el servidor contestó |
-| Píldora «Personalizado» que abría un calendario sin efecto | nada: un rango libre no es reproducible por ninguna otra pantalla (`components/views/SalesView.jsx:39-41`) |
+| Píldora «Personalizado» que abría un calendario sin efecto | nada: un rango libre no es reproducible por ninguna otra pantalla (`components/views/SalesView.jsx:39-41@a39a732`) |
 
 · **El botón «Plan de acción» (`slPlanBtn`)** era un botón muerto: se pintaba, se podía hacer clic y
 no pasaba nada, porque ningún código lo enganchaba y no tenía una sola frase detrás. Se borró el
-2026-09-21 y queda documentado en `components/views/SalesView.jsx:31-32`. El «Plan de acción» de Leads
+2026-09-21 y queda documentado en `components/views/SalesView.jsx:31-32@a39a732`. El «Plan de acción» de Leads
 Portal (`lpPlanBtn`), el último cableado tras irse los de Creative y Conversion, se fue el 2026-09-26
 (`components/views/ContactsView.jsx:16-18`); hoy no queda ningún `PlanBtn` en `lib/`, `app/` ni
 `components/` salvo en esos dos comentarios. La cita que este archivo daba para aquel enganche
@@ -209,7 +209,7 @@ apuntaba a una línea corrida, como anota `docs/leads-portal/07-EL-PLAN-DE-ACCIO
 La fila con nombre fue lo más grave de la maqueta —diez ventas y $31,000 atribuidos a una persona
 que en la base no tenía ninguna, en una pantalla que esa persona podía abrir— y se fue de la
 pantalla. **El nombre no se fue del repositorio**, que es público: sigue escrito en el encabezado de
-`components/views/SalesView.jsx:19-20`, en `lib/ghl/calendarios.ts`, `components/negocio/Fila.jsx`,
+`components/views/SalesView.jsx:19-20@a39a732`, en `lib/ghl/calendarios.ts`, `components/negocio/Fila.jsx`,
 `components/views/CloserView.jsx`, `pruebas/codigo/91-closer-y-setter.test.ts` y el prototipo
 `aios-command-center_1.html` de la raíz, y en cuatro archivos de `docs/sales/` (`02`, `04`, `06` y
 `10`), tres de ellos con el apellido de otro closer (`git grep` del 2026-09-28).
@@ -323,8 +323,8 @@ encuentra ninguna venta, y no es un registro: es una lectura.
 
 ## 5 · Datos que faltan, y de dónde tendrían que venir
 
-Los huecos que la pantalla declara viven en `lib/negocio/huecosDeSales.ts:48-85`, con
-`MEDIDO_EL = '21 de septiembre de 2026'` escrito a mano (`lib/negocio/huecosDeSales.ts:46`). Los
+Los huecos que la pantalla declara viven en `lib/negocio/huecosDeSales.ts:55-92`, con
+`MEDIDO_EL = '21 de septiembre de 2026'` escrito a mano (`lib/negocio/huecosDeSales.ts:53`). Los
 re-medí hoy uno por uno.
 
 **1 · La venta misma.** Sigue sin existir bajo ningún nombre (medido el 2026-09-28):
@@ -389,7 +389,7 @@ un reparto de hecho: de los contactos asignados a cada closer, son ICP alto 71 d
 
 **7 · El cobro verificado.** Ninguna integración de pagos: 0 de las 5 filas de credenciales tienen
 clave de pagos, sobre 13 organizaciones (medido el 2026-09-28). El hueco dice «0 de 5 organizaciones»
-(`lib/negocio/huecosDeSales.ts:64-68`): el 5 son las filas de credenciales, no las organizaciones,
+(`lib/negocio/huecosDeSales.ts:71-75`): el 5 son las filas de credenciales, no las organizaciones,
 que ya eran 12 el 2026-09-20. El cero es cierto; el denominador no es el que nombra.
 
 **8 · Los motivos de pérdida.** 1 fila `no_interesa` en toda la base, con «Otro». En el CRM, «Motivo
@@ -419,7 +419,7 @@ cobrado de Sales es la suma de `venta` y nada más.
 
 **3 · Es venta REPORTADA, no pago verificado. El §5.4 lo exige por escrito** (línea 288 del
 documento). Sales produce ese dato, así que el rótulo nace acá; hoy va pegado a la cifra
-(`components/sales/PanelDeSales.jsx:211-217`). Ninguna cifra de revenue de este departamento puede
+(`components/sales/PanelDeSales.jsx:211-217@a39a732`). Ninguna cifra de revenue de este departamento puede
 presentarse sin él, y ninguna «CERRADA» del analizador puede reemplazarlo: es la lectura de un
 modelo, no un reporte del closer.
 
@@ -503,7 +503,7 @@ cambie las filas viejas no se van a mover, y un agrupador cerrado las pierde en 
 **Una maqueta internamente consistente, y por eso engaña: pasó en Sales y sigue en Executive.**
 La de Sales cerraba perfecto —31+43 = 74 asistencias, 10+8 = 18 ventas, $31,000+$24,200 = $55,200,
 18/74 ≈ 24 %, 74−18 = 56 sin cierre, y las cuatro barras sumaban 56
-(`components/views/SalesView.jsx:8-10`)—; el 2026-09-16 once usuarios activos tenían acceso a ella.
+(`components/views/SalesView.jsx:8-10@a39a732`)—; el 2026-09-16 once usuarios activos tenían acceso a ella.
 Se borró el 2026-09-21.
 **Executive tiene la misma propiedad y sigue en pie** (§ 3.1): sus 11 ventas, 36 asistidas y $27,940
 de 7 días son coherentes entre sí, y ahora conviven con una pantalla que mide cero. **Después del corte, el 2026-10-01**: la maqueta del Executive se retiró en la etapa E7 de la nueva estructura, y este riesgo se fue con ella.
@@ -532,7 +532,7 @@ documento que la enuncia. La pantalla nunca dibujó ese número: hoy dice 34,9 %
 «Completo».
 
 **Cifras con fecha que envejecen escritas en el código.** `MEDIDO_EL` es un literal
-(`lib/negocio/huecosDeSales.ts:46`), y el hueco del pago dice «0 de 5 organizaciones» con 13
+(`lib/negocio/huecosDeSales.ts:53`), y el hueco del pago dice «0 de 5 organizaciones» con 13
 existentes. `lib/negocio/cierrePorCloser.ts:30-33` y `:88-91` llaman «ventana por omisión» a 14 días
 (y `:202` da su 0,627 a 14) cuando la pantalla abre en 30; lo mismo `docs/sales/02-METRICAS.md:173` y
 `docs/sales/00-MAPA.md:133-135`. El «5 puntos de diferencia» entre closers es de esa ventana que

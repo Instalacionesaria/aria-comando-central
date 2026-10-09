@@ -129,8 +129,8 @@ No todos los vacíos son del mismo tipo, y cada tipo sale de un lugar distinto:
 | Ubicación y posición | el placement no llega de ningún lado | ídem | la ficha, en publicidad (`LP05-14`) |
 | Costo por lead | el gasto es por anuncio y por día, no por persona | ídem | ídem |
 | Dispositivo y ciudad | sólo saldrían de la IP y del navegador, que no viajan | ídem | ídem |
-| La venta, el cierre y el monto | cero ventas y cero montos en toda la base | **se consumen** de `lib/negocio/huecosDeSales.ts:48-62`; no se reescriben (`LP08-05`) | las tarjetas: cierre y monto en `null`, con su motivo |
-| La asistencia | nadie la registra: `true` 0, `false` 0 | **no es un hueco entero**: es `sin_registrar` con su número, y el plantón aparte; Sales tampoco la declara hueco (`lib/negocio/huecosDeSales.ts:28-30`) | el filtro «Asistieron», vacío y con su motivo (`LP04-14`) |
+| La venta, el cierre y el monto | cero ventas y cero montos en toda la base | **se consumen** de `lib/negocio/huecosDeSales.ts:55-69`; no se reescriben (`LP08-05`) | las tarjetas: cierre y monto en `null`, con su motivo |
+| La asistencia | nadie la registra: `true` 0, `false` 0 | **no es un hueco entero**: es `sin_registrar` con su número, y el plantón aparte; Sales tampoco la declara hueco (`lib/negocio/huecosDeSales.ts:35-37`) | el filtro «Asistieron», vacío y con su motivo (`LP04-14`) |
 | El historial de la reproducción | no hay tabla de eventos | de ningún lado: es deuda (`LP11-P03`) | la ficha dice que el precall es la última foto que mandó el CRM (`LP11-11`) |
 
 La regla es la de toda la carpeta: un hueco dicho es una decisión, y uno callado es una regresión

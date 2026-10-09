@@ -339,7 +339,7 @@ pantalla que habla por Conversation: `grep` de «Lead Flow», «agente de voz» 
 `components/`, `app/` y `lib/aios/`, fuera de `components/conversation/` y `components/auditoria/`,
 el 2026-09-28, sólo acierta en `lib/aios/executive.js` y en dos comentarios de la ruta de esta misma
 pantalla (`app/api/auditoria/route.ts:140` y `app/api/auditoria/route.ts:145`). En `lib/negocio/`
-hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:82`) que no
+hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:89`) que no
 habla por este departamento.
 
 **3.1 · La tarjeta de Conversation** (`lib/aios/executive.js:190-193@c4cf2a8`): «58 % de efectividad en Lead

@@ -225,7 +225,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   Hoy coinciden, 139 y 139. El dueño que Executive declara, Conversion, no lo publica como etapa.
 - **Citas asistidas** — **no existe**: `citas.asistio` vale nulo en las **333** citas. Eran 321 el
   2026-09-16 ([05-SALES.md](05-SALES.md) § 4) y 327 en la medición del 2026-09-21 de
-  `lib/negocio/huecosDeSales.ts:28-30`. Lo más cercano es «la cita ya ocurrió y nadie la canceló»,
+  `lib/negocio/huecosDeSales.ts:35-37`. Lo más cercano es «la cita ya ocurrió y nadie la canceló»,
   el tercer eslabón de Sales, que **no es asistencia**: 46 contactos a 30 días. El calendario marca
   15 plantones, que Sales publica como conteo.
 - **Ventas e ingresos** — `cadenaDeCierre` y `dineroDelMes` en Sales. Valen **cero medido**: 7
@@ -274,7 +274,7 @@ La proyección exige ventas fechadas, y no hay ninguna.
 | Creative | «8 piezas activas», punto verde (`components/views/ExecutiveView.jsx:295-303@c4cf2a8`); «hook rate +4, cierre −7» (`lib/aios/executive.js:182-185@c4cf2a8`) | **14 piezas** con entrega a 30 días y **0** a 7. El hook rate existe en `rendimientoDelCreativo`; el cierre no existe |
 | Conversion | «1 incidencia crítica», punto rojo (`components/views/ExecutiveView.jsx:267-275@c4cf2a8`); «26 % de visita a cita» y un formulario que falla en Safari (`lib/aios/executive.js:186-189@c4cf2a8`) | Conversion no publica tasas por camino, no publica dispositivo, y el formulario de la landing **no tiene quien lo llene desde el 2026-08-31** (`lib/negocio/embudoDelFormulario.ts:33-38`) |
 | Conversation | «1 a revisar» (`components/views/ExecutiveView.jsx:253-261@c4cf2a8`); «58 % de efectividad» y el agente de voz en «14 de 22 llamadas» (`lib/aios/executive.js:190-193@c4cf2a8`) | «Efectividad» no está definida en ningún otro archivo. Responde el 59,6 % (161 de 270 escritos, 30 días). **El agente de voz no se audita**: el auditor mira dos agentes de texto (`lib/auditor/veredicto.ts:52`), con 70 análisis en toda la base |
-| Sales | «cierre 31 %», **punto verde** (`components/views/ExecutiveView.jsx:281-289@c4cf2a8`); «11 ventas · cierre 31 %» (`lib/aios/executive.js:194-197@c4cf2a8`) | 0 ventas; la tasa de cierre no tiene numerador ni piso. La pantalla de Sales lo dice como hueco declarado (`lib/negocio/huecosDeSales.ts:57-62`) |
+| Sales | «cierre 31 %», **punto verde** (`components/views/ExecutiveView.jsx:281-289@c4cf2a8`); «11 ventas · cierre 31 %» (`lib/aios/executive.js:194-197@c4cf2a8`) | 0 ventas; la tasa de cierre no tiene numerador ni piso. La pantalla de Sales lo dice como hueco declarado (`lib/negocio/huecosDeSales.ts:64-69`) |
 | Leads Portal | «312 contactos · 78 de ICP alto», «22 % del volumen, 61 % de las ventas» (`lib/aios/executive.js:198-201@c4cf2a8`), **en una ficha que ningún nodo dibuja** | Tramo alto: 50 de los 277 de la cohorte a 30 días (18,1 %; 248 con un puntaje mayor que cero), 0 de 3 a 7 días; el 61 % no se puede calcular con cero ventas |
 
 Y los dos juegos del panel derecho hablan en nombre de varios a la vez. `MEET` encadena
@@ -385,7 +385,7 @@ suma de lo que otros ya declararon y de lo que nadie tiene.
 de construir Executive (línea 1078). La asistencia tiene columna desde la migración 049
 (`db/migraciones/049_si_se_presento_a_la_cita.sql:47`) y escritor en Avanzar
 (`lib/negocio/avanzar.ts:248`), y **cero filas**; la venta, cero en toda la base. Tienen que venir
-del registro del closer. Sales lo declara en `lib/negocio/huecosDeSales.ts:46-85`, medido el
+del registro del closer. Sales lo declara en `lib/negocio/huecosDeSales.ts:53-92`, medido el
 2026-09-21. Re-medido el 2026-09-28: los 7 resultados (4 seguimientos, 2 no-show, 1 no interesa),
 0 ventas, 0 montos y 0 citas enganchadas siguen igual; el resto de esa lista no se re-midió.
 
@@ -463,7 +463,7 @@ las dos formas dividió una vez treinta y un días de gasto entre treinta de lea
 (`lib/negocio/costoDelAnuncio.ts:34-64`). Todo costo por etapa de Executive cae ahí.
 
 **4 · El dinero es del mes calendario, y es venta reportada.** No lo gobierna el selector
-(`app/api/sales/route.ts:28-30`) y no es un pago verificado (`lib/negocio/cadenaDeCierre.ts:353-358`,
+(`app/api/sales/route.ts:29-31`) y no es un pago verificado (`lib/negocio/cadenaDeCierre.ts:353-358`,
 § 5.4 del documento). Y el del closer no se suma con el del setter (`lib/negocio/etapas.ts:86-94`).
 
 **5 · Los dos ceros y el piso.** Con cero ventas, el ticket y el costo por venta dan `NaN` o

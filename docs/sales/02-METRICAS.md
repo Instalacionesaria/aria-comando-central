@@ -62,7 +62,7 @@ que gobiernan el catálogo.
 **Fórmula** · `sum(monto)` sobre `resultados` con `salida = 'venta'` y `creado_el >= date_trunc('month', …)`.
 **Unidad** · Dinero.
 **Población** · Los resultados registrados por los closers configurados de la empresa.
-**Rastro** · `SalesView.jsx:14-18` («Revenue reportado», `$55,200`); `§ 5.4:271-274`;
+**Rastro** · `SalesView.jsx:14-18@a39a732` («Revenue reportado», `$55,200`); `§ 5.4:271-274`;
 `lib/negocio/dineroDelMes.ts:132-152`.
 **Estado** · **Se consume** de `lib/negocio/dineroDelMes.ts`, que se extrajo de `inicio.ts` para
 que la regla exista una sola vez. Vale `0` medido o `—` según haya o no resultados en el mes, y con
@@ -79,7 +79,7 @@ mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Fórmula** · `count(*) filter (where salida = 'venta')`.
 **Unidad** · Conteo.
 **Población** · La misma que `S2-01`.
-**Rastro** · `SalesView.jsx:77-81` (`18`); `lib/negocio/dineroDelMes.ts:149`.
+**Rastro** · `SalesView.jsx:77-81@833fc51` (`18`); `lib/negocio/dineroDelMes.ts:149`.
 **Estado** · **Se consume.** Medido: **0 en toda la base**.
 
 ### S2-03 · Acuerdos sin pagar
@@ -102,7 +102,7 @@ mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Unidad** · Porcentaje.
 **Población** · Citas alcanzables (`ghl_calendario_id is not null`) de contactos no descartados.
 **Piso** · `PISO_DE_UNA_TASA`, sobre el denominador.
-**Rastro** · `lib/negocio/indicadoresDeCitas.ts:341`; `SalesView.jsx:57-61` la roza con «Asistencias».
+**Rastro** · `lib/negocio/indicadoresDeCitas.ts:341`; `SalesView.jsx:57-61@833fc51` la roza con «Asistencias».
 **Estado** · **Construida** en `lib/negocio/indicadoresDeCitas.ts`; Sales es su segundo consumidor y no la recalcula. Medido: **59,2 %** (132 de 223). Es la cifra de
 cabecera del departamento. **No se recalcula**: Sales sería su segundo consumidor.
 
@@ -127,7 +127,7 @@ infinito: **no entran, y se dicen**.
 **Fórmula** · Conteo de contactos distintos que cumplen ese eslabón **y todos los anteriores**.
 **Unidad** · Conteo, con su porción de la cohorte y su porción del eslabón anterior.
 **Población** · La cohorte de la ventana.
-**Rastro** · `§ 5.2:227-236`; reemplaza los cuatro KPI de `SalesView.jsx:14-18`.
+**Rastro** · `§ 5.2:227-236`; reemplaza los cuatro KPI de `SalesView.jsx:14-18@a39a732`.
 **Estado** · **Construida** en `lib/negocio/cadenaDeCierre.ts`, salvo el último eslabón. Medido: 590 → 201 → 91 → 5 → **0**. Ver
 `14-LOS-CINCO-ESLABONES.md`.
 
@@ -152,7 +152,7 @@ no entran en ningún eslabón.
 contacto**.
 **Unidad** · Conteo.
 **Población** · Citas de la ventana. **La fila «sin asignar» no se descarta.**
-**Rastro** · `SalesView.jsx:19-24` («Agendadas»); `§ 2.3:90`.
+**Rastro** · `SalesView.jsx:19-24@a39a732` («Agendadas»); `§ 2.3:90`.
 **Estado** · **Construido** en `lib/negocio/cierrePorCloser.ts`. Medido a 14 días: 32 · 13 · 6 · 1 (sin asignar).
 
 > Se cuentan por el asignatario del **contacto**, no por `citas.crm_asignado_a`, aunque esa columna
@@ -166,7 +166,7 @@ contacto**.
 **Fórmula** · `cancelled` / citas de esa persona.
 **Unidad** · Porcentaje.
 **Piso** · `PISO_DE_UNA_TASA`, **sobre el denominador de cada fila, no sobre el total**.
-**Rastro** · `SalesView.jsx:19-24` («Cierre»); `§ 2.3:90`.
+**Rastro** · `SalesView.jsx:19-24@a39a732` («Cierre»); `§ 2.3:90`.
 **Estado** · **Construida** en `lib/negocio/cierrePorCloser.ts`, y es el hallazgo del departamento
 — más chico de lo que decía la primera medición.
 
@@ -221,7 +221,7 @@ Sin ella, comparar dos filas de esa tabla es comparar una carrera con una camina
 **Unidad** · Conteo y proporción.
 **Población** · **Sólo `no_interesa`.** No se mezcla con `nurture`, que es otra salida.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `SalesView.jsx:25-30`; el catálogo real en `lib/negocio/salidas.ts:165`.
+**Rastro** · `SalesView.jsx:25-30@a39a732`; el catálogo real en `lib/negocio/salidas.ts:165`.
 **Estado** · **No se construyó**, y es el único requisito de esta carpeta que quedó afuera a propósito: está declarado como hueco en `lib/negocio/huecosDeSales.ts` en vez de dibujado. Hay **1 sola fila**, con el valor
 «Otro». Y **la taxonomía real no es la dibujada**: ver `05-LOS-MOTIVOS-DE-NO-VENTA.md`.
 
@@ -231,18 +231,18 @@ Sin ella, comparar dos filas de esa tabla es comparar una carrera con una camina
 
 ### S2-14 · Revenue reportado
 
-**Rastro** · `SalesView.jsx:14-18`, `$55,200`.
+**Rastro** · `SalesView.jsx:14-18@a39a732`, `$55,200`.
 **Estado** · **No.** Cero ventas, cero montos. Se consume del cockpit y sale `—` o `0` medido.
 
 ### S2-15 · Tasa de cierre
 
-**Rastro** · `SalesView.jsx:67-71`, `24%`.
+**Rastro** · `SalesView.jsx:67-71@833fc51`, `24%`.
 **Estado** · **No, y además no es de Sales.** El documento se la da a **Business** (`:1395`, `:1618`).
 Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`. Y aunque lo fuera: 0 ventas sobre 7 intentos no llega al piso.
 
 ### S2-16 · Asistencias
 
-**Rastro** · `SalesView.jsx:57-61`, `74`.
+**Rastro** · `SalesView.jsx:57-61@833fc51`, `74`.
 **Estado** · **No.** `citas.asistio` nulo en las 327. Lo que sí se puede publicar en su lugar es la
 tasa de **cancelación** (`S2-04`), que es otra pregunta y hay que rotularla como tal.
 

@@ -247,7 +247,7 @@ puede heredar.
   - **Asistieron** vacío porque nadie registró asistencia. Lo dice con la medición del momento, y
     agrega que el calendario marcó plantones aparte;
   - **Vendidos** vacío porque no hay ninguna venta registrada. Es el mismo hueco que Sales declara
-    (`lib/negocio/huecosDeSales.ts:49-56`);
+    (`lib/negocio/huecosDeSales.ts:56-63`);
   - una búsqueda o un tramo sin coincidencias mantiene el texto genérico.
   Hoy los dos primeros casos son los de cualquier período.
 

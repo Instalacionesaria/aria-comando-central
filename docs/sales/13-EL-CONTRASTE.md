@@ -34,7 +34,7 @@ ni en el documento**. Salió de medir.
 
 Tres cosas, y son pocas pero reales:
 
-1. **El rótulo «Revenue reportado»** (`SalesView.jsx:14-18`). La palabra *reportado* es exactamente lo que
+1. **El rótulo «Revenue reportado»** (`SalesView.jsx:14-18@a39a732`). La palabra *reportado* es exactamente lo que
    el `§ 5.4:288` exige y lo que la medición confirma. Se conserva, y se le agrega el resto de la
    frase pegada a la cifra.
 2. **La forma de la tabla por closer.** Seis columnas por persona es la forma correcta de la única
@@ -62,7 +62,7 @@ Hay **dos maquetas** afirmando cosas distintas sobre la misma pantalla:
 
 | dónde | ventas | tasa de cierre |
 |---|---|---|
-| `components/views/SalesView.jsx:80,70` | **18** | **24 %** |
+| `components/views/SalesView.jsx:80@a39a732,70` | **18** | **24 %** |
 | `lib/aios/executive.js:194-197@c4cf2a8` | **11** | **31 %** |
 
 Y el embudo ejecutivo de `lib/aios/executive.js:27-28@c4cf2a8` declara dos de sus pasos con `own:'Sales',

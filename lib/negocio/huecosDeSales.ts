@@ -1,5 +1,12 @@
 // Lo que la pantalla de Sales NO puede medir, dicho con su medición y su fecha.
 //
+// ── DESDE EL 2026-10-09 LA PANTALLA DE SALES YA NO LOS DIBUJA ──────────────
+//
+// Sales volvió al front del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, SA-3): cada cifra
+// sin dato dice «—» con su motivo, y lo que la pantalla no mide está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`.
+// La lista sigue viva porque Leads Portal comparte tres de sus huecos (`app/api/leads-portal/route.ts`). Lo de
+// abajo describe por qué nació, el 2026-09-21; la tabla por closer ya no publica los plantones del calendario.
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 // ACÁ EL HUECO ES EL HECHO CENTRAL DEL DEPARTAMENTO, NO UNA NOTA AL PIE
 //

@@ -20,7 +20,7 @@ cuatro frases en el modal compartido `#recoModal` y lo abre.
 Y es **el último plan de acción cableado de la aplicación**. Acquisition, Creative, Conversion y
 Sales ya borraron el suyo, cada uno con su motivo escrito en la cabecera de la vista nueva
 (`components/views/AcquisitionView.jsx` (en `4365cc9`, línea 21), `components/views/CreativeView.jsx:19`,
-`components/views/ConversionView.jsx:39@b2dcdf5`, `components/views/SalesView.jsx:31`). Con LP-6 no queda
+`components/views/ConversionView.jsx:39@b2dcdf5`, `components/views/SalesView.jsx:31@a39a732`). Con LP-6 no queda
 ninguno.
 
 ---
@@ -88,7 +88,7 @@ tarjeta).
 
 **La mitad de las ventas no se puede calcular.** Cero personas con una venta registrada y cero montos
 cargados en toda la base (medición del 2026-09-27). El 61 % de cero no existe, y Sales ya lo declara
-como hueco con su fecha (`lib/negocio/huecosDeSales.ts:49-56`).
+como hueco con su fecha (`lib/negocio/huecosDeSales.ts:56-63`).
 
 **Y contradice a su propia maqueta dos veces, y a la de Executive una:**
 
@@ -186,7 +186,7 @@ contrato en el que las dos partes delegan en la otra es una referencia circular.
 | 4 | un destino que publique la respuesta | Acquisition no publica ICP; Creative sí, por creativo | se decide quién publica «ICP por campaña» (`LP08-P03`) |
 
 **Tres de las cuatro dependen de la venta**, que es exactamente el hueco que Sales declara con fecha
-(`lib/negocio/huecosDeSales.ts:49-62`). Publicarlas sería contradecir a la pantalla de al lado con
+(`lib/negocio/huecosDeSales.ts:56-69`). Publicarlas sería contradecir a la pantalla de al lado con
 números inventados.
 
 ---

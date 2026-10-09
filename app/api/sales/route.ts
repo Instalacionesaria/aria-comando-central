@@ -5,7 +5,8 @@
 //
 // Lee UNA lectura, `lecturaDeSales`, la misma que las herramientas del cerebro que publican lo armado (S15-14):
 // `pantalla` es lo que dibuja el front —las cuatro cifras, la tabla, los motivos y la tarjeta de abajo, de 0 a 1—
-// y los bloques de siempre siguen viajando con su forma (S15-13).
+// y los bloques de siempre siguen viajando con su forma (S15-13). Los huecos de `huecosDeSales.ts` ya no viajan:
+// la pantalla dice cada «—» con su motivo, y lo que no mide está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA
@@ -62,7 +63,6 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { lecturaDeSales } from '../../../lib/negocio/lecturaDeSales.ts';
 import { VENTANAS } from '../../../lib/negocio/ventanasDeSales.ts';
-import { HUECOS, MEDIDO_EL } from '../../../lib/negocio/huecosDeSales.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'sales';
@@ -96,9 +96,6 @@ export async function GET(peticion: Request): Promise<Response> {
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,
     ventanas: VENTANAS,
-    /* Lo que la pantalla NO puede decir, con su medición y su fecha. Lo dibuja el panel de hoy; sale de la
-       respuesta en SA-3, con el front del prototipo, que no lo dibuja (S15-17). */
-    huecos: { medidoEl: MEDIDO_EL, lista: HUECOS },
     dinero: lectura.dinero,
     cancelacion: lectura.cancelacion,
     cadena: lectura.cadena,

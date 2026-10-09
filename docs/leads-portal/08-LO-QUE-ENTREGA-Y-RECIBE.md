@@ -91,13 +91,13 @@ en el mismo archivo, en vez de escribir la comparación en la consulta.
 
 ### LP08-05 · De Sales: la venta, el revenue y el cierre llegan como huecos
 
-**Rastro** · `lib/negocio/huecosDeSales.ts:48-85`, con su fecha en `:46`.
+**Rastro** · `lib/negocio/huecosDeSales.ts:55-92`, con su fecha en `:46`.
 
 **Requisito** · Mientras Sales declare que no hay ninguna venta registrada, esta pestaña no dibuja un
 «Revenue» ni un «Cierre N %» por tramo como hacía la maqueta: el cierre viaja `null` con el motivo
 `sin_ventas_registradas` y el monto dice «reportado» (`LP03-12`, `LP03-13`). Medido el 2026-09-27:
 0 personas con venta, 0 montos cargados. Un «$0» afirmaría que no se vendió nada, y lo que pasa es
-que nadie lo registró — es la misma frase de `lib/negocio/huecosDeSales.ts:60-61`.
+que nadie lo registró — es la misma frase de `lib/negocio/huecosDeSales.ts:67-68`.
 
 ### LP08-06 · De Conversion: el camino de entrada y el formulario, consumidos
 

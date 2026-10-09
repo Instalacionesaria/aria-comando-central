@@ -770,7 +770,7 @@ Leads Portal sólo pueden importar dos módulos puros (`pruebas/codigo/177-filtr
 El corolario: lo que el panel `'use client'` necesita explicar y no puede importar, **viaja en la
 respuesta** —las ventanas de Sales con su texto (`c109ebd`), el título de Creative (`7d1bc8b`)—.
 
-**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:588-592`: el corte
+**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:588-592@a39a732`: el corte
 de 640 px tiene que nombrar `:is(.pn-b, .pn-b.q3, .pn-b.q4)` porque el de 900 px pesa más, y sin eso a
 400 px el panel queda en dos columnas de 170 px. «Visto en el navegador, no deducido.» La hoja hoy la
 comparten las cinco pantallas de Inteligencia.
@@ -894,7 +894,7 @@ ocurrido». **No verificado** cuándo corrió por última vez.
 publicaba los huecos ni la pantalla los dibujaba — donde la maqueta tenía números inventados, «un hueco
 que se omite no se distingue de una regresión». El patrón es `fueraDeAlcance`
 (`lib/negocio/calidadDeLaAtribucion.ts:68-69`), y Sales y Leads Portal le agregaron la fecha:
-`MEDIDO_EL` viaja con la lista (`lib/negocio/huecosDeSales.ts:39-46`, `app/api/sales/route.ts:101`;
+`MEDIDO_EL` viaja con la lista (`lib/negocio/huecosDeSales.ts:46-53`, `app/api/sales/route.ts:101@a39a732`;
 `lib/negocio/huecosDelLeadsPortal.ts:37`) porque sin ella «no hay ventas registradas» se lee como un
 hecho permanente del producto. **La deuda que trae:** `MEDIDO_EL` es un literal escrito a mano, y envejece
 como cualquier cifra de comentario (lo registra [05-SALES.md](05-SALES.md)).
@@ -910,7 +910,7 @@ regla de «todo en la misma pasada» (§ 9) llevada de una tarjeta a una pantall
 **41 · «Los últimos 30 días» pueden ser tres poblaciones: cada una viaja con su nombre y su grano.** En
 Sales conviven el mes calendario del dinero, los contactos dados de alta en N días y las citas que
 ocurrieron en N días, y **las dos últimas dicen «30 días» y describen poblaciones distintas**
-(`app/api/sales/route.ts:22-34`, `c109ebd`); por eso las ventanas viajan descritas en la respuesta
+(`app/api/sales/route.ts:23-35`, `c109ebd`); por eso las ventanas viajan descritas en la respuesta
 (`lib/negocio/ventanasDeSales.ts`). En Creative, «días de la ventana» sumaba días de gasto por anuncio
 contra un denominador de días con impresiones —otro predicado y otro grano, 12,7 % de diferencia— y se
 arregló poniendo el grano en el nombre, `anuncioDiasConLaClave / anuncioDiasConEntrega` (`7d1bc8b`),
@@ -1039,8 +1039,8 @@ El rediseño de Conversation dejó cuatro defectos y **tres aparecieron mirando*
 | Qué estaba mal | Dónde quedó escrito | Cómo apareció |
 | --- | --- | --- |
 | El vocabulario de períodos metía el cliente de PostgreSQL en el paquete del navegador | `lib/negocio/periodo.ts:25-34` | Lo rechazó `next build` |
-| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:297-300` | Mirándola |
-| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:588-592` | Mirándola a 400 px |
+| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:301-304` | Mirándola |
+| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:588-592@a39a732` | Mirándola a 400 px |
 | El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:774-776` | Mirándola |
 
 **Y se repitió en el período, más grande.** A 375 px la barra lateral no colapsaba y al cuerpo le

@@ -364,7 +364,7 @@ anotarlas: la sonda da por cancelada sólo `'cancelled'`, y el código usa la li
   misma pregunta y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:105-110`).
 - **Vendió y monto valen cero medido**, y el cierre por tramo es nulo con su motivo, no «0 %»: es la
   misma lectura que Sales, que declara el revenue y la tasa de cierre como hueco porque *«un "$0"
-  acá afirmaría que no se vendió nada»* (`lib/negocio/huecosDeSales.ts:57-62`).
+  acá afirmaría que no se vendió nada»* (`lib/negocio/huecosDeSales.ts:64-69`).
 
 ### LP09-08 · La atribución: veinte claves, y cuáles viajan
 

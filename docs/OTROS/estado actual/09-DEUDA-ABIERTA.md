@@ -559,7 +559,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   (§ 2.1), que Leads Portal sí declara. **Cerrado el 2026-10-09** (CV-4 de Conversion): en «Completo» la nota dice
   «{N} contactos sin alta no entran.» (CV15-10).
 - **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:79`), con el
-  texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:52`), sin mirar si hay
+  texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`), sin mirar si hay
   ventas. El día de la primera venta, la tarjeta la va a contar y el hueco la va a negar.
 - **La tarjeta «Todos» de Leads Portal dibuja «0 vendidos»**
   (`components/leads-portal/PanelDeLeadsPortal.jsx:308-309`), el único cero de la pantalla sobre la
@@ -628,7 +628,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   `docs/sales/06-PERIODOS-Y-PISOS.md`, `docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md`— y en comentarios
   de código: `lib/ghl/calendarios.ts:19`, `components/negocio/Fila.jsx:23`,
   `components/views/CloserView.jsx:11` (el único de los cuatro que
-  [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 señala), `components/views/SalesView.jsx:19-20`.
+  [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 3.6 señala), `components/views/SalesView.jsx:19-20@a39a732`.
   También en una migración
   (`db/migraciones/034_varios_closers.sql:38`) y en una prueba
   (`pruebas/codigo/91-closer-y-setter.test.ts:434`, `pruebas/codigo/91-closer-y-setter.test.ts:442`):

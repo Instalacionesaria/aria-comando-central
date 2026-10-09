@@ -3,7 +3,7 @@
 > Escrito el **2026-10-09**, al volver la pestaña al front del prototipo
 > (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Hasta ese día la pantalla dibujaba un bloque al
 > final, «Lo que esta pantalla no puede medir», con cinco huecos fechados el 21 de septiembre
-> (`lib/negocio/huecosDeSales.ts:46`). Con el front del prototipo, los huecos que tienen lugar en él quedan
+> (`lib/negocio/huecosDeSales.ts:53`). Con el front del prototipo, los huecos que tienen lugar en él quedan
 > ahí, con «—» o con su frase. Este documento dice por qué y qué haría falta. **En casi todos el motivo es el
 > mismo: la maquinaria existe y nadie registra.**
 

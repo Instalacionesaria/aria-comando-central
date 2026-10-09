@@ -306,7 +306,7 @@ canceladas: 146 (146, el 2026-09-27). A 30 días,
 «agendó y canceló» (`lib/negocio/fichaDelLeadDelPortal.ts:176-182`); la tarjeta, no— y 75 de los
 139 llevan una etiqueta de descarte. Resultados: **7** —seguimiento 4, no_show 2, no_interesa 1—, 0
 con monto, 0 con la cita enganchada, el último del 2026-09-09: los mismos siete que
-`lib/negocio/huecosDeSales.ts:49-56` contó el 2026-09-21. **Ninguna venta en la base.**
+`lib/negocio/huecosDeSales.ts:56-63` contó el 2026-09-21. **Ninguna venta en la base.**
 
 **El descarte y el rechazo por ICP** (`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:264-290`): 122
 contactos con alguna etiqueta de descarte (121). Con `icp_rechazado`, 69 (68): alto 0 · medio 22 ·
@@ -354,7 +354,7 @@ Nadie nuevo recibió la pestaña desde LP-4 (`docs/leads-portal/12-QUIEN-VE-QUE.
 | Ubicación y posición del anuncio | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:56-62`) | Meta, con el desglose por ubicación que la sincronización de anuncios no trae | no re-medido |
 | El costo del lead | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:63-69`) | un modelo que reparta el gasto diario por anuncio: no sería un dato | sin cambio |
 | El dispositivo y la ciudad | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:70-76`) | sólo de la IP y el navegador, que no se muestran por privacidad | sin cambio |
-| La venta · el revenue y el cierre · el pago verificado | panel, abajo | 21-sep (`lib/negocio/huecosDeSales.ts:46`, `:49-69`), consumidos de Sales (`app/api/leads-portal/route.ts:44`) | el registro manual del closer en Avanzar; el pago, una integración de cobros que no existe | re-medido: 7 resultados, 0 ventas, 0 montos. La credencial de pagos «en 0 de 5 organizaciones» es del 2026-09-21, no re-medida |
+| La venta · el revenue y el cierre · el pago verificado | panel, abajo | 21-sep (`lib/negocio/huecosDeSales.ts:53`, `:49-69`), consumidos de Sales (`app/api/leads-portal/route.ts:44`) | el registro manual del closer en Avanzar; el pago, una integración de cobros que no existe | re-medido: 7 resultados, 0 ventas, 0 montos. La credencial de pagos «en 0 de 5 organizaciones» es del 2026-09-21, no re-medida |
 
 **Lo que no es un hueco entero, y no se colapsa en uno:** la asistencia es `sin_registrar` con su
 número —46 personas a 30 días y 77 en «Completo» el 2026-09-28—, y el plantón del calendario
@@ -488,10 +488,10 @@ separado y no se reconcilian; el día que alguien renombre «Puntaje | ICP» en 
 el ICP y esta pestaña no (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:127-144`).
 
 **Las fechas de los huecos son literales.** «Medido el 27 de septiembre» y «21 de septiembre» están
-escritos en el código (`lib/negocio/huecosDelLeadsPortal.ts:37`, `lib/negocio/huecosDeSales.ts:46`)
+escritos en el código (`lib/negocio/huecosDelLeadsPortal.ts:37`, `lib/negocio/huecosDeSales.ts:53`)
 y nada los vuelve a medir. La ruta manda los tres huecos de Sales siempre, sin mirar
 `hayVentasRegistradas` (`app/api/leads-portal/route.ts:79`): el día que se registre una venta, el
-hueco sigue diciendo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:52`) con su
+hueco sigue diciendo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`) con su
 fecha vieja hasta que alguien lo edite, mientras la tarjeta ya cuenta la venta.
 
 **Llamado sin ventana, el módulo mide catorce días.** `leadsDelPortal(dias = DIAS_DE_LA_TASA)`

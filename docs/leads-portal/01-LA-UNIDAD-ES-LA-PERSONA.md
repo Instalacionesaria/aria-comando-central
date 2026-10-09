@@ -209,7 +209,7 @@ no_interesa 1— y **ninguna venta**.
 - con cero ventas en la empresa, el cierre de un tramo es `null` con `sin_ventas_registradas`, no
   «0 %» (`LP02-07`). Un 0 % convertiría el «no se sabe» de un tramo entero en un «no»: es lo que
   Sales escribe del revenue, un «$0» que *«afirmaría que no se vendió nada»*
-  (`lib/negocio/huecosDeSales.ts:60-61`).
+  (`lib/negocio/huecosDeSales.ts:67-68`).
 
 Si algún resultado debería contar como un «no» es `LP01-P01`.
 

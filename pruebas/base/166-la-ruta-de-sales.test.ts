@@ -193,6 +193,9 @@ test('`pantalla` trae lo que dibuja el front del prototipo, y nada más', async 
   const cuerpo = await pedir('30d');
   const p = bloque(cuerpo, 'pantalla');
   assert.deepEqual(Object.keys(p).sort(), ['cifras', 'closers', 'comercial', 'motivos']);
+  /* Los huecos ya no viajan: cada «—» dice su motivo, y lo que no se mide está en
+     `docs/OTROS/futuro/lo-que-sales-no-mide.md` (S15-17). */
+  assert.equal('huecos' in cuerpo, false, 'volvieron los huecos: la pantalla del prototipo no los dibuja');
   assert.deepEqual(Object.keys(bloque(p, 'cifras')).sort(), ['asistencias', 'revenue', 'tasaDeCierre', 'ventas']);
   /* La cancelación de la tarjeta es la del bloque de siempre, de 0 a 1: la función la da de 0 a 100. */
   const tasa = bloque(cuerpo, 'cancelacion')['tasa'] as number | null;

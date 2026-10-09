@@ -218,11 +218,12 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      prototipo con su estética al 100 %, como Leads Portal (docs/acquisition/14, A14-01).
      12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo.
      11 desde el 2026-10-09: salió Conversion, que volvió al front del prototipo con su estética al 100 %, como
-     Acquisition (docs/conversion/15, CV15-01). */
+     Acquisition (docs/conversion/15, CV15-01). 10 el mismo día: salió Sales, por el mismo camino
+     (docs/sales/15, S15-01). */
   assert.equal(
     vistas.length,
-    11,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 11: si entró una pantalla ` +
+    10,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 10: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 

@@ -233,7 +233,7 @@ la pantalla nueva no puede heredar sin querer.
   1. **`sin_ventas_registradas`**: la empresa no tiene **ninguna** venta registrada. Es lo que pasa
      hoy en las cinco tarjetas. Se evalúa sobre la empresa y no sobre el tramo por el motivo de
      `huecosDeSales.ts`: *«Un "$0" acá afirmaría que no se vendió nada, que es distinto de que nadie
-     lo haya registrado»* (`lib/negocio/huecosDeSales.ts:57-62`). Un «ICP alto: 0 %» mientras nadie
+     lo haya registrado»* (`lib/negocio/huecosDeSales.ts:64-69`). Un «ICP alto: 0 %» mientras nadie
      registra ventas se lee como «el tramo alto no compra».
   2. **`bajo_el_piso`**: el tramo tiene menos de 10 contactos. A 7 días la cohorte entera son 3.
 - **Fuera de esos dos casos, la tasa se publica**, 0 % incluido. Si hay ventas en la empresa y

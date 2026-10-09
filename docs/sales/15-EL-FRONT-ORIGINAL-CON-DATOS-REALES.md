@@ -14,7 +14,7 @@
 
 El 2026-09-21 la maqueta de Sales se reemplazó por otra pantalla —el dinero del mes, la cobertura, la cadena
 de cierre, la cancelación, el ciclo hasta la cita y la tabla por closer, más cinco huecos— con la estética de
-operación (`estetica-op`, `components/views/SalesView.jsx:58`). Se hizo por una buena razón: la maqueta
+operación (`estetica-op`, `components/views/SalesView.jsx:58@a39a732`). Se hizo por una buena razón: la maqueta
 dibujaba 23 valores inventados que cerraban entre sí y engañaban (`docs/sales/03-LOS-CUATRO-KPI.md`). Pero con
 eso se perdió **la forma** que había pedido el product owner. Hoy esa forma vuelve, con los datos.
 
@@ -97,10 +97,12 @@ organización que tiene datos.
 **Fórmula** · Lo nuevo —la nota, la tarjeta de abajo, el teléfono— va en una hoja propia, `app/sales.css`, acotada
 a `#v-sales`. Es el método de Acquisition (A14-01) y de Conversion (CV15-01).
 
-**Rastro** · El prototipo: `aios-command-center_1.html:2931-2995`. La pantalla de hoy:
-`components/views/SalesView.jsx:58` y `components/sales/PanelDeSales.jsx:42`.
+**Rastro** · El prototipo: `aios-command-center_1.html:2931-2995`. La pantalla anterior:
+`components/views/SalesView.jsx:58@a39a732` y `components/sales/PanelDeSales.jsx:42@a39a732`.
 
-**Estado** · Por construir (SA-3).
+**Estado** · Construido el 2026-10-09 (SA-3): `components/views/SalesView.jsx`, `components/sales/PanelDeSales.jsx`
+y `app/sales.css`; `#v-sales` salió de `app/inteligencia-estetica.css`. Lo prueba
+`pruebas/codigo/249-la-pantalla-de-sales.test.ts`.
 
 ### S15-02 · Frases cortas, de una lista cerrada
 
@@ -132,8 +134,8 @@ Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del c
 | los motivos «No es quien decide», «Sin necesidad clara», «Pidió tiempo» | los del catálogo: Precio, No es el momento, Competencia, No califica, Otro | `lib/negocio/salidas.ts:159-167`; «Pidió tiempo» es de otra salida |
 | «Agendadas» | igual, pero son citas del CRM, no resultados | dos ejes distintos (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
 
-**Estado** · Por construir (SA-3): la lista vivirá en una constante `FRASE` de `components/sales/comun.jsx`, y una
-prueba nueva, la 249, exigirá que las dos coincidan en las dos direcciones.
+**Estado** · Construido el 2026-10-09 (SA-3): la lista vive en la constante `FRASE` de `components/sales/comun.jsx`,
+y `pruebas/codigo/249-la-pantalla-de-sales.test.ts` exige que las dos coincidan en las dos direcciones.
 
 ### S15-03 · El encabezado
 
@@ -146,7 +148,7 @@ publica otra vez los closers y los motivos. En `.ch-r` va sólo el segmentado.
 - Con la cabecera del departamento a la vista, `app/departamentos.css` oculta el `.ch-l`; como en Sales no hay
   chip, no hace falta devolverlo.
 
-**Estado** · Por construir (SA-3).
+**Estado** · Construido el 2026-10-09 (SA-3).
 
 ### S15-04 · Las ventanas
 
@@ -175,7 +177,7 @@ marcado, «—» con «Nadie marca la asistencia.»: no es cero, porque nadie re
 **Qué no es** · No es el «showed» del calendario: el calendario marca algunas citas y no otras, y un conteo sin
 denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). Es `S15-P04`.
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `asistencias` de `armarSales`, en `lib/negocio/lecturaDeSales.ts`; el dibujo, por construir (SA-3). Hoy, «—».
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `asistencias` de `armarSales`, en `lib/negocio/lecturaDeSales.ts`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, «—».
 
 ### S15-06 · Tasa de cierre
 
@@ -185,7 +187,7 @@ denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). 
 Un intento es un resultado registrado por el closer. Con menos de `PISO_DE_UNA_TASA` (10) intentos, «—» con
 «Pocos intentos para una tasa.».
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `tasaDeCierre` de `armarSales`; el dibujo, por construir (SA-3). Hoy, «—»: un intento en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `tasaDeCierre` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, «—»: un intento en 30 días.
 
 ### S15-07 · Ventas
 
@@ -196,7 +198,7 @@ setter es otra cosa y no se suma.
 en esta ventana.»; con resultados y sin ventas, **0**, que es un cero medido. Es la misma distinción de
 `dineroDelMes` (`lib/negocio/dineroDelMes.ts:156-186`).
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, por construir (SA-3). Hoy, 0 en 30 días y «—» en 7.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, 0 en 30 días y «—» en 7.
 
 ### S15-08 · Revenue reportado
 
@@ -206,7 +208,7 @@ verificado.
 **Fórmula** · La suma de `monto` de los resultados `venta` de los closers en la ventana, con la misma distinción
 que Ventas. El color es el del prototipo, `var(--exec)`, por una clase de `app/sales.css` y no en línea.
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `revenue` de `armarSales`, que suma el `montoDeVentas` nuevo de cada fila de `cierrePorCloser`; el dibujo, por construir (SA-3). Hoy, $0 en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `revenue` de `armarSales`, que suma el `montoDeVentas` nuevo de cada fila de `cierrePorCloser`; el dibujo, construido el 2026-10-09 (SA-3). Hoy, $0 en 30 días.
 
 ### S15-09 · La tabla de closers
 
@@ -228,14 +230,14 @@ la persona registró. La nota de la tabla, que escribe el servidor, lo dice.
 **Sin datos de personas en este documento ni en las pruebas** · Las filas muestran los nombres del catálogo de la
 empresa, como la pantalla de hoy. Acá se habla de «closer 1, 2 y 3».
 
-**Estado** · Las filas, construidas el 2026-10-09 (SA-1): `closers.filas` de `armarSales`, cada columna con su motivo; el dibujo, por construir (SA-3).
+**Estado** · Las filas, construidas el 2026-10-09 (SA-1): `closers.filas` de `armarSales`, cada columna con su motivo; el dibujo, construido el 2026-10-09 (SA-3).
 
 ### S15-10 · El encabezado de la tarjeta de motivos
 
 **Qué es** · «Motivos de no venta», con el `hint` «{N} sin venta»: los resultados de los closers en la ventana
 cuya salida no es una venta.
 
-**Estado** · El conteo, construido el 2026-10-09 (SA-1): `motivos.sinVenta` de `armarSales`; el dibujo, por construir (SA-3).
+**Estado** · El conteo, construido el 2026-10-09 (SA-1): `motivos.sinVenta` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3).
 
 ### S15-11 · Los motivos de no venta
 
@@ -251,7 +253,7 @@ motivos registrados.».
 una pérdida, y piden otra capacidad. Tampoco los campos del CRM: `docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md` mide
 que no los hay.
 
-**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `lib/negocio/motivosDeNoVenta.ts`; el dibujo, por construir (SA-3). Hoy: 1 en toda la historia, ninguno en 30 días.
+**Estado** · El cálculo, construido el 2026-10-09 (SA-1): `lib/negocio/motivosDeNoVenta.ts`; el dibujo, construido el 2026-10-09 (SA-3). Hoy: 1 en toda la historia, ninguno en 30 días.
 
 ### S15-12 · La cadena comercial, abajo
 
@@ -267,23 +269,25 @@ prototipo (`card`, `card-head`, `rows`, `row-i`):
 
 Cada sección con su aviso del servidor.
 
-**Estado** · Los cálculos, construidos el 2026-09-21; la tarjeta, por construir (SA-3).
+**Estado** · Los cálculos, construidos el 2026-09-21; la tarjeta, el 2026-10-09 (SA-3): «La cadena comercial», con
+cinco secciones —la cadena, la cancelación, el ciclo, el dinero del mes y la cobertura—.
 
 ### S15-13 · El servidor calcula; el navegador dibuja
 
 **Qué es** · Una sola lectura, `lecturaDeSales`, compone los módulos y entrega todo hecho y **de 0 a 1**: la
 cancelación de `tasaDeCancelacion` viaja de 0 a 100 (`lib/negocio/indicadoresDeCitas.ts:449`) y se convierte en la
 lectura, no en la función, que la comparten Conversation y Closer. El navegador multiplica por 100 en un solo
-lugar, y deja de calcular proporciones y anchos de barra (hoy, `components/sales/PanelDeSales.jsx:249`).
+lugar, y deja de calcular proporciones y anchos de barra (la pantalla anterior las calculaba:
+`components/sales/PanelDeSales.jsx:249@a39a732`).
 
 **La respuesta crece, no cambia** · Siguen `periodo`, `ventanas`, `dinero`, `cancelacion`, `cadena`, `ciclo` y
 `closers`, este último con el monto reportado de cada fila (`montoDeVentas`). Se agrega `pantalla`, lo que dibuja el
 front: `cifras` (las cuatro de la fila), `closers` (las filas de la tabla, cada columna con su motivo), `motivos` y
-`comercial` (la tarjeta de abajo). `huecos` sigue viajando mientras lo dibuje el panel de hoy y sale con el front, en
-SA-3; el módulo `lib/negocio/huecosDeSales.ts` queda, porque Leads Portal comparte tres de sus huecos.
+`comercial` (la tarjeta de abajo). `huecos` salió de la respuesta con el front, en SA-3; el módulo
+`lib/negocio/huecosDeSales.ts` queda, porque Leads Portal comparte tres de sus huecos.
 
 **Estado** · Construido el 2026-10-09: la lectura en SA-1 (`lib/negocio/lecturaDeSales.ts`, con `armarSales` pura) y
-la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:90-92`). `huecos` sale en SA-3.
+la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:90-92`). `huecos` salió en SA-3.
 
 ### S15-14 · El cerebro lee lo mismo
 
@@ -303,23 +307,27 @@ resultado. Del `detalle` sólo se usa su motivo cuando casa con el catálogo; lo
 vuelven los `data-leads`.
 
 **Estado** · El servidor, construido el 2026-10-09: el texto libre de un motivo no viaja en la respuesta (lo prueba
-`pruebas/base/166-la-ruta-de-sales.test.ts`); la pantalla, por construir (SA-3).
+`pruebas/base/166-la-ruta-de-sales.test.ts`); la pantalla no dibuja nada de un contacto, construido el 2026-10-09
+(SA-3, `pruebas/codigo/249-la-pantalla-de-sales.test.ts`).
 
 ### S15-16 · El teléfono
 
 **Qué es** · A 375 px las cuatro cifras van de a dos, las tablas deslizan a lo ancho como en Acquisition y la
 tarjeta de abajo apila sus secciones. Lo nuevo va en `app/sales.css`.
 
-**Estado** · Por construir (SA-3, SA-5).
+**Estado** · Construido el 2026-10-09 (SA-3) y mirado a 375 px con una pantalla sintética: las cifras de a dos, la
+tabla de closers desliza y la página no. La comparación medida contra el prototipo queda para SA-5.
 
 ### S15-17 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
-- **`MEDIDO_EL`** de los huecos (`lib/negocio/huecosDeSales.ts:46`): la pantalla deja de dibujarlos.
+- **`MEDIDO_EL`** de los huecos (`lib/negocio/huecosDeSales.ts:53`): la pantalla deja de dibujarlos.
 - **Los encabezados** de la vista, del panel y de la ruta.
 - **El comentario de `.grid-4`** en `app/inteligencia-estetica.css`, que dice que Sales lo emite.
 - **Las cifras vencidas de esta carpeta**, que se anotan al final de cada documento (§ 4).
 
-**Estado** · Por construir (SA-0 a SA-3).
+**Estado** · Hecho del 2026-10-09 (SA-0 a SA-3): el comentario de los huecos dice que la pantalla ya no los
+dibuja; los encabezados de la vista, del panel y de la ruta describen el front del prototipo; el de `.grid-4` se fue
+con su regla; y las citas a la pantalla anterior quedaron fijadas al commit donde existía.
 
 ---
 
@@ -342,7 +350,7 @@ tarjeta de abajo apila sus secciones. Lo nuevo va en `app/sales.css`.
 | SA-0 | Este documento, las correcciones al final de los otros, `docs/OTROS/futuro/lo-que-sales-no-mide.md` y la medición del 2026-10-09 | **hecho el 2026-10-09**, revisado por el usuario |
 | SA-1 | El servidor: `motivosDeNoVenta`, el monto por closer, las cuatro cifras y `lecturaDeSales`, con sus pruebas | **hecho el 2026-10-09**: `pruebas/codigo/248-lectura-de-sales.test.ts` y `pruebas/base/248-lectura-de-sales.test.ts`, 18 mutaciones muertas |
 | SA-2 | La ruta y el cerebro sobre la lectura única | **hecho el 2026-10-09**: `pantalla` en la respuesta, `motivos_de_no_venta` en el cerebro, 11 mutaciones muertas |
-| SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | por hacer |
+| SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | **hecho el 2026-10-09**: 24 mutaciones muertas; mirado a 1440 y 375 px |
 | SA-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
 

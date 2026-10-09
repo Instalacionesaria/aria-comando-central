@@ -5,7 +5,7 @@
 > Requisitos derivados del prototipo de Sales y de una medición propia contra producción del
 > **2026-09-20**. Cada requisito lleva su `archivo:línea`.
 
-`components/views/SalesView.jsx:14-18` deja anotada la rejilla de cuatro tarjetas que la maqueta
+`components/views/SalesView.jsx:14-18@a39a732` deja anotada la rejilla de cuatro tarjetas que la maqueta
 dibujaba. **Las cuatro cifras son
 literales escritos a mano en el JSX**, sin `fetch`, sin estado y sin interpolación.
 
@@ -41,7 +41,7 @@ engaña»*.
 ## S3-02 · «Asistencias» — el requisito sobrevive, la cifra no
 
 **Qué pregunta** · De la gente que agendó, cuánta se presentó.
-**Rastro** · `SalesView.jsx:57-61`; `§ 5.3:261` («Asistencia» en el perfil del lead); `§ 10.7:751`
+**Rastro** · `SalesView.jsx:57-61@833fc51`; `§ 5.3:261` («Asistencia» en el perfil del lead); `§ 10.7:751`
 («Show rate», que el documento asigna a **Appointment Flow**, no a Sales).
 **Estado** · **Sin fuente para una tasa.** `citas.asistio` es **NULL en las 327 filas** de la base.
 > **Corregido el 2026-09-21.** `citas.asistio` sigue nulo en las 327, pero decir «no hay ninguna
@@ -62,7 +62,7 @@ o las dos se confunden.
 ## S3-03 · «Tasa de cierre» — sin fuente, y además no es de Sales
 
 **Qué pregunta** · De las llamadas que ocurrieron, cuántas terminaron en venta.
-**Rastro** · `SalesView.jsx:67-71`.
+**Rastro** · `SalesView.jsx:67-71@833fc51`.
 **Estado** · **Sin fuente, por dos motivos independientes.**
 
 1. El numerador es cero: no hay ventas.
@@ -74,7 +74,7 @@ Y aunque existiera: 0 sobre 7 intentos no llega al piso de 10.
 
 ## S3-04 · «Ventas» — sin fuente, y es el corazón del departamento
 
-**Rastro** · `SalesView.jsx:77-81`; `§ 5.4:271` (*«¿El cliente compró?»*).
+**Rastro** · `SalesView.jsx:77-81@833fc51`; `§ 5.4:271` (*«¿El cliente compró?»*).
 **Estado** · **Cero en toda la base.** Ver `01-LA-VENTA-NO-EXISTE.md`.
 
 **Se consume, no se recalcula.** `lib/negocio/dineroDelMes.ts:149` ya publica este conteo para el Inicio del
@@ -82,7 +82,7 @@ Closer. Sales lo toma de ahí o habrá dos cifras del mismo hecho.
 
 ## S3-05 · «Revenue reportado» — el rótulo es lo único correcto
 
-**Rastro** · `SalesView.jsx:14-18`; `§ 5.4:272` (*«Monto vendido»*), `§ 5.4:288`.
+**Rastro** · `SalesView.jsx:14-18@a39a732`; `§ 5.4:272` (*«Monto vendido»*), `§ 5.4:288`.
 **Estado** · **Cero montos en las 7 filas.**
 
 **Pero el rótulo del prototipo acierta en algo que hay que conservar: dice «reportado».** El

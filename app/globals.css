@@ -90,6 +90,10 @@
    la maqueta no tenía —la nota de cobertura, el cajón de cada paso, el teléfono— sin tocar `aios.css`. */
 @import "./conversion.css" layer(components);
 
+/* Sales con el front del prototipo (SA-3). Hoja aparte por lo mismo: agrega lo que la maqueta no tenía —el motivo
+   de cada «—», la tarjeta de la cadena comercial, el teléfono— sin tocar `aios.css`. */
+@import "./sales.css" layer(components);
+
 /* Las señales y el Plan de acción de los departamentos con detector (AG9 y AG10 de los agentes): un solo
    componente en Acquisition y en Creative Insights, y por eso una sola hoja. */
 @import "./senales.css" layer(components);

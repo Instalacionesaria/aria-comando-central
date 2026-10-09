@@ -223,7 +223,7 @@ acciones y siete secciones:
   al CTA».
 - **Qué pide:** la sección se reemplaza por **una** línea de hueco, que sale de
   `huecosDelLeadsPortal.ts` con su `MEDIDO_EL`. Es el mismo patrón que `huecosDeSales.ts`
-  (`lib/negocio/huecosDeSales.ts:39-46`). No va un «0 %»: los 0 de VTurb son de un medidor que no
+  (`lib/negocio/huecosDeSales.ts:46-53`). No va un «0 %»: los 0 de VTurb son de un medidor que no
   reporta, no de gente que no vio.
 
 ### LP05-11 · El video precall sí tiene dato, y se muestra como el texto del CRM

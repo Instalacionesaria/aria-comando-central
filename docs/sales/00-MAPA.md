@@ -95,7 +95,7 @@ dos clases, y la segunda es la peligrosa:
 
 Por eso las trece se reapuntaron al ENCABEZADO del archivo nuevo, que enumera cada pieza borrada con
 la medición que la desmiente, en vez de a un número de línea del marcado que ya no existe. Y cada
-documento afectado lleva una nota que lo dice, porque «`SalesView.jsx:14-18` dibuja cuatro tarjetas»
+documento afectado lleva una nota que lo dice, porque «`SalesView.jsx:14-18@a39a732` dibuja cuatro tarjetas»
 era cierto ayer y hoy sería falso.
 
 Cuando eso pase, esta carpeta lleva la nota de cabecera que ya llevan `docs/creative/` y
