@@ -61,7 +61,7 @@ sólo que producido por la disposición en vez de por el parseo.
 3. **El segmentado deja de ser control de pantalla** y pasa a ser encabezado del bloque de la cadena,
    con su propio rótulo.
 4. **El botón encendido es el que contestó el SERVIDOR**, no el estado local — como
-   `PanelDeConversion.jsx:84-85`.
+   `PanelDeConversion.jsx:93-94@b2dcdf5`.
 
 ## S6-04 · Y por eso sólo tres campos del cockpit viajan
 

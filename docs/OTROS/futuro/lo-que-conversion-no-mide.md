@@ -3,8 +3,9 @@
 > Escrito el **2026-10-08**, al volver la pestaña al front del prototipo
 > (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Hasta ese día la pantalla dibujaba un bloque
 > al final, «Lo que esta pantalla no puede medir», con cinco huecos y su motivo. Con el front del prototipo
-> **cada hueco queda en su lugar**: la tarjeta o la celda dice «—» o «Sin dato», y este documento dice por
-> qué y qué haría falta. Es el plan de lo que falta, escrito para retomarlo mucho después.
+> **los huecos que tienen lugar en él quedan ahí**: la tarjeta, la celda o la sección dice «—» o «Sin dato». Las
+> sesiones y la tasa de la landing no tienen lugar propio, porque la base de los porcentajes son los contactos.
+> Este documento dice por qué y qué haría falta. Es el plan de lo que falta, escrito para retomarlo mucho después.
 
 ---
 
@@ -14,7 +15,7 @@
 «Visto promedio» y «Llegan al CTA», y su cajón con la curva de retención.
 
 **Por qué no hay dato** · El campo que guarda la retención se escribió 79 veces, entre el 2026-08-11 y el
-2026-08-30, y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:118-128`). No es que nadie viera el
+2026-08-30, y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:124-134`). No es que nadie viera el
 video: el medidor no reporta. Los otros dos campos de porcentaje de video están en 0 de 590.
 
 **Qué haría falta** · Arreglar vTurb o su integración con el CRM, que está fuera de este sistema. Y conviene
@@ -48,7 +49,8 @@ como las demás integraciones.
 
 ## 4 · La tasa de conversión de la landing
 
-**Dónde se dibujaría** · El porcentaje de la tarjeta de Landing, si su base fueran visitas.
+**Dónde se dibujaría** · El porcentaje de la tarjeta de Landing, si su base fueran visitas. Hoy ese lugar no
+existe: la tarjeta dibuja la cohorte, sin porcentaje.
 
 **Por qué no hay dato** · Su denominador tendría que ser la gente registrada **al llegar**, y la dirección se
 registra **al convertir**: 124 de 590 contactos la traen con origen «calendar» (medido el 2026-09-20). Una tasa

@@ -123,15 +123,15 @@ lo que estaba mal no era él, sino que detrás no hubiera nada.
 
 | clase | dónde está definida |
 |---|---|
-| `grid-4` | `app/aios.css:532` + `app/inteligencia-estetica.css:656` |
-| `stat` | `app/aios.css:536-537` + `inteligencia-estetica.css:685-691` |
-| `s-l` | `app/aios.css:536` + `inteligencia-estetica.css:686-691` |
-| `s-v` | `app/aios.css:537` + `inteligencia-estetica.css:685` |
+| `grid-4` | `app/aios.css:532` + `app/inteligencia-estetica.css:679-681` |
+| `stat` | `app/aios.css:536-537` + `inteligencia-estetica.css:683-689@8a0368a` |
+| `s-l` | `app/aios.css:536` + `inteligencia-estetica.css:684-689@8a0368a` |
+| `s-v` | `app/aios.css:537` + `inteligencia-estetica.css:683@8a0368a` |
 | `col-head` | `app/aios.css:553-559` |
-| `mini-bar` | `app/aios.css:569-570` + `inteligencia-estetica.css:692` |
+| `mini-bar` | `app/aios.css:569-570` + `inteligencia-estetica.css:690@8a0368a` |
 
-**Cuatro de ellas tienen regla `#v-sales` propia** en `app/inteligencia-estetica.css:685-692`. Si la
-reescritura deja de emitirlas, esas reglas quedan sin emisor.
+**Cuatro de ellas tenían regla `#v-sales` propia** en `app/inteligencia-estetica.css:683-690@8a0368a`. Si la
+reescritura dejaba de emitirlas, esas reglas quedaban sin emisor (y así pasó: ver abajo).
 
 ### Lo que la reescritura midió de verdad, el 2026-09-21
 
@@ -153,10 +153,11 @@ un panel de Inteligencia dibuja tenga al menos una regla que alcance a SU vista.
 
 **Y dos avisos concretos:**
 
-- `app/inteligencia-estetica.css:646-648` dice textualmente que la regla de `grid-4` **queda sólo
+- `app/inteligencia-estetica.css:665-667` dice textualmente que la regla de `grid-4` **queda sólo
   porque Sales la sigue emitiendo**. Es la última.
-- `app/inteligencia-estetica.css:31-35` afirma que las cinco pantallas de Inteligencia comparten
-  `.ch-r`. **Ya no es cierto**: Creative y Conversion lo borraron, y Sales es la única que queda.
+- `app/inteligencia-estetica.css:37-41` afirma que las cinco pantallas de Inteligencia comparten
+  `.ch-r`. **No era cierto** el 2026-09-21: Creative y Conversion lo habían borrado, y Sales era la única que
+  quedaba. Hoy lo dibujan Acquisition (AQ-4) y Conversion (CV-4), que volvieron al encabezado del prototipo.
 
 **`app/aios.css` no se toca.** Es el port literal del maquetado, y su propia cabecera lo dice. Lo que
 se limpia es `app/inteligencia-estetica.css`, y **con la medición hecha, no con una suposición**: en

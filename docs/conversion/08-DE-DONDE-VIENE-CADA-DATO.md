@@ -59,7 +59,7 @@
   `components` — **cero coincidencias**.
 - **Las tres entidades del `§ 5.1:210-212`**: `Landing Session`, `VSL Session`, `Form Submission`.
 - **Clarity y VTurb**: ni integración, ni credencial, ni variable de entorno, ni tabla. Sólo cadenas
-  de texto en `components/views/ConversionView.jsx:22-31` y en `conversion.js`.
+  de texto en `components/views/ConversionView.jsx:22-31@4da946d` y en `conversion.js`.
 - **Endpoint de formularios en GoHighLevel**: ninguna de las catorce operaciones de `lib/ghl/` toca
   `/forms`, `/surveys`, eventos de página ni trigger links.
 - **Tabla de historial de toques**: `atribucion_primera` y `atribucion_ultima` son **una fila por

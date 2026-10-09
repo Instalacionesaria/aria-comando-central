@@ -15,7 +15,7 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con la misma lectura (`app/api/conversion/route.ts:65-84`): desde el 2026-10-08,
+Lo mismo que su pantalla, con la misma lectura (`app/api/conversion/route.ts:71-94`): desde el 2026-10-08,
 `lecturaDeConversion` en días cerrados (`lib/negocio/pasosDeConversion.ts`), de la que toma:
 
 - `recorrido`: por cada familia de entrada, cuántos contactos entraron por ahí, qué porción de la cohorte son,

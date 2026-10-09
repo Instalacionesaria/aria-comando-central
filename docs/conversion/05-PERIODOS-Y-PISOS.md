@@ -48,7 +48,7 @@ tiene cinco claves: `hoy`, `7d`, `mes`, `tri`, `hist`. De ésas:
 
 ### CV5-02 · El prototipo arranca en una ventana que su propio botón contradice
 
-**Rastro** · `conversion.js:141` declara `let cvPeriod = 'hist'`, y `ConversionView.jsx:45` marca el
+**Rastro** · `conversion.js:141` declara `let cvPeriod = 'hist'`, y `ConversionView.jsx:45@4da946d` marca el
 botón **`7 días`** con `className="on"`.
 **Estado** · Al primer pintado la pastilla dice «7 días», las cifras son `866 × 3.4 = 2.944` visitas
 —las del histórico— y `#cvInfo` dice «histórico · sin comparación». **Tres afirmaciones distintas en

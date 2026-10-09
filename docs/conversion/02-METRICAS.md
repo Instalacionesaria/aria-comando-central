@@ -315,7 +315,7 @@ no publicar la banda y publicar la serie. No hay una tercera.
 
 ### CV2-P02 · ¿El «dispositivo» es un corte de primera clase?
 
-El prototipo lo ofrece como filtro permanente (`ConversionView.jsx:66-79`) y guarda bandas distintas
+El prototipo lo ofrece como filtro permanente (`ConversionView.jsx:66-79@4da946d`) y guarda bandas distintas
 por dispositivo (`conversion.js:23-27`). Medido el 2026-09-14 (`03-CONVERSION.md:345-347`): el
 dispositivo **se puede derivar hoy** del `userAgent`, sobre 162 citas → 107 móvil, 14 escritorio, 41
 sin dato. Pero el cohorte de escritorio son **14**, y la regla 8 del departamento, en su versión del

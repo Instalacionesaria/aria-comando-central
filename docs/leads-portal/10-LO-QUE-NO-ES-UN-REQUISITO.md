@@ -273,7 +273,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
 | el cajón «Grupo de contactos» y su módulo | `components/Overlays.jsx:5-26@c4cf2a8`, `lib/aios/leads-group.js` | lo abre el embudo de Executive (`lib/aios/executive.js:49@c4cf2a8`) |
 | el cajón `#drawer` | `components/Overlays.jsx:120-136@c4cf2a8` | lo abre Executive (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102@c4cf2a8`) |
 | las reglas `[data-leads]` | `app/aios.css:2366-2370` | Executive sigue emitiendo el atributo |
-| las reglas de la sección «LEADS PORTAL» | `app/aios.css:1205-1315` | `app/aios.css` es el port literal y no se toca (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:161-163`); ver `LP10-12` |
+| las reglas de la sección «LEADS PORTAL» | `app/aios.css:1205-1315` | `app/aios.css` es el port literal y no se toca (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:162-164`); ver `LP10-12` |
 | el modal `#recoModal` | `components/Overlays.jsx:98-119@c4cf2a8` | queda inerte; ver `LP07-08` y `LP07-P01` |
 
 ### LP10-12 · El CSS se mide emisor por emisor, antes y después
@@ -293,7 +293,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
   Sus reglas viven casi todas en `app/aios.css:1205-1315`. Fuera de ese bloque: `.lc`, `.lc-score`,
   `.sc-v` y `.sc-l` también en `app/aios.css:2373-2377` («leads sin calificar»); `.tb-lab` y
   `.fb-div` en `app/aios.css:648`, `:669-670` y `:729`; las cuatro del encabezado en
-  `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:91-112`,
+  `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:97-118`,
   acotadas a las pantallas de Inteligencia, que ya no las emiten;
 - **vivas fuera**: de la familia `.ld-*`, sólo `.ld-time`, `.ld-dot`, `.ld-t`, `.ld-m` y `.ld-when`,
   que emite también la ficha de las pestañas de operación (`components/negocio/Ficha.jsx:414-425`);
@@ -342,7 +342,7 @@ nadie lea el commit como si lo hiciera:
 
 El plan de LP-5 las pone en `app/aios.css`, acotadas a `#v-contacts` y con una media query a 375 px.
 El precedente dice lo contrario: `app/aios.css` es el port literal del prototipo y no se toca
-(`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:161-163`), y el commit `bd26085` puso una anulación en
+(`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:162-164`), y el commit `bd26085` puso una anulación en
 `app/closer.css` por ese mismo motivo. Con la compuerta de paridad sin vistas, el motivo pierde parte
 de su fuerza —ya no se compara la geometría de `contacts`—, pero sigue comparando los pasos de
 Executive, que usan reglas de la misma hoja. Hay que decidir si la hoja sigue siendo intocable o si

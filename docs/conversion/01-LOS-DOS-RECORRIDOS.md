@@ -90,7 +90,7 @@ alternativos**: quien agenda directo en `calls.ariaia.com` no pasó por la landi
 El prototipo comete exactamente ese error en su forma más pura: sus cinco pasos son una cadena
 —`.jarrow` dibuja una flecha entre cada par (`conversion.js:264`)— y cada paso publica su porcentaje
 **sobre el total de visitas** (`:268`), con el subtítulo *«porcentajes sobre el total de visitas»*
-(`components/views/ConversionView.jsx:90-92`). Eso es válido cuando hay un solo camino. Hoy no lo
+(`components/views/ConversionView.jsx:90-92@4da946d`). Eso es válido cuando hay un solo camino. Hoy no lo
 hay.
 
 **El requisito**: una fila por familia de recorrido, cada una con su cohorte y **su conteo de

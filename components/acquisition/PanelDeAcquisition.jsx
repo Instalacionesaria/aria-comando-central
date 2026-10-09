@@ -139,6 +139,11 @@ export default function PanelDeAcquisition() {
      la primera carga de 30 días que contesta después de la de 7 deja el botón en «30 días» y la
      pantalla en treinta, y volver a tocar «7 días» no pide nada (lo encontró la revisión de AQ-4). */
   const ultima = useRef(0);
+  /* Si hay una carga primera en vuelo. Una recarga que entra entonces la deja sin efecto —la primera se descarta por
+     vieja—, así que la recarga HEREDA su contrato: baja `cargando` y, si falla, vacía la pantalla. Sin esto quedaban
+     «Cargando…» y el fallo a la vez, o las cifras de la ventana anterior. No se salta, como en Conversion, porque acá
+     también recarga el selector de funnel después de guardar, y esa lectura tiene que ser posterior al guardado. */
+  const primeraEnVuelo = useRef(false);
 
   /**
    * Trae la pantalla. Mismo contrato que `PanelDeConversation`: una recarga del reloj que falla
@@ -148,19 +153,24 @@ export default function PanelDeAcquisition() {
    */
   const cargar = useCallback(
     async (esRecarga = false) => {
+      const comoPrimera = !esRecarga || primeraEnVuelo.current;
       const esta = ++ultima.current;
-      if (!esRecarga) setCargando(true);
+      if (!esRecarga) {
+        primeraEnVuelo.current = true;
+        setCargando(true);
+      }
       const r = await leerAcquisition(periodo);
       if (esta !== ultima.current) return;
+      primeraEnVuelo.current = false;
       if (r.tipo === 'datos') {
         setPantalla(r.pantalla);
         setError('');
       } else {
         // El motivo del servidor va en el `title`: la pantalla dice sólo la frase corta.
         setError(r.mensaje);
-        if (!esRecarga) setPantalla(null);
+        if (comoPrimera) setPantalla(null);
       }
-      if (!esRecarga) setCargando(false);
+      if (comoPrimera) setCargando(false);
     },
     [periodo],
   );

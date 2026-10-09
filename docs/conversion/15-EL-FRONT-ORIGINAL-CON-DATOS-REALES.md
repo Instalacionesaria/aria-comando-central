@@ -64,21 +64,21 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
 | Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:96`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
-| Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:118-128`) | — |
+| Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:124-134`) | — |
 | Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
 | Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **63** de 105, 60 % |
 | Panel 3 · Agendados | los mismos 63 | igual | **63** |
 | Panel 3 · Calificados | agendados sin etiqueta de descarte, sobre los agendados | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`), como A14-07 | **35** de 63, 56 % |
 | Panel 3 · No calificados | agendados descartados | la resta | **28** de 63, 44 % |
 | Panel 3 · «% de contacto a cita útil» | calificados sobre la cohorte | igual | 35 de 105, 33 % |
-| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`) | — |
-| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:200-203`) | 105 · 462 |
+| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:217`) | — |
+| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:201-204`) | 105 · 462 |
 | 02 VSL | hueco | — | — |
-| 03 Formulario | `con` sobre la cohorte hasta el corte; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:168-255`) | «—» en 7 y 30 días |
+| 03 Formulario | `con` sobre la cohorte hasta el corte; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:174-263`) | «—» en 7 y 30 días |
 | 04 Agenda | agendados sobre la cohorte; «Calificados» y «Confirmados» | lo de arriba, más `CAMPO_DE_CONFIRMACION` (`lib/negocio/indicadoresDeCitas.ts:208`) | 60 % · 56 % · 18 de 35 |
 | 05 Gracias | hueco | es el precall, de Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`) | — |
-| Cajón de Landing | la tabla de las siete familias, que hoy es el bloque principal | `recorridoDelLead` | — |
-| Cajón de Formulario | los tres estados y la contradicción con las citas, que hoy son el segundo bloque | `embudoDelFormulario` | — |
+| Cajón de Landing | la tabla de las siete familias, que hasta CV-4 fue el bloque principal | `recorridoDelLead` | — |
+| Cajón de Formulario | los tres estados y la contradicción con las citas, que hasta CV-4 fueron el segundo bloque | `embudoDelFormulario` | — |
 | Cajón de Agenda | agendados, calificados, tasa, confirmados, cancelaron y no calificados | CV15-18 | 63 · 35 · 56 % · 18 · 12 · 28 |
 | Alarma | las señales `critica` | `senales.lista` | ninguna: no hay reglas críticas |
 | Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:196`) | — |
@@ -119,13 +119,16 @@ que es la capa que cambió el look.
 **Fórmula** · Lo nuevo —la nota, el cajón, el chip con su punto, el teléfono— va en una hoja propia,
 `app/conversion.css`, acotada a `#v-conversion`. Es el método de Acquisition (A14-01): `aios.css` tiene que
 seguir siendo comparable línea por línea contra el HTML del prototipo. Y `#v-conversion` sale de los
-`:is()` de `app/inteligencia-estetica.css` (`app/inteligencia-estetica.css:91-154` y `:206` en adelante),
+`:is()` de `app/inteligencia-estetica.css` (`app/inteligencia-estetica.css:91-154@b2dcdf5` y `:206@b2dcdf5` en adelante),
 que repintan el segmentado, el botón del plan y los `.pn` aun sin `estetica-op`.
 
 **Rastro** · El prototipo: marcado en `aios-command-center_1.html:2806-2862`, reglas en 988-1289 y dibujo
 en 3937-4582.
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4): la vista va sin `estetica-op` y con `cv-wrap`
+(`components/views/ConversionView.jsx`), lo nuevo en `app/conversion.css`, y `#v-conversion` salió de cada `:is()` de
+`app/inteligencia-estetica.css`. Lo vigila `pruebas/codigo/247-la-pantalla-de-conversion.test.ts`, junto con `pruebas/codigo/146-estetica-de-operacion.test.ts`,
+que cuenta una vista menos con la estética de operación.
 
 ### CV15-02 · Frases cortas, de una lista cerrada
 
@@ -134,13 +137,13 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 
 | situación | texto |
 |---|---|
-| cifra o tasa sin dato, o bajo el piso | «—» |
-| paso o métrica sin fuente: VSL, Gracias, tiempo medio | «Sin dato» |
+| cifra, tasa o métrica sin dato o sin fuente —«Tiempo medio», las de VSL y Gracias—, o bajo el piso | «—» |
+| paso o sección sin fuente: VSL, Gracias, «Dan play al VSL» y las secciones de los cajones | «Sin dato» |
 | el formulario, en una ventana que empieza después del corte | «Sin dato desde el {corte}.» |
 | el formulario, en una ventana que cruza el corte: su tarjeta y su cajón | «hasta el {corte}» |
 | la ventana cruza el corte del formulario: en la nota | «Cruza el corte del {corte}.» |
 | cifra contada por Meta | «según Meta» |
-| cifra sin ventana anterior | «sin comparación» |
+| en la nota, «Completo» o una ventana cuyas personas no comparan; en la tira y en las métricas, una cifra que no compara con la ventana comparando | «sin comparación» |
 | «Hoy», en la nota | «día en curso, sin comparación» |
 | «7 días», en la nota | «vs 7 días previos» |
 | «30 días», en la nota | «vs 30 días previos» |
@@ -171,9 +174,9 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | «Visitas» | «Contactos» y «Vistas de landing» | CV15-06 |
 | Landing: «entran a la página» | «llegan como contacto» | la familia `sin-pagina` nunca abre una página (`lib/negocio/recorrido.ts:74-77`) |
 
-**Estado** · Por construir (CV-4): la lista vivirá en una constante `FRASE` del panel, y una prueba nueva,
-la 247, va a exigir que las dos coincidan en las dos direcciones, como la 182 de Acquisition. La lista es
-cerrada: una frase nueva entra acá primero.
+**Estado** · **Construido el 2026-10-09** (CV-4): la lista es la constante `FRASE` de
+`components/conversion/comun.jsx`, que comparten el panel y el cajón, y `pruebas/codigo/247-la-pantalla-de-conversion.test.ts` exige que las dos coincidan en
+las dos direcciones, como la 182 de Acquisition. La lista es cerrada: una frase nueva entra acá primero.
 
 ### CV15-03 · El encabezado
 
@@ -186,11 +189,17 @@ cerrada: una frase nueva entra acá primero.
   (`docs/conversion/00-MAPA.md:119-123`). Su punto `.dotx` (`app/aios.css:965`) es verde sólo si
   `frescuraDe('contactos')` está `al_dia`; si no, va apagado, con la clase de `app/conversion.css`.
 - **«Plan de acción»** es el `BotonDelPlan` que ya existe, en `.ch-r` antes del segmentado, como en
-  Acquisition. Sólo con 7 y 30 días: las señales son de esas dos ventanas.
+  Acquisition. El plan es de 7 y 30 días: con «Hoy» y «Completo» el botón se abre igual y lo dice.
 - **El segmentado** son los cuatro períodos (CV15-04). **Sin** la pastilla «Personalizado» y **sin** la
   `filterbar` del dispositivo: lo decidió el usuario, y su texto `#cvInfo` pasa a la nota (CV15-10).
 
-**Estado** · Por construir (CV-4).
+**Con la cabecera del departamento a la vista** · `app/departamentos.css` oculta el `.ch-l` entero de las pantallas
+del prototipo, porque ahí viven el título y la bajada que la cabecera ya dice. En Conversion ahí vive también el
+chip, así que `app/conversion.css` oculta sólo el título y la bajada, y el chip queda.
+
+**Estado** · **Construido el 2026-10-09** (CV-4). La frescura viaja en la respuesta (`frescura.contactos`, de
+`frescuraDe('contactos')`), con la frase de la cabecera del departamento (`faltaPorFrescura`) para el `title` del
+chip: la de `frescuraDe` promete una lectura al abrir la pantalla, y ésta no lee.
 
 ### CV15-04 · Los cuatro períodos, y qué días abarcan
 
@@ -217,8 +226,7 @@ horas», y acá «Hoy» es el día de calendario. Es el mismo arreglo que A14-10
 días» puede dar otra cifra en Creative que acá. Es la misma contrapartida que A14-10.
 
 **Estado** · **La ventana, construida el 2026-10-08** (CV-1): `bordesDelPeriodo` (CV15-21). **La ruta la usa desde
-el 2026-10-08** (CV-3): la pantalla de hoy ya muestra los días cerrados, y el segmentado sin el matiz llega con la
-pantalla nueva (CV-4). Es `CV15-P01`.
+el 2026-10-08** (CV-3), y el segmentado sin el matiz desde el 2026-10-09 (CV-4). Es `CV15-P01`.
 
 ### CV15-05 · La población: los contactos de la ventana
 
@@ -233,7 +241,7 @@ con denominador bajo `PISO_DE_UNA_TASA` (10, `lib/negocio/indicadoresDeCitas.ts:
 En «Completo» la nota lo dice (CV15-10). Es el riesgo 6 de
 `docs/OTROS/estado actual/03-CONVERSION.md:498-502`.
 
-**Estado** · **El cálculo, construido el 2026-10-08** (CV-2): `lecturaDeConversion`, en `lib/negocio/pasosDeConversion.ts`. Se dibuja en CV-4.
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2): `lecturaDeConversion`, en `lib/negocio/pasosDeConversion.ts`. Se dibuja desde el 2026-10-09 (CV-4).
 
 ### CV15-06 · El panel «Landing y VSL»: tres celdas
 
@@ -253,7 +261,7 @@ reserva—, y no se pueden cruzar con una persona (`docs/conversion/07-LO-QUE-EN
 En 30 días son 462 vistas contra 105 contactos. Rotularlas «Visitas a la landing VSL» afirmaría las dos
 cosas que no son.
 
-**Estado** · Por construir (CV-4). Es `CV15-P02`.
+**Estado** · **Construido el 2026-10-09** (CV-4): la «Tira» del panel. Es `CV15-P02`.
 
 ### CV15-07 · Las vistas de landing son una cifra de Meta, y no llevan tasa
 
@@ -295,7 +303,7 @@ a agenda»:
 | «Empiezan el form» | los que traen el campo | sobre la cohorte; CV15-14 | **nunca** |
 | «Agendan» | los agendados | sobre la cohorte | en puntos, a la misma edad |
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4).
 
 ### CV15-09 · El panel «Calidad de lo agendado»
 
@@ -308,7 +316,7 @@ contacto a cita útil», donde x son los calificados sobre la cohorte, con el pi
 | «Calificados» | agendados sin descarte (A14-07), con `esCalificado` | sobre los agendados | **ninguna**: el descarte no tiene fecha |
 | «No calificados» | agendados descartados | sobre los agendados | ninguna, como en el prototipo |
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4).
 
 ### CV15-10 · La nota de cobertura, en una línea
 
@@ -316,17 +324,22 @@ contacto a cita útil», donde x son los calificados sobre la cohorte, con el pi
 `.cv-note`, con el molde de `.acq-note`. Ocupa el lugar del `#cvInfo` del prototipo
 (`aios-command-center_1.html:4149-4151`):
 
-«**{con} de {sobre}** contactos traen por dónde entraron · {rango} · vs {rango anterior}»
+«**{con} de {sobre}** contactos traen por dónde entraron · {rango} · vs 30 días previos»
+
+La comparación es una frase cerrada de CV15-02: «vs 7 días previos» o «vs 30 días previos», «día en curso, sin
+comparación» con «Hoy», y «sin comparación» con «Completo» o cuando las personas no comparan. El rango de la ventana
+anterior va en el `title` de esa frase. Sin contactos en la ventana, la nota empieza con «Sin contactos en este
+período».
 
 Y, cuando corresponda, las frases cerradas de CV15-02: «Sin historia para comparar.», «Faltan contactos por
 leer.», «Faltan días de gasto.», «Falta gasto de algunas campañas.», «Sin desglose de Meta.», «Los agendados no
 comparan: hay citas congeladas.», «Cruza el corte del {corte}.» y, en «Completo», «{N} contactos sin alta no
 entran.».
 
-**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`). La
+**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:217`). La
 cobertura va arriba de cualquier reparto: es el § 18.5.
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4): la «Nota» del panel.
 
 ### CV15-11 · El recorrido: cinco tarjetas, con huecos
 
@@ -342,8 +355,12 @@ cobertura va arriba de cualquier reparto: es el § 18.5.
   si tiene una señal crítica.
 - Las flechas `.jarrow` (`app/aios.css:1129`) se dibujan, como decoración: cada porcentaje es sobre la
   cohorte y no sobre la tarjeta de al lado.
+- VSL y Gracias, que no abren cajón (CV15-13), no llevan la flecha `›` del encabezado ni la mano del cursor.
+- Cada métrica `jm` va en dos renglones, el rótulo arriba y la flecha y la cifra abajo, haya flecha o no: en el
+  prototipo todas la tenían, y con los datos reales sólo comparan algunas. Así las cinco tarjetas coinciden línea
+  por línea.
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4): la «Tarjeta» del panel, cada una con `jband empty`.
 
 ### CV15-12 · La tarjeta de Landing
 
@@ -352,13 +369,15 @@ contacto». Sus dos `.jmx`:
 
 - «Vistas, según Meta»: la cifra de CV15-07, con su flecha si compara;
 - «Por la landing»: la porción de la familia `landing` sobre la cohorte. Sin piso, porque es un conteo
-  sobre otro (`lib/negocio/recorridoDelLead.ts:200-203`). Su flecha es en puntos y **neutra**: que la
+  sobre otro (`lib/negocio/recorridoDelLead.ts:201-204`). Su flecha es en puntos y **neutra**: que la
   landing gane o pierda porción es un cambio de ruta, no algo bueno o malo.
 
 **Qué no es** · «Por la landing» no dice «vio la landing». La familia de septiembre es casi toda circular
-(`docs/OTROS/estado actual/03-CONVERSION.md:479-484`), y por eso el cajón lleva la marca de cada fila.
+(`docs/OTROS/estado actual/03-CONVERSION.md:479-484`). El cajón marca sólo la fila registrada entera al reservar, y
+el aviso del servidor nombra las que lo son en un 90 % o más, con el piso; la de septiembre, con el 86 %, queda sin
+marca (el riesgo 3 de ese documento).
 
-**Estado** · Por construir (CV-4). El segundo `jmx` es `CV15-P08`.
+**Estado** · **Construido el 2026-10-09** (CV-4). El segundo `jmx` es `CV15-P08`.
 
 ### CV15-13 · VSL y Gracias quedan como huecos
 
@@ -368,10 +387,10 @@ video» y «Video visto» en Gracias (`aios-command-center_1.html:4155-4166`). E
 
 **No abren cajón**: el cajón diría «Sin dato» y nada más. El hueco ya lo dice la tarjeta.
 
-**Por qué** · El VSL tiene 79 escrituras y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:118-128`).
+**Por qué** · El VSL tiene 79 escrituras y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:124-134`).
 Gracias es el precall, que pertenece a Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`).
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4).
 
 ### CV15-14 · La tarjeta de Formulario
 
@@ -388,12 +407,13 @@ corte del 2026-08-31.
   (`docs/OTROS/estado actual/03-CONVERSION.md:368`), y `docs/conversion/05-PERIODOS-Y-PISOS.md:81-97`
   pide no publicarlas como una sola serie.
 - **Sus `jmx`** · «Lo completan»: la `finalizacion` del embudo, con el piso sobre `con`
-  (`lib/negocio/embudoDelFormulario.ts:244`). «Tiempo medio»: «—».
+  (`lib/negocio/embudoDelFormulario.ts:251`). «Tiempo medio»: «—».
 - **Nunca lleva flecha**, mientras el campo esté muerto y la ventana actual termine después del corte. La
   anterior de 30 días cae casi entera antes del corte, y la actual entera después: sin esta regla la flecha
   bajaría 100 %, en rojo, sin que nada cambie.
 
-**Estado** · **El cálculo, construido el 2026-10-08** (CV-2), con la cohorte hasta el corte que cuenta `personasDeLaCohorte`; se dibuja en CV-4. El denominador es `CV15-P03`.
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2), con la cohorte hasta el corte que cuenta `personasDeLaCohorte`; se dibuja desde el 2026-10-09 (CV-4). El denominador
+es `CV15-P03`.
 
 ### CV15-15 · La tarjeta de Agenda
 
@@ -406,7 +426,7 @@ corte del 2026-08-31.
 **Por qué los agendados son la suma de las filas** · El número es Σ `agendaron` de las filas del recorrido.
 Así la tarjeta suma exactamente lo que dice la tabla del cajón de Landing.
 
-**Estado** · **El cálculo, construido el 2026-10-08** (CV-2); se dibuja en CV-4.
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2); se dibuja desde el 2026-10-09 (CV-4).
 
 ### CV15-16 · El pie de cada tarjeta
 
@@ -423,12 +443,14 @@ Así la tarjeta suma exactamente lo que dice la tabla del cajón de Landing.
   prototipo y se conserva.
 - En la tarjeta de Landing, ni hueco ni resta: es la base.
 
-**Estado** · **La caída, construida el 2026-10-08** (CV-2): `Paso.caida`. El pie se dibuja en CV-4.
+**Estado** · **La caída, construida el 2026-10-08** (CV-2): `Paso.caida`. El pie, desde el 2026-10-09 (CV-4): los
+pasos con reglas son los que `pasoDeLaSenal` puede devolver, y `pruebas/codigo/247-la-pantalla-de-conversion.test.ts` lo exige.
 
 ### CV15-17 · Los cajones: sólo Landing, Formulario y Agenda
 
 **Qué es** · Cada uno con la forma del prototipo: la meta con la **fuente y la población**, una rejilla de
-cajas, sus secciones reales y las «Observaciones» (`docs/conversion/04-LOS-CAJONES.md:40-58`). **No llevan
+cajas, sus secciones reales y, en los pasos con reglas —Landing y Formulario, CV15-16—, las «Observaciones»
+(`docs/conversion/04-LOS-CAJONES.md:40-58`). **No llevan
 la «Lectura»** en prosa: no hay ningún texto que el servidor escriba con fuente.
 
 **El componente** · `components/conversion/CajonDelPaso.jsx`, con `createPortal`, `scrim` y `drawer on`, el
@@ -437,16 +459,19 @@ id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
 
 **Landing** · Meta: «GoHighLevel · {cohorte} contactos · {rango}».
 
-- «Por dónde entró la gente»: la tabla de las siete familias de hoy (Camino · Contactos · Del total ·
-  Agendaron), con la nota de cada fila y la marca «registrada al reservar».
+- «Por dónde entró la gente»: la tabla de las siete familias (Camino · Contactos · Del total ·
+  Agendaron), con la nota de cada fila en el `title` y la marca «registrada al reservar» en la fila que se
+  registró entera al reservar. El aviso del servidor, debajo, nombra también las que lo son casi enteras.
 - Una línea «Sin dato» donde el prototipo tenía el comportamiento, el mapa de calor y las grabaciones.
 - Sus observaciones.
 
 **Formulario** · Meta: «GoHighLevel · {con} lo empezaron · {desde} – {hasta}».
 
-- Una rejilla: Lo empezaron · Lo completaron · Tasa.
-- La tabla de los tres estados, con la contradicción del campo contra las citas (`agendadoSegunLasCitas`) y
-  el aviso del embudo.
+- Una rejilla: Lo empezaron · Lo completaron · Tasa. «Lo completaron» es `completaron`, el numerador de la
+  finalización, que el embudo publica desde el 2026-10-09 para no sumar filas en el navegador.
+- La tabla de los tres estados (Estado · Contactos · De los que llegaron · Con cita), con la contradicción del
+  campo contra las citas (`agendadoSegunLasCitas`) en la columna «Con cita» de `Agendado`, y el aviso del
+  embudo.
 - «Campo por campo»: «Sin dato».
 - Sus observaciones.
 
@@ -457,13 +482,15 @@ id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
 - «Qué pasa después»: «Sin dato», porque depende del VSL (`docs/conversion/04-LOS-CAJONES.md:90-99`).
 - «Franja preferida» no se dibuja: no es una de las cifras pedidas, y se podría calcular de `inicio_el`, así
   que «Sin dato» sería falso.
-- Sus observaciones: hoy ninguna regla apunta a la Agenda.
+- Sin «Observaciones»: ninguna regla apunta a la Agenda (CV15-19), y la sección no se dibuja (`CON_REGLAS`, en
+  `components/conversion/comun.jsx`).
 
 **Las observaciones** · Las señales del paso, con el marcado `obs` (`app/aios.css:1080-1092`): `obs-t` es el
 texto, `obs-d` la revisión, `obs-m` la fecha y el estado, y `obs-n` la pérdida en contactos. «No tocar» no es
 una señal (`lib/agentes/detectores/conversion.ts:44-45`): si va como «a favor», es `CV15-P07`.
 
-**Estado** · Por construir (CV-4). Contesta CV4-P01: los cajones que sobreviven son tres.
+**Estado** · **Construido el 2026-10-09** (CV-4): `components/conversion/CajonDelPaso.jsx`. Contesta CV4-P01: los
+cajones que sobreviven son tres.
 
 ### CV15-18 · Confirmados y Cancelaron
 
@@ -508,7 +535,7 @@ texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →�
 **La tarjeta** · `TarjetaDeSenales` va al final, como en Acquisition, con todo `puede` en falso cuando se
 mira otra empresa.
 
-**Estado** · El reparto por paso, `pasoDeLaSenal`, construido el 2026-10-08 (CV-2), y en la ruta desde ese día (CV-3): `senales.porPaso`, vigilado en `pruebas/base/237-las-senales-de-conversion.test.ts`. La pantalla lo dibuja en CV-4. Es `CV15-P05`.
+**Estado** · El reparto por paso, `pasoDeLaSenal`, construido el 2026-10-08 (CV-2), y en la ruta desde ese día (CV-3): `senales.porPaso`, vigilado en `pruebas/base/237-las-senales-de-conversion.test.ts`. La pantalla lo dibuja desde el 2026-10-09 (CV-4): el pie de cada tarjeta, las observaciones de su cajón y la alarma. Es `CV15-P05`.
 
 ### CV15-20 · Las flechas contra la ventana anterior
 
@@ -528,7 +555,7 @@ porcentaje; cada variación llega con su lectura —buena, mala o neutra— calc
 **La diferencia con Acquisition, dicha** · Las cifras de personas no dependen del gasto, así que un gasto
 incompleto apaga sólo la flecha de las vistas. En Acquisition apaga todo, porque sus costos dividen el gasto.
 
-**Estado** · **Construido el 2026-10-08** (CV-2), en `lib/negocio/pasosDeConversion.ts`, y probado en `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`, cada regla con su mutación.
+**Estado** · **Construido el 2026-10-08** (CV-2), en `lib/negocio/pasosDeConversion.ts`, y probado en `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`, cada regla con su mutación. La pantalla lo dibuja desde el 2026-10-09 (CV-4): con la ventana comparando, la cifra que no compara dice «sin comparación» en su lugar en las celdas de personas de la tira y en las métricas de las tarjetas; la cifra grande de cada tarjeta, la celda de las vistas y la caja del cajón no tienen lugar para la frase, y lo dicen la tira y la nota. Con «Hoy» o «Completo» lo dice sólo la nota.
 
 ### CV15-21 · Una sola ventana, la de Acquisition
 
@@ -561,7 +588,8 @@ la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (
   los agendados a la misma edad, para que la tasa salga de una sola foto.
 
 **La respuesta crece, no cambia** · Siguen `comentario`, `periodo`, `recorrido`, `formulario`, `senales` y
-`puedeConSenales`, ahora sobre la ventana cerrada. Se agregan `pasos` y `senales.porPaso`. Todo lo de `pasos` viaja
+`puedeConSenales`, ahora sobre la ventana cerrada. Se agregan `pasos` y `senales.porPaso` (CV-3), y `frescura` y
+`formulario.completaron` (CV-4). Todo lo de `pasos` viaja
 de 0 a 1: la `finalizacion`, que llega en %, se divide por 100 al consumirla; el `formulario` que viaja para su
 cajón es el del embudo, con la `finalizacion` en %.
 
@@ -600,7 +628,7 @@ de los días de calendario hasta hoy a los días cerrados.
 - la evidencia de las señales lleva sólo conteos (CV6-08);
 - no vuelven los `data-leads`, que abrían un cajón con personas inventadas.
 
-**Estado** · Por construir (CV-4).
+**Estado** · **Construido el 2026-10-09** (CV-4), y vigilado en `pruebas/codigo/247-la-pantalla-de-conversion.test.ts`.
 
 ### CV15-25 · El teléfono
 
@@ -608,13 +636,17 @@ de los días de calendario hasta hoy a los días cerrados.
 ancho. Lo nuevo va en `app/conversion.css`. El panel 1, con tres celdas, puede quedar apretado en la columna
 de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 
-**Estado** · Por construir (CV-4, CV-5).
+**Estado** · **Las reglas, construidas el 2026-10-09** (CV-4) en `app/conversion.css`: entre el escritorio y el
+teléfono las cinco tarjetas van en tres columnas, la tira en un panel por fila y sin las flechas; desde 760 px,
+una tarjeta por fila, la fila del plan y del período al ancho —el segmentado parte sus botones en dos renglones
+si no entra— y el cajón también. A 375 px no hay desborde a lo ancho (visto en el navegador el 2026-10-09); la
+comparación lado a lado va en CV-5.
 
 ### CV15-26 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
 **Qué es** · Lo que dice el código sobre la pantalla vieja deja de ser cierto con esta:
 
-- **El hueco de Clarity** (`lib/negocio/embudoDelFormulario.ts:139-144`) dice que Clarity aparece en la
+- **El hueco de Clarity** (`lib/negocio/embudoDelFormulario.ts:139-144@b2dcdf5`) decía que Clarity aparecía en la
   pantalla como fuente conectada. No aparece desde el 2026-09-20. Es el riesgo 2 de
   `docs/OTROS/estado actual/03-CONVERSION.md:473-477`.
 - **Los encabezados** de la vista, del panel, de la ruta, de `lib/negocio/vistaDeConversion.ts` y del
@@ -623,14 +655,18 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
   Conversion cruza sus contactos con el gasto.
 - **Los comentarios de `app/inteligencia-estetica.css`** sobre las clases del recorrido.
 
-**Estado** · El comentario de la ventana, corregido en CV-1; lo demás, de CV-2 a CV-4.
+**Estado** · **Corregido**: el comentario de la ventana en CV-1; la ruta, la vista de datos y el detector en CV-3; y
+el hueco de Clarity, la vista, el panel y `app/inteligencia-estetica.css` el 2026-10-09 (CV-4). El hueco de Clarity
+ya no se dibuja, pero viaja en `formulario.fueraDeAlcance` y lo lee el cerebro.
 
 ### CV15-27 · Lo que sale de la pantalla
 
 - **El bloque «Lo que esta pantalla no puede medir».** Su lista —el VSL, las sesiones, el mapa de calor, la
   tasa de la landing, el abandono campo por campo— pasa a
-  `docs/OTROS/futuro/lo-que-conversion-no-mide.md`, con lo que haría falta para cada una. En la pantalla, cada
-  hueco queda en su lugar del prototipo, con «Sin dato».
+  `docs/OTROS/futuro/lo-que-conversion-no-mide.md`, con lo que haría falta para cada una. En la pantalla, el VSL,
+  el comportamiento y el mapa de calor del cajón de Landing y el abandono campo por campo quedan en su lugar del
+  prototipo, con «Sin dato». Las sesiones y la tasa de la landing no tienen lugar propio: la base de los porcentajes
+  son los contactos (CV15-05), y la celda «Visitas» pasó a «Contactos» y «Vistas de landing» (CV15-06).
 - **El bloque «Cuánto vale lo que dice esta pantalla».** Pasa a la nota de una línea (CV15-10).
 - **El filtro por dispositivo, la pastilla «Personalizado» y las bandas.** Decidido por el usuario.
 - **Los chips «Clarity» y «VTurb».** Siguen fuera; en su lugar va «GoHighLevel» (CV15-03).
@@ -665,7 +701,7 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 | CV-1 | Las piezas compartidas: `lib/negocio/diasCerrados.ts`, mudado desde Acquisition; los predicados de calificado, confirmó y cancelaron; la ventana explícita en `recorridoDelLead`, `embudoDelFormulario` y `corteDeEpoca`; la cohorte de Acquisition con la misma `cohorteEntre`, y la prueba de la invariante | **hecho el 2026-10-08** |
 | CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | **hecho el 2026-10-08** |
 | CV-3 | La ruta, el cerebro y el detector | **hecho el 2026-10-08** |
-| CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | por hacer |
+| CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | **hecho el 2026-10-09** |
 | CV-5 | La comparación lado a lado contra el prototipo, el humo con login, el teléfono y la subida | por hacer |
 
 Cada etapa lleva sus pruebas vistas en rojo con su mutación. Las migraciones, si hiciera falta alguna, van a

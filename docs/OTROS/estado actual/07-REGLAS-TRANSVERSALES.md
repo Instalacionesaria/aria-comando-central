@@ -415,7 +415,7 @@ llamada de las 18 dependa del 14.
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:66`,
-`app/api/creative/route.ts:66`, `app/api/conversion/route.ts:57`, `app/api/sales/route.ts:84`,
+`app/api/creative/route.ts:66`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:84`,
 `app/api/leads-portal/route.ts:53`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
@@ -770,7 +770,7 @@ Leads Portal sólo pueden importar dos módulos puros (`pruebas/codigo/177-filtr
 El corolario: lo que el panel `'use client'` necesita explicar y no puede importar, **viaja en la
 respuesta** —las ventanas de Sales con su texto (`c109ebd`), el título de Creative (`7d1bc8b`)—.
 
-**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:581-585`: el corte
+**29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:588-592`: el corte
 de 640 px tiene que nombrar `:is(.pn-b, .pn-b.q3, .pn-b.q4)` porque el de 900 px pesa más, y sin eso a
 400 px el panel queda en dos columnas de 170 px. «Visto en el navegador, no deducido.» La hoja hoy la
 comparten las cinco pantallas de Inteligencia.
@@ -854,7 +854,7 @@ el 2026-09-28** (`:37-42`), cuando el patrón pasó a admitir corchetes y el esp
 (`:52-64`); los dos cambios, en el árbol sin commit. **Lo que no atrapa, y lo dice:** la cita que sigue
 en rango y ya apunta a otra cosa (`:17-19`). Es el error J. **Y lo que no mira:** las citas de
 `docs/conversion/`, `docs/acquisition/` y el código (fuera de `AUDITADAS`, `:42`). Medido el 2026-09-28:
-en `HEAD` las cinco citas de la regla 11 —`cadenaDeCierre.ts:36`, `PanelDeConversion.jsx:24`,
+en `HEAD` las cinco citas de la regla 11 —`cadenaDeCierre.ts:36`, `PanelDeConversion.jsx:24@b2dcdf5`,
 `14-LOS-CINCO-ESLABONES.md:54`, `01-LOS-DOS-RECORRIDOS.md:101`, `03-EL-RECORRIDO.md:62`— dicen 451,
 cierta al escribirlas y corrida por `4fc9e43` a la regla 10; en el árbol ya dicen 625, el título de § 11.
 
@@ -1039,8 +1039,8 @@ El rediseño de Conversation dejó cuatro defectos y **tres aparecieron mirando*
 | Qué estaba mal | Dónde quedó escrito | Cómo apareció |
 | --- | --- | --- |
 | El vocabulario de períodos metía el cliente de PostgreSQL en el paquete del navegador | `lib/negocio/periodo.ts:25-34` | Lo rechazó `next build` |
-| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:290-293` | Mirándola |
-| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:581-585` | Mirándola a 400 px |
+| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:297-300` | Mirándola |
+| A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:588-592` | Mirándola a 400 px |
 | El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:774-776` | Mirándola |
 
 **Y se repitió en el período, más grande.** A 375 px la barra lateral no colapsaba y al cuerpo le

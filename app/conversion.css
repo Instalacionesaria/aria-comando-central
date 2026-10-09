@@ -1,0 +1,174 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONVERSION, OTRA VEZ CON EL FRONT DEL PROTOTIPO (CV-4)
+
+   El panel dibuja el marcado de `aios-command-center_1.html` —`cv-wrap`, `cre-head`, `cs-panels cv-panels`,
+   `ghead`, `journey` con sus cinco `jstep`, la alarma— y lo visten las reglas del prototipo, que siguen en
+   `app/aios.css` y no se tocan: esa hoja tiene que seguir siendo comparable contra el HTML
+   (docs/conversion/15, CV15-01). La sección no lleva `estetica-op`, que es la capa que había cambiado el look,
+   y `#v-conversion` salió de los `:is()` de `app/inteligencia-estetica.css`.
+
+   Lo de abajo es lo que el prototipo no tenía —el `.ch-l` a la vista con la cabecera del departamento, la nota de
+   cobertura, el punto apagado del chip, las tarjetas que no abren cajón, el anillo de foco, la línea de un fallo
+   y la de la primera carga, el cajón propio y el teléfono— y dos correcciones de reglas que sí tenía, hechas acá
+   para no tocar `aios.css`: la rejilla de `.jm` en dos renglones (`app/aios.css:1171`) y la caída `.jx em` con
+   la opacidad entera (`app/aios.css:1179`). Acotado a `#v-conversion`, y el cajón a `.cv-cajon`, porque se monta
+   en `document.body` y una regla con `#v-conversion` no lo alcanzaría. Sin colores literales (`104-temas`) ni
+   sombras (`107-sin-sombras`).
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── EL ENCABEZADO ───────────────────────────────────────────────────────────
+ *
+ * Con la cabecera de un departamento a la vista, `app/departamentos.css` oculta el `.ch-l` entero de las
+ * pantallas del prototipo: ahí viven el título y la bajada, que la cabecera ya dice. En Conversion ahí viven
+ * también los chips de las fuentes (`aios-command-center_1.html:2815-2818`: «Clarity» y «VTurb» en el prototipo,
+ * «GoHighLevel» acá, CV15-03), y con el chip se iba lo único que dice si la lectura de contactos está al día. Se oculta el título y la bajada, y el chip queda. El `#v-conversion` le gana
+ * a la regla de la cabecera, que no lleva id. */
+.app:has(> .cd:not(.cd-engranaje)) .main #v-conversion .cre-head > .ch-l:not(.stack) { display: flex; }
+.app:has(> .cd:not(.cd-engranaje)) .main #v-conversion .cre-head > .ch-l > :is(h2, .cre-desc) { display: none; }
+
+/* El punto del chip, apagado: la lectura de contactos no está al día y el punto verde lo afirmaría (CV15-03). */
+#v-conversion .src .dotx.apagado { background: var(--txt-faint); opacity: .5; }
+
+/* «No se pudo leer»: una línea, en el color de lo grave. El motivo del servidor va en el `title`. */
+#v-conversion .cv-falla {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--crit);
+}
+
+/* La primera carga, mientras no hay nada que dibujar. */
+#v-conversion .cv-cargando {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--txt-faint);
+}
+
+/* ── LA TIRA Y LA NOTA ───────────────────────────────────────────────────── */
+
+/* «según Meta», «Sin dato» y «hasta el {corte}» debajo de una cifra, donde el prototipo ponía la flecha. */
+#v-conversion .pn-d .cv-meta { font-size: 10.5px; color: var(--txt-faint); }
+
+/* La nota de cobertura, con el molde de `.acq-note` (CV15-10). Ocupa el lugar del `#cvInfo` del prototipo. */
+#v-conversion .cv-note {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--txt-faint);
+  line-height: 1.55;
+  padding: 11px 14px;
+  background: rgb(var(--c-nube) / .03);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+#v-conversion .cv-note b { color: var(--txt-dim); font-weight: 500; }
+
+/* ── EL RECORRIDO ────────────────────────────────────────────────────────── */
+
+/* El punto del `ghead` «Recorrido», que el prototipo pintaba con un `style` en línea. */
+#v-conversion .ghead .gdot.cv-gdot { background: var(--accent); }
+
+/* Cada métrica de la tarjeta en dos renglones —el rótulo arriba; la flecha y la cifra abajo—, haya flecha o no.
+   La rejilla de `.jm` del prototipo baja la flecha a un segundo renglón, y en el prototipo todas la tenían; con los
+   datos reales sólo comparan algunas, y la tarjeta de Landing quedaba más alta que las demás, con su pie corrido.
+   Así las cinco coinciden línea por línea, que es lo que pedía el prototipo (`app/aios.css:1160`). */
+#v-conversion .jm { grid-template-rows: auto auto; }
+#v-conversion .jm > span:first-child { grid-row: 1; grid-column: 1 / -1; }
+#v-conversion .jm .dlt,
+#v-conversion .jm b { grid-row: 2; }
+
+/* La caída «−N» (CV15-16), con la opacidad entera: el prototipo la atenuaba sobre `--txt-faint`, que ya es el piso
+   de contraste, y quedaba por debajo de 4,5:1. Es lo que `app/temas.css` hace con `.dlt.flat`. */
+#v-conversion .jstep .jx em { opacity: 1; }
+
+/* VSL y Gracias no abren cajón (CV15-13): sin la mano ni el salto del `:hover`, que prometían uno. Lo mismo una
+   fila de la alarma cuya señal no es de ningún paso. */
+#v-conversion .jstep.cv-sin-cajon,
+#v-conversion .alarm.cv-sin-cajon { cursor: default; }
+#v-conversion .jstep.cv-sin-cajon:hover { transform: none; border-color: var(--line); }
+
+/* Las tarjetas y las filas de la alarma que abren cajón se abren también con el teclado: el foco tiene que verse. */
+/* El anillo va por dentro: por fuera lo recortaba `.view-scroll`, que no tiene relleno a la izquierda. */
+#v-conversion .jstep[role='button']:focus-visible,
+#v-conversion .alarm[role='button']:focus-visible {
+  outline: 2px solid rgb(var(--c-acento) / .55);
+  outline-offset: -2px;
+}
+/* Lo mismo con el botón del plan y el segmentado, que usan el anillo de `app/temas.css`: arriba los recorta el
+   borde del desplazador, y debajo de 1120 px, cuando `.ch-r` baja al borde izquierdo, también por la izquierda. */
+#v-conversion .cre-head .ch-r .reco-btn:focus-visible,
+#v-conversion .cre-head .ch-r .db-seg button:focus-visible { outline-offset: -2px; }
+
+/* ── EL CAJÓN DE UN PASO ─────────────────────────────────────────────────────
+ *
+ * Las clases del cajón son las globales del prototipo (`.drawer`, `.dw-*`, `.out`, `.obs`). Lo de acá es lo que
+ * el prototipo no tenía: las tablas de las familias y de los estados, los huecos, el aviso del servidor y la
+ * tasa al lado de una cifra. */
+.cv-cajon .cv-rejilla { grid-template-columns: repeat(3, 1fr); }
+.cv-cajon .out .cv-tasa {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--txt-faint);
+}
+
+.cv-cajon .cv-hueco,
+.cv-cajon .cv-aviso {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--txt-faint);
+}
+.cv-cajon .cv-aviso { color: var(--txt-dim); }
+
+.cv-cajon .cv-tabla { display: flex; flex-direction: column; }
+.cv-cajon .cv-fila {
+  display: grid;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--txt-dim);
+  font-variant-numeric: tabular-nums;
+}
+.cv-cajon .cv-fila:last-child { border-bottom: 0; }
+.cv-cajon .cv-familias .cv-fila { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(56px, 76px)); }
+.cv-cajon .cv-estados .cv-fila { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(56px, 84px)); }
+.cv-cajon .cv-fila > span:not(.cv-n) { text-align: right; }
+.cv-cajon .cv-cab {
+  padding-top: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--txt-faint);
+}
+.cv-cajon .cv-n { min-width: 0; color: var(--txt); font-weight: 500; }
+.cv-cajon .cv-cab > span:first-child { text-align: left; }
+/* «registrada al reservar», debajo del nombre del camino. */
+.cv-cajon .cv-marca {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--txt-faint);
+}
+
+/* ── EL TELÉFONO, A 375 px (CV15-25) ─────────────────────────────────────────
+ *
+ * El prototipo dibujaba las cinco tarjetas en cinco columnas a cualquier ancho. Entre el escritorio y el
+ * teléfono pasan a tres, y la tira a un panel por fila; las flechas `.jarrow` se van, porque en una rejilla que
+ * se parte en renglones la primera de cada renglón apuntaría a la nada. Debajo del corte del menú (760 px,
+ * `app/armazon.css`), una tarjeta por fila; la fila del plan y del período ocupa el ancho, y el segmentado parte sus
+ * botones en dos renglones si no entra; y el cajón ocupa el ancho. */
+@media (max-width: 1120px) {
+  #v-conversion .journey { grid-template-columns: repeat(3, 1fr); }
+  #v-conversion .cs-panels.cv-panels { grid-template-columns: 1fr; }
+  #v-conversion .jarrow { display: none; }
+}
+@media (max-width: 760px) {
+  #v-conversion .journey { grid-template-columns: 1fr; }
+  #v-conversion .cre-head .ch-r { width: 100%; }
+  #v-conversion .db-seg { flex-wrap: wrap; }
+  .drawer.cv-cajon { width: 100%; max-width: 100%; }
+  .cv-cajon .cv-rejilla { grid-template-columns: repeat(2, 1fr); }
+}

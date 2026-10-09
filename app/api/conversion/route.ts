@@ -19,10 +19,9 @@
 // cerrados de Acquisition (CV15-04 y CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
 //
 //   · `pasos`       · la tira y las cinco tarjetas del prototipo, con sus flechas contra la anterior
-//   · `recorrido`   · la cohorte ENTERA repartida por el camino de entrada: la tabla de la pantalla de hoy, y el
-//                     cajón de Landing de la nueva (CV-4). Siete familias que no se suman entre sí como si fueran
-//                     pasos: son caminos alternativos
-//   · `formulario`  · sólo los que llegaron al formulario de la landing: su bloque hoy, su cajón en la nueva
+//   · `recorrido`   · la cohorte ENTERA repartida por el camino de entrada: la tabla del cajón de Landing. Siete
+//                     familias que no se suman entre sí como si fueran pasos: son caminos alternativos
+//   · `formulario`  · sólo los que llegaron al formulario de la landing: el cajón de Formulario
 //
 // **Las tres son de LA MISMA ventana**, y acá eso pesa más que en las otras pantallas: llevan el mismo
 // `corteDeEpoca` —el último día con el formulario escrito— y si cada una calculara el suyo sobre una ventana
@@ -40,9 +39,16 @@ import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { type ClaveDePaso, lecturaDeConversion, PASOS, pasoDeLaSenal } from '../../../lib/negocio/pasosDeConversion.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeConversion } from '../../../lib/agentes/plan/conversion.ts';
-import { comentarioDelDepartamento } from '../../../lib/agentes/cabecera.ts';
+import { comentarioDelDepartamento, faltaPorFrescura, LO_QUE_LEE } from '../../../lib/agentes/cabecera.ts';
+import { frescuraDe } from '../../../lib/negocio/frescura.ts';
 
 export const PANTALLA = 'conversion';
+
+/** La frescura de la lectura de contactos, con la frase de la cabecera. Corre dentro de `conOrganizacion`. */
+async function frescuraDelChip() {
+  const f = await frescuraDe('contactos');
+  return { contactos: { estado: f.estado, aviso: faltaPorFrescura(f, LO_QUE_LEE.conversion.que) } };
+}
 
 export async function GET(peticion: Request): Promise<Response> {
   /* `tablero.ver`, que es la que la sección ya declaraba. No se inventa una `conversion.ver`: siete
@@ -59,10 +65,10 @@ export async function GET(peticion: Request): Promise<Response> {
 
   /* Las señales del detector de Conversion (AG14 de los agentes), de 7 o de 30 días; con «hoy» o «completo»,
      ninguna, y la tarjeta lo dice. Las guarda la pasada de cada mañana; acá sólo se leen, y se reparten por paso
-     según su entidad (CV15-19), para que la pantalla nueva (CV-4) dibuje cada una en la tarjeta y el cajón de su
-     paso. La de hoy las muestra todas en su tarjeta de señales. */
+     según su entidad (CV15-19), para que la pantalla dibuje cada una en la tarjeta y el cajón de su paso; la
+     tarjeta de señales del final las muestra todas. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const [lectura, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const [lectura, senales, comentario, frescura] = await conOrganizacion(contexto.orgEfectiva, async () => {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('conversion', ventana, textoDeConversion);
     const porPaso = Object.fromEntries(PASOS.map((p) => [p, [] as string[]])) as Record<ClaveDePaso, string[]>;
     for (const s of lista) {
@@ -80,6 +86,10 @@ export async function GET(peticion: Request): Promise<Response> {
         porPaso,
       },
       await comentarioDelDepartamento('conversion', contexto.organizacion.zonaHoraria),
+      /* El punto del chip «GoHighLevel» (CV15-03): verde sólo con la lectura de contactos al día. Es la frescura
+         de la tarea y no del día, así que no depende del período. Su `aviso`, para el `title` del chip, es la frase
+         de la cabecera del departamento: la de `frescuraDe` promete una lectura al abrir la pantalla, y ésta no lee. */
+      await frescuraDelChip(),
     ] as const;
   });
 
@@ -93,6 +103,7 @@ export async function GET(peticion: Request): Promise<Response> {
     pasos: lectura.pasos,
     recorrido: lectura.recorrido,
     formulario: lectura.formulario,
+    frescura,
     senales,
     /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/conversion/senales` y
        `…/umbrales`, y nada bajo delegación (AG-82). */

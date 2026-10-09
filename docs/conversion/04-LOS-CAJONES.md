@@ -30,7 +30,7 @@
 
 **Rastro** · `stepDetail()` (`lib/aios/conversion.js:397-557`), abierto por `openStep()` (`:559-568`)
 desde cualquier `[data-step]` de la vista (`:570`). El subtítulo del grupo lo anuncia: *«abre un paso
-para ver su evidencia»* (`components/views/ConversionView.jsx:90-92`).
+para ver su evidencia»* (`components/views/ConversionView.jsx:90-92@4da946d`).
 
 **Estado** · **Requisito, y es el § 2.6 del documento funcional**: *«Toda recomendación debe mostrar
 qué se detectó, qué datos la respaldan… qué dato falta, cuando no existe evidencia suficiente»*
@@ -114,7 +114,7 @@ pantalla emite `data-step="calificados"`. Las seis cajas, la `Lectura` y las tre
 entraron» **no se dibujan nunca**.
 
 Y declara una **quinta fuente, `CRM`** (`:508`), que no figura entre los chips del encabezado
-(`ConversionView.jsx:22-31`) — o sea que ni siquiera es coherente con lo que la pantalla dice tener
+(`ConversionView.jsx:22-31@4da946d`) — o sea que ni siquiera es coherente con lo que la pantalla dice tener
 conectado.
 
 **Lo que sobrevive**: su meta es la mejor de las seis (`CRM · N de M citas`, con el denominador

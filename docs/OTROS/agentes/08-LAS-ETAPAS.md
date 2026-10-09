@@ -482,7 +482,7 @@
 
 - **Qué**: el detector (`fichas/F03-ACQUISITION.md`, con la tabla A6-01 a A6-24 regla por regla), el monitor
   de atribución en días cerrados, el Plan de acción con sus cinco grupos y su redacción, y en la pantalla: el
-  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:185` y la tarjeta de Señales al
+  botón «Plan de acción» en `components/acquisition/PanelDeAcquisition.jsx:196` y la tarjeta de Señales al
   final, con «Ver evidencia», «umbral provisional», resolver, descartar, validar y firmar.
 - **Rutas**: `app/api/acquisition/route.ts` suma señales, plan y lo que la persona puede hacer;
   `app/api/acquisition/senales/route.ts` y `app/api/acquisition/umbrales/route.ts`.

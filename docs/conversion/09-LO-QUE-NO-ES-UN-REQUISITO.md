@@ -48,7 +48,7 @@ presentadas como hechos.
 
 ### CV9-03 · Dos fuentes declaradas como conectadas que no existen
 
-**Rastro** · `components/views/ConversionView.jsx:22-31`, los chips `Clarity` y `VTurb` con el punto
+**Rastro** · `components/views/ConversionView.jsx:22-31@4da946d`, los chips `Clarity` y `VTurb` con el punto
 de «fuente viva».
 **Estado** · **No hay integración, ni credencial, ni variable de entorno, ni tabla.** Sólo cadenas de
 texto en el JSX y en `conversion.js`, donde además se declaran como origen de cada cajón —`Clarity ·
@@ -77,7 +77,7 @@ Ver `CV6-09`. Las siete cifras de la tira de KPI llevan `data-leads` y abren el 
 |---|---|---|
 | «Calificadas» tiene dos fuentes | `conversion.js:165-166` contra `:11-13` | con `hist`, el panel dice 482 y el cajón 479 |
 | «Las 84 restantes» | `conversion.js:502` | la propia pantalla calcula 283 y 286 en otros dos sitios |
-| El período inicial | `conversion.js:141` contra `components/views/ConversionView.jsx:45` | la pastilla dice «7 días» y los números son del histórico |
+| El período inicial | `conversion.js:141` contra `components/views/ConversionView.jsx:45@4da946d` | la pastilla dice «7 días» y los números son del histórico |
 | `FIELDS` no escala | `conversion.js:136-139` contra `:467` | la cabecera dice 1.047 y la tabla arranca en 308 |
 | `Tiempo medio` | `conversion.js:236` | siempre dice `▲ mejor` sin comparar nada |
 | El `0.94` | `conversion.js:167` | sin justificación ni comentario |
@@ -99,10 +99,10 @@ puede seleccionar.
 
 - **`lib/aios/conversion.js`** entero — 648 líneas, 538 literales, 47 frases.
 - Su entrada en **`lib/aios/index.js:8@0add4cc^`** (el `import`) y **`:26@0add4cc^`** (la posición en `MODULOS`).
-- Los chips **`Clarity`** y **`VTurb`** de `components/views/ConversionView.jsx:22-31`.
+- Los chips **`Clarity`** y **`VTurb`** de `components/views/ConversionView.jsx:22-31@4da946d`.
 - Las **siete puertas** `data-leads` de la tira de KPI.
-- El botón **`◈ Plan de acción`** (`ConversionView.jsx:34-39`) y la pastilla **`Personalizado`**
-  (`:52-59`), por los mismos motivos que `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
+- El botón **`◈ Plan de acción`** (`ConversionView.jsx:34-39@4da946d`) y la pastilla **`Personalizado`**
+  (`:52-59@4da946d`), por los mismos motivos que `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
 
 `ConversionView.jsx` queda como **cáscara que documenta qué se tiró**, con la forma de
 `components/views/CreativeView.jsx`.

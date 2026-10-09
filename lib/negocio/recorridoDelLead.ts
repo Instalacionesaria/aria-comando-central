@@ -1,4 +1,5 @@
-// Por dónde entra la gente, y qué hace cada camino. El bloque principal de Conversion.
+// Por dónde entra la gente, y qué hace cada camino: la tabla del cajón de Landing de Conversion (CV15-17),
+// que hasta CV-4 fue el bloque principal de la pantalla.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAS FAMILIAS NO SE SUMAN, Y ÉSE ES TODO EL DISEÑO
@@ -262,7 +263,7 @@ function avisoDe(filas: FilaDeRecorrido[], cohorte: number, corte: CorteDeEpoca)
     partes.push(
       `Esta ventana cruza el ${corte.fecha}, que es el último día con el formulario de la landing ` +
         'escrito. Antes de esa fecha la mayoría entraba por la landing y después casi nadie, así ' +
-        'que el reparto de abajo mezcla dos maneras distintas de captar gente.',
+        'que este reparto mezcla dos maneras distintas de captar gente.',
     );
   }
 

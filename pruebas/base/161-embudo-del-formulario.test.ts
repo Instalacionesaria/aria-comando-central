@@ -121,6 +121,8 @@ test('la finalización cuenta a los que COMPLETARON, agendaran o no', async () =
 
   assert.equal(r.cobertura.con, 10);
   assert.equal(r.finalizacion, 80, `salió ${r.finalizacion}: 50 sería contar sólo los agendados`);
+  // Y el numerador viaja en contactos, para el cajón de Formulario (CV15-17).
+  assert.equal(r.completaron, 8, `salió ${r.completaron}: 5 sería contar sólo los agendados`);
   assert.equal(await estado('Form incompleto sin agendar'), 2);
 });
 
@@ -270,9 +272,9 @@ test('los cinco huecos viajan con su motivo, incluido el del VSL', async () => {
   );
 });
 
-test('ni los avisos ni los huecos llevan Markdown: la pantalla los dibuja crudos', async () => {
+test('ni los avisos ni los huecos llevan Markdown: viajan crudos', async () => {
   /* Un `**` se lee con los asteriscos puestos dentro de un `<p>`. Ya pasó en el aviso de fatiga de
-     Creative, y los textos de los huecos se dibujan igual que un aviso. */
+     Creative. Los avisos se dibujan en los cajones de Conversion, y los huecos los cita el cerebro tal cual. */
   await limpiar();
   await sembrarElCampo();
   await unContacto({ estado: 'Form a medio llenar' });
@@ -301,6 +303,8 @@ test('el corte se detecta del dato y dice si la ventana lo cruza, en las dos dir
   const ancha = await leer(3650);
   assert.ok(ancha.corte.fecha, 'no detectó el corte');
   assert.equal(ancha.corte.laVentanaLoCruza, true, 'una ventana que abarca el corte dice que no lo cruza');
+  // El aviso no dice dónde están las cifras: en el cajón de Formulario van arriba de él (CV15-17).
+  assert.match(String(ancha.aviso), /estas cifras hablan sólo de la parte de la ventana anterior/);
 
   const angosta = await leer(7);
   assert.equal(angosta.corte.fecha, ancha.corte.fecha, 'el corte cambió con la ventana');

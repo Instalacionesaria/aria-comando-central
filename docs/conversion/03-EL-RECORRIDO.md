@@ -29,7 +29,7 @@
 ### CV3-01 · La cadena que el prototipo dibuja
 
 **Rastro** · `lib/aios/conversion.js:36-42`, con el subtítulo *«porcentajes sobre el total de visitas
-· abre un paso para ver su evidencia»* (`components/views/ConversionView.jsx:90-92`).
+· abre un paso para ver su evidencia»* (`components/views/ConversionView.jsx:90-92@4da946d`).
 
 | # | rótulo | subtítulo | fuente que el prototipo declara |
 |---|---|---|---|
@@ -154,7 +154,7 @@ la pieza en vez de darles columna (`components/creative/PanelDeCreative.jsx:427-
 Si `calls.ariaia.com` no distingue «abrió el calendario» de «eligió horario» de «confirmó», entonces
 el recorrido mayoritario de hoy es **un solo punto** y Conversion no puede decir dónde se pierde la
 gente en él — que es literalmente la bajada de la pantalla: *«Dónde se pierde la gente entre el click
-y la cita»* (`ConversionView.jsx:18-20`). Es `CV14-P02`, y sin contestarla la mitad grande del
+y la cita»* (`ConversionView.jsx:18-20@4da946d`). Es `CV14-P02`, y sin contestarla la mitad grande del
 departamento es un conteo, no un embudo.
 
 ### CV3-P02 · ¿El paso «Gracias» es de este departamento?

@@ -80,7 +80,11 @@ test('los tres funnels, con el nombre y los rótulos de etapa y de costo del pro
 
 test('los bloques van en el orden del prototipo: encabezado, cifras, nota, tarjetas, tablas', () => {
   const principal = funcion('PanelDeAcquisition');
-  assert.ok(principal.indexOf('className="cre-head"') < principal.indexOf('<Cuerpo'), 'el encabezado no va primero');
+  const cabeza = principal.indexOf('className="cre-head"');
+  const debajo = principal.indexOf('<Cuerpo');
+  // Las dos tienen que estar: con el encabezado fuera, `-1 < n` pasaba en verde.
+  assert.ok(cabeza !== -1 && debajo !== -1, 'falta el encabezado o el cuerpo en el panel');
+  assert.ok(cabeza < debajo, 'el encabezado no va primero');
   const cuerpo = funcion('Cuerpo');
   const orden = ['<Cifras', '<Nota', 'className="acq-fgrid"', '<Tablas'].map((x) => cuerpo.indexOf(x));
   assert.ok(orden.every((x) => x !== -1), `falta un bloque: ${JSON.stringify(orden)}`);

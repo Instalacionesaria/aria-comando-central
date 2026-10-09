@@ -201,9 +201,10 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      suma al alcance, hereda la paleta y la tipografía, y se queda con el encabezado sin invertir:
      no falla nada, se ve distinta.
 
-     Ojo: se lee el JSX **crudo** para encontrar las vistas, y **sin comentarios** para afirmar.
-     Un `estetica-op` nombrado en un comentario no anota a nadie, pero tampoco tiene que hacer
-     fallar a nadie. */
+     Ojo: las vistas se buscan y se afirman **sin comentarios**. Un `estetica-op` nombrado en un
+     comentario no anota a nadie: las pantallas que salieron de la estética (Acquisition, Conversion)
+     la nombran en su cabecera para decir por qué no la llevan, y buscadas en crudo se contarían de
+     más y fallarían el chequeo de `ch-l stack`. */
   const vistas = readdirSync(join(RAIZ, 'components/views'))
     .filter((f) => f.endsWith('.jsx'))
     .filter((f) => leer(`components/views/${f}`).includes('estetica-op'));
@@ -215,11 +216,13 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
   /* 12 desde el 2026-09-22: entró Analizadores, que es del grupo Operación y se dibuja con su
      estética como el Closer. 11 desde el 2026-09-30: salió Acquisition, que volvió al front del
      prototipo con su estética al 100 %, como Leads Portal (docs/acquisition/14, A14-01).
-     12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo. */
+     12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo.
+     11 desde el 2026-10-09: salió Conversion, que volvió al front del prototipo con su estética al 100 %, como
+     Acquisition (docs/conversion/15, CV15-01). */
   assert.equal(
     vistas.length,
-    12,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 12: si entró una pantalla ` +
+    11,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 11: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 

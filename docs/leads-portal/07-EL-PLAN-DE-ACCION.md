@@ -20,7 +20,7 @@ cuatro frases en el modal compartido `#recoModal` y lo abre.
 Y es **el último plan de acción cableado de la aplicación**. Acquisition, Creative, Conversion y
 Sales ya borraron el suyo, cada uno con su motivo escrito en la cabecera de la vista nueva
 (`components/views/AcquisitionView.jsx` (en `4365cc9`, línea 21), `components/views/CreativeView.jsx:19`,
-`components/views/ConversionView.jsx:39`, `components/views/SalesView.jsx:31`). Con LP-6 no queda
+`components/views/ConversionView.jsx:39@b2dcdf5`, `components/views/SalesView.jsx:31`). Con LP-6 no queda
 ninguno.
 
 ---

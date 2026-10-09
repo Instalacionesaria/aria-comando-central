@@ -418,7 +418,7 @@ otro departamento, y Acquisition dibuja una etapa de landing dentro de sus tres 
 
 **(b) De qué proveedor.** La misma línea de Conversion lo nombra: `src:'Clarity'` para las sesiones y
 `src:'VTurb'` para el VSL, y los dos se muestran en pantalla como fuentes conectadas
-(`conversion.js:398`, `:400`, `:420`, `:422`; `components/views/ConversionView.jsx:25`, `:29`). Los dos eran cadenas de texto y
+(`conversion.js:398`, `:400`, `:420`, `:422`; `components/views/ConversionView.jsx:25@4da946d`, `:29@4da946d`). Los dos eran cadenas de texto y
 nada más —ni cliente, ni ruta, ni tabla, ni variable de entorno—, y la pantalla afirmaba dos integraciones que nunca existieron;
 el 2026-09-20 se borraron los chips, y Clarity sigue sin estar en el código (`03-CONVERSION.md:215`, `03-CONVERSION.md:327`).
 

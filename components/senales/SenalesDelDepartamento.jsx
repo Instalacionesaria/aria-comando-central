@@ -1,8 +1,8 @@
 'use client';
 
-/* El Plan de acción y la tarjeta de Señales de un departamento con detector: Acquisition desde AG9 de los agentes
- * (`docs/OTROS/agentes/fichas/F03-ACQUISITION.md`, «La pantalla»; `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`) y
- * Creative Insights desde AG10 (`fichas/F06-CREATIVE-INSIGHTS.md`; `docs/creative/06-EL-PLAN-DE-ACCION.md`).
+/* El Plan de acción y la tarjeta de Señales de un departamento con detector, en las cuatro pantallas que lo tienen:
+ * Acquisition desde AG9 de los agentes (`docs/OTROS/agentes/fichas/F03-ACQUISITION.md`), Creative Insights desde
+ * AG10 (`fichas/F06-CREATIVE-INSIGHTS.md`), Conversation desde AG13 (`F05`) y Conversion desde AG14 (`F04`).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL MARCADO ES EL DEL PROTOTIPO, Y LO QUE DICE LLEGA HECHO
@@ -10,14 +10,14 @@
  * El botón «Plan de acción» (`reco-btn`), el modal con sus grupos (`reco-group`) y la tarjeta «Señales
  * detectadas · sin recomendación automática» (`card` con `.sig`) son los de `aios-command-center_1.html`
  * (líneas 2688, 2728 y 5644), con las reglas de `app/aios.css` y las propias en `app/senales.css`, acotadas a las
- * dos vistas. Las frases las arma el servidor con la plantilla de cada regla
+ * cuatro vistas. Las frases las arma el servidor con la plantilla de cada regla
  * —métrica, valor y base juntas (A6-06)—; acá sólo se resuelve el nombre de la entidad con lo que la pantalla ya
  * tiene (en Acquisition, las campañas de los embudos y los rótulos de los funnels) y se eligen los rótulos cortos.
  *
  * Lo que cambia entre departamentos está en `DEPARTAMENTOS`: el nombre del subtítulo, si sus ventanas son de días
- * cerrados (las de Acquisition) o llegan hasta hoy (las de Creative, que son las de su pantalla), y si sus
- * señales calculan gente perdida. Creative no la calcula: decir «sin pérdida calculable» en cada señal suya
- * sería ruido.
+ * cerrados (las de Acquisition y, desde su CV-3, las de Conversion) o llegan hasta hoy (las de Creative, que son las
+ * de su pantalla), y si sus señales calculan gente perdida. Creative no la calcula: decir «sin pérdida calculable»
+ * en cada señal suya sería ruido.
  *
  * ── LO QUE SE PUEDE HACER, Y QUIÉN ───────────────────────────────────────────
  *
@@ -36,7 +36,7 @@ const DEPARTAMENTOS = {
   acquisition: { nombre: 'Acquisition', cerrados: true, conPerdida: true },
   creative: { nombre: 'Creative Insights', cerrados: false, conPerdida: false },
   conversation: { nombre: 'Conversation', cerrados: false, conPerdida: false },
-  conversion: { nombre: 'Conversion', cerrados: false, conPerdida: true },
+  conversion: { nombre: 'Conversion', cerrados: true, conPerdida: true },
 };
 
 /** El rótulo corto de cada regla, para el título de la señal. El texto largo lo trae el servidor. */

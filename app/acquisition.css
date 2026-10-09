@@ -56,6 +56,12 @@
    (abajo). */
 #v-acquisition .acq-desliza { min-width: 0; }
 
+/* El anillo de foco del botón del plan y del segmentado (`app/temas.css`), por dentro: por fuera lo recorta el
+   borde del desplazador arriba y, debajo de 1120 px, cuando `.ch-r` baja al borde izquierdo, también a la izquierda.
+   Lo encontró la revisión de CV-4 de Conversion, que tiene el mismo encabezado. */
+#v-acquisition .cre-head .ch-r .reco-btn:focus-visible,
+#v-acquisition .cre-head .ch-r .db-seg button:focus-visible { outline-offset: -2px; }
+
 /* La fila de una tabla plegable se abre también con el teclado: el foco tiene que verse. */
 #v-acquisition .card-head[data-acq-toggle]:focus-visible {
   outline: 2px solid rgb(var(--c-acento) / .55);

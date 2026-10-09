@@ -52,8 +52,8 @@ con el estilo del botón principal de la pantalla, que enseña que la aplicació
    no tiene.
 
 **Y el marcado tampoco está al día.** Los cuatro paneles nuevos emiten `db-seg cs-periodos` con
-`role="group"` y `aria-label` (`PanelDeConversion.jsx:106`, `PanelDeCreative.jsx:111`,
-`PanelDeAcquisition.jsx:205`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
+`role="group"` y `aria-label` (`PanelDeConversion.jsx:115@b2dcdf5`, `PanelDeCreative.jsx:111`,
+`PanelDeAcquisition.jsx:226`, `PanelDeConversation.jsx:296`). Sales emite `db-seg` pelada con un `id`.
 
 ---
 
@@ -104,9 +104,10 @@ Con dos observaciones que valen para las tres pantallas:
    tenía `<div class="ch-l">` pelado, sin `stack` ni `ch-title`, y **sin `.cl-page`**: el cuerpo
    colgaba directo del scroller. Se agregaron después, y sin `.cl-page` el `gap: 24px` del scroller se
    aplica entre todos los bloques.
-2. **La mitad derecha (`.ch-r`) se va entera.** Creative y Conversion ya la borraron; hoy **Sales es
-   la única de las cinco que la conserva**, lo cual deja desactualizado el comentario de
-   `app/inteligencia-estetica.css:31-35`, que afirma que las cinco la comparten.
+2. **La mitad derecha (`.ch-r`) se va entera.** Al 2026-09-21 Creative y Conversion ya la habían borrado, y
+   **Sales era la única de las cinco que la conservaba**, lo cual dejaba desactualizado el comentario de
+   `app/inteligencia-estetica.css:37-41`, que afirma que las cinco la comparten. Desde AQ-4 y CV-4,
+   Acquisition y Conversion la vuelven a dibujar, con el encabezado del prototipo.
 
 ## S7-05 · Y la bajada cambia, como en las otras dos
 

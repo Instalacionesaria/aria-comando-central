@@ -81,6 +81,8 @@ export interface EmbudoDelFormulario {
    * **`null` bajo el piso, nunca cero.** Es la cifra que contesta al § 18.11.
    */
   finalizacion: number | null;
+  /** `Agendado` + `Form completo sin agendar`: el numerador de la finalización, en contactos (CV15-17). */
+  completaron: number;
   /**
    * Contactos con un valor que no es ninguno de los tres. **Se cuentan y se informan, no se
    * fuerzan.** Ver el encabezado.
@@ -97,7 +99,7 @@ export interface EmbudoDelFormulario {
   corte: CorteDeEpoca;
   /** `null` si el CRM no tiene el campo. Entonces el bloque entero se apaga y lo dice. */
   campoDelFormulario: string | null;
-  /** Lo que este departamento NO puede medir, con el motivo. **Se dibuja**; ver `FUERA_DE_ALCANCE`. */
+  /** Lo que este departamento NO puede medir, con el motivo. Viaja para el cerebro; ver `FUERA_DE_ALCANCE`. */
   fueraDeAlcance: { punto: string; porque: string }[];
   aviso: string | null;
 }
@@ -113,14 +115,18 @@ export interface EmbudoDelFormulario {
  * se dice por qué, la lectura razonable es que se rompió.
  *
  * **La diferencia entre un hueco declarado y una regresión es este párrafo.**
+ *
+ * Hasta CV-4 (2026-10-09) la pantalla dibujaba esta lista al final. Desde entonces los que tienen lugar en el
+ * prototipo dicen «Sin dato» ahí, y las sesiones y la tasa de la landing no lo tienen (CV15-27); lo que haría falta
+ * para cada uno vive en `docs/OTROS/futuro/lo-que-conversion-no-mide.md`, y esta lista la lee el cerebro.
  */
 export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {
     punto: 'La retención del VSL',
     porque:
-      /* Sin asteriscos: la pantalla dibuja este texto tal cual, dentro de un `<p>`. Un Markdown se
-         lee con los asteriscos puestos, y el texto que existe para explicar un hueco termina
-         pareciendo un error de la aplicación. Ya pasó en el aviso de fatiga de Creative. */
+      /* Sin asteriscos: el texto viaja crudo y se cita tal cual —la pantalla lo dibujaba dentro de un
+         `<p>` hasta CV-4; hoy lo lee el cerebro—. Un Markdown se lee con los asteriscos puestos, y el
+         texto que explica un hueco termina pareciendo un error. Ya pasó en el aviso de fatiga de Creative. */
       'el campo que la guarda se escribió 79 veces entre el 2026-08-11 y el 2026-08-30 y las 79 ' +
       'dicen cero. No es que nadie viera el video: es que el medidor no reporta. Los otros dos ' +
       'campos de porcentaje de video están en 0 de 590. Hace falta arreglar vTurb o su integración, ' +
@@ -129,9 +135,9 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {
     punto: 'Las sesiones, los visitantes y los eventos de página',
     porque:
-      /* Sin acentos graves tampoco. La pantalla dibuja este texto crudo dentro de un `<p>`, así que
-         un «`visitor_id`» se lee con las comillas invertidas puestas. Verificado en el navegador el
-         2026-09-20: salían literales. Es el mismo motivo por el que no lleva asteriscos. */
+      /* Sin acentos graves tampoco, por lo mismo: dibujado crudo dentro de un `<p>`, un «`visitor_id`»
+         se leía con las comillas invertidas puestas. Verificado en el navegador el 2026-09-20, con la
+         pantalla de entonces: salían literales. */
       'no existe ninguna tabla que los guarde, y los identificadores de visitante y de sesión no ' +
       'aparecen en una sola línea del repositorio. Un visitante que no se convierte en contacto no ' +
       'deja rastro en ningún lado, así que la unidad de este departamento es el contacto y no la visita',
@@ -139,8 +145,8 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {
     punto: 'El mapa de calor, el scroll y los clics muertos',
     porque:
-      'Clarity aparece en la pantalla como fuente conectada y sólo existe como una cadena de texto ' +
-      'en el JSX: no hay integración, ni credencial, ni variable de entorno, ni tabla',
+      'Clarity no está integrado: fue un chip de texto de la maqueta y no hay integración, ni ' +
+      'credencial, ni variable de entorno, ni tabla',
   },
   {
     punto: 'La tasa de conversión de la landing',
@@ -183,6 +189,7 @@ export async function embudoDelFormulario(
       filas: [],
       cobertura: { con: 0, sobre: 0 },
       finalizacion: null,
+      completaron: 0,
       fueraDelVocabulario: 0,
       agendadoSegunLasCitas: { segunElCampo: 0, conCitaAlcanzable: 0 },
       corte,
@@ -242,6 +249,7 @@ export async function embudoDelFormulario(
     /* El piso es del DENOMINADOR —los que traen el campo—, no de la cohorte. Con cuatro contactos
        que llegaron al formulario, «el 75 % lo completa» se lee igual que un 75 % sobre doscientos. */
     finalizacion: conCampo >= PISO_DE_UNA_TASA ? redondear((completaron / conCampo) * 100, 1) : null,
+    completaron,
     fueraDelVocabulario: Number(f?.huerfanos ?? 0),
     agendadoSegunLasCitas: { segunElCampo, conCitaAlcanzable: Number(f?.agendadoDeVerdad ?? 0) },
     corte,
@@ -279,7 +287,7 @@ function avisoDe(r: EmbudoDelFormulario): string | null {
   if (r.corte.laVentanaLoCruza && r.corte.fecha !== null) {
     partes.push(
       `Esta ventana cruza el ${r.corte.fecha}, que es el último día con el formulario escrito, así ` +
-        'que las cifras de abajo hablan sólo de la parte de la ventana anterior a esa fecha.',
+        'que estas cifras hablan sólo de la parte de la ventana anterior a esa fecha.',
     );
   }
 

@@ -102,43 +102,43 @@ porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/seccione
 décima salida de la lista, quinta vez que el cable dispara (`pruebas/codigo/90-fundaciones.test.ts:1172-1174`).
 El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:283-284`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
-**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:47-105`) pide `tablero.ver`
-por el portero (`app/api/conversion/route.ts:51`), **rechaza** con 400 un período que no está en la
-lista en vez de corregirlo (`app/api/conversion/route.ts:54-58`), le pasa **la misma ventana** a los
+**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:53-116`) pide `tablero.ver`
+por el portero (`app/api/conversion/route.ts:57`), **rechaza** con 400 un período que no está en la
+lista en vez de corregirlo (`app/api/conversion/route.ts:60-64`), le pasa **la misma ventana** a los
 dos módulos (`app/api/conversion/route.ts:64-78@02d9207`) y devuelve la clave del período que usó
-(`app/api/conversion/route.ts:86-104`). El lector del navegador exige el período, sin valor por
-omisión (`lib/negocio/vistaDeConversion.ts:48-60`).
+(`app/api/conversion/route.ts:96-115`). El lector del navegador exige el período, sin valor por
+omisión (`lib/negocio/vistaDeConversion.ts:51-63`).
 
 **La vista.** `components/views/ConversionView.jsx` (79 líneas) es una cáscara: su encabezado dice qué
-se tiró y por qué (`components/views/ConversionView.jsx:21-44`), la bajada cambió a *«Por dónde entra
-la gente, y quién abandona el formulario»* (`components/views/ConversionView.jsx:69`) y monta el panel
-(`components/views/ConversionView.jsx:74`).
+se tiró y por qué (`components/views/ConversionView.jsx:21-44@b2dcdf5`), la bajada cambió a *«Por dónde entra
+la gente, y quién abandona el formulario»* (`components/views/ConversionView.jsx:69@b2dcdf5`) y monta el panel
+(`components/views/ConversionView.jsx:74@b2dcdf5`).
 
 **El panel.** `components/conversion/PanelDeConversion.jsx` (488 líneas) dibuja, en este orden
-(`components/conversion/PanelDeConversion.jsx:167-179`):
+(`components/conversion/PanelDeConversion.jsx:167-179@b2dcdf5`):
 
-1. **La barra de períodos**, siempre presente (`components/conversion/PanelDeConversion.jsx:90-95`),
+1. **La barra de períodos**, siempre presente (`components/conversion/PanelDeConversion.jsx:90-95@b2dcdf5`),
    con los cuatro de `lib/negocio/periodo.ts:83-96`. Abre en **30 días**
-   (`lib/negocio/periodo.ts:109`, `components/conversion/PanelDeConversion.jsx:51`) y enciende el
-   botón que el servidor contestó, no el que se pidió (`components/conversion/PanelDeConversion.jsx:94`).
+   (`lib/negocio/periodo.ts:109`, `components/conversion/PanelDeConversion.jsx:51@b2dcdf5`) y enciende el
+   botón que el servidor contestó, no el que se pidió (`components/conversion/PanelDeConversion.jsx:94@b2dcdf5`).
    Se recarga cada 60 segundos sólo con la pestaña a la vista
-   (`components/conversion/PanelDeConversion.jsx:83-85`, `lib/cadencia.ts:91`).
-2. **«Cuánto vale lo que dice esta pantalla»** (`components/conversion/PanelDeConversion.jsx:189-257`):
+   (`components/conversion/PanelDeConversion.jsx:83-85@b2dcdf5`, `lib/cadencia.ts:91`).
+2. **«Cuánto vale lo que dice esta pantalla»** (`components/conversion/PanelDeConversion.jsx:189-257@b2dcdf5`):
    la cobertura del recorrido (contactos con dirección sobre la cohorte), la cobertura del formulario
    (contactos con el campo sobre la cohorte) y el rango real de cada bloque, que casi nunca es la
-   ventana pedida (`components/conversion/PanelDeConversion.jsx:247-254`).
-3. **«Por dónde entró la gente»** (`components/conversion/PanelDeConversion.jsx:266-333`): una fila
+   ventana pedida (`components/conversion/PanelDeConversion.jsx:247-254@b2dcdf5`).
+3. **«Por dónde entró la gente»** (`components/conversion/PanelDeConversion.jsx:266-333@b2dcdf5`): una fila
    por familia con contactos, porción de la cohorte y **un conteo** de agendados, no una tasa. Al lado
    del nombre, una nota cuando al menos el 90 % de la fila tiene la dirección registrada al reservar
-   (`components/conversion/PanelDeConversion.jsx:344-357`), y al pie el aviso del servidor.
+   (`components/conversion/PanelDeConversion.jsx:344-357@b2dcdf5`), y al pie el aviso del servidor.
 4. **«Cuántos abandonan el formulario de la landing»**
-   (`components/conversion/PanelDeConversion.jsx:372-423`): los tres estados del campo, la tasa de
+   (`components/conversion/PanelDeConversion.jsx:372-423@b2dcdf5`): los tres estados del campo, la tasa de
    finalización —o «—» con el rótulo «no alcanza para una tasa»
-   (`components/conversion/PanelDeConversion.jsx:393-396`)— y la contradicción entre lo que dice el
-   campo y lo que dicen las citas (`components/conversion/PanelDeConversion.jsx:434-446`).
-5. **«Lo que esta pantalla no puede medir»** (`components/conversion/PanelDeConversion.jsx:468-488`):
+   (`components/conversion/PanelDeConversion.jsx:393-396@b2dcdf5`)— y la contradicción entre lo que dice el
+   campo y lo que dicen las citas (`components/conversion/PanelDeConversion.jsx:434-446@b2dcdf5`).
+5. **«Lo que esta pantalla no puede medir»** (`components/conversion/PanelDeConversion.jsx:468-488@b2dcdf5`):
    los cinco huecos, bajo un encabezado fechado el 20 de septiembre
-   (`components/conversion/PanelDeConversion.jsx:476-477`). Ver § 5.
+   (`components/conversion/PanelDeConversion.jsx:476-477@b2dcdf5`). Ver § 5.
 
 **Los módulos.** `lib/negocio/recorrido.ts` (343 líneas, el 2026-10-08) tiene la clasificación: siete familias
 (`lib/negocio/recorrido.ts:56-64`), sus rótulos (`lib/negocio/recorrido.ts:69-95`), la lista de hosts
@@ -157,12 +157,12 @@ el formulario y los huecos. Las pruebas son 26: 14 en `pruebas/base/160-recorrid
 - **El corte se detecta del dato**: el último día con `Form Landing VSL` escrito
   (`lib/negocio/recorrido.ts:257-268`), y viaja con `laVentanaLoCruza` en las dos respuestas.
 - **Pisos**: la finalización exige al menos `PISO_DE_UNA_TASA = 10` contactos con el campo
-  (`lib/negocio/embudoDelFormulario.ts:242-244`, `lib/negocio/indicadoresDeCitas.ts:329`); la porción de
-  cada familia se publica sin piso porque es un conteo exacto (`lib/negocio/recorridoDelLead.ts:200-203`);
-  el aviso de circularidad exige 10 contactos y el 90 % (`lib/negocio/recorridoDelLead.ts:272-274`), y la
-  nota por fila sólo el 90 % (`components/conversion/PanelDeConversion.jsx:347`).
+  (`lib/negocio/embudoDelFormulario.ts:249-251`, `lib/negocio/indicadoresDeCitas.ts:329`); la porción de
+  cada familia se publica sin piso porque es un conteo exacto (`lib/negocio/recorridoDelLead.ts:201-204`);
+  el aviso de circularidad exige 10 contactos y el 90 % (`lib/negocio/recorridoDelLead.ts:273-275`), y la
+  nota por fila sólo el 90 % (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`).
 - **El valor por omisión de los módulos es `DIAS_DE_LA_TASA = 14`**
-  (`lib/negocio/indicadoresDeCitas.ts:339`, `lib/negocio/recorridoDelLead.ts:140-141`), pero la ruta
+  (`lib/negocio/indicadoresDeCitas.ts:339`, `lib/negocio/recorridoDelLead.ts:141-142`), pero la ruta
   siempre pasa el período, así que la pantalla nunca mide catorce días.
 
 **Lo que dibujaría hoy**, reproduciendo las consultas de los dos módulos a mano, medido el 2026-09-28
@@ -203,23 +203,23 @@ son historia y se leen con `git show 0add4cc^:lib/aios/conversion.js`.
 | lo que dibujaba la maqueta | qué hay hoy |
 |---|---|
 | El funnel `CV`: 18 números —sesiones, VSL, formulario, agenda, calificadas y gracias por tres dispositivos— multiplicados por un factor de período | **El reparto de siete familias**, con conteos reales. Visitas, VSL y gracias pasaron a hueco declarado; «calificadas» no tiene fuente y no se dibuja |
-| La cadena `Landing → VSL → Formulario → Agenda → Gracias`, cada paso sobre el total de visitas | **Se borró en vez de postergarse**: landing y widget son dos caminos, no dos pasos (`components/views/ConversionView.jsx:30-35`) |
+| La cadena `Landing → VSL → Formulario → Agenda → Gracias`, cada paso sobre el total de visitas | **Se borró en vez de postergarse**: landing y widget son dos caminos, no dos pasos (`components/views/ConversionView.jsx:30-35@b2dcdf5`) |
 | `BANDS`, la «banda esperada» que su comentario llamaba p25–p75 de 90 días y eran literales | Nada. Sin serie de 90 días no hay banda que calibrar |
-| Once fricciones, el modal «Plan de acción» con su 45 % de recuperación y 47 frases de guion | **Borrados** con el botón (`components/views/ConversionView.jsx:39-41`) |
+| Once fricciones, el modal «Plan de acción» con su 45 % de recuperación y 47 frases de guion | **Borrados** con el botón (`components/views/ConversionView.jsx:39-41@b2dcdf5`) |
 | Tres fallas técnicas inventadas asignadas por nombre a una persona real del equipo | Se fueron con el archivo. El nombre sigue en cuatro archivos de `docs/conversion/` (06, 09, 12 y 13); ver [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 15 |
-| El mapa de calor, el scroll y los clics por zona | Hueco declarado (`lib/negocio/embudoDelFormulario.ts:139-144`), con un texto que quedó falso; ver § 7, riesgo 2 |
-| La curva de retención del VSL, un `path` SVG con coordenadas escritas a mano | Hueco declarado (`lib/negocio/embudoDelFormulario.ts:118-128`) |
+| El mapa de calor, el scroll y los clics por zona | Hueco declarado (`lib/negocio/embudoDelFormulario.ts:139-144@b2dcdf5`), con un texto que quedó falso; ver § 7, riesgo 2 |
+| La curva de retención del VSL, un `path` SVG con coordenadas escritas a mano | Hueco declarado (`lib/negocio/embudoDelFormulario.ts:124-134`) |
 | El «video de bienvenida» de la página de gracias | Nada: es el precall, de Appointment Flow. La familia `precall` se dibuja sólo para que la cohorte cuadre (`lib/negocio/recorrido.ts:86-89`) |
-| El abandono campo por campo del formulario | Hueco (`lib/negocio/embudoDelFormulario.ts:152-157`). Lo que sí hay son los tres estados del campo |
+| El abandono campo por campo del formulario | Hueco (`lib/negocio/embudoDelFormulario.ts:158-163`). Lo que sí hay son los tres estados del campo |
 | `FACTOR` y `PREV`, los multiplicadores de período | Las cuatro ventanas reales (`lib/negocio/periodo.ts:83-96`), y lo que no está se rechaza |
-| Los chips «Clarity» y «VTurb» con punto de fuente conectada | **Borrados** (`components/views/ConversionView.jsx:21-25`) |
-| El filtro por dispositivo | **Borrado**: no hay sesiones de las que sacarlo (`components/views/ConversionView.jsx:26-29`) |
-| Siete puertas al panel de catorce personas inventadas | Quitadas de esta pantalla (`components/views/ConversionView.jsx:42-44`); `lib/aios/leads-group.js` sigue para Executive |
+| Los chips «Clarity» y «VTurb» con punto de fuente conectada | **Borrados** (`components/views/ConversionView.jsx:21-25@b2dcdf5`) |
+| El filtro por dispositivo | **Borrado**: no hay sesiones de las que sacarlo (`components/views/ConversionView.jsx:26-29@b2dcdf5`) |
+| Siete puertas al panel de catorce personas inventadas | Quitadas de esta pantalla (`components/views/ConversionView.jsx:42-44@b2dcdf5`); `lib/aios/leads-group.js` sigue para Executive |
 
 Los números del borrado no coinciden entre los comentarios que lo cuentan:
-`components/views/ConversionView.jsx:2` y `components/conversion/PanelDeConversion.jsx:11` dicen 530
+`components/views/ConversionView.jsx:2@b2dcdf5` y `components/conversion/PanelDeConversion.jsx:11@b2dcdf5` dicen 530
 literales; `lib/negocio/vistaDeConversion.ts:8` y `docs/conversion/09-LO-QUE-NO-ES-UN-REQUISITO.md:36`
-dicen 538; y `components/conversion/PanelDeConversion.jsx:8` y `lib/negocio/vistaDeConversion.ts:6`
+dicen 538; y `components/conversion/PanelDeConversion.jsx:8@b2dcdf5` y `lib/negocio/vistaDeConversion.ts:6`
 dicen 648 líneas de un archivo que al borrarse tenía 655. Un recuento mío con otro criterio dio 505.
 El número depende de qué se cuenta como literal, así que no lo fijo.
 
@@ -317,16 +317,16 @@ después.
 ## 5 · Datos que faltan, y de dónde tendrían que venir
 
 **Los cinco huecos que la pantalla declara** viajan en cada respuesta
-(`lib/negocio/embudoDelFormulario.ts:117-158`) y se dibujan al final del panel. Su encabezado dice
+(`lib/negocio/embudoDelFormulario.ts:123-164`) y se dibujan al final del panel. Su encabezado dice
 «medido el 20 de septiembre»; cada uno, re-medido hoy:
 
 | hueco | medición del código (2026-09-20) | 2026-09-28 | de dónde tendría que venir |
 |---|---|---|---|
-| La retención del VSL (`lib/negocio/embudoDelFormulario.ts:118-128`) | 79 escrituras, las 79 en cero; los otros dos campos de video en 0 de 590 | igual; los otros dos en 0 de 594 | vTurb o su integración, fuera de este sistema. Decisión del 2026-09-20: no se toca (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:137-138`) |
-| Sesiones, visitantes y eventos de página (`lib/negocio/embudoDelFormulario.ts:129-138`) | no hay tabla | por nombre en `information_schema.tables` sólo hay `auth.sessions`, `identidad.sesiones` y tres `public.closer_*` de la plataforma anterior; ninguna es web | un píxel propio o un proveedor que escriba `visitor_id` y `session_id` (§ 5.2) |
-| El mapa de calor, el scroll y los clics muertos (`lib/negocio/embudoDelFormulario.ts:139-144`) | Clarity sólo existe como texto | igual: fuera de comentarios y de este mismo texto no aparece en el código, y `.env.example` no lo nombra | Clarity o equivalente instalado en la landing. **El texto del hueco quedó falso**; ver § 7, riesgo 2 |
-| La tasa de conversión de la landing (`lib/negocio/embudoDelFormulario.ts:145-151`) | 124 de 590 con `medium = calendar` | 125 de 594; y en septiembre 31 de los 32 contactos de la familia landing | un registro AL LLEGAR a la página, que hoy no existe |
-| El abandono pregunta por pregunta (`lib/negocio/embudoDelFormulario.ts:152-157`) | GoHighLevel no expone formularios entre las operaciones que este sistema usa | del 2026-09-20, no re-medido: haría falta una sonda contra la API | instrumentar el formulario |
+| La retención del VSL (`lib/negocio/embudoDelFormulario.ts:124-134`) | 79 escrituras, las 79 en cero; los otros dos campos de video en 0 de 590 | igual; los otros dos en 0 de 594 | vTurb o su integración, fuera de este sistema. Decisión del 2026-09-20: no se toca (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:137-138`) |
+| Sesiones, visitantes y eventos de página (`lib/negocio/embudoDelFormulario.ts:135-144`) | no hay tabla | por nombre en `information_schema.tables` sólo hay `auth.sessions`, `identidad.sesiones` y tres `public.closer_*` de la plataforma anterior; ninguna es web | un píxel propio o un proveedor que escriba `visitor_id` y `session_id` (§ 5.2) |
+| El mapa de calor, el scroll y los clics muertos (`lib/negocio/embudoDelFormulario.ts:139-144@b2dcdf5`) | Clarity sólo existe como texto | igual: fuera de comentarios y de este mismo texto no aparece en el código, y `.env.example` no lo nombra | Clarity o equivalente instalado en la landing. **El texto del hueco quedó falso**; ver § 7, riesgo 2 |
+| La tasa de conversión de la landing (`lib/negocio/embudoDelFormulario.ts:151-157`) | 124 de 590 con `medium = calendar` | 125 de 594; y en septiembre 31 de los 32 contactos de la familia landing | un registro AL LLEGAR a la página, que hoy no existe |
+| El abandono pregunta por pregunta (`lib/negocio/embudoDelFormulario.ts:158-163`) | GoHighLevel no expone formularios entre las operaciones que este sistema usa | del 2026-09-20, no re-medido: haría falta una sonda contra la API | instrumentar el formulario |
 
 **Y los que no se declaran en pantalla:**
 
@@ -352,7 +352,7 @@ después.
 ## 6 · Reglas propias de este departamento
 
 Las nueve del corte anterior conservan su número, porque el código y `docs/conversion/` las citan por
-número (`lib/negocio/recorrido.ts:273-274`, `lib/negocio/recorridoDelLead.ts:37-38`). Las nueve
+número (`lib/negocio/recorrido.ts:273-274`, `lib/negocio/recorridoDelLead.ts:38-39`). Las nueve
 tienen ya algún punto del código que las cumple, y cada una dice cuál.
 
 **1. Los ceros de este departamento son tres, y hay que nombrarlos distinto.**
@@ -362,15 +362,15 @@ contactos lo traen, todos con alta del 2026-08-11 al 2026-08-30, y los 79 dicen 
 sin una excepción—. La regla: **mientras el censo de un campo numérico tenga un solo valor distinto,
 ese campo no es una medición: es un indicador de que algo se instaló y no funcionó**, y se reporta
 como alarma, no como cifra. En código: el VSL es un hueco y no una cifra
-(`lib/negocio/embudoDelFormulario.ts:118-128`), y la finalización bajo el piso es «—» y no «0 %»
-(`components/conversion/PanelDeConversion.jsx:393-396`).
+(`lib/negocio/embudoDelFormulario.ts:124-134`), y la finalización bajo el piso es «—» y no «0 %»
+(`components/conversion/PanelDeConversion.jsx:393-396@b2dcdf5`).
 
 **2. Nunca mezclar cohortes de antes y después del 2026-08-31.**
 
 Cualquier serie que cruce esa fecha muestra un derrumbe fantasma de los indicadores de landing y de
 VSL, y no es una caída de conversión: es un cambio de ruta de adquisición. En código es
 `corteDeEpoca` (`lib/negocio/recorrido.ts:270-312`), que las dos respuestas llevan siempre y que los
-dos avisos dicen (`lib/negocio/recorridoDelLead.ts:261-267`, `lib/negocio/embudoDelFormulario.ts:279-284`).
+dos avisos dicen (`lib/negocio/recorridoDelLead.ts:262-268`, `lib/negocio/embudoDelFormulario.ts:287-292`).
 Con el reloj del 2026-09-28, las cuatro ventanas siguen fallando de maneras opuestas:
 
 - **Hoy y 7 días** no cruzan el corte y no tienen gente: 1 y 3 contactos, ninguno con el formulario.
@@ -391,15 +391,15 @@ arreglara, sino porque el corte va quedando fuera de la ventana.
 Hoy es más marcado: **en septiembre, 31 de los 32 contactos de la familia landing tienen la dirección
 capturada al reservar**, y uno solo por el formulario; en la ventana de 30 días son 37 de 43. Una
 tasa de conversión sobre ese denominador da casi 100 % por construcción, así que no se publica. En
-código, la fila lleva el conteo de los capturados al reservar (`lib/negocio/recorridoDelLead.ts:17-42`)
-y el hueco lo dice (`lib/negocio/embudoDelFormulario.ts:145-151`).
+código, la fila lleva el conteo de los capturados al reservar (`lib/negocio/recorridoDelLead.ts:18-43`)
+y el hueco lo dice (`lib/negocio/embudoDelFormulario.ts:151-157`).
 
 **4. El vocabulario de `Form Landing VSL` es cerrado y hay que tratarlo como cerrado.**
 
 Tres valores exactos (`lib/negocio/recorrido.ts:234-238`). `negocio.campos_del_crm` no guarda las
 opciones declaradas, así que un cuarto valor sólo se ve contándolo: la consulta lo cuenta
-(`lib/negocio/embudoDelFormulario.ts:208-210`) y el aviso lo nombra
-(`lib/negocio/embudoDelFormulario.ts:296-301`). Hoy son cero.
+(`lib/negocio/embudoDelFormulario.ts:215-217`) y el aviso lo nombra
+(`lib/negocio/embudoDelFormulario.ts:304-309`). Hoy son cero.
 
 **5. Los siete hosts no son la misma página y no se pueden sumar.**
 
@@ -431,22 +431,22 @@ landing. Son dos videos, y hoy Conversion no puede medir el suyo (regla 1).
 `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`), sobre el denominador. El corte anterior
 advertía que el filtro por dispositivo no soportaba un segundo corte; el filtro se borró y el problema
 con él. Hoy el piso muerde en el formulario: la ventana por omisión tiene 5 contactos con el campo y
-la tasa no se publica (`lib/negocio/embudoDelFormulario.ts:242-244`). La porción de cada familia va
+la tasa no se publica (`lib/negocio/embudoDelFormulario.ts:249-251`). La porción de cada familia va
 sin piso, porque es un conteo exacto y no una muestra.
 
 **9. Ninguna cifra puede llevar un identificador de GoHighLevel escrito a mano.**
 
 `campoPorNombre()` (`lib/negocio/camposDelCrm.ts:307-319`) es la única puerta: compara por nombre
 exacto, desempata por `campo_id` y devuelve `null` —no cero— si alguien renombra el campo. Conversion
-entra por ahí (`lib/negocio/recorrido.ts:258`, `lib/negocio/embudoDelFormulario.ts:172`), y sin el
-campo el bloque se apaga y lo dice (`lib/negocio/embudoDelFormulario.ts:175-195`). El catálogo tiene
+entra por ahí (`lib/negocio/recorrido.ts:258`, `lib/negocio/embudoDelFormulario.ts:178`), y sin el
+campo el bloque se apaga y lo dice (`lib/negocio/embudoDelFormulario.ts:181-202`). El catálogo tiene
 hoy 195 definiciones y 194 nombres: un nombre repetido, que no es de este departamento.
 
 **Y tres que nacieron al construir la pantalla, el 2026-09-20:**
 
 **10. Por familia se publican conteos, no tasas.** La tasa de agenda por recorrido salió circular: las
 familias cuya dirección se escribe al reservar dan 100 % porque estar en la fila y haber agendado
-son el mismo hecho (`lib/negocio/recorridoDelLead.ts:17-42`, `docs/conversion/02-METRICAS.md:83-120`).
+son el mismo hecho (`lib/negocio/recorridoDelLead.ts:18-43`, `docs/conversion/02-METRICAS.md:83-120`).
 Hoy, en 30 días, «Meta, navegador interno» son 23 de 23 y «Precall» 19 de 19.
 
 **11. El agendamiento sale del calendario, no del campo del formulario.** El campo dice `Agendado` 121
@@ -455,9 +455,9 @@ esta pantalla diría una tercera cifra de agendamiento (`lib/negocio/embudoDelFo
 del predicado compartido `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`).
 
 **12. «No hubo gente» no es «no hay dato».** Con la pauta en cero, una ventana vacía es falta de
-tráfico, y el aviso lo dice con esas palabras (`lib/negocio/recorridoDelLead.ts:249-259`); un bloque del
+tráfico, y el aviso lo dice con esas palabras (`lib/negocio/recorridoDelLead.ts:250-260`); un bloque del
 formulario sin población dice cuándo fue el último y que el campo sigue existiendo
-(`lib/negocio/embudoDelFormulario.ts:266-277`). Desde el 2026-09-14 es lo que la pantalla dice casi
+(`lib/negocio/embudoDelFormulario.ts:274-285`). Desde el 2026-09-14 es lo que la pantalla dice casi
 todos los días en «Hoy» y «7 días».
 
 ---
@@ -471,25 +471,25 @@ una ventana que cruza el corte siempre. El aviso lo dice; la cifra grande, no. Q
 formulario de hoy» está mirando una ruta que se cerró el 31 de agosto.
 
 **2. El hueco de Clarity dice en pantalla algo falso sobre la propia pantalla.**
-`lib/negocio/embudoDelFormulario.ts:142-143` afirma que *«Clarity aparece en la pantalla como fuente
+`lib/negocio/embudoDelFormulario.ts:142-143@b2dcdf5` afirmaba que *«Clarity aparece en la pantalla como fuente
 conectada y sólo existe como una cadena de texto en el JSX»*. Los chips se borraron el mismo día
-(`components/views/ConversionView.jsx:21-25`): Clarity ya no aparece en la pantalla como nada. Es la
+(`components/views/ConversionView.jsx:21-25@b2dcdf5`): Clarity ya no aparece en la pantalla como nada. Es la
 clase de texto que la regla del proyecto trata como defecto de primera clase, porque se dibuja.
 
 **3. La fila «Landing con VSL» de septiembre es casi toda circular, y no lleva la marca.**
 En 30 días son 43 contactos, 37 capturados al reservar (86 %) y 30 «agendaron». La marca pide el 90 %
-(`components/conversion/PanelDeConversion.jsx:347`, `lib/negocio/recorridoDelLead.ts:272-274`), así que
+(`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`), así que
 la fila sale limpia y sus 30 agendados se leen como conversión de la landing. Y su rótulo —*«Entró
 por la página propia con el video y el formulario»* (`lib/negocio/recorrido.ts:70-73`)— describe
 agosto: en septiembre, 31 de sus 32 contactos tienen esa dirección registrada al reservar.
 
 **4. «Hoy» dice una cosa al pasar el cursor y mide otra.** El título del botón dice *«Las últimas 24
 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
-`components/conversion/PanelDeConversion.jsx:122`), y la cohorte de Conversion es el día de calendario
+`components/conversion/PanelDeConversion.jsx:122@b2dcdf5`), y la cohorte de Conversion es el día de calendario
 desde la medianoche UTC (`lib/negocio/recorrido.ts:201-203`). `lib/negocio/costoDelAnuncio.ts:62-64`
 admite la diferencia para Acquisition, pero el título es compartido y no cambió. Además,
 `lib/negocio/recorrido.ts:193-195@210ac73` justificaba el anclaje porque Conversion *«cruza sus contactos con el
-gasto y con las piezas»*, y la ruta no leía ni gasto ni piezas (`app/api/conversion/route.ts:64-78@02d9207`); corregido el 2026-10-08 (CV-1). Desde el CV-3 la ruta lee `lecturaDeConversion` (`app/api/conversion/route.ts:73`), que sí lee el gasto de la cuenta, para los días cerrados y para las vistas de landing de Meta.
+gasto y con las piezas»*, y la ruta no leía ni gasto ni piezas (`app/api/conversion/route.ts:64-78@02d9207`); corregido el 2026-10-08 (CV-1). Desde el CV-3 la ruta lee `lecturaDeConversion` (`app/api/conversion/route.ts:79`), que sí lee el gasto de la cuenta, para los días cerrados y para las vistas de landing de Meta.
 
 **5. Executive sigue publicando en nombre de Conversion.** Móvil contra escritorio, la retención del
 VSL, visitas a la landing y una falla de formulario con su pérdida en contactos (§ 3). Ahora hay una
@@ -544,3 +544,13 @@ ese diseño para la landing o el VSL entrega exactamente el dato que hoy no sirv
   (`lib/negocio/pasosDeConversion.ts`), en días cerrados: la ventana de las secciones 2 y 7 —días de calendario hasta
   hoy, dos lecturas sueltas en la ruta— ya no es la que corre. El riesgo 4, el «Hoy» de dos significados, sigue hasta
   que la pantalla nueva saque el matiz del segmentado (CV-4).
+- **Desde el CV-4 (2026-10-09) la pantalla es la del prototipo**, con los datos reales: la tira de tres paneles, la
+  nota de cobertura, las cinco tarjetas del recorrido, la alarma y la tarjeta de señales, sin `estetica-op`
+  (`components/conversion/PanelDeConversion.jsx`, `components/conversion/CajonDelPaso.jsx`, `app/conversion.css`). Las
+  secciones 2 y 3 describen la anterior, y sus citas quedaron fijadas a `@b2dcdf5`: el reparto es ahora el cajón de
+  Landing, el formulario el de Formulario y la cobertura la nota. Los huecos del § 5 ya no se dibujan: viajan en la
+  respuesta para el cerebro, y su lista, con lo que haría falta para cada uno, está en
+  `docs/OTROS/futuro/lo-que-conversion-no-mide.md`. Se cierran el riesgo 2 (el texto de Clarity), el 4 (el segmentado
+  ya no lleva el matiz) y la mitad del 6: la nota de «Completo» dice los sin alta. El rótulo de «Sin rastro» sigue
+  diciendo 26, y ahora va en el `title` de su fila del cajón de Landing. El 3 sigue: la marca va sólo en la fila
+  registrada entera. La reescritura de esta foto queda pendiente.

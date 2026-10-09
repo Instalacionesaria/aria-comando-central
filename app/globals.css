@@ -86,6 +86,10 @@
    `aios.css`. */
 @import "./acquisition.css" layer(components);
 
+/* Conversion con el front del prototipo (CV-4). Hoja aparte por lo mismo que `acquisition.css`: agrega lo que
+   la maqueta no tenía —la nota de cobertura, el cajón de cada paso, el teléfono— sin tocar `aios.css`. */
+@import "./conversion.css" layer(components);
+
 /* Las señales y el Plan de acción de los departamentos con detector (AG9 y AG10 de los agentes): un solo
    componente en Acquisition y en Creative Insights, y por eso una sola hoja. */
 @import "./senales.css" layer(components);

@@ -226,9 +226,16 @@ test('lo que se oculta de las pantallas es el título y nada más, sólo con cab
       'app/departamentos.css: .app:has(> .cd:not(.cd-engranaje)) .main .cre-head > .ch-l:not(.stack)',
       'app/departamentos.css: .app:has(> .cd-engranaje) .main .cre-head .ch-title > h2',
       'app/departamentos.css: .app:has(> .cd:not(.cd-engranaje)) .main .cre-head:not(:has(.cl-sub, .ch-r))',
+      /* Conversion lleva el chip de su fuente en el `.ch-l`, como el prototipo: ahí se oculta el título y la bajada,
+         y el chip queda (CV15-03). Con cabecera, igual que las de arriba. */
+      'app/conversion.css: .app:has(> .cd:not(.cd-engranaje)) .main #v-conversion .cre-head > .ch-l > :is(h2, .cre-desc)',
     ].sort(),
     'una regla oculta algo de la cabecera de una pantalla que no es su título, lo oculta donde no hay cabecera, o se lleva la bajada de lo del engranaje',
   );
+  /* Y en Conversion el `.ch-l` vuelve: la regla de arriba lo ocultaría entero, y ahí va el chip de su fuente, lo
+     único que dice si la lectura de contactos está al día (CV15-03). */
+  const chip = reglas(fuente('app/conversion.css')).find((r) => r.selector.replace(/\s+/g, ' ') === '.app:has(> .cd:not(.cd-engranaje)) .main #v-conversion .cre-head > .ch-l:not(.stack)');
+  assert.match(chip?.cuerpo ?? '', /display:\s*flex/, 'con cabecera, Conversion pierde el chip «GoHighLevel» (CV15-03)');
   /* La cabecera de la pantalla que queda vacía sale del flujo: `display: none` no gana contra el
      `!important` de `aios.css`. Sin esto, 38 px vacíos con su línea. En lo del engranaje no queda
      vacía: le queda la bajada, y la de Ajustes dice de qué empresa es la configuración (`NE-49`). */

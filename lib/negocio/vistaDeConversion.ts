@@ -19,6 +19,7 @@ import type { ClaveDePeriodo } from './periodo.ts';
 import type { ClaveDePaso, PasosDeConversion } from './pasosDeConversion.ts';
 import type { RecorridoDeLosLeads } from './recorridoDelLead.ts';
 import type { EmbudoDelFormulario } from './embudoDelFormulario.ts';
+import type { Frescura } from './frescura.ts';
 import type { PlanDeConversion } from '../agentes/plan/conversion.ts';
 import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
@@ -28,10 +29,12 @@ export interface PantallaDeConversion {
   periodo: ClaveDePeriodo;
   /** La tira y las cinco tarjetas del prototipo, en días cerrados (CV15-04). Todo de 0 a 1. */
   pasos: PasosDeConversion;
-  /** Por dónde entró la gente —hoy, la tabla del panel; en CV-4, el cajón de Landing—: una fila por familia, que **no se suman entre sí**. */
+  /** Por dónde entró la gente, para el cajón de Landing: una fila por familia, que **no se suman entre sí**. */
   recorrido: RecorridoDeLosLeads;
-  /** El formulario de la landing —hoy, su bloque; en CV-4, el cajón de Formulario—. Su `finalizacion` viaja en %. */
+  /** El formulario de la landing, para el cajón de Formulario. Su `finalizacion` viaja en %. */
   formulario: EmbudoDelFormulario;
+  /** La lectura de contactos, para el punto del chip «GoHighLevel» (CV15-03), con la frase de la cabecera. */
+  frescura: { contactos: { estado: Frescura['estado']; aviso: string | null } };
   /**
    * Las señales del detector (AG14 de los agentes): las vivas de la ventana, el último plan y las reglas, y los ids
    * de las de cada paso (CV15-19).

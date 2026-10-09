@@ -50,6 +50,8 @@ const PANELES: Readonly<Record<string, string>> = {
   'components/leads-portal/FichaDelLead.jsx': 'v-contacts',
   /* El cajón de la pieza de Creative, también en un portal: sus reglas cuelgan de `.cr-ficha`. */
   'components/creative/FichaDelCreativo.jsx': 'v-creative',
+  /* Y el de un paso de Conversion, igual: sus reglas cuelgan de `.cv-cajon`. */
+  'components/conversion/CajonDelPaso.jsx': 'v-conversion',
 };
 
 const sinComentarios = (t: string): string => t.replace(/\/\*[\s\S]*?\*\//g, '');

@@ -518,8 +518,9 @@ select (select max(fecha) from negocio.metricas_de_anuncio where gasto > 0) ulti
 Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario y no un programador.
 
 - **Conversion dice que Clarity está conectado.** El texto que se dibuja afirma que «Clarity
-  aparece en la pantalla como fuente conectada» (`lib/negocio/embudoDelFormulario.ts:142-143`), y los
-  chips se borraron el mismo 2026-09-20 (`components/views/ConversionView.jsx:21-25`).
+  aparece en la pantalla como fuente conectada» (`lib/negocio/embudoDelFormulario.ts:142-143@b2dcdf5`), y los
+  chips se borraron el mismo 2026-09-20 (`components/views/ConversionView.jsx:21-25@b2dcdf5`). **Cerrado el
+  2026-10-09** (CV-4 de Conversion): el texto dice que Clarity no está integrado, y la pantalla ya no dibuja los huecos.
 - **«Sin rastro: 26 contactos, todos anteriores a septiembre»** (`lib/negocio/recorrido.ts:91-94`, y
   lo mismo en `lib/negocio/recorrido.ts:28-29` y `docs/conversion/01-LOS-DOS-RECORRIDOS.md:205-211`).
   Medido 22:11 UTC: 27 con `atribucion_ultima = '{}'`: 24 sin alta, 2 con alta de antes de
@@ -527,12 +528,14 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   muestra 3 y no 26.
 - **El botón «Hoy» promete «las últimas 24 horas, no el día del calendario»**
   (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion
-  (`components/conversion/PanelDeConversion.jsx:122`) —Acquisition dejó de dibujarlo en AQ-4, el
+  (`components/conversion/PanelDeConversion.jsx:122@b2dcdf5`) —Acquisition dejó de dibujarlo en AQ-4, el
   2026-09-30—, cuyas cohortes se anclan al día de
   calendario (`lib/negocio/recorrido.ts:201-203`; el propio `lib/negocio/costoDelAnuncio.ts:62-64`
   lo admite). Y `lib/negocio/periodo.ts:76-77` sigue diciendo
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
-  (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes.
+  (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes. **En Conversion,
+  cerrado el 2026-10-09** (CV-4): su segmentado va sin ese `title`, y desde CV-3 corta en días cerrados; lo de
+  `periodo.ts` y Leads Portal sigue.
 - **El monitor de atribución cuenta una clave que nadie trae.** Las cinco UTM incluyen `utmCampaign`
   (`lib/negocio/calidadDeLaAtribucion.ts:89`, usadas en `lib/negocio/calidadDeLaAtribucion.ts:116-129`),
   que está en **0 de 594** contactos; GoHighLevel manda `campaign` (272 en el primer toque, 22:11 UTC)
@@ -547,11 +550,14 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
-  (`components/conversion/PanelDeConversion.jsx:347`, `lib/negocio/recorridoDelLead.ts:272-274`) y la
+  (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`) y la
   fila da 86 % a 30 días según [03-CONVERSION.md](03-CONVERSION.md) (no re-medido); su rótulo
-  (`lib/negocio/recorrido.ts:70-73`) describe el recorrido de agosto.
+  (`lib/negocio/recorrido.ts:70-73`) describe el recorrido de agosto. Desde CV-4 (2026-10-09) la tabla vive en el
+  cajón de Landing, y la marca «registrada al reservar» va sólo en la fila registrada entera; la del 86 % sigue
+  sin marca, y el aviso del servidor la nombra sólo desde el 90 %.
 - **La cobertura de Conversion dice «de 570» sobre una base de 594** sin declarar los 24 sin alta
-  (§ 2.1), que Leads Portal sí declara.
+  (§ 2.1), que Leads Portal sí declara. **Cerrado el 2026-10-09** (CV-4 de Conversion): en «Completo» la nota dice
+  «{N} contactos sin alta no entran.» (CV15-10).
 - **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:79`), con el
   texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:52`), sin mirar si hay
   ventas. El día de la primera venta, la tarjeta la va a contar y el hueco la va a negar.
@@ -601,9 +607,9 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
 - `lib/negocio/leadsDelPortal.ts:272-275`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es
   ninguna de las cuatro ventanas. La ruta siempre le pasa el período; es un riesgo latente.
 - Los números de la maqueta de Conversion no coinciden entre sí: 530 literales en
-  `components/views/ConversionView.jsx:2` y `components/conversion/PanelDeConversion.jsx:11`, 538 en
+  `components/views/ConversionView.jsx:2@b2dcdf5` y `components/conversion/PanelDeConversion.jsx:11@b2dcdf5`, 538 en
   `lib/negocio/vistaDeConversion.ts:8` y `docs/conversion/09-LO-QUE-NO-ES-UN-REQUISITO.md:36`; y 648
-  líneas en `components/conversion/PanelDeConversion.jsx:8` y `lib/negocio/vistaDeConversion.ts:6`,
+  líneas en `components/conversion/PanelDeConversion.jsx:8@b2dcdf5` y `lib/negocio/vistaDeConversion.ts:6`,
   cuando `git show 0add4cc^:lib/aios/conversion.js` tiene 655.
 - `lib/aios/shell.js:156-158@c4cf2a8` y `scripts/paridad.mjs:159-162@c4cf2a8`: § 10.
 
@@ -782,7 +788,7 @@ el documento miente o si buscó mal.
   `03-COSTOS.md` y 20 en `05-PERIODOS-Y-COMPARACION.md` (contadas el 2026-09-28)— apuntan a líneas
   de la foto anterior de [01-ACQUISITION.md](01-ACQUISITION.md), que hoy es otro texto.
 - **La regla 11 de [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md)** se cita por línea
-  desde `components/conversion/PanelDeConversion.jsx:24`, `lib/negocio/cadenaDeCierre.ts:36`,
+  desde `components/conversion/PanelDeConversion.jsx:24@b2dcdf5`, `lib/negocio/cadenaDeCierre.ts:36`,
   `docs/conversion/01-LOS-DOS-RECORRIDOS.md:101`, `docs/conversion/03-EL-RECORRIDO.md:62` y
   `docs/sales/14-LOS-CINCO-ESLABONES.md:54`. Las cinco decían 451 en `HEAD`, que dejó de ser la
   regla; el 2026-09-28 se reapuntaron (en el árbol, sin commit) a la 625, que hoy es su encabezado.

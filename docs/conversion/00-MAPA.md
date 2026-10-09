@@ -117,7 +117,7 @@ La regla práctica: **si la pieza se puede reemplazar por una consulta, es requi
 borrarla, es andamiaje; y si al borrarla queda un hueco con forma, la forma es el requisito.**
 
 El caso difícil propio de esta carpeta: **una fuente que la pantalla declara conectada y no
-existe.** Los chips `Clarity` y `VTurb` del encabezado (`components/views/ConversionView.jsx:22-31`)
+existe.** Los chips `Clarity` y `VTurb` del encabezado (`components/views/ConversionView.jsx:22-31@4da946d`)
 llevan el punto de «fuente viva» y son **cadenas de texto en el JSX**. No hay integración, ni
 credencial, ni variable de entorno, ni tabla. No es andamiaje —no está ahí para dar un número— y no
 es requisito —nadie decidió integrarlos—: es una **afirmación falsa en pantalla**, y va al `09`.
