@@ -74,7 +74,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`) | — |
 | 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:200-203`) | 105 · 462 |
 | 02 VSL | hueco | — | — |
-| 03 Formulario | `con / cohorte`; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:168-255`) | «—» en 7 y 30 días |
+| 03 Formulario | `con` sobre la cohorte hasta el corte; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:168-255`) | «—» en 7 y 30 días |
 | 04 Agenda | agendados sobre la cohorte; «Calificados» y «Confirmados» | lo de arriba, más `CAMPO_DE_CONFIRMACION` (`lib/negocio/indicadoresDeCitas.ts:208`) | 60 % · 56 % · 18 de 35 |
 | 05 Gracias | hueco | es el precall, de Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`) | — |
 | Cajón de Landing | la tabla de las siete familias, que hoy es el bloque principal | `recorridoDelLead` | — |
@@ -148,6 +148,7 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | la lectura de contactos o de citas está atrasada (`faltan_contactos`) | «Faltan contactos por leer.» |
 | a las vistas les falta algún día de gasto, o el colector está atrasado | «Faltan días de gasto.» |
 | las vistas: el detalle por campaña no cuadra con la cuenta (`no_cuadra`) | «Falta gasto de algunas campañas.» |
+| las vistas: el desglose de Meta no cubre la ventana o la anterior (`sin_desglose`) | «Sin desglose de Meta.» |
 | la anterior tiene citas congeladas, y los agendados no comparan | «Los agendados no comparan: hay citas congeladas.» |
 | «Completo»: los contactos sin fecha de alta | «{N} contactos sin alta no entran.» |
 | ventana sin contactos | «Sin contactos en este período» |
@@ -230,7 +231,7 @@ con denominador bajo `PISO_DE_UNA_TASA` (10, `lib/negocio/indicadoresDeCitas.ts:
 En «Completo» la nota lo dice (CV15-10). Es el riesgo 6 de
 `docs/OTROS/estado actual/03-CONVERSION.md:498-502`.
 
-**Estado** · Por construir (CV-2).
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2): `lecturaDeConversion`, en `lib/negocio/pasosDeConversion.ts`. Se dibuja en CV-4.
 
 ### CV15-06 · El panel «Landing y VSL»: tres celdas
 
@@ -258,20 +259,29 @@ cosas que no son.
 filtro `meta_campana_id is not null` que el detalle del gasto (`lib/negocio/gastoDeLaCuenta.ts:355`). Una
 campaña de mensajes no trae la clave y suma cero, así que no hace falta filtrar por funnel.
 
-**Fórmula** · La regla A14-05 de Acquisition:
+**Fórmula** · La de A14-05 de Acquisition, con dos diferencias, una para cada lado:
 
-- si nada entregó, son cero;
-- si entregó y no llegó ningún desglose, son nulas: no se saben;
-- si el desglose empieza después del comienzo de la ventana, no se publican. En «Completo» se dibuja «—».
+- **más estricta**: si el desglose no cubre la ventana —empieza después de su comienzo, o alguna fila que entregó no
+  lo trae—, no se publican (`sin_desglose`): serían las de una parte. Acquisition publica esa suma y cobra el clic
+  sólo a las filas con desglose, porque el costo la acota; acá la cifra está sola. En «Completo» se dibuja «—»;
+- con filas, la suma; si ninguna entregó, cero;
+- **menos estricta**: sin ninguna fila, Acquisition dice siempre «—»; acá, cero si la cuenta midió el cero esos días
+  —todos cerrados y enteros, con el total en cero—. Con la cuenta entera y gasto —un día declarado residuo cuenta como
+  entero, y sí gastó— es «—» con «Falta gasto de algunas campañas.»: la cuenta cobró algo que ninguna campaña que
+  tenemos explica. Sin la cuenta entera, «—»: así lo ven «Hoy» antes de la pasada de las 06:17 UTC, un día que el
+  colector no leyó y una empresa que nunca pautó. Con 7 y 30 días la nota dice por qué: «Faltan días de gasto.» si el
+  colector está atrasado o falta algún día de la cuenta, y «Falta gasto de algunas campañas.» si no cuadra. A la
+  empresa que nunca pautó no le dice nada: no le falta nada que leer.
 
-**Cuándo compara** · Sólo si las dos ventanas tienen el gasto entero, con `coberturaDelGasto`, y el desglose
-cubre la anterior. Un día que cuadra con el total de la cuenta prueba que se leyeron las filas de todas las
-campañas que gastaron, y las acciones viven en esas mismas filas. Si no, se apaga sólo esta flecha, con el
-motivo en la nota.
+**Cuándo compara** · Con 7 y 30 días, **por su cuenta**: aunque las personas no comparen, porque no son personas.
+Sólo si las dos ventanas tienen el gasto entero, con `coberturaDelGasto`, y el desglose completo en la anterior. Un
+día que cuadra con el total de la cuenta prueba que se leyeron las filas de todas las campañas que gastaron, y las
+acciones viven en esas mismas filas; que estén todas lo prueba la cuenta de filas sin desglose. Si no, se apaga sólo
+esta flecha, con el motivo en la nota.
 
 **«Hoy»** · Es la foto de las 06:17 UTC, la misma que Acquisition publica de sus clics. Es `CV15-P06`.
 
-**Estado** · Por construir (CV-2).
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2): `vistasDeLaLanding` y la cobertura del gasto en `lecturaDeConversion`. El desglose empieza el 2026-08-18, así que en «Completo» las vistas son «—».
 
 ### CV15-08 · El panel «Formulario y cita»
 
@@ -307,8 +317,9 @@ contacto a cita útil», donde x son los calificados sobre la cohorte, con el pi
 «**{con} de {sobre}** contactos traen por dónde entraron · {rango} · vs {rango anterior}»
 
 Y, cuando corresponda, las frases cerradas de CV15-02: «Sin historia para comparar.», «Faltan contactos por
-leer.», «Faltan días de gasto.», «Falta gasto de algunas campañas.», «Los agendados no comparan: hay citas
-congeladas.», «Cruza el corte del {corte}.» y, en «Completo», «{N} contactos sin alta no entran.».
+leer.», «Faltan días de gasto.», «Falta gasto de algunas campañas.», «Sin desglose de Meta.», «Los agendados no
+comparan: hay citas congeladas.», «Cruza el corte del {corte}.» y, en «Completo», «{N} contactos sin alta no
+entran.».
 
 **Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`). La
 cobertura va arriba de cualquier reparto: es el § 18.5.
@@ -380,7 +391,7 @@ corte del 2026-08-31.
   anterior de 30 días cae casi entera antes del corte, y la actual entera después: sin esta regla la flecha
   bajaría 100 %, en rojo, sin que nada cambie.
 
-**Estado** · Por construir (CV-2, CV-4). El denominador es `CV15-P03`.
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2), con la cohorte hasta el corte que cuenta `personasDeLaCohorte`; se dibuja en CV-4. El denominador es `CV15-P03`.
 
 ### CV15-15 · La tarjeta de Agenda
 
@@ -393,7 +404,7 @@ corte del 2026-08-31.
 **Por qué los agendados son la suma de las filas** · El número es Σ `agendaron` de las filas del recorrido.
 Así la tarjeta suma exactamente lo que dice la tabla del cajón de Landing.
 
-**Estado** · Por construir (CV-2, CV-4).
+**Estado** · **El cálculo, construido el 2026-10-08** (CV-2); se dibuja en CV-4.
 
 ### CV15-16 · El pie de cada tarjeta
 
@@ -402,14 +413,15 @@ Así la tarjeta suma exactamente lo que dice la tabla del cajón de Landing.
 - **A la izquierda**, «N a revisar», con las señales del paso que no están en `sin_medicion`. «sin
   observaciones» se escribe sólo cuando hay de dónde decirlo: con 7 o 30 días, y en un paso con reglas. Con
   «Hoy» o «Completo», el pie queda vacío.
-- **A la derecha**, «−N»: los contactos de la cohorte que **no** llegaron a ese paso. El prototipo restaba
+- **A la derecha**, «−N»: los contactos de la cohorte que **no** llegaron a ese paso —en el formulario, de la cohorte
+  hasta el corte, que es su denominador (CV15-14)—. El prototipo restaba
   la tarjeta anterior (`aios-command-center_1.html:4180`); acá se resta de la cohorte, porque los agendados
   no son un subconjunto de los que empezaron el formulario. CV2-13 pide medir la caída sólo dentro de una
   misma población (`docs/conversion/02-METRICAS.md:254-261`). La caída en personas es la mejor idea del
   prototipo y se conserva.
 - En la tarjeta de Landing, ni hueco ni resta: es la base.
 
-**Estado** · Por construir (CV-2, CV-4).
+**Estado** · **La caída, construida el 2026-10-08** (CV-2): `Paso.caida`. El pie se dibuja en CV-4.
 
 ### CV15-17 · Los cajones: sólo Landing, Formulario y Agenda
 
@@ -472,7 +484,7 @@ que cuenta **citas** en una ventana móvil. Por eso se rotula «Cancelaron» y n
 
 **Estado** · **Los predicados, construidos el 2026-10-08** (CV-1): `confirmoElAgendamiento`,
 `respondioLaConfirmacion` y `todasSusCitasCanceladas`, probados en `pruebas/base/246-pasos-de-conversion.test.ts`.
-La cifra sobre la cohorte, en CV-2. Contesta CV2-15.
+La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte`. Contesta CV2-15.
 
 ### CV15-19 · Las señales: por paso, la alarma y la tarjeta
 
@@ -494,7 +506,7 @@ texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →�
 **La tarjeta** · `TarjetaDeSenales` va al final, como en Acquisition, con todo `puede` en falso cuando se
 mira otra empresa.
 
-**Estado** · Por construir (CV-3, CV-4). Es `CV15-P05`.
+**Estado** · El reparto por paso, `pasoDeLaSenal`, construido el 2026-10-08 (CV-2); la ruta lo usa en CV-3 y la pantalla lo dibuja en CV-4. Es `CV15-P05`.
 
 ### CV15-20 · Las flechas contra la ventana anterior
 
@@ -507,14 +519,14 @@ porcentaje; cada variación llega con su lectura —buena, mala o neutra— calc
 | Contactos | el primer contacto es anterior al comienzo de la anterior, y las lecturas de contactos y de citas están al día | «Sin historia para comparar.» o «Faltan contactos por leer.», para todas las cifras de personas |
 | Porciones y tasas sobre la cohorte | lo anterior, y las dos cohortes llegan al piso | «sin comparación» en esa cifra |
 | Agendados, en conteo y en tasa | lo anterior; la anterior contada **a la misma edad**; y ninguna cita congelada entre sus contactos | «Los agendados no comparan: hay citas congeladas.» Hoy pasa en 30 días: 80 de los 447 contactos de la anterior tienen alguna |
-| Vistas de Meta | el gasto entero en las dos ventanas, y el desglose cubre la anterior | «Faltan días de gasto.» o «Falta gasto de algunas campañas.» |
+| Vistas de Meta | por su cuenta, aunque las personas no comparen: el gasto entero en las dos ventanas, y el desglose completo en la anterior | «Faltan días de gasto.», «Falta gasto de algunas campañas.» o «Sin desglose de Meta.» |
 | Formulario | nunca, mientras el campo esté muerto | — |
 | Calificados, no calificados, confirmados y cancelaron | nunca | el descarte es una etiqueta sin fecha; la confirmación, un campo del CRM sin fecha |
 
 **La diferencia con Acquisition, dicha** · Las cifras de personas no dependen del gasto, así que un gasto
 incompleto apaga sólo la flecha de las vistas. En Acquisition apaga todo, porque sus costos dividen el gasto.
 
-**Estado** · Por construir (CV-2).
+**Estado** · **Construido el 2026-10-08** (CV-2), en `lib/negocio/pasosDeConversion.ts`, y probado en `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`, cada regla con su mutación.
 
 ### CV15-21 · Una sola ventana, la de Acquisition
 
@@ -542,14 +554,16 @@ la invariante. La pantalla de Conversion corta con esa ventana desde CV-3, cuand
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
   `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:280-283` y `:307-316`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
-  las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita; no
-  recalcula lo que ya calculan.
+  las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita, y no
+  recalcula lo que ya calculan, con una excepción: en la ventana anterior, la pasada cuenta la cohorte junto con
+  los agendados a la misma edad, para que la tasa salga de una sola foto.
 
 **La respuesta crece, no cambia** · Siguen `comentario`, `periodo`, `recorrido`, `formulario`, `senales` y
-`puedeConSenales`, ahora sobre la ventana cerrada. Se agregan `pasos` y `senales.porPaso`. Todo viaja de 0 a 1;
-la `finalizacion`, que llega en %, se divide por 100 al consumirla.
+`puedeConSenales`, ahora sobre la ventana cerrada. Se agregan `pasos` y `senales.porPaso`. Todo lo de `pasos` viaja
+de 0 a 1: la `finalizacion`, que llega en %, se divide por 100 al consumirla; el `formulario` que viaja para su
+cajón es el del embudo, con la `finalizacion` en %.
 
-**Estado** · Por construir (CV-2, CV-3).
+**Estado** · **El módulo, construido el 2026-10-08** (CV-2): `lib/negocio/pasosDeConversion.ts`, con sus dos pruebas, `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`. La ruta lo usa desde CV-3.
 
 ### CV15-23 · El cerebro y el detector leen lo mismo
 
@@ -641,7 +655,7 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 |---|---|---|
 | CV-0 | Este documento, las respuestas en los otros, `docs/OTROS/futuro/lo-que-conversion-no-mide.md` y la medición del 2026-10-08 | **escrito el 2026-10-08**, para la revisión del usuario |
 | CV-1 | Las piezas compartidas: `lib/negocio/diasCerrados.ts`, mudado desde Acquisition; los predicados de calificado, confirmó y cancelaron; la ventana explícita en `recorridoDelLead`, `embudoDelFormulario` y `corteDeEpoca`; la cohorte de Acquisition con la misma `cohorteEntre`, y la prueba de la invariante | **hecho el 2026-10-08** |
-| CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | por hacer |
+| CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | **hecho el 2026-10-08** |
 | CV-3 | La ruta, el cerebro y el detector | por hacer |
 | CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | por hacer |
 | CV-5 | La comparación lado a lado contra el prototipo, el humo con login, el teléfono y la subida | por hacer |
