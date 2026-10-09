@@ -176,3 +176,16 @@ Sin persistencia, «detectada hace 3 h» no se puede calcular y el estado `visto
 
 Es el mismo hueco que Creative dejó abierto con «Solicitudes de nuevas variantes»
 (`docs/creative/12-QUIEN-VE-QUE.md:70`).
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+- **CV6-P01 · Sí: una fricción es una entidad persistida.** Desde AG14 (`28d6954`, 2026-10-06) son las
+  señales del detector de Conversion, guardadas en la tabla común por la pasada de la mañana, con su estado.
+  El front del prototipo las dibuja como observaciones en cada cajón y en la tarjeta «Señales» (CV15-19, en
+  `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+- **El botón «Plan de acción» ya volvió con AG14**, con el plan de esas señales, y se queda (CV15-03).
+- **La alarma «Requiere acción ahora» queda para las señales críticas**, y hoy ninguna regla `CNV-*` lo es
+  (CV15-19, `CV15-P05`).
+- **CV6-06 y CV6-08 siguen en pie**: ningún coeficiente de recuperación y ningún nombre de persona.

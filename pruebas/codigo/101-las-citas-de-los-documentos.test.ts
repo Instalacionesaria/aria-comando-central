@@ -61,7 +61,7 @@ const AUDITADAS = [
   // El plan de las ventanas en el día de la empresa (2026-10-07): diagnosticado y dejado para después.
   'docs/OTROS/futuro/el-dia-de-la-empresa.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', // ver «LA NUEVA ESTRUCTURA» y «LOS AGENTES», al final
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES» y «EL FRONT DE CONVERSION», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
@@ -237,3 +237,11 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
    `docs/OTROS/agentes/` entró el día que nació, por lo mismo que la nueva estructura: es el plan de los
    agentes de IA, cada etapa va a mover el código que cita, y una carpeta nueva no trae deuda. La entrada
    va en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */
+
+/* ── EL FRONT DE CONVERSION (2026-10-08) ──────────────────────────────────────
+   Los dos documentos que devuelven Conversion al front del prototipo entraron el día que nacieron: el `15`
+   de la carpeta, que fija qué dato va en cada lugar de la maqueta, y el plan de lo que esa pantalla no mide.
+   Las etapas CV-1 a CV-4 van a mover casi todo el código que el `15` cita, así que es el documento que más
+   rápido se pudriría sin auditar. El resto de `docs/conversion/` no entra: cita `lib/aios/conversion.js`,
+   que se borró el 2026-09-20, como referencia histórica, igual que Creative y Acquisition. Las dos entradas
+   van en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */

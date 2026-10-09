@@ -163,3 +163,24 @@ Sus seis cifras son literales y su sección de video es el precall, que es de Ap
 (`CV1-09`). Lo único propio sería «cuántos llegaron a la página de gracias», que hoy se puede
 aproximar con `precall.ariaia.com` en la URL (20 contactos, 19 de septiembre) — pero ésa también es
 post-agendamiento. **Puede que este paso no exista para Conversion**, y que el recorrido sean cuatro.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+Lo que `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` hace con cada requisito de este documento:
+
+- **CV3-01 · Vuelven los cinco pasos**, con el estado real de cada uno (CV15-11 a CV15-15): Landing y Agenda
+  con dato, Formulario histórico con su corte, VSL y Gracias como huecos.
+- **CV3-02 · La cadena se dibuja, pero no se lee como embudo**: cada porcentaje es sobre la cohorte, y las
+  flechas `.jarrow` son decoración (CV15-11).
+- **CV3-03 y CV3-04 · Sin banda**: todas las tarjetas van en `na`, el estado de «no se puede decir», salvo
+  las que tengan una señal crítica.
+- **CV3-05 · `#cvWorst` no se dibuja** (CV15-11, `CV15-P09`).
+- **CV3-06 y CV3-07 · La caída en personas y la sub-línea con el conteo se conservan** (CV15-16).
+- **CV3-08 · Las dos métricas por paso**: «Vistas, según Meta» y «Por la landing» en Landing, «Lo
+  completan» en Formulario —histórica— y «Calificados» y «Confirmados» en Agenda. Las otras seis dicen «—».
+- **CV3-P02 · Gracias queda como hueco** en su lugar, sin cajón (CV15-13). La pregunta de si es de este
+  departamento sigue abierta.
+
+`CV3-P01` sigue abierta.

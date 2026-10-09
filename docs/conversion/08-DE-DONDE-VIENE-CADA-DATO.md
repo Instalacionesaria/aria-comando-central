@@ -200,3 +200,16 @@ adentro. Medido: hay URLs con `first_name` en la cadena de consulta
 Conversion necesita el **host** y los **UTM**, no la URL entera. El requisito es extraer las dos
 cosas y **no publicar la cadena completa en ninguna parte** — ni en una tabla, ni en un `title`, ni
 en un cajón.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+- **CV8-P01 · La URL no se dibuja**, ni en una tabla, ni en un `title`, ni en un cajón. Sólo su host, y sólo
+  para clasificar la familia (CV15-24, en `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+- **Un dato nuevo: las vistas de landing de Meta.** Llegan por anuncio y por día en
+  `negocio.metricas_de_anuncio.acciones`, desde la `053`, por GoHighLevel. Medido el 2026-10-08: el desglose
+  empieza el 2026-08-18, y `landingPageView` y `omniLandingPageView` vienen juntas en 221 filas y valen lo
+  mismo en las 221. Se lee una sola, y no se cruza con personas (CV15-07).
+- **La confirmación del agendamiento**: el campo `Confirmación Agendamiento` está en 18 de los 35 calificados
+  de 30 días cerrados, y los 18 dicen `Si` (CV15-18, `CV15-P10`).

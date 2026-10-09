@@ -161,7 +161,7 @@ las cinco cosas que Acquisition le debe a Conversion según el `§ 18.16`, *«ni
 «Landing page views» entre las inexistentes. **Eso dejó de ser cierto el 2026-09-19**: llega, por anuncio y
 por día, en `negocio.metricas_de_anuncio.acciones` (lo registra `docs/OTROS/estado actual/03-CONVERSION.md:79-93`).
 
-Si un nombre de archivo de estas tablas no está en la carpeta, **manda la carpeta**. Cada requisito se
+El `15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (`CV15-`) nació el 2026-10-08, después de estas tablas: ver la última sección. Si un nombre de archivo de estas tablas no está en la carpeta, **manda la carpeta**. Cada requisito se
 cita por su número completo —`CV2-07`, `CV8-12`— desde cualquier documento.
 
 ### La convención de las citas cortas, y dónde muerde
@@ -231,3 +231,17 @@ Las otras seis están citadas en el archivo donde muerden.
 - **El mapa de calor, el scroll, los rage clicks y los dead clicks.** Clarity no está integrado.
 - **La tasa de conversión de la landing.** Su denominador tendría que ser gente registrada **al
   llegar**, y hoy la URL se escribe **al convertir**: la tasa daría casi 100 % por construcción.
+
+---
+
+## El front original, con los datos reales (2026-10-08)
+
+El usuario decidió que la pestaña vuelva al front del prototipo, ahora con los datos reales: las tres tiras
+de cifras, las cinco tarjetas con sus huecos, los cajones de Landing, Formulario y Agenda, el plan y las
+señales. Lo fija `15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, con el prefijo `CV15-`, en el molde del `14` de
+Acquisition. Los bloques de hoy se reparten en esa forma, y el de los huecos pasa a
+`docs/OTROS/futuro/lo-que-conversion-no-mide.md`.
+
+Lo que eso cambia de «El estado, en una línea»: lo construible sigue siendo lo mismo, y se suman las vistas
+de landing de Meta —una cifra de Meta, sin tasa— y la confirmación del agendamiento. Los huecos son los mismos,
+cada uno en su lugar del prototipo.

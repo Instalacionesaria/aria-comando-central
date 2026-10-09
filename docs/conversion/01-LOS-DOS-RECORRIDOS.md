@@ -271,3 +271,19 @@ sabemos cuál; «sin página» significa que no abrió ninguna. Son dos hechos d
 separados. Si resultan ser el mismo formulario visto de dos maneras, son **una familia de 83** y no
 dos de 60 y 23 — y eso cambia cuál es el recorrido mayoritario de septiembre. **Se contesta
 preguntando por la configuración de la campaña**, no desde la base.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+El usuario decidió que la pestaña vuelva a las cinco tarjetas del prototipo (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Eso no contradice
+CV1-04: los dos caminos siguen siendo dos.
+
+- **Cada porcentaje es sobre la cohorte**, no sobre la tarjeta anterior, y la caída «−N» también (CV15-11,
+  CV15-16). Una tarjeta no afirma que su gente pasó por la de al lado.
+- **Las siete familias siguen**, enteras, en el cajón de Landing (CV15-17), con la marca de las filas
+  circulares.
+- **«Por la landing»** es la porción de la familia `landing`, con su flecha neutra (CV15-12): que la landing
+  gane o pierda porción es un cambio de ruta, no algo bueno o malo.
+
+`CV1-P02` y `CV1-P03` siguen abiertas: esta decisión no las toca.

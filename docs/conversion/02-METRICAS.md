@@ -321,3 +321,21 @@ dispositivo **se puede derivar hoy** del `userAgent`, sobre 162 citas → 107 m�
 sin dato. Pero el cohorte de escritorio son **14**, y la regla 8 del departamento, en su versión del
 2026-09-16 (`bddb516`, líneas 250-252), dice que cualquier segundo corte cae bajo el piso: *«O se
 publica sin desglose, o no se publica.»* El filtro se borró después (`03-CONVERSION.md:431-433`).
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+Decidido por el usuario, o tomado por defecto en `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`:
+
+- **CV2-12 · La base de los porcentajes son los contactos de la ventana** (CV15-05). Las tres tasas sobre
+  visitas siguen sin denominador.
+- **CV2-13 · «−N» se mide contra la cohorte** (CV15-16): dentro de una misma población, como pide el
+  requisito.
+- **CV2-15 · Confirmados y Cancelaron**, en personas y sobre los calificados de la cohorte (CV15-18). «Franja
+  preferida» no se dibuja. Medido el 2026-10-08 sobre 30 días cerrados: 35 calificados, 18 con el campo de
+  confirmación —los 18 dicen `Si`— y 12 con todas sus citas canceladas.
+- **CV2-P01 · Las bandas no se dibujan**, por ahora (CV15-11). La pregunta sigue abierta: no hay noventa días
+  de una sola ruta.
+- **CV2-P02 · El dispositivo no se dibuja**, por ahora. El 2026-10-08 el `userAgent` venía en 47 de los 106
+  contactos de 30 días. Sigue abierta.

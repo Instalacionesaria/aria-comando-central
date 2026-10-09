@@ -178,3 +178,19 @@ De los seis, uno es inalcanzable (`CV4-08`), uno es de otro departamento (`CV4-0
 de fuentes que no existen. El único con datos propios y vivos es `Agenda`. **Puede que el requisito
 no sea «un cajón por paso» sino «un cajón por población que se pueda abrir»**, que hoy serían dos: el
 recorrido y el formulario.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+- **CV4-P01 · Sobreviven tres cajones**: Landing, Formulario y Agenda (CV15-17, en `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). VSL y Gracias
+  no abren: dirían sólo «Sin dato».
+- **CV4-02 · La meta con la fuente y la población se conserva** en los tres. La «Lectura» en prosa no: no hay
+  un texto con fuente que ponerle.
+- **CV4-03 a CV4-05 · Lo que no tiene fuente** —el mapa de calor, la curva del VSL, el campo por campo— queda
+  como una línea «Sin dato» en su cajón. El plan de cada uno está en
+  `docs/OTROS/futuro/lo-que-conversion-no-mide.md`.
+- **CV4-08 · «Citas calificadas» sigue sin paso propio**: su forma va al cajón de Agenda, con los
+  calificados, su tasa y los no calificados (CV15-17).
+- **CV4-09 · Las observaciones son las señales** de la pasada de la mañana, con su pérdida en contactos
+  (CV15-17, CV15-19).

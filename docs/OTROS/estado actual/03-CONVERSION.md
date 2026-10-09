@@ -520,3 +520,23 @@ maqueta, pero sigue sin ser una especificación.
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** El estado actual es
 la demostración: dos toques sobrescribibles sin fecha y un `% máximo visto` con 79 ceros. Repetir
 ese diseño para la landing o el VSL entrega exactamente el dato que hoy no sirve.
+
+---
+
+## 8 · Lo que cambió después de esta foto
+
+> Agregado el 2026-10-08, al final y no en su lugar, para no correr las citas de las secciones de arriba.
+
+- **AG14 sumó el plan y las señales, y el § 2 no los nombra.** Desde el detector de Conversion (`28d6954`,
+  2026-10-06), la barra de períodos lleva el botón «Plan de acción»
+  (`components/conversion/PanelDeConversion.jsx:92@82ba9e7`) y entre el formulario y los huecos va la
+  tarjeta «Señales» (`components/conversion/PanelDeConversion.jsx:174@82ba9e7`). El panel tiene 488 líneas, no
+  478. Y la fila del § 3 que dice «Borrados con el botón» ya no es cierta para el botón: volvió, con el plan de
+  las señales reales. Lo que sigue borrado son las once fricciones, el 45 % de recuperación y las 47 frases.
+- **El 2026-10-08 el usuario decidió volver al front del prototipo**, con los datos reales
+  (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Cuando se construya, esta foto queda vieja
+  entera y se reescribe. De los riesgos del § 7, el `15` cierra tres: el 2, el texto de Clarity (CV15-26); el
+  4, el matiz de «Hoy» (CV15-04); y el 6, los 24 sin alta, que la nota de «Completo» dice (CV15-10). El 3
+  sigue: la marca de circularidad pide el 90 %.
+- **Medido el 2026-10-08**, sobre 30 días cerrados, del 2026-09-08 al 10-07: 105 contactos, 63 agendados, 35
+  calificados, 462 vistas de landing según Meta y ninguno con el formulario.

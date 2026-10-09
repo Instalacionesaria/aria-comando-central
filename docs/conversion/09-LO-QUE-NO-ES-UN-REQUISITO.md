@@ -165,3 +165,25 @@ personas y no en puntos porcentuales es la mejor de la maqueta (`CV3-06`).
 `CRM · 479 de 765 citas · histórico` (`conversion.js:508`) es la única línea de toda la pantalla que
 declara fuente, numerador, denominador y ventana a la vez. Es exactamente lo que el `§ 18.5:1247`
 exige, y se conserva como forma obligatoria de cada bloque.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+La lista de borrado de CV9-08, con el front del prototipo de vuelta (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
+
+| pieza | hoy |
+|---|---|
+| Los chips «Clarity» y «VTurb» | siguen fuera; vuelve un solo chip real, «GoHighLevel» (CV15-03) |
+| El botón «Plan de acción» | volvió con AG14, con el plan de las señales reales |
+| La pastilla «Personalizado» | sigue fuera |
+| Las siete puertas `data-leads` | siguen fuera (CV15-24) |
+| El filtro de dispositivo | sigue fuera (CV15-03) |
+
+Y lo que CV9-12 a CV9-14 llamaban andamiaje que es requisito:
+
+- **CV9-12 · La banda**: su forma sigue siendo requisito, pero no se dibuja hasta tener un umbral (CV15-11).
+- **CV9-13 · La caída en personas** se dibuja, contra la cohorte (CV15-16).
+- **CV9-14 · La meta de cada cajón** se conserva como forma obligatoria (CV15-17).
+- **CV9-10 · El CSS se mide emisor por emisor** antes de tocarlo: el front nuevo usa las clases de
+  `app/aios.css` y no borra ninguna. Lo nuevo va en `app/conversion.css` (CV15-01).

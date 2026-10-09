@@ -165,3 +165,18 @@ define por un accidente del negocio**, y el día que la ruta cambie otra vez hab
 La alternativa es dejar las cuatro y que el `corteDeEpoca` haga el trabajo. **No está decidido**, y
 la lista de ventanas es cerrada por la regla 6 de `07-REGLAS-TRANSVERSALES.md:379`: agregar una toca
 a las seis pantallas que hoy la comparten (`07-REGLAS-TRANSVERSALES.md:415-419`).
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+- **CV5-01 · Los cuatro períodos del sistema**, sin «Personalizado» (CV15-04, en `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+- **«7 días» y «30 días» pasan a ser días cerrados**, como en Acquisition y con la misma función (CV15-04,
+  CV15-21, `CV15-P01`). Hasta hoy se cortaban con días de calendario que incluyen el día en curso.
+- **CV5-04 · El formulario no se publica como una sola serie.** Con la ventana después del corte dice «Sin
+  dato desde el 31 ago.»; con una ventana que lo cruza, se mide sobre la cohorte anterior al corte, con «hasta
+  el {corte}» al lado (CV15-14, `CV15-P03`).
+- **CV5-P01 · No hace falta una quinta ventana**: el corte viaja con cada respuesta, y la tarjeta lo dice.
+- **CV5-08 · Las citas congeladas apagan la flecha de los agendados** cuando la ventana anterior las tiene
+  (CV15-20). Medido el 2026-10-08: 80 de los 447 contactos de la anterior de 30 días tienen alguna.
+- **El matiz de «Hoy»** —«las últimas 24 horas»— no se dibuja: acá «Hoy» es el día de calendario.

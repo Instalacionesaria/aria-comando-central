@@ -163,3 +163,21 @@ fuente de agendamiento habría creado la tercera cifra de agendamiento del produ
 **Dieciocho: una quedó contestada el 2026-09-20 y una nació ese mismo día, midiendo antes de construir.** Acquisition tuvo menos y Creative también, y el motivo está en
 `CV10-11`: este departamento no tiene especificación. Tres de ellas —`CV14-P01`, `CV12-P01` y
 `CV3-P01`— **no se pueden contestar desde la base**: se contestan preguntando.
+
+---
+
+## Contestado el 2026-10-08, al volver al front del prototipo
+
+El estado de las preguntas de la tabla de arriba después del `15` (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
+
+| id | estado |
+|---|---|
+| `CV2-P01` | sigue abierta; mientras tanto, la banda no se dibuja (CV15-11) |
+| `CV2-P02` | sigue abierta; mientras tanto, sin dispositivo (CV15-03) |
+| `CV3-P02` | sigue abierta; mientras tanto, Gracias es un hueco sin cajón (CV15-13) |
+| `CV4-P01` | **contestada**: tres cajones, por población (CV15-17) |
+| `CV5-P01` | **contestada**: no hace falta una quinta ventana (CV15-14) |
+| `CV6-P01` | **contestada**: sí, son las señales de AG14 (CV15-19) |
+| `CV8-P01` | **contestada**: sólo el host, nunca la URL (CV15-24) |
+
+Las demás siguen como están. Las del front nuevo son `CV15-P01` a `CV15-P10`, en el § 6 del `15`.
