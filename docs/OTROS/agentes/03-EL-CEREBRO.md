@@ -87,8 +87,9 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `app/api/creative/route.ts:76` | el aviso si falta el campo del ICP |
 | `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:77` | sus huecos |
 | `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `app/api/creative/route.ts:78` | el umbral «no calibrado» |
-| `recorrido_de_los_leads` | `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:67` | conteos, no tasas |
-| `formulario_de_la_landing` | `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:68` | sus huecos |
+| `pasos_de_conversion` | `lecturaDeConversion(periodo, zona).pasos`, desde el 2026-10-08 | conversion (`tablero.ver`) | `app/api/conversion/route.ts:73` | la tira y los cinco pasos, en días cerrados |
+| `recorrido_de_los_leads` | `lecturaDeConversion(periodo, zona).recorrido`; hasta el 2026-10-08, `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:73` | conteos, no tasas |
+| `formulario_de_la_landing` | `lecturaDeConversion(periodo, zona).formulario`; hasta el 2026-10-08, `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:73` | sus huecos |
 | `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:84` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
 | `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `app/api/auditoria/route.ts:89`, `app/api/sales/route.ts:109` | sus avisos |
 | `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `app/api/auditoria/route.ts:90` | aviso y latencias |

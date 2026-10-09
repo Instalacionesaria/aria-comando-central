@@ -8,12 +8,13 @@
 //     Leads › De GHL, Acquisition, Creative, Conversion, Conversation, Sales y las colas del Setter y del
 //     Closer (la primera versión la daba sólo en Leads, y la revisión de AG6 lo encontró);
 //   · `citas` en Leads › De GHL —las dos frescuras que ya muestra su pantalla (`app/api/leads-portal`)—;
-//   · `citas` también en la Agenda del Closer (`lib/negocio/agenda.ts`), en Sales (la cadena de cierre) y en
-//     Conversation (la cancelación);
+//   · `citas` también en la Agenda del Closer (`lib/negocio/agenda.ts`), en Sales (la cadena de cierre), en
+//     Conversation (la cancelación) y en Conversion (los agendados y la confirmación de sus pasos);
 //   · `mensajes` donde se leen conversaciones: la ficha de contacto que se abre desde el Setter y el Closer
 //     (`lib/negocio/ficha.ts`) y Lead Flow, en Conversation;
 //   · `auditoria` y `mejora`, el auditor, en Conversation;
-//   · `anuncios` y `anuncios_relleno`, el gasto de Meta, en Acquisition y Creative;
+//   · `anuncios` y `anuncios_relleno`, el gasto de Meta, en Acquisition, Creative y Conversion (sus vistas de
+//     landing);
 //   · `analizadores` y `reintentos`, en Analizadores.
 // La `sonda` es de la plataforma y no alimenta ninguna pantalla de negocio: no viaja.
 //
@@ -34,7 +35,7 @@ export const TAREAS_POR_SECCION: Readonly<Record<string, readonly Tarea[]>> = {
   setter: ['contactos', 'mensajes'],
   sales: ['contactos', 'citas'],
   conversation: ['contactos', 'citas', 'mensajes', 'auditoria', 'mejora'],
-  conversion: ['contactos'],
+  conversion: ['contactos', 'citas', 'anuncios', 'anuncios_relleno'],
   acquisition: ['contactos', 'anuncios', 'anuncios_relleno'],
   creative: ['contactos', 'anuncios', 'anuncios_relleno'],
   analizadores: ['analizadores', 'reintentos'],

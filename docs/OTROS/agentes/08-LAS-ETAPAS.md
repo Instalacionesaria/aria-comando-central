@@ -640,7 +640,8 @@ Lo que decía el plan:
 - **Hecho el 2026-10-06, sin push.** Sin migración ni capacidad nueva.
 - **El detector** (`lib/agentes/detectores/conversion.ts`) con las cuatro reglas validadas, sobre las mismas
   funciones y días que la pantalla; la ventana anterior, con la misma función al doble de días. «Sin rastro» no
-  compite (lo encontró la base sembrada: todo era de esa familia, y caía en «No tocar»).
+  compite (lo encontró la base sembrada: todo era de esa familia, y caía en «No tocar»). Desde el 2026-10-08 lee la
+  lectura de la pantalla, en días cerrados (CV-3 de Conversion, `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 - **El plan** (`lib/agentes/plan/conversion.ts`): «Qué hacer primero» con las tres que más gente pierden (el
   armado común suma un `tope` por grupo y cuenta lo que quedó afuera), «Lo que dice la data», la validación
   ejecutiva para el cambio de ruta y «No tocar», que llega como renglón informativo del detector y no es señal

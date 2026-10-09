@@ -76,7 +76,11 @@ export function textoDeConversion(d: Deteccion, ventana: ParaElPlan['ventana']):
 
 const NO_SE_MIDIO: Record<string, string> = {
   [CNV.familiaQueNoAgenda]: 'cuánto agenda cada recorrido: la lectura de contactos no está al día',
-  [CNV.cambioDeRuta]: 'el cambio de ruta: la lectura de contactos no está al día',
+  /* Desde el CV-3 de Conversion (2026-10-08) el cambio de ruta también queda sin medir con los contactos al día: si
+     la historia no cubre la ventana anterior, o si la lectura de citas está atrasada, la lectura de la pantalla no da
+     anterior. El texto nombra las tres causas, porque el código de la regla no dice cuál fue. */
+  [CNV.cambioDeRuta]:
+    'el cambio de ruta: no hay una ventana anterior que comparar (historia corta, o la lectura de contactos o de citas atrasada)',
   [CNV.formularioAbandono]: 'cuánta gente termina el formulario: el campo del formulario no está en el CRM',
   [CNV.formularioSinDatos]: 'si el formulario sigue llegando: el campo del formulario no está en el CRM',
 };

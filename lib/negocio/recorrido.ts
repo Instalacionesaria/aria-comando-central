@@ -196,7 +196,7 @@ function comillas(v: string): string {
  *
  * **Conversion la usa sólo cuando no recibe una ventana explícita.** El 2026-10-08 se tomó por defecto (`CV15-P01`) que su pantalla
  * pase a los días cerrados de Acquisition (CV15-04 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`),
- * con `cohorteEntre` y los días que corta `diasCerrados.ts`; mientras la ruta no pase la ventana, cuenta con ésta.
+ * con `cohorteEntre` y los días que corta `diasCerrados.ts`: desde CV-3 la ruta, el cerebro y el detector la pasan.
  */
 export function ventanaDeLaCohorte(alias: string, dias: number) {
   return sql<boolean>`${sql.raw(alias)}.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`;

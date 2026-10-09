@@ -10,12 +10,13 @@
 // `conversion.js` no tenía una sola sentencia `import`, ni `fetch`, ni `await`.
 //
 // Acá el cliente pide y dibuja. Cada cifra llega con su piso aplicado, su nulo donde no se puede
-// decir y su aviso escrito — `recorridoDelLead` y `embudoDelFormulario` son los que deciden, y son
-// los que tienen pruebas verificadas por mutación contra la base.
+// decir y su aviso escrito — `lecturaDeConversion` es la que decide, con `recorridoDelLead` y
+// `embudoDelFormulario` adentro, y las tres tienen pruebas verificadas por mutación contra la base.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedir } from '../http/cliente.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
+import type { ClaveDePaso, PasosDeConversion } from './pasosDeConversion.ts';
 import type { RecorridoDeLosLeads } from './recorridoDelLead.ts';
 import type { EmbudoDelFormulario } from './embudoDelFormulario.ts';
 import type { PlanDeConversion } from '../agentes/plan/conversion.ts';
@@ -25,12 +26,17 @@ const RUTA = '/api/conversion';
 
 export interface PantallaDeConversion {
   periodo: ClaveDePeriodo;
-  /** Por dónde entró la gente: una fila por familia de recorrido, que **no se suman entre sí**. */
+  /** La tira y las cinco tarjetas del prototipo, en días cerrados (CV15-04). Todo de 0 a 1. */
+  pasos: PasosDeConversion;
+  /** Por dónde entró la gente —hoy, la tabla del panel; en CV-4, el cajón de Landing—: una fila por familia, que **no se suman entre sí**. */
   recorrido: RecorridoDeLosLeads;
-  /** Cuántos abandonan el formulario de la landing, y los cinco huecos declarados. */
+  /** El formulario de la landing —hoy, su bloque; en CV-4, el cajón de Formulario—. Su `finalizacion` viaja en %. */
   formulario: EmbudoDelFormulario;
-  /** Las señales del detector (AG14 de los agentes): las vivas de la ventana, el último plan y las reglas. */
-  senales: SenalesDelDepartamento<PlanDeConversion>;
+  /**
+   * Las señales del detector (AG14 de los agentes): las vivas de la ventana, el último plan y las reglas, y los ids
+   * de las de cada paso (CV15-19).
+   */
+  senales: SenalesDelDepartamento<PlanDeConversion> & { porPaso: Record<ClaveDePaso, string[]> };
   /** Lo que esta sesión puede hacer con ellas. Todo `false` bajo delegación. */
   puedeConSenales: PuedeConSenales;
 }

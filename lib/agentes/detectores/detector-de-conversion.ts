@@ -11,7 +11,7 @@ export const DETECTOR_DE_CONVERSION: Detector = {
   departamento: 'conversion',
   nombre: 'conversion',
   async detectar(c) {
-    const medida = await medirConversion(c.ventana);
+    const medida = await medirConversion(c.ventana, c.zona);
     const umbral = (codigo: string) => {
       const regla = CATALOGO_DE_REGLAS.find((r) => r.codigo === codigo);
       if (!regla) throw new Error(`conversion: «${codigo}» no está en el catálogo`);

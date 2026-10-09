@@ -4,10 +4,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LEE LO QUE LEE LA PANTALLA
 //
-// `recorridoDelLead(dias)` y `embudoDelFormulario(dias)`, con los mismos días que `app/api/conversion/route.ts`.
-// La ventana anterior, para el cambio de ruta, sale de la misma función con el doble de días menos la actual: la
-// cohorte se corta por días de calendario sin tope superior (`ventanaDeLaCohorte`), así que la de 60 días menos
-// la de 30 son exactamente los 30 anteriores, contados igual.
+// `lecturaDeConversion`, la misma de `app/api/conversion/route.ts`: el reparto, el formulario y el reparto de la
+// ventana anterior, con los días CERRADOS de Acquisition (`bordesDelPeriodo`) y la zona de la empresa. Así cumple
+// AG-28 —7 y 30 días cerrados— y una señal habla de los mismos contactos que la pantalla (CV15-23 de
+// `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Hasta el 2026-10-08 leía días de calendario hasta
+// hoy, y la anterior salía del doble de días menos la actual. Si la lectura no compara —sin historia que cubra la
+// anterior, o con la lectura de contactos o de citas atrasada—, el cambio de ruta queda sin medición.
 //
 // ── LAS REGLAS DE CUIDADO ───────────────────────────────────────────────────
 //
@@ -25,10 +27,9 @@
 // «sin medición»; sin el campo del formulario en el CRM, las del formulario.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { sql } from 'kysely';
-import { datos } from '../../datos/contexto.ts';
-import { recorridoDelLead, type RecorridoDeLosLeads } from '../../negocio/recorridoDelLead.ts';
-import { embudoDelFormulario, type EmbudoDelFormulario } from '../../negocio/embudoDelFormulario.ts';
+import type { RecorridoDeLosLeads } from '../../negocio/recorridoDelLead.ts';
+import type { EmbudoDelFormulario } from '../../negocio/embudoDelFormulario.ts';
+import { lecturaDeConversion } from '../../negocio/pasosDeConversion.ts';
 import type { Familia } from '../../negocio/recorrido.ts';
 import { PISO_DE_UNA_SENAL, type DebajoDelPiso, type DepartamentoConSenales, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
@@ -99,37 +100,32 @@ export const LE_TOCA: Readonly<Record<Familia, DepartamentoConSenales | null>> =
 export interface MedidaDeConversion {
   ventana: VentanaDeSenal;
   recorrido: Pick<RecorridoDeLosLeads, 'filas' | 'cohorte' | 'desde' | 'hasta'>;
-  /** La ventana anterior, de igual largo: el doble de días menos la actual. */
-  anterior: { filas: Pick<RecorridoDeLosLeads['filas'][number], 'familia' | 'contactos'>[]; cohorte: number };
+  /** La ventana anterior, de igual largo y justo antes. `null` si la lectura no compara: el cambio de ruta no se mide. */
+  anterior: { filas: Pick<RecorridoDeLosLeads['filas'][number], 'familia' | 'contactos'>[]; cohorte: number } | null;
   formulario: Pick<EmbudoDelFormulario, 'cobertura' | 'finalizacion' | 'campoDelFormulario'>;
   /** Si la lectura de contactos del CRM está al día. */
   contactosAlDia: boolean;
   periodo: { desde: string; hasta: string };
 }
 
-/** Corre dentro de `conOrganizacion`. */
-export async function medirConversion(ventana: VentanaDeSenal): Promise<MedidaDeConversion> {
-  const dias = ventana === '7d' ? 7 : 30;
-  const recorrido = await recorridoDelLead(dias);
-  const doble = await recorridoDelLead(dias * 2);
-  const formulario = await embudoDelFormulario(dias);
+/**
+ * Corre dentro de `conOrganizacion`.
+ *
+ * @param zona La de la empresa (`identidad.organizaciones.zona_horaria`): cuándo termina su día, para los días cerrados.
+ */
+export async function medirConversion(ventana: VentanaDeSenal, zona: string): Promise<MedidaDeConversion> {
+  const lectura = await lecturaDeConversion({ clave: ventana, dias: ventana === '7d' ? 7 : 30 }, zona);
   // La frescura al medir, por el ciclo de módulos que explica `./creative.ts`.
   const { frescuraDe } = await import('../../negocio/frescura.ts');
   const contactos = await frescuraDe('contactos');
-  const actualDe = new Map(recorrido.filas.map((f) => [f.familia, f.contactos]));
-  // La ventana de la cohorte, en días de la base: la misma cuenta que `ventanaDeLaCohorte`.
-  const bordes = await sql<{ desde: string; hasta: string }>`
-    select to_char(current_date - ${dias - 1}::int, 'YYYY-MM-DD') as desde, to_char(current_date, 'YYYY-MM-DD') as hasta`.execute(datos());
+  const previa = lectura.recorridoAnterior;
   return {
     ventana,
-    recorrido,
-    anterior: {
-      filas: doble.filas.map((f) => ({ familia: f.familia, contactos: f.contactos - (actualDe.get(f.familia) ?? 0) })),
-      cohorte: doble.cohorte - recorrido.cohorte,
-    },
-    formulario,
+    recorrido: lectura.recorrido,
+    anterior: previa === null ? null : { filas: previa.filas.map((f) => ({ familia: f.familia, contactos: f.contactos })), cohorte: previa.cohorte },
+    formulario: lectura.formulario,
     contactosAlDia: contactos.estado === 'al_dia',
-    periodo: bordes.rows[0]!,
+    periodo: lectura.ventana,
   };
 }
 
@@ -212,12 +208,15 @@ export function detectarEnConversion(
 
     // ── El cambio de ruta: la porción de cada familia contra la ventana anterior ──
     const uRuta = umbral(CNV.cambioDeRuta);
-    const antes = new Map(m.anterior.filas.map((f) => [f.familia, f.contactos]));
-    if (m.anterior.cohorte >= PISO_DE_UNA_SENAL) {
+    const anterior = m.anterior;
+    const antes = new Map((anterior?.filas ?? []).map((f) => [f.familia, f.contactos]));
+    // Sin una anterior que la lectura compare, no hay contra qué medir el cambio: se dice, no se calla.
+    if (anterior === null) salida.sinMedicion.push(CNV.cambioDeRuta);
+    else if (anterior.cohorte >= PISO_DE_UNA_SENAL) {
       for (const f of m.recorrido.filas) {
         // Que crezca «sin rastro» es un problema de la lectura, no un cambio de ruta que decida la dirección.
         if (LE_TOCA[f.familia] === null) continue;
-        const porcionAntes = (antes.get(f.familia) ?? 0) / m.anterior.cohorte;
+        const porcionAntes = (antes.get(f.familia) ?? 0) / anterior.cohorte;
         const porcionAhora = f.contactos / cohorte;
         const cambio = porcionAhora - porcionAntes;
         if (Math.abs(cambio) < uRuta.valor) continue;
@@ -229,7 +228,7 @@ export function detectarEnConversion(
           lineaBase: redondear(porcionAntes),
           valorActual: redondear(porcionAhora),
           cambioPct: redondear(cambio),
-          muestra: Math.min(cohorte, m.anterior.cohorte),
+          muestra: Math.min(cohorte, anterior.cohorte),
           gravedad: 'info',
           causasPosibles: ['puede deberse a un cambio de campañas o de presupuesto entre las dos ventanas'],
           revisionRecomendada: 'Decide con la dirección si ese cambio de ruta es el que se buscaba.',
@@ -237,7 +236,7 @@ export function detectarEnConversion(
           destino: null,
           requiereValidacionEjecutiva: true,
           umbral: uRuta,
-          evidencia: { ventana: m.ventana, familia: f.familia, ahora: { contactos: f.contactos, cohorte }, antes: { contactos: antes.get(f.familia) ?? 0, cohorte: m.anterior.cohorte } },
+          evidencia: { ventana: m.ventana, familia: f.familia, ahora: { contactos: f.contactos, cohorte }, antes: { contactos: antes.get(f.familia) ?? 0, cohorte: anterior.cohorte } },
         });
       }
     }

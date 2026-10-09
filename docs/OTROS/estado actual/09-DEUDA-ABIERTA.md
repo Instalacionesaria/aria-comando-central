@@ -593,9 +593,9 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   `adId` llega «si y sólo si» el lead entró por Facebook o Instagram; 01 midió hoy 4 de 217 que no
   (no re-medido).
 - **Cerrado el 2026-10-08** (CV-1 de Conversion): `lib/negocio/recorrido.ts:193-195@210ac73` justificaba la ventana anclada porque Conversion cruza con el
-  gasto y las piezas; de lo que mide, la ruta sólo llama a `recorridoDelLead` y a `embudoDelFormulario` (desde
+  gasto y las piezas; de lo que mide, la ruta sólo llamaba a `recorridoDelLead` y a `embudoDelFormulario` (desde
   AG14 de los agentes además lee sus señales guardadas, que no cruzan gasto ni piezas)
-  (`app/api/conversion/route.ts:64-78`).
+  (`app/api/conversion/route.ts:64-78@02d9207`).
 - `lib/negocio/tramosDelIcp.ts:20` («47 de los 471») no dice la fecha en esa línea. (El «79 anuncios y
   12 con gasto» del panel anterior de Acquisition salió con él en AQ-4.)
 - `lib/negocio/leadsDelPortal.ts:272-275`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es

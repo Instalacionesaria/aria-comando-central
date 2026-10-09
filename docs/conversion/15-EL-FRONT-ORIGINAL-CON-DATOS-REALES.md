@@ -201,8 +201,9 @@ cerrada: una frase nueva entra acá primero.
 **Fórmula** · La de Acquisition (A14-10), con la misma función:
 
 - **«7 días» y «30 días» son días CERRADOS**: los 7 o 30 días completos hasta el último día cerrado de la
-  serie de gasto de la cuenta. Hoy Conversion corta con días de calendario que **incluyen hoy**
-  (`lib/negocio/recorrido.ts:201-203`), y eso cambia.
+  serie de gasto de la cuenta. Hasta el CV-3 Conversion cortaba con días de calendario que **incluían hoy**
+  (`ventanaDeLaCohorte`, `lib/negocio/recorrido.ts:201-203`, desde `app/api/conversion/route.ts:67-68@02d9207`); desde el
+  2026-10-08 la ruta, el cerebro y el detector cortan con `bordesDelPeriodo` y `cohorteEntre`.
 - **«Hoy» es hoy**, a medias: no compara.
 - **«Completo»** empieza en el dato más viejo —el primer contacto con fecha de alta, o el primer día de gasto
   guardado si fuera anterior— y termina hoy. Es la regla de la función compartida (CV15-21); en ARIA el primer
@@ -215,8 +216,9 @@ horas», y acá «Hoy» es el día de calendario. Es el mismo arreglo que A14-10
 **La diferencia con el resto del sistema, dicha** · Creative sigue terminando sus ventanas hoy, así que «7
 días» puede dar otra cifra en Creative que acá. Es la misma contrapartida que A14-10.
 
-**Estado** · **La ventana, construida el 2026-10-08** (CV-1): `bordesDelPeriodo` (CV15-21). La pantalla la usa
-desde CV-3, cuando la ruta le pase la ventana a sus lecturas. Es `CV15-P01`.
+**Estado** · **La ventana, construida el 2026-10-08** (CV-1): `bordesDelPeriodo` (CV15-21). **La ruta la usa desde
+el 2026-10-08** (CV-3): la pantalla de hoy ya muestra los días cerrados, y el segmentado sin el matiz llega con la
+pantalla nueva (CV-4). Es `CV15-P01`.
 
 ### CV15-05 · La población: los contactos de la ventana
 
@@ -459,7 +461,7 @@ id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
 
 **Las observaciones** · Las señales del paso, con el marcado `obs` (`app/aios.css:1080-1092`): `obs-t` es el
 texto, `obs-d` la revisión, `obs-m` la fecha y el estado, y `obs-n` la pérdida en contactos. «No tocar» no es
-una señal (`lib/agentes/detectores/conversion.ts:43-44`): si va como «a favor», es `CV15-P07`.
+una señal (`lib/agentes/detectores/conversion.ts:44-45`): si va como «a favor», es `CV15-P07`.
 
 **Estado** · Por construir (CV-4). Contesta CV4-P01: los cajones que sobreviven son tres.
 
@@ -492,13 +494,13 @@ La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte
 
 | entidad | paso |
 |---|---|
-| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:157`) | Landing: el reparto vive en su cajón |
-| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:251`) | Formulario |
+| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:153`) | Landing: el reparto vive en su cajón |
+| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:250`) | Formulario |
 | cualquier otra | ninguno: va sólo a la tarjeta |
 
 **La alarma** · `#cvAlarmWrap` se muestra sólo si hay alguna señal con gravedad `critica`
 (`lib/agentes/senales/tipos.ts:22`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
-—son media, info, media y media (`lib/agentes/detectores/conversion.ts:46-83`)—, así que no aparece hasta que
+—son media, info, media y media (`lib/agentes/detectores/conversion.ts:47-84`)—, así que no aparece hasta que
 exista una. Su `gsub` del prototipo, «rompe el funnel · no espera al ciclo diario», es falso: las señales
 las guarda la pasada de la mañana. Pasa a «detectada en la pasada de la mañana». Cada fila: `al-t` es el
 texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →» abre el cajón del paso.
@@ -506,7 +508,7 @@ texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →�
 **La tarjeta** · `TarjetaDeSenales` va al final, como en Acquisition, con todo `puede` en falso cuando se
 mira otra empresa.
 
-**Estado** · El reparto por paso, `pasoDeLaSenal`, construido el 2026-10-08 (CV-2); la ruta lo usa en CV-3 y la pantalla lo dibuja en CV-4. Es `CV15-P05`.
+**Estado** · El reparto por paso, `pasoDeLaSenal`, construido el 2026-10-08 (CV-2), y en la ruta desde ese día (CV-3): `senales.porPaso`, vigilado en `pruebas/base/237-las-senales-de-conversion.test.ts`. La pantalla lo dibuja en CV-4. Es `CV15-P05`.
 
 ### CV15-20 · Las flechas contra la ventana anterior
 
@@ -534,14 +536,14 @@ incompleto apaga sólo la flecha de las vistas. En Acquisition apaga todo, porqu
 dentro de `lecturaDeAcquisition` (`lib/negocio/embudosDeAcquisition.ts:722-776@210ac73`). Desde el 2026-10-08
 vive en un módulo compartido, `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82-129`), y Acquisition lo usa: se
 mudó, no se copió. La cohorte también es una sola expresión, `cohorteEntre` (`lib/negocio/recorrido.ts:214-217`):
-la usa Acquisition, y las lecturas de Conversion cuando reciben la ventana; la pantalla, desde CV-3.
+la usan Acquisition y, desde CV-3, la ruta, el cerebro y el detector de Conversion.
 
 **La invariante** · Con la misma ventana, la cohorte de Conversion es exactamente el `cobertura.sobre` de
 Acquisition en 7 y en 30 días. La exige `pruebas/base/246-pasos-de-conversion.test.ts`, con un contacto en cada
 borde de las dos ventanas.
 
 **Estado** · **Construido el 2026-10-08** (CV-1): la función compartida, la expresión de la cohorte y la prueba de
-la invariante. La pantalla de Conversion corta con esa ventana desde CV-3, cuando la ruta se la pase.
+la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (CV-3).
 
 ### CV15-22 · El servidor calcula; el navegador dibuja
 
@@ -563,24 +565,30 @@ la invariante. La pantalla de Conversion corta con esa ventana desde CV-3, cuand
 de 0 a 1: la `finalizacion`, que llega en %, se divide por 100 al consumirla; el `formulario` que viaja para su
 cajón es el del embudo, con la `finalizacion` en %.
 
-**Estado** · **El módulo, construido el 2026-10-08** (CV-2): `lib/negocio/pasosDeConversion.ts`, con sus dos pruebas, `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`. La ruta lo usa desde CV-3.
+**Estado** · **El módulo, construido el 2026-10-08** (CV-2): `lib/negocio/pasosDeConversion.ts`, con sus dos pruebas, `pruebas/codigo/246-pasos-de-conversion.test.ts` y `pruebas/base/246-pasos-de-conversion.test.ts`. **La ruta lo usa desde el 2026-10-08** (CV-3): `GET /api/conversion` responde
+también `pasos` y `senales.porPaso`.
 
 ### CV15-23 · El cerebro y el detector leen lo mismo
 
 **Qué es** · Lo que se mide no se recalcula en ningún otro lugar:
 
 - **El cerebro.** `recorrido_de_los_leads` y `formulario_de_la_landing`
-  (`lib/agentes/executive/adaptadores/conversion.ts:11` y `:27`) pasan a la lectura única, con la zona de la
+  (`lib/agentes/executive/adaptadores/conversion.ts:45` y `:62`) pasan a la lectura única, con la zona de la
   empresa. Se agrega `pasos_de_conversion`, con las cifras de la tira y de las tarjetas. Ya promete días
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`
-  (`lib/agentes/executive/adaptadores/plataforma.ts:31-41`) suma las citas y los anuncios.
-- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:111-135`) consume la misma
+  (`lib/agentes/executive/adaptadores/plataforma.ts:32-42`) suma las citas y los anuncios.
+- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:116-130`) consume la misma
   lectura, como el de Acquisition. Así cumple AG-28, que pide 7 y 30 días cerrados
   (`lib/agentes/senales/tipos.ts:10-11`). La ventana anterior sale de la lectura y no del doble de días menos
   la actual.
 
-**Estado** · Por construir (CV-3).
+**Estado** · **Construido el 2026-10-08** (CV-3): las tres herramientas leen `lecturaDeConversion` con la zona de la
+empresa, `pasos_de_conversion` es nueva, y `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts` exige
+que sus cifras sean las de la pantalla; el detector mide con la misma lectura, y sin una anterior que compare el
+cambio de ruta queda sin medición (`pruebas/codigo/236-el-detector-de-conversion.test.ts`,
+`pruebas/base/237-las-senales-de-conversion.test.ts`). **Las señales de la pasada de la mañana cambian de ventana**:
+de los días de calendario hasta hoy a los días cerrados.
 
 ### CV15-24 · Sin datos personales
 
@@ -656,7 +664,7 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 | CV-0 | Este documento, las respuestas en los otros, `docs/OTROS/futuro/lo-que-conversion-no-mide.md` y la medición del 2026-10-08 | **escrito el 2026-10-08**, para la revisión del usuario |
 | CV-1 | Las piezas compartidas: `lib/negocio/diasCerrados.ts`, mudado desde Acquisition; los predicados de calificado, confirmó y cancelaron; la ventana explícita en `recorridoDelLead`, `embudoDelFormulario` y `corteDeEpoca`; la cohorte de Acquisition con la misma `cohorteEntre`, y la prueba de la invariante | **hecho el 2026-10-08** |
 | CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | **hecho el 2026-10-08** |
-| CV-3 | La ruta, el cerebro y el detector | por hacer |
+| CV-3 | La ruta, el cerebro y el detector | **hecho el 2026-10-08** |
 | CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | por hacer |
 | CV-5 | La comparación lado a lado contra el prototipo, el humo con login, el teléfono y la subida | por hacer |
 

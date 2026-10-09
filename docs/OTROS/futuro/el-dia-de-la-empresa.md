@@ -14,11 +14,14 @@ Para una empresa en America/Lima (UTC−5), de 19:00 a 24:00 locales `current_da
 
 Dónde, en `current_date`:
 
-- La cohorte de Conversion, `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:202`), y las copias a mano de
-  Creative (`lib/negocio/calidadDelCreativo.ts:228`) y del costo por anuncio (`lib/negocio/costoDelAnuncio.ts:355`).
+- La cohorte por días de calendario hasta hoy, `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:202`), y sus copias a
+  mano en Creative (`lib/negocio/calidadDelCreativo.ts:228`) y en el costo por anuncio
+  (`lib/negocio/costoDelAnuncio.ts:355`). Desde el 2026-10-08 Conversion corta con `cohorteEntre`
+  (`lib/negocio/recorrido.ts:214-217`), la de Acquisition: días cerrados, pero el borde de cada día sigue en UTC.
 - La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:84`), sin tope arriba.
 - El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:106`,
-  `lib/agentes/detectores/conversion.ts:122`), y el de Conversation en días UTC de JavaScript
+  `lib/agentes/detectores/conversion.ts:122@02d9207`; desde el 2026-10-08 el de Conversion son los días cerrados de
+  `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:81`).
 - El último día cerrado de Acquisition, que desde la `076` se mide sobre la serie de la cuenta
   (`lib/negocio/gastoDeLaCuenta.ts:310` y la cota de atraso de `:317`).
@@ -50,9 +53,10 @@ Se compararon dos diseños con un juez y tres escépticos (un flujo de 9 agentes
 
 ## El plan, en dos partes
 
-**Parte A, sin riesgo conocido:** Conversion y Creative con su gasto (la misma cantidad de días que los
-contactos, como pide el comentario de `costoDelAnuncio.ts`), los cuatro detectores, las herramientas del
-cerebro, la ficha del lead y el Brief, el «hoy» de Avanzar y el rótulo de `periodo.ts`. Pruebas: una de base
+**Parte A, sin riesgo conocido:** Creative con su gasto (la misma cantidad de días que los contactos, como pide
+el comentario de `costoDelAnuncio.ts`), los detectores de Creative y Conversation, las herramientas del cerebro de
+las pantallas de la Parte A, la ficha del lead y el Brief, el «hoy» de Avanzar y el rótulo de `periodo.ts`.
+Conversion pasó a la Parte B el 2026-10-08: ver abajo. Pruebas: una de base
 con una empresa en Asia/Tokyo y contactos a ±30 minutos de su medianoche, que con el código de hoy da roja a
 cualquier hora, y una de código que prohíba `current_date` y los `::date` sin zona en `lib/` y `app/`.
 
@@ -66,6 +70,12 @@ cualquier hora, y una de código que prohíba `current_date` y los `::date` sin 
   `:731`) siembran anclados al día UTC y habría que rehacerlos y correrlos de noche: un escéptico mostró que
   con el cambio mecánico se ponen rojos, o quedan verdes sin probar nada, entre las 19:00 y las 24:00 de Lima.
 - El «− 3» de la cota de atraso está justificado en días UTC; en días locales el desfase normal es 2.
+- **Conversion va con Acquisition.** Desde el 2026-10-08 (CV-3) su pantalla, su detector y sus herramientas del
+  cerebro cortan con `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82-129`) y `cohorteEntre`
+  (`lib/negocio/recorrido.ts:214-217`), los de Acquisition: mover el día de una es mover el de la otra, o se rompe la
+  invariante de `pruebas/base/246-pasos-de-conversion.test.ts` (CV15-21 de
+  `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). El detector de Acquisition, que lee
+  `lecturaDeAcquisition`, también va acá.
 
 ## Lo que hay que medir antes
 

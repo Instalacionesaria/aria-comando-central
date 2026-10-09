@@ -102,12 +102,12 @@ porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/seccione
 décima salida de la lista, quinta vez que el cable dispara (`pruebas/codigo/90-fundaciones.test.ts:1172-1174`).
 El galón del menú se quedó, por el precedente de Creative (`lib/autorizacion/secciones.ts:283-284`); desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja.
 
-**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:48-98`) pide `tablero.ver`
-por el portero (`app/api/conversion/route.ts:52`), **rechaza** con 400 un período que no está en la
-lista en vez de corregirlo (`app/api/conversion/route.ts:55-59`), le pasa **la misma ventana** a los
-dos módulos (`app/api/conversion/route.ts:64-78`) y devuelve la clave del período que usó
-(`app/api/conversion/route.ts:80-97`). El lector del navegador exige el período, sin valor por
-omisión (`lib/negocio/vistaDeConversion.ts:42-54`).
+**La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:47-105`) pide `tablero.ver`
+por el portero (`app/api/conversion/route.ts:51`), **rechaza** con 400 un período que no está en la
+lista en vez de corregirlo (`app/api/conversion/route.ts:54-58`), le pasa **la misma ventana** a los
+dos módulos (`app/api/conversion/route.ts:64-78@02d9207`) y devuelve la clave del período que usó
+(`app/api/conversion/route.ts:86-104`). El lector del navegador exige el período, sin valor por
+omisión (`lib/negocio/vistaDeConversion.ts:48-60`).
 
 **La vista.** `components/views/ConversionView.jsx` (79 líneas) es una cáscara: su encabezado dice qué
 se tiró y por qué (`components/views/ConversionView.jsx:21-44`), la bajada cambió a *«Por dónde entra
@@ -489,7 +489,7 @@ horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,
 desde la medianoche UTC (`lib/negocio/recorrido.ts:201-203`). `lib/negocio/costoDelAnuncio.ts:62-64`
 admite la diferencia para Acquisition, pero el título es compartido y no cambió. Además,
 `lib/negocio/recorrido.ts:193-195@210ac73` justificaba el anclaje porque Conversion *«cruza sus contactos con el
-gasto y con las piezas»*, y la ruta no lee ni gasto ni piezas (`app/api/conversion/route.ts:64-78`); corregido el 2026-10-08 (CV-1).
+gasto y con las piezas»*, y la ruta no leía ni gasto ni piezas (`app/api/conversion/route.ts:64-78@02d9207`); corregido el 2026-10-08 (CV-1). Desde el CV-3 la ruta lee `lecturaDeConversion` (`app/api/conversion/route.ts:73`), que sí lee el gasto de la cuenta, para los días cerrados y para las vistas de landing de Meta.
 
 **5. Executive sigue publicando en nombre de Conversion.** Móvil contra escritorio, la retención del
 VSL, visitas a la landing y una falla de formulario con su pérdida en contactos (§ 3). Ahora hay una
@@ -540,3 +540,7 @@ ese diseño para la landing o el VSL entrega exactamente el dato que hoy no sirv
   sigue: la marca de circularidad pide el 90 %.
 - **Medido el 2026-10-08**, sobre 30 días cerrados, del 2026-09-08 al 10-07: 105 contactos, 63 agendados, 35
   calificados, 462 vistas de landing según Meta y ninguno con el formulario.
+- **Desde el CV-3 (2026-10-08) la ruta, el cerebro y el detector leen `lecturaDeConversion`**
+  (`lib/negocio/pasosDeConversion.ts`), en días cerrados: la ventana de las secciones 2 y 7 —días de calendario hasta
+  hoy, dos lecturas sueltas en la ruta— ya no es la que corre. El riesgo 4, el «Hoy» de dos significados, sigue hasta
+  que la pantalla nueva saque el matiz del segmentado (CV-4).

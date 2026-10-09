@@ -103,6 +103,22 @@ test('el formulario: sin datos, abandono, y «sin medición» sin su campo', () 
   assert.deepEqual(sinCampo.sinMedicion, [CNV.formularioAbandono, CNV.formularioSinDatos]);
 });
 
+test('sin una anterior que la lectura compare, el cambio de ruta queda sin medición y la fuga se mide igual', () => {
+  /* Desde CV-3 la anterior sale de `lecturaDeConversion`, que no la da sin historia que la cubra o con una lectura
+     atrasada. Callar el cambio de ruta sin decirlo sería un silencio que se lee como «no cambió nada». Mutación:
+     sacar el `sinMedicion` de la anterior nula. */
+  const r = detectar(medida(COHORTE, { anterior: null }));
+  assert.deepEqual(r.sinMedicion, [CNV.cambioDeRuta], 'sin anterior, el cambio de ruta se calló');
+  assert.equal(de(r, CNV.cambioDeRuta).length, 0);
+  /* Y el plan no le echa la culpa a la lectura de contactos, que acá está al día: la causa puede ser la historia o las
+     citas. Mutación: volver al texto de «la lectura de contactos no está al día». */
+  const p = armarPlanDeConversion({ ventana: '30d', dia: '2026-10-08', periodo: { desde: '2026-09-08', hasta: '2026-10-07' }, ...r, vigentes: r.detecciones });
+  assert.equal(p.sinMedicion.length, 1);
+  assert.doesNotMatch(p.sinMedicion[0]!, /^el cambio de ruta: la lectura de contactos no está al día$/, 'el plan culpó a la lectura de contactos');
+  assert.match(p.sinMedicion[0]!, /no hay una ventana anterior que comparar/);
+  assert.equal(de(r, CNV.familiaQueNoAgenda).length, de(detectar(medida(COHORTE)), CNV.familiaQueNoAgenda).length, 'sin anterior, la fuga dejó de medirse');
+});
+
 test('sin la lectura de contactos al día, el recorrido no se publica', () => {
   const r = detectar(medida(COHORTE, { contactosAlDia: false }));
   assert.deepEqual([de(r, CNV.familiaQueNoAgenda).length, r.informativas.length], [0, 0]);

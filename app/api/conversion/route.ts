@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Conversion: por dónde entra la gente, y cuántos abandonan el formulario.
+// La pantalla de Conversion: los cinco pasos del prototipo, por dónde entra la gente y el formulario de la landing.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA
@@ -13,32 +13,31 @@
 //
 // O sea que este archivo y esa bandera se mueven juntos. Tercer departamento que lo hace.
 //
-// ── DOS BLOQUES Y NO TRES, Y LA DIFERENCIA CON CREATIVE ES EL CORTE ───────
+// ── UNA SOLA LECTURA, Y TRES PIEZAS DE LA MISMA VENTANA ───────────────────
 //
-// Creative pide tres módulos porque tiene tres poblaciones del mismo nombre de pieza. Acá son dos, y
-// hablan de **dos poblaciones que ni siquiera se solapan del todo**:
+// Desde el 2026-10-08 todo sale de `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts`), con los días
+// cerrados de Acquisition (CV15-04 y CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
 //
-//   · `recorrido`   · la cohorte ENTERA repartida por el camino de entrada. Siete familias que no
-//                     se suman entre sí como si fueran pasos: son caminos alternativos
-//   · `formulario`  · sólo los que llegaron al formulario de la landing, que en la ventana de 30
-//                     días son 63 de 335. Medido el 2026-09-20
+//   · `pasos`       · la tira y las cinco tarjetas del prototipo, con sus flechas contra la anterior
+//   · `recorrido`   · la cohorte ENTERA repartida por el camino de entrada: la tabla de la pantalla de hoy, y el
+//                     cajón de Landing de la nueva (CV-4). Siete familias que no se suman entre sí como si fueran
+//                     pasos: son caminos alternativos
+//   · `formulario`  · sólo los que llegaron al formulario de la landing: su bloque hoy, su cajón en la nueva
 //
-// **Los dos reciben LA MISMA ventana**, y acá eso pesa más que en las otras pantallas: los dos
-// llevan al lado el mismo `corteDeEpoca` —el último día con el formulario escrito— y si cada uno
-// calculara el suyo sobre una ventana distinta, la misma pantalla diría dos veces si cruza el corte
-// y podrían contestar distinto.
+// **Las tres son de LA MISMA ventana**, y acá eso pesa más que en las otras pantallas: llevan el mismo
+// `corteDeEpoca` —el último día con el formulario escrito— y si cada una calculara el suyo sobre una ventana
+// distinta, la misma pantalla diría dos veces si cruza el corte y podrían contestar distinto. Antes eran dos
+// lecturas sueltas con los días de calendario hasta hoy; ahora es una, y el cerebro y el detector leen la misma.
 //
 // **Ninguna cifra se escribe en este comentario**, y es deliberado: Creative pagó tener tres
-// mediciones vencidas al mismo tiempo en el encabezado de su ruta. Las que hay arriba —63 de 335—
-// llevan su fecha porque describen por qué el diseño es así, no lo que la pantalla va a mostrar hoy.
+// mediciones vencidas al mismo tiempo en el encabezado de su ruta.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
-import { recorridoDelLead } from '../../../lib/negocio/recorridoDelLead.ts';
-import { embudoDelFormulario } from '../../../lib/negocio/embudoDelFormulario.ts';
+import { type ClaveDePaso, lecturaDeConversion, PASOS, pasoDeLaSenal } from '../../../lib/negocio/pasosDeConversion.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeConversion } from '../../../lib/agentes/plan/conversion.ts';
 import { comentarioDelDepartamento } from '../../../lib/agentes/cabecera.ts';
@@ -59,19 +58,26 @@ export async function GET(peticion: Request): Promise<Response> {
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
   /* Las señales del detector de Conversion (AG14 de los agentes), de 7 o de 30 días; con «hoy» o «completo»,
-     ninguna, y la tarjeta lo dice. Las guarda la pasada de cada mañana; acá sólo se leen. */
+     ninguna, y la tarjeta lo dice. Las guarda la pasada de cada mañana; acá sólo se leen, y se reparten por paso
+     según su entidad (CV15-19), para que la pantalla nueva (CV-4) dibuje cada una en la tarjeta y el cajón de su
+     paso. La de hoy las muestra todas en su tarjeta de señales. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const [recorrido, formulario, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const [lectura, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('conversion', ventana, textoDeConversion);
+    const porPaso = Object.fromEntries(PASOS.map((p) => [p, [] as string[]])) as Record<ClaveDePaso, string[]>;
+    for (const s of lista) {
+      const p = pasoDeLaSenal(s.entidad);
+      if (p !== null) porPaso[p].push(s.id);
+    }
     return [
-      await recorridoDelLead(periodo.dias),
-      await embudoDelFormulario(periodo.dias),
+      await lecturaDeConversion(periodo, contexto.organizacion.zonaHoraria),
       {
         ventana,
         lista,
         estado: estadoDelDepartamento(lista),
         plan: ventana === null ? null : await ultimoPlan('conversion', ventana),
         reglas: await reglasDelDepartamento('conversion'),
+        porPaso,
       },
       await comentarioDelDepartamento('conversion', contexto.organizacion.zonaHoraria),
     ] as const;
@@ -84,8 +90,9 @@ export async function GET(peticion: Request): Promise<Response> {
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,
-    recorrido,
-    formulario,
+    pasos: lectura.pasos,
+    recorrido: lectura.recorrido,
+    formulario: lectura.formulario,
     senales,
     /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/conversion/senales` y
        `…/umbrales`, y nada bajo delegación (AG-82). */

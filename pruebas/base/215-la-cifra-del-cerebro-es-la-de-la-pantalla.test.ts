@@ -110,8 +110,12 @@ for (const { clave } of PERIODOS) {
     assert.deepEqual(fatiga.conVeredicto, p.fatiga.conVeredicto);
   });
 
-  test(`Conversion con «${clave}»: el recorrido y el formulario`, async () => {
+  test(`Conversion con «${clave}»: los pasos, el recorrido y el formulario`, async () => {
     const p = await pantalla(conversion, `/api/conversion?periodo=${clave}`);
+    const pasos = await herramienta('pasos_de_conversion', periodo);
+    assert.deepEqual(pasos.cifras, p.pasos.cifras, 'el cerebro y la pantalla dieron otras cifras de los pasos');
+    assert.deepEqual(pasos.ventana, p.pasos.ventana);
+    assert.deepEqual(pares(pasos.pasos, 'clave', 'valor', 'tasa'), pares(p.pasos.pasos, 'clave', 'valor', 'tasa'));
     const recorrido = await herramienta('recorrido_de_los_leads', periodo);
     assert.equal(recorrido.cohorte, p.recorrido.cohorte);
     assert.deepEqual(pares(recorrido.familias, 'familia', 'contactos', 'agendaron'), pares(p.recorrido.filas, 'familia', 'contactos', 'agendaron'));

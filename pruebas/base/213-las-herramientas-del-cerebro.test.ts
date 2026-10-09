@@ -162,6 +162,10 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     arriba: ['aviso', 'conVeredicto', 'dias', 'nota', 'piezas', 'umbralDeCaida'],
     filas: [['piezas', ['caida', 'creativo', 'ctrTardio', 'ctrTemprano', 'desde', 'dias', 'fatigado', 'hasta', 'motivo', 'porque']]],
   },
+  pasos_de_conversion: {
+    arriba: ['anterior', 'cifras', 'cobertura', 'pasos', 'sinAlta', 'sinComparacion', 'ventana'],
+    filas: [['pasos', ['caida', 'clave', 'estado', 'hastaElCorte', 'metricas', 'tasa', 'valor', 'variacion']]],
+  },
   recorrido_de_los_leads: {
     arriba: ['aviso', 'cobertura', 'cohorte', 'corte', 'desde', 'dias', 'familias', 'hasta'],
     filas: [['familias', ['agendaron', 'capturadaAlReservar', 'contactos', 'familia', 'porcion', 'titulo']]],
@@ -349,7 +353,7 @@ test('`frescura` habla sólo de las fuentes de las secciones que se ven', async 
     return Object.keys((r as { datos: { tareas: object } }).datos.tareas).sort();
   };
   assert.deepEqual(await deLas(['acquisition']), ['anuncios', 'anuncios_relleno', 'contactos']);
-  assert.deepEqual(await deLas(['conversion']), ['contactos']);
+  assert.deepEqual(await deLas(['conversion']), ['anuncios', 'anuncios_relleno', 'citas', 'contactos']);
   assert.deepEqual(await deLas(['closer', 'creative']), ['anuncios', 'anuncios_relleno', 'citas', 'contactos', 'mensajes']);
   assert.deepEqual(await deLas(['analizadores']), ['analizadores', 'reintentos']);
   // La sonda es de la plataforma: no viaja a nadie.

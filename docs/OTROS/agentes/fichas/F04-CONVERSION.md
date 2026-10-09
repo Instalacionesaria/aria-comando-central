@@ -15,13 +15,15 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con los mismos argumentos (`app/api/conversion/route.ts:64-78`):
+Lo mismo que su pantalla, con la misma lectura (`app/api/conversion/route.ts:65-84`): desde el 2026-10-08,
+`lecturaDeConversion` en días cerrados (`lib/negocio/pasosDeConversion.ts`), de la que toma:
 
-- `recorridoDelLead(dias)`: por cada familia de entrada, cuántos contactos entraron por ahí, qué porción de la
-  cohorte son, cuántos agendaron (**un conteo, no una tasa**) y cuántos traen la dirección capturada al
-  reservar, que dice cuánto de la fila es circular.
-- `embudoDelFormulario(dias)`: los estados del formulario, su cobertura y su finalización (`null` con menos
-  de 10).
+- `recorrido`: por cada familia de entrada, cuántos contactos entraron por ahí, qué porción de la cohorte son,
+  cuántos agendaron (**un conteo, no una tasa**) y cuántos traen la dirección capturada al reservar, que dice
+  cuánto de la fila es circular;
+- `formulario`: los estados del formulario, su cobertura y su finalización (`null` con menos de 10);
+- `recorridoAnterior`: el reparto de la ventana anterior, para el cambio de ruta. Hasta ese día eran
+  `recorridoDelLead(dias)` y `embudoDelFormulario(dias)`, con los días de calendario hasta hoy.
 
 ## Las reglas
 
@@ -32,9 +34,11 @@ Lo mismo que su pantalla, con los mismos argumentos (`app/api/conversion/route.t
 | `CNV-FORMULARIO-ABANDONO` | Mucha gente empieza el formulario y no lo termina | finalización bajo el 50 % | 10 que lo empezaron | media | funnel | Conversion |
 | `CNV-FORMULARIO-SIN-DATOS` | El formulario dejó de llegar: lo que la pantalla dice de él no vale para esta ventana | menos del 10 % de la cohorte lo trae | 10 en la cohorte | media | funnel | Conversion |
 
-La ventana anterior, para el cambio de ruta, sale de la misma función con el doble de días menos la actual: la
-cohorte se corta por días de calendario sin tope superior, así que la de 60 días menos la de 30 son exactamente
-los 30 anteriores (la 237 lo compara contra un conteo directo).
+Desde el 2026-10-08 la ventana y la anterior salen de `lecturaDeConversion`, la misma de la pantalla, con los días
+cerrados de Acquisition (CV15-23 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): la anterior es la del
+mismo largo, justo antes, y la 237 compara las dos contra un conteo directo. Sin historia que la cubra, o con la
+lectura de contactos o de citas atrasada, el cambio de ruta queda sin medición. Hasta ese día era el doble de días
+de calendario menos la actual.
 
 Tres reglas de cuidado:
 
