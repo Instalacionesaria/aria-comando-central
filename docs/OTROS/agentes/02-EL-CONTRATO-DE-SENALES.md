@@ -96,7 +96,7 @@ no se marca.
   por qué.
 - **Confianza**: `alta` con 30 o más casos en el denominador; `media` de 10 a 29.
 - **Debajo de 10 no hay señal**: se cuenta (A6-02). Es el piso de todo el sistema, `PISO_DE_UNA_TASA = 10`
-  (`lib/negocio/indicadoresDeCitas.ts:309`), y **toda regla declara su denominador** (impresiones,
+  (`lib/negocio/indicadoresDeCitas.ts:329`), y **toda regla declara su denominador** (impresiones,
   contactos, citas, llamadas) para que el piso se aplique al denominador correcto.
 
 ## AG-27 · Lo que no llega al piso se cuenta

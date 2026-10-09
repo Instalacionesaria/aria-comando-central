@@ -125,7 +125,7 @@ al `§ 10.6`. El prototipo lo dibuja en el paso «Gracias»; se va con el borrad
 
 **Rastro** · Cuatro de las seis `Lectura` del prototipo dicen `Corresponde a Sales`
 (`conversion.js:478`, `:502`, `:519`) o `Corresponde a Conversation` (`:548`).
-**Estado** · El ICP ya se resuelve en `lib/negocio/calidadDelCreativo.ts:61` con 344 de 344 contactos
+**Estado** · El ICP ya se resuelve en `lib/negocio/calidadDelCreativo.ts:62` con 344 de 344 contactos
 de treinta días. **Conversion lo consume**; la definición de «calificada» —dónde está el corte— no es
 suya: `docs/creative/08-DE-DONDE-VIENE-CADA-DATO.md:166` la deja como pregunta abierta con cuatro
 pantallas candidatas.

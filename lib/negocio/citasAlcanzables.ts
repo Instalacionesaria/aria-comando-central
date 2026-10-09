@@ -32,7 +32,7 @@
 // ── POR QUÉ FUNCIONES CON ALIAS Y NO CONSTANTES ─────────────────────────────
 //
 // Porque los fragmentos originales referencian `citas.org_id` sin calificar, y la consulta hermana
-// del mismo archivo usa `citas ci` (`indicadoresDeCitas.ts:239`). Una constante exportada se ata a
+// del mismo archivo usa `citas ci` (`indicadoresDeCitas.ts:267`). Una constante exportada se ata a
 // un nombre de tabla y revienta en cuanto alguien pone un alias — o peor, en un `join` con dos
 // tablas se ata a la equivocada y devuelve filas de la otra sin ningún error.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -158,6 +158,50 @@ export function contactoDescartado(alias = 'contactos'): RawBuilder<boolean> {
   return sql<boolean>`exists (
     select 1 from unnest(${sql.raw(alias)}.etiquetas) e
      where lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+}
+
+/**
+ * **¿Esta PERSONA es un calificado?** Agendó y no está descartada (A14-07 de
+ * `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+ *
+ * Vivía como una expresión local de Acquisition, y Conversion pide la misma cifra (CV15-09): dos copias de
+ * «calificado» divergen el día que alguien cambie una, y las dos pantallas dirían «35 calificados» de gente
+ * distinta.
+ *
+ * El descarte se mira como está hoy aunque se pida una edad: las etiquetas no tienen fecha. Por eso los
+ * calificados no comparan contra una ventana anterior en ninguna pantalla.
+ *
+ * Entre paréntesis porque son dos condiciones: sin ellos, un `not ${esCalificado(…)}` negaría sólo la
+ * primera.
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ * @param reservadaHaceDias La edad de `tieneCitaAlcanzable`, para una ventana anterior.
+ */
+export function esCalificado(alias = 'contactos', reservadaHaceDias: number | null = null): RawBuilder<boolean> {
+  return sql<boolean>`(${tieneCitaAlcanzable(alias, reservadaHaceDias)} and not ${contactoDescartado(alias)})`;
+}
+
+/**
+ * **¿Esta PERSONA canceló todo lo que reservó?** Tuvo alguna cita alcanzable, y ninguna de sus citas
+ * alcanzables sigue sin cancelar.
+ *
+ * Es la pregunta de la cifra «Cancelaron» que pide Conversion (CV15-18 de
+ * `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y su unidad es la persona: quien canceló y volvió a
+ * reservar no canceló. **No es la tasa de cancelación**
+ * de `indicadoresDeCitas.ts`, que cuenta citas en una ventana móvil; las dos se rotulan distinto para que
+ * nadie las compare.
+ *
+ * Las citas congeladas no cuentan ni para un lado ni para el otro, como en `tieneCitaAlcanzable`: su estado
+ * es una foto que el CRM ya no actualiza.
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ */
+export function todasSusCitasCanceladas(alias = 'contactos'): RawBuilder<boolean> {
+  const a = sql.raw(alias);
+  return sql<boolean>`(${tieneCitaAlcanzable(alias)} and not exists (
+    select 1 from negocio.citas cv
+     where cv.org_id = ${a}.org_id and cv.contacto_id = ${a}.id
+       and ${alcanzable('cv')} and not ${cancelada('cv')}))`;
 }
 
 /**

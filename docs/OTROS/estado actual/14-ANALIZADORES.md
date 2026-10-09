@@ -443,7 +443,7 @@ lo que se mueve pierde su análisis y su ficha viejos en la misma transacción.
 
 **10 · Ocho reuniones no son una tasa.** `scripts/medir-analizadores.sql` imprime «66,7 % no es HT» y
 «25,0 % no es OB», sobre 3 y 4 casos. El piso del proyecto para publicar una tasa es 10
-(`lib/negocio/indicadoresDeCitas.ts:309`); acá solo valen conteos.
+(`lib/negocio/indicadoresDeCitas.ts:329`); acá solo valen conteos.
 
 **11 · La categoría de una objeción es de un juego cerrado, y vale mientras su texto sea el mismo** (AG11 de los
 agentes, `docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md`). Haiku la pone una vez por llamada, en la tarea

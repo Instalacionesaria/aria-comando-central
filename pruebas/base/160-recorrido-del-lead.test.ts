@@ -358,3 +358,44 @@ test('los rótulos viajan en la respuesta, no se importan', async () => {
      orgánico. La familia se nombra por lo que la define, que es la ausencia de página. */
   assert.doesNotMatch(r.rotulos['sin-pagina'].titulo, /meta|facebook/i);
 });
+
+// ─── LA VENTANA EXPLÍCITA (CV-1, 2026-10-08) ──────────────────────────────────
+
+/** Un contacto con su alta en un instante exacto: `alta` es SQL, relativo a `current_date`. */
+async function unContactoEn(alta: string, ultima: Record<string, string> = {}): Promise<void> {
+  await esc.admin.query(
+    `insert into negocio.contactos
+       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, atribucion_ultima)
+     values ($1, $2, 'Lead de prueba', 'setter', ${alta}, '{}'::jsonb, $3::jsonb)`,
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify(ultima)],
+  );
+}
+
+test('con una ventana explícita cuenta sus dos días de borde enteros, y ni un segundo más', async () => {
+  /* Conversion pasa a los días cerrados de Acquisition (CV15-21 de
+     `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): `[desde, hasta]`, los dos días enteros. Los
+     cuatro contactos están en los bordes. Entran la medianoche de `desde` y el último segundo de `hasta`; no
+     entran el segundo anterior ni la medianoche siguiente.
+     *
+     * Mutaciones: `>` en vez de `>=` deja afuera la medianoche de `desde`; `hasta` sin el `+ 1` deja afuera
+     * todo su último día; y una lectura que ignore la ventana cuenta también al de hoy. */
+  await limpiar();
+  await unContactoEn(`(current_date - 5)::timestamptz`);
+  await unContactoEn(`(current_date - 5)::timestamptz - interval '1 second'`);
+  await unContactoEn(`(current_date - 2)::timestamptz - interval '1 second'`);
+  await unContactoEn(`(current_date - 2)::timestamptz`);
+  await unContactoEn('now()');
+  const v = (
+    await esc.admin.query<{ desde: string; hasta: string }>(
+      `select to_char(current_date - 5, 'YYYY-MM-DD') as desde, to_char(current_date - 3, 'YYYY-MM-DD') as hasta`,
+    )
+  ).rows[0]!;
+
+  const r = await conOrganizacion(esc.org, () => recorridoDelLead(30, v));
+  assert.equal(r.cohorte, 2, 'la ventana explícita no cortó en sus dos bordes');
+  assert.equal(r.desde, v.desde, 'el primer contacto de la ventana no es el de la medianoche de `desde`');
+  assert.equal(r.hasta, v.hasta, 'el último contacto de la ventana no es el del último segundo de `hasta`');
+  // Sin ventana, los 30 días que terminan hoy cuentan a los cinco.
+  assert.equal((await leer(30)).cohorte, 5, 'sin ventana explícita la lectura dejó de ser la de siempre');
+});
+

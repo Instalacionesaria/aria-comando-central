@@ -69,7 +69,7 @@ detalle, no al abrir la evidencia: en la señal.
   puntos de diferencia producidos por redondear dos personas**, y el 54 % de la señal es el segundo
   número, el que la pantalla nunca muestra.
 - **Estado:** la regla ya existe y es del sistema, no de esta pantalla. `PISO_DE_UNA_TASA = 10` en
-  `lib/negocio/indicadoresDeCitas.ts:300`, con su motivo escrito ahí mismo: *«una tasa sobre dos
+  `lib/negocio/indicadoresDeCitas.ts:329`, con su motivo escrito ahí mismo: *«una tasa sobre dos
   eventos no es una tasa — es un número que se mueve cincuenta puntos con el próximo registro»*.
   La aplican `lib/negocio/atribucionDelLead.ts:158`, `lib/negocio/consumoDelPrecall.ts:231` y
   `lib/auditor/sentimiento.ts:127`.
@@ -80,7 +80,7 @@ El piso es del **denominador de la señal**, no del volumen de la pantalla. Una 
 afinidad ICP de una campaña se mide sobre los calificados de esa campaña; con menos de diez, la
 señal no sale.
 
-- **Rastro:** `lib/negocio/indicadoresDeCitas.ts:300` (la constante) y `lib/aios/conversion.js:79-84`
+- **Rastro:** `lib/negocio/indicadoresDeCitas.ts:329` (la constante) y `lib/aios/conversion.js:79-84`
   (la forma ya dibujada en otro departamento): un arreglo `MINOR` con el comentario *«por debajo del
   umbral de impacto: no se muestran, se cuentan»*. El arreglo está declarado y **no se renderiza en
   ninguna parte** —un `grep` de `MINOR` sobre `conversion.js` da una sola línea, la declaración—, así
@@ -560,8 +560,8 @@ declarar ganador, escalar únicamente por CPL.
 | 0,5 % | `acquisition.js:130` | por debajo, la variación se dibuja «=» y no una flecha |
 | 100 / 60 / 25 | `acquisition.js:98` | los pesos de la afinidad; imponen un piso de 25 % |
 | 75 / 50 | `lib/aios/leads-group.js:10` | los cortes de tramo ICP — **escritos fuera de Acquisition** |
-| 10 | `lib/negocio/indicadoresDeCitas.ts:300` | el piso de publicación de toda tasa del sistema |
-| 14 días | `lib/negocio/indicadoresDeCitas.ts:310` | la ventana del resto del sistema |
+| 10 | `lib/negocio/indicadoresDeCitas.ts:329` | el piso de publicación de toda tasa del sistema |
+| 14 días | `lib/negocio/indicadoresDeCitas.ts:339` | la ventana del resto del sistema |
 
 **Que hay que decidir** — el prototipo los usa sin declararlos:
 

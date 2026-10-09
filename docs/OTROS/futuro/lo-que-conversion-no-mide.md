@@ -14,7 +14,7 @@
 «Visto promedio» y «Llegan al CTA», y su cajón con la curva de retención.
 
 **Por qué no hay dato** · El campo que guarda la retención se escribió 79 veces, entre el 2026-08-11 y el
-2026-08-30, y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:117-127`). No es que nadie viera el
+2026-08-30, y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:118-128`). No es que nadie viera el
 video: el medidor no reporta. Los otros dos campos de porcentaje de video están en 0 de 590.
 
 **Qué haría falta** · Arreglar vTurb o su integración con el CRM, que está fuera de este sistema. Y conviene

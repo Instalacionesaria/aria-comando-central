@@ -27,7 +27,7 @@
 //     colector los guarda en cero, así que un día sin fila es un día que nadie pidió, y su gasto faltaría en el
 //     denominador. Que el detalle por campaña cuadre no hace falta acá: el total de la cuenta no depende de él.
 // Además, los últimos días leídos pueden estar a medias: el colector lee la serie de madrugada y la relee en la
-// pasada siguiente, y al oeste de UTC−6 ni eso cierra el día (`embudosDeAcquisition.ts`, el último día cerrado).
+// pasada siguiente, y al oeste de UTC−6 ni eso cierra el día (`diasCerrados.ts`, el último día cerrado).
 // Eso va en la nota y no en el aviso: es cierto siempre, y un aviso que aparece siempre se aprende a ignorar.
 // ═══════════════════════════════════════════════════════════════════════════════
 

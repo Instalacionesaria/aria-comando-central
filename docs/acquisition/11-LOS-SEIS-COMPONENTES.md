@@ -152,7 +152,7 @@ nombrarlos porque son los que se olvidan:
   reproducir.
 - **`confidence`** — cuánta evidencia hay. Es lo que permite no publicar una alerta construida sobre
   tres impresiones, y lo que conecta con el `PISO_DE_UNA_TASA = 10` que este repositorio ya aplica en
-  todas sus tasas (`lib/negocio/indicadoresDeCitas.ts:300`).
+  todas sus tasas (`lib/negocio/indicadoresDeCitas.ts:329`).
 - **`possible_causes`** — en plural, y el plural es del documento. Una alerta que afirma UNA causa
   está diagnosticando, y diagnosticar sin cruzar con Business y Creative es exactamente lo que el
   § 18.1 le prohíbe a este departamento.

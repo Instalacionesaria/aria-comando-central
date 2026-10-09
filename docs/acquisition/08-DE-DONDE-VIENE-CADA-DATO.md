@@ -66,7 +66,7 @@ al CRM, no con `creado_el`, que es cuándo lo vio nuestro barrido. Es la regla 6
 ingesta.
 
 Los 14 días y el piso de 10 no son elección de este documento: son `DIAS_DE_LA_TASA = 14` y
-`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:310` y `:300`), y usar otros produciría
+`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:339` y `:329`), y usar otros produciría
 filas que no suman contra las cifras que el resto del sistema ya publica.
 
 ```sql

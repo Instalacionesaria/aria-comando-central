@@ -79,7 +79,7 @@ De los siete que `Cockpit` publica (`inicio.ts:40-66` y `dineroDelMes.ts:75-90`)
 
 ## S6-05 · El piso, y de qué es
 
-`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:300`).
+`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`).
 
 **Es del DENOMINADOR**, no del total ni de la fila. Sobre esta base eso decide mucho:
 
@@ -128,7 +128,7 @@ nada falle.
 
 Es la regla 4 del departamento (`docs/OTROS/estado actual/05-SALES.md:426-445`), con un matiz que esa regla
 ya corrige: **catorce días ya no es la ventana del sistema**. `DIAS_DE_LA_TASA = 14`
-(`indicadoresDeCitas.ts:310`) es hoy sólo el argumento por omisión de `tasaDeCancelacion` para quien
+(`indicadoresDeCitas.ts:339`) es hoy sólo el argumento por omisión de `tasaDeCancelacion` para quien
 no pide ventana. Sales sí pide.
 
 **Defecto que evita:** que un módulo se quede con su valor por omisión mientras los otros dos usan el

@@ -126,7 +126,7 @@ regresión. Ver `10`.
 - **La cadena de cierre** — `S14-01`. Cuatro eslabones con el contacto como unidad: 590 contactos →
   201 con cita alcanzable → los que confirmaron → los que tienen un intento registrado. Ninguna venta.
 - **La tasa de cancelación** — `S2-04`. **59,2 % medido**, y es la única cifra del embudo comercial
-  medible de punta a punta hoy. **No se recalcula**: `lib/negocio/indicadoresDeCitas.ts:312` ya la
+  medible de punta a punta hoy. **No se recalcula**: `lib/negocio/indicadoresDeCitas.ts:341` ya la
   publica y Sales sería su segundo consumidor.
 - **El ciclo del alta a la primera cita** — `S2-05`. **Mediana 2,9 días** contra media 16,5: la media
   está arrastrada por una cola de 14 contactos que llega a 290 días.

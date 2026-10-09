@@ -36,7 +36,7 @@
 //
 // Por eso `congeladas` viaja en la misma respuesta y en la misma pasada. Es la condición bajo la
 // cual una ventana de treinta días es publicable en una cifra de citas, y es lo mismo que hace
-// `tasaDeCancelacion` (`indicadoresDeCitas.ts:345`).
+// `tasaDeCancelacion` (`indicadoresDeCitas.ts:341`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';

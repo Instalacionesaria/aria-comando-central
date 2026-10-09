@@ -159,7 +159,7 @@ la pantalla nueva no puede heredar sin querer.
 - **Rastro:** Sin calificar, alto, medio, bajo y «Todos» al final (`aios-command-center_1.html:4724-4725`).
 - **Qué pide:** se conserva ese orden, que vive en `TRAMOS`. **Nunca se ordena por volumen**, por el
   mismo motivo que Conversion da para sus familias: ordenar por volumen haría que la pantalla
-  cambiara de forma cada semana (`lib/negocio/recorrido.ts:51-53`).
+  cambiara de forma cada semana (`lib/negocio/recorrido.ts:52-54`).
 
 ---
 
@@ -227,8 +227,8 @@ la pantalla nueva no puede heredar sin querer.
   denominador (`aios-command-center_1.html:4707`).
 - **Fórmula:** vendidos / contactos del tramo. Es la misma que la maqueta, y hay que leerla bien: de
   cada cien personas del tramo, cuántas compraron.
-- **Piso:** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`), **sobre el
-  denominador** (`lib/negocio/indicadoresDeCitas.ts:305-307`).
+- **Piso:** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`), **sobre el
+  denominador** (`lib/negocio/indicadoresDeCitas.ts:325-327`).
 - **Cuándo es nula, en este orden:**
   1. **`sin_ventas_registradas`**: la empresa no tiene **ninguna** venta registrada. Es lo que pasa
      hoy en las cinco tarjetas. Se evalúa sobre la empresa y no sobre el tramo por el motivo de

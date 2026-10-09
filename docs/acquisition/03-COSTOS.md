@@ -331,7 +331,7 @@ Corrida la aritmética de `build()` tal como está (`acquisition.js:85-122`) par
 
 **4 · La señal compara contra un 72 % que la pantalla dibuja como 25 %.** «Frente al 72 % del retargeting» (`AcquisitionView.jsx:119`): en 7 días, «Retargeting 90d» muestra **ICP 25 %** — el piso de la fórmula `(icpA*100 + icpM*60 + icpB*25) / q` (`:98`). Y su reparto ICP declarado es de los más altos de las siete (`icp.a = .45`, `:26`). Con **1 solo calificado**, los dos redondeos de `:96` dan cero y el residuo de `:97` manda ese único calificado al tramo bajo, así que una de las mejores campañas del modelo publica la peor afinidad de la pantalla.
 
-Los dos últimos son el mismo defecto que el A3-24 y el A3-11: **con denominadores de un dígito, el costo por calificado se dispara y la afinidad se desploma al piso, y ninguna de las dos cifras es una medición del negocio.** Es lo que el piso de 10 del sistema existe para evitar (`lib/negocio/indicadoresDeCitas.ts:300`), y esta pantalla no lo tiene.
+Los dos últimos son el mismo defecto que el A3-24 y el A3-11: **con denominadores de un dígito, el costo por calificado se dispara y la afinidad se desploma al piso, y ninguna de las dos cifras es una medición del negocio.** Es lo que el piso de 10 del sistema existe para evitar (`lib/negocio/indicadoresDeCitas.ts:329`), y esta pantalla no lo tiene.
 
 ---
 
@@ -345,7 +345,7 @@ Los dos últimos son el mismo defecto que el A3-24 y el A3-11: **con denominador
 
 **¿El costo por etapa comparte numerador, o cada paso lleva el suyo?** Hoy los cuatro costos de un embudo son la misma inversión con cuatro denominadores (A3-06), que responde «cuánto costó cada uno de los que llegaron hasta acá». La otra lectura —cuánto cuesta el paso— es otra métrica y no está en el prototipo.
 
-**¿Se publica un piso de volumen para las cifras de dinero?** El sistema tiene `PISO_DE_UNA_TASA = 10` y lo aplica a las tasas (`lib/negocio/indicadoresDeCitas.ts:300`); de los 7 anuncios de la ventana medida el 2026-09-15, sólo 3 lo alcanzaban (foto del 2026-09-15, línea 288); el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145`). El §6 muestra qué pasa con costos calculados sobre 1 o 2 calificados. Falta decidir si el piso apaga el costo, lo apaga y deja la inversión, o lo publica con la advertencia.
+**¿Se publica un piso de volumen para las cifras de dinero?** El sistema tiene `PISO_DE_UNA_TASA = 10` y lo aplica a las tasas (`lib/negocio/indicadoresDeCitas.ts:329`); de los 7 anuncios de la ventana medida el 2026-09-15, sólo 3 lo alcanzaban (foto del 2026-09-15, línea 288); el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145`). El §6 muestra qué pasa con costos calculados sobre 1 o 2 calificados. Falta decidir si el piso apaga el costo, lo apaga y deja la inversión, o lo publica con la advertencia.
 
 **¿Lleva delta la Inversión?** `:146` lo declara, pero `inv` se calcula sin el modificador del período (`:88`), así que con dos ventanas de la misma duración el actual y el anterior son idénticos y `delta` cae siempre en el «=» plano de `:130`. **El único caso en que ese KPI puede mostrar una flecha es cuando las dos ventanas duran distinto** —sólo alcanzable en modo `custom` + «Otro periodo»— y entonces la flecha es exactamente la razón entre las duraciones, que es el artefacto que la advertencia de `:77` existe para señalar. Comparar el gasto contra el período anterior exige medirlo por día (A3-16); si no, el KPI se muestra sin delta como las tres cifras del encabezado del embudo.
 

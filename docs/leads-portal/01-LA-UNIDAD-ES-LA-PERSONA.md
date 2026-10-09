@@ -44,7 +44,7 @@ Las demás pantallas que publican cifras tienen otra unidad, o cuentan personas 
 |---|---|---|
 | Acquisition | el anuncio: el costo por anuncio y el monitor de atribución | `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:16-18` |
 | Creative | la pieza, por el nombre del creativo | `lib/negocio/calidadDelCreativo.ts:19-21` |
-| Conversion | la familia de recorrido | `lib/negocio/recorrido.ts:48-55` |
+| Conversion | la familia de recorrido | `lib/negocio/recorrido.ts:49-56` |
 | Conversation | la conversación: audita chats | `docs/sales/13-EL-CONTRASTE.md:49-50` |
 | Sales | el eslabón y el closer; su cadena cuenta contactos, pero publica cuántos, no cuáles | `docs/sales/00-MAPA.md:126-127` |
 | Closer y Setter | la persona, pero la de un territorio, y un closer vinculado ve sólo sus asignados | `lib/negocio/alcanceDelCloser.ts:25-28` |
@@ -193,7 +193,7 @@ con las que Avanzar decide qué cita ofrece cerrar (`docs/sales/01-LA-VENTA-NO-E
 **Qué pide** · «No aplica» se dibuja **vacío**: ni «sin registrar» ni «no» (`LP05-07`, paso 4).
 Confundirlo con «no se sabe» acusaría de no registrar a quien nunca tuvo nada que registrar, y por
 eso `sin_registrar` exige las mismas tres condiciones que la cita cerrable de la cadena de Sales
-(`lib/negocio/citasAlcanzables.ts:174-176`).
+(`lib/negocio/citasAlcanzables.ts:218-220`).
 
 ### LP01-09 · Vendió tiene «sí» y «no se sabe»; su «no» está vacío a propósito
 
@@ -275,7 +275,7 @@ vacío. Medido el 2026-09-27: **121** personas con alguna de las seis etiquetas.
 El recorrido de la ficha —Entró, Llegó por, Agendó, Asistió, Compró, y el VSL como hueco declarado
 (`LP05-07`)— son los predicados de `LP01-04` en el orden en que ocurren, con los valores de
 `LP01-07` y con las mismas palabras. «Llegó por» es la excepción: no contesta sí o no, es la familia
-de recorrido de Conversion (`lib/negocio/recorrido.ts:139`).
+de recorrido de Conversion (`lib/negocio/recorrido.ts:140`).
 
 La bajada de la maqueta lo resume en una frase, «Cada contacto, de dónde vino y hasta dónde llegó»
 (`aios-command-center_1.html:3031`). Medido el 2026-09-27, la segunda mitad se detiene, para

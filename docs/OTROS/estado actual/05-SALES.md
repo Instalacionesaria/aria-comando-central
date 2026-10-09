@@ -168,10 +168,10 @@ ve hoy es **69,5 % a 30 días** (66 de 95) y 76,4 % con «Completo» (97 de 127)
 (`lib/negocio/dineroDelMes.ts:105`); la COHORTE de contactos dados de alta en N días para la cadena y
 el ciclo (`lib/negocio/cadenaDeCierre.ts:169`); las CITAS ocurridas en N días para la cancelación y
 la tabla (`lib/negocio/cierrePorCloser.ts:250-251`). Todas rodantes (`now() - N días`). El piso es
-`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`) sobre el denominador: por fila en
+`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`) sobre el denominador: por fila en
 la tabla (`lib/negocio/cierrePorCloser.ts:403-407`) y sobre los medidos en el ciclo
 (`lib/negocio/cicloHastaLaCita.ts:144-146`). **La cancelación de cabecera no tiene piso**: su tasa es
-`null` sólo con cero citas (`lib/negocio/indicadoresDeCitas.ts:67-68` y `:429`), y el panel la
+`null` sólo con cero citas (`lib/negocio/indicadoresDeCitas.ts:67-68` y `:449`), y el panel la
 dibuja con cualquier denominador (`components/sales/PanelDeSales.jsx:369-372`). Con «7 días», a las
 20:00 UTC del 2026-09-28, publicaba **40 % sobre 5 citas**; a las 22:00, 33,3 % sobre 6. Ver § 7.
 
@@ -424,10 +424,10 @@ presentarse sin él, y ninguna «CERRADA» del analizador puede reemplazarlo: es
 modelo, no un reporte del closer.
 
 **4 · El piso de 10 y la ventana, y el piso es del DENOMINADOR.**
-`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`) y `DIAS_DE_LA_TASA = 14`
-(`lib/negocio/indicadoresDeCitas.ts:319`). El encabezado del piso trae la regla que más le importa a
+`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`) y `DIAS_DE_LA_TASA = 14`
+(`lib/negocio/indicadoresDeCitas.ts:339`). El encabezado del piso trae la regla que más le importa a
 Sales: con 151 citas y 3 respuestas la muestra son 3, y **el closer que cierra sus intentos no es el
-mismo que no los cierra** (`lib/negocio/indicadoresDeCitas.ts:305-307`). Ése es el sesgo que va a
+mismo que no los cierra** (`lib/negocio/indicadoresDeCitas.ts:325-327`). Ése es el sesgo que va a
 tener cualquier tasa de cierre de Sales: los closers que registran no son una muestra al azar.
 
 Y catorce días **no es la ventana de ninguna pantalla, sino el valor por omisión de una función.**
@@ -453,7 +453,7 @@ ni el motor avisan. Hoy el dinero de Sales está en el estado (4) —6 resultado
 venta— y el 2026-10-01 pasa solo al (3) si nadie registra nada (ver § 7).
 
 **6 · El denominador de una tasa de asistencia lleva `asistio is not null`.**
-`lib/negocio/indicadoresDeCitas.ts:365-374`: como el nulo es el caso normal, sin ese filtro «la tasa
+`lib/negocio/indicadoresDeCitas.ts:385-394`: como el nulo es el caso normal, sin ese filtro «la tasa
 diría que no se presenta casi nadie. Sería una cifra plausible, alarmante y falsa». La tabla por
 closer lo repite por fila (`lib/negocio/cierrePorCloser.ts:269-273`). Con 0 de 333 citas con
 asistencia, ese denominador es cero y la tasa es `null`.
@@ -517,7 +517,7 @@ aviso de concentración— y los ven 13 usuarios; y el nombre de la maqueta sigu
 archivos fuera de `docs/` y cuatro de `docs/sales/` de un repositorio público (la lista, en § 3).
 
 **Publicar una tasa con menos de 10 eventos, y ya está pasando en la cifra de cabecera.** La
-cancelación no aplica el piso (`lib/negocio/indicadoresDeCitas.ts:429`) y el panel la dibuja siempre
+cancelación no aplica el piso (`lib/negocio/indicadoresDeCitas.ts:449`) y el panel la dibuja siempre
 que haya una cita: con «7 días», **40 % sobre 5 citas** a las 20:00 UTC y 33,3 % sobre 6 dos horas
 después. `docs/sales/02-METRICAS.md:104` le atribuye a esta cifra un piso que la función no tiene. Las
 demás tasas de la pantalla sí lo aplican.

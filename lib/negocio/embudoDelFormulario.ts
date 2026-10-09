@@ -48,10 +48,11 @@ import {
   type CorteDeEpoca,
   ESTADOS_DEL_FORMULARIO,
   type EstadoDelFormulario,
+  cohorteDeLaLectura,
   corteDeEpoca,
-  ventanaDeLaCohorte,
 } from './recorrido.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import type { DiasDeCalendario } from './diasCerrados.ts';
 
 export interface FilaDelFormulario {
   estado: EstadoDelFormulario;
@@ -160,10 +161,16 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
  * El embudo del formulario, en la ventana.
  *
  * Se corre dentro de `conOrganizacion(`.
+ *
+ * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` hasta
+ *   hoy: la misma que recibe `recorridoDelLead`, para que el corte se diga una sola vez para las dos.
  */
-export async function embudoDelFormulario(dias = DIAS_DE_LA_TASA): Promise<EmbudoDelFormulario> {
+export async function embudoDelFormulario(
+  dias = DIAS_DE_LA_TASA,
+  ventana: DiasDeCalendario | null = null,
+): Promise<EmbudoDelFormulario> {
   const campo = await campoPorNombre(CAMPO_DEL_FORMULARIO);
-  const corte = await corteDeEpoca(dias);
+  const corte = await corteDeEpoca(dias, ventana);
 
   /* Sin el campo, el bloque entero se apaga **y lo dice**. No publica ceros: que el CRM no tenga
      ese campo no significa que nadie complete el formulario. Es el mismo apagado que
@@ -209,7 +216,7 @@ export async function embudoDelFormulario(dias = DIAS_DE_LA_TASA): Promise<Embud
       sql<string | null>`min(alta_en_el_crm) filter (where ${valor} is not null)::date::text`.as('primero'),
       sql<string | null>`max(alta_en_el_crm) filter (where ${valor} is not null)::date::text`.as('ultimo'),
     ])
-    .where(ventanaDeLaCohorte('contactos', dias))
+    .where(cohorteDeLaLectura('contactos', dias, ventana))
     .executeTakeFirst();
 
   const cohorte = Number(f?.cohorte ?? 0);

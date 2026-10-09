@@ -96,7 +96,7 @@ avisos, y se lleva puestos a los que sí eran ciertos. El argumento está en
 **propio** y no parte de `aviso`: la asistencia va a estar bajo el piso durante semanas, así que un
 aviso compartido estaría siempre encendido, «incluido el de las citas congeladas».
 
-**La forma canónica son tres estados, no dos** (`lib/negocio/indicadoresDeCitas.ts:506-518`):
+**La forma canónica son tres estados, no dos** (`lib/negocio/indicadoresDeCitas.ts:526-538`):
 
 | Estado | Qué dice | Qué manda a hacer |
 | --- | --- | --- |
@@ -156,25 +156,25 @@ cuando aparezca un 1 va a saltearlo igual».
 **denominador**. Por debajo del piso el valor es `null`, se dibuja el conteo, y el aviso explica por
 qué.
 
-La constante vive en `lib/negocio/indicadoresDeCitas.ts:309`, con su justificación en `:293-308`.
+La constante vive en `lib/negocio/indicadoresDeCitas.ts:329`, con su justificación en `:313-328`.
 
 **Por qué diez, y no es gusto.** El no-show reportado se declara como **conteo y no como tasa** porque
 medía 2 eventos en catorce días —«una tasa sobre dos eventos no es una tasa»
 (`lib/negocio/indicadoresDeCitas.ts:121-127`)—. Con diez, un registro mueve diez puntos: sigue siendo
 mucho, y ya no es absurdo.
 
-**El piso es del DENOMINADOR, no del total.** Dicho en `lib/negocio/indicadoresDeCitas.ts:305-307`:
+**El piso es del DENOMINADOR, no del total.** Dicho en `lib/negocio/indicadoresDeCitas.ts:325-327`:
 «con 151 citas y 3 respuestas la muestra son 3, y quien contestó esas tres no es una muestra al azar
 de las 151».
 
 **Por qué se renombró.** Se llamaba `PISO_DE_ASISTENCIA`; el commit `1fce636` lo cambió porque
 «nombrar una constante compartida por la primera que la necesitó invita a que la quinta se escriba su
-propio piso», y el motivo sigue escrito en `lib/negocio/indicadoresDeCitas.ts:296-298`.
+propio piso», y el motivo sigue escrito en `lib/negocio/indicadoresDeCitas.ts:316-318`.
 
 **Quién lo usa hoy.** Medido el 2026-09-28 con `grep`: **15 archivos de `lib/` nombran la constante**
 (la foto anterior listaba ocho cifras en cuatro archivos). Los de Conversation, re-verificados: la asistencia
-(`lib/negocio/indicadoresDeCitas.ts:453-456`), la confirmación (`:462-465`), los descartados
-(`:472-475`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:174`), el consumo del precall
+(`lib/negocio/indicadoresDeCitas.ts:473-476`), la confirmación (`:482-485`), los descartados
+(`:492-495`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:174`), el consumo del precall
 y su desglose fino con las dos ramas sobre el piso (`lib/negocio/consumoDelPrecall.ts:231` y `:239`),
 y la proporción de molestos (`lib/auditor/sentimiento.ts:127`). Entre los nuevos, el commit `7d1bc8b`
 dejó escrita la variante que hay que evitar: el click-to-landing de Creative **no tenía piso** y el
@@ -218,7 +218,7 @@ para el hecho medido — y donde hace falta, un aviso que diga cuál de los dos 
 
 - `lib/datos/esquema.ts:28` — «**`null` no es cero.** `null` = nadie lo cargó; `0` = esta empresa no
   paga, que es un hecho.»
-- `lib/negocio/indicadoresDeCitas.ts:426-428` — «Sin citas NO hay tasa. Un `0 %` con cero citas se lee
+- `lib/negocio/indicadoresDeCitas.ts:446-448` — «Sin citas NO hay tasa. Un `0 %` con cero citas se lee
   como *no se cancela ninguna*».
 - `db/migraciones/048_de_donde_vino_el_lead.sql:67` y `db/migraciones/049_si_se_presento_a_la_cita.sql:44-45`
   — «un nulo significa una sola cosa. *No se presentó* es `false`».
@@ -238,13 +238,13 @@ nuestra»— (`lib/negocio/citasAlcanzables.ts:87-113`). Un «0 asistencias» y 
 sin contradecirse porque ninguno se hace pasar por el otro.
 
 El caso de la asistencia es el que mejor muestra por qué la regla importa:
-`lib/negocio/indicadoresDeCitas.ts:365-370` dice que sin el filtro `asistio is not null` en el
+`lib/negocio/indicadoresDeCitas.ts:385-390` dice que sin el filtro `asistio is not null` en el
 denominador, como el nulo es el caso normal, «la tasa diría que no se presenta casi nadie. Sería una
 cifra plausible, alarmante y falsa».
 
 **El tercer cero: el campo puede no existir.** `confirmacionEnLaVentana`
-(`lib/negocio/indicadoresDeCitas.ts:225-234`) distingue tres estados, y el primero lo dice con todas
-las letras en `:277-279`: si el campo no está en el catálogo, «no es que nadie confirme». El commit
+(`lib/negocio/indicadoresDeCitas.ts:245-254`) distingue tres estados, y el primero lo dice con todas
+las letras en `:297-299`: si el campo no está en el catálogo, «no es que nadie confirme». El commit
 `10fde57` lo resume: «*Nadie respondió* se arregla esperando o revisando el flujo del CRM. *El campo no
 existe* se arregla mirando el CRM».
 
@@ -382,7 +382,7 @@ la cohorte por territorio, con otro disfraz».
 hizo falta el día que la ventana se volvió elegible: **el parámetro se valida contra una lista
 cerrada, y lo que no está se rechaza — nunca se corrige al valor por omisión.**
 
-La primera sigue enunciada donde nació, `lib/negocio/indicadoresDeCitas.ts:311-319` («**Catorce y no
+La primera sigue enunciada donde nació, `lib/negocio/indicadoresDeCitas.ts:331-339` («**Catorce y no
 treinta** […] Pedir una ventana más larga no trae más señal: trae más citas que el sistema dejó de
 mirar»), elevada a regla de proyecto en `:20-24` y repetida en
 `db/migraciones/045_cuando_cambio_el_estado_de_la_cita.sql:36-37`. Medido el 2026-09-28, con las tres
@@ -397,13 +397,13 @@ poblaciones dichas por su nombre porque no son la misma:
 | completo | **231** | **143** | **101** |
 
 La columna del medio es el campo `citas` de `tasaDeCancelacion`
-(`lib/negocio/indicadoresDeCitas.ts:339`, `filter (where ${alcanzable} and not ${descartado})`). **La
+(`lib/negocio/indicadoresDeCitas.ts:359`, `filter (where ${alcanzable} and not ${descartado})`). **La
 foto anterior decía que el cuarto botón no agregaba ni una cita alcanzable sobre el tercero** (205
 contra 205). Ya no: con la ventana corrida al 2026-08-29, «Completo» agrega 40 citas publicables y 87
 congeladas sobre «30 días». La conclusión se dio vuelta en trece días sin que nadie tocara el código,
 que es exactamente por qué un comentario que describe la lectura de una ventana envejece.
 
-**Qué cambió de `DIAS_DE_LA_TASA`.** Sigue en 14 (`lib/negocio/indicadoresDeCitas.ts:319`) y, medido
+**Qué cambió de `DIAS_DE_LA_TASA`.** Sigue en 14 (`lib/negocio/indicadoresDeCitas.ts:339`) y, medido
 con `grep` el 2026-09-28, es el valor por omisión de **18 funciones** en 17 archivos de `lib/` —las de
 Conversation más las de Acquisition, Creative, Conversion, Sales y Leads Portal—. Las rutas les pasan siempre el período
 elegido, así que ese 14 sólo actúa donde nadie pide ventana; el caso conocido sigue siendo
@@ -442,7 +442,7 @@ forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:163`).
 
 **Y «completo» no puede leerse como historia.** Por eso las cifras traen `desde`, que es `min()` sobre
 las filas alcanzadas y no `now() - dias` (`lib/negocio/indicadoresDelLead.ts:268`,
-`lib/negocio/indicadoresDeCitas.ts:380-383`). Medido el 2026-09-28: en Lead Flow «Completo» arranca el
+`lib/negocio/indicadoresDeCitas.ts:400-403`). Medido el 2026-09-28: en Lead Flow «Completo» arranca el
 **2025-08-08** (el alta más vieja); en las citas, el **2026-08-24 13:00 UTC** contra el **2026-08-29 23:00**
 de «30 días». La foto anterior decía que en las citas los dos botones coincidían al minuto; ya no. Y
 `desde` solo también miente cuando describe a un caso suelto: para eso está `avisoDeLaCola`
@@ -453,7 +453,7 @@ Portal (el error D).
 la cobertura de `reservada_el` es parcial y crece sola. Medido el 2026-09-28: **201 de 333** citas la
 tienen; `inicio_el` es `not null` por esquema.
 
-**La ventana la calcula la BASE, no la aplicación** (`lib/negocio/indicadoresDeCitas.ts:394-396`): «es
+**La ventana la calcula la BASE, no la aplicación** (`lib/negocio/indicadoresDeCitas.ts:414-416`): «es
 la única forma de que el “ahora” sea el mismo reloj que escribió las filas». **Con una excepción
 declarada, que es nueva:** el gasto de anuncios vive en una columna `date`, así que
 `lib/negocio/costoDelAnuncio.ts:37-45` cuenta días de calendario y no 24 horas, y lo dice en su
@@ -579,7 +579,7 @@ dependa del corte se midió antes de elegir; no re-medido hoy.
 1. **Todas las cifras de la tarjeta cortan igual**, o las demás hablarían de otra población.
 2. **`exists` sobre `unnest` y no `&&` de arreglos** (`lib/negocio/citasAlcanzables.ts:71-73`): las
    etiquetas se guardan crudas y GoHighLevel no garantiza la caja.
-3. **Todo en la misma pasada** (`lib/negocio/indicadoresDeCitas.ts:343-345`): dos consultas podrían ver
+3. **Todo en la misma pasada** (`lib/negocio/indicadoresDeCitas.ts:363-365`): dos consultas podrían ver
    estados distintos de la tabla, «y entonces las dos poblaciones de la misma tarjeta no sumarían el
    total, sin que nada falle».
 
@@ -695,7 +695,7 @@ aparte como plantones (§ 3)—.
 
 **13 · El denominador se elige, y `exists` no es `join`.** Cuando el campo vive en el contacto y la
 cifra habla de citas, el denominador son CONTACTOS (`lib/negocio/indicadoresDeCitas.ts:162-164`). Y
-siempre `exists`, nunca `join` (`lib/negocio/indicadoresDeCitas.ts:243-244`,
+siempre `exists`, nunca `join` (`lib/negocio/indicadoresDeCitas.ts:263-264`,
 `lib/negocio/indicadoresDelLead.ts:199-200`). Creative midió lo que cuesta: un `join` infló una pieza de
 109 a 112 (`lib/negocio/citasAlcanzables.ts:122-124`).
 
@@ -792,7 +792,7 @@ y no constantes porque una constante se ata a un nombre de tabla (`:32-37`). Y l
 qué compartir sirve: aceptar las congeladas en el módulo compartido rompe 7 pruebas de tres archivos,
 cuando antes mutar el predicado de un módulo dejaba a los otros ocho intactos (mensaje de `1164984`).
 **Lo que no quedó en un solo lugar, medido con `grep` el 2026-09-28:** dos consultas de Conversation
-siguen escribiendo el predicado a mano —la confirmación (`lib/negocio/indicadoresDeCitas.ts:250`) y el
+siguen escribiendo el predicado a mano —la confirmación (`lib/negocio/indicadoresDeCitas.ts:270`) y el
 precall (`lib/negocio/consumoDelPrecall.ts:192`, que además reescribe `cancelada` como
 `<> all(ESTADOS_CANCELADOS)` en `:195`)—, y «agendó» tiene dos definiciones en el producto (§ 4).
 
@@ -1143,7 +1143,7 @@ descarte y la tabla de campos del video del error A. Van con su
 fecha del 2026-09-15 o anterior.
 
 **Encontrado de paso — la cadena visible sin fecha, que la foto anterior ya había señalado.**
-`lib/negocio/indicadoresDeCitas.ts:494-496` arma un aviso que se dibuja en pantalla
+`lib/negocio/indicadoresDeCitas.ts:514-516` arma un aviso que se dibuja en pantalla
 (`components/conversation/PanelDeConversation.jsx:685`) y termina en presente: «el CRM tiene ese campo en
 3 de 1052 citas». La cadena vecina del panel sí está fechada (regla 18). **Sigue igual el 2026-09-28.**
 

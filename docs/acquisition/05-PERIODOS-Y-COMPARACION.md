@@ -301,7 +301,7 @@ renderTables(build(w.a), build(w.b));
 niveles (campaña → embudo → total). Esa firma es la del endpoint el día que el dato sea real. Lo que
 no se porta es llamarla seis veces: con datos de servidor son **seis consultas donde alcanzan dos**,
 y peor, seis consultas que pueden devolver cifras distintas entre sí si algo se escribe en el medio
-— el mismo argumento que `lib/negocio/indicadoresDeCitas.ts:338-340` ya tiene escrito para las dos
+— el mismo argumento que `lib/negocio/indicadoresDeCitas.ts:363-365` ya tiene escrito para las dos
 poblaciones de la cancelación: «dos consultas podrían ver estados distintos de la tabla […] y
 entonces las dos poblaciones de la misma tarjeta no sumarían el total, sin que nada falle».
 
@@ -711,8 +711,8 @@ tenía la forma pedida y **0 filas**, y es de la plataforma anterior: foto del 2
 2026-09-16 está en `negocio.metricas_de_anuncio`, una fila por anuncio y por día (`01-ACQUISITION.md:230-232`).
 
 **P-08 · Cuál es la ventana canónica de este departamento y qué pasa con el piso.** El resto del
-sistema usa 14 días como ventana de cálculo (`indicadoresDeCitas.ts:310`) y piso de 10
-(`:300`); la pantalla ofrece 1, 7, 30 y libre. Con el piso de 10, el 2026-09-15 **sólo 3 de los 7 anuncios de
+sistema usa 14 días como ventana de cálculo (`indicadoresDeCitas.ts:339`) y piso de 10
+(`:320`); la pantalla ofrece 1, 7, 30 y libre. Con el piso de 10, el 2026-09-15 **sólo 3 de los 7 anuncios de
 la ventana de 14 días llegaban** (109, 44 y 17 contactos) y los otros cuatro tenían 1 o 2 (foto del 2026-09-15,
 línea 288); el 2026-09-28, a 30 días, llegan 4 de 79 (`01-ACQUISITION.md:145`). Con «Hoy» no llega ninguno. ¿El
 piso apaga la tasa y deja el conteo —como hace `atribucionDelLead.ts:179-183`— o apaga la fila? Y el piso se

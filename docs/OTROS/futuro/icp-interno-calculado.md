@@ -299,7 +299,7 @@ La otra vara es la única consecuencia que hoy se registra: **si el lead agendó
 definición que el resto de las pestañas —`tieneCitaAlcanzable`
 (`lib/negocio/citasAlcanzables.ts:135`), donde una cancelada cuenta y una congelada no—. Tasa de
 agendamiento por tramo, con las dos fuentes, sobre la misma población, y con el piso
-`PISO_DE_UNA_TASA = 10` en cada celda (`lib/negocio/indicadoresDeCitas.ts:309`).
+`PISO_DE_UNA_TASA = 10` en cada celda (`lib/negocio/indicadoresDeCitas.ts:329`).
 
 La referencia del CRM ya está medida: el 2026-09-16, sobre 180 contactos, alto agendó 75,7 %, medio
 50,8 %, bajo 53,1 % y los ceros 35,0 % (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555`). **Medio y

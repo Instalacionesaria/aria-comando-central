@@ -111,7 +111,7 @@ de la regla 1 llevado a la cohorte.
 
 ### CV5-06 · `PISO_DE_UNA_TASA` es el del sistema, y acá hay que respetarlo por familia
 
-**Rastro** · `lib/negocio/indicadoresDeCitas.ts:300`, con su justificación en `:291-298`: diez,
+**Rastro** · `lib/negocio/indicadoresDeCitas.ts:329`, con su justificación en `:313-328`: diez,
 porque *«con diez, un registro mueve diez puntos, que sigue siendo mucho y ya no es absurdo»*. Y **es
 del denominador**, no del total.
 

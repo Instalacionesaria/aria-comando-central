@@ -238,7 +238,7 @@ export async function cierrePorCloser(
   /* ── LA VENTANA ES LA DE `tasaDeCancelacion`, Y ESO SE MIDIÓ ───────────────
    *
    * `citas.inicio_el` en los últimos N días **y ya pasadas**, exactamente como
-   * `indicadoresDeCitas.ts:396-397`. No la cohorte de `contactos.alta_en_el_crm` que usan
+   * `indicadoresDeCitas.ts:416-417`. No la cohorte de `contactos.alta_en_el_crm` que usan
    * `cadenaDeCierre` y `cicloHastaLaCita`, y el motivo es que esta tabla publica una **tasa de
    * cancelación** y la pantalla publica otra arriba, de cabecera: con dos ventanas distintas para la
    * misma palabra, las filas no se relacionan con la cifra grande y la divergencia se ve como «la
@@ -269,7 +269,7 @@ export async function cierrePorCloser(
       /* `is not null` en el DENOMINADOR de la asistencia. Sin ese filtro la cuenta sería sobre todas
          las citas, y como el nulo es el caso normal —nadie cerró el intento todavía— la tasa diría
          que no se presenta casi nadie: plausible, alarmante y falsa. Es literal de
-         `indicadoresDeCitas.ts:365-372`, y acá vale lo mismo por fila. */
+         `indicadoresDeCitas.ts:385-392`, y acá vale lo mismo por fila. */
       sql<number>`count(*) filter (where ci.asistio is not null)`.as('con_asistencia'),
       /* `is true` y no `= true`: son equivalentes hoy porque el filtro de arriba ya excluyó los
          nulos, y `is true` lo sigue siendo el día que alguien toque ese filtro. */

@@ -229,7 +229,7 @@ Con **un** calificado, los tres tramos sólo pueden dar `0/0/1`, `0/1/0` o `1/0/
 afinidad sólo puede valer 25, 60 o 100. Y en «Hoy» (`p1`, 1 día) **tres de las siete campañas
 muestran 0 % y las otras cuatro muestran 25 %**: la columna entera de calidad se desploma por
 aritmética, no por negocio. Un sistema real con el piso de 10 contactos del resto de la casa
-(`lib/negocio/indicadoresDeCitas.ts:300`) va a estar en este régimen casi siempre.
+(`lib/negocio/indicadoresDeCitas.ts:329`) va a estar en este régimen casi siempre.
 
 ### A4-11 · La barra se normaliza sobre la suma de los tres tramos, no sobre los calificados
 
@@ -372,7 +372,7 @@ Acquisition necesita es el otro: un **puntaje por contacto**. No se cruzan en ni
 
 - **Rastro:** `lib/negocio/camposDelCrm.ts:307` (`campoPorNombre`)
 - **Estado:** el mecanismo existe y ya lo usan dos cifras de producción
-  (`consumoDelPrecall.ts:150`, `indicadoresDeCitas.ts:219`).
+  (`consumoDelPrecall.ts:150`, `indicadoresDeCitas.ts:248`).
 
 Los valores se guardan por identificador para que renombrar un campo en el CRM no congele nada, así
 que el nombre es lo único legible que hay. El precio está escrito en el archivo y vale igual para
@@ -462,7 +462,7 @@ Esto corrige al inventario que encargó este documento: **no es cierto que la ba
 señal de calificación.** Tiene la negativa, es operativa y ya la usa una cifra de producción.
 
 `lib/ghl/contrato.ts:231-238` declara `ETIQUETAS_DE_DESCARTE` con su censo escrito
-(`:217-218`), y `lib/negocio/indicadoresDeCitas.ts:322-327` la usa para separar las citas que
+(`:217-218`), y `lib/negocio/indicadoresDeCitas.ts:342-347` la usa para separar las citas que
 cancelaron porque el lead se arrepintió de las que canceló la casa **porque decidió que no
 calificaba**. Medido el 2026-09-16 sobre la ventana:
 

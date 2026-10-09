@@ -44,6 +44,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
+import type { DiasDeCalendario } from './diasCerrados.ts';
 
 /**
  * Las familias de recorrido, en el orden en que se dibujan.
@@ -184,18 +185,40 @@ function comillas(v: string): string {
 }
 
 /**
- * La ventana de la cohorte de contactos, anclada al día. **Un solo lugar, y por eso es exportada.**
+ * La ventana de la cohorte de contactos por DÍAS DE CALENDARIO que terminan hoy: los últimos `dias`, con
+ * el de hoy a medias.
  *
- * Es la misma que usan `costoDelAnuncio.ts:357` y `calidadDelCreativo.ts:230`, y tiene que serlo:
- * las tres pantallas cuentan contactos sobre la misma ventana y con la misma etiqueta arriba.
- *
- * **Anclada al día y no móvil de 24 horas**, al revés que el resto del sistema. El argumento entero
- * está en `costoDelAnuncio.ts:34-64`: Conversion cruza sus contactos con el gasto y con las piezas,
- * que viven en columnas `date`, y mezclar las dos formas dividió una vez treinta y un días de gasto
+ * Es la misma expresión que `costoDelAnuncio.ts` y `calidadDelCreativo.ts` escriben en sus consultas
+ * —copiada, no importada—, así que Creative y el costo por anuncio cuentan sobre estos mismos días.
+ * Anclada al día y no móvil de 24 horas, por el argumento de `costoDelAnuncio.ts:34-64`: el gasto y las
+ * piezas viven en columnas `date`, y mezclar las dos formas dividió una vez treinta y un días de gasto
  * entre treinta de leads.
+ *
+ * **Conversion la usa sólo cuando no recibe una ventana explícita.** El 2026-10-08 se tomó por defecto (`CV15-P01`) que su pantalla
+ * pase a los días cerrados de Acquisition (CV15-04 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`),
+ * con `cohorteEntre` y los días que corta `diasCerrados.ts`; mientras la ruta no pase la ventana, cuenta con ésta.
  */
 export function ventanaDeLaCohorte(alias: string, dias: number) {
   return sql<boolean>`${sql.raw(alias)}.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`;
+}
+
+/**
+ * La cohorte de contactos dados de alta en `[desde, hasta]`, los dos días incluidos: desde la medianoche de
+ * `desde` hasta antes de la de `hasta + 1`. **La usan Acquisition y Conversion**: con la misma ventana, las dos
+ * pantallas cuentan a la misma gente (CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Era
+ * una expresión escrita a mano en `embudosDeAcquisition.ts`, y una segunda copia divergiría sin que nada falle.
+ *
+ * Las fechas llegan como texto `YYYY-MM-DD` desde la base (`bordesDelPeriodo`) y se comparan como `date`:
+ * nunca pasan por un `Date` de JavaScript, que las correría un día al este de Greenwich.
+ */
+export function cohorteEntre(alias: string, ventana: DiasDeCalendario) {
+  const a = sql.raw(alias);
+  return sql<boolean>`(${a}.alta_en_el_crm >= ${ventana.desde}::date and ${a}.alta_en_el_crm < (${ventana.hasta}::date + 1))`;
+}
+
+/** La cohorte de una lectura: la ventana explícita si la hay, y si no los últimos `dias` días de calendario. */
+export function cohorteDeLaLectura(alias: string, dias: number, ventana: DiasDeCalendario | null) {
+  return ventana === null ? ventanaDeLaCohorte(alias, dias) : cohorteEntre(alias, ventana);
 }
 
 /**
@@ -237,7 +260,7 @@ export async function ultimoDiaDelFormulario(): Promise<string | null> {
 
   const f = await datos()
     .selectFrom('contactos')
-    .select(sql<string | null>`max(alta_en_el_crm)::date::text`.as('ultimo'))
+    .select(sql<string | null>`to_char(max(alta_en_el_crm)::date, 'YYYY-MM-DD')`.as('ultimo'))
     .where(sql<boolean>`campos_del_crm ? ${campo}`)
     .executeTakeFirst();
 
@@ -262,9 +285,14 @@ export interface CorteDeEpoca {
   laVentanaLoCruza: boolean;
 }
 
-export async function corteDeEpoca(dias: number): Promise<CorteDeEpoca> {
+/**
+ * @param ventana La ventana explícita, si la hay: la cruza si empieza el día del corte o antes. La
+ *   comparación es de texto `YYYY-MM-DD`, que ordena igual que las fechas, y no consulta el reloj de nadie.
+ */
+export async function corteDeEpoca(dias: number, ventana: DiasDeCalendario | null = null): Promise<CorteDeEpoca> {
   const fecha = await ultimoDiaDelFormulario();
   if (fecha === null) return { fecha: null, laVentanaLoCruza: false };
+  if (ventana !== null) return { fecha, laVentanaLoCruza: ventana.desde <= fecha };
 
   /* El primer día de la ventana, calculado por la BASE y con la misma expresión que
      `ventanaDeLaCohorte`. Hacerlo en JavaScript con `new Date()` usaría la zona del servidor, que

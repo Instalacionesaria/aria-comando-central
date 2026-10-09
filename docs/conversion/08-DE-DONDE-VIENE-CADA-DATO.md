@@ -80,9 +80,9 @@ Es la regla 9 del departamento (`03-CONVERSION.md:437-443`). Los tres campos que
 así:
 
 ```
-lib/negocio/calidadDelCreativo.ts:61   CAMPO_DE_ICP          = 'Puntaje | ICP'
+lib/negocio/calidadDelCreativo.ts:62   CAMPO_DE_ICP          = 'Puntaje | ICP'
 lib/negocio/consumoDelPrecall.ts:64    CAMPO_DEL_PRECALL     = 'Video Pre-Call'
-lib/negocio/indicadoresDeCitas.ts:199  CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento'
+lib/negocio/indicadoresDeCitas.ts:208  CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento'
 ```
 
 Conversion agrega `CAMPO_DEL_FORMULARIO = 'Form Landing VSL'` con el mismo molde: si devuelve `null`,

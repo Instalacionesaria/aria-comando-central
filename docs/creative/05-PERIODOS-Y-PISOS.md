@@ -65,7 +65,7 @@ piso y cada aviso de cobertura se vuelvan a razonar para una ventana arbitraria.
 
 ### C5-05 · El piso es `PISO_DE_UNA_TASA = 10`, y es del denominador
 
-**Rastro** · `lib/negocio/indicadoresDeCitas.ts:300`. Ver `C2-01`.
+**Rastro** · `lib/negocio/indicadoresDeCitas.ts:329`. Ver `C2-01`.
 **Estado** · **Y está medido cuántas piezas lo superan, que es lo que decide si la pantalla sirve.**
 Medido el 2026-09-18, ventana de 30 días: de **18 piezas con contactos, 6 superan el piso** —
 `agendamiento - yaping` (112), `agendamiento - yaping - 23/07` (65), `el app` (59),
@@ -113,7 +113,7 @@ días" — agrega 24 congeladas.»*
 
 **Fórmula** · La respuesta lleva, en la misma pasada, cuántas citas de la ventana todavía no
 ocurrieron.
-**Rastro** · El patrón vive en `lib/negocio/indicadoresDeCitas.ts:345` y `:514-526`.
+**Rastro** · El patrón vive en `lib/negocio/indicadoresDeCitas.ts:370` y `:534-546`.
 **Estado** · Construible hoy. **A 30 días, un cuarto de las citas no pasó todavía**: una tasa de
 agenda sin ese conteo al lado es una cifra que el lector no puede interpretar.
 Y se apaga solo: cuando no hay congeladas, el aviso viaja `null` y la pantalla no dibuja nada

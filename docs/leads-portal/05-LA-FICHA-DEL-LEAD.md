@@ -128,8 +128,8 @@ acciones y siete secciones:
   1. **Entró:** la fecha de alta y «campaña · creativo» del **primer toque**
      (`atribucion_primera`).
   2. **Llegó por:** reemplaza a «Vio el VSL». Es `familiaDelRecorrido`
-     (`lib/negocio/recorrido.ts:139-167`), con el título y la explicación de `ROTULOS`
-     (`lib/negocio/recorrido.ts:68-94`). **Es el último toque** (`atribucion_ultima`), no el primero
+     (`lib/negocio/recorrido.ts:140-168`), con el título y la explicación de `ROTULOS`
+     (`lib/negocio/recorrido.ts:69-95`). **Es el último toque** (`atribucion_ultima`), no el primero
      (`lib/negocio/recorrido.ts:12-15`), y el paso lo rotula así. El § 5.3 pide las dos atribuciones
      (`§ 5.3:251-252`), y «Entró» y «Llegó por» son esas dos.
   3. **Agendó:** la fecha de la primera cita alcanzable. Si todas sus citas están canceladas, el paso
@@ -182,18 +182,18 @@ acciones y siete secciones:
 ### LP05-09 · El estado del «Form Landing VSL» va al lado, con su corte del 31 de agosto
 
 - **Rastro:** la maqueta dice «Formulario completado» con un «8/8» (`aios-command-center_1.html:4858`).
-- **Dónde está el dato:** en el campo `Form Landing VSL` (`lib/negocio/recorrido.ts:208`), con un
-  vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:211-215`). **No está en el grupo
+- **Dónde está el dato:** en el campo `Form Landing VSL` (`lib/negocio/recorrido.ts:231`), con un
+  vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:234-238`). **No está en el grupo
   `calificacion`:** vive en la carpeta vieja «Score | ICP», que quedó fuera del perfil a propósito
   (`lib/ghl/contrato.ts:262-265`). Se lee por nombre con `campoPorNombre`
   (`lib/negocio/camposDelCrm.ts:307-319`), como ya hace Conversion
-  (`lib/negocio/recorrido.ts:234-245`).
+  (`lib/negocio/recorrido.ts:257-268`).
 - **Medido:** Agendado **121** · Form incompleto sin agendar **87** · Form completo sin agendar **39**
   · vacío **346**. **No se escribe desde el 2026-08-31**
   (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-20`).
 - **Qué pide:** el valor, tal como lo escribe el CRM, con la fecha del corte al lado. El corte **se
   detecta, no se escribe en el código**: sale de `ultimoDiaDelFormulario`
-  (`lib/negocio/recorrido.ts:219-245`). Un vacío de alguien que entró después del corte no quiere
+  (`lib/negocio/recorrido.ts:242-268`). Un vacío de alguien que entró después del corte no quiere
   decir «no completó»: quiere decir que el campo ya no se escribe, y la ficha lo dice así.
 - **Su «Agendado» es un estado del formulario, no la fuente del agendamiento.** Conversion lo midió:
   121 contactos con `Agendado` contra 47 con una cita alcanzable, y la diferencia son sobre todo
@@ -307,9 +307,9 @@ acciones y siete secciones:
   `gaClientId` (41), ni una clave desconocida. Es la prueba de LP-3, que usa un JWT de ejemplo.
 - **Tampoco viajan hoy, porque la lista es blanca y no negra:** `medium` (552), `mediumId` (548),
   `campaignId` (358) y `adSource` (214). Ver `LP05-P02`.
-- **El host se saca con una sola definición.** Es `hostDe` (`lib/negocio/recorrido.ts:306-315`),
+- **El host se saca con una sola definición.** Es `hostDe` (`lib/negocio/recorrido.ts:334-343`),
   que LP-3 exportó recibiendo la columna y la clave. `hostDeLaUltima`, que era privada y estaba atada
-  a `atribucion_ultima ->> 'url'`, pasó a llamarla (`lib/negocio/recorrido.ts:125-127`) y produce el
+  a `atribucion_ultima ->> 'url'`, pasó a llamarla (`lib/negocio/recorrido.ts:126-128`) y produce el
   mismo SQL, carácter por carácter. Si la ficha sacara el host por su cuenta, el sistema tendría dos
   ideas de qué es un host.
 

@@ -57,11 +57,12 @@ import {
   FAMILIAS,
   type Familia,
   ROTULOS,
+  cohorteDeLaLectura,
   corteDeEpoca,
   familiaDelRecorrido,
-  ventanaDeLaCohorte,
 } from './recorrido.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import type { DiasDeCalendario } from './diasCerrados.ts';
 
 export interface FilaDeRecorrido {
   familia: Familia;
@@ -131,9 +132,17 @@ function puesto(f: Familia): number {
  * El reparto de la cohorte por recorrido, en la ventana.
  *
  * Se corre dentro de `conOrganizacion(`.
+ *
+ * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` hasta
+ *   hoy: los días cerrados de `bordesDelPeriodo`, los mismos que corta Acquisition (CV15-21 de
+ *   `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Con ella, `dias` sólo viaja en la respuesta.
  */
-export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<RecorridoDeLosLeads> {
+export async function recorridoDelLead(
+  dias = DIAS_DE_LA_TASA,
+  ventana: DiasDeCalendario | null = null,
+): Promise<RecorridoDeLosLeads> {
   const familia = familiaDelRecorrido('contactos');
+  const enLaCohorte = cohorteDeLaLectura('contactos', dias, ventana);
 
   const [filas, extremos, corte] = await Promise.all([
     datos()
@@ -157,7 +166,7 @@ export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<Recorrid
         sql<number>`count(*) filter (
           where contactos.atribucion_ultima ->> 'medium' in ('calendar', 'form'))`.as('alReservar'),
       ])
-      .where(ventanaDeLaCohorte('contactos', dias))
+      .where(enLaCohorte)
       /* Se agrupa por la EXPRESIÓN, que es la misma instancia textual que la del `select`. Ver el
          argumento de `sql.raw` en `recorrido.ts`: con parámetros esto muere con `42803`. */
       .groupBy(familia)
@@ -172,10 +181,10 @@ export async function recorridoDelLead(dias = DIAS_DE_LA_TASA): Promise<Recorrid
         sql<string | null>`min(alta_en_el_crm)::date::text`.as('primero'),
         sql<string | null>`max(alta_en_el_crm)::date::text`.as('ultimo'),
       ])
-      .where(ventanaDeLaCohorte('contactos', dias))
+      .where(enLaCohorte)
       .executeTakeFirst(),
 
-    corteDeEpoca(dias),
+    corteDeEpoca(dias, ventana),
   ]);
 
   const cohorte = filas.reduce((s, f) => s + Number(f.contactos), 0);

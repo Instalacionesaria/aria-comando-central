@@ -40,7 +40,7 @@ que gobiernan el catálogo.
    y creíble.
 3. **Es venta REPORTADA, no pago verificado.** El `§ 5.4:288` lo exige por escrito, y el rótulo va
    pegado a la cifra, no en un pie.
-4. **El piso es del DENOMINADOR.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:300`),
+4. **El piso es del DENOMINADOR.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`),
    aplicado a lo que va abajo de la raya, nunca al total ni a la fila.
 5. **Los cuatro estados del cero**, y acá deciden si alguien cobra: no hay closer configurado · no
    hay resultados · hay resultados y ninguna venta · hay ventas sin monto
@@ -50,7 +50,7 @@ que gobiernan el catálogo.
 7. **Sales no deduce la asistencia desde la salida.** Nunca. Ver `01-LA-VENTA-NO-EXISTE.md`, `S1-08`.
 8. **Un resultado es un INTENTO del closer, no una cita.** No hay uno por cita ni una por resultado.
 9. **El filtro «alcanzable y no descartada» es del sistema**, no de esta pantalla. Se comparte, no se
-   copia (`lib/negocio/indicadoresDeCitas.ts:313-315`).
+   copia (`lib/negocio/indicadoresDeCitas.ts:349-351`).
 
 ---
 
@@ -102,7 +102,7 @@ mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Unidad** · Porcentaje.
 **Población** · Citas alcanzables (`ghl_calendario_id is not null`) de contactos no descartados.
 **Piso** · `PISO_DE_UNA_TASA`, sobre el denominador.
-**Rastro** · `lib/negocio/indicadoresDeCitas.ts:312`; `SalesView.jsx:57-61` la roza con «Asistencias».
+**Rastro** · `lib/negocio/indicadoresDeCitas.ts:341`; `SalesView.jsx:57-61` la roza con «Asistencias».
 **Estado** · **Construida** en `lib/negocio/indicadoresDeCitas.ts`; Sales es su segundo consumidor y no la recalcula. Medido: **59,2 %** (132 de 223). Es la cifra de
 cabecera del departamento. **No se recalcula**: Sales sería su segundo consumidor.
 

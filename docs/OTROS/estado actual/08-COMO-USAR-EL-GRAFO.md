@@ -131,7 +131,7 @@ graphify query "dónde se calcula la tasa de cancelación"
 ```
 
 Recorre el grafo desde los nodos que casan con la pregunta y contesta con nodos y ubicaciones. Hoy
-arranca en cuatro nodos —entre ellos `tasaDeCancelacion()`, `lib/negocio/indicadoresDeCitas.ts:321`—,
+arranca en cuatro nodos —entre ellos `tasaDeCancelacion()`, `lib/negocio/indicadoresDeCitas.ts:341`—,
 encuentra 300 y **muestra 49**: el presupuesto por omisión es de 2000 tokens, la salida avisa el
 corte con `[!] TRUNCATED`, y la respuesta puede estar entre lo cortado; `--budget 4000` agranda el
 corte, y con él mostró 114 de los mismos 300. Rinde más que un `grep` porque sigue relaciones —quién

@@ -182,7 +182,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   escribió un guardado para eso. La conclusión correcta es la contraria a la que sacó: una tasa real
   sí puede acercarse a 100 %, y el trabajo es explicar por qué —qué categorías junta esa fila, qué
   hecho técnico la produce— no recortarla. El guardado que sí hace falta no es un tope: es un piso
-  de denominador (`PISO_DE_UNA_TASA = 10`, `lib/negocio/indicadoresDeCitas.ts:300`) y una fila que
+  de denominador (`PISO_DE_UNA_TASA = 10`, `lib/negocio/indicadoresDeCitas.ts:329`) y una fila que
   se cuenta pero no compite (`lib/negocio/atribucionDelLead.ts:179-183`).
 
 ### A9-06 · El piso `Math.max(1, …)` en la etapa de entrada

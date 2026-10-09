@@ -55,7 +55,7 @@ nada falle.
 5. **Ninguna tasa cuyo denominador se defina por haber convertido** (`03-CONVERSION.md:387-395`).
    Ver `CV1-05`.
 6. **El piso es del denominador**, no del total: `PISO_DE_UNA_TASA = 10`
-   (`lib/negocio/indicadoresDeCitas.ts:300`). Y acá hay que subirlo — ver `CV5-05`.
+   (`lib/negocio/indicadoresDeCitas.ts:329`). Y acá hay que subirlo — ver `CV5-05`.
 7. **Ningún identificador de GoHighLevel escrito a mano.** `campoPorNombre()`
    (`lib/negocio/camposDelCrm.ts:307-320`) es la única puerta, y devuelve `null` —no cero— si alguien
    renombra el campo (`03-CONVERSION.md:437-443`).
@@ -208,7 +208,7 @@ el cajón dice **479**; «No calificadas» dice 283 arriba y 286 abajo. Y la Lec
 afirma *«Las 84 restantes»* (`conversion.js:502`), que es un tercer número literal.
 
 **El requisito que sobrevive** es que el ICP del lead califique la cita — y eso **ya existe**:
-`lib/negocio/calidadDelCreativo.ts:61` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
+`lib/negocio/calidadDelCreativo.ts:62` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
 días. **Conversion lo consume, no lo recalcula** (`§ 2.4` del documento funcional).
 
 Y el `0.94` del comparativo (`conversion.js:167`) no tiene justificación ni comentario en ninguna
@@ -276,7 +276,7 @@ campo ausente (`:151-159`). El prototipo lo dibuja en el paso «Gracias» como �
 **Estado** · `conversion.js:489-491`. `Confirmadas` es `agenda × 0.78` con el `0.78` literal;
 `Canceladas` es `6%` literal; `Franja preferida` es la cadena `9-11h`. Las tres son de **citas**, o
 sea de `lib/negocio/indicadoresDeCitas.ts`, que ya publica la confirmación con
-`CAMPO_DE_CONFIRMACION` (`:199`) y la cancelación partida en dos poblaciones (regla 9 de
+`CAMPO_DE_CONFIRMACION` (`:208`) y la cancelación partida en dos poblaciones (regla 9 de
 `07-REGLAS-TRANSVERSALES.md:543`).
 
 ---

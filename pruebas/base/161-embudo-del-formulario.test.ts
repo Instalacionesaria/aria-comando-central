@@ -35,6 +35,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { embudoDelFormulario } from '../../lib/negocio/embudoDelFormulario.ts';
+import { recorridoDelLead } from '../../lib/negocio/recorridoDelLead.ts';
 import { CAMPO_DEL_FORMULARIO } from '../../lib/negocio/recorrido.ts';
 import { PISO_DE_UNA_TASA } from '../../lib/negocio/indicadoresDeCitas.ts';
 
@@ -304,4 +305,41 @@ test('el corte se detecta del dato y dice si la ventana lo cruza, en las dos dir
   const angosta = await leer(7);
   assert.equal(angosta.corte.fecha, ancha.corte.fecha, 'el corte cambió con la ventana');
   assert.equal(angosta.corte.laVentanaLoCruza, false, 'una ventana posterior al corte dice que lo cruza');
+});
+
+// ─── LA VENTANA EXPLÍCITA (CV-1, 2026-10-08) ──────────────────────────────────
+
+test('con una ventana explícita, el corte se mide contra su comienzo: la cruza la que empieza ese mismo día', async () => {
+  /* Conversion pasa a los días cerrados de Acquisition (CV15-21 de
+     `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y el corte se dice contra esa ventana y no
+     contra los días que terminan hoy. Una ventana que empieza el mismo día del corte lo cruza —ese día todavía
+     hubo formulario—; la que empieza al día siguiente, no.
+     *
+     * Mutaciones: `<` en vez de `<=` hace que la del mismo día no lo cruce; ignorar la ventana y medir contra
+     * los `dias` hace que la del día siguiente lo cruce, porque treinta días hasta hoy sí lo abarcan. */
+  await limpiar();
+  await sembrarElCampo();
+  await unContacto({ estado: 'Agendado', hace: 10 });
+  const corte = (await leer(30)).corte.fecha!;
+  assert.ok(corte, 'no detectó el corte');
+  const siguiente = (
+    await esc.admin.query<{ d: string }>(`select to_char($1::date + 1, 'YYYY-MM-DD') as d`, [corte])
+  ).rows[0]!.d;
+  const hasta = (await esc.admin.query<{ d: string }>(`select to_char(current_date, 'YYYY-MM-DD') as d`)).rows[0]!.d;
+
+  const elMismoDia = await conOrganizacion(esc.org, () => embudoDelFormulario(30, { desde: corte, hasta }));
+  assert.equal(elMismoDia.corte.laVentanaLoCruza, true, 'la ventana que empieza el día del corte dice que no lo cruza');
+  assert.equal(elMismoDia.cobertura.con, 1);
+
+  const despues = await conOrganizacion(esc.org, () => embudoDelFormulario(30, { desde: siguiente, hasta }));
+  assert.equal(despues.corte.laVentanaLoCruza, false, 'la ventana posterior al corte dice que lo cruza');
+  assert.equal(despues.corte.fecha, corte, 'el corte cambió con la ventana');
+  assert.equal(despues.cobertura.sobre, 0, 'la ventana posterior al corte contó al contacto de antes');
+
+  /* Y el reparto dice lo mismo con la misma ventana: la pantalla les pide los dos con la misma, y si uno midiera
+     el corte contra los días hasta hoy, diría dos veces si cruza el corte y contestaría distinto. */
+  const reparto = await conOrganizacion(esc.org, () => recorridoDelLead(30, { desde: siguiente, hasta }));
+  assert.equal(reparto.corte.laVentanaLoCruza, false, 'el reparto midió el corte contra otra ventana que el formulario');
+  const repartoDelMismoDia = await conOrganizacion(esc.org, () => recorridoDelLead(30, { desde: corte, hasta }));
+  assert.equal(repartoDelMismoDia.corte.laVentanaLoCruza, true);
 });

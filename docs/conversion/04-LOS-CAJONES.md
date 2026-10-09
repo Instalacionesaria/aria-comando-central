@@ -92,7 +92,7 @@ la gente— y el que más lejos está. Requiere instrumentar el formulario.
 **Rastro** · Dos filas (`conversion.js:495-500`): `Asistencia esperada · Según consumo del VSL y
 segmento ICP · 74%`, y `Riesgo de no-show · Vieron menos del 40% del VSL · 31 contactos`.
 **Estado** · **Las dos dependen del VSL**, que está en cero. El segmento ICP sí existe
-(`lib/negocio/calidadDelCreativo.ts:61`, 344 de 344). Y la asistencia ya la publica
+(`lib/negocio/calidadDelCreativo.ts:62`, 344 de 344). Y la asistencia ya la publica
 `lib/negocio/indicadoresDeCitas.ts` con `asistio is not null` en el denominador.
 **Lo que sobrevive**: cruzar el consumo del VSL con la asistencia es un requisito real del
 `§ 10.7:761` —*«Show rate según consumo del VSL»*— y está **bloqueado por el mismo medidor roto**.

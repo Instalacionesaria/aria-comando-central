@@ -179,7 +179,7 @@ usan Leads Portal, Conversion y Sales, así que el número es el mismo que se ve
 (`aios-command-center_1.html:5433`). El «calificado» del pipeline del setter es otra cosa y va antes
 (`lib/negocio/etapasDelSetter.ts:48`); no se cruzan.
 
-**Estado** · Decidido el 2026-09-30; contesta P-1 y P-2 de `04`. **Construido el 2026-09-30** (AQ-3).
+**Estado** · Decidido el 2026-09-30; contesta P-1 y P-2 de `04`. **Construido el 2026-09-30** (AQ-3). Desde el 2026-10-08 la expresión es una sola, `esCalificado` (`lib/negocio/citasAlcanzables.ts`), para que Conversion cuente a los mismos calificados cuando dibuje los suyos (CV15-09).
 
 ### A14-08 · El ICP de los calificados: promedio del puntaje y tres tramos
 
@@ -209,7 +209,7 @@ vuelve a tener dato—, y con él la tasa acumulada (A2-27).
 **Fórmula** · Los costos de personas —por contacto, por agendado, por calificado— se pagan con la **inversión
 con contactos**, la de las campañas que trajeron algún contacto atribuido; el costo por clic, con el gasto con
 desglose de Meta (A14-19). Una tasa con denominador bajo `PISO_DE_UNA_TASA` (10,
-`lib/negocio/indicadoresDeCitas.ts:309`) se dibuja «—». Un costo con la etapa en cero también, y **un
+`lib/negocio/indicadoresDeCitas.ts:329`) se dibuja «—». Un costo con la etapa en cero también, y **un
 costo de una ventana sin inversión**: con la pauta parada llegan contactos de lo que se gastó antes, y
 «$0 por contacto» diría que salieron gratis. En «Hoy» no hay costos: el gasto de hoy es una foto de la
 madrugada —se lee a las 06:17 UTC— y los contactos son del día entero. **Y en ningún período hay costos
@@ -260,7 +260,7 @@ AQ-3:
 hoy, así que «7 días» puede dar otra cifra en Creative que acá. Es la contrapartida de que acá las
 flechas y los costos no carguen el día a medias.
 
-**Estado** · Contesta P-01 de `05`. **El cálculo, construido el 2026-09-30** (AQ-3). **El «Riesgo 2» del
+**Estado** · Contesta P-01 de `05`. **El cálculo, construido el 2026-09-30** (AQ-3); desde el 2026-10-08 vive en `lib/negocio/diasCerrados.ts`, para que Conversion corte los mismos días cuando su pantalla pase a usarlo (CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). **El «Riesgo 2» del
 estado actual —un «Hoy» con dos significados en la misma pantalla— quedó cerrado en AQ-4**: el monitor
 de `calidadDeLaAtribucion` —24 horas móviles por día— salió de la pantalla y de la ruta (A14-15), y el
 segmentado de esta pantalla no lleva el matiz de «Hoy» de `periodo.ts`, que es el de las otras

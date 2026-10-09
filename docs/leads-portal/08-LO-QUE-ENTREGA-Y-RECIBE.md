@@ -81,7 +81,7 @@ poniéndolas una al lado de la otra.
 | cita alcanzable, cancelada, plantón | `lib/negocio/citasAlcanzables.ts:54`, `:64`, `:111` | los importan ya Sales, Conversion, Creative y Acquisition |
 | «agendó» por persona | `lib/negocio/citasAlcanzables.ts:135` | estaba copiado ocho veces (`:118-120`); ya no |
 | el descarte por etiqueta | `lib/ghl/contrato.ts:231-238`, en minúscula | la lista existe una vez; medido: 121 personas descartadas por etiqueta |
-| el piso de una tasa | `lib/negocio/indicadoresDeCitas.ts:309` | es el mismo 10 que importan Acquisition, Creative, Conversion y Sales |
+| el piso de una tasa | `lib/negocio/indicadoresDeCitas.ts:329` | es el mismo 10 que importan Acquisition, Creative, Conversion y Sales |
 | las ventanas y la de omisión | `lib/negocio/periodo.ts:83-96`, `:109` | `periodoDe` (`:188`) rechaza lo que no está en la lista, como el `mes` del tercer botón de la maqueta (`LP06-02`) |
 
 El descarte tiene un matiz que LP-2 resuelve: el predicado que existe, `descartado`
@@ -101,16 +101,16 @@ que nadie lo registró — es la misma frase de `lib/negocio/huecosDeSales.ts:60
 
 ### LP08-06 · De Conversion: el camino de entrada y el formulario, consumidos
 
-**Rastro** · `familiaDelRecorrido` (`lib/negocio/recorrido.ts:139`), que reemplaza al «Vio el VSL»
-de la ficha; el campo y los estados del «Form Landing VSL» (`:208-217`) y su último día (`:234`).
+**Rastro** · `familiaDelRecorrido` (`lib/negocio/recorrido.ts:140`), que reemplaza al «Vio el VSL»
+de la ficha; el campo y los estados del «Form Landing VSL» (`:231-240`) y su último día (`:257`).
 
 **Requisito** · Se consumen, no se reescriben. La ficha dice por dónde llegó la persona con la misma
 clasificación que Conversion usa para contar a todos (`LP05-07`, `LP05-09`).
 
 **Un detalle que LP-3 resolvió al exportar el helper de host:** `hostDeLaUltima`
-(`lib/negocio/recorrido.ts:125-127`) estaba atado a `atribucion_ultima ->> 'url'`, y la ficha
+(`lib/negocio/recorrido.ts:126-128`) estaba atado a `atribucion_ultima ->> 'url'`, y la ficha
 necesita el host de la `url` y del `referrer` **del primer toque** (`LP05-13`). Ahora la expresión
-vive en `hostDe` (`lib/negocio/recorrido.ts:306-315`), con la columna y la clave como parámetros, y
+vive en `hostDe` (`lib/negocio/recorrido.ts:334-343`), con la columna y la clave como parámetros, y
 `hostDeLaUltima` la llama: lo que Conversion calcula no cambió.
 
 ### LP08-07 · De Acquisition: la atribución, por lista blanca

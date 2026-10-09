@@ -55,7 +55,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   `lib/negocio/citasAlcanzables.ts` —`alcanzable`, `cancelada`, `descartado` y
 >   `tieneCitaAlcanzable`, de `lib/negocio/citasAlcanzables.ts:54` a
 >   `lib/negocio/citasAlcanzables.ts:135`—, y `tasaDeCancelacion` los instancia
->   (`lib/negocio/indicadoresDeCitas.ts:329-331`). Sales consume esa misma función
+>   (`lib/negocio/indicadoresDeCitas.ts:349-351`). Sales consume esa misma función
 >   (`app/api/sales/route.ts:109`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
 >   (`lib/autorizacion/secciones.ts:326`), la misma capacidad que su ruta
@@ -222,8 +222,8 @@ con «Entraron al CRM 0 · 100 %», porque ese pie es un literal
 
 ── **PESTAÑA APPOINTMENT FLOW** ──
 
-Módulos: `lib/negocio/indicadoresDeCitas.ts` (531 líneas) y `lib/negocio/consumoDelPrecall.ts`
-(304), con los predicados de `lib/negocio/citasAlcanzables.ts` (165). Ventana: citas con `inicio_el`
+Módulos: `lib/negocio/indicadoresDeCitas.ts` (551 líneas) y `lib/negocio/consumoDelPrecall.ts`
+(304), con los predicados de `lib/negocio/citasAlcanzables.ts` (220). Ventana: citas con `inicio_el`
 en el período **y ya ocurridas**, sin congeladas ni descartados.
 
 9. **El titular es un hueco** (`components/conversation/PanelDeConversation.jsx:620-625`): «—»,
@@ -238,7 +238,7 @@ en el período **y ya ocurridas**, sin congeladas ni descartados.
     que la empresa ya había rechazado.
 12. **Confirmaron** (`components/conversation/PanelDeConversation.jsx:947-956`): **77,6 % · 59 de 76
     contactos** (71,4 % · 65 de 91), sobre 173 contactos con cita. Sigue sin excluir descartados
-    (`lib/negocio/indicadoresDeCitas.ts:246-253`): 82 de esos 173 lo son, y 8 de los 76 que
+    (`lib/negocio/indicadoresDeCitas.ts:266-273`): 82 de esos 173 lo son, y 8 de los 76 que
     contestaron.
 13. **Se reserva con** (`components/conversation/PanelDeConversation.jsx:957-962`): **2,4 días**
     (mediana 57,2 h), «sobre 105 de 106». La cobertura que el 15 se degradaba (96 de 127) volvió a
@@ -263,8 +263,8 @@ en el período **y ya ocurridas**, sin congeladas ni descartados.
 son **142 citas, 56 canceladas (39,4 %)** contra 106 y 34,9 %, porque la ventana de 30 días ya
 empieza el 29 de agosto y la cita alcanzable más vieja sigue siendo del 24. «7 días» publica **40 %
 · 2 de 5** y «Hoy» **0 % · 0 de 1**: `tasaDeCancelacion` sólo devuelve `null` con cero citas
-(`lib/negocio/indicadoresDeCitas.ts:429`), y el reagendamiento igual
-(`lib/negocio/indicadoresDeCitas.ts:442`). Como Sales consume la misma función, su cifra de cabecera
+(`lib/negocio/indicadoresDeCitas.ts:449`), y el reagendamiento igual
+(`lib/negocio/indicadoresDeCitas.ts:462`). Como Sales consume la misma función, su cifra de cabecera
 hereda los mismos números.
 
 ── **PESTAÑA AUDITORÍA (el Supervisor del §11)** ──
@@ -370,7 +370,7 @@ existe en ninguna forma.
   asistencia (`components/conversation/PanelDeConversation.jsx:131`). Bien resuelto: es una medición
   fechada de la subcuenta del CRM, que esta base no puede reproducir (tiene 333 citas).
 - **«el CRM tiene ese campo en 3 de 1052 citas»**, **sin fecha**, dentro del aviso grave de la
-  asistencia (`lib/negocio/indicadoresDeCitas.ts:494-496`), visible hoy en las cuatro ventanas. Es
+  asistencia (`lib/negocio/indicadoresDeCitas.ts:514-516`), visible hoy en las cuatro ventanas. Es
   el único de los tres sin fecha y el único a la vista. Desde esta base: `showed` en 0 de 333 y
   `noshow` en **15 de 333** (3 el 15).
 - **«las 316 citas que había al medirlo»**, detrás del ícono del no-show
@@ -552,7 +552,7 @@ vigentes y releídas en el código el 2026-09-28:
 - **«Completo» es una ventana grande, no un centinela** (`DIAS_DE_TODO = 3650`,
   `lib/negocio/periodo.ts:52`), y por eso existen `desde`, `mitad` y el aviso de la cola.
 - **`desde` es la fila más vieja real, calculada en la misma pasada que sus conteos**
-  (`lib/negocio/indicadoresDelLead.ts:265-275`, `lib/negocio/indicadoresDeCitas.ts:380-392`).
+  (`lib/negocio/indicadoresDelLead.ts:265-275`, `lib/negocio/indicadoresDeCitas.ts:400-412`).
 - **La cadena se corta donde deja de ser monótona.** Un embudo exige que cada escalón sea
   subconjunto del anterior, y agendar no exige haber contestado. La suma de la bifurcación se
   calcula en el módulo (`lib/negocio/indicadoresDelLead.ts:315`) y la fija una prueba
@@ -620,7 +620,7 @@ que nadie ve el video, con un medidor roto como fuente.
 
 **5 · El show rate no tiene ninguna vía abierta.** `asistio` en 0 de 333, `showed` en 0, y el
 reporte del closer quieto desde el 2026-09-09. Una tasa sin `asistio is not null` en el denominador
-diría que no viene nadie; el módulo lo evita (`lib/negocio/indicadoresDeCitas.ts:365-379`) y cada
+diría que no viene nadie; el módulo lo evita (`lib/negocio/indicadoresDeCitas.ts:385-399`) y cada
 corte nuevo del §10.7 puede volver a caer.
 
 **6 · Dos ventanas en la misma pantalla.** Las tarjetas del supervisor cuentan toda la historia
@@ -678,7 +678,7 @@ tercera no se rompe en silencio.
 días» publican 0 %, 66,7 %, 33,3 % y 40 % sobre 1, 3 y 5 casos. El piso de 10 lo aplican siete
 cifras, y el booking rate, la respuesta, la cancelación y el reagendamiento no están entre ellas
 (`lib/negocio/indicadoresDelLead.ts:306`, `lib/negocio/indicadoresDelLead.ts:318`,
-`lib/negocio/indicadoresDeCitas.ts:429` y `lib/negocio/indicadoresDeCitas.ts:442`). No es nuevo en
+`lib/negocio/indicadoresDeCitas.ts:449` y `lib/negocio/indicadoresDeCitas.ts:462`). No es nuevo en
 el código; lo nuevo es que ahora es lo normal. Y Sales hereda la cancelación.
 
 **17 · La atribución y el booking rate dejaron de contar lo mismo, y el comentario dice lo
@@ -730,7 +730,7 @@ ninguna es ésa. Un `grep` de `frescura` y `tareas_programadas` sobre `lib/audit
 `lib/negocio/indicadoresDelLead.ts`, `lib/negocio/indicadoresDeCitas.ts`,
 `lib/negocio/atribucionDelLead.ts`, `lib/negocio/consumoDelPrecall.ts` y
 `lib/negocio/citasAlcanzables.ts`, el 2026-09-28, sólo acierta en dos comentarios que la usan como
-analogía (`lib/negocio/indicadoresDeCitas.ts:60` y `lib/negocio/indicadoresDeCitas.ts:395`).
+analogía (`lib/negocio/indicadoresDeCitas.ts:60` y `lib/negocio/indicadoresDeCitas.ts:415`).
 Lo único que la pantalla dice sobre la edad de lo dibujado es el error de red, que deja las cifras
 en su lugar (`components/conversation/PanelDeConversation.jsx:899-901`). Hoy no muerde —las cinco
 tareas estaban al día a las 23:58 UTC—, pero con el negocio quieto es la peor combinación: todas las

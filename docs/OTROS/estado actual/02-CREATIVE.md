@@ -406,9 +406,9 @@ de 276 (40,6 %); el `utmContent` del `jsonb`, en 257 (93,1 %): 2,3 veces más en
 el nombre (el 2026-09-15, 85 contra 220, 2,6 veces).
 
 **7 · El piso y la ventana son los del proyecto — y el sesgo de la ventana es de las CITAS, no de los
-CONTACTOS.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`) rige cada denominador
+CONTACTOS.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`) rige cada denominador
 por separado (`lib/negocio/calidadDelCreativo.ts:244-249`); `DIAS_DE_LA_TASA = 14`
-(`lib/negocio/indicadoresDeCitas.ts:319`) es sólo el valor por omisión de los módulos, porque la ruta
+(`lib/negocio/indicadoresDeCitas.ts:339`) es sólo el valor por omisión de los módulos, porque la ruta
 siempre pasa el período.
 
 - **Las citas SÍ envejecen** (congeladas = `ghl_calendario_id is null`). Sobre citas ya ocurridas, el
@@ -424,7 +424,7 @@ siempre pasa el período.
 - **La condición para una ventana ancha en una cifra de citas** se cumple: las congeladas viajan en
   la misma pasada (`lib/negocio/calidadDelCreativo.ts:137-142`) y se dicen con el texto de
   `tasaDeCancelacion` (`lib/negocio/calidadDelCreativo.ts:363-371`,
-  `lib/negocio/indicadoresDeCitas.ts:526-528`).
+  `lib/negocio/indicadoresDeCitas.ts:546-548`).
   El módulo las cuenta sobre la cohorte de contactos, no por fecha de cita: 1 de 156 hoy.
 
 **8 · «Sin creativo» es un grupo, no un descarte.** `llaveOSinCreativo` devuelve nulo y ese nulo es
@@ -492,7 +492,7 @@ etiqueta.
 **5 · La ventana de la cohorte está escrita cuatro veces en `calidadDelCreativo`.** Las líneas
 `lib/negocio/calidadDelCreativo.ts:228`, `lib/negocio/calidadDelCreativo.ts:266`,
 `lib/negocio/calidadDelCreativo.ts:283` y `lib/negocio/calidadDelCreativo.ts:330` repiten a mano el
-predicado que `lib/negocio/recorrido.ts:197-199` exporta como «un solo lugar», y `costoDelAnuncio`
+predicado que `lib/negocio/recorrido.ts:201-203` exporta —su comentario lo llamaba «un solo lugar» (`lib/negocio/recorrido.ts:187@210ac73`), y desde el 2026-10-08 dice que las dos lo copian—, y `costoDelAnuncio`
 suma dos más (`lib/negocio/costoDelAnuncio.ts:355` sus leads, `lib/negocio/costoDelAnuncio.ts:377` su
 cobertura de `adId`). Hoy son idénticas; si una cambia, la misma etiqueta cubrirá dos ventanas distintas.
 
@@ -507,7 +507,7 @@ Con otra, el hook rate y las tasas de enlace pasarían a «el proveedor no repor
 el defecto de grano que citan está hoy en `lib/negocio/costoDelAnuncio.ts:195-201`, el alcance que no
 se suma en `lib/negocio/costoDelAnuncio.ts:116-126`, el `gasto is not null` en
 `lib/negocio/costoDelAnuncio.ts:297` y el conteo de congeladas de `tasaDeCancelacion` en
-`lib/negocio/indicadoresDeCitas.ts:350`. Una línea corrida no falla: manda a leer otra cosa.
+`lib/negocio/indicadoresDeCitas.ts:370`. Una línea corrida no falla: manda a leer otra cosa.
 
 **8 · Executive publica un Creative sano y activo.** «8 piezas activas» con punto verde, y un «hook
 nuevo» que cuesta ventas (§ 3), mientras la base dice 0 piezas con entrega desde el 2026-09-14 y 0

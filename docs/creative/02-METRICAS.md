@@ -46,7 +46,7 @@ publicar un número falso sin que nada falle.
 ### C2-01 · Toda tasa lleva piso, y el piso es del DENOMINADOR
 
 **Fórmula** · Si el denominador es menor que `PISO_DE_UNA_TASA = 10`, la tasa viaja `null`.
-**Rastro** · `lib/negocio/indicadoresDeCitas.ts:300`, la única definición del repositorio.
+**Rastro** · `lib/negocio/indicadoresDeCitas.ts:329`, la única definición del repositorio.
 **Estado** · Se reusa, no se redefine. *«Nombrar una constante compartida por la primera que la
 necesitó invita a que la quinta se escriba su propio piso, y dos pisos distintos para la misma regla
 divergen sin que nada falle.»*
@@ -255,7 +255,7 @@ las dos pantallas no sumarían igual.
 **Qué es** · Cuántas citas de la ventana todavía no ocurrieron, y por lo tanto no pueden haber
 producido resultado.
 **Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md` regla 7; el patrón está en
-`lib/negocio/indicadoresDeCitas.ts:345`.
+`lib/negocio/indicadoresDeCitas.ts:370`.
 **Estado** · Medido allí el 2026-09-15: en 14 días, 11 congeladas de 147 alcanzables (7,0 %); en 30
 días, 77 de 206 (**27,2 %**); en «Completo», 101 de 206 (32,9 %) — *«Completo no agrega ni una cita
 alcanzable sobre 30 días: agrega 24 congeladas»*, decía esa foto. Re-medido allí el 2026-09-28, en 30

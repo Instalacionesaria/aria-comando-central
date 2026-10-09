@@ -210,11 +210,11 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   (`app/api/sales/route.ts:110`), `leadsDelPortal` en Leads Portal, `recorridoDelLead` en Conversion
   e `indicadoresDelLead` en Conversation. **Con dos formas de ventana**: móvil en Sales, Leads Portal
   y Conversation (`lib/negocio/cadenaDeCierre.ts:46-55`), anclada al día en Acquisition, Creative y
-  Conversion (`lib/negocio/recorrido.ts:186-198`). Hoy, a 30 días, dan 277 y 276.
+  Conversion (`lib/negocio/recorrido.ts:187-202`). Hoy, a 30 días, dan 277 y 276.
 - **Conversaciones** — `indicadoresDelLead`, pero sólo detrás de `/api/auditoria`, que pide
   `auditor.ver` y no `tablero.ver` (`app/api/auditoria/route.ts:58`). Ver § 6, regla 6.
 - **Visitas landing** — **no existe**: Conversion declara que no hay sesiones ni visitantes
-  guardados (`lib/negocio/embudoDelFormulario.ts:129-136`). Lo que sí publica es cuántos contactos
+  guardados (`lib/negocio/embudoDelFormulario.ts:130-137`). Lo que sí publica es cuántos contactos
   entraron por cada camino, en conteos y no en tasas (`lib/negocio/recorridoDelLead.ts:4-45`). Lo
   más parecido a una visita son las «vistas de la landing» que Meta reporta por pieza y Creative
   publica como tasa (`lib/negocio/rendimientoDelCreativo.ts:246-248`): 1.330 en la ventana de 30
@@ -395,7 +395,7 @@ del registro del closer. Sales lo declara en `lib/negocio/huecosDeSales.ts:46-85
 costo a 7 días hoy es «sin entrega», no «$0», y así tiene que decirse.
 
 **4 · La visita, la sesión, el VSL y el dispositivo.** Declarados por Conversion
-(`lib/negocio/embudoDelFormulario.ts:116-157`, escrito el 2026-09-20), Creative
+(`lib/negocio/embudoDelFormulario.ts:117-158`, escrito el 2026-09-20), Creative
 (`lib/negocio/rendimientoDelCreativo.ts:143-168`, del 2026-09-18) y Leads Portal
 (`lib/negocio/huecosDelLeadsPortal.ts:37-77`, del 2026-09-27). Las «visitas landing», el «26 % de
 visita a cita» y el «78 % en móvil» de Executive cuelgan de ellos. Vienen de instrumentar la landing

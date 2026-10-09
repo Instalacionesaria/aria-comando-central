@@ -110,7 +110,7 @@ propio encabezado. Ver `06-PERIODOS-Y-PISOS.md`.
 | de dónde | qué | por qué no lo recalcula |
 |---|---|---|
 | `lib/negocio/inicio.ts` | `cobrado`, `ventas`, `acuerdos` | el dinero tiene un solo dueño |
-| `lib/negocio/indicadoresDeCitas.ts:312` | la tasa de cancelación | ya existe, y trae la partición de descartados que el commit `9931f4d` pagó |
+| `lib/negocio/indicadoresDeCitas.ts:341` | la tasa de cancelación | ya existe, y trae la partición de descartados que el commit `9931f4d` pagó |
 | `lib/negocio/alcanceDelCloser.ts:77` | quiénes son los closers | o las filas salen de un `group by` y el inactivo desaparece |
 | `lib/negocio/salidas.ts` | el vocabulario de salidas y sus opciones | el catálogo existe una vez |
 | `lib/negocio/periodo.ts` | las cuatro ventanas | isomorfo, lo comparten las cinco pantallas |

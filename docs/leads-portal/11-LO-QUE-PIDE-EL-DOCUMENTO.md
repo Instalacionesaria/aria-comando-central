@@ -138,7 +138,7 @@ distintas y no se funden en una**, porque la del anuncio falta en 380 contactos 
 
 **Primer toque:** va, por lista blanca. **Último toque:** hoy la pestaña lo usa para una sola cosa,
 «Llegó por» —`familiaDelRecorrido` lee el host de `atribucion_ultima`
-(`lib/negocio/recorrido.ts:125-127`)—, y no muestra sus UTM. El documento lo pide como renglón propio:
+(`lib/negocio/recorrido.ts:126-128`)—, y no muestra sus UTM. El documento lo pide como renglón propio:
 `LP11-P01`.
 
 ### LP11-06 · Las respuestas (`§ 5.3:253-254`)

@@ -107,7 +107,7 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
 |---|---|---|
 | `leadsDelPortal.ts` | una CTE arma una fila por persona y de ella salen la lista y las cinco tarjetas | `lib/negocio/leadsDelPortal.ts:4-13`, `:276-344` |
 | `tramosDelIcp.ts` | el corte 75/50, sin imports, para servidor y navegador | `lib/negocio/tramosDelIcp.ts:38`, `:41`, `:84-89` |
-| `citasAlcanzables.ts` | «agendó», «descartado», «cita cerrable», «plantón» | `lib/negocio/citasAlcanzables.ts:111-113`, `:128-134`, `:146-150`, `:163-165` |
+| `citasAlcanzables.ts` | «agendó», «descartado», «cita cerrable», «plantón» | `lib/negocio/citasAlcanzables.ts:111-113`, `:128-134`, `:146-150`, `:207-209` |
 | `ventasDelContacto.ts` | «vendió» y el monto reportado; lo importa también Sales | `lib/negocio/ventasDelContacto.ts:44-46`, `lib/negocio/cadenaDeCierre.ts:63` |
 | `fichaDelLeadDelPortal.ts` | la ficha, con los mismos fragmentos que la fila | `lib/negocio/fichaDelLeadDelPortal.ts:3-13` |
 | `atribucionVisible.ts` | ocho claves del primer toque por lista blanca; de `url` y `referrer`, el host | `lib/negocio/atribucionVisible.ts:51-60` |
@@ -171,7 +171,7 @@ sincronización (`:354-375`).
 es por alta en el CRM, móvil, la misma expresión que la cadena de Sales
 (`lib/negocio/leadsDelPortal.ts:300`, `lib/negocio/cadenaDeCierre.ts:169`). El único piso es el del
 cierre, `PISO_DE_UNA_TASA = 10` sobre los contactos del tramo
-(`lib/negocio/indicadoresDeCitas.ts:309`, `lib/negocio/leadsDelPortal.ts:497`); la porción no lleva
+(`lib/negocio/indicadoresDeCitas.ts:329`, `lib/negocio/leadsDelPortal.ts:497`); la porción no lleva
 piso (`LP06-P01`, abierta). El guardián de ceros mira 14 días de la empresa, sin la ventana
 (`lib/negocio/leadsDelPortal.ts:62`, `:336-339`). La lista viaja entera hasta 5.000 filas
 (`lib/negocio/leadsDelPortal.ts:54`) y el reloj recarga cada 60 segundos sólo con la pestaña a la
@@ -495,7 +495,7 @@ hueco sigue diciendo «No hay ninguna venta registrada» (`lib/negocio/huecosDeS
 fecha vieja hasta que alguien lo edite, mientras la tarjeta ya cuenta la venta.
 
 **Llamado sin ventana, el módulo mide catorce días.** `leadsDelPortal(dias = DIAS_DE_LA_TASA)`
-(`lib/negocio/leadsDelPortal.ts:272-275`, `lib/negocio/indicadoresDeCitas.ts:319`): catorce no es
+(`lib/negocio/leadsDelPortal.ts:272-275`, `lib/negocio/indicadoresDeCitas.ts:339`): catorce no es
 ninguno de los cuatro botones. La ruta siempre pasa `periodo.dias`, así que hoy no pasa; un
 consumidor nuevo que lo llame a secas publicaría una cohorte que ninguna pantalla puede reproducir.
 

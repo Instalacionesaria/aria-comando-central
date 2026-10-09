@@ -827,7 +827,7 @@ de calendario no pasa el `adId`. Dónde se dibuja esa fila es **A2-P12**.
 
 **Qué es** · El piso del sistema para mostrar una proporción.
 **Rastro** · `PISO_DE_UNA_TASA = 10` y `DIAS_DE_LA_TASA = 14` en
-`lib/negocio/indicadoresDeCitas.ts:300` y `:310`.
+`lib/negocio/indicadoresDeCitas.ts:329` y `:339`.
 **Estado** · **El efecto sobre esta pantalla es severo y hay que aceptarlo**: el 2026-09-15, de los 7 anuncios de la
 ventana **sólo 3 llegaban al piso** (109, 44 y 17 contactos) y los otros cuatro tenían 1 o 2 (regla 5 del § 6 de esa
 foto); el 2026-09-28, a 30 días, 4 de 79 filas tienen tasa (`01-ACQUISITION.md:145`). El prototipo no tiene piso

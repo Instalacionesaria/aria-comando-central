@@ -193,7 +193,7 @@ dibujar cuatro tarjetas con rayas sin explicar por qué. Ver `LP06-P02`.
 
 ### LP06-10 · `PISO_DE_UNA_TASA`, sobre el denominador de cada tasa
 
-`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`), con el motivo en `:300-307`:
+`PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`), con el motivo en `:320-327`:
 *«con diez, un registro mueve diez puntos, que sigue siendo mucho y ya no es absurdo»*. Y **es del
 denominador**, no del total.
 

@@ -65,7 +65,7 @@ no tienen denominador honesto.
 Y hay un matiz que va al lado: de las 327 citas de la base, **101 no son alcanzables** —
 `ghl_calendario_id` nulo, o sea que el CRM ya no devuelve su evento. Son citas **congeladas**, y el
 filtro que las aparta es del sistema, no de esta pantalla
-(`lib/negocio/indicadoresDeCitas.ts:316-326`).
+(`lib/negocio/indicadoresDeCitas.ts:336-346`).
 
 ---
 
@@ -97,7 +97,7 @@ Dos cosas que hay que leer juntas: **la cancelación subió a 66 % la semana del
 **el volumen se desploma después** — 27, 2, 1. Lo segundo es la pauta apagada desde el 2026-09-14
 (medido en `docs/conversion/14-…`, $0,00 de gasto diario). Lo primero no tiene explicación medida.
 
-> **No se recalcula acá.** `lib/negocio/indicadoresDeCitas.ts:312 :: tasaDeCancelacion` ya existe y
+> **No se recalcula acá.** `lib/negocio/indicadoresDeCitas.ts:341 :: tasaDeCancelacion` ya existe y
 > Sales sería su **segundo** consumidor — hoy sólo la usa `app/api/auditoria/route.ts:89`. Y trae
 > gratis la partición de descartados que el commit `9931f4d` ya pagó: sin ella la cifra mezcla el
 > descarte propio con la pérdida real.

@@ -136,7 +136,7 @@ La fila de 14 días es la del defecto «no hay resta» en estado puro: **una sol
 dejó de listar dentro de la ventana que sí se barre. Las otras son el borde.
 
 Y llega hasta la cifra publicada. Con el filtro del módulo —alcanzable, sin descartados, ya
-ocurrida; la ventana se cierra con `inicio_el < now()` en `lib/negocio/indicadoresDeCitas.ts:397`—:
+ocurrida; la ventana se cierra con `inicio_el < now()` en `lib/negocio/indicadoresDeCitas.ts:417`—:
 
 ```sql
 -- El denominador de la tarjeta y la cancelación, con el mismo filtro que el módulo.
@@ -191,7 +191,7 @@ nada que construir.
   corta por el `sessionSource` del primer toque (`lib/negocio/atribucionDelLead.ts:96`, leído en
   `lib/negocio/atribucionDelLead.ts:143`), que nunca lo trae; la ficha de Leads Portal también lee
   el primero (`lib/negocio/fichaDelLeadDelPortal.ts:151`); Conversion lee del último su `url`
-  (`lib/negocio/recorrido.ts:126`) y si trae `sessionSource` o no (`lib/negocio/recorrido.ts:164`),
+  (`lib/negocio/recorrido.ts:127`) y si trae `sessionSource` o no (`lib/negocio/recorrido.ts:165`),
   nunca cuál. El valor aparece una sola vez en el código, en un comentario
   (`lib/negocio/recorrido.ts:17`). Y la pantalla de Conversation sigue diciendo que un trigger link
   «es un sistema aparte —un redirector con un token por contacto—»
@@ -236,8 +236,8 @@ es 0 en las cuatro. El 2026-09-15 era 2 · 29 · 128 · 128.
 La pantalla lo dibuja como el hueco que es: «asistencia · 0 de 103 cerradas»
 (`components/conversation/PanelDeConversation.jsx:623`) y el eslabón «Se presentaron» con «nadie lo
 registró» (`components/conversation/PanelDeConversation.jsx:651-655`). El servidor aplica el mismo
-criterio: el denominador filtra `asistio is not null` (`lib/negocio/indicadoresDeCitas.ts:373-376`) y
-la tasa es `null` por debajo del piso (`lib/negocio/indicadoresDeCitas.ts:453-456`). Sin ese filtro
+criterio: el denominador filtra `asistio is not null` (`lib/negocio/indicadoresDeCitas.ts:393-396`) y
+la tasa es `null` por debajo del piso (`lib/negocio/indicadoresDeCitas.ts:473-476`). Sin ese filtro
 la tasa sería 0 % sobre 103 y diría, plausible y falsamente, que no se presenta nadie.
 
 El control está cableado de punta a punta (`components/negocio/Avanzar.jsx:138-139`, con el rótulo
@@ -518,9 +518,9 @@ select (select max(fecha) from negocio.metricas_de_anuncio where gasto > 0) ulti
 Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario y no un programador.
 
 - **Conversion dice que Clarity está conectado.** El texto que se dibuja afirma que «Clarity
-  aparece en la pantalla como fuente conectada» (`lib/negocio/embudoDelFormulario.ts:141-142`), y los
+  aparece en la pantalla como fuente conectada» (`lib/negocio/embudoDelFormulario.ts:142-143`), y los
   chips se borraron el mismo 2026-09-20 (`components/views/ConversionView.jsx:21-25`).
-- **«Sin rastro: 26 contactos, todos anteriores a septiembre»** (`lib/negocio/recorrido.ts:90-93`, y
+- **«Sin rastro: 26 contactos, todos anteriores a septiembre»** (`lib/negocio/recorrido.ts:91-94`, y
   lo mismo en `lib/negocio/recorrido.ts:28-29` y `docs/conversion/01-LOS-DOS-RECORRIDOS.md:205-211`).
   Medido 22:11 UTC: 27 con `atribucion_ultima = '{}'`: 24 sin alta, 2 con alta de antes de
   septiembre y **uno con alta en septiembre**; como la cohorte exige alta, en «Completo» la fila
@@ -529,7 +529,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   (`lib/negocio/periodo.ts:84`), y ese título se dibuja en Conversion
   (`components/conversion/PanelDeConversion.jsx:122`) —Acquisition dejó de dibujarlo en AQ-4, el
   2026-09-30—, cuyas cohortes se anclan al día de
-  calendario (`lib/negocio/recorrido.ts:197-199`; el propio `lib/negocio/costoDelAnuncio.ts:62-64`
+  calendario (`lib/negocio/recorrido.ts:201-203`; el propio `lib/negocio/costoDelAnuncio.ts:62-64`
   lo admite). Y `lib/negocio/periodo.ts:76-77` sigue diciendo
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
   (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes.
@@ -547,9 +547,9 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
-  (`components/conversion/PanelDeConversion.jsx:347`, `lib/negocio/recorridoDelLead.ts:263-265`) y la
+  (`components/conversion/PanelDeConversion.jsx:347`, `lib/negocio/recorridoDelLead.ts:272-274`) y la
   fila da 86 % a 30 días según [03-CONVERSION.md](03-CONVERSION.md) (no re-medido); su rótulo
-  (`lib/negocio/recorrido.ts:69-72`) describe el recorrido de agosto.
+  (`lib/negocio/recorrido.ts:70-73`) describe el recorrido de agosto.
 - **La cobertura de Conversion dice «de 570» sobre una base de 594** sin declarar los 24 sin alta
   (§ 2.1), que Leads Portal sí declara.
 - **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:79`), con el
@@ -592,7 +592,7 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   `lib/negocio/costoDelAnuncio.ts:486` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el
   `adId` llega «si y sólo si» el lead entró por Facebook o Instagram; 01 midió hoy 4 de 217 que no
   (no re-medido).
-- `lib/negocio/recorrido.ts:193-195` justifica la ventana anclada porque Conversion cruza con el
+- **Cerrado el 2026-10-08** (CV-1 de Conversion): `lib/negocio/recorrido.ts:193-195@210ac73` justificaba la ventana anclada porque Conversion cruza con el
   gasto y las piezas; de lo que mide, la ruta sólo llama a `recorridoDelLead` y a `embudoDelFormulario` (desde
   AG14 de los agentes además lee sus señales guardadas, que no cruzan gasto ni piezas)
   (`app/api/conversion/route.ts:64-78`).
@@ -743,7 +743,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   dicen que la base guarda un solo toque. Guarda los dos: primer toque no vacío en **553**, último en
   **567**, distintos entre sí en **279** (22:11 UTC). Lo que no hay es historia ni fecha.
 - **Conversion.** `docs/conversion/00-MAPA.md:212-215` dice que ningún módulo lee
-  `atribucion_ultima`; la lee `lib/negocio/recorrido.ts:126` desde el 2026-09-20.
+  `atribucion_ultima`; la lee `lib/negocio/recorrido.ts:127` desde el 2026-09-20.
   `docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:33-36` cuenta 349 contactos en «agosto
   y antes» con los 24 sin alta adentro; sin ellos, la landing de agosto es 62 % y no 58 % (según 03,
   no re-medido).
@@ -794,7 +794,7 @@ el documento miente o si buscó mal.
   `costoDelAnuncio.ts`, y hoy está hacia `lib/negocio/costoDelAnuncio.ts:200`;
   `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las líneas 88-95, y está hacia
   `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287 lo
-  que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189` manda a la 348 de
+  que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
   `lib/negocio/costoDelAnuncio.ts:355` y `lib/negocio/calidadDelCreativo.ts:228`.
 

@@ -202,7 +202,7 @@ que ya no es cierto o que nadie volvió a medir.
   333 filas el 2026-09-28).
 - **Por qué importa:** el día que un closer registre asistencias, **su propio cockpit seguirá
   diciendo «—»**. La cifra existe en otro módulo —`tasaDeAsistencia`, con su piso
-  (`lib/negocio/indicadoresDeCitas.ts:453-456`)— y el Inicio no la pide. El documento hermano pide
+  (`lib/negocio/indicadoresDeCitas.ts:473-476`)— y el Inicio no la pide. El documento hermano pide
   esa tarjeta.
 
 ### 3.2 · «Con cita agendada» sale de una etiqueta sin fecha, con el calendario ya leído
@@ -217,7 +217,7 @@ decir de cuándo.
 
 Avanzar le dice al closer que el campo de asistencia del CRM «está vacío en 1049 de 1052 citas»
 (`components/negocio/Avanzar.jsx:389-392`), y el aviso de Conversation repite «3 de 1052»
-(`lib/negocio/indicadoresDeCitas.ts:494-496`). Es una medición de la subcuenta del 2026-09-14
+(`lib/negocio/indicadoresDeCitas.ts:514-516`). Es una medición de la subcuenta del 2026-09-14
 (`db/migraciones/049_si_se_presento_a_la_cita.sql:49-50`), **no re-medida**, en un texto que no dice
 su fecha.
 
@@ -433,8 +433,8 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
    (`lib/negocio/periodo.ts:109`), y en esa ventana, sobre su población (sin descartados), a las
    18 h UTC había **69 citas no canceladas y sólo 13 dentro de los 14 días**. La cadena de Sales
    cuenta sus cerrables **sin ventana**
-   (`lib/negocio/citasAlcanzables.ts:174-176`), así que afirmar que acusa sobre la misma población que
-   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:166-169`)
+   (`lib/negocio/citasAlcanzables.ts:218-220`), así que afirmar que acusa sobre la misma población que
+   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:210-213`)
    es cierto para el resultado y falso para la asistencia.
 3. **Con dos citas o más, la respuesta por omisión es «ninguna».** Ver § 4.3.
 4. **El closer nunca ve su show rate.** Aunque registre, su Inicio dice «—» (§ 3.1).
@@ -442,8 +442,8 @@ Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ningun
 ### 5.6 · Lo que eso deja sin dato aguas abajo
 
 **Conversation.** La tasa de asistencia cuenta sólo citas con `asistio is not null`
-(`lib/negocio/indicadoresDeCitas.ts:365-379`) y calla por debajo de 10
-(`lib/negocio/indicadoresDeCitas.ts:453-456`). Medido el 2026-09-28 a las 18 h UTC con ese mismo
+(`lib/negocio/indicadoresDeCitas.ts:385-399`) y calla por debajo de 10
+(`lib/negocio/indicadoresDeCitas.ts:473-476`). Medido el 2026-09-28 a las 18 h UTC con ese mismo
 filtro —alcanzables, sin descartados, ya ocurridas—: **106 citas a 30 días y 0 con asistencia**; 17 a
 14 días, 142 en «completo». La pantalla dibuja «—» y «asistencia · 0 de 106 cerradas»
 (`components/conversation/PanelDeConversation.jsx:620-625`) y el eslabón «Se presentaron» con «nadie
@@ -451,7 +451,7 @@ lo registró» (`components/conversation/PanelDeConversation.jsx:650-656`). **No
 guion**, y es lo correcto.
 
 Los tres conteos ruedan con el reloj, porque la ventana la calcula la base con `now()`
-(`lib/negocio/indicadoresDeCitas.ts:396-397`). Re-medidos con el mismo filtro a las 23:58 UTC dieron
+(`lib/negocio/indicadoresDeCitas.ts:416-417`). Re-medidos con el mismo filtro a las 23:58 UTC dieron
 **102 a 30 días, 18 a 14 días y 143 en «completo»**, y 0 con asistencia a 30 días: las más viejas
 salieron de los 30 días y una cita más ocurrió (a las 18 h quedaban 2 por ocurrir; a las 23:58, 1).
 Las canceladas, 33 de 102 (32,4 %) a 30 días y 56 de 143 (39,2 %) en «completo».

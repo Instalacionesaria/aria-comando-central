@@ -64,17 +64,17 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
 | Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:96`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
-| Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:117-127`) | — |
-| Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:208`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
+| Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:118-128`) | — |
+| Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
 | Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **63** de 105, 60 % |
 | Panel 3 · Agendados | los mismos 63 | igual | **63** |
 | Panel 3 · Calificados | agendados sin etiqueta de descarte, sobre los agendados | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`), como A14-07 | **35** de 63, 56 % |
 | Panel 3 · No calificados | agendados descartados | la resta | **28** de 63, 44 % |
 | Panel 3 · «% de contacto a cita útil» | calificados sobre la cohorte | igual | 35 de 105, 33 % |
-| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:207`) | — |
-| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:191-194`) | 105 · 462 |
+| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`) | — |
+| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:200-203`) | 105 · 462 |
 | 02 VSL | hueco | — | — |
-| 03 Formulario | `con / cohorte`; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:164-248`) | «—» en 7 y 30 días |
+| 03 Formulario | `con / cohorte`; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:168-255`) | «—» en 7 y 30 días |
 | 04 Agenda | agendados sobre la cohorte; «Calificados» y «Confirmados» | lo de arriba, más `CAMPO_DE_CONFIRMACION` (`lib/negocio/indicadoresDeCitas.ts:208`) | 60 % · 56 % · 18 de 35 |
 | 05 Gracias | hueco | es el precall, de Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`) | — |
 | Cajón de Landing | la tabla de las siete familias, que hoy es el bloque principal | `recorridoDelLead` | — |
@@ -158,7 +158,7 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | la primera carga | «Cargando…» |
 | la lectura falló | «No se pudo leer. Reintenta.» |
 
-`{corte}` es la fecha corta del corte, «31 ago», y sale del dato (`corteDeEpoca`, `lib/negocio/recorrido.ts:265-284`), nunca escrita a mano. Lo que el servidor dice cuando algo falla va en el `title`.
+`{corte}` es la fecha corta del corte, «31 ago», y sale del dato (`corteDeEpoca`, `lib/negocio/recorrido.ts:292-312`), nunca escrita a mano. Lo que el servidor dice cuando algo falla va en el `title`.
 
 **Los cinco desvíos de rótulo, declarados** · El prototipo contaba visitas y citas; acá se cuentan personas:
 
@@ -168,7 +168,7 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | «{x}% de visita a cita útil» | «{x}% de contacto a cita útil» | igual |
 | «Citas», «Calificadas», «No calificadas», «Confirmadas» | «Agendados», «Calificados», «No calificados», «Confirmados» | la unidad es la persona: 226 citas alcanzables son 201 contactos (`lib/negocio/citasAlcanzables.ts:28-30`) |
 | «Visitas» | «Contactos» y «Vistas de landing» | CV15-06 |
-| Landing: «entran a la página» | «llegan como contacto» | la familia `sin-pagina` nunca abre una página (`lib/negocio/recorrido.ts:73-76`) |
+| Landing: «entran a la página» | «llegan como contacto» | la familia `sin-pagina` nunca abre una página (`lib/negocio/recorrido.ts:74-77`) |
 
 **Estado** · Por construir (CV-4): la lista vivirá en una constante `FRASE` del panel, y una prueba nueva,
 la 247, va a exigir que las dos coincidan en las dos direcciones, como la 182 de Acquisition. La lista es
@@ -201,9 +201,11 @@ cerrada: una frase nueva entra acá primero.
 
 - **«7 días» y «30 días» son días CERRADOS**: los 7 o 30 días completos hasta el último día cerrado de la
   serie de gasto de la cuenta. Hoy Conversion corta con días de calendario que **incluyen hoy**
-  (`lib/negocio/recorrido.ts:197-199`), y eso cambia.
+  (`lib/negocio/recorrido.ts:201-203`), y eso cambia.
 - **«Hoy» es hoy**, a medias: no compara.
-- **«Completo»** empieza en el primer contacto con fecha de alta y termina hoy.
+- **«Completo»** empieza en el dato más viejo —el primer contacto con fecha de alta, o el primer día de gasto
+  guardado si fuera anterior— y termina hoy. Es la regla de la función compartida (CV15-21); en ARIA el primer
+  dato es un contacto.
 
 El segmentado **no** lleva el `title` del matiz de «Hoy» (`lib/negocio/periodo.ts:84`): dice «las últimas 24
 horas», y acá «Hoy» es el día de calendario. Es el mismo arreglo que A14-10 y cierra el riesgo 4 de
@@ -212,7 +214,8 @@ horas», y acá «Hoy» es el día de calendario. Es el mismo arreglo que A14-10
 **La diferencia con el resto del sistema, dicha** · Creative sigue terminando sus ventanas hoy, así que «7
 días» puede dar otra cifra en Creative que acá. Es la misma contrapartida que A14-10.
 
-**Estado** · Por construir (CV-1, CV-2). Es `CV15-P01`.
+**Estado** · **La ventana, construida el 2026-10-08** (CV-1): `bordesDelPeriodo` (CV15-21). La pantalla la usa
+desde CV-3, cuando la ruta le pase la ventana a sus lecturas. Es `CV15-P01`.
 
 ### CV15-05 · La población: los contactos de la ventana
 
@@ -221,7 +224,7 @@ decidió el usuario. La unidad es la persona: no existe ninguna tabla de sesione
 (`docs/conversion/00-MAPA.md:229-230`).
 
 **Fórmula** · `alta_en_el_crm >= desde and alta_en_el_crm < hasta + 1`, con las fechas de CV15-21. Una tasa
-con denominador bajo `PISO_DE_UNA_TASA` (10, `lib/negocio/indicadoresDeCitas.ts:309`) se dibuja «—».
+con denominador bajo `PISO_DE_UNA_TASA` (10, `lib/negocio/indicadoresDeCitas.ts:329`) se dibuja «—».
 
 **Lo que no entra** · Los 24 contactos sin fecha de alta no caen en ninguna ventana, tampoco en «Completo».
 En «Completo» la nota lo dice (CV15-10). Es el riesgo 6 de
@@ -290,7 +293,7 @@ contacto a cita útil», donde x son los calificados sobre la cohorte, con el pi
 | celda | cifra | tasa | flecha |
 |---|---|---|---|
 | «Agendados» | los agendados | — | en %, a la misma edad |
-| «Calificados» | agendados sin descarte (A14-07) | sobre los agendados | **ninguna**: el descarte no tiene fecha |
+| «Calificados» | agendados sin descarte (A14-07), con `esCalificado` | sobre los agendados | **ninguna**: el descarte no tiene fecha |
 | «No calificados» | agendados descartados | sobre los agendados | ninguna, como en el prototipo |
 
 **Estado** · Por construir (CV-4).
@@ -307,7 +310,7 @@ Y, cuando corresponda, las frases cerradas de CV15-02: «Sin historia para compa
 leer.», «Faltan días de gasto.», «Falta gasto de algunas campañas.», «Los agendados no comparan: hay citas
 congeladas.», «Cruza el corte del {corte}.» y, en «Completo», «{N} contactos sin alta no entran.».
 
-**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:207`). La
+**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:216`). La
 cobertura va arriba de cualquier reparto: es el § 18.5.
 
 **Estado** · Por construir (CV-4).
@@ -336,7 +339,7 @@ contacto». Sus dos `.jmx`:
 
 - «Vistas, según Meta»: la cifra de CV15-07, con su flecha si compara;
 - «Por la landing»: la porción de la familia `landing` sobre la cohorte. Sin piso, porque es un conteo
-  sobre otro (`lib/negocio/recorridoDelLead.ts:191-194`). Su flecha es en puntos y **neutra**: que la
+  sobre otro (`lib/negocio/recorridoDelLead.ts:200-203`). Su flecha es en puntos y **neutra**: que la
   landing gane o pierda porción es un cambio de ruta, no algo bueno o malo.
 
 **Qué no es** · «Por la landing» no dice «vio la landing». La familia de septiembre es casi toda circular
@@ -352,7 +355,7 @@ video» y «Video visto» en Gracias (`aios-command-center_1.html:4155-4166`). E
 
 **No abren cajón**: el cajón diría «Sin dato» y nada más. El hueco ya lo dice la tarjeta.
 
-**Por qué** · El VSL tiene 79 escrituras y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:117-127`).
+**Por qué** · El VSL tiene 79 escrituras y las 79 dicen cero (`lib/negocio/embudoDelFormulario.ts:118-128`).
 Gracias es el precall, que pertenece a Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`).
 
 **Estado** · Por construir (CV-4).
@@ -372,7 +375,7 @@ corte del 2026-08-31.
   (`docs/OTROS/estado actual/03-CONVERSION.md:368`), y `docs/conversion/05-PERIODOS-Y-PISOS.md:81-97`
   pide no publicarlas como una sola serie.
 - **Sus `jmx`** · «Lo completan»: la `finalizacion` del embudo, con el piso sobre `con`
-  (`lib/negocio/embudoDelFormulario.ts:237`). «Tiempo medio»: «—».
+  (`lib/negocio/embudoDelFormulario.ts:244`). «Tiempo medio»: «—».
 - **Nunca lleva flecha**, mientras el campo esté muerto y la ventana actual termine después del corte. La
   anterior de 30 días cae casi entera antes del corte, y la actual entera después: sin esta regla la flecha
   bajaría 100 %, en rojo, sin que nada cambie.
@@ -458,16 +461,18 @@ automatización de descarte, que cancela el 94 % de lo suyo (`lib/negocio/indica
 - **Confirmados**: calificados cuyo campo `Confirmación Agendamiento`
   (`lib/negocio/indicadoresDeCitas.ts:208`) vale `Si` (`lib/negocio/indicadoresDeCitas.ts:211`). Sin el campo
   en el CRM, «—». El predicado se exporta y lo usa también `confirmacionEnLaVentana`
-  (`lib/negocio/indicadoresDeCitas.ts:225`): una sola definición de «confirmó». El denominador es
+  (`lib/negocio/indicadoresDeCitas.ts:245`): una sola definición de «confirmó». El denominador es
   `CV15-P10`.
 - **Cancelaron**: calificados con al menos una cita alcanzable y **ninguna** alcanzable que no esté cancelada
   (`alcanzable` y `cancelada`, `lib/negocio/citasAlcanzables.ts:54-66`). Quien canceló y volvió a reservar
   no cuenta. Tasa sobre los calificados, con el piso.
 
-**Qué no es** · No es la tasa de cancelación de Conversation y Sales (`lib/negocio/indicadoresDeCitas.ts:321`),
+**Qué no es** · No es la tasa de cancelación de Conversation y Sales (`lib/negocio/indicadoresDeCitas.ts:341`),
 que cuenta **citas** en una ventana móvil. Por eso se rotula «Cancelaron» y no «Canceladas».
 
-**Estado** · Por construir (CV-1, CV-2). Contesta CV2-15.
+**Estado** · **Los predicados, construidos el 2026-10-08** (CV-1): `confirmoElAgendamiento`,
+`respondioLaConfirmacion` y `todasSusCitasCanceladas`, probados en `pruebas/base/246-pasos-de-conversion.test.ts`.
+La cifra sobre la cohorte, en CV-2. Contesta CV2-15.
 
 ### CV15-19 · Las señales: por paso, la alarma y la tarjeta
 
@@ -513,14 +518,18 @@ incompleto apaga sólo la flecha de las vistas. En Acquisition apaga todo, porqu
 
 ### CV15-21 · Una sola ventana, la de Acquisition
 
-**Qué es** · El cálculo de los bordes de la ventana —último día cerrado, anterior, colector atrasado— vive
-hoy dentro de `lecturaDeAcquisition` (`lib/negocio/embudosDeAcquisition.ts:722-776`). Se **muda** a un
-módulo compartido, `lib/negocio/diasCerrados.ts`, y lo usan las dos pantallas. No se copia.
+**Qué es** · El cálculo de los bordes de la ventana —último día cerrado, anterior, colector atrasado— vivía
+dentro de `lecturaDeAcquisition` (`lib/negocio/embudosDeAcquisition.ts:722-776@210ac73`). Desde el 2026-10-08
+vive en un módulo compartido, `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82-129`), y Acquisition lo usa: se
+mudó, no se copió. La cohorte también es una sola expresión, `cohorteEntre` (`lib/negocio/recorrido.ts:214-217`):
+la usa Acquisition, y las lecturas de Conversion cuando reciben la ventana; la pantalla, desde CV-3.
 
 **La invariante** · Con la misma ventana, la cohorte de Conversion es exactamente el `cobertura.sobre` de
-Acquisition en 7 y en 30 días. Una prueba la exige.
+Acquisition en 7 y en 30 días. La exige `pruebas/base/246-pasos-de-conversion.test.ts`, con un contacto en cada
+borde de las dos ventanas.
 
-**Estado** · Por construir (CV-1).
+**Estado** · **Construido el 2026-10-08** (CV-1): la función compartida, la expresión de la cohorte y la prueba de
+la invariante. La pantalla de Conversion corta con esa ventana desde CV-3, cuando la ruta se la pase.
 
 ### CV15-22 · El servidor calcula; el navegador dibuja
 
@@ -531,7 +540,7 @@ Acquisition en 7 y en 30 días. Una prueba la exige.
 `lib/negocio/embudosDeAcquisition.ts`:
 
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
-  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:278-281` y `:305-314`), y no las copia;
+  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:280-283` y `:307-316`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
   las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita; no
   recalcula lo que ya calculan.
@@ -564,7 +573,7 @@ la `finalizacion`, que llega en %, se divide por 100 al consumirla.
 **Qué es** · La pantalla no dibuja ningún dato de una persona:
 
 - nunca la `url` ni el `referrer`, tampoco en un `title`. La familia sale sólo del host
-  (`lib/negocio/recorrido.ts:306-315`), y la dirección entera puede llevar el nombre de la persona
+  (`lib/negocio/recorrido.ts:334-343`), y la dirección entera puede llevar el nombre de la persona
   (`db/migraciones/048_de_donde_vino_el_lead.sql:94-99`, CV8-P01);
 - la evidencia de las señales lleva sólo conteos (CV6-08);
 - no vuelven los `data-leads`, que abrían un cajón con personas inventadas.
@@ -583,15 +592,16 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 
 **Qué es** · Lo que dice el código sobre la pantalla vieja deja de ser cierto con esta:
 
-- **El hueco de Clarity** (`lib/negocio/embudoDelFormulario.ts:138-143`) dice que Clarity aparece en la
+- **El hueco de Clarity** (`lib/negocio/embudoDelFormulario.ts:139-144`) dice que Clarity aparece en la
   pantalla como fuente conectada. No aparece desde el 2026-09-20. Es el riesgo 2 de
   `docs/OTROS/estado actual/03-CONVERSION.md:473-477`.
 - **Los encabezados** de la vista, del panel, de la ruta, de `lib/negocio/vistaDeConversion.ts` y del
   detector describen el reparto como bloque principal.
-- **El comentario de `ventanaDeLaCohorte`** (`lib/negocio/recorrido.ts:186-196`).
+- **El comentario de `ventanaDeLaCohorte`** (`lib/negocio/recorrido.ts:187-200`): corregido el 2026-10-08 (CV-1); ya no dice que
+  Conversion cruza sus contactos con el gasto.
 - **Los comentarios de `app/inteligencia-estetica.css`** sobre las clases del recorrido.
 
-**Estado** · Por construir (CV-2 a CV-4).
+**Estado** · El comentario de la ventana, corregido en CV-1; lo demás, de CV-2 a CV-4.
 
 ### CV15-27 · Lo que sale de la pantalla
 
@@ -630,7 +640,7 @@ de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
 | etapa | qué | estado |
 |---|---|---|
 | CV-0 | Este documento, las respuestas en los otros, `docs/OTROS/futuro/lo-que-conversion-no-mide.md` y la medición del 2026-10-08 | **escrito el 2026-10-08**, para la revisión del usuario |
-| CV-1 | Las piezas compartidas: `lib/negocio/diasCerrados.ts`, mudado desde Acquisition; los predicados de calificado, confirmó y cancelaron; la ventana explícita en `recorridoDelLead`, `embudoDelFormulario` y `corteDeEpoca` | por hacer |
+| CV-1 | Las piezas compartidas: `lib/negocio/diasCerrados.ts`, mudado desde Acquisition; los predicados de calificado, confirmó y cancelaron; la ventana explícita en `recorridoDelLead`, `embudoDelFormulario` y `corteDeEpoca`; la cohorte de Acquisition con la misma `cohorteEntre`, y la prueba de la invariante | **hecho el 2026-10-08** |
 | CV-2 | El módulo `lib/negocio/pasosDeConversion.ts` y sus dos pruebas | por hacer |
 | CV-3 | La ruta, el cerebro y el detector | por hacer |
 | CV-4 | El front sobre el marcado del prototipo, `CajonDelPaso.jsx` y `app/conversion.css` | por hacer |

@@ -113,7 +113,7 @@ Dos cosas que esta tabla no es:
   pantalla tiene que poder decir «no hay altas» y distinguirlo de «no hay dato»: por eso viaja la
   frescura al lado.
 - **No es la ventana anclada al día.** La medición usa la ventana rodante del plan —`now()` menos
-  N días—, y `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:197-199`) ancla al día calendario. Qué
+  N días—, y `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:201-203`) ancla al día calendario. Qué
   forma usa la pestaña se decide en `06-PERIODOS-Y-PISOS.md`; si se cambia, estas cifras se
   vuelven a medir con la otra forma.
 
@@ -173,7 +173,7 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 | paso | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
 | Entró | `aios-command-center_1.html:4815` | alta, campaña y creativo | 569 con alta |
-| «Vio el VSL» | `aios-command-center_1.html:4816` | **se reemplaza** por «Llegó por»: `familiaDelRecorrido` (`lib/negocio/recorrido.ts:139-167`) | sin medir en LP-0 (`LP09-P03`) |
+| «Vio el VSL» | `aios-command-center_1.html:4816` | **se reemplaza** por «Llegó por»: `familiaDelRecorrido` (`lib/negocio/recorrido.ts:140-168`) | sin medir en LP-0 (`LP09-P03`) |
 | El VSL | `aios-command-center_1.html:4816`, `:4830-4838` | no hay dato: hueco declarado (`LP09-12`) | — |
 | Agendó · closer | `aios-command-center_1.html:4817` | `tieneCitaAlcanzable` y el closer asignado | `LP09-07`, `LP09-10` |
 | Asistió | `aios-command-center_1.html:4818` | `citas.asistio`; el plantón, aparte | 0 · 0 |
@@ -184,7 +184,7 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
 | Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:459-538`) | `LP09-09` |
-| «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:208-215`) | `LP09-09` |
+| «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:231-238`) | `LP09-09` |
 | ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
 | Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
 | Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`) | `LP09-09` |
@@ -537,7 +537,7 @@ Conversation: «el CRM no registró reproducción».
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
   grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:739`; no está en
   `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:318-330`), y se lee **por nombre**, con
-  `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:208`, `:235`). Es el único campo sin grupo que
+  `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`, `:258`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no
   aparece» tiene que dejarlo pasar a él y a ningún otro: un segundo campo sin grupo en la ficha es
   un rojo.
@@ -681,13 +681,13 @@ Y la misma consulta por carpeta dice cuántos contestaron el de la landing y cu�
 widget 190 · sin página 90 · sin rastro 27 · Meta, navegador interno 23 · precall 20 · otra 9. En el
 último toque no aparece ninguno de los dos hosts de abajo; las 9 de «otra» son una página de empleo
 del dominio propio (4) y dos previsualizaciones de `vibepreview.com` (5), las mismas que el
-comentario de `HOSTS` ya menciona (`lib/negocio/recorrido.ts:104-105`).
+comentario de `HOSTS` ya menciona (`lib/negocio/recorrido.ts:105-106`).
 
-`familiaDelRecorrido` lee el host de **`atribucion_ultima`** (`lib/negocio/recorrido.ts:125-127`),
+`familiaDelRecorrido` lee el host de **`atribucion_ultima`** (`lib/negocio/recorrido.ts:126-128`),
 y la medición de hosts de arriba es sobre **`atribucion_primera`**. Son el último toque y el primero,
 y no se reemplazan uno por el otro. Además aparecen dos hosts —`tunegocio.ariaia.com` y
 `tunegocioia.com`, 4 contactos cada uno— que no están en la lista de hosts del recorrido
-(`lib/negocio/recorrido.ts:107-116`): si también están en el último toque, caen en «Otra página».
+(`lib/negocio/recorrido.ts:108-117`): si también están en el último toque, caen en «Otra página».
 Eso no es un error —«otra» es una fila con su conteo— pero hay que verlo antes de publicarlo:
 
 ```sql

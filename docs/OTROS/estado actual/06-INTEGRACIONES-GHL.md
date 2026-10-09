@@ -480,11 +480,11 @@ sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:325` 
 están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Para el **código de
 negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:307`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
-`lib/negocio/consumoDelPrecall.ts:150`, `lib/negocio/indicadoresDeCitas.ts:228`,
-`lib/negocio/calidadDelCreativo.ts:135`, `lib/negocio/embudoDelFormulario.ts:165`,
-`lib/negocio/recorrido.ts:235` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
+`lib/negocio/consumoDelPrecall.ts:150`, `lib/negocio/indicadoresDeCitas.ts:248`,
+`lib/negocio/calidadDelCreativo.ts:135`, `lib/negocio/embudoDelFormulario.ts:172`,
+`lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
-(`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:208`). El
+(`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El
 precio está escrito: si alguien renombra el campo en el CRM, devuelve `null`.
 
 Las 21 carpetas sin grupo, por tamaño (entre paréntesis, la cifra del 2026-09-15 donde cambió):
@@ -551,8 +551,8 @@ Form completo sin agendar       39
 ```
 
 El 2026-09-15 este informe decía que ninguna pantalla lo leía. **Cambió**: desde el 2026-09-20
-(commit `4da946d`) lo leen por nombre, para Conversion, `lib/negocio/embudoDelFormulario.ts:165` y
-`lib/negocio/recorrido.ts:235`, y desde el 2026-09-26, para Leads Portal,
+(commit `4da946d`) lo leen por nombre, para Conversion, `lib/negocio/embudoDelFormulario.ts:172` y
+`lib/negocio/recorrido.ts:258`, y desde el 2026-09-26, para Leads Portal,
 `lib/negocio/fichaDelLeadDelPortal.ts:212`. Y las cifras no se movieron por otro motivo: el campo
 dejó de reportar el 2026-08-31, cuando la gente empezó a entrar por el widget y no por la landing
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-23`).
@@ -741,7 +741,7 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 | **Oportunidades y pipelines** | `TYPE_ACTIVITY_OPPORTUNITY` apareció **6 veces en la muestra de 65 mensajes** (`lib/ghl/entrega.ts:125`). | Ninguna de las 18 operaciones toca `/opportunities`. El § 5.4 pide `opportunity_id` en el registro de venta y no hay de dónde sacarlo. |
 | **Correo, Instagram y llamadas** | Medido el 2026-09-14 sobre 518 conversaciones: 375 correos, 236 de Instagram, 128 de llamada. | `esDeUnCanalDelChat` los descarta. **Decisión de producto del 2026-09-14** (`lib/ghl/entrega.ts:213-231`), no una omisión. |
 | **El resultado del agente de voz** | 270 apariciones de etiquetas de llamada sobre 123 contactos (§ 4). | El contrato no las conoce. Están crudas en `contactos.etiquetas` y **no las lee nadie**. |
-| **El estado del formulario de la landing** | `Form Landing VSL`, 247 contactos, con los tres estados del embudo. | Su carpeta (`📁 Score \| ICP`) no tiene grupo. Desde el 2026-09-20 se lee por nombre (`lib/negocio/recorrido.ts:208`); sigue sin dibujarse en el Perfil. |
+| **El estado del formulario de la landing** | `Form Landing VSL`, 247 contactos, con los tres estados del embudo. | Su carpeta (`📁 Score \| ICP`) no tiene grupo. Desde el 2026-09-20 se lee por nombre (`lib/negocio/recorrido.ts:231`); sigue sin dibujarse en el Perfil. |
 | **Confirmación de asistencia** | `Confirmación Agendamiento`, 184 contactos, vocabulario `Si`/`No`. | Misma carpeta sin grupo; se alcanza por `campoPorNombre` y ya se usa. |
 | **Los enlaces y horarios de la reunión** | «📁 Links Sistema»: 6 campos, 1.369 valores (`Link del meets` 262, `Link reagenda` 218). | Carpeta sin grupo y ningún archivo nombra sus campos. |
 | **La grabación de la llamada** | `attachments[0]` en 128 de 128. | `leerMensaje` no lee `attachments`. |

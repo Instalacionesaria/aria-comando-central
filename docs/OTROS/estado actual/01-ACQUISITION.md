@@ -122,7 +122,7 @@ costo usa **días de calendario terminando hoy** (`lib/negocio/costoDelAnuncio.t
 por `:82-84`, y los leads y la cobertura con su propia copia, `:346` y `:368`); el monitor usa
 **ventanas móviles de 24 horas** en la pantalla (`lib/negocio/calidadDeLaAtribucion.ts:103-107`, `:131`, `:145`, `:157`);
 el detector de Acquisition le pasa los días cerrados de la pantalla (AG9) —ver
-§ 7, riesgo 2—. El piso es `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:309`): la
+§ 7, riesgo 2—. El piso es `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`): la
 tasa de agenda es nula por debajo (`costoDelAnuncio.ts:220`) y también las proporciones del monitor
 (`calidadDeLaAtribucion.ts:261`); el CPL se publica con un solo lead, a propósito
 (`costoDelAnuncio.ts:140-149`). El umbral que declara una cobertura incompleta es
@@ -488,7 +488,7 @@ Seis citas a `costoDelAnuncio.ts` desde otros módulos quedaron corridas (se da 
 de ese archivo y dónde está hoy lo citado): `lib/negocio/calidadDelCreativo.ts:162`,
 `lib/negocio/rendimientoDelCreativo.ts:116` y `:231` mandan a la 157-164 por el defecto de grano,
 que está en `costoDelAnuncio.ts:192-201`; `lib/negocio/fatigaDelCreativo.ts:7` manda a la 88-95 por
-el alcance, que está en `costoDelAnuncio.ts:116-126`; `lib/negocio/recorrido.ts:189` manda a la 348
+el alcance, que está en `costoDelAnuncio.ts:116-126`; `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, en el CV-1 de Conversion: el comentario ya no cita la línea de la ventana— a la 357
 por la ventana de la cohorte, que está en `costoDelAnuncio.ts:355`; y
 `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287, que está en `costoDelAnuncio.ts:297`.
 

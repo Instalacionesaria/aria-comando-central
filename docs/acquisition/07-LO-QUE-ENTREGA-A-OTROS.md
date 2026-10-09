@@ -230,7 +230,7 @@ contrario**, sin que ninguno de los dos se equivoque.
 - **Misma ventana.** La contradicción es «el contacto más barato **del mes**» contra una tasa de
   conversión que Conversion calcula sobre su propio período (`FACTOR`, `lib/aios/conversion.js:13`).
   Dos ventanas distintas producen contradicciones espurias y ocultan las reales. La ventana del resto
-  del sistema son **14 días** (`lib/negocio/indicadoresDeCitas.ts:310`).
+  del sistema son **14 días** (`lib/negocio/indicadoresDeCitas.ts:339`).
 - **Métricas emparejadas y declaradas.** El conflicto no se detecta comparando dos métricas
   cualesquiera: se detecta porque **una es de costo por entrada y la otra de rendimiento por
   entrada**, y la barata resulta peor. La forma mínima que Acquisition tiene que exponer por anuncio

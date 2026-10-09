@@ -37,7 +37,7 @@
 // única incompletitud que queda es la que este archivo declara.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { sql } from 'kysely';
+import { type RawBuilder, sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre } from './camposDelCrm.ts';
 /* `ESTADOS_CANCELADOS` y `ETIQUETAS_DE_DESCARTE` se dejaron de importar acá: los dos vocabularios
@@ -211,6 +211,26 @@ export const CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento';
 const CONFIRMO = 'Si';
 
 /**
+ * **¿Esta PERSONA confirmó su agendamiento?** Su campo `CAMPO_DE_CONFIRMACION` vale `CONFIRMO`.
+ *
+ * La única definición de «confirmó». La usa esta tarjeta, y la cifra «Confirmados» que pide Conversion (CV15-18
+ * de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) tiene que usar ésta: las dos cuentan sobre
+ * poblaciones distintas, y lo que no pueden es preguntar distinto.
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ * @param campoId El identificador del campo en el CRM (`campoPorNombre(CAMPO_DE_CONFIRMACION)`). Sin él no
+ *   hay pregunta que hacer, y quien llama tiene que decirlo en vez de contar cero.
+ */
+export function confirmoElAgendamiento(alias: string, campoId: string): RawBuilder<boolean> {
+  return sql<boolean>`coalesce(${sql.raw(alias)}.campos_del_crm ->> ${campoId} = ${CONFIRMO}, false)`;
+}
+
+/** **¿Esta PERSONA tiene respondido el campo de confirmación?**, con un valor u otro. El denominador de la tasa. */
+export function respondioLaConfirmacion(alias: string, campoId: string): RawBuilder<boolean> {
+  return sql<boolean>`(${sql.raw(alias)}.campos_del_crm ? ${campoId})`;
+}
+
+/**
  * Cuántos confirmaron, entre los contactos con cita alcanzable en la ventana.
  *
  * ── POR QUÉ ES UNA CONSULTA APARTE Y NO ENTRA A LA PASADA GRANDE ───────────
@@ -237,8 +257,8 @@ async function confirmacionEnLaVentana(
     .selectFrom('contactos as ct')
     .select([
       sql<number>`count(*)`.as('con_cita'),
-      sql<number>`count(*) filter (where ct.campos_del_crm ? ${campoId})`.as('con_confirmacion'),
-      sql<number>`count(*) filter (where ct.campos_del_crm ->> ${campoId} = ${CONFIRMO})`.as('confirmaron'),
+      sql<number>`count(*) filter (where ${respondioLaConfirmacion('ct', campoId)})`.as('con_confirmacion'),
+      sql<number>`count(*) filter (where ${confirmoElAgendamiento('ct', campoId)})`.as('confirmaron'),
     ])
     /* `exists` y no un `join`: con el `join`, un contacto con tres citas en la ventana contaría tres
        veces, y su única respuesta pesaría el triple que la de quien tuvo una sola. */

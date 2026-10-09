@@ -14,7 +14,7 @@
 //     anuncios; los costos de personas se pagan sólo con la de las campañas que traen contactos (A14-19);
 //   · contactos: los que traen esa campaña en `atribucion_primera->>'campaignId'`, dados de alta en la
 //     ventana (A14-04);
-//   · agendados: `tieneCitaAlcanzable`; calificados: agendados sin `contactoDescartado` (A14-07);
+//   · agendados: `tieneCitaAlcanzable`; calificados: `esCalificado`, agendados sin descarte (A14-07);
 //   · ICP: el puntaje de los calificados, con los cortes de `tramosDelIcp.ts` (A14-08);
 //   · el funnel de cada campaña: `negocio.funnels_de_campana`, asignado a mano (A14-03);
 //   · el nombre y el estado: `negocio.campanas` (A14-13).
@@ -58,8 +58,10 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { contactoDescartado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
-import { coberturaDelGasto, estadoDeLaSerie, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
+import { esCalificado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { bordesDelPeriodo } from './diasCerrados.ts';
+import { coberturaDelGasto, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
+import { cohorteEntre } from './recorrido.ts';
 import { funnelsDeLasCampanas, FUNNELS, type Funnel } from './funnelDeLaCampana.ts';
 import { PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
@@ -552,7 +554,7 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
   /* Los calificados, y el reparto de su puntaje, con el mismo `case` que `tramoDelPuntaje`: 0 o
      nulo es «sin calificar», y los cortes son los umbrales de `tramosDelIcp.ts`, pasados como
      parámetros para que no haya un segundo número. */
-  const calificado = sql`(${agendo} and not ${contactoDescartado('c')})`;
+  const calificado = esCalificado('c', edad);
   const gente = await sql<{
     campana: string;
     contactos: string;
@@ -576,8 +578,7 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
            sum(c.score) filter (where ${calificado} and c.score > 0) as suma,
            count(*) filter (where ${calificado} and c.score > 0) as con_puntaje
       from negocio.contactos c
-     where c.alta_en_el_crm >= ${desde}::date
-       and c.alta_en_el_crm < (${hasta}::date + 1)
+     where ${cohorteEntre('c', { desde, hasta })}
        and c.atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}
      group by c.atribucion_primera->>'campaignId'`.execute(datos());
 
@@ -724,59 +725,22 @@ export async function lecturaDeAcquisition(
   zona: string,
 ): Promise<LecturaDeAcquisition> {
   const d = periodo.dias;
-  const cerrados = periodo.clave === '7d' || periodo.clave === '30d';
-  const completo = periodo.clave === 'completo';
 
-  /* El último día CERRADO: el último anterior a hoy cuyo total de la cuenta se releyó después de la medianoche
-     siguiente de la empresa (`estadoDeLaSerie`). El colector lee la serie a las 06:17 UTC, así que hasta esa
-     pasada ayer todavía es la foto de la madrugada; en una empresa al oeste de UTC−6 ni la pasada del día
-     siguiente lo cierra —su medianoche cae después de las 06:17 UTC—, y el último cerrado es anteayer o el
-     anterior: la ventana termina ahí.
+  /* Los bordes de la ventana, con la regla de los días cerrados (A14-10). Vivían acá; desde el 2026-10-08 viven
+     en `diasCerrados.ts` con su porqué, para que Conversion corte los mismos días (CV15-21). El primer dato propio
+     de esta pantalla es el primer contacto con campaña: «Completo» empieza en él o en el primer día de gasto, el
+     más viejo.
 
-     **El colector atrasado**: la serie sin leer hace más de 26 horas —una pasada diaria perdida, con dos horas
-     de margen—, o su último día cerrado de hace más de tres —escribir no es cerrar, y tres días es el desfase
-     más grande que da una pasada al día en cualquier zona—. Lo encontraron la cuarta y la quinta revisión de
-     AQ-3, sobre las métricas; desde la `076` se mide sobre la serie, que es la que dice si un día está entero. */
-  const serie = await estadoDeLaSerie(zona);
+     **El colector atrasado** —la serie sin leer hace más de 26 horas, o su último día cerrado de hace más de
+     tres— lo encontraron la cuarta y la quinta revisión de AQ-3, sobre las métricas; desde la `076` se mide
+     sobre la serie, que es la que dice si un día está entero. Acá deja la ventana sin comparar (`faltan_dias`). */
   const contactos = await sql<{ desde: string | null }>`
     select to_char(min(alta_en_el_crm)::date, 'YYYY-MM-DD') as desde from negocio.contactos
      where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}`.execute(datos());
-  const primerDato =
-    [serie.primerDato, contactos.rows[0]?.desde ?? null].filter((d): d is string => d !== null).sort()[0] ?? null;
-  /* Sin gasto guardado no hay nada que esperar: ayer está cerrado. Con gasto, el último día cerrado; si el
-     colector está atrasado, la ventana termina ayer igual y no compara (`faltan_dias`). */
-  const colectorAtrasado = serie.atrasado;
-  const ultimoCerrado = !serie.hayDatos || colectorAtrasado ? null : serie.ultimoCerrado;
-
-  /* Las fechas salen de la base y viajan como texto: `current_date` es el de la base, y un `date` que
-     pasa por un `Date` de JavaScript se corre un día al este de Greenwich (ver `comoDiaLocal` en
-     `recolectarAnuncios.ts`). «Completo» empieza en el primer dato y no en `current_date - 3649`. */
-  const bordes = await sql<{
-    desde: string;
-    hasta: string;
-    ant_desde: string;
-    ant_hasta: string;
-    cierre: string;
-    dias_hasta_el_cierre: number;
-    dias: number;
-  }>`
-    select to_char(x.desde, 'YYYY-MM-DD') as desde,
-           to_char(x.hasta, 'YYYY-MM-DD') as hasta,
-           to_char(x.desde - (x.hasta - x.desde + 1), 'YYYY-MM-DD') as ant_desde,
-           to_char(x.desde - 1, 'YYYY-MM-DD') as ant_hasta,
-           to_char(least(x.hasta, x.cierre), 'YYYY-MM-DD') as cierre,
-           (least(x.hasta, x.cierre) - x.desde + 1)::int as dias_hasta_el_cierre,
-           (x.hasta - x.desde + 1)::int as dias
-      from (select case when ${completo} then coalesce(${primerDato}::date, current_date)
-                        when ${cerrados} then coalesce(${ultimoCerrado}::date, current_date - 1) - ${d - 1}::int
-                        else current_date end as desde,
-                   case when ${cerrados} then coalesce(${ultimoCerrado}::date, current_date - 1)
-                        else current_date end as hasta,
-                   coalesce(${ultimoCerrado}::date, current_date - 1) as cierre) as x`.execute(datos());
-  const b = bordes.rows[0]!;
-  const ventana = { desde: b.desde, hasta: b.hasta };
+  const b = await bordesDelPeriodo(periodo, zona, contactos.rows[0]?.desde ?? null);
+  const { ventana, cerrados, colectorAtrasado } = b;
   // La cobertura de la actual se mide hasta el último día cerrado: en «Completo», hoy a medias no cuenta.
-  const actualEntera = await coberturaDeLaVentana(ventana.desde, b.cierre, Number(b.dias_hasta_el_cierre), zona);
+  const actualEntera = await coberturaDeLaVentana(ventana.desde, b.cierre, b.diasHastaElCierre, zona);
 
   let anterior: { desde: string; hasta: string } | null = null;
   let sinComparacion: SinComparacion | null = null;
@@ -786,10 +750,10 @@ export async function lecturaDeAcquisition(
   } else if (colectorAtrasado || !actualEntera.gasto) {
     sinComparacion = 'faltan_dias';
   } else {
-    const previaEntera = await coberturaDeLaVentana(b.ant_desde, b.ant_hasta, d, zona);
+    const previaEntera = await coberturaDeLaVentana(b.anteriorCandidata.desde, b.anteriorCandidata.hasta, d, zona);
     if (!previaEntera.gasto || !previaEntera.contactos) sinComparacion = 'sin_historia';
     else {
-      anterior = { desde: b.ant_desde, hasta: b.ant_hasta };
+      anterior = b.anteriorCandidata;
       clicsComparables = previaEntera.clics;
     }
   }
@@ -798,14 +762,14 @@ export async function lecturaDeAcquisition(
 
   /* Lo que la cuenta cobró en la ventana ENTERA —con hoy a medias en «Hoy» y en «Completo»—, que es la inversión
      del total; y en la anterior, para su flecha. `null` si a algún día le falta el total de la cuenta. */
-  const deLaCuenta = (await coberturaDelGasto(ventana.desde, ventana.hasta, Number(b.dias), zona)).deLaCuenta;
+  const deLaCuenta = (await coberturaDelGasto(ventana.desde, ventana.hasta, b.dias, zona)).deLaCuenta;
   const motivoDelGasto: MotivoDelGasto | null = colectorAtrasado ? 'colector_atrasado' : actualEntera.motivo;
 
   const cobertura = await sql<{ con_campana: string; sobre: string }>`
     select count(*) filter (where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}) as con_campana,
            count(*) as sobre
       from negocio.contactos
-     where alta_en_el_crm >= ${ventana.desde}::date and alta_en_el_crm < (${ventana.hasta}::date + 1)`.execute(datos());
+     where ${cohorteEntre('contactos', ventana)}`.execute(datos());
 
   const actual = await cifrasPorCampana(ventana.desde, ventana.hasta);
   // Si el desglose no cubre la ventana actual, sus clics serían los de una parte: no se publican.
