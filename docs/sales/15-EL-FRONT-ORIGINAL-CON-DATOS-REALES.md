@@ -506,7 +506,8 @@ Las 87 objeciones de esas 38 llamadas están clasificadas: hoy la fila «Sin obj
 días, la tarjeta diría «4 llamadas sin cierre» y tres filas, que suman 6 porque dos llamadas tienen objeciones de dos
 categorías.
 
-**Estado** · Por construir (SA-7 el servidor, SA-8 la pantalla).
+**Estado** · El servidor, construido el 2026-10-09 (SA-7): `lib/negocio/motivosDeLasLlamadas.ts`, en `pantalla.motivos`;
+lo que registra el closer viaja como `pantalla.registrados`. La pantalla, por construir (SA-8).
 
 ### S15-20 · La cadena comercial, en cifras
 
@@ -544,13 +545,13 @@ de S15-02 coincidan en las dos direcciones.
 sin cierre, con el `hint`— y además, aparte, los «No le interesa» que los closers registraron en Avanzar con su
 motivo del catálogo. Las demás herramientas ya traen los avisos que la pantalla deja de dibujar (S15-18).
 
-**Estado** · Por construir (SA-7).
+**Estado** · Construido el 2026-10-09 (SA-7): `motivos_de_no_venta` con `registradosPorLosClosers`.
 
 ### Las etapas
 
 | etapa | qué | estado |
 |---|---|---|
 | SA-6 | Esta sección, la medición de las llamadas HT con el OK del usuario y la nota en `docs/OTROS/futuro/lo-que-sales-no-mide.md` | **hecho el 2026-10-09**, revisado por el usuario |
-| SA-7 | El servidor: los motivos de las llamadas HT en la lectura, la ruta y el cerebro, con sus pruebas | por hacer |
+| SA-7 | El servidor: los motivos de las llamadas HT en la lectura, la ruta y el cerebro, con sus pruebas | **hecho el 2026-10-09**: 14 mutaciones muertas; se sube con SA-8, porque la pantalla de hoy lee los motivos con la forma vieja |
 | SA-8 | La pantalla: sin párrafos, los motivos de las llamadas y la cadena en cifras; la lista de frases y la prueba 249 | por hacer |
 | SA-9 | La revisión, las mutaciones, la suite entera, el navegador, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |

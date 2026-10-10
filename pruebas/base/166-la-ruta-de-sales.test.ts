@@ -171,6 +171,7 @@ test('ningún módulo de Sales lee los campos personalizados del CRM', () => {
     'app/api/sales/route.ts',
     'lib/negocio/lecturaDeSales.ts',
     'lib/negocio/motivosDeNoVenta.ts',
+    'lib/negocio/motivosDeLasLlamadas.ts',
     'lib/negocio/cadenaDeCierre.ts',
     'lib/negocio/cicloHastaLaCita.ts',
     'lib/negocio/cierrePorCloser.ts',
@@ -192,7 +193,7 @@ test('`pantalla` trae lo que dibuja el front del prototipo, y nada más', async 
      motivos y la tarjeta de abajo; los bloques de siempre siguen viajando con su forma. */
   const cuerpo = await pedir('30d');
   const p = bloque(cuerpo, 'pantalla');
-  assert.deepEqual(Object.keys(p).sort(), ['cifras', 'closers', 'comercial', 'motivos']);
+  assert.deepEqual(Object.keys(p).sort(), ['cifras', 'closers', 'comercial', 'motivos', 'registrados']);
   /* Los huecos ya no viajan: cada «—» dice su motivo, y lo que no se mide está en
      `docs/OTROS/futuro/lo-que-sales-no-mide.md` (S15-17). */
   assert.equal('huecos' in cuerpo, false, 'volvieron los huecos: la pantalla del prototipo no los dibuja');
@@ -219,7 +220,8 @@ test('el texto libre de un motivo no viaja: sólo su conteo, fuera del catálogo
   await limpiar(esc);
   await conCloser(false);
   assert.equal(JSON.stringify(cuerpo).includes(libre), false, 'el texto libre del motivo viajó en la respuesta');
-  const motivos = bloque(bloque(cuerpo, 'pantalla'), 'motivos');
+  /* Lo que registró el closer viaja como `registrados`: la tarjeta dibuja los motivos de las llamadas (S15-19). */
+  const motivos = bloque(bloque(cuerpo, 'pantalla'), 'registrados');
   assert.ok((motivos['fueraDelCatalogo'] as number) >= 1, 'el motivo fuera del catálogo no se contó aparte');
   assert.ok((motivos['filas'] as { motivo: string }[]).some((f) => f.motivo === 'Precio'), 'el motivo del catálogo no viajó');
 });
@@ -264,8 +266,9 @@ test('el MISMO período llega a los cuatro bloques que gobierna, y no al dinero'
         `el bloque "${k}" quedó en otra ventana con el botón de "${p.clave}" encendido`,
       );
     }
-    /* Los motivos del front, también: cuentan los «No le interesa» de la misma ventana que la tabla. */
-    assert.equal(bloque(bloque(cuerpo, 'pantalla'), 'motivos')['dias'], p.dias, 'los motivos quedaron en otra ventana');
+    /* Los motivos, también: los de las llamadas y los que registraron los closers, en la misma ventana. */
+    assert.equal(bloque(bloque(cuerpo, 'pantalla'), 'motivos')['dias'], p.dias, 'los motivos de las llamadas quedaron en otra ventana');
+    assert.equal(bloque(bloque(cuerpo, 'pantalla'), 'registrados')['dias'], p.dias, 'los motivos registrados quedaron en otra ventana');
     /* Y el dinero NO tiene `dias`: no lo gobierna el selector, y si algún día lo tuviera sería
        porque alguien lo recalculó acá en vez de consumirlo. */
     assert.equal('dias' in bloque(cuerpo, 'dinero'), false, 'el dinero quedó atado al selector');

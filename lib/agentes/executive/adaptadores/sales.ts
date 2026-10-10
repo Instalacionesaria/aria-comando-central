@@ -121,15 +121,22 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
   {
     nombre: 'motivos_de_no_venta',
     descripcion:
-      'Sales: por qué dijo que no la gente que los closers registraron como «No le interesa» en la ventana, por los ' +
-      'motivos del catálogo de Avanzar (Precio, No es el momento, Competencia, No califica, Otro), con la porción de ' +
-      'cada uno como fracción de 0 a 1. Los que no traen motivo o traen uno fuera del catálogo se cuentan aparte. ' +
-      '`sinVenta` son los resultados registrados que no fueron venta. No son las objeciones de las llamadas analizadas.',
+      'Sales: los motivos de no venta de la pantalla —las llamadas de venta HT analizadas en la ventana que terminaron ' +
+      'sin cierre (`sinCierre`), y por categoría de objeción (precio, momento, decisor, confianza, encaje, otra) ' +
+      'cuántas tuvieron al menos una, con su porción como fracción de 0 a 1; una llamada con dos categorías cuenta en ' +
+      'las dos, y `sinObjecion` son las que no tienen ninguna clasificada—. El resultado y las categorías los lee un ' +
+      'modelo en la transcripción: no es lo que reportó el closer. Aparte, `registradosPorLosClosers`: los «No le ' +
+      'interesa» que los closers registraron en Avanzar, por motivo del catálogo (Precio, No es el momento, ' +
+      'Competencia, No califica, Otro), los de fuera del catálogo contados aparte, y `sinVenta`, los resultados ' +
+      'registrados que no fueron venta.',
     secciones: ['sales'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos) {
-      const m = (await leer(argumentos)).cierre.motivos;
-      return tomar(m, ['dias', 'total', 'filas', 'fueraDelCatalogo', 'porcionFueraDelCatalogo', 'sinVenta'] as const);
+      const { motivos, registrados } = (await leer(argumentos)).cierre;
+      return {
+        ...tomar(motivos, ['dias', 'sinCierre', 'filas', 'sinObjecion', 'porcionSinObjecion'] as const),
+        registradosPorLosClosers: tomar(registrados, ['total', 'filas', 'fueraDelCatalogo', 'porcionFueraDelCatalogo', 'sinVenta'] as const),
+      };
     },
   },
   {

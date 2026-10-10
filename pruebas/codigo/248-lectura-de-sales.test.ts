@@ -16,6 +16,9 @@
 //     mutación: confundir los ejes, o mirar las ventas en vez de los intentos;
 //   · los motivos siguen el catálogo de Avanzar y lo demás va aparte — mutación: repartir lo de afuera;
 //   · «{N} sin venta» son los intentos que no fueron venta — mutación: contar sólo los «No le interesa»;
+//   · los motivos de las llamadas van de más a menos, el catálogo desempata y la porción es sobre las llamadas sin
+//     cierre; la tarjeta dibuja ésos y lo registrado viaja aparte — mutación: ordenar por el catálogo, o dibujar lo
+//     registrado;
 //   · la cancelación de la tarjeta va de 0 a 1 — mutación: dejarla de 0 a 100.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -27,6 +30,7 @@ import type { CierreDeLosClosers, CierreDeUnCloser } from '../../lib/negocio/cie
 import type { Cancelacion } from '../../lib/negocio/indicadoresDeCitas.ts';
 import { armarSales, type EntradaDeSales } from '../../lib/negocio/lecturaDeSales.ts';
 import { MOTIVOS_DE_NO_VENTA, repartirMotivos } from '../../lib/negocio/motivosDeNoVenta.ts';
+import { repartirLasLlamadas } from '../../lib/negocio/motivosDeLasLlamadas.ts';
 
 function unCloser(o: Partial<CierreDeUnCloser> & { usuarioId: string }): CierreDeUnCloser {
   return {
@@ -58,6 +62,7 @@ function entrada(o: { filas?: CierreDeUnCloser[]; cancelacion?: Partial<Cancelac
     ciclo: { p50: 2.3, p90: 6.1, cobertura: { con: 139, sobre: 277 }, avisoDelTecho: null, aviso: null } as CicloHastaLaCita,
     closers: { filas: o.filas ?? [], coberturaDeLaTabla: { con: 95, sobre: 106 }, aviso: 'aviso de la tabla' } as CierreDeLosClosers,
     motivos: repartirMotivos(30, []),
+    llamadas: repartirLasLlamadas(30, 0, [], 0),
   };
 }
 
@@ -171,7 +176,7 @@ test('«{N} sin venta» son los intentos de los closers que no fueron venta', ()
       unCloser({ usuarioId: 'b', intentos: 2, ventas: 0, porSalida: { no_show: 2 } }),
     ],
   }));
-  assert.equal(p.motivos.sinVenta, 6);
+  assert.equal(p.registrados.sinVenta, 6);
 });
 
 test('la tarjeta de abajo viaja de 0 a 1: la cancelación, las coberturas y la del ciclo', () => {
@@ -182,4 +187,31 @@ test('la tarjeta de abajo viaja de 0 a 1: la cancelación, las coberturas y la d
   assert.deepEqual(p.comercial.ciclo.cobertura, { con: 139, sobre: 277, porcion: 139 / 277 });
   const sinCitas = armarSales(entrada({ cancelacion: { citas: 0, canceladas: 0, tasa: null } }));
   assert.equal(sinCitas.comercial.cancelacion.tasa, null);
+});
+
+test('los motivos de las llamadas: de más a menos, el catálogo desempata, la porción sobre las llamadas sin cierre', () => {
+  const m = repartirLasLlamadas(30, 4, [
+    { categoria: 'confianza', n: 1 },
+    { categoria: 'encaje', n: 2 },
+    { categoria: 'precio', n: 3 },
+    { categoria: 'decisor', n: 1 },
+    { categoria: 'momento', n: 0 },
+  ], 1);
+  assert.deepEqual(m.filas, [
+    { categoria: 'precio', llamadas: 3, porcion: 3 / 4 },
+    { categoria: 'encaje', llamadas: 2, porcion: 2 / 4 },
+    // A igual conteo, el orden del catálogo: `decisor` va antes que `confianza`.
+    { categoria: 'decisor', llamadas: 1, porcion: 1 / 4 },
+    { categoria: 'confianza', llamadas: 1, porcion: 1 / 4 },
+  ], 'el orden no es de más a menos, el desempate no es el del catálogo, o una categoría en cero tiene fila');
+  assert.deepEqual([m.sinCierre, m.sinObjecion, m.porcionSinObjecion], [4, 1, 1 / 4]);
+  const vacia = repartirLasLlamadas(7, 0, [], 0);
+  assert.deepEqual([vacia.filas, vacia.porcionSinObjecion], [[], null]);
+});
+
+test('la tarjeta dibuja los motivos de las llamadas; lo que registró el closer viaja aparte', () => {
+  const llamadas = repartirLasLlamadas(30, 4, [{ categoria: 'precio', n: 3 }], 0);
+  const p = armarSales({ ...entrada(), llamadas, motivos: repartirMotivos(30, [{ detalle: 'Precio', n: 2 }]) });
+  assert.equal(p.motivos, llamadas, 'la tarjeta no dibuja los motivos de las llamadas');
+  assert.equal(p.registrados.total, 2, 'lo que registró el closer se perdió');
 });

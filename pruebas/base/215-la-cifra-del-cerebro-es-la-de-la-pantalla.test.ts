@@ -152,7 +152,11 @@ for (const { clave } of PERIODOS) {
     );
     // Las cuatro de arriba de la pantalla, con su motivo: lo que el cerebro dice de una cifra es lo que se dibuja (S15-14).
     assert.deepEqual(cierre.cifras, p.pantalla.cifras);
-    assert.deepEqual(await herramienta('motivos_de_no_venta', periodo), p.pantalla.motivos);
+    const motivos = await herramienta('motivos_de_no_venta', periodo);
+    const { registradosPorLosClosers, ...deLasLlamadas } = motivos;
+    assert.deepEqual(deLasLlamadas, p.pantalla.motivos);
+    const { dias: _dias, ...registrados } = p.pantalla.registrados;
+    assert.deepEqual(registradosPorLosClosers, registrados);
     const cancelacion = await herramienta('cancelacion_de_citas', periodo);
     assert.deepEqual([cancelacion.citas, cancelacion.tasa], [p.cancelacion.citas, p.cancelacion.tasa]);
   });

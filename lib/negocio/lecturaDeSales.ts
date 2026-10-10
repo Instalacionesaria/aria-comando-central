@@ -5,8 +5,8 @@
 //
 // La pestaña vuelve al front del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): cuatro
 // cifras, la tabla de closers, los motivos de no venta y, debajo, la cadena comercial. Este módulo compone lo que
-// ya se mide —`dineroDelMes`, `tasaDeCancelacion`, `cadenaDeCierre`, `cicloHastaLaCita`, `cierrePorCloser` y
-// `motivosDeNoVenta`— y arma con eso lo que la pantalla dibuja. La ruta lee la lectura entera; las herramientas
+// ya se mide —`dineroDelMes`, `tasaDeCancelacion`, `cadenaDeCierre`, `cicloHastaLaCita`, `cierrePorCloser`,
+// `motivosDeLasLlamadas` y `motivosDeNoVenta`— y arma con eso lo que la pantalla dibuja. La ruta lee la lectura entera; las herramientas
 // del cerebro que publican lo armado —las cuatro cifras con la tabla, y los motivos— leen su mitad del cierre,
 // `lecturaDelCierre`, que es la misma que la lectura entera usa: lo que el cerebro dice de una cifra es lo que la
 // pantalla dibuja (S15-14), sin cargar con la cadena, el ciclo ni el dinero, que esas herramientas no publican.
@@ -26,6 +26,9 @@
 //     «—» porque nadie registró; con resultados y sin ventas, cero medido (S15-06 a S15-08). Una venta sin monto
 //     deja al revenue en «—»: sumarla como cero publicaría un monto más chico que el reportado.
 //
+// **Los motivos de no venta** de la pantalla son los de las llamadas HT sin cierre (S15-19, `motivosDeLasLlamadas`);
+// los que el closer registra en Avanzar viajan aparte, como `registrados`, y los da el agente (S15-22).
+//
 // Todo lo que viaja en `pantalla` va de 0 a 1. La cancelación sigue viajando también entera, de 0 a 100, en su
 // propio objeto: la función la comparten Conversation, Closer y el cerebro, y su contrato no cambia (S15-13).
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -36,6 +39,7 @@ import { cicloHastaLaCita, type CicloHastaLaCita } from './cicloHastaLaCita.ts';
 import { cierrePorCloser, type CierreDeLosClosers } from './cierrePorCloser.ts';
 import { dineroDelMes, type DineroDelMes } from './dineroDelMes.ts';
 import { type Cancelacion, PISO_DE_UNA_TASA, tasaDeCancelacion } from './indicadoresDeCitas.ts';
+import { motivosDeLasLlamadas, type MotivosDeLasLlamadas } from './motivosDeLasLlamadas.ts';
 import { motivosDeNoVenta, type MotivosDeNoVenta } from './motivosDeNoVenta.ts';
 
 // ─── Los tipos ──────────────────────────────────────────────────────────────
@@ -100,8 +104,13 @@ export interface ComercialDeSales {
 export interface CierreArmado {
   cifras: CifrasDeSales;
   closers: { filas: FilaDeCloser[]; aviso: string | null };
-  /** Los motivos, con «{N} sin venta»: los resultados de los closers en la ventana que no son una venta. */
-  motivos: MotivosDeNoVenta & { sinVenta: number };
+  /** Los motivos de no venta de la tarjeta: las llamadas HT sin cierre, por categoría de objeción (S15-19). */
+  motivos: MotivosDeLasLlamadas;
+  /**
+   * Los «No le interesa» que registraron los closers, con «{N} sin venta»: los resultados de la ventana que no son
+   * una venta. No se dibujan; los da el agente de Sales (S15-22).
+   */
+  registrados: MotivosDeNoVenta & { sinVenta: number };
 }
 
 export interface PantallaDeSalesArmada extends CierreArmado {
@@ -112,6 +121,7 @@ export interface EntradaDelCierre {
   cancelacion: Cancelacion;
   closers: CierreDeLosClosers;
   motivos: MotivosDeNoVenta;
+  llamadas: MotivosDeLasLlamadas;
 }
 
 export interface EntradaDeSales extends EntradaDelCierre {
@@ -189,7 +199,8 @@ export function armarCierre(e: EntradaDelCierre): CierreArmado {
   return {
     cifras,
     closers: { filas: tabla, aviso: e.closers.aviso },
-    motivos: { ...e.motivos, sinVenta: intentos - ventas },
+    motivos: e.llamadas,
+    registrados: { ...e.motivos, sinVenta: intentos - ventas },
   };
 }
 
@@ -246,7 +257,8 @@ export async function lecturaDelCierre(dias: number): Promise<LecturaDelCierre> 
   const cancelacion = await tasaDeCancelacion(dias);
   const closers = await cierrePorCloser(dias, catalogo);
   const motivos = await motivosDeNoVenta(dias, catalogo);
-  return { catalogo, cancelacion, closers, motivos, cierre: armarCierre({ cancelacion, closers, motivos }) };
+  const llamadas = await motivosDeLasLlamadas(dias);
+  return { catalogo, cancelacion, closers, motivos, llamadas, cierre: armarCierre({ cancelacion, closers, motivos, llamadas }) };
 }
 
 export interface LecturaDeSales {
@@ -256,6 +268,7 @@ export interface LecturaDeSales {
   ciclo: CicloHastaLaCita;
   closers: CierreDeLosClosers;
   motivos: MotivosDeNoVenta;
+  llamadas: MotivosDeLasLlamadas;
   /** Lo que dibuja el front del prototipo. */
   pantalla: PantallaDeSalesArmada;
 }
@@ -268,7 +281,7 @@ export interface LecturaDeSales {
  * salga «—» con su motivo.
  */
 export async function lecturaDeSales(dias: number, zonaHoraria: string): Promise<LecturaDeSales> {
-  const { catalogo, cancelacion, closers, motivos } = await lecturaDelCierre(dias);
+  const { catalogo, cancelacion, closers, motivos, llamadas } = await lecturaDelCierre(dias);
   const dinero = await dineroDelMes(zonaHoraria, sujetoDelDinero(catalogo));
   const cadena = await cadenaDeCierre(dias);
   const ciclo = await cicloHastaLaCita(dias);
@@ -280,6 +293,7 @@ export async function lecturaDeSales(dias: number, zonaHoraria: string): Promise
     ciclo,
     closers,
     motivos,
-    pantalla: armarSales({ cancelacion, cadena, ciclo, closers, motivos }),
+    llamadas,
+    pantalla: armarSales({ cancelacion, cadena, ciclo, closers, motivos, llamadas }),
   };
 }

@@ -11,7 +11,10 @@
 //     monto se cuenta aparte — mutación: sumar el monto de todas las salidas, o de las que empiezan con «venta»;
 //   · la lectura entera: sin ningún resultado, ventas y revenue son «—»; con resultados sin ventas, cero
 //     medido; el revenue es el de la ventana y no el del mes; y la asistencia es la de la cancelación, con una
-//     cita marcada de verdad — mutación: tomar el revenue de `dineroDelMes`, o publicar la asistencia sin mirar.
+//     cita marcada de verdad — mutación: tomar el revenue de `dineroDelMes`, o publicar la asistencia sin mirar;
+//   · los motivos de las llamadas cuentan las HT sin cierre de la ventana, una vez por categoría, y las que no
+//     tienen ninguna objeción clasificada van aparte — mutaciones: sacar el filtro de resultado, de tipo o de la
+//     ventana, contar objeciones en vez de llamadas, o casar la categoría sin mirar la huella.
 //
 // La organización `alfa` la comparten otras pruebas, así que lo que depende de TODA la empresa —la asistencia—
 // se compara contra la función de la que sale, no contra un número fijo.
@@ -28,6 +31,8 @@ import { closersDeLaEmpresa } from '../../lib/negocio/alcanceDelCloser.ts';
 import { cierrePorCloser } from '../../lib/negocio/cierrePorCloser.ts';
 import { lecturaDeSales } from '../../lib/negocio/lecturaDeSales.ts';
 import { motivosDeNoVenta } from '../../lib/negocio/motivosDeNoVenta.ts';
+import { motivosDeLasLlamadas } from '../../lib/negocio/motivosDeLasLlamadas.ts';
+import { TABLAS_DEL_ANALIZADOR } from '../apoyo/analizador.ts';
 
 let esc: Escenario;
 
@@ -194,8 +199,8 @@ test('sin ningún resultado, ventas y revenue son «—»; con uno sin venta, so
   const conUno = await enAlfa(() => lecturaDeSales(30, 'America/Lima'));
   assert.deepEqual(conUno.pantalla.cifras.ventas, { valor: 0, motivo: null });
   assert.deepEqual(conUno.pantalla.cifras.revenue, { valor: 0, motivo: null });
-  assert.equal(conUno.pantalla.motivos.total, 1);
-  assert.equal(conUno.pantalla.motivos.sinVenta, 1);
+  assert.equal(conUno.pantalla.registrados.total, 1);
+  assert.equal(conUno.pantalla.registrados.sinVenta, 1);
   assert.equal(conUno.pantalla.closers.filas.length, 1);
 });
 
@@ -250,4 +255,89 @@ test('la asistencia es la de la cancelación de la empresa, y la tarjeta de abaj
   assert.deepEqual(l.pantalla.cifras.asistencias, { valor: c.sePresentaron, motivo: null });
   assert.equal(l.pantalla.comercial.cancelacion.tasa, c.tasa === null ? null : c.tasa / 100);
   assert.equal(l.pantalla.comercial.cancelacion.citas, c.citas);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4 · LOS MOTIVOS DE LAS LLAMADAS HT (S15-19)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Vacía los Analizadores de la organización, como la 230: las llamadas de otra prueba cambiarían los conteos. */
+async function sinLlamadas(): Promise<void> {
+  for (const t of TABLAS_DEL_ANALIZADOR) await esc.admin.query(`delete from negocio.${t} where org_id = $1`, [esc.org]);
+}
+
+/**
+ * Una llamada analizada con su resultado y sus objeciones, cada una con la categoría que se le da. `vieja` siembra
+ * la categoría con la huella de otro texto: la de un análisis que cambió, que ya no casa.
+ */
+async function unaLlamada(o: {
+  tipo?: 'HT' | 'OB';
+  resultado: 'CERRADA' | 'NO_CERRADA' | 'INDETERMINADO';
+  haceDias?: number;
+  objeciones?: { texto: string; categoria: string | null; vieja?: boolean }[];
+}): Promise<void> {
+  const { rows } = await esc.admin.query<{ id: string }>(
+    `insert into negocio.analizador_llamadas (org_id, tipo, proveedor, estado, fecha_de_la_reunion)
+     values ($1, $2, 'MANUAL', 'DONE', now() - make_interval(days => $3) - interval '1 hour') returning id`,
+    [esc.org, o.tipo ?? 'HT', o.haceDias ?? 0],
+  );
+  const id = rows[0]!.id;
+  const objeciones = o.objeciones ?? [];
+  await esc.admin.query(
+    `insert into negocio.analizador_analisis (org_id, llamada_id, tipo, coincide, resultado, analisis, modelo, version_de_rubrica)
+     values ($1, $2, $3, true, $4, $5, 'claude-sonnet-5', 'rubric.es.md@v8.1')`,
+    [esc.org, id, o.tipo ?? 'HT', o.resultado, JSON.stringify({ seller: { objections: objeciones.map((x) => ({ objection: x.texto, howHandled: '', howToRespond: '' })) } })],
+  );
+  for (const [i, x] of objeciones.entries()) {
+    if (x.categoria === null) continue;
+    await esc.admin.query(
+      `insert into negocio.objeciones_clasificadas (org_id, llamada_id, indice, huella, categoria, modelo)
+       values ($1, $2, $3, md5($4), $5, 'claude-haiku-5')`,
+      [esc.org, id, i, x.vieja ? `${x.texto} (antes)` : x.texto, x.categoria],
+    );
+  }
+}
+
+test('los motivos cuentan las llamadas HT sin cierre de la ventana, una vez por categoría', async () => {
+  await sinLlamadas();
+  await unaLlamada({ resultado: 'NO_CERRADA', objeciones: [
+    { texto: 'Es caro.', categoria: 'precio' },
+    { texto: 'No me alcanza.', categoria: 'precio' },
+    { texto: 'Lo hablo con mi socio.', categoria: 'decisor' },
+  ] });
+  await unaLlamada({ resultado: 'NO_CERRADA', objeciones: [{ texto: 'Muy caro para mí.', categoria: 'precio' }] });
+  // Sin ninguna objeción clasificada: una sin objeciones, una sin categoría todavía y una con la categoría vieja.
+  await unaLlamada({ resultado: 'NO_CERRADA' });
+  await unaLlamada({ resultado: 'NO_CERRADA', objeciones: [{ texto: 'No sé si funciona.', categoria: null }] });
+  await unaLlamada({ resultado: 'NO_CERRADA', objeciones: [{ texto: 'No es para mí.', categoria: 'encaje', vieja: true }] });
+  // Lo que no cuenta: una cerrada, una indeterminada, una de onboarding y una de afuera de la ventana.
+  await unaLlamada({ resultado: 'CERRADA', objeciones: [{ texto: 'Caro, pero dale.', categoria: 'precio' }] });
+  await unaLlamada({ resultado: 'INDETERMINADO', objeciones: [{ texto: 'Caro.', categoria: 'precio' }] });
+  await unaLlamada({ tipo: 'OB', resultado: 'NO_CERRADA', objeciones: [{ texto: 'Caro.', categoria: 'precio' }] });
+  await unaLlamada({ resultado: 'NO_CERRADA', haceDias: 40, objeciones: [{ texto: 'Ahora no.', categoria: 'momento' }] });
+
+  const m = await enAlfa(() => motivosDeLasLlamadas(30));
+  await sinLlamadas();
+  assert.equal(m.sinCierre, 5, 'el total cuenta una cerrada, una indeterminada, una de onboarding o una de afuera de la ventana');
+  assert.deepEqual(
+    m.filas.map((f) => [f.categoria, f.llamadas]),
+    [['precio', 2], ['decisor', 1]],
+    'una llamada con dos objeciones de precio contó dos veces, o se coló una llamada que no cuenta',
+  );
+  assert.equal(m.filas[0]!.porcion, 2 / 5);
+  assert.equal(m.sinObjecion, 3, 'la llamada sin objeciones, la sin categoría o la de la categoría vieja no van aparte');
+});
+
+test('la lectura de la pantalla trae los motivos de las llamadas, y aparte lo que registraron los closers', async () => {
+  await limpiar();
+  await sinLlamadas();
+  const uno = await unaPersona('Closer uno');
+  await designar(uno, CRM_A, 3);
+  await unContacto(CRM_A, [{ salida: 'no_interesa', registradoPor: uno, detalle: 'Precio' }]);
+  // Hace cinco días: con la ventana de la lectura cae; con una de un día, no.
+  await unaLlamada({ resultado: 'NO_CERRADA', haceDias: 5, objeciones: [{ texto: 'Ahora no puedo.', categoria: 'momento' }] });
+  const l = await enAlfa(() => lecturaDeSales(30, 'America/Lima'));
+  await sinLlamadas();
+  assert.deepEqual([l.pantalla.motivos.sinCierre, l.pantalla.motivos.filas.map((f) => f.categoria)], [1, ['momento']]);
+  assert.deepEqual([l.pantalla.registrados.total, l.pantalla.registrados.filas.map((f) => f.motivo)], [1, ['Precio']]);
 });
