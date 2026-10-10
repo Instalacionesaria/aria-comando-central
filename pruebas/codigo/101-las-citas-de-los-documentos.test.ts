@@ -61,7 +61,7 @@ const AUDITADAS = [
   // El plan de las ventanas en el día de la empresa (2026-10-07): diagnosticado y dejado para después.
   'docs/OTROS/futuro/el-dia-de-la-empresa.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', 'docs/OTROS/futuro/lo-que-sales-no-mide.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION» y «EL FRONT DE SALES», al final
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', 'docs/OTROS/futuro/lo-que-sales-no-mide.md', 'docs/conversation', 'docs/OTROS/futuro/lo-que-conversation-no-mide.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION», «EL FRONT DE SALES» y «EL FRONT DE CONVERSATION», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
@@ -249,3 +249,8 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
 /* ── EL FRONT DE SALES (2026-10-09) ───────────────────────────────────────────
    El `15` de `docs/sales/` ya entra con la carpeta. Entra además el plan de lo que esa pantalla no mide, que vive en
    `futuro/`. La entrada va en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */
+
+/* ── EL FRONT DE CONVERSATION ───────────────────────────────────────────────
+   `docs/conversation/` nace el 2026-10-10, con lo que se hizo y el plan del front del prototipo, y entra entera el
+   día que nace, con `docs/OTROS/futuro/lo-que-conversation-no-mide.md`: son los documentos que el plan va a ir
+   corriendo etapa por etapa, y el plan de Sales mostró que una cita corrida sin auditar no la ve nadie. */
