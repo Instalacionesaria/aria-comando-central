@@ -248,6 +248,8 @@ empresa, como la pantalla de hoy. Acá se habla de «closer 1, 2 y 3».
 cuya salida no es una venta.
 
 **Estado** · El conteo, construido el 2026-10-09 (SA-1): `motivos.sinVenta` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3).
+**Reemplazado en la pantalla** por S15-19 (§ 7), por decisión del usuario del 2026-10-09: el `hint` pasa a «{N}
+llamadas sin cierre».
 
 ### S15-11 · Los motivos de no venta
 
@@ -264,6 +266,8 @@ una pérdida, y piden otra capacidad. Tampoco los campos del CRM: `docs/sales/05
 que no los hay.
 
 **Estado** · El cálculo, construido el 2026-10-09 (SA-1): `lib/negocio/motivosDeNoVenta.ts`; el dibujo, construido el 2026-10-09 (SA-3). Hoy: 1 en toda la historia, ninguno en 30 días.
+**Reemplazado en la pantalla** por S15-19 (§ 7), por decisión del usuario del 2026-10-09: los motivos salen de las
+llamadas HT sin cierre. Lo que registra el closer queda para el agente (S15-22).
 
 ### S15-12 · La cadena comercial, abajo
 
@@ -281,6 +285,8 @@ Cada sección con su aviso del servidor.
 
 **Estado** · Los cálculos, construidos el 2026-09-21; la tarjeta, el 2026-10-09 (SA-3): «La cadena comercial», con
 cinco secciones —la cadena, la cancelación, el ciclo, el dinero del mes y la cobertura—.
+**Reemplazado en la pantalla** por S15-20 (§ 7), por decisión del usuario del 2026-10-09: cifras grandes, sin
+descripciones ni avisos.
 
 ### S15-13 · El servidor calcula; el navegador dibuja
 
@@ -415,3 +421,136 @@ de la cancelación, el piso, el closer sin vínculo, que el texto libre no viaje
 
 La 215 compara al cerebro con la pantalla, que leen la misma lectura: lo que protege es que el período y la zona
 lleguen igual a las dos, no que la cifra sea correcta. La corrección la miran la 248 de código y la de base.
+
+---
+
+## 7 · La segunda revisión del usuario (2026-10-09): un tablero que se lee de un vistazo
+
+Con la pantalla en producción, el usuario pidió tres cosas:
+
+- **Sin párrafos.** «Es un dashboard»: cifras grandes con su rótulo, como el prototipo. Los análisis —por qué una
+  cifra no está, qué población cuenta, qué le falta a una fila— los da el agente de Sales cuando se le pregunta, no
+  la pantalla.
+- **Los motivos de no venta, automáticos**, sacados de donde ya hay datos. Con lo que registra el closer la
+  tarjeta tiene una sola fila en toda la historia; los análisis de las llamadas HT ya clasifican las objeciones de
+  cada llamada sin cierre.
+- **La cadena comercial, en cifras**, sin descripciones ni avisos.
+
+### Decidido por el usuario el 2026-10-09
+
+| tema | decisión | requisito |
+|---|---|---|
+| Los motivos de no venta | **De las llamadas HT, automáticos**: las objeciones de las llamadas que terminaron sin cierre, por categoría. El `hint` vuelve a ser el del prototipo, «{N} llamadas sin cierre» | S15-19 |
+| La tarjeta de abajo | **Cifras grandes, sin texto**: una fila con los cinco eslabones de la cadena y otra con la cancelación, los días hasta la cita y el cobrado del mes | S15-20 |
+| Debajo de un «—» | **Sí, una línea corta** de la lista cerrada, como «reportado por el closer»: sin ella, un «—» no se distingue de una falla | S15-18 |
+
+### S15-18 · Sin párrafos en la pantalla
+
+**Qué es** · La pantalla dibuja cifras con su rótulo y, debajo de un «—», una línea corta de la lista cerrada
+(S15-02, S15-21). No dibuja la nota de la tabla de closers, la de cada closer, los avisos de la cadena, de la
+cancelación, del ciclo y del dinero, ni el texto de cada ventana.
+
+**Dónde quedan** · Viajan igual en la respuesta y en las herramientas del cerebro, que ya los traen
+(`cierre_por_closer` con `aviso` arriba y por fila, `cadena_de_cierre`, `ciclo_hasta_la_cita`,
+`cancelacion_de_citas` y `dinero_del_mes`, en `lib/agentes/executive/adaptadores/sales.ts`). El agente de Sales es
+quien explica.
+
+**Lo que esto revierte** · Las notas de cada fila a la vista, que SA-4 agregó porque un `title` no se lee en el
+teléfono: ahora no van ni a la vista ni en el `title`.
+
+**Estado** · Por construir (SA-8).
+
+### S15-19 · Los motivos de no venta, de las llamadas HT
+
+**Reemplaza** a S15-10 y S15-11 en la pantalla.
+
+**Qué es** · «Motivos de no venta», con el `hint` del prototipo, «{N} llamadas sin cierre», y una fila por categoría
+de objeción con su conteo y su barra: **Precio · No es el momento · No es quien decide · No confía en el resultado ·
+No es para su negocio · Otra**. Son las seis categorías con que el analizador clasifica cada objeción
+(`lib/analizadores/categorias.ts:6`), con el rótulo en palabras: tres son los motivos del prototipo («Precio», «No es
+quien decide», «Pidió tiempo» → «No es el momento»).
+
+**Fórmula** ·
+
+- **La población**: las llamadas HT analizadas —`tipo = 'HT'`, `estado = 'DONE'`, el análisis vigente
+  (`coincide`)— cuyo resultado es `NO_CERRADA` (`lib/analizadores/nucleo/ht.ts:59` y `:136`), en la ventana, por
+  el momento de la reunión: `coalesce(fecha_de_la_reunion, creado_el)`, como las cuenta `llamadasDeVenta`
+  (`lib/negocio/llamadasDeVenta.ts:95-96`). Son de toda la empresa: una llamada no está atada a un closer
+  configurado.
+- **Cada fila**: cuántas de esas llamadas tienen al menos una objeción con esa categoría, la vigente de
+  `negocio.objeciones_clasificadas` (la misma unión de `lib/negocio/llamadasDeVenta.ts:110-127`). Una llamada con
+  objeciones de dos categorías cuenta en las dos, así que las filas pueden sumar más que el `hint`.
+- **La porción** de cada barra: sobre las llamadas sin cierre, calculada en el servidor.
+- **«Sin objeción clasificada»**: las llamadas sin cierre que no tienen ninguna objeción con categoría —porque no
+  las tuvieron o porque la clasificación todavía no corrió—, en su propia fila y con la barra gris.
+- **El orden**: de más a menos llamadas; a igual conteo, el orden del catálogo. Las categorías en cero no llevan
+  fila.
+- **Sin ninguna llamada sin cierre** en la ventana, la tarjeta dice «Sin llamadas sin cierre en esta ventana.».
+
+**Qué no es** · No es lo que el closer registró en Avanzar: esos «No le interesa» con su motivo siguen en
+`lib/negocio/motivosDeNoVenta.ts` y los da el agente (S15-22). Tampoco es una pérdida confirmada: es lo que el
+modelo leyó en la transcripción, y la llamada no está enganchada a un contacto ni a una cita
+(`docs/OTROS/estado actual/05-SALES.md` § 5). Ni la frase de la objeción ni el nombre de quien organizó la reunión
+llegan a la pantalla: sólo los conteos.
+
+**Medición** · El 2026-10-09, con el OK del usuario, con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos),
+en la única organización con llamadas:
+
+| ventana | llamadas sin cierre | por categoría, en llamadas | sin objeción clasificada |
+|---|---|---|---|
+| 7 días | 1 | Precio 1 | 0 |
+| 30 días | 4 | Precio 3 · No es para su negocio 2 · No confía en el resultado 1 | 0 |
+| toda la historia | 38 | Precio 24 · No confía en el resultado 22 · No es para su negocio 16 · No es quien decide 6 · No es el momento 3 · Otra 2 | 0 |
+
+Las 87 objeciones de esas 38 llamadas están clasificadas: hoy la fila «Sin objeción clasificada» no aparece. Con 30
+días, la tarjeta diría «4 llamadas sin cierre» y tres filas, que suman 6 porque dos llamadas tienen objeciones de dos
+categorías.
+
+**Estado** · Por construir (SA-7 el servidor, SA-8 la pantalla).
+
+### S15-20 · La cadena comercial, en cifras
+
+**Reemplaza** a S15-12 en la pantalla.
+
+**Qué es** · Una tarjeta, «La cadena comercial», con dos filas de cifras con el vocabulario del prototipo
+(`.stat`, `.s-l`, `.s-v`) y sin una sola descripción:
+
+| fila | cifras | debajo |
+|---|---|---|
+| la cadena | Entraron · Agendaron · Cita ocurrida · Registrado · Venta, en contactos | el porcentaje de la cohorte |
+| el cierre del período | Cancelación (con su decimal) · Días hasta la cita (la mediana) · Cobrado de {mes} | «reportado por el closer» bajo el cobrado |
+
+**Lo que sale de la pantalla** · El p90 del ciclo, las coberturas, las ventas y los acuerdos del mes y todos los
+avisos. Siguen en la respuesta y en el cerebro (S15-18).
+
+**Un «—»** · Con su línea: la cadena con la cohorte vacía, «Sin contactos en este período»; la cancelación sin
+citas, «Sin citas en esta ventana.»; la mediana bajo el piso, «Pocos contactos para una mediana.»; el cobrado sin
+registros, «Nadie registró en esta ventana.» o «Sin closers configurados.», como lo dice `dineroDelMes`.
+
+**Estado** · Por construir (SA-8).
+
+### S15-21 · La lista de frases, después de SA-8
+
+S15-02 cambia así en SA-8, con el código: **entran** «Sin llamadas sin cierre en esta ventana.», «Sin objeción
+clasificada» y «Pocos contactos para una mediana.»; **salen** «Sin motivos registrados.» y «Fuera del catálogo», que
+eran de los motivos de Avanzar. Las demás quedan. La prueba 249 sigue exigiendo que la constante `FRASE` y la tabla
+de S15-02 coincidan en las dos direcciones.
+
+**Estado** · Por construir (SA-8).
+
+### S15-22 · El agente de Sales responde lo que la pantalla no dice
+
+**Qué es** · `motivos_de_no_venta` del cerebro devuelve lo mismo que la tarjeta —las categorías de las llamadas HT
+sin cierre, con el `hint`— y además, aparte, los «No le interesa» que los closers registraron en Avanzar con su
+motivo del catálogo. Las demás herramientas ya traen los avisos que la pantalla deja de dibujar (S15-18).
+
+**Estado** · Por construir (SA-7).
+
+### Las etapas
+
+| etapa | qué | estado |
+|---|---|---|
+| SA-6 | Esta sección, la medición de las llamadas HT con el OK del usuario y la nota en `docs/OTROS/futuro/lo-que-sales-no-mide.md` | **hecho el 2026-10-09**, revisado por el usuario |
+| SA-7 | El servidor: los motivos de las llamadas HT en la lectura, la ruta y el cerebro, con sus pruebas | por hacer |
+| SA-8 | La pantalla: sin párrafos, los motivos de las llamadas y la cadena en cifras; la lista de frases y la prueba 249 | por hacer |
+| SA-9 | La revisión, las mutaciones, la suite entera, el navegador, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |

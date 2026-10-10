@@ -69,3 +69,7 @@ S15-11).
 son de otra cosa.
 
 **Qué haría falta** · Nada mientras Avanzar sea la fuente. Si el negocio prefiere el CRM, hay que decidirlo antes.
+
+**Cambia en SA-7** · El 2026-10-09 el usuario decidió que la tarjeta saque los motivos de las llamadas HT sin cierre,
+por la categoría de sus objeciones (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-19). Lo que registra
+el closer en Avanzar queda para el agente de Sales (S15-22).
